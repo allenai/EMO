@@ -143,6 +143,15 @@ DEFAULT_SETUP_STEPS = (
     "pip freeze",
 )
 
+RYAN_SETUP_STEPS = (
+    f"git clone https://ryanyxw:$GITHUB_TOKEN@github.com/allenai/FlexMoE.git .",
+    f'git checkout "${GIT_REF_ENV_VAR}"',
+    "git submodule update --init --recursive",
+    "conda shell.bash activate base",
+    "pip install -e '.[all]'",
+    "pip freeze",
+)
+
 
 def is_running_in_beaker() -> bool:
     """
@@ -180,6 +189,11 @@ class BeakerLaunchConfig(Config):
     budget: Optional[str] = None
     """
     The budget group to assign.
+    """
+
+    is_ryan: bool = False
+    """
+    Whether to use Ryan's git setup. Temp fix for private repo issue.
     """
 
     task_name: str = "train"
@@ -457,8 +471,7 @@ class BeakerLaunchConfig(Config):
             "mkdir -p /root/.cache/torch/kernels && export PYTORCH_KERNEL_CACHE_PATH=/root/.cache/torch/kernels",
             "mkdir -p /olmo-core-runtime",
             "cd /olmo-core-runtime",
-        ]
-        #  + self.setup_steps
+        ] + self.setup_steps if not self.is_ryan else list(RYAN_SETUP_STEPS)
 
         if torchrun:
             if self.num_nodes > 1 and any(["augusta" in cluster for cluster in self.clusters]):
@@ -786,6 +799,7 @@ def _parse_args():
     parser.add_argument("--nodes", type=int, default=1, help="The number of nodes/replicas.")
     parser.add_argument("--budget", type=str, help="The Beaker budget account to use.")
     parser.add_argument("--workspace", type=str, help="The Beaker workspace to use.")
+    parser.add_argument("--is_ryan", action="store_true", help="Whether to use Ryan's git setup. Temp fix for private repo issue")
     parser.add_argument(
         "--description", type=str, help="A description to assign to the Beaker experiment."
     )
@@ -884,10 +898,12 @@ def _build_config(opts: argparse.Namespace, command: List[str]) -> BeakerLaunchC
             raise ValueError(f"Invalid env secret '{e}', must be in the form NAME=SECRET_NAME")
         name, secret = e.split("=", 1)
         env_secrets.append(BeakerEnvSecret(name=name, secret=secret))
+
     return BeakerLaunchConfig(
         name=f"{opts.name}-{generate_uuid()[:8]}",
         budget=opts.budget,
         cmd=command,
+        is_ryan=opts.is_ryan,
         env_vars=env_vars,
         env_secrets=env_secrets,
         task_name=opts.task_name,
@@ -903,22 +919,6 @@ def _build_config(opts: argparse.Namespace, command: List[str]) -> BeakerLaunchC
         shared_filesystem=opts.shared_filesystem,
         weka_buckets=[
             BeakerWekaBucket(bucket=bucket, mount=f"/weka/{bucket}") for bucket in (opts.weka or [])
-        ],
-        setup_steps=[
-            # Clone private repo.
-            "conda install gh --channel conda-forge",
-            # assumes that conda is installed, which is true for our beaker images. # TODO: add to image
-            'gh repo clone "$REPO_URL" .',
-            'git checkout "$GIT_REF"',
-            "git submodule update --init --recursive",
-            # Setup python environment.
-            "conda shell.bash activate base",
-            "pip install -e '.[dev,beaker,wandb,train]'",  # we don't need eval, and it causes dependency conflicts
-            "pip freeze",
-            # Move AWS credentials from env to relevant files
-            "mkdir -p ~/.aws",
-            "printenv AWS_CONFIG > ~/.aws/config",
-            "printenv AWS_CREDENTIALS > ~/.aws/credentials",
         ],
     )
 

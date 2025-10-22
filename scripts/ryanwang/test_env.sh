@@ -15,20 +15,10 @@
 
 ##############################################################
 #git config --global credential.helper '!f() { echo "username=ryanyxw"; echo "password=$GH_TOKEN}"; }; f'
+# print out the current working directory
 command='''
-echo ${WANDB_API_KEY}
-echo yay
-echo ${BEAKER_TOKEN}
-echo yay
-echo ${AWS_ACCESS_KEY_ID}
-echo yay
-echo ${AWS_SECRET_ACCESS_KEY}
-echo yay
-echo ${HF_TOKEN}
-echo yay
-echo ${GH_TOKEN}
-echo yay
-echo ${BEAKER_TOKEN}
+pwd
+ls -al
 '''
 
 runname="test-beaker-secrets"
@@ -36,13 +26,14 @@ python -m olmo_core.launch.beaker \
   --name $runname \
 	--gpus 1 \
   --nodes 1 \
+  --is_ryan \
 	--weka=oe-training-default \
   --shared-filesystem \
 	--workspace ai2/flex2 \
 	--cluster ai2/jupiter \
 	--preemptible \
 	--allow-dirty \
-	--priority high \
+	--priority urgent \
 	--env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
 	-- \
 	bash -c "$command"
