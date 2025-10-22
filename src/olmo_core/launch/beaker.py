@@ -457,7 +457,8 @@ class BeakerLaunchConfig(Config):
             "mkdir -p /root/.cache/torch/kernels && export PYTORCH_KERNEL_CACHE_PATH=/root/.cache/torch/kernels",
             "mkdir -p /olmo-core-runtime",
             "cd /olmo-core-runtime",
-        ] + self.setup_steps
+        ]
+        #  + self.setup_steps
 
         if torchrun:
             if self.num_nodes > 1 and any(["augusta" in cluster for cluster in self.clusters]):
@@ -902,6 +903,22 @@ def _build_config(opts: argparse.Namespace, command: List[str]) -> BeakerLaunchC
         shared_filesystem=opts.shared_filesystem,
         weka_buckets=[
             BeakerWekaBucket(bucket=bucket, mount=f"/weka/{bucket}") for bucket in (opts.weka or [])
+        ],
+        setup_steps=[
+            # Clone private repo.
+            "conda install gh --channel conda-forge",
+            # assumes that conda is installed, which is true for our beaker images. # TODO: add to image
+            'gh repo clone "$REPO_URL" .',
+            'git checkout "$GIT_REF"',
+            "git submodule update --init --recursive",
+            # Setup python environment.
+            "conda shell.bash activate base",
+            "pip install -e '.[dev,beaker,wandb,train]'",  # we don't need eval, and it causes dependency conflicts
+            "pip freeze",
+            # Move AWS credentials from env to relevant files
+            "mkdir -p ~/.aws",
+            "printenv AWS_CONFIG > ~/.aws/config",
+            "printenv AWS_CREDENTIALS > ~/.aws/credentials",
         ],
     )
 
