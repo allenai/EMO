@@ -143,6 +143,15 @@ DEFAULT_SETUP_STEPS = (
     "pip freeze",
 )
 
+RYAN_SETUP_STEPS = (
+    f"git clone https://ryanyxw:$GITHUB_TOKEN@github.com/allenai/FlexMoE.git .",
+    f'git checkout "${GIT_REF_ENV_VAR}"',
+    "git submodule update --init --recursive",
+    "conda shell.bash activate base",
+    "pip install -e '.[all]'",
+    "pip freeze",
+)
+
 
 def is_running_in_beaker() -> bool:
     """
@@ -180,6 +189,11 @@ class BeakerLaunchConfig(Config):
     budget: Optional[str] = None
     """
     The budget group to assign.
+    """
+
+    is_ryan: bool = False
+    """
+    Whether to use Ryan's git setup. Temp fix for private repo issue.
     """
 
     task_name: str = "train"
@@ -457,7 +471,7 @@ class BeakerLaunchConfig(Config):
             "mkdir -p /root/.cache/torch/kernels && export PYTORCH_KERNEL_CACHE_PATH=/root/.cache/torch/kernels",
             "mkdir -p /olmo-core-runtime",
             "cd /olmo-core-runtime",
-        ] + self.setup_steps
+        ] + self.setup_steps if not self.is_ryan else list(RYAN_SETUP_STEPS)
 
         if torchrun:
             if self.num_nodes > 1 and any(["augusta" in cluster for cluster in self.clusters]):
@@ -471,7 +485,7 @@ class BeakerLaunchConfig(Config):
                     ")"
                 )
                 entrypoint_script.append("export BEAKER_REPLICA_RANK=$BEAKER_REPLICA_RANK")
-            entrypoint_script.append(" ".join(self._get_torchrun_cmd()) + ' "$@"')
+            entrypoint_script.append("exec " + " ".join(self._get_torchrun_cmd()) + ' "$@"')
         elif entrypoint:
             entrypoint_script.append(f'{entrypoint} "$@"')
         elif self.cmd and os.path.isfile(self.cmd[0]) and self.cmd[0].endswith(".py"):
@@ -568,6 +582,7 @@ class BeakerLaunchConfig(Config):
         torchrun: Optional[bool] = None,
         entrypoint: Optional[str] = None,
         slack_notifications: Optional[bool] = None,
+        launch_timeout: Optional[int] = None,
     ) -> Experiment:
         """
         Launch a Beaker experiment using this config.
@@ -583,6 +598,8 @@ class BeakerLaunchConfig(Config):
             Defaults to 'python'.
         :param slack_notifications: If ``follow=True``, send Slack notifications when the run launches,
             fails, or succeeds. This requires the env var ``SLACK_WEBHOOK_URL``.
+        :param launch_timeout: A timeout in seconds to wait for the job to start after submitting it.
+            If the job doesn't start in time a timeout error will be raised.
 
         :returns: The Beaker experiment.
         """
@@ -617,7 +634,12 @@ class BeakerLaunchConfig(Config):
             return experiment
 
         try:
-            follow_experiment(self.beaker, experiment, slack_webhook_url=slack_webhook_url)
+            follow_experiment(
+                self.beaker,
+                experiment,
+                slack_webhook_url=slack_webhook_url,
+                launch_timeout=launch_timeout,
+            )
         except KeyboardInterrupt:
             log.warning("Caught keyboard interrupt...")
             if Confirm.ask("Would you like to cancel the experiment?"):
@@ -637,31 +659,46 @@ def follow_experiment(
     experiment: Experiment,
     tail: bool = False,
     slack_webhook_url: Optional[str] = None,
+    launch_timeout: Optional[int] = None,
 ):
-    # Wait for job to start...
+    start_time = time.monotonic()
+
+    # Wait for job to be created...
     job: Optional[Job] = beaker.experiment.tasks(experiment.id)[0].latest_job  # type: ignore
     if job is None:
         log.info("Waiting for job to be created...")
         while job is None:
-            time.sleep(1.0)
-            job = beaker.experiment.tasks(experiment.id)[0].latest_job  # type: ignore
+            if launch_timeout is not None and (time.monotonic() - start_time) > launch_timeout:
+                beaker.experiment.stop(experiment)
+                raise TimeoutError(
+                    f"Job failed to be created within {launch_timeout} seconds. "
+                    f"Experiment has been stopped: {beaker.experiment.url(experiment)}"
+                )
+            else:
+                time.sleep(1.0)
+                job = beaker.experiment.tasks(experiment.id)[0].latest_job  # type: ignore
 
     # Pull events until job is running (or fails)...
     events = set()
-    while not (job.is_finalized or job.is_running):
-        job = beaker.job.get(job.id)
+    while True:
         for event in sorted(
             beaker.job.summarized_events(job), key=lambda event: event.latest_occurrence
         ):
             if event not in events:
                 events.add(event)
                 log.info(f"❯ {event.latest_message}")
-                if event.status.lower() == "started":
-                    break
+
+        job = beaker.job.get(job.id)
+        if job.is_finalized or job.is_running:
+            break
+        elif launch_timeout is not None and (time.monotonic() - start_time) > launch_timeout:
+            beaker.experiment.stop(experiment)
+            raise TimeoutError(
+                f"Job failed to start within {launch_timeout} seconds. "
+                f"Experiment has been stopped: {beaker.experiment.url(experiment)}"
+            )
         else:
             time.sleep(1.0)
-            continue
-        break
 
     if slack_webhook_url is not None:
         _send_slack_notification_for_event(beaker, experiment, "launched", slack_webhook_url)
@@ -762,6 +799,7 @@ def _parse_args():
     parser.add_argument("--nodes", type=int, default=1, help="The number of nodes/replicas.")
     parser.add_argument("--budget", type=str, help="The Beaker budget account to use.")
     parser.add_argument("--workspace", type=str, help="The Beaker workspace to use.")
+    parser.add_argument("--is_ryan", action="store_true", help="Whether to use Ryan's git setup. Temp fix for private repo issue")
     parser.add_argument(
         "--description", type=str, help="A description to assign to the Beaker experiment."
     )
@@ -860,10 +898,12 @@ def _build_config(opts: argparse.Namespace, command: List[str]) -> BeakerLaunchC
             raise ValueError(f"Invalid env secret '{e}', must be in the form NAME=SECRET_NAME")
         name, secret = e.split("=", 1)
         env_secrets.append(BeakerEnvSecret(name=name, secret=secret))
+
     return BeakerLaunchConfig(
         name=f"{opts.name}-{generate_uuid()[:8]}",
         budget=opts.budget,
         cmd=command,
+        is_ryan=opts.is_ryan,
         env_vars=env_vars,
         env_secrets=env_secrets,
         task_name=opts.task_name,
