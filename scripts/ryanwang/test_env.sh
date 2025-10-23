@@ -17,8 +17,7 @@
 #git config --global credential.helper '!f() { echo "username=ryanyxw"; echo "password=$GH_TOKEN}"; }; f'
 # print out the current working directory
 command='''
-pwd
-ls -al
+cd /weka && ls -al
 '''
 
 runname="test-beaker-secrets"

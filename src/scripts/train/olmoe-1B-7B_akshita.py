@@ -20,7 +20,7 @@ from olmo_core.data import (
     InstanceFilterConfig,
     NumpyDataLoaderConfig,
     NumpyDatasetConfig,
-    NumpyVSLDatasetConfig,
+    NumpyFSLDatasetConfig,
     TokenizerConfig,
     VSLCurriculumConfig,
     VSLCurriculumType,
@@ -172,17 +172,12 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
     log.info(f"Using data root: {DATA_ROOT}")
 
-    dataset_config = NumpyDatasetConfig.from_data_mix(
+    dataset_config = NumpyFSLDatasetConfig.from_data_mix(
         DataMix.OLMo_mix_0625,
         tokenizer=tokenizer_config,
         mix_base_dir=DATA_ROOT,
         sequence_length=opts.sequence_length,
         max_target_sequence_length=max(8192, opts.sequence_length),
-        min_sequence_length=min(256, opts.sequence_length),
-        max_sequence_length=max(8192, opts.sequence_length),
-        vsl_curriculum=VSLCurriculumConfig(
-            name=VSLCurriculumType.grow_p2, num_cycles=8, balanced=False
-        ),
         work_dir=work_dir,
         generate_doc_lengths=False,
         instance_filter_config=None
@@ -196,7 +191,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
     train_module_config = TransformerTrainModuleConfig(
         rank_microbatch_size=2 * 4096,  # NOTE: this is specified in tokens, not instances
-        max_sequence_length=dataset_config.effective_sequence_length,
+        max_sequence_length=dataset_config.max_target_sequence_length,
         optim=AdamWConfig(
             lr=4e-4,
             weight_decay=0.1,
