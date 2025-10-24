@@ -8,7 +8,6 @@ Launch this with torchrun:
 
 import argparse
 import logging
-import os
 import sys
 from dataclasses import dataclass
 from typing import List, Optional, cast
@@ -17,44 +16,38 @@ import rich
 
 from olmo_core.config import Config, DType
 from olmo_core.data import (
-    InstanceFilterConfig,
     NumpyDataLoaderConfig,
     NumpyDatasetConfig,
     NumpyFSLDatasetConfig,
     TokenizerConfig,
-    VSLCurriculumConfig,
-    VSLCurriculumType,
 )
+from olmo_core.data.mixes import DataMix
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_rank
 from olmo_core.nn.transformer import TransformerConfig
 from olmo_core.optim import AdamWConfig, CosWithWarmup, OptimGroupOverride
 from olmo_core.train import (
-    Duration,
     TrainerConfig,
     prepare_training_environment,
     teardown_training_environment,
 )
 from olmo_core.train.callbacks import (
+    BeakerCallback,
     CheckpointerCallback,
     CometCallback,
     ConfigSaverCallback,
-    DownstreamEvaluatorCallbackConfig,
     GPUMemoryMonitorCallback,
-    LMEvaluatorCallbackConfig,
     ProfilerCallback,
     WandBCallback,
-    BeakerCallback
 )
 from olmo_core.train.train_module import (
     TransformerDataParallelConfig,
-    TransformerTrainModuleConfig,
     TransformerDataParallelWrappingStrategy,
+    TransformerTrainModuleConfig,
 )
 from olmo_core.utils import seed_all
 
-from olmo_core.data.mixes import DataMix
-#from data_mixes import CustomDataMix
+# from data_mixes import CustomDataMix
 
 log = logging.getLogger(__name__)
 
@@ -180,7 +173,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         max_target_sequence_length=max(8192, opts.sequence_length),
         work_dir=work_dir,
         generate_doc_lengths=False,
-        instance_filter_config=None
+        instance_filter_config=None,
     )
 
     data_loader_config = NumpyDataLoaderConfig(
@@ -191,7 +184,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
     train_module_config = TransformerTrainModuleConfig(
         rank_microbatch_size=2 * 4096,  # NOTE: this is specified in tokens, not instances
-        max_sequence_length=dataset_config.max_target_sequence_length,
+        max_sequence_length=dataset_config.max_target_sequence_length or max(8192, opts.sequence_length),
         optim=AdamWConfig(
             lr=4e-4,
             weight_decay=0.1,
@@ -245,10 +238,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                 enabled=False,  # change to true to enable
             ),
         )
-        .with_callback(
-            "beaker",
-            BeakerCallback()
-        )
+        .with_callback("beaker", BeakerCallback())
         .with_callback("config_saver", ConfigSaverCallback())
         .with_callback("profiler", ProfilerCallback(enabled=False))
         # .with_callback(

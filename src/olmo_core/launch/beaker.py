@@ -143,8 +143,8 @@ DEFAULT_SETUP_STEPS = (
     "pip freeze",
 )
 
-RYAN_SETUP_STEPS = (
-    f"git clone https://ryanyxw:$GITHUB_TOKEN@github.com/allenai/FlexMoE.git .",
+PRIVATE_REPO_SETUP_STEPS = (
+    "git clone https://ryanyxw:$GITHUB_TOKEN@github.com/allenai/FlexMoE.git .",
     f'git checkout "${GIT_REF_ENV_VAR}"',
     "git submodule update --init --recursive",
     "conda shell.bash activate base",
@@ -191,9 +191,9 @@ class BeakerLaunchConfig(Config):
     The budget group to assign.
     """
 
-    is_ryan: bool = False
+    is_private_repo: bool = True
     """
-    Whether to use Ryan's git setup. Temp fix for private repo issue.
+    Whether to use private repo setup (with github token as beaker secret). Temp fix for private repo issue.
     """
 
     task_name: str = "train"
@@ -463,15 +463,20 @@ class BeakerLaunchConfig(Config):
                 "custom 'setup_steps' in order to clone the repo."
             )
 
-        entrypoint_script = [
-            "#!/usr/bin/env bash",
-            "set -exo pipefail",
-            "[[ -d /var/lib/tcpxo/lib64 ]] && export LD_LIBRARY_PATH=/var/lib/tcpxo/lib64:$LD_LIBRARY_PATH",
-            # Setup the kernel cache directory used by pytorch
-            "mkdir -p /root/.cache/torch/kernels && export PYTORCH_KERNEL_CACHE_PATH=/root/.cache/torch/kernels",
-            "mkdir -p /olmo-core-runtime",
-            "cd /olmo-core-runtime",
-        ] + self.setup_steps if not self.is_ryan else list(RYAN_SETUP_STEPS)
+        entrypoint_script = (
+            [
+                "#!/usr/bin/env bash",
+                "set -exo pipefail",
+                "[[ -d /var/lib/tcpxo/lib64 ]] && export LD_LIBRARY_PATH=/var/lib/tcpxo/lib64:$LD_LIBRARY_PATH",
+                # Setup the kernel cache directory used by pytorch
+                "mkdir -p /root/.cache/torch/kernels && export PYTORCH_KERNEL_CACHE_PATH=/root/.cache/torch/kernels",
+                "mkdir -p /olmo-core-runtime",
+                "cd /olmo-core-runtime",
+            ]
+            + self.setup_steps
+            if not self.is_private_repo
+            else list(PRIVATE_REPO_SETUP_STEPS)
+        )
 
         if torchrun:
             if self.num_nodes > 1 and any(["augusta" in cluster for cluster in self.clusters]):
@@ -799,7 +804,11 @@ def _parse_args():
     parser.add_argument("--nodes", type=int, default=1, help="The number of nodes/replicas.")
     parser.add_argument("--budget", type=str, help="The Beaker budget account to use.")
     parser.add_argument("--workspace", type=str, help="The Beaker workspace to use.")
-    parser.add_argument("--is_ryan", action="store_true", help="Whether to use Ryan's git setup. Temp fix for private repo issue")
+    parser.add_argument(
+        "--is_private_repo",
+        action="store_true",
+        help="Whether to pull private repo. Temp fix for private repo issue",
+    )
     parser.add_argument(
         "--description", type=str, help="A description to assign to the Beaker experiment."
     )
@@ -903,7 +912,7 @@ def _build_config(opts: argparse.Namespace, command: List[str]) -> BeakerLaunchC
         name=f"{opts.name}-{generate_uuid()[:8]}",
         budget=opts.budget,
         cmd=command,
-        is_ryan=opts.is_ryan,
+        is_private_repo=opts.is_private_repo,
         env_vars=env_vars,
         env_secrets=env_secrets,
         task_name=opts.task_name,
