@@ -18,8 +18,8 @@
 runname="olmo2_1b-pretrain-mose-natural-1025"
 python -m olmo_core.launch.beaker \
   --name $runname \
-	--gpus 4 \
-  --nodes 1 \
+	--gpus 8 \
+  --nodes 8 \
   --is_private_repo \
 	--weka=oe-training-default \
   --shared-filesystem \
