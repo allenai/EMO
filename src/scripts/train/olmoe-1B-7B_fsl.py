@@ -56,6 +56,7 @@ DATA_ROOT = "/weka/oe-training-default/ai2-llm"
 SEQUENCE_LENGTH = 4096
 GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
 
+
 # docs: start-define-config
 @dataclass
 class ExperimentConfig(Config):
@@ -151,7 +152,8 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     train_module_config = TransformerTrainModuleConfig(
-        rank_microbatch_size=2 * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
+        rank_microbatch_size=2
+        * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         max_sequence_length=SEQUENCE_LENGTH,
         optim=AdamWConfig(
             lr=4e-4,
