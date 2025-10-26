@@ -536,6 +536,9 @@ def run_eval(args_dict: dict):
     task_objects = [
         load_task(task_config, compute_config["output_dir"]) for task_config in tasks_config
     ]
+
+    breakpoint()
+
     if not task_objects:
         raise ValueError("No valid tasks constructed for the experiment!")
 
@@ -680,6 +683,7 @@ def run_eval(args_dict: dict):
         logger.info(f"**** Processing task: {task_name} ({task_hash['non_default']}) ****")
         logger.info(f"  Task hash: {task_hash['hash']}, starting download...")
         task.download()
+        breakpoint()
         logger.info("  Task finished downloading!")
         if task_name.startswith("eleuther:") and task_config.get("use_chat_format"):
             chat_template = model_config.get("chat_template")
