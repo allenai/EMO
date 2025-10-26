@@ -753,6 +753,8 @@ def run_eval(args_dict: dict):
                 save_json(output_file, full_config)
             continue
 
+        breakpoint()
+
         # Super hacky to avoid reprocessing metrics for uncond cases
         unsafe_prediction_import = False
         if cached_predictions is not None:
