@@ -57,6 +57,17 @@ dev = [
 beaker = ["beaker-py>=1.37.0,<2.0", "GitPython>=3.0,<4.0", "google-cloud-compute"]
 comet = ["comet_ml"]
 eval = ["ai2-olmo-eval==0.8.5"]
+
+eval_flex = [
+    "ai2-olmes@git+https://github.com/allenai/olmes@4f04122642bcee6d74393ec2ecfb0e572a64da53",
+    "s3fs",
+    "smart-open",
+    "torchvision",
+    "prettytable",
+    "datasets==3.6.0",
+    "huggingface-hub==0.33.2",
+]
+
 torchao = ["torchao"]
 transformers = ["transformers"]
 wandb = ["wandb"]
