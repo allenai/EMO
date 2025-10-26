@@ -5,5 +5,5 @@ python -u -m offline_evals.run_eval\
     --save-raw-requests true \
     --num-workers 1 \
     --gpus 1 \
-    --model /root/phdbrainstorm/models/olmoe-pretrain-replicate/step30995-hf \
+    --model olmo2_1b-pretrain-mose-natural-1025/step30995-hf \
     --model-args '{"model_type": "hf"}'
