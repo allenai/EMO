@@ -62,12 +62,6 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
     requests_data = load_jsonl_file(requests_file)
     predictions_data = load_jsonl_file(predictions_file)
 
-    # # we have a mapping between requests and predictions via eval_dataset_name:
-    # requests_per_prediction = {
-    #     "hellaswag:mc": 4
-    # }
-    # assert (len(requests_data) == requests_per_prediction[eval_dataset_name] * len(predictions_data)), f"Found {len(requests_data)} requests and {len(predictions_data)} predictions, expected ratio of {requests_per_prediction[eval_dataset_name]}"
-
     prompts, correct = [], []
 
     if eval_dataset_name == "hellaswag:mc":
@@ -77,7 +71,6 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
 
         # loop through the requests, select only the correct ones
         for req in requests_data:
-            # req["doc"]
             if req["idx"] != req["label"]:
                 continue
             correct_reqs.append(req)
@@ -105,7 +98,7 @@ def launch_logits(args_dict):
     # we load the data here
     for eval_dataset_name in args_dict["task"]:
         print("evaluating dataset ", eval_dataset_name)
-        prompts, index = get_prompt_sequences_for_evaluation(eval_dataset_name, args_dict["eval_dir"])
+        prompts, correct = get_prompt_sequences_for_evaluation(eval_dataset_name, args_dict["eval_dir"])
 
         out_fn = os.path.join(args_dict["eval_dir"], f"{eval_dataset_name}-router.jsonl")
 
@@ -115,25 +108,10 @@ def launch_logits(args_dict):
 
         for i in tqdm(range(0, len(prompts), args_dict["batch_size"])):
             batch_prompts = prompts[i:i+args_dict["batch_size"]]
-            batch_index = index[i:i+args_dict["batch_size"]]
+            batch_correct = correct[i:i+args_dict["batch_size"]]
 
             # we perform forward pass on prompts
             inputs = tokenizer(batch_prompts, return_tensors='pt', padding=True, return_offsets_mapping=True).to(model.device)
-
-            # helper function to get the deliminator for input_ids
-            def get_token_delimitor(offsets, char_index):
-                for i, (start, end) in enumerate(offsets):
-                    if start <= char_index < end:
-                        return i
-                return len(offsets) - 1
-
-            # we record the token indexes that represent transition from input to output
-            batch_token_index = []
-            for j, char_index in enumerate(batch_index):
-                offsets = inputs['offset_mapping'][j].tolist()
-                token_index = get_token_delimitor(offsets, char_index)
-                assert offsets[token_index][0] == char_index, f"char_index {char_index} does not match token start {offsets[token_index][0]}"
-                batch_token_index += [token_index]
 
             with torch.no_grad():
                 out = model(input_ids = inputs["input_ids"].to(model.device), attention_mask=inputs["attention_mask"].to(model.device), output_router_logits=True)
