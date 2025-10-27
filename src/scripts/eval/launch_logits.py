@@ -68,7 +68,7 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
 
     breakpoint()
 
-    if eval_dataset_name == "hellaswag:mc":
+    if ":mc" in eval_dataset_name:
         assert (len(requests_data) == 4 * len(predictions_data)), f"Found {len(requests_data)} requests and {len(predictions_data)} predictions, expected ratio of 4 times"
 
         correct_reqs = []
