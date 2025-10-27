@@ -105,8 +105,9 @@ def launch_logits(args_dict):
         out_file = open(out_fn, 'w')
 
         # initialize storage for summed router probabilities
-        breakpoint()
-        summed_router_probabilities = None
+        num_layers = model.config.num_hidden_layers
+        num_experts = model.config.num_experts
+        summed_router_probabilities = torch.zeros((num_layers, num_experts))
 
         # loop over dataset in batches
         for i in tqdm(range(0, len(prompts), args_dict["batch_size"])):
@@ -143,6 +144,14 @@ def launch_logits(args_dict):
             router_probabilities = router_probabilities * attention_mask_expanded
 
             summed_router_probabilities = router_probabilities.sum(dim=(1,2)) # (layers, num_experts)
+            # accumulate the summed router probabilities
+            summed_router_probabilities += summed_router_probabilities
+
+        # after processing all batches, we compute average router probabilities
+        correct_indices = [j for j, val in enumerate(correct) if (not args_dict["use_correct_only"]) or (val == 1)]
+        # combine with attention_mask to get total number of tokens considered
+
+
 
 
             # # store the logits
