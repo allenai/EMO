@@ -97,7 +97,7 @@ for TASK in "${TASKS[@]}"; do
     echo "  Output dir: $OUT_DIR"
     echo "  Job name: $job_name"
 
-    PYTHONPATH=. python -u src/scripts/eval/launch_evals.py \
+    PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
         --task "$TASK" \
         --output-dir "$OUT_DIR" \
         --save-raw-requests
