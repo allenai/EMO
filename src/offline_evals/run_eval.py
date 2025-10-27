@@ -60,7 +60,6 @@ except ImportError:
 
 
 from offline_evals import TASK_REGISTRY
-breakpoint()
 
 HAS_AI2_INTERNAL = (
     inspect.getmodule(add_internal_run_eval_args).__name__  # type: ignore
@@ -462,7 +461,6 @@ def load_task(task_config: dict, output_dir: Optional[str] = None) -> Task:
     """
     task_args = copy.deepcopy(task_config)
     task_name = task_args.pop("task_name")
-    breakpoint()
     if task_name in TASK_REGISTRY:
         task_obj: Task = TASK_REGISTRY[task_name](task_name=task_name, task_config=task_args)
         task_obj_name = task_obj.task_config["task_name"]
