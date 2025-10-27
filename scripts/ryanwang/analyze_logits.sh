@@ -119,7 +119,8 @@ for i in "${!MODEL_DIRS[@]}"; do
             --task "$TASK" \
             --eval-dir "$EVAL_DIR" \
             --batch-size "$BATCH_SIZE" \
-            --gpus "$GPUS"
+            --gpus "$GPUS" \
+            --use_correct_only
 
         #    gantry run \
 #        --name $job_name \

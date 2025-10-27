@@ -8,6 +8,7 @@ import re
 import subprocess
 import sys
 from typing import List
+import torch.nn.functional as F
 
 from tqdm import tqdm
 
@@ -25,6 +26,7 @@ _parser.add_argument(
 _parser.add_argument("--eval-dir", type=str, default=None, help="Directory corresponding to eval directory")
 _parser.add_argument("--batch-size", type=str, default=None, help="Override batch size")
 _parser.add_argument("--gpus", type=int, default=None, help="Number of GPUs to use")
+_parser.add_argument("--use_correct_only", action='store_true', help="Use only correct sequences for evaluation")
 
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
@@ -83,8 +85,6 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
             prompts += [req["request"]["context"] + req["request"]["continuation"]]
             correct += [1 if pred["metrics"]["acc_raw"] > 0 else 0]
 
-    breakpoint()
-
     return prompts, correct
 
 
@@ -104,8 +104,11 @@ def launch_logits(args_dict):
 
         out_file = open(out_fn, 'w')
 
-        # loop over dataset in batches
+        # initialize storage for summed router probabilities
+        breakpoint()
+        summed_router_probabilities = None
 
+        # loop over dataset in batches
         for i in tqdm(range(0, len(prompts), args_dict["batch_size"])):
             batch_prompts = prompts[i:i+args_dict["batch_size"]]
             batch_correct = correct[i:i+args_dict["batch_size"]]
@@ -124,21 +127,32 @@ def launch_logits(args_dict):
             # reshape router_logits
             router_logits = router_logits.view(router_logits.shape[0], inputs.input_ids.shape[0], inputs.input_ids.shape[1], router_logits.shape[-1]) # (layers, batch, sequence_length, num_experts)
 
-            # we now extract all router logits and save them
-            for j in range(len(batch_prompts)):
-                prompt = batch_prompts[j]
-                token_index = batch_token_index[j]
-                prompt_router_logits = router_logits[:, j, token_index:, :].cpu().numpy().tolist()
+            # select only the correct sequences in the batch if specified
+            if args_dict["use_correct_only"]:
+                correct_indices = [j for j, val in enumerate(batch_correct) if val == 1]
+                if len(correct_indices) == 0:
+                    continue
+                router_logits = router_logits[:, correct_indices, :, :]
+                batch_prompts = [batch_prompts[j] for j in correct_indices]
 
-                # store the logits
-                record = {
-                    "prompt": prompt,
-                    "token_index": token_index,
-                    "router_logits": prompt_router_logits
-                }
+            # aggregate router probabilities across batch and sequence length
+            router_probabilities = F.softmax(router_logits, dim=-1)
 
-                out_file.write(json.dumps(record) + "\n")
-                out_file.flush()
+            # zero out all the padding tokens
+            attention_mask_expanded = inputs.attention_mask.cpu().unsqueeze(0).unsqueeze(-1).expand(router_probabilities.shape[0], router_probabilities.shape[1], router_probabilities.shape[2], router_probabilities.shape[3]) # (layers, batch, sequence_length, num_experts)
+            router_probabilities = router_probabilities * attention_mask_expanded
+
+            summed_router_probabilities = router_probabilities.sum(dim=(1,2)) # (layers, num_experts)
+
+
+            # # store the logits
+            # record = {
+            #     "token_index": token_index,
+            #     "router_logits": prompt_router_logits
+            # }
+
+            # out_file.write(json.dumps(record) + "\n")
+            # out_file.flush()
 
         out_file.close()
 
