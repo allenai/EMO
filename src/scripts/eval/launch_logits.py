@@ -122,7 +122,6 @@ def launch_logits(args_dict):
         # loop over dataset in batches
         for i in tqdm(range(0, len(prompts), args_dict["batch_size"])):
             batch_prompts = prompts[i:i+args_dict["batch_size"]]
-            batch_correct = correct[i:i+args_dict["batch_size"]]
 
             # we perform forward pass on prompts
             inputs = tokenizer(batch_prompts, return_tensors='pt', padding=True, return_offsets_mapping=True).to(model.device)
@@ -134,6 +133,7 @@ def launch_logits(args_dict):
 
             del out
             torch.cuda.empty_cache()
+            breakpoint()
 
             # reshape router_logits
             router_logits = router_logits.view(router_logits.shape[0], inputs.input_ids.shape[0], inputs.input_ids.shape[1], router_logits.shape[-1]) # (layers, batch, sequence_length, num_experts)
