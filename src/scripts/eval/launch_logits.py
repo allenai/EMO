@@ -9,6 +9,10 @@ import subprocess
 import sys
 from typing import List
 
+from tqdm import tqdm
+
+import torch
+
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 ## This is the main launching script for running evaluations on logits.
@@ -111,6 +115,7 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
     # we now create the prompt sequences
     prompts = [] # records the full forward pass
     index = [] # records when we switch to model answers
+    breakpoint()
 
     for req, pred in zip(requests_data, predictions_data):
         assert req['native_id'] == pred['native_id'], f"Request id {req['id']} does not match prediction id {pred['id']}"
@@ -126,71 +131,71 @@ def launch_logits(args_dict):
 
     breakpoint()
 
-    # # load the model
-    # tokenizer = AutoTokenizer.from_pretrained(exp_configs.model_name_or_path)
-    # model = AutoModelForCausalLM.from_pretrained(exp_configs.model_name_or_path, device_map="auto", torch_dtype="auto")
-    #
-    # # we load the data here
-    # for eval_dataset_name in exp_configs.eval_datasets:
-    #     print("evaluating dataset ", eval_dataset_name)
-    #     prompts, index = get_prompt_sequences_for_evaluation(eval_dataset_name, exp_configs.eval_folder)
-    #
-    #     out_fn = os.path.join(exp_configs.eval_folder, dataset_name_to_output_file[eval_dataset_name])
-    #
-    #     out_file = open(out_fn, 'w')
-    #
-    #     # loop over dataset in batches
-    #
-    #     for i in tqdm(range(0, len(prompts), exp_configs.batch_size)):
-    #         batch_prompts = prompts[i:i+exp_configs.batch_size]
-    #         batch_index = index[i:i+exp_configs.batch_size]
-    #
-    #         # we perform forward pass on prompts
-    #         inputs = tokenizer(batch_prompts, return_tensors='pt', padding=True, return_offsets_mapping=True).to(model.device)
-    #
-    #         # helper function to get the deliminator for input_ids
-    #         def get_token_delimitor(offsets, char_index):
-    #             for i, (start, end) in enumerate(offsets):
-    #                 if start <= char_index < end:
-    #                     return i
-    #             return len(offsets) - 1
-    #
-    #         # we record the token indexes that represent transition from input to output
-    #         batch_token_index = []
-    #         for j, char_index in enumerate(batch_index):
-    #             offsets = inputs['offset_mapping'][j].tolist()
-    #             token_index = get_token_delimitor(offsets, char_index)
-    #             assert offsets[token_index][0] == char_index, f"char_index {char_index} does not match token start {offsets[token_index][0]}"
-    #             batch_token_index += [token_index]
-    #
-    #         with torch.no_grad():
-    #             out = model(input_ids = inputs["input_ids"].to(model.device), attention_mask=inputs["attention_mask"].to(model.device), output_router_logits=True)
-    #             router_logits = [x.cpu() for x in out["router_logits"]]
-    #             router_logits = torch.stack(router_logits) # this has dimension (layers, batch * sequence_length, num_experts)
-    #
-    #         del out
-    #         torch.cuda.empty_cache()
-    #
-    #         # reshape router_logits
-    #         router_logits = router_logits.view(router_logits.shape[0], inputs.input_ids.shape[0], inputs.input_ids.shape[1], router_logits.shape[-1]) # (layers, batch, sequence_length, num_experts)
-    #
-    #         # we now extract all router logits and save them
-    #         for j in range(len(batch_prompts)):
-    #             prompt = batch_prompts[j]
-    #             token_index = batch_token_index[j]
-    #             prompt_router_logits = router_logits[:, j, token_index:, :].cpu().numpy().tolist()
-    #
-    #             # store the logits
-    #             record = {
-    #                 "prompt": prompt,
-    #                 "token_index": token_index,
-    #                 "router_logits": prompt_router_logits
-    #             }
-    #
-    #             out_file.write(json.dumps(record) + "\n")
-    #             out_file.flush()
-    #
-    #     out_file.close()
+    # load the model
+    tokenizer = AutoTokenizer.from_pretrained(args_dict["model"])
+    model = AutoModelForCausalLM.from_pretrained(args_dict["model"], device_map="auto", torch_dtype="auto")
+
+    # we load the data here
+    for eval_dataset_name in args_dict["task"]:
+        print("evaluating dataset ", eval_dataset_name)
+        prompts, index = get_prompt_sequences_for_evaluation(eval_dataset_name, args_dict["output_dir"])
+
+        out_fn = os.path.join(args_dict["output_dir"], dataset_name_to_output_file[eval_dataset_name])
+
+        out_file = open(out_fn, 'w')
+
+        # loop over dataset in batches
+
+        for i in tqdm(range(0, len(prompts), args_dict["batch_size"])):
+            batch_prompts = prompts[i:i+args_dict["batch_size"]]
+            batch_index = index[i:i+args_dict["batch_size"]]
+
+            # we perform forward pass on prompts
+            inputs = tokenizer(batch_prompts, return_tensors='pt', padding=True, return_offsets_mapping=True).to(model.device)
+
+            # helper function to get the deliminator for input_ids
+            def get_token_delimitor(offsets, char_index):
+                for i, (start, end) in enumerate(offsets):
+                    if start <= char_index < end:
+                        return i
+                return len(offsets) - 1
+
+            # we record the token indexes that represent transition from input to output
+            batch_token_index = []
+            for j, char_index in enumerate(batch_index):
+                offsets = inputs['offset_mapping'][j].tolist()
+                token_index = get_token_delimitor(offsets, char_index)
+                assert offsets[token_index][0] == char_index, f"char_index {char_index} does not match token start {offsets[token_index][0]}"
+                batch_token_index += [token_index]
+
+            with torch.no_grad():
+                out = model(input_ids = inputs["input_ids"].to(model.device), attention_mask=inputs["attention_mask"].to(model.device), output_router_logits=True)
+                router_logits = [x.cpu() for x in out["router_logits"]]
+                router_logits = torch.stack(router_logits) # this has dimension (layers, batch * sequence_length, num_experts)
+
+            del out
+            torch.cuda.empty_cache()
+
+            # reshape router_logits
+            router_logits = router_logits.view(router_logits.shape[0], inputs.input_ids.shape[0], inputs.input_ids.shape[1], router_logits.shape[-1]) # (layers, batch, sequence_length, num_experts)
+
+            # we now extract all router logits and save them
+            for j in range(len(batch_prompts)):
+                prompt = batch_prompts[j]
+                token_index = batch_token_index[j]
+                prompt_router_logits = router_logits[:, j, token_index:, :].cpu().numpy().tolist()
+
+                # store the logits
+                record = {
+                    "prompt": prompt,
+                    "token_index": token_index,
+                    "router_logits": prompt_router_logits
+                }
+
+                out_file.write(json.dumps(record) + "\n")
+                out_file.flush()
+
+        out_file.close()
 
 
 def main():
