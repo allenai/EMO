@@ -2,7 +2,6 @@ from typing import Dict
 
 from oe_eval.tasks.oe_eval_tasks import TASK_REGISTRY
 
-from tasks.arc_splits import ARCEasyMC_Train
 from .tasks import (
     agi_eval,
     hatespeech,
@@ -33,7 +32,7 @@ new_task_registry: Dict = {
     **agi_eval.create_core_agi_eval_tasks(),
     **ruler.create_ruler_tasks(),
     **sciriff.create_bio_sciriff_qa_tasks(),
-    "arc_easy:mc_train": ARCEasyMC_Train,
+    "arc_easy:mc_train": arc_splits.ARCEasyMC_Train,
     "arc_easy:mc_validation": arc_splits.ARCEasyMC_Validation,
     "arc_easy:mc_test": arc_splits.ARCEasyMC_Test,
 }
