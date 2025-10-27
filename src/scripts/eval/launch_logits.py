@@ -61,20 +61,34 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
     # load the jsonl file
     requests_data = load_jsonl_file(requests_file)
     predictions_data = load_jsonl_file(predictions_file)
-    # assert (len(requests_data) == len(predictions_data)), f"Found {len(requests_data)} requests and {len(predictions_data)} predictions, expected same number"
 
-    # we now create the prompt sequences
-    prompts = [] # records the full forward pass
-    index = [] # records when we switch to model answers
-    breakpoint()
+    # # we have a mapping between requests and predictions via eval_dataset_name:
+    # requests_per_prediction = {
+    #     "hellaswag:mc": 4
+    # }
+    # assert (len(requests_data) == requests_per_prediction[eval_dataset_name] * len(predictions_data)), f"Found {len(requests_data)} requests and {len(predictions_data)} predictions, expected ratio of {requests_per_prediction[eval_dataset_name]}"
 
-    for req, pred in zip(requests_data, predictions_data):
-        assert req['native_id'] == pred['native_id'], f"Request id {req['id']} does not match prediction id {pred['id']}"
-        assert len(pred["model_output"]) == 1, f"Found {len(pred['model_output'])} model outputs for prediction id {pred['id']}, expected 1"
-        prompts += [req["request"]["context"] + pred["model_output"][0]["continuation"]]
-        index += [len(req["request"]["context"])]
+    prompts, correct = [], []
 
-    return prompts, index
+    if eval_dataset_name == "hellaswag:mc":
+        assert (len(requests_data) == 4 * len(predictions_data)), f"Found {len(requests_data)} requests and {len(predictions_data)} predictions, expected ratio of 4 times"
+
+        # loop through the requests, select only the correct ones
+        for req in requests_data:
+            # req["doc"]
+            breakpoint()
+
+        # for i in range(len(predictions_data)):
+        #     reqs = requests_data[i * requests_per_prediction[eval_dataset_name]:(i+1) * requests_per_prediction[eval_dataset_name]]
+        #
+        #
+        # for req, pred in zip(requests_data, predictions_data):
+        #     assert req['native_id'] == pred['native_id'], f"Request id {req['id']} does not match prediction id {pred['id']}"
+        #     assert len(pred["model_output"]) == 1, f"Found {len(pred['model_output'])} model outputs for prediction id {pred['id']}, expected 1"
+        #     prompts += [req["request"]["context"] + pred["model_output"][0]["continuation"]]
+        #     index += [len(req["request"]["context"])]
+
+    return prompts, correct
 
 
 def launch_logits(args_dict):
