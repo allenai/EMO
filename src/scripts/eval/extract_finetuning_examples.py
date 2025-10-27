@@ -79,7 +79,7 @@ def extract_finetuning_examples(args_dict):
 
         # loop over dataset in batches
         for i in tqdm(data):
-            out_file.write(json.dumps({"text": i}) + "\n")
+            out_file.write(json.dumps({"text": i, "id": hash(i), "source": eval_dataset_name}) + "\n")
         out_file.close()
 
 def main():
