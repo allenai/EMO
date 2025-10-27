@@ -14,38 +14,38 @@ model_type=hf
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
 #    # MC9 tasks
-    arc_easy:mc::olmes
-    arc_challenge:mc::olmes
-    boolq:mc::olmes
-    csqa:mc::olmes
-    hellaswag:mc::olmes
-    openbookqa:mc::olmes
-    piqa:mc::olmes
-    socialiqa:mc::olmes
-    winogrande:mc::olmes
-
-    arc_easy:rc::olmes
-    arc_challenge:rc::olmes
-    boolq:rc::olmes
-    csqa:rc::olmes
-    hellaswag:rc::olmes
-    openbookqa:rc::olmes
-    piqa:rc::olmes
-    socialiqa:rc::olmes
-    winogrande:rc::olmes
-
-    # Gen5 tasks
-    coqa::olmes
-    squad::olmes
-    naturalqs::olmes
-    triviaqa::olmes
-    drop::olmes
+#    arc_easy:mc::olmes
+#    arc_challenge:mc::olmes
+#    boolq:mc::olmes
+#    csqa:mc::olmes
+#    hellaswag:mc::olmes
+#    openbookqa:mc::olmes
+#    piqa:mc::olmes
+#    socialiqa:mc::olmes
+#    winogrande:mc::olmes
+#
+#    arc_easy:rc::olmes
+#    arc_challenge:rc::olmes
+#    boolq:rc::olmes
+#    csqa:rc::olmes
+#    hellaswag:rc::olmes
+#    openbookqa:rc::olmes
+#    piqa:rc::olmes
+#    socialiqa:rc::olmes
+#    winogrande:rc::olmes
+#
+#    # Gen5 tasks
+#    coqa::olmes
+#    squad::olmes
+#    naturalqs::olmes
+#    triviaqa::olmes
+#    drop::olmes
 #
     # MMLU tasks
-#    mmlu:mc::olmes
+    mmlu:mc::olmes
 #    mmlu_pro:mc::none
 #
-#    mmlu:rc::olmes
+    mmlu:rc::olmes
 #
 #    # AGI eval
 #    agi_eval_english:1shot::olmes
@@ -104,7 +104,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
     for TASK in "${TASKS[@]}"; do
         echo "Launching evaluation for model: $model, task: $TASK"
 
-    gpus=1
+    gpus=4
 
     # Batch size adjustment (matching original script)
     if [[ $TASK == *"cot"* || $TASK == "minerva_math_"* || $TASK == "mbpp"* || $TASK == "bigcodebench"* || $TASK == "ruler"* || $TASK == "sciriff"* ]]; then
