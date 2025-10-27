@@ -5,8 +5,10 @@
 
 # Configuration
 #MODELS=("/weka/oe-training-default/ryanwang/phdbrainstorm/models/olmoe-pretrain-mose-natural-1022_oldseqlen/step30995-hf")
+#BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/evals"
+
 MODELS=("/root/ryanwang/phdbrainstorm/models/olmoe-pretrain-mose-natural-1022_oldseqlen/step30995-hf")
-BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/evals"
+BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/evals"
 BATCH_SIZE=4
 GPUS=1
 CLUSTER="ai2/jupiter-cirrascale-2"
