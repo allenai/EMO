@@ -4,7 +4,7 @@
 # Usage: bash src/scripts/eval/launch_beaker_eval.sh
 
 # Configuration
-MODELS=("/weka/oe-training-default/ryanwang/phdbrainstorm/models/olmoe-pretrain-mose-unbalanced-1012/step30995-hf")
+MODELS=("/weka/oe-training-default/ryanwang/phdbrainstorm/models/olmoe-pretrain-mose-natural-1022_oldseqlen/step30995-hf")
 BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/evals"
 BATCH_SIZE=4
 CLUSTER="ai2/jupiter-cirrascale-2"
@@ -18,7 +18,7 @@ TASKS=(
 #    arc_challenge:mc::olmes
 #    boolq:mc::olmes
 #    csqa:mc::olmes
-#    hellaswag:mc::olmes
+    hellaswag:mc::olmes
 #    openbookqa:mc::olmes
 #    piqa:mc::olmes
 #    socialiqa:mc::olmes
@@ -35,11 +35,11 @@ TASKS=(
 #    winogrande:rc::olmes
 #
 #    # Gen5 tasks
-    coqa::olmes
-    squad::olmes
+#    coqa::olmes
+#    squad::olmes
 #    naturalqs::olmes
 #    triviaqa::olmes
-    drop::olmes
+#    drop::olmes
 
 #    # MMLU tasks
 #    mmlu:mc::olmes

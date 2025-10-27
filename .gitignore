@@ -59,3 +59,4 @@ site/
 /scratch/
 core
 /dataset-cache/
+DockerFile
