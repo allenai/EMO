@@ -148,7 +148,6 @@ def launch_logits(args_dict):
 
             tot_tokens += inputs.attention_mask.sum().item()
 
-        breakpoint()
         # after processing all batches, we compute average router probabilities
         save_router_probabilities = tot_router_probabilities / tot_tokens
         out_file.write(json.dumps({"avg_router_probabilities": save_router_probabilities.tolist()}) + "\n")

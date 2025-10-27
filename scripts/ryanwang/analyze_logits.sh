@@ -7,9 +7,9 @@
 #MODEL_DIR=("/weka/oe-training-default/ryanwang/phdbrainstorm/models/olmoe-pretrain-mose-natural-1022_oldseqlen/step30995-hf")
 #EVAL_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/evals"
 
-MODEL_DIRS=("/root/ryanwang/phdbrainstorm/models/olmoe-pretrain-mose-natural-1022_oldseqlen/step30995-hf")
-EVAL_DIRS=("/root/ryanwang/phdbrainstorm/evals/weka_oe-training-default_ryanwang_phdbrainstorm_models_olmoe-pretrain-mose-natural-1022_oldseqlen_step30995-hf")
-BATCH_SIZE=4
+MODEL_DIRS=("/root/ryanwang/phdbrainstorm/models/olmoe-pretrain-mose-natural-1022/step30995-hf")
+EVAL_DIRS=("/root/ryanwang/phdbrainstorm/evals/weka_oe-training-default_ryanwang_phdbrainstorm_models_olmoe-pretrain-mose-natural-1022_step30995-hf")
+BATCH_SIZE=16
 GPUS=1
 CLUSTER="ai2/jupiter-cirrascale-2"
 LIMIT=1000
