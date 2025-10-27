@@ -52,8 +52,8 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
     requests_files = find_file(eval_folder, f"{eval_dataset_name}-requests")
     predictions_files = find_file(eval_folder, f"{eval_dataset_name}-predictions")
 
-    assert len(requests_files) == 1, f"Found {len(requests_files)} request files for gsm8k in {eval_folder}, expected 1"
-    assert len(predictions_files) == 1, f"Found {len(predictions_files)} prediction files for gsm8k in {eval_folder}, expected 1"
+    assert len(requests_files) == 1, f"Found {len(requests_files)} request files for {eval_dataset_name} in {eval_folder}, expected 1"
+    assert len(predictions_files) == 1, f"Found {len(predictions_files)} prediction files for {eval_dataset_name} in {eval_folder}, expected 1"
 
     requests_file = requests_files[0]
     predictions_file = predictions_files[0]

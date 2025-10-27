@@ -22,7 +22,7 @@ TASKS=(
 #    arc_challenge:mc::olmes
 #    boolq:mc::olmes
 #    csqa:mc::olmes
-    hellaswag
+    hellaswag:mc
 #    openbookqa:mc::olmes
 #    piqa:mc::olmes
 #    socialiqa:mc::olmes
@@ -99,12 +99,7 @@ for i in "${!MODEL_DIRS[@]}"; do
     echo "Processing model: $MODEL_PATH"
     echo "Evaluation dir: $EVAL_DIR"
 
-    # For setting the eval_dir
-    if [[ $MODEL_PATH == "/"* ]]; then
-        model=$(get_checkpoint_name "$MODEL_PATH")
-    else
-        model=$(echo "$MODEL_PATH" | cut -d'/' -f2)
-    fi
+    model=$(basename "$MODEL_PATH")
 
     for TASK in "${TASKS[@]}"; do
         echo "Launching evaluation for model: $model, task: $TASK"
