@@ -73,28 +73,30 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
     if eval_dataset_name == "hellaswag:mc":
         assert (len(requests_data) == 4 * len(predictions_data)), f"Found {len(requests_data)} requests and {len(predictions_data)} predictions, expected ratio of 4 times"
 
+        correct_reqs = []
+
         # loop through the requests, select only the correct ones
         for req in requests_data:
             # req["doc"]
-            breakpoint()
+            if req["idx"] != req["label"]:
+                continue
+            correct_reqs.append(req)
 
-        # for i in range(len(predictions_data)):
-        #     reqs = requests_data[i * requests_per_prediction[eval_dataset_name]:(i+1) * requests_per_prediction[eval_dataset_name]]
-        #
-        #
-        # for req, pred in zip(requests_data, predictions_data):
-        #     assert req['native_id'] == pred['native_id'], f"Request id {req['id']} does not match prediction id {pred['id']}"
-        #     assert len(pred["model_output"]) == 1, f"Found {len(pred['model_output'])} model outputs for prediction id {pred['id']}, expected 1"
-        #     prompts += [req["request"]["context"] + pred["model_output"][0]["continuation"]]
-        #     index += [len(req["request"]["context"])]
+        # assert that the number of correct requests matches the number of predictions
+        assert len(correct_reqs) == len(predictions_data), f"Found {len(correct_reqs)} correct requests and {len(predictions_data)} predictions, expected them to match"
+
+        for req, pred in zip(correct_reqs, predictions_data):
+            assert req['doc_id'] == pred['doc_id'], f"Request doc_id {req['doc_id']} does not match prediction doc_id {pred['doc_id']}"
+            prompts += [req["request"]["context"] + req["request"]["continuation"]]
+            correct += [1 if pred["metrics"]["acc_raw"] > 0 else 0]
+
+    breakpoint()
 
     return prompts, correct
 
 
 def launch_logits(args_dict):
     print("yay!")
-
-    breakpoint()
 
     # load the model
     tokenizer = AutoTokenizer.from_pretrained(args_dict["model"])
