@@ -130,7 +130,7 @@ for i in "${!MODEL_DIRS[@]}"; do
             --workspace ai2/flex2 \
             --cluster $CLUSTER \
             --priority urgent \
-            --gpus $gpus \
+            --gpus $GPUS \
             --env-secret HF_TOKEN=RYAN_HF_TOKEN \
             --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
             --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
