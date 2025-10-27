@@ -146,7 +146,7 @@ def launch_logits(args_dict):
             # accumulate the summed router probabilities
             tot_router_probabilities += summed_router_probabilities
 
-            tot_tokens += inputs.attention_mask.sum().item().cpu()
+            tot_tokens += inputs.attention_mask.sum().item()
 
         breakpoint()
         # after processing all batches, we compute average router probabilities
