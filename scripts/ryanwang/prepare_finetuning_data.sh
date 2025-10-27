@@ -92,15 +92,23 @@ for TASK in "${TASKS[@]}"; do
 
     job_name="prepare_data_finetuning_${clean_task}"
 
-    output_dir="${OUT_DIR}/${clean_task}"
+    base_dir="${OUT_DIR}/${clean_task}"
 
-    echo "  Output dir: $OUT_DIR"
+    echo "  base dir: $base_dir"
     echo "  Job name: $job_name"
 
+    # this formats the data and saves raw requests
     PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
         --task "$TASK" \
-        --output-dir "$OUT_DIR" \
+        --output-dir "${base_dir}/raw" \
         --save-raw-requests true
+
+    # this gets the correct requests and saves them into dolma format (jsonl
+    PYTHONPATH=. python -u src/scripts/eval/extract_finetuning_examples.py \
+        --task "$TASK" \
+        --input-dir "${base_dir}/raw" \
+        --output-dir "${base_dir}/processed" \
+
 
 #    gantry run \
 #        --name $job_name \

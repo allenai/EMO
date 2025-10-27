@@ -16,58 +16,57 @@ model_type=hf
 
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
-#    # MC9 tasks
-    arc_easy:mc
-#    arc_challenge:mc
-#    boolq:mc
-#    csqa:mc
-#    hellaswag:mc
-#    openbookqa:mc
-#    piqa:mc
-#    socialiqa:mc
-#    winogrande:mc
+    # MC9 tasks
+    arc_easy:mc_train::olmes
+#    arc_challenge:mc::olmes
+#    boolq:mc::olmes
+#    csqa:mc::olmes
+#    hellaswag:mc::olmes
+#    openbookqa:mc::olmes
+#    piqa:mc::olmes
+#    socialiqa:mc::olmes
+#    winogrande:mc::olmes
 #
-    # rc tasks
-#    arc_easy
-#    arc_challenge
-#    boolq
-#    csqa
-#    hellaswag
-#    openbookqa
-#    piqa
-#    socialiqa
-#    winogrande
-#
-#    # Gen5 tasks
-#    coqa
-#    squad
-#    naturalqs
-#    triviaqa
-#    drop
+#    arc_easy:rc::olmes
+#    arc_challenge:rc::olmes
+#    boolq:rc::olmes
+#    csqa:rc::olmes
+#    hellaswag:rc::olmes
+#    openbookqa:rc::olmes
+#    piqa:rc::olmes
+#    socialiqa:rc::olmes
+#    winogrande:rc::olmes
 
-#    # MMLU tasks
-#    mmlu:mc
-#    mmlu_pro # this is still an MC task
+    # Gen5 tasks
+#    coqa::olmes
+#    squad::olmes
+#    naturalqs::olmes
+#    triviaqa::olmes
+#    drop::olmes
 #
-#    mmlu
+    # MMLU tasks
+#    mmlu:mc::olmes
+#    mmlu_pro:mc::none
 #
-#    # AGI eval
-#    agi_eval_english:1shot
+#    mmlu:rc::olmes
 #
-#    # BBH
-#    bbh:cot-v1
+##    # AGI eval
+#    agi_eval_english:1shot::olmes
+##
+##    # BBH
+#    bbh:cot-v1::olmes
+##
+##    # Math2 tasks
+#    gsm8k::olmes
+#    minerva_math_algebra::olmes
+#    minerva_math_counting_and_probability::olmes
+#    minerva_math_geometry::olmes
+#    minerva_math_intermediate_algebra::olmes
+#    minerva_math_number_theory::olmes
+#    minerva_math_prealgebra::olmes
+#    minerva_math_precalculus::olmes
 #
-#    # Math2 tasks
-#    gsm8k
-#    minerva_math_algebra
-#    minerva_math_counting_and_probability
-#    minerva_math_geometry
-#    minerva_math_intermediate_algebra
-#    minerva_math_number_theory
-#    minerva_math_prealgebra
-#    minerva_math_precalculus
-#
-#    # Code4 tasks
+##    # Code4 tasks
 #    codex_humaneval:temp0.8
 #    codex_humanevalplus:temp0.8
 #    mbpp::none
