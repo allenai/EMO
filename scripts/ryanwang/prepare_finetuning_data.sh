@@ -5,7 +5,7 @@
 
 # Configuration
 #OUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/data"
-OUT_DIR="/root/ryanwang/phdbrainstorm/finetune"
+OUT_DIR="/root/ryanwang/phdbrainstorm/data/finetune"
 BATCH_SIZE=16
 CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf

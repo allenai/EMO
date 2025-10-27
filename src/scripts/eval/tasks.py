@@ -18,6 +18,7 @@ def get_task_configs():
                 "task_name": "arc_easy:mc",
                 "split": "validation",
                 "num_shots": 5,
+                "limit": 1000,
                 "fewshot_source": "OLMES:ARC-Easy",
                 "metadata": {
                     "description": "ARC-Easy (MC) using OLMES-v0.1, on validation split",
@@ -28,6 +29,7 @@ def get_task_configs():
                 "task_name": "arc_easy:mc",
                 "split": "test",
                 "num_shots": 5,
+                "limit": 1000,
                 "fewshot_source": "OLMES:ARC-Easy",
                 "metadata": {
                     "description": "ARC-Easy (MC) using OLMES-v0.1, on test split",
