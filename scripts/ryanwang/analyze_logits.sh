@@ -122,8 +122,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
             --task $TASK \
             --output-dir $OUTPUT_DIR \
             --batch-size $BATCH_SIZE \
-            --gpus $GPUS \
-
+            --gpus $GPUS
 #    gantry run \
 #        --name $job_name \
 #        --weka oe-training-default:/weka/oe-training-default \
