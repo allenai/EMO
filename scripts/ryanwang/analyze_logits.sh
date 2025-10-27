@@ -27,15 +27,16 @@ TASKS=(
 #    socialiqa:mc
 #    winogrande:mc
 #
-    arc_easy:rc
-#    arc_challenge:rc
-#    boolq:rc
-#    csqa:rc
-#    hellaswag:rc
-#    openbookqa:rc
-#    piqa:rc
-#    socialiqa:rc
-#    winogrande:rc
+    # rc tasks
+    arc_easy
+#    arc_challenge
+#    boolq
+#    csqa
+#    hellaswag
+#    openbookqa
+#    piqa
+#    socialiqa
+#    winogrande
 #
 #    # Gen5 tasks
 #    coqa
@@ -46,9 +47,9 @@ TASKS=(
 
 #    # MMLU tasks
 #    mmlu:mc
-#    mmlu_pro:mc
+#    mmlu_pro # this is still an MC task
 #
-#    mmlu:rc
+#    mmlu
 #
 #    # AGI eval
 #    agi_eval_english:1shot
