@@ -97,11 +97,11 @@ for TASK in "${TASKS[@]}"; do
     echo "  base dir: $base_dir"
     echo "  Job name: $job_name"
 
-    # this formats the data and saves raw requests
-    PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
-        --task "$TASK" \
-        --output-dir "${base_dir}/raw" \
-        --save-raw-requests true
+#    # this formats the data and saves raw requests
+#    PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+#        --task "$TASK" \
+#        --output-dir "${base_dir}/raw" \
+#        --save-raw-requests true
 
     # this gets the correct requests and saves them into dolma format (jsonl
     PYTHONPATH=. python -u src/scripts/eval/extract_finetuning_examples.py \
