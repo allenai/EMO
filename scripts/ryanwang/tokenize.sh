@@ -1,5 +1,5 @@
 
-base_dir="/root/ryanwang/phdbrainstorm/data/finetune/arc_easy\:mc_train"
+base_dir="/root/ryanwang/phdbrainstorm/data/finetune/arc_easy:mc_train"
 
 jsonl_file="${base_dir}/processed/out.jsonl"
 destination="${base_dir}/tokenized"
