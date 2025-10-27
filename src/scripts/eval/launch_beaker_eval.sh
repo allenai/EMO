@@ -4,9 +4,9 @@
 # Usage: bash src/scripts/eval/launch_beaker_eval.sh
 
 # Configuration
-MODELS=("/weka/oe-training-default/ryanwang/phdbrainstorm/models/olmoe-pretrain-mose-natural-1022_oldseqlen/step30995-hf")
+MODELS=("/weka/oe-training-default/ryanwang/phdbrainstorm/models/olmo2_1b-pretrain-mose-natural-1025/step30995-hf")
 BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/evals"
-BATCH_SIZE=4
+BATCH_SIZE=16
 CLUSTER="ai2/jupiter-cirrascale-2"
 LIMIT=1000
 model_type=hf
@@ -14,38 +14,38 @@ model_type=hf
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
 #    # MC9 tasks
-#    arc_easy:mc::olmes
-#    arc_challenge:mc::olmes
-#    boolq:mc::olmes
-#    csqa:mc::olmes
-#    hellaswag:mc::olmes
-#    openbookqa:mc::olmes
-#    piqa:mc::olmes
-#    socialiqa:mc::olmes
-#    winogrande:mc::olmes
-#
-#    arc_easy:rc::olmes
-#    arc_challenge:rc::olmes
-#    boolq:rc::olmes
-#    csqa:rc::olmes
-#    hellaswag:rc::olmes
-#    openbookqa:rc::olmes
-#    piqa:rc::olmes
-#    socialiqa:rc::olmes
-#    winogrande:rc::olmes
-#
-#    # Gen5 tasks
-#    coqa::olmes
-#    squad::olmes
-#    naturalqs::olmes
-#    triviaqa::olmes
-#    drop::olmes
+    arc_easy:mc::olmes
+    arc_challenge:mc::olmes
+    boolq:mc::olmes
+    csqa:mc::olmes
+    hellaswag:mc::olmes
+    openbookqa:mc::olmes
+    piqa:mc::olmes
+    socialiqa:mc::olmes
+    winogrande:mc::olmes
+
+    arc_easy:rc::olmes
+    arc_challenge:rc::olmes
+    boolq:rc::olmes
+    csqa:rc::olmes
+    hellaswag:rc::olmes
+    openbookqa:rc::olmes
+    piqa:rc::olmes
+    socialiqa:rc::olmes
+    winogrande:rc::olmes
+
+    # Gen5 tasks
+    coqa::olmes
+    squad::olmes
+    naturalqs::olmes
+    triviaqa::olmes
+    drop::olmes
 #
     # MMLU tasks
-    mmlu:mc::olmes
+#    mmlu:mc::olmes
 #    mmlu_pro:mc::none
 #
-    mmlu:rc::olmes
+#    mmlu:rc::olmes
 #
 #    # AGI eval
 #    agi_eval_english:1shot::olmes
@@ -104,13 +104,13 @@ for MODEL_PATH in "${MODELS[@]}"; do
     for TASK in "${TASKS[@]}"; do
         echo "Launching evaluation for model: $model, task: $TASK"
 
-    gpus=4
+    gpus=1
 
     # Batch size adjustment (matching original script)
     if [[ $TASK == *"cot"* || $TASK == "minerva_math_"* || $TASK == "mbpp"* || $TASK == "bigcodebench"* || $TASK == "ruler"* || $TASK == "sciriff"* ]]; then
-        batch_size=1
+        batch_size=$((BATCH_SIZE / 4))
     else
-        batch_size=4
+        batch_size=$BATCH_SIZE
     fi
 
     # Create a shorter, valid job name
