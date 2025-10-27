@@ -4,6 +4,36 @@ from oe_eval.configs.tasks import TASK_CONFIGS
 def get_task_configs():
     TASK_CONFIGS.update(
         {
+            "arc_easy:mc_train::olmes": {
+                "task_name": "arc_easy:mc",
+                "split": "train",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:ARC-Easy",
+                "metadata": {
+                    "description": "ARC-Easy (MC) using OLMES-v0.1, on training split",
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "arc_easy:mc_validation::olmes": {
+                "task_name": "arc_easy:mc",
+                "split": "validation",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:ARC-Easy",
+                "metadata": {
+                    "description": "ARC-Easy (MC) using OLMES-v0.1, on validation split",
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "arc_easy:mc_test::olmes": {
+                "task_name": "arc_easy:mc",
+                "split": "test",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:ARC-Easy",
+                "metadata": {
+                    "description": "ARC-Easy (MC) using OLMES-v0.1, on test split",
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
             "mbpp::none": {
                 "task_name": "mbpp",
                 "primary_metric": "pass_at_1",

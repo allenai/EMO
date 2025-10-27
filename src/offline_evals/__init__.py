@@ -14,7 +14,6 @@ from .tasks import (
     sciriff,
     story_gen,
     xsum,
-    arc_splits,
 )
 
 new_task_registry: Dict = {
@@ -32,9 +31,6 @@ new_task_registry: Dict = {
     **agi_eval.create_core_agi_eval_tasks(),
     **ruler.create_ruler_tasks(),
     **sciriff.create_bio_sciriff_qa_tasks(),
-    "arc_challenge:mc_train": arc_splits.ARCEasyMC_Train,
-    "arc_challenge:mc_validation": arc_splits.ARCEasyMC_Validation,
-    "arc_challenge:mc_test": arc_splits.ARCEasyMC_Test,
 }
 
 TASK_REGISTRY.update(new_task_registry)
