@@ -5,7 +5,7 @@ def get_task_configs():
     TASK_CONFIGS.update(
         {
             "arc_easy:mc_train::olmes": {
-                "task_name": "arc_easy:mc",
+                "task_name": "arc_easy:mc_train",
                 "split": "train",
                 "num_shots": 5,
                 "fewshot_source": "OLMES:ARC-Easy",
@@ -15,7 +15,7 @@ def get_task_configs():
                 },
             },
             "arc_easy:mc_validation::olmes": {
-                "task_name": "arc_easy:mc",
+                "task_name": "arc_easy:mc_validation",
                 "split": "validation",
                 "num_shots": 5,
                 "limit": 1000,
@@ -26,7 +26,7 @@ def get_task_configs():
                 },
             },
             "arc_easy:mc_test::olmes": {
-                "task_name": "arc_easy:mc",
+                "task_name": "arc_easy:mc_test",
                 "split": "test",
                 "num_shots": 5,
                 "limit": 1000,
