@@ -30,55 +30,6 @@ _parser.add_argument("--gpus", type=int, default=None, help="Number of GPUs to u
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger()
 
-
-dataset_name_to_output_file = {
-    "gsm8k": "gsm8k-router.jsonl",
-    "codex_humaneval": "codex_humaneval-router.jsonl",
-    "codex_humanevalplus": "codex_humanevalplus-router.jsonl",
-    "coqa": "coqa-router.jsonl",
-    "triviaqa": "triviaqa-router.jsonl",
-    "drop": "drop-router.jsonl",
-    "squad": "squad-router.jsonl",
-    "naturalqs_open": "naturalqs_open-router.jsonl",
-    "mbpp": "mbpp-router.jsonl",
-    "mbppplus": "mbppplus-router.jsonl",
-    "minerva_math_algebra": "minerva_math_algebra-router.jsonl",
-    "minerva_math_counting_and_probability": "minerva_math_counting_and_probability-router.jsonl",
-    "minerva_math_geometry": "minerva_math_geometry-router.jsonl",
-    "minerva_math_intermediate_algebra": "minerva_math_intermediate_algebra-router.jsonl",
-    "minerva_math_number_theory": "minerva_math_number_theory-router.jsonl",
-    "minerva_math_prealgebra": "minerva_math_prealgebra-router.jsonl",
-    "minerva_math_precalculus": "minerva_math_precalculus-router.jsonl",
-    "bbh_boolean_expressions": "bbh_boolean_expressions-router.jsonl",
-    "bbh_causal_judgement": "bbh_causal_judgement-router.jsonl",
-    "bbh_date_understanding": "bbh_date_understanding-router.jsonl",
-    "bbh_disambiguation_qa": "bbh_disambiguation_qa-router.jsonl",
-    "bbh_dyck_languages": "bbh_dyck_languages-router.jsonl",
-    "bbh_formal_fallacies": "bbh_formal_fallacies-router.jsonl",
-    "bbh_geometric_shapes": "bbh_geometric_shapes-router.jsonl",
-    "bbh_hyperbaton": "bbh_hyperbaton-router.jsonl",
-    "bbh_logical_deduction_five_objects": "bbh_logical_deduction_five_objects-router.jsonl",
-    "bbh_logical_deduction_seven_objects": "bbh_logical_deduction_seven_objects-router.jsonl",
-    "bbh_logical_deduction_three_objects": "bbh_logical_deduction_three_objects-router.jsonl",
-    "bbh_movie_recommendation": "bbh_movie_recommendation-router.jsonl",
-    "bbh_multistep_arithmetic_two": "bbh_multistep_arithmetic_two-router.jsonl",
-    "bbh_navigate": "bbh_navigate-router.jsonl",
-    "bbh_object_counting": "bbh_object_counting-router.jsonl",
-    "bbh_penguins_in_a_table": "bbh_penguins_in_a_table-router.jsonl",
-    "bbh_reasoning_about_colored_objects": "bbh_reasoning_about_colored_objects-router.jsonl",
-    "bbh_ruin_names": "bbh_ruin_names-router.jsonl",
-    "bbh_salient_translation_error_detection": "bbh_salient_translation_error_detection-router.jsonl",
-    "bbh_snarks": "bbh_snarks-router.jsonl",
-    "bbh_sports_understanding": "bbh_sports_understanding-router.jsonl",
-    "bbh_temporal_sequences": "bbh_temporal_sequences-router.jsonl",
-    "bbh_tracking_shuffled_objects_five_objects": "bbh_tracking_shuffled_objects_five_objects-router.jsonl",
-    "bbh_tracking_shuffled_objects_seven_objects": "bbh_tracking_shuffled_objects_seven_objects-router.jsonl",
-    "bbh_tracking_shuffled_objects_three_objects": "bbh_tracking_shuffled_objects_three_objects-router.jsonl",
-    "bbh_web_of_lies": "bbh_web_of_lies-router.jsonl",
-    "bbh_word_sorting": "bbh_word_sorting-router.jsonl",
-    "agi_eval_english_1shot": "agi_eval_english_1shot-router.jsonl",
-}
-
 def find_file(directory, substring):
     """Finds all files in directory that contain substring in their filename."""
     found_arr = []
@@ -140,7 +91,7 @@ def launch_logits(args_dict):
         print("evaluating dataset ", eval_dataset_name)
         prompts, index = get_prompt_sequences_for_evaluation(eval_dataset_name, args_dict["output_dir"])
 
-        out_fn = os.path.join(args_dict["output_dir"], dataset_name_to_output_file[eval_dataset_name])
+        out_fn = os.path.join(args_dict["output_dir"], f"{eval_dataset_name}-router.jsonl")
 
         out_file = open(out_fn, 'w')
 
