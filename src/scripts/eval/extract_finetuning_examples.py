@@ -69,7 +69,7 @@ def extract_finetuning_examples(args_dict):
         # convert dataset name to substring
         eval_dataset_name = find_task_substring(eval_dataset_name)
 
-        data = get_correct_training_data(eval_dataset_name, args_dict["eval_dir"])
+        data = get_correct_training_data(eval_dataset_name, args_dict["input_dir"])
 
         out_fn = os.path.join(args_dict["output_dir"], f"{eval_dataset_name}.jsonl")
 
