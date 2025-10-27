@@ -108,6 +108,14 @@ def launch_logits(args_dict):
         num_layers = model.config.num_hidden_layers
         num_experts = model.config.num_experts
         summed_router_probabilities = torch.zeros((num_layers, num_experts))
+        tot_tokens = 0
+
+        print(f"Processing {len(prompts)} sequences...")
+        # select only the correct sequences in the batch if specified
+        if args_dict["use_correct_only"]:
+            prompts = [prompts[j] for j, val in enumerate(correct) if val == 1]
+
+        print(f"Use correct only is {args_dict["use_correct_only"]}, {len(prompts)} sequences remain.")
 
         breakpoint()
 
@@ -130,14 +138,6 @@ def launch_logits(args_dict):
             # reshape router_logits
             router_logits = router_logits.view(router_logits.shape[0], inputs.input_ids.shape[0], inputs.input_ids.shape[1], router_logits.shape[-1]) # (layers, batch, sequence_length, num_experts)
 
-            # select only the correct sequences in the batch if specified
-            if args_dict["use_correct_only"]:
-                correct_indices = [j for j, val in enumerate(batch_correct) if val == 1]
-                if len(correct_indices) == 0:
-                    continue
-                router_logits = router_logits[:, correct_indices, :, :]
-                batch_prompts = [batch_prompts[j] for j in correct_indices]
-
             # aggregate router probabilities across batch and sequence length
             router_probabilities = F.softmax(router_logits, dim=-1)
 
@@ -149,22 +149,11 @@ def launch_logits(args_dict):
             # accumulate the summed router probabilities
             summed_router_probabilities += summed_router_probabilities
 
+            tot_tokens += attention_mask_expanded.sum().item()
+
         # after processing all batches, we compute average router probabilities
-        correct_indices = [j for j, val in enumerate(correct) if (not args_dict["use_correct_only"]) or (val == 1)]
-        # combine with attention_mask to get total number of tokens considered
-
-
-
-
-            # # store the logits
-            # record = {
-            #     "token_index": token_index,
-            #     "router_logits": prompt_router_logits
-            # }
-
-            # out_file.write(json.dumps(record) + "\n")
-            # out_file.flush()
-
+        save_summed_router_probabilities = summed_router_probabilities / tot_tokens
+        out_file.write(json.dumps({"avg_router_probabilities": save_summed_router_probabilities.tolist()}) + "\n")
         out_file.close()
 
 
