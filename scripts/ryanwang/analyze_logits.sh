@@ -114,37 +114,37 @@ for i in "${!MODEL_DIRS[@]}"; do
         echo "  Batch size: $BATCH_SIZE"
         echo "  Job name: $job_name"
 
-        PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
-            --model "$MODEL_PATH" \
-            --task "$TASK" \
-            --eval-dir "$EVAL_DIR" \
-            --batch-size "$BATCH_SIZE" \
-            --gpus "$GPUS" \
-            --use_correct_only
+#        PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
+#            --model "$MODEL_PATH" \
+#            --task "$TASK" \
+#            --eval-dir "$EVAL_DIR" \
+#            --batch-size "$BATCH_SIZE" \
+#            --gpus "$GPUS" \
+#            --use_correct_only
 
-        #    gantry run \
-#        --name $job_name \
-#        --weka oe-training-default:/weka/oe-training-default \
-#        --install "bash src/scripts/eval/setup_eval_env.sh;" \
-#        --budget ai2/oe-base \
-#        --workspace ai2/flex2 \
-#        --cluster $CLUSTER \
-#        --priority urgent \
-#        --gpus $gpus \
-#        --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-#        --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-#        --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-#        -- \
-#        bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
-#            --model $MODEL_PATH \
-#            --task $TASK \
-#            --output-dir $OUTPUT_DIR \
-#            --batch-size $BATCH_SIZE \
-#            --gpus $GPUS \
-#            "
-#
-#        echo "Launched evaluation for model: $model, task: $TASK"
-#        echo "----------------------------------------"
+        gantry run \
+            --name $job_name \
+            --weka oe-training-default:/weka/oe-training-default \
+            --install "bash src/scripts/eval/setup_eval_env.sh;" \
+            --budget ai2/oceo \
+            --workspace ai2/flex2 \
+            --cluster $CLUSTER \
+            --priority urgent \
+            --gpus $gpus \
+            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+            -- \
+            bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
+                --model $MODEL_PATH \
+                --task $TASK \
+                --eval-dir "$EVAL_DIR" \
+                --batch-size "$BATCH_SIZE" \
+                --gpus "$GPUS" \
+                --use_correct_only
+                "
+        echo "Launched evaluation for model: $model, task: $TASK"
+        echo "----------------------------------------"
     done
 
     echo "Completed all tasks for model: $model"
