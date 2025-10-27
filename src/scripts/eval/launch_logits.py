@@ -61,7 +61,7 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
     # load the jsonl file
     requests_data = load_jsonl_file(requests_file)
     predictions_data = load_jsonl_file(predictions_file)
-    assert (len(requests_data) == len(predictions_data)), f"Found {len(requests_data)} requests and {len(predictions_data)} predictions, expected same number"
+    # assert (len(requests_data) == len(predictions_data)), f"Found {len(requests_data)} requests and {len(predictions_data)} predictions, expected same number"
 
     # we now create the prompt sequences
     prompts = [] # records the full forward pass

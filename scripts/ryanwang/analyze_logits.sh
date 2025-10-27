@@ -99,7 +99,7 @@ for i in "${!MODEL_DIRS[@]}"; do
     echo "Processing model: $MODEL_PATH"
     echo "Evaluation dir: $EVAL_DIR"
 
-    model=$(basename "$MODEL_PATH")
+    model="$(basename "$(dirname "$MODEL_PATH")")
 
     for TASK in "${TASKS[@]}"; do
         echo "Launching evaluation for model: $model, task: $TASK"
