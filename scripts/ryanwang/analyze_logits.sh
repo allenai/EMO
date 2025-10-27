@@ -17,26 +17,26 @@ model_type=hf
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
 #    # MC9 tasks
-    arc_easy:mc
-    arc_challenge:mc
-    boolq:mc
-    csqa:mc
-    hellaswag:mc
-    openbookqa:mc
-    piqa:mc
-    socialiqa:mc
-    winogrande:mc
+#    arc_easy:mc
+#    arc_challenge:mc
+#    boolq:mc
+#    csqa:mc
+#    hellaswag:mc
+#    openbookqa:mc
+#    piqa:mc
+#    socialiqa:mc
+#    winogrande:mc
 #
     # rc tasks
-#    arc_easy
-#    arc_challenge
-#    boolq
-#    csqa
-#    hellaswag
-#    openbookqa
-#    piqa
-#    socialiqa
-#    winogrande
+    arc_easy
+    arc_challenge
+    boolq
+    csqa
+    hellaswag
+    openbookqa
+    piqa
+    socialiqa
+    winogrande
 #
 #    # Gen5 tasks
 #    coqa
