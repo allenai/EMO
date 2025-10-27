@@ -146,7 +146,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
 #
 #        echo "Launched evaluation for model: $model, task: $TASK"
 #        echo "----------------------------------------"
-#    done
+    done
 
     echo "Completed all tasks for model: $model"
     echo "========================================"
