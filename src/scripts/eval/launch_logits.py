@@ -22,7 +22,7 @@ _parser.add_argument("--model", type=str, help="Name of model from model library
 _parser.add_argument(
     "--task", type=str, nargs="+", required=False, help="Task spec(s) from library or jsonl file"
 )
-_parser.add_argument("--output-dir", type=str, default=None, help="Directory for output files")
+_parser.add_argument("--eval-dir", type=str, default=None, help="Directory corresponding to eval directory")
 _parser.add_argument("--batch-size", type=str, default=None, help="Override batch size")
 _parser.add_argument("--gpus", type=int, default=None, help="Number of GPUs to use")
 
@@ -89,9 +89,9 @@ def launch_logits(args_dict):
     # we load the data here
     for eval_dataset_name in args_dict["task"]:
         print("evaluating dataset ", eval_dataset_name)
-        prompts, index = get_prompt_sequences_for_evaluation(eval_dataset_name, args_dict["output_dir"])
+        prompts, index = get_prompt_sequences_for_evaluation(eval_dataset_name, args_dict["eval_dir"])
 
-        out_fn = os.path.join(args_dict["output_dir"], f"{eval_dataset_name}-router.jsonl")
+        out_fn = os.path.join(args_dict["eval_dir"], f"{eval_dataset_name}-router.jsonl")
 
         out_file = open(out_fn, 'w')
 
