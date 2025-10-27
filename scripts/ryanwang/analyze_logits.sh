@@ -4,8 +4,8 @@
 # Usage: bash src/scripts/eval/launch_beaker_eval.sh
 
 # Configuration
-MODEL_DIR=("/weka/oe-training-default/ryanwang/phdbrainstorm/models/olmoe-pretrain-mose-natural-1022/step30995-hf")
-EVAL_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/evals/weka_oe-training-default_ryanwang_phdbrainstorm_models_olmoe-pretrain-mose-natural-1022_step30995-hf"
+MODEL_DIRS=("/weka/oe-training-default/ryanwang/phdbrainstorm/models/olmoe-pretrain-mose-natural-1022/step30995-hf")
+EVAL_DIRS="/weka/oe-training-default/ryanwang/phdbrainstorm/evals/weka_oe-training-default_ryanwang_phdbrainstorm_models_olmoe-pretrain-mose-natural-1022_step30995-hf"
 
 #MODEL_DIRS=("/root/ryanwang/phdbrainstorm/models/olmoe-pretrain-mose-natural-1022/step30995-hf")
 #EVAL_DIRS=("/root/ryanwang/phdbrainstorm/evals/weka_oe-training-default_ryanwang_phdbrainstorm_models_olmoe-pretrain-mose-natural-1022_step30995-hf")
