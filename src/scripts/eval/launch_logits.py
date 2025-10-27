@@ -107,7 +107,7 @@ def launch_logits(args_dict):
         # initialize storage for summed router probabilities
         num_layers = model.config.num_hidden_layers
         num_experts = model.config.num_experts
-        summed_router_probabilities = torch.zeros((num_layers, num_experts))
+        tot_router_probabilities = torch.zeros((num_layers, num_experts))
         tot_tokens = 0
 
         print(f"Processing {len(prompts)} sequences...")
@@ -116,8 +116,6 @@ def launch_logits(args_dict):
             prompts = [prompts[j] for j, val in enumerate(correct) if val == 1]
 
         print(f"Use correct only is {args_dict["use_correct_only"]}, {len(prompts)} sequences remain.")
-
-        breakpoint()
 
         # loop over dataset in batches
         for i in tqdm(range(0, len(prompts), args_dict["batch_size"])):
@@ -133,7 +131,6 @@ def launch_logits(args_dict):
 
             del out
             torch.cuda.empty_cache()
-            breakpoint()
 
             # reshape router_logits
             router_logits = router_logits.view(router_logits.shape[0], inputs.input_ids.shape[0], inputs.input_ids.shape[1], router_logits.shape[-1]) # (layers, batch, sequence_length, num_experts)
@@ -147,13 +144,14 @@ def launch_logits(args_dict):
 
             summed_router_probabilities = router_probabilities.sum(dim=(1,2)) # (layers, num_experts)
             # accumulate the summed router probabilities
-            summed_router_probabilities += summed_router_probabilities
+            tot_router_probabilities += summed_router_probabilities
 
-            tot_tokens += attention_mask_expanded.sum().item()
+            tot_tokens += inputs.attention_mask.sum().item().cpu()
 
+        breakpoint()
         # after processing all batches, we compute average router probabilities
-        save_summed_router_probabilities = summed_router_probabilities / tot_tokens
-        out_file.write(json.dumps({"avg_router_probabilities": save_summed_router_probabilities.tolist()}) + "\n")
+        save_router_probabilities = tot_router_probabilities / tot_tokens
+        out_file.write(json.dumps({"avg_router_probabilities": save_router_probabilities.tolist()}) + "\n")
         out_file.close()
 
 
