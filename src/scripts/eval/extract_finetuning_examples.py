@@ -74,7 +74,7 @@ def extract_finetuning_examples(args_dict):
 
         os.makedirs(args_dict["output_dir"], exist_ok=True)
 
-        out_fn = os.path.join(args_dict["output_dir"], f"{eval_dataset_name}.jsonl")
+        out_fn = os.path.join(args_dict["output_dir"], "out.jsonl")
 
         out_file = open(out_fn, 'w')
 
