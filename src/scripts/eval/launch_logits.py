@@ -24,7 +24,7 @@ _parser.add_argument(
     "--task", type=str, nargs="+", required=False, help="Task spec(s) from library or jsonl file"
 )
 _parser.add_argument("--eval-dir", type=str, default=None, help="Directory corresponding to eval directory")
-_parser.add_argument("--batch-size", type=str, default=None, help="Override batch size")
+_parser.add_argument("--batch-size", type=int, default=None, help="Override batch size")
 _parser.add_argument("--gpus", type=int, default=None, help="Number of GPUs to use")
 _parser.add_argument("--use_correct_only", action='store_true', help="Use only correct sequences for evaluation")
 
@@ -108,6 +108,8 @@ def launch_logits(args_dict):
         num_layers = model.config.num_hidden_layers
         num_experts = model.config.num_experts
         summed_router_probabilities = torch.zeros((num_layers, num_experts))
+
+        breakpoint()
 
         # loop over dataset in batches
         for i in tqdm(range(0, len(prompts), args_dict["batch_size"])):
