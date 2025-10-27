@@ -100,7 +100,7 @@ for TASK in "${TASKS[@]}"; do
     PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
         --task "$TASK" \
         --output-dir "$OUT_DIR" \
-        --save-raw-requests
+        --save-raw-requests true
 
 #    gantry run \
 #        --name $job_name \
