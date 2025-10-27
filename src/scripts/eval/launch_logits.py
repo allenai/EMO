@@ -66,6 +66,8 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
 
     prompts, correct = [], []
 
+    breakpoint()
+
     if eval_dataset_name == "hellaswag:mc":
         assert (len(requests_data) == 4 * len(predictions_data)), f"Found {len(requests_data)} requests and {len(predictions_data)} predictions, expected ratio of 4 times"
 
@@ -84,6 +86,9 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
             assert req['doc_id'] == pred['doc_id'], f"Request doc_id {req['doc_id']} does not match prediction doc_id {pred['doc_id']}"
             prompts += [req["request"]["context"] + req["request"]["continuation"]]
             correct += [1 if pred["metrics"]["acc_raw"] > 0 else 0]
+
+    else:
+        raise NotImplementedError(f"Dataset {eval_dataset_name} not implemented in get_prompt_sequences_for_evaluation")
 
     return prompts, correct
 
