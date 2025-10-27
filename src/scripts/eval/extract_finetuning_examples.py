@@ -33,6 +33,7 @@ logger = logging.getLogger()
 def get_correct_training_data(eval_dataset_name, eval_folder):
     # general matching rule
     requests_files = find_file(eval_folder, f"{eval_dataset_name}-requests")
+    breakpoint()
     assert len(requests_files) == 1, f"Found {len(requests_files)} request files for {eval_dataset_name} in {eval_folder}, expected 1"
 
     requests_file = requests_files[0]
