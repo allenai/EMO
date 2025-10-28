@@ -82,20 +82,42 @@ class PruningMoELinearRouter(MoELinearRouter):
             f"prune_keep_k={len(self.experts_to_keep)} < top_k={self.top_k}. "
             "Increase prune_keep_k or reduce top_k."
         )
+        self._expert_mask = None
+        self._active_indices = None
 
-        # Register mask as a buffer so it moves with the module
-        expert_mask = torch.zeros(self.num_experts, dtype=torch.bool, device=init_device)
-        expert_mask[self.experts_to_keep] = True
-        self.expert_mask = expert_mask
-        # self.register_buffer("expert_mask", expert_mask, persistent=False)
-
-        # Precompute active indices buffer
-        breakpoint()
-        active_idices = torch.nonzero(self.expert_mask, as_tuple=False).view(-1)
-        self.active_indices = active_idices
-        # self.register_buffer("active_indices", active_idx, persistent=False)
+        # # Register mask as a buffer so it moves with the module
+        # expert_mask = torch.zeros(self.num_experts, dtype=torch.bool, device=init_device)
+        # expert_mask[self.experts_to_keep] = True
+        # self.expert_mask = expert_mask
+        # # self.register_buffer("expert_mask", expert_mask, persistent=False)
+        #
+        # # Precompute active indices buffer
+        # breakpoint()
+        # active_idices = torch.nonzero(self.expert_mask, as_tuple=False).view(-1)
+        # self.active_indices = active_idices
+        # # self.register_buffer("active_indices", active_idx, persistent=False)
 
         print(f"Layer {layer_idx}: Keeping experts {self.experts_to_keep} out of {self.num_experts}")
+
+
+    @property
+    def expert_mask(self):
+        """Lazy creation of expert mask when needed"""
+        if self._expert_mask is None:
+            mask = torch.zeros(self.num_experts, dtype=torch.bool, device=self.weight.device)
+            mask[self.experts_to_keep] = True
+            self._expert_mask = mask
+        return self._expert_mask
+
+    @property
+    def active_indices(self):
+        """Lazy creation of active indices when needed"""
+        if self._active_indices is None:
+            mask = self.expert_mask
+            active_idx = torch.nonzero(mask, as_tuple=False).view(-1)
+            self._active_indices = active_idx
+        return self._active_indices
+
 
     def forward(
             self,
