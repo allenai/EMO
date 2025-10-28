@@ -369,6 +369,44 @@ def process_eval_args(args_dict: dict) -> dict:
 
     return eval_config
 
+def make_modified_forward(original_forward, num_experts, top_k, norm_topk_prob, experts, gate):
+    def modified_forward(self, hidden_states: torch.Tensor, btm_weight: Optional[torch.Tensor] = None,
+                        btm_topk: Optional[int] = None) -> torch.Tensor:
+        breakpoint()
+        batch_size, sequence_length, hidden_dim = hidden_states.shape
+        hidden_states = hidden_states.view(-1, hidden_dim)
+        router_logits = gate(hidden_states)
+
+        excluded_experts = [0, 1, 2]
+        if excluded_experts:
+            mask = torch.ones(router_logits.shape[-1], dtype=torch.bool, device=router_logits.device)
+            mask[excluded_experts] = False
+            router_logits = router_logits.masked_fill(~mask.unsqueeze(0), float('-inf'))
+
+        routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
+        routing_weights, selected_experts = torch.topk(routing_weights, top_k, dim=-1)
+
+        if norm_topk_prob:
+            routing_weights /= routing_weights.sum(dim=-1, keepdim=True)
+        routing_weights = routing_weights.to(hidden_states.dtype)
+
+        final_hidden_states = torch.zeros(
+            (batch_size * sequence_length, hidden_dim), dtype=hidden_states.dtype, device=hidden_states.device
+        )
+
+        expert_mask = torch.nn.functional.one_hot(selected_experts, num_classes=num_experts).permute(2, 1, 0)
+
+        for expert_idx in range(num_experts):
+            expert_layer = experts[expert_idx]
+            idx, top_x = torch.where(expert_mask[expert_idx])
+
+            current_state = hidden_states[None, top_x].reshape(-1, hidden_dim)
+            current_hidden_states = expert_layer(current_state) * routing_weights[top_x, idx, None]
+
+            final_hidden_states.index_add_(0, top_x, current_hidden_states.to(hidden_states.dtype))
+        final_hidden_states = final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
+        return final_hidden_states, router_logits
+    return modified_forward
 
 def limit_expert_usage(model, activations, prune_keep_k):
     """
@@ -386,167 +424,15 @@ def limit_expert_usage(model, activations, prune_keep_k):
         if hasattr(layer, 'mlp') and hasattr(layer.mlp, 'gate'):
             # Store original forward method
             original_forward = layer.mlp.forward
-
-            def modified_forward(self, hidden_states: torch.Tensor, btm_weight: Optional[torch.Tensor] = None,
-                        btm_topk: Optional[int] = None) -> torch.Tensor:
-                breakpoint()
-                batch_size, sequence_length, hidden_dim = hidden_states.shape
-                hidden_states = hidden_states.view(-1, hidden_dim)
-                # router_logits: (batch * sequence_length, n_experts)
-                router_logits = self.gate(hidden_states)
-                # bp()
-
-                # swj
-                '''
-                # 1. Extract the weights from current gate
-                original_weights = self.gate.weight  # Shape: [4, 4096]
-
-                # 2. Get only the first two rows of weights
-                # new_weights = original_weights[:2].clone()  # Shape: [2, 4096]
-                indices = torch.tensor([0, 2], device=original_weights.device)
-                new_weights = original_weights.index_select(0, indices)  # Shape: [2, 4096]
-
-
-                # 3. Create a new linear layer
-                import torch.nn as nn
-                new_gate = nn.Linear(in_features=4096, out_features=2, bias=False)
-
-                # 4. Assign the weights to the new layer
-                new_gate.weight.data = new_weights
-
-                router_logits = new_gate(hidden_states)
-                routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
-                torch.mean(routing_weights, dim=0)
-
-
-                # bp()
-                btm_topk = -1
-                if btm_topk == -1:
-                    # apply btm weight before 
-                    # F.softmax(router_logits * btm_weight_expanded, dim=1, dtype=torch.float)
-                    # routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
-
-                    # add BTM weight to the routing weights
-                    scaling_factor = 1 # Adjust this value between 0.0-1.0 to control influence
-                    btm_weight_expanded = btm_weight.unsqueeze(0) * scaling_factor
-                    router_logits = router_logits + btm_weight_expanded
-                    routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
-
-                    # swj
-                    routing_weights, selected_experts = torch.topk(routing_weights, self.top_k, dim=-1)
-                else:
-                    routing_weights = F.softmax(router_logits/1.5, dim=1, dtype=torch.float)
-                    # routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
-                    # # use BTM weight to select topk experts, set the BTM weight to 0 for the nontopk experts
-                    # topk_experts = torch.topk(btm_weight, self.top_k, dim=-1)
-                    # selected_experts = topk_experts.indices[:btm_topk]
-                    # # bp()
-                    # # compute the routing weights
-                    # routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
-                    # # mask out the routing weights for the nontopk experts
-                    # routing_weights[:, selected_experts] = 0.0
-                    # routing_weights, selected_experts = torch.topk(routing_weights, btm_topk, dim=-1)
-                '''
-                # bp()
-                # take the first expert as the shared expert
-                # routed_experts = router_logits[:, 1:]
-                # routing_weights = F.softmax(routed_experts, dim=1, dtype=torch.float)
-                # # concatenate the shared expert with the routing weights, the shared expert weight is 1
-                # routing_weights = torch.cat([torch.ones(routed_experts.shape[0], 1, device=hidden_states.device), routing_weights], dim=1)
-
-                # swj change bias:
-                router_logits[:, 0] += 0.01
-                # original
-                routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
-                routing_weights, selected_experts = torch.topk(routing_weights, self.top_k, dim=-1)
-                # print("self.norm_topk_prob: ", self.norm_topk_prob)
-                # bp()
-                if self.norm_topk_prob:
-                    routing_weights /= routing_weights.sum(dim=-1, keepdim=True)
-                # we cast back to the input dtype
-                routing_weights = routing_weights.to(hidden_states.dtype)
-
-                final_hidden_states = torch.zeros(
-                    (batch_size * sequence_length, hidden_dim), dtype=hidden_states.dtype, device=hidden_states.device
-                )
-
-                # One hot encode the selected experts to create an expert mask
-                # this will be used to easily index which expert is going to be selected
-                expert_mask = torch.nn.functional.one_hot(selected_experts, num_classes=self.num_experts).permute(2, 1,
-                                                                                                                  0)
-
-                # Loop over all available experts in the model and perform the computation on each expert
-                for expert_idx in range(self.num_experts):
-                    expert_layer = self.experts[expert_idx]
-                    idx, top_x = torch.where(expert_mask[expert_idx])
-
-                    # Index the correct hidden states and compute the expert hidden state for
-                    # the current expert. We need to make sure to multiply the output hidden
-                    # states by `routing_weights` on the corresponding tokens (top-1 and top-2)
-                    current_state = hidden_states[None, top_x].reshape(-1, hidden_dim)
-                    current_hidden_states = expert_layer(current_state) * routing_weights[top_x, idx, None]
-
-                    # However `index_add_` only support torch tensors for indexing so we'll use
-                    # the `top_x` tensor here.
-                    final_hidden_states.index_add_(0, top_x, current_hidden_states.to(hidden_states.dtype))
-                final_hidden_states = final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
-                return final_hidden_states, router_logits
-
-            # def modified_forward(self, hidden_states: torch.Tensor, btm_weight: Optional[torch.Tensor] = None,
-            #             btm_topk: Optional[int] = None) -> torch.Tensor:
-            #     breakpoint()
-            #     batch_size, sequence_length, hidden_dim = hidden_states.shape
-            #     hidden_states = hidden_states.view(-1, hidden_dim)
-            #     # router_logits: (batch * sequence_length, n_experts)
-            #     router_logits = self.gate(hidden_states)
-            #
-            #     # Add expert limiting logic here
-            #     excluded_experts = [0, 1, 2]  # Example: exclude experts 0, 1, and 2
-            #     if excluded_experts:
-            #         # Create mask for excluded experts
-            #         mask = torch.ones(router_logits.shape[-1], dtype=torch.bool, device=router_logits.device)
-            #         mask[excluded_experts] = False
-            #         # Set logits of excluded experts to -inf
-            #         router_logits = router_logits.masked_fill(~mask.unsqueeze(0), float('-inf'))
-            #
-            #     # Continue with the rest of the original forward pass
-            #     routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
-            #     routing_weights, selected_experts = torch.topk(routing_weights, self.top_k, dim=-1)
-            #
-            #     if self.norm_topk_prob:
-            #         routing_weights /= routing_weights.sum(dim=-1, keepdim=True)
-            #     # we cast back to the input dtype
-            #     routing_weights = routing_weights.to(hidden_states.dtype)
-            #
-            #     final_hidden_states = torch.zeros(
-            #         (batch_size * sequence_length, hidden_dim), dtype=hidden_states.dtype, device=hidden_states.device
-            #     )
-            #
-            #     # One hot encode the selected experts to create an expert mask
-            #     # this will be used to easily index which expert is going to be selected
-            #     expert_mask = torch.nn.functional.one_hot(selected_experts, num_classes=self.num_experts).permute(2, 1,
-            #                                                                                                       0)
-            #
-            #     # Loop over all available experts in the model and perform the computation on each expert
-            #     for expert_idx in range(self.num_experts):
-            #         expert_layer = self.experts[expert_idx]
-            #         idx, top_x = torch.where(expert_mask[expert_idx])
-            #
-            #         # Index the correct hidden states and compute the expert hidden state for
-            #         # the current expert. We need to make sure to multiply the output hidden
-            #         # states by `routing_weights` on the corresponding tokens (top-1 and top-2)
-            #         current_state = hidden_states[None, top_x].reshape(-1, hidden_dim)
-            #         current_hidden_states = expert_layer(current_state) * routing_weights[top_x, idx, None]
-            #
-            #         # However `index_add_` only support torch tensors for indexing so we'll use
-            #         # the `top_x` tensor here.
-            #         final_hidden_states.index_add_(0, top_x, current_hidden_states.to(hidden_states.dtype))
-            #     final_hidden_states = final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
-            #     return final_hidden_states, router_logits
-
-            # Replace the forward method
-            layer.mlp.forward = modified_forward
-            print(f"Modified MoE gate in layer {layer_idx} to exclude experts {excluded_experts}")
+            layer.mlp.forward = make_modified_forward(
+                original_forward,
+                layer.mlp.num_experts,
+                layer.mlp.top_k,
+                layer.mlp.norm_topk_prob,
+                layer.mlp.experts,
+                layer.mlp.gate
+            ).__get__(layer.mlp, layer.mlp.__class__)  # bind correctly to the instance
+            print(f"Modified MoE gate in layer {layer_idx}")
 
 
 def load_model(model_load_config: dict) -> HFLM_Verbose:
