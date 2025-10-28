@@ -294,6 +294,9 @@ def process_eval_args(args_dict: dict) -> dict:
     model_config["max_length"] = args_dict.pop("max_length")
     model_config["model_path"] = args_dict.pop("model_path")
     model_config["model_type"] = args_dict.pop("model_type")
+    model_config["do_prune"] = args_dict.pop("do_prune")
+    model_config["activation_file"] = args_dict.pop("activation_file")
+    model_config["prune_keep_k"] = args_dict.pop("prune_keep_k")
     model_args_dict = parse_args_string(args_dict.pop("model_args"))
     if model_args_dict:
         keys = list(model_args_dict.keys())
