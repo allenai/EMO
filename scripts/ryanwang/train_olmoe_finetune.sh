@@ -25,7 +25,7 @@ activation_file="/weka/oe-training-default/ryanwang/phdbrainstorm/evals/weka_oe-
 
 runname="olmoe-finetune-${task}"
 
-CUDA_VISIBLE_DEVICES=0,1,2,3 python src/scripts/train/olmoe-1B-7B_finetune.py \
+torchrun --nproc-per-node=4 src/scripts/train/olmoe-1B-7B_finetune.py \
     $runname \
 		--save-folder="${base_model}/$runname" \
 		--dataset.mix=arc-easy-train \
