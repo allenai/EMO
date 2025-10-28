@@ -56,7 +56,7 @@ DATA_ROOT = "/weka/oe-training-default/ryanwang"
 # DATA_ROOT = "/root/ryanwang"
 
 SEQUENCE_LENGTH = 4096
-GLOBAL_BATCH_SIZE = 8 * SEQUENCE_LENGTH
+GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
 
 
 # docs: start-define-config
@@ -254,7 +254,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback(
             "checkpointer",
             CheckpointerCallback(
-                save_interval=300,
+                save_interval=200,
                 ephemeral_save_interval=100,
                 save_async=True,
             ),

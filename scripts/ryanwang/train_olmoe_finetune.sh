@@ -17,7 +17,7 @@
 
 model_name="olmoe-pretrain-mose-natural-1022"
 step="step30995"
-task="arc_easy:mc"
+task="arc_easy:mc_validation"
 prune_keep_k=32
 
 base_model="/weka/oe-training-default/ryanwang/phdbrainstorm/models/${model_name}/${step}"
@@ -42,7 +42,7 @@ runname="olmoe-finetune-${task//:/-}"
 
 python -m olmo_core.launch.beaker \
   --name $runname \
-	--gpus 4 \
+	--gpus 8 \
   --nodes 1 \
   --is_private_repo \
 	--weka=oe-training-default \
