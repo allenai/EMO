@@ -534,6 +534,8 @@ def main(args):
             name = name.replace(":mc", "")
         return name
 
+    breakpoint()
+
     # Build and display table
     if args.transpose:
         formatted_task_names = [format_task(name) for name in task_names]
