@@ -384,7 +384,6 @@ def limit_expert_usage(model, activations, prune_keep_k):
     # Find all MoE layers in the model
     for layer_idx, layer in enumerate(model.model.model.layers):
         if hasattr(layer, 'mlp') and hasattr(layer.mlp, 'gate'):
-            breakpoint()
             # Store original forward method
             original_forward = layer.mlp.forward
 
