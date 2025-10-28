@@ -428,6 +428,12 @@ def limit_expert_usage(model, activations, prune_keep_k):
 
 def load_model(model_load_config: dict) -> HFLM_Verbose:
     """Load the model"""
+    pruning_configs = {}
+    if "do_prune" in model_load_config:
+        pruning_configs["do_prune"] = model_load_config.pop("do_prune")
+        pruning_configs["activation_file"] = model_load_config.pop("activation_file")
+        pruning_configs["prune_keep_k"] = model_load_config.pop("prune_keep_k")
+
     # TODO:  better validation and documentation of other args
     model_path = model_load_config["model_path"]
     if model_path is not None and isinstance(model_path, str):
@@ -500,12 +506,12 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
         **model_load_config_other,
     )
     breakpoint()
-    if "do_prune" in model_load_config and model_load_config["do_prune"]:
+    if pruning_configs["do_prune"]:
         # load the activation file
-        with open(model_load_config["activation_file"], 'r') as f:
+        with open(pruning_configs["activation_file"], 'r') as f:
             line = f.readline()
             activations = json.loads(line)["avg_router_probabilities"]
-        limit_expert_usage(model, activations, model_load_config["prune_keep_k"])
+        limit_expert_usage(model, activations, pruning_configs["prune_keep_k"])
     breakpoint()
 
     return model
