@@ -678,7 +678,6 @@ def run_eval(args_dict: dict):
             num_gpus % workers == 0
         ), f"GPUs should be evenly distributed to processes, got {workers} workers and {num_gpus} GPUs."
         _num_gpus = num_gpus // workers
-        breakpoint()
         if workers == 1:
             new_load_config = copy.deepcopy(model_load_config)
             new_load_config["do_prune"] = args_dict["do_prune"]
@@ -687,7 +686,7 @@ def run_eval(args_dict: dict):
             eval_model = load_model(new_load_config)
         else:
             if args_dict["do_prune"]:
-                raise NotImplementedError "Multiprocessing model loading not yet supported with pruning."
+                raise NotImplementedError("Model pruning with multiprocessing is not implemented yet.")
             assert (
                 model_config["model_type"] != "litellm"
             ), f"litellm does not support multiprocessing. Got {workers} workers."
