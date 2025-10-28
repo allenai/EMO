@@ -387,7 +387,7 @@ def limit_expert_usage(model, activations, prune_keep_k):
             # Store original forward method
             original_forward = layer.mlp.forward
 
-            def forward(self, hidden_states: torch.Tensor, btm_weight: Optional[torch.Tensor] = None,
+            def modified_forward(self, hidden_states: torch.Tensor, btm_weight: Optional[torch.Tensor] = None,
                         btm_topk: Optional[int] = None) -> torch.Tensor:
                 breakpoint()
                 batch_size, sequence_length, hidden_dim = hidden_states.shape
