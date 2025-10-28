@@ -14,7 +14,7 @@ from typing import List, Optional, cast
 
 import rich
 
-from nn.moe.pruning_router import PruningMoERouterConfig
+from olmo_core.nn.moe.pruning_router import PruningMoERouterConfig
 from olmo_core.config import Config, DType
 from olmo_core.data import (
     NumpyDataLoaderConfig,
