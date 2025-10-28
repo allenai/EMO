@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 
 from olmo_core.nn.moe.router import MoERouterConfig, MoERouterType

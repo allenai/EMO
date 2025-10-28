@@ -20,8 +20,11 @@ step="step30995"
 task="arc-easy:mc"
 prune_keep_k=32
 
-base_model="/weka/oe-training-default/ryanwang/phdbrainstorm/models/${model_name}/${step}"
-activation_file="/weka/oe-training-default/ryanwang/phdbrainstorm/evals/weka_oe-training-default_ryanwang_phdbrainstorm_models_${model_name}_${step}-hf/${task}-router.jsonl"
+#base_model="/weka/oe-training-default/ryanwang/phdbrainstorm/models/${model_name}/${step}"
+#activation_file="/weka/oe-training-default/ryanwang/phdbrainstorm/evals/weka_oe-training-default_ryanwang_phdbrainstorm_models_${model_name}_${step}-hf/${task}-router.jsonl"
+
+base_model="/root/ryanwang/phdbrainstorm/models/${model_name}/${step}"
+activation_file="/root/ryanwang/phdbrainstorm/evals/weka_oe-training-default_ryanwang_phdbrainstorm_models_${model_name}_${step}-hf/${task}-router.jsonl"
 
 runname="olmoe-finetune-${task}"
 
