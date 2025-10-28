@@ -86,10 +86,12 @@ class PruningMoELinearRouter(MoELinearRouter):
         # Register mask as a buffer so it moves with the module
         expert_mask = torch.zeros(self.num_experts, dtype=torch.bool, device=init_device)
         expert_mask[self.experts_to_keep] = True
+        self.expert_mask = expert_mask
         # self.register_buffer("expert_mask", expert_mask, persistent=False)
 
         # Precompute active indices buffer
-        active_idx = torch.nonzero(self.expert_mask, as_tuple=False).view(-1)
+        active_idices = torch.nonzero(self.expert_mask, as_tuple=False).view(-1)
+        self.active_indices = active_idices
         # self.register_buffer("active_indices", active_idx, persistent=False)
 
         print(f"Layer {layer_idx}: Keeping experts {self.experts_to_keep} out of {self.num_experts}")
