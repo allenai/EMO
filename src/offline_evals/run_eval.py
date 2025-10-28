@@ -379,9 +379,13 @@ def limit_expert_usage(model, activations, prune_keep_k):
     """
     breakpoint()
     excluded_experts = []
+    names = []
+    for name, module in model.model.named_modules():
+        names += [name]
+    breakpoint()
 
     # Find all MoE routers in the model
-    for name, module in model.named_modules():
+    for name, module in model.model.named_modules():
         if hasattr(module, 'router') and hasattr(module.router, 'get_expert_logits'):
             # Store original forward method
             original_forward = module.router.forward
