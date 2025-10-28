@@ -15,29 +15,50 @@
 
 ##############################################################
 
-base_model="/weka/oe-training-default/ryanwang/phdbrainstorm/models/olmoe-pretrain-mose-natural-1022/step-30995"
+model_name="olmoe-pretrain-mose-natural-1022"
+step="step30995"
+task="arc-easy:mc"
+prune_keep_k=32
 
-runname="olmoe-finetune-arc_easy"
-python -m olmo_core.launch.beaker \
-  --name $runname \
-	--gpus 4 \
-  --nodes 1 \
-  --is_private_repo \
-	--weka=oe-training-default \
-  --shared-filesystem \
-	--workspace ai2/flex2 \
-	--cluster ai2/jupiter \
-	--preemptible \
-	--allow-dirty \
-	--priority urgent \
-	--env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
-	-- src/scripts/train/olmoe-1B-7B_finetune.py \
+base_model="/weka/oe-training-default/ryanwang/phdbrainstorm/models/${model_name}/${step}"
+activation_file="/weka/oe-training-default/ryanwang/phdbrainstorm/evals/weka_oe-training-default_ryanwang_phdbrainstorm_models_${model_name}_${step}-hf/${task}-router.jsonl"
+
+runname="olmoe-finetune-${task}"
+
+bash src/scripts/train/olmoe-1B-7B_finetune.py \
     $runname \
 		--save-folder="${base_model}/$runname" \
 		--dataset.mix=arc-easy-train \
 		--work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
 		--trainer.max_duration='{value: 3, unit: epochs}' \
 		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
+		--load_path=$base_model \
+		--activation_file=$activation_file \
+		--prune_keep_k=$prune_keep_k \
+
+#python -m olmo_core.launch.beaker \
+#  --name $runname \
+#	--gpus 4 \
+#  --nodes 1 \
+#  --is_private_repo \
+#	--weka=oe-training-default \
+#  --shared-filesystem \
+#	--workspace ai2/flex2 \
+#	--cluster ai2/jupiter \
+#	--preemptible \
+#	--allow-dirty \
+#	--priority urgent \
+#	--env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+#	-- src/scripts/train/olmoe-1B-7B_finetune.py \
+#    $runname \
+#		--save-folder="${base_model}/$runname" \
+#		--dataset.mix=arc-easy-train \
+#		--work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
+#		--trainer.max_duration='{value: 3, unit: epochs}' \
+#		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
+#		--load_path=$base_model \
+#		--activation_file=$activation_file \
+#		--prune_keep_k=$prune_keep_k \
 
 
 

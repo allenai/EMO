@@ -14,6 +14,7 @@ from typing import List, Optional, cast
 
 import rich
 
+from nn.moe.pruning_router import PruningMoERouterConfig
 from olmo_core.config import Config, DType
 from olmo_core.data import (
     NumpyDataLoaderConfig,
@@ -130,7 +131,25 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     model_config = TransformerConfig.olmoe_1B_7B(
         vocab_size=tokenizer_config.padded_vocab_size(),  # a little bigger than actual vocab size to make it a multiple of 128
     )
+
+    breakpoint()
+
+    # Override the router config in the MoE blocks to be prunable
+    for i in range(model_config.n_layers):
+        if hasattr(model_config.block, 'feed_forward_moe'):
+            # Replace the router config with your custom one
+
+            kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
+            kwargs.pop("name")
+            kwargs.update(
+                prune_keep_k=opts.prune_keep_k,
+                activation_file=opts.activation_file,
+                layer_idx=i,  # Pass layer index
+            )
+            model_config.block.feed_forward_moe.router = PruningMoERouterConfig(**kwargs)
     # docs: end-model-config
+
+    breakpoint()
 
     log.info(f"Using data root: {DATA_ROOT}")
 
@@ -259,6 +278,16 @@ def parser_args():
         "--load_path",
         type=str,
         help="Path to load checkpoint from if no checkpoint is found in the save folder.",
+    )
+    parser.add_argument(
+        "--activation_file",
+        type=str,
+        help="Path to the activation file for pruning router.",
+    )
+    parser.add_argument(
+        "prune_keep_k",
+        type=int,
+        help="Number of experts to keep during pruning.",
     )
     opts, overrides = parser.parse_known_args()
     return opts, overrides
