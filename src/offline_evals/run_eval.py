@@ -373,7 +373,6 @@ def process_eval_args(args_dict: dict) -> dict:
 def make_modified_forward(original_forward, num_experts, top_k, norm_topk_prob, experts, gate, experts_to_keep):
     def modified_forward(self, hidden_states: torch.Tensor, btm_weight: Optional[torch.Tensor] = None,
                         btm_topk: Optional[int] = None) -> torch.Tensor:
-        breakpoint()
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         hidden_states = hidden_states.view(-1, hidden_dim)
         router_logits = gate(hidden_states)
@@ -381,7 +380,7 @@ def make_modified_forward(original_forward, num_experts, top_k, norm_topk_prob, 
         # swj change bias:
         router_logits[:, 0] += 0.01
 
-        mask = torch.zeros(self.num_experts, dtype=torch.bool)
+        mask = torch.zeros(self.num_experts, dtype=torch.bool, device=router_logits.device)
         mask[experts_to_keep] = True
 
         router_logits = router_logits.masked_fill(~mask.unsqueeze(0), float('-inf'))
@@ -419,9 +418,6 @@ def limit_expert_usage(model, activations, prune_keep_k):
         model: The loaded model
         excluded_experts: List of expert indices to exclude (0-indexed)
     """
-    breakpoint()
-    excluded_experts = []
-
     # Find all MoE layers in the model
     for layer_idx, layer in enumerate(model.model.model.layers):
         if hasattr(layer, 'mlp') and hasattr(layer.mlp, 'gate'):
@@ -522,7 +518,6 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
         tokenizer=tokenizer,
         **model_load_config_other,
     )
-    breakpoint()
     if pruning_configs["do_prune"]:
         # load the activation file
         with open(pruning_configs["activation_file"], 'r') as f:
