@@ -51,35 +51,10 @@ from olmo_core.utils import seed_all
 
 log = logging.getLogger(__name__)
 
-# # Check for the data on common Ai2 drives. If those don't exist we'll stream the data over the internet,
-# # which can be a lot slower. Alternatively you can download the files with wget, for example:
-# #  > wget http://olmo-data.org/examples/c4-en/gpt2/c4-train.00000-00099.npy
-# DEFAULT_DATA_ROOT = "http://olmo-data.org/examples/c4-en/gpt2"
-# for dir in (
-#     "/net/nfs/allennlp/llm-data/c4/en/",
-#     "/weka/oe-training-default/ai2-llm/examples/c4-en/gpt2/",
-# ):
-#     if os.path.exists(dir):
-#         DEFAULT_DATA_ROOT = dir
-#         break
-# DATA_ROOT = os.environ.get("OLMO_DATA_ROOT", DEFAULT_DATA_ROOT).rstrip("/")
-# DATA_PATHS = [
-#     f"{DATA_ROOT}/c4-train.00000-00099.npy",
-#     # Uncomment for full dataset which might not be available on NFS or Weka.
-#     #  f"{DATA_ROOT}/c4-train.00100-00199.npy",
-#     #  f"{DATA_ROOT}/c4-train.00200-00299.npy",
-#     #  f"{DATA_ROOT}/c4-train.00300-00399.npy",
-#     #  f"{DATA_ROOT}/c4-train.00400-00499.npy",
-#     #  f"{DATA_ROOT}/c4-train.00500-00599.npy",
-#     #  f"{DATA_ROOT}/c4-train.00600-00699.npy",
-#     #  f"{DATA_ROOT}/c4-train.00700-00799.npy",
-#     #  f"{DATA_ROOT}/c4-train.00800-00899.npy",
-#     #  f"{DATA_ROOT}/c4-train.00900-00999.npy",
-#     #  f"{DATA_ROOT}/c4-train.01000-01023.npy",
-# ]
-# EVAL_DATA_PATHS = [f"{DATA_ROOT}/c4-validation.00000-00008.npy"]
-
 DATA_ROOT = "/weka/oe-training-default/ai2-llm"
+
+SEQUENCE_LENGTH = 4096
+GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
 
 
 # docs: start-define-config
@@ -152,12 +127,6 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
     tokenizer_config = TokenizerConfig.dolma2()
 
-    # docs: start-model-config
-    # try:
-    #     factory = getattr(TransformerConfig, opts.model_factory)
-    # except AttributeError:
-    #     raise ValueError(f"Unknown model factory: {opts.model_factory}")
-
     model_config = TransformerConfig.olmoe_1B_7B(
         vocab_size=tokenizer_config.padded_vocab_size(),  # a little bigger than actual vocab size to make it a multiple of 128
     )
@@ -169,23 +138,23 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         DataMix.OLMo_mix_0625,
         tokenizer=tokenizer_config,
         mix_base_dir=DATA_ROOT,
-        sequence_length=opts.sequence_length,
-        max_target_sequence_length=max(8192, opts.sequence_length),
+        sequence_length=SEQUENCE_LENGTH,
+        max_target_sequence_length=max(8192, SEQUENCE_LENGTH),
         work_dir=work_dir,
         generate_doc_lengths=False,
         instance_filter_config=None,
     )
 
     data_loader_config = NumpyDataLoaderConfig(
-        global_batch_size=1024 * 4096,  # NOTE: this is specified in tokens, not instances
+        global_batch_size=GLOBAL_BATCH_SIZE,  # NOTE: this is specified in tokens, not instances
         seed=0,
         num_workers=4,
     )
 
     train_module_config = TransformerTrainModuleConfig(
-        rank_microbatch_size=2 * 4096,  # NOTE: this is specified in tokens, not instances
-        max_sequence_length=dataset_config.max_target_sequence_length
-        or max(8192, opts.sequence_length),
+        rank_microbatch_size=2
+        * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
+        max_sequence_length=SEQUENCE_LENGTH,
         optim=AdamWConfig(
             lr=4e-4,
             weight_decay=0.1,
@@ -242,29 +211,6 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback("beaker", BeakerCallback())
         .with_callback("config_saver", ConfigSaverCallback())
         .with_callback("profiler", ProfilerCallback(enabled=False))
-        # .with_callback(
-        #     "lm_evaluator",
-        #     LMEvaluatorCallbackConfig(
-        #         eval_dataset=NumpyDatasetConfig(
-        #             paths=EVAL_DATA_PATHS,
-        #             metadata=[{"label": "c4-validation"}],
-        #             name=NumpyDatasetType.padded_fsl,
-        #             sequence_length=opts.sequence_length,
-        #             tokenizer=tokenizer_config,
-        #             work_dir=work_dir,
-        #         ),
-        #         eval_interval=250,
-        #         eval_duration=Duration.steps(50),
-        #     ),
-        # )
-        # .with_callback(
-        #     "downstream_evaluator",
-        #     DownstreamEvaluatorCallbackConfig(
-        #         tasks=["hellaswag"],
-        #         tokenizer=tokenizer_config,
-        #         eval_interval=250,
-        #     ),
-        # )
     )
 
     config = ExperimentConfig(
@@ -291,19 +237,6 @@ def parser_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("run_name", type=str, help="""The name of the run.""")
-    parser.add_argument(
-        "--model-factory",
-        type=str,
-        default="llama2_271M",
-        help="""The name of the model factory to use.
-        This can be any classmethod on the TransformerConfig class.""",
-    )
-    parser.add_argument(
-        "--sequence-length",
-        type=int,
-        default=2048,
-        help="""The sequence length to train and eval on.""",
-    )
     parser.add_argument(
         "--save-folder",
         type=str,
