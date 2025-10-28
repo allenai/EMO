@@ -95,7 +95,7 @@ def train(opts, config: ExperimentConfig):
     model = config.model.build(init_device="meta")
 
     # Apply the pruning routers
-    apply_pruned_routers(model, activation_file=opts.activation_file, prune_keep_k=opts.prune_keep_k)
+    apply_pruned_routers(model, config.model, activation_file=opts.activation_file, prune_keep_k=opts.prune_keep_k)
 
     train_module = config.train_module.build(model)
     dataset = config.dataset.build()
@@ -121,28 +121,47 @@ def train(opts, config: ExperimentConfig):
     trainer.fit()
 
 
-def apply_pruned_routers(model, activation_file: str, prune_keep_k: int):
+def apply_pruned_routers(model, model_config, activation_file: str, prune_keep_k: int):
     """
     Replace each MoE layer's router with PruningMoELinearRouter,
     passing the correct per-layer index and preserving original settings.
     """
+    # we first define the new kwargs for the PruningMoERouter
+    kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
+    kwargs.pop("name")
+    kwargs.update(
+        prune_keep_k=prune_keep_k,
+        activation_file=activation_file,
+    )
+
     for i, (k, block) in enumerate(model.blocks.items()):
         # Only touch MoE layers
         if not getattr(block, "is_moe", False):
             continue
 
+        # assert traverse ordering is correct (layer index matches
+        assert str(i) == k
+
         breakpoint()
 
-        old = block.router  # MoERouter
+        old_router = block.router  # MoERouter
 
-        kwargs = old.as_dict(exclude_none=True, recurse=False)
-        kwargs.pop("name")
+        # update with layer index
         kwargs.update(
-            prune_keep_k=prune_keep_k,
-            activation_file=activation_file,
             layer_idx=i,  # Pass layer index
         )
-        new_router = PruningMoELinearRouter(**kwargs)
+
+        # new_router = PruningMoERouterConfig(**kwargs).build(
+        #
+        # )
+        new_router = PruningMoERouterConfig(**kwargs).build(
+            d_model=old_router.d_model,
+            num_experts=old_router.num_experts,
+            init_device=old_router.weight.device.type if hasattr(old_router, 'weight') else "cpu",
+            lb_loss_weight=getattr(old_router, 'lb_loss_weight', None),
+            lb_loss_granularity=getattr(old_router, 'lb_loss_granularity', None),
+            z_loss_weight=getattr(old_router, 'z_loss_weight', None),
+        )
         breakpoint()
 
         # Swap in
