@@ -14,7 +14,7 @@ from typing import List, Optional, cast
 
 import rich
 
-from olmo_core.nn.moe.pruning_router import PruningMoERouterConfig
+from olmo_core.nn.moe.pruning_router import PruningMoERouterConfig, PruningMoELinearRouter
 from olmo_core.config import Config, DType
 from olmo_core.data import (
     NumpyDataLoaderConfig,
@@ -83,7 +83,7 @@ class ExperimentConfig(Config):
     # docs: end-define-config
 
 
-def train(config: ExperimentConfig):
+def train(opts, config: ExperimentConfig):
     if get_rank() == 0:
         rich.print(config)
 
@@ -93,6 +93,10 @@ def train(config: ExperimentConfig):
     # docs: start-build-components
     # Build components.
     model = config.model.build(init_device="meta")
+
+    # Apply the pruning routers
+    apply_pruned_routers(model, activation_file=opts.activation_file, prune_keep_k=opts.prune_keep_k)
+
     train_module = config.train_module.build(model)
     dataset = config.dataset.build()
     data_loader = config.data_loader.build(dataset, dp_process_group=train_module.dp_process_group)
@@ -117,6 +121,33 @@ def train(config: ExperimentConfig):
     trainer.fit()
 
 
+def apply_pruned_routers(model, activation_file: str, prune_keep_k: int):
+    """
+    Replace each MoE layer's router with PruningMoELinearRouter,
+    passing the correct per-layer index and preserving original settings.
+    """
+    for i, (k, block) in enumerate(model.blocks.items()):
+        # Only touch MoE layers
+        if not getattr(block, "is_moe", False):
+            continue
+
+        breakpoint()
+
+        old = block.router  # MoERouter
+
+        kwargs = old.as_dict(exclude_none=True, recurse=False)
+        kwargs.pop("name")
+        kwargs.update(
+            prune_keep_k=prune_keep_k,
+            activation_file=activation_file,
+            layer_idx=i,  # Pass layer index
+        )
+        new_router = PruningMoELinearRouter(**kwargs)
+        breakpoint()
+
+        # Swap in
+        block.feed_forward_moe.router = new_router
+
 def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     save_folder = opts.save_folder
     if not save_folder:
@@ -132,24 +163,24 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         vocab_size=tokenizer_config.padded_vocab_size(),  # a little bigger than actual vocab size to make it a multiple of 128
     )
 
-    breakpoint()
-
-    # Override the router config in the MoE blocks to be prunable
-    for i in range(model_config.n_layers):
-        if hasattr(model_config.block, 'feed_forward_moe'):
-            # Replace the router config with your custom one
-
-            kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
-            kwargs.pop("name")
-            kwargs.update(
-                prune_keep_k=opts.prune_keep_k,
-                activation_file=opts.activation_file,
-                layer_idx=i,  # Pass layer index
-            )
-            model_config.block.feed_forward_moe.router = PruningMoERouterConfig(**kwargs)
-    # docs: end-model-config
-
-    breakpoint()
+    # breakpoint()
+    #
+    # # Override the router config in the MoE blocks to be prunable
+    # for i in range(model_config.n_layers):
+    #     if hasattr(model_config.block, 'feed_forward_moe'):
+    #         # Replace the router config with your custom one
+    #
+    #         kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
+    #         kwargs.pop("name")
+    #         kwargs.update(
+    #             prune_keep_k=opts.prune_keep_k,
+    #             activation_file=opts.activation_file,
+    #             layer_idx=i,  # Pass layer index
+    #         )
+    #         model_config.block.feed_forward_moe.router = PruningMoERouterConfig(**kwargs)
+    # # docs: end-model-config
+    #
+    # breakpoint()
 
     log.info(f"Using data root: {DATA_ROOT}")
 
@@ -304,7 +335,7 @@ def main():
 
     prepare_training_environment()
     try:
-        train(config)
+        train(opts, config)
     finally:
         teardown_training_environment()
 
