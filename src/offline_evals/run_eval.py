@@ -688,9 +688,9 @@ def run_eval(args_dict: dict):
         if workers == 1:
             breakpoint()
             new_load_config = copy.deepcopy(model_load_config)
-            new_load_config["do_prune"] = args_dict["do_prune"]
-            new_load_config["activation_file"] = args_dict["activation_file"]
-            new_load_config["prune_keep_k"] = args_dict["prune_keep_k"]
+            new_load_config["do_prune"] = model_load_config["do_prune"]
+            new_load_config["activation_file"] = model_load_config["activation_file"]
+            new_load_config["prune_keep_k"] = model_load_config["prune_keep_k"]
             eval_model = load_model(new_load_config)
         else:
             if args_dict["do_prune"]:
