@@ -64,8 +64,6 @@ class PruningMoELinearRouter(MoELinearRouter):
 
         # Load expert activations and determine which experts to keep
         if activation_file:
-            # replace all occurences of ":" with "\:" in activation_file path
-            activation_file = activation_file.replace(":", "\:")
             with open(activation_file, 'r') as f:
                 line = f.readline()
                 activations = json.loads(line)["avg_router_probabilities"]

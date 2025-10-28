@@ -17,7 +17,7 @@
 
 model_name="olmoe-pretrain-mose-natural-1022"
 step="step30995"
-task="arc-easy:mc"
+task="arc-easy-mc"
 prune_keep_k=32
 
 #base_model="/weka/oe-training-default/ryanwang/phdbrainstorm/models/${model_name}/${step}"
