@@ -88,6 +88,8 @@ def launch_logits(args_dict):
         # convert task name to substring that can be used to find corresponding output files
         eval_dataset_name = find_task_substring(eval_dataset_name)
 
+        print("TEST DATASET NAME after find_task_substring: ", eval_dataset_name)
+
         prompts, correct = get_prompt_sequences_for_evaluation(eval_dataset_name, args_dict["eval_dir"])
 
         out_fn = os.path.join(args_dict["eval_dir"], f"{eval_dataset_name}-router.jsonl")
