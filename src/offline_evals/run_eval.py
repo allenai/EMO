@@ -197,17 +197,17 @@ _parser.add_argument(
     help="Number of GPUs to use",
 )
 _parser.add_argument(
-    "--do_prune",
+    "--do-prune",
     action="store_true",
     help="Whether to prune the model based on activations saved in activation_file.",
 )
 _parser.add_argument(
-    "--activation_file",
+    "--activation-file",
     type=str,
     help="Path to the saved activation file to use to prune. Only used if do_prune is set."
 )
 _parser.add_argument(
-    "--prune_keep_k",
+    "--prune-keep-k",
     type=int,
     help="Number of experts to keep per MoE layer when pruning. Only used if do_prune is set."
 )
