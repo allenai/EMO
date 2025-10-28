@@ -440,7 +440,7 @@ def limit_expert_usage(model, activations, prune_keep_k):
                 return final_hidden_states, router_logits
 
             # Replace the forward method
-            layer.mlp = modified_forward
+            layer.mlp.forward = modified_forward
             print(f"Modified MoE gate in layer {layer_idx} to exclude experts {excluded_experts}")
 
 
