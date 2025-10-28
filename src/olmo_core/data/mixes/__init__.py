@@ -36,6 +36,7 @@ class DataMix(DataMixBase):
     """
 
     OLMoE_mix_0824 = "OLMoE-mix-0824"
+    mose_natural_1012 = "mose-natural-1022"
     dolma17 = "dolma17"
     v3_small_ppl_validation = "v3-small-ppl-validation"
     OLMo_mix_0625 = "OLMo-mix-0625"
@@ -86,8 +87,8 @@ class DataMix(DataMixBase):
                     if not line or line.startswith("#"):
                         continue
                     label, path = line.split(",")
-                    if "{TOKENIZER}" not in path:
-                        raise ValueError(f"line {line_num+1} in data mix '{self}' is invalid")
+                    # if "{TOKENIZER}" not in path:
+                    #     raise ValueError(f"line {line_num+1} in data mix '{self}' is invalid")
                     path = path.replace("{TOKENIZER}", tokenizer_id)
                     paths.append(f"{base_dir}{path}")
                     labels.append(label)
