@@ -90,6 +90,7 @@ class PruningMoELinearRouter(MoELinearRouter):
         # self.register_buffer("expert_mask", expert_mask, persistent=False)
 
         # Precompute active indices buffer
+        breakpoint()
         active_idices = torch.nonzero(self.expert_mask, as_tuple=False).view(-1)
         self.active_indices = active_idices
         # self.register_buffer("active_indices", active_idx, persistent=False)
