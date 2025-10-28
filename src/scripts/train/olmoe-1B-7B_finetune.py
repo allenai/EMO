@@ -285,7 +285,7 @@ def parser_args():
         help="Path to the activation file for pruning router.",
     )
     parser.add_argument(
-        "prune_keep_k",
+        "--prune_keep_k",
         type=int,
         help="Number of experts to keep during pruning.",
     )
