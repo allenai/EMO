@@ -142,8 +142,6 @@ def apply_pruned_routers(model, model_config, activation_file: str, prune_keep_k
         # assert traverse ordering is correct (layer index matches
         assert str(i) == k
 
-        breakpoint()
-
         old_router = block.router  # MoERouter
 
         # update with layer index
@@ -162,7 +160,6 @@ def apply_pruned_routers(model, model_config, activation_file: str, prune_keep_k
             lb_loss_granularity=getattr(old_router, 'lb_loss_granularity', None),
             z_loss_weight=getattr(old_router, 'z_loss_weight', None),
         )
-        breakpoint()
 
         # Swap in
         block.feed_forward_moe.router = new_router
