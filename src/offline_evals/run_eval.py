@@ -11,6 +11,7 @@ import tempfile
 import time
 from collections import defaultdict
 from typing import Optional
+import torch
 
 from lm_eval.api.model import TemplateLM
 from oe_eval.components.instances import RequestInstance
@@ -379,56 +380,69 @@ def limit_expert_usage(model, activations, prune_keep_k):
     """
     breakpoint()
     excluded_experts = []
-    names = []
-    for name, module in model.model.named_modules():
-        names += [name]
-    breakpoint()
 
-    # Find all MoE routers in the model
-    for name, module in model.model.named_modules():
-        if hasattr(module, 'router') and hasattr(module.router, 'get_expert_logits'):
+    # Find all MoE layers in the model
+    for layer_idx, layer in enumerate(model.model.model.layers):
+        if hasattr(layer, 'mlp') and hasattr(layer.mlp, 'gate'):
             # Store original forward method
-            original_forward = module.router.forward
+            original_forward = layer.mlp.gate.forward
 
-            def modified_forward(x, *, loss_div_factor=None):
-                # Get expert logits
-                logits = module.router.get_expert_logits(x).float()
+            def modified_forward(self, hidden_states: torch.Tensor, btm_weight: Optional[torch.Tensor] = None,
+                        btm_topk: Optional[int] = None) -> torch.Tensor:
+                breakpoint()
+                batch_size, sequence_length, hidden_dim = hidden_states.shape
+                hidden_states = hidden_states.view(-1, hidden_dim)
+                # router_logits: (batch * sequence_length, n_experts)
+                router_logits = self.gate(hidden_states)
 
-                # Mask excluded experts by setting their logits to -inf
+                # Add expert limiting logic here
+                excluded_experts = [0, 1, 2]  # Example: exclude experts 0, 1, and 2
                 if excluded_experts:
-                    mask = torch.ones(logits.shape[-1], dtype=torch.bool, device=logits.device)
+                    # Create mask for excluded experts
+                    mask = torch.ones(router_logits.shape[-1], dtype=torch.bool, device=router_logits.device)
                     mask[excluded_experts] = False
-                    logits = logits.masked_fill(~mask.unsqueeze(0).unsqueeze(0), float('-inf'))
+                    # Set logits of excluded experts to -inf
+                    router_logits = router_logits.masked_fill(~mask.unsqueeze(0), float('-inf'))
 
-                # Apply gating function
-                if module.router.gating_function.value == 'softmax':
-                    scores = logits.softmax(dim=-1)
-                elif module.router.gating_function.value == 'sigmoid':
-                    scores = torch.sigmoid(logits) + 1e-7
-                else:
-                    raise NotImplementedError(module.router.gating_function)
+                # Continue with the rest of the original forward pass
+                routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
+                routing_weights, selected_experts = torch.topk(routing_weights, self.top_k, dim=-1)
 
-                # Get top-k experts
-                expert_weights, expert_indices = module.router.get_top_k(scores)
+                if self.norm_topk_prob:
+                    routing_weights /= routing_weights.sum(dim=-1, keepdim=True)
+                # we cast back to the input dtype
+                routing_weights = routing_weights.to(hidden_states.dtype)
 
-                # Rest of the forward pass logic (simplified)
-                # You may need to adapt this based on your specific router implementation
-                with torch.no_grad():
-                    batched_batch_size_per_expert = ops.batched_histc(expert_indices, module.router.num_experts)
-                    batched_batch_size_per_expert = batched_batch_size_per_expert.sum(dim=1)
-                    batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
+                final_hidden_states = torch.zeros(
+                    (batch_size * sequence_length, hidden_dim), dtype=hidden_states.dtype, device=hidden_states.device
+                )
 
-                # Compute auxiliary losses if needed
-                aux_loss = None
-                if module.router.training and torch.is_grad_enabled():
-                    # Add your auxiliary loss computation here if needed
-                    pass
+                # One hot encode the selected experts to create an expert mask
+                # this will be used to easily index which expert is going to be selected
+                expert_mask = torch.nn.functional.one_hot(selected_experts, num_classes=self.num_experts).permute(2, 1,
+                                                                                                                  0)
 
-                return expert_weights, expert_indices, batch_size_per_expert, aux_loss
+                # Loop over all available experts in the model and perform the computation on each expert
+                for expert_idx in range(self.num_experts):
+                    expert_layer = self.experts[expert_idx]
+                    idx, top_x = torch.where(expert_mask[expert_idx])
+
+                    # Index the correct hidden states and compute the expert hidden state for
+                    # the current expert. We need to make sure to multiply the output hidden
+                    # states by `routing_weights` on the corresponding tokens (top-1 and top-2)
+                    current_state = hidden_states[None, top_x].reshape(-1, hidden_dim)
+                    current_hidden_states = expert_layer(current_state) * routing_weights[top_x, idx, None]
+
+                    # However `index_add_` only support torch tensors for indexing so we'll use
+                    # the `top_x` tensor here.
+                    final_hidden_states.index_add_(0, top_x, current_hidden_states.to(hidden_states.dtype))
+                final_hidden_states = final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
+                return final_hidden_states, router_logits
 
             # Replace the forward method
-            module.router.forward = modified_forward
-            print(f"Modified router in {name} to exclude experts {excluded_experts}")
+            layer.mlp.gate.forward = modified_forward
+            print(f"Modified MoE gate in layer {layer_idx} to exclude experts {excluded_experts}")
+
 
 def load_model(model_load_config: dict) -> HFLM_Verbose:
     """Load the model"""
@@ -516,7 +530,6 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
             line = f.readline()
             activations = json.loads(line)["avg_router_probabilities"]
         limit_expert_usage(model, activations, pruning_configs["prune_keep_k"])
-    breakpoint()
 
     return model
 
