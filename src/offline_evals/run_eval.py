@@ -692,7 +692,6 @@ def run_eval(args_dict: dict):
         ), f"GPUs should be evenly distributed to processes, got {workers} workers and {num_gpus} GPUs."
         _num_gpus = num_gpus // workers
         if workers == 1:
-            breakpoint()
             eval_model = load_model(model_load_config)
         else:
             if args_dict["do_prune"]:

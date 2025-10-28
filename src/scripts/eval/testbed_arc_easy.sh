@@ -3,7 +3,7 @@ step="step30995"
 task="arc_easy:mc"
 prune_keep_k=32
 
-activation_file="/weka/oe-training-default/ryanwang/phdbrainstorm/evals/weka_oe-training-default_ryanwang_phdbrainstorm_models_${model_name}_${step}-hf/${task}-router.jsonl"
+activation_file="/root/ryanwang/phdbrainstorm/evals/weka_oe-training-default_ryanwang_phdbrainstorm_models_${model_name}_${step}-hf/${task}-router.jsonl"
 
 
 python -m offline_evals.run_eval \
