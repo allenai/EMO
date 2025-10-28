@@ -628,7 +628,11 @@ def run_eval(args_dict: dict):
     if not task_objects:
         raise ValueError("No valid tasks constructed for the experiment!")
 
-    model_hash = hash_dict(model_config, MODEL_DEFAULTS)
+    hash_model_config = copy.deepcopy(model_config)
+    hash_model_config.pop("do_prune")
+    hash_model_config.pop("activation_file")
+    hash_model_config.pop("prune_keep_k")
+    model_hash = hash_dict(hash_model_config, MODEL_DEFAULTS)
 
     if HAS_AI2_INTERNAL:
         dl_check = process_internal_datalake_args(compute_config, model_hash, task_objects)
