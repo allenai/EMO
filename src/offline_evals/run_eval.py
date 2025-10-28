@@ -687,11 +687,7 @@ def run_eval(args_dict: dict):
         _num_gpus = num_gpus // workers
         if workers == 1:
             breakpoint()
-            new_load_config = copy.deepcopy(model_load_config)
-            new_load_config["do_prune"] = model_load_config["do_prune"]
-            new_load_config["activation_file"] = model_load_config["activation_file"]
-            new_load_config["prune_keep_k"] = model_load_config["prune_keep_k"]
-            eval_model = load_model(new_load_config)
+            eval_model = load_model(model_load_config)
         else:
             if args_dict["do_prune"]:
                 raise NotImplementedError("Model pruning with multiprocessing is not implemented yet.")
