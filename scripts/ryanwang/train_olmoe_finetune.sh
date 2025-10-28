@@ -26,7 +26,8 @@ activation_file="/weka/oe-training-default/ryanwang/phdbrainstorm/evals/weka_oe-
 #base_model="/root/ryanwang/phdbrainstorm/models/${model_name}/${step}"
 #activation_file="/root/ryanwang/phdbrainstorm/evals/weka_oe-training-default_ryanwang_phdbrainstorm_models_${model_name}_${step}-hf/${task}-router.jsonl"
 
-runname="olmoe-finetune-${task}"
+#change : to -
+runname="olmoe-finetune-${task//:/-}"
 
 #torchrun --nproc-per-node=4 src/scripts/train/olmoe-1B-7B_finetune.py \
 #    $runname \
