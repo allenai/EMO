@@ -171,6 +171,21 @@ _parser.add_argument(
     default=1,
     help="Number of workers.",
 )
+_parser.add_argument(
+    "--do_prune",
+    action="store_true",
+    help="Whether to prune the model based on activations saved in activation_file.",
+)
+_parser.add_argument(
+    "--activation_file",
+    type=str,
+    help="Path to the saved activation file to use to prune. Only used if do_prune is set."
+)
+_parser.add_argument(
+    "--prune_keep_k",
+    type=int,
+    help="Number of experts to keep per MoE layer when pruning. Only used if do_prune is set."
+)
 ## Internal Ai2 arguments added:
 HAS_AI2_INTERNAL = (
     inspect.getmodule(add_internal_launch_args).__name__  # type: ignore
@@ -365,6 +380,12 @@ def launch_eval(args_dict: dict):
         run_eval_args["recompute-metrics"] = True
     if args_dict["vllm_for_mc"]:
         run_eval_args["vllm-for-mc"] = True
+    if args_dict["do_prune"]:
+        run_eval_args["do_prune"] = True
+    if args_dict["activation_file"]:
+        run_eval_args["activation_file"] = args_dict["activation_file"]
+    if args_dict["prune_keep_k"]:
+        run_eval_args["prune_keep_k"] = args_dict["prune_keep_k"]
     if model_name != "none":
         run_eval_args["model"] = model_name
     if model_config:
