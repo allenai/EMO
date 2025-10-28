@@ -2,6 +2,7 @@ import argparse
 import copy
 import datetime
 import inspect
+import json
 import logging
 import multiprocessing as mp
 import os
@@ -193,6 +194,21 @@ _parser.add_argument(
     default=1,
     help="Number of GPUs to use",
 )
+_parser.add_argument(
+    "--do_prune",
+    action="store_true",
+    help="Whether to prune the model based on activations saved in activation_file.",
+)
+_parser.add_argument(
+    "--activation_file",
+    type=str,
+    help="Path to the saved activation file to use to prune. Only used if do_prune is set."
+)
+_parser.add_argument(
+    "--prune_keep_k",
+    type=int,
+    help="Number of experts to keep per MoE layer when pruning. Only used if do_prune is set."
+)
 
 ## Add internal Ai2 run_eval arguments:
 if HAS_AI2_INTERNAL:
@@ -278,6 +294,9 @@ def process_eval_args(args_dict: dict) -> dict:
     model_config["max_length"] = args_dict.pop("max_length")
     model_config["model_path"] = args_dict.pop("model_path")
     model_config["model_type"] = args_dict.pop("model_type")
+    model_config["do_prune"] = args_dict.pop("do_prune")
+    model_config["activation_file"] = args_dict.pop("activation_file")
+    model_config["prune_keep_k"] = args_dict.pop("prune_keep_k")
     model_args_dict = parse_args_string(args_dict.pop("model_args"))
     if model_args_dict:
         keys = list(model_args_dict.keys())
@@ -349,6 +368,63 @@ def process_eval_args(args_dict: dict) -> dict:
 
     return eval_config
 
+
+def limit_expert_usage(model, activations, prune_keep_k):
+    """
+    Modify the model's MoE routers to exclude certain experts.
+
+    Args:
+        model: The loaded model
+        excluded_experts: List of expert indices to exclude (0-indexed)
+    """
+    breakpoint()
+    excluded_experts = []
+
+    # Find all MoE routers in the model
+    for name, module in model.named_modules():
+        if hasattr(module, 'router') and hasattr(module.router, 'get_expert_logits'):
+            # Store original forward method
+            original_forward = module.router.forward
+
+            def modified_forward(x, *, loss_div_factor=None):
+                # Get expert logits
+                logits = module.router.get_expert_logits(x).float()
+
+                # Mask excluded experts by setting their logits to -inf
+                if excluded_experts:
+                    mask = torch.ones(logits.shape[-1], dtype=torch.bool, device=logits.device)
+                    mask[excluded_experts] = False
+                    logits = logits.masked_fill(~mask.unsqueeze(0).unsqueeze(0), float('-inf'))
+
+                # Apply gating function
+                if module.router.gating_function.value == 'softmax':
+                    scores = logits.softmax(dim=-1)
+                elif module.router.gating_function.value == 'sigmoid':
+                    scores = torch.sigmoid(logits) + 1e-7
+                else:
+                    raise NotImplementedError(module.router.gating_function)
+
+                # Get top-k experts
+                expert_weights, expert_indices = module.router.get_top_k(scores)
+
+                # Rest of the forward pass logic (simplified)
+                # You may need to adapt this based on your specific router implementation
+                with torch.no_grad():
+                    batched_batch_size_per_expert = ops.batched_histc(expert_indices, module.router.num_experts)
+                    batched_batch_size_per_expert = batched_batch_size_per_expert.sum(dim=1)
+                    batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
+
+                # Compute auxiliary losses if needed
+                aux_loss = None
+                if module.router.training and torch.is_grad_enabled():
+                    # Add your auxiliary loss computation here if needed
+                    pass
+
+                return expert_weights, expert_indices, batch_size_per_expert, aux_loss
+
+            # Replace the forward method
+            module.router.forward = modified_forward
+            print(f"Modified router in {name} to exclude experts {excluded_experts}")
 
 def load_model(model_load_config: dict) -> HFLM_Verbose:
     """Load the model"""
@@ -423,6 +499,15 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
         tokenizer=tokenizer,
         **model_load_config_other,
     )
+    breakpoint()
+    if model_load_config["do_prune"]:
+        # load the activation file
+        with open(model_load_config["activation_file"], 'r') as f:
+            line = f.readline()
+            activations = json.loads(line)["avg_router_probabilities"]
+        limit_expert_usage(model, activations, model_load_config["prune_keep_k"])
+    breakpoint()
+
     return model
 
 
