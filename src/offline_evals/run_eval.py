@@ -294,9 +294,6 @@ def process_eval_args(args_dict: dict) -> dict:
     model_config["max_length"] = args_dict.pop("max_length")
     model_config["model_path"] = args_dict.pop("model_path")
     model_config["model_type"] = args_dict.pop("model_type")
-    model_config["do_prune"] = args_dict.pop("do_prune")
-    model_config["activation_file"] = args_dict.pop("activation_file")
-    model_config["prune_keep_k"] = args_dict.pop("prune_keep_k")
     model_args_dict = parse_args_string(args_dict.pop("model_args"))
     if model_args_dict:
         keys = list(model_args_dict.keys())
@@ -500,7 +497,7 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
         **model_load_config_other,
     )
     breakpoint()
-    if model_load_config["do_prune"]:
+    if "do_prune" in model_load_config and model_load_config["do_prune"]:
         # load the activation file
         with open(model_load_config["activation_file"], 'r') as f:
             line = f.readline()
@@ -682,8 +679,14 @@ def run_eval(args_dict: dict):
         ), f"GPUs should be evenly distributed to processes, got {workers} workers and {num_gpus} GPUs."
         _num_gpus = num_gpus // workers
         if workers == 1:
-            eval_model = load_model(model_load_config)
+            new_load_config = copy.deepcopy(model_load_config)
+            new_load_config["do_prune"] = args_dict["do_prune"]
+            new_load_config["activation_file"] = args_dict["activation_file"]
+            new_load_config["prune_keep_k"] = args_dict["prune_keep_k"]
+            eval_model = load_model(new_load_config)
         else:
+            if args_dict["do_prune"]:
+                raise NotImplementedError "Multiprocessing model loading not yet supported with pruning."
             assert (
                 model_config["model_type"] != "litellm"
             ), f"litellm does not support multiprocessing. Got {workers} workers."
