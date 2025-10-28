@@ -25,7 +25,7 @@ activation_file="/weka/oe-training-default/ryanwang/phdbrainstorm/evals/weka_oe-
 
 runname="olmoe-finetune-${task}"
 
-bash src/scripts/train/olmoe-1B-7B_finetune.py \
+python src/scripts/train/olmoe-1B-7B_finetune.py \
     $runname \
 		--save-folder="${base_model}/$runname" \
 		--dataset.mix=arc-easy-train \
