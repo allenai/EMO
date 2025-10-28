@@ -12,6 +12,7 @@ import time
 from collections import defaultdict
 from typing import Optional
 import torch
+import torch.nn.functional as F
 
 from lm_eval.api.model import TemplateLM
 from oe_eval.components.instances import RequestInstance
@@ -369,7 +370,7 @@ def process_eval_args(args_dict: dict) -> dict:
 
     return eval_config
 
-def make_modified_forward(original_forward, num_experts, top_k, norm_topk_prob, experts, gate):
+def make_modified_forward(original_forward, num_experts, top_k, norm_topk_prob, experts, gate, experts_to_keep):
     def modified_forward(self, hidden_states: torch.Tensor, btm_weight: Optional[torch.Tensor] = None,
                         btm_topk: Optional[int] = None) -> torch.Tensor:
         breakpoint()
@@ -377,11 +378,13 @@ def make_modified_forward(original_forward, num_experts, top_k, norm_topk_prob, 
         hidden_states = hidden_states.view(-1, hidden_dim)
         router_logits = gate(hidden_states)
 
-        excluded_experts = [0, 1, 2]
-        if excluded_experts:
-            mask = torch.ones(router_logits.shape[-1], dtype=torch.bool, device=router_logits.device)
-            mask[excluded_experts] = False
-            router_logits = router_logits.masked_fill(~mask.unsqueeze(0), float('-inf'))
+        # swj change bias:
+        router_logits[:, 0] += 0.01
+
+        mask = torch.zeros(self.num_experts, dtype=torch.bool)
+        mask[experts_to_keep] = True
+
+        router_logits = router_logits.masked_fill(~mask.unsqueeze(0), float('-inf'))
 
         routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
         routing_weights, selected_experts = torch.topk(routing_weights, top_k, dim=-1)
@@ -424,13 +427,18 @@ def limit_expert_usage(model, activations, prune_keep_k):
         if hasattr(layer, 'mlp') and hasattr(layer.mlp, 'gate'):
             # Store original forward method
             original_forward = layer.mlp.forward
+
+            layer_expert_activations = activations[layer_idx]
+            experts_to_keep = torch.topk(torch.tensor(layer_expert_activations), min(prune_keep_k, len(layer_expert_activations))).indices.tolist()
+
             layer.mlp.forward = make_modified_forward(
                 original_forward,
                 layer.mlp.num_experts,
                 layer.mlp.top_k,
                 layer.mlp.norm_topk_prob,
                 layer.mlp.experts,
-                layer.mlp.gate
+                layer.mlp.gate,
+                experts_to_keep
             ).__get__(layer.mlp, layer.mlp.__class__)  # bind correctly to the instance
             print(f"Modified MoE gate in layer {layer_idx}")
 
