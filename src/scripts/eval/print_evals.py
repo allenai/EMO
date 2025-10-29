@@ -338,8 +338,6 @@ def main(args):
             with open("cached_results.pkl", "wb") as f_out:
                 pkl.dump([results, visited_paths], f_out)
 
-    breakpoint()
-
     # Common task groupings
     core9_tasks = [
         "arc_easy:mc",
@@ -352,6 +350,19 @@ def main(args):
         "socialiqa:mc",
         "winogrande:mc",
     ]
+
+    core9_task_rc = [
+        "arc_easy:rc",
+        "arc_challenge:rc",
+        "boolq:rc",
+        "csqa:rc",
+        "hellaswag:rc",
+        "openbookqa:rc",
+        "piqa:rc",
+        "socialiqa:rc",
+        "winogrande:rc",
+    ]
+
     gen5_tasks = ["coqa", "squad", "naturalqs_open", "triviaqa", "drop"]
 
     task_names = get_task_names(results)
@@ -359,8 +370,10 @@ def main(args):
     # Task averaging options
     if args.avg_core:
         results = avg_tasks(results, "core9:mc", core9_tasks)
+        results = avg_tasks(results, "core9:rc", core9_task_rc)
 
     if args.avg_mmlu_pro:
+        # TODO: default mc ends with nothing, which is ambiguous with rc tasks
         mmlu_pro_tasks = [
             task_name for task_name in task_names if task_name.startswith("mmlu_pro_")
         ]
@@ -368,13 +381,20 @@ def main(args):
             results = avg_tasks(results, "mmlu_pro:mc", mmlu_pro_tasks)
 
     if args.avg_mmlu:
-        mmlu_tasks = [
+        mmlu_tasks_mc = [
             task_name
             for task_name in task_names
-            if task_name.startswith("mmlu_") and not task_name.startswith("mmlu_pro_")
+            if task_name.startswith("mmlu_") and not task_name.startswith("mmlu_pro_") and task_name.endswith(":mc")
         ]
-        if mmlu_tasks:
-            results = avg_tasks(results, "mmlu:mc", mmlu_tasks)
+        mmlu_tasks_rc = [
+            task_name
+            for task_name in task_names
+            if task_name.startswith("mmlu_") and not task_name.startswith("mmlu_pro_") and task_name.endswith(":rc")
+        ]
+        assert len(mmlu_tasks_rc) == len(mmlu_tasks_mc)
+        if mmlu_tasks_mc or mmlu_tasks_rc:
+            results = avg_tasks(results, "mmlu:mc", mmlu_tasks_mc)
+            results = avg_tasks(results, "mmlu:rc", mmlu_tasks_rc)
 
     if args.avg_mmlu_cat or args.avg_mmlu_subcat:
         mmlu_tasks = [
@@ -402,6 +422,7 @@ def main(args):
         results = avg_tasks(results, "gen5", gen5_tasks)
 
     if args.avg_agi_eval:
+        # TODO: need to add rc
         agi_eval_tasks = [
             task_name for task_name in task_names if task_name.startswith("agi_eval_")
         ]
@@ -535,8 +556,6 @@ def main(args):
         if "medmcqa" not in name:
             name = name.replace(":mc", "")
         return name
-
-    breakpoint()
 
     # Build and display table
     if args.transpose:
