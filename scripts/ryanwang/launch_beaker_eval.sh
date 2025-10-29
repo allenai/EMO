@@ -5,7 +5,7 @@
 
 # Configuration
 MODELS=("/weka/oe-training-default/ryanwang/phdbrainstorm/models/dense_1b_olmoe-mix_1028/step30995-hf")
-BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals"
+BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals_test"
 BATCH_SIZE=16
 CLUSTER="ai2/jupiter-cirrascale-2"
 LIMIT=1000
