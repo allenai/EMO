@@ -15,12 +15,12 @@ model_type=hf
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
     # MC9 tasks
-#    arc_easy:mc_validation::olmes
+    arc_easy:mc_validation::olmes
 #    arc_easy:mc::olmes
 #    arc_challenge:mc::olmes
 #    boolq:mc::olmes
 #    csqa:mc::olmes
-    hellaswag:mc::olmes
+#    hellaswag:mc::olmes
 #    openbookqa:mc::olmes
 #    piqa:mc::olmes
 #    socialiqa:mc::olmes

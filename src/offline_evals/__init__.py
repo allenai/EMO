@@ -35,6 +35,9 @@ new_task_registry: Dict = {
     "arc_easy:mc_train": arc_splits.ARCEasyMC_Train,
     "arc_easy:mc_validation": arc_splits.ARCEasyMC_Validation,
     "arc_easy:mc_test": arc_splits.ARCEasyMC_Test,
+    "arc_easy:rc_train": arc_splits.ARCEasyRC_Train,
+    "arc_easy:rc_validation": arc_splits.ARCEasyRC_Validation,
+    "arc_easy:rc_test": arc_splits.ARCEasyRC_Test,
 }
 
 TASK_REGISTRY.update(new_task_registry)

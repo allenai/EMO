@@ -4,13 +4,51 @@ from oe_eval.configs.tasks import TASK_CONFIGS
 def get_task_configs():
     TASK_CONFIGS.update(
         {
+            "arc_easy:rc_train::olmes": {
+                "task_name": "arc_easy:rc_train",
+                "split": "train",
+                "primary_metric": "acc_per_char",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:ARC-Easy",
+                "metadata": {
+                    "description": "ARC-Easy (RC) train using OLMES-v0.1",
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
+            "arc_easy:rc_validation::olmes": {
+                "task_name": "arc_easy:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_per_char",
+                "num_shots": 5,
+                "limit": 1000,
+                "fewshot_source": "OLMES:ARC-Easy",
+                "metadata": {
+                    "description": "ARC-Easy (RC) validation using OLMES-v0.1, on validation split",
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
+            "arc_easy:rc_test::olmes": {
+                "task_name": "arc_easy:rc_test",
+                "split": "test",
+                "primary_metric": "acc_per_char",
+                "num_shots": 5,
+                "limit": 1000,
+                "fewshot_source": "OLMES:ARC-Easy",
+                "metadata": {
+                    "description": "ARC-Easy (RC) test using OLMES-v0.1, on test split",
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
             "arc_easy:mc_train::olmes": {
                 "task_name": "arc_easy:mc_train",
                 "split": "train",
                 "num_shots": 5,
                 "fewshot_source": "OLMES:ARC-Easy",
                 "metadata": {
-                    "description": "ARC-Easy (MC) using OLMES-v0.1, on training split",
+                    "description": "ARC-Easy (MC) train using OLMES-v0.1, on training split",
                     "regimes": ["OLMES-v0.1"],
                 },
             },
@@ -21,7 +59,7 @@ def get_task_configs():
                 "limit": 1000,
                 "fewshot_source": "OLMES:ARC-Easy",
                 "metadata": {
-                    "description": "ARC-Easy (MC) using OLMES-v0.1, on validation split",
+                    "description": "ARC-Easy (MC) validation using OLMES-v0.1, on validation split",
                     "regimes": ["OLMES-v0.1"],
                 },
             },
@@ -32,7 +70,7 @@ def get_task_configs():
                 "limit": 1000,
                 "fewshot_source": "OLMES:ARC-Easy",
                 "metadata": {
-                    "description": "ARC-Easy (MC) using OLMES-v0.1, on test split",
+                    "description": "ARC-Easy (MC) test using OLMES-v0.1, on test split",
                     "regimes": ["OLMES-v0.1"],
                 },
             },
