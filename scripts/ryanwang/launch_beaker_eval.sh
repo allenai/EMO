@@ -4,8 +4,9 @@
 # Usage: bash src/scripts/eval/launch_beaker_eval.sh
 
 # Configuration
-MODELS=("/weka/oe-training-default/ryanwang/phdbrainstorm/models/dense_1b_olmoe-mix_1028/step30995-hf")
-BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals_test"
+MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
+MODELS=("dense_1b_olmoe-mix_1028/step30995-hf")
+BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals"
 BATCH_SIZE=16
 CLUSTER="ai2/jupiter-cirrascale-2"
 LIMIT=1000
@@ -18,8 +19,8 @@ TASKS=(
 #    arc_easy:mc::olmes
 #    arc_challenge:mc::olmes
 #    boolq:mc::olmes
-    csqa:mc::olmes
-#    hellaswag:mc::olmes
+#    csqa:mc::olmes
+    hellaswag:mc::olmes
 #    openbookqa:mc::olmes
 #    piqa:mc::olmes
 #    socialiqa:mc::olmes
@@ -92,26 +93,34 @@ for MODEL_PATH in "${MODELS[@]}"; do
     echo "Processing model: $MODEL_PATH"
 
     # For setting the output_dir (matching original script logic)
-    if [[ $MODEL_PATH == "/"* ]]; then
-        # internal model
-        model=$(get_checkpoint_name $MODEL_PATH)
-    else
-        # HF model
-        model=$(echo $MODEL_PATH | cut -d'/' -f2)
-    fi
+#    if [[ $MODEL_PATH == "/"* ]]; then
+#        # internal model
+#        model=$(get_checkpoint_name $MODEL_PATH)
+#    else
+#        # HF model
+#        model=$(echo $MODEL_PATH | cut -d'/' -f2)
+#    fi
+    model=$(get_checkpoint_name $MODEL_PATH)
+
+    echo "Model name for output dir: $model"
 
     OUTPUT_DIR="${BASE_OUTPUT_DIR}/$model"
 
     for TASK in "${TASKS[@]}"; do
         echo "Launching evaluation for model: $model, task: $TASK"
 
-    gpus=1
-
     # Batch size adjustment (matching original script)
     if [[ $TASK == *"cot"* || $TASK == "minerva_math_"* || $TASK == "mbpp"* || $TASK == "bigcodebench"* || $TASK == "ruler"* || $TASK == "sciriff"* ]]; then
         batch_size=$((BATCH_SIZE / 4))
     else
         batch_size=$BATCH_SIZE
+    fi
+
+    # adjust number of gpus requested if its mmlu, agi_eval, bbh, gsm8k, minerva, codex, mbpp
+    if [[ $TASK == mmlu* || $TASK == agi_eval* || $TASK == bbh* || $TASK == gsm8k* || $TASK == minerva_math_* || $TASK == codex* || $TASK == mbpp* ]]; then
+        gpus=4
+    else
+        gpus=1
     fi
 
     # Create a shorter, valid job name
@@ -140,7 +149,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
         --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
         -- \
         bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
-            --model $MODEL_PATH \
+            --model "${MODEL_DIR}/${MODEL_PATH}" \
             --model-type hf \
             --task $TASK \
             --limit $LIMIT \

@@ -50,6 +50,7 @@ from oe_eval.utils import (
 )
 
 def task_file_name(output_dir: str, task_idx: int, task_name: str, file_name: str) -> str:
+    task_name_safe = task_name.replace(":", "_")
     return os.path.join(output_dir, f"task-{task_name}-{file_name}")
 
 # Import utility functions for internal evals
