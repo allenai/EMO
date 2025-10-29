@@ -338,6 +338,8 @@ def main(args):
             with open("cached_results.pkl", "wb") as f_out:
                 pkl.dump([results, visited_paths], f_out)
 
+    breakpoint()
+
     # Common task groupings
     core9_tasks = [
         "arc_easy:mc",
