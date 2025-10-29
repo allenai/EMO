@@ -1,4 +1,5 @@
-from oe_eval.tasks.oe_eval_tasks.arc import ARCEasyMC, ARCEasy
+from oe_eval.tasks.oe_eval_tasks.arc import ARCEasyMC, ARCEasy, ARCChallenge, ARCChallengeMC
+
 
 class ARCEasyRC_Train(ARCEasy):
     TASK_CONFIG_DEFAULTS: dict = {
@@ -64,3 +65,56 @@ class ARCEasyMC_Test(ARCEasyMC):
         "native_id_field": "id",
         "primary_metric": "acc_raw",
     }
+
+class ARCChallengeRC_Train(ARCChallenge):
+    TASK_CONFIG_DEFAULTS: dict = {
+        "split": "train",
+        "dataset_path": "ai2_arc",
+        "dataset_name": "ARC-Challenge-RC-Train",
+        "native_id_field": "id",
+        "primary_metric": "acc_uncond",
+    }
+
+class ARCChallengeRC_Validation(ARCChallenge):
+    TASK_CONFIG_DEFAULTS: dict = {
+        "split": "validation",
+        "dataset_path": "ai2_arc",
+        "dataset_name": "ARC-Challenge-RC-Validation",
+        "native_id_field": "id",
+        "primary_metric": "acc_uncond",
+    }
+
+class ARCChallengeRC_Test(ARCChallenge):
+    TASK_CONFIG_DEFAULTS: dict = {
+        "split": "test",
+        "dataset_path": "ai2_arc",
+        "dataset_name": "ARC-Challenge-RC-Test",
+        "native_id_field": "id",
+        "primary_metric": "acc_uncond",
+    }
+
+class ARCChallengeMC_Train(ARCChallengeMC):
+    TASK_CONFIG_DEFAULTS: dict = {
+        "dataset_path": "ai2_arc",
+        "dataset_name": "ARC-Challenge-MC-Train",
+        "native_id_field": "id",
+        "primary_metric": "acc_raw",
+    }
+
+class ARCChallengeMC_Validation(ARCChallengeMC):
+    TASK_CONFIG_DEFAULTS: dict = {
+        "dataset_path": "ai2_arc",
+        "dataset_name": "ARC-Challenge-MC-Validation",
+        "native_id_field": "id",
+        "primary_metric": "acc_raw",
+    }
+
+class ARCChallengeMC_Test(ARCChallengeMC):
+    TASK_CONFIG_DEFAULTS: dict = {
+        "dataset_path": "ai2_arc",
+        "dataset_name": "ARC-Challenge-MC-Test",
+        "native_id_field": "id",
+        "primary_metric": "acc_raw",
+    }
+
+

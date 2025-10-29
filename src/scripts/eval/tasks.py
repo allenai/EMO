@@ -4,6 +4,66 @@ from oe_eval.configs.tasks import TASK_CONFIGS
 def get_task_configs():
     TASK_CONFIGS.update(
         {
+            "arc_challenge:rc_train::olmes": {
+                "task_name": "arc_challenge:rc_train",
+                "split": "train",
+                "primary_metric": "acc_uncond",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:ARC-Challenge",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "arc_challenge:rc_validation::olmes": {
+                "task_name": "arc_challenge:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_uncond",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:ARC-Challenge",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "arc_challenge:rc_test::olmes": {
+                "task_name": "arc_challenge:rc_test",
+                "split": "test",
+                "primary_metric": "acc_uncond",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:ARC-Challenge",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
+            "arc_challenge:mc_train::olmes": {
+                "task_name": "arc_challenge:mc_train",
+                "split": "train",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:ARC-Challenge",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
+            "arc_challenge:mc_validation::olmes": {
+                "task_name": "arc_challenge:mc_validation",
+                "split": "validation",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:ARC-Challenge",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "arc_challenge:mc_test::olmes": {
+                "task_name": "arc_challenge:mc_test",
+                "split": "test",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:ARC-Challenge",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
             "arc_easy:rc_train::olmes": {
                 "task_name": "arc_easy:rc_train",
                 "split": "train",

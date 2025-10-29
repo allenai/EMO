@@ -38,6 +38,12 @@ new_task_registry: Dict = {
     "arc_easy:rc_train": arc_splits.ARCEasyRC_Train,
     "arc_easy:rc_validation": arc_splits.ARCEasyRC_Validation,
     "arc_easy:rc_test": arc_splits.ARCEasyRC_Test,
+    "arc_challenge:mc_train": arc_splits.ARCChallengeMC_Train,
+    "arc_challenge:mc_validation": arc_splits.ARCChallengeMC_Validation,
+    "arc_challenge:mc_test": arc_splits.ARCChallengeMC_Test,
+    "arc_challenge:rc_train": arc_splits.ARCChallengeRC_Train,
+    "arc_challenge:rc_validation": arc_splits.ARCChallengeRC_Validation,
+    "arc_challenge:rc_test": arc_splits.ARCChallengeRC_Test,
 }
 
 TASK_REGISTRY.update(new_task_registry)
