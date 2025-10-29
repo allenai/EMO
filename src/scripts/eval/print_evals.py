@@ -352,15 +352,15 @@ def main(args):
     ]
 
     core9_task_rc = [
-        "arc_easy:rc",
-        "arc_challenge:rc",
-        "boolq:rc",
-        "csqa:rc",
-        "hellaswag:rc",
-        "openbookqa:rc",
-        "piqa:rc",
-        "socialiqa:rc",
-        "winogrande:rc",
+        "arc_easy",
+        "arc_challenge",
+        "boolq",
+        "csqa",
+        "hellaswag",
+        "openbookqa",
+        "piqa",
+        "socialiqa",
+        "winogrande",
     ]
 
     gen5_tasks = ["coqa", "squad", "naturalqs_open", "triviaqa", "drop"]
