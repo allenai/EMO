@@ -391,6 +391,13 @@ def main(args):
             for task_name in task_names
             if task_name.startswith("mmlu_") and not task_name.startswith("mmlu_pro_") and task_name.endswith(":rc")
         ]
+
+        # print the set difference for debugging
+        mc_set = set(mmlu_tasks_mc)
+        rc_set = set(mmlu_tasks_rc)
+        breakpoint()
+        diff_mc = mc_set - rc_set
+
         assert len(mmlu_tasks_rc) == len(mmlu_tasks_mc)
         if mmlu_tasks_mc or mmlu_tasks_rc:
             results = avg_tasks(results, "mmlu:mc", mmlu_tasks_mc)
