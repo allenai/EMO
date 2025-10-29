@@ -4,7 +4,7 @@
 # Usage: bash src/scripts/eval/launch_beaker_eval.sh
 
 # Configuration
-MODELS=("/weka/oe-training-default/ryanwang/phdbrainstorm/models/olmoe-pretrain-mose-natural-1022/step30995-hf")
+MODELS=("/weka/oe-training-default/ryanwang/phdbrainstorm/models/dense_1b_olmoe-mix_1028/step30995")
 BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/evals"
 BATCH_SIZE=16
 CLUSTER="ai2/jupiter-cirrascale-2"
