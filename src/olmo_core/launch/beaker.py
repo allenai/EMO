@@ -143,6 +143,15 @@ DEFAULT_SETUP_STEPS = (
     "pip freeze",
 )
 
+PRIVATE_REPO_SETUP_STEPS = (
+    "git clone https://ryanyxw:$GITHUB_TOKEN@github.com/allenai/FlexMoE.git .",
+    f'git checkout "${GIT_REF_ENV_VAR}"',
+    "git submodule update --init --recursive",
+    "conda shell.bash activate base",
+    "pip install -e '.[all]'",
+    "pip freeze",
+)
+
 
 def is_running_in_beaker() -> bool:
     """
@@ -180,6 +189,11 @@ class BeakerLaunchConfig(Config):
     budget: Optional[str] = None
     """
     The budget group to assign.
+    """
+
+    is_private_repo: bool = True
+    """
+    Whether to use private repo setup (with github token as beaker secret). Temp fix for private repo issue.
     """
 
     task_name: str = "train"
@@ -449,15 +463,20 @@ class BeakerLaunchConfig(Config):
                 "custom 'setup_steps' in order to clone the repo."
             )
 
-        entrypoint_script = [
-            "#!/usr/bin/env bash",
-            "set -exo pipefail",
-            "[[ -d /var/lib/tcpxo/lib64 ]] && export LD_LIBRARY_PATH=/var/lib/tcpxo/lib64:$LD_LIBRARY_PATH",
-            # Setup the kernel cache directory used by pytorch
-            "mkdir -p /root/.cache/torch/kernels && export PYTORCH_KERNEL_CACHE_PATH=/root/.cache/torch/kernels",
-            "mkdir -p /olmo-core-runtime",
-            "cd /olmo-core-runtime",
-        ] + self.setup_steps
+        entrypoint_script = (
+            [
+                "#!/usr/bin/env bash",
+                "set -exo pipefail",
+                "[[ -d /var/lib/tcpxo/lib64 ]] && export LD_LIBRARY_PATH=/var/lib/tcpxo/lib64:$LD_LIBRARY_PATH",
+                # Setup the kernel cache directory used by pytorch
+                "mkdir -p /root/.cache/torch/kernels && export PYTORCH_KERNEL_CACHE_PATH=/root/.cache/torch/kernels",
+                "mkdir -p /olmo-core-runtime",
+                "cd /olmo-core-runtime",
+            ]
+            + self.setup_steps
+            if not self.is_private_repo
+            else list(PRIVATE_REPO_SETUP_STEPS)
+        )
 
         if torchrun:
             if self.num_nodes > 1 and any(["augusta" in cluster for cluster in self.clusters]):
@@ -786,6 +805,11 @@ def _parse_args():
     parser.add_argument("--budget", type=str, help="The Beaker budget account to use.")
     parser.add_argument("--workspace", type=str, help="The Beaker workspace to use.")
     parser.add_argument(
+        "--is_private_repo",
+        action="store_true",
+        help="Whether to pull private repo. Temp fix for private repo issue",
+    )
+    parser.add_argument(
         "--description", type=str, help="A description to assign to the Beaker experiment."
     )
     parser.add_argument(
@@ -883,10 +907,12 @@ def _build_config(opts: argparse.Namespace, command: List[str]) -> BeakerLaunchC
             raise ValueError(f"Invalid env secret '{e}', must be in the form NAME=SECRET_NAME")
         name, secret = e.split("=", 1)
         env_secrets.append(BeakerEnvSecret(name=name, secret=secret))
+
     return BeakerLaunchConfig(
         name=f"{opts.name}-{generate_uuid()[:8]}",
         budget=opts.budget,
         cmd=command,
+        is_private_repo=opts.is_private_repo,
         env_vars=env_vars,
         env_secrets=env_secrets,
         task_name=opts.task_name,
