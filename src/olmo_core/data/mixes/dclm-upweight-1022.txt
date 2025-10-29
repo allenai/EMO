@@ -1,3 +1,4 @@
+# 1022 removed specific topics of DCLM, included Starcoder and Math data v1
 # Starcoder Data
 starcoder,preprocessed/starcoder/v1-decon-100_to_20k-2star-top_token_030/{TOKENIZER}/part-000-00000.npy
 starcoder,preprocessed/starcoder/v1-decon-100_to_20k-2star-top_token_030/{TOKENIZER}/part-001-00000.npy

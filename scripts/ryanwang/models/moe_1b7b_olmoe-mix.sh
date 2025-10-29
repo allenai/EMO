@@ -15,7 +15,7 @@
 
 ##############################################################
 
-runname="olmoe-pretrain-replicate"
+runname="moe_1b7b_olmoe-mix"
 python -m olmo_core.launch.beaker \
   --name $runname \
 	--gpus 8 \
@@ -30,7 +30,7 @@ python -m olmo_core.launch.beaker \
 	--env-secret "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" \
 	-- src/scripts/train/olmoe-1B-7B.py \
     $runname \
-		--save-folder="/weka/oe-training-default/ryanwang/$runname" \
+		--save-folder="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/$runname" \
 		--dataset.mix=OLMoE-mix-0824 \
 		--work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
 		--trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
