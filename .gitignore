@@ -60,3 +60,5 @@ site/
 core
 /dataset-cache/
 DockerFile
+evals/
+s3_sync.sh

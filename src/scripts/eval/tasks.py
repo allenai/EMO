@@ -369,6 +369,7 @@ def get_task_configs():
                 "split": "train",
                 "primary_metric": "acc_uncond",
                 "num_shots": 5,
+                "limit": 1.0,
                 "fewshot_source": "OLMES:ARC-Challenge",
                 "metadata": {
                     "regimes": ["OLMES-v0.1"],
@@ -399,6 +400,7 @@ def get_task_configs():
                 "task_name": "arc_challenge:mc_train",
                 "split": "train",
                 "num_shots": 5,
+                "limit": 1.0,
                 "fewshot_source": "OLMES:ARC-Challenge",
                 "metadata": {
                     "regimes": ["OLMES-v0.1"],
@@ -429,6 +431,7 @@ def get_task_configs():
                 "split": "train",
                 "primary_metric": "acc_per_char",
                 "num_shots": 5,
+                "limit": 1.0,
                 "fewshot_source": "OLMES:ARC-Easy",
                 "metadata": {
                     "description": "ARC-Easy (RC) train using OLMES-v0.1",
@@ -466,6 +469,7 @@ def get_task_configs():
                 "task_name": "arc_easy:mc_train",
                 "split": "train",
                 "num_shots": 5,
+                "limit": 1.0,
                 "fewshot_source": "OLMES:ARC-Easy",
                 "metadata": {
                     "description": "ARC-Easy (MC) train using OLMES-v0.1, on training split",

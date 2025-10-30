@@ -12,84 +12,20 @@ CLUSTER="ai2/jupiter-cirrascale-2"
 LIMIT=1000
 model_type=hf
 
+# Define grouped tasks
+declare -A TASK_GROUPS
+
+#TASK_GROUPS["arc_easy"]="arc_easy:mc_train::olmes arc_easy:mc_validation::olmes arc_easy:mc_test::olmes arc_easy:rc_train::olmes arc_easy:rc_validation::olmes arc_easy:rc_test::olmes"
+TASK_GROUPS["arc_easy"]="arc_easy:mc_train::olmes arc_easy:rc_train::olmes"
+
+#TASK_GROUPS["arc_challenge"]="arc_challenge:mc_train::olmes arc_challenge:mc_validation::olmes arc_challenge:mc_test::olmes arc_challenge:rc_train::olmes arc_challenge:rc_validation::olmes arc_challenge:rc_test::olmes"
+#TASK_GROUPS["boolq"]="boolq:mc_train::olmes boolq:mc_validation::olmes boolq:mc_test::olmes boolq:rc_train::olmes boolq:rc_validation::olmes boolq:rc_test::olmes"
+#TASK_GROUPS["csqa"]="csqa:mc_train::olmes csqa:mc_validation::olmes csqa:mc_test::olmes csqa:rc_train::olmes csqa:rc_validation::olmes csqa:rc_test::olmes"
+#TASK_GROUPS["hellaswag"]="hellaswag:mc_train::olmes hellaswag:mc_validation::olmes hellaswag:mc_test::olmes hellaswag:rc_train::olmes hellaswag:rc_validation::olmes hellaswag:rc_test::olmes"
+
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
     # MC9 tasks
-#    arc_easy:mc_train::olmes
-#    arc_easy:mc_validation::olmes
-#    arc_easy:mc_test::olmes
-#
-#    arc_easy:rc_train::olmes
-#    arc_easy:rc_validation::olmes
-#    arc_easy:rc_test::olmes
-
-    arc_challenge:mc_train::olmes
-    arc_challenge:mc_validation::olmes
-    arc_challenge:mc_test::olmes
-
-    arc_challenge:rc_train::olmes
-    arc_challenge:rc_validation::olmes
-    arc_challenge:rc_test::olmes
-
-    boolq:mc_train::olmes
-    boolq:mc_validation::olmes
-    boolq:mc_test::olmes
-
-    boolq:rc_train::olmes
-    boolq:rc_validation::olmes
-    boolq:rc_test::olmes
-
-    csqa:mc_train::olmes
-    csqa:mc_validation::olmes
-    csqa:mc_test::olmes
-
-    csqa:rc_train::olmes
-    csqa:rc_validation::olmes
-    csqa:rc_test::olmes
-
-    hellaswag:mc_train::olmes
-    hellaswag:mc_validation::olmes
-    hellaswag:mc_test::olmes
-
-    hellaswag:rc_train::olmes
-    hellaswag:rc_validation::olmes
-    hellaswag:rc_test::olmes
-
-    openbookqa:mc_train::olmes
-    openbookqa:mc_validation::olmes
-    openbookqa:mc_test::olmes
-
-    openbookqa:rc_train::olmes
-    openbookqa:rc_validation::olmes
-    openbookqa:rc_test::olmes
-
-    piqa:mc_train::olmes
-    piqa:mc_validation::olmes
-    piqa:mc_test::olmes
-
-    piqa:rc_train::olmes
-    piqa:rc_validation::olmes
-    piqa:rc_test::olmes
-
-    socialiqa:mc_train::olmes
-    socialiqa:mc_validation::olmes
-    socialiqa:mc_test::olmes
-
-    socialiqa:rc_train::olmes
-    socialiqa:rc_validation::olmes
-    socialiqa:rc_test::olmes
-
-    winogrande:mc_train::olmes
-    winogrande:mc_validation::olmes
-    winogrande:mc_test::olmes
-
-    winogrande:rc_train::olmes
-    winogrande:rc_validation::olmes
-    winogrande:rc_test::olmes
-
-
-
-
 #    arc_easy:mc::olmes
 #    arc_challenge:mc::olmes
 #    boolq:mc::olmes
@@ -156,7 +92,7 @@ function get_checkpoint_name {
     echo "${modified_path//hf/${model_type}}"
 }
 
-echo "Launching beaker evaluations for ${#MODELS[@]} models and ${#TASKS[@]} tasks..."
+echo "Launching beaker evaluations for ${#MODELS[@]} models and ${#TASK_GROUPS[@]} task groups..."
 echo "Models: ${MODELS[@]}"
 echo "Base output directory: $BASE_OUTPUT_DIR"
 echo "Cluster: $CLUSTER"
@@ -180,66 +116,67 @@ for MODEL_PATH in "${MODELS[@]}"; do
 
     OUTPUT_DIR="${BASE_OUTPUT_DIR}/$model"
 
-    for TASK in "${TASKS[@]}"; do
-        echo "Launching evaluation for model: $model, task: $TASK"
+    for GROUP_NAME in "${!TASK_GROUPS[@]}"; do
+        echo "Launching evaluation for model: $model, group: $GROUP_NAME"
+        TASK="${TASK_GROUPS[$GROUP_NAME]}"
 
-    # Batch size adjustment (matching original script)
-    if [[ $TASK == *"cot"* || $TASK == "minerva_math_"* || $TASK == "mbpp"* || $TASK == "bigcodebench"* || $TASK == "ruler"* || $TASK == "sciriff"* ]]; then
-        batch_size=$((BATCH_SIZE / 4))
-    else
-        batch_size=$BATCH_SIZE
-    fi
+        # Batch size adjustment (matching original script)
+        if [[ $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* ]]; then
+            batch_size=$((BATCH_SIZE / 4))
+        else
+            batch_size=$BATCH_SIZE
+        fi
 
-    # adjust number of gpus requested if its mmlu, agi_eval, bbh, gsm8k, minerva, codex, mbpp
-    if [[ $TASK == mmlu* || $TASK == agi_eval* || $TASK == bbh* || $TASK == gsm8k* || $TASK == minerva_math_* || $TASK == codex* || $TASK == mbpp* ]]; then
-        gpus=4
-    else
-        gpus=1
-    fi
+        # adjust number of gpus requested if its mmlu, agi_eval, bbh, gsm8k, minerva, codex, mbpp
+        if [[ $TASK == *mmlu* || $TASK == *agi_eval* || $TASK == *bbh* || $TASK == *gsm8k* || $TASK == *minerva_math_* || $TASK == *codex* || $TASK == *mbpp* ]]; then
+            gpus=4
+        else
+            gpus=1
+        fi
 
-    # Create a shorter, valid job name
-    # Remove invalid characters and truncate long names
-    safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g' | cut -c1-20)
-    safe_task_name=$(echo $TASK | sed 's/[^a-zA-Z0-9_-]//g' | cut -c1-15)
-    job_name="eval-${safe_model_name}-${safe_task_name}"
+        # Create a shorter, valid job name
+        # Remove invalid characters and truncate long names
+        safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g' | cut -c1-20)
+        safe_group_name=$(echo $GROUP_NAME | sed 's/[^a-zA-Z0-9_-]//g' | cut -c1-15)
+        job_name="eval-${safe_model_name}-${safe_group_name}"
 
-    echo "  Model name: $model"
-    echo "  Output dir: $OUTPUT_DIR"
-    echo "  GPUs: $gpus"
-    echo "  Batch size: $batch_size"
-    echo "  Job name: $job_name"
+        echo "  Model name: $model"
+        echo "  Output dir: $OUTPUT_DIR"
+        echo "  GPUs: $gpus"
+        echo "  Batch size: $batch_size"
+        echo "  Job name: $job_name"
 
-    gantry run \
-        --name $job_name \
-        --weka oe-training-default:/weka/oe-training-default \
-        --install "bash src/scripts/eval/setup_eval_env.sh;" \
-        --budget ai2/oe-base \
-        --workspace ai2/flex2 \
-        --cluster $CLUSTER \
-        --priority urgent \
-        --gpus $gpus \
-        --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-        --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-        --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-        -- \
-        bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
-            --model "${MODEL_DIR}/${MODEL_PATH}" \
-            --model-type hf \
-            --task $TASK \
-            --limit $LIMIT \
-            --remote-output-dir $OUTPUT_DIR \
-            --batch-size $batch_size \
+        gantry run \
+            --name $job_name \
+            --weka oe-training-default:/weka/oe-training-default \
+            --install "bash src/scripts/eval/setup_eval_env.sh;" \
+            --budget ai2/oe-base \
+            --workspace ai2/flex2 \
+            --cluster $CLUSTER \
+            --priority urgent \
             --gpus $gpus \
-            "
+            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+            -- \
+            bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+                --model "${MODEL_DIR}/${MODEL_PATH}" \
+                --model-type hf \
+                --task $TASK \
+                --limit $LIMIT \
+                --remote-output-dir $OUTPUT_DIR \
+                --batch-size $batch_size \
+                --gpus $gpus \
+                "
 
-        echo "Launched evaluation for model: $model, task: $TASK"
+        echo "Launched evaluation for model: $model, group: $GROUP_NAME"
         echo "----------------------------------------"
     done
 
-    echo "Completed all tasks for model: $model"
+    echo "Completed all groups for model: $model"
     echo "========================================"
 done
 
 echo "All beaker evaluations have been launched!"
-echo "Total jobs: $((${#MODELS[@]} * ${#TASKS[@]}))"
+echo "Total jobs: $((${#MODELS[@]} * ${#TASK_GROUPS[@]}))"
 echo "Check the beaker dashboard for job status."
