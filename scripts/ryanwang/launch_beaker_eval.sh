@@ -15,8 +15,15 @@ model_type=hf
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
     # MC9 tasks
-#    arc_easy:mc_validation::olmes
+    arc_easy:mc_train::olmes
+    arc_easy:mc_validation::olmes
     arc_easy:mc_test::olmes
+
+    arc_easy:rc_train::olmes
+    arc_easy:rc_validation::olmes
+    arc_easy:rc_test::olmes
+
+
 #    arc_easy:mc::olmes
 #    arc_challenge:mc::olmes
 #    boolq:mc::olmes
@@ -154,7 +161,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
             --model-type hf \
             --task $TASK \
             --limit $LIMIT \
-            --output-dir $OUTPUT_DIR \
+            --remote-output-dir $OUTPUT_DIR \
             --batch-size $batch_size \
             --gpus $gpus \
             "

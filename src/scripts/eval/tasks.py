@@ -4,6 +4,124 @@ from oe_eval.configs.tasks import TASK_CONFIGS
 def get_task_configs():
     TASK_CONFIGS.update(
         {
+            "winogrande:mc_train::olmes": {
+                "task_name": "winogrande:mc_train",
+                "split": "validation",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:winogrande",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "winogrande:mc_validation::olmes": {
+                "task_name": "winogrande:mc_validation",
+                "split": "validation",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:winogrande",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "winogrande:mc_test::olmes": {
+                "task_name": "winogrande:mc_test",
+                "split": "validation",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:winogrande",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "winogrande:rc_train::olmes": {
+                "task_name": "winogrande:rc_train",
+                "split": "validation",
+                "primary_metric": "acc_raw",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:winogrande",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "winogrande:rc_validation::olmes": {
+                "task_name": "winogrande:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_raw",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:winogrande",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "winogrande:rc_test::olmes": {
+                "task_name": "winogrande:rc_test",
+                "split": "validation",
+                "primary_metric": "acc_raw",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:winogrande",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "socialiqa:mc_train::olmes": {
+                "task_name": "socialiqa:mc_train",
+                "split": "train",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:social_i_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "socialiqa:mc_validation::olmes": {
+                "task_name": "socialiqa:mc_validation",
+                "split": "validation",
+                "num_shots": 5,
+                "limit": 1000,
+                "fewshot_source": "OLMES:social_i_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "socialiqa:mc_test::olmes": {
+                "task_name": "socialiqa:mc_test",
+                "split": "test",
+                "num_shots": 5,
+                "limit": 1000,
+                "fewshot_source": "OLMES:social_i_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "socialiqa:rc_train::olmes": {
+                "task_name": "socialiqa:rc_train",
+                "split": "train",
+                "primary_metric": "acc_per_char",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:social_i_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "socialiqa:rc_validation::olmes": {
+                "task_name": "socialiqa:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_per_char",
+                "num_shots": 5,
+                "limit": 1000,
+                "fewshot_source": "OLMES:social_i_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "socialiqa:rc_test::olmes": {
+                "task_name": "socialiqa:rc_test",
+                "split": "test",
+                "primary_metric": "acc_per_char",
+                "num_shots": 5,
+                "limit": 1000,
+                "fewshot_source": "OLMES:social_i_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
             "piqa:mc_train::olmes": {
                 "task_name": "piqa:mc_train",
                 "split": "train",
