@@ -4,6 +4,130 @@ from oe_eval.configs.tasks import TASK_CONFIGS
 def get_task_configs():
     TASK_CONFIGS.update(
         {
+            "csqa:mc_train::olmes": {
+                "task_name": "csqa:mc_train",
+                "split": "train",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:commonsense_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "csqa:mc_validation::olmes": {
+                "task_name": "csqa:mc_validation",
+                "split": "validation",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:commonsense_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "csqa:mc_test::olmes": {
+                "task_name": "csqa:mc_test",
+                "split": "test",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:commonsense_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "csqa:rc_train::olmes": {
+                "task_name": "csqa:rc_train",
+                "split": "train",
+                "primary_metric": "acc_uncond",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:commonsense_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "csqa:rc_validation::olmes": {
+                "task_name": "csqa:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_uncond",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:commonsense_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "csqa:rc_test::olmes": {
+                "task_name": "csqa:rc_test",
+                "split": "test",
+                "primary_metric": "acc_uncond",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:commonsense_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "boolq:mc_train::olmes": {
+                "task_name": "boolq:mc_train",
+                "split": "train",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:BoolQ",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
+            "boolq:mc_validation::olmes": {
+                "task_name": "boolq:mc_validation",
+                "split": "validation",
+                "num_shots": 5,
+                "limit": 1000,
+                "fewshot_source": "OLMES:BoolQ",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
+            "boolq:mc_test::olmes": {
+                "task_name": "boolq:mc_test",
+                "split": "test",
+                "num_shots": 5,
+                "limit": 1000,
+                "fewshot_source": "OLMES:BoolQ",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
+            "boolq:rc_train::olmes": {
+                "task_name": "boolq:rc_train",
+                "split": "train",
+                "primary_metric": "acc_raw",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:BoolQ",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
+            "boolq:rc_validation::olmes": {
+                "task_name": "boolq:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_raw",
+                "num_shots": 5,
+                "limit": 1000,
+                "fewshot_source": "OLMES:BoolQ",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
+            "boolq:rc_test::olmes": {
+                "task_name": "boolq:rc_test",
+                "split": "test",
+                "primary_metric": "acc_raw",
+                "num_shots": 5,
+                "limit": 1000,
+                "fewshot_source": "OLMES:BoolQ",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
             "arc_challenge:rc_train::olmes": {
                 "task_name": "arc_challenge:rc_train",
                 "split": "train",
