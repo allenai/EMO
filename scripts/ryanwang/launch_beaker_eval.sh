@@ -14,11 +14,23 @@ model_type=hf
 # Define grouped tasks
 declare -A TASK_GROUPS
 
-TASK_GROUPS["arc_easy"]="arc_easy:mc_train::olmes arc_easy:mc_validation::olmes arc_easy:mc_test::olmes arc_easy:rc_train::olmes arc_easy:rc_validation::olmes arc_easy:rc_test::olmes"
-TASK_GROUPS["arc_challenge"]="arc_challenge:mc_train::olmes arc_challenge:mc_validation::olmes arc_challenge:mc_test::olmes arc_challenge:rc_train::olmes arc_challenge:rc_validation::olmes arc_challenge:rc_test::olmes"
-TASK_GROUPS["boolq"]="boolq:mc_train::olmes boolq:mc_validation::olmes boolq:mc_test::olmes boolq:rc_train::olmes boolq:rc_validation::olmes boolq:rc_test::olmes"
-TASK_GROUPS["csqa"]="csqa:mc_train::olmes csqa:mc_validation::olmes csqa:mc_test::olmes csqa:rc_train::olmes csqa:rc_validation::olmes csqa:rc_test::olmes"
-TASK_GROUPS["hellaswag"]="hellaswag:mc_train::olmes hellaswag:mc_validation::olmes hellaswag:mc_test::olmes hellaswag:rc_train::olmes hellaswag:rc_validation::olmes hellaswag:rc_test::olmes"
+#TASK_GROUPS["arc_easy"]="arc_easy:mc_train::olmes arc_easy:mc_validation::olmes arc_easy:mc_test::olmes arc_easy:rc_train::olmes arc_easy:rc_validation::olmes arc_easy:rc_test::olmes"
+#TASK_GROUPS["arc_challenge"]="arc_challenge:mc_train::olmes arc_challenge:mc_validation::olmes arc_challenge:mc_test::olmes arc_challenge:rc_train::olmes arc_challenge:rc_validation::olmes arc_challenge:rc_test::olmes"
+#TASK_GROUPS["boolq"]="boolq:mc_train::olmes boolq:mc_validation::olmes boolq:mc_test::olmes boolq:rc_train::olmes boolq:rc_validation::olmes boolq:rc_test::olmes"
+#TASK_GROUPS["csqa"]="csqa:mc_train::olmes csqa:mc_validation::olmes csqa:mc_test::olmes csqa:rc_train::olmes csqa:rc_validation::olmes csqa:rc_test::olmes"
+#TASK_GROUPS["hellaswag"]="hellaswag:mc_train::olmes hellaswag:mc_validation::olmes hellaswag:mc_test::olmes hellaswag:rc_train::olmes hellaswag:rc_validation::olmes hellaswag:rc_test::olmes"
+
+TASK_GROUPS_LIST=(
+  "arc_easy|arc_easy:mc_train::olmes arc_easy:mc_validation::olmes arc_easy:mc_test::olmes arc_easy:rc_train::olmes arc_easy:rc_validation::olmes arc_easy:rc_test::olmes"
+  "arc_challenge|arc_challenge:mc_train::olmes arc_challenge:mc_validation::olmes arc_challenge:mc_test::olmes arc_challenge:rc_train::olmes arc_challenge:rc_validation::olmes arc_challenge:rc_test::olmes"
+  "boolq|boolq:mc_train::olmes boolq:mc_validation::olmes boolq:mc_test::olmes boolq:rc_train::olmes boolq:rc_validation::olmes boolq:rc_test::olmes"
+  "csqa|csqa:mc_train::olmes csqa:mc_validation::olmes csqa:mc_test::olmes csqa:rc_train::olmes csqa:rc_validation::olmes csqa:rc_test::olmes"
+  "hellaswag|hellaswag:mc_train::olmes hellaswag:mc_validation::olmes hellaswag:mc_test::olmes hellaswag:rc_train::olmes hellaswag:rc_validation::olmes hellaswag:rc_test::olmes"
+  "openbookqa|openbookqa:mc_train::olmes openbookqa:mc_validation::olmes openbookqa:mc_test::olmes openbookqa:rc_train::olmes openbookqa:rc_validation::olmes openbookqa:rc_test::olmes"
+  "piqa|piqa:mc_train::olmes piqa:mc_validation::olmes piqa:mc_test::olmes piqa:rc_train::olmes piqa:rc_validation::olmes piqa:rc_test::olmes"
+  "socialiqa|socialiqa:mc_train::olmes socialiqa:mc_validation::olmes socialiqa:mc_test::olmes socialiqa:rc_train::olmes socialiqa:rc_validation::olmes socialiqa:rc_test::olmes"
+  "winogrande|winogrande:mc_train::olmes winogrande:mc_validation::olmes winogrande:mc_test::olmes winogrande:rc_train::olmes winogrande:rc_validation::olmes winogrande:rc_test::olmes"
+)
 
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
@@ -113,9 +125,9 @@ for MODEL_PATH in "${MODELS[@]}"; do
 
     OUTPUT_DIR="${BASE_OUTPUT_DIR}/$model"
 
-    for GROUP_NAME in "${!TASK_GROUPS[@]}"; do
-        echo "Launching evaluation for model: $model, group: $GROUP_NAME"
-        TASK="${TASK_GROUPS[$GROUP_NAME]}"
+    for entry in "${TASK_GROUPS_LIST[@]}"; do
+        GROUP_NAME="${entry%%|*}"                # text before '|'
+        TASK="${entry#*|}"            # text after '|'
 
         # Batch size adjustment (matching original script)
         if [[ $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* ]]; then
