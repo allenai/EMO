@@ -14,13 +14,11 @@ model_type=hf
 # Define grouped tasks
 declare -A TASK_GROUPS
 
-#TASK_GROUPS["arc_easy"]="arc_easy:mc_train::olmes arc_easy:mc_validation::olmes arc_easy:mc_test::olmes arc_easy:rc_train::olmes arc_easy:rc_validation::olmes arc_easy:rc_test::olmes"
-TASK_GROUPS["arc_easy"]="arc_easy:mc_train::olmes arc_easy:rc_train::olmes"
-
-#TASK_GROUPS["arc_challenge"]="arc_challenge:mc_train::olmes arc_challenge:mc_validation::olmes arc_challenge:mc_test::olmes arc_challenge:rc_train::olmes arc_challenge:rc_validation::olmes arc_challenge:rc_test::olmes"
-#TASK_GROUPS["boolq"]="boolq:mc_train::olmes boolq:mc_validation::olmes boolq:mc_test::olmes boolq:rc_train::olmes boolq:rc_validation::olmes boolq:rc_test::olmes"
-#TASK_GROUPS["csqa"]="csqa:mc_train::olmes csqa:mc_validation::olmes csqa:mc_test::olmes csqa:rc_train::olmes csqa:rc_validation::olmes csqa:rc_test::olmes"
-#TASK_GROUPS["hellaswag"]="hellaswag:mc_train::olmes hellaswag:mc_validation::olmes hellaswag:mc_test::olmes hellaswag:rc_train::olmes hellaswag:rc_validation::olmes hellaswag:rc_test::olmes"
+TASK_GROUPS["arc_easy"]="arc_easy:mc_train::olmes arc_easy:mc_validation::olmes arc_easy:mc_test::olmes arc_easy:rc_train::olmes arc_easy:rc_validation::olmes arc_easy:rc_test::olmes"
+TASK_GROUPS["arc_challenge"]="arc_challenge:mc_train::olmes arc_challenge:mc_validation::olmes arc_challenge:mc_test::olmes arc_challenge:rc_train::olmes arc_challenge:rc_validation::olmes arc_challenge:rc_test::olmes"
+TASK_GROUPS["boolq"]="boolq:mc_train::olmes boolq:mc_validation::olmes boolq:mc_test::olmes boolq:rc_train::olmes boolq:rc_validation::olmes boolq:rc_test::olmes"
+TASK_GROUPS["csqa"]="csqa:mc_train::olmes csqa:mc_validation::olmes csqa:mc_test::olmes csqa:rc_train::olmes csqa:rc_validation::olmes csqa:rc_test::olmes"
+TASK_GROUPS["hellaswag"]="hellaswag:mc_train::olmes hellaswag:mc_validation::olmes hellaswag:mc_test::olmes hellaswag:rc_train::olmes hellaswag:rc_validation::olmes hellaswag:rc_test::olmes"
 
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
