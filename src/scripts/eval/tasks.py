@@ -4,6 +4,124 @@ from oe_eval.configs.tasks import TASK_CONFIGS
 def get_task_configs():
     TASK_CONFIGS.update(
         {
+            "piqa:mc_train::olmes": {
+                "task_name": "piqa:mc_train",
+                "split": "train",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:piqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "piqa:mc_validation::olmes": {
+                "task_name": "piqa:mc_validation",
+                "split": "validation",
+                "num_shots": 5,
+                "limit": 1000,
+                "fewshot_source": "OLMES:piqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "piqa:mc_test::olmes": {
+                "task_name": "piqa:mc_test",
+                "split": "test",
+                "num_shots": 5,
+                "limit": 1000,
+                "fewshot_source": "OLMES:piqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "piqa:rc_train::olmes": {
+                "task_name": "piqa:rc_train",
+                "split": "train",
+                "primary_metric": "acc_per_char",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:piqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "piqa:rc_validation::olmes": {
+                "task_name": "piqa:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_per_char",
+                "num_shots": 5,
+                "limit": 1000,
+                "fewshot_source": "OLMES:piqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "piqa:rc_test::olmes": {
+                "task_name": "piqa:rc_test",
+                "split": "test",
+                "primary_metric": "acc_per_char",
+                "num_shots": 5,
+                "limit": 1000,
+                "fewshot_source": "OLMES:piqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "openbookqa:mc_train::olmes": {
+                "task_name": "openbookqa:mc_train",
+                "split": "train",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:openbookqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "openbookqa:mc_validation::olmes": {
+                "task_name": "openbookqa:mc_validation",
+                "split": "validation",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:openbookqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "openbookqa:mc_test::olmes": {
+                "task_name": "openbookqa:mc_test",
+                "split": "test",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:openbookqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "openbookqa:rc_train::olmes": {
+                "task_name": "openbookqa:rc_train",
+                "split": "train",
+                "primary_metric": "acc_uncond",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:openbookqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "openbookqa:rc_validation::olmes": {
+                "task_name": "openbookqa:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_uncond",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:openbookqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "openbookqa:rc_test::olmes": {
+                "task_name": "openbookqa:rc_test",
+                "split": "test",
+                "primary_metric": "acc_uncond",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:openbookqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
             "csqa:mc_train::olmes": {
                 "task_name": "csqa:mc_train",
                 "split": "train",
