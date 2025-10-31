@@ -4,56 +4,56 @@
 # Usage: bash src/scripts/eval/launch_beaker_eval.sh
 
 # Configuration
-MODELS=("/weka/oe-training-default/ryanwang/phdbrainstorm/models/olmoe-pretrain-mose-natural-1022/step30995-hf")
-BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/evals"
+MODELS=("/weka/oe-training-default/akshitab/test-moe-flex-model-hf")
+BASE_OUTPUT_DIR="/weka/oe-training-default/akshitab/evals"
 BATCH_SIZE=4
-CLUSTER="ai2/jupiter-cirrascale-2"
+CLUSTER="ai2/saturn"
 LIMIT=1000
 model_type=hf
 
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
-    # MC9 tasks
-    arc_easy:mc::olmes
-    arc_challenge:mc::olmes
-    boolq:mc::olmes
-    csqa:mc::olmes
-    hellaswag:mc::olmes
-    openbookqa:mc::olmes
-    piqa:mc::olmes
-    socialiqa:mc::olmes
-    winogrande:mc::olmes
-
-    arc_easy:rc::olmes
-    arc_challenge:rc::olmes
-    boolq:rc::olmes
-    csqa:rc::olmes
-    hellaswag:rc::olmes
-    openbookqa:rc::olmes
-    piqa:rc::olmes
-    socialiqa:rc::olmes
-    winogrande:rc::olmes
-
-    # Gen5 tasks
-    coqa::olmes
-    squad::olmes
-    naturalqs::olmes
-    triviaqa::olmes
-    drop::olmes
+#    # MC9 tasks
+#    arc_easy:mc::olmes
+#    arc_challenge:mc::olmes
+#    boolq:mc::olmes
+#    csqa:mc::olmes
+#    hellaswag:mc::olmes
+#    openbookqa:mc::olmes
+#    piqa:mc::olmes
+#    socialiqa:mc::olmes
+#    winogrande:mc::olmes
 #
-    # MMLU tasks
+#    arc_easy:rc::olmes
+#    arc_challenge:rc::olmes
+#    boolq:rc::olmes
+#    csqa:rc::olmes
+#    hellaswag:rc::olmes
+#    openbookqa:rc::olmes
+#    piqa:rc::olmes
+#    socialiqa:rc::olmes
+#    winogrande:rc::olmes
+#
+#    # Gen5 tasks
+#    coqa::olmes
+    squad::olmes
+#    naturalqs::olmes
+#    triviaqa::olmes
+#    drop::olmes
+
+#    # MMLU tasks
 #    mmlu:mc::olmes
 #    mmlu_pro:mc::none
 #
 #    mmlu:rc::olmes
 #
-##    # AGI eval
+#    # AGI eval
 #    agi_eval_english:1shot::olmes
-##
-##    # BBH
+#
+#    # BBH
 #    bbh:cot-v1::olmes
-##
-##    # Math2 tasks
+#
+#    # Math2 tasks
 #    gsm8k::olmes
 #    minerva_math_algebra::olmes
 #    minerva_math_counting_and_probability::olmes
@@ -63,7 +63,7 @@ TASKS=(
 #    minerva_math_prealgebra::olmes
 #    minerva_math_precalculus::olmes
 #
-##    # Code4 tasks
+#    # Code4 tasks
 #    codex_humaneval:temp0.8
 #    codex_humanevalplus:temp0.8
 #    mbpp::none
@@ -128,7 +128,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
     gantry run \
         --name $job_name \
         --weka oe-training-default:/weka/oe-training-default \
-        --install "bash src/scripts/eval/setup_eval_env.sh;" \
+        --install "pip install -e \".[all]\"" \
         --budget ai2/oe-base \
         --workspace ai2/flex2 \
         --cluster $CLUSTER \

@@ -74,10 +74,10 @@ HAS_AI2_INTERNAL = (
 )
 
 # To run "hf-oldstyle" OLMo models
-# try:
-#     from hf_olmo import *  # noqa: F403
-# except ImportError:
-#     pass
+try:
+    from hf_olmo import *  # noqa: F403
+except ImportError:
+    pass
 
 # For running e.g. https://huggingface.co/TRI-ML/DCLM-1B
 try:
@@ -86,6 +86,7 @@ except ImportError:
     pass
 
 logger = logging.getLogger()
+
 
 def add_arg(parser, arg, defaults, **kwargs):
     if defaults is None:

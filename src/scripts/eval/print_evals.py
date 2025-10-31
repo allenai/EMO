@@ -369,7 +369,6 @@ def main(args):
 
     # Task averaging options
     if args.avg_core:
-        breakpoint()
         results = avg_tasks(results, "core9:mc", core9_tasks)
         results = avg_tasks(results, "core9:rc", core9_task_rc)
 
