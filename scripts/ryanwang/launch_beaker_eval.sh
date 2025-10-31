@@ -195,5 +195,5 @@ for MODEL_PATH in "${MODELS[@]}"; do
 done
 
 echo "All beaker evaluations have been launched!"
-echo "Total jobs: $((${#MODELS[@]} * ${#TASK_GROUPS[@]}))"
+echo "Total jobs: $((${#MODELS[@]} * ${#TASK_GROUPS_LIST[@]}))"
 echo "Check the beaker dashboard for job status."
