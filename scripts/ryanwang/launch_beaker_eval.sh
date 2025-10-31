@@ -30,6 +30,8 @@ TASK_GROUPS_LIST=(
 #  "piqa|piqa:mc_train::olmes piqa:mc_validation::olmes piqa:mc_test::olmes piqa:rc_train::olmes piqa:rc_validation::olmes piqa:rc_test::olmes"
   "socialiqa|socialiqa:mc_train::olmes socialiqa:mc_validation::olmes socialiqa:mc_test::olmes socialiqa:rc_train::olmes socialiqa:rc_validation::olmes socialiqa:rc_test::olmes"
 #  "winogrande|winogrande:mc_train::olmes winogrande:mc_validation::olmes winogrande:mc_test::olmes winogrande:rc_train::olmes winogrande:rc_validation::olmes winogrande:rc_test::olmes"
+
+  # MMLU tasks
 )
 
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
