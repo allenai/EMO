@@ -26,12 +26,10 @@ TASK_GROUPS_LIST=(
 #  "winogrande|winogrande:mc_train::olmes winogrande:mc_validation::olmes winogrande:mc_test::olmes winogrande:rc_train::olmes winogrande:rc_validation::olmes winogrande:rc_test::olmes"
 
   # MMLU
-#  "mmlu_mc_train|mmlu:mc_train::olmes"
+  "mmlu_mc_train|mmlu:mc_train::olmes"
 #  "mmlu_mc_valid_test|mmlu:mc_validation::olmes mmlu:mc_test::olmes"
 #  "mmlu_rc_train|mmlu:rc_train::olmes"
 #  "mmlu_rc_valid_test|mmlu:rc_validation::olmes mmlu:rc_test::olmes"
-
-  "test|arc_easy:mc_train::olmes"
 
 )
 
