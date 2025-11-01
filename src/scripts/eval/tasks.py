@@ -6,6 +6,63 @@ from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 def get_task_configs():
     TASK_CONFIGS.update(
         {
+            "hellaswag:mc_train::olmes": {
+                "task_name": "hellaswag:mc_train",
+                "split": "train",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:hellaswag",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "hellaswag:mc_validation::olmes": {
+                "task_name": "hellaswag:mc_validation",
+                "split": "validation",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:hellaswag",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "hellaswag:mc_test::olmes": {
+                "task_name": "hellaswag:mc_test",
+                "split": "test",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:hellaswag",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "hellaswag:rc_train::olmes": {
+                "task_name": "hellaswag:rc_train",
+                "split": "train",
+                "primary_metric": "acc_per_char",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:hellaswag",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "hellaswag:rc_validation::olmes": {
+                "task_name": "hellaswag:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_per_char",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:hellaswag",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "hellaswag:rc_test::olmes": {
+                "task_name": "hellaswag:rc_test",
+                "split": "test",
+                "primary_metric": "acc_per_char",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:hellaswag",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
             "winogrande:mc_train::olmes": {
                 "task_name": "winogrande:mc_train",
                 "split": "validation",
