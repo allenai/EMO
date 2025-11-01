@@ -389,7 +389,7 @@ def main(args):
         mmlu_tasks_rc = [
             task_name
             for task_name in task_names
-            if task_name.startswith("mmlu_") and not task_name.startswith("mmlu_pro_") and not task_name.endswith(":rc_test")
+            if task_name.startswith("mmlu_") and not task_name.startswith("mmlu_pro_") and task_name.endswith(":rc_test")
         ]
         breakpoint()
 
