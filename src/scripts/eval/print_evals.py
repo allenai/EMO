@@ -242,8 +242,6 @@ def avg_tasks(results, label, task_names):
             results[model_name][label] = np.mean(
                 [results[model_name][task_name] for task_name in task_names]
             )
-        if label == "mmlu:mc":
-            breakpoint()
         for task_name in task_names:
             if task_name in results[model_name]:
                 del results[model_name][task_name]
@@ -394,12 +392,14 @@ def main(args):
             for task_name in task_names
             if task_name.startswith("mmlu_") and not task_name.startswith("mmlu_pro_") and task_name.endswith(":rc_test")
         ]
-        breakpoint()
 
         assert len(mmlu_tasks_rc) == len(mmlu_tasks_mc)
         if mmlu_tasks_mc or mmlu_tasks_rc:
             results = avg_tasks(results, "mmlu:mc", mmlu_tasks_mc)
             results = avg_tasks(results, "mmlu:rc", mmlu_tasks_rc)
+
+        breakpoint()
+
 
     if args.avg_mmlu_cat or args.avg_mmlu_subcat:
         mmlu_tasks = [
