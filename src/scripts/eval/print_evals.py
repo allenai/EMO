@@ -370,8 +370,10 @@ def main(args):
 
     # Task averaging options
     if args.avg_core:
-        results = avg_tasks(results, "core9:mc", core9_tasks)
-        results = avg_tasks(results, "core9:rc", core9_task_rc)
+        core_tasks_mc_update = [core_task + "_test" for core_task in core9_tasks]
+        core_tasks_rc_update = [core_task + ":rc_test" for core_task in core9_task_rc]
+        results = avg_tasks(results, "core9:mc", core_tasks_mc_update)
+        results = avg_tasks(results, "core9:rc", core_tasks_rc_update)
 
     if args.avg_mmlu_pro:
         # TODO: default mc ends with nothing, which is ambiguous with rc tasks
