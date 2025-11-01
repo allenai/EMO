@@ -391,6 +391,7 @@ def main(args):
             for task_name in task_names
             if task_name.startswith("mmlu_") and not task_name.startswith("mmlu_pro_") and not task_name.endswith(":mc")
         ]
+        breakpoint
 
         assert len(mmlu_tasks_rc) == len(mmlu_tasks_mc)
         if mmlu_tasks_mc or mmlu_tasks_rc:
