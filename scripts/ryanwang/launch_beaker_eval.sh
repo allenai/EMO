@@ -6,7 +6,7 @@
 # Configuration
 #MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
 MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
-MODELS=("dense_1b_olmoe-mix_1028/step30995-hf")
+MODELS=("moe_1b7b_olmoe-mix/step30995-hf")
 #BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals"
 BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/evals"
 BATCH_SIZE=16
