@@ -33,7 +33,8 @@ TASK_GROUPS_LIST=(
 #
 #  # Gen5 tasks
 #  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes drop::olmes"
-  squad::olmes
+#  squad::olmes
+  "test|hellaswag:mc_train::olmes"
 
 )
 
