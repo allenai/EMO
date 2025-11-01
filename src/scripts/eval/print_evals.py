@@ -238,9 +238,12 @@ def avg_tasks(results, label, task_names):
     """Average scores across multiple tasks into a single metric."""
     for model_name in results:
         if np.all([task_name in results[model_name] for task_name in task_names]):
+
             results[model_name][label] = np.mean(
                 [results[model_name][task_name] for task_name in task_names]
             )
+        if label == "mmlu:mc":
+            breakpoint()
         for task_name in task_names:
             if task_name in results[model_name]:
                 del results[model_name][task_name]
