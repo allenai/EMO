@@ -53,7 +53,7 @@ log = logging.getLogger(__name__)
 
 DATA_ROOT = "/weka/oe-training-default/ai2-llm"
 
-C4_VALIDATION_PATH = "/weka/oe-training-default/ai2-llm/examples/c4-en/gpt2/c4-train.0000-00008"
+C4_VALIDATION_PATH = ["/weka/oe-training-default/ai2-llm/examples/c4-en/gpt2/c4-train.0000-00008"]
 
 SEQUENCE_LENGTH = 4096
 GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
