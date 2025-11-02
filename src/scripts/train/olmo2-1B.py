@@ -210,29 +210,29 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback("beaker", BeakerCallback())
         .with_callback("config_saver", ConfigSaverCallback())
         .with_callback("profiler", ProfilerCallback(enabled=False))
-        .with_callback(
-            "downstream_evaluator",
-            #https://github.com/allenai/OLMo-in-loop-evals/blob/main/src/olmo_eval/tasks.py#L1752
-            DownstreamEvaluatorCallbackConfig(
-                tasks=["hellaswag", "arc_challenge", "piqa", "copa", "mmlu_stem", "mmlu_humanities", "mmlu_social_sciences", "mmlu_other"],
-                tokenizer=tokenizer_config,
-                eval_interval=250,
-            ),
-        )
-        .with_callback(
-            "lm_evaluator",
-            LMEvaluatorCallbackConfig(
-                eval_dataset=NumpyPaddedFSLDatasetConfig(
-                    paths=C4_VALIDATION_PATH,
-                    metadata=[{"label": "c4-validation"}],
-                    sequence_length=opts.sequence_length,
-                    tokenizer=tokenizer_config,
-                    work_dir=work_dir,
-                ),
-                eval_interval=250,
-                eval_duration=Duration.steps(50),
-            ),
-        )
+        # .with_callback(
+        #     "downstream_evaluator",
+        #     #https://github.com/allenai/OLMo-in-loop-evals/blob/main/src/olmo_eval/tasks.py#L1752
+        #     DownstreamEvaluatorCallbackConfig(
+        #         tasks=["hellaswag", "arc_challenge", "piqa", "copa", "mmlu_stem", "mmlu_humanities", "mmlu_social_sciences", "mmlu_other"],
+        #         tokenizer=tokenizer_config,
+        #         eval_interval=250,
+        #     ),
+        # )
+        # .with_callback(
+        #     "lm_evaluator",
+        #     LMEvaluatorCallbackConfig(
+        #         eval_dataset=NumpyPaddedFSLDatasetConfig(
+        #             paths=C4_VALIDATION_PATH,
+        #             metadata=[{"label": "c4-validation"}],
+        #             sequence_length=opts.sequence_length,
+        #             tokenizer=tokenizer_config,
+        #             work_dir=work_dir,
+        #         ),
+        #         eval_interval=250,
+        #         eval_duration=Duration.steps(50),
+        #     ),
+        # )
     )
 
     config = ExperimentConfig(

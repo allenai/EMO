@@ -19,7 +19,7 @@ runname="dense_1b_olmoe-mix_300B_1030"
 python -m olmo_core.launch.beaker \
   --name $runname \
 	--gpus 8 \
-  --nodes 1 \
+  --nodes 8 \
   --is_private_repo \
 	--weka=oe-training-default \
   --shared-filesystem \
