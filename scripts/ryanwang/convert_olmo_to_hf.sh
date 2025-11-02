@@ -1,6 +1,6 @@
 
 python src/examples/huggingface/convert_checkpoint_to_hf.py \
-  --checkpoint-input-path /root/ryanwang/phdbrainstorm/models/dense_1b_olmoe-mix_1028/step30995 \
+  --checkpoint-input-path /root/ryanwang/phdbrainstorm/models/moe_1b7b_olmoe-mix_300B_1030/step71526 \
   --max-sequence-length 4096 \
-  --huggingface-output-dir /root/ryanwang/phdbrainstorm/models/dense_1b_olmoe-mix_1028/step30995-hf \
+  --huggingface-output-dir /root/ryanwang/phdbrainstorm/models/moe_1b7b_olmoe-mix_300B_1030/step71526-hf \
   --dtype float32
