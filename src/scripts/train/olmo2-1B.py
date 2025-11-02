@@ -214,7 +214,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             "downstream_evaluator",
             #https://github.com/allenai/OLMo-in-loop-evals/blob/main/src/olmo_eval/tasks.py#L1752
             DownstreamEvaluatorCallbackConfig(
-                tasks=["hellaswag", "arc_challenge", "piqa", "copa", "winogrande", "mmlu_stem", "mmlu_humanities", "mmlu_social_sciences", "mmlu_other"],
+                tasks=["hellaswag", "arc_challenge", "piqa", "copa", "mmlu_stem", "mmlu_humanities", "mmlu_social_sciences", "mmlu_other"],
                 tokenizer=tokenizer_config,
                 eval_interval=250,
             ),
