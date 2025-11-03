@@ -17,6 +17,9 @@ for MODEL in "${MODELS[@]}"; do
     echo "checkpoint_input_path: ${MODEL_DIR}/${STEP}"
     echo "huggingface_output_dir: ${MODEL_DIR}/${STEP}-hf"
 
+  done
+done
+
 #    python src/examples/huggingface/convert_checkpoint_to_hf.py \
 #      --checkpoint-input-path "${MODEL_DIR}/${STEP}" \
 #      --max-sequence-length 4096 \
