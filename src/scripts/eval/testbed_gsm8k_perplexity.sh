@@ -6,4 +6,4 @@ python -m offline_evals.run_eval \
     --num-workers 1 \
     --gpus 1 \
     --model /root/ryanwang/phdbrainstorm/FlexMoE/models/dense_1b_olmoe-mix_300B_1030/step71526-hf \
-    --model-args '{"model_type": "hf"}
+    --model-args '{"model_type": "hf"}'
