@@ -164,7 +164,6 @@ class GSM8K_Perplexity_Base(Task):
         self, doc: dict, ctx: Union[str, list, dict], doc_id: int
     ) -> List[RequestInstance]:
         native_id_field = self.task_config.get("native_id_field", "id")
-        breakpoint()
         return [
             RequestInstance(
                 request_type=RequestType.LOGLIKELIHOOD.value,
