@@ -657,7 +657,7 @@ def run_eval(args_dict: dict):
         dl_check = process_internal_datalake_args(compute_config, model_hash, task_objects)
         if dl_check == "done":
             return
-
+    breakpoint()
     output_dir = compute_config["output_dir"]
     cached_output_dir = compute_config["cached_output_dir"]
     recompute_metrics = compute_config["recompute_metrics"]
