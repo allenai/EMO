@@ -6,7 +6,6 @@ from oe_eval.tasks.oe_eval_tasks import TASK_REGISTRY
 from oe_eval.tasks.oe_eval_tasks.mmlu import create_mmlu_task
 from oe_eval.tasks.oe_eval_tasks.mmlu_pro import create_mmlu_pro_task
 
-from tasks import splits_gsm8k
 from .tasks import (
     agi_eval,
     hatespeech,
@@ -29,6 +28,7 @@ from .tasks import (
     splits_piqa,
     splits_siqa,
     splits_winogrande,
+    splits_gsm8k,
 )
 
 
