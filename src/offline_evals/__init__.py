@@ -6,6 +6,7 @@ from oe_eval.tasks.oe_eval_tasks import TASK_REGISTRY
 from oe_eval.tasks.oe_eval_tasks.mmlu import create_mmlu_task
 from oe_eval.tasks.oe_eval_tasks.mmlu_pro import create_mmlu_pro_task
 
+from tasks import splits_gsm8k
 from .tasks import (
     agi_eval,
     hatespeech,
@@ -132,6 +133,9 @@ new_task_registry: Dict = {
     # MMLU
     **create_core_mmlu_tasks_withsplits(),
     **create_core_mmlu_pro_tasks_withsplits(),
+
+    # GSM8K
+    "gsm8k:perplexity": splits_gsm8k.GSM8K_Perplexity_Base,
 
 }
 

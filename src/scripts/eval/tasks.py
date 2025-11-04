@@ -6,6 +6,16 @@ from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 def get_task_configs():
     TASK_CONFIGS.update(
         {
+            "gsm8k:perplexity::olmes":{
+                "task_name": "gsm8k:perplexity",
+                "split": "test",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 8,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
             "hellaswag:mc_train::olmes": {
                 "task_name": "hellaswag:mc_train",
                 "split": "train",
