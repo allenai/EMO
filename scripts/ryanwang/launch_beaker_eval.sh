@@ -53,7 +53,7 @@ TASK_GROUPS_LIST=(
 #  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes drop::olmes"
 
 #   GSM8K
-  "gsm8k_test|gsm8k:perplexity::olmes"
+  "gsm8k_test|gsm8k:perplexity_test::olmes"
 
   ######### TRAIN-VAL-TEST ##########
 #  # MC9 tasks

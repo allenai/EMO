@@ -135,7 +135,9 @@ new_task_registry: Dict = {
     **create_core_mmlu_pro_tasks_withsplits(),
 
     # GSM8K
-    "gsm8k:perplexity": splits_gsm8k.GSM8K_Perplexity_Base,
+    "gsm8k:perplexity_train": splits_gsm8k.GSM8K_Perplexity_Train,
+    "gsm8k:perplexity_validation": splits_gsm8k.GSM8K_Perplexity_Validation,
+    "gsm8k:perplexity_test": splits_gsm8k.GSM8K_Perplexity_Test,
 
 }
 

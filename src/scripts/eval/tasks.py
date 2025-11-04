@@ -6,8 +6,28 @@ from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 def get_task_configs():
     TASK_CONFIGS.update(
         {
-            "gsm8k:perplexity::olmes":{
-                "task_name": "gsm8k:perplexity",
+            "gsm8k:perplexity_train::olmes":{
+                "task_name": "gsm8k:perplexity_train",
+                "split": "train",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 8,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k:perplexity_validation::olmes":{
+                "task_name": "gsm8k:perplexity_validation",
+                "split": "validation",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 8,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k:perplexity_test::olmes":{
+                "task_name": "gsm8k:perplexity_test",
                 "split": "test",
                 "primary_metric": "bits_per_byte",
                 "num_shots": 8,

@@ -181,5 +181,11 @@ class GSM8K_Perplexity_Base(Task):
             )
         ]
 
-        # return self.construct_basic_likelihood_rolling_requests(doc, cast(str, ctx), doc_id)
 
+class GSM8K_Perplexity_Train(GSM8K_Perplexity_Base):
+    pass
+
+class GSM8K_Perplexity_Validation(GSM8K_Perplexity_Base):
+    pass
+class GSM8K_Perplexity_Test(GSM8K_Perplexity_Base):
+    pass
