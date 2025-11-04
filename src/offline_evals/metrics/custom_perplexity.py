@@ -1,3 +1,5 @@
+import re
+
 import math
 from typing import List, Optional, Tuple
 
@@ -23,7 +25,7 @@ class CustomPerplexityMetric(Metric):
     ):
         super().__init__(**kwargs)
         self.metric_names = metric_names
-        self.scoring_types = ["token", "char", "word", "byte"]
+        self.scoring_types = ["char", "word", "byte"]
         self.source_key = source_key
         self.subdomain_key = subdomain_key
         self.verbose = verbose_token_logits
@@ -33,9 +35,10 @@ class CustomPerplexityMetric(Metric):
     def compute_for_requests(self, results_for_requests: List[dict]):
         for res in results_for_requests:
             prediction = res["model_resps"]
-
-            breakpoint()
             # add num_bytes, num_words, num_tokens, and num_chars to each result
+            prediction["num_chars"] = len(res["request"]["continuation"])
+            prediction["num_words"] = len(re.split(r"\s+", res["request"]["continuation"]))
+            prediction["num_bytes"] = len(res["request"]["continuation"].encode("utf-8"))
 
             new_output = {}
             new_output["bits_per_byte"] = -prediction["sum_logits"] / (
