@@ -819,7 +819,6 @@ def run_eval(args_dict: dict):
             task._instances = task_instances
         else:
             task.build_all_requests()
-            breakpoint()
             task_instances = task._instances if task._instances is not None else []
             eval_requests_raw = [ins.to_dict() for ins in task_instances]
         logger.info(f"Number of requests: {len(eval_requests_raw)}")
@@ -931,6 +930,8 @@ def run_eval(args_dict: dict):
                         os._exit(1)
                     # Gather results
                     results_for_requests.extend(result)
+
+        breakpoint()
 
         # Post-process generation results for metrics
         task.make_metrics()
