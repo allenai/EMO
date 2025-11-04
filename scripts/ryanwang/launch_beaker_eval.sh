@@ -4,8 +4,8 @@
 # Usage: bash src/scripts/eval/launch_beaker_eval.sh
 
 # Configuration
-MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
-#MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
+#MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
+MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 MODELS=(
     "dense_1b_olmoe-mix_300B_1030/step71526-hf"
     "dense_1b_olmoe-mix_1028/step30995-hf"
@@ -29,8 +29,8 @@ MODELS=(
 #    "dense_1b_olmoe-mix_300B_1030/step70000-hf"
 #)
 
-BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals"
-#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/evals"
+#BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals"
+BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/evals"
 BATCH_SIZE=16
 CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf
@@ -205,35 +205,35 @@ for MODEL_PATH in "${MODELS[@]}"; do
         echo "  Batch size: $batch_size"
         echo "  Job name: $job_name"
 
-#        PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
-#                --model "${MODEL_DIR}/${MODEL_PATH}" \
-#                --model-type hf \
-#                --task $TASK \
-#                --output-dir $OUTPUT_DIR \
-#                --batch-size $batch_size \
-#                --gpus $gpus \
-
-        gantry run \
-            --name $job_name \
-            --weka oe-training-default:/weka/oe-training-default \
-            --install "pip install -e \".[all]\"" \
-            --budget ai2/oe-base \
-            --workspace ai2/flex2 \
-            --cluster $CLUSTER \
-            --priority urgent \
-            --gpus $gpus \
-            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-            -- \
-            bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+        PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
                 --model "${MODEL_DIR}/${MODEL_PATH}" \
                 --model-type hf \
                 --task $TASK \
-                --remote-output-dir $OUTPUT_DIR \
+                --output-dir $OUTPUT_DIR \
                 --batch-size $batch_size \
                 --gpus $gpus \
-                "
+
+#        gantry run \
+#            --name $job_name \
+#            --weka oe-training-default:/weka/oe-training-default \
+#            --install "pip install -e \".[all]\"" \
+#            --budget ai2/oe-base \
+#            --workspace ai2/flex2 \
+#            --cluster $CLUSTER \
+#            --priority urgent \
+#            --gpus $gpus \
+#            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+#            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+#            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+#            -- \
+#            bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+#                --model "${MODEL_DIR}/${MODEL_PATH}" \
+#                --model-type hf \
+#                --task $TASK \
+#                --remote-output-dir $OUTPUT_DIR \
+#                --batch-size $batch_size \
+#                --gpus $gpus \
+#                "
 
         echo "Launched evaluation for model: $model, group: $GROUP_NAME"
         echo "----------------------------------------"
