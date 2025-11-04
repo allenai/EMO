@@ -931,8 +931,6 @@ def run_eval(args_dict: dict):
                     # Gather results
                     results_for_requests.extend(result)
 
-        breakpoint()
-
         # Post-process generation results for metrics
         task.make_metrics()
 
