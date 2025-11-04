@@ -4,29 +4,29 @@
 # Usage: bash src/scripts/eval/launch_beaker_eval.sh
 
 # Configuration
-MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
-#MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
+#MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
+MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 MODELS=("dense_1b_olmoe-mix_300B_1030/step71526-hf")
-MODELS=(
-    "dense_1b_olmoe-mix_300B_1030/step0-hf"
-    "dense_1b_olmoe-mix_300B_1030/step5000-hf"
-    "dense_1b_olmoe-mix_300B_1030/step10000-hf"
-    "dense_1b_olmoe-mix_300B_1030/step15000-hf"
-    "dense_1b_olmoe-mix_300B_1030/step20000-hf"
-    "dense_1b_olmoe-mix_300B_1030/step25000-hf"
-    "dense_1b_olmoe-mix_300B_1030/step30000-hf"
-    "dense_1b_olmoe-mix_300B_1030/step35000-hf"
-    "dense_1b_olmoe-mix_300B_1030/step40000-hf"
-    "dense_1b_olmoe-mix_300B_1030/step45000-hf"
-    "dense_1b_olmoe-mix_300B_1030/step50000-hf"
-    "dense_1b_olmoe-mix_300B_1030/step55000-hf"
-    "dense_1b_olmoe-mix_300B_1030/step60000-hf"
-    "dense_1b_olmoe-mix_300B_1030/step65000-hf"
-    "dense_1b_olmoe-mix_300B_1030/step70000-hf"
-)
+#MODELS=(
+#    "dense_1b_olmoe-mix_300B_1030/step0-hf"
+#    "dense_1b_olmoe-mix_300B_1030/step5000-hf"
+#    "dense_1b_olmoe-mix_300B_1030/step10000-hf"
+#    "dense_1b_olmoe-mix_300B_1030/step15000-hf"
+#    "dense_1b_olmoe-mix_300B_1030/step20000-hf"
+#    "dense_1b_olmoe-mix_300B_1030/step25000-hf"
+#    "dense_1b_olmoe-mix_300B_1030/step30000-hf"
+#    "dense_1b_olmoe-mix_300B_1030/step35000-hf"
+#    "dense_1b_olmoe-mix_300B_1030/step40000-hf"
+#    "dense_1b_olmoe-mix_300B_1030/step45000-hf"
+#    "dense_1b_olmoe-mix_300B_1030/step50000-hf"
+#    "dense_1b_olmoe-mix_300B_1030/step55000-hf"
+#    "dense_1b_olmoe-mix_300B_1030/step60000-hf"
+#    "dense_1b_olmoe-mix_300B_1030/step65000-hf"
+#    "dense_1b_olmoe-mix_300B_1030/step70000-hf"
+#)
 
-BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals"
-#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/evals"
+#BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals"
+BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/evals"
 BATCH_SIZE=16
 CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf
@@ -35,22 +35,25 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
-  "arc_easy|arc_easy:mc_test::olmes arc_easy:rc_test::olmes"
-  "arc_challenge|arc_challenge:mc_test::olmes arc_challenge:rc_test::olmes"
-  "boolq|boolq:mc_test::olmes boolq:rc_test::olmes"
-  "csqa|csqa:csqa:mc_test::olmes csqa:rc_test::olmes"
-  "hellaswag|hellaswag:mc_test::olmes hellaswag:rc_test::olmes"
-  "openbookqa|openbookqa:mc_test::olmes openbookqa:rc_test::olmes"
-  "piqa|piqa:piqa:mc_test::olmes piqa:rc_test::olmes"
-  "socialiqa|socialiqa:mc_test::olmes socialiqa:rc_test::olmes"
-  "winogrande|winogrande:mc_test::olmes winogrande:rc_test::olmes"
+#  "arc_easy|arc_easy:mc_test::olmes arc_easy:rc_test::olmes"
+#  "arc_challenge|arc_challenge:mc_test::olmes arc_challenge:rc_test::olmes"
+#  "boolq|boolq:mc_test::olmes boolq:rc_test::olmes"
+#  "csqa|csqa:csqa:mc_test::olmes csqa:rc_test::olmes"
+#  "hellaswag|hellaswag:mc_test::olmes hellaswag:rc_test::olmes"
+#  "openbookqa|openbookqa:mc_test::olmes openbookqa:rc_test::olmes"
+#  "piqa|piqa:piqa:mc_test::olmes piqa:rc_test::olmes"
+#  "socialiqa|socialiqa:mc_test::olmes socialiqa:rc_test::olmes"
+#  "winogrande|winogrande:mc_test::olmes winogrande:rc_test::olmes"
+#
+##   MMLU
+#  "mmlu_mc_valid_test|mmlu:mc_test::olmes"
+#  "mmlu_rc_valid_test|mmlu:rc_test::olmes"
+#
+##   Gen5 tasks
+#  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes drop::olmes"
 
-#   MMLU
-  "mmlu_mc_valid_test|mmlu:mc_test::olmes"
-  "mmlu_rc_valid_test|mmlu:rc_test::olmes"
-
-#   Gen5 tasks
-  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes drop::olmes"
+#   GSM8K
+  "gsm8k_test|gsm8k::perplexity::olmes"
 
   ######### TRAIN-VAL-TEST ##########
 #  # MC9 tasks
@@ -198,35 +201,35 @@ for MODEL_PATH in "${MODELS[@]}"; do
         echo "  Batch size: $batch_size"
         echo "  Job name: $job_name"
 
-#        PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
-#                --model "${MODEL_DIR}/${MODEL_PATH}" \
-#                --model-type hf \
-#                --task $TASK \
-#                --output-dir $OUTPUT_DIR \
-#                --batch-size $batch_size \
-#                --gpus $gpus \
-
-        gantry run \
-            --name $job_name \
-            --weka oe-training-default:/weka/oe-training-default \
-            --install "pip install -e \".[all]\"" \
-            --budget ai2/oe-base \
-            --workspace ai2/flex2 \
-            --cluster $CLUSTER \
-            --priority urgent \
-            --gpus $gpus \
-            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-            -- \
-            bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+        PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
                 --model "${MODEL_DIR}/${MODEL_PATH}" \
                 --model-type hf \
                 --task $TASK \
-                --remote-output-dir $OUTPUT_DIR \
+                --output-dir $OUTPUT_DIR \
                 --batch-size $batch_size \
                 --gpus $gpus \
-                "
+
+#        gantry run \
+#            --name $job_name \
+#            --weka oe-training-default:/weka/oe-training-default \
+#            --install "pip install -e \".[all]\"" \
+#            --budget ai2/oe-base \
+#            --workspace ai2/flex2 \
+#            --cluster $CLUSTER \
+#            --priority urgent \
+#            --gpus $gpus \
+#            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+#            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+#            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+#            -- \
+#            bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+#                --model "${MODEL_DIR}/${MODEL_PATH}" \
+#                --model-type hf \
+#                --task $TASK \
+#                --remote-output-dir $OUTPUT_DIR \
+#                --batch-size $batch_size \
+#                --gpus $gpus \
+#                "
 
         echo "Launched evaluation for model: $model, group: $GROUP_NAME"
         echo "----------------------------------------"
