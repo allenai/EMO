@@ -28,6 +28,8 @@ from oe_eval.tasks.base_task import Task
 from oe_eval.tasks.utils import apply_prompt_template
 from oe_eval.utils import get_dict_with_defaults
 
+from metrics.custom_perplexity import CustomPerplexityMetric
+
 _CITATION = """
 @misc{cobbe2021training,
       title={Training Verifiers to Solve Math Word Problems},
@@ -61,7 +63,7 @@ class GSM8K_Perplexity_Base(Task):
     }
 
     def make_metrics(self):
-        self._metrics = [PerplexityMetric()]
+        self._metrics = [CustomPerplexityMetric()]
         return self._metrics
 
     def has_training_docs(self):
