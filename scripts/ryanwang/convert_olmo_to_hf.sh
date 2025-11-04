@@ -25,8 +25,8 @@
 #done
 
 python src/examples/huggingface/convert_checkpoint_to_hf.py \
-      --checkpoint-input-path "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995" \
+      --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/moe_1b7b_128experts_olmoe-mix_130B_1103/step30995" \
       --max-sequence-length 4096 \
-      --huggingface-output-dir "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995-hf" \
+      --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/moe_1b7b_128experts_olmoe-mix_130B_1103/step30995-hf" \
       --dtype float32
 
