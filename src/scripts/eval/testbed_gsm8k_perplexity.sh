@@ -1,5 +1,5 @@
 python -m offline_evals.run_eval \
-    --task '{"task_name": "gsm8k:perplexity::olmes"}' \
+    --task '{"task_name": "gsm8k:perplexity"}' \
     --batch-size 16 \
     --output-dir /root/ryanwang/phdbrainstorm/FlexMoE/evals/dense_1b_olmoe-mix_300B_1030_step71526-hf \
     --save-raw-requests true \
