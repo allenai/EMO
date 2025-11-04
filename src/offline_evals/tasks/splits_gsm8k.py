@@ -21,7 +21,7 @@ import re
 from typing import List, Union, cast
 
 from oe_eval.components.instances import RequestInstance
-from oe_eval.components.requests import RequestType
+from oe_eval.components.requests import RequestType, LoglikelihoodRequest
 from oe_eval.metrics import PerplexityMetric
 from oe_eval.metrics.metric import ExactMatch, MajAtK, MCAccuracy
 from oe_eval.tasks.base_task import Task
@@ -163,5 +163,22 @@ class GSM8K_Perplexity_Base(Task):
     def construct_requests(
         self, doc: dict, ctx: Union[str, list, dict], doc_id: int
     ) -> List[RequestInstance]:
-        return self.construct_basic_likelihood_rolling_requests(doc, cast(str, ctx), doc_id)
+        native_id_field = self.task_config.get("native_id_field", "id")
+        breakpoint()
+        return [
+            RequestInstance(
+                request_type=RequestType.LOGLIKELIHOOD.value,
+                doc=doc,
+                request=LoglikelihoodRequest(
+                    context=ctx,
+                    continuation=" {}".format(self.doc_to_target(doc)),
+                ),
+                idx=0,
+                task_name=self.task_name,
+                doc_id=doc_id,
+                native_id=doc.get(native_id_field),
+            )
+        ]
+
+        # return self.construct_basic_likelihood_rolling_requests(doc, cast(str, ctx), doc_id)
 

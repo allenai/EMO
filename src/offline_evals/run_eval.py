@@ -657,7 +657,6 @@ def run_eval(args_dict: dict):
         dl_check = process_internal_datalake_args(compute_config, model_hash, task_objects)
         if dl_check == "done":
             return
-    breakpoint()
     output_dir = compute_config["output_dir"]
     cached_output_dir = compute_config["cached_output_dir"]
     recompute_metrics = compute_config["recompute_metrics"]
@@ -820,6 +819,7 @@ def run_eval(args_dict: dict):
             task._instances = task_instances
         else:
             task.build_all_requests()
+            breakpoint()
             task_instances = task._instances if task._instances is not None else []
             eval_requests_raw = [ins.to_dict() for ins in task_instances]
         logger.info(f"Number of requests: {len(eval_requests_raw)}")
