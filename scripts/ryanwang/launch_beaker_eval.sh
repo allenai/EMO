@@ -41,25 +41,25 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
-  "arc_easy|arc_easy:mc_test::olmes arc_easy:rc_test::olmes"
-  "arc_challenge|arc_challenge:mc_test::olmes arc_challenge:rc_test::olmes"
+#  "arc_easy|arc_easy:mc_test::olmes arc_easy:rc_test::olmes"
+#  "arc_challenge|arc_challenge:mc_test::olmes arc_challenge:rc_test::olmes"
   "boolq|boolq:mc_test::olmes boolq:rc_test::olmes"
-  "csqa|csqa:csqa:mc_test::olmes csqa:rc_test::olmes"
-  "hellaswag|hellaswag:mc_test::olmes hellaswag:rc_test::olmes"
-  "openbookqa|openbookqa:mc_test::olmes openbookqa:rc_test::olmes"
-  "piqa|piqa:piqa:mc_test::olmes piqa:rc_test::olmes"
-  "socialiqa|socialiqa:mc_test::olmes socialiqa:rc_test::olmes"
-  "winogrande|winogrande:mc_test::olmes winogrande:rc_test::olmes"
+  "csqa|csqa:mc_test::olmes csqa:rc_test::olmes"
+#  "hellaswag|hellaswag:mc_test::olmes hellaswag:rc_test::olmes"
+#  "openbookqa|openbookqa:mc_test::olmes openbookqa:rc_test::olmes"
+  "piqa|piqa:mc_test::olmes piqa:rc_test::olmes"
+#  "socialiqa|socialiqa:mc_test::olmes socialiqa:rc_test::olmes"
+#  "winogrande|winogrande:mc_test::olmes winogrande:rc_test::olmes"
 
 #   MMLU
-  "mmlu_mc_test|mmlu:mc_test::olmes"
-  "mmlu_rc_test|mmlu:rc_test::olmes"
+#  "mmlu_mc_test|mmlu:mc_test::olmes"
+#  "mmlu_rc_test|mmlu:rc_test::olmes"
 
 #   Gen5 tasks
-  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes drop::olmes"
+#  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes drop::olmes"
 
 #   GSM8K
-  "gsm8k_test|gsm8k:perplexity_test::olmes"
+#  "gsm8k_test|gsm8k:perplexity_test::olmes"
 
   ######### TRAIN-VAL-TEST ##########
 #  # MC9 tasks
