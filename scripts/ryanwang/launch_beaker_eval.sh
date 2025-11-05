@@ -182,7 +182,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
         TASK="${entry#*|}"            # text after '|'
 
         # Batch size adjustment (matching original script)
-        if [[ $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* || $TAS == *"boolq"* ]]; then
+        if [[ $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* || $TASK == *"boolq"* ]]; then
             batch_size=$((BATCH_SIZE / 4))
         else
             batch_size=$BATCH_SIZE
