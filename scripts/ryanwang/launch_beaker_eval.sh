@@ -44,10 +44,10 @@ TASK_GROUPS_LIST=(
 #  "arc_easy|arc_easy:mc_test::olmes arc_easy:rc_test::olmes"
 #  "arc_challenge|arc_challenge:mc_test::olmes arc_challenge:rc_test::olmes"
   "boolq|boolq:mc_test::olmes boolq:rc_test::olmes"
-  "csqa|csqa:mc_test::olmes csqa:rc_test::olmes"
+#  "csqa|csqa:mc_test::olmes csqa:rc_test::olmes"
 #  "hellaswag|hellaswag:mc_test::olmes hellaswag:rc_test::olmes"
 #  "openbookqa|openbookqa:mc_test::olmes openbookqa:rc_test::olmes"
-  "piqa|piqa:mc_test::olmes piqa:rc_test::olmes"
+#  "piqa|piqa:mc_test::olmes piqa:rc_test::olmes"
 #  "socialiqa|socialiqa:mc_test::olmes socialiqa:rc_test::olmes"
 #  "winogrande|winogrande:mc_test::olmes winogrande:rc_test::olmes"
 
@@ -182,7 +182,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
         TASK="${entry#*|}"            # text after '|'
 
         # Batch size adjustment (matching original script)
-        if [[ $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* ]]; then
+        if [[ $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* || $TAS == *"boolq"* ]]; then
             batch_size=$((BATCH_SIZE / 4))
         else
             batch_size=$BATCH_SIZE
