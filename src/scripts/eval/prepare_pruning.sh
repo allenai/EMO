@@ -31,10 +31,6 @@ while [[ $# -gt 0 ]]; do
       GPUS="$2"
       shift 2
       ;;
-#    --)
-#      VERBOSE=true
-#      shift
-#      ;;
     *)
       shift
       ;;
@@ -45,9 +41,6 @@ echo "=======Enter prepare_pruning.sh ========"
 echo "GROUP_NAME: $GROUP_NAME"
 echo "BASE_OUTPUT_REMOTE_DIR: $BASE_OUTPUT_REMOTE_DIR"
 echo "BATCH_SIZE: $BATCH_SIZE"
-
-#echo "Mode: $MODE"
-#[[ $VERBOSE == true ]] && echo "Verbose mode is ON"
 
 # this prepares all model-specific variables
 function get_checkpoint_name {
@@ -81,31 +74,31 @@ else
 fi
 
 # requests for validation (expert selection). Saves validation to model-specific directory since we also get model predictions for correctness
-#PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
-#      --model "$MODEL_PATH" \
-#      --model-type hf \
-#      --task "$validation_task_name" \
-#      --output-dir $output_dir \
-#      --batch-size $BATCH_SIZE \
-#      --gpus $GPUS \
-#      --save-raw-requests true
-#
-## requests for train (for finetuning). Saves to common directory since no model-specific info needed
-#PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
-#      --task "$train_task_name" \
-#      --output-dir $BASE_OUTPUT_REMOTE_DIR \
-#      --batch-size $BATCH_SIZE \
-#      --save-raw-requests true
-#
-#echo "~~~~~~~~~ prepare expert activations on validation set ~~~~~~~~~"
-#
-#PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
-#  --model "$MODEL_PATH" \
-#  --task "$validation_task_name" \
-#  --eval-dir "$output_dir" \
-#  --output-dir "$output_dir" \
-#  --batch-size "$BATCH_SIZE" \
-#  --gpus "$GPUS" \
+PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+      --model "$MODEL_PATH" \
+      --model-type hf \
+      --task "$validation_task_name" \
+      --output-dir $output_dir \
+      --batch-size $BATCH_SIZE \
+      --gpus $GPUS \
+      --save-raw-requests true
+
+# requests for train (for finetuning). Saves to common directory since no model-specific info needed
+PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+      --task "$train_task_name" \
+      --output-dir $BASE_OUTPUT_REMOTE_DIR \
+      --batch-size $BATCH_SIZE \
+      --save-raw-requests true
+
+echo "~~~~~~~~~ prepare expert activations on validation set ~~~~~~~~~"
+
+PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
+  --model "$MODEL_PATH" \
+  --task "$validation_task_name" \
+  --eval-dir "$output_dir" \
+  --output-dir "$output_dir" \
+  --batch-size "$BATCH_SIZE" \
+  --gpus "$GPUS" \
 
 echo "~~~~~~~~~ tokenize the training set ~~~~~~~~~"
 
@@ -139,6 +132,9 @@ destination="${BASE_OUTPUT_REMOTE_DIR}/${task_prefix}-tokenized"
 
 # gzip the data
 gzip ${jsonl_file}
+
+# pip install dolma (note: this will likely break the environment, but this is the last step so it's okay
+pip install dolma
 
 # tokenize the files
 dolma tokens \

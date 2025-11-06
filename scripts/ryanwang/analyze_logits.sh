@@ -1,13 +1,13 @@
 #!/bin/bash
 # Configuration
-#MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
-MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
+MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
+#MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 MODELS=(
     "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995-hf"
     )
-
 #BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/prune"
-BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/prune"
+#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/prune"
+BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/prune"
 BATCH_SIZE=16
 CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf
@@ -94,42 +94,33 @@ for MODEL_PATH in "${MODELS[@]}"; do
         echo "  Batch size: $batch_size"
         echo "  Job name: $job_name"
 
-        bash src/scripts/eval/prepare_pruning.sh \
-            --GROUP_NAME "$GROUP_NAME" \
-            --BASE_OUTPUT_REMOTE_DIR "$BASE_OUTPUT_DIR" \
-            --BATCH_SIZE "$batch_size" \
-            --MODEL_PATH "${MODEL_DIR}/${MODEL_PATH}" \
-            --GPUS "$gpus"
+#        bash src/scripts/eval/prepare_pruning.sh \
+#            --GROUP_NAME "$GROUP_NAME" \
+#            --BASE_OUTPUT_REMOTE_DIR "$BASE_OUTPUT_DIR" \
+#            --BATCH_SIZE "$batch_size" \
+#            --MODEL_PATH "${MODEL_DIR}/${MODEL_PATH}" \
+#            --GPUS "$gpus"
 
-#         PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
-#            --model "$MODEL_PATH" \
-#            --task "$TASK" \
-#            --eval-dir "$EVAL_DIR" \
-#            --batch-size "$BATCH_SIZE" \
-#            --gpus "$GPUS" \
-#            --use_correct_only
-
-#        gantry run \
-#            --name $job_name \
-#            --weka oe-training-default:/weka/oe-training-default \
-#            --install "bash src/scripts/eval/setup_eval_env.sh;" \
-#            --budget ai2/oceo \
-#            --workspace ai2/flex2 \
-#            --cluster $CLUSTER \
-#            --priority urgent \
-#            --gpus $GPUS \
-#            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-#            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-#            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-#            -- \
-#            bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
-#                --model $MODEL_PATH \
-#                --task $TASK \
-#                --eval-dir "$EVAL_DIR" \
-#                --batch-size "$BATCH_SIZE" \
-#                --gpus "$GPUS" \
-#                --use_correct_only
-#                "
+        gantry run \
+            --name $job_name \
+            --weka oe-training-default:/weka/oe-training-default \
+            --install "pip install -e \".[all]\"" \
+            --budget ai2/oceo \
+            --workspace ai2/flex2 \
+            --cluster $CLUSTER \
+            --priority urgent \
+            --gpus $GPUS \
+            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+            -- \
+            bash -c "bash src/scripts/eval/prepare_pruning.sh \
+                --GROUP_NAME "$GROUP_NAME" \
+                --BASE_OUTPUT_REMOTE_DIR "$BASE_OUTPUT_DIR" \
+                --BATCH_SIZE "$batch_size" \
+                --MODEL_PATH "${MODEL_DIR}/${MODEL_PATH}" \
+                --GPUS "$gpus"
+            "
 
         echo "Launched evaluation for model: $model, group: $GROUP_NAME"
         echo "----------------------------------------"
