@@ -127,5 +127,8 @@ get_eval_filename() {
     echo "task-${task_name}"
 }
 
+test_filename=$(get_eval_filename "$train_task_name")
+echo "TEST Train filename: $test_filename"
+
 
 echo "========================================"
