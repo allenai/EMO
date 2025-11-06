@@ -52,7 +52,7 @@ function get_checkpoint_name {
     local split_path=${path#*OLMo2-7B-}
     local modified_path=${split_path//\//_}
     modified_path=$(echo $modified_path | sed 's/^_//;s/_$//')
-    echo "${modified_path//hf/${model_type}}"
+    echo "${modified_path}"
 }
 get_model_subpath() {
     local input="$1"
@@ -61,7 +61,10 @@ get_model_subpath() {
 # setup output_dir to be model-specific (for validation set, as well as logits)
 MODEL_NAME=$(get_model_subpath $MODEL_PATH)
 model=$(get_checkpoint_name $MODEL_NAME)
-output_dir="$BASE_OUTPUT_REMOTE_DIR/$MODEL_PATH"
+output_dir="$BASE_OUTPUT_REMOTE_DIR/$model"
+echo "MODEL_NAME: $MODEL_NAME"
+echo "Model name for output dir: $model"
+echo "Output dir: $output_dir"
 
 # run to get requests. Will not override if file alread exists
 echo "~~~~~~~~~ get validation and train examples ~~~~~~~~~"

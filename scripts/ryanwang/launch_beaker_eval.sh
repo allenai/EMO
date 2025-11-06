@@ -150,7 +150,7 @@ function get_checkpoint_name {
     local split_path=${path#*OLMo2-7B-}
     local modified_path=${split_path//\//_}
     modified_path=$(echo $modified_path | sed 's/^_//;s/_$//')
-    echo "${modified_path//hf/${model_type}}"
+    echo "${modified_path}"
 }
 
 echo "Launching beaker evaluations for ${#MODELS[@]} models and ${#TASK_GROUPS[@]} task groups..."
