@@ -6,8 +6,8 @@ MODELS=(
     "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995-hf"
     )
 
-BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/prune"
-#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/prune"
+#BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/prune"
+BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/prune"
 BATCH_SIZE=16
 CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf
