@@ -33,7 +33,7 @@ done
 echo "========================================"
 echo "=======Enter prepare_pruning.sh ========"
 echo "TASK: $TASK"
-echo "BASE_OUTput_REMOTE_DIR: $BASE_OUTPUT_REMOTE_DIR"
+echo "BASE_OUTPUT_REMOTE_DIR: $BASE_OUTPUT_REMOTE_DIR"
 echo "BATCH_SIZE: $BATCH_SIZE"
 
 #echo "Mode: $MODE"
@@ -41,7 +41,7 @@ echo "BATCH_SIZE: $BATCH_SIZE"
 
 PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
         --task $TASK \
-        --output-dir $OUTPUT_DIR \
+        --output-dir $BASE_OUTPUT_REMOTE_DIR \
         --batch-size $BATCH_SIZE \
         --save-raw-requests \
 
