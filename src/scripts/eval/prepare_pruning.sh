@@ -107,7 +107,7 @@ fi
 #  --batch-size "$BATCH_SIZE" \
 #  --gpus "$GPUS" \
 
-echo "~~~~~~~~~ tokenize the training set "
+echo "~~~~~~~~~ tokenize the training set ~~~~~~~~~"
 
 # this gets the correct requests and saves them into dolma format (jsonl
 PYTHONPATH=. python -u src/scripts/eval/extract_finetuning_examples.py \
@@ -127,8 +127,27 @@ get_eval_filename() {
     echo "task-${task_name}"
 }
 
-test_filename=$(get_eval_filename "$train_task_name")
-echo "TEST Train filename: $test_filename"
+# this is the prefix of the output task name
+task_prefix=$(get_eval_filename "$train_task_name")
+processed_train_file="${task_prefix}-processed.jsonl}"
+echo "Processed Train filename: $processed_train_file"
 
+# we now tokenize the file
+tokenizer_name="allenai/OLMo-2-1124-7B"
+jsonl_file="${BASE_OUTPUT_REMOTE_DIR}/${processed_train_file}"
+destination="${BASE_OUTPUT_REMOTE_DIR}/${task_prefix}-tokenized"
+
+# gzip the data
+gzip ${jsonl_file}
+
+# tokenize the files
+dolma tokens \
+  --documents ${jsonl_file}.gz \
+  --tokenizer.name_or_path ${tokenizer_name} \
+  --tokenizer.eos_token_id 100257 \
+  --tokenizer.pad_token_id 100277 \
+  --destination ${destination} \
+  --dtype uint32 \
+  --processes 1
 
 echo "========================================"
