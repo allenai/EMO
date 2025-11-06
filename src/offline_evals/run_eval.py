@@ -756,6 +756,7 @@ def run_eval(args_dict: dict):
 
     for task_idx, task in enumerate(task_objects):
         start_time = time.time()
+        breakpoint()
         task_name = task.task_name
         predictions_file = None
         cached_predictions = None

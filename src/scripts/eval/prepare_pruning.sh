@@ -43,7 +43,7 @@ echo "BATCH_SIZE: $BATCH_SIZE"
 # run to get requests. Will not override if file alread exists
 echo "~~~~~~~~~ get validation and train examples ~~~~~~~~~"
 
-if [[ "gsm8k" == "$GROUP_NAME" ]]; then
+if [[ "gsm8k" == "*$GROUP_NAME*" ]]; then
     validation_task_name="$GROUP_NAME:perplexity_validation_0shot::olmes"
     train_task_name="$GROUP_NAME:perplexity_train_0shot::olmes"
 else
@@ -65,7 +65,5 @@ PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
       --save-raw-requests true
 
 
-
-# run to get the
 
 echo "========================================"
