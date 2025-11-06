@@ -7,8 +7,10 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from typing import List
 import torch.nn.functional as F
+from oe_eval.utilities.remote_utils import cache_s3_folder, upload_directory
 
 from tqdm import tqdm
 
@@ -40,8 +42,6 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
     # general matching rule
     requests_file = os.path.join(eval_folder, f"{eval_dataset_name}-requests.jsonl")
     predictions_file = os.path.join(eval_folder, f"{eval_dataset_name}-predictions.jsonl")
-
-    breakpoint()
 
     # load the jsonl file
     requests_data = load_jsonl_file(requests_file)
@@ -84,14 +84,26 @@ def launch_logits(args_dict):
     for eval_dataset_name in args_dict["task"]:
         print("evaluating dataset ", eval_dataset_name)
 
+        # retrieve eval-dir if eval-dir is s3
+        if args_dict["eval_dir"].startswith("s3://"):
+            eval_dir = cache_s3_folder(args_dict["eval_dir"])["local_dir"]
+        else:
+            eval_dir = args_dict["eval_dir"]
+
         # get the request file for the corresponding task
         eval_dataset_name = get_eval_filename(eval_dataset_name)
 
         print("TEST DATASET NAME after get_eval_filename: ", eval_dataset_name)
 
-        prompts, correct = get_prompt_sequences_for_evaluation(eval_dataset_name, args_dict["eval_dir"])
+        prompts, correct = get_prompt_sequences_for_evaluation(eval_dataset_name, eval_dir)
 
-        out_fn = os.path.join(args_dict["output_dir"], f"{eval_dataset_name}-router.jsonl")
+        if args_dict["output_dir"].startswith("s3://"):
+            output_dir = tempfile.mkdtemp()
+        else:
+            output_dir = args_dict["output_dir"]
+            os.makedirs(output_dir, exist_ok=True)
+
+        out_fn = os.path.join(output_dir, f"{eval_dataset_name}-router.jsonl")
 
         out_file = open(out_fn, 'w')
 
@@ -143,6 +155,9 @@ def launch_logits(args_dict):
         save_router_probabilities = tot_router_probabilities / tot_tokens
         out_file.write(json.dumps({"avg_router_probabilities": save_router_probabilities.tolist()}) + "\n")
         out_file.close()
+
+        if args_dict["output_dir"].startswith("s3://"):
+            upload_directory(output_dir, args_dict["output_dir"])
 
 
 def main():

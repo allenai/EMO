@@ -82,7 +82,7 @@ PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
       --model "$MODEL_PATH" \
       --model-type hf \
       --task "$validation_task_name" \
-      --output-dir $output_dir \
+      --remote-output-dir- $output_dir \
       --batch-size $BATCH_SIZE \
       --gpus $GPUS \
       --save-raw-requests true
@@ -90,7 +90,7 @@ PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
 # requests for train (for finetuning). Saves to common directory since no model-specific info needed
 PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
       --task "$train_task_name" \
-      --output-dir $BASE_OUTPUT_REMOTE_DIR \
+      --remote-output-dir $BASE_OUTPUT_REMOTE_DIR \
       --batch-size $BATCH_SIZE \
       --save-raw-requests true
 
@@ -103,6 +103,5 @@ PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
   --output-dir "$output_dir" \
   --batch-size "$BATCH_SIZE" \
   --gpus "$GPUS" \
-  --use_correct_only
 
 echo "========================================"
