@@ -65,14 +65,13 @@ def extract_finetuning_examples(args_dict):
     for eval_dataset_name in args_dict["task"]:
         print("evaluating dataset ", eval_dataset_name)
 
-        out_fn = os.path.join(args_dict["eval_dir"], f"{eval_dataset_name}-processed.jsonl")
+        # get the request file for the corresponding task
+        eval_dataset_name = get_eval_filename(eval_dataset_name)
 
+        out_fn = os.path.join(args_dict["eval_dir"], f"{eval_dataset_name}-processed.jsonl")
         if os.path.exists(out_fn):
             print(f"Output file {out_fn} already exists, skipping...")
             continue
-
-        # get the request file for the corresponding task
-        eval_dataset_name = get_eval_filename(eval_dataset_name)
 
         data = get_correct_training_data(eval_dataset_name, args_dict["eval_dir"])
 
