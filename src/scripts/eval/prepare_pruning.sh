@@ -107,4 +107,12 @@ PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
   --batch-size "$BATCH_SIZE" \
   --gpus "$GPUS" \
 
+echo "~~~~~~~~~ tokenize the training set "
+
+# this gets the correct requests and saves them into dolma format (jsonl
+PYTHONPATH=. python -u src/scripts/eval/extract_finetuning_examples.py \
+        --task "$train_task_name" \
+        --eval-dir "$output_dir" \
+        --token-dir "$output_dir/tokens" \
+
 echo "========================================"

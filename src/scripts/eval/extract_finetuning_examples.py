@@ -23,8 +23,8 @@ _parser = argparse.ArgumentParser()
 _parser.add_argument(
     "--task", type=str, nargs="+", required=False, help="Task spec(s) from library or jsonl file"
 )
-_parser.add_argument("--input-dir", type=str, default=None, help="Directory corresponding to outputted requests")
-_parser.add_argument("--output-dir", type=str, default=None, help="Directory corresponding to outputted processed jsonl")
+_parser.add_argument("--eval-dir", type=str, default=None, help="Directory corresponding to outputted requests")
+_parser.add_argument("--token-dir", type=str, default=None, help="Directory corresponding to outputted processed jsonl")
 
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
@@ -32,10 +32,7 @@ logger = logging.getLogger()
 
 def get_correct_training_data(eval_dataset_name, eval_folder):
     # general matching rule
-    requests_files = find_file(eval_folder, f"{eval_dataset_name}-requests")
-    assert len(requests_files) == 1, f"Found {len(requests_files)} request files for {eval_dataset_name} in {eval_folder}, expected 1"
-
-    requests_file = requests_files[0]
+    requests_file = os.path.join(eval_folder, f"{eval_dataset_name}-requests.jsonl")
 
     # load the jsonl file
     requests_data = load_jsonl_file(requests_file)
@@ -48,6 +45,8 @@ def get_correct_training_data(eval_dataset_name, eval_folder):
         # loop through the requests, select only the correct ones
         for req in requests_data:
             if req["idx"] != req["label"]:
+                continue
+            if req["request"]["context"].startswith("Answer:"):
                 continue
             correct_reqs.append(req)
 
@@ -66,12 +65,12 @@ def extract_finetuning_examples(args_dict):
     for eval_dataset_name in args_dict["task"]:
         print("evaluating dataset ", eval_dataset_name)
 
-        # convert dataset name to substring
-        eval_dataset_name = find_task_substring(eval_dataset_name)
+        # get the request file for the corresponding task
+        eval_dataset_name = get_eval_filename(eval_dataset_name)
 
-        data = get_correct_training_data(eval_dataset_name, args_dict["input_dir"])
+        data = get_correct_training_data(eval_dataset_name, args_dict["eval_dir"])
 
-        os.makedirs(args_dict["output_dir"], exist_ok=True)
+        os.makedirs(args_dict["token_dir"], exist_ok=True)
 
         out_fn = os.path.join(args_dict["output_dir"], "out.jsonl")
 

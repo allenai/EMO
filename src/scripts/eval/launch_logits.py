@@ -105,6 +105,10 @@ def launch_logits(args_dict):
 
         out_fn = os.path.join(output_dir, f"{eval_dataset_name}-router.jsonl")
 
+        if os.path.exists(out_fn):
+            print(f"Output file {out_fn} already exists, skipping...")
+            continue
+
         out_file = open(out_fn, 'w')
 
         # initialize storage for summed router probabilities
