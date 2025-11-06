@@ -20,10 +20,10 @@ def load_jsonl_file(file_path):
             data.append(json.loads(line))
     return data
 
-def find_task_substring(task_name):
-    """finds a substring that can use find_file to locate files for a given task name"""
-    if "mc" in task_name:
-        return task_name.split("::")[0]
-    if "rc" in task_name:
-        return task_name.split(":rc")[0]
-    raise NotImplementedError(f"Task {task_name} not implemented in find_task_substring")
+def get_eval_filename(task_name):
+    """gets the corresponding output file of an eval task"""
+    # remove the part after '::' if it exists
+    task_name = task_name.split('::')[0]
+    # convert all ":" to "_"
+    task_name = task_name.replace(":", "_")
+    return f"task-{task_name}"

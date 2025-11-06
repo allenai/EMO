@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 import torch
 
-from src.offline_evals.eval_utils import find_file, load_jsonl_file, find_task_substring
+from src.offline_evals.eval_utils import find_file, load_jsonl_file, get_eval_filename
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 ## This is the main launching script for running evaluations on logits.
@@ -25,6 +25,7 @@ _parser.add_argument(
     "--task", type=str, nargs="+", required=False, help="Task spec(s) from library or jsonl file"
 )
 _parser.add_argument("--eval-dir", type=str, default=None, help="Directory corresponding to eval directory")
+_parser.add_argument("--output-dir", type=str, default=None, help="Directory to save outputs. Should be model dependent")
 _parser.add_argument("--batch-size", type=int, default=None, help="Override batch size")
 _parser.add_argument("--gpus", type=int, default=None, help="Number of GPUs to use")
 _parser.add_argument("--use_correct_only", action='store_true', help="Use only correct sequences for evaluation")
@@ -37,14 +38,8 @@ logger = logging.getLogger()
 
 def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
     # general matching rule
-    requests_files = find_file(eval_folder, f"{eval_dataset_name}-requests")
-    predictions_files = find_file(eval_folder, f"{eval_dataset_name}-predictions")
-
-    assert len(requests_files) == 1, f"Found {len(requests_files)} request files for {eval_dataset_name} in {eval_folder}, expected 1"
-    assert len(predictions_files) == 1, f"Found {len(predictions_files)} prediction files for {eval_dataset_name} in {eval_folder}, expected 1"
-
-    requests_file = requests_files[0]
-    predictions_file = predictions_files[0]
+    requests_file = find_file(eval_folder, f"{eval_dataset_name}-requests.jsonl")
+    predictions_file = find_file(eval_folder, f"{eval_dataset_name}-predictions.jsonl")
 
     # load the jsonl file
     requests_data = load_jsonl_file(requests_file)
@@ -55,9 +50,11 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
     if requests_data[0]["request_type"] == "loglikelihood":
         correct_reqs = []
 
-        # loop through the requests, select only the correct ones
+        # loop through the requests, select only the correct ones and ones with correct context (rc tasks contain requests that exclude question)
         for req in requests_data:
             if req["idx"] != req["label"]:
+                continue
+            if req["request"]["context"].startswith("Answer:"):
                 continue
             correct_reqs.append(req)
 
@@ -85,14 +82,14 @@ def launch_logits(args_dict):
     for eval_dataset_name in args_dict["task"]:
         print("evaluating dataset ", eval_dataset_name)
 
-        # convert task name to substring that can be used to find corresponding output files
-        eval_dataset_name = find_task_substring(eval_dataset_name)
+        # get the request file for the corresponding task
+        eval_dataset_name = get_eval_filename(eval_dataset_name)
 
-        print("TEST DATASET NAME after find_task_substring: ", eval_dataset_name)
+        print("TEST DATASET NAME after get_eval_filename: ", eval_dataset_name)
 
         prompts, correct = get_prompt_sequences_for_evaluation(eval_dataset_name, args_dict["eval_dir"])
 
-        out_fn = os.path.join(args_dict["eval_dir"], f"{eval_dataset_name}-router.jsonl")
+        out_fn = os.path.join(args_dict["output_dir"], f"{eval_dataset_name}-router.jsonl")
 
         out_file = open(out_fn, 'w')
 

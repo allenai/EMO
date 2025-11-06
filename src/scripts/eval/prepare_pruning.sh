@@ -3,7 +3,6 @@
 # This script will prepare the following:
 #  - Generate requests for validation set
 #  - Generate requests for the train set
-#  - Tokenize the train set
 #  - Get expert activations for validation set
 
 # parse arguments
@@ -19,6 +18,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --BATCH_SIZE)
       BATCH_SIZE="$2"
+      shift 2
+      ;;
+    --MODEL_PATH)
+      MODEL_PATH="$2"
+      shift 2
+      ;;
+    --GPUS)
+      GPUS="$2"
       shift 2
       ;;
 #    --)
@@ -64,6 +71,25 @@ PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
       --batch-size $BATCH_SIZE \
       --save-raw-requests true
 
+echo "~~~~~~~~~ prepare expert activations on validation set ~~~~~~~~~"
 
+function get_checkpoint_name {
+    local path=$1
+    local split_path=${path#*OLMo2-7B-}
+    local modified_path=${split_path//\//_}
+    modified_path=$(echo $modified_path | sed 's/^_//;s/_$//')
+    echo "${modified_path//hf/${model_type}}"
+}
+model=$(get_checkpoint_name $MODEL_PATH)
+output_dir="$BASE_OUTPUT_REMOTE_DIR/$model"
+
+PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
+  --model "$MODEL_PATH" \
+  --task "$validation_task_name" \
+  --eval-dir "$BASE_OUTPUT_REMOTE_DIR" \
+  --output-dir "$output_dir" \
+  --batch-size "$BATCH_SIZE" \
+  --gpus "$GPUS" \
+  --use_correct_only
 
 echo "========================================"
