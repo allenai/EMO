@@ -112,7 +112,7 @@ echo "~~~~~~~~~ tokenize the training set "
 # this gets the correct requests and saves them into dolma format (jsonl
 PYTHONPATH=. python -u src/scripts/eval/extract_finetuning_examples.py \
         --task "$train_task_name" \
-        --eval-dir "$output_dir" \
+        --eval-dir "$BASE_OUTPUT_REMOTE_DIR" \
         --token-dir "$output_dir/tokens" \
 
 echo "========================================"
