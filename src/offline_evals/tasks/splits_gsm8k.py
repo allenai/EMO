@@ -187,5 +187,12 @@ class GSM8K_Perplexity_Train(GSM8K_Perplexity_Base):
 
 class GSM8K_Perplexity_Validation(GSM8K_Perplexity_Base):
     pass
+
+class GSM8K_Perplexity_Train_0shot(GSM8K_Perplexity_Base):
+    pass
+
+class GSM8K_Perplexity_Validation_0shot(GSM8K_Perplexity_Base):
+    pass
+
 class GSM8K_Perplexity_Test(GSM8K_Perplexity_Base):
     pass

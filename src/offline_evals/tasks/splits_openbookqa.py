@@ -6,6 +6,12 @@ class OpenBookQA_RC_Train(OpenBookQA):
 class OpenBookQA_RC_Validation(OpenBookQA):
     pass
 
+class OpenBookQA_RC_Train_0shot(OpenBookQA):
+    pass
+
+class OpenBookQA_RC_Validation_0shot(OpenBookQA):
+    pass
+
 class OpenBookQA_RC_Test(OpenBookQA):
     pass
 

@@ -7,6 +7,12 @@ class ARCEasy_RC_Train(ARCEasy):
 class ARCEasy_RC_Validation(ARCEasy):
     pass
 
+class ARCEasy_RC_Train_0shot(ARCEasy):
+    pass
+
+class ARCEasy_RC_Validation_0shot(ARCEasy):
+    pass
+
 class ARCEasy_RC_Test(ARCEasy):
     pass
 
@@ -23,6 +29,12 @@ class ARCChallenge_RC_Train(ARCChallenge):
     pass
 
 class ARCChallenge_RC_Validation(ARCChallenge):
+    pass
+
+class ARCChallenge_RC_Train_0shot(ARCChallenge):
+    pass
+
+class ARCChallenge_RC_Validation_0shot(ARCChallenge):
     pass
 
 class ARCChallenge_RC_Test(ARCChallenge):

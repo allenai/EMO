@@ -46,6 +46,12 @@ class PIQA_RC_Train(PIQA_RC_BASE):
 class PIQA_RC_Validation(PIQA_RC_BASE):
     pass
 
+class PIQA_RC_Train_0shot(PIQA_RC_BASE):
+    pass
+
+class PIQA_RC_Validation_0shot(PIQA_RC_BASE):
+    pass
+
 class PIQA_RC_Test(PIQA_RC_BASE):
     pass
 

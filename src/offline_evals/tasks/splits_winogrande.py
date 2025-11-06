@@ -46,6 +46,12 @@ class Winogrande_RC_Train(Winogrande_RC_BASE):
 class Winogrande_RC_Validation(Winogrande_RC_BASE):
     pass
 
+class Winogrande_RC_Train_0shot(Winogrande_RC_BASE):
+    pass
+
+class Winogrande_RC_Validation_0shot(Winogrande_RC_BASE):
+    pass
+
 class Winogrande_RC_Test(Winogrande_RC_BASE):
     pass
 

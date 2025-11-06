@@ -46,6 +46,12 @@ class CommonsenseQA_RC_Train(CommonsenseQA_RC_Base):
 class CommonsenseQA_RC_Validation(CommonsenseQA_RC_Base):
     pass
 
+class CommonsenseQA_RC_Train_0shot(CommonsenseQA_RC_Base):
+    pass
+
+class CommonsenseQA_RC_Validation_0shot(CommonsenseQA_RC_Base):
+    pass
+
 class CommonsenseQA_RC_Test(CommonsenseQA_RC_Base):
     pass
 

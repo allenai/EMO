@@ -48,6 +48,12 @@ class BoolQ_RC_Train(BoolQ_RC_Base):
 class BoolQ_RC_Validation(BoolQ_RC_Base):
     pass
 
+class BoolQ_RC_Train_0shot(BoolQ_RC_Base):
+    pass
+
+class BoolQ_RC_Validation_0shot(BoolQ_RC_Base):
+    pass
+
 class BoolQ_RC_Test(BoolQ_RC_Base):
     pass
 

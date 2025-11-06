@@ -46,6 +46,12 @@ class HellaSwag_RC_Train(HellaSwag_RC_Base):
 class HellaSwag_RC_Validation(HellaSwag_RC_Base):
     pass
 
+class HellaSwag_RC_Train_0shot(HellaSwag_RC_Base):
+    pass
+
+class HellaSwag_RC_Validation_0shot(HellaSwag_RC_Base):
+    pass
+
 class HellaSwag_RC_Test(HellaSwag_RC_Base):
     pass
 

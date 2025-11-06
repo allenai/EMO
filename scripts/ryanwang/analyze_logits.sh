@@ -17,20 +17,20 @@ TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
   "arc_easy"
-#  "arc_challenge|arc_challenge:rc_validation_0shot::olmes"
-#  "boolq|boolq:rc_validation_0shot::olmes"
-#  "csqa|csqa:rc_validation_0shot::olmes"
-#  "hellaswag|hellaswag:rc_validation_0shot::olmes"
-#  "openbookqa|openbookqa:rc_validation_0shot::olmes"
-#  "piqa|piqa:piqa:rc_validation_0shot::olmes"
-#  "socialiqa|socialiqa:rc_validation_0shot::olmes"
-#  "winogrande|winogrande:rc_validation_0shot::olmes"
+#  "arc_challenge"
+#  "boolq"
+#  "csqa"
+#  "hellaswag"
+#  "openbookqa"
+#  "piqa"
+#  "socialiqa"
+#  "winogrande"
 
 #   MMLU
-#  "mmlu_rc|mmlu:rc_validation_0shot::olmes"
+#  "mmlu_rc"
 
 #   GSM8K
-#  "gsm8k_test|gsm8k:perplexity_validation_0shot::olmes"
+#  "gsm8k"
 )
 
 # Function to get checkpoint name (matching the original script)

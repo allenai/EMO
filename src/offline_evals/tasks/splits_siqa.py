@@ -46,6 +46,12 @@ class SocialIQA_RC_Train(SocialIQA_RC_Base):
 class SocialIQA_RC_Validation(SocialIQA_RC_Base):
     pass
 
+class SocialIQA_RC_Train_0shot(SocialIQA_RC_Base):
+    pass
+
+class SocialIQA_RC_Validation_0shot(SocialIQA_RC_Base):
+    pass
+
 class SocialIQA_RC_Test(SocialIQA_RC_Base):
     pass
 
