@@ -129,7 +129,7 @@ get_eval_filename() {
 
 # this is the prefix of the output task name
 task_prefix=$(get_eval_filename "$train_task_name")
-processed_train_file="${task_prefix}-processed.jsonl}"
+processed_train_file="${task_prefix}-processed.jsonl"
 echo "Processed Train filename: $processed_train_file"
 
 # we now tokenize the file
