@@ -113,6 +113,19 @@ echo "~~~~~~~~~ tokenize the training set "
 PYTHONPATH=. python -u src/scripts/eval/extract_finetuning_examples.py \
         --task "$train_task_name" \
         --eval-dir "$BASE_OUTPUT_REMOTE_DIR" \
-        --token-dir "$output_dir/tokens" \
+
+get_eval_filename() {
+    local task_name="$1"
+
+    # Remove everything after and including '::' (if present)
+    task_name="${task_name%%::*}"
+
+    # Replace all ':' with '_'
+    task_name="${task_name//:/_}"
+
+    # Return the formatted string
+    echo "task-${task_name}"
+}
+
 
 echo "========================================"
