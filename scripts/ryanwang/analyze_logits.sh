@@ -98,7 +98,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
             --GROUP_NAME "$GROUP_NAME" \
             --BASE_OUTPUT_REMOTE_DIR "$BASE_OUTPUT_DIR" \
             --BATCH_SIZE "$batch_size" \
-            --MODEL_PATH "$MODEL_PATH" \
+            --MODEL_PATH "${MODEL_DIR}/${MODEL_PATH}" \
             --GPUS "$gpus"
 
 #         PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
