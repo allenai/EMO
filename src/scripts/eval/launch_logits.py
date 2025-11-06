@@ -39,7 +39,7 @@ logger = logging.getLogger()
 def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
     # general matching rule
     requests_file = os.path.join(eval_folder, f"{eval_dataset_name}-requests.jsonl")
-    predictions_file = os.path.join(eval_folder, f"{eval_dataset_name}-predictions.json")
+    predictions_file = os.path.join(eval_folder, f"{eval_dataset_name}-predictions.jsonl")
 
     breakpoint()
 

@@ -160,18 +160,18 @@ echo "Cluster: $CLUSTER"
 echo ""
 
 # Launch evaluation for each model and task combination
-for MODEL_PATH in "${MODELS[@]}"; do
-    echo "Processing model: $MODEL_PATH"
+for MODEL_NAME in "${MODELS[@]}"; do
+    echo "Processing model: $MODEL_NAME"
 
     # For setting the output_dir (matching original script logic)
-#    if [[ $MODEL_PATH == "/"* ]]; then
+#    if [[ $MODEL_NAME == "/"* ]]; then
 #        # internal model
-#        model=$(get_checkpoint_name $MODEL_PATH)
+#        model=$(get_checkpoint_name $MODEL_NAME)
 #    else
 #        # HF model
-#        model=$(echo $MODEL_PATH | cut -d'/' -f2)
+#        model=$(echo $MODEL_NAME | cut -d'/' -f2)
 #    fi
-    model=$(get_checkpoint_name $MODEL_PATH)
+    model=$(get_checkpoint_name $MODEL_NAME)
 
     echo "Model name for output dir: $model"
 
@@ -208,7 +208,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
         echo "  Job name: $job_name"
 
 #        PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
-#                --model "${MODEL_DIR}/${MODEL_PATH}" \
+#                --model "${MODEL_DIR}/${MODEL_NAME}" \
 #                --model-type hf \
 #                --task $TASK \
 #                --output-dir $OUTPUT_DIR \
@@ -229,7 +229,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
             --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
             -- \
             bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
-                --model "${MODEL_DIR}/${MODEL_PATH}" \
+                --model "${MODEL_DIR}/${MODEL_NAME}" \
                 --model-type hf \
                 --task $TASK \
                 --remote-output-dir $OUTPUT_DIR \
