@@ -46,6 +46,17 @@ echo "BATCH_SIZE: $BATCH_SIZE"
 #echo "Mode: $MODE"
 #[[ $VERBOSE == true ]] && echo "Verbose mode is ON"
 
+# this prepares all model-specific variables
+function get_checkpoint_name {
+    local path=$1
+    local split_path=${path#*OLMo2-7B-}
+    local modified_path=${split_path//\//_}
+    modified_path=$(echo $modified_path | sed 's/^_//;s/_$//')
+    echo "${modified_path//hf/${model_type}}"
+}
+# output_dir is model-specific (for validation set, as well as logits)
+model=$(get_checkpoint_name $MODEL_PATH)
+output_dir="$BASE_OUTPUT_REMOTE_DIR/$model"
 
 # run to get requests. Will not override if file alread exists
 echo "~~~~~~~~~ get validation and train examples ~~~~~~~~~"
@@ -58,13 +69,17 @@ else
     train_task_name="$GROUP_NAME:rc_train_0shot::olmes"
 fi
 
-# requests for validation (expert selection)
+# requests for validation (expert selection). Saves validation to model-specific directory since we also get model predictions for correctness
 PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+      --model "$MODEL_PATH" \
+      --model-type hf \
       --task "$validation_task_name" \
-      --output-dir $BASE_OUTPUT_REMOTE_DIR \
+      --output-dir $output_dir \
       --batch-size $BATCH_SIZE \
+      --gpus $GPUS \
       --save-raw-requests true
-# requests for train (for finetuning)
+
+# requests for train (for finetuning). Saves to common directory since no model-specific info needed
 PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
       --task "$train_task_name" \
       --output-dir $BASE_OUTPUT_REMOTE_DIR \
@@ -73,20 +88,10 @@ PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
 
 echo "~~~~~~~~~ prepare expert activations on validation set ~~~~~~~~~"
 
-function get_checkpoint_name {
-    local path=$1
-    local split_path=${path#*OLMo2-7B-}
-    local modified_path=${split_path//\//_}
-    modified_path=$(echo $modified_path | sed 's/^_//;s/_$//')
-    echo "${modified_path//hf/${model_type}}"
-}
-model=$(get_checkpoint_name $MODEL_PATH)
-output_dir="$BASE_OUTPUT_REMOTE_DIR/$model"
-
 PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
   --model "$MODEL_PATH" \
   --task "$validation_task_name" \
-  --eval-dir "$BASE_OUTPUT_REMOTE_DIR" \
+  --eval-dir "$output_dir" \
   --output-dir "$output_dir" \
   --batch-size "$BATCH_SIZE" \
   --gpus "$GPUS" \
