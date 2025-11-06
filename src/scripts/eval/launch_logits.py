@@ -38,8 +38,8 @@ logger = logging.getLogger()
 
 def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
     # general matching rule
-    requests_file = find_file(eval_folder, f"{eval_dataset_name}-requests.jsonl")
-    predictions_file = find_file(eval_folder, f"{eval_dataset_name}-predictions.json")
+    requests_file = os.path.join(eval_folder, f"{eval_dataset_name}-requests.jsonl")
+    predictions_file = os.path.join(eval_folder, f"{eval_dataset_name}-predictions.json")
 
     # load the jsonl file
     requests_data = load_jsonl_file(requests_file)
