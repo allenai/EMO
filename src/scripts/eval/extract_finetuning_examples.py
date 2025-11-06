@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 import torch
 
-from src.offline_evals.eval_utils import find_file, load_jsonl_file, find_task_substring
+from src.offline_evals.eval_utils import find_file, load_jsonl_file, get_eval_filename
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 ## This is the main launching script for running evaluations on logits.
