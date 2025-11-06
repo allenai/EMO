@@ -26,6 +26,26 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
+            "gsm8k:perplexity_train_0shot::olmes": {
+                "task_name": "gsm8k:perplexity_train",
+                "split": "train",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 0,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k:perplexity_validation_0shot::olmes": {
+                "task_name": "gsm8k:perplexity_validation",
+                "split": "validation",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 0,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
             "gsm8k:perplexity_test::olmes":{
                 "task_name": "gsm8k:perplexity_test",
                 "split": "test",
@@ -49,6 +69,24 @@ def get_task_configs():
                 "task_name": "hellaswag:mc_validation",
                 "split": "validation",
                 "num_shots": 5,
+                "fewshot_source": "OLMES:hellaswag",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "hellaswag:mc_train_0shot::olmes": {
+                "task_name": "hellaswag:mc_train",
+                "split": "train",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:hellaswag",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "hellaswag:mc_validation_0shot::olmes": {
+                "task_name": "hellaswag:mc_validation",
+                "split": "validation",
+                "num_shots": 0,
                 "fewshot_source": "OLMES:hellaswag",
                 "metadata": {
                     "regimes": ["OLMES-v0.1"],
@@ -83,6 +121,26 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
+            "hellaswag:rc_train_0shot::olmes": {
+                "task_name": "hellaswag:rc_train",
+                "split": "train",
+                "primary_metric": "acc_per_char",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:hellaswag",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "hellaswag:rc_validation_0shot::olmes": {
+                "task_name": "hellaswag:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_per_char",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:hellaswag",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
             "hellaswag:rc_test::olmes": {
                 "task_name": "hellaswag:rc_test",
                 "split": "test",
@@ -106,6 +164,24 @@ def get_task_configs():
                 "task_name": "winogrande:mc_validation",
                 "split": "validation",
                 "num_shots": 5,
+                "fewshot_source": "OLMES:winogrande",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "winogrande:mc_train_0shot::olmes": {
+                "task_name": "winogrande:mc_train",
+                "split": "validation",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:winogrande",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "winogrande:mc_validation_0shot::olmes": {
+                "task_name": "winogrande:mc_validation",
+                "split": "validation",
+                "num_shots": 0,
                 "fewshot_source": "OLMES:winogrande",
                 "metadata": {
                     "regimes": ["OLMES-v0.1"],
@@ -140,6 +216,26 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
+            "winogrande:rc_train_0shot::olmes": {
+                "task_name": "winogrande:rc_train",
+                "split": "validation",
+                "primary_metric": "acc_raw",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:winogrande",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "winogrande:rc_validation_0shot::olmes": {
+                "task_name": "winogrande:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_raw",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:winogrande",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
             "winogrande:rc_test::olmes": {
                 "task_name": "winogrande:rc_test",
                 "split": "validation",
@@ -163,6 +259,24 @@ def get_task_configs():
                 "task_name": "socialiqa:mc_validation",
                 "split": "validation",
                 "num_shots": 5,
+                "fewshot_source": "OLMES:social_i_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "socialiqa:mc_train_0shot::olmes": {
+                "task_name": "socialiqa:mc_train",
+                "split": "train",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:social_i_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "socialiqa:mc_validation_0shot::olmes": {
+                "task_name": "socialiqa:mc_validation",
+                "split": "validation",
+                "num_shots": 0,
                 "fewshot_source": "OLMES:social_i_qa",
                 "metadata": {
                     "regimes": ["OLMES-v0.1"],
@@ -197,6 +311,26 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
+            "socialiqa:rc_train_0shot::olmes": {
+                "task_name": "socialiqa:rc_train",
+                "split": "train",
+                "primary_metric": "acc_per_char",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:social_i_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "socialiqa:rc_validation_0shot::olmes": {
+                "task_name": "socialiqa:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_per_char",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:social_i_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
             "socialiqa:rc_test::olmes": {
                 "task_name": "socialiqa:rc_test",
                 "split": "test",
@@ -220,6 +354,24 @@ def get_task_configs():
                 "task_name": "piqa:mc_validation",
                 "split": "validation",
                 "num_shots": 5,
+                "fewshot_source": "OLMES:piqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "piqa:mc_train_0shot::olmes": {
+                "task_name": "piqa:mc_train",
+                "split": "train",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:piqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "piqa:mc_validation_0shot::olmes": {
+                "task_name": "piqa:mc_validation",
+                "split": "validation",
+                "num_shots": 0,
                 "fewshot_source": "OLMES:piqa",
                 "metadata": {
                     "regimes": ["OLMES-v0.1"],
@@ -254,6 +406,26 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
+            "piqa:rc_train_0shot::olmes": {
+                "task_name": "piqa:rc_train",
+                "split": "train",
+                "primary_metric": "acc_per_char",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:piqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "piqa:rc_validation_0shot::olmes": {
+                "task_name": "piqa:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_per_char",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:piqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
             "piqa:rc_test::olmes": {
                 "task_name": "piqa:rc_test",
                 "split": "test",
@@ -277,6 +449,24 @@ def get_task_configs():
                 "task_name": "openbookqa:mc_validation",
                 "split": "validation",
                 "num_shots": 5,
+                "fewshot_source": "OLMES:openbookqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "openbookqa:mc_train_0shot::olmes": {
+                "task_name": "openbookqa:mc_train",
+                "split": "train",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:openbookqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "openbookqa:mc_validation_0shot::olmes": {
+                "task_name": "openbookqa:mc_validation",
+                "split": "validation",
+                "num_shots": 0,
                 "fewshot_source": "OLMES:openbookqa",
                 "metadata": {
                     "regimes": ["OLMES-v0.1"],
@@ -311,6 +501,26 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
+            "openbookqa:rc_train_0shot::olmes": {
+                "task_name": "openbookqa:rc_train",
+                "split": "train",
+                "primary_metric": "acc_uncond",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:openbookqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "openbookqa:rc_validation_0shot::olmes": {
+                "task_name": "openbookqa:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_uncond",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:openbookqa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
             "openbookqa:rc_test::olmes": {
                 "task_name": "openbookqa:rc_test",
                 "split": "test",
@@ -334,6 +544,24 @@ def get_task_configs():
                 "task_name": "csqa:mc_validation",
                 "split": "validation",
                 "num_shots": 5,
+                "fewshot_source": "OLMES:commonsense_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "csqa:mc_train_0shot::olmes": {
+                "task_name": "csqa:mc_train",
+                "split": "train",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:commonsense_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "csqa:mc_validation_0shot::olmes": {
+                "task_name": "csqa:mc_validation",
+                "split": "validation",
+                "num_shots": 0,
                 "fewshot_source": "OLMES:commonsense_qa",
                 "metadata": {
                     "regimes": ["OLMES-v0.1"],
@@ -368,6 +596,26 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
+            "csqa:rc_train_0shot::olmes": {
+                "task_name": "csqa:rc_train",
+                "split": "train",
+                "primary_metric": "acc_uncond",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:commonsense_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "csqa:rc_validation_0shot::olmes": {
+                "task_name": "csqa:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_uncond",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:commonsense_qa",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
             "csqa:rc_test::olmes": {
                 "task_name": "csqa:rc_test",
                 "split": "test",
@@ -397,7 +645,25 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
+            "boolq:mc_train_0shot::olmes": {
+                "task_name": "boolq:mc_train",
+                "split": "train",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:BoolQ",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
 
+            "boolq:mc_validation_0shot::olmes": {
+                "task_name": "boolq:mc_validation",
+                "split": "validation",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:BoolQ",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
             "boolq:mc_test::olmes": {
                 "task_name": "boolq:mc_test",
                 "split": "test",
@@ -424,6 +690,27 @@ def get_task_configs():
                 "split": "validation",
                 "primary_metric": "acc_raw",
                 "num_shots": 5,
+                "fewshot_source": "OLMES:BoolQ",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "boolq:rc_train_0shot::olmes": {
+                "task_name": "boolq:rc_train",
+                "split": "train",
+                "primary_metric": "acc_raw",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:BoolQ",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
+            "boolq:rc_validation_0shot::olmes": {
+                "task_name": "boolq:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_raw",
+                "num_shots": 0,
                 "fewshot_source": "OLMES:BoolQ",
                 "metadata": {
                     "regimes": ["OLMES-v0.1"],
@@ -461,6 +748,26 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
+            "arc_challenge:rc_train_0shot::olmes": {
+                "task_name": "arc_challenge:rc_train",
+                "split": "train",
+                "primary_metric": "acc_uncond",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:ARC-Challenge",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "arc_challenge:rc_validation_0shot::olmes": {
+                "task_name": "arc_challenge:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_uncond",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:ARC-Challenge",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
             "arc_challenge:rc_test::olmes": {
                 "task_name": "arc_challenge:rc_test",
                 "split": "test",
@@ -486,6 +793,25 @@ def get_task_configs():
                 "task_name": "arc_challenge:mc_validation",
                 "split": "validation",
                 "num_shots": 5,
+                "fewshot_source": "OLMES:ARC-Challenge",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "arc_challenge:mc_train_0shot::olmes": {
+                "task_name": "arc_challenge:mc_train",
+                "split": "train",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:ARC-Challenge",
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
+            "arc_challenge:mc_validation_0shot::olmes": {
+                "task_name": "arc_challenge:mc_validation",
+                "split": "validation",
+                "num_shots": 0,
                 "fewshot_source": "OLMES:ARC-Challenge",
                 "metadata": {
                     "regimes": ["OLMES-v0.1"],
@@ -524,6 +850,29 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
+            "arc_easy:rc_train_0shot::olmes": {
+                "task_name": "arc_easy:rc_train",
+                "split": "train",
+                "primary_metric": "acc_per_char",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:ARC-Easy",
+                "metadata": {
+                    "description": "ARC-Easy (RC) train using OLMES-v0.1",
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
+            "arc_easy:rc_validation_0shot::olmes": {
+                "task_name": "arc_easy:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_per_char",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:ARC-Easy",
+                "metadata": {
+                    "description": "ARC-Easy (RC) validation using OLMES-v0.1, on validation split",
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
 
             "arc_easy:rc_test::olmes": {
                 "task_name": "arc_easy:rc_test",
@@ -551,6 +900,26 @@ def get_task_configs():
                 "task_name": "arc_easy:mc_validation",
                 "split": "validation",
                 "num_shots": 5,
+                "fewshot_source": "OLMES:ARC-Easy",
+                "metadata": {
+                    "description": "ARC-Easy (MC) validation using OLMES-v0.1, on validation split",
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "arc_easy:mc_train_0shot::olmes": {
+                "task_name": "arc_easy:mc_train",
+                "split": "train",
+                "num_shots": 0,
+                "fewshot_source": "OLMES:ARC-Easy",
+                "metadata": {
+                    "description": "ARC-Easy (MC) train using OLMES-v0.1, on training split",
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "arc_easy:mc_validation_0shot::olmes": {
+                "task_name": "arc_easy:mc_validation",
+                "split": "validation",
+                "num_shots": 0,
                 "fewshot_source": "OLMES:ARC-Easy",
                 "metadata": {
                     "description": "ARC-Easy (MC) validation using OLMES-v0.1, on validation split",
@@ -866,6 +1235,24 @@ def get_task_configs():
                 "regimes": ["OLMES-v0.1"],
             },
         }
+        TASK_CONFIGS[f"mmlu_{sub}:mc_train_0shot::olmes"] = {
+            "task_name": f"mmlu_{sub}:mc_train",
+            "split": "train",
+            "num_shots": 0,
+            "primary_metric": "acc_raw",
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_{sub}:mc_validation_0shot::olmes"] = {
+            "task_name": f"mmlu_{sub}:mc_validation",
+            "split": "validation",
+            "num_shots": 0,
+            "primary_metric": "acc_raw",
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
         TASK_CONFIGS[f"mmlu_{sub}:mc_test::olmes"] = {
             "task_name": f"mmlu_{sub}:mc_test",
             "split": "test",
@@ -889,6 +1276,24 @@ def get_task_configs():
             "task_name": f"mmlu_{sub}:rc_validation",
             "split": "validation",
             "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_{sub}:rc_train_0shot::olmes"] = {
+            "task_name": f"mmlu_{sub}:rc_train",
+            "split": "train",
+            "num_shots": 0,
+            "primary_metric": "acc_per_char",
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_{sub}:rc_validation_0shot::olmes"] = {
+            "task_name": f"mmlu_{sub}:rc_validation",
+            "split": "validation",
+            "num_shots": 0,
             "primary_metric": "acc_per_char",
             "metadata": {
                 "regimes": ["OLMES-v0.1"],
@@ -921,6 +1326,22 @@ def get_task_configs():
                 "regimes": [],
             },
         }
+        TASK_CONFIGS[f"mmlu_pro_{cat}:mc_train_0shot::none"] = {
+            "task_name": f"mmlu_pro_{cat}:mc_train",
+            "split": "train",
+            "num_shots": 0,
+            "metadata": {
+                "regimes": [],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_pro_{cat}:mc_validation_0shot::none"] = {
+            "task_name": f"mmlu_pro_{cat}:mc_validation",
+            "split": "validation",
+            "num_shots": 0,
+            "metadata": {
+                "regimes": [],
+            },
+        }
         TASK_CONFIGS[f"mmlu_pro_{cat}:mc_test::none"] = {
             "task_name": f"mmlu_pro_{cat}:mc_test",
             "split": "test",
@@ -941,6 +1362,22 @@ def get_task_configs():
             "task_name": f"mmlu_pro_{cat}:rc_validation",
             "split": "validation",
             "num_shots": 5,
+            "metadata": {
+                "regimes": [],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_pro_{cat}:rc_train_0shot::none"] = {
+            "task_name": f"mmlu_pro_{cat}:rc_train",
+            "split": "train",
+            "num_shots": 0,
+            "metadata": {
+                "regimes": [],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_pro_{cat}:rc_validation_0shot::none"] = {
+            "task_name": f"mmlu_pro_{cat}:rc_validation",
+            "split": "validation",
+            "num_shots": 0,
             "metadata": {
                 "regimes": [],
             },
