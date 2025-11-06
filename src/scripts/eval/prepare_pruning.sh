@@ -5,6 +5,9 @@
 #  - Generate requests for the train set
 #  - Get expert activations for validation set
 
+# if one step fails, the whole script fails
+set -e
+
 # parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in

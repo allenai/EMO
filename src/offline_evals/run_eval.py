@@ -860,6 +860,9 @@ def run_eval(args_dict: dict):
             if output_dir is not None:
                 logger.info(f"Saving task config in {output_file}...")
                 save_json(output_file, full_config)
+                if remote_output_dir is not None:
+                    logger.info(f"Uploading results to remote directory {remote_output_dir}...")
+                    upload_directory(output_dir, remote_output_dir)
             continue
 
         # Super hacky to avoid reprocessing metrics for uncond cases
