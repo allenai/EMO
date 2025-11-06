@@ -16,7 +16,7 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
-  "arc_easy|arc_easy:rc_validation_0shot::olmes"
+  "arc_easy"
 #  "arc_challenge|arc_challenge:rc_validation_0shot::olmes"
 #  "boolq|boolq:rc_validation_0shot::olmes"
 #  "csqa|csqa:rc_validation_0shot::olmes"
@@ -65,8 +65,8 @@ for MODEL_PATH in "${MODELS[@]}"; do
     echo "Model name for output dir: $model"
 
     for entry in "${TASK_GROUPS_LIST[@]}"; do
-        GROUP_NAME="${entry%%|*}"                # text before '|'
-        TASK="${entry#*|}"            # text after '|'
+        GROUP_NAME="$entry"
+        TASK="$GROUP_NAME"
 
         # Batch size adjustment (matching original script)
         if [[ $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* || $TASK == *"boolq"* ]]; then
@@ -95,7 +95,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
         echo "  Job name: $job_name"
 
         bash src/scripts/eval/prepare_pruning.sh \
-            --TASK "$TASK" \
+            --GROUP_NAME "$GROUP_NAME" \
             --BASE_OUTPUT_REMOTE_DIR "$BASE_OUTPUT_DIR" \
             --BATCH_SIZE "$batch_size"
 

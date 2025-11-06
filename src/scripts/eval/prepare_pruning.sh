@@ -9,8 +9,8 @@
 # parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --TASK)
-      TASK="$2"
+    --GROUP_NAME)
+      GROUP_NAME="$2"
       shift 2
       ;;
     --BASE_OUTPUT_REMOTE_DIR)
@@ -32,17 +32,40 @@ while [[ $# -gt 0 ]]; do
 done
 echo "========================================"
 echo "=======Enter prepare_pruning.sh ========"
-echo "TASK: $TASK"
+echo "GROUP_NAME: $GROUP_NAME"
 echo "BASE_OUTPUT_REMOTE_DIR: $BASE_OUTPUT_REMOTE_DIR"
 echo "BATCH_SIZE: $BATCH_SIZE"
 
 #echo "Mode: $MODE"
 #[[ $VERBOSE == true ]] && echo "Verbose mode is ON"
 
+
+# run to get requests. Will not override if file alread exists
+echo "~~~~~~~~~ get validation and train examples ~~~~~~~~~"
+
+if [[ "gsm8k" == "$GROUP_NAME" ]]; then
+    validation_task_name="$GROUP_NAME:perplexity_validation_0shot::olmes"
+    train_task_name="$GROUP_NAME:perplexity_train_0shot::olmes"
+else
+    validation_task_name="$GROUP_NAME:rc_validation_0shot::olmes"
+    train_task_name="$GROUP_NAME:rc_train_0shot::olmes"
+fi
+
+# requests for validation (expert selection)
 PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
-        --task $TASK \
-        --output-dir $BASE_OUTPUT_REMOTE_DIR \
-        --batch-size $BATCH_SIZE \
-        --save-raw-requests true \
+      --task "$validation_task_name" \
+      --output-dir $BASE_OUTPUT_REMOTE_DIR \
+      --batch-size $BATCH_SIZE \
+      --save-raw-requests true
+# requests for train (for finetuning)
+PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+      --task "$train_task_name" \
+      --output-dir $BASE_OUTPUT_REMOTE_DIR \
+      --batch-size $BATCH_SIZE \
+      --save-raw-requests true
+
+
+
+# run to get the
 
 echo "========================================"
