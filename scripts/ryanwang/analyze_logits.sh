@@ -1,13 +1,13 @@
 #!/bin/bash
 # Configuration
-MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
-#MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
+#MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
+MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 MODELS=(
     "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995-hf"
     )
 
-BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/prune"
-#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/evals"
+#BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/prune"
+BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/evals"
 BATCH_SIZE=16
 CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf

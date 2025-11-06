@@ -17,6 +17,10 @@ while [[ $# -gt 0 ]]; do
       BASE_OUTPUT_REMOTE_DIR="$2"
       shift 2
       ;;
+    --BATCH_SIZE)
+      BATCH_SIZE="$2"
+      shift 2
+      ;;
 #    --)
 #      VERBOSE=true
 #      shift
@@ -30,14 +34,15 @@ echo "========================================"
 echo "=======Enter prepare_pruning.sh ========"
 echo "TASK: $TASK"
 echo "BASE_OUTput_REMOTE_DIR: $BASE_OUTPUT_REMOTE_DIR"
+echo "BATCH_SIZE: $BATCH_SIZE"
 
 #echo "Mode: $MODE"
 #[[ $VERBOSE == true ]] && echo "Verbose mode is ON"
 
 PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
         --task $TASK \
-        --remote-output-dir $OUTPUT_DIR \
-        --batch-size $batch_size \
+        --output-dir $OUTPUT_DIR \
+        --batch-size $BATCH_SIZE \
         --save-raw-requests \
 
 echo "========================================"
