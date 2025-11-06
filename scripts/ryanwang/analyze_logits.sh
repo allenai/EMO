@@ -96,7 +96,8 @@ for MODEL_PATH in "${MODELS[@]}"; do
 
         bash src/scripts/eval/prepare_pruning.sh \
             --TASK "$TASK" \
-            --BASE_OUTPUT_REMOTE_DIR "$BASE_OUTPUT_DIR"
+            --BASE_OUTPUT_REMOTE_DIR "$BASE_OUTPUT_DIR" \
+            --BATCH_SIZE "$batch_size"
 
 
 #         PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
