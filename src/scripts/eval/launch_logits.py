@@ -41,6 +41,8 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
     requests_file = os.path.join(eval_folder, f"{eval_dataset_name}-requests.jsonl")
     predictions_file = os.path.join(eval_folder, f"{eval_dataset_name}-predictions.json")
 
+    breakpoint()
+
     # load the jsonl file
     requests_data = load_jsonl_file(requests_file)
     predictions_data = load_jsonl_file(predictions_file)
