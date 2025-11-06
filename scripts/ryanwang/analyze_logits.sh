@@ -7,7 +7,7 @@ MODELS=(
     )
 
 #BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/prune"
-BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/evals"
+BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/prune"
 BATCH_SIZE=16
 CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf
