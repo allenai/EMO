@@ -82,7 +82,7 @@ PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
       --model "$MODEL_PATH" \
       --model-type hf \
       --task "$validation_task_name" \
-      --remote-output-dir- $output_dir \
+      --remote-output-dir $output_dir \
       --batch-size $BATCH_SIZE \
       --gpus $GPUS \
       --save-raw-requests true
