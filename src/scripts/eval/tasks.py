@@ -15,6 +15,7 @@ def get_task_configs():
                 "metadata": {
                     "regimes": ["OLMES-v0.2"],
                 },
+                "out_name": "test_hello",
             },
             "gsm8k:perplexity_validation::olmes":{
                 "task_name": "gsm8k:perplexity_validation",
