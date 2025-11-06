@@ -43,6 +43,6 @@ PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
         --task $TASK \
         --output-dir $BASE_OUTPUT_REMOTE_DIR \
         --batch-size $BATCH_SIZE \
-        --save-raw-requests \
+        --save-raw-requests true \
 
 echo "========================================"
