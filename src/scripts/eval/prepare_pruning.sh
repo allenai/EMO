@@ -65,7 +65,7 @@ echo "Output dir: $output_dir"
 # run to get requests. Will not override if file alread exists
 echo "~~~~~~~~~ get validation and train examples ~~~~~~~~~"
 
-if [[ "$GROUP_NAME" == "*gsm8k*" ]]; then
+if [[ "$GROUP_NAME" == *gsm8k* ]]; then
     validation_task_name="$GROUP_NAME:perplexity_validation_0shot::olmes"
     train_task_name="$GROUP_NAME:perplexity_train_0shot::olmes"
 else
