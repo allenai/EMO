@@ -46,23 +46,23 @@ for train_task_name in "${train_task_names[@]}"; do
     destination="${BASE_OUTPUT_DIR}/${task_prefix}-tokenized"
     echo "destination folder: $destination"
 
-#    # gzip the data if not already gzipped
-#    if [[ ! -f "${jsonl_file}.gz" ]]; then
-#      echo "Gzipping ${jsonl_file}..."
-#      gzip ${jsonl_file}
-#    else
-#      echo "${jsonl_file}.gz already exists. Skipping gzip."
-#    fi
-#
-#    # tokenize the files
-#    dolma tokens \
-#      --documents ${jsonl_file}.gz \
-#      --tokenizer.name_or_path ${tokenizer_name} \
-#      --tokenizer.eos_token_id 100257 \
-#      --tokenizer.pad_token_id 100277 \
-#      --destination ${destination} \
-#      --dtype uint32 \
-#      --processes 1
+    # gzip the data if not already gzipped
+    if [[ ! -f "${jsonl_file}.gz" ]]; then
+      echo "Gzipping ${jsonl_file}..."
+      gzip ${jsonl_file}
+    else
+      echo "${jsonl_file}.gz already exists. Skipping gzip."
+    fi
+
+    # tokenize the files
+    dolma tokens \
+      --documents ${jsonl_file}.gz \
+      --tokenizer.name_or_path ${tokenizer_name} \
+      --tokenizer.eos_token_id 100257 \
+      --tokenizer.pad_token_id 100277 \
+      --destination ${destination} \
+      --dtype uint32 \
+      --processes 1
 
 done
 
