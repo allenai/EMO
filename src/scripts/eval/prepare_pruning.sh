@@ -15,8 +15,8 @@ while [[ $# -gt 0 ]]; do
       GROUP_NAME="$2"
       shift 2
       ;;
-    --BASE_OUTPUT_REMOTE_DIR)
-      BASE_OUTPUT_REMOTE_DIR="$2"
+    --BASE_OUTPUT_DIR)
+      BASE_OUTPUT_DIR="$2"
       shift 2
       ;;
     --BATCH_SIZE)
@@ -39,7 +39,7 @@ done
 echo "========================================"
 echo "=======Enter prepare_pruning.sh ========"
 echo "GROUP_NAME: $GROUP_NAME"
-echo "BASE_OUTPUT_REMOTE_DIR: $BASE_OUTPUT_REMOTE_DIR"
+echo "BASE_OUTPUT_DIR: $BASE_OUTPUT_DIR"
 echo "BATCH_SIZE: $BATCH_SIZE"
 
 # this prepares all model-specific variables
@@ -57,7 +57,7 @@ get_model_subpath() {
 # setup output_dir to be model-specific (for validation set, as well as logits)
 MODEL_NAME=$(get_model_subpath $MODEL_PATH)
 model=$(get_checkpoint_name $MODEL_NAME)
-output_dir="$BASE_OUTPUT_REMOTE_DIR/$model"
+output_dir="$BASE_OUTPUT_DIR/$model"
 echo "MODEL_NAME: $MODEL_NAME"
 echo "Model name for output dir: $model"
 echo "Output dir: $output_dir"
@@ -86,7 +86,7 @@ PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
 # requests for train (for finetuning). Saves to common directory since no model-specific info needed
 PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
       --task "$train_task_name" \
-      --output-dir $BASE_OUTPUT_REMOTE_DIR \
+      --output-dir $BASE_OUTPUT_DIR \
       --batch-size $BATCH_SIZE \
       --save-raw-requests true
 
@@ -100,55 +100,12 @@ PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
   --batch-size "$BATCH_SIZE" \
   --gpus "$GPUS" \
 
-echo "~~~~~~~~~ tokenize the training set ~~~~~~~~~"
+echo "~~~~~~~~~ prepare tokenization of the training set ~~~~~~~~~"
 
 # this gets the correct requests and saves them into dolma format (jsonl
 PYTHONPATH=. python -u src/scripts/eval/extract_finetuning_examples.py \
         --task "$train_task_name" \
-        --eval-dir "$BASE_OUTPUT_REMOTE_DIR" \
+        --eval-dir "$BASE_OUTPUT_DIR" \
 
-get_eval_filename() {
-    local task_name="$1"
-
-    # Remove everything after and including '::' (if present)
-    task_name="${task_name%%::*}"
-
-    # Replace all ':' with '_'
-    task_name="${task_name//:/_}"
-
-    # Return the formatted string
-    echo "task-${task_name}"
-}
-
-# this is the prefix of the output task name
-task_prefix=$(get_eval_filename "$train_task_name")
-processed_train_file="${task_prefix}-processed.jsonl"
-echo "Processed Train filename: $processed_train_file"
-
-# we now tokenize the file
-tokenizer_name="allenai/OLMo-2-1124-7B"
-jsonl_file="${BASE_OUTPUT_REMOTE_DIR}/${processed_train_file}"
-destination="${BASE_OUTPUT_REMOTE_DIR}/${task_prefix}-tokenized"
-
-# gzip the data if not already gzipped
-if [[ ! -f "${jsonl_file}.gz" ]]; then
-  echo "Gzipping ${jsonl_file}..."
-  gzip ${jsonl_file}
-else
-  echo "${jsonl_file}.gz already exists. Skipping gzip."
-fi
-
-# pip install dolma (note: this will likely break the environment, but this is the last step so it's okay
-pip install dolma
-
-# tokenize the files
-dolma tokens \
-  --documents ${jsonl_file}.gz \
-  --tokenizer.name_or_path ${tokenizer_name} \
-  --tokenizer.eos_token_id 100257 \
-  --tokenizer.pad_token_id 100277 \
-  --destination ${destination} \
-  --dtype uint32 \
-  --processes 1
 
 echo "========================================"

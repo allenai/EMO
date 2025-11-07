@@ -96,7 +96,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
 
 #        bash src/scripts/eval/prepare_pruning.sh \
 #            --GROUP_NAME "$GROUP_NAME" \
-#            --BASE_OUTPUT_REMOTE_DIR "$BASE_OUTPUT_DIR" \
+#            --BASE_OUTPUT_DIR "$BASE_OUTPUT_DIR" \
 #            --BATCH_SIZE "$batch_size" \
 #            --MODEL_PATH "${MODEL_DIR}/${MODEL_PATH}" \
 #            --GPUS "$gpus"
@@ -116,7 +116,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
             -- \
             bash -c "bash src/scripts/eval/prepare_pruning.sh \
                 --GROUP_NAME "$GROUP_NAME" \
-                --BASE_OUTPUT_REMOTE_DIR "$BASE_OUTPUT_DIR" \
+                --BASE_OUTPUT_DIR "$BASE_OUTPUT_DIR" \
                 --BATCH_SIZE "$batch_size" \
                 --MODEL_PATH "${MODEL_DIR}/${MODEL_PATH}" \
                 --GPUS "$gpus"
