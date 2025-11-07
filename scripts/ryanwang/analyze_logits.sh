@@ -17,17 +17,17 @@ TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
 #  "arc_easy"
-  "arc_challenge"
-  "boolq"
-  "csqa"
+#  "arc_challenge"
+#  "boolq"
+#  "csqa"
   "hellaswag"
-  "openbookqa"
-  "piqa"
-  "socialiqa"
-  "winogrande"
+#  "openbookqa"
+#  "piqa"
+#  "socialiqa"
+#  "winogrande"
 
 #   MMLU
-  "mmlu_rc"
+  "mmlu"
 
 #   GSM8K
   "gsm8k"

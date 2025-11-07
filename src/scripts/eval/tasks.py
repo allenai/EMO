@@ -113,8 +113,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-            "hellaswag:rc_validation_0shot::olmes_0shot": {
-                "task_name": "hellaswag:rc_validation",
+            "hellaswag:rc_validation_0shot::olmes": {
+                "task_name": "hellaswag:rc_validation_0shot",
                 "split": "validation",
                 "primary_metric": "acc_per_char",
                 "num_shots": 0,
