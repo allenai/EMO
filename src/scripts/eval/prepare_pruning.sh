@@ -130,8 +130,13 @@ tokenizer_name="allenai/OLMo-2-1124-7B"
 jsonl_file="${BASE_OUTPUT_REMOTE_DIR}/${processed_train_file}"
 destination="${BASE_OUTPUT_REMOTE_DIR}/${task_prefix}-tokenized"
 
-# gzip the data
-gzip ${jsonl_file}
+# gzip the data if not already gzipped
+if [[ ! -f "${jsonl_file}.gz" ]]; then
+  echo "Gzipping ${jsonl_file}..."
+  gzip ${jsonl_file}
+else
+  echo "${jsonl_file}.gz already exists. Skipping gzip."
+fi
 
 # pip install dolma (note: this will likely break the environment, but this is the last step so it's okay
 pip install dolma
