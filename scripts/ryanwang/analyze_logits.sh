@@ -20,14 +20,14 @@ TASK_GROUPS_LIST=(
 #  "arc_challenge"
 #  "boolq"
 #  "csqa"
-  "hellaswag"
+#  "hellaswag"
 #  "openbookqa"
 #  "piqa"
 #  "socialiqa"
 #  "winogrande"
 
 #   MMLU
-  "mmlu"
+#  "mmlu"
 
 #   GSM8K
   "gsm8k"
