@@ -16,21 +16,21 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
-  "arc_easy"
-#  "arc_challenge"
-#  "boolq"
-#  "csqa"
-#  "hellaswag"
-#  "openbookqa"
-#  "piqa"
-#  "socialiqa"
-#  "winogrande"
+#  "arc_easy"
+  "arc_challenge"
+  "boolq"
+  "csqa"
+  "hellaswag"
+  "openbookqa"
+  "piqa"
+  "socialiqa"
+  "winogrande"
 
 #   MMLU
-#  "mmlu_rc"
+  "mmlu_rc"
 
 #   GSM8K
-#  "gsm8k"
+  "gsm8k"
 )
 
 # Function to get checkpoint name (matching the original script)
