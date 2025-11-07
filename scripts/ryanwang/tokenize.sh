@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/prune"
+BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/prune"
 
 get_eval_filename() {
     local task_name="$1"
