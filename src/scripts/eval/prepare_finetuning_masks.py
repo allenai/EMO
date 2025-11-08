@@ -66,7 +66,7 @@ def prepare_finetuning_masks(args_dict):
                 for i in range(len(prev_document)):
                     if prev_document[i:i+len(delimiter_ids)] == delimiter_ids:
                         delimiter_pos.append(i)
-
+                breakpoint()
                 assert len(delimiter_pos) == 1, f"Delimiter not found or found multiple times in document with length {len(prev_document)}"
 
                 # create the label mask for the previous document
@@ -74,6 +74,7 @@ def prepare_finetuning_masks(args_dict):
                 # mask out everything before the delimiter
                 label_mask[:delimiter_pos[0]+len(delimiter_ids)] = False
                 breakpoint()
+                prev_document = []
 
             else:
                 prev_document.append(tokens[i])
