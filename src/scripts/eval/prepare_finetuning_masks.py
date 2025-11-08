@@ -56,7 +56,6 @@ def prepare_finetuning_masks(args_dict):
         # Save as memory-mapped file (more efficient for large files):
         mmap_mask = np.memmap(mask_path, mode='w+', dtype=np.bool_, shape=(num_tokens,))
 
-
         prev_document = []
         # we now extract individual documents and mask accordingly
         for i in range(num_tokens):
@@ -64,9 +63,9 @@ def prepare_finetuning_masks(args_dict):
             if tokens[i] == 100257: # we hit the end of a document
                 # find the delimiter in the previous document by searching for it
                 delimiter_pos = []
-                for i in range(len(prev_document)):
+                for j in range(len(prev_document)):
                     if prev_document[i:i+len(delimiter_ids)] == delimiter_ids:
-                        delimiter_pos.append(i)
+                        delimiter_pos.append(j)
                 assert len(delimiter_pos) == 1, f"Delimiter not found or found multiple times in document with length {len(prev_document)}"
 
                 # create the label mask for the previous document
@@ -76,7 +75,6 @@ def prepare_finetuning_masks(args_dict):
 
                 # write into mmap_mask
                 mmap_mask[i - len(prev_document) + 1:i + 1] = label_mask
-                mmap_mask.flush()
 
                 # reset prev_document
                 prev_document = []
