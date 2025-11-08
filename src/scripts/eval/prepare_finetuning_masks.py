@@ -60,6 +60,7 @@ def prepare_finetuning_masks(args_dict):
         prev_document = []
         # we now extract individual documents and mask accordingly
         for i in range(num_tokens):
+            prev_document.append(tokens[i])
             if tokens[i] == 100257: # we hit the end of a document
                 # find the delimiter in the previous document by searching for it
                 delimiter_pos = []
@@ -73,24 +74,17 @@ def prepare_finetuning_masks(args_dict):
                 label_mask = np.ones(len(prev_document), dtype=np.bool_)
                 # mask out everything before the delimiter
                 label_mask[:delimiter_pos[0]+len(delimiter_ids)] = False
-                breakpoint()
+
+                # write into mmap_mask
+                mmap_mask[i - len(prev_document) + 1:i + 1] = label_mask
+                # reset prev_document
                 prev_document = []
 
             else:
-                prev_document.append(tokens[i])
                 continue
-
 
         breakpoint()
 
-
-
-        # Or mask based on token values (e.g., mask padding tokens):
-        # pad_token_id = 0
-        # label_mask = (tokens != pad_token_id)
-
-
-        mmap_mask[:] = label_mask
         mmap_mask.flush()
 
     #
