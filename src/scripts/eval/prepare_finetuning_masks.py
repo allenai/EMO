@@ -4,6 +4,7 @@ import argparse
 from transformers import AutoTokenizer
 import logging
 import sys
+import os
 
 
 ## This is the main launching script for creating loss masks for finetuning
@@ -19,7 +20,21 @@ _parser.add_argument(
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger()
 
+def get_file_size(path):
+    """Get file size in bytes"""
+    return os.path.getsize(path)
 
+def load_token_file(token_path, dtype=np.uint32):
+    """
+    Load a token file created by dolma.
+    These are raw binary files (not standard .npy files with headers).
+    """
+    file_size = get_file_size(token_path)
+    num_tokens = file_size // dtype().itemsize
+
+    # Load as memory-mapped array in read mode
+    tokens = np.memmap(token_path, mode='r', dtype=dtype, shape=(num_tokens,))
+    return tokens
 
 def prepare_finetuning_masks(args_dict):
     print("yay!")
@@ -32,7 +47,7 @@ def prepare_finetuning_masks(args_dict):
 
     for token_path in args_dict["token_file_paths"]:
         # Load your token file to get the shape
-        tokens = np.load(token_path, allow_pickle=True)
+        tokens = load_token_file(token_path)
         num_tokens = len(tokens)
 
         # Create the label mask array
