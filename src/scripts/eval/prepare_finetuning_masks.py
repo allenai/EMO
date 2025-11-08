@@ -60,7 +60,7 @@ def prepare_finetuning_masks(args_dict):
         # we now extract individual documents and mask accordingly
         for i in range(num_tokens):
             if tokens[i] > 100256:
-                tot_arr.append(i)
+                tot_arr.append(tokens[i])
 
         breakpoint()
 
