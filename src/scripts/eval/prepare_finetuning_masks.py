@@ -64,7 +64,7 @@ def prepare_finetuning_masks(args_dict):
                 # find the delimiter in the previous document by searching for it
                 delimiter_pos = []
                 for j in range(len(prev_document)):
-                    if prev_document[i:i+len(delimiter_ids)] == delimiter_ids:
+                    if prev_document[j:j+len(delimiter_ids)] == delimiter_ids:
                         delimiter_pos.append(j)
 
                 if len(delimiter_pos) != 1:
