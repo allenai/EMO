@@ -1,14 +1,8 @@
 import numpy as np
-from pathlib import Path
 
-from tqdm import tqdm
+from transformers import AutoTokenizer
 
-import torch
-
-from src.offline_evals.eval_utils import find_file, load_jsonl_file, get_eval_filename
-from transformers import AutoTokenizer, AutoModelForCausalLM
-
-## This is the main launching script for running evaluations on logits.
+## This is the main launching script for creating loss masks for finetuning
 
 _parser = argparse.ArgumentParser()
 _parser.add_argument(
