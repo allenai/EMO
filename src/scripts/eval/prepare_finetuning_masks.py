@@ -76,11 +76,10 @@ def prepare_finetuning_masks(args_dict):
 
                 # write into mmap_mask
                 mmap_mask[i - len(prev_document) + 1:i + 1] = label_mask
+                mmap_mask.flush()
+
                 # reset prev_document
                 prev_document = []
-
-            else:
-                continue
 
         breakpoint()
 
