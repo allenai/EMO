@@ -67,7 +67,7 @@ for train_task_name in "${train_task_names[@]}"; do
     # we next add the label masks
 
     PYTHONPATH=. python -u src/scripts/eval/prepare_finetuning_masks.py \
-      --token_file_paths="${destination}/part*.npy" \
+      --token_file_paths=${destination}/part*.npy \
       --tokenizer=${tokenizer_name} \
 
 done
