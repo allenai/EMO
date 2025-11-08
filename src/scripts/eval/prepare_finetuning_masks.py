@@ -2,6 +2,9 @@ import numpy as np
 import argparse
 
 from transformers import AutoTokenizer
+import logging
+import sys
+
 
 ## This is the main launching script for creating loss masks for finetuning
 
@@ -16,32 +19,6 @@ _parser.add_argument(
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger()
 
-def get_correct_training_data(eval_dataset_name, eval_folder):
-    # general matching rule
-    requests_file = os.path.join(eval_folder, f"{eval_dataset_name}-requests.jsonl")
-
-    # load the jsonl file
-    requests_data = load_jsonl_file(requests_file)
-
-    data = []
-
-    if requests_data[0]["request_type"] == "loglikelihood":
-        correct_reqs = []
-
-        # loop through the requests, select only the correct ones
-        for req in requests_data:
-            if req["idx"] != req["label"]:
-                continue
-            if req["request"]["context"].startswith("Answer:"):
-                continue
-            correct_reqs.append(req)
-
-        for req in correct_reqs:
-            data += [req["request"]["context"] + req["request"]["continuation"]]
-    else:
-        raise NotImplementedError(f"Dataset {eval_dataset_name} not implemented in get_prompt_sequences_for_evaluation")
-
-    return data
 
 
 def prepare_finetuning_masks(args_dict):
@@ -63,10 +40,6 @@ def prepare_finetuning_masks(args_dict):
         label_mask = np.ones(num_tokens, dtype=np.bool_)
 
         breakpoint()
-
-
-
-
 
         # Or mask based on token values (e.g., mask padding tokens):
         # pad_token_id = 0
