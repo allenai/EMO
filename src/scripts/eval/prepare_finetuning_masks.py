@@ -43,7 +43,7 @@ def prepare_finetuning_masks(args_dict):
     tokenizer = AutoTokenizer.from_pretrained(args_dict["tokenizer"])
     # the string that represents the delimiter
     delimiter_str = "\nAnswer:"
-    delimiter_token_ids = tokenizer(delimiter_str).input_ids
+    delimiter_ids = tokenizer(delimiter_str).input_ids
 
     for token_path in args_dict["token_file_paths"]:
         # Load your token file to get the shape
@@ -62,7 +62,19 @@ def prepare_finetuning_masks(args_dict):
         for i in range(num_tokens):
             if tokens[i] == 100257: # we hit the end of a document
                 # find the delimiter in the previous document by searching for it
+                delimiter_pos = []
+                for i in range(len(prev_document)):
+                    if prev_document[i:i+len(delimiter_ids)] == delimiter_ids:
+                        delimiter_pos.append(i)
+
+                assert len(delimiter_pos) == 1, f"Delimiter not found or found multiple times in document with length {len(prev_document)}"
+
+                # create the label mask for the previous document
+                label_mask = np.ones(len(prev_document), dtype=np.bool_)
+                # mask out everything before the delimiter
+                label_mask[:delimiter_pos[0]+len(delimiter_ids)] = False
                 breakpoint()
+
             else:
                 prev_document.append(tokens[i])
                 continue
