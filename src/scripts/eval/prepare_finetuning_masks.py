@@ -50,21 +50,27 @@ def prepare_finetuning_masks(args_dict):
         tokens = load_token_file(token_path)
         num_tokens = len(tokens)
 
-        # Create the label mask array
-        # Initialize all to True (include all tokens by default)
-        label_mask = np.ones(num_tokens, dtype=np.bool_)
-
-        breakpoint()
-
-        # Or mask based on token values (e.g., mask padding tokens):
-        # pad_token_id = 0
-        # label_mask = (tokens != pad_token_id)
-
         # Save the label mask file
         mask_path = str(token_path).replace('.npy', '_mask.npy')
 
         # Save as memory-mapped file (more efficient for large files):
         mmap_mask = np.memmap(mask_path, mode='w+', dtype=np.bool_, shape=(num_tokens,))
+
+        tot_arr = []
+        # we now extract individual documents and mask accordingly
+        for i in range(num_tokens):
+            if tokens[i] > 10256:
+                tot_arr.append(i)
+
+        breakpoint()
+
+
+
+        # Or mask based on token values (e.g., mask padding tokens):
+        # pad_token_id = 0
+        # label_mask = (tokens != pad_token_id)
+
+
         mmap_mask[:] = label_mask
         mmap_mask.flush()
 
