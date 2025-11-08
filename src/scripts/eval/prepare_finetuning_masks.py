@@ -42,7 +42,7 @@ def prepare_finetuning_masks(args_dict):
     # load up the tokenizer
     tokenizer = AutoTokenizer.from_pretrained(args_dict["tokenizer"])
     # the string that represents the delimiter
-    delimiter_str = "\nAnswer:"
+    delimiter_str = "Answer:"
     delimiter_ids = tokenizer(delimiter_str).input_ids
 
     for token_path in args_dict["token_file_paths"]:
