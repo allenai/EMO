@@ -32,7 +32,7 @@ def prepare_finetuning_masks(args_dict):
 
     for token_path in args_dict["token_file_paths"]:
         # Load your token file to get the shape
-        tokens = np.load(token_path)
+        tokens = np.load(token_path, allow_pickle=True)
         num_tokens = len(tokens)
 
         # Create the label mask array
