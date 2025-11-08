@@ -56,11 +56,17 @@ def prepare_finetuning_masks(args_dict):
         # Save as memory-mapped file (more efficient for large files):
         mmap_mask = np.memmap(mask_path, mode='w+', dtype=np.bool_, shape=(num_tokens,))
 
-        tot_arr = []
+
+        prev_document = []
         # we now extract individual documents and mask accordingly
         for i in range(num_tokens):
-            if tokens[i] > 100256:
-                tot_arr.append(tokens[i])
+            if tokens[i] == 100257: # we hit the end of a document
+                # find the delimiter in the previous document by searching for it
+                breakpoint()
+            else:
+                prev_document.append(tokens[i])
+                continue
+
 
         breakpoint()
 
