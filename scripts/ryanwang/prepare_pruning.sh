@@ -94,7 +94,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
         echo "  Batch size: $batch_size"
         echo "  Job name: $job_name"
 
-#        bash src/scripts/eval/prepare_pruning.sh \
+#        bash src/scripts/eval/prepare_pruning_per_task.sh \
 #            --GROUP_NAME "$GROUP_NAME" \
 #            --BASE_OUTPUT_DIR "$BASE_OUTPUT_DIR" \
 #            --BATCH_SIZE "$batch_size" \
@@ -114,7 +114,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
             --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
             --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
             -- \
-            bash -c "bash src/scripts/eval/prepare_pruning.sh \
+            bash -c "bash src/scripts/eval/prepare_pruning_per_task.sh \
                 --GROUP_NAME "$GROUP_NAME" \
                 --BASE_OUTPUT_DIR "$BASE_OUTPUT_DIR" \
                 --BATCH_SIZE "$batch_size" \
