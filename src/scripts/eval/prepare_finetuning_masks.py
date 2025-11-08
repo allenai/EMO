@@ -67,8 +67,6 @@ def prepare_finetuning_masks(args_dict):
                     if prev_document[j:j+len(delimiter_ids)] == delimiter_ids:
                         delimiter_pos.append(j)
 
-                if len(delimiter_pos) != 1:
-                    breakpoint()
                 assert len(delimiter_pos) == 1, f"Delimiter not found or found multiple times in document with length {len(prev_document)}"
 
                 # create the label mask for the previous document
@@ -82,31 +80,7 @@ def prepare_finetuning_masks(args_dict):
                 # reset prev_document
                 prev_document = []
 
-        breakpoint()
-
         mmap_mask.flush()
-
-    #
-    # # we load the data here
-    # for eval_dataset_name in args_dict["task"]:
-    #     print("evaluating dataset ", eval_dataset_name)
-    #
-    #     # get the request file for the corresponding task
-    #     eval_dataset_name = get_eval_filename(eval_dataset_name)
-    #
-    #     out_fn = os.path.join(args_dict["eval_dir"], f"{eval_dataset_name}-processed.jsonl")
-    #     if os.path.exists(out_fn):
-    #         print(f"Output file {out_fn} already exists, skipping...")
-    #         continue
-    #
-    #     data = get_correct_training_data(eval_dataset_name, args_dict["eval_dir"])
-    #
-    #     out_file = open(out_fn, 'w')
-    #
-    #     # loop over dataset in batches
-    #     for i in tqdm(data):
-    #         out_file.write(json.dumps({"text": i, "id": str(hash(i)), "source": eval_dataset_name}) + "\n")
-    #     out_file.close()
 
 def main():
     args = _parser.parse_args()
