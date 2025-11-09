@@ -68,6 +68,12 @@ for train_task_name in "${train_task_names[@]}"; do
     dataset_paths=($(ls ${destination}/*.npy | grep -v mask.npy))
     label_mask_paths=($(ls ${destination}/*_mask.npy))
 
+    # Convert label_mask_paths array to a comma-separated string
+    IFS=','
+    dataset_paths_str="${dataset_paths[*]}"
+    label_mask_paths_str="${label_mask_paths[*]}"
+    unset IFS
+
     # swap out all occurences of "train" with "validation" to get validation set
     validation_task_prefix="${task_prefix/train/validation}"
     activation_file="${BASE_OUTPUT_DIR}/prune/${model_name}_${step}-hf/${validation_task_prefix}-router.jsonl"
