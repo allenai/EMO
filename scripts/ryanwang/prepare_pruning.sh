@@ -3,7 +3,8 @@
 MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
 #MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 MODELS=(
-    "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995-hf"
+#    "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995-hf"
+    "moe_1b7b_olmoe-mix"
     )
 #BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/prune"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/prune"
@@ -16,21 +17,21 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
-#  "arc_easy"
-#  "arc_challenge"
-#  "boolq"
-#  "csqa"
-#  "hellaswag"
-#  "openbookqa"
-#  "piqa"
-#  "socialiqa"
-#  "winogrande"
+  "arc_easy"
+  "arc_challenge"
+  "boolq"
+  "csqa"
+  "hellaswag"
+  "openbookqa"
+  "piqa"
+  "socialiqa"
+  "winogrande"
 
 #   MMLU
 #  "mmlu"
 
 #   GSM8K
-  "gsm8k"
+#  "gsm8k"
 )
 
 # Function to get checkpoint name (matching the original script)
