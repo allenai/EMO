@@ -14,8 +14,8 @@
 #       `--trainer.hard_stop.value=100 --trainer.hard_stop.unit=steps`
 
 ##############################################################
-BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
-#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
+#BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
+BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
 #model_name="moe_1b7b_128experts_olmoe-mix_130B_1103"
 model_name="moe_1b7b_olmoe-mix"
