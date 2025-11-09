@@ -229,8 +229,9 @@ class LMHead(nn.Module):
 
         h = self.norm(x) if self.norm is not None else x
 
-        print(labels)
-        print(labels[0][:1000])
+        # print(labels)
+        # print(labels[0][:1000])
+        breakpoint()
 
         if isinstance(logits_to_keep, int):
             if logits_to_keep != 0:
