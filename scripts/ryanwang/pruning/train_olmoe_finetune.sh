@@ -90,7 +90,7 @@ for train_task_name in "${train_task_names[@]}"; do
     echo "Prune keep k: $prune_keep_k"
     echo "Activation file: $activation_file"
 
-    torchrun --nproc-per-node=8 src/scripts/train/olmoe-1B-7B_finetune.py \
+    torchrun --nproc-per-node=4 src/scripts/train/olmoe-1B-7B_finetune.py \
         $runname \
     		--save-folder="${base_model}/$runname" \
         --dataset.paths="[${dataset_paths_str}]" \
