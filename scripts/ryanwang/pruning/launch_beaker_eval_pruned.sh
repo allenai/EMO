@@ -4,7 +4,7 @@
 # Usage: bash src/scripts/eval/launch_beaker_eval.sh
 
 # Configuration
-MODELS=("/weka/oe-training-default/ryanwang/phdbrainstorm/models/olmoe-pretrain-mose-natural-1022/step30995/olmoe-finetune-arc_easy-mc/step1686-hf")
+MODELS=("/weka/oe-training-default/ryanwang/phdbrainstorm/models/dense_1b_olmoe-mix_1028/step30995/olmoe-finetune-arc_easy-mc/step1686-hf")
 BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/evals"
 activation_file="/weka/oe-training-default/ryanwang/phdbrainstorm/evals/weka_oe-training-default_ryanwang_phdbrainstorm_models_olmoe-pretrain-mose-natural-1022_step30995-hf/arc_easy:mc-router.jsonl"
 prune_keep_k=32

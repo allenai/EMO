@@ -201,14 +201,24 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
     log.info(f"Using data root: {DATA_ROOT}")
 
-    dataset_config = NumpyPaddedFSLDatasetConfig.from_data_mix(
-        DataMix.OLMo_mix_0625,
+    dataset_config = NumpyPaddedFSLDatasetConfig(
+        paths=[], # to be filled in by the bash script
+        label_mask_paths=[], # to be filled in by the bash script
         tokenizer=tokenizer_config,
         mix_base_dir=DATA_ROOT,
         sequence_length=SEQUENCE_LENGTH,
         work_dir=work_dir,
         instance_filter_config=None,
     )
+
+    # dataset_config = NumpyPaddedFSLDatasetConfig.from_data_mix(
+    #     DataMix.OLMo_mix_0625,
+    #     tokenizer=tokenizer_config,
+    #     mix_base_dir=DATA_ROOT,
+    #     sequence_length=SEQUENCE_LENGTH,
+    #     work_dir=work_dir,
+    #     instance_filter_config=None,
+    # )
 
     data_loader_config = NumpyDataLoaderConfig(
         global_batch_size=GLOBAL_BATCH_SIZE,  # NOTE: this is specified in tokens, not instances
