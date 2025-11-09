@@ -126,7 +126,6 @@ class NumpyDatasetBase(ABC):
         bos_token_id: Optional[int] = None,
     ):
         if not paths:
-            breakpoint()
             raise OLMoConfigurationError("At least one path is required")
 
         self._array_paths = tuple(paths)

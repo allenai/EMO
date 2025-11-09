@@ -229,6 +229,8 @@ class LMHead(nn.Module):
 
         h = self.norm(x) if self.norm is not None else x
 
+        breakpoint()
+
         if isinstance(logits_to_keep, int):
             if logits_to_keep != 0:
                 # Keep only the last logits_to_keep positions
