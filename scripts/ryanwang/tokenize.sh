@@ -23,7 +23,7 @@ train_task_names=(
 #  "openbookqa:rc_train_0shot::olmes"
 #  "piqa:rc_train_0shot::olmes"
 #  "socialiqa:rc_train_0shot::olmes"
-#  "winogrande:rc_train_0shot::olmes"
+  "winogrande:rc_train_0shot::olmes"
 #
 ##   MMLU
 #  "mmlu_rc:rc_train_0shot::olmes"
