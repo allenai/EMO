@@ -38,6 +38,7 @@ python -m olmo_core.launch.beaker \
 		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
 		--model.block.feed_forward_moe.num_experts=128 \
 		--dataset.generate_doc_lengths=true \
+		--model.block.attention.backend=flash_2 \
 
 
 
