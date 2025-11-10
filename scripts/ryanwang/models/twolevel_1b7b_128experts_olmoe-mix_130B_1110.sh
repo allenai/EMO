@@ -26,10 +26,10 @@ torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
 		--trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
 		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
 		--model.block.feed_forward_moe.num_experts=16 \
-#		--dataset.generate_doc_lengths=true \
-#		--model.block.attention.backend=flash_2 \
 		--model-type="two-level" \
-		--document-expert-pool=${document_expert_pool} \
+		--document-expert-pool=${document_expert_pool}
+		#		--dataset.generate_doc_lengths=true \
+#		--model.block.attention.backend=flash_2 \
 
 #python -m olmo_core.launch.beaker \
 #  --name $runname \
