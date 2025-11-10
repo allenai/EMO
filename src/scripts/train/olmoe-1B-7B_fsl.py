@@ -96,6 +96,7 @@ def train(opts, config: ExperimentConfig):
     model = config.model.build(init_device="meta")
 
     # Apply special routers or other modifications to the model here if needed.
+    breakpoint()
     if opts.model_type == "dense" or opts.model_type == "moe":
         log.info("Using default routers; no modifications applied.")
         pass
