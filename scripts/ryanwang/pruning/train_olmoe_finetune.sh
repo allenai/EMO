@@ -67,8 +67,8 @@ for train_task_name in "${train_task_names[@]}"; do
     echo "destination folder: $destination"
 
     # Collect the corresponding dataset paths. Can make this assumption given we have a warning in tokenize script
-    dataset_paths=("${destination}/part-0-00000.npy")
-    label_mask_paths=("${destination}/part-0-00000_mask.npy")
+    dataset_paths="${destination}/part-0-00000.npy"
+    label_mask_paths="${destination}/part-0-00000_mask.npy"
 
     # swap out all occurences of "train" with "validation" to get validation set
     validation_task_prefix="${task_prefix/train/validation}"
@@ -87,8 +87,8 @@ for train_task_name in "${train_task_names[@]}"; do
 #    torchrun --nproc-per-node=4 src/scripts/train/olmoe-1B-7B_finetune.py \
 #        $runname \
 #    		--save-folder="${base_model}/$runname" \
-#        --dataset.paths="[${dataset_paths_str}]" \
-#        --dataset.label_mask_paths="[${label_mask_paths_str}]" \
+#       --dataset.paths="[${dataset_paths}]" \
+#       --dataset.label_mask_paths="[${label_mask_paths}]" \
 #        --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
 #    		--trainer.max_duration='{value: 3, unit: epochs}' \
 #    		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
@@ -112,8 +112,8 @@ for train_task_name in "${train_task_names[@]}"; do
       -- src/scripts/train/olmoe-1B-7B_finetune.py \
         $runname \
         --save-folder="${base_model}/$runname" \
-        --dataset.paths="[${dataset_paths_str}]" \
-        --dataset.label_mask_paths="[${label_mask_paths_str}]" \
+        --dataset.paths="[${dataset_paths}]" \
+        --dataset.label_mask_paths="[${label_mask_paths}]" \
         --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
         --trainer.max_duration='{value: 3, unit: epochs}' \
         --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
