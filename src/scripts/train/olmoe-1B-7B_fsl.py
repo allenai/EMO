@@ -14,6 +14,7 @@ from typing import List, Optional, cast
 
 import rich
 
+from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouterConfig
 from olmo_core.config import Config, DType
 from olmo_core.data import (
     NumpyDataLoaderConfig,
@@ -82,7 +83,7 @@ class ExperimentConfig(Config):
     # docs: end-define-config
 
 
-def train(config: ExperimentConfig):
+def train(opts, config: ExperimentConfig):
     if get_rank() == 0:
         rich.print(config)
 
@@ -92,6 +93,19 @@ def train(config: ExperimentConfig):
     # docs: start-build-components
     # Build components.
     model = config.model.build(init_device="meta")
+
+    # Apply special routers or other modifications to the model here if needed.
+    if opts.model_type == "dense" or opts.model_type == "moe":
+        log.info("Using default routers; no modifications applied.")
+        pass
+    elif opts.model_type == "two-level":
+        log.info("Applying two-level routers to the model...")
+        if opts.document_expert_pool is None:
+            raise ValueError("document_expert_pool must be specified for two-level model type.")
+        apply_twolevel_routers(model, config, document_expert_pool=opts.document_expert_pool)
+    else:
+        raise ValueError(f"Unknown model type: {opts.model_type}")
+
     train_module = config.train_module.build(model)
     dataset = config.dataset.build()
     data_loader = config.data_loader.build(dataset, dp_process_group=train_module.dp_process_group)
@@ -115,6 +129,39 @@ def train(config: ExperimentConfig):
     # Train.
     trainer.fit()
 
+
+def apply_twolevel_routers(model, config, document_expert_pool: int):
+    """
+    Replace each MoE layer's router with MoETwoLevelRouter,
+    passing the correct per-layer index and preserving original settings.
+    """
+    # we first define the new kwargs for the PruningMoERouter
+    model_config = config.model
+    kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
+    kwargs.pop("name")
+    breakpoint()
+    kwargs.update(
+        document_expert_pool=document_expert_pool,
+    )
+
+    for i, (k, block) in enumerate(model.blocks.items()):
+        # Only touch MoE layers
+        if not getattr(block, "is_moe", False):
+            continue
+
+        old_router = block.router  # MoERouter
+
+        new_router = MoETwoLevelRouterConfig(**kwargs).build(
+            d_model=old_router.d_model,
+            num_experts=old_router.num_experts,
+            init_device=old_router.weight.device.type if hasattr(old_router, 'weight') else "cpu",
+            lb_loss_weight=getattr(old_router, 'lb_loss_weight', None),
+            lb_loss_granularity=getattr(old_router, 'lb_loss_granularity', None),
+            z_loss_weight=getattr(old_router, 'z_loss_weight', None),
+        )
+
+        # Swap in
+        block.feed_forward_moe.router = new_router
 
 def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     save_folder = opts.save_folder
@@ -205,7 +252,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             WandBCallback(
                 name=opts.run_name,
                 cancel_check_interval=10,
-                enabled=False,  # change to true to enable
+                enabled=True,  # change to true to enable
             ),
         )
         .with_callback("beaker", BeakerCallback())
@@ -254,6 +301,16 @@ def parser_args():
         action="store_true",
         help="""Print the config and exit.""",
     )
+    parser.add_argument(
+        "--model-type",
+        type=str,
+        help="Type of MoE model to use.",
+    )
+    parser.add_argument(
+        "--document-expert-pool",
+        type=int,
+        help="Number of experts for a specific document to choose top-k from",
+    )
     opts, overrides = parser.parse_known_args()
     return opts, overrides
 
@@ -269,7 +326,7 @@ def main():
 
     prepare_training_environment()
     try:
-        train(config)
+        train(opts, config)
     finally:
         teardown_training_environment()
 

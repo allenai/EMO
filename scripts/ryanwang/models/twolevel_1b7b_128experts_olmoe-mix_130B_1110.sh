@@ -14,8 +14,9 @@
 #       `--trainer.hard_stop.value=100 --trainer.hard_stop.unit=steps`
 
 ##############################################################
+document_expert_pool=64
 
-runname="twolevel_1b7b_128experts_olmoe-mix_130B_1110"
+runname="twolevel-${document_expert_pool}_1b7b_128experts_olmoe-mix_130B_1110"
 python -m olmo_core.launch.beaker \
   --name $runname \
 	--gpus 8 \
@@ -36,9 +37,11 @@ python -m olmo_core.launch.beaker \
 		--work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
 		--trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
 		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
-		--model.block.feed_forward_moe.num_experts=128 \
+		--model.block.feed_forward_moe.num_experts=16 \
 		--dataset.generate_doc_lengths=true \
 		--model.block.attention.backend=flash_2 \
+		--model-type="twolevel"
+		--document-expert-pool=${document_expert_pool} \
 
 
 
