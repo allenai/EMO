@@ -88,6 +88,10 @@ def prepare_finetuning_masks(args_dict):
 
         mmap_mask.flush()
 
+    # check if there are more than one file. If there are, the finetuning script breaks, so we throw an error to remind user
+    if len(args_dict["token_file_paths"]) > 1:
+        raise ValueError(f"There are a total of {len(args_dict['token_file_paths'])} token files provided for mask generation. The finetuning script currently only supports one file at a time. Be careful (masking script successfully completed)")
+
 def main():
     args = _parser.parse_args()
     args_dict = vars(args)

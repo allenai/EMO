@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/prune"
 
 get_eval_filename() {
