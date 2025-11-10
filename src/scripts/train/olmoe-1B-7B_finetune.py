@@ -52,9 +52,6 @@ from olmo_core.utils import seed_all
 
 log = logging.getLogger(__name__)
 
-DATA_ROOT = "/weka/oe-training-default/ryanwang"
-# DATA_ROOT = "/root/ryanwang"
-
 SEQUENCE_LENGTH = 4096
 GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
 
@@ -199,13 +196,10 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     #
     # breakpoint()
 
-    log.info(f"Using data root: {DATA_ROOT}")
-
     dataset_config = NumpyPaddedFSLDatasetConfig(
         paths=[], # to be filled in by the bash script
         label_mask_paths=[], # to be filled in by the bash script
         tokenizer=tokenizer_config,
-        mix_base_dir=DATA_ROOT,
         sequence_length=SEQUENCE_LENGTH,
         work_dir=work_dir,
         instance_filter_config=None,
@@ -227,7 +221,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     train_module_config = TransformerTrainModuleConfig(
-        rank_microbatch_size=2
+        rank_microbatch_size=4
         * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         max_sequence_length=SEQUENCE_LENGTH,
         optim=AdamWConfig(
