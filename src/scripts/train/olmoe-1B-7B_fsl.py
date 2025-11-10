@@ -52,7 +52,8 @@ from olmo_core.utils import seed_all
 
 log = logging.getLogger(__name__)
 
-DATA_ROOT = "/weka/oe-training-default/ai2-llm"
+# DATA_ROOT = "/weka/oe-training-default/ai2-llm"
+DATA_ROOT = "/root/ryanwang"
 
 SEQUENCE_LENGTH = 4096
 GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH

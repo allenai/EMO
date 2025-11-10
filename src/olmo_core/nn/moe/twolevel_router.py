@@ -80,7 +80,7 @@ class MoETwoLevelRouter(MoELinearRouter):
         # shape: (batch_size, seq_len, num_experts)
         logits = self.get_expert_logits(x).float()
 
-        #
+        breakpoint()
 
         # Mask out pruned experts by setting their logits to a very large negative value
         logits = logits.masked_fill(~self.expert_mask.unsqueeze(0).unsqueeze(0), float('-inf'))
