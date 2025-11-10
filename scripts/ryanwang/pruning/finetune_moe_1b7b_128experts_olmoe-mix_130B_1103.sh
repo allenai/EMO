@@ -120,6 +120,8 @@ for train_task_name in "${train_task_names[@]}"; do
         --load_path=$base_model \
         --activation_file=$activation_file \
         --prune_keep_k=$prune_keep_k \
+        --model.block.feed_forward_moe.num_experts=128 \
+
 
 done
 
