@@ -28,7 +28,7 @@ torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
 		--model.block.feed_forward_moe.num_experts=16 \
 		--dataset.generate_doc_lengths=true \
 		--model.block.attention.backend=flash_2 \
-		--model-type="twolevel"
+		--model-type="twolevel" \
 		--document-expert-pool=${document_expert_pool} \
 
 #python -m olmo_core.launch.beaker \
