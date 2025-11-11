@@ -87,7 +87,6 @@ class MoETwoLevelRouter(MoELinearRouter):
         # shape: (batch_size, seq_len, num_experts)
         logits = self.get_expert_logits(x).float()
 
-        breakpoint()
 
         for seq_idx in range(x.size(0)):
             start = 0
@@ -96,7 +95,6 @@ class MoETwoLevelRouter(MoELinearRouter):
             if document_boundary[-1] != x.size(1):
                 document_boundary = torch.cat([document_boundary, torch.tensor([x.size(1)], device=document_boundary.device)])
             for end in document_boundary:
-                breakpoint()
                 sequence_logits = logits[seq_idx, start:end, :] # shape: (doc_len, num_experts)
                 # calculate the softmax over the experts
                 expert_probs = F.softmax(sequence_logits, dim=-1) # shape: (doc_len, num_experts)
@@ -108,10 +106,6 @@ class MoETwoLevelRouter(MoELinearRouter):
                 # set the logits of these experts to a very large negative value
                 logits[seq_idx, start:end, experts_to_discard] = float('-inf')
                 start = end
-
-
-        # Mask out pruned experts by setting their logits to a very large negative value
-        logits = logits.masked_fill(~self.expert_mask.unsqueeze(0).unsqueeze(0), float('-inf'))
 
         # shape: (batch_size, seq_len, num_experts)
         if self.gating_function == MoERouterGatingFunction.softmax:
@@ -134,45 +128,66 @@ class MoETwoLevelRouter(MoELinearRouter):
                 )
             )
 
-        with torch.no_grad():
-            # Histogram the expert ids to identify the number of items/tokens routed to each expert.
-            # shape: (batch_size, seq_len, num_experts)
-            batched_batch_size_per_expert = ops.batched_histc(expert_indices, self.num_experts)
-            # shape: (batch_size, num_experts)
-            batched_batch_size_per_expert = batched_batch_size_per_expert.sum(dim=1)
-            # shape: (num_experts,)
-            batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
-
         # Maybe compute auxiliary losses and accumulate metrics.
         aux_loss: Optional[torch.Tensor] = None
         if self.training and torch.is_grad_enabled():
             with torch.autocast(enabled=False, device_type=x.device.type):
-                # Slice to active experts for LB loss, and use effective sizes
-                active_idx = self.active_indices
-                scores_active = scores.index_select(-1, active_idx)  # (B, S, E_active)
-                bbse_active = batched_batch_size_per_expert.index_select(-1, active_idx)  # (B, E_active)
-                bse_active = batch_size_per_expert.index_select(0, active_idx)  # (E_active,)
-                num_active = active_idx.numel()
-                eff_top_k = min(self.top_k, num_active)
-
                 if self.lb_loss_weight is not None:
                     assert self.load_balancing_loss is not None
 
-                    # Make sure scores are normalized, otherwise load balancing loss doesn't work well.
-                    if self.gating_function == MoERouterGatingFunction.sigmoid:
-                        scores_active = scores_active / scores_active.sum(dim=-1, keepdim=True)
+                    doc_lb_losses = []
+                    breakpoint()
+                    for seq_idx in range(x.size(0)):
+                        start = 0
+                        document_boundary = document_boundaries[seq_idx]
+                        # if the end of the sequence is not already present, add it
+                        if document_boundary[-1] != x.size(1):
+                            document_boundary = torch.cat(
+                                [document_boundary, torch.tensor([x.size(1)], device=document_boundary.device)]
+                            )
 
-                    lb_loss = load_balancing_loss(
-                        num_experts=num_active,
-                        top_k=eff_top_k,
-                        expert_scores=scores_active,
-                        batch_size_per_expert=bse_active,
-                        batched_batch_size_per_expert=bbse_active,
-                        granularity=self.lb_loss_granularity,
-                        loss_div_factor=loss_div_factor,
-                        tp_mesh=self.tp_mesh,
-                        cp_mesh=self.cp_mesh,
-                    )
+                        for end in document_boundary:
+                            # Get tokens for this document
+                            doc_scores = scores[seq_idx, start:end, :]  # (doc_len, num_experts)
+                            doc_indices = expert_indices[seq_idx, start:end]  # (doc_len, top_k)
+                            doc_len = end - start
+
+                            # find active experts (not masked)
+                            active_experts_mask = torch.isfinite(logits[seq_idx, start:end, :]).any(dim=0)
+                            doc_scores = doc_scores[:, active_experts_mask]
+                            num_active = doc_scores.shape[-1]
+
+                            assert num_active == self.document_expert_pool, f"Number of active experts {num_active} does not match document_expert_pool {self.document_expert_pool}"
+
+                            # Make sure scores are normalized, otherwise load balancing loss doesn't work well.
+                            if self.gating_function == MoERouterGatingFunction.sigmoid:
+                                doc_scores = doc_scores / doc_scores.sum(dim=-1, keepdim=True)
+
+                            with torch.no_grad():
+                                # Histogram the expert ids to identify the number of items/tokens routed to each expert.
+                                # shape: (batch_size, seq_len, num_experts)
+                                batched_batch_size_per_expert = ops.batched_histc(doc_indices.unsqueeze(0), self.document_expert_pool)
+                                # shape: (batch_size, num_experts)
+                                batched_batch_size_per_expert = batched_batch_size_per_expert.sum(dim=1)
+                                # shape: (num_experts,)
+                                batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
+
+                            doc_lb_loss = load_balancing_loss(
+                                num_experts=self.document_expert_pool,
+                                top_k=self.top_k,
+                                expert_scores=doc_scores,
+                                batch_size_per_expert=batch_size_per_expert,
+                                batched_batch_size_per_expert=batched_batch_size_per_expert,
+                                granularity=self.lb_loss_granularity,
+                                loss_div_factor=loss_div_factor,
+                                tp_mesh=self.tp_mesh,
+                                cp_mesh=self.cp_mesh,
+                            )
+                            doc_lb_losses.append(doc_lb_loss)
+                            start = end
+
+                    # Combine all document-level LB losses
+                    lb_loss = torch.stack(doc_lb_losses).mean()
                     self.load_balancing_loss += lb_loss.detach()
 
                     scaled_lb_loss = self.lb_loss_weight * lb_loss
