@@ -39,6 +39,7 @@ from ..buffer_cache import BufferCache
 from ..functional import l2_normalize
 from ..lm_head import LMHeadConfig, LMOutputWithLoss
 from ..moe import MoEBase
+from ..moe.twolevel_router import MoETwoLevelRouter
 from ..rope import RoPEBuffers, RotaryEmbeddingBase
 from ..utils import selective_checkpointing_context_fn
 from .block import (
@@ -501,11 +502,14 @@ class Transformer(nn.Module):
         # pipeline parallel configuration.
         h = self.embeddings(input_ids) if self.embeddings is not None else input_ids
 
-        # TODO: compute document boundaries here
-        breakpoint()
+        # compute document boundaries here if router is a MoETwoLevelRouter
+        is_moe_twolevel_router = isinstance(self.blocks["0"].feed_forward_moe.router, MoETwoLevelRouter)
+        if is_moe_twolevel_router:
+            eos_token_id = self.blocks["0"].feed_forward_moe.router.eos_token_id
+            matches = (input_ids == eos_token_id)
 
-
-        document_boundaries=torch.tensor([1, 2, 3])
+            # Get indices for each sequence in batch, output is (num_sequences, num_documents)
+            document_boundaries = [torch.nonzero(row, as_tuple=True)[0] for row in matches]
 
         # Run each block.
         for block_key, block in self.blocks.items():
@@ -514,7 +518,10 @@ class Transformer(nn.Module):
             # Mark sizes as dynamic for torch.compile().
             if self.compile_enabled:
                 mark_dynamic(h, (0, 1), strict=False)
-            h = block(h, document_boundaries=document_boundaries, **all_block_kwargs, **block_kwargs)
+            if is_moe_twolevel_router:
+                h = block(h, document_boundaries=document_boundaries, **all_block_kwargs, **block_kwargs)
+            else:
+                h = block(h, **all_block_kwargs, **block_kwargs)
 
         # Get final logits but again pass-through in case of pipeline parallelism.
         if self.lm_head is not None:
