@@ -181,7 +181,7 @@ class MoETwoLevelRouter(MoELinearRouter):
     def extra_repr(self):
         """Add custom parameter to string representation."""
         base_repr = super().extra_repr()
-        return f"{base_repr}, prune_keep_k={self.prune_keep_k}, layer_idx={self.layer_idx}"
+        return f"{base_repr}, document_expert_pool={self.document_expert_pool}, eos_token_id={self.eos_token_id}"
 
 @dataclass
 class MoETwoLevelRouterConfig(MoERouterConfig):
