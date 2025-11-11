@@ -95,6 +95,9 @@ class MoETwoLevelRouter(MoELinearRouter):
             if len(document_boundary) == 0 or document_boundary[-1] != x.size(1):
                 document_boundary = torch.cat([document_boundary, torch.tensor([x.size(1)], device=document_boundary.device)])
             for end in document_boundary:
+                if end <= start:
+                    start = end
+                    continue
                 sequence_logits = logits[seq_idx, start:end, :] # shape: (doc_len, num_experts)
                 # calculate the softmax over the experts
                 expert_probs = F.softmax(sequence_logits, dim=-1) # shape: (doc_len, num_experts)
@@ -146,6 +149,9 @@ class MoETwoLevelRouter(MoELinearRouter):
                             )
 
                         for end in document_boundary:
+                            if end <= start:
+                                start=end
+                                continue
                             # Get tokens for this document
                             doc_scores = scores[seq_idx, start:end, :]  # (doc_len, num_experts)
                             doc_indices = expert_indices[seq_idx, start:end]  # (doc_len, top_k)

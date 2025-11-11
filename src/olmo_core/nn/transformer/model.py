@@ -504,11 +504,17 @@ class Transformer(nn.Module):
 
         # compute document boundaries here if router is a MoETwoLevelRouter
         is_moe_twolevel_router = isinstance(self.blocks["0"].feed_forward_moe.router, MoETwoLevelRouter)
+        document_boundaries = []
         if is_moe_twolevel_router:
             eos_token_id = self.blocks["0"].feed_forward_moe.router.eos_token_id
             matches = (input_ids == eos_token_id)
             # Get indices for each sequence in batch, output is (num_sequences, num_documents)
-            document_boundaries = [torch.nonzero(row, as_tuple=True)[0] for row in matches]
+            for row in matches:
+                pos = torch.nonzero(row, as_tuple=True)[0]
+                pos = pos[pos > 0]  # drop 0 to avoid empty [start:end]
+                if pos.numel() > 1:
+                    pos = pos.unique(sorted=True)  # remove duplicates, ascending
+                document_boundaries.append(pos)
 
         # Run each block.
         for block_key, block in self.blocks.items():
