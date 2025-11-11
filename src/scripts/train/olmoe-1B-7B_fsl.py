@@ -52,11 +52,15 @@ from olmo_core.utils import seed_all
 
 log = logging.getLogger(__name__)
 
-DATA_ROOT = "/weka/oe-training-default/ai2-llm"
-# DATA_ROOT = "/root/ryanwang"
+# DATA_ROOT = "/weka/oe-training-default/ai2-llm"
+# HACK
+DATA_ROOT = "/root/ryanwang"
 
 SEQUENCE_LENGTH = 4096
-GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
+# HACK
+GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
+# GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
+
 
 
 # docs: start-define-config
@@ -210,7 +214,8 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     train_module_config = TransformerTrainModuleConfig(
-        rank_microbatch_size=4
+        # HACK
+        rank_microbatch_size=2
         * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         max_sequence_length=SEQUENCE_LENGTH,
         optim=AdamWConfig(
