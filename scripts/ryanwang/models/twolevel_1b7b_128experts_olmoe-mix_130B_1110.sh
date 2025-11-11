@@ -19,7 +19,7 @@ document_expert_pool=12
 
 runname="twolevel-${document_expert_pool}_1b7b_128experts_olmoe-mix_130B_1110"
 
-torchrun --nproc-per-node=4 src/scripts/train/olmoe-1B-7B_fsl.py \
+torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
     $runname \
 		--save-folder="/root/ryanwang/phdbrainstorm/FlexMoE/models/$runname" \
 		--dataset.mix=arc-easy-train \
