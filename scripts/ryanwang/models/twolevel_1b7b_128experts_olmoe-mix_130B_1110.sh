@@ -14,7 +14,7 @@
 #       `--trainer.hard_stop.value=100 --trainer.hard_stop.unit=steps`
 
 ##############################################################
-document_expert_pool=64
+document_expert_pool=32
 
 runname="twolevel-${document_expert_pool}_1b7b_128experts_olmoe-mix_130B_1110"
 
