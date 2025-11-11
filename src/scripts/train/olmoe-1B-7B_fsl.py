@@ -39,7 +39,7 @@ from olmo_core.train.callbacks import (
     ConfigSaverCallback,
     GPUMemoryMonitorCallback,
     ProfilerCallback,
-    WandBCallback,
+    WandBCallback, DownstreamEvaluatorCallbackConfig,
 )
 from olmo_core.train.train_module import (
     TransformerDataParallelConfig,
@@ -52,13 +52,11 @@ from olmo_core.utils import seed_all
 
 log = logging.getLogger(__name__)
 
-# DATA_ROOT = "/weka/oe-training-default/ai2-llm"
-DATA_ROOT = "/root/ryanwang"
+DATA_ROOT = "/weka/oe-training-default/ai2-llm"
+# DATA_ROOT = "/root/ryanwang"
 
 SEQUENCE_LENGTH = 4096
-#HACK
-GLOBAL_BATCH_SIZE = 8 * SEQUENCE_LENGTH
-# GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
+GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
 
 
 # docs: start-define-config
@@ -212,7 +210,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     train_module_config = TransformerTrainModuleConfig(
-        rank_microbatch_size=2
+        rank_microbatch_size=4
         * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         max_sequence_length=SEQUENCE_LENGTH,
         optim=AdamWConfig(
@@ -271,6 +269,16 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback("beaker", BeakerCallback())
         .with_callback("config_saver", ConfigSaverCallback())
         .with_callback("profiler", ProfilerCallback(enabled=False))
+        .with_callback(
+            "downstream_evaluator",
+            # https://github.com/allenai/OLMo-in-loop-evals/blob/main/src/olmo_eval/tasks.py#L1752
+            DownstreamEvaluatorCallbackConfig(
+                tasks=["hellaswag", "arc_challenge", "piqa", "copa", "mmlu_stem", "mmlu_humanities",
+                       "mmlu_social_sciences", "mmlu_other"],
+                tokenizer=tokenizer_config,
+                eval_interval=250,
+            ),
+        )
     )
 
     config = ExperimentConfig(
