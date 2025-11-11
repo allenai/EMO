@@ -88,7 +88,6 @@ class MoETwoLevelRouter(MoELinearRouter):
         logits = self.get_expert_logits(x).float()
         logits_mask = torch.zeros_like(logits, dtype=torch.bool, device=logits.device)
 
-        breakpoint()
         document_boundaries_cpu = []
         for b in document_boundaries:
             bc = b.detach().cpu().tolist()
@@ -115,8 +114,6 @@ class MoETwoLevelRouter(MoELinearRouter):
                 # logits[seq_idx, start:end, experts_to_discard] = float('-inf')
                 logits_mask[seq_idx, start:end, experts_to_discard] = True
                 start = end
-
-        breakpoint()
 
         logits.masked_fill_(logits_mask, float('-inf'))
 
@@ -157,8 +154,6 @@ class MoETwoLevelRouter(MoELinearRouter):
             with torch.autocast(enabled=False, device_type=x.device.type):
                 if self.lb_loss_weight is not None:
                     assert self.load_balancing_loss is not None
-
-                    breakpoint()
 
                     doc_lb_losses = []
                     for seq_idx in range(x.size(0)):
@@ -213,7 +208,6 @@ class MoETwoLevelRouter(MoELinearRouter):
                             )
                             doc_lb_losses.append(doc_lb_loss)
                             start = end
-                    breakpoint()
                     # Combine all document-level LB losses
                     lb_loss = torch.stack(doc_lb_losses).mean()
                     self.load_balancing_loss += lb_loss.detach()
