@@ -136,7 +136,6 @@ class MoETwoLevelRouter(MoELinearRouter):
                     assert self.load_balancing_loss is not None
 
                     doc_lb_losses = []
-                    breakpoint()
                     for seq_idx in range(x.size(0)):
                         start = 0
                         document_boundary = document_boundaries[seq_idx]
@@ -177,14 +176,15 @@ class MoETwoLevelRouter(MoELinearRouter):
                                 # shape: (num_experts,)
                                 batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
 
+                            # removed loss_div_factor because we are computing by document
+
                             doc_lb_loss = load_balancing_loss(
                                 num_experts=self.document_expert_pool,
                                 top_k=self.top_k,
-                                expert_scores=doc_scores,
+                                expert_scores=doc_scores.unsqueeze(0),
                                 batch_size_per_expert=batch_size_per_expert,
                                 batched_batch_size_per_expert=batched_batch_size_per_expert,
                                 granularity=self.lb_loss_granularity,
-                                loss_div_factor=loss_div_factor,
                                 tp_mesh=self.tp_mesh,
                                 cp_mesh=self.cp_mesh,
                             )
@@ -192,6 +192,7 @@ class MoETwoLevelRouter(MoELinearRouter):
                             start = end
 
                     # Combine all document-level LB losses
+                    breakpoint()
                     lb_loss = torch.stack(doc_lb_losses).mean()
                     self.load_balancing_loss += lb_loss.detach()
 
