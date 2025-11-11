@@ -502,6 +502,8 @@ class Transformer(nn.Module):
         h = self.embeddings(input_ids) if self.embeddings is not None else input_ids
 
         # TODO: compute document boundaries here
+        breakpoint()
+
         document_boundaries=torch.tensor([1, 2, 3])
 
         # Run each block.
