@@ -53,7 +53,7 @@ python -m olmo_core.launch.beaker \
 		--model.block.feed_forward_moe.num_experts=128 \
 		--dataset.generate_doc_lengths=true \
 		--model.block.attention.backend=flash_2 \
-		--model-type="twolevel" \
+		--model-type="two-level" \
 		--document-expert-pool=${document_expert_pool}
 
 
