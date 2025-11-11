@@ -192,7 +192,6 @@ class MoETwoLevelRouter(MoELinearRouter):
                             start = end
 
                     # Combine all document-level LB losses
-                    breakpoint()
                     lb_loss = torch.stack(doc_lb_losses).mean()
                     self.load_balancing_loss += lb_loss.detach()
 
