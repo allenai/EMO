@@ -158,6 +158,12 @@ class MoETwoLevelRouter(MoELinearRouter):
 
                             assert num_active == self.document_expert_pool, f"Number of active experts {num_active} does not match document_expert_pool {self.document_expert_pool}"
 
+                            # we re-assign the expert indices to be in the range of the active experts only
+                            expert_id_mapping = torch.zeros(self.num_experts, dtype=torch.long, device=x.device) - 1
+                            expert_id_mapping[active_experts_mask] = torch.arange(num_active, device=x.device)
+
+                            doc_indices_local = expert_id_mapping[doc_indices]
+
                             # Make sure scores are normalized, otherwise load balancing loss doesn't work well.
                             if self.gating_function == MoERouterGatingFunction.sigmoid:
                                 doc_scores = doc_scores / doc_scores.sum(dim=-1, keepdim=True)
@@ -165,7 +171,7 @@ class MoETwoLevelRouter(MoELinearRouter):
                             with torch.no_grad():
                                 # Histogram the expert ids to identify the number of items/tokens routed to each expert.
                                 # shape: (batch_size, seq_len, num_experts)
-                                batched_batch_size_per_expert = ops.batched_histc(doc_indices.unsqueeze(0), self.document_expert_pool)
+                                batched_batch_size_per_expert = ops.batched_histc(doc_indices_local.unsqueeze(0), self.document_expert_pool)
                                 # shape: (batch_size, num_experts)
                                 batched_batch_size_per_expert = batched_batch_size_per_expert.sum(dim=1)
                                 # shape: (num_experts,)
