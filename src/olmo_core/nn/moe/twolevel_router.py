@@ -175,6 +175,7 @@ class MoETwoLevelRouter(MoELinearRouter):
 
                             # find active experts (not masked)
                             active_experts_mask = (~logits_mask[seq_idx, start:end, :]).any(dim=0)
+                            doc_scores = doc_scores[:, active_experts_mask]
                             num_active = doc_scores.shape[-1]
 
                             assert num_active == self.document_expert_pool, f"Number of active experts {num_active} does not match document_expert_pool {self.document_expert_pool}"
