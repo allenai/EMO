@@ -235,10 +235,10 @@ class MoETwoLevelRouter(MoELinearRouter):
                     scaled_z_loss = self.z_loss_weight * z_loss
                     aux_loss = scaled_z_loss if aux_loss is None else aux_loss + scaled_z_loss
 
-            self.batch_size_per_expert += batch_size_per_expert
+            self.batch_size_per_expert += tot_batch_size_per_expert
             if self.bias_gamma is not None:
                 assert self.score_bias_batch_size_per_expert is not None
-                self.score_bias_batch_size_per_expert += batch_size_per_expert
+                self.score_bias_batch_size_per_expert += tot_batch_size_per_expert
 
         return expert_weights, expert_indices, tot_batch_size_per_expert, aux_loss
 
