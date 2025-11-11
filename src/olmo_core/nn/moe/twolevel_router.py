@@ -92,7 +92,7 @@ class MoETwoLevelRouter(MoELinearRouter):
             start = 0
             document_boundary = document_boundaries[seq_idx]
             # add to document_boundary the end of the sequence if not already present
-            if document_boundary[-1] != x.size(1):
+            if len(document_boundary) == 0 or document_boundary[-1] != x.size(1):
                 document_boundary = torch.cat([document_boundary, torch.tensor([x.size(1)], device=document_boundary.device)])
             for end in document_boundary:
                 sequence_logits = logits[seq_idx, start:end, :] # shape: (doc_len, num_experts)
@@ -140,7 +140,7 @@ class MoETwoLevelRouter(MoELinearRouter):
                         start = 0
                         document_boundary = document_boundaries[seq_idx]
                         # if the end of the sequence is not already present, add it
-                        if document_boundary[-1] != x.size(1):
+                        if len(document_boundary) == 0 or document_boundary[-1] != x.size(1):
                             document_boundary = torch.cat(
                                 [document_boundary, torch.tensor([x.size(1)], device=document_boundary.device)]
                             )
