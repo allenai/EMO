@@ -97,18 +97,6 @@ def train(opts, config: ExperimentConfig):
     # Build components.
     model = config.model.build(init_device="meta")
 
-    # Apply special routers or other modifications to the model here if needed.
-    if opts.model_type == "dense" or opts.model_type == "moe":
-        log.info("Using default routers; no modifications applied.")
-        pass
-    elif opts.model_type == "two-level":
-        log.info("Applying two-level routers to the model...")
-        if opts.document_expert_pool is None:
-            raise ValueError("document_expert_pool must be specified for two-level model type.")
-        apply_twolevel_routers(model, config, document_expert_pool=opts.document_expert_pool)
-    else:
-        raise ValueError(f"Unknown model type: {opts.model_type}")
-
     train_module = config.train_module.build(model)
     dataset = config.dataset.build()
     data_loader = config.data_loader.build(dataset, dp_process_group=train_module.dp_process_group)
@@ -132,39 +120,39 @@ def train(opts, config: ExperimentConfig):
     # Train.
     trainer.fit()
 
-
-def apply_twolevel_routers(model, config, document_expert_pool: int):
-    """
-    Replace each MoE layer's router with MoETwoLevelRouter,
-    passing the correct per-layer index and preserving original settings.
-    """
-    # we first define the new kwargs for the PruningMoERouter
-    model_config = config.model
-    kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
-    kwargs.pop("name")
-    kwargs.update(
-        document_expert_pool=document_expert_pool,
-        eos_token_id=config.dataset.tokenizer.eos_token_id,
-    )
-
-    for i, (k, block) in enumerate(model.blocks.items()):
-        # Only touch MoE layers
-        if not getattr(block, "is_moe", False):
-            continue
-
-        old_router = block.router  # MoERouter
-
-        new_router = MoETwoLevelRouterConfig(**kwargs).build(
-            d_model=old_router.d_model,
-            num_experts=old_router.num_experts,
-            init_device=old_router.weight.device.type if hasattr(old_router, 'weight') else "cpu",
-            lb_loss_weight=getattr(old_router, 'lb_loss_weight', None),
-            lb_loss_granularity=getattr(old_router, 'lb_loss_granularity', None),
-            z_loss_weight=getattr(old_router, 'z_loss_weight', None),
-        )
-
-        # Swap in
-        block.feed_forward_moe.router = new_router
+#
+# def apply_twolevel_routers(model, config, document_expert_pool: int):
+#     """
+#     Replace each MoE layer's router with MoETwoLevelRouter,
+#     passing the correct per-layer index and preserving original settings.
+#     """
+#     # we first define the new kwargs for the PruningMoERouter
+#     model_config = config.model
+#     kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
+#     kwargs.pop("name")
+#     kwargs.update(
+#         document_expert_pool=document_expert_pool,
+#         eos_token_id=config.dataset.tokenizer.eos_token_id,
+#     )
+#
+#     for i, (k, block) in enumerate(model.blocks.items()):
+#         # Only touch MoE layers
+#         if not getattr(block, "is_moe", False):
+#             continue
+#
+#         old_router = block.router  # MoERouter
+#
+#         new_router = MoETwoLevelRouterConfig(**kwargs).build(
+#             d_model=old_router.d_model,
+#             num_experts=old_router.num_experts,
+#             init_device=old_router.weight.device.type if hasattr(old_router, 'weight') else "cpu",
+#             lb_loss_weight=getattr(old_router, 'lb_loss_weight', None),
+#             lb_loss_granularity=getattr(old_router, 'lb_loss_granularity', None),
+#             z_loss_weight=getattr(old_router, 'z_loss_weight', None),
+#         )
+#
+#         # Swap in
+#         block.feed_forward_moe.router = new_router
 
 def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     save_folder = opts.save_folder
@@ -180,6 +168,28 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     model_config = TransformerConfig.olmoe_1B_7B(
         vocab_size=tokenizer_config.padded_vocab_size(),  # a little bigger than actual vocab size to make it a multiple of 128
     )
+
+    # Apply special routers or other modifications to the model here if needed.
+    if opts.model_type == "dense" or opts.model_type == "moe":
+        log.info("Using default routers; no modifications applied.")
+        pass
+    elif opts.model_type == "two-level":
+        log.info("Applying two-level routers to the model...")
+        if opts.document_expert_pool is None:
+            raise ValueError("document_expert_pool must be specified for two-level model type.")
+        # Get existing router config parameters
+        router_kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
+        router_kwargs.pop("name")
+        router_kwargs.update(
+            document_expert_pool=opts.document_expert_pool,
+            eos_token_id=tokenizer_config.eos_token_id,
+        )
+
+        # Replace router config
+        model_config.block.feed_forward_moe.router = MoETwoLevelRouterConfig(**router_kwargs)
+    else:
+        raise ValueError(f"Unknown model type: {opts.model_type}")
+
     # docs: end-model-config
 
     log.info(f"Using data root: {DATA_ROOT}")

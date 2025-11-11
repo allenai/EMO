@@ -221,6 +221,7 @@ class MoEBase(nn.Module):
         x: torch.Tensor,
         *,
         loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
+        **kwargs,
     ) -> torch.Tensor:
         """
         Run the MoE on the input ``x`` of shape ``(*, d_model)``.
@@ -231,7 +232,7 @@ class MoEBase(nn.Module):
             router Z-loss.
         """
         expert_weights, expert_indices, batch_size_per_expert, router_aux_loss = self.router(
-            x, loss_div_factor=loss_div_factor
+            x, loss_div_factor=loss_div_factor, **kwargs
         )
 
         if router_aux_loss is not None:

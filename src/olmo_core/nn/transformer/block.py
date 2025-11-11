@@ -477,7 +477,7 @@ class MoETransformerBlock(TransformerBlockBase):
     ) -> torch.Tensor:
         h = x + self.dropout(self.attention(self.attention_norm(x), **kwargs))
         return h + self.dropout(
-            self.feed_forward_moe(self.feed_forward_norm(h), loss_div_factor=loss_div_factor)
+            self.feed_forward_moe(self.feed_forward_norm(h), loss_div_factor=loss_div_factor, **kwargs)
         )
 
     def apply_pp(self, pp_mesh: DeviceMesh):

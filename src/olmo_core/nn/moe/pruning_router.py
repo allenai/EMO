@@ -124,6 +124,7 @@ class PruningMoELinearRouter(MoELinearRouter):
             x: torch.Tensor,
             *,
             loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
+            **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
         Custom forward pass with modifications to implement pruned experts (i.e never activate certain experts).
