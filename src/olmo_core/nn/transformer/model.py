@@ -501,6 +501,9 @@ class Transformer(nn.Module):
         # pipeline parallel configuration.
         h = self.embeddings(input_ids) if self.embeddings is not None else input_ids
 
+        # TODO: compute document boundaries here
+        document_boundaries=torch.tensor[1, 2, 3]
+
         # Run each block.
         for block_key, block in self.blocks.items():
             block_idx = int(block_key)
@@ -508,7 +511,7 @@ class Transformer(nn.Module):
             # Mark sizes as dynamic for torch.compile().
             if self.compile_enabled:
                 mark_dynamic(h, (0, 1), strict=False)
-            h = block(h, input_ids=input_ids, **all_block_kwargs, **block_kwargs)
+            h = block(h, document_boundaries=document_boundaries, **all_block_kwargs, **block_kwargs)
 
         # Get final logits but again pass-through in case of pipeline parallelism.
         if self.lm_head is not None:

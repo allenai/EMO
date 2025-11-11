@@ -69,7 +69,7 @@ class MoETwoLevelRouter(MoELinearRouter):
             x: torch.Tensor,
             *,
             loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
-            input_ids: Optional[torch.Tensor] = None,
+            document_boundaries: Optional[torch.Tensor] = None,
             **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
