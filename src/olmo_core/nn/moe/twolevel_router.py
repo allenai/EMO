@@ -86,14 +86,18 @@ class MoETwoLevelRouter(MoELinearRouter):
 
         # shape: (batch_size, seq_len, num_experts)
         logits = self.get_expert_logits(x).float()
+        logits_mask = torch.zeros_like(logits, dtype=torch.bool, device=logits.device)
 
+        document_boundaries_cpu = []
+        for b in document_boundaries:
+            bc = b.detach().cpu().tolist()
+            if not bc or bc[-1] != x.size(1):
+                bc.append(int(x.size(1)))
+            document_boundaries_cpu.append(bc)
 
         for seq_idx in range(x.size(0)):
             start = 0
-            document_boundary = document_boundaries[seq_idx]
-            # add to document_boundary the end of the sequence if not already present
-            if len(document_boundary) == 0 or document_boundary[-1] != x.size(1):
-                document_boundary = torch.cat([document_boundary, torch.tensor([x.size(1)], device=document_boundary.device)])
+            document_boundary = document_boundaries_cpu[seq_idx]
             for end in document_boundary:
                 if end <= start:
                     start = end
@@ -107,8 +111,11 @@ class MoETwoLevelRouter(MoELinearRouter):
                 bot_document_expert_pool = self.num_experts - self.document_expert_pool
                 experts_to_discard = torch.topk(-document_expert_probs, bot_document_expert_pool).indices # shape: (bot_document_expert_pool,)
                 # set the logits of these experts to a very large negative value
-                logits[seq_idx, start:end, experts_to_discard] = float('-inf')
+                # logits[seq_idx, start:end, experts_to_discard] = float('-inf')
+                logits_mask[seq_idx, start:end, experts_to_discard] = True
                 start = end
+
+        logits.masked_fill_(logits_mask, float('-inf'))
 
         # shape: (batch_size, seq_len, num_experts)
         if self.gating_function == MoERouterGatingFunction.softmax:
@@ -151,12 +158,7 @@ class MoETwoLevelRouter(MoELinearRouter):
                     doc_lb_losses = []
                     for seq_idx in range(x.size(0)):
                         start = 0
-                        document_boundary = document_boundaries[seq_idx]
-                        # if the end of the sequence is not already present, add it
-                        if len(document_boundary) == 0 or document_boundary[-1] != x.size(1):
-                            document_boundary = torch.cat(
-                                [document_boundary, torch.tensor([x.size(1)], device=document_boundary.device)]
-                            )
+                        document_boundary = document_boundaries_cpu[seq_idx]
 
                         for end in document_boundary:
                             if end <= start:
@@ -167,8 +169,7 @@ class MoETwoLevelRouter(MoELinearRouter):
                             doc_indices = expert_indices[seq_idx, start:end]  # (doc_len, top_k)
 
                             # find active experts (not masked)
-                            active_experts_mask = torch.isfinite(logits[seq_idx, start:end, :]).any(dim=0)
-                            doc_scores = doc_scores[:, active_experts_mask]
+                            active_experts_mask = (~logits_mask[seq_idx, start:end, :]).any(dim=0)                            doc_scores = doc_scores[:, active_experts_mask]
                             num_active = doc_scores.shape[-1]
 
                             assert num_active == self.document_expert_pool, f"Number of active experts {num_active} does not match document_expert_pool {self.document_expert_pool}"
