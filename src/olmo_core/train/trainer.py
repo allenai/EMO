@@ -1310,6 +1310,7 @@ class Trainer:
             return  # for backwards compatibility
 
         log.info("Starting forward/backward dry-run batch...")
+        # HACK
         # self.train_module.train_batch(batch, dry_run=True)
         log.info("Dry-run complete")
 
