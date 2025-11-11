@@ -573,7 +573,7 @@ class MoEReorderedNormTransformerBlock(MoETransformerBlock):
     ) -> torch.Tensor:
         h = x + self.dropout(self.attention_norm(self.attention(x, **kwargs)))
         return h + self.dropout(
-            self.feed_forward_norm(self.feed_forward_moe(h, loss_div_factor=loss_div_factor))
+            self.feed_forward_norm(self.feed_forward_moe(h, loss_div_factor=loss_div_factor, **kwargs))
         )
 
     def apply_fsdp(
