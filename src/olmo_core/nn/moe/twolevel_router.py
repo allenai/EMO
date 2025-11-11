@@ -52,12 +52,17 @@ class MoETwoLevelRouter(MoELinearRouter):
             dtype: torch.dtype = torch.float32,
             init_device: str = "cpu",
             document_expert_pool: int,
+            eos_token_id: int,
             **kwargs,
     ):
         super().__init__(dtype=dtype, init_device=init_device, **kwargs)
 
         # the number of experts that each document can select their top-k experts from
         self.document_expert_pool = document_expert_pool
+        # the eos token id
+        if eos_token_id is None:
+            raise OLMoConfigurationError("eos_token_id must be provided for MoETwoLevelRouter")
+        self.eos_token_id = eos_token_id
 
     def forward(
             self,
@@ -182,6 +187,7 @@ class MoETwoLevelRouterConfig(MoERouterConfig):
     Config for pruning MoE router.
     """
     document_expert_pool: int = 32
+    eos_token_id: Optional[int] = None
 
     def build(
             self,
