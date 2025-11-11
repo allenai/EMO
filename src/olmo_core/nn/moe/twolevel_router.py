@@ -150,7 +150,6 @@ class MoETwoLevelRouter(MoELinearRouter):
                             # Get tokens for this document
                             doc_scores = scores[seq_idx, start:end, :]  # (doc_len, num_experts)
                             doc_indices = expert_indices[seq_idx, start:end]  # (doc_len, top_k)
-                            doc_len = end - start
 
                             # find active experts (not masked)
                             active_experts_mask = torch.isfinite(logits[seq_idx, start:end, :]).any(dim=0)
