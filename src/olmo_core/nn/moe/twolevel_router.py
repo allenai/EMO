@@ -82,12 +82,32 @@ class MoETwoLevelRouter(MoELinearRouter):
             and optionally the auxiliary losses.
         """
         # shape: (batch_size, seq_len, d_model)
-        breakpoint()
-
         x = self.jitter(x)
 
         # shape: (batch_size, seq_len, num_experts)
         logits = self.get_expert_logits(x).float()
+
+        breakpoint()
+
+        for seq_idx in range(x.size(0)):
+            start = 0
+            document_boundary = document_boundaries[seq_idx]
+            # add to document_boundary the end of the sequence if not already present
+            if document_boundary[-1] != x.size(1):
+                document_boundary = torch.cat([document_boundary, torch.tensor([x.size(1)], device=document_boundary.device)])
+            for end in document_boundary:
+                breakpoint()
+                sequence_logits = logits[seq_idx, start:end, :] # shape: (doc_len, num_experts)
+                # calculate the softmax over the experts
+                expert_probs = F.softmax(sequence_logits, dim=-1) # shape: (doc_len, num_experts)
+                # take the sum across the document
+                document_expert_probs = expert_probs.sum(dim=0) # shape: (num_experts,)
+                # get the bottom document_expert_pool experts
+                bot_document_expert_pool = self.num_experts - self.document_expert_pool
+                experts_to_discard = torch.topk(-document_expert_probs, bot_document_expert_pool).indices # shape: (bot_document_expert_pool,)
+                # set the logits of these experts to a very large negative value
+                logits[seq_idx, start:end, experts_to_discard] = float('-inf')
+                start = end
 
 
         # Mask out pruned experts by setting their logits to a very large negative value
