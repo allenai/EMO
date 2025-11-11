@@ -212,6 +212,15 @@ class MoETwoLevelRouter(MoELinearRouter):
                     scaled_z_loss = self.z_loss_weight * z_loss
                     aux_loss = scaled_z_loss if aux_loss is None else aux_loss + scaled_z_loss
 
+            with torch.no_grad():
+                # Histogram the expert ids to identify the number of items/tokens routed to each expert.
+                # shape: (batch_size, seq_len, num_experts)
+                batched_batch_size_per_expert = ops.batched_histc(expert_indices,
+                                                                  self.num_experts)
+                # shape: (batch_size, num_experts)
+                batched_batch_size_per_expert = batched_batch_size_per_expert.sum(dim=1)
+                # shape: (num_experts,)
+                batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
             self.batch_size_per_expert += batch_size_per_expert
             if self.bias_gamma is not None:
                 assert self.score_bias_batch_size_per_expert is not None
