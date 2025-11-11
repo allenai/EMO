@@ -96,6 +96,7 @@ def train(opts, config: ExperimentConfig):
     # docs: start-build-components
     # Build components.
     model = config.model.build(init_device="meta")
+    model.eos_token_id = config.dataset.tokenizer.eos_token_id
 
     train_module = config.train_module.build(model)
     dataset = config.dataset.build()

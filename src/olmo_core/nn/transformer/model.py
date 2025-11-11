@@ -504,6 +504,7 @@ class Transformer(nn.Module):
         # TODO: compute document boundaries here
         breakpoint()
 
+
         document_boundaries=torch.tensor([1, 2, 3])
 
         # Run each block.
