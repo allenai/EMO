@@ -25,15 +25,15 @@ prune_keep_k=64
 base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
 train_task_names=(
-#  "arc_easy:rc_train_0shot::olmes"
-#  "arc_challenge:rc_train_0shot::olmes"
-#  "boolq:rc_train_0shot::olmes"
-#  "csqa:rc_train_0shot::olmes"
-  "hellaswag:rc_train_0shot::olmes"
-#  "openbookqa:rc_train_0shot::olmes"
-#  "piqa:rc_train_0shot::olmes"
-#  "socialiqa:rc_train_0shot::olmes"
-#  "winogrande:rc_train_0shot::olmes"
+#  "arc_easy:rc_train_0shot::olmes|2251"
+#  "arc_challenge:rc_train_0shot::olmes|1119"
+#  "boolq:rc_train_0shot::olmes|8427"
+#  "csqa:rc_train_0shot::olmes|8741"
+  "hellaswag:rc_train_0shot::olmes|38905"
+#  "openbookqa:rc_train_0shot::olmes|4957"
+#  "piqa:rc_train_0shot::olmes|15113"
+#  "socialiqa:rc_train_0shot::olmes|32410"
+#  "winogrande:rc_train_0shot::olmes|1000"
 #
 ##   MMLU
 #  "mmlu_rc:rc_train_0shot::olmes"
@@ -83,6 +83,8 @@ for train_task_name in "${train_task_names[@]}"; do
     echo "Base model: $base_model"
     echo "Prune keep k: $prune_keep_k"
     echo "Activation file: $activation_file"
+
+    # define
 
 #    torchrun --nproc-per-node=4 src/scripts/train/olmoe-1B-7B_finetune.py \
 #        $runname \

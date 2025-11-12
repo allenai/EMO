@@ -135,7 +135,7 @@ def get_task_configs():
             },
             "winogrande:mc_train::olmes": {
                 "task_name": "winogrande:mc_train",
-                "split": "validation",
+                "split": "train",
                 "num_shots": 5,
                 "fewshot_source": "OLMES:winogrande",
                 "metadata": {
@@ -153,7 +153,7 @@ def get_task_configs():
             },
             "winogrande:mc_test::olmes": {
                 "task_name": "winogrande:mc_test",
-                "split": "validation",
+                "split": "test",
                 "num_shots": 5,
                 "fewshot_source": "OLMES:winogrande",
                 "metadata": {
@@ -162,7 +162,7 @@ def get_task_configs():
             },
             "winogrande:rc_train::olmes": {
                 "task_name": "winogrande:rc_train",
-                "split": "validation",
+                "split": "train",
                 "primary_metric": "acc_raw",
                 "num_shots": 5,
                 "fewshot_source": "OLMES:winogrande",
@@ -182,7 +182,7 @@ def get_task_configs():
             },
             "winogrande:rc_train_0shot::olmes": {
                 "task_name": "winogrande:rc_train_0shot",
-                "split": "validation",
+                "split": "train",
                 "primary_metric": "acc_raw",
                 "num_shots": 0,
                 "fewshot_source": "OLMES:winogrande",
@@ -202,7 +202,7 @@ def get_task_configs():
             },
             "winogrande:rc_test::olmes": {
                 "task_name": "winogrande:rc_test",
-                "split": "validation",
+                "split": "test",
                 "primary_metric": "acc_raw",
                 "num_shots": 5,
                 "fewshot_source": "OLMES:winogrande",

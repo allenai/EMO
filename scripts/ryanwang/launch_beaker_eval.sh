@@ -8,10 +8,10 @@ MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
 #MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 MODELS=(
     "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995-hf"
-#    "dense_1b_olmoe-mix_300B_1030/step71526-hf"
-#    "dense_1b_olmoe-mix_1028/step30995-hf"
-#    "moe_1b7b_olmoe-mix_300B_1030/step71526-hf"
-#    "moe_1b7b_olmoe-mix/step30995-hf"
+    "dense_1b_olmoe-mix_300B_1030/step71526-hf"
+    "dense_1b_olmoe-mix_1028/step30995-hf"
+    "moe_1b7b_olmoe-mix_300B_1030/step71526-hf"
+    "moe_1b7b_olmoe-mix/step30995-hf"
     )
 #MODELS=(
 #    "dense_1b_olmoe-mix_300B_1030/step0-hf"
@@ -43,13 +43,13 @@ TASK_GROUPS_LIST=(
   # MC9 tasks
 #  "arc_easy|arc_easy:mc_test::olmes arc_easy:rc_test::olmes"
 #  "arc_challenge|arc_challenge:mc_test::olmes arc_challenge:rc_test::olmes"
-  "boolq|boolq:mc_test::olmes boolq:rc_test::olmes"
+#  "boolq|boolq:mc_test::olmes boolq:rc_test::olmes"
 #  "csqa|csqa:mc_test::olmes csqa:rc_test::olmes"
 #  "hellaswag|hellaswag:mc_test::olmes hellaswag:rc_test::olmes"
 #  "openbookqa|openbookqa:mc_test::olmes openbookqa:rc_test::olmes"
 #  "piqa|piqa:mc_test::olmes piqa:rc_test::olmes"
 #  "socialiqa|socialiqa:mc_test::olmes socialiqa:rc_test::olmes"
-#  "winogrande|winogrande:mc_test::olmes winogrande:rc_test::olmes"
+  "winogrande|winogrande:mc_test::olmes winogrande:rc_test::olmes"
 
 #   MMLU
 #  "mmlu_mc_test|mmlu:mc_test::olmes"

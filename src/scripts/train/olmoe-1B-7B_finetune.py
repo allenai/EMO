@@ -258,8 +258,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback(
             "checkpointer",
             CheckpointerCallback(
-                save_interval=200,
-                ephemeral_save_interval=100,
+                save_interval=opts.save_interval_steps,
                 save_async=True,
             ),
         )
@@ -340,6 +339,12 @@ def parser_args():
         "--prune_keep_k",
         type=int,
         help="Number of experts to keep during pruning.",
+    )
+    parser.add_argument(
+        "--save_interval_steps",
+        type=int,
+        default=100
+        help="Number of steps between saving checkpoints.",
     )
     opts, overrides = parser.parse_known_args()
     return opts, overrides
