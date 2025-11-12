@@ -10,7 +10,6 @@ activation_file="/weka/oe-training-default/ryanwang/phdbrainstorm/evals/weka_oe-
 prune_keep_k=32
 BATCH_SIZE=4
 CLUSTER="ai2/jupiter-cirrascale-2"
-LIMIT=1000
 model_type=hf
 
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
@@ -144,7 +143,6 @@ for MODEL_PATH in "${MODELS[@]}"; do
             --model $MODEL_PATH \
             --model-type hf \
             --task $TASK \
-            --limit $LIMIT \
             --output-dir $OUTPUT_DIR \
             --batch-size $batch_size \
             --gpus $gpus \

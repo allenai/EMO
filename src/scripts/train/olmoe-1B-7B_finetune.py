@@ -98,6 +98,19 @@ def train(opts, config: ExperimentConfig):
     train_module = config.train_module.build(model)
     dataset = config.dataset.build()
     data_loader = config.data_loader.build(dataset, dp_process_group=train_module.dp_process_group)
+
+    total_batches = data_loader.total_batches
+    if total_batches is None:
+        raise ValueError("Cannot determine total batches from dataset")
+    save_interval = max(1, total_batches // opts.num_checkpoints)
+    log.info(f"Total batches: {total_batches}, Total checkpoints: {opts.num_checkpoints}, Save interval: {save_interval}")
+
+    # Update checkpointer callback with new save interval
+    cast(
+        CheckpointerCallback,
+        config.trainer.callbacks["checkpointer"],
+    ).save_interval = save_interval
+
     trainer = config.trainer.build(train_module, data_loader)
     # docs: end-build-components
 
@@ -258,7 +271,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback(
             "checkpointer",
             CheckpointerCallback(
-                save_interval=opts.save_interval_steps,
+                save_interval=100,
                 save_async=True,
             ),
         )
@@ -341,9 +354,9 @@ def parser_args():
         help="Number of experts to keep during pruning.",
     )
     parser.add_argument(
-        "--save_interval_steps",
+        "--num_checkpoints",
         type=int,
-        default=100
+        default=4,
         help="Number of steps between saving checkpoints.",
     )
     opts, overrides = parser.parse_known_args()

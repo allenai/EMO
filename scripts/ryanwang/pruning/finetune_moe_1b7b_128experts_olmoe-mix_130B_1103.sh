@@ -20,20 +20,21 @@ BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
 model_name="moe_1b7b_128experts_olmoe-mix_130B_1103"
 #model_name="moe_1b7b_olmoe-mix"
 step="step30995"
-prune_keep_k=64
+prune_keep_k=32
+num_checkpoints=5
 
 base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
 train_task_names=(
-#  "arc_easy:rc_train_0shot::olmes|2251"
-#  "arc_challenge:rc_train_0shot::olmes|1119"
-#  "boolq:rc_train_0shot::olmes|8427"
-#  "csqa:rc_train_0shot::olmes|8741"
-  "hellaswag:rc_train_0shot::olmes|38905"
-#  "openbookqa:rc_train_0shot::olmes|4957"
-#  "piqa:rc_train_0shot::olmes|15113"
-#  "socialiqa:rc_train_0shot::olmes|32410"
-#  "winogrande:rc_train_0shot::olmes|1000"
+  "arc_easy:rc_train_0shot::olmes"
+#  "arc_challenge:rc_train_0shot::olmes"
+#  "boolq:rc_train_0shot::olmes"
+#  "csqa:rc_train_0shot::olmes"
+#  "hellaswag:rc_train_0shot::olmes"
+#  "openbookqa:rc_train_0shot::olmes"
+#  "piqa:rc_train_0shot::olmes"
+#  "socialiqa:rc_train_0shot::olmes"
+#  "winogrande:rc_train_0shot::olmes"
 #
 ##   MMLU
 #  "mmlu_rc:rc_train_0shot::olmes"
@@ -122,8 +123,8 @@ for train_task_name in "${train_task_names[@]}"; do
         --load_path=$base_model \
         --activation_file=$activation_file \
         --prune_keep_k=$prune_keep_k \
+        --num_checkpoints=$num_checkpoints \
         --model.block.feed_forward_moe.num_experts=128 \
-
 
 done
 
