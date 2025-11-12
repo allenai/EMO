@@ -17,14 +17,14 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
-  "arc_easy"
-  "arc_challenge"
-  "boolq"
-  "csqa"
-  "hellaswag"
-  "openbookqa"
-  "piqa"
-  "socialiqa"
+#  "arc_easy"
+#  "arc_challenge"
+#  "boolq"
+#  "csqa"
+#  "hellaswag"
+#  "openbookqa"
+#  "piqa"
+#  "socialiqa"
   "winogrande"
 
 #   MMLU
