@@ -103,7 +103,8 @@ for BASE in "${PARENT_MODELS[@]}"; do
     echo "checkpoint-input-path is ${MODEL_DIR}"
     echo "output_dir is ${MODEL_DIR}-hf"
 
-    job_name="convert_${FINETUNE}"
+    # Beaker names can only contain letters, digits, periods, dashes, and underscores.
+    job_name="convert_${MODEL_DIR//\//_}"
 
     gantry run \
     --name $job_name \
