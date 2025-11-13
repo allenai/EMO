@@ -26,8 +26,8 @@ num_checkpoints=5
 base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
 train_task_names=(
-  "arc_easy:rc_train_0shot::olmes"
-#  "arc_challenge:rc_train_0shot::olmes"
+#  "arc_easy:rc_train_0shot::olmes"
+  "arc_challenge:rc_train_0shot::olmes"
 #  "boolq:rc_train_0shot::olmes"
 #  "csqa:rc_train_0shot::olmes"
 #  "hellaswag:rc_train_0shot::olmes"
