@@ -55,6 +55,7 @@ def prepare_finetuning_masks(args_dict):
 
         # Save as memory-mapped file (more efficient for large files):
         mmap_mask = np.memmap(mask_path, mode='w+', dtype=np.bool_, shape=(num_tokens,))
+        mmap_mask[:] = False
 
         if "hellaswag" in token_path.lower() or "winogrande" in token_path.lower():
             # special case: hellaswag has no delimiters, we just train on all tokens
