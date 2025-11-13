@@ -27,6 +27,49 @@ FINETUNE_TASKS=(
 #    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step123-hf"
 #    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step164-hf"
 #    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step207-hf"
+
+#    "task-boolq_rc_train_0shot_finetune-keepk32/step0-hf"
+#    "task-boolq_rc_train_0shot_finetune-keepk32/step315-hf"
+#    "task-boolq_rc_train_0shot_finetune-keepk32/step630-hf"
+#    "task-boolq_rc_train_0shot_finetune-keepk32/step945-hf"
+#    "task-boolq_rc_train_0shot_finetune-keepk32/step1260-hf"
+#    "task-boolq_rc_train_0shot_finetune-keepk32/step1578-hf"
+
+    "task-csqa_rc_train_0shot_finetune-keepk32/step0-hf"
+    "task-csqa_rc_train_0shot_finetune-keepk32/step327-hf"
+    "task-csqa_rc_train_0shot_finetune-keepk32/step654-hf"
+    "task-csqa_rc_train_0shot_finetune-keepk32/step981-hf"
+    "task-csqa_rc_train_0shot_finetune-keepk32/step1308-hf"
+    "task-csqa_rc_train_0shot_finetune-keepk32/step1638-hf"
+
+    "task-hellaswag_rc_train_0shot_finetune-keepk32/step0-hf"
+    "task-hellaswag_rc_train_0shot_finetune-keepk32/step1458-hf"
+    "task-hellaswag_rc_train_0shot_finetune-keepk32/step2916-hf"
+    "task-hellaswag_rc_train_0shot_finetune-keepk32/step4370-hf"
+    "task-hellaswag_rc_train_0shot_finetune-keepk32/step5832-hf"
+    "task-hellaswag_rc_train_0shot_finetune-keepk32/step7293-hf"
+
+    "task-openbookqa_rc_train_0shot_finetune-keepk32/step0-hf"
+    "task-openbookqa_rc_train_0shot_finetune-keepk32/step185-hf"
+    "task-openbookqa_rc_train_0shot_finetune-keepk32/step370-hf"
+    "task-openbookqa_rc_train_0shot_finetune-keepk32/step555-hf"
+    "task-openbookqa_rc_train_0shot_finetune-keepk32/step740-hf"
+    "task-openbookqa_rc_train_0shot_finetune-keepk32/step927-hf"
+
+    "task-piqa_rc_train_0shot_finetune-keepk32/step0-hf"
+    "task-piqa_rc_train_0shot_finetune-keepk32/step566-hf"
+    "task-piqa_rc_train_0shot_finetune-keepk32/step1132-hf"
+    "task-piqa_rc_train_0shot_finetune-keepk32/step1698-hf"
+    "task-piqa_rc_train_0shot_finetune-keepk32/step2264-hf"
+    "task-piqa_rc_train_0shot_finetune-keepk32/step2832-hf"
+
+
+
+
+
+
+
+
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals"
