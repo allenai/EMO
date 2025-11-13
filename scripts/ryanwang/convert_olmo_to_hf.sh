@@ -96,7 +96,8 @@ for BASE in "${PARENT_MODELS[@]}"; do
     --install 'pip install -e .[all]' \
     --budget ai2/oceo \
     --workspace ai2/flex2 \
-    --cluster $CLUSTER \
+    --cluster "ai2/jupiter-cirrascale-2" \
+    --gpus 0 \
     --priority urgent \
     --env-secret HF_TOKEN=RYAN_HF_TOKEN \
     --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
