@@ -14,8 +14,22 @@ PARENT_MODELS=(
 )
 
 FINETUNE_TASKS=(
-    "task-arc_easy_rc_train_0shot_finetune-keepk32/step420-hf"
+    "task-arc_easy_rc_train_0shot_finetune-keepk32/step0-hf"
+    "task-arc_easy_rc_train_0shot_finetune-keepk32/step84-hf"
+    "task-arc_easy_rc_train_0shot_finetune-keepk32/step168-hf"
     "task-arc_easy_rc_train_0shot_finetune-keepk32/step252-hf"
+    "task-arc_easy_rc_train_0shot_finetune-keepk32/step336-hf"
+    "task-arc_easy_rc_train_0shot_finetune-keepk32/step420-hf"
+
+    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step0-hf"
+    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step41-hf"
+    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step82-hf"
+    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step123-hf"
+    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step164-hf"
+    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step207-hf"
+
+
+
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals"
@@ -30,15 +44,15 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
-  "arc_easy|arc_easy:mc_test::olmes arc_easy:rc_test::olmes"
-#  "arc_challenge|arc_challenge:mc_test::olmes arc_challenge:rc_test::olmes"
-#  "boolq|boolq:mc_test::olmes boolq:rc_test::olmes"
-#  "csqa|csqa:mc_test::olmes csqa:rc_test::olmes"
-#  "hellaswag|hellaswag:mc_test::olmes hellaswag:rc_test::olmes"
-#  "openbookqa|openbookqa:mc_test::olmes openbookqa:rc_test::olmes"
-#  "piqa|piqa:mc_test::olmes piqa:rc_test::olmes"
-#  "socialiqa|socialiqa:mc_test::olmes socialiqa:rc_test::olmes"
-#  "winogrande|winogrande:mc_test::olmes winogrande:rc_test::olmes"
+  "arc_easy|arc_easy:rc_test::olmes"
+  "arc_challenge|arc_challenge:rc_test::olmes"
+  "boolq|boolq:rc_test::olmes"
+  "csqa|csqa:rc_test::olmes"
+  "hellaswag|hellaswag:rc_test::olmes"
+  "openbookqa|openbookqa:rc_test::olmes"
+  "piqa|piqa:rc_test::olmes"
+  "socialiqa|socialiqa:rc_test::olmes"
+  "winogrande|winogrande:rc_test::olmes"
 
 #   MMLU
 #  "mmlu_mc_test|mmlu:mc_test::olmes"
@@ -84,6 +98,12 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
             GROUP_NAME="${entry%%|*}"                # text before '|'
             TASK="${entry#*|}"            # text after '|'
 
+            # if GROUP_NAME is not in FINETUNE_TASK, skip
+            if [[ $FINETUNE_TASK != *"$GROUP_NAME"* ]]; then
+                echo "Skipping group $GROUP_NAME for finetune task $FINETUNE_TASK"
+                continue
+            fi
+
             # Batch size adjustment (matching original script)
             if [[ $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* || $TASK == *"boolq"* ]]; then
                 batch_size=$((BATCH_SIZE / 4))
@@ -128,32 +148,32 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
 #                    --batch-size $batch_size \
 #                    --gpus $gpus \
 
-            gantry run \
-            --name $job_name \
-            --weka oe-training-default:/weka/oe-training-default \
-            --install "pip install -e \".[all]\"" \
-            --budget ai2/oceo \
-            --workspace ai2/flex2 \
-            --cluster $CLUSTER \
-            --priority urgent \
-            --gpus $gpus \
-            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-            -- \
-            bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
-                --model "${MODEL_DIR}/${MODEL_NAME}" \
-                --model-type hf \
-                --task $TASK \
-                --remote-output-dir $OUTPUT_DIR \
-                --batch-size $batch_size \
-                --gpus $gpus \
-                --do_prune \
-                --activation_file $activation_file \
-                --prune_keep_k $prune_keep_k \
-                "
-
-            echo "Launched evaluation for model: $model, group: $GROUP_NAME"
+#            gantry run \
+#            --name $job_name \
+#            --weka oe-training-default:/weka/oe-training-default \
+#            --install "pip install -e \".[all]\"" \
+#            --budget ai2/oceo \
+#            --workspace ai2/flex2 \
+#            --cluster $CLUSTER \
+#            --priority urgent \
+#            --gpus $gpus \
+#            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+#            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+#            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+#            -- \
+#            bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+#                --model "${MODEL_DIR}/${MODEL_NAME}" \
+#                --model-type hf \
+#                --task $TASK \
+#                --remote-output-dir $OUTPUT_DIR \
+#                --batch-size $batch_size \
+#                --gpus $gpus \
+#                --do_prune \
+#                --activation_file $activation_file \
+#                --prune_keep_k $prune_keep_k \
+#                "
+#
+#            echo "Launched evaluation for model: $model, group: $GROUP_NAME"
             echo "----------------------------------------"
         done
 
