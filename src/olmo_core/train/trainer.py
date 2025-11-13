@@ -1360,6 +1360,7 @@ class Trainer:
                 callback.post_step()
 
             if first_batch or self.global_step % self.metrics_collect_interval == 0:
+                print(batch)
                 self._log_metrics()
                 if torch.cuda.is_available():
                     torch.cuda.set_sync_debug_mode("warn")
