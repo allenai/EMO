@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-model_path = "/root/ryanwang/phdbrainstorm/FlexMoE/prune/moe_1b7b_128experts_olmoe-mix_130B_1103_step30995-hf"
+model_path = "/root/ryanwang/phdbrainstorm/FlexMoE/prune/twolevel-32_1b7b_128experts_olmoe-mix_130B_1110_step30995-hf"
 out_dir = "/root/ryanwang/phdbrainstorm/FlexMoE/eval_plots"
 
 router_paths = [
@@ -63,9 +63,9 @@ for k in k_range:
     plt.colorbar()
     plt.xticks(range(len(router_paths)), [name for name, _ in router_paths], rotation=45)
     plt.yticks(range(len(router_paths)), [name for name, _ in router_paths])
-    plt.title(f'MoE Expert Overlap Matrix (Top-{k})')
+    plt.title(f'Twolevel Expert Overlap Matrix (Top-{k})')
     plt.tight_layout()
-    plt.savefig(f"{out_dir}/MoE_expert_overlap_top{k}.png")
+    plt.savefig(f"{out_dir}/Twolevel_expert_overlap_top{k}.png")
     plt.close()
     print(f"Saved expert overlap matrix for top-{k} to expert_overlap_top{k}.png")
 
@@ -77,7 +77,7 @@ for k in k_range:
             total_overlap += overlap_matrix[i, j]
             count += 1
     avg_overlap = total_overlap / count
-    print(f"Average MoE expert overlap for top-{k}: {avg_overlap}")
+    print(f"Average Twolevel expert overlap for top-{k}: {avg_overlap}")
 
 
 
