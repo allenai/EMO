@@ -54,7 +54,7 @@ def prepare_finetuning_masks(args_dict):
         # Save the label mask file
         mask_path = str(token_path).replace('.npy', '_mask.npy')
 
-        masks = load_token_file(mask_path)
+        masks = load_token_file(mask_path, dtype=np.bool_)
         breakpoint()
 
         # Save as memory-mapped file (more efficient for large files):
