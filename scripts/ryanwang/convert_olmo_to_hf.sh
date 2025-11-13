@@ -44,8 +44,8 @@ FINETUNE_TASKS=(
 #    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step164"
 #    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step207"
 
-    "task-boolq_rc_train_0shot_finetune-keepk32/step0"
-#    "task-boolq_rc_train_0shot_finetune-keepk32/step315"
+#    "task-boolq_rc_train_0shot_finetune-keepk32/step0"
+    "task-boolq_rc_train_0shot_finetune-keepk32/step315"
 #    "task-boolq_rc_train_0shot_finetune-keepk32/step630"
 #    "task-boolq_rc_train_0shot_finetune-keepk32/step945"
 #    "task-boolq_rc_train_0shot_finetune-keepk32/step1260"
@@ -113,6 +113,7 @@ for BASE in "${PARENT_MODELS[@]}"; do
     --workspace ai2/flex2 \
     --cluster "ai2/jupiter-cirrascale-2" \
     --cpus 16 \
+    --gpus 0 \
     --priority urgent \
     --env-secret HF_TOKEN=RYAN_HF_TOKEN \
     --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
