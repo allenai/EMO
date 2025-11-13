@@ -21,7 +21,7 @@ train_task_names=(
   "arc_challenge:rc_train_0shot::olmes"
   "boolq:rc_train_0shot::olmes"
   "csqa:rc_train_0shot::olmes"
-  "hellaswag:rc_train_0shot::olmes"
+#  "hellaswag:rc_train_0shot::olmes"
   "openbookqa:rc_train_0shot::olmes"
   "piqa:rc_train_0shot::olmes"
   "socialiqa:rc_train_0shot::olmes"
