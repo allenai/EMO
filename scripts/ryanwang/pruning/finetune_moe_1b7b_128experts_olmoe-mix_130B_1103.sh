@@ -102,7 +102,7 @@ for train_task_name in "${train_task_names[@]}"; do
 
     python -m olmo_core.launch.beaker \
       --name $runname \
-      --gpus 4 \
+      --gpus 8 \
       --nodes 1 \
       --is_private_repo \
       --weka=oe-training-default \
