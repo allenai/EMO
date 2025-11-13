@@ -94,6 +94,8 @@ def prepare_finetuning_masks(args_dict):
                         f"All tokens are masked out in document starting at index {document_start_idx}. "
                         f"Check if the delimiter '{delimiter_str}' is correctly placed. Token path: {token_path}"
                     )
+                if sum(label_mask) < 2:
+                    breakpoint()
 
                 # write into mmap_mask - use document_start_idx for correct indexing
                 mmap_mask[document_start_idx:document_start_idx + len(prev_document)] = label_mask
