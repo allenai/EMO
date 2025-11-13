@@ -17,11 +17,11 @@ get_eval_filename() {
     echo "task-${task_name}"
 }
 train_task_names=(
-#  "arc_easy:rc_train_0shot::olmes"
+  "arc_easy:rc_train_0shot::olmes"
 #  "arc_challenge:rc_train_0shot::olmes"
 #  "boolq:rc_train_0shot::olmes"
 #  "csqa:rc_train_0shot::olmes"
-  "hellaswag:rc_train_0shot::olmes"
+#  "hellaswag:rc_train_0shot::olmes"
 #  "openbookqa:rc_train_0shot::olmes"
 #  "piqa:rc_train_0shot::olmes"
 #  "socialiqa:rc_train_0shot::olmes"
@@ -57,14 +57,14 @@ for train_task_name in "${train_task_names[@]}"; do
     fi
 
     # tokenize the files
-    dolma tokens \
-      --documents ${jsonl_file}.gz \
-      --tokenizer.name_or_path ${tokenizer_name} \
-      --tokenizer.eos_token_id 100257 \
-      --tokenizer.pad_token_id 100277 \
-      --destination ${destination} \
-      --dtype uint32 \
-      --processes 1
+#    dolma tokens \
+#      --documents ${jsonl_file}.gz \
+#      --tokenizer.name_or_path ${tokenizer_name} \
+#      --tokenizer.eos_token_id 100257 \
+#      --tokenizer.pad_token_id 100277 \
+#      --destination ${destination} \
+#      --dtype uint32 \
+#      --processes 1
 
     # we next add the label masks
     files=($(ls ${destination}/*.npy | grep -v mask.npy))
