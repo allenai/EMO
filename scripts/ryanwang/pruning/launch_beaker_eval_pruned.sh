@@ -132,7 +132,7 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
             --name $job_name \
             --weka oe-training-default:/weka/oe-training-default \
             --install "pip install -e \".[all]\"" \
-            --budget ai2/oe-oceo \
+            --budget ai2/oceo \
             --workspace ai2/flex2 \
             --cluster $CLUSTER \
             --priority urgent \
