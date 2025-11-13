@@ -7,19 +7,19 @@ PARENT_MODELS=(
 )
 
 FINETUNE_TASKS=(
-    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step0"
-    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step84"
-    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step168"
-    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step252"
-    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step336"
-    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step420"
+#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step0"
+#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step84"
+#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step168"
+#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step252"
+#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step336"
+#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step420"
 #
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step0"
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step41"
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step82"
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step123"
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step164"
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step207"
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step0"
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step41"
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step82"
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step123"
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step164"
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step207"
 #
 #    "task-boolq_rc_train_0shot_finetune_random-keepk32/step0"
 #    "task-boolq_rc_train_0shot_finetune_random-keepk32/step315"
@@ -101,7 +101,8 @@ for BASE in "${PARENT_MODELS[@]}"; do
       --checkpoint-input-path "${MODEL_DIR}" \
       --max-sequence-length 4096 \
       --huggingface-output-dir "${MODEL_DIR}-hf" \
-      --dtype float32
+      --dtype float32 \
+      --skip-validation
       "
 
   done
