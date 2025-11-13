@@ -144,6 +144,14 @@ class PruningMoELinearRouter(MoELinearRouter):
         # Mask out pruned experts by setting their logits to a very large negative value
         logits = logits.masked_fill(~self.expert_mask.unsqueeze(0).unsqueeze(0), float('-inf'))
 
+        # Check for edge case: if all experts are masked (shouldn't happen but safeguard)
+        # This would cause softmax to produce NaNs
+        if not self.expert_mask.any():
+            raise RuntimeError(
+                f"All experts are masked in layer {self.layer_idx}. "
+                f"experts_to_keep={self.experts_to_keep}, num_experts={self.num_experts}"
+            )
+
         # shape: (batch_size, seq_len, num_experts)
         if self.gating_function == MoERouterGatingFunction.softmax:
             scores = logits.softmax(dim=-1)

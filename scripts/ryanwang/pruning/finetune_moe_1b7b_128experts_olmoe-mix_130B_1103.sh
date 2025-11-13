@@ -14,8 +14,8 @@
 #       `--trainer.hard_stop.value=100 --trainer.hard_stop.unit=steps`
 
 ##############################################################
-BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
-#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
+#BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
+BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
 model_name="moe_1b7b_128experts_olmoe-mix_130B_1103"
 #model_name="moe_1b7b_olmoe-mix"
@@ -27,14 +27,14 @@ base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
 train_task_names=(
   "arc_easy:rc_train_0shot::olmes"
-  "arc_challenge:rc_train_0shot::olmes"
-  "boolq:rc_train_0shot::olmes"
-  "csqa:rc_train_0shot::olmes"
-  "hellaswag:rc_train_0shot::olmes"
-  "openbookqa:rc_train_0shot::olmes"
-  "piqa:rc_train_0shot::olmes"
-  "socialiqa:rc_train_0shot::olmes"
-  "winogrande:rc_train_0shot::olmes"
+#  "arc_challenge:rc_train_0shot::olmes"
+#  "boolq:rc_train_0shot::olmes"
+#  "csqa:rc_train_0shot::olmes"
+#  "hellaswag:rc_train_0shot::olmes"
+#  "openbookqa:rc_train_0shot::olmes"
+#  "piqa:rc_train_0shot::olmes"
+#  "socialiqa:rc_train_0shot::olmes"
+#  "winogrande:rc_train_0shot::olmes"
 #
 ##   MMLU
 #  "mmlu_rc:rc_train_0shot::olmes"
@@ -88,44 +88,46 @@ for train_task_name in "${train_task_names[@]}"; do
 
     # define
 
-#    torchrun --nproc-per-node=4 src/scripts/train/olmoe-1B-7B_finetune.py \
-#        $runname \
-#    		--save-folder="${base_model}/$runname" \
-#       --dataset.paths="[${dataset_paths}]" \
-#       --dataset.label_mask_paths="[${label_mask_paths}]" \
-#        --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
-#    		--trainer.max_duration='{value: 3, unit: epochs}' \
-#    		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
-#    		--load_path=$base_model \
-#    		--activation_file=$activation_file \
-#    		--prune_keep_k=$prune_keep_k \
-
-    python -m olmo_core.launch.beaker \
-      --name $runname \
-      --gpus 8 \
-      --nodes 1 \
-      --is_private_repo \
-      --weka=oe-training-default \
-      --shared-filesystem \
-      --workspace ai2/flex2 \
-      --cluster ai2/jupiter \
-      --preemptible \
-      --allow-dirty \
-      --priority urgent \
-      --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
-      -- src/scripts/train/olmoe-1B-7B_finetune.py \
+    torchrun --nproc-per-node=8 src/scripts/train/olmoe-1B-7B_finetune.py \
         $runname \
-        --save-folder="${base_model}/${out_dir}" \
-        --dataset.paths="[${dataset_paths}]" \
-        --dataset.label_mask_paths="[${label_mask_paths}]" \
+    		--save-folder="${base_model}/$runname" \
+       --dataset.paths="[${dataset_paths}]" \
+       --dataset.label_mask_paths="[${label_mask_paths}]" \
         --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
-        --trainer.max_duration='{value: 3, unit: epochs}' \
-        --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
-        --load_path=$base_model \
-        --activation_file=$activation_file \
-        --prune_keep_k=$prune_keep_k \
-        --num_checkpoints=$num_checkpoints \
+    		--trainer.max_duration='{value: 3, unit: epochs}' \
+    		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
+    		--load_path=$base_model \
+    		--activation_file=$activation_file \
+    		--prune_keep_k=$prune_keep_k \
         --model.block.feed_forward_moe.num_experts=128 \
+
+
+#    python -m olmo_core.launch.beaker \
+#      --name $runname \
+#      --gpus 8 \
+#      --nodes 1 \
+#      --is_private_repo \
+#      --weka=oe-training-default \
+#      --shared-filesystem \
+#      --workspace ai2/flex2 \
+#      --cluster ai2/jupiter \
+#      --preemptible \
+#      --allow-dirty \
+#      --priority urgent \
+#      --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+#      -- src/scripts/train/olmoe-1B-7B_finetune.py \
+#        $runname \
+#        --save-folder="${base_model}/${out_dir}" \
+#        --dataset.paths="[${dataset_paths}]" \
+#        --dataset.label_mask_paths="[${label_mask_paths}]" \
+#        --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
+#        --trainer.max_duration='{value: 3, unit: epochs}' \
+#        --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
+#        --load_path=$base_model \
+#        --activation_file=$activation_file \
+#        --prune_keep_k=$prune_keep_k \
+#        --num_checkpoints=$num_checkpoints \
+#        --model.block.feed_forward_moe.num_experts=128 \
 
 done
 
