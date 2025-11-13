@@ -89,6 +89,13 @@ def prepare_finetuning_masks(args_dict):
                 # mask out everything before and including the delimiter
                 label_mask[:delimiter_pos[0] + len(delimiter_ids)] = False
 
+                # make sure that the document is not all masked out
+                if np.all(label_mask == False):
+                    raise ValueError(
+                        f"All tokens are masked out in document starting at index {document_start_idx}. "
+                        f"Check if the delimiter '{delimiter_str}' is correctly placed. Token path: {token_path}"
+                    )
+
                 # write into mmap_mask - use document_start_idx for correct indexing
                 mmap_mask[document_start_idx:document_start_idx + len(prev_document)] = label_mask
 
@@ -129,6 +136,13 @@ def prepare_finetuning_masks(args_dict):
             mmap_mask[document_start_idx:document_start_idx + len(prev_document)] = label_mask
 
         mmap_mask.flush()
+
+        mask_check = np.memmap(mask_path, mode='r', dtype=np.bool_)
+        if len(tokens) != len(mask_check):
+            raise ValueError(
+                f"Mask file length ({len(mask_check)}) doesn't match token file length ({len(tokens)}) "
+                f"for {token_path}"
+            )
 
     # check if there are more than one file. If there are, the finetuning script breaks, so we throw an error to remind user
     if len(args_dict["token_file_paths"]) > 1:
