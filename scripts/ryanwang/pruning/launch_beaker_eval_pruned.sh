@@ -170,6 +170,8 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
             safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g')
             safe_group_name=$(echo $GROUP_NAME | sed 's/[^a-zA-Z0-9_-]//g')
             job_name="eval-${safe_model_name}-${safe_group_name}"
+            # limit job_name to be at most 128 characters
+            job_name=${job_name:0:128}
 
             # find the activation file
             parent_model_name=$(get_checkpoint_name $PARENT_MODEL)
