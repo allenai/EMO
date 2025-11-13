@@ -26,8 +26,8 @@ num_checkpoints=5
 base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
 train_task_names=(
-#  "arc_easy:rc_train_0shot::olmes"
-  "arc_challenge:rc_train_0shot::olmes"
+  "arc_easy:rc_train_0shot::olmes"
+#  "arc_challenge:rc_train_0shot::olmes"
 #  "boolq:rc_train_0shot::olmes"
 #  "csqa:rc_train_0shot::olmes"
 #  "hellaswag:rc_train_0shot::olmes"
@@ -118,6 +118,7 @@ for train_task_name in "${train_task_names[@]}"; do
       -- src/scripts/train/olmoe-1B-7B_finetune.py \
         $runname \
         --save-folder="${base_model}/${out_dir}" \
+        --dataset.label_mask_paths="[${label_mask_paths}]" \
         --dataset.paths="[${dataset_paths}]" \
         --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
         --trainer.max_duration='{value: 3, unit: epochs}' \
@@ -128,7 +129,6 @@ for train_task_name in "${train_task_names[@]}"; do
         --num_checkpoints=$num_checkpoints \
         --model.block.feed_forward_moe.num_experts=128 \
 
-#        --dataset.label_mask_paths="[${label_mask_paths}]" \
 
 done
 

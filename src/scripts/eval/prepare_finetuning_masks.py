@@ -63,6 +63,7 @@ def prepare_finetuning_masks(args_dict):
             # special case: hellaswag has no delimiters, we just train on all tokens
             mmap_mask[:] = True
             mmap_mask.flush()
+            del mmap_mask
             continue
 
         prev_document = []
@@ -142,13 +143,28 @@ def prepare_finetuning_masks(args_dict):
             mmap_mask[document_start_idx:document_start_idx + len(prev_document)] = label_mask
 
         mmap_mask.flush()
+        del mmap_mask
 
+        # Now verify the mask file
         mask_check = np.memmap(mask_path, mode='r', dtype=np.bool_)
         if len(tokens) != len(mask_check):
+            del mask_check
             raise ValueError(
                 f"Mask file length ({len(mask_check)}) doesn't match token file length ({len(tokens)}) "
                 f"for {token_path}"
             )
+
+        # Verify that at least some tokens are not masked (to avoid all-False mask)
+        num_unmasked = np.sum(mask_check)
+        if num_unmasked == 0:
+            del mask_check
+            raise ValueError(
+                f"All tokens are masked out in mask file for {token_path}. "
+                f"This will cause NaN in loss computation."
+            )
+
+        logger.info(f"Mask file created: {mask_path}, {num_unmasked}/{len(mask_check)} tokens unmasked")
+        del mask_check
 
     # check if there are more than one file. If there are, the finetuning script breaks, so we throw an error to remind user
     if len(args_dict["token_file_paths"]) > 1:
