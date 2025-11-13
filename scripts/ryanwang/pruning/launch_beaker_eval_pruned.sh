@@ -21,15 +21,12 @@ FINETUNE_TASKS=(
     "task-arc_easy_rc_train_0shot_finetune-keepk32/step336-hf"
     "task-arc_easy_rc_train_0shot_finetune-keepk32/step420-hf"
 
-    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step0-hf"
-    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step41-hf"
-    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step82-hf"
-    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step123-hf"
-    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step164-hf"
-    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step207-hf"
-
-
-
+#    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step0-hf"
+#    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step41-hf"
+#    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step82-hf"
+#    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step123-hf"
+#    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step164-hf"
+#    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step207-hf"
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals"
@@ -148,32 +145,32 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
 #                    --batch-size $batch_size \
 #                    --gpus $gpus \
 
-#            gantry run \
-#            --name $job_name \
-#            --weka oe-training-default:/weka/oe-training-default \
-#            --install "pip install -e \".[all]\"" \
-#            --budget ai2/oceo \
-#            --workspace ai2/flex2 \
-#            --cluster $CLUSTER \
-#            --priority urgent \
-#            --gpus $gpus \
-#            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-#            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-#            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-#            -- \
-#            bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
-#                --model "${MODEL_DIR}/${MODEL_NAME}" \
-#                --model-type hf \
-#                --task $TASK \
-#                --remote-output-dir $OUTPUT_DIR \
-#                --batch-size $batch_size \
-#                --gpus $gpus \
-#                --do_prune \
-#                --activation_file $activation_file \
-#                --prune_keep_k $prune_keep_k \
-#                "
-#
-#            echo "Launched evaluation for model: $model, group: $GROUP_NAME"
+            gantry run \
+            --name $job_name \
+            --weka oe-training-default:/weka/oe-training-default \
+            --install "pip install -e \".[all]\"" \
+            --budget ai2/oceo \
+            --workspace ai2/flex2 \
+            --cluster $CLUSTER \
+            --priority urgent \
+            --gpus $gpus \
+            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+            -- \
+            bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+                --model "${MODEL_DIR}/${MODEL_NAME}" \
+                --model-type hf \
+                --task $TASK \
+                --remote-output-dir $OUTPUT_DIR \
+                --batch-size $batch_size \
+                --gpus $gpus \
+                --do_prune \
+                --activation_file $activation_file \
+                --prune_keep_k $prune_keep_k \
+                "
+
+            echo "Launched evaluation for model: $model, group: $GROUP_NAME"
             echo "----------------------------------------"
         done
 
