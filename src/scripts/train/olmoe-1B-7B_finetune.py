@@ -212,7 +212,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
     dataset_config = NumpyPaddedFSLDatasetConfig(
         paths=[], # to be filled in by the bash script
-        label_mask_paths=[], # to be filled in by the bash script
+        # label_mask_paths=[], # to be filled in by the bash script
         tokenizer=tokenizer_config,
         sequence_length=SEQUENCE_LENGTH,
         work_dir=work_dir,
