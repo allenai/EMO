@@ -104,7 +104,7 @@ for BASE in "${PARENT_MODELS[@]}"; do
     echo "output_dir is ${MODEL_DIR}-hf"
 
     # Beaker names can only contain letters, digits, periods, dashes, and underscores.
-    job_name="convert_${MODEL_DIR//\//_}"
+    job_name="convert_${FINETUNE//\//_}"
 
     gantry run \
     --name $job_name \
