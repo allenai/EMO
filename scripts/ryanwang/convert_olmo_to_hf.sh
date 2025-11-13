@@ -91,23 +91,23 @@ for BASE in "${PARENT_MODELS[@]}"; do
     job_name="convert-olmo-to-hf-$(date +%s)"
 
     gantry run \
-            --name $job_name \
-            --weka oe-training-default:/weka/oe-training-default \
-            --install "pip install -e \".[all]\"" \
-            --budget ai2/oceo \
-            --workspace ai2/flex2 \
-            --cluster $CLUSTER \
-            --priority urgent \
-            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-            -- \
-            bash -c "python src/examples/huggingface/convert_checkpoint_to_hf.py \
-                --checkpoint-input-path "${MODEL_DIR}" \
-                --max-sequence-length 4096 \
-                --huggingface-output-dir "${MODEL_DIR}-hf" \
-                --dtype float32
-                "
+      --name $job_name \
+      --weka oe-training-default:/weka/oe-training-default \
+      --install "pip install -e \".[all]\"" \
+      --budget ai2/oceo \
+      --workspace ai2/flex2 \
+      --cluster $CLUSTER \
+      --priority urgent \
+      --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+      --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+      --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+      -- \
+      bash -c "python src/examples/huggingface/convert_checkpoint_to_hf.py \
+        --checkpoint-input-path "${MODEL_DIR}" \
+        --max-sequence-length 4096 \
+        --huggingface-output-dir "${MODEL_DIR}-hf" \
+        --dtype float32
+        "
 
   done
 done
