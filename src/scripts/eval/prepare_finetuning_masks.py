@@ -69,6 +69,8 @@ def prepare_finetuning_masks(args_dict):
         prev_document = []
         document_start_idx = 0  # Track where the current document started
 
+        random_sum = []
+
         # we now extract individual documents and mask accordingly
         for i in range(num_tokens):
             prev_document.append(tokens[i])
@@ -94,8 +96,7 @@ def prepare_finetuning_masks(args_dict):
                         f"All tokens are masked out in document starting at index {document_start_idx}. "
                         f"Check if the delimiter '{delimiter_str}' is correctly placed. Token path: {token_path}"
                     )
-                if sum(label_mask) < 2:
-                    breakpoint()
+                random_sum += [sum(label_mask)]
 
                 # write into mmap_mask - use document_start_idx for correct indexing
                 mmap_mask[document_start_idx:document_start_idx + len(prev_document)] = label_mask
@@ -103,6 +104,8 @@ def prepare_finetuning_masks(args_dict):
                 # reset for next document
                 document_start_idx = i + 1
                 prev_document = []
+
+        print("DEBUG: Average unmasked tokens per document:", sum(random_sum)/len(random_sum))
 
         # Process the last document if file doesn't end with 100257
         if len(prev_document) > 0:
