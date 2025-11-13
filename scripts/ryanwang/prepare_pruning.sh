@@ -3,8 +3,8 @@
 MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
 #MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 MODELS=(
-#    "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995-hf"
-    "moe_1b7b_olmoe-mix/step30995-hf"
+    "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995-hf"
+#    "moe_1b7b_olmoe-mix/step30995-hf"
     )
 #BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/prune"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/prune"
@@ -17,14 +17,14 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
-#  "arc_easy"
-#  "arc_challenge"
-#  "boolq"
-#  "csqa"
-#  "hellaswag"
-#  "openbookqa"
-#  "piqa"
-#  "socialiqa"
+  "arc_easy"
+  "arc_challenge"
+  "boolq"
+  "csqa"
+  "hellaswag"
+  "openbookqa"
+  "piqa"
+  "socialiqa"
   "winogrande"
 
 #   MMLU
@@ -85,8 +85,8 @@ for MODEL_PATH in "${MODELS[@]}"; do
 
         # Create a shorter, valid job name
         # Remove invalid characters and truncate long names
-        safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g' | cut -c1-20)
-        safe_group_name=$(echo $GROUP_NAME | sed 's/[^a-zA-Z0-9_-]//g' | cut -c1-15)
+        safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g')
+        safe_group_name=$(echo $GROUP_NAME | sed 's/[^a-zA-Z0-9_-]//g')
         job_name="pruneprep-${safe_model_name}-${safe_group_name}"
 
         echo "  Model name: $model"

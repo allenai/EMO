@@ -197,8 +197,8 @@ for MODEL_NAME in "${MODELS[@]}"; do
 
         # Create a shorter, valid job name
         # Remove invalid characters and truncate long names
-        safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g' | cut -c1-20)
-        safe_group_name=$(echo $GROUP_NAME | sed 's/[^a-zA-Z0-9_-]//g' | cut -c1-15)
+        safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g')
+        safe_group_name=$(echo $GROUP_NAME | sed 's/[^a-zA-Z0-9_-]//g')
         job_name="eval-${safe_model_name}-${safe_group_name}"
 
         echo "  Model name: $model"

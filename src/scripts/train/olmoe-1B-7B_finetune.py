@@ -274,6 +274,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             CheckpointerCallback(
                 save_interval=100,
                 save_async=True,
+                pre_train_checkpoint=True,
             ),
         )
         .with_callback(
