@@ -119,7 +119,6 @@ for train_task_name in "${train_task_names[@]}"; do
         $runname \
         --save-folder="${base_model}/${out_dir}" \
         --dataset.paths="[${dataset_paths}]" \
-        --dataset.label_mask_paths="[${label_mask_paths}]" \
         --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
         --trainer.max_duration='{value: 3, unit: epochs}' \
         --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
@@ -128,6 +127,8 @@ for train_task_name in "${train_task_names[@]}"; do
         --prune_keep_k=$prune_keep_k \
         --num_checkpoints=$num_checkpoints \
         --model.block.feed_forward_moe.num_experts=128 \
+
+#        --dataset.label_mask_paths="[${label_mask_paths}]" \
 
 done
 

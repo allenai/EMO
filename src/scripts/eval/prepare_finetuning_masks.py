@@ -36,6 +36,7 @@ def load_token_file(token_path, dtype=np.uint32):
     tokens = np.memmap(token_path, mode='r', dtype=dtype, shape=(num_tokens,))
     return tokens
 
+
 def prepare_finetuning_masks(args_dict):
     print("yay!")
 
@@ -54,8 +55,9 @@ def prepare_finetuning_masks(args_dict):
         mask_path = str(token_path).replace('.npy', '_mask.npy')
 
         # Save as memory-mapped file (more efficient for large files):
+        # Initialize to False (masked out) by default
         mmap_mask = np.memmap(mask_path, mode='w+', dtype=np.bool_, shape=(num_tokens,))
-        mmap_mask[:] = False
+        mmap_mask[:] = False  # Explicitly initialize to False
 
         if "hellaswag" in token_path.lower() or "winogrande" in token_path.lower():
             # special case: hellaswag has no delimiters, we just train on all tokens
@@ -64,28 +66,64 @@ def prepare_finetuning_masks(args_dict):
             continue
 
         prev_document = []
+        document_start_idx = 0  # Track where the current document started
+
         # we now extract individual documents and mask accordingly
         for i in range(num_tokens):
             prev_document.append(tokens[i])
-            if tokens[i] == 100257: # we hit the end of a document
+
+            if tokens[i] == 100257:  # we hit the end of a document
                 # find the delimiter in the previous document by searching for it
                 delimiter_pos = []
-                for j in range(len(prev_document)):
-                    if prev_document[j:j+len(delimiter_ids)] == delimiter_ids:
+                for j in range(len(prev_document) - len(delimiter_ids) + 1):  # Fixed: don't go past end
+                    if prev_document[j:j + len(delimiter_ids)] == delimiter_ids:
                         delimiter_pos.append(j)
 
                 assert len(delimiter_pos) == 1, f"Delimiter not found or found multiple times in document with length {len(prev_document)}"
 
                 # create the label mask for the previous document
                 label_mask = np.ones(len(prev_document), dtype=np.bool_)
-                # mask out everything before the delimiter
-                label_mask[:delimiter_pos[0]+len(delimiter_ids)] = False
+                # mask out everything before and including the delimiter
+                label_mask[:delimiter_pos[0] + len(delimiter_ids)] = False
 
-                # write into mmap_mask
-                mmap_mask[i - len(prev_document) + 1:i + 1] = label_mask
+                # write into mmap_mask - use document_start_idx for correct indexing
+                mmap_mask[document_start_idx:document_start_idx + len(prev_document)] = label_mask
 
-                # reset prev_document
+                # reset for next document
+                document_start_idx = i + 1
                 prev_document = []
+
+        # Process the last document if file doesn't end with 100257
+        if len(prev_document) > 0:
+            logger.warning(
+                f"File does not end with document separator (100257). "
+                f"Processing last document starting at index {document_start_idx}. Token path: {token_path}"
+            )
+
+            # find the delimiter in the last document
+            delimiter_pos = []
+            for j in range(len(prev_document) - len(delimiter_ids) + 1):
+                if prev_document[j:j + len(delimiter_ids)] == delimiter_ids:
+                    delimiter_pos.append(j)
+
+            if len(delimiter_pos) == 0:
+                raise ValueError(
+                    f"Delimiter '{delimiter_str}' not found in last document starting at index {document_start_idx}, "
+                    f"length {len(prev_document)}. Token path: {token_path}"
+                )
+            elif len(delimiter_pos) > 1:
+                logger.warning(
+                    f"Multiple delimiters found in last document starting at index {document_start_idx}. "
+                    f"Using the first one at position {delimiter_pos[0]}. Token path: {token_path}"
+                )
+
+            # create the label mask for the last document
+            label_mask = np.ones(len(prev_document), dtype=np.bool_)
+            # mask out everything before and including the delimiter
+            label_mask[:delimiter_pos[0] + len(delimiter_ids)] = False
+
+            # write into mmap_mask
+            mmap_mask[document_start_idx:document_start_idx + len(prev_document)] = label_mask
 
         mmap_mask.flush()
 
