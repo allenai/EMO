@@ -54,9 +54,6 @@ def prepare_finetuning_masks(args_dict):
         # Save the label mask file
         mask_path = str(token_path).replace('.npy', '_mask.npy')
 
-        masks = load_token_file(mask_path, dtype=np.bool_)
-        breakpoint()
-
         # Save as memory-mapped file (more efficient for large files):
         # Initialize to False (masked out) by default
         mmap_mask = np.memmap(mask_path, mode='w+', dtype=np.bool_, shape=(num_tokens,))
@@ -91,6 +88,7 @@ def prepare_finetuning_masks(args_dict):
 
                 # make sure that the document is not all masked out
                 if np.all(label_mask == False):
+                    breakpoint()
                     raise ValueError(
                         f"All tokens are masked out in document starting at index {document_start_idx}. "
                         f"Check if the delimiter '{delimiter_str}' is correctly placed. Token path: {token_path}"
@@ -131,6 +129,14 @@ def prepare_finetuning_masks(args_dict):
             label_mask = np.ones(len(prev_document), dtype=np.bool_)
             # mask out everything before and including the delimiter
             label_mask[:delimiter_pos[0] + len(delimiter_ids)] = False
+
+            # make sure that the document is not all masked out
+            if np.all(label_mask == False):
+                breakpoint()
+                raise ValueError(
+                    f"All tokens are masked out in document starting at index {document_start_idx}. "
+                    f"Check if the delimiter '{delimiter_str}' is correctly placed. Token path: {token_path}"
+                )
 
             # write into mmap_mask
             mmap_mask[document_start_idx:document_start_idx + len(prev_document)] = label_mask
