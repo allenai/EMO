@@ -14,61 +14,68 @@ PARENT_MODELS=(
 )
 
 FINETUNE_TASKS=(
-    "task-arc_easy_rc_train_0shot_finetune-keepk32/step0-hf"
-    "task-arc_easy_rc_train_0shot_finetune-keepk32/step84-hf"
-    "task-arc_easy_rc_train_0shot_finetune-keepk32/step168-hf"
-    "task-arc_easy_rc_train_0shot_finetune-keepk32/step252-hf"
-    "task-arc_easy_rc_train_0shot_finetune-keepk32/step336-hf"
-    "task-arc_easy_rc_train_0shot_finetune-keepk32/step420-hf"
+    "task-arc_easy_rc_train_0shot_finetune-keepk32/step0"
+    "task-arc_easy_rc_train_0shot_finetune-keepk32/step84"
+    "task-arc_easy_rc_train_0shot_finetune-keepk32/step168"
+    "task-arc_easy_rc_train_0shot_finetune-keepk32/step252"
+    "task-arc_easy_rc_train_0shot_finetune-keepk32/step336"
+    "task-arc_easy_rc_train_0shot_finetune-keepk32/step420"
 
-    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step0-hf"
-    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step41-hf"
-    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step82-hf"
-    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step123-hf"
-    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step164-hf"
-    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step207-hf"
+    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step0"
+    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step41"
+    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step82"
+    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step123"
+    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step164"
+    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step207"
 
-    "task-boolq_rc_train_0shot_finetune-keepk32/step0-hf"
-    "task-boolq_rc_train_0shot_finetune-keepk32/step315-hf"
-    "task-boolq_rc_train_0shot_finetune-keepk32/step630-hf"
-    "task-boolq_rc_train_0shot_finetune-keepk32/step945-hf"
-    "task-boolq_rc_train_0shot_finetune-keepk32/step1260-hf"
-    "task-boolq_rc_train_0shot_finetune-keepk32/step1578-hf"
+#    "task-boolq_rc_train_0shot_finetune-keepk32/step0"
+#    "task-boolq_rc_train_0shot_finetune-keepk32/step315"
+#    "task-boolq_rc_train_0shot_finetune-keepk32/step630"
+#    "task-boolq_rc_train_0shot_finetune-keepk32/step945"
+#    "task-boolq_rc_train_0shot_finetune-keepk32/step1260"
+#    "task-boolq_rc_train_0shot_finetune-keepk32/step1578"
+#
+#    "task-csqa_rc_train_0shot_finetune-keepk32/step0"
+#    "task-csqa_rc_train_0shot_finetune-keepk32/step327"
+#    "task-csqa_rc_train_0shot_finetune-keepk32/step654"
+#    "task-csqa_rc_train_0shot_finetune-keepk32/step981"
+#    "task-csqa_rc_train_0shot_finetune-keepk32/step1308"
+#    "task-csqa_rc_train_0shot_finetune-keepk32/step1638"
 
-    "task-csqa_rc_train_0shot_finetune-keepk32/step0-hf"
-    "task-csqa_rc_train_0shot_finetune-keepk32/step327-hf"
-    "task-csqa_rc_train_0shot_finetune-keepk32/step654-hf"
-    "task-csqa_rc_train_0shot_finetune-keepk32/step981-hf"
-    "task-csqa_rc_train_0shot_finetune-keepk32/step1308-hf"
-    "task-csqa_rc_train_0shot_finetune-keepk32/step1638-hf"
+    "task-hellaswag_rc_train_0shot_finetune-keepk32/step0"
+    "task-hellaswag_rc_train_0shot_finetune-keepk32/step1458"
+    "task-hellaswag_rc_train_0shot_finetune-keepk32/step2916"
+    "task-hellaswag_rc_train_0shot_finetune-keepk32/step4370"
+    "task-hellaswag_rc_train_0shot_finetune-keepk32/step5832"
+    "task-hellaswag_rc_train_0shot_finetune-keepk32/step7293"
 
-    "task-hellaswag_rc_train_0shot_finetune-keepk32/step0-hf"
-    "task-hellaswag_rc_train_0shot_finetune-keepk32/step1458-hf"
-    "task-hellaswag_rc_train_0shot_finetune-keepk32/step2916-hf"
-    "task-hellaswag_rc_train_0shot_finetune-keepk32/step4370-hf"
-    "task-hellaswag_rc_train_0shot_finetune-keepk32/step5832-hf"
-    "task-hellaswag_rc_train_0shot_finetune-keepk32/step7293-hf"
-
-    "task-openbookqa_rc_train_0shot_finetune-keepk32/step0-hf"
-    "task-openbookqa_rc_train_0shot_finetune-keepk32/step185-hf"
-    "task-openbookqa_rc_train_0shot_finetune-keepk32/step370-hf"
-    "task-openbookqa_rc_train_0shot_finetune-keepk32/step555-hf"
-    "task-openbookqa_rc_train_0shot_finetune-keepk32/step740-hf"
-    "task-openbookqa_rc_train_0shot_finetune-keepk32/step927-hf"
-
-    "task-piqa_rc_train_0shot_finetune-keepk32/step0-hf"
-    "task-piqa_rc_train_0shot_finetune-keepk32/step566-hf"
-    "task-piqa_rc_train_0shot_finetune-keepk32/step1132-hf"
-    "task-piqa_rc_train_0shot_finetune-keepk32/step1698-hf"
-    "task-piqa_rc_train_0shot_finetune-keepk32/step2264-hf"
-    "task-piqa_rc_train_0shot_finetune-keepk32/step2832-hf"
-
-
-
-
-
-
-
+#    "task-openbookqa_rc_train_0shot_finetune-keepk32/step0"
+#    "task-openbookqa_rc_train_0shot_finetune-keepk32/step185"
+#    "task-openbookqa_rc_train_0shot_finetune-keepk32/step370"
+#    "task-openbookqa_rc_train_0shot_finetune-keepk32/step555"
+#    "task-openbookqa_rc_train_0shot_finetune-keepk32/step740"
+#    "task-openbookqa_rc_train_0shot_finetune-keepk32/step927"
+#
+#    "task-piqa_rc_train_0shot_finetune-keepk32/step0"
+#    "task-piqa_rc_train_0shot_finetune-keepk32/step566"
+#    "task-piqa_rc_train_0shot_finetune-keepk32/step1132"
+#    "task-piqa_rc_train_0shot_finetune-keepk32/step1698"
+#    "task-piqa_rc_train_0shot_finetune-keepk32/step2264"
+#    "task-piqa_rc_train_0shot_finetune-keepk32/step2832"
+#
+#    "task-socialiqa_rc_train_0shot_finetune-keepk32/step0"
+#    "task-socialiqa_rc_train_0shot_finetune-keepk32/step1215"
+#    "task-socialiqa_rc_train_0shot_finetune-keepk32/step2430"
+#    "task-socialiqa_rc_train_0shot_finetune-keepk32/step3645"
+#    "task-socialiqa_rc_train_0shot_finetune-keepk32/step4860"
+#    "task-socialiqa_rc_train_0shot_finetune-keepk32/step6075"
+#
+#    "task-winogrande_rc_train_0shot_finetune-keepk32/step0"
+#    "task-winogrande_rc_train_0shot_finetune-keepk32/step1477"
+#    "task-winogrande_rc_train_0shot_finetune-keepk32/step2954"
+#    "task-winogrande_rc_train_0shot_finetune-keepk32/step4431"
+#    "task-winogrande_rc_train_0shot_finetune-keepk32/step5908"
+#    "task-winogrande_rc_train_0shot_finetune-keepk32/step7386"
 
 )
 
