@@ -63,11 +63,21 @@ for k in k_range:
     plt.colorbar()
     plt.xticks(range(len(router_paths)), [name for name, _ in router_paths], rotation=45)
     plt.yticks(range(len(router_paths)), [name for name, _ in router_paths])
-    plt.title(f'Expert Overlap Matrix (Top-{k})')
+    plt.title(f'MoE Expert Overlap Matrix (Top-{k})')
     plt.tight_layout()
-    plt.savefig(f"{out_dir}/expert_overlap_top{k}.png")
+    plt.savefig(f"{out_dir}/MoE_expert_overlap_top{k}.png")
     plt.close()
     print(f"Saved expert overlap matrix for top-{k} to expert_overlap_top{k}.png")
+
+    # we also get the average overlap
+    total_overlap = 0
+    count = 0
+    for i in range(len(router_paths)):
+        for j in range(i + 1, len(router_paths)):
+            total_overlap += overlap_matrix[i, j]
+            count += 1
+    avg_overlap = total_overlap / count
+    print(f"Average MoE expert overlap for top-{k}: {avg_overlap}")
 
 
 
