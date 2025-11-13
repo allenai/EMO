@@ -27,14 +27,14 @@ base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
 train_task_names=(
   "arc_easy:rc_train_0shot::olmes"
-#  "arc_challenge:rc_train_0shot::olmes"
-#  "boolq:rc_train_0shot::olmes"
-#  "csqa:rc_train_0shot::olmes"
-#  "hellaswag:rc_train_0shot::olmes"
-#  "openbookqa:rc_train_0shot::olmes"
-#  "piqa:rc_train_0shot::olmes"
-#  "socialiqa:rc_train_0shot::olmes"
-#  "winogrande:rc_train_0shot::olmes"
+  "arc_challenge:rc_train_0shot::olmes"
+  "boolq:rc_train_0shot::olmes"
+  "csqa:rc_train_0shot::olmes"
+  "hellaswag:rc_train_0shot::olmes"
+  "openbookqa:rc_train_0shot::olmes"
+  "piqa:rc_train_0shot::olmes"
+  "socialiqa:rc_train_0shot::olmes"
+  "winogrande:rc_train_0shot::olmes"
 #
 ##   MMLU
 #  "mmlu_rc:rc_train_0shot::olmes"
@@ -102,7 +102,7 @@ for train_task_name in "${train_task_names[@]}"; do
 
     python -m olmo_core.launch.beaker \
       --name $runname \
-      --gpus 8 \
+      --gpus 4 \
       --nodes 1 \
       --is_private_repo \
       --weka=oe-training-default \
