@@ -488,7 +488,6 @@ class MoERouter(nn.Module):
 
             # prepare for unique experts metric
             if self.training:
-                breakpoint()
                 if padding_mask is not None:
                     # log that we only consider non-padded tokens for unique experts metric. padding_mask is 1 for non-padded tokens
                     padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
