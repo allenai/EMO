@@ -215,6 +215,10 @@ class MoERouter(nn.Module):
         self._load_balancing_loss: Optional[_HiddenTensor] = None
         self._z_loss: Optional[_HiddenTensor] = None
 
+        # add metrics to keep track of unique experts per batch
+        self._unique_experts_sum = 0.0
+        self._num_batches_tracked = 0
+
     def reset_parameters(self):
         self._batch_size_per_expert = hide_from_torch(
             torch.zeros(self.num_experts, device=self.device)
@@ -399,6 +403,21 @@ class MoERouter(nn.Module):
             out["router Z loss"] = (self.z_loss_weight * self.z_loss, ReduceType.mean)
             out["router Z loss unscaled"] = (self.z_loss.clone(), ReduceType.mean)
 
+        # Unique experts used per batch
+        if self._num_batches_tracked > 0:
+            avg_unique_experts = self._unique_experts_sum / self._num_batches_tracked
+            fraction_unique_experts = avg_unique_experts / self.num_experts
+
+            # Convert to tensors for consistency with other metrics
+            out["unique experts used per batch"] = (
+                torch.tensor(avg_unique_experts, device=self.device),
+                ReduceType.mean,
+            )
+            out["fraction of experts used per batch"] = (
+                torch.tensor(fraction_unique_experts, device=self.device),
+                ReduceType.mean,
+            )
+
         if reset:
             self.reset_metrics()
 
@@ -417,6 +436,7 @@ class MoERouter(nn.Module):
         x: torch.Tensor,
         *,
         loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
+        padding_mask: Optional[torch.Tensor] = None, # shape: (B, S)
         **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
@@ -462,6 +482,20 @@ class MoERouter(nn.Module):
             batched_batch_size_per_expert = batched_batch_size_per_expert.sum(dim=1)
             # shape: (num_experts,)
             batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
+
+            if padding_mask is not None:
+                # log that we only consider non-padded tokens for unique experts metric
+                padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
+                valid_expert_indices = expert_indices.masked_select(~padding_mask_expanded)
+            else:
+                valid_expert_indices = expert_indices.reshape(-1)
+
+            # Update unique experts metric.
+            unique_experts = torch.unique(valid_expert_indices)
+            num_unique_experts = unique_experts.numel()
+
+            self._unique_experts_sum += num_unique_experts
+            self._num_batches_tracked += 1
 
         # Maybe compute auxiliary losses and accumulate metrics.
         aux_loss: Optional[torch.Tensor] = None

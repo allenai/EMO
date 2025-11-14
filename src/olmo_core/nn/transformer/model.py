@@ -498,6 +498,10 @@ class Transformer(nn.Module):
             **kwargs,
         )
 
+        if labels is not None:
+            padding_mask = (labels != ignore_index)
+            all_block_kwargs["padding_mask"] = padding_mask
+
         # Get embeddings but pass-through for non-existent layers to allow easy
         # pipeline parallel configuration.
         h = self.embeddings(input_ids) if self.embeddings is not None else input_ids

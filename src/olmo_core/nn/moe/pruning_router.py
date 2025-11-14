@@ -124,6 +124,7 @@ class PruningMoELinearRouter(MoELinearRouter):
             x: torch.Tensor,
             *,
             loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
+            padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
             **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
@@ -181,6 +182,19 @@ class PruningMoELinearRouter(MoELinearRouter):
             batched_batch_size_per_expert = batched_batch_size_per_expert.sum(dim=1)
             # shape: (num_experts,)
             batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
+
+            if padding_mask is not None:
+                padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
+                valid_expert_indices = expert_indices.masked_select(~padding_mask_expanded)
+            else:
+                valid_expert_indices = expert_indices.reshape(-1)
+
+            # Update unique experts metric.
+            unique_experts = torch.unique(valid_expert_indices)
+            num_unique_experts = unique_experts.numel()
+
+            self._unique_experts_sum += num_unique_experts
+            self._num_batches_tracked += 1
 
         # Maybe compute auxiliary losses and accumulate metrics.
         aux_loss: Optional[torch.Tensor] = None
