@@ -15,7 +15,7 @@
 
 ##############################################################
 #document_expert_pool=32
-document_expert_pool=12
+document_expert_pool=10
 
 runname="twolevel-${document_expert_pool}_1b14b_stability_instance_filter_1114"
 
@@ -26,7 +26,7 @@ torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
   --work-dir="/root/ryanwang/dataset-cache" \
   --trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
   --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
-  --model.block.feed_forward_moe.num_experts=16 \
+  --model.block.feed_forward_moe.num_experts=12 \
   --model-type="two-level" \
   --document-expert-pool=${document_expert_pool} \
   --train_module.compile_model=false \
