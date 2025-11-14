@@ -499,7 +499,7 @@ class Transformer(nn.Module):
         )
 
         if labels is not None:
-            breakpoint()
+            # we will mask if the next token is padding
             padding_mask = (labels != ignore_index)
             all_block_kwargs["padding_mask"] = move_to_device(padding_mask, self.device)
 

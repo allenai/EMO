@@ -30,8 +30,8 @@ torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
   --model-type="two-level" \
   --document-expert-pool=${document_expert_pool} \
   --train_module.compile_model=false \
-  --dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}'
-
+  --dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
+  --model.block.feed_forward_moe.z_loss_weight=0.004 \
 
 
 #python -m olmo_core.launch.beaker \
