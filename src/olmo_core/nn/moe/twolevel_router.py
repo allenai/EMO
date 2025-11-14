@@ -151,7 +151,7 @@ class MoETwoLevelRouter(MoELinearRouter):
 
             if padding_mask is not None:
                 padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
-                valid_expert_indices = expert_indices.masked_select(~padding_mask_expanded)
+                valid_expert_indices = expert_indices.masked_select(padding_mask_expanded)
             else:
                 valid_expert_indices = expert_indices.reshape(-1)
 

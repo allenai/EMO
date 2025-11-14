@@ -500,7 +500,7 @@ class Transformer(nn.Module):
 
         if labels is not None:
             padding_mask = (labels != ignore_index)
-            all_block_kwargs["padding_mask"] = padding_mask
+            all_block_kwargs["padding_mask"] = move_to_device(padding_mask, self.device)
 
         # Get embeddings but pass-through for non-existent layers to allow easy
         # pipeline parallel configuration.

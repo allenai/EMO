@@ -431,6 +431,9 @@ class MoERouter(nn.Module):
         if (z_loss := self.z_loss) is not None:
             z_loss.zero_()
 
+        self._unique_experts_sum = 0.0
+        self._num_batches_tracked = 0
+
     def forward(
         self,
         x: torch.Tensor,
@@ -483,19 +486,22 @@ class MoERouter(nn.Module):
             # shape: (num_experts,)
             batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
 
-            if padding_mask is not None:
-                # log that we only consider non-padded tokens for unique experts metric
-                padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
-                valid_expert_indices = expert_indices.masked_select(~padding_mask_expanded)
-            else:
-                valid_expert_indices = expert_indices.reshape(-1)
+            # prepare for unique experts metric
+            if self.training:
+                breakpoint()
+                if padding_mask is not None:
+                    # log that we only consider non-padded tokens for unique experts metric. padding_mask is 1 for non-padded tokens
+                    padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
+                    valid_expert_indices = expert_indices.masked_select(padding_mask_expanded)
+                else:
+                    valid_expert_indices = expert_indices.reshape(-1)
 
-            # Update unique experts metric.
-            unique_experts = torch.unique(valid_expert_indices)
-            num_unique_experts = unique_experts.numel()
+                # Update unique experts metric.
+                unique_experts = torch.unique(valid_expert_indices)
+                num_unique_experts = unique_experts.numel()
 
-            self._unique_experts_sum += num_unique_experts
-            self._num_batches_tracked += 1
+                self._unique_experts_sum += num_unique_experts
+                self._num_batches_tracked += 1
 
         # Maybe compute auxiliary losses and accumulate metrics.
         aux_loss: Optional[torch.Tensor] = None
