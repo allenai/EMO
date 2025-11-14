@@ -2,24 +2,24 @@ BASE_FOLDER="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models"
 
 
 PARENT_MODELS=(
-    "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995"
-#    "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995"
+#    "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995"
+    "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995"
 )
 
 FINETUNE_TASKS=(
-#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step0"
-#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step84"
-#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step168"
-#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step252"
-#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step336"
-#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step420"
-#
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step0"
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step41"
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step82"
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step123"
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step164"
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step207"
+    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step0"
+    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step84"
+    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step168"
+    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step252"
+    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step336"
+    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step420"
+
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step0"
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step41"
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step82"
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step123"
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step164"
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step207"
 
     "task-boolq_rc_train_0shot_finetune_random-keepk32/step0"
     "task-boolq_rc_train_0shot_finetune_random-keepk32/step315"
