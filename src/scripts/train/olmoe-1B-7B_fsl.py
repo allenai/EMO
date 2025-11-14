@@ -58,7 +58,7 @@ DATA_ROOT = "/root/ryanwang"
 
 SEQUENCE_LENGTH = 4096
 # HACK
-GLOBAL_BATCH_SIZE = 2 * SEQUENCE_LENGTH
+GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
 # GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
 
 
@@ -214,7 +214,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     train_module_config = TransformerTrainModuleConfig(
-        rank_microbatch_size=4
+        rank_microbatch_size=2
         * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         max_sequence_length=SEQUENCE_LENGTH,
         optim=AdamWConfig(
