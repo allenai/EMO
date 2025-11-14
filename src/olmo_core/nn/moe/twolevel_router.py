@@ -150,6 +150,7 @@ class MoETwoLevelRouter(MoELinearRouter):
             tot_batch_size_per_expert = tot_batched_batch_size_per_expert.sum(dim=0)
 
             if self.training:
+                breakpoint()
                 if padding_mask is not None:
                     padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
                     valid_expert_indices = expert_indices.masked_select(padding_mask_expanded)
