@@ -27,7 +27,6 @@ torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
   --trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
   --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
   --model.block.feed_forward_moe.num_experts=16 \
-#  --model.block.feed_forward_moe.router.top_k=2 \
   --model-type="two-level" \
   --document-expert-pool=${document_expert_pool} \
   --train_module.compile_model=false \
