@@ -17,20 +17,20 @@
 #document_expert_pool=32
 document_expert_pool=12
 
-runname="twolevel-${document_expert_pool}_1b7b_128experts_olmoe-mix_130B_1110"
+runname="twolevel-${document_expert_pool}_1b14b_stability_instance_filter_1114"
 
- torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
-    $runname \
-		--save-folder="/root/ryanwang/phdbrainstorm/FlexMoE/models/$runname" \
-		--dataset.mix=arc-easy-train \
-		--work-dir="/root/ryanwang/dataset-cache" \
-		--trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
-		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
-		--model.block.feed_forward_moe.num_experts=16 \
-		--model-type="two-level" \
-		--document-expert-pool=${document_expert_pool} \
-		--train_module.compile_model=false
-		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}'
+torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
+  $runname \
+  --save-folder="/root/ryanwang/phdbrainstorm/FlexMoE/models/$runname" \
+  --dataset.mix=arc-easy-train \
+  --work-dir="/root/ryanwang/dataset-cache" \
+  --trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
+  --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
+  --model.block.feed_forward_moe.num_experts=16 \
+  --model-type="two-level" \
+  --document-expert-pool=${document_expert_pool} \
+  --train_module.compile_model=false
+  --dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}'
 
 
 
