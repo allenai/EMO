@@ -14,6 +14,7 @@ from typing import List, Optional, cast
 
 import rich
 
+from olmo_core.nn.moe.twolevel_batchlb_router import MoETwoLevelBatchLBRouterConfig
 from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouterConfig
 from olmo_core.config import Config, DType
 from olmo_core.data import (
@@ -188,6 +189,20 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
         # Replace router config
         model_config.block.feed_forward_moe.router = MoETwoLevelRouterConfig(**router_kwargs)
+    elif opts.model_type == "two-level_lb-batch":
+        log.info("Applying two-level with batch-leve load balancing (olmoe lb) routers to the model...")
+        if opts.document_expert_pool is None:
+            raise ValueError("document_expert_pool must be specified for two-level model type.")
+        # Get existing router config parameters
+        router_kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
+        router_kwargs.pop("name")
+        router_kwargs.update(
+            document_expert_pool=opts.document_expert_pool,
+            eos_token_id=tokenizer_config.eos_token_id,
+        )
+
+        # Replace router config
+        model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBRouterConfig(**router_kwargs)
     else:
         raise ValueError(f"Unknown model type: {opts.model_type}")
 
