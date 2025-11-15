@@ -2,6 +2,7 @@ import json
 from typing import Optional
 
 from olmo_core.nn.moe.router import MoERouterConfig, MoERouterType
+from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
 from dataclasses import dataclass
 
 import logging
@@ -41,28 +42,10 @@ from olmo_core.distributed.utils import get_local_tensor
 
 
 
-class MoETwoLevelBatchLBRouter(MoELinearRouter):
+class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
     """
     Custom MoE router with modified forward pass and additional class variables.
     """
-
-    def __init__(
-            self,
-            *,
-            dtype: torch.dtype = torch.float32,
-            init_device: str = "cpu",
-            document_expert_pool: int,
-            eos_token_id: int,
-            **kwargs,
-    ):
-        super().__init__(dtype=dtype, init_device=init_device, **kwargs)
-
-        # the number of experts that each document can select their top-k experts from
-        self.document_expert_pool = document_expert_pool
-        # the eos token id
-        if eos_token_id is None:
-            raise OLMoConfigurationError("eos_token_id must be provided for MoETwoLevelRouter")
-        self.eos_token_id = eos_token_id
 
     def forward(
             self,
@@ -218,13 +201,8 @@ class MoETwoLevelBatchLBRouter(MoELinearRouter):
         return f"{base_repr}, document_expert_pool={self.document_expert_pool}, eos_token_id={self.eos_token_id}"
 
 @dataclass
-class MoETwoLevelBatchLBRouterConfig(MoERouterConfig):
-    """
-    Config for pruning MoE router.
-    """
-    document_expert_pool: int = 32
-    eos_token_id: Optional[int] = None
-
+class MoETwoLevelBatchLBRouterConfig(MoETwoLevelRouterConfig):
+    # just update the build to call the correct new class
     def build(
             self,
             d_model: int,
