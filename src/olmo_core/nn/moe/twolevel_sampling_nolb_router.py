@@ -96,7 +96,6 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
                 bc.append(int(x.size(1)))
             document_boundaries_cpu.append(bc)
 
-        breakpoint()
         tot_doc_entropy = []
         for seq_idx in range(x.size(0)):
             start = 0
@@ -129,8 +128,6 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
         self._router_documentlevel_expert_entropy += avg_doc_entropy
 
         # logits.masked_fill_(logits_mask, float('-inf'))
-
-        breakpoint()
 
         # shape: (batch_size, seq_len, num_experts)
         if self.gating_function == MoERouterGatingFunction.softmax:
@@ -182,7 +179,6 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
                 self._unique_experts_sum += num_unique_experts
                 self._num_batches_tracked += 1
 
-                breakpoint()
                 # Compute router distribution entropy metric
                 # calculate entropy of the router distribution over experts. NOTE: this should be much lower than document-level, since some experts are already masked out
                 if padding_mask is not None:
