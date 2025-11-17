@@ -220,9 +220,9 @@ class MoERouter(nn.Module):
         self._num_batches_tracked = 0
 
         # add metrics to keep track of router expert entropy
-        self._router_expert_entropy = 0.0
-        # this is for the twolevel sampling router expert entropy only
-        self._samplingrouter_expert_entropy = 0.0
+        self._router_tokenlevel_expert_entropy = 0.0
+        # this is for document-level expert entropy for choosing experts per document
+        self._router_documentlevel_expert_entropy = 0.0
 
     def reset_parameters(self):
         self._batch_size_per_expert = hide_from_torch(
@@ -423,15 +423,15 @@ class MoERouter(nn.Module):
                 ReduceType.mean,
             )
 
-        if self._router_expert_entropy != 0.0:
-            out["router expert entropy"] = (
-                torch.tensor(self._router_expert_entropy, device=self.device),
+        if self._router_tokenlevel_expert_entropy != 0.0:
+            out["router token-level expert entropy"] = (
+                torch.tensor(self._router_tokenlevel_expert_entropy, device=self.device),
                 ReduceType.mean,
             )
 
-        if self._samplingrouter_expert_entropy != 0.0:
-            out["sampling router expert entropy"] = (
-                torch.tensor(self._samplingrouter_expert_entropy, device=self.device),
+        if self._router_documentlevel_expert_entropy != 0.0:
+            out["router document-level expert entropy"] = (
+                torch.tensor(self._router_documentlevel_expert_entropy, device=self.device),
                 ReduceType.mean,
             )
 
@@ -451,9 +451,9 @@ class MoERouter(nn.Module):
         self._unique_experts_sum = 0.0
         self._num_batches_tracked = 0
 
-        self._router_expert_entropy = 0.0
+        self._router_tokenlevel_expert_entropy = 0.0
 
-        self._samplingrouter_expert_entropy = 0.0
+        self._router_documentlevel_expert_entropy = 0.0
 
     def forward(
         self,
@@ -536,7 +536,7 @@ class MoERouter(nn.Module):
                 token_entropies = -torch.sum(valid_scores * torch.log(valid_scores + 1e-10), dim=-1)
                 # average entropy over valid tokens
                 avg_entropy = token_entropies.mean().item()
-                self._router_expert_entropy += avg_entropy
+                self._router_tokenlevel_expert_entropy += avg_entropy
 
         # Maybe compute auxiliary losses and accumulate metrics.
         aux_loss: Optional[torch.Tensor] = None

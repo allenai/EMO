@@ -146,6 +146,20 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
                 self._unique_experts_sum += num_unique_experts
                 self._num_batches_tracked += 1
 
+                # Compute router distribution entropy metric
+                # calculate entropy of the router distribution over experts. NOTE: this should be much lower than document-level, since some experts are already masked out
+                if padding_mask is not None:
+                    # only consider non-padded tokens
+                    padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
+                    valid_scores = scores.masked_select(padding_mask_expanded).view(-1, self.num_experts)
+                else:
+                    valid_scores = scores.view(-1, self.num_experts)
+                # get entropy per token
+                token_entropies = -torch.sum(valid_scores * torch.log(valid_scores + 1e-10), dim=-1)
+                # average entropy over valid tokens
+                avg_entropy = token_entropies.mean().item()
+                self._router_tokenlevel_expert_entropy += avg_entropy
+
         # Maybe compute auxiliary losses and accumulate metrics.
         aux_loss: Optional[torch.Tensor] = None
         if self.training and torch.is_grad_enabled():

@@ -126,7 +126,7 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
         # log the average document entropy
         avg_doc_entropy = sum(tot_doc_entropy) / len(tot_doc_entropy) if tot_doc_entropy else 0.0
         logging.info(f"Average document entropy over experts: {avg_doc_entropy}")
-        self._samplingrouter_expert_entropy += avg_doc_entropy
+        self._router_documentlevel_expert_entropy += avg_doc_entropy
 
         # logits.masked_fill_(logits_mask, float('-inf'))
 
@@ -184,7 +184,7 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
 
                 breakpoint()
                 # Compute router distribution entropy metric
-                # calculate entropy of the router distribution over experts
+                # calculate entropy of the router distribution over experts. NOTE: this should be much lower than document-level, since some experts are already masked out
                 if padding_mask is not None:
                     # only consider non-padded tokens
                     padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
@@ -195,7 +195,7 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
                 token_entropies = -torch.sum(valid_scores * torch.log(valid_scores + 1e-10), dim=-1)
                 # average entropy over valid tokens
                 avg_entropy = token_entropies.mean().item()
-                self._router_expert_entropy += avg_entropy
+                self._router_tokenlevel_expert_entropy += avg_entropy
 
         # Maybe compute auxiliary losses and accumulate metrics.
         aux_loss: Optional[torch.Tensor] = None
