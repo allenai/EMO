@@ -68,7 +68,7 @@ echo "~~~~~~~~~ get validation and train examples ~~~~~~~~~"
 if [[ "$GROUP_NAME" == *gsm8k* ]]; then
     validation_task_name="$GROUP_NAME:perplexity_validation_0shot::olmes"
     train_task_name="$GROUP_NAME:perplexity_train_0shot::olmes"
-if [[ "$GROUP_NAME" == *mmlu* ]]; then
+elif [[ "$GROUP_NAME" == *mmlu* ]]; then
     validation_task_name="$GROUP_NAME:rc_validation_0shot::olmes"
     train_task_name="" # set to empty string since there's no train set
 else
