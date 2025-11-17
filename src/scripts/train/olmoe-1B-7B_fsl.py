@@ -14,6 +14,7 @@ from typing import List, Optional, cast
 
 import rich
 
+from olmo_core.nn.moe.twolevel_sampling_nolb_router import MoETwoLevelSamplingNoLBRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_router import MoETwoLevelBatchLBRouterConfig
 from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouterConfig
 from olmo_core.config import Config, DType
@@ -54,12 +55,12 @@ from olmo_core.utils import seed_all
 log = logging.getLogger(__name__)
 
 # HACK
-DATA_ROOT = "/weka/oe-training-default/ai2-llm"
-# DATA_ROOT = "/root/ryanwang"
+# DATA_ROOT = "/weka/oe-training-default/ai2-llm"
+DATA_ROOT = "/root/ryanwang"
 
 SEQUENCE_LENGTH = 4096
-# GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
-GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
+GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
+# GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
 
 
 
@@ -203,6 +204,20 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
         # Replace router config
         model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBRouterConfig(**router_kwargs)
+    elif opts.model_type == "two-level_sampling_nolb":
+        log.info("Applying two-level with sampling and no load balancing routers to the model...")
+        if opts.document_expert_pool is None:
+            raise ValueError("document_expert_pool must be specified for two-level model type.")
+        # Get existing router config parameters
+        router_kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
+        router_kwargs.pop("name")
+        router_kwargs.update(
+            document_expert_pool=opts.document_expert_pool,
+            eos_token_id=tokenizer_config.eos_token_id,
+        )
+
+        # Replace router config
+        model_config.block.feed_forward_moe.router = MoETwoLevelSamplingNoLBRouterConfig(**router_kwargs)
     else:
         raise ValueError(f"Unknown model type: {opts.model_type}")
 
@@ -228,7 +243,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     train_module_config = TransformerTrainModuleConfig(
-        rank_microbatch_size=4
+        rank_microbatch_size=2
         * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         max_sequence_length=SEQUENCE_LENGTH,
         optim=AdamWConfig(
