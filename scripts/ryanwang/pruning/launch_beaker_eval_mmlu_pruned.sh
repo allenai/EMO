@@ -26,12 +26,12 @@ TASK_GROUPS_LIST=(
   ######### TEST-only ##########
 #   MMLU
 #  "abstract_algebra|mmlu_abstract_algebra:rc_test::olmes"
-  "anatomy|mmlu_anatomy:rc_test::olmes"
-  "astronomy|mmlu_astronomy:rc_test::olmes"
-  "business_ethics|mmlu_business_ethics:rc_test::olmes"
-  "clinical_knowledge|mmlu_clinical_knowledge:rc_test::olmes"
-  "college_biology|mmlu_college_biology:rc_test::olmes"
-  "college_chemistry|mmlu_college_chemistry:rc_test::olmes"
+#  "anatomy|mmlu_anatomy:rc_test::olmes"
+#  "astronomy|mmlu_astronomy:rc_test::olmes"
+#  "business_ethics|mmlu_business_ethics:rc_test::olmes"
+#  "clinical_knowledge|mmlu_clinical_knowledge:rc_test::olmes"
+#  "college_biology|mmlu_college_biology:rc_test::olmes"
+#  "college_chemistry|mmlu_college_chemistry:rc_test::olmes"
   "college_computer_science|mmlu_college_computer_science:rc_test::olmes"
   "college_mathematics|mmlu_college_mathematics:rc_test::olmes"
   "college_medicine|mmlu_college_medicine:rc_test::olmes"
@@ -123,12 +123,8 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
               batch_size=$BATCH_SIZE
           fi
 
-          # adjust number of gpus requested if its mmlu, agi_eval, bbh, gsm8k, minerva, codex, mbpp
-          if [[ $TASK == *mmlu* || $TASK == *agi_eval* || $TASK == *bbh* || $TASK == *gsm8k* || $TASK == *minerva_math_* || $TASK == *codex* || $TASK == *mbpp* ]]; then
-              gpus=4
-          else
-              gpus=1
-          fi
+          # fix gpu to 1 since we are doing one mmlu task at a time
+          gpus=1
 
           # Create a shorter, valid job name
           # Remove invalid characters and truncate long names
