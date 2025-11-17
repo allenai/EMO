@@ -512,6 +512,7 @@ class Transformer(nn.Module):
         document_boundaries = []
         if is_moe_twolevel_router:
             eos_token_id = self.blocks["0"].feed_forward_moe.router.eos_token_id
+            breakpoint()
             matches = (input_ids == eos_token_id)
             # Get indices for each sequence in batch, output is (num_sequences, num_documents)
             for row in matches:
