@@ -10,8 +10,9 @@ PRUNE_DIR="${BASE_DIR}/prune"
 #MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 
 PARENT_MODELS=(
+    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
 #    "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995"
-    "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995"
+#    "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995"
 )
 
 FINETUNE_TASKS=(
@@ -36,47 +37,47 @@ FINETUNE_TASKS=(
     "task-boolq_rc_train_0shot_finetune-keepk32/step1260-hf"
     "task-boolq_rc_train_0shot_finetune-keepk32/step1578-hf"
 
-    "task-csqa_rc_train_0shot_finetune-keepk32/step0-hf"
-    "task-csqa_rc_train_0shot_finetune-keepk32/step327-hf"
-    "task-csqa_rc_train_0shot_finetune-keepk32/step654-hf"
-    "task-csqa_rc_train_0shot_finetune-keepk32/step981-hf"
-    "task-csqa_rc_train_0shot_finetune-keepk32/step1308-hf"
-    "task-csqa_rc_train_0shot_finetune-keepk32/step1638-hf"
-
-    "task-hellaswag_rc_train_0shot_finetune-keepk32/step0-hf"
-    "task-hellaswag_rc_train_0shot_finetune-keepk32/step1458-hf"
-    "task-hellaswag_rc_train_0shot_finetune-keepk32/step2916-hf"
-    "task-hellaswag_rc_train_0shot_finetune-keepk32/step4374-hf"
-    "task-hellaswag_rc_train_0shot_finetune-keepk32/step5832-hf"
-    "task-hellaswag_rc_train_0shot_finetune-keepk32/step7293-hf"
-
-    "task-openbookqa_rc_train_0shot_finetune-keepk32/step0-hf"
-    "task-openbookqa_rc_train_0shot_finetune-keepk32/step185-hf"
-    "task-openbookqa_rc_train_0shot_finetune-keepk32/step370-hf"
-    "task-openbookqa_rc_train_0shot_finetune-keepk32/step555-hf"
-    "task-openbookqa_rc_train_0shot_finetune-keepk32/step740-hf"
-    "task-openbookqa_rc_train_0shot_finetune-keepk32/step927-hf"
-
-    "task-piqa_rc_train_0shot_finetune-keepk32/step0-hf"
-    "task-piqa_rc_train_0shot_finetune-keepk32/step566-hf"
-    "task-piqa_rc_train_0shot_finetune-keepk32/step1132-hf"
-    "task-piqa_rc_train_0shot_finetune-keepk32/step1698-hf"
-    "task-piqa_rc_train_0shot_finetune-keepk32/step2264-hf"
-    "task-piqa_rc_train_0shot_finetune-keepk32/step2832-hf"
-
-    "task-socialiqa_rc_train_0shot_finetune-keepk32/step0-hf"
-    "task-socialiqa_rc_train_0shot_finetune-keepk32/step1215-hf"
-    "task-socialiqa_rc_train_0shot_finetune-keepk32/step2430-hf"
-    "task-socialiqa_rc_train_0shot_finetune-keepk32/step3645-hf"
-    "task-socialiqa_rc_train_0shot_finetune-keepk32/step4860-hf"
-    "task-socialiqa_rc_train_0shot_finetune-keepk32/step6075-hf"
-
-    "task-winogrande_rc_train_0shot_finetune-keepk32/step0-hf"
-    "task-winogrande_rc_train_0shot_finetune-keepk32/step1477-hf"
-    "task-winogrande_rc_train_0shot_finetune-keepk32/step2954-hf"
-    "task-winogrande_rc_train_0shot_finetune-keepk32/step4431-hf"
-    "task-winogrande_rc_train_0shot_finetune-keepk32/step5908-hf"
-    "task-winogrande_rc_train_0shot_finetune-keepk32/step7386-hf"
+#    "task-csqa_rc_train_0shot_finetune-keepk32/step0-hf"
+#    "task-csqa_rc_train_0shot_finetune-keepk32/step327-hf"
+#    "task-csqa_rc_train_0shot_finetune-keepk32/step654-hf"
+#    "task-csqa_rc_train_0shot_finetune-keepk32/step981-hf"
+#    "task-csqa_rc_train_0shot_finetune-keepk32/step1308-hf"
+#    "task-csqa_rc_train_0shot_finetune-keepk32/step1638-hf"
+#
+#    "task-hellaswag_rc_train_0shot_finetune-keepk32/step0-hf"
+#    "task-hellaswag_rc_train_0shot_finetune-keepk32/step1458-hf"
+#    "task-hellaswag_rc_train_0shot_finetune-keepk32/step2916-hf"
+#    "task-hellaswag_rc_train_0shot_finetune-keepk32/step4374-hf"
+#    "task-hellaswag_rc_train_0shot_finetune-keepk32/step5832-hf"
+#    "task-hellaswag_rc_train_0shot_finetune-keepk32/step7293-hf"
+#
+#    "task-openbookqa_rc_train_0shot_finetune-keepk32/step0-hf"
+#    "task-openbookqa_rc_train_0shot_finetune-keepk32/step185-hf"
+#    "task-openbookqa_rc_train_0shot_finetune-keepk32/step370-hf"
+#    "task-openbookqa_rc_train_0shot_finetune-keepk32/step555-hf"
+#    "task-openbookqa_rc_train_0shot_finetune-keepk32/step740-hf"
+#    "task-openbookqa_rc_train_0shot_finetune-keepk32/step927-hf"
+#
+#    "task-piqa_rc_train_0shot_finetune-keepk32/step0-hf"
+#    "task-piqa_rc_train_0shot_finetune-keepk32/step566-hf"
+#    "task-piqa_rc_train_0shot_finetune-keepk32/step1132-hf"
+#    "task-piqa_rc_train_0shot_finetune-keepk32/step1698-hf"
+#    "task-piqa_rc_train_0shot_finetune-keepk32/step2264-hf"
+#    "task-piqa_rc_train_0shot_finetune-keepk32/step2832-hf"
+#
+#    "task-socialiqa_rc_train_0shot_finetune-keepk32/step0-hf"
+#    "task-socialiqa_rc_train_0shot_finetune-keepk32/step1215-hf"
+#    "task-socialiqa_rc_train_0shot_finetune-keepk32/step2430-hf"
+#    "task-socialiqa_rc_train_0shot_finetune-keepk32/step3645-hf"
+#    "task-socialiqa_rc_train_0shot_finetune-keepk32/step4860-hf"
+#    "task-socialiqa_rc_train_0shot_finetune-keepk32/step6075-hf"
+#
+#    "task-winogrande_rc_train_0shot_finetune-keepk32/step0-hf"
+#    "task-winogrande_rc_train_0shot_finetune-keepk32/step1477-hf"
+#    "task-winogrande_rc_train_0shot_finetune-keepk32/step2954-hf"
+#    "task-winogrande_rc_train_0shot_finetune-keepk32/step4431-hf"
+#    "task-winogrande_rc_train_0shot_finetune-keepk32/step5908-hf"
+#    "task-winogrande_rc_train_0shot_finetune-keepk32/step7386-hf"
 
 )
 
