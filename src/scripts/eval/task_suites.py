@@ -20,17 +20,11 @@ def get_task_suite_configs():
     )
 
     # adding MMLU subjects
-    TASK_SUITE_CONFIGS["mmlu:mc_train::olmes"] = {
-        "tasks": [f"mmlu_{sub}:mc_train::olmes" for sub in MMLU_SUBJECTS],
-    }
     TASK_SUITE_CONFIGS["mmlu:mc_validation::olmes"] = {
         "tasks": [f"mmlu_{sub}:mc_validation::olmes" for sub in MMLU_SUBJECTS],
     }
     TASK_SUITE_CONFIGS["mmlu:mc_test::olmes"] = {
         "tasks": [f"mmlu_{sub}:mc_test::olmes" for sub in MMLU_SUBJECTS],
-    }
-    TASK_SUITE_CONFIGS["mmlu:rc_train::olmes"] = {
-        "tasks": [f"mmlu_{sub}:rc_train::olmes" for sub in MMLU_SUBJECTS],
     }
     TASK_SUITE_CONFIGS["mmlu:rc_validation::olmes"] = {
         "tasks": [f"mmlu_{sub}:rc_validation::olmes" for sub in MMLU_SUBJECTS],
@@ -41,22 +35,13 @@ def get_task_suite_configs():
     TASK_SUITE_CONFIGS["mmlu:rc_validation_0shot::olmes"] = {
         "tasks": [f"mmlu_{sub}:rc_validation_0shot::olmes" for sub in MMLU_SUBJECTS],
     }
-    TASK_SUITE_CONFIGS["mmlu:rc_test_0shot::olmes"] = {
-        "tasks": [f"mmlu_{sub}:rc_test_0shot::olmes" for sub in MMLU_SUBJECTS],
-    }
 
     # adding MMLU Pro
-    TASK_SUITE_CONFIGS["mmlu_pro:mc_train::olmes"] = {
-        "tasks": [f"mmlu_pro_{sub}:mc_train::olmes" for sub in MMLU_PRO_CATEGORIES],
-    }
     TASK_SUITE_CONFIGS["mmlu_pro:mc_validation::olmes"] = {
         "tasks": [f"mmlu_pro_{sub}:mc_validation::olmes" for sub in MMLU_PRO_CATEGORIES],
     }
     TASK_SUITE_CONFIGS["mmlu_pro:mc_test::olmes"] = {
         "tasks": [f"mmlu_pro_{sub}:mc_test::olmes" for sub in MMLU_PRO_CATEGORIES],
-    }
-    TASK_SUITE_CONFIGS["mmlu_pro:rc_train::olmes"] = {
-        "tasks": [f"mmlu_pro_{sub}:rc_train::olmes" for sub in MMLU_PRO_CATEGORIES],
     }
     TASK_SUITE_CONFIGS["mmlu_pro:rc_validation::olmes"] = {
         "tasks": [f"mmlu_pro_{sub}:rc_validation::olmes" for sub in MMLU_PRO_CATEGORIES],

@@ -61,6 +61,10 @@ def get_correct_training_data(eval_dataset_name, eval_folder):
 def extract_finetuning_examples(args_dict):
     print("yay!")
 
+    if not any(args_dict["task"]):
+        print("No tasks specified, exiting...")
+        return 0
+
     # we load the data here
     for eval_dataset_name in args_dict["task"]:
         print("evaluating dataset ", eval_dataset_name)

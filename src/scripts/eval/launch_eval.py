@@ -263,6 +263,9 @@ def launch_eval(args_dict: dict):
         logger.info(output)
     if listed_stuff:
         return 0
+    if not any(args_dict["task"]):
+        logger.info("No tasks specified, exiting...")
+        return 0
     if not args_dict["task"]:
         raise ValueError("No tasks specified!")
     model = args_dict["model"]

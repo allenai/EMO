@@ -37,12 +37,9 @@ def create_core_mmlu_tasks_withsplits():
     Note that the differences between train, validation, and test is declared in TASK_CONFIGS"""
     res = {}
     for sub in MMLU_SUBJECTS:
-        res[f"mmlu_{sub}:mc_train"] = create_mmlu_task(sub)
         res[f"mmlu_{sub}:mc_validation"] = create_mmlu_task(sub)
         res[f"mmlu_{sub}:mc_test"] = create_mmlu_task(sub)
-        res[f"mmlu_{sub}:rc_train"] = create_mmlu_task(sub, is_mc=False)
         res[f"mmlu_{sub}:rc_validation"] = create_mmlu_task(sub, is_mc=False)
-        res[f"mmlu_{sub}:rc_train_0shot"] = create_mmlu_task(sub, is_mc=False)
         res[f"mmlu_{sub}:rc_validation_0shot"] = create_mmlu_task(sub, is_mc=False)
         res[f"mmlu_{sub}:rc_test"] = create_mmlu_task(sub, is_mc=False)
     return res
@@ -52,10 +49,8 @@ def create_core_mmlu_pro_tasks_withsplits():
     Note that the differences between train, validation, and test is declared in TASK_CONFIGS"""
     res = {}
     for sub in MMLU_PRO_CATEGORIES:
-        res[f"mmlu_pro_{sub}:mc_train"] = create_mmlu_pro_task(sub)
         res[f"mmlu_pro_{sub}:mc_validation"] = create_mmlu_pro_task(sub)
         res[f"mmlu_pro_{sub}:mc_test"] = create_mmlu_pro_task(sub)
-        res[f"mmlu_pro_{sub}:rc_train"] = create_mmlu_pro_task(sub, is_mc=False)
         res[f"mmlu_pro_{sub}:rc_validation"] = create_mmlu_pro_task(sub, is_mc=False)
         res[f"mmlu_pro_{sub}:rc_test"] = create_mmlu_pro_task(sub, is_mc=False)
     return res
