@@ -47,7 +47,7 @@ TASK_GROUPS_LIST=(
 #  "high_school_biology|mmlu_high_school_biology:rc_test::olmes"
 #  "high_school_chemistry|mmlu_high_school_chemistry:rc_test::olmes"
 #  "high_school_computer_science|mmlu_high_school_computer_science:rc_test::olmes"
-  "high_school_european_history|mmlu_high_school_european_history:rc_test::olmes"
+#  "high_school_european_history|mmlu_high_school_european_history:rc_test::olmes"
 #  "high_school_geography|mmlu_high_school_geography:rc_test::olmes"
 #  "high_school_government_and_politics|mmlu_high_school_government_and_politics:rc_test::olmes"
 #  "high_school_macroeconomics|mmlu_high_school_macroeconomics:rc_test::olmes"
@@ -56,8 +56,8 @@ TASK_GROUPS_LIST=(
 #  "high_school_physics|mmlu_high_school_physics:rc_test::olmes"
 #  "high_school_psychology|mmlu_high_school_psychology:rc_test::olmes"
 #  "high_school_statistics|mmlu_high_school_statistics:rc_test::olmes"
-  "high_school_us_history|mmlu_high_school_us_history:rc_test::olmes"
-  "high_school_world_history|mmlu_high_school_world_history:rc_test::olmes"
+#  "high_school_us_history|mmlu_high_school_us_history:rc_test::olmes"
+#  "high_school_world_history|mmlu_high_school_world_history:rc_test::olmes"
 #  "human_aging|mmlu_human_aging:rc_test::olmes"
 #  "human_sexuality|mmlu_human_sexuality:rc_test::olmes"
 #  "international_law|mmlu_international_law:rc_test::olmes"
@@ -74,7 +74,7 @@ TASK_GROUPS_LIST=(
 #  "philosophy|mmlu_philosophy:rc_test::olmes"
 #  "prehistory|mmlu_prehistory:rc_test::olmes"
 #  "professional_accounting|mmlu_professional_accounting:rc_test::olmes"
-#  "professional_law|mmlu_professional_law:rc_test::olmes"
+  "professional_law|mmlu_professional_law:rc_test::olmes"
 #  "professional_medicine|mmlu_professional_medicine:rc_test::olmes"
 #  "professional_psychology|mmlu_professional_psychology:rc_test::olmes"
 #  "public_relations|mmlu_public_relations:rc_test::olmes"
@@ -118,7 +118,7 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
           TASK="${entry#*|}"            # text after '|'
 
           # Batch size adjustment (matching original script)
-          if [[ $TASK == *"world_history"* || $TASK == *"us_history"* || $TASK == *"european_history"*  ]]; then
+          if [[ $TASK == *"world_history"* || $TASK == *"us_history"* || $TASK == *"european_history"* || $TASK == *"professional_law"* ]]; then
               batch_size=$((BATCH_SIZE / 4))
           else
               batch_size=$BATCH_SIZE
