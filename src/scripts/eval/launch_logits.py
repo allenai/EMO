@@ -72,6 +72,17 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
 
     return prompts, correct
 
+def resolve_tasks(task_list):
+    from src.scripts.eval.task_suites import get_task_suite_configs
+    TASK_SUITE_CONFIGS = get_task_suite_configs()
+
+    resolved_tasks = []
+    for task in task_list:
+        if task in TASK_SUITE_CONFIGS:
+            resolved_tasks.extend(TASK_SUITE_CONFIGS[task]["tasks"])
+        else:
+            resolved_tasks.append(task)
+    return resolved_tasks
 
 def launch_logits(args_dict):
     print("yay!")
@@ -79,6 +90,9 @@ def launch_logits(args_dict):
     # load the model
     tokenizer = AutoTokenizer.from_pretrained(args_dict["model"])
     model = AutoModelForCausalLM.from_pretrained(args_dict["model"], device_map="auto", torch_dtype="auto")
+
+    # resolve task suites if needed
+    args_dict["task"] = resolve_tasks(args_dict["task"])
 
     # we load the data here
     for eval_dataset_name in args_dict["task"]:
