@@ -219,6 +219,11 @@ class MoERouter(nn.Module):
         self._unique_experts_sum = 0.0
         self._num_batches_tracked = 0
 
+        # add metrics to keep track of router entropy
+        self._router_dist_entropy = 0.0
+        # this is for the twolevel sampling router only
+        self._samplingrouter_dist_entropy = 0.0
+
     def reset_parameters(self):
         self._batch_size_per_expert = hide_from_torch(
             torch.zeros(self.num_experts, device=self.device)
@@ -418,6 +423,18 @@ class MoERouter(nn.Module):
                 ReduceType.mean,
             )
 
+        if self._router_dist_entropy != 0.0:
+            out["router distribution entropy"] = (
+                torch.tensor(self._router_dist_entropy, device=self.device),
+                ReduceType.mean,
+            )
+
+        if self._samplingrouter_dist_entropy != 0.0:
+            out["sampling router distribution entropy"] = (
+                torch.tensor(self._samplingrouter_dist_entropy, device=self.device),
+                ReduceType.mean,
+            )
+
         if reset:
             self.reset_metrics()
 
@@ -433,6 +450,10 @@ class MoERouter(nn.Module):
 
         self._unique_experts_sum = 0.0
         self._num_batches_tracked = 0
+
+        self._router_dist_entropy = 0.0
+
+        self._samplingrouter_dist_entropy = 0.0
 
     def forward(
         self,
@@ -486,8 +507,9 @@ class MoERouter(nn.Module):
             # shape: (num_experts,)
             batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
 
-            # prepare for unique experts metric
+            # prepare for custom metric
             if self.training:
+                # prepare unique experts metric
                 if padding_mask is not None:
                     # log that we only consider non-padded tokens for unique experts metric. padding_mask is 1 for non-padded tokens
                     padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
@@ -501,6 +523,20 @@ class MoERouter(nn.Module):
 
                 self._unique_experts_sum += num_unique_experts
                 self._num_batches_tracked += 1
+
+                # Compute router distribution entropy metric
+                # calculate entropy of the router distribution over experts
+                if padding_mask is not None:
+                    # only consider non-padded tokens
+                    padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
+                    valid_scores = scores.masked_select(padding_mask_expanded).view(-1, self.num_experts)
+                else:
+                    valid_scores = scores.view(-1, self.num_experts)
+                # get entropy per token
+                token_entropies = -torch.sum(valid_scores * torch.log(valid_scores + 1e-10), dim=-1)
+                # average entropy over valid tokens
+                avg_entropy = token_entropies.mean().item()
+                self._router_dist_entropy += avg_entropy
 
         # Maybe compute auxiliary losses and accumulate metrics.
         aux_loss: Optional[torch.Tensor] = None

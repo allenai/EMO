@@ -97,6 +97,7 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
             document_boundaries_cpu.append(bc)
 
         breakpoint()
+        tot_doc_entropy = []
         for seq_idx in range(x.size(0)):
             start = 0
             document_boundary = document_boundaries_cpu[seq_idx]
@@ -107,6 +108,13 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
                 sequence_logits = logits[seq_idx, start:end, :]  # shape: (doc_len, num_experts)
                 # calculate the softmax over the experts
                 expert_probs = F.softmax(sequence_logits, dim=-1)  # shape: (doc_len, num_experts)
+
+                # get the entropy over experts per token
+                token_entropies = -torch.sum(expert_probs * torch.log(expert_probs + 1e-10), dim=-1)  # shape: (doc_len,)
+                # average entropy over the document
+                avg_entropy = token_entropies.mean().item()
+                tot_doc_entropy.append(avg_entropy)
+
                 # take the sum across the document
                 document_expert_probs = expert_probs.sum(dim=0)  # shape: (num_experts,)
                 # sample to select the experts for this document
@@ -114,6 +122,11 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
                 # we now only keep these experts for this document, set the rest in scores_mask to True
                 scores_mask[seq_idx, start:end, experts_to_keep] = False
                 start = end
+
+        # log the average document entropy
+        avg_doc_entropy = sum(tot_doc_entropy) / len(tot_doc_entropy) if tot_doc_entropy else 0.0
+        logging.info(f"Average document entropy over experts: {avg_doc_entropy}")
+        self._samplingrouter_dist_entropy += avg_doc_entropy
 
         # logits.masked_fill_(logits_mask, float('-inf'))
 
@@ -153,7 +166,9 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
             # shape: (num_experts,)
             tot_batch_size_per_expert = tot_batched_batch_size_per_expert.sum(dim=0)
 
+            # prepare for custom metric
             if self.training:
+                # prepare unique experts metric
                 if padding_mask is not None:
                     padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
                     valid_expert_indices = expert_indices.masked_select(padding_mask_expanded)
@@ -166,6 +181,21 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
 
                 self._unique_experts_sum += num_unique_experts
                 self._num_batches_tracked += 1
+
+                breakpoint()
+                # Compute router distribution entropy metric
+                # calculate entropy of the router distribution over experts
+                if padding_mask is not None:
+                    # only consider non-padded tokens
+                    padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
+                    valid_scores = scores.masked_select(padding_mask_expanded).view(-1, self.num_experts)
+                else:
+                    valid_scores = scores.view(-1, self.num_experts)
+                # get entropy per token
+                token_entropies = -torch.sum(valid_scores * torch.log(valid_scores + 1e-10), dim=-1)
+                # average entropy over valid tokens
+                avg_entropy = token_entropies.mean().item()
+                self._router_dist_entropy += avg_entropy
 
         # Maybe compute auxiliary losses and accumulate metrics.
         aux_loss: Optional[torch.Tensor] = None
