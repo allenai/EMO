@@ -124,7 +124,7 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
 
         # log the average document entropy
         avg_doc_entropy = sum(tot_doc_entropy) / len(tot_doc_entropy) if tot_doc_entropy else 0.0
-        logging.info(f"Average document entropy over experts: {avg_doc_entropy}")
+        # logging.info(f"Average document entropy over experts: {avg_doc_entropy}")
         self._router_documentlevel_expert_entropy += avg_doc_entropy
 
         # logits.masked_fill_(logits_mask, float('-inf'))
