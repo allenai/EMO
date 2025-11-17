@@ -33,7 +33,7 @@ def get_task_suite_configs():
         "tasks": [f"mmlu_{sub}:rc_test::olmes" for sub in MMLU_SUBJECTS],
     }
     TASK_SUITE_CONFIGS["mmlu:rc_validation_0shot::olmes"] = {
-        "tasks": [f"mmlu_{sub}:rc_validation_0shot::olmes" for sub in MMLU_SUBJECTS[:2]],
+        "tasks": [f"mmlu_{sub}:rc_validation_0shot::olmes" for sub in MMLU_SUBJECTS],
     }
 
     # adding MMLU Pro

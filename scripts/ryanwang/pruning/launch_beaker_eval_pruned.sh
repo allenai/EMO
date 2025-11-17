@@ -104,8 +104,7 @@ TASK_GROUPS_LIST=(
   "winogrande|winogrande:rc_test::olmes"
 
 #   MMLU
-#  "mmlu_mc_test|mmlu:mc_test::olmes"
-#  "mmlu_rc_test|mmlu:rc_test::olmes"
+  "mmlu_rc_test|mmlu:rc_test::olmes"
 
 #   Gen5 tasks
 #  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes drop::olmes"
