@@ -138,7 +138,8 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
             raise NotImplementedError(self.gating_function)
 
         # mask out the experts not selected for each document. we mask scores instead of logits to allow z-loss computation
-        scores.masked_fill_(scores_mask, 0.0)
+        scores = scores.masked_fill(scores_mask, 0.0)
+        # scores.masked_fill_(scores_mask, 0.0)
 
         # shape: (batch_size, seq_len, top_k)
         expert_weights, expert_indices = self.get_top_k(scores)
