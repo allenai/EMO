@@ -76,6 +76,8 @@ for train_task_name in "${train_task_names[@]}"; do
     activation_file="${BASE_OUTPUT_DIR}/prune/${model_name}_${step}-hf/${validation_task_prefix}-router.jsonl"
 
     runname="${model_name}_${step}_finetune_${task_prefix}_keepk${prune_keep_k}"
+    # limit runname to 128 characters
+    runname=${runname:0:128}
     out_dir="${task_prefix}_finetune-keepk${prune_keep_k}"
 
     # for debugging
