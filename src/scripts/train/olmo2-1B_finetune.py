@@ -25,7 +25,7 @@ from olmo_core.data.mixes import DataMix
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_rank
 from olmo_core.nn.transformer import TransformerConfig
-from olmo_core.optim import CosWithWarmup, OptimGroupOverride, LinearWithWarmup
+from olmo_core.optim import CosWithWarmup, OptimGroupOverride, LinearWithWarmup, AdamWConfig
 from olmo_core.train import (
     TrainerConfig,
     prepare_training_environment,
@@ -51,13 +51,9 @@ from olmo_core.utils import seed_all
 
 log = logging.getLogger(__name__)
 
-DATA_ROOT = "/weka/oe-training-default/ai2-llm"
-
-C4_VALIDATION_PATH = ["/weka/oe-training-default/ai2-llm/examples/c4-en/gpt2/c4-validation.00000-00008.npy"]
 
 SEQUENCE_LENGTH = 4096
 GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
-# GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
 
 # docs: start-define-config
 @dataclass
@@ -103,8 +99,7 @@ def train(opts, config: ExperimentConfig):
     if total_batches is None:
         raise ValueError("Cannot determine total batches from dataset")
     save_interval = max(1, total_batches // opts.num_checkpoints)
-    log.info(
-        f"Total batches: {total_batches}, Total checkpoints: {opts.num_checkpoints}, Save interval: {save_interval}")
+    log.info(f"Total batches: {total_batches}, Total checkpoints: {opts.num_checkpoints}, Save interval: {save_interval}")
 
     # Update checkpointer callback with new save interval
     cast(
@@ -149,8 +144,6 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
     # docs: end-model-config
 
-    log.info(f"Using data root: {DATA_ROOT}")
-
     dataset_config = NumpyPaddedFSLDatasetConfig(
         paths=[],  # to be filled in by the bash script
         # label_mask_paths=[], # to be filled in by the bash script
@@ -180,13 +173,14 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     train_module_config = TransformerTrainModuleConfig(
         rank_microbatch_size=2 * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         max_sequence_length=SEQUENCE_LENGTH,
-        optim=SkipStepAdamWConfig(
+        optim=AdamWConfig(
             lr=5e-5,
             weight_decay=0,
             betas=(0.9, 0.999),
             group_overrides=[
                 OptimGroupOverride(params=["embeddings.weight"], opts=dict(weight_decay=0.0))
             ],
+            fused=True,
         ),
         compile_model=True,
         dp_config=TransformerDataParallelConfig(
