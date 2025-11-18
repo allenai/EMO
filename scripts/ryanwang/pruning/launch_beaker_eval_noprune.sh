@@ -15,6 +15,7 @@ PARENT_MODELS=(
 
 #postfix="-keepk8"
 #postfix="-keepk32"
+#postfix="_random-keepk32
 postfix=""
 
 FINETUNE_TASKS=(
