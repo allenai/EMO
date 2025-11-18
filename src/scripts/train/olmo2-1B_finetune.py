@@ -25,7 +25,7 @@ from olmo_core.data.mixes import DataMix
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_rank
 from olmo_core.nn.transformer import TransformerConfig
-from olmo_core.optim import CosWithWarmup, OptimGroupOverride, SkipStepAdamWConfig
+from olmo_core.optim import CosWithWarmup, OptimGroupOverride, LinearWithWarmup
 from olmo_core.train import (
     TrainerConfig,
     prepare_training_environment,
@@ -56,7 +56,8 @@ DATA_ROOT = "/weka/oe-training-default/ai2-llm"
 C4_VALIDATION_PATH = ["/weka/oe-training-default/ai2-llm/examples/c4-en/gpt2/c4-validation.00000-00008.npy"]
 
 SEQUENCE_LENGTH = 4096
-GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
+GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
+# GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
 
 # docs: start-define-config
 @dataclass
@@ -83,7 +84,7 @@ class ExperimentConfig(Config):
     # docs: end-define-config
 
 
-def train(config: ExperimentConfig):
+def train(opts, config: ExperimentConfig):
     if get_rank() == 0:
         rich.print(config)
 
@@ -96,6 +97,21 @@ def train(config: ExperimentConfig):
     train_module = config.train_module.build(model)
     dataset = config.dataset.build()
     data_loader = config.data_loader.build(dataset, dp_process_group=train_module.dp_process_group)
+
+    assert config.trainer.max_duration.unit == "epochs", "we assume we train using epochs to calculate checkpoints"
+    total_batches = data_loader.total_batches * config.trainer.max_duration.value
+    if total_batches is None:
+        raise ValueError("Cannot determine total batches from dataset")
+    save_interval = max(1, total_batches // opts.num_checkpoints)
+    log.info(
+        f"Total batches: {total_batches}, Total checkpoints: {opts.num_checkpoints}, Save interval: {save_interval}")
+
+    # Update checkpointer callback with new save interval
+    cast(
+        CheckpointerCallback,
+        config.trainer.callbacks["checkpointer"],
+    ).save_interval = save_interval
+
     trainer = config.trainer.build(train_module, data_loader)
     # docs: end-build-components
 
@@ -135,16 +151,25 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
     log.info(f"Using data root: {DATA_ROOT}")
 
-    dataset_config = NumpyFSLDatasetConfig.from_data_mix(
-        DataMix.OLMo_mix_0625,
+    dataset_config = NumpyPaddedFSLDatasetConfig(
+        paths=[],  # to be filled in by the bash script
+        # label_mask_paths=[], # to be filled in by the bash script
         tokenizer=tokenizer_config,
-        mix_base_dir=DATA_ROOT,
         sequence_length=SEQUENCE_LENGTH,
-        max_target_sequence_length=max(8192, SEQUENCE_LENGTH),
         work_dir=work_dir,
-        generate_doc_lengths=False,
         instance_filter_config=None,
     )
+
+    # dataset_config = NumpyFSLDatasetConfig.from_data_mix(
+    #     DataMix.OLMo_mix_0625,
+    #     tokenizer=tokenizer_config,
+    #     mix_base_dir=DATA_ROOT,
+    #     sequence_length=SEQUENCE_LENGTH,
+    #     max_target_sequence_length=max(8192, SEQUENCE_LENGTH),
+    #     work_dir=work_dir,
+    #     generate_doc_lengths=False,
+    #     instance_filter_config=None,
+    # )
 
     data_loader_config = NumpyDataLoaderConfig(
         global_batch_size=GLOBAL_BATCH_SIZE,  # NOTE: this is specified in tokens, not instances
@@ -153,12 +178,12 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     train_module_config = TransformerTrainModuleConfig(
-        rank_microbatch_size=4 * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
+        rank_microbatch_size=2 * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         max_sequence_length=SEQUENCE_LENGTH,
         optim=SkipStepAdamWConfig(
-            lr=4e-4,
-            weight_decay=0.033,
-            betas=(0.9, 0.95),
+            lr=5e-5,
+            weight_decay=0,
+            betas=(0.9, 0.999),
             group_overrides=[
                 OptimGroupOverride(params=["embeddings.weight"], opts=dict(weight_decay=0.0))
             ],
@@ -172,7 +197,9 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         ),
         z_loss_multiplier=1e-5,
         max_grad_norm=1.0,
-        scheduler=CosWithWarmup(warmup_steps=2000),
+        scheduler=LinearWithWarmup(
+            warmup_fraction=0.1,
+        ),
     )
 
     trainer_config = (
@@ -186,9 +213,9 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback(
             "checkpointer",
             CheckpointerCallback(
-                save_interval=5000,
-                ephemeral_save_interval=100,
+                save_interval=100,
                 save_async=True,
+                pre_train_checkpoint=True,
             ),
         )
         .with_callback(
@@ -227,6 +254,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         data_loader=data_loader_config,
         train_module=train_module_config,
         trainer=trainer_config,
+        load_path=opts.load_path,
     )
 
     # Apply overrides.
@@ -262,6 +290,11 @@ def parser_args():
         action="store_true",
         help="""Print the config and exit.""",
     )
+    parser.add_argument(
+        "--load_path",
+        type=str,
+        help="Path to load checkpoint from if no checkpoint is found in the save folder.",
+    )
     opts, overrides = parser.parse_known_args()
     return opts, overrides
 
@@ -277,7 +310,7 @@ def main():
 
     prepare_training_environment()
     try:
-        train(config)
+        train(opts, config)
     finally:
         teardown_training_environment()
 
