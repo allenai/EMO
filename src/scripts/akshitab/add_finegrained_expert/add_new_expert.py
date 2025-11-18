@@ -20,8 +20,31 @@ from olmo_core.distributed.checkpoint import (
     save_model_and_optim_state,
 )
 from olmo_core.nn.transformer import TransformerConfig
+from olmo_core.nn.transformer.init import InitMethod
 
 logger = logging.getLogger(__name__)
+
+
+class AddExpertInitMethod:
+    RANDOM = "random"
+    """
+    Initialize new expert with random weights.
+    """
+
+    AVERAGE = "average"
+    """
+    Initialize new expert with average of existing experts.
+    """
+
+    ZERO = "zero"
+    """
+    Initialize new expert with zeros.
+    """
+
+    SIMILAR = "similar"
+    """
+    Initialize new expert with weights similar to existing experts.
+    """
 
 
 def get_model_config(checkpoint_path: str):
@@ -55,19 +78,19 @@ def save_checkpoint(config: dict, model: torch.nn.Module, save_path: str):
     logger.info(f"Saved new model weights to {model_weights_path}")
 
 
-def copy_param_with_resize(source_param, target_param, num_experts: int):
+def copy_param_with_resize(source_param, target_param, num_experts: int, init_method: str = AddExpertInitMethod.ZERO):
     """
     Copy parameters from source to target, handling two cases:
 
-    Case 1: Multi-block tensors
+    Case 1: Multi-block tensors (expert weights)
         source_param: (num_experts * b, c)
         target_param: ((num_experts + 1) * b, c)
 
-    Case 2: Flat tensors that should be viewed as matrices
+    Case 2: Flat tensors that should be viewed as matrices (router weights)
         source_param: (num_experts * c,)
         target_param: ((num_experts + 1) * c,)
     """
-    # Check if we're dealing with flat tensors (1D) - Case 2
+    # Router weights
     if len(source_param.shape) == 1:
         source_len = source_param.shape[0]
         target_len = target_param.shape[0]
@@ -88,10 +111,29 @@ def copy_param_with_resize(source_param, target_param, num_experts: int):
         # Reshape flat tensors to matrices
         source_matrix = source_param.view(num_experts, c)
 
-        # Create a new tensor for target
-        target_new = torch.zeros(
-            (num_experts + 1) * c, device=target_param.device, dtype=target_param.dtype
-        )
+        if init_method == AddExpertInitMethod.ZERO:
+            # Create a new tensor for target
+            target_new = torch.zeros(
+                (num_experts + 1) * c, device=target_param.device, dtype=target_param.dtype
+            )
+        elif init_method == AddExpertInitMethod.RANDOM:
+            # Do nothing, the new_model was initialized randomly already
+            target_new = target_param.view(num_experts+1, c).clone()
+        elif init_method == AddExpertInitMethod.AVERAGE:
+            # Create a new tensor for target
+            target_new = torch.empty(
+                (num_experts + 1) * c, device=target_param.device, dtype=target_param.dtype
+            )
+            # Compute average of existing experts
+            avg_expert = source_matrix.mean(dim=0)
+            # Copy average to new expert position
+            with torch.no_grad():
+                target_new.view(num_experts + 1, c)[-1, :].copy_(avg_expert)
+        elif init_method == AddExpertInitMethod.SIMILAR:
+            print("Similar initialization not implemented yet.")
+            raise NotImplementedError("Similar initialization not implemented yet.")
+        else:
+            raise ValueError(f"Unknown init method: {init_method}")
         target_matrix = target_new.view(num_experts + 1, c)
 
         # Copy data
@@ -101,7 +143,7 @@ def copy_param_with_resize(source_param, target_param, num_experts: int):
         with torch.no_grad():
             target_param.copy_(target_new)
 
-    # Case 1: 2D tensors (multi-block)
+    # Expert weights
     else:
         source_rows, columns = source_param.shape
         target_rows, target_columns = target_param.shape
@@ -130,9 +172,28 @@ def copy_param_with_resize(source_param, target_param, num_experts: int):
 
         # Create new tensor
         a_new = num_experts + 1
-        target_new = torch.zeros(
-            a_new, b, columns, device=target_param.device, dtype=target_param.dtype
-        )
+
+        if init_method == AddExpertInitMethod.ZERO:
+            target_new = torch.zeros(
+                a_new, b, columns, device=target_param.device, dtype=target_param.dtype
+            )
+        elif init_method == AddExpertInitMethod.RANDOM:
+            # Do nothing, the new_model was initialized randomly already
+            target_new = target_param.view(a_new, b, columns).clone()
+        elif init_method == AddExpertInitMethod.AVERAGE:
+            target_new = torch.empty(
+                a_new, b, columns, device=target_param.device, dtype=target_param.dtype
+            )
+            # Compute average of existing experts
+            avg_expert = source_reshaped.mean(dim=0)
+            # Copy average to new expert position
+            with torch.no_grad():
+                target_new[-1, :, :].copy_(avg_expert)
+        elif init_method == AddExpertInitMethod.SIMILAR:
+            print("Similar initialization not implemented yet.")
+            raise NotImplementedError("Similar initialization not implemented yet.")
+        else:
+            raise ValueError(f"Unknown init method: {init_method}")
 
         # Copy data
         target_new[:num_experts, :, :] = source_reshaped
@@ -147,12 +208,13 @@ def copy_param_with_resize(source_param, target_param, num_experts: int):
     return target_param
 
 
-def add_expert(checkpoint_path: str, save_path: Optional[str] = None):
+def add_expert(checkpoint_path: str, save_path: Optional[str] = None, init_method: Optional[str] = None):
     # Load model config
     config_path = os.path.join(checkpoint_path, "config.json")
     logger.info(f"Loading model config from {config_path}")
     with open(config_path, "r") as f:
         config = json.load(f)
+
     model_config = TransformerConfig.from_dict(config["model"])
     logger.info(f"Model config {model_config}")
 
@@ -168,6 +230,8 @@ def add_expert(checkpoint_path: str, save_path: Optional[str] = None):
     new_config.block.feed_forward_moe.num_experts += 1
     new_model = new_config.build(init_device="cpu")
 
+    new_model.init_weights() # Initialized with random init
+
     num_experts = model_config.block.feed_forward_moe.num_experts
 
     # Copy weights from old model to new model
@@ -180,13 +244,25 @@ def add_expert(checkpoint_path: str, save_path: Optional[str] = None):
                 # assert "router" in name, f"Shape mismatch for parameter {name}"
                 if "router" in name or "experts" in name:
                     copy_param_with_resize(param, new_param, num_experts)
-                else:
-                    logger.warning(
-                        f"Shape mismatch for parameter {name}, but not a router or expert parameter. Skipping."
-                    )
+                    if init_method == AddExpertInitMethod.AVERAGE:
+                        if len(param.shape) == 2:
+                            # Multi-block tensor
+                            b = param.shape[0] // num_experts
+                            columns = param.shape[1]
+                            param_reshaped = param.view(num_experts, b, columns)
+                            avg_expert = param_reshaped.mean(dim=0)
+                            with torch.no_grad():
+                                new_param.data[-b:, :].copy_(avg_expert)
+                        elif len(param.shape) == 1:
+                            # Flat tensor
+                            c = param.shape[0] // num_experts
+                            param_reshaped = param.view(num_experts, c)
+                            avg_expert = param_reshaped.mean(dim=0)
+                            with torch.no_grad():
+                                new_param.data[-c:].copy_(avg_expert)
+
         else:
             logger.debug(f"Parameter {name} not found in new model, not updating weights")
-            # TODO: how should expert weights for new expert be initialized?
 
     logger.info("Weights copied to new model successfully")
 
@@ -201,10 +277,13 @@ def add_expert(checkpoint_path: str, save_path: Optional[str] = None):
 def parse_args():
     parser = argparse.ArgumentParser(description="Add new expert to MoE model")
     parser.add_argument(
-        "--checkpoint_path", type=str, required=True, help="Path to existing MoE checkpoint"
+        "-c", "--checkpoint_path", type=str, required=True, help="Path to existing MoE checkpoint"
     )
     parser.add_argument(
-        "--save_path", type=str, required=True, help="Path to save new MoE checkpoint"
+        "-o", "--save_path", type=str, required=True, help="Path to save new MoE checkpoint"
+    )
+    parser.add_argument(
+        "--init_method", type=str, default=AddExpertInitMethod.RANDOM, help="Initialization method for new expert"
     )
     return parser.parse_args()
 
