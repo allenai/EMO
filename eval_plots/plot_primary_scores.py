@@ -8,25 +8,29 @@ import json
 from pathlib import Path
 from typing import Dict, Iterable, List
 
+import colorsys
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import pandas as pd
 import seaborn as sns
 
 # Configuration -----------------------------------------------------------------
 
-# MAIN_MODEL="twolevel-32_1b7b_128experts_olmoe-mix_130B_1110_step30995"
-# MAIN_MODEL_GROUP_LABEL="twolevel keepk32"
-# MAIN_MODEL_GROUP_LABEL_RANDOM="twolevel keepk32 random"
-# MAIN_MODEL_BASELINE_LABEL="twolevel full"
-# MAIN_MODEL_FAMILY="twolevel"
+MAIN_MODEL="twolevel-32_1b7b_128experts_olmoe-mix_130B_1110_step30995"
+MAIN_MODEL_GROUP_LABEL="twolevel keepk32"
+MAIN_MODEL_GROUP_LABEL_RANDOM="twolevel keepk32 random"
+MAIN_MODEL_GROUP_LABEL_K8 = "N/A"
+MAIN_MODEL_GROUP_LABEL_K8_RANDOM = "N/A"
+MAIN_MODEL_BASELINE_LABEL="twolevel full"
+MAIN_MODEL_FAMILY="twolevel"
 
-MAIN_MODEL = "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115_step30995"
-MAIN_MODEL_GROUP_LABEL = "twolevelbatchlb keepk32"
-MAIN_MODEL_GROUP_LABEL_RANDOM = "twolevelbatchlb keepk32 random"
-MAIN_MODEL_GROUP_LABEL_K8 = "twolevelbatchlb keepk8"
-MAIN_MODEL_GROUP_LABEL_K8_RANDOM = "twolevelbatchlb keepk8 random"
-MAIN_MODEL_BASELINE_LABEL = "twolevelbatchlb full"
-MAIN_MODEL_FAMILY = "twolevelbatchlb"
+# MAIN_MODEL = "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115_step30995"
+# MAIN_MODEL_GROUP_LABEL = "twolevelbatchlb keepk32"
+# MAIN_MODEL_GROUP_LABEL_RANDOM = "twolevelbatchlb keepk32 random"
+# MAIN_MODEL_GROUP_LABEL_K8 = "twolevelbatchlb keepk8"
+# MAIN_MODEL_GROUP_LABEL_K8_RANDOM = "twolevelbatchlb keepk8 random"
+# MAIN_MODEL_BASELINE_LABEL = "twolevelbatchlb full"
+# MAIN_MODEL_FAMILY = "twolevelbatchlb"
 
 # Task-specific configuration.
 TASKS: List[str] = [
@@ -310,6 +314,24 @@ def load_baseline_scores(
     return scores
 
 
+def adjust_color_brightness(hex_color: str, brightness_factor: float) -> str:
+    """Adjust the brightness of a hex color.
+    
+    Args:
+        hex_color: Hex color string (e.g., "#988ED5")
+        brightness_factor: Factor to adjust brightness (>1.0 = lighter, <1.0 = darker)
+    
+    Returns:
+        Adjusted hex color string
+    """
+    rgb = mcolors.hex2color(hex_color)
+    hls = colorsys.rgb_to_hls(*rgb)
+    # Adjust lightness while keeping hue and saturation
+    new_lightness = max(0.0, min(1.0, hls[1] * brightness_factor))
+    new_rgb = colorsys.hls_to_rgb(hls[0], new_lightness, hls[2])
+    return mcolors.rgb2hex(new_rgb)
+
+
 def plot_primary_scores(
         df: pd.DataFrame,
         output: Path,
@@ -325,9 +347,39 @@ def plot_primary_scores(
     unique_families = sorted(
         set(GROUP_FAMILY.values()) | set(BASELINE_FAMILY.values())
     )
+    # Custom color mapping to ensure good distinction between families
+    # Using distinct colors: dense (red), moe (blue), twolevelbatchlb (purple)
+    custom_colors = {
+        "dense": "#E24A33",  # Red/Orange
+        "moe": "#348ABD",     # Blue
+        "twolevelbatchlb": "#988ED5",  # Purple
+    }
+    # Fallback to colorblind palette for any families not in custom mapping
     base_palette = sns.color_palette("colorblind", n_colors=len(unique_families))
-    family_colors = {family: base_palette[idx] for idx, family in enumerate(unique_families)}
-    group_palette = {group: family_colors[GROUP_FAMILY[group]] for group in df["model_group"].unique()}
+    family_colors = {
+        family: custom_colors.get(family, base_palette[idx])
+        for idx, family in enumerate(unique_families)
+    }
+    
+    # Create color variations for each model group within families
+    # This helps distinguish lines when they cross, while keeping family grouping clear
+    group_palette = {}
+    for group in df["model_group"].unique():
+        family = GROUP_FAMILY[group]
+        base_color = family_colors[family]
+        
+        # Create variations based on group characteristics
+        is_random = "random" in group.lower()
+        is_keepk8 = "keepk8" in group.lower()
+        
+        # Adjust brightness: keepk8 is slightly darker, random is slightly lighter
+        brightness = 1.0
+        if is_keepk8:
+            brightness *= 0.85  # Darker for keepk8
+        if is_random:
+            brightness *= 1.15  # Lighter for random
+        
+        group_palette[group] = adjust_color_brightness(base_color, brightness)
 
     ax = plt.gca()
 
@@ -379,11 +431,11 @@ def plot_primary_scores(
         )
         line.set_label(label)
 
-    ax.legend(title="Model Group", loc="best")
+    ax.legend(title="Model Group", loc="center left", bbox_to_anchor=(1.02, 0.5))
 
     plt.tight_layout()
     output.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output)
+    plt.savefig(output, bbox_inches='tight')
     print(f"[INFO] Saved plot to {output}")
 
     if show:
