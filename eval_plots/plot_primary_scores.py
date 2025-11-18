@@ -14,6 +14,18 @@ import seaborn as sns
 
 # Configuration -----------------------------------------------------------------
 
+# MAIN_MODEL="twolevel-32_1b7b_128experts_olmoe-mix_130B_1110_step30995"
+# MAIN_MODEL_GROUP_LABEL="twolevel keepk32"
+# MAIN_MODEL_GROUP_LABEL_RANDOM="twolevel keepk32 random"
+# MAIN_MODEL_BASELINE_LABEL="twolevel full"
+# MAIN_MODEL_FAMILY="twolevel"
+
+MAIN_MODEL = "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115_step30995"
+MAIN_MODEL_GROUP_LABEL = "twolevelbatchlb keepk32"
+MAIN_MODEL_GROUP_LABEL_RANDOM = "twolevelbatchlb keepk32 random"
+MAIN_MODEL_BASELINE_LABEL = "twolevelbatchlb full"
+MAIN_MODEL_FAMILY = "twolevelbatchlb"
+
 # Task-specific configuration.
 TASKS: List[str] = [
     "arc_challenge:rc_test",
@@ -47,9 +59,17 @@ MODEL_GROUPS: Dict[str, str] = {
         "moe_1b7b_128experts_olmoe-mix_130B_1103_step30995_"
         "task-{task_core}_rc_train_0shot_finetune-keepk32_step{step}-hf"
     ),
-    "twolevel keepk32": (
-        "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110_step30995_"
+    "moe keepk32 random": (
+        "moe_1b7b_128experts_olmoe-mix_130B_1103_step30995_"
+        "task-{task_core}_rc_train_0shot_finetune_random-keepk32_step{step}-hf"
+    ),
+    MAIN_MODEL_GROUP_LABEL: (
+        f"{MAIN_MODEL}_"
         "task-{task_core}_rc_train_0shot_finetune-keepk32_step{step}-hf"
+    ),
+    MAIN_MODEL_GROUP_LABEL_RANDOM: (
+        f"{MAIN_MODEL}_"
+        "task-{task_core}_rc_train_0shot_finetune_random-keepk32_step{step}-hf"
     ),
 }
 
@@ -57,29 +77,21 @@ BASELINE_MODELS: Dict[str, str] = {
     "moe full": (
         "moe_1b7b_128experts_olmoe-mix_130B_1103_step30995-hf"
     ),
-    "twolevel full": (
-        "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110_step30995-hf"
+    MAIN_MODEL_BASELINE_LABEL: (
+        f"{MAIN_MODEL}-hf"
     ),
 }
 
 GROUP_FAMILY: Dict[str, str] = {
     "moe keepk32": "moe",
-    "twolevel keepk32": "twolevel",
+    MAIN_MODEL_GROUP_LABEL: MAIN_MODEL_FAMILY,
+    "moe keepk32 random": "moe",
+    MAIN_MODEL_GROUP_LABEL_RANDOM: MAIN_MODEL_FAMILY,
 }
 
 BASELINE_FAMILY: Dict[str, str] = {
     "moe full": "moe",
-    "twolevel full": "twolevel",
-}
-
-GROUP_FAMILY: Dict[str, str] = {
-    "moe keepk32": "moe",
-    "twolevel keepk32": "twolevel",
-}
-
-BASELINE_FAMILY: Dict[str, str] = {
-    "moe full": "moe",
-    "twolevel full": "twolevel",
+    MAIN_MODEL_BASELINE_LABEL: MAIN_MODEL_FAMILY,
 }
 
 
@@ -120,12 +132,12 @@ def task_core_from_name(task_name: str) -> str:
 
 
 def collect_primary_scores(
-    evals_root: Path,
-    model_template: str,
-    steps: Iterable[int],
-    task_name: str,
-    task_core: str,
-    metrics_filename: str,
+        evals_root: Path,
+        model_template: str,
+        steps: Iterable[int],
+        task_name: str,
+        task_core: str,
+        metrics_filename: str,
 ) -> tuple[List[Dict[str, float]], str | None]:
     """Load primary_score values for a model template across the provided steps."""
     records: List[Dict[str, float]] = []
@@ -185,10 +197,10 @@ def collect_primary_scores(
 
 
 def build_dataframe(
-    evals_root: Path,
-    task_name: str,
-    metrics_filename: str,
-    steps: Iterable[int],
+        evals_root: Path,
+        task_name: str,
+        metrics_filename: str,
+        steps: Iterable[int],
 ) -> tuple[pd.DataFrame, str | None]:
     """Build a tidy DataFrame with columns [model_group, step, primary_score]."""
     rows: List[Dict[str, object]] = []
@@ -226,10 +238,10 @@ def build_dataframe(
 
 
 def load_baseline_scores(
-    evals_root: Path,
-    task_name: str,
-    primary_metric_name: str | None,
-    metrics_filename: str,
+        evals_root: Path,
+        task_name: str,
+        primary_metric_name: str | None,
+        metrics_filename: str,
 ) -> Dict[str, float]:
     scores: Dict[str, float] = {}
 
@@ -259,8 +271,8 @@ def load_baseline_scores(
 
         task_match = entry_task == task_name
         metric_match = (
-            primary_metric_name is None
-            or entry_primary_metric == primary_metric_name
+                primary_metric_name is None
+                or entry_primary_metric == primary_metric_name
         )
 
         metric_values = metrics.get("metrics")
@@ -283,13 +295,13 @@ def load_baseline_scores(
 
 
 def plot_primary_scores(
-    df: pd.DataFrame,
-    output: Path,
-    style: str,
-    show: bool,
-    task_name: str | None,
-    primary_metric_name: str | None,
-    baseline_scores: Dict[str, float],
+        df: pd.DataFrame,
+        output: Path,
+        style: str,
+        show: bool,
+        task_name: str | None,
+        primary_metric_name: str | None,
+        baseline_scores: Dict[str, float],
 ) -> None:
     sns.set_theme(style=style)
     plt.figure(figsize=(8, 5))
@@ -301,14 +313,24 @@ def plot_primary_scores(
     family_colors = {family: base_palette[idx] for idx, family in enumerate(unique_families)}
     group_palette = {group: family_colors[GROUP_FAMILY[group]] for group in df["model_group"].unique()}
 
-    ax = sns.lineplot(
-        data=df,
-        x="step",
-        y="primary_score",
-        hue="model_group",
-        marker="o",
-        palette=group_palette,
-    )
+    ax = plt.gca()
+
+    # Plot each group with appropriate marker
+    # Circle for regular, triangle for random
+    for group in sorted(df["model_group"].unique()):
+        group_data = df[df["model_group"] == group].sort_values("step")
+        is_random = "random" in group.lower()
+        marker = "^" if is_random else "o"  # triangle for random, circle for regular
+
+        ax.plot(
+            group_data["step"],
+            group_data["primary_score"],
+            marker=marker,
+            color=group_palette[group],
+            label=group,
+            linewidth=2,
+            markersize=9,
+        )
 
     metric_label = primary_metric_name or "Primary Score"
     if task_name:
@@ -373,8 +395,9 @@ def main() -> None:
         )
 
         output_file = (
-            args.output_dir
-            / f"{task_name.replace(':', '_')}_primary_score_comparison.png"
+                args.output_dir
+                / f"{MAIN_MODEL}" /
+                f"{task_name.replace(':', '_')}_primary_score_comparison.png"
         )
 
         plot_primary_scores(
