@@ -1,7 +1,7 @@
 PARENT_MODELS=(
 #    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
-#    "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995"
-    "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995"
+    "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995"
+#    "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995"
 )
 
 FINETUNE_TASKS=(
