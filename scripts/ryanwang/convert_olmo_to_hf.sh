@@ -3,7 +3,8 @@ BASE_FOLDER="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models"
 
 
 PARENT_MODELS=(
-    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
+    "dense_1b_olmoe-mix_1028/step30995"
+#    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
 #    "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995"
 #    "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995"
 )
@@ -13,13 +14,13 @@ PARENT_MODELS=(
 postfix=""
 
 FINETUNE_TASKS=(
-#    "task-arc_easy_rc_train_0shot_finetune${postfix}/step0"
-#    "task-arc_easy_rc_train_0shot_finetune${postfix}/step84"
-#    "task-arc_easy_rc_train_0shot_finetune${postfix}/step168"
-#    "task-arc_easy_rc_train_0shot_finetune${postfix}/step252"
-#    "task-arc_easy_rc_train_0shot_finetune${postfix}/step336"
-#    "task-arc_easy_rc_train_0shot_finetune${postfix}/step420"
-#
+    "task-arc_easy_rc_train_0shot_finetune${postfix}/step0"
+    "task-arc_easy_rc_train_0shot_finetune${postfix}/step84"
+    "task-arc_easy_rc_train_0shot_finetune${postfix}/step168"
+    "task-arc_easy_rc_train_0shot_finetune${postfix}/step252"
+    "task-arc_easy_rc_train_0shot_finetune${postfix}/step336"
+    "task-arc_easy_rc_train_0shot_finetune${postfix}/step420"
+
     "task-arc_challenge_rc_train_0shot_finetune${postfix}/step0"
     "task-arc_challenge_rc_train_0shot_finetune${postfix}/step41"
     "task-arc_challenge_rc_train_0shot_finetune${postfix}/step82"
@@ -89,27 +90,27 @@ for BASE in "${PARENT_MODELS[@]}"; do
     # Beaker names can only contain letters, digits, periods, dashes, and underscores.
     job_name="convert_${FINETUNE//\//_}"
 
-#    gantry run \
-#    --name $job_name \
-#    --weka oe-training-default:/weka/oe-training-default \
-#    --install 'pip install -e .[all]' \
-#    --budget ai2/oceo \
-#    --workspace ai2/flex2 \
-#    --cluster "ai2/jupiter-cirrascale-2" \
-#    --cpus 16 \
-#    --gpus 0 \
-#    --priority urgent \
-#    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-#    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-#    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-#    -- \
-#    bash -c "python src/examples/huggingface/convert_checkpoint_to_hf.py \
-#      --checkpoint-input-path "${MODEL_DIR}" \
-#      --max-sequence-length 4096 \
-#      --huggingface-output-dir "${MODEL_DIR}-hf" \
-#      --dtype float32 \
-#      --skip-validation
-#      "
+    gantry run \
+    --name $job_name \
+    --weka oe-training-default:/weka/oe-training-default \
+    --install 'pip install -e .[all]' \
+    --budget ai2/oceo \
+    --workspace ai2/flex2 \
+    --cluster "ai2/jupiter-cirrascale-2" \
+    --cpus 16 \
+    --gpus 0 \
+    --priority urgent \
+    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+    -- \
+    bash -c "python src/examples/huggingface/convert_checkpoint_to_hf.py \
+      --checkpoint-input-path "${MODEL_DIR}" \
+      --max-sequence-length 4096 \
+      --huggingface-output-dir "${MODEL_DIR}-hf" \
+      --dtype float32 \
+      --skip-validation
+      "
 
   done
 done
