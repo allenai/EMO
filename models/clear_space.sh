@@ -73,6 +73,11 @@ FINETUNE_TASKS=(
 # Do a two-level loop to get all combinations of parent model and finetune task
 for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
     for FINETUNE_TASK in "${FINETUNE_TASKS[@]}"; do
-        echo "${PARENT_MODEL}/${FINETUNE_TASK}"
+        # check if the path exists
+        if [ -d "${PARENT_MODEL}/${FINETUNE_TASK}" ]; then
+            echo "Directory exists: ${PARENT_MODEL}/${FINETUNE_TASK}"
+        else
+            echo "Directory does not exist: ${PARENT_MODEL}/${FINETUNE_TASK}"
+        fi
     done
 done
