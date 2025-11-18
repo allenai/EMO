@@ -508,6 +508,9 @@ class Transformer(nn.Module):
         h = self.embeddings(input_ids) if self.embeddings is not None else input_ids
 
         # compute document boundaries here if router is a MoETwoLevelRouter
+        is_moe_twolevel_router = False
+        if hasattr(self.blocks["0"], "feed_forward_moe"):
+            is_moe_twolevel_router = isinstance(self.blocks["0"].feed_forward_moe.router, MoETwoLevelRouter)
         is_moe_twolevel_router = isinstance(self.blocks["0"].feed_forward_moe.router, MoETwoLevelRouter)
         document_boundaries = []
         if is_moe_twolevel_router:
