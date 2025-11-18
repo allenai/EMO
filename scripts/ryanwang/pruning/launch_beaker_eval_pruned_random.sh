@@ -10,31 +10,32 @@ PRUNE_DIR="${BASE_DIR}/prune"
 #MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 
 PARENT_MODELS=(
-    "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995"
+    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
+#    "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995"
 #    "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995"
 )
 
 FINETUNE_TASKS=(
-#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step0-hf"
-#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step84-hf"
-#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step168-hf"
-#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step252-hf"
-#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step336-hf"
-#    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step420-hf"
-#
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step0-hf"
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step41-hf"
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step82-hf"
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step123-hf"
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step164-hf"
-#    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step207-hf"
-#
-#    "task-boolq_rc_train_0shot_finetune_random-keepk32/step0-hf"
-#    "task-boolq_rc_train_0shot_finetune_random-keepk32/step315-hf"
-#    "task-boolq_rc_train_0shot_finetune_random-keepk32/step630-hf"
-#    "task-boolq_rc_train_0shot_finetune_random-keepk32/step945-hf"
-#    "task-boolq_rc_train_0shot_finetune_random-keepk32/step1260-hf"
-#    "task-boolq_rc_train_0shot_finetune_random-keepk32/step1578-hf"
+    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step0-hf"
+    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step84-hf"
+    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step168-hf"
+    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step252-hf"
+    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step336-hf"
+    "task-arc_easy_rc_train_0shot_finetune_random-keepk32/step420-hf"
+
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step0-hf"
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step41-hf"
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step82-hf"
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step123-hf"
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step164-hf"
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step207-hf"
+
+    "task-boolq_rc_train_0shot_finetune_random-keepk32/step0-hf"
+    "task-boolq_rc_train_0shot_finetune_random-keepk32/step315-hf"
+    "task-boolq_rc_train_0shot_finetune_random-keepk32/step630-hf"
+    "task-boolq_rc_train_0shot_finetune_random-keepk32/step945-hf"
+    "task-boolq_rc_train_0shot_finetune_random-keepk32/step1260-hf"
+    "task-boolq_rc_train_0shot_finetune_random-keepk32/step1578-hf"
 
 #    "task-csqa_rc_train_0shot_finetune_random-keepk32/step0-hf"
 #    "task-csqa_rc_train_0shot_finetune_random-keepk32/step327-hf"
@@ -48,7 +49,7 @@ FINETUNE_TASKS=(
 #    "task-hellaswag_rc_train_0shot_finetune_random-keepk32/step2916-hf"
 #    "task-hellaswag_rc_train_0shot_finetune_random-keepk32/step4374-hf"
 #    "task-hellaswag_rc_train_0shot_finetune_random-keepk32/step5832-hf"
-    "task-hellaswag_rc_train_0shot_finetune_random-keepk32/step7293-hf"
+#    "task-hellaswag_rc_train_0shot_finetune_random-keepk32/step7293-hf"
 #
 #    "task-openbookqa_rc_train_0shot_finetune_random-keepk32/step0-hf"
 #    "task-openbookqa_rc_train_0shot_finetune_random-keepk32/step185-hf"
