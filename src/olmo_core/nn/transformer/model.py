@@ -511,7 +511,6 @@ class Transformer(nn.Module):
         is_moe_twolevel_router = False
         if hasattr(self.blocks["0"], "feed_forward_moe"):
             is_moe_twolevel_router = isinstance(self.blocks["0"].feed_forward_moe.router, MoETwoLevelRouter)
-        is_moe_twolevel_router = isinstance(self.blocks["0"].feed_forward_moe.router, MoETwoLevelRouter)
         document_boundaries = []
         if is_moe_twolevel_router:
             eos_token_id = self.blocks["0"].feed_forward_moe.router.eos_token_id
