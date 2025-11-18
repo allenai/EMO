@@ -17,6 +17,7 @@ FINETUNE_TASKS=(
     "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step82"
     "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step123"
     "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step164"
+    "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step205"
     "task-arc_challenge_rc_train_0shot_finetune_random-keepk32/step207"
 
     "task-boolq_rc_train_0shot_finetune_random-keepk32/step0"
@@ -24,6 +25,7 @@ FINETUNE_TASKS=(
     "task-boolq_rc_train_0shot_finetune_random-keepk32/step630"
     "task-boolq_rc_train_0shot_finetune_random-keepk32/step945"
     "task-boolq_rc_train_0shot_finetune_random-keepk32/step1260"
+    "task-boolq_rc_train_0shot_finetune_random-keepk32/step1575"
     "task-boolq_rc_train_0shot_finetune_random-keepk32/step1578"
 
     "task-csqa_rc_train_0shot_finetune_random-keepk32/step0"
@@ -31,6 +33,7 @@ FINETUNE_TASKS=(
     "task-csqa_rc_train_0shot_finetune_random-keepk32/step654"
     "task-csqa_rc_train_0shot_finetune_random-keepk32/step981"
     "task-csqa_rc_train_0shot_finetune_random-keepk32/step1308"
+    "task-csqa_rc_train_0shot_finetune_random-keepk32/step1635"
     "task-csqa_rc_train_0shot_finetune_random-keepk32/step1638"
 
     "task-hellaswag_rc_train_0shot_finetune_random-keepk32/step0"
@@ -38,6 +41,7 @@ FINETUNE_TASKS=(
     "task-hellaswag_rc_train_0shot_finetune_random-keepk32/step2916"
     "task-hellaswag_rc_train_0shot_finetune_random-keepk32/step4374"
     "task-hellaswag_rc_train_0shot_finetune_random-keepk32/step5832"
+    "task-hellaswag_rc_train_0shot_finetune_random-keepk32/step7290"
     "task-hellaswag_rc_train_0shot_finetune_random-keepk32/step7293"
 
     "task-openbookqa_rc_train_0shot_finetune_random-keepk32/step0"
@@ -45,6 +49,7 @@ FINETUNE_TASKS=(
     "task-openbookqa_rc_train_0shot_finetune_random-keepk32/step370"
     "task-openbookqa_rc_train_0shot_finetune_random-keepk32/step555"
     "task-openbookqa_rc_train_0shot_finetune_random-keepk32/step740"
+    "task-openbookqa_rc_train_0shot_finetune_random-keepk32/step925"
     "task-openbookqa_rc_train_0shot_finetune_random-keepk32/step927"
 
     "task-piqa_rc_train_0shot_finetune_random-keepk32/step0"
@@ -52,6 +57,7 @@ FINETUNE_TASKS=(
     "task-piqa_rc_train_0shot_finetune_random-keepk32/step1132"
     "task-piqa_rc_train_0shot_finetune_random-keepk32/step1698"
     "task-piqa_rc_train_0shot_finetune_random-keepk32/step2264"
+    "task-piqa_rc_train_0shot_finetune_random-keepk32/step2830"
     "task-piqa_rc_train_0shot_finetune_random-keepk32/step2832"
 
     "task-socialiqa_rc_train_0shot_finetune_random-keepk32/step0"
@@ -66,6 +72,7 @@ FINETUNE_TASKS=(
     "task-winogrande_rc_train_0shot_finetune_random-keepk32/step2954"
     "task-winogrande_rc_train_0shot_finetune_random-keepk32/step4431"
     "task-winogrande_rc_train_0shot_finetune_random-keepk32/step5908"
+    "task-winogrande_rc_train_0shot_finetune_random-keepk32/step7385"
     "task-winogrande_rc_train_0shot_finetune_random-keepk32/step7386"
     
     "task-arc_easy_rc_train_0shot_finetune-keepk32/step0"
@@ -80,6 +87,7 @@ FINETUNE_TASKS=(
     "task-arc_challenge_rc_train_0shot_finetune-keepk32/step82"
     "task-arc_challenge_rc_train_0shot_finetune-keepk32/step123"
     "task-arc_challenge_rc_train_0shot_finetune-keepk32/step164"
+    "task-arc_challenge_rc_train_0shot_finetune-keepk32/step205"
     "task-arc_challenge_rc_train_0shot_finetune-keepk32/step207"
 
     "task-boolq_rc_train_0shot_finetune-keepk32/step0"
@@ -87,6 +95,7 @@ FINETUNE_TASKS=(
     "task-boolq_rc_train_0shot_finetune-keepk32/step630"
     "task-boolq_rc_train_0shot_finetune-keepk32/step945"
     "task-boolq_rc_train_0shot_finetune-keepk32/step1260"
+    "task-boolq_rc_train_0shot_finetune-keepk32/step1575"
     "task-boolq_rc_train_0shot_finetune-keepk32/step1578"
 
     "task-csqa_rc_train_0shot_finetune-keepk32/step0"
@@ -94,6 +103,7 @@ FINETUNE_TASKS=(
     "task-csqa_rc_train_0shot_finetune-keepk32/step654"
     "task-csqa_rc_train_0shot_finetune-keepk32/step981"
     "task-csqa_rc_train_0shot_finetune-keepk32/step1308"
+    "task-csqa_rc_train_0shot_finetune-keepk32/step1635"
     "task-csqa_rc_train_0shot_finetune-keepk32/step1638"
 
     "task-hellaswag_rc_train_0shot_finetune-keepk32/step0"
@@ -101,6 +111,7 @@ FINETUNE_TASKS=(
     "task-hellaswag_rc_train_0shot_finetune-keepk32/step2916"
     "task-hellaswag_rc_train_0shot_finetune-keepk32/step4374"
     "task-hellaswag_rc_train_0shot_finetune-keepk32/step5832"
+    "task-hellaswag_rc_train_0shot_finetune-keepk32/step7290"
     "task-hellaswag_rc_train_0shot_finetune-keepk32/step7293"
 
     "task-openbookqa_rc_train_0shot_finetune-keepk32/step0"
@@ -108,6 +119,7 @@ FINETUNE_TASKS=(
     "task-openbookqa_rc_train_0shot_finetune-keepk32/step370"
     "task-openbookqa_rc_train_0shot_finetune-keepk32/step555"
     "task-openbookqa_rc_train_0shot_finetune-keepk32/step740"
+    "task-openbookqa_rc_train_0shot_finetune-keepk32/step925"
     "task-openbookqa_rc_train_0shot_finetune-keepk32/step927"
 
     "task-piqa_rc_train_0shot_finetune-keepk32/step0"
@@ -115,6 +127,7 @@ FINETUNE_TASKS=(
     "task-piqa_rc_train_0shot_finetune-keepk32/step1132"
     "task-piqa_rc_train_0shot_finetune-keepk32/step1698"
     "task-piqa_rc_train_0shot_finetune-keepk32/step2264"
+    "task-piqa_rc_train_0shot_finetune-keepk32/step2830"
     "task-piqa_rc_train_0shot_finetune-keepk32/step2832"
 
     "task-socialiqa_rc_train_0shot_finetune-keepk32/step0"
@@ -129,6 +142,7 @@ FINETUNE_TASKS=(
     "task-winogrande_rc_train_0shot_finetune-keepk32/step2954"
     "task-winogrande_rc_train_0shot_finetune-keepk32/step4431"
     "task-winogrande_rc_train_0shot_finetune-keepk32/step5908"
+    "task-winogrande_rc_train_0shot_finetune-keepk32/step7385"
     "task-winogrande_rc_train_0shot_finetune-keepk32/step7386"
 
 )
