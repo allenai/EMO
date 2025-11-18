@@ -20,21 +20,20 @@ BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
 model_name="dense_1b_olmoe-mix_1028"
 #model_name="moe_1b7b_olmoe-mix"
 step="step30995"
-prune_keep_k=8
 num_checkpoints=5
 
 base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
 train_task_names=(
   "arc_easy:rc_train_0shot::olmes"
-  "arc_challenge:rc_train_0shot::olmes"
-  "boolq:rc_train_0shot::olmes"
-  "csqa:rc_train_0shot::olmes"
-  "hellaswag:rc_train_0shot::olmes"
-  "openbookqa:rc_train_0shot::olmes"
-  "piqa:rc_train_0shot::olmes"
-  "socialiqa:rc_train_0shot::olmes"
-  "winogrande:rc_train_0shot::olmes"
+#  "arc_challenge:rc_train_0shot::olmes"
+#  "boolq:rc_train_0shot::olmes"
+#  "csqa:rc_train_0shot::olmes"
+#  "hellaswag:rc_train_0shot::olmes"
+#  "openbookqa:rc_train_0shot::olmes"
+#  "piqa:rc_train_0shot::olmes"
+#  "socialiqa:rc_train_0shot::olmes"
+#  "winogrande:rc_train_0shot::olmes"
 #
 ##   MMLU
 #  "mmlu_rc:rc_train_0shot::olmes"
@@ -71,23 +70,18 @@ for train_task_name in "${train_task_names[@]}"; do
     dataset_paths="${destination}/part-0-00000.npy"
     label_mask_paths="${destination}/part-0-00000_mask.npy"
 
-    # swap out all occurences of "train" with "validation" to get validation set
-    validation_task_prefix="${task_prefix/train/validation}"
-    activation_file="${BASE_OUTPUT_DIR}/prune/${model_name}_${step}-hf/${validation_task_prefix}-router.jsonl"
-
-    runname="${model_name}_${step}_finetune_${task_prefix}_keepk${prune_keep_k}"
+    runname="${model_name}_${step}_finetune_${task_prefix}"
     # limit runname to 128 characters
     runname=$(echo $runname | cut -c1-100)
 
-    out_dir="${task_prefix}_finetune-keepk${prune_keep_k}"
+    out_dir="${task_prefix}_finetune"
 
     # for debugging
     echo "Run name: $runname"
     echo "Dataset paths: ${dataset_paths[@]}"
     echo "Label mask paths: ${label_mask_paths[@]}"
     echo "Base model: $base_model"
-    echo "Prune keep k: $prune_keep_k"
-    echo "Activation file: $activation_file"
+    echo "Output dir: $out_dir"
 
     # define
 
@@ -126,10 +120,7 @@ for train_task_name in "${train_task_names[@]}"; do
         --trainer.max_duration='{value: 3, unit: epochs}' \
         --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
         --load_path=$base_model \
-        --activation_file=$activation_file \
-        --prune_keep_k=$prune_keep_k \
         --num_checkpoints=$num_checkpoints \
-        --model.block.feed_forward_moe.num_experts=128 \
 
 #        --dataset.label_mask_paths="[${label_mask_paths}]" \
 
