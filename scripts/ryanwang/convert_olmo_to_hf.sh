@@ -74,41 +74,41 @@ FINETUNE_TASKS=(
 
 )
 
-for BASE in "${PARENT_MODELS[@]}"; do
-  for FINETUNE in "${FINETUNE_TASKS[@]}"; do
-    # list all the files in the model directory, only include directories that start with "step"
-    MODEL_DIR="${BASE_FOLDER}/${BASE}/${FINETUNE}"
-
-    echo "checkpoint-input-path is ${MODEL_DIR}"
-    echo "output_dir is ${MODEL_DIR}-hf"
-
-    # Beaker names can only contain letters, digits, periods, dashes, and underscores.
-    job_name="convert_${FINETUNE//\//_}"
-
-    gantry run \
-    --name $job_name \
-    --weka oe-training-default:/weka/oe-training-default \
-    --install 'pip install -e .[all]' \
-    --budget ai2/oceo \
-    --workspace ai2/flex2 \
-    --cluster "ai2/jupiter-cirrascale-2" \
-    --cpus 16 \
-    --gpus 0 \
-    --priority urgent \
-    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-    -- \
-    bash -c "python src/examples/huggingface/convert_checkpoint_to_hf.py \
-      --checkpoint-input-path "${MODEL_DIR}" \
-      --max-sequence-length 4096 \
-      --huggingface-output-dir "${MODEL_DIR}-hf" \
-      --dtype float32 \
-      --skip-validation
-      "
-
-  done
-done
+#for BASE in "${PARENT_MODELS[@]}"; do
+#  for FINETUNE in "${FINETUNE_TASKS[@]}"; do
+#    # list all the files in the model directory, only include directories that start with "step"
+#    MODEL_DIR="${BASE_FOLDER}/${BASE}/${FINETUNE}"
+#
+#    echo "checkpoint-input-path is ${MODEL_DIR}"
+#    echo "output_dir is ${MODEL_DIR}-hf"
+#
+#    # Beaker names can only contain letters, digits, periods, dashes, and underscores.
+#    job_name="convert_${FINETUNE//\//_}"
+#
+#    gantry run \
+#    --name $job_name \
+#    --weka oe-training-default:/weka/oe-training-default \
+#    --install 'pip install -e .[all]' \
+#    --budget ai2/oceo \
+#    --workspace ai2/flex2 \
+#    --cluster "ai2/jupiter-cirrascale-2" \
+#    --cpus 16 \
+#    --gpus 0 \
+#    --priority urgent \
+#    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+#    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+#    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+#    -- \
+#    bash -c "python src/examples/huggingface/convert_checkpoint_to_hf.py \
+#      --checkpoint-input-path "${MODEL_DIR}" \
+#      --max-sequence-length 4096 \
+#      --huggingface-output-dir "${MODEL_DIR}-hf" \
+#      --dtype float32 \
+#      --skip-validation
+#      "
+#
+#  done
+#done
 
 #MODELS=(
 ##  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-arc_easy_rc_train_0shot_finetune-keepk32"
@@ -164,9 +164,9 @@ done
 #  done
 #done
 
-#python src/examples/huggingface/convert_checkpoint_to_hf.py \
-#      --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995" \
-#      --max-sequence-length 4096 \
-#      --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995-hf" \
-#      --dtype float32
+python src/examples/huggingface/convert_checkpoint_to_hf.py \
+      --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/twolevelsamplingnolb-32_1b14b_stability_filter-true_zlossweight-1e-3_1116/step30995" \
+      --max-sequence-length 4096 \
+      --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/twolevelsamplingnolb-32_1b14b_stability_filter-true_zlossweight-1e-3_1116/step30995-hf" \
+      --dtype float32
 
