@@ -23,6 +23,8 @@ import seaborn as sns
 MAIN_MODEL = "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115_step30995"
 MAIN_MODEL_GROUP_LABEL = "twolevelbatchlb keepk32"
 MAIN_MODEL_GROUP_LABEL_RANDOM = "twolevelbatchlb keepk32 random"
+MAIN_MODEL_GROUP_LABEL_K8 = "twolevelbatchlb keepk8"
+MAIN_MODEL_GROUP_LABEL_K8_RANDOM = "twolevelbatchlb keepk8 random"
 MAIN_MODEL_BASELINE_LABEL = "twolevelbatchlb full"
 MAIN_MODEL_FAMILY = "twolevelbatchlb"
 
@@ -71,6 +73,14 @@ MODEL_GROUPS: Dict[str, str] = {
         f"{MAIN_MODEL}_"
         "task-{task_core}_rc_train_0shot_finetune_random-keepk32_step{step}-hf"
     ),
+    MAIN_MODEL_GROUP_LABEL_K8: (
+        f"{MAIN_MODEL}_"
+        "task-{task_core}_rc_train_0shot_finetune-keepk8_step{step}-hf"
+    ),
+    MAIN_MODEL_GROUP_LABEL_K8_RANDOM: (
+        f"{MAIN_MODEL}_"
+        "task-{task_core}_rc_train_0shot_finetune_random-keepk8_step{step}-hf"
+    ),
 }
 
 BASELINE_MODELS: Dict[str, str] = {
@@ -87,6 +97,8 @@ GROUP_FAMILY: Dict[str, str] = {
     MAIN_MODEL_GROUP_LABEL: MAIN_MODEL_FAMILY,
     "moe keepk32 random": "moe",
     MAIN_MODEL_GROUP_LABEL_RANDOM: MAIN_MODEL_FAMILY,
+    MAIN_MODEL_GROUP_LABEL_K8: MAIN_MODEL_FAMILY,
+    MAIN_MODEL_GROUP_LABEL_K8_RANDOM: MAIN_MODEL_FAMILY,
 }
 
 BASELINE_FAMILY: Dict[str, str] = {
@@ -316,11 +328,21 @@ def plot_primary_scores(
     ax = plt.gca()
 
     # Plot each group with appropriate marker
-    # Circle for regular, triangle for random
+    # Different markers for keepk8 vs keepk32, and random vs regular
     for group in sorted(df["model_group"].unique()):
         group_data = df[df["model_group"] == group].sort_values("step")
         is_random = "random" in group.lower()
-        marker = "^" if is_random else "o"  # triangle for random, circle for regular
+        is_keepk8 = "keepk8" in group.lower()
+        
+        # Marker selection:
+        # keepk32 regular: circle (o)
+        # keepk32 random: triangle up (^)
+        # keepk8 regular: square (s)
+        # keepk8 random: diamond (D)
+        if is_keepk8:
+            marker = "D" if is_random else "s"  # diamond for keepk8 random, square for keepk8 regular
+        else:
+            marker = "^" if is_random else "o"  # triangle for keepk32 random, circle for keepk32 regular
 
         ax.plot(
             group_data["step"],
