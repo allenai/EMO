@@ -289,6 +289,12 @@ def parser_args():
         type=str,
         help="Path to load checkpoint from if no checkpoint is found in the save folder.",
     )
+    parser.add_argument(
+        "--num_checkpoints",
+        type=int,
+        default=4,
+        help="Number of steps between saving checkpoints.",
+    )
     opts, overrides = parser.parse_known_args()
     return opts, overrides
 
