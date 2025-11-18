@@ -90,6 +90,9 @@ BASELINE_MODELS: Dict[str, str] = {
     MAIN_MODEL_BASELINE_LABEL: (
         f"{MAIN_MODEL}-hf"
     ),
+    "dense full": (
+        "dense_1b_olmoe-mix_1028_step30995-hf"
+    ),
 }
 
 GROUP_FAMILY: Dict[str, str] = {
@@ -104,6 +107,7 @@ GROUP_FAMILY: Dict[str, str] = {
 BASELINE_FAMILY: Dict[str, str] = {
     "moe full": "moe",
     MAIN_MODEL_BASELINE_LABEL: MAIN_MODEL_FAMILY,
+    "dense full": "dense",
 }
 
 

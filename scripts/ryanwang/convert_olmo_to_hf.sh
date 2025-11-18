@@ -8,71 +8,73 @@ PARENT_MODELS=(
 #    "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995"
 )
   
-keepk=8
+#postfix="-keepk8"
+#postfix="-keepk32"
+postfix=""
 
 FINETUNE_TASKS=(
-#    "task-arc_easy_rc_train_0shot_finetune-keepk${keepk}/step0"
-#    "task-arc_easy_rc_train_0shot_finetune-keepk${keepk}/step84"
-#    "task-arc_easy_rc_train_0shot_finetune-keepk${keepk}/step168"
-#    "task-arc_easy_rc_train_0shot_finetune-keepk${keepk}/step252"
-#    "task-arc_easy_rc_train_0shot_finetune-keepk${keepk}/step336"
-#    "task-arc_easy_rc_train_0shot_finetune-keepk${keepk}/step420"
+#    "task-arc_easy_rc_train_0shot_finetune${postfix}/step0"
+#    "task-arc_easy_rc_train_0shot_finetune${postfix}/step84"
+#    "task-arc_easy_rc_train_0shot_finetune${postfix}/step168"
+#    "task-arc_easy_rc_train_0shot_finetune${postfix}/step252"
+#    "task-arc_easy_rc_train_0shot_finetune${postfix}/step336"
+#    "task-arc_easy_rc_train_0shot_finetune${postfix}/step420"
 #
-    "task-arc_challenge_rc_train_0shot_finetune-keepk${keepk}/step0"
-    "task-arc_challenge_rc_train_0shot_finetune-keepk${keepk}/step41"
-    "task-arc_challenge_rc_train_0shot_finetune-keepk${keepk}/step82"
-    "task-arc_challenge_rc_train_0shot_finetune-keepk${keepk}/step123"
-    "task-arc_challenge_rc_train_0shot_finetune-keepk${keepk}/step164"
-    "task-arc_challenge_rc_train_0shot_finetune-keepk${keepk}/step207"
+    "task-arc_challenge_rc_train_0shot_finetune${postfix}/step0"
+    "task-arc_challenge_rc_train_0shot_finetune${postfix}/step41"
+    "task-arc_challenge_rc_train_0shot_finetune${postfix}/step82"
+    "task-arc_challenge_rc_train_0shot_finetune${postfix}/step123"
+    "task-arc_challenge_rc_train_0shot_finetune${postfix}/step164"
+    "task-arc_challenge_rc_train_0shot_finetune${postfix}/step207"
 
-    "task-boolq_rc_train_0shot_finetune-keepk${keepk}/step0"
-    "task-boolq_rc_train_0shot_finetune-keepk${keepk}/step315"
-    "task-boolq_rc_train_0shot_finetune-keepk${keepk}/step630"
-    "task-boolq_rc_train_0shot_finetune-keepk${keepk}/step945"
-    "task-boolq_rc_train_0shot_finetune-keepk${keepk}/step1260"
-    "task-boolq_rc_train_0shot_finetune-keepk${keepk}/step1578"
+    "task-boolq_rc_train_0shot_finetune${postfix}/step0"
+    "task-boolq_rc_train_0shot_finetune${postfix}/step315"
+    "task-boolq_rc_train_0shot_finetune${postfix}/step630"
+    "task-boolq_rc_train_0shot_finetune${postfix}/step945"
+    "task-boolq_rc_train_0shot_finetune${postfix}/step1260"
+    "task-boolq_rc_train_0shot_finetune${postfix}/step1578"
 
-    "task-csqa_rc_train_0shot_finetune-keepk${keepk}/step0"
-    "task-csqa_rc_train_0shot_finetune-keepk${keepk}/step327"
-    "task-csqa_rc_train_0shot_finetune-keepk${keepk}/step654"
-    "task-csqa_rc_train_0shot_finetune-keepk${keepk}/step981"
-    "task-csqa_rc_train_0shot_finetune-keepk${keepk}/step1308"
-    "task-csqa_rc_train_0shot_finetune-keepk${keepk}/step1638"
+    "task-csqa_rc_train_0shot_finetune${postfix}/step0"
+    "task-csqa_rc_train_0shot_finetune${postfix}/step327"
+    "task-csqa_rc_train_0shot_finetune${postfix}/step654"
+    "task-csqa_rc_train_0shot_finetune${postfix}/step981"
+    "task-csqa_rc_train_0shot_finetune${postfix}/step1308"
+    "task-csqa_rc_train_0shot_finetune${postfix}/step1638"
 
-    "task-hellaswag_rc_train_0shot_finetune-keepk${keepk}/step0"
-    "task-hellaswag_rc_train_0shot_finetune-keepk${keepk}/step1458"
-    "task-hellaswag_rc_train_0shot_finetune-keepk${keepk}/step2916"
-    "task-hellaswag_rc_train_0shot_finetune-keepk${keepk}/step4374"
-    "task-hellaswag_rc_train_0shot_finetune-keepk${keepk}/step5832"
-    "task-hellaswag_rc_train_0shot_finetune-keepk${keepk}/step7293"
+    "task-hellaswag_rc_train_0shot_finetune${postfix}/step0"
+    "task-hellaswag_rc_train_0shot_finetune${postfix}/step1458"
+    "task-hellaswag_rc_train_0shot_finetune${postfix}/step2916"
+    "task-hellaswag_rc_train_0shot_finetune${postfix}/step4374"
+    "task-hellaswag_rc_train_0shot_finetune${postfix}/step5832"
+    "task-hellaswag_rc_train_0shot_finetune${postfix}/step7293"
 
-    "task-openbookqa_rc_train_0shot_finetune-keepk${keepk}/step0"
-    "task-openbookqa_rc_train_0shot_finetune-keepk${keepk}/step185"
-    "task-openbookqa_rc_train_0shot_finetune-keepk${keepk}/step370"
-    "task-openbookqa_rc_train_0shot_finetune-keepk${keepk}/step555"
-    "task-openbookqa_rc_train_0shot_finetune-keepk${keepk}/step740"
-    "task-openbookqa_rc_train_0shot_finetune-keepk${keepk}/step927"
+    "task-openbookqa_rc_train_0shot_finetune${postfix}/step0"
+    "task-openbookqa_rc_train_0shot_finetune${postfix}/step185"
+    "task-openbookqa_rc_train_0shot_finetune${postfix}/step370"
+    "task-openbookqa_rc_train_0shot_finetune${postfix}/step555"
+    "task-openbookqa_rc_train_0shot_finetune${postfix}/step740"
+    "task-openbookqa_rc_train_0shot_finetune${postfix}/step927"
 
-    "task-piqa_rc_train_0shot_finetune-keepk${keepk}/step0"
-    "task-piqa_rc_train_0shot_finetune-keepk${keepk}/step566"
-    "task-piqa_rc_train_0shot_finetune-keepk${keepk}/step1132"
-    "task-piqa_rc_train_0shot_finetune-keepk${keepk}/step1698"
-    "task-piqa_rc_train_0shot_finetune-keepk${keepk}/step2264"
-    "task-piqa_rc_train_0shot_finetune-keepk${keepk}/step2832"
+    "task-piqa_rc_train_0shot_finetune${postfix}/step0"
+    "task-piqa_rc_train_0shot_finetune${postfix}/step566"
+    "task-piqa_rc_train_0shot_finetune${postfix}/step1132"
+    "task-piqa_rc_train_0shot_finetune${postfix}/step1698"
+    "task-piqa_rc_train_0shot_finetune${postfix}/step2264"
+    "task-piqa_rc_train_0shot_finetune${postfix}/step2832"
 
-    "task-socialiqa_rc_train_0shot_finetune-keepk${keepk}/step0"
-    "task-socialiqa_rc_train_0shot_finetune-keepk${keepk}/step1215"
-    "task-socialiqa_rc_train_0shot_finetune-keepk${keepk}/step2430"
-    "task-socialiqa_rc_train_0shot_finetune-keepk${keepk}/step3645"
-    "task-socialiqa_rc_train_0shot_finetune-keepk${keepk}/step4860"
-    "task-socialiqa_rc_train_0shot_finetune-keepk${keepk}/step6075"
+    "task-socialiqa_rc_train_0shot_finetune${postfix}/step0"
+    "task-socialiqa_rc_train_0shot_finetune${postfix}/step1215"
+    "task-socialiqa_rc_train_0shot_finetune${postfix}/step2430"
+    "task-socialiqa_rc_train_0shot_finetune${postfix}/step3645"
+    "task-socialiqa_rc_train_0shot_finetune${postfix}/step4860"
+    "task-socialiqa_rc_train_0shot_finetune${postfix}/step6075"
 
-    "task-winogrande_rc_train_0shot_finetune-keepk${keepk}/step0"
-    "task-winogrande_rc_train_0shot_finetune-keepk${keepk}/step1477"
-    "task-winogrande_rc_train_0shot_finetune-keepk${keepk}/step2954"
-    "task-winogrande_rc_train_0shot_finetune-keepk${keepk}/step4431"
-    "task-winogrande_rc_train_0shot_finetune-keepk${keepk}/step5908"
-    "task-winogrande_rc_train_0shot_finetune-keepk${keepk}/step7386"
+    "task-winogrande_rc_train_0shot_finetune${postfix}/step0"
+    "task-winogrande_rc_train_0shot_finetune${postfix}/step1477"
+    "task-winogrande_rc_train_0shot_finetune${postfix}/step2954"
+    "task-winogrande_rc_train_0shot_finetune${postfix}/step4431"
+    "task-winogrande_rc_train_0shot_finetune${postfix}/step5908"
+    "task-winogrande_rc_train_0shot_finetune${postfix}/step7386"
 
 )
 
@@ -87,50 +89,50 @@ for BASE in "${PARENT_MODELS[@]}"; do
     # Beaker names can only contain letters, digits, periods, dashes, and underscores.
     job_name="convert_${FINETUNE//\//_}"
 
-    gantry run \
-    --name $job_name \
-    --weka oe-training-default:/weka/oe-training-default \
-    --install 'pip install -e .[all]' \
-    --budget ai2/oceo \
-    --workspace ai2/flex2 \
-    --cluster "ai2/jupiter-cirrascale-2" \
-    --cpus 16 \
-    --gpus 0 \
-    --priority urgent \
-    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-    -- \
-    bash -c "python src/examples/huggingface/convert_checkpoint_to_hf.py \
-      --checkpoint-input-path "${MODEL_DIR}" \
-      --max-sequence-length 4096 \
-      --huggingface-output-dir "${MODEL_DIR}-hf" \
-      --dtype float32 \
-      --skip-validation
-      "
+#    gantry run \
+#    --name $job_name \
+#    --weka oe-training-default:/weka/oe-training-default \
+#    --install 'pip install -e .[all]' \
+#    --budget ai2/oceo \
+#    --workspace ai2/flex2 \
+#    --cluster "ai2/jupiter-cirrascale-2" \
+#    --cpus 16 \
+#    --gpus 0 \
+#    --priority urgent \
+#    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+#    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+#    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+#    -- \
+#    bash -c "python src/examples/huggingface/convert_checkpoint_to_hf.py \
+#      --checkpoint-input-path "${MODEL_DIR}" \
+#      --max-sequence-length 4096 \
+#      --huggingface-output-dir "${MODEL_DIR}-hf" \
+#      --dtype float32 \
+#      --skip-validation
+#      "
 
   done
 done
 
 #MODELS=(
-##  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-arc_easy_rc_train_0shot_finetune-keepk${keepk}"
-##  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-arc_challenge_rc_train_0shot_finetune-keepk${keepk}"
-#  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-boolq_rc_train_0shot_finetune-keepk${keepk}"
-#  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-csqa_rc_train_0shot_finetune-keepk${keepk}"
-##  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-hellaswag_rc_train_0shot_finetune-keepk${keepk}"
-##  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-openbookqa_rc_train_0shot_finetune-keepk${keepk}"
-##  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-piqa_rc_train_0shot_finetune-keepk${keepk}"
-##  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-socialiqa_rc_train_0shot_finetune-keepk${keepk}"
-##  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-winogrande_rc_train_0shot_finetune-keepk${keepk}"
+##  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-arc_easy_rc_train_0shot_finetune${postfix}"
+##  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-arc_challenge_rc_train_0shot_finetune${postfix}"
+#  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-boolq_rc_train_0shot_finetune${postfix}"
+#  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-csqa_rc_train_0shot_finetune${postfix}"
+##  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-hellaswag_rc_train_0shot_finetune${postfix}"
+##  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-openbookqa_rc_train_0shot_finetune${postfix}"
+##  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-piqa_rc_train_0shot_finetune${postfix}"
+##  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-socialiqa_rc_train_0shot_finetune${postfix}"
+##  "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995/task-winogrande_rc_train_0shot_finetune${postfix}"
 #
-##  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995/task-arc_challenge_rc_train_0shot_finetune-keepk${keepk}"
-##  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995/task-boolq_rc_train_0shot_finetune-keepk${keepk}"
-##  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995/task-csqa_rc_train_0shot_finetune-keepk${keepk}"
-##  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995/task-hellaswag_rc_train_0shot_finetune-keepk${keepk}"
-##  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995/task-openbookqa_rc_train_0shot_finetune-keepk${keepk}"
-##  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995/task-piqa_rc_train_0shot_finetune-keepk${keepk}"
-##  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995/task-socialiqa_rc_train_0shot_finetune-keepk${keepk}"
-##  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995/task-winogrande_rc_train_0shot_finetune-keepk${keepk}"
+##  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995/task-arc_challenge_rc_train_0shot_finetune${postfix}"
+##  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995/task-boolq_rc_train_0shot_finetune${postfix}"
+##  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995/task-csqa_rc_train_0shot_finetune${postfix}"
+##  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995/task-hellaswag_rc_train_0shot_finetune${postfix}"
+##  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995/task-openbookqa_rc_train_0shot_finetune${postfix}"
+##  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995/task-piqa_rc_train_0shot_finetune${postfix}"
+##  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995/task-socialiqa_rc_train_0shot_finetune${postfix}"
+##  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995/task-winogrande_rc_train_0shot_finetune${postfix}"
 #
 #)
 
