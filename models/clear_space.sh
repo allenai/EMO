@@ -75,9 +75,11 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
     for FINETUNE_TASK in "${FINETUNE_TASKS[@]}"; do
         # check if the path exists
         if [ -d "${PARENT_MODEL}/${FINETUNE_TASK}" ]; then
-            echo "Directory exists: ${PARENT_MODEL}/${FINETUNE_TASK}"
+            echo "#### Directory exists: ${PARENT_MODEL}/${FINETUNE_TASK}"
+            rm -rf "${PARENT_MODEL}/${FINETUNE_TASK}"
+            echo "Removed directory: ${PARENT_MODEL}/${FINETUNE_TASK}"
         else
-            echo "Directory does not exist: ${PARENT_MODEL}/${FINETUNE_TASK}"
+            echo "#### Directory does not exist: ${PARENT_MODEL}/${FINETUNE_TASK}"
         fi
     done
 done
