@@ -12,11 +12,11 @@ keepk=8
 
 FINETUNE_TASKS=(
     "task-arc_easy_rc_train_0shot_finetune-keepk${keepk}/step0"
-#    "task-arc_easy_rc_train_0shot_finetune-keepk${keepk}/step84"
-#    "task-arc_easy_rc_train_0shot_finetune-keepk${keepk}/step168"
-#    "task-arc_easy_rc_train_0shot_finetune-keepk${keepk}/step252"
-#    "task-arc_easy_rc_train_0shot_finetune-keepk${keepk}/step336"
-#    "task-arc_easy_rc_train_0shot_finetune-keepk${keepk}/step420"
+    "task-arc_easy_rc_train_0shot_finetune-keepk${keepk}/step84"
+    "task-arc_easy_rc_train_0shot_finetune-keepk${keepk}/step168"
+    "task-arc_easy_rc_train_0shot_finetune-keepk${keepk}/step252"
+    "task-arc_easy_rc_train_0shot_finetune-keepk${keepk}/step336"
+    "task-arc_easy_rc_train_0shot_finetune-keepk${keepk}/step420"
 #
 #    "task-arc_challenge_rc_train_0shot_finetune-keepk${keepk}/step0"
 #    "task-arc_challenge_rc_train_0shot_finetune-keepk${keepk}/step41"
