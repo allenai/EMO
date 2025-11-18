@@ -15,7 +15,7 @@
 
 ##############################################################
 
-runname="moe_1b7b_128experts_olmoe-mix_130B_1117_replicate"
+runname="moe_1b14b_128experts_olmoe-mix_130B_1117"
 python -m olmo_core.launch.beaker \
   --name $runname \
 	--gpus 8 \
