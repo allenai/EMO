@@ -1,5 +1,5 @@
-#BASE_FOLDER="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models"
-BASE_FOLDER="/root/ryanwang/phdbrainstorm/FlexMoE/models"
+BASE_FOLDER="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models"
+#BASE_FOLDER="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 
 
 PARENT_MODELS=(
