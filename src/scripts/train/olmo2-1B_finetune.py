@@ -25,7 +25,7 @@ from olmo_core.data.mixes import DataMix
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_rank
 from olmo_core.nn.transformer import TransformerConfig
-from olmo_core.optim import CosWithWarmup, OptimGroupOverride, LinearWithWarmup, AdamWConfig
+from olmo_core.optim import CosWithWarmup, OptimGroupOverride, LinearWithWarmup, SkipStepAdamWConfig
 from olmo_core.train import (
     TrainerConfig,
     prepare_training_environment,
@@ -173,7 +173,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     train_module_config = TransformerTrainModuleConfig(
         rank_microbatch_size=2 * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         max_sequence_length=SEQUENCE_LENGTH,
-        optim=AdamWConfig(
+        optim=SkipStepAdamWConfig(
             lr=5e-5,
             weight_decay=0,
             betas=(0.9, 0.999),
