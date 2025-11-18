@@ -11,9 +11,6 @@ PRUNE_DIR="${BASE_DIR}/prune"
 
 PARENT_MODELS=(
     "dense_1b_olmoe-mix_1028/step30995"
-#    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
-#    "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995"
-#    "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995"
 )
 
 #postfix="-keepk8"
@@ -222,9 +219,6 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
                 --remote-output-dir $OUTPUT_DIR \
                 --batch-size $batch_size \
                 --gpus $gpus \
-                --do_prune \
-                --activation_file $activation_file \
-                --prune_keep_k $keepk \
                 "
 
             echo "Launched evaluation for model: $model, group: $GROUP_NAME"
