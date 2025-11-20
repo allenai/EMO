@@ -17,6 +17,7 @@ import rich
 from olmo_core.nn.moe.twolevel_sampling_nolb_router import MoETwoLevelSamplingNoLBRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_router import MoETwoLevelBatchLBRouterConfig
 from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouterConfig
+from olmo_core.nn.moe.twolevel_batchlb_fullzloss_router import MoETwoLevelBatchLBFullZLossRouterConfig
 from olmo_core.config import Config, DType
 from olmo_core.data import (
     NumpyDataLoaderConfig,
@@ -204,6 +205,20 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
         # Replace router config
         model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBRouterConfig(**router_kwargs)
+    elif opts.model_type == "two-level_lb-batch_fullzloss":
+        log.info("Applying two-level with batch-leve load balancing (olmoe lb) and full zloss (even for unactivated experts, standard for olmoe) routers to the model...")
+        if opts.document_expert_pool is None:
+            raise ValueError("document_expert_pool must be specified for two-level model type.")
+        # Get existing router config parameters
+        router_kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
+        router_kwargs.pop("name")
+        router_kwargs.update(
+            document_expert_pool=opts.document_expert_pool,
+            eos_token_id=tokenizer_config.eos_token_id,
+        )
+
+        # Replace router config
+        model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBFullZLossRouterConfig(**router_kwargs)
     elif opts.model_type == "two-level_sampling_nolb":
         log.info("Applying two-level with sampling and no load balancing routers to the model...")
         if opts.document_expert_pool is None:

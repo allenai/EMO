@@ -42,7 +42,7 @@ from olmo_core.distributed.utils import get_local_tensor
 
 
 
-class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
+class MoETwoLevelBatchLBFullZLossRouter(MoETwoLevelRouter):
     """
     Custom MoE router with modified forward pass and additional class variables.
     """
@@ -70,7 +70,7 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
 
         # shape: (batch_size, seq_len, num_experts)
         logits = self.get_expert_logits(x).float()
-        logits_mask = torch.zeros_like(logits, dtype=torch.bool, device=logits.device)
+        scores_mask = torch.zeros_like(logits, dtype=torch.bool, device=logits.device)
 
         document_boundaries_cpu = []
         for b in document_boundaries:
@@ -104,10 +104,10 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
                 experts_to_discard = torch.topk(-document_expert_probs, bot_document_expert_pool).indices # shape: (bot_document_expert_pool,)
                 # set the logits of these experts to a very large negative value
                 # logits[seq_idx, start:end, experts_to_discard] = float('-inf')
-                logits_mask[seq_idx, start:end, experts_to_discard] = True
+                scores_mask[seq_idx, start:end, experts_to_discard] = True
                 start = end
 
-        logits.masked_fill_(logits_mask, float('-inf'))
+        # logits.masked_fill_(logits_mask, float('-inf'))
 
         if self.training:
             # log the average document entropy
@@ -122,6 +122,9 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
             scores = F.sigmoid(logits) + 1e-7
         else:
             raise NotImplementedError(self.gating_function)
+
+        # mask out the experts not selected for each document. we mask scores instead of logits to allow z-loss computation
+        scores = scores.masked_fill(scores_mask, 0.0)
 
         # shape: (batch_size, seq_len, top_k)
         expert_weights, expert_indices = self.get_top_k(scores)
@@ -229,7 +232,7 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
         return f"{base_repr}, document_expert_pool={self.document_expert_pool}, eos_token_id={self.eos_token_id}"
 
 @dataclass
-class MoETwoLevelBatchLBRouterConfig(MoETwoLevelRouterConfig):
+class MoETwoLevelBatchLBFullZLossRouterConfig(MoETwoLevelRouterConfig):
     # just update the build to call the correct new class
     def build(
             self,
@@ -241,7 +244,7 @@ class MoETwoLevelBatchLBRouterConfig(MoETwoLevelRouterConfig):
             z_loss_weight: Optional[float] = None,
             dtype: Optional[torch.dtype] = None,
             init_device: str = "cpu",
-    ) -> MoETwoLevelBatchLBRouter:
+    ) -> MoETwoLevelBatchLBFullZLossRouter:
         """
         Build the pruning router.
         """
@@ -260,4 +263,4 @@ class MoETwoLevelBatchLBRouterConfig(MoETwoLevelRouterConfig):
         elif dtype is not None:
             kwargs["dtype"] = dtype
 
-        return MoETwoLevelBatchLBRouter(**kwargs)
+        return MoETwoLevelBatchLBFullZLossRouter(**kwargs)

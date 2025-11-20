@@ -16,21 +16,21 @@ import seaborn as sns
 
 # Configuration -----------------------------------------------------------------
 
-MAIN_MODEL="twolevel-32_1b7b_128experts_olmoe-mix_130B_1110_step30995"
-MAIN_MODEL_GROUP_LABEL="twolevel keepk32"
-MAIN_MODEL_GROUP_LABEL_RANDOM="twolevel keepk32 random"
-MAIN_MODEL_GROUP_LABEL_K8 = "N/A"
-MAIN_MODEL_GROUP_LABEL_K8_RANDOM = "N/A"
-MAIN_MODEL_BASELINE_LABEL="twolevel full"
-MAIN_MODEL_FAMILY="twolevel"
+# MAIN_MODEL="twolevel-32_1b7b_128experts_olmoe-mix_130B_1110_step30995"
+# MAIN_MODEL_GROUP_LABEL="twolevel keepk32"
+# MAIN_MODEL_GROUP_LABEL_RANDOM="twolevel keepk32 random"
+# MAIN_MODEL_GROUP_LABEL_K8 = "N/A"
+# MAIN_MODEL_GROUP_LABEL_K8_RANDOM = "N/A"
+# MAIN_MODEL_BASELINE_LABEL="twolevel full"
+# MAIN_MODEL_FAMILY="twolevel"
 
-# MAIN_MODEL = "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115_step30995"
-# MAIN_MODEL_GROUP_LABEL = "twolevelbatchlb keepk32"
-# MAIN_MODEL_GROUP_LABEL_RANDOM = "twolevelbatchlb keepk32 random"
-# MAIN_MODEL_GROUP_LABEL_K8 = "twolevelbatchlb keepk8"
-# MAIN_MODEL_GROUP_LABEL_K8_RANDOM = "twolevelbatchlb keepk8 random"
-# MAIN_MODEL_BASELINE_LABEL = "twolevelbatchlb full"
-# MAIN_MODEL_FAMILY = "twolevelbatchlb"
+MAIN_MODEL = "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115_step30995"
+MAIN_MODEL_GROUP_LABEL = "twolevelbatchlb keepk32"
+MAIN_MODEL_GROUP_LABEL_RANDOM = "twolevelbatchlb keepk32 random"
+MAIN_MODEL_GROUP_LABEL_K8 = "twolevelbatchlb keepk8"
+MAIN_MODEL_GROUP_LABEL_K8_RANDOM = "twolevelbatchlb keepk8 random"
+MAIN_MODEL_BASELINE_LABEL = "twolevelbatchlb full"
+MAIN_MODEL_FAMILY = "twolevelbatchlb"
 
 # Task-specific configuration.
 TASKS: List[str] = [
@@ -85,6 +85,10 @@ MODEL_GROUPS: Dict[str, str] = {
         f"{MAIN_MODEL}_"
         "task-{task_core}_rc_train_0shot_finetune_random-keepk8_step{step}-hf"
     ),
+    "dense finetuned": (
+        "dense_1b_olmoe-mix_1028_step30995_"
+        "task-{task_core}_rc_train_0shot_finetune_step{step}-hf"
+    ),
 }
 
 BASELINE_MODELS: Dict[str, str] = {
@@ -106,6 +110,7 @@ GROUP_FAMILY: Dict[str, str] = {
     MAIN_MODEL_GROUP_LABEL_RANDOM: MAIN_MODEL_FAMILY,
     MAIN_MODEL_GROUP_LABEL_K8: MAIN_MODEL_FAMILY,
     MAIN_MODEL_GROUP_LABEL_K8_RANDOM: MAIN_MODEL_FAMILY,
+    "dense finetuned": "dense",
 }
 
 BASELINE_FAMILY: Dict[str, str] = {
@@ -176,6 +181,7 @@ def collect_primary_scores(
 
         if not metrics_path.exists():
             print(f"[WARN] Missing metrics for {model_dir}")
+            print(f"[DEBUG] Looking for: {metrics_path}")
             continue
 
         try:
@@ -212,6 +218,7 @@ def collect_primary_scores(
             continue
 
         records.append({"step": step, "primary_score": score})
+        print(f"[DEBUG] Found score {score} for step {step} in {model_dir}")
 
     return records, primary_metric_name
 
@@ -389,13 +396,17 @@ def plot_primary_scores(
         group_data = df[df["model_group"] == group].sort_values("step")
         is_random = "random" in group.lower()
         is_keepk8 = "keepk8" in group.lower()
+        is_dense = "dense" in group.lower()
         
         # Marker selection:
+        # dense keepk32: triangle down (v)
         # keepk32 regular: circle (o)
         # keepk32 random: triangle up (^)
         # keepk8 regular: square (s)
         # keepk8 random: diamond (D)
-        if is_keepk8:
+        if is_dense:
+            marker = "v"  # triangle down for dense
+        elif is_keepk8:
             marker = "D" if is_random else "s"  # diamond for keepk8 random, square for keepk8 regular
         else:
             marker = "^" if is_random else "o"  # triangle for keepk32 random, circle for keepk32 regular
