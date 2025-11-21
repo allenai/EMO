@@ -23,7 +23,7 @@ step="step30995"
 prune_keep_k=32
 num_checkpoints=5
 
-lr=4e-5
+lr=6e-5
 ABLATION_NAME="-lr_${lr}"
 
 base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
