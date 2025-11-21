@@ -23,7 +23,7 @@ step="step30995"
 prune_keep_k=32
 num_checkpoints=5
 
-ABLATION_NAME="-lr_2e-5"
+ABLATION_NAME="-nochange"
 
 base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
@@ -128,13 +128,13 @@ for train_task_name in "${train_task_names[@]}"; do
         --dataset.paths="[${dataset_paths}]" \
         --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
         --trainer.max_duration='{value: 3, unit: epochs}' \
-        --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
+        --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}, group: finetune_ablate}" \
         --load_path=$base_model \
         --activation_file=$activation_file \
         --prune_keep_k=$prune_keep_k \
         --num_checkpoints=$num_checkpoints \
         --model.block.feed_forward_moe.num_experts=128 \
-        --train_module.optim.lr=2e-5 \
+#        --train_module.optim.lr=2e-5 \
 
 
 #        --dataset.label_mask_paths="[${label_mask_paths}]" \
