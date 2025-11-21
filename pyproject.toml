@@ -57,7 +57,7 @@ dev = [
 beaker = ["beaker-py>=1.37.0,<2.0", "GitPython>=3.0,<4.0", "google-cloud-compute"]
 comet = ["comet_ml"]
 eval = [
-    "ai2-olmes@git+https://github.com/allenai/olmes@85ca343dade59a82b700c8819c5245165f97d308",
+    "ai2-olmes@git+https://github.com/allenai/olmes@dd799419ac9262c649cac2a5a400f7089c1bdb16",
     "beaker-gantry"
 ]
 torchao = ["torchao"]
