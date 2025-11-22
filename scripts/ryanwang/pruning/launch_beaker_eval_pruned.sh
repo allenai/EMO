@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# Script to launch beaker evaluations for all available tasks
-# Usage: bash src/scripts/eval/launch_beaker_eval.sh
+# Script to launch beaker evaluations for pruned models. Requires changing "postfix" accordingly
 
 # Configuration
 BASE_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"

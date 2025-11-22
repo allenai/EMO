@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# Script to launch beaker evaluations for all available tasks
-# Usage: bash src/scripts/eval/launch_beaker_eval.sh
+# Script to launch beaker evaluations for mmlu tasks + pruning (just lists the tasks)
 
 # Configuration
 BASE_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"

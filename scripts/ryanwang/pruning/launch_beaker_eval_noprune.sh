@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Script to launch beaker evaluations for all available tasks
-# Usage: bash src/scripts/eval/launch_beaker_eval.sh
+# Script to launch beaker evaluations for unpruned models (e.g dense full models without any pruning)
+# note that this means to not pass in any pruning related arguments to the eval script
 
 # Configuration
 BASE_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"

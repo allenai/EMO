@@ -17,9 +17,9 @@ model_type=hf
 
 # Define grouped tasks
 TASK_GROUPS_LIST=(
-  ######### TEST-only ##########
+  ######### few-shot ##########
   # MC9 tasks
-#  "arc_easy"
+  "arc_easy"
 #  "arc_challenge"
 #  "boolq"
 #  "csqa"
@@ -30,10 +30,28 @@ TASK_GROUPS_LIST=(
 #  "winogrande"
 
 #   MMLU
-  "mmlu"
+#  "mmlu"
 
 #   GSM8K
 #  "gsm8k"
+
+  ######### ZERO-SHOT only ##########
+  # MC9 tasks
+#  "arc_easy_zeroshot"
+#  "arc_challenge_zeroshot"
+#  "boolq_zeroshot"
+#  "csqa_zeroshot"
+#  "hellaswag_zeroshot"
+#  "openbookqa_zeroshot"
+#  "piqa_zeroshot"
+#  "socialiqa_zeroshot"
+#  "winogrande_zeroshot"
+
+#   MMLU
+#  "mmlu_zeroshot"
+
+#   GSM8K
+#  "gsm8k_zeroshot"
 )
 
 # Function to get checkpoint name (matching the original script)

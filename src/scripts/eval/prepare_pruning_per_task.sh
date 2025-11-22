@@ -65,16 +65,34 @@ echo "Output dir: $output_dir"
 # run to get requests. Will not override if file alread exists
 echo "~~~~~~~~~ get validation and train examples ~~~~~~~~~"
 
-if [[ "$GROUP_NAME" == *gsm8k* ]]; then
-    validation_task_name="$GROUP_NAME:perplexity_validation_0shot::olmes"
-    train_task_name="$GROUP_NAME:perplexity_train_0shot::olmes"
-elif [[ "$GROUP_NAME" == *mmlu* ]]; then
-    validation_task_name="$GROUP_NAME:rc_validation_0shot::olmes"
-    train_task_name="" # set to empty string since there's no train set
+# first check if "fewshot" is in the GROUP_NAME
+if [[ "$GROUP_NAME" == *_zeroshot* ]]; then
+    # remove "_zeroshot" from GROUP_NAME
+    GROUP_NAME="${GROUP_NAME//_zeroshot/}"
+    if [[ "$GROUP_NAME" == *gsm8k* ]]; then
+        validation_task_name="$GROUP_NAME:perplexity_validation_0shot::olmes"
+        train_task_name="$GROUP_NAME:perplexity_train_0shot::olmes"
+    elif [[ "$GROUP_NAME" == *mmlu* ]]; then
+        validation_task_name="$GROUP_NAME:rc_validation_0shot::olmes"
+        train_task_name="" # set to empty string since there's no train set
+    else
+        validation_task_name="$GROUP_NAME:rc_validation_0shot::olmes"
+        train_task_name="$GROUP_NAME:rc_train_0shot::olmes"
+    fi
 else
-    validation_task_name="$GROUP_NAME:rc_validation_0shot::olmes"
-    train_task_name="$GROUP_NAME:rc_train_0shot::olmes"
+    if [[ "$GROUP_NAME" == *gsm8k* ]]; then
+        validation_task_name="$GROUP_NAME:perplexity_validation::olmes"
+        train_task_name="$GROUP_NAME:perplexity_train::olmes"
+    elif [[ "$GROUP_NAME" == *mmlu* ]]; then
+        validation_task_name="$GROUP_NAME:rc_validation::olmes"
+        train_task_name="" # set to empty string since there's no train set
+    else
+        validation_task_name="$GROUP_NAME:rc_validation::olmes"
+        train_task_name="$GROUP_NAME:rc_train::olmes"
+    fi
 fi
+
+
 
 # requests for validation (expert selection). Saves validation to model-specific directory since we also get model predictions for correctness
 PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
