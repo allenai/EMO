@@ -23,8 +23,9 @@ step="step30995"
 prune_keep_k=32
 num_checkpoints=5
 
-lr=8e-5
-ABLATION_NAME="-lr_${lr}"
+lr=4e-5
+warmup_fraction=0.2
+ABLATION_NAME="-lr_${lr}-warmupfrac_${warmup_fraction}"
 
 base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
@@ -136,6 +137,7 @@ for train_task_name in "${train_task_names[@]}"; do
         --num_checkpoints=$num_checkpoints \
         --model.block.feed_forward_moe.num_experts=128 \
         --train_module.optim.lr=${lr} \
+        --train_module.scheduler.warmup_fraction=${warmup_fraction}
 
 
 #        --dataset.label_mask_paths="[${label_mask_paths}]" \
