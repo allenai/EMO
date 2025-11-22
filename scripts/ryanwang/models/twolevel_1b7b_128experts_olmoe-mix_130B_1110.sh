@@ -1,18 +1,11 @@
-# default command explanations:
-
-# the first name is the name appear in beaker
-# for more details, do `python -m olmo_core.launch.beaker --help`
-
-# basically it's running `src/examples/llm/train.py`
-# the first config is a run name (used for save_folder, wandb name, etc)
-# for more details, `python src/examples/llm/train.py olmo1B-pretrain-01 --dry-run`
-
-# -- trainer.load_path if you want to load from another model
-
-# when the config is a class, we could either use a json string or set individual value
-# e.g., `--trainer.hard_stop='value: 100, unit: steps'` or 
-#       `--trainer.hard_stop.value=100 --trainer.hard_stop.unit=steps`
-
+# PARENT: N/A
+# DESCRIPTION:
+#     - implemented two-level MoE
+#     - different from standard MoE (e.g moe_1b14b_128experts_olmoe-mix_130B_1117.sh) in the following:
+#         1) do intra-document masking
+#         2) Has a expert-pool which is selected for each document (here it's set to 32)
+# STATUS: DEPRICATED
+#     - replaced by "twolevelbatchlb_1b14b_stability_filter-true_zlossweight-1e-3_1115.sh" since performance was not good and training was unstable (loss was not consistenly decreasing)
 ##############################################################
 document_expert_pool=32
 

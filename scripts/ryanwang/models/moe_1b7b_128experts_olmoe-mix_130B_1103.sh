@@ -1,18 +1,9 @@
-# default command explanations:
-
-# the first name is the name appear in beaker
-# for more details, do `python -m olmo_core.launch.beaker --help`
-
-# basically it's running `src/examples/llm/train.py`
-# the first config is a run name (used for save_folder, wandb name, etc)
-# for more details, `python src/examples/llm/train.py olmo1B-pretrain-01 --dry-run`
-
-# -- trainer.load_path if you want to load from another model
-
-# when the config is a class, we could either use a json string or set individual value
-# e.g., `--trainer.hard_stop='value: 100, unit: steps'` or 
-#       `--trainer.hard_stop.value=100 --trainer.hard_stop.unit=steps`
-
+# PARENT: "moe_1b7b_olmoe-mix.sh"
+# DESCRIPTION:
+#     - same as parent but with 128 experts (total 14B params) trained on 130B tokens
+#     - typo in name (should be 1b14b instead of 1b7b),
+# STATUS: DEPRICATED
+#     - replaced by moe_1b14b_128experts_olmoe-mix_130B_1117.sh for replication of in-loop evals and updated dataset filtering
 ##############################################################
 
 runname="moe_1b7b_128experts_olmoe-mix_130B_1103"

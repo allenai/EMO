@@ -1,18 +1,8 @@
-# default command explanations:
-
-# the first name is the name appear in beaker
-# for more details, do `python -m olmo_core.launch.beaker --help`
-
-# basically it's running `src/examples/llm/train.py`
-# the first config is a run name (used for save_folder, wandb name, etc)
-# for more details, `python src/examples/llm/train.py olmo1B-pretrain-01 --dry-run`
-
-# -- trainer.load_path if you want to load from another model
-
-# when the config is a class, we could either use a json string or set individual value
-# e.g., `--trainer.hard_stop='value: 100, unit: steps'` or
-#       `--trainer.hard_stop.value=100 --trainer.hard_stop.unit=steps`
-
+# PARENT: "moe_1b7b_olmoe-mix.sh"
+# DESCRIPTION:
+#     - trained on upweighted DCLM mix dataset, everything else same as parent
+# STATUS: DEPRICATED
+#     - Decided to not use upweighted DCLM and stick with OLMoE mix. See "moe_1b7b_olmoe-mix.sh"
 ##############################################################
 
 runname="moe-1b7b_dclm-upweight"
