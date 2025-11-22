@@ -50,7 +50,7 @@ python -m olmo_core.launch.beaker \
 		--document-expert-pool=${document_expert_pool} \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="moe" \
-		--model.block.attention.qk_norm=false
+		--model.block.attention.qk_norm=null
 
 
 
