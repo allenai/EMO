@@ -17,7 +17,18 @@ get_eval_filename() {
     echo "task-${task_name}"
 }
 train_task_names=(
-  "arc_easy:rc_train_0shot::olmes"
+  "arc_easy:rc_train::olmes"
+  "arc_challenge:rc_train::olmes"
+  "boolq:rc_train::olmes"
+  "csqa:rc_train::olmes"
+  "hellaswag:rc_train::olmes"
+  "openbookqa:rc_train::olmes"
+  "piqa:rc_train::olmes"
+  "socialiqa:rc_train::olmes"
+  "winogrande:rc_train::olmes"
+
+
+#  "arc_easy:rc_train_0shot::olmes"
 #  "arc_challenge:rc_train_0shot::olmes"
 #  "boolq:rc_train_0shot::olmes"
 #  "csqa:rc_train_0shot::olmes"
