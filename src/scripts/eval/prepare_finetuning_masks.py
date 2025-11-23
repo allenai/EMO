@@ -69,6 +69,8 @@ def prepare_finetuning_masks(args_dict):
         prev_document = []
         document_start_idx = 0  # Track where the current document started
 
+        breakpoint()
+
         # we now extract individual documents and mask accordingly
         for i in range(num_tokens):
             prev_document.append(tokens[i])
@@ -80,14 +82,13 @@ def prepare_finetuning_masks(args_dict):
                     if prev_document[j:j + len(delimiter_ids)] == delimiter_ids:
                         delimiter_pos.append(j)
 
-                breakpoint()
-
-                assert len(delimiter_pos) == 1, f"Delimiter not found or found multiple times in document with length {len(prev_document)}"
+                # removing this assert because we might have few-shot now.
+                # assert len(delimiter_pos) == 1, f"Delimiter not found or found multiple times in document with length {len(prev_document)}"
 
                 # create the label mask for the previous document
                 label_mask = np.ones(len(prev_document), dtype=np.bool_)
-                # mask out everything before and including the delimiter
-                label_mask[:delimiter_pos[0] + len(delimiter_ids)] = False
+                # mask out everything before and including the delimiter for the final question/answer pair
+                label_mask[:delimiter_pos[-1] + len(delimiter_ids)] = False
 
                 # make sure that the document is not all masked out
                 if np.all(label_mask == False):
@@ -103,6 +104,8 @@ def prepare_finetuning_masks(args_dict):
                 # reset for next document
                 document_start_idx = i + 1
                 prev_document = []
+
+        breakpoint()
 
         # Process the last document if file doesn't end with 100257
         if len(prev_document) > 0:
@@ -122,16 +125,17 @@ def prepare_finetuning_masks(args_dict):
                     f"Delimiter '{delimiter_str}' not found in last document starting at index {document_start_idx}, "
                     f"length {len(prev_document)}. Token path: {token_path}"
                 )
-            elif len(delimiter_pos) > 1:
-                logger.warning(
-                    f"Multiple delimiters found in last document starting at index {document_start_idx}. "
-                    f"Using the first one at position {delimiter_pos[0]}. Token path: {token_path}"
-                )
+            # removing this check because we might have few-shot now.
+            # elif len(delimiter_pos) > 1:
+            #     logger.warning(
+            #         f"Multiple delimiters found in last document starting at index {document_start_idx}. "
+            #         f"Using the first one at position {delimiter_pos[0]}. Token path: {token_path}"
+            #     )
 
             # create the label mask for the last document
             label_mask = np.ones(len(prev_document), dtype=np.bool_)
             # mask out everything before and including the delimiter
-            label_mask[:delimiter_pos[0] + len(delimiter_ids)] = False
+            label_mask[:delimiter_pos[-1] + len(delimiter_ids)] = False
 
             # make sure that the document is not all masked out
             if np.all(label_mask == False):
