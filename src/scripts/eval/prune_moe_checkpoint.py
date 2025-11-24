@@ -80,6 +80,7 @@ def copy_param_with_prune(source_param, target_param, num_experts, prune_keep_k,
     """
     Copy parameters from source to target, handling two cases:
     NOTE: c means hidden dim of model, NOT context length
+    NOTE: b means hidden dim of expert (usually hidden dim of model / 2)
 
     Case 1: Multi-block tensors (expert weights)
         source_param: (num_experts * b, c)
@@ -157,7 +158,7 @@ def copy_param_with_prune(source_param, target_param, num_experts, prune_keep_k,
             )
 
         b = source_rows // num_experts
-        expected_target_rows = (num_experts + 1) * b
+        expected_target_rows = prune_keep_k * b
 
         # Verify target shape
         if target_rows != expected_target_rows:
@@ -169,37 +170,18 @@ def copy_param_with_prune(source_param, target_param, num_experts, prune_keep_k,
         source_reshaped = source_param.view(num_experts, b, columns)
 
         # Create new tensor
-        a_new = num_experts + 1
+        target_new = torch.zeros(
+            prune_keep_k, b, columns, device=target_param.device, dtype=target_param.dtype
+        )
 
-        init_method=AddExpertInitMethod.RANDOM  # TODO debug only
-
-        if init_method == AddExpertInitMethod.ZERO:
-            target_new = torch.zeros(
-                a_new, b, columns, device=target_param.device, dtype=target_param.dtype
-            )
-        elif init_method == AddExpertInitMethod.RANDOM:
-            # Do nothing, the new_model was initialized randomly already
-            target_new = target_param.view(a_new, b, columns).clone()
-        elif init_method == AddExpertInitMethod.AVERAGE:
-            target_new = torch.empty(
-                a_new, b, columns, device=target_param.device, dtype=target_param.dtype
-            )
-            # Compute average of existing experts
-            avg_expert = source_reshaped.mean(dim=0)
-            # Copy average to new expert position
-            with torch.no_grad():
-                target_new[-1, :, :].copy_(avg_expert)
-        elif init_method == AddExpertInitMethod.SIMILAR:
-            print("Similar initialization not implemented yet.")
-            raise NotImplementedError("Similar initialization not implemented yet.")
-        else:
-            raise ValueError(f"Unknown init method: {init_method}")
+        breakpoint()
 
         # Copy data
-        target_new[:num_experts, :, :] = source_reshaped
+        for i, expert_idx in enumerate(experts_to_keep):
+            target_new[i, :, :] = source_reshaped[expert_idx, :, :]
 
         # Reshape back
-        target_flat = target_new.view(a_new * b, columns)
+        target_flat = target_new.view(prune_keep_k * b, columns)
 
         # Update target
         with torch.no_grad():
