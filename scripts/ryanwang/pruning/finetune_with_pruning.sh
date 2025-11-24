@@ -153,7 +153,6 @@ for model_name in "${model_names[@]}"; do
             --load_path=$base_model \
             --num_checkpoints=$num_checkpoints \
             --model.block.feed_forward_moe.num_experts=${prune_keep_k} \
-            --
 
     #        --dataset.label_mask_paths="[${label_mask_paths}]" \
 
