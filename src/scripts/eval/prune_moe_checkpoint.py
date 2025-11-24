@@ -209,6 +209,7 @@ def copy_param_with_resize(source_param, target_param, num_experts: int, init_me
 
 
 def add_expert(checkpoint_path: str, save_path: Optional[str] = None, init_method: Optional[str] = None):
+    breakpoint()
     # Load model config
     config_path = os.path.join(checkpoint_path, "config.json")
     logger.info(f"Loading model config from {config_path}")
@@ -290,5 +291,4 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    breakpoint()
     new_model = add_expert(args.checkpoint_path, args.save_path)
