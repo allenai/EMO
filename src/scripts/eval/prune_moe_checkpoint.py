@@ -76,9 +76,10 @@ def save_checkpoint(config: dict, model: torch.nn.Module, save_path: str):
     logger.info(f"Saved new model weights to {model_weights_path}")
 
 
-def copy_param_with_resize(source_param, target_param, num_experts: int, init_method: str = AddExpertInitMethod.ZERO):
+def copy_param_with_prune(source_param, target_param, num_experts, prune_keep_k, model_config, experts_to_keep):
     """
     Copy parameters from source to target, handling two cases:
+    NOTE: c means hidden dim of model, NOT context length
 
     Case 1: Multi-block tensors (expert weights)
         source_param: (num_experts * b, c)
@@ -86,8 +87,16 @@ def copy_param_with_resize(source_param, target_param, num_experts: int, init_me
 
     Case 2: Flat tensors that should be viewed as matrices (router weights)
         source_param: (num_experts * c,)
-        target_param: ((num_experts + 1) * c,)
+        target_param: (prune_keep_k * c,)
+
+    "source_param": parameter tensor from the source model
+    "target_param": parameter tensor from the target model
+    "num_experts": number of experts in the source model
+    "prune_keep_k": number of experts to keep in the target model
+    "model_config": config of the model to check dimensions
+    "experts_to_keep": list of experts to keep for the layer being processed. Tensor of shape (prune_keepk,) with range [0, num_experts-1]
     """
+
     # Router weights
     if len(source_param.shape) == 1:
         source_len = source_param.shape[0]
@@ -100,42 +109,33 @@ def copy_param_with_resize(source_param, target_param, num_experts: int, init_me
             )
 
         c = source_len // num_experts
+        assert c == model_config.d_model, f"Expected hidden dim {model_config.d_model}, got {c}"
 
         # Verify target length
-        expected_target_len = (num_experts + 1) * c
+        expected_target_len = prune_keep_k * c
         if target_len != expected_target_len:
             raise ValueError(f"Expected target length {expected_target_len}, got {target_len}")
 
         # Reshape flat tensors to matrices
         source_matrix = source_param.view(num_experts, c)
 
-        if init_method == AddExpertInitMethod.ZERO:
-            # Create a new tensor for target
-            target_new = torch.zeros(
-                (num_experts + 1) * c, device=target_param.device, dtype=target_param.dtype
-            )
-        elif init_method == AddExpertInitMethod.RANDOM:
-            # Do nothing, the new_model was initialized randomly already
-            target_new = target_param.view(num_experts+1, c).clone()
-        elif init_method == AddExpertInitMethod.AVERAGE:
-            # Create a new tensor for target
-            target_new = torch.empty(
-                (num_experts + 1) * c, device=target_param.device, dtype=target_param.dtype
-            )
-            # Compute average of existing experts
-            avg_expert = source_matrix.mean(dim=0)
-            # Copy average to new expert position
-            with torch.no_grad():
-                target_new.view(num_experts + 1, c)[-1, :].copy_(avg_expert)
-        elif init_method == AddExpertInitMethod.SIMILAR:
-            print("Similar initialization not implemented yet.")
-            raise NotImplementedError("Similar initialization not implemented yet.")
-        else:
-            raise ValueError(f"Unknown init method: {init_method}")
-        target_matrix = target_new.view(num_experts + 1, c)
+        # initialize new tensor for target
+        target_new = torch.zeros(
+            prune_keep_k * c, device=target_param.device, dtype=target_param.dtype
+        )
 
-        # Copy data
-        target_matrix[:num_experts, :] = source_matrix
+        target_matrix = target_new.view(prune_keep_k, c)
+
+        breakpoint()
+
+        # Copy data for selected experts
+        for i, expert_idx in enumerate(experts_to_keep):
+            target_matrix[i, :] = source_matrix[expert_idx, :]
+        # # Update target parameter
+        #
+        #
+        # # Copy data
+        # target_matrix[:num_experts, :] = source_matrix
 
         # Update target parameter
         with torch.no_grad():
@@ -170,6 +170,8 @@ def copy_param_with_resize(source_param, target_param, num_experts: int, init_me
 
         # Create new tensor
         a_new = num_experts + 1
+
+        init_method=AddExpertInitMethod.RANDOM  # TODO debug only
 
         if init_method == AddExpertInitMethod.ZERO:
             target_new = torch.zeros(
@@ -206,10 +208,10 @@ def copy_param_with_resize(source_param, target_param, num_experts: int, init_me
     return target_param
 
 
-def prune_experts(checkpoint_path: str, prune_keep_k: int, save_path: Optional[str] = None):
+def prune_experts(args):
     breakpoint()
     # Load model config
-    config_path = os.path.join(checkpoint_path, "config.json")
+    config_path = os.path.join(args.checkpoint_path, "config.json")
     logger.info(f"Loading model config from {config_path}")
     with open(config_path, "r") as f:
         config = json.load(f)
@@ -218,8 +220,8 @@ def prune_experts(checkpoint_path: str, prune_keep_k: int, save_path: Optional[s
     logger.info(f"Model config {model_config}")
 
     # Load model weights
-    logger.info(f"Loading model weights from {checkpoint_path}")
-    model = load_checkpoint(model_config=model_config, checkpoint_path=checkpoint_path)
+    logger.info(f"Loading model weights from {args.checkpoint_path}")
+    model = load_checkpoint(model_config=model_config, checkpoint_path=args.checkpoint_path)
     logger.info("Model loaded successfully")
 
     # Update config
@@ -227,15 +229,23 @@ def prune_experts(checkpoint_path: str, prune_keep_k: int, save_path: Optional[s
     new_config = model_config.copy()
     assert new_config.block.feed_forward_moe is not None, "Model is not MoE"
     # Set the total number of experts to prune_keep_k
-    new_config.block.feed_forward_moe.num_experts = prune_keep_k
+    new_config.block.feed_forward_moe.num_experts = args.prune_keep_k
     new_model = new_config.build(init_device="cpu")
 
     new_model.init_weights() # Initialized with random init
 
     num_experts = model_config.block.feed_forward_moe.num_experts
+    assert num_experts == args.prune_keep_k, f"Number of experts in config {num_experts} does not match prune_keep_k {args.prune_keep_k}"
+
+    # we now load in the activation file to determine which experts to keep
+    with open(args.activation_file, 'r') as f:
+        line = f.readline()
+        activations = json.loads(line)["avg_router_probabilities"]
+    assert len(activations) == model_config.n_layers, f"Number of layers in activation file {len(activations)} does not match orig model {model_config.n_layers}"
 
     # Copy weights from old model to new model
     for name, param in model.named_parameters():
+        assert name in new_model.state_dict() , f"Parameter {name} not found in new model, expected to be same since we're pruning router weights only"
         if name in new_model.state_dict():
             new_param = new_model.state_dict()[name]
             if param.shape == new_param.shape:
@@ -244,23 +254,15 @@ def prune_experts(checkpoint_path: str, prune_keep_k: int, save_path: Optional[s
                 breakpoint()
                 # assert "router" in name, f"Shape mismatch for parameter {name}"
                 if "router" in name or "experts" in name:
-                    copy_param_with_resize(param, new_param, num_experts)
-                    if init_method == AddExpertInitMethod.AVERAGE:
-                        if len(param.shape) == 2:
-                            # Multi-block tensor
-                            b = param.shape[0] // num_experts
-                            columns = param.shape[1]
-                            param_reshaped = param.view(num_experts, b, columns)
-                            avg_expert = param_reshaped.mean(dim=0)
-                            with torch.no_grad():
-                                new_param.data[-b:, :].copy_(avg_expert)
-                        elif len(param.shape) == 1:
-                            # Flat tensor
-                            c = param.shape[0] // num_experts
-                            param_reshaped = param.view(num_experts, c)
-                            avg_expert = param_reshaped.mean(dim=0)
-                            with torch.no_grad():
-                                new_param.data[-c:].copy_(avg_expert)
+                    # we extract the layer number
+                    layer_idx = int(name.split(".")[1]) # Assumes naming convention like 'blocks.15.feed_forward_moe.router.weight', 'blocks.15.feed_forward_moe.experts.mlp.w1'
+                    layer_activation = activations[layer_idx]
+                    experts_to_keep = torch.topk(
+                        torch.tensor(layer_activation),
+                        min(args.prune_keep_k, len(layer_activation))
+                    ).indices.tolist()
+
+                    copy_param_with_prune(param, new_param, num_experts, args.prune_keep_k, model_config, experts_to_keep)
 
         else:
             logger.debug(f"Parameter {name} not found in new model, not updating weights")
@@ -268,9 +270,9 @@ def prune_experts(checkpoint_path: str, prune_keep_k: int, save_path: Optional[s
     logger.info("Weights copied to new model successfully")
 
     # Save new model checkpoint
-    if save_path is not None:
+    if args.save_path is not None:
         config["model"] = new_config.as_config_dict()
-        save_checkpoint(config, new_model, save_path)
+        save_checkpoint(config, new_model, args.save_path)
 
     return new_model
 
@@ -286,9 +288,12 @@ def parse_args():
     parser.add_argument(
         "--prune_keep_k", type=int, required=True, help="Number of experts to keep after pruning"
     )
+    parser.add_argument(
+        "--activation_file", type=str, required=True, help="Path to activation file that records expert activations"
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
-    new_model = prune_experts(args.checkpoint_path, args.prune_keep_k, args.save_path)
+    new_model = prune_experts(args)
