@@ -24,6 +24,26 @@ from olmo_core.nn.transformer.init import InitMethod
 
 logger = logging.getLogger(__name__)
 
+class AddExpertInitMethod:
+    RANDOM = "random"
+    """
+    Initialize new expert with random weights.
+    """
+
+    AVERAGE = "average"
+    """
+    Initialize new expert with average of existing experts.
+    """
+
+    ZERO = "zero"
+    """
+    Initialize new expert with zeros.
+    """
+
+    SIMILAR = "similar"
+    """
+    Initialize new expert with weights similar to existing experts.
+    """
 
 def get_model_config(checkpoint_path: str):
     config_path = os.path.join(checkpoint_path, "config.json")
