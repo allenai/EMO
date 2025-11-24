@@ -18,10 +18,9 @@ BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
 run_configs=(
+  "moe_1b7b_128experts_olmoe-mix_130B_1103|prune_keep_k=32"
+  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110|prune_keep_k=32"
   "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115|prune_keep_k=32"
-#  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115|prune_keep_k=8"
-#  "moe_1b7b_128experts_olmoe-mix_130B_1103|prune_keep_k=32"
-#  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110|prune_keep_k=32"
 )
 #model_name="moe_1b7b_olmoe-mix"
 step="step30995"
@@ -97,15 +96,15 @@ for run_config in "${run_configs[@]}"; do
 
         # swap out all occurences of "train" with "validation" to get validation set
         validation_task_prefix="${task_prefix/train/validation}"
-        activation_file="${BASE_OUTPUT_DIR}/prune/${model_name}_${step}-hf/${validation_task_prefix}-router.jsonl"
+        activation_file="${BASE_OUTPUT_DIR}/prune/random-router.jsonl"
 
-        runname="${model_name}_${step}_finetune_${task_prefix}_keepk${prune_keep_k}"
+        runname="${model_name}_${step}_finetune_random_${task_prefix}_keepk${prune_keep_k}"
         wandb_name=${runname}
         # limit runname to 128 characters, take first 25 and last 75
         runname=$(echo $runname | cut -c1-35)_$(echo $runname | rev | cut -c1-65 | rev)
 #        runname=$(echo $runname | rev | cut -c1-100 | rev)
 
-        out_dir="${task_prefix}_finetune-keepk${prune_keep_k}"
+        out_dir="${task_prefix}_finetune_random-keepk${prune_keep_k}"
 
         # for debugging
         echo "Run name: $runname"
@@ -131,32 +130,32 @@ for run_config in "${run_configs[@]}"; do
     #        --model.block.feed_forward_moe.num_experts=128 \
 
 
-        python -m olmo_core.launch.beaker \
-          --name $runname \
-          --gpus 8 \
-          --nodes 1 \
-          --is_private_repo \
-          --weka=oe-training-default \
-          --shared-filesystem \
-          --workspace ai2/flex2 \
-          --cluster ai2/jupiter \
-          --preemptible \
-          --allow-dirty \
-          --priority urgent \
-          --no-follow \
-          --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
-          -- src/scripts/train/olmoe-1B-7B_finetune.py \
-            $runname \
-            --save-folder="${base_model}/${out_dir}" \
-            --dataset.paths="[${dataset_paths}]" \
-            --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
-            --trainer.max_duration='{value: 3, unit: epochs}' \
-            --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${wandb_name}, tags: [${task_prefix}, ${model_name}, keepk${prune_keep_k}]}" \
-            --load_path=$base_model \
-            --activation_file=$activation_file \
-            --prune_keep_k=$prune_keep_k \
-            --num_checkpoints=$num_checkpoints \
-            --model.block.feed_forward_moe.num_experts=128 \
+#        python -m olmo_core.launch.beaker \
+#          --name $runname \
+#          --gpus 8 \
+#          --nodes 1 \
+#          --is_private_repo \
+#          --weka=oe-training-default \
+#          --shared-filesystem \
+#          --workspace ai2/flex2 \
+#          --cluster ai2/jupiter \
+#          --preemptible \
+#          --allow-dirty \
+#          --priority urgent \
+#          --no-follow \
+#          --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+#          -- src/scripts/train/olmoe-1B-7B_finetune.py \
+#            $runname \
+#            --save-folder="${base_model}/${out_dir}" \
+#            --dataset.paths="[${dataset_paths}]" \
+#            --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
+#            --trainer.max_duration='{value: 3, unit: epochs}' \
+#            --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${wandb_name}, tags: [${task_prefix}, ${model_name}, keepk${prune_keep_k}]}" \
+#            --load_path=$base_model \
+#            --activation_file=$activation_file \
+#            --prune_keep_k=$prune_keep_k \
+#            --num_checkpoints=$num_checkpoints \
+#            --model.block.feed_forward_moe.num_experts=128 \
 
     #        --dataset.label_mask_paths="[${label_mask_paths}]" \
 
