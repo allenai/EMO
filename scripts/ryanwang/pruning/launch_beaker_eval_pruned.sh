@@ -138,16 +138,6 @@ echo ""
 # Launch evaluation for each combination of parent model and finetune task
 for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
     for FINETUNE_TASK in "${FINETUNE_TASKS[@]}"; do
-        # Construct the full model path by combining parent model and finetune task
-        MODEL_NAME="${PARENT_MODEL}/${FINETUNE_TASK}"
-        echo "Processing model: $MODEL_NAME"
-
-        model=$(get_checkpoint_name $MODEL_NAME)
-
-        echo "Model name for output dir: $model"
-
-        OUTPUT_DIR="${BASE_OUTPUT_DIR}/$model"
-
         for entry in "${TASK_GROUPS_LIST[@]}"; do
             GROUP_NAME="${entry%%|*}"                # text before '|'
             TASK="${entry#*|}"            # text after '|'
@@ -172,6 +162,20 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
                 gpus=1
             fi
 
+            # find the activation file
+            parent_model_name=$(get_checkpoint_name $PARENT_MODEL)
+            # get validation_task_prefix by getting what comes before _finetune, and also swapping out all "train" with "validation"
+            validation_task_prefix="${FINETUNE_TASK%%_finetune*}"
+            validation_task_prefix="${validation_task_prefix/train/validation}"
+            activation_file="${PRUNE_DIR}/${parent_model_name}-hf/${validation_task_prefix}-router.jsonl"
+
+            # Construct the full model path
+            MODEL_NAME="${PARENT_MODEL}_${validation_task_prefix}/${FINETUNE_TASK}"
+            echo "Processing model: $MODEL_NAME"
+            model=$(get_checkpoint_name $MODEL_NAME)
+            echo "Model name for output dir: $model"
+            OUTPUT_DIR="${BASE_OUTPUT_DIR}/$model"
+
             # Create a shorter, valid job name
             # Remove invalid characters and truncate long names
             safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g')
@@ -179,13 +183,6 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
             job_name="eval-${safe_model_name}-${safe_group_name}"
             # limit job_name to be at most 128 characters
             job_name=${job_name:0:120}
-
-            # find the activation file
-            parent_model_name=$(get_checkpoint_name $PARENT_MODEL)
-            # get finetune_task_name by getting what comes before _finetune, and also swapping out all "train" with "validation"
-            finetune_task_name="${FINETUNE_TASK%%_finetune*}"
-            finetune_task_name="${finetune_task_name/train/validation}"
-            activation_file="${PRUNE_DIR}/${parent_model_name}-hf/${finetune_task_name}-router.jsonl"
 
 
             echo "  Model name: $model"

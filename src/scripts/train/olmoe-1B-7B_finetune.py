@@ -92,8 +92,12 @@ def train(opts, config: ExperimentConfig):
     # Build components.
     model = config.model.build(init_device="meta")
 
-    # Apply the pruning routers
-    apply_pruned_routers(model, config.model, activation_file=opts.activation_file, prune_keep_k=opts.prune_keep_k)
+    # Apply the pruning routers if prune_keep_k is set
+    if opts.prune_keep_k > 0:
+        log.info(f"Applying PruningMoERouter with keep_k={opts.prune_keep_k} and activation_file={opts.activation_file}")
+        apply_pruned_routers(model, config.model, activation_file=opts.activation_file, prune_keep_k=opts.prune_keep_k)
+    else:
+        log.info("No extra pruning applied to routers.")
 
     train_module = config.train_module.build(model)
     dataset = config.dataset.build()
@@ -190,25 +194,6 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     model_config = TransformerConfig.olmoe_1B_7B(
         vocab_size=tokenizer_config.padded_vocab_size(),  # a little bigger than actual vocab size to make it a multiple of 128
     )
-
-    # breakpoint()
-    #
-    # # Override the router config in the MoE blocks to be prunable
-    # for i in range(model_config.n_layers):
-    #     if hasattr(model_config.block, 'feed_forward_moe'):
-    #         # Replace the router config with your custom one
-    #
-    #         kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
-    #         kwargs.pop("name")
-    #         kwargs.update(
-    #             prune_keep_k=opts.prune_keep_k,
-    #             activation_file=opts.activation_file,
-    #             layer_idx=i,  # Pass layer index
-    #         )
-    #         model_config.block.feed_forward_moe.router = PruningMoERouterConfig(**kwargs)
-    # # docs: end-model-config
-    #
-    # breakpoint()
 
     dataset_config = NumpyPaddedFSLDatasetConfig(
         paths=[], # to be filled in by the bash script
@@ -353,12 +338,12 @@ def parser_args():
     parser.add_argument(
         "--prune_keep_k",
         type=int,
+        default=-1,
         help="Number of experts to keep during pruning.",
     )
     parser.add_argument(
         "--num_checkpoints",
         type=int,
-        default=4,
         help="Number of steps between saving checkpoints.",
     )
     opts, overrides = parser.parse_known_args()

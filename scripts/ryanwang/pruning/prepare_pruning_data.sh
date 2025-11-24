@@ -73,14 +73,6 @@ echo ""
 for MODEL_PATH in "${MODELS[@]}"; do
     echo "Processing model: $MODEL_PATH"
 
-    # For setting the output_dir (matching original script logic)
-#    if [[ $MODEL_PATH == "/"* ]]; then
-#        # internal model
-#        model=$(get_checkpoint_name $MODEL_PATH)
-#    else
-#        # HF model
-#        model=$(echo $MODEL_PATH | cut -d'/' -f2)
-#    fi
     model=$(get_checkpoint_name $MODEL_PATH)
 
     echo "Model name for output dir: $model"

@@ -17,27 +17,29 @@
 BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
-run_configs=(
-  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115|prune_keep_k=32"
-#  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115|prune_keep_k=8"
-#  "moe_1b7b_128experts_olmoe-mix_130B_1103|prune_keep_k=32"
-#  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110|prune_keep_k=32"
+model_names=(
+  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115"
+#  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115"
+#  "moe_1b7b_128experts_olmoe-mix_130B_1103"
+#  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110"
 )
 #model_name="moe_1b7b_olmoe-mix"
 step="step30995"
 num_checkpoints=5
 
-train_task_names=(
-  "arc_easy:rc_train::olmes"
-#  "arc_challenge:rc_train::olmes"
-#  "boolq:rc_train::olmes"
-#  "csqa:rc_train::olmes"
-#  "hellaswag:rc_train::olmes"
-#  "openbookqa:rc_train::olmes"
-#  "piqa:rc_train::olmes"
-#  "socialiqa:rc_train::olmes"
-#  "winogrande:rc_train::olmes"
+# first argument is which validation used for pruning, second is training dataset
+task_configs=(
+  "task-arc_easy_rc_validation_keepk32|arc_easy:rc_train::olmes"
+#  "task-arc_challenge_rc_validation_keepk32|arc_challenge:rc_train::olmes"
+#  "task-boolq_rc_validation_keepk32|boolq:rc_train::olmes"
+#  "task-csqa_rc_validation_keepk32|csqa:rc_train::olmes"
+#  "task-hellaswag_rc_validation_keepk32|hellaswag:rc_train::olmes"
+#  "task-openbookqa_rc_validation_keepk32|openbookqa:rc_train::olmes"
+#  "task-piqa_rc_validation_keepk32|piqa:rc_train::olmes"
+#  "task-socialiqa_rc_validation_keepk32|socialiqa:rc_train::olmes"
+#  "task-winogrande_rc_validation_keepk32|winogrande:rc_train::olmes"
 
+  # following is depricated for now
 #  "arc_easy:rc_train_0shot::olmes"
 #  "arc_challenge:rc_train_0shot::olmes"
 #  "boolq:rc_train_0shot::olmes"
@@ -68,15 +70,12 @@ get_eval_filename() {
     echo "task-${task_name}"
 }
 
-for run_config in "${run_configs[@]}"; do
-    # Split the run_config into model_name and prune_keep_k
-    model_name=${run_config%%|*}
+for model_name in "${model_names[@]}"; do
+    for task_config in "${task_configs[@]}"; do
+        # Split the task_config into pruned_model_name and train_task_name
+        pruned_model_name=${task_config%%|*}
+        train_task_name=${task_config##*|}
 
-    # extract prune_keep_k value
-    prune_keep_k=${run_config##*|}
-    prune_keep_k="${prune_keep_k#prune_keep_k=}"
-
-    for train_task_name in "${train_task_names[@]}"; do
         echo "Processing train task: $train_task_name"
 
         # this is the prefix of the output task name
@@ -84,26 +83,22 @@ for run_config in "${run_configs[@]}"; do
 
         # we now tokenize the file
         tokenizer_name="allenai/OLMo-2-1124-7B"
-        destination="${BASE_OUTPUT_DIR}/prune/${task_prefix}-tokenized"
-        echo "destination folder: $destination"
+        data_folder="${BASE_OUTPUT_DIR}/prune/${task_prefix}-tokenized"
+        echo "data_folder : $data_folder"
 
         # Collect the corresponding dataset paths. Can make this assumption given we have a warning in tokenize script
-        dataset_paths="${destination}/part-0-00000.npy"
-        label_mask_paths="${destination}/part-0-00000_mask.npy"
+        dataset_paths="${data_folder}/part-0-00000.npy"
+        label_mask_paths="${data_folder}/part-0-00000_mask.npy"
 
-        # swap out all occurences of "train" with "validation" to get validation set
-        validation_task_prefix="${task_prefix/train/validation}"
-        activation_file="${BASE_OUTPUT_DIR}/prune/${model_name}_${step}-hf/${validation_task_prefix}-router.jsonl"
-
-        runname="${model_name}_${step}_finetune_${task_prefix}_keepk${prune_keep_k}"
+        runname="${model_name}/${step}_${pruned_model_name}_finetune-${task_prefix}"
         wandb_name=${runname}
         # limit runname to 128 characters, take first 25 and last 75
         runname=$(echo $runname | cut -c1-35)_$(echo $runname | rev | cut -c1-65 | rev)
 #        runname=$(echo $runname | rev | cut -c1-100 | rev)
 
-        out_dir="${task_prefix}_finetune-keepk${prune_keep_k}"
+        out_dir="finetune-${task_prefix}"
 
-        base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}_${validation_task_prefix}_keepk${prune_keep_k}"
+        base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}_${pruned_model_name}"
 
         echo "Using base model: $base_model"
 
@@ -112,8 +107,7 @@ for run_config in "${run_configs[@]}"; do
         echo "Dataset paths: ${dataset_paths}"
         echo "Label mask paths: ${label_mask_paths}"
         echo "Base model: $base_model"
-        echo "Prune keep k: $prune_keep_k"
-        echo "Activation file: $activation_file"
+        echo "Save folder: ${base_model}/${out_dir}"
 
         # define
 
@@ -151,7 +145,7 @@ for run_config in "${run_configs[@]}"; do
             --dataset.paths="[${dataset_paths}]" \
             --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
             --trainer.max_duration='{value: 3, unit: epochs}' \
-            --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${wandb_name}, tags: [${task_prefix:0:64}, ${model_name:0:64}, keepk${prune_keep_k}]}" \
+            --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${wandb_name}, tags: [${task_prefix:0:64}, ${model_name:0:64}, ${pruned_model_name}]}" \
             --load_path=$base_model \
             --activation_file=$activation_file \
             --prune_keep_k=$prune_keep_k \

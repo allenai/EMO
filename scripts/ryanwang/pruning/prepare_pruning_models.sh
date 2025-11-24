@@ -27,16 +27,16 @@ run_configs=(
 step="step30995"
 
 # these should correspond to activation files
-task_names=(
-  "arc_easy_rc_validation"
-#  "arc_challenge_rc_validation"
-#  "boolq_rc_validation"
-#  "csqa_rc_validation"
-#  "hellaswag_rc_validation"
-#  "openbookqa_rc_validation"
-#  "piqa_rc_validation"
-#  "socialiqa_rc_validation"
-#  "winogrande_rc_validation"
+validation_task_names=(
+  "task-arc_easy_rc_validation"
+#  "task-arc_challenge_rc_validation"
+#  "task-boolq_rc_validation"
+#  "task-csqa_rc_validation"
+#  "task-hellaswag_rc_validation"
+#  "task-openbookqa_rc_validation"
+#  "task-piqa_rc_validation"
+#  "task-socialiqa_rc_validation"
+#  "task-winogrande_rc_validation"
 #
 ##   MMLU
 #  "mmlu_rc:rc_train_0shot::olmes"
@@ -44,19 +44,6 @@ task_names=(
 ##   GSM8K
 #  "gsm8k:perplexity_train_0shot::olmes"
 )
-
-get_eval_filename() {
-    local task_name="$1"
-
-    # Remove everything after and including '::' (if present)
-    task_name="${task_name%%::*}"
-
-    # Replace all ':' with '_'
-    task_name="${task_name//:/_}"
-
-    # Return the formatted string
-    echo "task-${task_name}"
-}
 
 for run_config in "${run_configs[@]}"; do
     # Split the run_config into model_name and prune_keep_k
@@ -70,64 +57,41 @@ for run_config in "${run_configs[@]}"; do
 
     echo "Using base model: $base_model"
 
-    for task_name in "${task_names[@]}"; do
-        echo "Processing train task: ${task_name}"
+    for validation_task_name in "${validation_task_names[@]}"; do
+        echo "Processing train task: ${validation_task_name}"
 
-        # this is the prefix of the output task name
-        task_prefix=$(get_eval_filename "${task_name}")
+        activation_file="${BASE_OUTPUT_DIR}/prune/${model_name}_${step}-hf/${validation_task_name}-router.jsonl"
 
-        activation_file="${BASE_OUTPUT_DIR}/prune/${model_name}_${step}-hf/${task_prefix}-router.jsonl"
-
-        runname="pruneprepmodel-${model_name}_${step}_${task_prefix}_keepk${prune_keep_k}"
+        runname="pruneprepmodel-${model_name}_${step}_${validation_task_name}_keepk${prune_keep_k}"
         # limit runname to 128 characters, take first 25 and last 75
         runname=$(echo $runname | cut -c1-35)_$(echo $runname | rev | cut -c1-65 | rev)
 
         # for debugging
         echo "Run name: $runname"
         echo "Base model: $base_model"
-        echo "save path" "${base_model}_${task_prefix}_keepk${prune_keep_k}"
+        echo "save path" "${base_model}_${validation_task_name}_keepk${prune_keep_k}"
         echo "Prune keep k: $prune_keep_k"
         echo "Activation file: $activation_file"
 
-        python -m olmo_core.launch.beaker \
-          --name $runname \
-          --gpus 1 \
-          --nodes 1 \
-          --is_private_repo \
-          --weka=oe-training-default \
-          --shared-filesystem \
-          --workspace ai2/flex2 \
-          --cluster ai2/jupiter \
-          --preemptible \
-          --allow-dirty \
-          --priority urgent \
-          --no-follow \
-          --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
-          -- src/scripts/eval/prune_moe_checkpoint.py \
-            --checkpoint_path "$base_model" \
-            --save_path "${base_model}_${task_prefix}_keepk${prune_keep_k}" \
-            --prune_keep_k ${prune_keep_k} \
-            --activation_file $activation_file \
-
-#        gantry run \
-#            --name $runname \
-#            --weka oe-training-default:/weka/oe-training-default \
-#            --install "pip install -e \".[all]\"" \
-#            --budget ai2/oceo \
-#            --workspace ai2/flex2 \
-#            --cluster "ai2/jupiter-cirrascale-2" \
-#            --priority urgent \
-#            --gpus 1 \
-#            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-#            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-#            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-#            -- \
-#            bash -c "python src/scripts/eval/prune_moe_checkpoint.py \
-#                --checkpoint_path "$base_model" \
-#                --save_path "${base_model}_${task_prefix}_keepk${prune_keep_k}" \
-#                --prune_keep_k ${prune_keep_k} \
-#                --activation_file $activation_file \
-#            "
+#        python -m olmo_core.launch.beaker \
+#          --name $runname \
+#          --gpus 1 \
+#          --nodes 1 \
+#          --is_private_repo \
+#          --weka=oe-training-default \
+#          --shared-filesystem \
+#          --workspace ai2/flex2 \
+#          --cluster ai2/jupiter \
+#          --preemptible \
+#          --allow-dirty \
+#          --priority urgent \
+#          --no-follow \
+#          --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+#          -- src/scripts/eval/prune_moe_checkpoint.py \
+#            --checkpoint_path "$base_model" \
+#            --save_path "${base_model}_${validation_task_name}_keepk${prune_keep_k}" \
+#            --prune_keep_k ${prune_keep_k} \
+#            --activation_file $activation_file \
 
     done
 done
