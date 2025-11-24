@@ -25,7 +25,6 @@ run_configs=(
 )
 #model_name="moe_1b7b_olmoe-mix"
 step="step30995"
-num_checkpoints=5
 
 # these should correspond to activation files
 task_names=(
@@ -98,7 +97,7 @@ for run_config in "${run_configs[@]}"; do
             --workspace ai2/flex2 \
             --cluster $CLUSTER \
             --priority urgent \
-            --gpus $gpus \
+            --gpus 1 \
             --env-secret HF_TOKEN=RYAN_HF_TOKEN \
             --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
             --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
