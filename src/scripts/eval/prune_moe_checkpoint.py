@@ -235,7 +235,7 @@ def prune_experts(args):
     new_model.init_weights() # Initialized with random init
 
     num_experts = model_config.block.feed_forward_moe.num_experts
-    assert num_experts == args.prune_keep_k, f"Number of experts in config {num_experts} does not match prune_keep_k {args.prune_keep_k}"
+    assert args.prune_keep_k < num_experts, f"prune_keep_k {args.prune_keep_k} must be less than original number of experts {num_experts}"
 
     # we now load in the activation file to determine which experts to keep
     with open(args.activation_file, 'r') as f:
