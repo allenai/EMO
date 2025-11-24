@@ -16,8 +16,8 @@ PARENT_MODELS=(
 )
 
 #postfix="-keepk8"
-#postfix="-keepk32"
-postfix=""
+postfix="-keepk32"
+#postfix=""
 
 #taskvariant="_0shot"
 taskvariant=""

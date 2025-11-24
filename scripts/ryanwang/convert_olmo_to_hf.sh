@@ -3,79 +3,81 @@ BASE_FOLDER="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models"
 
 
 PARENT_MODELS=(
-    "dense_1b_olmoe-mix_1028/step30995"
-#    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
+#    "dense_1b_olmoe-mix_1028/step30995"
+    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
 #    "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995"
 #    "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995"
 )
   
 #postfix="-keepk8"
-#postfix="-keepk32"
-postfix=""
+postfix="-keepk32"
+#postfix=""
+
+taskvariant=""
 
 FINETUNE_TASKS=(
-    "task-arc_easy_rc_train_0shot_finetune${postfix}/step0"
-    "task-arc_easy_rc_train_0shot_finetune${postfix}/step84"
-    "task-arc_easy_rc_train_0shot_finetune${postfix}/step168"
-    "task-arc_easy_rc_train_0shot_finetune${postfix}/step252"
-    "task-arc_easy_rc_train_0shot_finetune${postfix}/step336"
-    "task-arc_easy_rc_train_0shot_finetune${postfix}/step420"
+    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step0"
+#    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step84"
+#    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step168"
+#    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step252"
+#    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step336"
+#    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step420"
 
-    "task-arc_challenge_rc_train_0shot_finetune${postfix}/step0"
-    "task-arc_challenge_rc_train_0shot_finetune${postfix}/step41"
-    "task-arc_challenge_rc_train_0shot_finetune${postfix}/step82"
-    "task-arc_challenge_rc_train_0shot_finetune${postfix}/step123"
-    "task-arc_challenge_rc_train_0shot_finetune${postfix}/step164"
-    "task-arc_challenge_rc_train_0shot_finetune${postfix}/step207"
-
-    "task-boolq_rc_train_0shot_finetune${postfix}/step0"
-    "task-boolq_rc_train_0shot_finetune${postfix}/step315"
-    "task-boolq_rc_train_0shot_finetune${postfix}/step630"
-    "task-boolq_rc_train_0shot_finetune${postfix}/step945"
-    "task-boolq_rc_train_0shot_finetune${postfix}/step1260"
-    "task-boolq_rc_train_0shot_finetune${postfix}/step1578"
-
-    "task-csqa_rc_train_0shot_finetune${postfix}/step0"
-    "task-csqa_rc_train_0shot_finetune${postfix}/step327"
-    "task-csqa_rc_train_0shot_finetune${postfix}/step654"
-    "task-csqa_rc_train_0shot_finetune${postfix}/step981"
-    "task-csqa_rc_train_0shot_finetune${postfix}/step1308"
-    "task-csqa_rc_train_0shot_finetune${postfix}/step1638"
-
-    "task-hellaswag_rc_train_0shot_finetune${postfix}/step0"
-    "task-hellaswag_rc_train_0shot_finetune${postfix}/step1458"
-    "task-hellaswag_rc_train_0shot_finetune${postfix}/step2916"
-    "task-hellaswag_rc_train_0shot_finetune${postfix}/step4374"
-    "task-hellaswag_rc_train_0shot_finetune${postfix}/step5832"
-    "task-hellaswag_rc_train_0shot_finetune${postfix}/step7293"
-
-    "task-openbookqa_rc_train_0shot_finetune${postfix}/step0"
-    "task-openbookqa_rc_train_0shot_finetune${postfix}/step185"
-    "task-openbookqa_rc_train_0shot_finetune${postfix}/step370"
-    "task-openbookqa_rc_train_0shot_finetune${postfix}/step555"
-    "task-openbookqa_rc_train_0shot_finetune${postfix}/step740"
-    "task-openbookqa_rc_train_0shot_finetune${postfix}/step927"
-
-    "task-piqa_rc_train_0shot_finetune${postfix}/step0"
-    "task-piqa_rc_train_0shot_finetune${postfix}/step566"
-    "task-piqa_rc_train_0shot_finetune${postfix}/step1132"
-    "task-piqa_rc_train_0shot_finetune${postfix}/step1698"
-    "task-piqa_rc_train_0shot_finetune${postfix}/step2264"
-    "task-piqa_rc_train_0shot_finetune${postfix}/step2832"
-
-    "task-socialiqa_rc_train_0shot_finetune${postfix}/step0"
-    "task-socialiqa_rc_train_0shot_finetune${postfix}/step1215"
-    "task-socialiqa_rc_train_0shot_finetune${postfix}/step2430"
-    "task-socialiqa_rc_train_0shot_finetune${postfix}/step3645"
-    "task-socialiqa_rc_train_0shot_finetune${postfix}/step4860"
-    "task-socialiqa_rc_train_0shot_finetune${postfix}/step6075"
-
-    "task-winogrande_rc_train_0shot_finetune${postfix}/step0"
-    "task-winogrande_rc_train_0shot_finetune${postfix}/step1477"
-    "task-winogrande_rc_train_0shot_finetune${postfix}/step2954"
-    "task-winogrande_rc_train_0shot_finetune${postfix}/step4431"
-    "task-winogrande_rc_train_0shot_finetune${postfix}/step5908"
-    "task-winogrande_rc_train_0shot_finetune${postfix}/step7386"
+#    "task-arc_challenge_rc_train${taskvariant}_finetune${postfix}/step0"
+#    "task-arc_challenge_rc_train${taskvariant}_finetune${postfix}/step41"
+#    "task-arc_challenge_rc_train${taskvariant}_finetune${postfix}/step82"
+#    "task-arc_challenge_rc_train${taskvariant}_finetune${postfix}/step123"
+#    "task-arc_challenge_rc_train${taskvariant}_finetune${postfix}/step164"
+#    "task-arc_challenge_rc_train${taskvariant}_finetune${postfix}/step207"
+#
+#    "task-boolq_rc_train${taskvariant}_finetune${postfix}/step0"
+#    "task-boolq_rc_train${taskvariant}_finetune${postfix}/step315"
+#    "task-boolq_rc_train${taskvariant}_finetune${postfix}/step630"
+#    "task-boolq_rc_train${taskvariant}_finetune${postfix}/step945"
+#    "task-boolq_rc_train${taskvariant}_finetune${postfix}/step1260"
+#    "task-boolq_rc_train${taskvariant}_finetune${postfix}/step1578"
+#
+#    "task-csqa_rc_train${taskvariant}_finetune${postfix}/step0"
+#    "task-csqa_rc_train${taskvariant}_finetune${postfix}/step327"
+#    "task-csqa_rc_train${taskvariant}_finetune${postfix}/step654"
+#    "task-csqa_rc_train${taskvariant}_finetune${postfix}/step981"
+#    "task-csqa_rc_train${taskvariant}_finetune${postfix}/step1308"
+#    "task-csqa_rc_train${taskvariant}_finetune${postfix}/step1638"
+#
+#    "task-hellaswag_rc_train${taskvariant}_finetune${postfix}/step0"
+#    "task-hellaswag_rc_train${taskvariant}_finetune${postfix}/step1458"
+#    "task-hellaswag_rc_train${taskvariant}_finetune${postfix}/step2916"
+#    "task-hellaswag_rc_train${taskvariant}_finetune${postfix}/step4374"
+#    "task-hellaswag_rc_train${taskvariant}_finetune${postfix}/step5832"
+#    "task-hellaswag_rc_train${taskvariant}_finetune${postfix}/step7293"
+#
+#    "task-openbookqa_rc_train${taskvariant}_finetune${postfix}/step0"
+#    "task-openbookqa_rc_train${taskvariant}_finetune${postfix}/step185"
+#    "task-openbookqa_rc_train${taskvariant}_finetune${postfix}/step370"
+#    "task-openbookqa_rc_train${taskvariant}_finetune${postfix}/step555"
+#    "task-openbookqa_rc_train${taskvariant}_finetune${postfix}/step740"
+#    "task-openbookqa_rc_train${taskvariant}_finetune${postfix}/step927"
+#
+#    "task-piqa_rc_train${taskvariant}_finetune${postfix}/step0"
+#    "task-piqa_rc_train${taskvariant}_finetune${postfix}/step566"
+#    "task-piqa_rc_train${taskvariant}_finetune${postfix}/step1132"
+#    "task-piqa_rc_train${taskvariant}_finetune${postfix}/step1698"
+#    "task-piqa_rc_train${taskvariant}_finetune${postfix}/step2264"
+#    "task-piqa_rc_train${taskvariant}_finetune${postfix}/step2832"
+#
+#    "task-socialiqa_rc_train${taskvariant}_finetune${postfix}/step0"
+#    "task-socialiqa_rc_train${taskvariant}_finetune${postfix}/step1215"
+#    "task-socialiqa_rc_train${taskvariant}_finetune${postfix}/step2430"
+#    "task-socialiqa_rc_train${taskvariant}_finetune${postfix}/step3645"
+#    "task-socialiqa_rc_train${taskvariant}_finetune${postfix}/step4860"
+#    "task-socialiqa_rc_train${taskvariant}_finetune${postfix}/step6075"
+#
+#    "task-winogrande_rc_train${taskvariant}_finetune${postfix}/step0"
+#    "task-winogrande_rc_train${taskvariant}_finetune${postfix}/step1477"
+#    "task-winogrande_rc_train${taskvariant}_finetune${postfix}/step2954"
+#    "task-winogrande_rc_train${taskvariant}_finetune${postfix}/step4431"
+#    "task-winogrande_rc_train${taskvariant}_finetune${postfix}/step5908"
+#    "task-winogrande_rc_train${taskvariant}_finetune${postfix}/step7386"
 
 )
 
@@ -89,6 +91,8 @@ for BASE in "${PARENT_MODELS[@]}"; do
 
     # Beaker names can only contain letters, digits, periods, dashes, and underscores.
     job_name="convert_${FINETUNE//\//_}"
+
+    # launch the gantry run and delete the original model
 
     gantry run \
     --name $job_name \
@@ -104,14 +108,16 @@ for BASE in "${PARENT_MODELS[@]}"; do
     --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
     --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
     -- \
-    bash -c "python src/examples/huggingface/convert_checkpoint_to_hf.py \
-      --checkpoint-input-path "${MODEL_DIR}" \
+    bash -c '
+    python src/examples/huggingface/convert_checkpoint_to_hf.py \
+      --checkpoint-input-path "'"${MODEL_DIR}"'" \
       --max-sequence-length 4096 \
-      --huggingface-output-dir "${MODEL_DIR}-hf" \
+      --huggingface-output-dir "'"${MODEL_DIR}"'-hf" \
       --dtype float32 \
-      --skip-validation
-      "
-
+      --skip-validation \
+    && \
+      rm -rf "'"${MODEL_DIR}"'"
+  '
   done
 done
 
