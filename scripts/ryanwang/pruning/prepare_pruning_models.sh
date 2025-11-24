@@ -104,7 +104,7 @@ for run_config in "${run_configs[@]}"; do
             -- \
             bash -c "python src/scripts/eval/prune_moe_checkpoint.py \
                 --checkpoint_path "$base_model" \
-                --save_path "${base_model}_${out_dir}/" \
+                --save_path "${base_model}_${task_prefix}_keepk${prune_keep_k}/" \
                 --prune_keep_k ${prune_keep_k} \
                 --activation_file $activation_file \
             "
