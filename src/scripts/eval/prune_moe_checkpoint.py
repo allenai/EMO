@@ -54,6 +54,16 @@ def save_checkpoint(config: dict, model: torch.nn.Module, save_path: str):
     save_model_and_optim_state(dir=model_weights_path, model=model, optim=None)
     logger.info(f"Saved new model weights to {model_weights_path}")
 
+    # Copy .metadata from model_and_optim to root so the checkpoint is recognized
+    import shutil
+    metadata_source = os.path.join(model_weights_path, ".metadata")
+    metadata_dest = os.path.join(save_path, ".metadata")
+    if os.path.exists(metadata_source):
+        shutil.copy2(metadata_source, metadata_dest)
+        logger.info(f"Copied .metadata to root: {metadata_dest}")
+    else:
+        logger.warning(f".metadata file not found at {metadata_source}")
+
 
 def copy_param_with_prune(source_param, target_param, num_experts, prune_keep_k, model_config, experts_to_keep):
     """
