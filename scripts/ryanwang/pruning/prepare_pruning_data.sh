@@ -107,7 +107,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
         # Remove invalid characters and truncate long names
         safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g')
         safe_group_name=$(echo $GROUP_NAME | sed 's/[^a-zA-Z0-9_-]//g')
-        job_name="pruneprep-${safe_model_name}-${safe_group_name}"
+        job_name="pruneprepdata-${safe_model_name}-${safe_group_name}"
 
         echo "  Model name: $model"
         echo "  Base output dir: $BASE_OUTPUT_DIR"
