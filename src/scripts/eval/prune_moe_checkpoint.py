@@ -282,9 +282,13 @@ def parse_args():
     parser.add_argument(
         "-o", "--save_path", type=str, required=True, help="Path to save new MoE checkpoint"
     )
+    parser.add_argument(
+        "-p", "--prune_keep_k", type=int, required=True, help="Number of experts to keep after pruning"
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
+    breakpoint()
     new_model = add_expert(args.checkpoint_path, args.save_path)
