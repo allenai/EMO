@@ -151,7 +151,7 @@ for run_config in "${run_configs[@]}"; do
             --dataset.paths="[${dataset_paths}]" \
             --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
             --trainer.max_duration='{value: 3, unit: epochs}' \
-            --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${wandb_name}, tags: [${task_prefix}, ${model_name}, keepk${prune_keep_k}]}" \
+            --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${wandb_name}, tags: [${task_prefix:0:64}, ${model_name:0:64}, keepk${prune_keep_k}]}" \
             --load_path=$base_model \
             --activation_file=$activation_file \
             --prune_keep_k=$prune_keep_k \
