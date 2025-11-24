@@ -16,12 +16,12 @@ postfix="-keepk32"
 taskvariant=""
 
 FINETUNE_TASKS=(
-    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step0"
-#    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step84"
-#    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step168"
-#    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step252"
-#    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step336"
-#    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step420"
+#    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step0"
+    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step84"
+    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step168"
+    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step252"
+    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step336"
+    "task-arc_easy_rc_train${taskvariant}_finetune${postfix}/step420"
 
 #    "task-arc_challenge_rc_train${taskvariant}_finetune${postfix}/step0"
 #    "task-arc_challenge_rc_train${taskvariant}_finetune${postfix}/step41"

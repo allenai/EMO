@@ -229,8 +229,6 @@ def prune_experts(args):
     new_config = model_config.copy()
     assert new_config.block.feed_forward_moe is not None, "Model is not MoE"
     # Set the total number of experts to prune_keep_k
-    # TODO DELETE:
-    new_config.block.attention.backend="torch"
     new_config.block.feed_forward_moe.num_experts = args.prune_keep_k
     new_model = new_config.build(init_device="cpu")
 
