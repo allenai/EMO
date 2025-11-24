@@ -73,25 +73,25 @@ for run_config in "${run_configs[@]}"; do
         echo "Prune keep k: $prune_keep_k"
         echo "Activation file: $activation_file"
 
-#        python -m olmo_core.launch.beaker \
-#          --name $runname \
-#          --gpus 1 \
-#          --nodes 1 \
-#          --is_private_repo \
-#          --weka=oe-training-default \
-#          --shared-filesystem \
-#          --workspace ai2/flex2 \
-#          --cluster ai2/jupiter \
-#          --preemptible \
-#          --allow-dirty \
-#          --priority urgent \
-#          --no-follow \
-#          --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
-#          -- src/scripts/eval/prune_moe_checkpoint.py \
-#            --checkpoint_path "$base_model" \
-#            --save_path "${base_model}_${validation_task_name}_keepk${prune_keep_k}" \
-#            --prune_keep_k ${prune_keep_k} \
-#            --activation_file $activation_file \
+        python -m olmo_core.launch.beaker \
+          --name $runname \
+          --gpus 1 \
+          --nodes 1 \
+          --is_private_repo \
+          --weka=oe-training-default \
+          --shared-filesystem \
+          --workspace ai2/flex2 \
+          --cluster ai2/jupiter \
+          --preemptible \
+          --allow-dirty \
+          --priority urgent \
+          --no-follow \
+          --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+          -- src/scripts/eval/prune_moe_checkpoint.py \
+            --checkpoint_path "$base_model" \
+            --save_path "${base_model}_${validation_task_name}_keepk${prune_keep_k}" \
+            --prune_keep_k ${prune_keep_k} \
+            --activation_file $activation_file \
 
     done
 done
