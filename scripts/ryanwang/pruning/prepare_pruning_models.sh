@@ -90,7 +90,7 @@ for run_config in "${run_configs[@]}"; do
         echo "Activation file: $activation_file"
 
         gantry run \
-            --name $run_name \
+            --name $runname \
             --weka oe-training-default:/weka/oe-training-default \
             --install "pip install -e \".[all]\"" \
             --budget ai2/oceo \
