@@ -277,13 +277,13 @@ def add_expert(checkpoint_path: str, save_path: Optional[str] = None, init_metho
 def parse_args():
     parser = argparse.ArgumentParser(description="Add new expert to MoE model")
     parser.add_argument(
-        "-c", "--checkpoint_path", type=str, required=True, help="Path to existing MoE checkpoint"
+        "--checkpoint_path", type=str, required=True, help="Path to existing MoE checkpoint"
     )
     parser.add_argument(
-        "-o", "--save_path", type=str, required=True, help="Path to save new MoE checkpoint"
+        "--save_path", type=str, required=True, help="Path to save new MoE checkpoint"
     )
     parser.add_argument(
-        "-p", "--prune_keep_k", type=int, required=True, help="Number of experts to keep after pruning"
+        "--prune_keep_k", type=int, required=True, help="Number of experts to keep after pruning"
     )
     return parser.parse_args()
 
