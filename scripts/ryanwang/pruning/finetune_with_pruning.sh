@@ -76,10 +76,6 @@ for run_config in "${run_configs[@]}"; do
     prune_keep_k=${run_config##*|}
     prune_keep_k="${prune_keep_k#prune_keep_k=}"
 
-    base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
-
-    echo "Using base model: $base_model"
-
     for train_task_name in "${train_task_names[@]}"; do
         echo "Processing train task: $train_task_name"
 
@@ -106,6 +102,10 @@ for run_config in "${run_configs[@]}"; do
 #        runname=$(echo $runname | rev | cut -c1-100 | rev)
 
         out_dir="${task_prefix}_finetune-keepk${prune_keep_k}"
+
+        base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}_${validation_task_prefix}_keepk${prune_keep_k}"
+
+        echo "Using base model: $base_model"
 
         # for debugging
         echo "Run name: $runname"

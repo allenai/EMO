@@ -85,29 +85,49 @@ for run_config in "${run_configs[@]}"; do
         # for debugging
         echo "Run name: $runname"
         echo "Base model: $base_model"
-        echo "save path" "${base_model}_${task_prefix}_keepk${prune_keep_k}/"
+        echo "save path" "${base_model}_${task_prefix}_keepk${prune_keep_k}"
         echo "Prune keep k: $prune_keep_k"
         echo "Activation file: $activation_file"
 
-        gantry run \
-            --name $runname \
-            --weka oe-training-default:/weka/oe-training-default \
-            --install "pip install -e \".[all]\"" \
-            --budget ai2/oceo \
-            --workspace ai2/flex2 \
-            --cluster "ai2/jupiter-cirrascale-2" \
-            --priority urgent \
-            --gpus 1 \
-            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-            -- \
-            bash -c "python src/scripts/eval/prune_moe_checkpoint.py \
-                --checkpoint_path "$base_model" \
-                --save_path "${base_model}_${task_prefix}_keepk${prune_keep_k}/" \
-                --prune_keep_k ${prune_keep_k} \
-                --activation_file $activation_file \
-            "
+        python -m olmo_core.launch.beaker \
+          --name $runname \
+          --gpus 1 \
+          --nodes 1 \
+          --is_private_repo \
+          --weka=oe-training-default \
+          --shared-filesystem \
+          --workspace ai2/flex2 \
+          --cluster ai2/jupiter \
+          --preemptible \
+          --allow-dirty \
+          --priority urgent \
+          --no-follow \
+          --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+          -- src/scripts/eval/prune_moe_checkpoint.py \
+            --checkpoint_path "$base_model" \
+            --save_path "${base_model}_${task_prefix}_keepk${prune_keep_k}" \
+            --prune_keep_k ${prune_keep_k} \
+            --activation_file $activation_file \
+
+#        gantry run \
+#            --name $runname \
+#            --weka oe-training-default:/weka/oe-training-default \
+#            --install "pip install -e \".[all]\"" \
+#            --budget ai2/oceo \
+#            --workspace ai2/flex2 \
+#            --cluster "ai2/jupiter-cirrascale-2" \
+#            --priority urgent \
+#            --gpus 1 \
+#            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+#            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+#            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+#            -- \
+#            bash -c "python src/scripts/eval/prune_moe_checkpoint.py \
+#                --checkpoint_path "$base_model" \
+#                --save_path "${base_model}_${task_prefix}_keepk${prune_keep_k}" \
+#                --prune_keep_k ${prune_keep_k} \
+#                --activation_file $activation_file \
+#            "
 
     done
 done
