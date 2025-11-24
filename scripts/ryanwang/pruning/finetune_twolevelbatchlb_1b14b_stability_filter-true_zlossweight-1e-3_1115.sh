@@ -26,15 +26,26 @@ num_checkpoints=5
 base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
 train_task_names=(
-  "arc_easy:rc_train_0shot::olmes"
-  "arc_challenge:rc_train_0shot::olmes"
-  "boolq:rc_train_0shot::olmes"
-  "csqa:rc_train_0shot::olmes"
-  "hellaswag:rc_train_0shot::olmes"
-  "openbookqa:rc_train_0shot::olmes"
-  "piqa:rc_train_0shot::olmes"
-  "socialiqa:rc_train_0shot::olmes"
-  "winogrande:rc_train_0shot::olmes"
+
+  "arc_easy:rc_train::olmes"
+#  "arc_challenge:rc_train::olmes"
+#  "boolq:rc_train::olmes"
+#  "csqa:rc_train::olmes"
+#  "hellaswag:rc_train::olmes"
+#  "openbookqa:rc_train::olmes"
+#  "piqa:rc_train::olmes"
+#  "socialiqa:rc_train::olmes"
+#  "winogrande:rc_train::olmes"
+
+#  "arc_easy:rc_train_0shot::olmes"
+#  "arc_challenge:rc_train_0shot::olmes"
+#  "boolq:rc_train_0shot::olmes"
+#  "csqa:rc_train_0shot::olmes"
+#  "hellaswag:rc_train_0shot::olmes"
+#  "openbookqa:rc_train_0shot::olmes"
+#  "piqa:rc_train_0shot::olmes"
+#  "socialiqa:rc_train_0shot::olmes"
+#  "winogrande:rc_train_0shot::olmes"
 #
 ##   MMLU
 #  "mmlu_rc:rc_train_0shot::olmes"
