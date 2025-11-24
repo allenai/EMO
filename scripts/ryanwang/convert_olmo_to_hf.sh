@@ -80,7 +80,7 @@ FINETUNE_TASKS=(
 for BASE in "${PARENT_MODELS[@]}"; do
   for FINETUNE in "${FINETUNE_TASKS[@]}"; do
     # list all the files in the model directory, only include directories that start with "step"
-    MODEL_DIR="${BASE_FOLDER}/${BASE}/${FINETUNE}"
+    MODEL_DIR="${BASE_FOLDER}/${BASE}_${FINETUNE}"
 
     echo "checkpoint-input-path is ${MODEL_DIR}"
     echo "output_dir is ${MODEL_DIR}-hf"
