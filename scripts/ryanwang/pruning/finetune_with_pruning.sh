@@ -102,12 +102,16 @@ for model_name in "${model_names[@]}"; do
 
         echo "Using base model: $base_model"
 
+        # get the prune_keep_k value from pruned_model_name
+        prune_keep_k=${pruned_model_name##*_keepk}
+
         # for debugging
         echo "Run name: $runname"
         echo "Dataset paths: ${dataset_paths}"
         echo "Label mask paths: ${label_mask_paths}"
         echo "Base model: $base_model"
         echo "Save folder: ${base_model}/${out_dir}"
+        echo "Prune keep k: $prune_keep_k"
 
         # define
 
@@ -147,10 +151,8 @@ for model_name in "${model_names[@]}"; do
             --trainer.max_duration='{value: 3, unit: epochs}' \
             --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${wandb_name}, tags: [${task_prefix:0:64}, ${model_name:0:64}, ${pruned_model_name}]}" \
             --load_path=$base_model \
-            --activation_file=$activation_file \
-            --prune_keep_k=$prune_keep_k \
             --num_checkpoints=$num_checkpoints \
-            --model.block.feed_forward_moe.num_experts=128 \
+            --model.block.feed_forward_moe.num_experts=${prune_keep_k} \
 
     #        --dataset.label_mask_paths="[${label_mask_paths}]" \
 
