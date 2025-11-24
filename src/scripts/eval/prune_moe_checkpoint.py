@@ -24,27 +24,6 @@ from olmo_core.nn.transformer.init import InitMethod
 
 logger = logging.getLogger(__name__)
 
-class AddExpertInitMethod:
-    RANDOM = "random"
-    """
-    Initialize new expert with random weights.
-    """
-
-    AVERAGE = "average"
-    """
-    Initialize new expert with average of existing experts.
-    """
-
-    ZERO = "zero"
-    """
-    Initialize new expert with zeros.
-    """
-
-    SIMILAR = "similar"
-    """
-    Initialize new expert with weights similar to existing experts.
-    """
-
 def get_model_config(checkpoint_path: str):
     config_path = os.path.join(checkpoint_path, "config.json")
     with open(config_path, "r") as f:
@@ -84,7 +63,7 @@ def copy_param_with_prune(source_param, target_param, num_experts, prune_keep_k,
 
     Case 1: Multi-block tensors (expert weights)
         source_param: (num_experts * b, c)
-        target_param: ((num_experts + 1) * b, c)
+        target_param: (prune_keep_k * b, c)
 
     Case 2: Flat tensors that should be viewed as matrices (router weights)
         source_param: (num_experts * c,)
@@ -127,16 +106,10 @@ def copy_param_with_prune(source_param, target_param, num_experts, prune_keep_k,
 
         target_matrix = target_new.view(prune_keep_k, c)
 
-        breakpoint()
 
         # Copy data for selected experts
         for i, expert_idx in enumerate(experts_to_keep):
             target_matrix[i, :] = source_matrix[expert_idx, :]
-        # # Update target parameter
-        #
-        #
-        # # Copy data
-        # target_matrix[:num_experts, :] = source_matrix
 
         # Update target parameter
         with torch.no_grad():
@@ -174,8 +147,6 @@ def copy_param_with_prune(source_param, target_param, num_experts, prune_keep_k,
             prune_keep_k, b, columns, device=target_param.device, dtype=target_param.dtype
         )
 
-        breakpoint()
-
         # Copy data
         for i, expert_idx in enumerate(experts_to_keep):
             target_new[i, :, :] = source_reshaped[expert_idx, :, :]
@@ -191,7 +162,6 @@ def copy_param_with_prune(source_param, target_param, num_experts, prune_keep_k,
 
 
 def prune_experts(args):
-    breakpoint()
     # Load model config
     config_path = os.path.join(args.checkpoint_path, "config.json")
     logger.info(f"Loading model config from {config_path}")
@@ -233,7 +203,6 @@ def prune_experts(args):
             if param.shape == new_param.shape:
                 new_param.data.copy_(param.data)
             else:
-                breakpoint()
                 # assert "router" in name, f"Shape mismatch for parameter {name}"
                 if "router" in name or "experts" in name:
                     # we extract the layer number
