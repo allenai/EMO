@@ -95,7 +95,7 @@ for run_config in "${run_configs[@]}"; do
             --install "pip install -e \".[all]\"" \
             --budget ai2/oceo \
             --workspace ai2/flex2 \
-            --cluster $CLUSTER \
+            --cluster "ai2/jupiter-cirrascale-2" \
             --priority urgent \
             --gpus 1 \
             --env-secret HF_TOKEN=RYAN_HF_TOKEN \
