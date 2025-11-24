@@ -25,28 +25,6 @@ from olmo_core.nn.transformer.init import InitMethod
 logger = logging.getLogger(__name__)
 
 
-class AddExpertInitMethod:
-    RANDOM = "random"
-    """
-    Initialize new expert with random weights.
-    """
-
-    AVERAGE = "average"
-    """
-    Initialize new expert with average of existing experts.
-    """
-
-    ZERO = "zero"
-    """
-    Initialize new expert with zeros.
-    """
-
-    SIMILAR = "similar"
-    """
-    Initialize new expert with weights similar to existing experts.
-    """
-
-
 def get_model_config(checkpoint_path: str):
     config_path = os.path.join(checkpoint_path, "config.json")
     with open(config_path, "r") as f:
@@ -208,7 +186,7 @@ def copy_param_with_resize(source_param, target_param, num_experts: int, init_me
     return target_param
 
 
-def add_expert(checkpoint_path: str, save_path: Optional[str] = None, init_method: Optional[str] = None):
+def prune_experts(checkpoint_path: str, prune_keep_k: int, save_path: Optional[str] = None):
     breakpoint()
     # Load model config
     config_path = os.path.join(checkpoint_path, "config.json")
@@ -228,7 +206,8 @@ def add_expert(checkpoint_path: str, save_path: Optional[str] = None, init_metho
     logger.info("Adding new expert to the model")
     new_config = model_config.copy()
     assert new_config.block.feed_forward_moe is not None, "Model is not MoE"
-    new_config.block.feed_forward_moe.num_experts += 1
+    # Set the total number of experts to prune_keep_k
+    new_config.block.feed_forward_moe.num_experts = prune_keep_k
     new_model = new_config.build(init_device="cpu")
 
     new_model.init_weights() # Initialized with random init
@@ -242,6 +221,7 @@ def add_expert(checkpoint_path: str, save_path: Optional[str] = None, init_metho
             if param.shape == new_param.shape:
                 new_param.data.copy_(param.data)
             else:
+                breakpoint()
                 # assert "router" in name, f"Shape mismatch for parameter {name}"
                 if "router" in name or "experts" in name:
                     copy_param_with_resize(param, new_param, num_experts)
@@ -291,4 +271,4 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    new_model = add_expert(args.checkpoint_path, args.save_path)
+    new_model = prune_experts(args.checkpoint_path, args.prune_keep_k, args.save_path)
