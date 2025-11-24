@@ -17,12 +17,14 @@
 BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
-model_names=(
-  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115"
+run_configs=(
+  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115|prune_keep_k=32"
+#  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115|prune_keep_k=8"
+#  "moe_1b7b_128experts_olmoe-mix_130B_1103|prune_keep_k=32"
+#  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110|prune_keep_k=32"
 )
 #model_name="moe_1b7b_olmoe-mix"
 step="step30995"
-prune_keep_k=32
 num_checkpoints=5
 
 train_task_names=(
@@ -66,7 +68,13 @@ get_eval_filename() {
     echo "task-${task_name}"
 }
 
-for model_name in "${model_names[@]}"; do
+for run_config in "${run_configs[@]}"; do
+    # Split the run_config into model_name and prune_keep_k
+    model_name=${run_config%%|*}
+
+    # extract prune_keep_k value
+    prune_keep_k=${run_config##*|}
+    prune_keep_k="${prune_keep_k#prune_keep_k=}"
 
     base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
@@ -92,15 +100,16 @@ for model_name in "${model_names[@]}"; do
         activation_file="${BASE_OUTPUT_DIR}/prune/${model_name}_${step}-hf/${validation_task_prefix}-router.jsonl"
 
         runname="${model_name}_${step}_finetune_${task_prefix}_keepk${prune_keep_k}"
+        wandb_name=${runname}
         # limit runname to 128 characters
-        runname=$(echo $runname | cut -c1-100)
+        runname=$(echo $runname | rev | cut -c1-100 | rev)
 
         out_dir="${task_prefix}_finetune-keepk${prune_keep_k}"
 
         # for debugging
         echo "Run name: $runname"
-        echo "Dataset paths: ${dataset_paths[@]}"
-        echo "Label mask paths: ${label_mask_paths[@]}"
+        echo "Dataset paths: ${dataset_paths}"
+        echo "Label mask paths: ${label_mask_paths}"
         echo "Base model: $base_model"
         echo "Prune keep k: $prune_keep_k"
         echo "Activation file: $activation_file"
@@ -141,7 +150,7 @@ for model_name in "${model_names[@]}"; do
             --dataset.paths="[${dataset_paths}]" \
             --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
             --trainer.max_duration='{value: 3, unit: epochs}' \
-            --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
+            --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${wandb_name}, tags: [${task_prefix}, ${model_name}, keepk${prune_keep_k}]}" \
             --load_path=$base_model \
             --activation_file=$activation_file \
             --prune_keep_k=$prune_keep_k \
