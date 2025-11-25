@@ -8,7 +8,6 @@ PARENT_MODELS=(
 #    "dense_1b_olmoe-mix_1119/step30995"
 #    "dense_1b_olmoe-mix_1119/step30995/noloadoptim"
 
-#    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
     "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
 
 )
