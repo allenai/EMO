@@ -18,18 +18,26 @@ BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
 model_names=(
-  "moe_1b14b_128experts_olmoe-mix_130B_1117"
-#  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115"
-
-
-#  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115"
-#  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115"
-#  "moe_1b7b_128experts_olmoe-mix_130B_1103"
-#  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110"
+#  "moe_1b14b_128experts_olmoe-mix_130B_1117"
+  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115"
 )
 #model_name="moe_1b7b_olmoe-mix"
 step="step30995"
 num_checkpoints=5
+
+# this is used for ablations
+variation="_lr-3e-5_warmup-0.2"
+
+variation_flags=""
+# Define variation-specific settings
+if [ "$variation" == "_lr-3e-5_warmup-0.2" ]; then
+    # Variation: No optimizer state loading
+    # Changes: Initialize optimizer from scratch instead of loading from checkpoint.
+    variation_flags="--train_module.optim.lr=3e-5 --train_module.scheduler.warmup_fraction=0.2"
+else
+    echo "Warning: Unknown variation '$variation'. Using default settings."
+    variation_flags=""
+fi
 
 # first argument is which validation used for pruning, second is training dataset
 task_configs=(
@@ -149,7 +157,7 @@ for model_name in "${model_names[@]}"; do
           --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
           -- src/scripts/train/olmoe-1B-7B_finetune.py \
             $runname \
-            --save-folder="${base_model}/${out_dir}" \
+            --save-folder="${base_model}/${variation}/${out_dir}" \
             --dataset.paths="[${dataset_paths}]" \
             --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
             --trainer.max_duration='{value: 3, unit: epochs}' \
@@ -157,6 +165,7 @@ for model_name in "${model_names[@]}"; do
             --load_path=$base_model \
             --num_checkpoints=$num_checkpoints \
             --model.block.feed_forward_moe.num_experts=${prune_keep_k} \
+            $variation_flags
 
     #        --dataset.label_mask_paths="[${label_mask_paths}]" \
 

@@ -139,7 +139,7 @@ for train_task_name in "${train_task_names[@]}"; do
       --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
       -- src/scripts/train/olmo2-1B_finetune.py \
         $runname \
-        --save-folder="${base_model}${variation}/${out_dir}" \
+        --save-folder="${base_model}/${variation}/${out_dir}" \
         --dataset.paths="[${dataset_paths}]" \
         --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
         --trainer.max_duration='{value: 3, unit: epochs}' \
