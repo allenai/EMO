@@ -88,6 +88,7 @@ def launch_logits(args_dict):
     print("yay!")
 
     # load the model
+    breakpoint()
     tokenizer = AutoTokenizer.from_pretrained(args_dict["model"])
     model = AutoModelForCausalLM.from_pretrained(args_dict["model"], device_map="auto", torch_dtype="auto")
 

@@ -104,33 +104,33 @@ for MODEL_PATH in "${MODELS[@]}"; do
         echo "  Batch size: $batch_size"
         echo "  Job name: $job_name"
 
-#        bash src/scripts/eval/prepare_pruning_per_task.sh \
-#            --GROUP_NAME "$GROUP_NAME" \
-#            --BASE_OUTPUT_DIR "$BASE_OUTPUT_DIR" \
-#            --BATCH_SIZE "$batch_size" \
-#            --MODEL_PATH "${MODEL_DIR}/${MODEL_PATH}" \
-#            --GPUS "$gpus"
+        bash src/scripts/eval/prepare_pruning_per_task.sh \
+            --GROUP_NAME "$GROUP_NAME" \
+            --BASE_OUTPUT_DIR "$BASE_OUTPUT_DIR" \
+            --BATCH_SIZE "$batch_size" \
+            --MODEL_PATH "${MODEL_DIR}/${MODEL_PATH}" \
+            --GPUS "$gpus"
 
-        gantry run \
-            --name $job_name \
-            --weka oe-training-default:/weka/oe-training-default \
-            --install "pip install -e \".[all]\"" \
-            --budget ai2/oceo \
-            --workspace ai2/flex2 \
-            --cluster $CLUSTER \
-            --priority urgent \
-            --gpus $gpus \
-            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-            -- \
-            bash -c "bash src/scripts/eval/prepare_pruning_per_task.sh \
-                --GROUP_NAME "$GROUP_NAME" \
-                --BASE_OUTPUT_DIR "$BASE_OUTPUT_DIR" \
-                --BATCH_SIZE "$batch_size" \
-                --MODEL_PATH "${MODEL_DIR}/${MODEL_PATH}" \
-                --GPUS "$gpus"
-            "
+#        gantry run \
+#            --name $job_name \
+#            --weka oe-training-default:/weka/oe-training-default \
+#            --install "pip install -e \".[all]\"" \
+#            --budget ai2/oceo \
+#            --workspace ai2/flex2 \
+#            --cluster $CLUSTER \
+#            --priority urgent \
+#            --gpus $gpus \
+#            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+#            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+#            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+#            -- \
+#            bash -c "bash src/scripts/eval/prepare_pruning_per_task.sh \
+#                --GROUP_NAME "$GROUP_NAME" \
+#                --BASE_OUTPUT_DIR "$BASE_OUTPUT_DIR" \
+#                --BATCH_SIZE "$batch_size" \
+#                --MODEL_PATH "${MODEL_DIR}/${MODEL_PATH}" \
+#                --GPUS "$gpus"
+#            "
 
         echo "Launched evaluation for model: $model, group: $GROUP_NAME"
         echo "----------------------------------------"
