@@ -11,11 +11,12 @@ PRUNE_DIR="${BASE_DIR}/prune"
 PARENT_MODELS=(
 #    "moe_1b14b_128experts_olmoe-mix_130B_1117/step30995"
 #    "dense_1b_olmoe-mix_1119/step30995"
-    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
+    "dense_1b_olmoe-mix_1119/step30995/noloadoptim"
+#    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
 )
 
-#postfix="_keepk32"
-postfix="_keepk32/lr-3e-5_warmup-0.2"
+postfix="_keepk32"
+#postfix="_keepk32/lr-3e-5_warmup-0.2"
 
 
 FINETUNE_TASKS=(
@@ -25,20 +26,20 @@ FINETUNE_TASKS=(
     "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step252-hf"
     "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step336-hf"
     "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step420-hf"
-#
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step41-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step82-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step123-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step164-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step207-hf"
-#
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step0-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step315-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step630-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step945-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step1260-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step1578-hf"
+
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step41-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step82-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step123-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step164-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step207-hf"
+
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step0-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step315-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step630-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step945-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step1260-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step1578-hf"
 
 #    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step0-hf"
 #    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step327-hf"
