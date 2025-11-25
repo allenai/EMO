@@ -12,23 +12,23 @@ FINETUNE_TASKS=(
 #    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0"
 #    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84"
 #    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168"
-    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step252"
+#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step252"
 #    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step336"
 #    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step420"
+
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step41"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step82"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step123"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step164"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step207"
 #
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step41"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step82"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step123"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step164"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step207"
-#
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step0"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step315"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step630"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step945"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step1260"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step1578"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step0"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step315"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step630"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step945"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step1260"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step1578"
 
 #    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step0"
 #    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step327"
@@ -114,10 +114,10 @@ FINETUNE_TASKS=(
 #  done
 #done
 
-python src/examples/huggingface/convert_checkpoint_to_hf.py \
-      --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/dense_1b_olmoe-mix_1119/step30995" \
-      --max-sequence-length 4096 \
-      --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/dense_1b_olmoe-mix_1119/step30995-hf" \
-      --dtype float32 \
-      --skip-validation
+#python src/examples/huggingface/convert_checkpoint_to_hf.py \
+#      --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/dense_1b_olmoe-mix_1119/step30995" \
+#      --max-sequence-length 4096 \
+#      --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/dense_1b_olmoe-mix_1119/step30995-hf" \
+#      --dtype float32 \
+#      --skip-validation
 
