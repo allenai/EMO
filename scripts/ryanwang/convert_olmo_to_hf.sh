@@ -3,8 +3,8 @@ BASE_FOLDER="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models"
 
 
 PARENT_MODELS=(
-#    "moe_1b14b_128experts_olmoe-mix_130B_1117/step30995"
-    "dense_1b_olmoe-mix_1119/step30995"
+    "moe_1b14b_128experts_olmoe-mix_130B_1117/step30995"
+#    "dense_1b_olmoe-mix_1119/step30995"
 )
 
 postfix="_keepk32"
