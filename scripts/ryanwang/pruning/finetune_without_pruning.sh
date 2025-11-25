@@ -39,7 +39,7 @@ fi
 base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
 train_task_names=(
-  "arc_easy:rc_train::olmes"
+#  "arc_easy:rc_train::olmes"
   "arc_challenge:rc_train::olmes"
   "boolq:rc_train::olmes"
   "csqa:rc_train::olmes"
@@ -135,6 +135,7 @@ for train_task_name in "${train_task_names[@]}"; do
       --preemptible \
       --allow-dirty \
       --priority urgent \
+      --no-follow \
       --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
       -- src/scripts/train/olmo2-1B_finetune.py \
         $runname \
