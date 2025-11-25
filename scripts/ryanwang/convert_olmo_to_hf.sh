@@ -3,20 +3,21 @@ BASE_FOLDER="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models"
 
 
 PARENT_MODELS=(
-    "moe_1b14b_128experts_olmoe-mix_130B_1117/step30995"
+#    "moe_1b14b_128experts_olmoe-mix_130B_1117/step30995"
+    "dense_1b_olmoe-mix_1119/step30995"
 )
 
 postfix="_keepk32"
 
 FINETUNE_TASKS=(
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step252"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step336"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step420"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step252"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step336"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step420"
 
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0"
     "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step41"
     "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step82"
     "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step123"
