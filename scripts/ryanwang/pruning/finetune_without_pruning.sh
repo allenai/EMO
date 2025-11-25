@@ -22,6 +22,20 @@ model_name="dense_1b_olmoe-mix_1119"
 step="step30995"
 num_checkpoints=5
 
+# this is used for ablations
+variation="_noloadoptim"
+
+variation_flags=""
+# Define variation-specific settings
+if [ "$variation" == "_noloadoptim" ]; then
+    # Variation: No optimizer state loading
+    # Changes: Initialize optimizer from scratch instead of loading from checkpoint.
+    variation_flags="--trainer.load_optim_state=false --trainer.load_trainer_state=false"
+else
+    echo "Warning: Unknown variation '$variation'. Using default settings."
+    variation_flags=""
+fi
+
 base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
 train_task_names=(
@@ -124,13 +138,14 @@ for train_task_name in "${train_task_names[@]}"; do
       --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
       -- src/scripts/train/olmo2-1B_finetune.py \
         $runname \
-        --save-folder="${base_model}/${out_dir}" \
+        --save-folder="${base_model}${variation}/${out_dir}" \
         --dataset.paths="[${dataset_paths}]" \
         --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
         --trainer.max_duration='{value: 3, unit: epochs}' \
         --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
         --load_path=$base_model \
         --num_checkpoints=$num_checkpoints \
+        $variation_flags
 
 #        --dataset.label_mask_paths="[${label_mask_paths}]" \
 
