@@ -1,4 +1,4 @@
-# PARENT: "twolevelbatchlb_1b14b_stability_filter-true_zlossweight-1e-3_1115.sh
+# PARENT: "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115.sh
 # DESCRIPTION:
 #     - changed architecture to add prenorm to test if performance improves - yes
 # STATUS: USED

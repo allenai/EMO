@@ -1,12 +1,11 @@
-# PARENT: "twolevelbatchlb_1b14b_stability_prenorm_1120.sh"
+# PARENT: "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115.sh
 # DESCRIPTION:
-#     - removed qk-norm from the model compared to parent.
+#     - set to top-8 instead of top-32 to have a fair comparison with dense model
 # STATUS: USED
 ##############################################################
-document_expert_pool=32
-#document_expert_pool=12
+document_expert_pool=8
 
-runname="twolevelbatchlb-${document_expert_pool}_1b14b_stability_prenorm_noqknorm_1121"
+runname="twolevelbatchlb-${document_expert_pool}_1b14b_stability_1125"
 
 #torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
 #  $runname \
@@ -49,8 +48,7 @@ python -m olmo_core.launch.beaker \
 		--model-type="two-level_lb-batch" \
 		--document-expert-pool=${document_expert_pool} \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
-		--model.block.name="moe" \
-		--model.block.attention.qk_norm=null
+    --model.block.feed_forward_moe.z_loss_weight=0.001 \
 
 
 
