@@ -511,10 +511,13 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
     else:
         raise ValueError(f"Model type {model_type} not recognized")
 
-    if "olmo" in pretrained or "OLMo" in pretrained:
-        tokenizer = "allenai/dolma2-tokenizer"
-    else:
-        tokenizer = None
+
+    tokenizer = "allenai/dolma2-tokenizer"
+
+    # if "olmo" in pretrained or "OLMo" in pretrained:
+    #     tokenizer = "allenai/dolma2-tokenizer"
+    # else:
+    #     tokenizer = None
     model = model_class(
         pretrained=pretrained,
         tokenizer=tokenizer,
