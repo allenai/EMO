@@ -3,7 +3,7 @@ BASE_FOLDER="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models"
 
 
 PARENT_MODELS=(
-    "moe_1b14b_128experts_olmoe-mix_130B_1117"
+    "moe_1b14b_128experts_olmoe-mix_130B_1117/step30995"
 )
 
 postfix="_keepk32"
@@ -16,7 +16,7 @@ FINETUNE_TASKS=(
 #    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step336"
 #    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step420"
 
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0"
 #    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step41"
 #    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step82"
 #    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step123"
@@ -30,19 +30,19 @@ FINETUNE_TASKS=(
 #    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step1260"
 #    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step1578"
 
-    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step0"
-    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step327"
-    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step654"
-    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step981"
-    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step1308"
-    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step1638"
-
-    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step0"
-    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step1458"
-    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step2916"
-    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step4374"
-    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step5832"
-    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step7293"
+#    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step0"
+#    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step327"
+#    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step654"
+#    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step981"
+#    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step1308"
+#    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step1638"
+#
+#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step0"
+#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step1458"
+#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step2916"
+#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step4374"
+#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step5832"
+#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step7293"
 
 #    "task-openbookqa_rc_validation${postfix}/finetune-task-openbookqa_rc_train/step0"
 #    "task-openbookqa_rc_validation${postfix}/finetune-task-openbookqa_rc_train/step185"
