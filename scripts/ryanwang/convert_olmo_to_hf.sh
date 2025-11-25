@@ -14,7 +14,7 @@ PARENT_MODELS=(
 
 # used to iterate on different finetuning variations
 #postfix="_keepk32"
-postfix="_keepk32/lr-9e-5_warmup-0.2"
+postfix="_keepk32/lr-7e-5_warmup-0.2"
 
 FINETUNE_TASKS=(
 #    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0"
