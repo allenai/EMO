@@ -16,7 +16,7 @@ PARENT_MODELS=(
 )
 
 #postfix="_keepk32"
-postfix="_keepk32/lr-9e-5_warmup-0.2"
+postfix="_keepk32/lr-7e-5_warmup-0.1"
 
 
 FINETUNE_TASKS=(
