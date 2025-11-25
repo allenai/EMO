@@ -73,18 +73,18 @@ for train_task_name in "${train_task_names[@]}"; do
 
     # we now tokenize the file
     tokenizer_name="allenai/OLMo-2-1124-7B"
-    destination="${BASE_OUTPUT_DIR}/prune/${task_prefix}-tokenized"
-    echo "destination folder: $destination"
+    data_folder="${BASE_OUTPUT_DIR}/prune/${task_prefix}-tokenized"
+    echo "data_folder folder: $data_folder"
 
     # Collect the corresponding dataset paths. Can make this assumption given we have a warning in tokenize script
-    dataset_paths="${destination}/part-0-00000.npy"
-    label_mask_paths="${destination}/part-0-00000_mask.npy"
+    dataset_paths="${data_folder}/part-0-00000.npy"
+    label_mask_paths="${data_folder}/part-0-00000_mask.npy"
 
     runname="${model_name}_${step}_finetune_${task_prefix}"
-    # limit runname to 128 characters
-    runname=$(echo $runname | cut -c1-100)
+    # limit runname to 128 characters, take first 25 and last 75
+    runname=$(echo $runname | cut -c1-35)_$(echo $runname | rev | cut -c1-65 | rev)
 
-    out_dir="${task_prefix}_finetune"
+    out_dir="finetune-${task_prefix}"
 
     # for debugging
     echo "Run name: $runname"

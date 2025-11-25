@@ -3,19 +3,19 @@ BASE_FOLDER="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models"
 
 
 PARENT_MODELS=(
-    "moe_1b14b_128experts_olmoe-mix_130B_1117/step30995"
-#    "dense_1b_olmoe-mix_1119/step30995"
+#    "moe_1b14b_128experts_olmoe-mix_130B_1117/step30995"
+    "dense_1b_olmoe-mix_1119/step30995"
 )
 
 postfix="_keepk32"
 
 FINETUNE_TASKS=(
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step252"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step336"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step420"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step252"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step336"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step420"
 #
 #    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0"
 #    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step41"
@@ -60,11 +60,11 @@ FINETUNE_TASKS=(
 #    "task-piqa_rc_validation${postfix}/finetune-task-piqa_rc_train/step2832"
 #
 #    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step0"
-    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step1215"
-    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step2430"
-    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step3645"
-    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step4860"
-    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step6075"
+#    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step1215"
+#    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step2430"
+#    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step3645"
+#    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step4860"
+#    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step6075"
 
 #    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step0"
 #    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step1477"
@@ -77,8 +77,15 @@ FINETUNE_TASKS=(
 
 for BASE in "${PARENT_MODELS[@]}"; do
   for FINETUNE in "${FINETUNE_TASKS[@]}"; do
-    # list all the files in the model directory, only include directories that start with "step"
-    MODEL_DIR="${BASE_FOLDER}/${BASE}_${FINETUNE}"
+
+    # check if "dense" appears in BASE, if so then change dir structure (dense did not go through pruning)
+    if [[ "$BASE" == *"dense"* ]]; then
+      # remove everything before the first "/" in FINETUNE
+      FINETUNE="${FINETUNE#*/}"
+      MODEL_DIR="${BASE_FOLDER}/${BASE}/${FINETUNE}"
+    else
+      MODEL_DIR="${BASE_FOLDER}/${BASE}_${FINETUNE}"
+    fi
 
     echo "checkpoint-input-path is ${MODEL_DIR}"
     echo "output_dir is ${MODEL_DIR}-hf"
