@@ -26,7 +26,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="lr-7e-5_warmup-0.1"
+variation="lr-7e-5_warmup-0.2"
 
 variation_flags=""
 # Define variation-specific settings
@@ -45,10 +45,10 @@ fi
 
 # first argument is which validation used for pruning, second is training dataset
 task_configs=(
-  "task-arc_easy_rc_validation_keepk32|arc_easy:rc_train::olmes"
+#  "task-arc_easy_rc_validation_keepk32|arc_easy:rc_train::olmes"
 #  "task-arc_challenge_rc_validation_keepk32|arc_challenge:rc_train::olmes"
 #  "task-boolq_rc_validation_keepk32|boolq:rc_train::olmes"
-#  "task-csqa_rc_validation_keepk32|csqa:rc_train::olmes"
+  "task-csqa_rc_validation_keepk32|csqa:rc_train::olmes"
 #  "task-hellaswag_rc_validation_keepk32|hellaswag:rc_train::olmes"
 #  "task-openbookqa_rc_validation_keepk32|openbookqa:rc_train::olmes"
 #  "task-piqa_rc_validation_keepk32|piqa:rc_train::olmes"
