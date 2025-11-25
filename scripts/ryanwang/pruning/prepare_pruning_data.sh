@@ -16,15 +16,15 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### few-shot ##########
   # MC9 tasks
-  "arc_easy"
-#  "arc_challenge"
-#  "boolq"
-#  "csqa"
-#  "hellaswag"
-#  "openbookqa"
-#  "piqa"
-#  "socialiqa"
-#  "winogrande"
+#  "arc_easy"
+  "arc_challenge"
+  "boolq"
+  "csqa"
+  "hellaswag"
+  "openbookqa"
+  "piqa"
+  "socialiqa"
+  "winogrande"
 
 #   MMLU
 #  "mmlu"
