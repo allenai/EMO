@@ -32,14 +32,14 @@ step="step30995"
 # these should correspond to activation files
 validation_task_names=(
   "task-arc_easy_rc_validation"
-  "task-arc_challenge_rc_validation"
-  "task-boolq_rc_validation"
-  "task-csqa_rc_validation"
-  "task-hellaswag_rc_validation"
-  "task-openbookqa_rc_validation"
-  "task-piqa_rc_validation"
-  "task-socialiqa_rc_validation"
-  "task-winogrande_rc_validation"
+#  "task-arc_challenge_rc_validation"
+#  "task-boolq_rc_validation"
+#  "task-csqa_rc_validation"
+#  "task-hellaswag_rc_validation"
+#  "task-openbookqa_rc_validation"
+#  "task-piqa_rc_validation"
+#  "task-socialiqa_rc_validation"
+#  "task-winogrande_rc_validation"
 #
 ##   MMLU
 #  "mmlu_rc:rc_train_0shot::olmes"
