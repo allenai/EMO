@@ -23,11 +23,11 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="_noloadoptim"
+variation="noloadoptim"
 
 variation_flags=""
 # Define variation-specific settings
-if [ "$variation" == "_noloadoptim" ]; then
+if [ "$variation" == "noloadoptim" ]; then
     # Variation: No optimizer state loading
     # Changes: Initialize optimizer from scratch instead of loading from checkpoint.
     variation_flags="--trainer.load_optim_state=false --trainer.load_trainer_state=false"
