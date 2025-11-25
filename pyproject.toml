@@ -55,6 +55,9 @@ dev = [
     "twine>=1.11.0",
     "wheel",
 ]
+flashattn = [
+    "flash-attn==2.8.2",
+]
 beaker = ["beaker-py>=1.37.0,<2.0", "GitPython>=3.0,<4.0", "google-cloud-compute"]
 comet = ["comet_ml"]
 eval = [
@@ -65,7 +68,7 @@ torchao = ["torchao"]
 #transformers = ["transformers>=4.57.1"]
 transformers = ["transformers==4.57.1"]
 wandb = ["wandb"]
-all = ["ai2-olmo-core[dev,beaker,comet,eval,torchao,transformers,wandb]"]
+all = ["ai2-olmo-core[dev,beaker,comet,eval,torchao,transformers,wandb,flashattn]"]
 
 
 [tool.setuptools]
