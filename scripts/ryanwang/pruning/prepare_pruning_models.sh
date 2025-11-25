@@ -18,7 +18,9 @@ BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
 run_configs=(
-  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115|prune_keep_k=32"
+  "moe_1b14b_128experts_olmoe-mix_130B_1117|prune_keep_k=32"
+
+#  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115|prune_keep_k=32"
 #  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115|prune_keep_k=8"
 #  "moe_1b7b_128experts_olmoe-mix_130B_1103|prune_keep_k=32"
 #  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110|prune_keep_k=32"
@@ -29,14 +31,14 @@ step="step30995"
 # these should correspond to activation files
 validation_task_names=(
   "task-arc_easy_rc_validation"
-#  "task-arc_challenge_rc_validation"
-#  "task-boolq_rc_validation"
-#  "task-csqa_rc_validation"
-#  "task-hellaswag_rc_validation"
-#  "task-openbookqa_rc_validation"
-#  "task-piqa_rc_validation"
-#  "task-socialiqa_rc_validation"
-#  "task-winogrande_rc_validation"
+  "task-arc_challenge_rc_validation"
+  "task-boolq_rc_validation"
+  "task-csqa_rc_validation"
+  "task-hellaswag_rc_validation"
+  "task-openbookqa_rc_validation"
+  "task-piqa_rc_validation"
+  "task-socialiqa_rc_validation"
+  "task-winogrande_rc_validation"
 #
 ##   MMLU
 #  "mmlu_rc:rc_train_0shot::olmes"
