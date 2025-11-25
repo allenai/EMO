@@ -26,7 +26,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="lr-3e-5_warmup-0.2"
+variation="lr-7e-5_warmup-0.2"
 
 variation_flags=""
 # Define variation-specific settings
@@ -34,6 +34,10 @@ if [ "$variation" == "lr-3e-5_warmup-0.2" ]; then
     # Variation: No optimizer state loading
     # Changes: Initialize optimizer from scratch instead of loading from checkpoint.
     variation_flags="--train_module.optim.lr=3e-5 --train_module.scheduler.warmup_fraction=0.2"
+elif [ "$variation" == "lr-7e-5_warmup-0.2" ]; then
+    # Variation: No optimizer state loading
+    # Changes: Initialize optimizer from scratch instead of loading from checkpoint.
+    variation_flags="--train_module.optim.lr=7e-5 --train_module.scheduler.warmup_fraction=0.2"
 else
     echo "Warning: Unknown variation '$variation'. Using default settings."
     variation_flags=""
