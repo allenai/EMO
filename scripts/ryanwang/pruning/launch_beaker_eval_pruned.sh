@@ -23,26 +23,26 @@ postfix="_keepk32"
 
 
 FINETUNE_TASKS=(
-    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_trainstep252-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step336-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step420-hf"
-#
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step41-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step82-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step123-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step164-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step207-hf"
-#
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step0-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step315-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step630-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step945-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step1260-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step1578-hf"
+#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_trainstep252-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step336-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step420-hf"
+
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step41-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step82-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step123-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step164-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step207-hf"
+
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step0-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step315-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step630-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step945-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step1260-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step1578-hf"
 
 #    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step0-hf"
 #    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step327-hf"
@@ -162,8 +162,16 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
                 gpus=1
             fi
 
+            # check if "dense" appears in BASE, if so then change dir structure (dense did not go through pruning)
+            if [[ "$PARENT_MODEL" == *"dense"* ]]; then
+              # remove everything before the first "/" in FINETUNE
+                FINETUNE_TASK="${FINETUNE_TASK#*/}"
+                MODEL_NAME="${PARENT_MODEL}/${FINETUNE_TASK}"
+            else
+                MODEL_NAME="${PARENT_MODEL}_${FINETUNE_TASK}"
+            fi
+
             # Construct the full model path
-            MODEL_NAME="${PARENT_MODEL}_${FINETUNE_TASK}"
             echo "Processing model: $MODEL_NAME"
             model=$(get_checkpoint_name $MODEL_NAME)
             echo "Model name for output dir: $model"
