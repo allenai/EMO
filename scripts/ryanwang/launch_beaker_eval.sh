@@ -7,7 +7,11 @@
 MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
 #MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 MODELS=(
-    "twolevelsamplingnolb-32_1b14b_stability_filter-true_zlossweight-1e-3_1116/step30995-hf"
+    "moe_1b14b_128experts_olmoe-mix_130B_1117/step30995-hf"
+    "dense_1b_olmoe-mix_1119/step30995-hf"
+    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995-hf"
+
+#    "twolevelsamplingnolb-32_1b14b_stability_filter-true_zlossweight-1e-3_1116/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995-hf"
 #    "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110/step30995-hf"
 #    "moe_1b7b_128experts_olmoe-mix_130B_1103/step30995-hf"
@@ -16,23 +20,7 @@ MODELS=(
 #    "moe_1b7b_olmoe-mix_300B_1030/step71526-hf"
 #    "moe_1b7b_olmoe-mix/step30995-hf"
     )
-#MODELS=(
-#    "dense_1b_olmoe-mix_300B_1030/step0-hf"
-#    "dense_1b_olmoe-mix_300B_1030/step5000-hf"
-#    "dense_1b_olmoe-mix_300B_1030/step10000-hf"
-#    "dense_1b_olmoe-mix_300B_1030/step15000-hf"
-#    "dense_1b_olmoe-mix_300B_1030/step20000-hf"
-#    "dense_1b_olmoe-mix_300B_1030/step25000-hf"
-#    "dense_1b_olmoe-mix_300B_1030/step30000-hf"
-#    "dense_1b_olmoe-mix_300B_1030/step35000-hf"
-#    "dense_1b_olmoe-mix_300B_1030/step40000-hf"
-#    "dense_1b_olmoe-mix_300B_1030/step45000-hf"
-#    "dense_1b_olmoe-mix_300B_1030/step50000-hf"
-#    "dense_1b_olmoe-mix_300B_1030/step55000-hf"
-#    "dense_1b_olmoe-mix_300B_1030/step60000-hf"
-#    "dense_1b_olmoe-mix_300B_1030/step65000-hf"
-#    "dense_1b_olmoe-mix_300B_1030/step70000-hf"
-#)
+
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/evals"
