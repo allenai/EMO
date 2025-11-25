@@ -158,18 +158,6 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
                 gpus=1
             fi
 
-            # find the activation file
-            parent_model_name=$(get_checkpoint_name $PARENT_MODEL)
-            # get validation_task_name by taking the prefix of FINETUNE_TASK without the suffix
-            # Strip leading "task-" and everything after the first "/"
-            validation_task_name="${FINETUNE_TASK#task-}"
-            validation_task_name="${validation_task_name%%/*}"
-            # Strip postfix if FINETUNE_TASK contains it
-            if [[ -n "$postfix" ]]; then
-                validation_task_name="${validation_task_name%"$postfix"}"
-            fi
-            activation_file="${PRUNE_DIR}/${parent_model_name}-hf/${validation_task_name}-router.jsonl"
-
             # Construct the full model path
             MODEL_NAME="${PARENT_MODEL}_${FINETUNE_TASK}"
             echo "Processing model: $MODEL_NAME"
@@ -182,8 +170,8 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
             safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g')
             safe_group_name=$(echo $GROUP_NAME | sed 's/[^a-zA-Z0-9_-]//g')
             job_name="eval-${safe_model_name}-${safe_group_name}"
-            # limit job_name to be at most 128 characters
-            job_name=${job_name:0:120}
+            # limit runname to 128 characters, take first 25 and last 75
+            job_name=$(echo $job_name | cut -c1-35)_$(echo $job_name | rev | cut -c1-65 | rev)
 
 
             echo "  Model name: $model"
@@ -191,7 +179,6 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
             echo "  GPUs: $gpus"
             echo "  Batch size: $batch_size"
             echo "  Job name: $job_name"
-            echo "  Activation file: $activation_file"
 
 
 #            PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
@@ -222,9 +209,6 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
                 --remote-output-dir $OUTPUT_DIR \
                 --batch-size $batch_size \
                 --gpus $gpus \
-                --do_prune \
-                --activation_file $activation_file \
-                --prune_keep_k $keepk \
                 "
 
             echo "Launched evaluation for model: $model, group: $GROUP_NAME"

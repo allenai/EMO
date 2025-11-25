@@ -12,12 +12,12 @@ PARENT_MODELS=(
 postfix="_keepk32"
 
 FINETUNE_TASKS=(
-    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0"
-    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84"
-    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168"
-    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_trainstep252"
-    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step336"
-    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step420"
+#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0"
+#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84"
+#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step252"
+#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step336"
+#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step420"
 #
 #    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0"
 #    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step41"
