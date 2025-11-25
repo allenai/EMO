@@ -74,45 +74,45 @@ FINETUNE_TASKS=(
 
 )
 
-#for BASE in "${PARENT_MODELS[@]}"; do
-#  for FINETUNE in "${FINETUNE_TASKS[@]}"; do
-#    # list all the files in the model directory, only include directories that start with "step"
-#    MODEL_DIR="${BASE_FOLDER}/${BASE}_${FINETUNE}"
-#
-#    echo "checkpoint-input-path is ${MODEL_DIR}"
-#    echo "output_dir is ${MODEL_DIR}-hf"
-#
-#    # Beaker names can only contain letters, digits, periods, dashes, and underscores.
-#    job_name="convert_${FINETUNE//\//_}"
-#
-#    # launch the gantry run and delete the original model
-#
-#    gantry run \
-#    --name $job_name \
-#    --weka oe-training-default:/weka/oe-training-default \
-#    --install 'pip install -e .[all]' \
-#    --budget ai2/oceo \
-#    --workspace ai2/flex2 \
-#    --cluster "ai2/jupiter-cirrascale-2" \
-#    --cpus 16 \
-#    --gpus 0 \
-#    --priority urgent \
-#    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-#    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-#    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-#    -- \
-#    bash -c '
-#    python src/examples/huggingface/convert_checkpoint_to_hf.py \
-#      --checkpoint-input-path "'"${MODEL_DIR}"'" \
-#      --max-sequence-length 4096 \
-#      --huggingface-output-dir "'"${MODEL_DIR}"'-hf" \
-#      --dtype float32 \
-#      --skip-validation \
-#    && \
-#      rm -rf "'"${MODEL_DIR}"'"
-#  '
-#  done
-#done
+for BASE in "${PARENT_MODELS[@]}"; do
+  for FINETUNE in "${FINETUNE_TASKS[@]}"; do
+    # list all the files in the model directory, only include directories that start with "step"
+    MODEL_DIR="${BASE_FOLDER}/${BASE}_${FINETUNE}"
+
+    echo "checkpoint-input-path is ${MODEL_DIR}"
+    echo "output_dir is ${MODEL_DIR}-hf"
+
+    # Beaker names can only contain letters, digits, periods, dashes, and underscores.
+    job_name="convert_${FINETUNE//\//_}"
+
+    # launch the gantry run and delete the original model
+
+    gantry run \
+    --name $job_name \
+    --weka oe-training-default:/weka/oe-training-default \
+    --install 'pip install -e .[all]' \
+    --budget ai2/oceo \
+    --workspace ai2/flex2 \
+    --cluster "ai2/jupiter-cirrascale-2" \
+    --cpus 16 \
+    --gpus 0 \
+    --priority urgent \
+    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+    -- \
+    bash -c '
+    python src/examples/huggingface/convert_checkpoint_to_hf.py \
+      --checkpoint-input-path "'"${MODEL_DIR}"'" \
+      --max-sequence-length 4096 \
+      --huggingface-output-dir "'"${MODEL_DIR}"'-hf" \
+      --dtype float32 \
+      --skip-validation \
+    && \
+      rm -rf "'"${MODEL_DIR}"'"
+  '
+  done
+done
 
 #python src/examples/huggingface/convert_checkpoint_to_hf.py \
 #      --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/dense_1b_olmoe-mix_1119/step30995" \
