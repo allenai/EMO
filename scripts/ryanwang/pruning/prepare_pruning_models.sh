@@ -18,7 +18,8 @@ BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
 run_configs=(
-  "moe_1b14b_128experts_olmoe-mix_130B_1117|prune_keep_k=32"
+#  "moe_1b14b_128experts_olmoe-mix_130B_1117|prune_keep_k=32"
+  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115|prune_keep_k=32"
 
 #  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115|prune_keep_k=32"
 #  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115|prune_keep_k=8"
