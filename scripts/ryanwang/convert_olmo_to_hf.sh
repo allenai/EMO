@@ -115,9 +115,9 @@ FINETUNE_TASKS=(
 #done
 
 python src/examples/huggingface/convert_checkpoint_to_hf.py \
-      --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995" \
+      --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/dense_1b_olmoe-mix_1119/step30995" \
       --max-sequence-length 4096 \
-      --huggingface-output-dir "/root/ryanwang/phdbrainstor/FlexMoE/models/dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995-hf" \
+      --huggingface-output-dir "/root/ryanwang/phdbrainstor/FlexMoE/models/dense_1b_olmoe-mix_1119/step30995-hf" \
       --dtype float32 \
       --skip-validation
 
