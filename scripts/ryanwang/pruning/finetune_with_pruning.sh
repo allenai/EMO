@@ -26,7 +26,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="lr-7e-5_warmup-0.2"
+variation="lr-7e-5_warmup-0.1"
 
 variation_flags=""
 # Define variation-specific settings
