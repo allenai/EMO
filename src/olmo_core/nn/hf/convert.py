@@ -295,7 +295,7 @@ MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_WEIGHT_MAPPINGS: Dict[
     str, Dict[str, str]
 ] = {
     "flex_olmo_noqknorm_prenorm": {
-        f"blocks.{LAYER}.attention_norm.weight": f"model.layers.{LAYER}.pre_attention_layernorm",
+        f"blocks.{LAYER}.attention_norm.weight": f"model.layers.{LAYER}.pre_attention_layernorm.weight",
         f"blocks.{LAYER}.feed_forward_norm.weight": f"model.layers.{LAYER}.pre_feedforward_layernorm.weight",
     }
 }
