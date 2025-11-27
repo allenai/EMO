@@ -15,7 +15,7 @@ from olmo_core.nn.transformer.model import (
 )
 
 try:
-    from transformers import FlexOlmoConfig  # type: ignore
+    from transformers import FlexOlmoConfig, FlexOlmoNoQKNormPrenormConfig  # type: ignore
 except ImportError:
     FlexOlmoConfig = None
 
