@@ -295,8 +295,8 @@ MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_WEIGHT_MAPPINGS: Dict[
     str, Dict[str, str]
 ] = {
     "flex_olmo_noqknorm_prenorm": {
-        f"blocks.{LAYER}.attention_norm.weight": f"model.layers.{LAYER}.input_layernorm.weight",
-        f"blocks.{LAYER}.feed_forward_norm.weight": f"model.layers.{LAYER}.post_attention_layernorm.weight",
+        f"blocks.{LAYER}.attention_norm.weight": f"model.layers.{LAYER}.pre_attention_layernorm",
+        f"blocks.{LAYER}.feed_forward_norm.weight": f"model.layers.{LAYER}.pre_feedforward_layernorm.weight",
     }
 }
 
@@ -304,8 +304,8 @@ MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_MODULE_MAPPINGS: Dict[
     str, Dict[str, str]
 ] = {
     "flex_olmo_noqknorm_prenorm": {
-        f"blocks.{LAYER}.attention_norm": f"model.layers.{LAYER}.input_layernorm",
-        f"blocks.{LAYER}.feed_forward_norm": f"model.layers.{LAYER}.post_attention_layernorm",
+        f"blocks.{LAYER}.attention_norm": f"model.layers.{LAYER}.pre_attention_layernorm",
+        f"blocks.{LAYER}.feed_forward_norm": f"model.layers.{LAYER}.pre_feedforward_layernorm",
     }
 }
 
@@ -407,11 +407,23 @@ def _get_converter_to_hf(model_type: str | None = None) -> StateConverter:
         }
     )
     mapping_templates.update(OLMO_CORE_TO_HF_TEMPLATE_MAPPINGS)
-    breakpoint()
 
     if model_type:
         mapping_templates.update(
             MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_TEMPLATE_MAPPINGS.get(model_type, {})
+        )
+        mapping_templates.update(
+            {
+                olmo_core_key: StateMappingTemplate(olmo_core_key, hf_key, state_type=StateType.weight)
+                for olmo_core_key, hf_key in MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_WEIGHT_MAPPINGS.get(model_type, {}).items()
+            }
+        )
+        mapping_templates.update(
+            {
+                olmo_core_key: StateMappingTemplate(olmo_core_key, hf_key, state_type=StateType.weight)
+                for olmo_core_key, hf_key in
+                MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_MODULE_MAPPINGS.get(model_type, {}).items()
+            }
         )
 
     return StateConverter(list(mapping_templates.values()))
