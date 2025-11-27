@@ -291,6 +291,24 @@ MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_TEMPLATE_MAPPINGS: Dict[
     }
 }
 
+MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_WEIGHT_MAPPINGS: Dict[
+    str, Dict[str, str]
+] = {
+    "flex_olmo_noqknorm_prenorm": {
+        f"blocks.{LAYER}.attention_norm.weight": f"model.layers.{LAYER}.input_layernorm.weight",
+        f"blocks.{LAYER}.feed_forward_norm.weight": f"model.layers.{LAYER}.post_attention_layernorm.weight",
+    }
+}
+
+MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_MODULE_MAPPINGS: Dict[
+    str, Dict[str, str]
+] = {
+    "flex_olmo_noqknorm_prenorm": {
+        f"blocks.{LAYER}.attention_norm": f"model.layers.{LAYER}.input_layernorm",
+        f"blocks.{LAYER}.feed_forward_norm": f"model.layers.{LAYER}.post_attention_layernorm",
+    }
+}
+
 
 def _get_hf_model_to_olmo_core_one_to_one_templates(
     model_type: str | None = None,
