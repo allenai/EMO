@@ -389,6 +389,7 @@ def _get_converter_to_hf(model_type: str | None = None) -> StateConverter:
         }
     )
     mapping_templates.update(OLMO_CORE_TO_HF_TEMPLATE_MAPPINGS)
+    breakpoint()
 
     if model_type:
         mapping_templates.update(
