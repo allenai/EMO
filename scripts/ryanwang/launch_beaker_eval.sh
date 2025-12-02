@@ -10,7 +10,10 @@ MODELS=(
 #    "moe_1b14b_128experts_olmoe-mix_130B_1117/step30995-hf"
 #    "dense_1b_olmoe-mix_1119/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995-hf"
-    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
+#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
+    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
+    "twolevelsamplingnolb-32_1b10b_stability_1127/step30995-hf"
+    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995-hf"
 
 #    "twolevelsamplingnolb-32_1b14b_stability_filter-true_zlossweight-1e-3_1116/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995-hf"
