@@ -145,4 +145,4 @@ for MODEL in "${MODELS[@]}"; do
           --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}-hf" \
           --dtype float32 \
           --skip-validation
-
+done
