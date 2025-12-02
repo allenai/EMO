@@ -130,11 +130,11 @@ FINETUNE_TASKS=(
 #done
 
 MODELS=(
-#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_1121/step30995"
-#    "twolevelbatchlb-32_1b14b_stability_prenorm_1120/step30995"
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
-    "twolevelsamplingnolb-32_1b10b_stability_1127/step30995"
-    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
+    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_1121/step30995"
+    "twolevelbatchlb-32_1b14b_stability_prenorm_1120/step30995"
+#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
+#    "twolevelsamplingnolb-32_1b10b_stability_1127/step30995"
+#    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
 )
 
 for MODEL in "${MODELS[@]}"; do

@@ -15,7 +15,7 @@ from olmo_core.nn.transformer.model import (
 )
 
 try:
-    from transformers import FlexOlmoConfig, FlexOlmoNoQKNormPrenormConfig  # type: ignore
+    from transformers import FlexOlmoConfig, FlexOlmoNoQKNormPrenormConfig, FlexOlmoPrenormConfig  # type: ignore
 except ImportError:
     FlexOlmoConfig = None
 
@@ -29,7 +29,11 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
     blocks = list(model.blocks.values())
     for block in blocks:
         if not isinstance(block, MoEReorderedNormTransformerBlock):
-            if not(isinstance(block, MoETransformerBlock) and block.attention.q_norm is None and block.attention.k_norm is None):
+            if isinstance(block, MoETransformerBlock) and block.attention.q_norm is None and block.attention.k_norm is None:
+                pass
+            elif isinstance(block, MoETransformerBlock) and block.attention.q_norm is not None and block.attention.k_norm is not None:
+                pass
+            else:
                 raise NotImplementedError(
                     f"Block is not a {MoEReorderedNormTransformerBlock.__name__}, unable to build HF config for {model.__class__.__name__}"
                 )
@@ -58,6 +62,26 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
 
     if isinstance(block, MoETransformerBlock) and block.attention.q_norm is None and block.attention.k_norm is None:
         return FlexOlmoNoQKNormPrenormConfig(
+            vocab_size=model.vocab_size,
+            hidden_size=model.d_model,
+            intermediate_size=block.feed_forward_moe.experts.mlp.hidden_size,
+            num_hidden_layers=model.n_layers,
+            num_attention_heads=block.attention.n_heads,
+            num_key_value_heads=block.attention.n_kv_heads,
+            hidden_act="silu",
+            max_position_embeddings=-1,
+            attention_bias=block.attention.w_out.bias is not None,
+            rope_theta=block.attention.rope.theta,
+            pad_token_id=None,  # type: ignore
+            bos_token_id=None,
+            eos_token_id=None,  # type: ignore
+            rms_norm_eps=block.feed_forward_norm.eps,
+            num_experts_per_tok=block.feed_forward_moe.router.top_k,
+            num_experts=block.feed_forward_moe.router.num_experts,
+            tie_word_embeddings=False,
+        )
+    elif isinstance(block, MoETransformerBlock) and block.attention.q_norm is not None and block.attention.k_norm is not None:
+        return FlexOlmoPrenormConfig(
             vocab_size=model.vocab_size,
             hidden_size=model.d_model,
             intermediate_size=block.feed_forward_moe.experts.mlp.hidden_size,

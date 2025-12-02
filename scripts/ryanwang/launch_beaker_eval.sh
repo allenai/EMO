@@ -23,7 +23,7 @@ MODELS=(
 #    "dense_1b_olmoe-mix_1028/step30995-hf"
 #    "moe_1b7b_olmoe-mix_300B_1030/step71526-hf"
 #    "moe_1b7b_olmoe-mix/step30995-hf"
-    )
+)
 
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals"
