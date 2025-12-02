@@ -3,7 +3,8 @@
 #     - fixed typo from 1b7b to 1b14b
 #     - Added batchlb to add load balancing (prev version "collapsed" to using only a few experts)
 #     - Added data filter
-# STATUS: USED
+# STATUS: DEPRICATED
+#     - replaced by twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121.sh
 ##############################################################
 document_expert_pool=32
 #document_expert_pool=12

@@ -2,7 +2,8 @@
 # DESCRIPTION:
 #     - Different from parent by adding dataset filtering
 #     - Re-run to also collect in-loop evals (1028 version did not have in-loop evals setup)
-# STATUS: USED
+# STATUS: DEPRICATED
+#     - Decuded to use prenorm + noqknorm instead (dense_1b_olmoe-mix_prenorm_noqknorm_1123.sh)
 ##############################################################
 
 runname="dense_1b_olmoe-mix_1119"

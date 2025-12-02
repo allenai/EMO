@@ -1,7 +1,8 @@
 # PARENT: "moe1b7b_128experts_olmoe-mix_130B_1103.sh"
 # DESCRIPTION:
 #     - same as parent but fixed typo in name to 1b14b and added in-loop evals and updated dataset filtering
-# STATUS: USED
+# STATUS: DEPRICATED
+#     - replaced by moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123.sh
 ##############################################################
 
 runname="moe_1b14b_128experts_olmoe-mix_130B_1117"

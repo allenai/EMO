@@ -129,10 +129,20 @@ FINETUNE_TASKS=(
 #  done
 #done
 
-python src/examples/huggingface/convert_checkpoint_to_hf.py \
-      --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995" \
-      --max-sequence-length 4096 \
-      --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf" \
-      --dtype float32 \
-      --skip-validation
+MODELS=(
+    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_1121/step30995"
+    "twolevelbatchlb-32_1b14b_stability_prenorm_1120/step30995"
+    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
+    "twolevelsamplingnolb-32_1b10b_stability_1127/step30995"
+    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
+)
+
+for MODEL in "${MODELS[@]}"; do
+
+    python src/examples/huggingface/convert_checkpoint_to_hf.py \
+          --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}" \
+          --max-sequence-length 4096 \
+          --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}-hf" \
+          --dtype float32 \
+          --skip-validation
 
