@@ -1,4 +1,4 @@
-from transformers import Olmo2Config, PretrainedConfig
+from transformers import Olmo2Config, PretrainedConfig, Olmo2NoQKNormPrenormConfig
 
 from olmo_core.doc_utils import beta_feature
 from olmo_core.nn.attention import Attention
@@ -6,7 +6,7 @@ from olmo_core.nn.moe.mlp import DroplessMoEMLP, MoEMLP
 from olmo_core.nn.rope import RoPEScalingConfig
 from olmo_core.nn.transformer.block import (
     MoEReorderedNormTransformerBlock,
-    ReorderedNormTransformerBlock, MoETransformerBlock,
+    ReorderedNormTransformerBlock, MoETransformerBlock, TransformerBlock,
 )
 from olmo_core.nn.transformer.model import (
     MoETransformer,
@@ -134,9 +134,13 @@ def get_hf_config(model: Transformer) -> PretrainedConfig:
     blocks = list(model.blocks.values())
     first_block = blocks[0]
     if not isinstance(first_block, ReorderedNormTransformerBlock):
-        raise NotImplementedError(
-            f"Block is not a {ReorderedNormTransformerBlock.__name__}, unable to build HF config for {model.__class__.__name__}"
-        )
+        # we support case where we use prenorm and no q/k norm
+        if isinstance(first_block, TransformerBlock) and first_block.attention.q_norm is None and first_block.attention.k_norm is None:
+            pass
+        else:
+            raise NotImplementedError(
+                f"Block is not a {ReorderedNormTransformerBlock.__name__}, unable to build HF config for {model.__class__.__name__}"
+            )
 
     if not isinstance(first_block.attention, Attention):
         raise NotImplementedError(
@@ -213,7 +217,10 @@ def get_hf_config(model: Transformer) -> PretrainedConfig:
         }
         return Olmo3Config(**common_config_args, **olmo3_specific_args)
     else:
-        return Olmo2Config(**common_config_args)
+        if isinstance(first_block, TransformerBlock) and first_block.attention.q_norm is None and first_block.attention.k_norm is None:
+            return Olmo2NoQKNormPrenormConfig(**common_config_args)
+        else:
+            return Olmo2Config(**common_config_args)
 
 
 def _get_and_validate_rope_scaling_config(blocks) -> dict | None:

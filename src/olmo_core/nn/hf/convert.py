@@ -301,6 +301,10 @@ MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_WEIGHT_MAPPINGS: Dict[
     "flex_olmo_prenorm": {
         f"blocks.{LAYER}.attention_norm.weight": f"model.layers.{LAYER}.pre_attention_layernorm.weight",
         f"blocks.{LAYER}.feed_forward_norm.weight": f"model.layers.{LAYER}.pre_feedforward_layernorm.weight",
+    },
+    "olmo2_noqknorm_prenorm": {
+        f"blocks.{LAYER}.attention_norm.weight": f"model.layers.{LAYER}.pre_attention_layernorm.weight",
+        f"blocks.{LAYER}.feed_forward_norm.weight": f"model.layers.{LAYER}.pre_feedforward_layernorm.weight",
     }
 }
 
@@ -314,7 +318,11 @@ MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_MODULE_MAPPINGS: Dict[
     "flex_olmo_prenorm": {
         f"blocks.{LAYER}.attention_norm": f"model.layers.{LAYER}.pre_attention_layernorm",
         f"blocks.{LAYER}.feed_forward_norm": f"model.layers.{LAYER}.pre_feedforward_layernorm",
-    }
+    },
+    "olmo2_noqknorm_prenorm": {
+        f"blocks.{LAYER}.attention_norm": f"model.layers.{LAYER}.pre_attention_layernorm",
+        f"blocks.{LAYER}.feed_forward_norm": f"model.layers.{LAYER}.pre_feedforward_layernorm",
+    },
 }
 
 
