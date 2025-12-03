@@ -1,12 +1,12 @@
-# PARENT: "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121.sh"
+# PARENT: "twolevelbatchlb-32_1b14b_stability_lr-4e-5_1202.sh"
 # DESCRIPTION:
-#     - changed lr from 4e-4 to 4e-5 to ablate to improve downstream task performance
+#     - changed lr from 4e-5 to 6e-4 to ablate to improve downstream task performance
 # STATUS: USED
 ##############################################################
 document_expert_pool=32
 #document_expert_pool=12
 
-runname="twolevelbatchlb-${document_expert_pool}_1b14b_stability_lr-4e-5_1202"
+runname="twolevelbatchlb-${document_expert_pool}_1b14b_stability_lr-6e-4_1203"
 
 #torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
 #  $runname \
@@ -41,7 +41,7 @@ python -m olmo_core.launch.beaker \
 		--save-folder="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/$runname" \
 		--dataset.mix=OLMoE-mix-0824 \
 		--work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
-		--lr=4e-5 \
+		--lr=6e-4 \
 		--trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
 		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
 		--model.block.feed_forward_moe.num_experts=128 \
