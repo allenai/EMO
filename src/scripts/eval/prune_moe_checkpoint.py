@@ -224,6 +224,8 @@ def prune_experts(args):
                     ).indices.tolist()
 
                     copy_param_with_prune(param, new_param, num_experts, args.prune_keep_k, model_config, experts_to_keep)
+                else:
+                    raise ValueError(f"Shape mismatch for parameter {name}, cannot prune non-router/expert weights")
 
         else:
             logger.debug(f"Parameter {name} not found in new model, not updating weights")
