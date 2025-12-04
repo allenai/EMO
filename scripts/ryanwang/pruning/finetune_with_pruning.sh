@@ -22,8 +22,8 @@ model_names=(
 #  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115"
 
    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121"
-   "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123"
-   "twolevelsamplingnolb-32_1b14b_stability_1127"
+#   "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123"
+#   "twolevelsamplingnolb-32_1b14b_stability_1127"
 )
 #model_name="moe_1b7b_olmoe-mix"
 step="step30995"
@@ -50,14 +50,14 @@ fi
 # first argument is which validation used for pruning, second is training dataset
 task_configs=(
   "task-arc_easy_rc_validation_keepk32|arc_easy:rc_train::olmes"
-  "task-arc_challenge_rc_validation_keepk32|arc_challenge:rc_train::olmes"
-  "task-boolq_rc_validation_keepk32|boolq:rc_train::olmes"
-  "task-csqa_rc_validation_keepk32|csqa:rc_train::olmes"
-  "task-hellaswag_rc_validation_keepk32|hellaswag:rc_train::olmes"
-  "task-openbookqa_rc_validation_keepk32|openbookqa:rc_train::olmes"
-  "task-piqa_rc_validation_keepk32|piqa:rc_train::olmes"
-  "task-socialiqa_rc_validation_keepk32|socialiqa:rc_train::olmes"
-  "task-winogrande_rc_validation_keepk32|winogrande:rc_train::olmes"
+#  "task-arc_challenge_rc_validation_keepk32|arc_challenge:rc_train::olmes"
+#  "task-boolq_rc_validation_keepk32|boolq:rc_train::olmes"
+#  "task-csqa_rc_validation_keepk32|csqa:rc_train::olmes"
+#  "task-hellaswag_rc_validation_keepk32|hellaswag:rc_train::olmes"
+#  "task-openbookqa_rc_validation_keepk32|openbookqa:rc_train::olmes"
+#  "task-piqa_rc_validation_keepk32|piqa:rc_train::olmes"
+#  "task-socialiqa_rc_validation_keepk32|socialiqa:rc_train::olmes"
+#  "task-winogrande_rc_validation_keepk32|winogrande:rc_train::olmes"
 
   # following is depricated for now
 #  "arc_easy:rc_train_0shot::olmes"
@@ -173,6 +173,8 @@ for model_name in "${model_names[@]}"; do
             --load_path=$base_model \
             --num_checkpoints=$num_checkpoints \
             --model.block.feed_forward_moe.num_experts=${prune_keep_k} \
+            --model.block.name="moe" \
+		        --model.block.attention.qk_norm=null \
             $variation_flags
 
     #        --dataset.label_mask_paths="[${label_mask_paths}]" \
