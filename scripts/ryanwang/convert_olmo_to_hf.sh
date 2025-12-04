@@ -20,7 +20,7 @@ postfix="_keepk32"
 #postfix="_keepk32/lr-3e-5_warmup-0.2"
 
 FINETUNE_TASKS=(
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0"
     "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84"
     "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168"
     "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step252"
