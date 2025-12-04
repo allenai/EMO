@@ -15,8 +15,8 @@ PARENT_MODELS=(
     "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
 )
 
-#postfix="_keepk32"
-postfix="_keepk32/lr-7e-5_warmup-0.1"
+postfix="_keepk32"
+#postfix="_keepk32/lr-7e-5_warmup-0.1"
 
 
 FINETUNE_TASKS=(
@@ -96,15 +96,16 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
-  "arc_easy|arc_easy:rc_test::olmes"
-  "arc_challenge|arc_challenge:rc_test::olmes"
-  "boolq|boolq:rc_test::olmes"
-  "csqa|csqa:rc_test::olmes"
-  "hellaswag|hellaswag:rc_test::olmes"
-  "openbookqa|openbookqa:rc_test::olmes"
-  "piqa|piqa:rc_test::olmes"
-  "socialiqa|socialiqa:rc_test::olmes"
-  "winogrande|winogrande:rc_test::olmes"
+  "arc_easy|arc_easy:rc_train::olmes"
+#  "arc_easy|arc_easy:rc_test::olmes"
+#  "arc_challenge|arc_challenge:rc_test::olmes"
+#  "boolq|boolq:rc_test::olmes"
+#  "csqa|csqa:rc_test::olmes"
+#  "hellaswag|hellaswag:rc_test::olmes"
+#  "openbookqa|openbookqa:rc_test::olmes"
+#  "piqa|piqa:rc_test::olmes"
+#  "socialiqa|socialiqa:rc_test::olmes"
+#  "winogrande|winogrande:rc_test::olmes"
 
 #   MMLU
 #  "mmlu_rc_test|mmlu:rc_test::olmes"
