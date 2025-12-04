@@ -3,9 +3,10 @@
 MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
 #MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 MODELS=(
-    "moe_1b14b_128experts_olmoe-mix_130B_1117/step30995-hf"
+#    "moe_1b14b_128experts_olmoe-mix_130B_1117/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995-hf"
 #    "dense_1b_olmoe-mix_1119/step30995-hf"
+    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
     )
 #BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/prune"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/prune"
@@ -19,14 +20,14 @@ TASK_GROUPS_LIST=(
   ######### few-shot ##########
   # MC9 tasks
   "arc_easy"
-#  "arc_challenge"
-#  "boolq"
-#  "csqa"
-#  "hellaswag"
-#  "openbookqa"
-#  "piqa"
-#  "socialiqa"
-#  "winogrande"
+  "arc_challenge"
+  "boolq"
+  "csqa"
+  "hellaswag"
+  "openbookqa"
+  "piqa"
+  "socialiqa"
+  "winogrande"
 
 #   MMLU
 #  "mmlu"
