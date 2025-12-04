@@ -21,9 +21,9 @@ model_names=(
 #  "moe_1b14b_128experts_olmoe-mix_130B_1117"
 #  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115"
 
-   "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121"
-#   "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123"
-#   "twolevelsamplingnolb-32_1b14b_stability_1127"
+#   "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121"
+   "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123"
+   "twolevelsamplingnolb-32_1b14b_stability_1127"
 )
 #model_name="moe_1b7b_olmoe-mix"
 step="step30995"
@@ -49,7 +49,7 @@ fi
 
 # first argument is which validation used for pruning, second is training dataset
 task_configs=(
-#  "task-arc_easy_rc_validation_keepk32|arc_easy:rc_train::olmes"
+  "task-arc_easy_rc_validation_keepk32|arc_easy:rc_train::olmes"
   "task-arc_challenge_rc_validation_keepk32|arc_challenge:rc_train::olmes"
   "task-boolq_rc_validation_keepk32|boolq:rc_train::olmes"
   "task-csqa_rc_validation_keepk32|csqa:rc_train::olmes"
