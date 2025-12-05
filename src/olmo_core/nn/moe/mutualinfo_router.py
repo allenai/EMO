@@ -2,7 +2,6 @@ import json
 from typing import Optional
 
 from olmo_core.nn.moe.router import MoERouterConfig, MoERouterType
-from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
 from dataclasses import dataclass
 
 import logging
@@ -42,7 +41,7 @@ from olmo_core.distributed.utils import get_local_tensor
 
 
 
-class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
+class MoEMutualInfoRouter(MoELinearRouter):
     """
     Custom MoE router with modified forward pass and additional class variables.
     """
@@ -53,11 +52,10 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
             *,
             loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
             padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
-            document_boundaries: Optional[torch.Tensor] = None,
             **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
-        Custom forward pass with modifications to implement two level routing.
+        Custom forward pass with modifications to implement mutual information losses.
         Given the input ``x`` of shape ``(B, S, d_model)``, compute the experts assignment.
 
         :returns: The expert weights of shape ``(B, S, top_k)``,
@@ -72,48 +70,7 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
         logits = self.get_expert_logits(x).float()
         logits_mask = torch.zeros_like(logits, dtype=torch.bool, device=logits.device)
 
-        document_boundaries_cpu = []
-        for b in document_boundaries:
-            bc = b.detach().cpu().tolist()
-            if not bc or bc[-1] != x.size(1):
-                bc.append(int(x.size(1)))
-            document_boundaries_cpu.append(bc)
-
-        tot_doc_entropy = []
-        for seq_idx in range(x.size(0)):
-            start = 0
-            document_boundary = document_boundaries_cpu[seq_idx]
-            for end in document_boundary:
-                if end <= start:
-                    start = end
-                    continue
-                sequence_logits = logits[seq_idx, start:end, :] # shape: (doc_len, num_experts)
-                # calculate the softmax over the experts
-                expert_probs = F.softmax(sequence_logits, dim=-1) # shape: (doc_len, num_experts)
-
-                # get the entropy over experts per token
-                token_entropies = -torch.sum(expert_probs * torch.log(expert_probs + 1e-10), dim=-1)  # shape: (doc_len,)
-                # average entropy over the document
-                avg_entropy = token_entropies.mean().item()
-                tot_doc_entropy.append(avg_entropy)
-
-                # take the sum across the document
-                document_expert_probs = expert_probs.sum(dim=0) # shape: (num_experts,)
-                # get the bottom document_expert_pool experts
-                bot_document_expert_pool = self.num_experts - self.document_expert_pool
-                experts_to_discard = torch.topk(-document_expert_probs, bot_document_expert_pool).indices # shape: (bot_document_expert_pool,)
-                # set the logits of these experts to a very large negative value
-                # logits[seq_idx, start:end, experts_to_discard] = float('-inf')
-                logits_mask[seq_idx, start:end, experts_to_discard] = True
-                start = end
-
         logits.masked_fill_(logits_mask, float('-inf'))
-
-        if self.training:
-            # log the average document entropy
-            avg_doc_entropy = sum(tot_doc_entropy) / len(tot_doc_entropy) if tot_doc_entropy else 0.0
-            # logging.info(f"Average document entropy over experts: {avg_doc_entropy}")
-            self._router_documentlevel_expert_entropy += avg_doc_entropy
 
         # shape: (batch_size, seq_len, num_experts)
         if self.gating_function == MoERouterGatingFunction.softmax:
@@ -178,25 +135,64 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
         aux_loss: Optional[torch.Tensor] = None
         if self.training and torch.is_grad_enabled():
             with torch.autocast(enabled=False, device_type=x.device.type):
-                # use the batch-level load balancing loss
                 if self.lb_loss_weight is not None:
                     assert self.load_balancing_loss is not None
 
-                    # Make sure scores are normalized, otherwise load balancing loss doesn't work well.
-                    if self.gating_function == MoERouterGatingFunction.sigmoid:
-                        scores = scores / scores.sum(dim=-1, keepdim=True)
+                    doc_lb_losses = []
+                    for seq_idx in range(x.size(0)):
+                        start = 0
+                        document_boundary = document_boundaries_cpu[seq_idx]
 
-                    lb_loss = load_balancing_loss(
-                        num_experts=self.num_experts,
-                        top_k=self.top_k,
-                        expert_scores=scores,
-                        batch_size_per_expert=tot_batch_size_per_expert,
-                        batched_batch_size_per_expert=tot_batched_batch_size_per_expert,
-                        granularity=self.lb_loss_granularity,
-                        loss_div_factor=loss_div_factor,
-                        tp_mesh=self.tp_mesh,
-                        cp_mesh=self.cp_mesh,
-                    )
+                        for end in document_boundary:
+                            if end <= start:
+                                start=end
+                                continue
+                            # Get tokens for this document
+                            doc_scores = scores[seq_idx, start:end, :]  # (doc_len, num_experts)
+                            doc_indices = expert_indices[seq_idx, start:end]  # (doc_len, top_k)
+
+                            # find active experts (not masked)
+                            active_experts_mask = (~logits_mask[seq_idx, start:end, :]).any(dim=0)
+                            doc_scores = doc_scores[:, active_experts_mask]
+                            num_active = doc_scores.shape[-1]
+
+                            assert num_active == self.document_expert_pool, f"Number of active experts {num_active} does not match document_expert_pool {self.document_expert_pool}"
+
+                            # we re-assign the expert indices to be in the range of the active experts only
+                            expert_id_mapping = torch.zeros(self.num_experts, dtype=torch.long, device=x.device) - 1
+                            expert_id_mapping[active_experts_mask] = torch.arange(num_active, device=x.device)
+
+                            doc_indices_local = expert_id_mapping[doc_indices]
+
+                            # Make sure scores are normalized, otherwise load balancing loss doesn't work well.
+                            if self.gating_function == MoERouterGatingFunction.sigmoid:
+                                doc_scores = doc_scores / doc_scores.sum(dim=-1, keepdim=True)
+
+                            with torch.no_grad():
+                                # Histogram the expert ids to identify the number of items/tokens routed to each expert.
+                                # shape: (batch_size, seq_len, num_experts)
+                                batched_batch_size_per_expert = ops.batched_histc(doc_indices_local.unsqueeze(0), self.document_expert_pool)
+                                # shape: (batch_size, num_experts)
+                                batched_batch_size_per_expert = batched_batch_size_per_expert.sum(dim=1)
+                                # shape: (num_experts,)
+                                batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
+
+                            # removed loss_div_factor because we are computing by document
+
+                            doc_lb_loss = load_balancing_loss(
+                                num_experts=self.document_expert_pool,
+                                top_k=self.top_k,
+                                expert_scores=doc_scores.unsqueeze(0),
+                                batch_size_per_expert=batch_size_per_expert,
+                                batched_batch_size_per_expert=batched_batch_size_per_expert,
+                                granularity=self.lb_loss_granularity,
+                                tp_mesh=self.tp_mesh,
+                                cp_mesh=self.cp_mesh,
+                            )
+                            doc_lb_losses.append(doc_lb_loss)
+                            start = end
+                    # Combine all document-level LB losses
+                    lb_loss = torch.stack(doc_lb_losses).mean()
                     self.load_balancing_loss += lb_loss.detach()
 
                     scaled_lb_loss = self.lb_loss_weight * lb_loss
@@ -229,8 +225,13 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
         return f"{base_repr}, document_expert_pool={self.document_expert_pool}, eos_token_id={self.eos_token_id}"
 
 @dataclass
-class MoETwoLevelBatchLBRouterConfig(MoETwoLevelRouterConfig):
-    # just update the build to call the correct new class
+class MoEMutualInfoRouterConfig(MoERouterConfig):
+    """
+    Config for pruning MoE router.
+    """
+    document_expert_pool: int = 32
+    eos_token_id: Optional[int] = None
+
     def build(
             self,
             d_model: int,
@@ -241,7 +242,7 @@ class MoETwoLevelBatchLBRouterConfig(MoETwoLevelRouterConfig):
             z_loss_weight: Optional[float] = None,
             dtype: Optional[torch.dtype] = None,
             init_device: str = "cpu",
-    ) -> MoETwoLevelBatchLBRouter:
+    ) -> MoETwoLevelRouter:
         """
         Build the pruning router.
         """
@@ -260,4 +261,4 @@ class MoETwoLevelBatchLBRouterConfig(MoETwoLevelRouterConfig):
         elif dtype is not None:
             kwargs["dtype"] = dtype
 
-        return MoETwoLevelBatchLBRouter(**kwargs)
+        return MoETwoLevelRouter(**kwargs)
