@@ -29,7 +29,7 @@ runname="mutualinfo_1b14b_cond-1_uncond-1_1205"
 python -m olmo_core.launch.beaker \
   --name $runname \
 	--gpus 8 \
-  --nodes 16 \
+  --nodes 8 \
 	--weka=oe-training-default \
   --shared-filesystem \
 	--workspace ai2/flex2 \
