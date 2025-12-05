@@ -18,6 +18,7 @@ from olmo_core.nn.moe.twolevel_sampling_nolb_router import MoETwoLevelSamplingNo
 from olmo_core.nn.moe.twolevel_batchlb_router import MoETwoLevelBatchLBRouterConfig
 from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_fullzloss_router import MoETwoLevelBatchLBFullZLossRouterConfig
+from olmo_core.nn.moe.mutualinfo_router import MoEMutualInfoRouterConfig
 from olmo_core.config import Config, DType
 from olmo_core.data import (
     NumpyDataLoaderConfig,
@@ -56,12 +57,12 @@ from olmo_core.utils import seed_all
 log = logging.getLogger(__name__)
 
 # HACK
-DATA_ROOT = "/weka/oe-training-default/ai2-llm"
-# DATA_ROOT = "/root/ryanwang"
+# DATA_ROOT = "/weka/oe-training-default/ai2-llm"
+DATA_ROOT = "/root/ryanwang"
 
 SEQUENCE_LENGTH = 4096
-# GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
-GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
+GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
+# GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
 
 
 
@@ -233,6 +234,18 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
         # Replace router config
         model_config.block.feed_forward_moe.router = MoETwoLevelSamplingNoLBRouterConfig(**router_kwargs)
+    elif opts.model_type == "mutual-info":
+        log.info("Applying mutual info router to the model...")
+        # Get existing router config parameters
+        router_kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
+        router_kwargs.pop("name")
+        router_kwargs.update(
+            document_expert_pool=opts.document_expert_pool,
+            eos_token_id=tokenizer_config.eos_token_id,
+        )
+
+        # Replace router config
+        model_config.block.feed_forward_moe.router = MoEMutualInfoRouterConfig(**router_kwargs)
     else:
         raise ValueError(f"Unknown model type: {opts.model_type}")
 
@@ -258,7 +271,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     train_module_config = TransformerTrainModuleConfig(
-        rank_microbatch_size=4
+        rank_microbatch_size=2
         * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         max_sequence_length=SEQUENCE_LENGTH,
         optim=AdamWConfig(
@@ -317,16 +330,16 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback("beaker", BeakerCallback())
         .with_callback("config_saver", ConfigSaverCallback())
         .with_callback("profiler", ProfilerCallback(enabled=False))
-        .with_callback(
-            "downstream_evaluator",
-            # https://github.com/allenai/OLMo-in-loop-evals/blob/main/src/olmo_eval/tasks.py#L1752
-            DownstreamEvaluatorCallbackConfig(
-                tasks=["hellaswag", "arc_challenge", "piqa", "copa", "mmlu_stem", "mmlu_humanities",
-                       "mmlu_social_sciences", "mmlu_other"],
-                tokenizer=tokenizer_config,
-                eval_interval=250,
-            ),
-        )
+        # .with_callback(
+        #     "downstream_evaluator",
+        #     # https://github.com/allenai/OLMo-in-loop-evals/blob/main/src/olmo_eval/tasks.py#L1752
+        #     DownstreamEvaluatorCallbackConfig(
+        #         tasks=["hellaswag", "arc_challenge", "piqa", "copa", "mmlu_stem", "mmlu_humanities",
+        #                "mmlu_social_sciences", "mmlu_other"],
+        #         tokenizer=tokenizer_config,
+        #         eval_interval=250,
+        #     ),
+        # )
     )
 
     config = ExperimentConfig(
