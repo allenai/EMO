@@ -236,9 +236,15 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         model_config.block.feed_forward_moe.router = MoETwoLevelSamplingNoLBRouterConfig(**router_kwargs)
     elif opts.model_type == "mutual-info":
         log.info("Applying mutual info router to the model...")
+        if opts.expert_cond_token_entropy_bias is None or opts.expert_uncond_entropy_bias is None:
+            raise ValueError("Both expert_cond_token_entropy_bias and expert_uncond_entropy_bias must be specified for mutual-info model type.")
         # Get existing router config parameters
         router_kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
         router_kwargs.pop("name")
+        router_kwargs.update(
+            expert_cond_token_entropy_bias=opts.expert_cond_token_entropy_bias,
+            expert_uncond_entropy_bias=opts.expert_uncond_entropy_bias,
+        )
 
         # Replace router config
         model_config.block.feed_forward_moe.router = MoEMutualInfoRouterConfig(**router_kwargs)
@@ -394,6 +400,16 @@ def parser_args():
         type=float,
         default=4e-4,
         help="Learning rate for the optimizer.",
+    )
+    parser.add_argument(
+        "--expert_cond_token_entropy_bias",
+        type=float,
+        help="Bias term for expert conditional token entropy in mutual info router.",
+    )
+    parser.add_argument(
+        "--expert_uncond_entropy_bias",
+        type=float,
+        help="Bias term for expert unconditional entropy in mutual info router.",
     )
     opts, overrides = parser.parse_known_args()
     return opts, overrides

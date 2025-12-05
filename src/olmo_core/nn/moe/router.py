@@ -224,6 +224,10 @@ class MoERouter(nn.Module):
         # this is for document-level expert entropy for choosing experts per document
         self._router_documentlevel_expert_entropy = 0.0
 
+        # add metrics to track expert_cond_token_entropy (which we want to minimize) and expert_uncond_entropy (which we want to maximize
+        self._router_expert_cond_token_entropy = 0.0
+        self._router_expert_uncond_entropy = 0.0
+
     def reset_parameters(self):
         self._batch_size_per_expert = hide_from_torch(
             torch.zeros(self.num_experts, device=self.device)
@@ -435,6 +439,18 @@ class MoERouter(nn.Module):
                 ReduceType.mean,
             )
 
+        if self._router_expert_cond_token_entropy != 0.0:
+            out["router expert_cond_token_entropy"] = (
+                torch.tensor(self._router_expert_cond_token_entropy, device=self.device),
+                ReduceType.mean,
+            )
+
+        if self._router_expert_uncond_entropy != 0.0:
+            out["router expert_uncond_entropy"] = (
+                torch.tensor(self._router_expert_uncond_entropy, device=self.device),
+                ReduceType.mean,
+            )
+
         if reset:
             self.reset_metrics()
 
@@ -454,6 +470,9 @@ class MoERouter(nn.Module):
         self._router_tokenlevel_expert_entropy = 0.0
 
         self._router_documentlevel_expert_entropy = 0.0
+
+        self._router_expert_cond_token_entropy = 0.0
+        self._router_expert_uncond_entropy = 0.0
 
     def forward(
         self,

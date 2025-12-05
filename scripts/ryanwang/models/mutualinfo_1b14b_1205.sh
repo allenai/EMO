@@ -18,7 +18,13 @@ torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
   --train_module.compile_model=false \
   --dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
   --model.block.name="moe" \
-	--model.block.attention.qk_norm=null
+	--model.block.attention.qk_norm=null \
+	--model.block.feed_forward_moe.z_loss_weight=null \
+	--model.block.feed_forward_moe.lb_loss_weight=null \
+	--expert_cond_token_entropy_bias=1 \
+	--expert_uncond_entropy_bias=1
+
+
 
 #python -m olmo_core.launch.beaker \
 #  --name $runname \
@@ -45,6 +51,10 @@ torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
 #		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 #		--model.block.name="moe" \
 #		--model.block.attention.qk_norm=null
+#	  --model.block.feed_forward_moe.z_loss_weight=0 \
+#	  --model.block.feed_forward_moe.lb_loss_weight=0 \
+#	  --model.block.feed_forward_moe.expert_cond_token_entropy_bias=1 \
+#	  --model.block.feed_forward_moe.expert_uncond_entropy_bias=1
 
 
 
