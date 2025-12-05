@@ -50,7 +50,7 @@ python -m olmo_core.launch.beaker \
 		--model.block.feed_forward_moe.num_experts=128 \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="moe" \
-		--model.block.attention.qk_norm=null
+		--model.block.attention.qk_norm=null \
 	  --model.block.feed_forward_moe.z_loss_weight=null \
 	  --model.block.feed_forward_moe.lb_loss_weight=null \
 	  --expert_cond_token_entropy_bias=1 \
