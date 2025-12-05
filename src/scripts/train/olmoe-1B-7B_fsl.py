@@ -239,9 +239,6 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         # Get existing router config parameters
         router_kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
         router_kwargs.pop("name")
-        router_kwargs.update(
-            eos_token_id=tokenizer_config.eos_token_id,
-        )
 
         # Replace router config
         model_config.block.feed_forward_moe.router = MoEMutualInfoRouterConfig(**router_kwargs)
