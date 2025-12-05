@@ -179,19 +179,11 @@ class MoEMutualInfoRouter(MoELinearRouter):
 
         return expert_weights, expert_indices, batch_size_per_expert, aux_loss
 
-    def extra_repr(self):
-        """Add custom parameter to string representation."""
-        base_repr = super().extra_repr()
-        return f"{base_repr}, document_expert_pool={self.document_expert_pool}, eos_token_id={self.eos_token_id}"
-
 @dataclass
 class MoEMutualInfoRouterConfig(MoERouterConfig):
     """
     Config for pruning MoE router.
     """
-    document_expert_pool: int = 32
-    eos_token_id: Optional[int] = None
-
     def build(
             self,
             d_model: int,

@@ -240,7 +240,6 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         router_kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
         router_kwargs.pop("name")
         router_kwargs.update(
-            document_expert_pool=opts.document_expert_pool,
             eos_token_id=tokenizer_config.eos_token_id,
         )
 
