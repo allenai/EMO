@@ -133,7 +133,6 @@ class MoEMutualInfoRouter(MoELinearRouter):
         aux_loss: Optional[torch.Tensor] = None
         if self.training and torch.is_grad_enabled():
             with torch.autocast(enabled=False, device_type=x.device.type):
-                breakpoint()
                 if self.expert_uncond_entropy_bias is not None and self.expert_cond_token_entropy_bias is not None:
                     # calculate entropy over experts conditioned on each token
                     if padding_mask is not None:
