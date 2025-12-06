@@ -63,7 +63,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
     {
         "label": "moe keepk32",
         "template": (
-            "moe_1b14b_128experts_olmoe-mix_130B_1117_step30995_"
+            "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123_step30995_"
             "task-{task_core}_rc_validation_keepk32_finetune-task-{task_core}_rc_train_step{step}-hf"
         ),
         "family": "moe",
@@ -84,75 +84,63 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "linewidth": 2,
         "markersize": 9,
     },
-    {
-        "label": "lr-3e-5_warmup-0.2",
-        "template": (
-            f"{MAIN_MODEL}_"
-            "task-{task_core}_rc_validation_keepk32_lr-3e-5_warmup-0.2_finetune-task-{task_core}_rc_train_step{step}-hf"
-        ),
-        "family": "twolevelbatchlb",
-        "marker": "s",              # Square marker for ablation
-        "brightness": 0.8,          # Slightly darker
-        "linewidth": 2,
-        "markersize": 9,
-    },
-    {
-        "label": "lr-7e-5_warmup-0.2",
-        "template": (
-            f"{MAIN_MODEL}_"
-            "task-{task_core}_rc_validation_keepk32_lr-7e-5_warmup-0.2_finetune-task-{task_core}_rc_train_step{step}-hf"
-        ),
-        "family": "twolevelbatchlb",
-        "marker": "s",              # Square marker for ablation
-        "brightness": 0.6,          # Slightly darker
-        "linewidth": 2,
-        "markersize": 9,
-    },
-    {
-        "label": "lr-9e-5_warmup-0.2",
-        "template": (
-            f"{MAIN_MODEL}_"
-            "task-{task_core}_rc_validation_keepk32_lr-9e-5_warmup-0.2_finetune-task-{task_core}_rc_train_step{step}-hf"
-        ),
-        "family": "twolevelbatchlb",
-        "marker": "s",              # Square marker for ablation
-        "brightness": 0.4,          # Slightly darker
-        "linewidth": 2,
-        "markersize": 9,
-    },
-    {
-        "label": "lr-7e-5_warmup-0.1",
-        "template": (
-            f"{MAIN_MODEL}_"
-            "task-{task_core}_rc_validation_keepk32_lr-7e-5_warmup-0.1_finetune-task-{task_core}_rc_train_step{step}-hf"
-        ),
-        "family": "twolevelbatchlb",
-        "marker": "s",              # Square marker for ablation
-        "brightness": 0.2,          # Slightly darker
-        "linewidth": 2,
-        "markersize": 9,
-    },
+    # {
+    #     "label": "lr-3e-5_warmup-0.2",
+    #     "template": (
+    #         f"{MAIN_MODEL}_"
+    #         "task-{task_core}_rc_validation_keepk32_lr-3e-5_warmup-0.2_finetune-task-{task_core}_rc_train_step{step}-hf"
+    #     ),
+    #     "family": "twolevelbatchlb",
+    #     "marker": "s",              # Square marker for ablation
+    #     "brightness": 0.8,          # Slightly darker
+    #     "linewidth": 2,
+    #     "markersize": 9,
+    # },
+    # {
+    #     "label": "lr-7e-5_warmup-0.2",
+    #     "template": (
+    #         f"{MAIN_MODEL}_"
+    #         "task-{task_core}_rc_validation_keepk32_lr-7e-5_warmup-0.2_finetune-task-{task_core}_rc_train_step{step}-hf"
+    #     ),
+    #     "family": "twolevelbatchlb",
+    #     "marker": "s",              # Square marker for ablation
+    #     "brightness": 0.6,          # Slightly darker
+    #     "linewidth": 2,
+    #     "markersize": 9,
+    # },
+    # {
+    #     "label": "lr-9e-5_warmup-0.2",
+    #     "template": (
+    #         f"{MAIN_MODEL}_"
+    #         "task-{task_core}_rc_validation_keepk32_lr-9e-5_warmup-0.2_finetune-task-{task_core}_rc_train_step{step}-hf"
+    #     ),
+    #     "family": "twolevelbatchlb",
+    #     "marker": "s",              # Square marker for ablation
+    #     "brightness": 0.4,          # Slightly darker
+    #     "linewidth": 2,
+    #     "markersize": 9,
+    # },
+    # {
+    #     "label": "lr-7e-5_warmup-0.1",
+    #     "template": (
+    #         f"{MAIN_MODEL}_"
+    #         "task-{task_core}_rc_validation_keepk32_lr-7e-5_warmup-0.1_finetune-task-{task_core}_rc_train_step{step}-hf"
+    #     ),
+    #     "family": "twolevelbatchlb",
+    #     "marker": "s",              # Square marker for ablation
+    #     "brightness": 0.2,          # Slightly darker
+    #     "linewidth": 2,
+    #     "markersize": 9,
+    # },
     {
         "label": "dense finetuned",
         "template": (
-            "dense_1b_olmoe-mix_1119_step30995_"
+            "dense_1b_olmoe-mix_prenorm_noqknorm_1123_step30995_"
             "finetune-task-{task_core}_rc_train_step{step}-hf"
         ),
         "family": "dense",
         "marker": "v",              # Triangle down for dense
         "brightness": 1.0,
-        "linewidth": 2,
-        "markersize": 9,
-    },
-    {
-        "label": "dense finetuned_newoptim",
-        "template": (
-            "dense_1b_olmoe-mix_1119_step30995_noloadoptim_"
-            "finetune-task-{task_core}_rc_train_step{step}-hf"
-        ),
-        "family": "dense",
-        "marker": "v",              # Triangle down for dense
-        "brightness": 0.6,
         "linewidth": 2,
         "markersize": 9,
     },
@@ -163,7 +151,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
 BASELINE_RUNS: List[Dict[str, Any]] = [
     {
         "label": "moe full",
-        "template": "moe_1b14b_128experts_olmoe-mix_130B_1117_step30995-hf",
+        "template": "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123_step30995-hf",
         "family": "moe",
         "linestyle": "--",          # Line style for baseline
         "linewidth": 1.2,
@@ -177,7 +165,7 @@ BASELINE_RUNS: List[Dict[str, Any]] = [
     },
     {
         "label": "dense full",
-        "template": "dense_1b_olmoe-mix_1119_step30995-hf",
+        "template": "dense_olmoe-mix_prenorm_noqknorm_1123_step30995-hf",
         "family": "dense",
         "linestyle": "--",
         "linewidth": 1.2,
