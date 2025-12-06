@@ -1,7 +1,9 @@
 # PARENT: "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123.sh"
 # DESCRIPTION:
 #     - First implementation of mutual-info model. Use prenorm + noqknorm, no intra-document masking
-# STATUS: USED
+# STATUS: DEPRICATED
+#     = The loss does not converge well, unique experts increases too fast, grad norm spikes very high
+#     - Add z-loss to reduce grad norm
 ##############################################################
 
 runname="mutualinfo_1b14b_cond-1_uncond-1_1205"

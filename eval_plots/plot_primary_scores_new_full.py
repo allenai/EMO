@@ -19,7 +19,7 @@ import seaborn as sns
 # ============================================================================
 
 # Base model identifier (used in output directory naming)
-MAIN_MODEL = "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115_step30995"
+MAIN_MODEL = "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121_step30995"
 
 # Task-specific configuration.
 TASKS: List[str] = [
@@ -71,18 +71,6 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "brightness": 1.0,          # Brightness multiplier (1.0 = no change, >1.0 = lighter, <1.0 = darker)
         "linewidth": 2,             # Line width
         "markersize": 9,            # Marker size
-    },
-    {
-        "label": "moe keepk32 random",
-        "template": (
-            "moe_1b14b_128experts_olmoe-mix_130B_1117_step30995_"
-            "task-random_keepk32_finetune-task-{task_core}_rc_train_step{step}-hf"
-        ),
-        "family": "moe",
-        "marker": "^",
-        "brightness": 1.15,         # Lighter for random
-        "linewidth": 2,
-        "markersize": 9,
     },
     {
         "label": "twolevelbatchlb keepk32",

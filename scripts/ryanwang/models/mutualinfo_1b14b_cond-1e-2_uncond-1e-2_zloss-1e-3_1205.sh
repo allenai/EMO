@@ -6,7 +6,7 @@
 #     - replaced by setting both entropy bias terms to 0.01 (which is the original lb loss weight
 ##############################################################
 
-runname="mutualinfo_1b14b_cond-1_uncond-1_zloss-1e-3_1205"
+runname="mutualinfo_1b14b_cond-1e-2_uncond-1e-2_zloss-1e-3_1205"
 
 #torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
 #  $runname \
@@ -55,8 +55,8 @@ python -m olmo_core.launch.beaker \
 		--model.block.attention.qk_norm=null \
 	  --model.block.feed_forward_moe.z_loss_weight=1e-3 \
 	  --model.block.feed_forward_moe.lb_loss_weight=null \
-	  --expert_cond_token_entropy_bias=1 \
-	  --expert_uncond_entropy_bias=1
+	  --expert_cond_token_entropy_bias=1e-2 \
+	  --expert_uncond_entropy_bias=1e-2
 
 
 
