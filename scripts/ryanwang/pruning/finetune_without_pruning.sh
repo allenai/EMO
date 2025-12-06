@@ -144,6 +144,8 @@ for train_task_name in "${train_task_names[@]}"; do
         --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
         --trainer.max_duration='{value: 3, unit: epochs}' \
         --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}, tags: [finetuning, ${task_prefix:0:64}, ${model_name:0:64}]}" \
+        --model.block.name="default" \
+		    --model.block.attention.qk_norm=null \
         --load_path=$base_model \
         --num_checkpoints=$num_checkpoints \
         $variation_flags
