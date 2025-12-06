@@ -54,6 +54,7 @@ FAMILY_COLORS: Dict[str, str] = {
     "moe": "#348ABD",          # Blue
     "twolevelbatchlb": "#988ED5",  # Purple
     # Add more families as needed
+    "twolevelsamplingnolb": "#777777",  # Gray
 }
 
 # Model run configurations
@@ -85,53 +86,29 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "markersize": 9,
     },
     # {
-    #     "label": "lr-3e-5_warmup-0.2",
+    #     "label": "twolevelbatchlb keepk32 old",
     #     "template": (
-    #         f"{MAIN_MODEL}_"
-    #         "task-{task_core}_rc_validation_keepk32_lr-3e-5_warmup-0.2_finetune-task-{task_core}_rc_train_step{step}-hf"
+    #         f"twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115_step30995_"
+    #         "task-{task_core}_rc_validation_keepk32_finetune-task-{task_core}_rc_train_step{step}-hf"
     #     ),
-    #     "family": "twolevelbatchlb",
-    #     "marker": "s",              # Square marker for ablation
-    #     "brightness": 0.8,          # Slightly darker
+    #     "family": "moe",
+    #     "marker": "o",
+    #     "brightness": 1.0,
     #     "linewidth": 2,
     #     "markersize": 9,
     # },
-    # {
-    #     "label": "lr-7e-5_warmup-0.2",
-    #     "template": (
-    #         f"{MAIN_MODEL}_"
-    #         "task-{task_core}_rc_validation_keepk32_lr-7e-5_warmup-0.2_finetune-task-{task_core}_rc_train_step{step}-hf"
-    #     ),
-    #     "family": "twolevelbatchlb",
-    #     "marker": "s",              # Square marker for ablation
-    #     "brightness": 0.6,          # Slightly darker
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
-    # {
-    #     "label": "lr-9e-5_warmup-0.2",
-    #     "template": (
-    #         f"{MAIN_MODEL}_"
-    #         "task-{task_core}_rc_validation_keepk32_lr-9e-5_warmup-0.2_finetune-task-{task_core}_rc_train_step{step}-hf"
-    #     ),
-    #     "family": "twolevelbatchlb",
-    #     "marker": "s",              # Square marker for ablation
-    #     "brightness": 0.4,          # Slightly darker
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
-    # {
-    #     "label": "lr-7e-5_warmup-0.1",
-    #     "template": (
-    #         f"{MAIN_MODEL}_"
-    #         "task-{task_core}_rc_validation_keepk32_lr-7e-5_warmup-0.1_finetune-task-{task_core}_rc_train_step{step}-hf"
-    #     ),
-    #     "family": "twolevelbatchlb",
-    #     "marker": "s",              # Square marker for ablation
-    #     "brightness": 0.2,          # Slightly darker
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
+    {
+        "label": "twolevelsampling keepk32",
+        "template": (
+            f"twolevelsamplingnolb-32_1b14b_stability_1127_step30995_"
+            "task-{task_core}_rc_validation_keepk32_finetune-task-{task_core}_rc_train_step{step}-hf"
+        ),
+        "family": "twolevelsamplingnolb",
+        "marker": "o",
+        "brightness": 1.0,
+        "linewidth": 2,
+        "markersize": 9,
+    },
     {
         "label": "dense finetuned",
         "template": (
@@ -163,13 +140,28 @@ BASELINE_RUNS: List[Dict[str, Any]] = [
         "linestyle": "--",
         "linewidth": 1.2,
     },
+    # {
+    #     "label": "twolevelbatchlb full old",
+    #     "template": "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115_step30995-hf",
+    #     "family": "moe",
+    #     "linestyle": "--",
+    #     "linewidth": 1.2,
+    # },
     {
         "label": "dense full",
-        "template": "dense_olmoe-mix_prenorm_noqknorm_1123_step30995-hf",
+        "template": "dense_1b_olmoe-mix_prenorm_noqknorm_1123_step30995-hf",
         "family": "dense",
         "linestyle": "--",
         "linewidth": 1.2,
     },
+{
+        "label": "twolevelsampling full",
+        "template": "twolevelsamplingnolb-32_1b14b_stability_1127_step30995-hf",
+        "family": "twolevelsamplingnolb",
+        "linestyle": "--",
+        "linewidth": 1.2,
+    },
+
 ]
 
 # ============================================================================
