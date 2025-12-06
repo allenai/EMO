@@ -1,11 +1,10 @@
 # PARENT: "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205.sh
 # DESCRIPTION:
-#     - changed 1e-2 to 5e-2 for uncond entropy, since it's observed that total unique experts used is still decreasing (even though the uncond entropy should prevent this), and loss isn't going down as fast
+#     - Testing reorderednorm + qknorm instead of prenorm + noqknorm, to see if it improves training stability
 # STATUS: USED
-#     - stopped because gradient norm was spiking way more, and loss wasn't seeing any big deviation
 ##############################################################
 
-runname="mutualinfo_1b14b_cond-1e-2_uncond-5e-2_1205"
+runname="mutualinfo_1b14b_cond-1e-2_uncond-1e-2_reorderednorm_qknorm_1205"
 
 #torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
 #  $runname \
@@ -50,12 +49,10 @@ python -m olmo_core.launch.beaker \
 		--model-type="mutual-info" \
 		--model.block.feed_forward_moe.num_experts=128 \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
-		--model.block.name="moe" \
-		--model.block.attention.qk_norm=null \
 	  --model.block.feed_forward_moe.z_loss_weight=null \
 	  --model.block.feed_forward_moe.lb_loss_weight=null \
 	  --expert_cond_token_entropy_bias=1e-2 \
-	  --expert_uncond_entropy_bias=5e-2
+	  --expert_uncond_entropy_bias=1e-2
 
 
 
