@@ -10,7 +10,8 @@ PRUNE_DIR="${BASE_DIR}/prune"
 #MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 
 PARENT_MODELS=(
-    "dense_1b_olmoe-mix_1028/step30995"
+#    "dense_1b_olmoe-mix_1028/step30995"
+    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
 )
 
 #postfix="-keepk8"
@@ -19,7 +20,7 @@ PARENT_MODELS=(
 postfix=""
 
 FINETUNE_TASKS=(
-#    "task-arc_easy_rc_train_0shot_finetune${postfix}/step0-hf"
+    "task-arc_easy_rc_train_0shot_finetune${postfix}/step0-hf"
 #    "task-arc_easy_rc_train_0shot_finetune${postfix}/step84-hf"
 #    "task-arc_easy_rc_train_0shot_finetune${postfix}/step168-hf"
 #    "task-arc_easy_rc_train_0shot_finetune${postfix}/step252-hf"
@@ -61,26 +62,26 @@ FINETUNE_TASKS=(
 #    "task-openbookqa_rc_train_0shot_finetune${postfix}/step740-hf"
 #    "task-openbookqa_rc_train_0shot_finetune${postfix}/step927-hf"
 #
-    "task-piqa_rc_train_0shot_finetune${postfix}/step0-hf"
-    "task-piqa_rc_train_0shot_finetune${postfix}/step566-hf"
-    "task-piqa_rc_train_0shot_finetune${postfix}/step1132-hf"
-    "task-piqa_rc_train_0shot_finetune${postfix}/step1698-hf"
-    "task-piqa_rc_train_0shot_finetune${postfix}/step2264-hf"
-    "task-piqa_rc_train_0shot_finetune${postfix}/step2832-hf"
-
-    "task-socialiqa_rc_train_0shot_finetune${postfix}/step0-hf"
-    "task-socialiqa_rc_train_0shot_finetune${postfix}/step1215-hf"
-    "task-socialiqa_rc_train_0shot_finetune${postfix}/step2430-hf"
-    "task-socialiqa_rc_train_0shot_finetune${postfix}/step3645-hf"
-    "task-socialiqa_rc_train_0shot_finetune${postfix}/step4860-hf"
-    "task-socialiqa_rc_train_0shot_finetune${postfix}/step6075-hf"
-
-    "task-winogrande_rc_train_0shot_finetune${postfix}/step0-hf"
-    "task-winogrande_rc_train_0shot_finetune${postfix}/step1477-hf"
-    "task-winogrande_rc_train_0shot_finetune${postfix}/step2954-hf"
-    "task-winogrande_rc_train_0shot_finetune${postfix}/step4431-hf"
-    "task-winogrande_rc_train_0shot_finetune${postfix}/step5908-hf"
-    "task-winogrande_rc_train_0shot_finetune${postfix}/step7386-hf"
+#    "task-piqa_rc_train_0shot_finetune${postfix}/step0-hf"
+#    "task-piqa_rc_train_0shot_finetune${postfix}/step566-hf"
+#    "task-piqa_rc_train_0shot_finetune${postfix}/step1132-hf"
+#    "task-piqa_rc_train_0shot_finetune${postfix}/step1698-hf"
+#    "task-piqa_rc_train_0shot_finetune${postfix}/step2264-hf"
+#    "task-piqa_rc_train_0shot_finetune${postfix}/step2832-hf"
+#
+#    "task-socialiqa_rc_train_0shot_finetune${postfix}/step0-hf"
+#    "task-socialiqa_rc_train_0shot_finetune${postfix}/step1215-hf"
+#    "task-socialiqa_rc_train_0shot_finetune${postfix}/step2430-hf"
+#    "task-socialiqa_rc_train_0shot_finetune${postfix}/step3645-hf"
+#    "task-socialiqa_rc_train_0shot_finetune${postfix}/step4860-hf"
+#    "task-socialiqa_rc_train_0shot_finetune${postfix}/step6075-hf"
+#
+#    "task-winogrande_rc_train_0shot_finetune${postfix}/step0-hf"
+#    "task-winogrande_rc_train_0shot_finetune${postfix}/step1477-hf"
+#    "task-winogrande_rc_train_0shot_finetune${postfix}/step2954-hf"
+#    "task-winogrande_rc_train_0shot_finetune${postfix}/step4431-hf"
+#    "task-winogrande_rc_train_0shot_finetune${postfix}/step5908-hf"
+#    "task-winogrande_rc_train_0shot_finetune${postfix}/step7386-hf"
 
 )
 
