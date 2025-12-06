@@ -1,12 +1,10 @@
-# PARENT: "mutualinfo_1b14b_cond-1_uncond-1_1205.sh"
+# PARENT: "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205.sh
 # DESCRIPTION:
-#     - First implementation of mutual-info model. Use prenorm + noqknorm, no intra-document masking
-# STATUS: DEPRICATED
-#     = the model gradient norms are more stable, training loss decreases more smoothly, but is still performing worse than other models. Noticed that z-loss increases and then decreases dramatically, which seems to have adverse effects on train loss
-#     - replaced by run that does not have z-loss
+#     - changed 1e-2 to 5e-2 for uncond entropy, since it's observed that total unique experts used is still decreasing (even though the uncond entropy should prevent this), and loss isn't going down as fast
+# STATUS: USED
 ##############################################################
 
-runname="mutualinfo_1b14b_cond-1e-2_uncond-1e-2_zloss-1e-3_1205"
+runname="mutualinfo_1b14b_cond-1e-2_uncond-5e-2_1205"
 
 #torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
 #  $runname \
@@ -53,10 +51,10 @@ python -m olmo_core.launch.beaker \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="moe" \
 		--model.block.attention.qk_norm=null \
-	  --model.block.feed_forward_moe.z_loss_weight=1e-3 \
+	  --model.block.feed_forward_moe.z_loss_weight=null \
 	  --model.block.feed_forward_moe.lb_loss_weight=null \
 	  --expert_cond_token_entropy_bias=1e-2 \
-	  --expert_uncond_entropy_bias=1e-2
+	  --expert_uncond_entropy_bias=5e-2
 
 
 
