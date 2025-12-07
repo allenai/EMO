@@ -23,8 +23,8 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-8e-5"
-expertiment_tag="newdefault_ablations_arc_easy"
+variation="newdefault_lr-4e-5"
+expertiment_tag="newdefault_ablations_arc_challenge"
 
 variation_flags=""
 # Define variation-specific settings
@@ -32,18 +32,21 @@ if [ "$variation" == "noloadoptim" ]; then
     # Variation: No optimizer state loading
     # add on
     variation_flags="--trainer.load_optim_state=false --trainer.load_trainer_state=false"
-elif [ "$variation" == "newdefault_lr-1e-5" ]; then
-    # reinitialize optim and use masked finetuning (should be checked)
-    variation_flags="--train_module.optim.lr=1e-5"
+#elif [ "$variation" == "newdefault_lr-1e-5" ]; then
+#    # reinitialize optim and use masked finetuning (should be checked)
+#    variation_flags="--train_module.optim.lr=1e-5"
 elif [ "$variation" == "newdefault_lr-2e-5" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
     variation_flags="--train_module.optim.lr=2e-5"
 elif [ "$variation" == "newdefault_lr-4e-5" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
     variation_flags="--train_module.optim.lr=4e-5"
-elif [ "$variation" == "newdefault_lr-8e-6" ]; then
-    # reinitialize optim and use masked finetuning and batch size of 32 (should be checked)
-    variation_flags="--train_module.optim.lr=8e-6"
+elif [ "$variation" == "newdefault_lr-4e-4" ]; then
+    # reinitialize optim and use masked finetuning (should be checked)
+    variation_flags="--train_module.optim.lr=4e-4"
+#elif [ "$variation" == "newdefault_lr-8e-6" ]; then
+#    # reinitialize optim and use masked finetuning and batch size of 32 (should be checked)
+#    variation_flags="--train_module.optim.lr=8e-6"
 else
     echo "Warning: Unknown variation '$variation'. Using default settings."
     variation_flags=""
@@ -52,8 +55,8 @@ fi
 base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
 train_task_names=(
-  "arc_easy:rc_train::olmes"
-#  "arc_challenge:rc_train::olmes"
+#  "arc_easy:rc_train::olmes"
+  "arc_challenge:rc_train::olmes"
 #  "boolq:rc_train::olmes"
 #  "csqa:rc_train::olmes"
 #  "hellaswag:rc_train::olmes"
