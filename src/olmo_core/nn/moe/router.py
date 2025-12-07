@@ -518,6 +518,7 @@ class MoERouter(nn.Module):
             )
 
         with torch.no_grad():
+            breakpoint()
             # Histogram the expert ids to identify the number of items/tokens routed to each expert.
             # shape: (batch_size, seq_len, num_experts)
             batched_batch_size_per_expert = ops.batched_histc(expert_indices, self.num_experts)
