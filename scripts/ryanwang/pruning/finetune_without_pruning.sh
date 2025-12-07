@@ -129,6 +129,7 @@ for train_task_name in "${train_task_names[@]}"; do
         --train_module.optim.lr=2e-5 \
         --trainer.load_optim_state=false \
         --trainer.load_trainer_state=false \
+        --data_loader.seed=1 \
     		$variation_flags
 
     # throw error if not load_optim_state and load_trainer_state are false in variation_flags
