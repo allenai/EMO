@@ -165,7 +165,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     # )
 
     data_loader_config = NumpyDataLoaderConfig(
-        global_batch_size=opts.global_batch_size,
+        global_batch_size=opts.global_batch_size * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         seed=0,
         num_workers=4,
     )
