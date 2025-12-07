@@ -140,8 +140,8 @@ for train_task_name in "${train_task_names[@]}"; do
 #    		$variation_flags
 
     # throw error if not load_optim_state and load_trainer_state are false in variation_flags
-    if [[ $variation_flags != *"newdefault"* ]]; then
-        echo "Error: must be of new_default type (i.e reinitialize optim, masked finetuning)"
+    if [[ $variation != *"newdefault"* ]]; then
+        echo "Error: must be of newdefault type (i.e reinitialize optim, masked finetuning)"
         exit 1
     fi
 
