@@ -24,7 +24,7 @@ num_checkpoints=5
 
 # this is used for ablations
 variation="newdefault_lr-4e-5_batchsize-16"
-expertiment_tag="newdefault_ablations_boolq"
+expertiment_tag="newdefault_ablations_arc_challenge"
 
 variation_flags=""
 # Define variation-specific settings
@@ -59,8 +59,8 @@ base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
 train_task_names=(
 #  "arc_easy:rc_train::olmes"
-#  "arc_challenge:rc_train::olmes"
-  "boolq:rc_train::olmes"
+  "arc_challenge:rc_train::olmes"
+#  "boolq:rc_train::olmes"
 #  "csqa:rc_train::olmes"
 #  "hellaswag:rc_train::olmes"
 #  "openbookqa:rc_train::olmes"
