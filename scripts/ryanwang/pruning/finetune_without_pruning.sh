@@ -23,7 +23,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-4e-5"
+variation="newdefault_lr-1e-5"
 expertiment_tag="newdefault_ablations_arc_easy"
 
 variation_flags=""
@@ -107,7 +107,7 @@ for train_task_name in "${train_task_names[@]}"; do
     dataset_paths="${data_folder}/part-0-00000.npy"
     label_mask_paths="${data_folder}/part-0-00000_mask.npy"
 
-    runname="${model_name}_${step}_finetune_${task_prefix}"
+    runname="${model_name}_${step}_finetune_${task_prefix}_${variation}"
     # limit runname to 128 characters, take first 25 and last 75
     runname=$(echo $runname | cut -c1-35)_$(echo $runname | rev | cut -c1-65 | rev)
 
