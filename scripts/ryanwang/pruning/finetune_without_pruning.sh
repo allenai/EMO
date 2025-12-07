@@ -24,7 +24,7 @@ num_checkpoints=5
 
 # this is used for ablations
 variation="newdefault_lr-4e-5_batchsize-16"
-expertiment_tag="newdefault_ablations_socialiqa"
+expertiment_tag="newdefault_ablations_piqa"
 
 variation_flags=""
 # Define variation-specific settings
@@ -64,8 +64,8 @@ train_task_names=(
 #  "csqa:rc_train::olmes"
 #  "hellaswag:rc_train::olmes"
 #  "openbookqa:rc_train::olmes"
-#  "piqa:rc_train::olmes"
-  "socialiqa:rc_train::olmes"
+  "piqa:rc_train::olmes"
+#  "socialiqa:rc_train::olmes"
 #  "winogrande:rc_train::olmes"
 
 #  "arc_easy:rc_train_0shot::olmes"
