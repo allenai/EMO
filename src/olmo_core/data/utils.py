@@ -571,7 +571,6 @@ def get_labels(batch: Dict[str, Any], label_ignore_index: int = -100) -> torch.T
         batch.get("attention_mask"),
         batch.get("instance_mask"),
     )
-    breakpoint()
     if label_mask is not None:
         labels.masked_fill_(~label_mask, label_ignore_index)
     if attention_mask is not None:
