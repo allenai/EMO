@@ -14,16 +14,16 @@
 #       `--trainer.hard_stop.value=100 --trainer.hard_stop.unit=steps`
 
 ##############################################################
-BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
-#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
+#BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
+BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
 model_names=(
 #  "moe_1b14b_128experts_olmoe-mix_130B_1117"
 #  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115"
 
-#   "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121"
-   "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123"
-   "twolevelsamplingnolb-32_1b14b_stability_1127"
+   "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121"
+#   "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123"
+#   "twolevelsamplingnolb-32_1b14b_stability_1127"
 )
 #model_name="moe_1b7b_olmoe-mix"
 step="step30995"
@@ -32,17 +32,12 @@ num_checkpoints=5
 # this is used for ablations
 variation=""
 
+#experiment_tag="pruned_finetuning"
+expertiment_tag="pruned_finetuning_ablate"
+
 variation_flags=""
 # Define variation-specific settings
-if [ "$variation" == "lr-3e-5_warmup-0.2" ]; then
-    variation_flags="--train_module.optim.lr=3e-5 --train_module.scheduler.warmup_fraction=0.2"
-elif [ "$variation" == "lr-7e-5_warmup-0.2" ]; then
-    variation_flags="--train_module.optim.lr=7e-5 --train_module.scheduler.warmup_fraction=0.2"
-elif [ "$variation" == "lr-7e-5_warmup-0.1" ]; then
-    variation_flags="--train_module.optim.lr=7e-5 --train_module.scheduler.warmup_fraction=0.1"
-elif [ "$variation" == "lr-9e-5_warmup-0.2" ]; then
-    variation_flags="--train_module.optim.lr=9e-5 --train_module.scheduler.warmup_fraction=0.2"
-elif [ "$variation" == "noloadoptim" ]; then
+if [ "$variation" == "noloadoptim" ]; then
     variation_flags="--trainer.load_optim_state=false --trainer.load_trainer_state=false"
 else
     echo "Warning: Unknown variation '$variation'. Using default settings."
@@ -151,11 +146,10 @@ for model_name in "${model_names[@]}"; do
     #        --model.block.feed_forward_moe.num_experts=128 \
 
         # throw error if not load_optim_state and load_trainer_state are false in variation_flags
-        if [[ $variation_flags != *"--trainer.load_optim_state=false"* ]]; then
-            echo "Error: --trainer.load_optim_state must be false for finetuning after pruning."
+        if [[ $variation != *"newdefault"* ]]; then
+            echo "Error: must be of newdefault type (i.e reinitialize optim, masked finetuning)"
             exit 1
         fi
-
 
         python -m olmo_core.launch.beaker \
           --name $runname \
@@ -177,12 +171,15 @@ for model_name in "${model_names[@]}"; do
             --dataset.paths="[${dataset_paths}]" \
             --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
             --trainer.max_duration='{value: 3, unit: epochs}' \
-            --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${wandb_name}, tags: [pruned_finetuning, ${task_prefix:0:64}, ${model_name:0:64}, ${pruned_model_name}]}" \
+            --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${wandb_name}, tags: [${task_prefix:0:64}, ${model_name:0:64}, ${pruned_model_name}, ${experiment_tag]}" \
             --load_path=$base_model \
             --num_checkpoints=$num_checkpoints \
             --model.block.feed_forward_moe.num_experts=${prune_keep_k} \
             --model.block.name="moe" \
 		        --model.block.attention.qk_norm=null \
+		        --trainer.load_optim_state=false \
+		        --trainer.load_trainer_state=false \
+		        --global_batch_size=32 \
             $variation_flags
 
     #        --dataset.label_mask_paths="[${label_mask_paths}]" \

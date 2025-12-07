@@ -23,8 +23,10 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-4e-5_batchsize-16"
-expertiment_tag="newdefault_ablations_arc_easy"
+variation="newdefault_lr-4e-6"
+
+#expertiment_tag="finetuning"
+expertiment_tag="finetune_ablate"
 
 variation_flags=""
 # Define variation-specific settings
@@ -43,7 +45,11 @@ elif [ "$variation" == "newdefault_lr-4e-5" ]; then
     variation_flags="--train_module.optim.lr=4e-5"
 elif [ "$variation" == "newdefault_lr-4e-5_batchsize-16" ]; then
     # reinitialize optim and use masked finetuning and batch size of 16 (should be checked)
-    variation_flags="--train_module.optim.lr=4e-5"# NOTE: the batch size 16 is hard coded for pipeline simplicity
+    # NOTE: the batch size 16 is hard coded for pipeline simplicity
+    variation_flags="--train_module.optim.lr=4e-5"
+elif [ "$variation" == "newdefault_lr-4e-6" ]; then
+    # reinitialize optim and use masked finetuning (should be checked)
+    variation_flags="--train_module.optim.lr=4e-6"
 elif [ "$variation" == "newdefault_lr-4e-4" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
     variation_flags="--train_module.optim.lr=4e-4"
@@ -172,14 +178,14 @@ for train_task_name in "${train_task_names[@]}"; do
         --dataset.label_mask_paths="[${label_mask_paths}]" \
         --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
         --trainer.max_duration='{value: 3, unit: epochs}' \
-        --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}, tags: [finetuning, ${task_prefix:0:64}, ${model_name:0:64}, ${expertiment_tag}]}" \
+        --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}, tags: [${task_prefix:0:64}, ${model_name:0:64}, ${expertiment_tag}]}" \
         --model.block.name="default" \
 		    --model.block.attention.qk_norm=null \
         --load_path=$base_model \
         --num_checkpoints=$num_checkpoints \
         --trainer.load_optim_state=false \
         --trainer.load_trainer_state=false \
-        --global_batch_size=16 \
+        --global_batch_size=32 \
         $variation_flags
 
 
