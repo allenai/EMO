@@ -53,7 +53,7 @@ log = logging.getLogger(__name__)
 
 
 SEQUENCE_LENGTH = 4096
-GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
+GLOBAL_BATCH_SIZE = 32 * SEQUENCE_LENGTH
 
 # docs: start-define-config
 @dataclass
