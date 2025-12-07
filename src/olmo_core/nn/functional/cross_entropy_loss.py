@@ -39,7 +39,6 @@ def cross_entropy_loss(
         return loss, None
 
     z_squared = logits.logsumexp(-1).pow(2)
-    breakpoint()
     mask = labels != ignore_index
     if reduction == "mean":
         z_squared = (z_squared * mask).sum() / mask.sum()
