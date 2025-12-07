@@ -24,7 +24,7 @@ num_checkpoints=5
 
 # this is used for ablations
 variation="newdefault_lr-4e-4"
-expertiment_tag="newdefault_ablations_hellaswag"
+expertiment_tag="newdefault_ablations_openbookqa"
 
 variation_flags=""
 # Define variation-specific settings
@@ -59,8 +59,8 @@ train_task_names=(
 #  "arc_challenge:rc_train::olmes"
 #  "boolq:rc_train::olmes"
 #  "csqa:rc_train::olmes"
-  "hellaswag:rc_train::olmes"
-#  "openbookqa:rc_train::olmes"
+#  "hellaswag:rc_train::olmes"
+  "openbookqa:rc_train::olmes"
 #  "piqa:rc_train::olmes"
 #  "socialiqa:rc_train::olmes"
 #  "winogrande:rc_train::olmes"
