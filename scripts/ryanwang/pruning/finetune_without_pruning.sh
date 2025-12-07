@@ -23,7 +23,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-2e-5"
+variation="newdefault_lr-4e-5_batchsize-16"
 expertiment_tag="newdefault_ablations_winogrande"
 
 variation_flags=""
@@ -41,6 +41,9 @@ elif [ "$variation" == "newdefault_lr-2e-5" ]; then
 elif [ "$variation" == "newdefault_lr-4e-5" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
     variation_flags="--train_module.optim.lr=4e-5"
+elif [ "$variation" == "newdefault_lr-4e-5_batchsize-16" ]; then
+    # reinitialize optim and use masked finetuning and batch size of 16 (should be checked)
+    variation_flags="--train_module.optim.lr=4e-5"# NOTE: the batch size 16 is hard coded for pipeline simplicity
 elif [ "$variation" == "newdefault_lr-4e-4" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
     variation_flags="--train_module.optim.lr=4e-4"
@@ -176,7 +179,7 @@ for train_task_name in "${train_task_names[@]}"; do
         --num_checkpoints=$num_checkpoints \
         --trainer.load_optim_state=false \
         --trainer.load_trainer_state=false \
-        --global_batch_size=32 \
+        --global_batch_size=16 \
         $variation_flags
 
 
