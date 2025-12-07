@@ -126,11 +126,16 @@ for train_task_name in "${train_task_names[@]}"; do
 		    --model.block.attention.qk_norm=null \
     		--load_path=$base_model \
     		--num_checkpoints=$num_checkpoints \
-        --train_module.optim.lr=4e-4 \
+        --train_module.optim.lr=4e-5 \
         --trainer.load_optim_state=false \
         --trainer.load_trainer_state=false \
     		$variation_flags
 
+    # throw error if not load_optim_state and load_trainer_state are false in variation_flags
+    if [[ $variation_flags != *"--trainer.load_optim_state=false"* ]]; then
+        echo "Error: --trainer.load_optim_state must be false for finetuning after pruning."
+        exit 1
+    fi
 
 #    python -m olmo_core.launch.beaker \
 #      --name $runname \

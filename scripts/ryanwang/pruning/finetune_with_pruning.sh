@@ -42,6 +42,8 @@ elif [ "$variation" == "lr-7e-5_warmup-0.1" ]; then
     variation_flags="--train_module.optim.lr=7e-5 --train_module.scheduler.warmup_fraction=0.1"
 elif [ "$variation" == "lr-9e-5_warmup-0.2" ]; then
     variation_flags="--train_module.optim.lr=9e-5 --train_module.scheduler.warmup_fraction=0.2"
+elif [ "$variation" == "noloadoptim" ]; then
+    variation_flags="--trainer.load_optim_state=false --trainer.load_trainer_state=false"
 else
     echo "Warning: Unknown variation '$variation'. Using default settings."
     variation_flags=""
@@ -147,6 +149,12 @@ for model_name in "${model_names[@]}"; do
     #    		--activation_file=$activation_file \
     #    		--prune_keep_k=$prune_keep_k \
     #        --model.block.feed_forward_moe.num_experts=128 \
+
+        # throw error if not load_optim_state and load_trainer_state are false in variation_flags
+        if [[ $variation_flags != *"--trainer.load_optim_state=false"* ]]; then
+            echo "Error: --trainer.load_optim_state must be false for finetuning after pruning."
+            exit 1
+        fi
 
 
         python -m olmo_core.launch.beaker \
