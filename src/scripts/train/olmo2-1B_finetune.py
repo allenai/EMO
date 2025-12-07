@@ -53,7 +53,7 @@ log = logging.getLogger(__name__)
 
 
 SEQUENCE_LENGTH = 4096
-GLOBAL_BATCH_SIZE = 32 * SEQUENCE_LENGTH
+# GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
 
 # docs: start-define-config
 @dataclass
@@ -165,7 +165,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     # )
 
     data_loader_config = NumpyDataLoaderConfig(
-        global_batch_size=GLOBAL_BATCH_SIZE,  # NOTE: this is specified in tokens, not instances
+        global_batch_size=opts.global_batch_size,
         seed=0,
         num_workers=4,
     )
@@ -293,6 +293,12 @@ def parser_args():
         type=int,
         default=4,
         help="Number of steps between saving checkpoints.",
+    )
+    parser.add_argument(
+        "--global_batch_size",
+        type=int,
+        default=16,
+        help="Global batch size in number of sequences.",
     )
     opts, overrides = parser.parse_known_args()
     return opts, overrides
