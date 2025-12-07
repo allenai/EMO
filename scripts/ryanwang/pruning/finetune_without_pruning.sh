@@ -24,7 +24,7 @@ num_checkpoints=5
 
 # this is used for ablations
 variation="newdefault_lr-4e-4"
-expertiment_tag="newdefault_ablations_arc_challenge"
+expertiment_tag="newdefault_ablations_socialiqa"
 
 variation_flags=""
 # Define variation-specific settings
@@ -56,13 +56,13 @@ base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
 train_task_names=(
 #  "arc_easy:rc_train::olmes"
-  "arc_challenge:rc_train::olmes"
+#  "arc_challenge:rc_train::olmes"
 #  "boolq:rc_train::olmes"
 #  "csqa:rc_train::olmes"
 #  "hellaswag:rc_train::olmes"
 #  "openbookqa:rc_train::olmes"
 #  "piqa:rc_train::olmes"
-#  "socialiqa:rc_train::olmes"
+  "socialiqa:rc_train::olmes"
 #  "winogrande:rc_train::olmes"
 
 #  "arc_easy:rc_train_0shot::olmes"
