@@ -1,9 +1,7 @@
 # PARENT: "mutualinfo_1b14b_cond-1_uncond-1_1205.sh"
 # DESCRIPTION:
 #     - Changed the magnitude of aux losses from 1 to 1e-2 for both cond and uncond entropy bias, since the loss was not decreasing fast enough and norms were exploding
-# STATUS: DEPRICATED
-#     = the model gradient norms are more stable, training loss decreases more smoothly, but is still performing worse than other models. Noticed that z-loss increases and then decreases dramatically, which seems to have adverse effects on train loss
-#     - replaced by run that does not have z-loss
+# STATUS: USED
 ##############################################################
 
 runname="mutualinfo_1b14b_cond-1e-2_uncond-1e-2_zloss-1e-3_1205"
