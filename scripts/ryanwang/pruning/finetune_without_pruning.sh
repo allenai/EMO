@@ -126,7 +126,7 @@ for train_task_name in "${train_task_names[@]}"; do
 		    --model.block.attention.qk_norm=null \
     		--load_path=$base_model \
     		--num_checkpoints=$num_checkpoints \
-        --train_module.optim.lr=4e-5 \
+        --train_module.optim.lr=2e-5 \
         --trainer.load_optim_state=false \
         --trainer.load_trainer_state=false \
     		$variation_flags
