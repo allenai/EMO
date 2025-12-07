@@ -23,7 +23,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-2e-5"
+variation="newdefault_lr-4e-5"
 expertiment_tag="newdefault_ablations_hellaswag"
 
 variation_flags=""
