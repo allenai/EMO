@@ -536,6 +536,7 @@ class MoERouter(nn.Module):
             if padding_mask is not None:
                 padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
                 valid_expert_indices = expert_indices.masked_select(padding_mask_expanded).view(-1, expert_indices.size(-1))
+                padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
                 valid_scores = scores.masked_select(padding_mask_expanded).view(-1, self.num_experts)
                 valid_logits = logits.masked_select(padding_mask_expanded).view(-1, self.num_experts)
 
