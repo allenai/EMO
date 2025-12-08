@@ -33,7 +33,7 @@ num_checkpoints=5
 variation="newdefault_lr-4e-5"
 
 #experiment_tag="pruned_finetuning"
-expertiment_tag="pruned_finetuning_ablate"
+experiment_tag="pruned_finetuning_ablate"
 
 variation_flags=""
 # Define variation-specific settings
