@@ -14,8 +14,8 @@
 #       `--trainer.hard_stop.value=100 --trainer.hard_stop.unit=steps`
 
 ##############################################################
-#BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
-BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
+BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
+#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
 model_names=(
 #  "moe_1b14b_128experts_olmoe-mix_130B_1117"
@@ -135,24 +135,24 @@ for model_name in "${model_names[@]}"; do
 
         # define
 
-        torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_finetune.py \
-            $runname \
-        		--save-folder="${base_model}/${variation}/${out_dir}" \
-            --dataset.paths="[${dataset_paths}]" \
-            --dataset.label_mask_paths="[${label_mask_paths}]" \
-            --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
-        		--trainer.max_duration='{value: 3, unit: epochs}' \
-        		--trainer.callbacks.wandb="{enabled: false, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
-        		--train_module.compile_model=false \
-        		--load_path=$base_model \
-        		--num_checkpoints=$num_checkpoints \
-        		--model.block.feed_forward_moe.num_experts=${prune_keep_k} \
-            --model.block.name="moe" \
-            --model.block.attention.qk_norm=null \
-            --trainer.load_optim_state=false \
-            --trainer.load_trainer_state=false \
-            --global_batch_size=32 \
-            $variation_flags
+#        torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_finetune.py \
+#            $runname \
+#        		--save-folder="${base_model}/${variation}/${out_dir}" \
+#            --dataset.paths="[${dataset_paths}]" \
+#            --dataset.label_mask_paths="[${label_mask_paths}]" \
+#            --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
+#        		--trainer.max_duration='{value: 3, unit: epochs}' \
+#        		--trainer.callbacks.wandb="{enabled: false, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
+#        		--train_module.compile_model=false \
+#        		--load_path=$base_model \
+#        		--num_checkpoints=$num_checkpoints \
+#        		--model.block.feed_forward_moe.num_experts=${prune_keep_k} \
+#            --model.block.name="moe" \
+#            --model.block.attention.qk_norm=null \
+#            --trainer.load_optim_state=false \
+#            --trainer.load_trainer_state=false \
+#            --global_batch_size=32 \
+#            $variation_flags
 
         # throw error if not load_optim_state and load_trainer_state are false in variation_flags
         if [[ $variation != *"newdefault"* ]]; then
@@ -160,36 +160,37 @@ for model_name in "${model_names[@]}"; do
             exit 1
         fi
 
-#        python -m olmo_core.launch.beaker \
-#          --name $runname \
-#          --gpus 8 \
-#          --nodes 1 \
-#          --is_private_repo \
-#          --weka=oe-training-default \
-#          --shared-filesystem \
-#          --workspace ai2/flex2 \
-#          --cluster ai2/jupiter \
-#          --preemptible \
-#          --allow-dirty \
-#          --priority urgent \
-#          --no-follow \
-#          --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
-#          -- src/scripts/train/olmoe-1B-7B_finetune.py \
-#            $runname \
-#            --save-folder="${base_model}/${variation}/${out_dir}" \
-#            --dataset.paths="[${dataset_paths}]" \
-#            --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
-#            --trainer.max_duration='{value: 3, unit: epochs}' \
-#            --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${wandb_name}, tags: [${task_prefix:0:64}, ${model_name:0:64}, ${pruned_model_name}, ${experiment_tag]}" \
-#            --load_path=$base_model \
-#            --num_checkpoints=$num_checkpoints \
-#            --model.block.feed_forward_moe.num_experts=${prune_keep_k} \
-#            --model.block.name="moe" \
-#		        --model.block.attention.qk_norm=null \
-#		        --trainer.load_optim_state=false \
-#		        --trainer.load_trainer_state=false \
-#		        --global_batch_size=32 \
-#            $variation_flags
+        python -m olmo_core.launch.beaker \
+          --name $runname \
+          --gpus 8 \
+          --nodes 1 \
+          --is_private_repo \
+          --weka=oe-training-default \
+          --shared-filesystem \
+          --workspace ai2/flex2 \
+          --cluster ai2/jupiter \
+          --preemptible \
+          --allow-dirty \
+          --priority urgent \
+          --no-follow \
+          --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+          -- src/scripts/train/olmoe-1B-7B_finetune.py \
+            $runname \
+            --save-folder="${base_model}/${variation}/${out_dir}" \
+            --dataset.paths="[${dataset_paths}]" \
+            --dataset.label_mask_paths="[${label_mask_paths}]" \
+            --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
+            --trainer.max_duration='{value: 3, unit: epochs}' \
+            --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${wandb_name}, tags: [${task_prefix:0:64}, ${model_name:0:64}, ${pruned_model_name}, ${experiment_tag]}" \
+            --load_path=$base_model \
+            --num_checkpoints=$num_checkpoints \
+            --model.block.feed_forward_moe.num_experts=${prune_keep_k} \
+            --model.block.name="moe" \
+		        --model.block.attention.qk_norm=null \
+		        --trainer.load_optim_state=false \
+		        --trainer.load_trainer_state=false \
+		        --global_batch_size=32 \
+            $variation_flags
 
     #        --dataset.label_mask_paths="[${label_mask_paths}]" \
 
