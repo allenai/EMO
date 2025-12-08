@@ -531,7 +531,6 @@ class MoERouter(nn.Module):
             # shape: (num_experts,)
             batch_size_per_expert_routing = batched_batch_size_per_expert_routing.sum(dim=0)
 
-            breakpoint()
             # we first filter out the padding tokens (also includes masked tokens)
             if padding_mask is not None:
                 padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
