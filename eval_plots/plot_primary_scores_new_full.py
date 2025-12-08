@@ -35,16 +35,28 @@ TASKS: List[str] = [
 ]
 
 # Relative steps per task to compare across both model families.
-TASK_STEPS: Dict[str, List[int]] = {
-    "arc_challenge:rc_test": [0, 41, 82, 123, 164, 207],
-    "arc_easy:rc_test": [0, 84, 168, 252, 336, 420],
-    "boolq:rc_test": [0, 315, 630, 945, 1260, 1578],
-    "csqa:rc_test": [0, 327, 654, 981, 1308, 1638],
-    "hellaswag:rc_test": [0, 1458, 2916, 4374, 5832, 7293],
-    "openbookqa:rc_test": [0, 185, 370, 555, 740, 927],
-    "piqa:rc_test": [0, 566, 1132, 1698, 2264, 2832],
-    "socialiqa:rc_test": [0, 1215, 2430, 3645, 4860, 6075],
-    "winogrande:rc_test": [0, 1477, 2954, 4431, 5908, 7386],
+# TASK_STEPS: Dict[str, List[int]] = {
+#     "arc_challenge:rc_test": [0, 41, 82, 123, 164, 207],
+#     "arc_easy:rc_test": [0, 84, 168, 252, 336, 420],
+#     "boolq:rc_test": [0, 315, 630, 945, 1260, 1578],
+#     "csqa:rc_test": [0, 327, 654, 981, 1308, 1638],
+#     "hellaswag:rc_test": [0, 1458, 2916, 4374, 5832, 7293],
+#     "openbookqa:rc_test": [0, 185, 370, 555, 740, 927],
+#     "piqa:rc_test": [0, 566, 1132, 1698, 2264, 2832],
+#     "socialiqa:rc_test": [0, 1215, 2430, 3645, 4860, 6075],
+#     "winogrande:rc_test": [0, 1477, 2954, 4431, 5908, 7386],
+# }
+
+TASK_STEPS = {
+    "arc_easy:rc_test":       [0, 42, 84, 126, 168, 210],
+    "arc_challenge:rc_test":  [0, 20, 40, 60, 80, 102],
+    "boolq:rc_test":          [0, 157, 314, 471, 628, 789],
+    "csqa:rc_test":           [0, 163, 326, 489, 652, 819],
+    "hellaswag:rc_test":      [0, 729, 1458, 2187, 2916, 3645],
+    "openbookqa:rc_test":     [0, 92, 184, 276, 368, 462],
+    "piqa:rc_test":           [0, 283, 566, 849, 1132, 1416],
+    "socialiqa:rc_test":      [0, 607, 1214, 1821, 2428, 3036],
+    "winogrande:rc_test":     [0, 738, 1476, 2214, 2952, 3693],
 }
 
 # Family color mapping - define base colors for each model family
@@ -65,7 +77,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "label": "moe keepk32",
         "template": (
             "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123_step30995_"
-            "task-{task_core}_rc_validation_keepk32_finetune-task-{task_core}_rc_train_step{step}-hf"
+            "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
         ),
         "family": "moe",
         "marker": "o",              # matplotlib marker style (o=circle, s=square, ^=triangle, etc.)
@@ -77,7 +89,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "label": "twolevelbatchlb keepk32",
         "template": (
             f"{MAIN_MODEL}_"
-            "task-{task_core}_rc_validation_keepk32_finetune-task-{task_core}_rc_train_step{step}-hf"
+            "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
         ),
         "family": "twolevelbatchlb",
         "marker": "o",
@@ -97,22 +109,22 @@ MODEL_RUNS: List[Dict[str, Any]] = [
     #     "linewidth": 2,
     #     "markersize": 9,
     # },
-    {
-        "label": "twolevelsampling keepk32",
-        "template": (
-            f"twolevelsamplingnolb-32_1b14b_stability_1127_step30995_"
-            "task-{task_core}_rc_validation_keepk32_finetune-task-{task_core}_rc_train_step{step}-hf"
-        ),
-        "family": "twolevelsamplingnolb",
-        "marker": "o",
-        "brightness": 1.0,
-        "linewidth": 2,
-        "markersize": 9,
-    },
+    # {
+    #     "label": "twolevelsampling keepk32",
+    #     "template": (
+    #         f"twolevelsamplingnolb-32_1b14b_stability_1127_step30995_"
+    #         "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
+    #     ),
+    #     "family": "twolevelsamplingnolb",
+    #     "marker": "o",
+    #     "brightness": 1.0,
+    #     "linewidth": 2,
+    #     "markersize": 9,
+    # },
     {
         "label": "dense finetuned",
         "template": (
-            "dense_1b_olmoe-mix_prenorm_noqknorm_1123_step30995_"
+            "dense_1b_olmoe-mix_prenorm_noqknorm_1123_step30995_newdefault_lr-4e-5_"
             "finetune-task-{task_core}_rc_train_step{step}-hf"
         ),
         "family": "dense",
@@ -154,13 +166,13 @@ BASELINE_RUNS: List[Dict[str, Any]] = [
         "linestyle": "--",
         "linewidth": 1.2,
     },
-{
-        "label": "twolevelsampling full",
-        "template": "twolevelsamplingnolb-32_1b14b_stability_1127_step30995-hf",
-        "family": "twolevelsamplingnolb",
-        "linestyle": "--",
-        "linewidth": 1.2,
-    },
+# {
+#         "label": "twolevelsampling full",
+#         "template": "twolevelsamplingnolb-32_1b14b_stability_1127_step30995-hf",
+#         "family": "twolevelsamplingnolb",
+#         "linestyle": "--",
+#         "linewidth": 1.2,
+#     },
 
 ]
 
