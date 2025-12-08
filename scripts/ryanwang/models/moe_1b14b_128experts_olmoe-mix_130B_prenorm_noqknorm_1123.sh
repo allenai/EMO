@@ -24,7 +24,7 @@ python -m olmo_core.launch.beaker \
 		--dataset.mix=OLMoE-mix-0824 \
 		--work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
 		--trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
-		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
+		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}, tags: [pretraining]}" \
 		--model-type="moe" \
 		--model.block.feed_forward_moe.num_experts=128 \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \

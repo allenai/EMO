@@ -43,7 +43,7 @@ python -m olmo_core.launch.beaker \
 		--work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
 		--lr=8e-4 \
 		--trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
-		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
+		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}, tags: [pretraining]}" \
 		--model.block.feed_forward_moe.num_experts=128 \
 		--dataset.generate_doc_lengths=true \
 		--model.block.attention.backend=flash_2 \
