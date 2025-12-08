@@ -52,7 +52,7 @@ fi
 
 # first argument is which validation used for pruning, second is training dataset
 task_configs=(
-#  "task-arc_easy_rc_validation_keepk32|arc_easy:rc_train::olmes"
+  "task-arc_easy_rc_validation_keepk32|arc_easy:rc_train::olmes"
   "task-arc_challenge_rc_validation_keepk32|arc_challenge:rc_train::olmes"
   "task-boolq_rc_validation_keepk32|boolq:rc_train::olmes"
   "task-csqa_rc_validation_keepk32|csqa:rc_train::olmes"
