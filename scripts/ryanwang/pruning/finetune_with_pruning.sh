@@ -30,7 +30,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-4e-4"
+variation="newdefault_lr-4e-5"
 
 #experiment_tag="pruned_finetuning"
 experiment_tag="pruned_finetuning_ablate"
@@ -113,7 +113,7 @@ for model_name in "${model_names[@]}"; do
         dataset_paths="${data_folder}/part-0-00000.npy"
         label_mask_paths="${data_folder}/part-0-00000_mask.npy"
 
-        runname="${model_name}/${step}_${pruned_model_name}_finetune-${task_prefix}"
+        runname="${model_name}/${step}_${pruned_model_name}_finetune-${task_prefix}_${variation}"
         wandb_name=${runname}
         # limit runname to 128 characters, take first 25 and last 75
         runname=$(echo $runname | cut -c1-35)_$(echo $runname | rev | cut -c1-65 | rev)
