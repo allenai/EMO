@@ -10,8 +10,8 @@ PARENT_MODELS=(
 
 #    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
 
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
-#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
+#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
+    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
 #    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
 )
@@ -88,70 +88,69 @@ FINETUNE_TASKS=(
 
 )
 
-#for BASE in "${PARENT_MODELS[@]}"; do
-#  for FINETUNE in "${FINETUNE_TASKS[@]}"; do
-#
-#    # check if "dense" appears in BASE, if so then change dir structure (dense did not go through pruning)
-#    if [[ "$BASE" == *"dense"* ]]; then
-#      # remove everything before the first "/" in FINETUNE
-#      FINETUNE="${FINETUNE#*/}"
-#      MODEL_DIR="${BASE_FOLDER}/${BASE}/${FINETUNE}"
-#    else
-#      MODEL_DIR="${BASE_FOLDER}/${BASE}_${FINETUNE}"
-#    fi
-#
-#    echo "checkpoint-input-path is ${MODEL_DIR}"
-#    echo "output_dir is ${MODEL_DIR}-hf"
-#
-#    # Beaker names can only contain letters, digits, periods, dashes, and underscores.
-#    job_name="convert_${FINETUNE//\//_}"
-#
-#    # launch the gantry run and delete the original model
-#
-#    gantry run \
-#    --name $job_name \
-#    --weka oe-training-default:/weka/oe-training-default \
-#    --install 'pip install -e .[all]' \
-#    --budget ai2/oceo \
-#    --workspace ai2/flex2 \
-#    --cluster "ai2/jupiter-cirrascale-2" \
-#    --cpus 16 \
-#    --gpus 0 \
-#    --priority urgent \
-#    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-#    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-#    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-#    -- \
-#    bash -c '
-#    python src/examples/huggingface/convert_checkpoint_to_hf.py \
-#      --checkpoint-input-path "'"${MODEL_DIR}"'" \
-#      --max-sequence-length 4096 \
-#      --huggingface-output-dir "'"${MODEL_DIR}"'-hf" \
-#      --dtype float32 \
-#      --skip-validation \
-#    && \
-#      rm -rf "'"${MODEL_DIR}"'"
-#  '
-#  done
-#done
+for BASE in "${PARENT_MODELS[@]}"; do
+  for FINETUNE in "${FINETUNE_TASKS[@]}"; do
+
+    # check if "dense" appears in BASE, if so then change dir structure (dense did not go through pruning)
+    if [[ "$BASE" == *"dense"* ]]; then
+      # remove everything before the first "/" in FINETUNE
+      FINETUNE="${FINETUNE#*/}"
+      MODEL_DIR="${BASE_FOLDER}/${BASE}/${FINETUNE}"
+    else
+      MODEL_DIR="${BASE_FOLDER}/${BASE}_${FINETUNE}"
+    fi
+
+    echo "checkpoint-input-path is ${MODEL_DIR}"
+    echo "output_dir is ${MODEL_DIR}-hf"
+
+    # Beaker names can only contain letters, digits, periods, dashes, and underscores.
+    job_name="convert_${FINETUNE//\//_}"
+
+    # launch the gantry run and delete the original model
+
+    gantry run \
+    --name $job_name \
+    --weka oe-training-default:/weka/oe-training-default \
+    --install 'pip install -e .[all]' \
+    --budget ai2/oceo \
+    --workspace ai2/flex2 \
+    --cluster "ai2/jupiter-cirrascale-2" \
+    --cpus 16 \
+    --gpus 0 \
+    --priority urgent \
+    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+    -- \
+    bash -c '
+    python src/examples/huggingface/convert_checkpoint_to_hf.py \
+      --checkpoint-input-path "'"${MODEL_DIR}"'" \
+      --max-sequence-length 4096 \
+      --huggingface-output-dir "'"${MODEL_DIR}"'-hf" \
+      --dtype float32 \
+      --skip-validation \
+    && \
+      rm -rf "'"${MODEL_DIR}"'"
+  '
+  done
+done
 
 MODELS=(
 #    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_1121/step30995"
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_1120/step30995"
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995_task-arc_easy_rc_validation_keepk8"
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995"
 #    "twolevelsamplingnolb-32_1b10b_stability_1127/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
 )
 
-for MODEL in "${MODELS[@]}"; do
-
-    python src/examples/huggingface/convert_checkpoint_to_hf.py \
-          --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}" \
-          --max-sequence-length 4096 \
-          --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}-hf" \
-          --dtype float32 \
-          --skip-validation
-done
+#for MODEL in "${MODELS[@]}"; do
+#
+#    python src/examples/huggingface/convert_checkpoint_to_hf.py \
+#          --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}" \
+#          --max-sequence-length 4096 \
+#          --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}-hf" \
+#          --dtype float32 \
+#          --skip-validation
+#done
