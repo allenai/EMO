@@ -27,7 +27,8 @@ run_configs=(
 #  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110|prune_keep_k=32"
 
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121|prune_keep_k=32"
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121|prune_keep_k=8"
+#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121|prune_keep_k=8"
+    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121|prune_keep_k=12"
 
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123|prune_keep_k=32"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127|prune_keep_k=32"
