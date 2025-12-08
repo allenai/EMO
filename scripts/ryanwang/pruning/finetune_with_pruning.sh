@@ -30,7 +30,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-4e-5"
+variation="newdefault_lr-4e-4"
 
 #experiment_tag="pruned_finetuning"
 experiment_tag="pruned_finetuning_ablate"
