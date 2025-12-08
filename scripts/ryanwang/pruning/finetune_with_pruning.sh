@@ -181,7 +181,7 @@ for model_name in "${model_names[@]}"; do
             --dataset.label_mask_paths="[${label_mask_paths}]" \
             --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
             --trainer.max_duration='{value: 3, unit: epochs}' \
-            --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${wandb_name}, tags: [${task_prefix:0:64}, ${model_name:0:64}, ${pruned_model_name}, ${experiment_tag]}" \
+            --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${wandb_name}, tags: [${task_prefix:0:64}, ${model_name:0:64}, ${pruned_model_name}, ${experiment_tag}]}" \
             --load_path=$base_model \
             --num_checkpoints=$num_checkpoints \
             --model.block.feed_forward_moe.num_experts=${prune_keep_k} \
