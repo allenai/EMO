@@ -44,10 +44,9 @@ def load_balancing_loss(
         get_local_tensor(batched_batch_size_per_expert),
     )
 
-    B, S, _ = expert_scores.shape
-
     loss: torch.Tensor
     if granularity == MoELoadBalancingLossGranularity.instance:
+        B, S, _ = expert_scores.shape
         # shape: (B, num_experts)
         batched_batch_size_per_expert = batched_batch_size_per_expert.type_as(expert_scores)
 
@@ -87,6 +86,7 @@ def load_balancing_loss(
         # Due to that DTensor reduction, with TP the 'loss_div_factor' should be the total number
         # of tokens across the TP group, but not the CP group.
         if loss_div_factor is None:
+            B, S, _ = expert_scores.shape
             loss_div_factor = B * S
             if tp_mesh is not None:
                 loss_div_factor = loss_div_factor * tp_mesh.size()
@@ -119,12 +119,12 @@ def router_z_loss(
     cp_mesh: Optional[dist.DeviceMesh] = None,
 ) -> torch.Tensor:
     expert_logits = get_local_tensor(expert_logits)
-    B, S, _ = expert_logits.shape
 
     # NOTE: with TP, end result has to be a DTensor over the TP mesh, so we wrap as a DTensor
     # and reduce it. Due to this reduction, the 'loss_div_factor' should represent the total
     # number of tokens across the TP group (but not the CP group).
     if loss_div_factor is None:
+        B, S, _ = expert_logits.shape
         loss_div_factor = B * S
         if tp_mesh is not None:
             loss_div_factor = loss_div_factor * tp_mesh.size()

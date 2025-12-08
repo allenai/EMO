@@ -518,27 +518,43 @@ class MoERouter(nn.Module):
             )
 
         with torch.no_grad():
-            breakpoint()
-            # Histogram the expert ids to identify the number of items/tokens routed to each expert.
+            # we first make the assertion that we are using granularity of local_batch as opposed to instance, since masking doesn't work with instance
+            if self.lb_loss_granularity != MoELoadBalancingLossGranularity.local_batch:
+                raise NotImplementedError("masking with instance-level load balancing loss granularity is not supported yet")
+
+            # Histogram the expert ids to identify the number of items/tokens routed to each expert. This is ONLY USED in
+            # the return values used for kernels to route tokens to their corresponding experts, NOT for loss computation
             # shape: (batch_size, seq_len, num_experts)
-            batched_batch_size_per_expert = ops.batched_histc(expert_indices, self.num_experts)
+            batched_batch_size_per_expert_routing = ops.batched_histc(expert_indices, self.num_experts)
             # shape: (batch_size, num_experts)
-            batched_batch_size_per_expert = batched_batch_size_per_expert.sum(dim=1)
+            batched_batch_size_per_expert_routing = batched_batch_size_per_expert_routing.sum(dim=1)
             # shape: (num_experts,)
-            batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
+            batch_size_per_expert_routing = batched_batch_size_per_expert_routing.sum(dim=0)
+
+            breakpoint()
+            # we first filter out the padding tokens (also includes masked tokens)
+            if padding_mask is not None:
+                padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
+                valid_expert_indices = expert_indices.masked_select(padding_mask_expanded).view(-1, expert_indices.size(-1))
+                valid_scores = scores.masked_select(padding_mask_expanded).view(-1, self.num_experts)
+                valid_logits = logits.masked_select(padding_mask_expanded).view(-1, self.num_experts)
+
+                # (valid_tokens, num_experts)
+                batched_batch_size_per_expert = ops.batched_histc(valid_expert_indices, self.num_experts)
+                # (num_experts)
+                batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
+            else:
+                valid_expert_indices = expert_indices.view(-1, expert_indices.size(-1))
+                valid_scores = scores.view(-1, self.num_experts)
+                valid_logits = logits.view(-1, self.num_experts)
+
+                batch_size_per_expert = batch_size_per_expert_routing
 
             # prepare for custom metric
             if self.training:
-                # prepare unique experts metric
-                if padding_mask is not None:
-                    # log that we only consider non-padded tokens for unique experts metric. padding_mask is 1 for non-padded tokens
-                    padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
-                    valid_expert_indices = expert_indices.masked_select(padding_mask_expanded)
-                else:
-                    valid_expert_indices = expert_indices.reshape(-1)
 
-                # Update unique experts metric.
-                unique_experts = torch.unique(valid_expert_indices)
+                # prepare unique experts metric.
+                unique_experts = torch.unique(valid_expert_indices.view(-1))
                 num_unique_experts = unique_experts.numel()
 
                 self._unique_experts_sum += num_unique_experts
@@ -546,12 +562,6 @@ class MoERouter(nn.Module):
 
                 # Compute router distribution entropy metric
                 # calculate entropy of the router distribution over experts
-                if padding_mask is not None:
-                    # only consider non-padded tokens
-                    padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
-                    valid_scores = scores.masked_select(padding_mask_expanded).view(-1, self.num_experts)
-                else:
-                    valid_scores = scores.view(-1, self.num_experts)
                 # get entropy per token
                 token_entropies = -torch.sum(valid_scores * torch.log(valid_scores + 1e-10), dim=-1)
                 # average entropy over valid tokens
@@ -565,16 +575,22 @@ class MoERouter(nn.Module):
                 if self.lb_loss_weight is not None:
                     assert self.load_balancing_loss is not None
 
-                    # Make sure scores are normalized, otherwise load balancing loss doesn't work well.
+                    # we make some extra checks here that gating_function is softmax and that loss_div_factor is set (required for new loss to work)
+                    if self.gating_function != MoERouterGatingFunction.softmax:
+                        raise NotImplementedError("load balancing loss currently only supported for softmax gating function")
+                    if loss_div_factor is None:
+                        raise ValueError("loss_div_factor must be set when using load balancing loss")
+
+                    # Make sure scores are normalized, otherwise load balancing loss doesn't work well. (this SHOULD NOT run)
                     if self.gating_function == MoERouterGatingFunction.sigmoid:
                         scores = scores / scores.sum(dim=-1, keepdim=True)
 
                     lb_loss = load_balancing_loss(
                         num_experts=self.num_experts,
                         top_k=self.top_k,
-                        expert_scores=scores,
+                        expert_scores=valid_scores,
                         batch_size_per_expert=batch_size_per_expert,
-                        batched_batch_size_per_expert=batched_batch_size_per_expert,
+                        batched_batch_size_per_expert=batched_batch_size_per_expert, # we don't even use this in local_batch granularity, but we pass it anyway
                         granularity=self.lb_loss_granularity,
                         loss_div_factor=loss_div_factor,
                         tp_mesh=self.tp_mesh,
@@ -589,7 +605,7 @@ class MoERouter(nn.Module):
                     assert self.z_loss is not None
 
                     z_loss = router_z_loss(
-                        expert_logits=logits,
+                        expert_logits=valid_logits,
                         loss_div_factor=loss_div_factor,
                         tp_mesh=self.tp_mesh,
                         cp_mesh=self.cp_mesh,
@@ -604,7 +620,10 @@ class MoERouter(nn.Module):
                 assert self.score_bias_batch_size_per_expert is not None
                 self.score_bias_batch_size_per_expert += batch_size_per_expert
 
-        return expert_weights, expert_indices, batch_size_per_expert, aux_loss
+        # TODOTODOTODOTODOTODOJKDLSJFKLDJLS
+        # check whether we should be passing in the original unchanged expert_indices and expert_weights (i.e does masking happen for CE already)
+
+        return expert_weights, expert_indices, batch_size_per_expert_routing, aux_loss
 
     def apply_tp(self, tp_mesh: DeviceMesh, float8_enabled: bool = False):
         del float8_enabled
