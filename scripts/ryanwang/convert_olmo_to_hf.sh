@@ -10,10 +10,10 @@ PARENT_MODELS=(
 
 #    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
 
-#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
+    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
-    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
+#    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
 )
 
 # used to iterate on different finetuning variations
@@ -23,7 +23,7 @@ postfix="_keepk32/newdefault_lr-4e-5"
 #postfix="_keepk32/lr-3e-5_warmup-0.2"
 
 FINETUNE_TASKS=(
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0"
     "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step42"
     "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84"
     "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step126"
