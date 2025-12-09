@@ -22,8 +22,8 @@ PARENT_MODELS=(
 
 # used to iterate on different finetuning variations
 #postfix=""
-postfix="_keepk32/newdefault_lr-4e-5"
-#postfix="_keepk8/newdefault_lr-4e-5"
+#postfix="_keepk32/newdefault_lr-4e-5"
+postfix="_keepk8/newdefault_lr-4e-5"
 #postfix="_keepk32"
 #postfix="_keepk32/lr-3e-5_warmup-0.2"
 
