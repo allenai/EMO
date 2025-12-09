@@ -16,7 +16,10 @@ PARENT_MODELS=(
 
 #    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
-    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
+#    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995"
+
+
+#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
 )
 
