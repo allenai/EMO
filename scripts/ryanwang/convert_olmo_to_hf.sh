@@ -144,14 +144,15 @@ MODELS=(
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995"
 #    "twolevelsamplingnolb-32_1b10b_stability_1127/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
+    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995"
 )
 
-#for MODEL in "${MODELS[@]}"; do
-#
-#    python src/examples/huggingface/convert_checkpoint_to_hf.py \
-#          --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}" \
-#          --max-sequence-length 4096 \
-#          --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}-hf" \
-#          --dtype float32 \
-#          --skip-validation
-#done
+for MODEL in "${MODELS[@]}"; do
+
+    python src/examples/huggingface/convert_checkpoint_to_hf.py \
+          --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}" \
+          --max-sequence-length 4096 \
+          --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}-hf" \
+          --dtype float32 \
+          --skip-validation
+done
