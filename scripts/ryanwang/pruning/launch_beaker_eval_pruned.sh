@@ -16,41 +16,42 @@ PARENT_MODELS=(
 
 #    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
-    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995"
+#    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995"
 
+    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995"
 
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
 )
 
 #postfix=""
-#postfix="_keepk32/newdefault_lr-4e-5"
-postfix="_keepk8/newdefault_lr-4e-5"
+postfix="_keepk32/newdefault_lr-4e-5"
+#postfix="_keepk8/newdefault_lr-4e-5"
 #postfix="_keepk32"
 #postfix="_keepk32/lr-7e-5_warmup-0.1"
 
 
 FINETUNE_TASKS=(
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step42-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step126-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step210-hf"
-##
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step20-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step40-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step60-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step80-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step102-hf"
-##
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step0-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step157-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step314-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step471-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step628-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step789-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step42-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step126-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step210-hf"
+#
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step20-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step40-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step60-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step80-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step102-hf"
+#
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step0-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step157-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step314-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step471-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step628-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step789-hf"
 
 #    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step0-hf"
 #    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step163-hf"
@@ -73,26 +74,26 @@ FINETUNE_TASKS=(
 #    "task-openbookqa_rc_validation${postfix}/finetune-task-openbookqa_rc_train/step368-hf"
 #    "task-openbookqa_rc_validation${postfix}/finetune-task-openbookqa_rc_train/step462-hf"
 ###
-    "task-piqa_rc_validation${postfix}/finetune-task-piqa_rc_train/step0-hf"
-    "task-piqa_rc_validation${postfix}/finetune-task-piqa_rc_train/step283-hf"
-    "task-piqa_rc_validation${postfix}/finetune-task-piqa_rc_train/step566-hf"
-    "task-piqa_rc_validation${postfix}/finetune-task-piqa_rc_train/step849-hf"
-    "task-piqa_rc_validation${postfix}/finetune-task-piqa_rc_train/step1132-hf"
-    "task-piqa_rc_validation${postfix}/finetune-task-piqa_rc_train/step1416-hf"
-
-    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step0-hf"
-    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step607-hf"
-    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step1214-hf"
-    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step1821-hf"
-    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step2428-hf"
-    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step3036-hf"
-
-    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step0-hf"
-    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step738-hf"
-    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step1476-hf"
-    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step2214-hf"
-    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step2952-hf"
-    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step3693-hf"
+#    "task-piqa_rc_validation${postfix}/finetune-task-piqa_rc_train/step0-hf"
+#    "task-piqa_rc_validation${postfix}/finetune-task-piqa_rc_train/step283-hf"
+#    "task-piqa_rc_validation${postfix}/finetune-task-piqa_rc_train/step566-hf"
+#    "task-piqa_rc_validation${postfix}/finetune-task-piqa_rc_train/step849-hf"
+#    "task-piqa_rc_validation${postfix}/finetune-task-piqa_rc_train/step1132-hf"
+#    "task-piqa_rc_validation${postfix}/finetune-task-piqa_rc_train/step1416-hf"
+#
+#    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step0-hf"
+#    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step607-hf"
+#    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step1214-hf"
+#    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step1821-hf"
+#    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step2428-hf"
+#    "task-socialiqa_rc_validation${postfix}/finetune-task-socialiqa_rc_train/step3036-hf"
+#
+#    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step0-hf"
+#    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step738-hf"
+#    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step1476-hf"
+#    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step2214-hf"
+#    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step2952-hf"
+#    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step3693-hf"
 
 )
 
@@ -215,6 +216,7 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
             --install "pip install -e \".[all]\"" \
             --budget ai2/oceo \
             --workspace ai2/flex2 \
+            --allow-dirty \
             --cluster $CLUSTER \
             --priority urgent \
             --gpus $gpus \
