@@ -142,9 +142,12 @@ MODELS=(
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_1120/step30995"
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995"
+    "twolevelbatchlb-8_1b7b_stability_1207/step30995"
+
 #    "twolevelsamplingnolb-32_1b10b_stability_1127/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
-    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995"
+#    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995"
+
 )
 
 for MODEL in "${MODELS[@]}"; do
