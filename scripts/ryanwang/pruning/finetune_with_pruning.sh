@@ -22,7 +22,9 @@ model_names=(
 #  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115"
 
 #   "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121"
-   "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203"
+#   "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203"
+
+   "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205"
 
 #   "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123"
 #   "twolevelsamplingnolb-32_1b14b_stability_1127"
