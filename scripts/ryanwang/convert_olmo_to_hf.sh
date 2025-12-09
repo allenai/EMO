@@ -117,6 +117,7 @@ for BASE in "${PARENT_MODELS[@]}"; do
     --install 'pip install -e .[all]' \
     --budget ai2/oceo \
     --workspace ai2/flex2 \
+    --allow-dirty \
     --cluster "ai2/jupiter-cirrascale-2" \
     --cpus 16 \
     --gpus 0 \
