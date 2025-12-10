@@ -141,7 +141,7 @@ def copy_param_with_resize(source_param, target_param, num_experts: int, init_me
 
         # Update target parameter
         with torch.no_grad():
-            target_param.copy_(target_new)
+            target_param.copy_(target_matrix.view(-1))
 
     # Expert weights
     else:
@@ -181,6 +181,7 @@ def copy_param_with_resize(source_param, target_param, num_experts: int, init_me
             # Do nothing, the new_model was initialized randomly already
             target_new = target_param.view(a_new, b, columns).clone()
         elif init_method == AddExpertInitMethod.AVERAGE:
+            # import pdb; pdb.set_trace()
             target_new = torch.empty(
                 a_new, b, columns, device=target_param.device, dtype=target_param.dtype
             )
@@ -234,6 +235,8 @@ def add_expert(checkpoint_path: str, save_path: Optional[str] = None, init_metho
 
     num_experts = model_config.block.feed_forward_moe.num_experts
 
+    init_method = init_method or AddExpertInitMethod.RANDOM
+
     # Copy weights from old model to new model
     for name, param in model.named_parameters():
         if name in new_model.state_dict():
@@ -243,7 +246,7 @@ def add_expert(checkpoint_path: str, save_path: Optional[str] = None, init_metho
             else:
                 # assert "router" in name, f"Shape mismatch for parameter {name}"
                 if "router" in name or "experts" in name:
-                    copy_param_with_resize(param, new_param, num_experts)
+                    copy_param_with_resize(param, new_param, num_experts, init_method=init_method)
                     if init_method == AddExpertInitMethod.AVERAGE:
                         if len(param.shape) == 2:
                             # Multi-block tensor
