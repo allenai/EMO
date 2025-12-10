@@ -20,7 +20,6 @@ from olmo_core.distributed.checkpoint import (
     save_model_and_optim_state,
 )
 from olmo_core.nn.transformer import TransformerConfig
-from olmo_core.nn.transformer.init import InitMethod
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +77,9 @@ def save_checkpoint(config: dict, model: torch.nn.Module, save_path: str):
     logger.info(f"Saved new model weights to {model_weights_path}")
 
 
-def copy_param_with_resize(source_param, target_param, num_experts: int, init_method: str = AddExpertInitMethod.ZERO):
+def copy_param_with_resize(
+    source_param, target_param, num_experts: int, init_method: str = AddExpertInitMethod.ZERO
+):
     """
     Copy parameters from source to target, handling two cases:
 
@@ -118,7 +119,7 @@ def copy_param_with_resize(source_param, target_param, num_experts: int, init_me
             )
         elif init_method == AddExpertInitMethod.RANDOM:
             # Do nothing, the new_model was initialized randomly already
-            target_new = target_param.view(num_experts+1, c).clone()
+            target_new = target_param.view(num_experts + 1, c).clone()
         elif init_method == AddExpertInitMethod.AVERAGE:
             # Create a new tensor for target
             target_new = torch.empty(
@@ -209,7 +210,9 @@ def copy_param_with_resize(source_param, target_param, num_experts: int, init_me
     return target_param
 
 
-def add_expert(checkpoint_path: str, save_path: Optional[str] = None, init_method: Optional[str] = None):
+def add_expert(
+    checkpoint_path: str, save_path: Optional[str] = None, init_method: Optional[str] = None
+):
     # Load model config
     config_path = os.path.join(checkpoint_path, "config.json")
     logger.info(f"Loading model config from {config_path}")
@@ -231,7 +234,7 @@ def add_expert(checkpoint_path: str, save_path: Optional[str] = None, init_metho
     new_config.block.feed_forward_moe.num_experts += 1
     new_model = new_config.build(init_device="cpu")
 
-    new_model.init_weights() # Initialized with random init
+    new_model.init_weights()  # Initialized with random init
 
     num_experts = model_config.block.feed_forward_moe.num_experts
 
@@ -286,7 +289,10 @@ def parse_args():
         "-o", "--save_path", type=str, required=True, help="Path to save new MoE checkpoint"
     )
     parser.add_argument(
-        "--init_method", type=str, default=AddExpertInitMethod.RANDOM, help="Initialization method for new expert"
+        "--init_method",
+        type=str,
+        default=AddExpertInitMethod.RANDOM,
+        help="Initialization method for new expert",
     )
     return parser.parse_args()
 
