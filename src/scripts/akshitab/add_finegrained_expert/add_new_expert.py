@@ -236,6 +236,7 @@ def add_expert(
 
     new_model.init_weights()  # Initialized with random init
 
+    assert model_config.block.feed_forward_moe is not None
     num_experts = model_config.block.feed_forward_moe.num_experts
 
     init_method = init_method or AddExpertInitMethod.RANDOM
