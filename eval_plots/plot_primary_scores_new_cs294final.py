@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plot primary_score over training steps for selected evaluation runs."""
+"""Plot primary_score over training steps for all nine tasks in a single 3x3 grid."""
 
 from __future__ import annotations
 
@@ -35,18 +35,6 @@ TASKS: List[str] = [
 ]
 
 # Relative steps per task to compare across both model families.
-# TASK_STEPS: Dict[str, List[int]] = {
-#     "arc_challenge:rc_test": [0, 41, 82, 123, 164, 207],
-#     "arc_easy:rc_test": [0, 84, 168, 252, 336, 420],
-#     "boolq:rc_test": [0, 315, 630, 945, 1260, 1578],
-#     "csqa:rc_test": [0, 327, 654, 981, 1308, 1638],
-#     "hellaswag:rc_test": [0, 1458, 2916, 4374, 5832, 7293],
-#     "openbookqa:rc_test": [0, 185, 370, 555, 740, 927],
-#     "piqa:rc_test": [0, 566, 1132, 1698, 2264, 2832],
-#     "socialiqa:rc_test": [0, 1215, 2430, 3645, 4860, 6075],
-#     "winogrande:rc_test": [0, 1477, 2954, 4431, 5908, 7386],
-# }
-
 TASK_STEPS = {
     "arc_easy:rc_test":       [0, 42, 84, 126, 168, 210],
     "arc_challenge:rc_test":  [0, 20, 40, 60, 80, 102],
@@ -88,7 +76,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "markersize": 9,            # Marker size
     },
     {
-        "label": "twolevelbatchlb train32/128 keepk32",
+        "label": "twolevel keepk32",
         "template": (
             f"{MAIN_MODEL}_"
             "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
@@ -99,90 +87,42 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "linewidth": 2,
         "markersize": 9,
     },
-    {
-        "label": "twolevelbatchlb train32/128 keepk8",
-        "template": (
-            f"{MAIN_MODEL}_"
-            "task-{task_core}_rc_validation_keepk8_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-        ),
-        "family": "twolevelbatchlb train32/128",
-        "marker": "o",
-        "brightness": 0.7,
-        "linewidth": 2,
-        "markersize": 9,
-    },
-# {
-    #     "label": "twolevelbatchlb train32/128 keepk32 lr high",
-    #     "template": (
-    #         f"twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203_step30995_"
-    #         "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-    #     ),
-    #     "family": "twolevelbatchlb train32/128 lr high",
-    #     "marker": "o",
-    #     "brightness": 1.0,
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
     # {
-    #     "label": "twolevelbatchlb train32/128 keepk8 lr high",
+    #     "label": "twolevel keepk8",
     #     "template": (
-    #         f"twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203_step30995_"
+    #         f"{MAIN_MODEL}_"
     #         "task-{task_core}_rc_validation_keepk8_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
     #     ),
-    #     "family": "twolevelbatchlb train32/128 lr high",
+    #     "family": "twolevelbatchlb train32/128",
     #     "marker": "o",
     #     "brightness": 0.7,
     #     "linewidth": 2,
     #     "markersize": 9,
     # },
-# {
-#         "label": "twolevelbatchlb train8/64 keepk32",
-#         "template": (
-#             f"twolevelbatchlb-8_1b7b_stability_1207_step30995_"
-#             "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-#         ),
-#         "family": "twolevelbatchlb train8/64",
-#         "marker": "o",
-#         "brightness": 1.0,
-#         "linewidth": 2,
-#         "markersize": 9,
-#     },
-#     {
-#         "label": "twolevelbatchlb train8/64 keepk8",
-#         "template": (
-#             f"twolevelbatchlb-8_1b7b_stability_1207_step30995_"
-#             "task-{task_core}_rc_validation_keepk8_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-#         ),
-#         "family": "twolevelbatchlb train8/64",
-#         "marker": "o",
-#         "brightness": 0.7,
-#         "linewidth": 2,
-#         "markersize": 9,
-#     },
-#     {
-#         "label": "mutualinfo keepk32",
-#         "template": (
-#             f"mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205_step30995_"
-#             "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-#         ),
-#         "family": "mutualinfo",
-#         "marker": "o",
-#         "brightness": 1.0,
-#         "linewidth": 2,
-#         "markersize": 9,
-#     },
-#     {
-#         "label": "mutualinfo keepk8",
-#         "template": (
-#             f"mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205_step30995_"
-#             "task-{task_core}_rc_validation_keepk8_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-#         ),
-#         "family": "mutualinfo",
-#         "marker": "o",
-#         "brightness": 0.7,
-#         "linewidth": 2,
-#         "markersize": 9,
-#     },
+    {
+        "label": "mutualinfo keepk32",
+        "template": (
+            f"mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205_step30995_"
+            "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
+        ),
+        "family": "mutualinfo",
+        "marker": "o",
+        "brightness": 1.0,
+        "linewidth": 2,
+        "markersize": 9,
+    },
+    {
+        "label": "mutualinfo keepk8",
+        "template": (
+            f"mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205_step30995_"
+            "task-{task_core}_rc_validation_keepk8_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
+        ),
+        "family": "mutualinfo",
+        "marker": "o",
+        "brightness": 0.7,
+        "linewidth": 2,
+        "markersize": 9,
+    },
     {
         "label": "dense finetuned",
         "template": (
@@ -195,35 +135,6 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "linewidth": 2,
         "markersize": 9,
     },
-
-
-
-
-    # {
-    #     "label": "twolevelbatchlb keepk32 old",
-    #     "template": (
-    #         f"twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115_step30995_"
-    #         "task-{task_core}_rc_validation_keepk32_finetune-task-{task_core}_rc_train_step{step}-hf"
-    #     ),
-    #     "family": "moe",
-    #     "marker": "o",
-    #     "brightness": 1.0,
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
-    # {
-    #     "label": "twolevelsampling keepk32",
-    #     "template": (
-    #         f"twolevelsamplingnolb-32_1b14b_stability_1127_step30995_"
-    #         "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-    #     ),
-    #     "family": "twolevelsamplingnolb",
-    #     "marker": "o",
-    #     "brightness": 1.0,
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
-
 ]
 
 # Baseline model configurations
@@ -237,19 +148,12 @@ BASELINE_RUNS: List[Dict[str, Any]] = [
         "linewidth": 1.2,
     },
     {
-        "label": "twolevelbatchlb full",
+        "label": "twolevel full",
         "template": f"{MAIN_MODEL}-hf",
         "family": "twolevelbatchlb",
         "linestyle": "--",
         "linewidth": 1.2,
     },
-    # {
-    #     "label": "twolevelbatchlb full old",
-    #     "template": "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115_step30995-hf",
-    #     "family": "moe",
-    #     "linestyle": "--",
-    #     "linewidth": 1.2,
-    # },
     {
         "label": "dense full",
         "template": "dense_1b_olmoe-mix_prenorm_noqknorm_1123_step30995-hf",
@@ -257,14 +161,6 @@ BASELINE_RUNS: List[Dict[str, Any]] = [
         "linestyle": "--",
         "linewidth": 1.2,
     },
-# {
-#         "label": "twolevelsampling full",
-#         "template": "twolevelsamplingnolb-32_1b14b_stability_1127_step30995-hf",
-#         "family": "twolevelsamplingnolb",
-#         "linestyle": "--",
-#         "linewidth": 1.2,
-#     },
-
 ]
 
 # ============================================================================
@@ -281,8 +177,8 @@ BASELINE_FAMILY: Dict[str, str] = {run["label"]: run["family"] for run in BASELI
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Generate a seaborn line plot comparing primary_score across "
-            "training steps for two model families."
+            "Generate a 3x3 grid of seaborn line plots comparing primary_score across "
+            "training steps for all nine tasks."
         )
     )
     parser.add_argument(
@@ -497,50 +393,18 @@ def adjust_color_brightness(hex_color: str, brightness_factor: float) -> str:
     return mcolors.rgb2hex(new_rgb)
 
 
-def plot_primary_scores(
+def plot_single_subplot(
+        ax: plt.Axes,
         df: pd.DataFrame,
-        output: Path,
-        style: str,
-        show: bool,
-        task_name: str | None,
+        task_name: str,
         primary_metric_name: str | None,
         baseline_scores: Dict[str, float],
+        run_configs: Dict[str, Dict[str, Any]],
+        baseline_configs: Dict[str, Dict[str, Any]],
+        group_palette: Dict[str, str],
+        family_colors: Dict[str, str],
 ) -> None:
-    sns.set_theme(style=style)
-    plt.figure(figsize=(8, 5))
-
-    # Get unique families and set up color mapping
-    unique_families = sorted(
-        set(GROUP_FAMILY.values()) | set(BASELINE_FAMILY.values())
-    )
-    # Fallback to colorblind palette for any families not in custom mapping
-    base_palette = sns.color_palette("colorblind", n_colors=len(unique_families))
-    family_colors = {
-        family: FAMILY_COLORS.get(family, base_palette[idx])
-        for idx, family in enumerate(unique_families)
-    }
-    
-    # Build configuration lookup dictionaries for quick access
-    run_configs = {run["label"]: run for run in MODEL_RUNS}
-    baseline_configs = {run["label"]: run for run in BASELINE_RUNS}
-    
-    # Create color palette for each model group using configured brightness
-    group_palette = {}
-    for group in df["model_group"].unique():
-        if group not in run_configs:
-            # Fallback for groups not in configuration
-            family = GROUP_FAMILY.get(group, "unknown")
-            base_color = family_colors.get(family, "#000000")
-            group_palette[group] = base_color
-        else:
-            config = run_configs[group]
-            family = config["family"]
-            base_color = family_colors[family]
-            brightness = config.get("brightness", 1.0)
-            group_palette[group] = adjust_color_brightness(base_color, brightness)
-
-    ax = plt.gca()
-
+    """Plot a single task's data on the given axes."""
     # Plot each group using configuration
     for group in sorted(df["model_group"].unique()):
         group_data = df[df["model_group"] == group].sort_values("step")
@@ -567,14 +431,6 @@ def plot_primary_scores(
             markersize=markersize,
         )
 
-    metric_label = primary_metric_name or "Primary Score"
-    if task_name:
-        ax.set_title(task_name)
-    else:
-        ax.set_title("Primary Score vs. Training Step")
-    ax.set_xlabel("Training Step")
-    ax.set_ylabel(metric_label)
-
     # Plot baseline models using configuration
     for label, score in baseline_scores.items():
         if score is None:
@@ -593,19 +449,179 @@ def plot_primary_scores(
             linestyle = config.get("linestyle", "--")
             linewidth = config.get("linewidth", 1.2)
         
-        line = ax.axhline(
+        ax.axhline(
             score,
             linestyle=linestyle,
             linewidth=linewidth,
             color=color,
+            label=label,
         )
-        line.set_label(label)
 
-    ax.legend(title="Model Group", loc="center left", bbox_to_anchor=(1.02, 0.5))
+    # Set labels and title
+    metric_label = primary_metric_name or "Primary Score"
+    ax.set_title(task_name, fontsize=22)
+    ax.set_xlabel("Training Step", fontsize=20)
+    ax.set_ylabel(metric_label, fontsize=20)
+    ax.tick_params(labelsize=18)
 
-    plt.tight_layout()
+
+def plot_all_tasks_grid(
+        output: Path,
+        style: str,
+        show: bool,
+        evals_root: Path,
+) -> None:
+    """Create a 3x3 grid plot with all nine tasks."""
+    sns.set_theme(style=style)
+    
+    # Create figure with 3x3 subplots - increased size for bigger plots
+    fig, axes = plt.subplots(3, 3, figsize=(22, 18))
+    fig.suptitle("Primary Score vs. Training Step Across All Tasks, ModuleFormer", fontsize=28, y=0.98)
+    
+    # Set up color mapping and configuration (shared across all subplots)
+    unique_families = sorted(
+        set(GROUP_FAMILY.values()) | set(BASELINE_FAMILY.values())
+    )
+    base_palette = sns.color_palette("colorblind", n_colors=len(unique_families))
+    family_colors = {
+        family: FAMILY_COLORS.get(family, base_palette[idx])
+        for idx, family in enumerate(unique_families)
+    }
+    
+    run_configs = {run["label"]: run for run in MODEL_RUNS}
+    baseline_configs = {run["label"]: run for run in BASELINE_RUNS}
+    
+    # Create color palette for each model group using configured brightness
+    group_palette = {}
+    all_groups = set()
+    for run in MODEL_RUNS:
+        all_groups.add(run["label"])
+    for group in all_groups:
+        if group not in run_configs:
+            family = GROUP_FAMILY.get(group, "unknown")
+            base_color = family_colors.get(family, "#000000")
+            group_palette[group] = base_color
+        else:
+            config = run_configs[group]
+            family = config["family"]
+            base_color = family_colors[family]
+            brightness = config.get("brightness", 1.0)
+            group_palette[group] = adjust_color_brightness(base_color, brightness)
+    
+    # Flatten axes array for easier indexing
+    axes_flat = axes.flatten()
+    
+    # Collect handles and labels for shared legend (from first successful plot)
+    handles_list = []
+    labels_list = []
+    legend_collected = False
+    
+    # Process each task
+    for idx, task_name in enumerate(TASKS):
+        if idx >= 9:
+            break  # Safety check
+        
+        ax = axes_flat[idx]
+        metrics_filename = f"task-{task_name.replace(':', '_')}-metrics.json"
+        steps = TASK_STEPS.get(task_name)
+        
+        if not steps:
+            print(f"[WARN] No step configuration for {task_name}; skipping.")
+            ax.text(0.5, 0.5, f"No data for\n{task_name}", 
+                   ha='center', va='center', transform=ax.transAxes, fontsize=20)
+            ax.set_title(task_name, fontsize=22)
+            continue
+        
+        try:
+            df, primary_metric_name = build_dataframe(
+                evals_root,
+                task_name,
+                metrics_filename,
+                steps,
+            )
+        except RuntimeError as exc:
+            print(f"[WARN] Skipping {task_name}: {exc}")
+            ax.text(0.5, 0.5, f"Error loading\n{task_name}", 
+                   ha='center', va='center', transform=ax.transAxes, fontsize=20)
+            ax.set_title(task_name, fontsize=22)
+            continue
+
+        baseline_scores = load_baseline_scores(
+            evals_root,
+            task_name,
+            primary_metric_name,
+            metrics_filename,
+        )
+        
+        # Plot on this subplot
+        plot_single_subplot(
+            ax,
+            df,
+            task_name,
+            primary_metric_name,
+            baseline_scores,
+            run_configs,
+            baseline_configs,
+            group_palette,
+            family_colors,
+        )
+        
+        # Collect handles and labels from the first successful subplot for legend
+        # matplotlib tracks handles even without explicit legend creation
+        if not legend_collected:
+            # Get all handles and labels from the axes
+            handles, labels = ax.get_legend_handles_labels()
+            # Remove duplicates while preserving order
+            seen_labels = set()
+            for handle, label in zip(handles, labels):
+                if label not in seen_labels:
+                    handles_list.append(handle)
+                    labels_list.append(label)
+                    seen_labels.add(label)
+            legend_collected = True
+    
+    # Create shared legend at the bottom of the figure
+    if handles_list and labels_list:
+        fig.legend(
+            handles_list,
+            labels_list,
+            title="Model Group",
+            loc="lower center",
+            bbox_to_anchor=(0.5, -0.05),
+            ncol=4,
+            fontsize=18,
+            title_fontsize=20,
+            frameon=True,
+        )
+    else:
+        # Fallback: create legend from first subplot if handles weren't collected
+        handles, labels = axes_flat[0].get_legend_handles_labels()
+        if handles and labels:
+            fig.legend(
+                handles,
+                labels,
+                title="Model Group",
+                loc="lower center",
+                bbox_to_anchor=(0.5, -0.05),
+                ncol=4,
+                fontsize=18,
+                title_fontsize=20,
+                frameon=True,
+            )
+    
+    # Adjust spacing: reduce wspace (column spacing), keep hspace reasonable
+    # Increased top and bottom margins to accommodate title and legend
+    plt.subplots_adjust(
+        left=0.06,
+        right=0.98,
+        top=0.92,  # Reduced from 0.96 to give more space for title
+        bottom=0.10,  # Increased from 0.08 to give more space for legend
+        wspace=0.25,  # Reduced column spacing
+        hspace=0.35,  # Row spacing
+    )
+    
     output.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output, bbox_inches='tight')
+    plt.savefig(output, bbox_inches='tight', dpi=300)
     print(f"[INFO] Saved plot to {output}")
 
     if show:
@@ -618,45 +634,18 @@ def main() -> None:
     args = parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    for task_name in TASKS:
-        metrics_filename = f"task-{task_name.replace(':', '_')}-metrics.json"
-        steps = TASK_STEPS.get(task_name)
-        if not steps:
-            print(f"[WARN] No step configuration for {task_name}; skipping.")
-            continue
-        try:
-            df, primary_metric_name = build_dataframe(
-                args.evals_root,
-                task_name,
-                metrics_filename,
-                steps,
-            )
-        except RuntimeError as exc:
-            print(f"[WARN] Skipping {task_name}: {exc}")
-            continue
+    output_file = (
+        args.output_dir
+        / f"{MAIN_MODEL}_cs294final"
+        / "all_tasks_primary_score_comparison.png"
+    )
 
-        baseline_scores = load_baseline_scores(
-            args.evals_root,
-            task_name,
-            primary_metric_name,
-            metrics_filename,
-        )
-
-        output_file = (
-                args.output_dir
-                / f"{MAIN_MODEL}_full"
-                / f"{task_name.replace(':', '_')}_primary_score_comparison.png"
-        )
-
-        plot_primary_scores(
-            df,
-            output_file,
-            args.style,
-            args.show,
-            task_name,
-            primary_metric_name,
-            baseline_scores,
-        )
+    plot_all_tasks_grid(
+        output_file,
+        args.style,
+        args.show,
+        args.evals_root,
+    )
 
 
 if __name__ == "__main__":
