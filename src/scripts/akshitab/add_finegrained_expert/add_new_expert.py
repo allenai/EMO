@@ -77,199 +77,112 @@ def save_checkpoint(config: dict, model: torch.nn.Module, save_path: str):
     logger.info(f"Saved new model weights to {model_weights_path}")
 
 
-def copy_param_with_resize(
-    source_param, target_param, num_experts: int, init_method: str = AddExpertInitMethod.ZERO
-):
-    """
-    Copy parameters from source to target, handling two cases:
-
-    Case 1: Multi-block tensors (expert weights)
-        source_param: (num_experts * b, c)
-        target_param: ((num_experts + 1) * b, c)
-
-    Case 2: Flat tensors that should be viewed as matrices (router weights)
-        source_param: (num_experts * c,)
-        target_param: ((num_experts + 1) * c,)
-    """
-    # Router weights
-    if len(source_param.shape) == 1:
-        source_len = source_param.shape[0]
-        target_len = target_param.shape[0]
-
-        # Calculate c by dividing the length by num_experts
-        if source_len % num_experts != 0:
-            raise ValueError(
-                f"Source length {source_len} is not divisible by num_experts {num_experts}"
-            )
-
-        c = source_len // num_experts
-
-        # Verify target length
-        expected_target_len = (num_experts + 1) * c
-        if target_len != expected_target_len:
-            raise ValueError(f"Expected target length {expected_target_len}, got {target_len}")
-
-        # Reshape flat tensors to matrices
-        source_matrix = source_param.view(num_experts, c)
-
-        if init_method == AddExpertInitMethod.ZERO:
-            # Create a new tensor for target
-            target_new = torch.zeros(
-                (num_experts + 1) * c, device=target_param.device, dtype=target_param.dtype
-            )
-        elif init_method == AddExpertInitMethod.RANDOM:
-            # Do nothing, the new_model was initialized randomly already
-            target_new = target_param.view(num_experts + 1, c).clone()
-        elif init_method == AddExpertInitMethod.AVERAGE:
-            # Create a new tensor for target
-            target_new = torch.empty(
-                (num_experts + 1) * c, device=target_param.device, dtype=target_param.dtype
-            )
-            # Compute average of existing experts
-            avg_expert = source_matrix.mean(dim=0)
-            # Copy average to new expert position
-            with torch.no_grad():
-                target_new.view(num_experts + 1, c)[-1, :].copy_(avg_expert)
-        elif init_method == AddExpertInitMethod.SIMILAR:
-            print("Similar initialization not implemented yet.")
-            raise NotImplementedError("Similar initialization not implemented yet.")
-        else:
-            raise ValueError(f"Unknown init method: {init_method}")
-        target_matrix = target_new.view(num_experts + 1, c)
-
-        # Copy data
-        target_matrix[:num_experts, :] = source_matrix
-
-        # Update target parameter
-        with torch.no_grad():
-            target_param.copy_(target_matrix.view(-1))
-
-    # Expert weights
-    else:
-        source_rows, columns = source_param.shape
-        target_rows, target_columns = target_param.shape
-
-        # Check column dimensions match
-        if columns != target_columns:
-            raise ValueError(f"Column dimensions don't match: {columns} vs {target_columns}")
-
-        # Calculate b
-        if source_rows % num_experts != 0:
-            raise ValueError(
-                f"Source rows {source_rows} is not divisible by num_experts {num_experts}"
-            )
-
-        b = source_rows // num_experts
-        expected_target_rows = (num_experts + 1) * b
-
-        # Verify target shape
-        if target_rows != expected_target_rows:
-            raise ValueError(
-                f"Expected target rows to be {expected_target_rows}, got {target_rows}"
-            )
-
-        # Reshape for manipulation
-        source_reshaped = source_param.view(num_experts, b, columns)
-
-        # Create new tensor
-        a_new = num_experts + 1
-
-        if init_method == AddExpertInitMethod.ZERO:
-            target_new = torch.zeros(
-                a_new, b, columns, device=target_param.device, dtype=target_param.dtype
-            )
-        elif init_method == AddExpertInitMethod.RANDOM:
-            # Do nothing, the new_model was initialized randomly already
-            target_new = target_param.view(a_new, b, columns).clone()
-        elif init_method == AddExpertInitMethod.AVERAGE:
-            # import pdb; pdb.set_trace()
-            target_new = torch.empty(
-                a_new, b, columns, device=target_param.device, dtype=target_param.dtype
-            )
-            # Compute average of existing experts
-            avg_expert = source_reshaped.mean(dim=0)
-            # Copy average to new expert position
-            with torch.no_grad():
-                target_new[-1, :, :].copy_(avg_expert)
-        elif init_method == AddExpertInitMethod.SIMILAR:
-            print("Similar initialization not implemented yet.")
-            raise NotImplementedError("Similar initialization not implemented yet.")
-        else:
-            raise ValueError(f"Unknown init method: {init_method}")
-
-        # Copy data
-        target_new[:num_experts, :, :] = source_reshaped
-
-        # Reshape back
-        target_flat = target_new.view(a_new * b, columns)
-
-        # Update target
-        with torch.no_grad():
-            target_param.copy_(target_flat)
-
-    return target_param
-
-
 def add_expert(
     checkpoint_path: str, save_path: Optional[str] = None, init_method: Optional[str] = None
 ):
     # Load model config
-    config_path = os.path.join(checkpoint_path, "config.json")
-    logger.info(f"Loading model config from {config_path}")
-    with open(config_path, "r") as f:
+    old_config_path = os.path.join(checkpoint_path, "config.json")
+    logger.info(f"Loading model config from {old_config_path}")
+    with open(old_config_path, "r") as f:
         config = json.load(f)
 
-    model_config = TransformerConfig.from_dict(config["model"])
-    logger.info(f"Model config {model_config}")
+    old_model_config = TransformerConfig.from_dict(config["model"])
+    logger.info(f"Model config {old_model_config}")
 
     # Load model weights
     logger.info(f"Loading model weights from {checkpoint_path}")
-    model = load_checkpoint(model_config=model_config, checkpoint_path=checkpoint_path)
+    old_model = load_checkpoint(model_config=old_model_config, checkpoint_path=checkpoint_path)
     logger.info("Model loaded successfully")
 
     # Update config
     logger.info("Adding new expert to the model")
-    new_config = model_config.copy()
+    new_config = old_model_config.copy()
     assert new_config.block.feed_forward_moe is not None, "Model is not MoE"
     new_config.block.feed_forward_moe.num_experts += 1
     new_model = new_config.build(init_device="cpu")
 
     new_model.init_weights()  # Initialized with random init
 
-    assert model_config.block.feed_forward_moe is not None
-    num_experts = model_config.block.feed_forward_moe.num_experts
+    assert old_model_config.block.feed_forward_moe is not None
+    num_experts = old_model_config.block.feed_forward_moe.num_experts
 
     init_method = init_method or AddExpertInitMethod.RANDOM
 
     # Copy weights from old model to new model
-    for name, param in model.named_parameters():
+    for name, old_param in old_model.named_parameters():
         if name in new_model.state_dict():
             new_param = new_model.state_dict()[name]
-            if param.shape == new_param.shape:
-                new_param.data.copy_(param.data)
-            else:
-                # assert "router" in name, f"Shape mismatch for parameter {name}"
-                if "router" in name or "experts" in name:
-                    copy_param_with_resize(param, new_param, num_experts, init_method=init_method)
-                    if init_method == AddExpertInitMethod.AVERAGE:
-                        if len(param.shape) == 2:
-                            # Multi-block tensor
-                            b = param.shape[0] // num_experts
-                            columns = param.shape[1]
-                            param_reshaped = param.view(num_experts, b, columns)
-                            avg_expert = param_reshaped.mean(dim=0)
-                            with torch.no_grad():
-                                new_param.data[-b:, :].copy_(avg_expert)
-                        elif len(param.shape) == 1:
-                            # Flat tensor
-                            c = param.shape[0] // num_experts
-                            param_reshaped = param.view(num_experts, c)
-                            avg_expert = param_reshaped.mean(dim=0)
-                            with torch.no_grad():
-                                new_param.data[-c:].copy_(avg_expert)
+            if old_param.shape == new_param.shape:
+                new_param.data.copy_(old_param.data)
+
+            elif "router.weight" in name:
+                source_param = old_param.view(num_experts, -1)
+                _, source_columns = source_param.shape
+
+                target_param = new_param.view(num_experts + 1, source_columns).clone()
+
+                if init_method == AddExpertInitMethod.ZERO:
+                    target_param = torch.zeros(
+                        (num_experts + 1), source_columns, device=new_param.device, dtype=new_param.dtype
+                    )
+                elif init_method == AddExpertInitMethod.RANDOM:
+                    # Do nothing, the new_model was initialized randomly already
+                    pass
+                elif init_method == AddExpertInitMethod.AVERAGE:
+                    target_param = torch.empty(
+                        (num_experts + 1), source_columns, device=new_param.device, dtype=new_param.dtype
+                    )
+                    # Compute average of existing experts
+                    avg_expert = source_param.data.mean(dim=0)
+                    # Copy average to new expert position
+                    with torch.no_grad():
+                        target_param[-1, :].copy_(avg_expert)
+                elif init_method == AddExpertInitMethod.SIMILAR:
+                    print("Similar initialization not implemented yet.")
+                    raise NotImplementedError("Similar initialization not implemented yet.")
+
+                target_param[:num_experts, :] = source_param
+                with torch.no_grad():
+                    new_param.data.copy_(target_param.view(-1))
+
+            elif "experts.mlp" in name:
+                source_param = old_param.clone()
+                source_rows, source_columns = source_param.shape
+
+                target_param = new_param.view(num_experts + 1, source_rows // num_experts, source_columns).clone()
+
+                if init_method == AddExpertInitMethod.ZERO:
+                    target_param = torch.zeros(
+                        (num_experts + 1), (source_rows // num_experts), source_columns,
+                        device=new_param.device,
+                        dtype=new_param.dtype,
+                    )
+                elif init_method == AddExpertInitMethod.RANDOM:
+                    # Do nothing, the new_model was initialized randomly already
+                    pass
+                elif init_method == AddExpertInitMethod.AVERAGE:
+                    target_param = torch.empty(
+                        (num_experts + 1), (source_rows // num_experts), source_columns,
+                        device=new_param.device,
+                        dtype=new_param.dtype,
+                    )
+                    # Compute average of existing experts
+                    source_param = source_param.view(num_experts, source_rows // num_experts, source_columns)
+                    avg_expert = source_param.data.mean(dim=0)
+                    # Copy average to new expert position
+                    with torch.no_grad():
+                        target_param[-1, :, :].copy_(avg_expert)
+                elif init_method == AddExpertInitMethod.SIMILAR:
+                    print("Similar initialization not implemented yet.")
+                    raise NotImplementedError("Similar initialization not implemented yet.")
+
+                target_param[:num_experts, :, :] = source_param.view(num_experts, source_rows // num_experts, source_columns)
+                with torch.no_grad():
+                    new_param.data.copy_(target_param.view(-1, source_columns))
 
         else:
             logger.debug(f"Parameter {name} not found in new model, not updating weights")
+
 
     logger.info("Weights copied to new model successfully")
 
@@ -279,6 +192,7 @@ def add_expert(
         save_checkpoint(config, new_model, save_path)
 
     return new_model
+
 
 
 def parse_args():
