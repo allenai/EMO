@@ -122,16 +122,11 @@ def add_expert(
                 target_param = new_param.view(num_experts + 1, source_columns).clone()
 
                 if init_method == AddExpertInitMethod.ZERO:
-                    target_param = torch.zeros(
-                        (num_experts + 1), source_columns, device=new_param.device, dtype=new_param.dtype
-                    )
+                    target_param.fill_(0)
                 elif init_method == AddExpertInitMethod.RANDOM:
                     # Do nothing, the new_model was initialized randomly already
                     pass
                 elif init_method == AddExpertInitMethod.AVERAGE:
-                    target_param = torch.empty(
-                        (num_experts + 1), source_columns, device=new_param.device, dtype=new_param.dtype
-                    )
                     # Compute average of existing experts
                     avg_expert = source_param.data.mean(dim=0)
                     # Copy average to new expert position
@@ -149,25 +144,20 @@ def add_expert(
                 source_param = old_param.clone()
                 source_rows, source_columns = source_param.shape
 
-                target_param = new_param.view(num_experts + 1, source_rows // num_experts, source_columns).clone()
+                target_param = new_param.view(
+                    num_experts + 1, source_rows // num_experts, source_columns
+                ).clone()
 
                 if init_method == AddExpertInitMethod.ZERO:
-                    target_param = torch.zeros(
-                        (num_experts + 1), (source_rows // num_experts), source_columns,
-                        device=new_param.device,
-                        dtype=new_param.dtype,
-                    )
+                    target_param.fill_(0)
                 elif init_method == AddExpertInitMethod.RANDOM:
                     # Do nothing, the new_model was initialized randomly already
                     pass
                 elif init_method == AddExpertInitMethod.AVERAGE:
-                    target_param = torch.empty(
-                        (num_experts + 1), (source_rows // num_experts), source_columns,
-                        device=new_param.device,
-                        dtype=new_param.dtype,
-                    )
                     # Compute average of existing experts
-                    source_param = source_param.view(num_experts, source_rows // num_experts, source_columns)
+                    source_param = source_param.view(
+                        num_experts, source_rows // num_experts, source_columns
+                    )
                     avg_expert = source_param.data.mean(dim=0)
                     # Copy average to new expert position
                     with torch.no_grad():
@@ -176,13 +166,14 @@ def add_expert(
                     print("Similar initialization not implemented yet.")
                     raise NotImplementedError("Similar initialization not implemented yet.")
 
-                target_param[:num_experts, :, :] = source_param.view(num_experts, source_rows // num_experts, source_columns)
+                target_param[:num_experts, :, :] = source_param.view(
+                    num_experts, source_rows // num_experts, source_columns
+                )
                 with torch.no_grad():
                     new_param.data.copy_(target_param.view(-1, source_columns))
 
         else:
             logger.debug(f"Parameter {name} not found in new model, not updating weights")
-
 
     logger.info("Weights copied to new model successfully")
 
@@ -192,7 +183,6 @@ def add_expert(
         save_checkpoint(config, new_model, save_path)
 
     return new_model
-
 
 
 def parse_args():
