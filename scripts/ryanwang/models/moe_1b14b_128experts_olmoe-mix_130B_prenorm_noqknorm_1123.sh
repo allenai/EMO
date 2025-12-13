@@ -4,7 +4,7 @@
 # STATUS: USED
 ##############################################################
 
-runname="moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123"
+runname="moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123_testeta"
 python -m olmo_core.launch.beaker \
   --name $runname \
 	--gpus 8 \
