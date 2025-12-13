@@ -30,8 +30,7 @@ python -m olmo_core.launch.beaker \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="moe" \
 		--model.block.attention.qk_norm=null \
-		--model.block.feed_forward_moe.lb_loss_weight=1000 \
-		--train_module.rank_microbatch_size=32768 # 8x4096
+		--model.block.feed_forward_moe.lb_loss_weight=1000
 
 
 
