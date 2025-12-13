@@ -31,7 +31,7 @@ python -m olmo_core.launch.beaker \
 		--model.block.name="moe" \
 		--model.block.attention.qk_norm=null \
 		--model.block.feed_forward_moe.lb_loss_weight=1000 \
-		--train_module.rank_microbatch_size=8
+		--train_module.rank_microbatch_size=32768 # 8x4096
 
 
 
