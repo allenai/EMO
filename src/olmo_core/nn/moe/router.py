@@ -588,7 +588,8 @@ class MoERouter(nn.Module):
                     lb_loss = load_balancing_loss(
                         num_experts=self.num_experts,
                         top_k=self.top_k,
-                        expert_scores=valid_scores,
+                        expert_scores=scores,
+                        # expert_scores=valid_scores,
                         batch_size_per_expert=batch_size_per_expert,
                         batched_batch_size_per_expert=batched_batch_size_per_expert, # we don't even use this in local_batch granularity, but we pass it anyway
                         granularity=self.lb_loss_granularity,
@@ -605,7 +606,8 @@ class MoERouter(nn.Module):
                     assert self.z_loss is not None
 
                     z_loss = router_z_loss(
-                        expert_logits=valid_logits,
+                        expert_logits=logits,
+                        # expert_logits=valid_logits,
                         loss_div_factor=loss_div_factor,
                         tp_mesh=self.tp_mesh,
                         cp_mesh=self.cp_mesh,
