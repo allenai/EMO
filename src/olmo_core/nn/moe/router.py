@@ -590,7 +590,8 @@ class MoERouter(nn.Module):
                         top_k=self.top_k,
                         expert_scores=scores,
                         # expert_scores=valid_scores,
-                        batch_size_per_expert=batch_size_per_expert,
+                        batch_size_per_expert=batch_size_per_expert_routing,
+                        # batch_size_per_expert=batch_size_per_expert,
                         batched_batch_size_per_expert=batched_batch_size_per_expert, # we don't even use this in local_batch granularity, but we pass it anyway
                         granularity=self.lb_loss_granularity,
                         loss_div_factor=loss_div_factor,
