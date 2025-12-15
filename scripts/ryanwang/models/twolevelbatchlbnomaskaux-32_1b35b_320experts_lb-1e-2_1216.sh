@@ -6,7 +6,7 @@
 document_expert_pool=32
 #document_expert_pool=12
 
-runname="twolevelbatchlbnomaskaux-${document_expert_pool}_1b35b_320experts_1216"
+runname="twolevelbatchlbnomaskaux-${document_expert_pool}_1b35b_320experts_lb-1e-2_1216"
 
 #torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
 #  $runname \

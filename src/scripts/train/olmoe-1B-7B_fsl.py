@@ -16,7 +16,7 @@ import rich
 
 from olmo_core.nn.moe.twolevel_sampling_nolb_router import MoETwoLevelSamplingNoLBRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_router import MoETwoLevelBatchLBRouterConfig
-from olmo_core.nn.moe.twolevel_batchlb_nomask_router import MoETwoLevelBatchLBNoMaskAuxRouterConfig
+from olmo_core.nn.moe.twolevel_batchlb_nomaskaux_router import MoETwoLevelBatchLBNoMaskAuxRouterConfig
 from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_fullzloss_router import MoETwoLevelBatchLBFullZLossRouterConfig
 from olmo_core.nn.moe.mutualinfo_router import MoEMutualInfoRouterConfig
