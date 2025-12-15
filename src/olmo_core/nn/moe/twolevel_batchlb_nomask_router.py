@@ -79,7 +79,9 @@ class MoETwoLevelBatchLBNoMaskAuxRouter(MoETwoLevelRouter):
                 bc.append(int(x.size(1)))
             document_boundaries_cpu.append(bc)
 
-        tot_doc_entropy = []
+        # tot_doc_entropy = []
+        doc_entropy_sum=logits.new_zeros(())
+        doc_entropy_count = 0
         for seq_idx in range(x.size(0)):
             start = 0
             document_boundary = document_boundaries_cpu[seq_idx]
@@ -94,8 +96,10 @@ class MoETwoLevelBatchLBNoMaskAuxRouter(MoETwoLevelRouter):
                 # get the entropy over experts per token
                 token_entropies = -torch.sum(expert_probs * torch.log(expert_probs + 1e-10), dim=-1)  # shape: (doc_len,)
                 # average entropy over the document
-                avg_entropy = token_entropies.mean().item()
-                tot_doc_entropy.append(avg_entropy)
+                # avg_entropy = token_entropies.mean().item()
+                # tot_doc_entropy.append(avg_entropy)
+                doc_entropy_sum += token_entropies.mean()
+                doc_entropy_count += 1
 
                 # take the sum across the document
                 document_expert_probs = expert_probs.sum(dim=0) # shape: (num_experts,)
@@ -107,11 +111,13 @@ class MoETwoLevelBatchLBNoMaskAuxRouter(MoETwoLevelRouter):
                 scores_mask[seq_idx, start:end, experts_to_discard] = True
                 start = end
 
-        if self.training:
-            # log the average document entropy
-            avg_doc_entropy = sum(tot_doc_entropy) / len(tot_doc_entropy) if tot_doc_entropy else 0.0
-            # logging.info(f"Average document entropy over experts: {avg_doc_entropy}")
-            self._router_documentlevel_expert_entropy += avg_doc_entropy
+        if self.training and doc_entropy_count > 0:
+            # # log the average document entropy
+            # avg_doc_entropy = sum(tot_doc_entropy) / len(tot_doc_entropy) if tot_doc_entropy else 0.0
+            # # logging.info(f"Average document entropy over experts: {avg_doc_entropy}")
+            # self._router_documentlevel_expert_entropy += avg_doc_entropy
+            avg_doc_entropy = (doc_entropy_sum / doc_entropy_count).detach()
+            self._router_documentlevel_expert_entropy += avg_doc_entropy.item()
 
         # shape: (batch_size, seq_len, num_experts)
         if self.gating_function == MoERouterGatingFunction.softmax:
