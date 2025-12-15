@@ -42,27 +42,10 @@ from olmo_core.distributed.utils import get_local_tensor
 
 
 
-class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
+class MoETwoLevelBatchLBNoMaskAuxRouter(MoETwoLevelRouter):
     """
     Custom MoE router with modified forward pass and additional class variables.
     """
-
-    # remove lb_loss_weight from init
-    def __init__(
-            self,
-            *,
-            dtype: torch.dtype = torch.float32,
-            init_device: str = "cpu",
-            lb_loss_weight: Optional[float] = None,
-            **kwargs,
-    ):
-        super().__init__(dtype=dtype, init_device=init_device, **kwargs)
-
-        if lb_loss_weight is not None and lb_loss_weight != 0.0:
-            raise OLMoConfigurationError(
-                "MoETwoLevelSamplingNoLBRouter does not support load balancing loss. "
-                "Please set lb_loss_weight to None or 0.0."
-            )
 
     def forward(
             self,
@@ -87,7 +70,7 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
 
         # shape: (batch_size, seq_len, num_experts)
         logits = self.get_expert_logits(x).float()
-        scores_mask = torch.ones_like(logits, dtype=torch.bool, device=logits.device)
+        scores_mask = torch.zeros_like(logits, dtype=torch.bool, device=logits.device)
 
         document_boundaries_cpu = []
         for b in document_boundaries:
@@ -104,9 +87,9 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
                 if end <= start:
                     start = end
                     continue
-                sequence_logits = logits[seq_idx, start:end, :]  # shape: (doc_len, num_experts)
+                sequence_logits = logits[seq_idx, start:end, :] # shape: (doc_len, num_experts)
                 # calculate the softmax over the experts
-                expert_probs = F.softmax(sequence_logits, dim=-1)  # shape: (doc_len, num_experts)
+                expert_probs = F.softmax(sequence_logits, dim=-1) # shape: (doc_len, num_experts)
 
                 # get the entropy over experts per token
                 token_entropies = -torch.sum(expert_probs * torch.log(expert_probs + 1e-10), dim=-1)  # shape: (doc_len,)
@@ -115,11 +98,13 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
                 tot_doc_entropy.append(avg_entropy)
 
                 # take the sum across the document
-                document_expert_probs = expert_probs.sum(dim=0)  # shape: (num_experts,)
-                # sample to select the experts for this document
-                experts_to_keep = torch.multinomial(document_expert_probs, self.document_expert_pool, replacement=False)  # shape: (document_expert_pool,)
-                # we now only keep these experts for this document, set the rest in scores_mask to True
-                scores_mask[seq_idx, start:end, experts_to_keep] = False
+                document_expert_probs = expert_probs.sum(dim=0) # shape: (num_experts,)
+                # get the bottom document_expert_pool experts
+                bot_document_expert_pool = self.num_experts - self.document_expert_pool
+                experts_to_discard = torch.topk(-document_expert_probs, bot_document_expert_pool).indices # shape: (bot_document_expert_pool,)
+                # set the logits of these experts to a very large negative value
+                # logits[seq_idx, start:end, experts_to_discard] = float('-inf')
+                scores_mask[seq_idx, start:end, experts_to_discard] = True
                 start = end
 
         if self.training:
@@ -127,8 +112,6 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
             avg_doc_entropy = sum(tot_doc_entropy) / len(tot_doc_entropy) if tot_doc_entropy else 0.0
             # logging.info(f"Average document entropy over experts: {avg_doc_entropy}")
             self._router_documentlevel_expert_entropy += avg_doc_entropy
-
-        # logits.masked_fill_(logits_mask, float('-inf'))
 
         # shape: (batch_size, seq_len, num_experts)
         if self.gating_function == MoERouterGatingFunction.softmax:
@@ -138,13 +121,12 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
         else:
             raise NotImplementedError(self.gating_function)
 
-        raise NotImplementedError("MoETwoLevelSamplingNoLBRouter is not yet fully implemented. CANNOT mask scores without renormalization")
-        # mask out the experts not selected for each document. we mask scores instead of logits to allow z-loss computation
-        scores = scores.masked_fill(scores_mask, 0.0)
-        # scores.masked_fill_(scores_mask, 0.0)
+        # we now mask and renormalize scores
+        valid_scores = scores.masked_fill(scores_mask, 0)
+        valid_scores = valid_scores / valid_scores.sum(dim=-1, keepdim=True)
 
         # shape: (batch_size, seq_len, top_k)
-        expert_weights, expert_indices = self.get_top_k(scores)
+        expert_weights, expert_indices = self.get_top_k(valid_scores)
 
         if self.normalize_expert_weights is not None:
             expert_weights = expert_weights.div(
@@ -166,14 +148,13 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
             # shape: (num_experts,)
             tot_batch_size_per_expert = tot_batched_batch_size_per_expert.sum(dim=0)
 
-            # prepare for custom metric
             if self.training:
-                # prepare unique experts metric
-                if padding_mask is not None:
-                    padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
-                    valid_expert_indices = expert_indices.masked_select(padding_mask_expanded)
-                else:
-                    valid_expert_indices = expert_indices.reshape(-1)
+                # if padding_mask is not None:
+                #     padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
+                #     valid_expert_indices = expert_indices.masked_select(padding_mask_expanded)
+                # else:
+                #     valid_expert_indices = expert_indices.reshape(-1)
+                valid_expert_indices = expert_indices.view(-1)
 
                 # Update unique experts metric.
                 unique_experts = torch.unique(valid_expert_indices)
@@ -184,12 +165,13 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
 
                 # Compute router distribution entropy metric
                 # calculate entropy of the router distribution over experts. NOTE: this should be much lower than document-level, since some experts are already masked out
-                if padding_mask is not None:
-                    # only consider non-padded tokens
-                    padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
-                    valid_scores = scores.masked_select(padding_mask_expanded).view(-1, self.num_experts)
-                else:
-                    valid_scores = scores.view(-1, self.num_experts)
+                # if padding_mask is not None:
+                #     # only consider non-padded tokens
+                #     padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
+                #     valid_scores = scores.masked_select(padding_mask_expanded).view(-1, self.num_experts)
+                # else:
+                #     valid_scores = scores.view(-1, self.num_experts)
+                valid_scores = valid_scores.view(-1, self.num_experts)
                 # get entropy per token
                 token_entropies = -torch.sum(valid_scores * torch.log(valid_scores + 1e-10), dim=-1)
                 # average entropy over valid tokens
@@ -200,10 +182,35 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
         aux_loss: Optional[torch.Tensor] = None
         if self.training and torch.is_grad_enabled():
             with torch.autocast(enabled=False, device_type=x.device.type):
+                # use the batch-level load balancing loss
+                if self.lb_loss_weight is not None:
+                    assert self.load_balancing_loss is not None
+
+                    # note: for all lb and z-loss we use the unmasked scores and logits
+
+                    # Make sure scores are normalized, otherwise load balancing loss doesn't work well.
+                    if self.gating_function == MoERouterGatingFunction.sigmoid:
+                        scores = scores / scores.sum(dim=-1, keepdim=True)
+
+                    lb_loss = load_balancing_loss(
+                        num_experts=self.num_experts,
+                        top_k=self.top_k,
+                        expert_scores=scores,
+                        batch_size_per_expert=tot_batch_size_per_expert,
+                        batched_batch_size_per_expert=tot_batched_batch_size_per_expert,
+                        granularity=self.lb_loss_granularity,
+                        loss_div_factor=loss_div_factor,
+                        tp_mesh=self.tp_mesh,
+                        cp_mesh=self.cp_mesh,
+                    )
+                    self.load_balancing_loss += lb_loss.detach()
+
+                    scaled_lb_loss = self.lb_loss_weight * lb_loss
+                    aux_loss = scaled_lb_loss
+
                 if self.z_loss_weight is not None:
                     assert self.z_loss is not None
 
-                    # we use the full logits (without any masking) for z-loss computation
                     z_loss = router_z_loss(
                         expert_logits=logits,
                         loss_div_factor=loss_div_factor,
@@ -228,7 +235,7 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
         return f"{base_repr}, document_expert_pool={self.document_expert_pool}, eos_token_id={self.eos_token_id}"
 
 @dataclass
-class MoETwoLevelSamplingNoLBRouterConfig(MoETwoLevelRouterConfig):
+class MoETwoLevelBatchLBNoMaskAuxRouterConfig(MoETwoLevelRouterConfig):
     # just update the build to call the correct new class
     def build(
             self,
@@ -240,7 +247,7 @@ class MoETwoLevelSamplingNoLBRouterConfig(MoETwoLevelRouterConfig):
             z_loss_weight: Optional[float] = None,
             dtype: Optional[torch.dtype] = None,
             init_device: str = "cpu",
-    ) -> MoETwoLevelSamplingNoLBRouter:
+    ) -> MoETwoLevelBatchLBNoMaskAuxRouter:
         """
         Build the pruning router.
         """
@@ -259,4 +266,4 @@ class MoETwoLevelSamplingNoLBRouterConfig(MoETwoLevelRouterConfig):
         elif dtype is not None:
             kwargs["dtype"] = dtype
 
-        return MoETwoLevelSamplingNoLBRouter(**kwargs)
+        return MoETwoLevelBatchLBNoMaskAuxRouter(**kwargs)
