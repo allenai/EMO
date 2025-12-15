@@ -4,7 +4,7 @@
 # STATUS: USED
 ##############################################################
 
-runname="moe_1b35b_320experts_lb-1e-2_1212"
+runname="moe_1b35b_320experts_lb-1e-2_1214"
 python -m olmo_core.launch.beaker \
   --name $runname \
 	--gpus 8 \
