@@ -4,7 +4,7 @@
 # STATUS: USED
 ##############################################################
 
-runname="moe_1b35b_320experts_lb-1e-1_1212"
+runname="moe_1b35b_320experts_lb-1e-1_1214"
 python -m olmo_core.launch.beaker \
   --name $runname \
 	--gpus 8 \
@@ -30,7 +30,7 @@ python -m olmo_core.launch.beaker \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="moe" \
 		--model.block.attention.qk_norm=null \
-		--model.block.feed_forward_moe.lb_loss_weight=0.1
+		--model.block.feed_forward_moe.lb_loss_weight=1e-1
 
 
 
