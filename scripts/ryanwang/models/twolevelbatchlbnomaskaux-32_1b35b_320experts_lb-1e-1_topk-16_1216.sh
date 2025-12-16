@@ -53,7 +53,8 @@ python -m olmo_core.launch.beaker \
 		--model.block.attention.qk_norm=null \
 		--model.block.feed_forward_moe.lb_loss_weight=1e-1 \
 		--model.block.feed_forward_moe.router.top_k=16 \
-    --trainer.hard_stop='{value: 800, unit: steps}'
+		--train_module.rank_microbatch_size=8192 \
+    --trainer.hard_stop='{value: 750, unit: steps}'
 
 
 
