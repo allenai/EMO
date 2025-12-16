@@ -19,7 +19,7 @@ class ExpertPoolSchedulerCallback(Callback):
                 routers.append(m)
 
         # if routers is empty, return
-        if not routers or self.min_pool==-1 or self.decau_steps==-1:
+        if not routers or self.min_pool==-1 or self.decay_steps==-1:
             return
 
         self._routers = routers
