@@ -66,7 +66,6 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
             and optionally the auxiliary losses.
         """
         # shape: (batch_size, seq_len, d_model)
-        breakpoint()
         x = self.jitter(x)
 
         # shape: (batch_size, seq_len, num_experts)

@@ -76,7 +76,7 @@ def parse_poolsched(spec: str):
     pairs = [p.strip() for p in s.split(",") if p.strip()]
     out = {}
     for p in pairs:
-        k, v = p.split("=", 1)
+        k, v = p.split(":", 1)
         out[k.strip()] = int(v.strip())
     return out
 

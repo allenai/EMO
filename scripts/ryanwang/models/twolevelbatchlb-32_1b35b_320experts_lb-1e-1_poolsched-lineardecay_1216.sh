@@ -4,7 +4,7 @@
 # STATUS: USED
 ##############################################################
 #document_expert_pool=32
-document_expert_pool=12
+document_expert_pool=6
 
 runname="twolevelbatchlb-${document_expert_pool}_1b35b_320experts_lb-1e-1_poolsched-lineardecay_1216"
 
@@ -15,7 +15,8 @@ torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
   --work-dir="/root/ryanwang/dataset-cache" \
   --trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
   --trainer.callbacks.wandb="{enabled: false, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
-  --model.block.feed_forward_moe.num_experts=16 \
+  --model.block.feed_forward_moe.num_experts=8 \
+	--model.block.feed_forward_moe.router.top_k=4 \
   --model-type="two-level_lb-batch" \
   --document-expert-pool=${document_expert_pool} \
   --train_module.compile_model=false \
@@ -23,7 +24,7 @@ torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
   --model.block.name="moe" \
 	--model.block.attention.qk_norm=null \
 	--model.block.feed_forward_moe.lb_loss_weight=1e-1 \
-	--poolsched="{min_pool=${document_expert_pool}, decay_steps=5}"
+	--poolsched="{min_pool: ${document_expert_pool}, decay_steps: 5}"
 
 
 
