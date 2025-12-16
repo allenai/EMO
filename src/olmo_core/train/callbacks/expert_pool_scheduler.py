@@ -10,13 +10,14 @@ class ExpertPoolSchedulerCallback(Callback):
     decay_steps: int       # steps to decay from full pool -> min_pool
 
     def post_attach(self):
-        breakpoint()
         # Called once after attaching to the trainer; cache routers here.
         model = self.trainer.train_module.model  # Transformer
         routers: List[MoETwoLevelBatchLBRouter] = []
         for m in model.modules():
             if isinstance(m, MoETwoLevelBatchLBRouter):
                 routers.append(m)
+
+        breakpoint()
 
         # if routers is empty, return
         if not routers or self.min_pool==-1 or self.decay_steps==-1:
