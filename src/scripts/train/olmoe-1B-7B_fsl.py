@@ -52,20 +52,33 @@ from olmo_core.train.train_module import (
     TransformerTrainModuleConfig,
 )
 from olmo_core.utils import seed_all
+from olmo_core.train.callbacks.expert_pool_scheduler import ExpertPoolSchedulerCallback
 
 # from data_mixes import CustomDataMix
 
 log = logging.getLogger(__name__)
 
 # HACK
-DATA_ROOT = "/weka/oe-training-default/ai2-llm"
-# DATA_ROOT = "/root/ryanwang"
+# DATA_ROOT = "/weka/oe-training-default/ai2-llm"
+DATA_ROOT = "/root/ryanwang"
 
 SEQUENCE_LENGTH = 4096
+GLOBAL_BATCH_SIZE = 8 * SEQUENCE_LENGTH
 # GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
-GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
+# GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
 
-
+def parse_poolsched(spec: str):
+    if spec is None:
+        return None
+    s = spec.strip()
+    if s.startswith("{") and s.endswith("}"):
+        s = s[1:-1]
+    pairs = [p.strip() for p in s.split(",") if p.strip()]
+    out = {}
+    for p in pairs:
+        k, v = p.split("=", 1)
+        out[k.strip()] = int(v.strip())
+    return out
 
 # docs: start-define-config
 @dataclass
@@ -347,14 +360,20 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback("beaker", BeakerCallback())
         .with_callback("config_saver", ConfigSaverCallback())
         .with_callback("profiler", ProfilerCallback(enabled=False))
+        # .with_callback(
+        #     "downstream_evaluator",
+        #     # https://github.com/allenai/OLMo-in-loop-evals/blob/main/src/olmo_eval/tasks.py#L1752
+        #     DownstreamEvaluatorCallbackConfig(
+        #         tasks=["hellaswag", "arc_challenge", "piqa", "copa", "mmlu_stem", "mmlu_humanities",
+        #                "mmlu_social_sciences", "mmlu_other"],
+        #         tokenizer=tokenizer_config,
+        #         eval_interval=250,
+        #     ),
+        # )
         .with_callback(
-            "downstream_evaluator",
-            # https://github.com/allenai/OLMo-in-loop-evals/blob/main/src/olmo_eval/tasks.py#L1752
-            DownstreamEvaluatorCallbackConfig(
-                tasks=["hellaswag", "arc_challenge", "piqa", "copa", "mmlu_stem", "mmlu_humanities",
-                       "mmlu_social_sciences", "mmlu_other"],
-                tokenizer=tokenizer_config,
-                eval_interval=250,
+            "expert_pool_scheduler",
+            ExpertPoolSchedulerCallback(
+                **parse_poolsched(opts.poolsched)
             ),
         )
     )
@@ -425,6 +444,12 @@ def parser_args():
         "--expert_uncond_entropy_bias",
         type=float,
         help="Bias term for expert unconditional entropy in mutual info router.",
+    )
+    parser.add_argument(
+        "--poolsched",
+        type=str,
+        default="{min_pool: -1, decay_steps: -1}",
+        help="Type of pool scheduling to use. Only applies for twolevelbatchlb for now.",
     )
     opts, overrides = parser.parse_known_args()
     return opts, overrides
