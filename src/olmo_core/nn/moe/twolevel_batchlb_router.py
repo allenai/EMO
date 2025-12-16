@@ -79,7 +79,10 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
                 bc.append(int(x.size(1)))
             document_boundaries_cpu.append(bc)
 
-        tot_doc_entropy = []
+        # tot_doc_entropy = []
+        doc_entropy_sum = logits.new_zeros(())
+        doc_entropy_count = 0
+
         for seq_idx in range(x.size(0)):
             start = 0
             document_boundary = document_boundaries_cpu[seq_idx]
@@ -94,8 +97,10 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
                 # get the entropy over experts per token
                 token_entropies = -torch.sum(expert_probs * torch.log(expert_probs + 1e-10), dim=-1)  # shape: (doc_len,)
                 # average entropy over the document
-                avg_entropy = token_entropies.mean().item()
-                tot_doc_entropy.append(avg_entropy)
+                # avg_entropy = token_entropies.mean().item()
+                # tot_doc_entropy.append(avg_entropy)
+                doc_entropy_sum += token_entropies.mean()
+                doc_entropy_count += 1
 
                 # take the sum across the document
                 document_expert_probs = expert_probs.sum(dim=0) # shape: (num_experts,)
@@ -111,9 +116,11 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
 
         if self.training:
             # log the average document entropy
-            avg_doc_entropy = sum(tot_doc_entropy) / len(tot_doc_entropy) if tot_doc_entropy else 0.0
+            # avg_doc_entropy = sum(tot_doc_entropy) / len(tot_doc_entropy) if tot_doc_entropy else 0.0
             # logging.info(f"Average document entropy over experts: {avg_doc_entropy}")
-            self._router_documentlevel_expert_entropy += avg_doc_entropy
+            # self._router_documentlevel_expert_entropy += avg_doc_entropy
+            avg_doc_entropy = (doc_entropy_sum / doc_entropy_count).detach()
+            self._router_documentlevel_expert_entropy += avg_doc_entropy.item()
 
         # shape: (batch_size, seq_len, num_experts)
         if self.gating_function == MoERouterGatingFunction.softmax:
@@ -147,11 +154,12 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
             tot_batch_size_per_expert = tot_batched_batch_size_per_expert.sum(dim=0)
 
             if self.training:
-                if padding_mask is not None:
-                    padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
-                    valid_expert_indices = expert_indices.masked_select(padding_mask_expanded)
-                else:
-                    valid_expert_indices = expert_indices.reshape(-1)
+                # if padding_mask is not None:
+                #     padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
+                #     valid_expert_indices = expert_indices.masked_select(padding_mask_expanded)
+                # else:
+                #     valid_expert_indices = expert_indices.reshape(-1)
+                valid_expert_indices = expert_indices.view(-1)
 
                 # Update unique experts metric.
                 unique_experts = torch.unique(valid_expert_indices)
@@ -162,12 +170,13 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
 
                 # Compute router distribution entropy metric
                 # calculate entropy of the router distribution over experts. NOTE: this should be much lower than document-level, since some experts are already masked out
-                if padding_mask is not None:
-                    # only consider non-padded tokens
-                    padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
-                    valid_scores = scores.masked_select(padding_mask_expanded).view(-1, self.num_experts)
-                else:
-                    valid_scores = scores.view(-1, self.num_experts)
+                # if padding_mask is not None:
+                #     # only consider non-padded tokens
+                #     padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
+                #     valid_scores = scores.masked_select(padding_mask_expanded).view(-1, self.num_experts)
+                # else:
+                #     valid_scores = scores.view(-1, self.num_experts)
+                valid_scores = scores.view(-1, self.num_experts)
                 # get entropy per token
                 token_entropies = -torch.sum(valid_scores * torch.log(valid_scores + 1e-10), dim=-1)
                 # average entropy over valid tokens
