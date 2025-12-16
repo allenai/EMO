@@ -49,3 +49,10 @@ class ExpertPoolSchedulerCallback(Callback):
 
         for r in self._routers:
             r.document_expert_pool = current_pool
+
+    def post_step(self):
+        """Log the current document expert pool size to metrics."""
+        if hasattr(self, "_routers") and self._routers:
+            # All routers have the same value, so just read from the first one
+            current_pool = self._routers[0].document_expert_pool
+            self.trainer.record_metric("train/document_expert_pool", current_pool)
