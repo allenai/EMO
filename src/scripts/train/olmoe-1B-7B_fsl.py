@@ -59,13 +59,13 @@ from olmo_core.train.callbacks.expert_pool_scheduler import ExpertPoolSchedulerC
 log = logging.getLogger(__name__)
 
 # HACK
-DATA_ROOT = "/weka/oe-training-default/ai2-llm"
-# DATA_ROOT = "/root/ryanwang"
+# DATA_ROOT = "/weka/oe-training-default/ai2-llm"
+DATA_ROOT = "/root/ryanwang"
 
 SEQUENCE_LENGTH = 4096
-# GLOBAL_BATCH_SIZE = 8 * SEQUENCE_LENGTH
+GLOBAL_BATCH_SIZE = 8 * SEQUENCE_LENGTH
 # GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
-GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
+# GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
 
 def parse_poolsched(spec: str):
     if spec is None:
@@ -360,22 +360,22 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback("beaker", BeakerCallback())
         .with_callback("config_saver", ConfigSaverCallback())
         .with_callback("profiler", ProfilerCallback(enabled=False))
-        .with_callback(
-            "downstream_evaluator",
-            # https://github.com/allenai/OLMo-in-loop-evals/blob/main/src/olmo_eval/tasks.py#L1752
-            DownstreamEvaluatorCallbackConfig(
-                tasks=["hellaswag", "arc_challenge", "piqa", "copa", "mmlu_stem", "mmlu_humanities",
-                       "mmlu_social_sciences", "mmlu_other"],
-                tokenizer=tokenizer_config,
-                eval_interval=250,
-            ),
-        )
         # .with_callback(
-        #     "expert_pool_scheduler",
-        #     ExpertPoolSchedulerCallback(
-        #         **parse_poolsched(opts.poolsched)
+        #     "downstream_evaluator",
+        #     # https://github.com/allenai/OLMo-in-loop-evals/blob/main/src/olmo_eval/tasks.py#L1752
+        #     DownstreamEvaluatorCallbackConfig(
+        #         tasks=["hellaswag", "arc_challenge", "piqa", "copa", "mmlu_stem", "mmlu_humanities",
+        #                "mmlu_social_sciences", "mmlu_other"],
+        #         tokenizer=tokenizer_config,
+        #         eval_interval=250,
         #     ),
         # )
+        .with_callback(
+            "expert_pool_scheduler",
+            ExpertPoolSchedulerCallback(
+                **parse_poolsched(opts.poolsched)
+            ),
+        )
     )
 
     config = ExperimentConfig(
