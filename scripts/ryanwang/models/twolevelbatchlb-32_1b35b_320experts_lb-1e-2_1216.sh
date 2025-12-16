@@ -51,7 +51,7 @@ python -m olmo_core.launch.beaker \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="moe" \
 		--model.block.attention.qk_norm=null \
-		--model.block.feed_forward_moe.lb_loss_weight=1e-1 \
+		--model.block.feed_forward_moe.lb_loss_weight=1e-2 \
     --trainer.hard_stop='{value: 750, unit: steps}'
 
 
