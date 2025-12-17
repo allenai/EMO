@@ -153,7 +153,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     if not work_dir:
         work_dir = "/tmp/dataset-cache"
 
-    tokenizer_config = TokenizerConfig.gpt2()
+    tokenizer_config = TokenizerConfig.dolma2()
 
     # docs: start-model-config
     # model_config = TransformerConfig.olmoe_1B_7B(
