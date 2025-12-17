@@ -169,8 +169,8 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     model_config = TransformerConfig.smallmoe(
         vocab_size=tokenizer_config.padded_vocab_size(),
         n_layers=2,
-        d_model=4,
-        num_experts=3,
+        d_model=128,
+        num_experts=33,
         freeze_params=[
             "embeddings.*",
             "blocks.*.attention*",

@@ -741,12 +741,13 @@ class TransformerConfig(Config):
             layer_norm_eps=1e-6,
             feed_forward_moe=MoEConfig(
                 name=MoEType.dropless,
-                num_experts=64,
+                num_experts=kwargs.pop("num_experts", 64),
                 hidden_size=int(0.5 * d_model),
                 router=MoERouterConfig(top_k=8),
                 lb_loss_weight=0.01,
                 z_loss_weight=0.001,
             ),
+            **kwargs,
         )
 
     @classmethod
