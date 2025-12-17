@@ -51,7 +51,7 @@ DATA_ROOT = "/weka/oe-training-default/ai2-llm"
 
 SEQUENCE_LENGTH = 4096
 # GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
-GLOBAL_BATCH_SIZE = 512 * SEQUENCE_LENGTH
+GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
 
 
 # docs: start-define-config
@@ -163,7 +163,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         n_layers=16,
         d_model=2048,
         n_heads=16,
-        num_experts=321,
+        num_experts=129,
         top_k=8,
         freeze_params=[
             "embeddings.*",
@@ -178,6 +178,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
     # DEBUG / TEST
     # model = model_config.build(init_device="cpu")
+    # print(model)
     # import sys; sys.exit(0)
 
     # docs: end-model-config
