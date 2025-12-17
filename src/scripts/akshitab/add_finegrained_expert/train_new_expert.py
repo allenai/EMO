@@ -16,11 +16,7 @@ import rich
 import torch
 
 from olmo_core.config import Config, DType
-from olmo_core.data import (
-    NumpyDataLoaderConfig,
-    NumpyFSLDatasetConfig,
-    TokenizerConfig,
-)
+from olmo_core.data import NumpyDataLoaderConfig, NumpyFSLDatasetConfig, TokenizerConfig
 from olmo_core.data.mixes import DataMix
 from olmo_core.data.numpy_dataset import NumpyDatasetConfig
 from olmo_core.distributed.parallel import DataParallelType
@@ -84,7 +80,7 @@ class ExperimentConfig(Config):
 
 
 def partial_freeze_router_and_experts(
-    model_config: TransformerConfig, name: str, param: torch.nn.Parameter
+    model_config: TransformerConfig, name: str, param: torch.nn.Parameter, num_experts_to_freeze: int = 1,
 ) -> Optional[torch.Tensor]:
     if "experts" in name or "router" in name:
         mask = torch.ones_like(param, dtype=torch.bool)
@@ -92,7 +88,7 @@ def partial_freeze_router_and_experts(
         num_experts = model_config.block.feed_forward_moe.num_experts
         expert_size = param.shape[0] // num_experts
         # Freeze all but the last expert
-        mask = freeze_indices(dim=0, indices=list(range(0, expert_size * (num_experts - 1))))(
+        mask = freeze_indices(dim=0, indices=list(range(0, expert_size * (num_experts - num_experts_to_freeze))))(
             name, param
         )
         return mask.float()
@@ -156,21 +152,19 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     tokenizer_config = TokenizerConfig.dolma2()
 
     # docs: start-model-config
-    # model_config = TransformerConfig.olmoe_1B_7B(
-    #     vocab_size=tokenizer_config.padded_vocab_size(),  # a little bigger than actual vocab size to make it a multiple of 128
-    #     freeze_params=["embeddings.*", "blocks.*.attention*", "blocks.*.feed_forward_norm.*", "lm_head.*"],
-    # )
 
     global PARTIAL_FREEZE_FN_REGISTRY
     PARTIAL_FREEZE_FN_REGISTRY[
         "partial_freeze_router_and_experts"
     ] = partial_freeze_router_and_experts
 
-    model_config = TransformerConfig.smallmoe(
+    model_config = TransformerConfig.olmoe_1B_7B(
         vocab_size=tokenizer_config.padded_vocab_size(),
         n_layers=2,
-        d_model=128,
-        num_experts=33,
+        d_model=2048,
+        n_heads=16,
+        num_experts=321,
+        top_k=8,
         freeze_params=[
             "embeddings.*",
             "blocks.*.attention*",
@@ -191,7 +185,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     log.info(f"Using data root: {DATA_ROOT}")
 
     dataset_config = NumpyFSLDatasetConfig.from_data_mix(
-        DataMix.OLMo_mix_0625,
+        DataMix.OLMoE_mix_0824,
         tokenizer=tokenizer_config,
         mix_base_dir=DATA_ROOT,
         sequence_length=SEQUENCE_LENGTH,
@@ -202,7 +196,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     data_loader_config = NumpyDataLoaderConfig(
-        global_batch_size=256 * 1024,  # NOTE: this is specified in tokens, not instances
+        global_batch_size=GLOBAL_BATCH_SIZE,  # NOTE: this is specified in tokens, not instances
         seed=0,
         num_workers=4,
     )

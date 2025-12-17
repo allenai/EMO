@@ -743,7 +743,7 @@ class TransformerConfig(Config):
                 name=MoEType.dropless,
                 num_experts=kwargs.pop("num_experts", 64),
                 hidden_size=int(0.5 * d_model),
-                router=MoERouterConfig(top_k=8),
+                router=MoERouterConfig(top_k=kwargs.pop("top_k", 8)),
                 lb_loss_weight=0.01,
                 z_loss_weight=0.001,
             ),
