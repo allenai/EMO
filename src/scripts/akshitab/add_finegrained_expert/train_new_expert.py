@@ -160,7 +160,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
     model_config = TransformerConfig.olmoe_1B_7B(
         vocab_size=tokenizer_config.padded_vocab_size(),
-        n_layers=2,
+        n_layers=16,
         d_model=2048,
         n_heads=16,
         num_experts=321,
