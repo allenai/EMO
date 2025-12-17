@@ -27,6 +27,8 @@ if TYPE_CHECKING:
     from .block import TransformerBlockBase
     from .model import Transformer
 
+PARTIAL_FREEZE_FN_REGISTRY = {}
+
 log = logging.getLogger(__name__)
 
 
@@ -277,6 +279,7 @@ class TransformerConfig(Config):
     init_seed: int = 0
     init_std: float = 0.02
     freeze_params: Optional[List[str]] = None
+    partial_freeze_params_mask_fn_name: Optional[str] = None
     block_overrides: Optional[Dict[int, TransformerBlockConfig]] = None
 
     def build(
@@ -352,12 +355,22 @@ class TransformerConfig(Config):
                 else:
                     log.info(f"Param '{name}' will be trainable")
 
+        partial_freeze_params_mask_fn = PARTIAL_FREEZE_FN_REGISTRY.get(
+            self.partial_freeze_params_mask_fn_name, None
+        )
+        if partial_freeze_params_mask_fn is not None:
+            for name, param in model.named_parameters():
+                mask = partial_freeze_params_mask_fn(self, name, param)
+                if mask is not None and param.requires_grad:
+                    param.register_hook(lambda grad: grad * mask.to(grad.device))
+                    log.info(f"Param '{name}' will be partially frozen")
+
         log.info("%s", model)
         log.info(
             f"Built model with:\n"
             f"- {model.num_params:,d} total params\n"
             f"- {model.num_non_embedding_params:,d} non-embedding params\n"
-            f"- {model.num_trainable_params:,d} trainable params"
+            f"- {model.num_trainable_params:,d} trainable params"  # TODO: doesn't consider partially frozen params
         )
 
         return model
@@ -679,13 +692,14 @@ class TransformerConfig(Config):
             layer_norm_eps=1e-6,
             feed_forward_moe=MoEConfig(
                 name=MoEType.default,
-                num_experts=32,
+                num_experts=kwargs.pop("num_experts", 32),
                 hidden_size=int(0.5 * d_model),
                 router=MoERouterConfig(top_k=4),
                 shared_mlp=FeedForwardConfig(hidden_size=d_model * 2),
                 lb_loss_weight=0.01,
                 z_loss_weight=0.001,
             ),
+            **kwargs,
         )
 
     @classmethod
