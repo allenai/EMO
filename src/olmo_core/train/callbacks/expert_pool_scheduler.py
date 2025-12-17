@@ -17,8 +17,6 @@ class ExpertPoolSchedulerCallback(Callback):
             if isinstance(m, MoETwoLevelBatchLBRouter):
                 routers.append(m)
 
-        breakpoint()
-
         # if routers is empty, return
         if not routers or self.min_pool==-1 or self.decay_steps==-1:
             return
@@ -30,7 +28,6 @@ class ExpertPoolSchedulerCallback(Callback):
 
     def pre_step(self, batch):
         # Runs before each training step; adjust pool based on global_step.
-        breakpoint()
         del batch
         if not getattr(self, "_routers", None) or self._num_experts is None:
             return
