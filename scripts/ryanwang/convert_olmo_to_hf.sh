@@ -170,7 +170,7 @@ for MODEL in "${MODELS[@]}"; do
 #          --dtype float32 \
 #          --skip-validation
   gantry run \
-    --name convert-${MODEL} \
+    --name convert-${MODEL//\//_} \
     --weka oe-training-default:/weka/oe-training-default \
     --install 'pip install -e .[all]' \
     --budget ai2/oceo \
