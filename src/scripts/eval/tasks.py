@@ -6,8 +6,8 @@ from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 def get_task_configs():
     TASK_CONFIGS.update(
         {
-            "gsm8k:generation_train_0shot::olmes": {
-                "task_name": "gsm8k:generation_train_0shot",
+            "gsm8k_generation:train_0shot::olmes": {
+                "task_name": "gsm8k_generation:train_0shot",
                 "split": "train",
                 "primary_metric": "bits_per_byte",
                 "num_shots": 0,
@@ -16,8 +16,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "gsm8k:generation_validation_0shot::olmes": {
-                "task_name": "gsm8k:generation_validation_0shot",
+            "gsm8k_generation:validation_0shot::olmes": {
+                "task_name": "gsm8k_generation:validation_0shot",
                 "split": "validation",
                 "primary_metric": "bits_per_byte",
                 "num_shots": 0,
@@ -26,8 +26,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "gsm8k:generation_test_0shot::olmes": {
-                "task_name": "gsm8k:generation_test_0shot",
+            "gsm8k_generation:test_0shot::olmes": {
+                "task_name": "gsm8k_generation:test_0shot",
                 "split": "test",
                 "primary_metric": "exact_match",
                 "num_shots": 0,
@@ -103,7 +103,7 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-            "gsm8k:perplexity_train::olmes":{
+            "gsm8k_perplexity:train::olmes":{
                 "task_name": "gsm8k:perplexity_train",
                 "split": "train",
                 "primary_metric": "bits_per_byte",
@@ -113,7 +113,7 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "gsm8k:perplexity_validation::olmes":{
+            "gsm8k_perplexity:validation::olmes":{
                 "task_name": "gsm8k:perplexity_validation",
                 "split": "validation",
                 "primary_metric": "bits_per_byte",
@@ -123,7 +123,7 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "gsm8k:perplexity_train_0shot::olmes": {
+            "gsm8k_perplexity:train_0shot::olmes": {
                 "task_name": "gsm8k:perplexity_train_0shot",
                 "split": "train",
                 "primary_metric": "bits_per_byte",
@@ -133,7 +133,7 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "gsm8k:perplexity_validation_0shot::olmes": {
+            "gsm8k_perplexity:validation_0shot::olmes": {
                 "task_name": "gsm8k:perplexity_validation_0shot",
                 "split": "validation",
                 "primary_metric": "bits_per_byte",
@@ -143,7 +143,7 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "gsm8k:perplexity_test::olmes":{
+            "gsm8k_perplexity:test::olmes":{
                 "task_name": "gsm8k:perplexity_test",
                 "split": "test",
                 "primary_metric": "bits_per_byte",

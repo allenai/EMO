@@ -69,9 +69,13 @@ echo "~~~~~~~~~ get validation and train examples ~~~~~~~~~"
 if [[ "$GROUP_NAME" == *_zeroshot* ]]; then
     # remove "_zeroshot" from GROUP_NAME
     GROUP_NAME="${GROUP_NAME//_zeroshot/}"
-    if [[ "$GROUP_NAME" == *gsm8k* ]]; then
-        validation_task_name="$GROUP_NAME:perplexity_validation_0shot::olmes"
-        train_task_name="$GROUP_NAME:perplexity_train_0shot::olmes"
+    if [[ "$GROUP_NAME" == *gsm8k_generation* ]]; then
+        validation_task_name="$GROUP_NAME:validation_0shot::olmes"
+        train_task_name="$GROUP_NAME:train_0shot::olmes"
+    elif [[ "$GROUP_NAME" == *gsm8k_perplexity* ]]; then
+        # the gsm8k perplexity
+        validation_task_name="$GROUP_NAME:validation_0shot::olmes"
+        train_task_name="$GROUP_NAME:train_0shot::olmes"
     elif [[ "$GROUP_NAME" == *mmlu* ]]; then
         validation_task_name="$GROUP_NAME:rc_validation_0shot::olmes"
         train_task_name="" # set to empty string since there's no train set
@@ -80,9 +84,9 @@ if [[ "$GROUP_NAME" == *_zeroshot* ]]; then
         train_task_name="$GROUP_NAME:rc_train_0shot::olmes"
     fi
 else
-    if [[ "$GROUP_NAME" == *gsm8k* ]]; then
-        validation_task_name="$GROUP_NAME:perplexity_validation::olmes"
-        train_task_name="$GROUP_NAME:perplexity_train::olmes"
+    if [[ "$GROUP_NAME" == *gsm8k_perplexity* ]]; then
+        validation_task_name="$GROUP_NAME:validation::olmes"
+        train_task_name="$GROUP_NAME:train::olmes"
     elif [[ "$GROUP_NAME" == *mmlu* ]]; then
         validation_task_name="$GROUP_NAME:rc_validation::olmes"
         train_task_name="" # set to empty string since there's no train set
