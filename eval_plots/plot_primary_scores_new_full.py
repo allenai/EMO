@@ -32,6 +32,8 @@ TASKS: List[str] = [
     "piqa:rc_test",
     "socialiqa:rc_test",
     "winogrande:rc_test",
+    "gsm8k_generation:train_0shot",
+    "synthea:rc_train_0shot",
 ]
 
 # Relative steps per task to compare across both model families.
@@ -57,6 +59,8 @@ TASK_STEPS = {
     "piqa:rc_test":           [0, 283, 566, 849, 1132, 1416],
     "socialiqa:rc_test":      [0, 607, 1214, 1821, 2428, 3036],
     "winogrande:rc_test":     [0, 738, 1476, 2214, 2952, 3693],
+    "gsm8k_generation:train_0shot": [0, 121, 242, 363, 484, 606],
+    "synthea:rc_train_0shot": [0, 161, 322, 483, 644, 807],
 }
 
 # Family color mapping - define base colors for each model family
@@ -187,11 +191,23 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "label": "dense finetuned",
         "template": (
             "dense_1b_olmoe-mix_prenorm_noqknorm_1123_step30995_newdefault_lr-4e-5_"
-            "finetune-task-{task_core}_rc_train_step{step}-hf"
+            "finetune-task-{task_core}{task_suffix}_step{step}-hf"
         ),
         "family": "dense",
         "marker": "v",              # Triangle down for dense
         "brightness": 1.0,
+        "linewidth": 2,
+        "markersize": 9,
+    },
+    {
+        "label": "dense finetuned (synthea lr-4e-6)",
+        "template": (
+            "dense_1b_olmoe-mix_prenorm_noqknorm_1123_step30995_newdefault_lr-4e-6_bs-128_"
+            "finetune-task-{task_core}{task_suffix}_step{step}-hf"
+        ),
+        "family": "dense",
+        "marker": "v",
+        "brightness": 0.8,          # Slightly darker to distinguish
         "linewidth": 2,
         "markersize": 9,
     },
@@ -311,7 +327,22 @@ def parse_args() -> argparse.Namespace:
 
 
 def task_core_from_name(task_name: str) -> str:
+    """Extract task core from task name for use in model paths."""
+    # Special cases for tasks with different naming in model paths
+    if task_name == "synthea:rc_train_0shot":
+        return "synthea_rc"
     return task_name.split(":", 1)[0]
+
+
+def get_task_suffix(task_name: str) -> str:
+    """Get the suffix pattern for task in model paths (e.g., '_rc_train', '_train_0shot')."""
+    if task_name == "gsm8k_generation:train_0shot":
+        return "_train_0shot"
+    elif task_name == "synthea:rc_train_0shot":
+        return "_train_0shot"
+    else:
+        # Default pattern for other tasks
+        return "_rc_train"
 
 
 def collect_primary_scores(
@@ -325,10 +356,13 @@ def collect_primary_scores(
     """Load primary_score values for a model template across the provided steps."""
     records: List[Dict[str, float]] = []
     primary_metric_name: str | None = None
+    task_suffix = get_task_suffix(task_name)
 
     for step in steps:
         try:
-            formatted_path = model_template.format(step=step, task_core=task_core)
+            # Replace {task_suffix} placeholder if present, otherwise use default _rc_train
+            template_to_format = model_template.replace("{task_suffix}", task_suffix)
+            formatted_path = template_to_format.format(step=step, task_core=task_core)
         except KeyError as exc:
             raise KeyError(
                 f"Template {model_template!r} missing placeholder {exc}."
