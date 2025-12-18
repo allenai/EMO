@@ -192,16 +192,17 @@ for MODEL_NAME in "${MODELS[@]}"; do
             batch_size=$BATCH_SIZE
         fi
 
-        # if the model is a 35b model, further reduce batch size by half
-        if [[ $MODEL_NAME == *"1b35b"* ]]; then
-            batch_size=$((batch_size / 4))
-        fi
-
         # adjust number of gpus requested if its mmlu, agi_eval, bbh, gsm8k, minerva, codex, mbpp
         if [[ $TASK == *mmlu* || $TASK == *agi_eval* || $TASK == *bbh* || $TASK == *gsm8k* || $TASK == *minerva_math_* || $TASK == *codex* || $TASK == *mbpp* ]]; then
             gpus=4
         else
             gpus=1
+        fi
+
+        # if the model is a 35b model, further reduce batch size by half
+        if [[ $MODEL_NAME == *"1b35b"* ]]; then
+            batch_size=$((batch_size / 4))
+            gpus=$((gpus * 2))
         fi
 
         # Create a shorter, valid job name
