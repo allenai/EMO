@@ -15,14 +15,14 @@ PARENT_MODELS=(
 #    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
 
 #    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
+#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995"
 #    "twolevelbatchlb-8_1b7b_stability_1207/step30995"
 
 
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995"
 
-#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
+    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
 )
 
