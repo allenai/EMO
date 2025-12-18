@@ -10,7 +10,7 @@ PARENT_MODELS=(
 
 #    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
 
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
+#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995"
 #    "twolevelbatchlb-8_1b7b_stability_1207/step30995"
 
@@ -92,7 +92,7 @@ FINETUNE_TASKS=(
 #    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step2952"
 #    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step3693"
 
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step0"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step0"
     "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step121"
     "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step242"
     "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step363"
@@ -118,6 +118,8 @@ for BASE in "${PARENT_MODELS[@]}"; do
 
     # Beaker names can only contain letters, digits, periods, dashes, and underscores.
     job_name="convert_${FINETUNE//\//_}"
+    # limit to 120 char
+    job_name=${job_name:0:120}
 
     # launch the gantry run and delete the original model
 
