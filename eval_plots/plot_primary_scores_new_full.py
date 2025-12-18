@@ -99,18 +99,18 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "linewidth": 2,
         "markersize": 9,
     },
-    {
-        "label": "twolevelbatchlb train32/128 keepk8",
-        "template": (
-            f"{MAIN_MODEL}_"
-            "task-{task_core}_rc_validation_keepk8_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-        ),
-        "family": "twolevelbatchlb train32/128",
-        "marker": "o",
-        "brightness": 0.7,
-        "linewidth": 2,
-        "markersize": 9,
-    },
+    # {
+    #     "label": "twolevelbatchlb train32/128 keepk8",
+    #     "template": (
+    #         f"{MAIN_MODEL}_"
+    #         "task-{task_core}_rc_validation_keepk8_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
+    #     ),
+    #     "family": "twolevelbatchlb train32/128",
+    #     "marker": "o",
+    #     "brightness": 0.7,
+    #     "linewidth": 2,
+    #     "markersize": 9,
+    # },
 # {
     #     "label": "twolevelbatchlb train32/128 keepk32 lr high",
     #     "template": (
