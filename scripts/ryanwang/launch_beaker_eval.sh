@@ -236,6 +236,7 @@ for MODEL_NAME in "${MODELS[@]}"; do
             --workspace ai2/flex2 \
             --cluster $CLUSTER \
             --priority urgent \
+            --allow-dirty \
             --gpus $gpus \
             --env-secret HF_TOKEN=RYAN_HF_TOKEN \
             --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \

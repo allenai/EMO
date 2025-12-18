@@ -83,7 +83,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "label": "moe keepk32",
         "template": (
             "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123_step30995_"
-            "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
+            "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}{task_suffix}_step{step}-hf"
         ),
         "family": "moe",
         "marker": "o",              # matplotlib marker style (o=circle, s=square, ^=triangle, etc.)
@@ -95,7 +95,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "label": "twolevelbatchlb train32/128 keepk32",
         "template": (
             f"{MAIN_MODEL}_"
-            "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
+            "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}{task_suffix}_step{step}-hf"
         ),
         "family": "twolevelbatchlb train32/128",
         "marker": "o",
@@ -198,6 +198,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "brightness": 1.0,
         "linewidth": 2,
         "markersize": 9,
+        "exclude_tasks": ["synthea:rc_train_0shot"],  # Exclude synthea (uses different template)
     },
     {
         "label": "dense finetuned (synthea lr-4e-6)",
@@ -210,6 +211,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "brightness": 0.8,          # Slightly darker to distinguish
         "linewidth": 2,
         "markersize": 9,
+        "tasks": ["synthea:rc_train_0shot"],  # Only apply to synthea task
     },
 
 
@@ -427,6 +429,14 @@ def build_dataframe(
     task_core = task_core_from_name(task_name)
 
     for group_label, template in MODEL_GROUPS.items():
+        # Check if this model run is restricted to specific tasks or excluded from this task
+        run_config = next((r for r in MODEL_RUNS if r["label"] == group_label), None)
+        if run_config:
+            if "tasks" in run_config and task_name not in run_config["tasks"]:
+                continue  # Skip this model run for this task
+            if "exclude_tasks" in run_config and task_name in run_config["exclude_tasks"]:
+                continue  # Skip this model run for excluded tasks
+        
         records, group_metric = collect_primary_scores(
             evals_root,
             template,

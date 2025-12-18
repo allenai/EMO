@@ -23,7 +23,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-4e-5_bs-128"
+variation="newdefault_lr-4e-6_bs-128"
 
 #expertiment_tag="finetuning"
 expertiment_tag="finetune_ablate"
@@ -165,7 +165,7 @@ for train_task_name in "${train_task_names[@]}"; do
 
     python -m olmo_core.launch.beaker \
       --name $runname \
-      --gpus 4 \
+      --gpus 8 \
       --nodes 1 \
       --is_private_repo \
       --weka=oe-training-default \
