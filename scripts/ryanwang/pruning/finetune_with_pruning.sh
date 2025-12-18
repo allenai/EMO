@@ -35,7 +35,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-4e-6"
+variation="newdefault_lr-4e-6_bs-128"
 
 experiment_tag="pruned_finetuning"
 #experiment_tag="pruned_finetuning_ablate"
@@ -52,6 +52,9 @@ elif [ "$variation" == "newdefault_lr-4e-4" ]; then
     variation_flags="--train_module.optim.lr=4e-4"
 elif [ "$variation" == "newdefault_lr-4e-6" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
+    variation_flags="--train_module.optim.lr=4e-6"
+elif [ "$variation" == "newdefault_lr-4e-6_bs-128" ]; then
+    # reinitialize optim and use masked finetuning (should be checked) and batch size of 128 (should be checked)
     variation_flags="--train_module.optim.lr=4e-6"
 else
     echo "Warning: Unknown variation '$variation'. Using default settings."
@@ -214,7 +217,7 @@ for model_name in "${model_names[@]}"; do
 		        --model.block.attention.qk_norm=null \
 		        --trainer.load_optim_state=false \
 		        --trainer.load_trainer_state=false \
-		        --global_batch_size=32 \
+		        --global_batch_size=128 \
 		        --model-type="masked-finetune" \
             $variation_flags
 
