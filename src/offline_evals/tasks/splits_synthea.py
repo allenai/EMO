@@ -45,7 +45,6 @@ class Synthea(MultipleChoiceTask):
         train_data = load_jsonl(train_set_1) + load_jsonl(train_set_2)
         val_data = load_jsonl(val_set_1) + load_jsonl(val_set_2)
         test_data = load_jsonl(test_set_1) + load_jsonl(test_set_2)
-        breakpoint()
 
         self.dataset = {"train": train_data, "val": val_data, "test": test_data}
 
@@ -75,13 +74,12 @@ class Synthea(MultipleChoiceTask):
         return "Answer:"
 
     def _process_doc(self, doc):
-        breakpoint()
         prompt = doc["prompt"]
         question_idx = prompt.rfind("\nA. ")
         if prompt.count("\nA. ") != 1:
             breakpoint()
 
-        question = prompt[:question_idx]
+        question = prompt[:question_idx].strip()
 
         query = make_cloze_prompt(question)
         out_doc = {
