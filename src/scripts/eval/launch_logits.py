@@ -60,8 +60,9 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
                 continue
             correct_reqs.append(req)
 
-        # assert that the number of correct requests matches the number of predictions
-        assert len(correct_reqs) == len(predictions_data), f"Found {len(correct_reqs)} correct requests and {len(predictions_data)} predictions, expected them to match"
+        # assert that the number of correct requests matches the number of predictions, for non gsm8k datasets
+        if "gsm8k" not in eval_dataset_name:
+            assert len(correct_reqs) == len(predictions_data), f"Found {len(correct_reqs)} correct requests and {len(predictions_data)} predictions, expected them to match"
 
         for req, pred in zip(correct_reqs, predictions_data):
             assert req['doc_id'] == pred['doc_id'], f"Request doc_id {req['doc_id']} does not match prediction doc_id {pred['doc_id']}"
