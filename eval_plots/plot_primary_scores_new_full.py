@@ -83,7 +83,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "label": "moe keepk32",
         "template": (
             "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123_step30995_"
-            "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}{task_suffix}_step{step}-hf"
+            "task-{task_core}{validation_suffix}_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}{task_suffix}_step{step}-hf"
         ),
         "family": "moe",
         "marker": "o",              # matplotlib marker style (o=circle, s=square, ^=triangle, etc.)
@@ -95,7 +95,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "label": "twolevelbatchlb train32/128 keepk32",
         "template": (
             f"{MAIN_MODEL}_"
-            "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}{task_suffix}_step{step}-hf"
+            "task-{task_core}{validation_suffix}_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}{task_suffix}_step{step}-hf"
         ),
         "family": "twolevelbatchlb train32/128",
         "marker": "o",
@@ -347,6 +347,17 @@ def get_task_suffix(task_name: str) -> str:
         return "_rc_train"
 
 
+def get_validation_suffix(task_name: str) -> str:
+    """Get the validation suffix pattern for task in model paths (e.g., '_rc_validation', '_validation_0shot')."""
+    if task_name == "gsm8k_generation:train_0shot":
+        return "_validation_0shot"
+    elif task_name == "synthea:rc_train_0shot":
+        return "_rc_validation_0shot"
+    else:
+        # Default pattern for other tasks
+        return "_rc_validation"
+
+
 def collect_primary_scores(
         evals_root: Path,
         model_template: str,
@@ -359,11 +370,13 @@ def collect_primary_scores(
     records: List[Dict[str, float]] = []
     primary_metric_name: str | None = None
     task_suffix = get_task_suffix(task_name)
+    validation_suffix = get_validation_suffix(task_name)
 
     for step in steps:
         try:
-            # Replace {task_suffix} placeholder if present, otherwise use default _rc_train
+            # Replace {task_suffix} and {validation_suffix} placeholders if present
             template_to_format = model_template.replace("{task_suffix}", task_suffix)
+            template_to_format = template_to_format.replace("{validation_suffix}", validation_suffix)
             formatted_path = template_to_format.format(step=step, task_core=task_core)
         except KeyError as exc:
             raise KeyError(
