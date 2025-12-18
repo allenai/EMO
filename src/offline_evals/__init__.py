@@ -29,6 +29,7 @@ from .tasks import (
     splits_siqa,
     splits_winogrande,
     splits_gsm8k,
+    splits_synthea
 )
 
 
@@ -144,6 +145,12 @@ new_task_registry: Dict = {
     "winogrande:rc_train_0shot": splits_winogrande.Winogrande_RC_Train_0shot,
     "winogrande:rc_validation_0shot": splits_winogrande.Winogrande_RC_Validation_0shot,
     "winogrande:rc_test": splits_winogrande.Winogrande_RC_Test,
+    "synthea:rc_train": splits_synthea.Synthea_RC_Train,
+    "synthea:rc_validation": splits_synthea.Synthea_RC_Validation,
+    "synthea:rc_test": splits_synthea.Synthea_RC_Test,
+    "synthea:rc_train_0shot": splits_synthea.Synthea_RC_Train_0shot,
+    "synthea:rc_validation_0shot": splits_synthea.Synthea_RC_Validation_0shot,
+    "synthea:rc_test_0shot": splits_synthea.Synthea_RC_Test_0shot,
 
     # MMLU
     **create_core_mmlu_tasks_withsplits(),

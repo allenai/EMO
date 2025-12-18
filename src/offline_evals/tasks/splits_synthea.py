@@ -45,6 +45,7 @@ class Synthea(MultipleChoiceTask):
         train_data = load_jsonl(train_set_1) + load_jsonl(train_set_2)
         val_data = load_jsonl(val_set_1) + load_jsonl(val_set_2)
         test_data = load_jsonl(test_set_1) + load_jsonl(test_set_2)
+        breakpoint()
 
         self.dataset = {"train": train_data, "val": val_data, "test": test_data}
 
@@ -74,22 +75,42 @@ class Synthea(MultipleChoiceTask):
         return "Answer:"
 
     def _process_doc(self, doc):
-        # NOTE: Some `doc["answerKey"]`s are in numeric string format being one
-        # of {'1', '2', '3', '4', '5'}. We map them back to letters.
-        # Question: When a switch is used in an electrical circuit, the switch can
-        # Answer: stop and start the flow of current.
-        num_to_letter = {"1": "A", "2": "B", "3": "C", "4": "D", "5": "E"}
-        doc["answerKey"] = num_to_letter.get(doc["answerKey"], doc["answerKey"])
-        query = make_cloze_prompt(doc["question"])
+        breakpoint()
+        prompt = doc["prompt"]
+        question_idx = prompt.rfind("\nA. ")
+        if prompt.count("\nA. ") != 1:
+            breakpoint()
+
+        question = prompt[:question_idx]
+
+        query = make_cloze_prompt(question)
         out_doc = {
             "id": doc["id"],
             "query": query,
-            "choices": doc["choices"]["text"],
-            "gold": ["A", "B", "C", "D", "E"].index(doc["answerKey"]),
+            "choices": doc["choices"],
+            "gold": int(doc["answer_idx"]),
         }
         return out_doc
 
     def doc_to_text(self, doc):
         return doc["query"]
+
+class Synthea_RC_Train(Synthea):
+    pass
+
+class Synthea_RC_Validation(Synthea):
+    pass
+
+class Synthea_RC_Test(Synthea):
+    pass
+
+class Synthea_RC_Train_0shot(Synthea):
+    pass
+
+class Synthea_RC_Validation_0shot(Synthea):
+    pass
+
+class Synthea_RC_Test_0shot(Synthea):
+    pass
 
 

@@ -6,6 +6,69 @@ from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 def get_task_configs():
     TASK_CONFIGS.update(
         {
+            "synthea:rc_train_0shot::olmes": {
+                "task_name": "synthea:rc_train_0shot",
+                "split": "train",
+                "primary_metric": "acc_per_char",
+                "num_shots": 0,
+                "metadata": {
+                    "description": "synthea train using OLMES-v0.1",
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
+            "synthea:rc_validation_0shot::olmes": {
+                "task_name": "synthea:rc_validation_0shot",
+                "split": "validation",
+                "primary_metric": "acc_per_char",
+                "num_shots": 0,
+                "metadata": {
+                    "description": "synthea train using OLMES-v0.1",
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
+            "synthea:rc_test_0shot::olmes": {
+                "task_name": "synthea:rc_test_0shot",
+                "split": "test",
+                "primary_metric": "acc_per_char",
+                "num_shots": 0,
+                "metadata": {
+                    "description": "synthea train using OLMES-v0.1",
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+
+            "synthea:rc_train::olmes": {
+                "task_name": "synthea:rc_train",
+                "split": "train",
+                "primary_metric": "acc_per_char",
+                "num_shots": 5,
+                "metadata": {
+                    "description": "ARC-Easy (RC) test using OLMES-v0.1, on test split",
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "synthea:rc_validation::olmes": {
+                "task_name": "synthea:rc_validation",
+                "split": "validation",
+                "primary_metric": "acc_per_char",
+                "num_shots": 5,
+                "metadata": {
+                    "description": "ARC-Easy (RC) test using OLMES-v0.1, on test split",
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
+            "synthea:rc_test::olmes": {
+                "task_name": "synthea:rc_test",
+                "split": "test",
+                "primary_metric": "acc_per_char",
+                "num_shots": 5,
+                "metadata": {
+                    "description": "ARC-Easy (RC) test using OLMES-v0.1, on test split",
+                    "regimes": ["OLMES-v0.1"],
+                },
+            },
             "gsm8k:perplexity_train::olmes":{
                 "task_name": "gsm8k:perplexity_train",
                 "split": "train",
