@@ -186,9 +186,9 @@ for MODEL in "${MODELS[@]}"; do
     -- \
     bash -c '
     python src/examples/huggingface/convert_checkpoint_to_hf.py \
-      --checkpoint-input-path "'"${MODEL}"'" \
+      --checkpoint-input-path "'"${BASE_FOLDER}/${MODEL}"'" \
       --max-sequence-length 4096 \
-      --huggingface-output-dir "'"${MODEL}"'-hf" \
+      --huggingface-output-dir "'"${BASE_FOLDER}/${MODEL}"'-hf" \
       --dtype float32 \
       --skip-validation \
   '
