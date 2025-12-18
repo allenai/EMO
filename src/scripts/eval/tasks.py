@@ -21,6 +21,7 @@ def get_task_configs():
                 "task_name": "synthea:rc_validation_0shot",
                 "split": "validation",
                 "primary_metric": "acc_per_char",
+                "limit": 1000,
                 "num_shots": 0,
                 "metadata": {
                     "description": "synthea train using OLMES-v0.1",
@@ -32,6 +33,7 @@ def get_task_configs():
                 "task_name": "synthea:rc_test_0shot",
                 "split": "test",
                 "primary_metric": "acc_per_char",
+                "limit": 1000,
                 "num_shots": 0,
                 "metadata": {
                     "description": "synthea train using OLMES-v0.1",
@@ -54,6 +56,7 @@ def get_task_configs():
                 "split": "validation",
                 "primary_metric": "acc_per_char",
                 "num_shots": 5,
+                "limit": 1000,
                 "metadata": {
                     "description": "ARC-Easy (RC) test using OLMES-v0.1, on test split",
                     "regimes": ["OLMES-v0.1"],
@@ -64,6 +67,7 @@ def get_task_configs():
                 "split": "test",
                 "primary_metric": "acc_per_char",
                 "num_shots": 5,
+                "limit": 1000,
                 "metadata": {
                     "description": "ARC-Easy (RC) test using OLMES-v0.1, on test split",
                     "regimes": ["OLMES-v0.1"],
