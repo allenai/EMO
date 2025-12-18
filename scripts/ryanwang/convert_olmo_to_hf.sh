@@ -172,6 +172,7 @@ for MODEL in "${MODELS[@]}"; do
   gantry run \
     --name convert-${MODEL//\//_} \
     --weka oe-training-default:/weka/oe-training-default \
+    --beaker-image "ai2/cuda12.8-dev-ubuntu22.04-notorch" \
     --install 'pip install -e .[all] && pip install --no-build-isolation flash-attn==2.8.2' \
     --budget ai2/oceo \
     --workspace ai2/flex2 \
