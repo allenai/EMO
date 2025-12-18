@@ -10,20 +10,21 @@ PARENT_MODELS=(
 
 #    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
 
-#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
+    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995"
 #    "twolevelbatchlb-8_1b7b_stability_1207/step30995"
 
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995"
 
-#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
+    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
     "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
 )
 
 # used to iterate on different finetuning variations
 #postfix=""
-postfix="_keepk32/newdefault_lr-4e-5"
+#postfix="_keepk32/newdefault_lr-4e-5"
+postfix="_keepk32/newdefault_lr-4e-6_bs-128"
 #postfix="_keepk8/newdefault_lr-4e-5"
 #postfix="_keepk32"
 #postfix="_keepk32/lr-3e-5_warmup-0.2"
@@ -92,12 +93,20 @@ FINETUNE_TASKS=(
 #    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step2952"
 #    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step3693"
 
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step0"
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step121"
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step242"
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step363"
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step484"
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step606"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step0"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step121"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step242"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step363"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step484"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step606"
+
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step0"
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step161"
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step322"
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step483"
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step644"
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step807"
+
 
 )
 
