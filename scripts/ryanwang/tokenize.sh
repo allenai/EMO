@@ -27,7 +27,7 @@ train_task_names=(
 #  "socialiqa:rc_train::olmes"
 #  "winogrande:rc_train::olmes"
   "synthea:rc_train_0shot::olmes"
-  "gsm8k_generation:train_0shot::olmes"
+#  "gsm8k_generation:train_0shot::olmes"
 
 
 #  "arc_easy:rc_train_0shot::olmes"
