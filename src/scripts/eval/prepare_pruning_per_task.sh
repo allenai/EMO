@@ -117,6 +117,11 @@ PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
 
 echo "~~~~~~~~~ prepare expert activations on validation set ~~~~~~~~~"
 
+# if "synthea" in validation_task_name, divide batch_size by 4
+if [[ "$validation_task_name" == *synthea* ]]; then
+    BATCH_SIZE=$((BATCH_SIZE / 4))
+fi
+
 PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
   --model "$MODEL_PATH" \
   --task "$validation_task_name" \
