@@ -46,7 +46,7 @@ class Synthea(MultipleChoiceTask):
         val_data = load_jsonl(val_set_1) + load_jsonl(val_set_2)
         test_data = load_jsonl(test_set_1) + load_jsonl(test_set_2)
 
-        self.dataset = {"train": train_data, "val": val_data, "test": test_data}
+        self.dataset = {"train": train_data, "validation": val_data, "test": test_data}
 
     def has_training_docs(self):
         return True
