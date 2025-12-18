@@ -11,17 +11,17 @@ MODELS=(
 #    "dense_1b_olmoe-mix_1119/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995-hf"
 
-#    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995-hf"
+    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995-hf"
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_1121/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_1120/step30995-hf"
-#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
-#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
+    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
+    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995-hf"
 #    "twolevelsamplingnolb-32_1b10b_stability_1127/step30995-hf"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995-hf"
 
 #    "moe_1b35b_320experts_lb-1e-1_1214/step30995-hf"
-    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995-hf"
+#    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995-hf"
 
 #    "twolevelsamplingnolb-32_1b14b_stability_filter-true_zlossweight-1e-3_1116/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995-hf"
@@ -44,23 +44,26 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
-  "arc_easy|arc_easy:mc_test::olmes arc_easy:rc_test::olmes"
-  "arc_challenge|arc_challenge:mc_test::olmes arc_challenge:rc_test::olmes"
-  "boolq|boolq:mc_test::olmes boolq:rc_test::olmes"
-  "csqa|csqa:mc_test::olmes csqa:rc_test::olmes"
-  "hellaswag|hellaswag:mc_test::olmes hellaswag:rc_test::olmes"
-  "openbookqa|openbookqa:mc_test::olmes openbookqa:rc_test::olmes"
-  "piqa|piqa:mc_test::olmes piqa:rc_test::olmes"
-  "socialiqa|socialiqa:mc_test::olmes socialiqa:rc_test::olmes"
-  "winogrande|winogrande:mc_test::olmes winogrande:rc_test::olmes"
+#  "arc_easy|arc_easy:mc_test::olmes arc_easy:rc_test::olmes"
+#  "arc_challenge|arc_challenge:mc_test::olmes arc_challenge:rc_test::olmes"
+#  "boolq|boolq:mc_test::olmes boolq:rc_test::olmes"
+#  "csqa|csqa:mc_test::olmes csqa:rc_test::olmes"
+#  "hellaswag|hellaswag:mc_test::olmes hellaswag:rc_test::olmes"
+#  "openbookqa|openbookqa:mc_test::olmes openbookqa:rc_test::olmes"
+#  "piqa|piqa:mc_test::olmes piqa:rc_test::olmes"
+#  "socialiqa|socialiqa:mc_test::olmes socialiqa:rc_test::olmes"
+#  "winogrande|winogrande:mc_test::olmes winogrande:rc_test::olmes"
 
 #   MMLU
 #  "mmlu_mc_test|mmlu:mc_test::olmes"
 #  "mmlu_rc_test|mmlu:rc_test::olmes"
 
 #   Gen5 tasks
-  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes"
-  "drop|drop::olmes"
+#  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes"
+#  "drop|drop::olmes"
+
+  "synthea:rc_test_0shot::olmes"
+  "gsm8k_generation:test_0shot::olmes"
 
 #   GSM8K
 #  "gsm8k_test|gsm8k:perplexity_test::olmes"
