@@ -217,7 +217,7 @@ for model_name in "${model_names[@]}"; do
 		        --model.block.attention.qk_norm=null \
 		        --trainer.load_optim_state=false \
 		        --trainer.load_trainer_state=false \
-		        --global_batch_size=128 \
+		        --global_batch_size=32 \
 		        --model-type="masked-finetune" \
             $variation_flags
 
