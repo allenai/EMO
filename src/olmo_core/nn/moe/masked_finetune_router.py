@@ -42,7 +42,7 @@ from olmo_core.distributed.utils import get_local_tensor
 
 
 
-class MoEMaskedFinetuneRouterConfig(MoELinearRouter):
+class MoEMaskedFinetuneRouter(MoELinearRouter):
     """
     Custom MoE router with modified forward pass and additional class variables.
     """
@@ -219,7 +219,7 @@ class MoEMaskedFinetuneRouterConfig(MoERouterConfig):
             z_loss_weight: Optional[float] = None,
             dtype: Optional[torch.dtype] = None,
             init_device: str = "cpu",
-    ) -> MoEMaskedFinetuneRouterConfig:
+    ) -> MoEMaskedFinetuneRouter:
         """
         Build the pruning router.
         """
@@ -238,4 +238,4 @@ class MoEMaskedFinetuneRouterConfig(MoERouterConfig):
         elif dtype is not None:
             kwargs["dtype"] = dtype
 
-        return MoEMaskedFinetuneRouterConfig(**kwargs)
+        return MoEMaskedFinetuneRouter(**kwargs)
