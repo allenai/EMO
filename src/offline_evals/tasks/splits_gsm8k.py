@@ -25,6 +25,7 @@ from oe_eval.components.requests import RequestType, LoglikelihoodRequest
 from oe_eval.metrics import PerplexityMetric
 from oe_eval.metrics.metric import ExactMatch, MajAtK, MCAccuracy
 from oe_eval.tasks.base_task import Task
+from oe_eval.tasks.oe_eval_tasks.gsm8k import GSM8K
 from oe_eval.tasks.utils import apply_prompt_template
 from oe_eval.utils import get_dict_with_defaults
 
@@ -196,3 +197,14 @@ class GSM8K_Perplexity_Validation_0shot(GSM8K_Perplexity_Base):
 
 class GSM8K_Perplexity_Test(GSM8K_Perplexity_Base):
     pass
+
+# For GSM8K Finetuning. For test, we use generation-based. For train and val, we want gold labels to base off of
+class GSM8K_Generation_Test_0shot(GSM8K):
+    pass
+
+class GSM8K_Generation_Train_0shot(GSM8K_Perplexity_Base):
+    pass
+
+class GSM8K_Generation_Validation_0shot(GSM8K_Perplexity_Base):
+    pass
+

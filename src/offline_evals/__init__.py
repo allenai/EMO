@@ -163,6 +163,11 @@ new_task_registry: Dict = {
     "gsm8k:perplexity_validation_0shot": splits_gsm8k.GSM8K_Perplexity_Validation_0shot,
     "gsm8k:perplexity_test": splits_gsm8k.GSM8K_Perplexity_Test,
 
+    "gsm8k:generation_train_0shot": splits_gsm8k.GSM8K_Generation_Train_0shot,
+    "gsm8k:generation_validation_0shot": splits_gsm8k.GSM8K_Generation_Validation_0shot,
+    "gsm8k:generation_test_0shot": splits_gsm8k.GSM8K_Generation_Test_0shot,
+
+
 }
 
 TASK_REGISTRY.update(new_task_registry)

@@ -95,7 +95,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
         TASK="$GROUP_NAME"
 
         # Batch size adjustment (matching original script)
-        if [[ $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* || $TASK == *"boolq"* ]]; then
+        if [[ $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* || $TASK == *"boolq"* || $TASK == *"synthea"* ]]; then
             batch_size=$((BATCH_SIZE / 4))
         else
             batch_size=$BATCH_SIZE

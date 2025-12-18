@@ -6,6 +6,36 @@ from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 def get_task_configs():
     TASK_CONFIGS.update(
         {
+            "gsm8k:generation_train_0shot::olmes": {
+                "task_name": "gsm8k:generation_train_0shot",
+                "split": "train",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 0,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k:generation_validation_0shot::olmes": {
+                "task_name": "gsm8k:generation_validation_0shot",
+                "split": "validation",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 0,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k:generation_test_0shot::olmes": {
+                "task_name": "gsm8k:generation_test_0shot",
+                "split": "test",
+                "primary_metric": "exact_match",
+                "num_shots": 0,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
             "synthea:rc_train_0shot::olmes": {
                 "task_name": "synthea:rc_train_0shot",
                 "split": "train",
