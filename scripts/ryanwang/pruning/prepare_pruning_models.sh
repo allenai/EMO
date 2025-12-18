@@ -57,7 +57,7 @@ validation_task_names=(
 #  "task-socialiqa_rc_validation"
 #  "task-winogrande_rc_validation"
   "task-synthea_rc_validation_0shot"
-  "task-gsm8k_generation_validation_0shot"
+#  "task-gsm8k_generation_validation_0shot"
 
 ##   MMLU
 #  "mmlu_rc:rc_train_0shot::olmes"
