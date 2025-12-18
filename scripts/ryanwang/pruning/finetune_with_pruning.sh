@@ -35,7 +35,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-4e-5"
+variation="newdefault_lr-4e-6"
 
 experiment_tag="pruned_finetuning"
 #experiment_tag="pruned_finetuning_ablate"
@@ -50,6 +50,9 @@ elif [ "$variation" == "newdefault_lr-4e-5" ]; then
 elif [ "$variation" == "newdefault_lr-4e-4" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
     variation_flags="--train_module.optim.lr=4e-4"
+elif [ "$variation" == "newdefault_lr-4e-6" ]; then
+    # reinitialize optim and use masked finetuning (should be checked)
+    variation_flags="--train_module.optim.lr=4e-6"
 else
     echo "Warning: Unknown variation '$variation'. Using default settings."
     variation_flags=""
@@ -67,7 +70,7 @@ task_configs=(
 #  "task-socialiqa_rc_validation_keepk32|socialiqa:rc_train::olmes"
 #  "task-winogrande_rc_validation_keepk32|winogrande:rc_train::olmes"
   "task-synthea_rc_validation_0shot_keepk32|synthea:rc_train_0shot::olmes"
-  "task-gsm8k_generation_validation_0shot_keepk32|gsm8k_generation:train_0shot::olmes"
+#  "task-gsm8k_generation_validation_0shot_keepk32|gsm8k_generation:train_0shot::olmes"
 
 #
 #  "task-arc_easy_rc_validation_keepk8|arc_easy:rc_train::olmes"
