@@ -21,7 +21,7 @@ MODELS=(
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995-hf"
 
     "moe_1b35b_320experts_lb-1e-1_1214/step30995-hf"
-    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995-hf"
+#    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995-hf"
 
 #    "twolevelsamplingnolb-32_1b14b_stability_filter-true_zlossweight-1e-3_1116/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995-hf"
@@ -55,15 +55,15 @@ TASK_GROUPS_LIST=(
   "winogrande|winogrande:mc_test::olmes winogrande:rc_test::olmes"
 
 #   MMLU
-  "mmlu_mc_test|mmlu:mc_test::olmes"
-  "mmlu_rc_test|mmlu:rc_test::olmes"
+#  "mmlu_mc_test|mmlu:mc_test::olmes"
+#  "mmlu_rc_test|mmlu:rc_test::olmes"
 
 #   Gen5 tasks
   "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes"
   "drop|drop::olmes"
 
 #   GSM8K
-  "gsm8k_test|gsm8k:perplexity_test::olmes"
+#  "gsm8k_test|gsm8k:perplexity_test::olmes"
 
   ######### TRAIN-VAL-TEST ##########
 #  # MC9 tasks
@@ -194,7 +194,7 @@ for MODEL_NAME in "${MODELS[@]}"; do
 
         # if the model is a 35b model, further reduce batch size by half
         if [[ $MODEL_NAME == *"1b35b"* ]]; then
-            batch_size=$((batch_size / 2))
+            batch_size=$((batch_size / 4))
         fi
 
         # adjust number of gpus requested if its mmlu, agi_eval, bbh, gsm8k, minerva, codex, mbpp
