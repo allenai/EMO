@@ -163,35 +163,35 @@ MODELS=(
 
 for MODEL in "${MODELS[@]}"; do
 #
-#    python src/examples/huggingface/convert_checkpoint_to_hf.py \
-#          --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}" \
-#          --max-sequence-length 4096 \
-#          --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}-hf" \
-#          --dtype float32 \
-#          --skip-validation
-  gantry run \
-    --name convert-${MODEL//\//_} \
-    --weka oe-training-default:/weka/oe-training-default \
-    --beaker-image "ai2/cuda12.8-dev-ubuntu22.04-notorch" \
-    --install 'pip install -e .[all] && pip install --no-build-isolation flash-attn==2.8.2' \
-    --budget ai2/oceo \
-    --workspace ai2/flex2 \
-    --allow-dirty \
-    --cluster "ai2/jupiter-cirrascale-2" \
-    --cpus 16 \
-    --gpus 0 \
-    --priority urgent \
-    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-    -- \
-    bash -c '
     python src/examples/huggingface/convert_checkpoint_to_hf.py \
-      --checkpoint-input-path "'"${BASE_FOLDER}/${MODEL}"'" \
-      --max-sequence-length 4096 \
-      --huggingface-output-dir "'"${BASE_FOLDER}/${MODEL}"'-hf" \
-      --dtype float32 \
-      --skip-validation \
-  '
-
+          --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}" \
+          --max-sequence-length 4096 \
+          --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}-hf" \
+          --dtype float32 \
+          --skip-validation
+#  gantry run \
+#    --name convert-${MODEL//\//_} \
+#    --weka oe-training-default:/weka/oe-training-default \
+#    --beaker-image "ai2/cuda12.8-dev-ubuntu22.04-notorch" \
+#    --install 'pip install -e .[all] && pip install --no-build-isolation flash-attn==2.8.2' \
+#    --budget ai2/oceo \
+#    --workspace ai2/flex2 \
+#    --allow-dirty \
+#    --cluster "ai2/jupiter-cirrascale-2" \
+#    --cpus 16 \
+#    --gpus 0 \
+#    --priority urgent \
+#    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+#    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+#    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+#    -- \
+#    bash -c '
+#    python src/examples/huggingface/convert_checkpoint_to_hf.py \
+#      --checkpoint-input-path "'"${BASE_FOLDER}/${MODEL}"'" \
+#      --max-sequence-length 4096 \
+#      --huggingface-output-dir "'"${BASE_FOLDER}/${MODEL}"'-hf" \
+#      --dtype float32 \
+#      --skip-validation \
+#  '
+#
 done
