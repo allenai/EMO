@@ -68,7 +68,10 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
         for req, pred in zip(correct_reqs, predictions_data):
             assert req['doc_id'] == pred['doc_id'], f"Request doc_id {req['doc_id']} does not match prediction doc_id {pred['doc_id']}"
             prompts += [req["request"]["context"] + req["request"]["continuation"]]
-            correct += [1 if pred["metrics"]["acc_raw"] > 0 else 0]
+            if "gsm8k" not in eval_dataset_name:
+                correct += [1 if pred["metrics"]["acc_raw"] > 0 else 0]
+            else:
+                correct += [1] # gsm8k is always correct
     else:
         raise NotImplementedError(f"Dataset {eval_dataset_name} not implemented in get_prompt_sequences_for_evaluation")
 
