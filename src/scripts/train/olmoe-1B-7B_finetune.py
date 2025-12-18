@@ -14,6 +14,7 @@ from typing import List, Optional, cast
 
 import rich
 
+from olmo_core.nn.moe.masked_finetune_router import MoEMaskedFinetuneRouterConfig
 from olmo_core.nn.moe.pruning_router import PruningMoERouterConfig, PruningMoELinearRouter
 from olmo_core.config import Config, DType
 from olmo_core.data import (
@@ -195,6 +196,25 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         vocab_size=tokenizer_config.padded_vocab_size(),  # a little bigger than actual vocab size to make it a multiple of 128
     )
 
+    # Apply special routers or other modifications to the model here if needed.
+    if opts.model_type == "dense" or opts.model_type == "moe":
+        log.info("Using default routers; no modifications applied.")
+        pass
+    else:
+        # make sure we are not trying to prune model, since that involves different logic
+        if opts.prune_keep_k > 0:
+            raise ValueError("Cannot apply both model_type modifications and pruning simultaneously, since pruning will use the pruning_router class")
+        if opts.model_type == "masked-finetune":
+            log.info("Applying finetuning router that masks masked tokens for losses ...")
+            # Get existing router config parameters
+            router_kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
+            router_kwargs.pop("name")
+
+            # Replace router config
+            model_config.block.feed_forward_moe.router = MoEMaskedFinetuneRouterConfig(**router_kwargs)
+        else:
+            raise ValueError(f"Unknown model_type {opts.model_type}")
+
     dataset_config = NumpyPaddedFSLDatasetConfig(
         paths=[], # to be filled in by the bash script
         # label_mask_paths=[], # to be filled in by the bash script
@@ -324,6 +344,11 @@ def parser_args():
         "--dry-run",
         action="store_true",
         help="""Print the config and exit.""",
+    )
+    parser.add_argument(
+        "--model-type",
+        type=str,
+        help="Type of MoE model to use.",
     )
     parser.add_argument(
         "--load_path",

@@ -170,6 +170,7 @@ for model_name in "${model_names[@]}"; do
 #            --trainer.load_optim_state=false \
 #            --trainer.load_trainer_state=false \
 #            --global_batch_size=32 \
+#		        --model-type="masked-finetune" \
 #            $variation_flags
 
         # throw error if not load_optim_state and load_trainer_state are false in variation_flags
@@ -208,6 +209,7 @@ for model_name in "${model_names[@]}"; do
 		        --trainer.load_optim_state=false \
 		        --trainer.load_trainer_state=false \
 		        --global_batch_size=32 \
+		        --model-type="masked-finetune" \
             $variation_flags
 
     #        --dataset.label_mask_paths="[${label_mask_paths}]" \

@@ -8,7 +8,7 @@ runname="moe_1b14b_128experts_lb-1e-1_1217"
 python -m olmo_core.launch.beaker \
   --name $runname \
 	--gpus 8 \
-  --nodes 4 \
+  --nodes 8 \
 	--weka=oe-training-default \
   --shared-filesystem \
 	--workspace ai2/flex2 \
