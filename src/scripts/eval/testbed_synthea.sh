@@ -1,6 +1,6 @@
 
 python -m offline_evals.run_eval \
-    --task "synthea:rc_test_0shot::olmes" \
+    --task '{"task_name": "synthea:rc_test_0shot", "split": "test", "num_shots": 0, "metadata": {"description": "synthea test using OLMES-v0.1", "regimes": ["OLMES-v0.1"], "alias": "synthea:rc_test_0shot::olmes"}}' \
     --batch-size 1 \
     --output-dir /root/ryanwang/phdbrainstorm/evals/testbed_synthea \
     --save-raw-requests true \
