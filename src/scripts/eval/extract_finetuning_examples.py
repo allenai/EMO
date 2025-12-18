@@ -44,10 +44,11 @@ def get_correct_training_data(eval_dataset_name, eval_folder):
 
         # loop through the requests, select only the correct ones
         for req in requests_data:
-            if req["idx"] != req["label"]:
-                continue
-            if req["request"]["context"].startswith("Answer:"):
-                continue
+            if "gsm8k" not in eval_dataset_name:
+                if req["idx"] != req["label"]:
+                    continue
+                if req["request"]["context"].startswith("Answer:"):
+                    continue
             correct_reqs.append(req)
 
         for req in correct_reqs:

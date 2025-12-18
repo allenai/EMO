@@ -41,7 +41,7 @@ TASK_GROUPS_LIST=(
 #  "socialiqa"
 #  "winogrande"
   "synthea_zeroshot"
-#  "gsm8k_generation_zeroshot"
+  "gsm8k_generation_zeroshot"
 
 #   MMLU
 #  "mmlu"
