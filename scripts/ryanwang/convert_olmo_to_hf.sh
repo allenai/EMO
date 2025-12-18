@@ -151,7 +151,7 @@ MODELS=(
 #    "twolevelbatchlb-8_1b7b_stability_1207/step30995"
 
 
-      "moe_1b35b_320experts_lb-1e-1_1214/step30995"
+#      "moe_1b35b_320experts_lb-1e-1_1214/step30995"
       "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995"
 
 
@@ -172,7 +172,7 @@ for MODEL in "${MODELS[@]}"; do
   gantry run \
     --name convert-${MODEL//\//_} \
     --weka oe-training-default:/weka/oe-training-default \
-    --install 'pip install -e .[all]' \
+    --install 'pip install -e .[all] && pip install --no-build-isolation flash-attn==2.8.2' \
     --budget ai2/oceo \
     --workspace ai2/flex2 \
     --allow-dirty \
