@@ -16,9 +16,12 @@ MODELS=(
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_1120/step30995-hf"
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
-    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995-hf"
+#    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995-hf"
 #    "twolevelsamplingnolb-32_1b10b_stability_1127/step30995-hf"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995-hf"
+
+    "moe_1b35b_320experts_lb-1e-1_1214/step30995-hf"
+    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995-hf"
 
 #    "twolevelsamplingnolb-32_1b14b_stability_filter-true_zlossweight-1e-3_1116/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995-hf"
@@ -187,6 +190,11 @@ for MODEL_NAME in "${MODELS[@]}"; do
             batch_size=$((BATCH_SIZE / 4))
         else
             batch_size=$BATCH_SIZE
+        fi
+
+        # if the model is a 35b model, further reduce batch size by half
+        if [[ $MODEL_NAME == *"1b35b"* ]]; then
+            batch_size=$((batch_size / 2))
         fi
 
         # adjust number of gpus requested if its mmlu, agi_eval, bbh, gsm8k, minerva, codex, mbpp
