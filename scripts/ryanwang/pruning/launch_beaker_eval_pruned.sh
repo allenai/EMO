@@ -27,7 +27,8 @@ PARENT_MODELS=(
 )
 
 #postfix=""
-postfix="_keepk32/newdefault_lr-4e-5"
+#postfix="_keepk32/newdefault_lr-4e-5"
+postfix="_keepk32/newdefault_lr-4e-6_bs-128"
 #postfix="_keepk8/newdefault_lr-4e-5"
 #postfix="_keepk32"
 #postfix="_keepk32/lr-7e-5_warmup-0.1"
@@ -97,12 +98,19 @@ FINETUNE_TASKS=(
 #    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step2952-hf"
 #    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step3693-hf"
 
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step0-hf"
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step121-hf"
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step242-hf"
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step363-hf"
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step484-hf"
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step606-hf"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step0-hf"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step121-hf"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step242-hf"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step363-hf"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step484-hf"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step606-hf"
+
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step0-hf"
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step161-hf"
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step322-hf"
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step483-hf"
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step644-hf"
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step807-hf"
 
 )
 
@@ -176,7 +184,7 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
             fi
 
             # adjust number of gpus requested if its mmlu, agi_eval, bbh, gsm8k, minerva, codex, mbpp
-            if [[ $TASK == *mmlu* || $TASK == *agi_eval* || $TASK == *bbh* || $TASK == *gsm8k* || $TASK == *minerva_math_* || $TASK == *codex* || $TASK == *mbpp* ]]; then
+            if [[ $TASK == *mmlu* || $TASK == *agi_eval* || $TASK == *bbh* || $TASK == *gsm8k* || $TASK == *minerva_math_* || $TASK == *codex* || $TASK == *mbpp* || $TASK==*synthea* ]]; then
                 gpus=4
             else
                 gpus=1
