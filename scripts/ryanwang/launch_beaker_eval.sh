@@ -20,8 +20,8 @@ MODELS=(
 #    "twolevelsamplingnolb-32_1b10b_stability_1127/step30995-hf"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995-hf"
 
-    "moe_1b35b_320experts_lb-1e-1_1214/step30995-hf"
-#    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995-hf"
+#    "moe_1b35b_320experts_lb-1e-1_1214/step30995-hf"
+    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995-hf"
 
 #    "twolevelsamplingnolb-32_1b14b_stability_filter-true_zlossweight-1e-3_1116/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995-hf"
