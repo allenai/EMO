@@ -295,7 +295,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     data_loader_config = NumpyDataLoaderConfig(
-        global_batch_size=GLOBAL_BATCH_SIZE,  # NOTE: this is specified in tokens, not instances
+        global_batch_size=opts.global_batch_size * SEQUENCE_LENGTH, # NOTE: this is specified in tokens, not instances
         seed=0,
         num_workers=4,
     )
@@ -450,6 +450,12 @@ def parser_args():
         type=str,
         default="{min_pool: -1, decay_steps: -1}",
         help="Type of pool scheduling to use. Only applies for twolevelbatchlb for now.",
+    )
+    parser.add_argument(
+        "--global_batch_size",
+        type=int,
+        help="Global batch size to use.",
+        default=1024,
     )
     opts, overrides = parser.parse_known_args()
     return opts, overrides

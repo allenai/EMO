@@ -83,7 +83,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "label": "moe keepk32",
         "template": (
             "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123_step30995_"
-            "task-{task_core}{validation_suffix}_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}{task_suffix}_step{step}-hf"
+            "task-{task_core}{validation_suffix}_keepk32_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
         ),
         "family": "moe",
         "marker": "o",              # matplotlib marker style (o=circle, s=square, ^=triangle, etc.)
@@ -95,7 +95,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "label": "twolevelbatchlb train32/128 keepk32",
         "template": (
             f"{MAIN_MODEL}_"
-            "task-{task_core}{validation_suffix}_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}{task_suffix}_step{step}-hf"
+            "task-{task_core}{validation_suffix}_keepk32_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
         ),
         "family": "twolevelbatchlb train32/128",
         "marker": "o",
@@ -201,9 +201,9 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "exclude_tasks": ["synthea:rc_train_0shot"],  # Exclude synthea (uses different template)
     },
     {
-        "label": "dense finetuned (synthea lr-4e-6)",
+        "label": "dense finetuned (synthea lr-4e-5)",
         "template": (
-            "dense_1b_olmoe-mix_prenorm_noqknorm_1123_step30995_newdefault_lr-4e-6_bs-128_"
+            "dense_1b_olmoe-mix_prenorm_noqknorm_1123_step30995_newdefault_lr-4e-5_bs-128_"
             "finetune-task-{task_core}{task_suffix}_step{step}-hf"
         ),
         "family": "dense",
@@ -352,10 +352,32 @@ def get_validation_suffix(task_name: str) -> str:
     if task_name == "gsm8k_generation:train_0shot":
         return "_validation_0shot"
     elif task_name == "synthea:rc_train_0shot":
-        return "_rc_validation_0shot"
+        # Note: task_core is "synthea_rc", so we only need "_validation_0shot" (not "_rc_validation_0shot")
+        return "_validation_0shot"
     else:
         # Default pattern for other tasks
         return "_rc_validation"
+
+
+def get_lr_suffix(task_name: str) -> str:
+    """Get the learning rate suffix for task in model paths (e.g., 'lr-4e-5', 'lr-4e-6_bs-128')."""
+    if task_name == "synthea:rc_train_0shot":
+        return "lr-4e-6_bs-128"
+    else:
+        # Default learning rate for other tasks
+        return "lr-4e-5"
+
+
+def get_metrics_task_name(task_name: str) -> str:
+    """Get the task name to use for metrics filename (may differ from directory task name)."""
+    # For gsm8k_generation, the directory uses train_0shot but metrics file uses test_0shot
+    if task_name == "gsm8k_generation:train_0shot":
+        return "gsm8k_generation:test_0shot"
+    # For synthea, the directory uses rc_train_0shot but metrics file uses rc_test_0shot
+    elif task_name == "synthea:rc_train_0shot":
+        return "synthea:rc_test_0shot"
+    # For other tasks, use the task name as-is
+    return task_name
 
 
 def collect_primary_scores(
@@ -371,12 +393,14 @@ def collect_primary_scores(
     primary_metric_name: str | None = None
     task_suffix = get_task_suffix(task_name)
     validation_suffix = get_validation_suffix(task_name)
+    lr_suffix = get_lr_suffix(task_name)
 
     for step in steps:
         try:
-            # Replace {task_suffix} and {validation_suffix} placeholders if present
+            # Replace {task_suffix}, {validation_suffix}, and {lr_suffix} placeholders if present
             template_to_format = model_template.replace("{task_suffix}", task_suffix)
             template_to_format = template_to_format.replace("{validation_suffix}", validation_suffix)
+            template_to_format = template_to_format.replace("{lr_suffix}", lr_suffix)
             formatted_path = template_to_format.format(step=step, task_core=task_core)
         except KeyError as exc:
             raise KeyError(
@@ -407,10 +431,11 @@ def collect_primary_scores(
             primary_metric_name = primary_metric_name or task_config.get("primary_metric")
 
         detected_task = metrics.get("task_name")
-        if detected_task and detected_task != task_name:
+        metrics_task_name = get_metrics_task_name(task_name)
+        if detected_task and detected_task != metrics_task_name:
             print(
                 f"[WARN] Task mismatch detected in {metrics_path}: "
-                f"{detected_task} vs {task_name}."
+                f"{detected_task} vs {metrics_task_name}."
             )
 
         score = None
@@ -511,7 +536,8 @@ def load_baseline_scores(
             entry_task = entry_task or task_config.get("task_name")
             entry_primary_metric = task_config.get("primary_metric")
 
-        task_match = entry_task == task_name
+        metrics_task_name = get_metrics_task_name(task_name)
+        task_match = entry_task == metrics_task_name
         metric_match = (
                 primary_metric_name is None
                 or entry_primary_metric == primary_metric_name
@@ -525,7 +551,7 @@ def load_baseline_scores(
         if score is None:
             warn_parts = [
                 f"No primary_score found for baseline '{label}'",
-                f"(task={task_name!r}, metric={primary_metric_name!r})",
+                f"(task={metrics_task_name!r}, metric={primary_metric_name!r})",
                 f"in {metrics_path}",
             ]
             print(f"[WARN] {' '.join(warn_parts)}")
@@ -676,7 +702,8 @@ def main() -> None:
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     for task_name in TASKS:
-        metrics_filename = f"task-{task_name.replace(':', '_')}-metrics.json"
+        metrics_task_name = get_metrics_task_name(task_name)
+        metrics_filename = f"task-{metrics_task_name.replace(':', '_')}-metrics.json"
         steps = TASK_STEPS.get(task_name)
         if not steps:
             print(f"[WARN] No step configuration for {task_name}; skipping.")
