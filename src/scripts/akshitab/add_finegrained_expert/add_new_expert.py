@@ -1,12 +1,6 @@
-# Part 1: Add a new expert to an existing Mixture of Experts (MoE) model checkpoint
-# Load existing MoE checkpoint
-# Create new MoE with same config + new expert
-# Copy weights from loaded MoE to new MoE.
-# Save new MoE checkpoint
-
-# Part 2:
-# Train the new expert on some data, keeping other experts frozen
-
+"""
+Add new expert(s) to an existing Mixture of Experts (MoE) model checkpoint.
+"""
 import argparse
 import json
 import logging
@@ -253,9 +247,41 @@ def parse_args():
         default=AddExpertInitMethod.RANDOM,
         help="Initialization method for new expert",
     )
+    parser.add_argument(
+        "-n",
+        "--num_new_experts",
+        type=int,
+        default=1,
+        help="Number of new experts to add",
+    )
+    parser.add_argument(
+        "-k",
+        "--top_k",
+        type=int,
+        default=1,
+        help="Top k similar experts to use for SIMILAR init method",
+    )
+    parser.add_argument(
+        "--activation_file",
+        type=str,
+        default=None,
+        help="Path to activation file for SIMILAR init method",
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
-    new_model = add_experts(args.checkpoint_path, args.save_path)
+    if args.activation_file is not None:
+        top_k_expert_indices = get_similar_experts(
+            activation_file=args.activation_file, top_k=args.top_k
+        )
+    else:
+        top_k_expert_indices = None
+    new_model = add_experts(
+        checkpoint_path=args.checkpoint_path,
+        save_path=args.save_path,
+        init_method=args.init_method,
+        num_new_experts=args.num_new_experts,
+        top_k_expert_indices=top_k_expert_indices,
+    )
