@@ -26,7 +26,7 @@ runname="twolevelbatchlb-${document_expert_pool}_1b35b_320experts_lb-1e-1_1219"
 python -m olmo_core.launch.beaker \
   --name $runname \
 	--gpus 8 \
-  --nodes 8 \
+  --nodes 16 \
 	--weka=oe-training-default \
   --shared-filesystem \
 	--workspace ai2/flex2 \
@@ -52,7 +52,6 @@ python -m olmo_core.launch.beaker \
 		--model.block.name="moe" \
 		--model.block.attention.qk_norm=null \
 		--model.block.feed_forward_moe.lb_loss_weight=1e-1 \
-    --trainer.hard_stop='{value: 4000, unit: steps}'
 
 
 
