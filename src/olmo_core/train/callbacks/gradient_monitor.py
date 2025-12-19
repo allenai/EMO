@@ -59,10 +59,10 @@ class GradientMonitorCallback(Callback):
             total_monitored += param.numel() if param.grad is not None else param.numel()
 
             if param.grad is not None:
-                # Check if all individual elements are zero
-                num_zero_grads = param.grad.count_nonzero().item()
-                zero_grads_count += num_zero_grads
-                nonzero_grads_count += param.numel() - num_zero_grads
+                # Count individual non-zero elements
+                num_nonzero_grads = (param.grad != 0).sum().item()
+                nonzero_grads_count += num_nonzero_grads
+                zero_grads_count += param.numel() - num_nonzero_grads
 
                 # Optionally log individual parameter gradients
                 if self.log_all_params:
