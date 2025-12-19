@@ -14,6 +14,7 @@ from olmo_core.distributed.checkpoint import (
     save_model_and_optim_state,
 )
 from olmo_core.nn.transformer import TransformerConfig
+from olmo_core.utils import setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -142,29 +143,42 @@ def add_experts(
         if name in new_model.state_dict():
             new_param = new_model.state_dict()[name]
             if old_param.shape == new_param.shape:
+                logger.info(f"Copying parameter {name} without changes")
                 new_param.data.copy_(old_param.data)
 
             elif "router.weight" in name:
+                logger.info(f"Copying parameter {name} with expert addition")
                 source_param = old_param.view(num_experts, -1)
                 _, source_columns = source_param.shape
 
                 target_param = new_param.view(num_experts + num_new_experts, source_columns).clone()
 
                 if init_method == AddExpertInitMethod.ZERO:
+                    logger.info(f"Initializing new expert weights to zero for {name}")
                     target_param.fill_(0)
                 elif init_method == AddExpertInitMethod.RANDOM:
                     # Do nothing, the new_model was initialized randomly already
+                    logger.info(f"Keeping random initialization for new expert weights for {name}")
                     pass
                 elif init_method == AddExpertInitMethod.RANDOM_EXPERT:
+                    logger.info(
+                        f"Initializing new expert weights from random existing experts {random_expert_ids} for {name}"
+                    )
                     with torch.no_grad():
                         target_param[-num_new_experts:, :].copy_(source_param[random_expert_ids, :])
                 elif init_method == AddExpertInitMethod.AVERAGE:
+                    logger.info(
+                        f"Initializing new expert weights with average of all experts for {name}"
+                    )
                     # Compute average of existing experts
                     avg_expert = source_param.data.mean(dim=0)
                     # Copy average to new expert position
                     with torch.no_grad():
                         target_param[-num_new_experts:, :].copy_(avg_expert)
                 elif init_method == AddExpertInitMethod.SIMILAR:
+                    logger.info(
+                        f"Initializing new expert weights with {top_k_expert_indices} experts for {name}"
+                    )
                     assert (
                         top_k_expert_indices is not None
                     ), "top_k_expert_indices must be provided for SIMILAR initialization"
@@ -185,11 +199,16 @@ def add_experts(
                 ).clone()
 
                 if init_method == AddExpertInitMethod.ZERO:
+                    logger.info(f"Initializing new expert weights to zero for {name}")
                     target_param.fill_(0)
                 elif init_method == AddExpertInitMethod.RANDOM:
                     # Do nothing, the new_model was initialized randomly already
+                    logger.info(f"Keeping random initialization for new expert weights for {name}")
                     pass
                 elif init_method == AddExpertInitMethod.RANDOM_EXPERT:
+                    logger.info(
+                        f"Initializing new expert weights from random existing experts {random_expert_ids} for {name}"
+                    )
                     source_param = source_param.view(
                         num_experts, source_rows // num_experts, source_columns
                     )
@@ -198,6 +217,9 @@ def add_experts(
                             source_param[random_expert_ids, :, :]
                         )
                 elif init_method == AddExpertInitMethod.AVERAGE:
+                    logger.info(
+                        f"Initializing new expert weights with average for all experts for {name}"
+                    )
                     # Compute average of existing experts
                     source_param = source_param.view(
                         num_experts, source_rows // num_experts, source_columns
@@ -207,6 +229,9 @@ def add_experts(
                     with torch.no_grad():
                         target_param[-num_new_experts:, :, :].copy_(avg_expert)
                 elif init_method == AddExpertInitMethod.SIMILAR:
+                    logger.info(
+                        f"Initializing new expert weights with {top_k_expert_indices} experts for {name}"
+                    )
                     assert (
                         top_k_expert_indices is not None
                     ), "top_k_expert_indices must be provided for SIMILAR initialization"
@@ -274,6 +299,7 @@ def parse_args():
 
 
 if __name__ == "__main__":
+    setup_logging()
     args = parse_args()
     if args.activation_file is not None:
         top_k_expert_indices = get_similar_experts(
