@@ -19,7 +19,7 @@ NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/moe_1b7b_
 
 
 # Part 2: Train with new expert
-RUN_NAME="test_moe1b7b_129experts_1trained-01"
+RUN_NAME="test_moe1b7b_129experts_1trained-math-02"
 
 python -m olmo_core.launch.beaker \
   --name ${RUN_NAME} \
@@ -38,7 +38,7 @@ python -m olmo_core.launch.beaker \
     ${RUN_NAME} \
 		--trainer.load_path="${NEW_BASE_MODEL_PATH}/model_and_optim" \
 		--save-folder="/weka/oe-training-default/akshitab/FlexMoE/models/${RUN_NAME}" \
-		--dataset.mix=OLMoE-mix-0824 \
+		--dataset.mix=mj_finemath4plus \
 		--work-dir="/weka/oe-training-default/akshitab/dataset-cache" \
 		--trainer.max_duration='{value: 5_000_000_000, unit: tokens}' \
 		--trainer.callbacks.wandb="{enabled: true, entity: akshitab, project: olmoe-modular, name: ${RUN_NAME}, tags: [extension]}" \
