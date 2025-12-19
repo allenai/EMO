@@ -3,10 +3,10 @@
 #     - removed qk-norm from the model compared to parent.
 # STATUS: USED
 ##############################################################
-document_expert_pool=32
+document_expert_pool=128
 #document_expert_pool=12
 
-runname="twolevelbatchlb-${document_expert_pool}_1b35b_320experts_lb-1e-1_bs-2x_1216"
+runname="twolevelbatchlb-${document_expert_pool}_1b35b_320experts_lb-1e-1_1219"
 
 #torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
 #  $runname \
@@ -52,8 +52,7 @@ python -m olmo_core.launch.beaker \
 		--model.block.name="moe" \
 		--model.block.attention.qk_norm=null \
 		--model.block.feed_forward_moe.lb_loss_weight=1e-1 \
-    --trainer.hard_stop='{value: 2000, unit: steps}' \
-    --global_batch_size=2048
+    --trainer.hard_stop='{value: 4000, unit: steps}'
 
 
 
