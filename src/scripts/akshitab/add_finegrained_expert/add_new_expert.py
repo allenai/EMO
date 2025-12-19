@@ -32,7 +32,7 @@ class AddExpertInitMethod:
 
     RANDOM_EXPERT = "random_expert"
     """
-    Initialize new expert with weights of a randomly selected existing expert.
+    Initialize new expert with weights of randomly selected existing experts.
     """
 
     AVERAGE = "average"
@@ -129,11 +129,16 @@ def add_experts(
     num_experts = old_model_config.block.feed_forward_moe.num_experts
 
     if top_k_expert_indices is not None:
-        assert len(top_k_expert_indices) <= num_experts, "top_k_expert_indices cannot be more than existing experts"
+        assert (
+            len(top_k_expert_indices) <= num_experts
+        ), "top_k_expert_indices cannot be more than existing experts"
         for idx in top_k_expert_indices:
             assert 0 <= idx < num_experts, f"Expert index {idx} out of range"
 
     init_method = init_method or AddExpertInitMethod.RANDOM
+
+    if init_method == AddExpertInitMethod.RANDOM_EXPERT:
+        random_expert_ids = torch.randint(0, num_experts, (num_new_experts,)).tolist()
 
     # Copy weights from old model to new model
     for name, old_param in old_model.named_parameters():
@@ -153,6 +158,9 @@ def add_experts(
                 elif init_method == AddExpertInitMethod.RANDOM:
                     # Do nothing, the new_model was initialized randomly already
                     pass
+                elif init_method == AddExpertInitMethod.RANDOM_EXPERT:
+                    with torch.no_grad():
+                        target_param[-num_new_experts:, :].copy_(source_param[random_expert_ids, :])
                 elif init_method == AddExpertInitMethod.AVERAGE:
                     # Compute average of existing experts
                     avg_expert = source_param.data.mean(dim=0)
@@ -160,7 +168,9 @@ def add_experts(
                     with torch.no_grad():
                         target_param[-num_new_experts:, :].copy_(avg_expert)
                 elif init_method == AddExpertInitMethod.SIMILAR:
-                    assert top_k_expert_indices is not None, "top_k_expert_indices must be provided for SIMILAR initialization"
+                    assert (
+                        top_k_expert_indices is not None
+                    ), "top_k_expert_indices must be provided for SIMILAR initialization"
                     avg_expert = source_param[top_k_expert_indices, :].data.mean(dim=0)
                     with torch.no_grad():
                         target_param[-num_new_experts:, :].copy_(avg_expert)
@@ -182,6 +192,14 @@ def add_experts(
                 elif init_method == AddExpertInitMethod.RANDOM:
                     # Do nothing, the new_model was initialized randomly already
                     pass
+                elif init_method == AddExpertInitMethod.RANDOM_EXPERT:
+                    source_param = source_param.view(
+                        num_experts, source_rows // num_experts, source_columns
+                    )
+                    with torch.no_grad():
+                        target_param[-num_new_experts:, :, :].copy_(
+                            source_param[random_expert_ids, :, :]
+                        )
                 elif init_method == AddExpertInitMethod.AVERAGE:
                     # Compute average of existing experts
                     source_param = source_param.view(
@@ -192,7 +210,9 @@ def add_experts(
                     with torch.no_grad():
                         target_param[-num_new_experts:, :, :].copy_(avg_expert)
                 elif init_method == AddExpertInitMethod.SIMILAR:
-                    assert top_k_expert_indices is not None, "top_k_expert_indices must be provided for SIMILAR initialization"
+                    assert (
+                        top_k_expert_indices is not None
+                    ), "top_k_expert_indices must be provided for SIMILAR initialization"
                     source_param = source_param.view(
                         num_experts, source_rows // num_experts, source_columns
                     )

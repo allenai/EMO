@@ -11,10 +11,15 @@ from scripts.akshitab.add_finegrained_expert.add_new_expert import (
 )
 
 
-@pytest.mark.parametrize("init_method", ["random", "average", "zero", "similar"])
+@pytest.mark.parametrize("init_method", ["random", "random_expert", "average", "zero", "similar"])
 @pytest.mark.parametrize("num_new_experts", [1, 3, 8])
 @pytest.mark.parametrize("top_k_expert_indices", [None, [4], [1, 2]])
-def test_add_expert(tmp_path: Path, init_method: str, num_new_experts: int, top_k_expert_indices: Optional[list[int]]):
+def test_add_expert(
+    tmp_path: Path,
+    init_method: str,
+    num_new_experts: int,
+    top_k_expert_indices: Optional[list[int]],
+):
     checkpoint_path = "src/test_fixtures/smallmoe"
     output_path = tmp_path / "smallmoe_with_new_expert"
 
@@ -48,7 +53,7 @@ def test_add_expert(tmp_path: Path, init_method: str, num_new_experts: int, top_
         if "experts.mlp" in old_name:
             if init_method == "zero":
                 assert torch.all(new_param.data[-1] == 0)
-            elif init_method == "random":
+            elif init_method == "random" or init_method == "random_expert":
                 assert not torch.all(new_param.data[-1] == 0)
             elif init_method == "average":
                 source_param = old_model.state_dict()[old_name]
@@ -65,9 +70,7 @@ def test_add_expert(tmp_path: Path, init_method: str, num_new_experts: int, top_
             elif init_method == "similar" and top_k_expert_indices is not None:
                 source_param = old_model.state_dict()[old_name]
                 source_rows, source_columns = source_param.shape
-                expected_value = torch.zeros(
-                    source_rows // num_experts, source_columns
-                )
+                expected_value = torch.zeros(source_rows // num_experts, source_columns)
                 for idx in top_k_expert_indices:
                     expected_value += source_param.view(
                         num_experts, source_rows // num_experts, source_columns
@@ -82,13 +85,15 @@ def test_add_expert(tmp_path: Path, init_method: str, num_new_experts: int, top_
         elif "router.weight" in old_name:
             if init_method == "zero":
                 assert torch.all(new_param.data[-1] == 0)
-            elif init_method == "random":
+            elif init_method == "random" or init_method == "random_expert":
                 assert not torch.all(new_param.data[-1] == 0)
             elif init_method == "average":
                 source_param = old_model.state_dict()[old_name].view(num_experts, -1)
                 source_rows, source_columns = source_param.shape
                 expected_value = source_param.data.mean(dim=0)
-                actual_value = new_param.data.view(num_experts + num_new_experts, source_columns)[-1]
+                actual_value = new_param.data.view(num_experts + num_new_experts, source_columns)[
+                    -1
+                ]
                 assert torch.allclose(actual_value, expected_value, atol=1e-6)
             elif init_method == "similar" and top_k_expert_indices is not None:
                 source_param = old_model.state_dict()[old_name].view(num_experts, -1)
@@ -97,7 +102,9 @@ def test_add_expert(tmp_path: Path, init_method: str, num_new_experts: int, top_
                 for idx in top_k_expert_indices:
                     expected_value += source_param.data[idx]
                 expected_value /= len(top_k_expert_indices)
-                actual_value = new_param.data.view(num_experts + num_new_experts, source_columns)[-1]
+                actual_value = new_param.data.view(num_experts + num_new_experts, source_columns)[
+                    -1
+                ]
                 assert torch.allclose(actual_value, expected_value, atol=1e-6)
         else:
             assert torch.all(
