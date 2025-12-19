@@ -1,5 +1,39 @@
 """
 Add new expert(s) to an existing Mixture of Experts (MoE) model checkpoint.
+
+Examples:
+
+Initialize new expert with randomly selected expert:
+
+```bash
+python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
+	-c ${BASE_MODEL_PATH}\
+	-o ${NEW_BASE_MODEL_PATH} \
+	--num_new_experts 1 \
+	--init_method random_expert
+```
+
+Initialize new expert with average of top 2 most similar experts by domain
+
+```bash
+python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
+	-c ${BASE_MODEL_PATH}\
+	-o ${NEW_BASE_MODEL_PATH} \
+	--num_new_experts 1 \
+	--init_method similar \
+        --activation_file ${ACTIVATION_FILE} \
+	--top_k 2
+```
+
+Initialize 8 new experts with average of previous experts:
+```bash
+python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
+	-c ${BASE_MODEL_PATH}\
+	-o ${NEW_BASE_MODEL_PATH} \
+	--num_new_experts 8 \
+	--init_method average
+```
+
 """
 import argparse
 import json
@@ -42,7 +76,7 @@ class AddExpertInitMethod:
 
     SIMILAR = "similar"
     """
-    Initialize new expert with weights similar to existing experts.
+    Initialize new expert with weights from similar existing experts.
     """
 
 

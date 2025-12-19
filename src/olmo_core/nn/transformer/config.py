@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from .block import TransformerBlockBase
     from .model import Transformer
 
-PARTIAL_FREEZE_FN_REGISTRY = {}
+PARTIAL_FREEZE_FN_REGISTRY: Dict[str, Callable] = {}
 
 log = logging.getLogger(__name__)
 

@@ -95,13 +95,14 @@ def partial_freeze_router_and_experts(
             dim=0, indices=list(range(0, expert_size * (num_experts - num_experts_to_train)))
         )(name, param)
         return mask.float()
+    return None
 
 
 def freeze_indices(dim: int, indices: list[int]) -> Callable:
     def mask_fn(name: str, param: torch.Tensor) -> torch.Tensor:
         mask = torch.ones_like(param, dtype=torch.bool, device="cpu")
         idx = [slice(None)] * param.ndim
-        idx[dim] = indices
+        idx[dim] = indices  # type: ignore
         mask[tuple(idx)] = False
         return mask.float()
 
