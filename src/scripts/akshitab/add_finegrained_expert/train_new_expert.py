@@ -80,7 +80,10 @@ class ExperimentConfig(Config):
 
 
 def partial_freeze_router_and_experts(
-    model_config: TransformerConfig, name: str, param: torch.nn.Parameter, num_experts_to_freeze: int = 1,
+    model_config: TransformerConfig,
+    name: str,
+    param: torch.nn.Parameter,
+    num_experts_to_freeze: int = 1,
 ) -> Optional[torch.Tensor]:
     if "experts" in name or "router" in name:
         mask = torch.ones_like(param, dtype=torch.bool)
@@ -88,9 +91,9 @@ def partial_freeze_router_and_experts(
         num_experts = model_config.block.feed_forward_moe.num_experts
         expert_size = param.shape[0] // num_experts
         # Freeze all but the last expert
-        mask = freeze_indices(dim=0, indices=list(range(0, expert_size * (num_experts - num_experts_to_freeze))))(
-            name, param
-        )
+        mask = freeze_indices(
+            dim=0, indices=list(range(0, expert_size * (num_experts - num_experts_to_freeze)))
+        )(name, param)
         return mask.float()
 
 

@@ -30,6 +30,11 @@ class AddExpertInitMethod:
     Initialize new expert with random weights.
     """
 
+    RANDOM_EXPERT = "random_expert"
+    """
+    Initialize new expert with weights of a randomly selected existing expert.
+    """
+
     AVERAGE = "average"
     """
     Initialize new expert with average of existing experts.
@@ -44,6 +49,19 @@ class AddExpertInitMethod:
     """
     Initialize new expert with weights similar to existing experts.
     """
+
+
+def get_similar_experts(activation_file: str, top_k: int = 1):
+    with open(activation_file, "r") as f:
+        line = f.readline()
+        activations = json.loads(line)["avg_router_probabilities"]  # (layers, num_experts)
+
+    all_activations = torch.tensor(activations)
+
+    # Expert with highest activation across all layers
+    expert_sums = all_activations.sum(dim=0)
+    top_k_similar_experts = torch.topk(expert_sums, top_k).indices.tolist()
+    return top_k_similar_experts
 
 
 def get_model_config(checkpoint_path: str):
@@ -77,8 +95,12 @@ def save_checkpoint(config: dict, model: torch.nn.Module, save_path: str):
     logger.info(f"Saved new model weights to {model_weights_path}")
 
 
-def add_expert(
-    checkpoint_path: str, save_path: Optional[str] = None, init_method: Optional[str] = None
+def add_experts(
+    checkpoint_path: str,
+    save_path: Optional[str] = None,
+    init_method: Optional[str] = None,
+    num_new_experts: int = 1,
+    top_k_expert_indices: Optional[list[int]] = None,
 ):
     # Load model config
     old_config_path = os.path.join(checkpoint_path, "config.json")
@@ -98,13 +120,18 @@ def add_expert(
     logger.info("Adding new expert to the model")
     new_config = old_model_config.copy()
     assert new_config.block.feed_forward_moe is not None, "Model is not MoE"
-    new_config.block.feed_forward_moe.num_experts += 1
+    new_config.block.feed_forward_moe.num_experts += num_new_experts
     new_model = new_config.build(init_device="cpu")
 
     new_model.init_weights()  # Initialized with random init
 
     assert old_model_config.block.feed_forward_moe is not None
     num_experts = old_model_config.block.feed_forward_moe.num_experts
+
+    if top_k_expert_indices is not None:
+        assert len(top_k_expert_indices) <= num_experts, "top_k_expert_indices cannot be more than existing experts"
+        for idx in top_k_expert_indices:
+            assert 0 <= idx < num_experts, f"Expert index {idx} out of range"
 
     init_method = init_method or AddExpertInitMethod.RANDOM
 
@@ -119,7 +146,7 @@ def add_expert(
                 source_param = old_param.view(num_experts, -1)
                 _, source_columns = source_param.shape
 
-                target_param = new_param.view(num_experts + 1, source_columns).clone()
+                target_param = new_param.view(num_experts + num_new_experts, source_columns).clone()
 
                 if init_method == AddExpertInitMethod.ZERO:
                     target_param.fill_(0)
@@ -131,10 +158,12 @@ def add_expert(
                     avg_expert = source_param.data.mean(dim=0)
                     # Copy average to new expert position
                     with torch.no_grad():
-                        target_param[-1, :].copy_(avg_expert)
+                        target_param[-num_new_experts:, :].copy_(avg_expert)
                 elif init_method == AddExpertInitMethod.SIMILAR:
-                    print("Similar initialization not implemented yet.")
-                    raise NotImplementedError("Similar initialization not implemented yet.")
+                    assert top_k_expert_indices is not None, "top_k_expert_indices must be provided for SIMILAR initialization"
+                    avg_expert = source_param[top_k_expert_indices, :].data.mean(dim=0)
+                    with torch.no_grad():
+                        target_param[-num_new_experts:, :].copy_(avg_expert)
 
                 target_param[:num_experts, :] = source_param
                 with torch.no_grad():
@@ -145,7 +174,7 @@ def add_expert(
                 source_rows, source_columns = source_param.shape
 
                 target_param = new_param.view(
-                    num_experts + 1, source_rows // num_experts, source_columns
+                    num_experts + num_new_experts, source_rows // num_experts, source_columns
                 ).clone()
 
                 if init_method == AddExpertInitMethod.ZERO:
@@ -161,10 +190,15 @@ def add_expert(
                     avg_expert = source_param.data.mean(dim=0)
                     # Copy average to new expert position
                     with torch.no_grad():
-                        target_param[-1, :, :].copy_(avg_expert)
+                        target_param[-num_new_experts:, :, :].copy_(avg_expert)
                 elif init_method == AddExpertInitMethod.SIMILAR:
-                    print("Similar initialization not implemented yet.")
-                    raise NotImplementedError("Similar initialization not implemented yet.")
+                    assert top_k_expert_indices is not None, "top_k_expert_indices must be provided for SIMILAR initialization"
+                    source_param = source_param.view(
+                        num_experts, source_rows // num_experts, source_columns
+                    )
+                    avg_expert = source_param[top_k_expert_indices, :, :].data.mean(dim=0)
+                    with torch.no_grad():
+                        target_param[-num_new_experts:, :, :].copy_(avg_expert)
 
                 target_param[:num_experts, :, :] = source_param.view(
                     num_experts, source_rows // num_experts, source_columns
@@ -204,4 +238,4 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    new_model = add_expert(args.checkpoint_path, args.save_path)
+    new_model = add_experts(args.checkpoint_path, args.save_path)
