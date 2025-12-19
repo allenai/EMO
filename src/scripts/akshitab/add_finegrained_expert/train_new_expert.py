@@ -35,6 +35,7 @@ from olmo_core.train.callbacks import (
     ConfigSaverCallback,
     DownstreamEvaluatorCallbackConfig,
     GPUMemoryMonitorCallback,
+    GradientMonitorCallback,
     ProfilerCallback,
     WandBCallback,
 )
@@ -277,6 +278,15 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                 ],
                 tokenizer=tokenizer_config,
                 eval_interval=250,
+            ),
+        )
+        .with_callback(
+            "gradient_monitor",
+            GradientMonitorCallback(
+                layer_names=["expert.mlp", "router"],
+                max_steps_to_monitor=10,
+                log_all_params=True,
+                enabled=True,
             ),
         )
     )
