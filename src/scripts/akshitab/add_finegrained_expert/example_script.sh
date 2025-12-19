@@ -19,7 +19,7 @@ NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/moe_1b7b_
 
 
 # Part 2: Train with new expert
-RUN_NAME="test_moe1b7b_129experts_1trained-math-02"
+RUN_NAME="test_moe1b7b_129experts_1trained-math-03"
 
 python -m olmo_core.launch.beaker \
   --name ${RUN_NAME} \

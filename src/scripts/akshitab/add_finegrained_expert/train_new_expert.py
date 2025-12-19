@@ -286,7 +286,6 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                 layer_names=["expert.mlp", "router"],
                 max_steps_to_monitor=10,
                 log_all_params=True,
-                enabled=True,
             ),
         )
     )
