@@ -162,11 +162,11 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     ] = partial_freeze_router_and_experts
 
     model_config = TransformerConfig.olmoe_1B_7B(
-        100,
-        n_layers=2,
-        d_model=128,
-        n_heads=12,
-        num_experts=32,
+        vocab_size=tokenizer_config.padded_vocab_size(),
+        n_layers=16,
+        d_model=2048,
+        n_heads=16,
+        num_experts=129,
         top_k=8,
         freeze_params=[
             "embeddings.*",
@@ -177,22 +177,6 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         partial_freeze_params_mask_fn_name="partial_freeze_router_and_experts",
         partial_freeze_params_mask_fn_kwargs={"num_experts_to_train": opts.num_experts_to_train},
     )
-    # model_config = TransformerConfig.olmoe_1B_7B(
-    #     vocab_size=tokenizer_config.padded_vocab_size(),
-    #     n_layers=16,
-    #     d_model=2048,
-    #     n_heads=16,
-    #     num_experts=129,
-    #     top_k=8,
-    #     freeze_params=[
-    #         "embeddings.*",
-    #         "blocks.*.attention*",
-    #         "blocks.*.feed_forward_norm.*",
-    #         "lm_head.*",
-    #     ],
-    #     partial_freeze_params_mask_fn_name="partial_freeze_router_and_experts",
-    #     partial_freeze_params_mask_fn_kwargs={"num_experts_to_train": opts.num_experts_to_train},
-    # )
 
     print(model_config)
     # docs: end-model-config
