@@ -280,6 +280,7 @@ class TransformerConfig(Config):
     init_std: float = 0.02
     freeze_params: Optional[List[str]] = None
     partial_freeze_params_mask_fn_name: Optional[str] = None
+    partial_freeze_params_mask_fn_kwargs: Optional[Dict[str, int]] = None
     block_overrides: Optional[Dict[int, TransformerBlockConfig]] = None
 
     def build(
@@ -355,14 +356,19 @@ class TransformerConfig(Config):
                 else:
                     log.info(f"Param '{name}' will be trainable")
 
+        num_partially_frozen_params = 0
         partial_freeze_params_mask_fn = PARTIAL_FREEZE_FN_REGISTRY.get(
             self.partial_freeze_params_mask_fn_name, None
         )
+        partial_freeze_params_mask_fn_kwargs = self.partial_freeze_params_mask_fn_kwargs or {}
         if partial_freeze_params_mask_fn is not None:
             for name, param in model.named_parameters():
-                mask = partial_freeze_params_mask_fn(self, name, param)
+                mask = partial_freeze_params_mask_fn(
+                    self, name, param, **partial_freeze_params_mask_fn_kwargs
+                )
                 if mask is not None and param.requires_grad:
                     param.register_hook(lambda grad: grad * mask.to(grad.device))
+                    num_partially_frozen_params += mask.numel() - int(mask.sum().item())
                     log.info(f"Param '{name}' will be partially frozen")
 
         log.info("%s", model)
@@ -370,7 +376,8 @@ class TransformerConfig(Config):
             f"Built model with:\n"
             f"- {model.num_params:,d} total params\n"
             f"- {model.num_non_embedding_params:,d} non-embedding params\n"
-            f"- {model.num_trainable_params:,d} trainable params"  # TODO: doesn't consider partially frozen params
+            f"- {model.num_trainable_params - num_partially_frozen_params:,d} trainable params\n"
+            f"- {num_partially_frozen_params:,d} partially frozen params\n"
         )
 
         return model
@@ -694,7 +701,7 @@ class TransformerConfig(Config):
                 name=MoEType.default,
                 num_experts=kwargs.pop("num_experts", 32),
                 hidden_size=int(0.5 * d_model),
-                router=MoERouterConfig(top_k=4),
+                router=MoERouterConfig(top_k=kwargs.pop("top_k", 4)),
                 shared_mlp=FeedForwardConfig(hidden_size=d_model * 2),
                 lb_loss_weight=0.01,
                 z_loss_weight=0.001,

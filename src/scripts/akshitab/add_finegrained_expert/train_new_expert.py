@@ -83,16 +83,16 @@ def partial_freeze_router_and_experts(
     model_config: TransformerConfig,
     name: str,
     param: torch.nn.Parameter,
-    num_experts_to_freeze: int = 1,
+    num_experts_to_train: int = 1,
 ) -> Optional[torch.Tensor]:
     if "experts" in name or "router" in name:
         mask = torch.ones_like(param, dtype=torch.bool)
         assert model_config.block.feed_forward_moe is not None
         num_experts = model_config.block.feed_forward_moe.num_experts
         expert_size = param.shape[0] // num_experts
-        # Freeze all but the last `num_experts_to_freeze` experts.
+        # Freeze all but the last `num_experts_to_train` experts.
         mask = freeze_indices(
-            dim=0, indices=list(range(0, expert_size * (num_experts - num_experts_to_freeze)))
+            dim=0, indices=list(range(0, expert_size * (num_experts - num_experts_to_train)))
         )(name, param)
         return mask.float()
 
@@ -162,11 +162,11 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     ] = partial_freeze_router_and_experts
 
     model_config = TransformerConfig.olmoe_1B_7B(
-        vocab_size=tokenizer_config.padded_vocab_size(),
-        n_layers=16,
-        d_model=2048,
-        n_heads=16,
-        num_experts=129,
+        100,
+        n_layers=2,
+        d_model=128,
+        n_heads=12,
+        num_experts=32,
         top_k=8,
         freeze_params=[
             "embeddings.*",
@@ -175,15 +175,32 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             "lm_head.*",
         ],
         partial_freeze_params_mask_fn_name="partial_freeze_router_and_experts",
+        partial_freeze_params_mask_fn_kwargs={"num_experts_to_train": opts.num_experts_to_train},
     )
+    # model_config = TransformerConfig.olmoe_1B_7B(
+    #     vocab_size=tokenizer_config.padded_vocab_size(),
+    #     n_layers=16,
+    #     d_model=2048,
+    #     n_heads=16,
+    #     num_experts=129,
+    #     top_k=8,
+    #     freeze_params=[
+    #         "embeddings.*",
+    #         "blocks.*.attention*",
+    #         "blocks.*.feed_forward_norm.*",
+    #         "lm_head.*",
+    #     ],
+    #     partial_freeze_params_mask_fn_name="partial_freeze_router_and_experts",
+    #     partial_freeze_params_mask_fn_kwargs={"num_experts_to_train": opts.num_experts_to_train},
+    # )
 
     print(model_config)
 
-    # DEBUG / TEST
+    # # DEBUG / TEST
     # model = model_config.build(init_device="cpu")
     # print(model)
-    # import sys; sys.exit(0)
-
+    # import sys
+    # sys.exit(0)
     # docs: end-model-config
 
     log.info(f"Using data root: {DATA_ROOT}")
@@ -337,6 +354,12 @@ def parser_args():
         type=float,
         default=4e-4,
         help="Learning rate for the optimizer.",
+    )
+    parser.add_argument(
+        "--num-experts-to-train",
+        type=int,
+        default=1,
+        help="Number of experts to train (last n experts). Remaining are frozen.",
     )
     opts, overrides = parser.parse_known_args()
     return opts, overrides
