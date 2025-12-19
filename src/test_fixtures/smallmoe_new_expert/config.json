@@ -1,0 +1,81 @@
+{
+    "model": {
+        "d_model": 128,
+        "vocab_size": 100,
+        "n_layers": 2,
+        "block": {
+            "attention": {
+                "name": "default",
+                "n_heads": 12,
+                "bias": false,
+                "rope": {
+                    "name": "default",
+                    "theta": 500000,
+                    "full_precision": true,
+                    "_CLASS_": "olmo_core.nn.rope.RoPEConfig"
+                },
+                "qk_norm": {
+                    "name": "rms",
+                    "eps": 1e-06,
+                    "bias": false,
+                    "dtype": "float32",
+                    "_CLASS_": "olmo_core.nn.layer_norm.LayerNormConfig"
+                },
+                "dtype": "float32",
+                "_CLASS_": "olmo_core.nn.attention.AttentionConfig"
+            },
+            "layer_norm": {
+                "name": "rms",
+                "eps": 1e-06,
+                "bias": false,
+                "dtype": "float32",
+                "_CLASS_": "olmo_core.nn.layer_norm.LayerNormConfig"
+            },
+            "feed_forward_moe": {
+                "name": "default",
+                "num_experts": 33,
+                "hidden_size": 64,
+                "router": {
+                    "name": "default",
+                    "top_k": 4,
+                    "uniform_expert_assignment": false,
+                    "gating_function": "softmax",
+                    "_CLASS_": "olmo_core.nn.moe.router.MoERouterConfig"
+                },
+                "shared_mlp": {
+                    "hidden_size": 256,
+                    "name": "default",
+                    "_CLASS_": "olmo_core.nn.feed_forward.FeedForwardConfig"
+                },
+                "lb_loss_weight": 0.01,
+                "lb_loss_granularity": "local_batch",
+                "z_loss_weight": 0.001,
+                "scale_loss_by_num_layers": true,
+                "dtype": "float32",
+                "_CLASS_": "olmo_core.nn.moe.moe.MoEConfig"
+            },
+            "name": "moe_reordered_norm",
+            "_CLASS_": "olmo_core.nn.transformer.config.TransformerBlockConfig"
+        },
+        "lm_head": {
+            "name": "default",
+            "layer_norm": {
+                "name": "rms",
+                "eps": 1e-06,
+                "bias": false,
+                "dtype": "float32",
+                "_CLASS_": "olmo_core.nn.layer_norm.LayerNormConfig"
+            },
+            "bias": false,
+            "dtype": "float32",
+            "loss_implementation": "default",
+            "_CLASS_": "olmo_core.nn.lm_head.LMHeadConfig"
+        },
+        "name": "moe",
+        "dtype": "float32",
+        "init_method": "normal",
+        "init_seed": 0,
+        "init_std": 0.02,
+        "_CLASS_": "olmo_core.nn.transformer.config.TransformerConfig"
+    }
+}
