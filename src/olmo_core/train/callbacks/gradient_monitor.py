@@ -56,34 +56,26 @@ class GradientMonitorCallback(Callback):
             if not any(layer_name in name for layer_name in self.layer_names):
                 continue
 
-            total_monitored += 1
+            total_monitored += param.numel() if param.grad is not None else param.numel()
 
             if param.grad is not None:
-                grad_norm = param.grad.norm().item()
-                is_zero = grad_norm == 0.0
-
-                if is_zero:
-                    zero_grads_count += 1
-                else:
-                    nonzero_grads_count += 1
+                # Check if all individual elements are zero
+                num_zero_grads = param.grad.count_nonzero().item()
+                zero_grads_count += num_zero_grads
+                nonzero_grads_count += param.numel() - num_zero_grads
 
                 # Optionally log individual parameter gradients
                 if self.log_all_params:
+                    grad_norm = param.grad.norm().item()
                     self.trainer.record_metric(
                         f"grad_norm/{name}",
                         grad_norm,
                         namespace="debug",
                         reduce_type=ReduceType.max,
                     )
-                    self.trainer.record_metric(
-                        f"grad_is_zero/{name}",
-                        float(is_zero),
-                        namespace="debug",
-                        reduce_type=ReduceType.max,
-                    )
             else:
                 # Gradient is None (parameter not in computation graph)
-                zero_grads_count += 1
+                zero_grads_count += param.numel()
 
         # Always log summary statistics
         if total_monitored > 0:
