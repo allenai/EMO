@@ -99,7 +99,7 @@ def partial_freeze_router_and_experts(
 
 def freeze_indices(dim: int, indices: list[int]) -> Callable:
     def mask_fn(name: str, param: torch.Tensor) -> torch.Tensor:
-        mask = torch.ones_like(param, dtype=torch.bool)
+        mask = torch.ones_like(param, dtype=torch.bool, device="cpu")
         idx = [slice(None)] * param.ndim
         idx[dim] = indices
         mask[tuple(idx)] = False
@@ -195,12 +195,6 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     # )
 
     print(model_config)
-
-    # # DEBUG / TEST
-    # model = model_config.build(init_device="cpu")
-    # print(model)
-    # import sys
-    # sys.exit(0)
     # docs: end-model-config
 
     log.info(f"Using data root: {DATA_ROOT}")
@@ -314,6 +308,9 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     # docs: start-config-merge
     config = config.merge(overrides)
     # docs: end-config-merge
+
+    # # DEBUG / TEST
+    # config.model.build(init_device="meta")
 
     return config
 
