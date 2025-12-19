@@ -76,17 +76,20 @@ def load_checkpoint(model_config: TransformerConfig, checkpoint_path: str):
 
 
 def save_checkpoint(config: dict, model: torch.nn.Module, save_path: str):
-    os.makedirs(save_path, exist_ok=True)
-    logger.info(f"Saving new model checkpoint to {save_path}")
-    new_config_path = os.path.join(save_path, "config.json")
+    if os.path.exists(save_path):
+        logger.warning(f"Save path {save_path} already exists. Not overwriting.")
+    else:
+        os.makedirs(save_path, exist_ok=True)
+        logger.info(f"Saving new model checkpoint to {save_path}")
+        new_config_path = os.path.join(save_path, "config.json")
 
-    with open(new_config_path, "w") as f:
-        json.dump(config, f, indent=4)
-    logger.info(f"Saved new model config to {new_config_path}")
+        with open(new_config_path, "w") as f:
+            json.dump(config, f, indent=4)
+        logger.info(f"Saved new model config to {new_config_path}")
 
-    model_weights_path = os.path.join(save_path, "model_and_optim")
-    save_model_and_optim_state(dir=model_weights_path, model=model, optim=None)
-    logger.info(f"Saved new model weights to {model_weights_path}")
+        model_weights_path = os.path.join(save_path, "model_and_optim")
+        save_model_and_optim_state(dir=model_weights_path, model=model, optim=None)
+        logger.info(f"Saved new model weights to {model_weights_path}")
 
 
 def add_experts(
@@ -244,8 +247,8 @@ def parse_args():
     parser.add_argument(
         "--init_method",
         type=str,
-        default=AddExpertInitMethod.RANDOM,
-        help="Initialization method for new expert",
+        default=AddExpertInitMethod.RANDOM_EXPERT,
+        help="Initialization method for new expert, options: RANDOM, RANDOM_EXPERT, AVERAGE, ZERO, SIMILAR. SIMILAR requires --activation_file.",
     )
     parser.add_argument(
         "-n",

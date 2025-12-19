@@ -90,7 +90,7 @@ def partial_freeze_router_and_experts(
         assert model_config.block.feed_forward_moe is not None
         num_experts = model_config.block.feed_forward_moe.num_experts
         expert_size = param.shape[0] // num_experts
-        # Freeze all but the last expert
+        # Freeze all but the last `num_experts_to_freeze` experts.
         mask = freeze_indices(
             dim=0, indices=list(range(0, expert_size * (num_experts - num_experts_to_freeze)))
         )(name, param)
