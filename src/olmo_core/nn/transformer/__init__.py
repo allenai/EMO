@@ -11,6 +11,7 @@ from .block import (
     TransformerBlockBase,
 )
 from .config import (
+    PARTIAL_FREEZE_FN_REGISTRY,
     TransformerActivationCheckpointingMode,
     TransformerBlockConfig,
     TransformerBlockType,
@@ -42,4 +43,5 @@ __all__ = [
     "TransformerDataParallelWrappingStrategy",
     "TransformerActivationCheckpointingMode",
     "InitMethod",
+    "PARTIAL_FREEZE_FN_REGISTRY",
 ]

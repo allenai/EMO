@@ -11,9 +11,9 @@ from .tasks import (
     news_gen,
     poem_gen,
     ruler,
+    sciriff,
     squad,
     squad2,
-    sciriff,
     story_gen,
     xsum,
 )

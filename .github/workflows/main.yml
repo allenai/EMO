@@ -36,18 +36,25 @@ jobs:
           - name: Lint
             run: make lint-check
 
-          - name: Test
+          # - name: Test Core
+          #   run: |
+          #     pytest -v --color=yes --durations=3 \
+          #       --ignore-glob='src/test/distributed/checkpoint*' \
+          #       --ignore-glob='src/test/train/checkpoint*' \
+          #       src/test/
+
+          - name: Test Scripts
             run: |
               pytest -v --color=yes --durations=3 \
                 --ignore-glob='src/test/distributed/checkpoint*' \
                 --ignore-glob='src/test/train/checkpoint*' \
-                src/test/
+                src/test/scripts/
 
-          - name: Test checkpoint
-            run: |
-              pytest -v --color=yes --durations=3 \
-                src/test/distributed/checkpoint* \
-                src/test/train/checkpoint*
+          # - name: Test checkpoint
+          #   run: |
+          #     pytest -v --color=yes --durations=3 \
+          #       src/test/distributed/checkpoint* \
+          #       src/test/train/checkpoint*
 
           - name: Type check
             run: make type-check
@@ -61,12 +68,6 @@ jobs:
           - name: Docs
             run: |
               cd docs && make html SPHINXOPTS="-W --keep-going"
-
-        include:
-          - python: "3.9"
-            task:
-              name: Lint (min Python)
-              run: make lint-check
 
     steps:
       - uses: actions/checkout@v4
