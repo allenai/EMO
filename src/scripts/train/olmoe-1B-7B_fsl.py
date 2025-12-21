@@ -14,6 +14,7 @@ from typing import List, Optional, cast
 
 import rich
 
+from olmo_core.nn.moe.twolevel_topp_batchlb_router import MoETwoLevelTopPBatchLBRouterConfig
 from olmo_core.nn.moe.twolevel_sampling_nolb_router import MoETwoLevelSamplingNoLBRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_router import MoETwoLevelBatchLBRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_nomaskaux_router import MoETwoLevelBatchLBNoMaskAuxRouterConfig
@@ -220,6 +221,23 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
         # Replace router config
         model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBRouterConfig(**router_kwargs)
+    elif opts.model_type == "two-level_topp_lb-batch":
+        log.info("Applying two-level with batch-leve load balancing (olmoe lb) routers and top-p selection to the model...")
+        if opts.top_p is None:
+            raise ValueError("top_p must be specified for two-level topp batchlb loss model type.")
+        if opts.max_document_expert_pool is None or opts.min_document_expert_pool is None:
+            raise ValueError("Both max_document_expert_pool and min_document_expert_pool must be specified for two-level_topp_lb-batch model type.")
+        # Get existing router config parameters
+        router_kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
+        router_kwargs.pop("name")
+        router_kwargs.update(
+            top_p=opts.top_p,
+            max_document_expert_pool=opts.max_document_expert_pool,
+            min_document_expert_pool=opts.min_document_expert_pool,
+        )
+
+        # Replace router config
+        model_config.block.feed_forward_moe.router = MoETwoLevelTopPBatchLBRouterConfig(**router_kwargs)
     elif opts.model_type == "two-level_lb-batch_nomaskaux":
         log.info("Applying two-level with batch-leve load balancing with no masking on aux loss routers to the model...")
         if opts.document_expert_pool is None:
@@ -456,6 +474,21 @@ def parser_args():
         type=int,
         help="Global batch size to use.",
         default=1024,
+    )
+    parser.add_argument(
+        "--top_p",
+        type=float,
+        help="Top-p value for expert selection in two-level_topp_lb-batch router.",
+    )
+    parser.add_argument(
+        "--max_document_expert_pool",
+        type=int,
+        help="Maximum number of experts for a specific document to choose top-p from",
+    )
+    parser.add_argument(
+        "--min_document_expert_pool",
+        type=int,
+        help="Minimum number of experts for a specific document to choose top-p from",
     )
     opts, overrides = parser.parse_known_args()
     return opts, overrides
