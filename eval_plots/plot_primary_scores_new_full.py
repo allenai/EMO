@@ -163,18 +163,18 @@ MODEL_RUNS: List[Dict[str, Any]] = [
 #         "linewidth": 2,
 #         "markersize": 9,
 #     },
-#     {
-#         "label": "mutualinfo keepk32",
-#         "template": (
-#             f"mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205_step30995_"
-#             "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-#         ),
-#         "family": "mutualinfo",
-#         "marker": "o",
-#         "brightness": 1.0,
-#         "linewidth": 2,
-#         "markersize": 9,
-#     },
+    {
+        "label": "mutualinfo keepk32",
+        "template": (
+            f"mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205_step30995_"
+            "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
+        ),
+        "family": "mutualinfo",
+        "marker": "o",
+        "brightness": 1.0,
+        "linewidth": 2,
+        "markersize": 9,
+    },
 #     {
 #         "label": "mutualinfo keepk8",
 #         "template": (
