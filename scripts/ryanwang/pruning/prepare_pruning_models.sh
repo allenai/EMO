@@ -18,27 +18,20 @@ BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
 run_configs=(
-#  "moe_1b14b_128experts_olmoe-mix_130B_1117|prune_keep_k=32"
-#  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115|prune_keep_k=32"
-
-#  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115|prune_keep_k=32"
-#  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115|prune_keep_k=8"
-#  "moe_1b7b_128experts_olmoe-mix_130B_1103|prune_keep_k=32"
-#  "twolevel-32_1b7b_128experts_olmoe-mix_130B_1110|prune_keep_k=32"
-
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121|prune_keep_k=32"
+#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121|prune_keep_k=32"
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121|prune_keep_k=8"
 
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203|prune_keep_k=32"
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203|prune_keep_k=8"
 
+    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217|prune_keep_k=128"
+
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205|prune_keep_k=32"
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205|prune_keep_k=8"
 
-#    "twolevelbatchlb-8_1b7b_stability_1207|prune_keep_k=32"
-#    "twolevelbatchlb-8_1b7b_stability_1207|prune_keep_k=8"
+#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123|prune_keep_k=32"
+    "moe_1b35b_320experts_lb-1e-1_1214|prune_keep_k=128"
 
-    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123|prune_keep_k=32"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127|prune_keep_k=32"
 )
 
