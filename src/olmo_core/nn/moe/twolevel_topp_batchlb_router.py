@@ -117,6 +117,10 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
         doc_entropy_sum = logits.new_zeros(())
         doc_entropy_count = 0
 
+        # used to store avg for self._router_avg_num_expert_per_document
+        doc_num_experts_sum = 0
+
+
         for seq_idx in range(x.size(0)):
             start = 0
             document_boundary = document_boundaries_cpu[seq_idx]
@@ -145,6 +149,8 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
                 # limit to the right range
                 num_experts_to_keep = min(max(num_experts_to_keep, self.min_document_expert_pool), self.max_document_expert_pool)
 
+                doc_num_experts_sum += num_experts_to_keep
+
                 discard_idx = sorted_idx[num_experts_to_keep:]
                 if discard_idx.numel() > 0:
                     logits_mask[seq_idx, start:end, discard_idx] = True
@@ -160,6 +166,10 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
             # self._router_documentlevel_expert_entropy += avg_doc_entropy
             avg_doc_entropy = (doc_entropy_sum / doc_entropy_count).detach()
             self._router_documentlevel_expert_entropy += avg_doc_entropy.item()
+
+            # log the average number of experts per document
+            avg_num_experts_per_document = doc_num_experts_sum / doc_entropy_count
+            self._router_avg_num_expert_per_document += avg_num_experts_per_document
 
         # shape: (batch_size, seq_len, num_experts)
         if self.gating_function == MoERouterGatingFunction.softmax:
