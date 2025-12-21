@@ -27,7 +27,7 @@ model_names=(
 #   "twolevelsamplingnolb-32_1b14b_stability_1127"
 
     "moe_1b35b_320experts_lb-1e-1_1214"
-    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217"
+#    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217"
 #    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216/step30995-hf"
 #    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219/step30995-hf"
 )
@@ -138,7 +138,7 @@ for model_name in "${model_names[@]}"; do
         dataset_paths="${data_folder}/part-0-00000.npy"
         label_mask_paths="${data_folder}/part-0-00000_mask.npy"
 
-        runname="${model_name}/${step}_${pruned_model_name}_finetune-${task_prefix}_${variation}"
+        runname="${model_name}_${step}_${pruned_model_name}_finetune-${task_prefix}_${variation}"
         wandb_name=${runname}
         # limit runname to 128 characters, take first 25 and last 75
         runname=$(echo $runname | cut -c1-35)_$(echo $runname | rev | cut -c1-65 | rev)
