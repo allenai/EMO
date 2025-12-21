@@ -18,24 +18,25 @@ BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
 model_names=(
-#  "moe_1b14b_128experts_olmoe-mix_130B_1117"
-#  "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115"
-
-   "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121"
+#   "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121"
 #   "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203"
-#   "twolevelbatchlb-8_1b7b_stability_1207"
 
 #   "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205"
 
-   "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123"
+#   "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123"
 #   "twolevelsamplingnolb-32_1b14b_stability_1127"
+
+    "moe_1b35b_320experts_lb-1e-1_1214"
+    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217"
+#    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216/step30995-hf"
+#    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219/step30995-hf"
 )
 #model_name="moe_1b7b_olmoe-mix"
 step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-4e-6_bs-128"
+variation="newdefault_lr-4e-5"
 
 experiment_tag="pruned_finetuning"
 #experiment_tag="pruned_finetuning_ablate"
@@ -57,8 +58,8 @@ elif [ "$variation" == "newdefault_lr-4e-6_bs-128" ]; then
     # reinitialize optim and use masked finetuning (should be checked) and batch size of 128 (should be checked)
     variation_flags="--train_module.optim.lr=4e-6"
 else
-    echo "Warning: Unknown variation '$variation'. Using default settings."
-    variation_flags=""
+    echo "error: Unknown variation '$variation'. "
+    exit 1
 fi
 
 # first argument is which validation used for pruning, second is training dataset
@@ -72,8 +73,8 @@ task_configs=(
 #  "task-piqa_rc_validation_keepk32|piqa:rc_train::olmes"
 #  "task-socialiqa_rc_validation_keepk32|socialiqa:rc_train::olmes"
 #  "task-winogrande_rc_validation_keepk32|winogrande:rc_train::olmes"
-  "task-synthea_rc_validation_0shot_keepk32|synthea:rc_train_0shot::olmes"
-#  "task-gsm8k_generation_validation_0shot_keepk32|gsm8k_generation:train_0shot::olmes"
+#  "task-synthea_rc_validation_0shot_keepk32|synthea:rc_train_0shot::olmes"
+  "task-gsm8k_generation_validation_0shot_keepk32|gsm8k_generation:train_0shot::olmes"
 
 #
 #  "task-arc_easy_rc_validation_keepk8|arc_easy:rc_train::olmes"
