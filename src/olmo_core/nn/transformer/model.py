@@ -511,7 +511,7 @@ class Transformer(nn.Module):
         # compute document boundaries here if router is a MoETwoLevelRouter
         is_moe_twolevel_router = False
         if hasattr(self.blocks["0"], "feed_forward_moe"):
-            is_moe_twolevel_router = isinstance(self.blocks["0"].feed_forward_moe.router, MoETwoLevelRouter) or isinstance(self.blocks[0].feed_forward_moe.router, MoETwoLevelTopPBatchLBRouter)
+            is_moe_twolevel_router = isinstance(self.blocks["0"].feed_forward_moe.router, MoETwoLevelRouter) or isinstance(self.blocks["0"].feed_forward_moe.router, MoETwoLevelTopPBatchLBRouter)
         document_boundaries = []
         if is_moe_twolevel_router:
             eos_token_id = self.blocks["0"].feed_forward_moe.router.eos_token_id
