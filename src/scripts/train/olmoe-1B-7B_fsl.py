@@ -234,6 +234,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             top_p=opts.top_p,
             max_document_expert_pool=opts.max_document_expert_pool,
             min_document_expert_pool=opts.min_document_expert_pool,
+            eos_token_id=tokenizer_config.eos_token_id,
         )
 
         # Replace router config

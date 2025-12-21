@@ -55,6 +55,7 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
             top_p: float,
             max_document_expert_pool: int,
             min_document_expert_pool: int,
+            eos_token_id: int,
             **kwargs,
     ):
         super().__init__(dtype=dtype, init_device=init_device, **kwargs)
@@ -73,6 +74,11 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
                 f"min_document_expert_pool must be in the range [1, num_experts], got {min_document_expert_pool} with num_experts={self.num_experts}"
             )
         self.min_document_expert_pool = min_document_expert_pool
+
+        # the eos token id
+        if eos_token_id is None:
+            raise OLMoConfigurationError("eos_token_id must be provided for MoETwoLevelRouter")
+        self.eos_token_id = eos_token_id
 
 
     def forward(
@@ -275,6 +281,7 @@ class MoETwoLevelTopPBatchLBRouterConfig(MoERouterConfig):
     top_p: float = 0.6
     max_document_expert_pool: int = 128
     min_document_expert_pool: int = 1
+    eos_token_id: Optional[int] = None
 
     # just update the build to call the correct new class
     def build(
