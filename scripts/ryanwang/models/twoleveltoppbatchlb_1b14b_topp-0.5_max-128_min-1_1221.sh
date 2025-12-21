@@ -3,7 +3,7 @@
 #     - removed qk-norm from the model compared to parent.
 # STATUS: USED
 ##############################################################
-top_p=0.7
+top_p=0.1
 max_document_expert_pool=128
 min_document_expert_pool=1
 #document_expert_pool=12
