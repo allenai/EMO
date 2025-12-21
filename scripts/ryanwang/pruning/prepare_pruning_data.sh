@@ -16,8 +16,10 @@ MODELS=(
 
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995-hf"
 
-    "moe_1b35b_320experts_lb-1e-1_1214/step30995-hf"
-    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995-hf"
+#    "moe_1b35b_320experts_lb-1e-1_1214/step30995-hf"
+#    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995-hf"
+    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216/step30995-hf"
+    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219/step30995-hf"
 
     )
 #BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/prune"
