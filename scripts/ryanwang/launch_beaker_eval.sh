@@ -7,13 +7,7 @@
 MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
 #MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 MODELS=(
-#    "moe_1b14b_128experts_olmoe-mix_130B_1117/step30995-hf"
-#    "dense_1b_olmoe-mix_1119/step30995-hf"
-#    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995-hf"
-
-#    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995-hf"
-#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_1121/step30995-hf"
-#    "twolevelbatchlb-32_1b14b_stability_prenorm_1120/step30995-hf"
+    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995-hf"
     "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
     "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995-hf"
@@ -62,8 +56,10 @@ TASK_GROUPS_LIST=(
 #  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes"
 #  "drop|drop::olmes"
 
-  "synthea:rc_test_0shot::olmes"
-#  "gsm8k_generation:test_0shot::olmes"
+#  "synthea|synthea:rc_test_0shot::olmes"
+#  "gsm8k|gsm8k_generation:test_0shot::olmes"
+  "coqa|coqa:test_0shot::olmes"
+  "squad|squad:test_0shot::olmes"
 
 #   GSM8K
 #  "gsm8k_test|gsm8k:perplexity_test::olmes"
