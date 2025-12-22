@@ -19,7 +19,7 @@ PARENT_MODELS=(
     "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
 
-#    "moe_1b35b_320experts_lb-1e-1_1214/step30995"
+    "moe_1b35b_320experts_lb-1e-1_1214/step30995"
 #    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995"
 #    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216/step30995"
 #    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219/step30995"
@@ -114,13 +114,19 @@ FINETUNE_TASKS=(
 #    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step644-hf"
 #    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step807-hf"
 
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step0-hf"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step115-hf"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step230-hf"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step345-hf"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step460-hf"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step579-hf"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step0-hf"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step115-hf"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step230-hf"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step345-hf"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step460-hf"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step579-hf"
 
+    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step0-hf"
+    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step1623-hf"
+    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step3246-hf"
+    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step4869-hf"
+    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step6492-hf"
+    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step8118-hf"
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals"
@@ -249,7 +255,7 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
             --allow-dirty \
             --cluster $CLUSTER \
             --priority urgent \
-            --gpus $gpus \
+            --gpus 8 \
             --env-secret HF_TOKEN=RYAN_HF_TOKEN \
             --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
             --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
@@ -259,8 +265,8 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
                 --model-type hf \
                 --task $TASK \
                 --remote-output-dir $OUTPUT_DIR \
-                --batch-size $batch_size \
-                --gpus $gpus \
+                --batch-size 32 \
+                --gpus 8 \
                 "
 
             echo "Launched evaluation for model: $model, group: $GROUP_NAME"

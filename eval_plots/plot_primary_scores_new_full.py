@@ -60,7 +60,7 @@ TASK_STEPS = {
     # "socialiqa:rc_test":      [0, 607, 1214, 1821, 2428, 3036],
     # "winogrande:rc_test":     [0, 738, 1476, 2214, 2952, 3693],
     "gsm8k_generation:train_0shot": [0, 121, 242, 363, 484, 606],
-    # "synthea:rc_train_0shot": [0, 161, 322, 483, 644, 807],
+    "synthea:rc_train_0shot": [0, 161, 322, 483, 644, 807],
 }
 
 # Family color mapping - define base colors for each model family
@@ -91,18 +91,18 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "linewidth": 2,             # Line width
         "markersize": 9,            # Marker size
     },
-    {
-        "label": "moe train320 keepk128",
-        "template": (
-            f"moe_1b35b_320experts_lb-1e-1_1214_step30995_"
-            "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
-        ),
-        "family": "moe",
-        "marker": "o",
-        "brightness": 0.8,
-        "linewidth": 2,
-        "markersize": 9,
-    },
+    # {
+    #     "label": "moe train320 keepk128",
+    #     "template": (
+    #         f"moe_1b35b_320experts_lb-1e-1_1214_step30995_"
+    #         "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
+    #     ),
+    #     "family": "moe",
+    #     "marker": "o",
+    #     "brightness": 0.8,
+    #     "linewidth": 2,
+    #     "markersize": 9,
+    # },
     {
         "label": "twolevelbatchlb train32/128 keepk32",
         "template": (
@@ -116,42 +116,42 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "markersize": 9,
     },
 
-    {
-        "label": "twolevelbatchlb train128/320 keepk128 poolsched",
-        "template": (
-            f"twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217_step30995_"
-            "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
-        ),
-        "family": "twolevelbatchlb train32/128",
-        "marker": "o",
-        "brightness": 0.8,
-        "linewidth": 2,
-        "markersize": 9,
-    },
-    {
-        "label": "twolevelbatchlb train32/320 keepk128",
-        "template": (
-            f"twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216_step30995_"
-            "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
-        ),
-        "family": "twolevelbatchlb train32/128",
-        "marker": "o",
-        "brightness": 0.5,
-        "linewidth": 2,
-        "markersize": 9,
-    },
-    {
-        "label": "twolevelbatchlb train128/320 keepk128",
-        "template": (
-            f"twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219_step30995_"
-            "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
-        ),
-        "family": "twolevelbatchlb train32/128",
-        "marker": "o",
-        "brightness": 0.2,
-        "linewidth": 2,
-        "markersize": 9,
-    },
+    # {
+    #     "label": "twolevelbatchlb train128/320 keepk128 poolsched",
+    #     "template": (
+    #         f"twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217_step30995_"
+    #         "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
+    #     ),
+    #     "family": "twolevelbatchlb train32/128",
+    #     "marker": "o",
+    #     "brightness": 0.8,
+    #     "linewidth": 2,
+    #     "markersize": 9,
+    # },
+    # {
+    #     "label": "twolevelbatchlb train32/320 keepk128",
+    #     "template": (
+    #         f"twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216_step30995_"
+    #         "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
+    #     ),
+    #     "family": "twolevelbatchlb train32/128",
+    #     "marker": "o",
+    #     "brightness": 0.5,
+    #     "linewidth": 2,
+    #     "markersize": 9,
+    # },
+    # {
+    #     "label": "twolevelbatchlb train128/320 keepk128",
+    #     "template": (
+    #         f"twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219_step30995_"
+    #         "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
+    #     ),
+    #     "family": "twolevelbatchlb train32/128",
+    #     "marker": "o",
+    #     "brightness": 0.2,
+    #     "linewidth": 2,
+    #     "markersize": 9,
+    # },
 
     # {
     #     "label": "twolevelbatchlb train32/128 keepk8",
@@ -412,7 +412,7 @@ def get_validation_suffix(task_name: str) -> str:
 def get_lr_suffix(task_name: str) -> str:
     """Get the learning rate suffix for task in model paths (e.g., 'lr-4e-5', 'lr-4e-6_bs-128')."""
     if task_name == "synthea:rc_train_0shot":
-        return "lr-4e-6_bs-128"
+        return "lr-4e-5"
     else:
         # Default learning rate for other tasks
         return "lr-4e-5"
