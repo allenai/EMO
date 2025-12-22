@@ -440,13 +440,14 @@ class MoERouter(nn.Module):
 
             # Histogram statistics for expert counts per document
             if hasattr(self, '_router_counts_num_expert_per_document') and len(self._router_counts_num_expert_per_document) > 0:
-                counts_tensor = torch.tensor(self._router_counts_num_expert_per_document, device=self.device)
+                counts_tensor = torch.tensor(self._router_counts_num_expert_per_document, dtype=torch.float32)
+                p25, p50, p75, p95 = torch.quantile(counts_tensor, torch.tensor([0.25, 0.50, 0.75, 0.95]))
                 out["router expert counts per document (min)"] = (counts_tensor.min(), ReduceType.mean)
                 out["router expert counts per document (max)"] = (counts_tensor.max(), ReduceType.mean)
-                out["router expert counts per document (p25)"] = (counts_tensor.quantile(0.25), ReduceType.mean)
-                out["router expert counts per document (p50)"] = (counts_tensor.quantile(0.50), ReduceType.mean)
-                out["router expert counts per document (p75)"] = (counts_tensor.quantile(0.75), ReduceType.mean)
-                out["router expert counts per document (p95)"] = (counts_tensor.quantile(0.95), ReduceType.mean)
+                out["router expert counts per document (p25)"] = (p25, ReduceType.mean)
+                out["router expert counts per document (p50)"] = (p50, ReduceType.mean)
+                out["router expert counts per document (p75)"] = (p75, ReduceType.mean)
+                out["router expert counts per document (p95)"] = (p95, ReduceType.mean)
                 # Standard deviation
                 out["router expert counts per document (std)"] = (counts_tensor.std(), ReduceType.mean)
 
