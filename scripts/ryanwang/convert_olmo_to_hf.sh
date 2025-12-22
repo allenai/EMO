@@ -3,7 +3,7 @@ BASE_FOLDER="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models"
 
 
 PARENT_MODELS=(
-#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
+    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995"
 #    "twolevelbatchlb-8_1b7b_stability_1207/step30995"
 
@@ -108,12 +108,12 @@ FINETUNE_TASKS=(
 #    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step644"
 #    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step807"
 
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step0"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step115"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step230"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step345"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step460"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step579"
+    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step0"
+    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step1623"
+    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step3246"
+    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step4869"
+    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step6492"
+    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step8118"
 
 
 )
