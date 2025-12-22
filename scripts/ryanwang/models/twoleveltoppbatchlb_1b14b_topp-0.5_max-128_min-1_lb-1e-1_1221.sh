@@ -3,13 +3,13 @@
 #     - removed qk-norm from the model compared to parent.
 # STATUS: USED
 ##############################################################
-top_p=0.2
-max_document_expert_pool=128
+top_p=0.4
+max_document_expert_pool=32
 min_document_expert_pool=1
 lb=1e-1
 #document_expert_pool=12
 
-runname="twoleveltoppbatchlb_1b14b_topp-${top_p}_max-${max_document_expert_pool}_min-${min_document_expert_pool}_lb-${lb}_1221"
+runname="twoleveltoppbatchlb_1b14b_topp-${top_p}_max-${max_document_expert_pool}_min-${min_document_expert_pool}_lb-${lb}_1222"
 
 #torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
 #  $runname \
@@ -56,8 +56,7 @@ python -m olmo_core.launch.beaker \
 		--top_p=${top_p} \
 		--max_document_expert_pool=${max_document_expert_pool} \
 		--min_document_expert_pool=${min_document_expert_pool} \
-		--model.block.feed_forward_moe.lb_loss_weight=${lb} \
-    --trainer.hard_stop='{value: 5000, unit: steps}'
+		--model.block.feed_forward_moe.lb_loss_weight=${lb}
 
 
 
