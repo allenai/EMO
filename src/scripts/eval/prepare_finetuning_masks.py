@@ -91,6 +91,8 @@ def prepare_finetuning_masks(args_dict):
                 # create the label mask for the previous document
                 label_mask = np.ones(len(prev_document), dtype=np.bool_)
                 # mask out everything before and including the delimiter for the final question/answer pair
+                if len(delimiter_pos) == 0:
+                    breakpoint()
                 label_mask[:delimiter_pos[-1] + len(delimiter_ids)] = False
 
                 # make sure that the document is not all masked out
