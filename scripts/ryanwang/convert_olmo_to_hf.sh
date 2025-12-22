@@ -3,7 +3,7 @@ BASE_FOLDER="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models"
 
 
 PARENT_MODELS=(
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
+#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995"
 #    "twolevelbatchlb-8_1b7b_stability_1207/step30995"
 
@@ -11,7 +11,7 @@ PARENT_MODELS=(
 
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
-#    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
+    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
 
 #    "moe_1b35b_320experts_lb-1e-1_1214/step30995"
 #    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995"
@@ -24,7 +24,8 @@ PARENT_MODELS=(
 #postfix=""
 #postfix="_keepk128/newdefault_lr-4e-5"
 #postfix="_keepk32/newdefault_lr-4e-5_bs-128"
-postfix="_keepk32/newdefault_lr-4e-5"
+postfix="_keepk32/newdefault_lr-4e-6_bs-128"
+#postfix="_keepk32/newdefault_lr-4e-5"
 #postfix="_keepk8/newdefault_lr-4e-5"
 #postfix="_keepk32"
 #postfix="_keepk32/lr-3e-5_warmup-0.2"
@@ -100,19 +101,19 @@ FINETUNE_TASKS=(
 #    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step484"
 #    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step606"
 
-#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step0"
-#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step161"
-#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step322"
-#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step483"
-#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step644"
-#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step807"
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step0"
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step161"
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step322"
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step483"
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step644"
+    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step807"
 
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step0"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step115"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step230"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step345"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step460"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step579"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step0"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step115"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step230"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step345"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step460"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step579"
 
 
 )
