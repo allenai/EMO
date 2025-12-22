@@ -60,8 +60,8 @@ elif [ "$variation" == "newdefault_lr-4e-4" ]; then
 #    # reinitialize optim and use masked finetuning and batch size of 32 (should be checked)
 #    variation_flags="--train_module.optim.lr=8e-6"
 else
-    echo "Warning: Unknown variation '$variation'. Using default settings."
-    variation_flags=""
+    echo "error: Unknown variation '$variation'. "
+    exit 1
 fi
 
 base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"

@@ -66,6 +66,11 @@ def prepare_finetuning_masks(args_dict):
             del mmap_mask
             continue
 
+        if "squad" in token_path.lower():
+            # we change the delimiter_str
+            delimiter_str = "A: "
+            delimiter_ids = tokenizer(delimiter_str).input_ids
+
         prev_document = []
         document_start_idx = 0  # Track where the current document started
 
