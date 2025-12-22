@@ -18,13 +18,19 @@ PARENT_MODELS=(
 
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
-    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
+#    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
+
+    "moe_1b35b_320experts_lb-1e-1_1214/step30995"
+    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995"
+    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216/step30995"
+    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219/step30995"
+
 )
 
 # used to iterate on different finetuning variations
 #postfix=""
-#postfix="_keepk32/newdefault_lr-4e-5"
-postfix="_keepk32/newdefault_lr-4e-5_bs-128"
+postfix="_keepk128/newdefault_lr-4e-5"
+#postfix="_keepk32/newdefault_lr-4e-5_bs-128"
 #postfix="_keepk8/newdefault_lr-4e-5"
 #postfix="_keepk32"
 #postfix="_keepk32/lr-3e-5_warmup-0.2"
@@ -93,72 +99,72 @@ FINETUNE_TASKS=(
 #    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step2952"
 #    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step3693"
 
-#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step0"
-#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step121"
-#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step242"
-#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step363"
-#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step484"
-#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step606"
+    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step0"
+    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step121"
+    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step242"
+    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step363"
+    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step484"
+    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step606"
 
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step0"
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step161"
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step322"
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step483"
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step644"
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step807"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step0"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step161"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step322"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step483"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step644"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step807"
 
 
 )
 
-#for BASE in "${PARENT_MODELS[@]}"; do
-#  for FINETUNE in "${FINETUNE_TASKS[@]}"; do
-#
-#    # check if "dense" appears in BASE, if so then change dir structure (dense did not go through pruning)
-#    if [[ "$BASE" == *"dense"* ]]; then
-#      # remove everything before the first "/" in FINETUNE
-#      FINETUNE="${FINETUNE#*/}"
-#      MODEL_DIR="${BASE_FOLDER}/${BASE}/${FINETUNE}"
-#    else
-#      MODEL_DIR="${BASE_FOLDER}/${BASE}_${FINETUNE}"
-#    fi
-#
-#    echo "checkpoint-input-path is ${MODEL_DIR}"
-#    echo "output_dir is ${MODEL_DIR}-hf"
-#
-#    # Beaker names can only contain letters, digits, periods, dashes, and underscores.
-#    job_name="convert_${FINETUNE//\//_}"
-#    # limit to 120 char
-#    job_name=${job_name:0:120}
-#
-#    # launch the gantry run and delete the original model
-#
-#    gantry run \
-#    --name $job_name \
-#    --weka oe-training-default:/weka/oe-training-default \
-#    --install 'pip install -e .[all]' \
-#    --budget ai2/oceo \
-#    --workspace ai2/flex2 \
-#    --allow-dirty \
-#    --cluster "ai2/jupiter-cirrascale-2" \
-#    --cpus 16 \
-#    --gpus 0 \
-#    --priority urgent \
-#    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-#    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-#    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-#    -- \
-#    bash -c '
-#    python src/examples/huggingface/convert_checkpoint_to_hf.py \
-#      --checkpoint-input-path "'"${MODEL_DIR}"'" \
-#      --max-sequence-length 4096 \
-#      --huggingface-output-dir "'"${MODEL_DIR}"'-hf" \
-#      --dtype float32 \
-#      --skip-validation \
-#    && \
-#      rm -rf "'"${MODEL_DIR}"'"
-#  '
-#  done
-#done
+for BASE in "${PARENT_MODELS[@]}"; do
+  for FINETUNE in "${FINETUNE_TASKS[@]}"; do
+
+    # check if "dense" appears in BASE, if so then change dir structure (dense did not go through pruning)
+    if [[ "$BASE" == *"dense"* ]]; then
+      # remove everything before the first "/" in FINETUNE
+      FINETUNE="${FINETUNE#*/}"
+      MODEL_DIR="${BASE_FOLDER}/${BASE}/${FINETUNE}"
+    else
+      MODEL_DIR="${BASE_FOLDER}/${BASE}_${FINETUNE}"
+    fi
+
+    echo "checkpoint-input-path is ${MODEL_DIR}"
+    echo "output_dir is ${MODEL_DIR}-hf"
+
+    # Beaker names can only contain letters, digits, periods, dashes, and underscores.
+    job_name="convert_${FINETUNE//\//_}"
+    # limit to 120 char
+    job_name=${job_name:0:120}
+
+    # launch the gantry run and delete the original model
+
+    gantry run \
+    --name $job_name \
+    --weka oe-training-default:/weka/oe-training-default \
+    --install 'pip install -e .[all]' \
+    --budget ai2/oceo \
+    --workspace ai2/flex2 \
+    --allow-dirty \
+    --cluster "ai2/jupiter-cirrascale-2" \
+    --cpus 16 \
+    --gpus 0 \
+    --priority urgent \
+    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+    -- \
+    bash -c '
+    python src/examples/huggingface/convert_checkpoint_to_hf.py \
+      --checkpoint-input-path "'"${MODEL_DIR}"'" \
+      --max-sequence-length 4096 \
+      --huggingface-output-dir "'"${MODEL_DIR}"'-hf" \
+      --dtype float32 \
+      --skip-validation \
+    && \
+      rm -rf "'"${MODEL_DIR}"'"
+  '
+  done
+done
 
 MODELS=(
 #    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
@@ -181,37 +187,37 @@ MODELS=(
 
 )
 
-for MODEL in "${MODELS[@]}"; do
-#
-    python src/examples/huggingface/convert_checkpoint_to_hf.py \
-          --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}" \
-          --max-sequence-length 4096 \
-          --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}-hf" \
-          --dtype float32 \
-          --skip-validation
-##  gantry run \
-##    --name convert-${MODEL//\//_} \
-##    --weka oe-training-default:/weka/oe-training-default \
-##    --beaker-image "ai2/cuda12.8-dev-ubuntu22.04-notorch" \
-##    --install 'pip install -e .[all] && pip install --no-build-isolation flash-attn==2.8.2' \
-##    --budget ai2/oceo \
-##    --workspace ai2/flex2 \
-##    --allow-dirty \
-##    --cluster "ai2/jupiter-cirrascale-2" \
-##    --cpus 16 \
-##    --gpus 0 \
-##    --priority urgent \
-##    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-##    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-##    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-##    -- \
-##    bash -c '
-##    python src/examples/huggingface/convert_checkpoint_to_hf.py \
-##      --checkpoint-input-path "'"${BASE_FOLDER}/${MODEL}"'" \
-##      --max-sequence-length 4096 \
-##      --huggingface-output-dir "'"${BASE_FOLDER}/${MODEL}"'-hf" \
-##      --dtype float32 \
-##      --skip-validation \
-##  '
+#for MODEL in "${MODELS[@]}"; do
 ##
-done
+#    python src/examples/huggingface/convert_checkpoint_to_hf.py \
+#          --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}" \
+#          --max-sequence-length 4096 \
+#          --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}-hf" \
+#          --dtype float32 \
+#          --skip-validation
+###  gantry run \
+###    --name convert-${MODEL//\//_} \
+###    --weka oe-training-default:/weka/oe-training-default \
+###    --beaker-image "ai2/cuda12.8-dev-ubuntu22.04-notorch" \
+###    --install 'pip install -e .[all] && pip install --no-build-isolation flash-attn==2.8.2' \
+###    --budget ai2/oceo \
+###    --workspace ai2/flex2 \
+###    --allow-dirty \
+###    --cluster "ai2/jupiter-cirrascale-2" \
+###    --cpus 16 \
+###    --gpus 0 \
+###    --priority urgent \
+###    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+###    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+###    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+###    -- \
+###    bash -c '
+###    python src/examples/huggingface/convert_checkpoint_to_hf.py \
+###      --checkpoint-input-path "'"${BASE_FOLDER}/${MODEL}"'" \
+###      --max-sequence-length 4096 \
+###      --huggingface-output-dir "'"${BASE_FOLDER}/${MODEL}"'-hf" \
+###      --dtype float32 \
+###      --skip-validation \
+###  '
+###
+#done
