@@ -30,7 +30,8 @@ from .tasks import (
     splits_winogrande,
     splits_gsm8k,
     splits_synthea,
-    splits_coqa
+    splits_coqa,
+    splits_squad
 )
 
 
@@ -171,6 +172,10 @@ new_task_registry: Dict = {
     "coqa:train_0shot": splits_coqa.COQA_Train_0shot,
     "coqa:validation_0shot": splits_coqa.COQA_Validation_0shot,
     "coqa:test_0shot": splits_coqa.COQA_Test_0shot,
+
+    "squad:train_0shot": splits_squad.SQUAD_Train_0shot,
+    "squad:validation_0shot": splits_squad.SQUAD_Validation_0shot,
+    "squad:test_0shot": splits_squad.SQUAD_Validation_0shot,
 
 
 }

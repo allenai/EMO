@@ -6,6 +6,51 @@ from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 def get_task_configs():
     TASK_CONFIGS.update(
         {
+            "squad:train_0shot::olmes": {
+                "task_name": "squad:train_0shot",
+                "split": "train",
+                "primary_metric": "exact_match",
+                "num_shots": 0,
+                "generation_kwargs": {
+                    "max_gen_toks": 32,
+                },
+                "context_kwargs": {
+                    "short_prefix": True,
+                },
+                "metadata": {
+                    "regimes": [],
+                },
+            },
+            "squad:validation_0shot::olmes": {
+                "task_name": "squad:validation_0shot",
+                "split": "validation",
+                "primary_metric": "exact_match",
+                "num_shots": 0,
+                "generation_kwargs": {
+                    "max_gen_toks": 32,
+                },
+                "context_kwargs": {
+                    "short_prefix": True,
+                },
+                "metadata": {
+                    "regimes": [],
+                },
+            },
+            "squad:test_0shot::olmes": {
+                "task_name": "squad:test_0shot",
+                "split": "test",
+                "primary_metric": "exact_match",
+                "num_shots": 0,
+                "generation_kwargs": {
+                    "max_gen_toks": 32,
+                },
+                "context_kwargs": {
+                    "short_prefix": True,
+                },
+                "metadata": {
+                    "regimes": [],
+                },
+            },
             "coqa:train_0shot::olmes": {
                 "task_name": "coqa:train_0shot",
                 "split": "train",
