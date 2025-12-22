@@ -55,7 +55,7 @@ def get_correct_training_data(eval_dataset_name, eval_folder):
             data += [req["request"]["context"] + req["request"]["continuation"]]
     if requests_data[0]["request_type"] == "generate_until":
         for req in requests_data:
-            data += [req["request"]["context"] + req["doc"]["choices"][0][0]]
+            data += [req["request"]["context"] + req["doc"]["choices"][0]]
     else:
         raise NotImplementedError(f"Dataset {eval_dataset_name} not implemented in get_prompt_sequences_for_evaluation")
 

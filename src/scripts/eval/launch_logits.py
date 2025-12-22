@@ -80,7 +80,7 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
         for req, pred in zip(requests_data, predictions_data):
             assert req['doc_id'] == pred[
                 'doc_id'], f"Request doc_id {req['doc_id']} does not match prediction doc_id {pred['doc_id']}"
-            prompts += [req["request"]["context"] + req["doc"]["choices"][0][0]]
+            prompts += [req["request"]["context"] + req["doc"]["choices"][0]]
             correct += [1 if pred["metrics"]["f1"] > 0 else 0]
     else:
         raise NotImplementedError(f"Dataset {eval_dataset_name} not implemented in get_prompt_sequences_for_evaluation")
