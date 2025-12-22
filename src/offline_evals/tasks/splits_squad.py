@@ -29,7 +29,7 @@ class SQUAD_Train_0shot(SQUAD_Base):
         # A: 1968
 
         q_prefix = "Q: " if self.task_config["context_kwargs"]["short_prefix"] else "Question: "
-        a_prefix = "A:" if self.task_config["context_kwargs"]["short_prefix"] else "Answer: "
+        a_prefix = "A: " if self.task_config["context_kwargs"]["short_prefix"] else "Answer: "
         if self.task_config["context_kwargs"]["reduced_spacing"]:
             query = f"Title: {doc['title']}\nBackground: {doc['context']}\n"
             query += f"{q_prefix}{doc['question']}\n{a_prefix}"
@@ -57,7 +57,7 @@ class SQUAD_Validation_0shot(SQUAD_Base):
         # A: 1968
 
         q_prefix = "Q: " if self.task_config["context_kwargs"]["short_prefix"] else "Question: "
-        a_prefix = "A:" if self.task_config["context_kwargs"]["short_prefix"] else "Answer: "
+        a_prefix = "A: " if self.task_config["context_kwargs"]["short_prefix"] else "Answer: "
         if self.task_config["context_kwargs"]["reduced_spacing"]:
             query = f"Title: {doc['title']}\nBackground: {doc['context']}\n"
             query += f"{q_prefix}{doc['question']}\n{a_prefix}"
