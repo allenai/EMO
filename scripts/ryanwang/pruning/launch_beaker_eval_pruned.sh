@@ -9,26 +9,26 @@ PRUNE_DIR="${BASE_DIR}/prune"
 #MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 
 PARENT_MODELS=(
-#    "moe_1b14b_128experts_olmoe-mix_130B_1117/step30995"
-#    "dense_1b_olmoe-mix_1119/step30995"
-#    "dense_1b_olmoe-mix_1119/step30995/noloadoptim"
-#    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
-
-    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
+#    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995"
 #    "twolevelbatchlb-8_1b7b_stability_1207/step30995"
-
 
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995"
 
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
+
+    "moe_1b35b_320experts_lb-1e-1_1214/step30995"
+    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995"
+#    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216/step30995"
+#    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219/step30995"
+
 )
 
 #postfix=""
-#postfix="_keepk32/newdefault_lr-4e-5"
-postfix="_keepk32/newdefault_lr-4e-5_bs-128"
+postfix="_keepk128/newdefault_lr-4e-5"
+#postfix="_keepk32/newdefault_lr-4e-5_bs-128"
 #postfix="_keepk8/newdefault_lr-4e-5"
 #postfix="_keepk32"
 #postfix="_keepk32/lr-7e-5_warmup-0.1"
@@ -98,19 +98,19 @@ FINETUNE_TASKS=(
 #    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step2952-hf"
 #    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step3693-hf"
 
-#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step0-hf"
-#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step121-hf"
-#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step242-hf"
-#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step363-hf"
-#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step484-hf"
-#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step606-hf"
+    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step0-hf"
+    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step121-hf"
+    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step242-hf"
+    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step363-hf"
+    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step484-hf"
+    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step606-hf"
 
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step0-hf"
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step161-hf"
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step322-hf"
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step483-hf"
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step644-hf"
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step807-hf"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step0-hf"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step161-hf"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step322-hf"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step483-hf"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step644-hf"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step807-hf"
 
 )
 
@@ -134,8 +134,8 @@ TASK_GROUPS_LIST=(
 #  "piqa|piqa:rc_test::olmes"
 #  "socialiqa|socialiqa:rc_test::olmes"
 #  "winogrande|winogrande:rc_test::olmes"
-#  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
-  "synthea|synthea:rc_test_0shot::olmes"
+  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
+#  "synthea|synthea:rc_test_0shot::olmes"
 
 #   MMLU
 #  "mmlu_rc_test|mmlu:rc_test::olmes"
