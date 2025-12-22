@@ -430,6 +430,13 @@ class MoERouter(nn.Module):
                 ReduceType.mean,
             )
 
+            if self._router_avg_num_expert_per_document != 0.0:
+                avg_num_experts_per_document = self._router_avg_num_expert_per_document / self._num_batches_tracked
+                out["router avg num expert per document"] = (
+                    torch.tensor(avg_num_experts_per_document, device=self.device),
+                    ReduceType.mean,
+                )
+
         if self._router_tokenlevel_expert_entropy != 0.0:
             out["router token-level expert entropy"] = (
                 torch.tensor(self._router_tokenlevel_expert_entropy, device=self.device),
@@ -442,11 +449,6 @@ class MoERouter(nn.Module):
                 ReduceType.mean,
             )
 
-        if self._router_avg_num_expert_per_document != 0.0:
-            out["router avg num expert per document"] = (
-                torch.tensor(self._router_avg_num_expert_per_document, device=self.device),
-                ReduceType.mean,
-            )
 
         if self._router_expert_cond_token_entropy != 0.0:
             out["router expert_cond_token_entropy"] = (

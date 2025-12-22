@@ -3,12 +3,12 @@
 #     - removed qk-norm from the model compared to parent.
 # STATUS: USED
 ##############################################################
-top_p=0.2
+top_p=0.3
 max_document_expert_pool=128
 min_document_expert_pool=1
 #document_expert_pool=12
 
-runname="twoleveltoppbatchlb_1b14b_topp-${top_p}_max-${max_document_expert_pool}_min-${min_document_expert_pool}_1221"
+runname="twoleveltoppbatchlb_1b14b_topp-${top_p}_max-${max_document_expert_pool}_min-${min_document_expert_pool}_1221_correctwandb"
 
 #torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
 #  $runname \
