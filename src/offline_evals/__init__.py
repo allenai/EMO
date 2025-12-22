@@ -29,7 +29,8 @@ from .tasks import (
     splits_siqa,
     splits_winogrande,
     splits_gsm8k,
-    splits_synthea
+    splits_synthea,
+    splits_coqa
 )
 
 
@@ -166,6 +167,10 @@ new_task_registry: Dict = {
     "gsm8k_generation:train_0shot": splits_gsm8k.GSM8K_Generation_Train_0shot,
     "gsm8k_generation:validation_0shot": splits_gsm8k.GSM8K_Generation_Validation_0shot,
     "gsm8k_generation:test_0shot": splits_gsm8k.GSM8K_Generation_Test_0shot,
+
+    "coqa:train_0shot": splits_coqa.COQA_Train_0shot,
+    "coqa:validation_0shot": splits_coqa.COQA_Validation_0shot,
+    "coqa:test_0shot": splits_coqa.COQA_Test_0shot,
 
 
 }

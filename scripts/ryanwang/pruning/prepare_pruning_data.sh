@@ -3,23 +3,19 @@
 MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
 #MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 MODELS=(
-#    "moe_1b14b_128experts_olmoe-mix_130B_1117/step30995-hf"
-#    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995-hf"
-#    "dense_1b_olmoe-mix_1119/step30995-hf"
-
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995-hf"
 #    "twolevelbatchlb-8_1b7b_stability_1207/step30995-hf"
 
-#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
+    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995-hf"
 
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995-hf"
 
 #    "moe_1b35b_320experts_lb-1e-1_1214/step30995-hf"
 #    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995-hf"
-    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216/step30995-hf"
-    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219/step30995-hf"
+#    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216/step30995-hf"
+#    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219/step30995-hf"
 
     )
 #BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/prune"
@@ -43,7 +39,8 @@ TASK_GROUPS_LIST=(
 #  "socialiqa"
 #  "winogrande"
 #  "synthea_zeroshot"
-  "gsm8k_generation_zeroshot"
+#  "gsm8k_generation_zeroshot"
+  "coqa"
 
 #   MMLU
 #  "mmlu"

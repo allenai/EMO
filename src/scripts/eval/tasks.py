@@ -6,6 +6,33 @@ from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 def get_task_configs():
     TASK_CONFIGS.update(
         {
+            "coqa:train_0shot::olmes": {
+                "task_name": "coqa:train_0shot",
+                "split": "train",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "coqa:validation_0shot::olmes": {
+                "task_name": "coqa:validation_0shot",
+                "split": "validation",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "coqa:test_0shot::olmes": {
+                "task_name": "coqa:test_0shot",
+                "split": "test",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
             "gsm8k_generation:train_0shot::olmes": {
                 "task_name": "gsm8k_generation:train_0shot",
                 "split": "train",

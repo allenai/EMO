@@ -72,8 +72,7 @@ if [[ "$GROUP_NAME" == *_zeroshot* ]]; then
     if [[ "$GROUP_NAME" == *gsm8k_generation* ]]; then
         validation_task_name="$GROUP_NAME:validation_0shot::olmes"
         train_task_name="$GROUP_NAME:train_0shot::olmes"
-    elif [[ "$GROUP_NAME" == *gsm8k_perplexity* ]]; then
-        # the gsm8k perplexity
+    elif [[ "$GROUP_NAME" == *gsm8k_perplexity* || "$GROUP_NAME" == *coqa* ]]; then
         validation_task_name="$GROUP_NAME:validation_0shot::olmes"
         train_task_name="$GROUP_NAME:train_0shot::olmes"
     elif [[ "$GROUP_NAME" == *mmlu* ]]; then

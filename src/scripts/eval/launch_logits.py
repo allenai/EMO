@@ -72,6 +72,16 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
                 correct += [1 if pred["metrics"]["acc_raw"] > 0 else 0]
             else:
                 correct += [1] # gsm8k is always correct
+    elif requests_data[0]["request_type"] == "generate_until":
+        # assert that the number of correct requests matches the number of predictions. Note that for generate_until metrics, there is no incorrect metric
+        assert len(requests_data) == len(
+            predictions_data), f"Found {len(requests_data)} correct requests and {len(predictions_data)} predictions, expected them to match"
+
+        for req, pred in zip(requests_data, predictions_data):
+            assert req['doc_id'] == pred[
+                'doc_id'], f"Request doc_id {req['doc_id']} does not match prediction doc_id {pred['doc_id']}"
+            prompts += [req["request"]["context"] + req["doc"]["choices"][0][0]]
+            correct += [1 if pred["metrics"]["f1"] > 0 else 0]
     else:
         raise NotImplementedError(f"Dataset {eval_dataset_name} not implemented in get_prompt_sequences_for_evaluation")
 
