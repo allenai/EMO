@@ -119,6 +119,8 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
 
         # used to store avg for self._router_avg_num_expert_per_document
         doc_num_experts_sum = 0
+        # track individual expert counts per document for histogram-like
+        doc_num_experts_counts_list = []
 
 
         for seq_idx in range(x.size(0)):
@@ -150,6 +152,7 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
                 num_experts_to_keep = min(max(num_experts_to_keep, self.min_document_expert_pool), self.max_document_expert_pool)
 
                 doc_num_experts_sum += num_experts_to_keep
+                doc_num_experts_counts_list.append(num_experts_to_keep)
 
                 discard_idx = sorted_idx[num_experts_to_keep:]
                 if discard_idx.numel() > 0:
@@ -170,6 +173,8 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
             # log the average number of experts per document
             avg_num_experts_per_document = doc_num_experts_sum / doc_entropy_count
             self._router_avg_num_expert_per_document += avg_num_experts_per_document
+
+            self._router_counts_num_expert_per_document.extend(doc_num_experts_counts_list)
 
         # shape: (batch_size, seq_len, num_experts)
         if self.gating_function == MoERouterGatingFunction.softmax:

@@ -226,6 +226,7 @@ class MoERouter(nn.Module):
 
         # for top-p
         self._router_avg_num_expert_per_document = 0.0
+        self._router_counts_num_expert_per_document = []
 
         # add metrics to track expert_cond_token_entropy (which we want to minimize) and expert_uncond_entropy (which we want to maximize
         self._router_expert_cond_token_entropy = 0.0
@@ -437,6 +438,18 @@ class MoERouter(nn.Module):
                     ReduceType.mean,
                 )
 
+            # Histogram statistics for expert counts per document
+            if hasattr(self, '_doc_expert_counts_accumulated') and len(self._doc_expert_counts_accumulated) > 0:
+                counts_tensor = torch.tensor(self._doc_expert_counts_accumulated, device=self.device)
+                out["router expert counts per document (min)"] = (counts_tensor.min(), ReduceType.min)
+                out["router expert counts per document (max)"] = (counts_tensor.max(), ReduceType.max)
+                out["router expert counts per document (p25)"] = (counts_tensor.quantile(0.25), ReduceType.mean)
+                out["router expert counts per document (p50)"] = (counts_tensor.quantile(0.50), ReduceType.mean)
+                out["router expert counts per document (p75)"] = (counts_tensor.quantile(0.75), ReduceType.mean)
+                out["router expert counts per document (p95)"] = (counts_tensor.quantile(0.95), ReduceType.mean)
+                # Standard deviation
+                out["router expert counts per document (std)"] = (counts_tensor.std(), ReduceType.mean)
+
         if self._router_tokenlevel_expert_entropy != 0.0:
             out["router token-level expert entropy"] = (
                 torch.tensor(self._router_tokenlevel_expert_entropy, device=self.device),
@@ -483,6 +496,7 @@ class MoERouter(nn.Module):
         self._router_documentlevel_expert_entropy = 0.0
 
         self._router_avg_num_expert_per_document = 0.0
+        self._router_counts_num_expert_per_document = []
 
         self._router_expert_cond_token_entropy = 0.0
         self._router_expert_uncond_entropy = 0.0
