@@ -19,10 +19,10 @@ PARENT_MODELS=(
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
 
-    "moe_1b35b_320experts_lb-1e-1_1214/step30995"
-    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995"
-#    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216/step30995"
-#    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219/step30995"
+#    "moe_1b35b_320experts_lb-1e-1_1214/step30995"
+#    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995"
+    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216/step30995"
+    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219/step30995"
 
 )
 
