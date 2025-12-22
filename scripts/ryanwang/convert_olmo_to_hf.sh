@@ -9,7 +9,7 @@ PARENT_MODELS=(
 
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995"
 
-#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
+    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
     "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
 
@@ -101,19 +101,19 @@ FINETUNE_TASKS=(
 #    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step484"
 #    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step606"
 
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step0"
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step161"
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step322"
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step483"
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step644"
-    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step807"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step0"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step161"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step322"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step483"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step644"
+#    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step807"
 
-#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step0"
-#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step115"
-#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step230"
-#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step345"
-#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step460"
-#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step579"
+    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step0"
+    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step115"
+    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step230"
+    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step345"
+    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step460"
+    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step579"
 
 
 )
