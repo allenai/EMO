@@ -441,8 +441,8 @@ class MoERouter(nn.Module):
             # Histogram statistics for expert counts per document
             if hasattr(self, '_router_counts_num_expert_per_document') and len(self._router_counts_num_expert_per_document) > 0:
                 counts_tensor = torch.tensor(self._router_counts_num_expert_per_document, device=self.device)
-                out["router expert counts per document (min)"] = (counts_tensor.min(), ReduceType.min)
-                out["router expert counts per document (max)"] = (counts_tensor.max(), ReduceType.max)
+                out["router expert counts per document (min)"] = (counts_tensor.min(), ReduceType.mean)
+                out["router expert counts per document (max)"] = (counts_tensor.max(), ReduceType.mean)
                 out["router expert counts per document (p25)"] = (counts_tensor.quantile(0.25), ReduceType.mean)
                 out["router expert counts per document (p50)"] = (counts_tensor.quantile(0.50), ReduceType.mean)
                 out["router expert counts per document (p75)"] = (counts_tensor.quantile(0.75), ReduceType.mean)
