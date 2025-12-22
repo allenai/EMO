@@ -75,7 +75,8 @@ task_configs=(
 #  "task-winogrande_rc_validation_keepk32|winogrande:rc_train::olmes"
 #  "task-synthea_rc_validation_0shot_keepk32|synthea:rc_train_0shot::olmes"
 #  "task-gsm8k_generation_validation_0shot_keepk128|gsm8k_generation:train_0shot::olmes"
-  "task-squad_validation_0shot_keepk32|squad:train_0shot::olmes"
+  "task-coqa_validation_0shot_keepk32|coqa:train_0shot::olmes"
+#  "task-squad_validation_0shot_keepk32|squad:train_0shot::olmes"
 
 #
 #  "task-arc_easy_rc_validation_keepk8|arc_easy:rc_train::olmes"

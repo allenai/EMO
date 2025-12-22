@@ -201,11 +201,6 @@ class MoEMaskedFinetuneRouter(MoELinearRouter):
 
         return expert_weights, expert_indices, batch_size_per_expert_routing, aux_loss
 
-    def extra_repr(self):
-        """Add custom parameter to string representation."""
-        base_repr = super().extra_repr()
-        return f"{base_repr}, document_expert_pool={self.document_expert_pool}, eos_token_id={self.eos_token_id}"
-
 @dataclass
 class MoEMaskedFinetuneRouterConfig(MoERouterConfig):
     # just update the build to call the correct new class
