@@ -40,7 +40,7 @@ TASK_GROUPS_LIST=(
 #  "winogrande"
 #  "synthea_zeroshot"
 #  "gsm8k_generation_zeroshot"
-  "coqa_zeroshot"
+#  "coqa_zeroshot"
   "squad_zeroshot"
 
 #   MMLU

@@ -1,4 +1,4 @@
-from oe_eval.tasks.oe_eval_tasks.squad import SQuAD
+from squad import SQuAD
 
 
 class SQUAD_Base(SQuAD):
