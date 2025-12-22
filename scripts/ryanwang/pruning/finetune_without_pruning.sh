@@ -80,8 +80,8 @@ train_task_names=(
 #  "synthea:rc_train_0shot::olmes"
 #  "gsm8k_generation:train_0shot::olmes"
 
-  "coqa:train_0shot::olmes"
-#  "squad:train_0shot::olmes"
+#  "coqa:train_0shot::olmes"
+  "squad:train_0shot::olmes"
 
 #  "arc_easy:rc_train_0shot::olmes"
 #  "arc_challenge:rc_train_0shot::olmes"
