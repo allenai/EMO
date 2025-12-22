@@ -23,7 +23,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-4e-6_bs-128"
+variation="newdefault_lr-4e-5"
 
 #expertiment_tag="finetuning"
 expertiment_tag="finetune_ablate"
@@ -77,8 +77,11 @@ train_task_names=(
 #  "socialiqa:rc_train::olmes"
 #  "winogrande:rc_train::olmes"
 
-  "synthea:rc_train_0shot::olmes"
+#  "synthea:rc_train_0shot::olmes"
 #  "gsm8k_generation:train_0shot::olmes"
+
+  "coqa:train_0shot::olmes"
+#  "squad:train_0shot::olmes"
 
 #  "arc_easy:rc_train_0shot::olmes"
 #  "arc_challenge:rc_train_0shot::olmes"
@@ -191,7 +194,7 @@ for train_task_name in "${train_task_names[@]}"; do
         --num_checkpoints=$num_checkpoints \
         --trainer.load_optim_state=false \
         --trainer.load_trainer_state=false \
-        --global_batch_size=128 \
+        --global_batch_size=32 \
         $variation_flags
 
 
