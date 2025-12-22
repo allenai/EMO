@@ -1,4 +1,4 @@
-from squad import SQuAD
+from .squad import SQuAD
 
 
 class SQUAD_Base(SQuAD):
