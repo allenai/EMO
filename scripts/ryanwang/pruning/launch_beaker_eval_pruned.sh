@@ -151,8 +151,8 @@ TASK_GROUPS_LIST=(
 #  "winogrande|winogrande:rc_test::olmes"
 #  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
 #  "synthea|synthea:rc_test_0shot::olmes"
-  "coqa|coqa:test_0shot::olmes"
-#  "squad|squad:test_0shot::olmes"
+#  "coqa|coqa:test_0shot::olmes"
+  "squad|squad:test_0shot::olmes"
 
 #   MMLU
 #  "mmlu_rc_test|mmlu:rc_test::olmes"
