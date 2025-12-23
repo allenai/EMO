@@ -104,7 +104,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
 
 #        # if the model is a 35b model, further reduce batch size by half
         if [[ $MODEL_PATH == *"1b35b"* ]]; then
-            batch_size=$((batch_size / 2))
+            batch_size=$((batch_size / 4))
         fi
 
         # adjust number of gpus requested if its mmlu, agi_eval, bbh, gsm8k, minerva, codex, mbpp
