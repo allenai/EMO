@@ -175,7 +175,7 @@ new_task_registry: Dict = {
 
     "squad:train_0shot": splits_squad.SQUAD_Train_0shot,
     "squad:validation_0shot": splits_squad.SQUAD_Validation_0shot,
-    "squad:test_0shot": splits_squad.SQUAD_Validation_0shot,
+    "squad:test_0shot": splits_squad.SQUAD_Test_0shot,
 
 
 }
