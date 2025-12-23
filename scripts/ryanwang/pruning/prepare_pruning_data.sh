@@ -30,15 +30,15 @@ TASK_GROUPS_LIST=(
   ######### few-shot ##########
   # MC9 tasks
   "arc_easy"
-  "arc_challenge"
-  "boolq"
-  "csqa"
-  "hellaswag"
-  "openbookqa"
-  "piqa"
-  "socialiqa"
-  "winogrande"
-  "synthea_zeroshot"
+#  "arc_challenge"
+#  "boolq"
+#  "csqa"
+#  "hellaswag"
+#  "openbookqa"
+#  "piqa"
+#  "socialiqa"
+#  "winogrande"
+#  "synthea_zeroshot"
 #  "gsm8k_generation_zeroshot"
 #  "coqa_zeroshot"
 #  "squad_zeroshot"
@@ -96,19 +96,19 @@ for MODEL_PATH in "${MODELS[@]}"; do
         TASK="$GROUP_NAME"
 
         # Batch size adjustment (matching original script)
-        if [[ $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* || $TASK == *"boolq"* || $TASK == *"synthea"* ]]; then
+        if [[ $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* || $TASK == *"boolq"* || $TASK == *"synthea"* || $MODEL_PATH == *"1b35b"* ]]; then
             batch_size=$((BATCH_SIZE / 4))
         else
             batch_size=$BATCH_SIZE
         fi
 
-        # if the model is a 35b model, further reduce batch size by half
-        if [[ $MODEL_NAME == *"1b35b"* ]]; then
-            batch_size=$((batch_size / 2))
-        fi
+#        # if the model is a 35b model, further reduce batch size by half
+#        if [[ $MODEL_PATH == *"1b35b"* ]]; then
+#            batch_size=$((batch_size / 2))
+#        fi
 
         # adjust number of gpus requested if its mmlu, agi_eval, bbh, gsm8k, minerva, codex, mbpp
-        if [[ $TASK == *mmlu* || $TASK == *agi_eval* || $TASK == *bbh* || $TASK == *gsm8k* || $TASK == *minerva_math_* || $TASK == *codex* || $TASK == *mbpp* || $MODEL_NAME == *"1b35b"* ]]; then
+        if [[ $TASK == *mmlu* || $TASK == *agi_eval* || $TASK == *bbh* || $TASK == *gsm8k* || $TASK == *minerva_math_* || $TASK == *codex* || $TASK == *mbpp* ]]; then
             gpus=4
         else
             gpus=1
