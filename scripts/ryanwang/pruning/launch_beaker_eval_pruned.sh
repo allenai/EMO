@@ -255,7 +255,7 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
             --allow-dirty \
             --cluster $CLUSTER \
             --priority urgent \
-            --gpus 8 \
+            --gpus $gpus \
             --env-secret HF_TOKEN=RYAN_HF_TOKEN \
             --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
             --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
@@ -265,8 +265,8 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
                 --model-type hf \
                 --task $TASK \
                 --remote-output-dir $OUTPUT_DIR \
-                --batch-size 32 \
-                --gpus 8 \
+                --batch-size $batch_size \
+                --gpus $gpus \
                 "
 
             echo "Launched evaluation for model: $model, group: $GROUP_NAME"

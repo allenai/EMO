@@ -34,6 +34,8 @@ TASKS: List[str] = [
     "winogrande:rc_test",
     "gsm8k_generation:train_0shot",
     "synthea:rc_train_0shot",
+    "coqa:train_0shot",
+    "squad:train_0shot",
 ]
 
 # Relative steps per task to compare across both model families.
@@ -60,7 +62,9 @@ TASK_STEPS = {
     # "socialiqa:rc_test":      [0, 607, 1214, 1821, 2428, 3036],
     # "winogrande:rc_test":     [0, 738, 1476, 2214, 2952, 3693],
     "gsm8k_generation:train_0shot": [0, 121, 242, 363, 484, 606],
-    "synthea:rc_train_0shot": [0, 161, 322, 483, 644, 807],
+    # "synthea:rc_train_0shot": [0, 161, 322, 483, 644, 807],
+    # "coqa:train_0shot": [0, 115, 230, 345, 460, 579],
+    "squad:train_0shot": [0, 1623, 3246, 4869, 6492, 8118],
 }
 
 # Family color mapping - define base colors for each model family
@@ -116,42 +120,42 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "markersize": 9,
     },
 
-    # {
-    #     "label": "twolevelbatchlb train128/320 keepk128 poolsched",
-    #     "template": (
-    #         f"twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217_step30995_"
-    #         "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
-    #     ),
-    #     "family": "twolevelbatchlb train32/128",
-    #     "marker": "o",
-    #     "brightness": 0.8,
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
-    # {
-    #     "label": "twolevelbatchlb train32/320 keepk128",
-    #     "template": (
-    #         f"twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216_step30995_"
-    #         "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
-    #     ),
-    #     "family": "twolevelbatchlb train32/128",
-    #     "marker": "o",
-    #     "brightness": 0.5,
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
-    # {
-    #     "label": "twolevelbatchlb train128/320 keepk128",
-    #     "template": (
-    #         f"twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219_step30995_"
-    #         "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
-    #     ),
-    #     "family": "twolevelbatchlb train32/128",
-    #     "marker": "o",
-    #     "brightness": 0.2,
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
+    {
+        "label": "twolevelbatchlb train128/320 keepk128 poolsched",
+        "template": (
+            f"twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217_step30995_"
+            "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
+        ),
+        "family": "twolevelbatchlb train32/128",
+        "marker": "o",
+        "brightness": 0.8,
+        "linewidth": 2,
+        "markersize": 9,
+    },
+    {
+        "label": "twolevelbatchlb train32/320 keepk128",
+        "template": (
+            f"twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216_step30995_"
+            "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
+        ),
+        "family": "twolevelbatchlb train32/128",
+        "marker": "o",
+        "brightness": 0.5,
+        "linewidth": 2,
+        "markersize": 9,
+    },
+    {
+        "label": "twolevelbatchlb train128/320 keepk128",
+        "template": (
+            f"twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219_step30995_"
+            "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
+        ),
+        "family": "twolevelbatchlb train32/128",
+        "marker": "o",
+        "brightness": 0.2,
+        "linewidth": 2,
+        "markersize": 9,
+    },
 
     # {
     #     "label": "twolevelbatchlb train32/128 keepk8",
@@ -240,7 +244,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
     {
         "label": "dense finetuned",
         "template": (
-            "dense_1b_olmoe-mix_prenorm_noqknorm_1123_step30995_newdefault_lr-4e-5_"
+            "dense_1b_olmoe-mix_prenorm_noqknorm_1123_step30995_newdefault_{lr_suffix}_"
             "finetune-task-{task_core}{task_suffix}_step{step}-hf"
         ),
         "family": "dense",
@@ -248,20 +252,6 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "brightness": 1.0,
         "linewidth": 2,
         "markersize": 9,
-        "exclude_tasks": ["synthea:rc_train_0shot"],  # Exclude synthea (uses different template)
-    },
-    {
-        "label": "dense finetuned (synthea lr-4e-5)",
-        "template": (
-            "dense_1b_olmoe-mix_prenorm_noqknorm_1123_step30995_newdefault_lr-4e-5_bs-128_"
-            "finetune-task-{task_core}{task_suffix}_step{step}-hf"
-        ),
-        "family": "dense",
-        "marker": "v",
-        "brightness": 0.8,          # Slightly darker to distinguish
-        "linewidth": 2,
-        "markersize": 9,
-        "tasks": ["synthea:rc_train_0shot"],  # Only apply to synthea task
     },
 
 
@@ -392,6 +382,10 @@ def get_task_suffix(task_name: str) -> str:
         return "_train_0shot"
     elif task_name == "synthea:rc_train_0shot":
         return "_train_0shot"
+    elif task_name == "coqa:train_0shot":
+        return "_train_0shot"
+    elif task_name == "squad:train_0shot":
+        return "_train_0shot"
     else:
         # Default pattern for other tasks
         return "_rc_train"
@@ -404,6 +398,10 @@ def get_validation_suffix(task_name: str) -> str:
     elif task_name == "synthea:rc_train_0shot":
         # Note: task_core is "synthea_rc", so we only need "_validation_0shot" (not "_rc_validation_0shot")
         return "_validation_0shot"
+    elif task_name == "coqa:train_0shot":
+        return "_validation_0shot"
+    elif task_name == "squad:train_0shot":
+        return "_validation_0shot"
     else:
         # Default pattern for other tasks
         return "_rc_validation"
@@ -412,7 +410,7 @@ def get_validation_suffix(task_name: str) -> str:
 def get_lr_suffix(task_name: str) -> str:
     """Get the learning rate suffix for task in model paths (e.g., 'lr-4e-5', 'lr-4e-6_bs-128')."""
     if task_name == "synthea:rc_train_0shot":
-        return "lr-4e-5"
+        return "lr-4e-6_bs-128"
     else:
         # Default learning rate for other tasks
         return "lr-4e-5"
@@ -426,6 +424,12 @@ def get_metrics_task_name(task_name: str) -> str:
     # For synthea, the directory uses rc_train_0shot but metrics file uses rc_test_0shot
     elif task_name == "synthea:rc_train_0shot":
         return "synthea:rc_test_0shot"
+    # For coqa, the directory uses train_0shot but metrics file uses test_0shot
+    elif task_name == "coqa:train_0shot":
+        return "coqa:test_0shot"
+    # For squad, the directory uses train_0shot but metrics file uses test_0shot
+    elif task_name == "squad:train_0shot":
+        return "squad:test_0shot"
     # For other tasks, use the task name as-is
     return task_name
 
