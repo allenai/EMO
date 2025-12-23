@@ -18,17 +18,17 @@ BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
 model_names=(
-   "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121"
+#   "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121"
 #   "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203"
 
 #   "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205"
 
-   "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123"
+#   "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123"
 #   "twolevelsamplingnolb-32_1b14b_stability_1127"
 
 #    "moe_1b35b_320experts_lb-1e-1_1214"
 #    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217"
-#    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216"
+    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216"
 #    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219"
 )
 #model_name="moe_1b7b_olmoe-mix"
@@ -64,19 +64,19 @@ fi
 
 # first argument is which validation used for pruning, second is training dataset
 task_configs=(
-#  "task-arc_easy_rc_validation_keepk32|arc_easy:rc_train::olmes"
-#  "task-arc_challenge_rc_validation_keepk32|arc_challenge:rc_train::olmes"
-#  "task-boolq_rc_validation_keepk32|boolq:rc_train::olmes"
-#  "task-csqa_rc_validation_keepk32|csqa:rc_train::olmes"
-#  "task-hellaswag_rc_validation_keepk32|hellaswag:rc_train::olmes"
-#  "task-openbookqa_rc_validation_keepk32|openbookqa:rc_train::olmes"
-#  "task-piqa_rc_validation_keepk32|piqa:rc_train::olmes"
-#  "task-socialiqa_rc_validation_keepk32|socialiqa:rc_train::olmes"
-#  "task-winogrande_rc_validation_keepk32|winogrande:rc_train::olmes"
-#  "task-synthea_rc_validation_0shot_keepk32|synthea:rc_train_0shot::olmes"
+  "task-arc_easy_rc_validation_keepk32|arc_easy:rc_train::olmes"
+  "task-arc_challenge_rc_validation_keepk32|arc_challenge:rc_train::olmes"
+  "task-boolq_rc_validation_keepk32|boolq:rc_train::olmes"
+  "task-csqa_rc_validation_keepk32|csqa:rc_train::olmes"
+  "task-hellaswag_rc_validation_keepk32|hellaswag:rc_train::olmes"
+  "task-openbookqa_rc_validation_keepk32|openbookqa:rc_train::olmes"
+  "task-piqa_rc_validation_keepk32|piqa:rc_train::olmes"
+  "task-socialiqa_rc_validation_keepk32|socialiqa:rc_train::olmes"
+  "task-winogrande_rc_validation_keepk32|winogrande:rc_train::olmes"
+  "task-synthea_rc_validation_0shot_keepk32|synthea:rc_train_0shot::olmes"
 #  "task-gsm8k_generation_validation_0shot_keepk128|gsm8k_generation:train_0shot::olmes"
 #  "task-coqa_validation_0shot_keepk32|coqa:train_0shot::olmes"
-  "task-squad_validation_0shot_keepk32|squad:train_0shot::olmes"
+#  "task-squad_validation_0shot_keepk32|squad:train_0shot::olmes"
 
 #
 #  "task-arc_easy_rc_validation_keepk8|arc_easy:rc_train::olmes"
