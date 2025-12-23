@@ -61,7 +61,7 @@ TASK_STEPS = {
     # "piqa:rc_test":           [0, 283, 566, 849, 1132, 1416],
     # "socialiqa:rc_test":      [0, 607, 1214, 1821, 2428, 3036],
     # "winogrande:rc_test":     [0, 738, 1476, 2214, 2952, 3693],
-    "gsm8k_generation:train_0shot": [0, 121, 242, 363, 484, 606],
+    # "gsm8k_generation:train_0shot": [0, 121, 242, 363, 484, 606],
     # "synthea:rc_train_0shot": [0, 161, 322, 483, 644, 807],
     # "coqa:train_0shot": [0, 115, 230, 345, 460, 579],
     "squad:train_0shot": [0, 1623, 3246, 4869, 6492, 8118],

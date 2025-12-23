@@ -73,7 +73,9 @@ task_configs=(
   "task-piqa_rc_validation_keepk32|piqa:rc_train::olmes"
   "task-socialiqa_rc_validation_keepk32|socialiqa:rc_train::olmes"
   "task-winogrande_rc_validation_keepk32|winogrande:rc_train::olmes"
-  "task-synthea_rc_validation_0shot_keepk32|synthea:rc_train_0shot::olmes"
+#  "task-synthea_rc_validation_0shot_keepk32|synthea:rc_train_0shot::olmes"
+  "task-gsm8k_generation_validation_0shot_keepk32|gsm8k_generation:train_0shot::olmes"
+
 #  "task-gsm8k_generation_validation_0shot_keepk128|gsm8k_generation:train_0shot::olmes"
 #  "task-coqa_validation_0shot_keepk32|coqa:train_0shot::olmes"
 #  "task-squad_validation_0shot_keepk32|squad:train_0shot::olmes"
