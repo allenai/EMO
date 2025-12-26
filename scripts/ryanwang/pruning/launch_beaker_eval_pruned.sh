@@ -9,19 +9,19 @@ PRUNE_DIR="${BASE_DIR}/prune"
 #MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 
 PARENT_MODELS=(
-    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
+#    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
+#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995"
 #    "twolevelbatchlb-8_1b7b_stability_1207/step30995"
 
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995"
 
-    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
+#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
 
 #    "moe_1b35b_320experts_lb-1e-1_1214/step30995"
 #    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995"
-#    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216/step30995"
+    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216/step30995"
 #    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219/step30995"
 
 )
@@ -37,26 +37,26 @@ postfix="_keepk32/newdefault_lr-4e-5"
 
 
 FINETUNE_TASKS=(
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step42-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step126-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step210-hf"
-##
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step20-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step40-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step60-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step80-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step102-hf"
-##
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step0-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step157-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step314-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step471-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step628-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step789-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step42-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step126-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step210-hf"
+#
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step20-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step40-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step60-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step80-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step102-hf"
+#
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step0-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step157-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step314-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step471-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step628-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step789-hf"
 
 #    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step0-hf"
 #    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step163-hf"
@@ -99,7 +99,7 @@ FINETUNE_TASKS=(
 #    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step2214-hf"
 #    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step2952-hf"
 #    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step3693-hf"
-
+#
 #    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step0-hf"
 #    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step121-hf"
 #    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step242-hf"
@@ -121,12 +121,12 @@ FINETUNE_TASKS=(
 #    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step460-hf"
 #    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step579-hf"
 
-    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step0-hf"
-    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step1623-hf"
-    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step3246-hf"
-    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step4869-hf"
-    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step6492-hf"
-    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step8118-hf"
+#    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step0-hf"
+#    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step1623-hf"
+#    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step3246-hf"
+#    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step4869-hf"
+#    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step6492-hf"
+#    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step8118-hf"
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals"
@@ -140,19 +140,19 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
-#  "arc_easy|arc_easy:rc_test::olmes"
-#  "arc_challenge|arc_challenge:rc_test::olmes"
-#  "boolq|boolq:rc_test::olmes"
-#  "csqa|csqa:rc_test::olmes"
-#  "hellaswag|hellaswag:rc_test::olmes"
-#  "openbookqa|openbookqa:rc_test::olmes"
-#  "piqa|piqa:rc_test::olmes"
-#  "socialiqa|socialiqa:rc_test::olmes"
-#  "winogrande|winogrande:rc_test::olmes"
-#  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
+  "arc_easy|arc_easy:rc_test::olmes"
+  "arc_challenge|arc_challenge:rc_test::olmes"
+  "boolq|boolq:rc_test::olmes"
+  "csqa|csqa:rc_test::olmes"
+  "hellaswag|hellaswag:rc_test::olmes"
+  "openbookqa|openbookqa:rc_test::olmes"
+  "piqa|piqa:rc_test::olmes"
+  "socialiqa|socialiqa:rc_test::olmes"
+  "winogrande|winogrande:rc_test::olmes"
+  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
 #  "synthea|synthea:rc_test_0shot::olmes"
 #  "coqa|coqa:test_0shot::olmes"
-  "squad|squad:test_0shot::olmes"
+#  "squad|squad:test_0shot::olmes"
 
 #   MMLU
 #  "mmlu_rc_test|mmlu:rc_test::olmes"
