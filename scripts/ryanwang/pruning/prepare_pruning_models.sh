@@ -33,7 +33,7 @@ run_configs=(
 #    "moe_1b35b_320experts_lb-1e-1_1214|prune_keep_k=128"
 #    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217|prune_keep_k=128"
 #    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216|prune_keep_k=128"
-    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216|prune_keep_k=32"
+#    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216|prune_keep_k=32"
 #    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219|prune_keep_k=128"
 
 #    "twolevelsamplingnolb-32_1b14b_stability_1127|prune_keep_k=32"
