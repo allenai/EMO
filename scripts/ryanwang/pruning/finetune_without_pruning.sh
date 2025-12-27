@@ -17,8 +17,8 @@
 BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
-model_name="dense_1b_olmoe-mix_prenorm_noqknorm_1123"
-#model_name="moe_1b7b_olmoe-mix"
+model_name="moe_1b4b_32experts_1224"
+#model_name="dense_1b_olmoe-mix_prenorm_noqknorm_1123"
 step="step30995"
 num_checkpoints=5
 
@@ -67,21 +67,21 @@ fi
 base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
 train_task_names=(
-#  "arc_easy:rc_train::olmes"
-#  "arc_challenge:rc_train::olmes"
-#  "boolq:rc_train::olmes"
-#  "csqa:rc_train::olmes"
-#  "hellaswag:rc_train::olmes"
-#  "openbookqa:rc_train::olmes"
-#  "piqa:rc_train::olmes"
-#  "socialiqa:rc_train::olmes"
-#  "winogrande:rc_train::olmes"
+  "arc_easy:rc_train::olmes"
+  "arc_challenge:rc_train::olmes"
+  "boolq:rc_train::olmes"
+  "csqa:rc_train::olmes"
+  "hellaswag:rc_train::olmes"
+  "openbookqa:rc_train::olmes"
+  "piqa:rc_train::olmes"
+  "socialiqa:rc_train::olmes"
+  "winogrande:rc_train::olmes"
 
 #  "synthea:rc_train_0shot::olmes"
-#  "gsm8k_generation:train_0shot::olmes"
+  "gsm8k_generation:train_0shot::olmes"
 
 #  "coqa:train_0shot::olmes"
-  "squad:train_0shot::olmes"
+#  "squad:train_0shot::olmes"
 
 #  "arc_easy:rc_train_0shot::olmes"
 #  "arc_challenge:rc_train_0shot::olmes"
