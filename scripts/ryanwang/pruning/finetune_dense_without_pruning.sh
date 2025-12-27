@@ -17,8 +17,7 @@
 BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
-model_name="moe_1b4b_32experts_1224"
-#model_name="dense_1b_olmoe-mix_prenorm_noqknorm_1123"
+model_name="dense_1b_olmoe-mix_prenorm_noqknorm_1123"
 step="step30995"
 num_checkpoints=5
 

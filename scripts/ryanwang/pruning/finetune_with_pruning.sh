@@ -217,13 +217,13 @@ for model_name in "${model_names[@]}"; do
             --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${wandb_name}, tags: [${task_prefix:0:64}, ${model_name:0:64}, ${pruned_model_name}, ${experiment_tag}]}" \
             --load_path=$base_model \
             --num_checkpoints=$num_checkpoints \
-            --model.block.feed_forward_moe.num_experts=${prune_keep_k} \
+		        --model-type="masked-finetune" \
             --model.block.name="moe" \
 		        --model.block.attention.qk_norm=null \
+            --model.block.feed_forward_moe.num_experts=${prune_keep_k} \
 		        --trainer.load_optim_state=false \
 		        --trainer.load_trainer_state=false \
 		        --global_batch_size=32 \
-		        --model-type="masked-finetune" \
             $variation_flags
 
     #        --dataset.label_mask_paths="[${label_mask_paths}]" \
