@@ -30,6 +30,10 @@ run_configs=(
 
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123|prune_keep_k=32"
 
+    "twoleveltoppbatchlb_1b14b_topp-0.35_max-64_min-1_lb-1e-1_1222|prune_keep_k=32"
+    "twoleveltoppbatchlb_1b14b_topp-0.35_max-64_min-1_lb-1e-1_1222|prune_keep_k=16"
+    "twoleveltoppbatchlb_1b14b_topp-0.35_max-64_min-1_lb-1e-1_1222|prune_keep_k=64"
+
 #    "moe_1b35b_320experts_lb-1e-1_1214|prune_keep_k=128"
 #    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217|prune_keep_k=128"
 #    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216|prune_keep_k=128"

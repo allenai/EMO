@@ -7,7 +7,7 @@
 
 z_loss_weight=0.001
 lb_loss_weight=0.01
-cond_bias=1e-2
+cond_bias=1e-1
 uncond_bias=0
 
 runname="mutualinfo_1b14b_zloss-${z_loss_weight}_lbloss-${lb_loss_weight}_cond-${cond_bias}_uncond-${uncond_bias}_1230"
