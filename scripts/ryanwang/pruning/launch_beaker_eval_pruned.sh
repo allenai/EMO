@@ -17,11 +17,12 @@ PARENT_MODELS=(
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995"
 
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
+    "moe_1b4b_32experts_1224/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
 
 #    "moe_1b35b_320experts_lb-1e-1_1214/step30995"
 #    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995"
-    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216/step30995"
+#    "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216/step30995"
 #    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219/step30995"
 
 )
@@ -37,26 +38,26 @@ postfix="_keepk32/newdefault_lr-4e-5"
 
 
 FINETUNE_TASKS=(
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step42-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step126-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step210-hf"
-##
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step20-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step40-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step60-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step80-hf"
-#    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step102-hf"
-##
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step0-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step157-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step314-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step471-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step628-hf"
-#    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step789-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step42-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step126-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step210-hf"
+#
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step20-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step40-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step60-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step80-hf"
+    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step102-hf"
+#
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step0-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step157-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step314-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step471-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step628-hf"
+    "task-boolq_rc_validation${postfix}/finetune-task-boolq_rc_train/step789-hf"
 
 #    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step0-hf"
 #    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step163-hf"
@@ -100,12 +101,12 @@ FINETUNE_TASKS=(
 #    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step2952-hf"
 #    "task-winogrande_rc_validation${postfix}/finetune-task-winogrande_rc_train/step3693-hf"
 #
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step0-hf"
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step121-hf"
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step242-hf"
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step363-hf"
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step484-hf"
-    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step606-hf"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step0-hf"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step121-hf"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step242-hf"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step363-hf"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step484-hf"
+#    "task-gsm8k_generation_validation_0shot${postfix}/finetune-task-gsm8k_generation_train_0shot/step606-hf"
 
 #    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step0-hf"
 #    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step161-hf"
@@ -208,7 +209,7 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
             fi
 
             # check if "dense" appears in BASE, if so then change dir structure (dense did not go through pruning)
-            if [[ "$PARENT_MODEL" == *"dense"* ]]; then
+            if [[ "$PARENT_MODEL" == *"dense"* || "$BASE" == *"1b4b"* ]]; then
               # remove everything before the first "/" in FINETUNE
                 FINETUNE_TASK="${FINETUNE_TASK#*/}"
                 MODEL_NAME="${PARENT_MODEL}/${FINETUNE_TASK}"
