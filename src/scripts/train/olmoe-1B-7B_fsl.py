@@ -17,6 +17,7 @@ import rich
 from olmo_core.nn.moe.twolevel_topp_batchlb_router import MoETwoLevelTopPBatchLBRouterConfig
 from olmo_core.nn.moe.twolevel_sampling_nolb_router import MoETwoLevelSamplingNoLBRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_router import MoETwoLevelBatchLBRouterConfig
+from olmo_core.nn.moe.twolevel_pbatchlb_router import MoETwoLevelPBatchLBRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_nomaskaux_router import MoETwoLevelBatchLBNoMaskAuxRouterConfig
 from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_fullzloss_router import MoETwoLevelBatchLBFullZLossRouterConfig
@@ -221,6 +222,26 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
         # Replace router config
         model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBRouterConfig(**router_kwargs)
+    elif opts.model_type == "two-level_p_lb-batch":
+        log.info("Applying two-level with batch-level load balancing using probabilities to the model...")
+        if opts.document_expert_pool is None:
+            raise ValueError("document_expert_pool must be specified for two-level model type.")
+        if opts.expert_uncond_entropy_bias is None:
+            raise ValueError("expert_uncond_entropy_bias must be specified for two-level_p_lb-batch model type.")
+        if opts.expert_uncond_lb_prob_bias is None:
+            raise ValueError("expert_uncond_lb_prob_bias must be specified for two-level_p_lb-batch model type.")
+        # Get existing router config parameters
+        router_kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
+        router_kwargs.pop("name")
+        router_kwargs.update(
+            document_expert_pool=opts.document_expert_pool,
+            eos_token_id=tokenizer_config.eos_token_id,
+            expert_uncond_entropy_bias=opts.expert_uncond_entropy_bias,
+            expert_uncond_lb_prob_bias=opts.expert_uncond_lb_prob_bias,
+        )
+
+        # Replace router config
+        model_config.block.feed_forward_moe.router = MoETwoLevelPBatchLBRouterConfig(**router_kwargs)
     elif opts.model_type == "two-level_topp_lb-batch":
         log.info("Applying two-level with batch-leve load balancing (olmoe lb) routers and top-p selection to the model...")
         if opts.top_p is None:
@@ -463,6 +484,11 @@ def parser_args():
         "--expert_uncond_entropy_bias",
         type=float,
         help="Bias term for expert unconditional entropy in mutual info router.",
+    )
+    parser.add_argument(
+        "--expert_uncond_lb_prob_bias",
+        type=float,
+        help="Bias term for expert unconditional lb in twolevel pbatchlb router.",
     )
     parser.add_argument(
         "--poolsched",
