@@ -115,12 +115,13 @@ class MoEMutualInfoRouter(MoELinearRouter):
             # prepare for custom metric
             if self.training:
                 # prepare unique experts metric
-                if padding_mask is not None:
-                    # log that we only consider non-padded tokens for unique experts metric. padding_mask is 1 for non-padded tokens
-                    padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
-                    valid_expert_indices = expert_indices.masked_select(padding_mask_expanded)
-                else:
-                    valid_expert_indices = expert_indices.reshape(-1)
+                # if padding_mask is not None:
+                #     # log that we only consider non-padded tokens for unique experts metric. padding_mask is 1 for non-padded tokens
+                #     padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
+                #     valid_expert_indices = expert_indices.masked_select(padding_mask_expanded)
+                # else:
+                #     valid_expert_indices = expert_indices.reshape(-1)
+                valid_expert_indices = expert_indices.view(-1)
 
                 # Update unique experts metric.
                 unique_experts = torch.unique(valid_expert_indices)
