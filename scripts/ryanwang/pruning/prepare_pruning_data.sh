@@ -8,10 +8,12 @@ MODELS=(
 #    "twolevelbatchlb-8_1b7b_stability_1207/step30995-hf"
 
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
-    "moe_1b4b_32experts_1224/step30995-hf"
+#    "moe_1b4b_32experts_1224/step30995-hf"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995-hf"
 
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995-hf"
+
+    "twoleveltoppbatchlb_1b14b_topp-0.35_max-64_min-1_lb-1e-1_1222/step30995-hf"
 
 #    "moe_1b35b_320experts_lb-1e-1_1214/step30995-hf"
 #    "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995-hf"
