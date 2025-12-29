@@ -209,7 +209,7 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
             fi
 
             # check if "dense" appears in BASE, if so then change dir structure (dense did not go through pruning)
-            if [[ "$PARENT_MODEL" == *"dense"* || "$BASE" == *"1b4b"* ]]; then
+            if [[ "$PARENT_MODEL" == *"dense"* || "$PARENT_MODEL" == *"1b4b"* ]]; then
               # remove everything before the first "/" in FINETUNE
                 FINETUNE_TASK="${FINETUNE_TASK#*/}"
                 MODEL_NAME="${PARENT_MODEL}/${FINETUNE_TASK}"
