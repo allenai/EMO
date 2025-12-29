@@ -57,10 +57,10 @@ python -m olmo_core.launch.beaker \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="moe" \
 		--model.block.attention.qk_norm=null \
-	  --model.block.feed_forward_moe.z_loss_weight=null \
-	  --model.block.feed_forward_moe.lb_loss_weight=null \
-	  --expert_cond_token_entropy_bias=1e-2 \
-	  --expert_uncond_entropy_bias=5e-2 \
+	  --model.block.feed_forward_moe.z_loss_weight=${z_loss_weight} \
+	  --model.block.feed_forward_moe.lb_loss_weight=${lb_loss_weight} \
+	  --expert_cond_token_entropy_bias=${cond_bias} \
+	  --expert_uncond_entropy_bias=${uncond_bias} \
     --trainer.hard_stop='{value: 5000, unit: steps}'
 
 
