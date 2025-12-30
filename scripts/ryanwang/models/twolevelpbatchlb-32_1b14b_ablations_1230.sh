@@ -29,7 +29,7 @@ runname="twolevelpbatchlb-${document_expert_pool}_1b14b_uncond-${uncond_bias}_un
 python -m olmo_core.launch.beaker \
   --name $runname \
 	--gpus 8 \
-  --nodes 8 \
+  --nodes 16 \
 	--weka=oe-training-default \
   --shared-filesystem \
 	--workspace ai2/flex2 \
