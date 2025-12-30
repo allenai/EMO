@@ -49,7 +49,7 @@ python -m olmo_core.launch.beaker \
 		--model.block.feed_forward_moe.num_experts=128 \
 		--dataset.generate_doc_lengths=true \
 		--model.block.attention.backend=flash_2 \
-		--model-type="two-level_lb-batch" \
+		--model-type="two-level_p_lb-batch" \
 		--document-expert-pool=${document_expert_pool} \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="moe" \
