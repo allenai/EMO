@@ -6,8 +6,8 @@
 document_expert_pool=32
 #lb_loss_weight=0.01
 lb_loss_weight=0
-uncond_lb_bias=0
-uncond_bias=1e-1
+uncond_lb_bias=1e-2
+uncond_bias=0
 
 runname="twolevelpbatchlb-${document_expert_pool}_1b14b_uncond-${uncond_bias}_uncondlb-${uncond_lb_bias}_lbloss-${lb_loss_weight}_1230"
 
