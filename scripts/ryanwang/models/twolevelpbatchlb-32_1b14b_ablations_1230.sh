@@ -6,8 +6,8 @@
 document_expert_pool=32
 #lb_loss_weight=0.01
 lb_loss_weight=1e-2
-uncond_lb_bias=1e-2
-uncond_bias=0
+uncond_lb_bias=0
+uncond_bias=1e-2
 
 runname="twolevelpbatchlb-${document_expert_pool}_1b14b_uncond-${uncond_bias}_uncondlb-${uncond_lb_bias}_lbloss-${lb_loss_weight}_1230"
 
@@ -29,7 +29,7 @@ runname="twolevelpbatchlb-${document_expert_pool}_1b14b_uncond-${uncond_bias}_un
 python -m olmo_core.launch.beaker \
   --name $runname \
 	--gpus 8 \
-  --nodes 16 \
+  --nodes 8 \
 	--weka=oe-training-default \
   --shared-filesystem \
 	--workspace ai2/flex2 \
