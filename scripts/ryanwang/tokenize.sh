@@ -72,14 +72,14 @@ for train_task_name in "${train_task_names[@]}"; do
     fi
 
     # tokenize the files
-#    dolma tokens \
-#      --documents ${jsonl_file}.gz \
-#      --tokenizer.name_or_path ${tokenizer_name} \
-#      --tokenizer.eos_token_id 100257 \
-#      --tokenizer.pad_token_id 100277 \
-#      --destination ${destination} \
-#      --dtype uint32 \
-#      --processes 1
+    dolma tokens \
+      --documents ${jsonl_file}.gz \
+      --tokenizer.name_or_path ${tokenizer_name} \
+      --tokenizer.eos_token_id 100257 \
+      --tokenizer.pad_token_id 100277 \
+      --destination ${destination} \
+      --dtype uint32 \
+      --processes 1
 
     # we next add the label masks
     files=($(ls ${destination}/*.npy | grep -v mask.npy))

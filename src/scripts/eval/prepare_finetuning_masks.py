@@ -85,8 +85,6 @@ def prepare_finetuning_masks(args_dict):
                     if prev_document[j:j + len(delimiter_ids)] == delimiter_ids:
                         delimiter_pos.append(j)
 
-                breakpoint()
-
                 # removing this assert because we might have few-shot now.
                 # assert len(delimiter_pos) == 1, f"Delimiter not found or found multiple times in document with length {len(prev_document)}"
 
