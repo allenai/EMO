@@ -64,9 +64,18 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
         self.top_p = top_p
 
         if max_document_expert_pool > self.num_experts or max_document_expert_pool <= 0:
-            raise OLMoConfigurationError(
-                f"max_document_expert_pool must be in the range (0, num_experts], got {max_document_expert_pool} with num_experts={self.num_experts}"
-            )
+            if max_document_expert_pool > self.num_experts:
+                # we have likely entered here because we pruned the model down to a size smaller than the max_document_expert_pool used during training
+                # thus we reset max_document_expert_pool and log this
+                logging.warning(
+                    f"max_document_expert_pool of {max_document_expert_pool} is larger than num_experts of {self.num_experts}. "
+                    f"Setting max_document_expert_pool to num_experts."
+                )
+                max_document_expert_pool = self.num_experts
+            else:
+                raise OLMoConfigurationError(
+                    f"max_document_expert_pool must be in the range (0, num_experts], got {max_document_expert_pool} with num_experts={self.num_experts}"
+                )
         self.max_document_expert_pool = max_document_expert_pool
 
         if min_document_expert_pool <= 0 or min_document_expert_pool > self.num_experts:
