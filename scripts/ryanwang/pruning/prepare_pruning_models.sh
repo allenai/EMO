@@ -18,7 +18,7 @@ BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
 run_configs=(
-#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121|prune_keep_k=32"
+    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121|prune_keep_k=32"
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121|prune_keep_k=8"
 
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203|prune_keep_k=32"
@@ -28,10 +28,10 @@ run_configs=(
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205|prune_keep_k=32"
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205|prune_keep_k=8"
 
-#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123|prune_keep_k=32"
+    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123|prune_keep_k=32"
 
-    "twoleveltoppbatchlb_1b14b_topp-0.35_max-64_min-1_lb-1e-1_1222|prune_keep_k=32"
-    "twoleveltoppbatchlb_1b14b_topp-0.35_max-64_min-1_lb-1e-1_1222|prune_keep_k=16"
+#    "twoleveltoppbatchlb_1b14b_topp-0.35_max-64_min-1_lb-1e-1_1222|prune_keep_k=32"
+#    "twoleveltoppbatchlb_1b14b_topp-0.35_max-64_min-1_lb-1e-1_1222|prune_keep_k=16"
 #    "twoleveltoppbatchlb_1b14b_topp-0.35_max-64_min-1_lb-1e-1_1222|prune_keep_k=64"
 
 #    "moe_1b35b_320experts_lb-1e-1_1214|prune_keep_k=128"
@@ -48,18 +48,18 @@ step="step30995"
 
 # these should correspond to activation files
 validation_task_names=(
-  "task-arc_easy_rc_validation"
-  "task-arc_challenge_rc_validation"
-  "task-boolq_rc_validation"
-  "task-csqa_rc_validation"
-  "task-hellaswag_rc_validation"
-  "task-openbookqa_rc_validation"
-  "task-piqa_rc_validation"
-  "task-socialiqa_rc_validation"
-  "task-winogrande_rc_validation"
-  "task-synthea_rc_validation_0shot"
-  "task-gsm8k_generation_validation_0shot"
-#  "task-coqa_validation_0shot"
+#  "task-arc_easy_rc_validation"
+#  "task-arc_challenge_rc_validation"
+#  "task-boolq_rc_validation"
+#  "task-csqa_rc_validation"
+#  "task-hellaswag_rc_validation"
+#  "task-openbookqa_rc_validation"
+#  "task-piqa_rc_validation"
+#  "task-socialiqa_rc_validation"
+#  "task-winogrande_rc_validation"
+#  "task-synthea_rc_validation_0shot"
+#  "task-gsm8k_generation_validation_0shot"
+  "task-coqa_validation_0shot"
 #  "task-squad_validation_0shot"
 
 ##   MMLU
