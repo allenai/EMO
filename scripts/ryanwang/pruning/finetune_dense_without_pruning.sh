@@ -14,8 +14,8 @@
 #       `--trainer.hard_stop.value=100 --trainer.hard_stop.unit=steps`
 
 ##############################################################
-BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
-#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
+#BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
+BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
 model_name="dense_1b_olmoe-mix_prenorm_noqknorm_1123"
 step="step30995"
@@ -142,7 +142,7 @@ for train_task_name in "${train_task_names[@]}"; do
 
     torchrun --nproc-per-node=1 src/scripts/train/olmo2-1B_finetune.py \
         $runname \
-    		--save-folder="${base_model}/${variation}/${out_dir}" \
+    		--save-folder="${base_model}/${variation}/${out_dir}_torchrun" \
         --dataset.paths="[${dataset_paths}]" \
         --dataset.label_mask_paths="[${label_mask_paths}]" \
         --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
