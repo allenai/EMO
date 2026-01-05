@@ -39,7 +39,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-4e-5"
+variation="newdefault_lr-4e-6_bs-128"
 
 experiment_tag="pruned_finetuning"
 #experiment_tag="pruned_finetuning_ablate"
@@ -50,16 +50,19 @@ if [ "$variation" == "noloadoptim" ]; then
     variation_flags="--trainer.load_optim_state=false --trainer.load_trainer_state=false"
 elif [ "$variation" == "newdefault_lr-4e-5" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
-    variation_flags="--train_module.optim.lr=4e-5"
+    variation_flags="--train_module.optim.lr=4e-5 --global_batch_size=32"
+elif [ "$variation" == "newdefault_lr-4e-5_bs-128" ]; then
+    # reinitialize optim and use masked finetuning (should be checked)
+    variation_flags="--train_module.optim.lr=4e-5 --global_batch_size=128"
 elif [ "$variation" == "newdefault_lr-4e-4" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
-    variation_flags="--train_module.optim.lr=4e-4"
+    variation_flags="--train_module.optim.lr=4e-4 --global_batch_size=32"
 elif [ "$variation" == "newdefault_lr-4e-6" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
-    variation_flags="--train_module.optim.lr=4e-6"
+    variation_flags="--train_module.optim.lr=4e-6 --global_batch_size=32"
 elif [ "$variation" == "newdefault_lr-4e-6_bs-128" ]; then
     # reinitialize optim and use masked finetuning (should be checked) and batch size of 128 (should be checked)
-    variation_flags="--train_module.optim.lr=4e-6"
+    variation_flags="--train_module.optim.lr=4e-6 --global_batch_size=32"
 else
     echo "error: Unknown variation '$variation'. "
     exit 1
@@ -226,7 +229,6 @@ for model_name in "${model_names[@]}"; do
             --model.block.feed_forward_moe.num_experts=${prune_keep_k} \
 		        --trainer.load_optim_state=false \
 		        --trainer.load_trainer_state=false \
-		        --global_batch_size=32 \
             $variation_flags
 
     #        --dataset.label_mask_paths="[${label_mask_paths}]" \

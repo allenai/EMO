@@ -22,7 +22,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-4e-5"
+variation="newdefault_lr-4e-6_bs-128"
 
 #expertiment_tag="finetuning"
 expertiment_tag="finetune_ablate"
@@ -38,23 +38,25 @@ if [ "$variation" == "noloadoptim" ]; then
 #    variation_flags="--train_module.optim.lr=1e-5"
 elif [ "$variation" == "newdefault_lr-2e-5" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
-    variation_flags="--train_module.optim.lr=2e-5"
+    variation_flags="--train_module.optim.lr=2e-5 --global_batch_size=32"
 elif [ "$variation" == "newdefault_lr-4e-5" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
-    variation_flags="--train_module.optim.lr=4e-5"
+    variation_flags="--train_module.optim.lr=4e-5 --global_batch_size=32"
+elif [ "$variation" == "newdefault_lr-4e-5_bs-128" ]; then
+    # reinitialize optim and use masked finetuning (should be checked)
+    variation_flags="--train_module.optim.lr=4e-5 --global_batch_size=128"
 elif [ "$variation" == "newdefault_lr-4e-5_batchsize-16" ]; then
     # reinitialize optim and use masked finetuning and batch size of 16 (should be checked)
-    # NOTE: the batch size 16 is hard coded for pipeline simplicity
-    variation_flags="--train_module.optim.lr=4e-5"
+    variation_flags="--train_module.optim.lr=4e-5 --global_batch_size=16"
 elif [ "$variation" == "newdefault_lr-4e-6" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
-    variation_flags="--train_module.optim.lr=4e-6"
+    variation_flags="--train_module.optim.lr=4e-6 --global_batch_size=32"
 elif [ "$variation" == "newdefault_lr-4e-6_bs-128" ]; then
     # reinitialize optim and use masked finetuning (should be checked) and batch size of 128
-    variation_flags="--train_module.optim.lr=4e-6"
+    variation_flags="--train_module.optim.lr=4e-6 --global_batch_size=128"
 elif [ "$variation" == "newdefault_lr-4e-4" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
-    variation_flags="--train_module.optim.lr=4e-4"
+    variation_flags="--train_module.optim.lr=4e-4 --global_batch_size=32"
 #elif [ "$variation" == "newdefault_lr-8e-6" ]; then
 #    # reinitialize optim and use masked finetuning and batch size of 32 (should be checked)
 #    variation_flags="--train_module.optim.lr=8e-6"
