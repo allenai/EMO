@@ -66,20 +66,20 @@ fi
 base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
 train_task_names=(
-  "arc_easy:rc_train::olmes"
-  "arc_challenge:rc_train::olmes"
-  "boolq:rc_train::olmes"
-  "csqa:rc_train::olmes"
-  "hellaswag:rc_train::olmes"
-  "openbookqa:rc_train::olmes"
-  "piqa:rc_train::olmes"
-  "socialiqa:rc_train::olmes"
-  "winogrande:rc_train::olmes"
+#  "arc_easy:rc_train::olmes"
+#  "arc_challenge:rc_train::olmes"
+#  "boolq:rc_train::olmes"
+#  "csqa:rc_train::olmes"
+#  "hellaswag:rc_train::olmes"
+#  "openbookqa:rc_train::olmes"
+#  "piqa:rc_train::olmes"
+#  "socialiqa:rc_train::olmes"
+#  "winogrande:rc_train::olmes"
 
 #  "synthea:rc_train_0shot::olmes"
-  "gsm8k_generation:train_0shot::olmes"
+#  "gsm8k_generation:train_0shot::olmes"
 
-#  "coqa:train_0shot::olmes"
+  "coqa:train_0shot::olmes"
 #  "squad:train_0shot::olmes"
 
 #  "arc_easy:rc_train_0shot::olmes"
@@ -140,24 +140,24 @@ for train_task_name in "${train_task_names[@]}"; do
     echo "Base model: $base_model"
     echo "Output dir: $out_dir"
 
-#    torchrun --nproc-per-node=1 src/scripts/train/olmo2-1B_finetune.py \
-#        $runname \
-#    		--save-folder="${base_model}/${variation}/${out_dir}" \
-#        --dataset.paths="[${dataset_paths}]" \
-#        --dataset.label_mask_paths="[${label_mask_paths}]" \
-#        --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
-#    		--trainer.max_duration='{value: 3, unit: epochs}' \
-#    		--trainer.callbacks.wandb="{enabled: false, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
-#        --train_module.compile_model=false \
-#    		--model.block.name="default" \
-#		    --model.block.attention.qk_norm=null \
-#    		--load_path=$base_model \
-#    		--num_checkpoints=$num_checkpoints \
-#        --train_module.optim.lr=1e-5 \
-#        --trainer.load_optim_state=false \
-#        --trainer.load_trainer_state=false \
-#        --data_loader.seed=2 \
-#    		$variation_flags
+    torchrun --nproc-per-node=1 src/scripts/train/olmo2-1B_finetune.py \
+        $runname \
+    		--save-folder="${base_model}/${variation}/${out_dir}" \
+        --dataset.paths="[${dataset_paths}]" \
+        --dataset.label_mask_paths="[${label_mask_paths}]" \
+        --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
+    		--trainer.max_duration='{value: 3, unit: epochs}' \
+    		--trainer.callbacks.wandb="{enabled: false, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
+        --train_module.compile_model=false \
+    		--model.block.name="default" \
+		    --model.block.attention.qk_norm=null \
+        --train_module.compile_model=false \
+    		--load_path=$base_model \
+    		--num_checkpoints=$num_checkpoints \
+        --trainer.load_optim_state=false \
+        --trainer.load_trainer_state=false \
+        --global_batch_size=32 \
+    		$variation_flags
 
     # throw error if not load_optim_state and load_trainer_state are false in variation_flags
     if [[ $variation != *"newdefault"* ]]; then
@@ -165,36 +165,36 @@ for train_task_name in "${train_task_names[@]}"; do
         exit 1
     fi
 
-    python -m olmo_core.launch.beaker \
-      --name $runname \
-      --gpus 8 \
-      --nodes 1 \
-      --is_private_repo \
-      --weka=oe-training-default \
-      --shared-filesystem \
-      --workspace ai2/flex2 \
-      --cluster ai2/jupiter \
-      --preemptible \
-      --allow-dirty \
-      --priority urgent \
-      --no-follow \
-      --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
-      -- src/scripts/train/olmo2-1B_finetune.py \
-        $runname \
-        --save-folder="${base_model}/${variation}/${out_dir}" \
-        --dataset.paths="[${dataset_paths}]" \
-        --dataset.label_mask_paths="[${label_mask_paths}]" \
-        --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
-        --trainer.max_duration='{value: 3, unit: epochs}' \
-        --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}, tags: [${task_prefix:0:64}, ${model_name:0:64}, ${expertiment_tag}]}" \
-        --model.block.name="default" \
-		    --model.block.attention.qk_norm=null \
-        --load_path=$base_model \
-        --num_checkpoints=$num_checkpoints \
-        --trainer.load_optim_state=false \
-        --trainer.load_trainer_state=false \
-        --global_batch_size=32 \
-        $variation_flags
+#    python -m olmo_core.launch.beaker \
+#      --name $runname \
+#      --gpus 8 \
+#      --nodes 1 \
+#      --is_private_repo \
+#      --weka=oe-training-default \
+#      --shared-filesystem \
+#      --workspace ai2/flex2 \
+#      --cluster ai2/jupiter \
+#      --preemptible \
+#      --allow-dirty \
+#      --priority urgent \
+#      --no-follow \
+#      --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+#      -- src/scripts/train/olmo2-1B_finetune.py \
+#        $runname \
+#        --save-folder="${base_model}/${variation}/${out_dir}" \
+#        --dataset.paths="[${dataset_paths}]" \
+#        --dataset.label_mask_paths="[${label_mask_paths}]" \
+#        --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
+#        --trainer.max_duration='{value: 3, unit: epochs}' \
+#        --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}, tags: [${task_prefix:0:64}, ${model_name:0:64}, ${expertiment_tag}]}" \
+#        --model.block.name="default" \
+#		    --model.block.attention.qk_norm=null \
+#        --load_path=$base_model \
+#        --num_checkpoints=$num_checkpoints \
+#        --trainer.load_optim_state=false \
+#        --trainer.load_trainer_state=false \
+#        --global_batch_size=32 \
+#        $variation_flags
 
 
 done
