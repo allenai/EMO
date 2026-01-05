@@ -63,7 +63,7 @@ TASK_STEPS = {
     # "winogrande:rc_test":     [0, 738, 1476, 2214, 2952, 3693],
     # "gsm8k_generation:train_0shot": [0, 121, 242, 363, 484, 606],
     # "synthea:rc_train_0shot": [0, 161, 322, 483, 644, 807],
-    "coqa:train_0shot": [0, 115, 230, 345, 460, 579],
+    "coqa:train_0shot": [0, 28, 56, 84, 112, 144],
     # "squad:train_0shot": [0, 1623, 3246, 4869, 6492, 8118],
 }
 
@@ -434,6 +434,8 @@ def get_validation_suffix(task_name: str) -> str:
 def get_lr_suffix(task_name: str) -> str:
     """Get the learning rate suffix for task in model paths (e.g., 'lr-4e-5', 'lr-4e-6_bs-128')."""
     if task_name == "synthea:rc_train_0shot":
+        return "lr-4e-6_bs-128"
+    elif task_name == "coqa:train_0shot":
         return "lr-4e-6_bs-128"
     else:
         # Default learning rate for other tasks

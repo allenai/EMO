@@ -22,7 +22,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-4e-5_bs-128"
+variation="newdefault_lr-1e-6_bs-128"
 
 #expertiment_tag="finetuning"
 expertiment_tag="finetune_ablate"
@@ -54,6 +54,9 @@ elif [ "$variation" == "newdefault_lr-4e-6" ]; then
 elif [ "$variation" == "newdefault_lr-4e-6_bs-128" ]; then
     # reinitialize optim and use masked finetuning (should be checked) and batch size of 128
     variation_flags="--train_module.optim.lr=4e-6 --global_batch_size=128"
+elif [ "$variation" == "newdefault_lr-1e-6_bs-128" ]; then
+    # reinitialize optim and use masked finetuning (should be checked) and batch size of 128
+    variation_flags="--train_module.optim.lr=1e-6 --global_batch_size=128"
 elif [ "$variation" == "newdefault_lr-4e-4" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
     variation_flags="--train_module.optim.lr=4e-4 --global_batch_size=32"
