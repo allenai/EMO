@@ -55,7 +55,11 @@ def get_correct_training_data(eval_dataset_name, eval_folder):
             data += [req["request"]["context"] + req["request"]["continuation"]]
     elif requests_data[0]["request_type"] == "generate_until":
         for req in requests_data:
-            data += [req["request"]["context"] + req["doc"]["choices"][0]]
+            # for some tasks (e.g coqa), by default there is no space between context and choice, so we add it here
+            if req["request"]["context"][-1] != " " and req["doc"]["choices"][0][0] != " ":
+                data += [req["request"]["context"] + " " + req["doc"]["choices"][0]]
+            else:
+                data += [req["request"]["context"] + req["doc"]["choices"][0]]
     else:
         raise NotImplementedError(f"Dataset {eval_dataset_name} with request type {requests_data[0]["request_type"]} not implemented in get_prompt_sequences_for_evaluation")
 
