@@ -109,4 +109,44 @@ class COQA_Validation_0shot(COQA_Base):
         return doc["answers"][0]
 
 class COQA_Test_0shot(COQA_Base):
-    pass
+    # we override this to add a "space" after the "Answer" to match the same format.
+    def _process_doc_to_multi(self, doc):
+        new_docs = []
+        core_id = doc["id"]
+        source = doc["source"]
+        story = doc["story"]
+        questions = doc["questions"]["input_text"]
+        all_answers = doc["answers"]["input_text"]
+        additional_answers = [x["input_text"] for x in doc["additional_answers"].values()]
+        previous_qa: list = []
+        for turn_idx, question in enumerate(questions):
+            question = questions[turn_idx]
+            answers = [all_answers[turn_idx]]
+            for answer_list in additional_answers:
+                if len(answer_list) > turn_idx and answer_list[turn_idx]:
+                    answers.append(answer_list[turn_idx])
+            query = f"Passage: {story}"
+            if previous_qa:
+                query += "\n\nPreceding questions:"
+                for prev in previous_qa:
+                    query += f"\n\nQuestion: {prev['question']}\nAnswer: {prev['answer']}"
+            query += "\n\nFinal question:"
+            query += f"\n\nQuestion: {question}\nAnswer: "
+            new_doc = {
+                "id": f"{core_id}_turn{turn_idx}",
+                "source": source,
+                "story": story,
+                "query": query,
+                "question": question,
+                "answers": answers,
+                "choices": [answers[0]],
+                "previous_qa": previous_qa,
+            }
+            previous_qa.append({"question": question, "answer": answers[0]})
+            new_docs.append(new_doc)
+        return new_docs
+
+    # this shouldn't matter, but we also change it anyways by removing the leading " "
+    def doc_to_target(self, doc):
+        # return " " + doc["answers"][0]
+        return doc["answers"][0]
