@@ -116,11 +116,11 @@ FINETUNE_TASKS=(
 #    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step807-hf"
 
     "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step0-hf"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step115-hf"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step230-hf"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step345-hf"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step460-hf"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step579-hf"
+    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step28-hf"
+    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step56-hf"
+    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step84-hf"
+    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step112-hf"
+    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step144-hf"
 
 #    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step0-hf"
 #    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step1623-hf"
