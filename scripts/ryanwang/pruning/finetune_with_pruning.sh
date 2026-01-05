@@ -62,7 +62,7 @@ elif [ "$variation" == "newdefault_lr-4e-6" ]; then
     variation_flags="--train_module.optim.lr=4e-6 --global_batch_size=32"
 elif [ "$variation" == "newdefault_lr-4e-6_bs-128" ]; then
     # reinitialize optim and use masked finetuning (should be checked) and batch size of 128 (should be checked)
-    variation_flags="--train_module.optim.lr=4e-6 --global_batch_size=32"
+    variation_flags="--train_module.optim.lr=4e-6 --global_batch_size=128"
 else
     echo "error: Unknown variation '$variation'. "
     exit 1
