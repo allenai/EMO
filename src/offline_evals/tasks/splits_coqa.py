@@ -44,13 +44,13 @@ class COQA_Full_Base(CoQA):
         return self._process_all_docs(self.dataset["validation"])
         # return map(self._process_doc, self.dataset["validation"])
 
-class COQA_full_Train_0shot(COQA_Base):
+class COQA_full_Train_0shot(COQA_Full_Base):
     pass
 
-class COQA_full_Validation_0shot(COQA_Base):
+class COQA_full_Validation_0shot(COQA_Full_Base):
     pass
 
-class COQA_full_Test_0shot(COQA_Base):
+class COQA_full_Test_0shot(COQA_Full_Base):
     pass
 
 class COQA_Train_0shot(COQA_Base):
