@@ -22,10 +22,11 @@ SEQUENCE_LENGTH = 8 * 1024
 GLOBAL_BATCH_SIZE = 4 * 1024 * 1024
 
 
-def build_data_components(common: CommonComponents) -> DataComponents:
+def build_data_components(common: CommonComponents, **kwargs) -> DataComponents:
     """Build data config using OLMo-mix-0625-150Bsample."""
+    print(f"DEBUG: build_data_components called, using DataMix.OLMoE_mix_0824 = {DataMix.OLMoE_mix_0824.value}")
     dataset_config = NumpyFSLDatasetConfig.from_data_mix(
-        DataMix.OLMo_mix_0625_150Bsample,
+        DataMix.OLMoE_mix_0824,
         tokenizer=common.tokenizer,
         mix_base_dir=common.root_dir,
         work_dir=common.work_dir,
@@ -66,7 +67,7 @@ def build_train_module_config(common: CommonComponents) -> TransformerTrainModul
         ),
         compile_model=True,
         dp_config=TransformerDataParallelConfig(
-            name=DataParallelType.fsdp,
+            name=DataParallelType.hsdp,
             param_dtype=DType.bfloat16,
             reduce_dtype=DType.float32,
             wrapping_strategy=TransformerDataParallelWrappingStrategy.blocks,
@@ -93,8 +94,8 @@ def build_trainer_config(common: CommonComponents) -> TrainerConfig:
             save_overwrite=True,
             metrics_collect_interval=10,
             cancel_check_interval=cancel_check_interval,
-            max_duration=Duration.tokens(int(150e9)),
-            hard_stop=Duration.tokens(int(150e9)),
+            max_duration=Duration.tokens(int(130e9)),
+            hard_stop=Duration.tokens(int(130e9)),
         )
         .with_callback(
             "checkpointer",
