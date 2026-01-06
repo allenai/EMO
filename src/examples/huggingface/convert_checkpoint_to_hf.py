@@ -353,8 +353,6 @@ def validate_conversion(
     )
     hf_config = hf_model.config
 
-    breakpoint()
-
     olmo_core_state, hf_state = {}, {}
     if debug:
         olmo_core_state, hf_state = _register_debug_hooks(hf_model, model)
@@ -405,6 +403,8 @@ def validate_conversion(
         log.info(f"simple mapping: {simple_module_name_mapping}")
         log.info(f"hf_state keys: {hf_state.keys()}")
         log.info(f"olmo_core_state keys: {olmo_core_state.keys()}")
+
+        breakpoint()
 
         for olmo_core_state_name, (_, olmo_core_tensor) in sorted(
             olmo_core_state.items(), key=lambda item: item[1][0]
@@ -474,7 +474,6 @@ def validate_conversion(
 
 def load_config(checkpoint_input_dir: PathOrStr) -> Optional[dict]:
     if not file_exists(f"{checkpoint_input_dir}/config.json"):
-        breakpoint()
         raise RuntimeError(f"Config file not found at {checkpoint_input_dir}")
 
     with cached_path(f"{checkpoint_input_dir}/config.json").open("r", encoding="utf-8") as f:
