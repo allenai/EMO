@@ -21,6 +21,37 @@ class COQA_Base(CoQA):
         # validation set used to be the test set by default if a test set did not exist, so we still set it as test set
         return map(self._process_doc, self.dataset["validation"])
 
+class COQA_Full_Base(CoQA):
+    def has_test_docs(self):
+        return True
+
+    def training_docs(self):
+        if self._training_docs is None:
+            # select training docs excluding 1000 examples used for validation
+            train_dataset = self.dataset["train"].shuffle(seed=0).select(range(1000, len(self.dataset["train"])))
+            # self._training_docs = list(map(self._process_doc, train_dataset))
+            self._training_docs = self._process_all_docs(train_dataset)
+        return self._training_docs
+
+    def validation_docs(self):
+        # select 1000 examples from the train set as validation set
+        val_dataset = self.dataset["train"].shuffle(seed=0).select(range(0, 1000))
+        return self._process_all_docs(val_dataset)
+        # return map(self._process_doc, val_dataset)
+
+    def test_docs(self):
+        # validation set used to be the test set by default if a test set did not exist, so we still set it as test set
+        return self._process_all_docs(self.dataset["validation"])
+        # return map(self._process_doc, self.dataset["validation"])
+
+class COQA_full_Train_0shot(COQA_Base):
+    pass
+
+class COQA_full_Validation_0shot(COQA_Base):
+    pass
+
+class COQA_full_Test_0shot(COQA_Base):
+    pass
 
 class COQA_Train_0shot(COQA_Base):
     # # we override this to add a "space" after the "Answer" to match the same format.

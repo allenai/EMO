@@ -173,6 +173,10 @@ new_task_registry: Dict = {
     "coqa:validation_0shot": splits_coqa.COQA_Validation_0shot,
     "coqa:test_0shot": splits_coqa.COQA_Test_0shot,
 
+    "coqa_full:train_0shot": splits_coqa.COQA_full_Train_0shot,
+    "coqa_full:validation_0shot": splits_coqa.COQA_full_Validation_0shot,
+    "coqa_full:test_0shot": splits_coqa.COQA_full_Test_0shot,
+
     "squad:train_0shot": splits_squad.SQUAD_Train_0shot,
     "squad:validation_0shot": splits_squad.SQUAD_Validation_0shot,
     "squad:test_0shot": splits_squad.SQUAD_Test_0shot,

@@ -51,6 +51,33 @@ def get_task_configs():
                     "regimes": [],
                 },
             },
+            "coqa_full:train_0shot::olmes": {
+                "task_name": "coqa_full:train_0shot",
+                "split": "train",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "coqa_full:validation_0shot::olmes": {
+                "task_name": "coqa_full:validation_0shot",
+                "split": "validation",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "coqa_full:test_0shot::olmes": {
+                "task_name": "coqa_full:test_0shot",
+                "split": "test",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
             "coqa:train_0shot::olmes": {
                 "task_name": "coqa:train_0shot",
                 "split": "train",
