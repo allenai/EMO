@@ -33,6 +33,7 @@ def cross_entropy_loss(
     :returns: The cross entropy loss and optionally the z-loss.
     """
     logits = logits.float()
+    breakpoint()
     loss = F.cross_entropy(logits, labels, ignore_index=ignore_index, reduction=reduction)
 
     if not compute_z_loss:
