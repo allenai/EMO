@@ -7,7 +7,7 @@
 
 # Part 1: Add new expert
 BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moe_1b7b_128experts_olmoe-mix_130B_1103/step30995"
-NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/moe_1b7b_129experts_olmoe-mix_130B_1103"
+NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/extensions/moe_1b7b_129experts_olmoe-mix_130B_1103_step30995_init_random_expert"
 
 # Run this once; on weka
 python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
