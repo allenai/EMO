@@ -474,6 +474,7 @@ def validate_conversion(
 
 def load_config(checkpoint_input_dir: PathOrStr) -> Optional[dict]:
     if not file_exists(f"{checkpoint_input_dir}/config.json"):
+        breakpoint()
         raise RuntimeError(f"Config file not found at {checkpoint_input_dir}")
 
     with cached_path(f"{checkpoint_input_dir}/config.json").open("r", encoding="utf-8") as f:
