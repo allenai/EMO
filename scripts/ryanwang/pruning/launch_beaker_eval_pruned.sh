@@ -29,9 +29,9 @@ PARENT_MODELS=(
 
 #postfix=""
 #postfix="_keepk128/newdefault_lr-4e-5"
-#postfix="_keepk32/newdefault_lr-4e-5_bs-128"
+postfix="_keepk32/newdefault_lr-4e-5_bs-128"
 #postfix="_keepk32/newdefault_lr-4e-6_bs-128"
-postfix="_keepk32/newdefault_lr-1e-6_bs-128"
+#postfix="_keepk32/newdefault_lr-1e-6_bs-128"
 #postfix="_keepk32/newdefault_lr-4e-5"
 #postfix="_keepk8/newdefault_lr-4e-5"
 #postfix="_keepk32"
