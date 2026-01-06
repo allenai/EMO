@@ -151,9 +151,9 @@ for BASE in "${PARENT_MODELS[@]}"; do
 
     # for debugging only
     python src/examples/huggingface/convert_checkpoint_to_hf.py \
-      --checkpoint-input-path "'"${MODEL_DIR}"'" \
+      --checkpoint-input-path "${MODEL_DIR}" \
       --max-sequence-length 4096 \
-      --huggingface-output-dir "'"${MODEL_DIR}"'-hf" \
+      --huggingface-output-dir "${MODEL_DIR}-hf" \
       --dtype float32 \
       --debug
 
