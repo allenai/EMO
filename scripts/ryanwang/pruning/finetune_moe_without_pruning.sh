@@ -24,7 +24,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-4e-5"
+variation="newdefault_lr-4e-5_bs-128"
 
 #expertiment_tag="finetuning"
 expertiment_tag="finetune_ablate"
@@ -40,26 +40,29 @@ if [ "$variation" == "noloadoptim" ]; then
 #    variation_flags="--train_module.optim.lr=1e-5"
 elif [ "$variation" == "newdefault_lr-2e-5" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
-    variation_flags="--train_module.optim.lr=2e-5"
+    variation_flags="--train_module.optim.lr=2e-5 --global_batch_size=32"
 elif [ "$variation" == "newdefault_lr-4e-5" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
-    variation_flags="--train_module.optim.lr=4e-5"
+    variation_flags="--train_module.optim.lr=4e-5 --global_batch_size=32"
 elif [ "$variation" == "newdefault_lr-4e-5_batchsize-16" ]; then
     # reinitialize optim and use masked finetuning and batch size of 16 (should be checked)
     # NOTE: the batch size 16 is hard coded for pipeline simplicity
-    variation_flags="--train_module.optim.lr=4e-5"
+    variation_flags="--train_module.optim.lr=4e-5 --global_batch_size=16"
+elif [ "$variation" == "newdefault_lr-4e-5_bs-128" ]; then
+    # reinitialize optim and use masked finetuning (should be checked) and batch size of 128
+    variation_flags="--train_module.optim.lr=4e-5 --global_batch_size=128"
 elif [ "$variation" == "newdefault_lr-4e-6" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
-    variation_flags="--train_module.optim.lr=4e-6"
+    variation_flags="--train_module.optim.lr=4e-6 --global_batch_size=32"
 elif [ "$variation" == "newdefault_lr-4e-6_bs-128" ]; then
     # reinitialize optim and use masked finetuning (should be checked) and batch size of 128
-    variation_flags="--train_module.optim.lr=4e-6"
+    variation_flags="--train_module.optim.lr=4e-6 --global_batch_size=128"
 elif [ "$variation" == "newdefault_lr-4e-4" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
-    variation_flags="--train_module.optim.lr=4e-4"
+    variation_flags="--train_module.optim.lr=4e-4 --global_batch_size=32"
 #elif [ "$variation" == "newdefault_lr-8e-6" ]; then
 #    # reinitialize optim and use masked finetuning and batch size of 32 (should be checked)
-#    variation_flags="--train_module.optim.lr=8e-6"
+#    variation_flags="--train_module.optim.lr=8e-6 --global_batch_size=32"
 else
     echo "error: Unknown variation '$variation'. "
     exit 1
@@ -68,20 +71,20 @@ fi
 base_model="${BASE_OUTPUT_DIR}/models/${model_name}/${step}"
 
 train_task_names=(
-  "arc_easy:rc_train::olmes"
-  "arc_challenge:rc_train::olmes"
-  "boolq:rc_train::olmes"
-  "csqa:rc_train::olmes"
-  "hellaswag:rc_train::olmes"
-  "openbookqa:rc_train::olmes"
-  "piqa:rc_train::olmes"
-  "socialiqa:rc_train::olmes"
-  "winogrande:rc_train::olmes"
+#  "arc_easy:rc_train::olmes"
+#  "arc_challenge:rc_train::olmes"
+#  "boolq:rc_train::olmes"
+#  "csqa:rc_train::olmes"
+#  "hellaswag:rc_train::olmes"
+#  "openbookqa:rc_train::olmes"
+#  "piqa:rc_train::olmes"
+#  "socialiqa:rc_train::olmes"
+#  "winogrande:rc_train::olmes"
 
 #  "synthea:rc_train_0shot::olmes"
-  "gsm8k_generation:train_0shot::olmes"
+#  "gsm8k_generation:train_0shot::olmes"
 
-#  "coqa:train_0shot::olmes"
+  "coqa:train_0shot::olmes"
 #  "squad:train_0shot::olmes"
 
 #  "arc_easy:rc_train_0shot::olmes"
@@ -197,7 +200,6 @@ for train_task_name in "${train_task_names[@]}"; do
         --num_checkpoints=$num_checkpoints \
         --trainer.load_optim_state=false \
         --trainer.load_trainer_state=false \
-        --global_batch_size=32 \
         $variation_flags
 
 done
