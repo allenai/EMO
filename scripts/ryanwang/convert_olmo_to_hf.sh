@@ -9,8 +9,8 @@ PARENT_MODELS=(
 
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995"
 
-    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
-#    "moe_1b4b_32experts_1224/step30995"
+#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
+    "moe_1b4b_32experts_1224/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
 #    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
 
