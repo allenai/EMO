@@ -6,7 +6,7 @@
 
 
 # Part 1: Add new expert
-BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moe_1b7b_128experts_olmoe-mix_130B_1103/step30995"
+BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
 NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/extensions/moe_1b7b_129experts_olmoe-mix_130B_1103_step30995_init_random_expert"
 
 # Run this once; on weka
@@ -15,6 +15,9 @@ python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
 	-o ${NEW_BASE_MODEL_PATH} \
 	--num_new_experts 1 \
 	--init_method random_expert
+
+
+# Note: random_expert chose expert 119.
 
 # # Part 2: Train with new expert
 # RUN_NAME="test_moe1b7b_129experts_1trained-math-03"
