@@ -134,6 +134,7 @@ def convert_checkpoint_to_hf(
     for block_label, block_config in block_entries:
         prepare_block_for_conversion(block_label, block_config)
 
+    breakpoint()
     model = model_config.build(init_device="meta")
     model.to_empty(device=device or torch.device("cpu"))
 
