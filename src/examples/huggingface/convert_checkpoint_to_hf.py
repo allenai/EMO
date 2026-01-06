@@ -305,6 +305,8 @@ def _register_debug_hooks(hf_model: torch.nn.Module, model: Transformer):
                 output = output.narrow(i, 0, min(size, MAX_DIM_SIZE))
             debug_state[state_name] = (len(debug_state), output)
 
+    breakpoint()
+
     for name, module in model.named_modules():
         module.register_forward_hook(partial(module_hook, olmo_core_debug_state, "olmo_core", name))
     for name, module in hf_model.named_modules():

@@ -436,7 +436,7 @@ def _get_converter_to_hf(model_type: str | None = None) -> StateConverter:
         )
         mapping_templates.update(
             {
-                olmo_core_key: StateMappingTemplate(olmo_core_key, hf_key, state_type=StateType.weight)
+                olmo_core_key: StateMappingTemplate(olmo_core_key, hf_key, state_type=StateType.module)
                 for olmo_core_key, hf_key in
                 MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_MODULE_MAPPINGS.get(model_type, {}).items()
             }
