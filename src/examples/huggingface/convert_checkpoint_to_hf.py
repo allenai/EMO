@@ -134,7 +134,6 @@ def convert_checkpoint_to_hf(
     for block_label, block_config in block_entries:
         prepare_block_for_conversion(block_label, block_config)
 
-    breakpoint()
     model = model_config.build(init_device="meta")
     model.to_empty(device=device or torch.device("cpu"))
 
@@ -308,8 +307,6 @@ def _register_debug_hooks(hf_model: torch.nn.Module, model: Transformer):
                 output = output.narrow(i, 0, min(size, MAX_DIM_SIZE))
             debug_state[state_name] = (len(debug_state), output)
 
-    breakpoint()
-
     for name, module in model.named_modules():
         module.register_forward_hook(partial(module_hook, olmo_core_debug_state, "olmo_core", name))
     for name, module in hf_model.named_modules():
@@ -408,8 +405,6 @@ def validate_conversion(
         log.info(f"simple mapping: {simple_module_name_mapping}")
         log.info(f"hf_state keys: {hf_state.keys()}")
         log.info(f"olmo_core_state keys: {olmo_core_state.keys()}")
-
-        breakpoint()
 
         for olmo_core_state_name, (_, olmo_core_tensor) in sorted(
             olmo_core_state.items(), key=lambda item: item[1][0]
