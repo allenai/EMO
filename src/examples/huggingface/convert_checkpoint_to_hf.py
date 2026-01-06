@@ -353,6 +353,8 @@ def validate_conversion(
     )
     hf_config = hf_model.config
 
+    breakpoint()
+
     olmo_core_state, hf_state = {}, {}
     if debug:
         olmo_core_state, hf_state = _register_debug_hooks(hf_model, model)

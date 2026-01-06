@@ -24,9 +24,9 @@ PARENT_MODELS=(
 # used to iterate on different finetuning variations
 #postfix=""
 #postfix="_keepk128/newdefault_lr-4e-5"
-#postfix="_keepk32/newdefault_lr-4e-5_bs-128"
+postfix="_keepk32/newdefault_lr-4e-5_bs-128"
 #postfix="_keepk32/newdefault_lr-4e-6_bs-128"
-postfix="_keepk32/newdefault_lr-1e-7_bs-128"
+#postfix="_keepk32/newdefault_lr-1e-7_bs-128"
 #postfix="_keepk32/newdefault_lr-4e-5"
 #postfix="_keepk8/newdefault_lr-4e-5"
 #postfix="_keepk32"
@@ -110,12 +110,14 @@ FINETUNE_TASKS=(
 #    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step644"
 #    "task-synthea_rc_validation_0shot${postfix}/finetune-task-synthea_rc_train_0shot/step807"
 
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step0"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step28"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step56"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step84"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step112"
-    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step144"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step0"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step28"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step56"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step84"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step112"
+#    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step144"
+
+    "task-coqa_validation_0shot${postfix}/finetune-task-coqa_train_0shot/step140"
 
 #    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step0"
 #    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step1623"
@@ -147,33 +149,41 @@ for BASE in "${PARENT_MODELS[@]}"; do
     # limit to 120 char
     job_name=${job_name:0:120}
 
-    # launch the gantry run and delete the original model
-
-    gantry run \
-    --name $job_name \
-    --weka oe-training-default:/weka/oe-training-default \
-    --install 'pip install -e .[all]' \
-    --budget ai2/oceo \
-    --workspace ai2/flex2 \
-    --allow-dirty \
-    --cluster "ai2/jupiter-cirrascale-2" \
-    --cpus 16 \
-    --gpus 0 \
-    --priority urgent \
-    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-    -- \
-    bash -c '
+    # for debugging only
     python src/examples/huggingface/convert_checkpoint_to_hf.py \
       --checkpoint-input-path "'"${MODEL_DIR}"'" \
       --max-sequence-length 4096 \
       --huggingface-output-dir "'"${MODEL_DIR}"'-hf" \
       --dtype float32 \
-      --skip-validation \
-    && \
-      rm -rf "'"${MODEL_DIR}"'"
-  '
+      --debug
+
+    # launch the gantry run and delete the original model
+
+#    gantry run \
+#    --name $job_name \
+#    --weka oe-training-default:/weka/oe-training-default \
+#    --install 'pip install -e .[all]' \
+#    --budget ai2/oceo \
+#    --workspace ai2/flex2 \
+#    --allow-dirty \
+#    --cluster "ai2/jupiter-cirrascale-2" \
+#    --cpus 16 \
+#    --gpus 0 \
+#    --priority urgent \
+#    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+#    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+#    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+#    -- \
+#    bash -c '
+#    python src/examples/huggingface/convert_checkpoint_to_hf.py \
+#      --checkpoint-input-path "'"${MODEL_DIR}"'" \
+#      --max-sequence-length 4096 \
+#      --huggingface-output-dir "'"${MODEL_DIR}"'-hf" \
+#      --dtype float32 \
+#      --skip-validation \
+#    && \
+#      rm -rf "'"${MODEL_DIR}"'"
+#  '
   done
 done
 

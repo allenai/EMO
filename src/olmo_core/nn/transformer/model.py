@@ -499,8 +499,6 @@ class Transformer(nn.Module):
             **kwargs,
         )
 
-        breakpoint()
-
         if labels is not None:
             # we will mask if the next token is padding
             padding_mask = (labels != ignore_index)
