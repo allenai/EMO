@@ -22,5 +22,5 @@ python -m olmo_core.launch.beaker \
   --allow-dirty \
   --env-secret "GITHUB_TOKEN=KEVINF_GITHUB_TOKEN" "WANDB_API_KEY=KEVINF_WANDB_API_KEY" "BEAKER_TOKEN=KEVINF_BEAKER_TOKEN" \
   -- src/scripts/kevinf/train/OLMo3-1B.py \
-  $runname \
+  train $runname ai2/jupiter \
   --work-dir="/weka/oe-training-default/kevinf/dataset-cache"
