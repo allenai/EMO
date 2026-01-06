@@ -44,8 +44,8 @@ TASK_GROUPS_LIST=(
 #  "synthea_zeroshot"
 #  "gsm8k_generation_zeroshot"
 #  "coqa_zeroshot"
-  "coqa_full_zeroshot"
-#  "squad_zeroshot"
+#  "coqa_full_zeroshot"
+  "squad_zeroshot"
 
 #   MMLU
 #  "mmlu"
