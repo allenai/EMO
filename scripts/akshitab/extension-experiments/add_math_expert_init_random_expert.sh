@@ -20,7 +20,7 @@ NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/extension
 # Note: random_expert chose expert 119.
 
 # # Part 2: Train with new expert
-RUN_NAME="moe1b14b_129experts_1trained_math_init_random_expert_01"
+RUN_NAME="moe1b14b_129experts_1trained_math_init_random_expert_5B"
 
 python -m olmo_core.launch.beaker \
   --name ${RUN_NAME} \
@@ -41,9 +41,12 @@ python -m olmo_core.launch.beaker \
 		--save-folder="/weka/oe-training-default/akshitab/FlexMoE/models/${RUN_NAME}" \
 		--dataset.mix=mj_finemath4plus \
 		--work-dir="/weka/oe-training-default/akshitab/dataset-cache" \
-		--trainer.max_duration='{value: 1, unit: epochs}' \
+		--trainer.max_duration='{value: 5_000_000_000, unit: tokens}' \
 		--trainer.callbacks.wandb="{enabled: true, entity: akshitab, project: olmoe-modular, name: ${RUN_NAME}, tags: [extension]}" \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="moe" \
 		--model.block.attention.qk_norm=null \
-		--model.block.feed_forward_moe.lb_loss_weight=1e-2
+		--model.block.feed_forward_moe.lb_loss_weight=1e-2 \
+        --lr=4e-4 \
+        --num_experts_to_train=1 \
+        --train_module.scheduler.warmup_fraction=0.1
