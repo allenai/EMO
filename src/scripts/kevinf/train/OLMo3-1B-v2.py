@@ -20,6 +20,7 @@ import rich
 
 from olmo_core.config import Config, DType
 from olmo_core.data import DataMix, NumpyDataLoaderConfig, NumpyFSLDatasetConfig, TokenizerConfig
+from olmo_core.eval.task_groups import TASK_GROUPS
 from olmo_core.data.numpy_dataset import NumpyDatasetConfig
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_rank
@@ -203,12 +204,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback(
             "downstream_evaluator",
             DownstreamEvaluatorCallbackConfig(
-                tasks=[
-                    "hellaswag",
-                    "arc_challenge",
-                    "piqa",
-                    "copa",
-                ],
+                tasks=TASK_GROUPS["fast"],
                 tokenizer=tokenizer_config,
                 eval_interval=250,
             ),
@@ -233,7 +229,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         prog=sys.argv[0],
         usage=f"python {sys.argv[0]} RUN_NAME [OPTIONS...] [CONFIG_OVERRIDES...]",
-        description="Train OLMo3-1B on OLMoE-mix-0824.",
+        description="Train OLMo3-1B",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("run_name", type=str, help="""The name of the run.""")

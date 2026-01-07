@@ -7,7 +7,7 @@
 # Data: OLMoE-mix-0824
 # Training: 130B tokens on 2 nodes (16 GPUs)
 
-runname="kevinf-olmo3-1b-130b-olmoemix-0824"
+runname="new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample"
 
 python -m olmo_core.launch.beaker \
   --name $runname \
@@ -15,7 +15,7 @@ python -m olmo_core.launch.beaker \
   --nodes 2 \
   --weka=oe-training-default \
   --is_private_repo \
-  --priority high \
+  --priority urgent \
   --shared-filesystem \
   --workspace ai2/flex2 \
   --cluster ai2/jupiter \
@@ -23,10 +23,10 @@ python -m olmo_core.launch.beaker \
   --allow-dirty \
   --env-secret "GITHUB_TOKEN=KEVINF_GITHUB_TOKEN" "WANDB_API_KEY=KEVINF_WANDB_API_KEY" "BEAKER_TOKEN=KEVINF_BEAKER_TOKEN" \
   -- src/scripts/kevinf/train/OLMo3-1B-v2.py \
-  $runname --dry-run \
-  --save-folder="/weka/oe-training-default/kevinf/checkpoints/${runname}/" \
+  $runname \
+  --save-folder="/weka/oe-training-default/kevinf/checkpoints-new/${runname}/" \
   --work-dir="/weka/oe-training-default/kevinf/dataset-cache" \
   --trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
   --trainer.hard_stop='{value: 130_000_000_000, unit: tokens}' \
   --trainer.callbacks.downstream_evaluator.eval_interval=250 \
-  --dataset.mix=OLMoE-mix-0824
+  --dataset.mix=OLMo-mix-0625-150Bsample
