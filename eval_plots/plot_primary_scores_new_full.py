@@ -436,7 +436,7 @@ def get_lr_suffix(task_name: str) -> str:
     if task_name == "synthea:rc_train_0shot":
         return "lr-4e-6_bs-128"
     elif task_name == "coqa:train_0shot":
-        return "lr-4e-6_bs-128"
+        return "lr-4e-5_bs-128"
     else:
         # Default learning rate for other tasks
         return "lr-4e-5"
