@@ -179,12 +179,12 @@ _parser.add_argument(
 _parser.add_argument(
     "--activation_file",
     type=str,
-    help="Path to the saved activation file to use to prune. Only used if do_prune is set."
+    help="Path to the saved activation file to use to prune. Only used if do_prune is set.",
 )
 _parser.add_argument(
     "--prune_keep_k",
     type=int,
-    help="Number of experts to keep per MoE layer when pruning. Only used if do_prune is set."
+    help="Number of experts to keep per MoE layer when pruning. Only used if do_prune is set.",
 )
 ## Internal Ai2 arguments added:
 HAS_AI2_INTERNAL = (

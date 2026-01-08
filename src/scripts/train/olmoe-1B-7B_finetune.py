@@ -14,20 +14,29 @@ from typing import List, Optional, cast
 
 import rich
 
-from olmo_core.nn.moe.masked_finetune_router import MoEMaskedFinetuneRouterConfig
-from olmo_core.nn.moe.pruning_router import PruningMoERouterConfig, PruningMoELinearRouter
 from olmo_core.config import Config, DType
 from olmo_core.data import (
     NumpyDataLoaderConfig,
     NumpyDatasetConfig,
     NumpyFSLDatasetConfig,
-    TokenizerConfig, NumpyPaddedFSLDatasetConfig,
+    NumpyPaddedFSLDatasetConfig,
+    TokenizerConfig,
 )
 from olmo_core.data.mixes import DataMix
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_rank
+from olmo_core.nn.moe.masked_finetune_router import MoEMaskedFinetuneRouterConfig
+from olmo_core.nn.moe.pruning_router import (
+    PruningMoELinearRouter,
+    PruningMoERouterConfig,
+)
 from olmo_core.nn.transformer import TransformerConfig
-from olmo_core.optim import AdamWConfig, CosWithWarmup, OptimGroupOverride, LinearWithWarmup
+from olmo_core.optim import (
+    AdamWConfig,
+    CosWithWarmup,
+    LinearWithWarmup,
+    OptimGroupOverride,
+)
 from olmo_core.train import (
     TrainerConfig,
     prepare_training_environment,
@@ -95,8 +104,15 @@ def train(opts, config: ExperimentConfig):
 
     # Apply the pruning routers if prune_keep_k is set
     if opts.prune_keep_k > 0:
-        log.info(f"Applying PruningMoERouter with keep_k={opts.prune_keep_k} and activation_file={opts.activation_file}")
-        apply_pruned_routers(model, config.model, activation_file=opts.activation_file, prune_keep_k=opts.prune_keep_k)
+        log.info(
+            f"Applying PruningMoERouter with keep_k={opts.prune_keep_k} and activation_file={opts.activation_file}"
+        )
+        apply_pruned_routers(
+            model,
+            config.model,
+            activation_file=opts.activation_file,
+            prune_keep_k=opts.prune_keep_k,
+        )
     else:
         log.info("No extra pruning applied to routers.")
 
@@ -104,12 +120,16 @@ def train(opts, config: ExperimentConfig):
     dataset = config.dataset.build()
     data_loader = config.data_loader.build(dataset, dp_process_group=train_module.dp_process_group)
 
-    assert config.trainer.max_duration.unit == "epochs", "we assume we train using epochs to calculate checkpoints"
+    assert (
+        config.trainer.max_duration.unit == "epochs"
+    ), "we assume we train using epochs to calculate checkpoints"
     total_batches = data_loader.total_batches * config.trainer.max_duration.value
     if total_batches is None:
         raise ValueError("Cannot determine total batches from dataset")
     save_interval = max(1, total_batches // opts.num_checkpoints)
-    log.info(f"Total batches: {total_batches}, Total checkpoints: {opts.num_checkpoints}, Save interval: {save_interval}")
+    log.info(
+        f"Total batches: {total_batches}, Total checkpoints: {opts.num_checkpoints}, Save interval: {save_interval}"
+    )
 
     # Update checkpointer callback with new save interval
     cast(
@@ -172,14 +192,15 @@ def apply_pruned_routers(model, model_config, activation_file: str, prune_keep_k
         new_router = PruningMoERouterConfig(**kwargs).build(
             d_model=old_router.d_model,
             num_experts=old_router.num_experts,
-            init_device=old_router.weight.device.type if hasattr(old_router, 'weight') else "cpu",
-            lb_loss_weight=getattr(old_router, 'lb_loss_weight', None),
-            lb_loss_granularity=getattr(old_router, 'lb_loss_granularity', None),
-            z_loss_weight=getattr(old_router, 'z_loss_weight', None),
+            init_device=old_router.weight.device.type if hasattr(old_router, "weight") else "cpu",
+            lb_loss_weight=getattr(old_router, "lb_loss_weight", None),
+            lb_loss_granularity=getattr(old_router, "lb_loss_granularity", None),
+            z_loss_weight=getattr(old_router, "z_loss_weight", None),
         )
 
         # Swap in
         block.feed_forward_moe.router = new_router
+
 
 def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     save_folder = opts.save_folder
@@ -203,20 +224,26 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     else:
         # make sure we are not trying to prune model, since that involves different logic
         if opts.prune_keep_k > 0:
-            raise ValueError("Cannot apply both model_type modifications and pruning simultaneously, since pruning will use the pruning_router class")
+            raise ValueError(
+                "Cannot apply both model_type modifications and pruning simultaneously, since pruning will use the pruning_router class"
+            )
         if opts.model_type == "masked-finetune":
             log.info("Applying finetuning router that masks masked tokens for losses ...")
             # Get existing router config parameters
-            router_kwargs = model_config.block.feed_forward_moe.router.as_dict(exclude_none=True, recurse=False)
+            router_kwargs = model_config.block.feed_forward_moe.router.as_dict(
+                exclude_none=True, recurse=False
+            )
             router_kwargs.pop("name")
 
             # Replace router config
-            model_config.block.feed_forward_moe.router = MoEMaskedFinetuneRouterConfig(**router_kwargs)
+            model_config.block.feed_forward_moe.router = MoEMaskedFinetuneRouterConfig(
+                **router_kwargs
+            )
         else:
             raise ValueError(f"Unknown model_type {opts.model_type}")
 
     dataset_config = NumpyPaddedFSLDatasetConfig(
-        paths=[], # to be filled in by the bash script
+        paths=[],  # to be filled in by the bash script
         # label_mask_paths=[], # to be filled in by the bash script
         tokenizer=tokenizer_config,
         sequence_length=SEQUENCE_LENGTH,
@@ -234,7 +261,8 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     # )
 
     data_loader_config = NumpyDataLoaderConfig(
-        global_batch_size=opts.global_batch_size * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
+        global_batch_size=opts.global_batch_size
+        * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         seed=0,
         num_workers=4,
     )

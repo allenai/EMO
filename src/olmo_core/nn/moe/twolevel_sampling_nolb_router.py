@@ -1,12 +1,7 @@
 import json
-from typing import Optional
-
-from olmo_core.nn.moe.router import MoERouterConfig, MoERouterType
-from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
-from dataclasses import dataclass
-
 import logging
 from abc import abstractmethod
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union, cast
 
 import torch
@@ -28,18 +23,18 @@ from olmo_core.distributed.utils import (
     unhide_from_torch,
 )
 from olmo_core.exceptions import OLMoConfigurationError
+from olmo_core.nn.moe.router import (
+    MoELinearRouter,
+    MoELoadBalancingLossGranularity,
+    MoERouter,
+    MoERouterConfig,
+    MoERouterGatingFunction,
+    MoERouterType,
+)
+from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
 from olmo_core.utils import get_default_device
 
 from .loss import MoELoadBalancingLossGranularity, load_balancing_loss, router_z_loss
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from typing import Tuple, Optional, Union
-from olmo_core.nn.moe.router import MoELinearRouter, MoERouter
-from olmo_core.nn.moe.router import MoERouterGatingFunction, MoELoadBalancingLossGranularity
-from olmo_core.distributed.utils import get_local_tensor
-
 
 
 class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
@@ -49,12 +44,12 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
 
     # remove lb_loss_weight from init
     def __init__(
-            self,
-            *,
-            dtype: torch.dtype = torch.float32,
-            init_device: str = "cpu",
-            lb_loss_weight: Optional[float] = None,
-            **kwargs,
+        self,
+        *,
+        dtype: torch.dtype = torch.float32,
+        init_device: str = "cpu",
+        lb_loss_weight: Optional[float] = None,
+        **kwargs,
     ):
         super().__init__(dtype=dtype, init_device=init_device, **kwargs)
 
@@ -65,13 +60,13 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
             )
 
     def forward(
-            self,
-            x: torch.Tensor,
-            *,
-            loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
-            padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
-            document_boundaries: Optional[torch.Tensor] = None,
-            **kwargs,
+        self,
+        x: torch.Tensor,
+        *,
+        loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
+        padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
+        document_boundaries: Optional[torch.Tensor] = None,
+        **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
         Custom forward pass with modifications to implement two level routing.
@@ -109,7 +104,9 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
                 expert_probs = F.softmax(sequence_logits, dim=-1)  # shape: (doc_len, num_experts)
 
                 # get the entropy over experts per token
-                token_entropies = -torch.sum(expert_probs * torch.log(expert_probs + 1e-10), dim=-1)  # shape: (doc_len,)
+                token_entropies = -torch.sum(
+                    expert_probs * torch.log(expert_probs + 1e-10), dim=-1
+                )  # shape: (doc_len,)
                 # average entropy over the document
                 avg_entropy = token_entropies.mean().item()
                 tot_doc_entropy.append(avg_entropy)
@@ -117,14 +114,18 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
                 # take the sum across the document
                 document_expert_probs = expert_probs.sum(dim=0)  # shape: (num_experts,)
                 # sample to select the experts for this document
-                experts_to_keep = torch.multinomial(document_expert_probs, self.document_expert_pool, replacement=False)  # shape: (document_expert_pool,)
+                experts_to_keep = torch.multinomial(
+                    document_expert_probs, self.document_expert_pool, replacement=False
+                )  # shape: (document_expert_pool,)
                 # we now only keep these experts for this document, set the rest in scores_mask to True
                 scores_mask[seq_idx, start:end, experts_to_keep] = False
                 start = end
 
         if self.training:
             # log the average document entropy
-            avg_doc_entropy = sum(tot_doc_entropy) / len(tot_doc_entropy) if tot_doc_entropy else 0.0
+            avg_doc_entropy = (
+                sum(tot_doc_entropy) / len(tot_doc_entropy) if tot_doc_entropy else 0.0
+            )
             # logging.info(f"Average document entropy over experts: {avg_doc_entropy}")
             self._router_documentlevel_expert_entropy += avg_doc_entropy
 
@@ -138,7 +139,9 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
         else:
             raise NotImplementedError(self.gating_function)
 
-        raise NotImplementedError("MoETwoLevelSamplingNoLBRouter is not yet fully implemented. CANNOT mask scores without renormalization")
+        raise NotImplementedError(
+            "MoETwoLevelSamplingNoLBRouter is not yet fully implemented. CANNOT mask scores without renormalization"
+        )
         # mask out the experts not selected for each document. we mask scores instead of logits to allow z-loss computation
         scores = scores.masked_fill(scores_mask, 0.0)
         # scores.masked_fill_(scores_mask, 0.0)
@@ -159,8 +162,7 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
         with torch.no_grad():
             # Histogram the expert ids to identify the number of items/tokens routed to each expert.
             # shape: (batch_size, seq_len, num_experts)
-            tot_batched_batch_size_per_expert = ops.batched_histc(expert_indices,
-                                                              self.num_experts)
+            tot_batched_batch_size_per_expert = ops.batched_histc(expert_indices, self.num_experts)
             # shape: (batch_size, num_experts)
             tot_batched_batch_size_per_expert = tot_batched_batch_size_per_expert.sum(dim=1)
             # shape: (num_experts,)
@@ -187,7 +189,9 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
                 if padding_mask is not None:
                     # only consider non-padded tokens
                     padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
-                    valid_scores = scores.masked_select(padding_mask_expanded).view(-1, self.num_experts)
+                    valid_scores = scores.masked_select(padding_mask_expanded).view(
+                        -1, self.num_experts
+                    )
                 else:
                     valid_scores = scores.view(-1, self.num_experts)
                 # get entropy per token
@@ -227,19 +231,20 @@ class MoETwoLevelSamplingNoLBRouter(MoETwoLevelRouter):
         base_repr = super().extra_repr()
         return f"{base_repr}, document_expert_pool={self.document_expert_pool}, eos_token_id={self.eos_token_id}"
 
+
 @dataclass
 class MoETwoLevelSamplingNoLBRouterConfig(MoETwoLevelRouterConfig):
     # just update the build to call the correct new class
     def build(
-            self,
-            d_model: int,
-            num_experts,
-            *,
-            lb_loss_weight: Optional[float] = None,
-            lb_loss_granularity: MoELoadBalancingLossGranularity = MoELoadBalancingLossGranularity.local_batch,
-            z_loss_weight: Optional[float] = None,
-            dtype: Optional[torch.dtype] = None,
-            init_device: str = "cpu",
+        self,
+        d_model: int,
+        num_experts,
+        *,
+        lb_loss_weight: Optional[float] = None,
+        lb_loss_granularity: MoELoadBalancingLossGranularity = MoELoadBalancingLossGranularity.local_batch,
+        z_loss_weight: Optional[float] = None,
+        dtype: Optional[torch.dtype] = None,
+        init_device: str = "cpu",
     ) -> MoETwoLevelSamplingNoLBRouter:
         """
         Build the pruning router.

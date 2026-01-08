@@ -19,26 +19,35 @@ from olmo_core.data import (
     NumpyDataLoaderConfig,
     NumpyDatasetConfig,
     NumpyFSLDatasetConfig,
-    TokenizerConfig, NumpyPaddedFSLDatasetConfig,
+    NumpyPaddedFSLDatasetConfig,
+    TokenizerConfig,
 )
 from olmo_core.data.mixes import DataMix
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_rank
 from olmo_core.nn.transformer import TransformerConfig
-from olmo_core.optim import CosWithWarmup, OptimGroupOverride, LinearWithWarmup, SkipStepAdamWConfig
+from olmo_core.optim import (
+    CosWithWarmup,
+    LinearWithWarmup,
+    OptimGroupOverride,
+    SkipStepAdamWConfig,
+)
 from olmo_core.train import (
+    Duration,
     TrainerConfig,
     prepare_training_environment,
-    teardown_training_environment, Duration,
+    teardown_training_environment,
 )
 from olmo_core.train.callbacks import (
     BeakerCallback,
     CheckpointerCallback,
     CometCallback,
     ConfigSaverCallback,
+    DownstreamEvaluatorCallbackConfig,
     GPUMemoryMonitorCallback,
+    LMEvaluatorCallbackConfig,
     ProfilerCallback,
-    WandBCallback, DownstreamEvaluatorCallbackConfig, LMEvaluatorCallbackConfig,
+    WandBCallback,
 )
 from olmo_core.train.train_module import (
     TransformerDataParallelConfig,
@@ -54,6 +63,7 @@ log = logging.getLogger(__name__)
 
 SEQUENCE_LENGTH = 4096
 # GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
+
 
 # docs: start-define-config
 @dataclass
@@ -94,12 +104,16 @@ def train(opts, config: ExperimentConfig):
     dataset = config.dataset.build()
     data_loader = config.data_loader.build(dataset, dp_process_group=train_module.dp_process_group)
 
-    assert config.trainer.max_duration.unit == "epochs", "we assume we train using epochs to calculate checkpoints"
+    assert (
+        config.trainer.max_duration.unit == "epochs"
+    ), "we assume we train using epochs to calculate checkpoints"
     total_batches = data_loader.total_batches * config.trainer.max_duration.value
     if total_batches is None:
         raise ValueError("Cannot determine total batches from dataset")
     save_interval = max(1, total_batches // opts.num_checkpoints)
-    log.info(f"Total batches: {total_batches}, Total checkpoints: {opts.num_checkpoints}, Save interval: {save_interval}")
+    log.info(
+        f"Total batches: {total_batches}, Total checkpoints: {opts.num_checkpoints}, Save interval: {save_interval}"
+    )
 
     # Update checkpointer callback with new save interval
     cast(
@@ -165,13 +179,15 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     # )
 
     data_loader_config = NumpyDataLoaderConfig(
-        global_batch_size=opts.global_batch_size * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
+        global_batch_size=opts.global_batch_size
+        * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         seed=0,
         num_workers=4,
     )
 
     train_module_config = TransformerTrainModuleConfig(
-        rank_microbatch_size=2 * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
+        rank_microbatch_size=2
+        * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         max_sequence_length=SEQUENCE_LENGTH,
         optim=SkipStepAdamWConfig(
             lr=5e-5,

@@ -1,13 +1,14 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
-from olmo_core.train.callbacks.callback import Callback
 from olmo_core.nn.moe.twolevel_batchlb_router import MoETwoLevelBatchLBRouter
+from olmo_core.train.callbacks.callback import Callback
+
 
 @dataclass
 class ExpertPoolSchedulerCallback(Callback):
-    min_pool: int          # your CLI / config document_expert_pool (minimum)
-    decay_steps: int       # steps to decay from full pool -> min_pool
+    min_pool: int  # your CLI / config document_expert_pool (minimum)
+    decay_steps: int  # steps to decay from full pool -> min_pool
 
     def post_attach(self):
         # Called once after attaching to the trainer; cache routers here.
@@ -18,13 +19,11 @@ class ExpertPoolSchedulerCallback(Callback):
                 routers.append(m)
 
         # if routers is empty, return
-        if not routers or self.min_pool==-1 or self.decay_steps==-1:
+        if not routers or self.min_pool == -1 or self.decay_steps == -1:
             return
 
         self._routers = routers
-        self._num_experts: Optional[int] = (
-            routers[0].num_experts if routers else None
-        )
+        self._num_experts: Optional[int] = routers[0].num_experts if routers else None
 
     def pre_step(self, batch):
         # Runs before each training step; adjust pool based on global_step.

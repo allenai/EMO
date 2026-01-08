@@ -21,7 +21,7 @@ import re
 from typing import List, Union, cast
 
 from oe_eval.components.instances import RequestInstance
-from oe_eval.components.requests import RequestType, LoglikelihoodRequest
+from oe_eval.components.requests import LoglikelihoodRequest, RequestType
 from oe_eval.metrics import PerplexityMetric
 from oe_eval.metrics.metric import ExactMatch, MajAtK, MCAccuracy
 from oe_eval.tasks.base_task import Task
@@ -79,10 +79,12 @@ class GSM8K_Perplexity_Base(Task):
     def training_docs(self):
         if self._training_docs is None:
             # select training docs excluding 1000 examples used for validation
-            train_dataset = self.dataset["train"].shuffle(seed=0).select(range(1000, len(self.dataset["train"])))
-            self._training_docs = list(
-                train_dataset.map(self._process_doc, with_indices=True)
+            train_dataset = (
+                self.dataset["train"]
+                .shuffle(seed=0)
+                .select(range(1000, len(self.dataset["train"])))
             )
+            self._training_docs = list(train_dataset.map(self._process_doc, with_indices=True))
         return self._training_docs
 
     def validation_docs(self):
@@ -186,25 +188,31 @@ class GSM8K_Perplexity_Base(Task):
 class GSM8K_Perplexity_Train(GSM8K_Perplexity_Base):
     pass
 
+
 class GSM8K_Perplexity_Validation(GSM8K_Perplexity_Base):
     pass
+
 
 class GSM8K_Perplexity_Train_0shot(GSM8K_Perplexity_Base):
     pass
 
+
 class GSM8K_Perplexity_Validation_0shot(GSM8K_Perplexity_Base):
     pass
 
+
 class GSM8K_Perplexity_Test(GSM8K_Perplexity_Base):
     pass
+
 
 # For GSM8K Finetuning. For test, we use generation-based. For train and val, we want gold labels to base off of
 class GSM8K_Generation_Test_0shot(GSM8K):
     pass
 
+
 class GSM8K_Generation_Train_0shot(GSM8K_Perplexity_Base):
     pass
 
+
 class GSM8K_Generation_Validation_0shot(GSM8K_Perplexity_Base):
     pass
-

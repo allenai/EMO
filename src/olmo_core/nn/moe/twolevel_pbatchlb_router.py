@@ -1,12 +1,7 @@
 import json
-from typing import Optional
-
-from olmo_core.nn.moe.router import MoERouterConfig, MoERouterType
-from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
-from dataclasses import dataclass
-
 import logging
 from abc import abstractmethod
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union, cast
 
 import torch
@@ -28,32 +23,33 @@ from olmo_core.distributed.utils import (
     unhide_from_torch,
 )
 from olmo_core.exceptions import OLMoConfigurationError
+from olmo_core.nn.moe.router import (
+    MoELinearRouter,
+    MoELoadBalancingLossGranularity,
+    MoERouter,
+    MoERouterConfig,
+    MoERouterGatingFunction,
+    MoERouterType,
+)
+from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
 from olmo_core.utils import get_default_device
 
 from .loss import MoELoadBalancingLossGranularity, load_balancing_loss, router_z_loss
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from typing import Tuple, Optional, Union
-from olmo_core.nn.moe.router import MoELinearRouter, MoERouter
-from olmo_core.nn.moe.router import MoERouterGatingFunction, MoELoadBalancingLossGranularity
-from olmo_core.distributed.utils import get_local_tensor
-
 
 
 class MoETwoLevelPBatchLBRouter(MoETwoLevelRouter):
     """
     Custom MoE router with modified forward pass and additional class variables.
     """
+
     def __init__(
-            self,
-            *,
-            dtype: torch.dtype = torch.float32,
-            init_device: str = "cpu",
-            expert_uncond_entropy_bias: Optional[float] = None,
-            expert_uncond_lb_prob_bias: Optional[float] = None,
-            **kwargs,
+        self,
+        *,
+        dtype: torch.dtype = torch.float32,
+        init_device: str = "cpu",
+        expert_uncond_entropy_bias: Optional[float] = None,
+        expert_uncond_lb_prob_bias: Optional[float] = None,
+        **kwargs,
     ):
         super().__init__(dtype=dtype, init_device=init_device, **kwargs)
 
@@ -61,13 +57,13 @@ class MoETwoLevelPBatchLBRouter(MoETwoLevelRouter):
         self.expert_uncond_lb_prob_bias = expert_uncond_lb_prob_bias
 
     def forward(
-            self,
-            x: torch.Tensor,
-            *,
-            loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
-            padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
-            document_boundaries: Optional[torch.Tensor] = None,
-            **kwargs,
+        self,
+        x: torch.Tensor,
+        *,
+        loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
+        padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
+        document_boundaries: Optional[torch.Tensor] = None,
+        **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
         Custom forward pass with modifications to implement two level routing.
@@ -103,12 +99,14 @@ class MoETwoLevelPBatchLBRouter(MoETwoLevelRouter):
                 if end <= start:
                     start = end
                     continue
-                sequence_logits = logits[seq_idx, start:end, :] # shape: (doc_len, num_experts)
+                sequence_logits = logits[seq_idx, start:end, :]  # shape: (doc_len, num_experts)
                 # calculate the softmax over the experts
-                expert_probs = F.softmax(sequence_logits, dim=-1) # shape: (doc_len, num_experts)
+                expert_probs = F.softmax(sequence_logits, dim=-1)  # shape: (doc_len, num_experts)
 
                 # get the entropy over experts per token
-                token_entropies = -torch.sum(expert_probs * torch.log(expert_probs + 1e-10), dim=-1)  # shape: (doc_len,)
+                token_entropies = -torch.sum(
+                    expert_probs * torch.log(expert_probs + 1e-10), dim=-1
+                )  # shape: (doc_len,)
                 # average entropy over the document
                 # avg_entropy = token_entropies.mean().item()
                 # tot_doc_entropy.append(avg_entropy)
@@ -116,16 +114,18 @@ class MoETwoLevelPBatchLBRouter(MoETwoLevelRouter):
                 doc_entropy_count += 1
 
                 # take the sum across the document
-                document_expert_probs = expert_probs.sum(dim=0) # shape: (num_experts,)
+                document_expert_probs = expert_probs.sum(dim=0)  # shape: (num_experts,)
                 # get the bottom document_expert_pool experts
                 bot_document_expert_pool = self.num_experts - self.document_expert_pool
-                experts_to_discard = torch.topk(-document_expert_probs, bot_document_expert_pool).indices # shape: (bot_document_expert_pool,)
+                experts_to_discard = torch.topk(
+                    -document_expert_probs, bot_document_expert_pool
+                ).indices  # shape: (bot_document_expert_pool,)
                 # set the logits of these experts to a very large negative value
                 # logits[seq_idx, start:end, experts_to_discard] = float('-inf')
                 logits_mask[seq_idx, start:end, experts_to_discard] = True
                 start = end
 
-        logits.masked_fill_(logits_mask, float('-inf'))
+        logits.masked_fill_(logits_mask, float("-inf"))
 
         if self.training:
             # log the average document entropy
@@ -159,8 +159,7 @@ class MoETwoLevelPBatchLBRouter(MoETwoLevelRouter):
         with torch.no_grad():
             # Histogram the expert ids to identify the number of items/tokens routed to each expert.
             # shape: (batch_size, seq_len, num_experts)
-            tot_batched_batch_size_per_expert = ops.batched_histc(expert_indices,
-                                                              self.num_experts)
+            tot_batched_batch_size_per_expert = ops.batched_histc(expert_indices, self.num_experts)
             # shape: (batch_size, num_experts)
             tot_batched_batch_size_per_expert = tot_batched_batch_size_per_expert.sum(dim=1)
             # shape: (num_experts,)
@@ -224,19 +223,25 @@ class MoETwoLevelPBatchLBRouter(MoETwoLevelRouter):
                     scaled_lb_loss = self.lb_loss_weight * lb_loss
                     aux_loss = scaled_lb_loss
 
-                expert_probs = None # for caching result in case both expert_uncond_entropy_bias and expert_uncond_lb_prob are set
+                expert_probs = None  # for caching result in case both expert_uncond_entropy_bias and expert_uncond_lb_prob are set
 
                 if self.expert_uncond_entropy_bias is not None:
                     valid_scores = scores.view(-1, self.num_experts)
 
                     # first get expert probability usage
-                    expert_probs = torch.mean(valid_scores, dim=0) # shape: (num_experts,)
+                    expert_probs = torch.mean(valid_scores, dim=0)  # shape: (num_experts,)
                     # calculate expert entropy
-                    expert_uncond_entropy = -torch.sum(expert_probs * torch.log(expert_probs + 1e-10))
+                    expert_uncond_entropy = -torch.sum(
+                        expert_probs * torch.log(expert_probs + 1e-10)
+                    )
                     self._router_expert_uncond_entropy += expert_uncond_entropy.detach()
 
                     # add to aux_loss with respective biases
-                    aux_loss = -1 * self.expert_uncond_entropy_bias * expert_uncond_entropy if aux_loss is None else aux_loss - self.expert_uncond_entropy_bias * expert_uncond_entropy
+                    aux_loss = (
+                        -1 * self.expert_uncond_entropy_bias * expert_uncond_entropy
+                        if aux_loss is None
+                        else aux_loss - self.expert_uncond_entropy_bias * expert_uncond_entropy
+                    )
 
                 if self.expert_uncond_lb_prob_bias is not None:
                     if expert_probs is None:
@@ -249,7 +254,11 @@ class MoETwoLevelPBatchLBRouter(MoETwoLevelRouter):
                     self._router_expert_uncond_lb_prob += expert_uncond_lb_prob.detach()
 
                     # add to aux_loss with respective biases. We want to minimize this term, so we add it to the loss
-                    aux_loss = self.expert_uncond_lb_prob_bias * expert_uncond_lb_prob if aux_loss is None else aux_loss + self.expert_uncond_lb_prob_bias * expert_uncond_lb_prob
+                    aux_loss = (
+                        self.expert_uncond_lb_prob_bias * expert_uncond_lb_prob
+                        if aux_loss is None
+                        else aux_loss + self.expert_uncond_lb_prob_bias * expert_uncond_lb_prob
+                    )
 
                 if self.z_loss_weight is not None:
                     assert self.z_loss is not None
@@ -277,6 +286,7 @@ class MoETwoLevelPBatchLBRouter(MoETwoLevelRouter):
         base_repr = super().extra_repr()
         return f"{base_repr}, expert_uncond_entropy_bias={self.expert_uncond_entropy_bias}, expert_uncond_lb_prob_bias={self.expert_uncond_lb_prob_bias}"
 
+
 @dataclass
 class MoETwoLevelPBatchLBRouterConfig(MoETwoLevelRouterConfig):
     expert_uncond_entropy_bias: Optional[float] = None
@@ -284,15 +294,15 @@ class MoETwoLevelPBatchLBRouterConfig(MoETwoLevelRouterConfig):
 
     # just update the build to call the correct new class
     def build(
-            self,
-            d_model: int,
-            num_experts,
-            *,
-            lb_loss_weight: Optional[float] = None,
-            lb_loss_granularity: MoELoadBalancingLossGranularity = MoELoadBalancingLossGranularity.local_batch,
-            z_loss_weight: Optional[float] = None,
-            dtype: Optional[torch.dtype] = None,
-            init_device: str = "cpu",
+        self,
+        d_model: int,
+        num_experts,
+        *,
+        lb_loss_weight: Optional[float] = None,
+        lb_loss_granularity: MoELoadBalancingLossGranularity = MoELoadBalancingLossGranularity.local_batch,
+        z_loss_weight: Optional[float] = None,
+        dtype: Optional[torch.dtype] = None,
+        init_device: str = "cpu",
     ) -> MoETwoLevelPBatchLBRouter:
         """
         Build the pruning router.

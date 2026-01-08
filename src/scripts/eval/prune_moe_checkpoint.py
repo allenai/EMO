@@ -24,6 +24,7 @@ from olmo_core.nn.transformer.init import InitMethod
 
 logger = logging.getLogger(__name__)
 
+
 def get_model_config(checkpoint_path: str):
     config_path = os.path.join(checkpoint_path, "config.json")
     with open(config_path, "r") as f:
@@ -56,6 +57,7 @@ def save_checkpoint(config: dict, model: torch.nn.Module, save_path: str):
 
     # Copy .metadata from model_and_optim to root so the checkpoint is recognized
     import shutil
+
     metadata_source = os.path.join(model_weights_path, ".metadata")
     metadata_dest = os.path.join(save_path, ".metadata")
     if os.path.exists(metadata_source):
@@ -65,7 +67,9 @@ def save_checkpoint(config: dict, model: torch.nn.Module, save_path: str):
         logger.warning(f".metadata file not found at {metadata_source}")
 
 
-def copy_param_with_prune(source_param, target_param, num_experts, prune_keep_k, model_config, experts_to_keep):
+def copy_param_with_prune(
+    source_param, target_param, num_experts, prune_keep_k, model_config, experts_to_keep
+):
     """
     Copy parameters from source to target, handling two cases:
     NOTE: c means hidden dim of model, NOT context length
@@ -115,7 +119,6 @@ def copy_param_with_prune(source_param, target_param, num_experts, prune_keep_k,
         )
 
         target_matrix = target_new.view(prune_keep_k, c)
-
 
         # Copy data for selected experts
         for i, expert_idx in enumerate(experts_to_keep):
@@ -194,20 +197,26 @@ def prune_experts(args):
     new_config.block.feed_forward_moe.num_experts = args.prune_keep_k
     new_model = new_config.build(init_device="cpu")
 
-    new_model.init_weights() # Initialized with random init
+    new_model.init_weights()  # Initialized with random init
 
     num_experts = model_config.block.feed_forward_moe.num_experts
-    assert args.prune_keep_k < num_experts, f"prune_keep_k {args.prune_keep_k} must be less than original number of experts {num_experts}"
+    assert (
+        args.prune_keep_k < num_experts
+    ), f"prune_keep_k {args.prune_keep_k} must be less than original number of experts {num_experts}"
 
     # we now load in the activation file to determine which experts to keep
-    with open(args.activation_file, 'r') as f:
+    with open(args.activation_file, "r") as f:
         line = f.readline()
         activations = json.loads(line)["avg_router_probabilities"]
-    assert len(activations) == model_config.n_layers, f"Number of layers in activation file {len(activations)} does not match orig model {model_config.n_layers}"
+    assert (
+        len(activations) == model_config.n_layers
+    ), f"Number of layers in activation file {len(activations)} does not match orig model {model_config.n_layers}"
 
     # Copy weights from old model to new model
     for name, param in model.named_parameters():
-        assert name in new_model.state_dict() , f"Parameter {name} not found in new model, expected to be same since we're pruning router weights only"
+        assert (
+            name in new_model.state_dict()
+        ), f"Parameter {name} not found in new model, expected to be same since we're pruning router weights only"
         if name in new_model.state_dict():
             new_param = new_model.state_dict()[name]
             if param.shape == new_param.shape:
@@ -216,16 +225,27 @@ def prune_experts(args):
                 # assert "router" in name, f"Shape mismatch for parameter {name}"
                 if "router" in name or "experts" in name:
                     # we extract the layer number
-                    layer_idx = int(name.split(".")[1]) # Assumes naming convention like 'blocks.15.feed_forward_moe.router.weight', 'blocks.15.feed_forward_moe.experts.mlp.w1'
+                    layer_idx = int(
+                        name.split(".")[1]
+                    )  # Assumes naming convention like 'blocks.15.feed_forward_moe.router.weight', 'blocks.15.feed_forward_moe.experts.mlp.w1'
                     layer_activation = activations[layer_idx]
                     experts_to_keep = torch.topk(
                         torch.tensor(layer_activation),
-                        min(args.prune_keep_k, len(layer_activation))
+                        min(args.prune_keep_k, len(layer_activation)),
                     ).indices.tolist()
 
-                    copy_param_with_prune(param, new_param, num_experts, args.prune_keep_k, model_config, experts_to_keep)
+                    copy_param_with_prune(
+                        param,
+                        new_param,
+                        num_experts,
+                        args.prune_keep_k,
+                        model_config,
+                        experts_to_keep,
+                    )
                 else:
-                    raise ValueError(f"Shape mismatch for parameter {name}, cannot prune non-router/expert weights")
+                    raise ValueError(
+                        f"Shape mismatch for parameter {name}, cannot prune non-router/expert weights"
+                    )
 
         else:
             logger.debug(f"Parameter {name} not found in new model, not updating weights")
@@ -252,7 +272,10 @@ def parse_args():
         "--prune_keep_k", type=int, required=True, help="Number of experts to keep after pruning"
     )
     parser.add_argument(
-        "--activation_file", type=str, required=True, help="Path to activation file that records expert activations"
+        "--activation_file",
+        type=str,
+        required=True,
+        help="Path to activation file that records expert activations",
     )
     return parser.parse_args()
 

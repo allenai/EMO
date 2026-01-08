@@ -501,7 +501,7 @@ class Transformer(nn.Module):
 
         if labels is not None:
             # we will mask if the next token is padding
-            padding_mask = (labels != ignore_index)
+            padding_mask = labels != ignore_index
             all_block_kwargs["padding_mask"] = move_to_device(padding_mask, self.device)
 
         # Get embeddings but pass-through for non-existent layers to allow easy
@@ -511,11 +511,13 @@ class Transformer(nn.Module):
         # compute document boundaries here if router is a MoETwoLevelRouter
         is_moe_twolevel_router = False
         if hasattr(self.blocks["0"], "feed_forward_moe"):
-            is_moe_twolevel_router = isinstance(self.blocks["0"].feed_forward_moe.router, MoETwoLevelRouter) or isinstance(self.blocks["0"].feed_forward_moe.router, MoETwoLevelTopPBatchLBRouter)
+            is_moe_twolevel_router = isinstance(
+                self.blocks["0"].feed_forward_moe.router, MoETwoLevelRouter
+            ) or isinstance(self.blocks["0"].feed_forward_moe.router, MoETwoLevelTopPBatchLBRouter)
         document_boundaries = []
         if is_moe_twolevel_router:
             eos_token_id = self.blocks["0"].feed_forward_moe.router.eos_token_id
-            matches = (input_ids == eos_token_id)
+            matches = input_ids == eos_token_id
             # Get indices for each sequence in batch, output is (num_sequences, num_documents)
             for row in matches:
                 pos = torch.nonzero(row, as_tuple=True)[0]
@@ -532,7 +534,9 @@ class Transformer(nn.Module):
             if self.compile_enabled:
                 mark_dynamic(h, (0, 1), strict=False)
             if is_moe_twolevel_router:
-                h = block(h, document_boundaries=document_boundaries, **all_block_kwargs, **block_kwargs)
+                h = block(
+                    h, document_boundaries=document_boundaries, **all_block_kwargs, **block_kwargs
+                )
             else:
                 h = block(h, **all_block_kwargs, **block_kwargs)
 

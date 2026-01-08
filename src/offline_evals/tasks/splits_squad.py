@@ -8,7 +8,11 @@ class SQUAD_Base(SQuAD):
     def training_docs(self):
         if self._training_docs is None:
             # select training docs excluding 1000 examples used for validation
-            train_dataset = self.dataset["train"].shuffle(seed=0).select(range(1000, len(self.dataset["train"])))
+            train_dataset = (
+                self.dataset["train"]
+                .shuffle(seed=0)
+                .select(range(1000, len(self.dataset["train"])))
+            )
             self._training_docs = list(map(self._process_doc, train_dataset))
         return self._training_docs
 
@@ -25,8 +29,10 @@ class SQUAD_Base(SQuAD):
 class SQUAD_Train_0shot(SQUAD_Base):
     pass
 
+
 class SQUAD_Validation_0shot(SQUAD_Base):
     pass
+
 
 class SQUAD_Test_0shot(SQUAD_Base):
     pass

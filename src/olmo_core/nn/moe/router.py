@@ -433,24 +433,42 @@ class MoERouter(nn.Module):
             )
 
             if self._router_avg_num_expert_per_document != 0.0:
-                avg_num_experts_per_document = self._router_avg_num_expert_per_document / self._num_batches_tracked
+                avg_num_experts_per_document = (
+                    self._router_avg_num_expert_per_document / self._num_batches_tracked
+                )
                 out["router avg num expert per document"] = (
                     torch.tensor(avg_num_experts_per_document, device=self.device),
                     ReduceType.mean,
                 )
 
             # Histogram statistics for expert counts per document
-            if hasattr(self, '_router_counts_num_expert_per_document') and len(self._router_counts_num_expert_per_document) > 0:
-                counts_tensor = torch.tensor(self._router_counts_num_expert_per_document, dtype=torch.float32)
-                p25, p50, p75, p95 = torch.quantile(counts_tensor, torch.tensor([0.25, 0.50, 0.75, 0.95]))
-                out["router expert counts per document (min)"] = (counts_tensor.min(), ReduceType.mean)
-                out["router expert counts per document (max)"] = (counts_tensor.max(), ReduceType.mean)
+            if (
+                hasattr(self, "_router_counts_num_expert_per_document")
+                and len(self._router_counts_num_expert_per_document) > 0
+            ):
+                counts_tensor = torch.tensor(
+                    self._router_counts_num_expert_per_document, dtype=torch.float32
+                )
+                p25, p50, p75, p95 = torch.quantile(
+                    counts_tensor, torch.tensor([0.25, 0.50, 0.75, 0.95])
+                )
+                out["router expert counts per document (min)"] = (
+                    counts_tensor.min(),
+                    ReduceType.mean,
+                )
+                out["router expert counts per document (max)"] = (
+                    counts_tensor.max(),
+                    ReduceType.mean,
+                )
                 out["router expert counts per document (p25)"] = (p25, ReduceType.mean)
                 out["router expert counts per document (p50)"] = (p50, ReduceType.mean)
                 out["router expert counts per document (p75)"] = (p75, ReduceType.mean)
                 out["router expert counts per document (p95)"] = (p95, ReduceType.mean)
                 # Standard deviation
-                out["router expert counts per document (std)"] = (counts_tensor.std(), ReduceType.mean)
+                out["router expert counts per document (std)"] = (
+                    counts_tensor.std(),
+                    ReduceType.mean,
+                )
 
         if self._router_tokenlevel_expert_entropy != 0.0:
             out["router token-level expert entropy"] = (
@@ -463,7 +481,6 @@ class MoERouter(nn.Module):
                 torch.tensor(self._router_documentlevel_expert_entropy, device=self.device),
                 ReduceType.mean,
             )
-
 
         if self._router_expert_cond_token_entropy != 0.0:
             out["router expert_cond_token_entropy"] = (
@@ -515,7 +532,7 @@ class MoERouter(nn.Module):
         x: torch.Tensor,
         *,
         loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
-        padding_mask: Optional[torch.Tensor] = None, # shape: (B, S)
+        padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
         **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
@@ -556,12 +573,16 @@ class MoERouter(nn.Module):
         with torch.no_grad():
             # we first make the assertion that we are using granularity of local_batch as opposed to instance, since masking doesn't work with instance
             if self.lb_loss_granularity != MoELoadBalancingLossGranularity.local_batch:
-                raise NotImplementedError("masking with instance-level load balancing loss granularity is not supported yet")
+                raise NotImplementedError(
+                    "masking with instance-level load balancing loss granularity is not supported yet"
+                )
 
             # Histogram the expert ids to identify the number of items/tokens routed to each expert. This is ONLY USED in
             # the return values used for kernels to route tokens to their corresponding experts, NOT for loss computation
             # shape: (batch_size, seq_len, num_experts)
-            batched_batch_size_per_expert_routing = ops.batched_histc(expert_indices, self.num_experts)
+            batched_batch_size_per_expert_routing = ops.batched_histc(
+                expert_indices, self.num_experts
+            )
             # shape: (batch_size, num_experts)
             batched_batch_size_per_expert_routing = batched_batch_size_per_expert_routing.sum(dim=1)
             # shape: (num_experts,)
@@ -570,13 +591,21 @@ class MoERouter(nn.Module):
             # we first filter out the padding tokens (also includes masked tokens)
             if padding_mask is not None:
                 padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
-                valid_expert_indices = expert_indices.masked_select(padding_mask_expanded).view(-1, expert_indices.size(-1))
+                valid_expert_indices = expert_indices.masked_select(padding_mask_expanded).view(
+                    -1, expert_indices.size(-1)
+                )
                 padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
-                valid_scores = scores.masked_select(padding_mask_expanded).view(-1, self.num_experts)
-                valid_logits = logits.masked_select(padding_mask_expanded).view(-1, self.num_experts)
+                valid_scores = scores.masked_select(padding_mask_expanded).view(
+                    -1, self.num_experts
+                )
+                valid_logits = logits.masked_select(padding_mask_expanded).view(
+                    -1, self.num_experts
+                )
 
                 # (valid_tokens, num_experts)
-                batched_batch_size_per_expert = ops.batched_histc(valid_expert_indices, self.num_experts)
+                batched_batch_size_per_expert = ops.batched_histc(
+                    valid_expert_indices, self.num_experts
+                )
                 # (num_experts)
                 batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
             else:
@@ -588,7 +617,6 @@ class MoERouter(nn.Module):
 
             # prepare for custom metric
             if self.training:
-
                 # prepare unique experts metric.
                 unique_experts = torch.unique(valid_expert_indices.view(-1))
                 num_unique_experts = unique_experts.numel()
@@ -613,9 +641,13 @@ class MoERouter(nn.Module):
 
                     # we make some extra checks here that gating_function is softmax and that loss_div_factor is set (required for new loss to work)
                     if self.gating_function != MoERouterGatingFunction.softmax:
-                        raise NotImplementedError("load balancing loss currently only supported for softmax gating function")
+                        raise NotImplementedError(
+                            "load balancing loss currently only supported for softmax gating function"
+                        )
                     if loss_div_factor is None:
-                        raise ValueError("loss_div_factor must be set when using load balancing loss")
+                        raise ValueError(
+                            "loss_div_factor must be set when using load balancing loss"
+                        )
 
                     # Make sure scores are normalized, otherwise load balancing loss doesn't work well. (this SHOULD NOT run)
                     if self.gating_function == MoERouterGatingFunction.sigmoid:
@@ -628,7 +660,7 @@ class MoERouter(nn.Module):
                         # expert_scores=valid_scores,
                         batch_size_per_expert=batch_size_per_expert_routing,
                         # batch_size_per_expert=batch_size_per_expert,
-                        batched_batch_size_per_expert=batched_batch_size_per_expert, # we don't even use this in local_batch granularity, but we pass it anyway
+                        batched_batch_size_per_expert=batched_batch_size_per_expert,  # we don't even use this in local_batch granularity, but we pass it anyway
                         granularity=self.lb_loss_granularity,
                         loss_div_factor=loss_div_factor,
                         tp_mesh=self.tp_mesh,

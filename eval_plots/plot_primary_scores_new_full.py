@@ -4,13 +4,13 @@
 from __future__ import annotations
 
 import argparse
+import colorsys
 import json
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
-import colorsys
-import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
@@ -70,13 +70,13 @@ TASK_STEPS = {
 # Family color mapping - define base colors for each model family
 # Colors are specified as hex strings (e.g., "#988ED5")
 FAMILY_COLORS: Dict[str, str] = {
-    "dense": "#E24A33",        # Red/Orange
-    "moe": "#348ABD",          # Blue
+    "dense": "#E24A33",  # Red/Orange
+    "moe": "#348ABD",  # Blue
     "twolevelbatchlb train32/128": "#988ED5",  # Purple
     "twolevelbatchlb train32/128 lr high": "#FFB5B8",  # Light Red/Pink
-    "twolevelbatchlb train8/64": "#8EBA42",    # Green
+    "twolevelbatchlb train8/64": "#8EBA42",  # Green
     "twolevelsamplingnolb": "#777777",  # Gray
-    "mutualinfo": "#FBC15E",   # Yellow
+    "mutualinfo": "#FBC15E",  # Yellow
 }
 
 # Model run configurations
@@ -90,10 +90,10 @@ MODEL_RUNS: List[Dict[str, Any]] = [
             "task-{task_core}{validation_suffix}_keepk32_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
         ),
         "family": "moe",
-        "marker": "o",              # matplotlib marker style (o=circle, s=square, ^=triangle, etc.)
-        "brightness": 1.0,          # Brightness multiplier (1.0 = no change, >1.0 = lighter, <1.0 = darker)
-        "linewidth": 2,             # Line width
-        "markersize": 9,            # Marker size
+        "marker": "o",  # matplotlib marker style (o=circle, s=square, ^=triangle, etc.)
+        "brightness": 1.0,  # Brightness multiplier (1.0 = no change, >1.0 = lighter, <1.0 = darker)
+        "linewidth": 2,  # Line width
+        "markersize": 9,  # Marker size
     },
     # {
     #     "label": "moe train320 keepk128",
@@ -119,7 +119,6 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "linewidth": 2,
         "markersize": 9,
     },
-
     # {
     #     "label": "twolevelbatchlb train128/320 keepk128 poolsched",
     #     "template": (
@@ -168,7 +167,6 @@ MODEL_RUNS: List[Dict[str, Any]] = [
     #     "linewidth": 2,
     #     "markersize": 9,
     # },
-
     # {
     #     "label": "twolevelbatchlb train32/128 keepk8",
     #     "template": (
@@ -181,7 +179,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
     #     "linewidth": 2,
     #     "markersize": 9,
     # },
-# {
+    # {
     #     "label": "twolevelbatchlb train32/128 keepk32 lr high",
     #     "template": (
     #         f"twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203_step30995_"
@@ -205,30 +203,30 @@ MODEL_RUNS: List[Dict[str, Any]] = [
     #     "linewidth": 2,
     #     "markersize": 9,
     # },
-# {
-#         "label": "twolevelbatchlb train8/64 keepk32",
-#         "template": (
-#             f"twolevelbatchlb-8_1b7b_stability_1207_step30995_"
-#             "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-#         ),
-#         "family": "twolevelbatchlb train8/64",
-#         "marker": "o",
-#         "brightness": 1.0,
-#         "linewidth": 2,
-#         "markersize": 9,
-#     },
-#     {
-#         "label": "twolevelbatchlb train8/64 keepk8",
-#         "template": (
-#             f"twolevelbatchlb-8_1b7b_stability_1207_step30995_"
-#             "task-{task_core}_rc_validation_keepk8_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-#         ),
-#         "family": "twolevelbatchlb train8/64",
-#         "marker": "o",
-#         "brightness": 0.7,
-#         "linewidth": 2,
-#         "markersize": 9,
-#     },
+    # {
+    #         "label": "twolevelbatchlb train8/64 keepk32",
+    #         "template": (
+    #             f"twolevelbatchlb-8_1b7b_stability_1207_step30995_"
+    #             "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
+    #         ),
+    #         "family": "twolevelbatchlb train8/64",
+    #         "marker": "o",
+    #         "brightness": 1.0,
+    #         "linewidth": 2,
+    #         "markersize": 9,
+    #     },
+    #     {
+    #         "label": "twolevelbatchlb train8/64 keepk8",
+    #         "template": (
+    #             f"twolevelbatchlb-8_1b7b_stability_1207_step30995_"
+    #             "task-{task_core}_rc_validation_keepk8_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
+    #         ),
+    #         "family": "twolevelbatchlb train8/64",
+    #         "marker": "o",
+    #         "brightness": 0.7,
+    #         "linewidth": 2,
+    #         "markersize": 9,
+    #     },
     {
         "label": "mutualinfo keepk32",
         "template": (
@@ -241,18 +239,18 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "linewidth": 2,
         "markersize": 9,
     },
-#     {
-#         "label": "mutualinfo keepk8",
-#         "template": (
-#             f"mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205_step30995_"
-#             "task-{task_core}_rc_validation_keepk8_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-#         ),
-#         "family": "mutualinfo",
-#         "marker": "o",
-#         "brightness": 0.7,
-#         "linewidth": 2,
-#         "markersize": 9,
-#     },
+    #     {
+    #         "label": "mutualinfo keepk8",
+    #         "template": (
+    #             f"mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205_step30995_"
+    #             "task-{task_core}_rc_validation_keepk8_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
+    #         ),
+    #         "family": "mutualinfo",
+    #         "marker": "o",
+    #         "brightness": 0.7,
+    #         "linewidth": 2,
+    #         "markersize": 9,
+    #     },
     {
         "label": "dense finetuned",
         "template": (
@@ -260,7 +258,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
             "finetune-task-{task_core}{task_suffix}_step{step}-hf"
         ),
         "family": "dense",
-        "marker": "v",              # Triangle down for dense
+        "marker": "v",  # Triangle down for dense
         "brightness": 1.0,
         "linewidth": 2,
         "markersize": 9,
@@ -272,15 +270,11 @@ MODEL_RUNS: List[Dict[str, Any]] = [
             "finetune-task-{task_core}{task_suffix}_step{step}-hf"
         ),
         "family": "moe",
-        "marker": "v",              # Triangle down for dense
+        "marker": "v",  # Triangle down for dense
         "brightness": 0.7,
         "linewidth": 2,
         "markersize": 9,
     },
-
-
-
-
     # {
     #     "label": "twolevelbatchlb keepk32 old",
     #     "template": (
@@ -305,7 +299,6 @@ MODEL_RUNS: List[Dict[str, Any]] = [
     #     "linewidth": 2,
     #     "markersize": 9,
     # },
-
 ]
 
 # Baseline model configurations
@@ -315,7 +308,7 @@ BASELINE_RUNS: List[Dict[str, Any]] = [
         "label": "moe full",
         "template": "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123_step30995-hf",
         "family": "moe",
-        "linestyle": "--",          # Line style for baseline
+        "linestyle": "--",  # Line style for baseline
         "linewidth": 1.2,
     },
     {
@@ -339,14 +332,13 @@ BASELINE_RUNS: List[Dict[str, Any]] = [
         "linestyle": "--",
         "linewidth": 1.2,
     },
-# {
-#         "label": "twolevelsampling full",
-#         "template": "twolevelsamplingnolb-32_1b14b_stability_1127_step30995-hf",
-#         "family": "twolevelsamplingnolb",
-#         "linestyle": "--",
-#         "linewidth": 1.2,
-#     },
-
+    # {
+    #         "label": "twolevelsampling full",
+    #         "template": "twolevelsamplingnolb-32_1b14b_stability_1127_step30995-hf",
+    #         "family": "twolevelsamplingnolb",
+    #         "linestyle": "--",
+    #         "linewidth": 1.2,
+    #     },
 ]
 
 # ============================================================================
@@ -461,12 +453,12 @@ def get_metrics_task_name(task_name: str) -> str:
 
 
 def collect_primary_scores(
-        evals_root: Path,
-        model_template: str,
-        steps: Iterable[int],
-        task_name: str,
-        task_core: str,
-        metrics_filename: str,
+    evals_root: Path,
+    model_template: str,
+    steps: Iterable[int],
+    task_name: str,
+    task_core: str,
+    metrics_filename: str,
 ) -> tuple[List[Dict[str, float]], str | None]:
     """Load primary_score values for a model template across the provided steps."""
     records: List[Dict[str, float]] = []
@@ -479,13 +471,13 @@ def collect_primary_scores(
         try:
             # Replace {task_suffix}, {validation_suffix}, and {lr_suffix} placeholders if present
             template_to_format = model_template.replace("{task_suffix}", task_suffix)
-            template_to_format = template_to_format.replace("{validation_suffix}", validation_suffix)
+            template_to_format = template_to_format.replace(
+                "{validation_suffix}", validation_suffix
+            )
             template_to_format = template_to_format.replace("{lr_suffix}", lr_suffix)
             formatted_path = template_to_format.format(step=step, task_core=task_core)
         except KeyError as exc:
-            raise KeyError(
-                f"Template {model_template!r} missing placeholder {exc}."
-            ) from exc
+            raise KeyError(f"Template {model_template!r} missing placeholder {exc}.") from exc
 
         model_dir = evals_root / formatted_path
         metrics_path = model_dir / metrics_filename
@@ -524,9 +516,7 @@ def collect_primary_scores(
             score = metric_values.get("primary_score")
 
         if score is None:
-            print(
-                f"[WARN] No 'primary_score' found in metrics for {metrics_path}"
-            )
+            print(f"[WARN] No 'primary_score' found in metrics for {metrics_path}")
             continue
 
         records.append({"step": step, "primary_score": score})
@@ -536,10 +526,10 @@ def collect_primary_scores(
 
 
 def build_dataframe(
-        evals_root: Path,
-        task_name: str,
-        metrics_filename: str,
-        steps: Iterable[int],
+    evals_root: Path,
+    task_name: str,
+    metrics_filename: str,
+    steps: Iterable[int],
 ) -> tuple[pd.DataFrame, str | None]:
     """Build a tidy DataFrame with columns [model_group, step, primary_score]."""
     rows: List[Dict[str, object]] = []
@@ -554,7 +544,7 @@ def build_dataframe(
                 continue  # Skip this model run for this task
             if "exclude_tasks" in run_config and task_name in run_config["exclude_tasks"]:
                 continue  # Skip this model run for excluded tasks
-        
+
         records, group_metric = collect_primary_scores(
             evals_root,
             template,
@@ -585,10 +575,10 @@ def build_dataframe(
 
 
 def load_baseline_scores(
-        evals_root: Path,
-        task_name: str,
-        primary_metric_name: str | None,
-        metrics_filename: str,
+    evals_root: Path,
+    task_name: str,
+    primary_metric_name: str | None,
+    metrics_filename: str,
 ) -> Dict[str, float]:
     scores: Dict[str, float] = {}
 
@@ -618,10 +608,7 @@ def load_baseline_scores(
 
         metrics_task_name = get_metrics_task_name(task_name)
         task_match = entry_task == metrics_task_name
-        metric_match = (
-                primary_metric_name is None
-                or entry_primary_metric == primary_metric_name
-        )
+        metric_match = primary_metric_name is None or entry_primary_metric == primary_metric_name
 
         metric_values = metrics.get("metrics")
         score = None
@@ -644,11 +631,11 @@ def load_baseline_scores(
 
 def adjust_color_brightness(hex_color: str, brightness_factor: float) -> str:
     """Adjust the brightness of a hex color.
-    
+
     Args:
         hex_color: Hex color string (e.g., "#988ED5")
         brightness_factor: Factor to adjust brightness (>1.0 = lighter, <1.0 = darker)
-    
+
     Returns:
         Adjusted hex color string
     """
@@ -661,32 +648,30 @@ def adjust_color_brightness(hex_color: str, brightness_factor: float) -> str:
 
 
 def plot_primary_scores(
-        df: pd.DataFrame,
-        output: Path,
-        style: str,
-        show: bool,
-        task_name: str | None,
-        primary_metric_name: str | None,
-        baseline_scores: Dict[str, float],
+    df: pd.DataFrame,
+    output: Path,
+    style: str,
+    show: bool,
+    task_name: str | None,
+    primary_metric_name: str | None,
+    baseline_scores: Dict[str, float],
 ) -> None:
     sns.set_theme(style=style)
     plt.figure(figsize=(8, 5))
 
     # Get unique families and set up color mapping
-    unique_families = sorted(
-        set(GROUP_FAMILY.values()) | set(BASELINE_FAMILY.values())
-    )
+    unique_families = sorted(set(GROUP_FAMILY.values()) | set(BASELINE_FAMILY.values()))
     # Fallback to colorblind palette for any families not in custom mapping
     base_palette = sns.color_palette("colorblind", n_colors=len(unique_families))
     family_colors = {
         family: FAMILY_COLORS.get(family, base_palette[idx])
         for idx, family in enumerate(unique_families)
     }
-    
+
     # Build configuration lookup dictionaries for quick access
     run_configs = {run["label"]: run for run in MODEL_RUNS}
     baseline_configs = {run["label"]: run for run in BASELINE_RUNS}
-    
+
     # Create color palette for each model group using configured brightness
     group_palette = {}
     for group in df["model_group"].unique():
@@ -707,7 +692,7 @@ def plot_primary_scores(
     # Plot each group using configuration
     for group in sorted(df["model_group"].unique()):
         group_data = df[df["model_group"] == group].sort_values("step")
-        
+
         # Get configuration for this group
         if group not in run_configs:
             # Fallback configuration
@@ -742,7 +727,7 @@ def plot_primary_scores(
     for label, score in baseline_scores.items():
         if score is None:
             continue
-        
+
         if label not in baseline_configs:
             # Fallback configuration
             family = BASELINE_FAMILY.get(label, "unknown")
@@ -755,7 +740,7 @@ def plot_primary_scores(
             color = family_colors[family]
             linestyle = config.get("linestyle", "--")
             linewidth = config.get("linewidth", 1.2)
-        
+
         line = ax.axhline(
             score,
             linestyle=linestyle,
@@ -768,7 +753,7 @@ def plot_primary_scores(
 
     plt.tight_layout()
     output.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output, bbox_inches='tight')
+    plt.savefig(output, bbox_inches="tight")
     print(f"[INFO] Saved plot to {output}")
 
     if show:
@@ -807,9 +792,9 @@ def main() -> None:
         )
 
         output_file = (
-                args.output_dir
-                / f"{MAIN_MODEL}_full"
-                / f"{task_name.replace(':', '_')}_primary_score_comparison.png"
+            args.output_dir
+            / f"{MAIN_MODEL}_full"
+            / f"{task_name.replace(':', '_')}_primary_score_comparison.png"
         )
 
         plot_primary_scores(
@@ -825,4 +810,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

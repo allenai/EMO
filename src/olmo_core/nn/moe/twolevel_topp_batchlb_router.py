@@ -1,12 +1,7 @@
 import json
-from typing import Optional
-
-from olmo_core.nn.moe.router import MoERouterConfig, MoERouterType
-from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
-from dataclasses import dataclass
-
 import logging
 from abc import abstractmethod
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union, cast
 
 import torch
@@ -28,18 +23,18 @@ from olmo_core.distributed.utils import (
     unhide_from_torch,
 )
 from olmo_core.exceptions import OLMoConfigurationError
+from olmo_core.nn.moe.router import (
+    MoELinearRouter,
+    MoELoadBalancingLossGranularity,
+    MoERouter,
+    MoERouterConfig,
+    MoERouterGatingFunction,
+    MoERouterType,
+)
+from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
 from olmo_core.utils import get_default_device
 
 from .loss import MoELoadBalancingLossGranularity, load_balancing_loss, router_z_loss
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from typing import Tuple, Optional, Union
-from olmo_core.nn.moe.router import MoELinearRouter, MoERouter
-from olmo_core.nn.moe.router import MoERouterGatingFunction, MoELoadBalancingLossGranularity
-from olmo_core.distributed.utils import get_local_tensor
-
 
 
 class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
@@ -48,15 +43,15 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
     """
 
     def __init__(
-            self,
-            *,
-            dtype: torch.dtype = torch.float32,
-            init_device: str = "cpu",
-            top_p: float,
-            max_document_expert_pool: int,
-            min_document_expert_pool: int,
-            eos_token_id: int,
-            **kwargs,
+        self,
+        *,
+        dtype: torch.dtype = torch.float32,
+        init_device: str = "cpu",
+        top_p: float,
+        max_document_expert_pool: int,
+        min_document_expert_pool: int,
+        eos_token_id: int,
+        **kwargs,
     ):
         super().__init__(dtype=dtype, init_device=init_device, **kwargs)
 
@@ -89,15 +84,14 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
             raise OLMoConfigurationError("eos_token_id must be provided for MoETwoLevelRouter")
         self.eos_token_id = eos_token_id
 
-
     def forward(
-            self,
-            x: torch.Tensor,
-            *,
-            loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
-            padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
-            document_boundaries: Optional[torch.Tensor] = None,
-            **kwargs,
+        self,
+        x: torch.Tensor,
+        *,
+        loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
+        padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
+        document_boundaries: Optional[torch.Tensor] = None,
+        **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
         Custom forward pass with modifications to implement two level routing.
@@ -131,7 +125,6 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
         # track individual expert counts per document for histogram-like
         doc_num_experts_counts_list = []
 
-
         for seq_idx in range(x.size(0)):
             start = 0
             document_boundary = document_boundaries_cpu[seq_idx]
@@ -139,16 +132,18 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
                 if end <= start:
                     start = end
                     continue
-                sequence_logits = logits[seq_idx, start:end, :] # shape: (doc_len, num_experts)
+                sequence_logits = logits[seq_idx, start:end, :]  # shape: (doc_len, num_experts)
                 # calculate the softmax over the experts
-                expert_probs = F.softmax(sequence_logits, dim=-1) # shape: (doc_len, num_experts)
+                expert_probs = F.softmax(sequence_logits, dim=-1)  # shape: (doc_len, num_experts)
 
                 # take the sum across the document
-                document_expert_probs = expert_probs.sum(dim=0) # shape: (num_experts,)
+                document_expert_probs = expert_probs.sum(dim=0)  # shape: (num_experts,)
                 # normalize
                 document_expert_probs = document_expert_probs / document_expert_probs.sum()
 
-                doc_entropy_sum += -torch.sum(document_expert_probs * torch.log(document_expert_probs + 1e-10))
+                doc_entropy_sum += -torch.sum(
+                    document_expert_probs * torch.log(document_expert_probs + 1e-10)
+                )
                 doc_entropy_count += 1
 
                 # figure out how many experts we want to keep
@@ -158,7 +153,10 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
                 num_experts_to_keep = int((cumulative_probs < self.top_p).sum().item() + 1)
 
                 # limit to the right range
-                num_experts_to_keep = min(max(num_experts_to_keep, self.min_document_expert_pool), self.max_document_expert_pool)
+                num_experts_to_keep = min(
+                    max(num_experts_to_keep, self.min_document_expert_pool),
+                    self.max_document_expert_pool,
+                )
 
                 doc_num_experts_sum += num_experts_to_keep
                 doc_num_experts_counts_list.append(num_experts_to_keep)
@@ -169,7 +167,7 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
 
                 start = end
 
-        logits.masked_fill_(logits_mask, float('-inf'))
+        logits.masked_fill_(logits_mask, float("-inf"))
 
         if self.training:
             # log the average document entropy
@@ -209,8 +207,7 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
         with torch.no_grad():
             # Histogram the expert ids to identify the number of items/tokens routed to each expert.
             # shape: (batch_size, seq_len, num_experts)
-            tot_batched_batch_size_per_expert = ops.batched_histc(expert_indices,
-                                                              self.num_experts)
+            tot_batched_batch_size_per_expert = ops.batched_histc(expert_indices, self.num_experts)
             # shape: (batch_size, num_experts)
             tot_batched_batch_size_per_expert = tot_batched_batch_size_per_expert.sum(dim=1)
             # shape: (num_experts,)
@@ -300,6 +297,7 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
         base_repr = super().extra_repr()
         return f"{base_repr}, top_p={self.top_p}, max_document_expert_pool={self.max_document_expert_pool}, min_document_expert_pool={self.min_document_expert_pool}"
 
+
 @dataclass
 class MoETwoLevelTopPBatchLBRouterConfig(MoERouterConfig):
     top_p: float = 0.6
@@ -309,15 +307,15 @@ class MoETwoLevelTopPBatchLBRouterConfig(MoERouterConfig):
 
     # just update the build to call the correct new class
     def build(
-            self,
-            d_model: int,
-            num_experts,
-            *,
-            lb_loss_weight: Optional[float] = None,
-            lb_loss_granularity: MoELoadBalancingLossGranularity = MoELoadBalancingLossGranularity.local_batch,
-            z_loss_weight: Optional[float] = None,
-            dtype: Optional[torch.dtype] = None,
-            init_device: str = "cpu",
+        self,
+        d_model: int,
+        num_experts,
+        *,
+        lb_loss_weight: Optional[float] = None,
+        lb_loss_granularity: MoELoadBalancingLossGranularity = MoELoadBalancingLossGranularity.local_batch,
+        z_loss_weight: Optional[float] = None,
+        dtype: Optional[torch.dtype] = None,
+        init_device: str = "cpu",
     ) -> MoETwoLevelTopPBatchLBRouter:
         """
         Build the pruning router.

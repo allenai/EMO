@@ -1,12 +1,7 @@
 import json
-from typing import Optional
-
-from olmo_core.nn.moe.router import MoERouterConfig, MoERouterType
-from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
-from dataclasses import dataclass
-
 import logging
 from abc import abstractmethod
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union, cast
 
 import torch
@@ -28,18 +23,18 @@ from olmo_core.distributed.utils import (
     unhide_from_torch,
 )
 from olmo_core.exceptions import OLMoConfigurationError
+from olmo_core.nn.moe.router import (
+    MoELinearRouter,
+    MoELoadBalancingLossGranularity,
+    MoERouter,
+    MoERouterConfig,
+    MoERouterGatingFunction,
+    MoERouterType,
+)
+from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
 from olmo_core.utils import get_default_device
 
 from .loss import MoELoadBalancingLossGranularity, load_balancing_loss, router_z_loss
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from typing import Tuple, Optional, Union
-from olmo_core.nn.moe.router import MoELinearRouter, MoERouter
-from olmo_core.nn.moe.router import MoERouterGatingFunction, MoELoadBalancingLossGranularity
-from olmo_core.distributed.utils import get_local_tensor
-
 
 
 class MoETwoLevelBatchLBFullZLossRouter(MoETwoLevelRouter):
@@ -48,13 +43,13 @@ class MoETwoLevelBatchLBFullZLossRouter(MoETwoLevelRouter):
     """
 
     def forward(
-            self,
-            x: torch.Tensor,
-            *,
-            loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
-            padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
-            document_boundaries: Optional[torch.Tensor] = None,
-            **kwargs,
+        self,
+        x: torch.Tensor,
+        *,
+        loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
+        padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
+        document_boundaries: Optional[torch.Tensor] = None,
+        **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
         Custom forward pass with modifications to implement two level routing.
@@ -87,21 +82,25 @@ class MoETwoLevelBatchLBFullZLossRouter(MoETwoLevelRouter):
                 if end <= start:
                     start = end
                     continue
-                sequence_logits = logits[seq_idx, start:end, :] # shape: (doc_len, num_experts)
+                sequence_logits = logits[seq_idx, start:end, :]  # shape: (doc_len, num_experts)
                 # calculate the softmax over the experts
-                expert_probs = F.softmax(sequence_logits, dim=-1) # shape: (doc_len, num_experts)
+                expert_probs = F.softmax(sequence_logits, dim=-1)  # shape: (doc_len, num_experts)
 
                 # get the entropy over experts per token
-                token_entropies = -torch.sum(expert_probs * torch.log(expert_probs + 1e-10), dim=-1)  # shape: (doc_len,)
+                token_entropies = -torch.sum(
+                    expert_probs * torch.log(expert_probs + 1e-10), dim=-1
+                )  # shape: (doc_len,)
                 # average entropy over the document
                 avg_entropy = token_entropies.mean().item()
                 tot_doc_entropy.append(avg_entropy)
 
                 # take the sum across the document
-                document_expert_probs = expert_probs.sum(dim=0) # shape: (num_experts,)
+                document_expert_probs = expert_probs.sum(dim=0)  # shape: (num_experts,)
                 # get the bottom document_expert_pool experts
                 bot_document_expert_pool = self.num_experts - self.document_expert_pool
-                experts_to_discard = torch.topk(-document_expert_probs, bot_document_expert_pool).indices # shape: (bot_document_expert_pool,)
+                experts_to_discard = torch.topk(
+                    -document_expert_probs, bot_document_expert_pool
+                ).indices  # shape: (bot_document_expert_pool,)
                 # set the logits of these experts to a very large negative value
                 # logits[seq_idx, start:end, experts_to_discard] = float('-inf')
                 scores_mask[seq_idx, start:end, experts_to_discard] = True
@@ -111,7 +110,9 @@ class MoETwoLevelBatchLBFullZLossRouter(MoETwoLevelRouter):
 
         if self.training:
             # log the average document entropy
-            avg_doc_entropy = sum(tot_doc_entropy) / len(tot_doc_entropy) if tot_doc_entropy else 0.0
+            avg_doc_entropy = (
+                sum(tot_doc_entropy) / len(tot_doc_entropy) if tot_doc_entropy else 0.0
+            )
             # logging.info(f"Average document entropy over experts: {avg_doc_entropy}")
             self._router_documentlevel_expert_entropy += avg_doc_entropy
 
@@ -142,8 +143,7 @@ class MoETwoLevelBatchLBFullZLossRouter(MoETwoLevelRouter):
         with torch.no_grad():
             # Histogram the expert ids to identify the number of items/tokens routed to each expert.
             # shape: (batch_size, seq_len, num_experts)
-            tot_batched_batch_size_per_expert = ops.batched_histc(expert_indices,
-                                                              self.num_experts)
+            tot_batched_batch_size_per_expert = ops.batched_histc(expert_indices, self.num_experts)
             # shape: (batch_size, num_experts)
             tot_batched_batch_size_per_expert = tot_batched_batch_size_per_expert.sum(dim=1)
             # shape: (num_experts,)
@@ -168,7 +168,9 @@ class MoETwoLevelBatchLBFullZLossRouter(MoETwoLevelRouter):
                 if padding_mask is not None:
                     # only consider non-padded tokens
                     padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
-                    valid_scores = scores.masked_select(padding_mask_expanded).view(-1, self.num_experts)
+                    valid_scores = scores.masked_select(padding_mask_expanded).view(
+                        -1, self.num_experts
+                    )
                 else:
                     valid_scores = scores.view(-1, self.num_experts)
                 # get entropy per token
@@ -231,19 +233,20 @@ class MoETwoLevelBatchLBFullZLossRouter(MoETwoLevelRouter):
         base_repr = super().extra_repr()
         return f"{base_repr}, document_expert_pool={self.document_expert_pool}, eos_token_id={self.eos_token_id}"
 
+
 @dataclass
 class MoETwoLevelBatchLBFullZLossRouterConfig(MoETwoLevelRouterConfig):
     # just update the build to call the correct new class
     def build(
-            self,
-            d_model: int,
-            num_experts,
-            *,
-            lb_loss_weight: Optional[float] = None,
-            lb_loss_granularity: MoELoadBalancingLossGranularity = MoELoadBalancingLossGranularity.local_batch,
-            z_loss_weight: Optional[float] = None,
-            dtype: Optional[torch.dtype] = None,
-            init_device: str = "cpu",
+        self,
+        d_model: int,
+        num_experts,
+        *,
+        lb_loss_weight: Optional[float] = None,
+        lb_loss_granularity: MoELoadBalancingLossGranularity = MoELoadBalancingLossGranularity.local_batch,
+        z_loss_weight: Optional[float] = None,
+        dtype: Optional[torch.dtype] = None,
+        init_device: str = "cpu",
     ) -> MoETwoLevelBatchLBFullZLossRouter:
         """
         Build the pruning router.

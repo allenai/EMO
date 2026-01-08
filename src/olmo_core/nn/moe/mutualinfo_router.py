@@ -1,11 +1,7 @@
 import json
-from typing import Optional
-
-from olmo_core.nn.moe.router import MoERouterConfig, MoERouterType
-from dataclasses import dataclass
-
 import logging
 from abc import abstractmethod
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union, cast
 
 import torch
@@ -27,17 +23,17 @@ from olmo_core.distributed.utils import (
     unhide_from_torch,
 )
 from olmo_core.exceptions import OLMoConfigurationError
+from olmo_core.nn.moe.router import (
+    MoELinearRouter,
+    MoELoadBalancingLossGranularity,
+    MoERouter,
+    MoERouterConfig,
+    MoERouterGatingFunction,
+    MoERouterType,
+)
 from olmo_core.utils import get_default_device
 
 from .loss import MoELoadBalancingLossGranularity, load_balancing_loss, router_z_loss
-
-import torch
-import torch.nn.functional as F
-from typing import Tuple, Optional, Union
-from olmo_core.nn.moe.router import MoELinearRouter, MoERouter
-from olmo_core.nn.moe.router import MoERouterGatingFunction, MoELoadBalancingLossGranularity
-from olmo_core.distributed.utils import get_local_tensor
-
 
 
 class MoEMutualInfoRouter(MoELinearRouter):
@@ -46,13 +42,13 @@ class MoEMutualInfoRouter(MoELinearRouter):
     """
 
     def __init__(
-            self,
-            *,
-            dtype: torch.dtype = torch.float32,
-            init_device: str = "cpu",
-            expert_cond_token_entropy_bias: Optional[float] = None,
-            expert_uncond_entropy_bias: Optional[float] = None,
-            **kwargs,
+        self,
+        *,
+        dtype: torch.dtype = torch.float32,
+        init_device: str = "cpu",
+        expert_cond_token_entropy_bias: Optional[float] = None,
+        expert_uncond_entropy_bias: Optional[float] = None,
+        **kwargs,
     ):
         super().__init__(dtype=dtype, init_device=init_device, **kwargs)
 
@@ -60,12 +56,12 @@ class MoEMutualInfoRouter(MoELinearRouter):
         self.expert_uncond_entropy_bias = expert_uncond_entropy_bias
 
     def forward(
-            self,
-            x: torch.Tensor,
-            *,
-            loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
-            padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
-            **kwargs,
+        self,
+        x: torch.Tensor,
+        *,
+        loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
+        padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
+        **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
         Custom forward pass with modifications to implement mutual information losses.
@@ -134,36 +130,62 @@ class MoEMutualInfoRouter(MoELinearRouter):
         aux_loss: Optional[torch.Tensor] = None
         if self.training and torch.is_grad_enabled():
             with torch.autocast(enabled=False, device_type=x.device.type):
-                if self.expert_uncond_entropy_bias is not None and self.expert_cond_token_entropy_bias is not None:
+                if (
+                    self.expert_uncond_entropy_bias is not None
+                    and self.expert_cond_token_entropy_bias is not None
+                ):
                     # calculate entropy over experts conditioned on each token
                     if padding_mask is not None:
                         # only consider non-padded tokens
                         padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
-                        valid_scores = scores.masked_select(padding_mask_expanded).view(-1, self.num_experts)
+                        valid_scores = scores.masked_select(padding_mask_expanded).view(
+                            -1, self.num_experts
+                        )
                     else:
                         valid_scores = scores.view(-1, self.num_experts)
                     # get expert entropy per token
-                    expert_cond_token_entropies = -torch.sum(valid_scores * torch.log(valid_scores + 1e-10), dim=-1)
+                    expert_cond_token_entropies = -torch.sum(
+                        valid_scores * torch.log(valid_scores + 1e-10), dim=-1
+                    )
                     # average expert entropy over valid tokens
                     expert_cond_token_entropy = expert_cond_token_entropies.mean()
-                    self._router_tokenlevel_expert_entropy += expert_cond_token_entropy.detach() # old metric logging
-                    self._router_expert_cond_token_entropy += expert_cond_token_entropy.detach() # new metric logging
+                    self._router_tokenlevel_expert_entropy += (
+                        expert_cond_token_entropy.detach()
+                    )  # old metric logging
+                    self._router_expert_cond_token_entropy += (
+                        expert_cond_token_entropy.detach()
+                    )  # new metric logging
 
                     # we now calculate overall expert distribution entropy
 
                     # first get expert probability usage
-                    expert_probs = torch.mean(valid_scores, dim=0) # shape: (num_experts,)
+                    expert_probs = torch.mean(valid_scores, dim=0)  # shape: (num_experts,)
                     # calculate expert entropy
-                    expert_uncond_entropy = -torch.sum(expert_probs * torch.log(expert_probs + 1e-10))
+                    expert_uncond_entropy = -torch.sum(
+                        expert_probs * torch.log(expert_probs + 1e-10)
+                    )
                     self._router_expert_uncond_entropy += expert_uncond_entropy.detach()
 
                     # add to aux_loss with respective biases
-                    aux_loss = self.expert_cond_token_entropy_bias * expert_cond_token_entropy - self.expert_uncond_entropy_bias * expert_uncond_entropy
+                    aux_loss = (
+                        self.expert_cond_token_entropy_bias * expert_cond_token_entropy
+                        - self.expert_uncond_entropy_bias * expert_uncond_entropy
+                    )
 
-                elif self.expert_uncond_entropy_bias is not None and self.expert_cond_token_entropy_bias is None:
-                    raise OLMoConfigurationError("expert_cond_token_entropy_bias must be set if expert_uncond_entropy_bias is set.")
-                elif self.expert_uncond_entropy_bias is None and self.expert_cond_token_entropy_bias is not None:
-                    raise OLMoConfigurationError("expert_uncond_entropy_bias must be set if expert_cond_token_entropy_bias is set.")
+                elif (
+                    self.expert_uncond_entropy_bias is not None
+                    and self.expert_cond_token_entropy_bias is None
+                ):
+                    raise OLMoConfigurationError(
+                        "expert_cond_token_entropy_bias must be set if expert_uncond_entropy_bias is set."
+                    )
+                elif (
+                    self.expert_uncond_entropy_bias is None
+                    and self.expert_cond_token_entropy_bias is not None
+                ):
+                    raise OLMoConfigurationError(
+                        "expert_uncond_entropy_bias must be set if expert_cond_token_entropy_bias is set."
+                    )
 
                 if self.lb_loss_weight is not None:
                     assert self.load_balancing_loss is not None
@@ -209,25 +231,27 @@ class MoEMutualInfoRouter(MoELinearRouter):
 
         return expert_weights, expert_indices, batch_size_per_expert, aux_loss
 
+
 @dataclass
 class MoEMutualInfoRouterConfig(MoERouterConfig):
     """
     Config for pruning MoE router.
     """
+
     # Weight factors for the mutual information loss (H(experts|token) - H(experts)).
     expert_cond_token_entropy_bias: Optional[float] = None
     expert_uncond_entropy_bias: Optional[float] = None
 
     def build(
-            self,
-            d_model: int,
-            num_experts,
-            *,
-            lb_loss_weight: Optional[float] = None,
-            lb_loss_granularity: MoELoadBalancingLossGranularity = MoELoadBalancingLossGranularity.local_batch,
-            z_loss_weight: Optional[float] = None,
-            dtype: Optional[torch.dtype] = None,
-            init_device: str = "cpu",
+        self,
+        d_model: int,
+        num_experts,
+        *,
+        lb_loss_weight: Optional[float] = None,
+        lb_loss_granularity: MoELoadBalancingLossGranularity = MoELoadBalancingLossGranularity.local_batch,
+        z_loss_weight: Optional[float] = None,
+        dtype: Optional[torch.dtype] = None,
+        init_device: str = "cpu",
     ) -> MoEMutualInfoRouter:
         """
         Build the pruning router.

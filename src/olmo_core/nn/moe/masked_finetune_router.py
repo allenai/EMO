@@ -1,12 +1,7 @@
 import json
-from typing import Optional
-
-from olmo_core.nn.moe.router import MoERouterConfig, MoERouterType
-from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
-from dataclasses import dataclass
-
 import logging
 from abc import abstractmethod
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union, cast
 
 import torch
@@ -28,18 +23,18 @@ from olmo_core.distributed.utils import (
     unhide_from_torch,
 )
 from olmo_core.exceptions import OLMoConfigurationError
+from olmo_core.nn.moe.router import (
+    MoELinearRouter,
+    MoELoadBalancingLossGranularity,
+    MoERouter,
+    MoERouterConfig,
+    MoERouterGatingFunction,
+    MoERouterType,
+)
+from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
 from olmo_core.utils import get_default_device
 
 from .loss import MoELoadBalancingLossGranularity, load_balancing_loss, router_z_loss
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from typing import Tuple, Optional, Union
-from olmo_core.nn.moe.router import MoELinearRouter, MoERouter
-from olmo_core.nn.moe.router import MoERouterGatingFunction, MoELoadBalancingLossGranularity
-from olmo_core.distributed.utils import get_local_tensor
-
 
 
 class MoEMaskedFinetuneRouter(MoELinearRouter):
@@ -48,12 +43,12 @@ class MoEMaskedFinetuneRouter(MoELinearRouter):
     """
 
     def forward(
-            self,
-            x: torch.Tensor,
-            *,
-            loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
-            padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
-            **kwargs,
+        self,
+        x: torch.Tensor,
+        *,
+        loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
+        padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
+        **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
         Given the input ``x`` of shape ``(B, S, d_model)``, compute the experts assignment.
@@ -94,12 +89,15 @@ class MoEMaskedFinetuneRouter(MoELinearRouter):
             # we first make the assertion that we are using granularity of local_batch as opposed to instance, since masking doesn't work with instance
             if self.lb_loss_granularity != MoELoadBalancingLossGranularity.local_batch:
                 raise NotImplementedError(
-                    "masking with instance-level load balancing loss granularity is not supported yet")
+                    "masking with instance-level load balancing loss granularity is not supported yet"
+                )
 
             # Histogram the expert ids to identify the number of items/tokens routed to each expert. This is ONLY USED in
             # the return values used for kernels to route tokens to their corresponding experts, NOT for loss computation
             # shape: (batch_size, seq_len, num_experts)
-            batched_batch_size_per_expert_routing = ops.batched_histc(expert_indices, self.num_experts)
+            batched_batch_size_per_expert_routing = ops.batched_histc(
+                expert_indices, self.num_experts
+            )
             # shape: (batch_size, num_experts)
             batched_batch_size_per_expert_routing = batched_batch_size_per_expert_routing.sum(dim=1)
             # shape: (num_experts,)
@@ -108,14 +106,21 @@ class MoEMaskedFinetuneRouter(MoELinearRouter):
             # we first filter out the padding tokens (also includes masked tokens)
             if padding_mask is not None:
                 padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
-                valid_expert_indices = expert_indices.masked_select(padding_mask_expanded).view(-1,
-                                                                                                expert_indices.size(-1))
+                valid_expert_indices = expert_indices.masked_select(padding_mask_expanded).view(
+                    -1, expert_indices.size(-1)
+                )
                 padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
-                valid_scores = scores.masked_select(padding_mask_expanded).view(-1, self.num_experts)
-                valid_logits = logits.masked_select(padding_mask_expanded).view(-1, self.num_experts)
+                valid_scores = scores.masked_select(padding_mask_expanded).view(
+                    -1, self.num_experts
+                )
+                valid_logits = logits.masked_select(padding_mask_expanded).view(
+                    -1, self.num_experts
+                )
 
                 # (valid_tokens, num_experts)
-                batched_batch_size_per_expert = ops.batched_histc(valid_expert_indices, self.num_experts)
+                batched_batch_size_per_expert = ops.batched_histc(
+                    valid_expert_indices, self.num_experts
+                )
                 # (num_experts)
                 batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
             else:
@@ -152,9 +157,12 @@ class MoEMaskedFinetuneRouter(MoELinearRouter):
                     # we make some extra checks here that gating_function is softmax and that loss_div_factor is set (required for new loss to work)
                     if self.gating_function != MoERouterGatingFunction.softmax:
                         raise NotImplementedError(
-                            "load balancing loss currently only supported for softmax gating function")
+                            "load balancing loss currently only supported for softmax gating function"
+                        )
                     if loss_div_factor is None:
-                        raise ValueError("loss_div_factor must be set when using load balancing loss")
+                        raise ValueError(
+                            "loss_div_factor must be set when using load balancing loss"
+                        )
 
                     # Make sure scores are normalized, otherwise load balancing loss doesn't work well. (this SHOULD NOT run)
                     if self.gating_function == MoERouterGatingFunction.sigmoid:
@@ -201,19 +209,20 @@ class MoEMaskedFinetuneRouter(MoELinearRouter):
 
         return expert_weights, expert_indices, batch_size_per_expert_routing, aux_loss
 
+
 @dataclass
 class MoEMaskedFinetuneRouterConfig(MoERouterConfig):
     # just update the build to call the correct new class
     def build(
-            self,
-            d_model: int,
-            num_experts,
-            *,
-            lb_loss_weight: Optional[float] = None,
-            lb_loss_granularity: MoELoadBalancingLossGranularity = MoELoadBalancingLossGranularity.local_batch,
-            z_loss_weight: Optional[float] = None,
-            dtype: Optional[torch.dtype] = None,
-            init_device: str = "cpu",
+        self,
+        d_model: int,
+        num_experts,
+        *,
+        lb_loss_weight: Optional[float] = None,
+        lb_loss_granularity: MoELoadBalancingLossGranularity = MoELoadBalancingLossGranularity.local_batch,
+        z_loss_weight: Optional[float] = None,
+        dtype: Optional[torch.dtype] = None,
+        init_device: str = "cpu",
     ) -> MoEMaskedFinetuneRouter:
         """
         Build the pruning router.
