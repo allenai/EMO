@@ -59,3 +59,8 @@ site/
 /scratch/
 core
 /dataset-cache/
+DockerFile
+evals/
+s3_sync.sh
+eval_visualizer
+*.png

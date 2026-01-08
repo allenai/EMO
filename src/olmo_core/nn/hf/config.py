@@ -1,4 +1,4 @@
-from transformers import Olmo2Config, PretrainedConfig
+from transformers import Olmo2Config, Olmo2NoQKNormPrenormConfig, PretrainedConfig
 
 from olmo_core.doc_utils import beta_feature
 from olmo_core.nn.attention import Attention
@@ -6,7 +6,9 @@ from olmo_core.nn.moe.mlp import DroplessMoEMLP, MoEMLP
 from olmo_core.nn.rope import RoPEScalingConfig
 from olmo_core.nn.transformer.block import (
     MoEReorderedNormTransformerBlock,
+    MoETransformerBlock,
     ReorderedNormTransformerBlock,
+    TransformerBlock,
 )
 from olmo_core.nn.transformer.model import (
     MoETransformer,
@@ -15,7 +17,11 @@ from olmo_core.nn.transformer.model import (
 )
 
 try:
-    from transformers import FlexOlmoConfig  # type: ignore
+    from transformers import (  # type: ignore
+        FlexOlmoConfig,
+        FlexOlmoNoQKNormPrenormConfig,
+        FlexOlmoPrenormConfig,
+    )
 except ImportError:
     FlexOlmoConfig = None
 
@@ -29,9 +35,22 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
     blocks = list(model.blocks.values())
     for block in blocks:
         if not isinstance(block, MoEReorderedNormTransformerBlock):
-            raise NotImplementedError(
-                f"Block is not a {MoEReorderedNormTransformerBlock.__name__}, unable to build HF config for {model.__class__.__name__}"
-            )
+            if (
+                isinstance(block, MoETransformerBlock)
+                and block.attention.q_norm is None
+                and block.attention.k_norm is None
+            ):
+                pass
+            elif (
+                isinstance(block, MoETransformerBlock)
+                and block.attention.q_norm is not None
+                and block.attention.k_norm is not None
+            ):
+                pass
+            else:
+                raise NotImplementedError(
+                    f"Block is not a {MoEReorderedNormTransformerBlock.__name__}, unable to build HF config for {model.__class__.__name__}"
+                )
 
         if not isinstance(block.experts.mlp, (DroplessMoEMLP, MoEMLP)):
             raise NotImplementedError(
@@ -48,13 +67,61 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
             )
 
     block = blocks[0]
-    assert isinstance(block, MoEReorderedNormTransformerBlock)
+    assert isinstance(block, (MoEReorderedNormTransformerBlock, MoETransformerBlock))
     assert isinstance(block.attention, Attention)
     assert block.attention.rope is not None
 
     if FlexOlmoConfig is None:
         raise RuntimeError("The installed transformers version does not support FlexOlmo")
 
+    if (
+        isinstance(block, MoETransformerBlock)
+        and block.attention.q_norm is None
+        and block.attention.k_norm is None
+    ):
+        return FlexOlmoNoQKNormPrenormConfig(
+            vocab_size=model.vocab_size,
+            hidden_size=model.d_model,
+            intermediate_size=block.feed_forward_moe.experts.mlp.hidden_size,
+            num_hidden_layers=model.n_layers,
+            num_attention_heads=block.attention.n_heads,
+            num_key_value_heads=block.attention.n_kv_heads,
+            hidden_act="silu",
+            max_position_embeddings=-1,
+            attention_bias=block.attention.w_out.bias is not None,
+            rope_theta=block.attention.rope.theta,
+            pad_token_id=None,  # type: ignore
+            bos_token_id=None,
+            eos_token_id=None,  # type: ignore
+            rms_norm_eps=block.feed_forward_norm.eps,
+            num_experts_per_tok=block.feed_forward_moe.router.top_k,
+            num_experts=block.feed_forward_moe.router.num_experts,
+            tie_word_embeddings=False,
+        )
+    elif (
+        isinstance(block, MoETransformerBlock)
+        and block.attention.q_norm is not None
+        and block.attention.k_norm is not None
+    ):
+        return FlexOlmoPrenormConfig(
+            vocab_size=model.vocab_size,
+            hidden_size=model.d_model,
+            intermediate_size=block.feed_forward_moe.experts.mlp.hidden_size,
+            num_hidden_layers=model.n_layers,
+            num_attention_heads=block.attention.n_heads,
+            num_key_value_heads=block.attention.n_kv_heads,
+            hidden_act="silu",
+            max_position_embeddings=-1,
+            attention_bias=block.attention.w_out.bias is not None,
+            rope_theta=block.attention.rope.theta,
+            pad_token_id=None,  # type: ignore
+            bos_token_id=None,
+            eos_token_id=None,  # type: ignore
+            rms_norm_eps=block.feed_forward_norm.eps,
+            num_experts_per_tok=block.feed_forward_moe.router.top_k,
+            num_experts=block.feed_forward_moe.router.num_experts,
+            tie_word_embeddings=False,
+        )
     return FlexOlmoConfig(
         vocab_size=model.vocab_size,
         hidden_size=model.d_model,
@@ -89,9 +156,17 @@ def get_hf_config(model: Transformer) -> PretrainedConfig:
     blocks = list(model.blocks.values())
     first_block = blocks[0]
     if not isinstance(first_block, ReorderedNormTransformerBlock):
-        raise NotImplementedError(
-            f"Block is not a {ReorderedNormTransformerBlock.__name__}, unable to build HF config for {model.__class__.__name__}"
-        )
+        # we support case where we use prenorm and no q/k norm
+        if (
+            isinstance(first_block, TransformerBlock)
+            and first_block.attention.q_norm is None
+            and first_block.attention.k_norm is None
+        ):
+            pass
+        else:
+            raise NotImplementedError(
+                f"Block is not a {ReorderedNormTransformerBlock.__name__}, unable to build HF config for {model.__class__.__name__}"
+            )
 
     if not isinstance(first_block.attention, Attention):
         raise NotImplementedError(
@@ -168,7 +243,14 @@ def get_hf_config(model: Transformer) -> PretrainedConfig:
         }
         return Olmo3Config(**common_config_args, **olmo3_specific_args)
     else:
-        return Olmo2Config(**common_config_args)
+        if (
+            isinstance(first_block, TransformerBlock)
+            and first_block.attention.q_norm is None
+            and first_block.attention.k_norm is None
+        ):
+            return Olmo2NoQKNormPrenormConfig(**common_config_args)
+        else:
+            return Olmo2Config(**common_config_args)
 
 
 def _get_and_validate_rope_scaling_config(blocks) -> dict | None:

@@ -471,6 +471,7 @@ class Attention(AttentionBase):
         pos_cos: Optional[torch.Tensor] = None,
         freqs_cis: Optional[torch.Tensor] = None,
         cache_leftpad: Optional[torch.Tensor] = None,
+        **kwargs,
     ) -> torch.Tensor:
         """
         Apply attention to the input.
@@ -712,6 +713,7 @@ class NormalizedAttention(Attention):
         pos_cos: Optional[torch.Tensor] = None,
         freqs_cis: Optional[torch.Tensor] = None,
         cache_leftpad: Optional[torch.Tensor] = None,
+        **kwargs,
     ) -> torch.Tensor:
         if cache_leftpad:
             raise NotImplementedError(
@@ -886,6 +888,7 @@ class FusedAttention(AttentionBase):
         pos_cos: Optional[torch.Tensor] = None,
         freqs_cis: Optional[torch.Tensor] = None,
         cache_leftpad: Optional[torch.Tensor] = None,
+        **kwargs,
     ) -> torch.Tensor:
         """
         Apply attention to the input.

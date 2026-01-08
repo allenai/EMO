@@ -138,7 +138,9 @@ def convert_checkpoint_to_hf(
     model.to_empty(device=device or torch.device("cpu"))
 
     tokenizer_config = TokenizerConfig.from_dict(tokenizer_config_dict)
-    vocab_size = tokenizer_config.vocab_size
+    # NOTE: We use the training vocab_size to keep things as close as possible to the original model.
+    # vocab_size = tokenizer_config.vocab_size
+    vocab_size = model_config.vocab_size
 
     with TemporaryDirectory() as work_dir:
         model_and_optim_dir = join_path(original_checkpoint_path, "model_and_optim")

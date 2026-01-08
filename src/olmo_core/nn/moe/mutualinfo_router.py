@@ -1,0 +1,274 @@
+import json
+import logging
+from abc import abstractmethod
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union, cast
+
+import torch
+import torch.distributed as dist
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.distributed import DeviceMesh
+from torch.distributed.tensor import Replicate, Shard, distribute_tensor
+from torch.distributed.tensor.parallel import PrepareModuleInput, parallelize_module
+
+import olmo_core.ops.moe as ops
+from olmo_core.config import Config, DType, StrEnum
+from olmo_core.distributed.utils import (
+    _HiddenTensor,
+    distribute_like,
+    get_local_tensor,
+    hide_from_torch,
+    is_distributed,
+    unhide_from_torch,
+)
+from olmo_core.exceptions import OLMoConfigurationError
+from olmo_core.nn.moe.router import (
+    MoELinearRouter,
+    MoELoadBalancingLossGranularity,
+    MoERouter,
+    MoERouterConfig,
+    MoERouterGatingFunction,
+    MoERouterType,
+)
+from olmo_core.utils import get_default_device
+
+from .loss import MoELoadBalancingLossGranularity, load_balancing_loss, router_z_loss
+
+
+class MoEMutualInfoRouter(MoELinearRouter):
+    """
+    Custom MoE router with modified forward pass and additional class variables.
+    """
+
+    def __init__(
+        self,
+        *,
+        dtype: torch.dtype = torch.float32,
+        init_device: str = "cpu",
+        expert_cond_token_entropy_bias: Optional[float] = None,
+        expert_uncond_entropy_bias: Optional[float] = None,
+        **kwargs,
+    ):
+        super().__init__(dtype=dtype, init_device=init_device, **kwargs)
+
+        self.expert_cond_token_entropy_bias = expert_cond_token_entropy_bias
+        self.expert_uncond_entropy_bias = expert_uncond_entropy_bias
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        *,
+        loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
+        padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
+        **kwargs,
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
+        """
+        Custom forward pass with modifications to implement mutual information losses.
+        Given the input ``x`` of shape ``(B, S, d_model)``, compute the experts assignment.
+
+        :returns: The expert weights of shape ``(B, S, top_k)``,
+            the expert indices of shape ``(B, S, top_k)``,
+            the total number of items routed to each expert, with shape ``(num_experts,)``,
+            and optionally the auxiliary losses.
+        """
+        # shape: (batch_size, seq_len, d_model)
+        x = self.jitter(x)
+
+        # shape: (batch_size, seq_len, num_experts)
+        logits = self.get_expert_logits(x).float()
+
+        # shape: (batch_size, seq_len, num_experts)
+        if self.gating_function == MoERouterGatingFunction.softmax:
+            scores = logits.softmax(dim=-1)
+        elif self.gating_function == MoERouterGatingFunction.sigmoid:
+            scores = F.sigmoid(logits) + 1e-7
+        else:
+            raise NotImplementedError(self.gating_function)
+
+        # shape: (batch_size, seq_len, top_k)
+        expert_weights, expert_indices = self.get_top_k(scores)
+
+        if self.normalize_expert_weights is not None:
+            expert_weights = expert_weights.div(
+                torch.norm(
+                    expert_weights,
+                    p=self.normalize_expert_weights,
+                    dim=-1,
+                    keepdim=True,
+                )
+            )
+
+        with torch.no_grad():
+            # Histogram the expert ids to identify the number of items/tokens routed to each expert.
+            # shape: (batch_size, seq_len, num_experts)
+            batched_batch_size_per_expert = ops.batched_histc(expert_indices, self.num_experts)
+            # shape: (batch_size, num_experts)
+            batched_batch_size_per_expert = batched_batch_size_per_expert.sum(dim=1)
+            # shape: (num_experts,)
+            batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
+
+            # prepare for custom metric
+            if self.training:
+                # prepare unique experts metric
+                # if padding_mask is not None:
+                #     # log that we only consider non-padded tokens for unique experts metric. padding_mask is 1 for non-padded tokens
+                #     padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
+                #     valid_expert_indices = expert_indices.masked_select(padding_mask_expanded)
+                # else:
+                #     valid_expert_indices = expert_indices.reshape(-1)
+                valid_expert_indices = expert_indices.view(-1)
+
+                # Update unique experts metric.
+                unique_experts = torch.unique(valid_expert_indices)
+                num_unique_experts = unique_experts.numel()
+
+                self._unique_experts_sum += num_unique_experts
+                self._num_batches_tracked += 1
+
+        # Maybe compute auxiliary losses and accumulate metrics.
+        aux_loss: Optional[torch.Tensor] = None
+        if self.training and torch.is_grad_enabled():
+            with torch.autocast(enabled=False, device_type=x.device.type):
+                if (
+                    self.expert_uncond_entropy_bias is not None
+                    and self.expert_cond_token_entropy_bias is not None
+                ):
+                    # calculate entropy over experts conditioned on each token
+                    if padding_mask is not None:
+                        # only consider non-padded tokens
+                        padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
+                        valid_scores = scores.masked_select(padding_mask_expanded).view(
+                            -1, self.num_experts
+                        )
+                    else:
+                        valid_scores = scores.view(-1, self.num_experts)
+                    # get expert entropy per token
+                    expert_cond_token_entropies = -torch.sum(
+                        valid_scores * torch.log(valid_scores + 1e-10), dim=-1
+                    )
+                    # average expert entropy over valid tokens
+                    expert_cond_token_entropy = expert_cond_token_entropies.mean()
+                    self._router_tokenlevel_expert_entropy += (
+                        expert_cond_token_entropy.detach()
+                    )  # old metric logging
+                    self._router_expert_cond_token_entropy += (
+                        expert_cond_token_entropy.detach()
+                    )  # new metric logging
+
+                    # we now calculate overall expert distribution entropy
+
+                    # first get expert probability usage
+                    expert_probs = torch.mean(valid_scores, dim=0)  # shape: (num_experts,)
+                    # calculate expert entropy
+                    expert_uncond_entropy = -torch.sum(
+                        expert_probs * torch.log(expert_probs + 1e-10)
+                    )
+                    self._router_expert_uncond_entropy += expert_uncond_entropy.detach()
+
+                    # add to aux_loss with respective biases
+                    aux_loss = (
+                        self.expert_cond_token_entropy_bias * expert_cond_token_entropy
+                        - self.expert_uncond_entropy_bias * expert_uncond_entropy
+                    )
+
+                elif (
+                    self.expert_uncond_entropy_bias is not None
+                    and self.expert_cond_token_entropy_bias is None
+                ):
+                    raise OLMoConfigurationError(
+                        "expert_cond_token_entropy_bias must be set if expert_uncond_entropy_bias is set."
+                    )
+                elif (
+                    self.expert_uncond_entropy_bias is None
+                    and self.expert_cond_token_entropy_bias is not None
+                ):
+                    raise OLMoConfigurationError(
+                        "expert_uncond_entropy_bias must be set if expert_cond_token_entropy_bias is set."
+                    )
+
+                if self.lb_loss_weight is not None:
+                    assert self.load_balancing_loss is not None
+
+                    # Make sure scores are normalized, otherwise load balancing loss doesn't work well.
+                    if self.gating_function == MoERouterGatingFunction.sigmoid:
+                        scores = scores / scores.sum(dim=-1, keepdim=True)
+
+                    lb_loss = load_balancing_loss(
+                        num_experts=self.num_experts,
+                        top_k=self.top_k,
+                        expert_scores=scores,
+                        batch_size_per_expert=batch_size_per_expert,
+                        batched_batch_size_per_expert=batched_batch_size_per_expert,
+                        granularity=self.lb_loss_granularity,
+                        loss_div_factor=loss_div_factor,
+                        tp_mesh=self.tp_mesh,
+                        cp_mesh=self.cp_mesh,
+                    )
+                    self.load_balancing_loss += lb_loss.detach()
+
+                    scaled_lb_loss = self.lb_loss_weight * lb_loss
+                    aux_loss = scaled_lb_loss if aux_loss is None else aux_loss + scaled_lb_loss
+
+                if self.z_loss_weight is not None:
+                    assert self.z_loss is not None
+
+                    z_loss = router_z_loss(
+                        expert_logits=logits,
+                        loss_div_factor=loss_div_factor,
+                        tp_mesh=self.tp_mesh,
+                        cp_mesh=self.cp_mesh,
+                    )
+                    self.z_loss += z_loss.detach()
+
+                    scaled_z_loss = self.z_loss_weight * z_loss
+                    aux_loss = scaled_z_loss if aux_loss is None else aux_loss + scaled_z_loss
+
+            self.batch_size_per_expert += batch_size_per_expert
+            if self.bias_gamma is not None:
+                assert self.score_bias_batch_size_per_expert is not None
+                self.score_bias_batch_size_per_expert += batch_size_per_expert
+
+        return expert_weights, expert_indices, batch_size_per_expert, aux_loss
+
+
+@dataclass
+class MoEMutualInfoRouterConfig(MoERouterConfig):
+    """
+    Config for pruning MoE router.
+    """
+
+    # Weight factors for the mutual information loss (H(experts|token) - H(experts)).
+    expert_cond_token_entropy_bias: Optional[float] = None
+    expert_uncond_entropy_bias: Optional[float] = None
+
+    def build(
+        self,
+        d_model: int,
+        num_experts,
+        *,
+        lb_loss_weight: Optional[float] = None,
+        lb_loss_granularity: MoELoadBalancingLossGranularity = MoELoadBalancingLossGranularity.local_batch,
+        z_loss_weight: Optional[float] = None,
+        dtype: Optional[torch.dtype] = None,
+        init_device: str = "cpu",
+    ) -> MoEMutualInfoRouter:
+        """
+        Build the pruning router.
+        """
+        kwargs = self.as_dict(exclude_none=True, recurse=False)
+        kwargs.pop("name")  # Remove name since we're directly instantiating
+        kwargs.update(
+            d_model=d_model,
+            num_experts=num_experts,
+            init_device=init_device,
+            lb_loss_weight=lb_loss_weight,
+            lb_loss_granularity=lb_loss_granularity,
+            z_loss_weight=z_loss_weight,
+        )
+        if self.dtype is not None:
+            kwargs["dtype"] = self.dtype.as_pt()
+        elif dtype is not None:
+            kwargs["dtype"] = dtype
+
+        return MoEMutualInfoRouter(**kwargs)

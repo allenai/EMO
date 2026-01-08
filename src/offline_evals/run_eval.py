@@ -2,6 +2,7 @@ import argparse
 import copy
 import datetime
 import inspect
+import json
 import logging
 import multiprocessing as mp
 import os
@@ -11,6 +12,8 @@ import time
 from collections import defaultdict
 from typing import Optional
 
+import torch
+import torch.nn.functional as F
 from lm_eval.api.model import TemplateLM
 from oe_eval.components.instances import RequestInstance
 from oe_eval.default_configs import MODEL_DEFAULTS, TASK_DEFAULTS
@@ -31,7 +34,7 @@ from oe_eval.utilities.hf_hub_writing import upload_to_hf
 from oe_eval.utilities.model_results_collation import collate_results
 from oe_eval.utilities.remote_utils import cache_s3_folder, upload_directory
 from oe_eval.utilities.wandb_writing import wandb_log_metrics
-from oe_eval.utils import (
+from oe_eval.utils import (  # task_file_name,
     get_dict_with_defaults,
     get_recorded_inputs,
     hash_dict,
@@ -43,8 +46,13 @@ from oe_eval.utils import (
     save_json,
     save_jsonl,
     show_model_input,
-    task_file_name,
 )
+
+
+def task_file_name(output_dir: str, task_idx: int, task_name: str, file_name: str) -> str:
+    task_name_safe = task_name.replace(":", "_")
+    return os.path.join(output_dir, f"task-{task_name_safe}-{file_name}")
+
 
 # Import utility functions for internal evals
 try:
@@ -191,6 +199,21 @@ _parser.add_argument(
     default=1,
     help="Number of GPUs to use",
 )
+_parser.add_argument(
+    "--do-prune",
+    action="store_true",
+    help="Whether to prune the model based on activations saved in activation_file.",
+)
+_parser.add_argument(
+    "--activation-file",
+    type=str,
+    help="Path to the saved activation file to use to prune. Only used if do_prune is set.",
+)
+_parser.add_argument(
+    "--prune-keep-k",
+    type=int,
+    help="Number of experts to keep per MoE layer when pruning. Only used if do_prune is set.",
+)
 
 ## Add internal Ai2 run_eval arguments:
 if HAS_AI2_INTERNAL:
@@ -276,6 +299,9 @@ def process_eval_args(args_dict: dict) -> dict:
     model_config["max_length"] = args_dict.pop("max_length")
     model_config["model_path"] = args_dict.pop("model_path")
     model_config["model_type"] = args_dict.pop("model_type")
+    model_config["do_prune"] = args_dict.pop("do_prune")
+    model_config["activation_file"] = args_dict.pop("activation_file")
+    model_config["prune_keep_k"] = args_dict.pop("prune_keep_k")
     model_args_dict = parse_args_string(args_dict.pop("model_args"))
     if model_args_dict:
         keys = list(model_args_dict.keys())
@@ -348,8 +374,100 @@ def process_eval_args(args_dict: dict) -> dict:
     return eval_config
 
 
+def make_modified_forward(
+    original_forward, num_experts, top_k, norm_topk_prob, experts, gate, experts_to_keep
+):
+    def modified_forward(
+        self,
+        hidden_states: torch.Tensor,
+        btm_weight: Optional[torch.Tensor] = None,
+        btm_topk: Optional[int] = None,
+    ) -> torch.Tensor:
+        batch_size, sequence_length, hidden_dim = hidden_states.shape
+        hidden_states = hidden_states.view(-1, hidden_dim)
+        router_logits = gate(hidden_states)
+
+        # swj change bias:
+        router_logits[:, 0] += 0.01
+
+        mask = torch.zeros(self.num_experts, dtype=torch.bool, device=router_logits.device)
+        mask[experts_to_keep] = True
+
+        router_logits = router_logits.masked_fill(~mask.unsqueeze(0), float("-inf"))
+
+        routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
+        routing_weights, selected_experts = torch.topk(routing_weights, top_k, dim=-1)
+
+        if norm_topk_prob:
+            routing_weights /= routing_weights.sum(dim=-1, keepdim=True)
+        routing_weights = routing_weights.to(hidden_states.dtype)
+
+        final_hidden_states = torch.zeros(
+            (batch_size * sequence_length, hidden_dim),
+            dtype=hidden_states.dtype,
+            device=hidden_states.device,
+        )
+
+        expert_mask = torch.nn.functional.one_hot(
+            selected_experts, num_classes=num_experts
+        ).permute(2, 1, 0)
+
+        for expert_idx in range(num_experts):
+            expert_layer = experts[expert_idx]
+            idx, top_x = torch.where(expert_mask[expert_idx])
+
+            current_state = hidden_states[None, top_x].reshape(-1, hidden_dim)
+            current_hidden_states = expert_layer(current_state) * routing_weights[top_x, idx, None]
+
+            final_hidden_states.index_add_(0, top_x, current_hidden_states.to(hidden_states.dtype))
+        final_hidden_states = final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
+        return final_hidden_states, router_logits
+
+    return modified_forward
+
+
+def limit_expert_usage(model, activations, prune_keep_k):
+    """
+    Modify the model's MoE routers to exclude certain experts.
+
+    Args:
+        model: The loaded model
+        excluded_experts: List of expert indices to exclude (0-indexed)
+    """
+    # Find all MoE layers in the model
+    for layer_idx, layer in enumerate(model.model.model.layers):
+        if hasattr(layer, "mlp") and hasattr(layer.mlp, "gate"):
+            # Store original forward method
+            original_forward = layer.mlp.forward
+
+            layer_expert_activations = activations[layer_idx]
+            experts_to_keep = torch.topk(
+                torch.tensor(layer_expert_activations),
+                min(prune_keep_k, len(layer_expert_activations)),
+            ).indices.tolist()
+
+            layer.mlp.forward = make_modified_forward(
+                original_forward,
+                layer.mlp.num_experts,
+                layer.mlp.top_k,
+                layer.mlp.norm_topk_prob,
+                layer.mlp.experts,
+                layer.mlp.gate,
+                experts_to_keep,
+            ).__get__(
+                layer.mlp, layer.mlp.__class__
+            )  # bind correctly to the instance
+            print(f"Modified MoE gate in layer {layer_idx}")
+
+
 def load_model(model_load_config: dict) -> HFLM_Verbose:
     """Load the model"""
+    pruning_configs = {}
+    if "do_prune" in model_load_config:
+        pruning_configs["do_prune"] = model_load_config.pop("do_prune")
+        pruning_configs["activation_file"] = model_load_config.pop("activation_file")
+        pruning_configs["prune_keep_k"] = model_load_config.pop("prune_keep_k")
+
     # TODO:  better validation and documentation of other args
     model_path = model_load_config["model_path"]
     if model_path is not None and isinstance(model_path, str):
@@ -412,15 +530,24 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
     else:
         raise ValueError(f"Model type {model_type} not recognized")
 
-    if "olmo" in pretrained or "OLMo" in pretrained:
-        tokenizer = "allenai/dolma2-tokenizer"
-    else:
-        tokenizer = None
+    tokenizer = "allenai/dolma2-tokenizer"
+
+    # if "olmo" in pretrained or "OLMo" in pretrained:
+    #     tokenizer = "allenai/dolma2-tokenizer"
+    # else:
+    #     tokenizer = None
     model = model_class(
         pretrained=pretrained,
         tokenizer=tokenizer,
         **model_load_config_other,
     )
+    if pruning_configs["do_prune"]:
+        # load the activation file
+        with open(pruning_configs["activation_file"], "r") as f:
+            line = f.readline()
+            activations = json.loads(line)["avg_router_probabilities"]
+        limit_expert_usage(model, activations, pruning_configs["prune_keep_k"])
+
     return model
 
 
@@ -537,16 +664,20 @@ def run_eval(args_dict: dict):
     task_objects = [
         load_task(task_config, compute_config["output_dir"]) for task_config in tasks_config
     ]
+
     if not task_objects:
         raise ValueError("No valid tasks constructed for the experiment!")
 
-    model_hash = hash_dict(model_config, MODEL_DEFAULTS)
+    hash_model_config = copy.deepcopy(model_config)
+    hash_model_config.pop("do_prune")
+    hash_model_config.pop("activation_file")
+    hash_model_config.pop("prune_keep_k")
+    model_hash = hash_dict(hash_model_config, MODEL_DEFAULTS)
 
     if HAS_AI2_INTERNAL:
         dl_check = process_internal_datalake_args(compute_config, model_hash, task_objects)
         if dl_check == "done":
             return
-
     output_dir = compute_config["output_dir"]
     cached_output_dir = compute_config["cached_output_dir"]
     recompute_metrics = compute_config["recompute_metrics"]
@@ -596,6 +727,10 @@ def run_eval(args_dict: dict):
         if workers == 1:
             eval_model = load_model(model_load_config)
         else:
+            if args_dict["do_prune"]:
+                raise NotImplementedError(
+                    "Model pruning with multiprocessing is not implemented yet."
+                )
             assert (
                 model_config["model_type"] != "litellm"
             ), f"litellm does not support multiprocessing. Got {workers} workers."
@@ -748,6 +883,9 @@ def run_eval(args_dict: dict):
             if output_dir is not None:
                 logger.info(f"Saving task config in {output_file}...")
                 save_json(output_file, full_config)
+                if remote_output_dir is not None:
+                    logger.info(f"Uploading results to remote directory {remote_output_dir}...")
+                    upload_directory(output_dir, remote_output_dir)
             continue
 
         # Super hacky to avoid reprocessing metrics for uncond cases
