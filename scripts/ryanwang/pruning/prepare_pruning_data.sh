@@ -3,7 +3,7 @@
 MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
 #MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 MODELS=(
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
+#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995-hf"
 #    "twolevelbatchlb-8_1b7b_stability_1207/step30995-hf"
 
@@ -45,7 +45,9 @@ TASK_GROUPS_LIST=(
 #  "gsm8k_generation_zeroshot"
 #  "coqa_zeroshot"
 #  "coqa_full_zeroshot"
-  "squad_zeroshot"
+#  "squad_zeroshot"
+
+  "mmlu_abstract_algebra"
 
 #   MMLU
 #  "mmlu"
