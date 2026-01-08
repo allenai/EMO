@@ -1,17 +1,20 @@
-import numpy as np
 import argparse
-
-from transformers import AutoTokenizer
 import logging
-import sys
 import os
+import sys
 
+import numpy as np
+from transformers import AutoTokenizer
 
 ## This is the main launching script for creating loss masks for finetuning
 
 _parser = argparse.ArgumentParser()
 _parser.add_argument(
-    "--token_file_paths", type=str, nargs="+", required=False, help="Task spec(s) from library or jsonl file"
+    "--token_file_paths",
+    type=str,
+    nargs="+",
+    required=False,
+    help="Task spec(s) from library or jsonl file",
 )
 _parser.add_argument(
     "--tokenizer", type=str, default=None, help="Directory corresponding to outputted requests"
@@ -20,9 +23,11 @@ _parser.add_argument(
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger()
 
+
 def get_file_size(path):
     """Get file size in bytes"""
     return os.path.getsize(path)
+
 
 def load_token_file(token_path, dtype=np.uint32):
     """
@@ -33,7 +38,7 @@ def load_token_file(token_path, dtype=np.uint32):
     num_tokens = file_size // dtype().itemsize
 
     # Load as memory-mapped array in read mode
-    tokens = np.memmap(token_path, mode='r', dtype=dtype, shape=(num_tokens,))
+    tokens = np.memmap(token_path, mode="r", dtype=dtype, shape=(num_tokens,))
     return tokens
 
 
@@ -52,11 +57,11 @@ def prepare_finetuning_masks(args_dict):
         num_tokens = len(tokens)
 
         # Save the label mask file
-        mask_path = str(token_path).replace('.npy', '_mask.npy')
+        mask_path = str(token_path).replace(".npy", "_mask.npy")
 
         # Save as memory-mapped file (more efficient for large files):
         # Initialize to False (masked out) by default
-        mmap_mask = np.memmap(mask_path, mode='w+', dtype=np.bool_, shape=(num_tokens,))
+        mmap_mask = np.memmap(mask_path, mode="w+", dtype=np.bool_, shape=(num_tokens,))
         mmap_mask[:] = False  # Explicitly initialize to False
 
         if "hellaswag" in token_path.lower() or "winogrande" in token_path.lower():
@@ -81,8 +86,10 @@ def prepare_finetuning_masks(args_dict):
             if tokens[i] == 100257:  # we hit the end of a document
                 # find the delimiter in the previous document by searching for it
                 delimiter_pos = []
-                for j in range(len(prev_document) - len(delimiter_ids) + 1):  # Fixed: don't go past end
-                    if prev_document[j:j + len(delimiter_ids)] == delimiter_ids:
+                for j in range(
+                    len(prev_document) - len(delimiter_ids) + 1
+                ):  # Fixed: don't go past end
+                    if prev_document[j : j + len(delimiter_ids)] == delimiter_ids:
                         delimiter_pos.append(j)
 
                 # removing this assert because we might have few-shot now.
@@ -91,7 +98,7 @@ def prepare_finetuning_masks(args_dict):
                 # create the label mask for the previous document
                 label_mask = np.ones(len(prev_document), dtype=np.bool_)
                 # mask out everything before and including the delimiter for the final question/answer pair
-                label_mask[:delimiter_pos[-1] + len(delimiter_ids)] = False
+                label_mask[: delimiter_pos[-1] + len(delimiter_ids)] = False
 
                 # make sure that the document is not all masked out
                 if np.all(label_mask == False):
@@ -102,7 +109,7 @@ def prepare_finetuning_masks(args_dict):
                     )
 
                 # write into mmap_mask - use document_start_idx for correct indexing
-                mmap_mask[document_start_idx:document_start_idx + len(prev_document)] = label_mask
+                mmap_mask[document_start_idx : document_start_idx + len(prev_document)] = label_mask
 
                 # reset for next document
                 document_start_idx = i + 1
@@ -118,7 +125,7 @@ def prepare_finetuning_masks(args_dict):
             # find the delimiter in the last document
             delimiter_pos = []
             for j in range(len(prev_document) - len(delimiter_ids) + 1):
-                if prev_document[j:j + len(delimiter_ids)] == delimiter_ids:
+                if prev_document[j : j + len(delimiter_ids)] == delimiter_ids:
                     delimiter_pos.append(j)
 
             if len(delimiter_pos) == 0:
@@ -136,7 +143,7 @@ def prepare_finetuning_masks(args_dict):
             # create the label mask for the last document
             label_mask = np.ones(len(prev_document), dtype=np.bool_)
             # mask out everything before and including the delimiter
-            label_mask[:delimiter_pos[-1] + len(delimiter_ids)] = False
+            label_mask[: delimiter_pos[-1] + len(delimiter_ids)] = False
 
             # make sure that the document is not all masked out
             if np.all(label_mask == False):
@@ -147,13 +154,13 @@ def prepare_finetuning_masks(args_dict):
                 )
 
             # write into mmap_mask
-            mmap_mask[document_start_idx:document_start_idx + len(prev_document)] = label_mask
+            mmap_mask[document_start_idx : document_start_idx + len(prev_document)] = label_mask
 
         mmap_mask.flush()
         del mmap_mask
 
         # Now verify the mask file
-        mask_check = np.memmap(mask_path, mode='r', dtype=np.bool_)
+        mask_check = np.memmap(mask_path, mode="r", dtype=np.bool_)
         if len(tokens) != len(mask_check):
             del mask_check
             raise ValueError(
@@ -170,12 +177,17 @@ def prepare_finetuning_masks(args_dict):
                 f"This will cause NaN in loss computation."
             )
 
-        logger.info(f"Mask file created: {mask_path}, {num_unmasked}/{len(mask_check)} tokens unmasked")
+        logger.info(
+            f"Mask file created: {mask_path}, {num_unmasked}/{len(mask_check)} tokens unmasked"
+        )
         del mask_check
 
     # check if there are more than one file. If there are, the finetuning script breaks, so we throw an error to remind user
     if len(args_dict["token_file_paths"]) > 1:
-        raise ValueError(f"There are a total of {len(args_dict['token_file_paths'])} token files provided for mask generation. The finetuning script currently only supports one file at a time. Be careful (masking script successfully completed)")
+        raise ValueError(
+            f"There are a total of {len(args_dict['token_file_paths'])} token files provided for mask generation. The finetuning script currently only supports one file at a time. Be careful (masking script successfully completed)"
+        )
+
 
 def main():
     args = _parser.parse_args()
@@ -187,6 +199,7 @@ def main():
     except Exception:
         # not a return code
         pass
+
 
 if __name__ == "__main__":
     main()

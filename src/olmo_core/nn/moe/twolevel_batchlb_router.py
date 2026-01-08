@@ -1,12 +1,7 @@
 import json
-from typing import Optional
-
-from olmo_core.nn.moe.router import MoERouterConfig, MoERouterType
-from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
-from dataclasses import dataclass
-
 import logging
 from abc import abstractmethod
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union, cast
 
 import torch
@@ -28,18 +23,18 @@ from olmo_core.distributed.utils import (
     unhide_from_torch,
 )
 from olmo_core.exceptions import OLMoConfigurationError
+from olmo_core.nn.moe.router import (
+    MoELinearRouter,
+    MoELoadBalancingLossGranularity,
+    MoERouter,
+    MoERouterConfig,
+    MoERouterGatingFunction,
+    MoERouterType,
+)
+from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
 from olmo_core.utils import get_default_device
 
 from .loss import MoELoadBalancingLossGranularity, load_balancing_loss, router_z_loss
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from typing import Tuple, Optional, Union
-from olmo_core.nn.moe.router import MoELinearRouter, MoERouter
-from olmo_core.nn.moe.router import MoERouterGatingFunction, MoELoadBalancingLossGranularity
-from olmo_core.distributed.utils import get_local_tensor
-
 
 
 class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
@@ -48,13 +43,13 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
     """
 
     def forward(
-            self,
-            x: torch.Tensor,
-            *,
-            loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
-            padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
-            document_boundaries: Optional[torch.Tensor] = None,
-            **kwargs,
+        self,
+        x: torch.Tensor,
+        *,
+        loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
+        padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
+        document_boundaries: Optional[torch.Tensor] = None,
+        **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
         Custom forward pass with modifications to implement two level routing.
@@ -90,12 +85,14 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
                 if end <= start:
                     start = end
                     continue
-                sequence_logits = logits[seq_idx, start:end, :] # shape: (doc_len, num_experts)
+                sequence_logits = logits[seq_idx, start:end, :]  # shape: (doc_len, num_experts)
                 # calculate the softmax over the experts
-                expert_probs = F.softmax(sequence_logits, dim=-1) # shape: (doc_len, num_experts)
+                expert_probs = F.softmax(sequence_logits, dim=-1)  # shape: (doc_len, num_experts)
 
                 # get the entropy over experts per token
-                token_entropies = -torch.sum(expert_probs * torch.log(expert_probs + 1e-10), dim=-1)  # shape: (doc_len,)
+                token_entropies = -torch.sum(
+                    expert_probs * torch.log(expert_probs + 1e-10), dim=-1
+                )  # shape: (doc_len,)
                 # average entropy over the document
                 # avg_entropy = token_entropies.mean().item()
                 # tot_doc_entropy.append(avg_entropy)
@@ -103,16 +100,18 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
                 doc_entropy_count += 1
 
                 # take the sum across the document
-                document_expert_probs = expert_probs.sum(dim=0) # shape: (num_experts,)
+                document_expert_probs = expert_probs.sum(dim=0)  # shape: (num_experts,)
                 # get the bottom document_expert_pool experts
                 bot_document_expert_pool = self.num_experts - self.document_expert_pool
-                experts_to_discard = torch.topk(-document_expert_probs, bot_document_expert_pool).indices # shape: (bot_document_expert_pool,)
+                experts_to_discard = torch.topk(
+                    -document_expert_probs, bot_document_expert_pool
+                ).indices  # shape: (bot_document_expert_pool,)
                 # set the logits of these experts to a very large negative value
                 # logits[seq_idx, start:end, experts_to_discard] = float('-inf')
                 logits_mask[seq_idx, start:end, experts_to_discard] = True
                 start = end
 
-        logits.masked_fill_(logits_mask, float('-inf'))
+        logits.masked_fill_(logits_mask, float("-inf"))
 
         if self.training:
             # log the average document entropy
@@ -146,8 +145,7 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
         with torch.no_grad():
             # Histogram the expert ids to identify the number of items/tokens routed to each expert.
             # shape: (batch_size, seq_len, num_experts)
-            tot_batched_batch_size_per_expert = ops.batched_histc(expert_indices,
-                                                              self.num_experts)
+            tot_batched_batch_size_per_expert = ops.batched_histc(expert_indices, self.num_experts)
             # shape: (batch_size, num_experts)
             tot_batched_batch_size_per_expert = tot_batched_batch_size_per_expert.sum(dim=1)
             # shape: (num_experts,)
@@ -237,19 +235,20 @@ class MoETwoLevelBatchLBRouter(MoETwoLevelRouter):
         base_repr = super().extra_repr()
         return f"{base_repr}, document_expert_pool={self.document_expert_pool}, eos_token_id={self.eos_token_id}"
 
+
 @dataclass
 class MoETwoLevelBatchLBRouterConfig(MoETwoLevelRouterConfig):
     # just update the build to call the correct new class
     def build(
-            self,
-            d_model: int,
-            num_experts,
-            *,
-            lb_loss_weight: Optional[float] = None,
-            lb_loss_granularity: MoELoadBalancingLossGranularity = MoELoadBalancingLossGranularity.local_batch,
-            z_loss_weight: Optional[float] = None,
-            dtype: Optional[torch.dtype] = None,
-            init_device: str = "cpu",
+        self,
+        d_model: int,
+        num_experts,
+        *,
+        lb_loss_weight: Optional[float] = None,
+        lb_loss_granularity: MoELoadBalancingLossGranularity = MoELoadBalancingLossGranularity.local_batch,
+        z_loss_weight: Optional[float] = None,
+        dtype: Optional[torch.dtype] = None,
+        init_device: str = "cpu",
     ) -> MoETwoLevelBatchLBRouter:
         """
         Build the pruning router.

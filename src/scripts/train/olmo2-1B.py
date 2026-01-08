@@ -19,7 +19,8 @@ from olmo_core.data import (
     NumpyDataLoaderConfig,
     NumpyDatasetConfig,
     NumpyFSLDatasetConfig,
-    TokenizerConfig, NumpyPaddedFSLDatasetConfig,
+    NumpyPaddedFSLDatasetConfig,
+    TokenizerConfig,
 )
 from olmo_core.data.mixes import DataMix
 from olmo_core.distributed.parallel import DataParallelType
@@ -27,18 +28,21 @@ from olmo_core.distributed.utils import get_rank
 from olmo_core.nn.transformer import TransformerConfig
 from olmo_core.optim import CosWithWarmup, OptimGroupOverride, SkipStepAdamWConfig
 from olmo_core.train import (
+    Duration,
     TrainerConfig,
     prepare_training_environment,
-    teardown_training_environment, Duration,
+    teardown_training_environment,
 )
 from olmo_core.train.callbacks import (
     BeakerCallback,
     CheckpointerCallback,
     CometCallback,
     ConfigSaverCallback,
+    DownstreamEvaluatorCallbackConfig,
     GPUMemoryMonitorCallback,
+    LMEvaluatorCallbackConfig,
     ProfilerCallback,
-    WandBCallback, DownstreamEvaluatorCallbackConfig, LMEvaluatorCallbackConfig,
+    WandBCallback,
 )
 from olmo_core.train.train_module import (
     TransformerDataParallelConfig,
@@ -53,10 +57,13 @@ log = logging.getLogger(__name__)
 
 DATA_ROOT = "/weka/oe-training-default/ai2-llm"
 
-C4_VALIDATION_PATH = ["/weka/oe-training-default/ai2-llm/examples/c4-en/gpt2/c4-validation.00000-00008.npy"]
+C4_VALIDATION_PATH = [
+    "/weka/oe-training-default/ai2-llm/examples/c4-en/gpt2/c4-validation.00000-00008.npy"
+]
 
 SEQUENCE_LENGTH = 4096
 GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
+
 
 # docs: start-define-config
 @dataclass
@@ -153,7 +160,8 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     train_module_config = TransformerTrainModuleConfig(
-        rank_microbatch_size=4 * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
+        rank_microbatch_size=4
+        * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         max_sequence_length=SEQUENCE_LENGTH,
         optim=SkipStepAdamWConfig(
             lr=4e-4,
@@ -212,9 +220,18 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback("profiler", ProfilerCallback(enabled=False))
         .with_callback(
             "downstream_evaluator",
-            #https://github.com/allenai/OLMo-in-loop-evals/blob/main/src/olmo_eval/tasks.py#L1752
+            # https://github.com/allenai/OLMo-in-loop-evals/blob/main/src/olmo_eval/tasks.py#L1752
             DownstreamEvaluatorCallbackConfig(
-                tasks=["hellaswag", "arc_challenge", "piqa", "copa", "mmlu_stem", "mmlu_humanities", "mmlu_social_sciences", "mmlu_other"],
+                tasks=[
+                    "hellaswag",
+                    "arc_challenge",
+                    "piqa",
+                    "copa",
+                    "mmlu_stem",
+                    "mmlu_humanities",
+                    "mmlu_social_sciences",
+                    "mmlu_other",
+                ],
                 tokenizer=tokenizer_config,
                 eval_interval=250,
             ),

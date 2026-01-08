@@ -1,5 +1,6 @@
-from oe_eval.tasks.oe_eval_tasks.naturalqs_open import NaturalQsOpen
 from itertools import islice
+
+from oe_eval.tasks.oe_eval_tasks.naturalqs_open import NaturalQsOpen
 
 
 class NaturalQS_Base(NaturalQsOpen):
@@ -15,7 +16,11 @@ class NaturalQS_Base(NaturalQsOpen):
 
             # create a random shuffle and select first 1000 examples from sample TODO
             # select training docs excluding 1000 examples used for validation
-            train_dataset = self.dataset["train"].shuffle(seed=0).select(range(1000, len(self.dataset["train"])))
+            train_dataset = (
+                self.dataset["train"]
+                .shuffle(seed=0)
+                .select(range(1000, len(self.dataset["train"])))
+            )
             self._training_docs = list(map(self._process_doc, train_dataset))
 
         return self._training_docs
@@ -58,6 +63,7 @@ class NaturalQS_Train_0shot(NaturalQS_Base):
     def doc_to_target(self, doc):
         return doc["answers_text"][0]
 
+
 class NaturalQS_Validation_0shot(NaturalQS_Base):
     # we add an extra space
     def _process_doc(self, doc):
@@ -85,6 +91,7 @@ class NaturalQS_Validation_0shot(NaturalQS_Base):
     # this shouldn't matter, but we remove the leading space since we added it into the query
     def doc_to_target(self, doc):
         return doc["answers_text"][0]
+
 
 class NaturalQS_Test_0shot(NaturalQS_Base):
     pass

@@ -1,11 +1,7 @@
 import json
-from typing import Optional
-
-from olmo_core.nn.moe.router import MoERouterConfig, MoERouterType
-from dataclasses import dataclass
-
 import logging
 from abc import abstractmethod
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union, cast
 
 import torch
@@ -27,18 +23,17 @@ from olmo_core.distributed.utils import (
     unhide_from_torch,
 )
 from olmo_core.exceptions import OLMoConfigurationError
+from olmo_core.nn.moe.router import (
+    MoELinearRouter,
+    MoELoadBalancingLossGranularity,
+    MoERouter,
+    MoERouterConfig,
+    MoERouterGatingFunction,
+    MoERouterType,
+)
 from olmo_core.utils import get_default_device
 
 from .loss import MoELoadBalancingLossGranularity, load_balancing_loss, router_z_loss
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from typing import Tuple, Optional, Union
-from olmo_core.nn.moe.router import MoELinearRouter, MoERouter
-from olmo_core.nn.moe.router import MoERouterGatingFunction, MoELoadBalancingLossGranularity
-from olmo_core.distributed.utils import get_local_tensor
-
 
 
 class PruningMoELinearRouter(MoELinearRouter):
@@ -47,14 +42,14 @@ class PruningMoELinearRouter(MoELinearRouter):
     """
 
     def __init__(
-            self,
-            *,
-            dtype: torch.dtype = torch.float32,
-            init_device: str = "cpu",
-            prune_keep_k: int = 32,  # the number of experts to keep after pruning
-            activation_file: str = "",  # path to activation file for pruning
-            layer_idx: int, # index of the layer for which this router is being created -> needs to know this to know which experts to keep
-            **kwargs,
+        self,
+        *,
+        dtype: torch.dtype = torch.float32,
+        init_device: str = "cpu",
+        prune_keep_k: int = 32,  # the number of experts to keep after pruning
+        activation_file: str = "",  # path to activation file for pruning
+        layer_idx: int,  # index of the layer for which this router is being created -> needs to know this to know which experts to keep
+        **kwargs,
     ):
         super().__init__(dtype=dtype, init_device=init_device, **kwargs)
 
@@ -64,14 +59,13 @@ class PruningMoELinearRouter(MoELinearRouter):
 
         # Load expert activations and determine which experts to keep
         if activation_file:
-            with open(activation_file, 'r') as f:
+            with open(activation_file, "r") as f:
                 line = f.readline()
                 activations = json.loads(line)["avg_router_probabilities"]
-            expert_activations = activations[layer_idx] # choose the layer to activate
+            expert_activations = activations[layer_idx]  # choose the layer to activate
             # Get indices of top-k most activated experts
             self.experts_to_keep = torch.topk(
-                torch.tensor(expert_activations),
-                min(self.prune_keep_k, len(expert_activations))
+                torch.tensor(expert_activations), min(self.prune_keep_k, len(expert_activations))
             ).indices.tolist()
         else:
             # If no activation file, keep all experts
@@ -97,8 +91,9 @@ class PruningMoELinearRouter(MoELinearRouter):
         # self.active_indices = active_idices
         # # self.register_buffer("active_indices", active_idx, persistent=False)
 
-        print(f"Layer {layer_idx}: Keeping experts {self.experts_to_keep} out of {self.num_experts}")
-
+        print(
+            f"Layer {layer_idx}: Keeping experts {self.experts_to_keep} out of {self.num_experts}"
+        )
 
     @property
     def expert_mask(self):
@@ -118,14 +113,13 @@ class PruningMoELinearRouter(MoELinearRouter):
             self._active_indices = active_idx
         return self._active_indices
 
-
     def forward(
-            self,
-            x: torch.Tensor,
-            *,
-            loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
-            padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
-            **kwargs,
+        self,
+        x: torch.Tensor,
+        *,
+        loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
+        padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
+        **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
         Custom forward pass with modifications to implement pruned experts (i.e never activate certain experts).
@@ -143,7 +137,7 @@ class PruningMoELinearRouter(MoELinearRouter):
         logits = self.get_expert_logits(x).float()
 
         # Mask out pruned experts by setting their logits to a very large negative value
-        logits = logits.masked_fill(~self.expert_mask.unsqueeze(0).unsqueeze(0), float('-inf'))
+        logits = logits.masked_fill(~self.expert_mask.unsqueeze(0).unsqueeze(0), float("-inf"))
 
         # Check for edge case: if all experts are masked (shouldn't happen but safeguard)
         # This would cause softmax to produce NaNs
@@ -204,7 +198,9 @@ class PruningMoELinearRouter(MoELinearRouter):
                 # Slice to active experts for LB loss, and use effective sizes
                 active_idx = self.active_indices
                 scores_active = scores.index_select(-1, active_idx)  # (B, S, E_active)
-                bbse_active = batched_batch_size_per_expert.index_select(-1, active_idx)  # (B, E_active)
+                bbse_active = batched_batch_size_per_expert.index_select(
+                    -1, active_idx
+                )  # (B, E_active)
                 bse_active = batch_size_per_expert.index_select(0, active_idx)  # (E_active,)
                 num_active = active_idx.numel()
                 eff_top_k = min(self.top_k, num_active)
@@ -258,25 +254,27 @@ class PruningMoELinearRouter(MoELinearRouter):
         base_repr = super().extra_repr()
         return f"{base_repr}, prune_keep_k={self.prune_keep_k}, layer_idx={self.layer_idx}"
 
+
 @dataclass
 class PruningMoERouterConfig(MoERouterConfig):
     """
     Config for pruning MoE router.
     """
+
     prune_keep_k: int = 32
     activation_file: str = ""
     layer_idx: int = 0
 
     def build(
-            self,
-            d_model: int,
-            num_experts,
-            *,
-            lb_loss_weight: Optional[float] = None,
-            lb_loss_granularity: MoELoadBalancingLossGranularity = MoELoadBalancingLossGranularity.local_batch,
-            z_loss_weight: Optional[float] = None,
-            dtype: Optional[torch.dtype] = None,
-            init_device: str = "cpu",
+        self,
+        d_model: int,
+        num_experts,
+        *,
+        lb_loss_weight: Optional[float] = None,
+        lb_loss_granularity: MoELoadBalancingLossGranularity = MoELoadBalancingLossGranularity.local_batch,
+        z_loss_weight: Optional[float] = None,
+        dtype: Optional[torch.dtype] = None,
+        init_device: str = "cpu",
     ) -> PruningMoELinearRouter:
         """
         Build the pruning router.

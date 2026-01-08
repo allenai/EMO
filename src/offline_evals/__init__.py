@@ -16,22 +16,22 @@ from .tasks import (
     poem_gen,
     ruler,
     sciriff,
-    squad,
-    squad2,
-    story_gen,
-    xsum,
     splits_arc,
     splits_boolq,
+    splits_coqa,
     splits_csqa,
+    splits_gsm8k,
     splits_hellaswag,
     splits_openbookqa,
     splits_piqa,
     splits_siqa,
-    splits_winogrande,
-    splits_gsm8k,
+    splits_squad,
     splits_synthea,
-    splits_coqa,
-    splits_squad
+    splits_winogrande,
+    squad,
+    squad2,
+    story_gen,
+    xsum,
 )
 
 
@@ -47,6 +47,7 @@ def create_core_mmlu_tasks_withsplits():
         res[f"mmlu_{sub}:rc_test"] = create_mmlu_task(sub, is_mc=False)
     return res
 
+
 def create_core_mmlu_pro_tasks_withsplits():
     """Creates a dictionary of MMLU-Pro tasks from a list of categories
     Note that the differences between train, validation, and test is declared in TASK_CONFIGS"""
@@ -57,6 +58,7 @@ def create_core_mmlu_pro_tasks_withsplits():
         res[f"mmlu_pro_{sub}:rc_validation"] = create_mmlu_pro_task(sub, is_mc=False)
         res[f"mmlu_pro_{sub}:rc_test"] = create_mmlu_pro_task(sub, is_mc=False)
     return res
+
 
 new_task_registry: Dict = {
     "xsum": xsum.XSum,
@@ -153,35 +155,27 @@ new_task_registry: Dict = {
     "synthea:rc_train_0shot": splits_synthea.Synthea_RC_Train_0shot,
     "synthea:rc_validation_0shot": splits_synthea.Synthea_RC_Validation_0shot,
     "synthea:rc_test_0shot": splits_synthea.Synthea_RC_Test_0shot,
-
     # MMLU
     **create_core_mmlu_tasks_withsplits(),
     **create_core_mmlu_pro_tasks_withsplits(),
-
     # GSM8K
     "gsm8k_perplexity:train": splits_gsm8k.GSM8K_Perplexity_Train,
     "gsm8k_perplexity:validation": splits_gsm8k.GSM8K_Perplexity_Validation,
     "gsm8k_perplexity:train_0shot": splits_gsm8k.GSM8K_Perplexity_Train_0shot,
     "gsm8k_perplexity:validation_0shot": splits_gsm8k.GSM8K_Perplexity_Validation_0shot,
     "gsm8k_perplexity:test": splits_gsm8k.GSM8K_Perplexity_Test,
-
     "gsm8k_generation:train_0shot": splits_gsm8k.GSM8K_Generation_Train_0shot,
     "gsm8k_generation:validation_0shot": splits_gsm8k.GSM8K_Generation_Validation_0shot,
     "gsm8k_generation:test_0shot": splits_gsm8k.GSM8K_Generation_Test_0shot,
-
     "coqa:train_0shot": splits_coqa.COQA_Train_0shot,
     "coqa:validation_0shot": splits_coqa.COQA_Validation_0shot,
     "coqa:test_0shot": splits_coqa.COQA_Test_0shot,
-
     "coqa_full:train_0shot": splits_coqa.COQA_full_Train_0shot,
     "coqa_full:validation_0shot": splits_coqa.COQA_full_Validation_0shot,
     "coqa_full:test_0shot": splits_coqa.COQA_full_Test_0shot,
-
     "squad:train_0shot": splits_squad.SQUAD_Train_0shot,
     "squad:validation_0shot": splits_squad.SQUAD_Validation_0shot,
     "squad:test_0shot": splits_squad.SQUAD_Test_0shot,
-
-
 }
 
 TASK_REGISTRY.update(new_task_registry)

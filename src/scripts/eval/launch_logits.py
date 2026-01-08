@@ -9,15 +9,14 @@ import subprocess
 import sys
 import tempfile
 from typing import List
-import torch.nn.functional as F
-from oe_eval.utilities.remote_utils import cache_s3_folder, upload_directory
-
-from tqdm import tqdm
 
 import torch
+import torch.nn.functional as F
+from oe_eval.utilities.remote_utils import cache_s3_folder, upload_directory
+from tqdm import tqdm
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from src.offline_evals.eval_utils import find_file, load_jsonl_file, get_eval_filename
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from src.offline_evals.eval_utils import find_file, get_eval_filename, load_jsonl_file
 
 ## This is the main launching script for running evaluations on logits.
 

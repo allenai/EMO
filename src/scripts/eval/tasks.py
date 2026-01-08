@@ -145,7 +145,6 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-
             "synthea:rc_validation_0shot::olmes": {
                 "task_name": "synthea:rc_validation_0shot",
                 "split": "validation",
@@ -157,7 +156,6 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-
             "synthea:rc_test_0shot::olmes": {
                 "task_name": "synthea:rc_test_0shot",
                 "split": "test",
@@ -169,7 +167,6 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-
             "synthea:rc_train::olmes": {
                 "task_name": "synthea:rc_train",
                 "split": "train",
@@ -202,7 +199,7 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-            "gsm8k_perplexity:train::olmes":{
+            "gsm8k_perplexity:train::olmes": {
                 "task_name": "gsm8k:perplexity_train",
                 "split": "train",
                 "primary_metric": "bits_per_byte",
@@ -212,7 +209,7 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "gsm8k_perplexity:validation::olmes":{
+            "gsm8k_perplexity:validation::olmes": {
                 "task_name": "gsm8k:perplexity_validation",
                 "split": "validation",
                 "primary_metric": "bits_per_byte",
@@ -242,7 +239,7 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "gsm8k_perplexity:test::olmes":{
+            "gsm8k_perplexity:test::olmes": {
                 "task_name": "gsm8k:perplexity_test",
                 "split": "test",
                 "primary_metric": "bits_per_byte",
@@ -723,7 +720,6 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-
             "boolq:mc_validation::olmes": {
                 "task_name": "boolq:mc_validation",
                 "split": "validation",
@@ -742,7 +738,6 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-
             "boolq:rc_train::olmes": {
                 "task_name": "boolq:rc_train",
                 "split": "train",
@@ -753,7 +748,6 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-
             "boolq:rc_validation::olmes": {
                 "task_name": "boolq:rc_validation",
                 "split": "validation",
@@ -774,7 +768,6 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-
             "boolq:rc_validation_0shot::olmes": {
                 "task_name": "boolq:rc_validation_0shot",
                 "split": "validation",
@@ -785,7 +778,6 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-
             "boolq:rc_test::olmes": {
                 "task_name": "boolq:rc_test",
                 "split": "test",
@@ -796,7 +788,6 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-
             "arc_challenge:rc_train::olmes": {
                 "task_name": "arc_challenge:rc_train",
                 "split": "train",
@@ -847,7 +838,6 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-
             "arc_challenge:mc_train::olmes": {
                 "task_name": "arc_challenge:mc_train",
                 "split": "train",
@@ -857,7 +847,6 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-
             "arc_challenge:mc_validation::olmes": {
                 "task_name": "arc_challenge:mc_validation",
                 "split": "validation",
@@ -876,7 +865,6 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-
             "arc_easy:rc_train::olmes": {
                 "task_name": "arc_easy:rc_train",
                 "split": "train",
@@ -888,7 +876,6 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-
             "arc_easy:rc_validation::olmes": {
                 "task_name": "arc_easy:rc_validation",
                 "split": "validation",
@@ -911,7 +898,6 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-
             "arc_easy:rc_validation_0shot::olmes": {
                 "task_name": "arc_easy:rc_validation_0shot",
                 "split": "validation",
@@ -923,7 +909,6 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-
             "arc_easy:rc_test::olmes": {
                 "task_name": "arc_easy:rc_test",
                 "split": "test",
@@ -935,7 +920,6 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
-
             "arc_easy:mc_train::olmes": {
                 "task_name": "arc_easy:mc_train",
                 "split": "train",

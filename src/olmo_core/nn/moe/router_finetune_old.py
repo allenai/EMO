@@ -41,7 +41,6 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 
-
 @dataclass
 class MoERouterConfig(Config):
     """
@@ -446,7 +445,7 @@ class MoERouter(nn.Module):
         x: torch.Tensor,
         *,
         loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
-        padding_mask: Optional[torch.Tensor] = None, # shape: (B, S)
+        padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
         **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
@@ -487,12 +486,16 @@ class MoERouter(nn.Module):
         with torch.no_grad():
             # we first make the assertion that we are using granularity of local_batch as opposed to instance, since masking doesn't work with instance
             if self.lb_loss_granularity != MoELoadBalancingLossGranularity.local_batch:
-                raise NotImplementedError("masking with instance-level load balancing loss granularity is not supported yet")
+                raise NotImplementedError(
+                    "masking with instance-level load balancing loss granularity is not supported yet"
+                )
 
             # Histogram the expert ids to identify the number of items/tokens routed to each expert. This is ONLY USED in
             # the return values used for kernels to route tokens to their corresponding experts, NOT for loss computation
             # shape: (batch_size, seq_len, num_experts)
-            batched_batch_size_per_expert_routing = ops.batched_histc(expert_indices, self.num_experts)
+            batched_batch_size_per_expert_routing = ops.batched_histc(
+                expert_indices, self.num_experts
+            )
             # shape: (batch_size, num_experts)
             batched_batch_size_per_expert_routing = batched_batch_size_per_expert_routing.sum(dim=1)
             # shape: (num_experts,)
@@ -501,13 +504,21 @@ class MoERouter(nn.Module):
             # we first filter out the padding tokens (also includes masked tokens)
             if padding_mask is not None:
                 padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
-                valid_expert_indices = expert_indices.masked_select(padding_mask_expanded).view(-1, expert_indices.size(-1))
+                valid_expert_indices = expert_indices.masked_select(padding_mask_expanded).view(
+                    -1, expert_indices.size(-1)
+                )
                 padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
-                valid_scores = scores.masked_select(padding_mask_expanded).view(-1, self.num_experts)
-                valid_logits = logits.masked_select(padding_mask_expanded).view(-1, self.num_experts)
+                valid_scores = scores.masked_select(padding_mask_expanded).view(
+                    -1, self.num_experts
+                )
+                valid_logits = logits.masked_select(padding_mask_expanded).view(
+                    -1, self.num_experts
+                )
 
                 # (valid_tokens, num_experts)
-                batched_batch_size_per_expert = ops.batched_histc(valid_expert_indices, self.num_experts)
+                batched_batch_size_per_expert = ops.batched_histc(
+                    valid_expert_indices, self.num_experts
+                )
                 # (num_experts)
                 batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
             else:
@@ -519,7 +530,6 @@ class MoERouter(nn.Module):
 
             # prepare for custom metric
             if self.training:
-
                 # prepare unique experts metric.
                 unique_experts = torch.unique(valid_expert_indices.view(-1))
                 num_unique_experts = unique_experts.numel()
@@ -544,9 +554,13 @@ class MoERouter(nn.Module):
 
                     # we make some extra checks here that gating_function is softmax and that loss_div_factor is set (required for new loss to work)
                     if self.gating_function != MoERouterGatingFunction.softmax:
-                        raise NotImplementedError("load balancing loss currently only supported for softmax gating function")
+                        raise NotImplementedError(
+                            "load balancing loss currently only supported for softmax gating function"
+                        )
                     if loss_div_factor is None:
-                        raise ValueError("loss_div_factor must be set when using load balancing loss")
+                        raise ValueError(
+                            "loss_div_factor must be set when using load balancing loss"
+                        )
 
                     # Make sure scores are normalized, otherwise load balancing loss doesn't work well. (this SHOULD NOT run)
                     if self.gating_function == MoERouterGatingFunction.sigmoid:
@@ -559,7 +573,7 @@ class MoERouter(nn.Module):
                         expert_scores=valid_scores,
                         # batch_size_per_expert=batch_size_per_expert_routing,
                         batch_size_per_expert=batch_size_per_expert,
-                        batched_batch_size_per_expert=batched_batch_size_per_expert, # we don't even use this in local_batch granularity, but we pass it anyway
+                        batched_batch_size_per_expert=batched_batch_size_per_expert,  # we don't even use this in local_batch granularity, but we pass it anyway
                         granularity=self.lb_loss_granularity,
                         loss_div_factor=loss_div_factor,
                         tp_mesh=self.tp_mesh,

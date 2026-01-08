@@ -12,18 +12,17 @@ router_paths = [
     ("openbooqa", "task-openbookqa_rc_validation_0shot-router.jsonl"),
     ("piqa", "task-piqa_rc_validation_0shot-router.jsonl"),
     ("socialiqa", "task-socialiqa_rc_validation_0shot-router.jsonl"),
-    ("winogrande", "task-winogrande_rc_validation_0shot-router.jsonl")
+    ("winogrande", "task-winogrande_rc_validation_0shot-router.jsonl"),
 ]
 
 # load the sample file and print the first line
 import json
-import torch
 
+import torch
 
 k_range = [4, 8, 16, 32, 64]
 
 for k in k_range:
-
     router_dict = defaultdict(set)
     for name, router_path in router_paths:
         # load router probabilities
@@ -32,12 +31,9 @@ for k in k_range:
             logits_json = json.loads(logits)
             logits_values = logits_json["avg_router_probabilities"]
 
-            logits_tensor = torch.tensor(logits_values) # layers x experts
+            logits_tensor = torch.tensor(logits_values)  # layers x experts
 
-            topk = torch.topk(
-                logits_tensor,
-                k
-            ).indices
+            topk = torch.topk(logits_tensor, k).indices
 
             # create a unique id for each expert per layer
             for layer_idx in range(topk.shape[0]):
@@ -48,8 +44,9 @@ for k in k_range:
             router_dict[name] = set(topk_1d)
 
     # create a overlap matrix and plot it
-    import numpy as np
     import matplotlib.pyplot as plt
+    import numpy as np
+
     overlap_matrix = np.zeros((len(router_paths), len(router_paths)))
     for i, (name_i, _) in enumerate(router_paths):
         for j, (name_j, _) in enumerate(router_paths):
@@ -59,11 +56,11 @@ for k in k_range:
                 overlap_matrix[j, i] = overlap
     plt.figure(figsize=(10, 8))
     # save the overlap matrix as a heatmap
-    plt.imshow(overlap_matrix, cmap='hot', interpolation='nearest')
+    plt.imshow(overlap_matrix, cmap="hot", interpolation="nearest")
     plt.colorbar()
     plt.xticks(range(len(router_paths)), [name for name, _ in router_paths], rotation=45)
     plt.yticks(range(len(router_paths)), [name for name, _ in router_paths])
-    plt.title(f'Twolevel Expert Overlap Matrix (Top-{k})')
+    plt.title(f"Twolevel Expert Overlap Matrix (Top-{k})")
     plt.tight_layout()
     plt.savefig(f"{out_dir}/Twolevel_expert_overlap_top{k}.png")
     plt.close()
@@ -78,10 +75,3 @@ for k in k_range:
             count += 1
     avg_overlap = total_overlap / count
     print(f"Average Twolevel expert overlap for top-{k}: {avg_overlap}")
-
-
-
-
-
-
-

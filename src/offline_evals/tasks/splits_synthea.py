@@ -6,8 +6,8 @@ from typing import Optional
 
 from oe_eval.tasks.base_task import MultipleChoiceTask
 from oe_eval.tasks.utils import make_cloze_prompt, make_mcq_prompt
-
 from oe_eval.utils import load_jsonl
+
 
 class Synthea(MultipleChoiceTask):
     VERSION = 0
@@ -93,22 +93,26 @@ class Synthea(MultipleChoiceTask):
     def doc_to_text(self, doc):
         return doc["query"]
 
+
 class Synthea_RC_Train(Synthea):
     pass
+
 
 class Synthea_RC_Validation(Synthea):
     pass
 
+
 class Synthea_RC_Test(Synthea):
     pass
+
 
 class Synthea_RC_Train_0shot(Synthea):
     pass
 
+
 class Synthea_RC_Validation_0shot(Synthea):
     pass
 
+
 class Synthea_RC_Test_0shot(Synthea):
     pass
-
-

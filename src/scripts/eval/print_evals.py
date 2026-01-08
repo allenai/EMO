@@ -238,7 +238,6 @@ def avg_tasks(results, label, task_names):
     """Average scores across multiple tasks into a single metric."""
     for model_name in results:
         if np.all([task_name in results[model_name] for task_name in task_names]):
-
             results[model_name][label] = np.mean(
                 [results[model_name][task_name] for task_name in task_names]
             )
@@ -387,12 +386,16 @@ def main(args):
         mmlu_tasks_mc = [
             task_name
             for task_name in task_names
-            if task_name.startswith("mmlu_") and not task_name.startswith("mmlu_pro_") and task_name.endswith(":mc_test")
+            if task_name.startswith("mmlu_")
+            and not task_name.startswith("mmlu_pro_")
+            and task_name.endswith(":mc_test")
         ]
         mmlu_tasks_rc = [
             task_name
             for task_name in task_names
-            if task_name.startswith("mmlu_") and not task_name.startswith("mmlu_pro_") and task_name.endswith(":rc_test")
+            if task_name.startswith("mmlu_")
+            and not task_name.startswith("mmlu_pro_")
+            and task_name.endswith(":rc_test")
         ]
 
         assert len(mmlu_tasks_rc) == len(mmlu_tasks_mc)
@@ -401,7 +404,6 @@ def main(args):
             results = avg_tasks(results, "mmlu:rc", mmlu_tasks_rc)
 
         breakpoint()
-
 
     if args.avg_mmlu_cat or args.avg_mmlu_subcat:
         mmlu_tasks = [

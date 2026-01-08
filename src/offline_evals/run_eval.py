@@ -11,9 +11,9 @@ import tempfile
 import time
 from collections import defaultdict
 from typing import Optional
+
 import torch
 import torch.nn.functional as F
-
 from lm_eval.api.model import TemplateLM
 from oe_eval.components.instances import RequestInstance
 from oe_eval.default_configs import MODEL_DEFAULTS, TASK_DEFAULTS
@@ -34,7 +34,7 @@ from oe_eval.utilities.hf_hub_writing import upload_to_hf
 from oe_eval.utilities.model_results_collation import collate_results
 from oe_eval.utilities.remote_utils import cache_s3_folder, upload_directory
 from oe_eval.utilities.wandb_writing import wandb_log_metrics
-from oe_eval.utils import (
+from oe_eval.utils import (  # task_file_name,
     get_dict_with_defaults,
     get_recorded_inputs,
     hash_dict,
@@ -46,12 +46,13 @@ from oe_eval.utils import (
     save_json,
     save_jsonl,
     show_model_input,
-    # task_file_name,
 )
+
 
 def task_file_name(output_dir: str, task_idx: int, task_name: str, file_name: str) -> str:
     task_name_safe = task_name.replace(":", "_")
     return os.path.join(output_dir, f"task-{task_name_safe}-{file_name}")
+
 
 # Import utility functions for internal evals
 try:
@@ -206,12 +207,12 @@ _parser.add_argument(
 _parser.add_argument(
     "--activation-file",
     type=str,
-    help="Path to the saved activation file to use to prune. Only used if do_prune is set."
+    help="Path to the saved activation file to use to prune. Only used if do_prune is set.",
 )
 _parser.add_argument(
     "--prune-keep-k",
     type=int,
-    help="Number of experts to keep per MoE layer when pruning. Only used if do_prune is set."
+    help="Number of experts to keep per MoE layer when pruning. Only used if do_prune is set.",
 )
 
 ## Add internal Ai2 run_eval arguments:
@@ -372,9 +373,16 @@ def process_eval_args(args_dict: dict) -> dict:
 
     return eval_config
 
-def make_modified_forward(original_forward, num_experts, top_k, norm_topk_prob, experts, gate, experts_to_keep):
-    def modified_forward(self, hidden_states: torch.Tensor, btm_weight: Optional[torch.Tensor] = None,
-                        btm_topk: Optional[int] = None) -> torch.Tensor:
+
+def make_modified_forward(
+    original_forward, num_experts, top_k, norm_topk_prob, experts, gate, experts_to_keep
+):
+    def modified_forward(
+        self,
+        hidden_states: torch.Tensor,
+        btm_weight: Optional[torch.Tensor] = None,
+        btm_topk: Optional[int] = None,
+    ) -> torch.Tensor:
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         hidden_states = hidden_states.view(-1, hidden_dim)
         router_logits = gate(hidden_states)
@@ -385,7 +393,7 @@ def make_modified_forward(original_forward, num_experts, top_k, norm_topk_prob, 
         mask = torch.zeros(self.num_experts, dtype=torch.bool, device=router_logits.device)
         mask[experts_to_keep] = True
 
-        router_logits = router_logits.masked_fill(~mask.unsqueeze(0), float('-inf'))
+        router_logits = router_logits.masked_fill(~mask.unsqueeze(0), float("-inf"))
 
         routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
         routing_weights, selected_experts = torch.topk(routing_weights, top_k, dim=-1)
@@ -395,10 +403,14 @@ def make_modified_forward(original_forward, num_experts, top_k, norm_topk_prob, 
         routing_weights = routing_weights.to(hidden_states.dtype)
 
         final_hidden_states = torch.zeros(
-            (batch_size * sequence_length, hidden_dim), dtype=hidden_states.dtype, device=hidden_states.device
+            (batch_size * sequence_length, hidden_dim),
+            dtype=hidden_states.dtype,
+            device=hidden_states.device,
         )
 
-        expert_mask = torch.nn.functional.one_hot(selected_experts, num_classes=num_experts).permute(2, 1, 0)
+        expert_mask = torch.nn.functional.one_hot(
+            selected_experts, num_classes=num_experts
+        ).permute(2, 1, 0)
 
         for expert_idx in range(num_experts):
             expert_layer = experts[expert_idx]
@@ -410,7 +422,9 @@ def make_modified_forward(original_forward, num_experts, top_k, norm_topk_prob, 
             final_hidden_states.index_add_(0, top_x, current_hidden_states.to(hidden_states.dtype))
         final_hidden_states = final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
         return final_hidden_states, router_logits
+
     return modified_forward
+
 
 def limit_expert_usage(model, activations, prune_keep_k):
     """
@@ -422,12 +436,15 @@ def limit_expert_usage(model, activations, prune_keep_k):
     """
     # Find all MoE layers in the model
     for layer_idx, layer in enumerate(model.model.model.layers):
-        if hasattr(layer, 'mlp') and hasattr(layer.mlp, 'gate'):
+        if hasattr(layer, "mlp") and hasattr(layer.mlp, "gate"):
             # Store original forward method
             original_forward = layer.mlp.forward
 
             layer_expert_activations = activations[layer_idx]
-            experts_to_keep = torch.topk(torch.tensor(layer_expert_activations), min(prune_keep_k, len(layer_expert_activations))).indices.tolist()
+            experts_to_keep = torch.topk(
+                torch.tensor(layer_expert_activations),
+                min(prune_keep_k, len(layer_expert_activations)),
+            ).indices.tolist()
 
             layer.mlp.forward = make_modified_forward(
                 original_forward,
@@ -436,8 +453,10 @@ def limit_expert_usage(model, activations, prune_keep_k):
                 layer.mlp.norm_topk_prob,
                 layer.mlp.experts,
                 layer.mlp.gate,
-                experts_to_keep
-            ).__get__(layer.mlp, layer.mlp.__class__)  # bind correctly to the instance
+                experts_to_keep,
+            ).__get__(
+                layer.mlp, layer.mlp.__class__
+            )  # bind correctly to the instance
             print(f"Modified MoE gate in layer {layer_idx}")
 
 
@@ -511,7 +530,6 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
     else:
         raise ValueError(f"Model type {model_type} not recognized")
 
-
     tokenizer = "allenai/dolma2-tokenizer"
 
     # if "olmo" in pretrained or "OLMo" in pretrained:
@@ -525,7 +543,7 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
     )
     if pruning_configs["do_prune"]:
         # load the activation file
-        with open(pruning_configs["activation_file"], 'r') as f:
+        with open(pruning_configs["activation_file"], "r") as f:
             line = f.readline()
             activations = json.loads(line)["avg_router_probabilities"]
         limit_expert_usage(model, activations, pruning_configs["prune_keep_k"])
@@ -710,7 +728,9 @@ def run_eval(args_dict: dict):
             eval_model = load_model(model_load_config)
         else:
             if args_dict["do_prune"]:
-                raise NotImplementedError("Model pruning with multiprocessing is not implemented yet.")
+                raise NotImplementedError(
+                    "Model pruning with multiprocessing is not implemented yet."
+                )
             assert (
                 model_config["model_type"] != "litellm"
             ), f"litellm does not support multiprocessing. Got {workers} workers."
