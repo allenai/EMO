@@ -866,6 +866,11 @@ def _parse_args():
         help="""Do a dry run where the launch config is printed.""",
     )
     parser.add_argument(
+        "--no-follow",
+        action="store_true",
+        help="""Don't follow the experiment logs. Launch the job and return immediately.""",
+    )
+    parser.add_argument(
         "--env",
         type=str,
         nargs="*",
@@ -939,7 +944,7 @@ def main():
     if opts.dry_run:
         rich.print(config)
     else:
-        config.launch(torchrun=opts.torchrun, follow=True)
+        config.launch(torchrun=opts.torchrun, follow=not opts.no_follow)
 
 
 if __name__ == "__main__":

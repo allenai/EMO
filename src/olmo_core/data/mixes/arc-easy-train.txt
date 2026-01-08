@@ -1,0 +1,1 @@
+arc_easy,phdbrainstorm/data/finetune/arc_easy:mc_train/tokenized/part-0-00000.npy
