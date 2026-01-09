@@ -359,7 +359,7 @@ class TransformerConfig(Config):
         num_partially_frozen_params = 0
 
         partial_freeze_params_mask_fn_kwargs = self.partial_freeze_params_mask_fn_kwargs or {}
-        if self.partial_freeze_params_mask_fn_name is not None:
+        if self.partial_freeze_params_mask_fn_name is not None and PARTIAL_FREEZE_FN_REGISTRY.get(self.partial_freeze_params_mask_fn_name, None) is not None:
             partial_freeze_params_mask_fn = PARTIAL_FREEZE_FN_REGISTRY[
                 self.partial_freeze_params_mask_fn_name
             ]
