@@ -1,0 +1,168 @@
+#!/bin/bash
+
+# Configuration
+MODELS = (
+    "/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moe_1b7b_128experts_olmoe-mix_130B_1103/step30995-hf"
+)
+
+BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
+BATCH_SIZE=16
+CLUSTER="ai2/jupiter-cirrascale-2"
+model_type=hf
+
+
+# Define grouped tasks
+TASK_GROUPS_LIST=(
+  ######### TEST-only ##########
+  # MC9 tasks
+#  "arc_easy|arc_easy:rc_test::olmes"
+#  "arc_challenge|arc_challenge:rc_test::olmes"
+#  "boolq|boolq:rc_test::olmes"
+#  "csqa|csqa:rc_test::olmes"
+#  "hellaswag|hellaswag:rc_test::olmes"
+#  "openbookqa|openbookqa:rc_test::olmes"
+#  "piqa|piqa:rc_test::olmes"
+#  "socialiqa|socialiqa:rc_test::olmes"
+#  "winogrande|winogrande:rc_test::olmes"
+#  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
+#  "synthea|synthea:rc_test_0shot::olmes"
+#   "coqa|coqa:test_0shot::olmes"
+#  "squad|squad:test_0shot::olmes"
+
+
+#  "coqa|coqa:train_0shot::olmes"
+
+
+#   MMLU
+#  "mmlu_rc_test|mmlu:rc_test::olmes"
+
+#   Gen5 tasks
+#  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes drop::olmes"
+
+#   math
+  "gsm8k_test|gsm8k:perplexity_test::olmes"
+  "gsm8k::olmes"
+  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
+#   "mmlu:mc::olmes"
+#   "mmlu_pro:mc::olmes"
+  "minerva_math_algebra::olmes"
+#   "minerva_math_counting_and_probability::olmes"
+#   "minerva_math_geometry::olmes"
+#   "minerva_math_intermediate_algebra::olmes"
+#   "minerva_math_number_theory::olmes"
+#   "minerva_math_prealgebra::olmes"
+#   "minerva_math_precalculus::olmes"
+  "minerva_math_algebra:bpb::olmes"
+)
+
+# Function to get checkpoint name (matching the original script)
+function get_checkpoint_name {
+    local path=$1
+    local split_path=${path#*OLMo2-7B-}
+    local modified_path=${split_path//\//_}
+    modified_path=$(echo $modified_path | sed 's/^_//;s/_$//')
+    echo "${modified_path}"
+}
+
+echo "Launching beaker evaluations for ${#MODELS[@]} models and ${#TASK_GROUPS[@]} task groups..."
+echo "Models: ${MODELS[@]}"
+echo "Base output directory: $BASE_OUTPUT_DIR"
+echo "Cluster: $CLUSTER"
+echo ""
+
+# Launch evaluation for each model and task combination
+for MODEL_NAME in "${MODELS[@]}"; do
+    echo "Processing model: $MODEL_NAME"
+
+    # For setting the output_dir (matching original script logic)
+#    if [[ $MODEL_NAME == "/"* ]]; then
+#        # internal model
+#        model=$(get_checkpoint_name $MODEL_NAME)
+#    else
+#        # HF model
+#        model=$(echo $MODEL_NAME | cut -d'/' -f2)
+#    fi
+    model=$(get_checkpoint_name $MODEL_NAME)
+
+    echo "Model name for output dir: $model"
+
+    OUTPUT_DIR="${BASE_OUTPUT_DIR}/$model"
+
+    for entry in "${TASK_GROUPS_LIST[@]}"; do
+        GROUP_NAME="${entry%%|*}"                # text before '|'
+        TASK="${entry#*|}"            # text after '|'
+
+        # Batch size adjustment (matching original script)
+        if [[ $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* || $TASK == *"boolq"* || $TASK == *"drop"* ]]; then
+            batch_size=$((BATCH_SIZE / 4))
+        else
+            batch_size=$BATCH_SIZE
+        fi
+
+        # adjust number of gpus requested if its mmlu, agi_eval, bbh, gsm8k, minerva, codex, mbpp
+        if [[ $TASK == *mmlu* || $TASK == *agi_eval* || $TASK == *bbh* || $TASK == *gsm8k* || $TASK == *minerva_math_* || $TASK == *codex* || $TASK == *mbpp* || $TASK == *synthea* ]]; then
+            gpus=4
+        else
+            gpus=1
+        fi
+
+        # if the model is a 35b model, further reduce batch size by half
+        if [[ $MODEL_NAME == *"1b35b"* ]]; then
+            batch_size=$((batch_size / 4))
+            gpus=$((gpus * 2))
+        fi
+
+        # Create a shorter, valid job name
+        # Remove invalid characters and truncate long names
+        safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g')
+        safe_group_name=$(echo $GROUP_NAME | sed 's/[^a-zA-Z0-9_-]//g')
+        job_name="eval-${safe_model_name}-${safe_group_name}"
+
+        echo "  Model name: $model"
+        echo "  Output dir: $OUTPUT_DIR"
+        echo "  GPUs: $gpus"
+        echo "  Batch size: $batch_size"
+        echo "  Job name: $job_name"
+
+#        PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+#                --model "${MODEL_DIR}/${MODEL_NAME}" \
+#                --model-type hf \
+#                --task $TASK \
+#                --output-dir $OUTPUT_DIR \
+#                --batch-size $batch_size \
+#                --gpus $gpus \
+
+        gantry run \
+            --name $job_name \
+            --weka oe-training-default:/weka/oe-training-default \
+            --install "pip install -e \".[all]\"" \
+            --budget ai2/oceo \
+            --workspace ai2/flex2 \
+            --cluster $CLUSTER \
+            --priority urgent \
+            --allow-dirty \
+            --gpus $gpus \
+            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+            -- \
+            bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+                --model "${MODEL_DIR}/${MODEL_NAME}" \
+                --model-type hf \
+                --task $TASK \
+                --remote-output-dir $OUTPUT_DIR \
+                --batch-size $batch_size \
+                --gpus $gpus \
+                "
+
+        echo "Launched evaluation for model: $model, group: $GROUP_NAME"
+        echo "----------------------------------------"
+    done
+
+    echo "Completed all groups for model: $model"
+    echo "========================================"
+done
+
+echo "All beaker evaluations have been launched!"
+echo "Total jobs: $((${#MODELS[@]} * ${#TASK_GROUPS_LIST[@]}))"
+echo "Check the beaker dashboard for job status."
