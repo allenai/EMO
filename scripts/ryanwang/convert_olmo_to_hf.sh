@@ -125,14 +125,14 @@ FINETUNE_TASKS=(
 #    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step6492"
 #    "task-squad_validation_0shot${postfix}/finetune-task-squad_train_0shot/step8118"
 
-    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step0"
-    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step4"
-    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step8"
-    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step12"
-    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step16"
-    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step20"
-    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step21"
-#    "task-mmlu_anatomy_rc_validation${postfix}/finetune-task-mmlu_anatomy_rc_train/step0"
+#    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step0"
+#    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step4"
+#    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step8"
+#    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step12"
+#    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step16"
+#    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step20"
+#    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step21"
+    "task-mmlu_anatomy_rc_validation${postfix}/finetune-task-mmlu_anatomy_rc_train/step0"
 #    "task-mmlu_anatomy_rc_validation${postfix}/finetune-task-mmlu_anatomy_rc_train/step6"
 #    "task-mmlu_anatomy_rc_validation${postfix}/finetune-task-mmlu_anatomy_rc_train/step12"
 #    "task-mmlu_anatomy_rc_validation${postfix}/finetune-task-mmlu_anatomy_rc_train/step18"
@@ -547,7 +547,6 @@ for BASE in "${PARENT_MODELS[@]}"; do
     --allow-dirty \
     --cluster "ai2/jupiter-cirrascale-2" \
     --cpus 16 \
-    --gpus 0 \
     --priority urgent \
     --env-secret HF_TOKEN=RYAN_HF_TOKEN \
     --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
