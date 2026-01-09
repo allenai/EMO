@@ -216,6 +216,8 @@ for MODEL_PATH in "${MODELS[@]}"; do
                 --GPUS "$gpus"
             "
 
+        sleep 25 # to avoid overwhelming huggingface with too many requests
+
         echo "Launched evaluation for model: $model, group: $GROUP_NAME"
         echo "----------------------------------------"
     done
