@@ -124,17 +124,17 @@ TASK_STEPS = {
     # "coqa:train_0shot": [0, 28, 56, 84, 112, 144],
     # "squad:train_0shot": [0, 1623, 3246, 4869, 6492, 8118],
 
-    "mmlu_abstract_algebra:rc_test": [0, 4, 8, 12, 16, 21],
+    # "mmlu_abstract_algebra:rc_test": [0, 4, 8, 12, 16, 21],
     "mmlu_anatomy:rc_test": [0, 6, 12, 18, 24, 30],
     "mmlu_astronomy:rc_test": [0, 6, 12, 18, 24, 33],
     "mmlu_business_ethics:rc_test": [0, 4, 8, 12, 16, 21],
-    # "mmlu_clinical_knowledge:rc_test": [0, 11, 22, 33, 44, 57],
-    # "mmlu_college_biology:rc_test": [0, 6, 12, 18, 24, 30],
-    # "mmlu_college_chemistry:rc_test": [0, 4, 8, 12, 16, 21],
-    # "mmlu_college_computer_science:rc_test": [0, 4, 8, 12, 16, 21],
-    # "mmlu_college_mathematics:rc_test": [0, 4, 8, 12, 16, 21],
-    # "mmlu_college_medicine:rc_test": [0, 7, 14, 21, 28, 36],
-    # "mmlu_college_physics:rc_test": [0, 4, 8, 12, 16, 21],
+    "mmlu_clinical_knowledge:rc_test": [0, 11, 22, 33, 44, 57],
+    "mmlu_college_biology:rc_test": [0, 6, 12, 18, 24, 30],
+    "mmlu_college_chemistry:rc_test": [0, 4, 8, 12, 16, 21],
+    "mmlu_college_computer_science:rc_test": [0, 4, 8, 12, 16, 21],
+    "mmlu_college_mathematics:rc_test": [0, 4, 8, 12, 16, 21],
+    "mmlu_college_medicine:rc_test": [0, 7, 14, 21, 28, 36],
+    "mmlu_college_physics:rc_test": [0, 4, 8, 12, 16, 21],
     # "mmlu_computer_security:rc_test": [0, 4, 8, 12, 16, 21],
     # "mmlu_conceptual_physics:rc_test": [0, 10, 20, 30, 40, 51],
     # "mmlu_econometrics:rc_test": [0, 4, 8, 12, 16, 20, 24],
@@ -212,46 +212,22 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "markersize": 9,  # Marker size
     },
     # {
-    #     "label": "moe train320 keepk128",
+    #     "label": "twolevelbatchlb train32/128 keepk32",
     #     "template": (
-    #         f"moe_1b35b_320experts_lb-1e-1_1214_step30995_"
-    #         "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
-    #     ),
-    #     "family": "moe",
-    #     "marker": "o",
-    #     "brightness": 0.8,
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
-    {
-        "label": "twolevelbatchlb train32/128 keepk32",
-        "template": (
-            f"{MAIN_MODEL}_"
-            "task-{task_core}{validation_suffix}_keepk32_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
-        ),
-        "family": "twolevelbatchlb train32/128",
-        "marker": "o",
-        "brightness": 1.0,
-        "linewidth": 2,
-        "markersize": 9,
-    },
-    # {
-    #     "label": "twolevelbatchlb train128/320 keepk128 poolsched",
-    #     "template": (
-    #         f"twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217_step30995_"
-    #         "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
+    #         f"{MAIN_MODEL}_"
+    #         "task-{task_core}{validation_suffix}_keepk32_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
     #     ),
     #     "family": "twolevelbatchlb train32/128",
     #     "marker": "o",
-    #     "brightness": 0.8,
+    #     "brightness": 1.0,
     #     "linewidth": 2,
     #     "markersize": 9,
     # },
     # {
-    #     "label": "twolevelbatchlb train32/320 keepk128",
+    #     "label": "twolevelbatchlb train32/320 keepk32",
     #     "template": (
     #         f"twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216_step30995_"
-    #         "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
+    #         "task-{task_core}{validation_suffix}_keepk32_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
     #     ),
     #     "family": "twolevelbatchlb train32/128",
     #     "marker": "o",
@@ -259,159 +235,39 @@ MODEL_RUNS: List[Dict[str, Any]] = [
     #     "linewidth": 2,
     #     "markersize": 9,
     # },
-    {
-        "label": "twolevelbatchlb train32/320 keepk32",
-        "template": (
-            f"twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216_step30995_"
-            "task-{task_core}{validation_suffix}_keepk32_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
-        ),
-        "family": "twolevelbatchlb train32/128",
-        "marker": "o",
-        "brightness": 0.5,
-        "linewidth": 2,
-        "markersize": 9,
-    },
     # {
-    #     "label": "twolevelbatchlb train128/320 keepk128",
+    #     "label": "mutualinfo keepk32",
     #     "template": (
-    #         f"twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219_step30995_"
-    #         "task-{task_core}{validation_suffix}_keepk128_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
-    #     ),
-    #     "family": "twolevelbatchlb train32/128",
-    #     "marker": "o",
-    #     "brightness": 0.2,
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
-    # {
-    #     "label": "twolevelbatchlb train32/128 keepk8",
-    #     "template": (
-    #         f"{MAIN_MODEL}_"
-    #         "task-{task_core}_rc_validation_keepk8_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-    #     ),
-    #     "family": "twolevelbatchlb train32/128",
-    #     "marker": "o",
-    #     "brightness": 0.7,
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
-    # {
-    #     "label": "twolevelbatchlb train32/128 keepk32 lr high",
-    #     "template": (
-    #         f"twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203_step30995_"
+    #         f"mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205_step30995_"
     #         "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
     #     ),
-    #     "family": "twolevelbatchlb train32/128 lr high",
+    #     "family": "mutualinfo",
     #     "marker": "o",
     #     "brightness": 1.0,
     #     "linewidth": 2,
     #     "markersize": 9,
     # },
     # {
-    #     "label": "twolevelbatchlb train32/128 keepk8 lr high",
+    #     "label": "dense finetuned",
     #     "template": (
-    #         f"twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203_step30995_"
-    #         "task-{task_core}_rc_validation_keepk8_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
+    #         "dense_1b_olmoe-mix_prenorm_noqknorm_1123_step30995_newdefault_{lr_suffix}_"
+    #         "finetune-task-{task_core}{task_suffix}_step{step}-hf"
     #     ),
-    #     "family": "twolevelbatchlb train32/128 lr high",
-    #     "marker": "o",
-    #     "brightness": 0.7,
+    #     "family": "dense",
+    #     "marker": "v",  # Triangle down for dense
+    #     "brightness": 1.0,
     #     "linewidth": 2,
     #     "markersize": 9,
     # },
     # {
-    #         "label": "twolevelbatchlb train8/64 keepk32",
-    #         "template": (
-    #             f"twolevelbatchlb-8_1b7b_stability_1207_step30995_"
-    #             "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-    #         ),
-    #         "family": "twolevelbatchlb train8/64",
-    #         "marker": "o",
-    #         "brightness": 1.0,
-    #         "linewidth": 2,
-    #         "markersize": 9,
-    #     },
-    #     {
-    #         "label": "twolevelbatchlb train8/64 keepk8",
-    #         "template": (
-    #             f"twolevelbatchlb-8_1b7b_stability_1207_step30995_"
-    #             "task-{task_core}_rc_validation_keepk8_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-    #         ),
-    #         "family": "twolevelbatchlb train8/64",
-    #         "marker": "o",
-    #         "brightness": 0.7,
-    #         "linewidth": 2,
-    #         "markersize": 9,
-    #     },
-    {
-        "label": "mutualinfo keepk32",
-        "template": (
-            f"mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205_step30995_"
-            "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-        ),
-        "family": "mutualinfo",
-        "marker": "o",
-        "brightness": 1.0,
-        "linewidth": 2,
-        "markersize": 9,
-    },
-    #     {
-    #         "label": "mutualinfo keepk8",
-    #         "template": (
-    #             f"mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205_step30995_"
-    #             "task-{task_core}_rc_validation_keepk8_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-    #         ),
-    #         "family": "mutualinfo",
-    #         "marker": "o",
-    #         "brightness": 0.7,
-    #         "linewidth": 2,
-    #         "markersize": 9,
-    #     },
-    {
-        "label": "dense finetuned",
-        "template": (
-            "dense_1b_olmoe-mix_prenorm_noqknorm_1123_step30995_newdefault_{lr_suffix}_"
-            "finetune-task-{task_core}{task_suffix}_step{step}-hf"
-        ),
-        "family": "dense",
-        "marker": "v",  # Triangle down for dense
-        "brightness": 1.0,
-        "linewidth": 2,
-        "markersize": 9,
-    },
-    {
-        "label": "moe 1b4b",
-        "template": (
-            "moe_1b4b_32experts_1224_step30995_newdefault_{lr_suffix}_"
-            "finetune-task-{task_core}{task_suffix}_step{step}-hf"
-        ),
-        "family": "moe",
-        "marker": "v",  # Triangle down for dense
-        "brightness": 0.7,
-        "linewidth": 2,
-        "markersize": 9,
-    },
-    # {
-    #     "label": "twolevelbatchlb keepk32 old",
+    #     "label": "moe 1b4b",
     #     "template": (
-    #         f"twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115_step30995_"
-    #         "task-{task_core}_rc_validation_keepk32_finetune-task-{task_core}_rc_train_step{step}-hf"
+    #         "moe_1b4b_32experts_1224_step30995_newdefault_{lr_suffix}_"
+    #         "finetune-task-{task_core}{task_suffix}_step{step}-hf"
     #     ),
     #     "family": "moe",
-    #     "marker": "o",
-    #     "brightness": 1.0,
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
-    # {
-    #     "label": "twolevelsampling keepk32",
-    #     "template": (
-    #         f"twolevelsamplingnolb-32_1b14b_stability_1127_step30995_"
-    #         "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-    #     ),
-    #     "family": "twolevelsamplingnolb",
-    #     "marker": "o",
-    #     "brightness": 1.0,
+    #     "marker": "v",  # Triangle down for dense
+    #     "brightness": 0.7,
     #     "linewidth": 2,
     #     "markersize": 9,
     # },
@@ -434,13 +290,6 @@ BASELINE_RUNS: List[Dict[str, Any]] = [
         "linestyle": "--",
         "linewidth": 1.2,
     },
-    # {
-    #     "label": "twolevelbatchlb full old",
-    #     "template": "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115_step30995-hf",
-    #     "family": "moe",
-    #     "linestyle": "--",
-    #     "linewidth": 1.2,
-    # },
     {
         "label": "dense full",
         "template": "dense_1b_olmoe-mix_prenorm_noqknorm_1123_step30995-hf",
@@ -448,13 +297,6 @@ BASELINE_RUNS: List[Dict[str, Any]] = [
         "linestyle": "--",
         "linewidth": 1.2,
     },
-    # {
-    #         "label": "twolevelsampling full",
-    #         "template": "twolevelsamplingnolb-32_1b14b_stability_1127_step30995-hf",
-    #         "family": "twolevelsamplingnolb",
-    #         "linestyle": "--",
-    #         "linewidth": 1.2,
-    #     },
 ]
 
 # ============================================================================
