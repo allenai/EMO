@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-from transformers import Olmo2Config, PretrainedConfig, Olmo2NoQKNormPrenormConfig
-=======
 from transformers import Olmo2Config, Olmo2NoQKNormPrenormConfig, PretrainedConfig
->>>>>>> main
 
 from olmo_core.doc_utils import beta_feature
 from olmo_core.nn.attention import Attention
@@ -10,13 +6,9 @@ from olmo_core.nn.moe.mlp import DroplessMoEMLP, MoEMLP
 from olmo_core.nn.rope import RoPEScalingConfig
 from olmo_core.nn.transformer.block import (
     MoEReorderedNormTransformerBlock,
-<<<<<<< HEAD
-    ReorderedNormTransformerBlock, MoETransformerBlock, TransformerBlock,
-=======
     MoETransformerBlock,
     ReorderedNormTransformerBlock,
     TransformerBlock,
->>>>>>> main
 )
 from olmo_core.nn.transformer.model import (
     MoETransformer,
