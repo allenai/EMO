@@ -18,7 +18,7 @@ BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
 model_names=(
-   "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121"
+#   "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121"
 #   "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203"
 
 #   "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205"
@@ -39,7 +39,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-4e-5_bs-128"
+variation="newdefault_lr-4e-5_bs-8"
 
 experiment_tag="pruned_finetuning"
 #experiment_tag="pruned_finetuning_ablate"
@@ -54,6 +54,9 @@ elif [ "$variation" == "newdefault_lr-4e-5" ]; then
 elif [ "$variation" == "newdefault_lr-4e-5_bs-128" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
     variation_flags="--train_module.optim.lr=4e-5 --global_batch_size=128"
+elif [ "$variation" == "newdefault_lr-4e-5_bs-8" ]; then
+    # reinitialize optim and use masked finetuning (should be checked)
+    variation_flags="--train_module.optim.lr=4e-5 --global_batch_size=8"
 elif [ "$variation" == "newdefault_lr-4e-4" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
     variation_flags="--train_module.optim.lr=4e-4 --global_batch_size=32"
@@ -83,8 +86,10 @@ task_configs=(
 #  "task-gsm8k_generation_validation_0shot_keepk32|gsm8k_generation:train_0shot::olmes"
 
 #  "task-gsm8k_generation_validation_0shot_keepk128|gsm8k_generation:train_0shot::olmes"
-  "task-coqa_validation_0shot_keepk32|coqa:train_0shot::olmes"
+#  "task-coqa_validation_0shot_keepk32|coqa:train_0shot::olmes"
 #  "task-squad_validation_0shot_keepk32|squad:train_0shot::olmes"
+
+#  "task-mmlu_abstract_algebra_rc_validation_keepk
 
 #
 #  "task-arc_easy_rc_validation_keepk8|arc_easy:rc_train::olmes"

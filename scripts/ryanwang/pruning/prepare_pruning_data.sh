@@ -204,6 +204,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
             --cluster $CLUSTER \
             --priority urgent \
             --gpus $gpus \
+            --allow-dirty \
             --env-secret HF_TOKEN=RYAN_HF_TOKEN \
             --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
             --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
