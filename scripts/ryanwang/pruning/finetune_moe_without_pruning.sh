@@ -24,7 +24,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-4e-5_bs-128"
+variation="newdefault_lr-4e-5_bs-8"
 
 #expertiment_tag="finetuning"
 expertiment_tag="finetune_ablate"
@@ -51,6 +51,8 @@ elif [ "$variation" == "newdefault_lr-4e-5_batchsize-16" ]; then
 elif [ "$variation" == "newdefault_lr-4e-5_bs-128" ]; then
     # reinitialize optim and use masked finetuning (should be checked) and batch size of 128
     variation_flags="--train_module.optim.lr=4e-5 --global_batch_size=128"
+elif [ "$variation" == "newdefault_lr-4e-5_bs-8" ]; then
+    variation_flags="--train_module.optim.lr=4e-5 --global_batch_size=8"
 elif [ "$variation" == "newdefault_lr-4e-6" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
     variation_flags="--train_module.optim.lr=4e-6 --global_batch_size=32"
@@ -98,6 +100,65 @@ train_task_names=(
 #  "winogrande:rc_train_0shot::olmes"
 #
 ##   MMLU
+  "mmlu_abstract_algebra:rc_train::olmes"
+  "mmlu_anatomy:rc_train::olmes"
+  "mmlu_astronomy:rc_train::olmes"
+  "mmlu_business_ethics:rc_train::olmes"
+  "mmlu_clinical_knowledge:rc_train::olmes"
+  "mmlu_college_biology:rc_train::olmes"
+  "mmlu_college_chemistry:rc_train::olmes"
+  "mmlu_college_computer_science:rc_train::olmes"
+  "mmlu_college_mathematics:rc_train::olmes"
+  "mmlu_college_medicine:rc_train::olmes"
+  "mmlu_college_physics:rc_train::olmes"
+  "mmlu_computer_security:rc_train::olmes"
+  "mmlu_conceptual_physics:rc_train::olmes"
+  "mmlu_econometrics:rc_train::olmes"
+  "mmlu_electrical_engineering:rc_train::olmes"
+  "mmlu_elementary_mathematics:rc_train::olmes"
+  "mmlu_formal_logic:rc_train::olmes"
+  "mmlu_global_facts:rc_train::olmes"
+  "mmlu_high_school_biology:rc_train::olmes"
+  "mmlu_high_school_chemistry:rc_train::olmes"
+  "mmlu_high_school_computer_science:rc_train::olmes"
+  "mmlu_high_school_european_history:rc_train::olmes"
+  "mmlu_high_school_geography:rc_train::olmes"
+  "mmlu_high_school_government_and_politics:rc_train::olmes"
+  "mmlu_high_school_macroeconomics:rc_train::olmes"
+  "mmlu_high_school_mathematics:rc_train::olmes"
+  "mmlu_high_school_microeconomics:rc_train::olmes"
+  "mmlu_high_school_physics:rc_train::olmes"
+  "mmlu_high_school_psychology:rc_train::olmes"
+  "mmlu_high_school_statistics:rc_train::olmes"
+  "mmlu_high_school_us_history:rc_train::olmes"
+  "mmlu_high_school_world_history:rc_train::olmes"
+  "mmlu_human_aging:rc_train::olmes"
+  "mmlu_human_sexuality:rc_train::olmes"
+  "mmlu_international_law:rc_train::olmes"
+  "mmlu_jurisprudence:rc_train::olmes"
+  "mmlu_logical_fallacies:rc_train::olmes"
+  "mmlu_machine_learning:rc_train::olmes"
+  "mmlu_management:rc_train::olmes"
+  "mmlu_marketing:rc_train::olmes"
+  "mmlu_medical_genetics:rc_train::olmes"
+  "mmlu_miscellaneous:rc_train::olmes"
+  "mmlu_moral_disputes:rc_train::olmes"
+  "mmlu_moral_scenarios:rc_train::olmes"
+  "mmlu_nutrition:rc_train::olmes"
+  "mmlu_philosophy:rc_train::olmes"
+  "mmlu_prehistory:rc_train::olmes"
+  "mmlu_professional_accounting:rc_train::olmes"
+  "mmlu_professional_law:rc_train::olmes"
+  "mmlu_professional_medicine:rc_train::olmes"
+  "mmlu_professional_psychology:rc_train::olmes"
+  "mmlu_public_relations:rc_train::olmes"
+  "mmlu_security_studies:rc_train::olmes"
+  "mmlu_sociology:rc_train::olmes"
+  "mmlu_us_foreign_policy:rc_train::olmes"
+  "mmlu_virology:rc_train::olmes"
+  "mmlu_world_religions:rc_train::olmes"
+
+
 #  "mmlu_rc:rc_train_0shot::olmes"
 #
 ##   GSM8K
@@ -170,9 +231,16 @@ for train_task_name in "${train_task_names[@]}"; do
         exit 1
     fi
 
+    # for mmlu, we use less gpus since we have a pretty small batch size
+    if [[ $train_task_name == *"mmlu"* ]]; then
+        num_gpus=4
+    else
+        num_gpus=8
+    fi
+
     python -m olmo_core.launch.beaker \
       --name $runname \
-      --gpus 8 \
+      --gpus $num_gpus \
       --nodes 1 \
       --is_private_repo \
       --weka=oe-training-default \
@@ -201,6 +269,8 @@ for train_task_name in "${train_task_names[@]}"; do
         --trainer.load_optim_state=false \
         --trainer.load_trainer_state=false \
         $variation_flags
+
+    sleep 30
 
 done
 

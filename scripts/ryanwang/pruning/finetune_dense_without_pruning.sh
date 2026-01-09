@@ -230,11 +230,11 @@ for train_task_name in "${train_task_names[@]}"; do
     fi
 
     # for mmlu, we use less gpus since we have a pretty small batch size
-        if [[ $train_task_name == *"mmlu"* ]]; then
-            num_gpus=4
-        else
-            num_gpus=8
-        fi
+    if [[ $train_task_name == *"mmlu"* ]]; then
+        num_gpus=4
+    else
+        num_gpus=8
+    fi
 
     python -m olmo_core.launch.beaker \
       --name $runname \
