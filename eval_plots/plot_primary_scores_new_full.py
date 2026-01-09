@@ -124,9 +124,9 @@ TASK_STEPS = {
     # "coqa:train_0shot": [0, 28, 56, 84, 112, 144],
     # "squad:train_0shot": [0, 1623, 3246, 4869, 6492, 8118],
 
-    # "mmlu_abstract_algebra:rc_test": [0, 4, 8, 12, 16, 21],
-    # "mmlu_anatomy:rc_test": [0, 6, 12, 18, 24, 30],
-    # "mmlu_astronomy:rc_test": [0, 6, 12, 18, 24, 33],
+    "mmlu_abstract_algebra:rc_test": [0, 4, 8, 12, 16, 21],
+    "mmlu_anatomy:rc_test": [0, 6, 12, 18, 24, 30],
+    "mmlu_astronomy:rc_test": [0, 6, 12, 18, 24, 33],
     "mmlu_business_ethics:rc_test": [0, 4, 8, 12, 16, 21],
     # "mmlu_clinical_knowledge:rc_test": [0, 11, 22, 33, 44, 57],
     # "mmlu_college_biology:rc_test": [0, 6, 12, 18, 24, 30],
