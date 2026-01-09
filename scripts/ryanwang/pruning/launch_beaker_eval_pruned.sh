@@ -721,7 +721,7 @@ for PARENT_MODEL in "${PARENT_MODELS[@]}"; do
             echo "Launched evaluation for model: $model, group: $GROUP_NAME"
             echo "----------------------------------------"
 
-            sleep 25
+            sleep 20
         done
 
         echo "Completed all groups for model: $model"
