@@ -5,7 +5,7 @@
 MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
 
 MODELS=(
-    moe_1b7b_128experts_olmoe-mix_130B_1103/step30995-hf
+    moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
@@ -43,7 +43,7 @@ TASK_GROUPS_LIST=(
 #  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes drop::olmes"
 
 #   math
-  "gsm8k_test|gsm8k:perplexity_test::olmes"
+#   "gsm8k_test|gsm8k:perplexity_test::olmes"
   "gsm8k::olmes"
   "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
 #   "mmlu:mc::olmes"
