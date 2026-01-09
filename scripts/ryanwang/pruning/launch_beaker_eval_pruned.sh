@@ -10,14 +10,14 @@ PRUNE_DIR="${BASE_DIR}/prune"
 
 PARENT_MODELS=(
     "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
+#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995"
 #    "twolevelbatchlb-8_1b7b_stability_1207/step30995"
 
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995"
 
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
-    "moe_1b4b_32experts_1224/step30995"
+#    "moe_1b4b_32experts_1224/step30995"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
 
 #    "moe_1b35b_320experts_lb-1e-1_1214/step30995"
@@ -187,7 +187,7 @@ FINETUNE_TASKS=(
 #    "task-mmlu_college_computer_science_rc_validation${postfix}/finetune-task-mmlu_college_computer_science_rc_train/step21-hf"
 #    "task-mmlu_college_mathematics_rc_validation${postfix}/finetune-task-mmlu_college_mathematics_rc_train/step0-hf"
 #    "task-mmlu_college_mathematics_rc_validation${postfix}/finetune-task-mmlu_college_mathematics_rc_train/step4-hf"
-    "task-mmlu_college_mathematics_rc_validation${postfix}/finetune-task-mmlu_college_mathematics_rc_train/step8-hf"
+#    "task-mmlu_college_mathematics_rc_validation${postfix}/finetune-task-mmlu_college_mathematics_rc_train/step8-hf"
     "task-mmlu_college_mathematics_rc_validation${postfix}/finetune-task-mmlu_college_mathematics_rc_train/step12-hf"
     "task-mmlu_college_mathematics_rc_validation${postfix}/finetune-task-mmlu_college_mathematics_rc_train/step16-hf"
     "task-mmlu_college_mathematics_rc_validation${postfix}/finetune-task-mmlu_college_mathematics_rc_train/step20-hf"
