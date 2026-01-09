@@ -29,7 +29,7 @@ train_task_names=(
 #  "synthea:rc_train_0shot::olmes"
 #  "gsm8k_generation:train_0shot::olmes"
 #  "coqa:train_0shot::olmes"
-  "coqa_full:train_0shot::olmes"
+#  "coqa_full:train_0shot::olmes"
 #  "squad:train_0shot::olmes"
 
 
