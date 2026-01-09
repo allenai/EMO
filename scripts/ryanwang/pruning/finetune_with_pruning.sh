@@ -261,9 +261,16 @@ for model_name in "${model_names[@]}"; do
             exit 1
         fi
 
+        # for mmlu, we use less gpus since we have a pretty small batch size
+        if [[ $task_config == *"mmlu"* ]]; then
+            num_gpus=4
+        else
+            num_gpus=8
+        fi
+
         python -m olmo_core.launch.beaker \
           --name $runname \
-          --gpus 8 \
+          --gpus $num_gpus \
           --nodes 1 \
           --is_private_repo \
           --weka=oe-training-default \
