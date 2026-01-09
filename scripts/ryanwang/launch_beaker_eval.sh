@@ -9,8 +9,8 @@ MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
 MODELS=(
 #    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995-hf"
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
-#    "moe_1b4b_32experts_1224/step30995-hf"
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
+    "moe_1b4b_32experts_1224/step30995-hf"
+#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
 
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995-hf"
 #    "twolevelsamplingnolb-32_1b10b_stability_1127/step30995-hf"
@@ -64,12 +64,12 @@ TASK_GROUPS_LIST=(
 #  "squad|squad:test_0shot::olmes"
 
 #   GSM8K
-#  "mmlu_abstract_algebra|mmlu_abstract_algebra:rc_test::olmes"
-#  "mmlu_anatomy|mmlu_anatomy:rc_test::olmes"
-#  "mmlu_astronomy|mmlu_astronomy:rc_test::olmes"
-#  "mmlu_business_ethics|mmlu_business_ethics:rc_test::olmes"
-#  "mmlu_clinical_knowledge|mmlu_clinical_knowledge:rc_test::olmes"
-#  "mmlu_college_biology|mmlu_college_biology:rc_test::olmes"
+  "mmlu_abstract_algebra|mmlu_abstract_algebra:rc_test::olmes"
+  "mmlu_anatomy|mmlu_anatomy:rc_test::olmes"
+  "mmlu_astronomy|mmlu_astronomy:rc_test::olmes"
+  "mmlu_business_ethics|mmlu_business_ethics:rc_test::olmes"
+  "mmlu_clinical_knowledge|mmlu_clinical_knowledge:rc_test::olmes"
+  "mmlu_college_biology|mmlu_college_biology:rc_test::olmes"
   "mmlu_college_chemistry|mmlu_college_chemistry:rc_test::olmes"
   "mmlu_college_computer_science|mmlu_college_computer_science:rc_test::olmes"
   "mmlu_college_mathematics|mmlu_college_mathematics:rc_test::olmes"
@@ -201,7 +201,7 @@ for MODEL_NAME in "${MODELS[@]}"; do
                 --gpus $gpus \
                 "
 
-#        sleep 25
+#        sleep 20
 
         echo "Launched evaluation for model: $model, group: $GROUP_NAME"
         echo "----------------------------------------"
