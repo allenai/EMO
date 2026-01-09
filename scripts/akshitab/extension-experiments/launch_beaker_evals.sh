@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Configuration
-MODELS = (
-    "/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moe_1b7b_128experts_olmoe-mix_130B_1103/step30995-hf"
+MODELS=(
+    /weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moe_1b7b_128experts_olmoe-mix_130B_1103/step30995-hf
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
