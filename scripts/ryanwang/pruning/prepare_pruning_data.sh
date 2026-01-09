@@ -169,8 +169,8 @@ for MODEL_PATH in "${MODELS[@]}"; do
             batch_size=$((batch_size / 2))
         fi
 
-        # adjust number of gpus requested if its mmlu, agi_eval, bbh, gsm8k, minerva, codex, mbpp
-        if [[ $TASK == *mmlu* || $TASK == *agi_eval* || $TASK == *bbh* || $TASK == *gsm8k* || $TASK == *minerva_math_* || $TASK == *codex* || $TASK == *mbpp* || $MODEL_PATH == *"1b35b"* ]]; then
+        # adjust number of gpus requested if its agi_eval, bbh, gsm8k, minerva, codex, mbpp
+        if [[ $TASK == *agi_eval* || $TASK == *bbh* || $TASK == *gsm8k* || $TASK == *minerva_math_* || $TASK == *codex* || $TASK == *mbpp* || $MODEL_PATH == *"1b35b"* ]]; then
             gpus=4
         else
             gpus=1
