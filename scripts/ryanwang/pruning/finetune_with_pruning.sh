@@ -18,12 +18,12 @@ BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
 #BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 
 model_names=(
-#   "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121"
+   "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121"
 #   "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203"
 
 #   "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205"
 
-   "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123"
+#   "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123"
 #   "twolevelsamplingnolb-32_1b14b_stability_1127"
 
 #    "twoleveltoppbatchlb_1b14b_topp-0.35_max-64_min-1_lb-1e-1_1222"
@@ -89,7 +89,7 @@ task_configs=(
 #  "task-coqa_validation_0shot_keepk32|coqa:train_0shot::olmes"
 #  "task-squad_validation_0shot_keepk32|squad:train_0shot::olmes"
 
-#  "task-mmlu_abstract_algebra_rc_validation_keepk32|mmlu_abstract_algebra:rc_train::olmes"
+  "task-mmlu_abstract_algebra_rc_validation_keepk32|mmlu_abstract_algebra:rc_train::olmes"
   "task-mmlu_anatomy_rc_validation_keepk32|mmlu_anatomy:rc_train::olmes"
   "task-mmlu_astronomy_rc_validation_keepk32|mmlu_astronomy:rc_train::olmes"
   "task-mmlu_business_ethics_rc_validation_keepk32|mmlu_business_ethics:rc_train::olmes"
