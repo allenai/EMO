@@ -350,6 +350,19 @@ def main(args):
         "socialiqa:mc",
         "winogrande:mc",
     ]
+
+    core9_rc_tasks = [
+        "arc_easy:rc_test",
+        "arc_challenge:rc_test",
+        "boolq:rc_test",
+        "csqa:rc_test",
+        "hellaswag:rc_test",
+        "openbookqa:rc_test",
+        "piqa:rc_test",
+        "socialiqa:rc_test",
+        "winogrande:rc_test",
+    ]
+
     gen5_tasks = ["coqa", "squad", "naturalqs_open", "triviaqa", "drop"]
 
     task_names = get_task_names(results)
@@ -357,6 +370,9 @@ def main(args):
     # Task averaging options
     if args.avg_core:
         results = avg_tasks(results, "core9:mc", core9_tasks)
+
+    if args.avg_core_rc:
+        results = avg_tasks(results, "core9:rc", core9_rc_tasks)
 
     if args.avg_mmlu_pro:
         mmlu_pro_tasks = [
@@ -679,6 +695,7 @@ Examples:
 
     # Task averaging options
     parser.add_argument("--avg-core", action="store_true", help="Average core 9 tasks")
+    parser.add_argument("--avg-core-rc", action="store_true", help="Average core 9 RC tasks")
     parser.add_argument("--avg-mmlu", action="store_true", help="Average MMLU tasks")
     parser.add_argument("--avg-mmlu-cat", action="store_true", help="Average MMLU by category")
     parser.add_argument(
