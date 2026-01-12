@@ -40,6 +40,7 @@ import json
 import logging
 import os
 from typing import Optional
+import smart_open
 
 import torch
 
@@ -81,7 +82,7 @@ class AddExpertInitMethod:
 
 
 def get_similar_experts(activation_file: str, top_k: int = 1):
-    with open(activation_file, "r") as f:
+    with smart_open.open(activation_file, "r") as f:
         line = f.readline()
         activations = json.loads(line)["avg_router_probabilities"]  # (layers, num_experts)
 
@@ -339,6 +340,7 @@ if __name__ == "__main__":
         top_k_expert_indices = get_similar_experts(
             activation_file=args.activation_file, top_k=args.top_k
         )
+        print(top_k_expert_indices)
     else:
         top_k_expert_indices = None
     new_model = add_experts(
