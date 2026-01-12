@@ -4,6 +4,7 @@
 # STATUS: USED
 ##############################################################
 
+NUM_NEW_EXPERTS=2
 
 # Part 1: Add new expert
 BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
@@ -13,12 +14,12 @@ NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/extension
 # python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
 # 	-c ${BASE_MODEL_PATH}\
 # 	-o ${NEW_BASE_MODEL_PATH} \
-# 	--num_new_experts 2 \
+# 	--num_new_experts ${NUM_NEW_EXPERTS} \
 # 	--init_method average
 
 
 # # Part 2: Train with new expert
-RUN_NAME="moe1b14b_130experts_2trained_math_init_average_5B"
+RUN_NAME="moe1b14b_130experts_${NUM_NEW_EXPERTS}trained_math_init_average_5B"
 
 python -m olmo_core.launch.beaker \
   --name ${RUN_NAME} \
@@ -47,4 +48,4 @@ python -m olmo_core.launch.beaker \
 		--model.block.feed_forward_moe.lb_loss_weight=1e-2 \
         --train_module.scheduler.warmup_fraction=0.1 \
         --lr=4e-4 \
-        --num-experts-to-train=1
+        --num-experts-to-train=${NUM_NEW_EXPERTS}
