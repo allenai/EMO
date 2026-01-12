@@ -2,13 +2,13 @@
 
 # Configuration
 
-# MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
-MODEL_DIR=/weka/oe-training-default/akshitab/FlexMoE/models
+MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
+# MODEL_DIR=/weka/oe-training-default/akshitab/FlexMoE/models
 
 MODELS=(
-    # moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
-    moe1b14b_129experts_1trained_math_init_random_expert_5B/step1193-hf
-    moe1b14b_129experts_1trained_math_init_average_5B/step1193-hf
+    moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
+    # moe1b14b_129experts_1trained_math_init_random_expert_5B/step1193-hf
+    # moe1b14b_129experts_1trained_math_init_average_5B/step1193-hf
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
@@ -71,7 +71,7 @@ function get_checkpoint_name {
     echo "${modified_path}"
 }
 
-echo "Launching beaker evaluations for ${#MODELS[@]} models and ${#TASK_GROUPS[@]} task groups..."
+echo "Launching beaker logits for ${#MODELS[@]} models and ${#TASK_GROUPS[@]} task groups..."
 echo "Models: ${MODELS[@]}"
 echo "Base output directory: $BASE_OUTPUT_DIR"
 echo "Cluster: $CLUSTER"
@@ -153,16 +153,16 @@ for MODEL_NAME in "${MODELS[@]}"; do
             --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
             --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
             -- \
-            bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+            bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
                 --model "${MODEL_DIR}/${MODEL_NAME}" \
-                --model-type hf \
                 --task $TASK \
-                --remote-output-dir $OUTPUT_DIR \
+                --eval-dir $OUTPUT_DIR \
+                --output-dir $OUTPUT_DIR \
                 --batch-size $batch_size \
                 --gpus $gpus \
                 "
 
-        echo "Launched evaluation for model: $model, group: $GROUP_NAME"
+        echo "Launched logits for model: $model, group: $GROUP_NAME"
         echo "----------------------------------------"
     done
 
