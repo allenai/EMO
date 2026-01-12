@@ -98,7 +98,7 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
                 prompts += [req["request"]["context"] + " " + req["doc"]["choices"][0]]
             else:
                 prompts += [req["request"]["context"] + req["doc"]["choices"][0]]
-            correct += [1 if pred["metrics"]["f1"] > 0 else 0]
+            correct += [1 if pred["metrics"].get("f1", 0) > 0 else 0]
     else:
         raise NotImplementedError(
             f"Dataset {eval_dataset_name} not implemented in get_prompt_sequences_for_evaluation"
