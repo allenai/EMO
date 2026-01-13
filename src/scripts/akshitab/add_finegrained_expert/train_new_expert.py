@@ -294,7 +294,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                 ],
                 tokenizer=tokenizer_config,
                 eval_interval=250,
-                eval_on_startup=opts.eval_only,
+                eval_on_startup=True, #opts.eval_only,
                 cancel_after_first_eval=opts.eval_only,
             ),
         )
