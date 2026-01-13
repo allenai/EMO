@@ -51,4 +51,5 @@ python -m olmo_core.launch.beaker \
 		--model.block.feed_forward_moe.lb_loss_weight=1e-2 \
         --train_module.scheduler.warmup_fraction=0.1 \
         --lr=4e-4 \
-        --num-experts-to-train=1
+        --num-experts-to-train=1 \
+		--eval-only

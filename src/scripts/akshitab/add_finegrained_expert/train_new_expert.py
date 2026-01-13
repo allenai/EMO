@@ -290,6 +290,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                     "mmlu_social_sciences",
                     "mmlu_other",
                     "minerva_math_500_gold_bpb_0shot",
+                    "basic_skills_arithmetic_rc_5shot"
                 ],
                 tokenizer=tokenizer_config,
                 eval_interval=250,

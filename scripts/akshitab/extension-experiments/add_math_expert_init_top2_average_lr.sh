@@ -22,7 +22,7 @@ EVAL_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions/moe_1b14b_128experts_ol
 
 
 # # Part 2: Train with new expert
-RUN_NAME="moe1b14b_129experts_1trained_math_init_top2_average_5B_lr_9e-4"
+RUN_NAME="moe1b14b_129experts_1trained_math_init_top2_average_5B_lr_1e-4"
 
 python -m olmo_core.launch.beaker \
   --name ${RUN_NAME} \
@@ -50,5 +50,5 @@ python -m olmo_core.launch.beaker \
 		--model.block.attention.qk_norm=null \
 		--model.block.feed_forward_moe.lb_loss_weight=1e-2 \
         --train_module.scheduler.warmup_fraction=0.1 \
-        --lr=9e-4 \
+        --lr=1e-4 \
         --num-experts-to-train=1
