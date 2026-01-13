@@ -110,7 +110,7 @@ def freeze_indices(dim: int, indices: list[int]) -> Callable:
     return mask_fn
 
 
-def train(config: ExperimentConfig):
+def train(config: ExperimentConfig, eval_only: bool = False):
     if get_rank() == 0:
         rich.print(config)
 
@@ -134,11 +134,25 @@ def train(config: ExperimentConfig):
     # docs: start-load-path
     # If we have a load path set and there is no checkpoint in the save folder, load the
     # checkpoint from the load path.
-    if not trainer.no_checkpoints and not trainer.maybe_load_checkpoint() and config.load_path:
-        log.info(
-            f"Loading checkpoint from {config.load_path} since no checkpoints were found in the save folder..."
+    checkpoint_loaded = False
+    if not trainer.no_checkpoints:
+        checkpoint_loaded = trainer.maybe_load_checkpoint()
+        if not checkpoint_loaded and config.load_path:
+            log.info(
+                f"Loading checkpoint from {config.load_path} since no checkpoints were found in the save folder..."
+            )
+            trainer.load_checkpoint(config.load_path, load_trainer_state=config.load_trainer_state)
+            checkpoint_loaded = True
+
+    # In eval-only mode, ensure a checkpoint was loaded
+    if eval_only and not checkpoint_loaded:
+        raise RuntimeError(
+            "Cannot run eval-only mode: no checkpoint found in save folder and no load_path provided. "
+            "Please ensure checkpoints exist or provide --load-path."
         )
-        trainer.load_checkpoint(config.load_path, load_trainer_state=config.load_trainer_state)
+
+    if eval_only:
+        log.info("Running in eval-only mode: will evaluate checkpoint and exit without training.")
     # docs: end-load-path
 
     # Train.
@@ -275,9 +289,12 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                     "mmlu_humanities",
                     "mmlu_social_sciences",
                     "mmlu_other",
+                    "minerva_math_500_gold_bpb_0shot",
                 ],
                 tokenizer=tokenizer_config,
                 eval_interval=250,
+                eval_on_startup=opts.eval_only,
+                cancel_after_first_eval=opts.eval_only,
             ),
         )
         .with_callback(
@@ -352,6 +369,12 @@ def parser_args():
         default=1,
         help="Number of experts to train (last n experts). Remaining are frozen.",
     )
+    parser.add_argument(
+        "--eval-only",
+        action="store_true",
+        help="""Run evaluations only on existing checkpoint without training.
+        This will load the latest checkpoint and run downstream evals.""",
+    )
     opts, overrides = parser.parse_known_args()
     return opts, overrides
 
@@ -366,7 +389,7 @@ def main():
         return
 
     prepare_training_environment()
-    train(config)
+    train(config, eval_only=opts.eval_only)
     teardown_training_environment()
 
 
