@@ -211,66 +211,66 @@ MODEL_RUNS: List[Dict[str, Any]] = [
         "linewidth": 2,  # Line width
         "markersize": 9,  # Marker size
     },
-    # {
-    #     "label": "twolevelbatchlb train32/128 keepk32",
-    #     "template": (
-    #         f"{MAIN_MODEL}_"
-    #         "task-{task_core}{validation_suffix}_keepk32_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
-    #     ),
-    #     "family": "twolevelbatchlb train32/128",
-    #     "marker": "o",
-    #     "brightness": 1.0,
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
-    # {
-    #     "label": "twolevelbatchlb train32/320 keepk32",
-    #     "template": (
-    #         f"twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216_step30995_"
-    #         "task-{task_core}{validation_suffix}_keepk32_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
-    #     ),
-    #     "family": "twolevelbatchlb train32/128",
-    #     "marker": "o",
-    #     "brightness": 0.5,
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
-    # {
-    #     "label": "mutualinfo keepk32",
-    #     "template": (
-    #         f"mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205_step30995_"
-    #         "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
-    #     ),
-    #     "family": "mutualinfo",
-    #     "marker": "o",
-    #     "brightness": 1.0,
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
-    # {
-    #     "label": "dense finetuned",
-    #     "template": (
-    #         "dense_1b_olmoe-mix_prenorm_noqknorm_1123_step30995_newdefault_{lr_suffix}_"
-    #         "finetune-task-{task_core}{task_suffix}_step{step}-hf"
-    #     ),
-    #     "family": "dense",
-    #     "marker": "v",  # Triangle down for dense
-    #     "brightness": 1.0,
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
-    # {
-    #     "label": "moe 1b4b",
-    #     "template": (
-    #         "moe_1b4b_32experts_1224_step30995_newdefault_{lr_suffix}_"
-    #         "finetune-task-{task_core}{task_suffix}_step{step}-hf"
-    #     ),
-    #     "family": "moe",
-    #     "marker": "v",  # Triangle down for dense
-    #     "brightness": 0.7,
-    #     "linewidth": 2,
-    #     "markersize": 9,
-    # },
+    {
+        "label": "twolevelbatchlb train32/128 keepk32",
+        "template": (
+            f"{MAIN_MODEL}_"
+            "task-{task_core}{validation_suffix}_keepk32_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
+        ),
+        "family": "twolevelbatchlb train32/128",
+        "marker": "o",
+        "brightness": 1.0,
+        "linewidth": 2,
+        "markersize": 9,
+    },
+    {
+        "label": "twolevelbatchlb train32/320 keepk32",
+        "template": (
+            f"twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216_step30995_"
+            "task-{task_core}{validation_suffix}_keepk32_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
+        ),
+        "family": "twolevelbatchlb train32/128",
+        "marker": "o",
+        "brightness": 0.5,
+        "linewidth": 2,
+        "markersize": 9,
+    },
+    {
+        "label": "mutualinfo keepk32",
+        "template": (
+            f"mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205_step30995_"
+            "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
+        ),
+        "family": "mutualinfo",
+        "marker": "o",
+        "brightness": 1.0,
+        "linewidth": 2,
+        "markersize": 9,
+    },
+    {
+        "label": "dense finetuned",
+        "template": (
+            "dense_1b_olmoe-mix_prenorm_noqknorm_1123_step30995_newdefault_{lr_suffix}_"
+            "finetune-task-{task_core}{task_suffix}_step{step}-hf"
+        ),
+        "family": "dense",
+        "marker": "v",  # Triangle down for dense
+        "brightness": 1.0,
+        "linewidth": 2,
+        "markersize": 9,
+    },
+    {
+        "label": "moe 1b4b",
+        "template": (
+            "moe_1b4b_32experts_1224_step30995_newdefault_{lr_suffix}_"
+            "finetune-task-{task_core}{task_suffix}_step{step}-hf"
+        ),
+        "family": "moe",
+        "marker": "v",  # Triangle down for dense
+        "brightness": 0.7,
+        "linewidth": 2,
+        "markersize": 9,
+    },
 ]
 
 # Baseline model configurations
