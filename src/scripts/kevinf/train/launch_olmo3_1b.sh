@@ -22,7 +22,7 @@ python -m olmo_core.launch.beaker \
   --preemptible \
   --allow-dirty \
   --env-secret "GITHUB_TOKEN=KEVINF_GITHUB_TOKEN" "WANDB_API_KEY=KEVINF_WANDB_API_KEY" "BEAKER_TOKEN=KEVINF_BEAKER_TOKEN" \
-  -- src/scripts/kevinf/train/OLMo3-1B-v2.py \
+  -- src/scripts/kevinf/train/OLMo3-1B.py \
   $runname \
   --save-folder="/weka/oe-training-default/kevinf/checkpoints-new/${runname}/" \
   --work-dir="/weka/oe-training-default/kevinf/dataset-cache" \

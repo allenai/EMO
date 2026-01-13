@@ -3,11 +3,11 @@ Train OLMo3-1B on OLMoE-mix-0824.
 
 Launch this with torchrun:
 
-    torchrun --nproc-per-node=8 src/scripts/kevinf/train/OLMo3-1B-v2.py run_name [OVERRIDES...]
+    torchrun --nproc-per-node=8 src/scripts/kevinf/train/OLMo3-1B.py run_name [OVERRIDES...]
 
 Or use the launch script for Beaker:
 
-    bash src/scripts/kevinf/train/launch_olmo3_1b_v2.sh
+    bash src/scripts/kevinf/train/launch_olmo3_1b.sh
 """
 
 import argparse

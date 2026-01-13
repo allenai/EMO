@@ -692,6 +692,7 @@ Examples:
     parser.add_argument("--avg-ruler", action="store_true", help="Average RULER tasks")
     parser.add_argument("--avg-sciriff", action="store_true", help="Average SciRIFF tasks")
     parser.add_argument("--avg-code", action="store_true", help="Average coding tasks")
+    parser.add_argument("--avg-all", action="store_true", help="Average all tasks into a single score")
 
     # Task filtering
     parser.add_argument("--stem-only", action="store_true", help="Show only STEM tasks")
@@ -712,5 +713,18 @@ Examples:
     # Validate arguments
     if args.avg_mmlu and args.avg_mmlu_cat:
         parser.error("Cannot use both --avg-mmlu and --avg-mmlu-cat")
+
+    # --avg-all enables all averaging flags
+    if args.avg_all:
+        args.avg_core = True
+        args.avg_mmlu = True
+        args.avg_mmlu_pro = True
+        args.avg_agi_eval = True
+        args.avg_bbh = True
+        args.avg_gen = True
+        args.avg_mm = True
+        args.avg_ruler = True
+        args.avg_sciriff = True
+        args.avg_code = True
 
     main(args)
