@@ -182,7 +182,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         n_layers=16,
         d_model=2048,
         n_heads=16,
-        num_experts=129,
+        num_experts=128 + opts.num_experts_to_train,
         top_k=8,
         freeze_params=[
             "embeddings.*",
