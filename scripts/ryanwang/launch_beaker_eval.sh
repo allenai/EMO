@@ -40,23 +40,23 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
-#  "arc_easy|arc_easy:mc_test::olmes arc_easy:rc_test::olmes"
-#  "arc_challenge|arc_challenge:mc_test::olmes arc_challenge:rc_test::olmes"
-#  "boolq|boolq:mc_test::olmes boolq:rc_test::olmes"
-#  "csqa|csqa:mc_test::olmes csqa:rc_test::olmes"
-#  "hellaswag|hellaswag:mc_test::olmes hellaswag:rc_test::olmes"
-#  "openbookqa|openbookqa:mc_test::olmes openbookqa:rc_test::olmes"
-#  "piqa|piqa:mc_test::olmes piqa:rc_test::olmes"
-#  "socialiqa|socialiqa:mc_test::olmes socialiqa:rc_test::olmes"
-#  "winogrande|winogrande:mc_test::olmes winogrande:rc_test::olmes"
+  "arc_easy|arc_easy:mc_test::olmes arc_easy:rc_test::olmes"
+  "arc_challenge|arc_challenge:mc_test::olmes arc_challenge:rc_test::olmes"
+  "boolq|boolq:mc_test::olmes boolq:rc_test::olmes"
+  "csqa|csqa:mc_test::olmes csqa:rc_test::olmes"
+  "hellaswag|hellaswag:mc_test::olmes hellaswag:rc_test::olmes"
+  "openbookqa|openbookqa:mc_test::olmes openbookqa:rc_test::olmes"
+  "piqa|piqa:mc_test::olmes piqa:rc_test::olmes"
+  "socialiqa|socialiqa:mc_test::olmes socialiqa:rc_test::olmes"
+  "winogrande|winogrande:mc_test::olmes winogrande:rc_test::olmes"
 
 #   MMLU
 #  "mmlu_mc_test|mmlu:mc_test::olmes"
-#  "mmlu_rc_test|mmlu:rc_test::olmes"
+  "mmlu_rc_test|mmlu:rc_test::olmes"
 
 #   Gen5 tasks
-#  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes"
-#  "drop|drop::olmes"
+  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes"
+  "drop|drop::olmes"
 
 #  "synthea|synthea:rc_test_0shot::olmes"
 #  "gsm8k|gsm8k_generation:test_0shot::olmes"
@@ -64,19 +64,19 @@ TASK_GROUPS_LIST=(
 #  "squad|squad:test_0shot::olmes"
 
 #   GSM8K
-  "mmlu_abstract_algebra|mmlu_abstract_algebra:rc_test::olmes"
-  "mmlu_anatomy|mmlu_anatomy:rc_test::olmes"
-  "mmlu_astronomy|mmlu_astronomy:rc_test::olmes"
-  "mmlu_business_ethics|mmlu_business_ethics:rc_test::olmes"
-  "mmlu_clinical_knowledge|mmlu_clinical_knowledge:rc_test::olmes"
-  "mmlu_college_biology|mmlu_college_biology:rc_test::olmes"
-  "mmlu_college_chemistry|mmlu_college_chemistry:rc_test::olmes"
-  "mmlu_college_computer_science|mmlu_college_computer_science:rc_test::olmes"
-  "mmlu_college_mathematics|mmlu_college_mathematics:rc_test::olmes"
-  "mmlu_college_medicine|mmlu_college_medicine:rc_test::olmes"
-  "mmlu_college_physics|mmlu_college_physics:rc_test::olmes"
+#  "mmlu_abstract_algebra|mmlu_abstract_algebra:rc_test::olmes"
+#  "mmlu_anatomy|mmlu_anatomy:rc_test::olmes"
+#  "mmlu_astronomy|mmlu_astronomy:rc_test::olmes"
+#  "mmlu_business_ethics|mmlu_business_ethics:rc_test::olmes"
+#  "mmlu_clinical_knowledge|mmlu_clinical_knowledge:rc_test::olmes"
+#  "mmlu_college_biology|mmlu_college_biology:rc_test::olmes"
+#  "mmlu_college_chemistry|mmlu_college_chemistry:rc_test::olmes"
+#  "mmlu_college_computer_science|mmlu_college_computer_science:rc_test::olmes"
+#  "mmlu_college_mathematics|mmlu_college_mathematics:rc_test::olmes"
+#  "mmlu_college_medicine|mmlu_college_medicine:rc_test::olmes"
+#  "mmlu_college_physics|mmlu_college_physics:rc_test::olmes"
 
-#  "gsm8k_test|gsm8k:perplexity_test::olmes"
+  "gsm8k_test|gsm8k:perplexity_test::olmes"
 
   ######### TRAIN-VAL-TEST ##########
 #  # MC9 tasks
