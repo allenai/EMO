@@ -40,8 +40,8 @@ import json
 import logging
 import os
 from typing import Optional
-import smart_open
 
+import smart_open
 import torch
 
 from olmo_core.distributed.checkpoint import (
