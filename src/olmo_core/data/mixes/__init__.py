@@ -46,6 +46,8 @@ class DataMix(DataMixBase):
     mj_finemath4plus = "mj_finemath4plus"
     mose_code_mix = "mose_code_mix"
 
+    chempile = "chempile"
+
     @classmethod
     def _missing_(cls, value: object) -> "DataMix | None":
         """Handle alias lookups."""
