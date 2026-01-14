@@ -11,7 +11,7 @@ from scripts.akshitab.add_finegrained_expert.add_new_expert import (
 )
 
 
-@pytest.mark.parametrize("init_method", ["random", "random_expert", "average", "zero", "similar"])
+@pytest.mark.parametrize("init_method", ["random", "random_expert", "average", "zero", "similar", "similar_no_average"])
 @pytest.mark.parametrize("num_new_experts", [1, 3, 8])
 @pytest.mark.parametrize("top_k_expert_indices", [None, [4], [1, 2]])
 def test_add_expert(
@@ -27,6 +27,12 @@ def test_add_expert(
 
     if init_method == "similar" and top_k_expert_indices is None:
         pytest.skip("top_k_expert_indices must be provided for 'similar' init_method")
+
+    if init_method == "similar_no_average":
+        if top_k_expert_indices is None:
+            pytest.skip("top_k_expert_indices must be provided for 'similar_no_average' init_method")
+        if len(top_k_expert_indices) < num_new_experts:
+            pytest.skip(f"Need at least {num_new_experts} expert indices for 'similar_no_average', got {len(top_k_expert_indices)}")
 
     add_experts(
         checkpoint_path="src/test_fixtures/smallmoe",
@@ -82,6 +88,21 @@ def test_add_expert(
                 assert torch.allclose(
                     actual_value, expected_value, atol=1e-6
                 ), f"Discrepancy in {old_name} and {new_name}: expected {expected_value}, got {new_param.data[-1]}"
+            elif init_method == "similar_no_average" and top_k_expert_indices is not None:
+                source_param = old_model.state_dict()[old_name]
+                source_rows, source_columns = source_param.shape
+                source_param_view = source_param.view(
+                    num_experts, source_rows // num_experts, source_columns
+                )
+                new_param_view = new_param.data.view(
+                    num_experts + num_new_experts, source_rows // num_experts, source_columns
+                )
+                for i in range(num_new_experts):
+                    expected_value = source_param_view[top_k_expert_indices[i]]
+                    actual_value = new_param_view[num_experts + i]
+                    assert torch.allclose(
+                        actual_value, expected_value, atol=1e-6
+                    ), f"Discrepancy in {old_name} and {new_name} for new expert {i}: expected weights from expert {top_k_expert_indices[i]}"
         elif "router.weight" in old_name:
             if init_method == "zero":
                 assert torch.all(new_param.data[-1] == 0)
@@ -106,6 +127,16 @@ def test_add_expert(
                     -1
                 ]
                 assert torch.allclose(actual_value, expected_value, atol=1e-6)
+            elif init_method == "similar_no_average" and top_k_expert_indices is not None:
+                source_param = old_model.state_dict()[old_name].view(num_experts, -1)
+                _, source_columns = source_param.shape
+                new_param_view = new_param.data.view(num_experts + num_new_experts, source_columns)
+                for i in range(num_new_experts):
+                    expected_value = source_param.data[top_k_expert_indices[i]]
+                    actual_value = new_param_view[num_experts + i]
+                    assert torch.allclose(
+                        actual_value, expected_value, atol=1e-6
+                    ), f"Discrepancy in router weights {old_name} for new expert {i}: expected weights from expert {top_k_expert_indices[i]}"
         else:
             assert torch.all(
                 old_param.data == new_param.data
