@@ -2,7 +2,6 @@ from oe_eval.configs.tasks import TASK_CONFIGS
 from oe_eval.data.mmlu_pro_categories import MMLU_PRO_CATEGORIES
 from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 
-
 def get_task_configs():
     TASK_CONFIGS.update(
         {
@@ -1230,6 +1229,57 @@ def get_task_configs():
     )
 
     # update MMLU, MMLU_Pro categories and configs
+    MMLU_CATEGORIES = [
+        "biology",
+        "business",
+        "chemistry",
+        "computer_science",
+        "culture",
+        "economics",
+        "engineering",
+        "geography",
+        "health",
+        "history",
+        "law",
+        "math",
+        "other",
+        "philosophy",
+        "physics",
+        "politics",
+        "psychology",
+    ]
+    for category in MMLU_CATEGORIES:
+        TASK_CONFIGS[f"mmlu_{category}:rc_validation::olmes"] = {
+            "task_name": f"mmlu_{category}:rc_validation",
+            "split": "validation",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": category,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_{category}:rc_test::olmes"] = {
+            "task_name": f"mmlu_{category}:rc_test",
+            "split": "test",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": category,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_{category}:rc_train::olmes"] = {
+            "task_name": f"mmlu_{category}:rc_train",
+            "split": "train",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": category,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+
     for sub in MMLU_SUBJECTS:
         TASK_CONFIGS[f"mmlu_{sub}:rc_validation::olmes"] = {
             "task_name": f"mmlu_{sub}:rc_validation",

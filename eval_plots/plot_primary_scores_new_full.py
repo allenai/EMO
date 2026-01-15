@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plot primary_score over training steps for selected evaluation runs."""
+"""Plot evaluation metrics over training steps for selected runs."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import argparse
 import colorsys
 import json
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List
 
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
@@ -18,169 +18,221 @@ import seaborn as sns
 # CONFIGURATION - Full control over model runs and visual settings
 # ============================================================================
 
-# Base model identifier (used in output directory naming)
-MAIN_MODEL = "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121_step30995"
-
-# Task-specific configuration.
-TASKS: List[str] = [
-    "arc_challenge:rc_test",
-    "arc_easy:rc_test",
-    "boolq:rc_test",
-    "csqa:rc_test",
-    "hellaswag:rc_test",
-    "openbookqa:rc_test",
-    "piqa:rc_test",
-    "socialiqa:rc_test",
-    "winogrande:rc_test",
-    "gsm8k_generation:train_0shot",
-    "synthea:rc_train_0shot",
-    "coqa:train_0shot",
-    "squad:train_0shot",
-
-    "mmlu_abstract_algebra:rc_test",
-    "mmlu_anatomy:rc_test",
-    "mmlu_astronomy:rc_test",
-    "mmlu_business_ethics:rc_test",
-    "mmlu_clinical_knowledge:rc_test",
-    "mmlu_college_biology:rc_test",
-    "mmlu_college_chemistry:rc_test",
-    "mmlu_college_computer_science:rc_test",
-    "mmlu_college_mathematics:rc_test",
-    "mmlu_college_medicine:rc_test",
-    "mmlu_college_physics:rc_test",
-    "mmlu_computer_security:rc_test",
-    "mmlu_conceptual_physics:rc_test",
-    "mmlu_econometrics:rc_test",
-    "mmlu_electrical_engineering:rc_test",
-    "mmlu_elementary_mathematics:rc_test",
-    "mmlu_formal_logic:rc_test",
-    "mmlu_global_facts:rc_test",
-    "mmlu_high_school_biology:rc_test",
-    "mmlu_high_school_chemistry:rc_test",
-    "mmlu_high_school_computer_science:rc_test",
-    "mmlu_high_school_european_history:rc_test",
-    "mmlu_high_school_geography:rc_test",
-    "mmlu_high_school_government_and_politics:rc_test",
-    "mmlu_high_school_macroeconomics:rc_test",
-    "mmlu_high_school_mathematics:rc_test",
-    "mmlu_high_school_microeconomics:rc_test",
-    "mmlu_high_school_physics:rc_test",
-    "mmlu_high_school_psychology:rc_test",
-    "mmlu_high_school_statistics:rc_test",
-    "mmlu_high_school_us_history:rc_test",
-    "mmlu_high_school_world_history:rc_test",
-    "mmlu_human_aging:rc_test",
-    "mmlu_human_sexuality:rc_test",
-    "mmlu_international_law:rc_test",
-    "mmlu_jurisprudence:rc_test",
-    "mmlu_logical_fallacies:rc_test",
-    "mmlu_machine_learning:rc_test",
-    "mmlu_management:rc_test",
-    "mmlu_marketing:rc_test",
-    "mmlu_medical_genetics:rc_test",
-    "mmlu_miscellaneous:rc_test",
-    "mmlu_moral_disputes:rc_test",
-    "mmlu_moral_scenarios:rc_test",
-    "mmlu_nutrition:rc_test",
-    "mmlu_philosophy:rc_test",
-    "mmlu_prehistory:rc_test",
-    "mmlu_professional_accounting:rc_test",
-    "mmlu_professional_law:rc_test",
-    "mmlu_professional_medicine:rc_test",
-    "mmlu_professional_psychology:rc_test",
-    "mmlu_public_relations:rc_test",
-    "mmlu_security_studies:rc_test",
-    "mmlu_sociology:rc_test",
-    "mmlu_us_foreign_policy:rc_test",
-    "mmlu_virology:rc_test",
-    "mmlu_world_religions:rc_test"
-]
-
-# Relative steps per task to compare across both model families.
-# TASK_STEPS: Dict[str, List[int]] = {
-#     "arc_challenge:rc_test": [0, 41, 82, 123, 164, 207],
-#     "arc_easy:rc_test": [0, 84, 168, 252, 336, 420],
-#     "boolq:rc_test": [0, 315, 630, 945, 1260, 1578],
-#     "csqa:rc_test": [0, 327, 654, 981, 1308, 1638],
-#     "hellaswag:rc_test": [0, 1458, 2916, 4374, 5832, 7293],
-#     "openbookqa:rc_test": [0, 185, 370, 555, 740, 927],
-#     "piqa:rc_test": [0, 566, 1132, 1698, 2264, 2832],
-#     "socialiqa:rc_test": [0, 1215, 2430, 3645, 4860, 6075],
-#     "winogrande:rc_test": [0, 1477, 2954, 4431, 5908, 7386],
-# }
-
-TASK_STEPS = {
-    # "arc_easy:rc_test":       [0, 42, 84, 126, 168, 210],
-    # "arc_challenge:rc_test":  [0, 20, 40, 60, 80, 102],
-    # "boolq:rc_test":          [0, 157, 314, 471, 628, 789],
-    # "csqa:rc_test":           [0, 163, 326, 489, 652, 819],
-    # "hellaswag:rc_test":      [0, 729, 1458, 2187, 2916, 3645],
-    # "openbookqa:rc_test":     [0, 92, 184, 276, 368, 462],
-    # "piqa:rc_test":           [0, 283, 566, 849, 1132, 1416],
-    # "socialiqa:rc_test":      [0, 607, 1214, 1821, 2428, 3036],
-    # "winogrande:rc_test":     [0, 738, 1476, 2214, 2952, 3693],
-    # "gsm8k_generation:train_0shot": [0, 121, 242, 363, 484, 606],
-    # "synthea:rc_train_0shot": [0, 161, 322, 483, 644, 807],
-    # "coqa:train_0shot": [0, 28, 56, 84, 112, 144],
-    # "squad:train_0shot": [0, 1623, 3246, 4869, 6492, 8118],
-
-    # "mmlu_abstract_algebra:rc_test": [0, 4, 8, 12, 16, 21],
-    "mmlu_anatomy:rc_test": [0, 6, 12, 18, 24, 30],
-    "mmlu_astronomy:rc_test": [0, 6, 12, 18, 24, 33],
-    "mmlu_business_ethics:rc_test": [0, 4, 8, 12, 16, 21],
-    "mmlu_clinical_knowledge:rc_test": [0, 11, 22, 33, 44, 57],
-    "mmlu_college_biology:rc_test": [0, 6, 12, 18, 24, 30],
-    "mmlu_college_chemistry:rc_test": [0, 4, 8, 12, 16, 21],
-    "mmlu_college_computer_science:rc_test": [0, 4, 8, 12, 16, 21],
-    "mmlu_college_mathematics:rc_test": [0, 4, 8, 12, 16, 21],
-    "mmlu_college_medicine:rc_test": [0, 7, 14, 21, 28, 36],
-    "mmlu_college_physics:rc_test": [0, 4, 8, 12, 16, 21],
-    # "mmlu_computer_security:rc_test": [0, 4, 8, 12, 16, 21],
-    # "mmlu_conceptual_physics:rc_test": [0, 10, 20, 30, 40, 51],
-    # "mmlu_econometrics:rc_test": [0, 4, 8, 12, 16, 20, 24],
-    # "mmlu_electrical_engineering:rc_test": [0, 6, 12, 18, 24, 30],
-    # "mmlu_elementary_mathematics:rc_test": [0, 16, 32, 48, 64, 84],
-    # "mmlu_formal_logic:rc_test": [0, 5, 10, 15, 20, 27],
-    # "mmlu_global_facts:rc_test": [0, 4, 8, 12, 16, 21],
-    # "mmlu_high_school_biology:rc_test": [0, 13, 26, 39, 52, 69],
-    # "mmlu_high_school_chemistry:rc_test": [0, 9, 18, 27, 36, 45],
-    # "mmlu_high_school_computer_science:rc_test": [0, 4, 8, 12, 16, 21],
-    # "mmlu_high_school_european_history:rc_test": [0, 7, 14, 21, 28, 36],
-    # "mmlu_high_school_geography:rc_test": [0, 8, 16, 24, 32, 42],
-    # "mmlu_high_school_government_and_politics:rc_test": [0],
-    # "mmlu_high_school_macroeconomics:rc_test": [0, 17, 34, 51, 68, 87],
-    # "mmlu_high_school_mathematics:rc_test": [0, 12, 24, 36, 48, 60],
-    # "mmlu_high_school_microeconomics:rc_test": [0, 10, 20, 30, 40, 51],
-    # "mmlu_high_school_physics:rc_test": [0, 6, 12, 18, 24, 33],
-    # "mmlu_high_school_psychology:rc_test": [0, 24, 48, 72, 96, 120],
-    # "mmlu_high_school_statistics:rc_test": [0, 9, 18, 27, 36, 48],
-    # "mmlu_high_school_us_history:rc_test": [0, 9, 18, 27, 36, 45],
-    # "mmlu_high_school_world_history:rc_test": [0, 10, 20, 30, 40, 51],
-    # "mmlu_human_aging:rc_test": [0, 9, 18, 27, 36, 48],
-    # "mmlu_human_sexuality:rc_test": [0, 5, 10, 15, 20, 27],
-    # "mmlu_international_law:rc_test": [0, 5, 10, 15, 20, 27],
-    # "mmlu_jurisprudence:rc_test": [0, 4, 8, 12, 16, 20, 24],
-    # "mmlu_logical_fallacies:rc_test": [0, 7, 14, 21, 28, 36],
-    # "mmlu_machine_learning:rc_test": [0, 4, 8, 12, 16, 20, 24],
-    # "mmlu_management:rc_test": [0, 4, 8, 12, 16, 21],
-    # "mmlu_marketing:rc_test": [0, 10, 20, 30, 40, 51],
-    # "mmlu_medical_genetics:rc_test": [0, 4, 8, 12, 16, 21],
-    # "mmlu_miscellaneous:rc_test": [0, 34, 68, 102, 136, 174],
-    # "mmlu_moral_disputes:rc_test": [0, 15, 30, 45, 60, 75],
-    # "mmlu_moral_scenarios:rc_test": [0, 40, 80, 120, 160, 201],
-    # "mmlu_nutrition:rc_test": [0, 13, 26, 39, 52, 66],
-    # "mmlu_philosophy:rc_test": [0, 13, 26, 39, 52, 69],
-    # "mmlu_prehistory:rc_test": [0, 14, 28, 42, 56, 72],
-    # "mmlu_professional_accounting:rc_test": [0, 12, 24, 36, 48, 63],
-    # "mmlu_professional_law:rc_test": [0, 69, 138, 207, 276, 345],
-    # "mmlu_professional_medicine:rc_test": [0, 12, 24, 36, 48, 60],
-    # "mmlu_professional_psychology:rc_test": [0, 27, 54, 81, 108, 135],
-    # "mmlu_public_relations:rc_test": [0, 4, 8, 12, 16, 20, 24],
-    # "mmlu_security_studies:rc_test": [0, 10, 20, 30, 40, 54],
-    # "mmlu_sociology:rc_test": [0, 9, 18, 27, 36, 45],
-    # "mmlu_us_foreign_policy:rc_test": [0, 4, 8, 12, 16, 21],
-    # "mmlu_virology:rc_test": [0, 7, 14, 21, 28, 36],
-    # "mmlu_world_religions:rc_test": [0, 7, 14, 21, 28, 36],
+# Task configuration now keeps task names, steps, and optional metric key together.
+# Only override metric_key when you want something other than "primary_score".
+TASK_CONFIGS: Dict[str, Dict[str, Any]] = {
+    "arc_easy:rc_test": {
+        "steps": [0, 42, 84, 126, 168, 210],
+    },
+    "arc_challenge:rc_test": {
+        "steps": [0, 20, 40, 60, 80, 102],
+        "metric_key": "sum_logits_corr",
+    },
+    "boolq:rc_test": {
+        "steps": [0, 157, 314, 471, 628, 789],
+    },
+    "csqa:rc_test": {
+        "steps": [0, 163, 326, 489, 652, 819],
+    },
+    "hellaswag:rc_test": {
+        "steps": [0, 729, 1458, 2187, 2916, 3645],
+        "metric_key": "sum_logits_corr",
+    },
+    "openbookqa:rc_test": {
+        "steps": [0, 92, 184, 276, 368, 462],
+    },
+    "piqa:rc_test": {
+        "steps": [0, 283, 566, 849, 1132, 1416],
+    },
+    "socialiqa:rc_test": {
+        "steps": [0, 607, 1214, 1821, 2428, 3036],
+    },
+    "winogrande:rc_test": {
+        "steps": [0, 738, 1476, 2214, 2952, 3693],
+    },
+    "gsm8k_generation:train_0shot": {
+        "steps": [0, 121, 242, 363, 484, 606],
+    },
+    "synthea:rc_train_0shot": {
+        "steps": [0, 161, 322, 483, 644, 807],
+    },
+    "coqa:train_0shot": {
+        "steps": [0, 28, 56, 84, 112, 144],
+    },
+    "squad:train_0shot": {
+        "steps": [0, 1623, 3246, 4869, 6492, 8118],
+    },
+    "mmlu_abstract_algebra:rc_test": {
+        "steps": [0, 4, 8, 12, 16, 21],
+    },
+    "mmlu_anatomy:rc_test": {
+        "steps": [0, 6, 12, 18, 24, 30],
+    },
+    "mmlu_astronomy:rc_test": {
+        "steps": [0, 6, 12, 18, 24, 33],
+    },
+    "mmlu_business_ethics:rc_test": {
+        "steps": [0, 4, 8, 12, 16, 21],
+    },
+    "mmlu_clinical_knowledge:rc_test": {
+        "steps": [0, 11, 22, 33, 44, 57],
+    },
+    "mmlu_college_biology:rc_test": {
+        "steps": [0, 6, 12, 18, 24, 30],
+    },
+    "mmlu_college_chemistry:rc_test": {
+        "steps": [0, 4, 8, 12, 16, 21],
+    },
+    "mmlu_college_computer_science:rc_test": {
+        "steps": [0, 4, 8, 12, 16, 21],
+    },
+    "mmlu_college_mathematics:rc_test": {
+        "steps": [0, 4, 8, 12, 16, 21],
+    },
+    "mmlu_college_medicine:rc_test": {
+        "steps": [0, 7, 14, 21, 28, 36],
+    },
+    "mmlu_college_physics:rc_test": {
+        "steps": [0, 4, 8, 12, 16, 21],
+    },
+    "mmlu_computer_security:rc_test": {
+        "steps": [0, 4, 8, 12, 16, 21],
+    },
+    "mmlu_conceptual_physics:rc_test": {
+        "steps": [0, 10, 20, 30, 40, 51],
+    },
+    "mmlu_econometrics:rc_test": {
+        "steps": [0, 4, 8, 12, 16, 20, 24],
+    },
+    "mmlu_electrical_engineering:rc_test": {
+        "steps": [0, 6, 12, 18, 24, 30],
+    },
+    "mmlu_elementary_mathematics:rc_test": {
+        "steps": [0, 16, 32, 48, 64, 84],
+    },
+    "mmlu_formal_logic:rc_test": {
+        "steps": [0, 5, 10, 15, 20, 27],
+    },
+    "mmlu_global_facts:rc_test": {
+        "steps": [0, 4, 8, 12, 16, 21],
+    },
+    "mmlu_high_school_biology:rc_test": {
+        "steps": [0, 13, 26, 39, 52, 69],
+    },
+    "mmlu_high_school_chemistry:rc_test": {
+        "steps": [0, 9, 18, 27, 36, 45],
+    },
+    "mmlu_high_school_computer_science:rc_test": {
+        "steps": [0, 4, 8, 12, 16, 21],
+    },
+    "mmlu_high_school_european_history:rc_test": {
+        "steps": [0, 7, 14, 21, 28, 36],
+    },
+    "mmlu_high_school_geography:rc_test": {
+        "steps": [0, 8, 16, 24, 32, 42],
+    },
+    "mmlu_high_school_government_and_politics:rc_test": {
+        "steps": [0],
+    },
+    "mmlu_high_school_macroeconomics:rc_test": {
+        "steps": [0, 17, 34, 51, 68, 87],
+    },
+    "mmlu_high_school_mathematics:rc_test": {
+        "steps": [0, 12, 24, 36, 48, 60],
+    },
+    "mmlu_high_school_microeconomics:rc_test": {
+        "steps": [0, 10, 20, 30, 40, 51],
+    },
+    "mmlu_high_school_physics:rc_test": {
+        "steps": [0, 6, 12, 18, 24, 33],
+    },
+    "mmlu_high_school_psychology:rc_test": {
+        "steps": [0, 24, 48, 72, 96, 120],
+    },
+    "mmlu_high_school_statistics:rc_test": {
+        "steps": [0, 9, 18, 27, 36, 48],
+    },
+    "mmlu_high_school_us_history:rc_test": {
+        "steps": [0, 9, 18, 27, 36, 45],
+    },
+    "mmlu_high_school_world_history:rc_test": {
+        "steps": [0, 10, 20, 30, 40, 51],
+    },
+    "mmlu_human_aging:rc_test": {
+        "steps": [0, 9, 18, 27, 36, 48],
+    },
+    "mmlu_human_sexuality:rc_test": {
+        "steps": [0, 5, 10, 15, 20, 27],
+    },
+    "mmlu_international_law:rc_test": {
+        "steps": [0, 5, 10, 15, 20, 27],
+    },
+    "mmlu_jurisprudence:rc_test": {
+        "steps": [0, 4, 8, 12, 16, 20, 24],
+    },
+    "mmlu_logical_fallacies:rc_test": {
+        "steps": [0, 7, 14, 21, 28, 36],
+    },
+    "mmlu_machine_learning:rc_test": {
+        "steps": [0, 4, 8, 12, 16, 20, 24],
+    },
+    "mmlu_management:rc_test": {
+        "steps": [0, 4, 8, 12, 16, 21],
+    },
+    "mmlu_marketing:rc_test": {
+        "steps": [0, 10, 20, 30, 40, 51],
+    },
+    "mmlu_medical_genetics:rc_test": {
+        "steps": [0, 4, 8, 12, 16, 21],
+    },
+    "mmlu_miscellaneous:rc_test": {
+        "steps": [0, 34, 68, 102, 136, 174],
+    },
+    "mmlu_moral_disputes:rc_test": {
+        "steps": [0, 15, 30, 45, 60, 75],
+    },
+    "mmlu_moral_scenarios:rc_test": {
+        "steps": [0, 40, 80, 120, 160, 201],
+    },
+    "mmlu_nutrition:rc_test": {
+        "steps": [0, 13, 26, 39, 52, 66],
+    },
+    "mmlu_philosophy:rc_test": {
+        "steps": [0, 13, 26, 39, 52, 69],
+    },
+    "mmlu_prehistory:rc_test": {
+        "steps": [0, 14, 28, 42, 56, 72],
+    },
+    "mmlu_professional_accounting:rc_test": {
+        "steps": [0, 12, 24, 36, 48, 63],
+    },
+    "mmlu_professional_law:rc_test": {
+        "steps": [0, 69, 138, 207, 276, 345],
+    },
+    "mmlu_professional_medicine:rc_test": {
+        "steps": [0, 12, 24, 36, 48, 60],
+    },
+    "mmlu_professional_psychology:rc_test": {
+        "steps": [0, 27, 54, 81, 108, 135],
+    },
+    "mmlu_public_relations:rc_test": {
+        "steps": [0, 4, 8, 12, 16, 20, 24],
+    },
+    "mmlu_security_studies:rc_test": {
+        "steps": [0, 10, 20, 30, 40, 54],
+    },
+    "mmlu_sociology:rc_test": {
+        "steps": [0, 9, 18, 27, 36, 45],
+    },
+    "mmlu_us_foreign_policy:rc_test": {
+        "steps": [0, 4, 8, 12, 16, 21],
+    },
+    "mmlu_virology:rc_test": {
+        "steps": [0, 7, 14, 21, 28, 36],
+    },
+    "mmlu_world_religions:rc_test": {
+        "steps": [0, 7, 14, 21, 28, 36],
+    },
 }
 
 # Family color mapping - define base colors for each model family
@@ -194,6 +246,8 @@ FAMILY_COLORS: Dict[str, str] = {
     "twolevelsamplingnolb": "#777777",  # Gray
     "mutualinfo": "#FBC15E",  # Yellow
 }
+
+DEFAULT_OUTPUT_SUBDIR = "primary_score_plots"
 
 # Model run configurations
 # Each entry defines a model run that will be plotted as a line
@@ -214,7 +268,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
     {
         "label": "twolevelbatchlb train32/128 keepk32",
         "template": (
-            f"{MAIN_MODEL}_"
+            "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121_step30995_"
             "task-{task_core}{validation_suffix}_keepk32_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
         ),
         "family": "twolevelbatchlb train32/128",
@@ -285,7 +339,7 @@ BASELINE_RUNS: List[Dict[str, Any]] = [
     },
     {
         "label": "twolevelbatchlb full",
-        "template": f"{MAIN_MODEL}-hf",
+        "template": "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121_step30995-hf",
         "family": "twolevelbatchlb",
         "linestyle": "--",
         "linewidth": 1.2,
@@ -313,8 +367,8 @@ BASELINE_FAMILY: Dict[str, str] = {run["label"]: run["family"] for run in BASELI
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Generate a seaborn line plot comparing primary_score across "
-            "training steps for two model families."
+            "Generate seaborn line plots comparing evaluation metrics across "
+            "training steps for selected model groups."
         )
     )
     parser.add_argument(
@@ -328,6 +382,11 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path(__file__).resolve().parent,
         help="Directory to save the generated plot images.",
+    )
+    parser.add_argument(
+        "--output-subdir",
+        default=DEFAULT_OUTPUT_SUBDIR,
+        help="Name of the subdirectory inside output-dir for generated plots.",
     )
     parser.add_argument(
         "--style",
@@ -412,17 +471,17 @@ def get_metrics_task_name(task_name: str) -> str:
     return task_name
 
 
-def collect_primary_scores(
+def collect_metric_scores(
     evals_root: Path,
     model_template: str,
     steps: Iterable[int],
     task_name: str,
     task_core: str,
     metrics_filename: str,
-) -> tuple[List[Dict[str, float]], str | None]:
-    """Load primary_score values for a model template across the provided steps."""
+    metric_key: str,
+) -> List[Dict[str, float]]:
+    """Load metric values for a model template across the provided steps."""
     records: List[Dict[str, float]] = []
-    primary_metric_name: str | None = None
     task_suffix = get_task_suffix(task_name)
     validation_suffix = get_validation_suffix(task_name)
     lr_suffix = get_lr_suffix(task_name)
@@ -458,10 +517,6 @@ def collect_primary_scores(
             print(f"[WARN] Unexpected metrics format in {metrics_path}")
             continue
 
-        task_config = metrics.get("task_config", {})
-        if task_config and isinstance(task_config, dict):
-            primary_metric_name = primary_metric_name or task_config.get("primary_metric")
-
         detected_task = metrics.get("task_name")
         metrics_task_name = get_metrics_task_name(task_name)
         if detected_task and detected_task != metrics_task_name:
@@ -470,19 +525,19 @@ def collect_primary_scores(
                 f"{detected_task} vs {metrics_task_name}."
             )
 
-        score = None
+        metric_value = None
         metric_values = metrics.get("metrics")
         if isinstance(metric_values, dict):
-            score = metric_values.get("primary_score")
+            metric_value = metric_values.get(metric_key)
 
-        if score is None:
-            print(f"[WARN] No 'primary_score' found in metrics for {metrics_path}")
+        if metric_value is None:
+            print(f"[WARN] No '{metric_key}' found in metrics for {metrics_path}")
             continue
 
-        records.append({"step": step, "primary_score": score})
-        print(f"[DEBUG] Found score {score} for step {step} in {model_dir}")
+        records.append({"step": step, "metric_value": metric_value})
+        print(f"[DEBUG] Found {metric_key}={metric_value} for step {step} in {model_dir}")
 
-    return records, primary_metric_name
+    return records
 
 
 def build_dataframe(
@@ -490,10 +545,10 @@ def build_dataframe(
     task_name: str,
     metrics_filename: str,
     steps: Iterable[int],
-) -> tuple[pd.DataFrame, str | None]:
-    """Build a tidy DataFrame with columns [model_group, step, primary_score]."""
+    metric_key: str,
+) -> pd.DataFrame:
+    """Build a tidy DataFrame with columns [model_group, step, metric_value]."""
     rows: List[Dict[str, object]] = []
-    primary_metric_name: str | None = None
     task_core = task_core_from_name(task_name)
 
     for group_label, template in MODEL_GROUPS.items():
@@ -505,20 +560,15 @@ def build_dataframe(
             if "exclude_tasks" in run_config and task_name in run_config["exclude_tasks"]:
                 continue  # Skip this model run for excluded tasks
 
-        records, group_metric = collect_primary_scores(
+        records = collect_metric_scores(
             evals_root,
             template,
             steps,
             task_name,
             task_core,
             metrics_filename,
+            metric_key,
         )
-        if group_metric and primary_metric_name and group_metric != primary_metric_name:
-            print(
-                f"[WARN] Primary metric mismatch: {group_metric} vs {primary_metric_name}. "
-                "Using the first encountered metric."
-            )
-        primary_metric_name = primary_metric_name or group_metric
 
         for record in records:
             record["model_group"] = group_label
@@ -531,14 +581,14 @@ def build_dataframe(
         )
 
     df = pd.DataFrame(rows)
-    return df.sort_values(["model_group", "step"]), primary_metric_name
+    return df.sort_values(["model_group", "step"])
 
 
 def load_baseline_scores(
     evals_root: Path,
     task_name: str,
-    primary_metric_name: str | None,
     metrics_filename: str,
+    metric_key: str,
 ) -> Dict[str, float]:
     scores: Dict[str, float] = {}
 
@@ -561,24 +611,21 @@ def load_baseline_scores(
 
         entry_task = metrics.get("task_name")
         task_config = metrics.get("task_config", {})
-        entry_primary_metric = None
         if isinstance(task_config, dict):
             entry_task = entry_task or task_config.get("task_name")
-            entry_primary_metric = task_config.get("primary_metric")
 
         metrics_task_name = get_metrics_task_name(task_name)
         task_match = entry_task == metrics_task_name
-        metric_match = primary_metric_name is None or entry_primary_metric == primary_metric_name
 
         metric_values = metrics.get("metrics")
         score = None
-        if task_match and metric_match and isinstance(metric_values, dict):
-            score = metric_values.get("primary_score")
+        if task_match and isinstance(metric_values, dict):
+            score = metric_values.get(metric_key)
 
         if score is None:
             warn_parts = [
-                f"No primary_score found for baseline '{label}'",
-                f"(task={metrics_task_name!r}, metric={primary_metric_name!r})",
+                f"No {metric_key!r} found for baseline '{label}'",
+                f"(task={metrics_task_name!r})",
                 f"in {metrics_path}",
             ]
             print(f"[WARN] {' '.join(warn_parts)}")
@@ -607,13 +654,13 @@ def adjust_color_brightness(hex_color: str, brightness_factor: float) -> str:
     return mcolors.rgb2hex(new_rgb)
 
 
-def plot_primary_scores(
+def plot_metric_scores(
     df: pd.DataFrame,
     output: Path,
     style: str,
     show: bool,
     task_name: str | None,
-    primary_metric_name: str | None,
+    metric_name: str,
     baseline_scores: Dict[str, float],
 ) -> None:
     sns.set_theme(style=style)
@@ -667,7 +714,7 @@ def plot_primary_scores(
 
         ax.plot(
             group_data["step"],
-            group_data["primary_score"],
+            group_data["metric_value"],
             marker=marker,
             color=group_palette[group],
             label=group,
@@ -675,13 +722,12 @@ def plot_primary_scores(
             markersize=markersize,
         )
 
-    metric_label = primary_metric_name or "Primary Score"
     if task_name:
         ax.set_title(task_name)
     else:
-        ax.set_title("Primary Score vs. Training Step")
+        ax.set_title(f"{metric_name} vs. Training Step")
     ax.set_xlabel("Training Step")
-    ax.set_ylabel(metric_label)
+    ax.set_ylabel(metric_name)
 
     # Plot baseline models using configuration
     for label, score in baseline_scores.items():
@@ -724,21 +770,24 @@ def plot_primary_scores(
 
 def main() -> None:
     args = parse_args()
-    args.output_dir.mkdir(parents=True, exist_ok=True)
+    base_output_dir = (args.output_dir / args.output_subdir).resolve()
+    base_output_dir.mkdir(parents=True, exist_ok=True)
 
-    for task_name in TASKS:
+    for task_name, task_config in TASK_CONFIGS.items():
         metrics_task_name = get_metrics_task_name(task_name)
         metrics_filename = f"task-{metrics_task_name.replace(':', '_')}-metrics.json"
-        steps = TASK_STEPS.get(task_name)
+        steps = task_config.get("steps")
+        metric_key = task_config.get("metric_key", "primary_score")
         if not steps:
             print(f"[WARN] No step configuration for {task_name}; skipping.")
             continue
         try:
-            df, primary_metric_name = build_dataframe(
+            df = build_dataframe(
                 args.evals_root,
                 task_name,
                 metrics_filename,
                 steps,
+                metric_key,
             )
         except RuntimeError as exc:
             print(f"[WARN] Skipping {task_name}: {exc}")
@@ -747,23 +796,22 @@ def main() -> None:
         baseline_scores = load_baseline_scores(
             args.evals_root,
             task_name,
-            primary_metric_name,
             metrics_filename,
+            metric_key,
         )
 
         output_file = (
-            args.output_dir
-            / f"{MAIN_MODEL}_full"
-            / f"{task_name.replace(':', '_')}_primary_score_comparison.png"
+            base_output_dir
+            / f"{task_name.replace(':', '_')}_{metric_key}_comparison.png"
         )
 
-        plot_primary_scores(
+        plot_metric_scores(
             df,
             output_file,
             args.style,
             args.show,
             task_name,
-            primary_metric_name,
+            metric_key,
             baseline_scores,
         )
 

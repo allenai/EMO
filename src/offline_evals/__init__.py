@@ -6,7 +6,7 @@ from oe_eval.tasks.oe_eval_tasks import TASK_REGISTRY
 from oe_eval.tasks.oe_eval_tasks.mmlu import create_mmlu_task
 from oe_eval.tasks.oe_eval_tasks.mmlu_pro import create_mmlu_pro_task
 
-from .tasks.splits_mmlu import create_mmlu_tasks_withsplits
+from .tasks.splits_mmlu import create_mmlu_tasks_withsplits, MMLU_17categories_RC
 from .tasks import (
     agi_eval,
     hatespeech,
@@ -44,6 +44,16 @@ def create_core_mmlu_tasks_withsplits():
         res[f"mmlu_{sub}:rc_validation"] = create_mmlu_tasks_withsplits(sub)
         res[f"mmlu_{sub}:rc_test"] = create_mmlu_tasks_withsplits(sub)
         res[f"mmlu_{sub}:rc_train"] = create_mmlu_tasks_withsplits(sub)
+    return res
+
+def create_category_mmlu_tasks_withsplits():
+    """Creates a dictionary of tasks from a list of subjects.
+    Note that the differences between train, validation, and test is declared in TASK_CONFIGS"""
+    res = {}
+    for sub in MMLU_SUBJECTS:
+        res[f"mmlu_{sub}:rc_validation"] = MMLU_17categories_RC
+        res[f"mmlu_{sub}:rc_test"] = MMLU_17categories_RC
+        res[f"mmlu_{sub}:rc_train"] = MMLU_17categories_RC
     return res
 
 
@@ -156,6 +166,7 @@ new_task_registry: Dict = {
     "synthea:rc_test_0shot": splits_synthea.Synthea_RC_Test_0shot,
     # MMLU
     **create_core_mmlu_tasks_withsplits(),
+    **create_category_mmlu_tasks_withsplits(),
     # **create_core_mmlu_pro_tasks_withsplits(),
     # GSM8K
     "gsm8k_perplexity:train": splits_gsm8k.GSM8K_Perplexity_Train,
