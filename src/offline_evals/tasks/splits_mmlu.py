@@ -168,6 +168,10 @@ class MMLU_17categories_RC(GenericMMLU):
         train_split = self.dataset["test"].shuffle(seed=0).select(range(0, int(tot_test_size * self.TEST_FRACTION)))
         return train_split.map(self._process_doc, with_indices=True)
 
+def create_mmlu_categories_tasks_withsplits(category):
+    class MMLU_Category(MMLU_17categories_RC):
+        DATASET_NAME = f"mmlu_{category}"
+    return MMLU_Category
 
 def create_mmlu_tasks_withsplits(subject):
     class MMLU(GenericMMLU_withsplits):

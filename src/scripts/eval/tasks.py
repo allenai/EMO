@@ -1251,7 +1251,6 @@ def get_task_configs():
     for category in MMLU_CATEGORIES:
         TASK_CONFIGS[f"mmlu_{category}:rc_validation::olmes"] = {
             "task_name": f"mmlu_{category}:rc_validation",
-            "dataset_name": f"mmlu_{category}",
             "split": "validation",
             "num_shots": 5,
             "primary_metric": "acc_per_char",
@@ -1262,7 +1261,6 @@ def get_task_configs():
         }
         TASK_CONFIGS[f"mmlu_{category}:rc_test::olmes"] = {
             "task_name": f"mmlu_{category}:rc_test",
-            "dataset_name": f"mmlu_{category}",
             "split": "test",
             "num_shots": 5,
             "primary_metric": "acc_per_char",
@@ -1273,7 +1271,6 @@ def get_task_configs():
         }
         TASK_CONFIGS[f"mmlu_{category}:rc_train::olmes"] = {
             "task_name": f"mmlu_{category}:rc_train",
-            "dataset_name": f"mmlu_{category}",
             "split": "train",
             "num_shots": 5,
             "primary_metric": "acc_per_char",
