@@ -100,6 +100,24 @@ train_task_names=(
 #  "winogrande:rc_train_0shot::olmes"
 #
 ##   MMLU
+  "mmlu_biology:rc_train::olmes"
+  "mmlu_business:rc_train::olmes"
+  "mmlu_chemistry:rc_train::olmes"
+  "mmlu_computer_science:rc_train::olmes"
+  "mmlu_culture:rc_train::olmes"
+  "mmlu_economics:rc_train::olmes"
+  "mmlu_engineering:rc_train::olmes"
+  "mmlu_geography:rc_train::olmes"
+  "mmlu_health:rc_train::olmes"
+  "mmlu_history:rc_train::olmes"
+  "mmlu_law:rc_train::olmes"
+  "mmlu_math:rc_train::olmes"
+  "mmlu_other:rc_train::olmes"
+  "mmlu_philosophy:rc_train::olmes"
+  "mmlu_physics:rc_train::olmes"
+  "mmlu_politics:rc_train::olmes"
+  "mmlu_psychology:rc_train::olmes"
+
 #  "mmlu_abstract_algebra:rc_train::olmes"
 #  "mmlu_anatomy:rc_train::olmes"
 #  "mmlu_astronomy:rc_train::olmes"
@@ -155,8 +173,8 @@ train_task_names=(
 #  "mmlu_security_studies:rc_train::olmes"
 #  "mmlu_sociology:rc_train::olmes"
 #  "mmlu_us_foreign_policy:rc_train::olmes"
-  "mmlu_virology:rc_train::olmes"
-  "mmlu_world_religions:rc_train::olmes"
+#  "mmlu_virology:rc_train::olmes"
+#  "mmlu_world_religions:rc_train::olmes"
 #  "mmlu_rc:rc_train_0shot::olmes"
 #
 ##   GSM8K

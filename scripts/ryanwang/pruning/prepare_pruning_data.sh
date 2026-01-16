@@ -3,7 +3,7 @@
 MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
 #MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 MODELS=(
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
+#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995-hf"
 #    "twolevelbatchlb-8_1b7b_stability_1207/step30995-hf"
 
@@ -234,7 +234,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
                 --GPUS "$gpus"
             "
 
-        sleep 30 # to avoid overwhelming huggingface with too many requests
+        sleep 15 # to avoid overwhelming huggingface with too many requests
 
         echo "Launched evaluation for model: $model, group: $GROUP_NAME"
         echo "----------------------------------------"
