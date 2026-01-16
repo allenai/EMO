@@ -7,10 +7,10 @@
 MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
 #MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 MODELS=(
-#    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995-hf"
-#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
+    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995-hf"
+    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
     "moe_1b4b_32experts_1224/step30995-hf"
-#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
+    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
 
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995-hf"
 #    "twolevelsamplingnolb-32_1b10b_stability_1127/step30995-hf"
@@ -40,23 +40,23 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
-  "arc_easy|arc_easy:mc_test::olmes arc_easy:rc_test::olmes"
-  "arc_challenge|arc_challenge:mc_test::olmes arc_challenge:rc_test::olmes"
-  "boolq|boolq:mc_test::olmes boolq:rc_test::olmes"
-  "csqa|csqa:mc_test::olmes csqa:rc_test::olmes"
-  "hellaswag|hellaswag:mc_test::olmes hellaswag:rc_test::olmes"
-  "openbookqa|openbookqa:mc_test::olmes openbookqa:rc_test::olmes"
-  "piqa|piqa:mc_test::olmes piqa:rc_test::olmes"
-  "socialiqa|socialiqa:mc_test::olmes socialiqa:rc_test::olmes"
-  "winogrande|winogrande:mc_test::olmes winogrande:rc_test::olmes"
+#  "arc_easy|arc_easy:mc_test::olmes arc_easy:rc_test::olmes"
+#  "arc_challenge|arc_challenge:mc_test::olmes arc_challenge:rc_test::olmes"
+#  "boolq|boolq:mc_test::olmes boolq:rc_test::olmes"
+#  "csqa|csqa:mc_test::olmes csqa:rc_test::olmes"
+#  "hellaswag|hellaswag:mc_test::olmes hellaswag:rc_test::olmes"
+#  "openbookqa|openbookqa:mc_test::olmes openbookqa:rc_test::olmes"
+#  "piqa|piqa:mc_test::olmes piqa:rc_test::olmes"
+#  "socialiqa|socialiqa:mc_test::olmes socialiqa:rc_test::olmes"
+#  "winogrande|winogrande:mc_test::olmes winogrande:rc_test::olmes"
 
 #   MMLU
 #  "mmlu_mc_test|mmlu:mc_test::olmes"
-  "mmlu_rc_test|mmlu:rc_test::olmes"
+#  "mmlu_rc_test|mmlu:rc_test::olmes"
 
 #   Gen5 tasks
-  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes"
-  "drop|drop::olmes"
+#  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes"
+#  "drop|drop::olmes"
 
 #  "synthea|synthea:rc_test_0shot::olmes"
 #  "gsm8k|gsm8k_generation:test_0shot::olmes"
@@ -64,6 +64,24 @@ TASK_GROUPS_LIST=(
 #  "squad|squad:test_0shot::olmes"
 
 #   GSM8K
+  "mmlu_biology|mmlu_biology:rc_test::olmes"
+  "mmlu_business|mmlu_business:rc_test::olmes"
+  "mmlu_chemistry|mmlu_chemistry:rc_test::olmes"
+  "mmlu_computer_science|mmlu_computer_science:rc_test::olmes"
+  "mmlu_culture|mmlu_culture:rc_test::olmes"
+  "mmlu_economics|mmlu_economics:rc_test::olmes"
+  "mmlu_engineering|mmlu_engineering:rc_test::olmes"
+  "mmlu_geography|mmlu_geography:rc_test::olmes"
+  "mmlu_health|mmlu_health:rc_test::olmes"
+  "mmlu_history|mmlu_history:rc_test::olmes"
+  "mmlu_law|mmlu_law:rc_test::olmes"
+  "mmlu_math|mmlu_math:rc_test::olmes"
+  "mmlu_other|mmlu_other:rc_test::olmes"
+  "mmlu_philosophy_cat|mmlu_philosophy_cat:rc_test::olmes"
+  "mmlu_physics|mmlu_physics:rc_test::olmes"
+  "mmlu_politics|mmlu_politics:rc_test::olmes"
+  "mmlu_psychology|mmlu_psychology:rc_test::olmes"
+
 #  "mmlu_abstract_algebra|mmlu_abstract_algebra:rc_test::olmes"
 #  "mmlu_anatomy|mmlu_anatomy:rc_test::olmes"
 #  "mmlu_astronomy|mmlu_astronomy:rc_test::olmes"
@@ -75,8 +93,8 @@ TASK_GROUPS_LIST=(
 #  "mmlu_college_mathematics|mmlu_college_mathematics:rc_test::olmes"
 #  "mmlu_college_medicine|mmlu_college_medicine:rc_test::olmes"
 #  "mmlu_college_physics|mmlu_college_physics:rc_test::olmes"
-
-  "gsm8k_test|gsm8k:perplexity_test::olmes"
+#
+#  "gsm8k_test|gsm8k:perplexity_test::olmes"
 
   ######### TRAIN-VAL-TEST ##########
 #  # MC9 tasks
@@ -201,7 +219,7 @@ for MODEL_NAME in "${MODELS[@]}"; do
                 --gpus $gpus \
                 "
 
-#        sleep 20
+        sleep 20
 
         echo "Launched evaluation for model: $model, group: $GROUP_NAME"
         echo "----------------------------------------"

@@ -23,217 +23,297 @@ import seaborn as sns
 TASK_CONFIGS: Dict[str, Dict[str, Any]] = {
     "arc_easy:rc_test": {
         "steps": [0, 42, 84, 126, 168, 210],
+        "metric_key": "bits_per_byte_corr",
     },
     "arc_challenge:rc_test": {
         "steps": [0, 20, 40, 60, 80, 102],
-        "metric_key": "sum_logits_corr",
+        "metric_key": "bits_per_byte_corr",
     },
     "boolq:rc_test": {
         "steps": [0, 157, 314, 471, 628, 789],
+        "metric_key": "bits_per_byte_corr",
     },
     "csqa:rc_test": {
         "steps": [0, 163, 326, 489, 652, 819],
+        "metric_key": "bits_per_byte_corr",
     },
     "hellaswag:rc_test": {
         "steps": [0, 729, 1458, 2187, 2916, 3645],
-        "metric_key": "sum_logits_corr",
+        "metric_key": "bits_per_byte_corr",
     },
     "openbookqa:rc_test": {
         "steps": [0, 92, 184, 276, 368, 462],
+        "metric_key": "bits_per_byte_corr",
     },
     "piqa:rc_test": {
         "steps": [0, 283, 566, 849, 1132, 1416],
+        "metric_key": "bits_per_byte_corr",
     },
     "socialiqa:rc_test": {
         "steps": [0, 607, 1214, 1821, 2428, 3036],
+        "metric_key": "bits_per_byte_corr",
     },
     "winogrande:rc_test": {
         "steps": [0, 738, 1476, 2214, 2952, 3693],
+        "metric_key": "bits_per_byte_corr",
     },
     "gsm8k_generation:train_0shot": {
         "steps": [0, 121, 242, 363, 484, 606],
+        "metric_key": "bits_per_byte_corr",
     },
     "synthea:rc_train_0shot": {
         "steps": [0, 161, 322, 483, 644, 807],
+        "metric_key": "bits_per_byte_corr",
     },
     "coqa:train_0shot": {
         "steps": [0, 28, 56, 84, 112, 144],
+        "metric_key": "bits_per_byte_corr",
     },
     "squad:train_0shot": {
         "steps": [0, 1623, 3246, 4869, 6492, 8118],
+        "metric_key": "bits_per_byte_corr",
     },
-    "mmlu_abstract_algebra:rc_test": {
-        "steps": [0, 4, 8, 12, 16, 21],
-    },
-    "mmlu_anatomy:rc_test": {
-        "steps": [0, 6, 12, 18, 24, 30],
-    },
-    "mmlu_astronomy:rc_test": {
-        "steps": [0, 6, 12, 18, 24, 33],
-    },
-    "mmlu_business_ethics:rc_test": {
-        "steps": [0, 4, 8, 12, 16, 21],
-    },
-    "mmlu_clinical_knowledge:rc_test": {
-        "steps": [0, 11, 22, 33, 44, 57],
-    },
-    "mmlu_college_biology:rc_test": {
-        "steps": [0, 6, 12, 18, 24, 30],
-    },
-    "mmlu_college_chemistry:rc_test": {
-        "steps": [0, 4, 8, 12, 16, 21],
-    },
-    "mmlu_college_computer_science:rc_test": {
-        "steps": [0, 4, 8, 12, 16, 21],
-    },
-    "mmlu_college_mathematics:rc_test": {
-        "steps": [0, 4, 8, 12, 16, 21],
-    },
-    "mmlu_college_medicine:rc_test": {
-        "steps": [0, 7, 14, 21, 28, 36],
-    },
-    "mmlu_college_physics:rc_test": {
-        "steps": [0, 4, 8, 12, 16, 21],
-    },
-    "mmlu_computer_security:rc_test": {
-        "steps": [0, 4, 8, 12, 16, 21],
-    },
-    "mmlu_conceptual_physics:rc_test": {
+    # "mmlu_abstract_algebra:rc_test": {
+    #     "steps": [0, 4, 8, 12, 16, 21],
+    # },
+    # "mmlu_anatomy:rc_test": {
+    #     "steps": [0, 6, 12, 18, 24, 30],
+    # },
+    # "mmlu_astronomy:rc_test": {
+    #     "steps": [0, 6, 12, 18, 24, 33],
+    # },
+    # "mmlu_business_ethics:rc_test": {
+    #     "steps": [0, 4, 8, 12, 16, 21],
+    # },
+    # "mmlu_clinical_knowledge:rc_test": {
+    #     "steps": [0, 11, 22, 33, 44, 57],
+    # },
+    # "mmlu_college_biology:rc_test": {
+    #     "steps": [0, 6, 12, 18, 24, 30],
+    # },
+    # "mmlu_college_chemistry:rc_test": {
+    #     "steps": [0, 4, 8, 12, 16, 21],
+    # },
+    # "mmlu_college_computer_science:rc_test": {
+    #     "steps": [0, 4, 8, 12, 16, 21],
+    # },
+    # "mmlu_college_mathematics:rc_test": {
+    #     "steps": [0, 4, 8, 12, 16, 21],
+    # },
+    # "mmlu_college_medicine:rc_test": {
+    #     "steps": [0, 7, 14, 21, 28, 36],
+    # },
+    # "mmlu_college_physics:rc_test": {
+    #     "steps": [0, 4, 8, 12, 16, 21],
+    # },
+    # "mmlu_computer_security:rc_test": {
+    #     "steps": [0, 4, 8, 12, 16, 21],
+    # },
+    # "mmlu_conceptual_physics:rc_test": {
+    #     "steps": [0, 10, 20, 30, 40, 51],
+    # },
+    # "mmlu_econometrics:rc_test": {
+    #     "steps": [0, 4, 8, 12, 16, 20, 24],
+    # },
+    # "mmlu_electrical_engineering:rc_test": {
+    #     "steps": [0, 6, 12, 18, 24, 30],
+    # },
+    # "mmlu_elementary_mathematics:rc_test": {
+    #     "steps": [0, 16, 32, 48, 64, 84],
+    # },
+    # "mmlu_formal_logic:rc_test": {
+    #     "steps": [0, 5, 10, 15, 20, 27],
+    # },
+    # "mmlu_global_facts:rc_test": {
+    #     "steps": [0, 4, 8, 12, 16, 21],
+    # },
+    # "mmlu_high_school_biology:rc_test": {
+    #     "steps": [0, 13, 26, 39, 52, 69],
+    # },
+    # "mmlu_high_school_chemistry:rc_test": {
+    #     "steps": [0, 9, 18, 27, 36, 45],
+    # },
+    # "mmlu_high_school_computer_science:rc_test": {
+    #     "steps": [0, 4, 8, 12, 16, 21],
+    # },
+    # "mmlu_high_school_european_history:rc_test": {
+    #     "steps": [0, 7, 14, 21, 28, 36],
+    # },
+    # "mmlu_high_school_geography:rc_test": {
+    #     "steps": [0, 8, 16, 24, 32, 42],
+    # },
+    # "mmlu_high_school_government_and_politics:rc_test": {
+    #     "steps": [0],
+    # },
+    # "mmlu_high_school_macroeconomics:rc_test": {
+    #     "steps": [0, 17, 34, 51, 68, 87],
+    # },
+    # "mmlu_high_school_mathematics:rc_test": {
+    #     "steps": [0, 12, 24, 36, 48, 60],
+    # },
+    # "mmlu_high_school_microeconomics:rc_test": {
+    #     "steps": [0, 10, 20, 30, 40, 51],
+    # },
+    # "mmlu_high_school_physics:rc_test": {
+    #     "steps": [0, 6, 12, 18, 24, 33],
+    # },
+    # "mmlu_high_school_psychology:rc_test": {
+    #     "steps": [0, 24, 48, 72, 96, 120],
+    # },
+    # "mmlu_high_school_statistics:rc_test": {
+    #     "steps": [0, 9, 18, 27, 36, 48],
+    # },
+    # "mmlu_high_school_us_history:rc_test": {
+    #     "steps": [0, 9, 18, 27, 36, 45],
+    # },
+    # "mmlu_high_school_world_history:rc_test": {
+    #     "steps": [0, 10, 20, 30, 40, 51],
+    # },
+    # "mmlu_human_aging:rc_test": {
+    #     "steps": [0, 9, 18, 27, 36, 48],
+    # },
+    # "mmlu_human_sexuality:rc_test": {
+    #     "steps": [0, 5, 10, 15, 20, 27],
+    # },
+    # "mmlu_international_law:rc_test": {
+    #     "steps": [0, 5, 10, 15, 20, 27],
+    # },
+    # "mmlu_jurisprudence:rc_test": {
+    #     "steps": [0, 4, 8, 12, 16, 20, 24],
+    # },
+    # "mmlu_logical_fallacies:rc_test": {
+    #     "steps": [0, 7, 14, 21, 28, 36],
+    # },
+    # "mmlu_machine_learning:rc_test": {
+    #     "steps": [0, 4, 8, 12, 16, 20, 24],
+    # },
+    # "mmlu_management:rc_test": {
+    #     "steps": [0, 4, 8, 12, 16, 21],
+    # },
+    # "mmlu_marketing:rc_test": {
+    #     "steps": [0, 10, 20, 30, 40, 51],
+    # },
+    # "mmlu_medical_genetics:rc_test": {
+    #     "steps": [0, 4, 8, 12, 16, 21],
+    # },
+    # "mmlu_miscellaneous:rc_test": {
+    #     "steps": [0, 34, 68, 102, 136, 174],
+    # },
+    # "mmlu_moral_disputes:rc_test": {
+    #     "steps": [0, 15, 30, 45, 60, 75],
+    # },
+    # "mmlu_moral_scenarios:rc_test": {
+    #     "steps": [0, 40, 80, 120, 160, 201],
+    # },
+    # "mmlu_nutrition:rc_test": {
+    #     "steps": [0, 13, 26, 39, 52, 66],
+    # },
+    # "mmlu_philosophy:rc_test": {
+    #     "steps": [0, 13, 26, 39, 52, 69],
+    # },
+    # "mmlu_prehistory:rc_test": {
+    #     "steps": [0, 14, 28, 42, 56, 72],
+    # },
+    # "mmlu_professional_accounting:rc_test": {
+    #     "steps": [0, 12, 24, 36, 48, 63],
+    # },
+    # "mmlu_professional_law:rc_test": {
+    #     "steps": [0, 69, 138, 207, 276, 345],
+    # },
+    # "mmlu_professional_medicine:rc_test": {
+    #     "steps": [0, 12, 24, 36, 48, 60],
+    # },
+    # "mmlu_professional_psychology:rc_test": {
+    #     "steps": [0, 27, 54, 81, 108, 135],
+    # },
+    # "mmlu_public_relations:rc_test": {
+    #     "steps": [0, 4, 8, 12, 16, 20, 24],
+    # },
+    # "mmlu_security_studies:rc_test": {
+    #     "steps": [0, 10, 20, 30, 40, 54],
+    # },
+    # "mmlu_sociology:rc_test": {
+    #     "steps": [0, 9, 18, 27, 36, 45],
+    # },
+    # "mmlu_us_foreign_policy:rc_test": {
+    #     "steps": [0, 4, 8, 12, 16, 21],
+    # },
+    # "mmlu_virology:rc_test": {
+    #     "steps": [0, 7, 14, 21, 28, 36],
+    # },
+    # "mmlu_world_religions:rc_test": {
+    #     "steps": [0, 7, 14, 21, 28, 36],
+    # },
+    "mmlu_biology:rc_test": {
         "steps": [0, 10, 20, 30, 40, 51],
+        "metric_key": "bits_per_byte_corr",
     },
-    "mmlu_econometrics:rc_test": {
-        "steps": [0, 4, 8, 12, 16, 20, 24],
-    },
-    "mmlu_electrical_engineering:rc_test": {
-        "steps": [0, 6, 12, 18, 24, 30],
-    },
-    "mmlu_elementary_mathematics:rc_test": {
-        "steps": [0, 16, 32, 48, 64, 84],
-    },
-    "mmlu_formal_logic:rc_test": {
-        "steps": [0, 5, 10, 15, 20, 27],
-    },
-    "mmlu_global_facts:rc_test": {
-        "steps": [0, 4, 8, 12, 16, 21],
-    },
-    "mmlu_high_school_biology:rc_test": {
-        "steps": [0, 13, 26, 39, 52, 69],
-    },
-    "mmlu_high_school_chemistry:rc_test": {
-        "steps": [0, 9, 18, 27, 36, 45],
-    },
-    "mmlu_high_school_computer_science:rc_test": {
-        "steps": [0, 4, 8, 12, 16, 21],
-    },
-    "mmlu_high_school_european_history:rc_test": {
-        "steps": [0, 7, 14, 21, 28, 36],
-    },
-    "mmlu_high_school_geography:rc_test": {
-        "steps": [0, 8, 16, 24, 32, 42],
-    },
-    "mmlu_high_school_government_and_politics:rc_test": {
-        "steps": [0],
-    },
-    "mmlu_high_school_macroeconomics:rc_test": {
-        "steps": [0, 17, 34, 51, 68, 87],
-    },
-    "mmlu_high_school_mathematics:rc_test": {
-        "steps": [0, 12, 24, 36, 48, 60],
-    },
-    "mmlu_high_school_microeconomics:rc_test": {
-        "steps": [0, 10, 20, 30, 40, 51],
-    },
-    "mmlu_high_school_physics:rc_test": {
-        "steps": [0, 6, 12, 18, 24, 33],
-    },
-    "mmlu_high_school_psychology:rc_test": {
-        "steps": [0, 24, 48, 72, 96, 120],
-    },
-    "mmlu_high_school_statistics:rc_test": {
+    "mmlu_business:rc_test": {
         "steps": [0, 9, 18, 27, 36, 48],
+        "metric_key": "bits_per_byte_corr",
     },
-    "mmlu_high_school_us_history:rc_test": {
+    "mmlu_chemistry:rc_test": {
+        "steps": [0, 6, 12, 18, 24, 33],
+        "metric_key": "bits_per_byte_corr",
+    },
+    "mmlu_computer_science:rc_test": {
         "steps": [0, 9, 18, 27, 36, 45],
+        "metric_key": "bits_per_byte_corr",
     },
-    "mmlu_high_school_world_history:rc_test": {
-        "steps": [0, 10, 20, 30, 40, 51],
-    },
-    "mmlu_human_aging:rc_test": {
-        "steps": [0, 9, 18, 27, 36, 48],
-    },
-    "mmlu_human_sexuality:rc_test": {
-        "steps": [0, 5, 10, 15, 20, 27],
-    },
-    "mmlu_international_law:rc_test": {
-        "steps": [0, 5, 10, 15, 20, 27],
-    },
-    "mmlu_jurisprudence:rc_test": {
-        "steps": [0, 4, 8, 12, 16, 20, 24],
-    },
-    "mmlu_logical_fallacies:rc_test": {
+    "mmlu_culture:rc_test": {
         "steps": [0, 7, 14, 21, 28, 36],
+        "metric_key": "bits_per_byte_corr",
     },
-    "mmlu_machine_learning:rc_test": {
-        "steps": [0, 4, 8, 12, 16, 20, 24],
+    "mmlu_economics:rc_test": {
+        "steps": [0, 16, 32, 48, 64, 81],
+        "metric_key": "bits_per_byte_corr",
     },
-    "mmlu_management:rc_test": {
+    "mmlu_engineering:rc_test": {
+        "steps": [0, 3, 6, 9, 12, 15],
+        "metric_key": "bits_per_byte_corr",
+    },
+    "mmlu_geography:rc_test": {
         "steps": [0, 4, 8, 12, 16, 21],
+        "metric_key": "bits_per_byte_corr",
     },
-    "mmlu_marketing:rc_test": {
-        "steps": [0, 10, 20, 30, 40, 51],
+    "mmlu_health:rc_test": {
+        "steps": [0, 36, 72, 108, 144, 183],
+        "metric_key": "bits_per_byte_corr",
     },
-    "mmlu_medical_genetics:rc_test": {
-        "steps": [0, 4, 8, 12, 16, 21],
+    "mmlu_history:rc_test": {
+        "steps": [0, 20, 40, 60, 80, 102],
+        "metric_key": "bits_per_byte_corr",
     },
-    "mmlu_miscellaneous:rc_test": {
-        "steps": [0, 34, 68, 102, 136, 174],
+    "mmlu_law:rc_test": {
+        "steps": [0, 39, 78, 117, 156, 198],
+        "metric_key": "bits_per_byte_corr",
     },
-    "mmlu_moral_disputes:rc_test": {
-        "steps": [0, 15, 30, 45, 60, 75],
+    "mmlu_math:rc_test": {
+        "steps": [0, 23, 46, 69, 92, 117],
+        "metric_key": "bits_per_byte_corr",
     },
-    "mmlu_moral_scenarios:rc_test": {
-        "steps": [0, 40, 80, 120, 160, 201],
+    "mmlu_other:rc_test": {
+        "steps": [0, 25, 50, 75, 100, 129],
+        "metric_key": "bits_per_byte_corr",
     },
-    "mmlu_nutrition:rc_test": {
-        "steps": [0, 13, 26, 39, 52, 66],
+    "mmlu_philosophy_cat:rc_test": {
+        "steps": [0, 45, 90, 135, 180, 225],
+        "metric_key": "bits_per_byte_corr",
     },
-    "mmlu_philosophy:rc_test": {
-        "steps": [0, 13, 26, 39, 52, 69],
-    },
-    "mmlu_prehistory:rc_test": {
+    "mmlu_physics:rc_test": {
         "steps": [0, 14, 28, 42, 56, 72],
+        "metric_key": "bits_per_byte_corr",
     },
-    "mmlu_professional_accounting:rc_test": {
-        "steps": [0, 12, 24, 36, 48, 63],
+    "mmlu_politics:rc_test": {
+        "steps": [0, 14, 28, 42, 56, 72],
+        "metric_key": "bits_per_byte_corr",
     },
-    "mmlu_professional_law:rc_test": {
-        "steps": [0, 69, 138, 207, 276, 345],
-    },
-    "mmlu_professional_medicine:rc_test": {
-        "steps": [0, 12, 24, 36, 48, 60],
-    },
-    "mmlu_professional_psychology:rc_test": {
-        "steps": [0, 27, 54, 81, 108, 135],
-    },
-    "mmlu_public_relations:rc_test": {
-        "steps": [0, 4, 8, 12, 16, 20, 24],
-    },
-    "mmlu_security_studies:rc_test": {
-        "steps": [0, 10, 20, 30, 40, 54],
-    },
-    "mmlu_sociology:rc_test": {
-        "steps": [0, 9, 18, 27, 36, 45],
-    },
-    "mmlu_us_foreign_policy:rc_test": {
-        "steps": [0, 4, 8, 12, 16, 21],
-    },
-    "mmlu_virology:rc_test": {
-        "steps": [0, 7, 14, 21, 28, 36],
-    },
-    "mmlu_world_religions:rc_test": {
-        "steps": [0, 7, 14, 21, 28, 36],
+    "mmlu_psychology:rc_test": {
+        "steps": [0, 25, 50, 75, 100, 129],
+        "metric_key": "bits_per_byte_corr",
     },
 }
+
 
 # Family color mapping - define base colors for each model family
 # Colors are specified as hex strings (e.g., "#988ED5")
@@ -447,7 +527,7 @@ def get_lr_suffix(task_name: str) -> str:
     elif task_name == "coqa:train_0shot":
         return "lr-4e-5_bs-128"
     elif "mmlu" in task_name:
-        return "lr-4e-5_bs-8"
+        return "lr-4e-5_bs-16"
     else:
         # Default learning rate for other tasks
         return "lr-4e-5"
