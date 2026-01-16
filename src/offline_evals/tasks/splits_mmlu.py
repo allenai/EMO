@@ -2,7 +2,6 @@ from datasets import DatasetDict
 from oe_eval.tasks.oe_eval_tasks.mmlu import GenericMMLU
 from oe_eval.utilities.datasets_wrapper import MOUNTED_WEKA_DATASET_WRAPPER
 
-# NOTEEEEEE: Another copy of this exists in tasks.py
 MMLU_CATEGORIES = {
     "math": [
         "abstract_algebra",
@@ -153,7 +152,6 @@ class MMLU_17categories_RC(GenericMMLU):
             combined_dataset[split] = concatenate_datasets(split_datasets)
 
         self.dataset = combined_dataset
-        breakpoint()
 
     def validation_docs(self):
         return self.dataset["validation"].map(self._process_doc, with_indices=True)
