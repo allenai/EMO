@@ -1243,7 +1243,7 @@ def get_task_configs():
         "law",
         "math",
         "other",
-        "philosophy",
+        "philosophy_cat",
         "physics",
         "politics",
         "psychology",

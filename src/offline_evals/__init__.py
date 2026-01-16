@@ -63,7 +63,7 @@ def create_category_mmlu_tasks_withsplits():
         "law",
         "math",
         "other",
-        "philosophy",
+        "philosophy_cat",
         "physics",
         "politics",
         "psychology",

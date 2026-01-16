@@ -53,7 +53,7 @@ MMLU_CATEGORIES = {
     "engineering": [
         "electrical_engineering",
     ],
-    "philosophy": [
+    "philosophy_cat": [
         "formal_logic",
         "logical_fallacies",
         "moral_disputes",
