@@ -23,7 +23,7 @@ model_names=(
 
 #   "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205"
 
-#   "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123"
+   "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123"
 #   "twolevelsamplingnolb-32_1b14b_stability_1127"
 
 #    "twoleveltoppbatchlb_1b14b_topp-0.35_max-64_min-1_lb-1e-1_1222"
@@ -39,7 +39,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-4e-5_bs-8"
+variation="newdefault_lr-4e-5_bs-16"
 
 experiment_tag="pruned_finetuning"
 #experiment_tag="pruned_finetuning_ablate"
@@ -57,6 +57,9 @@ elif [ "$variation" == "newdefault_lr-4e-5_bs-128" ]; then
 elif [ "$variation" == "newdefault_lr-4e-5_bs-8" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
     variation_flags="--train_module.optim.lr=4e-5 --global_batch_size=8"
+elif [ "$variation" == "newdefault_lr-4e-5_bs-16" ]; then
+    # reinitialize optim and use masked finetuning (should be checked)
+    variation_flags="--train_module.optim.lr=4e-5 --global_batch_size=16"
 elif [ "$variation" == "newdefault_lr-4e-4" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
     variation_flags="--train_module.optim.lr=4e-4 --global_batch_size=32"
@@ -318,7 +321,7 @@ for model_name in "${model_names[@]}"; do
 		        --trainer.load_trainer_state=false \
             $variation_flags
 
-        sleep 30
+        sleep 20
 
     #        --dataset.label_mask_paths="[${label_mask_paths}]" \
 
