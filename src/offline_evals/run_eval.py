@@ -48,6 +48,9 @@ from oe_eval.utils import (  # task_file_name,
     show_model_input,
 )
 
+# temp fix: add another TASK_DEFAULTS for mmlu categories
+TASK_DEFAULTS["category_name"] = None
+
 
 def task_file_name(output_dir: str, task_idx: int, task_name: str, file_name: str) -> str:
     task_name_safe = task_name.replace(":", "_")
