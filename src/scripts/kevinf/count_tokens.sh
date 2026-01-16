@@ -1,7 +1,12 @@
-  BASE="/data/input/ai2-llm"
-  TOKENIZER="allenai/dolma2-tokenizer"
+BASE="/data/input/ai2-llm"
+TOKENIZER="allenai/dolma2-tokenizer"
 
-  grep -v "^#" src/olmo_core/data/mixes/OLMo-mix-0625-150Bsample.txt | grep -v "^$" | cut -d',' -f2 | \
+if [[ -z "$1" ]]; then
+  echo "Usage: $0 <path-to-txt-file>" >&2
+  exit 1
+fi
+
+grep -v "^#" "$1" | grep -v "^$" | cut -d',' -f2 | \
     sed "s|{TOKENIZER}|$TOKENIZER|g" | \
     while read path; do
       full="$BASE/$path"
