@@ -8,19 +8,21 @@ NUM_NEW_EXPERTS=2
 
 # Part 1: Add new expert
 BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
-NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/extensions/moe_1b14b_130experts_olmoe-mix_130B_1103_step30995_init_average_noise_10perc"
+NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/extensions/moe_1b14b_130experts_olmoe-mix_130B_1103_step30995_init_top2_average_noise"
 
 # Run this once; on weka
 # python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
 # 	-c ${BASE_MODEL_PATH}\
 # 	-o ${NEW_BASE_MODEL_PATH} \
 # 	--num_new_experts ${NUM_NEW_EXPERTS} \
-# 	--init_method average \
-#   --noise_std_fraction 0.1
+# 	--init_method similar_no_average \
+#   --activation_file task-gsm8k_generation_test_0shot-router.jsonl \
+#   -k 2 \
+#   --noise_std_fraction 0.01
 
 
 # # Part 2: Train with new expert
-RUN_NAME="moe1b14b_130experts_${NUM_NEW_EXPERTS}trained_math_init_average_noise_10perc_5B"
+RUN_NAME="moe1b14b_130experts_${NUM_NEW_EXPERTS}trained_math_init_top2_average_noise_5B"
 
 python -m olmo_core.launch.beaker \
   --name ${RUN_NAME} \

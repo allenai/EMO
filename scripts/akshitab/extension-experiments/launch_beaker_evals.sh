@@ -7,9 +7,15 @@ MODEL_DIR=/weka/oe-training-default/akshitab/FlexMoE/models
 
 MODELS=(
     # moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
-    moe1b14b_129experts_1trained_math_init_random_expert_5B/step1193-hf
-    moe1b14b_129experts_1trained_math_init_average_5B/step1193-hf
-    moe1b14b_129experts_1trained_math_init_top2_average_5B/step1193-hf
+    # moe1b14b_129experts_1trained_math_init_random_expert_5B/step1193-hf
+    # moe1b14b_129experts_1trained_math_init_average_5B/step1193-hf
+    # moe1b14b_129experts_1trained_math_init_top2_average_5B/step1193-hf
+    # moe1b14b_129experts_1trained_math_init_top2_average_10B/step2385-hf
+    # moe1b14b_129experts_1trained_math_init_top2_average_20B/step4769-hf
+
+    # moe1b14b_130experts_2trained_math_init_average_noise_5B/step1193-hf
+    # moe1b14b_130experts_2trained_math_init_average_noise_10perc_5B/step1193-hf
+    moe1b14b_130experts_2trained_math_init_top2_5B/step1193-hf
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
@@ -22,15 +28,15 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
-#  "arc_easy|arc_easy:rc_test::olmes"
-#  "arc_challenge|arc_challenge:rc_test::olmes"
-#  "boolq|boolq:rc_test::olmes"
-#  "csqa|csqa:rc_test::olmes"
-#  "hellaswag|hellaswag:rc_test::olmes"
-#  "openbookqa|openbookqa:rc_test::olmes"
-#  "piqa|piqa:rc_test::olmes"
-#  "socialiqa|socialiqa:rc_test::olmes"
-#  "winogrande|winogrande:rc_test::olmes"
+ "arc_easy|arc_easy:rc_test::olmes"
+ "arc_challenge|arc_challenge:rc_test::olmes"
+ "boolq|boolq:rc_test::olmes"
+ "csqa|csqa:rc_test::olmes"
+ "hellaswag|hellaswag:rc_test::olmes"
+ "openbookqa|openbookqa:rc_test::olmes"
+ "piqa|piqa:rc_test::olmes"
+ "socialiqa|socialiqa:rc_test::olmes"
+ "winogrande|winogrande:rc_test::olmes"
 #  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
 #  "synthea|synthea:rc_test_0shot::olmes"
 #   "coqa|coqa:test_0shot::olmes"
@@ -48,8 +54,8 @@ TASK_GROUPS_LIST=(
 
 #   math
 #   "gsm8k_test|gsm8k:perplexity_test::olmes"
-#   "gsm8k::olmes"
-#   "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
+  "gsm8k::olmes"
+  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
     # "gsm8k:bpb::olmes"
 #   "mmlu:mc::olmes"
 #   "mmlu_pro:mc::olmes"
@@ -62,7 +68,10 @@ TASK_GROUPS_LIST=(
 #   "minerva_math_precalculus::olmes"
     # "minerva_math_algebra:bpb::olmes"
     "basic_skills::olmes"
-    # "basic_skills_arithmetic:rc::olmes"
+    "basic_skills_arithmetic:rc::olmes"
+
+
+    # "minerva_math_algebra:bpb::olmes"
 )
 
 # Function to get checkpoint name (matching the original script)
