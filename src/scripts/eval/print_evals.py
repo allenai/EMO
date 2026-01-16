@@ -424,14 +424,16 @@ def main(args):
             results = avg_tasks(results, "sciriff5", sciriff_tasks)
 
     if args.avg_chembench:
-        # MC tasks (accuracy-based)
+        # MC tasks (accuracy-based) - averaged separately
         chembench_mc_tasks = [
             task_name for task_name in task_names
             if task_name.startswith("chembench_") and ":mc" in task_name
         ]
         if chembench_mc_tasks:
             results = avg_tasks(results, "chembench:mc", chembench_mc_tasks)
-        # Generative tasks (F1/EM-based)
+        # Generative tasks (F1/EM-based) - averaged separately
+        # Note: We don't combine MC and gen scores because they use different metrics
+        # (accuracy vs F1) and are not directly comparable
         chembench_gen_tasks = [
             task_name for task_name in task_names
             if task_name.startswith("chembench_") and ":gen" in task_name
@@ -546,7 +548,8 @@ def main(args):
         name = name.replace("codex_humaneval", "humaneval")
         name = name.replace("bigcodebench", "bcb")
         name = name.replace("plus", "+")
-        if "medmcqa" not in name:
+        # Keep :mc suffix for chembench and medmcqa tasks
+        if "medmcqa" not in name and "chembench" not in name:
             name = name.replace(":mc", "")
         return name
 

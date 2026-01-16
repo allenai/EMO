@@ -11,9 +11,12 @@ MODELS=(
     # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-olmoemix-0824/step19000-hf"
     # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
     # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
-    "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift/step2385-hf"
-
+    # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift/step2385-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift-ckpt_1B_dolma3/step2385-hf"
+    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift-ckpt_1B_dolma3/step2385-hf"
 )
+
 BASE_OUTPUT_DIR="/data/input/kevinf/flexmoe/eval/results"
 # BASE_OUTPUT_DIR="s3://ai2-llm/jacobm/flexolmo/results"
 BATCH_SIZE=4
@@ -24,48 +27,48 @@ model_type=hf
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
     # MC9 tasks
-    # arc_easy:mc::olmes
-    # arc_challenge:mc::olmes
-    # boolq:mc::olmes
-    # csqa:mc::olmes
-    # hellaswag:mc::olmes
-    # openbookqa:mc::olmes
-    # piqa:mc::olmes
-    # socialiqa:mc::olmes
-    # winogrande:mc::olmes
+    arc_easy:mc::olmes
+    arc_challenge:mc::olmes
+    boolq:mc::olmes
+    csqa:mc::olmes
+    hellaswag:mc::olmes
+    openbookqa:mc::olmes
+    piqa:mc::olmes
+    socialiqa:mc::olmes
+    winogrande:mc::olmes
     
-    # # Gen5 tasks
-    # coqa::olmes
-    # squad::olmes
-    # naturalqs::olmes
-    # triviaqa::olmes
-    # drop::olmes
+    # Gen5 tasks
+    coqa::olmes
+    squad::olmes
+    naturalqs::olmes
+    triviaqa::olmes
+    drop::olmes
 
-    # # MMLU tasks
-    # mmlu:mc::olmes
-    # # mmlu_pro_mc::none
+    # MMLU tasks
+    mmlu:mc::olmes
+    # mmlu_pro_mc::none
 
-    # # AGI eval
-    # agi_eval_english:1shot::olmes
+    # AGI eval
+    agi_eval_english:1shot::olmes
 
-    # # BBH
-    # bbh:cot-v1::olmes
+    # BBH
+    bbh:cot-v1::olmes
 
-    # # Math2 tasks
-    # gsm8k::olmes
-    # minerva_math_algebra::olmes
-    # minerva_math_counting_and_probability::olmes
-    # minerva_math_geometry::olmes
-    # minerva_math_intermediate_algebra::olmes
-    # minerva_math_number_theory::olmes
-    # minerva_math_prealgebra::olmes
-    # minerva_math_precalculus::olmes
+    # Math2 tasks
+    gsm8k::olmes
+    minerva_math_algebra::olmes
+    minerva_math_counting_and_probability::olmes
+    minerva_math_geometry::olmes
+    minerva_math_intermediate_algebra::olmes
+    minerva_math_number_theory::olmes
+    minerva_math_prealgebra::olmes
+    minerva_math_precalculus::olmes
 
-    # # Code4 tasks
-    # codex_humaneval:temp0.8
-    # codex_humanevalplus:temp0.8
-    # mbpp::none
-    # mbppplus::none
+    # Code4 tasks
+    codex_humaneval:temp0.8
+    codex_humanevalplus:temp0.8
+    mbpp::none
+    mbppplus::none
 
     # ChemBench MC and generative tasks
     chembench:mc
@@ -114,10 +117,9 @@ for MODEL_PATH in "${MODELS[@]}"; do
         batch_size=4
     fi
     
-    # Create a shorter, valid job name
-    # Remove invalid characters and truncate long names
-    safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g' | cut -c1-20)
-    safe_task_name=$(echo $TASK | sed 's/[^a-zA-Z0-9_-]//g' | cut -c1-15)
+    # Create job name - remove invalid characters only
+    safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g')
+    safe_task_name=$(echo $TASK | sed 's/[^a-zA-Z0-9_-]//g')
     job_name="eval-${safe_model_name}-${safe_task_name}"
     
     echo "  Model name: $model"
