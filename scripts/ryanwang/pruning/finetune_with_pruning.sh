@@ -102,7 +102,7 @@ task_configs=(
   "task-mmlu_law_rc_validation_keepk32|mmlu_law:rc_train::olmes",
   "task-mmlu_math_rc_validation_keepk32|mmlu_math:rc_train::olmes",
   "task-mmlu_other_rc_validation_keepk32|mmlu_other:rc_train::olmes",
-  "task-mmlu_philosophy_rc_validation_keepk32|mmlu_philosophy:rc_train::olmes",
+  "task-mmlu_philosophy_cat_rc_validation_keepk32|mmlu_philosophy:rc_train::olmes",
   "task-mmlu_physics_rc_validation_keepk32|mmlu_physics:rc_train::olmes",
   "task-mmlu_politics_rc_validation_keepk32|mmlu_politics:rc_train::olmes",
   "task-mmlu_psychology_rc_validation_keepk32|mmlu_psychology:rc_train::olmes",

@@ -77,7 +77,7 @@ validation_task_names=(
   "task-mmlu_law_rc_validation"
   "task-mmlu_math_rc_validation"
   "task-mmlu_other_rc_validation"
-  "task-mmlu_philosophy_rc_validation"
+  "task-mmlu_philosophy_cat_rc_validation"
   "task-mmlu_physics_rc_validation"
   "task-mmlu_politics_rc_validation"
   "task-mmlu_psychology_rc_validation"

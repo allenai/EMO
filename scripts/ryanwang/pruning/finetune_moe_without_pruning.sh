@@ -113,7 +113,7 @@ train_task_names=(
   "mmlu_law:rc_train::olmes"
   "mmlu_math:rc_train::olmes"
   "mmlu_other:rc_train::olmes"
-  "mmlu_philosophy:rc_train::olmes"
+  "mmlu_philosophy_cat:rc_train::olmes"
   "mmlu_physics:rc_train::olmes"
   "mmlu_politics:rc_train::olmes"
   "mmlu_psychology:rc_train::olmes"
