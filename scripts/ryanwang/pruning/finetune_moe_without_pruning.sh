@@ -112,7 +112,7 @@ train_task_names=(
 #  "mmlu_geography:rc_train::olmes"
 #  "mmlu_health:rc_train::olmes"
 #  "mmlu_history:rc_train::olmes"
-  "mmlu_law:rc_train::olmes"
+#  "mmlu_law:rc_train::olmes"
 #  "mmlu_math:rc_train::olmes"
 #  "mmlu_other:rc_train::olmes"
   "mmlu_philosophy_cat:rc_train::olmes"
