@@ -5,7 +5,7 @@
 #
 # Model: OLMo3-1B (1B parameters)
 # Data: ChemPile (paper, education, lift)
-  # Training: 130B tokens on 2 nodes (16 GPUs)
+# Training: 130B tokens on 2 nodes (16 GPUs)
 
 runname="olmo3-1b-10B-chempile-papers_education_lift"
 
