@@ -20,6 +20,7 @@ dependencies = [
     "packaging",
     "rich",
     "omegaconf",
+    "torchvision==0.23.0",
     "safetensors",
     "importlib_resources",
     "bettermap",
