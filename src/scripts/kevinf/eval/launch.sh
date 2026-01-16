@@ -133,7 +133,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
         --budget ai2/oceo \
         --workspace ai2/flex2 \
         --cluster $CLUSTER \
-        --priority high \
+        --priority urgent \
         --gpus $gpus \
         --env-secret HF_TOKEN=KEVINF_HF_TOKEN \
         --env-secret AWS_ACCESS_KEY_ID=KEVINF_AWS_ACCESS_KEY_ID \
