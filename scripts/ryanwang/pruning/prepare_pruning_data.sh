@@ -7,7 +7,7 @@ MODELS=(
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995-hf"
 #    "twolevelbatchlb-8_1b7b_stability_1207/step30995-hf"
 
-#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
+    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995-hf"
 
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995-hf"
@@ -59,10 +59,10 @@ TASK_GROUPS_LIST=(
 #  "mmlu_law"
 #  "mmlu_math"
 #  "mmlu_other"
-#  "mmlu_philosophy"
+  "mmlu_philosophy_cat"
 #  "mmlu_physics"
 #  "mmlu_politics"
-  "mmlu_psychology"
+#  "mmlu_psychology"
 
 #  "mmlu_abstract_algebra"
 #  "mmlu_anatomy"
