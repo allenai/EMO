@@ -4,6 +4,7 @@ from oe_eval.tasks.oe_eval_tasks import TASK_REGISTRY
 
 from .tasks import (
     agi_eval,
+    chembench,
     hatespeech,
     medmcqa,
     medqa,
@@ -31,6 +32,7 @@ new_task_registry: Dict = {
     "hate_speech_offensive": hatespeech.HateSpeechOffensive,
     "hatexplain": hatespeech.Hatexplain,
     **agi_eval.create_core_agi_eval_tasks(),
+    **chembench.create_chembench_tasks(),
     **ruler.create_ruler_tasks(),
     **sciriff.create_bio_sciriff_qa_tasks(),
     "squad": squad.SQuAD,

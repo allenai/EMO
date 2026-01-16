@@ -423,6 +423,22 @@ def main(args):
         if sciriff_tasks:
             results = avg_tasks(results, "sciriff5", sciriff_tasks)
 
+    if args.avg_chembench:
+        # MC tasks (accuracy-based)
+        chembench_mc_tasks = [
+            task_name for task_name in task_names
+            if task_name.startswith("chembench_") and ":mc" in task_name
+        ]
+        if chembench_mc_tasks:
+            results = avg_tasks(results, "chembench:mc", chembench_mc_tasks)
+        # Generative tasks (F1/EM-based)
+        chembench_gen_tasks = [
+            task_name for task_name in task_names
+            if task_name.startswith("chembench_") and ":gen" in task_name
+        ]
+        if chembench_gen_tasks:
+            results = avg_tasks(results, "chembench:gen", chembench_gen_tasks)
+
     if args.avg_code:
         code_tasks = [
             task_name
@@ -691,6 +707,7 @@ Examples:
     parser.add_argument("--avg-mm", action="store_true", help="Average Minerva Math tasks")
     parser.add_argument("--avg-ruler", action="store_true", help="Average RULER tasks")
     parser.add_argument("--avg-sciriff", action="store_true", help="Average SciRIFF tasks")
+    parser.add_argument("--avg-chembench", action="store_true", help="Average ChemBench tasks")
     parser.add_argument("--avg-code", action="store_true", help="Average coding tasks")
     parser.add_argument("--avg-all", action="store_true", help="Average all tasks into a single score")
 
@@ -725,6 +742,7 @@ Examples:
         args.avg_mm = True
         args.avg_ruler = True
         args.avg_sciriff = True
+        args.avg_chembench = True
         args.avg_code = True
 
     main(args)
