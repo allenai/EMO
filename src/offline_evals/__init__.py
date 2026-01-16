@@ -49,8 +49,27 @@ def create_core_mmlu_tasks_withsplits():
 def create_category_mmlu_tasks_withsplits():
     """Creates a dictionary of tasks from a list of subjects.
     Note that the differences between train, validation, and test is declared in TASK_CONFIGS"""
+    MMLU_CATEGORIES = [
+        "biology",
+        "business",
+        "chemistry",
+        "computer_science",
+        "culture",
+        "economics",
+        "engineering",
+        "geography",
+        "health",
+        "history",
+        "law",
+        "math",
+        "other",
+        "philosophy",
+        "physics",
+        "politics",
+        "psychology",
+    ]
     res = {}
-    for sub in MMLU_SUBJECTS:
+    for sub in MMLU_CATEGORIES:
         res[f"mmlu_{sub}:rc_validation"] = MMLU_17categories_RC
         res[f"mmlu_{sub}:rc_test"] = MMLU_17categories_RC
         res[f"mmlu_{sub}:rc_train"] = MMLU_17categories_RC
