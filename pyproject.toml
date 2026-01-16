@@ -10,11 +10,11 @@ description = "Core training module for the Open Language Model (OLMo)"
 authors = [
     { name = "Allen Institute for Artificial Intelligence", email = "olmo@allenai.org" },
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10,<3.13"
 license = { file = "LICENSE" }
 dependencies = [
     "numpy",
-    "torch>=2.6.0",
+    "torch==2.8.0",
     "cached-path>=1.7.2",
     "requests",
     "packaging",
@@ -22,7 +22,9 @@ dependencies = [
     "omegaconf",
     "safetensors",
     "importlib_resources",
-    "bettermap"
+    "bettermap",
+    "flash-attn @ https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.7.2/flash_attn-2.8.3+cu128torch2.8-cp310-cp310-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.10'",
+    "transformers>=4.57.1",
 ]
 
 [project.urls]
@@ -169,3 +171,7 @@ filterwarnings = [
     'ignore::UserWarning:torch\.distributed\.checkpoint\.state_dict_saver',
     'ignore::UserWarning:torch\.distributed\.checkpoint\.state_dict_loader',
 ]
+
+[tool.uv]
+extra-index-url = ["https://download.pytorch.org/whl/cu128"]
+index-strategy = "unsafe-best-match"                                                  
