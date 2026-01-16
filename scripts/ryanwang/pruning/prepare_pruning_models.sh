@@ -28,7 +28,7 @@ run_configs=(
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205|prune_keep_k=32"
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205|prune_keep_k=8"
 
-#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123|prune_keep_k=32"
+    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123|prune_keep_k=32"
 
 #    "twoleveltoppbatchlb_1b14b_topp-0.35_max-64_min-1_lb-1e-1_1222|prune_keep_k=32"
 #    "twoleveltoppbatchlb_1b14b_topp-0.35_max-64_min-1_lb-1e-1_1222|prune_keep_k=16"
