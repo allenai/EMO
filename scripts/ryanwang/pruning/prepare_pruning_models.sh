@@ -74,7 +74,7 @@ validation_task_names=(
   "task-mmlu_geography_rc_validation"
   "task-mmlu_health_rc_validation"
   "task-mmlu_history_rc_validation"
-  "task-mmlu_law_rc_validation"
+#  "task-mmlu_law_rc_validation"
   "task-mmlu_math_rc_validation"
   "task-mmlu_other_rc_validation"
   "task-mmlu_philosophy_cat_rc_validation"
