@@ -3,7 +3,7 @@
 #     - Same as parent except cleaned up name, set learning rate to default
 # STATUS: USED
 ##############################################################
-lr=4e-3
+lr=4e-5
 
 runname="moe_1b14b_lr-${lr}-ablations_0116"
 python -m olmo_core.launch.beaker \
