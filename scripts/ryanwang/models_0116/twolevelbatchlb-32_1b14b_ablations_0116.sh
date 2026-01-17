@@ -4,7 +4,7 @@
 # STATUS: USED
 ##############################################################
 document_expert_pool=32
-lr=4e-3
+lr=4e-2
 lb=1e-1
 
 #runname="twolevelbatchlb-${document_expert_pool}_1b14b_lr-${lr}_poolsched-true_ablations_0116"
