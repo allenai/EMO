@@ -4,9 +4,12 @@
 # STATUS: USED
 ##############################################################
 document_expert_pool=32
-lr=4e-4
+lr=4e-3
+lb=1e-1
 
-runname="twolevelbatchlb-${document_expert_pool}_1b14b_lr-${lr}_poolsched-true_ablations_0116"
+#runname="twolevelbatchlb-${document_expert_pool}_1b14b_lr-${lr}_poolsched-true_ablations_0116"
+runname="twolevelbatchlb-${document_expert_pool}_1b14b_lr-${lr}_lb-${lb}_ablations_0117"
+
 
 #torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
 #  $runname \
@@ -52,9 +55,13 @@ python -m olmo_core.launch.beaker \
 		--model.block.name="moe" \
 		--model.block.attention.qk_norm=null \
 		--lr=${lr} \
+		--model.block.feed_forward_moe.lb_loss_weight=${lb} \
 		--trainer.no_checkpoints \
-		--poolsched="{min_pool: ${document_expert_pool}, decay_steps: 2000}" \
     --trainer.hard_stop='{value: 5000, unit: steps}'
+
+
+#		--poolsched="{min_pool: ${document_expert_pool}, decay_steps: 2000}" \
+
 
 
 
