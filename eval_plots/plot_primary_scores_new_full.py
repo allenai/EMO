@@ -320,6 +320,7 @@ TASK_CONFIGS: Dict[str, Dict[str, Any]] = {
 FAMILY_COLORS: Dict[str, str] = {
     "dense": "#E24A33",  # Red/Orange
     "moe": "#348ABD",  # Blue
+    "moe 1b4b": "#00BFA5",  # Teal for clearer distinction from moe blue
     "twolevelbatchlb train32/128": "#988ED5",  # Purple
     "twolevelbatchlb train32/128 lr high": "#FFB5B8",  # Light Red/Pink
     "twolevelbatchlb train8/64": "#8EBA42",  # Green
@@ -327,7 +328,7 @@ FAMILY_COLORS: Dict[str, str] = {
     "mutualinfo": "#FBC15E",  # Yellow
 }
 
-DEFAULT_OUTPUT_SUBDIR = "primary_score_plots"
+DEFAULT_OUTPUT_SUBDIR = "bpb_plots"
 
 # Model run configurations
 # Each entry defines a model run that will be plotted as a line
@@ -399,9 +400,9 @@ MODEL_RUNS: List[Dict[str, Any]] = [
             "moe_1b4b_32experts_1224_step30995_newdefault_{lr_suffix}_"
             "finetune-task-{task_core}{task_suffix}_step{step}-hf"
         ),
-        "family": "moe",
+        "family": "moe 1b4b",
         "marker": "v",  # Triangle down for dense
-        "brightness": 0.7,
+        "brightness": 0.3,
         "linewidth": 2,
         "markersize": 9,
     },
@@ -414,6 +415,13 @@ BASELINE_RUNS: List[Dict[str, Any]] = [
         "label": "moe full",
         "template": "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123_step30995-hf",
         "family": "moe",
+        "linestyle": "--",  # Line style for baseline
+        "linewidth": 1.2,
+    },
+    {
+        "label": "moe 1b4b",
+        "template": "moe_1b4b_32experts_1224_step30995-hf",
+        "family": "moe 1b4b",
         "linestyle": "--",  # Line style for baseline
         "linewidth": 1.2,
     },
