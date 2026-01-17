@@ -36,9 +36,9 @@ from olmo_core.train.callbacks import (
     DownstreamEvaluatorCallbackConfig,
     GPUMemoryMonitorCallback,
     GradientMonitorCallback,
+    HFConverterCallback,
     ProfilerCallback,
     WandBCallback,
-    HFConverterCallback,
 )
 from olmo_core.train.train_module import (
     TransformerDataParallelConfig,

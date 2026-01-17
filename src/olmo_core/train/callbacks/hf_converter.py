@@ -10,7 +10,6 @@ import torch
 
 from olmo_core.config import DType
 from olmo_core.distributed.utils import get_rank
-from olmo_core.io import join_path
 
 from .callback import Callback
 from .checkpointer import CheckpointerCallback
@@ -131,14 +130,10 @@ class HFConverterCallback(Callback):
 
         # Import and call the conversion function
         try:
-            from examples.huggingface.convert_checkpoint_to_hf import (
-                convert_checkpoint_to_hf,
-                load_config,
-            )
+            from olmo_core.hf_utils import convert_checkpoint_to_hf, load_config
         except ImportError:
             log.error(
-                "Failed to import conversion functions. Make sure the examples.huggingface "
-                "module is available."
+                "Failed to import conversion functions. Make sure that transformers library is installed."
             )
             return
 

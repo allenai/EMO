@@ -11,7 +11,9 @@ from scripts.akshitab.add_finegrained_expert.add_new_expert import (
 )
 
 
-@pytest.mark.parametrize("init_method", ["random", "random_expert", "average", "zero", "similar", "similar_no_average"])
+@pytest.mark.parametrize(
+    "init_method", ["random", "random_expert", "average", "zero", "similar", "similar_no_average"]
+)
 @pytest.mark.parametrize("num_new_experts", [1, 3, 8])
 @pytest.mark.parametrize("top_k_expert_indices", [None, [4], [1, 2]])
 def test_add_expert(
@@ -30,9 +32,13 @@ def test_add_expert(
 
     if init_method == "similar_no_average":
         if top_k_expert_indices is None:
-            pytest.skip("top_k_expert_indices must be provided for 'similar_no_average' init_method")
+            pytest.skip(
+                "top_k_expert_indices must be provided for 'similar_no_average' init_method"
+            )
         if len(top_k_expert_indices) < num_new_experts:
-            pytest.skip(f"Need at least {num_new_experts} expert indices for 'similar_no_average', got {len(top_k_expert_indices)}")
+            pytest.skip(
+                f"Need at least {num_new_experts} expert indices for 'similar_no_average', got {len(top_k_expert_indices)}"
+            )
 
     add_experts(
         checkpoint_path="src/test_fixtures/smallmoe",

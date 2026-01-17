@@ -215,7 +215,11 @@ def add_experts(
                     # Compute average of existing experts
                     avg_expert = source_param.data.mean(dim=0)
                     # Compute noise scale
-                    actual_noise_scale = noise_std_fraction * avg_expert.std() if noise_std_fraction is not None else noise_scale
+                    actual_noise_scale = (
+                        noise_std_fraction * avg_expert.std()
+                        if noise_std_fraction is not None
+                        else noise_scale
+                    )
                     # Copy average to new expert position with noise for each expert
                     with torch.no_grad():
                         for i in range(num_new_experts):
@@ -230,7 +234,11 @@ def add_experts(
                     ), "top_k_expert_indices must be provided for SIMILAR initialization"
                     avg_expert = source_param[top_k_expert_indices, :].data.mean(dim=0)
                     # Compute noise scale
-                    actual_noise_scale = noise_std_fraction * avg_expert.std() if noise_std_fraction is not None else noise_scale
+                    actual_noise_scale = (
+                        noise_std_fraction * avg_expert.std()
+                        if noise_std_fraction is not None
+                        else noise_scale
+                    )
                     with torch.no_grad():
                         for i in range(num_new_experts):
                             noise = torch.randn_like(avg_expert) * actual_noise_scale
@@ -247,7 +255,9 @@ def add_experts(
                     ), f"Need at least {num_new_experts} expert indices for SIMILAR_NO_AVERAGE, got {len(top_k_expert_indices)}"
                     with torch.no_grad():
                         for i in range(num_new_experts):
-                            target_param[num_experts + i, :].copy_(source_param[top_k_expert_indices[i], :])
+                            target_param[num_experts + i, :].copy_(
+                                source_param[top_k_expert_indices[i], :]
+                            )
 
                 target_param[:num_experts, :] = source_param
                 with torch.no_grad():
@@ -289,7 +299,11 @@ def add_experts(
                     )
                     avg_expert = source_param.data.mean(dim=0)
                     # Compute noise scale
-                    actual_noise_scale = noise_std_fraction * avg_expert.std() if noise_std_fraction is not None else noise_scale
+                    actual_noise_scale = (
+                        noise_std_fraction * avg_expert.std()
+                        if noise_std_fraction is not None
+                        else noise_scale
+                    )
                     # Copy average to new expert position with noise for each expert
                     with torch.no_grad():
                         for i in range(num_new_experts):
@@ -307,7 +321,11 @@ def add_experts(
                     )
                     avg_expert = source_param[top_k_expert_indices, :, :].data.mean(dim=0)
                     # Compute noise scale
-                    actual_noise_scale = noise_std_fraction * avg_expert.std() if noise_std_fraction is not None else noise_scale
+                    actual_noise_scale = (
+                        noise_std_fraction * avg_expert.std()
+                        if noise_std_fraction is not None
+                        else noise_scale
+                    )
                     with torch.no_grad():
                         for i in range(num_new_experts):
                             noise = torch.randn_like(avg_expert) * actual_noise_scale
@@ -327,7 +345,9 @@ def add_experts(
                     )
                     with torch.no_grad():
                         for i in range(num_new_experts):
-                            target_param[num_experts + i, :, :].copy_(source_param[top_k_expert_indices[i], :, :])
+                            target_param[num_experts + i, :, :].copy_(
+                                source_param[top_k_expert_indices[i], :, :]
+                            )
 
                 target_param[:num_experts, :, :] = source_param.view(
                     num_experts, source_rows // num_experts, source_columns
