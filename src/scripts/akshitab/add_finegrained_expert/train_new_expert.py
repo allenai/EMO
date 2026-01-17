@@ -354,6 +354,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                 enabled=True,
                 dtype=DType.float32,
                 max_sequence_length=SEQUENCE_LENGTH,
+                device="cpu",
             ),
         )
     )
