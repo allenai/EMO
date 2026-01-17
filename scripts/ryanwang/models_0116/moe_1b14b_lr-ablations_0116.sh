@@ -3,9 +3,10 @@
 #     - Same as parent except cleaned up name, set learning rate to default
 # STATUS: USED
 ##############################################################
-lr=4e-2
+lr=4e-3
+lb=1e-1
 
-runname="moe_1b14b_lr-${lr}-ablations_0116"
+runname="moe_1b14b_lr-${lr}_lb-${lb}-ablations_0116"
 python -m olmo_core.launch.beaker \
   --name $runname \
 	--gpus 8 \
@@ -32,6 +33,7 @@ python -m olmo_core.launch.beaker \
 		--model.block.name="moe" \
 		--model.block.attention.qk_norm=null \
 		--lr=${lr} \
+		--model.block.feed_forward_moe.lb_loss_weight=${lb} \
 		--trainer.no_checkpoints \
     --trainer.hard_stop='{value: 5000, unit: steps}'
 
