@@ -17,6 +17,7 @@ from .evaluator_callback import (
 from .garbage_collector import GarbageCollectorCallback
 from .gpu_memory_monitor import GPUMemoryMonitorCallback
 from .gradient_monitor import GradientMonitorCallback
+from .hf_converter import HFConverterCallback
 from .monkey_patcher import MonkeyPatcherCallback
 from .profiler import ProfilerCallback
 from .sequence_length_scheduler import SequenceLengthSchedulerCallback
@@ -39,6 +40,7 @@ __all__ = [
     "GarbageCollectorCallback",
     "GPUMemoryMonitorCallback",
     "GradientMonitorCallback",
+    "HFConverterCallback",
     "ProfilerCallback",
     "SlackNotifierCallback",
     "SlackNotificationSetting",
