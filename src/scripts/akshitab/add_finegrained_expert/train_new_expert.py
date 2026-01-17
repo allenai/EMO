@@ -38,6 +38,7 @@ from olmo_core.train.callbacks import (
     GradientMonitorCallback,
     ProfilerCallback,
     WandBCallback,
+    HFConverterCallback,
 )
 from olmo_core.train.train_module import (
     TransformerDataParallelConfig,
@@ -345,6 +346,14 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                 layer_names=["expert.mlp", "router"],
                 max_steps_to_monitor=10,
                 log_all_params=True,
+            ),
+        )
+        .with_callback(
+            "hf_converter",
+            HFConverterCallback(
+                enabled=True,
+                dtype=DType.float32,
+                max_sequence_length=SEQUENCE_LENGTH,
             ),
         )
     )
