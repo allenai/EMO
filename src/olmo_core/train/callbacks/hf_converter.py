@@ -165,12 +165,25 @@ class HFConverterCallback(Callback):
         # Determine device
         device = torch.device(self.device) if self.device else None
 
+        # Get the model state dict directly from the trainer's train_module
+        model_state_dict = None
+        if hasattr(self, "state_dict"):
+            try:
+                model_state_dict = self.state_dict()
+                print(model_state_dict.keys())
+            except Exception as e:
+                log.warning(f"Could not get state dict from trainer: {e}")
+
+        if model_state_dict is None:
+            log.info("Falling back to loading model from checkpoint")
+
         try:
             convert_checkpoint_to_hf(
                 original_checkpoint_path=checkpoint_path,
                 output_path=output_path,
                 transformer_config_dict=transformer_config_dict,
                 tokenizer_config_dict=tokenizer_config_dict,
+                model_state_dict=model_state_dict,
                 dtype=self.dtype,
                 tokenizer_id=self.tokenizer_id,
                 max_sequence_length=self.max_sequence_length,

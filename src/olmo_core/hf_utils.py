@@ -30,11 +30,12 @@ log = logging.getLogger(__name__)
 
 
 def convert_checkpoint_to_hf(
-    original_checkpoint_path: str | Path,
+    original_checkpoint_path: str | Path | None,
     output_path: str | Path,
     transformer_config_dict: Dict[str, Any],
     tokenizer_config_dict: Dict[str, Any],
     *,
+    model_state_dict: Optional[Dict[str, Any]] = None,
     dtype: Optional[DType] = None,
     tokenizer_id: str | None = None,
     max_sequence_length: int | None = None,
@@ -49,12 +50,16 @@ def convert_checkpoint_to_hf(
     Convert a checkpoint to a different OLMo core compatible format.
 
     Args:
-        original_checkpoint_path: Path to the original checkpoint
-        output_format: Format of converted checkpoint
+        original_checkpoint_path: Path to the original checkpoint. Can be None if model_state_dict
+            is provided.
         output_path: Where to save the converted model
         transformer_config_dict: Dictionary form of OLMo core model config
         tokenizer_config_dict: Dictionary form of OLMo core tokenizer config
+        model_state_dict: Optional model state dict. If provided, weights are taken from this
+            instead of loading from original_checkpoint_path.
     """
+    if model_state_dict is None and original_checkpoint_path is None:
+        raise ValueError("Either model_state_dict or original_checkpoint_path must be provided")
     if max_sequence_length is not None and max_sequence_length <= 0:
         raise ValueError(f"Invalid sequence length: {max_sequence_length}")
 
@@ -122,30 +127,38 @@ def convert_checkpoint_to_hf(
         if moe_capacity_factor is not None and block_config.feed_forward_moe is not None:
             block_config.feed_forward_moe.capacity_factor = moe_capacity_factor
 
-    for block_label, block_config in block_entries:
-        prepare_block_for_conversion(block_label, block_config)
-
-    model = model_config.build(init_device="meta")
-    model.to_empty(device=device or torch.device("cpu"))
-
     tokenizer_config = TokenizerConfig.from_dict(tokenizer_config_dict)
     # NOTE: We use the training vocab_size to keep things as close as possible to the original model.
     # vocab_size = tokenizer_config.vocab_size
     vocab_size = model_config.vocab_size
 
+    for block_label, block_config in block_entries:
+        prepare_block_for_conversion(block_label, block_config)
+
+    # Build model for config extraction (needed by save_hf_model and validate_conversion)
+    model = model_config.build(init_device="meta")
+    model.to_empty(device=device or torch.device("cpu"))
+
+    # If model_state_dict is not provided, load from checkpoint
+    load_from_checkpoint = model_state_dict is None
+
     with TemporaryDirectory() as work_dir:
-        model_and_optim_dir = join_path(original_checkpoint_path, "model_and_optim")
-        log.info(f"Loading checkpoint from '{model_and_optim_dir}'")
-        load_model_and_optim_state(
-            model_and_optim_dir,
-            model,
-            work_dir=work_dir,
-        )
-        log.info(f"Saving checkpoint to '{output_path}'")
-        state_dict_options = dist_cp_sd.StateDictOptions(
-            flatten_optimizer_state_dict=True, cpu_offload=True
-        )
-        model_state_dict = dist_cp_sd.get_model_state_dict(model, options=state_dict_options)
+        if load_from_checkpoint:
+            assert original_checkpoint_path is not None
+            model_and_optim_dir = join_path(original_checkpoint_path, "model_and_optim")
+            log.info(f"Loading checkpoint from '{model_and_optim_dir}'")
+            load_model_and_optim_state(
+                model_and_optim_dir,
+                model,
+                work_dir=work_dir,
+            )
+            log.info(f"Saving checkpoint to '{output_path}'")
+            state_dict_options = dist_cp_sd.StateDictOptions(
+                flatten_optimizer_state_dict=True, cpu_offload=True
+            )
+            model_state_dict = dist_cp_sd.get_model_state_dict(model, options=state_dict_options)
+        else:
+            log.info(f"Using provided model state dict, saving to '{output_path}'")
 
         if (moe_config := model_config.block.feed_forward_moe) is not None:
             if moe_config.name == MoEType.dropless:

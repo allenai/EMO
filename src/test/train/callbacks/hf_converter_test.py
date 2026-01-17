@@ -229,7 +229,7 @@ class TestHFConverterCallback:
         checkpoint_with_config: Path,
         mock_trainer: MagicMock,
     ):
-        """Test that default output path is checkpoint_path/hf."""
+        """Test that default output path is checkpoint_path-hf."""
         from transformers import AutoConfig
 
         callback = HFConverterCallback(
@@ -243,7 +243,7 @@ class TestHFConverterCallback:
             callback.post_train()
 
         # Verify HF model was created in default location
-        expected_output = checkpoint_with_config / "hf"
+        expected_output = Path(str(checkpoint_with_config) + "-hf")
         assert expected_output.exists()
         hf_config = AutoConfig.from_pretrained(expected_output)
         assert hf_config is not None
