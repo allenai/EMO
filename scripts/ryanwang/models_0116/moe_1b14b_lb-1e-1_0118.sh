@@ -3,10 +3,10 @@
 #     - Same as parent except cleaned up name, set learning rate to default
 # STATUS: USED
 ##############################################################
-lr=4e-3
+lr=4e-4
 lb=1e-1
 
-runname="moe_1b14b_0117"
+runname="moe_1b14b_lb-1e-1_0118"
 python -m olmo_core.launch.beaker \
   --name $runname \
 	--gpus 8 \
