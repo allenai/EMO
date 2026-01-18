@@ -5,7 +5,7 @@
 ##############################################################
 document_expert_pool=32
 lr=4e-3
-lb=1e-1
+lb=1e-2
 
 #runname="twolevelbatchlb-${document_expert_pool}_1b14b_lr-${lr}_poolsched-true_ablations_0116"
 runname="twolevelbatchlb-${document_expert_pool}_1b14b_lr-${lr}_lb-${lb}_poolsched-true_ablations_0117"
