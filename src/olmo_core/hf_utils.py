@@ -45,6 +45,7 @@ def convert_checkpoint_to_hf(
     moe_capacity_factor: float | None = None,
     validation_device: torch.device | None = None,
     validation_sliding_window: int | None = None,
+    thread_count: Optional[int] = None,
 ) -> None:
     """
     Convert a checkpoint to a different OLMo core compatible format.
@@ -151,6 +152,7 @@ def convert_checkpoint_to_hf(
                 model_and_optim_dir,
                 model,
                 work_dir=work_dir,
+                thread_count=thread_count,
             )
             log.info(f"Saving checkpoint to '{output_path}'")
             state_dict_options = dist_cp_sd.StateDictOptions(

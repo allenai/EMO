@@ -165,17 +165,17 @@ class HFConverterCallback(Callback):
         # Determine device
         device = torch.device(self.device) if self.device else None
 
-        # Get the model state dict directly from the trainer's train_module
-        model_state_dict = None
-        if hasattr(self, "state_dict"):
-            try:
-                model_state_dict = self.state_dict()
-                print(model_state_dict.keys())
-            except Exception as e:
-                log.warning(f"Could not get state dict from trainer: {e}")
+        # # Get the model state dict directly from the trainer's train_module
+        # model_state_dict = None
+        # if hasattr(self, "state_dict"):
+        #     try:
+        #         model_state_dict = self.state_dict()
+        #         print(model_state_dict.keys())
+        #     except Exception as e:
+        #         log.warning(f"Could not get state dict from trainer: {e}")
 
-        if model_state_dict is None:
-            log.info("Falling back to loading model from checkpoint")
+        # if model_state_dict is None:
+        #     log.info("Falling back to loading model from checkpoint")
 
         try:
             convert_checkpoint_to_hf(
@@ -183,7 +183,7 @@ class HFConverterCallback(Callback):
                 output_path=output_path,
                 transformer_config_dict=transformer_config_dict,
                 tokenizer_config_dict=tokenizer_config_dict,
-                model_state_dict=model_state_dict,
+                model_state_dict=None,
                 dtype=self.dtype,
                 tokenizer_id=self.tokenizer_id,
                 max_sequence_length=self.max_sequence_length,
@@ -191,6 +191,7 @@ class HFConverterCallback(Callback):
                 debug=self.debug,
                 device=device,
                 moe_capacity_factor=self.moe_capacity_factor,
+                thread_count=16,
             )
             log.info(f"Successfully converted checkpoint to HuggingFace format at '{output_path}'")
         except Exception as e:
