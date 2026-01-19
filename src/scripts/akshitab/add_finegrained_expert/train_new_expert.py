@@ -348,15 +348,15 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                 log_all_params=True,
             ),
         )
-        .with_callback(
-            "hf_converter",
-            HFConverterCallback(
-                enabled=True,
-                dtype=DType.float32,
-                max_sequence_length=SEQUENCE_LENGTH,
-                device="cpu",
-            ),
-        )
+        # .with_callback(
+        #     "hf_converter",  # TODO: fix bug that causes it to stall.
+        #     HFConverterCallback(
+        #         enabled=True,
+        #         dtype=DType.float32,
+        #         max_sequence_length=SEQUENCE_LENGTH,
+        #         device="cpu",
+        #     ),
+        # )
     )
 
     config = ExperimentConfig(
