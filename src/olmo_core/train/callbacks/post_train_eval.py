@@ -263,6 +263,7 @@ class PostTrainEvalCallback(Callback):
                 "run",
                 "--name", job_name,
                 "--repo", self.github_repo,  # Explicit repo to avoid remote parsing issues
+                "--gh-token-secret", "KEVINF_GITHUB_TOKEN",  # For private repo clone
                 "--weka", "oe-training-default:/data/input",
                 "--install", 'pip install -e ".[eval]"',
                 "--budget", self.budget,
@@ -270,6 +271,7 @@ class PostTrainEvalCallback(Callback):
                 "--cluster", self.cluster,
                 "--priority", self.job_priority,
                 "--gpus", "1",
+                "--env-secret", "GITHUB_TOKEN=KEVINF_GITHUB_TOKEN",  # For private repo access
                 "--env-secret", "HF_TOKEN=KEVINF_HF_TOKEN",
                 "--env-secret", "AWS_ACCESS_KEY_ID=KEVINF_AWS_ACCESS_KEY_ID",
                 "--env-secret", "AWS_SECRET_ACCESS_KEY=KEVINF_AWS_SECRET_ACCESS_KEY",
