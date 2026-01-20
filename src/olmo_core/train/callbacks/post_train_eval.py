@@ -205,21 +205,6 @@ class PostTrainEvalCallback(Callback):
             log.error(f"Stdout: {e.stdout}")
             return None
 
-    def _ensure_gantry_installed(self) -> bool:
-        """Ensure beaker-gantry is installed and up-to-date."""
-        log.info("Installing/upgrading beaker-gantry...")
-        try:
-            subprocess.run(
-                ["pip", "install", "--upgrade", "beaker-gantry", "beaker-py"],
-                check=True,
-                capture_output=True,
-            )
-            log.info("beaker-gantry installed/upgraded successfully")
-            return True
-        except subprocess.CalledProcessError as e:
-            log.error(f"Failed to install beaker-gantry: {e.stderr}")
-            return False
-
     def _fix_git_remote(self):
         """Fix git remote URL to remove embedded token (which confuses gantry)."""
         try:
@@ -249,13 +234,6 @@ class PostTrainEvalCallback(Callback):
         log.info(f"  HF checkpoint: {hf_checkpoint_path}")
         log.info(f"  Output dir: {output_dir}")
         log.info(f"  Tasks: {len(self.tasks)} tasks")
-
-        # Ensure gantry is installed
-        if not self._ensure_gantry_installed():
-            log.error("Cannot launch evals without beaker-gantry")
-            log.info("To manually launch evals, run locally:")
-            log.info(f'  MODELS=("{hf_checkpoint_path}") bash src/scripts/kevinf/eval/launch.sh')
-            return
 
         # Fix git remote URL (remove embedded token which confuses gantry)
         self._fix_git_remote()
