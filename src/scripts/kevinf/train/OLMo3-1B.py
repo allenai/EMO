@@ -97,13 +97,22 @@ def train(config: ExperimentConfig):
     config_dict = config.as_config_dict()
     cast(ConfigSaverCallback, trainer.callbacks["config_saver"]).config = config_dict
 
-    # If we have a load path set and there is no checkpoint in the save folder, load the
-    # checkpoint from the load path.
-    if not trainer.no_checkpoints and not trainer.maybe_load_checkpoint() and config.load_path:
-        log.info(
-            f"Loading checkpoint from {config.load_path} since no checkpoints were found in the save folder..."
-        )
-        trainer.load_checkpoint(config.load_path, load_trainer_state=config.load_trainer_state)
+    # Try to load checkpoint: save_folder takes priority over load_path.
+    if not trainer.no_checkpoints:
+        checkpoint_loaded_from_save_folder = trainer.maybe_load_checkpoint()
+        
+        if checkpoint_loaded_from_save_folder:
+            if config.load_path:
+                log.warning(
+                    f"Ignoring load_path ('{config.load_path}') since checkpoint was found in save folder"
+                )
+        elif config.load_path:
+            log.info(
+                f"Loading checkpoint from {config.load_path} since no checkpoints were found in the save folder..."
+            )
+            trainer.load_checkpoint(config.load_path, load_trainer_state=config.load_trainer_state)
+        else:
+            log.info("No checkpoint found, training from scratch...")
 
     # Train.
     trainer.fit()

@@ -7,7 +7,7 @@
 # Data: ChemPile (paper, education, lift)
 # Training: 130B tokens on 2 nodes (16 GPUs)
 
-runname="olmo3-1b-10B-chempile-papers_education_lift"
+runname="olmo3-1b-10B-chempile-papers_education_lift-continued_pt_30B_from_130B_dolma3"
 
 python -m olmo_core.launch.beaker \
   --name $runname \

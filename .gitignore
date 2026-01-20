@@ -59,3 +59,12 @@ site/
 /scratch/
 core
 /dataset-cache/
+/data/
+cached_results.pkl
+src/scripts/kevinf/data/get_data_sources.py
+src/scripts/kevinf/test_env.py
+docs/kevinf-branch-changes.md
+docs/env-setup-guide.md
+.claude/
+CLAUDE.md
+
