@@ -533,6 +533,7 @@ def main(args):
 
     def format_model_name(model):
         """Format model name for display. Override this for custom formatting."""
+        model = model.replace("moe1b14b_130experts_", "").replace("step1193-hf", "")
         return model
 
     def format_number(v, task_name):

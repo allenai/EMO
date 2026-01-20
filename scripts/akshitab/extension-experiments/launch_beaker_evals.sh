@@ -13,9 +13,12 @@ MODELS=(
     # moe1b14b_129experts_1trained_math_init_top2_average_10B/step2385-hf
     # moe1b14b_129experts_1trained_math_init_top2_average_20B/step4769-hf
 
+    # moe1b14b_130experts_2trained_math_init_average_5B/step1193-hf
     # moe1b14b_130experts_2trained_math_init_average_noise_5B/step1193-hf
     # moe1b14b_130experts_2trained_math_init_average_noise_10perc_5B/step1193-hf
-    moe1b14b_130experts_2trained_math_init_top2_5B/step1193-hf
+    # moe1b14b_130experts_2trained_math_init_top2_5B/step1193-hf
+    # moe1b14b_130experts_2trained_math_init_top2_average_noise_5B/step1193-hf
+    moe1b14b_128experts_1trained_math_5B/step1193-hf
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
@@ -59,7 +62,7 @@ TASK_GROUPS_LIST=(
     # "gsm8k:bpb::olmes"
 #   "mmlu:mc::olmes"
 #   "mmlu_pro:mc::olmes"
-#   "minerva_math_algebra::olmes"
+  "minerva_math_algebra::olmes"
 #   "minerva_math_counting_and_probability::olmes"
 #   "minerva_math_geometry::olmes"
 #   "minerva_math_intermediate_algebra::olmes"
