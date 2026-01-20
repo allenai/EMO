@@ -220,6 +220,20 @@ class PostTrainEvalCallback(Callback):
             log.error(f"Failed to install beaker-gantry: {e.stderr}")
             return False
 
+    def _fix_git_remote(self):
+        """Fix git remote URL to remove embedded token (which confuses gantry)."""
+        try:
+            # Set the remote to a clean URL without the token
+            clean_url = f"https://github.com/{self.github_repo}.git"
+            subprocess.run(
+                ["git", "remote", "set-url", "origin", clean_url],
+                check=True,
+                capture_output=True,
+            )
+            log.info(f"Fixed git remote to: {clean_url}")
+        except subprocess.CalledProcessError as e:
+            log.warning(f"Could not fix git remote: {e.stderr}")
+
     def _launch_evals(self, hf_checkpoint_path: str):
         """Launch beaker evaluation jobs for the HF checkpoint."""
         # Derive the eval run name from the checkpoint path
@@ -243,6 +257,9 @@ class PostTrainEvalCallback(Callback):
             log.info(f'  MODELS=("{hf_checkpoint_path}") bash src/scripts/kevinf/eval/launch.sh')
             return
 
+        # Fix git remote URL (remove embedded token which confuses gantry)
+        self._fix_git_remote()
+
         launched_count = 0
         failed_count = 0
 
@@ -262,7 +279,6 @@ class PostTrainEvalCallback(Callback):
             gantry_args = [
                 "run",
                 "--name", job_name,
-                "--repo", self.github_repo,  # Explicit repo to avoid remote parsing issues
                 "--gh-token-secret", "KEVINF_GITHUB_TOKEN",  # For private repo clone
                 "--weka", "oe-training-default:/data/input",
                 "--install", 'pip install -e ".[eval]"',
