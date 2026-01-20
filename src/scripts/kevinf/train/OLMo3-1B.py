@@ -39,6 +39,7 @@ from olmo_core.train.callbacks import (
     ConfigSaverCallback,
     DownstreamEvaluatorCallbackConfig,
     GPUMemoryMonitorCallback,
+    PostTrainEvalCallback,
     WandBCallback,
 )
 from olmo_core.train.train_module import (
@@ -216,6 +217,14 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                 tasks=TASK_GROUPS["fast"],
                 tokenizer=tokenizer_config,
                 eval_interval=250,
+            ),
+        )
+        .with_callback(
+            "post_train_eval",
+            PostTrainEvalCallback(
+                eval_output_base_dir="/data/input/kevinf/flexmoe/eval/results",
+                cluster="ai2/saturn",
+                enabled=True,
             ),
         )
     )

@@ -22,6 +22,7 @@ from .profiler import ProfilerCallback
 from .sequence_length_scheduler import SequenceLengthSchedulerCallback
 from .slack_notifier import SlackNotificationSetting, SlackNotifierCallback
 from .speed_monitor import SpeedMonitorCallback
+from .post_train_eval import PostTrainEvalCallback
 from .wandb import WandBCallback
 
 __all__ = [
@@ -48,6 +49,7 @@ __all__ = [
     "BeakerCallback",
     "BatchSizeSchedulerCallback",
     "MonkeyPatcherCallback",
+    "PostTrainEvalCallback",
 ]
 
 __doc__ += "\n"
