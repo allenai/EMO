@@ -89,6 +89,9 @@ class PostTrainEvalCallback(Callback):
     job_priority: str = "urgent"
     """Job priority for eval jobs."""
 
+    github_repo: str = "allenai/FlexMoE"
+    """GitHub repo for gantry (needed when remote URL has embedded token)."""
+
     batch_size: int = 4
     """Default batch size for evaluations."""
 
@@ -203,27 +206,19 @@ class PostTrainEvalCallback(Callback):
             return None
 
     def _ensure_gantry_installed(self) -> bool:
-        """Ensure beaker-gantry is installed, install if needed."""
+        """Ensure beaker-gantry is installed and up-to-date."""
+        log.info("Installing/upgrading beaker-gantry...")
         try:
             subprocess.run(
-                ["python", "-c", "import gantry"],
+                ["pip", "install", "--upgrade", "beaker-gantry", "beaker-py"],
                 check=True,
                 capture_output=True,
             )
+            log.info("beaker-gantry installed/upgraded successfully")
             return True
-        except subprocess.CalledProcessError:
-            log.info("Installing beaker-gantry...")
-            try:
-                subprocess.run(
-                    ["pip", "install", "beaker-gantry"],
-                    check=True,
-                    capture_output=True,
-                )
-                log.info("beaker-gantry installed successfully")
-                return True
-            except subprocess.CalledProcessError as e:
-                log.error(f"Failed to install beaker-gantry: {e.stderr}")
-                return False
+        except subprocess.CalledProcessError as e:
+            log.error(f"Failed to install beaker-gantry: {e.stderr}")
+            return False
 
     def _launch_evals(self, hf_checkpoint_path: str):
         """Launch beaker evaluation jobs for the HF checkpoint."""
@@ -267,6 +262,7 @@ class PostTrainEvalCallback(Callback):
             gantry_args = [
                 "run",
                 "--name", job_name,
+                "--repo", self.github_repo,  # Explicit repo to avoid remote parsing issues
                 "--weka", "oe-training-default:/data/input",
                 "--install", 'pip install -e ".[eval]"',
                 "--budget", self.budget,
