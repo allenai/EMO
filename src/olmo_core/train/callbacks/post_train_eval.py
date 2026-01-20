@@ -202,6 +202,29 @@ class PostTrainEvalCallback(Callback):
             log.error(f"Stdout: {e.stdout}")
             return None
 
+    def _ensure_gantry_installed(self) -> bool:
+        """Ensure beaker-gantry is installed, install if needed."""
+        try:
+            subprocess.run(
+                ["python", "-c", "import gantry"],
+                check=True,
+                capture_output=True,
+            )
+            return True
+        except subprocess.CalledProcessError:
+            log.info("Installing beaker-gantry...")
+            try:
+                subprocess.run(
+                    ["pip", "install", "beaker-gantry"],
+                    check=True,
+                    capture_output=True,
+                )
+                log.info("beaker-gantry installed successfully")
+                return True
+            except subprocess.CalledProcessError as e:
+                log.error(f"Failed to install beaker-gantry: {e.stderr}")
+                return False
+
     def _launch_evals(self, hf_checkpoint_path: str):
         """Launch beaker evaluation jobs for the HF checkpoint."""
         # Derive the eval run name from the checkpoint path
@@ -218,6 +241,13 @@ class PostTrainEvalCallback(Callback):
         log.info(f"  Output dir: {output_dir}")
         log.info(f"  Tasks: {len(self.tasks)} tasks")
 
+        # Ensure gantry is installed
+        if not self._ensure_gantry_installed():
+            log.error("Cannot launch evals without beaker-gantry")
+            log.info("To manually launch evals, run locally:")
+            log.info(f'  MODELS=("{hf_checkpoint_path}") bash src/scripts/kevinf/eval/launch.sh')
+            return
+
         launched_count = 0
         failed_count = 0
 
@@ -233,9 +263,9 @@ class PostTrainEvalCallback(Callback):
             safe_task_name = "".join(c for c in task if c.isalnum() or c in "_-")
             job_name = f"eval-{safe_run_name}-{safe_task_name}"
 
-            # Build gantry command
-            cmd = [
-                "uv", "run", "gantry", "run",
+            # Build gantry command (try gantry directly, fall back to python -m)
+            gantry_args = [
+                "run",
                 "--name", job_name,
                 "--weka", "oe-training-default:/data/input",
                 "--install", 'pip install -e ".[eval]"',
@@ -259,14 +289,30 @@ class PostTrainEvalCallback(Callback):
                 f"--batch-size {batch_size} "
                 f"--gpus 1",
             ]
+            
+            # Try different ways to invoke gantry
+            cmd = ["gantry"] + gantry_args
 
             try:
                 log.info(f"Launching eval job: {job_name}")
-                subprocess.run(cmd, check=True, capture_output=True, text=True)
+                # Try gantry directly first
+                try:
+                    subprocess.run(cmd, check=True, capture_output=True, text=True)
+                except FileNotFoundError:
+                    # gantry not in PATH, try python -m gantry
+                    cmd = ["python", "-m", "gantry"] + gantry_args
+                    subprocess.run(cmd, check=True, capture_output=True, text=True)
                 launched_count += 1
+            except FileNotFoundError:
+                log.error("gantry command not found even after install attempt")
+                failed_count += 1
+                break  # No point trying more tasks if gantry isn't available
             except subprocess.CalledProcessError as e:
                 log.error(f"Failed to launch eval job {job_name}: {e.stderr}")
                 failed_count += 1
 
         log.info(f"Eval job launch complete: {launched_count} launched, {failed_count} failed")
+        if failed_count > 0 and launched_count == 0:
+            log.info("To manually launch evals, run locally:")
+            log.info(f'  MODELS=("{hf_checkpoint_path}") bash src/scripts/kevinf/eval/launch.sh')
 
