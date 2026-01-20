@@ -14,7 +14,8 @@ MODELS=(
     # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift-ckpt_1B_dolma3/step2385-hf"
     # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
-    "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift-ckpt_1B_dolma3/step2385-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift-ckpt_1B_dolma3/step2385-hf"
+    "/data/input/kevinf/checkpoints-new/olmo3-1b-130b-OLMo-mix-0625-150Bsample-dclm/step30995-hf"
 )
 
 BASE_OUTPUT_DIR="/data/input/kevinf/flexmoe/eval/results"
