@@ -28,9 +28,15 @@ PARENT_MODELS=(
 )
 
 #postfix=""
-#postfix="_keepk128/newdefault_lr-4e-5"
+# for hellaswag
+postfix="_keepk128/newdefault_lr-4e-5"
+
+# for the mmlu grouped tasks
+#postfix="_keepk32/newdefault_lr-4e-5_bs-16"
+
 #postfix="_keepk32/newdefault_lr-4e-5_bs-128"
-postfix="_keepk32/newdefault_lr-4e-5_bs-16"
+
+
 #postfix="_keepk32/newdefault_lr-4e-6_bs-128"
 #postfix="_keepk32/newdefault_lr-1e-6_bs-128"
 #postfix="_keepk32/newdefault_lr-4e-5"
@@ -68,12 +74,12 @@ FINETUNE_TASKS=(
 #    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step652-hf"
 #    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step819-hf"
 #
-#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step0-hf"
-#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step729-hf"
-#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step1458-hf"
-#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step2187-hf"
-#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step2916-hf"
-#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step3645-hf"
+    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step0-hf"
+    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step729-hf"
+    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step1458-hf"
+    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step2187-hf"
+    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step2916-hf"
+    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step3645-hf"
 #
 #    "task-openbookqa_rc_validation${postfix}/finetune-task-openbookqa_rc_train/step0-hf"
 #    "task-openbookqa_rc_validation${postfix}/finetune-task-openbookqa_rc_train/step92-hf"
@@ -209,12 +215,12 @@ FINETUNE_TASKS=(
 #    "task-mmlu_other_rc_validation${postfix}/finetune-task-mmlu_other_rc_train/step75-hf"
 #    "task-mmlu_other_rc_validation${postfix}/finetune-task-mmlu_other_rc_train/step100-hf"
 #    "task-mmlu_other_rc_validation${postfix}/finetune-task-mmlu_other_rc_train/step129-hf"
-    "task-mmlu_philosophy_cat_rc_validation${postfix}/finetune-task-mmlu_philosophy_cat_rc_train/step0-hf"
-    "task-mmlu_philosophy_cat_rc_validation${postfix}/finetune-task-mmlu_philosophy_cat_rc_train/step45-hf"
-    "task-mmlu_philosophy_cat_rc_validation${postfix}/finetune-task-mmlu_philosophy_cat_rc_train/step90-hf"
-    "task-mmlu_philosophy_cat_rc_validation${postfix}/finetune-task-mmlu_philosophy_cat_rc_train/step135-hf"
-    "task-mmlu_philosophy_cat_rc_validation${postfix}/finetune-task-mmlu_philosophy_cat_rc_train/step180-hf"
-    "task-mmlu_philosophy_cat_rc_validation${postfix}/finetune-task-mmlu_philosophy_cat_rc_train/step225-hf"
+#    "task-mmlu_philosophy_cat_rc_validation${postfix}/finetune-task-mmlu_philosophy_cat_rc_train/step0-hf"
+#    "task-mmlu_philosophy_cat_rc_validation${postfix}/finetune-task-mmlu_philosophy_cat_rc_train/step45-hf"
+#    "task-mmlu_philosophy_cat_rc_validation${postfix}/finetune-task-mmlu_philosophy_cat_rc_train/step90-hf"
+#    "task-mmlu_philosophy_cat_rc_validation${postfix}/finetune-task-mmlu_philosophy_cat_rc_train/step135-hf"
+#    "task-mmlu_philosophy_cat_rc_validation${postfix}/finetune-task-mmlu_philosophy_cat_rc_train/step180-hf"
+#    "task-mmlu_philosophy_cat_rc_validation${postfix}/finetune-task-mmlu_philosophy_cat_rc_train/step225-hf"
 #    "task-mmlu_physics_rc_validation${postfix}/finetune-task-mmlu_physics_rc_train/step0-hf"
 #    "task-mmlu_physics_rc_validation${postfix}/finetune-task-mmlu_physics_rc_train/step14-hf"
 #    "task-mmlu_physics_rc_validation${postfix}/finetune-task-mmlu_physics_rc_train/step28-hf"
@@ -630,19 +636,19 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
-#  "arc_easy|arc_easy:rc_test::olmes"
-#  "arc_challenge|arc_challenge:rc_test::olmes"
-#  "boolq|boolq:rc_test::olmes"
-#  "csqa|csqa:rc_test::olmes"
-#  "hellaswag|hellaswag:rc_test::olmes"
-#  "openbookqa|openbookqa:rc_test::olmes"
-#  "piqa|piqa:rc_test::olmes"
-#  "socialiqa|socialiqa:rc_test::olmes"
-#  "winogrande|winogrande:rc_test::olmes"
-#  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
-#  "synthea|synthea:rc_test_0shot::olmes"
-#  "coqa|coqa:test_0shot::olmes"
-#  "squad|squad:test_0shot::olmes"
+  "arc_easy|arc_easy:rc_test::olmes"
+  "arc_challenge|arc_challenge:rc_test::olmes"
+  "boolq|boolq:rc_test::olmes"
+  "csqa|csqa:rc_test::olmes"
+  "hellaswag|hellaswag:rc_test::olmes"
+  "openbookqa|openbookqa:rc_test::olmes"
+  "piqa|piqa:rc_test::olmes"
+  "socialiqa|socialiqa:rc_test::olmes"
+  "winogrande|winogrande:rc_test::olmes"
+  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
+  "synthea|synthea:rc_test_0shot::olmes"
+  "coqa|coqa:test_0shot::olmes"
+  "squad|squad:test_0shot::olmes"
 
 
 #  "coqa|coqa:train_0shot::olmes"
