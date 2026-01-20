@@ -219,9 +219,10 @@ for TASK in "${TASKS[@]}"; do
         batch_size=4
     fi
     
-    # Create safe job name
-    safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g')
-    safe_task_name=$(echo $TASK | sed 's/[^a-zA-Z0-9_-]//g')
+    # Create safe job name (Beaker limit: 128 chars)
+    # Reserve ~5 for "eval-", ~1 for "-", leaves ~122 for model+task
+    safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g' | cut -c1-80)
+    safe_task_name=$(echo $TASK | sed 's/[^a-zA-Z0-9_-]//g' | cut -c1-40)
     job_name="eval-${safe_model_name}-${safe_task_name}"
     
     echo "Launching: $TASK (batch_size=$batch_size)"
