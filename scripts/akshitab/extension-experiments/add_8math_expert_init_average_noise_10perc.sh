@@ -4,7 +4,7 @@
 # STATUS: USED
 ##############################################################
 
-NUM_NEW_EXPERTS=4
+NUM_NEW_EXPERTS=8
 TOTAL_EXPERTS=$((128+${NUM_NEW_EXPERTS}))
 
 # Part 1: Add new expert

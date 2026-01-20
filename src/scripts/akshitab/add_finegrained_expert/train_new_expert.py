@@ -178,18 +178,18 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         "partial_freeze_router_and_experts"
     ] = partial_freeze_router_and_experts
 
-    if opts.num_experts_to_train != opts.added_experts:
-        log.warning(
-            f"num_experts_to_train ({opts.num_experts_to_train}) != added_experts ({opts.added_experts})."
-            f" This will train weights for the last {opts.num_experts_to_train} existing expert(s)."
-        )
+    # if opts.num_experts_to_train != opts.added_experts:
+    #     log.warning(
+    #         f"num_experts_to_train ({opts.num_experts_to_train}) != added_experts ({opts.added_experts})."
+    #         f" This will train weights for the last {opts.num_experts_to_train} existing expert(s)."
+    #     )
 
     model_config = TransformerConfig.olmoe_1B_7B(
         vocab_size=tokenizer_config.padded_vocab_size(),
         n_layers=16,
         d_model=2048,
         n_heads=16,
-        num_experts=128 + opts.added_experts,
+        num_experts=128 + opts.num_experts_to_train,
         top_k=8,
         freeze_params=[
             "embeddings.*",
