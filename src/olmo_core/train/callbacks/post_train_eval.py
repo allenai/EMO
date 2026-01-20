@@ -219,6 +219,17 @@ class PostTrainEvalCallback(Callback):
         except subprocess.CalledProcessError as e:
             log.warning(f"Could not fix git remote: {e.stderr}")
 
+    def _transform_path_for_eval(self, path: str) -> str:
+        """Transform weka path to the mount point used in eval jobs.
+        
+        Training jobs use: /weka/oe-training-default/...
+        Eval jobs mount:   --weka oe-training-default:/data/input
+        So we need:        /weka/oe-training-default/... -> /data/input/...
+        """
+        if path.startswith("/weka/oe-training-default/"):
+            return path.replace("/weka/oe-training-default/", "/data/input/")
+        return path
+
     def _launch_evals(self, hf_checkpoint_path: str):
         """Launch beaker evaluation jobs for the HF checkpoint."""
         # Derive the eval run name from the checkpoint path
@@ -228,10 +239,14 @@ class PostTrainEvalCallback(Callback):
         run_name = path.parent.name  # e.g., my-run
         eval_run_name = f"{run_name}_{step_dir}"
 
+        # Transform path for eval container's mount point
+        eval_checkpoint_path = self._transform_path_for_eval(hf_checkpoint_path)
+        
         output_dir = f"{self.eval_output_base_dir}/{eval_run_name}"
 
         log.info(f"Launching evaluations for {eval_run_name}")
-        log.info(f"  HF checkpoint: {hf_checkpoint_path}")
+        log.info(f"  HF checkpoint (local): {hf_checkpoint_path}")
+        log.info(f"  HF checkpoint (eval):  {eval_checkpoint_path}")
         log.info(f"  Output dir: {output_dir}")
         log.info(f"  Tasks: {len(self.tasks)} tasks")
 
@@ -273,7 +288,7 @@ class PostTrainEvalCallback(Callback):
                 "--",
                 "bash", "-c",
                 f"PYTHONPATH=. python -u src/scripts/eval/launch_eval.py "
-                f"--model {hf_checkpoint_path} "
+                f"--model {eval_checkpoint_path} "
                 f"--model-type hf "
                 f"--task {task} "
                 f"--limit {self.limit} "
