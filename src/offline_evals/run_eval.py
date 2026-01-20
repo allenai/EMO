@@ -635,7 +635,6 @@ def merge_metric_outputs(lists_of_dicts):
     >>> merge_lists_of_dicts([{"metrics": {"a": 1}, {"b": 2}}], [{"metrics": {"c": 3}, {"d": 4}}])
     >>> [{"metrics": {"a": 1}, {"b": 2}, {"c": 3}, {"d": 4}}]
     """
-    breakpoint()
     if not all(len(lst) == len(lists_of_dicts[0]) for lst in lists_of_dicts):
         raise ValueError("All lists must have the same length.")
 
