@@ -78,7 +78,7 @@ class SoftLoss(Metric):
         logits_per_char_softmax = torch.nn.functional.softmax(torch.tensor(logits_per_char), dim=-1)
         softloss_per_char_corr = logits_per_char_softmax[label] if label is not None else 0.0
 
-
+        breakpoint()
         return {
             "softloss_corr": softloss_corr,
             "softloss_per_token_corr": softloss_per_token_corr,
