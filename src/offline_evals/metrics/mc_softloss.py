@@ -80,7 +80,7 @@ class SoftLoss(Metric):
 
         breakpoint()
         return {
-            "softloss_corr": softloss_corr,
-            "softloss_per_token_corr": softloss_per_token_corr,
-            "softloss_per_char_corr": softloss_per_char_corr,
+            "softloss_corr": softloss_corr.item(),
+            "softloss_per_token_corr": softloss_per_token_corr.item(),
+            "softloss_per_char_corr": softloss_per_char_corr.item(),
         }
