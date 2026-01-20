@@ -53,15 +53,13 @@ class SoftLoss(Metric):
         ):
             label = 0  # this is very problematic, do not keep
 
-        breakpoint()
-
-        sum_logits_softmax = torch.nn.functional.softmax(sum_logits, dim=-1)
+        sum_logits_softmax = torch.nn.functional.softmax(torch.tensor(sum_logits), dim=-1)
         softloss_corr = sum_logits_softmax[label] if label is not None else 0.0
 
-        logits_per_token_softmax = torch.nn.functional.softmax(logits_per_token, dim=-1)
+        logits_per_token_softmax = torch.nn.functional.softmax(torch.tensor(logits_per_token), dim=-1)
         softloss_per_token_corr = logits_per_token_softmax[label] if label is not None else 0.0
 
-        logits_per_char_softmax = torch.nn.functional.softmax(logits_per_char, dim=-1)
+        logits_per_char_softmax = torch.nn.functional.softmax(torch.tensor(logits_per_char), dim=-1)
         softloss_per_char_corr = logits_per_char_softmax[label] if label is not None else 0.0
 
 
