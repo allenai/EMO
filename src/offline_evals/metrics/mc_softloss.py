@@ -41,6 +41,7 @@ class SoftLoss(Metric):
 
         # compute logits_per_token for acc_norm
         for res in results_for_requests:
+            breakpoint()
             num_tokens = max(res["model_resps"]["num_tokens"], 1)
             num_chars = max(len(res["request"].get("continuation", "")), 1)
             res["model_resps"].update(
