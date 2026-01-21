@@ -21,58 +21,58 @@ import seaborn as sns
 # Task configuration now keeps task names, steps, and optional metric key together.
 # Only override metric_key when you want something other than "primary_score".
 TASK_CONFIGS: Dict[str, Dict[str, Any]] = {
-    "arc_easy:rc_test": {
-        "steps": [0, 42, 84, 126, 168, 210],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "arc_challenge:rc_test": {
-        "steps": [0, 20, 40, 60, 80, 102],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "boolq:rc_test": {
-        "steps": [0, 157, 314, 471, 628, 789],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "csqa:rc_test": {
-        "steps": [0, 163, 326, 489, 652, 819],
-        "metric_key": "bits_per_byte_corr",
-    },
+    # "arc_easy:rc_test": {
+    #     "steps": [0, 42, 84, 126, 168, 210],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "arc_challenge:rc_test": {
+    #     "steps": [0, 20, 40, 60, 80, 102],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "boolq:rc_test": {
+    #     "steps": [0, 157, 314, 471, 628, 789],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "csqa:rc_test": {
+    #     "steps": [0, 163, 326, 489, 652, 819],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
     "hellaswag:rc_test": {
         "steps": [0, 729, 1458, 2187, 2916, 3645],
-        "metric_key": "bits_per_byte_corr",
+        "metric_key": "softloss_per_char_corr"
     },
-    "openbookqa:rc_test": {
-        "steps": [0, 92, 184, 276, 368, 462],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "piqa:rc_test": {
-        "steps": [0, 283, 566, 849, 1132, 1416],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "socialiqa:rc_test": {
-        "steps": [0, 607, 1214, 1821, 2428, 3036],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "winogrande:rc_test": {
-        "steps": [0, 738, 1476, 2214, 2952, 3693],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "gsm8k_generation:train_0shot": {
-        "steps": [0, 121, 242, 363, 484, 606],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "synthea:rc_train_0shot": {
-        "steps": [0, 161, 322, 483, 644, 807],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "coqa:train_0shot": {
-        "steps": [0, 28, 56, 84, 112, 144],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "squad:train_0shot": {
-        "steps": [0, 1623, 3246, 4869, 6492, 8118],
-        "metric_key": "bits_per_byte_corr",
-    },
+    # "openbookqa:rc_test": {
+    #     "steps": [0, 92, 184, 276, 368, 462],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "piqa:rc_test": {
+    #     "steps": [0, 283, 566, 849, 1132, 1416],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "socialiqa:rc_test": {
+    #     "steps": [0, 607, 1214, 1821, 2428, 3036],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "winogrande:rc_test": {
+    #     "steps": [0, 738, 1476, 2214, 2952, 3693],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "gsm8k_generation:train_0shot": {
+    #     "steps": [0, 121, 242, 363, 484, 606],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "synthea:rc_train_0shot": {
+    #     "steps": [0, 161, 322, 483, 644, 807],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "coqa:train_0shot": {
+    #     "steps": [0, 28, 56, 84, 112, 144],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "squad:train_0shot": {
+    #     "steps": [0, 1623, 3246, 4869, 6492, 8118],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
     # "mmlu_abstract_algebra:rc_test": {
     #     "steps": [0, 4, 8, 12, 16, 21],
     # },
@@ -244,74 +244,74 @@ TASK_CONFIGS: Dict[str, Dict[str, Any]] = {
     # "mmlu_world_religions:rc_test": {
     #     "steps": [0, 7, 14, 21, 28, 36],
     # },
-    "mmlu_biology:rc_test": {
-        "steps": [0, 10, 20, 30, 40, 51],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "mmlu_business:rc_test": {
-        "steps": [0, 9, 18, 27, 36, 48],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "mmlu_chemistry:rc_test": {
-        "steps": [0, 6, 12, 18, 24, 33],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "mmlu_computer_science:rc_test": {
-        "steps": [0, 9, 18, 27, 36, 45],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "mmlu_culture:rc_test": {
-        "steps": [0, 7, 14, 21, 28, 36],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "mmlu_economics:rc_test": {
-        "steps": [0, 16, 32, 48, 64, 81],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "mmlu_engineering:rc_test": {
-        "steps": [0, 3, 6, 9, 12, 15],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "mmlu_geography:rc_test": {
-        "steps": [0, 4, 8, 12, 16, 21],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "mmlu_health:rc_test": {
-        "steps": [0, 36, 72, 108, 144, 183],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "mmlu_history:rc_test": {
-        "steps": [0, 20, 40, 60, 80, 102],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "mmlu_law:rc_test": {
-        "steps": [0, 39, 78, 117, 156, 198],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "mmlu_math:rc_test": {
-        "steps": [0, 23, 46, 69, 92, 117],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "mmlu_other:rc_test": {
-        "steps": [0, 25, 50, 75, 100, 129],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "mmlu_philosophy_cat:rc_test": {
-        "steps": [0, 45, 90, 135, 180, 225],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "mmlu_physics:rc_test": {
-        "steps": [0, 14, 28, 42, 56, 72],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "mmlu_politics:rc_test": {
-        "steps": [0, 14, 28, 42, 56, 72],
-        "metric_key": "bits_per_byte_corr",
-    },
-    "mmlu_psychology:rc_test": {
-        "steps": [0, 25, 50, 75, 100, 129],
-        "metric_key": "bits_per_byte_corr",
-    },
+    # "mmlu_biology:rc_test": {
+    #     "steps": [0, 10, 20, 30, 40, 51],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "mmlu_business:rc_test": {
+    #     "steps": [0, 9, 18, 27, 36, 48],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "mmlu_chemistry:rc_test": {
+    #     "steps": [0, 6, 12, 18, 24, 33],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "mmlu_computer_science:rc_test": {
+    #     "steps": [0, 9, 18, 27, 36, 45],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "mmlu_culture:rc_test": {
+    #     "steps": [0, 7, 14, 21, 28, 36],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "mmlu_economics:rc_test": {
+    #     "steps": [0, 16, 32, 48, 64, 81],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "mmlu_engineering:rc_test": {
+    #     "steps": [0, 3, 6, 9, 12, 15],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "mmlu_geography:rc_test": {
+    #     "steps": [0, 4, 8, 12, 16, 21],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "mmlu_health:rc_test": {
+    #     "steps": [0, 36, 72, 108, 144, 183],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "mmlu_history:rc_test": {
+    #     "steps": [0, 20, 40, 60, 80, 102],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "mmlu_law:rc_test": {
+    #     "steps": [0, 39, 78, 117, 156, 198],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "mmlu_math:rc_test": {
+    #     "steps": [0, 23, 46, 69, 92, 117],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "mmlu_other:rc_test": {
+    #     "steps": [0, 25, 50, 75, 100, 129],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "mmlu_philosophy_cat:rc_test": {
+    #     "steps": [0, 45, 90, 135, 180, 225],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "mmlu_physics:rc_test": {
+    #     "steps": [0, 14, 28, 42, 56, 72],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "mmlu_politics:rc_test": {
+    #     "steps": [0, 14, 28, 42, 56, 72],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
+    # "mmlu_psychology:rc_test": {
+    #     "steps": [0, 25, 50, 75, 100, 129],
+    #     "metric_key": "bits_per_byte_corr",
+    # },
 }
 
 
@@ -328,7 +328,7 @@ FAMILY_COLORS: Dict[str, str] = {
     "mutualinfo": "#FBC15E",  # Yellow
 }
 
-DEFAULT_OUTPUT_SUBDIR = "bpb_plots"
+DEFAULT_OUTPUT_SUBDIR = "primary_score_plots"
 
 # Model run configurations
 # Each entry defines a model run that will be plotted as a line

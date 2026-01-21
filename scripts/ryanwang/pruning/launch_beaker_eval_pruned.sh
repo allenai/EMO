@@ -9,18 +9,18 @@ PRUNE_DIR="${BASE_DIR}/prune"
 #MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
 
 PARENT_MODELS=(
-#    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
+    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
     "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
 
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995"
 
     "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
-#    "moe_1b4b_32experts_1224/step30995"
+    "moe_1b4b_32experts_1224/step30995"
 
 )
 
 #postfix=""
-# for hellaswag
+# for hellaswag or other arc tasks
 postfix="_keepk32/newdefault_lr-4e-5"
 
 # for the mmlu grouped tasks
@@ -38,12 +38,12 @@ postfix="_keepk32/newdefault_lr-4e-5"
 
 
 FINETUNE_TASKS=(
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step42-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step126-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168-hf"
-#    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step210-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step0-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step42-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step84-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step126-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step168-hf"
+    "task-arc_easy_rc_validation${postfix}/finetune-task-arc_easy_rc_train/step210-hf"
 ##
 #    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step0-hf"
 #    "task-arc_challenge_rc_validation${postfix}/finetune-task-arc_challenge_rc_train/step20-hf"
@@ -66,12 +66,12 @@ FINETUNE_TASKS=(
 #    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step652-hf"
 #    "task-csqa_rc_validation${postfix}/finetune-task-csqa_rc_train/step819-hf"
 #
-    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step0-hf"
-    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step729-hf"
-    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step1458-hf"
-    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step2187-hf"
-    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step2916-hf"
-    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step3645-hf"
+#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step0-hf"
+#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step729-hf"
+#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step1458-hf"
+#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step2187-hf"
+#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step2916-hf"
+#    "task-hellaswag_rc_validation${postfix}/finetune-task-hellaswag_rc_train/step3645-hf"
 #
 #    "task-openbookqa_rc_validation${postfix}/finetune-task-openbookqa_rc_train/step0-hf"
 #    "task-openbookqa_rc_validation${postfix}/finetune-task-openbookqa_rc_train/step92-hf"
