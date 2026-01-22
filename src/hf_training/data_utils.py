@@ -13,6 +13,9 @@ from typing import Dict, List, Optional, Tuple
 
 from datasets import Dataset, load_dataset
 
+from offline_evals.run_eval import load_task
+from scripts.eval.tasks import get_task_configs
+
 logger = logging.getLogger(__name__)
 
 # Task configurations for HuggingFace datasets
@@ -345,11 +348,22 @@ def get_formatted_prompts(task_name: str, split: str) -> List[str]:
         List of formatted prompt+answer strings
     """
     breakpoint()
-    raw_dataset = load_hf_dataset(task_name, split)
+    TASK_CONFIGS = get_task_configs()
+    task_config = TASK_CONFIGS[task_name]
+    task = load_task(task_config, "tmp")
+    task.download()
+    task.build_all_requests()
 
-    prompts = []
-    for example in raw_dataset:
-        prompt, answer = format_example(example, task_name)
-        prompts.append(prompt + answer)
+    dataset = []
+    for instance in task._instances:
+        dataset.append(instance.request.context + instance.request.continuation)
 
-    return prompts
+
+    # raw_dataset = load_hf_dataset(task_name, split)
+    #
+    # prompts = []
+    # for example in raw_dataset:
+    #     prompt, answer = format_example(example, task_name)
+    #     prompts.append(prompt + answer)
+
+    return dataset
