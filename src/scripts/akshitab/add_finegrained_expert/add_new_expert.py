@@ -149,6 +149,8 @@ def add_experts(
         config = json.load(f)
 
     old_model_config = TransformerConfig.from_dict(config["model"])
+    backend = old_model_config.block.attention.backend
+    old_model_config.block.attention.backend = 'torch'
     logger.info(f"Model config {old_model_config}")
 
     # Load model weights
@@ -362,6 +364,7 @@ def add_experts(
 
     # Save new model checkpoint
     if save_path is not None:
+        new_config.block.attention.backend = backend
         config["model"] = new_config.as_config_dict()
         save_checkpoint(config, new_model, save_path)
 
