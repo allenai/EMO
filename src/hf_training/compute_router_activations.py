@@ -72,6 +72,7 @@ def compute_router_activations(
     logger.info(f"Loaded {len(prompts)} prompts")
 
     # Get model config
+    breakpoint()
     num_layers = model.config.num_hidden_layers
     num_experts = model.config.num_local_experts if hasattr(model.config, "num_local_experts") else model.config.num_experts
 
