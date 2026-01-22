@@ -96,7 +96,8 @@ def train(config: ExperimentConfig):
 
     # Debug: Check first batch for out-of-range tokens
     if get_rank() == 0:
-        log.info(f"Model vocab_size: {model.config.vocab_size}")
+        model_vocab_size = config.model.vocab_size
+        log.info(f"Model vocab_size: {model_vocab_size}")
         log.info(f"Tokenizer vocab_size: {config.dataset.tokenizer.vocab_size}")
         log.info(f"Data mix: {config.dataset.mix}")
         log.info(f"Data base_dir: {config.dataset.mix_base_dir}")
@@ -106,8 +107,8 @@ def train(config: ExperimentConfig):
             max_token = input_ids.max().item()
             min_token = input_ids.min().item()
             log.info(f"First batch token range: min={min_token}, max={max_token}")
-            if max_token >= model.config.vocab_size:
-                log.error(f"TOKEN ID OUT OF RANGE! max_token={max_token} >= vocab_size={model.config.vocab_size}")
+            if max_token >= model_vocab_size:
+                log.error(f"TOKEN ID OUT OF RANGE! max_token={max_token} >= vocab_size={model_vocab_size}")
             break
 
     # Save config to W&B and each checkpoint dir.
