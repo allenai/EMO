@@ -344,6 +344,7 @@ def get_formatted_prompts(task_name: str, split: str) -> List[str]:
     Returns:
         List of formatted prompt+answer strings
     """
+    breakpoint()
     raw_dataset = load_hf_dataset(task_name, split)
 
     prompts = []

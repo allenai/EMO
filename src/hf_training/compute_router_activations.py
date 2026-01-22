@@ -55,7 +55,6 @@ def compute_router_activations(
         Dict containing avg_router_probabilities
     """
     logger.info(f"Loading model: {model_name}")
-    breakpoint()
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
