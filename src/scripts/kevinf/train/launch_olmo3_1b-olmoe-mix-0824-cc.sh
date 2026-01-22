@@ -21,7 +21,8 @@ python -m olmo_core.launch.beaker \
   --cluster ai2/jupiter \
   --preemptible \
   --allow-dirty \
-  --env-secret "GITHUB_TOKEN=KEVINF_GITHUB_TOKEN" "WANDB_API_KEY=KEVINF_WANDB_API_KEY" "BEAKER_TOKEN=KEVINF_BEAKER_TOKEN" \
+  --env-secret "GITHUB_TOKEN=KEVINF_GITHUB_TOKEN" "WANDB_API_KEY=KEVINF_WANDB_API_KEY" "BEAKER_TOKEN=KEVINF_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=KEVINF_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=KEVINF_AWS_SECRET_ACCESS_KEY" \
+  --env "S3_PROFILE=" \
   -- src/scripts/kevinf/train/OLMo3-1B.py \
   $runname \
   --save-folder="/weka/oe-training-default/kevinf/checkpoints-new/${runname}/" \
