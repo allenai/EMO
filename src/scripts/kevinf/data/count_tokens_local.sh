@@ -18,18 +18,30 @@ tmpfile=$(mktemp)
 missing_file=$(mktemp)
 trap "rm -f $tmpfile $missing_file" EXIT
 
+# Count total files to process
+total_files=$(grep -v "^#" "$1" | grep -v "^$" | wc -l)
+current=0
+
 # Process each line and collect subset name with file size
 grep -v "^#" "$1" | grep -v "^$" | while IFS=',' read -r subset path; do
+  ((current++))
   path=$(echo "$path" | sed "s|{TOKENIZER}|$TOKENIZER|g")
   full="$BASE/$path"
+  
+  # Show progress
+  printf "\r[%d/%d] Processing: %-60s" "$current" "$total_files" "${path:0:60}" >&2
+  
   if [[ -f "$full" ]]; then
     size=$(stat -c%s "$full")
     echo "$subset,$size"
   else
-    echo "MISSING: $full" >&2
+    printf "\nMISSING: %s\n" "$full" >&2
     echo "$full" >> "$missing_file"
   fi
 done > "$tmpfile"
+
+# Clear the progress line
+printf "\r%-80s\r" "" >&2
 
 # Check if any files were missing
 if [[ -s "$missing_file" ]]; then
