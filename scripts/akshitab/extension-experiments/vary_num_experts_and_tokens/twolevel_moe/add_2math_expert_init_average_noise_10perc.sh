@@ -5,22 +5,27 @@
 ##############################################################
 
 NUM_NEW_EXPERTS=2
+TOTAL_EXPERTS=$((128+${NUM_NEW_EXPERTS}))
 
 # Part 1: Add new expert
-BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
-NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/extensions/moe_1b14b_130experts_olmoe-mix_130B_1103_step30995_init_average_noise_10perc"
+
+BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
+NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/extensions/twolevelbatchlb-32_1b14b_${TOTAL_EXPERTS}experts_stability_prenorm_noqknorm_1121_step30995_init_average_noise_10perc"
 
 # Run this once; on weka
-# python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
-# 	-c ${BASE_MODEL_PATH}\
-# 	-o ${NEW_BASE_MODEL_PATH} \
-# 	--num_new_experts ${NUM_NEW_EXPERTS} \
-# 	--init_method average \
-#   --noise_std_fraction 0.1
+python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
+	-c ${BASE_MODEL_PATH}\
+	-o ${NEW_BASE_MODEL_PATH} \
+	--num_new_experts ${NUM_NEW_EXPERTS} \
+	--init_method average \
+  --noise_std_fraction 0.1
+
+NUM_BILLION_TOKENS=20
+NUM_TOKENS=$((NUM_BILLION_TOKENS * 1000000000))
 
 
 # # Part 2: Train with new expert
-RUN_NAME="moe1b14b_130experts_${NUM_NEW_EXPERTS}trained_math_init_average_noise_10perc_5B"
+RUN_NAME="twolevelbatchlb-32_130experts_${NUM_NEW_EXPERTS}trained_math_init_average_noise_10perc_${NUM_BILLION_TOKENS}B"
 
 python -m olmo_core.launch.beaker \
   --name ${RUN_NAME} \
@@ -41,7 +46,7 @@ python -m olmo_core.launch.beaker \
 		--save-folder="/weka/oe-training-default/akshitab/FlexMoE/models/${RUN_NAME}" \
 		--dataset.mix=mj_finemath4plus \
 		--work-dir="/weka/oe-training-default/akshitab/dataset-cache" \
-		--trainer.max_duration='{value: 5_000_000_000, unit: tokens}' \
+		--trainer.max_duration="{value: ${NUM_TOKENS}, unit: tokens}" \
 		--trainer.callbacks.wandb="{enabled: true, entity: akshitab, project: olmoe-modular, name: ${RUN_NAME}, tags: [extension]}" \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="moe" \

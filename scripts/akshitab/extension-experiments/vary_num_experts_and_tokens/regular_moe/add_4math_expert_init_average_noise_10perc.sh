@@ -20,8 +20,11 @@ NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/extension
 #   --noise_std_fraction 0.1
 
 
+NUM_BILLION_TOKENS=20
+NUM_TOKENS=$((NUM_BILLION_TOKENS * 1000000000))
+
 # # Part 2: Train with new expert
-RUN_NAME="moe1b14b_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_math_init_average_noise_10perc_5B"
+RUN_NAME="moe1b14b_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_math_init_average_noise_10perc_${NUM_BILLION_TOKENS}B"
 
 python -m olmo_core.launch.beaker \
   --name ${RUN_NAME} \
@@ -42,7 +45,7 @@ python -m olmo_core.launch.beaker \
 		--save-folder="/weka/oe-training-default/akshitab/FlexMoE/models/${RUN_NAME}" \
 		--dataset.mix=mj_finemath4plus \
 		--work-dir="/weka/oe-training-default/akshitab/dataset-cache" \
-		--trainer.max_duration='{value: 5_000_000_000, unit: tokens}' \
+		--trainer.max_duration="{value: ${NUM_TOKENS}, unit: tokens}" \
 		--trainer.callbacks.wandb="{enabled: true, entity: akshitab, project: olmoe-modular, name: ${RUN_NAME}, tags: [extension]}" \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="moe" \
