@@ -194,6 +194,9 @@ def select_replacement_files(
     for i, (path, size) in enumerate(all_files):
         if accumulated >= target_bytes:
             break
+        # Only include .npy files, skip metadata files like .csv.gz
+        if not path.endswith(".npy"):
+            continue
         selected.append((path, size))
         accumulated += size
 
