@@ -534,7 +534,13 @@ def main(args):
         )
 
     def format_model_name(model):
-        """Format model name for display. Override this for custom formatting."""
+        """Format model name for display. Applies nicknames if configured."""
+        if args.nicknames:
+            for mapping in args.nicknames.split(","):
+                if ":" in mapping:
+                    pattern, nickname = mapping.split(":", 1)
+                    if pattern in model:
+                        return nickname
         return model
 
     def format_number(v, task_name):
@@ -727,6 +733,10 @@ Examples:
     parser.add_argument("--show-models", help="Comma-separated list of model patterns to show")
     parser.add_argument("--hide-tasks", help="Comma-separated list of task patterns to hide")
     parser.add_argument("--show-tasks", help="Comma-separated list of task patterns to show")
+    parser.add_argument(
+        "--nicknames",
+        help="Comma-separated pattern:nickname mappings for model names (e.g., 'dolma:Dolma,olmoe:OLMoE')",
+    )
 
     args = parser.parse_args()
 
