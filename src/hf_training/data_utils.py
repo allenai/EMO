@@ -357,9 +357,22 @@ def get_formatted_prompts(task_name: str, split: str) -> List[str]:
     # TODO: need to filter out the incorrect examples somehow
 
     dataset = []
-    for instance in task._instances:
-        if instance.idx == instance.label:
-            dataset.append(instance.request.context + instance.request.continuation)
+
+    if task._instances[0].request_type == "loglikelihood":
+
+        for instance in task._instances:
+            # we only choose the correct instances
+            if instance.idx == instance.label and not instance.request.context.startswith("Answer:"):
+                dataset.append(instance.request.context + instance.request.continuation)
+
+    elif task._instances[0].request_type == "generate_until":
+        raise NotImplementedError("generate_until not implemented in get_formatted_prompts")
+        # for req in requests_data:
+        #     # for some tasks (e.g coqa), by default there is no space between context and choice, so we add it here
+        #     if req["request"]["context"][-1] != " " and req["doc"]["choices"][0][0] != " ":
+        #         data += [req["request"]["context"] + " " + req["doc"]["choices"][0]]
+        #     else:
+        #         data += [req["request"]["context"] + req["doc"]["choices"][0]]
 
     breakpoint()
 
