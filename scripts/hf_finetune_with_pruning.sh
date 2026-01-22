@@ -181,12 +181,12 @@ if [ "$SKIP_ACTIVATION" = false ]; then
 
     mkdir -p "$(dirname "$ACTIVATION_FILE")"
 
-#    python -m src.hf_training.compute_router_activations \
-#        --model "$MODEL" \
-#        --task "$TASK" \
-#        --split "$ACTIVATION_SPLIT" \
-#        --output-file "$ACTIVATION_FILE" \
-#        --batch-size "$BATCH_SIZE"
+    python -m src.hf_training.compute_router_activations \
+        --model "$MODEL" \
+        --task "$TASK" \
+        --split "$ACTIVATION_SPLIT" \
+        --output-file "$ACTIVATION_FILE" \
+        --batch-size "$BATCH_SIZE"
 
     echo "Activations saved to: $ACTIVATION_FILE"
 else
