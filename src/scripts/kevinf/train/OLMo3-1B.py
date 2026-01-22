@@ -94,6 +94,22 @@ def train(config: ExperimentConfig):
     data_loader = config.data_loader.build(dataset, dp_process_group=train_module.dp_process_group)
     trainer = config.trainer.build(train_module, data_loader)
 
+    # Debug: Check first batch for out-of-range tokens
+    if get_rank() == 0:
+        log.info(f"Model vocab_size: {model.config.vocab_size}")
+        log.info(f"Tokenizer vocab_size: {config.dataset.tokenizer.vocab_size}")
+        log.info(f"Data mix: {config.dataset.mix}")
+        log.info(f"Data base_dir: {config.dataset.mix_base_dir}")
+        # Check a sample batch
+        for batch in data_loader:
+            input_ids = batch["input_ids"]
+            max_token = input_ids.max().item()
+            min_token = input_ids.min().item()
+            log.info(f"First batch token range: min={min_token}, max={max_token}")
+            if max_token >= model.config.vocab_size:
+                log.error(f"TOKEN ID OUT OF RANGE! max_token={max_token} >= vocab_size={model.config.vocab_size}")
+            break
+
     # Save config to W&B and each checkpoint dir.
     config_dict = config.as_config_dict()
     cast(ConfigSaverCallback, trainer.callbacks["config_saver"]).config = config_dict
