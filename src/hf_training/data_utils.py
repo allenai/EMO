@@ -354,10 +354,14 @@ def get_formatted_prompts(task_name: str, split: str) -> List[str]:
     task.download()
     task.build_all_requests()
 
+    # TODO: need to filter out the incorrect examples somehow
+
     dataset = []
     for instance in task._instances:
-        dataset.append(instance.request.context + instance.request.continuation)
+        if instance.idx == instance.label:
+            dataset.append(instance.request.context + instance.request.continuation)
 
+    breakpoint()
 
     # raw_dataset = load_hf_dataset(task_name, split)
     #
