@@ -333,6 +333,20 @@ def load_finetuning_dataset(task_name: str, split: str, tokenizer, max_length: i
     """
     return prepare_finetuning_dataset(task_name, split, tokenizer, max_length)
 
+def get_oe_task_name(task_name, split):
+    """
+    Get task string for offline evals to recognize which partition to use.
+
+    Args:
+        task_name: Name of the task
+        split: Dataset split
+
+    Returns:
+        Formatted task string
+    """
+
+    return f"{task_name}:rc_{split}::olmes"
+
 
 def get_formatted_prompts(task_name: str, split: str) -> List[str]:
     """
@@ -347,9 +361,9 @@ def get_formatted_prompts(task_name: str, split: str) -> List[str]:
     Returns:
         List of formatted prompt+answer strings
     """
-    breakpoint()
+    oe_task_name = get_oe_task_name(task_name, split)
     TASK_CONFIGS = get_task_configs()
-    task_config = TASK_CONFIGS[task_name]
+    task_config = TASK_CONFIGS[oe_task_name]
     task = load_task(task_config, "tmp")
     task.download()
     task.build_all_requests()

@@ -27,7 +27,6 @@ NUM_GPUS=1
 NUM_EPOCHS=3
 NUM_CHECKPOINTS=5
 BATCH_SIZE=4
-ACTIVATION_SPLIT="validation"
 SKIP_ACTIVATION=false
 SKIP_PRUNE=false
 ACTIVATION_FILE=""
@@ -70,10 +69,6 @@ while [[ $# -gt 0 ]]; do
             BATCH_SIZE="$2"
             shift 2
             ;;
-        --activation-split)
-            ACTIVATION_SPLIT="$2"
-            shift 2
-            ;;
         --skip-activation)
             SKIP_ACTIVATION=true
             shift
@@ -112,7 +107,6 @@ while [[ $# -gt 0 ]]; do
             echo "  --num-epochs      Number of training epochs (default: 3)"
             echo "  --num-checkpoints Number of checkpoints to save (default: 5)"
             echo "  --batch-size      Batch size for activation computation (default: 4)"
-            echo "  --activation-split Split for activation computation (default: validation)"
             echo "  --skip-activation Skip activation computation (requires --activation-file)"
             echo "  --skip-prune      Skip pruning (requires --pruned-model)"
             echo "  --activation-file Path to existing activation file"
@@ -149,7 +143,7 @@ mkdir -p "$OUTPUT_DIR"
 
 # Set up paths
 if [ -z "$ACTIVATION_FILE" ]; then
-    ACTIVATION_FILE="${OUTPUT_DIR}/activations/${TASK}_${ACTIVATION_SPLIT}_activations.jsonl"
+    ACTIVATION_FILE="${OUTPUT_DIR}/activations/${TASK}_val_activations.jsonl"
 fi
 
 if [ -z "$PRUNED_MODEL" ]; then
@@ -184,7 +178,7 @@ if [ "$SKIP_ACTIVATION" = false ]; then
     python -m src.hf_training.compute_router_activations \
         --model "$MODEL" \
         --task "$TASK" \
-        --split "$ACTIVATION_SPLIT" \
+        --split "validation" \
         --output-file "$ACTIVATION_FILE" \
         --batch-size "$BATCH_SIZE"
 

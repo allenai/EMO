@@ -87,6 +87,8 @@ def compute_router_activations(
     for i in tqdm(range(0, len(prompts), batch_size), desc="Computing activations"):
         batch_prompts = prompts[i : i + batch_size]
 
+        breakpoint()
+
         # Tokenize
         inputs = tokenizer(
             batch_prompts,
