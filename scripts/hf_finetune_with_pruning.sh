@@ -181,12 +181,12 @@ if [ "$SKIP_ACTIVATION" = false ]; then
 
     mkdir -p "$(dirname "$ACTIVATION_FILE")"
 
-    python -m src.hf_training.compute_router_activations \
-        --model "$MODEL" \
-        --task "$TASK" \
-        --split "$ACTIVATION_SPLIT" \
-        --output-file "$ACTIVATION_FILE" \
-        --batch-size "$BATCH_SIZE"
+#    python -m src.hf_training.compute_router_activations \
+#        --model "$MODEL" \
+#        --task "$TASK" \
+#        --split "$ACTIVATION_SPLIT" \
+#        --output-file "$ACTIVATION_FILE" \
+#        --batch-size "$BATCH_SIZE"
 
     echo "Activations saved to: $ACTIVATION_FILE"
 else
@@ -194,53 +194,53 @@ else
     echo "Step 1: Skipping activation computation (using existing file)"
     echo "Activation file: $ACTIVATION_FILE"
 fi
-
-# Step 2: Prune model
-if [ "$SKIP_PRUNE" = false ]; then
-    echo ""
-    echo "Step 2: Pruning model..."
-    echo "========================================"
-
-    python -m src.hf_training.prune_hf_model \
-        --model "$MODEL" \
-        --activation-file "$ACTIVATION_FILE" \
-        --prune-keep-k "$PRUNE_KEEP_K" \
-        --save-path "$PRUNED_MODEL"
-
-    echo "Pruned model saved to: $PRUNED_MODEL"
-else
-    echo ""
-    echo "Step 2: Skipping pruning (using existing pruned model)"
-    echo "Pruned model: $PRUNED_MODEL"
-fi
-
-# Step 3: Finetune
-echo ""
-echo "Step 3: Finetuning..."
-echo "========================================"
-
-# Determine FSDP setting
-if [ "$NUM_GPUS" -gt 1 ]; then
-    FSDP_FLAG=""
-else
-    FSDP_FLAG="--no-fsdp"
-fi
-
-torchrun --nproc_per_node="$NUM_GPUS" \
-    -m src.hf_training.finetune \
-    --model "$PRUNED_MODEL" \
-    --task "$TASK" \
-    --output-dir "$FINETUNED_MODEL" \
-    --num-epochs "$NUM_EPOCHS" \
-    --num-checkpoints "$NUM_CHECKPOINTS" \
-    --learning-rate "$LEARNING_RATE" \
-    --run-name "$RUN_NAME" \
-    $FSDP_FLAG
-
-echo ""
-echo "========================================"
-echo "Pipeline complete!"
-echo "========================================"
-echo "Activations: $ACTIVATION_FILE"
-echo "Pruned model: $PRUNED_MODEL"
-echo "Finetuned model: $FINETUNED_MODEL"
+#
+## Step 2: Prune model
+#if [ "$SKIP_PRUNE" = false ]; then
+#    echo ""
+#    echo "Step 2: Pruning model..."
+#    echo "========================================"
+#
+#    python -m src.hf_training.prune_hf_model \
+#        --model "$MODEL" \
+#        --activation-file "$ACTIVATION_FILE" \
+#        --prune-keep-k "$PRUNE_KEEP_K" \
+#        --save-path "$PRUNED_MODEL"
+#
+#    echo "Pruned model saved to: $PRUNED_MODEL"
+#else
+#    echo ""
+#    echo "Step 2: Skipping pruning (using existing pruned model)"
+#    echo "Pruned model: $PRUNED_MODEL"
+#fi
+#
+## Step 3: Finetune
+#echo ""
+#echo "Step 3: Finetuning..."
+#echo "========================================"
+#
+## Determine FSDP setting
+#if [ "$NUM_GPUS" -gt 1 ]; then
+#    FSDP_FLAG=""
+#else
+#    FSDP_FLAG="--no-fsdp"
+#fi
+#
+#torchrun --nproc_per_node="$NUM_GPUS" \
+#    -m src.hf_training.finetune \
+#    --model "$PRUNED_MODEL" \
+#    --task "$TASK" \
+#    --output-dir "$FINETUNED_MODEL" \
+#    --num-epochs "$NUM_EPOCHS" \
+#    --num-checkpoints "$NUM_CHECKPOINTS" \
+#    --learning-rate "$LEARNING_RATE" \
+#    --run-name "$RUN_NAME" \
+#    $FSDP_FLAG
+#
+#echo ""
+#echo "========================================"
+#echo "Pipeline complete!"
+#echo "========================================"
+#echo "Activations: $ACTIVATION_FILE"
+#echo "Pruned model: $PRUNED_MODEL"
+#echo "Finetuned model: $FINETUNED_MODEL"
