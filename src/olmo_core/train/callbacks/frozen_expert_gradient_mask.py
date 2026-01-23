@@ -46,7 +46,7 @@ class FrozenExpertGradientMaskCallback(Callback):
     layer_patterns: List[str] = field(default_factory=lambda: ["experts", "router"])
 
     # Internal state
-    _mask_cache: Dict[str, torch.Tensor] = field(default_factory=dict, repr=False)
+    _mask_cache: dict = field(default_factory=dict, repr=False)
     _logged_params: bool = field(default=False, repr=False)
 
     def _should_mask(self, name: str) -> bool:
