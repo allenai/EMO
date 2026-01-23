@@ -247,6 +247,8 @@ def prune_hf_model(
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
 
+    breakpoint()
+
     # Save pruned model
     logger.info(f"Saving pruned model to {save_path}")
     os.makedirs(save_path, exist_ok=True)
