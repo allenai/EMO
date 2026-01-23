@@ -34,6 +34,7 @@ from olmo_core.train.callbacks import (
     CometCallback,
     ConfigSaverCallback,
     DownstreamEvaluatorCallbackConfig,
+    FrozenExpertGradientMaskCallback,
     GPUMemoryMonitorCallback,
     GradientMonitorCallback,
     HFConverterCallback,
@@ -197,8 +198,10 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             "blocks.*.feed_forward_norm.*",
             "lm_head.*",
         ],
-        partial_freeze_params_mask_fn_name="partial_freeze_router_and_experts",
-        partial_freeze_params_mask_fn_kwargs={"num_experts_to_train": opts.num_experts_to_train},
+        # NOTE: Hook-based partial_freeze doesn't work with torch.compile.
+        # Use FrozenExpertGradientMaskCallback instead (added to trainer_config).
+        # partial_freeze_params_mask_fn_name="partial_freeze_router_and_experts",
+        # partial_freeze_params_mask_fn_kwargs={"num_experts_to_train": opts.num_experts_to_train},
     )
 
     print(model_config)
@@ -241,7 +244,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             ],
             fused=True,
         ),
-        compile_model=False,
+        compile_model=True,
         dp_config=TransformerDataParallelConfig(
             name=DataParallelType.fsdp,
             param_dtype=DType.bfloat16,
@@ -378,6 +381,14 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                 layer_names=["expert.mlp", "router"],
                 max_steps_to_monitor=10,
                 log_all_params=True,
+            ),
+        )
+        .with_callback(
+            "frozen_expert_gradient_mask",
+            FrozenExpertGradientMaskCallback(
+                num_experts=128 + opts.num_experts_to_train,
+                num_experts_to_train=opts.num_experts_to_train,
+                layer_patterns=["experts", "router"],
             ),
         )
         # .with_callback(
