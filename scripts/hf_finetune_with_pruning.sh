@@ -188,25 +188,25 @@ else
     echo "Step 1: Skipping activation computation (using existing file)"
     echo "Activation file: $ACTIVATION_FILE"
 fi
-#
-## Step 2: Prune model
-#if [ "$SKIP_PRUNE" = false ]; then
-#    echo ""
-#    echo "Step 2: Pruning model..."
-#    echo "========================================"
-#
-#    python -m src.hf_training.prune_hf_model \
-#        --model "$MODEL" \
-#        --activation-file "$ACTIVATION_FILE" \
-#        --prune-keep-k "$PRUNE_KEEP_K" \
-#        --save-path "$PRUNED_MODEL"
-#
-#    echo "Pruned model saved to: $PRUNED_MODEL"
-#else
-#    echo ""
-#    echo "Step 2: Skipping pruning (using existing pruned model)"
-#    echo "Pruned model: $PRUNED_MODEL"
-#fi
+
+# Step 2: Prune model
+if [ "$SKIP_PRUNE" = false ]; then
+    echo ""
+    echo "Step 2: Pruning model..."
+    echo "========================================"
+
+    python -m src.hf_training.prune_hf_model \
+        --model "$MODEL" \
+        --activation-file "$ACTIVATION_FILE" \
+        --prune-keep-k "$PRUNE_KEEP_K" \
+        --save-path "$PRUNED_MODEL"
+
+    echo "Pruned model saved to: $PRUNED_MODEL"
+else
+    echo ""
+    echo "Step 2: Skipping pruning (using existing pruned model)"
+    echo "Pruned model: $PRUNED_MODEL"
+fi
 #
 ## Step 3: Finetune
 #echo ""
