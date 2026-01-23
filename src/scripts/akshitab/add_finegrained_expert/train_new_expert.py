@@ -229,15 +229,15 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         max_sequence_length=SEQUENCE_LENGTH,
         optim=AdamWConfig(
             lr=opts.lr,
-            weight_decay=0.1,
+            # AdamW adds wd to partially frozen params, which causes weights to drift.
+            # Ideally, the experts being trained would have 0.1, but due to partial freezing implementation limitations,
+            # all experts including the trainable ones have to have 0.0 wd.
+            weight_decay=0.0,
             betas=(0.9, 0.95),
             group_overrides=[
                 OptimGroupOverride(params=["embeddings.weight"], opts=dict(weight_decay=0.0)),
-                # AdamW adds wd to partially frozen params, which causes weights to drift.
-                # Ideally, the experts being trained would have 0.1, but due to partial freezing implementation limitations,
-                # all experts including the trainable ones have to have 0.0 wd.
-                OptimGroupOverride(params=["blocks.*.feed_forward_moe.experts.*"], opts=dict(weight_decay=0.0)),
-                OptimGroupOverride(params=["blocks.*.feed_forward_moe.router.*"], opts=dict(weight_decay=0.0)),
+                # OptimGroupOverride(params=["blocks.*.feed_forward_moe.experts.*"], opts=dict(weight_decay=0.0)),
+                # OptimGroupOverride(params=["blocks.*.feed_forward_moe.router.*"], opts=dict(weight_decay=0.0)),
             ],
             fused=True,
         ),
