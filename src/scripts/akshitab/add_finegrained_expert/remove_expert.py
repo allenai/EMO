@@ -109,7 +109,7 @@ def remove_experts(
 
                 target_param = new_param.view(num_experts - len(experts_to_remove), source_columns).clone()
 
-                target_param[experts_to_keep, :] = source_param
+                target_param[:, :] = source_param[experts_to_keep, :]
                 with torch.no_grad():
                     new_param.data.copy_(target_param.view(-1))
 
@@ -121,9 +121,9 @@ def remove_experts(
                     num_experts - len(experts_to_remove), source_rows // num_experts, source_columns
                 ).clone()
 
-                target_param[experts_to_keep, :, :] = source_param.view(
+                target_param[:, :, :] = source_param.view(
                     num_experts, source_rows // num_experts, source_columns
-                )
+                )[experts_to_keep, :, :]
                 with torch.no_grad():
                     new_param.data.copy_(target_param.view(-1, source_columns))
 
