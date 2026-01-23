@@ -9,13 +9,38 @@ This is more robust than gradient hooks because it works with:
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import ClassVar, Dict, List
 
 import torch
+from torch.distributed.tensor import DTensor
+
+from olmo_core.distributed.utils import get_local_tensor
 
 from .callback import Callback
 
 log = logging.getLogger(__name__)
+
+
+def _create_expert_mask_1d(
+    size: int,
+    num_experts: int,
+    num_experts_to_train: int,
+    dtype: torch.dtype,
+    device: torch.device,
+) -> torch.Tensor:
+    """
+    Create a 1D mask for expert parameters.
+
+    Returns a mask where frozen expert indices are 0.0 and trainable are 1.0.
+    Assumes experts are stacked along dimension 0.
+    """
+    mask = torch.ones(size, dtype=dtype, device=device)
+    num_frozen = num_experts - num_experts_to_train
+    if num_frozen > 0:
+        expert_size = size // num_experts
+        frozen_end = expert_size * num_frozen
+        mask[:frozen_end] = 0.0
+    return mask
 
 
 @dataclass
@@ -53,20 +78,56 @@ class FrozenExpertGradientMaskCallback(Callback):
         """Check if a parameter should have gradient masking applied."""
         return any(pattern in name for pattern in self.layer_patterns)
 
-    def _get_or_create_mask(self, name: str, param: torch.Tensor) -> torch.Tensor:
-        """Get or create a gradient mask for the given parameter."""
-        cache_key = f"{name}_{param.shape}_{param.device}"
+    def _get_or_create_mask(
+        self, name: str, grad: torch.Tensor, full_shape: torch.Size
+    ) -> torch.Tensor:
+        """
+        Get or create a gradient mask for the given parameter.
+
+        Handles both regular tensors and DTensors (FSDP sharded).
+        """
+        # For DTensor, we need to work with the local tensor
+        local_grad = get_local_tensor(grad)
+
+        cache_key = f"{name}_{local_grad.shape}_{local_grad.device}"
 
         if cache_key not in self._mask_cache:
-            # Create mask: 1.0 for trainable, 0.0 for frozen
-            mask = torch.ones_like(param, dtype=param.dtype)
+            if isinstance(grad, DTensor):
+                # For sharded tensors, create full mask then redistribute
+                # to match the gradient's sharding
+                full_mask = _create_expert_mask_1d(
+                    size=full_shape[0],
+                    num_experts=self.num_experts,
+                    num_experts_to_train=self.num_experts_to_train,
+                    dtype=local_grad.dtype,
+                    device="cpu",  # Create on CPU first
+                )
+                # Reshape to match full parameter shape
+                if len(full_shape) > 1:
+                    full_mask = full_mask.view(-1, *([1] * (len(full_shape) - 1)))
+                    full_mask = full_mask.expand(full_shape).contiguous()
 
-            num_frozen = self.num_experts - self.num_experts_to_train
-            expert_size = param.shape[0] // self.num_experts
-
-            # Zero out frozen expert portion
-            if num_frozen > 0:
-                mask[:expert_size * num_frozen] = 0.0
+                # Distribute with same placement as gradient
+                from torch.distributed.tensor import distribute_tensor
+                mask_dtensor = distribute_tensor(
+                    full_mask.to(local_grad.device),
+                    grad.device_mesh,
+                    grad.placements,
+                )
+                mask = get_local_tensor(mask_dtensor)
+            else:
+                # Regular tensor - create mask directly
+                mask = _create_expert_mask_1d(
+                    size=full_shape[0],
+                    num_experts=self.num_experts,
+                    num_experts_to_train=self.num_experts_to_train,
+                    dtype=local_grad.dtype,
+                    device=local_grad.device,
+                )
+                # Reshape and broadcast for 2D+ params
+                if len(full_shape) > 1:
+                    mask = mask.view(-1, *([1] * (len(full_shape) - 1)))
+                    mask = mask.expand(full_shape)
 
             self._mask_cache[cache_key] = mask
 
@@ -75,7 +136,6 @@ class FrozenExpertGradientMaskCallback(Callback):
     def pre_optim_step(self):
         """Zero out gradients for frozen experts before optimizer step."""
         masked_count = 0
-        total_frozen_grad_norm = 0.0
 
         for name, param in self.trainer.train_module.model.named_parameters():
             if not self._should_mask(name):
@@ -84,32 +144,24 @@ class FrozenExpertGradientMaskCallback(Callback):
             if param.grad is None:
                 continue
 
+            # Get the full shape (before any sharding)
+            if isinstance(param, DTensor):
+                full_shape = param.shape  # DTensor.shape gives full shape
+            else:
+                full_shape = param.shape
+
             # Get or create the mask
-            mask = self._get_or_create_mask(name, param.grad)
+            mask = self._get_or_create_mask(name, param.grad, full_shape)
 
-            # Calculate frozen gradient norm before masking (for debugging)
-            num_frozen = self.num_experts - self.num_experts_to_train
-            expert_size = param.grad.shape[0] // self.num_experts
-            frozen_grad = param.grad[:expert_size * num_frozen]
-            frozen_norm = frozen_grad.norm().item()
-            total_frozen_grad_norm += frozen_norm
-
-            # Apply mask in-place
-            param.grad.mul_(mask)
+            # Apply mask in-place to local gradient
+            local_grad = get_local_tensor(param.grad)
+            local_grad.mul_(mask)
             masked_count += 1
 
-        # Log on first step and periodically
+        # Log on first step
         if not self._logged_params:
             log.info(
                 f"FrozenExpertGradientMask: Masking gradients for {masked_count} parameters "
                 f"(freezing {self.num_experts - self.num_experts_to_train}/{self.num_experts} experts)"
             )
             self._logged_params = True
-
-        # Log frozen gradient norm at logging intervals (should be ~0 if working correctly)
-        if self.step % self.trainer.metrics_collect_interval == 0:
-            if total_frozen_grad_norm > 1e-6:
-                log.warning(
-                    f"Step {self.step}: Frozen expert gradients had norm {total_frozen_grad_norm:.6e} "
-                    f"before masking (now zeroed)"
-                )
