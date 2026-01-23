@@ -388,7 +388,6 @@ def get_formatted_prompts(task_name: str, split: str) -> List[str]:
         #     else:
         #         data += [req["request"]["context"] + req["doc"]["choices"][0]]
 
-    breakpoint()
 
     # raw_dataset = load_hf_dataset(task_name, split)
     #
