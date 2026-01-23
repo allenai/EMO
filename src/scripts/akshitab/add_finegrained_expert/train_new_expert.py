@@ -241,7 +241,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             ],
             fused=True,
         ),
-        compile_model=True,
+        compile_model=False,
         dp_config=TransformerDataParallelConfig(
             name=DataParallelType.fsdp,
             param_dtype=DType.bfloat16,
