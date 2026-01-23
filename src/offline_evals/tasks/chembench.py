@@ -19,12 +19,14 @@ This differs from ChemBench's official evaluation which:
 - Parses numeric answers as floats for mae/mse questions (so "6" == "6.0")
 - See: https://lamalab-org.github.io/chembench/
 
-We chose strict string matching for simplicity and consistency with our other evals.
-This means numeric answers must match exactly (e.g., "6" != "6.0").
+We use strict string matching for exact_string_match questions, but for mae/mse
+we parse floats so numeric formatting differences (e.g., "6" vs "6.0") do not
+count as mismatches.
 """
 
 import json
 import logging
+import re
 from typing import List, Union
 
 from oe_eval.components.instances import RequestInstance
@@ -88,6 +90,64 @@ CHEMBENCH_SUBFIELDS = [
 # Question types based on preferred_score field
 MC_SCORE_TYPE = "multiple_choice_grade"
 OPEN_ENDED_SCORE_TYPES = {"exact_string_match", "mae", "mse"}
+
+_FLOAT_RE = re.compile(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?")
+
+
+def _extract_float(text: str):
+    if not text:
+        return None
+    match = _FLOAT_RE.search(text)
+    if not match:
+        return None
+    try:
+        return float(match.group(0))
+    except ValueError:
+        return None
+
+
+class ChemBenchGenMetric(SQuADF1EMRecallMetric):
+    """
+    SQuAD-style metric with numeric parsing for ChemBench mae/mse questions.
+
+    For preferred_score in {"mae", "mse"}, treat numeric predictions as equal if the
+    parsed floats match within tolerance, so "6" == "6.0".
+    """
+
+    _FLOAT_TOL = 1e-6
+
+    def process_one_doc(self, group_lst) -> dict:
+        base_result = super().process_one_doc(group_lst)
+        doc = group_lst[0].get("doc", {})
+        preferred_score = doc.get("preferred_score", "")
+        if preferred_score not in {"mae", "mse"}:
+            return base_result
+
+        pred_text = None
+        for item in group_lst:
+            for key in ("pred", "prediction", "completion", "text", "response"):
+                if isinstance(item.get(key), str) and item.get(key).strip():
+                    pred_text = item.get(key)
+                    break
+            if pred_text is not None:
+                break
+
+        target_text = doc.get("target", "")
+        pred_val = _extract_float(pred_text or "")
+        target_val = _extract_float(target_text)
+        if pred_val is None or target_val is None:
+            return base_result
+
+        mae = abs(pred_val - target_val)
+        mse = (pred_val - target_val) ** 2
+        exact_match = 1 if mae <= self._FLOAT_TOL else 0
+
+        for key in ("f1", "exact_match", "recall"):
+            if key in base_result:
+                base_result[key] = exact_match
+        base_result["mae"] = mae
+        base_result["mse"] = mse
+        return base_result
 
 
 def create_chembench_tasks() -> dict:
@@ -167,7 +227,7 @@ class GenericChemBenchChoice(MultipleChoiceTask):
         "dataset_name": None,  # subfield name, e.g., "organic_chemistry"
         "fewshot_source": None,
         "primary_metric": "acc_raw",
-        "num_shots": 5,  # Five-shot by default for ChemBench choice tasks
+        "num_shots": 3,  # Five-shot by default for ChemBench choice tasks
         "split": "train",  # ChemBench only has train split
     }
 
@@ -326,7 +386,7 @@ class GenericChemBenchGen(Task):
         "native_id_field": "uuid",
         "fewshot_source": None,
         "primary_metric": "f1",  # Use F1/EM for string matching
-        "num_shots": 5,
+        "num_shots": 3,
         "split": "train",
         "context_kwargs": {},
         "generation_kwargs": {
@@ -338,7 +398,7 @@ class GenericChemBenchGen(Task):
     }
 
     def make_metrics(self):
-        self._metrics = [SQuADF1EMRecallMetric(**self.task_config["metric_kwargs"])]
+        self._metrics = [ChemBenchGenMetric(**self.task_config["metric_kwargs"])]
         return self._metrics
 
     def has_training_docs(self):
@@ -379,6 +439,7 @@ class GenericChemBenchGen(Task):
             "uuid": doc.get("uuid", ""),
             "question": question,
             "target": target,
+            "preferred_score": doc.get("preferred_score", ""),
             "name": doc.get("name", ""),
             "subfield": doc.get("subfield", ""),
         }
