@@ -44,6 +44,21 @@ def get_task_suite_configs():
                 ],
                 "primary_metric": "macro",
             },
+            # ChemBench ranked classification (cloze prompt)
+            "chembench:rc": {
+                "tasks": [
+                    "chembench_analytical_chemistry:rc",
+                    "chembench_chemical_preference:rc",
+                    "chembench_general_chemistry:rc",
+                    "chembench_inorganic_chemistry:rc",
+                    "chembench_materials_science:rc",
+                    "chembench_organic_chemistry:rc",
+                    "chembench_physical_chemistry:rc",
+                    "chembench_technical_chemistry:rc",
+                    "chembench_toxicity_and_safety:rc",
+                ],
+                "primary_metric": "macro",
+            },
         },
     )
     return TASK_SUITE_CONFIGS

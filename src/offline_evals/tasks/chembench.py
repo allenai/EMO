@@ -30,7 +30,7 @@ from typing import List, Union
 from oe_eval.components.instances import RequestInstance
 from oe_eval.metrics.metric import MCAccuracy, SQuADF1EMRecallMetric
 from oe_eval.tasks.base_task import MultipleChoiceTask, Task
-from oe_eval.tasks.utils import make_mcq_prompt, map_indexed
+from oe_eval.tasks.utils import make_cloze_prompt, make_mcq_prompt, map_indexed
 from oe_eval.utils import get_dict_with_defaults
 
 
@@ -91,11 +91,13 @@ OPEN_ENDED_SCORE_TYPES = {"exact_string_match", "mae", "mse"}
 
 
 def create_chembench_tasks() -> dict:
-    """Create all ChemBench subfield tasks (MC and generative)."""
+    """Create all ChemBench subfield tasks (MC, RC, and generative)."""
     all_tasks = {}
     for subfield in CHEMBENCH_SUBFIELDS:
         # Multiple choice tasks
         all_tasks[f"chembench_{subfield}:mc"] = create_chembench_mc_task(subfield)
+        # Ranked classification tasks
+        all_tasks[f"chembench_{subfield}:rc"] = create_chembench_rc_task(subfield)
         # Open-ended/generative tasks
         all_tasks[f"chembench_{subfield}:gen"] = create_chembench_gen_task(subfield)
     return all_tasks
@@ -129,9 +131,23 @@ def create_chembench_gen_task(subfield: str):
     return ChemBenchGen
 
 
-class GenericChemBenchMC(MultipleChoiceTask):
+def create_chembench_rc_task(subfield: str):
+    """Factory function to create a ChemBench RC task for a specific subfield."""
+
+    class ChemBenchRC(GenericChemBenchRC):
+        TASK_CONFIG_DEFAULTS = get_dict_with_defaults(
+            {
+                "dataset_name": subfield,
+            },
+            GenericChemBenchRC.TASK_CONFIG_DEFAULTS,
+        )
+
+    return ChemBenchRC
+
+
+class GenericChemBenchChoice(MultipleChoiceTask):
     """
-    ChemBench multiple choice task.
+    ChemBench choice task (shared base for MC and RC).
 
     Only processes questions where preferred_score == "multiple_choice_grade".
 
@@ -151,7 +167,7 @@ class GenericChemBenchMC(MultipleChoiceTask):
         "dataset_name": None,  # subfield name, e.g., "organic_chemistry"
         "fewshot_source": None,
         "primary_metric": "acc_raw",
-        "num_shots": 0,  # Zero-shot by default for ChemBench
+        "num_shots": 5,  # Five-shot by default for ChemBench choice tasks
         "split": "train",  # ChemBench only has train split
     }
 
@@ -171,24 +187,24 @@ class GenericChemBenchMC(MultipleChoiceTask):
         return False
 
     def training_docs(self):
-        # Filter to only MC questions (preferred_score == "multiple_choice_grade")
-        mc_docs = [
+        # Filter to only choice questions (preferred_score == "multiple_choice_grade")
+        choice_docs = [
             doc for doc in self.dataset["train"]
-            if self._is_mc_question(doc)
+            if self._is_choice_question(doc)
         ]
-        logger.info(
-            f"ChemBench MC: Found {len(mc_docs)} multiple-choice questions "
-            f"out of {len(self.dataset['train'])} total"
-        )
-        return list(map_indexed(self._process_doc, mc_docs))
+        # logger.info(
+        #     f"ChemBench choice: Found {len(choice_docs)} multiple-choice questions "
+        #     f"out of {len(self.dataset['train'])} total"
+        # )
+        return list(map_indexed(self._process_doc, choice_docs))
 
-    def _is_mc_question(self, doc) -> bool:
-        """Check if this is a multiple choice question based on preferred_score field."""
+    def _is_choice_question(self, doc) -> bool:
+        """Check if this is a choice question based on preferred_score field."""
         preferred_score = doc.get("preferred_score", "")
         return preferred_score == MC_SCORE_TYPE
 
-    def _process_doc(self, doc, index=-1):
-        """Process a ChemBench MC document into the standard format."""
+    def _extract_choices_and_gold(self, doc):
+        """Extract question, choices, and gold indices from a ChemBench document."""
         example = doc["examples"][0]
         question = example["input"]
 
@@ -210,6 +226,35 @@ class GenericChemBenchMC(MultipleChoiceTask):
                 f"{question[:100]}... Scores: {target_scores}"
             )
 
+        return question, choices, gold_indices
+
+    def doc_to_text(self, doc):
+        return doc["query"]
+
+    def doc_to_target(self, doc):
+        gold = doc.get("gold")
+        if isinstance(gold, list):
+            if not gold:
+                raise ValueError("ChemBench choice doc missing gold indices")
+            gold = gold[0]
+        return " " + doc["choices"][gold]
+
+    def unconditioned_prompt(self):
+        # Don't need unconditioned normalization
+        return None
+
+
+class GenericChemBenchMC(GenericChemBenchChoice):
+    """
+    ChemBench multiple choice task.
+
+    Uses an MCQ-style prompt with all options listed in the context.
+    """
+
+    def _process_doc(self, doc, index=-1):
+        """Process a ChemBench MC document into the standard format."""
+        question, choices, gold_indices = self._extract_choices_and_gold(doc)
+
         # Build the MCQ prompt
         query = make_mcq_prompt(question, choices, question_prefix="Question: ")
 
@@ -224,12 +269,40 @@ class GenericChemBenchMC(MultipleChoiceTask):
         }
         return out_doc
 
-    def doc_to_text(self, doc):
-        return doc["query"]
+
+class GenericChemBenchRC(GenericChemBenchChoice):
+    """
+    ChemBench ranked classification task.
+
+    Uses a cloze-style prompt (no answer choices in the context) and scores each
+    option as a continuation.
+    """
+
+    TASK_CONFIG_DEFAULTS = {
+        **GenericChemBenchChoice.TASK_CONFIG_DEFAULTS,
+        "primary_metric": "acc_per_char",
+    }
+
+    def _process_doc(self, doc, index=-1):
+        """Process a ChemBench RC document into the standard format."""
+        question, choices, gold_indices = self._extract_choices_and_gold(doc)
+
+        # Build the cloze prompt (no choices in context)
+        query = make_cloze_prompt(question, question_prefix="Question: ")
+
+        out_doc = {
+            "index": index,
+            "question": question,
+            "query": query,
+            "choices": choices,
+            "gold": gold_indices,
+            "name": doc.get("name", ""),
+            "subfield": doc.get("subfield", ""),
+        }
+        return out_doc
 
     def unconditioned_prompt(self):
-        # Don't need unconditioned normalization
-        return None
+        return "Answer:"
 
 
 class GenericChemBenchGen(Task):
@@ -253,7 +326,7 @@ class GenericChemBenchGen(Task):
         "native_id_field": "uuid",
         "fewshot_source": None,
         "primary_metric": "f1",  # Use F1/EM for string matching
-        "num_shots": 0,
+        "num_shots": 5,
         "split": "train",
         "context_kwargs": {},
         "generation_kwargs": {

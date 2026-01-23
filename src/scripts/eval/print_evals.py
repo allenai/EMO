@@ -440,6 +440,13 @@ def main(args):
         ]
         if chembench_gen_tasks:
             results = avg_tasks(results, "chembench:gen", chembench_gen_tasks)
+        # RC tasks (length-normalized accuracy) - averaged separately
+        chembench_rc_tasks = [
+            task_name for task_name in task_names
+            if task_name.startswith("chembench_") and ":rc" in task_name
+        ]
+        if chembench_rc_tasks:
+            results = avg_tasks(results, "chembench:rc", chembench_rc_tasks)
 
     if args.avg_code:
         code_tasks = [
