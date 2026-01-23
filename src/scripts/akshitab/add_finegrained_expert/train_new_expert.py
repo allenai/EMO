@@ -293,18 +293,39 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             # https://github.com/allenai/OLMo-in-loop-evals/blob/main/src/olmo_eval/tasks.py#L1752
             DownstreamEvaluatorCallbackConfig(
                 tasks=[
-                    "hellaswag",
-                    "arc_challenge",
-                    "piqa",
-                    "copa",
-                    "mmlu_stem",
-                    "mmlu_humanities",
-                    "mmlu_social_sciences",
-                    "mmlu_other",
+                    # "hellaswag",
+                    # "arc_challenge",
+                    # "piqa",
+                    # "copa",
+                    # "mmlu_stem",
+                    # "mmlu_humanities",
+                    # "mmlu_social_sciences",
+                    # "mmlu_other",
+                    "arc_challenge_test_rc_5shot",
+                    "arc_easy_test_rc_5shot",
+                    "hellaswag_rc_5shot",  # 1K subset of HellaSwag
+                    "winogrande_val_rc_5shot",  # Helpful after 750M-5xC scale
+                    "csqa_val_rc_5shot",
+                    "piqa_val_rc_5shot",
+                    "socialiqa_val_rc_5shot",
+                    # Too noisy to be worth tracking
+                    # "boolq_val_rc_5shot",
+                    # "openbookqa_test_rc_5shot",
+                    # MMLU RC
+                    "mmlu_stem_val_rc_5shot",
+                    "mmlu_humanities_val_rc_5shot",
+                    "mmlu_social_sciences_val_rc_5shot",
+                    "mmlu_other_val_rc_5shot",
+                    "mmlu_stem_test_rc_5shot",
+                    "mmlu_humanities_test_rc_5shot",
+                    "mmlu_social_sciences_test_rc_5shot",
+                    "mmlu_other_test_rc_5shot",
                     "basic_skills_common_knowledge_rc_5shot",
                     "basic_skills_logical_reasoning_rc_5shot",
                     "basic_skills_pattern_rc_5shot",
                     "basic_skills_string_operations_rc_5shot",
+                    # Sanity check for MCQA ability
+                    "copycolors_10way_fast",
                     # math
                     "basic_skills_arithmetic_rc_5shot",
                     "gsm8k_gold_bpb_5shot",
