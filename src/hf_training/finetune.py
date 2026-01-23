@@ -47,6 +47,7 @@ class FinetuneConfig:
 
     model_path: str
     task_name: str
+    split: str
     output_dir: str
     num_epochs: int = 3
     num_checkpoints: int = 5
@@ -111,6 +112,7 @@ def compute_save_steps(total_steps: int, num_checkpoints: int) -> int:
 
 def finetune(config: FinetuneConfig):
     """Run finetuning with the given configuration."""
+    breakpoint()
     logger.info(f"Loading model from {config.model_path}")
     tokenizer = AutoTokenizer.from_pretrained(config.model_path)
     model = AutoModelForCausalLM.from_pretrained(
@@ -233,6 +235,12 @@ def main():
         help="Task name (gsm8k, mmlu, squad, coqa)",
     )
     parser.add_argument(
+        "--split",
+        type=str,
+        required=True,
+        help="one of train, validation, test",
+    )
+    parser.add_argument(
         "--output-dir",
         type=str,
         required=True,
@@ -308,6 +316,7 @@ def main():
     config = FinetuneConfig(
         model_path=args.model,
         task_name=args.task,
+        split=args.split,
         output_dir=args.output_dir,
         num_epochs=args.num_epochs,
         num_checkpoints=args.num_checkpoints,

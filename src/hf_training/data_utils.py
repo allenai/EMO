@@ -292,13 +292,16 @@ def prepare_finetuning_dataset(
     Returns:
         HuggingFace Dataset with tokenized examples
     """
-    config = get_task_config(task_name)
+    # config = get_task_config(task_name)
 
     # Load raw dataset
-    raw_dataset = load_hf_dataset(task_name, split)
+    # raw_dataset = load_hf_dataset(task_name, split)
+
+    breakpoint()
+    formatted_dataset = get_formatted_prompts(task_name, split)
 
     # Get delimiter
-    delimiter = config["delimiter"]
+    delimiter = "Answer:" if task_name != "squad" else "A:"
 
     def process_example(example):
         prompt, answer = format_example(example, task_name)

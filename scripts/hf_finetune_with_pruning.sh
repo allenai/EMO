@@ -138,22 +138,37 @@ if [ -z "$OUTPUT_DIR" ]; then
     exit 1
 fi
 
+# check that $TASK is a substring of $OUTPUT_DIR
+if [[ "$OUTPUT_DIR" != *"$TASK"* ]]; then
+    echo "ERROR: --output-dir does not contain the task name '$TASK'"
+    exit 1
+fi
+
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
 
 # Set up paths
 if [ -z "$ACTIVATION_FILE" ]; then
-    ACTIVATION_FILE="${OUTPUT_DIR}/activations/${TASK}_val_activations.jsonl"
+    ACTIVATION_FILE="${OUTPUT_DIR}/val_activations.jsonl"
 fi
 
 if [ -z "$PRUNED_MODEL" ]; then
-    PRUNED_MODEL="${OUTPUT_DIR}/pruned_model"
+    PRUNED_MODEL="${OUTPUT_DIR}/pruned_model/"
 fi
 
 FINETUNED_MODEL="${OUTPUT_DIR}/finetuned_model"
 
+
+# we now get the model name simplified by getting the last two chunks delimited by "/"
+# Get the last in terms of steps
+steps="${MODEL##*/}"
+# Remove the last part to get the parent directory path
+parent_path="${MODEL%/*}"
+# Get the last part of that parent path
+model_name="${parent_path##*/}"
+
 if [ -z "$RUN_NAME" ]; then
-    RUN_NAME="${TASK}_k${PRUNE_KEEP_K}"
+    RUN_NAME="${model_name}_${steps}_${TASK}_k${PRUNE_KEEP_K}"
 fi
 
 echo "========================================"
@@ -208,33 +223,34 @@ else
     echo "Pruned model: $PRUNED_MODEL"
 fi
 #
-## Step 3: Finetune
-#echo ""
-#echo "Step 3: Finetuning..."
-#echo "========================================"
-#
-## Determine FSDP setting
-#if [ "$NUM_GPUS" -gt 1 ]; then
-#    FSDP_FLAG=""
-#else
-#    FSDP_FLAG="--no-fsdp"
-#fi
-#
-#torchrun --nproc_per_node="$NUM_GPUS" \
-#    -m src.hf_training.finetune \
-#    --model "$PRUNED_MODEL" \
-#    --task "$TASK" \
-#    --output-dir "$FINETUNED_MODEL" \
-#    --num-epochs "$NUM_EPOCHS" \
-#    --num-checkpoints "$NUM_CHECKPOINTS" \
-#    --learning-rate "$LEARNING_RATE" \
-#    --run-name "$RUN_NAME" \
-#    $FSDP_FLAG
-#
-#echo ""
-#echo "========================================"
-#echo "Pipeline complete!"
-#echo "========================================"
-#echo "Activations: $ACTIVATION_FILE"
-#echo "Pruned model: $PRUNED_MODEL"
-#echo "Finetuned model: $FINETUNED_MODEL"
+# Step 3: Finetune
+echo ""
+echo "Step 3: Finetuning..."
+echo "========================================"
+
+# Determine FSDP setting
+if [ "$NUM_GPUS" -gt 1 ]; then
+    FSDP_FLAG=""
+else
+    FSDP_FLAG="--no-fsdp"
+fi
+
+torchrun --nproc_per_node="$NUM_GPUS" \
+    -m src.hf_training.finetune \
+    --model "$PRUNED_MODEL" \
+    --task "$TASK" \
+    --split "train" \
+    --output-dir "$FINETUNED_MODEL" \
+    --num-epochs "$NUM_EPOCHS" \
+    --num-checkpoints "$NUM_CHECKPOINTS" \
+    --learning-rate "$LEARNING_RATE" \
+    --run-name "$RUN_NAME" \
+    $FSDP_FLAG
+
+echo ""
+echo "========================================"
+echo "Pipeline complete!"
+echo "========================================"
+echo "Activations: $ACTIVATION_FILE"
+echo "Pruned model: $PRUNED_MODEL"
+echo "Finetuned model: $FINETUNED_MODEL"
