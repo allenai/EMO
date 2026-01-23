@@ -40,7 +40,6 @@ def get_experts_to_keep(activations: List[List[float]], prune_keep_k: int) -> Li
     Returns:
         List of expert indices to keep for each layer
     """
-    breakpoint()
     experts_to_keep = []
     for layer_idx, layer_activations in enumerate(activations):
         # Get top-k experts by activation probability
@@ -76,7 +75,6 @@ def prune_olmoe_model(
     num_layers = config.num_hidden_layers
 
     for layer_idx in range(num_layers):
-        breakpoint()
         layer = model.model.layers[layer_idx]
 
         # Check if this is an MoE layer
@@ -218,7 +216,6 @@ def prune_hf_model(
         line = f.readline()
         activations = json.loads(line)["avg_router_probabilities"]
 
-    breakpoint()
     # Determine experts to keep
     experts_to_keep = get_experts_to_keep(activations, prune_keep_k)
 
