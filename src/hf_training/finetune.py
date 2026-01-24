@@ -139,6 +139,8 @@ def finetune(config: FinetuneConfig):
         max_length=config.max_seq_length,
     )
 
+    breakpoint()
+
     logger.info(f"Train dataset size: {len(train_dataset)}")
 
     # Calculate training steps

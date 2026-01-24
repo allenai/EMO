@@ -247,7 +247,6 @@ def tokenize_and_mask_example(
     Returns:
         Dict with input_ids, attention_mask, and labels
     """
-    breakpoint()
     # Tokenize
     tokenized = tokenizer(
         full_text,
@@ -296,7 +295,6 @@ def prepare_finetuning_dataset(
     # Load raw dataset
     # raw_dataset = load_hf_dataset(task_name, split)
 
-    breakpoint()
     raw_dataset = get_formatted_prompts(task_name, split)
 
     # convert to hf
