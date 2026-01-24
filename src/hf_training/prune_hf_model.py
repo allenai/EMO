@@ -248,6 +248,10 @@ def prune_hf_model(
         raise ValueError(f"Unsupported model type: {model_type}")
 
     breakpoint()
+    # update the model configs accordingly
+    if model.config.num_experts_per_tok > prune_keep_k:
+        model.config.num_experts_per_tok = prune_keep_k
+    model.config.num_experts = prune_keep_k
 
     # Save pruned model
     logger.info(f"Saving pruned model to {save_path}")
