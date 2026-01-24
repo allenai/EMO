@@ -44,6 +44,7 @@ class DataMix(DataMixBase):
     OLMo_mix_0625_150Bsample = "OLMo-mix-0625-150Bsample"
     OLMo_mix_0625_150Bsample_dclm = "OLMo-mix-0625-150Bsample-dclm"
     OLMoE_mix_0824_cc = "OLMoE-mix-0824-cc"
+    the_pile_of_law = "the-pile-of-law"
 
     mj_finemath4plus = "mj_finemath4plus"
     mose_code_mix = "mose_code_mix"
