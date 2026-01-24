@@ -299,11 +299,14 @@ def prepare_finetuning_dataset(
     breakpoint()
     raw_dataset = get_formatted_prompts(task_name, split)
 
+    # convert to hf
+    raw_dataset = Dataset.from_dict({"text": raw_dataset})
+
     # Get delimiter
     delimiter = "Answer:" if task_name != "squad" else "A:"
 
     def process_example(example):
-        return tokenize_and_mask_example(example, tokenizer, max_length, delimiter)
+        return tokenize_and_mask_example(example["text"], tokenizer, max_length, delimiter)
 
     # Process all examples
     logger.info(f"Tokenizing {len(raw_dataset)} examples...")
