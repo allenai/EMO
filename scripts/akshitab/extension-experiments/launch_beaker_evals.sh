@@ -34,7 +34,12 @@ MODELS=(
     # moe1b14b_136experts_8trained_math_init_average_noise_10perc_20B/step4769-hf
 
     # twolevelbatchlb-32_1b14b_129experts_1trained_math_init_top2_5B/step1193-hf
-    twolevelbatchlb-32_1b14b_129experts_1trained_math_init_average_5B/step1193-hf
+    # twolevelbatchlb-32_1b14b_129experts_1trained_math_init_average_5B/step1193-hf
+
+    # freeze-fix-moe1b14b_129experts_1trained_math_init_top2_average_5B_lr_4e-3/step1193-hf
+    # freeze-fix-moe1b14b_129experts_1trained_math_init_top2_average_5B_lr_4e-4/step1193-hf
+    freeze-fix-moe1b14b_129experts_1trained_math_init_top2_average_5B_lr_4e-5/step1193-hf
+
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
@@ -78,7 +83,7 @@ TASK_GROUPS_LIST=(
     # "gsm8k:bpb::olmes"
 #   "mmlu:mc::olmes"
 #   "mmlu_pro:mc::olmes"
-  "minerva_math_algebra::olmes"
+#   "minerva_math_algebra::olmes"
 #   "minerva_math_counting_and_probability::olmes"
 #   "minerva_math_geometry::olmes"
 #   "minerva_math_intermediate_algebra::olmes"
@@ -91,6 +96,8 @@ TASK_GROUPS_LIST=(
 
 
     # "minerva_math_algebra:bpb::olmes"
+    # minerva_math_500:bpb::olmes
+    minerva_math_500::olmes
 )
 
 # Function to get checkpoint name (matching the original script)
