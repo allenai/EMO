@@ -212,12 +212,15 @@ def create_masked_labels(
     labels = list(input_ids)  # Copy input_ids
 
     # Find delimiter position
-    delimiter_pos = find_delimiter_position(input_ids, delimiter_ids)
+
+    delimiter_pos = -1
+    for i in range(len(input_ids) - len(delimiter_ids), 0, -1):
+        if input_ids[i : i + len(delimiter_ids)] == delimiter_ids:
+            delimiter_pos = i + len(delimiter_ids)
+            break
 
     if delimiter_pos == -1:
-        # If delimiter not found, log warning and return all masked
-        logger.warning("Delimiter not found in input, masking all tokens")
-        return [ignore_index] * len(input_ids)
+        raise ValueError(f"Delimiter not found in input_ids {input_ids} with delimiter_ids {delimiter_ids}")
 
     # Mask everything before and including the delimiter
     for i in range(delimiter_pos):
@@ -227,8 +230,7 @@ def create_masked_labels(
 
 
 def tokenize_and_mask_example(
-    prompt: str,
-    answer: str,
+    full_text,
     tokenizer,
     max_length: int = 4096,
     delimiter: str = "Answer:",
@@ -237,8 +239,7 @@ def tokenize_and_mask_example(
     Tokenize prompt+answer and create masked labels.
 
     Args:
-        prompt: The prompt text (question/context)
-        answer: The answer text
+        full_text: the combined prompt + answer text
         tokenizer: HuggingFace tokenizer
         max_length: Maximum sequence length
         delimiter: Delimiter string that separates prompt from answer
@@ -246,9 +247,7 @@ def tokenize_and_mask_example(
     Returns:
         Dict with input_ids, attention_mask, and labels
     """
-    # Combine prompt and answer
-    full_text = prompt + answer
-
+    breakpoint()
     # Tokenize
     tokenized = tokenizer(
         full_text,
@@ -298,14 +297,13 @@ def prepare_finetuning_dataset(
     # raw_dataset = load_hf_dataset(task_name, split)
 
     breakpoint()
-    formatted_dataset = get_formatted_prompts(task_name, split)
+    raw_dataset = get_formatted_prompts(task_name, split)
 
     # Get delimiter
     delimiter = "Answer:" if task_name != "squad" else "A:"
 
     def process_example(example):
-        prompt, answer = format_example(example, task_name)
-        return tokenize_and_mask_example(prompt, answer, tokenizer, max_length, delimiter)
+        return tokenize_and_mask_example(example, tokenizer, max_length, delimiter)
 
     # Process all examples
     logger.info(f"Tokenizing {len(raw_dataset)} examples...")
@@ -370,8 +368,6 @@ def get_formatted_prompts(task_name: str, split: str) -> List[str]:
     task = load_task(task_config, "tmp")
     task.download()
     task.build_all_requests()
-
-    # TODO: need to filter out the incorrect examples somehow
 
     dataset = []
 
