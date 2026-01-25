@@ -9,7 +9,7 @@ from typing import ClassVar, Optional
 import torch
 
 from olmo_core.config import DType
-from olmo_core.distributed.utils import get_rank
+from olmo_core.distributed.utils import barrier, get_rank
 
 from .callback import Callback
 from .checkpointer import CheckpointerCallback
@@ -107,93 +107,92 @@ class HFConverterCallback(Callback):
         return None
 
     def post_train(self):
-        if not self.enabled:
-            log.info("HFConverterCallback is disabled, skipping conversion")
-            return
-
-        # Only run on rank 0
-        if get_rank() != 0:
-            return
-
-        checkpoint_path = self._get_latest_checkpoint_path()
-        if checkpoint_path is None:
-            log.warning("No checkpoint found, skipping HF conversion")
-            return
-
-        log.info(f"Converting checkpoint at '{checkpoint_path}' to HuggingFace format")
-
-        # Determine output path
-        if self.output_folder is not None:
-            output_path = self.output_folder
-        else:
-            output_path = checkpoint_path + "-hf"  # join_path(checkpoint_path, "hf")
-
-        # Import and call the conversion function
+        # NOTE: In distributed training, all ranks call post_train() before the trainer
+        # calls barrier() in _shutdown(). If only rank 0 does work while others return early,
+        # non-rank-0 processes will reach the shutdown barrier and wait while rank 0 is still
+        # converting, causing a deadlock. To fix this, we use a try/finally to ensure all
+        # ranks reach a barrier at the end of this method.
         try:
-            from olmo_core.hf_utils import convert_checkpoint_to_hf, load_config
-        except ImportError:
-            log.error(
-                "Failed to import conversion functions. Make sure that transformers library is installed."
-            )
-            return
+            if not self.enabled:
+                log.info("HFConverterCallback is disabled, skipping conversion")
+                return
 
-        # Load config from checkpoint
-        try:
-            experiment_config = load_config(checkpoint_path)
-        except Exception as e:
-            log.error(f"Failed to load config from checkpoint: {e}")
-            return
+            # Only run conversion on rank 0
+            if get_rank() != 0:
+                return
 
-        if experiment_config is None:
-            log.error("Experiment config not found in checkpoint, cannot convert to HF format")
-            return
+            checkpoint_path = self._get_latest_checkpoint_path()
+            if checkpoint_path is None:
+                log.warning("No checkpoint found, skipping HF conversion")
+                return
 
-        transformer_config_dict = experiment_config.get("model")
-        tokenizer_config_dict = experiment_config.get("dataset", {}).get("tokenizer")
+            log.info(f"Converting checkpoint at '{checkpoint_path}' to HuggingFace format")
 
-        if transformer_config_dict is None:
-            log.error("Model config not found in experiment config, cannot convert to HF format")
-            return
+            # Determine output path
+            if self.output_folder is not None:
+                output_path = self.output_folder
+            else:
+                output_path = checkpoint_path + "-hf"  # join_path(checkpoint_path, "hf")
 
-        if tokenizer_config_dict is None:
-            log.warning(
-                "Tokenizer config not found in experiment config, "
-                "conversion will proceed without tokenizer"
-            )
-            tokenizer_config_dict = {}
+            # Import and call the conversion function
+            try:
+                from olmo_core.hf_utils import convert_checkpoint_to_hf, load_config
+            except ImportError:
+                log.error(
+                    "Failed to import conversion functions. Make sure that transformers library is installed."
+                )
+                return
 
-        # Determine device
-        device = torch.device(self.device) if self.device else None
+            # Load config from checkpoint
+            try:
+                experiment_config = load_config(checkpoint_path)
+            except Exception as e:
+                log.error(f"Failed to load config from checkpoint: {e}")
+                return
 
-        # # Get the model state dict directly from the trainer's train_module
-        # model_state_dict = None
-        # if hasattr(self, "state_dict"):
-        #     try:
-        #         model_state_dict = self.state_dict()
-        #         print(model_state_dict.keys())
-        #     except Exception as e:
-        #         log.warning(f"Could not get state dict from trainer: {e}")
+            if experiment_config is None:
+                log.error("Experiment config not found in checkpoint, cannot convert to HF format")
+                return
 
-        # if model_state_dict is None:
-        #     log.info("Falling back to loading model from checkpoint")
+            transformer_config_dict = experiment_config.get("model")
+            tokenizer_config_dict = experiment_config.get("dataset", {}).get("tokenizer")
 
-        try:
-            convert_checkpoint_to_hf(
-                original_checkpoint_path=checkpoint_path,
-                output_path=output_path,
-                transformer_config_dict=transformer_config_dict,
-                tokenizer_config_dict=tokenizer_config_dict,
-                model_state_dict=None,
-                dtype=self.dtype,
-                tokenizer_id=self.tokenizer_id,
-                max_sequence_length=self.max_sequence_length,
-                validate=self.validate,
-                debug=self.debug,
-                device=device,
-                moe_capacity_factor=self.moe_capacity_factor,
-                thread_count=16,
-            )
-            log.info(f"Successfully converted checkpoint to HuggingFace format at '{output_path}'")
-        except Exception as e:
-            log.error(f"Failed to convert checkpoint to HuggingFace format: {e}")
-            raise
+            if transformer_config_dict is None:
+                log.error("Model config not found in experiment config, cannot convert to HF format")
+                return
+
+            if tokenizer_config_dict is None:
+                log.warning(
+                    "Tokenizer config not found in experiment config, "
+                    "conversion will proceed without tokenizer"
+                )
+                tokenizer_config_dict = {}
+
+            # Determine device
+            device = torch.device(self.device) if self.device else None
+
+            try:
+                convert_checkpoint_to_hf(
+                    original_checkpoint_path=checkpoint_path,
+                    output_path=output_path,
+                    transformer_config_dict=transformer_config_dict,
+                    tokenizer_config_dict=tokenizer_config_dict,
+                    model_state_dict=None,
+                    dtype=self.dtype,
+                    tokenizer_id=self.tokenizer_id,
+                    max_sequence_length=self.max_sequence_length,
+                    validate=self.validate,
+                    debug=self.debug,
+                    device=device,
+                    moe_capacity_factor=self.moe_capacity_factor,
+                    thread_count=16,
+                )
+                log.info(f"Successfully converted checkpoint to HuggingFace format at '{output_path}'")
+            except Exception as e:
+                log.error(f"Failed to convert checkpoint to HuggingFace format: {e}")
+                raise
+        finally:
+            # Barrier to synchronize all ranks before proceeding to trainer shutdown.
+            # This prevents non-rank-0 processes from reaching the shutdown barrier
+            # while rank 0 is still converting.
+            barrier()

@@ -391,15 +391,15 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                 layer_patterns=["experts", "router"],
             ),
         )
-        # .with_callback(
-        #     "hf_converter",  # TODO: fix bug that causes it to stall.
-        #     HFConverterCallback(
-        #         enabled=True,
-        #         dtype=DType.float32,
-        #         max_sequence_length=SEQUENCE_LENGTH,
-        #         device="cpu",
-        #     ),
-        # )
+        .with_callback(
+            "hf_converter",
+            HFConverterCallback(
+                enabled=True,
+                dtype=DType.float32,
+                max_sequence_length=SEQUENCE_LENGTH,
+                device="cpu",
+            ),
+        )
     )
 
     config = ExperimentConfig(
