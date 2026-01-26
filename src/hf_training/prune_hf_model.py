@@ -253,6 +253,9 @@ def prune_hf_model(
         model.config.num_experts_per_tok = prune_keep_k
     model.config.num_experts = prune_keep_k
 
+    # set the "output_router_logits" to "true" to enable load balancing during finetuning
+    model.config.output_router_logits = True
+
     # Save pruned model
     logger.info(f"Saving pruned model to {save_path}")
     os.makedirs(save_path, exist_ok=True)

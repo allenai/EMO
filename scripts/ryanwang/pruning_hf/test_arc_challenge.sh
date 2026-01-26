@@ -4,5 +4,4 @@ scripts/hf_finetune_with_pruning.sh \
    --prune-keep-k 16 \
    --output-dir /root/ryanwang/phdbrainstorm/evals/testbed_arc_challenge \
    --num-gpus 1 \
-   --skip-activation \
-   --skip-prune
+   --skip-activation
