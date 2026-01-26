@@ -258,6 +258,50 @@ class GenericChemBenchChoice(MultipleChoiceTask):
         # )
         return list(map_indexed(self._process_doc, choice_docs))
 
+    def fewshot_examples(self, k, rnd, doc):
+        """Cap fewshot sampling when a subtask has fewer examples than requested."""
+        fewshot_source = self.task_config.get("fewshot_source")
+        if rnd is None and fewshot_source is None:
+            raise ValueError("A `random.Random` generator argument must be provided to `rnd`")
+
+        if fewshot_source is not None:
+            from oe_eval.tasks.base_task import FEWSHOT_SOURCES
+
+            if fewshot_source not in FEWSHOT_SOURCES:
+                raise ValueError(f"Fewshot source '{fewshot_source}' not found in FEWSHOT_SOURCES!")
+            self._fewshot_docs = list(map(self._process_doc, FEWSHOT_SOURCES[fewshot_source]))
+            if len(self._fewshot_docs) < k:
+                logger.warning(
+                    "ChemBench Choice: capping num_shots from %d to %d (fewshot_source=%s)",
+                    k,
+                    len(self._fewshot_docs),
+                    fewshot_source,
+                )
+            return self._fewshot_docs[: min(k, len(self._fewshot_docs))]
+
+        if self.has_training_docs():
+            self._fewshot_docs = list(self.training_docs())
+            if len(self._fewshot_docs) < k:
+                logger.warning(
+                    "ChemBench Choice: capping num_shots from %d to %d for subfield %s",
+                    k,
+                    len(self._fewshot_docs),
+                    self.task_config.get("dataset_name"),
+                )
+            return rnd.sample(self._fewshot_docs, min(k, len(self._fewshot_docs)))
+
+        self._fewshot_docs = list(
+            self.validation_docs() if self.has_validation_docs() else self.test_docs()
+        )
+        sample_k = min(k + 1, len(self._fewshot_docs))
+        if sample_k < k + 1:
+            logger.warning(
+                "ChemBench Choice: capping num_shots from %d to %d (no train docs)",
+                k,
+                max(sample_k - 1, 0),
+            )
+        return rnd.sample(self._fewshot_docs, sample_k)
+
     def _is_choice_question(self, doc) -> bool:
         """Check if this is a choice question based on preferred_score field."""
         preferred_score = doc.get("preferred_score", "")
@@ -444,6 +488,50 @@ class GenericChemBenchGen(Task):
             "subfield": doc.get("subfield", ""),
         }
         return out_doc
+
+    def fewshot_examples(self, k, rnd, doc):
+        """Cap fewshot sampling when a subtask has fewer examples than requested."""
+        fewshot_source = self.task_config.get("fewshot_source")
+        if rnd is None and fewshot_source is None:
+            raise ValueError("A `random.Random` generator argument must be provided to `rnd`")
+
+        if fewshot_source is not None:
+            from oe_eval.tasks.base_task import FEWSHOT_SOURCES
+
+            if fewshot_source not in FEWSHOT_SOURCES:
+                raise ValueError(f"Fewshot source '{fewshot_source}' not found in FEWSHOT_SOURCES!")
+            self._fewshot_docs = list(map(self._process_doc, FEWSHOT_SOURCES[fewshot_source]))
+            if len(self._fewshot_docs) < k:
+                logger.warning(
+                    "ChemBench Gen: capping num_shots from %d to %d (fewshot_source=%s)",
+                    k,
+                    len(self._fewshot_docs),
+                    fewshot_source,
+                )
+            return self._fewshot_docs[: min(k, len(self._fewshot_docs))]
+
+        if self.has_training_docs():
+            self._fewshot_docs = list(self.training_docs())
+            if len(self._fewshot_docs) < k:
+                logger.warning(
+                    "ChemBench Gen: capping num_shots from %d to %d for subfield %s",
+                    k,
+                    len(self._fewshot_docs),
+                    self.task_config.get("dataset_name"),
+                )
+            return rnd.sample(self._fewshot_docs, min(k, len(self._fewshot_docs)))
+
+        self._fewshot_docs = list(
+            self.validation_docs() if self.has_validation_docs() else self.test_docs()
+        )
+        sample_k = min(k + 1, len(self._fewshot_docs))
+        if sample_k < k + 1:
+            logger.warning(
+                "ChemBench Gen: capping num_shots from %d to %d (no train docs)",
+                k,
+                max(sample_k - 1, 0),
+            )
+        return rnd.sample(self._fewshot_docs, sample_k)
 
     def doc_to_text(self, doc):
         return f"Question: {doc['question']}\nAnswer:"
