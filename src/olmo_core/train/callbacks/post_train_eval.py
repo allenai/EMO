@@ -56,8 +56,9 @@ DEFAULT_EVAL_TASKS = [
     "mbpp::none",
     "mbppplus::none",
     # ChemBench
-    "chembench:mc",
+    # "chembench:mc",
     "chembench:gen",
+    "chembench:rc",
 ]
 
 
