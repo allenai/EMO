@@ -58,7 +58,7 @@ class FinetuneConfig:
     warmup_ratio: float = 0.1
     weight_decay: float = 0.0
     max_grad_norm: float = 1.0
-    seed: int = 42
+    seed: int = 0
     use_fsdp: bool = True
     gradient_checkpointing: bool = True
     bf16: bool = True
@@ -112,7 +112,6 @@ def compute_save_steps(total_steps: int, num_checkpoints: int) -> int:
 
 def finetune(config: FinetuneConfig):
     """Run finetuning with the given configuration."""
-    breakpoint()
     logger.info(f"Loading model from {config.model_path}")
     tokenizer = AutoTokenizer.from_pretrained(config.model_path)
     model = AutoModelForCausalLM.from_pretrained(
@@ -138,8 +137,6 @@ def finetune(config: FinetuneConfig):
         tokenizer=tokenizer,
         max_length=config.max_seq_length,
     )
-
-    breakpoint()
 
     logger.info(f"Train dataset size: {len(train_dataset)}")
 
