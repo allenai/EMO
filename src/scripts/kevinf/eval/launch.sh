@@ -153,7 +153,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
             --model-type hf \
             --task $TASK \
             --limit $LIMIT \
-            --output-dir $OUTPUT_DIR-seeds1234 \
+            --output-dir $OUTPUT_DIR \
             --batch-size $batch_size \
             --gpus $gpus \
             --fewshot-seed 1234 \
