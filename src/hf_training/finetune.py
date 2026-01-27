@@ -27,6 +27,8 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import torch
+
+from hf_training.FlexOlmoNoQKNormPrenormForCausalLMDebug import FlexOlmoNoQKNormPrenormForCausalLMDebug
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -114,11 +116,17 @@ def finetune(config: FinetuneConfig):
     """Run finetuning with the given configuration."""
     logger.info(f"Loading model from {config.model_path}")
     tokenizer = AutoTokenizer.from_pretrained(config.model_path)
-    model = AutoModelForCausalLM.from_pretrained(
+    # DEBUG
+    model = FlexOlmoNoQKNormPrenormForCausalLMDebug.from_pretrained(
         config.model_path,
         torch_dtype=torch.bfloat16 if config.bf16 else torch.float32,
         attn_implementation="flash_attention_2",
     )
+    # model = AutoModelForCausalLM.from_pretrained(
+    #     config.model_path,
+    #     torch_dtype=torch.bfloat16 if config.bf16 else torch.float32,
+    #     attn_implementation="flash_attention_2",
+    # )
 
     # Set padding token if not set
     if tokenizer.pad_token is None:
