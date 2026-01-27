@@ -1,9 +1,9 @@
 from typing import Optional, Union
 
+from transformers.utils import ModelOutput
+
 from transformers import FlexOlmoNoQKNormPrenormForCausalLM, Cache
 import torch
-
-from utils import ModelOutput
 
 
 class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormForCausalLM):
