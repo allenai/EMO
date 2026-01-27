@@ -1,4 +1,4 @@
-from .arc import (
+from oe_eval.tasks.oe_eval_tasks.arc import (
     ARCChallenge,
     ARCChallengeMC,
     ARCEasy,
