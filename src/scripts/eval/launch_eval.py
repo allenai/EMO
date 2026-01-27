@@ -92,6 +92,12 @@ _parser.add_argument(
     help="seed for doc sampling when `limit` is smaller than docs size",
 )
 _parser.add_argument(
+    "--fewshot-seed",
+    type=int,
+    default=None,
+    help="seed for fewshot example sampling (for reproducibility)",
+)
+_parser.add_argument(
     "--num-shots", type=int, default=None, help="Override number of shots for each task"
 )
 _parser.add_argument(
@@ -317,7 +323,7 @@ def launch_eval(args_dict: dict):
         task_config_overrides = parse_args_string(args_dict["task_args"])
     if "limit" in args_dict:
         args_dict["limit"] = make_int(args_dict["limit"], exclude_float1=True)
-    for key in ["num_shots", "limit", "random_subsample_seed", "use_chat_format", "split"]:
+    for key in ["num_shots", "limit", "random_subsample_seed", "fewshot_seed", "use_chat_format", "split"]:
         if key in args_dict and args_dict[key] is not None:
             if key in task_config_overrides:
                 raise ValueError(

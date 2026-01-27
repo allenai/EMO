@@ -32,7 +32,7 @@ model_type=hf
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
     # # MC9 tasks
-    # arc_easy:mc::olmes
+    arc_easy:mc::olmes
     # arc_challenge:mc::olmes
     # boolq:mc::olmes
     # csqa:mc::olmes
@@ -72,8 +72,8 @@ TASKS=(
     # # Code4 tasks
     # codex_humaneval:temp0.8
     # codex_humanevalplus:temp0.8
-    # mbpp::none
-    # mbppplus::none
+    mbpp::none
+    mbppplus::none
 
     # ChemBench MC and generative tasks
     chembench:mc
@@ -153,9 +153,11 @@ for MODEL_PATH in "${MODELS[@]}"; do
             --model-type hf \
             --task $TASK \
             --limit $LIMIT \
-            --output-dir $OUTPUT_DIR \
+            --output-dir $OUTPUT_DIR-seeds1234 \
             --batch-size $batch_size \
             --gpus $gpus \
+            --fewshot-seed 1234 \
+            --random-subsample-seed 1234 \
             "
     
         echo "Launched evaluation for model: $model, task: $TASK"
