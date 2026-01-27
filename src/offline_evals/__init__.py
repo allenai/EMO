@@ -7,6 +7,7 @@ from oe_eval.tasks.oe_eval_tasks.mmlu import create_mmlu_task
 from oe_eval.tasks.oe_eval_tasks.mmlu_pro import create_mmlu_pro_task
 
 from .tasks import (
+    arc,
     agi_eval,
     hatespeech,
     medmcqa,
@@ -61,6 +62,10 @@ def create_core_mmlu_pro_tasks_withsplits():
 
 
 new_task_registry: Dict = {
+    "arc_challenge": arc.ARCChallenge,
+    "arc_challenge:mc": arc.ARCChallengeMC,
+    "arc_easy": arc.ARCEasy,
+    "arc_easy:mc": arc.ARCEasyMC,
     "xsum": xsum.XSum,
     "narrativeqa": narrativeqa.NarrativeQA,
     "story_gen": story_gen.Story_Gen_LMJudge,
