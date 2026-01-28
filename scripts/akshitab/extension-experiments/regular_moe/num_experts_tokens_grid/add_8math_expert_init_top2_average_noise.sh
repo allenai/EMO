@@ -4,28 +4,32 @@
 # STATUS: USED
 ##############################################################
 
-NUM_NEW_EXPERTS=2
+NUM_NEW_EXPERTS=8
 TOTAL_EXPERTS=$((128+${NUM_NEW_EXPERTS}))
 
 # Part 1: Add new expert
-
-BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
-NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/extensions/twolevelbatchlb-32_1b14b_${TOTAL_EXPERTS}experts_stability_prenorm_noqknorm_1121_step30995_init_average_noise_10perc"
+BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
+NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/extensions/moe_1b14b_${TOTAL_EXPERTS}experts_olmoe-mix_130B_1103_step30995_init_top2_average_noise_10perc"
 
 # Run this once; on weka
-python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
-	-c ${BASE_MODEL_PATH}\
-	-o ${NEW_BASE_MODEL_PATH} \
-	--num_new_experts ${NUM_NEW_EXPERTS} \
-	--init_method average \
-  --noise_std_fraction 0.1
-
-NUM_BILLION_TOKENS=20
-NUM_TOKENS=$((NUM_BILLION_TOKENS * 1000000000))
+# python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
+# 	-c ${BASE_MODEL_PATH}\
+# 	-o ${NEW_BASE_MODEL_PATH} \
+# 	--num_new_experts ${NUM_NEW_EXPERTS} \
+# 	--init_method similar \
+#     --activation_file task-gsm8k_generation_test_0shot-router.jsonl \
+#     -k 2 \
+#   --noise_std_fraction 0.1
 
 
 # # Part 2: Train with new expert
-RUN_NAME="twolevelbatchlb-32_130experts_${NUM_NEW_EXPERTS}trained_math_init_average_noise_10perc_${NUM_BILLION_TOKENS}B"
+NUM_BILLION_TOKENS=20
+NUM_TOKENS=$((NUM_BILLION_TOKENS * 1000000000))
+
+LR=4e-4 #4e-4  # 4e-3, #4e-5
+
+# # Part 2: Train with new expert
+RUN_NAME="freeze-fix-moe1b14b_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_math_init_top2_average_noise_${NUM_BILLION_TOKENS}B_lr_${LR}"
 
 python -m olmo_core.launch.beaker \
   --name ${RUN_NAME} \

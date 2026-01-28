@@ -38,7 +38,35 @@ MODELS=(
 
     # freeze-fix-moe1b14b_129experts_1trained_math_init_top2_average_5B_lr_4e-3/step1193-hf
     # freeze-fix-moe1b14b_129experts_1trained_math_init_top2_average_5B_lr_4e-4/step1193-hf
-    freeze-fix-moe1b14b_129experts_1trained_math_init_top2_average_5B_lr_4e-5/step1193-hf
+    # freeze-fix-moe1b14b_129experts_1trained_math_init_top2_average_5B_lr_4e-5/step1193-hf
+
+    # freeze-fix-moe1b14b_129experts_1trained_math_init_top2_average_10B_lr_4e-4/step2385-hf
+    # freeze-fix-moe1b14b_129experts_1trained_math_init_top2_average_10B_lr_4e-3/step2385-hf
+    # freeze-fix-moe1b14b_129experts_1trained_math_init_average_5B_lr_4e-4/step1193-hf
+
+    # freeze-fix-moe1b14b_129experts_1trained_math_init_random_expert_5B_lr_4e-4/step1193-hf
+    # freeze-fix-moe1b14b_130experts_2trained_math_init_average_noise_10pc_5B_lr_4e-4/step1193-hf
+    # freeze-fix-moe1b14b_experts_2trained_math_init_top2_5B_lr_4e-4/step1193-hf
+    # freeze-fix-twolevel_129experts_1trained_math_init_average_5B_lr_4e-4/step1193-hf
+    # freeze-fix-moe1b14b_129experts_1trained_math_init_top2_average_20B_lr_4e-4/step4769-hf
+    # freeze-fix-twolevel_129experts_1trained_math_init_top2_average_5B_lr_4e-4/step1193-hf
+
+    # freeze-fix-moe1b14b_130experts_2trained_math_init_top2_average_noise_5B_lr_4e-4/step1193-hf
+    # freeze-fix-moe1b14b_130experts_2trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # freeze-fix-moe1b14b_130experts_2trained_math_init_top2_average_noise_20B_lr_4e-4/step4769-hf
+
+    # freeze-fix-moe1b14b_132experts_4trained_math_init_top2_average_noise_5B_lr_4e-4/step1193-hf
+    # freeze-fix-moe1b14b_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+
+    # freeze-fix-moe1b14b_136experts_8trained_math_init_top2_average_noise_5B_lr_4e-4/step1193-hf
+    # freeze-fix-moe1b14b_136experts_8trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+
+    # freeze-fix-moe1b14b_132experts_4trained_math_init_top2_average_noise_20B_lr_4e-4/step4769-hf
+    # freeze-fix-twolevel_130experts_2trained_math_init_average_noise_10pc_5B_lr_4e-4/step1193-hf
+    # freeze-fix-twolevel_130experts_2trained_math_init_top2_average_noise_5B_lr_4e-4/step1193-hf
+    freeze-fix-moe1b14b_136experts_8trained_math_init_top2_average_noise_20B_lr_4e-4/step4769-hf
+
+
 
 )
 
@@ -187,7 +215,7 @@ for MODEL_NAME in "${MODELS[@]}"; do
             --priority urgent \
             --allow-dirty \
             --gpus $gpus \
-            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+            --env-secret HF_TOKEN=AKSHITAB_HF_TOKEN \
             --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
             --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
             -- \
