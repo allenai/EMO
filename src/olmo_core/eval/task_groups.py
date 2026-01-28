@@ -131,12 +131,16 @@ FAST_TASKS = [
     "mt_mbpp_rust_gold_bpb_3shot",
     # Sanity check for MCQA ability
     "copycolors_10way_fast",
+    "legalbench_abercrombie_rc_0shot"
+
 ]
 
+TEST_TASKS = ["legalbench_abercrombie_rc_0shot"]
 
 TASK_GROUPS: Dict[str, List[str]] = {
     "full__small_compute": FULL_TASKS_SMALL_COMPUTE,
     "full__large_compute": FULL_TASKS_LARGE_COMPUTE,
     "full": FULL_TASKS,
     "fast": FAST_TASKS,
+    "test": TEST_TASKS,
 }
