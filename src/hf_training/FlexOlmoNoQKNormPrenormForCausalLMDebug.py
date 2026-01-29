@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Optional, Union
 
 from transformers.utils import ModelOutput
@@ -6,6 +7,7 @@ from transformers import FlexOlmoNoQKNormPrenormForCausalLM, Cache
 import torch
 
 
+@dataclass
 class MoeCausalLMOutputWithPast(ModelOutput):
     """
     Base class for causal language model (or autoregressive) with mixture of experts outputs.
