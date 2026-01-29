@@ -1,0 +1,127 @@
+import torch
+import torch.distributed as dist
+from transformers import TrainerCallback
+
+class LogMoeCallback(TrainerCallback):
+    """
+    Logs MoE losses during training.
+
+    - forward hook: stash latest aux_loss (no counting here)
+    - on_substep_end/on_step_end: accumulate once per micro-step / step
+    - on_log: write averaged aux_loss into `logs` so wandb logs it
+    """
+
+    def __init__(
+        self,
+        reduce_across_processes=True,  # good default for DDP/FSDP
+    ):
+        breakpoint()
+        self.lb_loss_key = "lb_loss"
+        self.ce_loss_key = "ce_loss"
+        self.reduce_across_processes = reduce_across_processes
+
+        self._handle = None
+        self._latest_lb_loss = None  # tensor
+        self._latest_ce_loss = None  # tensor
+        self._window_lb_sum = None  # tensor
+        self._window_lb_count = 0   # python int
+        self._window_ce_sum = None  # tensor
+        self._window_ce_count = 0   # python int
+
+    def _extract_aux_loss(self, output, aux_loss_key):
+        breakpoint()
+        aux = getattr(output, aux_loss_key, None)
+        if aux is not None:
+            return aux
+        if isinstance(output, dict):
+            return output.get(aux_loss_key, None)
+        return None
+
+    def _forward_hook(self, module, inputs, output):
+        breakpoint()
+        lb_loss = self._extract_aux_loss(output, self.lb_loss_key)
+        ce_loss = self._extract_aux_loss(output, self.ce_loss_key)
+        # stash *latest* value only (avoid checkpoint recompute double counting)
+        if lb_loss is not None:
+            self._latest_lb_loss = lb_loss.detach()
+        if ce_loss is not None:
+            self._latest_ce_loss = ce_loss.detach()
+        return
+
+    def on_train_begin(self, args, state, control, model=None, **kwargs):
+        breakpoint()
+
+        m = model.module if hasattr(model, "module") else model
+        self._handle = m.register_forward_hook(self._forward_hook)
+        self._window_lb_sum = torch.tensor(0.0, device=args.device)
+        self._window_lb_count = 0
+        self._window_ce_sum = torch.tensor(0.0, device=args.device)
+        self._window_ce_count = 0
+
+    def on_train_end(self, args, state, control, **kwargs):
+        breakpoint()
+
+        if self._handle is not None:
+            self._handle.remove()
+            self._handle = None
+        self._latest_lb_loss = None
+        self._latest_ce_loss = None
+        self._window_lb_sum = None
+        self._window_lb_count = 0
+        self._window_ce_sum = None
+        self._window_ce_count = 0
+
+    def _accumulate_latest(self):
+        breakpoint()
+
+        if self._latest_lb_loss is not None:
+            self._window_lb_sum += self._latest_lb_loss.float().to(self._window_lb_sum.device)
+            self._window_lb_count += 1
+            self._latest_lb_loss = None
+
+        if self._latest_ce_loss is not None:
+            self._window_ce_sum += self._latest_ce_loss.float().to(self._window_ce_sum.device)
+            self._window_ce_count += 1
+            self._latest_ce_loss = None
+
+    def on_substep_end(self, args, state, control, **kwargs):
+        breakpoint()
+
+        # called on non-sync micro-steps (gradient accumulation)
+        self._accumulate_latest()
+
+    def on_step_end(self, args, state, control, **kwargs):
+        breakpoint()
+
+        # called on optimizer update steps (the last micro-step)
+        self._accumulate_latest()
+
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        breakpoint()
+
+        if logs is not None and self._window_lb_count != 0:
+            sum_t_lb = self._window_lb_sum
+            count_t_lb = torch.tensor(float(self._window_lb_count), device=sum_t_lb.device)
+
+            if self.reduce_across_processes and dist.is_available() and dist.is_initialized():
+                dist.all_reduce(sum_t_lb, op=dist.ReduceOp.SUM)
+                dist.all_reduce(count_t_lb, op=dist.ReduceOp.SUM)
+
+            logs[f"train/{self.lb_loss_key}"] = (sum_t_lb / count_t_lb).item()
+
+            self._window_lb_sum.zero_()
+            self._window_lb_count = 0
+
+        if logs is not None and self._window_ce_count != 0:
+            sum_t_ce = self._window_ce_sum
+            count_t_ce = torch.tensor(float(self._window_ce_count), device=sum_t_ce.device)
+
+            if self.reduce_across_processes and dist.is_available() and dist.is_initialized():
+                dist.all_reduce(sum_t_ce, op=dist.ReduceOp.SUM)
+                dist.all_reduce(count_t_ce, op=dist.ReduceOp.SUM)
+
+            logs[f"train/{self.ce_loss_key}"] = (sum_t_ce / count_t_ce).item()
+
+            self._window_ce_sum.zero_()
+            self._window_ce_count = 0
+        return

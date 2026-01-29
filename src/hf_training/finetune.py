@@ -29,6 +29,7 @@ from typing import Optional
 import torch
 
 from hf_training.FlexOlmoNoQKNormPrenormForCausalLMDebug import FlexOlmoNoQKNormPrenormForCausalLMDebug
+from hf_training.LogMoECallback import LogMoeCallback
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -207,6 +208,7 @@ def finetune(config: FinetuneConfig):
         args=training_args,
         train_dataset=train_dataset,
         data_collator=data_collator,
+        callbacks=[LogMoeCallback],
     )
 
     # Train
