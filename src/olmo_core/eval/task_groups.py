@@ -46,6 +46,7 @@ FULL_TASKS_SMALL_COMPUTE = [
     "basic_skills_logical_reasoning_rc_5shot",
     "basic_skills_pattern_rc_5shot",
     "basic_skills_string_operations_rc_5shot",
+    "legalbench_abercrombie_rc_0shot"
 ]
 
 # For training runs where we expect the model to acquire MC
@@ -132,7 +133,6 @@ FAST_TASKS = [
     # Sanity check for MCQA ability
     "copycolors_10way_fast",
     "legalbench_abercrombie_rc_0shot"
-
 ]
 
 TEST_TASKS = ["legalbench_abercrombie_rc_0shot"]
