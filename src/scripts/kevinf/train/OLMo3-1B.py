@@ -177,7 +177,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         float8_config=Float8Config(enabled=False),
         z_loss_multiplier=1e-5,
         max_grad_norm=1.0,
-        scheduler=CosWithWarmup(warmup_steps=2000),
+        scheduler=CosWithWarmup(warmup_fraction=0.1),
     )
 
     # Trainer config
