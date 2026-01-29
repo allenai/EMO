@@ -8,14 +8,14 @@
 # Base: 130B Dolma pretrained checkpoint
 
 # Hyperparameters (easy to change for sweeps)
-dataset="tpol-70-dclm-30"
+dataset="tpol_70_dclm_30"
 warmup_steps=715
 train_tokens_B=10  # in billions
 train_tokens_raw=$((train_tokens_B * 1000000000))
 load_path="/weka/oe-training-default/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995"
 
 # LR sweep: conservative (5e-5), moderate (1e-4), aggressive (2e-4)
-for lr in 5e-5 1e-4 2e-4; do
+for lr in 5e-5 ; do
   # Construct runname from hyperparams
   runname="olmo3-1b-${dataset}-${train_tokens_B}B-lr${lr}-warmup${warmup_steps}"
   if [ -n "$load_path" ]; then
