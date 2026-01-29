@@ -8,7 +8,7 @@
 # Base: 130B Dolma pretrained checkpoint
 
 # Hyperparameters (easy to change for sweeps)
-dataset="tpol_70_dclm_30"
+dataset="tpol-70-dclm-30"
 warmup_steps=715
 train_tokens_B=10  # in billions
 train_tokens_raw=$((train_tokens_B * 1000000000))
