@@ -149,6 +149,7 @@ PRIVATE_REPO_SETUP_STEPS = (
     "git submodule update --init --recursive",
     "conda shell.bash activate base",
     "pip install -e '.[all]'",
+    "pip install -U fsspec",  # Fix huggingface_hub compatibility
     "pip freeze",
 )
 
