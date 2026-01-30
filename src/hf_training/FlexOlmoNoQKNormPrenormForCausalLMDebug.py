@@ -110,6 +110,9 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormForCausalLM
             loss = ce_loss
 
         lb_loss = None
+
+        print(f'num_items_in_batch = {kwargs["num_items_in_batch"]}')
+
         if output_router_logits:
             lb_loss = load_balancing_loss_func_olmoe(
                 outputs.router_logits if return_dict else outputs[-1],
