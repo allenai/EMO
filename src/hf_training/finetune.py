@@ -27,10 +27,10 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import torch
+from transformers.integrations import WandbCallback
 
 from hf_training.FlexOlmoNoQKNormPrenormForCausalLMDebug import FlexOlmoNoQKNormPrenormForCausalLMDebug
 from hf_training.LogMoECallback import LogMoeCallback
-from integrations import WandbCallback
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
