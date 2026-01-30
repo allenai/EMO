@@ -117,6 +117,7 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormForCausalLM
                 self.num_experts,
                 self.num_experts_per_tok,
                 attention_mask,
+                labels,
                 **kwargs
             )
             if labels is not None:
@@ -145,6 +146,7 @@ def load_balancing_loss_func_olmoe(
     num_experts: Optional[int] = None,
     top_k=2,
     attention_mask: Optional[torch.Tensor] = None,
+    labels: Optional[torch.Tensor] = None,
     num_items_in_batch: Optional[torch.Tensor] = None,
 ) -> Union[torch.Tensor, int]:
     r"""
@@ -184,7 +186,7 @@ def load_balancing_loss_func_olmoe(
 
     expert_counts_onehot = torch.nn.functional.one_hot(selected_experts, num_experts) # shape: (num_hidden_layers, batch_size * sequence_length, top_k, num_experts)
 
-    if attention_mask is None:
+    if attention_mask is None and labels is None:
 
         # Compute the percentage of tokens routed to each experts
         frequency_per_expert = torch.mean(expert_counts_onehot.float(), dim=(1, 2))  # shape: (num_hidden_layers, num_experts)
