@@ -117,6 +117,7 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormForCausalLM
                 self.num_experts,
                 self.num_experts_per_tok,
                 attention_mask,
+                **kwargs
             )
             if labels is not None:
                 loss += self.router_aux_loss_coef * lb_loss.to(loss.device)  # make sure to reside in the same device
@@ -144,6 +145,7 @@ def load_balancing_loss_func_olmoe(
     num_experts: Optional[int] = None,
     top_k=2,
     attention_mask: Optional[torch.Tensor] = None,
+    num_items_in_batch: Optional[torch.Tensor] = None,
 ) -> Union[torch.Tensor, int]:
     r"""
     Computes auxiliary load balancing loss as in Switch Transformer - implemented in Pytorch.
@@ -218,6 +220,8 @@ def load_balancing_loss_func_olmoe(
         prob_per_expert = torch.sum(routing_weights * router_per_expert_attention_mask, dim=1) / torch.sum(
             router_per_expert_attention_mask, dim=1
         )
+
+        breakpoint() # check that sum of router_per_expert_attention_mask is equivalent to expert_attention_mask
 
     overall_loss = torch.sum(
         frequency_per_expert * prob_per_expert
