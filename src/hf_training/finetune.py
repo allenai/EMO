@@ -213,8 +213,8 @@ def finetune(config: FinetuneConfig):
 
     # ensure that wandb is logging the correct logs
     trainer.pop_callback(WandbCallback)
-    trainer.add_callback(LogMoeCallback)
-    trainer.add_callback(WandbCallback)
+    trainer.add_callback(LogMoeCallback())
+    trainer.add_callback(WandbCallback())
 
     # Train
     logger.info("Starting training...")

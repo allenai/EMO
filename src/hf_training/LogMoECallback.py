@@ -84,7 +84,7 @@ class LogMoeCallback(TrainerCallback):
         self._accumulate_latest()
 
     def on_log(self, args, state, control, logs=None, **kwargs):
-        if not logs or not state.is_world_process_zero:
+        if not logs or not state.is_world_process_zero or state.global_step <= self._globalstep_last_logged:
             return
 
         sum_t_lb = self._window_lb_sum
@@ -99,6 +99,7 @@ class LogMoeCallback(TrainerCallback):
         if self.reduce_across_processes and dist.is_available() and dist.is_initialized():
             dist.all_reduce(sum_t_ce, op=dist.ReduceOp.SUM)
         # trainer accumulates loss over all steps since last log, so divide by that number of steps
+
         logs[f"train/{self.ce_loss_key}"] = sum_t_ce.item() / (state.global_step - self._globalstep_last_logged)
 
         self._globalstep_last_logged = state.global_step
