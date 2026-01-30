@@ -84,25 +84,43 @@ class LogMoeCallback(TrainerCallback):
         self._accumulate_latest()
 
     def on_log(self, args, state, control, logs=None, **kwargs):
-        if not logs or not state.is_world_process_zero or state.global_step <= self._globalstep_last_logged:
+        if state.global_step <= self._globalstep_last_logged:
             return
 
-        sum_t_lb = self._window_lb_sum
-        if self.reduce_across_processes and dist.is_available() and dist.is_initialized():
-            dist.all_reduce(sum_t_lb, op=dist.ReduceOp.SUM)
-        logs[f"train/{self.lb_loss_key}"] = sum_t_lb.item()
-        # note: we do not need to divide by anything, since this has been taken care of by num_items_in_batch
+        use_dist = (
+                self.reduce_across_processes
+                and dist.is_available()
+                and dist.is_initialized()
+                and dist.get_world_size() > 1
+        )
 
+        # --- LB ---
+        lb = self._window_lb_sum
+        if use_dist:
+            # clone so we can reset the window without affecting the reduced value
+            lb_reduced = lb.detach().clone()
+            dist.reduce(lb_reduced, dst=0, op=dist.ReduceOp.SUM)
+        else:
+            lb_reduced = lb
+
+        # --- CE ---
+        ce = self._window_ce_sum
+        if use_dist:
+            ce_reduced = ce.detach().clone()
+            dist.reduce(ce_reduced, dst=0, op=dist.ReduceOp.SUM)
+        else:
+            ce_reduced = ce
+
+        # Reset windows on *all* ranks so everyone stays in sync
         self._window_lb_sum.zero_()
+        self._window_ce_sum.zero_()
 
-        sum_t_ce = self._window_ce_sum
-        if self.reduce_across_processes and dist.is_available() and dist.is_initialized():
-            dist.all_reduce(sum_t_ce, op=dist.ReduceOp.SUM)
-        # trainer accumulates loss over all steps since last log, so divide by that number of steps
-
-        logs[f"train/{self.ce_loss_key}"] = sum_t_ce.item() / (state.global_step - self._globalstep_last_logged)
-
+        # Update step marker on *all* ranks (keeps denom consistent everywhere)
+        steps_since = state.global_step - self._globalstep_last_logged
         self._globalstep_last_logged = state.global_step
 
-        self._window_ce_sum.zero_()
+        # Only rank 0 writes logs (and only if logs dict exists)
+        if state.is_world_process_zero and logs is not None:
+            logs[f"train/{self.lb_loss_key}"] = lb_reduced.item()
+            logs[f"train/{self.ce_loss_key}"] = ce_reduced.item() / max(1, steps_since)
         return
