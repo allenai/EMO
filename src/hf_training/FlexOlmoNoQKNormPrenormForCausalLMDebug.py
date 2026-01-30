@@ -48,6 +48,8 @@ class MoeCausalLMOutputWithPast(ModelOutput):
 
     loss: Optional[torch.FloatTensor] = None
     aux_loss: Optional[torch.FloatTensor] = None
+    lb_loss: Optional[torch.FloatTensor] = None
+    ce_loss: Optional[torch.FloatTensor] = None
     logits: Optional[torch.FloatTensor] = None
     past_key_values: Optional[Cache] = None
     hidden_states: Optional[tuple[torch.FloatTensor, ...]] = None
@@ -95,7 +97,6 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormForCausalLM
             return_dict=return_dict,
             cache_position=cache_position,
         )
-        breakpoint()
 
         hidden_states = outputs[0]
         # Only compute necessary logits, and do not upcast them to float if we are not computing the loss
@@ -103,29 +104,33 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormForCausalLM
         logits = self.lm_head(hidden_states[:, slice_indices, :])
 
         loss = None
+        ce_loss = None
         if labels is not None:
-            loss = self.loss_function(logits, labels, self.vocab_size, **kwargs)
+            ce_loss = self.loss_function(logits, labels, self.vocab_size, **kwargs)
+            loss = ce_loss
 
-        aux_loss = None
+        lb_loss = None
         if output_router_logits:
-            aux_loss = load_balancing_loss_func_olmoe(
+            lb_loss = load_balancing_loss_func_olmoe(
                 outputs.router_logits if return_dict else outputs[-1],
                 self.num_experts,
                 self.num_experts_per_tok,
                 attention_mask,
             )
             if labels is not None:
-                loss += self.router_aux_loss_coef * aux_loss.to(loss.device)  # make sure to reside in the same device
+                loss += self.router_aux_loss_coef * lb_loss.to(loss.device)  # make sure to reside in the same device
 
         if not return_dict:
             output = (logits,) + outputs[1:]
             if output_router_logits:
-                output = (aux_loss,) + output
+                output = (lb_loss,) + output
             return (loss,) + output if loss is not None else output
 
         return MoeCausalLMOutputWithPast(
             loss=loss,
-            aux_loss=aux_loss,
+            aux_loss=lb_loss,
+            lb_loss=lb_loss,
+            ce_loss=ce_loss,
             logits=logits,
             past_key_values=outputs.past_key_values,
             hidden_states=outputs.hidden_states,
@@ -162,7 +167,6 @@ def load_balancing_loss_func_olmoe(
     Returns:
         The auxiliary loss.
     """
-    breakpoint()
     if gate_logits is None or not isinstance(gate_logits, tuple):
         return 0
 
@@ -197,11 +201,11 @@ def load_balancing_loss_func_olmoe(
         )
 
         # Compute the percentage of tokens routed to each experts
-        tokens_per_expert = torch.sum(expert_counts_onehot.float() * expert_attention_mask, dim=(1, 2)) / torch.sum(
+        frequency_per_expert = torch.sum(expert_counts_onehot.float() * expert_attention_mask, dim=(1, 2)) / torch.sum(
             expert_attention_mask, dim=(1, 2)
         )
 
-        # Compute the mask that masks all padding tokens as 0 with the same shape of tokens_per_expert
+        # Compute the mask that masks all padding tokens as 0 with the same shape of frequency_per_expert
         router_per_expert_attention_mask = (
             attention_mask[None, :, :, None]
             .expand((num_hidden_layers, batch_size, sequence_length, num_experts))
@@ -210,18 +214,15 @@ def load_balancing_loss_func_olmoe(
         )
 
         # Compute the average probability of routing to these experts
-        router_prob_per_expert = torch.sum(routing_weights * router_per_expert_attention_mask, dim=1) / torch.sum(
+        prob_per_expert = torch.sum(routing_weights * router_per_expert_attention_mask, dim=1) / torch.sum(
             router_per_expert_attention_mask, dim=1
         )
 
     overall_loss = torch.sum(
-        tokens_per_expert * router_prob_per_expert
+        frequency_per_expert * prob_per_expert
     )
 
-    loss_div_factor = 0.01 / concatenated_gate_logits.shape[0] # loss_div_factor/num_hidden_layers (as per olmo-core implementation)
+    overall_loss = overall_loss * num_experts / concatenated_gate_logits.shape[0] # times num_experts according to lb equation, divide by num_hidden_layers to get average over layers (which is how olmo-core is implemented to make loss agnostic to number of layers)
 
-    scale = num_experts / top_k / loss_div_factor
-    breakpoint()
-
-    return overall_loss * scale
+    return overall_loss
 
