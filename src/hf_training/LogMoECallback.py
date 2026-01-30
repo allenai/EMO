@@ -41,6 +41,12 @@ class LogMoeCallback(TrainerCallback):
         breakpoint()
         lb_loss = self._extract_aux_loss(output, self.lb_loss_key)
         ce_loss = self._extract_aux_loss(output, self.ce_loss_key)
+
+        # add on model's router_aux_loss_coef scaling since that is done in the trainer
+        router_aux_loss_coef = module.config.router_aux_loss_coef
+        lb_loss = lb_loss * router_aux_loss_coef
+        ce_loss = ce_loss * router_aux_loss_coef
+
         # stash *latest* value only (avoid checkpoint recompute double counting)
         if lb_loss is not None:
             self._latest_lb_loss = lb_loss.detach()
@@ -72,8 +78,6 @@ class LogMoeCallback(TrainerCallback):
         self._window_ce_count = 0
 
     def _accumulate_latest(self):
-        breakpoint()
-
         if self._latest_lb_loss is not None:
             self._window_lb_sum += self._latest_lb_loss.float().to(self._window_lb_sum.device)
             self._window_lb_count += 1
@@ -85,14 +89,11 @@ class LogMoeCallback(TrainerCallback):
             self._latest_ce_loss = None
 
     def on_substep_end(self, args, state, control, **kwargs):
-        breakpoint()
-
         # called on non-sync micro-steps (gradient accumulation)
         self._accumulate_latest()
 
     def on_step_end(self, args, state, control, **kwargs):
         breakpoint()
-
         # called on optimizer update steps (the last micro-step)
         self._accumulate_latest()
 
