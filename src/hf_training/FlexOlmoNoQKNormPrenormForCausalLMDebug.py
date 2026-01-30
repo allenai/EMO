@@ -128,6 +128,7 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormForCausalLM
                 output = (lb_loss,) + output
             return (loss,) + output if loss is not None else output
 
+        breakpoint()
         return MoeCausalLMOutputWithPast(
             loss=loss,
             aux_loss=lb_loss,
