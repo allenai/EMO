@@ -215,7 +215,6 @@ def finetune(config: FinetuneConfig):
     trainer.pop_callback(WandbCallback)
     trainer.add_callback(LogMoeCallback)
     trainer.add_callback(WandbCallback)
-    breakpoint()
 
     # Train
     logger.info("Starting training...")
