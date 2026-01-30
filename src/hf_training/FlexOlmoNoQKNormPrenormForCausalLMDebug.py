@@ -105,7 +105,6 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormForCausalLM
 
         loss = None
         ce_loss = None
-        breakpoint()
         if labels is not None:
             ce_loss = self.loss_function(logits, labels, self.vocab_size, **kwargs)
             loss = ce_loss

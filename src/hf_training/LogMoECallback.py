@@ -29,7 +29,6 @@ class LogMoeCallback(TrainerCallback):
         self._window_ce_count = 0   # python int
 
     def _extract_aux_loss(self, output, aux_loss_key):
-        breakpoint()
         aux = getattr(output, aux_loss_key, None)
         if aux is not None:
             return aux
@@ -38,7 +37,6 @@ class LogMoeCallback(TrainerCallback):
         return None
 
     def _forward_hook(self, module, inputs, output):
-        breakpoint()
         lb_loss = self._extract_aux_loss(output, self.lb_loss_key)
         ce_loss = self._extract_aux_loss(output, self.ce_loss_key)
 
