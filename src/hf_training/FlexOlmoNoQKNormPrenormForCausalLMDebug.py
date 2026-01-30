@@ -148,6 +148,7 @@ def load_balancing_loss_func_olmoe(
     attention_mask: Optional[torch.Tensor] = None,
     labels: Optional[torch.Tensor] = None,
     num_items_in_batch: Optional[torch.Tensor] = None,
+    ignore_index = -100,
 ) -> Union[torch.Tensor, int]:
     r"""
     Computes auxiliary load balancing loss as in Switch Transformer - implemented in Pytorch.
@@ -194,6 +195,8 @@ def load_balancing_loss_func_olmoe(
         # Compute the average probability of routing to these experts
         prob_per_expert = torch.mean(routing_weights, dim=1)  # shape: (num_hidden_layers, num_experts)
     else:
+        if labels is not None:
+            attention_mask = labels != ignore_index  # shape: (batch_size, sequence_length)
         batch_size, sequence_length = attention_mask.shape
         num_hidden_layers = concatenated_gate_logits.shape[0]
 
