@@ -210,6 +210,7 @@ def finetune(config: FinetuneConfig):
         data_collator=data_collator,
         callbacks=[LogMoeCallback],
     )
+    breakpoint()
 
     # Train
     logger.info("Starting training...")
