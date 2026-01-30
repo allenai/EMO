@@ -175,43 +175,43 @@ def load_balancing_loss_func_olmoe(
 
     _, selected_experts = torch.topk(routing_weights, top_k, dim=-1) # shape: (num_hidden_layers, batch_size * sequence_length, top_k)
 
-    selected_experts_onehot = torch.nn.functional.one_hot(selected_experts, num_experts) # shape: (num_hidden_layers, batch_size * sequence_length, top_k, num_experts)
+    expert_counts_onehot = torch.nn.functional.one_hot(selected_experts, num_experts) # shape: (num_hidden_layers, batch_size * sequence_length, top_k, num_experts)
 
     if attention_mask is None:
 
         # Compute the percentage of tokens routed to each experts
-        tokens_per_expert = torch.mean(selected_experts_onehot.float(), dim=(1, 2))  # shape: (num_hidden_layers, num_experts)
+        frequency_per_expert = torch.mean(expert_counts_onehot.float(), dim=(1, 2))  # shape: (num_hidden_layers, num_experts)
 
         # Compute the average probability of routing to these experts
-        router_prob_per_expert = torch.mean(routing_weights, dim=1)  # shape: (num_hidden_layers, num_experts)
+        prob_per_expert = torch.mean(routing_weights, dim=1)  # shape: (num_hidden_layers, num_experts)
     else:
         batch_size, sequence_length = attention_mask.shape
-        num_hidden_layers = concatenated_gate_logits.shape[0] // (batch_size * sequence_length)
+        num_hidden_layers = concatenated_gate_logits.shape[0]
 
         # Compute the mask that masks all padding tokens as 0 with the same shape of expert_mask
         expert_attention_mask = (
             attention_mask[None, :, :, None, None]
             .expand((num_hidden_layers, batch_size, sequence_length, top_k, num_experts))
-            .reshape(-1, top_k, num_experts)
+            .reshape(num_hidden_layers, -1, top_k, num_experts)
             .to(compute_device)
         )
 
         # Compute the percentage of tokens routed to each experts
-        tokens_per_expert = torch.sum(expert_mask.float() * expert_attention_mask, dim=0) / torch.sum(
-            expert_attention_mask, dim=0
+        tokens_per_expert = torch.sum(expert_counts_onehot.float() * expert_attention_mask, dim=(1, 2)) / torch.sum(
+            expert_attention_mask, dim=(1, 2)
         )
 
         # Compute the mask that masks all padding tokens as 0 with the same shape of tokens_per_expert
         router_per_expert_attention_mask = (
             attention_mask[None, :, :, None]
-            .expand((num_hidden_layers, batch_size, sequence_length, routing_weights.shape[1]))
-            .reshape(-1, routing_weights.shape[1])
+            .expand((num_hidden_layers, batch_size, sequence_length, num_experts))
+            .reshape(num_hidden_layers, -1, routing_weights.shape[1])
             .to(compute_device)
         )
 
         # Compute the average probability of routing to these experts
-        router_prob_per_expert = torch.sum(routing_weights * router_per_expert_attention_mask, dim=0) / torch.sum(
-            router_per_expert_attention_mask, dim=0
+        router_prob_per_expert = torch.sum(routing_weights * router_per_expert_attention_mask, dim=1) / torch.sum(
+            router_per_expert_attention_mask, dim=1
         )
 
     device_index = routing_weights.device.index if routing_weights.device.index is not None else 0
