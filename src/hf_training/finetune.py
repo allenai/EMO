@@ -30,6 +30,7 @@ import torch
 
 from hf_training.FlexOlmoNoQKNormPrenormForCausalLMDebug import FlexOlmoNoQKNormPrenormForCausalLMDebug
 from hf_training.LogMoECallback import LogMoeCallback
+from integrations import WandbCallback
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -208,8 +209,12 @@ def finetune(config: FinetuneConfig):
         args=training_args,
         train_dataset=train_dataset,
         data_collator=data_collator,
-        callbacks=[LogMoeCallback],
     )
+
+    # ensure that wandb is logging the correct logs
+    trainer.pop_callback(WandbCallback)
+    trainer.add_callback(LogMoeCallback)
+    trainer.add_callback(WandbCallback)
     breakpoint()
 
     # Train

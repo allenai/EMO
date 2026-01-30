@@ -84,27 +84,24 @@ class LogMoeCallback(TrainerCallback):
         self._accumulate_latest()
 
     def on_log(self, args, state, control, logs=None, **kwargs):
-        if logs is not None:
-            sum_t_lb = self._window_lb_sum
+        if not logs or not state.is_world_process_zero:
+            return
 
-            if self.reduce_across_processes and dist.is_available() and dist.is_initialized():
-                dist.all_reduce(sum_t_lb, op=dist.ReduceOp.SUM)
+        sum_t_lb = self._window_lb_sum
+        if self.reduce_across_processes and dist.is_available() and dist.is_initialized():
+            dist.all_reduce(sum_t_lb, op=dist.ReduceOp.SUM)
+        logs[f"train/{self.lb_loss_key}"] = sum_t_lb.item()
+        # note: we do not need to divide by anything, since this has been taken care of by num_items_in_batch
 
-            logs[f"train/{self.lb_loss_key}"] = sum_t_lb.item()
-            # note: we do not need to divide by anything, since this has been taken care of by num_items_in_batch
+        self._window_lb_sum.zero_()
 
-            self._window_lb_sum.zero_()
+        sum_t_ce = self._window_ce_sum
+        if self.reduce_across_processes and dist.is_available() and dist.is_initialized():
+            dist.all_reduce(sum_t_ce, op=dist.ReduceOp.SUM)
+        # trainer accumulates loss over all steps since last log, so divide by that number of steps
+        logs[f"train/{self.ce_loss_key}"] = sum_t_ce.item() / (state.global_step - self._globalstep_last_logged)
 
-        if logs is not None:
-            sum_t_ce = self._window_ce_sum
+        self._globalstep_last_logged = state.global_step
 
-            if self.reduce_across_processes and dist.is_available() and dist.is_initialized():
-                dist.all_reduce(sum_t_ce, op=dist.ReduceOp.SUM)
-
-            # trainer accumulates loss over all steps since last log, so divide by that number of steps
-            logs[f"train/{self.ce_loss_key}"] = sum_t_ce.item() / (state.global_step - self._globalstep_last_logged)
-
-            self._global_step_last_logged = state.global_step
-
-            self._window_ce_sum.zero_()
+        self._window_ce_sum.zero_()
         return
