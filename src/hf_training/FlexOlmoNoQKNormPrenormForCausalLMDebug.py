@@ -205,7 +205,7 @@ def load_balancing_loss_func_olmoe(
         router_per_expert_attention_mask = (
             attention_mask[None, :, :, None]
             .expand((num_hidden_layers, batch_size, sequence_length, num_experts))
-            .reshape(num_hidden_layers, -1, routing_weights.shape[1])
+            .reshape(num_hidden_layers, -1, num_experts)
             .to(compute_device)
         )
 
@@ -214,10 +214,14 @@ def load_balancing_loss_func_olmoe(
             router_per_expert_attention_mask, dim=1
         )
 
-    device_index = routing_weights.device.index if routing_weights.device.index is not None else 0
-    rank = routing_weights.shape[1] * int(device_index)
     overall_loss = torch.sum(
-        tokens_per_expert[:, rank : rank + routing_weights.shape[1]] * router_prob_per_expert.unsqueeze(0)
+        tokens_per_expert * router_prob_per_expert
     )
-    return overall_loss * num_experts
+
+    loss_div_factor = 0.01 / concatenated_gate_logits.shape[0] # loss_div_factor/num_hidden_layers (as per olmo-core implementation)
+
+    scale = num_experts / top_k / loss_div_factor
+    breakpoint()
+
+    return overall_loss * scale
 
