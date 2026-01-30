@@ -15,7 +15,6 @@ class LogMoeCallback(TrainerCallback):
         self,
         reduce_across_processes=True,  # good default for DDP/FSDP
     ):
-        breakpoint()
         self.lb_loss_key = "lb_loss"
         self.ce_loss_key = "ce_loss"
         self.reduce_across_processes = reduce_across_processes
@@ -25,6 +24,8 @@ class LogMoeCallback(TrainerCallback):
         self._latest_ce_loss = None  # tensor
         self._window_lb_sum = None  # tensor
         self._window_ce_sum = None  # tensor
+
+        self._globalstep_last_logged = 0
 
     def _extract_aux_loss(self, output, aux_loss_key):
         aux = getattr(output, aux_loss_key, None)
@@ -51,16 +52,12 @@ class LogMoeCallback(TrainerCallback):
         return
 
     def on_train_begin(self, args, state, control, model=None, **kwargs):
-        breakpoint()
-
         m = model.module if hasattr(model, "module") else model
         self._handle = m.register_forward_hook(self._forward_hook)
         self._window_lb_sum = torch.tensor(0.0, device=args.device)
         self._window_ce_sum = torch.tensor(0.0, device=args.device)
 
     def on_train_end(self, args, state, control, **kwargs):
-        breakpoint()
-
         if self._handle is not None:
             self._handle.remove()
             self._handle = None
@@ -87,8 +84,6 @@ class LogMoeCallback(TrainerCallback):
         self._accumulate_latest()
 
     def on_log(self, args, state, control, logs=None, **kwargs):
-        breakpoint()
-
         if logs is not None:
             sum_t_lb = self._window_lb_sum
 
@@ -106,7 +101,10 @@ class LogMoeCallback(TrainerCallback):
             if self.reduce_across_processes and dist.is_available() and dist.is_initialized():
                 dist.all_reduce(sum_t_ce, op=dist.ReduceOp.SUM)
 
-            logs[f"train/{self.ce_loss_key}"] = sum_t_ce.item()
+            # trainer accumulates loss over all steps since last log, so divide by that number of steps
+            logs[f"train/{self.ce_loss_key}"] = sum_t_ce.item() / (state.global_step - self._globalstep_last_logged)
+
+            self._global_step_last_logged = state.global_step
 
             self._window_ce_sum.zero_()
         return
