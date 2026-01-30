@@ -195,8 +195,9 @@ def load_balancing_loss_func_olmoe(
         # Compute the average probability of routing to these experts
         prob_per_expert = torch.mean(routing_weights, dim=1)  # shape: (num_hidden_layers, num_experts)
     else:
+        # if there are labels, then we want to ignore the indices that are in the prompt as well (if there is any)
         if labels is not None:
-            attention_mask = labels != ignore_index  # shape: (batch_size, sequence_length)
+            attention_mask = labels != ignore_index
         batch_size, sequence_length = attention_mask.shape
         num_hidden_layers = concatenated_gate_logits.shape[0]
 
@@ -209,9 +210,9 @@ def load_balancing_loss_func_olmoe(
         )
 
         # Compute the percentage of tokens routed to each experts
-        frequency_per_expert = torch.sum(expert_counts_onehot.float() * expert_attention_mask, dim=(1, 2)) / torch.sum(
-            expert_attention_mask, dim=(1, 2)
-        )
+        frequency_total = num_items_in_batch * top_k # total number of tokens in full batch (not just local batch) times top_k
+        # frequency_total is used to replace torch.sum(expert_attention_mask, dim=(1,2)) to allow normalization across gradient accumulatio steps
+        frequency_per_expert = torch.sum(expert_counts_onehot.float() * expert_attention_mask, dim=(1, 2)) / frequency_total
 
         # Compute the mask that masks all padding tokens as 0 with the same shape of frequency_per_expert
         router_per_expert_attention_mask = (
@@ -221,12 +222,10 @@ def load_balancing_loss_func_olmoe(
             .to(compute_device)
         )
 
+        prob_total = num_items_in_batch # total number of tokens in full batch (not just local batch)
+        # prob_total is used to replace torch.sum(router_per_expert_attention_mask, dim=1) to allow normalization across gradient accumulatio steps
         # Compute the average probability of routing to these experts
-        prob_per_expert = torch.sum(routing_weights * router_per_expert_attention_mask, dim=1) / torch.sum(
-            router_per_expert_attention_mask, dim=1
-        )
-
-        breakpoint() # check that sum of router_per_expert_attention_mask is equivalent to expert_attention_mask
+        prob_per_expert = torch.sum(routing_weights * router_per_expert_attention_mask, dim=1) / prob_total
 
     overall_loss = torch.sum(
         frequency_per_expert * prob_per_expert
