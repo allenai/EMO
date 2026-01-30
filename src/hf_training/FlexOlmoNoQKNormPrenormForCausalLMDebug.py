@@ -133,7 +133,7 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormForCausalLM
             router_logits=outputs.router_logits,
         )
 
-def load_balancing_loss_func(
+def load_balancing_loss_func_olmoe(
     gate_logits: Union[torch.Tensor, tuple[torch.Tensor], None],
     num_experts: Optional[int] = None,
     top_k=2,
@@ -149,7 +149,7 @@ def load_balancing_loss_func(
     Args:
         gate_logits:
             Logits from the `gate`, should be a tuple of model.config.num_hidden_layers tensors of
-            shape [batch_size X sequence_length, num_experts].
+            shape [batch_size X sequence_length, num_experts]. This has not been softmaxed yet
         num_experts:
             Number of experts
         top_k:
@@ -168,20 +168,22 @@ def load_balancing_loss_func(
 
     if isinstance(gate_logits, tuple):
         compute_device = gate_logits[0].device
-        concatenated_gate_logits = torch.cat([layer_gate.to(compute_device) for layer_gate in gate_logits], dim=0)
+        concatenated_gate_logits = torch.stack([layer_gate.to(compute_device) for layer_gate in gate_logits], dim=0) # shape: (num_hidden_layers, batch_size * sequence_length, num_experts)
+        # concatenated_gate_logits = torch.cat([layer_gate.to(compute_device) for layer_gate in gate_logits], dim=0) # shape: (num_hidden_layers * batch_size * sequence_length, num_experts)
 
     routing_weights = torch.nn.functional.softmax(concatenated_gate_logits, dim=-1)
 
-    _, selected_experts = torch.topk(routing_weights, top_k, dim=-1)
+    _, selected_experts = torch.topk(routing_weights, top_k, dim=-1) # shape: (num_hidden_layers, batch_size * sequence_length, top_k)
 
-    expert_mask = torch.nn.functional.one_hot(selected_experts, num_experts)
+    selected_experts_onehot = torch.nn.functional.one_hot(selected_experts, num_experts) # shape: (num_hidden_layers, batch_size * sequence_length, top_k, num_experts)
 
     if attention_mask is None:
+
         # Compute the percentage of tokens routed to each experts
-        tokens_per_expert = torch.mean(expert_mask.float(), dim=0)
+        tokens_per_expert = torch.mean(selected_experts_onehot.float(), dim=(1, 2))  # shape: (num_hidden_layers, num_experts)
 
         # Compute the average probability of routing to these experts
-        router_prob_per_expert = torch.mean(routing_weights, dim=0)
+        router_prob_per_expert = torch.mean(routing_weights, dim=1)  # shape: (num_hidden_layers, num_experts)
     else:
         batch_size, sequence_length = attention_mask.shape
         num_hidden_layers = concatenated_gate_logits.shape[0] // (batch_size * sequence_length)
