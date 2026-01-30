@@ -93,7 +93,6 @@ class LogMoeCallback(TrainerCallback):
         self._accumulate_latest()
 
     def on_step_end(self, args, state, control, **kwargs):
-        breakpoint()
         # called on optimizer update steps (the last micro-step)
         self._accumulate_latest()
 
