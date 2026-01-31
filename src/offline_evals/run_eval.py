@@ -169,7 +169,7 @@ _parser.add_argument(
     default=None,
 )
 _parser.add_argument(
-    "--save-raw-requests", type=bool, default=False, help="Save raw requests in output directory"
+    "--save-raw-requests", action="store_true", help="Save raw requests in output directory"
 )
 _parser.add_argument(
     "--recompute-metrics", action="store_true", help="Recompute metrics for cached predictions"
@@ -312,7 +312,17 @@ def process_eval_args(args_dict: dict) -> dict:
     task_configs = []
     for task in tasks:
         task_config = parse_args_string(task, "task_name")
-        task_configs.append(get_dict_with_defaults(task_config, task_config_shared))
+
+        # Handle aggregate task expansion
+        # If task is "legalbench:rc", expand to all individual classification tasks
+        if task_config.get("task_name") == "legalbench:rc":
+            from offline_evals.tasks import legalbench
+
+            for legalbench_task_name in legalbench.LEGALBENCH_CLASSIFICATION_TASKS.keys():
+                expanded_task = {"task_name": f"legalbench_{legalbench_task_name}:rc"}
+                task_configs.append(get_dict_with_defaults(expanded_task, task_config_shared))
+        else:
+            task_configs.append(get_dict_with_defaults(task_config, task_config_shared))
 
     compute_config = {}
     compute_config["batch_size"] = args_dict.pop("batch_size")

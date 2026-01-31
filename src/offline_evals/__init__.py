@@ -6,6 +6,7 @@ from .tasks import (
     agi_eval,
     chembench,
     hatespeech,
+    legalbench,
     medmcqa,
     medqa,
     narrativeqa,
@@ -37,6 +38,8 @@ new_task_registry: Dict = {
     **sciriff.create_bio_sciriff_qa_tasks(),
     "squad": squad.SQuAD,
     "squad2": squad2.SQuAD2,
+    # LegalBench tasks (~110 classification tasks)
+    **legalbench.create_legalbench_tasks(),
 }
 
 TASK_REGISTRY.update(new_task_registry)
