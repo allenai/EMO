@@ -169,7 +169,7 @@ _parser.add_argument(
     default=None,
 )
 _parser.add_argument(
-    "--save-raw-requests", action="store_true", help="Save raw requests in output directory"
+    "--save-raw-requests", type=bool, default=False, help="Save raw requests in output directory"
 )
 _parser.add_argument(
     "--recompute-metrics", action="store_true", help="Recompute metrics for cached predictions"
