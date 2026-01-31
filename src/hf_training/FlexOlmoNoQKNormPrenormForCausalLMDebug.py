@@ -132,8 +132,8 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormForCausalLM
         return MoeCausalLMOutputWithPast(
             loss=loss,
             aux_loss=lb_loss,
-            lb_loss=lb_loss,
-            ce_loss=ce_loss,
+            lb_loss=lb_loss.detach().clone(), # for logging callback
+            ce_loss=ce_loss.detach().clone(), # for logging callback
             logits=logits,
             past_key_values=outputs.past_key_values,
             hidden_states=outputs.hidden_states,
