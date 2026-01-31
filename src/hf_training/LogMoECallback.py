@@ -105,9 +105,6 @@ class LogMoeCallback(TrainerCallback):
 
         # --- CE ---
 
-        print(f"Debug: window_ce_sum before reduction: {self._window_ce_sum.item()}")
-        print(f"Debug: window_lb_sum before reduction: {self._window_lb_sum.item()}")
-
         ce = self._window_ce_sum
         if use_dist:
             ce_reduced = ce.detach().clone()
@@ -115,16 +112,12 @@ class LogMoeCallback(TrainerCallback):
         else:
             ce_reduced = ce.detach().clone()
 
-        print(f"Debug: ce_reduced after reduction: {ce_reduced.item()}")
-        print(f"Debug: lb_reduced after reduction: {lb_reduced.item()}")
-
         # Reset windows on *all* ranks so everyone stays in sync
         self._window_lb_sum.zero_()
         self._window_ce_sum.zero_()
 
         # Update step marker on *all* ranks (keeps denom consistent everywhere)
         steps_since = state.global_step - self._globalstep_last_logged
-        print(f"Debug: steps_since last log: {steps_since}")
         self._globalstep_last_logged = state.global_step
 
         # Only rank 0 writes logs (and only if logs dict exists)
