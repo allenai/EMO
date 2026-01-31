@@ -101,7 +101,7 @@ class LogMoeCallback(TrainerCallback):
             lb_reduced = lb.detach().clone()
             dist.reduce(lb_reduced, dst=0, op=dist.ReduceOp.AVG) # reduce by averaging across DP ranks
         else:
-            lb_reduced = lb
+            lb_reduced = lb.detach().clone()
 
         # --- CE ---
         ce = self._window_ce_sum
@@ -109,7 +109,7 @@ class LogMoeCallback(TrainerCallback):
             ce_reduced = ce.detach().clone()
             dist.reduce(ce_reduced, dst=0, op=dist.ReduceOp.AVG) # reduce by averaging across DP ranks
         else:
-            ce_reduced = ce
+            ce_reduced = ce.detach().clone()
 
         # Reset windows on *all* ranks so everyone stays in sync
         self._window_lb_sum.zero_()
@@ -120,7 +120,6 @@ class LogMoeCallback(TrainerCallback):
         self._globalstep_last_logged = state.global_step
 
         # Only rank 0 writes logs (and only if logs dict exists)
-        breakpoint()
         if state.is_world_process_zero and logs is not None:
             logs[f"train/{self.lb_loss_key}"] = lb_reduced.item()
             logs[f"train/{self.ce_loss_key}"] = ce_reduced.item() / max(1, steps_since)
