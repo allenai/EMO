@@ -66,7 +66,7 @@ class FinetuneConfig:
     use_fsdp: bool = True
     gradient_checkpointing: bool = True
     bf16: bool = True
-    logging_steps: int = 10
+    logging_steps: int = 5
     report_to: str = "wandb"
     run_name: Optional[str] = None
 

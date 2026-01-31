@@ -3,6 +3,7 @@ scripts/hf_finetune_with_pruning.sh \
    --task arc_challenge \
    --prune-keep-k 16 \
    --output-dir /root/ryanwang/phdbrainstorm/evals/testbed_arc_challenge \
-   --num-gpus 1 \
+   --num-gpus 4 \
    --skip-activation \
-   --skip-prune
+   --skip-prune \
+   --run-name 4gpus
