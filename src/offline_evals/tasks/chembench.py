@@ -108,21 +108,22 @@ def _extract_float(text: str):
 
 class ChemBenchGenMetric(SQuADF1EMRecallMetric):
     """
-    SQuAD-style metric with numeric parsing for ChemBench mae/mse questions.
+    ChemBench generative task metric matching official evaluation.
 
-    For preferred_score in {"mae", "mse"}, treat numeric predictions as equal if the
-    parsed floats match within tolerance, so "6" == "6.0".
+    Implements binary all_correct scoring:
+    - exact_string_match: Binary exact string match after stripping whitespace
+    - mae/mse: Binary correctness with 1% relative tolerance (matches official ChemBench)
+
+    This matches the official ChemBench evaluation in metrics.py and prompter.py.
     """
-
-    _FLOAT_TOL = 1e-6
 
     def process_one_doc(self, group_lst) -> dict:
         base_result = super().process_one_doc(group_lst)
         doc = group_lst[0].get("doc", {})
         preferred_score = doc.get("preferred_score", "")
-        if preferred_score not in {"mae", "mse"}:
-            return base_result
+        target_text = doc.get("target", "")
 
+        # Extract prediction
         pred_text = None
         for item in group_lst:
             for key in ("pred", "prediction", "completion", "text", "response"):
@@ -132,21 +133,49 @@ class ChemBenchGenMetric(SQuADF1EMRecallMetric):
             if pred_text is not None:
                 break
 
-        target_text = doc.get("target", "")
-        pred_val = _extract_float(pred_text or "")
-        target_val = _extract_float(target_text)
-        if pred_val is None or target_val is None:
-            return base_result
+        if pred_text is None:
+            pred_text = ""
 
-        mae = abs(pred_val - target_val)
-        mse = (pred_val - target_val) ** 2
-        exact_match = 1 if mae <= self._FLOAT_TOL else 0
+        # Store raw values for debugging
+        base_result["pred_text"] = pred_text
+        base_result["target_text"] = target_text
+        base_result["preferred_score_type"] = preferred_score
 
-        for key in ("f1", "exact_match", "recall"):
-            if key in base_result:
-                base_result[key] = exact_match
-        base_result["mae"] = mae
-        base_result["mse"] = mse
+        # Compute all_correct based on preferred_score
+        if preferred_score in {"mae", "mse"}:
+            # Numeric questions: use 1% relative tolerance (matches official ChemBench)
+            pred_val = _extract_float(pred_text)
+            target_val = _extract_float(target_text)
+
+            if pred_val is None or target_val is None:
+                # Could not parse numbers, mark as incorrect
+                all_correct = 0
+                mae_val = float('inf')
+                mse_val = float('inf')
+            else:
+                mae_val = abs(pred_val - target_val)
+                mse_val = (pred_val - target_val) ** 2
+
+                # Official ChemBench uses 1% of target as tolerance
+                tolerance = 0.01 * abs(target_val) if target_val != 0 else 0.01
+                all_correct = 1 if mae_val < tolerance else 0
+
+            base_result["mae"] = mae_val
+            base_result["mse"] = mse_val
+        else:
+            # exact_string_match: binary exact match after stripping (matches official ChemBench)
+            pred_stripped = str(pred_text).strip()
+            target_stripped = str(target_text).strip()
+            all_correct = 1 if pred_stripped == target_stripped else 0
+            base_result["mae"] = None
+            base_result["mse"] = None
+
+        # Set all_correct as the primary metric (replaces F1/EM/recall)
+        base_result["all_correct"] = all_correct
+        base_result["exact_match"] = all_correct
+        base_result["f1"] = all_correct  # Override F1 with binary all_correct
+        base_result["recall"] = all_correct
+
         return base_result
 
 
@@ -252,10 +281,11 @@ class GenericChemBenchChoice(MultipleChoiceTask):
             doc for doc in self.dataset["train"]
             if self._is_choice_question(doc)
         ]
-        # logger.info(
-        #     f"ChemBench choice: Found {len(choice_docs)} multiple-choice questions "
-        #     f"out of {len(self.dataset['train'])} total"
-        # )
+        subfield = self.task_config.get("dataset_name", "unknown")
+        logger.info(
+            f"ChemBench Choice ({subfield}): Found {len(choice_docs)} multiple-choice questions "
+            f"out of {len(self.dataset['train'])} total"
+        )
         return list(map_indexed(self._process_doc, choice_docs))
 
     def fewshot_examples(self, k, rnd, doc):
@@ -429,7 +459,7 @@ class GenericChemBenchGen(Task):
         "dataset_name": None,  # subfield name
         "native_id_field": "uuid",
         "fewshot_source": None,
-        "primary_metric": "f1",  # Use F1/EM for string matching
+        "primary_metric": "all_correct",  # Binary accuracy (matches official ChemBench)
         "num_shots": 3,
         "split": "train",
         "context_kwargs": {},
@@ -461,8 +491,9 @@ class GenericChemBenchGen(Task):
             doc for doc in self.dataset["train"]
             if self._is_gen_question(doc)
         ]
+        subfield = self.task_config.get("dataset_name", "unknown")
         logger.info(
-            f"ChemBench Gen: Found {len(gen_docs)} open-ended questions "
+            f"ChemBench Gen ({subfield}): Found {len(gen_docs)} open-ended questions "
             f"out of {len(self.dataset['train'])} total"
         )
         return list(map_indexed(self._process_doc, gen_docs))
