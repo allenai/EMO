@@ -100,7 +100,7 @@ class LogMoeCallback(TrainerCallback):
         if use_dist:
             # clone so we can reset the window without affecting the reduced value
             lb_reduced = lb.detach().clone()
-            dist.reduce(lb_reduced, dst=0, op=dist.ReduceOp.SUM)
+            dist.reduce(lb_reduced, dst=0, op=dist.ReduceOp.AVG) # reduce by averaging across DP ranks
         else:
             lb_reduced = lb
 
@@ -108,7 +108,7 @@ class LogMoeCallback(TrainerCallback):
         ce = self._window_ce_sum
         if use_dist:
             ce_reduced = ce.detach().clone()
-            dist.reduce(ce_reduced, dst=0, op=dist.ReduceOp.SUM)
+            dist.reduce(ce_reduced, dst=0, op=dist.ReduceOp.AVG) # reduce by averaging across DP ranks
         else:
             ce_reduced = ce
 

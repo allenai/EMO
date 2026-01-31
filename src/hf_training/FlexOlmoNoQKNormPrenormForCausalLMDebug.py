@@ -149,7 +149,7 @@ def load_balancing_loss_func_olmoe(
     top_k=2,
     attention_mask: Optional[torch.Tensor] = None,
     labels: Optional[torch.Tensor] = None,
-    num_items_in_batch: Optional[torch.Tensor] = None,
+    num_items_in_batch: Optional[torch.Tensor] = None, # the number of tokens within a local batch (for gradient accumulation calc)
     ignore_index = -100,
 ) -> Union[torch.Tensor, int]:
     r"""
@@ -212,9 +212,7 @@ def load_balancing_loss_func_olmoe(
         )
 
         # Compute the percentage of tokens routed to each experts
-        frequency_total = num_items_in_batch * top_k # total number of tokens in full batch (not just local batch) times top_k
-        # frequency_total is used to replace torch.sum(expert_attention_mask, dim=(1,2)) to allow normalization across gradient accumulatio steps
-        frequency_per_expert = torch.sum(expert_counts_onehot.float() * expert_attention_mask, dim=(1, 2)) / frequency_total
+        frequency_per_expert = torch.sum(expert_counts_onehot.float() * expert_attention_mask, dim=(1, 2)) / torch.sum(expert_attention_mask, dim=(1,2)) # shape: (num_hidden_layers, num_experts)
 
         # Compute the mask that masks all padding tokens as 0 with the same shape of frequency_per_expert
         router_per_expert_attention_mask = (
@@ -224,14 +222,13 @@ def load_balancing_loss_func_olmoe(
             .to(compute_device)
         )
 
-        prob_total = num_items_in_batch # total number of tokens in full batch (not just local batch)
-        # prob_total is used to replace torch.sum(router_per_expert_attention_mask, dim=1) to allow normalization across gradient accumulatio steps
-        # Compute the average probability of routing to these experts
-        prob_per_expert = torch.sum(routing_weights * router_per_expert_attention_mask, dim=1) / prob_total
+        prob_per_expert = torch.sum(routing_weights * router_per_expert_attention_mask, dim=1) / torch.sum(router_per_expert_attention_mask, dim=1)  # shape: (num_hidden_layers, num_experts)
 
     overall_loss = torch.sum(
         frequency_per_expert * prob_per_expert
     )
+
+    overall_loss = overall_loss / num_items_in_batch # this will help average over gradient accumulation steps
 
     overall_loss = overall_loss * num_experts / concatenated_gate_logits.shape[0] # times num_experts according to lb equation, divide by num_hidden_layers to get average over layers (which is how olmo-core is implemented to make loss agnostic to number of layers)
 
