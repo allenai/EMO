@@ -65,7 +65,7 @@ class TrainerDebug(Trainer):
             # print the loss if we are on rank 0 of the distributed setup
             if self.accelerator.is_main_process:
                 print(f"1 loss is {loss}")
-                print(f"1 outputs: {outputs}")
+                print(f"1 outputs.loss: {outputs.loss}, outputs.lb_loss: {outputs.lb_loss}, outputs.ce_loss: {outputs.ce_loss}")
 
         if (
             self.args.average_tokens_across_devices
@@ -75,7 +75,7 @@ class TrainerDebug(Trainer):
             loss *= self.accelerator.num_processes if self.args.n_gpu <= 1 else self.args.n_gpu
             if self.accelerator.is_main_process:
                 print(f"2 loss is {loss}")
-                print(f"2 outputs: {outputs}")
+                print(f"2 outputs.loss: {outputs.loss}, outputs.lb_loss: {outputs.lb_loss}, outputs.ce_loss: {outputs.ce_loss}")
 
         return (loss, outputs) if return_outputs else loss
 
