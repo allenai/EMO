@@ -221,8 +221,8 @@ def load_balancing_loss_func_olmoe(
             .to(compute_device)
         )
 
-        prob_per_expert = torch.sum(routing_weights * router_per_expert_attention_mask, dim=1) / torch.sum(router_per_expert_attention_mask, dim=1)  # shape: (num_hidden_layers, num_experts)
-        breakpoint()
+        # average the probability across valid tokens
+        prob_per_expert = torch.sum(routing_weights * router_per_expert_attention_mask, dim=1) / torch.sum(attention_mask)  # shape: (num_hidden_layers, num_experts)
 
     overall_loss = torch.sum(
         counts_per_expert * prob_per_expert
