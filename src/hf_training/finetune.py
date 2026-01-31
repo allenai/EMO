@@ -27,6 +27,8 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import torch
+
+from hf_training.TrainerDebug import TrainerDebug
 from transformers.integrations import WandbCallback
 
 from hf_training.FlexOlmoNoQKNormPrenormForCausalLMDebug import FlexOlmoNoQKNormPrenormForCausalLMDebug
@@ -205,7 +207,8 @@ def finetune(config: FinetuneConfig):
     )
 
     # Initialize trainer
-    trainer = Trainer(
+    # DEBUG
+    trainer = TrainerDebug(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
