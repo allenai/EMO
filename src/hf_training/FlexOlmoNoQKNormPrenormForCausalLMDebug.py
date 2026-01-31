@@ -105,7 +105,6 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormForCausalLM
 
         loss = None
         ce_loss = None
-        breakpoint()
         if labels is not None:
             ce_loss = self.loss_function(logits, labels, self.vocab_size, **kwargs)
             loss = ce_loss
@@ -191,7 +190,7 @@ def load_balancing_loss_func_olmoe(
     if attention_mask is None and labels is None:
 
         # Compute the percentage of tokens routed to each experts
-        frequency_per_expert = torch.mean(expert_counts_onehot.float(), dim=(1, 2))  # shape: (num_hidden_layers, num_experts)
+        counts_per_expert = torch.mean(expert_counts_onehot.float(), dim=(1, 2))  # shape: (num_hidden_layers, num_experts)
 
         # Compute the average probability of routing to these experts
         prob_per_expert = torch.mean(routing_weights, dim=1)  # shape: (num_hidden_layers, num_experts)
@@ -211,7 +210,8 @@ def load_balancing_loss_func_olmoe(
         )
 
         # Compute the percentage of tokens routed to each experts
-        frequency_per_expert = torch.sum(expert_counts_onehot.float() * expert_attention_mask, dim=(1, 2)) / torch.sum(expert_attention_mask, dim=(1,2)) # shape: (num_hidden_layers, num_experts)
+        # frequency_per_expert = torch.sum(expert_counts_onehot.float() * expert_attention_mask, dim=(1, 2)) / torch.sum(expert_attention_mask, dim=(1,2)) # shape: (num_hidden_layers, num_experts)
+        counts_per_expert = torch.sum(expert_counts_onehot.float() * expert_attention_mask, dim=(1, 2))
 
         # Compute the mask that masks all padding tokens as 0 with the same shape of frequency_per_expert
         router_per_expert_attention_mask = (
@@ -224,10 +224,11 @@ def load_balancing_loss_func_olmoe(
         prob_per_expert = torch.sum(routing_weights * router_per_expert_attention_mask, dim=1) / torch.sum(router_per_expert_attention_mask, dim=1)  # shape: (num_hidden_layers, num_experts)
 
     overall_loss = torch.sum(
-        frequency_per_expert * prob_per_expert
+        counts_per_expert * prob_per_expert
     )
 
-    overall_loss = overall_loss / num_items_in_batch # this will help average over gradient accumulation steps
+    # we follow olmo-core and use counts for dot product instead of frequency, and divide by total number token across gradient accumulation steps
+    overall_loss = overall_loss / (num_items_in_batch * top_k)
 
     overall_loss = overall_loss * num_experts / concatenated_gate_logits.shape[0] # times num_experts according to lb equation, divide by num_hidden_layers to get average over layers (which is how olmo-core is implemented to make loss agnostic to number of layers)
 
