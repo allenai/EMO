@@ -121,7 +121,7 @@ def finetune(config: FinetuneConfig):
     logger.info(f"Loading model from {config.model_path}")
     tokenizer = AutoTokenizer.from_pretrained(config.model_path)
     # DEBUG
-    model = FlexOlmoNoQKNormPrenormForCausalLMDebug.from_pretrained(
+    model = AutoModelForCausalLM.from_pretrained(
         config.model_path,
         torch_dtype=torch.bfloat16 if config.bf16 else torch.float32,
         attn_implementation="flash_attention_2",
@@ -208,7 +208,7 @@ def finetune(config: FinetuneConfig):
 
     # Initialize trainer
     # DEBUG
-    trainer = TrainerDebug(
+    trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
