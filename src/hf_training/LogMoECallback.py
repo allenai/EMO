@@ -93,7 +93,6 @@ class LogMoeCallback(TrainerCallback):
                 and dist.is_initialized()
                 and dist.get_world_size() > 1
         )
-        print(use_dist)
 
         # --- LB ---
         lb = self._window_lb_sum

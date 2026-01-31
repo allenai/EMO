@@ -105,13 +105,12 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormForCausalLM
 
         loss = None
         ce_loss = None
+        breakpoint()
         if labels is not None:
             ce_loss = self.loss_function(logits, labels, self.vocab_size, **kwargs)
             loss = ce_loss
 
         lb_loss = None
-
-        print(f'num_items_in_batch = {kwargs["num_items_in_batch"]}')
 
         if output_router_logits:
             lb_loss = load_balancing_loss_func_olmoe(
