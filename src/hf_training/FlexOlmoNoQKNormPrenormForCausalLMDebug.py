@@ -147,7 +147,7 @@ def load_balancing_loss_func_olmoe(
     top_k=2,
     attention_mask: Optional[torch.Tensor] = None,
     labels: Optional[torch.Tensor] = None,
-    num_items_in_batch: Optional[torch.Tensor] = None, # the number of tokens within a local batch (for gradient accumulation calc)
+    num_items_in_batch: Optional[torch.Tensor] = None, # the number of tokens within a global batch (including across dp ranks)
     ignore_index = -100,
 ) -> Union[torch.Tensor, int]:
     r"""
