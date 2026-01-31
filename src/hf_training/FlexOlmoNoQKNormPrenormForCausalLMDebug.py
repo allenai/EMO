@@ -228,8 +228,10 @@ def load_balancing_loss_func_olmoe(
         counts_per_expert * prob_per_expert
     )
 
+    breakpoint()
     # we follow olmo-core and use counts for dot product instead of frequency, and divide by total number token across gradient accumulation steps
     overall_loss = overall_loss / (num_items_in_batch * top_k)
+
 
     overall_loss = overall_loss * num_experts / concatenated_gate_logits.shape[0] # times num_experts according to lb equation, divide by num_hidden_layers to get average over layers (which is how olmo-core is implemented to make loss agnostic to number of layers)
 
