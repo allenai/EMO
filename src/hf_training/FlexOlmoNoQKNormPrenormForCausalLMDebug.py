@@ -228,16 +228,10 @@ def load_balancing_loss_func_olmoe(
         counts_per_expert * prob_per_expert
     )
 
-    print(f"overall_loss v1 = {overall_loss}")
-    print(f"micro_batch_size = {torch.sum(attention_mask)}")
-    print(f"num_items_in_batch = {num_items_in_batch}")
     # we follow olmo-core and use counts for dot product instead of frequency, and divide by total number token across gradient accumulation steps
     overall_loss = overall_loss / (num_items_in_batch * top_k)
-    print(f"overall_loss v2 = {overall_loss}")
 
     overall_loss = overall_loss * num_experts / concatenated_gate_logits.shape[0] # times num_experts according to lb equation, divide by num_hidden_layers to get average over layers (which is how olmo-core is implemented to make loss agnostic to number of layers)
-
-    print(f"overall_loss v3 = {overall_loss}")
 
     return overall_loss
 
