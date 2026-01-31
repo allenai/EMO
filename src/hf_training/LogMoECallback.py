@@ -120,6 +120,7 @@ class LogMoeCallback(TrainerCallback):
         self._globalstep_last_logged = state.global_step
 
         # Only rank 0 writes logs (and only if logs dict exists)
+        breakpoint()
         if state.is_world_process_zero and logs is not None:
             logs[f"train/{self.lb_loss_key}"] = lb_reduced.item()
             logs[f"train/{self.ce_loss_key}"] = ce_reduced.item() / max(1, steps_since)
