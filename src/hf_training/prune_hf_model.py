@@ -222,7 +222,7 @@ def prune_hf_model(
     # Load model
     logger.info(f"Loading model: {model_name}")
     config = AutoConfig.from_pretrained(model_name)
-    model = FlexOlmoNoQKNormPrenormForCausalLMDebug.from_pretrained(
+    model = AutoModelForCausalLM.from_pretrained(
         model_name,
         config=config,
         torch_dtype=torch.bfloat16,

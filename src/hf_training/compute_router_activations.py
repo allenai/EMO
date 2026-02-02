@@ -22,6 +22,8 @@ from typing import List, Optional
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
+
+from hf_training.FlexOlmoNoQKNormPrenormForCausalLMDebug import FlexOlmoNoQKNormPrenormForCausalLMDebug
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from src.hf_training.data_utils import get_formatted_prompts
@@ -56,7 +58,7 @@ def compute_router_activations(
     """
     logger.info(f"Loading model: {model_name}")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(
+    model = FlexOlmoNoQKNormPrenormForCausalLMDebug.from_pretrained(
         model_name,
         device_map="auto" if device is None else device,
         torch_dtype="auto",
