@@ -64,7 +64,9 @@ MODELS=(
     # freeze-fix-moe1b14b_132experts_4trained_math_init_top2_average_noise_20B_lr_4e-4/step4769-hf
     # freeze-fix-twolevel_130experts_2trained_math_init_average_noise_10pc_5B_lr_4e-4/step1193-hf
     # freeze-fix-twolevel_130experts_2trained_math_init_top2_average_noise_5B_lr_4e-4/step1193-hf
-    freeze-fix-moe1b14b_136experts_8trained_math_init_top2_average_noise_20B_lr_4e-4/step4769-hf
+    # freeze-fix-moe1b14b_136experts_8trained_math_init_top2_average_noise_20B_lr_4e-4/step4769-hf
+
+    freeze-fix-moe1b14b_132experts_4trained_math_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
 
 
 
