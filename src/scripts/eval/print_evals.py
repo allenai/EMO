@@ -237,10 +237,20 @@ def map_mmlu_subcat(subtask):
 def avg_tasks(results, label, task_names):
     """Average scores across multiple tasks into a single metric."""
     for model_name in results:
-        if np.all([task_name in results[model_name] for task_name in task_names]):
-            results[model_name][label] = np.mean(
-                [results[model_name][task_name] for task_name in task_names]
-            )
+        # Collect valid (non-None, non-N/A) scores for averaging
+        valid_scores = [
+            results[model_name][task_name]
+            for task_name in task_names
+            if task_name in results[model_name]
+            and results[model_name][task_name] is not None
+            and results[model_name][task_name] != "N/A"
+        ]
+        # Only compute average if we have at least one valid score
+        if valid_scores:
+            results[model_name][label] = np.mean(valid_scores)
+        else:
+            results[model_name][label] = None  # No valid scores to average
+        # Remove individual task scores after averaging
         for task_name in task_names:
             if task_name in results[model_name]:
                 del results[model_name][task_name]
@@ -268,8 +278,10 @@ def main(args):
 
     if not args.load_cache:
         updated = False
+        # Track number of instances per task per model for comparability checking
+        num_instances_tracker = defaultdict(lambda: defaultdict(int))
 
-        def _add_to_results(model_name, task_name, score):
+        def _add_to_results(model_name, task_name, score, num_instances=None):
             if model_name not in results:
                 results[model_name] = {}
             if task_name in results[model_name]:
@@ -281,6 +293,10 @@ def main(args):
                     exit()
             else:
                 results[model_name][task_name] = score
+
+            # Track num_instances if provided
+            if num_instances is not None:
+                num_instances_tracker[task_name][model_name] = num_instances
 
         # Model directory discovery
         # Check if base_dir itself contains metrics files
@@ -329,7 +345,8 @@ def main(args):
                 task_name = metric["task_name"]
                 metrics = metric["metrics"]
                 score = metrics["primary_score"]
-                _add_to_results(model_name, task_name, score)
+                num_instances = metric.get("num_instances", None)
+                _add_to_results(model_name, task_name, score, num_instances)
 
                 visited_paths.add(metric_path)
                 updated = True
@@ -337,6 +354,22 @@ def main(args):
         if updated:
             with open("cached_results.pkl", "wb") as f_out:
                 pkl.dump([results, visited_paths], f_out)
+
+        # Check for tasks with inconsistent number of examples across models
+        print("\n=== Checking task comparability ===")
+        has_warnings = False
+        for task_name, model_counts in num_instances_tracker.items():
+            if len(model_counts) > 1:  # Only check if multiple models have this task
+                counts = list(model_counts.values())
+                if len(set(counts)) > 1:  # Different counts exist
+                    has_warnings = True
+                    print(f"\n⚠️  WARNING: Task '{task_name}' has different numbers of examples:")
+                    for model_name, count in sorted(model_counts.items()):
+                        print(f"   - {model_name}: {count} examples")
+
+        if not has_warnings:
+            print("✓ All tasks have consistent numbers of examples across models")
+        print()
 
     # Common task groupings
     core9_tasks = [
@@ -448,6 +481,16 @@ def main(args):
         if chembench_rc_tasks:
             results = avg_tasks(results, "chembench:rc", chembench_rc_tasks)
 
+    if args.avg_legalbench:
+        # All LegalBench tasks use RC (ranked classification) evaluation
+        # Aggregate all ~110 classification tasks into a single score
+        legalbench_tasks = [
+            task_name for task_name in task_names
+            if task_name.startswith("legalbench_") and ":rc" in task_name
+        ]
+        if legalbench_tasks:
+            results = avg_tasks(results, "legalbench:rc", legalbench_tasks)
+
     if args.avg_code:
         code_tasks = [
             task_name
@@ -536,9 +579,13 @@ def main(args):
     # Compute best scores for highlighting
     best_results = {}
     for task_name in task_names:
-        best_results[task_name] = np.max(
-            [_results.get(task_name, -1) for _results in results.values()]
-        )
+        # Filter out None and N/A values when computing best score
+        valid_scores = [
+            _results.get(task_name, -1)
+            for _results in results.values()
+            if _results.get(task_name) is not None and _results.get(task_name) != "N/A"
+        ]
+        best_results[task_name] = np.max(valid_scores) if valid_scores else -1
 
     def format_model_name(model):
         """Format model name for display. Applies nicknames if configured."""
@@ -552,8 +599,11 @@ def main(args):
 
     def format_number(v, task_name):
         """Format score with best result highlighting."""
-        is_best = np.abs(v - best_results[task_name]) < 0.001 if v is not None else False
-        v = f"{v:.3f}" if v is not None else "-"
+        # Handle None, "N/A", or missing scores
+        if v is None or v == "N/A":
+            return "N/A"
+        is_best = np.abs(v - best_results[task_name]) < 0.001
+        v = f"{v:.3f}"
         return colored(v, "red") if is_best else v
 
     def format_task(name):
@@ -619,7 +669,10 @@ def main(args):
                         row = [format_model_name(model)]
                         for task in task_names:
                             value = results[model].get(task, None)
-                            row.append(f"{value:.3f}" if value is not None else "-")
+                            if value is None or value == "N/A":
+                                row.append("N/A")
+                            else:
+                                row.append(f"{value:.3f}")
                         writer.writerow(row)
                 else:
                     header = ["Task"] + [format_model_name(m) for m in model_names]
@@ -628,7 +681,10 @@ def main(args):
                         row = [format_task(task)]
                         for m in model_names:
                             value = results[m].get(task, None)
-                            row.append(f"{value:.3f}" if value is not None else "-")
+                            if value is None or value == "N/A":
+                                row.append("N/A")
+                            else:
+                                row.append(f"{value:.3f}")
                         writer.writerow(row)
 
             print(f"Exported results to {args.export_csv}")
@@ -724,6 +780,7 @@ Examples:
     parser.add_argument("--avg-ruler", action="store_true", help="Average RULER tasks")
     parser.add_argument("--avg-sciriff", action="store_true", help="Average SciRIFF tasks")
     parser.add_argument("--avg-chembench", action="store_true", help="Average ChemBench tasks")
+    parser.add_argument("--avg-legalbench", action="store_true", help="Average LegalBench tasks")
     parser.add_argument("--avg-code", action="store_true", help="Average coding tasks")
     parser.add_argument("--avg-all", action="store_true", help="Average all tasks into a single score")
 
@@ -763,6 +820,7 @@ Examples:
         args.avg_ruler = True
         args.avg_sciriff = True
         args.avg_chembench = True
+        args.avg_legalbench = True
         args.avg_code = True
 
     main(args)
