@@ -190,7 +190,7 @@ for MODEL in "${MODELS[@]}"; do
         echo "  epochs: ${num_epochs}"
 
         bash scripts/hf_finetune_with_pruning.sh \
-                --model ${BASE_DIR}/${MODEL} \
+                --model ${BASE_DIR}/models/${MODEL} \
                 --task ${TASK} \
                 --prune-keep-k ${prune_keep_k} \
                 --base-dir "${BASE_DIR}/prune_evals" \
