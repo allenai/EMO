@@ -228,6 +228,19 @@ def load_balancing_loss_func_olmoe(
         counts_per_expert * prob_per_expert
     )
 
+    # Fallback when num_items_in_batch isn't provided (e.g., manual forward calls)
+    if num_items_in_batch is None:
+        if labels is not None:
+            num_items_in_batch = (labels != ignore_index).sum()
+        elif attention_mask is not None:
+            num_items_in_batch = attention_mask.sum()
+        else:
+            # fall back to total tokens in batch/seq from gate logits
+            num_items_in_batch = gate_logits[0].shape[0]
+
+        if torch.is_tensor(num_items_in_batch):
+            num_items_in_batch = num_items_in_batch.to(compute_device)
+
     # we follow olmo-core and use counts for dot product instead of frequency, and divide by total number token across gradient accumulation steps
     overall_loss = overall_loss / (num_items_in_batch * top_k)
 
