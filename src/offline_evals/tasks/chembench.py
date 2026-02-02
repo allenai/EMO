@@ -117,23 +117,22 @@ class ChemBenchGenMetric(SQuADF1EMRecallMetric):
     This matches the official ChemBench evaluation in metrics.py and prompter.py.
     """
 
+    def __init__(self, metric_names: List[str] = None, **kwargs):
+        # Add 'all_correct' to the metric names so it gets aggregated
+        if metric_names is None:
+            metric_names = ["exact_match", "f1", "recall", "all_correct"]
+        super().__init__(metric_names=metric_names, **kwargs)
+
     def process_one_doc(self, group_lst) -> dict:
         base_result = super().process_one_doc(group_lst)
         doc = group_lst[0].get("doc", {})
         preferred_score = doc.get("preferred_score", "")
         target_text = doc.get("target", "")
 
-        # Extract prediction
-        pred_text = None
-        for item in group_lst:
-            for key in ("pred", "prediction", "completion", "text", "response"):
-                if isinstance(item.get(key), str) and item.get(key).strip():
-                    pred_text = item.get(key)
-                    break
-            if pred_text is not None:
-                break
-
-        if pred_text is None:
+        # Extract prediction - use same method as parent class
+        try:
+            pred_text = group_lst[0]["model_resps"]["continuation"]
+        except (KeyError, IndexError):
             pred_text = ""
 
         # Store raw values for debugging
@@ -170,11 +169,8 @@ class ChemBenchGenMetric(SQuADF1EMRecallMetric):
             base_result["mae"] = None
             base_result["mse"] = None
 
-        # Set all_correct as the primary metric (replaces F1/EM/recall)
+        # Add all_correct as the primary metric (keep F1/EM/recall from parent)
         base_result["all_correct"] = all_correct
-        base_result["exact_match"] = all_correct
-        base_result["f1"] = all_correct  # Override F1 with binary all_correct
-        base_result["recall"] = all_correct
 
         return base_result
 
