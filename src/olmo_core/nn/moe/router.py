@@ -590,17 +590,12 @@ class MoERouter(nn.Module):
 
             # we first filter out the padding tokens (also includes masked tokens)
             if padding_mask is not None:
-                padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
-                valid_expert_indices = expert_indices.masked_select(padding_mask_expanded).view(
-                    -1, expert_indices.size(-1)
-                )
-                padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
-                valid_scores = scores.masked_select(padding_mask_expanded).view(
-                    -1, self.num_experts
-                )
-                valid_logits = logits.masked_select(padding_mask_expanded).view(
-                    -1, self.num_experts
-                )
+                # Use boolean indexing instead of masked_select to avoid a CUDA sync
+                # when calling .view(-1, ...) on the variable-length output.
+                # padding_mask: (batch_size, seq_len) -> index into dim 0,1
+                valid_expert_indices = expert_indices[padding_mask]  # (valid_tokens, top_k)
+                valid_scores = scores[padding_mask]  # (valid_tokens, num_experts)
+                valid_logits = logits[padding_mask]  # (valid_tokens, num_experts)
 
                 # (valid_tokens, num_experts)
                 batched_batch_size_per_expert = ops.batched_histc(
