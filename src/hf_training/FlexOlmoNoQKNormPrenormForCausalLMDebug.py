@@ -228,7 +228,6 @@ def load_balancing_loss_func_olmoe(
         counts_per_expert * prob_per_expert
     )
 
-    breakpoint()
     # Fallback when num_items_in_batch isn't provided (e.g., manual forward calls)
     if num_items_in_batch is None:
         if labels is not None:
