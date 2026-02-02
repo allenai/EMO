@@ -285,7 +285,7 @@ for checkpoint in "${all_checkpoints[@]}"; do
         --model-type hf \
         --task "$TASK-pruned" \
         --pruned_split "test" \
-        --remote-output-dir "s3://ai2-sewonm/ryanwang/evals/${RELATIVE_DIR}/eval_results" \
+        --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals/${RELATIVE_DIR}/eval_results" \
         --batch-size $BATCH_SIZE \
         --gpus "$NUM_GPUS"
 
