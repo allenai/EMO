@@ -346,7 +346,6 @@ def get_oe_task_name(task_name, split):
     Returns:
         Formatted task string
     """
-
     return f"{task_name}:rc_{split}::olmes"
 
 
