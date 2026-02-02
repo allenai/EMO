@@ -8,6 +8,8 @@ import subprocess
 import sys
 from typing import List
 
+from src.hf_training.data_utils import get_oe_task_name
+
 ## This is the main launching script for running evaluations.
 ## It should have minimal dependencies so it can run without installing extra packages
 
@@ -95,6 +97,9 @@ _parser.add_argument(
 )
 _parser.add_argument(
     "--split", type=str, default=None, help="Override evaluation split used for each task"
+)
+_parser.add_argument(
+    "--pruned_split", type=str, default=None, help="used to find the name of the task split. Only used when the task name ends with -pruned"
 )
 _parser.add_argument(
     "--use-chat-format", type=bool, default=None, help="Override use_chat_format each task"
@@ -303,7 +308,13 @@ def launch_eval(args_dict: dict):
     all_tasks = []
     task_suite_parent: dict = {}
     for task in tasks:
-        all_tasks += resolve_task_suite(task, task_suite_parent)
+        if task.endswith("-pruned"):
+            task = task[:-7]
+            pruned_split = args_dict["pruned_split"]
+            updated_task_name = get_oe_task_name(task, pruned_split)
+        else:
+            updated_task_name = task
+        all_tasks += resolve_task_suite(updated_task_name, task_suite_parent)
     for task in all_tasks:
         if task.endswith(".jsonl"):
             task_configs += load_jsonl(task)

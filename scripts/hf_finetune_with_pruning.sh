@@ -22,7 +22,8 @@ set -e
 MODEL=""
 TASK=""
 PRUNE_KEEP_K=4
-OUTPUT_DIR=""
+RELATIVE_DIR=""
+BASE_DIR=""
 NUM_GPUS=1
 NUM_EPOCHS=3
 NUM_CHECKPOINTS=5
@@ -49,10 +50,14 @@ while [[ $# -gt 0 ]]; do
             PRUNE_KEEP_K="$2"
             shift 2
             ;;
-        --output-dir)
-            OUTPUT_DIR="$2"
+        --relative-dir)
+            RELATIVE_DIR="$2"
             shift 2
             ;;
+        --base-dir)
+          BASE_DIR="$2"
+          shift 2
+          ;;
         --num-gpus)
             NUM_GPUS="$2"
             shift 2
@@ -133,16 +138,23 @@ if [ -z "$TASK" ]; then
     exit 1
 fi
 
-if [ -z "$OUTPUT_DIR" ]; then
-    echo "Error: --output-dir is required"
+if [ -z "$RELATIVE_DIR" ]; then
+    echo "Error: --relative-dir is required"
     exit 1
 fi
 
-# check that $TASK is a substring of $OUTPUT_DIR
-if [[ "$OUTPUT_DIR" != *"$TASK"* ]]; then
-    echo "ERROR: --output-dir does not contain the task name '$TASK'"
+if [ -z "$BASE_DIR" ]; then
+    echo "Error: --base-dir is required"
     exit 1
 fi
+
+# check that $TASK is a substring of $RELATIVE_DIR
+if [[ "$RELATIVE_DIR" != *"$TASK"* ]]; then
+    echo "ERROR: --relative-dir does not contain the task name '$TASK'"
+    exit 1
+fi
+
+OUTPUT_DIR="${BASE_DIR}/${RELATIVE_DIR}"
 
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
@@ -153,7 +165,7 @@ if [ -z "$ACTIVATION_FILE" ]; then
 fi
 
 if [ -z "$PRUNED_MODEL" ]; then
-    PRUNED_MODEL="${OUTPUT_DIR}/pruned_model/"
+    PRUNED_MODEL="${OUTPUT_DIR}/pruned_model"
 fi
 
 FINETUNED_MODEL="${OUTPUT_DIR}/finetuned_model"
@@ -235,6 +247,12 @@ else
     FSDP_FLAG="--no-fsdp"
 fi
 
+# set correct wandb environment variables
+export WANDB_PROJECT="olmoe-modular"
+export WANDB_ENTITY="ryanyxw"
+# optional:
+export WANDB_TAGS="${TASK:0:64}, ${MODEL:0:64}"
+
 torchrun --nproc_per_node="$NUM_GPUS" \
     -m src.hf_training.finetune \
     --model "$PRUNED_MODEL" \
@@ -246,6 +264,27 @@ torchrun --nproc_per_node="$NUM_GPUS" \
     --learning-rate "$LEARNING_RATE" \
     --run-name "$RUN_NAME" \
     $FSDP_FLAG
+
+
+echo ""
+echo "Step 4: evals..."
+echo "========================================"
+
+# find all the checkpoints in the finetuned model directory and evaluate each one
+all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
+
+for checkpoint in "${all_checkpoints[@]}"; do
+    echo "Evaluating checkpoint: $checkpoint"
+    python -u src.scripts/eval/launch_eval.py \
+        --model_path "$checkpoint" \
+        --model-type hf \
+        --task "$TASK-pruned" \
+        --pruned_split "test" \
+        --remote-output-dir "s3://ai2-sewonm/ryanwang/evals/${RELATIVE_DIR}/eval_results" \
+        --batch-size $BATCH_SIZE \
+        --gpus "$NUM_GPUS"
+
+done
 
 echo ""
 echo "========================================"

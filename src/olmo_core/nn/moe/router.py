@@ -691,9 +691,6 @@ class MoERouter(nn.Module):
                 assert self.score_bias_batch_size_per_expert is not None
                 self.score_bias_batch_size_per_expert += batch_size_per_expert
 
-        # TODOTODOTODOTODOTODOJKDLSJFKLDJLS
-        # check whether we should be passing in the original unchanged expert_indices and expert_weights (i.e does masking happen for CE already)
-
         return expert_weights, expert_indices, batch_size_per_expert_routing, aux_loss
 
     def apply_tp(self, tp_mesh: DeviceMesh, float8_enabled: bool = False):

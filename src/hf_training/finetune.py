@@ -120,7 +120,6 @@ def finetune(config: FinetuneConfig):
     """Run finetuning with the given configuration."""
     logger.info(f"Loading model from {config.model_path}")
     tokenizer = AutoTokenizer.from_pretrained(config.model_path)
-    # DEBUG
     model = AutoModelForCausalLM.from_pretrained(
         config.model_path,
         torch_dtype=torch.bfloat16 if config.bf16 else torch.float32,
@@ -207,7 +206,6 @@ def finetune(config: FinetuneConfig):
     )
 
     # Initialize trainer
-    # DEBUG
     trainer = Trainer(
         model=model,
         args=training_args,
