@@ -46,6 +46,7 @@ class DataMix(DataMixBase):
 
     mj_finemath4plus = "mj_finemath4plus"
     mose_code_mix = "mose_code_mix"
+    starcoder = "starcoder"
 
     @classmethod
     def _missing_(cls, value: object) -> "DataMix | None":
