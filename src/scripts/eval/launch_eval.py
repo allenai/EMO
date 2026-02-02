@@ -57,8 +57,8 @@ from oe_eval.utils import (
 
 # from oe_eval.configs.task_suites import TASK_SUITE_CONFIGS
 # from oe_eval.configs.tasks import TASK_CONFIGS
-from task_suites import get_task_suite_configs
-from tasks import get_task_configs
+from src.scripts.eval.task_suites import get_task_suite_configs
+from src.scripts.eval.tasks import get_task_configs
 
 TASK_SUITE_CONFIGS = get_task_suite_configs()
 TASK_CONFIGS = get_task_configs()
