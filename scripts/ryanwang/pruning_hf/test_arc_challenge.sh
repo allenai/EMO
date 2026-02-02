@@ -2,7 +2,7 @@
 
 # Configuration
 #BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
-MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
+BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 MODELS=(
     "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
@@ -43,7 +43,7 @@ TASK_GROUPS_LIST=(
 #  "mmlu_geography"
 #  "mmlu_health"
 #  "mmlu_history"
-  "mmlu_law"
+#  "mmlu_law"
 #  "mmlu_math"
 #  "mmlu_other"
 #  "mmlu_philosophy_cat"
@@ -173,7 +173,7 @@ for MODEL in "${MODELS[@]}"; do
         relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}"
         job_name="eval-$(echo $relative_dir | sed 's/[^a-zA-Z0-9_-]//g')"
 
-        echo "  Model name: $model"
+        echo "  Model name: ${BASE_DIR}/${MODEL}"
         echo "  GPUs: $gpus"
         echo "  Batch size: $batch_size"
         echo "  Job name: $job_name"
