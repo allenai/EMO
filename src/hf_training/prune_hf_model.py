@@ -247,7 +247,6 @@ def prune_hf_model(
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
 
-    breakpoint()
     # update the model configs accordingly
     if model.config.num_experts_per_tok > prune_keep_k:
         model.config.num_experts_per_tok = prune_keep_k
