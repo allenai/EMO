@@ -133,6 +133,11 @@ if [ -z "$MODEL" ] && [ "$SKIP_ACTIVATION" = false ]; then
     exit 1
 fi
 
+if [ "$SKIP_PRUNE" = true ] && [ -z "$PRUNED_MODEL" ]; then
+    echo "Error: --pruned-model is required when --skip-prune is set"
+    exit 1
+fi
+
 if [ -z "$TASK" ]; then
     echo "Error: --task is required"
     exit 1

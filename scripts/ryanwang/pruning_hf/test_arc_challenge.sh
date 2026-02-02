@@ -192,12 +192,10 @@ for MODEL in "${MODELS[@]}"; do
         bash scripts/hf_finetune_with_pruning.sh \
                 --model ${BASE_DIR}/${MODEL} \
                 --task ${TASK} \
-                --prune-keep-k 16 \
-                --base-dir ${BASE_DIR}/evals \
+                --prune-keep-k ${prune_keep_k} \
+                --base-dir "${BASE_DIR}/prune_evals" \
                 --relative-dir ${relative_dir} \
                 --num-gpus $gpus \
-                --skip-activation \
-                --skip-prune \
                 --run-name ${job_name} \
                 --learning-rate ${lr} \
                 --batch-size ${batch_size} \
