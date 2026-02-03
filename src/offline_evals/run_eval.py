@@ -552,6 +552,10 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
             activations = json.loads(line)["avg_router_probabilities"]
         limit_expert_usage(model, activations, pruning_configs["prune_keep_k"])
 
+    # if we use a moe model, set output_router_logits to False during inference (or stuff breaks cuz of weird generation tricks)
+    if hasattr(model.config, "output_router_logits"):
+        model.config.output_router_logits = False
+
     return model
 
 
