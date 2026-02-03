@@ -218,6 +218,18 @@ def finetune(config: FinetuneConfig):
     trainer.add_callback(LogMoeCallback())
     trainer.add_callback(WandbCallback())
 
+    # save the 0th checkpoint for simpler eval stuff
+    logger.info("Saving step-0 checkpoint...")
+    ckpt0_dir = os.path.join(config.output_dir, "checkpoint-0")
+    trainer.save_model(ckpt0_dir)
+    # ensure optimizer + scheduler + trainer_state are saved too
+    trainer.state.global_step = 0
+    trainer._save_checkpoint(
+        model=trainer.model,
+        trial=None,
+        metrics=None,
+    )
+
     # Train
     logger.info("Starting training...")
     train_result = trainer.train()
