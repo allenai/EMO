@@ -128,6 +128,11 @@ def finetune(config: FinetuneConfig):
         attn_implementation="flash_attention_2",
     )
 
+    # Set padding token if not set
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+        model.config.pad_token_id = tokenizer.pad_token_id
+
     # save the checkpoint 0 of the model before any training
     logger.info(f"Saving initial checkpoint to {config.output_dir}/checkpoint-0")
     if not dist.is_initialized() or dist.get_rank() == 0:
@@ -135,11 +140,6 @@ def finetune(config: FinetuneConfig):
         tokenizer.save_pretrained(os.path.join(config.output_dir, "checkpoint-0"))
     if dist.is_initialized():
         dist.barrier()
-
-    # Set padding token if not set
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-        model.config.pad_token_id = tokenizer.pad_token_id
 
     # Enable gradient checkpointing
     if config.gradient_checkpointing:
@@ -202,6 +202,7 @@ def finetune(config: FinetuneConfig):
         gradient_checkpointing_kwargs={"use_reentrant": False} if config.gradient_checkpointing else None,
         remove_unused_columns=False,
         ddp_find_unused_parameters=False,
+        save_only_model=True,
     )
 
     # Data collator that preserves masked labels
