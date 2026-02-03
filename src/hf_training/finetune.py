@@ -29,6 +29,7 @@ from typing import Optional
 import torch.distributed as dist
 
 import torch
+from olmo import FSDPConfig
 
 from hf_training.TrainerDebug import TrainerDebug
 from transformers.integrations import WandbCallback
@@ -174,7 +175,7 @@ def finetune(config: FinetuneConfig):
     fsdp_config = None
     if config.use_fsdp:
         fsdp_config = {
-            "fsdp_transformer_layer_cls_to_wrap": ["FlexOlmoNoQKNormPrenormDecoderLayer"]
+            "fsdp_transformer_layer_cls_to_wrap": ["FlexOlmoNoQKNormPrenormDecoderLayer", "Olmo2NoQKNormPrenormDecoderLayer", "OlmoeDecoderLayer", "MixtralDecoderLayer", "LlamaDecoderLayer"]
             # "fsdp_transformer_layer_cls_to_wrap": ["OlmoeDecoderLayer", "MixtralDecoderLayer", "LlamaDecoderLayer"],
         }
 
