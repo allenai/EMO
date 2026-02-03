@@ -539,12 +539,17 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
     #     tokenizer = "allenai/dolma2-tokenizer"
     # else:
     #     tokenizer = None
+
+    breakpoint()
+
     model = model_class(
         pretrained=pretrained,
         tokenizer=tokenizer,
         **model_load_config_other,
     )
+
     breakpoint()
+
     if pruning_configs["do_prune"]:
         # load the activation file
         with open(pruning_configs["activation_file"], "r") as f:
