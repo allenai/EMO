@@ -140,21 +140,26 @@ for MODEL in "${MODELS[@]}"; do
             --priority urgent \
             --gpus $gpus \
             --allow-dirty \
-            --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+            --env-secret GITHUB_TOKEN=RYAN_GITHUB_TOKEN \
+            --env-secret WANDB_API_KEY=RYAN_WANDB_API_KEY \
             -- \
-            bash -c "bash scripts/hf_finetune_with_pruning.sh \
-                --model ${BASE_DIR}/models/${MODEL} \
-                --task ${TASK} \
-                --prune-keep-k ${prune_keep_k} \
-                --base-dir "${BASE_DIR}/prune_evals" \
-                --relative-dir ${relative_dir} \
-                --num-gpus $gpus \
-                --run-name ${job_name} \
-                --learning-rate ${lr} \
-                --batch-size ${batch_size} \
-                --micro-batch-size ${micro_batch_size} \
-                --num-epochs ${num_epochs}
-            "
+            bash -c "echo $WANDB_API_KEY && echo $HF_TOKEN"
+#            bash -c "bash scripts/hf_finetune_with_pruning.sh \
+#                --model ${BASE_DIR}/models/${MODEL} \
+#                --task ${TASK} \
+#                --prune-keep-k ${prune_keep_k} \
+#                --base-dir "${BASE_DIR}/prune_evals" \
+#                --relative-dir ${relative_dir} \
+#                --num-gpus $gpus \
+#                --run-name ${job_name} \
+#                --learning-rate ${lr} \
+#                --batch-size ${batch_size} \
+#                --micro-batch-size ${micro_batch_size} \
+#                --num-epochs ${num_epochs}
+#            "
 
         echo "Launched evaluation for model: $model, task: $TASK"
         echo "----------------------------------------"
