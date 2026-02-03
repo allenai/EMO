@@ -23,6 +23,8 @@ AUTO_DISCOVER = True
 AVAILABLE_MODELS = [
     "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123step30995-hf",
     "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121step30995-hf",
+    "dense_1b_olmoe-mix_prenorm_noqknorm_1123step30995-hf",
+    "moe_1b4b_32experts_1224step30995-hf",
 ]
 
 AVAILABLE_TASK_RUNS = [
@@ -43,12 +45,14 @@ SELECTED_TASK_RUNS = list(AVAILABLE_TASK_RUNS)
 # Optional display names for models (legend labels).
 # Key: model directory name. Value: label to show in plots.
 MODEL_LABELS = {
-    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123step30995-hf": "moe",
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121step30995-hf": "twolevelbatchlb",
+    # "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123step30995-hf": "moe",
+    # "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121step30995-hf": "twolevelbatchlb",
+    # "dense_1b_olmoe-mix_prenorm_noqknorm_1123step30995-hf": "dense",
+    # "moe_1b4b_32experts_1224step30995-hf": "moe_1b4b",
 }
 
 # Metric to plot (override with --metric-key if desired).
-METRIC_KEY = "primary_score"
+METRIC_KEY = "acc_per_byte"
 
 DEFAULT_OUTPUT_SUBDIR = "prune_eval_plots"
 
