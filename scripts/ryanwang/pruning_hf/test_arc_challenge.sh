@@ -15,6 +15,7 @@ model_type=hf
 
 num_epochs=1
 prune_keep_k=32
+batch_size=32
 
 # Define grouped tasks
 TASK_GROUPS_LIST=(
@@ -58,7 +59,7 @@ for MODEL in "${MODELS[@]}"; do
 #        else
 #            micro_batch_size=$micro_batch_size
 #        fi
-        micro_batch_size=32
+        micro_batch_size=8
 
         # TODO choose the right number of gpus based on task (so that it doesn't oom)
 #        # adjust number of gpus requested if its agi_eval, bbh, gsm8k, minerva, codex, mbpp
