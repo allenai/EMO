@@ -61,8 +61,10 @@ def get_prompt_sequences_for_evaluation(eval_dataset_name, eval_folder):
 
         # loop through the requests, select only the correct ones and ones with correct context (rc tasks contain requests that exclude question)
         for req in requests_data:
-            if "gsm8k" not in eval_dataset_name:
-                # do filtering if not gsm8k (for gsm8k it's label is "null" and we don't have to filter it since everything is gold label
+            # Only filter for multiple-choice tasks where idx and label are both integers.
+            # For tasks like gsm8k (label is "null") or code bpb tasks like mbpp (label is a code string),
+            # every request is already the gold completion, so no filtering is needed.
+            if isinstance(req["label"], int):
                 if req["idx"] != req["label"]:
                     continue
                 if req["request"]["context"].startswith("Answer:"):
