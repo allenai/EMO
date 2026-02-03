@@ -218,10 +218,11 @@ def finetune(config: FinetuneConfig):
         data_collator=data_collator,
     )
 
-    # ensure that wandb is logging the correct logs
-    trainer.pop_callback(WandbCallback)
-    trainer.add_callback(LogMoeCallback())
-    trainer.add_callback(WandbCallback())
+    # log the MoE-specific metrics if training a MoE model
+    if "dense" not in config.model_path:
+        trainer.pop_callback(WandbCallback)
+        trainer.add_callback(LogMoeCallback())
+        trainer.add_callback(WandbCallback())
 
     # Train
     logger.info("Starting training...")
