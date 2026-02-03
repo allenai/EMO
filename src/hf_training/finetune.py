@@ -26,6 +26,8 @@ import os
 from dataclasses import dataclass, field
 from typing import Optional
 
+import torch.distributed as dist
+
 import torch
 
 from hf_training.TrainerDebug import TrainerDebug
@@ -125,11 +127,13 @@ def finetune(config: FinetuneConfig):
         torch_dtype=torch.bfloat16 if config.bf16 else torch.float32,
         attn_implementation="flash_attention_2",
     )
-    # model = AutoModelForCausalLM.from_pretrained(
-    #     config.model_path,
-    #     torch_dtype=torch.bfloat16 if config.bf16 else torch.float32,
-    #     attn_implementation="flash_attention_2",
-    # )
+
+    # save the checkpoint 0 of the model before any training
+    if not dist.is_initialized() or dist.get_rank() == 0:
+        model.save_pretrained(os.path.join(config.output_dir, "checkpoint-0"))
+        tokenizer.save_pretrained(os.path.join(config.output_dir, "checkpoint-0"))
+    if dist.is_initialized():
+        dist.barrier()
 
     # Set padding token if not set
     if tokenizer.pad_token is None:
