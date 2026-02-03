@@ -388,15 +388,12 @@ def get_formatted_prompts(task_name: str, split: str) -> List[str]:
                 dataset.append(instance.request.context + instance.request.continuation)
 
     elif task._instances[0].request_type == "generate_until":
-        breakpoint()
-        raise NotImplementedError("generate_until not implemented in get_formatted_prompts")
-        # for req in requests_data:
-        #     # for some tasks (e.g coqa), by default there is no space between context and choice, so we add it here
-        #     if req["request"]["context"][-1] != " " and req["doc"]["choices"][0][0] != " ":
-        #         data += [req["request"]["context"] + " " + req["doc"]["choices"][0]]
-        #     else:
-        #         data += [req["request"]["context"] + req["doc"]["choices"][0]]
-
+        for instance in task._instances:
+            # for some tasks (e.g coqa), by default there is no space between context and choice, so we add it here
+            if instance.request.context[-1] != " " and instance.doc["choices"][0][0] != " ":
+                dataset.append(instance.request.context + " " + instance.doc["choices"][0])
+            else:
+                dataset.append(instance.request.context + instance.doc["choices"][0])
 
     # raw_dataset = load_hf_dataset(task_name, split)
     #
