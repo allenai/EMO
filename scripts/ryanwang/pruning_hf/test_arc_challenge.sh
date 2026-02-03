@@ -4,9 +4,9 @@
 #BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 MODELS=(
-#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
+    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
-    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
+#    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
 #    "moe_1b4b_32experts_1224/step30995"
     )
 
@@ -14,22 +14,22 @@ CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf
 
 num_epochs=1
-prune_keep_k=16
+prune_keep_k=32
 
 # Define grouped tasks
 TASK_GROUPS_LIST=(
   ######### few-shot ##########
   # MC9 tasks
-#  "arc_easy"
-#  "arc_challenge"
-#  "boolq"
-#  "csqa"
-#  "hellaswag"
-#  "openbookqa"
-#  "piqa"
-#  "socialiqa"
-#  "winogrande"
-  "gsm8k_generation_0shot"
+  "arc_easy"
+  "arc_challenge"
+  "boolq"
+  "csqa"
+  "hellaswag"
+  "openbookqa"
+  "piqa"
+  "socialiqa"
+  "winogrande"
+#  "gsm8k_generation_0shot"
 #  "coqa_0shot"
 #  "coqa_full_0shot"
 #  "squad_0shot"
@@ -115,7 +115,33 @@ for MODEL in "${MODELS[@]}"; do
             continue
         fi
 
-        bash scripts/hf_finetune_with_pruning.sh \
+#        bash scripts/hf_finetune_with_pruning.sh \
+#                --model ${BASE_DIR}/models/${MODEL} \
+#                --task ${TASK} \
+#                --prune-keep-k ${prune_keep_k} \
+#                --base-dir "${BASE_DIR}/prune_evals" \
+#                --relative-dir ${relative_dir} \
+#                --num-gpus $gpus \
+#                --run-name ${job_name} \
+#                --learning-rate ${lr} \
+#                --batch-size ${batch_size} \
+#                --num-epochs ${num_epochs}
+
+        gantry run \
+            --name $job_name \
+            --weka oe-training-default:/weka/oe-training-default \
+            --install "pip install -e \".[all]\"" \
+            --budget ai2/oceo \
+            --workspace ai2/flex2 \
+            --cluster $CLUSTER \
+            --priority urgent \
+            --gpus $gpus \
+            --allow-dirty \
+            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+            -- \
+            bash -c "bash scripts/hf_finetune_with_pruning.sh \
                 --model ${BASE_DIR}/models/${MODEL} \
                 --task ${TASK} \
                 --prune-keep-k ${prune_keep_k} \
@@ -126,32 +152,7 @@ for MODEL in "${MODELS[@]}"; do
                 --learning-rate ${lr} \
                 --batch-size ${batch_size} \
                 --num-epochs ${num_epochs}
-
-#        gantry run \
-#            --name $job_name \
-#            --weka oe-training-default:/weka/oe-training-default \
-#            --install "pip install -e \".[all]\"" \
-#            --budget ai2/oceo \
-#            --workspace ai2/flex2 \
-#            --cluster $CLUSTER \
-#            --priority urgent \
-#            --gpus $gpus \
-#            --allow-dirty \
-#            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-#            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-#            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-#            -- \
-#            bash -c "bash scripts/hf_finetune_with_pruning.sh \
-#                --model ${BASE_DIR}/${MODEL} \
-#                --task ${TASK} \
-#                --prune-keep-k 16 \
-#                --base-dir ${BASE_DIR}/evals \
-#                --relative-dir ${relative_dir} \
-#                --num-gpus $gpus \
-#                --skip-activation \
-#                --skip-prune \
-#                --run-name ${job_name}
-#            "
+            "
 
         echo "Launched evaluation for model: $model, task: $TASK"
         echo "----------------------------------------"
