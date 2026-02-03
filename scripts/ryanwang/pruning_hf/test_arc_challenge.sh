@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Configuration
-BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
-#BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
+#BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
+BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 MODELS=(
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
