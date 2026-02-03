@@ -268,7 +268,7 @@ def tokenize_and_mask_example(
         # special case: hellaswag or winogrande has no delimiters, we just train on all tokens
         labels = list(input_ids)
     else:
-        labels = create_masked_labels(input_ids, delimiter_ids, task_name)
+        labels = create_masked_labels(input_ids, delimiter_ids)
 
     return {
         "input_ids": input_ids,
