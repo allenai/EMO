@@ -58,7 +58,7 @@ def compute_router_activations(
     """
     logger.info(f"Loading model: {model_name}")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = FlexOlmoNoQKNormPrenormForCausalLMDebug.from_pretrained(
+    model = AutoModelForCausalLM.from_pretrained(
         model_name,
         device_map="auto" if device is None else device,
         torch_dtype="auto",
