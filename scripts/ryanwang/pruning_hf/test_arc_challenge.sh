@@ -27,17 +27,17 @@ TASK_GROUPS_LIST=(
 #  "piqa"
 #  "socialiqa"
 #  "winogrande"
-#  "synthea_zeroshot"
-#  "gsm8k_generation_zeroshot"
-#  "coqa_zeroshot"
-#  "coqa_full_zeroshot"
-#  "squad_zeroshot"
+#  "gsm8k_generation_0shot"
+#  "coqa_0shot"
+#  "coqa_full_0shot"
+#  "squad_0shot"
 
 #   MMLU
 #  "mmlu"
 
-#   GSM8K
-#  "gsm8k_generation_0shot"
+#  "synthea_zeroshot"
+
+
 
   ######### ZERO-SHOT only ##########
   # MC9 tasks

@@ -282,7 +282,6 @@ for checkpoint in "${all_checkpoints[@]}"; do
     echo "Evaluating checkpoint: $checkpoint"
     # get the checkpoint number
     checkpoint_num=$(basename "$checkpoint" | sed 's/checkpoint-//')
-    echo "Checkpoint number: $checkpoint_num"
     python -m src.scripts.eval.launch_eval \
         --model "$checkpoint" \
         --model-type hf \

@@ -5,8 +5,8 @@ from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 def get_task_configs():
     TASK_CONFIGS.update(
         {
-            "squad:train_0shot::olmes": {
-                "task_name": "squad:train_0shot",
+            "squad_0shot:train::olmes": {
+                "task_name": "squad_0shot:train",
                 "split": "train",
                 "primary_metric": "exact_match",
                 "num_shots": 0,
@@ -20,8 +20,8 @@ def get_task_configs():
                     "regimes": [],
                 },
             },
-            "squad:validation_0shot::olmes": {
-                "task_name": "squad:validation_0shot",
+            "squad_0shot:validation::olmes": {
+                "task_name": "squad_0shot:validation",
                 "split": "validation",
                 "primary_metric": "exact_match",
                 "num_shots": 0,
@@ -35,8 +35,8 @@ def get_task_configs():
                     "regimes": [],
                 },
             },
-            "squad:test_0shot::olmes": {
-                "task_name": "squad:test_0shot",
+            "squad_0shot:test::olmes": {
+                "task_name": "squad_0shot:test",
                 "split": "test",
                 "primary_metric": "exact_match",
                 "num_shots": 0,
@@ -50,8 +50,8 @@ def get_task_configs():
                     "regimes": [],
                 },
             },
-            "coqa_full:train_0shot::olmes": {
-                "task_name": "coqa_full:train_0shot",
+            "coqa_full_0shot:train::olmes": {
+                "task_name": "coqa_full_0shot:train",
                 "split": "train",
                 "primary_metric": "f1",
                 "num_shots": 0,
@@ -59,8 +59,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "coqa_full:validation_0shot::olmes": {
-                "task_name": "coqa_full:validation_0shot",
+            "coqa_full_0shot:validation::olmes": {
+                "task_name": "coqa_full_0shot:validation",
                 "split": "validation",
                 "primary_metric": "f1",
                 "num_shots": 0,
@@ -68,8 +68,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "coqa_full:test_0shot::olmes": {
-                "task_name": "coqa_full:test_0shot",
+            "coqa_full_0shot:test::olmes": {
+                "task_name": "coqa_full_0shot:test",
                 "split": "test",
                 "primary_metric": "f1",
                 "num_shots": 0,
@@ -77,8 +77,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "coqa:train_0shot::olmes": {
-                "task_name": "coqa:train_0shot",
+            "coqa_0shot:train::olmes": {
+                "task_name": "coqa_0shot:train",
                 "split": "train",
                 "primary_metric": "f1",
                 "num_shots": 0,
@@ -86,8 +86,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "coqa:validation_0shot::olmes": {
-                "task_name": "coqa:validation_0shot",
+            "coqa_0shot:validation::olmes": {
+                "task_name": "coqa_0shot:validation",
                 "split": "validation",
                 "primary_metric": "f1",
                 "num_shots": 0,
@@ -95,8 +95,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "coqa:test_0shot::olmes": {
-                "task_name": "coqa:test_0shot",
+            "coqa_0shot:test::olmes": {
+                "task_name": "coqa_0shot:test",
                 "split": "test",
                 "primary_metric": "f1",
                 "num_shots": 0,

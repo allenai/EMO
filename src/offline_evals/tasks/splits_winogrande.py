@@ -1,7 +1,8 @@
 from oe_eval.tasks.oe_eval_tasks.winogrande import Winogrande, WinograndeMC
 
+from ..metrics.mc_softloss import SoftLoss
 
-class Winogrande_RC_BASE(Winogrande):
+class Winogrande_RC_Base(Winogrande):
     def has_test_docs(self):
         return True
 
@@ -24,6 +25,14 @@ class Winogrande_RC_BASE(Winogrande):
     def test_docs(self):
         # validation set used to be the test set by default if a test set did not exist, so we still set it as test set
         return map(self._process_doc, self.dataset["validation"])
+
+    def make_metrics(self):
+        # run the super
+        super().make_metrics()
+        # add softloss metric
+        self._metrics += [SoftLoss(**self.task_config["metric_kwargs"])]
+
+        return self._metrics
 
 
 class Winogrande_MC_BASE(WinograndeMC):
@@ -51,24 +60,24 @@ class Winogrande_MC_BASE(WinograndeMC):
         return map(self._process_doc, self.dataset["validation"])
 
 
-class Winogrande_RC_Train(Winogrande_RC_BASE):
-    pass
-
-
-class Winogrande_RC_Validation(Winogrande_RC_BASE):
-    pass
-
-
-class Winogrande_RC_Train_0shot(Winogrande_RC_BASE):
-    pass
-
-
-class Winogrande_RC_Validation_0shot(Winogrande_RC_BASE):
-    pass
-
-
-class Winogrande_RC_Test(Winogrande_RC_BASE):
-    pass
+# class Winogrande_RC_Train(Winogrande_RC_BASE):
+#     pass
+#
+#
+# class Winogrande_RC_Validation(Winogrande_RC_BASE):
+#     pass
+#
+#
+# class Winogrande_RC_Train_0shot(Winogrande_RC_BASE):
+#     pass
+#
+#
+# class Winogrande_RC_Validation_0shot(Winogrande_RC_BASE):
+#     pass
+#
+#
+# class Winogrande_RC_Test(Winogrande_RC_BASE):
+#     pass
 
 
 class Winogrande_MC_Train(Winogrande_MC_BASE):
