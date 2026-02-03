@@ -313,8 +313,7 @@ for checkpoint in "${all_checkpoints[@]}"; do
         --pruned_split "test" \
         --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
         --batch-size 32 \
-        --gpus "$NUM_GPUS" \
-        --model-args "output_router_logits=false"
+        --gpus "$NUM_GPUS"
 
 done
 

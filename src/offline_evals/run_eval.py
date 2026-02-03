@@ -544,6 +544,7 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
         tokenizer=tokenizer,
         **model_load_config_other,
     )
+    breakpoint()
     if pruning_configs["do_prune"]:
         # load the activation file
         with open(pruning_configs["activation_file"], "r") as f:
@@ -676,6 +677,7 @@ def run_eval(args_dict: dict):
     hash_model_config.pop("activation_file")
     hash_model_config.pop("prune_keep_k")
     model_hash = hash_dict(hash_model_config, MODEL_DEFAULTS)
+    breakpoint()
 
     if HAS_AI2_INTERNAL:
         dl_check = process_internal_datalake_args(compute_config, model_hash, task_objects)
@@ -718,6 +720,7 @@ def run_eval(args_dict: dict):
     elif have_all_predictions:
         logger.info("All predictions found, skipping model loading...")
     else:
+        breakpoint()
         model_load_config = model_config.copy()
         model_load_config["batch_size"] = compute_config["batch_size"]
         model_load_config["max_batch_size"] = compute_config["max_batch_size"]
@@ -728,6 +731,7 @@ def run_eval(args_dict: dict):
         ), f"GPUs should be evenly distributed to processes, got {workers} workers and {num_gpus} GPUs."
         _num_gpus = num_gpus // workers
         if workers == 1:
+            breakpoint()
             eval_model = load_model(model_load_config)
         else:
             if args_dict["do_prune"]:
