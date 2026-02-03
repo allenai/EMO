@@ -208,6 +208,7 @@ def load_balancing_loss_func_olmoe(
             .reshape(num_hidden_layers, -1, top_k, num_experts)
             .to(compute_device)
         )
+        breakpoint()
 
         # Compute the percentage of tokens routed to each experts
         # frequency_per_expert = torch.sum(expert_counts_onehot.float() * expert_attention_mask, dim=(1, 2)) / torch.sum(expert_attention_mask, dim=(1,2)) # shape: (num_hidden_layers, num_experts)
