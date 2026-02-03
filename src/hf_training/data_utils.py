@@ -371,6 +371,7 @@ def get_formatted_prompts(task_name: str, split: str) -> List[str]:
     Returns:
         List of formatted prompt+answer strings
     """
+    breakpoint()
     oe_task_name = get_oe_task_name(task_name, split)
     TASK_CONFIGS = get_task_configs()
     task_config = TASK_CONFIGS[oe_task_name]
@@ -395,6 +396,7 @@ def get_formatted_prompts(task_name: str, split: str) -> List[str]:
             else:
                 dataset.append(instance.request.context + instance.doc["choices"][0])
 
+    breakpoint()
     # raw_dataset = load_hf_dataset(task_name, split)
     #
     # prompts = []

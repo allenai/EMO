@@ -32,9 +32,11 @@ AVAILABLE_TASK_RUNS = [
     "arc_easy_keepk_32_bs-32_lr-5e-5_epoch-1",
     "boolq_keepk_32_bs-32_lr-5e-5_epoch-1",
     "csqa_keepk_32_bs-32_lr-5e-5_epoch-1",
+    "hellaswag_keepk_32_bs-32_lr-5e-5_epoch-1",
     "openbookqa_keepk_32_bs-32_lr-5e-5_epoch-1",
     "piqa_keepk_32_bs-32_lr-5e-5_epoch-1",
     "socialiqa_keepk_32_bs-32_lr-5e-5_epoch-1",
+    "winogrande_keepk_32_bs-32_lr-5e-5_epoch-1",
 ]
 
 # Select which models/tasks to plot.
@@ -45,10 +47,10 @@ SELECTED_TASK_RUNS = list(AVAILABLE_TASK_RUNS)
 # Optional display names for models (legend labels).
 # Key: model directory name. Value: label to show in plots.
 MODEL_LABELS = {
-    # "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123step30995-hf": "moe",
-    # "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121step30995-hf": "twolevelbatchlb",
-    # "dense_1b_olmoe-mix_prenorm_noqknorm_1123step30995-hf": "dense",
-    # "moe_1b4b_32experts_1224step30995-hf": "moe_1b4b",
+    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123step30995-hf": "moe",
+    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121step30995-hf": "twolevelbatchlb",
+    "dense_1b_olmoe-mix_prenorm_noqknorm_1123step30995-hf": "dense",
+    "moe_1b4b_32experts_1224step30995-hf": "moe_1b4b",
 }
 
 # Metric to plot (override with --metric-key if desired).
