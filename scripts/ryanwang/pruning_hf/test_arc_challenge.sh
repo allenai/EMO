@@ -4,14 +4,16 @@
 #BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 MODELS=(
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
+#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
+    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
+#    "moe_1b4b_32experts_1224/step30995"
     )
 
 CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf
 
-num_epochs=3
+num_epochs=1
 prune_keep_k=16
 
 # Define grouped tasks
@@ -32,32 +34,12 @@ TASK_GROUPS_LIST=(
 #  "coqa_full_0shot"
 #  "squad_0shot"
 
-#   MMLU
+#   TO BE IMPLEMENTED
 #  "mmlu"
 
 #  "synthea_zeroshot"
 
-
-
-  ######### ZERO-SHOT only ##########
-  # MC9 tasks
-#  "arc_easy_zeroshot"
-#  "arc_challenge_zeroshot"
-#  "boolq_zeroshot"
-#  "csqa_zeroshot"
-#  "hellaswag_zeroshot"
-#  "openbookqa_zeroshot"
-#  "piqa_zeroshot"
-#  "socialiqa_zeroshot"
-#  "winogrande_zeroshot"
-
-#   MMLU
-#  "mmlu_zeroshot"
-
-#   GSM8K
-#  "gsm8k_zeroshot"
 )
-
 
 echo "Launching evals for ${#MODELS[@]} models and ${#TASK_GROUPS[@]} task groups..."
 echo "Models: ${MODELS[@]}"
@@ -85,10 +67,10 @@ for MODEL in "${MODELS[@]}"; do
 #        else
 #            gpus=1
 #        fi
-        gpus=2
+        gpus=4
 
         # TODO: choose the right learning rate based on task
-        lr=4e-5
+        lr=5e-5
 
         # Create a shorter, valid job name
         # Remove invalid characters and truncate long names
@@ -112,6 +94,26 @@ for MODEL in "${MODELS[@]}"; do
         echo "  learning-rate: ${lr}"
         echo "  batch_size: ${batch_size}"
         echo "  epochs: ${num_epochs}"
+
+        # if the model is dense or 1b4b, we skip activation and pruning
+        if [[ $MODEL == *"dense"* || $MODEL == *"1b4b"* ]]; then
+            echo "  Skipping activation computation and pruning for model: $MODEL"
+            bash scripts/hf_finetune_with_pruning.sh \
+                --pruned-model ${BASE_DIR}/models/${MODEL} \
+                --task ${TASK} \
+                --base-dir "${BASE_DIR}/prune_evals" \
+                --relative-dir ${relative_dir} \
+                --num-gpus $gpus \
+                --run-name ${job_name} \
+                --learning-rate ${lr} \
+                --batch-size ${batch_size} \
+                --num-epochs ${num_epochs} \
+                --skip-activation \
+                --skip-prune
+            echo "Launched evaluation for model: $model, task: $TASK"
+            echo "----------------------------------------"
+            continue
+        fi
 
         bash scripts/hf_finetune_with_pruning.sh \
                 --model ${BASE_DIR}/models/${MODEL} \

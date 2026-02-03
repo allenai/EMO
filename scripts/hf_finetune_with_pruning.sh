@@ -159,6 +159,12 @@ if [[ "$RELATIVE_DIR" != *"$TASK"* ]]; then
     exit 1
 fi
 
+
+if [ -z "$RUN_NAME" ]; then
+    echo "Error: --run-name is required"
+    exit 1
+fi
+
 OUTPUT_DIR="${BASE_DIR}/${RELATIVE_DIR}"
 
 # Create output directory
@@ -174,19 +180,6 @@ if [ -z "$PRUNED_MODEL" ]; then
 fi
 
 FINETUNED_MODEL="${OUTPUT_DIR}/finetuned_model"
-
-
-# we now get the model name simplified by getting the last two chunks delimited by "/"
-# Get the last in terms of steps
-steps="${MODEL##*/}"
-# Remove the last part to get the parent directory path
-parent_path="${MODEL%/*}"
-# Get the last part of that parent path
-model_name="${parent_path##*/}"
-
-if [ -z "$RUN_NAME" ]; then
-    RUN_NAME="${model_name}_${steps}_${TASK}_k${PRUNE_KEEP_K}"
-fi
 
 echo "========================================"
 echo "HuggingFace Finetuning Pipeline"
@@ -256,7 +249,7 @@ fi
 export WANDB_PROJECT="olmoe-modular"
 export WANDB_ENTITY="ryanyxw"
 # optional:
-export WANDB_TAGS="${TASK:0:60},${MODEL: -60}"
+export WANDB_TAGS="${TASK:0:60},${PRUNED_MODEL: -60}"
 
 torchrun --nproc_per_node="$NUM_GPUS" \
     -m src.hf_training.finetune \
