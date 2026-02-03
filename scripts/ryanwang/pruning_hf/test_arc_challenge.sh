@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # Configuration
-#BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
-BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
+BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
+#BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 MODELS=(
-#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
-#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
-#    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995-hf"
+    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
+    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
+    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995-hf"
     "moe_1b4b_32experts_1224/step30995-hf"
     )
 
@@ -68,7 +68,7 @@ for MODEL in "${MODELS[@]}"; do
 #        else
 #            gpus=1
 #        fi
-        gpus=1
+        gpus=4
 
         # TODO: choose the right learning rate based on task
         lr=5e-5
@@ -100,35 +100,7 @@ for MODEL in "${MODELS[@]}"; do
         # if the model is dense or 1b4b, we skip activation and pruning
         if [[ $MODEL == *"dense"* || $MODEL == *"1b4b"* ]]; then
             echo "  Skipping activation computation and pruning for model: $MODEL"
-            bash scripts/hf_finetune_with_pruning.sh \
-                --pruned-model ${BASE_DIR}/models/${MODEL} \
-                --task ${TASK} \
-                --base-dir "${BASE_DIR}/prune_evals" \
-                --relative-dir ${relative_dir} \
-                --num-gpus $gpus \
-                --run-name ${job_name} \
-                --learning-rate ${lr} \
-                --batch-size ${batch_size} \
-                --micro-batch-size ${micro_batch_size} \
-                --num-epochs ${num_epochs} \
-                --skip-activation \
-                --skip-prune
-#            python -m olmo_core.launch.beaker \
-#                --name $job_name \
-#                --gpus $gpus \
-#                --nodes 1 \
-#                --is_private_repo \
-#                --weka=oe-training-default \
-#                --shared-filesystem \
-#                --workspace ai2/flex2 \
-#                --cluster ai2/jupiter \
-#                --preemptible \
-#                --allow-dirty \
-#                --priority urgent \
-#                --no-follow \
-#                --no-torchrun \
-#                --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
-#                -- bash -c "scripts/hf_finetune_with_pruning.sh \
+#            bash scripts/hf_finetune_with_pruning.sh \
 #                --pruned-model ${BASE_DIR}/models/${MODEL} \
 #                --task ${TASK} \
 #                --base-dir "${BASE_DIR}/prune_evals" \
@@ -141,7 +113,35 @@ for MODEL in "${MODELS[@]}"; do
 #                --num-epochs ${num_epochs} \
 #                --skip-activation \
 #                --skip-prune
-#                "
+            python -m olmo_core.launch.beaker \
+                --name $job_name \
+                --gpus $gpus \
+                --nodes 1 \
+                --is_private_repo \
+                --weka=oe-training-default \
+                --shared-filesystem \
+                --workspace ai2/flex2 \
+                --cluster ai2/jupiter \
+                --preemptible \
+                --allow-dirty \
+                --priority urgent \
+                --no-follow \
+                --no-torchrun \
+                --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+                -- bash -c "scripts/hf_finetune_with_pruning.sh \
+                --pruned-model ${BASE_DIR}/models/${MODEL} \
+                --task ${TASK} \
+                --base-dir "${BASE_DIR}/prune_evals" \
+                --relative-dir ${relative_dir} \
+                --num-gpus $gpus \
+                --run-name ${job_name} \
+                --learning-rate ${lr} \
+                --batch-size ${batch_size} \
+                --micro-batch-size ${micro_batch_size} \
+                --num-epochs ${num_epochs} \
+                --skip-activation \
+                --skip-prune
+                "
             echo "Launched evaluation for model: $model, task: $TASK"
             echo "----------------------------------------"
             continue
