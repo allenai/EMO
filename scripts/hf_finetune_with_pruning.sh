@@ -275,19 +275,20 @@ echo ""
 echo "Step 4: evals..."
 echo "========================================"
 
+echo $FINETUNED_MODEL
 # find all the checkpoints in the finetuned model directory and evaluate each one
-all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
-
-for checkpoint in "${all_checkpoints[@]}"; do
-    echo "Evaluating checkpoint: $checkpoint"
-    python -m src.scripts.eval.launch_eval \
-        --model_path "$checkpoint" \
-        --model-type hf \
-        --task "$TASK-pruned" \
-        --pruned_split "test" \
-        --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals/${RELATIVE_DIR}/eval_results" \
-        --batch-size $BATCH_SIZE \
-        --gpus "$NUM_GPUS"
+#all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
+#
+#for checkpoint in "${all_checkpoints[@]}"; do
+#    echo "Evaluating checkpoint: $checkpoint"
+#    python -m src.scripts.eval.launch_eval \
+#        --model_path "$checkpoint" \
+#        --model-type hf \
+#        --task "$TASK-pruned" \
+#        --pruned_split "test" \
+#        --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals/${RELATIVE_DIR}/eval_results" \
+#        --batch-size $BATCH_SIZE \
+#        --gpus "$NUM_GPUS"
 
 done
 
