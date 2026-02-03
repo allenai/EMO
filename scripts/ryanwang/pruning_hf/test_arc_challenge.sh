@@ -130,10 +130,18 @@ for MODEL in "${MODELS[@]}"; do
 #                --micro-batch-size ${micro_batch_size} \
 #                --num-epochs ${num_epochs}
 
+        command="""
+        echo Starting job
+        echo WANDB_API_KEY: $WANDB_API_KEY
+        echo HF_TOKEN: $HF_TOKEN
+        echo End of env vars
+        """
+
+#            --install "pip install -e \".[all]\"" \
+
         gantry run \
             --name $job_name \
             --weka oe-training-default:/weka/oe-training-default \
-            --install "pip install -e \".[all]\"" \
             --budget ai2/oceo \
             --workspace ai2/flex2 \
             --cluster $CLUSTER \
@@ -146,7 +154,7 @@ for MODEL in "${MODELS[@]}"; do
             --env-secret GITHUB_TOKEN=RYAN_GITHUB_TOKEN \
             --env-secret WANDB_API_KEY=RYAN_WANDB_API_KEY \
             -- \
-            bash -c "echo $WANDB_API_KEY && echo $HF_TOKEN"
+            bash -c "$command"
 #            bash -c "bash scripts/hf_finetune_with_pruning.sh \
 #                --model ${BASE_DIR}/models/${MODEL} \
 #                --task ${TASK} \
