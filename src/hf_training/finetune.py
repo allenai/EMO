@@ -129,6 +129,7 @@ def finetune(config: FinetuneConfig):
     )
 
     # save the checkpoint 0 of the model before any training
+    logger.info(f"Saving initial checkpoint to {config.output_dir}/checkpoint-0")
     if not dist.is_initialized() or dist.get_rank() == 0:
         model.save_pretrained(os.path.join(config.output_dir, "checkpoint-0"))
         tokenizer.save_pretrained(os.path.join(config.output_dir, "checkpoint-0"))

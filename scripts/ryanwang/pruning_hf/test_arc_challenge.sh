@@ -67,7 +67,7 @@ for MODEL in "${MODELS[@]}"; do
 #        else
 #            gpus=1
 #        fi
-        gpus=4
+        gpus=2
 
         # TODO: choose the right learning rate based on task
         lr=5e-5
