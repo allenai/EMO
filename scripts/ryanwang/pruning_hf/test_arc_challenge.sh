@@ -4,10 +4,10 @@
 BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 #BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 MODELS=(
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
-    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
-#    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995-hf"
-#    "moe_1b4b_32experts_1224/step30995-hf"
+#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
+#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
+    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995-hf"
+    "moe_1b4b_32experts_1224/step30995-hf"
     )
 
 CLUSTER="ai2/jupiter-cirrascale-2"
@@ -21,15 +21,15 @@ batch_size=32
 TASK_GROUPS_LIST=(
   ######### few-shot ##########
   # MC9 tasks
-#  "arc_easy"
-#  "arc_challenge"
-#  "boolq"
-#  "csqa"
+  "arc_easy"
+  "arc_challenge"
+  "boolq"
+  "csqa"
 #  "hellaswag"
-#  "openbookqa"
-#  "piqa"
-#  "socialiqa"
-  "winogrande"
+  "openbookqa"
+  "piqa"
+  "socialiqa"
+#  "winogrande"
 #  "gsm8k_generation_0shot"
 #  "coqa_0shot"
 #  "coqa_full_0shot"
