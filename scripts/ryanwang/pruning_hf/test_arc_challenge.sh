@@ -20,15 +20,15 @@ prune_keep_k=32
 TASK_GROUPS_LIST=(
   ######### few-shot ##########
   # MC9 tasks
-#  "arc_easy"
+  "arc_easy"
   "arc_challenge"
-#  "boolq"
-#  "csqa"
-#  "hellaswag"
-#  "openbookqa"
-#  "piqa"
-#  "socialiqa"
-#  "winogrande"
+  "boolq"
+  "csqa"
+  "hellaswag"
+  "openbookqa"
+  "piqa"
+  "socialiqa"
+  "winogrande"
 #  "gsm8k_generation_0shot"
 #  "coqa_0shot"
 #  "coqa_full_0shot"
