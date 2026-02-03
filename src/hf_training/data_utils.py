@@ -219,6 +219,8 @@ def create_masked_labels(
             delimiter_pos = i + len(delimiter_ids)
             break
 
+    breakpoint()
+
     if delimiter_pos == -1:
         raise ValueError(f"Delimiter not found in input_ids {input_ids} with delimiter_ids {delimiter_ids}")
 
@@ -307,6 +309,7 @@ def prepare_finetuning_dataset(
 
     # Get delimiter
     delimiter = "Answer:" if task_name != "squad" else "A:"
+    breakpoint()
 
     def process_example(example):
         return tokenize_and_mask_example(example["text"], tokenizer, task_name, max_length, delimiter)
