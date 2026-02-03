@@ -346,6 +346,10 @@ def get_oe_task_name(task_name, split):
     Returns:
         Formatted task string
     """
+    # if this is a generation-based task, don't specify rc
+    if task_name in ["squad_0shot", "gsm8k_generation_0shot", "coqa_0shot", "coqa_full_0shot"]:
+        return f"{task_name}:{split}::olmes"
+
     return f"{task_name}:rc_{split}::olmes"
 
 
