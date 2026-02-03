@@ -281,7 +281,7 @@ all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
 for checkpoint in "${all_checkpoints[@]}"; do
     echo "Evaluating checkpoint: $checkpoint"
     python -m src.scripts.eval.launch_eval \
-        --model_path "$checkpoint" \
+        --model "$checkpoint" \
         --model-type hf \
         --task "$TASK-pruned" \
         --pruned_split "test" \
