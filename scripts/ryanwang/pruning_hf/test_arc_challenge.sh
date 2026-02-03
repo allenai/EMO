@@ -148,7 +148,7 @@ for MODEL in "${MODELS[@]}"; do
             --priority urgent \
             --gpus $gpus \
             --allow-dirty \
-            --env-secret "HF_TOKEN=RYAN_HF_TOKEN,AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY,GITHUB_TOKEN=RYAN_GITHUB_TOKEN,WANDB_API_KEY=RYAN_WANDB_API_KEY" \
+            --env-secret HF_TOKEN=RYAN_HF_TOKEN,AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY,GITHUB_TOKEN=RYAN_GITHUB_TOKEN,WANDB_API_KEY=RYAN_WANDB_API_KEY \
             -- \
             bash -c "$command"
 #            bash -c "bash scripts/hf_finetune_with_pruning.sh \
