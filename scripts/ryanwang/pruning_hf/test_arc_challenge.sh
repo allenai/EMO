@@ -54,11 +54,11 @@ for MODEL in "${MODELS[@]}"; do
         # TODO: choose the right batch size based on the task
 #        # Batch size adjustment (matching original script)
 #        if [[ $TASK == *"mmlu_high_school_european_history"* || $TASK == *"mmlu_high_school_us_history"* || $TASK == *"mmlu_history"* || $TASK == *"mmlu_philosophy"* || $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* || $TASK == *"boolq"* || $TASK == *"synthea"* || $MODEL == *"1b35b"* ]]; then
-#            batch_size=$((BATCH_SIZE / 4))
+#            micro_batch_size=$((micro_batch_size / 4))
 #        else
-#            batch_size=$BATCH_SIZE
+#            micro_batch_size=$micro_batch_size
 #        fi
-        batch_size=32
+        micro_batch_size=32
 
         # TODO choose the right number of gpus based on task (so that it doesn't oom)
 #        # adjust number of gpus requested if its agi_eval, bbh, gsm8k, minerva, codex, mbpp
@@ -107,6 +107,7 @@ for MODEL in "${MODELS[@]}"; do
                 --run-name ${job_name} \
                 --learning-rate ${lr} \
                 --batch-size ${batch_size} \
+                --micro-batch-size ${micro_batch_size} \
                 --num-epochs ${num_epochs} \
                 --skip-activation \
                 --skip-prune
@@ -125,6 +126,7 @@ for MODEL in "${MODELS[@]}"; do
 #                --run-name ${job_name} \
 #                --learning-rate ${lr} \
 #                --batch-size ${batch_size} \
+#                --micro-batch-size ${micro_batch_size} \
 #                --num-epochs ${num_epochs}
 
         gantry run \
@@ -151,6 +153,7 @@ for MODEL in "${MODELS[@]}"; do
                 --run-name ${job_name} \
                 --learning-rate ${lr} \
                 --batch-size ${batch_size} \
+                --micro-batch-size ${micro_batch_size} \
                 --num-epochs ${num_epochs}
             "
 

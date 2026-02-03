@@ -28,6 +28,7 @@ NUM_GPUS=1
 NUM_EPOCHS=3
 NUM_CHECKPOINTS=5
 BATCH_SIZE=4
+MICRO_BATCH_SIZE=1
 SKIP_ACTIVATION=false
 SKIP_PRUNE=false
 ACTIVATION_FILE=""
@@ -74,6 +75,10 @@ while [[ $# -gt 0 ]]; do
             BATCH_SIZE="$2"
             shift 2
             ;;
+        --micro-batch-size)
+            MICRO_BATCH_SIZE="$2"
+            shift 2
+            ;;
         --skip-activation)
             SKIP_ACTIVATION=true
             shift
@@ -111,7 +116,8 @@ while [[ $# -gt 0 ]]; do
             echo "  --num-gpus        Number of GPUs for training (default: 1)"
             echo "  --num-epochs      Number of training epochs (default: 3)"
             echo "  --num-checkpoints Number of checkpoints to save (default: 5)"
-            echo "  --batch-size      Batch size for activation computation (default: 4)"
+            echo "  --batch-size      Global Batch size for activation computation (default: 4)"
+            echo "  --micro-batch-size Micro batch size for finetuning (default: 1)"
             echo "  --skip-activation Skip activation computation (requires --activation-file)"
             echo "  --skip-prune      Skip pruning (requires --pruned-model)"
             echo "  --activation-file Path to existing activation file"
@@ -165,6 +171,16 @@ if [ -z "$RUN_NAME" ]; then
     exit 1
 fi
 
+# check that batch_size is a multiple of NUM_GPUS and micro_batch_size
+if (( BATCH_SIZE % NUM_GPUS != 0 )); then
+    echo "Error: --batch-size must be a multiple of --num-gpus"
+    exit 1
+fi
+if (( BATCH_SIZE % MICRO_BATCH_SIZE != 0 )); then
+    echo "Error: --batch-size must be a multiple of --micro-batch-size"
+    exit 1
+fi
+
 OUTPUT_DIR="${BASE_DIR}/${RELATIVE_DIR}"
 
 # Create output directory
@@ -205,7 +221,7 @@ if [ "$SKIP_ACTIVATION" = false ]; then
         --task "$TASK" \
         --split "validation" \
         --output-file "$ACTIVATION_FILE" \
-        --batch-size "$BATCH_SIZE"
+        --batch-size 32
 
     echo "Activations saved to: $ACTIVATION_FILE"
 else
@@ -251,6 +267,9 @@ export WANDB_ENTITY="ryanyxw"
 # optional:
 export WANDB_TAGS="${TASK:0:60},${PRUNED_MODEL: -60}"
 
+# calculate gas
+gas=$(( BATCH_SIZE / (NUM_GPUS * MICRO_BATCH_SIZE) ))
+
 torchrun --nproc_per_node="$NUM_GPUS" \
     -m src.hf_training.finetune \
     --model "$PRUNED_MODEL" \
@@ -261,6 +280,8 @@ torchrun --nproc_per_node="$NUM_GPUS" \
     --num-checkpoints "$NUM_CHECKPOINTS" \
     --learning-rate "$LEARNING_RATE" \
     --run-name "$RUN_NAME" \
+    --per-device-batch-size "$MICRO_BATCH_SIZE" \
+    --gradient-accumulation-steps "$gas" \
     $FSDP_FLAG
 
 
@@ -281,7 +302,7 @@ for checkpoint in "${all_checkpoints[@]}"; do
         --task "$TASK-pruned" \
         --pruned_split "test" \
         --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
-        --batch-size $BATCH_SIZE \
+        --batch-size 32 \
         --gpus "$NUM_GPUS"
 
 done
