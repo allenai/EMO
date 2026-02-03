@@ -1226,6 +1226,15 @@ def get_task_configs():
                 "split": "validation",
                 "num_shots": 5,
             },
+            "minerva_math_500::olmes": {
+                "task_name": "minerva_math_500",
+                "split": "test",
+                "num_shots": 4,
+                "fewshot_source": "Minerva:MATH:fixed",  # fix double new line within solution in example
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            }
         }
     )
 
