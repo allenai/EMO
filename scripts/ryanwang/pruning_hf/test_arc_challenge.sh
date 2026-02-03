@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Configuration
-BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
-#BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
+#BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
+BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 MODELS=(
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
@@ -68,7 +68,7 @@ for MODEL in "${MODELS[@]}"; do
 #        else
 #            gpus=1
 #        fi
-        gpus=4
+        gpus=1
 
         # TODO: choose the right learning rate based on task
         lr=5e-5
