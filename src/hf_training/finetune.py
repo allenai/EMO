@@ -174,10 +174,16 @@ def finetune(config: FinetuneConfig):
     # Setup FSDP config
     fsdp_config = None
     if config.use_fsdp:
-        fsdp_config = {
-            "fsdp_transformer_layer_cls_to_wrap": ["FlexOlmoNoQKNormPrenormDecoderLayer", "Olmo2NoQKNormPrenormDecoderLayer", "OlmoeDecoderLayer", "MixtralDecoderLayer", "LlamaDecoderLayer"]
-            # "fsdp_transformer_layer_cls_to_wrap": ["OlmoeDecoderLayer", "MixtralDecoderLayer", "LlamaDecoderLayer"],
-        }
+        if "dense" in config.model_path:
+            fsdp_config = {
+                "fsdp_transformer_layer_cls_to_wrap": ["Olmo2NoQKNormPrenormDecoderLayer"],
+                # "fsdp_transformer_layer_cls_to_wrap": ["OlmoeDecoderLayer", "MixtralDecoderLayer", "LlamaDecoderLayer"],
+            }
+        else:
+            fsdp_config = {
+                "fsdp_transformer_layer_cls_to_wrap": ["FlexOlmoNoQKNormPrenormDecoderLayer"],
+                # "fsdp_transformer_layer_cls_to_wrap": ["OlmoeDecoderLayer", "MixtralDecoderLayer", "LlamaDecoderLayer"],
+            }
 
     # Training arguments
     training_args = TrainingArguments(
