@@ -237,32 +237,32 @@ echo "========================================"
 #echo ""
 #echo "Step 3: Finetuning..."
 #echo "========================================"
-
-# Determine FSDP setting
-if [ "$NUM_GPUS" -gt 1 ]; then
-    FSDP_FLAG=""
-else
-    FSDP_FLAG="--no-fsdp"
-fi
-
-# set correct wandb environment variables
-export WANDB_PROJECT="olmoe-modular"
-export WANDB_ENTITY="ryanyxw"
-# optional:
-export WANDB_TAGS="${TASK:0:60},${PRUNED_MODEL: -60}"
-
-torchrun --nproc_per_node="$NUM_GPUS" \
-    -m src.hf_training.finetune \
-    --model "$PRUNED_MODEL" \
-    --task "$TASK" \
-    --split "train" \
-    --output-dir "$FINETUNED_MODEL" \
-    --num-epochs "$NUM_EPOCHS" \
-    --num-checkpoints "$NUM_CHECKPOINTS" \
-    --learning-rate "$LEARNING_RATE" \
-    --run-name "$RUN_NAME" \
-    $FSDP_FLAG
-
+#
+## Determine FSDP setting
+#if [ "$NUM_GPUS" -gt 1 ]; then
+#    FSDP_FLAG=""
+#else
+#    FSDP_FLAG="--no-fsdp"
+#fi
+#
+## set correct wandb environment variables
+#export WANDB_PROJECT="olmoe-modular"
+#export WANDB_ENTITY="ryanyxw"
+## optional:
+#export WANDB_TAGS="${TASK:0:60},${PRUNED_MODEL: -60}"
+#
+#torchrun --nproc_per_node="$NUM_GPUS" \
+#    -m src.hf_training.finetune \
+#    --model "$PRUNED_MODEL" \
+#    --task "$TASK" \
+#    --split "train" \
+#    --output-dir "$FINETUNED_MODEL" \
+#    --num-epochs "$NUM_EPOCHS" \
+#    --num-checkpoints "$NUM_CHECKPOINTS" \
+#    --learning-rate "$LEARNING_RATE" \
+#    --run-name "$RUN_NAME" \
+#    $FSDP_FLAG
+#
 
 echo ""
 echo "Step 4: evals..."
