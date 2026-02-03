@@ -130,27 +130,46 @@ for MODEL in "${MODELS[@]}"; do
 #                --micro-batch-size ${micro_batch_size} \
 #                --num-epochs ${num_epochs}
 
-        command="""
-        echo Starting job
-        echo WANDB_API_KEY: $WANDB_API_KEY
-        echo HF_TOKEN: $HF_TOKEN
-        echo End of env vars
-        """
 
+         python -m olmo_core.launch.beaker \
+          --name $job_name \
+          --gpus $gpus \
+          --nodes 1 \
+          --is_private_repo \
+          --weka=oe-training-default \
+          --shared-filesystem \
+          --workspace ai2/flex2 \
+          --cluster ai2/jupiter \
+          --preemptible \
+          --allow-dirty \
+          --priority urgent \
+          --no-follow \
+          --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+          -- scripts/hf_finetune_with_pruning.sh \
+              --model ${BASE_DIR}/models/${MODEL} \
+              --task ${TASK} \
+              --prune-keep-k ${prune_keep_k} \
+              --base-dir "${BASE_DIR}/prune_evals" \
+              --relative-dir ${relative_dir} \
+              --num-gpus $gpus \
+              --run-name ${job_name} \
+              --learning-rate ${lr} \
+              --batch-size ${batch_size} \
+              --micro-batch-size ${micro_batch_size} \
+              --num-epochs ${num_epochs}
+
+#        gantry run \
+#            --name $job_name \
 #            --install "pip install -e \".[all]\"" \
-
-        gantry run \
-            --name $job_name \
-            --weka oe-training-default:/weka/oe-training-default \
-            --budget ai2/oceo \
-            --workspace ai2/flex2 \
-            --cluster $CLUSTER \
-            --priority urgent \
-            --gpus $gpus \
-            --allow-dirty \
-            --env-secret WANDB_API_KEY=RYAN_WANDB_API_KEY \
-            -- \
-            bash -c "$command"
+#            --weka oe-training-default:/weka/oe-training-default \
+#            --budget ai2/oceo \
+#            --workspace ai2/flex2 \
+#            --cluster $CLUSTER \
+#            --priority urgent \
+#            --gpus $gpus \
+#            --allow-dirty \
+#            --env-secret WANDB_API_KEY=RYAN_WANDB_API_KEY \
+#            -- \
 #            bash -c "bash scripts/hf_finetune_with_pruning.sh \
 #                --model ${BASE_DIR}/models/${MODEL} \
 #                --task ${TASK} \
