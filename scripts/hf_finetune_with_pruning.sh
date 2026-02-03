@@ -233,7 +233,7 @@ else
     echo "Pruned model: $PRUNED_MODEL"
 fi
 
- Step 3: Finetune
+# Step 3: Finetune
 echo ""
 echo "Step 3: Finetuning..."
 echo "========================================"
