@@ -19,7 +19,7 @@ TASK_GROUPS_LIST=(
   ######### few-shot ##########
   # MC9 tasks
 #  "arc_easy"
-  "arc_challenge"
+#  "arc_challenge"
 #  "boolq"
 #  "csqa"
 #  "hellaswag"
@@ -27,7 +27,7 @@ TASK_GROUPS_LIST=(
 #  "piqa"
 #  "socialiqa"
 #  "winogrande"
-#  "gsm8k_generation_0shot"
+  "gsm8k_generation_0shot"
 #  "coqa_0shot"
 #  "coqa_full_0shot"
 #  "squad_0shot"
