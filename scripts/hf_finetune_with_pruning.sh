@@ -283,14 +283,14 @@ for checkpoint in "${all_checkpoints[@]}"; do
     # get the checkpoint number
     checkpoint_num=$(basename "$checkpoint" | sed 's/checkpoint-//')
     echo "Checkpoint number: $checkpoint_num"
-#    python -m src.scripts.eval.launch_eval \
-#        --model "$checkpoint" \
-#        --model-type hf \
-#        --task "$TASK-pruned" \
-#        --pruned_split "test" \
-#        --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals/${RELATIVE_DIR}/eval_results" \
-#        --batch-size $BATCH_SIZE \
-#        --gpus "$NUM_GPUS"
+    python -m src.scripts.eval.launch_eval \
+        --model "$checkpoint" \
+        --model-type hf \
+        --task "$TASK-pruned" \
+        --pruned_split "test" \
+        --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
+        --batch-size $BATCH_SIZE \
+        --gpus "$NUM_GPUS"
 
 done
 
