@@ -80,7 +80,7 @@ for MODEL in "${MODELS[@]}"; do
         relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}"
         safe_relative_dir=$(echo $relative_dir | sed 's/[^a-zA-Z0-9_-]//g')
         safe_relative_dir=${safe_relative_dir: -100}
-        job_name="eval-${safe_relative_dir}
+        job_name="eval-${safe_relative_dir}"
 
         echo "  Model name: ${BASE_DIR}/${MODEL}"
         echo "  GPUs: $gpus"
