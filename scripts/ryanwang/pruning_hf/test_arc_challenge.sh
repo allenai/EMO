@@ -31,9 +31,9 @@ TASK_GROUPS_LIST=(
 #  "socialiqa"
 #  "winogrande"
 #  "gsm8k_generation_0shot"
-  "coqa_0shot"
+#  "coqa_0shot"
 #  "coqa_full_0shot"
-#  "squad_0shot"
+  "squad_0shot"
 
 #   TO BE IMPLEMENTED
 #  "mmlu"
