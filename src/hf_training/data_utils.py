@@ -371,7 +371,6 @@ def get_formatted_prompts(task_name: str, split: str) -> List[str]:
     Returns:
         List of formatted prompt+answer strings
     """
-    breakpoint()
     oe_task_name = get_oe_task_name(task_name, split)
     TASK_CONFIGS = get_task_configs()
     task_config = TASK_CONFIGS[oe_task_name]
@@ -387,6 +386,9 @@ def get_formatted_prompts(task_name: str, split: str) -> List[str]:
             # we only choose the correct instances
             if instance.idx == instance.label and not instance.request.context.startswith("Answer:"):
                 dataset.append(instance.request.context + instance.request.continuation)
+            # gsm8k is an exception - implemented using loglikelihood formatting (but actually generate_until), so doesn't have label or answer
+            elif "gsm8k" in task_name:
+                dataset.append(instance.request.context + instance.request.continuation)
 
     elif task._instances[0].request_type == "generate_until":
         for instance in task._instances:
@@ -396,7 +398,6 @@ def get_formatted_prompts(task_name: str, split: str) -> List[str]:
             else:
                 dataset.append(instance.request.context + instance.doc["choices"][0])
 
-    breakpoint()
     # raw_dataset = load_hf_dataset(task_name, split)
     #
     # prompts = []
