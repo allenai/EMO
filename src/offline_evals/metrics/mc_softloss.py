@@ -22,7 +22,7 @@ class SoftLoss(Metric):
     def compute_for_requests(self, results_for_requests) -> List[dict]:
         """ """
         # comput sum_logits_uncond for acc_uncond (optional)
-        if self.uncond_docid_offset:
+        if hasattr(self, "uncond_docid_offset") and self.uncond_docid_offset is not None:
             middle = len(results_for_requests) // 2
             results_contexted = results_for_requests[:middle]
             results_uncond = results_for_requests[middle:]
