@@ -4,7 +4,7 @@
 BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 #BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 MODELS=(
-#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
+    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
     "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
 #    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995-hf"
 #    "moe_1b4b_32experts_1224/step30995-hf"
@@ -21,19 +21,19 @@ batch_size=32
 TASK_GROUPS_LIST=(
   ######### few-shot ##########
   # MC9 tasks
-  "arc_easy"
-  "arc_challenge"
-  "boolq"
-  "csqa"
+#  "arc_easy"
+#  "arc_challenge"
+#  "boolq"
+#  "csqa"
   "hellaswag"
-  "openbookqa"
-  "piqa"
-  "socialiqa"
+#  "openbookqa"
+#  "piqa"
+#  "socialiqa"
   "winogrande"
   "gsm8k_generation_0shot"
-  "coqa_0shot"
+#  "coqa_0shot"
 #  "coqa_full_0shot"
-  "squad_0shot"
+#  "squad_0shot"
 
 #   TO BE IMPLEMENTED
 #  "mmlu"
@@ -79,6 +79,8 @@ for MODEL in "${MODELS[@]}"; do
         stringified_model=$(echo $MODEL | sed 's/[^a-zA-Z0-9_-]//g')
         relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}"
         job_name="eval-$(echo $relative_dir | sed 's/[^a-zA-Z0-9_-]//g')"
+        # limit job_name to 120 characters
+        job_name=${job_name:0:120}
 
         echo "  Model name: ${BASE_DIR}/${MODEL}"
         echo "  GPUs: $gpus"
@@ -186,7 +188,7 @@ for MODEL in "${MODELS[@]}"; do
 #                --num-epochs ${num_epochs}
 #            "
 
-        echo "Launched evaluation for model: $model, task: $TASK"
+        echo "Launched evaluation for model: $MODEL, task: $TASK"
         echo "----------------------------------------"
     done
 

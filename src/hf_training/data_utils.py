@@ -232,6 +232,7 @@ def create_masked_labels(
 def tokenize_and_mask_example(
     full_text,
     tokenizer,
+    task_name,
     max_length: int = 4096,
     delimiter: str = "Answer:",
 ) -> Dict:
@@ -263,7 +264,11 @@ def tokenize_and_mask_example(
     delimiter_ids = tokenizer(delimiter, add_special_tokens=False)["input_ids"]
 
     # Create masked labels
-    labels = create_masked_labels(input_ids, delimiter_ids)
+    if "hellaswag" in task_name or "winogrande" in task_name:
+        # special case: hellaswag or winogrande has no delimiters, we just train on all tokens
+        labels = list(input_ids)
+    else:
+        labels = create_masked_labels(input_ids, delimiter_ids, task_name)
 
     return {
         "input_ids": input_ids,
@@ -304,7 +309,7 @@ def prepare_finetuning_dataset(
     delimiter = "Answer:" if task_name != "squad" else "A:"
 
     def process_example(example):
-        return tokenize_and_mask_example(example["text"], tokenizer, max_length, delimiter)
+        return tokenize_and_mask_example(example["text"], tokenizer, task_name, max_length, delimiter)
 
     # Process all examples
     logger.info(f"Tokenizing {len(raw_dataset)} examples...")
