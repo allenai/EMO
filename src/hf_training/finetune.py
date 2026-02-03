@@ -125,7 +125,6 @@ def finetune(config: FinetuneConfig):
     model = AutoModelForCausalLM.from_pretrained(
         config.model_path,
         torch_dtype=torch.bfloat16 if config.bf16 else torch.float32,
-        attn_implementation="flash_attention_2",
     )
 
     # Set padding token if not set
