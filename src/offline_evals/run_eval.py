@@ -540,7 +540,11 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
     # else:
     #     tokenizer = None
 
-    breakpoint()
+    # breakpoint()
+
+    # if model is an moe model, we set output_router_logits to False
+    if "dense" not in model_load_config["model"]:
+        model_load_config_other["output_router_logits"] = False
 
     model = model_class(
         pretrained=pretrained,
@@ -548,7 +552,7 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
         **model_load_config_other,
     )
 
-    breakpoint()
+    # breakpoint()
 
     if pruning_configs["do_prune"]:
         # load the activation file
