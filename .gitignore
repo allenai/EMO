@@ -65,3 +65,4 @@ s3_sync.sh
 prune_evals
 eval_visualizer
 *.png
+transformers
