@@ -19,7 +19,7 @@ TASK_GROUPS_LIST=(
   ######### few-shot ##########
   # MC9 tasks
 #  "arc_easy"
-#  "arc_challenge"
+  "arc_challenge"
 #  "boolq"
 #  "csqa"
 #  "hellaswag"
@@ -37,7 +37,7 @@ TASK_GROUPS_LIST=(
 #  "mmlu"
 
 #   GSM8K
-  "gsm8k_generation_0shot"
+#  "gsm8k_generation_0shot"
 
   ######### ZERO-SHOT only ##########
   # MC9 tasks
