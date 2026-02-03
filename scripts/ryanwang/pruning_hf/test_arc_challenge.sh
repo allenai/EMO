@@ -20,8 +20,8 @@ prune_keep_k=32
 TASK_GROUPS_LIST=(
   ######### few-shot ##########
   # MC9 tasks
-  "arc_easy"
-#  "arc_challenge"
+#  "arc_easy"
+  "arc_challenge"
 #  "boolq"
 #  "csqa"
 #  "hellaswag"
