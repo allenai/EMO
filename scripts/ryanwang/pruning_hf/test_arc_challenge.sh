@@ -78,8 +78,7 @@ for MODEL in "${MODELS[@]}"; do
 
         stringified_model=$(echo $MODEL | sed 's/[^a-zA-Z0-9_-]//g')
         relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}"
-        safe_relative_dir=$(echo $relative_dir | sed 's/[^a-zA-Z0-9_-]//g')
-        safe_relative_dir=${safe_relative_dir: -100}
+        safe_relative_dir=$(printf '%s' "$relative_dir" | sed 's/[^a-zA-Z0-9_-]//g' | tail -c 100)
         job_name="eval-${safe_relative_dir}"
 
         echo "  Model name: ${BASE_DIR}/${MODEL}"
