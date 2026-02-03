@@ -144,6 +144,7 @@ for MODEL in "${MODELS[@]}"; do
           --allow-dirty \
           --priority urgent \
           --no-follow \
+          --no-torchrun \
           --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
           -- bash -c "scripts/hf_finetune_with_pruning.sh \
               --model ${BASE_DIR}/models/${MODEL} \
