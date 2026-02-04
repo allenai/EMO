@@ -46,6 +46,7 @@ class DataMix(DataMixBase):
     OLMoE_mix_0824_cc = "OLMoE-mix-0824-cc"
     the_pile_of_law = "the-pile-of-law"
     tpol_70_dclm_30 = "tpol-70-dclm-30"
+    croissant = "croissant"
 
     mj_finemath4plus = "mj_finemath4plus"
     mose_code_mix = "mose_code_mix"
