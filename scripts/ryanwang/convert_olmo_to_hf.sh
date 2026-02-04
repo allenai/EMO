@@ -243,503 +243,112 @@ FINETUNE_TASKS=(
     "task-mmlu_psychology_rc_validation${postfix}/finetune-task-mmlu_psychology_rc_train/step129"
 
 
-#    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step0"
-#    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step4"
-#    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step8"
-#    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step12"
-#    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step16"
-#    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step20"
-#    "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step21"
-#    "task-mmlu_anatomy_rc_validation${postfix}/finetune-task-mmlu_anatomy_rc_train/step0"
-#    "task-mmlu_anatomy_rc_validation${postfix}/finetune-task-mmlu_anatomy_rc_train/step6"
-#    "task-mmlu_anatomy_rc_validation${postfix}/finetune-task-mmlu_anatomy_rc_train/step12"
-#    "task-mmlu_anatomy_rc_validation${postfix}/finetune-task-mmlu_anatomy_rc_train/step18"
-#    "task-mmlu_anatomy_rc_validation${postfix}/finetune-task-mmlu_anatomy_rc_train/step24"
-#    "task-mmlu_anatomy_rc_validation${postfix}/finetune-task-mmlu_anatomy_rc_train/step30"
-#    "task-mmlu_astronomy_rc_validation${postfix}/finetune-task-mmlu_astronomy_rc_train/step0"
-#    "task-mmlu_astronomy_rc_validation${postfix}/finetune-task-mmlu_astronomy_rc_train/step6"
-#    "task-mmlu_astronomy_rc_validation${postfix}/finetune-task-mmlu_astronomy_rc_train/step12"
-#    "task-mmlu_astronomy_rc_validation${postfix}/finetune-task-mmlu_astronomy_rc_train/step18"
-#    "task-mmlu_astronomy_rc_validation${postfix}/finetune-task-mmlu_astronomy_rc_train/step24"
-#    "task-mmlu_astronomy_rc_validation${postfix}/finetune-task-mmlu_astronomy_rc_train/step30"
-#    "task-mmlu_astronomy_rc_validation${postfix}/finetune-task-mmlu_astronomy_rc_train/step33"
-#    "task-mmlu_business_ethics_rc_validation${postfix}/finetune-task-mmlu_business_ethics_rc_train/step0"
-#    "task-mmlu_business_ethics_rc_validation${postfix}/finetune-task-mmlu_business_ethics_rc_train/step4"
-#    "task-mmlu_business_ethics_rc_validation${postfix}/finetune-task-mmlu_business_ethics_rc_train/step8"
-#    "task-mmlu_business_ethics_rc_validation${postfix}/finetune-task-mmlu_business_ethics_rc_train/step12"
-#    "task-mmlu_business_ethics_rc_validation${postfix}/finetune-task-mmlu_business_ethics_rc_train/step16"
-#    "task-mmlu_business_ethics_rc_validation${postfix}/finetune-task-mmlu_business_ethics_rc_train/step20"
-#    "task-mmlu_business_ethics_rc_validation${postfix}/finetune-task-mmlu_business_ethics_rc_train/step21"
-#    "task-mmlu_clinical_knowledge_rc_validation${postfix}/finetune-task-mmlu_clinical_knowledge_rc_train/step0"
-#    "task-mmlu_clinical_knowledge_rc_validation${postfix}/finetune-task-mmlu_clinical_knowledge_rc_train/step11"
-#    "task-mmlu_clinical_knowledge_rc_validation${postfix}/finetune-task-mmlu_clinical_knowledge_rc_train/step22"
-#    "task-mmlu_clinical_knowledge_rc_validation${postfix}/finetune-task-mmlu_clinical_knowledge_rc_train/step33"
-#    "task-mmlu_clinical_knowledge_rc_validation${postfix}/finetune-task-mmlu_clinical_knowledge_rc_train/step44"
-#    "task-mmlu_clinical_knowledge_rc_validation${postfix}/finetune-task-mmlu_clinical_knowledge_rc_train/step55"
-#    "task-mmlu_clinical_knowledge_rc_validation${postfix}/finetune-task-mmlu_clinical_knowledge_rc_train/step57"
-#    "task-mmlu_college_biology_rc_validation${postfix}/finetune-task-mmlu_college_biology_rc_train/step0"
-#    "task-mmlu_college_biology_rc_validation${postfix}/finetune-task-mmlu_college_biology_rc_train/step6"
-#    "task-mmlu_college_biology_rc_validation${postfix}/finetune-task-mmlu_college_biology_rc_train/step12"
-#    "task-mmlu_college_biology_rc_validation${postfix}/finetune-task-mmlu_college_biology_rc_train/step18"
-#    "task-mmlu_college_biology_rc_validation${postfix}/finetune-task-mmlu_college_biology_rc_train/step24"
-#    "task-mmlu_college_biology_rc_validation${postfix}/finetune-task-mmlu_college_biology_rc_train/step30"
-#    "task-mmlu_college_chemistry_rc_validation${postfix}/finetune-task-mmlu_college_chemistry_rc_train/step0"
-#    "task-mmlu_college_chemistry_rc_validation${postfix}/finetune-task-mmlu_college_chemistry_rc_train/step4"
-#    "task-mmlu_college_chemistry_rc_validation${postfix}/finetune-task-mmlu_college_chemistry_rc_train/step8"
-#    "task-mmlu_college_chemistry_rc_validation${postfix}/finetune-task-mmlu_college_chemistry_rc_train/step12"
-#    "task-mmlu_college_chemistry_rc_validation${postfix}/finetune-task-mmlu_college_chemistry_rc_train/step16"
-#    "task-mmlu_college_chemistry_rc_validation${postfix}/finetune-task-mmlu_college_chemistry_rc_train/step20"
-#    "task-mmlu_college_chemistry_rc_validation${postfix}/finetune-task-mmlu_college_chemistry_rc_train/step21"
-#    "task-mmlu_college_computer_science_rc_validation${postfix}/finetune-task-mmlu_college_computer_science_rc_train/step0"
-#    "task-mmlu_college_computer_science_rc_validation${postfix}/finetune-task-mmlu_college_computer_science_rc_train/step4"
-#    "task-mmlu_college_computer_science_rc_validation${postfix}/finetune-task-mmlu_college_computer_science_rc_train/step8"
-#    "task-mmlu_college_computer_science_rc_validation${postfix}/finetune-task-mmlu_college_computer_science_rc_train/step12"
-#    "task-mmlu_college_computer_science_rc_validation${postfix}/finetune-task-mmlu_college_computer_science_rc_train/step16"
-#    "task-mmlu_college_computer_science_rc_validation${postfix}/finetune-task-mmlu_college_computer_science_rc_train/step20"
-#    "task-mmlu_college_computer_science_rc_validation${postfix}/finetune-task-mmlu_college_computer_science_rc_train/step21"
-#    "task-mmlu_college_mathematics_rc_validation${postfix}/finetune-task-mmlu_college_mathematics_rc_train/step0"
-#    "task-mmlu_college_mathematics_rc_validation${postfix}/finetune-task-mmlu_college_mathematics_rc_train/step4"
-#    "task-mmlu_college_mathematics_rc_validation${postfix}/finetune-task-mmlu_college_mathematics_rc_train/step8"
-#    "task-mmlu_college_mathematics_rc_validation${postfix}/finetune-task-mmlu_college_mathematics_rc_train/step12"
-#    "task-mmlu_college_mathematics_rc_validation${postfix}/finetune-task-mmlu_college_mathematics_rc_train/step16"
-#    "task-mmlu_college_mathematics_rc_validation${postfix}/finetune-task-mmlu_college_mathematics_rc_train/step20"
-#    "task-mmlu_college_mathematics_rc_validation${postfix}/finetune-task-mmlu_college_mathematics_rc_train/step21"
-#    "task-mmlu_college_medicine_rc_validation${postfix}/finetune-task-mmlu_college_medicine_rc_train/step0"
-#    "task-mmlu_college_medicine_rc_validation${postfix}/finetune-task-mmlu_college_medicine_rc_train/step7"
-#    "task-mmlu_college_medicine_rc_validation${postfix}/finetune-task-mmlu_college_medicine_rc_train/step14"
-#    "task-mmlu_college_medicine_rc_validation${postfix}/finetune-task-mmlu_college_medicine_rc_train/step21"
-#    "task-mmlu_college_medicine_rc_validation${postfix}/finetune-task-mmlu_college_medicine_rc_train/step28"
-#    "task-mmlu_college_medicine_rc_validation${postfix}/finetune-task-mmlu_college_medicine_rc_train/step35"
-#    "task-mmlu_college_medicine_rc_validation${postfix}/finetune-task-mmlu_college_medicine_rc_train/step36"
-#    "task-mmlu_college_physics_rc_validation${postfix}/finetune-task-mmlu_college_physics_rc_train/step0"
-#    "task-mmlu_college_physics_rc_validation${postfix}/finetune-task-mmlu_college_physics_rc_train/step4"
-#    "task-mmlu_college_physics_rc_validation${postfix}/finetune-task-mmlu_college_physics_rc_train/step8"
-#    "task-mmlu_college_physics_rc_validation${postfix}/finetune-task-mmlu_college_physics_rc_train/step12"
-#    "task-mmlu_college_physics_rc_validation${postfix}/finetune-task-mmlu_college_physics_rc_train/step16"
-#    "task-mmlu_college_physics_rc_validation${postfix}/finetune-task-mmlu_college_physics_rc_train/step20"
-#    "task-mmlu_college_physics_rc_validation${postfix}/finetune-task-mmlu_college_physics_rc_train/step21"
-#    "task-mmlu_computer_security_rc_validation${postfix}/finetune-task-mmlu_computer_security_rc_train/step0"
-#    "task-mmlu_computer_security_rc_validation${postfix}/finetune-task-mmlu_computer_security_rc_train/step4"
-#    "task-mmlu_computer_security_rc_validation${postfix}/finetune-task-mmlu_computer_security_rc_train/step8"
-#    "task-mmlu_computer_security_rc_validation${postfix}/finetune-task-mmlu_computer_security_rc_train/step12"
-#    "task-mmlu_computer_security_rc_validation${postfix}/finetune-task-mmlu_computer_security_rc_train/step16"
-#    "task-mmlu_computer_security_rc_validation${postfix}/finetune-task-mmlu_computer_security_rc_train/step20"
-#    "task-mmlu_computer_security_rc_validation${postfix}/finetune-task-mmlu_computer_security_rc_train/step21"
-#    "task-mmlu_conceptual_physics_rc_validation${postfix}/finetune-task-mmlu_conceptual_physics_rc_train/step0"
-#    "task-mmlu_conceptual_physics_rc_validation${postfix}/finetune-task-mmlu_conceptual_physics_rc_train/step10"
-#    "task-mmlu_conceptual_physics_rc_validation${postfix}/finetune-task-mmlu_conceptual_physics_rc_train/step20"
-#    "task-mmlu_conceptual_physics_rc_validation${postfix}/finetune-task-mmlu_conceptual_physics_rc_train/step30"
-#    "task-mmlu_conceptual_physics_rc_validation${postfix}/finetune-task-mmlu_conceptual_physics_rc_train/step40"
-#    "task-mmlu_conceptual_physics_rc_validation${postfix}/finetune-task-mmlu_conceptual_physics_rc_train/step50"
-#    "task-mmlu_conceptual_physics_rc_validation${postfix}/finetune-task-mmlu_conceptual_physics_rc_train/step51"
-#    "task-mmlu_econometrics_rc_validation${postfix}/finetune-task-mmlu_econometrics_rc_train/step0"
-#    "task-mmlu_econometrics_rc_validation${postfix}/finetune-task-mmlu_econometrics_rc_train/step4"
-#    "task-mmlu_econometrics_rc_validation${postfix}/finetune-task-mmlu_econometrics_rc_train/step8"
-#    "task-mmlu_econometrics_rc_validation${postfix}/finetune-task-mmlu_econometrics_rc_train/step12"
-#    "task-mmlu_econometrics_rc_validation${postfix}/finetune-task-mmlu_econometrics_rc_train/step16"
-#    "task-mmlu_econometrics_rc_validation${postfix}/finetune-task-mmlu_econometrics_rc_train/step20"
-#    "task-mmlu_econometrics_rc_validation${postfix}/finetune-task-mmlu_econometrics_rc_train/step24"
-#    "task-mmlu_electrical_engineering_rc_validation${postfix}/finetune-task-mmlu_electrical_engineering_rc_train/step0"
-#    "task-mmlu_electrical_engineering_rc_validation${postfix}/finetune-task-mmlu_electrical_engineering_rc_train/step6"
-#    "task-mmlu_electrical_engineering_rc_validation${postfix}/finetune-task-mmlu_electrical_engineering_rc_train/step12"
-#    "task-mmlu_electrical_engineering_rc_validation${postfix}/finetune-task-mmlu_electrical_engineering_rc_train/step18"
-#    "task-mmlu_electrical_engineering_rc_validation${postfix}/finetune-task-mmlu_electrical_engineering_rc_train/step24"
-#    "task-mmlu_electrical_engineering_rc_validation${postfix}/finetune-task-mmlu_electrical_engineering_rc_train/step30"
-#    "task-mmlu_elementary_mathematics_rc_validation${postfix}/finetune-task-mmlu_elementary_mathematics_rc_train/step0"
-#    "task-mmlu_elementary_mathematics_rc_validation${postfix}/finetune-task-mmlu_elementary_mathematics_rc_train/step16"
-#    "task-mmlu_elementary_mathematics_rc_validation${postfix}/finetune-task-mmlu_elementary_mathematics_rc_train/step32"
-#    "task-mmlu_elementary_mathematics_rc_validation${postfix}/finetune-task-mmlu_elementary_mathematics_rc_train/step48"
-#    "task-mmlu_elementary_mathematics_rc_validation${postfix}/finetune-task-mmlu_elementary_mathematics_rc_train/step64"
-#    "task-mmlu_elementary_mathematics_rc_validation${postfix}/finetune-task-mmlu_elementary_mathematics_rc_train/step80"
-#    "task-mmlu_elementary_mathematics_rc_validation${postfix}/finetune-task-mmlu_elementary_mathematics_rc_train/step84"
-#    "task-mmlu_formal_logic_rc_validation${postfix}/finetune-task-mmlu_formal_logic_rc_train/step0"
-#    "task-mmlu_formal_logic_rc_validation${postfix}/finetune-task-mmlu_formal_logic_rc_train/step5"
-#    "task-mmlu_formal_logic_rc_validation${postfix}/finetune-task-mmlu_formal_logic_rc_train/step10"
-#    "task-mmlu_formal_logic_rc_validation${postfix}/finetune-task-mmlu_formal_logic_rc_train/step15"
-#    "task-mmlu_formal_logic_rc_validation${postfix}/finetune-task-mmlu_formal_logic_rc_train/step20"
-#    "task-mmlu_formal_logic_rc_validation${postfix}/finetune-task-mmlu_formal_logic_rc_train/step25"
-#    "task-mmlu_formal_logic_rc_validation${postfix}/finetune-task-mmlu_formal_logic_rc_train/step27"
-#    "task-mmlu_global_facts_rc_validation${postfix}/finetune-task-mmlu_global_facts_rc_train/step0"
-#    "task-mmlu_global_facts_rc_validation${postfix}/finetune-task-mmlu_global_facts_rc_train/step4"
-#    "task-mmlu_global_facts_rc_validation${postfix}/finetune-task-mmlu_global_facts_rc_train/step8"
-#    "task-mmlu_global_facts_rc_validation${postfix}/finetune-task-mmlu_global_facts_rc_train/step12"
-#    "task-mmlu_global_facts_rc_validation${postfix}/finetune-task-mmlu_global_facts_rc_train/step16"
-#    "task-mmlu_global_facts_rc_validation${postfix}/finetune-task-mmlu_global_facts_rc_train/step20"
-#    "task-mmlu_global_facts_rc_validation${postfix}/finetune-task-mmlu_global_facts_rc_train/step21"
-#    "task-mmlu_high_school_biology_rc_validation${postfix}/finetune-task-mmlu_high_school_biology_rc_train/step0"
-#    "task-mmlu_high_school_biology_rc_validation${postfix}/finetune-task-mmlu_high_school_biology_rc_train/step13"
-#    "task-mmlu_high_school_biology_rc_validation${postfix}/finetune-task-mmlu_high_school_biology_rc_train/step26"
-#    "task-mmlu_high_school_biology_rc_validation${postfix}/finetune-task-mmlu_high_school_biology_rc_train/step39"
-#    "task-mmlu_high_school_biology_rc_validation${postfix}/finetune-task-mmlu_high_school_biology_rc_train/step52"
-#    "task-mmlu_high_school_biology_rc_validation${postfix}/finetune-task-mmlu_high_school_biology_rc_train/step65"
-#    "task-mmlu_high_school_biology_rc_validation${postfix}/finetune-task-mmlu_high_school_biology_rc_train/step69"
-#    "task-mmlu_high_school_chemistry_rc_validation${postfix}/finetune-task-mmlu_high_school_chemistry_rc_train/step0"
-#    "task-mmlu_high_school_chemistry_rc_validation${postfix}/finetune-task-mmlu_high_school_chemistry_rc_train/step9"
-#    "task-mmlu_high_school_chemistry_rc_validation${postfix}/finetune-task-mmlu_high_school_chemistry_rc_train/step18"
-#    "task-mmlu_high_school_chemistry_rc_validation${postfix}/finetune-task-mmlu_high_school_chemistry_rc_train/step27"
-#    "task-mmlu_high_school_chemistry_rc_validation${postfix}/finetune-task-mmlu_high_school_chemistry_rc_train/step36"
-#    "task-mmlu_high_school_chemistry_rc_validation${postfix}/finetune-task-mmlu_high_school_chemistry_rc_train/step45"
-#    "task-mmlu_high_school_computer_science_rc_validation${postfix}/finetune-task-mmlu_high_school_computer_science_rc_train/step0"
-#    "task-mmlu_high_school_computer_science_rc_validation${postfix}/finetune-task-mmlu_high_school_computer_science_rc_train/step4"
-#    "task-mmlu_high_school_computer_science_rc_validation${postfix}/finetune-task-mmlu_high_school_computer_science_rc_train/step8"
-#    "task-mmlu_high_school_computer_science_rc_validation${postfix}/finetune-task-mmlu_high_school_computer_science_rc_train/step12"
-#    "task-mmlu_high_school_computer_science_rc_validation${postfix}/finetune-task-mmlu_high_school_computer_science_rc_train/step16"
-#    "task-mmlu_high_school_computer_science_rc_validation${postfix}/finetune-task-mmlu_high_school_computer_science_rc_train/step20"
-#    "task-mmlu_high_school_computer_science_rc_validation${postfix}/finetune-task-mmlu_high_school_computer_science_rc_train/step21"
-#    "task-mmlu_high_school_european_history_rc_validation${postfix}/finetune-task-mmlu_high_school_european_history_rc_train/step0"
-#    "task-mmlu_high_school_european_history_rc_validation${postfix}/finetune-task-mmlu_high_school_european_history_rc_train/step7"
-#    "task-mmlu_high_school_european_history_rc_validation${postfix}/finetune-task-mmlu_high_school_european_history_rc_train/step14"
-#    "task-mmlu_high_school_european_history_rc_validation${postfix}/finetune-task-mmlu_high_school_european_history_rc_train/step21"
-#    "task-mmlu_high_school_european_history_rc_validation${postfix}/finetune-task-mmlu_high_school_european_history_rc_train/step28"
-#    "task-mmlu_high_school_european_history_rc_validation${postfix}/finetune-task-mmlu_high_school_european_history_rc_train/step35"
-#    "task-mmlu_high_school_european_history_rc_validation${postfix}/finetune-task-mmlu_high_school_european_history_rc_train/step36"
-#    "task-mmlu_high_school_geography_rc_validation${postfix}/finetune-task-mmlu_high_school_geography_rc_train/step0"
-#    "task-mmlu_high_school_geography_rc_validation${postfix}/finetune-task-mmlu_high_school_geography_rc_train/step8"
-#    "task-mmlu_high_school_geography_rc_validation${postfix}/finetune-task-mmlu_high_school_geography_rc_train/step16"
-#    "task-mmlu_high_school_geography_rc_validation${postfix}/finetune-task-mmlu_high_school_geography_rc_train/step24"
-#    "task-mmlu_high_school_geography_rc_validation${postfix}/finetune-task-mmlu_high_school_geography_rc_train/step32"
-#    "task-mmlu_high_school_geography_rc_validation${postfix}/finetune-task-mmlu_high_school_geography_rc_train/step40"
-#    "task-mmlu_high_school_geography_rc_validation${postfix}/finetune-task-mmlu_high_school_geography_rc_train/step42"
-#    "task-mmlu_high_school_government_and_politics_rc_validation${postfix}/finetune-task-mmlu_high_school_government_and_politics_rc_train/step0"
-#    "task-mmlu_high_school_macroeconomics_rc_validation${postfix}/finetune-task-mmlu_high_school_macroeconomics_rc_train/step0"
-#    "task-mmlu_high_school_macroeconomics_rc_validation${postfix}/finetune-task-mmlu_high_school_macroeconomics_rc_train/step17"
-#    "task-mmlu_high_school_macroeconomics_rc_validation${postfix}/finetune-task-mmlu_high_school_macroeconomics_rc_train/step34"
-#    "task-mmlu_high_school_macroeconomics_rc_validation${postfix}/finetune-task-mmlu_high_school_macroeconomics_rc_train/step51"
-#    "task-mmlu_high_school_macroeconomics_rc_validation${postfix}/finetune-task-mmlu_high_school_macroeconomics_rc_train/step68"
-#    "task-mmlu_high_school_macroeconomics_rc_validation${postfix}/finetune-task-mmlu_high_school_macroeconomics_rc_train/step85"
-#    "task-mmlu_high_school_macroeconomics_rc_validation${postfix}/finetune-task-mmlu_high_school_macroeconomics_rc_train/step87"
-#    "task-mmlu_high_school_mathematics_rc_validation${postfix}/finetune-task-mmlu_high_school_mathematics_rc_train/step0"
-#    "task-mmlu_high_school_mathematics_rc_validation${postfix}/finetune-task-mmlu_high_school_mathematics_rc_train/step12"
-#    "task-mmlu_high_school_mathematics_rc_validation${postfix}/finetune-task-mmlu_high_school_mathematics_rc_train/step24"
-#    "task-mmlu_high_school_mathematics_rc_validation${postfix}/finetune-task-mmlu_high_school_mathematics_rc_train/step36"
-#    "task-mmlu_high_school_mathematics_rc_validation${postfix}/finetune-task-mmlu_high_school_mathematics_rc_train/step48"
-#    "task-mmlu_high_school_mathematics_rc_validation${postfix}/finetune-task-mmlu_high_school_mathematics_rc_train/step60"
-#    "task-mmlu_high_school_microeconomics_rc_validation${postfix}/finetune-task-mmlu_high_school_microeconomics_rc_train/step0"
-#    "task-mmlu_high_school_microeconomics_rc_validation${postfix}/finetune-task-mmlu_high_school_microeconomics_rc_train/step10"
-#    "task-mmlu_high_school_microeconomics_rc_validation${postfix}/finetune-task-mmlu_high_school_microeconomics_rc_train/step20"
-#    "task-mmlu_high_school_microeconomics_rc_validation${postfix}/finetune-task-mmlu_high_school_microeconomics_rc_train/step30"
-#    "task-mmlu_high_school_microeconomics_rc_validation${postfix}/finetune-task-mmlu_high_school_microeconomics_rc_train/step40"
-#    "task-mmlu_high_school_microeconomics_rc_validation${postfix}/finetune-task-mmlu_high_school_microeconomics_rc_train/step50"
-#    "task-mmlu_high_school_microeconomics_rc_validation${postfix}/finetune-task-mmlu_high_school_microeconomics_rc_train/step51"
-#    "task-mmlu_high_school_physics_rc_validation${postfix}/finetune-task-mmlu_high_school_physics_rc_train/step0"
-#    "task-mmlu_high_school_physics_rc_validation${postfix}/finetune-task-mmlu_high_school_physics_rc_train/step6"
-#    "task-mmlu_high_school_physics_rc_validation${postfix}/finetune-task-mmlu_high_school_physics_rc_train/step12"
-#    "task-mmlu_high_school_physics_rc_validation${postfix}/finetune-task-mmlu_high_school_physics_rc_train/step18"
-#    "task-mmlu_high_school_physics_rc_validation${postfix}/finetune-task-mmlu_high_school_physics_rc_train/step24"
-#    "task-mmlu_high_school_physics_rc_validation${postfix}/finetune-task-mmlu_high_school_physics_rc_train/step30"
-#    "task-mmlu_high_school_physics_rc_validation${postfix}/finetune-task-mmlu_high_school_physics_rc_train/step33"
-#    "task-mmlu_high_school_psychology_rc_validation${postfix}/finetune-task-mmlu_high_school_psychology_rc_train/step0"
-#    "task-mmlu_high_school_psychology_rc_validation${postfix}/finetune-task-mmlu_high_school_psychology_rc_train/step24"
-#    "task-mmlu_high_school_psychology_rc_validation${postfix}/finetune-task-mmlu_high_school_psychology_rc_train/step48"
-#    "task-mmlu_high_school_psychology_rc_validation${postfix}/finetune-task-mmlu_high_school_psychology_rc_train/step72"
-#    "task-mmlu_high_school_psychology_rc_validation${postfix}/finetune-task-mmlu_high_school_psychology_rc_train/step96"
-#    "task-mmlu_high_school_psychology_rc_validation${postfix}/finetune-task-mmlu_high_school_psychology_rc_train/step120"
-#    "task-mmlu_high_school_statistics_rc_validation${postfix}/finetune-task-mmlu_high_school_statistics_rc_train/step0"
-#    "task-mmlu_high_school_statistics_rc_validation${postfix}/finetune-task-mmlu_high_school_statistics_rc_train/step9"
-#    "task-mmlu_high_school_statistics_rc_validation${postfix}/finetune-task-mmlu_high_school_statistics_rc_train/step18"
-#    "task-mmlu_high_school_statistics_rc_validation${postfix}/finetune-task-mmlu_high_school_statistics_rc_train/step27"
-#    "task-mmlu_high_school_statistics_rc_validation${postfix}/finetune-task-mmlu_high_school_statistics_rc_train/step36"
-#    "task-mmlu_high_school_statistics_rc_validation${postfix}/finetune-task-mmlu_high_school_statistics_rc_train/step45"
-#    "task-mmlu_high_school_statistics_rc_validation${postfix}/finetune-task-mmlu_high_school_statistics_rc_train/step48"
-#    "task-mmlu_high_school_us_history_rc_validation${postfix}/finetune-task-mmlu_high_school_us_history_rc_train/step0"
-#    "task-mmlu_high_school_us_history_rc_validation${postfix}/finetune-task-mmlu_high_school_us_history_rc_train/step9"
-#    "task-mmlu_high_school_us_history_rc_validation${postfix}/finetune-task-mmlu_high_school_us_history_rc_train/step18"
-#    "task-mmlu_high_school_us_history_rc_validation${postfix}/finetune-task-mmlu_high_school_us_history_rc_train/step27"
-#    "task-mmlu_high_school_us_history_rc_validation${postfix}/finetune-task-mmlu_high_school_us_history_rc_train/step36"
-#    "task-mmlu_high_school_us_history_rc_validation${postfix}/finetune-task-mmlu_high_school_us_history_rc_train/step45"
-#    "task-mmlu_high_school_world_history_rc_validation${postfix}/finetune-task-mmlu_high_school_world_history_rc_train/step0"
-#    "task-mmlu_high_school_world_history_rc_validation${postfix}/finetune-task-mmlu_high_school_world_history_rc_train/step10"
-#    "task-mmlu_high_school_world_history_rc_validation${postfix}/finetune-task-mmlu_high_school_world_history_rc_train/step20"
-#    "task-mmlu_high_school_world_history_rc_validation${postfix}/finetune-task-mmlu_high_school_world_history_rc_train/step30"
-#    "task-mmlu_high_school_world_history_rc_validation${postfix}/finetune-task-mmlu_high_school_world_history_rc_train/step40"
-#    "task-mmlu_high_school_world_history_rc_validation${postfix}/finetune-task-mmlu_high_school_world_history_rc_train/step50"
-#    "task-mmlu_high_school_world_history_rc_validation${postfix}/finetune-task-mmlu_high_school_world_history_rc_train/step51"
-#    "task-mmlu_human_aging_rc_validation${postfix}/finetune-task-mmlu_human_aging_rc_train/step0"
-#    "task-mmlu_human_aging_rc_validation${postfix}/finetune-task-mmlu_human_aging_rc_train/step9"
-#    "task-mmlu_human_aging_rc_validation${postfix}/finetune-task-mmlu_human_aging_rc_train/step18"
-#    "task-mmlu_human_aging_rc_validation${postfix}/finetune-task-mmlu_human_aging_rc_train/step27"
-#    "task-mmlu_human_aging_rc_validation${postfix}/finetune-task-mmlu_human_aging_rc_train/step36"
-#    "task-mmlu_human_aging_rc_validation${postfix}/finetune-task-mmlu_human_aging_rc_train/step45"
-#    "task-mmlu_human_aging_rc_validation${postfix}/finetune-task-mmlu_human_aging_rc_train/step48"
-#    "task-mmlu_human_sexuality_rc_validation${postfix}/finetune-task-mmlu_human_sexuality_rc_train/step0"
-#    "task-mmlu_human_sexuality_rc_validation${postfix}/finetune-task-mmlu_human_sexuality_rc_train/step5"
-#    "task-mmlu_human_sexuality_rc_validation${postfix}/finetune-task-mmlu_human_sexuality_rc_train/step10"
-#    "task-mmlu_human_sexuality_rc_validation${postfix}/finetune-task-mmlu_human_sexuality_rc_train/step15"
-#    "task-mmlu_human_sexuality_rc_validation${postfix}/finetune-task-mmlu_human_sexuality_rc_train/step20"
-#    "task-mmlu_human_sexuality_rc_validation${postfix}/finetune-task-mmlu_human_sexuality_rc_train/step25"
-#    "task-mmlu_human_sexuality_rc_validation${postfix}/finetune-task-mmlu_human_sexuality_rc_train/step27"
-#    "task-mmlu_international_law_rc_validation${postfix}/finetune-task-mmlu_international_law_rc_train/step0"
-#    "task-mmlu_international_law_rc_validation${postfix}/finetune-task-mmlu_international_law_rc_train/step5"
-#    "task-mmlu_international_law_rc_validation${postfix}/finetune-task-mmlu_international_law_rc_train/step10"
-#    "task-mmlu_international_law_rc_validation${postfix}/finetune-task-mmlu_international_law_rc_train/step15"
-#    "task-mmlu_international_law_rc_validation${postfix}/finetune-task-mmlu_international_law_rc_train/step20"
-#    "task-mmlu_international_law_rc_validation${postfix}/finetune-task-mmlu_international_law_rc_train/step25"
-#    "task-mmlu_international_law_rc_validation${postfix}/finetune-task-mmlu_international_law_rc_train/step27"
-#    "task-mmlu_jurisprudence_rc_validation${postfix}/finetune-task-mmlu_jurisprudence_rc_train/step0"
-#    "task-mmlu_jurisprudence_rc_validation${postfix}/finetune-task-mmlu_jurisprudence_rc_train/step4"
-#    "task-mmlu_jurisprudence_rc_validation${postfix}/finetune-task-mmlu_jurisprudence_rc_train/step8"
-#    "task-mmlu_jurisprudence_rc_validation${postfix}/finetune-task-mmlu_jurisprudence_rc_train/step12"
-#    "task-mmlu_jurisprudence_rc_validation${postfix}/finetune-task-mmlu_jurisprudence_rc_train/step16"
-#    "task-mmlu_jurisprudence_rc_validation${postfix}/finetune-task-mmlu_jurisprudence_rc_train/step20"
-#    "task-mmlu_jurisprudence_rc_validation${postfix}/finetune-task-mmlu_jurisprudence_rc_train/step24"
-#    "task-mmlu_logical_fallacies_rc_validation${postfix}/finetune-task-mmlu_logical_fallacies_rc_train/step0"
-#    "task-mmlu_logical_fallacies_rc_validation${postfix}/finetune-task-mmlu_logical_fallacies_rc_train/step7"
-#    "task-mmlu_logical_fallacies_rc_validation${postfix}/finetune-task-mmlu_logical_fallacies_rc_train/step14"
-#    "task-mmlu_logical_fallacies_rc_validation${postfix}/finetune-task-mmlu_logical_fallacies_rc_train/step21"
-#    "task-mmlu_logical_fallacies_rc_validation${postfix}/finetune-task-mmlu_logical_fallacies_rc_train/step28"
-#    "task-mmlu_logical_fallacies_rc_validation${postfix}/finetune-task-mmlu_logical_fallacies_rc_train/step35"
-#    "task-mmlu_logical_fallacies_rc_validation${postfix}/finetune-task-mmlu_logical_fallacies_rc_train/step36"
-#    "task-mmlu_machine_learning_rc_validation${postfix}/finetune-task-mmlu_machine_learning_rc_train/step0"
-#    "task-mmlu_machine_learning_rc_validation${postfix}/finetune-task-mmlu_machine_learning_rc_train/step4"
-#    "task-mmlu_machine_learning_rc_validation${postfix}/finetune-task-mmlu_machine_learning_rc_train/step8"
-#    "task-mmlu_machine_learning_rc_validation${postfix}/finetune-task-mmlu_machine_learning_rc_train/step12"
-#    "task-mmlu_machine_learning_rc_validation${postfix}/finetune-task-mmlu_machine_learning_rc_train/step16"
-#    "task-mmlu_machine_learning_rc_validation${postfix}/finetune-task-mmlu_machine_learning_rc_train/step20"
-#    "task-mmlu_machine_learning_rc_validation${postfix}/finetune-task-mmlu_machine_learning_rc_train/step24"
-#    "task-mmlu_management_rc_validation${postfix}/finetune-task-mmlu_management_rc_train/step0"
-#    "task-mmlu_management_rc_validation${postfix}/finetune-task-mmlu_management_rc_train/step4"
-#    "task-mmlu_management_rc_validation${postfix}/finetune-task-mmlu_management_rc_train/step8"
-#    "task-mmlu_management_rc_validation${postfix}/finetune-task-mmlu_management_rc_train/step12"
-#    "task-mmlu_management_rc_validation${postfix}/finetune-task-mmlu_management_rc_train/step16"
-#    "task-mmlu_management_rc_validation${postfix}/finetune-task-mmlu_management_rc_train/step20"
-#    "task-mmlu_management_rc_validation${postfix}/finetune-task-mmlu_management_rc_train/step21"
-#    "task-mmlu_marketing_rc_validation${postfix}/finetune-task-mmlu_marketing_rc_train/step0"
-#    "task-mmlu_marketing_rc_validation${postfix}/finetune-task-mmlu_marketing_rc_train/step10"
-#    "task-mmlu_marketing_rc_validation${postfix}/finetune-task-mmlu_marketing_rc_train/step20"
-#    "task-mmlu_marketing_rc_validation${postfix}/finetune-task-mmlu_marketing_rc_train/step30"
-#    "task-mmlu_marketing_rc_validation${postfix}/finetune-task-mmlu_marketing_rc_train/step40"
-#    "task-mmlu_marketing_rc_validation${postfix}/finetune-task-mmlu_marketing_rc_train/step50"
-#    "task-mmlu_marketing_rc_validation${postfix}/finetune-task-mmlu_marketing_rc_train/step51"
-#    "task-mmlu_medical_genetics_rc_validation${postfix}/finetune-task-mmlu_medical_genetics_rc_train/step0"
-#    "task-mmlu_medical_genetics_rc_validation${postfix}/finetune-task-mmlu_medical_genetics_rc_train/step4"
-#    "task-mmlu_medical_genetics_rc_validation${postfix}/finetune-task-mmlu_medical_genetics_rc_train/step8"
-#    "task-mmlu_medical_genetics_rc_validation${postfix}/finetune-task-mmlu_medical_genetics_rc_train/step12"
-#    "task-mmlu_medical_genetics_rc_validation${postfix}/finetune-task-mmlu_medical_genetics_rc_train/step16"
-#    "task-mmlu_medical_genetics_rc_validation${postfix}/finetune-task-mmlu_medical_genetics_rc_train/step20"
-#    "task-mmlu_medical_genetics_rc_validation${postfix}/finetune-task-mmlu_medical_genetics_rc_train/step21"
-#    "task-mmlu_miscellaneous_rc_validation${postfix}/finetune-task-mmlu_miscellaneous_rc_train/step0"
-#    "task-mmlu_miscellaneous_rc_validation${postfix}/finetune-task-mmlu_miscellaneous_rc_train/step34"
-#    "task-mmlu_miscellaneous_rc_validation${postfix}/finetune-task-mmlu_miscellaneous_rc_train/step68"
-#    "task-mmlu_miscellaneous_rc_validation${postfix}/finetune-task-mmlu_miscellaneous_rc_train/step102"
-#    "task-mmlu_miscellaneous_rc_validation${postfix}/finetune-task-mmlu_miscellaneous_rc_train/step136"
-#    "task-mmlu_miscellaneous_rc_validation${postfix}/finetune-task-mmlu_miscellaneous_rc_train/step170"
-#    "task-mmlu_miscellaneous_rc_validation${postfix}/finetune-task-mmlu_miscellaneous_rc_train/step174"
-#    "task-mmlu_moral_disputes_rc_validation${postfix}/finetune-task-mmlu_moral_disputes_rc_train/step0"
-#    "task-mmlu_moral_disputes_rc_validation${postfix}/finetune-task-mmlu_moral_disputes_rc_train/step15"
-#    "task-mmlu_moral_disputes_rc_validation${postfix}/finetune-task-mmlu_moral_disputes_rc_train/step30"
-#    "task-mmlu_moral_disputes_rc_validation${postfix}/finetune-task-mmlu_moral_disputes_rc_train/step45"
-#    "task-mmlu_moral_disputes_rc_validation${postfix}/finetune-task-mmlu_moral_disputes_rc_train/step60"
-#    "task-mmlu_moral_disputes_rc_validation${postfix}/finetune-task-mmlu_moral_disputes_rc_train/step75"
-#    "task-mmlu_moral_scenarios_rc_validation${postfix}/finetune-task-mmlu_moral_scenarios_rc_train/step0"
-#    "task-mmlu_moral_scenarios_rc_validation${postfix}/finetune-task-mmlu_moral_scenarios_rc_train/step40"
-#    "task-mmlu_moral_scenarios_rc_validation${postfix}/finetune-task-mmlu_moral_scenarios_rc_train/step80"
-#    "task-mmlu_moral_scenarios_rc_validation${postfix}/finetune-task-mmlu_moral_scenarios_rc_train/step120"
-#    "task-mmlu_moral_scenarios_rc_validation${postfix}/finetune-task-mmlu_moral_scenarios_rc_train/step160"
-#    "task-mmlu_moral_scenarios_rc_validation${postfix}/finetune-task-mmlu_moral_scenarios_rc_train/step200"
-#    "task-mmlu_moral_scenarios_rc_validation${postfix}/finetune-task-mmlu_moral_scenarios_rc_train/step201"
-#    "task-mmlu_nutrition_rc_validation${postfix}/finetune-task-mmlu_nutrition_rc_train/step0"
-#    "task-mmlu_nutrition_rc_validation${postfix}/finetune-task-mmlu_nutrition_rc_train/step13"
-#    "task-mmlu_nutrition_rc_validation${postfix}/finetune-task-mmlu_nutrition_rc_train/step26"
-#    "task-mmlu_nutrition_rc_validation${postfix}/finetune-task-mmlu_nutrition_rc_train/step39"
-#    "task-mmlu_nutrition_rc_validation${postfix}/finetune-task-mmlu_nutrition_rc_train/step52"
-#    "task-mmlu_nutrition_rc_validation${postfix}/finetune-task-mmlu_nutrition_rc_train/step65"
-#    "task-mmlu_nutrition_rc_validation${postfix}/finetune-task-mmlu_nutrition_rc_train/step66"
-#    "task-mmlu_philosophy_rc_validation${postfix}/finetune-task-mmlu_philosophy_rc_train/step0"
-#    "task-mmlu_philosophy_rc_validation${postfix}/finetune-task-mmlu_philosophy_rc_train/step13"
-#    "task-mmlu_philosophy_rc_validation${postfix}/finetune-task-mmlu_philosophy_rc_train/step26"
-#    "task-mmlu_philosophy_rc_validation${postfix}/finetune-task-mmlu_philosophy_rc_train/step39"
-#    "task-mmlu_philosophy_rc_validation${postfix}/finetune-task-mmlu_philosophy_rc_train/step52"
-#    "task-mmlu_philosophy_rc_validation${postfix}/finetune-task-mmlu_philosophy_rc_train/step65"
-#    "task-mmlu_philosophy_rc_validation${postfix}/finetune-task-mmlu_philosophy_rc_train/step69"
-#    "task-mmlu_prehistory_rc_validation${postfix}/finetune-task-mmlu_prehistory_rc_train/step0"
-#    "task-mmlu_prehistory_rc_validation${postfix}/finetune-task-mmlu_prehistory_rc_train/step14"
-#    "task-mmlu_prehistory_rc_validation${postfix}/finetune-task-mmlu_prehistory_rc_train/step28"
-#    "task-mmlu_prehistory_rc_validation${postfix}/finetune-task-mmlu_prehistory_rc_train/step42"
-#    "task-mmlu_prehistory_rc_validation${postfix}/finetune-task-mmlu_prehistory_rc_train/step56"
-#    "task-mmlu_prehistory_rc_validation${postfix}/finetune-task-mmlu_prehistory_rc_train/step70"
-#    "task-mmlu_prehistory_rc_validation${postfix}/finetune-task-mmlu_prehistory_rc_train/step72"
-#    "task-mmlu_professional_accounting_rc_validation${postfix}/finetune-task-mmlu_professional_accounting_rc_train/step0"
-#    "task-mmlu_professional_accounting_rc_validation${postfix}/finetune-task-mmlu_professional_accounting_rc_train/step12"
-#    "task-mmlu_professional_accounting_rc_validation${postfix}/finetune-task-mmlu_professional_accounting_rc_train/step24"
-#    "task-mmlu_professional_accounting_rc_validation${postfix}/finetune-task-mmlu_professional_accounting_rc_train/step36"
-#    "task-mmlu_professional_accounting_rc_validation${postfix}/finetune-task-mmlu_professional_accounting_rc_train/step48"
-#    "task-mmlu_professional_accounting_rc_validation${postfix}/finetune-task-mmlu_professional_accounting_rc_train/step60"
-#    "task-mmlu_professional_accounting_rc_validation${postfix}/finetune-task-mmlu_professional_accounting_rc_train/step63"
-#    "task-mmlu_professional_law_rc_validation${postfix}/finetune-task-mmlu_professional_law_rc_train/step0"
-#    "task-mmlu_professional_law_rc_validation${postfix}/finetune-task-mmlu_professional_law_rc_train/step69"
-#    "task-mmlu_professional_law_rc_validation${postfix}/finetune-task-mmlu_professional_law_rc_train/step138"
-#    "task-mmlu_professional_law_rc_validation${postfix}/finetune-task-mmlu_professional_law_rc_train/step207"
-#    "task-mmlu_professional_law_rc_validation${postfix}/finetune-task-mmlu_professional_law_rc_train/step276"
-#    "task-mmlu_professional_law_rc_validation${postfix}/finetune-task-mmlu_professional_law_rc_train/step345"
-#    "task-mmlu_professional_medicine_rc_validation${postfix}/finetune-task-mmlu_professional_medicine_rc_train/step0"
-#    "task-mmlu_professional_medicine_rc_validation${postfix}/finetune-task-mmlu_professional_medicine_rc_train/step12"
-#    "task-mmlu_professional_medicine_rc_validation${postfix}/finetune-task-mmlu_professional_medicine_rc_train/step24"
-#    "task-mmlu_professional_medicine_rc_validation${postfix}/finetune-task-mmlu_professional_medicine_rc_train/step36"
-#    "task-mmlu_professional_medicine_rc_validation${postfix}/finetune-task-mmlu_professional_medicine_rc_train/step48"
-#    "task-mmlu_professional_medicine_rc_validation${postfix}/finetune-task-mmlu_professional_medicine_rc_train/step60"
-#    "task-mmlu_professional_psychology_rc_validation${postfix}/finetune-task-mmlu_professional_psychology_rc_train/step0"
-#    "task-mmlu_professional_psychology_rc_validation${postfix}/finetune-task-mmlu_professional_psychology_rc_train/step27"
-#    "task-mmlu_professional_psychology_rc_validation${postfix}/finetune-task-mmlu_professional_psychology_rc_train/step54"
-#    "task-mmlu_professional_psychology_rc_validation${postfix}/finetune-task-mmlu_professional_psychology_rc_train/step81"
-#    "task-mmlu_professional_psychology_rc_validation${postfix}/finetune-task-mmlu_professional_psychology_rc_train/step108"
-#    "task-mmlu_professional_psychology_rc_validation${postfix}/finetune-task-mmlu_professional_psychology_rc_train/step135"
-#    "task-mmlu_public_relations_rc_validation${postfix}/finetune-task-mmlu_public_relations_rc_train/step0"
-#    "task-mmlu_public_relations_rc_validation${postfix}/finetune-task-mmlu_public_relations_rc_train/step4"
-#    "task-mmlu_public_relations_rc_validation${postfix}/finetune-task-mmlu_public_relations_rc_train/step8"
-#    "task-mmlu_public_relations_rc_validation${postfix}/finetune-task-mmlu_public_relations_rc_train/step12"
-#    "task-mmlu_public_relations_rc_validation${postfix}/finetune-task-mmlu_public_relations_rc_train/step16"
-#    "task-mmlu_public_relations_rc_validation${postfix}/finetune-task-mmlu_public_relations_rc_train/step20"
-#    "task-mmlu_public_relations_rc_validation${postfix}/finetune-task-mmlu_public_relations_rc_train/step24"
-#    "task-mmlu_security_studies_rc_validation${postfix}/finetune-task-mmlu_security_studies_rc_train/step0"
-#    "task-mmlu_security_studies_rc_validation${postfix}/finetune-task-mmlu_security_studies_rc_train/step10"
-#    "task-mmlu_security_studies_rc_validation${postfix}/finetune-task-mmlu_security_studies_rc_train/step20"
-#    "task-mmlu_security_studies_rc_validation${postfix}/finetune-task-mmlu_security_studies_rc_train/step30"
-#    "task-mmlu_security_studies_rc_validation${postfix}/finetune-task-mmlu_security_studies_rc_train/step40"
-#    "task-mmlu_security_studies_rc_validation${postfix}/finetune-task-mmlu_security_studies_rc_train/step50"
-#    "task-mmlu_security_studies_rc_validation${postfix}/finetune-task-mmlu_security_studies_rc_train/step54"
-#    "task-mmlu_sociology_rc_validation${postfix}/finetune-task-mmlu_sociology_rc_train/step0"
-#    "task-mmlu_sociology_rc_validation${postfix}/finetune-task-mmlu_sociology_rc_train/step9"
-#    "task-mmlu_sociology_rc_validation${postfix}/finetune-task-mmlu_sociology_rc_train/step18"
-#    "task-mmlu_sociology_rc_validation${postfix}/finetune-task-mmlu_sociology_rc_train/step27"
-#    "task-mmlu_sociology_rc_validation${postfix}/finetune-task-mmlu_sociology_rc_train/step36"
-#    "task-mmlu_sociology_rc_validation${postfix}/finetune-task-mmlu_sociology_rc_train/step45"
-#    "task-mmlu_us_foreign_policy_rc_validation${postfix}/finetune-task-mmlu_us_foreign_policy_rc_train/step0"
-#    "task-mmlu_us_foreign_policy_rc_validation${postfix}/finetune-task-mmlu_us_foreign_policy_rc_train/step4"
-#    "task-mmlu_us_foreign_policy_rc_validation${postfix}/finetune-task-mmlu_us_foreign_policy_rc_train/step8"
-#    "task-mmlu_us_foreign_policy_rc_validation${postfix}/finetune-task-mmlu_us_foreign_policy_rc_train/step12"
-#    "task-mmlu_us_foreign_policy_rc_validation${postfix}/finetune-task-mmlu_us_foreign_policy_rc_train/step16"
-#    "task-mmlu_us_foreign_policy_rc_validation${postfix}/finetune-task-mmlu_us_foreign_policy_rc_train/step20"
-#    "task-mmlu_us_foreign_policy_rc_validation${postfix}/finetune-task-mmlu_us_foreign_policy_rc_train/step21"
-#    "task-mmlu_virology_rc_validation${postfix}/finetune-task-mmlu_virology_rc_train/step0"
-#    "task-mmlu_virology_rc_validation${postfix}/finetune-task-mmlu_virology_rc_train/step7"
-#    "task-mmlu_virology_rc_validation${postfix}/finetune-task-mmlu_virology_rc_train/step14"
-#    "task-mmlu_virology_rc_validation${postfix}/finetune-task-mmlu_virology_rc_train/step21"
-#    "task-mmlu_virology_rc_validation${postfix}/finetune-task-mmlu_virology_rc_train/step28"
-#    "task-mmlu_virology_rc_validation${postfix}/finetune-task-mmlu_virology_rc_train/step35"
-#    "task-mmlu_virology_rc_validation${postfix}/finetune-task-mmlu_virology_rc_train/step36"
-#    "task-mmlu_world_religions_rc_validation${postfix}/finetune-task-mmlu_world_religions_rc_train/step0"
-#    "task-mmlu_world_religions_rc_validation${postfix}/finetune-task-mmlu_world_religions_rc_train/step7"
-#    "task-mmlu_world_religions_rc_validation${postfix}/finetune-task-mmlu_world_religions_rc_train/step14"
-#    "task-mmlu_world_religions_rc_validation${postfix}/finetune-task-mmlu_world_religions_rc_train/step21"
-#    "task-mmlu_world_religions_rc_validation${postfix}/finetune-task-mmlu_world_religions_rc_train/step28"
-#    "task-mmlu_world_religions_rc_validation${postfix}/finetune-task-mmlu_world_religions_rc_train/step35"
-#    "task-mmlu_world_religions_rc_validation${postfix}/finetune-task-mmlu_world_religions_rc_train/step36"
 )
 #
-for BASE in "${PARENT_MODELS[@]}"; do
-  for FINETUNE in "${FINETUNE_TASKS[@]}"; do
-
-    # check if "dense" appears in BASE, if so then change dir structure (dense did not go through pruning)
-    if [[ "$BASE" == *"dense"* || "$BASE" == *"1b4b"* ]]; then
-      # remove everything before the first "/" in FINETUNE
-      FINETUNE="${FINETUNE#*/}"
-      MODEL_DIR="${BASE_FOLDER}/${BASE}/${FINETUNE}"
-    else
-      MODEL_DIR="${BASE_FOLDER}/${BASE}_${FINETUNE}"
-    fi
-
-    echo "checkpoint-input-path is ${MODEL_DIR}"
-    echo "output_dir is ${MODEL_DIR}-hf"
-
-    # Beaker names can only contain letters, digits, periods, dashes, and underscores.
-    job_name="convert_${FINETUNE//\//_}"
-    # limit to 120 char
-    job_name=${job_name:0:120}
-
-    # for debugging only
+#for BASE in "${PARENT_MODELS[@]}"; do
+#  for FINETUNE in "${FINETUNE_TASKS[@]}"; do
+#
+#    # check if "dense" appears in BASE, if so then change dir structure (dense did not go through pruning)
+#    if [[ "$BASE" == *"dense"* || "$BASE" == *"1b4b"* ]]; then
+#      # remove everything before the first "/" in FINETUNE
+#      FINETUNE="${FINETUNE#*/}"
+#      MODEL_DIR="${BASE_FOLDER}/${BASE}/${FINETUNE}"
+#    else
+#      MODEL_DIR="${BASE_FOLDER}/${BASE}_${FINETUNE}"
+#    fi
+#
+#    echo "checkpoint-input-path is ${MODEL_DIR}"
+#    echo "output_dir is ${MODEL_DIR}-hf"
+#
+#    # Beaker names can only contain letters, digits, periods, dashes, and underscores.
+#    job_name="convert_${FINETUNE//\//_}"
+#    # limit to 120 char
+#    job_name=${job_name:0:120}
+#
+#    # for debugging only
+##    python src/examples/huggingface/convert_checkpoint_to_hf.py \
+##      --checkpoint-input-path "${MODEL_DIR}" \
+##      --max-sequence-length 4096 \
+##      --huggingface-output-dir "${MODEL_DIR}-hf" \
+##      --dtype float32 \
+##      --debug
+#
+#    # launch the gantry run and delete the original model
+#
+#    gantry run \
+#    --name $job_name \
+#    --weka oe-training-default:/weka/oe-training-default \
+#    --install 'pip install -e .[all]' \
+#    --budget ai2/oceo \
+#    --workspace ai2/flex2 \
+#    --allow-dirty \
+#    --cluster "ai2/jupiter-cirrascale-2" \
+#    --cpus 16 \
+#    --priority urgent \
+#    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+#    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+#    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+#    -- \
+#    bash -c '
 #    python src/examples/huggingface/convert_checkpoint_to_hf.py \
-#      --checkpoint-input-path "${MODEL_DIR}" \
+#      --checkpoint-input-path "'"${MODEL_DIR}"'" \
 #      --max-sequence-length 4096 \
-#      --huggingface-output-dir "${MODEL_DIR}-hf" \
+#      --huggingface-output-dir "'"${MODEL_DIR}"'-hf" \
 #      --dtype float32 \
-#      --debug
-
-    # launch the gantry run and delete the original model
-
-    gantry run \
-    --name $job_name \
-    --weka oe-training-default:/weka/oe-training-default \
-    --install 'pip install -e .[all]' \
-    --budget ai2/oceo \
-    --workspace ai2/flex2 \
-    --allow-dirty \
-    --cluster "ai2/jupiter-cirrascale-2" \
-    --cpus 16 \
-    --priority urgent \
-    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-    -- \
-    bash -c '
-    python src/examples/huggingface/convert_checkpoint_to_hf.py \
-      --checkpoint-input-path "'"${MODEL_DIR}"'" \
-      --max-sequence-length 4096 \
-      --huggingface-output-dir "'"${MODEL_DIR}"'-hf" \
-      --dtype float32 \
-      --skip-validation \
-    && \
-      rm -rf "'"${MODEL_DIR}"'"
-  '
-  done
-done
+#      --skip-validation \
+#    && \
+#      rm -rf "'"${MODEL_DIR}"'"
+#  '
+#  done
+#done
 
 MODELS=(
 #    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_1121/step30995"
-#    "twolevelbatchlb-32_1b14b_stability_prenorm_1120/step30995"
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
-#    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995"
-#    "twolevelbatchlb-8_1b7b_stability_1207/step30995"
-
 
 #      "moe_1b35b_320experts_lb-1e-1_1214/step30995"
 #      "moe_1b4b_32experts_1224/step30995"
 
-    "twoleveltoppbatchlb_1b14b_topp-0.35_max-64_min-1_lb-1e-1_1222/step30995"
-
-
-#      "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_poolsched-lineardecay2000_1217/step30995"
-
-#      "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216/step30995"
-#      "twolevelbatchlb-128_1b35b_320experts_lb-1e-1_1219/step30995"
-
-#    "twolevelsamplingnolb-32_1b10b_stability_1127/step30995"
-#    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995"
-#    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995"
+#    "twoleveltoppbatchlb_1b14b_topp-0.35_max-64_min-1_lb-1e-1_1222/step30995"
+    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995"
+    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118/step30995"
+    "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_0118/step30995"
+    "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_poolsched_0119/step30995"
 
 )
 
-#for MODEL in "${MODELS[@]}"; do
+for MODEL in "${MODELS[@]}"; do
+#
+    python src/examples/huggingface/convert_checkpoint_to_hf.py \
+          --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}" \
+          --max-sequence-length 4096 \
+          --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}-hf" \
+          --dtype float32 \
+          --skip-validation
+##  gantry run \
+##    --name convert-${MODEL//\//_} \
+##    --weka oe-training-default:/weka/oe-training-default \
+##    --beaker-image "ai2/cuda12.8-dev-ubuntu22.04-notorch" \
+##    --install 'pip install -e .[all] && pip install --no-build-isolation flash-attn==2.8.2' \
+##    --budget ai2/oceo \
+##    --workspace ai2/flex2 \
+##    --allow-dirty \
+##    --cluster "ai2/jupiter-cirrascale-2" \
+##    --cpus 16 \
+##    --gpus 0 \
+##    --priority urgent \
+##    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+##    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+##    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+##    -- \
+##    bash -c '
+##    python src/examples/huggingface/convert_checkpoint_to_hf.py \
+##      --checkpoint-input-path "'"${BASE_FOLDER}/${MODEL}"'" \
+##      --max-sequence-length 4096 \
+##      --huggingface-output-dir "'"${BASE_FOLDER}/${MODEL}"'-hf" \
+##      --dtype float32 \
+##      --skip-validation \
+##  '
 ##
-#    python src/examples/huggingface/convert_checkpoint_to_hf.py \
-#          --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}" \
-#          --max-sequence-length 4096 \
-#          --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}-hf" \
-#          --dtype float32 \
-#          --skip-validation
-###  gantry run \
-###    --name convert-${MODEL//\//_} \
-###    --weka oe-training-default:/weka/oe-training-default \
-###    --beaker-image "ai2/cuda12.8-dev-ubuntu22.04-notorch" \
-###    --install 'pip install -e .[all] && pip install --no-build-isolation flash-attn==2.8.2' \
-###    --budget ai2/oceo \
-###    --workspace ai2/flex2 \
-###    --allow-dirty \
-###    --cluster "ai2/jupiter-cirrascale-2" \
-###    --cpus 16 \
-###    --gpus 0 \
-###    --priority urgent \
-###    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-###    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-###    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-###    -- \
-###    bash -c '
-###    python src/examples/huggingface/convert_checkpoint_to_hf.py \
-###      --checkpoint-input-path "'"${BASE_FOLDER}/${MODEL}"'" \
-###      --max-sequence-length 4096 \
-###      --huggingface-output-dir "'"${BASE_FOLDER}/${MODEL}"'-hf" \
-###      --dtype float32 \
-###      --skip-validation \
-###  '
-###
-#done
+done

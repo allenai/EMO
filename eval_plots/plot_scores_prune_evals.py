@@ -28,15 +28,18 @@ AVAILABLE_MODELS = [
 ]
 
 AVAILABLE_TASK_RUNS = [
-    "arc_challenge_keepk_32_bs-32_lr-5e-5_epoch-1",
-    "arc_easy_keepk_32_bs-32_lr-5e-5_epoch-1",
-    "boolq_keepk_32_bs-32_lr-5e-5_epoch-1",
-    "csqa_keepk_32_bs-32_lr-5e-5_epoch-1",
-    "hellaswag_keepk_32_bs-32_lr-5e-5_epoch-1",
-    "openbookqa_keepk_32_bs-32_lr-5e-5_epoch-1",
-    "piqa_keepk_32_bs-32_lr-5e-5_epoch-1",
-    "socialiqa_keepk_32_bs-32_lr-5e-5_epoch-1",
-    "winogrande_keepk_32_bs-32_lr-5e-5_epoch-1",
+    # "arc_challenge_keepk_32_bs-32_lr-5e-5_epoch-1",
+    # "arc_easy_keepk_32_bs-32_lr-5e-5_epoch-1",
+    # "boolq_keepk_32_bs-32_lr-5e-5_epoch-1",
+    "coqa_0shot_keepk_32_bs-32_lr-5e-5_epoch-1",
+    # "csqa_keepk_32_bs-32_lr-5e-5_epoch-1",
+    # "gsm8k_generation_0shot_keepk_32_bs-32_lr-5e-5_epoch-1",
+    # "hellaswag_keepk_32_bs-32_lr-5e-5_epoch-1",
+    # "openbookqa_keepk_32_bs-32_lr-5e-5_epoch-1",
+    # "piqa_keepk_32_bs-32_lr-5e-5_epoch-1",
+    # "socialiqa_keepk_32_bs-32_lr-5e-5_epoch-1",
+    # "squad_0shot_keepk_32_bs-32_lr-5e-5_epoch-1",
+    # "winogrande_keepk_32_bs-32_lr-5e-5_epoch-1",
 ]
 
 # Select which models/tasks to plot.
@@ -54,7 +57,7 @@ MODEL_LABELS = {
 }
 
 # Metric to plot (override with --metric-key if desired).
-METRIC_KEY = "acc_per_byte"
+METRIC_KEY = "recall"
 
 DEFAULT_OUTPUT_SUBDIR = "prune_eval_plots"
 
