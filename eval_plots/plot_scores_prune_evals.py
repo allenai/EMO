@@ -39,49 +39,61 @@ TASK_SPECS = {
     "arc_challenge_keepk_32_bs-32_lr-5e-5_epoch-1": [
         "softloss_corr",
         "acc_per_byte",
+        "primary_score"
     ],
     "arc_easy_keepk_32_bs-32_lr-5e-5_epoch-1": [
         "softloss_corr",
         "acc_per_byte",
+        "primary_score"
     ],
     "boolq_keepk_32_bs-32_lr-5e-5_epoch-1": [
         "softloss_corr",
         "acc_per_byte",
+        "primary_score"
     ],
     "coqa_0shot_keepk_32_bs-32_lr-5e-5_epoch-1": [
         "recall",
         "f1",
+        "primary_score"
     ],
     "csqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
         "softloss_corr",
         "acc_per_byte",
+        "primary_score"
     ],
     "gsm8k_generation_0shot_keepk_32_bs-32_lr-5e-5_epoch-1": [
         "exact_match",
+        "primary_score"
     ],
     "hellaswag_keepk_32_bs-32_lr-5e-5_epoch-1": [
         "softloss_corr",
         "acc_per_byte",
+        "primary_score"
     ],
     "openbookqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
         "softloss_corr",
         "acc_per_byte",
+        "primary_score"
     ],
     "piqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
         "softloss_corr",
         "acc_per_byte",
+        "primary_score"
     ],
     "socialiqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
         "softloss_corr",
         "acc_per_byte",
+        "primary_score"
     ],
     "squad_0shot_keepk_32_bs-32_lr-5e-5_epoch-1": [
         "recall",
         "f1",
+        "primary_score"
     ],
     "winogrande_keepk_32_bs-32_lr-5e-5_epoch-1": [
         "softloss_corr",
         "acc_per_byte",
+        "primary_score"
     ],
 }
 AVAILABLE_TASK_RUNS = list(TASK_SPECS)
