@@ -20,27 +20,71 @@ import seaborn as sns
 AUTO_DISCOVER = True
 
 # Current prune_evals inventory (auto-generated at script creation time).
-AVAILABLE_MODELS = [
-    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123step30995-hf",
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121step30995-hf",
-    "dense_1b_olmoe-mix_prenorm_noqknorm_1123step30995-hf",
-    "moe_1b4b_32experts_1224step30995-hf",
-]
+# Key: model directory name. Value: label to show in plots (or None to use full name).
+MODEL_SPECS = {
+    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123step30995-hf": "moe",
+    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121step30995-hf": "twolevelbatchlb",
+    "dense_1b_olmoe-mix_prenorm_noqknorm_1123step30995-hf": "dense",
+    "moe_1b4b_32experts_1224step30995-hf": "moe_1b4b",
+    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": "twolevelbatchlb-lr4e-3-lb1e-1",
+    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118step30995-hf": "twolevelbatchlb-lr4e-3-lb1e-2",
+    "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_0118step30995-hf": "twolevelbatchlb-lr4e-4-lb1e-1",
+    "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_poolsched_0119step30995-hf": "twolevelbatchlb-lr4e-4-lb1e-1-poolsched",
+}
+AVAILABLE_MODELS = list(MODEL_SPECS)
 
-AVAILABLE_TASK_RUNS = [
-    # "arc_challenge_keepk_32_bs-32_lr-5e-5_epoch-1",
-    # "arc_easy_keepk_32_bs-32_lr-5e-5_epoch-1",
-    # "boolq_keepk_32_bs-32_lr-5e-5_epoch-1",
-    "coqa_0shot_keepk_32_bs-32_lr-5e-5_epoch-1",
-    # "csqa_keepk_32_bs-32_lr-5e-5_epoch-1",
-    # "gsm8k_generation_0shot_keepk_32_bs-32_lr-5e-5_epoch-1",
-    # "hellaswag_keepk_32_bs-32_lr-5e-5_epoch-1",
-    # "openbookqa_keepk_32_bs-32_lr-5e-5_epoch-1",
-    # "piqa_keepk_32_bs-32_lr-5e-5_epoch-1",
-    # "socialiqa_keepk_32_bs-32_lr-5e-5_epoch-1",
-    # "squad_0shot_keepk_32_bs-32_lr-5e-5_epoch-1",
-    # "winogrande_keepk_32_bs-32_lr-5e-5_epoch-1",
-]
+# Task list + per-task metrics.
+# Key: task run name. Value: list of metric keys to plot for that task.
+TASK_SPECS = {
+    "arc_challenge_keepk_32_bs-32_lr-5e-5_epoch-1": [
+        "softloss_corr",
+        "acc_per_byte",
+    ],
+    "arc_easy_keepk_32_bs-32_lr-5e-5_epoch-1": [
+        "softloss_corr",
+        "acc_per_byte",
+    ],
+    "boolq_keepk_32_bs-32_lr-5e-5_epoch-1": [
+        "softloss_corr",
+        "acc_per_byte",
+    ],
+    "coqa_0shot_keepk_32_bs-32_lr-5e-5_epoch-1": [
+        "recall",
+        "f1",
+    ],
+    "csqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
+        "softloss_corr",
+        "acc_per_byte",
+    ],
+    "gsm8k_generation_0shot_keepk_32_bs-32_lr-5e-5_epoch-1": [
+        "exact_match",
+    ],
+    "hellaswag_keepk_32_bs-32_lr-5e-5_epoch-1": [
+        "softloss_corr",
+        "acc_per_byte",
+    ],
+    "openbookqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
+        "softloss_corr",
+        "acc_per_byte",
+    ],
+    "piqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
+        "softloss_corr",
+        "acc_per_byte",
+    ],
+    "socialiqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
+        "softloss_corr",
+        "acc_per_byte",
+    ],
+    "squad_0shot_keepk_32_bs-32_lr-5e-5_epoch-1": [
+        "recall",
+        "f1",
+    ],
+    "winogrande_keepk_32_bs-32_lr-5e-5_epoch-1": [
+        "softloss_corr",
+        "acc_per_byte",
+    ],
+}
+AVAILABLE_TASK_RUNS = list(TASK_SPECS)
 
 # Select which models/tasks to plot.
 # Tip: set to a subset of AVAILABLE_* lists for quick filtering.
@@ -49,17 +93,9 @@ SELECTED_TASK_RUNS = list(AVAILABLE_TASK_RUNS)
 
 # Optional display names for models (legend labels).
 # Key: model directory name. Value: label to show in plots.
-MODEL_LABELS = {
-    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123step30995-hf": "moe",
-    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121step30995-hf": "twolevelbatchlb",
-    "dense_1b_olmoe-mix_prenorm_noqknorm_1123step30995-hf": "dense",
-    "moe_1b4b_32experts_1224step30995-hf": "moe_1b4b",
-}
+MODEL_LABELS = {model: label for model, label in MODEL_SPECS.items() if label}
 
-# Metric to plot (override with --metric-key if desired).
-METRIC_KEY = "recall"
-
-DEFAULT_OUTPUT_SUBDIR = "prune_eval_plots"
+DEFAULT_OUTPUT_SUBDIR = "prune_eval_plots_0116"
 
 # ============================================================================
 # END CONFIGURATION
@@ -89,8 +125,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--metric-key",
-        default=METRIC_KEY,
-        help="Metric key to plot (e.g., acc_per_byte).",
+        default=None,
+        help=(
+            "Comma-separated metric keys to plot (overrides TASK_SPECS for all tasks). "
+            "Example: acc_per_byte,softloss_corr."
+        ),
     )
     parser.add_argument(
         "--style",
@@ -314,29 +353,43 @@ def main() -> None:
     if not task_set:
         raise RuntimeError("No valid task runs selected.")
 
-    df, task_labels = collect_records(
-        args.prune_evals_root,
-        model_set,
-        task_set,
-        args.metric_key,
-    )
+    metric_override = parse_csv_arg(args.metric_key)
+    metric_to_tasks: Dict[str, List[str]] = {}
+    for task_run in task_set:
+        metrics = metric_override or TASK_SPECS.get(task_run)
+        if not metrics:
+            print(f"[WARN] No metrics configured for task: {task_run}")
+            continue
+        for metric_key in metrics:
+            metric_to_tasks.setdefault(metric_key, []).append(task_run)
+
+    if not metric_to_tasks:
+        raise RuntimeError("No metrics selected. Check TASK_SPECS or --metric-key.")
 
     base_output_dir = (args.output_dir / args.output_subdir).resolve()
-    for task_run in task_set:
-        label = task_labels.get(task_run, task_run)
-        output_file = (
-            base_output_dir
-            / f"{sanitize_filename(task_run)}_{sanitize_filename(args.metric_key)}.png"
+    for metric_key, tasks_for_metric in metric_to_tasks.items():
+        df, task_labels = collect_records(
+            args.prune_evals_root,
+            model_set,
+            tasks_for_metric,
+            metric_key,
         )
-        plot_task(
-            df,
-            task_run,
-            label,
-            output_file,
-            args.style,
-            args.show,
-            args.metric_key,
-        )
+        metric_output_dir = base_output_dir / sanitize_filename(metric_key)
+        for task_run in tasks_for_metric:
+            label = task_labels.get(task_run, task_run)
+            output_file = (
+                metric_output_dir
+                / f"{sanitize_filename(task_run)}_{sanitize_filename(metric_key)}.png"
+            )
+            plot_task(
+                df,
+                task_run,
+                label,
+                output_file,
+                args.style,
+                args.show,
+                metric_key,
+            )
 
 
 if __name__ == "__main__":

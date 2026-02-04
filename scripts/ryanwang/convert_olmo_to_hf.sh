@@ -311,10 +311,11 @@ MODELS=(
 #      "moe_1b4b_32experts_1224/step30995"
 
 #    "twoleveltoppbatchlb_1b14b_topp-0.35_max-64_min-1_lb-1e-1_1222/step30995"
-    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995"
-    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118/step30995"
-    "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_0118/step30995"
-    "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_poolsched_0119/step30995"
+#    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995"
+#    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118/step30995"
+#    "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_0118/step30995"
+#    "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_poolsched_0119/step30995"
+    "moe_1b14b_128experts_lb-1e-1_1217/step30995"
 
 )
 
