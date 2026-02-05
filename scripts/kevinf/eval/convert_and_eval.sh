@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Script to convert OLMo Core checkpoint to HF format and launch Beaker evaluations
-# Usage: bash src/scripts/kevinf/eval/convert_and_eval.sh <checkpoint_path> [output_path]
+# Usage: bash scripts/kevinf/eval/convert_and_eval.sh <checkpoint_path> [output_path]
 #
 # Example:
-#   bash src/scripts/kevinf/eval/convert_and_eval.sh /data/input/kevinf/checkpoints/my-run/step10000
+#   bash scripts/kevinf/eval/convert_and_eval.sh /data/input/kevinf/checkpoints/my-run/step10000
 #
 # This will:
 #   1. Convert checkpoint to HF format at <checkpoint_path>-hf
@@ -14,7 +14,7 @@ set -e  # Exit on any error
 
 # Activate virtual environment for uv/python access
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 if [ -f "$REPO_ROOT/.venv/bin/activate" ]; then
     source "$REPO_ROOT/.venv/bin/activate"
 fi

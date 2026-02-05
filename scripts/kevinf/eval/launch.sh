@@ -6,18 +6,18 @@
 # Configuration
 MODELS=(
     # need: general model, pretrained model (hf versions)
-    # "/weka/oe-training-default/jacobm/flexolmo/checkpoints/code-anneal-no-expert-bias-5B/step9537-hf"
-    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step19000-hf"
-    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-olmoemix-0824/step19000-hf"
     # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
-    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift-ckpt_1B_dolma3/step2385-hf"
-    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift-ckpt_1B_dolma3/step2385-hf"
     # "/data/input/kevinf/checkpoints-new/olmo3-1b-130b-OLMo-mix-0625-150Bsample-dclm/step30995-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift-continued_pt_30B_from_130B_dolma3/step7153-hf"
-    "/data/input/kevinf/checkpoints/olmo3-1b-chempile-10B-lr1e-4-warmup715-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-the-pile-of-law-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-chempile-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
     "/data/input/kevinf/checkpoints/olmo3-1b-chempile-10B-lr2e-4-warmup715-ctd/step2385-hf"
     "/data/input/kevinf/checkpoints/olmo3-1b-chempile-10B-lr5e-5-warmup715-ctd/step2385-hf"
 )
@@ -32,7 +32,7 @@ model_type=hf
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
     # # MC9 tasks
-    arc_easy:mc::olmes
+    # arc_easy:mc::olmes
     # arc_challenge:mc::olmes
     # boolq:mc::olmes
     # csqa:mc::olmes
@@ -72,13 +72,14 @@ TASKS=(
     # # Code4 tasks
     # codex_humaneval:temp0.8
     # codex_humanevalplus:temp0.8
-    mbpp::none
-    mbppplus::none
+    # mbpp::none
+    # mbppplus::none
 
     # ChemBench MC and generative tasks
     chembench:mc
     chembench:gen
     chembench:rc    
+    # legalbench:rc
 )
 
 # Function to get checkpoint name - extracts run name and step from path
@@ -153,7 +154,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
             --model-type hf \
             --task $TASK \
             --limit $LIMIT \
-            --output-dir $OUTPUT_DIR \
+            --output-dir $OUTPUT_DIR-him-2 \
             --batch-size $batch_size \
             --gpus $gpus \
             --fewshot-seed 1234 \
