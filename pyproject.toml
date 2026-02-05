@@ -62,8 +62,6 @@ eval = [
     "beaker-gantry",
     "ai2-olmo-eval @ git+https://github.com/allenai/OLMo-in-loop-evals@kevinf/add-legalbench",
     "prettytable",
-    "fsspec>=2024.2.0,<=2025.3.0",
-    "s3fs>=2024.2.0,<=2025.3.0",
 ]
 torchao = ["torchao"]
 transformers = [
@@ -183,4 +181,10 @@ filterwarnings = [
 
 [tool.uv]
 extra-index-url = ["https://download.pytorch.org/whl/cu128"]
-index-strategy = "unsafe-best-match"                                                  
+index-strategy = "unsafe-best-match"
+# Override ai2-olmes' hard pin on fsspec==2023.5.0 (it's a self-described hack in olmes
+# and works fine with newer versions). Needed for huggingface_hub's maxdepth support.
+override-dependencies = [
+    "fsspec>=2024.2.0,<=2025.3.0",
+    "s3fs>=2024.2.0,<=2025.3.0",
+]                                                  
