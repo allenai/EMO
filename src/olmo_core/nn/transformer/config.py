@@ -684,7 +684,7 @@ class TransformerConfig(Config):
             **kwargs,
         )
         return config
-        
+
     @classmethod
     def olmo3_7B(cls, vocab_size: int, **kwargs) -> "TransformerConfig":
         """

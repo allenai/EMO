@@ -31,6 +31,7 @@ from pathlib import Path
 @dataclass
 class SourceConfig:
     """Configuration for a data source."""
+
     name: str
     mix_path: str
     percentage: float
@@ -42,7 +43,7 @@ class SourceConfig:
 def parse_token_count(s: str) -> int:
     """Parse token count string like '10B', '500M', '1T'."""
     s = s.strip().upper()
-    multipliers = {'K': 1e3, 'M': 1e6, 'B': 1e9, 'T': 1e12}
+    multipliers = {"K": 1e3, "M": 1e6, "B": 1e9, "T": 1e12}
 
     for suffix, mult in multipliers.items():
         if s.endswith(suffix):
@@ -78,6 +79,7 @@ def s3_list_files_with_sizes(s3_prefix: str) -> dict[str, int]:
 def local_list_files_with_sizes(local_prefix: str) -> dict[str, int]:
     """List all files under local prefix with their sizes."""
     import os
+
     files = {}
     local_path = Path(local_prefix)
 
@@ -88,7 +90,9 @@ def local_list_files_with_sizes(local_prefix: str) -> dict[str, int]:
     for root, dirs, filenames in os.walk(local_path):
         for filename in filenames:
             full_path = Path(root) / filename
-            rel_path = str(full_path.relative_to(local_path.parent.parent.parent.parent))  # relative to base
+            rel_path = str(
+                full_path.relative_to(local_path.parent.parent.parent.parent)
+            )  # relative to base
             size = full_path.stat().st_size
             files[rel_path] = size
 
@@ -110,10 +114,7 @@ def parse_mix_file(mix_path: str) -> list[tuple[str, str]]:
 
 
 def get_file_sizes_for_entries(
-    entries: list[tuple[str, str]],
-    s3_base: str,
-    local_base: str,
-    tokenizer: str
+    entries: list[tuple[str, str]], s3_base: str, local_base: str, tokenizer: str
 ) -> dict[str, int]:
     """
     Get file sizes for all entries in a mix.
@@ -160,8 +161,7 @@ def get_file_sizes_for_entries(
         sizes = {}
         for resolved in resolved_paths:
             result = subprocess.run(
-                ["aws", "s3", "ls", f"{s3_base}/{resolved}"],
-                capture_output=True, text=True
+                ["aws", "s3", "ls", f"{s3_base}/{resolved}"], capture_output=True, text=True
             )
             if result.returncode == 0 and result.stdout.strip():
                 parts = result.stdout.strip().split()
@@ -187,7 +187,7 @@ def select_files_for_target(
     file_sizes: dict[str, int],
     target_bytes: int,
     seed: int = 42,
-    fine_tune: bool = False
+    fine_tune: bool = False,
 ) -> list[tuple[str, str, int]]:
     """
     Select files from entries to reach target_bytes.
@@ -240,39 +240,36 @@ def main():
     parser = argparse.ArgumentParser(
         description="Create a weighted mix from multiple data sources.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__
+        epilog=__doc__,
     )
     parser.add_argument(
-        "--sources", nargs="+", required=True,
-        help="Source mix files with percentages, format: path:percentage (e.g., law.txt:80 dclm.txt:20)"
+        "--sources",
+        nargs="+",
+        required=True,
+        help="Source mix files with percentages, format: path:percentage (e.g., law.txt:80 dclm.txt:20)",
     )
     parser.add_argument(
-        "--total-tokens", required=True,
-        help="Target total tokens (e.g., 10B, 500M, 1T)"
+        "--total-tokens", required=True, help="Target total tokens (e.g., 10B, 500M, 1T)"
+    )
+    parser.add_argument("--output", required=True, help="Output mix file path")
+    parser.add_argument(
+        "--s3-base", default="s3://ai2-llm", help="S3 base path (default: s3://ai2-llm)"
     )
     parser.add_argument(
-        "--output", required=True,
-        help="Output mix file path"
+        "--local-base",
+        default="/data/input/ai2-llm",
+        help="Local mount path for data (default: /data/input/ai2-llm). Used if files exist locally.",
     )
     parser.add_argument(
-        "--s3-base", default="s3://ai2-llm",
-        help="S3 base path (default: s3://ai2-llm)"
+        "--tokenizer",
+        default="allenai/dolma2-tokenizer",
+        help="Tokenizer for {TOKENIZER} placeholder (default: allenai/dolma2-tokenizer)",
     )
     parser.add_argument(
-        "--local-base", default="/data/input/ai2-llm",
-        help="Local mount path for data (default: /data/input/ai2-llm). Used if files exist locally."
+        "--seed", type=int, default=42, help="Random seed for sampling (default: 42)"
     )
     parser.add_argument(
-        "--tokenizer", default="allenai/dolma2-tokenizer",
-        help="Tokenizer for {TOKENIZER} placeholder (default: allenai/dolma2-tokenizer)"
-    )
-    parser.add_argument(
-        "--seed", type=int, default=42,
-        help="Random seed for sampling (default: 42)"
-    )
-    parser.add_argument(
-        "--dry-run", action="store_true",
-        help="Calculate and print stats without writing output"
+        "--dry-run", action="store_true", help="Calculate and print stats without writing output"
     )
 
     args = parser.parse_args()
@@ -280,7 +277,9 @@ def main():
     # Parse total tokens
     total_tokens = parse_token_count(args.total_tokens)
     total_bytes = total_tokens * 4  # 4 bytes per token (uint32)
-    print(f"Target: {total_tokens / 1e9:.2f}B tokens ({total_bytes / 1e12:.4f} TB)", file=sys.stderr)
+    print(
+        f"Target: {total_tokens / 1e9:.2f}B tokens ({total_bytes / 1e12:.4f} TB)", file=sys.stderr
+    )
 
     # Parse sources
     sources: list[SourceConfig] = []
@@ -288,7 +287,10 @@ def main():
 
     for source_spec in args.sources:
         if ":" not in source_spec:
-            print(f"ERROR: Invalid source format '{source_spec}', expected 'path:percentage'", file=sys.stderr)
+            print(
+                f"ERROR: Invalid source format '{source_spec}', expected 'path:percentage'",
+                file=sys.stderr,
+            )
             sys.exit(1)
 
         path, pct_str = source_spec.rsplit(":", 1)
@@ -298,12 +300,7 @@ def main():
         name = Path(path).stem
         entries = parse_mix_file(path)
 
-        sources.append(SourceConfig(
-            name=name,
-            mix_path=path,
-            percentage=pct,
-            entries=entries
-        ))
+        sources.append(SourceConfig(name=name, mix_path=path, percentage=pct, entries=entries))
         print(f"\nSource '{name}': {len(entries)} entries, {pct}%", file=sys.stderr)
 
     # Normalize percentages if they don't sum to 100
@@ -321,7 +318,10 @@ def main():
         )
         src.total_bytes = sum(src.file_sizes.values())
         src_tokens = src.total_bytes / 4
-        print(f"  Available: {src.total_bytes / 1e12:.4f} TB = {src_tokens / 1e9:.2f}B tokens", file=sys.stderr)
+        print(
+            f"  Available: {src.total_bytes / 1e12:.4f} TB = {src_tokens / 1e9:.2f}B tokens",
+            file=sys.stderr,
+        )
 
     # Sort sources by average file size (largest first) for better ratio control
     # Sources with larger files are the "anchor" - we select from them first
@@ -334,14 +334,17 @@ def main():
         return src.total_bytes / len(src.file_sizes)
 
     sources_sorted = sorted(sources, key=avg_file_size, reverse=True)
-    print(f"(Processing by avg file size: {' -> '.join(f'{s.name} ({avg_file_size(s)/1e9:.2f}B/file)' for s in sources_sorted)})", file=sys.stderr)
+    print(
+        f"(Processing by avg file size: {' -> '.join(f'{s.name} ({avg_file_size(s)/1e9:.2f}B/file)' for s in sources_sorted)})",
+        file=sys.stderr,
+    )
 
     selected_by_source: list[tuple[SourceConfig, list]] = []
     anchor_selected_bytes = 0  # Track what the anchor source actually selected
     anchor_pct = 0  # The percentage of the anchor source
 
     for i, src in enumerate(sources_sorted):
-        is_anchor = (i == 0)  # First source (largest avg file size) is anchor
+        is_anchor = i == 0  # First source (largest avg file size) is anchor
 
         if is_anchor:
             # Anchor source: use original target based on percentage
@@ -356,22 +359,30 @@ def main():
 
         target_tokens_for_src = target_bytes_for_src / 4
         print(f"\nSource '{src.name}' ({src.percentage:.1f}%):", file=sys.stderr)
-        print(f"  Target: {target_bytes_for_src / 1e12:.4f} TB = {target_tokens_for_src / 1e9:.2f}B tokens", file=sys.stderr)
+        print(
+            f"  Target: {target_bytes_for_src / 1e12:.4f} TB = {target_tokens_for_src / 1e9:.2f}B tokens",
+            file=sys.stderr,
+        )
 
         # Check if we have enough data
         if target_bytes_for_src > src.total_bytes:
-            print(f"  WARNING: Not enough data! Have {src.total_bytes / 1e12:.4f} TB, need {target_bytes_for_src / 1e12:.4f} TB", file=sys.stderr)
+            print(
+                f"  WARNING: Not enough data! Have {src.total_bytes / 1e12:.4f} TB, need {target_bytes_for_src / 1e12:.4f} TB",
+                file=sys.stderr,
+            )
             print(f"  Will use all available data.", file=sys.stderr)
             target_bytes_for_src = src.total_bytes
 
         # Anchor source: normal selection. Secondary: fine-tune mode (use smaller files)
         selected = select_files_for_target(
-            src.entries, src.file_sizes, target_bytes_for_src, args.seed,
-            fine_tune=(not is_anchor)
+            src.entries, src.file_sizes, target_bytes_for_src, args.seed, fine_tune=(not is_anchor)
         )
         selected_bytes = sum(s for _, _, s in selected)
         selected_tokens = selected_bytes / 4
-        print(f"  Selected: {len(selected)} files, {selected_bytes / 1e12:.4f} TB = {selected_tokens / 1e9:.2f}B tokens", file=sys.stderr)
+        print(
+            f"  Selected: {len(selected)} files, {selected_bytes / 1e12:.4f} TB = {selected_tokens / 1e9:.2f}B tokens",
+            file=sys.stderr,
+        )
 
         if is_anchor:
             anchor_selected_bytes = selected_bytes
@@ -391,7 +402,10 @@ def main():
         grand_total_bytes += selected_bytes
         grand_total_files += len(selected)
 
-    print(f"Total: {grand_total_bytes / 1e12:.4f} TB = {(grand_total_bytes / 4) / 1e9:.2f}B tokens, {grand_total_files} files", file=sys.stderr)
+    print(
+        f"Total: {grand_total_bytes / 1e12:.4f} TB = {(grand_total_bytes / 4) / 1e9:.2f}B tokens, {grand_total_files} files",
+        file=sys.stderr,
+    )
     print(f"\nActual ratios:", file=sys.stderr)
     for src, selected in selected_by_source:
         selected_bytes = sum(s for _, _, s in selected)

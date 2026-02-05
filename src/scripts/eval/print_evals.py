@@ -459,7 +459,8 @@ def main(args):
     if args.avg_chembench:
         # MC tasks (accuracy-based) - averaged separately
         chembench_mc_tasks = [
-            task_name for task_name in task_names
+            task_name
+            for task_name in task_names
             if task_name.startswith("chembench_") and ":mc" in task_name
         ]
         if chembench_mc_tasks:
@@ -468,14 +469,16 @@ def main(args):
         # Note: We don't combine MC and gen scores because they use different metrics
         # (accuracy vs F1) and are not directly comparable
         chembench_gen_tasks = [
-            task_name for task_name in task_names
+            task_name
+            for task_name in task_names
             if task_name.startswith("chembench_") and ":gen" in task_name
         ]
         if chembench_gen_tasks:
             results = avg_tasks(results, "chembench:gen", chembench_gen_tasks)
         # RC tasks (length-normalized accuracy) - averaged separately
         chembench_rc_tasks = [
-            task_name for task_name in task_names
+            task_name
+            for task_name in task_names
             if task_name.startswith("chembench_") and ":rc" in task_name
         ]
         if chembench_rc_tasks:
@@ -485,7 +488,8 @@ def main(args):
         # All LegalBench tasks use RC (ranked classification) evaluation
         # Aggregate all ~110 classification tasks into a single score
         legalbench_tasks = [
-            task_name for task_name in task_names
+            task_name
+            for task_name in task_names
             if task_name.startswith("legalbench_") and ":rc" in task_name
         ]
         if legalbench_tasks:
@@ -782,7 +786,9 @@ Examples:
     parser.add_argument("--avg-chembench", action="store_true", help="Average ChemBench tasks")
     parser.add_argument("--avg-legalbench", action="store_true", help="Average LegalBench tasks")
     parser.add_argument("--avg-code", action="store_true", help="Average coding tasks")
-    parser.add_argument("--avg-all", action="store_true", help="Average all tasks into a single score")
+    parser.add_argument(
+        "--avg-all", action="store_true", help="Average all tasks into a single score"
+    )
 
     # Task filtering
     parser.add_argument("--stem-only", action="store_true", help="Show only STEM tasks")

@@ -6,6 +6,7 @@ Usage:
 """
 
 import sys
+
 import numpy as np
 from transformers import AutoTokenizer
 

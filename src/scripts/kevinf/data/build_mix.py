@@ -139,7 +139,7 @@ def calculate_target_bytes(
     # resolved_paths are also relative to bucket (no s3:// prefix)
     total = 0
     missing = 0
-    
+
     for resolved_path in resolved_paths:
         if resolved_path in size_cache:
             total += size_cache[resolved_path]
@@ -148,7 +148,10 @@ def calculate_target_bytes(
             missing += 1
 
     if missing > 0:
-        print(f"Warning: {missing}/{len(resolved_paths)} files not found in S3 listing", file=sys.stderr)
+        print(
+            f"Warning: {missing}/{len(resolved_paths)} files not found in S3 listing",
+            file=sys.stderr,
+        )
 
     return total
 
@@ -158,7 +161,7 @@ def select_replacement_files(
 ) -> List[Tuple[str, int]]:
     """
     List files from S3 prefix and select until target_bytes is reached.
-    
+
     Args:
         s3_prefix: S3 path prefix to list files from
         target_bytes: Target total bytes to select
@@ -167,7 +170,7 @@ def select_replacement_files(
                  This ensures balanced sampling across subcategories.
                  If False, selects in alphabetical order.
         seed: Random seed for reproducibility when shuffling
-    
+
     Returns list of (relative_path, size) tuples.
     """
     # Replace tokenizer in prefix
@@ -210,10 +213,10 @@ def select_replacement_files(
             )
 
     print(file=sys.stderr)  # Newline after progress
-    
+
     # Sort selected files by path for consistent output ordering
     selected.sort(key=lambda x: x[0])
-    
+
     return selected
 
 
@@ -324,7 +327,7 @@ def main():
         action="store_true",
         default=True,
         help="Randomly shuffle files before selecting (default: enabled). "
-             "This ensures balanced sampling across subcategories.",
+        "This ensures balanced sampling across subcategories.",
     )
     parser.add_argument(
         "--no-shuffle",
@@ -339,7 +342,7 @@ def main():
     )
 
     args = parser.parse_args()
-    
+
     # Handle shuffle flag
     if args.no_shuffle:
         args.shuffle = False
@@ -389,8 +392,14 @@ def main():
     diff_pct = ((actual_bytes - target_bytes) / target_bytes * 100) if target_bytes > 0 else 0
 
     print(f"\n=== Summary ===", file=sys.stderr)
-    print(f"Target:   {target_bytes / 1e12:.4f} TB = {target_tokens / 1e9:.2f}B tokens", file=sys.stderr)
-    print(f"Selected: {actual_bytes / 1e12:.4f} TB = {actual_tokens / 1e9:.2f}B tokens", file=sys.stderr)
+    print(
+        f"Target:   {target_bytes / 1e12:.4f} TB = {target_tokens / 1e9:.2f}B tokens",
+        file=sys.stderr,
+    )
+    print(
+        f"Selected: {actual_bytes / 1e12:.4f} TB = {actual_tokens / 1e9:.2f}B tokens",
+        file=sys.stderr,
+    )
     print(f"Difference: {diff_pct:+.2f}%", file=sys.stderr)
     print(f"Files selected: {len(selected_files)}", file=sys.stderr)
 
@@ -414,4 +423,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
