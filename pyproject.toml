@@ -61,6 +61,8 @@ eval = [
     "ai2-olmes@git+https://github.com/allenai/olmes@8e2743734066b073c5d8498d1b8220f67a21a2d6",
     "beaker-gantry",
     "ai2-olmo-eval @ git+https://github.com/allenai/OLMo-in-loop-evals@kevinf/add-legalbench",
+    "fsspec>=2024.2.0,<=2025.3.0",
+    "s3fs>=2024.2.0,<=2025.3.0",
     "prettytable",
 ]
 torchao = ["torchao"]
