@@ -261,7 +261,7 @@ class PostTrainEvalCallback(Callback):
                 "--weka",
                 "oe-training-default:/data/input",
                 "--install",
-                'pip install -e ".[eval]"',
+                'UV_CACHE_DIR=/tmp/uv-cache uv pip install -e ".[eval]"',
                 "--budget",
                 self.budget,
                 "--workspace",
