@@ -35,31 +35,30 @@ from oe_eval.tasks.base_task import MultipleChoiceTask, Task
 from oe_eval.tasks.utils import make_cloze_prompt, make_mcq_prompt, map_indexed
 from oe_eval.utils import get_dict_with_defaults
 
-
 logger = logging.getLogger(__name__)
 
 
 class ChemBenchMCAccuracy(MCAccuracy):
     """
     Custom MC accuracy metric that supports multiple correct answers.
-    
+
     ChemBench has some questions with multiple correct answers (e.g., "select all that apply").
     This metric checks if the predicted answer is in the list of correct answers.
     """
-    
+
     def process_one_doc(self, group_lst) -> dict:
         """Override to handle gold as a list of valid indices."""
         # Get the base metrics from parent
         base_result = super().process_one_doc(group_lst)
-        
+
         # Get the gold indices (could be a list for multi-answer questions)
         doc = group_lst[0].get("doc", {})
         gold_indices = doc.get("gold", [])
-        
+
         # Ensure gold_indices is a list
         if not isinstance(gold_indices, list):
             gold_indices = [gold_indices]
-        
+
         # Check each accuracy metric against all valid gold indices
         for metric_name in ["acc_raw", "acc_per_token", "acc_per_char", "acc_per_byte"]:
             pred_key = metric_name.replace("acc_", "predicted_index_")
@@ -67,10 +66,10 @@ class ChemBenchMCAccuracy(MCAccuracy):
                 predicted = base_result[pred_key]
                 # Mark as correct if predicted is ANY of the valid answers
                 base_result[metric_name] = 1 if predicted in gold_indices else 0
-        
+
         # Update correct_choice to show all valid choices
         base_result["correct_choice"] = gold_indices
-        
+
         return base_result
 
 
@@ -149,8 +148,8 @@ class ChemBenchGenMetric(SQuADF1EMRecallMetric):
             if pred_val is None or target_val is None:
                 # Could not parse numbers, mark as incorrect
                 all_correct = 0
-                mae_val = float('inf')
-                mse_val = float('inf')
+                mae_val = float("inf")
+                mse_val = float("inf")
             else:
                 mae_val = abs(pred_val - target_val)
                 mse_val = (pred_val - target_val) ** 2
@@ -241,7 +240,7 @@ class GenericChemBenchChoice(MultipleChoiceTask):
     - The 'examples' field contains a list with one dict
     - The dict has 'input' (question) and 'target_scores' (JSON string of answer options)
     - target_scores format: {"option1": 0.0, "option2": 1.0, ...} where 1.0 is correct
-    
+
     NOTE: Some questions have multiple correct answers. We use ChemBenchMCAccuracy
     to handle this - any correct answer is accepted.
     """
@@ -273,10 +272,7 @@ class GenericChemBenchChoice(MultipleChoiceTask):
 
     def training_docs(self):
         # Filter to only choice questions (preferred_score == "multiple_choice_grade")
-        choice_docs = [
-            doc for doc in self.dataset["train"]
-            if self._is_choice_question(doc)
-        ]
+        choice_docs = [doc for doc in self.dataset["train"] if self._is_choice_question(doc)]
         subfield = self.task_config.get("dataset_name", "unknown")
         logger.info(
             f"ChemBench Choice ({subfield}): Found {len(choice_docs)} multiple-choice questions "
@@ -483,10 +479,7 @@ class GenericChemBenchGen(Task):
 
     def training_docs(self):
         # Filter to only open-ended questions (preferred_score in {"exact_string_match", "mae", "mse"})
-        gen_docs = [
-            doc for doc in self.dataset["train"]
-            if self._is_gen_question(doc)
-        ]
+        gen_docs = [doc for doc in self.dataset["train"] if self._is_gen_question(doc)]
         subfield = self.task_config.get("dataset_name", "unknown")
         logger.info(
             f"ChemBench Gen ({subfield}): Found {len(gen_docs)} open-ended questions "
@@ -569,6 +562,4 @@ class GenericChemBenchGen(Task):
     def construct_requests(
         self, doc: dict, ctx: Union[str, list, dict], doc_id: int
     ) -> List[RequestInstance]:
-        return self.construct_basic_generation_requests(
-            doc, ctx, doc_id, label=doc["target"]
-        )
+        return self.construct_basic_generation_requests(doc, ctx, doc_id, label=doc["target"])
