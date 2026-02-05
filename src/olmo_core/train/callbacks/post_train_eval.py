@@ -1,16 +1,18 @@
 """
-Callback to automatically convert checkpoint to HuggingFace format and launch evaluations
-when training completes successfully.
+Callback to automatically launch evaluations when training completes successfully.
+
+This callback expects an HF-format checkpoint to already exist (created by HFConverterCallback).
+It looks for a checkpoint with the "-hf" suffix and launches evaluation jobs for it.
 """
 
 import logging
-import os
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
+from typing import ClassVar, List, Optional
 
 from olmo_core.distributed.utils import get_rank
+from olmo_core.io import file_exists, join_path
 
 from .callback import Callback
 
@@ -66,12 +68,20 @@ DEFAULT_EVAL_TASKS = [
 @dataclass
 class PostTrainEvalCallback(Callback):
     """
-    Callback that automatically converts the final checkpoint to HuggingFace format
-    and launches evaluation jobs when training completes successfully.
+    Callback that launches evaluation jobs for an HF-format checkpoint when training completes.
+
+    This callback expects an HF-format checkpoint to already exist (created by HFConverterCallback).
+    It looks for a checkpoint with the "-hf" suffix and launches evaluation jobs via Beaker/gantry.
 
     This callback only runs on successful training completion (post_train), not on
     preemption or errors.
+
+    .. note::
+        Use this callback together with :class:`HFConverterCallback`. The HFConverterCallback
+        should convert the checkpoint to HF format first, then this callback will launch evals.
     """
+
+    priority: ClassVar[int] = -2  # Run after HFConverterCallback (priority=-1)
 
     eval_output_base_dir: str = "/data/input/kevinf/flexmoe/eval/results"
     """Base directory for evaluation results."""
@@ -100,22 +110,13 @@ class PostTrainEvalCallback(Callback):
     limit: int = 1000
     """Limit for number of evaluation examples."""
 
-    max_sequence_length: int = 65536
-    """Max sequence length for HF conversion."""
-
-    skip_hf_validation: bool = True
-    """Skip validation during HF conversion (faster)."""
-
     enabled: bool = True
     """Set to False to disable this callback."""
-
-    run_evals: bool = True
-    """Whether to launch eval jobs after HF conversion."""
 
     def post_train(self):
         """
         Called when training completes successfully.
-        Converts the latest checkpoint to HF format and launches evals.
+        Looks for an HF-format checkpoint and launches evaluation jobs.
         """
         if not self.enabled:
             log.info("PostTrainEvalCallback is disabled, skipping")
@@ -129,27 +130,21 @@ class PostTrainEvalCallback(Callback):
             log.info("Training was canceled, skipping post-train eval pipeline")
             return
 
-        log.info("Training completed successfully! Starting post-train eval pipeline...")
+        log.info("Training completed successfully! Starting eval pipeline...")
 
-        # Find the latest checkpoint
-        latest_checkpoint = self._find_latest_checkpoint()
-        if latest_checkpoint is None:
-            log.warning("No checkpoint found, skipping HF conversion and evals")
-            return
-
-        log.info(f"Found latest checkpoint: {latest_checkpoint}")
-
-        # Convert to HF format
-        hf_checkpoint = self._convert_to_hf(latest_checkpoint)
+        # Find the HF checkpoint (expects HFConverterCallback to have run first)
+        hf_checkpoint = self._find_hf_checkpoint()
         if hf_checkpoint is None:
-            log.error("HF conversion failed, skipping evals")
+            log.warning(
+                "No HF checkpoint found. Make sure HFConverterCallback is enabled and ran successfully, or that the converted checkpoint exists.\n"
+                "Looking for checkpoint with '-hf' suffix."
+            )
             return
+
+        log.info(f"Found HF checkpoint: {hf_checkpoint}")
 
         # Launch evaluations
-        if self.run_evals:
-            self._launch_evals(hf_checkpoint)
-        else:
-            log.info(f"Eval launching disabled, HF checkpoint ready at: {hf_checkpoint}")
+        self._launch_evals(hf_checkpoint)
 
     def _find_latest_checkpoint(self) -> Optional[str]:
         """Find the latest checkpoint in the save folder."""
@@ -170,42 +165,25 @@ class PostTrainEvalCallback(Callback):
             log.warning(f"Save folder not found: {save_folder}")
             return None
 
-    def _convert_to_hf(self, checkpoint_path: str) -> Optional[str]:
-        """Convert checkpoint to HuggingFace format."""
-        # Output path is checkpoint_path with -hf suffix
-        hf_output_path = f"{checkpoint_path.rstrip('/')}-hf"
+    def _find_hf_checkpoint(self) -> Optional[str]:
+        """Find the HF-format checkpoint (expects HFConverterCallback ran first).
 
-        log.info(f"Converting checkpoint to HF format: {checkpoint_path} -> {hf_output_path}")
-
-        # Build the conversion command
-        cmd = [
-            "python",
-            "src/examples/huggingface/convert_checkpoint_to_hf.py",
-            "-i", checkpoint_path,
-            "-o", hf_output_path,
-            "--max-sequence-length", str(self.max_sequence_length),
-        ]
-
-        if self.skip_hf_validation:
-            cmd.append("--skip-validation")
-
-        try:
-            log.info(f"Running HF conversion: {' '.join(cmd)}")
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                check=True,
-                cwd=os.environ.get("OLMO_CORE_ROOT", "."),
-            )
-            log.info("HF conversion completed successfully")
-            log.debug(f"Conversion stdout: {result.stdout}")
-            return hf_output_path
-        except subprocess.CalledProcessError as e:
-            log.error(f"HF conversion failed with return code {e.returncode}")
-            log.error(f"Stderr: {e.stderr}")
-            log.error(f"Stdout: {e.stdout}")
+        Looks for a checkpoint with the '-hf' suffix that contains a config.json file.
+        """
+        latest_checkpoint = self._find_latest_checkpoint()
+        if latest_checkpoint is None:
             return None
+
+        # HF checkpoint should be at {checkpoint_path}-hf
+        hf_checkpoint = f"{latest_checkpoint.rstrip('/')}-hf"
+
+        # Check if HF checkpoint exists (config.json is a good indicator)
+        config_path = join_path(hf_checkpoint, "config.json")
+        if file_exists(config_path):
+            return hf_checkpoint
+
+        log.warning(f"HF checkpoint not found at expected path: {hf_checkpoint}")
+        return None
 
     def _fix_git_remote(self):
         """Fix git remote URL to remove embedded token (which confuses gantry)."""
@@ -223,7 +201,7 @@ class PostTrainEvalCallback(Callback):
 
     def _transform_path_for_eval(self, path: str) -> str:
         """Transform weka path to the mount point used in eval jobs.
-        
+
         Training jobs use: /weka/oe-training-default/...
         Eval jobs mount:   --weka oe-training-default:/data/input
         So we need:        /weka/oe-training-default/... -> /data/input/...
@@ -243,7 +221,7 @@ class PostTrainEvalCallback(Callback):
 
         # Transform path for eval container's mount point
         eval_checkpoint_path = self._transform_path_for_eval(hf_checkpoint_path)
-        
+
         output_dir = f"{self.eval_output_base_dir}/{eval_run_name}"
 
         log.info(f"Launching evaluations for {eval_run_name}")
@@ -260,7 +238,10 @@ class PostTrainEvalCallback(Callback):
 
         for task in self.tasks:
             # Determine batch size based on task type
-            if any(x in task for x in ["cot", "minerva_math_", "mbpp", "bigcodebench", "ruler", "sciriff"]):
+            if any(
+                x in task
+                for x in ["cot", "minerva_math_", "mbpp", "bigcodebench", "ruler", "sciriff"]
+            ):
                 batch_size = 1
             else:
                 batch_size = self.batch_size
@@ -273,22 +254,36 @@ class PostTrainEvalCallback(Callback):
             # Build gantry command (try gantry directly, fall back to python -m)
             gantry_args = [
                 "run",
-                "--name", job_name,
-                "--gh-token-secret", "KEVINF_GITHUB_TOKEN",  # For private repo clone
-                "--weka", "oe-training-default:/data/input",
-                "--install", 'pip install -e ".[eval]"',
-                "--budget", self.budget,
-                "--workspace", self.workspace,
-                "--cluster", self.cluster,
-                "--priority", self.job_priority,
-                "--gpus", "1",
-                "--env-secret", "GITHUB_TOKEN=KEVINF_GITHUB_TOKEN",  # For private repo access
-                "--env-secret", "HF_TOKEN=KEVINF_HF_TOKEN",
-                "--env-secret", "AWS_ACCESS_KEY_ID=KEVINF_AWS_ACCESS_KEY_ID",
-                "--env-secret", "AWS_SECRET_ACCESS_KEY=KEVINF_AWS_SECRET_ACCESS_KEY",
+                "--name",
+                job_name,
+                "--gh-token-secret",
+                "KEVINF_GITHUB_TOKEN",  # For private repo clone
+                "--weka",
+                "oe-training-default:/data/input",
+                "--install",
+                'pip install -e ".[eval]"',
+                "--budget",
+                self.budget,
+                "--workspace",
+                self.workspace,
+                "--cluster",
+                self.cluster,
+                "--priority",
+                self.job_priority,
+                "--gpus",
+                "1",
+                "--env-secret",
+                "GITHUB_TOKEN=KEVINF_GITHUB_TOKEN",  # For private repo access
+                "--env-secret",
+                "HF_TOKEN=KEVINF_HF_TOKEN",
+                "--env-secret",
+                "AWS_ACCESS_KEY_ID=KEVINF_AWS_ACCESS_KEY_ID",
+                "--env-secret",
+                "AWS_SECRET_ACCESS_KEY=KEVINF_AWS_SECRET_ACCESS_KEY",
                 "--allow-dirty",
                 "--",
-                "bash", "-c",
+                "bash",
+                "-c",
                 f"PYTHONPATH=. python -u src/scripts/eval/launch_eval.py "
                 f"--model {eval_checkpoint_path} "
                 f"--model-type hf "
@@ -298,7 +293,7 @@ class PostTrainEvalCallback(Callback):
                 f"--batch-size {batch_size} "
                 f"--gpus 1",
             ]
-            
+
             # Try different ways to invoke gantry
             cmd = ["gantry"] + gantry_args
 
@@ -324,4 +319,3 @@ class PostTrainEvalCallback(Callback):
         if failed_count > 0 and launched_count == 0:
             log.info("To manually launch evals, run locally:")
             log.info(f'  MODELS=("{hf_checkpoint_path}") bash src/scripts/kevinf/eval/launch.sh')
-

@@ -17,12 +17,13 @@ from .evaluator_callback import (
 from .garbage_collector import GarbageCollectorCallback
 from .gpu_memory_monitor import GPUMemoryMonitorCallback
 from .gradient_monitor import GradientMonitorCallback
+from .hf_converter import HFConverterCallback
 from .monkey_patcher import MonkeyPatcherCallback
+from .post_train_eval import PostTrainEvalCallback
 from .profiler import ProfilerCallback
 from .sequence_length_scheduler import SequenceLengthSchedulerCallback
 from .slack_notifier import SlackNotificationSetting, SlackNotifierCallback
 from .speed_monitor import SpeedMonitorCallback
-from .post_train_eval import PostTrainEvalCallback
 from .wandb import WandBCallback
 
 __all__ = [
@@ -40,6 +41,7 @@ __all__ = [
     "GarbageCollectorCallback",
     "GPUMemoryMonitorCallback",
     "GradientMonitorCallback",
+    "HFConverterCallback",
     "ProfilerCallback",
     "SlackNotifierCallback",
     "SlackNotificationSetting",

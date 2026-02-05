@@ -19,11 +19,16 @@ from typing import List, Optional, cast
 import rich
 
 from olmo_core.config import Config, DType
-from olmo_core.data import DataMix, NumpyDataLoaderConfig, NumpyFSLDatasetConfig, TokenizerConfig
-from olmo_core.eval.task_groups import TASK_GROUPS
+from olmo_core.data import (
+    DataMix,
+    NumpyDataLoaderConfig,
+    NumpyFSLDatasetConfig,
+    TokenizerConfig,
+)
 from olmo_core.data.numpy_dataset import NumpyDatasetConfig
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_rank
+from olmo_core.eval.task_groups import TASK_GROUPS
 from olmo_core.float8 import Float8Config
 from olmo_core.nn.attention import AttentionBackendName
 from olmo_core.nn.transformer import TransformerConfig
@@ -39,6 +44,7 @@ from olmo_core.train.callbacks import (
     ConfigSaverCallback,
     DownstreamEvaluatorCallbackConfig,
     GPUMemoryMonitorCallback,
+    HFConverterCallback,
     PostTrainEvalCallback,
     WandBCallback,
 )
@@ -101,7 +107,7 @@ def train(config: ExperimentConfig):
     # Try to load checkpoint: save_folder takes priority over load_path.
     if not trainer.no_checkpoints:
         checkpoint_loaded_from_save_folder = trainer.maybe_load_checkpoint()
-        
+
         if checkpoint_loaded_from_save_folder:
             if config.load_path:
                 log.warning(
@@ -161,7 +167,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         max_sequence_length=SEQUENCE_LENGTH,
         optim=SkipStepAdamWConfig(
             lr=4e-4,
-            weight_decay=0.033,
+            weight_decay=0.033,  # Not ablated; from OLMo3 defaults
             betas=(0.9, 0.95),
             group_overrides=[
                 OptimGroupOverride(params=["embeddings.weight"], opts=dict(weight_decay=0.0))
@@ -217,6 +223,13 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                 tasks=TASK_GROUPS["fast"],
                 tokenizer=tokenizer_config,
                 eval_interval=250,
+            ),
+        )
+        .with_callback(
+            "hf_converter",
+            HFConverterCallback(
+                enabled=True,
+                validate=False,  # Skip validation for speed
             ),
         )
         .with_callback(
