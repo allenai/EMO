@@ -62,7 +62,8 @@ eval = [
     "beaker-gantry",
     "ai2-olmo-eval @ git+https://github.com/allenai/OLMo-in-loop-evals@kevinf/add-legalbench",
     "prettytable",
-    "fsspec>=2024.2.0",
+    "fsspec>=2024.2.0,<=2025.3.0",
+    "s3fs>=2024.2.0,<=2025.3.0",
 ]
 torchao = ["torchao"]
 transformers = [
