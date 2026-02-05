@@ -5,6 +5,7 @@ from oe_eval.tasks.oe_eval_tasks import TASK_REGISTRY
 from .tasks import (
     agi_eval,
     chembench,
+    frenchbench,
     hatespeech,
     legalbench,
     medmcqa,
@@ -40,6 +41,8 @@ new_task_registry: Dict = {
     "squad2": squad2.SQuAD2,
     # LegalBench tasks (~110 classification tasks)
     **legalbench.create_legalbench_tasks(),
+    # FrenchBench tasks (French language MC as RC)
+    **frenchbench.create_frenchbench_tasks(),
 }
 
 TASK_REGISTRY.update(new_task_registry)
