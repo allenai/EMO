@@ -237,6 +237,10 @@ class FrenchBenchGrammarVocabReadingRC(GenericFrenchBenchRC):
         GenericFrenchBenchRC.TASK_CONFIG_DEFAULTS,
     )
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._test_docs = None
+
     def has_training_docs(self):
         return False
 
