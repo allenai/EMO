@@ -86,16 +86,15 @@ CHEMBENCH_SUBFIELDS = [
     "toxicity_and_safety",
 ]
 
-# Subfields that also have open-ended/generative questions (mae, exact_string_match)
-# chemical_preference and toxicity_and_safety are MC-only
+# Subfields that have enough open-ended/generative questions for meaningful evaluation.
+# Excluded: chemical_preference (0 gen), toxicity_and_safety (0 gen),
+#           technical_chemistry (2 gen), materials_science (4 gen)
 CHEMBENCH_GEN_SUBFIELDS = [
-    "analytical_chemistry",
-    "general_chemistry",
-    "inorganic_chemistry",
-    "materials_science",
-    "organic_chemistry",
-    "physical_chemistry",
-    "technical_chemistry",
+    "analytical_chemistry",   # 50 gen
+    "general_chemistry",      # 47 gen
+    "inorganic_chemistry",    # 37 gen
+    "organic_chemistry",      # 35 gen
+    "physical_chemistry",     # 68 gen
 ]
 
 # Question types based on preferred_score field
@@ -315,26 +314,29 @@ class GenericChemBenchChoice(MultipleChoiceTask):
 
         if self.has_training_docs():
             self._fewshot_docs = list(self.training_docs())
-            if len(self._fewshot_docs) < k:
+            # Use num_shots=0 when pool is too small to avoid fewshot leakage
+            if len(self._fewshot_docs) <= k:
                 logger.warning(
-                    "ChemBench Choice: capping num_shots from %d to %d for subfield %s",
-                    k,
+                    "ChemBench Choice: setting num_shots=0 (only %d docs, need >%d) for subfield %s",
                     len(self._fewshot_docs),
+                    k,
                     self.task_config.get("dataset_name"),
                 )
-            return rnd.sample(self._fewshot_docs, min(k, len(self._fewshot_docs)))
+                return []
+            return rnd.sample(self._fewshot_docs, k)
 
         self._fewshot_docs = list(
             self.validation_docs() if self.has_validation_docs() else self.test_docs()
         )
-        sample_k = min(k + 1, len(self._fewshot_docs))
-        if sample_k < k + 1:
+        # Need k+1 docs (k fewshot + 1 eval doc) to avoid leakage
+        if len(self._fewshot_docs) <= k:
             logger.warning(
-                "ChemBench Choice: capping num_shots from %d to %d (no train docs)",
+                "ChemBench Choice: setting num_shots=0 (only %d docs, need >%d, no train docs)",
+                len(self._fewshot_docs),
                 k,
-                max(sample_k - 1, 0),
             )
-        return rnd.sample(self._fewshot_docs, sample_k)
+            return []
+        return rnd.sample(self._fewshot_docs, k + 1)
 
     def _is_choice_question(self, doc) -> bool:
         """Check if this is a choice question based on preferred_score field."""
@@ -544,26 +546,29 @@ class GenericChemBenchGen(Task):
 
         if self.has_training_docs():
             self._fewshot_docs = list(self.training_docs())
-            if len(self._fewshot_docs) < k:
+            # Use num_shots=0 when pool is too small to avoid fewshot leakage
+            if len(self._fewshot_docs) <= k:
                 logger.warning(
-                    "ChemBench Gen: capping num_shots from %d to %d for subfield %s",
-                    k,
+                    "ChemBench Gen: setting num_shots=0 (only %d docs, need >%d) for subfield %s",
                     len(self._fewshot_docs),
+                    k,
                     self.task_config.get("dataset_name"),
                 )
-            return rnd.sample(self._fewshot_docs, min(k, len(self._fewshot_docs)))
+                return []
+            return rnd.sample(self._fewshot_docs, k)
 
         self._fewshot_docs = list(
             self.validation_docs() if self.has_validation_docs() else self.test_docs()
         )
-        sample_k = min(k + 1, len(self._fewshot_docs))
-        if sample_k < k + 1:
+        # Need k+1 docs (k fewshot + 1 eval doc) to avoid leakage
+        if len(self._fewshot_docs) <= k:
             logger.warning(
-                "ChemBench Gen: capping num_shots from %d to %d (no train docs)",
+                "ChemBench Gen: setting num_shots=0 (only %d docs, need >%d, no train docs)",
+                len(self._fewshot_docs),
                 k,
-                max(sample_k - 1, 0),
             )
-        return rnd.sample(self._fewshot_docs, sample_k)
+            return []
+        return rnd.sample(self._fewshot_docs, k + 1)
 
     def doc_to_text(self, doc):
         return f"Question: {doc['question']}\nAnswer:"
