@@ -9,8 +9,8 @@
 
 # Hyperparameters (easy to change for sweeps)
 dataset="croissant"
-warmup_fraction=0.2
-train_tokens_B=1  # in billions
+warmup_fraction=0.1
+train_tokens_B=10  # in billions
 train_tokens_raw=$((train_tokens_B * 1000000000))
 load_path="/weka/oe-training-default/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995"
 

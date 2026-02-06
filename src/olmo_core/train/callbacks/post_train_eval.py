@@ -61,7 +61,8 @@ DEFAULT_EVAL_TASKS = [
     # "chembench:mc",
     "chembench:gen",
     "chembench:rc",
-    "legalbench_abercrombie_rc_0shot",
+    "legalbench:rc",
+    "frenchbench:rc",
 ]
 
 

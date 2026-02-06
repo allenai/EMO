@@ -61,4 +61,21 @@ def get_task_suite_configs():
             },
         },
     )
+    from offline_evals.tasks import frenchbench, legalbench
+
+    TASK_SUITE_CONFIGS.update(
+        {
+            "legalbench:rc": {
+                "tasks": [
+                    f"legalbench_{task_name}:rc"
+                    for task_name in legalbench.LEGALBENCH_CLASSIFICATION_TASKS.keys()
+                ],
+                "primary_metric": "macro",
+            },
+            "frenchbench:rc": {
+                "tasks": list(frenchbench.create_frenchbench_tasks().keys()),
+                "primary_metric": "macro",
+            },
+        },
+    )
     return TASK_SUITE_CONFIGS
