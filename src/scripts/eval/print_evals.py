@@ -495,6 +495,16 @@ def main(args):
         if legalbench_tasks:
             results = avg_tasks(results, "legalbench:rc", legalbench_tasks)
 
+    if args.avg_frenchbench:
+        # All FrenchBench tasks use RC (ranked classification) evaluation
+        frenchbench_tasks = [
+            task_name
+            for task_name in task_names
+            if task_name.startswith("frenchbench_") and ":rc" in task_name
+        ]
+        if frenchbench_tasks:
+            results = avg_tasks(results, "frenchbench:rc", frenchbench_tasks)
+
     if args.avg_code:
         code_tasks = [
             task_name
@@ -785,6 +795,7 @@ Examples:
     parser.add_argument("--avg-sciriff", action="store_true", help="Average SciRIFF tasks")
     parser.add_argument("--avg-chembench", action="store_true", help="Average ChemBench tasks")
     parser.add_argument("--avg-legalbench", action="store_true", help="Average LegalBench tasks")
+    parser.add_argument("--avg-frenchbench", action="store_true", help="Average FrenchBench tasks")
     parser.add_argument("--avg-code", action="store_true", help="Average coding tasks")
     parser.add_argument(
         "--avg-all", action="store_true", help="Average all tasks into a single score"
@@ -827,6 +838,7 @@ Examples:
         args.avg_sciriff = True
         args.avg_chembench = True
         args.avg_legalbench = True
+        args.avg_frenchbench = True
         args.avg_code = True
 
     main(args)

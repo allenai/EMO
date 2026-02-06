@@ -73,7 +73,7 @@ class ChemBenchMCAccuracy(MCAccuracy):
         return base_result
 
 
-# All ChemBench subfields
+# All ChemBench subfields (all have multiple choice questions)
 CHEMBENCH_SUBFIELDS = [
     "analytical_chemistry",
     "chemical_preference",
@@ -84,6 +84,18 @@ CHEMBENCH_SUBFIELDS = [
     "physical_chemistry",
     "technical_chemistry",
     "toxicity_and_safety",
+]
+
+# Subfields that also have open-ended/generative questions (mae, exact_string_match)
+# chemical_preference and toxicity_and_safety are MC-only
+CHEMBENCH_GEN_SUBFIELDS = [
+    "analytical_chemistry",
+    "general_chemistry",
+    "inorganic_chemistry",
+    "materials_science",
+    "organic_chemistry",
+    "physical_chemistry",
+    "technical_chemistry",
 ]
 
 # Question types based on preferred_score field
@@ -178,11 +190,11 @@ def create_chembench_tasks() -> dict:
     """Create all ChemBench subfield tasks (MC, RC, and generative)."""
     all_tasks = {}
     for subfield in CHEMBENCH_SUBFIELDS:
-        # Multiple choice tasks
+        # Multiple choice and ranked classification tasks (all subfields)
         all_tasks[f"chembench_{subfield}:mc"] = create_chembench_mc_task(subfield)
-        # Ranked classification tasks
         all_tasks[f"chembench_{subfield}:rc"] = create_chembench_rc_task(subfield)
-        # Open-ended/generative tasks
+    for subfield in CHEMBENCH_GEN_SUBFIELDS:
+        # Open-ended/generative tasks (only subfields with gen questions)
         all_tasks[f"chembench_{subfield}:gen"] = create_chembench_gen_task(subfield)
     return all_tasks
 

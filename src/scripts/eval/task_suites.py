@@ -2,6 +2,8 @@ from oe_eval.configs.task_suites import TASK_SUITE_CONFIGS
 
 
 def get_task_suite_configs():
+    from offline_evals.tasks import chembench, frenchbench, legalbench
+
     TASK_SUITE_CONFIGS.update(
         {
             "sciriff5": {
@@ -14,57 +16,18 @@ def get_task_suite_configs():
                 ],
                 "primary_metric": "macro",
             },
-            # ChemBench MC only (multiple choice questions)
             "chembench:mc": {
-                "tasks": [
-                    "chembench_analytical_chemistry:mc",
-                    "chembench_chemical_preference:mc",
-                    "chembench_general_chemistry:mc",
-                    "chembench_inorganic_chemistry:mc",
-                    "chembench_materials_science:mc",
-                    "chembench_organic_chemistry:mc",
-                    "chembench_physical_chemistry:mc",
-                    "chembench_technical_chemistry:mc",
-                    "chembench_toxicity_and_safety:mc",
-                ],
+                "tasks": [f"chembench_{s}:mc" for s in chembench.CHEMBENCH_SUBFIELDS],
                 "primary_metric": "macro",
             },
-            # ChemBench generative/open-ended questions
             "chembench:gen": {
-                "tasks": [
-                    "chembench_analytical_chemistry:gen",
-                    "chembench_chemical_preference:gen",
-                    "chembench_general_chemistry:gen",
-                    "chembench_inorganic_chemistry:gen",
-                    "chembench_materials_science:gen",
-                    "chembench_organic_chemistry:gen",
-                    "chembench_physical_chemistry:gen",
-                    "chembench_technical_chemistry:gen",
-                    "chembench_toxicity_and_safety:gen",
-                ],
+                "tasks": [f"chembench_{s}:gen" for s in chembench.CHEMBENCH_GEN_SUBFIELDS],
                 "primary_metric": "macro",
             },
-            # ChemBench ranked classification (cloze prompt)
             "chembench:rc": {
-                "tasks": [
-                    "chembench_analytical_chemistry:rc",
-                    "chembench_chemical_preference:rc",
-                    "chembench_general_chemistry:rc",
-                    "chembench_inorganic_chemistry:rc",
-                    "chembench_materials_science:rc",
-                    "chembench_organic_chemistry:rc",
-                    "chembench_physical_chemistry:rc",
-                    "chembench_technical_chemistry:rc",
-                    "chembench_toxicity_and_safety:rc",
-                ],
+                "tasks": [f"chembench_{s}:rc" for s in chembench.CHEMBENCH_SUBFIELDS],
                 "primary_metric": "macro",
             },
-        },
-    )
-    from offline_evals.tasks import frenchbench, legalbench
-
-    TASK_SUITE_CONFIGS.update(
-        {
             "legalbench:rc": {
                 "tasks": [
                     f"legalbench_{task_name}:rc"
