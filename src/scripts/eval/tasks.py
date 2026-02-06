@@ -199,7 +199,7 @@ def get_task_configs():
                 },
             },
             "gsm8k_perplexity:train::olmes": {
-                "task_name": "gsm8k:perplexity_train",
+                "task_name": "gsm8k_perplexity:train",
                 "split": "train",
                 "primary_metric": "bits_per_byte",
                 "num_shots": 8,
@@ -209,7 +209,7 @@ def get_task_configs():
                 },
             },
             "gsm8k_perplexity:validation::olmes": {
-                "task_name": "gsm8k:perplexity_validation",
+                "task_name": "gsm8k_perplexity:validation",
                 "split": "validation",
                 "primary_metric": "bits_per_byte",
                 "num_shots": 8,
@@ -218,8 +218,18 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "gsm8k_perplexity:train_0shot::olmes": {
-                "task_name": "gsm8k:perplexity_train_0shot",
+            "gsm8k_perplexity:test::olmes": {
+                "task_name": "gsm8k_perplexity:test",
+                "split": "test",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 8,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k_perplexity_0shot:train::olmes": {
+                "task_name": "gsm8k_perplexity_0shot:train",
                 "split": "train",
                 "primary_metric": "bits_per_byte",
                 "num_shots": 0,
@@ -228,8 +238,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "gsm8k_perplexity:validation_0shot::olmes": {
-                "task_name": "gsm8k:perplexity_validation_0shot",
+            "gsm8k_perplexity_0shot:validation::olmes": {
+                "task_name": "gsm8k_perplexity_0shot:validation",
                 "split": "validation",
                 "primary_metric": "bits_per_byte",
                 "num_shots": 0,
@@ -238,11 +248,11 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "gsm8k_perplexity:test::olmes": {
-                "task_name": "gsm8k:perplexity_test",
+            "gsm8k_perplexity_0shot:test::olmes": {
+                "task_name": "gsm8k_perplexity_0shot:test",
                 "split": "test",
                 "primary_metric": "bits_per_byte",
-                "num_shots": 8,
+                "num_shots": 0,
                 "fewshot_source": "STD:GSM8k",
                 "metadata": {
                     "regimes": ["OLMES-v0.2"],
