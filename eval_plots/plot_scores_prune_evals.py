@@ -23,6 +23,7 @@ AUTO_DISCOVER = True
 # Key: model directory name. Value: label to show in plots (or None to use full name).
 MODEL_SPECS = {
     "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123step30995-hf": "moe",
+    "moe_1b14b_128experts_lb-1e-1_1217step30995-hf": "moe-lb1e-1",
     "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121step30995-hf": "twolevelbatchlb",
     "dense_1b_olmoe-mix_prenorm_noqknorm_1123step30995-hf": "dense",
     "moe_1b4b_32experts_1224step30995-hf": "moe_1b4b",
