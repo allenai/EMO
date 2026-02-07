@@ -60,6 +60,12 @@ class MoETwoLevelBatchLBReduceDPRouter(MoETwoLevelRouter):
             the total number of items routed to each expert, with shape ``(num_experts,)``,
             and optionally the auxiliary losses.
         """
+        # make sure tp and cp are not enabled
+        if self.tp_mesh is not None:
+            raise NotImplementedError("Tensor parallelism is not supported in MoETwoLevelBatchLBReduceDPRouter.")
+        if self.cp_mesh is not None:
+            raise NotImplementedError("Context parallelism is not supported in MoETwoLevelBatchLBReduceDPRouter.")
+
         # shape: (batch_size, seq_len, d_model)
         x = self.jitter(x)
 
@@ -193,14 +199,30 @@ class MoETwoLevelBatchLBReduceDPRouter(MoETwoLevelRouter):
                     if self.gating_function == MoERouterGatingFunction.sigmoid:
                         scores = scores / scores.sum(dim=-1, keepdim=True)
 
+                    # we now do reduction on the tot_batch_size_per_expert to get a dp-global lb loss (still not full global sinze we don't do across gradient accumulation steps)
+                    dp_global_tot_batch_size_per_expert = tot_batch_size_per_expert.clone() # we clone to not interfere with logging or other routing stuff
+                    dp_global_loss_div_factor = loss_div_factor.clone()
+
+                    if is_distributed():
+                        dist.all_reduce(dp_global_tot_batch_size_per_expert, op=dist.ReduceOp.SUM)
+                        dist.all_reduce(dp_global_loss_div_factor, op=dist.ReduceOp.SUM)
+
+                        # breakpoint on rank 0, let other ranks wait
+                        if dist.get_rank() == 0:
+                            breakpoint()
+                        else:
+                            dist.barrier()
+                    else:
+                        breakpoint()
+
                     lb_loss = load_balancing_loss(
                         num_experts=self.num_experts,
                         top_k=self.top_k,
                         expert_scores=scores,
-                        batch_size_per_expert=tot_batch_size_per_expert,
-                        batched_batch_size_per_expert=tot_batched_batch_size_per_expert,
+                        batch_size_per_expert=dp_global_tot_batch_size_per_expert,
+                        batched_batch_size_per_expert=tot_batched_batch_size_per_expert, # this is not used, so we don't bother reducing it
                         granularity=self.lb_loss_granularity,
-                        loss_div_factor=loss_div_factor,
+                        loss_div_factor=dp_global_loss_div_factor,
                         tp_mesh=self.tp_mesh,
                         cp_mesh=self.cp_mesh,
                     )
