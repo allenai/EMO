@@ -41,7 +41,7 @@ TASK_GROUPS_LIST=(
 #  "coqa_full_0shot"
 #  "squad_0shot"
 
-#  "mmlu_biology"
+  "mmlu_biology"
 #  "mmlu_business"
 #  "mmlu_chemistry"
 #  "mmlu_computer_science"
