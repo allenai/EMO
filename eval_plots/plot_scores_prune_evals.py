@@ -22,8 +22,8 @@ AUTO_DISCOVER = True
 # Current prune_evals inventory (auto-generated at script creation time).
 # Key: model directory name. Value: label to show in plots (or None to use full name).
 MODEL_SPECS = {
-    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123step30995-hf": "moe",
-    "moe_1b14b_128experts_lb-1e-1_1217step30995-hf": "moe-lb1e-1",
+    # "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123step30995-hf": "moe",
+    # "moe_1b14b_128experts_lb-1e-1_1217step30995-hf": "moe-lb1e-1",
     "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121step30995-hf": "twolevelbatchlb",
     "dense_1b_olmoe-mix_prenorm_noqknorm_1123step30995-hf": "dense",
     "moe_1b4b_32experts_1224step30995-hf": "moe_1b4b",
@@ -37,65 +37,69 @@ AVAILABLE_MODELS = list(MODEL_SPECS)
 # Task list + per-task metrics.
 # Key: task run name. Value: list of metric keys to plot for that task.
 TASK_SPECS = {
-    "arc_challenge_keepk_32_bs-32_lr-5e-5_epoch-1": [
-        "softloss_corr",
-        "acc_per_byte",
+    # "arc_challenge_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    #     "softloss_corr",
+    #     "acc_per_byte",
+    #     "primary_score"
+    # ],
+    # "arc_easy_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    #     "softloss_corr",
+    #     "acc_per_byte",
+    #     "primary_score"
+    # ],
+    # "boolq_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    #     "softloss_corr",
+    #     "acc_per_byte",
+    #     "primary_score"
+    # ],
+    # "coqa_0shot_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    #     "recall",
+    #     "f1",
+    #     "primary_score"
+    # ],
+    # "csqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    #     "softloss_corr",
+    #     "acc_per_byte",
+    #     "primary_score"
+    # ],
+    # "gsm8k_generation_0shot_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    #     "exact_match",
+    #     "primary_score"
+    # ],
+    "gsm8k_perplexity_0shot_keepk_32_bs-32_lr-5e-5_epoch-1": [
+        "bits_per_byte",
         "primary_score"
     ],
-    "arc_easy_keepk_32_bs-32_lr-5e-5_epoch-1": [
-        "softloss_corr",
-        "acc_per_byte",
-        "primary_score"
-    ],
-    "boolq_keepk_32_bs-32_lr-5e-5_epoch-1": [
-        "softloss_corr",
-        "acc_per_byte",
-        "primary_score"
-    ],
-    "coqa_0shot_keepk_32_bs-32_lr-5e-5_epoch-1": [
-        "recall",
-        "f1",
-        "primary_score"
-    ],
-    "csqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
-        "softloss_corr",
-        "acc_per_byte",
-        "primary_score"
-    ],
-    "gsm8k_generation_0shot_keepk_32_bs-32_lr-5e-5_epoch-1": [
-        "exact_match",
-        "primary_score"
-    ],
-    "hellaswag_keepk_32_bs-32_lr-5e-5_epoch-1": [
-        "softloss_corr",
-        "acc_per_byte",
-        "primary_score"
-    ],
-    "openbookqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
-        "softloss_corr",
-        "acc_per_byte",
-        "primary_score"
-    ],
-    "piqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
-        "softloss_corr",
-        "acc_per_byte",
-        "primary_score"
-    ],
-    "socialiqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
-        "softloss_corr",
-        "acc_per_byte",
-        "primary_score"
-    ],
-    "squad_0shot_keepk_32_bs-32_lr-5e-5_epoch-1": [
-        "recall",
-        "f1",
-        "primary_score"
-    ],
-    "winogrande_keepk_32_bs-32_lr-5e-5_epoch-1": [
-        "softloss_corr",
-        "acc_per_byte",
-        "primary_score"
-    ],
+#     "hellaswag_keepk_32_bs-32_lr-5e-5_epoch-1": [
+#         "softloss_corr",
+#         "acc_per_byte",
+#         "primary_score"
+#     ],
+#     "openbookqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
+#         "softloss_corr",
+#         "acc_per_byte",
+#         "primary_score"
+#     ],
+#     "piqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
+#         "softloss_corr",
+#         "acc_per_byte",
+#         "primary_score"
+#     ],
+#     "socialiqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
+#         "softloss_corr",
+#         "acc_per_byte",
+#         "primary_score"
+#     ],
+#     "squad_0shot_keepk_32_bs-32_lr-5e-5_epoch-1": [
+#         "recall",
+#         "f1",
+#         "primary_score"
+#     ],
+#     "winogrande_keepk_32_bs-32_lr-5e-5_epoch-1": [
+#         "softloss_corr",
+#         "acc_per_byte",
+#         "primary_score"
+#     ],
 }
 AVAILABLE_TASK_RUNS = list(TASK_SPECS)
 
