@@ -217,6 +217,7 @@ class MoERouter(nn.Module):
 
         # add metrics to keep track of unique experts per batch
         self._unique_experts_sum = 0.0
+        self._reducedp_unique_experts_sum = 0.0
         self._num_batches_tracked = 0
 
         # add metrics to keep track of router expert entropy
@@ -420,11 +421,16 @@ class MoERouter(nn.Module):
         # Unique experts used per batch
         if self._num_batches_tracked > 0:
             avg_unique_experts = self._unique_experts_sum / self._num_batches_tracked
+            reducedp_avg_unique_experts = self._reducedp_unique_experts_sum / self._num_batches_tracked
             fraction_unique_experts = avg_unique_experts / self.num_experts
 
             # Convert to tensors for consistency with other metrics
             out["unique experts used per batch"] = (
                 torch.tensor(avg_unique_experts, device=self.device),
+                ReduceType.mean,
+            )
+            out["reducedp unique experts used per batch"] = (
+                torch.tensor(reducedp_avg_unique_experts, device=self.device),
                 ReduceType.mean,
             )
             out["fraction of experts used per batch"] = (
@@ -514,6 +520,7 @@ class MoERouter(nn.Module):
             z_loss.zero_()
 
         self._unique_experts_sum = 0.0
+        self._reducedp_unique_experts_sum = 0.0
         self._num_batches_tracked = 0
 
         self._router_tokenlevel_expert_entropy = 0.0

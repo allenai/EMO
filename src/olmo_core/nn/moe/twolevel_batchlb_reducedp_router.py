@@ -207,13 +207,8 @@ class MoETwoLevelBatchLBReduceDPRouter(MoETwoLevelRouter):
                         dist.all_reduce(dp_global_tot_batch_size_per_expert, op=dist.ReduceOp.SUM)
                         dist.all_reduce(dp_global_loss_div_factor, op=dist.ReduceOp.SUM)
 
-                    #     # breakpoint on rank 0, let other ranks wait
-                    #     if dist.get_rank() == 0:
-                    #         breakpoint()
-                    #     else:
-                    #         dist.barrier()
-                    # else:
-                    #     breakpoint()
+                    # collect all non-zero entries of the dp_global_tot_batch_size_per_expert
+                    self._reducedp_unique_experts_sum += (dp_global_tot_batch_size_per_expert > 0).sum().item()
 
                     lb_loss = load_balancing_loss(
                         num_experts=self.num_experts,
@@ -226,28 +221,6 @@ class MoETwoLevelBatchLBReduceDPRouter(MoETwoLevelRouter):
                         tp_mesh=self.tp_mesh,
                         cp_mesh=self.cp_mesh,
                     )
-
-                    lb_loss_local = load_balancing_loss(
-                        num_experts=self.num_experts,
-                        top_k=self.top_k,
-                        expert_scores=scores,
-                        batch_size_per_expert=tot_batch_size_per_expert,
-                        batched_batch_size_per_expert=tot_batched_batch_size_per_expert,
-                        # this is not used, so we don't bother reducing it
-                        granularity=self.lb_loss_granularity,
-                        loss_div_factor=loss_div_factor,
-                        tp_mesh=self.tp_mesh,
-                        cp_mesh=self.cp_mesh,
-                    )
-
-                    if is_distributed():
-                        # breakpoint on rank 0, let other ranks wait
-                        if dist.get_rank() == 0:
-                            breakpoint()
-                        else:
-                            dist.barrier()
-                    else:
-                        breakpoint()
 
                     self.load_balancing_loss += lb_loss.detach()
 
