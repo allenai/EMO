@@ -11,7 +11,7 @@ lb=1e-1
 runname="twolevelbatchlbreducedp-${document_expert_pool}_1b14b_lr-${lr}_lb-${lb}_0119"
 
 
-torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
+torchrun --nproc-per-node=2 src/scripts/train/olmoe-1B-7B_fsl.py \
   $runname \
   --save-folder="/root/ryanwang/phdbrainstorm/FlexMoE/models/$runname" \
   --dataset.mix=arc-easy-train \
