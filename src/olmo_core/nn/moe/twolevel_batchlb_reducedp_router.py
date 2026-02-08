@@ -203,17 +203,17 @@ class MoETwoLevelBatchLBReduceDPRouter(MoETwoLevelRouter):
                     dp_global_tot_batch_size_per_expert = tot_batch_size_per_expert.clone() # we clone to not interfere with logging or other routing stuff
                     dp_global_loss_div_factor = loss_div_factor.clone()
 
-                    breakpoint()
                     if is_distributed():
                         dist.all_reduce(dp_global_tot_batch_size_per_expert, op=dist.ReduceOp.SUM)
                         dist.all_reduce(dp_global_loss_div_factor, op=dist.ReduceOp.SUM)
 
                         # breakpoint on rank 0, let other ranks wait
                         if dist.get_rank() == 0:
-                            import pdb
-                            tty_in = open("/dev/tty", "r")
-                            tty_out = open("/dev/tty", "w")
-                            pdb.Pdb(stdin=tty_in, stdout=tty_out).set_trace()
+                            breakpoint()
+                            # import pdb
+                            # tty_in = open("/dev/tty", "r")
+                            # tty_out = open("/dev/tty", "w")
+                            # pdb.Pdb(stdin=tty_in, stdout=tty_out).set_trace()
                         else:
                             dist.barrier()
                     else:
