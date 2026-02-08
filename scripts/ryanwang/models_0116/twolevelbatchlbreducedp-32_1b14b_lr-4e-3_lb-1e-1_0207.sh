@@ -7,7 +7,7 @@ document_expert_pool=32
 lr=4e-3
 lb=1e-1
 
-nodes=8
+nodes=16
 gpus=8
 # calculate by taking nodes multiply by gpus multiply by 4 (since we have 4 as micro batch size)
 lb_global_batch_size=$((nodes * gpus * 4))
