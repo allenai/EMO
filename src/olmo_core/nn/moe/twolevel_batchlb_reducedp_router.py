@@ -210,7 +210,10 @@ class MoETwoLevelBatchLBReduceDPRouter(MoETwoLevelRouter):
 
                         # breakpoint on rank 0, let other ranks wait
                         if dist.get_rank() == 0:
-                            breakpoint()
+                            import pdb
+                            tty_in = open("/dev/tty", "r")
+                            tty_out = open("/dev/tty", "w")
+                            pdb.Pdb(stdin=tty_in, stdout=tty_out).set_trace()
                         else:
                             dist.barrier()
                     else:
