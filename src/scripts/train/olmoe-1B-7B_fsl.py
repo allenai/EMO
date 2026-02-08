@@ -204,6 +204,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         vocab_size=tokenizer_config.padded_vocab_size(),  # a little bigger than actual vocab size to make it a multiple of 128
     )
 
+    breakpoint()
     # Apply special routers or other modifications to the model here if needed.
     if opts.model_type == "dense" or opts.model_type == "moe":
         log.info("Using default routers; no modifications applied.")
