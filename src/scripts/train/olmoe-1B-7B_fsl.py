@@ -75,9 +75,9 @@ log = logging.getLogger(__name__)
 DATA_ROOT = "/root/ryanwang"
 
 SEQUENCE_LENGTH = 4096
-GLOBAL_BATCH_SIZE = 4 * SEQUENCE_LENGTH
+# GLOBAL_BATCH_SIZE = 4 * SEQUENCE_LENGTH
 # GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
-# GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
+GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
 
 
 def parse_poolsched(spec: str):
@@ -204,7 +204,6 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         vocab_size=tokenizer_config.padded_vocab_size(),  # a little bigger than actual vocab size to make it a multiple of 128
     )
 
-    breakpoint()
     # Apply special routers or other modifications to the model here if needed.
     if opts.model_type == "dense" or opts.model_type == "moe":
         log.info("Using default routers; no modifications applied.")
@@ -584,7 +583,7 @@ def parser_args():
         "--global_batch_size",
         type=int,
         help="Global batch size to use.",
-        default=1024,
+        default=4,
     )
     parser.add_argument(
         "--top_p",
