@@ -77,7 +77,7 @@ def merge_experts(
     merge_model_config = old_model_config.copy()
     merge_models = []
     for idx, ckpt_path in enumerate(merge_checkpoint_paths):
-        merge_model_config.block.feed_forward_moe.num_experts = len(expert_indices[idx])
+        merge_model_config.block.feed_forward_moe.num_experts += len(expert_indices[idx])
         merge_model = load_checkpoint(model_config=merge_model_config, checkpoint_path=ckpt_path)
         merge_models.append(merge_model)
         logger.info(f"Merge model loaded successfully from {ckpt_path}")
