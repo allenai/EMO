@@ -2,6 +2,8 @@ from datasets import DatasetDict
 from oe_eval.tasks.oe_eval_tasks.mmlu import GenericMMLU
 from oe_eval.utilities.datasets_wrapper import MOUNTED_WEKA_DATASET_WRAPPER
 
+from ..metrics.mc_softloss import SoftLoss
+
 MMLU_CATEGORIES = {
     "math": [
         "abstract_algebra",
@@ -112,6 +114,14 @@ class GenericMMLU_withsplits(GenericMMLU):
         train_split = self.dataset["test"].shuffle(seed=0).select(range(0, int(tot_test_size * self.TEST_FRACTION)))
         return train_split.map(self._process_doc, with_indices=True)
 
+    def make_metrics(self):
+        # run the super
+        super().make_metrics()
+        # add softloss metric
+        self._metrics += [SoftLoss(**self.task_config["metric_kwargs"])]
+
+        return self._metrics
+
 class MMLU_17categories_RC(GenericMMLU):
     # choose from one of 17 categories using the task_config in tasks.py
     TEST_FRACTION = 0.6
@@ -165,6 +175,14 @@ class MMLU_17categories_RC(GenericMMLU):
         tot_test_size = len(self.dataset["test"])
         train_split = self.dataset["test"].shuffle(seed=0).select(range(0, int(tot_test_size * self.TEST_FRACTION)))
         return train_split.map(self._process_doc, with_indices=True)
+
+    def make_metrics(self):
+        # run the super
+        super().make_metrics()
+        # add softloss metric
+        self._metrics += [SoftLoss(**self.task_config["metric_kwargs"])]
+
+        return self._metrics
 
 def create_mmlu_categories_tasks_withsplits(category):
     class MMLU_Category(MMLU_17categories_RC):
