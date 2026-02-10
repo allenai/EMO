@@ -74,6 +74,14 @@ def merge_experts(
     old_model_config.block.attention.backend = 'torch'
     logger.info(f"Model config {old_model_config}")
 
+    merge_model_config = old_model_config.copy()
+    merge_models = []
+    for idx, ckpt_path in enumerate(merge_checkpoint_paths):
+        merge_model_config.block.feed_forward_moe.num_experts = len(expert_indices[idx])
+        merge_model = load_checkpoint(model_config=merge_model_config, checkpoint_path=ckpt_path)
+        merge_models.append(merge_model)
+        logger.info(f"Merge model loaded successfully from {ckpt_path}")
+
     new_config = old_model_config.copy()
     assert new_config.block.feed_forward_moe is not None, "Model is not MoE"
     new_config.block.feed_forward_moe.num_experts = sum([len(indices) for indices in expert_indices])
@@ -102,7 +110,7 @@ def merge_experts(
 
                 current_expert = 0
                 for ckpt_path, indices in zip(merge_checkpoint_paths, expert_indices):
-                    merge_model = load_checkpoint(model_config=old_model_config, checkpoint_path=ckpt_path)
+                    merge_model = merge_models[merge_checkpoint_paths.index(ckpt_path)]
                     merge_param = merge_model.state_dict()[name].view(num_experts, -1)
                     for idx in indices:
                         logger.info(f"Copying expert {idx} from {ckpt_path} to new model at position {current_expert}")
@@ -122,7 +130,7 @@ def merge_experts(
 
                 current_expert = 0
                 for ckpt_path, indices in zip(merge_checkpoint_paths, expert_indices):
-                    merge_model = load_checkpoint(model_config=old_model_config, checkpoint_path=ckpt_path)
+                    merge_model = merge_models[merge_checkpoint_paths.index(ckpt_path)]
                     merge_param = merge_model.state_dict()[name].view(
                         num_experts, source_rows // num_experts, source_columns
                     )
