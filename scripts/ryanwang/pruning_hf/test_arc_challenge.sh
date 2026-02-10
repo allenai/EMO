@@ -5,8 +5,8 @@ BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 #BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 MODELS=(
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
-    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995-hf"
-    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118/step30995-hf"
+#    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995-hf"
+#    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118/step30995-hf"
     "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-2_0207/step30995-hf"
 
     "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
@@ -216,7 +216,7 @@ for MODEL in "${MODELS[@]}"; do
         echo "Launched evaluation for model: $MODEL, task: $TASK"
         echo "----------------------------------------"
 
-        sleep 30 # brief pause to avoid overwhelming huggingface
+        sleep 120 # brief pause to avoid overwhelming huggingface
     done
 
     echo "Completed all groups for model: $model"
