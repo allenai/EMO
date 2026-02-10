@@ -262,14 +262,24 @@ def main(args):
         assert not args.load_cache
         results: dict = defaultdict(dict)
         visited_paths = set()
+        cached_bpb_tasks: set = set()
     else:
         with open("cached_results.pkl", "rb") as f:
-            results, visited_paths = pkl.load(f)
+            cache_data = pkl.load(f)
+            # Handle old cache format (2 elements) vs new format (3 elements)
+            if len(cache_data) == 2:
+                results, visited_paths = cache_data
+                cached_bpb_tasks = set()
+            else:
+                results, visited_paths, cached_bpb_tasks = cache_data
+
+    # Track which tasks are bpb (lower is better)
+    bpb_tasks: set = set(cached_bpb_tasks)
 
     if not args.load_cache:
         updated = False
 
-        def _add_to_results(model_name, task_name, score):
+        def _add_to_results(model_name, task_name, score, is_bpb=False):
             if model_name not in results:
                 results[model_name] = {}
             if task_name in results[model_name]:
@@ -281,6 +291,8 @@ def main(args):
                     exit()
             else:
                 results[model_name][task_name] = score
+            if is_bpb:
+                bpb_tasks.add(task_name)
 
         # Model directory discovery
         # Check if base_dir itself contains metrics files
@@ -329,50 +341,79 @@ def main(args):
                 task_name = metric["task_name"]
                 metrics = metric["metrics"]
                 score = metrics["primary_score"]
-                _add_to_results(model_name, task_name, score)
+
+                # Check if this is a bpb task (lower is better)
+                task_config = metric.get("task_config", {})
+                primary_metric = task_config.get("primary_metric", "")
+                is_bpb = primary_metric == "bits_per_byte_corr"
+
+                # Add num_shots info if not already in task name
+                num_shots = task_config.get("num_shots")
+                if num_shots is not None and "shot" not in task_name.lower():
+                    task_name = f"{task_name}:{num_shots}shot"
+
+                # For bpb tasks, ensure "bpb" is in the task name
+                if is_bpb and "bpb" not in task_name.lower():
+                    task_name = f"{task_name}:bpb"
+
+                # Build more informative task name using dataset_name if available
+                # Skip for core 9 tasks where dataset_name is redundant
+                core9_task_prefixes = (
+                    "arc_easy", "arc_challenge", "boolq", "csqa", "hellaswag",
+                    "openbookqa", "piqa", "socialiqa", "winogrande"
+                )
+                dataset_name = task_config.get("dataset_name")
+                is_core9 = any(task_name.startswith(prefix) for prefix in core9_task_prefixes)
+                if dataset_name and dataset_name not in task_name and not is_core9:
+                    task_name = f"{task_name}_{dataset_name}"
+
+                _add_to_results(model_name, task_name, score, is_bpb=is_bpb)
 
                 visited_paths.add(metric_path)
                 updated = True
 
         if updated:
             with open("cached_results.pkl", "wb") as f_out:
-                pkl.dump([results, visited_paths], f_out)
+                pkl.dump([results, visited_paths, bpb_tasks], f_out)
 
-    # Common task groupings
-    core9_tasks = [
-        "arc_easy:mc",
-        "arc_challenge:mc",
-        "boolq:mc",
-        "csqa:mc",
-        "hellaswag:mc",
-        "openbookqa:mc",
-        "piqa:mc",
-        "socialiqa:mc",
-        "winogrande:mc",
+    # Common task groupings - defined as prefixes for dynamic matching
+    core9_prefixes = [
+        "arc_easy",
+        "arc_challenge",
+        "boolq",
+        "csqa",
+        "hellaswag",
+        "openbookqa",
+        "piqa",
+        "socialiqa",
+        "winogrande",
     ]
 
-    core9_rc_tasks = [
-        "arc_easy:rc_test",
-        "arc_challenge:rc_test",
-        "boolq:rc_test",
-        "csqa:rc_test",
-        "hellaswag:rc_test",
-        "openbookqa:rc_test",
-        "piqa:rc_test",
-        "socialiqa:rc_test",
-        "winogrande:rc_test",
-    ]
-
-    gen5_tasks = ["coqa", "squad", "naturalqs_open", "triviaqa", "drop"]
+    gen5_prefixes = ["coqa", "squad", "naturalqs_open", "triviaqa", "drop"]
 
     task_names = get_task_names(results)
 
+    def find_tasks_by_prefixes(prefixes, task_names, suffix_filter=None):
+        """Find tasks matching prefixes, optionally filtered by suffix."""
+        matched = []
+        for prefix in prefixes:
+            for task in task_names:
+                if task.startswith(prefix):
+                    if suffix_filter is None or suffix_filter in task:
+                        matched.append(task)
+                        break  # Only one task per prefix
+        return matched
+
     # Task averaging options
     if args.avg_core:
-        results = avg_tasks(results, "core9:mc", core9_tasks)
+        core9_tasks = find_tasks_by_prefixes(core9_prefixes, task_names, suffix_filter=":mc")
+        if len(core9_tasks) == len(core9_prefixes):
+            results = avg_tasks(results, "core9:mc", core9_tasks)
 
     if args.avg_core_rc:
-        results = avg_tasks(results, "core9:rc", core9_rc_tasks)
+        core9_rc_tasks = find_tasks_by_prefixes(core9_prefixes, task_names, suffix_filter=":rc")
+        if len(core9_rc_tasks) == len(core9_prefixes):
+            results = avg_tasks(results, "core9:rc", core9_rc_tasks)
 
     if args.avg_mmlu_pro:
         mmlu_pro_tasks = [
@@ -413,7 +454,9 @@ def main(args):
             results = avg_tasks(results, "bbh", bbh_tasks)
 
     if args.avg_gen:
-        results = avg_tasks(results, "gen5", gen5_tasks)
+        gen5_tasks = find_tasks_by_prefixes(gen5_prefixes, task_names)
+        if len(gen5_tasks) == len(gen5_prefixes):
+            results = avg_tasks(results, "gen5", gen5_tasks)
 
     if args.avg_agi_eval:
         agi_eval_tasks = [
@@ -520,36 +563,53 @@ def main(args):
         ]
 
     if args.core_and_gen_only:
+        core_and_gen_prefixes = core9_prefixes + gen5_prefixes
         task_names = [
-            task_name for task_name in task_names if task_name in core9_tasks + gen5_tasks
+            task_name for task_name in task_names
+            if any(task_name.startswith(prefix) for prefix in core_and_gen_prefixes)
         ]
 
-    # Compute best scores for highlighting
+    # Compute best scores for highlighting (min for bpb tasks, max for others)
     best_results = {}
     for task_name in task_names:
-        best_results[task_name] = np.max(
-            [_results.get(task_name, -1) for _results in results.values()]
-        )
+        scores = [_results.get(task_name, None) for _results in results.values()]
+        scores = [s for s in scores if s is not None]
+        if scores:
+            if task_name in bpb_tasks:
+                best_results[task_name] = np.min(scores)
+            else:
+                best_results[task_name] = np.max(scores)
+        else:
+            best_results[task_name] = None
 
     def format_model_name(model):
         """Format model name for display. Override this for custom formatting."""
-        model = model.replace("moe1b14b_", "").replace("step1193-hf", "").replace("128experts_olmoe-mix_130B_", "").replace("freeze-fix-", "")
+        # Remove step count and -hf suffix (e.g., "/step2385-hf" or "_step1193-hf")
+        model = re.sub(r"[/_]step\d+-hf$", "", model)
+        # Remove ff- or freeze-fix- prefix
+        model = re.sub(r"^(ff-|freeze-fix-)", "", model)
+        # Remove moe1b14b_ or moe_1b14b_ prefix
+        model = re.sub(r"^moe_?1b14b_", "", model)
         return model
 
     def format_number(v, task_name):
         """Format score with best result highlighting."""
-        is_best = np.abs(v - best_results[task_name]) < 0.001 if v is not None else False
+        best = best_results.get(task_name)
+        is_best = (v is not None and best is not None and np.abs(v - best) < 0.001)
         v = f"{v:.3f}" if v is not None else "-"
         return colored(v, "red") if is_best else v
 
     def format_task(name):
         """Format task name for display."""
-        name = name.replace("codex_humaneval", "humaneval")
-        name = name.replace("bigcodebench", "bcb")
-        name = name.replace("plus", "+")
+        display_name = name.replace("codex_humaneval", "humaneval")
+        display_name = display_name.replace("bigcodebench", "bcb")
+        display_name = display_name.replace("plus", "+")
         # if "medmcqa" not in name:
         #     name = name.replace(":mc", "")
-        return name
+        # Indicate bpb tasks (lower is better) with a down arrow
+        if name in bpb_tasks:
+            display_name = f"{display_name} (↓)"
+        return display_name
 
     # Build and display table
     if args.transpose:
