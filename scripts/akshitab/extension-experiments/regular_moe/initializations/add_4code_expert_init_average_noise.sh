@@ -27,7 +27,7 @@ NUM_TOKENS=$((NUM_BILLION_TOKENS * 1000000000))
 LR=4e-4 #4e-4  # 4e-3, #4e-5
 
 # # Part 2: Train with new expert
-RUN_NAME="freeze-fix-moe1b14b_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_starcoder_init_average_noise_10pc_${NUM_BILLION_TOKENS}B_lr_${LR}"
+RUN_NAME="freeze-fix-moe1b14b_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_code_mix_init_average_noise_10pc_${NUM_BILLION_TOKENS}B_lr_${LR}"
 #RUN_NAME="debug-data-starcoder"
 
 python -m olmo_core.launch.beaker \
@@ -47,7 +47,7 @@ python -m olmo_core.launch.beaker \
     ${RUN_NAME} \
 		--trainer.load_path="${NEW_BASE_MODEL_PATH}/model_and_optim" \
 		--save-folder="/weka/oe-training-default/akshitab/FlexMoE/models/${RUN_NAME}" \
-		--dataset.mix=starcoder \
+		--dataset.mix=code_mix \
 		--work-dir="/weka/oe-training-default/akshitab/dataset-cache" \
 		--trainer.max_duration="{value: ${NUM_TOKENS}, unit: tokens}" \
 		--trainer.callbacks.wandb="{enabled: true, entity: akshitab, project: olmoe-modular, name: ${RUN_NAME}, tags: [extension]}" \
