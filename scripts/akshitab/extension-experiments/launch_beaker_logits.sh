@@ -6,7 +6,7 @@ MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
 # MODEL_DIR=/weka/oe-training-default/akshitab/FlexMoE/models
 
 MODELS=(
-    # moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
+    moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
     # moe1b14b_129experts_1trained_math_init_random_expert_5B/step1193-hf
     # moe1b14b_129experts_1trained_math_init_average_5B/step1193-hf
     twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf
@@ -48,8 +48,8 @@ TASK_GROUPS_LIST=(
 
 #   math
 #   "gsm8k_test|gsm8k:perplexity_test::olmes"
-  "gsm8k::olmes"
-  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
+#   "gsm8k::olmes"
+#   "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
     # "gsm8k:bpb::olmes"
 #   "mmlu:mc::olmes"
 #   "mmlu_pro:mc::olmes"
@@ -61,6 +61,12 @@ TASK_GROUPS_LIST=(
 #   "minerva_math_prealgebra::olmes"
 #   "minerva_math_precalculus::olmes"
   #"minerva_math_algebra:bpb::olmes"
+
+    # mbpp:3shot:bpb::none
+    # codex_humaneval:3shot:bpb::none
+    mbpp
+    codex_humaneval
+
 )
 
 # Function to get checkpoint name (matching the original script)

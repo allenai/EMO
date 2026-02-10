@@ -56,7 +56,7 @@ MODELS=(
     # freeze-fix-moe1b14b_130experts_2trained_math_init_top2_average_noise_20B_lr_4e-4/step4769-hf
 
     # freeze-fix-moe1b14b_132experts_4trained_math_init_top2_average_noise_5B_lr_4e-4/step1193-hf
-    # freeze-fix-moe1b14b_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    freeze-fix-moe1b14b_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
 
     # freeze-fix-moe1b14b_136experts_8trained_math_init_top2_average_noise_5B_lr_4e-4/step1193-hf
     # freeze-fix-moe1b14b_136experts_8trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
@@ -66,9 +66,10 @@ MODELS=(
     # freeze-fix-twolevel_130experts_2trained_math_init_top2_average_noise_5B_lr_4e-4/step1193-hf
     # freeze-fix-moe1b14b_136experts_8trained_math_init_top2_average_noise_20B_lr_4e-4/step4769-hf
 
-    freeze-fix-moe1b14b_132experts_4trained_math_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
-
-
+    # freeze-fix-moe1b14b_132experts_4trained_math_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
+    # freeze-fix-moe1b14b_132experts_4trained_starcoder_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
+    ff-moe1b14b_132experts_4trained_starcoder_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # ff-moe_1b14b_128base_4math_10B_4code_init_top2_starcoder_average_noise_10B_lr_4e-4/step2385-hf
 
 )
 
@@ -82,52 +83,55 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
- "arc_easy|arc_easy:rc_test::olmes"
- "arc_challenge|arc_challenge:rc_test::olmes"
- "boolq|boolq:rc_test::olmes"
- "csqa|csqa:rc_test::olmes"
- "hellaswag|hellaswag:rc_test::olmes"
- "openbookqa|openbookqa:rc_test::olmes"
- "piqa|piqa:rc_test::olmes"
- "socialiqa|socialiqa:rc_test::olmes"
+#  "arc_easy|arc_easy:rc_test::olmes"
+#  "arc_challenge|arc_challenge:rc_test::olmes"
+#  "boolq|boolq:rc_test::olmes"
+#  "csqa|csqa:rc_test::olmes"
+#  "hellaswag|hellaswag:rc_test::olmes"
+#  "openbookqa|openbookqa:rc_test::olmes"
+#  "piqa|piqa:rc_test::olmes"
+#  "socialiqa|socialiqa:rc_test::olmes"
  "winogrande|winogrande:rc_test::olmes"
-#  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
-#  "synthea|synthea:rc_test_0shot::olmes"
-#   "coqa|coqa:test_0shot::olmes"
-#  "squad|squad:test_0shot::olmes"
+# #  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
+# #  "synthea|synthea:rc_test_0shot::olmes"
+# #   "coqa|coqa:test_0shot::olmes"
+# #  "squad|squad:test_0shot::olmes"
 
 
-#  "coqa|coqa:train_0shot::olmes"
+# #  "coqa|coqa:train_0shot::olmes"
 
 
-#   MMLU
-#  "mmlu_rc_test|mmlu:rc_test::olmes"
+# #   MMLU
+# #  "mmlu_rc_test|mmlu:rc_test::olmes"
 
-#   Gen5 tasks
-#  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes drop::olmes"
+# #   Gen5 tasks
+# #  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes drop::olmes"
 
-#   math
-#   "gsm8k_test|gsm8k:perplexity_test::olmes"
-  "gsm8k::olmes"
-  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
-    # "gsm8k:bpb::olmes"
-#   "mmlu:mc::olmes"
-#   "mmlu_pro:mc::olmes"
-#   "minerva_math_algebra::olmes"
-#   "minerva_math_counting_and_probability::olmes"
-#   "minerva_math_geometry::olmes"
-#   "minerva_math_intermediate_algebra::olmes"
-#   "minerva_math_number_theory::olmes"
-#   "minerva_math_prealgebra::olmes"
-#   "minerva_math_precalculus::olmes"
-    # "minerva_math_algebra:bpb::olmes"
-    "basic_skills::olmes"
-    "basic_skills_arithmetic:rc::olmes"
+# #   math
+# #   "gsm8k_test|gsm8k:perplexity_test::olmes"
+#   "gsm8k::olmes"
+#   "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
+#     # "gsm8k:bpb::olmes"
+# #   "mmlu:mc::olmes"
+# #   "mmlu_pro:mc::olmes"
+# #   "minerva_math_algebra::olmes"
+# #   "minerva_math_counting_and_probability::olmes"
+# #   "minerva_math_geometry::olmes"
+# #   "minerva_math_intermediate_algebra::olmes"
+# #   "minerva_math_number_theory::olmes"
+# #   "minerva_math_prealgebra::olmes"
+# #   "minerva_math_precalculus::olmes"
+#     # "minerva_math_algebra:bpb::olmes"
+#     "basic_skills::olmes"
+#     "basic_skills_arithmetic:rc::olmes"
 
 
     # "minerva_math_algebra:bpb::olmes"
     # minerva_math_500:bpb::olmes
-    minerva_math_500::olmes
+    # minerva_math_500::olmes
+
+    # mbpp:3shot:bpb::none
+    # codex_humaneval:3shot:bpb::none
 )
 
 # Function to get checkpoint name (matching the original script)
@@ -191,6 +195,8 @@ for MODEL_NAME in "${MODELS[@]}"; do
         # Remove invalid characters and truncate long names
         safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g')
         safe_group_name=$(echo $GROUP_NAME | sed 's/[^a-zA-Z0-9_-]//g')
+
+        safe_model_name=${safe_model_name/freeze-fix/ff}
         job_name="eval-${safe_model_name}-${safe_group_name}"
 
         echo "  Model name: $model"
