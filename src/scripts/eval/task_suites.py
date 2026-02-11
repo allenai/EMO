@@ -41,6 +41,20 @@ def get_task_suite_configs():
                 "tasks": list(frenchbench.create_frenchbench_tasks().keys()),
                 "primary_metric": "macro",
             },
+            "frenchbench:rc:0shot": {
+                "tasks": [
+                    f"{task}:0shot::olmes"
+                    for task in frenchbench.create_frenchbench_tasks().keys()
+                ],
+                "primary_metric": "macro",
+            },
+            "frenchbench:rc:5shot": {
+                "tasks": [
+                    f"{task}:5shot::olmes"
+                    for task in frenchbench.create_frenchbench_tasks().keys()
+                ],
+                "primary_metric": "macro",
+            },
         },
     )
 
