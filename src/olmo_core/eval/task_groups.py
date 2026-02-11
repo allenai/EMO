@@ -46,7 +46,6 @@ FULL_TASKS_SMALL_COMPUTE = [
     "basic_skills_logical_reasoning_rc_5shot",
     "basic_skills_pattern_rc_5shot",
     "basic_skills_string_operations_rc_5shot",
-    "legalbench:rc",
     "frenchbench:rc",
 ]
 
@@ -133,10 +132,7 @@ FAST_TASKS = [
     "mt_mbpp_rust_gold_bpb_3shot",
     # Sanity check for MCQA ability
     "copycolors_10way_fast",
-    "legalbench:rc",
 ]
-
-TEST_TASKS = ["legalbench:rc"]
 
 TASK_GROUPS: Dict[str, List[str]] = {
     "full__small_compute": FULL_TASKS_SMALL_COMPUTE,
