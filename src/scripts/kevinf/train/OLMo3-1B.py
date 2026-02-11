@@ -251,7 +251,6 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                     tokenizer=tokenizer_config,
                     mix_base_dir=DATA_ROOT,
                     sequence_length=SEQUENCE_LENGTH,
-                    max_target_sequence_length=max(8192, SEQUENCE_LENGTH),
                     work_dir=work_dir,
                 ),
                 eval_interval=2, 
