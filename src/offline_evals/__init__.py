@@ -8,6 +8,7 @@ from oe_eval.tasks.oe_eval_tasks.mmlu_pro import create_mmlu_pro_task
 
 from .tasks import (
     agi_eval,
+    frenchbench,
     hatespeech,
     medmcqa,
     medqa,
@@ -176,6 +177,8 @@ new_task_registry: Dict = {
     "squad:train_0shot": splits_squad.SQUAD_Train_0shot,
     "squad:validation_0shot": splits_squad.SQUAD_Validation_0shot,
     "squad:test_0shot": splits_squad.SQUAD_Test_0shot,
+    # FrenchBench tasks (French language MC as RC)
+    **frenchbench.create_frenchbench_tasks(),
 }
 
 TASK_REGISTRY.update(new_task_registry)
