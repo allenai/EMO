@@ -253,7 +253,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                     max_target_sequence_length=max(8192, SEQUENCE_LENGTH),
                     work_dir=work_dir,
                 ),
-                eval_interval=100, 
+                eval_interval=2, 
                 eval_duration=25,
                 eval_on_startup=True,
                 log_interval=1
