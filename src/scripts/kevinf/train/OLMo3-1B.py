@@ -23,6 +23,7 @@ from olmo_core.data import (
     DataMix,
     NumpyDataLoaderConfig,
     NumpyFSLDatasetConfig,
+    NumpyPaddedFSLDatasetConfig,
     TokenizerConfig,
 )
 from olmo_core.data.numpy_dataset import NumpyDatasetConfig
@@ -245,7 +246,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback(
             "lm_evaluator",
             LMEvaluatorCallbackConfig(
-                eval_dataset=NumpyFSLDatasetConfig.from_data_mix(
+                eval_dataset=NumpyPaddedFSLDatasetConfig.from_data_mix(
                     DataMix.chempile,
                     tokenizer=tokenizer_config,
                     mix_base_dir=DATA_ROOT,
