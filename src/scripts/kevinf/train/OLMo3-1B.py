@@ -47,6 +47,8 @@ from olmo_core.train.callbacks import (
     HFConverterCallback,
     PostTrainEvalCallback,
     WandBCallback,
+    LMEvaluatorCallbackConfig,
+
 )
 from olmo_core.train.train_module import (
     TransformerDataParallelConfig,
@@ -146,7 +148,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
     # Dataset config
     dataset_config = NumpyFSLDatasetConfig.from_data_mix(
-        DataMix.OLMoE_mix_0824,
+        DataMix.chempile,
         tokenizer=tokenizer_config,
         mix_base_dir=DATA_ROOT,
         sequence_length=SEQUENCE_LENGTH,
@@ -239,6 +241,23 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                 cluster="ai2/saturn",
                 enabled=True,
             ),
+        )
+        .with_callback(
+            "lm_evaluator",
+            LMEvaluatorCallbackConfig(
+                eval_dataset=NumpyFSLDatasetConfig.from_data_mix(
+                    DataMix.chempile,
+                    tokenizer=tokenizer_config,
+                    mix_base_dir=DATA_ROOT,
+                    sequence_length=SEQUENCE_LENGTH,
+                    max_target_sequence_length=max(8192, SEQUENCE_LENGTH),
+                    work_dir=work_dir,
+                ),
+                eval_interval=100, 
+                eval_duration=25,
+                eval_on_startup=True,
+                log_interval=1
+            )
         )
     )
 
