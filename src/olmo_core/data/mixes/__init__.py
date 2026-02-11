@@ -48,6 +48,8 @@ class DataMix(DataMixBase):
     code_mix = "code_mix"
     starcoder = "starcoder"
 
+    croissant = "croissant"
+
     @classmethod
     def _missing_(cls, value: object) -> "DataMix | None":
         """Handle alias lookups."""
