@@ -666,6 +666,26 @@ class TransformerConfig(Config):
         return config
 
     @classmethod
+    def olmo3_1B(cls, vocab_size: int, **kwargs) -> "TransformerConfig":
+        """
+        A 1B OLMo3 model config.
+        """
+        config = cls.olmo2_1B_v2(
+            vocab_size=vocab_size,
+            sliding_window=kwargs.pop(
+                "sliding_window",
+                SlidingWindowAttentionConfig(
+                    force_full_attention_on_first_layer=False,
+                    force_full_attention_on_last_layer=True,
+                    pattern=[4096, 4096, 4096, -1],
+                ),
+            ),
+            attn_backend=kwargs.pop("attn_backend", AttentionBackendName.flash_2),
+            **kwargs,
+        )
+        return config
+
+    @classmethod
     def olmo3_7B(cls, vocab_size: int, **kwargs) -> "TransformerConfig":
         """
         A 7B OLMo3 model config.

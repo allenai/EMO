@@ -43,9 +43,16 @@ class DataMix(DataMixBase):
     OLMo_mix_0625 = "OLMo-mix-0625"
     OLMo_mix_0925 = "OLMo-mix-0925"
     OLMo_mix_0625_150Bsample = "OLMo-mix-0625-150Bsample"
+    OLMo_mix_0625_150Bsample_dclm = "OLMo-mix-0625-150Bsample-dclm"
+    OLMoE_mix_0824_cc = "OLMoE-mix-0824-cc"
+    the_pile_of_law = "the-pile-of-law"
+    tpol_70_dclm_30 = "tpol-70-dclm-30"
+    croissant = "croissant"
 
     mj_finemath4plus = "mj_finemath4plus"
     mose_code_mix = "mose_code_mix"
+
+    chempile = "chempile"
 
     @classmethod
     def _missing_(cls, value: object) -> "DataMix | None":

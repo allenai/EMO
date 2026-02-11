@@ -1,0 +1,65 @@
+# Weighted mix created by create_weighted_mix.py
+# Total: 15.54B tokens
+# Sources:
+#   the-pile-of-law: 68.4%
+#   dclm: 31.6%
+
+# the-pile-of-law data
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-00-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-01-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-02-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-05-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-06-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-07-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-08-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-09-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-10-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-11-00002.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-12-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-13-00001.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-15-00002.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-16-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-17-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-18-00001.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-19-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-20-00002.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-21-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-22-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-23-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-24-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-26-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-27-00001.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-28-00002.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-29-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-30-00007.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-31-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-32-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-33-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-35-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-36-00001.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-37-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-39-00001.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-40-00001.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-41-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-42-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-43-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-44-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-45-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-46-00001.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-47-00001.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-49-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-50-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-51-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-54-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-55-00001.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-57-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-58-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-60-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-62-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-64-00000.npy
+the-pile-of-law,preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/part-66-00000.npy
+
+# dclm data
+dclm,preprocessed/dclm/text_openhermes_reddit_eli5_vs_rw_v2_bigram_200k_train/{TOKENIZER}/part-002-00004.npy
+dclm,preprocessed/dclm/text_openhermes_reddit_eli5_vs_rw_v2_bigram_200k_train/{TOKENIZER}/part-003-00004.npy
+
