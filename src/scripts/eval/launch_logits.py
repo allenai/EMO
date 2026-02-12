@@ -192,9 +192,9 @@ def launch_logits(args_dict):
                     attention_mask=inputs["attention_mask"].to(model.device),
                     output_router_logits=True,
                 )
-                router_logits = [x.cpu() for x in out["router_logits"]]
+                router_logits_list = [x.cpu() for x in out["router_logits"]]
                 router_logits = torch.stack(
-                    router_logits
+                    router_logits_list
                 )  # this has dimension (layers, batch * sequence_length, num_experts)
 
             del out

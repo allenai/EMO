@@ -226,7 +226,7 @@ class MoERouter(nn.Module):
 
         # for top-p
         self._router_avg_num_expert_per_document = 0.0
-        self._router_counts_num_expert_per_document = []
+        self._router_counts_num_expert_per_document: list = []
 
         # add metrics to track expert_cond_token_entropy (which we want to minimize) and expert_uncond_entropy (which we want to maximize
         self._router_expert_cond_token_entropy = 0.0

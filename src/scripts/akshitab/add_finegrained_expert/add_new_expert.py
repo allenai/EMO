@@ -48,6 +48,7 @@ from olmo_core.distributed.checkpoint import (
     load_model_and_optim_state,
     save_model_and_optim_state,
 )
+from olmo_core.nn.attention.backend import AttentionBackendName
 from olmo_core.nn.transformer import TransformerConfig
 from olmo_core.utils import setup_logging
 
@@ -150,7 +151,7 @@ def add_experts(
 
     old_model_config = TransformerConfig.from_dict(config["model"])
     backend = old_model_config.block.attention.backend
-    old_model_config.block.attention.backend = "torch"
+    old_model_config.block.attention.backend = AttentionBackendName.torch
     logger.info(f"Model config {old_model_config}")
 
     # Load model weights

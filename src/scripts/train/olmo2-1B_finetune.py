@@ -97,9 +97,8 @@ def train(opts, config: ExperimentConfig):
     assert (
         config.trainer.max_duration.unit == "epochs"
     ), "we assume we train using epochs to calculate checkpoints"
+    assert data_loader.total_batches is not None, "Cannot determine total batches from dataset"
     total_batches = data_loader.total_batches * config.trainer.max_duration.value
-    if total_batches is None:
-        raise ValueError("Cannot determine total batches from dataset")
     save_interval = max(1, total_batches // opts.num_checkpoints)
     log.info(
         f"Total batches: {total_batches}, Total checkpoints: {opts.num_checkpoints}, Save interval: {save_interval}"

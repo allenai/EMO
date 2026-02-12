@@ -63,6 +63,7 @@ class MoETwoLevelRouter(MoELinearRouter):
         logits = self.get_expert_logits(x).float()
         logits_mask = torch.zeros_like(logits, dtype=torch.bool, device=logits.device)
 
+        assert document_boundaries is not None
         document_boundaries_cpu = []
         for b in document_boundaries:
             bc = b.detach().cpu().tolist()

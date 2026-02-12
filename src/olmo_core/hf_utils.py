@@ -162,6 +162,7 @@ def convert_checkpoint_to_hf(
         else:
             log.info(f"Using provided model state dict, saving to '{output_path}'")
 
+        assert model_state_dict is not None
         if (moe_config := model_config.block.feed_forward_moe) is not None:
             if moe_config.name == MoEType.dropless:
                 for k, v in model_state_dict.items():

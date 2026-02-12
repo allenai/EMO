@@ -27,7 +27,7 @@ count as mismatches.
 import json
 import logging
 import re
-from typing import List, Union
+from typing import List, Optional, Union
 
 from oe_eval.components.instances import RequestInstance
 from oe_eval.metrics.metric import MCAccuracy, SQuADF1EMRecallMetric
@@ -127,7 +127,7 @@ class ChemBenchGenMetric(SQuADF1EMRecallMetric):
     This matches the official ChemBench evaluation in metrics.py and prompter.py.
     """
 
-    def __init__(self, metric_names: List[str] = None, **kwargs):
+    def __init__(self, metric_names: Optional[List[str]] = None, **kwargs):
         # Add 'all_correct' to the metric names so it gets aggregated
         if metric_names is None:
             metric_names = ["exact_match", "f1", "recall", "all_correct"]
@@ -460,7 +460,7 @@ class GenericChemBenchGen(Task):
     """
 
     VERSION = 0
-    TASK_CONFIG_DEFAULTS = {
+    TASK_CONFIG_DEFAULTS: dict = {
         "dataset_path": "jablonkagroup/ChemBench",
         "dataset_name": None,  # subfield name
         "native_id_field": "uuid",

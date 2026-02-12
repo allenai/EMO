@@ -197,6 +197,7 @@ def prune_experts(args):
 
     new_model.init_weights()  # Initialized with random init
 
+    assert model_config.block.feed_forward_moe is not None
     num_experts = model_config.block.feed_forward_moe.num_experts
     assert (
         args.prune_keep_k < num_experts

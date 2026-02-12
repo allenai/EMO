@@ -35,6 +35,7 @@ def test_add_expert(
             pytest.skip(
                 "top_k_expert_indices must be provided for 'similar_no_average' init_method"
             )
+        assert top_k_expert_indices is not None
         if len(top_k_expert_indices) < num_new_experts:
             pytest.skip(
                 f"Need at least {num_new_experts} expert indices for 'similar_no_average', got {len(top_k_expert_indices)}"

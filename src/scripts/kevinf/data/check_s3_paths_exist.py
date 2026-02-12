@@ -32,7 +32,7 @@ def check_s3_path(s3_path: str) -> tuple[str, bool, str]:
         return (s3_path, False, str(e))
 
 
-def parse_mix_file(mix_file: str, base_dir: str, tokenizer: str) -> list[tuple[str, str]]:
+def parse_mix_file(mix_file: str, base_dir: str, tokenizer: str) -> list[tuple[str, str, int]]:
     """Parse mix file and return list of (label, full_s3_path) tuples."""
     paths = []
 
@@ -126,7 +126,7 @@ def main():
     if missing:
         print()
         print("Missing paths by label:")
-        label_counts = {}
+        label_counts: dict[str, int] = {}
         for label, path, line_num, error in missing:
             label_counts[label] = label_counts.get(label, 0) + 1
         for label, count in sorted(label_counts.items(), key=lambda x: -x[1]):

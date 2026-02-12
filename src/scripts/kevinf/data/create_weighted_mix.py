@@ -26,6 +26,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 
 @dataclass
@@ -37,7 +38,7 @@ class SourceConfig:
     percentage: float
     entries: list  # [(label, path), ...]
     total_bytes: int = 0
-    file_sizes: dict = None  # {path: size}
+    file_sizes: Optional[dict] = None  # {path: size}
 
 
 def parse_token_count(s: str) -> int:
@@ -283,7 +284,7 @@ def main():
 
     # Parse sources
     sources: list[SourceConfig] = []
-    total_pct = 0
+    total_pct: float = 0
 
     for source_spec in args.sources:
         if ":" not in source_spec:
@@ -341,7 +342,7 @@ def main():
 
     selected_by_source: list[tuple[SourceConfig, list]] = []
     anchor_selected_bytes = 0  # Track what the anchor source actually selected
-    anchor_pct = 0  # The percentage of the anchor source
+    anchor_pct: float = 0  # The percentage of the anchor source
 
     for i, src in enumerate(sources_sorted):
         is_anchor = i == 0  # First source (largest avg file size) is anchor
@@ -374,6 +375,7 @@ def main():
             target_bytes_for_src = src.total_bytes
 
         # Anchor source: normal selection. Secondary: fine-tune mode (use smaller files)
+        assert src.file_sizes is not None
         selected = select_files_for_target(
             src.entries, src.file_sizes, target_bytes_for_src, args.seed, fine_tune=(not is_anchor)
         )
