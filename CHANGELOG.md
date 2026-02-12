@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Extension code and experiments.
 - Added option to skip ranges of steps in the trainer.
 - Added training configuration to train olmoe 1B-7B on 130B tokens of mose natural distribution [10/22]
 - Added offline_evals for FlexMoE.
