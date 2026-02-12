@@ -36,6 +36,7 @@ from olmo_core.nn.moe.twolevel_batchlb_router import MoETwoLevelBatchLBRouterCon
 from olmo_core.nn.moe.twolevel_pbatchlb_router import MoETwoLevelPBatchLBRouterConfig
 from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_reducedp_router import MoETwoLevelBatchLBReduceDPRouterConfig
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_router import MoETwoLevelBatchLBReduceDPSharedExpRouterConfig
 from olmo_core.nn.moe.twolevel_sampling_nolb_router import (
     MoETwoLevelSamplingNoLBRouterConfig,
 )
@@ -72,8 +73,8 @@ from olmo_core.utils import seed_all
 log = logging.getLogger(__name__)
 
 # HACK
-DATA_ROOT = "/weka/oe-training-default/ai2-llm"
-# DATA_ROOT = "/root/ryanwang"
+# DATA_ROOT = "/weka/oe-training-default/ai2-llm"
+DATA_ROOT = "/root/ryanwang"
 
 SEQUENCE_LENGTH = 4096
 # GLOBAL_BATCH_SIZE = 4 * SEQUENCE_LENGTH
@@ -270,6 +271,29 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
         # Replace router config
         model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBReduceDPRouterConfig(**router_kwargs)
+    elif opts.model_type == "two-level_lb-batch_reduce-dp_sharedexp":
+        log.info(
+            "Applying two-level with batch-leve load balancing (olmoe lb) routers that are reduced across dp ranks and have shared routers to the model..."
+        )
+        if opts.document_expert_pool is None:
+            raise ValueError("document_expert_pool must be specified for two-level model type.")
+        if opts.num_shared_experts is None:
+            raise ValueError(
+                "num_shared_experts must be specified for two-level_lb-batch_reduce-dp_sharedexp model type."
+            )
+        # Get existing router config parameters
+        router_kwargs = model_config.block.feed_forward_moe.router.as_dict(
+            exclude_none=True, recurse=False
+        )
+        router_kwargs.pop("name")
+        router_kwargs.update(
+            document_expert_pool=opts.document_expert_pool,
+            eos_token_id=tokenizer_config.eos_token_id,
+            num_shared_experts=opts.num_shared_experts,
+        )
+
+        # Replace router config
+        model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBReduceDPSharedExpRouterConfig(**router_kwargs)
     elif opts.model_type == "two-level_p_lb-batch":
         log.info(
             "Applying two-level with batch-level load balancing using probabilities to the model..."
@@ -428,7 +452,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     train_module_config = TransformerTrainModuleConfig(
-        rank_microbatch_size=4
+        rank_microbatch_size=2
         * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         max_sequence_length=SEQUENCE_LENGTH,
         optim=AdamWConfig(
@@ -561,6 +585,11 @@ def parser_args():
         "--document-expert-pool",
         type=int,
         help="Number of experts for a specific document to choose top-k from",
+    )
+    parser.add_argument(
+        "--num_shared_experts",
+        type=int,
+        help="Number of shared experts that are always activated",
     )
     parser.add_argument(
         "--lr",
