@@ -24,11 +24,7 @@ from olmo_core.data import (
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_rank
 from olmo_core.nn.transformer import TransformerConfig
-from olmo_core.optim import (
-    LinearWithWarmup,
-    OptimGroupOverride,
-    SkipStepAdamWConfig,
-)
+from olmo_core.optim import LinearWithWarmup, OptimGroupOverride, SkipStepAdamWConfig
 from olmo_core.train import (
     TrainerConfig,
     prepare_training_environment,

@@ -22,8 +22,8 @@ def _hf_conversion_available() -> bool:
     try:
         from transformers import AutoConfig, AutoModelForCausalLM  # noqa: F401
 
-        from examples.huggingface.convert_checkpoint_to_hf import (
-            convert_checkpoint_to_hf,  # noqa: F401
+        from examples.huggingface.convert_checkpoint_to_hf import (  # noqa: F401
+            convert_checkpoint_to_hf,
         )
 
         return True
