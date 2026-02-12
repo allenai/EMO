@@ -31,6 +31,7 @@ from olmo_core.nn.moe.twolevel_batchlb_fullzloss_router import (
 from olmo_core.nn.moe.twolevel_batchlb_nomaskaux_router import (
     MoETwoLevelBatchLBNoMaskAuxRouterConfig,
 )
+from olmo_core.nn.moe.router_lbreducedp import MoELinearLBReduceDPRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_router import MoETwoLevelBatchLBRouterConfig
 from olmo_core.nn.moe.twolevel_pbatchlb_router import MoETwoLevelPBatchLBRouterConfig
 from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouterConfig
@@ -208,6 +209,15 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     if opts.model_type == "dense" or opts.model_type == "moe":
         log.info("Using default routers; no modifications applied.")
         pass
+    elif opts.model_type == "moe_lbreducedp":
+        log.info("Applying standard moe routers with data parallel reduced load balancing to the model...")
+        router_kwargs = model_config.block.feed_forward_moe.router.as_dict(
+            exclude_none=True, recurse=False
+        )
+        router_kwargs.pop("name")
+
+        # Replace router config
+        model_config.block.feed_forward_moe.router = MoELinearLBReduceDPRouterConfig(**router_kwargs)
     elif opts.model_type == "two-level":
         log.info("Applying two-level routers to the model...")
         if opts.document_expert_pool is None:

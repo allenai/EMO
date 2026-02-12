@@ -31,13 +31,12 @@ from olmo_core.nn.moe.router import (
     MoERouterGatingFunction,
     MoERouterType,
 )
-from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
 from olmo_core.utils import get_default_device
 
 from .loss import MoELoadBalancingLossGranularity, load_balancing_loss, router_z_loss
 
 
-class MoELinearReduceDPRouter(MoELinearRouter):
+class MoELinearLBReduceDPRouter(MoELinearRouter):
     """
     Custom MoE router with modified forward pass and additional class variables.
     """
@@ -58,6 +57,13 @@ class MoELinearReduceDPRouter(MoELinearRouter):
             the total number of items routed to each expert, with shape ``(num_experts,)``,
             and optionally the auxiliary losses.
         """
+
+        # make sure tp and cp are not enabled
+        if self.tp_mesh is not None:
+            raise NotImplementedError("Tensor parallelism is not supported in MoETwoLevelBatchLBReduceDPRouter.")
+        if self.cp_mesh is not None:
+            raise NotImplementedError("Context parallelism is not supported in MoETwoLevelBatchLBReduceDPRouter.")
+
         # shape: (batch_size, seq_len, d_model)
         x = self.jitter(x)
 
@@ -168,17 +174,27 @@ class MoELinearReduceDPRouter(MoELinearRouter):
                     if self.gating_function == MoERouterGatingFunction.sigmoid:
                         scores = scores / scores.sum(dim=-1, keepdim=True)
 
+                    # we now do reduction on the tot_batch_size_per_expert to get a dp-global lb loss (still not full global sinze we don't do across gradient accumulation steps)
+                    dp_global_batch_size_per_expert_routing = batch_size_per_expert_routing.clone()  # we clone to not interfere with logging or other routing stuff
+                    dp_global_loss_div_factor = loss_div_factor.clone()
+
+                    if is_distributed():
+                        dist.all_reduce(dp_global_batch_size_per_expert_routing, op=dist.ReduceOp.SUM)
+                        dist.all_reduce(dp_global_loss_div_factor, op=dist.ReduceOp.SUM)
+
+                    # collect all non-zero entries of the dp_global_batch_size_per_expert_routing
+                    self._reducedp_unique_experts_sum += (dp_global_batch_size_per_expert_routing > 0).sum().item()
+
                     lb_loss = load_balancing_loss(
                         num_experts=self.num_experts,
                         top_k=self.top_k,
                         expert_scores=scores,
                         # expert_scores=valid_scores,
-                        batch_size_per_expert=batch_size_per_expert_routing,
+                        batch_size_per_expert=dp_global_batch_size_per_expert_routing,
                         # batch_size_per_expert=batch_size_per_expert,
-                        batched_batch_size_per_expert=batched_batch_size_per_expert,
-                        # we don't even use this in local_batch granularity, but we pass it anyway
+                        batched_batch_size_per_expert=batched_batch_size_per_expert, # we don't even use this in local_batch granularity, but we pass it anyway
                         granularity=self.lb_loss_granularity,
-                        loss_div_factor=loss_div_factor,
+                        loss_div_factor=dp_global_loss_div_factor,
                         tp_mesh=self.tp_mesh,
                         cp_mesh=self.cp_mesh,
                     )
@@ -211,7 +227,7 @@ class MoELinearReduceDPRouter(MoELinearRouter):
 
 
 @dataclass
-class MoELinearReduceDPRouterConfig(MoERouterConfig):
+class MoELinearLBReduceDPRouterConfig(MoERouterConfig):
     # just update the build to call the correct new class
     def build(
         self,
@@ -223,7 +239,7 @@ class MoELinearReduceDPRouterConfig(MoERouterConfig):
         z_loss_weight: Optional[float] = None,
         dtype: Optional[torch.dtype] = None,
         init_device: str = "cpu",
-    ) -> MoELinearReduceDPRouter:
+    ) -> MoELinearLBReduceDPRouter:
         """
         Build the pruning router.
         """
@@ -242,4 +258,4 @@ class MoELinearReduceDPRouterConfig(MoERouterConfig):
         elif dtype is not None:
             kwargs["dtype"] = dtype
 
-        return MoELinearReduceDPRouter(**kwargs)
+        return MoELinearLBReduceDPRouter(**kwargs)
