@@ -10,20 +10,21 @@ description = "Core training module for the Open Language Model (OLMo)"
 authors = [
     { name = "Allen Institute for Artificial Intelligence", email = "olmo@allenai.org" },
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 license = { file = "LICENSE" }
 dependencies = [
     "numpy",
-    "torch>=2.8.0",
+    "torch==2.8.0",
     "torchvision==0.23.0",
     "cached-path>=1.7.2",
     "requests",
     "packaging",
     "rich",
     "omegaconf",
+    "torchvision==0.23.0",
     "safetensors",
     "importlib_resources",
-    "bettermap"
+    "bettermap",
 ]
 
 [project.urls]
@@ -60,6 +61,7 @@ comet = ["comet_ml"]
 eval = [
     "ai2-olmes@git+https://github.com/allenai/olmes@721d796d00db4c2044a89ef9e1f81463e06f3090", # "ai2-olmes@git+https://github.com/allenai/olmes@162158ed7878a5d107f5c7e5ad1cebed2a95a26d",
     "beaker-gantry",
+    "ai2-olmo-eval @ git+https://github.com/allenai/OLMo-in-loop-evals@kevinf/add-legalbench",
     "prettytable",
     "s3fs"
 ]
@@ -68,8 +70,12 @@ torchao = ["torchao"]
 transformers=[
     "transformers@git+https://github.com/ryanyxw/transformers.git@32d46178310cca37c0c901045ac9c52973d9f8fb"
 ]
+flash-attn = [
+    "flash-attn @ https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.7.2/flash_attn-2.8.3+cu128torch2.8-cp310-cp310-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.10'",
+    "flash-attn @ https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.7.2/flash_attn-2.8.3+cu128torch2.8-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.11'",
+]
 wandb = ["wandb"]
-all = ["ai2-olmo-core[dev,beaker,comet,eval,torchao,transformers,wandb]"]
+all = ["ai2-olmo-core[dev,beaker,comet,eval,flash-attn,torchao,transformers,wandb]"]
 
 
 [tool.setuptools]
@@ -175,3 +181,12 @@ filterwarnings = [
     'ignore::UserWarning:torch\.distributed\.checkpoint\.state_dict_saver',
     'ignore::UserWarning:torch\.distributed\.checkpoint\.state_dict_loader',
 ]
+
+[tool.uv]
+extra-index-url = ["https://download.pytorch.org/whl/cu128"]
+index-strategy = "unsafe-best-match"
+# Override ai2-olmes' hard pin on fsspec==2023.5.0 (it's a self-described hack in olmes
+# and works fine with newer versions). Needed for huggingface_hub's maxdepth support.
+override-dependencies = [
+    "fsspec>=2024.2.0,<=2025.3.0",
+]                                                  

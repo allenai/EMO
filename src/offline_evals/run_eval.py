@@ -55,6 +55,8 @@ try:
 except ImportError:
     get_gpu_memory = lambda: None  # noqa: E731
 
+from offline_evals import TASK_REGISTRY
+
 
 def task_file_name(output_dir: str, task_idx: int, task_name: str, file_name: str) -> str:
     task_name_safe = task_name.replace(":", "_")
@@ -73,8 +75,6 @@ except ImportError:
     add_internal_run_eval_args = lambda *x: None  # noqa: E731
     process_internal_compute_config = lambda *x: None  # noqa: E731
 
-
-from offline_evals import TASK_REGISTRY
 
 HAS_AI2_INTERNAL = (
     inspect.getmodule(add_internal_run_eval_args).__name__  # type: ignore
@@ -345,6 +345,7 @@ def process_eval_args(args_dict: dict) -> dict:
     task_configs = []
     for task in tasks:
         task_config = parse_args_string(task, "task_name")
+
         task_configs.append(get_dict_with_defaults(task_config, task_config_shared))
 
     compute_config = {}

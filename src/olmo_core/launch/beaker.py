@@ -144,11 +144,12 @@ DEFAULT_SETUP_STEPS = (
 )
 
 PRIVATE_REPO_SETUP_STEPS = (
-    "git clone https://ryanyxw:$GITHUB_TOKEN@github.com/allenai/FlexMoE.git .",
+    "git clone https://x-access-token:$GITHUB_TOKEN@github.com/allenai/FlexMoE.git .",
     f'git checkout "${GIT_REF_ENV_VAR}"',
     "git submodule update --init --recursive",
     "conda shell.bash activate base",
     "pip install -e '.[all]'",
+    "pip install -U fsspec",  # Fix huggingface_hub compatibility
     "pip freeze",
 )
 

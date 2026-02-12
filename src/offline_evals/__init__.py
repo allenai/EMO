@@ -8,8 +8,10 @@ from oe_eval.tasks.oe_eval_tasks.mmlu_pro import create_mmlu_pro_task
 
 from .tasks import (
     agi_eval,
+    chembench,
     frenchbench,
     hatespeech,
+    legalbench,
     medmcqa,
     medqa,
     narrativeqa,
@@ -74,10 +76,15 @@ new_task_registry: Dict = {
     "hate_speech_offensive": hatespeech.HateSpeechOffensive,
     "hatexplain": hatespeech.Hatexplain,
     **agi_eval.create_core_agi_eval_tasks(),
+    **chembench.create_chembench_tasks(),
     **ruler.create_ruler_tasks(),
     **sciriff.create_bio_sciriff_qa_tasks(),
     "squad": squad.SQuAD,
     "squad2": squad2.SQuAD2,
+    # LegalBench tasks (~110 classification tasks)
+    **legalbench.create_legalbench_tasks(),
+    # FrenchBench tasks (French language MC as RC)
+    **frenchbench.create_frenchbench_tasks(),
     "arc_easy:mc_train": splits_arc.ARCEasy_MC_Train,
     "arc_easy:mc_validation": splits_arc.ARCEasy_MC_Validation,
     "arc_easy:mc_test": splits_arc.ARCEasy_MC_Test,
@@ -177,8 +184,6 @@ new_task_registry: Dict = {
     "squad:train_0shot": splits_squad.SQUAD_Train_0shot,
     "squad:validation_0shot": splits_squad.SQUAD_Validation_0shot,
     "squad:test_0shot": splits_squad.SQUAD_Test_0shot,
-    # FrenchBench tasks (French language MC as RC)
-    **frenchbench.create_frenchbench_tasks(),
 }
 
 TASK_REGISTRY.update(new_task_registry)

@@ -812,7 +812,8 @@ def _get_s3_client(scheme: str):
 def _get_s3_profile_name(scheme: str) -> Optional[str]:
     if scheme == "s3":
         # For backwards compatibility, we assume S3 uses the default profile if S3_PROFILE is not set.
-        return os.environ.get("S3_PROFILE")
+        # Treat empty string as None to allow overriding with S3_PROFILE="" to use env credentials.
+        return os.environ.get("S3_PROFILE") or None
     if scheme == "r2":
         profile_name = os.environ.get("R2_PROFILE")
         if profile_name is None:

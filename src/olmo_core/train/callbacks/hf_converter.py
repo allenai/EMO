@@ -186,7 +186,9 @@ class HFConverterCallback(Callback):
             tokenizer_config_dict = experiment_config.get("dataset", {}).get("tokenizer")
 
             if transformer_config_dict is None:
-                log.error("Model config not found in experiment config, cannot convert to HF format")
+                log.error(
+                    "Model config not found in experiment config, cannot convert to HF format"
+                )
                 barrier()
                 return
 
@@ -222,7 +224,9 @@ class HFConverterCallback(Callback):
                     moe_capacity_factor=self.moe_capacity_factor,
                     thread_count=16,
                 )
-                log.info(f"Successfully converted checkpoint to HuggingFace format at '{output_path}'")
+                log.info(
+                    f"Successfully converted checkpoint to HuggingFace format at '{output_path}'"
+                )
             except Exception as e:
                 log.error(f"Failed to convert checkpoint to HuggingFace format: {e}")
                 barrier()

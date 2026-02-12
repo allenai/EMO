@@ -20,6 +20,7 @@ from .gpu_memory_monitor import GPUMemoryMonitorCallback
 from .gradient_monitor import GradientMonitorCallback
 from .hf_converter import HFConverterCallback
 from .monkey_patcher import MonkeyPatcherCallback
+from .post_train_eval import PostTrainEvalCallback
 from .profiler import ProfilerCallback
 from .sequence_length_scheduler import SequenceLengthSchedulerCallback
 from .slack_notifier import SlackNotificationSetting, SlackNotifierCallback
@@ -52,6 +53,7 @@ __all__ = [
     "BeakerCallback",
     "BatchSizeSchedulerCallback",
     "MonkeyPatcherCallback",
+    "PostTrainEvalCallback",
 ]
 
 __doc__ += "\n"

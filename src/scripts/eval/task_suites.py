@@ -4,6 +4,8 @@ from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 
 
 def get_task_suite_configs():
+    from offline_evals.tasks import chembench, frenchbench, legalbench
+
     TASK_SUITE_CONFIGS.update(
         {
             "sciriff5": {
@@ -14,6 +16,29 @@ def get_task_suite_configs():
                     "sciriff_covid_deepset_qa",  # Extractive
                     "sciriff_pubmedqa_qa",  # Y/N
                 ],
+                "primary_metric": "macro",
+            },
+            "chembench:mc": {
+                "tasks": [f"chembench_{s}:mc" for s in chembench.CHEMBENCH_SUBFIELDS],
+                "primary_metric": "macro",
+            },
+            "chembench:gen": {
+                "tasks": [f"chembench_{s}:gen" for s in chembench.CHEMBENCH_GEN_SUBFIELDS],
+                "primary_metric": "macro",
+            },
+            "chembench:rc": {
+                "tasks": [f"chembench_{s}:rc" for s in chembench.CHEMBENCH_SUBFIELDS],
+                "primary_metric": "macro",
+            },
+            "legalbench:rc": {
+                "tasks": [
+                    f"legalbench_{task_name}:rc"
+                    for task_name in legalbench.LEGALBENCH_CLASSIFICATION_TASKS.keys()
+                ],
+                "primary_metric": "macro",
+            },
+            "frenchbench:rc": {
+                "tasks": list(frenchbench.create_frenchbench_tasks().keys()),
                 "primary_metric": "macro",
             },
         },
