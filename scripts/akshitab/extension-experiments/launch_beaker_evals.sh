@@ -56,7 +56,7 @@ MODELS=(
     # freeze-fix-moe1b14b_130experts_2trained_math_init_top2_average_noise_20B_lr_4e-4/step4769-hf
 
     # freeze-fix-moe1b14b_132experts_4trained_math_init_top2_average_noise_5B_lr_4e-4/step1193-hf
-    freeze-fix-moe1b14b_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # freeze-fix-moe1b14b_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
 
     # freeze-fix-moe1b14b_136experts_8trained_math_init_top2_average_noise_5B_lr_4e-4/step1193-hf
     # freeze-fix-moe1b14b_136experts_8trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
@@ -68,8 +68,16 @@ MODELS=(
 
     # freeze-fix-moe1b14b_132experts_4trained_math_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
     # freeze-fix-moe1b14b_132experts_4trained_starcoder_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
-    ff-moe1b14b_132experts_4trained_starcoder_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # ff-moe1b14b_132experts_4trained_starcoder_init_top2_average_noise_10B_lr_4e-4/step2385-hf
     # ff-moe_1b14b_128base_4math_10B_4code_init_top2_starcoder_average_noise_10B_lr_4e-4/step2385-hf
+
+    # merged_moe_1b14b_128base_4math_10B_4starcoder_10B_init_top2_average_noise-hf
+    # ff-moe_1b14b_128base_4math_10B_4code_init_top2_code_mix_average_noise_10B_lr_4e-4/step2385-hf
+    # freeze-fix-moe1b14b_132experts_4trained_code_mix_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
+    # ff-moe1b14b_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
+
+    ff-moe1b14b_132experts_4trained_croissant_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
 
 )
 
@@ -91,7 +99,7 @@ TASK_GROUPS_LIST=(
 #  "openbookqa|openbookqa:rc_test::olmes"
 #  "piqa|piqa:rc_test::olmes"
 #  "socialiqa|socialiqa:rc_test::olmes"
- "winogrande|winogrande:rc_test::olmes"
+#  "winogrande|winogrande:rc_test::olmes"
 # #  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
 # #  "synthea|synthea:rc_test_0shot::olmes"
 # #   "coqa|coqa:test_0shot::olmes"
@@ -122,7 +130,7 @@ TASK_GROUPS_LIST=(
 # #   "minerva_math_prealgebra::olmes"
 # #   "minerva_math_precalculus::olmes"
 #     # "minerva_math_algebra:bpb::olmes"
-#     "basic_skills::olmes"
+    # "basic_skills::olmes"
 #     "basic_skills_arithmetic:rc::olmes"
 
 
@@ -132,6 +140,12 @@ TASK_GROUPS_LIST=(
 
     # mbpp:3shot:bpb::none
     # codex_humaneval:3shot:bpb::none
+
+    frenchbench_hellaswag:rc
+    frenchbench_boolq:rc
+    frenchbench_arc_challenge:rc
+    frenchbench_grammar_vocab_reading:rc
+    
 )
 
 # Function to get checkpoint name (matching the original script)
@@ -197,7 +211,8 @@ for MODEL_NAME in "${MODELS[@]}"; do
         safe_group_name=$(echo $GROUP_NAME | sed 's/[^a-zA-Z0-9_-]//g')
 
         safe_model_name=${safe_model_name/freeze-fix/ff}
-        job_name="eval-${safe_model_name}-${safe_group_name}"
+        # job_name="eval-${safe_model_name}-${safe_group_name}"
+        job_name="eval-${safe_group_name}"
 
         echo "  Model name: $model"
         echo "  Output dir: $OUTPUT_DIR"
