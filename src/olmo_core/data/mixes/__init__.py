@@ -53,8 +53,6 @@ class DataMix(DataMixBase):
     code_mix = "code_mix"
     starcoder = "starcoder"
 
-    croissant = "croissant"
-
     chempile = "chempile"
 
     @classmethod
