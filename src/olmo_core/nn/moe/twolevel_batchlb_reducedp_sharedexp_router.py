@@ -135,8 +135,6 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
         doc_entropy_sum = logits.new_zeros(())
         doc_entropy_count = 0
 
-        breakpoint()
-
         for seq_idx in range(x.size(0)):
             start = 0
             document_boundary = document_boundaries_cpu[seq_idx]
@@ -158,8 +156,8 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
 
                 # take the sum across the document
                 document_expert_probs = expert_probs.sum(dim=0)  # shape: (num_experts - num_shared_experts,)
-                # get the bottom document_expert_pool experts (including removing the shared experts)
-                bot_document_expert_pool = self.num_experts - self.document_expert_pool + self.num_shared_experts
+                # get the bottom document_expert_pool experts (including removing the shared experts since we already took that out of the logits)
+                bot_document_expert_pool = self.num_experts - self.document_expert_pool - self.num_shared_experts
                 experts_to_discard = torch.topk(
                     -document_expert_probs, bot_document_expert_pool
                 ).indices  # shape: (bot_document_expert_pool,)
@@ -199,32 +197,29 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
                 )
             )
 
+        breakpoint()
+
         with torch.no_grad():
             # Histogram the expert ids to identify the number of items/tokens routed to each expert.
-            # shape: (batch_size, seq_len, num_experts)
-            tot_batched_batch_size_per_expert = ops.batched_histc(expert_indices, self.num_experts) # TODO change
-            # shape: (batch_size, num_experts)
+            # shape: (batch_size, seq_len, num_experts - num_shared_experts)
+            tot_batched_batch_size_per_expert = ops.batched_histc(expert_indices, self.num_experts - self.num_shared_experts)
+            # shape: (batch_size, num_experts - num_shared_experts)
             tot_batched_batch_size_per_expert = tot_batched_batch_size_per_expert.sum(dim=1)
-            # shape: (num_experts,)
+            # shape: (num_experts - num_shared_experts,)
             tot_batch_size_per_expert = tot_batched_batch_size_per_expert.sum(dim=0)
 
             if self.training:
-                # if padding_mask is not None:
-                #     padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
-                #     valid_expert_indices = expert_indices.masked_select(padding_mask_expanded)
-                # else:
-                #     valid_expert_indices = expert_indices.reshape(-1)
                 valid_expert_indices = expert_indices.view(-1)
 
                 # Update unique experts metric.
                 unique_experts = torch.unique(valid_expert_indices)
-                num_unique_experts = unique_experts.numel()
+                num_unique_experts = unique_experts.numel() + self.num_shared_experts # we add the shared experts since they are always active
 
                 self._unique_experts_sum += num_unique_experts
                 self._num_batches_tracked += 1
 
                 # Compute router distribution entropy metric
-                valid_scores = scores.view(-1, self.num_experts) # TODO change
+                valid_scores = scores.view(-1, self.num_experts - self.num_shared_experts)
                 # get entropy per token
                 token_entropies = -torch.sum(valid_scores * torch.log(valid_scores + 1e-10), dim=-1)
                 # average entropy over valid tokens
@@ -255,8 +250,8 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
                     self._reducedp_unique_experts_sum += (dp_global_tot_batch_size_per_expert > 0).sum().item()
 
                     lb_loss = load_balancing_loss(
-                        num_experts=self.num_experts, # TODO Change
-                        top_k=self.top_k, # TODO change
+                        num_experts=self.num_experts - self.num_shared_experts, # we only calculate the load balancing loss over the non-shared experts
+                        top_k=self.num_choose_experts, # we only choose self.num_choose_experts
                         expert_scores=scores,
                         batch_size_per_expert=dp_global_tot_batch_size_per_expert,
                         batched_batch_size_per_expert=tot_batched_batch_size_per_expert, # this is not used, so we don't bother reducing it
@@ -291,6 +286,11 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
                 self.score_bias_batch_size_per_expert += tot_batch_size_per_expert
 
         # in the end, we add on the shared experts to both expert_weights and expert_indices
+        breakpoint()
+        if self.num_shared_experts > 0:
+            expert_weights = F.pad(expert_weights, (0, self.num_shared_experts), value=1.0) # we set the weights of the shared experts to 1 since they are always active
+            expert_indices = F.pad(expert_indices, (0, self.num_shared_experts), value=self.num_experts - self.num_shared_experts) # we set the indices of the shared experts to the last num_shared_experts indices since we removed those from the logits earlier
+
 
         return expert_weights, expert_indices, tot_batch_size_per_expert, aux_loss
 
