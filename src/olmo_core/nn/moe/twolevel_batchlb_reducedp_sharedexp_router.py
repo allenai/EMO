@@ -247,7 +247,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
                         dist.all_reduce(dp_global_loss_div_factor, op=dist.ReduceOp.SUM)
 
                     # collect all non-zero entries of the dp_global_tot_batch_size_per_expert
-                    self._reducedp_unique_experts_sum += (dp_global_tot_batch_size_per_expert > 0).sum().item()
+                    self._reducedp_unique_experts_sum += (dp_global_tot_batch_size_per_expert > 0).sum().item() + self.num_shared_experts # we add the shared experts since they are always active
 
                     lb_loss = load_balancing_loss(
                         num_experts=self.num_experts - self.num_shared_experts, # we only calculate the load balancing loss over the non-shared experts
@@ -269,6 +269,8 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
                 if self.z_loss_weight is not None:
                     assert self.z_loss is not None
 
+                    # we don't care about shared expert z_loss since they are always set to 1 (thus logits not used)
+
                     z_loss = router_z_loss(
                         expert_logits=logits,
                         loss_div_factor=loss_div_factor,
@@ -288,6 +290,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
         # in the end, we add on the shared experts to both expert_weights and expert_indices
         breakpoint()
         if self.num_shared_experts > 0:
+            # TODO: need to check this
             expert_weights = F.pad(expert_weights, (0, self.num_shared_experts), value=1.0) # we set the weights of the shared experts to 1 since they are always active
             expert_indices = F.pad(expert_indices, (0, self.num_shared_experts), value=self.num_experts - self.num_shared_experts) # we set the indices of the shared experts to the last num_shared_experts indices since we removed those from the logits earlier
 
