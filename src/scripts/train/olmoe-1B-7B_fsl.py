@@ -291,7 +291,6 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             eos_token_id=tokenizer_config.eos_token_id,
             num_shared_experts=opts.num_shared_experts,
         )
-        breakpoint()
 
         # Replace router config
         model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBReduceDPSharedExpRouterConfig(**router_kwargs)
