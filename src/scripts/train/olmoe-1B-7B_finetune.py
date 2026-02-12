@@ -184,7 +184,9 @@ def apply_pruned_routers(model, model_config, activation_file: str, prune_keep_k
             num_experts=old_router.num_experts,
             init_device=old_router.weight.device.type if hasattr(old_router, "weight") else "cpu",
             lb_loss_weight=getattr(old_router, "lb_loss_weight", None),
-            lb_loss_granularity=getattr(old_router, "lb_loss_granularity", MoELoadBalancingLossGranularity.local_batch),
+            lb_loss_granularity=getattr(
+                old_router, "lb_loss_granularity", MoELoadBalancingLossGranularity.local_batch
+            ),
             z_loss_weight=getattr(old_router, "z_loss_weight", None),
         )
 
