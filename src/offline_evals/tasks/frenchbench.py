@@ -127,7 +127,6 @@ class FrenchBenchArcChallengeRC(GenericFrenchBenchRC):
             "dataset_path": "manu/french_bench_arc_challenge",
             "native_id_field": "id",
             "split": "test",
-            "fewshot_source": "train",
         },
         GenericFrenchBenchRC.TASK_CONFIG_DEFAULTS,
     )
