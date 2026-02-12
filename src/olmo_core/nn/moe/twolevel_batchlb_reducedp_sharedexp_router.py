@@ -52,7 +52,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
             num_shared_experts: int,
             **kwargs,
     ):
-        super().__init__(dtype=dtype, init_device=init_device, **kwargs)
+        super().__init__(dtype=dtype, init_device=init_device, document_expert_pool=document_expert_pool, eos_token_id=eos_token_id, **kwargs)
 
         # the number of experts that each document can select their top-k experts from
         self.document_expert_pool = document_expert_pool
