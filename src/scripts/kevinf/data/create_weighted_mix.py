@@ -26,6 +26,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 
 @dataclass
@@ -37,7 +38,7 @@ class SourceConfig:
     percentage: float
     entries: list  # [(label, path), ...]
     total_bytes: int = 0
-    file_sizes: dict = None  # {path: size}
+    file_sizes: Optional[dict] = None  # {path: size}
 
 
 def parse_token_count(s: str) -> int:
@@ -157,7 +158,7 @@ def get_file_sizes_for_entries(
 
     # Fall back to S3
     if not common_prefix:
-        print(f"  No common prefix, listing files individually...", file=sys.stderr)
+        print("  No common prefix, listing files individually...", file=sys.stderr)
         sizes = {}
         for resolved in resolved_paths:
             result = subprocess.run(
@@ -283,7 +284,7 @@ def main():
 
     # Parse sources
     sources: list[SourceConfig] = []
-    total_pct = 0
+    total_pct: float = 0
 
     for source_spec in args.sources:
         if ":" not in source_spec:
@@ -310,7 +311,7 @@ def main():
             src.percentage = (src.percentage / total_pct) * 100
 
     # Get file sizes for each source
-    print(f"\n=== Calculating file sizes ===", file=sys.stderr)
+    print("\n=== Calculating file sizes ===", file=sys.stderr)
     for src in sources:
         print(f"\nSource '{src.name}':", file=sys.stderr)
         src.file_sizes = get_file_sizes_for_entries(
@@ -326,7 +327,7 @@ def main():
     # Sort sources by average file size (largest first) for better ratio control
     # Sources with larger files are the "anchor" - we select from them first
     # Then sources with smaller files can fine-tune to hit the exact ratio
-    print(f"\n=== Selecting files ===", file=sys.stderr)
+    print("\n=== Selecting files ===", file=sys.stderr)
 
     def avg_file_size(src):
         if not src.file_sizes:
@@ -341,7 +342,7 @@ def main():
 
     selected_by_source: list[tuple[SourceConfig, list]] = []
     anchor_selected_bytes = 0  # Track what the anchor source actually selected
-    anchor_pct = 0  # The percentage of the anchor source
+    anchor_pct: float = 0  # The percentage of the anchor source
 
     for i, src in enumerate(sources_sorted):
         is_anchor = i == 0  # First source (largest avg file size) is anchor
@@ -370,10 +371,11 @@ def main():
                 f"  WARNING: Not enough data! Have {src.total_bytes / 1e12:.4f} TB, need {target_bytes_for_src / 1e12:.4f} TB",
                 file=sys.stderr,
             )
-            print(f"  Will use all available data.", file=sys.stderr)
+            print("  Will use all available data.", file=sys.stderr)
             target_bytes_for_src = src.total_bytes
 
         # Anchor source: normal selection. Secondary: fine-tune mode (use smaller files)
+        assert src.file_sizes is not None
         selected = select_files_for_target(
             src.entries, src.file_sizes, target_bytes_for_src, args.seed, fine_tune=(not is_anchor)
         )
@@ -393,7 +395,7 @@ def main():
     selected_by_source.sort(key=lambda x: sources.index(x[0]))
 
     # Summary
-    print(f"\n=== Summary ===", file=sys.stderr)
+    print("\n=== Summary ===", file=sys.stderr)
     grand_total_bytes = 0
     grand_total_files = 0
 
@@ -406,14 +408,14 @@ def main():
         f"Total: {grand_total_bytes / 1e12:.4f} TB = {(grand_total_bytes / 4) / 1e9:.2f}B tokens, {grand_total_files} files",
         file=sys.stderr,
     )
-    print(f"\nActual ratios:", file=sys.stderr)
+    print("\nActual ratios:", file=sys.stderr)
     for src, selected in selected_by_source:
         selected_bytes = sum(s for _, _, s in selected)
         actual_pct = (selected_bytes / grand_total_bytes * 100) if grand_total_bytes > 0 else 0
         print(f"  {src.name}: {actual_pct:.1f}% (target: {src.percentage:.1f}%)", file=sys.stderr)
 
     if args.dry_run:
-        print(f"\n[Dry run - not writing output]", file=sys.stderr)
+        print("\n[Dry run - not writing output]", file=sys.stderr)
         return
 
     # Write output
@@ -421,7 +423,7 @@ def main():
     with open(args.output, "w") as f:
         f.write("# Weighted mix created by create_weighted_mix.py\n")
         f.write(f"# Total: {(grand_total_bytes / 4) / 1e9:.2f}B tokens\n")
-        f.write(f"# Sources:\n")
+        f.write("# Sources:\n")
         for src, selected in selected_by_source:
             selected_bytes = sum(s for _, _, s in selected)
             actual_pct = (selected_bytes / grand_total_bytes * 100) if grand_total_bytes > 0 else 0

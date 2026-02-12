@@ -31,7 +31,7 @@ class GenericFrenchBenchRC(MultipleChoiceTask):
     """
 
     VERSION = 0
-    TASK_NAME = None
+    TASK_NAME: str = ""
 
     TASK_CONFIG_DEFAULTS: dict = {
         "dataset_path": None,  # Set by subclass

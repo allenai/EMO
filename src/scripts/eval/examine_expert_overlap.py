@@ -1,4 +1,7 @@
+import json
 from collections import defaultdict
+
+import torch
 
 model_path = "/root/ryanwang/phdbrainstorm/FlexMoE/prune/twolevel-32_1b7b_128experts_olmoe-mix_130B_1110_step30995-hf"
 out_dir = "/root/ryanwang/phdbrainstorm/FlexMoE/eval_plots"
@@ -14,11 +17,6 @@ router_paths = [
     ("socialiqa", "task-socialiqa_rc_validation_0shot-router.jsonl"),
     ("winogrande", "task-winogrande_rc_validation_0shot-router.jsonl"),
 ]
-
-# load the sample file and print the first line
-import json
-
-import torch
 
 k_range = [4, 8, 16, 32, 64]
 

@@ -18,25 +18,16 @@ from olmo_core.config import Config, DType
 from olmo_core.data import (
     NumpyDataLoaderConfig,
     NumpyDatasetConfig,
-    NumpyFSLDatasetConfig,
     NumpyPaddedFSLDatasetConfig,
     TokenizerConfig,
 )
-from olmo_core.data.mixes import DataMix
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_rank
+from olmo_core.nn.moe.loss import MoELoadBalancingLossGranularity
 from olmo_core.nn.moe.masked_finetune_router import MoEMaskedFinetuneRouterConfig
-from olmo_core.nn.moe.pruning_router import (
-    PruningMoELinearRouter,
-    PruningMoERouterConfig,
-)
+from olmo_core.nn.moe.pruning_router import PruningMoERouterConfig
 from olmo_core.nn.transformer import TransformerConfig
-from olmo_core.optim import (
-    AdamWConfig,
-    CosWithWarmup,
-    LinearWithWarmup,
-    OptimGroupOverride,
-)
+from olmo_core.optim import AdamWConfig, LinearWithWarmup, OptimGroupOverride
 from olmo_core.train import (
     TrainerConfig,
     prepare_training_environment,
@@ -123,9 +114,8 @@ def train(opts, config: ExperimentConfig):
     assert (
         config.trainer.max_duration.unit == "epochs"
     ), "we assume we train using epochs to calculate checkpoints"
+    assert data_loader.total_batches is not None, "Cannot determine total batches from dataset"
     total_batches = data_loader.total_batches * config.trainer.max_duration.value
-    if total_batches is None:
-        raise ValueError("Cannot determine total batches from dataset")
     save_interval = max(1, total_batches // opts.num_checkpoints)
     log.info(
         f"Total batches: {total_batches}, Total checkpoints: {opts.num_checkpoints}, Save interval: {save_interval}"
@@ -194,7 +184,9 @@ def apply_pruned_routers(model, model_config, activation_file: str, prune_keep_k
             num_experts=old_router.num_experts,
             init_device=old_router.weight.device.type if hasattr(old_router, "weight") else "cpu",
             lb_loss_weight=getattr(old_router, "lb_loss_weight", None),
-            lb_loss_granularity=getattr(old_router, "lb_loss_granularity", None),
+            lb_loss_granularity=getattr(
+                old_router, "lb_loss_granularity", MoELoadBalancingLossGranularity.local_batch
+            ),
             z_loss_weight=getattr(old_router, "z_loss_weight", None),
         )
 
@@ -227,6 +219,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             raise ValueError(
                 "Cannot apply both model_type modifications and pruning simultaneously, since pruning will use the pruning_router class"
             )
+        assert model_config.block.feed_forward_moe is not None
         if opts.model_type == "masked-finetune":
             log.info("Applying finetuning router that masks masked tokens for losses ...")
             # Get existing router config parameters

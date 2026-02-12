@@ -1226,6 +1226,48 @@ def get_task_configs():
                 "split": "validation",
                 "num_shots": 5,
             },
+            "minerva_math_500::olmes": {
+                "task_name": "minerva_math_500",
+                "split": "test",
+                "num_shots": 4,
+                "fewshot_source": "Minerva:MATH:fixed",  # fix double new line within solution in example
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "mbpp:3shot:bpb::none": {
+                "task_name": "mbpp",
+                "primary_metric": "bits_per_byte_corr",
+                "use_chat_format": False,
+                "context_kwargs": {
+                    "prompt_variant": "inloop_bpb",
+                },
+                "generation_kwargs": {
+                    "stop_sequences": [],
+                },
+                "compute_gold_bpb": True,
+                "num_shots": 3,  # like deepseek
+                "limit": 500,
+            },
+            "codex_humaneval:3shot:bpb::none": {
+                "task_name": "codex_humaneval",
+                "primary_metric": "bits_per_byte_corr",
+                "use_chat_format": False,
+                "context_kwargs": {
+                    "prompt_variant": "inloop_bpb",
+                    "answer_prefix": "",
+                },
+                "generation_kwargs": {
+                    "stop_sequences": [],
+                },
+                "chat_overrides": {
+                    "context_kwargs": {
+                        "assistant_prefix": "",
+                    },
+                },
+                "compute_gold_bpb": True,
+                "num_shots": 3,  # like deepseek
+            },
         }
     )
 

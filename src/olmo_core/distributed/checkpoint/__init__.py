@@ -343,6 +343,7 @@ def load_model_and_optim_state(
     :param thread_count: Set the number of threads used for certain operations.
     """
     dir = normalize_path(dir)
+    log.debug("Preparing state dict for loading from checkpoint '%s'", dir)
     state_dict = _prepare_state_dict(
         model, optim, process_group=process_group, flatten_optimizer_state=flatten_optimizer_state
     )
@@ -694,6 +695,8 @@ def _prepare_state_dict(
     flatten_optimizer_state: bool = False,
 ) -> Dict[str, Any]:
     del process_group  # I feel like these torch functions should take a process group argument.
+
+    log.debug("Preparing state dict...")
     sd_options = dist_cp_sd.StateDictOptions(
         full_state_dict=False,
         cpu_offload=True,
@@ -703,6 +706,9 @@ def _prepare_state_dict(
     state_dict: Dict[str, Any] = {
         "model": dist_cp_sd.get_model_state_dict(model, options=sd_options)
     }
+
+    log.debug("Model state dict prepared.")
+
     if optim is not None:
         state_dict["optim"] = dist_cp_sd.get_optimizer_state_dict(model, optim, options=sd_options)
 

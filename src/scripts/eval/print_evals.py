@@ -279,7 +279,7 @@ def main(args):
     if not args.load_cache:
         updated = False
         # Track number of instances per task per model for comparability checking
-        num_instances_tracker = defaultdict(lambda: defaultdict(int))
+        num_instances_tracker: dict = defaultdict(lambda: defaultdict(int))
 
         def _add_to_results(model_name, task_name, score, num_instances=None):
             if model_name not in results:

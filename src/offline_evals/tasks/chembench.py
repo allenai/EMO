@@ -27,7 +27,7 @@ count as mismatches.
 import json
 import logging
 import re
-from typing import List, Union
+from typing import List, Optional, Union
 
 from oe_eval.components.instances import RequestInstance
 from oe_eval.metrics.metric import MCAccuracy, SQuADF1EMRecallMetric
@@ -90,11 +90,11 @@ CHEMBENCH_SUBFIELDS = [
 # Excluded: chemical_preference (0 gen), toxicity_and_safety (0 gen),
 #           technical_chemistry (2 gen), materials_science (4 gen)
 CHEMBENCH_GEN_SUBFIELDS = [
-    "analytical_chemistry",   # 50 gen
-    "general_chemistry",      # 47 gen
-    "inorganic_chemistry",    # 37 gen
-    "organic_chemistry",      # 35 gen
-    "physical_chemistry",     # 68 gen
+    "analytical_chemistry",  # 50 gen
+    "general_chemistry",  # 47 gen
+    "inorganic_chemistry",  # 37 gen
+    "organic_chemistry",  # 35 gen
+    "physical_chemistry",  # 68 gen
 ]
 
 # Question types based on preferred_score field
@@ -127,7 +127,7 @@ class ChemBenchGenMetric(SQuADF1EMRecallMetric):
     This matches the official ChemBench evaluation in metrics.py and prompter.py.
     """
 
-    def __init__(self, metric_names: List[str] = None, **kwargs):
+    def __init__(self, metric_names: Optional[List[str]] = None, **kwargs):
         # Add 'all_correct' to the metric names so it gets aggregated
         if metric_names is None:
             metric_names = ["exact_match", "f1", "recall", "all_correct"]
@@ -460,7 +460,7 @@ class GenericChemBenchGen(Task):
     """
 
     VERSION = 0
-    TASK_CONFIG_DEFAULTS = {
+    TASK_CONFIG_DEFAULTS: dict = {
         "dataset_path": "jablonkagroup/ChemBench",
         "dataset_name": None,  # subfield name
         "native_id_field": "uuid",

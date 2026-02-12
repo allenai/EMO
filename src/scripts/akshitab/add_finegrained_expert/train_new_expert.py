@@ -34,8 +34,10 @@ from olmo_core.train.callbacks import (
     CometCallback,
     ConfigSaverCallback,
     DownstreamEvaluatorCallbackConfig,
+    FrozenExpertGradientMaskCallback,
     GPUMemoryMonitorCallback,
     GradientMonitorCallback,
+    HFConverterCallback,
     ProfilerCallback,
     WandBCallback,
 )
@@ -110,7 +112,7 @@ def freeze_indices(dim: int, indices: list[int]) -> Callable:
     return mask_fn
 
 
-def train(config: ExperimentConfig):
+def train(config: ExperimentConfig, eval_only: bool = False):
     if get_rank() == 0:
         rich.print(config)
 
@@ -134,11 +136,25 @@ def train(config: ExperimentConfig):
     # docs: start-load-path
     # If we have a load path set and there is no checkpoint in the save folder, load the
     # checkpoint from the load path.
-    if not trainer.no_checkpoints and not trainer.maybe_load_checkpoint() and config.load_path:
-        log.info(
-            f"Loading checkpoint from {config.load_path} since no checkpoints were found in the save folder..."
+    checkpoint_loaded = False
+    if not trainer.no_checkpoints:
+        checkpoint_loaded = trainer.maybe_load_checkpoint()
+        if not checkpoint_loaded and config.load_path:
+            log.info(
+                f"Loading checkpoint from {config.load_path} since no checkpoints were found in the save folder..."
+            )
+            trainer.load_checkpoint(config.load_path, load_trainer_state=config.load_trainer_state)
+            checkpoint_loaded = True
+
+    # In eval-only mode, ensure a checkpoint was loaded
+    if eval_only and not checkpoint_loaded:
+        raise RuntimeError(
+            "Cannot run eval-only mode: no checkpoint found in save folder and no load_path provided. "
+            "Please ensure checkpoints exist or provide --load-path."
         )
-        trainer.load_checkpoint(config.load_path, load_trainer_state=config.load_trainer_state)
+
+    if eval_only:
+        log.info("Running in eval-only mode: will evaluate checkpoint and exit without training.")
     # docs: end-load-path
 
     # Train.
@@ -163,12 +179,18 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         "partial_freeze_router_and_experts"
     ] = partial_freeze_router_and_experts
 
+    # if opts.num_experts_to_train != opts.added_experts:
+    #     log.warning(
+    #         f"num_experts_to_train ({opts.num_experts_to_train}) != added_experts ({opts.added_experts})."
+    #         f" This will train weights for the last {opts.num_experts_to_train} existing expert(s)."
+    #     )
+
     model_config = TransformerConfig.olmoe_1B_7B(
         vocab_size=tokenizer_config.padded_vocab_size(),
         n_layers=16,
         d_model=2048,
         n_heads=16,
-        num_experts=129,
+        num_experts=128 + opts.num_experts_to_train,
         top_k=8,
         freeze_params=[
             "embeddings.*",
@@ -176,8 +198,10 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             "blocks.*.feed_forward_norm.*",
             "lm_head.*",
         ],
-        partial_freeze_params_mask_fn_name="partial_freeze_router_and_experts",
-        partial_freeze_params_mask_fn_kwargs={"num_experts_to_train": opts.num_experts_to_train},
+        # NOTE: Hook-based partial_freeze doesn't work with torch.compile.
+        # Use FrozenExpertGradientMaskCallback instead (added to trainer_config).
+        # partial_freeze_params_mask_fn_name="partial_freeze_router_and_experts",
+        # partial_freeze_params_mask_fn_kwargs={"num_experts_to_train": opts.num_experts_to_train},
     )
 
     print(model_config)
@@ -203,15 +227,20 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     train_module_config = TransformerTrainModuleConfig(
-        rank_microbatch_size=2
+        rank_microbatch_size=4
         * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         max_sequence_length=SEQUENCE_LENGTH,
         optim=AdamWConfig(
             lr=opts.lr,
-            weight_decay=0.1,
+            # AdamW adds wd to partially frozen params, which causes weights to drift.
+            # Ideally, the experts being trained would have 0.1, but due to partial freezing implementation limitations,
+            # all experts including the trainable ones have to have 0.0 wd.
+            weight_decay=0.0,
             betas=(0.9, 0.95),
             group_overrides=[
-                OptimGroupOverride(params=["embeddings.weight"], opts=dict(weight_decay=0.0))
+                OptimGroupOverride(params=["embeddings.weight"], opts=dict(weight_decay=0.0)),
+                # OptimGroupOverride(params=["blocks.*.feed_forward_moe.experts.*"], opts=dict(weight_decay=0.0)),
+                # OptimGroupOverride(params=["blocks.*.feed_forward_moe.router.*"], opts=dict(weight_decay=0.0)),
             ],
             fused=True,
         ),
@@ -224,7 +253,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         ),
         z_loss_multiplier=1e-5,
         max_grad_norm=1.0,
-        scheduler=CosWithWarmup(warmup_steps=2000),
+        scheduler=CosWithWarmup(warmup_fraction=0.1),
     )
 
     trainer_config = (
@@ -267,17 +296,83 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             # https://github.com/allenai/OLMo-in-loop-evals/blob/main/src/olmo_eval/tasks.py#L1752
             DownstreamEvaluatorCallbackConfig(
                 tasks=[
-                    "hellaswag",
-                    "arc_challenge",
-                    "piqa",
-                    "copa",
-                    "mmlu_stem",
-                    "mmlu_humanities",
-                    "mmlu_social_sciences",
-                    "mmlu_other",
+                    # "hellaswag",
+                    # "arc_challenge",
+                    # "piqa",
+                    # "copa",
+                    # "mmlu_stem",
+                    # "mmlu_humanities",
+                    # "mmlu_social_sciences",
+                    # "mmlu_other",
+                    "arc_challenge_test_rc_5shot",
+                    "arc_easy_test_rc_5shot",
+                    "hellaswag_rc_5shot",  # 1K subset of HellaSwag
+                    "winogrande_val_rc_5shot",  # Helpful after 750M-5xC scale
+                    "csqa_val_rc_5shot",
+                    "piqa_val_rc_5shot",
+                    "socialiqa_val_rc_5shot",
+                    # Too noisy to be worth tracking
+                    # "boolq_val_rc_5shot",
+                    # "openbookqa_test_rc_5shot",
+                    # MMLU RC
+                    "mmlu_stem_val_rc_5shot",
+                    "mmlu_humanities_val_rc_5shot",
+                    "mmlu_social_sciences_val_rc_5shot",
+                    "mmlu_other_val_rc_5shot",
+                    "mmlu_stem_test_rc_5shot",
+                    "mmlu_humanities_test_rc_5shot",
+                    "mmlu_social_sciences_test_rc_5shot",
+                    "mmlu_other_test_rc_5shot",
+                    "basic_skills_common_knowledge_rc_5shot",
+                    "basic_skills_logical_reasoning_rc_5shot",
+                    "basic_skills_pattern_rc_5shot",
+                    "basic_skills_string_operations_rc_5shot",
+                    # Sanity check for MCQA ability
+                    "copycolors_10way_fast",
+                    # math
+                    "basic_skills_arithmetic_rc_5shot",
+                    "gsm8k_gold_bpb_5shot",
+                    "minerva_math_algebra_gold_bpb_0shot",
+                    "minerva_math_counting_and_probability_gold_bpb_0shot",
+                    "minerva_math_geometry_gold_bpb_0shot",
+                    "minerva_math_intermediate_algebra_gold_bpb_0shot",
+                    "minerva_math_number_theory_gold_bpb_0shot",
+                    "minerva_math_prealgebra_gold_bpb_0shot",
+                    "minerva_math_precalculus_gold_bpb_0shot",
+                    "minerva_math_500_gold_bpb_0shot",
+                    # code
+                    "basic_skills_coding_rc_5shot",
+                    "codex_humaneval_gold_bpb_0shot",
+                    "codex_humaneval_gold_bpb_3shot",
+                    "codex_mbpp_gold_bpb_0shot",
+                    "codex_mbpp_gold_bpb_3shot",
+                ]
+                + [
+                    f"mt_mbpp_{lang}_gold_bpb_3shot"
+                    for lang in [
+                        "haskell",
+                        "go",
+                        "python",
+                        "cpp",
+                        "javascript",
+                        "swift",
+                        "scala",
+                        "bash",
+                        "typescript",
+                        "c",
+                        "php",
+                        "rust",
+                        "csharp",
+                        "r",
+                        "ruby",
+                        "java",
+                        "matlab",
+                    ]
                 ],
                 tokenizer=tokenizer_config,
                 eval_interval=250,
+                eval_on_startup=opts.eval_only,
+                cancel_after_first_eval=opts.eval_only,
             ),
         )
         .with_callback(
@@ -286,6 +381,23 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                 layer_names=["expert.mlp", "router"],
                 max_steps_to_monitor=10,
                 log_all_params=True,
+            ),
+        )
+        .with_callback(
+            "frozen_expert_gradient_mask",
+            FrozenExpertGradientMaskCallback(
+                num_experts=128 + opts.num_experts_to_train,
+                num_experts_to_train=opts.num_experts_to_train,
+                layer_patterns=["experts", "router"],
+            ),
+        )
+        .with_callback(
+            "hf_converter",
+            HFConverterCallback(
+                enabled=True,
+                dtype=DType.float32,
+                max_sequence_length=SEQUENCE_LENGTH,
+                device="cpu",
             ),
         )
     )
@@ -352,6 +464,18 @@ def parser_args():
         default=1,
         help="Number of experts to train (last n experts). Remaining are frozen.",
     )
+    parser.add_argument(
+        "--added-experts",
+        type=int,
+        default=1,
+        help="Number of experts actually added.",
+    )
+    parser.add_argument(
+        "--eval-only",
+        action="store_true",
+        help="""Run evaluations only on existing checkpoint without training.
+        This will load the latest checkpoint and run downstream evals.""",
+    )
     opts, overrides = parser.parse_known_args()
     return opts, overrides
 
@@ -366,7 +490,7 @@ def main():
         return
 
     prepare_training_environment()
-    train(config)
+    train(config, eval_only=opts.eval_only)
     teardown_training_environment()
 
 

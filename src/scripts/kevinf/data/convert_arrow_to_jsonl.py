@@ -143,7 +143,7 @@ def process_arrow_file(args: Tuple[Path, str, str, Path, int, int]) -> Tuple[str
 
         return str(arrow_file.name), docs, chunks_written
 
-    except Exception as e:
+    except Exception:
         return str(arrow_file.name), 0, 0
 
 
@@ -234,15 +234,15 @@ def main():
     if elapsed > 0:
         print(f"Total time:   {elapsed:.1f}s ({grand_docs/elapsed:,.0f} docs/s)")
 
-    print(f"\n# Tokenize with Dolma:")
-    print(f"dolma tokens \\")
+    print("\n# Tokenize with Dolma:")
+    print("dolma tokens \\")
     print(f"    --documents '{args.output_dir}/**/*.jsonl.gz' \\")
     print(f"    --destination {args.output_dir}/tokenized \\")
-    print(f"    --tokenizer.name_or_path allenai/dolma2-tokenizer \\")
-    print(f"    --tokenizer.eos_token_id 100257 \\")
-    print(f"    --tokenizer.pad_token_id 100277 \\")
-    print(f"    --dtype uint32 \\")
-    print(f"    --processes 64")
+    print("    --tokenizer.name_or_path allenai/dolma2-tokenizer \\")
+    print("    --tokenizer.eos_token_id 100257 \\")
+    print("    --tokenizer.pad_token_id 100277 \\")
+    print("    --dtype uint32 \\")
+    print("    --processes 64")
 
 
 if __name__ == "__main__":

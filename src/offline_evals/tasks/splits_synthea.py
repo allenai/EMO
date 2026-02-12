@@ -5,7 +5,7 @@ import os
 from typing import Optional
 
 from oe_eval.tasks.base_task import MultipleChoiceTask
-from oe_eval.tasks.utils import make_cloze_prompt, make_mcq_prompt
+from oe_eval.tasks.utils import make_cloze_prompt
 from oe_eval.utils import load_jsonl
 
 

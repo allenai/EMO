@@ -50,7 +50,8 @@ class DataMix(DataMixBase):
     croissant = "croissant"
 
     mj_finemath4plus = "mj_finemath4plus"
-    mose_code_mix = "mose_code_mix"
+    code_mix = "code_mix"
+    starcoder = "starcoder"
 
     chempile = "chempile"
 

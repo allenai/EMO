@@ -359,7 +359,11 @@ class TransformerConfig(Config):
         num_partially_frozen_params = 0
 
         partial_freeze_params_mask_fn_kwargs = self.partial_freeze_params_mask_fn_kwargs or {}
-        if self.partial_freeze_params_mask_fn_name is not None:
+        if (
+            self.partial_freeze_params_mask_fn_name is not None
+            and PARTIAL_FREEZE_FN_REGISTRY.get(self.partial_freeze_params_mask_fn_name, None)
+            is not None
+        ):
             partial_freeze_params_mask_fn = PARTIAL_FREEZE_FN_REGISTRY[
                 self.partial_freeze_params_mask_fn_name
             ]
@@ -368,7 +372,14 @@ class TransformerConfig(Config):
                     self, name, param, **partial_freeze_params_mask_fn_kwargs
                 )
                 if mask is not None and param.requires_grad:
-                    param.register_hook(lambda grad: grad * mask.to(grad.device))
+                    # BUG FIXED: late binding issue in lambda in a loop; the mask variable is captured by reference, not by value.
+                    # Since this is inside a for loop, all the registered hooks will use the last value of mask computed in the loop,
+                    # not the mask specific to each parameter.
+                    # param.register_hook(lambda grad: grad * mask.to(grad.device))
+                    log.info(
+                        f"Param '{name}' mask sum: {mask.sum().item()}/{mask.numel()} trainable"
+                    )
+                    param.register_hook(lambda grad, mask=mask: grad * mask.to(grad.device))
                     num_partially_frozen_params += mask.numel() - int(mask.sum().item())
                     log.info(f"Param '{name}' will be partially frozen")
 

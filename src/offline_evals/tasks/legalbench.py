@@ -26,10 +26,10 @@ class GenericLegalBenchRC(MultipleChoiceTask):
     """
 
     VERSION = 0
-    TASK_NAME = None  # Set by subclass
-    CHOICES = None  # Set by subclass
-    TEXT_FIELD = "text"  # Field containing input text
-    ANSWER_FIELD = "answer"  # Field containing answer label
+    TASK_NAME: str = ""  # Set by subclass
+    CHOICES: list = []  # Set by subclass
+    TEXT_FIELD: str = "text"  # Field containing input text
+    ANSWER_FIELD: str = "answer"  # Field containing answer label
 
     TASK_CONFIG_DEFAULTS: dict = {
         "dataset_path": "nguha/legalbench",

@@ -204,6 +204,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     # Apply special routers or other modifications to the model here if needed.
+    assert model_config.block.feed_forward_moe is not None
     if opts.model_type == "dense" or opts.model_type == "moe":
         log.info("Using default routers; no modifications applied.")
         pass
