@@ -1369,7 +1369,7 @@ def get_task_configs():
         "frenchbench_grammar_vocab_reading",
     ]:
         TASK_CONFIGS[f"{fb_task}:rc:0shot::olmes"] = {
-            "task_name": f"{fb_task}:rc",
+            "task_name": f"{fb_task}:rc:0shot",
             "num_shots": 0,
             "primary_metric": "acc_per_char",
             "metadata": {
@@ -1377,7 +1377,7 @@ def get_task_configs():
             },
         }
         TASK_CONFIGS[f"{fb_task}:rc:5shot::olmes"] = {
-            "task_name": f"{fb_task}:rc",
+            "task_name": f"{fb_task}:rc:5shot",
             "num_shots": 5,
             "primary_metric": "acc_per_char",
             "metadata": {
