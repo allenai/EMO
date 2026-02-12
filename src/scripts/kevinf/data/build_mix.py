@@ -17,7 +17,6 @@ import argparse
 import random
 import subprocess
 import sys
-from pathlib import Path
 from typing import List, Tuple
 
 
@@ -238,8 +237,8 @@ def write_mix_file(
 ) -> None:
     """Write the new mix file."""
     # Extract bucket name from s3_base (e.g., "s3://ai2-llm" -> "ai2-llm")
-    bucket = s3_base.replace("s3://", "").rstrip("/")
-    resolved_prefix = replacement_prefix.replace("{TOKENIZER}", tokenizer)
+    # bucket = s3_base.replace("s3://", "").rstrip("/")
+    # resolved_prefix = replacement_prefix.replace("{TOKENIZER}", tokenizer)
 
     with open(output_path, "w") as f:
         # Write kept lines first
@@ -376,7 +375,7 @@ def main():
     )
 
     # 4. Select replacement files
-    print(f"\nSelecting replacement files...", file=sys.stderr)
+    print("\nSelecting replacement files...", file=sys.stderr)
     full_prefix = f"{args.s3_base}/{args.replacement_prefix}"
     selected_files = select_replacement_files(
         full_prefix, target_bytes, args.tokenizer, shuffle=args.shuffle, seed=args.seed
@@ -391,7 +390,7 @@ def main():
     actual_tokens = actual_bytes / 4
     diff_pct = ((actual_bytes - target_bytes) / target_bytes * 100) if target_bytes > 0 else 0
 
-    print(f"\n=== Summary ===", file=sys.stderr)
+    print("\n=== Summary ===", file=sys.stderr)
     print(
         f"Target:   {target_bytes / 1e12:.4f} TB = {target_tokens / 1e9:.2f}B tokens",
         file=sys.stderr,

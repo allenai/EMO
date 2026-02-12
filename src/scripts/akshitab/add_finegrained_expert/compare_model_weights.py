@@ -7,12 +7,9 @@ import logging
 import os
 from typing import Optional
 
-import smart_open
 import torch
 
-from olmo_core.distributed.checkpoint import (
-    load_model_and_optim_state,
-)
+from olmo_core.distributed.checkpoint import load_model_and_optim_state
 from olmo_core.nn.transformer import TransformerConfig
 from olmo_core.utils import setup_logging
 
@@ -44,8 +41,7 @@ def load_model(checkpoint_path):
         config = json.load(f)
 
     config = TransformerConfig.from_dict(config["model"])
-    backend = config.block.attention.backend
-    config.block.attention.backend = 'torch'
+    config.block.attention.backend = "torch"
     logger.info(f"Model config {config}")
 
     # Load model weights
@@ -53,6 +49,7 @@ def load_model(checkpoint_path):
     old_model = load_checkpoint(model_config=config, checkpoint_path=checkpoint_path)
     logger.info("Model loaded successfully")
     return old_model
+
 
 def check_model_weights(
     checkpoint_path1: str,
@@ -62,7 +59,9 @@ def check_model_weights(
     model2 = load_model(checkpoint_path2)
 
     # Compare weights
-    for (name1, param1), (name2, param2) in zip(model1.named_parameters(), model2.named_parameters()):
+    for (name1, param1), (name2, param2) in zip(
+        model1.named_parameters(), model2.named_parameters()
+    ):
         if name1 != name2:
             logger.error(f"Parameter names do not match: {name1} vs {name2}")
             return False
@@ -87,7 +86,7 @@ def parse_args():
 if __name__ == "__main__":
     setup_logging()
     args = parse_args()
-    
+
     new_model = check_model_weights(
         checkpoint_path1=args.checkpoint_path1,
         checkpoint_path2=args.checkpoint_path2,

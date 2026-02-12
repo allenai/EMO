@@ -101,7 +101,7 @@ def prepare_finetuning_masks(args_dict):
                 label_mask[: delimiter_pos[-1] + len(delimiter_ids)] = False
 
                 # make sure that the document is not all masked out
-                if np.all(label_mask == False):
+                if np.all(~label_mask):
                     breakpoint()
                     raise ValueError(
                         f"All tokens are masked out in document starting at index {document_start_idx}. "
@@ -146,7 +146,7 @@ def prepare_finetuning_masks(args_dict):
             label_mask[: delimiter_pos[-1] + len(delimiter_ids)] = False
 
             # make sure that the document is not all masked out
-            if np.all(label_mask == False):
+            if np.all(~label_mask):
                 breakpoint()
                 raise ValueError(
                     f"All tokens are masked out in document starting at index {document_start_idx}. "

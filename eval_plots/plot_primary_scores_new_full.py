@@ -7,7 +7,7 @@ import argparse
 import colorsys
 import json
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List
 
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
@@ -146,7 +146,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
     {
         "label": "twolevelbatchlb train32/320 keepk32",
         "template": (
-            f"twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216_step30995_"
+            "twolevelbatchlb-32_1b35b_320experts_lb-1e-1_1216_step30995_"
             "task-{task_core}{validation_suffix}_keepk32_newdefault_{lr_suffix}_finetune-task-{task_core}{task_suffix}_step{step}-hf"
         ),
         "family": "twolevelbatchlb train32/128",
@@ -230,7 +230,7 @@ MODEL_RUNS: List[Dict[str, Any]] = [
     {
         "label": "mutualinfo keepk32",
         "template": (
-            f"mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205_step30995_"
+            "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205_step30995_"
             "task-{task_core}_rc_validation_keepk32_newdefault_lr-4e-5_finetune-task-{task_core}_rc_train_step{step}-hf"
         ),
         "family": "mutualinfo",

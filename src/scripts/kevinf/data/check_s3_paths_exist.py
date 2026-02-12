@@ -13,7 +13,6 @@ import argparse
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from pathlib import Path
 
 
 def check_s3_path(s3_path: str) -> tuple[str, bool, str]:
@@ -88,7 +87,7 @@ def main():
 
     missing = []
     found = 0
-    errors = []
+    # errors = []
 
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
         futures = {
@@ -118,7 +117,7 @@ def main():
 
     print()
     print("=" * 60)
-    print(f"SUMMARY")
+    print("SUMMARY")
     print("=" * 60)
     print(f"Total paths: {len(paths)}")
     print(f"Found: {found}")

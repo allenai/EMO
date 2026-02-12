@@ -7,7 +7,7 @@ bypassing the gradient masking mechanism used for partial freezing.
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 
 import torch
 
@@ -97,7 +97,9 @@ class FrozenWeightRestorerCallback(Callback):
             if self.log_drift:
                 # Calculate drift before restoring
                 current_weights = param.data[frozen_slice]
-                drift = (current_weights - saved_weights.to(current_weights.device)).abs().max().item()
+                drift = (
+                    (current_weights - saved_weights.to(current_weights.device)).abs().max().item()
+                )
                 total_drift = max(total_drift, drift)
 
             # Restore frozen weights

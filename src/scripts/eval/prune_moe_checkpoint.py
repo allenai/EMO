@@ -11,7 +11,6 @@ import argparse
 import json
 import logging
 import os
-from typing import Optional
 
 import torch
 
@@ -20,7 +19,6 @@ from olmo_core.distributed.checkpoint import (
     save_model_and_optim_state,
 )
 from olmo_core.nn.transformer import TransformerConfig
-from olmo_core.nn.transformer.init import InitMethod
 
 logger = logging.getLogger(__name__)
 

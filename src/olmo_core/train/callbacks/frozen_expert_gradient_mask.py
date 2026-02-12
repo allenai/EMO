@@ -9,7 +9,7 @@ This is more robust than gradient hooks because it works with:
 
 import logging
 from dataclasses import dataclass, field
-from typing import ClassVar, Dict, List
+from typing import ClassVar, List
 
 import torch
 from torch.distributed.tensor import DTensor
@@ -109,6 +109,7 @@ class FrozenExpertGradientMaskCallback(Callback):
 
                 # Distribute with same placement as gradient
                 from torch.distributed.tensor import distribute_tensor
+
                 mask_dtensor = distribute_tensor(
                     full_mask.to(local_grad.device),
                     grad.device_mesh,

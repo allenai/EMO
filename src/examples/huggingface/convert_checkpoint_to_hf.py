@@ -9,9 +9,9 @@ import logging
 from argparse import ArgumentParser
 from pathlib import Path
 
-from olmo_core.config import DType
 import torch
 
+from olmo_core.config import DType
 from olmo_core.hf_utils import convert_checkpoint_to_hf, load_config
 from olmo_core.utils import prepare_cli_environment
 

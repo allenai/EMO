@@ -359,8 +359,15 @@ def main(args):
                 # Build more informative task name using dataset_name if available
                 # Skip for core 9 tasks where dataset_name is redundant
                 core9_task_prefixes = (
-                    "arc_easy", "arc_challenge", "boolq", "csqa", "hellaswag",
-                    "openbookqa", "piqa", "socialiqa", "winogrande"
+                    "arc_easy",
+                    "arc_challenge",
+                    "boolq",
+                    "csqa",
+                    "hellaswag",
+                    "openbookqa",
+                    "piqa",
+                    "socialiqa",
+                    "winogrande",
                 )
                 dataset_name = task_config.get("dataset_name")
                 is_core9 = any(task_name.startswith(prefix) for prefix in core9_task_prefixes)
@@ -565,7 +572,8 @@ def main(args):
     if args.core_and_gen_only:
         core_and_gen_prefixes = core9_prefixes + gen5_prefixes
         task_names = [
-            task_name for task_name in task_names
+            task_name
+            for task_name in task_names
             if any(task_name.startswith(prefix) for prefix in core_and_gen_prefixes)
         ]
 
@@ -595,7 +603,7 @@ def main(args):
     def format_number(v, task_name):
         """Format score with best result highlighting."""
         best = best_results.get(task_name)
-        is_best = (v is not None and best is not None and np.abs(v - best) < 0.001)
+        is_best = v is not None and best is not None and np.abs(v - best) < 0.001
         v = f"{v:.3f}" if v is not None else "-"
         return colored(v, "red") if is_best else v
 

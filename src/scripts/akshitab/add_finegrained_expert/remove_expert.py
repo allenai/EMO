@@ -7,7 +7,6 @@ import logging
 import os
 from typing import Optional
 
-import smart_open
 import torch
 
 from olmo_core.distributed.checkpoint import (
@@ -67,13 +66,15 @@ def remove_experts(
 
     old_model_config = TransformerConfig.from_dict(config["model"])
     backend = old_model_config.block.attention.backend
-    old_model_config.block.attention.backend = 'torch'
+    old_model_config.block.attention.backend = "torch"
     logger.info(f"Model config {old_model_config}")
 
     assert old_model_config.block.feed_forward_moe is not None
     num_experts = old_model_config.block.feed_forward_moe.num_experts
 
-    experts_to_remove = [expert_id + num_experts if expert_id < 0 else expert_id for expert_id in experts_to_remove]
+    experts_to_remove = [
+        expert_id + num_experts if expert_id < 0 else expert_id for expert_id in experts_to_remove
+    ]
 
     for expert_id in experts_to_remove:
         assert 0 <= expert_id < num_experts, f"Expert id {expert_id} out of range"
@@ -107,7 +108,9 @@ def remove_experts(
                 source_param = old_param.view(num_experts, -1)
                 _, source_columns = source_param.shape
 
-                target_param = new_param.view(num_experts - len(experts_to_remove), source_columns).clone()
+                target_param = new_param.view(
+                    num_experts - len(experts_to_remove), source_columns
+                ).clone()
 
                 target_param[:, :] = source_param[experts_to_keep, :]
                 with torch.no_grad():
@@ -162,9 +165,9 @@ def parse_args():
 if __name__ == "__main__":
     setup_logging()
     args = parse_args()
-    
+
     new_model = remove_experts(
         checkpoint_path=args.checkpoint_path,
         save_path=args.save_path,
-        experts_to_remove=list(range(-args.num_experts_to_remove, 0))
+        experts_to_remove=list(range(-args.num_experts_to_remove, 0)),
     )

@@ -27,18 +27,14 @@ class SimpleExpertModel(nn.Module):
 
         # Simulate expert weights stacked along dim 0
         # Each expert has expert_size rows
-        self.experts_w1 = nn.Parameter(
-            torch.randn(num_experts * expert_size, input_size)
-        )
-        self.experts_w2 = nn.Parameter(
-            torch.randn(input_size, num_experts * expert_size)
-        )
+        self.experts_w1 = nn.Parameter(torch.randn(num_experts * expert_size, input_size))
+        self.experts_w2 = nn.Parameter(torch.randn(input_size, num_experts * expert_size))
         self.router = nn.Parameter(torch.randn(num_experts, input_size))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Simple forward that uses all parameters
-        router_logits = x @ self.router.T  # [B, num_experts]
-        router_weights = torch.softmax(router_logits, dim=-1)
+        # router_logits = x @ self.router.T  # [B, num_experts]
+        # router_weights = torch.softmax(router_logits, dim=-1)
 
         # Simulate expert computation
         h = x @ self.experts_w1.T  # [B, num_experts * expert_size]
@@ -87,17 +83,13 @@ class TestPartialFreezeClosureBug:
         num_experts_to_train = 1
         expert_size = 8
 
-        model = SimpleExpertModel(
-            num_experts=num_experts, expert_size=expert_size, input_size=16
-        )
+        model = SimpleExpertModel(num_experts=num_experts, expert_size=expert_size, input_size=16)
 
         # Store masks and hooks using the FIXED pattern (mask=mask captures by value)
         masks = {}
         for name, param in model.named_parameters():
             if "experts" in name:
-                mask = create_partial_freeze_mask(
-                    param, num_experts, num_experts_to_train
-                )
+                mask = create_partial_freeze_mask(param, num_experts, num_experts_to_train)
                 masks[name] = mask
                 # This is the FIXED pattern - capture mask by value
                 param.register_hook(lambda grad, m=mask: grad * m)
@@ -120,7 +112,7 @@ class TestPartialFreezeClosureBug:
             num_expert_params = grad.shape[0] // num_experts
 
             frozen_grad = grad[: num_expert_params * num_frozen]
-            trainable_grad = grad[num_expert_params * num_frozen :]
+            # trainable_grad = grad[num_expert_params * num_frozen :]
 
             # With the fix, frozen params should have zero gradients
             assert torch.allclose(
@@ -136,9 +128,7 @@ class TestPartialFreezeClosureBug:
         num_experts_to_train = 1
         expert_size = 8
 
-        model = SimpleExpertModel(
-            num_experts=num_experts, expert_size=expert_size, input_size=16
-        )
+        model = SimpleExpertModel(num_experts=num_experts, expert_size=expert_size, input_size=16)
 
         # Simulate the BUGGY pattern - mask captured by reference
         # We'll manually track what the bug would do
@@ -147,9 +137,7 @@ class TestPartialFreezeClosureBug:
 
         for name, param in model.named_parameters():
             if "experts" in name or "router" in name:
-                mask = create_partial_freeze_mask(
-                    param, num_experts, num_experts_to_train
-                )
+                mask = create_partial_freeze_mask(param, num_experts, num_experts_to_train)
                 # Capture the mask reference at registration time
                 hook_masks.append(mask)
 
@@ -170,17 +158,13 @@ class TestPartialFreezeClosureBug:
         num_experts_to_train = 1
         expert_size = 8
 
-        model = SimpleExpertModel(
-            num_experts=num_experts, expert_size=expert_size, input_size=16
-        )
+        model = SimpleExpertModel(num_experts=num_experts, expert_size=expert_size, input_size=16)
 
         # Register hooks with the fixed pattern
         captured_masks = {}
         for name, param in model.named_parameters():
             if "experts" in name:
-                mask = create_partial_freeze_mask(
-                    param, num_experts, num_experts_to_train
-                )
+                mask = create_partial_freeze_mask(param, num_experts, num_experts_to_train)
                 captured_masks[name] = mask
 
                 # Use a wrapper to capture which mask each hook uses
@@ -205,7 +189,7 @@ class TestPartialFreezeClosureBug:
                 continue
 
             grad = param.grad
-            expected_mask = captured_masks[name]
+            # expected_mask = captured_masks[name]
             num_frozen = num_experts - num_experts_to_train
             num_expert_params = grad.shape[0] // num_experts
 
@@ -224,18 +208,14 @@ class TestPartialFreezeClosureBug:
         num_experts_to_train = 1
         expert_size = 8
 
-        model = SimpleExpertModel(
-            num_experts=num_experts, expert_size=expert_size, input_size=16
-        )
+        model = SimpleExpertModel(num_experts=num_experts, expert_size=expert_size, input_size=16)
 
         # Store original weights
         original_weights = {}
         for name, param in model.named_parameters():
             if "experts" in name:
                 original_weights[name] = param.data.clone()
-                mask = create_partial_freeze_mask(
-                    param, num_experts, num_experts_to_train
-                )
+                mask = create_partial_freeze_mask(param, num_experts, num_experts_to_train)
                 # Fixed closure pattern
                 param.register_hook(lambda grad, m=mask: grad * m)
 
@@ -261,9 +241,9 @@ class TestPartialFreezeClosureBug:
             # Frozen weights should be unchanged
             frozen_original = original[: num_expert_params * num_frozen]
             frozen_updated = updated[: num_expert_params * num_frozen]
-            assert torch.allclose(frozen_original, frozen_updated), (
-                f"Frozen experts in {name} should not change after optimizer step"
-            )
+            assert torch.allclose(
+                frozen_original, frozen_updated
+            ), f"Frozen experts in {name} should not change after optimizer step"
 
 
 class TestPartialFreezeWithTransformerConfig:

@@ -1074,6 +1074,7 @@ def run_eval(args_dict: dict):
         if task_config["primary_metric"] == "bits_per_byte_corr":
             # If the metric requests BPB, only compute BPB (this requires overriding the default metric)
             from oe_eval.metrics.metric import MCAccuracy
+
             assert task_config[
                 "compute_gold_bpb"
             ], "Gold BPB must be enabled to compute BPB on generative tasks!"

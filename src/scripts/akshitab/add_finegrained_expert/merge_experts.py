@@ -7,7 +7,6 @@ import logging
 import os
 from typing import List, Optional
 
-import smart_open
 import torch
 
 from olmo_core.distributed.checkpoint import (
@@ -60,8 +59,9 @@ def merge_experts(
     expert_indices: List[List[int]],
     save_path: Optional[str] = None,
 ):
-    
-    assert len(merge_checkpoint_paths) == len(expert_indices), "Mismatch in checkpoint paths and expert indices"
+    assert len(merge_checkpoint_paths) == len(
+        expert_indices
+    ), "Mismatch in checkpoint paths and expert indices"
 
     # Load model config
     old_config_path = os.path.join(base_checkpoint_path, "config.json")
@@ -71,21 +71,25 @@ def merge_experts(
 
     old_model_config = TransformerConfig.from_dict(config["model"])
     backend = old_model_config.block.attention.backend
-    old_model_config.block.attention.backend = 'torch'
+    old_model_config.block.attention.backend = "torch"
     logger.info(f"Model config {old_model_config}")
 
     merge_model_config = old_model_config.copy()
     merge_models = []
     base_num_experts = old_model_config.block.feed_forward_moe.num_experts
     for idx, ckpt_path in enumerate(merge_checkpoint_paths):
-        merge_model_config.block.feed_forward_moe.num_experts = base_num_experts + len(expert_indices[idx])
+        merge_model_config.block.feed_forward_moe.num_experts = base_num_experts + len(
+            expert_indices[idx]
+        )
         merge_model = load_checkpoint(model_config=merge_model_config, checkpoint_path=ckpt_path)
         merge_models.append(merge_model)
         logger.info(f"Merge model loaded successfully from {ckpt_path}")
 
     new_config = old_model_config.copy()
     assert new_config.block.feed_forward_moe is not None, "Model is not MoE"
-    new_config.block.feed_forward_moe.num_experts = sum([len(indices) for indices in expert_indices])
+    new_config.block.feed_forward_moe.num_experts = sum(
+        [len(indices) for indices in expert_indices]
+    )
 
     new_model = new_config.build(init_device="cpu")
     new_model.init_weights()  # Initialized with random init
@@ -106,7 +110,9 @@ def merge_experts(
                 source_param = old_param.view(base_num_experts, -1)
                 _, source_columns = source_param.shape
 
-                target_param = new_param.view(new_config.block.feed_forward_moe.num_experts, source_columns).clone()
+                target_param = new_param.view(
+                    new_config.block.feed_forward_moe.num_experts, source_columns
+                ).clone()
 
                 current_expert = 0
                 for ckpt_path, indices in zip(merge_checkpoint_paths, expert_indices):
@@ -114,7 +120,9 @@ def merge_experts(
                     merge_num_experts = base_num_experts + len(indices)
                     merge_param = merge_model.state_dict()[name].view(merge_num_experts, -1)
                     for idx in indices:
-                        logger.info(f"Copying expert {idx} from {ckpt_path} to new model at position {current_expert}")
+                        logger.info(
+                            f"Copying expert {idx} from {ckpt_path} to new model at position {current_expert}"
+                        )
                         target_param[current_expert, :].copy_(merge_param[idx, :])
                         current_expert += 1
 
@@ -126,7 +134,9 @@ def merge_experts(
                 source_rows, source_columns = source_param.shape
 
                 target_param = new_param.view(
-                    new_config.block.feed_forward_moe.num_experts, source_rows // base_num_experts, source_columns
+                    new_config.block.feed_forward_moe.num_experts,
+                    source_rows // base_num_experts,
+                    source_columns,
                 ).clone()
 
                 current_expert = 0
@@ -137,7 +147,9 @@ def merge_experts(
                         merge_num_experts, source_rows // base_num_experts, source_columns
                     )
                     for idx in indices:
-                        logger.info(f"Copying expert {idx} from {ckpt_path} to new model at position {current_expert}")
+                        logger.info(
+                            f"Copying expert {idx} from {ckpt_path} to new model at position {current_expert}"
+                        )
                         target_param[current_expert, :, :].copy_(merge_param[idx, :, :])
                         current_expert += 1
 
@@ -190,7 +202,7 @@ if __name__ == "__main__":
     setup_logging()
     args = parse_args()
     print(args)
-    
+
     new_model = merge_experts(
         base_checkpoint_path=args.base_checkpoint_path,
         merge_checkpoint_paths=args.merge_checkpoint_paths,

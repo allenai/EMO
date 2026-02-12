@@ -90,11 +90,11 @@ CHEMBENCH_SUBFIELDS = [
 # Excluded: chemical_preference (0 gen), toxicity_and_safety (0 gen),
 #           technical_chemistry (2 gen), materials_science (4 gen)
 CHEMBENCH_GEN_SUBFIELDS = [
-    "analytical_chemistry",   # 50 gen
-    "general_chemistry",      # 47 gen
-    "inorganic_chemistry",    # 37 gen
-    "organic_chemistry",      # 35 gen
-    "physical_chemistry",     # 68 gen
+    "analytical_chemistry",  # 50 gen
+    "general_chemistry",  # 47 gen
+    "inorganic_chemistry",  # 37 gen
+    "organic_chemistry",  # 35 gen
+    "physical_chemistry",  # 68 gen
 ]
 
 # Question types based on preferred_score field

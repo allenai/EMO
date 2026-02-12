@@ -150,7 +150,7 @@ def add_experts(
 
     old_model_config = TransformerConfig.from_dict(config["model"])
     backend = old_model_config.block.attention.backend
-    old_model_config.block.attention.backend = 'torch'
+    old_model_config.block.attention.backend = "torch"
     logger.info(f"Model config {old_model_config}")
 
     # Load model weights

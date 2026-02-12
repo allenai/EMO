@@ -1,5 +1,3 @@
-from itertools import islice
-
 from oe_eval.tasks.oe_eval_tasks.naturalqs_open import NaturalQsOpen
 
 
@@ -12,8 +10,6 @@ class NaturalQS_Base(NaturalQsOpen):
     def training_docs(self):
         if self._training_docs is None:
             # Data is too large to fit in memory. We just sample from the first bit.
-            sample = islice(self.dataset["train"], 0, self.MAX_TRAINING_DOCS)
-
             # create a random shuffle and select first 1000 examples from sample TODO
             # select training docs excluding 1000 examples used for validation
             train_dataset = (

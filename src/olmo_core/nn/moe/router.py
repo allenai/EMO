@@ -595,7 +595,6 @@ class MoERouter(nn.Module):
                 # padding_mask: (batch_size, seq_len) -> index into dim 0,1
                 valid_expert_indices = expert_indices[padding_mask]  # (valid_tokens, top_k)
                 valid_scores = scores[padding_mask]  # (valid_tokens, num_experts)
-                valid_logits = logits[padding_mask]  # (valid_tokens, num_experts)
 
                 # (valid_tokens, num_experts)
                 batched_batch_size_per_expert = ops.batched_histc(
@@ -606,7 +605,6 @@ class MoERouter(nn.Module):
             else:
                 valid_expert_indices = expert_indices.view(-1, expert_indices.size(-1))
                 valid_scores = scores.view(-1, self.num_experts)
-                valid_logits = logits.view(-1, self.num_experts)
 
                 batch_size_per_expert = batch_size_per_expert_routing
 

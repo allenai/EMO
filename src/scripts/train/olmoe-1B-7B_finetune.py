@@ -18,22 +18,18 @@ from olmo_core.config import Config, DType
 from olmo_core.data import (
     NumpyDataLoaderConfig,
     NumpyDatasetConfig,
-    NumpyFSLDatasetConfig,
     NumpyPaddedFSLDatasetConfig,
     TokenizerConfig,
 )
-from olmo_core.data.mixes import DataMix
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_rank
 from olmo_core.nn.moe.masked_finetune_router import MoEMaskedFinetuneRouterConfig
 from olmo_core.nn.moe.pruning_router import (
-    PruningMoELinearRouter,
     PruningMoERouterConfig,
 )
 from olmo_core.nn.transformer import TransformerConfig
 from olmo_core.optim import (
     AdamWConfig,
-    CosWithWarmup,
     LinearWithWarmup,
     OptimGroupOverride,
 )
