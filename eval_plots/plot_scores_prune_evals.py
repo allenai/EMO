@@ -31,7 +31,8 @@ MODEL_SPECS = {
     "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118step30995-hf": "twolevelbatchlb-lr4e-3-lb1e-2",
     # "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_0118step30995-hf": "twolevelbatchlb-lr4e-4-lb1e-1",
     # "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_poolsched_0119step30995-hf": "twolevelbatchlb-lr4e-4-lb1e-1-poolsched",
-    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-2_0207step30995-hf": "twolevelbatchlbreducedp512-lr4e-3-lb1e-2"
+    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-2_0207step30995-hf": "twolevelbatchlbreducedp512-lr4e-3-lb1e-2",
+    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": "YAYAY twolevelbatchlbreducedp512-lr4e-3-lb1e-1",
 }
 AVAILABLE_MODELS = list(MODEL_SPECS)
 
