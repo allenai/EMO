@@ -12,7 +12,7 @@ gpus=8
 # calculate by taking nodes multiply by gpus multiply by 4 (since we have 4 as micro batch size)
 lb_global_batch_size=$((nodes * gpus * 4))
 
-num_shared_experts=2 # 2 out of 8 will be shared experts
+num_shared_experts=1 # 1 out of 8 will be shared experts
 
 runname="twolevelbatchlbreducedp${lb_global_batch_size}sharedexp${num_shared_experts}-${document_expert_pool}_1b14b_lr-${lr}_lb-${lb}_0211"
 
