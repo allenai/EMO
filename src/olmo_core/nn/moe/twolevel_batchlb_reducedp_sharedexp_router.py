@@ -73,6 +73,14 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
             torch.zeros(self.num_choose_experts, device=init_device)
         )
 
+    def reset_parameters(self):
+        super().reset_parameters()
+
+        # reset _batch_size_per_expert to be dimension num_choose_experts
+        self._batch_size_per_expert = hide_from_torch(
+            torch.zeros(self.num_choose_experts, device=self.device)
+        )
+
     def get_top_k(self, scores: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """ We override the get_top_k to use self.num_choose_experts instead of self.top_k, since we will always activate self.num_shared_experts"""
         expert_weights: torch.Tensor
