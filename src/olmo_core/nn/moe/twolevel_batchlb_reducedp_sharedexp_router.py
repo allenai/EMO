@@ -114,6 +114,8 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
         if self.cp_mesh is not None:
             raise NotImplementedError("Context parallelism is not supported.")
 
+        breakpoint()
+
         # shape: (batch_size, seq_len, d_model)
         x = self.jitter(x)
 
