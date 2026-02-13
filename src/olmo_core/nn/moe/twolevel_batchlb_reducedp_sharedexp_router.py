@@ -68,19 +68,6 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
         self.num_shared_experts = num_shared_experts
         self.num_choose_experts = self.top_k - self.num_shared_experts
 
-        # we set the initialization of self.batch_size_per_expert (used for logging) to equal the number of choose experts
-        self._batch_size_per_expert = hide_from_torch(
-            torch.zeros(self.num_choose_experts, device=init_device)
-        )
-
-    def reset_parameters(self):
-        super().reset_parameters()
-
-        # reset _batch_size_per_expert to be dimension num_choose_experts
-        self._batch_size_per_expert = hide_from_torch(
-            torch.zeros(self.num_choose_experts, device=self.device)
-        )
-
     def get_top_k(self, scores: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """ We override the get_top_k to use self.num_choose_experts instead of self.top_k, since we will always activate self.num_shared_experts"""
         expert_weights: torch.Tensor
@@ -126,8 +113,6 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
             raise NotImplementedError("Tensor parallelism is not supported.")
         if self.cp_mesh is not None:
             raise NotImplementedError("Context parallelism is not supported.")
-
-        breakpoint()
 
         # shape: (batch_size, seq_len, d_model)
         x = self.jitter(x)
@@ -297,6 +282,11 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
 
             breakpoint()
 
+            if self.batch_size_per_expert.shape[-1] != tot_batch_size_per_expert.shape[-1]:
+                # make sure that the shared expert positions are zero, since it means the parameter was reset
+                extra_counts = self.batch_size_per_experts[tot_batch_size_per_expert.shape[-1]:]
+                assert torch.all(extra_counts == 0), f"Expected extra counts to be zero, but got {extra_counts}"
+                self.batch_size_per_expert = self.batch_size_per_expert[:tot_batch_size_per_expert.shape[-1]]
             self.batch_size_per_expert += tot_batch_size_per_expert
             if self.bias_gamma is not None:
                 assert self.score_bias_batch_size_per_expert is not None
