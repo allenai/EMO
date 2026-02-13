@@ -8,7 +8,7 @@
 # Base: 130B Dolma pretrained checkpoint
 
 # Hyperparameters (easy to change for sweeps)
-dataset="chempile-paper"
+dataset="chempile_paper"
 warmup_fraction=0.1
 train_tokens_B=30  # in billions
 train_tokens_raw=$((train_tokens_B * 1000000000))
@@ -44,6 +44,7 @@ for lr in 5e-5 ; do
     --trainer.callbacks.downstream_evaluator.eval_interval=100 \
     --trainer.callbacks.lm_evaluator.eval_dataset.mix=$dataset \
     --dataset.mix=$dataset \
+    --eval-mix chempile_paper \
     --train_module.optim.lr=$lr \
     ${load_path:+--load_path=$load_path} 
     # --train_module.scheduler.warmup_fraction=$warmup_fraction \
