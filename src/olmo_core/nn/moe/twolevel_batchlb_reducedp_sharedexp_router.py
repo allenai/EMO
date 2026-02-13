@@ -284,7 +284,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
 
             if self.batch_size_per_expert.shape[-1] != tot_batch_size_per_expert.shape[-1]:
                 # make sure that the shared expert positions are zero, since it means the parameter was reset
-                extra_counts = self.batch_size_per_experts[tot_batch_size_per_expert.shape[-1]:]
+                extra_counts = self.batch_size_per_expert[tot_batch_size_per_expert.shape[-1]:]
                 assert torch.all(extra_counts == 0), f"Expected extra counts to be zero, but got {extra_counts}"
                 self.batch_size_per_expert = self.batch_size_per_expert[:tot_batch_size_per_expert.shape[-1]]
             self.batch_size_per_expert += tot_batch_size_per_expert
