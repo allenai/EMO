@@ -54,6 +54,10 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
     ):
         super().__init__(dtype=dtype, init_device=init_device, document_expert_pool=document_expert_pool, eos_token_id=eos_token_id, **kwargs)
 
+        self.weight.register_hook(lambda grad: print(
+            f"Shared expert grad norm: {grad.view(self.num_experts, self.d_model)[-self.num_shared_experts:].norm().item()}"
+        ))
+
         # the number of experts that each document can select their top-k experts from
         self.document_expert_pool = document_expert_pool
         # the eos token id
