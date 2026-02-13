@@ -54,10 +54,6 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
     ):
         super().__init__(dtype=dtype, init_device=init_device, document_expert_pool=document_expert_pool, eos_token_id=eos_token_id, **kwargs)
 
-        self.weight.register_hook(lambda grad: print(
-            f"Shared expert grad norm: {grad.view(self.num_experts, self.d_model)[-self.num_shared_experts:].norm().item()}"
-        ))
-
         # the number of experts that each document can select their top-k experts from
         self.document_expert_pool = document_expert_pool
         # the eos token id
@@ -284,8 +280,6 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
                     scaled_z_loss = self.z_loss_weight * z_loss
                     aux_loss = scaled_z_loss if aux_loss is None else aux_loss + scaled_z_loss
 
-            breakpoint()
-
             if self.batch_size_per_expert.shape[-1] != tot_batch_size_per_expert.shape[-1]:
                 # make sure that the shared expert positions are zero, since it means the parameter was reset
                 extra_counts = self.batch_size_per_expert[tot_batch_size_per_expert.shape[-1]:]
@@ -297,7 +291,6 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
                 self.score_bias_batch_size_per_expert += tot_batch_size_per_expert
 
         # in the end, we add on the shared experts to both expert_weights and expert_indices
-        breakpoint()
         if self.num_shared_experts > 0:
             # TODO: need to check this
             expert_weights = F.pad(expert_weights, (0, self.num_shared_experts), value=1.0) # we set the weights of the shared experts to 1 since they are always active

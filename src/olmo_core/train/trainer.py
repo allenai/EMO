@@ -1350,6 +1350,8 @@ class Trainer:
                 for callback in self._iter_callbacks():
                     callback.pre_optim_step()
 
+                breakpoint()
+
                 self.train_module.optim_step()
                 self.train_module.zero_grads()
 
