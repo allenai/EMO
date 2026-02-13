@@ -1310,7 +1310,7 @@ class Trainer:
             return  # for backwards compatibility
 
         log.info("Starting forward/backward dry-run batch...")
-        # self.train_module.train_batch(batch, dry_run=True)
+        self.train_module.train_batch(batch, dry_run=True)
         log.info("Dry-run complete")
 
     def _fit_epoch(self):
@@ -1349,8 +1349,6 @@ class Trainer:
 
                 for callback in self._iter_callbacks():
                     callback.pre_optim_step()
-
-                breakpoint()
 
                 self.train_module.optim_step()
                 self.train_module.zero_grads()
