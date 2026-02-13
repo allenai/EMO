@@ -68,6 +68,11 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
         self.num_shared_experts = num_shared_experts
         self.num_choose_experts = self.top_k - self.num_shared_experts
 
+        # we set the initialization of self.batch_size_per_expert (used for logging) to equal the number of choose experts
+        self._batch_size_per_expert = hide_from_torch(
+            torch.zeros(self.num_choose_experts, device=init_device)
+        )
+
     def get_top_k(self, scores: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """ We override the get_top_k to use self.num_choose_experts instead of self.top_k, since we will always activate self.num_shared_experts"""
         expert_weights: torch.Tensor
@@ -294,8 +299,11 @@ class MoETwoLevelBatchLBReduceDPSharedExpRouter(MoETwoLevelRouter):
         if self.num_shared_experts > 0:
             # TODO: need to check this
             expert_weights = F.pad(expert_weights, (0, self.num_shared_experts), value=1.0) # we set the weights of the shared experts to 1 since they are always active
-            expert_indices = F.pad(expert_indices, (0, self.num_shared_experts), value=self.num_experts - self.num_shared_experts) # we set the indices of the shared experts to the last num_shared_experts indices since we removed those from the logits earlier
-
+            # we set the indices of the shared experts to the last num_shared_experts indices since we removed those from the logits earlier
+            shared_expert_indices = torch.arange(self.num_experts - self.num_shared_experts, self.num_experts, device=expert_indices.device).view(1, 1, self.num_shared_experts).expand(expert_indices.size(0), expert_indices.size(1), self.num_shared_experts)
+            expert_indices = torch.cat([expert_indices, shared_expert_indices], dim=-1)
+            # we also set tot_batch_size_per_expert for the shared experts to be the batch size since they are always active
+            tot_batch_size_per_expert = F.pad(tot_batch_size_per_expert, (0, self.num_shared_experts), value=x.size(0) * x.size(1))
 
         return expert_weights, expert_indices, tot_batch_size_per_expert, aux_loss
 
