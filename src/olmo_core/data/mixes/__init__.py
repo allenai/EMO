@@ -59,6 +59,7 @@ class DataMix(DataMixBase):
     code_fim_python = "code_fim_python"
     code_fim_java = "code_fim_java"
     code_fim_cpp = "code_fim_cpp"
+    code_fim_by_lang = "code_fim_by_lang"
 
     @classmethod
     def _missing_(cls, value: object) -> "DataMix | None":
