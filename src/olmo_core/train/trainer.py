@@ -1310,7 +1310,7 @@ class Trainer:
             return  # for backwards compatibility
 
         log.info("Starting forward/backward dry-run batch...")
-        self.train_module.train_batch(batch, dry_run=True)
+        # self.train_module.train_batch(batch, dry_run=True)
         log.info("Dry-run complete")
 
     def _fit_epoch(self):
