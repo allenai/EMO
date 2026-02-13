@@ -129,14 +129,6 @@ def launch_logits(args_dict):
         args_dict["model"], device_map="auto", torch_dtype="auto"
     )
 
-    # The HF-converted model's load_balancing_loss_func has a bug with device_map="auto":
-    # it conflates the CUDA device index with expert-parallel rank, causing a tensor shape
-    # mismatch when the first MoE layer lands on a non-zero GPU. Since we only need the
-    # router logits (not the aux loss), we patch the loss function to a no-op.
-    model_module = importlib.import_module(type(model).__module__)
-    if hasattr(model_module, "load_balancing_loss_func"):
-        model_module.load_balancing_loss_func = lambda *args, **kwargs: 0
-
     # resolve task suites if needed
     args_dict["task"] = resolve_tasks(args_dict["task"])
 
