@@ -56,6 +56,10 @@ class DataMix(DataMixBase):
     chempile = "chempile"
     chempile_paper = "chempile_paper"
 
+    code_fim_python = "code_fim_python"
+    code_fim_java = "code_fim_java"
+    code_fim_cpp = "code_fim_cpp"
+
     @classmethod
     def _missing_(cls, value: object) -> "DataMix | None":
         """Handle alias lookups."""
