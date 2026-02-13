@@ -25,7 +25,7 @@ for lr in 5e-5 ; do
   python -m olmo_core.launch.beaker \
     --name $runname \
     --gpus 8 \
-    --nodes 2 \
+    --nodes 1 \
     --weka=oe-training-default \
     --is_private_repo \
     --priority urgent \
@@ -42,6 +42,7 @@ for lr in 5e-5 ; do
     --trainer.max_duration="{value: ${train_tokens_raw}, unit: tokens}" \
     --trainer.hard_stop="{value: ${train_tokens_raw}, unit: tokens}" \
     --trainer.callbacks.downstream_evaluator.eval_interval=100 \
+    --trainer.callbacks.lm_evaluator.eval_dataset.mix=$dataset \
     --dataset.mix=$dataset \
     --train_module.optim.lr=$lr \
     ${load_path:+--load_path=$load_path} 
