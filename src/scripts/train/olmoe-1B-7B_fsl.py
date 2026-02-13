@@ -457,7 +457,8 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         max_sequence_length=SEQUENCE_LENGTH,
         optim=AdamWConfig(
             lr=opts.lr,
-            weight_decay=0.1,
+            # weight_decay=0.1,
+            weight_decay=0.0,
             betas=(0.9, 0.95),
             group_overrides=[
                 OptimGroupOverride(params=["embeddings.weight"], opts=dict(weight_decay=0.0))
