@@ -37,6 +37,7 @@ from olmo_core.nn.moe.twolevel_pbatchlb_router import MoETwoLevelPBatchLBRouterC
 from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_reducedp_router import MoETwoLevelBatchLBReduceDPRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_router import MoETwoLevelBatchLBReduceDPSharedExpRouterConfig
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexppool_router import MoETwoLevelBatchLBReduceDPSharedExpPoolRouterConfig
 from olmo_core.nn.moe.twolevel_sampling_nolb_router import (
     MoETwoLevelSamplingNoLBRouterConfig,
 )
@@ -73,8 +74,8 @@ from olmo_core.utils import seed_all
 log = logging.getLogger(__name__)
 
 # HACK
-DATA_ROOT = "/weka/oe-training-default/ai2-llm"
-# DATA_ROOT = "/root/ryanwang"
+# DATA_ROOT = "/weka/oe-training-default/ai2-llm"
+DATA_ROOT = "/root/ryanwang"
 
 SEQUENCE_LENGTH = 4096
 # GLOBAL_BATCH_SIZE = 4 * SEQUENCE_LENGTH
@@ -294,6 +295,34 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
         # Replace router config
         model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBReduceDPSharedExpRouterConfig(**router_kwargs)
+    elif opts.model_type == "two-level_lb-batch_reduce-dp_sharedexppool":
+        log.info(
+            "Applying two-level with batch-leve load balancing (olmoe lb) routers that are reduced across dp ranks and have shared routers (that is a pool) to the model..."
+        )
+        if opts.document_expert_pool is None:
+            raise ValueError("document_expert_pool must be specified for two-level model type.")
+        if opts.num_shared_experts is None:
+            raise ValueError(
+                "num_shared_experts must be specified for two-level_lb-batch_reduce-dp_sharedexp model type."
+            )
+        if opts.num_shared_experts_pool is None:
+            raise ValueError(
+                "num_shared_experts_pool must be specified for two-level_lb-batch_reduce-dp_sharedexpchoice model type."
+            )
+        # Get existing router config parameters
+        router_kwargs = model_config.block.feed_forward_moe.router.as_dict(
+            exclude_none=True, recurse=False
+        )
+        router_kwargs.pop("name")
+        router_kwargs.update(
+            document_expert_pool=opts.document_expert_pool,
+            eos_token_id=tokenizer_config.eos_token_id,
+            num_shared_experts=opts.num_shared_experts,
+            num_shared_experts_pool=opts.num_shared_experts_pool,
+        )
+
+        # Replace router config
+        model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBReduceDPSharedExpPoolRouterConfig(**router_kwargs)
     elif opts.model_type == "two-level_p_lb-batch":
         log.info(
             "Applying two-level with batch-level load balancing using probabilities to the model..."
@@ -452,7 +481,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     train_module_config = TransformerTrainModuleConfig(
-        rank_microbatch_size=4
+        rank_microbatch_size=2
         * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         max_sequence_length=SEQUENCE_LENGTH,
         optim=AdamWConfig(
@@ -511,24 +540,24 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback("beaker", BeakerCallback())
         .with_callback("config_saver", ConfigSaverCallback())
         .with_callback("profiler", ProfilerCallback(enabled=False))
-        .with_callback(
-            "downstream_evaluator",
-            # https://github.com/allenai/OLMo-in-loop-evals/blob/main/src/olmo_eval/tasks.py#L1752
-            DownstreamEvaluatorCallbackConfig(
-                tasks=[
-                    "hellaswag",
-                    "arc_challenge",
-                    "piqa",
-                    "copa",
-                    "mmlu_stem",
-                    "mmlu_humanities",
-                    "mmlu_social_sciences",
-                    "mmlu_other",
-                ],
-                tokenizer=tokenizer_config,
-                eval_interval=250,
-            ),
-        )
+        # .with_callback(
+        #     "downstream_evaluator",
+        #     # https://github.com/allenai/OLMo-in-loop-evals/blob/main/src/olmo_eval/tasks.py#L1752
+        #     DownstreamEvaluatorCallbackConfig(
+        #         tasks=[
+        #             "hellaswag",
+        #             "arc_challenge",
+        #             "piqa",
+        #             "copa",
+        #             "mmlu_stem",
+        #             "mmlu_humanities",
+        #             "mmlu_social_sciences",
+        #             "mmlu_other",
+        #         ],
+        #         tokenizer=tokenizer_config,
+        #         eval_interval=250,
+        #     ),
+        # )
         .with_callback(
             "expert_pool_scheduler",
             ExpertPoolSchedulerCallback(**parse_poolsched(opts.poolsched)),
@@ -590,6 +619,11 @@ def parser_args():
         "--num_shared_experts",
         type=int,
         help="Number of shared experts that are always activated",
+    )
+    parser.add_argument(
+        "--num_shared_experts_pool",
+        type=int,
+        help="Number of shared experts to keep in the pool"
     )
     parser.add_argument(
         "--lr",
