@@ -220,7 +220,7 @@ class MoERouter(nn.Module):
         self._unique_experts_sum = 0.0
         self._unique_experts_sum_shared = 0.0
         self._reducedp_unique_experts_sum = 0.0
-        self.reducedp_unique_experts_sum_shared = 0.0
+        self._reducedp_unique_experts_sum_shared = 0.0
         self._num_batches_tracked = 0
 
         # add metrics to keep track of router expert entropy
@@ -452,7 +452,7 @@ class MoERouter(nn.Module):
             avg_unique_experts = self._unique_experts_sum / self._num_batches_tracked
             avg_unique_experts_shared = self._unique_experts_sum_shared / self._num_batches_tracked
             reducedp_avg_unique_experts = self._reducedp_unique_experts_sum / self._num_batches_tracked
-            reducedp_avg_unique_experts_shared = self.reducedp_unique_experts_sum_shared / self._num_batches_tracked
+            reducedp_avg_unique_experts_shared = self._reducedp_unique_experts_sum_shared / self._num_batches_tracked
             fraction_unique_experts = avg_unique_experts / self.num_experts
 
             # Convert to tensors for consistency with other metrics
