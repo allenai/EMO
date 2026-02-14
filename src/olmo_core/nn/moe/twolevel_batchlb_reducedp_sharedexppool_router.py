@@ -298,8 +298,6 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
                 avg_entropy = token_entropies.mean().item()
                 self._router_tokenlevel_expert_entropy += avg_entropy
 
-        breakpoint()
-
         # Maybe compute auxiliary losses and accumulate metrics.
         aux_loss: Optional[torch.Tensor] = None
         if self.training and torch.is_grad_enabled():
