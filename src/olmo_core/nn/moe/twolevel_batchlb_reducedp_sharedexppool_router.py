@@ -243,7 +243,6 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
         else:
             raise NotImplementedError(self.gating_function)
 
-        breakpoint()
         # shape: (batch_size, seq_len, self.num_choose_experts)
         expert_weights_standard_exp, expert_indices_standard_exp = self.get_top_k(scores_standard_exp)
         expert_weights_shared_exp, expert_indices_shared_exp = self.get_top_k_shared(scores_shared_exp, self.num_shared_experts)
@@ -261,30 +260,45 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
 
         with torch.no_grad():
             # Histogram the expert ids to identify the number of items/tokens routed to each expert.
-            # shape: (batch_size, seq_len, num_experts - num_shared_experts)
-            tot_batched_batch_size_per_expert = ops.batched_histc(expert_indices, self.num_experts - self.num_shared_experts)
-            # shape: (batch_size, num_experts - num_shared_experts)
-            tot_batched_batch_size_per_expert = tot_batched_batch_size_per_expert.sum(dim=1)
-            # shape: (num_experts - num_shared_experts,)
-            tot_batch_size_per_expert = tot_batched_batch_size_per_expert.sum(dim=0)
+
+            # for standard experts
+            # shape: (batch_size, seq_len, num_choose_experts_pool)
+            tot_batched_batch_size_per_expert_standard = ops.batched_histc(expert_indices_standard_exp, self.num_choose_experts_pool)
+            # shape: (batch_size, num_choose_experts_pool)
+            tot_batched_batch_size_per_expert_standard = tot_batched_batch_size_per_expert_standard.sum(dim=1)
+            # shape: (num_choose_experts_pool,)
+            tot_batch_size_per_expert_standard = tot_batched_batch_size_per_expert_standard.sum(dim=0)
+
+            # for shared experts
+            # shape: (batch_size, seq_len, num_shared_experts_pool)
+            tot_batched_batch_size_per_expert_shared = ops.batched_histc(expert_indices_shared_exp, self.num_shared_experts_pool)
+            # shape: (batch_size, num_shared_experts_pool)
+            tot_batched_batch_size_per_expert_shared = tot_batched_batch_size_per_expert_shared.sum(dim=1)
+            # shape: (num_shared_experts_pool,)
+            tot_batch_size_per_expert_shared = tot_batched_batch_size_per_expert_shared.sum(dim=0)
 
             if self.training:
-                valid_expert_indices = expert_indices.view(-1)
+                valid_expert_indices_standard_exp = expert_indices_standard_exp.view(-1)
+                valid_expert_indices_shared_exp = expert_indices_shared_exp.view(-1)
 
                 # Update unique experts metric.
-                unique_experts = torch.unique(valid_expert_indices)
-                num_unique_experts = unique_experts.numel() + self.num_shared_experts # we add the shared experts since they are always active
+                unique_experts_standard_exp = torch.unique(valid_expert_indices_standard_exp)
+                unique_experts_shared_exp = torch.unique(valid_expert_indices_shared_exp)
+                num_unique_experts = unique_experts_standard_exp.numel() + unique_experts_shared_exp.numel()
 
                 self._unique_experts_sum += num_unique_experts
+                self._unique_experts_sum_shared += unique_experts_shared_exp.numel() # also track how many unique experts are used
                 self._num_batches_tracked += 1
 
-                # Compute router distribution entropy metric
-                valid_scores = scores.view(-1, self.num_experts - self.num_shared_experts)
+                # Compute router distribution entropy metric (depricated here - only for standard experts)
+                valid_scores = scores_standard_exp.view(-1, self.num_choose_experts_pool)
                 # get entropy per token
                 token_entropies = -torch.sum(valid_scores * torch.log(valid_scores + 1e-10), dim=-1)
                 # average entropy over valid tokens
                 avg_entropy = token_entropies.mean().item()
                 self._router_tokenlevel_expert_entropy += avg_entropy
+
+        breakpoint()
 
         # Maybe compute auxiliary losses and accumulate metrics.
         aux_loss: Optional[torch.Tensor] = None

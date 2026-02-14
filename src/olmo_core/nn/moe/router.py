@@ -217,6 +217,7 @@ class MoERouter(nn.Module):
 
         # add metrics to keep track of unique experts per batch
         self._unique_experts_sum = 0.0
+        self._unique_experts_sum_shared = 0.0
         self._reducedp_unique_experts_sum = 0.0
         self._num_batches_tracked = 0
 
@@ -421,6 +422,7 @@ class MoERouter(nn.Module):
         # Unique experts used per batch
         if self._num_batches_tracked > 0:
             avg_unique_experts = self._unique_experts_sum / self._num_batches_tracked
+            avg_unique_experts = self._unique_experts_sum_shared / self._num_batches_tracked
             reducedp_avg_unique_experts = self._reducedp_unique_experts_sum / self._num_batches_tracked
             fraction_unique_experts = avg_unique_experts / self.num_experts
 
@@ -520,6 +522,7 @@ class MoERouter(nn.Module):
             z_loss.zero_()
 
         self._unique_experts_sum = 0.0
+        self._unique_experts_sum_shared = 0.0
         self._reducedp_unique_experts_sum = 0.0
         self._num_batches_tracked = 0
 
