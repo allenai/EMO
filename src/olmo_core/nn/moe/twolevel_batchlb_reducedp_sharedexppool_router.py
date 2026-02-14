@@ -246,7 +246,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
         breakpoint()
         # shape: (batch_size, seq_len, self.num_choose_experts)
         expert_weights_standard_exp, expert_indices_standard_exp = self.get_top_k(scores_standard_exp)
-        expert_weights_shared_exp, expert_indices_shared_exp = self.get_top_k_shared(scores_shared_exp)
+        expert_weights_shared_exp, expert_indices_shared_exp = self.get_top_k_shared(scores_shared_exp, self.num_shared_experts)
 
         if self.normalize_expert_weights is not None:
             raise NotImplementedError("Expert weight normalization is not supported in MoETwoLevelBatchLBReduceDPSharedExpRouter since it is not clear how to do it with the shared experts (do we normalize over the shared and standard experts together, or separately?)")
