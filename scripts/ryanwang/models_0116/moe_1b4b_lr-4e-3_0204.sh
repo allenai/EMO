@@ -1,7 +1,7 @@
 # PARENT: "moe_1b4b_32experts_1224.sh"
 # DESCRIPTION:
 #     - Same as parent except increased learning rate
-# STATUS: USED
+# STATUS: nan lossed
 ##############################################################
 lr=4e-3
 runname="moe_1b4b_lr-${lr}_0204"
