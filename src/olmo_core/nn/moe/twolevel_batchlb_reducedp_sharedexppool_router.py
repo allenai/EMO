@@ -363,6 +363,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
                 if self.z_loss_weight is not None:
                     assert self.z_loss is not None
 
+                    # TODO: if there are problems, likely because z_loss_shared and z_loss_standard are weighted differently
                     # we create one z_loss per standard and expert pool
                     z_loss_standard = router_z_loss(
                         expert_logits=logits_standard_exp,
@@ -377,15 +378,13 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
                         cp_mesh=self.cp_mesh,
                     )
                     self.z_loss += z_loss_standard.detach() + z_loss_shared.detach()
+                    self.z_loss_shared += z_loss_shared.detach()
 
                     scaled_z_loss = self.z_loss_weight * (z_loss_standard + z_loss_shared)
                     aux_loss = scaled_z_loss if aux_loss is None else aux_loss + scaled_z_loss
 
-            if self.batch_size_per_expert.shape[-1] != tot_batch_size_per_expert.shape[-1]:
-                # make sure that the shared expert positions are zero, since it means the parameter was reset
-                extra_counts = self.batch_size_per_expert[tot_batch_size_per_expert.shape[-1]:]
-                assert torch.all(extra_counts == 0), f"Expected extra counts to be zero, but got {extra_counts}"
-                self.batch_size_per_expert = self.batch_size_per_expert[:tot_batch_size_per_expert.shape[-1]]
+            # merge the shared and standard experts
+            tot_batch_size_per_expert = torch.cat([tot_batch_size_per_expert_standard, tot_batch_size_per_expert_shared], dim=0)
             self.batch_size_per_expert += tot_batch_size_per_expert
             if self.bias_gamma is not None:
                 assert self.score_bias_batch_size_per_expert is not None
@@ -393,13 +392,8 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
 
         # in the end, we add on the shared experts to both expert_weights and expert_indices
         if self.num_shared_experts > 0:
-            # TODO: need to check this
-            expert_weights = F.pad(expert_weights, (0, self.num_shared_experts), value=1.0) # we set the weights of the shared experts to 1 since they are always active
-            # we set the indices of the shared experts to the last num_shared_experts indices since we removed those from the logits earlier
-            shared_expert_indices = torch.arange(self.num_experts - self.num_shared_experts, self.num_experts, device=expert_indices.device).view(1, 1, self.num_shared_experts).expand(expert_indices.size(0), expert_indices.size(1), self.num_shared_experts)
-            expert_indices = torch.cat([expert_indices, shared_expert_indices], dim=-1)
-            # we also set tot_batch_size_per_expert for the shared experts to be the batch size since they are always active
-            tot_batch_size_per_expert = F.pad(tot_batch_size_per_expert, (0, self.num_shared_experts), value=x.size(0) * x.size(1))
+            expert_weights = torch.cat([expert_weights_standard_exp, expert_weights_shared_exp], dim=-1)
+            expert_indices = torch.cat([expert_indices_standard_exp, expert_indices_shared_exp + self.num_choose_experts_pool], dim=-1) # we need to shift the indices of the shared experts since they come after the standard experts in the original logits
 
         return expert_weights, expert_indices, tot_batch_size_per_expert, aux_loss
 
