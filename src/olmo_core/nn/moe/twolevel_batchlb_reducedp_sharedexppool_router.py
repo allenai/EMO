@@ -310,50 +310,75 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
 
                     # Make sure scores are normalized, otherwise load balancing loss doesn't work well.
                     if self.gating_function == MoERouterGatingFunction.sigmoid:
+                        raise NotImplementedError("Sigmoid gating function is not supported in MoETwoLevelBatchLBReduceDPSharedExpRouter, so we don't implement load balancing loss for sigmoid gating function")
                         scores = scores / scores.sum(dim=-1, keepdim=True)
 
                     # we now do reduction on the tot_batch_size_per_expert to get a dp-global lb loss (still not full global sinze we don't do across gradient accumulation steps)
-                    dp_global_tot_batch_size_per_expert = tot_batch_size_per_expert.clone() # we clone to not interfere with logging or other routing stuff
+                    dp_global_tot_batch_size_per_expert_standard = tot_batch_size_per_expert_standard.clone() # we clone to not interfere with logging or other routing stuff
+                    dp_global_tot_batch_size_per_expert_shared = tot_batch_size_per_expert_shared.clone()
                     dp_global_loss_div_factor = loss_div_factor.clone()
 
                     if is_distributed():
-                        dist.all_reduce(dp_global_tot_batch_size_per_expert, op=dist.ReduceOp.SUM)
+                        dist.all_reduce(dp_global_tot_batch_size_per_expert_standard, op=dist.ReduceOp.SUM)
+                        dist.all_reduce(dp_global_tot_batch_size_per_expert_shared, op=dist.ReduceOp.SUM)
                         dist.all_reduce(dp_global_loss_div_factor, op=dist.ReduceOp.SUM)
 
                     # collect all non-zero entries of the dp_global_tot_batch_size_per_expert
-                    self._reducedp_unique_experts_sum += (dp_global_tot_batch_size_per_expert > 0).sum().item() + self.num_shared_experts # we add the shared experts since they are always active
+                    concatenated_bspe = torch.cat([dp_global_tot_batch_size_per_expert_standard, dp_global_tot_batch_size_per_expert_shared], dim=0)
+                    self._reducedp_unique_experts_sum += (concatenated_bspe > 0).sum().item() # we add the shared experts since they are always active
+                    self._reducedp_unique_experts_sum_shared += (dp_global_tot_batch_size_per_expert_shared > 0).sum().item()
 
-                    lb_loss = load_balancing_loss(
-                        num_experts=self.num_experts - self.num_shared_experts, # we only calculate the load balancing loss over the non-shared experts
+                    lb_loss_standard = load_balancing_loss(
+                        num_experts=self.num_choose_experts_pool, # we only calculate the load balancing loss over the non-shared experts
                         top_k=self.num_choose_experts, # we only choose self.num_choose_experts
-                        expert_scores=scores,
-                        batch_size_per_expert=dp_global_tot_batch_size_per_expert,
-                        batched_batch_size_per_expert=tot_batched_batch_size_per_expert, # this is not used, so we don't bother reducing it
+                        expert_scores=scores_standard_exp,
+                        batch_size_per_expert=dp_global_tot_batch_size_per_expert_standard,
+                        batched_batch_size_per_expert=tot_batched_batch_size_per_expert_standard, # this is not used, so we don't bother reducing it
                         granularity=self.lb_loss_granularity,
                         loss_div_factor=dp_global_loss_div_factor,
                         tp_mesh=self.tp_mesh,
                         cp_mesh=self.cp_mesh,
                     )
 
-                    self.load_balancing_loss += lb_loss.detach()
+                    lb_loss_shared = load_balancing_loss(
+                        num_experts=self.num_shared_experts_pool,
+                        # we only calculate the load balancing loss over the non-shared experts
+                        top_k=self.num_shared_experts,  # we only choose self.num_choose_experts
+                        expert_scores=scores_shared_exp,
+                        batch_size_per_expert=dp_global_tot_batch_size_per_expert_shared,
+                        batched_batch_size_per_expert=tot_batched_batch_size_per_expert_shared,
+                        # this is not used, so we don't bother reducing it
+                        granularity=self.lb_loss_granularity,
+                        loss_div_factor=dp_global_loss_div_factor,
+                        tp_mesh=self.tp_mesh,
+                        cp_mesh=self.cp_mesh,
+                    )
 
-                    scaled_lb_loss = self.lb_loss_weight * lb_loss
+                    self.load_balancing_loss += lb_loss_standard.detach() + lb_loss_shared.detach()
+                    self.load_balancing_loss_shared += lb_loss_shared.detach()
+
+                    scaled_lb_loss = self.lb_loss_weight * (lb_loss_standard + lb_loss_shared)
                     aux_loss = scaled_lb_loss
 
                 if self.z_loss_weight is not None:
                     assert self.z_loss is not None
 
-                    # we don't care about shared expert z_loss since they are always set to 1 (thus logits not used)
-
-                    z_loss = router_z_loss(
-                        expert_logits=logits,
+                    # we create one z_loss per standard and expert pool
+                    z_loss_standard = router_z_loss(
+                        expert_logits=logits_standard_exp,
                         loss_div_factor=loss_div_factor,
                         tp_mesh=self.tp_mesh,
                         cp_mesh=self.cp_mesh,
                     )
-                    self.z_loss += z_loss.detach()
+                    z_loss_shared = router_z_loss(
+                        expert_logits=logits_shared_exp,
+                        loss_div_factor=loss_div_factor,
+                        tp_mesh=self.tp_mesh,
+                        cp_mesh=self.cp_mesh,
+                    )
+                    self.z_loss += z_loss_standard.detach() + z_loss_shared.detach()
 
-                    scaled_z_loss = self.z_loss_weight * z_loss
+                    scaled_z_loss = self.z_loss_weight * (z_loss_standard + z_loss_shared)
                     aux_loss = scaled_z_loss if aux_loss is None else aux_loss + scaled_z_loss
 
             if self.batch_size_per_expert.shape[-1] != tot_batch_size_per_expert.shape[-1]:
