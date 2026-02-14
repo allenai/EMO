@@ -101,6 +101,28 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
 
         return expert_weights, expert_indices
 
+    def get_top_k_shared(self, scores: torch.Tensor, k) -> Tuple[torch.Tensor, torch.Tensor]:
+        """ We write a function that takes in k (instead of hardcoding the k like before)"""
+        expert_weights: torch.Tensor
+        expert_indices: torch.Tensor
+        if self.bias_gamma is None:
+            if k == 1:
+                expert_weights, expert_indices = scores.max(dim=-1, keepdim=True)
+            else:
+                expert_weights, expert_indices = torch.topk(scores, k, dim=-1)
+        else:
+            assert self.score_bias is not None
+            with torch.no_grad():
+                _, expert_indices = torch.topk(
+                    scores + self.score_bias.unsqueeze(0), k, dim=-1  # type: ignore
+                )
+            expert_weights = scores.gather(-1, expert_indices)
+
+        if self.uniform_expert_assignment:
+            raise NotImplementedError("Uniform expert assignment is not supported in MoETwoLevelBatchLBReduceDPSharedExpRouter. (actually very easy - just copy paste the implementation, but too lazy right now since we don't use this)")
+
+        return expert_weights, expert_indices
+
     def forward(
         self,
         x: torch.Tensor,
@@ -131,12 +153,10 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
         # shape: (batch_size, seq_len, num_experts)
         logits = self.get_expert_logits(x).float()
 
-        breakpoint()
-
         # we split the router up into shared experts and standard experts
         logits_standard_exp = logits[:, :, :self.num_choose_experts_pool]
         logits_mask_standard_exp = torch.zeros_like(logits_standard_exp, dtype=torch.bool, device=logits.device)
-        logits_shared_exp = logits[:, :, self.num_shared_experts_pool:]
+        logits_shared_exp = logits[:, :, self.num_choose_experts_pool:]
         logits_mask_shared_exp = torch.zeros_like(logits_shared_exp, dtype=torch.bool, device=logits.device)
 
         assert logits_shared_exp.shape[-1] == self.num_shared_experts_pool, f"Expected the number of shared experts in the logits to be {self.num_shared_experts_pool}, but got {logits_shared_exp.shape[-1]}"
@@ -214,16 +234,22 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
 
         # shape: (batch_size, seq_len, num_experts)
         if self.gating_function == MoERouterGatingFunction.softmax:
-            scores = logits.softmax(dim=-1)
+            # scores = logits.softmax(dim=-1)
+            scores_standard_exp = logits_standard_exp.softmax(dim=-1)
+            scores_shared_exp = logits_shared_exp.softmax(dim=-1)
         elif self.gating_function == MoERouterGatingFunction.sigmoid:
+            raise NotImplementedError("Sigmoid gating function is not supported in MoETwoLevelBatchLBReduceDPSharedExpRouter")
             scores = F.sigmoid(logits) + 1e-7
         else:
             raise NotImplementedError(self.gating_function)
 
+        breakpoint()
         # shape: (batch_size, seq_len, self.num_choose_experts)
-        expert_weights, expert_indices = self.get_top_k(scores)
+        expert_weights_standard_exp, expert_indices_standard_exp = self.get_top_k(scores_standard_exp)
+        expert_weights_shared_exp, expert_indices_shared_exp = self.get_top_k_shared(scores_shared_exp)
 
         if self.normalize_expert_weights is not None:
+            raise NotImplementedError("Expert weight normalization is not supported in MoETwoLevelBatchLBReduceDPSharedExpRouter since it is not clear how to do it with the shared experts (do we normalize over the shared and standard experts together, or separately?)")
             expert_weights = expert_weights.div(
                 torch.norm(
                     expert_weights,
