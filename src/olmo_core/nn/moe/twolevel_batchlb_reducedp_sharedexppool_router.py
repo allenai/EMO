@@ -194,7 +194,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
 
                 # get the entropy over experts per token (only for the standard experts)
                 token_entropies = -torch.sum(
-                    expert_probs_shared_exp * torch.log(expert_probs_shared_exp + 1e-10), dim=-1
+                    expert_probs_standard_exp * torch.log(expert_probs_standard_exp + 1e-10), dim=-1
                 )  # shape: (doc_len,)
                 # average entropy over the document
                 doc_entropy_sum += token_entropies.mean()

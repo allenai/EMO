@@ -13,8 +13,8 @@ gpus=8
 lb_global_batch_size=$((nodes * gpus * 4))
 
 num_shared_experts_pool=4
-num_shared_experts=1 # 1 out of 8 will be shared experts
-shared_exp_lb_loss=1 # coefficient for the lb loss for shared experts, in reality is 1/16 (divide by number of layers)
+num_shared_experts=2 # 2 out of 4 will be shared experts. NOTE: cannot set to 1 because softmax gradients won't backprop
+shared_exp_lb_loss=1e-1 # coefficient for the lb loss for shared experts, in reality is 1/16 (divide by number of layers)
 
 runname="twolevelbatchlbreducedp${lb_global_batch_size}sharedexp${num_shared_experts_pool}c${num_shared_experts}-${document_expert_pool}_1b14b_lr-${lr}_lb-${lb}_sharelb-${shared_exp_lb_loss}_0214"
 
