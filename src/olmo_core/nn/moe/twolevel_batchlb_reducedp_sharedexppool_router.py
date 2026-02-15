@@ -277,6 +277,9 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
             # shape: (num_shared_experts_pool,)
             tot_batch_size_per_expert_shared = tot_batched_batch_size_per_expert_shared.sum(dim=0)
 
+            # merge the two together for logging and returning (lb loss will not use this term)
+            tot_batch_size_per_expert = torch.cat([tot_batch_size_per_expert_standard, tot_batch_size_per_expert_shared], dim=0)
+
             if self.training:
                 valid_expert_indices_standard_exp = expert_indices_standard_exp.view(-1)
                 valid_expert_indices_shared_exp = expert_indices_shared_exp.view(-1)
@@ -300,7 +303,6 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
 
         # Maybe compute auxiliary losses and accumulate metrics.
         aux_loss: Optional[torch.Tensor] = None
-        tot_batch_size_per_expert = None
         if self.training and torch.is_grad_enabled():
             with torch.autocast(enabled=False, device_type=x.device.type):
                 # use the batch-level load balancing loss
@@ -383,7 +385,6 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
                     aux_loss = scaled_z_loss if aux_loss is None else aux_loss + scaled_z_loss
 
             # merge the shared and standard experts
-            tot_batch_size_per_expert = torch.cat([tot_batch_size_per_expert_standard, tot_batch_size_per_expert_shared], dim=0)
             self.batch_size_per_expert += tot_batch_size_per_expert
             if self.bias_gamma is not None:
                 assert self.score_bias_batch_size_per_expert is not None
