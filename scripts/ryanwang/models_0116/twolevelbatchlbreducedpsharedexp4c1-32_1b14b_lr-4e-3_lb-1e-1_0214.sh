@@ -14,8 +14,9 @@ lb_global_batch_size=$((nodes * gpus * 4))
 
 num_shared_experts_pool=4
 num_shared_experts=1 # 1 out of 8 will be shared experts
+shared_exp_lb_loss=1 # coefficient for the lb loss for shared experts, in reality is 1/16 (divide by number of layers)
 
-runname="twolevelbatchlbreducedp${lb_global_batch_size}sharedexp${num_shared_experts_pool}c${num_shared_experts}-${document_expert_pool}_1b14b_lr-${lr}_lb-${lb}_0214"
+runname="twolevelbatchlbreducedp${lb_global_batch_size}sharedexp${num_shared_experts_pool}c${num_shared_experts}-${document_expert_pool}_1b14b_lr-${lr}_lb-${lb}_sharelb-${shared_exp_lb_loss}_0214"
 
 
 #torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
@@ -70,15 +71,5 @@ python -m olmo_core.launch.beaker \
 		--model.block.name="moe" \
 		--model.block.attention.qk_norm=null \
 		--lr=${lr} \
-		--model.block.feed_forward_moe.lb_loss_weight=${lb}
-
-
-
-
-
-
-
-
-
-
-
+		--model.block.feed_forward_moe.lb_loss_weight=${lb} \
+		--shared_exp_lb_loss=${shared_exp_lb_loss}

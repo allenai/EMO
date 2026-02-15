@@ -448,11 +448,7 @@ class MoERouter(nn.Module):
                 ReduceType.mean,
             )
             out["shared load balancing loss"] = (
-                self.lb_loss_weight * self.load_balancing_loss_shared,
-                ReduceType.mean,
-            )
-            out["shared load balancing loss unscaled"] = (
-                self.load_balancing_loss_shared.clone(),
+                self.load_balancing_loss_shared, # we don't scale the shared loss since it's already scaled
                 ReduceType.mean,
             )
 

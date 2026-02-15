@@ -309,6 +309,14 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             raise ValueError(
                 "num_shared_experts_pool must be specified for two-level_lb-batch_reduce-dp_sharedexpchoice model type."
             )
+        if opts.shared_exp_lb_loss is None:
+            raise ValueError(
+                "shared_exp_lb_loss must be specified for two-level_lb-batch_reduce-dp_sharedexpchoice model type."
+            )
+
+        # we first normalize shared_exp_lb_loss with number of layers to maintain consistency with "scale_loss_by_num_layers" in MoEBase
+        shared_exp_lb_loss = opts.shared_exp_lb_loss / model_config.n_layers
+
         # Get existing router config parameters
         router_kwargs = model_config.block.feed_forward_moe.router.as_dict(
             exclude_none=True, recurse=False
@@ -319,6 +327,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             eos_token_id=tokenizer_config.eos_token_id,
             num_shared_experts=opts.num_shared_experts,
             num_shared_experts_pool=opts.num_shared_experts_pool,
+            shared_exp_lb_loss=shared_exp_lb_loss,
         )
 
         # Replace router config
@@ -672,6 +681,11 @@ def parser_args():
         "--min_document_expert_pool",
         type=int,
         help="Minimum number of experts for a specific document to choose top-p from",
+    )
+    parser.add_argument(
+        "--shared_exp_lb_loss",
+        type=float,
+        help="the weight for the load balancing loss for the shared experts in the two-level batchlb reduced dp shared exp router",
     )
     opts, overrides = parser.parse_known_args()
     return opts, overrides

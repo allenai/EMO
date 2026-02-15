@@ -51,6 +51,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
             eos_token_id: int,
             num_shared_experts: int,
             num_shared_experts_pool: int,
+            shared_exp_lb_loss: Optional[float] = None,
             **kwargs,
     ):
         super().__init__(dtype=dtype, init_device=init_device, document_expert_pool=document_expert_pool, eos_token_id=eos_token_id, **kwargs)
@@ -78,6 +79,8 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
 
         if self.num_choose_experts_pool < self.document_expert_pool:
             raise OLMoConfigurationError(f"num_choose_experts_pool ({self.num_choose_experts_pool}) must be greater than or equal to document_expert_pool ({self.document_expert_pool})")
+
+        self.shared_exp_lb_loss_weight = shared_exp_lb_loss
 
     def get_top_k(self, scores: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """ We override the get_top_k to use self.num_choose_experts instead of self.top_k, since we will always activate self.num_shared_experts"""
@@ -355,10 +358,10 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
                         cp_mesh=self.cp_mesh,
                     )
 
-                    self.load_balancing_loss += lb_loss_standard.detach() + lb_loss_shared.detach()
-                    self.load_balancing_loss_shared += lb_loss_shared.detach()
+                    self.load_balancing_loss += lb_loss_standard.detach() # this is scaled during logging
+                    self.load_balancing_loss_shared += self.shared_exp_lb_loss_weight * lb_loss_shared.detach() # this is scaled now since I don't want to override compute_metrics
 
-                    scaled_lb_loss = self.lb_loss_weight * (lb_loss_standard + lb_loss_shared)
+                    scaled_lb_loss = self.lb_loss_weight * lb_loss_standard + self.shared_exp_lb_loss_weight * lb_loss_shared
                     aux_loss = scaled_lb_loss
 
                 if self.z_loss_weight is not None:
@@ -407,6 +410,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
 class MoETwoLevelBatchLBReduceDPSharedExpPoolRouterConfig(MoETwoLevelRouterConfig):
     num_shared_experts: int = 2 # the number of experts to share
     num_shared_experts_pool: int = 2
+    shared_exp_lb_loss: Optional[float] = None
 
     # just update the build to call the correct new class
     def build(
