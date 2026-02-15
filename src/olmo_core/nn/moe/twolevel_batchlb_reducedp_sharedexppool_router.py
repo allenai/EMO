@@ -300,6 +300,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
 
         # Maybe compute auxiliary losses and accumulate metrics.
         aux_loss: Optional[torch.Tensor] = None
+        tot_batch_size_per_expert = None
         if self.training and torch.is_grad_enabled():
             with torch.autocast(enabled=False, device_type=x.device.type):
                 # use the batch-level load balancing loss
