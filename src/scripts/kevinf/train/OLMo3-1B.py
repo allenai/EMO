@@ -246,14 +246,16 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             "lm_evaluator",
             LMEvaluatorCallbackConfig(
                 eval_dataset=NumpyPaddedFSLDatasetConfig.from_data_mix(
-                    DataMix(opts.eval_mix) if opts.eval_mix else DataMix.OLMoE_mix_0824,
+                    DataMix.croissant,
                     tokenizer=tokenizer_config,
                     mix_base_dir=DATA_ROOT,
                     sequence_length=SEQUENCE_LENGTH,
                     work_dir=work_dir,
                 ),
-                eval_interval=250,
-                enabled=bool(opts.eval_mix),
+                eval_interval=100,
+                eval_duration=Duration.steps(200),
+                eval_on_startup=True,
+                log_interval=1,
             ),
         )
     )
@@ -296,12 +298,6 @@ def parse_args():
         "--dry-run",
         action="store_true",
         help="""Print the config and exit.""",
-    )
-    parser.add_argument(
-        "--eval-mix",
-        type=str,
-        help="""DataMix name for the LM evaluator PPL callback (e.g., chempile, croissant, pmc).
-        Defaults to the training dataset mix if not provided.""",
     )
     opts, overrides = parser.parse_known_args()
     return opts, overrides
