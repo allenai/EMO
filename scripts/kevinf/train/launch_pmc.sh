@@ -16,7 +16,7 @@ load_path="/weka/oe-training-default/kevinf/checkpoints-new/new-kevinf-olmo3-1b-
 
 for lr in 5e-5; do
   # Construct runname from hyperparams
-  runname="test-lmevaluator-olmo3-1b-${dataset}-${train_tokens_B}B-lr${lr}-warmup${warmup_fraction}"
+  runname="olmo3-1b-${dataset}-${train_tokens_B}B-lr${lr}-warmup${warmup_fraction}"
   if [ -n "$load_path" ]; then
     runname="${runname}-ctd"
   fi
@@ -48,12 +48,12 @@ for lr in 5e-5; do
     --trainer.callbacks.lm_evaluator.eval_dataset.mix_base_dir=s3://ai2-llm \
     --trainer.callbacks.lm_evaluator.enabled=true \
     --trainer.callbacks.lm_evaluator.eval_interval=100 \
-    --trainer.callbacks.lm_evaluator.eval_duration="{value: 50, unit: steps}" \
+    --trainer.callbacks.lm_evaluator.eval_duration="{value: 200, unit: steps}" \
     --trainer.callbacks.lm_evaluator.eval_on_startup=true \
     --trainer.callbacks.lm_evaluator.log_interval=1 \
     --train_module.optim.lr=$lr \
-    ${load_path:+--load_path=$load_path} \
     --train_module.scheduler.warmup_fraction=$warmup_fraction \
+    ${load_path:+--load_path=$load_path} \
 
   sleep 5  # Brief pause between submissions
 done
