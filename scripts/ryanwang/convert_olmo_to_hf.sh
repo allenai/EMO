@@ -315,8 +315,9 @@ MODELS=(
 #    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118/step30995"
 #    "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_0118/step30995"
 #    "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_poolsched_0119/step30995"
-    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995"
+#    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995"
 #    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-2_0207/step30995"
+    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30900"
 
 
 #    "moe_1b14b_128experts_lb-1e-1_1217/step30995"

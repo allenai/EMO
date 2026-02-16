@@ -248,6 +248,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
 
         # shape: (batch_size, seq_len, self.num_choose_experts)
         expert_weights_standard_exp, expert_indices_standard_exp = self.get_top_k(scores_standard_exp)
+        # we implement the following using get_top_k, but in reality we just want to get the weighting (the remaining shared experts that has not been masked out will all be used)
         expert_weights_shared_exp, expert_indices_shared_exp = self.get_top_k_shared(scores_shared_exp, self.num_shared_experts)
 
         if self.normalize_expert_weights is not None:
