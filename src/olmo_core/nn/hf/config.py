@@ -33,6 +33,7 @@ except ImportError:
 
 def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
     blocks = list(model.blocks.values())
+    breakpoint()
     for block in blocks:
         if not isinstance(block, MoEReorderedNormTransformerBlock):
             if (

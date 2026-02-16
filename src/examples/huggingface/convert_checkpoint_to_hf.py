@@ -64,7 +64,6 @@ def convert_checkpoint_to_hf(
         transformer_config_dict: Dictionary form of OLMo core model config
         tokenizer_config_dict: Dictionary form of OLMo core tokenizer config
     """
-    breakpoint()
     if max_sequence_length is not None and max_sequence_length <= 0:
         raise ValueError(f"Invalid sequence length: {max_sequence_length}")
 
