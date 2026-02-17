@@ -27,12 +27,16 @@ MODEL_SPECS = {
     # "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121step30995-hf": "twolevelbatchlb",
     "dense_1b_olmoe-mix_prenorm_noqknorm_1123step30995-hf": "dense",
     "moe_1b4b_32experts_1224step30995-hf": "moe_1b4b",
-    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": "twolevelbatchlb-lr4e-3-lb1e-1",
-    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118step30995-hf": "twolevelbatchlb-lr4e-3-lb1e-2",
+    # "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": "twolevelbatchlb-lr4e-3-lb1e-1",
+    # "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118step30995-hf": "twolevelbatchlb-lr4e-3-lb1e-2",
     # "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_0118step30995-hf": "twolevelbatchlb-lr4e-4-lb1e-1",
     # "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_poolsched_0119step30995-hf": "twolevelbatchlb-lr4e-4-lb1e-1-poolsched",
     "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-2_0207step30995-hf": "twolevelbatchlbreducedp512-lr4e-3-lb1e-2",
-    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": "YAYAY twolevelbatchlbreducedp512-lr4e-3-lb1e-1",
+    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": "twolevelbatchlbreducedp512-lr4e-3-lb1e-1",
+    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1",
+    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213step30995-hf": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-2",
+    "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-1_sharelb-1e-1_0214step30995-hf": "twolevelbatchlbreducedp512sharedexp4c2-lr4e-3-lb1e-1",
+
 }
 AVAILABLE_MODELS = list(MODEL_SPECS)
 
@@ -189,7 +193,17 @@ TASK_SPECS = {
         "primary_score",
     ],
 
+    # Virtual aggregated task: macro average across all MMLU categories.
+    "mmlu_avg": [
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+
 }
+# MMLU sub-tasks whose metrics are averaged for the "mmlu_avg" virtual task.
+MMLU_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_") and t != "mmlu_avg"]
+
 AVAILABLE_TASK_RUNS = list(TASK_SPECS)
 
 # Select which models/tasks to plot.
@@ -379,6 +393,49 @@ def collect_records(
     return df.sort_values(["task_run", "model", "checkpoint"]), task_labels
 
 
+def collect_mmlu_avg_records(
+    prune_evals_root: Path,
+    model_names: Sequence[str],
+    metric_key: str,
+) -> pd.DataFrame:
+    """Collect records for all MMLU sub-tasks and return their macro average.
+
+    Averaging is done by **ordinal checkpoint index** (1st, 2nd, 3rd, ...)
+    rather than by absolute step number, so sub-tasks with different step
+    values are still aligned correctly.  The resulting ``checkpoint`` column
+    contains the 1-based ordinal index.
+
+    Returns a DataFrame with the same schema as ``collect_records`` but with
+    ``task_run`` set to ``"mmlu_avg"``.
+    """
+    try:
+        df, _ = collect_records(
+            prune_evals_root, model_names, MMLU_SUBTASKS, metric_key
+        )
+    except RuntimeError:
+        return pd.DataFrame()
+
+    # Keep only MMLU sub-task rows (safety filter).
+    df = df[df["task_run"].isin(MMLU_SUBTASKS)]
+    if df.empty:
+        return df
+
+    # Assign a 1-based ordinal index to each checkpoint within each
+    # (model, task_run) group, sorted by the original step number.
+    df = df.sort_values(["model", "task_run", "checkpoint"])
+    df["ckpt_idx"] = df.groupby(["model", "task_run"]).cumcount() + 1
+
+    # Macro average: mean over sub-tasks for each (model, ordinal index).
+    avg_df = (
+        df.groupby(["model", "model_label", "ckpt_idx"], as_index=False)
+        .agg(metric_value=("metric_value", "mean"))
+    )
+    avg_df = avg_df.rename(columns={"ckpt_idx": "checkpoint"})
+    avg_df["task_run"] = "mmlu_avg"
+    avg_df["task_label"] = "MMLU (macro avg)"
+    return avg_df
+
+
 def plot_task(
     df: pd.DataFrame,
     task_run: str,
@@ -451,8 +508,10 @@ def main() -> None:
     selected_models = parse_csv_arg(args.models) or list(SELECTED_MODELS)
     selected_tasks = parse_csv_arg(args.tasks) or list(SELECTED_TASK_RUNS)
 
+    # Virtual tasks (e.g. mmlu_avg) don't exist on disk; always keep them.
+    VIRTUAL_TASKS = {"mmlu_avg"}
     model_set = [m for m in selected_models if m in available_models]
-    task_set = [t for t in selected_tasks if t in available_tasks]
+    task_set = [t for t in selected_tasks if t in available_tasks or t in VIRTUAL_TASKS]
 
     if not model_set:
         raise RuntimeError("No valid models selected.")
@@ -474,28 +533,57 @@ def main() -> None:
 
     base_output_dir = (args.output_dir / args.output_subdir).resolve()
     for metric_key, tasks_for_metric in metric_to_tasks.items():
-        df, task_labels = collect_records(
-            args.prune_evals_root,
-            model_set,
-            tasks_for_metric,
-            metric_key,
-        )
-        metric_output_dir = base_output_dir / sanitize_filename(metric_key)
-        for task_run in tasks_for_metric:
-            label = task_labels.get(task_run, task_run)
-            output_file = (
-                metric_output_dir
-                / f"{sanitize_filename(task_run)}_{sanitize_filename(metric_key)}.png"
-            )
-            plot_task(
-                df,
-                task_run,
-                label,
-                output_file,
-                args.style,
-                args.show,
+        # Separate the virtual mmlu_avg task from regular on-disk tasks.
+        regular_tasks = [t for t in tasks_for_metric if t != "mmlu_avg"]
+        has_mmlu_avg = "mmlu_avg" in tasks_for_metric
+
+        # --- regular per-task plots ---
+        if regular_tasks:
+            df, task_labels = collect_records(
+                args.prune_evals_root,
+                model_set,
+                regular_tasks,
                 metric_key,
             )
+            metric_output_dir = base_output_dir / sanitize_filename(metric_key)
+            for task_run in regular_tasks:
+                label = task_labels.get(task_run, task_run)
+                output_file = (
+                    metric_output_dir
+                    / f"{sanitize_filename(task_run)}_{sanitize_filename(metric_key)}.png"
+                )
+                plot_task(
+                    df,
+                    task_run,
+                    label,
+                    output_file,
+                    args.style,
+                    args.show,
+                    metric_key,
+                )
+
+        # --- mmlu_avg (macro average across MMLU categories) ---
+        if has_mmlu_avg:
+            avg_df = collect_mmlu_avg_records(
+                args.prune_evals_root, model_set, metric_key
+            )
+            if avg_df.empty:
+                print(f"[WARN] No MMLU data for metric {metric_key!r}; skipping mmlu_avg.")
+            else:
+                metric_output_dir = base_output_dir / sanitize_filename(metric_key)
+                output_file = (
+                    metric_output_dir
+                    / f"mmlu_avg_{sanitize_filename(metric_key)}.png"
+                )
+                plot_task(
+                    avg_df,
+                    "mmlu_avg",
+                    "MMLU (macro avg)",
+                    output_file,
+                    args.style,
+                    args.show,
+                    metric_key,
+                )
 
 
 if __name__ == "__main__":
