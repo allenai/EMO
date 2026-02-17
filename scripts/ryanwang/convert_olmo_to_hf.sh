@@ -319,7 +319,12 @@ MODELS=(
 #    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-2_0207/step30995"
 
 #    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995"
-    "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-1_sharelb-1e-1_0214/step30995"
+#    "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-1_sharelb-1e-1_0214/step30995"
+    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0211/step30995"
+    "dense_1b_lr-4e-3_0213/step30995"
+    "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212/step30995"
+    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995"
+
 
 
 #    "moe_1b14b_128experts_lb-1e-1_1217/step30995"
