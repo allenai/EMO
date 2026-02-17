@@ -185,6 +185,7 @@ for MODEL in "${MODELS[@]}"; do
                 "
             echo "Launched evaluation for model: $model, task: $TASK"
             echo "----------------------------------------"
+            sleep 300 # brief pause to avoid overwhelming huggingface
             continue
         fi
 
