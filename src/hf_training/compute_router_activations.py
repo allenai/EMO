@@ -120,28 +120,62 @@ def compute_router_activations(
                 num_layers, batch_size_actual, seq_len, num_experts
             )
 
-            # Convert to probabilities
-            router_probabilities = F.softmax(router_logits_reshaped, dim=-1)
+            # we now take out the shared experts if num_shared_experts > 0
+            if model.config.num_shared_experts > 0:
+                router_logits_reshaped_standard = router_logits_reshaped[:, :, :, : num_experts - model.config.num_shared_experts]
+                router_logits_reshaped_shared = router_logits_reshaped[:, :, :, num_experts - model.config.num_shared_experts :]
 
-            # Mask out padding tokens
-            attention_mask_expanded = (
-                inputs.attention_mask.cpu()
-                .unsqueeze(0)
-                .unsqueeze(-1)
-                .expand(num_layers, batch_size_actual, seq_len, num_experts)
-            )
-            router_probabilities = router_probabilities * attention_mask_expanded
+                router_probabilities_standard = F.softmax(router_logits_reshaped_standard, dim=-1)
+                router_probabilities_shared = F.softmax(router_logits_reshaped_shared, dim=-1)
 
-            # Sum across batch and sequence length: (num_layers, num_experts)
-            summed_router_probabilities = router_probabilities.sum(dim=(1, 2))
-            tot_router_probabilities += summed_router_probabilities
+                # Mask out padding tokens
+                attention_mask_expanded_standard = (
+                    inputs.attention_mask.cpu()
+                    .unsqueeze(0)
+                    .unsqueeze(-1)
+                    .expand(num_layers, batch_size_actual, seq_len, num_experts - model.config.num_shared_experts)
+                )
+                attention_mask_expanded_shared = (
+                    inputs.attention_mask.cpu()
+                    .unsqueeze(0)
+                    .unsqueeze(-1)
+                    .expand(num_layers, batch_size_actual, seq_len, model.config.num_shared_experts)
+                )
 
-            tot_tokens += inputs.attention_mask.sum().item()
+                router_probabilities_standard = router_probabilities_standard * attention_mask_expanded_standard
+                router_probabilities_shared = router_probabilities_shared * attention_mask_expanded_shared
+
+                summed_router_probabilities_standard = router_probabilities_standard.sum(dim=(1, 2))
+                summed_router_probabilities_shared = router_probabilities_shared.sum(dim=(1, 2))
+
+                tot_router_probabilities[:, : num_experts - model.config.num_shared_experts] += summed_router_probabilities_standard
+                tot_router_probabilities[:, num_experts - model.config.num_shared_experts :] += summed_router_probabilities_shared
+
+                tot_tokens += inputs.attention_mask.sum().item()
+            else:
+                # Convert to probabilities
+                router_probabilities = F.softmax(router_logits_reshaped, dim=-1)
+
+                # Mask out padding tokens
+                attention_mask_expanded = (
+                    inputs.attention_mask.cpu()
+                    .unsqueeze(0)
+                    .unsqueeze(-1)
+                    .expand(num_layers, batch_size_actual, seq_len, num_experts)
+                )
+                router_probabilities = router_probabilities * attention_mask_expanded
+
+                # Sum across batch and sequence length: (num_layers, num_experts)
+                summed_router_probabilities = router_probabilities.sum(dim=(1, 2))
+                tot_router_probabilities += summed_router_probabilities
+
+                tot_tokens += inputs.attention_mask.sum().item()
 
         # Clean up
         del outputs
         torch.cuda.empty_cache()
 
+    breakpoint()
     # Compute average
     avg_router_probabilities = tot_router_probabilities / tot_tokens
     logger.info(f"Processed {tot_tokens} total tokens")
@@ -188,12 +222,6 @@ def main():
         type=int,
         default=4,
         help="Batch size for inference (default: 4)",
-    )
-    parser.add_argument(
-        "--num-shared-experts",
-        type=int,
-        default=0,
-        help="the number of shared experts we prune down to",
     )
     parser.add_argument(
         "--device",
