@@ -100,7 +100,6 @@ def compute_router_activations(
 
         # Forward pass with router logits
         with torch.no_grad():
-            breakpoint()
             outputs = model(
                 input_ids=inputs["input_ids"],
                 attention_mask=inputs["attention_mask"],
@@ -175,7 +174,6 @@ def compute_router_activations(
         del outputs
         torch.cuda.empty_cache()
 
-    breakpoint()
     # Compute average
     avg_router_probabilities = tot_router_probabilities / tot_tokens
     logger.info(f"Processed {tot_tokens} total tokens")
