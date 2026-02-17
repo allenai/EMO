@@ -118,7 +118,8 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormForCausalLM
                 self.num_experts_per_tok,
                 attention_mask,
                 labels,
-                **kwargs
+                num_shared_experts=self.config.num_shared_experts,
+                **kwargs,
             )
             if labels is not None:
                 loss += self.router_aux_loss_coef * lb_loss.to(loss.device)  # make sure to reside in the same device
@@ -132,8 +133,8 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormForCausalLM
         return MoeCausalLMOutputWithPast(
             loss=loss,
             aux_loss=lb_loss,
-            lb_loss=lb_loss.detach().clone() if lb_loss is not None else None, # for logging callback
-            ce_loss=ce_loss.detach().clone() if ce_loss is not None else None, # for logging callback
+            lb_loss=lb_loss.detach().clone() if lb_loss is not None else None,  # for logging callback
+            ce_loss=ce_loss.detach().clone() if ce_loss is not None else None,  # for logging callback
             logits=logits,
             past_key_values=outputs.past_key_values,
             hidden_states=outputs.hidden_states,
@@ -147,8 +148,11 @@ def load_balancing_loss_func_olmoe(
     top_k=2,
     attention_mask: Optional[torch.Tensor] = None,
     labels: Optional[torch.Tensor] = None,
-    num_items_in_batch: Optional[torch.Tensor] = None, # the number of tokens within a global batch (including across dp ranks)
-    ignore_index = -100,
+    num_items_in_batch: Optional[
+        torch.Tensor
+    ] = None,  # the number of tokens within a global batch (including across dp ranks)
+    ignore_index=-100,
+    num_shared_experts=0,
 ) -> Union[torch.Tensor, int]:
     r"""
     Computes auxiliary load balancing loss as in Switch Transformer - implemented in Pytorch.
@@ -178,19 +182,33 @@ def load_balancing_loss_func_olmoe(
 
     if isinstance(gate_logits, tuple):
         compute_device = gate_logits[0].device
-        concatenated_gate_logits = torch.stack([layer_gate.to(compute_device) for layer_gate in gate_logits], dim=0) # shape: (num_hidden_layers, batch_size * sequence_length, num_experts)
+        concatenated_gate_logits = torch.stack(
+            [layer_gate.to(compute_device) for layer_gate in gate_logits], dim=0
+        )  # shape: (num_hidden_layers, batch_size * sequence_length, num_experts)
         # concatenated_gate_logits = torch.cat([layer_gate.to(compute_device) for layer_gate in gate_logits], dim=0) # shape: (num_hidden_layers * batch_size * sequence_length, num_experts)
+
+    # remove the shared experts from the gate logits since they are not used for routing in the loss function
+    if num_shared_experts > 0:
+        concatenated_gate_logits = concatenated_gate_logits[:, :, :-num_shared_experts]
+        # adjust the num_experts and top_k accordingly for the loss computation
+        num_experts = num_experts - num_shared_experts
+        top_k = top_k - num_shared_experts
 
     routing_weights = torch.nn.functional.softmax(concatenated_gate_logits, dim=-1)
 
-    _, selected_experts = torch.topk(routing_weights, top_k, dim=-1) # shape: (num_hidden_layers, batch_size * sequence_length, top_k)
+    _, selected_experts = torch.topk(
+        routing_weights, top_k, dim=-1
+    )  # shape: (num_hidden_layers, batch_size * sequence_length, top_k)
 
-    expert_counts_onehot = torch.nn.functional.one_hot(selected_experts, num_experts) # shape: (num_hidden_layers, batch_size * sequence_length, top_k, num_experts)
+    expert_counts_onehot = torch.nn.functional.one_hot(
+        selected_experts, num_experts
+    )  # shape: (num_hidden_layers, batch_size * sequence_length, top_k, num_experts)
 
     if attention_mask is None and labels is None:
-
         # Compute the percentage of tokens routed to each experts
-        counts_per_expert = torch.mean(expert_counts_onehot.float(), dim=(1, 2))  # shape: (num_hidden_layers, num_experts)
+        counts_per_expert = torch.mean(
+            expert_counts_onehot.float(), dim=(1, 2)
+        )  # shape: (num_hidden_layers, num_experts)
 
         # Compute the average probability of routing to these experts
         prob_per_expert = torch.mean(routing_weights, dim=1)  # shape: (num_hidden_layers, num_experts)
@@ -208,7 +226,6 @@ def load_balancing_loss_func_olmoe(
             .reshape(num_hidden_layers, -1, top_k, num_experts)
             .to(compute_device)
         )
-        breakpoint()
 
         # Compute the percentage of tokens routed to each experts
         # frequency_per_expert = torch.sum(expert_counts_onehot.float() * expert_attention_mask, dim=(1, 2)) / torch.sum(expert_attention_mask, dim=(1,2)) # shape: (num_hidden_layers, num_experts)
@@ -223,11 +240,11 @@ def load_balancing_loss_func_olmoe(
         )
 
         # average the probability across valid tokens
-        prob_per_expert = torch.sum(routing_weights * router_per_expert_attention_mask, dim=1) / torch.sum(attention_mask)  # shape: (num_hidden_layers, num_experts)
+        prob_per_expert = torch.sum(routing_weights * router_per_expert_attention_mask, dim=1) / torch.sum(
+            attention_mask
+        )  # shape: (num_hidden_layers, num_experts)
 
-    overall_loss = torch.sum(
-        counts_per_expert * prob_per_expert
-    )
+    overall_loss = torch.sum(counts_per_expert * prob_per_expert)
 
     # Fallback when num_items_in_batch isn't provided (e.g., manual forward calls)
     if num_items_in_batch is None:
@@ -245,7 +262,9 @@ def load_balancing_loss_func_olmoe(
     # we follow olmo-core and use counts for dot product instead of frequency, and divide by total number token across gradient accumulation steps
     overall_loss = overall_loss / (num_items_in_batch * top_k)
 
-    overall_loss = overall_loss * num_experts / concatenated_gate_logits.shape[0] # times num_experts according to lb equation, divide by num_hidden_layers to get average over layers (which is how olmo-core is implemented to make loss agnostic to number of layers)
+    overall_loss = (
+        overall_loss * num_experts / concatenated_gate_logits.shape[0]
+    )  # times num_experts according to lb equation, divide by num_hidden_layers to get average over layers (which is how olmo-core is implemented to make loss agnostic to number of layers)
 
     return overall_loss
 

@@ -22,6 +22,7 @@ set -e
 MODEL=""
 TASK=""
 PRUNE_KEEP_K=4
+NUM_SHARED_EXPERTS=0
 RELATIVE_DIR=""
 BASE_DIR=""
 NUM_GPUS=1
@@ -49,6 +50,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --prune-keep-k)
             PRUNE_KEEP_K="$2"
+            shift 2
+            ;;
+        --num-shared-experts)
+            NUM_SHARED_EXPERTS="$2"
             shift 2
             ;;
         --relative-dir)
@@ -113,6 +118,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Optional:"
             echo "  --prune-keep-k    Number of experts to keep (default: 4)"
+            echo "  --num-shared-experts Number of shared experts to keep (default: 0)"
             echo "  --num-gpus        Number of GPUs for training (default: 1)"
             echo "  --num-epochs      Number of training epochs (default: 3)"
             echo "  --num-checkpoints Number of checkpoints to save (default: 5)"
@@ -240,82 +246,82 @@ else
     echo "Activation file: $ACTIVATION_FILE"
 fi
 
-# Step 2: Prune model
-if [ "$SKIP_PRUNE" = false ]; then
-    echo ""
-    echo "Step 2: Pruning model..."
-    echo "========================================"
-
-    python -m src.hf_training.prune_hf_model \
-        --model "$MODEL" \
-        --activation-file "$ACTIVATION_FILE" \
-        --prune-keep-k "$PRUNE_KEEP_K" \
-        --save-path "$PRUNED_MODEL"
-
-    echo "Pruned model saved to: $PRUNED_MODEL"
-else
-    echo ""
-    echo "Step 2: Skipping pruning (using existing pruned model)"
-    echo "Pruned model: $PRUNED_MODEL"
-fi
-
-# Step 3: Finetune
-echo ""
-echo "Step 3: Finetuning..."
-echo "========================================"
-
-# Determine FSDP setting
-if [ "$NUM_GPUS" -gt 1 ]; then
-    FSDP_FLAG=""
-else
-    FSDP_FLAG="--no-fsdp"
-fi
-
-# set correct wandb environment variables
-export WANDB_PROJECT="olmoe-modular"
-export WANDB_ENTITY="ryanyxw"
-# optional:
-export WANDB_TAGS="finetune,${TASK:0:60},${PRUNED_MODEL: -60}"
-
-# calculate gas
-gas=$(( BATCH_SIZE / (NUM_GPUS * MICRO_BATCH_SIZE) ))
-
-torchrun --nproc_per_node="$NUM_GPUS" \
-    -m src.hf_training.finetune \
-    --model "$PRUNED_MODEL" \
-    --task "$TASK" \
-    --split "train" \
-    --output-dir "$FINETUNED_MODEL" \
-    --num-epochs "$NUM_EPOCHS" \
-    --num-checkpoints "$NUM_CHECKPOINTS" \
-    --learning-rate "$LEARNING_RATE" \
-    --run-name "$RUN_NAME" \
-    --per-device-batch-size "$MICRO_BATCH_SIZE" \
-    --gradient-accumulation-steps "$gas" \
-    $FSDP_FLAG
-
-
-echo ""
-echo "Step 4: evals..."
-echo "========================================"
-
-# find all the checkpoints in the finetuned model directory and evaluate each one
-all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
-
-for checkpoint in "${all_checkpoints[@]}"; do
-    echo "Evaluating checkpoint: $checkpoint"
-    # get the checkpoint number
-    checkpoint_num=$(basename "$checkpoint" | sed 's/checkpoint-//')
-    python -m src.scripts.eval.launch_eval \
-        --model "$checkpoint" \
-        --model-type hf \
-        --task "$TASK-pruned" \
-        --pruned_split "test" \
-        --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
-        --batch-size 32 \
-        --gpus "$NUM_GPUS"
-
-done
+## Step 2: Prune model
+#if [ "$SKIP_PRUNE" = false ]; then
+#    echo ""
+#    echo "Step 2: Pruning model..."
+#    echo "========================================"
+#
+#    python -m src.hf_training.prune_hf_model \
+#        --model "$MODEL" \
+#        --activation-file "$ACTIVATION_FILE" \
+#        --prune-keep-k "$PRUNE_KEEP_K" \
+#        --save-path "$PRUNED_MODEL"
+#
+#    echo "Pruned model saved to: $PRUNED_MODEL"
+#else
+#    echo ""
+#    echo "Step 2: Skipping pruning (using existing pruned model)"
+#    echo "Pruned model: $PRUNED_MODEL"
+#fi
+#
+## Step 3: Finetune
+#echo ""
+#echo "Step 3: Finetuning..."
+#echo "========================================"
+#
+## Determine FSDP setting
+#if [ "$NUM_GPUS" -gt 1 ]; then
+#    FSDP_FLAG=""
+#else
+#    FSDP_FLAG="--no-fsdp"
+#fi
+#
+## set correct wandb environment variables
+#export WANDB_PROJECT="olmoe-modular"
+#export WANDB_ENTITY="ryanyxw"
+## optional:
+#export WANDB_TAGS="finetune,${TASK:0:60},${PRUNED_MODEL: -60}"
+#
+## calculate gas
+#gas=$(( BATCH_SIZE / (NUM_GPUS * MICRO_BATCH_SIZE) ))
+#
+#torchrun --nproc_per_node="$NUM_GPUS" \
+#    -m src.hf_training.finetune \
+#    --model "$PRUNED_MODEL" \
+#    --task "$TASK" \
+#    --split "train" \
+#    --output-dir "$FINETUNED_MODEL" \
+#    --num-epochs "$NUM_EPOCHS" \
+#    --num-checkpoints "$NUM_CHECKPOINTS" \
+#    --learning-rate "$LEARNING_RATE" \
+#    --run-name "$RUN_NAME" \
+#    --per-device-batch-size "$MICRO_BATCH_SIZE" \
+#    --gradient-accumulation-steps "$gas" \
+#    $FSDP_FLAG
+#
+#
+#echo ""
+#echo "Step 4: evals..."
+#echo "========================================"
+#
+## find all the checkpoints in the finetuned model directory and evaluate each one
+#all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
+#
+#for checkpoint in "${all_checkpoints[@]}"; do
+#    echo "Evaluating checkpoint: $checkpoint"
+#    # get the checkpoint number
+#    checkpoint_num=$(basename "$checkpoint" | sed 's/checkpoint-//')
+#    python -m src.scripts.eval.launch_eval \
+#        --model "$checkpoint" \
+#        --model-type hf \
+#        --task "$TASK-pruned" \
+#        --pruned_split "test" \
+#        --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
+#        --batch-size 32 \
+#        --gpus "$NUM_GPUS"
+#
+#done
 
 echo ""
 echo "========================================"

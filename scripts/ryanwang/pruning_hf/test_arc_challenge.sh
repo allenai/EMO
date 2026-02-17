@@ -1,14 +1,15 @@
 #!/bin/bash
 
 # Configuration
-BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
-#BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
+#BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
+BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 MODELS=(
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118/step30995-hf"
 #    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-2_0207/step30995-hf"
-    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995-hf"
+#    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995-hf"
+    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
 
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
 #    "moe_1b14b_128experts_lb-1e-1_1217/step30995-hf"
@@ -29,37 +30,37 @@ TASK_GROUPS_LIST=(
   ######### few-shot ##########
   # MC9 tasks
   "arc_easy"
-  "arc_challenge"
-  "boolq"
-  "csqa"
-  "hellaswag"
-  "openbookqa"
-  "piqa"
-  "socialiqa"
-  "winogrande"
-  "gsm8k_generation_0shot"
-  "gsm8k_perplexity_0shot"
-  "coqa_0shot"
-  "coqa_full_0shot"
-  "squad_0shot"
-
-  "mmlu_biology"
-  "mmlu_business"
-  "mmlu_chemistry"
-  "mmlu_computer_science"
-  "mmlu_culture"
-  "mmlu_economics"
-  "mmlu_engineering"
-  "mmlu_geography"
-  "mmlu_health"
-  "mmlu_history"
-  "mmlu_law"
-  "mmlu_math"
-  "mmlu_other"
-  "mmlu_philosophy_cat"
-  "mmlu_physics"
-  "mmlu_politics"
-  "mmlu_psychology"
+#  "arc_challenge"
+#  "boolq"
+#  "csqa"
+#  "hellaswag"
+#  "openbookqa"
+#  "piqa"
+#  "socialiqa"
+#  "winogrande"
+#  "gsm8k_generation_0shot"
+#  "gsm8k_perplexity_0shot"
+#  "coqa_0shot"
+#  "coqa_full_0shot"
+#  "squad_0shot"
+#
+#  "mmlu_biology"
+#  "mmlu_business"
+#  "mmlu_chemistry"
+#  "mmlu_computer_science"
+#  "mmlu_culture"
+#  "mmlu_economics"
+#  "mmlu_engineering"
+#  "mmlu_geography"
+#  "mmlu_health"
+#  "mmlu_history"
+#  "mmlu_law"
+#  "mmlu_math"
+#  "mmlu_other"
+#  "mmlu_philosophy_cat"
+#  "mmlu_physics"
+#  "mmlu_politics"
+#  "mmlu_psychology"
 
 #  "synthea_zeroshot"
 
@@ -73,6 +74,15 @@ echo ""
 # Launch evaluation for each model and task combination
 for MODEL in "${MODELS[@]}"; do
     echo "Processing model: ${MODEL}"
+
+    # choose the number of pruned down shared experts
+    if [[ $MODEL == *"twolevelbatchlbreducedp512sharedexp1"* ]]; then
+        num_shared_experts=1
+    elif [[ $MODEL == *"twolevelbatchlbreducedp512sharedexp4c2"* ]]; then
+        num_shared_experts=2
+    else
+        num_shared_experts=0
+    fi
 
     for TASK in "${TASK_GROUPS_LIST[@]}"; do
         # TODO: choose the right batch size based on the task
@@ -119,6 +129,7 @@ for MODEL in "${MODELS[@]}"; do
         echo "  learning-rate: ${lr}"
         echo "  batch_size: ${batch_size}"
         echo "  epochs: ${num_epochs}"
+        echo "  num_shared_experts: ${num_shared_experts}"
 
         # if the model is dense or 1b4b, we skip activation and pruning
         if [[ $MODEL == *"dense"* || $MODEL == *"1b4b"* ]]; then
@@ -134,6 +145,7 @@ for MODEL in "${MODELS[@]}"; do
 #                --batch-size ${batch_size} \
 #                --micro-batch-size ${micro_batch_size} \
 #                --num-epochs ${num_epochs} \
+#               --num-shared-experts ${num_shared_experts} \
 #                --skip-activation \
 #                --skip-prune
             python -m olmo_core.launch.beaker \
@@ -162,6 +174,7 @@ for MODEL in "${MODELS[@]}"; do
                 --batch-size ${batch_size} \
                 --micro-batch-size ${micro_batch_size} \
                 --num-epochs ${num_epochs} \
+                --num-shared-experts ${num_shared_experts} \
                 --skip-activation \
                 --skip-prune
                 "
@@ -170,48 +183,50 @@ for MODEL in "${MODELS[@]}"; do
             continue
         fi
 
-#        bash scripts/hf_finetune_with_pruning.sh \
-#                --model ${BASE_DIR}/models/${MODEL} \
-#                --task ${TASK} \
-#                --prune-keep-k ${prune_keep_k} \
-#                --base-dir "${BASE_DIR}/prune_evals" \
-#                --relative-dir ${relative_dir} \
-#                --num-gpus $gpus \
-#                --run-name ${job_name} \
-#                --learning-rate ${lr} \
-#                --batch-size ${batch_size} \
-#                --micro-batch-size ${micro_batch_size} \
-#                --num-epochs ${num_epochs}
+        bash scripts/hf_finetune_with_pruning.sh \
+                --model ${BASE_DIR}/models/${MODEL} \
+                --task ${TASK} \
+                --prune-keep-k ${prune_keep_k} \
+                --base-dir "${BASE_DIR}/prune_evals" \
+                --relative-dir ${relative_dir} \
+                --num-gpus $gpus \
+                --run-name ${job_name} \
+                --learning-rate ${lr} \
+                --batch-size ${batch_size} \
+                --micro-batch-size ${micro_batch_size} \
+                --num-epochs ${num_epochs} \
+                --num-shared-experts ${num_shared_experts}
 
 
-         python -m olmo_core.launch.beaker \
-          --name $job_name \
-          --gpus $gpus \
-          --nodes 1 \
-          --is_private_repo \
-          --weka=oe-training-default \
-          --shared-filesystem \
-          --workspace ai2/flex2 \
-          --cluster ai2/jupiter \
-          --preemptible \
-          --allow-dirty \
-          --priority urgent \
-          --no-follow \
-          --no-torchrun \
-          --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
-          -- bash -c "scripts/hf_finetune_with_pruning.sh \
-              --model ${BASE_DIR}/models/${MODEL} \
-              --task ${TASK} \
-              --prune-keep-k ${prune_keep_k} \
-              --base-dir "${BASE_DIR}/prune_evals" \
-              --relative-dir ${relative_dir} \
-              --num-gpus $gpus \
-              --run-name ${job_name} \
-              --learning-rate ${lr} \
-              --batch-size ${batch_size} \
-              --micro-batch-size ${micro_batch_size} \
-              --num-epochs ${num_epochs}
-          "
+#         python -m olmo_core.launch.beaker \
+#          --name $job_name \
+#          --gpus $gpus \
+#          --nodes 1 \
+#          --is_private_repo \
+#          --weka=oe-training-default \
+#          --shared-filesystem \
+#          --workspace ai2/flex2 \
+#          --cluster ai2/jupiter \
+#          --preemptible \
+#          --allow-dirty \
+#          --priority urgent \
+#          --no-follow \
+#          --no-torchrun \
+#          --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+#          -- bash -c "scripts/hf_finetune_with_pruning.sh \
+#              --model ${BASE_DIR}/models/${MODEL} \
+#              --task ${TASK} \
+#              --prune-keep-k ${prune_keep_k} \
+#              --base-dir "${BASE_DIR}/prune_evals" \
+#              --relative-dir ${relative_dir} \
+#              --num-gpus $gpus \
+#              --run-name ${job_name} \
+#              --learning-rate ${lr} \
+#              --batch-size ${batch_size} \
+#              --micro-batch-size ${micro_batch_size} \
+#              --num-epochs ${num_epochs} \
+#              --num-shared-experts ${num_shared_experts}
+#          "
 
 
         echo "Launched evaluation for model: $MODEL, task: $TASK"

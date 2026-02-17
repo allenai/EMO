@@ -64,6 +64,8 @@ def compute_router_activations(
         torch_dtype="auto",
     )
 
+    breakpoint()
+
     # Set padding token if not set
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -100,6 +102,7 @@ def compute_router_activations(
 
         # Forward pass with router logits
         with torch.no_grad():
+            breakpoint()
             outputs = model(
                 input_ids=inputs["input_ids"],
                 attention_mask=inputs["attention_mask"],
