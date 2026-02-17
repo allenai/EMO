@@ -64,8 +64,6 @@ def compute_router_activations(
         torch_dtype="auto",
     )
 
-    breakpoint()
-
     # Set padding token if not set
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -190,6 +188,12 @@ def main():
         type=int,
         default=4,
         help="Batch size for inference (default: 4)",
+    )
+    parser.add_argument(
+        "--num-shared-experts",
+        type=int,
+        default=0,
+        help="the number of shared experts we prune down to",
     )
     parser.add_argument(
         "--device",

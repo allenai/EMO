@@ -237,7 +237,8 @@ if [ "$SKIP_ACTIVATION" = false ]; then
         --task "$TASK" \
         --split "validation" \
         --output-file "$ACTIVATION_FILE" \
-        --batch-size 32
+        --batch-size 32 \
+        --num-shared-experts "$NUM_SHARED_EXPERTS"
 
     echo "Activations saved to: $ACTIVATION_FILE"
 else
