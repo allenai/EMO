@@ -404,7 +404,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
     def extra_repr(self):
         """Add custom parameter to string representation."""
         base_repr = super().extra_repr()
-        return f"{base_repr}, document_expert_pool={self.document_expert_pool}, eos_token_id={self.eos_token_id}"
+        return f"{base_repr}, document_expert_pool={self.document_expert_pool}, eos_token_id={self.eos_token_id}, num_shared_experts={self.num_shared_experts}, num_shared_experts_pool={self.num_shared_experts_pool}, shared_exp_lb_loss_weight={self.shared_exp_lb_loss_weight}"
 
 
 @dataclass

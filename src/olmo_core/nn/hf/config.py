@@ -10,6 +10,8 @@ from olmo_core.nn.transformer.block import (
     ReorderedNormTransformerBlock,
     TransformerBlock,
 )
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexppool_router import MoETwoLevelBatchLBReduceDPSharedExpPoolRouter
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_router import MoETwoLevelBatchLBReduceDPSharedExpRouter
 from olmo_core.nn.transformer.model import (
     MoETransformer,
     NormalizedTransformer,
@@ -33,7 +35,6 @@ except ImportError:
 
 def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
     blocks = list(model.blocks.values())
-    breakpoint()
     for block in blocks:
         if not isinstance(block, MoEReorderedNormTransformerBlock):
             if (
@@ -80,6 +81,14 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
         and block.attention.q_norm is None
         and block.attention.k_norm is None
     ):
+        # find the right number of shared experts accordingly
+        num_shared_experts = 0
+        if isinstance(block.feed_forward_moe.router, MoETwoLevelBatchLBReduceDPSharedExpPoolRouter):
+            # NOTE: we use the total pool size, and rely on pruning scripts for pruning shared experts down
+            # NOTE: we discard the shared_exp_lb_loss_weight, since we by default assume all shared experts are active for all tokens, and any deviation from this will be handled by pruning scripts and not by HF config
+            num_shared_experts = block.feed_forward_moe.router.num_shared_experts_pool
+        elif isinstance(block.feed_forward_moe.router, MoETwoLevelBatchLBReduceDPSharedExpRouter):
+            num_shared_experts = block.feed_forward_moe.router.num_shared_experts
         return FlexOlmoNoQKNormPrenormConfig(
             vocab_size=model.vocab_size,
             hidden_size=model.d_model,
@@ -98,6 +107,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
             num_experts_per_tok=block.feed_forward_moe.router.top_k,
             num_experts=block.feed_forward_moe.router.num_experts,
             tie_word_embeddings=False,
+            num_shared_experts=num_shared_experts,
         )
     elif (
         isinstance(block, MoETransformerBlock)
