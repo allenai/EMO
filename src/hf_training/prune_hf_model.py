@@ -260,7 +260,7 @@ def prune_hf_model(
     logger.info(f"Detected model type: {model_type}")
 
     if model_type == "olmoe":
-        model = prune_olmoe_model(model, config, experts_to_keep, prune_keep_k)
+        model = prune_olmoe_model(model, config, experts_to_keep, prune_keep_k) # we pass prune_keep_k that includes both shared and non-shared experts
     elif model_type == "mixtral":
         model = prune_mixtral_model(model, config, experts_to_keep, prune_keep_k)
     else:
