@@ -216,9 +216,6 @@ def prune_hf_model(
         line = f.readline()
         activations = json.loads(line)["avg_router_probabilities"]
 
-    # Determine experts to keep
-    experts_to_keep = get_experts_to_keep(activations, prune_keep_k)
-
     # Load model
     logger.info(f"Loading model: {model_name}")
     config = AutoConfig.from_pretrained(model_name)
@@ -229,6 +226,10 @@ def prune_hf_model(
         device_map=device,
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+    # Determine experts to keep
+    breakpoint()
+    experts_to_keep = get_experts_to_keep(activations, prune_keep_k)
 
     # Verify activation file matches model
     num_layers = config.num_hidden_layers
@@ -294,6 +295,12 @@ def main():
         type=int,
         required=True,
         help="Number of experts to keep per layer",
+    )
+    parser.add_argument(
+        "--num-shared-experts",
+        type=int,
+        default=0,
+        help="Number of shared experts to keep (default: 0, meaning all experts are standard)",
     )
     parser.add_argument(
         "--save-path",
