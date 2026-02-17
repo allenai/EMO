@@ -198,6 +198,7 @@ def prune_hf_model(
     model_name: str,
     activation_file: str,
     prune_keep_k: int,
+    num_shared_experts: int,
     save_path: str,
     device: str = "cpu",
 ) -> None:
@@ -208,6 +209,7 @@ def prune_hf_model(
         model_name: HuggingFace model name or path
         activation_file: Path to activation file (JSON with avg_router_probabilities)
         prune_keep_k: Number of experts to keep per layer
+        num_shared_experts: Number of shared experts to keep (if applicable). NOTE: model.config.num_shared_experts is total shared experts, this is the number of shared experts to keep
         save_path: Path to save the pruned model
     """
     # Load activation file
@@ -227,15 +229,31 @@ def prune_hf_model(
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    # Determine experts to keep
-    breakpoint()
-    experts_to_keep = get_experts_to_keep(activations, prune_keep_k)
-
     # Verify activation file matches model
     num_layers = config.num_hidden_layers
     assert len(activations) == num_layers, (
         f"Activation file has {len(activations)} layers but model has {num_layers} layers"
     )
+
+    # Determine experts to keep
+    breakpoint()
+    activations = torch.tensor(activations)
+    # check if we have shared experts
+    if model.config.num_shared_experts > 0:
+        activations_standard = activations[:, :model.config.num_experts - model.config.num_shared_experts]
+        activations_shared = activations[:, model.config.num_experts - model.config.num_shared_experts :]
+
+        experts_to_keep_standard = get_experts_to_keep(activations_standard, prune_keep_k - num_shared_experts)
+        experts_to_keep_shared = get_experts_to_keep(activations_shared, num_shared_experts)
+
+        experts_to_keep = []
+        for layer_idx in range(num_layers):
+            layer_experts_to_keep = sorted(experts_to_keep_standard[layer_idx]) + sorted(
+                [idx + model.config.num_experts - model.config.num_shared_experts for idx in experts_to_keep_shared[layer_idx]]
+            )
+            experts_to_keep.append(layer_experts_to_keep)
+    else:
+        experts_to_keep = get_experts_to_keep(activations, prune_keep_k)
 
     # Detect model type and prune
     model_type = detect_model_type(model)
@@ -253,6 +271,9 @@ def prune_hf_model(
         model.config.num_experts_per_tok = prune_keep_k
     model.config.num_experts = prune_keep_k
 
+    # update the number of shared experts in the config
+    model.config.num_shared_experts = num_shared_experts
+
     # set the "output_router_logits" to "true" to enable load balancing during finetuning
     model.config.output_router_logits = True
 
@@ -266,6 +287,7 @@ def prune_hf_model(
     metadata = {
         "original_model": model_name,
         "prune_keep_k": prune_keep_k,
+        "num_shared_experts": num_shared_experts,
         "activation_file": activation_file,
         "experts_kept_per_layer": experts_to_keep,
     }
@@ -321,6 +343,7 @@ def main():
         model_name=args.model,
         activation_file=args.activation_file,
         prune_keep_k=args.prune_keep_k,
+        num_shared_experts=args.num_shared_experts,
         save_path=args.save_path,
         device=args.device,
     )
