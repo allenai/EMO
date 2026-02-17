@@ -236,7 +236,6 @@ def prune_hf_model(
     )
 
     # Determine experts to keep
-    breakpoint()
     activations = torch.tensor(activations)
     # check if we have shared experts
     if model.config.num_shared_experts > 0:
