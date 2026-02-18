@@ -1,0 +1,24 @@
+# Pile of Law: local tokenization only (data already on disk as JSONL)
+# Usage: ./tokenize_remote.sh configs/the-pile-of-law.yaml
+
+dataset:
+  name: the-pile-of-law
+
+source:
+  format: jsonl
+  local_path: /data/input/ai2-llm/pretraining-data/sources/the-pile-of-law/
+  documents_pattern: "train.*.jsonl.xz"
+
+destination:
+  local_tokenized: /data/input/ai2-llm/preprocessed/the-pile-of-law/allenai/dolma2-tokenizer/
+
+compute:
+  mode: local
+  num_processes: 200
+
+tokenizer:
+  name: allenai/dolma2-tokenizer
+  eos_token_id: 100257
+  pad_token_id: 100277
+  dtype: uint32
+  use_uv: false

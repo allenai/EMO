@@ -22,12 +22,12 @@ MODELS=(
     # "/data/input/kevinf/checkpoints/olmo3-1b-croissant-10B-lr5e-5-warmup0.1-ctd/step2385-hf/"
     # "/data/input/kevinf/checkpoints/olmo3-1b-croissant-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
     "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
-    "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
+    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-chempile-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-the-pile-of-law-10B-lr5e-5-warmup0.1-ctd"/step2385-hf
-    "/data/input/kevinf/checkpoints/olmo3-1b-croissant-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
-
-
+    # "/data/input/kevinf/checkpoints/olmo3-1b-croissant-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-pmc-30B-lr5e-5-warmup0.1-ctd/step7153-hf"
+    "/data/input/kevinf/checkpoints/olmo3-1b-mimic-iv-note-2B-lr5e-5-warmup0.1-ctd/step477-hf"
 )
 
 BASE_OUTPUT_DIR="/data/input/kevinf/flexmoe/eval/results"
@@ -39,43 +39,43 @@ model_type=hf
 
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
-    # # MC9 tasks
-    arc_easy:mc::olmes
-    arc_challenge:mc::olmes
-    boolq:mc::olmes
-    csqa:mc::olmes
-    hellaswag:mc::olmes
-    openbookqa:mc::olmes
-    piqa:mc::olmes
-    socialiqa:mc::olmes
-    winogrande:mc::olmes
+    # # # MC9 tasks
+    # arc_easy:mc::olmes
+    # arc_challenge:mc::olmes
+    # boolq:mc::olmes
+    # csqa:mc::olmes
+    # hellaswag:mc::olmes
+    # openbookqa:mc::olmes
+    # piqa:mc::olmes
+    # socialiqa:mc::olmes
+    # winogrande:mc::olmes
     
-    # # Gen5 tasks
-    coqa::olmes
-    squad::olmes
-    naturalqs::olmes
-    triviaqa::olmes
-    drop::olmes
+    # # # Gen5 tasks
+    # coqa::olmes
+    # squad::olmes
+    # naturalqs::olmes
+    # triviaqa::olmes
+    # drop::olmes
 
-    # # MMLU tasks
-    mmlu:mc::olmes
-    # mmlu_pro_mc::none
+    # # # MMLU tasks
+    # mmlu:mc::olmes
+    # # mmlu_pro_mc::none
 
-    # # AGI eval
-    agi_eval_english:1shot::olmes
+    # # # AGI eval
+    # agi_eval_english:1shot::olmes
 
-    # # BBH
-    # bbh:cot-v1::olmes
+    # # # BBH
+    # # bbh:cot-v1::olmes
 
-    # # Math2 tasks
-    gsm8k::olmes
-    minerva_math_algebra::olmes
-    minerva_math_counting_and_probability::olmes
-    minerva_math_geometry::olmes
-    minerva_math_intermediate_algebra::olmes
-    minerva_math_number_theory::olmes
-    minerva_math_prealgebra::olmes
-    minerva_math_precalculus::olmes
+    # # # Math2 tasks
+    # gsm8k::olmes
+    # minerva_math_algebra::olmes
+    # minerva_math_counting_and_probability::olmes
+    # minerva_math_geometry::olmes
+    # minerva_math_intermediate_algebra::olmes
+    # minerva_math_number_theory::olmes
+    # minerva_math_prealgebra::olmes
+    # minerva_math_precalculus::olmes
 
     # # Code4 tasks
     # codex_humaneval:temp0.8
@@ -89,6 +89,9 @@ TASKS=(
     # chembench:rc    
     # frenchbench:rc
     # legalbench:rc
+
+    medqa
+    medmcqa:mc
 )
 
 # Function to get checkpoint name - extracts run name and step from path
@@ -147,7 +150,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
     uv run gantry run \
         --name $job_name \
         --weka oe-training-default:/data/input \
-        --install "pip install uv && UV_CACHE_DIR=/tmp/uv-cache uv pip install -e '.[eval]'" \
+        --install "pip install setuptools uv && UV_CACHE_DIR=/tmp/uv-cache uv pip install -e '.[eval]'" \
         --budget ai2/oceo \
         --workspace ai2/flex2 \
         --cluster $CLUSTER \
@@ -163,11 +166,11 @@ for MODEL_PATH in "${MODELS[@]}"; do
             --model-type hf \
             --task $TASK \
             --limit $LIMIT \
-            --output-dir $OUTPUT_DIR-frenchbenchfinal \
+            --output-dir $OUTPUT_DIR \
             --batch-size $batch_size \
             --gpus $gpus \
-            --fewshot-seed 1234 \
-            --random-subsample-seed 1234 \
+            --fewshot-seed 4321 \
+            --random-subsample-seed 4321 \
             "
     
         echo "Launched evaluation for model: $model, task: $TASK"
