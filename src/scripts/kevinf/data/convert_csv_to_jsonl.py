@@ -84,7 +84,7 @@ def read_csv_file(filepath, text_field, id_field, metadata_fields, source):
     if str(filepath).endswith(".gz"):
         open_kwargs["errors"] = "replace"
 
-    with open_fn(filepath, **open_kwargs) as f:
+    with open_fn(filepath, **open_kwargs) as f:  # type: ignore[operator]
         # Increase CSV field size limit for large text fields (e.g., discharge summaries)
         csv.field_size_limit(sys.maxsize)
         reader = csv.DictReader(f)
@@ -115,7 +115,9 @@ def main():
     parser.add_argument("--text-field", default="text")
     parser.add_argument("--id-field", default="id")
     parser.add_argument("--metadata-fields", nargs="*", default=[])
-    parser.add_argument("--files", nargs="*", default=None, help="Specific CSV filenames to process")
+    parser.add_argument(
+        "--files", nargs="*", default=None, help="Specific CSV filenames to process"
+    )
     parser.add_argument("--max-workers", type=int, default=64)
     parser.add_argument("--docs-per-shard", type=int, default=50000)
     parser.add_argument("--gzip-level", type=int, default=1)
@@ -171,7 +173,9 @@ def main():
 
         pool = ProcessPoolExecutor(max_workers=args.max_workers)
 
-        for doc in read_csv_file(csv_file, args.text_field, args.id_field, args.metadata_fields, args.source):
+        for doc in read_csv_file(
+            csv_file, args.text_field, args.id_field, args.metadata_fields, args.source
+        ):
             current_batch.append(doc)
 
             if len(current_batch) >= args.docs_per_shard:
@@ -184,7 +188,9 @@ def main():
 
                 # Print progress every 10 shards
                 if shard_idx % 10 == 0:
-                    print(f"    Queued {shard_idx} shards ({shard_idx * args.docs_per_shard:,} docs)...")
+                    print(
+                        f"    Queued {shard_idx} shards ({shard_idx * args.docs_per_shard:,} docs)..."
+                    )
 
         # Write remaining docs
         if current_batch:
@@ -214,15 +220,15 @@ def main():
     if total_elapsed > 0:
         print(f"Throughput:   {grand_total / total_elapsed:,.0f} docs/s")
 
-    print(f"\n# Tokenize with Dolma:")
-    print(f"dolma tokens \\")
+    print("\n# Tokenize with Dolma:")
+    print("dolma tokens \\")
     print(f"    --documents '{args.output_dir}/**/*.jsonl.gz' \\")
     print(f"    --destination {args.output_dir}/../tokenized \\")
-    print(f"    --tokenizer.name_or_path allenai/dolma2-tokenizer \\")
-    print(f"    --tokenizer.eos_token_id 100257 \\")
-    print(f"    --tokenizer.pad_token_id 100277 \\")
-    print(f"    --dtype uint32 \\")
-    print(f"    --processes $(nproc)")
+    print("    --tokenizer.name_or_path allenai/dolma2-tokenizer \\")
+    print("    --tokenizer.eos_token_id 100257 \\")
+    print("    --tokenizer.pad_token_id 100277 \\")
+    print("    --dtype uint32 \\")
+    print("    --processes $(nproc)")
 
 
 if __name__ == "__main__":

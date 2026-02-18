@@ -181,6 +181,88 @@ Check that:
 - `lm_evaluator.eval_dataset.mix` matches
 - `lm_evaluator.enabled` is `True`
 
+## Weighted / Multi-Source Mixes
+
+When combining multiple datasets with a target token budget (e.g., "all of dataset A + fill the rest with dataset B to reach 5B tokens"), you need to control the ratio by **subsampling the larger dataset at the file level**.
+
+### Why ratios matter
+
+The data loader consumes files proportionally to their byte sizes. Simply concatenating all files from both datasets would make the smaller dataset negligibly represented. For example, 1.7B tokens of mimic + 63.8B tokens of PMC would make mimic only ~2.6% of training.
+
+### Step 1: Count tokens per dataset
+
+Use the token counting script on an existing mix file:
+```bash
+bash scripts/kevinf/data/count_tokens_s3.sh s3://ai2-llm src/olmo_core/data/mixes/<mix>.txt
+```
+
+Or count tokens directly from S3 for a dataset without a mix file:
+```bash
+aws s3 ls --recursive s3://ai2-llm/preprocessed/<dataset>/ | grep '\.npy$' | \
+  awk 'BEGIN{OFMT="%.0f"} {total += $3} END {printf "%.2fB tokens\n", total/4/1e9}'
+```
+
+**Important**: Use `OFMT="%.0f"` or floating-point math in awk — default integer arithmetic overflows at 2^31 bytes (~0.5B tokens).
+
+### Step 2: Calculate the ratio
+
+Given:
+- Dataset A: X tokens (include all)
+- Dataset B: Y tokens available (sample from this)
+- Target: T total tokens
+
+Then you need `T - X` tokens from dataset B. Find the right number of files:
+```bash
+# List per-file token counts with cumulative totals
+aws s3 ls s3://ai2-llm/preprocessed/<dataset>/<subset>/dolma2-tokenizer/ | grep '\.npy$' | \
+  awk '{sizes[NR]=$3; names[NR]=$NF; count++} END {
+    cumul=0; for(i=1;i<=count;i++){
+      cumul+=sizes[i];
+      printf "%s: %.3fB (cumul: %.3fB)\n", names[i], sizes[i]/4/1e9, cumul/4/1e9;
+      if(cumul/4/1e9 > <TARGET_B>) break
+    }
+  }'
+```
+
+### Step 3: Using create_weighted_mix.py (automated)
+
+For automated ratio-based selection with S3 file size lookups:
+```bash
+python src/scripts/kevinf/data/create_weighted_mix.py \
+  --sources <mix_a>.txt:<pct_a> <mix_b>.txt:<pct_b> \
+  --total-tokens 5B \
+  --output src/olmo_core/data/mixes/<output>.txt \
+  --dry-run
+```
+
+**Note**: This script queries S3 for file sizes, which can be slow (~5 min for large datasets). If you already know the file sizes, it's faster to calculate manually and write the mix file directly.
+
+### Step 3 (alternative): Manual mix file creation
+
+Write the combined mix file directly with comments documenting the ratio:
+```
+# Weighted mix: ~5B tokens
+# dataset-a: 34% (~1.70B tokens, all files)
+# dataset-b: 66% (~3.34B tokens, subset)
+
+# dataset-a
+dataset-a-subset,preprocessed/dataset-a/subset/dolma2-tokenizer/part-00-00000.npy
+...
+
+# dataset-b (sampled)
+dataset-b-subset,preprocessed/dataset-b/subset/dolma2-tokenizer/part-00-00000.npy
+...
+```
+
+### Granularity note
+
+Ratio precision is limited by file sizes. If each `.npy` file is ~0.5B tokens, you can only adjust in ~0.5B increments. The trainer's `max_duration` controls the exact training budget — having slightly more data in the mix than the token budget is fine.
+
+### Reference: Existing multi-source mixes
+
+- `mimic-pmc-5B.txt`: mimic-iv-note (all, ~1.70B) + PMC oa_comm (7 files, ~3.34B) = ~5.04B total
+- `tpol-70-dclm-30.txt`: the-pile-of-law 70% + DCLM 30%
+
 ## Key Files Reference
 
 | Purpose | Path |
@@ -192,3 +274,6 @@ Check that:
 | S3 profile logic | `src/olmo_core/io.py` (`_get_s3_profile_name`) |
 | Beaker env defaults | `src/olmo_core/launch/beaker.py` (line ~339) |
 | Task groups (in-loop eval) | `src/olmo_core/eval/task_groups.py` |
+| Token counting (S3) | `scripts/kevinf/data/count_tokens_s3.sh` |
+| Weighted mix creator | `src/scripts/kevinf/data/create_weighted_mix.py` |
+| S3 path validator | `src/scripts/kevinf/data/check_s3_paths_exist.py` |
