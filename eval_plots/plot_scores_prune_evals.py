@@ -22,20 +22,27 @@ AUTO_DISCOVER = True
 # Current prune_evals inventory (auto-generated at script creation time).
 # Key: model directory name. Value: label to show in plots (or None to use full name).
 MODEL_SPECS = {
-    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123step30995-hf": "moe",
-    # "moe_1b14b_128experts_lb-1e-1_1217step30995-hf": "moe-lb1e-1",
-    # "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121step30995-hf": "twolevelbatchlb",
-    "dense_1b_olmoe-mix_prenorm_noqknorm_1123step30995-hf": "dense",
-    "moe_1b4b_32experts_1224step30995-hf": "moe_1b4b",
+    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": "moe_reduce",
+    "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212step30995-hf": "moe_1b4b_reduce",
+    "dense_1b_lr-4e-3_0213step30995-hf": "dense-lr4e-3",
+
+    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1",
+    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213step30995-hf": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-2",
+
+    # depricated
     # "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": "twolevelbatchlb-lr4e-3-lb1e-1",
     # "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118step30995-hf": "twolevelbatchlb-lr4e-3-lb1e-2",
     # "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_0118step30995-hf": "twolevelbatchlb-lr4e-4-lb1e-1",
     # "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_poolsched_0119step30995-hf": "twolevelbatchlb-lr4e-4-lb1e-1-poolsched",
-    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-2_0207step30995-hf": "twolevelbatchlbreducedp512-lr4e-3-lb1e-2",
-    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": "twolevelbatchlbreducedp512-lr4e-3-lb1e-1",
-    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1",
-    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213step30995-hf": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-2",
-    "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-1_sharelb-1e-1_0214step30995-hf": "twolevelbatchlbreducedp512sharedexp4c2-lr4e-3-lb1e-1",
+    # "moe_1b14b_128experts_lb-1e-1_1217step30995-hf": "moe-lb1e-1",
+    # "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121step30995-hf": "twolevelbatchlb",
+    # "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123step30995-hf": "moe",
+    # "dense_1b_olmoe-mix_prenorm_noqknorm_1123step30995-hf": "dense",
+    # "moe_1b4b_32experts_1224step30995-hf": "moe_1b4b",
+
+    # "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-1_sharelb-1e-1_0214step30995-hf": "twolevelbatchlbreducedp512sharedexp4c2-lr4e-3-lb1e-1",
+    # "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-2_0207step30995-hf": "twolevelbatchlbreducedp512-lr4e-3-lb1e-2",
+    # "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": "twolevelbatchlbreducedp512-lr4e-3-lb1e-1",
 
 }
 AVAILABLE_MODELS = list(MODEL_SPECS)
@@ -420,6 +427,19 @@ def collect_mmlu_avg_records(
     if df.empty:
         return df
 
+    # Warn about models missing specific MMLU sub-tasks for this metric.
+    for model_name in model_names:
+        model_label = MODEL_LABELS.get(model_name, model_name)
+        model_tasks = set(
+            df.loc[df["model"] == model_name, "task_run"].unique()
+        )
+        missing = [t for t in MMLU_SUBTASKS if t not in model_tasks]
+        if missing:
+            print(
+                f"[WARN] Model {model_label!r} is missing {len(missing)} MMLU "
+                f"sub-task(s) for metric={metric_key!r}: {missing}"
+            )
+
     # Assign a 1-based ordinal index to each checkpoint within each
     # (model, task_run) group, sorted by the original step number.
     df = df.sort_values(["model", "task_run", "checkpoint"])
@@ -444,11 +464,23 @@ def plot_task(
     style: str,
     show: bool,
     metric_key: str,
+    expected_models: Optional[Sequence[str]] = None,
 ) -> None:
     task_df = df[df["task_run"] == task_run]
     if task_df.empty:
         print(f"[WARN] No data for task run: {task_run}")
         return
+
+    # Warn about any expected models that have no data for this task/metric.
+    if expected_models is not None:
+        models_present = set(task_df["model"].unique())
+        for model in expected_models:
+            if model not in models_present:
+                label = MODEL_LABELS.get(model, model)
+                print(
+                    f"[WARN] Model {label!r} has no data for "
+                    f"task={task_run!r}, metric={metric_key!r}"
+                )
 
     sns.set_theme(style=style)
     plt.figure(figsize=(8, 5))
@@ -560,6 +592,7 @@ def main() -> None:
                     args.style,
                     args.show,
                     metric_key,
+                    expected_models=model_set,
                 )
 
         # --- mmlu_avg (macro average across MMLU categories) ---
@@ -583,6 +616,7 @@ def main() -> None:
                     args.style,
                     args.show,
                     metric_key,
+                    expected_models=model_set,
                 )
 
 
