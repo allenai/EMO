@@ -66,3 +66,6 @@ prune_evals
 eval_visualizer
 *.png
 transformers
+src/offline_evals/data/synthea
+models
+prune
