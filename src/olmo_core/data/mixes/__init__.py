@@ -55,6 +55,7 @@ class DataMix(DataMixBase):
 
     chempile = "chempile"
     pmc = "pmc"
+    mimic_iv_note = "mimic-iv-note"
 
     @classmethod
     def _missing_(cls, value: object) -> "DataMix | None":
