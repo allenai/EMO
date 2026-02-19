@@ -2,7 +2,8 @@
 
 # Configuration
 #BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
-BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
+#BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
+BASE_DIR="/root/phdbrainstorm/FlexMoE"
 MODELS=(
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995-hf"
@@ -26,6 +27,11 @@ MODELS=(
 
 CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf
+
+# Pruning mode: "global"    -- original single-pass activation collection + prune
+#               "layerwise" -- greedy layer-by-layer pruning (each layer conditioned
+#                              on already-pruned earlier layers)
+PRUNING_MODE="layerwise"
 
 num_epochs=1
 prune_keep_k=32
@@ -116,7 +122,7 @@ for MODEL in "${MODELS[@]}"; do
         # Remove invalid characters and truncate long names
 
         stringified_model=$(echo $MODEL | sed 's/[^a-zA-Z0-9_-]//g')
-        relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}"
+        relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}_prunemode-${PRUNING_MODE}"
         safe_relative_dir=$(printf '%s' "$relative_dir" | sed 's/[^a-zA-Z0-9_-]//g' | tail -c 100)
         job_name="eval-${safe_relative_dir}"
 
@@ -140,7 +146,7 @@ for MODEL in "${MODELS[@]}"; do
         # if the model is dense or 1b4b, we skip activation and pruning
         if [[ $MODEL == *"dense"* || $MODEL == *"1b4b"* ]]; then
             echo "  Skipping activation computation and pruning for model: $MODEL"
-            bash scripts/hf_finetune_with_pruning.sh \
+            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
                 --pruned-model ${BASE_DIR}/models/${MODEL} \
                 --task ${TASK} \
                 --base-dir "${BASE_DIR}/prune_evals" \
@@ -190,7 +196,8 @@ for MODEL in "${MODELS[@]}"; do
             continue
         fi
 
-        bash scripts/hf_finetune_with_pruning.sh \
+        if [[ $PRUNING_MODE == "layerwise" ]]; then
+            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
                 --model ${BASE_DIR}/models/${MODEL} \
                 --task ${TASK} \
                 --prune-keep-k ${prune_keep_k} \
@@ -203,6 +210,21 @@ for MODEL in "${MODELS[@]}"; do
                 --micro-batch-size ${micro_batch_size} \
                 --num-epochs ${num_epochs} \
                 --num-shared-experts ${num_shared_experts}
+        else
+            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
+                --model ${BASE_DIR}/models/${MODEL} \
+                --task ${TASK} \
+                --prune-keep-k ${prune_keep_k} \
+                --base-dir "${BASE_DIR}/prune_evals" \
+                --relative-dir ${relative_dir} \
+                --num-gpus $gpus \
+                --run-name ${job_name} \
+                --learning-rate ${lr} \
+                --batch-size ${batch_size} \
+                --micro-batch-size ${micro_batch_size} \
+                --num-epochs ${num_epochs} \
+                --num-shared-experts ${num_shared_experts}
+        fi
 
 
 #         python -m olmo_core.launch.beaker \
