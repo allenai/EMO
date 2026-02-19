@@ -198,7 +198,7 @@ def finetune(config: FinetuneConfig):
         bf16=config.bf16,
         logging_steps=config.logging_steps,
         save_steps=save_steps,
-        save_total_limit=config.num_checkpoints + 2, # for checkpoint-0 and final checkpoint
+        save_total_limit=None,
         seed=config.seed,
         report_to=config.report_to,
         run_name=config.run_name,

@@ -28,6 +28,7 @@ MODEL_SPECS = {
 
     "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1",
     "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213step30995-hf": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-2",
+    "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-2_sharelb-1e-2_0214step30995-hf": "twolevelbatchlbreducedp512sharedexp4c2-lr4e-3-lb1e-2",
 
     # depricated
     # "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": "twolevelbatchlb-lr4e-3-lb1e-1",
@@ -444,6 +445,33 @@ def collect_mmlu_avg_records(
     # (model, task_run) group, sorted by the original step number.
     df = df.sort_values(["model", "task_run", "checkpoint"])
     df["ckpt_idx"] = df.groupby(["model", "task_run"]).cumcount() + 1
+
+    # Truncate each model's series to the minimum checkpoint count across
+    # its sub-tasks so every ordinal index is a true average over *all*
+    # sub-tasks rather than a biased subset.
+    min_ckpts = (
+        df.groupby(["model", "task_run"])["ckpt_idx"]
+        .max()
+        .groupby("model")
+        .min()
+    )
+    keep_masks = []
+    for model_name, max_idx in min_ckpts.items():
+        model_label = MODEL_LABELS.get(model_name, model_name)
+        full_max = df.loc[df["model"] == model_name]
+        per_task_max = full_max.groupby("task_run")["ckpt_idx"].max()
+        truncated = per_task_max[per_task_max > max_idx]
+        if not truncated.empty:
+            print(
+                f"[INFO] Truncating model {model_label!r} to {max_idx} "
+                f"checkpoint(s) for mmlu_avg (metric={metric_key!r}). "
+                f"Dropped trailing checkpoints from: "
+                f"{list(truncated.index)}"
+            )
+        keep_masks.append(
+            (df["model"] == model_name) & (df["ckpt_idx"] <= max_idx)
+        )
+    df = df[pd.concat(keep_masks, axis=1).any(axis=1)]
 
     # Macro average: mean over sub-tasks for each (model, ordinal index).
     avg_df = (
