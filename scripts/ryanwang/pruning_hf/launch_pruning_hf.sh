@@ -4,24 +4,25 @@
 BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 #BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 MODELS=(
-#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
-#    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995-hf"
-#    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118/step30995-hf"
-#    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-2_0207/step30995-hf"
-#    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995-hf"
     "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
-#    "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-1_sharelb-1e-1_0214/step30995-hf"
-#    "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-2_sharelb-1e-2_0214/step30995-hf"
-#    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213/step30995-hf"
-#    "dense_1b_lr-4e-3_0213/step30995-hf"
-#    "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212/step30995-hf"
-#    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
+    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213/step30995-hf"
+    "dense_1b_lr-4e-3_0213/step30995-hf"
+    "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212/step30995-hf"
+    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
 
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
 #    "moe_1b14b_128experts_lb-1e-1_1217/step30995-hf"
 
 #    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995-hf"
 #    "moe_1b4b_32experts_1224/step30995-hf"
+#    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
+#    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995-hf"
+#    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118/step30995-hf"
+#    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-2_0207/step30995-hf"
+#    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995-hf"
+#    "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-1_sharelb-1e-1_0214/step30995-hf"
+#    "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-2_sharelb-1e-2_0214/step30995-hf"
+
     )
 
 CLUSTER="ai2/jupiter-cirrascale-2"
@@ -30,7 +31,7 @@ model_type=hf
 # Pruning mode: "global"    -- original single-pass activation collection + prune
 #               "layerwise" -- greedy layer-by-layer pruning (each layer conditioned
 #                              on already-pruned earlier layers)
-PRUNING_MODE="layerwise"
+PRUNING_MODE="global"
 
 num_epochs=1
 prune_keep_k=32
@@ -42,18 +43,18 @@ TASK_GROUPS_LIST=(
   # MC9 tasks
 #  "arc_easy"
 #  "arc_challenge"
-  "boolq"
-  "csqa"
-  "hellaswag"
-  "openbookqa"
-  "piqa"
-  "socialiqa"
-  "winogrande"
-  "gsm8k_generation_0shot"
-  "gsm8k_perplexity_0shot"
-  "coqa_0shot"
-  "coqa_full_0shot"
-  "squad_0shot"
+#  "boolq"
+#  "csqa"
+#  "hellaswag"
+#  "openbookqa"
+#  "piqa"
+#  "socialiqa"
+#  "winogrande"
+#  "gsm8k_generation_0shot"
+#  "gsm8k_perplexity_0shot"
+#  "coqa_0shot"
+#  "coqa_full_0shot"
+#  "squad_0shot"
 
   "mmlu_biology"
   "mmlu_business"
@@ -121,7 +122,14 @@ for MODEL in "${MODELS[@]}"; do
         # Remove invalid characters and truncate long names
 
         stringified_model=$(echo $MODEL | sed 's/[^a-zA-Z0-9_-]//g')
-        relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}_prunemode-${PRUNING_MODE}"
+
+        # if prunemode is global, don't include it in the name
+        if [[ $PRUNING_MODE == "global" ]]; then
+          relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}"
+        else
+          relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}_prunemode-${PRUNING_MODE}"
+        fi
+
         safe_relative_dir=$(printf '%s' "$relative_dir" | sed 's/[^a-zA-Z0-9_-]//g' | tail -c 100)
         job_name="eval-${safe_relative_dir}"
 
@@ -269,7 +277,7 @@ for MODEL in "${MODELS[@]}"; do
                 --no-follow \
                 --no-torchrun \
                 --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
-                -- bash -c "scripts/hf_finetune_with_pruning.sh \
+                -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
                     --model ${BASE_DIR}/models/${MODEL} \
                     --task ${TASK} \
                     --prune-keep-k ${prune_keep_k} \
