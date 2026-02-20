@@ -225,6 +225,14 @@ MODEL_LABELS = {model: label for model, label in MODEL_SPECS.items() if label}
 
 DEFAULT_OUTPUT_SUBDIR = "prune_eval_plots_0116"
 
+# Task-directory suffixes that represent alternate pruning strategies rather
+# than separate tasks. Each suffix maps to a label modifier appended to the
+# model's display name in plot legends.  Results from these variant dirs are
+# plotted as additional model lines on the base task's plot.
+PRUNE_MODE_VARIANTS: Dict[str, str] = {
+    "_prunemode-layerwise": "(layerwise)",
+}
+
 # ============================================================================
 # END CONFIGURATION
 # ============================================================================
@@ -282,6 +290,10 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _is_variant_task(task_name: str) -> bool:
+    return any(task_name.endswith(suffix) for suffix in PRUNE_MODE_VARIANTS)
+
+
 def discover_catalog(prune_evals_root: Path) -> Tuple[List[str], List[str]]:
     models = sorted([p.name for p in prune_evals_root.iterdir() if p.is_dir()])
     task_runs = sorted(
@@ -290,7 +302,7 @@ def discover_catalog(prune_evals_root: Path) -> Tuple[List[str], List[str]]:
             for model_dir in prune_evals_root.iterdir()
             if model_dir.is_dir()
             for t in model_dir.iterdir()
-            if t.is_dir()
+            if t.is_dir() and not _is_variant_task(t.name)
         }
     )
     return models, task_runs
@@ -328,6 +340,66 @@ def extract_task_label(metrics: Dict[str, object], metrics_path: Path) -> str:
     return stem
 
 
+def _scan_checkpoints(
+    task_dir: Path,
+    metric_key: str,
+    model_key: str,
+    model_label: str,
+    task_run: str,
+    rows: List[Dict[str, object]],
+    task_labels: Dict[str, str],
+) -> None:
+    """Scan checkpoint dirs under *task_dir*/results and append rows."""
+    results_dir = task_dir / "results"
+    if not results_dir.is_dir():
+        return
+
+    for checkpoint_dir in sorted(results_dir.glob("checkpoint-*")):
+        if not checkpoint_dir.is_dir():
+            continue
+
+        step_str = checkpoint_dir.name.replace("checkpoint-", "")
+        try:
+            step = int(step_str)
+        except ValueError:
+            print(f"[WARN] Unexpected checkpoint dir: {checkpoint_dir}")
+            continue
+
+        metrics_files = sorted(checkpoint_dir.glob("task-*-metrics.json"))
+        if not metrics_files:
+            print(f"[WARN] No metrics files in {checkpoint_dir}")
+            continue
+
+        metrics_path = metrics_files[0]
+        metrics = read_metrics(metrics_path)
+        if metrics is None:
+            continue
+
+        metric_values = metrics.get("metrics")
+        if not isinstance(metric_values, dict):
+            print(f"[WARN] Missing metrics dict in {metrics_path}")
+            continue
+
+        metric_value = metric_values.get(metric_key)
+        if metric_value is None:
+            print(f"[WARN] Missing {metric_key!r} in {metrics_path}")
+            continue
+
+        task_label = extract_task_label(metrics, metrics_path)
+        task_labels.setdefault(task_run, task_label)
+
+        rows.append(
+            {
+                "model": model_key,
+                "model_label": model_label,
+                "task_run": task_run,
+                "task_label": task_label,
+                "checkpoint": step,
+                "metric_value": metric_value,
+            }
+        )
+
+
 def collect_records(
     prune_evals_root: Path,
     model_names: Sequence[str],
@@ -345,53 +417,21 @@ def collect_records(
         model_label = MODEL_LABELS.get(model_name, model_name)
 
         for task_run in task_runs:
-            task_dir = model_dir / task_run / "results"
-            if not task_dir.is_dir():
-                continue
+            _scan_checkpoints(
+                model_dir / task_run, metric_key,
+                model_key=model_name, model_label=model_label,
+                task_run=task_run, rows=rows, task_labels=task_labels,
+            )
 
-            for checkpoint_dir in sorted(task_dir.glob("checkpoint-*")):
-                if not checkpoint_dir.is_dir():
+            for suffix, label_mod in PRUNE_MODE_VARIANTS.items():
+                variant_task_dir = model_dir / (task_run + suffix)
+                if not variant_task_dir.is_dir():
                     continue
-
-                step_str = checkpoint_dir.name.replace("checkpoint-", "")
-                try:
-                    step = int(step_str)
-                except ValueError:
-                    print(f"[WARN] Unexpected checkpoint dir: {checkpoint_dir}")
-                    continue
-
-                metrics_files = sorted(checkpoint_dir.glob("task-*-metrics.json"))
-                if not metrics_files:
-                    print(f"[WARN] No metrics files in {checkpoint_dir}")
-                    continue
-
-                metrics_path = metrics_files[0]
-                metrics = read_metrics(metrics_path)
-                if metrics is None:
-                    continue
-
-                metric_values = metrics.get("metrics")
-                if not isinstance(metric_values, dict):
-                    print(f"[WARN] Missing metrics dict in {metrics_path}")
-                    continue
-
-                metric_value = metric_values.get(metric_key)
-                if metric_value is None:
-                    print(f"[WARN] Missing {metric_key!r} in {metrics_path}")
-                    continue
-
-                task_label = extract_task_label(metrics, metrics_path)
-                task_labels.setdefault(task_run, task_label)
-
-                rows.append(
-                    {
-                        "model": model_name,
-                        "model_label": model_label,
-                        "task_run": task_run,
-                        "task_label": task_label,
-                        "checkpoint": step,
-                        "metric_value": metric_value,
-                    }
+                _scan_checkpoints(
+                    variant_task_dir, metric_key,
+                    model_key=model_name + suffix,
+                    model_label=model_label + " " + label_mod,
+                    task_run=task_run, rows=rows, task_labels=task_labels,
                 )
 
     if not rows:
@@ -405,28 +445,30 @@ def collect_mmlu_avg_records(
     prune_evals_root: Path,
     model_names: Sequence[str],
     metric_key: str,
-) -> pd.DataFrame:
-    """Collect records for all MMLU sub-tasks and return their macro average.
+) -> Dict[int, pd.DataFrame]:
+    """Collect MMLU sub-task records and return macro averages grouped by
+    checkpoint count.
 
-    Averaging is done by **ordinal checkpoint index** (1st, 2nd, 3rd, ...)
-    rather than by absolute step number, so sub-tasks with different step
-    values are still aligned correctly.  The resulting ``checkpoint`` column
-    contains the 1-based ordinal index.
+    Instead of truncating all sub-tasks to the minimum checkpoint count,
+    sub-tasks are grouped by how many checkpoints they have (per model).
+    Each group is averaged independently, yielding one DataFrame per
+    distinct checkpoint count.
 
-    Returns a DataFrame with the same schema as ``collect_records`` but with
-    ``task_run`` set to ``"mmlu_avg"``.
+    Returns a dict mapping checkpoint count -> averaged DataFrame (same
+    schema as ``collect_records`` output, with ``task_run`` set to
+    ``"mmlu_avg_<N>ckpts"``).  An empty dict is returned when no data is
+    available.
     """
     try:
         df, _ = collect_records(
             prune_evals_root, model_names, MMLU_SUBTASKS, metric_key
         )
     except RuntimeError:
-        return pd.DataFrame()
+        return {}
 
-    # Keep only MMLU sub-task rows (safety filter).
     df = df[df["task_run"].isin(MMLU_SUBTASKS)]
     if df.empty:
-        return df
+        return {}
 
     # Warn about models missing specific MMLU sub-tasks for this metric.
     for model_name in model_names:
@@ -441,47 +483,125 @@ def collect_mmlu_avg_records(
                 f"sub-task(s) for metric={metric_key!r}: {missing}"
             )
 
-    # Assign a 1-based ordinal index to each checkpoint within each
-    # (model, task_run) group, sorted by the original step number.
+    # Assign a 1-based ordinal checkpoint index per (model, subtask).
     df = df.sort_values(["model", "task_run", "checkpoint"])
     df["ckpt_idx"] = df.groupby(["model", "task_run"]).cumcount() + 1
 
-    # Truncate each model's series to the minimum checkpoint count across
-    # its sub-tasks so every ordinal index is a true average over *all*
-    # sub-tasks rather than a biased subset.
-    min_ckpts = (
+    # Checkpoint count per (model, subtask).
+    ckpt_counts = (
         df.groupby(["model", "task_run"])["ckpt_idx"]
         .max()
-        .groupby("model")
-        .min()
+        .rename("n_ckpts")
+        .reset_index()
     )
-    keep_masks = []
-    for model_name, max_idx in min_ckpts.items():
-        model_label = MODEL_LABELS.get(model_name, model_name)
-        full_max = df.loc[df["model"] == model_name]
-        per_task_max = full_max.groupby("task_run")["ckpt_idx"].max()
-        truncated = per_task_max[per_task_max > max_idx]
-        if not truncated.empty:
-            print(
-                f"[INFO] Truncating model {model_label!r} to {max_idx} "
-                f"checkpoint(s) for mmlu_avg (metric={metric_key!r}). "
-                f"Dropped trailing checkpoints from: "
-                f"{list(truncated.index)}"
-            )
-        keep_masks.append(
-            (df["model"] == model_name) & (df["ckpt_idx"] <= max_idx)
-        )
-    df = df[pd.concat(keep_masks, axis=1).any(axis=1)]
+    df = df.merge(ckpt_counts, on=["model", "task_run"])
 
-    # Macro average: mean over sub-tasks for each (model, ordinal index).
-    avg_df = (
-        df.groupby(["model", "model_label", "ckpt_idx"], as_index=False)
-        .agg(metric_value=("metric_value", "mean"))
+    result: Dict[int, pd.DataFrame] = {}
+    for n in sorted(df["n_ckpts"].unique()):
+        group_df = df[df["n_ckpts"] == n]
+
+        for model_key in sorted(group_df["model"].unique()):
+            mlabel = group_df.loc[
+                group_df["model"] == model_key, "model_label"
+            ].iloc[0]
+            subtasks = sorted(
+                group_df.loc[group_df["model"] == model_key, "task_run"].unique()
+            )
+            print(
+                f"[INFO] mmlu_avg ({n} ckpts, metric={metric_key!r}): "
+                f"model {mlabel!r} averages over {len(subtasks)} sub-task(s)"
+            )
+
+        avg_df = (
+            group_df.groupby(
+                ["model", "model_label", "ckpt_idx"], as_index=False
+            ).agg(metric_value=("metric_value", "mean"))
+        )
+        avg_df = avg_df.rename(columns={"ckpt_idx": "checkpoint"})
+        avg_df["task_run"] = f"mmlu_avg_{n}ckpts"
+        avg_df["task_label"] = f"MMLU avg ({n} ckpts)"
+
+        result[n] = avg_df
+
+    return result
+
+
+def plot_mmlu_avg_subplots(
+    ckpt_groups: Dict[int, pd.DataFrame],
+    output_path: Path,
+    style: str,
+    show: bool,
+    metric_key: str,
+) -> None:
+    """Plot MMLU macro-avg results as side-by-side subplots, one per checkpoint count."""
+    if not ckpt_groups:
+        print("[WARN] No MMLU avg data to plot.")
+        return
+
+    sorted_counts = sorted(ckpt_groups)
+    n_groups = len(sorted_counts)
+
+    all_labels = sorted(
+        {
+            label
+            for avg_df in ckpt_groups.values()
+            for label in avg_df["model_label"].unique()
+        }
     )
-    avg_df = avg_df.rename(columns={"ckpt_idx": "checkpoint"})
-    avg_df["task_run"] = "mmlu_avg"
-    avg_df["task_label"] = "MMLU (macro avg)"
-    return avg_df
+
+    sns.set_theme(style=style)
+    fig, axes = plt.subplots(
+        1, n_groups, figsize=(8 * n_groups, 5), squeeze=False
+    )
+
+    palette = sns.color_palette("colorblind", n_colors=len(all_labels))
+    color_map = {label: palette[i] for i, label in enumerate(all_labels)}
+
+    for ax_idx, n_ckpts in enumerate(sorted_counts):
+        ax = axes[0][ax_idx]
+        avg_df = ckpt_groups[n_ckpts]
+
+        for model_label in sorted(avg_df["model_label"].unique()):
+            model_df = avg_df[
+                avg_df["model_label"] == model_label
+            ].sort_values("checkpoint")
+            ax.plot(
+                model_df["checkpoint"],
+                model_df["metric_value"],
+                marker="o",
+                linewidth=2,
+                markersize=6,
+                color=color_map[model_label],
+                label=model_label,
+            )
+
+        ax.set_title(f"MMLU avg ({n_ckpts} checkpoints)")
+        ax.set_xlabel("Checkpoint")
+        ax.set_ylabel(metric_key)
+
+    # Deduplicated legend shared across all subplots.
+    seen: Dict[str, object] = {}
+    for ax_row in axes:
+        for ax in ax_row:
+            for handle, label in zip(*ax.get_legend_handles_labels()):
+                seen.setdefault(label, handle)
+    fig.legend(
+        list(seen.values()),
+        list(seen.keys()),
+        title="Model",
+        loc="center left",
+        bbox_to_anchor=(1.02, 0.5),
+    )
+
+    plt.tight_layout()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(output_path, bbox_inches="tight")
+    print(f"[INFO] Saved MMLU avg subplot to {output_path}")
+
+    if show:
+        plt.show()
+    else:
+        plt.close()
 
 
 def plot_task(
@@ -499,11 +619,13 @@ def plot_task(
         print(f"[WARN] No data for task run: {task_run}")
         return
 
-    # Warn about any expected models that have no data for this task/metric.
+    # Warn about any expected (base) models that have no data for this
+    # task/metric.  Variant model keys are auto-discovered and optional, so
+    # we only warn for the explicitly selected base models.
     if expected_models is not None:
         models_present = set(task_df["model"].unique())
         for model in expected_models:
-            if model not in models_present:
+            if model not in models_present and not _is_variant_task(model):
                 label = MODEL_LABELS.get(model, model)
                 print(
                     f"[WARN] Model {label!r} has no data for "
@@ -625,10 +747,10 @@ def main() -> None:
 
         # --- mmlu_avg (macro average across MMLU categories) ---
         if has_mmlu_avg:
-            avg_df = collect_mmlu_avg_records(
+            ckpt_groups = collect_mmlu_avg_records(
                 args.prune_evals_root, model_set, metric_key
             )
-            if avg_df.empty:
+            if not ckpt_groups:
                 print(f"[WARN] No MMLU data for metric {metric_key!r}; skipping mmlu_avg.")
             else:
                 metric_output_dir = base_output_dir / sanitize_filename(metric_key)
@@ -636,15 +758,12 @@ def main() -> None:
                     metric_output_dir
                     / f"mmlu_avg_{sanitize_filename(metric_key)}.png"
                 )
-                plot_task(
-                    avg_df,
-                    "mmlu_avg",
-                    "MMLU (macro avg)",
+                plot_mmlu_avg_subplots(
+                    ckpt_groups,
                     output_file,
                     args.style,
                     args.show,
                     metric_key,
-                    expected_models=model_set,
                 )
 
 
