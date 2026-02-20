@@ -40,38 +40,38 @@ batch_size=32
 TASK_GROUPS_LIST=(
   ######### few-shot ##########
   # MC9 tasks
-  "arc_easy"
+#  "arc_easy"
 #  "arc_challenge"
-#  "boolq"
-#  "csqa"
-#  "hellaswag"
-#  "openbookqa"
-#  "piqa"
-#  "socialiqa"
-#  "winogrande"
-#  "gsm8k_generation_0shot"
-#  "gsm8k_perplexity_0shot"
-#  "coqa_0shot"
-#  "coqa_full_0shot"
-#  "squad_0shot"
-#
-#  "mmlu_biology"
-#  "mmlu_business"
-#  "mmlu_chemistry"
-#  "mmlu_computer_science"
-#  "mmlu_culture"
-#  "mmlu_economics"
-#  "mmlu_engineering"
-#  "mmlu_geography"
-#  "mmlu_health"
-#  "mmlu_history"
-#  "mmlu_law"
-#  "mmlu_math"
-#  "mmlu_other"
-#  "mmlu_philosophy_cat"
-#  "mmlu_physics"
-#  "mmlu_politics"
-#  "mmlu_psychology"
+  "boolq"
+  "csqa"
+  "hellaswag"
+  "openbookqa"
+  "piqa"
+  "socialiqa"
+  "winogrande"
+  "gsm8k_generation_0shot"
+  "gsm8k_perplexity_0shot"
+  "coqa_0shot"
+  "coqa_full_0shot"
+  "squad_0shot"
+
+  "mmlu_biology"
+  "mmlu_business"
+  "mmlu_chemistry"
+  "mmlu_computer_science"
+  "mmlu_culture"
+  "mmlu_economics"
+  "mmlu_engineering"
+  "mmlu_geography"
+  "mmlu_health"
+  "mmlu_history"
+  "mmlu_law"
+  "mmlu_math"
+  "mmlu_other"
+  "mmlu_philosophy_cat"
+  "mmlu_physics"
+  "mmlu_politics"
+  "mmlu_psychology"
 
 #  "synthea_zeroshot"
 
@@ -174,7 +174,7 @@ for MODEL in "${MODELS[@]}"; do
                 --no-follow \
                 --no-torchrun \
                 --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
-                -- bash -c "scripts/hf_finetune_with_pruning.sh \
+                -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
                 --pruned-model ${BASE_DIR}/models/${MODEL} \
                 --task ${TASK} \
                 --base-dir "${BASE_DIR}/prune_evals" \
@@ -225,7 +225,7 @@ for MODEL in "${MODELS[@]}"; do
                 --no-follow \
                 --no-torchrun \
                 --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
-                -- bash -c "scripts/hf_finetune_with_pruning_layerwise.sh \
+                -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
                     --model ${BASE_DIR}/models/${MODEL} \
                     --task ${TASK} \
                     --prune-keep-k ${prune_keep_k} \
