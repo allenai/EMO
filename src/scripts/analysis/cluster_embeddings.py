@@ -43,13 +43,16 @@ logger = logging.getLogger(__name__)
 # Loading
 # ---------------------------------------------------------------------------
 
-def load_data(output_dir: str):
-    emb_path = os.path.join(output_dir, "embeddings_optA_avgprob.npy")
-    meta_path = os.path.join(output_dir, "metadata.jsonl.gz")
-    info_path = os.path.join(output_dir, "info.json")
+def load_data(output_dir: str, emb_file: str = None, data_dir: str = None):
+    if data_dir is None:
+        data_dir = output_dir
+    if emb_file is None:
+        emb_file = os.path.join(data_dir, "embeddings_optA_avgprob.npy")
+    meta_path = os.path.join(data_dir, "metadata.jsonl.gz")
+    info_path = os.path.join(data_dir, "info.json")
 
-    logger.info(f"Loading embeddings from {emb_path} ...")
-    emb = np.load(emb_path).astype(np.float32)  # (N, 2032)
+    logger.info(f"Loading embeddings from {emb_file} ...")
+    emb = np.load(emb_file).astype(np.float32)  # (N, D)
 
     logger.info(f"Loading metadata ...")
     meta = []
@@ -280,11 +283,16 @@ def main():
     parser.add_argument("--variance-threshold", type=float, default=0.95)
     parser.add_argument("--n-components", type=int, default=None,
                         help="Fix PCA components directly (overrides --variance-threshold)")
+    parser.add_argument("--emb-file", type=str, default=None,
+                        help="Path to embedding .npy file (default: <data-dir>/embeddings_optA_avgprob.npy)")
+    parser.add_argument("--data-dir", type=str, default=None,
+                        help="Dir with shared data files (metadata.jsonl.gz, info.json). "
+                             "Defaults to --output-dir if not specified.")
     args = parser.parse_args()
 
     np.random.seed(42)
 
-    emb, meta, info = load_data(args.output_dir)
+    emb, meta, info = load_data(args.output_dir, args.emb_file, args.data_dir)
 
     reduced, pca, cumvar, n_components = reduce_and_normalize(
         emb, args.variance_threshold, args.n_components)

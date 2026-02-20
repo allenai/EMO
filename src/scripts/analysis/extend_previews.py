@@ -70,17 +70,23 @@ def iter_documents(tokens, min_len=32, max_len=2048):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output-dir", default="claude_outputs/analysis/router_clustering")
+    parser.add_argument("--data-dir", default="claude_outputs/analysis/router_clustering",
+                        help="Dir with shared data files (metadata.jsonl.gz, mix_composition.json, info.json)")
+    parser.add_argument("--analysis-dir", default=None,
+                        help="Dir with clusters_k{k}/ and where HTML/report go. Defaults to --data-dir.")
+    parser.add_argument("--emb-file", default=None,
+                        help="Embedding .npy path. Defaults to <data-dir>/embeddings_optA_avgprob.npy.")
     parser.add_argument("--k", type=int, default=64)
     parser.add_argument("--max-preview-chars", type=int, default=3000)
     parser.add_argument("--model-path",
                         default="models/twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf")
     args = parser.parse_args()
 
-    cluster_dir = os.path.join(args.output_dir, f"clusters_k{args.k}")
-    meta_path   = os.path.join(args.output_dir, "metadata.jsonl.gz")
-    comp_path   = os.path.join(args.output_dir, "mix_composition.json")
-    info_path   = os.path.join(args.output_dir, "info.json")
+    analysis_dir = args.analysis_dir or args.data_dir
+    cluster_dir = os.path.join(analysis_dir, f"clusters_k{args.k}")
+    meta_path   = os.path.join(args.data_dir, "metadata.jsonl.gz")
+    comp_path   = os.path.join(args.data_dir, "mix_composition.json")
+    info_path   = os.path.join(args.data_dir, "info.json")
 
     # ── Load existing state ──────────────────────────────────────────────────
     logger.info("Loading existing metadata...")
@@ -206,9 +212,12 @@ def main():
 
     # ── Regenerate HTML visualizer ───────────────────────────────────────────
     logger.info("Regenerating HTML visualizer with full previews...")
+    emb_file = args.emb_file or os.path.join(args.data_dir, "embeddings_optA_avgprob.npy")
     sys.argv = [
         "generate_cluster_viz",
-        "--output-dir", args.output_dir,
+        "--output-dir", analysis_dir,
+        "--data-dir", args.data_dir,
+        "--emb-file", emb_file,
         "--k", str(args.k),
     ]
     import importlib

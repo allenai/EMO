@@ -1,37 +1,37 @@
 #!/bin/bash
-# Pipeline: analyze data composition → extract router embeddings → cluster
+# Pipeline: analyze all-dressed topic distribution → extract router embeddings → cluster
 #
-# Step 1 (analyze_data_mix) is fast (~2 min) and only needs to be run once.
-# Step 2 (extract_router_embeddings) is the long step (~2-4 hrs for 500M tokens).
-# Step 3 (cluster_embeddings) will be run interactively after consulting on k.
+# Uses cc_weborganizer vigintile_0020 data with uniform mixing across 24 topics.
 #
-# All outputs go to claude_outputs/analysis/router_clustering/
+# Step 1 (analyze_weborganizer): Fast S3 scan, only needs to run once.
+# Step 2 (extract_router_embeddings): Long step (~2-4 hrs for 500M tokens).
+# Step 3 (cluster_embeddings): Run interactively after consulting on k.
+#
+# All outputs go to claude_outputs/analysis/router_clustering_weborganizer/
 
 set -e
 
 MODEL_PATH="models/twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
-OUTPUT_DIR="claude_outputs/analysis/router_clustering_pretraining"
+OUTPUT_DIR="claude_outputs/analysis/router_clustering_weborganizer"
 COMPOSITION_FILE="${OUTPUT_DIR}/mix_composition.json"
 TARGET_TOKENS=500000000
 BATCH_SIZE=8
 
 # ---------------------------------------------------------------------------
-# Step 1: Analyze data mix composition (run once; skip if already done)
+# Step 1: Analyze all-dressed data distribution (run once; skip if done)
 # ---------------------------------------------------------------------------
 if [ ! -f "$COMPOSITION_FILE" ]; then
-    echo "=== Step 1: Analyzing data mix composition ==="
-    conda run -n flexmoe python -m src.scripts.analysis.analyze_data_mix \
-        --mix-file src/olmo_core/data/mixes/OLMoE-mix-0824.txt \
+    echo "=== Step 1: Analyzing all-dressed data distribution ==="
+    conda run -n flexmoe python -m src.scripts.analysis.analyze_weborganizer \
         --output-dir "$OUTPUT_DIR" \
-        --num-preview-docs 2 \
-        --stream-bytes 3000000
+        --num-preview-docs 0
 else
     echo "=== Step 1: Composition file already exists, skipping ==="
     echo "    (delete ${COMPOSITION_FILE} to re-run)"
 fi
 
 # ---------------------------------------------------------------------------
-# Step 2: Extract router embeddings (proportional sampling, ~500M tokens)
+# Step 2: Extract router embeddings (uniform sampling, ~500M tokens)
 # ---------------------------------------------------------------------------
 echo ""
 echo "=== Step 2: Extracting router embeddings ==="

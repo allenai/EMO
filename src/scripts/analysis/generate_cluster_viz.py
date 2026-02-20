@@ -26,70 +26,137 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 CLUSTER_LABELS = {
-    0:  ("Industrial & Manufacturing Products", "reference"),
-    1:  ("Parenting & Family Blogs", "personal"),
-    2:  ("Software Development Q&A", "code"),
-    3:  ("Environmental & Energy Journalism", "news"),
-    4:  ("International Conflict News", "news"),
-    5:  ("Business & HR Advice", "business"),
-    6:  ("Biomedical / Clinical Medicine", "science"),
-    7:  ("Gaming & RPG", "personal"),
-    8:  ("Digital Marketing & E-Commerce", "business"),
-    9:  ("Food & Recipe Blogs", "personal"),
-    10: ("Personal Lifestyle Blogs", "personal"),
-    11: ("Celebrity & Entertainment Gossip", "personal"),
-    12: ("Pet Care", "personal"),
-    13: ("Online Forums & Game FAQs", "reference"),
-    14: ("Consumer Health & Wellness", "health"),
-    15: ("US Political Commentary", "news"),
-    16: ("Sports Training & Fitness", "personal"),
-    17: ("General Programming Code", "code"),
-    18: ("Web Forms & Registration Pages", "reference"),
-    19: ("Personal Finance & Mortgages", "business"),
-    20: ("Music Reviews & Blogs", "arts"),
-    21: ("Religion & Christianity", "arts"),
-    22: ("Multilingual / Non-English Web", "reference"),
-    23: ("Travel & Tourism", "personal"),
-    24: ("Math & Physics Q&A Forums", "science"),
-    25: ("Self-Help & Personal Development", "personal"),
-    26: ("Movies & Entertainment Reviews", "arts"),
-    27: ("Chinese Manufacturing Listings", "business"),
-    28: ("Web Hosting & Tech Support", "code"),
-    29: ("Earth Science & Climate", "science"),
-    30: ("US Law & Legal Commentary", "news"),
-    31: ("Geopolitical / Foreign Policy News", "news"),
-    32: ("Humanities & Literary Analysis", "arts"),
-    33: ("Professional Sports News", "personal"),
-    34: ("Cooking Recipes", "personal"),
-    35: ("Education & Pedagogy", "science"),
-    36: ("Philosophy & Secular Blogs", "arts"),
-    37: ("Spam / Low-Quality Web", "spam"),
-    38: ("Crafts, DIY & Handmade Arts", "personal"),
-    39: ("Finance & Investment Analysis", "business"),
-    40: ("Crime & Violence News", "news"),
-    41: ("Generic Listicle / Boilerplate", "spam"),
-    42: ("School & Community News", "education"),
-    43: ("South Asian / Indian News", "news"),
-    44: ("Wildlife & Animal Biology", "science"),
-    45: ("Programming Tutorials & Docs", "code"),
-    46: ("Astronomy & Space Science", "science"),
-    47: ("Slang & Quotations (Urban Dict.)", "reference"),
-    48: ("Automotive Reviews", "reference"),
-    49: ("Fan Fiction & Creative Fiction", "personal"),
-    50: ("Biomedical Research (Immunology)", "science"),
-    51: ("Consumer Tech & Gadgets", "reference"),
-    52: ("Applied Engineering Research", "science"),
-    53: ("Tech Stack Exchange Q&A", "code"),
-    54: ("Poetry & Creative Writing", "arts"),
-    55: ("Legal & Regulatory Compliance", "business"),
-    56: ("Consumer Electronics & Hardware", "reference"),
-    57: ("SEO Spam / Dating Ads", "spam"),
-    58: ("Miscellaneous Personal Blogs", "personal"),
-    59: ("Academic Research Citations", "science"),
-    60: ("Reference & Dictionary Sites", "reference"),
-    61: ("Alternative Health & Supplements", "health"),
-    62: ("Systems & Infrastructure Code", "code"),
-    63: ("International Trade & Economics", "news"),
+    # --- optB k=128 labels ---
+    # Key finding: optB clustering strongly captures document prefix/format patterns
+    # (day-of-week blogs, Q&A prefixes, web boilerplate) rather than pure semantics.
+    0:  ("Skip-to-Content Blog Pages", "personal"),
+    1:  ("Miscellaneous Short Web Pages (R-prefix)", "reference"),
+    2:  ("Wednesday Blog Posts", "personal"),
+    3:  ("Currently... Web Pages", "reference"),
+    4:  ("Short Misc S-Prefix Pages", "spam"),
+    5:  ("Sh-Prefix Articles (health/baby/legal)", "reference"),
+    6:  ("Se-Prefix Articles (tech/fashion/religion)", "reference"),
+    7:  ("The-Prefix Articles (Large Diverse Cluster)", "reference"),
+    8:  ("F-Prefix Articles (ocean/Angular/robotics)", "reference"),
+    9:  ("How-To / How-Do Q&A Articles", "reference"),
+    10: ("Person Profile Pages (Jason/Patrick)", "reference"),
+    11: ("What-Is / What-Are Q&A Articles", "reference"),
+    12: ("Obama Political Commentary", "news"),
+    13: ("Miscellaneous Heterogeneous Web", "spam"),
+    14: ('Quote-Prefixed Articles ("...")', "reference"),
+    15: ("Home-Slash Navigation Pages", "reference"),
+    16: ("Friday Blog Posts", "personal"),
+    17: ("E-Prefix Pages (eCommerce/eHealth/eBook)", "reference"),
+    18: ("Art & Artificial Intelligence Articles", "arts"),
+    19: ("Find-Prefix Service & Legal Pages", "reference"),
+    20: ("Image-Tagged Pages", "reference"),
+    21: ("Top-N Listicle Pages", "reference"),
+    22: ("Helicopter / Haunted / Mixed Pages", "reference"),
+    23: ("GitHub Code Repositories", "code"),
+    24: ("Travel Letters & News Opinions", "personal"),
+    25: ("Scientists-Discover Science News", "science"),
+    26: ("Ten-Item Listicle Articles", "reference"),
+    27: ("Forum Discussion Threads (HIV/Q&A)", "reference"),
+    28: ("[Bracket]-Prefix Forum Posts", "reference"),
+    29: ("Hash/Symbol-Prefix Mixed Pages (#)", "reference"),
+    30: ("Tag-Archive Category Pages", "reference"),
+    31: ("You-Are Navigation Pages", "reference"),
+    32: ("Why-Question Articles", "reference"),
+    33: ("Urban Dictionary Entries", "reference"),
+    34: ("Please-Prefix CTA Pages", "reference"),
+    35: ("V-Prefix News Articles (politics/tech)", "news"),
+    36: ("Charles-Named Articles (profiles/history)", "reference"),
+    37: ("Estate, Legal & Biblical Text", "reference"),
+    38: ("My-Prefix Personal Blog Entries", "personal"),
+    39: ("Tuesday Blog Posts", "personal"),
+    40: ("Quick-Answer How-To Articles", "reference"),
+    41: ("Monday Blog Posts", "personal"),
+    42: ("Stack Exchange Q&A (Take-2-min-tour)", "code"),
+    43: ("Follow-Prefix Tech/News Pages", "reference"),
+    44: ("Bullet-Point Structured Pages (•)", "reference"),
+    45: ("Plus-Prefix Pages (+phone/+votes)", "reference"),
+    46: ("Long-Form Feature Articles (books/history)", "news"),
+    47: ("Five-Item Tips & Articles", "reference"),
+    48: ("Grand-Prefix Articles (science/news/games)", "reference"),
+    49: ("Go-Prefix Pages (Go team/Go to/Goa)", "reference"),
+    50: ("Medical & Innovation Mixed", "health"),
+    51: ("28-Date-Prefix Pages (job/diary/history)", "reference"),
+    52: ("Engineering & Gaming Mixed", "science"),
+    53: ("Health, Cultural & City Mixed", "health"),
+    54: ("Local News & Reports (CINCINNATI/Catholic)", "news"),
+    55: ("Linux/Tech Stack Exchange (Sign up ×)", "code"),
+    56: ("N-Prefix News & Info Pages", "reference"),
+    57: ("Psychology Wiki Articles", "science"),
+    58: ("J-Prefix Short Articles", "reference"),
+    59: ("Wikipedia Mixed Entries", "reference"),
+    60: ("Code Import Blocks (Python/TF/React)", "code"),
+    61: ("B-Prefix Articles (Bible/Boulder/Bengals)", "reference"),
+    62: ("BOM-Char Prefix Pages (﻿)", "reference"),
+    63: ("New-Prefix News Articles", "news"),
+    64: ("Here-Prefix Pages (Here's.../Here you...)", "reference"),
+    65: ("View-Thread Forum Posts", "reference"),
+    66: ("Diet, Culture & Sports Mixed", "personal"),
+    67: ("To-Prefix Pages (forms/research/letters)", "reference"),
+    68: ("Can-Question Articles", "reference"),
+    69: ("TED Talks & Board Feature Pages", "reference"),
+    70: ("Sm-Prefix Pages (smoking/smores/smell)", "reference"),
+    71: ("Z-Prefix Articles (Zika/Zvi/Zaphary)", "reference"),
+    72: ("Who-Question Articles (Piaget/NFL/God)", "reference"),
+    73: ("Interview Articles (with/by author)", "reference"),
+    74: ("Sunday Blog Posts", "personal"),
+    75: ("Biomedical Research Abstracts (Cookies...)", "science"),
+    76: ("Gaming & Entertainment Login Pages", "personal"),
+    77: ("One-Prefix Articles (One bite/One Less)", "reference"),
+    78: ("Miscellaneous Personal Mixed", "personal"),
+    79: ("Stack Exchange Diverse Q&A (Tell me more ×)", "code"),
+    80: ("Matt-Named Articles (profiles/coding/faith)", "reference"),
+    81: ("When-Prefix Articles (when governments...)", "reference"),
+    82: ("For-Prefix Explanatory Articles", "reference"),
+    83: ("Your-Prefix Pages (Your Brain/Your Cart)", "reference"),
+    84: ("If-You-Prefix Instructional Pages", "reference"),
+    85: ("CA/CAE/PBS Media & Law Pages", "reference"),
+    86: ("Single-Quote-Titled News Articles ('...')", "news"),
+    87: ("Four-Item Listicle Articles", "reference"),
+    88: ("Numbered-List Entries (1. ...)", "reference"),
+    89: ("It-Is Prefix Articles (It's/It is...)", "reference"),
+    90: ("Our-Mission/Vision Organization Pages", "reference"),
+    91: ("P-Prefix Articles (Plexus/Pain/Pope)", "reference"),
+    92: ("Paramount/Richard Mixed Profiles", "reference"),
+    93: ("Day-N Numbered Blog/Diary Posts", "personal"),
+    94: ("This-Prefix Articles (This site/This Week)", "reference"),
+    95: ("National-Org & Institution Articles", "reference"),
+    96: ("Cen-Prefix Articles (CentOS/Centos/Centric)", "reference"),
+    97: ("Search-Prefix Pages (Search blog/jobs)", "reference"),
+    98: ("From-Prefix Pages (From ErfWiki/From mag)", "reference"),
+    99: ("By-Author Attributed Articles", "reference"),
+    100: ("As-Prefix Articles (As COVID/As the...)", "reference"),
+    101: ("There-Is/Are Prefix Articles", "reference"),
+    102: ("An-Prefix Articles (An ultra-fast/An intro)", "reference"),
+    103: ("L-Prefix Mixed Articles (Lupaca/LAMBRO)", "reference"),
+    104: ("Wow/O.Henry/Owen Mixed Pages", "reference"),
+    105: ("We-Prefix Pages (We gratefully/We Need)", "reference"),
+    106: ("Main-Navigation Pages (Main Page/Content)", "reference"),
+    107: ("Submit-Prefix User Submission Pages", "reference"),
+    108: ("Sup-Prefix Articles (Supreme/Supplementary)", "reference"),
+    109: ("Saturday Blog Posts", "personal"),
+    110: ("Review Articles (book/game/movie)", "arts"),
+    111: ("Is-Question Articles (Is a Better.../Is...)", "reference"),
+    112: ("Print-Prefix Pages (Print this page/PDF)", "reference"),
+    113: ("K-Prefix Articles (Kubernetes/KIEV/Kotebel)", "reference"),
+    114: ("Use-Prefix Instructional Pages", "reference"),
+    115: ("Q-and-A Format Pages (Q: How do...)", "reference"),
+    116: ("Apple Inc. Tech News", "reference"),
+    117: ("Str/Stu-Prefix Articles (Stunning/Stress)", "reference"),
+    118: ("W-Prefix Miscellaneous Articles", "reference"),
+    119: ("M-Prefix News Articles (Malware/Malaysia)", "news"),
+    120: ("Flash & Scripting/FAQ Pages", "code"),
+    121: ("Question-Format Q&A (Question: What is...)", "reference"),
+    122: ("Mixed Utility Articles (Airport/Battery)", "reference"),
+    123: ("G-Prefix Articles (Guts/Gambino/Garden)", "reference"),
+    124: ("American-Prefix Articles (government/culture)", "reference"),
+    125: ("E-Prefix Articles (Eating/Elder Scrolls/Econ)", "reference"),
+    126: ("Cryptocurrency & Diverse Mixed Web", "reference"),
+    127: ("Meet-Prefix Profile Articles", "reference"),
 }
 
 CATEGORY_COLORS = {
@@ -112,24 +179,33 @@ CATEGORY_COLORS = {
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output-dir", default="claude_outputs/analysis/router_clustering")
+    parser.add_argument("--output-dir", required=True,
+                        help="Analysis output dir (where clusters_k{k}/, HTML, and report go)")
+    parser.add_argument("--data-dir", default=None,
+                        help="Dir with shared data files (metadata.jsonl.gz, info.json). "
+                             "Defaults to --output-dir if not specified.")
+    parser.add_argument("--emb-file", default=None,
+                        help="Path to embedding .npy file. "
+                             "Defaults to <data-dir>/embeddings_optA_avgprob.npy.")
     parser.add_argument("--k", type=int, default=64)
     args = parser.parse_args()
 
+    data_dir = args.data_dir or args.output_dir
     cluster_dir = os.path.join(args.output_dir, f"clusters_k{args.k}")
+    emb_file = args.emb_file or os.path.join(data_dir, "embeddings_optA_avgprob.npy")
 
     # Load everything
-    logger.info("Loading embeddings...")
-    emb = np.load(os.path.join(args.output_dir, "embeddings_optA_avgprob.npy")).astype(np.float32)
+    logger.info(f"Loading embeddings from {emb_file}...")
+    emb = np.load(emb_file).astype(np.float32)
     labels = np.load(os.path.join(cluster_dir, "assignments.npy"))
 
     logger.info("Loading metadata...")
     meta = []
-    with gzip.open(os.path.join(args.output_dir, "metadata.jsonl.gz"), "rt") as f:
+    with gzip.open(os.path.join(data_dir, "metadata.jsonl.gz"), "rt") as f:
         for line in f:
             meta.append(json.loads(line))
 
-    with open(os.path.join(args.output_dir, "info.json")) as f:
+    with open(os.path.join(data_dir, "info.json")) as f:
         info = json.load(f)
 
     with open(os.path.join(cluster_dir, "summary.json")) as f:
@@ -183,14 +259,11 @@ def main():
             "rep_docs": c["representative_docs"],
         })
 
-    # Write markdown report
-    report_path = os.path.join(args.output_dir, "cluster_report.md")
-    write_report(clusters_js, info, args.k, report_path)
-    logger.info(f"Saved report → {report_path}")
+    emb_label = os.path.basename(emb_file).replace(".npy", "")
 
     # Write HTML visualizer
     html_path = os.path.join(args.output_dir, "cluster_explorer.html")
-    write_html(clusters_js, docs_js, info, args.k, html_path)
+    write_html(clusters_js, docs_js, info, args.k, emb_label, html_path)
     logger.info(f"Saved HTML visualizer → {html_path}")
 
 
@@ -198,9 +271,9 @@ def main():
 # Markdown report
 # ---------------------------------------------------------------------------
 
-def write_report(clusters_js, info, k, path):
+def write_report(clusters_js, info, k, emb_label, path):
     lines = []
-    lines.append(f"# FlexMoE Router Cluster Analysis (k={k})")
+    lines.append(f"# FlexMoE Router Cluster Analysis (k={k}, {emb_label})")
     lines.append("")
     lines.append(f"**Model:** `{info['model_path']}`")
     lines.append(f"**Documents:** {info['num_docs']:,}  |  **Tokens:** {info['total_tokens']:,}")
@@ -293,10 +366,14 @@ def write_report(clusters_js, info, k, path):
 # HTML visualizer
 # ---------------------------------------------------------------------------
 
-def write_html(clusters_js, docs_js, info, k, path):
-    clusters_json = json.dumps(clusters_js)
-    docs_json = json.dumps(docs_js)
-    cat_colors_json = json.dumps(CATEGORY_COLORS)
+def write_html(clusters_js, docs_js, info, k, emb_label, path):
+    # Escape </script> so it can't terminate the <script> block early
+    def safe_json(obj):
+        return json.dumps(obj).replace("</", "<\\/")
+
+    clusters_json = safe_json(clusters_js)
+    docs_json = safe_json(docs_js)
+    cat_colors_json = safe_json(CATEGORY_COLORS)
     model_path = info["model_path"]
     num_docs = info["num_docs"]
     num_tokens = info["total_tokens"]
@@ -305,7 +382,7 @@ def write_html(clusters_js, docs_js, info, k, path):
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>FlexMoE Cluster Explorer — k={k}</title>
+<title>FlexMoE Cluster Explorer — k={k} · {emb_label}</title>
 <style>
   :root {{
     --bg: #0f1117;
@@ -451,7 +528,7 @@ def write_html(clusters_js, docs_js, info, k, path):
 <body>
 
 <div id="header">
-  <h1>FlexMoE Router Cluster Explorer</h1>
+  <h1>FlexMoE Cluster Explorer — {emb_label}</h1>
   <span class="meta">k={k} · {num_docs:,} docs · {num_tokens:,} tokens · {model_path.split('/')[-2]}</span>
   <div id="view-tabs">
     <button class="view-tab active" onclick="setView('detail')">Clusters</button>
