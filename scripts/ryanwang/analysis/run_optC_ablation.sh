@@ -42,7 +42,7 @@ else
         echo "optC Transform: $TRANSFORM  [sweep]"
         echo "========================================"
 
-        conda run --no-capture-output -n flexmoe python -u \
+        python -u \
             -m src.scripts.analysis.cluster_embeddings \
             --output-dir "$OUT" \
             --emb-file "$EMB_FILE_C" \
@@ -74,7 +74,7 @@ else
         echo "optD Transform: $TRANSFORM  [sweep]"
         echo "========================================"
 
-        conda run --no-capture-output -n flexmoe python -u \
+        python -u \
             -m src.scripts.analysis.cluster_embeddings \
             --output-dir "$OUT" \
             --emb-file "$EMB_FILE_D" \

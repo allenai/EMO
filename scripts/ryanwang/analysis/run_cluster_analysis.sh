@@ -20,7 +20,7 @@ BATCH_SIZE=8
 # ---------------------------------------------------------------------------
 if [ ! -f "$COMPOSITION_FILE" ]; then
     echo "=== Step 1: Analyzing data mix composition ==="
-    conda run -n flexmoe python -m src.scripts.analysis.analyze_data_mix \
+    python -u -m src.scripts.analysis.analyze_data_mix \
         --mix-file src/olmo_core/data/mixes/OLMoE-mix-0824.txt \
         --output-dir "$OUTPUT_DIR" \
         --num-preview-docs 2 \
@@ -35,7 +35,7 @@ fi
 # ---------------------------------------------------------------------------
 echo ""
 echo "=== Step 2: Extracting router embeddings ==="
-conda run -n flexmoe python -m src.scripts.analysis.extract_router_embeddings \
+python -u -m src.scripts.analysis.extract_router_embeddings \
     --model-path "$MODEL_PATH" \
     --composition-file "$COMPOSITION_FILE" \
     --output-dir "$OUTPUT_DIR" \
