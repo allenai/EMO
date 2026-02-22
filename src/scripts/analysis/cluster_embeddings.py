@@ -2,22 +2,31 @@
 Cluster document router embeddings to discover implicit domains learned by the MoE model.
 
 Steps:
-  1. Load Option A embeddings (avg softmax probs, float16)
-  2. PCA to capture 95% variance
-  3. L2 normalize (cosine-like distance for K-means)
-  4. K-means sweep over k values → elbow + silhouette plots
-  5. For chosen k: save assignments + per-cluster report
+  1. Load embeddings (optA/B/C/D .npy file)
+  2. Apply a transform pipeline (see --transform)
+  3. K-means sweep over k values → elbow + silhouette plots
+  4. For chosen k: save assignments + per-cluster report
+
+Transform options (--transform):
+  raw                No transform — raw embedding values as-is
+  l2                 L2 normalize only
+  pca_l2             PCA (95% var) → L2 normalize  [default]
+  log_l2             log1p → L2 normalize (compresses dynamic range)
+  standardize_pca_l2 Z-score per feature → PCA (95% var) → L2 normalize
+  renorm_l2          Per-layer renormalize to sum=1 → L2 normalize
+  tsvd_l2            TruncatedSVD (95% var) → L2 normalize (no mean-centering)
+  renorm_tsvd_l2     Per-layer renormalize → TruncatedSVD → L2 normalize
 
 Usage:
     # Step 1: sweep to pick k (produces plots)
     python -m src.scripts.analysis.cluster_embeddings \
         --output-dir claude_outputs/analysis/router_clustering \
-        --mode sweep
+        --mode sweep --transform pca_l2
 
     # Step 2: run final clustering with chosen k
     python -m src.scripts.analysis.cluster_embeddings \
         --output-dir claude_outputs/analysis/router_clustering \
-        --mode cluster --k 32
+        --mode cluster --k 128 --transform pca_l2
 """
 
 import argparse
@@ -26,14 +35,19 @@ import json
 import logging
 import os
 
+# Limit BLAS threads before any numpy/sklearn import to prevent OpenBLAS segfault
+# on machines with many cores (>128 thread limit in precompiled OpenBLAS).
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "16")
+os.environ.setdefault("OMP_NUM_THREADS", "16")
+
 import matplotlib
 matplotlib.use("Agg")  # non-interactive backend
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, TruncatedSVD
 from sklearn.metrics import silhouette_score
-from sklearn.preprocessing import normalize
+from sklearn.preprocessing import normalize, StandardScaler
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -97,8 +111,11 @@ def reduce_and_normalize(emb: np.ndarray, variance_threshold: float = 0.95,
 
 
 def plot_explained_variance(cumvar, n_components, out_path):
+    # Truncate display to first 300 dims for readability, but always include n_components
+    max_display = max(300, n_components + 20)
+    plot_cumvar = cumvar[:min(max_display, len(cumvar))]
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.plot(np.arange(1, len(cumvar) + 1), cumvar, linewidth=1)
+    ax.plot(np.arange(1, len(plot_cumvar) + 1), plot_cumvar, linewidth=1)
     ax.axvline(n_components, color="red", linestyle="--",
                label=f"{n_components} components → {cumvar[n_components-1]:.1%} variance")
     ax.set_xlabel("Number of PCA components")
@@ -110,6 +127,128 @@ def plot_explained_variance(cumvar, n_components, out_path):
     plt.savefig(out_path, dpi=150)
     plt.close()
     logger.info(f"Saved PCA variance plot → {out_path}")
+
+
+# ---------------------------------------------------------------------------
+# Per-layer renormalization (for sparse optC/optD embeddings)
+# ---------------------------------------------------------------------------
+
+def renormalize_per_layer(emb: np.ndarray, num_layers: int = 16, num_experts: int = 127):
+    """
+    Renormalize each layer's block so values sum to 1.0 per layer.
+
+    For sparse embeddings (optC/optD), the top-32 softmax probs may only sum to ~0.4
+    per layer. This rescales them to proper distributions.
+    """
+    N = emb.shape[0]
+    reshaped = emb.reshape(N, num_layers, num_experts)
+    layer_sums = reshaped.sum(axis=2, keepdims=True)
+    layer_sums = np.where(layer_sums == 0, 1.0, layer_sums)  # avoid div-by-zero
+    reshaped = reshaped / layer_sums
+    return reshaped.reshape(N, num_layers * num_experts)
+
+
+# ---------------------------------------------------------------------------
+# TruncatedSVD (sparsity-preserving dimensionality reduction)
+# ---------------------------------------------------------------------------
+
+def reduce_tsvd(emb: np.ndarray, variance_threshold: float = 0.95,
+                n_components_fixed: int = None):
+    """
+    Like reduce_and_normalize() but uses TruncatedSVD instead of PCA.
+
+    TruncatedSVD does NOT center the data, so zeros stay near zero — important
+    for sparse embeddings where PCA's mean-centering destroys sparsity structure.
+    """
+    max_components = min(emb.shape[0], emb.shape[1]) - 1  # SVD can't do full rank
+    logger.info(f"Fitting TruncatedSVD (max {max_components} components) ...")
+
+    # First fit with many components to find explained variance curve
+    n_fit = min(max_components, 500)
+    svd_full = TruncatedSVD(n_components=n_fit, random_state=42)
+    svd_full.fit(emb)
+
+    cumvar = np.cumsum(svd_full.explained_variance_ratio_)
+    if n_components_fixed is not None:
+        n_components = min(n_components_fixed, n_fit)
+        logger.info(f"TruncatedSVD: using fixed {n_components} components "
+                    f"(explains {cumvar[n_components-1]:.1%} variance)")
+    else:
+        n_components = int(np.searchsorted(cumvar, variance_threshold)) + 1
+        n_components = min(n_components, n_fit)
+        logger.info(f"TruncatedSVD: {n_components} components explain "
+                    f"{cumvar[n_components-1]:.1%} variance (threshold {variance_threshold:.0%})")
+
+    # Fit with chosen components
+    svd = TruncatedSVD(n_components=n_components, random_state=42)
+    reduced = svd.fit_transform(emb)
+
+    return reduced, cumvar, n_components
+
+
+# ---------------------------------------------------------------------------
+# Transform pipelines
+# ---------------------------------------------------------------------------
+
+def apply_transform(
+    emb: np.ndarray,
+    transform: str,
+    variance_threshold: float = 0.95,
+    n_components_fixed: int = None,
+    num_layers: int = 16,
+    num_experts: int = 127,
+):
+    """
+    Apply a feature-engineering pipeline to raw embeddings before clustering.
+
+    Args:
+        emb: (N, D) float array of raw embeddings
+        transform: one of raw | l2 | pca_l2 | log_l2 | standardize_pca_l2 |
+                   renorm_l2 | tsvd_l2 | renorm_tsvd_l2
+        variance_threshold: PCA/SVD explained-variance cutoff
+        n_components_fixed: override PCA/SVD component count (overrides variance_threshold)
+        num_layers: number of MoE layers (for per-layer renormalization)
+        num_experts: number of experts per layer (for per-layer renormalization)
+
+    Returns:
+        transformed: (N, D') float32 array ready for K-means
+        pca_info: (cumvar, n_components) tuple if PCA/SVD was applied, else None
+    """
+    emb = emb.astype(np.float32)
+
+    if transform == "raw":
+        return emb, None
+
+    elif transform == "l2":
+        return normalize(emb, norm="l2"), None
+
+    elif transform == "pca_l2":
+        reduced, _, cumvar, n_comps = reduce_and_normalize(emb, variance_threshold, n_components_fixed)
+        return normalize(reduced, norm="l2"), (cumvar, n_comps)
+
+    elif transform == "log_l2":
+        return normalize(np.log1p(emb), norm="l2"), None
+
+    elif transform == "standardize_pca_l2":
+        scaled = StandardScaler().fit_transform(emb)
+        reduced, _, cumvar, n_comps = reduce_and_normalize(scaled, variance_threshold, n_components_fixed)
+        return normalize(reduced, norm="l2"), (cumvar, n_comps)
+
+    elif transform == "renorm_l2":
+        renormed = renormalize_per_layer(emb, num_layers, num_experts)
+        return normalize(renormed, norm="l2"), None
+
+    elif transform == "tsvd_l2":
+        reduced, cumvar, n_comps = reduce_tsvd(emb, variance_threshold, n_components_fixed)
+        return normalize(reduced, norm="l2"), (cumvar, n_comps)
+
+    elif transform == "renorm_tsvd_l2":
+        renormed = renormalize_per_layer(emb, num_layers, num_experts)
+        reduced, cumvar, n_comps = reduce_tsvd(renormed, variance_threshold, n_components_fixed)
+        return normalize(reduced, norm="l2"), (cumvar, n_comps)
+
+    else:
+        raise ValueError(f"Unknown transform: {transform!r}")
 
 
 # ---------------------------------------------------------------------------
@@ -280,6 +419,10 @@ def main():
                         help="Number of clusters (required for --mode cluster)")
     parser.add_argument("--k-values", type=int, nargs="+", default=[8, 16, 32, 64, 128],
                         help="k values to sweep (default: 8 16 32 64 128)")
+    parser.add_argument("--transform", default="pca_l2",
+                        choices=["raw", "l2", "pca_l2", "log_l2", "standardize_pca_l2",
+                                 "renorm_l2", "tsvd_l2", "renorm_tsvd_l2"],
+                        help="Feature transform pipeline applied before K-means (default: pca_l2)")
     parser.add_argument("--variance-threshold", type=float, default=0.95)
     parser.add_argument("--n-components", type=int, default=None,
                         help="Fix PCA components directly (overrides --variance-threshold)")
@@ -288,31 +431,39 @@ def main():
     parser.add_argument("--data-dir", type=str, default=None,
                         help="Dir with shared data files (metadata.jsonl.gz, info.json). "
                              "Defaults to --output-dir if not specified.")
+    parser.add_argument("--num-layers", type=int, default=16,
+                        help="Number of MoE layers (for per-layer renormalization, default: 16)")
+    parser.add_argument("--num-experts", type=int, default=127,
+                        help="Number of experts per layer (for per-layer renormalization, default: 127)")
     args = parser.parse_args()
 
     np.random.seed(42)
+    os.makedirs(args.output_dir, exist_ok=True)
 
     emb, meta, info = load_data(args.output_dir, args.emb_file, args.data_dir)
 
-    reduced, pca, cumvar, n_components = reduce_and_normalize(
-        emb, args.variance_threshold, args.n_components)
-    plot_explained_variance(
-        cumvar[:min(300, len(cumvar))],  # plot first 300 dims for readability
-        n_components,
-        os.path.join(args.output_dir, "pca_variance.png")
+    logger.info(f"Applying transform: {args.transform}")
+    transformed, pca_info = apply_transform(
+        emb, args.transform, args.variance_threshold, args.n_components,
+        args.num_layers, args.num_experts,
     )
 
-    # L2 normalize for cosine-like K-means
-    reduced_normed = normalize(reduced, norm="l2")
+    if pca_info is not None:
+        cumvar, n_components = pca_info
+        plot_explained_variance(
+            cumvar,
+            n_components,
+            os.path.join(args.output_dir, "pca_variance.png")
+        )
 
     if args.mode == "sweep":
-        run_sweep(reduced_normed, args.k_values, args.output_dir)
+        run_sweep(transformed, args.k_values, args.output_dir)
         logger.info("\nReview kmeans_sweep.png then rerun with --mode cluster --k <chosen_k>")
 
     elif args.mode == "cluster":
         if args.k is None:
             raise ValueError("--k is required for --mode cluster")
-        run_final_cluster(reduced_normed, emb.astype(np.float32), meta, info,
+        run_final_cluster(transformed, emb.astype(np.float32), meta, info,
                           args.k, args.output_dir)
 
 
