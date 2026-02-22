@@ -211,6 +211,7 @@ def embed_batch(
       emb_d: (batch, num_layers * num_standard_experts) float16
              Sparse logits: average pre-softmax logits, top-32 per layer.
     """
+    breakpoint()
     B = len(batch_docs)
     max_len = max(len(d) for d in batch_docs)
     input_ids = torch.full((B, max_len), EOS_TOKEN_ID, dtype=torch.long, device=device)
@@ -282,6 +283,7 @@ def run_sanity_checks(model, tokenizer, source_doc_samples, device, num_layers, 
     logger.info("=== Running sanity checks ===")
 
     sample_doc = source_doc_samples[0][1][0]
+    breakpoint()
 
     # Check 1: embedding shapes and dtype
     ea, eb, ec, ed = embed_batch(model, [sample_doc], device, num_layers, num_standard_experts, top_k)

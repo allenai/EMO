@@ -12,7 +12,7 @@ set -e
 MODEL_PATH="models/twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
 OUTPUT_DIR="claude_outputs/analysis/router_clustering_pretraining"
 COMPOSITION_FILE="${OUTPUT_DIR}/mix_composition.json"
-TARGET_TOKENS=500000000
+TARGET_TOKENS=20000000
 BATCH_SIZE=8
 
 # ---------------------------------------------------------------------------
