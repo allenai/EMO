@@ -43,7 +43,7 @@ for lr in 5e-5; do
     --trainer.callbacks.downstream_evaluator.eval_interval=100 \
     --dataset.mix=$dataset \
     --dataset.mix_base_dir=s3://ai2-llm \
-    --trainer.callbacks.lm_evaluator.eval_dataset.mix=$dataset \
+    --trainer.callbacks.lm_evaluator.eval_dataset.mix=dolma2-code \
     --trainer.callbacks.lm_evaluator.eval_dataset.mix_base_dir=s3://ai2-llm \
     --trainer.callbacks.lm_evaluator.enabled=true \
     --train_module.optim.lr=$lr \
