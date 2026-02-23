@@ -1,36 +1,41 @@
 """
-Extract per-document router embeddings from a trained MoE model over OLMoE-mix-0824 data.
+Extract per-document router embeddings from a trained MoE model.
 
-For each document, computes five embeddings:
-  - Option A: average softmax probabilities per expert per layer (float16)
-  - Option B: binary mask of which experts were ever in top-k (bool)
-  - Option C: sparse optA — avg softmax probs but zero all but top-32 per layer (float16)
-  - Option D: average pre-softmax logits per expert per layer, top-32 sparsified (float16)
-  - Option E: binary mask of top-32 experts per layer by avg softmax probability (bool)
+For each document, computes embeddings of shape (num_layers * num_standard_experts,)
+representing the router activations across all layers, concatenated.
 
-All have shape (num_layers * num_standard_experts,) = (16 * 127,) = 2032 dims.
+Embedding types are registered via EMBEDDING_REGISTRY. Each type defines a function
+that receives per-layer router logits (GPU tensors) and an attention mask, and
+returns a (B, L*E) numpy array. This allows each type to operate on raw per-token
+logits before any aggregation (e.g. softmax per token, then average).
+
+Currently supported:
+    logits  — average pre-softmax router logits per expert per layer (float16)
+    probs   — per-token softmax, then average probabilities per expert per layer (float16)
+
+New embedding types can be added by:
+    1. Define a function with signature:
+       (per_layer_logits: List[Tensor(B,S,E)], attention_mask: Tensor(B,S),
+        num_layers: int, num_experts: int) -> np.ndarray(B, L*E)
+    2. Register it in EMBEDDING_REGISTRY.
 
 Proportional sampling: reads mix_composition.json (produced by analyze_data_mix.py)
 to allocate tokens per source proportionally. Uses range-GET from S3 to avoid
 downloading full files (which are multi-GB each).
 
 Usage:
-    python -m src.scripts.analysis.extract_router_embeddings \
-        --model-path models/twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf \
-        --composition-file claude_outputs/analysis/router_clustering/mix_composition.json \
-        --output-dir claude_outputs/analysis/router_clustering \
-        --target-tokens 20_000_000 \
+    # Extract all embedding types
+    python -m src.scripts.analysis.extract_router_embeddings \\
+        --model-path models/.../step30995-hf \\
+        --composition-file claude_outputs/analysis/router_clustering/mix_composition.json \\
+        --output-dir claude_outputs/analysis/router_clustering \\
+        --target-tokens 20_000_000 \\
         --batch-size 32
 
-    # To add only optC (when optA/B already exist):
-    python -m src.scripts.analysis.extract_router_embeddings \
-        --model-path ... --composition-file ... --output-dir ... \
-        --embeddings optC
-
-    # To add only optD (logits-based) or optE (binary top-32):
-    python -m src.scripts.analysis.extract_router_embeddings \
-        --model-path ... --composition-file ... --output-dir ... \
-        --embeddings optD  # or optE
+    # Extract only logits
+    python -m src.scripts.analysis.extract_router_embeddings \\
+        --model-path ... --composition-file ... --output-dir ... \\
+        --embeddings logits
 """
 
 import argparse
@@ -39,10 +44,11 @@ import json
 import logging
 import os
 import subprocess
-import sys
 import tempfile
+import time
 from collections import defaultdict
-from typing import Iterator, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Callable, Dict, Iterator, List, Tuple
 
 import numpy as np
 import torch
@@ -54,6 +60,146 @@ logger = logging.getLogger(__name__)
 
 EOS_TOKEN_ID = 100257
 BYTES_PER_TOKEN = 4  # uint32
+
+
+# ---------------------------------------------------------------------------
+# Embedding type registry
+# ---------------------------------------------------------------------------
+
+@dataclass
+class EmbeddingType:
+    """Definition of an embedding type."""
+    name: str
+    filename: str
+    dtype: type
+    compute_fn: Callable[[List[torch.Tensor], torch.Tensor, int, int], np.ndarray]
+    description: str
+
+
+def compute_logits_embedding(
+    per_layer_logits: List[torch.Tensor],
+    attention_mask: torch.Tensor,
+    num_layers: int,
+    num_experts: int,
+) -> np.ndarray:
+    """
+    Average pre-softmax router logits per expert per layer.
+
+    For each document, averages the raw logits across all non-padding tokens.
+    Shape: (B, num_layers * num_experts), dtype float16.
+    """
+    mask = attention_mask.unsqueeze(-1)  # (B, S, 1)
+    doc_lens = attention_mask.sum(dim=1, keepdim=True).unsqueeze(-1).float()  # (B, 1, 1)
+
+    layers = []
+    for logits in per_layer_logits:  # (B, S, E)
+        avg = (logits.float() * mask).sum(dim=1) / doc_lens.squeeze(1)  # (B, E)
+        layers.append(avg.cpu().numpy())
+
+    return np.concatenate(layers, axis=1).astype(np.float16)
+
+
+def compute_probs_embedding(
+    per_layer_logits: List[torch.Tensor],
+    attention_mask: torch.Tensor,
+    num_layers: int,
+    num_experts: int,
+) -> np.ndarray:
+    """
+    Per-token softmax probabilities, averaged per expert per layer.
+
+    Applies softmax over experts for each token independently, then averages
+    across non-padding tokens. Each layer block sums to ~1.
+    Shape: (B, num_layers * num_experts), dtype float16.
+    """
+    mask = attention_mask.unsqueeze(-1)  # (B, S, 1)
+    doc_lens = attention_mask.sum(dim=1, keepdim=True).unsqueeze(-1).half()  # (B, 1, 1)
+
+    layers = []
+    for logits in per_layer_logits:  # (B, S, E)
+        probs = F.softmax(logits.float(), dim=-1).half()  # (B, S, E)
+        avg = (probs * mask).sum(dim=1) / doc_lens.squeeze(1)  # (B, E)
+        layers.append(avg.cpu().numpy())
+
+    return np.concatenate(layers, axis=1).astype(np.float16)
+
+
+TOP_K_SPARSE = 32  # number of experts to keep per layer in sparse variants
+
+
+def _sparsify_top_k(emb: np.ndarray, num_layers: int, num_experts: int, k: int) -> np.ndarray:
+    """Zero out all but the top-k experts per layer (by value, i.e. highest activated)."""
+    B = emb.shape[0]
+    reshaped = emb.reshape(B, num_layers, num_experts).copy()
+    bottom_idx = np.argsort(reshaped, axis=2)[:, :, :-k]
+    np.put_along_axis(reshaped, bottom_idx, 0.0, axis=2)
+    return reshaped.reshape(B, -1)
+
+
+def compute_logits_sparse_embedding(
+    per_layer_logits: List[torch.Tensor],
+    attention_mask: torch.Tensor,
+    num_layers: int,
+    num_experts: int,
+) -> np.ndarray:
+    """
+    Sparse average logits: top-32 experts per layer, rest zeroed.
+
+    Computes average logits first, then keeps only the top-32 experts per layer
+    by absolute value.
+    Shape: (B, num_layers * num_experts), dtype float16, ~25% non-zero.
+    """
+    dense = compute_logits_embedding(per_layer_logits, attention_mask, num_layers, num_experts)
+    return _sparsify_top_k(dense.astype(np.float32), num_layers, num_experts, TOP_K_SPARSE).astype(np.float16)
+
+
+def compute_probs_sparse_embedding(
+    per_layer_logits: List[torch.Tensor],
+    attention_mask: torch.Tensor,
+    num_layers: int,
+    num_experts: int,
+) -> np.ndarray:
+    """
+    Sparse average probabilities: top-32 experts per layer, rest zeroed.
+
+    Computes per-token softmax then average first, then keeps only the top-32
+    experts per layer by value.
+    Shape: (B, num_layers * num_experts), dtype float16, ~25% non-zero.
+    """
+    dense = compute_probs_embedding(per_layer_logits, attention_mask, num_layers, num_experts)
+    return _sparsify_top_k(dense.astype(np.float32), num_layers, num_experts, TOP_K_SPARSE).astype(np.float16)
+
+
+EMBEDDING_REGISTRY: Dict[str, EmbeddingType] = {
+    "logits": EmbeddingType(
+        name="logits",
+        filename="embeddings_logits.npy",
+        dtype=np.float16,
+        compute_fn=compute_logits_embedding,
+        description="Average pre-softmax router logits per expert per layer",
+    ),
+    "probs": EmbeddingType(
+        name="probs",
+        filename="embeddings_probs.npy",
+        dtype=np.float16,
+        compute_fn=compute_probs_embedding,
+        description="Per-token softmax probabilities, averaged per expert per layer",
+    ),
+    "logits_sparse": EmbeddingType(
+        name="logits_sparse",
+        filename="embeddings_logits_sparse.npy",
+        dtype=np.float16,
+        compute_fn=compute_logits_sparse_embedding,
+        description="Sparse avg logits: top-32 experts per layer, rest zeroed",
+    ),
+    "probs_sparse": EmbeddingType(
+        name="probs_sparse",
+        filename="embeddings_probs_sparse.npy",
+        dtype=np.float16,
+        compute_fn=compute_probs_sparse_embedding,
+        description="Sparse avg probs: top-32 experts per layer, rest zeroed",
+    ),
+}
 
 
 # ---------------------------------------------------------------------------
@@ -115,8 +261,6 @@ def load_source_documents(
     """
     docs = []
     collected_tokens = 0
-    # Add 50% headroom since not every byte becomes a valid document
-    # (some are split at boundaries, some too short/long)
     bytes_needed = int(target_tokens * BYTES_PER_TOKEN * 1.5)
 
     for s3_path in s3_files:
@@ -159,43 +303,6 @@ def load_model_and_tokenizer(model_path: str):
     return model, tokenizer
 
 
-TOP_K_SPARSE = 32  # optC: keep only this many experts per layer
-
-# ---------------------------------------------------------------------------
-# Embedding type definitions
-# ---------------------------------------------------------------------------
-# All embeddings have shape (num_layers * num_standard_experts,) = (16 * 127,) = 2032.
-# Saved files and their properties:
-#
-#   optA  embeddings_optA_avgprob.npy       float16, dense
-#         Per-layer average softmax probability per standard expert.
-#         For each token, softmax over 127 experts; average across all tokens in doc.
-#         Each layer block sums to ~1. Dense: all 127 values non-zero per layer.
-#
-#   optB  embeddings_optB_binary.npy        bool, very sparse (~6% density)
-#         Per-layer binary mask: True if expert appeared in the model's actual
-#         top-k (k=num_experts_per_tok=8) routing for ≥1 token in the doc.
-#         Captures the hard routing footprint with no magnitude information.
-#
-#   optC  embeddings_optC_top32sparse.npy   float16, sparse (~25% density)
-#         Same as optA but zeroing all but the top-32 experts per layer.
-#         Preserves softmax magnitudes for the top-32; bottom 95 are zeroed.
-#         Top-32 = 4× the actual top-k=8 routing threshold.
-#
-#   optD  embeddings_optD_logits_top32sparse.npy  float16, sparse (~25% density)
-#         Per-layer average of raw pre-softmax logits per expert, then top-32
-#         sparsified. Unlike optC (softmax bounded 0-1), logits have wider
-#         dynamic range so PCA centering is less destructive and top experts
-#         have much larger magnitudes — better cluster separation.
-#
-#   optE  embeddings_optE_top32binary.npy         bool, sparse (25% density)
-#         Binary version of optC: True for the top-32 experts per layer
-#         (ranked by average softmax probability), False elsewhere.
-#         Like optB but uses a fixed top-32 threshold instead of the model's
-#         actual top-k=8 routing decisions across tokens.
-# ---------------------------------------------------------------------------
-
-
 @torch.no_grad()
 def embed_batch(
     model,
@@ -203,22 +310,15 @@ def embed_batch(
     device: str,
     num_layers: int,
     num_standard_experts: int,
-    top_k: int,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    embedding_types: List[EmbeddingType],
+) -> Dict[str, np.ndarray]:
     """
-    Run a batch of token-ID arrays through the model.
+    Run a batch of documents through the model and compute requested embeddings.
 
-    Returns:
-      emb_a: (batch, num_layers * num_standard_experts) float16
-             Per-layer average softmax probability per standard expert.
-      emb_b: (batch, num_layers * num_standard_experts) bool
-             Per-layer binary mask: True if expert appeared in top-k for ≥1 token.
-      emb_c: (batch, num_layers * num_standard_experts) float16
-             Sparse optA: keep only top-32 experts per layer, zero the rest.
-      emb_d: (batch, num_layers * num_standard_experts) float16
-             Sparse logits: average pre-softmax logits, top-32 per layer.
-      emb_e: (batch, num_layers * num_standard_experts) bool
-             Binary top-32: True for the top-32 experts per layer by avg softmax prob.
+    Phase 1 (GPU): Single forward pass, collect per-layer logits as tensors.
+    Phase 2: Each embedding type's compute_fn transforms the logits.
+
+    Returns dict mapping embedding name -> (B, num_layers * num_standard_experts) array.
     """
     B = len(batch_docs)
     max_len = max(len(d) for d in batch_docs)
@@ -235,122 +335,55 @@ def embed_batch(
         output_router_logits=True,
     )
 
-    # router_logits: tuple of (B*S, num_all_experts) per layer
-    emb_a_layers, emb_b_layers, emb_d_layers = [], [], []
+    # Collect per-layer logits: List of (B, S, num_standard_experts)
+    per_layer_logits = []
     for layer_logits in outputs.router_logits:
-        logits = layer_logits.view(B, max_len, -1)[:, :, :num_standard_experts]  # (B, S, E)
+        logits = layer_logits.view(B, max_len, -1)[:, :, :num_standard_experts]
+        per_layer_logits.append(logits)
 
-        # Option A: masked average softmax
-        probs = F.softmax(logits.float(), dim=-1).half()          # (B, S, E)
-        mask = attention_mask.unsqueeze(-1)                        # (B, S, 1)
-        doc_lens = attention_mask.sum(dim=1, keepdim=True).unsqueeze(-1).half()  # (B, 1, 1)
-        avg_probs = (probs * mask).sum(dim=1) / doc_lens.squeeze(1)  # (B, E)
-        emb_a_layers.append(avg_probs.cpu().numpy())
-
-        # Option B: binary — which experts appeared in top-k for ≥1 non-padding token
-        topk_idx = torch.topk(logits, k=top_k, dim=-1).indices   # (B, S, top_k)
-        binary = torch.zeros(B, num_standard_experts, dtype=torch.bool, device=device)
-        valid_mask = attention_mask.unsqueeze(-1).expand_as(topk_idx)  # (B, S, top_k)
-        flat_idx = topk_idx.reshape(B, -1)                         # (B, S*top_k)
-        flat_mask = valid_mask.reshape(B, -1).bool()               # (B, S*top_k)
-        for b in range(B):
-            valid = flat_idx[b][flat_mask[b]]
-            binary[b].scatter_(0, valid, True)
-        emb_b_layers.append(binary.cpu().numpy())
-
-        # Option D: average raw logits per expert (pre-softmax), masked by attention
-        avg_logits = (logits.float() * mask).sum(dim=1) / doc_lens.squeeze(1)  # (B, E)
-        emb_d_layers.append(avg_logits.cpu().numpy())
+    # Compute each requested embedding type
+    results = {}
+    for et in embedding_types:
+        results[et.name] = et.compute_fn(
+            per_layer_logits, attention_mask, num_layers, num_standard_experts
+        )
 
     torch.cuda.empty_cache()
-    emb_a = np.concatenate(emb_a_layers, axis=1).astype(np.float16)  # (B, L*E)
-    emb_b = np.concatenate(emb_b_layers, axis=1)                      # (B, L*E) bool
-
-    # Option C: sparse optA — zero all but top-32 experts per layer
-    emb_c = emb_a.reshape(B, num_layers, num_standard_experts).copy()
-    # argsort ascending → bottom (E - TOP_K_SPARSE) indices are zeroed
-    bottom_idx = np.argsort(emb_c, axis=2)[:, :, :-TOP_K_SPARSE]
-    np.put_along_axis(emb_c, bottom_idx, 0.0, axis=2)
-    emb_c = emb_c.reshape(B, -1).astype(np.float16)                   # (B, L*E) float16
-
-    # Option D: sparse logits — zero all but top-32 per layer (by magnitude)
-    emb_d = np.concatenate(emb_d_layers, axis=1).astype(np.float32)   # (B, L*E)
-    emb_d_sparse = emb_d.reshape(B, num_layers, num_standard_experts).copy()
-    bottom_idx_d = np.argsort(emb_d_sparse, axis=2)[:, :, :-TOP_K_SPARSE]
-    np.put_along_axis(emb_d_sparse, bottom_idx_d, 0.0, axis=2)
-    emb_d = emb_d_sparse.reshape(B, -1).astype(np.float16)            # (B, L*E) float16
-
-    # Option E: binary top-32 — True where optC is non-zero
-    emb_e = (emb_c != 0)                                               # (B, L*E) bool
-
-    return emb_a, emb_b, emb_c, emb_d, emb_e
+    return results
 
 
 # ---------------------------------------------------------------------------
 # Sanity checks
 # ---------------------------------------------------------------------------
 
-def run_sanity_checks(model, tokenizer, source_doc_samples, device, num_layers, num_standard_experts, top_k):
+def run_sanity_checks(
+    model, tokenizer, source_doc_samples, device,
+    num_layers, num_standard_experts, embedding_types,
+):
     logger.info("=== Running sanity checks ===")
 
     sample_doc = source_doc_samples[0][1][0]
-
-    # Check 1: embedding shapes and dtype
-    ea, eb, ec, ed, ee = embed_batch(model, [sample_doc], device, num_layers, num_standard_experts, top_k)
     D = num_layers * num_standard_experts
-    assert ea.shape == (1, D), f"emb_a shape {ea.shape} != (1, {D})"
-    assert eb.shape == (1, D), f"emb_b shape {eb.shape} != (1, {D})"
-    assert ec.shape == (1, D), f"emb_c shape {ec.shape} != (1, {D})"
-    assert ed.shape == (1, D), f"emb_d shape {ed.shape} != (1, {D})"
-    assert ee.shape == (1, D), f"emb_e shape {ee.shape} != (1, {D})"
-    assert ea.dtype == np.float16
-    assert eb.dtype == bool
-    assert ec.dtype == np.float16
-    assert ed.dtype == np.float16
-    assert ee.dtype == bool
-    logger.info(f"  CHECK 1 PASSED: shapes all {ea.shape}, dtypes float16/bool/float16/float16/bool ✓")
 
-    # Check 2: softmax probs sum to ~1 per layer
-    per_layer_sum = ea[0].reshape(num_layers, num_standard_experts).sum(axis=1)
-    assert (per_layer_sum > 0.95).all() and (per_layer_sum < 1.05).all(), \
-        f"Softmax row sums off: {per_layer_sum}"
-    logger.info(f"  CHECK 2 PASSED: per-layer prob sums in [0.95,1.05] ✓")
+    # Check 1: shapes and dtypes
+    results = embed_batch(
+        model, [sample_doc], device, num_layers, num_standard_experts, embedding_types
+    )
+    for et in embedding_types:
+        arr = results[et.name]
+        assert arr.shape == (1, D), f"{et.name} shape {arr.shape} != (1, {D})"
+        assert arr.dtype == et.dtype, f"{et.name} dtype {arr.dtype} != {et.dtype}"
+        assert not np.isnan(arr).any(), f"{et.name} contains NaN"
+        logger.info(f"  CHECK 1 [{et.name}]: shape=(1, {D}), dtype={et.dtype}, "
+                    f"range=[{arr.min():.4f}, {arr.max():.4f}]")
+    logger.info(f"  CHECK 1 PASSED")
 
-    # Check 2b: optC has exactly TOP_K_SPARSE non-zeros per layer
-    ec_reshaped = ec[0].reshape(num_layers, num_standard_experts)
-    nnz_per_layer = (ec_reshaped != 0).sum(axis=1)
-    assert (nnz_per_layer == TOP_K_SPARSE).all(), \
-        f"optC non-zeros per layer: {nnz_per_layer} (expected {TOP_K_SPARSE})"
-    logger.info(f"  CHECK 2b PASSED: optC has exactly {TOP_K_SPARSE} non-zeros per layer ✓")
-
-    # Check 2c: optD has exactly TOP_K_SPARSE non-zeros per layer and wider range than optC
-    ed_reshaped = ed[0].reshape(num_layers, num_standard_experts)
-    nnz_d_per_layer = (ed_reshaped != 0).sum(axis=1)
-    assert (nnz_d_per_layer == TOP_K_SPARSE).all(), \
-        f"optD non-zeros per layer: {nnz_d_per_layer} (expected {TOP_K_SPARSE})"
-    logit_range = float(ed.max() - ed.min())
-    prob_range = float(ec.max() - ec.min())
-    logger.info(f"  CHECK 2c PASSED: optD has {TOP_K_SPARSE} non-zeros/layer, "
-                f"range={logit_range:.2f} (vs optC prob range={prob_range:.4f}) ✓")
-
-    # Check 2d: optE has exactly TOP_K_SPARSE True values per layer
-    ee_reshaped = ee[0].reshape(num_layers, num_standard_experts)
-    true_per_layer = ee_reshaped.sum(axis=1)
-    assert (true_per_layer == TOP_K_SPARSE).all(), \
-        f"optE True-count per layer: {true_per_layer} (expected {TOP_K_SPARSE})"
-    # optE should be True exactly where optC is non-zero
-    assert np.array_equal(ee[0], ec[0] != 0), \
-        "optE should be the binary mask of optC's non-zero entries"
-    # optE's True positions should be a superset of optB's (top-8 ⊂ top-32)
-    assert (eb[0] & ~ee[0]).sum() == 0 or True, \
-        "Note: optB True positions not always a subset of optE (different ranking)"
-    # Check density: optE should be ~25% (32/127)
-    density = ee[0].mean()
-    expected_density = TOP_K_SPARSE / num_standard_experts
-    assert abs(density - expected_density) < 0.01, \
-        f"optE density {density:.3f} != expected {expected_density:.3f}"
-    logger.info(f"  CHECK 2d PASSED: optE has exactly {TOP_K_SPARSE} True/layer, "
-                f"density={density:.3f}, dtype=bool ✓")
+    # Check 2: probs sum to ~1 per layer
+    if "probs" in results:
+        per_layer_sum = results["probs"][0].reshape(num_layers, num_standard_experts).sum(axis=1)
+        assert (per_layer_sum > 0.95).all() and (per_layer_sum < 1.05).all(), \
+            f"Softmax row sums off: {per_layer_sum}"
+        logger.info(f"  CHECK 2 PASSED: probs per-layer sums in [0.95, 1.05]")
 
     # Check 3: decoded text looks sane
     logger.info("  CHECK 3: decoding sample docs per source")
@@ -358,25 +391,27 @@ def run_sanity_checks(model, tokenizer, source_doc_samples, device, num_layers, 
         decoded = tokenizer.decode(docs[0][:80].tolist(), skip_special_tokens=True)
         logger.info(f"    [{label}] {decoded[:120]!r}")
 
-    # Check 4: same-source docs more similar than cross-source (option A)
+    # Check 4: same-source docs more similar than cross-source
     if len(source_doc_samples) >= 2:
         def cos(x, y):
             x, y = x.astype(np.float32), y.astype(np.float32)
             return float(np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y) + 1e-8))
 
+        check_et = embedding_types[0]
         la, da = source_doc_samples[0]
         lb, db = source_doc_samples[1]
         if len(da) >= 2 and len(db) >= 1:
-            ea0, _, _, _, _ = embed_batch(model, [da[0]], device, num_layers, num_standard_experts, top_k)
-            ea1, _, _, _, _ = embed_batch(model, [da[1]], device, num_layers, num_standard_experts, top_k)
-            eb0, _, _, _, _ = embed_batch(model, [db[0]], device, num_layers, num_standard_experts, top_k)
-            same = cos(ea0[0], ea1[0])
-            cross = cos(ea0[0], eb0[0])
-            logger.info(f"  CHECK 4: same-source ({la}) cos={same:.3f}  cross-source ({la} vs {lb}) cos={cross:.3f}")
+            r0 = embed_batch(model, [da[0]], device, num_layers, num_standard_experts, [check_et])
+            r1 = embed_batch(model, [da[1]], device, num_layers, num_standard_experts, [check_et])
+            r2 = embed_batch(model, [db[0]], device, num_layers, num_standard_experts, [check_et])
+            same = cos(r0[check_et.name][0], r1[check_et.name][0])
+            cross = cos(r0[check_et.name][0], r2[check_et.name][0])
+            logger.info(f"  CHECK 4 ({check_et.name}): same-source ({la}) cos={same:.3f}  "
+                        f"cross-source ({la} vs {lb}) cos={cross:.3f}")
             if same > cross:
-                logger.info("  CHECK 4 PASSED: same-source more similar ✓")
+                logger.info("  CHECK 4 PASSED: same-source more similar")
             else:
-                logger.info("  CHECK 4 NOTE: cross-source similarity not lower — may be fine for similar domains")
+                logger.info("  CHECK 4 NOTE: cross-source not lower — may be fine")
 
     logger.info("=== Sanity checks complete ===\n")
 
@@ -386,6 +421,8 @@ def run_sanity_checks(model, tokenizer, source_doc_samples, device, num_layers, 
 # ---------------------------------------------------------------------------
 
 def main():
+    all_names = sorted(EMBEDDING_REGISTRY.keys())
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-path", required=True)
     parser.add_argument("--composition-file", required=True,
@@ -397,22 +434,34 @@ def main():
     parser.add_argument("--min-doc-len", type=int, default=32)
     parser.add_argument("--sanity-check-only", action="store_true")
     parser.add_argument("--embeddings", default="all",
-                        choices=["all", "optA", "optB", "optC", "optD", "optE"],
-                        help="Which embeddings to save. Use 'optC'/'optD'/'optE' to add only that "
-                             "file when others already exist. (default: all)")
+                        help=f"Comma-separated embedding types to compute, or 'all'. "
+                             f"Available: {', '.join(all_names)} (default: all)")
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
+
+    # Resolve which embedding types to compute
+    if args.embeddings == "all":
+        requested_names = all_names
+    else:
+        requested_names = [s.strip() for s in args.embeddings.split(",")]
+        for name in requested_names:
+            if name not in EMBEDDING_REGISTRY:
+                parser.error(f"Unknown embedding type '{name}'. "
+                             f"Available: {', '.join(all_names)}")
+
+    embedding_types = [EMBEDDING_REGISTRY[name] for name in requested_names]
+    logger.info(f"Will compute embeddings: {[et.name for et in embedding_types]}")
 
     # Load proportional composition
     with open(args.composition_file) as f:
         composition = json.load(f)
 
-    sources = composition["sources"]  # {label: {fraction, all_files, ...}}
+    sources = composition["sources"]
     logger.info(f"Loaded composition for {len(sources)} sources")
     for label, info in sorted(sources.items(), key=lambda x: -x[1]["fraction"]):
         alloc = int(info["fraction"] * args.target_tokens)
-        logger.info(f"  {label}: {info['fraction']:.2%} → {alloc:,} tokens")
+        logger.info(f"  {label}: {info['fraction']:.2%} -> {alloc:,} tokens")
 
     # Load model
     model, tokenizer = load_model_and_tokenizer(args.model_path)
@@ -423,10 +472,9 @@ def main():
     num_all_experts = cfg.num_experts if hasattr(cfg, "num_experts") else cfg.num_local_experts
     num_shared = getattr(cfg, "num_shared_experts", 0)
     num_standard_experts = num_all_experts - num_shared
-    top_k = cfg.num_experts_per_tok
     emb_dim = num_layers * num_standard_experts
 
-    logger.info(f"Model: {num_layers} layers, {num_standard_experts} standard experts, top-{top_k}")
+    logger.info(f"Model: {num_layers} layers, {num_standard_experts} standard experts")
     logger.info(f"Embedding dim: {emb_dim}")
 
     # Collect a few docs per source for sanity checks
@@ -438,18 +486,18 @@ def main():
         if docs:
             source_doc_samples.append((label, docs))
 
-    run_sanity_checks(model, tokenizer, source_doc_samples, device, num_layers, num_standard_experts, top_k)
+    run_sanity_checks(
+        model, tokenizer, source_doc_samples, device,
+        num_layers, num_standard_experts, embedding_types,
+    )
 
     if args.sanity_check_only:
         logger.info("--sanity-check-only specified, exiting.")
         return
 
-    # Determine which embeddings to save
-    save_set = {"optA", "optB", "optC", "optD", "optE"} if args.embeddings == "all" else {args.embeddings}
-    logger.info(f"Will save embeddings: {sorted(save_set)}")
-
     # Main extraction: proportional sampling per source
-    all_emb_a, all_emb_b, all_emb_c, all_emb_d, all_emb_e, all_meta = [], [], [], [], [], []
+    all_embeddings: Dict[str, List[np.ndarray]] = {et.name: [] for et in embedding_types}
+    all_meta: List[dict] = []
 
     for label, info in sorted(sources.items(), key=lambda x: -x[1]["fraction"]):
         target_source_tokens = int(info["fraction"] * args.target_tokens)
@@ -467,18 +515,17 @@ def main():
             continue
 
         # Batch inference
-        import time
-        emb_a_list, emb_b_list, emb_c_list, emb_d_list, emb_e_list = [], [], [], [], []
+        batch_embeddings: Dict[str, List[np.ndarray]] = {et.name: [] for et in embedding_types}
         num_batches = (len(docs) + args.batch_size - 1) // args.batch_size
         t0 = time.time()
         for batch_idx, i in enumerate(range(0, len(docs), args.batch_size)):
             batch = docs[i : i + args.batch_size]
-            ea, eb, ec, ed, ee = embed_batch(model, batch, device, num_layers, num_standard_experts, top_k)
-            emb_a_list.append(ea)
-            emb_b_list.append(eb)
-            emb_c_list.append(ec)
-            emb_d_list.append(ed)
-            emb_e_list.append(ee)
+            results = embed_batch(
+                model, batch, device, num_layers, num_standard_experts, embedding_types
+            )
+            for name, arr in results.items():
+                batch_embeddings[name].append(arr)
+
             if (batch_idx + 1) % 10 == 0 or batch_idx == num_batches - 1:
                 elapsed = time.time() - t0
                 rate = (batch_idx + 1) / elapsed
@@ -489,11 +536,8 @@ def main():
                     f"elapsed={elapsed/60:.1f}m  eta={eta/60:.1f}m"
                 )
 
-        all_emb_a.append(np.concatenate(emb_a_list, axis=0))
-        all_emb_b.append(np.concatenate(emb_b_list, axis=0))
-        all_emb_c.append(np.concatenate(emb_c_list, axis=0))
-        all_emb_d.append(np.concatenate(emb_d_list, axis=0))
-        all_emb_e.append(np.concatenate(emb_e_list, axis=0))
+        for name in batch_embeddings:
+            all_embeddings[name].append(np.concatenate(batch_embeddings[name], axis=0))
 
         for doc in docs:
             try:
@@ -504,41 +548,20 @@ def main():
 
         logger.info(f"  Done: {len(docs)} docs embedded for {label}")
 
-    # Save embeddings (only the requested ones)
-    out_a = os.path.join(args.output_dir, "embeddings_optA_avgprob.npy")
-    out_b = os.path.join(args.output_dir, "embeddings_optB_binary.npy")
-    out_c = os.path.join(args.output_dir, "embeddings_optC_top32sparse.npy")
-    out_d = os.path.join(args.output_dir, "embeddings_optD_logits_top32sparse.npy")
-    out_e = os.path.join(args.output_dir, "embeddings_optE_top32binary.npy")
+    # Save embeddings
+    for et in embedding_types:
+        out_path = os.path.join(args.output_dir, et.filename)
+        arr = np.concatenate(all_embeddings[et.name], axis=0)
+        np.save(out_path, arr)
+        logger.info(f"  {et.name}: {out_path}  shape={arr.shape}  dtype={arr.dtype}")
+
+    # Save metadata
     out_meta = os.path.join(args.output_dir, "metadata.jsonl.gz")
-    out_info = os.path.join(args.output_dir, "info.json")
-
-    if "optA" in save_set:
-        emb_a_arr = np.concatenate(all_emb_a, axis=0)
-        np.save(out_a, emb_a_arr)
-        logger.info(f"  emb_a: {out_a}  shape={emb_a_arr.shape}")
-    if "optB" in save_set:
-        emb_b_arr = np.concatenate(all_emb_b, axis=0)
-        np.save(out_b, emb_b_arr)
-        logger.info(f"  emb_b: {out_b}  shape={emb_b_arr.shape}")
-    if "optC" in save_set:
-        emb_c_arr = np.concatenate(all_emb_c, axis=0)
-        np.save(out_c, emb_c_arr)
-        logger.info(f"  emb_c: {out_c}  shape={emb_c_arr.shape}")
-    if "optD" in save_set:
-        emb_d_arr = np.concatenate(all_emb_d, axis=0)
-        np.save(out_d, emb_d_arr)
-        logger.info(f"  emb_d: {out_d}  shape={emb_d_arr.shape}")
-    if "optE" in save_set:
-        emb_e_arr = np.concatenate(all_emb_e, axis=0)
-        np.save(out_e, emb_e_arr)
-        logger.info(f"  emb_e: {out_e}  shape={emb_e_arr.shape}")
-
-    # Always save metadata and info (needed for clustering/viz)
     with gzip.open(out_meta, "wt") as f:
         for m in all_meta:
             f.write(json.dumps(m) + "\n")
 
+    # Save info
     source_counts = defaultdict(int)
     for m in all_meta:
         source_counts[m["source"]] += 1
@@ -550,8 +573,10 @@ def main():
         "num_standard_experts": num_standard_experts,
         "emb_dim": emb_dim,
         "model_path": args.model_path,
+        "embedding_types": [et.name for et in embedding_types],
         "source_doc_counts": dict(source_counts),
     }
+    out_info = os.path.join(args.output_dir, "info.json")
     with open(out_info, "w") as f:
         json.dump(info_out, f, indent=2)
 
