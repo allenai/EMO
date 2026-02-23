@@ -57,6 +57,10 @@ class DataMix(DataMixBase):
     pmc = "pmc"
     mimic_iv_note = "mimic-iv-note"
     mimic_pmc_5B = "mimic-pmc-5B"
+    dolma2_code = "dolma2-code"
+    dolma2_code_python = "dolma2-code-python"
+    dolma2_code_java = "dolma2-code-java"
+    dolma2_code_cpp = "dolma2-code-cpp"
 
     @classmethod
     def _missing_(cls, value: object) -> "DataMix | None":

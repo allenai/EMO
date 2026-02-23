@@ -1,0 +1,11 @@
+# Token counts (bytes/4 for uint32 .npy files):
+#   Python: 74.90B tokens (8 files)
+#   TOTAL:  74.90B tokens (8 files)
+stack-edu-Python,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Python/000000.npy
+stack-edu-Python,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Python/000001.npy
+stack-edu-Python,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Python/000002.npy
+stack-edu-Python,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Python/000003.npy
+stack-edu-Python,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Python/000004.npy
+stack-edu-Python,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Python/000005.npy
+stack-edu-Python,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Python/000006.npy
+stack-edu-Python,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Python/000007.npy
