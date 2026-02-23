@@ -5,11 +5,11 @@ Reads embeddings_logits.npy and/or embeddings_probs.npy and creates sparsified
 versions by keeping only the top-k experts per layer (rest zeroed).
 
 Usage:
-    python -m src.scripts.analysis.compute_embeddings \
+    python -m src.scripts.analysis.sparsify_embeddings \
         --data-dir claude_outputs/analysis/router_clustering_pretraining
 
     # Only compute sparse logits
-    python -m src.scripts.analysis.compute_embeddings \
+    python -m src.scripts.analysis.sparsify_embeddings \
         --data-dir claude_outputs/analysis/router_clustering_pretraining \
         --embeddings logits_sparse
 """

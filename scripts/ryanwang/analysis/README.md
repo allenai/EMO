@@ -1,95 +1,122 @@
-# Router Clustering Analysis Scripts
+# Router Clustering Analysis Pipeline
 
-## Overview
+Analyze how MoE router activations cluster documents into implicit domains.
 
-These scripts analyze how MoE routers implicitly cluster documents by examining per-layer expert activation patterns. The pipeline extracts router embeddings from a trained model, clusters them, and produces interactive HTML visualizations.
-
-## Pipeline
+## Pipeline Overview
 
 ```
-analyze_data_mix / analyze_weborganizer     (1. characterize data sources)
-        ↓
-extract_router_embeddings                   (2. GPU inference → embedding .npy files)
-        ↓
-exclude_layers (optional)                   (3. extract layer subsets for ablations)
-layer_pattern_analysis (optional)           (3b. per-layer diversity stats)
-        ↓
-cluster_embeddings --mode sweep             (4. k-means sweep → pick best k)
-        ↓
-cluster_embeddings --mode cluster           (5. final clustering at chosen k)
-        ↓
-generate_cluster_viz                        (6. UMAP + interactive HTML explorer)
-        ↓
-extend_previews (optional)                  (7. re-stream S3 for longer doc previews)
+analyze_data_mix.py          → mix_composition.json (data source fractions)
+extract_router_embeddings.py → embeddings_*.npy + metadata.jsonl.gz + info.json
+sparsify_embeddings.py        → derived embeddings (sparse variants) from existing files
+cluster_embeddings.py        → k-means sweep/clustering + reports
+generate_cluster_viz.py      → UMAP + interactive HTML visualizer
 ```
 
-## Shell Scripts (runners)
+## Step 1: Analyze Data Composition
 
-| Script | Purpose |
-|--------|---------|
-| `run_cluster_analysis.sh` | End-to-end pipeline for **pretraining** data (OLMoE-mix-0824). Runs steps 1-2. |
-| `run_weborganizer_analysis.sh` | End-to-end pipeline for **weborganizer** data (cc_all_dressed). Runs steps 1-2. |
-| `run_optB_layer_ablation.sh` | Layer ablation study for optB embeddings. Generates layer subsets (L1-15, L6-10, L15), runs pattern analysis, and sweeps k-means for each. |
-| `run_optC_ablation.sh` | Transform ablation study for optC embeddings. Compares different PCA/normalization pipelines. |
-| `push_router_clustering.sh` | Sync `claude_outputs/analysis/` to S3 (`s3://ai2-sewonm/ryanwang/`). |
-| `pull_router_clustering.sh` | Sync from S3 back to local. |
+One-time step. Queries S3 for file sizes and computes per-source token fractions.
 
-## Python Scripts (`src/scripts/analysis/`)
+```bash
+python -u -m src.scripts.analysis.analyze_data_mix \
+    --mix-file src/olmo_core/data/mixes/OLMoE-mix-0824.txt \
+    --output-dir claude_outputs/analysis/router_clustering_pretraining \
+    --num-preview-docs 2 \
+    --stream-bytes 3000000
+```
 
-### Data Preparation
+Output: `mix_composition.json`
 
-| Script | Purpose |
-|--------|---------|
-| `analyze_data_mix.py` | Scans OLMoE-mix-0824 S3 paths to compute per-source token fractions. Outputs `mix_composition.json`. |
-| `analyze_weborganizer.py` | Same for cc_all_dressed/weborganizer data with uniform mixing across topics. |
+## Step 2: Extract Router Embeddings
 
-### Embedding Extraction
+GPU inference. Runs documents through the model and captures router activations.
+Proportionally samples documents from each data source.
 
-| Script | Purpose |
-|--------|---------|
-| `extract_router_embeddings.py` | Runs documents through the MoE model (GPU) and records router activations. Produces 5 embedding types: optA (avg softmax), optB (binary top-k mask), optC (sparse top-32 softmax), optD (sparse top-32 logits), optE (binary top-32). Also saves `metadata.jsonl.gz` with doc previews (up to 3000 chars). |
+```bash
+python -u -m src.scripts.analysis.extract_router_embeddings \
+    --model-path models/twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf \
+    --composition-file claude_outputs/analysis/router_clustering_pretraining/mix_composition.json \
+    --output-dir claude_outputs/analysis/router_clustering_pretraining \
+    --target-tokens 20_000_000 \
+    --batch-size 32
+```
 
-### Layer Analysis & Subsetting
+### Embedding Types
 
-| Script | Purpose |
-|--------|---------|
-| `exclude_layers.py` | Extracts a subset of layers from full embeddings. Uses `--keep-layers` (e.g., `6-10`, `15`, `1-15`). Output named by layers kept (e.g., `_L6-10.npy`). |
-| `layer_pattern_analysis.py` | Reports per-layer routing diversity: unique patterns, Shannon entropy, coverage stats, active experts per doc. Saves JSON. |
+All embeddings have shape `(num_docs, num_layers * num_experts)` = `(N, 2032)` for a 16-layer, 127-expert model.
 
-### Clustering
+| Name | File | Description |
+|------|------|-------------|
+| `logits` | `embeddings_logits.npy` | Average pre-softmax router logits per expert per layer |
+| `probs` | `embeddings_probs.npy` | Per-token softmax probabilities, averaged per expert per layer |
+| `logits_sparse` | `embeddings_logits_sparse.npy` | Sparse logits: top-32 experts per layer, rest zeroed (~25% density) |
+| `probs_sparse` | `embeddings_probs_sparse.npy` | Sparse probs: top-32 experts per layer, rest zeroed (~25% density) |
 
-| Script | Purpose |
-|--------|---------|
-| `cluster_embeddings.py` | PCA + k-means clustering pipeline. Two modes: `sweep` (try multiple k values, produce elbow/silhouette plots) and `cluster` (final clustering at chosen k, produce summary.json with per-cluster stats and representative docs). Supports multiple transform pipelines via `--transform` (pca_l2, raw, l2, log_l2, etc.). |
+Use `--embeddings logits,probs` to select specific types (default: `all`).
 
-### Visualization
+### Adding New Embedding Types
 
-| Script | Purpose |
-|--------|---------|
-| `generate_cluster_viz.py` | Generates interactive HTML cluster explorer with UMAP scatter plot, per-cluster source breakdowns, representative docs, and document browser. Loads cluster labels from `cluster_labels.json` if present (auto-generated or hand-labeled). |
-| `extend_previews.py` | Re-streams S3 data (no GPU needed) to replace short doc previews with longer ones. Updates metadata, summary.json, and regenerates HTML. |
+In `extract_router_embeddings.py`:
+1. Define a function with signature: `(per_layer_logits: List[Tensor], attention_mask: Tensor, num_layers: int, num_experts: int) -> np.ndarray`
+2. Add an `EmbeddingType` entry to `EMBEDDING_REGISTRY`
 
-## Output Directory Layout
+## Step 2b: Derive Sparse Embeddings (from existing files)
+
+CPU-only post-processing. Avoids re-running GPU extraction when dense embeddings already exist.
+
+```bash
+python -u -m src.scripts.analysis.compute_embeddings \
+    --data-dir claude_outputs/analysis/router_clustering_pretraining
+```
+
+## Step 3: Cluster Embeddings
+
+K-means sweep to find optimal k, then final clustering.
+
+```bash
+# Sweep
+OPENBLAS_NUM_THREADS=16 python -u -m src.scripts.analysis.cluster_embeddings \
+    --output-dir claude_outputs/analysis/router_clustering_pretraining/probs \
+    --emb-file claude_outputs/analysis/router_clustering_pretraining/embeddings_probs.npy \
+    --data-dir claude_outputs/analysis/router_clustering_pretraining \
+    --mode sweep --k-values 8 16 32 64 128
+
+# Final cluster (after reviewing sweep)
+OPENBLAS_NUM_THREADS=16 python -u -m src.scripts.analysis.cluster_embeddings \
+    --output-dir claude_outputs/analysis/router_clustering_pretraining/probs \
+    --emb-file claude_outputs/analysis/router_clustering_pretraining/embeddings_probs.npy \
+    --data-dir claude_outputs/analysis/router_clustering_pretraining \
+    --mode cluster --k 128
+```
+
+## Step 4: HTML Visualizer
+
+UMAP projection + interactive browser.
+
+```bash
+OPENBLAS_NUM_THREADS=16 python -u -m src.scripts.analysis.generate_cluster_viz \
+    --output-dir claude_outputs/analysis/router_clustering_pretraining/probs \
+    --emb-file claude_outputs/analysis/router_clustering_pretraining/embeddings_probs.npy \
+    --data-dir claude_outputs/analysis/router_clustering_pretraining \
+    --k 128
+```
+
+## Output Directory Structure
 
 ```
-claude_outputs/analysis/router_clustering_<experiment>/
-    mix_composition.json          ← data source fractions
-    metadata.jsonl.gz             ← per-doc source, length, preview text
-    info.json                     ← model config + extraction stats
-    layer_pattern_analysis.json   ← per-layer diversity stats
-    embeddings_optA_avgprob.npy   ← (N, num_layers * num_experts) float16
-    embeddings_optB_binary.npy    ← (N, num_layers * num_experts) bool
-    embeddings_optB_binary_L6-10.npy  ← layer subset variants
-    embeddings_optC_*.npy, optD_*.npy, optE_*.npy
-    optB_binary/pca_l2/           ← one subdir per embedding+transform combo
+claude_outputs/analysis/router_clustering_pretraining/
+    mix_composition.json          # data source fractions
+    embeddings_logits.npy         # dense logits
+    embeddings_probs.npy          # dense probs
+    embeddings_logits_sparse.npy  # sparse logits (top-32)
+    embeddings_probs_sparse.npy   # sparse probs (top-32)
+    metadata.jsonl.gz             # per-doc metadata (source, length, preview)
+    info.json                     # model info + extraction params
+    probs/                        # clustering results for probs embedding
         kmeans_sweep.json/png
         pca_variance.png
         clusters_k128/
             assignments.npy
             summary.json
-            cluster_labels.json   ← auto-generated descriptive labels
-            umap_coords.npy
-        cluster_explorer.html     ← interactive visualizer
-    optB_binary_L6-10/pca_l2/     ← same structure per variant
-        ...
+            report.txt
+            cluster_explorer.html
 ```
