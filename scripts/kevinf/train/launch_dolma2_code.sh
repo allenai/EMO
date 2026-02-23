@@ -24,7 +24,7 @@ for lr in 5e-5; do
   python -m olmo_core.launch.beaker \
     --name $runname \
     --gpus 8 \
-    --nodes 1 \
+    --nodes 2 \
     --weka=oe-training-default \
     --is_private_repo \
     --priority urgent \
