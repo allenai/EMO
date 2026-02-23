@@ -108,12 +108,14 @@ def register_transform(name: str, description: str):
 
 @register_transform("identity", "No transform — raw embedding values as-is")
 def transform_identity(emb: np.ndarray, info: dict) -> np.ndarray:
+    breakpoint()
     return emb
 
 
 @register_transform("l2", "L2 normalize each document vector")
 def transform_l2(emb: np.ndarray, info: dict) -> np.ndarray:
     from sklearn.preprocessing import normalize
+    breakpoint()
     return normalize(emb, norm="l2")
 
 
@@ -121,6 +123,7 @@ def transform_l2(emb: np.ndarray, info: dict) -> np.ndarray:
 def transform_pca_l2(emb: np.ndarray, info: dict) -> np.ndarray:
     from sklearn.decomposition import PCA
     from sklearn.preprocessing import normalize
+    breakpoint()
 
     n_components = min(emb.shape[0], emb.shape[1])
     pca = PCA(n_components=n_components, svd_solver="randomized", random_state=42)
@@ -178,12 +181,17 @@ def main():
             print(f"  {name:20s} — {entry['description']}")
         return
 
+    breakpoint()
+
     # Load
     emb, meta, info = load_embedding(args.data_dir, args.embedding)
+
+    breakpoint()
 
     # Transform
     transformed = apply_transform(emb, args.transform, info)
     logger.info(f"  Output shape: {transformed.shape}")
+    breakpoint()
 
     # TODO: add clustering, saving, visualization, etc.
     logger.info("Done.")
