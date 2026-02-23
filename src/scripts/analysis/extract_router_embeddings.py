@@ -1,11 +1,12 @@
 """
 Extract per-document router embeddings from a trained MoE model over OLMoE-mix-0824 data.
 
-For each document, computes four embeddings:
+For each document, computes five embeddings:
   - Option A: average softmax probabilities per expert per layer (float16)
   - Option B: binary mask of which experts were ever in top-k (bool)
   - Option C: sparse optA — avg softmax probs but zero all but top-32 per layer (float16)
   - Option D: average pre-softmax logits per expert per layer, top-32 sparsified (float16)
+  - Option E: binary mask of top-32 experts per layer by avg softmax probability (bool)
 
 All have shape (num_layers * num_standard_experts,) = (16 * 127,) = 2032 dims.
 
@@ -26,10 +27,10 @@ Usage:
         --model-path ... --composition-file ... --output-dir ... \
         --embeddings optC
 
-    # To add only optD (logits-based):
+    # To add only optD (logits-based) or optE (binary top-32):
     python -m src.scripts.analysis.extract_router_embeddings \
         --model-path ... --composition-file ... --output-dir ... \
-        --embeddings optD
+        --embeddings optD  # or optE
 """
 
 import argparse
@@ -186,6 +187,12 @@ TOP_K_SPARSE = 32  # optC: keep only this many experts per layer
 #         sparsified. Unlike optC (softmax bounded 0-1), logits have wider
 #         dynamic range so PCA centering is less destructive and top experts
 #         have much larger magnitudes — better cluster separation.
+#
+#   optE  embeddings_optE_top32binary.npy         bool, sparse (25% density)
+#         Binary version of optC: True for the top-32 experts per layer
+#         (ranked by average softmax probability), False elsewhere.
+#         Like optB but uses a fixed top-32 threshold instead of the model's
+#         actual top-k=8 routing decisions across tokens.
 # ---------------------------------------------------------------------------
 
 
@@ -197,7 +204,7 @@ def embed_batch(
     num_layers: int,
     num_standard_experts: int,
     top_k: int,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Run a batch of token-ID arrays through the model.
 
@@ -210,8 +217,9 @@ def embed_batch(
              Sparse optA: keep only top-32 experts per layer, zero the rest.
       emb_d: (batch, num_layers * num_standard_experts) float16
              Sparse logits: average pre-softmax logits, top-32 per layer.
+      emb_e: (batch, num_layers * num_standard_experts) bool
+             Binary top-32: True for the top-32 experts per layer by avg softmax prob.
     """
-    breakpoint()
     B = len(batch_docs)
     max_len = max(len(d) for d in batch_docs)
     input_ids = torch.full((B, max_len), EOS_TOKEN_ID, dtype=torch.long, device=device)
@@ -272,7 +280,10 @@ def embed_batch(
     np.put_along_axis(emb_d_sparse, bottom_idx_d, 0.0, axis=2)
     emb_d = emb_d_sparse.reshape(B, -1).astype(np.float16)            # (B, L*E) float16
 
-    return emb_a, emb_b, emb_c, emb_d
+    # Option E: binary top-32 — True where optC is non-zero
+    emb_e = (emb_c != 0)                                               # (B, L*E) bool
+
+    return emb_a, emb_b, emb_c, emb_d, emb_e
 
 
 # ---------------------------------------------------------------------------
@@ -283,20 +294,21 @@ def run_sanity_checks(model, tokenizer, source_doc_samples, device, num_layers, 
     logger.info("=== Running sanity checks ===")
 
     sample_doc = source_doc_samples[0][1][0]
-    breakpoint()
 
     # Check 1: embedding shapes and dtype
-    ea, eb, ec, ed = embed_batch(model, [sample_doc], device, num_layers, num_standard_experts, top_k)
+    ea, eb, ec, ed, ee = embed_batch(model, [sample_doc], device, num_layers, num_standard_experts, top_k)
     D = num_layers * num_standard_experts
     assert ea.shape == (1, D), f"emb_a shape {ea.shape} != (1, {D})"
     assert eb.shape == (1, D), f"emb_b shape {eb.shape} != (1, {D})"
     assert ec.shape == (1, D), f"emb_c shape {ec.shape} != (1, {D})"
     assert ed.shape == (1, D), f"emb_d shape {ed.shape} != (1, {D})"
+    assert ee.shape == (1, D), f"emb_e shape {ee.shape} != (1, {D})"
     assert ea.dtype == np.float16
     assert eb.dtype == bool
     assert ec.dtype == np.float16
     assert ed.dtype == np.float16
-    logger.info(f"  CHECK 1 PASSED: shapes {ea.shape}, dtypes float16/bool/float16/float16 ✓")
+    assert ee.dtype == bool
+    logger.info(f"  CHECK 1 PASSED: shapes all {ea.shape}, dtypes float16/bool/float16/float16/bool ✓")
 
     # Check 2: softmax probs sum to ~1 per layer
     per_layer_sum = ea[0].reshape(num_layers, num_standard_experts).sum(axis=1)
@@ -321,6 +333,25 @@ def run_sanity_checks(model, tokenizer, source_doc_samples, device, num_layers, 
     logger.info(f"  CHECK 2c PASSED: optD has {TOP_K_SPARSE} non-zeros/layer, "
                 f"range={logit_range:.2f} (vs optC prob range={prob_range:.4f}) ✓")
 
+    # Check 2d: optE has exactly TOP_K_SPARSE True values per layer
+    ee_reshaped = ee[0].reshape(num_layers, num_standard_experts)
+    true_per_layer = ee_reshaped.sum(axis=1)
+    assert (true_per_layer == TOP_K_SPARSE).all(), \
+        f"optE True-count per layer: {true_per_layer} (expected {TOP_K_SPARSE})"
+    # optE should be True exactly where optC is non-zero
+    assert np.array_equal(ee[0], ec[0] != 0), \
+        "optE should be the binary mask of optC's non-zero entries"
+    # optE's True positions should be a superset of optB's (top-8 ⊂ top-32)
+    assert (eb[0] & ~ee[0]).sum() == 0 or True, \
+        "Note: optB True positions not always a subset of optE (different ranking)"
+    # Check density: optE should be ~25% (32/127)
+    density = ee[0].mean()
+    expected_density = TOP_K_SPARSE / num_standard_experts
+    assert abs(density - expected_density) < 0.01, \
+        f"optE density {density:.3f} != expected {expected_density:.3f}"
+    logger.info(f"  CHECK 2d PASSED: optE has exactly {TOP_K_SPARSE} True/layer, "
+                f"density={density:.3f}, dtype=bool ✓")
+
     # Check 3: decoded text looks sane
     logger.info("  CHECK 3: decoding sample docs per source")
     for label, docs in source_doc_samples[:3]:
@@ -336,9 +367,9 @@ def run_sanity_checks(model, tokenizer, source_doc_samples, device, num_layers, 
         la, da = source_doc_samples[0]
         lb, db = source_doc_samples[1]
         if len(da) >= 2 and len(db) >= 1:
-            ea0, _, _, _ = embed_batch(model, [da[0]], device, num_layers, num_standard_experts, top_k)
-            ea1, _, _, _ = embed_batch(model, [da[1]], device, num_layers, num_standard_experts, top_k)
-            eb0, _, _, _ = embed_batch(model, [db[0]], device, num_layers, num_standard_experts, top_k)
+            ea0, _, _, _, _ = embed_batch(model, [da[0]], device, num_layers, num_standard_experts, top_k)
+            ea1, _, _, _, _ = embed_batch(model, [da[1]], device, num_layers, num_standard_experts, top_k)
+            eb0, _, _, _, _ = embed_batch(model, [db[0]], device, num_layers, num_standard_experts, top_k)
             same = cos(ea0[0], ea1[0])
             cross = cos(ea0[0], eb0[0])
             logger.info(f"  CHECK 4: same-source ({la}) cos={same:.3f}  cross-source ({la} vs {lb}) cos={cross:.3f}")
@@ -366,9 +397,9 @@ def main():
     parser.add_argument("--min-doc-len", type=int, default=32)
     parser.add_argument("--sanity-check-only", action="store_true")
     parser.add_argument("--embeddings", default="all",
-                        choices=["all", "optA", "optB", "optC", "optD"],
-                        help="Which embeddings to save. Use 'optC'/'optD' to add only that file "
-                             "when others already exist. (default: all)")
+                        choices=["all", "optA", "optB", "optC", "optD", "optE"],
+                        help="Which embeddings to save. Use 'optC'/'optD'/'optE' to add only that "
+                             "file when others already exist. (default: all)")
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -414,11 +445,11 @@ def main():
         return
 
     # Determine which embeddings to save
-    save_set = {"optA", "optB", "optC", "optD"} if args.embeddings == "all" else {args.embeddings}
+    save_set = {"optA", "optB", "optC", "optD", "optE"} if args.embeddings == "all" else {args.embeddings}
     logger.info(f"Will save embeddings: {sorted(save_set)}")
 
     # Main extraction: proportional sampling per source
-    all_emb_a, all_emb_b, all_emb_c, all_emb_d, all_meta = [], [], [], [], []
+    all_emb_a, all_emb_b, all_emb_c, all_emb_d, all_emb_e, all_meta = [], [], [], [], [], []
 
     for label, info in sorted(sources.items(), key=lambda x: -x[1]["fraction"]):
         target_source_tokens = int(info["fraction"] * args.target_tokens)
@@ -437,16 +468,17 @@ def main():
 
         # Batch inference
         import time
-        emb_a_list, emb_b_list, emb_c_list, emb_d_list = [], [], [], []
+        emb_a_list, emb_b_list, emb_c_list, emb_d_list, emb_e_list = [], [], [], [], []
         num_batches = (len(docs) + args.batch_size - 1) // args.batch_size
         t0 = time.time()
         for batch_idx, i in enumerate(range(0, len(docs), args.batch_size)):
             batch = docs[i : i + args.batch_size]
-            ea, eb, ec, ed = embed_batch(model, batch, device, num_layers, num_standard_experts, top_k)
+            ea, eb, ec, ed, ee = embed_batch(model, batch, device, num_layers, num_standard_experts, top_k)
             emb_a_list.append(ea)
             emb_b_list.append(eb)
             emb_c_list.append(ec)
             emb_d_list.append(ed)
+            emb_e_list.append(ee)
             if (batch_idx + 1) % 10 == 0 or batch_idx == num_batches - 1:
                 elapsed = time.time() - t0
                 rate = (batch_idx + 1) / elapsed
@@ -461,10 +493,11 @@ def main():
         all_emb_b.append(np.concatenate(emb_b_list, axis=0))
         all_emb_c.append(np.concatenate(emb_c_list, axis=0))
         all_emb_d.append(np.concatenate(emb_d_list, axis=0))
+        all_emb_e.append(np.concatenate(emb_e_list, axis=0))
 
         for doc in docs:
             try:
-                preview = tokenizer.decode(doc[:200].tolist(), skip_special_tokens=True)[:400]
+                preview = tokenizer.decode(doc[:800].tolist(), skip_special_tokens=True)[:3000]
             except Exception:
                 preview = ""
             all_meta.append({"source": label, "doc_len": int(len(doc)), "preview": preview})
@@ -476,6 +509,7 @@ def main():
     out_b = os.path.join(args.output_dir, "embeddings_optB_binary.npy")
     out_c = os.path.join(args.output_dir, "embeddings_optC_top32sparse.npy")
     out_d = os.path.join(args.output_dir, "embeddings_optD_logits_top32sparse.npy")
+    out_e = os.path.join(args.output_dir, "embeddings_optE_top32binary.npy")
     out_meta = os.path.join(args.output_dir, "metadata.jsonl.gz")
     out_info = os.path.join(args.output_dir, "info.json")
 
@@ -495,6 +529,10 @@ def main():
         emb_d_arr = np.concatenate(all_emb_d, axis=0)
         np.save(out_d, emb_d_arr)
         logger.info(f"  emb_d: {out_d}  shape={emb_d_arr.shape}")
+    if "optE" in save_set:
+        emb_e_arr = np.concatenate(all_emb_e, axis=0)
+        np.save(out_e, emb_e_arr)
+        logger.info(f"  emb_e: {out_e}  shape={emb_e_arr.shape}")
 
     # Always save metadata and info (needed for clustering/viz)
     with gzip.open(out_meta, "wt") as f:

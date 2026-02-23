@@ -238,16 +238,47 @@ def main():
             "c": int(lbl),
             "s": m["source"],
             "l": m["doc_len"],
-            "p": m["preview"],   # full 400-char preview
+            "p": m["preview"],   # full preview text (up to 3000 chars)
             "x": round(float(xy[0]), 3),
             "y": round(float(xy[1]), 3),
         })
 
     # Build cluster data for JS
+    # ─── Cluster label loading ────────────────────────────────────────────
+    # Labels are loaded from cluster_labels.json in the cluster directory.
+    # If that file doesn't exist, falls back to the legacy CLUSTER_LABELS dict
+    # (only valid for the original baseline optB k=128 clustering).
+    #
+    # IMPORTANT FOR FUTURE VISUALIZATIONS: Every new clustering variant needs
+    # its own cluster_labels.json. Generate it by reading summary.json (which
+    # has representative documents per cluster) and writing a short descriptive
+    # label + category for each cluster. Use label_clusters.py or generate
+    # labels manually. Without this file, clusters will show as "Cluster N".
+    # ──────────────────────────────────────────────────────────────────────
+    external_labels = {}
+    labels_path = os.path.join(cluster_dir, "cluster_labels.json")
+    if os.path.exists(labels_path):
+        logger.info(f"Loading cluster labels from {labels_path}")
+        with open(labels_path) as f:
+            external_labels = json.load(f)
+    else:
+        logger.warning(f"No cluster_labels.json found in {cluster_dir}. "
+                       f"Using fallback labels. Generate labels for better visualization.")
+
     clusters_js = []
     for c in summary:
         cid = c["cluster"]
-        label, cat = CLUSTER_LABELS.get(cid, (f"Cluster {cid}", "reference"))
+        cid_str = str(cid)
+        if cid_str in external_labels:
+            label = external_labels[cid_str]["label"]
+            cat = external_labels[cid_str].get("category", "reference")
+            if cat not in CATEGORY_COLORS:
+                cat = "reference"
+        elif cid in CLUSTER_LABELS:
+            # Legacy fallback for original baseline optB k=128
+            label, cat = CLUSTER_LABELS[cid]
+        else:
+            label, cat = f"Cluster {cid}", "reference"
         clusters_js.append({
             "id": cid,
             "label": label,

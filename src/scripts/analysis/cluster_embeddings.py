@@ -311,7 +311,8 @@ def run_sweep(reduced_normed: np.ndarray, k_values, output_dir: str):
 # ---------------------------------------------------------------------------
 
 def run_final_cluster(reduced_normed: np.ndarray, emb_orig: np.ndarray,
-                      meta: list, info: dict, k: int, output_dir: str):
+                      meta: list, info: dict, k: int, output_dir: str,
+                      num_layers: int = None, num_experts: int = None):
     logger.info(f"\nRunning final K-means with k={k} ...")
     km = MiniBatchKMeans(n_clusters=k, n_init=10, max_iter=500,
                          batch_size=4096, random_state=42)
@@ -326,8 +327,8 @@ def run_final_cluster(reduced_normed: np.ndarray, emb_orig: np.ndarray,
     # Per-cluster analysis
     sources = [m["source"] for m in meta]
     unique_sources = sorted(set(sources))
-    num_layers = info["num_layers"]
-    num_experts = info["num_standard_experts"]
+    num_layers = num_layers if num_layers is not None else info["num_layers"]
+    num_experts = num_experts if num_experts is not None else info["num_standard_experts"]
 
     report_lines = [f"Clustering report: k={k}, {len(labels)} documents\n"]
     cluster_summaries = []
@@ -336,6 +337,15 @@ def run_final_cluster(reduced_normed: np.ndarray, emb_orig: np.ndarray,
         mask = labels == c
         c_indices = np.where(mask)[0]
         c_size = mask.sum()
+
+        if c_size == 0:
+            cluster_summaries.append({
+                "cluster": int(c), "size": 0, "source_counts": {},
+                "top10_experts_global": [], "representative_docs": [],
+            })
+            report_lines.append(f"\n{'='*70}")
+            report_lines.append(f"CLUSTER {c}  (0 docs, empty)")
+            continue
 
         # Source breakdown
         c_sources = [sources[i] for i in c_indices]
@@ -361,7 +371,7 @@ def run_final_cluster(reduced_normed: np.ndarray, emb_orig: np.ndarray,
             rep_docs.append({
                 "source": meta[idx]["source"],
                 "doc_len": meta[idx]["doc_len"],
-                "preview": meta[idx]["preview"][:300],
+                "preview": meta[idx]["preview"],
             })
 
         cluster_summaries.append({
@@ -464,7 +474,8 @@ def main():
         if args.k is None:
             raise ValueError("--k is required for --mode cluster")
         run_final_cluster(transformed, emb.astype(np.float32), meta, info,
-                          args.k, args.output_dir)
+                          args.k, args.output_dir,
+                          num_layers=args.num_layers, num_experts=args.num_experts)
 
 
 if __name__ == "__main__":
