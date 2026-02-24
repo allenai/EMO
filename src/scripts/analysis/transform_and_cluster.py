@@ -291,6 +291,136 @@ def run_clustering(emb: np.ndarray, cluster_name: str, k: int) -> np.ndarray:
 
 
 # ---------------------------------------------------------------------------
+# Evaluation metrics
+# ---------------------------------------------------------------------------
+
+def evaluate_clustering(emb: np.ndarray, labels: np.ndarray, meta: list) -> dict:
+    """
+    Compute clustering quality metrics.
+
+    Returns a dict of metric_name -> value.
+    """
+    from sklearn.metrics import (
+        silhouette_score,
+        calinski_harabasz_score,
+        davies_bouldin_score,
+    )
+
+    n_clusters = len(set(labels))
+    metrics = {"n_clusters": n_clusters, "n_docs": len(labels)}
+
+    if n_clusters < 2:
+        logger.warning("  Only 1 cluster — skipping all metrics")
+        return metrics
+
+    # Silhouette score: [-1, 1], higher = better separated clusters
+    n_sample = min(10_000, len(emb))
+    rng = np.random.default_rng(42)
+    idx = rng.choice(len(emb), n_sample, replace=False)
+    metrics["silhouette"] = float(silhouette_score(
+        emb[idx], labels[idx], metric="euclidean", sample_size=None
+    ))
+
+    # Calinski-Harabasz index: higher = denser, well-separated clusters
+    metrics["calinski_harabasz"] = float(calinski_harabasz_score(emb, labels))
+
+    # Davies-Bouldin index: lower = better (measures avg cluster similarity)
+    metrics["davies_bouldin"] = float(davies_bouldin_score(emb, labels))
+
+    # Cluster size stats
+    unique, counts = np.unique(labels, return_counts=True)
+    metrics["cluster_size_min"] = int(counts.min())
+    metrics["cluster_size_max"] = int(counts.max())
+    metrics["cluster_size_median"] = int(np.median(counts))
+    metrics["cluster_size_std"] = float(counts.std())
+
+    # Source entropy: how mixed are clusters w.r.t. data sources?
+    # Higher = more mixing (clusters are not just source buckets)
+    sources = np.array([m["source"] for m in meta])
+    unique_sources = np.unique(sources)
+    entropies = []
+    for c in unique:
+        mask = labels == c
+        if mask.sum() == 0:
+            continue
+        c_sources = sources[mask]
+        probs = np.array([np.sum(c_sources == s) for s in unique_sources], dtype=np.float64)
+        probs = probs / probs.sum()
+        probs = probs[probs > 0]
+        entropies.append(float(-np.sum(probs * np.log2(probs))))
+    metrics["avg_source_entropy"] = float(np.mean(entropies))
+
+    return metrics
+
+
+def print_metrics(metrics: dict):
+    """Pretty-print evaluation metrics."""
+    logger.info("--- Evaluation Metrics ---")
+    logger.info(f"  n_clusters:          {metrics['n_clusters']}")
+    logger.info(f"  n_docs:              {metrics['n_docs']}")
+    if "silhouette" in metrics:
+        logger.info(f"  silhouette:          {metrics['silhouette']:.4f}  (higher=better, [-1,1])")
+        logger.info(f"  calinski_harabasz:   {metrics['calinski_harabasz']:.1f}  (higher=better)")
+        logger.info(f"  davies_bouldin:      {metrics['davies_bouldin']:.4f}  (lower=better)")
+        logger.info(f"  cluster sizes:       min={metrics['cluster_size_min']}, "
+                    f"max={metrics['cluster_size_max']}, "
+                    f"median={metrics['cluster_size_median']}, "
+                    f"std={metrics['cluster_size_std']:.1f}")
+        logger.info(f"  avg_source_entropy:  {metrics['avg_source_entropy']:.4f} bits")
+
+
+# ---------------------------------------------------------------------------
+# Saving results
+# ---------------------------------------------------------------------------
+
+def save_results(
+    labels: np.ndarray, metrics: dict, meta: list,
+    args, output_dir: str,
+):
+    """Save clustering assignments, metrics, and a summary report."""
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Assignments
+    np.save(os.path.join(output_dir, "assignments.npy"), labels)
+
+    # Metrics + run config
+    run_info = {
+        "embedding": args.embedding,
+        "transform": args.transform,
+        "cluster": args.cluster,
+        "k": args.k,
+        "metrics": metrics,
+    }
+    with open(os.path.join(output_dir, "run_info.json"), "w") as f:
+        json.dump(run_info, f, indent=2)
+
+    # Per-cluster summary
+    sources = [m["source"] for m in meta]
+    unique_sources = sorted(set(sources))
+    summaries = []
+    for c in range(args.k):
+        mask = labels == c
+        c_indices = np.where(mask)[0]
+        c_size = int(mask.sum())
+        if c_size == 0:
+            summaries.append({"cluster": c, "size": 0, "source_counts": {}})
+            continue
+        c_sources = [sources[i] for i in c_indices]
+        source_counts = {s: c_sources.count(s) for s in unique_sources if c_sources.count(s) > 0}
+        summaries.append({
+            "cluster": c,
+            "size": c_size,
+            "source_counts": source_counts,
+        })
+
+    with open(os.path.join(output_dir, "summary.json"), "w") as f:
+        json.dump(summaries, f, indent=2)
+
+    logger.info(f"  Saved results to {output_dir}/")
+    logger.info(f"    assignments.npy, run_info.json, summary.json")
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -313,8 +443,15 @@ def main():
                         help=f"Clustering algorithm. "
                              f"Available: {', '.join(sorted(CLUSTER_REGISTRY))} "
                              f"(default: kmeans)")
-    parser.add_argument("--k", type=int, default=64,
-                        help="Number of clusters (default: 64)")
+    parser.add_argument("--k", type=int, nargs="+", default=[64],
+                        help="Number of clusters. Pass multiple values for sweep. "
+                             "(default: 64)")
+    parser.add_argument("--save", action="store_true",
+                        help="Save clustering results (assignments, metrics, summary). "
+                             "Without this flag, only prints evaluation metrics.")
+    parser.add_argument("--output-dir", type=str, default=None,
+                        help="Output directory when --save is set. "
+                             "Defaults to <data-dir>/<embedding>_<transform>_<cluster>_k<k>/")
     parser.add_argument("--list", action="store_true",
                         help="List available embeddings, transforms, and clusterers, then exit")
     args = parser.parse_args()
@@ -338,14 +475,43 @@ def main():
     transformed = apply_transform(emb, args.transform, info)
     logger.info(f"  Output shape: {transformed.shape}")
 
-    # Cluster
-    labels = run_clustering(transformed, args.cluster, args.k)
-    logger.info(f"  Cluster labels: {len(labels)}, {len(set(labels))} unique clusters")
+    # Cluster + evaluate for each k
+    all_results = []
+    for k in args.k:
+        logger.info(f"\n--- k={k} ---")
+        args_k = argparse.Namespace(**vars(args), **{"k_single": k})  # for save_results
+        args_k.k = k
 
-    breakpoint()
-    # TODO: add saving, evaluation metrics, visualization, etc.
+        labels = run_clustering(transformed, args.cluster, k)
+        metrics = evaluate_clustering(transformed, labels, meta)
+        print_metrics(metrics)
+        all_results.append({"k": k, **metrics})
 
-    logger.info("Done.")
+        if args.save:
+            output_dir = args.output_dir or os.path.join(
+                args.data_dir, f"{args.embedding}_{args.transform}_{args.cluster}_k{k}"
+            )
+            save_results(labels, metrics, meta, args_k, output_dir)
+
+    # Print summary table if multiple k values
+    if len(args.k) > 1:
+        logger.info("\n=== SWEEP SUMMARY ===")
+        header = (f"{'k':>5}  {'silhouette':>11}  {'calinski_h':>11}  {'davies_b':>10}  "
+                  f"{'sz_med':>7}  {'sz_std':>8}  {'src_ent':>8}")
+        logger.info(header)
+        logger.info("-" * len(header))
+        for r in all_results:
+            logger.info(
+                f"{r['k']:>5}  "
+                f"{r.get('silhouette', float('nan')):>11.4f}  "
+                f"{r.get('calinski_harabasz', float('nan')):>11.1f}  "
+                f"{r.get('davies_bouldin', float('nan')):>10.4f}  "
+                f"{r.get('cluster_size_median', 0):>7}  "
+                f"{r.get('cluster_size_std', 0):>8.1f}  "
+                f"{r.get('avg_source_entropy', 0):>8.4f}"
+            )
+
+    logger.info("\nDone.")
 
 
 if __name__ == "__main__":
