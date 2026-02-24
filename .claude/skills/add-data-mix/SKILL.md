@@ -148,20 +148,36 @@ When using `s3://` paths, Beaker jobs need AWS credentials and the S3 profile cl
 
 ## LM Evaluator (Perplexity Eval on Training Data)
 
-`OLMo3-1B.py` has an `LMEvaluatorCallbackConfig` callback that computes perplexity on a data mix during training. It's disabled by default.
+`OLMo3-1B.py` has an `LMEvaluatorCallbackConfig` callback that computes perplexity on a data mix during training.
 
-**Two ways to enable and configure it**:
-
-1. **Config overrides in launch script** (preferred):
-   ```
-   --trainer.callbacks.lm_evaluator.eval_dataset.mix=$dataset
-   --trainer.callbacks.lm_evaluator.eval_dataset.mix_base_dir=s3://ai2-llm
-   --trainer.callbacks.lm_evaluator.enabled=true
-   ```
-
-2. **CLI arg**: `--eval-mix <mix_name>` (sets both the mix and enables the callback in Python code)
+**Use config overrides in the launch script** (preferred over `--eval-mix` CLI arg):
+```
+--trainer.callbacks.lm_evaluator.eval_dataset.mix=$eval_dataset
+--trainer.callbacks.lm_evaluator.eval_dataset.mix_base_dir=s3://ai2-llm
+--trainer.callbacks.lm_evaluator.enabled=true
+```
 
 OmegaConf correctly preserves concrete subclass types through merge/reconstruct cycles, so config overrides work even though `eval_dataset` is typed as `NumpyDatasetConfig` (ABC) but holds a `NumpyPaddedFSLDatasetConfig` instance.
+
+**Eval dataset should be the full parent mix, not the training subset.** For example, if training on `dolma2-code-python`, eval on `dolma2-code` (all 15 languages). This gives cross-domain perplexity signal — you can see how training on one language affects perplexity across all languages. Use a separate `eval_dataset` variable in the launch script:
+```bash
+dataset="dolma2-code-python"
+eval_dataset="dolma2-code"
+```
+
+## Beaker Launch Checklist
+
+Before launching jobs on Beaker:
+
+1. **Push your branch first.** Beaker clones the repo at the specific commit hash. If the commit doesn't exist on the remote, the job fails with `fatal: reference is not a tree`.
+
+2. **Use the correct venv.** Always `source /Users/kevinfarhat/repos/FlexMoE/.venv/bin/activate` before running launch scripts. The shell may have another project's venv active.
+
+3. **Verify eval task groups exist.** The `TASK_GROUPS["fast"]` in `task_groups.py` is used by the downstream evaluator. If it references tasks not available in the `olmo_eval` package installed on Beaker (e.g., `legalbench:rc`), the job crashes at config build time with `KeyError: 'Downstream evaluation config not found'`.
+
+4. **The LM evaluator callback must exist in OLMo3-1B.py.** Config overrides like `--trainer.callbacks.lm_evaluator.eval_dataset.mix=X` will fail with `OLMoConfigurationError: Key 'eval_dataset' not in 'Callback'` if the `lm_evaluator` callback isn't defined in the training script. The callback with default values must be present for overrides to work.
+
+5. **Monitor by experiment ID, not name.** Use `beaker experiment get <ID>` to check status. Names can vary with random suffixes. To find recent experiments: `beaker workspace experiments ai2/flex2 --format json`.
 
 ## Verification
 
