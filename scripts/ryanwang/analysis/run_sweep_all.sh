@@ -22,6 +22,13 @@ K_VALUES="8 16 32 64 128"
 # Transforms that do NOT reduce dimensionality — skip GMM for these
 NO_DIMREDUCE="identity l2"
 
+# Back up existing TSV if present
+if [ -f "$OUTPUT_TSV" ]; then
+    BACKUP="${OUTPUT_TSV%.tsv}_$(date +%Y%m%d_%H%M%S).tsv"
+    cp "$OUTPUT_TSV" "$BACKUP"
+    echo "Backed up existing sweep results → $BACKUP"
+fi
+
 # Write TSV header
 echo -e "embedding\ttransform\tcluster\tk\tsilhouette\tcalinski_harabasz\tdavies_bouldin\tcluster_size_min\tcluster_size_max\tcluster_size_median\tcluster_size_std\tavg_source_entropy" > "$OUTPUT_TSV"
 

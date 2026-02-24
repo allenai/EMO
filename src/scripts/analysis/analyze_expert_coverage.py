@@ -194,9 +194,9 @@ def main():
     parser.add_argument("--composition-file", type=str, default=None,
                         help="Path to existing mix_composition.json. "
                              "If not provided, will discover topics on S3.")
-    parser.add_argument("--output-dir", type=str,
-                        default="claude_outputs/analysis/expert_coverage_weborganizer",
-                        help="Output directory for results")
+    parser.add_argument("--output-dir", type=str, default=None,
+                        help="Output directory for results. If not provided, "
+                             "auto-derived as expert_coverage_weborganizer/<model_name>/")
     parser.add_argument("--target-tokens", type=int, default=20_000_000,
                         help="Total tokens to sample (distributed uniformly across topics)")
     parser.add_argument("--batch-size", type=int, default=32,
@@ -206,6 +206,21 @@ def main():
     parser.add_argument("--debug", action="store_true",
                         help="Debug mode: only load from the first 2 data sources")
     args = parser.parse_args()
+
+    # Derive output dir from model path if not specified
+    if args.output_dir is None:
+        # Extract model name: strip trailing /step*-hf, take last path component
+        model_name = args.model_path.rstrip("/")
+        # Remove step*-hf suffix if present
+        parts = model_name.split("/")
+        if parts[-1].startswith("step") and parts[-1].endswith("-hf"):
+            model_name = parts[-2]
+        else:
+            model_name = parts[-1]
+        args.output_dir = os.path.join(
+            "claude_outputs/analysis/expert_coverage_weborganizer", model_name
+        )
+        logger.info(f"Auto-derived output dir: {args.output_dir}")
 
     os.makedirs(args.output_dir, exist_ok=True)
 

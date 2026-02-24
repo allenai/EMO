@@ -375,9 +375,17 @@ def print_metrics(metrics: dict):
 
 def save_results(
     labels: np.ndarray, metrics: dict, meta: list,
+    emb: np.ndarray, transformed: np.ndarray,
     args, output_dir: str,
+    n_rep_docs: int = 5,
 ):
-    """Save clustering assignments, metrics, and a summary report."""
+    """Save clustering assignments, metrics, and a summary report.
+
+    Parameters
+    ----------
+    emb : raw embedding array (N, num_layers * num_experts) — used for top-expert computation
+    transformed : transformed embedding array — used to find representative docs (closest to centroid)
+    """
     os.makedirs(output_dir, exist_ok=True)
 
     # Assignments
@@ -394,7 +402,7 @@ def save_results(
     with open(os.path.join(output_dir, "run_info.json"), "w") as f:
         json.dump(run_info, f, indent=2)
 
-    # Per-cluster summary
+    # Per-cluster summary (with top experts and representative docs)
     sources = [m["source"] for m in meta]
     unique_sources = sorted(set(sources))
     summaries = []
@@ -403,14 +411,41 @@ def save_results(
         c_indices = np.where(mask)[0]
         c_size = int(mask.sum())
         if c_size == 0:
-            summaries.append({"cluster": c, "size": 0, "source_counts": {}})
+            summaries.append({
+                "cluster": c, "size": 0, "source_counts": {},
+                "top10_experts_global": [], "representative_docs": [],
+            })
             continue
+
+        # Source counts
         c_sources = [sources[i] for i in c_indices]
         source_counts = {s: c_sources.count(s) for s in unique_sources if c_sources.count(s) > 0}
+
+        # Top 10 experts by summed activation across cluster docs
+        cluster_emb_sum = emb[c_indices].sum(axis=0)  # (num_layers * num_experts,)
+        top10_experts = np.argsort(cluster_emb_sum)[::-1][:10].tolist()
+
+        # Representative docs: closest to centroid in transformed space
+        centroid = transformed[c_indices].mean(axis=0)
+        dists = np.linalg.norm(transformed[c_indices] - centroid, axis=1)
+        closest = np.argsort(dists)[:n_rep_docs]
+        rep_docs = []
+        for idx in closest:
+            global_idx = int(c_indices[idx])
+            m = meta[global_idx]
+            rep_docs.append({
+                "doc_index": global_idx,
+                "source": m["source"],
+                "doc_len": m["doc_len"],
+                "preview": m["preview"][:3000],
+            })
+
         summaries.append({
             "cluster": c,
             "size": c_size,
             "source_counts": source_counts,
+            "top10_experts_global": top10_experts,
+            "representative_docs": rep_docs,
         })
 
     with open(os.path.join(output_dir, "summary.json"), "w") as f:
@@ -491,7 +526,7 @@ def main():
             output_dir = args.output_dir or os.path.join(
                 args.data_dir, f"{args.embedding}_{args.transform}_{args.cluster}_k{k}"
             )
-            save_results(labels, metrics, meta, args_k, output_dir)
+            save_results(labels, metrics, meta, emb, transformed, args_k, output_dir)
 
     # Print summary table if multiple k values
     if len(args.k) > 1:

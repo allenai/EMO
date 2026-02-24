@@ -179,20 +179,31 @@ CATEGORY_COLORS = {
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output-dir", required=True,
-                        help="Analysis output dir (where clusters_k{k}/, HTML, and report go)")
+    parser.add_argument("--cluster-dir", required=True,
+                        help="Directory containing assignments.npy, summary.json, and run_info.json "
+                             "(output of transform_and_cluster.py --save)")
     parser.add_argument("--data-dir", default=None,
-                        help="Dir with shared data files (metadata.jsonl.gz, info.json). "
-                             "Defaults to --output-dir if not specified.")
+                        help="Dir with shared data files (metadata.jsonl.gz, info.json, embeddings). "
+                             "Defaults to parent of --cluster-dir.")
     parser.add_argument("--emb-file", default=None,
                         help="Path to embedding .npy file. "
-                             "Defaults to <data-dir>/embeddings_optA_avgprob.npy.")
-    parser.add_argument("--k", type=int, default=64)
+                             "Auto-detected from run_info.json if not specified.")
     args = parser.parse_args()
 
-    data_dir = args.data_dir or args.output_dir
-    cluster_dir = os.path.join(args.output_dir, f"clusters_k{args.k}")
-    emb_file = args.emb_file or os.path.join(data_dir, "embeddings_optA_avgprob.npy")
+    cluster_dir = args.cluster_dir
+    data_dir = args.data_dir or os.path.dirname(os.path.normpath(cluster_dir))
+
+    # Load run_info to get k and embedding name
+    with open(os.path.join(cluster_dir, "run_info.json")) as f:
+        run_info = json.load(f)
+    k = run_info["k"]
+
+    # Auto-detect embedding file from run_info
+    if args.emb_file:
+        emb_file = args.emb_file
+    else:
+        emb_name = run_info["embedding"]
+        emb_file = os.path.join(data_dir, f"embeddings_{emb_name}.npy")
 
     # Load everything
     logger.info(f"Loading embeddings from {emb_file}...")
@@ -274,9 +285,6 @@ def main():
             cat = external_labels[cid_str].get("category", "reference")
             if cat not in CATEGORY_COLORS:
                 cat = "reference"
-        elif cid in CLUSTER_LABELS:
-            # Legacy fallback for original baseline optB k=128
-            label, cat = CLUSTER_LABELS[cid]
         else:
             label, cat = f"Cluster {cid}", "reference"
         clusters_js.append({
@@ -290,11 +298,12 @@ def main():
             "rep_docs": c["representative_docs"],
         })
 
-    emb_label = os.path.basename(emb_file).replace(".npy", "")
+    # Build a descriptive label from run_info
+    emb_label = f"{run_info['embedding']}_{run_info['transform']}_{run_info['cluster']}"
 
-    # Write HTML visualizer
-    html_path = os.path.join(args.output_dir, "cluster_explorer.html")
-    write_html(clusters_js, docs_js, info, args.k, emb_label, html_path)
+    # Write HTML visualizer into cluster_dir
+    html_path = os.path.join(cluster_dir, "cluster_explorer.html")
+    write_html(clusters_js, docs_js, info, k, emb_label, html_path)
     logger.info(f"Saved HTML visualizer → {html_path}")
 
 

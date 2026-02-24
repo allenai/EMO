@@ -169,10 +169,14 @@ claude_outputs/analysis/router_clustering_pretraining/
             cluster_explorer.html
 
 claude_outputs/analysis/expert_coverage_weborganizer/
-    mix_composition.json          # uniform topic fractions (auto-generated or copied)
-    metadata.jsonl.gz             # per-doc metadata
-    info.json                     # model + extraction params
-    expert_freq.npy               # per-doc normalized frequencies (num_docs, num_layers*num_experts)
-    topic_stats.json              # per-topic avg experts/layer and entropy/layer
-    expert_coverage_heatmap.png   # heatmap: topics x layers x avg experts used
+    <model_name>/                 # one subdir per model (auto-derived from model path)
+        mix_composition.json          # uniform topic fractions (auto-generated or copied)
+        metadata.jsonl.gz             # per-doc metadata
+        info.json                     # model + extraction params
+        expert_freq.npy               # per-doc normalized frequencies (num_docs, num_layers*num_experts)
+        topic_stats.json              # per-topic avg experts/layer and entropy/layer
+        expert_coverage_heatmap.png   # heatmap: topics x layers x avg experts used
+        expert_entropy_heatmap.png    # heatmap: topics x layers x entropy
+        topic_similarity_heatmap.png  # 2x2 cosine similarity at L0/L5/L10/L15
+        topic_l2_distance_heatmap.png # 2x2 L2 distance at L0/L5/L10/L15
 ```
