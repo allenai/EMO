@@ -2,11 +2,11 @@
 
 # Configuration
 
-MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
-# MODEL_DIR=/weka/oe-training-default/akshitab/FlexMoE/models
+# MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
+MODEL_DIR=/weka/oe-training-default/akshitab/FlexMoE/models
 
 MODELS=(
-    moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
+    # moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
     # moe1b14b_129experts_1trained_math_init_random_expert_5B/step1193-hf
     # moe1b14b_129experts_1trained_math_init_average_5B/step1193-hf
     # twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf
@@ -15,6 +15,12 @@ MODELS=(
     # ff-moe1b14b_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
     # ff-moe_1b14b_128base_4math_10B_4code_init_top2_code_mix_average_noise_10B_lr_4e-4/step2385-hf
     # merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
+
+    # math extension before training:
+    # extensions/moe_1b14b_132experts_olmoe-mix_130B_1103_step30995_init_top2_average_noise_10perc-hf
+    # code extension before training:
+    extensions/moe_1b14b_132experts_olmoe-mix_130B_1103_step30995_init_top2_code_average_noise-hf
+    
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
@@ -46,7 +52,7 @@ TASK_GROUPS_LIST=(
 
 
 #   MMLU
- "mmlu_rc_test|mmlu:rc_test::olmes"
+#  "mmlu_rc_test|mmlu:rc_test::olmes"
 
 #   Gen5 tasks
 #  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes drop::olmes"
@@ -73,8 +79,8 @@ TASK_GROUPS_LIST=(
     # "gsm8k::olmes"
     # "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
     # "minerva_math_500::olmes"
-    # "mbpp"
-    # "codex_humaneval"
+    "mbpp"
+    "codex_humaneval"
 )
 
 # Function to get checkpoint name (matching the original script)

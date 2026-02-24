@@ -77,7 +77,10 @@ MODELS=(
     # ff-moe1b14b_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
     # merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
 
-    ff-moe1b14b_132experts_4trained_croissant_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
+    # ff-moe1b14b_132experts_4trained_croissant_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
+
+    # extensions/moe_1b14b_132experts_olmoe-mix_130B_1103_step30995_init_top2_average_noise_10perc-hf
+    # extensions/moe_1b14b_132experts_olmoe-mix_130B_1103_step30995_init_top2_code_average_noise-hf
 
 )
 
@@ -95,7 +98,7 @@ TASK_GROUPS_LIST=(
 #  "arc_challenge|arc_challenge:rc_test::olmes"
 #  "boolq|boolq:rc_test::olmes"
 #  "csqa|csqa:rc_test::olmes"
-#  "hellaswag|hellaswag:rc_test::olmes"
+ "hellaswag|hellaswag:rc_test::olmes"
 #  "openbookqa|openbookqa:rc_test::olmes"
 #  "piqa|piqa:rc_test::olmes"
 #  "socialiqa|socialiqa:rc_test::olmes"
@@ -138,13 +141,13 @@ TASK_GROUPS_LIST=(
     # minerva_math_500:bpb::olmes
     # minerva_math_500::olmes
 
-    # mbpp:3shot:bpb::none
-    # codex_humaneval:3shot:bpb::none
+    mbpp:3shot:bpb::none
+    codex_humaneval:3shot:bpb::none
 
-    frenchbench_hellaswag:rc
-    frenchbench_boolq:rc
-    frenchbench_arc_challenge:rc
-    frenchbench_grammar_vocab_reading:rc
+    # frenchbench_hellaswag:rc
+    # frenchbench_boolq:rc
+    # frenchbench_arc_challenge:rc
+    # frenchbench_grammar_vocab_reading:rc
     
 )
 
