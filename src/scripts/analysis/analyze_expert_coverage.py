@@ -155,6 +155,8 @@ def process_batch(
     counts = torch.zeros(B, num_layers, num_standard_experts, dtype=torch.int32, device=device)
     mask = attention_mask.unsqueeze(-1)  # (B, S, 1)
 
+    breakpoint()
+
     for layer_idx, layer_logits in enumerate(outputs.router_logits):
         # layer_logits: (B*S, E_total) -> (B, S, E_standard)
         logits = layer_logits.view(B, max_len, -1)[:, :, :num_standard_experts]
@@ -259,6 +261,7 @@ def main():
     # Collect raw counts: (num_docs, num_layers * num_standard_experts)
     all_counts = np.zeros((num_docs, emb_dim), dtype=np.int32)
     all_doc_lens = np.zeros(num_docs, dtype=np.int32)
+    breakpoint()
     t0 = time.time()
 
     for batch_idx in range(num_batches):
