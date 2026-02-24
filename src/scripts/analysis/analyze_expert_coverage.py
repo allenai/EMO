@@ -150,7 +150,6 @@ def process_batch(
         attention_mask=attention_mask,
         output_router_logits=True,
     )
-    breakpoint()
 
     # Accumulate counts: (B, num_layers, num_standard_experts)
     counts = torch.zeros(B, num_layers, num_standard_experts, dtype=torch.int32, device=device)
@@ -266,7 +265,6 @@ def main():
     # Collect raw counts: (num_docs, num_layers * num_standard_experts)
     all_counts = np.zeros((num_docs, emb_dim), dtype=np.int32)
     all_doc_lens = np.zeros(num_docs, dtype=np.int32)
-    breakpoint()
     t0 = time.time()
 
     for batch_idx in range(num_batches):
