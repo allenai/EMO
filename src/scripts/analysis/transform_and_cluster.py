@@ -118,23 +118,45 @@ def transform_l2(emb: np.ndarray, info: dict) -> np.ndarray:
     breakpoint()
     return normalize(emb, norm="l2")
 
-
-@register_transform("pca_l2", "PCA (95% variance) then L2 normalize")
-def transform_pca_l2(emb: np.ndarray, info: dict) -> np.ndarray:
+@register_transform("mean_pca", "Mean-center then PCA (95% variance)")
+def transform_mean_pca(emb: np.ndarray, info: dict) -> np.ndarray:
     from sklearn.decomposition import PCA
-    from sklearn.preprocessing import normalize
     breakpoint()
 
-    n_components = min(emb.shape[0], emb.shape[1])
+    # Mean-center
+    centered = emb - emb.mean(axis=0, keepdims=True)
+
+    # PCA
+    n_components = min(centered.shape[0], centered.shape[1])
     pca = PCA(n_components=n_components, svd_solver="randomized", random_state=42)
-    pca.fit(emb)
+    pca.fit(centered)
 
     cumvar = np.cumsum(pca.explained_variance_ratio_)
     k = int(np.searchsorted(cumvar, 0.95)) + 1
     logger.info(f"  PCA: {k} components explain {cumvar[k-1]:.1%} variance")
 
     pca_k = PCA(n_components=k, random_state=42)
-    reduced = pca_k.fit_transform(emb)
+    return pca_k.fit_transform(centered)
+
+@register_transform("mean_pca_l2", "Mean-center then PCA (95% variance) then L2 normalize")
+def transform_mean_pca_l2(emb: np.ndarray, info: dict) -> np.ndarray:
+    from sklearn.decomposition import PCA
+    from sklearn.preprocessing import normalize
+    breakpoint()
+
+    # Mean-center
+    centered = emb - emb.mean(axis=0, keepdims=True)
+
+    n_components = min(centered.shape[0], centered.shape[1])
+    pca = PCA(n_components=n_components, svd_solver="randomized", random_state=42)
+    pca.fit(centered)
+
+    cumvar = np.cumsum(pca.explained_variance_ratio_)
+    k = int(np.searchsorted(cumvar, 0.95)) + 1
+    logger.info(f"  PCA: {k} components explain {cumvar[k-1]:.1%} variance")
+
+    pca_k = PCA(n_components=k, random_state=42)
+    reduced = pca_k.fit_transform(centered)
     return normalize(reduced, norm="l2")
 
 @register_transform("mean_l2_pca", "Mean-center, L2 normalize, then PCA (95% variance)")
