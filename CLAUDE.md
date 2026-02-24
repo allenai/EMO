@@ -32,6 +32,10 @@ make checks        # All checks combined
 make docs
 ```
 
+**Pre-commit hooks** are installed (isort, black, ruff, mypy on changed files). They run automatically on `git commit`.
+
+**CHANGELOG**: When making changes to `src/`, always add an entry under `## Unreleased` in `CHANGELOG.md`. CI will block PRs to main without it.
+
 ## Environment
 
 - Always use `uv pip` instead of `pip` for package installation
@@ -305,7 +309,7 @@ python src/scripts/eval/print_evals.py \
 
 **Batch size rules** (auto-applied in launch.sh):
 - Default: 4
-- CoT, minerva_math, mbpp, bigcodebench, ruler, sciriff tasks: 1
+- CoT, minerva_math, mbpp, bigcodebench, ruler, sciriff, `*_gen*` tasks: 1
 
 ### Adding Shot Variants to an Existing Benchmark
 
