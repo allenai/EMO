@@ -1,17 +1,14 @@
 """
-Load a router embedding file and apply a named transformation pipeline.
-
-This script is a boilerplate entrypoint for experimenting with different
-dimensionality reduction, normalization, and clustering strategies on top
-of extracted router embeddings.
+Load a router embedding, apply a transformation, and cluster.
 
 Usage:
     python -m src.scripts.analysis.transform_and_cluster \
         --data-dir claude_outputs/analysis/router_clustering_pretraining \
         --embedding logits \
-        --transform pca_l2
+        --transform mean_pca_l2 \
+        --cluster kmeans --k 64
 
-    # List available embeddings and transforms
+    # List available embeddings, transforms, and clustering algorithms
     python -m src.scripts.analysis.transform_and_cluster --list
 """
 
@@ -241,12 +238,65 @@ def apply_transform(emb: np.ndarray, transform_name: str, info: dict) -> np.ndar
 
 
 # ---------------------------------------------------------------------------
+# Clustering registry
+# ---------------------------------------------------------------------------
+
+CLUSTER_REGISTRY = {}
+
+
+def register_cluster(name: str, description: str):
+    """Decorator to register a clustering algorithm."""
+    def decorator(fn):
+        CLUSTER_REGISTRY[name] = {"fn": fn, "description": description}
+        return fn
+    return decorator
+
+
+@register_cluster("kmeans", "MiniBatchKMeans clustering")
+def cluster_kmeans(emb: np.ndarray, k: int) -> np.ndarray:
+    from sklearn.cluster import MiniBatchKMeans
+
+    km = MiniBatchKMeans(
+        n_clusters=k, n_init=10, max_iter=500,
+        batch_size=4096, random_state=42,
+    )
+    labels = km.fit_predict(emb)
+    logger.info(f"  KMeans: inertia={km.inertia_:.1f}")
+    return labels
+
+
+@register_cluster("gmm", "Gaussian Mixture Model clustering")
+def cluster_gmm(emb: np.ndarray, k: int) -> np.ndarray:
+    from sklearn.mixture import GaussianMixture
+
+    gmm = GaussianMixture(
+        n_components=k, covariance_type="full",
+        max_iter=200, n_init=3, random_state=42,
+    )
+    labels = gmm.fit_predict(emb)
+    logger.info(f"  GMM: converged={gmm.converged_}, "
+                f"BIC={gmm.bic(emb):.1f}, AIC={gmm.aic(emb):.1f}")
+    return labels
+
+
+def run_clustering(emb: np.ndarray, cluster_name: str, k: int) -> np.ndarray:
+    """Run a named clustering algorithm. Returns (N,) int array of labels."""
+    if cluster_name not in CLUSTER_REGISTRY:
+        raise ValueError(
+            f"Unknown clustering '{cluster_name}'. "
+            f"Available: {', '.join(sorted(CLUSTER_REGISTRY))}"
+        )
+    logger.info(f"Clustering: {cluster_name} with k={k}")
+    return CLUSTER_REGISTRY[cluster_name]["fn"](emb, k)
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Load router embeddings and apply transformations."
+        description="Load router embeddings, apply transformations, and cluster."
     )
     parser.add_argument("--data-dir", type=str,
                         default="claude_outputs/analysis/router_clustering_pretraining",
@@ -259,8 +309,14 @@ def main():
                         help=f"Transform to apply. "
                              f"Available: {', '.join(sorted(TRANSFORM_REGISTRY))} "
                              f"(default: identity)")
+    parser.add_argument("--cluster", type=str, default="kmeans",
+                        help=f"Clustering algorithm. "
+                             f"Available: {', '.join(sorted(CLUSTER_REGISTRY))} "
+                             f"(default: kmeans)")
+    parser.add_argument("--k", type=int, default=64,
+                        help="Number of clusters (default: 64)")
     parser.add_argument("--list", action="store_true",
-                        help="List available embeddings and transforms, then exit")
+                        help="List available embeddings, transforms, and clusterers, then exit")
     args = parser.parse_args()
 
     if args.list:
@@ -269,6 +325,9 @@ def main():
             print(f"  {name:20s} -> {filename}")
         print("\nAvailable transforms:")
         for name, entry in sorted(TRANSFORM_REGISTRY.items()):
+            print(f"  {name:20s} — {entry['description']}")
+        print("\nAvailable clustering algorithms:")
+        for name, entry in sorted(CLUSTER_REGISTRY.items()):
             print(f"  {name:20s} — {entry['description']}")
         return
 
@@ -279,8 +338,12 @@ def main():
     transformed = apply_transform(emb, args.transform, info)
     logger.info(f"  Output shape: {transformed.shape}")
 
+    # Cluster
+    labels = run_clustering(transformed, args.cluster, args.k)
+    logger.info(f"  Cluster labels: {len(labels)}, {len(set(labels))} unique clusters")
+
     breakpoint()
-    # TODO: add clustering, saving, visualization, etc.
+    # TODO: add saving, evaluation metrics, visualization, etc.
 
     logger.info("Done.")
 
