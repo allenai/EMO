@@ -21,4 +21,5 @@ python -m src.scripts.analysis.analyze_expert_coverage \
     $COMP_ARG \
     --output-dir "$OUTPUT_DIR" \
     --target-tokens 50000 \
-    --batch-size 4
+    --batch-size 4 \
+    --debug

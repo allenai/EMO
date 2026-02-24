@@ -153,9 +153,6 @@ def process_batch(
 
     # Accumulate counts: (B, num_layers, num_standard_experts)
     counts = torch.zeros(B, num_layers, num_standard_experts, dtype=torch.int32, device=device)
-    mask = attention_mask.unsqueeze(-1)  # (B, S, 1)
-
-    breakpoint()
 
     for layer_idx, layer_logits in enumerate(outputs.router_logits):
         # layer_logits: (B*S, E_total) -> (B, S, E_standard)
@@ -164,17 +161,17 @@ def process_batch(
         # Top-8 expert indices per token: (B, S, TOP_K)
         top_indices = logits.topk(TOP_K, dim=-1).indices
 
-        # Create one-hot and mask out padding, then sum across tokens
-        # one_hot: (B, S, TOP_K, E) -> sum over S and TOP_K dims
-        one_hot = torch.zeros(B, max_len, TOP_K, num_standard_experts,
-                              dtype=torch.int32, device=device)
-        one_hot.scatter_(3, top_indices.unsqueeze(-1), 1)
+        # Flatten top-k indices to (B, S*TOP_K) and use scatter_add_ to count
+        flat_indices = top_indices.reshape(B, -1)  # (B, S*TOP_K)
 
-        # Mask padding tokens: mask is (B, S, 1), broadcast over TOP_K and E
-        one_hot = one_hot * mask.unsqueeze(2)  # (B, S, TOP_K, E)
+        # Build a mask for valid (non-padding) tokens, repeated for each top-k slot
+        # attention_mask: (B, S) -> repeat each entry TOP_K times -> (B, S*TOP_K)
+        valid = attention_mask.unsqueeze(-1).expand(-1, -1, TOP_K).reshape(B, -1)  # (B, S*TOP_K)
 
-        # Sum over tokens and top-k selections: (B, E)
-        counts[:, layer_idx, :] = one_hot.sum(dim=(1, 2))
+        # scatter_add_ ones at expert indices, masked by valid tokens
+        counts[:, layer_idx, :].scatter_add_(
+            1, flat_indices, valid.to(torch.int32)
+        )
 
     # Flatten to (B, num_layers * num_standard_experts)
     counts_flat = counts.view(B, -1).cpu().numpy()
@@ -204,6 +201,8 @@ def main():
                         help="Batch size for model inference")
     parser.add_argument("--min-doc-len", type=int, default=32)
     parser.add_argument("--max-doc-len", type=int, default=2048)
+    parser.add_argument("--debug", action="store_true",
+                        help="Debug mode: only load from the first 2 data sources")
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -218,6 +217,11 @@ def main():
         composition = generate_uniform_composition(args.output_dir)
 
     sources = composition["sources"]
+    if args.debug:
+        # Only keep the first 2 sources for fast iteration
+        kept = dict(list(sorted(sources.items()))[:2])
+        logger.info(f"DEBUG mode: using 2/{len(sources)} sources: {list(kept.keys())}")
+        sources = kept
     num_topics = len(sources)
     tokens_per_topic = args.target_tokens // num_topics
     logger.info(f"{num_topics} topics, {tokens_per_topic:,} tokens per topic "
