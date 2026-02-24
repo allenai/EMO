@@ -39,7 +39,7 @@ model_type=hf
 
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
-    # # # MC9 tasks
+    # # MC9 tasks
     # arc_easy:mc::olmes
     # arc_challenge:mc::olmes
     # boolq:mc::olmes
@@ -50,24 +50,24 @@ TASKS=(
     # socialiqa:mc::olmes
     # winogrande:mc::olmes
     
-    # # # Gen5 tasks
+    # # Gen5 tasks
     # coqa::olmes
     # squad::olmes
     # naturalqs::olmes
     # triviaqa::olmes
     # drop::olmes
 
-    # # # MMLU tasks
+    # # MMLU tasks
     # mmlu:mc::olmes
-    # # mmlu_pro_mc::none
+    # mmlu_pro_mc::none
 
-    # # # AGI eval
+    # # AGI eval
     # agi_eval_english:1shot::olmes
 
-    # # # BBH
-    # # bbh:cot-v1::olmes
+    # # BBH
+    # bbh:cot-v1::olmes
 
-    # # # Math2 tasks
+    # # Math2 tasks
     # gsm8k::olmes
     # minerva_math_algebra::olmes
     # minerva_math_counting_and_probability::olmes
@@ -86,12 +86,15 @@ TASKS=(
     # # ChemBench MC and generative tasks
     # chembench:mc
     # chembench:gen
-    # chembench:rc    
+    # chembench:rc
     # frenchbench:rc
     # legalbench:rc
 
     medqa
     medmcqa:mc
+    # # FrenchBench 0-shot and 5-shot
+    frenchbench:rc:0shot
+    frenchbench:rc:5shot
 )
 
 # Function to get checkpoint name - extracts run name and step from path

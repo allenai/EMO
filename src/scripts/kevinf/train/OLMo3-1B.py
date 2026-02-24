@@ -49,6 +49,8 @@ from olmo_core.train.callbacks import (
     LMEvaluatorCallbackConfig,
     PostTrainEvalCallback,
     WandBCallback,
+    LMEvaluatorCallbackConfig,
+
 )
 from olmo_core.train.train_module import (
     TransformerDataParallelConfig,
@@ -148,7 +150,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
     # Dataset config
     dataset_config = NumpyFSLDatasetConfig.from_data_mix(
-        DataMix.OLMoE_mix_0824,
+        DataMix.chempile,
         tokenizer=tokenizer_config,
         mix_base_dir=DATA_ROOT,
         sequence_length=SEQUENCE_LENGTH,
