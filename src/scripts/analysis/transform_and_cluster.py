@@ -137,6 +137,30 @@ def transform_pca_l2(emb: np.ndarray, info: dict) -> np.ndarray:
     reduced = pca_k.fit_transform(emb)
     return normalize(reduced, norm="l2")
 
+@register_transform("mean_l2_pca", "Mean-center, L2 normalize, then PCA (95% variance)")
+def transform_mean_l2_pca(emb: np.ndarray, info: dict) -> np.ndarray:
+    from sklearn.decomposition import PCA
+    from sklearn.preprocessing import normalize
+    breakpoint()
+
+    # Mean-center
+    centered = emb - emb.mean(axis=0, keepdims=True)
+
+    # L2 normalize
+    normalized = normalize(centered, norm="l2")
+
+    # PCA
+    n_components = min(normalized.shape[0], normalized.shape[1])
+    pca = PCA(n_components=n_components, svd_solver="randomized", random_state=42)
+    pca.fit(normalized)
+
+    cumvar = np.cumsum(pca.explained_variance_ratio_)
+    k = int(np.searchsorted(cumvar, 0.95)) + 1
+    logger.info(f"  PCA: {k} components explain {cumvar[k-1]:.1%} variance")
+
+    pca_k = PCA(n_components=k, random_state=42)
+    return pca_k.fit_transform(normalized)
+
 
 def apply_transform(emb: np.ndarray, transform_name: str, info: dict) -> np.ndarray:
     """Apply a named transform to an embedding array."""
