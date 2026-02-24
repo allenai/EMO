@@ -299,12 +299,6 @@ def parse_args():
         action="store_true",
         help="""Print the config and exit.""",
     )
-    parser.add_argument(
-        "--eval-mix",
-        type=str,
-        help="""DataMix name for the LM evaluator PPL callback (e.g., chempile, croissant, mj_finemath4plus).
-        Defaults to the training dataset mix if not provided.""",
-    )
     opts, overrides = parser.parse_known_args()
     return opts, overrides
 

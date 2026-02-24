@@ -44,7 +44,6 @@ for lr in 5e-5 ; do
     --trainer.callbacks.downstream_evaluator.eval_interval=100 \
     --trainer.callbacks.lm_evaluator.eval_dataset.mix=$dataset \
     --dataset.mix=$dataset \
-    --eval-mix $dataset \
     --train_module.optim.lr=$lr \
     # ${load_path:+--load_path=$load_path} 
     # --train_module.scheduler.warmup_fraction=$warmup_fraction \
