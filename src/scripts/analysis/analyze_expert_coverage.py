@@ -150,6 +150,7 @@ def process_batch(
         attention_mask=attention_mask,
         output_router_logits=True,
     )
+    breakpoint()
 
     # Accumulate counts: (B, num_layers, num_standard_experts)
     counts = torch.zeros(B, num_layers, num_standard_experts, dtype=torch.int32, device=device)
