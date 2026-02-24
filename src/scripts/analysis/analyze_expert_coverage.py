@@ -66,7 +66,7 @@ def generate_uniform_composition(output_dir: str) -> Dict[str, Any]:
     topic_files: Dict[str, list] = {}
     topic_vigintile: Dict[str, str] = {}
 
-    for topic in topics:
+    for topic in topics[:2]:
         vigs = sorted(e for e in s3_ls(f"{ALL_DRESSED_PREFIX}/{topic}") if e.startswith("vigintile_"))
         if not vigs:
             logger.warning(f"  [{topic}] no vigintiles, skipping")
