@@ -183,6 +183,59 @@ def transform_mean_l2_pca(emb: np.ndarray, info: dict) -> np.ndarray:
     pca_k = PCA(n_components=k, random_state=42)
     return pca_k.fit_transform(normalized)
 
+@register_transform("tsvd", "TruncatedSVD (95% variance)")
+def transform_tsvd(emb: np.ndarray, info: dict) -> np.ndarray:
+    from sklearn.decomposition import TruncatedSVD
+    breakpoint()
+
+    n_components = min(emb.shape[0], emb.shape[1])
+    tsvd = TruncatedSVD(n_components=n_components, random_state=42)
+    tsvd.fit(emb)
+
+    cumvar = np.cumsum(tsvd.explained_variance_ratio_)
+    k = int(np.searchsorted(cumvar, 0.95)) + 1
+    logger.info(f"  TruncatedSVD: {k} components explain {cumvar[k-1]:.1%} variance")
+
+    tsvd_k = TruncatedSVD(n_components=k, random_state=42)
+    return tsvd_k.fit_transform(emb)
+
+@register_transform("l2_tsvd", "L2 normalize then TruncatedSVD (95% variance)")
+def transform_l2_tsvd(emb: np.ndarray, info: dict) -> np.ndarray:
+    from sklearn.decomposition import TruncatedSVD
+    from sklearn.preprocessing import normalize
+    breakpoint()
+
+    # L2 normalize
+    normalized = normalize(emb, norm="l2")
+
+    n_components = min(normalized.shape[0], normalized.shape[1])
+    tsvd = TruncatedSVD(n_components=n_components, random_state=42)
+    tsvd.fit(normalized)
+
+    cumvar = np.cumsum(tsvd.explained_variance_ratio_)
+    k = int(np.searchsorted(cumvar, 0.95)) + 1
+    logger.info(f"  TruncatedSVD: {k} components explain {cumvar[k-1]:.1%} variance")
+
+    tsvd_k = TruncatedSVD(n_components=k, random_state=42)
+    return tsvd_k.fit_transform(normalized)
+
+@register_transform("tsvd_l2", "TruncatedSVD (95% variance) then L2 normalize")
+def transform_tsvd_l2(emb: np.ndarray, info: dict) -> np.ndarray:
+    from sklearn.decomposition import TruncatedSVD
+    from sklearn.preprocessing import normalize
+    breakpoint()
+
+    n_components = min(emb.shape[0], emb.shape[1])
+    tsvd = TruncatedSVD(n_components=n_components, random_state=42)
+    tsvd.fit(emb)
+
+    cumvar = np.cumsum(tsvd.explained_variance_ratio_)
+    k = int(np.searchsorted(cumvar, 0.95)) + 1
+    logger.info(f"  TruncatedSVD: {k} components explain {cumvar[k-1]:.1%} variance")
+
+    tsvd_k = TruncatedSVD(n_components=k, random_state=42)
+    reduced = tsvd_k.fit_transform(emb)
+    return normalize(reduced, norm="l2")
 
 def apply_transform(emb: np.ndarray, transform_name: str, info: dict) -> np.ndarray:
     """Apply a named transform to an embedding array."""
