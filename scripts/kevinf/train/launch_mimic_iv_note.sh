@@ -10,7 +10,7 @@
 # Hyperparameters (easy to change for sweeps)
 dataset="mimic-iv-note"
 warmup_fraction=0.1
-train_tokens_B=2  # in billions (~1 epoch over 1.7B tokens)
+train_tokens_B=5  # in billions (~3 epochs over 1.7B tokens)
 train_tokens_raw=$((train_tokens_B * 1000000000))
 load_path="/weka/oe-training-default/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995"
 
