@@ -36,6 +36,7 @@ from typing import Any, Dict, List
 
 import numpy as np
 import torch
+from scipy.stats import entropy as scipy_entropy
 
 from src.scripts.analysis.utils import (
     ALL_DRESSED_PREFIX,
@@ -112,9 +113,6 @@ def generate_uniform_composition(output_dir: str) -> Dict[str, Any]:
 
 # ── Model inference ──────────────────────────────────────────────────────────
 
-TOP_K = 8  # number of experts selected per token per layer
-
-
 @torch.no_grad()
 def process_batch(
     model: Any,
@@ -122,17 +120,22 @@ def process_batch(
     device: str,
     num_layers: int,
     num_standard_experts: int,
-):
+    routed_top_k: int,
+) -> np.ndarray:
     """
-    Run a batch of documents through the model, select top-8 experts per token
-    per layer, and return per-document expert activation counts.
+    Run a batch of documents through the model, select top routed_top_k experts
+    per token per layer, and return per-document normalized expert activation
+    frequencies.
+
+    routed_top_k is the number of experts selected by the router, excluding
+    shared experts (i.e. num_experts_per_tok - num_shared_experts).
+
+    For each document, counts how many tokens selected each expert at each
+    layer, then divides by the document length. Values are in [0, 1] and each
+    layer's frequencies sum to routed_top_k.
 
     Returns:
-        counts: np.ndarray of shape (B, num_layers * num_standard_experts), dtype int32.
-                Each entry is the number of tokens in that document that selected
-                that expert (via top-8) at that layer.
-        doc_lens: np.ndarray of shape (B,), the number of real (non-padding) tokens
-                  per document.
+        freq: np.ndarray of shape (B, num_layers * num_standard_experts), dtype float32.
     """
     B = len(batch_docs)
     max_len = max(len(doc) for doc in batch_docs)
@@ -158,27 +161,26 @@ def process_batch(
         # layer_logits: (B*S, E_total) -> (B, S, E_standard)
         logits = layer_logits.view(B, max_len, -1)[:, :, :num_standard_experts]
 
-        # Top-8 expert indices per token: (B, S, TOP_K)
-        top_indices = logits.topk(TOP_K, dim=-1).indices
+        # Top routed_top_k expert indices per token: (B, S, routed_top_k)
+        top_indices = logits.topk(routed_top_k, dim=-1).indices
 
-        # Flatten top-k indices to (B, S*TOP_K) and use scatter_add_ to count
-        flat_indices = top_indices.reshape(B, -1)  # (B, S*TOP_K)
+        # Flatten top-k indices to (B, S*routed_top_k) and use scatter_add_ to count
+        flat_indices = top_indices.reshape(B, -1)  # (B, S*routed_top_k)
 
         # Build a mask for valid (non-padding) tokens, repeated for each top-k slot
-        # attention_mask: (B, S) -> repeat each entry TOP_K times -> (B, S*TOP_K)
-        valid = attention_mask.unsqueeze(-1).expand(-1, -1, TOP_K).reshape(B, -1)  # (B, S*TOP_K)
+        valid = attention_mask.unsqueeze(-1).expand(-1, -1, routed_top_k).reshape(B, -1)
 
         # scatter_add_ ones at expert indices, masked by valid tokens
         counts[:, layer_idx, :].scatter_add_(
             1, flat_indices, valid.to(torch.int32)
         )
 
-    # Flatten to (B, num_layers * num_standard_experts)
-    counts_flat = counts.view(B, -1).cpu().numpy()
-    doc_lens = attention_mask.sum(dim=1).cpu().numpy()
+    # Normalize: divide by doc_len to get frequencies in [0, 1]
+    doc_lens = attention_mask.sum(dim=1, keepdim=True).float()  # (B, 1)
+    freq = counts.view(B, -1).float() / doc_lens  # (B, num_layers * num_standard_experts)
 
     torch.cuda.empty_cache()
-    return counts_flat, doc_lens
+    return freq.cpu().numpy()
 
 
 # ── Main ─────────────────────────────────────────────────────────────────────
@@ -253,18 +255,19 @@ def main():
     moe_cfg = get_moe_config(model)
     num_layers = moe_cfg["num_layers"]
     num_standard_experts = moe_cfg["num_standard_experts"]
+    routed_top_k = moe_cfg["routed_top_k"]
 
     # ── Step 4: Process documents through model ──────────────────────────────
     logger.info("\nProcessing documents through model ...")
-    logger.info(f"  Top-{TOP_K} expert selection per token per layer")
+    logger.info(f"  top_k={moe_cfg['top_k']} (routed={routed_top_k}, "
+                f"shared={moe_cfg['num_shared_experts']})")
 
     num_docs = len(all_docs)
     num_batches = (num_docs + args.batch_size - 1) // args.batch_size
     emb_dim = num_layers * num_standard_experts
 
-    # Collect raw counts: (num_docs, num_layers * num_standard_experts)
-    all_counts = np.zeros((num_docs, emb_dim), dtype=np.int32)
-    all_doc_lens = np.zeros(num_docs, dtype=np.int32)
+    # Collect normalized frequencies: (num_docs, num_layers * num_standard_experts)
+    all_freq = np.zeros((num_docs, emb_dim), dtype=np.float32)
     t0 = time.time()
 
     for batch_idx in range(num_batches):
@@ -272,12 +275,11 @@ def main():
         batch_end = min(batch_start + args.batch_size, num_docs)
         batch_docs = all_docs[batch_start:batch_end]
 
-        batch_counts, batch_doc_lens = process_batch(
-            model, batch_docs, device, num_layers, num_standard_experts
+        batch_freq = process_batch(
+            model, batch_docs, device, num_layers, num_standard_experts, routed_top_k
         )
 
-        all_counts[batch_start:batch_end] = batch_counts
-        all_doc_lens[batch_start:batch_end] = batch_doc_lens
+        all_freq[batch_start:batch_end] = batch_freq
 
         if (batch_idx + 1) % 10 == 0 or batch_idx == num_batches - 1:
             elapsed = time.time() - t0
@@ -289,54 +291,93 @@ def main():
                 f"elapsed={elapsed/60:.1f}m  eta={eta/60:.1f}m"
             )
 
-    # ── Step 4b: Validate counts ─────────────────────────────────────────────
-    logger.info("\nValidating counts ...")
-    assert all_counts.min() >= 0, f"Counts have negative values: min={all_counts.min()}"
+    # ── Step 4b: Validate frequencies ────────────────────────────────────────
+    logger.info("\nValidating frequencies ...")
+    assert all_freq.min() >= 0.0, f"Frequencies have negative values: min={all_freq.min()}"
+    assert all_freq.max() <= 1.0, f"Frequencies exceed 1.0: max={all_freq.max()}"
 
-    # Per-layer counts for each doc should sum to doc_len * TOP_K
-    # (each token selects TOP_K experts per layer)
-    counts_per_layer = all_counts.reshape(num_docs, num_layers, num_standard_experts)
-    layer_sums = counts_per_layer.sum(axis=2)  # (num_docs, num_layers)
-    expected_sums = all_doc_lens[:, None] * TOP_K  # (num_docs, 1)
-    assert (layer_sums == expected_sums).all(), \
-        f"Per-layer count sums don't match doc_len * top_k. " \
-        f"Got range [{layer_sums.min()}, {layer_sums.max()}], " \
-        f"expected range [{expected_sums.min()}, {expected_sums.max()}]"
-
-    # Each individual count should be <= doc_len (at most every token chose that expert)
-    max_per_doc = all_counts.max(axis=1)  # (num_docs,)
-    assert (max_per_doc <= all_doc_lens).all(), \
-        f"Some expert counts exceed doc length: max_count={max_per_doc.max()}, " \
-        f"max_doc_len={all_doc_lens.max()}"
-
-    logger.info(f"  All counts >= 0: PASSED")
-    logger.info(f"  All counts <= doc_len: PASSED (max={max_per_doc.max()}, "
-                f"max_doc_len={all_doc_lens.max()})")
-    logger.info(f"  Per-layer sums == doc_len * {TOP_K}: PASSED")
-    logger.info(f"  Counts shape: {all_counts.shape}")
-    logger.info(f"  Counts range: [{all_counts.min()}, {all_counts.max()}]")
-
-    # ── Step 4c: Normalize by number of tokens ───────────────────────────────
-    # Divide each document's counts by its token count to get frequencies
-    coverage_freq = all_counts.astype(np.float32) / all_doc_lens[:, None].astype(np.float32)
-    logger.info(f"  Coverage freq shape: {coverage_freq.shape}")
-    logger.info(f"  Coverage freq range: [{coverage_freq.min():.4f}, {coverage_freq.max():.4f}]")
-    # Each layer's frequencies should sum to TOP_K
-    freq_per_layer = coverage_freq.reshape(num_docs, num_layers, num_standard_experts)
+    # Each layer's frequencies should sum to routed_top_k
+    freq_per_layer = all_freq.reshape(num_docs, num_layers, num_standard_experts)
     layer_freq_sums = freq_per_layer.sum(axis=2)
-    logger.info(f"  Per-layer freq sums: [{layer_freq_sums.min():.4f}, {layer_freq_sums.max():.4f}] "
-                f"(expected {TOP_K})")
+    assert np.allclose(layer_freq_sums, routed_top_k, atol=1e-4), \
+        f"Per-layer freq sums not close to {routed_top_k}: " \
+        f"range [{layer_freq_sums.min():.4f}, {layer_freq_sums.max():.4f}]"
+
+    logger.info(f"  All freq in [0, 1]: PASSED (range [{all_freq.min():.4f}, {all_freq.max():.4f}])")
+    logger.info(f"  Per-layer freq sums == {routed_top_k}: PASSED "
+                f"(range [{layer_freq_sums.min():.4f}, {layer_freq_sums.max():.4f}])")
+    logger.info(f"  Freq shape: {all_freq.shape}")
+
+    # ── Step 4c: Per-topic expert coverage statistics ───────────────────────
+    logger.info("\nPer-topic expert coverage statistics:")
+    all_labels_arr = np.array(all_labels)
+    topic_stats = {}
+
+    for topic in sorted(set(all_labels)):
+        mask = all_labels_arr == topic
+        # (num_docs_in_topic, num_layers, num_standard_experts)
+        topic_freq = all_freq[mask].reshape(-1, num_layers, num_standard_experts)
+        n_docs = topic_freq.shape[0]
+
+        # (1) Average number of nonzero experts per layer per document
+        nonzero_per_doc_layer = (topic_freq > 0).sum(axis=2)  # (n_docs, num_layers)
+        avg_nonzero_per_layer = nonzero_per_doc_layer.mean(axis=0)  # (num_layers,)
+
+        # (2) Entropy of expert distribution per layer per document, then average
+        # Normalize each doc's layer freqs to a distribution (sum to 1)
+        layer_sums = topic_freq.sum(axis=2, keepdims=True)  # (n_docs, num_layers, 1)
+        layer_dists = topic_freq / layer_sums  # (n_docs, num_layers, num_standard_experts)
+        # Entropy per doc per layer (base 2 for bits)
+        entropy_per_doc_layer = np.array([
+            [scipy_entropy(layer_dists[d, l], base=2) for l in range(num_layers)]
+            for d in range(n_docs)
+        ])  # (n_docs, num_layers)
+        avg_entropy_per_layer = entropy_per_doc_layer.mean(axis=0)  # (num_layers,)
+        max_entropy = np.log2(num_standard_experts)
+
+        topic_stats[topic] = {
+            "num_docs": int(n_docs),
+            "avg_experts_per_layer": avg_nonzero_per_layer.tolist(),
+            "avg_experts_per_layer_mean": float(avg_nonzero_per_layer.mean()),
+            "entropy_per_layer": avg_entropy_per_layer.tolist(),
+            "entropy_per_layer_mean": float(avg_entropy_per_layer.mean()),
+            "max_entropy": float(max_entropy),
+        }
+
+        logger.info(f"  [{topic}] ({n_docs} docs)")
+        logger.info(f"    Avg experts/layer: {avg_nonzero_per_layer.mean():.1f} "
+                     f"(min={avg_nonzero_per_layer.min():.1f}, "
+                     f"max={avg_nonzero_per_layer.max():.1f}) "
+                     f"out of {num_standard_experts}")
+        logger.info(f"    Entropy/layer:     {avg_entropy_per_layer.mean():.2f} bits "
+                     f"(min={avg_entropy_per_layer.min():.2f}, "
+                     f"max={avg_entropy_per_layer.max():.2f}) "
+                     f"out of {max_entropy:.2f} max")
+
+    # Summary table sorted by mean entropy (ascending = most concentrated)
+    logger.info("\n" + "=" * 90)
+    logger.info(f"{'TOPIC':<35} {'DOCS':>5} {'AVG_EXPERTS/LAYER':>18} "
+                f"{'ENTROPY (bits)':>15} {'/ MAX':>7}")
+    logger.info("=" * 90)
+    for topic in sorted(topic_stats, key=lambda t: topic_stats[t]["entropy_per_layer_mean"]):
+        ts = topic_stats[topic]
+        logger.info(f"{topic:<35} {ts['num_docs']:>5} "
+                    f"{ts['avg_experts_per_layer_mean']:>18.1f} "
+                    f"{ts['entropy_per_layer_mean']:>15.2f} "
+                    f"/ {ts['max_entropy']:.2f}")
+    logger.info("=" * 90)
 
     # ── Step 5: Save results ─────────────────────────────────────────────────
-    # Save raw counts
-    counts_path = os.path.join(args.output_dir, "expert_counts.npy")
-    np.save(counts_path, all_counts)
-    logger.info(f"Saved raw counts -> {counts_path}  shape={all_counts.shape}")
-
     # Save normalized frequencies
     freq_path = os.path.join(args.output_dir, "expert_freq.npy")
-    np.save(freq_path, coverage_freq)
-    logger.info(f"Saved frequencies -> {freq_path}  shape={coverage_freq.shape}")
+    np.save(freq_path, all_freq)
+    logger.info(f"\nSaved frequencies -> {freq_path}  shape={all_freq.shape}")
+
+    # Save per-topic stats
+    stats_path = os.path.join(args.output_dir, "topic_stats.json")
+    with open(stats_path, "w") as f:
+        json.dump(topic_stats, f, indent=2)
+    logger.info(f"Saved topic stats -> {stats_path}")
 
     # Save metadata
     metadata_path = os.path.join(args.output_dir, "metadata.jsonl.gz")
@@ -356,7 +397,9 @@ def main():
         "model_path": args.model_path,
         "num_layers": num_layers,
         "num_standard_experts": num_standard_experts,
-        "top_k": TOP_K,
+        "num_shared_experts": moe_cfg["num_shared_experts"],
+        "top_k": moe_cfg["top_k"],
+        "routed_top_k": routed_top_k,
         "num_topics": num_topics,
         "target_tokens": args.target_tokens,
         "tokens_per_topic": tokens_per_topic,

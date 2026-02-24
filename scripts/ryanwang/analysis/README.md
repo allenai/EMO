@@ -13,6 +13,7 @@ sparsify_embeddings.py        → derived embeddings (sparse variants) from exis
 cluster_embeddings.py         → k-means sweep/clustering + reports
 generate_cluster_viz.py       → UMAP + interactive HTML visualizer
 analyze_expert_coverage.py    → expert coverage analysis across weborganizer topics
+plot_expert_coverage.py       → heatmap visualization of expert coverage per topic/layer
 ```
 
 ## Step 1: Analyze Data Composition
@@ -125,6 +126,11 @@ python -u -m src.scripts.analysis.analyze_expert_coverage \
 
 # Or use the shell wrapper
 bash scripts/ryanwang/analysis/run_expert_coverage.sh
+
+# Plot heatmap from results
+python -u -m src.scripts.analysis.plot_expert_coverage \
+    --stats-file claude_outputs/analysis/expert_coverage_weborganizer/topic_stats.json \
+    --output-dir claude_outputs/analysis/expert_coverage_weborganizer
 ```
 
 ## Shared Utilities (`utils.py`)
@@ -166,5 +172,7 @@ claude_outputs/analysis/expert_coverage_weborganizer/
     mix_composition.json          # uniform topic fractions (auto-generated or copied)
     metadata.jsonl.gz             # per-doc metadata
     info.json                     # model + extraction params
-    # (additional outputs TBD based on coverage metrics)
+    expert_freq.npy               # per-doc normalized frequencies (num_docs, num_layers*num_experts)
+    topic_stats.json              # per-topic avg experts/layer and entropy/layer
+    expert_coverage_heatmap.png   # heatmap: topics x layers x avg experts used
 ```

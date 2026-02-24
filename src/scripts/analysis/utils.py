@@ -179,22 +179,34 @@ def get_moe_config(model) -> Dict[str, int]:
     Extract MoE-related config from a loaded model.
 
     Returns dict with keys: num_layers, num_experts, num_shared_experts,
-    num_standard_experts, emb_dim.
+    num_standard_experts, top_k, routed_top_k, emb_dim.
+
+    top_k is the total number of experts per token (including shared).
+    routed_top_k = top_k - num_shared_experts is the number of experts
+    selected by the router (excluding always-on shared experts).
     """
     cfg = model.config
     num_layers = cfg.num_hidden_layers
     num_all_experts = cfg.num_experts if hasattr(cfg, "num_experts") else cfg.num_local_experts
     num_shared = getattr(cfg, "num_shared_experts", 0)
     num_standard_experts = num_all_experts - num_shared
+    top_k = cfg.num_experts_per_tok
+    routed_top_k = top_k - num_shared
     emb_dim = num_layers * num_standard_experts
 
+    assert num_shared < top_k, \
+        f"num_shared_experts ({num_shared}) must be less than top_k ({top_k})"
+
     logger.info(f"Model: {num_layers} layers, {num_standard_experts} standard experts "
-                f"({num_shared} shared), emb_dim={emb_dim}")
+                f"({num_shared} shared), top_k={top_k} (routed={routed_top_k}), "
+                f"emb_dim={emb_dim}")
 
     return {
         "num_layers": num_layers,
         "num_experts": num_all_experts,
         "num_shared_experts": num_shared,
         "num_standard_experts": num_standard_experts,
+        "top_k": top_k,
+        "routed_top_k": routed_top_k,
         "emb_dim": emb_dim,
     }
