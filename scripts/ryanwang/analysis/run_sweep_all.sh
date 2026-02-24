@@ -79,14 +79,15 @@ for CLUST in $CLUSTERS; do
         # Extract the block for this k value
         BLOCK=$(sed -n "/--- k=${K} ---/,/--- k=\|=== SWEEP/p" "$LOGFILE")
 
-        SIL=$(echo "$BLOCK" | grep "silhouette:" | head -1 | awk '{print $NF}' | sed 's/[^0-9.\-]//g')
-        CH=$(echo "$BLOCK" | grep "calinski_harabasz:" | head -1 | awk '{print $NF}' | sed 's/[^0-9.\-]//g')
-        DB=$(echo "$BLOCK" | grep "davies_bouldin:" | head -1 | awk '{print $NF}' | sed 's/[^0-9.\-]//g')
+        # Parse metrics — field after the metric name (field 6 in log format: timestamp [LEVEL] name: VALUE ...)
+        SIL=$(echo "$BLOCK" | grep "silhouette:" | head -1 | awk -F'silhouette: *' '{print $2}' | awk '{print $1}')
+        CH=$(echo "$BLOCK" | grep "calinski_harabasz:" | head -1 | awk -F'calinski_harabasz: *' '{print $2}' | awk '{print $1}')
+        DB=$(echo "$BLOCK" | grep "davies_bouldin:" | head -1 | awk -F'davies_bouldin: *' '{print $2}' | awk '{print $1}')
         SZ_MIN=$(echo "$BLOCK" | grep "cluster sizes:" | head -1 | sed 's/.*min=\([0-9]*\).*/\1/')
         SZ_MAX=$(echo "$BLOCK" | grep "cluster sizes:" | head -1 | sed 's/.*max=\([0-9]*\).*/\1/')
         SZ_MED=$(echo "$BLOCK" | grep "cluster sizes:" | head -1 | sed 's/.*median=\([0-9]*\).*/\1/')
         SZ_STD=$(echo "$BLOCK" | grep "cluster sizes:" | head -1 | sed 's/.*std=\([0-9.]*\).*/\1/')
-        SRC_ENT=$(echo "$BLOCK" | grep "avg_source_entropy:" | head -1 | awk '{print $NF}' | sed 's/[^0-9.\-]//g')
+        SRC_ENT=$(echo "$BLOCK" | grep "avg_source_entropy:" | head -1 | awk -F'avg_source_entropy: *' '{print $2}' | awk '{print $1}')
 
         echo -e "${EMB}\t${TRANS}\t${CLUST}\t${K}\t${SIL:-NA}\t${CH:-NA}\t${DB:-NA}\t${SZ_MIN:-NA}\t${SZ_MAX:-NA}\t${SZ_MED:-NA}\t${SZ_STD:-NA}\t${SRC_ENT:-NA}" >> "$OUTPUT_TSV"
 

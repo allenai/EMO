@@ -24,39 +24,21 @@ import argparse
 import json
 import logging
 import os
-import subprocess
 from typing import Dict, List, Tuple
 
 import numpy as np
 
+from src.scripts.analysis.utils import (
+    ALL_DRESSED_PREFIX,
+    BYTES_PER_TOKEN,
+    EOS_TOKEN_ID,
+    list_npy_files,
+    s3_ls,
+    stream_bytes_from_s3,
+)
+
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-S3_BASE = "s3://ai2-llm"
-ALL_DRESSED_PREFIX = "preprocessed/cc_all_dressed/all_dressed_v3/dclm_plus2_vigilantes/allenai/dolma2-tokenizer"
-BYTES_PER_TOKEN = 4  # headerless raw uint32 binary
-EOS_TOKEN_ID = 100257
-
-
-def s3_ls(prefix: str) -> List[str]:
-    """List immediate children of an S3 prefix (directories and files)."""
-    result = subprocess.run(
-        ["aws", "s3", "ls", f"s3://ai2-llm/{prefix}/"],
-        capture_output=True, text=True,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f"aws s3 ls failed for {prefix}: {result.stderr[:200]}")
-    entries = []
-    for line in result.stdout.strip().splitlines():
-        parts = line.split()
-        if not parts:
-            continue
-        # Directories end with "/"
-        if line.strip().startswith("PRE"):
-            entries.append(parts[1].rstrip("/"))
-        elif len(parts) == 4:
-            entries.append(parts[3])
-    return entries
 
 
 def list_topics() -> List[str]:
@@ -69,59 +51,8 @@ def list_vigintiles(topic: str) -> List[str]:
     """List vigintile subdirectories for a topic, sorted."""
     prefix = f"{ALL_DRESSED_PREFIX}/{topic}"
     entries = s3_ls(prefix)
-    # Keep only vigintile_* directories
     vigs = sorted(e for e in entries if e.startswith("vigintile_"))
     return vigs
-
-
-def list_npy_files(topic: str, vigintile: str) -> List[Tuple[str, int]]:
-    """
-    List .npy files in a topic/vigintile directory.
-    Returns list of (s3_path, size_bytes).
-    """
-    prefix = f"{ALL_DRESSED_PREFIX}/{topic}/{vigintile}"
-    result = subprocess.run(
-        ["aws", "s3", "ls", f"s3://ai2-llm/{prefix}/"],
-        capture_output=True, text=True,
-    )
-    if result.returncode != 0:
-        logger.warning(f"Could not list {prefix}: {result.stderr[:100]}")
-        return []
-
-    files = []
-    for line in result.stdout.strip().splitlines():
-        parts = line.split()
-        if len(parts) == 4:
-            fname, size_str = parts[3], parts[2]
-            if fname.endswith(".npy"):
-                try:
-                    s3_path = f"s3://ai2-llm/{prefix}/{fname}"
-                    files.append((s3_path, int(size_str)))
-                except ValueError:
-                    pass
-    return sorted(files, key=lambda x: x[0])
-
-
-def stream_bytes_from_s3(s3_path: str, num_bytes: int) -> bytes:
-    import tempfile
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".bin") as tmp:
-        tmp_path = tmp.name
-    try:
-        result = subprocess.run(
-            ["aws", "s3api", "get-object",
-             "--bucket", "ai2-llm",
-             "--key", s3_path.replace("s3://ai2-llm/", ""),
-             "--range", f"bytes=0-{num_bytes - 1}",
-             tmp_path],
-            capture_output=True, text=True,
-        )
-        if result.returncode != 0:
-            raise RuntimeError(f"S3 range-GET failed: {result.stderr[:200]}")
-        with open(tmp_path, "rb") as f:
-            return f.read()
-    finally:
-        if os.path.exists(tmp_path):
-            os.unlink(tmp_path)
 
 
 def decode_sample_docs(s3_path: str, tokenizer, num_docs: int = 2,

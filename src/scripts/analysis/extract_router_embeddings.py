@@ -43,23 +43,26 @@ import gzip
 import json
 import logging
 import os
-import subprocess
-import tempfile
 import time
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Callable, Dict, Iterator, List, Tuple
+from typing import Callable, Dict, List
 
 import numpy as np
 import torch
 import torch.nn.functional as F
-from transformers import AutoModelForCausalLM, AutoTokenizer
+
+from src.scripts.analysis.utils import (
+    EOS_TOKEN_ID,
+    iter_documents,
+    load_model_and_tokenizer,
+    load_source_documents,
+    stream_bytes_from_s3,
+    tokens_from_bytes,
+)
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-EOS_TOKEN_ID = 100257
-BYTES_PER_TOKEN = 4  # uint32
 
 
 # ---------------------------------------------------------------------------
@@ -203,104 +206,8 @@ EMBEDDING_REGISTRY: Dict[str, EmbeddingType] = {
 
 
 # ---------------------------------------------------------------------------
-# S3 data loading
-# ---------------------------------------------------------------------------
-
-def stream_bytes_from_s3(s3_path: str, num_bytes: int) -> bytes:
-    """Range-GET the first `num_bytes` of an S3 file into memory."""
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".bin") as tmp:
-        tmp_path = tmp.name
-    try:
-        result = subprocess.run(
-            [
-                "aws", "s3api", "get-object",
-                "--bucket", "ai2-llm",
-                "--key", s3_path.replace("s3://ai2-llm/", ""),
-                "--range", f"bytes=0-{num_bytes - 1}",
-                tmp_path,
-            ],
-            capture_output=True, text=True,
-        )
-        if result.returncode != 0:
-            raise RuntimeError(f"S3 range-GET failed for {s3_path}: {result.stderr[:200]}")
-        with open(tmp_path, "rb") as f:
-            return f.read()
-    finally:
-        if os.path.exists(tmp_path):
-            os.unlink(tmp_path)
-
-
-def tokens_from_bytes(raw: bytes) -> np.ndarray:
-    """Parse headerless raw uint32 binary into token IDs."""
-    n = len(raw) // BYTES_PER_TOKEN
-    return np.frombuffer(raw[: n * BYTES_PER_TOKEN], dtype=np.uint32).astype(np.int32)
-
-
-def iter_documents(
-    tokens: np.ndarray, min_len: int = 32, max_len: int = 2048
-) -> Iterator[np.ndarray]:
-    """Split a token array on EOS tokens, yielding individual documents."""
-    eos_pos = np.where(tokens == EOS_TOKEN_ID)[0]
-    start = 0
-    for pos in eos_pos:
-        doc = tokens[start : pos + 1]
-        if min_len <= len(doc) <= max_len:
-            yield doc
-        start = pos + 1
-
-
-def load_source_documents(
-    s3_files: List[str],
-    target_tokens: int,
-    min_doc_len: int,
-    max_doc_len: int,
-) -> List[np.ndarray]:
-    """
-    Stream just enough data from S3 (across files if needed) to collect
-    `target_tokens` worth of documents for a single source.
-    """
-    docs = []
-    collected_tokens = 0
-    bytes_needed = int(target_tokens * BYTES_PER_TOKEN * 1.5)
-
-    for s3_path in s3_files:
-        if collected_tokens >= target_tokens:
-            break
-        remaining_bytes = max(0, bytes_needed - collected_tokens * BYTES_PER_TOKEN)
-        logger.info(f"  Streaming {remaining_bytes / 1e6:.1f} MB from {s3_path.split('/')[-1]} ...")
-        try:
-            raw = stream_bytes_from_s3(s3_path, remaining_bytes)
-        except Exception as e:
-            logger.warning(f"  Skipping {s3_path}: {e}")
-            continue
-
-        tokens = tokens_from_bytes(raw)
-        for doc in iter_documents(tokens, min_doc_len, max_doc_len):
-            docs.append(doc.copy())
-            collected_tokens += len(doc)
-            if collected_tokens >= target_tokens:
-                break
-
-    logger.info(f"  Collected {len(docs)} docs / {collected_tokens:,} tokens")
-    return docs
-
-
-# ---------------------------------------------------------------------------
 # Model inference
 # ---------------------------------------------------------------------------
-
-def load_model_and_tokenizer(model_path: str):
-    logger.info(f"Loading model from {model_path}")
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-    model = AutoModelForCausalLM.from_pretrained(
-        model_path,
-        device_map="auto",
-        torch_dtype=torch.float16,
-    )
-    model.eval()
-    return model, tokenizer
 
 
 @torch.no_grad()

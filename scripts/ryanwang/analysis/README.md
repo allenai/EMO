@@ -1,15 +1,18 @@
-# Router Clustering Analysis Pipeline
+# MoE Analysis Pipeline
 
-Analyze how MoE router activations cluster documents into implicit domains.
+Analyze MoE router activations: clustering into implicit domains and expert coverage across topics.
 
 ## Pipeline Overview
 
 ```
-analyze_data_mix.py          → mix_composition.json (data source fractions)
-extract_router_embeddings.py → embeddings_*.npy + metadata.jsonl.gz + info.json
+utils.py                      → shared S3 streaming, token parsing, document loading, model loading
+analyze_data_mix.py           → mix_composition.json (data source fractions)
+analyze_weborganizer.py       → mix_composition.json (uniform fractions across weborganizer topics)
+extract_router_embeddings.py  → embeddings_*.npy + metadata.jsonl.gz + info.json
 sparsify_embeddings.py        → derived embeddings (sparse variants) from existing files
-cluster_embeddings.py        → k-means sweep/clustering + reports
-generate_cluster_viz.py      → UMAP + interactive HTML visualizer
+cluster_embeddings.py         → k-means sweep/clustering + reports
+generate_cluster_viz.py       → UMAP + interactive HTML visualizer
+analyze_expert_coverage.py    → expert coverage analysis across weborganizer topics
 ```
 
 ## Step 1: Analyze Data Composition
@@ -100,6 +103,45 @@ OPENBLAS_NUM_THREADS=16 python -u -m src.scripts.analysis.generate_cluster_viz \
     --k 128
 ```
 
+## Expert Coverage Analysis
+
+Analyzes how MoE experts cover different weborganizer topic domains. Samples 20M tokens
+uniformly across topics and runs them through the model.
+
+```bash
+# Using existing mix_composition.json from the weborganizer clustering analysis
+python -u -m src.scripts.analysis.analyze_expert_coverage \
+    --model-path models/twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf \
+    --composition-file claude_outputs/analysis/router_clustering_weborganizer/mix_composition.json \
+    --output-dir claude_outputs/analysis/expert_coverage_weborganizer \
+    --target-tokens 20_000_000 \
+    --batch-size 32
+
+# Or without a composition file (auto-discovers topics on S3)
+python -u -m src.scripts.analysis.analyze_expert_coverage \
+    --model-path models/twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf \
+    --output-dir claude_outputs/analysis/expert_coverage_weborganizer \
+    --target-tokens 20_000_000
+
+# Or use the shell wrapper
+bash scripts/ryanwang/analysis/run_expert_coverage.sh
+```
+
+## Shared Utilities (`utils.py`)
+
+Common functions used across all analysis scripts:
+
+| Function | Description |
+|----------|-------------|
+| `s3_ls(prefix)` | List S3 directory children |
+| `list_npy_files(topic, vigintile)` | List .npy files for a topic/vigintile |
+| `stream_bytes_from_s3(path, n)` | Range-GET first N bytes from S3 |
+| `tokens_from_bytes(raw)` | Parse uint32 binary to token IDs |
+| `iter_documents(tokens)` | Split tokens on EOS into documents |
+| `load_source_documents(files, target)` | Stream docs from S3 up to target tokens |
+| `load_model_and_tokenizer(path)` | Load HF MoE model |
+| `get_moe_config(model)` | Extract num_layers, num_experts, etc. |
+
 ## Output Directory Structure
 
 ```
@@ -119,4 +161,10 @@ claude_outputs/analysis/router_clustering_pretraining/
             summary.json
             report.txt
             cluster_explorer.html
+
+claude_outputs/analysis/expert_coverage_weborganizer/
+    mix_composition.json          # uniform topic fractions (auto-generated or copied)
+    metadata.jsonl.gz             # per-doc metadata
+    info.json                     # model + extraction params
+    # (additional outputs TBD based on coverage metrics)
 ```
