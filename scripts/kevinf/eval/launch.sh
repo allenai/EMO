@@ -21,13 +21,13 @@ MODELS=(
     # "/data/input/kevinf/checkpoints/olmo3-1b-chempile-10B-lr5e-5-warmup715-ctd/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-croissant-10B-lr5e-5-warmup0.1-ctd/step2385-hf/"
     # "/data/input/kevinf/checkpoints/olmo3-1b-croissant-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
-    "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
     # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-chempile-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-the-pile-of-law-10B-lr5e-5-warmup0.1-ctd"/step2385-hf
     # "/data/input/kevinf/checkpoints/olmo3-1b-croissant-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-pmc-30B-lr5e-5-warmup0.1-ctd/step7153-hf"
-    "/data/input/kevinf/checkpoints/olmo3-1b-mimic-iv-note-2B-lr5e-5-warmup0.1-ctd/step477-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-mimic-iv-note-2B-lr5e-5-warmup0.1-ctd/step477-hf"
 )
 
 BASE_OUTPUT_DIR="/data/input/kevinf/flexmoe/eval/results"
@@ -39,7 +39,7 @@ model_type=hf
 
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
-    # # MC9 tasks
+    # # # MC9 tasks
     # arc_easy:mc::olmes
     # arc_challenge:mc::olmes
     # boolq:mc::olmes
@@ -50,24 +50,24 @@ TASKS=(
     # socialiqa:mc::olmes
     # winogrande:mc::olmes
     
-    # # Gen5 tasks
+    # # # Gen5 tasks
     # coqa::olmes
     # squad::olmes
     # naturalqs::olmes
     # triviaqa::olmes
     # drop::olmes
 
-    # # MMLU tasks
+    # # # MMLU tasks
     # mmlu:mc::olmes
-    # mmlu_pro_mc::none
+    # # mmlu_pro_mc::none
 
-    # # AGI eval
+    # # # AGI eval
     # agi_eval_english:1shot::olmes
 
-    # # BBH
-    # bbh:cot-v1::olmes
+    # # # BBH
+    # # bbh:cot-v1::olmes
 
-    # # Math2 tasks
+    # # # Math2 tasks
     # gsm8k::olmes
     # minerva_math_algebra::olmes
     # minerva_math_counting_and_probability::olmes
@@ -83,18 +83,19 @@ TASKS=(
     # mbpp::none
     # mbppplus::none
 
+    # Multilingual MBPP (17 languages, BPB)
+    mt_mbpp
+
+
     # # ChemBench MC and generative tasks
     # chembench:mc
     # chembench:gen
-    # chembench:rc
+    # chembench:rc    
     # frenchbench:rc
     # legalbench:rc
 
-    medqa
-    medmcqa:mc
-    # # FrenchBench 0-shot and 5-shot
-    frenchbench:rc:0shot
-    frenchbench:rc:5shot
+    # medqa
+    # medmcqa:mc
 )
 
 # Function to get checkpoint name - extracts run name and step from path
@@ -133,7 +134,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
     gpus=1
     
     # Batch size adjustment (matching original script)
-    if [[ $TASK == *"cot"* || $TASK == "minerva_math_"* || $TASK == "mbpp"* || $TASK == "bigcodebench"* || $TASK == "ruler"* || $TASK == "sciriff"* ]]; then
+    if [[ $TASK == *"cot"* || $TASK == "minerva_math_"* || $TASK == "mbpp"* || $TASK == "mt_mbpp"* || $TASK == "multipl_e_"* || $TASK == "bigcodebench"* || $TASK == "ruler"* || $TASK == "sciriff"* ]]; then
         batch_size=1
     else
         batch_size=4
