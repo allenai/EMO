@@ -3,18 +3,33 @@
 # Produces dense logits + probs embeddings, then derives sparse variants.
 #
 # Prerequisites: mix_composition.json must exist (run run_analyze_data_mix.sh first)
+#
+# Usage:
+#   bash scripts/ryanwang/analysis/run_extract_embeddings.sh [MODEL_PATH]
+#
+# If MODEL_PATH is not provided, defaults to the sharedexp1 model.
+# Output dir is auto-derived: claude_outputs/analysis/router_clustering_pretraining/<model_name>/
 set -e
 
-MODEL_PATH="models/twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
-OUTPUT_DIR="claude_outputs/analysis/router_clustering_pretraining"
-COMPOSITION_FILE="${OUTPUT_DIR}/mix_composition.json"
+MODEL_PATH="${1:-models/twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf}"
+
+# Derive model name (parent directory of the checkpoint)
+MODEL_NAME="$(basename "$(dirname "$MODEL_PATH")")"
+BASE_DIR="claude_outputs/analysis/router_clustering_pretraining"
+OUTPUT_DIR="${BASE_DIR}/${MODEL_NAME}"
+COMPOSITION_FILE="${BASE_DIR}/mix_composition.json"
 TARGET_TOKENS=20000000
 BATCH_SIZE=32
+
+echo "Model: $MODEL_PATH"
+echo "Output: $OUTPUT_DIR"
 
 if [ ! -f "$COMPOSITION_FILE" ]; then
     echo "ERROR: ${COMPOSITION_FILE} not found. Run run_analyze_data_mix.sh first."
     exit 1
 fi
+
+mkdir -p "$OUTPUT_DIR"
 
 # Step 1: Extract dense embeddings (GPU, ~35 min for 20M tokens)
 echo "=== Extracting router embeddings ==="

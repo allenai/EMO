@@ -334,7 +334,9 @@ def main():
     parser.add_argument("--model-path", required=True)
     parser.add_argument("--composition-file", required=True,
                         help="mix_composition.json from analyze_data_mix.py")
-    parser.add_argument("--output-dir", default="claude_outputs/analysis/router_clustering")
+    parser.add_argument("--output-dir", required=True,
+                        help="Output directory for embeddings and metadata "
+                             "(e.g. claude_outputs/analysis/router_clustering_pretraining/<model_name>)")
     parser.add_argument("--target-tokens", type=int, default=20_000_000)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--max-doc-len", type=int, default=2048)

@@ -8,11 +8,21 @@
 # since full-covariance GMM on 2032 dims will OOM/segfault.
 #
 # Usage:
-#   bash scripts/ryanwang/analysis/run_sweep_all.sh
+#   bash scripts/ryanwang/analysis/run_sweep_all.sh <DATA_DIR>
+#
+# Example:
+#   bash scripts/ryanwang/analysis/run_sweep_all.sh \
+#       claude_outputs/analysis/router_clustering_pretraining/twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211
 set -e
 
-DATA_DIR="claude_outputs/analysis/router_clustering_pretraining"
-OUTPUT_TSV="claude_outputs/analysis/router_clustering_pretraining/sweep_results.tsv"
+if [ -z "$1" ]; then
+    echo "Usage: $0 <DATA_DIR>"
+    echo "  DATA_DIR: per-model directory containing embeddings_*.npy, metadata.jsonl.gz, info.json"
+    exit 1
+fi
+
+DATA_DIR="$1"
+OUTPUT_TSV="${DATA_DIR}/sweep_results.tsv"
 
 EMBEDDINGS="logits probs logits_sparse probs_sparse"
 TRANSFORMS="identity l2 mean_pca mean_pca_l2 mean_l2_pca tsvd l2_tsvd tsvd_l2"
@@ -115,4 +125,4 @@ echo "================================================================"
 echo ""
 echo "=== TOP 10 BY SILHOUETTE ==="
 head -1 "$OUTPUT_TSV"
-tail -n +2 "$OUTPUT_TSV" | grep -v ERROR | grep -v SKIPPED | sort -t$'\t' -k5 -rn | head -10
+tail -n +2 "$OUTPUT_TSV" | grep -v ERROR | grep -v SKIPPED | sort -t'	' -k5 -rn | head -10

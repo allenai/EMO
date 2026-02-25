@@ -463,9 +463,9 @@ def main():
     parser = argparse.ArgumentParser(
         description="Load router embeddings, apply transformations, and cluster."
     )
-    parser.add_argument("--data-dir", type=str,
-                        default="claude_outputs/analysis/router_clustering_pretraining",
-                        help="Directory containing embeddings, metadata, and info.json")
+    parser.add_argument("--data-dir", type=str, required=True,
+                        help="Directory containing embeddings, metadata, and info.json "
+                             "(e.g. claude_outputs/analysis/router_clustering_pretraining/<model_name>)")
     parser.add_argument("--embedding", type=str, default="logits",
                         help=f"Embedding type to load. "
                              f"Available: {', '.join(sorted(EMBEDDING_FILES))} "

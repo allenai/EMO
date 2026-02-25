@@ -28,14 +28,21 @@ MODELS=(
 CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf
 
-# Pruning mode: "global"    -- original single-pass activation collection + prune
-#               "layerwise" -- greedy layer-by-layer pruning (each layer conditioned
-#                              on already-pruned earlier layers)
+# Pruning mode: "global"              -- original single-pass activation collection + prune
+#               "layerwise"           -- greedy layer-by-layer pruning (each layer conditioned
+#                                        on already-pruned earlier layers)
+#               "layerwise_variable"  -- greedy layerwise with per-layer keep-k schedule
 PRUNING_MODE="global"
 
 num_epochs=1
 prune_keep_k=32
 batch_size=32
+
+# --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
+# Schedule name (used in output directory naming)
+PRUNE_SCHEDULE_NAME="first2_unpruned"
+# Per-layer keep-k: layers 0-1 keep all 128 experts, layers 2-15 pruned to prune_keep_k
+KEEP_K_PER_LAYER="128,128,32,32,32,32,32,32,32,32,32,32,32,32,32,32"
 
 # Define grouped tasks
 TASK_GROUPS_LIST=(
@@ -126,6 +133,8 @@ for MODEL in "${MODELS[@]}"; do
         # if prunemode is global, don't include it in the name
         if [[ $PRUNING_MODE == "global" ]]; then
           relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}"
+        elif [[ $PRUNING_MODE == "layerwise_variable" ]]; then
+          relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}_prunemode-${PRUNING_MODE}_${PRUNE_SCHEDULE_NAME}"
         else
           relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}_prunemode-${PRUNING_MODE}"
         fi
@@ -203,7 +212,53 @@ for MODEL in "${MODELS[@]}"; do
             continue
         fi
 
-        if [[ $PRUNING_MODE == "layerwise" ]]; then
+        if [[ $PRUNING_MODE == "layerwise_variable" ]]; then
+#            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise_variable.sh \
+#                --model ${BASE_DIR}/models/${MODEL} \
+#                --task ${TASK} \
+#                --keep-k-per-layer "${KEEP_K_PER_LAYER}" \
+#                --base-dir "${BASE_DIR}/prune_evals" \
+#                --relative-dir ${relative_dir} \
+#                --num-gpus $gpus \
+#                --run-name ${job_name} \
+#                --learning-rate ${lr} \
+#                --batch-size ${batch_size} \
+#                --micro-batch-size ${micro_batch_size} \
+#                --num-epochs ${num_epochs} \
+#                --num-shared-experts ${num_shared_experts} \
+#                --prune-mode ${PRUNE_SCHEDULE_NAME}
+
+            python -m olmo_core.launch.beaker \
+                --name $job_name \
+                --gpus $gpus \
+                --nodes 1 \
+                --is_private_repo \
+                --weka=oe-training-default \
+                --shared-filesystem \
+                --workspace ai2/flex2 \
+                --cluster ai2/jupiter \
+                --preemptible \
+                --allow-dirty \
+                --priority urgent \
+                --no-follow \
+                --no-torchrun \
+                --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+                -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise_variable.sh \
+                    --model ${BASE_DIR}/models/${MODEL} \
+                    --task ${TASK} \
+                    --keep-k-per-layer '${KEEP_K_PER_LAYER}' \
+                    --base-dir "${BASE_DIR}/prune_evals" \
+                    --relative-dir ${relative_dir} \
+                    --num-gpus $gpus \
+                    --run-name ${job_name} \
+                    --learning-rate ${lr} \
+                    --batch-size ${batch_size} \
+                    --micro-batch-size ${micro_batch_size} \
+                    --num-epochs ${num_epochs} \
+                    --num-shared-experts ${num_shared_experts} \
+                    --prune-mode ${PRUNE_SCHEDULE_NAME}
+                "
+        elif [[ $PRUNING_MODE == "layerwise" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
 #                --model ${BASE_DIR}/models/${MODEL} \
 #                --task ${TASK} \
