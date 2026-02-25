@@ -397,6 +397,7 @@ def save_results(
         "transform": args.transform,
         "cluster": args.cluster,
         "k": args.k,
+        "layers": args.layers,
         "metrics": metrics,
     }
     with open(os.path.join(output_dir, "run_info.json"), "w") as f:
@@ -487,6 +488,10 @@ def main():
     parser.add_argument("--output-dir", type=str, default=None,
                         help="Output directory when --save is set. "
                              "Defaults to <data-dir>/<embedding>_<transform>_<cluster>_k<k>/")
+    parser.add_argument("--layers", type=str, default=None,
+                        help="Layer range to use (e.g. '3-16' for layers 3..15, '11-16' for layers 11..15). "
+                             "Uses 1-indexed inclusive start, exclusive end. "
+                             "If not specified, uses all layers.")
     parser.add_argument("--list", action="store_true",
                         help="List available embeddings, transforms, and clusterers, then exit")
     args = parser.parse_args()
@@ -506,6 +511,27 @@ def main():
     # Load
     emb, meta, info = load_embedding(args.data_dir, args.embedding)
 
+    # Slice layers if requested
+    if args.layers:
+        parts = args.layers.split("-")
+        layer_start = int(parts[0])
+        layer_end = int(parts[1])
+        num_experts = info["num_standard_experts"]
+        num_layers = info["num_layers"]
+        if layer_start < 0 or layer_end > num_layers or layer_start >= layer_end:
+            raise ValueError(
+                f"Invalid --layers '{args.layers}': must be <start>-<end> with "
+                f"0 <= start < end <= {num_layers}"
+            )
+        col_start = layer_start * num_experts
+        col_end = layer_end * num_experts
+        emb = emb[:, col_start:col_end]
+        n_selected = layer_end - layer_start
+        logger.info(f"  Sliced layers {layer_start}-{layer_end} "
+                    f"({n_selected} layers): shape={emb.shape}")
+        # Update info so transforms see correct dimensions
+        info = {**info, "num_layers": n_selected}
+
     # Transform
     transformed = apply_transform(emb, args.transform, info)
     logger.info(f"  Output shape: {transformed.shape}")
@@ -523,8 +549,9 @@ def main():
         all_results.append({"k": k, **metrics})
 
         if args.save:
+            layers_suffix = f"_L{args.layers}" if args.layers else ""
             output_dir = args.output_dir or os.path.join(
-                args.data_dir, f"{args.embedding}_{args.transform}_{args.cluster}_k{k}"
+                args.data_dir, f"{args.embedding}_{args.transform}_{args.cluster}_k{k}{layers_suffix}"
             )
             save_results(labels, metrics, meta, emb, transformed, args_k, output_dir)
 

@@ -16,13 +16,33 @@
 set -e
 
 if [ -z "$1" ]; then
-    echo "Usage: $0 <DATA_DIR>"
+    echo "Usage: $0 <DATA_DIR> [--layers START-END]"
     echo "  DATA_DIR: per-model directory containing embeddings_*.npy, metadata.jsonl.gz, info.json"
+    echo "  --layers:  optional layer range (e.g. 11-16) passed to transform_and_cluster.py"
     exit 1
 fi
 
 DATA_DIR="$1"
-OUTPUT_TSV="${DATA_DIR}/sweep_results.tsv"
+shift
+
+# Parse optional --layers flag
+LAYERS_ARG=""
+LAYERS_SUFFIX=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --layers)
+            LAYERS_ARG="--layers $2"
+            LAYERS_SUFFIX="_L${2}"
+            shift 2
+            ;;
+        *)
+            echo "Unknown argument: $1"
+            exit 1
+            ;;
+    esac
+done
+
+OUTPUT_TSV="${DATA_DIR}/sweep_results${LAYERS_SUFFIX}.tsv"
 
 EMBEDDINGS="logits probs logits_sparse probs_sparse"
 TRANSFORMS="identity l2 mean_pca mean_pca_l2 mean_l2_pca tsvd l2_tsvd tsvd_l2"
@@ -40,7 +60,11 @@ if [ -f "$OUTPUT_TSV" ]; then
 fi
 
 # Write TSV header
-echo -e "embedding\ttransform\tcluster\tk\tsilhouette\tcalinski_harabasz\tdavies_bouldin\tcluster_size_min\tcluster_size_max\tcluster_size_median\tcluster_size_std\tavg_source_entropy" > "$OUTPUT_TSV"
+echo -e "embedding\ttransform\tcluster\tk\tlayers\tsilhouette\tcalinski_harabasz\tdavies_bouldin\tcluster_size_min\tcluster_size_max\tcluster_size_median\tcluster_size_std\tavg_source_entropy" > "$OUTPUT_TSV"
+
+# Human-readable layers value for TSV rows
+LAYERS_VAL="${LAYERS_SUFFIX:+${LAYERS_SUFFIX#_L}}"
+LAYERS_VAL="${LAYERS_VAL:-all}"
 
 COUNT=0
 for EMB in $EMBEDDINGS; do
@@ -61,7 +85,7 @@ for CLUST in $CLUSTERS; do
             echo "  SKIP: $EMB / $TRANS / $CLUST (GMM needs dim reduction)"
             for K in $K_VALUES; do
                 COUNT=$((COUNT + 1))
-                echo -e "${EMB}\t${TRANS}\t${CLUST}\t${K}\tSKIPPED\t\t\t\t\t\t\t" >> "$OUTPUT_TSV"
+                echo -e "${EMB}\t${TRANS}\t${CLUST}\t${K}\t${LAYERS_VAL}\tSKIPPED\t\t\t\t\t\t\t" >> "$OUTPUT_TSV"
             done
             continue
         fi
@@ -79,11 +103,11 @@ for CLUST in $CLUSTERS; do
         --embedding "$EMB" \
         --transform "$TRANS" \
         --cluster "$CLUST" \
-        --k $K_VALUES 2>&1 | tee "$LOGFILE" || {
+        --k $K_VALUES $LAYERS_ARG 2>&1 | tee "$LOGFILE" || {
         echo "  FAILED: $EMB / $TRANS / $CLUST"
         for K in $K_VALUES; do
             COUNT=$((COUNT + 1))
-            echo -e "${EMB}\t${TRANS}\t${CLUST}\t${K}\tERROR\t\t\t\t\t\t\t" >> "$OUTPUT_TSV"
+            echo -e "${EMB}\t${TRANS}\t${CLUST}\t${K}\t${LAYERS_VAL}\tERROR\t\t\t\t\t\t\t" >> "$OUTPUT_TSV"
         done
         rm -f "$LOGFILE"
         continue
@@ -106,7 +130,7 @@ for CLUST in $CLUSTERS; do
         SZ_STD=$(echo "$BLOCK" | grep "cluster sizes:" | head -1 | sed 's/.*std=\([0-9.]*\).*/\1/')
         SRC_ENT=$(echo "$BLOCK" | grep "avg_source_entropy:" | head -1 | awk -F'avg_source_entropy: *' '{print $2}' | awk '{print $1}')
 
-        echo -e "${EMB}\t${TRANS}\t${CLUST}\t${K}\t${SIL:-NA}\t${CH:-NA}\t${DB:-NA}\t${SZ_MIN:-NA}\t${SZ_MAX:-NA}\t${SZ_MED:-NA}\t${SZ_STD:-NA}\t${SRC_ENT:-NA}" >> "$OUTPUT_TSV"
+        echo -e "${EMB}\t${TRANS}\t${CLUST}\t${K}\t${LAYERS_VAL}\t${SIL:-NA}\t${CH:-NA}\t${DB:-NA}\t${SZ_MIN:-NA}\t${SZ_MAX:-NA}\t${SZ_MED:-NA}\t${SZ_STD:-NA}\t${SRC_ENT:-NA}" >> "$OUTPUT_TSV"
 
         echo "  [$COUNT] $EMB / $TRANS / $CLUST / k=$K  sil=${SIL:-NA}"
     done
@@ -125,4 +149,4 @@ echo "================================================================"
 echo ""
 echo "=== TOP 10 BY SILHOUETTE ==="
 head -1 "$OUTPUT_TSV"
-tail -n +2 "$OUTPUT_TSV" | grep -v ERROR | grep -v SKIPPED | sort -t'	' -k5 -rn | head -10
+tail -n +2 "$OUTPUT_TSV" | grep -v ERROR | grep -v SKIPPED | sort -t'	' -k6 -rn | head -10
