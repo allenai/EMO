@@ -195,6 +195,7 @@ def compute_topk_freq_embedding(
 
     Shape: (B, num_layers * num_experts), dtype float32.
     """
+    breakpoint()
     B = attention_mask.shape[0]
     device = attention_mask.device
 
@@ -295,6 +296,8 @@ def embed_batch(
         output_router_logits=True,
     )
 
+    breakpoint()
+
     # Collect per-layer logits: List of (B, S, num_standard_experts)
     per_layer_logits = []
     for layer_logits in outputs.router_logits:
@@ -349,6 +352,7 @@ def run_sanity_checks(
 
     # Check 2b: topk_freq per-layer sums == routed_top_k
     if "topk_freq" in results:
+        breakpoint()
         per_layer_sum = results["topk_freq"][0].reshape(num_layers, num_standard_experts).sum(axis=1)
         assert np.allclose(per_layer_sum, routed_top_k, atol=1e-4), \
             f"topk_freq per-layer sums not close to {routed_top_k}: {per_layer_sum}"
