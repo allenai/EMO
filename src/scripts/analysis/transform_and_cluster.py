@@ -37,6 +37,7 @@ EMBEDDING_FILES = {
     "probs":          "embeddings_probs.npy",
     "logits_sparse":  "embeddings_logits_sparse.npy",
     "probs_sparse":   "embeddings_probs_sparse.npy",
+    "topk_freq":      "embeddings_topk_freq.npy",
 }
 
 

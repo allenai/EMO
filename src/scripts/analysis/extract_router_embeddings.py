@@ -54,6 +54,7 @@ import torch.nn.functional as F
 
 from src.scripts.analysis.utils import (
     EOS_TOKEN_ID,
+    get_moe_config,
     iter_documents,
     load_model_and_tokenizer,
     load_source_documents,
@@ -75,7 +76,7 @@ class EmbeddingType:
     name: str
     filename: str
     dtype: type
-    compute_fn: Callable[[List[torch.Tensor], torch.Tensor, int, int], np.ndarray]
+    compute_fn: Callable  # (per_layer_logits, attention_mask, num_layers, num_experts, **kwargs) -> ndarray
     description: str
 
 
@@ -84,6 +85,7 @@ def compute_logits_embedding(
     attention_mask: torch.Tensor,
     num_layers: int,
     num_experts: int,
+    **kwargs,
 ) -> np.ndarray:
     """
     Average pre-softmax router logits per expert per layer.
@@ -107,6 +109,7 @@ def compute_probs_embedding(
     attention_mask: torch.Tensor,
     num_layers: int,
     num_experts: int,
+    **kwargs,
 ) -> np.ndarray:
     """
     Per-token softmax probabilities, averaged per expert per layer.
@@ -144,6 +147,7 @@ def compute_logits_sparse_embedding(
     attention_mask: torch.Tensor,
     num_layers: int,
     num_experts: int,
+    **kwargs,
 ) -> np.ndarray:
     """
     Sparse average logits: top-32 experts per layer, rest zeroed.
@@ -161,6 +165,7 @@ def compute_probs_sparse_embedding(
     attention_mask: torch.Tensor,
     num_layers: int,
     num_experts: int,
+    **kwargs,
 ) -> np.ndarray:
     """
     Sparse average probabilities: top-32 experts per layer, rest zeroed.
@@ -171,6 +176,46 @@ def compute_probs_sparse_embedding(
     """
     dense = compute_probs_embedding(per_layer_logits, attention_mask, num_layers, num_experts)
     return _sparsify_top_k(dense.astype(np.float32), num_layers, num_experts, TOP_K_SPARSE).astype(np.float16)
+
+
+def compute_topk_freq_embedding(
+    per_layer_logits: List[torch.Tensor],
+    attention_mask: torch.Tensor,
+    num_layers: int,
+    num_experts: int,
+    routed_top_k: int = 8,
+) -> np.ndarray:
+    """
+    Top-k expert selection frequency per expert per layer.
+
+    For each token, selects the top routed_top_k experts (by logit value) at each
+    layer and increments a count. Divides by document length to get the fraction
+    of tokens that activated each expert. Each layer's frequencies sum to
+    routed_top_k.
+
+    Shape: (B, num_layers * num_experts), dtype float32.
+    """
+    B = attention_mask.shape[0]
+    device = attention_mask.device
+
+    counts = torch.zeros(B, num_layers, num_experts, dtype=torch.int32, device=device)
+
+    for layer_idx, logits in enumerate(per_layer_logits):  # (B, S, E)
+        top_indices = logits.topk(routed_top_k, dim=-1).indices  # (B, S, routed_top_k)
+        flat_indices = top_indices.reshape(B, -1)  # (B, S * routed_top_k)
+
+        # Mask out padding tokens (repeated for each top-k slot)
+        valid = attention_mask.unsqueeze(-1).expand(-1, -1, routed_top_k).reshape(B, -1)
+
+        counts[:, layer_idx, :].scatter_add_(
+            1, flat_indices, valid.to(torch.int32)
+        )
+
+    # Normalize by document length
+    doc_lens = attention_mask.sum(dim=1, keepdim=True).float()  # (B, 1)
+    freq = counts.view(B, -1).float() / doc_lens  # (B, num_layers * num_experts)
+
+    return freq.cpu().numpy().astype(np.float32)
 
 
 EMBEDDING_REGISTRY: Dict[str, EmbeddingType] = {
@@ -202,6 +247,13 @@ EMBEDDING_REGISTRY: Dict[str, EmbeddingType] = {
         compute_fn=compute_probs_sparse_embedding,
         description="Sparse avg probs: top-32 experts per layer, rest zeroed",
     ),
+    "topk_freq": EmbeddingType(
+        name="topk_freq",
+        filename="embeddings_topk_freq.npy",
+        dtype=np.float32,
+        compute_fn=compute_topk_freq_embedding,
+        description="Top-k expert selection frequency per expert per layer",
+    ),
 }
 
 
@@ -218,6 +270,7 @@ def embed_batch(
     num_layers: int,
     num_standard_experts: int,
     embedding_types: List[EmbeddingType],
+    routed_top_k: int = 8,
 ) -> Dict[str, np.ndarray]:
     """
     Run a batch of documents through the model and compute requested embeddings.
@@ -252,7 +305,8 @@ def embed_batch(
     results = {}
     for et in embedding_types:
         results[et.name] = et.compute_fn(
-            per_layer_logits, attention_mask, num_layers, num_standard_experts
+            per_layer_logits, attention_mask, num_layers, num_standard_experts,
+            routed_top_k=routed_top_k,
         )
 
     torch.cuda.empty_cache()
@@ -265,7 +319,7 @@ def embed_batch(
 
 def run_sanity_checks(
     model, tokenizer, source_doc_samples, device,
-    num_layers, num_standard_experts, embedding_types,
+    num_layers, num_standard_experts, routed_top_k, embedding_types,
 ):
     logger.info("=== Running sanity checks ===")
 
@@ -274,7 +328,8 @@ def run_sanity_checks(
 
     # Check 1: shapes and dtypes
     results = embed_batch(
-        model, [sample_doc], device, num_layers, num_standard_experts, embedding_types
+        model, [sample_doc], device, num_layers, num_standard_experts, embedding_types,
+        routed_top_k=routed_top_k,
     )
     for et in embedding_types:
         arr = results[et.name]
@@ -292,6 +347,13 @@ def run_sanity_checks(
             f"Softmax row sums off: {per_layer_sum}"
         logger.info(f"  CHECK 2 PASSED: probs per-layer sums in [0.95, 1.05]")
 
+    # Check 2b: topk_freq per-layer sums == routed_top_k
+    if "topk_freq" in results:
+        per_layer_sum = results["topk_freq"][0].reshape(num_layers, num_standard_experts).sum(axis=1)
+        assert np.allclose(per_layer_sum, routed_top_k, atol=1e-4), \
+            f"topk_freq per-layer sums not close to {routed_top_k}: {per_layer_sum}"
+        logger.info(f"  CHECK 2b PASSED: topk_freq per-layer sums == {routed_top_k}")
+
     # Check 3: decoded text looks sane
     logger.info("  CHECK 3: decoding sample docs per source")
     for label, docs in source_doc_samples[:3]:
@@ -308,9 +370,9 @@ def run_sanity_checks(
         la, da = source_doc_samples[0]
         lb, db = source_doc_samples[1]
         if len(da) >= 2 and len(db) >= 1:
-            r0 = embed_batch(model, [da[0]], device, num_layers, num_standard_experts, [check_et])
-            r1 = embed_batch(model, [da[1]], device, num_layers, num_standard_experts, [check_et])
-            r2 = embed_batch(model, [db[0]], device, num_layers, num_standard_experts, [check_et])
+            r0 = embed_batch(model, [da[0]], device, num_layers, num_standard_experts, [check_et], routed_top_k=routed_top_k)
+            r1 = embed_batch(model, [da[1]], device, num_layers, num_standard_experts, [check_et], routed_top_k=routed_top_k)
+            r2 = embed_batch(model, [db[0]], device, num_layers, num_standard_experts, [check_et], routed_top_k=routed_top_k)
             same = cos(r0[check_et.name][0], r1[check_et.name][0])
             cross = cos(r0[check_et.name][0], r2[check_et.name][0])
             logger.info(f"  CHECK 4 ({check_et.name}): same-source ({la}) cos={same:.3f}  "
@@ -342,6 +404,8 @@ def main():
     parser.add_argument("--max-doc-len", type=int, default=2048)
     parser.add_argument("--min-doc-len", type=int, default=32)
     parser.add_argument("--sanity-check-only", action="store_true")
+    parser.add_argument("--debug", action="store_true",
+                        help="Debug mode: only load from the first 2 data sources")
     parser.add_argument("--embeddings", default="all",
                         help=f"Comma-separated embedding types to compute, or 'all'. "
                              f"Available: {', '.join(all_names)} (default: all)")
@@ -367,6 +431,10 @@ def main():
         composition = json.load(f)
 
     sources = composition["sources"]
+    if args.debug:
+        kept = dict(list(sorted(sources.items()))[:2])
+        logger.info(f"DEBUG mode: using 2/{len(sources)} sources: {list(kept.keys())}")
+        sources = kept
     logger.info(f"Loaded composition for {len(sources)} sources")
     for label, info in sorted(sources.items(), key=lambda x: -x[1]["fraction"]):
         alloc = int(info["fraction"] * args.target_tokens)
@@ -376,15 +444,15 @@ def main():
     model, tokenizer = load_model_and_tokenizer(args.model_path)
     device = str(next(model.parameters()).device)
 
-    cfg = model.config
-    num_layers = cfg.num_hidden_layers
-    num_all_experts = cfg.num_experts if hasattr(cfg, "num_experts") else cfg.num_local_experts
-    num_shared = getattr(cfg, "num_shared_experts", 0)
-    num_standard_experts = num_all_experts - num_shared
-    emb_dim = num_layers * num_standard_experts
+    moe_cfg = get_moe_config(model)
+    num_layers = moe_cfg["num_layers"]
+    num_standard_experts = moe_cfg["num_standard_experts"]
+    routed_top_k = moe_cfg["routed_top_k"]
+    emb_dim = moe_cfg["emb_dim"]
 
     logger.info(f"Model: {num_layers} layers, {num_standard_experts} standard experts")
     logger.info(f"Embedding dim: {emb_dim}")
+    logger.info(f"Routed top-k: {routed_top_k} (total top-k={moe_cfg['top_k']}, shared={moe_cfg['num_shared_experts']})")
 
     # Collect a few docs per source for sanity checks
     source_doc_samples = []
@@ -397,7 +465,7 @@ def main():
 
     run_sanity_checks(
         model, tokenizer, source_doc_samples, device,
-        num_layers, num_standard_experts, embedding_types,
+        num_layers, num_standard_experts, routed_top_k, embedding_types,
     )
 
     if args.sanity_check_only:
@@ -430,7 +498,8 @@ def main():
         for batch_idx, i in enumerate(range(0, len(docs), args.batch_size)):
             batch = docs[i : i + args.batch_size]
             results = embed_batch(
-                model, batch, device, num_layers, num_standard_experts, embedding_types
+                model, batch, device, num_layers, num_standard_experts, embedding_types,
+                routed_top_k=routed_top_k,
             )
             for name, arr in results.items():
                 batch_embeddings[name].append(arr)
@@ -480,6 +549,7 @@ def main():
         "total_tokens": int(sum(m["doc_len"] for m in all_meta)),
         "num_layers": num_layers,
         "num_standard_experts": num_standard_experts,
+        "routed_top_k": routed_top_k,
         "emb_dim": emb_dim,
         "model_path": args.model_path,
         "embedding_types": [et.name for et in embedding_types],

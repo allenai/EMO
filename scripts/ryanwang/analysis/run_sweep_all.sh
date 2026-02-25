@@ -44,7 +44,7 @@ done
 
 OUTPUT_TSV="${DATA_DIR}/sweep_results${LAYERS_SUFFIX}.tsv"
 
-EMBEDDINGS="logits probs logits_sparse probs_sparse"
+EMBEDDINGS="logits probs logits_sparse probs_sparse topk_freq"
 TRANSFORMS="identity l2 mean_pca mean_pca_l2 mean_l2_pca tsvd l2_tsvd tsvd_l2"
 CLUSTERS="kmeans gmm"
 K_VALUES="8 16 32 64 128"
