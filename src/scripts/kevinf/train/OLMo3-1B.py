@@ -1,3 +1,4 @@
+# isort: skip_file
 """
 Train OLMo3-1B on OLMoE-mix-0824.
 
@@ -14,7 +15,7 @@ import argparse
 import logging
 import sys
 from dataclasses import dataclass
-from typing import List, Optional, cast
+from typing import cast, List, Optional
 
 import rich
 

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Removed redundant `hf auth login` CLI call in `launch_eval.py` that was triggering `/whoami-v2` rate limits when many Beaker eval jobs launched concurrently.
+
 ### Added
 
 - Extension code and experiments.
