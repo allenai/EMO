@@ -46,9 +46,9 @@ from olmo_core.train.callbacks import (
     DownstreamEvaluatorCallbackConfig,
     GPUMemoryMonitorCallback,
     HFConverterCallback,
+    LMEvaluatorCallbackConfig,
     PostTrainEvalCallback,
     WandBCallback,
-    LMEvaluatorCallbackConfig,
 )
 from olmo_core.train.train_module import (
     TransformerDataParallelConfig,
@@ -252,11 +252,11 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                     sequence_length=SEQUENCE_LENGTH,
                     work_dir=work_dir,
                 ),
-                eval_interval=100, 
+                eval_interval=100,
                 eval_duration=Duration.steps(50),
                 eval_on_startup=True,
-                log_interval=1
-            )
+                log_interval=1,
+            ),
         )
     )
 
