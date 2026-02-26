@@ -17,7 +17,6 @@ dolma's dependencies. Falls back to a simple built-in parser for the subset
 of YAML used by tokenization configs.
 """
 
-import re
 import sys
 
 

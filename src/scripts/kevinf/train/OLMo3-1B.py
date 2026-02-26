@@ -1,4 +1,3 @@
-# isort: skip_file
 """
 Train OLMo3-1B on OLMoE-mix-0824.
 
@@ -15,7 +14,7 @@ import argparse
 import logging
 import sys
 from dataclasses import dataclass
-from typing import cast, List, Optional
+from typing import List, Optional, cast
 
 import rich
 
@@ -50,7 +49,6 @@ from olmo_core.train.callbacks import (
     LMEvaluatorCallbackConfig,
     PostTrainEvalCallback,
     WandBCallback,
-    LMEvaluatorCallbackConfig,
 )
 from olmo_core.train.train_module import (
     TransformerDataParallelConfig,
