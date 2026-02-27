@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Configuration
-#BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
-BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
+BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
+#BASE_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
 MODELS=(
     "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
 #    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213/step30995-hf"
@@ -162,36 +162,7 @@ for MODEL in "${MODELS[@]}"; do
         # if the model is dense or 1b4b, we skip activation and pruning
         if [[ $MODEL == *"dense"* || $MODEL == *"1b4b"* ]]; then
             echo "  Skipping activation computation and pruning for model: $MODEL"
-            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
-                --pruned-model ${BASE_DIR}/models/${MODEL} \
-                --task ${TASK} \
-                --base-dir "${BASE_DIR}/prune_evals" \
-                --relative-dir ${relative_dir} \
-                --num-gpus $gpus \
-                --run-name ${job_name} \
-                --learning-rate ${lr} \
-                --batch-size ${batch_size} \
-                --micro-batch-size ${micro_batch_size} \
-                --num-epochs ${num_epochs} \
-               --num-shared-experts ${num_shared_experts} \
-                --skip-activation \
-                --skip-prune
-#            python -m olmo_core.launch.beaker \
-#                --name $job_name \
-#                --gpus $gpus \
-#                --nodes 1 \
-#                --is_private_repo \
-#                --weka=oe-training-default \
-#                --shared-filesystem \
-#                --workspace ai2/flex2 \
-#                --cluster ai2/jupiter \
-#                --preemptible \
-#                --allow-dirty \
-#                --priority urgent \
-#                --no-follow \
-#                --no-torchrun \
-#                --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
-#                -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
+#            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
 #                --pruned-model ${BASE_DIR}/models/${MODEL} \
 #                --task ${TASK} \
 #                --base-dir "${BASE_DIR}/prune_evals" \
@@ -202,21 +173,27 @@ for MODEL in "${MODELS[@]}"; do
 #                --batch-size ${batch_size} \
 #                --micro-batch-size ${micro_batch_size} \
 #                --num-epochs ${num_epochs} \
-#                --num-shared-experts ${num_shared_experts} \
+#               --num-shared-experts ${num_shared_experts} \
 #                --skip-activation \
 #                --skip-prune
-#                "
-            echo "Launched evaluation for model: $model, task: $TASK"
-            echo "----------------------------------------"
-            sleep 300 # brief pause to avoid overwhelming huggingface
-            continue
-        fi
-
-        if [[ $PRUNING_MODE == "layerwise_variable" ]]; then
-            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise_variable.sh \
-                --model ${BASE_DIR}/models/${MODEL} \
+            python -m olmo_core.launch.beaker \
+                --name $job_name \
+                --gpus $gpus \
+                --nodes 1 \
+                --is_private_repo \
+                --weka=oe-training-default \
+                --shared-filesystem \
+                --workspace ai2/flex2 \
+                --cluster ai2/jupiter \
+                --preemptible \
+                --allow-dirty \
+                --priority urgent \
+                --no-follow \
+                --no-torchrun \
+                --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+                -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
+                --pruned-model ${BASE_DIR}/models/${MODEL} \
                 --task ${TASK} \
-                --keep-k-per-layer "${KEEP_K_PER_LAYER}" \
                 --base-dir "${BASE_DIR}/prune_evals" \
                 --relative-dir ${relative_dir} \
                 --num-gpus $gpus \
@@ -226,126 +203,149 @@ for MODEL in "${MODELS[@]}"; do
                 --micro-batch-size ${micro_batch_size} \
                 --num-epochs ${num_epochs} \
                 --num-shared-experts ${num_shared_experts} \
-                --prune-mode ${PRUNE_SCHEDULE_NAME}
+                --skip-activation \
+                --skip-prune
+                "
+            echo "Launched evaluation for model: $model, task: $TASK"
+            echo "----------------------------------------"
+            sleep 300 # brief pause to avoid overwhelming huggingface
+            continue
+        fi
 
-#            python -m olmo_core.launch.beaker \
-#                --name $job_name \
-#                --gpus $gpus \
-#                --nodes 1 \
-#                --is_private_repo \
-#                --weka=oe-training-default \
-#                --shared-filesystem \
-#                --workspace ai2/flex2 \
-#                --cluster ai2/jupiter \
-#                --preemptible \
-#                --allow-dirty \
-#                --priority urgent \
-#                --no-follow \
-#                --no-torchrun \
-#                --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
-#                -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise_variable.sh \
-#                    --model ${BASE_DIR}/models/${MODEL} \
-#                    --task ${TASK} \
-#                    --keep-k-per-layer '${KEEP_K_PER_LAYER}' \
-#                    --base-dir "${BASE_DIR}/prune_evals" \
-#                    --relative-dir ${relative_dir} \
-#                    --num-gpus $gpus \
-#                    --run-name ${job_name} \
-#                    --learning-rate ${lr} \
-#                    --batch-size ${batch_size} \
-#                    --micro-batch-size ${micro_batch_size} \
-#                    --num-epochs ${num_epochs} \
-#                    --num-shared-experts ${num_shared_experts} \
-#                    --prune-mode ${PRUNE_SCHEDULE_NAME}
-#                "
+        if [[ $PRUNING_MODE == "layerwise_variable" ]]; then
+#            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise_variable.sh \
+#                --model ${BASE_DIR}/models/${MODEL} \
+#                --task ${TASK} \
+#                --keep-k-per-layer "${KEEP_K_PER_LAYER}" \
+#                --base-dir "${BASE_DIR}/prune_evals" \
+#                --relative-dir ${relative_dir} \
+#                --num-gpus $gpus \
+#                --run-name ${job_name} \
+#                --learning-rate ${lr} \
+#                --batch-size ${batch_size} \
+#                --micro-batch-size ${micro_batch_size} \
+#                --num-epochs ${num_epochs} \
+#                --num-shared-experts ${num_shared_experts} \
+#                --prune-mode ${PRUNE_SCHEDULE_NAME}
+
+            python -m olmo_core.launch.beaker \
+                --name $job_name \
+                --gpus $gpus \
+                --nodes 1 \
+                --is_private_repo \
+                --weka=oe-training-default \
+                --shared-filesystem \
+                --workspace ai2/flex2 \
+                --cluster ai2/jupiter \
+                --preemptible \
+                --allow-dirty \
+                --priority urgent \
+                --no-follow \
+                --no-torchrun \
+                --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+                -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise_variable.sh \
+                    --model ${BASE_DIR}/models/${MODEL} \
+                    --task ${TASK} \
+                    --keep-k-per-layer '${KEEP_K_PER_LAYER}' \
+                    --base-dir "${BASE_DIR}/prune_evals" \
+                    --relative-dir ${relative_dir} \
+                    --num-gpus $gpus \
+                    --run-name ${job_name} \
+                    --learning-rate ${lr} \
+                    --batch-size ${batch_size} \
+                    --micro-batch-size ${micro_batch_size} \
+                    --num-epochs ${num_epochs} \
+                    --num-shared-experts ${num_shared_experts} \
+                    --prune-mode ${PRUNE_SCHEDULE_NAME}
+                "
         elif [[ $PRUNING_MODE == "layerwise" ]]; then
-            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
-                --model ${BASE_DIR}/models/${MODEL} \
-                --task ${TASK} \
-                --prune-keep-k ${prune_keep_k} \
-                --base-dir "${BASE_DIR}/prune_evals" \
-                --relative-dir ${relative_dir} \
-                --num-gpus $gpus \
-                --run-name ${job_name} \
-                --learning-rate ${lr} \
-                --batch-size ${batch_size} \
-                --micro-batch-size ${micro_batch_size} \
-                --num-epochs ${num_epochs} \
-                --num-shared-experts ${num_shared_experts}
+#            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
+#                --model ${BASE_DIR}/models/${MODEL} \
+#                --task ${TASK} \
+#                --prune-keep-k ${prune_keep_k} \
+#                --base-dir "${BASE_DIR}/prune_evals" \
+#                --relative-dir ${relative_dir} \
+#                --num-gpus $gpus \
+#                --run-name ${job_name} \
+#                --learning-rate ${lr} \
+#                --batch-size ${batch_size} \
+#                --micro-batch-size ${micro_batch_size} \
+#                --num-epochs ${num_epochs} \
+#                --num-shared-experts ${num_shared_experts}
 
-#            python -m olmo_core.launch.beaker \
-#                --name $job_name \
-#                --gpus $gpus \
-#                --nodes 1 \
-#                --is_private_repo \
-#                --weka=oe-training-default \
-#                --shared-filesystem \
-#                --workspace ai2/flex2 \
-#                --cluster ai2/jupiter \
-#                --preemptible \
-#                --allow-dirty \
-#                --priority urgent \
-#                --no-follow \
-#                --no-torchrun \
-#                --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
-#                -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
-#                    --model ${BASE_DIR}/models/${MODEL} \
-#                    --task ${TASK} \
-#                    --prune-keep-k ${prune_keep_k} \
-#                    --base-dir "${BASE_DIR}/prune_evals" \
-#                    --relative-dir ${relative_dir} \
-#                    --num-gpus $gpus \
-#                    --run-name ${job_name} \
-#                    --learning-rate ${lr} \
-#                    --batch-size ${batch_size} \
-#                    --micro-batch-size ${micro_batch_size} \
-#                    --num-epochs ${num_epochs} \
-#                    --num-shared-experts ${num_shared_experts}
-#                "
+            python -m olmo_core.launch.beaker \
+                --name $job_name \
+                --gpus $gpus \
+                --nodes 1 \
+                --is_private_repo \
+                --weka=oe-training-default \
+                --shared-filesystem \
+                --workspace ai2/flex2 \
+                --cluster ai2/jupiter \
+                --preemptible \
+                --allow-dirty \
+                --priority urgent \
+                --no-follow \
+                --no-torchrun \
+                --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+                -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
+                    --model ${BASE_DIR}/models/${MODEL} \
+                    --task ${TASK} \
+                    --prune-keep-k ${prune_keep_k} \
+                    --base-dir "${BASE_DIR}/prune_evals" \
+                    --relative-dir ${relative_dir} \
+                    --num-gpus $gpus \
+                    --run-name ${job_name} \
+                    --learning-rate ${lr} \
+                    --batch-size ${batch_size} \
+                    --micro-batch-size ${micro_batch_size} \
+                    --num-epochs ${num_epochs} \
+                    --num-shared-experts ${num_shared_experts}
+                "
         else
-            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
-                --model ${BASE_DIR}/models/${MODEL} \
-                --task ${TASK} \
-                --prune-keep-k ${prune_keep_k} \
-                --base-dir "${BASE_DIR}/prune_evals" \
-                --relative-dir ${relative_dir} \
-                --num-gpus $gpus \
-                --run-name ${job_name} \
-                --learning-rate ${lr} \
-                --batch-size ${batch_size} \
-                --micro-batch-size ${micro_batch_size} \
-                --num-epochs ${num_epochs} \
-                --num-shared-experts ${num_shared_experts}
+#            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
+#                --model ${BASE_DIR}/models/${MODEL} \
+#                --task ${TASK} \
+#                --prune-keep-k ${prune_keep_k} \
+#                --base-dir "${BASE_DIR}/prune_evals" \
+#                --relative-dir ${relative_dir} \
+#                --num-gpus $gpus \
+#                --run-name ${job_name} \
+#                --learning-rate ${lr} \
+#                --batch-size ${batch_size} \
+#                --micro-batch-size ${micro_batch_size} \
+#                --num-epochs ${num_epochs} \
+#                --num-shared-experts ${num_shared_experts}
 
-#            python -m olmo_core.launch.beaker \
-#                --name $job_name \
-#                --gpus $gpus \
-#                --nodes 1 \
-#                --is_private_repo \
-#                --weka=oe-training-default \
-#                --shared-filesystem \
-#                --workspace ai2/flex2 \
-#                --cluster ai2/jupiter \
-#                --preemptible \
-#                --allow-dirty \
-#                --priority urgent \
-#                --no-follow \
-#                --no-torchrun \
-#                --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
-#                -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
-#                    --model ${BASE_DIR}/models/${MODEL} \
-#                    --task ${TASK} \
-#                    --prune-keep-k ${prune_keep_k} \
-#                    --base-dir "${BASE_DIR}/prune_evals" \
-#                    --relative-dir ${relative_dir} \
-#                    --num-gpus $gpus \
-#                    --run-name ${job_name} \
-#                    --learning-rate ${lr} \
-#                    --batch-size ${batch_size} \
-#                    --micro-batch-size ${micro_batch_size} \
-#                    --num-epochs ${num_epochs} \
-#                    --num-shared-experts ${num_shared_experts}
-#                "
+            python -m olmo_core.launch.beaker \
+                --name $job_name \
+                --gpus $gpus \
+                --nodes 1 \
+                --is_private_repo \
+                --weka=oe-training-default \
+                --shared-filesystem \
+                --workspace ai2/flex2 \
+                --cluster ai2/jupiter \
+                --preemptible \
+                --allow-dirty \
+                --priority urgent \
+                --no-follow \
+                --no-torchrun \
+                --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+                -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
+                    --model ${BASE_DIR}/models/${MODEL} \
+                    --task ${TASK} \
+                    --prune-keep-k ${prune_keep_k} \
+                    --base-dir "${BASE_DIR}/prune_evals" \
+                    --relative-dir ${relative_dir} \
+                    --num-gpus $gpus \
+                    --run-name ${job_name} \
+                    --learning-rate ${lr} \
+                    --batch-size ${batch_size} \
+                    --micro-batch-size ${micro_batch_size} \
+                    --num-epochs ${num_epochs} \
+                    --num-shared-experts ${num_shared_experts}
+                "
         fi
 
         echo "Launched evaluation for model: $MODEL, task: $TASK"
