@@ -90,7 +90,7 @@ def merge_experts(
 
     new_config = old_model_config.copy()
     assert new_config.block.feed_forward_moe is not None, "Model is not MoE"
-    new_config.block.feed_forward_moe.num_experts = sum(
+    new_config.block.feed_forward_moe.num_experts = base_num_experts + sum(
         [len(indices) for indices in expert_indices]
     )
 
@@ -117,7 +117,11 @@ def merge_experts(
                     new_config.block.feed_forward_moe.num_experts, source_columns
                 ).clone()
 
-                current_expert = 0
+                # Copy base model's router rows first
+                target_param[:base_num_experts, :].copy_(source_param)
+                logger.info(f"Copied {base_num_experts} base router rows for {name}")
+
+                current_expert = base_num_experts
                 for ckpt_path, indices in zip(merge_checkpoint_paths, expert_indices):
                     merge_model = merge_models[merge_checkpoint_paths.index(ckpt_path)]
                     merge_num_experts = base_num_experts + len(indices)
@@ -135,19 +139,26 @@ def merge_experts(
             elif "experts.mlp" in name:
                 source_param = old_param.clone()
                 source_rows, source_columns = source_param.shape
+                expert_dim = source_rows // base_num_experts
 
                 target_param = new_param.view(
                     new_config.block.feed_forward_moe.num_experts,
-                    source_rows // base_num_experts,
+                    expert_dim,
                     source_columns,
                 ).clone()
 
-                current_expert = 0
+                # Copy base model's expert weights first
+                target_param[:base_num_experts, :, :].copy_(
+                    source_param.view(base_num_experts, expert_dim, source_columns)
+                )
+                logger.info(f"Copied {base_num_experts} base expert weights for {name}")
+
+                current_expert = base_num_experts
                 for ckpt_path, indices in zip(merge_checkpoint_paths, expert_indices):
                     merge_model = merge_models[merge_checkpoint_paths.index(ckpt_path)]
                     merge_num_experts = base_num_experts + len(indices)
                     merge_param = merge_model.state_dict()[name].view(
-                        merge_num_experts, source_rows // base_num_experts, source_columns
+                        merge_num_experts, expert_dim, source_columns
                     )
                     for idx in indices:
                         logger.info(
