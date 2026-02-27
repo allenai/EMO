@@ -24,13 +24,16 @@ from typing import List, Optional
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoConfig, AutoTokenizer
 
 from src.hf_training.data_utils import get_formatted_prompts
 from src.hf_training.greedy_prune_layerwise import (
     EarlyExit,
     _capture_layer_output,
     prune_moe_layer_inplace,
+)
+from src.hf_training.FlexOlmoNoQKNormPrenormForCausalLMDebug import (
+    FlexOlmoNoQKNormPrenormForCausalLMDebug,
 )
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
@@ -63,10 +66,15 @@ def greedy_prune_layerwise_variable(
         device: Device override; defaults to "auto" (multi-GPU if available)
     """
     logger.info(f"Loading model: {model_name}")
-    config = AutoConfig.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(
+    # config = AutoConfig.from_pretrained(model_name)
+    # model = AutoModelForCausalLM.from_pretrained(
+    #     model_name,
+    #     config=config,
+    #     torch_dtype=torch.bfloat16,
+    #     device_map="auto" if device is None else device,
+    # )
+    model = FlexOlmoNoQKNormPrenormForCausalLMDebug.from_pretrained(
         model_name,
-        config=config,
         torch_dtype=torch.bfloat16,
         device_map="auto" if device is None else device,
     )
@@ -74,6 +82,7 @@ def greedy_prune_layerwise_variable(
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
+    config = model.config
     num_layers = config.num_hidden_layers
     assert len(keep_k_per_layer) == num_layers, (
         f"keep_k_per_layer has length {len(keep_k_per_layer)} but model has {num_layers} layers"
@@ -253,6 +262,20 @@ def greedy_prune_layerwise_variable(
     # -------------------------------------------------------------------------
     # Update global model config to reflect pruned expert counts
     # -------------------------------------------------------------------------
+    # Compute actual per-layer expert counts after pruning
+    # (layers that were skipped retain their original count)
+    actual_num_experts_per_layer = []
+    actual_num_shared_experts_per_layer = []
+    for layer_idx in range(num_layers):
+        layer = model.model.layers[layer_idx]
+        if hasattr(layer, "mlp") and hasattr(layer.mlp, "experts"):
+            actual_num_experts_per_layer.append(layer.mlp.num_experts)
+            actual_num_shared_experts_per_layer.append(layer.mlp.num_shared_experts)
+        else:
+            # Non-MoE layer, use 0 as placeholder
+            actual_num_experts_per_layer.append(0)
+            actual_num_shared_experts_per_layer.append(0)
+
     min_keep_k = min(keep_k_per_layer)
     if hasattr(model.config, "num_experts_per_tok") and model.config.num_experts_per_tok > min_keep_k:
         model.config.num_experts_per_tok = min_keep_k
@@ -261,6 +284,10 @@ def greedy_prune_layerwise_variable(
         model.config.num_local_experts = min_keep_k
     model.config.num_shared_experts = num_shared_experts
     model.config.output_router_logits = True
+
+    # Store per-layer expert counts for FlexOlmoNoQKNormPrenormForCausalLMDebug
+    model.config.num_experts_per_layer = actual_num_experts_per_layer
+    model.config.num_shared_experts_per_layer = actual_num_shared_experts_per_layer
 
     # -------------------------------------------------------------------------
     # Save pruned model

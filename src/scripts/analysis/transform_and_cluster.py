@@ -176,6 +176,55 @@ def transform_mean_l2_pca(emb: np.ndarray, info: dict) -> np.ndarray:
     pca_k = PCA(n_components=k, random_state=42)
     return pca_k.fit_transform(normalized)
 
+@register_transform("l2_mean_pca", "L2 normalize, mean-center, then PCA (95% variance)")
+def transform_l2_mean_pca(emb: np.ndarray, info: dict) -> np.ndarray:
+    from sklearn.decomposition import PCA
+    from sklearn.preprocessing import normalize
+
+    # L2 normalize
+    normalized = normalize(emb, norm="l2")
+
+    # Mean-center
+    centered = normalized - normalized.mean(axis=0, keepdims=True)
+
+    # PCA
+    n_components = min(centered.shape[0], centered.shape[1])
+    pca = PCA(n_components=n_components, svd_solver="randomized", random_state=42)
+    pca.fit(centered)
+
+    cumvar = np.cumsum(pca.explained_variance_ratio_)
+    k = int(np.searchsorted(cumvar, 0.95)) + 1
+    logger.info(f"  PCA: {k} components explain {cumvar[k-1]:.1%} variance")
+
+    pca_k = PCA(n_components=k, random_state=42)
+    return pca_k.fit_transform(centered)
+
+@register_transform("l2_mean_pca_l2", "L2 normalize, mean-center, PCA (95% variance), L2 normalize")
+def transform_l2_mean_pca_l2(emb: np.ndarray, info: dict) -> np.ndarray:
+    from sklearn.decomposition import PCA
+    from sklearn.preprocessing import normalize
+
+    # L2 normalize
+    normalized = normalize(emb, norm="l2")
+
+    # Mean-center
+    centered = normalized - normalized.mean(axis=0, keepdims=True)
+
+    # PCA
+    n_components = min(centered.shape[0], centered.shape[1])
+    pca = PCA(n_components=n_components, svd_solver="randomized", random_state=42)
+    pca.fit(centered)
+
+    cumvar = np.cumsum(pca.explained_variance_ratio_)
+    k = int(np.searchsorted(cumvar, 0.95)) + 1
+    logger.info(f"  PCA: {k} components explain {cumvar[k-1]:.1%} variance")
+
+    pca_k = PCA(n_components=k, random_state=42)
+    reduced = pca_k.fit_transform(centered)
+
+    # L2 normalize again
+    return normalize(reduced, norm="l2")
+
 @register_transform("tsvd", "TruncatedSVD (95% variance)")
 def transform_tsvd(emb: np.ndarray, info: dict) -> np.ndarray:
     from sklearn.decomposition import TruncatedSVD
@@ -321,6 +370,9 @@ def evaluate_clustering(emb: np.ndarray, labels: np.ndarray, meta: list) -> dict
     metrics["silhouette"] = float(silhouette_score(
         emb[idx], labels[idx], metric="euclidean", sample_size=None
     ))
+    metrics["silhouette_cosine"] = float(silhouette_score(
+        emb[idx], labels[idx], metric="cosine", sample_size=None
+    ))
 
     # Calinski-Harabasz index: higher = denser, well-separated clusters
     metrics["calinski_harabasz"] = float(calinski_harabasz_score(emb, labels))
@@ -361,6 +413,8 @@ def print_metrics(metrics: dict):
     logger.info(f"  n_docs:              {metrics['n_docs']}")
     if "silhouette" in metrics:
         logger.info(f"  silhouette:          {metrics['silhouette']:.4f}  (higher=better, [-1,1])")
+    if "silhouette_cosine" in metrics:
+        logger.info(f"  silhouette_cosine:   {metrics['silhouette_cosine']:.4f}  (higher=better, [-1,1])")
         logger.info(f"  calinski_harabasz:   {metrics['calinski_harabasz']:.1f}  (higher=better)")
         logger.info(f"  davies_bouldin:      {metrics['davies_bouldin']:.4f}  (lower=better)")
         logger.info(f"  cluster sizes:       min={metrics['cluster_size_min']}, "
