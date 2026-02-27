@@ -1,0 +1,8 @@
+model,gsm8k_generation_0shot
+moe_reduce,0.1274
+moe_1b4b_reduce,0.1077
+dense-lr4e-3,0.0660
+twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1,0.1478
+twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1 (layerwise),0.1395
+twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1 (layerwise first2 unpruned),0.1494
+twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-2,0.1274

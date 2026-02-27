@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import textwrap
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -295,6 +296,14 @@ def _is_variant_task(task_name: str) -> bool:
     return any(task_name.endswith(suffix) for suffix in PRUNE_MODE_VARIANTS)
 
 
+LEGEND_WRAP_WIDTH = 30
+
+
+def _wrap_label(label: str) -> str:
+    """Wrap long legend labels across multiple lines."""
+    return textwrap.fill(label, width=LEGEND_WRAP_WIDTH, break_on_hyphens=True)
+
+
 def discover_catalog(prune_evals_root: Path) -> Tuple[List[str], List[str]]:
     models = sorted([p.name for p in prune_evals_root.iterdir() if p.is_dir()])
     task_runs = sorted(
@@ -573,7 +582,7 @@ def plot_mmlu_avg_subplots(
                 linewidth=2,
                 markersize=6,
                 color=color_map[model_label],
-                label=model_label,
+                label=_wrap_label(model_label),
             )
 
         ax.set_title(f"MMLU avg ({n_ckpts} checkpoints)")
@@ -652,7 +661,7 @@ def plot_task(
             linewidth=2,
             markersize=6,
             color=color_map[model_label],
-            label=model_label,
+            label=_wrap_label(model_label),
         )
 
     ax.set_title(f"{task_label} ({task_run})")
