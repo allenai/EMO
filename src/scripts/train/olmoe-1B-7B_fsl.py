@@ -323,9 +323,11 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         # Override layers 0 and 1 to be dense, matching active parameter count (top_k * moe_hidden_size)
         moe_cfg = model_config.block.feed_forward_moe
         dense_hidden = moe_cfg.router.top_k * moe_cfg.hidden_size  # 8 * 1024 = 8192
+        dense_attention = replace(model_config.block.attention, qk_norm=None)
         dense_block = replace(
             model_config.block,
             name=TransformerBlockType.default,
+            attention=dense_attention,
             feed_forward=FeedForwardConfig(hidden_size=dense_hidden),
             feed_forward_moe=None,
         )

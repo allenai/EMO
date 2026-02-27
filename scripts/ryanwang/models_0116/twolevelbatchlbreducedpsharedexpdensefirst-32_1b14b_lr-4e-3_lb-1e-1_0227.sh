@@ -34,8 +34,7 @@ torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
   --model.block.name="moe" \
   --model.block.attention.qk_norm=null \
   --lr=${lr} \
-  --model.block.feed_forward_moe.lb_loss_weight=${lb} \
-  --dry-run
+  --model.block.feed_forward_moe.lb_loss_weight=${lb}
 
 
 #python -m olmo_core.launch.beaker \
