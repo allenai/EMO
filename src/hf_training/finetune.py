@@ -123,14 +123,14 @@ def finetune(config: FinetuneConfig):
     """Run finetuning with the given configuration."""
     logger.info(f"Loading model from {config.model_path}")
     tokenizer = AutoTokenizer.from_pretrained(config.model_path)
-    # model = AutoModelForCausalLM.from_pretrained(
-    #     config.model_path,
-    #     torch_dtype=torch.bfloat16 if config.bf16 else torch.float32,
-    # )
-    model = FlexOlmoNoQKNormPrenormForCausalLMDebug.from_pretrained(
+    model = AutoModelForCausalLM.from_pretrained(
         config.model_path,
         torch_dtype=torch.bfloat16 if config.bf16 else torch.float32,
     )
+    # model = FlexOlmoNoQKNormPrenormForCausalLMDebug.from_pretrained(
+    #     config.model_path,
+    #     torch_dtype=torch.bfloat16 if config.bf16 else torch.float32,
+    # )
 
     # Set padding token if not set
     if tokenizer.pad_token is None:

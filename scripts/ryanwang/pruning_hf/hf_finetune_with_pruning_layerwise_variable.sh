@@ -211,27 +211,27 @@ echo "Num GPUs: $NUM_GPUS"
 echo "Num epochs: $NUM_EPOCHS"
 echo "========================================"
 
-# Steps 1+2: Greedy layerwise variable pruning
-#if [ "$SKIP_PRUNE" = false ]; then
-#    echo ""
-#    echo "Steps 1+2: Greedy layerwise variable pruning..."
-#    echo "========================================"
-#
-#    python -m src.hf_training.greedy_prune_layerwise_variable \
-#        --model "$MODEL" \
-#        --task "$TASK" \
-#        --split "validation" \
-#        --keep-k-per-layer "$KEEP_K_PER_LAYER" \
-#        --num-shared-experts "$NUM_SHARED_EXPERTS" \
-#        --save-path "$PRUNED_MODEL" \
-#        --batch-size 32
-#
-#    echo "Pruned model saved to: $PRUNED_MODEL"
-#else
-#    echo ""
-#    echo "Steps 1+2: Skipping pruning (using existing pruned model)"
-#    echo "Pruned model: $PRUNED_MODEL"
-#fi
+ Steps 1+2: Greedy layerwise variable pruning
+if [ "$SKIP_PRUNE" = false ]; then
+    echo ""
+    echo "Steps 1+2: Greedy layerwise variable pruning..."
+    echo "========================================"
+
+    python -m src.hf_training.greedy_prune_layerwise_variable \
+        --model "$MODEL" \
+        --task "$TASK" \
+        --split "validation" \
+        --keep-k-per-layer "$KEEP_K_PER_LAYER" \
+        --num-shared-experts "$NUM_SHARED_EXPERTS" \
+        --save-path "$PRUNED_MODEL" \
+        --batch-size 32
+
+    echo "Pruned model saved to: $PRUNED_MODEL"
+else
+    echo ""
+    echo "Steps 1+2: Skipping pruning (using existing pruned model)"
+    echo "Pruned model: $PRUNED_MODEL"
+fi
 
 # Step 3: Finetune
 echo ""

@@ -24,7 +24,7 @@ from typing import List, Optional
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
-from transformers import AutoConfig, AutoTokenizer
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 from src.hf_training.data_utils import get_formatted_prompts
 from src.hf_training.greedy_prune_layerwise import (
@@ -66,23 +66,22 @@ def greedy_prune_layerwise_variable(
         device: Device override; defaults to "auto" (multi-GPU if available)
     """
     logger.info(f"Loading model: {model_name}")
-    # config = AutoConfig.from_pretrained(model_name)
-    # model = AutoModelForCausalLM.from_pretrained(
-    #     model_name,
-    #     config=config,
-    #     torch_dtype=torch.bfloat16,
-    #     device_map="auto" if device is None else device,
-    # )
-    model = FlexOlmoNoQKNormPrenormForCausalLMDebug.from_pretrained(
+    config = AutoConfig.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(
         model_name,
+        config=config,
         torch_dtype=torch.bfloat16,
         device_map="auto" if device is None else device,
     )
+    # model = FlexOlmoNoQKNormPrenormForCausalLMDebug.from_pretrained(
+    #     model_name,
+    #     torch_dtype=torch.bfloat16,
+    #     device_map="auto" if device is None else device,
+    # )
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    config = model.config
     num_layers = config.num_hidden_layers
     assert len(keep_k_per_layer) == num_layers, (
         f"keep_k_per_layer has length {len(keep_k_per_layer)} but model has {num_layers} layers"
