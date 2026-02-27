@@ -9,7 +9,7 @@ Launch this with torchrun:
 import argparse
 import logging
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import List, Optional, cast
 
 import rich
@@ -44,7 +44,8 @@ from olmo_core.nn.moe.twolevel_sampling_nolb_router import (
 from olmo_core.nn.moe.twolevel_topp_batchlb_router import (
     MoETwoLevelTopPBatchLBRouterConfig,
 )
-from olmo_core.nn.transformer import TransformerConfig
+from olmo_core.nn.feed_forward import FeedForwardConfig
+from olmo_core.nn.transformer import TransformerBlockType, TransformerConfig
 from olmo_core.optim import AdamWConfig, CosWithWarmup, OptimGroupOverride
 from olmo_core.train import (
     TrainerConfig,
@@ -295,6 +296,40 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
         # Replace router config
         model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBReduceDPSharedExpRouterConfig(**router_kwargs)
+    elif opts.model_type == "two-level_lb-batch_reduce-dp_sharedexp_densefirst":
+        log.info(
+            "Applying two-level with batch-level load balancing (olmoe lb) routers that are reduced across dp ranks and have shared routers to the model, with dense first two layers..."
+        )
+        if opts.document_expert_pool is None:
+            raise ValueError("document_expert_pool must be specified for two-level model type.")
+        if opts.num_shared_experts is None:
+            raise ValueError(
+                "num_shared_experts must be specified for two-level_lb-batch_reduce-dp_sharedexp_densefirst model type."
+            )
+        # Get existing router config parameters
+        router_kwargs = model_config.block.feed_forward_moe.router.as_dict(
+            exclude_none=True, recurse=False
+        )
+        router_kwargs.pop("name")
+        router_kwargs.update(
+            document_expert_pool=opts.document_expert_pool,
+            eos_token_id=tokenizer_config.eos_token_id,
+            num_shared_experts=opts.num_shared_experts,
+        )
+
+        # Replace router config
+        model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBReduceDPSharedExpRouterConfig(**router_kwargs)
+
+        # Override layers 0 and 1 to be dense, matching active parameter count (top_k * moe_hidden_size)
+        moe_cfg = model_config.block.feed_forward_moe
+        dense_hidden = moe_cfg.router.top_k * moe_cfg.hidden_size  # 8 * 1024 = 8192
+        dense_block = replace(
+            model_config.block,
+            name=TransformerBlockType.default,
+            feed_forward=FeedForwardConfig(hidden_size=dense_hidden),
+            feed_forward_moe=None,
+        )
+        model_config.block_overrides = {0: dense_block, 1: dense_block}
     elif opts.model_type == "two-level_lb-batch_reduce-dp_sharedexppool":
         log.info(
             "Applying two-level with batch-leve load balancing (olmoe lb) routers that are reduced across dp ranks and have shared routers (that is a pool) to the model..."
