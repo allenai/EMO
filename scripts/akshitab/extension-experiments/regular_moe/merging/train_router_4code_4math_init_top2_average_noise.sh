@@ -17,7 +17,7 @@ NUM_TOKENS=$((NUM_BILLION_TOKENS * 1000000000))
 LR=4e-4 #4e-4  # 4e-3, #4e-5
 
 # # Part 2: Train with new expert
-RUN_NAME="rt-moe1b14b_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_math_init_top2_average_${NUM_BILLION_TOKENS}B_lr_${LR}"
+RUN_NAME="rt-merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_${NUM_BILLION_TOKENS}B_lr_${LR}"
 
 python -m olmo_core.launch.beaker \
   --name ${RUN_NAME} \
