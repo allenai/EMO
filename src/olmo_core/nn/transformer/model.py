@@ -508,15 +508,18 @@ class Transformer(nn.Module):
         # pipeline parallel configuration.
         h = self.embeddings(input_ids) if self.embeddings is not None else input_ids
 
-        # compute document boundaries here if router is a MoETwoLevelRouter
+        # compute document boundaries here if any block uses a MoETwoLevelRouter
         is_moe_twolevel_router = False
-        if hasattr(self.blocks["0"], "feed_forward_moe"):
-            is_moe_twolevel_router = isinstance(
-                self.blocks["0"].feed_forward_moe.router, MoETwoLevelRouter
-            ) or isinstance(self.blocks["0"].feed_forward_moe.router, MoETwoLevelTopPBatchLBRouter)
+        for blk in self.blocks.values():
+            if hasattr(blk, "feed_forward_moe") and blk.feed_forward_moe is not None:
+                if isinstance(blk.feed_forward_moe.router, MoETwoLevelRouter) or isinstance(
+                    blk.feed_forward_moe.router, MoETwoLevelTopPBatchLBRouter
+                ):
+                    is_moe_twolevel_router = True
+                    eos_token_id = blk.feed_forward_moe.router.eos_token_id
+                    break
         document_boundaries = []
         if is_moe_twolevel_router:
-            eos_token_id = self.blocks["0"].feed_forward_moe.router.eos_token_id
             matches = input_ids == eos_token_id
             # Get indices for each sequence in batch, output is (num_sequences, num_documents)
             for row in matches:
@@ -533,7 +536,7 @@ class Transformer(nn.Module):
             # Mark sizes as dynamic for torch.compile().
             if self.compile_enabled:
                 mark_dynamic(h, (0, 1), strict=False)
-            if is_moe_twolevel_router:
+            if is_moe_twolevel_router and hasattr(block, "feed_forward_moe") and block.feed_forward_moe is not None:
                 h = block(
                     h, document_boundaries=document_boundaries, **all_block_kwargs, **block_kwargs
                 )
