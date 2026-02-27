@@ -250,7 +250,21 @@ export WANDB_TAGS="finetune,${TASK:0:60},${PRUNED_MODEL: -60}"
 
 gas=$(( BATCH_SIZE / (NUM_GPUS * MICRO_BATCH_SIZE) ))
 
-torchrun --nproc_per_node="$NUM_GPUS" \
+#torchrun --nproc_per_node="$NUM_GPUS" \
+#    -m src.hf_training.finetune \
+#    --model "$PRUNED_MODEL" \
+#    --task "$TASK" \
+#    --split "train" \
+#    --output-dir "$FINETUNED_MODEL" \
+#    --num-epochs "$NUM_EPOCHS" \
+#    --num-checkpoints "$NUM_CHECKPOINTS" \
+#    --learning-rate "$LEARNING_RATE" \
+#    --run-name "$RUN_NAME" \
+#    --per-device-batch-size "$MICRO_BATCH_SIZE" \
+#    --gradient-accumulation-steps "$gas" \
+#    $FSDP_FLAG
+#DEBUG
+torchrun --nproc_per_node=1 \
     -m src.hf_training.finetune \
     --model "$PRUNED_MODEL" \
     --task "$TASK" \
@@ -263,6 +277,7 @@ torchrun --nproc_per_node="$NUM_GPUS" \
     --per-device-batch-size "$MICRO_BATCH_SIZE" \
     --gradient-accumulation-steps "$gas" \
     $FSDP_FLAG
+
 #
 ## Step 4: Evals
 #echo ""
