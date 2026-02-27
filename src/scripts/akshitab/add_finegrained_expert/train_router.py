@@ -157,7 +157,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             "blocks.*.attention*",
             "blocks.*.feed_forward_norm.*",
             "lm_head.*",
-            "experts.*",
+            "blocks.*.feed_forward_moe.experts.*",
         ],
     )
 

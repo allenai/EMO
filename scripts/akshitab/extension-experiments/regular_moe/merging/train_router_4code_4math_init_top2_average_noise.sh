@@ -11,13 +11,13 @@ TOTAL_EXPERTS=$((128+${NUM_NEW_EXPERTS}))
 MERGED_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/extensions/merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise"
 
 
-NUM_MILLION_TOKENS=5
-NUM_TOKENS=$((NUM_MILLION_TOKENS * 1000000))
+NUM_BILLION_TOKENS=1
+NUM_TOKENS=$((NUM_BILLION_TOKENS * 1000000000))
 
 LR=4e-4 #4e-4  # 4e-3, #4e-5
 
 # # Part 2: Train with new expert
-RUN_NAME="rt-merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_${NUM_MILLION_TOKENS}M_lr_${LR}"
+RUN_NAME="rt-merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_${NUM_BILLION_TOKENS}B_lr_${LR}"
 
 python -m olmo_core.launch.beaker \
   --name ${RUN_NAME} \
