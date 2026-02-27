@@ -211,7 +211,7 @@ echo "Num GPUs: $NUM_GPUS"
 echo "Num epochs: $NUM_EPOCHS"
 echo "========================================"
 
- Steps 1+2: Greedy layerwise variable pruning
+# Steps 1+2: Greedy layerwise variable pruning
 if [ "$SKIP_PRUNE" = false ]; then
     echo ""
     echo "Steps 1+2: Greedy layerwise variable pruning..."
