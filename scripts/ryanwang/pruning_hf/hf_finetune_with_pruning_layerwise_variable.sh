@@ -212,26 +212,26 @@ echo "Num epochs: $NUM_EPOCHS"
 echo "========================================"
 
 # Steps 1+2: Greedy layerwise variable pruning
-if [ "$SKIP_PRUNE" = false ]; then
-    echo ""
-    echo "Steps 1+2: Greedy layerwise variable pruning..."
-    echo "========================================"
-
-    python -m src.hf_training.greedy_prune_layerwise_variable \
-        --model "$MODEL" \
-        --task "$TASK" \
-        --split "validation" \
-        --keep-k-per-layer "$KEEP_K_PER_LAYER" \
-        --num-shared-experts "$NUM_SHARED_EXPERTS" \
-        --save-path "$PRUNED_MODEL" \
-        --batch-size 32
-
-    echo "Pruned model saved to: $PRUNED_MODEL"
-else
-    echo ""
-    echo "Steps 1+2: Skipping pruning (using existing pruned model)"
-    echo "Pruned model: $PRUNED_MODEL"
-fi
+#if [ "$SKIP_PRUNE" = false ]; then
+#    echo ""
+#    echo "Steps 1+2: Greedy layerwise variable pruning..."
+#    echo "========================================"
+#
+#    python -m src.hf_training.greedy_prune_layerwise_variable \
+#        --model "$MODEL" \
+#        --task "$TASK" \
+#        --split "validation" \
+#        --keep-k-per-layer "$KEEP_K_PER_LAYER" \
+#        --num-shared-experts "$NUM_SHARED_EXPERTS" \
+#        --save-path "$PRUNED_MODEL" \
+#        --batch-size 32
+#
+#    echo "Pruned model saved to: $PRUNED_MODEL"
+#else
+#    echo ""
+#    echo "Steps 1+2: Skipping pruning (using existing pruned model)"
+#    echo "Pruned model: $PRUNED_MODEL"
+#fi
 
 # Step 3: Finetune
 echo ""
@@ -250,19 +250,19 @@ export WANDB_TAGS="finetune,${TASK:0:60},${PRUNED_MODEL: -60}"
 
 gas=$(( BATCH_SIZE / (NUM_GPUS * MICRO_BATCH_SIZE) ))
 
-#torchrun --nproc_per_node="$NUM_GPUS" \
-#    -m src.hf_training.finetune \
-#    --model "$PRUNED_MODEL" \
-#    --task "$TASK" \
-#    --split "train" \
-#    --output-dir "$FINETUNED_MODEL" \
-#    --num-epochs "$NUM_EPOCHS" \
-#    --num-checkpoints "$NUM_CHECKPOINTS" \
-#    --learning-rate "$LEARNING_RATE" \
-#    --run-name "$RUN_NAME" \
-#    --per-device-batch-size "$MICRO_BATCH_SIZE" \
-#    --gradient-accumulation-steps "$gas" \
-#    $FSDP_FLAG
+torchrun --nproc_per_node="$NUM_GPUS" \
+    -m src.hf_training.finetune \
+    --model "$PRUNED_MODEL" \
+    --task "$TASK" \
+    --split "train" \
+    --output-dir "$FINETUNED_MODEL" \
+    --num-epochs "$NUM_EPOCHS" \
+    --num-checkpoints "$NUM_CHECKPOINTS" \
+    --learning-rate "$LEARNING_RATE" \
+    --run-name "$RUN_NAME" \
+    --per-device-batch-size "$MICRO_BATCH_SIZE" \
+    --gradient-accumulation-steps "$gas" \
+    $FSDP_FLAG
 #
 ## Step 4: Evals
 #echo ""
