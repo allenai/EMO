@@ -82,7 +82,9 @@ MODELS=(
     # extensions/moe_1b14b_132experts_olmoe-mix_130B_1103_step30995_init_top2_average_noise_10perc-hf
     # extensions/moe_1b14b_132experts_olmoe-mix_130B_1103_step30995_init_top2_code_average_noise-hf
 
-    rt-merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_5M_lr_4e-4/step2-hf
+    # rt-merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_1B_lr_4e-4/step239-hf
+
+    merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
 
 )
 
@@ -95,62 +97,26 @@ model_type=hf
 # Define grouped tasks
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
-  # MC9 tasks
- "arc_easy|arc_easy:rc_test::olmes"
- "arc_challenge|arc_challenge:rc_test::olmes"
- "boolq|boolq:rc_test::olmes"
- "csqa|csqa:rc_test::olmes"
- "hellaswag|hellaswag:rc_test::olmes"
- "openbookqa|openbookqa:rc_test::olmes"
- "piqa|piqa:rc_test::olmes"
- "socialiqa|socialiqa:rc_test::olmes"
-#  "winogrande|winogrande:rc_test::olmes"
-# #  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
-# #  "synthea|synthea:rc_test_0shot::olmes"
-# #   "coqa|coqa:test_0shot::olmes"
-# #  "squad|squad:test_0shot::olmes"
+    # MC9 tasks
+    "arc_easy|arc_easy:rc_test::olmes"
+    "arc_challenge|arc_challenge:rc_test::olmes"
+    "boolq|boolq:rc_test::olmes"
+    "csqa|csqa:rc_test::olmes"
+    "hellaswag|hellaswag:rc_test::olmes"
+    "openbookqa|openbookqa:rc_test::olmes"
+    "piqa|piqa:rc_test::olmes"
+    "socialiqa|socialiqa:rc_test::olmes"
+    "winogrande|winogrande:rc_test::olmes"
 
+    # math tasks
+    "gsm8k::olmes"
+    "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
+    "minerva_math_500::olmes"
+    "basic_skills::olmes"
 
-# #  "coqa|coqa:train_0shot::olmes"
-
-
-  MMLU
- "mmlu_rc_test|mmlu:rc_test::olmes"
-
-# #   Gen5 tasks
-# #  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes drop::olmes"
-
-# #   math
-# #   "gsm8k_test|gsm8k:perplexity_test::olmes"
-  "gsm8k::olmes"
-  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
-#     # "gsm8k:bpb::olmes"
-# #   "mmlu:mc::olmes"
-# #   "mmlu_pro:mc::olmes"
-# #   "minerva_math_algebra::olmes"
-# #   "minerva_math_counting_and_probability::olmes"
-# #   "minerva_math_geometry::olmes"
-# #   "minerva_math_intermediate_algebra::olmes"
-# #   "minerva_math_number_theory::olmes"
-# #   "minerva_math_prealgebra::olmes"
-# #   "minerva_math_precalculus::olmes"
-#     # "minerva_math_algebra:bpb::olmes"
-    # "basic_skills::olmes"
-#     "basic_skills_arithmetic:rc::olmes"
-
-
-    # "minerva_math_algebra:bpb::olmes"
-    # minerva_math_500:bpb::olmes
-    minerva_math_500::olmes
-
-    mbpp:3shot:bpb::none
-    codex_humaneval:3shot:bpb::none
-
-    # frenchbench_hellaswag:rc
-    # frenchbench_boolq:rc
-    # frenchbench_arc_challenge:rc
-    # frenchbench_grammar_vocab_reading:rc
-    
+    # code tasks
+    "mbpp:3shot:bpb::none"
+    "codex_humaneval:3shot:bpb::none"
 )
 
 # Function to get checkpoint name (matching the original script)
