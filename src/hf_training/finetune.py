@@ -131,7 +131,6 @@ def finetune(config: FinetuneConfig):
         config.model_path,
         torch_dtype=torch.bfloat16 if config.bf16 else torch.float32,
     )
-    breakpoint()
 
     # Set padding token if not set
     if tokenizer.pad_token is None:
