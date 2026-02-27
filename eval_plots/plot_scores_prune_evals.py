@@ -28,7 +28,7 @@ MODEL_SPECS = {
 
     "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1",
     "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213step30995-hf": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-2",
-    "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-2_sharelb-1e-2_0214step30995-hf": "twolevelbatchlbreducedp512sharedexp4c2-lr4e-3-lb1e-2",
+    # "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-2_sharelb-1e-2_0214step30995-hf": "twolevelbatchlbreducedp512sharedexp4c2-lr4e-3-lb1e-2",
 
     # depricated
     # "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": "twolevelbatchlb-lr4e-3-lb1e-1",
@@ -223,7 +223,7 @@ SELECTED_TASK_RUNS = list(AVAILABLE_TASK_RUNS)
 # Key: model directory name. Value: label to show in plots.
 MODEL_LABELS = {model: label for model, label in MODEL_SPECS.items() if label}
 
-DEFAULT_OUTPUT_SUBDIR = "prune_eval_plots_0116"
+DEFAULT_OUTPUT_SUBDIR = "prune_eval_plots_0227"
 
 # Task-directory suffixes that represent alternate pruning strategies rather
 # than separate tasks. Each suffix maps to a label modifier appended to the
@@ -231,6 +231,7 @@ DEFAULT_OUTPUT_SUBDIR = "prune_eval_plots_0116"
 # plotted as additional model lines on the base task's plot.
 PRUNE_MODE_VARIANTS: Dict[str, str] = {
     "_prunemode-layerwise": "(layerwise)",
+    "_prunemode-layerwise_variable_first2_unpruned": "(layerwise first2 unpruned)",
 }
 
 # ============================================================================
