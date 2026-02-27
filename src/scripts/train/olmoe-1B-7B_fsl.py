@@ -75,8 +75,8 @@ from olmo_core.utils import seed_all
 log = logging.getLogger(__name__)
 
 # HACK
-DATA_ROOT = "/weka/oe-training-default/ai2-llm"
-# DATA_ROOT = "/root/ryanwang"
+# DATA_ROOT = "/weka/oe-training-default/ai2-llm"
+DATA_ROOT = "/root/ryanwang"
 
 SEQUENCE_LENGTH = 4096
 # GLOBAL_BATCH_SIZE = 4 * SEQUENCE_LENGTH
