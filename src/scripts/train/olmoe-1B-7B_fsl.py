@@ -320,18 +320,9 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         # Replace router config
         model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBReduceDPSharedExpRouterConfig(**router_kwargs)
 
-        # Override layers 0 and 1 to be dense, matching active parameter count (top_k * moe_hidden_size)
-        moe_cfg = model_config.block.feed_forward_moe
-        dense_hidden = moe_cfg.router.top_k * moe_cfg.hidden_size  # 8 * 1024 = 8192
-        dense_attention = replace(model_config.block.attention, qk_norm=None)
-        dense_block = replace(
-            model_config.block,
-            name=TransformerBlockType.default,
-            attention=dense_attention,
-            feed_forward=FeedForwardConfig(hidden_size=dense_hidden),
-            feed_forward_moe=None,
-        )
-        model_config.block_overrides = {0: dense_block, 1: dense_block}
+        # NOTE: block_overrides for dense first layers are applied after config.merge()
+        # so that CLI overrides (e.g. --model.block.attention.backend, --model.block.attention.qk_norm)
+        # are properly inherited by the dense blocks.
     elif opts.model_type == "two-level_lb-batch_reduce-dp_sharedexppool":
         log.info(
             "Applying two-level with batch-leve load balancing (olmoe lb) routers that are reduced across dp ranks and have shared routers (that is a pool) to the model..."
@@ -622,6 +613,19 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     # docs: start-config-merge
     config = config.merge(overrides)
     # docs: end-config-merge
+
+    # Apply dense first layer overrides AFTER merge so CLI overrides
+    # (backend, qk_norm, etc.) are inherited by the dense blocks.
+    if opts.model_type == "two-level_lb-batch_reduce-dp_sharedexp_densefirst":
+        moe_cfg = config.model.block.feed_forward_moe
+        dense_hidden = moe_cfg.router.top_k * moe_cfg.hidden_size  # 8 * 1024 = 8192
+        dense_block = replace(
+            config.model.block,
+            name=TransformerBlockType.default,
+            feed_forward=FeedForwardConfig(hidden_size=dense_hidden),
+            feed_forward_moe=None,
+        )
+        config.model.block_overrides = {0: dense_block, 1: dense_block}
 
     return config
 

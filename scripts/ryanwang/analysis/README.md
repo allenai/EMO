@@ -139,6 +139,24 @@ bash scripts/ryanwang/analysis/run_expert_coverage.sh models/<model_name>/step<N
 | `push_router_clustering.sh` | (none) | Sync outputs to S3 |
 | `pull_router_clustering.sh` | (none) | Pull outputs from S3 |
 
+## Cumulative Expert Probability Mass Analysis
+
+**Motivation**: During pre-training with top-p routing, the effective k (number of experts selected) tends to be relatively small. This analysis investigates why by examining how probability mass is distributed across experts for each document and layer.
+
+**Method**: For each document and each layer, experts are sorted by their average token-level probability (descending). The cumulative probability mass is then computed over the sorted experts, yielding a curve from k=1 to num_experts (where the final value is 1.0). This reveals how concentrated vs. diffuse the router's probability distribution is.
+
+**Script**: `src/scripts/analysis/plot_cumulative_expert_mass.py`
+
+```bash
+python -u -m src.scripts.analysis.plot_cumulative_expert_mass \
+    --emb-file "$DATA_DIR/embeddings_probs.npy" \
+    --info-file "$DATA_DIR/info.json" \
+    --output-dir "$DATA_DIR/cumulative_mass" \
+    --model-label "descriptive label"
+```
+
+**Output**: Per-layer scatterplots (4x4 grid, one per layer) with p10/p50/p90 percentile lines and mean overlay. Also produces a zoomed version focusing on the top-32 experts. Saved to `<model_dir>/cumulative_mass/`.
+
 ## Shared Utilities (`utils.py`)
 
 Common functions used across all analysis scripts:
