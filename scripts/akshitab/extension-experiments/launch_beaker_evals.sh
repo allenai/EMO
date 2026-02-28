@@ -81,10 +81,14 @@ MODELS=(
 
     # extensions/moe_1b14b_132experts_olmoe-mix_130B_1103_step30995_init_top2_average_noise_10perc-hf
     # extensions/moe_1b14b_132experts_olmoe-mix_130B_1103_step30995_init_top2_code_average_noise-hf
+<<<<<<< HEAD
 
     # rt-merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_1B_lr_4e-4/step239-hf
 
     merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
+=======
+    freeze-fix-moe1b14b_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+>>>>>>> akshitab/router-analysis
 
 )
 
