@@ -19,8 +19,10 @@ MODELS=(
     # math extension before training:
     # extensions/moe_1b14b_132experts_olmoe-mix_130B_1103_step30995_init_top2_average_noise_10perc-hf
     # code extension before training:
-    extensions/moe_1b14b_132experts_olmoe-mix_130B_1103_step30995_init_top2_code_average_noise-hf
+    # extensions/moe_1b14b_132experts_olmoe-mix_130B_1103_step30995_init_top2_code_average_noise-hf
     
+    # merged model
+    merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
@@ -42,41 +44,11 @@ TASK_GROUPS_LIST=(
 #  "piqa|piqa:rc_test::olmes"
 #  "socialiqa|socialiqa:rc_test::olmes"
 #  "winogrande|winogrande:rc_test::olmes"
-#  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
-#  "synthea|synthea:rc_test_0shot::olmes"
-#   "coqa|coqa:test_0shot::olmes"
-#  "squad|squad:test_0shot::olmes"
-
-
-#  "coqa|coqa:train_0shot::olmes"
-
-
-#   MMLU
-#  "mmlu_rc_test|mmlu:rc_test::olmes"
-
-#   Gen5 tasks
-#  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes drop::olmes"
-
-#   math
-#   "gsm8k_test|gsm8k:perplexity_test::olmes"
-#   "gsm8k::olmes"
-#   "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
-    # "gsm8k:bpb::olmes"
-#   "mmlu:mc::olmes"
-#   "mmlu_pro:mc::olmes"
-  #"minerva_math_algebra::olmes"
-#   "minerva_math_counting_and_probability::olmes"
-#   "minerva_math_geometry::olmes"
-#   "minerva_math_intermediate_algebra::olmes"
-#   "minerva_math_number_theory::olmes"
-#   "minerva_math_prealgebra::olmes"
-#   "minerva_math_precalculus::olmes"
-  #"minerva_math_algebra:bpb::olmes"
 
     # mbpp:3shot:bpb::none
     # codex_humaneval:3shot:bpb::none
 
-    # "gsm8k::olmes"
+    "gsm8k::olmes"
     # "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
     # "minerva_math_500::olmes"
     "mbpp"
