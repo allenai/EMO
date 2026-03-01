@@ -37,6 +37,7 @@ from olmo_core.nn.moe.twolevel_pbatchlb_router import MoETwoLevelPBatchLBRouterC
 from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_reducedp_router import MoETwoLevelBatchLBReduceDPRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_router import MoETwoLevelBatchLBReduceDPSharedExpRouterConfig
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_randpool_router import MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexppool_router import MoETwoLevelBatchLBReduceDPSharedExpPoolRouterConfig
 from olmo_core.nn.moe.twolevel_sampling_nolb_router import (
     MoETwoLevelSamplingNoLBRouterConfig,
@@ -323,6 +324,34 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         # NOTE: block_overrides for dense first layers are applied after config.merge()
         # so that CLI overrides (e.g. --model.block.attention.backend, --model.block.attention.qk_norm)
         # are properly inherited by the dense blocks.
+    elif opts.model_type == "two-level_lb-batch_reduce-dp_sharedexp_randpool":
+        log.info(
+            "Applying two-level with batch-level load balancing (olmoe lb) routers that are reduced across dp ranks, have shared routers, and random document expert pool sizes..."
+        )
+        if opts.min_document_expert_pool is None or opts.max_document_expert_pool is None:
+            raise ValueError(
+                "Both min_document_expert_pool and max_document_expert_pool must be specified for two-level_lb-batch_reduce-dp_sharedexp_randpool model type."
+            )
+        if opts.num_shared_experts is None:
+            raise ValueError(
+                "num_shared_experts must be specified for two-level_lb-batch_reduce-dp_sharedexp_randpool model type."
+            )
+        # Get existing router config parameters
+        router_kwargs = model_config.block.feed_forward_moe.router.as_dict(
+            exclude_none=True, recurse=False
+        )
+        router_kwargs.pop("name")
+        router_kwargs.update(
+            min_document_expert_pool=opts.min_document_expert_pool,
+            max_document_expert_pool=opts.max_document_expert_pool,
+            eos_token_id=tokenizer_config.eos_token_id,
+            num_shared_experts=opts.num_shared_experts,
+        )
+        if opts.eval_document_expert_pool is not None:
+            router_kwargs["eval_document_expert_pool"] = opts.eval_document_expert_pool
+
+        # Replace router config
+        model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouterConfig(**router_kwargs)
     elif opts.model_type == "two-level_lb-batch_reduce-dp_sharedexppool":
         log.info(
             "Applying two-level with batch-leve load balancing (olmoe lb) routers that are reduced across dp ranks and have shared routers (that is a pool) to the model..."
@@ -727,6 +756,11 @@ def parser_args():
         "--shared_exp_lb_loss",
         type=float,
         help="the weight for the load balancing loss for the shared experts in the two-level batchlb reduced dp shared exp router",
+    )
+    parser.add_argument(
+        "--eval_document_expert_pool",
+        type=int,
+        help="Fixed pool size to use during evaluation for randpool router. Defaults to midpoint of min/max.",
     )
     opts, overrides = parser.parse_known_args()
     return opts, overrides
