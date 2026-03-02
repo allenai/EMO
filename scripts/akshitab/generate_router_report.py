@@ -12,8 +12,6 @@ Analyzes:
 
 import json
 import os
-import sys
-from collections import defaultdict
 
 import torch
 
@@ -71,6 +69,7 @@ def thin_sep(width=120):
 
 # ── Report sections ──────────────────────────────────────────────────────────
 
+
 def section_header(title):
     print(f"\n{separator()}")
     print(f"  {title}")
@@ -96,7 +95,9 @@ def report_availability():
 def report_new_expert_activation():
     """For extended models (132 experts), report how much probability mass
     the 4 new experts (128-131) receive per task, averaged across layers."""
-    section_header("NEW EXPERT ACTIVATION (experts 128-131) — avg probability mass across all layers")
+    section_header(
+        "NEW EXPERT ACTIVATION (experts 128-131) — avg probability mass across all layers"
+    )
 
     all_tasks = [t for tasks in TASK_GROUPS.values() for t in tasks]
     extended_models = {k: v for k, v in MODELS.items() if k != "Base (128 experts)"}
@@ -123,7 +124,9 @@ def report_new_expert_per_layer(model_name, model_dir, task, probs):
     """Detailed per-layer breakdown of new expert probabilities."""
     num_layers = probs.shape[0]
     print(f"\n  {model_name} | {task}")
-    print(f"  {'Layer':<7} {'Exp128':>8} {'Exp129':>8} {'Exp130':>8} {'Exp131':>8} {'Sum128-131':>12}  {'Top-1 Expert (prob)':>22}")
+    print(
+        f"  {'Layer':<7} {'Exp128':>8} {'Exp129':>8} {'Exp130':>8} {'Exp131':>8} {'Sum128-131':>12}  {'Top-1 Expert (prob)':>22}"
+    )
     print(f"  {thin_sep(75)}")
     for layer in range(num_layers):
         exp_probs = [probs[layer, eid].item() for eid in NEW_EXPERT_IDS]
@@ -192,7 +195,9 @@ def report_expert_rank_shift():
                 parts = []
                 for eid in NEW_EXPERT_IDS:
                     if eid < probs.shape[1]:
-                        parts.append(f"E{eid}=rank {rank_of[eid]+1:>3} ({fmt_pct(global_probs[eid].item()).strip()})")
+                        parts.append(
+                            f"E{eid}=rank {rank_of[eid]+1:>3} ({fmt_pct(global_probs[eid].item()).strip()})"
+                        )
                 print(f"  {model_name:<22} {', '.join(parts)}")
 
 
@@ -259,7 +264,9 @@ def report_per_layer_heatmap_text():
             # Average row
             row = f"  {'AVG':<7}"
             for _, probs in available:
-                val = probs[:, NEW_EXPERT_IDS].sum(dim=1).mean().item() if probs.shape[1] > 128 else 0
+                val = (
+                    probs[:, NEW_EXPERT_IDS].sum(dim=1).mean().item() if probs.shape[1] > 128 else 0
+                )
                 row += f"{fmt_pct(val):>22}"
             print(row)
 
@@ -267,7 +274,7 @@ def report_per_layer_heatmap_text():
 def main():
     print(separator())
     print("  ROUTER ANALYSIS REPORT: Expert Activation Across Models and Tasks")
-    print(f"  Base model: 128 experts | Extended models: 132 experts (new: 128-131)")
+    print("  Base model: 128 experts | Extended models: 132 experts (new: 128-131)")
     print(separator())
 
     report_availability()

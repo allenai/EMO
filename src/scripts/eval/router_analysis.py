@@ -4,15 +4,27 @@ import os
 
 import torch
 
-_parser = argparse.ArgumentParser(description="Analyze router probability files from MoE forward passes.")
-_parser.add_argument(
-    "--router-files", type=str, nargs="+", required=True, help="Paths to one or more *-router.jsonl files"
+_parser = argparse.ArgumentParser(
+    description="Analyze router probability files from MoE forward passes."
 )
-_parser.add_argument("--top-k", type=int, default=5, help="Number of top experts to report per layer")
-_parser.add_argument("--visualize", action="store_true", help="Enable visualization (heatmap + optional bar charts)")
+_parser.add_argument(
+    "--router-files",
+    type=str,
+    nargs="+",
+    required=True,
+    help="Paths to one or more *-router.jsonl files",
+)
+_parser.add_argument(
+    "--top-k", type=int, default=5, help="Number of top experts to report per layer"
+)
+_parser.add_argument(
+    "--visualize", action="store_true", help="Enable visualization (heatmap + optional bar charts)"
+)
 _parser.add_argument("--output-dir", type=str, default=".", help="Directory to save plots")
 _parser.add_argument(
-    "--per-layer-bar", action="store_true", help="Also generate per-layer bar charts (requires --visualize)"
+    "--per-layer-bar",
+    action="store_true",
+    help="Also generate per-layer bar charts (requires --visualize)",
 )
 
 
@@ -61,7 +73,9 @@ def plot_heatmaps(file_probs, top_k, output_dir):
     import matplotlib.pyplot as plt
 
     n_files = len(file_probs)
-    fig, axes = plt.subplots(1, n_files, figsize=(8 * n_files, max(6, file_probs[0][1].shape[0] * 0.4)))
+    fig, axes = plt.subplots(
+        1, n_files, figsize=(8 * n_files, max(6, file_probs[0][1].shape[0] * 0.4))
+    )
     if n_files == 1:
         axes = [axes]
 
@@ -80,8 +94,14 @@ def plot_heatmaps(file_probs, top_k, output_dir):
             _, indices = torch.topk(probs[layer_idx], top_k)
             for idx in indices:
                 ax.text(
-                    idx.item(), layer_idx, str(idx.item()),
-                    ha="center", va="center", fontsize=4, color="red", fontweight="bold",
+                    idx.item(),
+                    layer_idx,
+                    str(idx.item()),
+                    ha="center",
+                    va="center",
+                    fontsize=4,
+                    color="red",
+                    fontweight="bold",
                 )
 
     fig.colorbar(im, ax=axes, label="Router Probability", shrink=0.8)
@@ -116,8 +136,13 @@ def plot_per_layer_bars(filepath, probs, top_k, output_dir):
         # Label top-K bars with expert number
         for idx in topk_indices.tolist():
             ax.text(
-                idx, layer_probs[idx], str(idx),
-                ha="center", va="bottom", fontsize=5, fontweight="bold",
+                idx,
+                layer_probs[idx],
+                str(idx),
+                ha="center",
+                va="bottom",
+                fontsize=5,
+                fontweight="bold",
             )
         ax.set_title(f"Layer {layer_idx}", fontsize=9)
         ax.set_xlabel("Expert", fontsize=7)

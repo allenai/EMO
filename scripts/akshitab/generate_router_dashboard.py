@@ -11,7 +11,6 @@ Usage:
 
 import json
 import os
-import sys
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
@@ -98,7 +97,9 @@ def load_all_data():
                 available[model_name].append(task_name)
                 num_layers = len(raw["avg_router_probabilities"])
                 num_experts = len(raw["avg_router_probabilities"][0])
-                print(f"  Loaded {model_name} / {task_name}: {num_layers} layers x {num_experts} experts")
+                print(
+                    f"  Loaded {model_name} / {task_name}: {num_layers} layers x {num_experts} experts"
+                )
     return data, available
 
 
@@ -114,13 +115,15 @@ def build_embedded_json(data, available):
 
     task_group_map = TASK_TO_GROUP.copy()
 
-    return json.dumps({
-        "models": models_meta,
-        "task_groups": TASK_GROUPS,
-        "task_to_group": task_group_map,
-        "available": available,
-        "data": data,
-    })
+    return json.dumps(
+        {
+            "models": models_meta,
+            "task_groups": TASK_GROUPS,
+            "task_to_group": task_group_map,
+            "available": available,
+            "data": data,
+        }
+    )
 
 
 HTML_TEMPLATE = r"""<!DOCTYPE html>

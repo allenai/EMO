@@ -156,9 +156,7 @@ def merge_experts(
                 source_param = old_param.view(base_num_experts, -1)
                 _, source_columns = source_param.shape
 
-                target_param = new_param.view(
-                    new_num_experts, source_columns
-                ).clone()
+                target_param = new_param.view(new_num_experts, source_columns).clone()
 
                 # Copy base model's router rows first
                 target_param[:base_num_experts, :].copy_(source_param)

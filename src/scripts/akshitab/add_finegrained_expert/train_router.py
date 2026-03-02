@@ -10,11 +10,9 @@ import argparse
 import logging
 import sys
 from dataclasses import dataclass
-from typing import Callable, List, Optional, cast
+from typing import List, Optional, cast
 
 import rich
-from scripts.akshitab.add_finegrained_expert.train_new_expert import partial_freeze_router_and_experts
-import torch
 
 from olmo_core.config import Config, DType
 from olmo_core.data import NumpyDataLoaderConfig, NumpyFSLDatasetConfig, TokenizerConfig
@@ -22,7 +20,7 @@ from olmo_core.data.mixes import DataMix
 from olmo_core.data.numpy_dataset import NumpyDatasetConfig
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_rank
-from olmo_core.nn.transformer import PARTIAL_FREEZE_FN_REGISTRY, TransformerConfig
+from olmo_core.nn.transformer import TransformerConfig
 from olmo_core.optim import AdamWConfig, CosWithWarmup, OptimGroupOverride
 from olmo_core.train import (
     TrainerConfig,
@@ -35,7 +33,6 @@ from olmo_core.train.callbacks import (
     CometCallback,
     ConfigSaverCallback,
     DownstreamEvaluatorCallbackConfig,
-    FrozenExpertGradientMaskCallback,
     GPUMemoryMonitorCallback,
     GradientMonitorCallback,
     HFConverterCallback,
