@@ -35,7 +35,7 @@ model_type=hf
 PRUNING_MODE="layerwise_variable"
 
 num_epochs=1
-prune_keep_k=32
+PRUNE_KEEP_K_VALUES=(32)
 batch_size=32
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
@@ -85,14 +85,16 @@ TASK_GROUPS_LIST=(
 
 )
 
-echo "Launching evals for ${#MODELS[@]} models and ${#TASK_GROUPS[@]} task groups..."
+echo "Launching evals for ${#MODELS[@]} models, ${#PRUNE_KEEP_K_VALUES[@]} keep-k values, and ${#TASK_GROUPS_LIST[@]} task groups..."
 echo "Models: ${MODELS[@]}"
+echo "Keep-k values: ${PRUNE_KEEP_K_VALUES[@]}"
 echo "Cluster: $CLUSTER"
 echo ""
 
-# Launch evaluation for each model and task combination
+# Launch evaluation for each model, keep-k, and task combination
 for MODEL in "${MODELS[@]}"; do
-    echo "Processing model: ${MODEL}"
+  for prune_keep_k in "${PRUNE_KEEP_K_VALUES[@]}"; do
+    echo "Processing model: ${MODEL}, keep-k: ${prune_keep_k}"
 
     # choose the number of pruned down shared experts
     if [[ $MODEL == *"twolevelbatchlbreducedp512sharedexp1"* ]]; then
@@ -354,10 +356,11 @@ for MODEL in "${MODELS[@]}"; do
         sleep 300 # brief pause to avoid overwhelming huggingface
     done
 
-    echo "Completed all groups for model: $model"
+    echo "Completed all tasks for model: $MODEL, keep-k: $prune_keep_k"
     echo "========================================"
+  done
 done
 
 echo "All beaker evaluations have been launched!"
-echo "Total jobs: $((${#MODELS[@]} * ${#TASK_GROUPS_LIST[@]}))"
+echo "Total jobs: $((${#MODELS[@]} * ${#PRUNE_KEEP_K_VALUES[@]} * ${#TASK_GROUPS_LIST[@]}))"
 echo "Check the beaker dashboard for job status."
