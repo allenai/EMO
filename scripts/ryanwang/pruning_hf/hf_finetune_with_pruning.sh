@@ -232,12 +232,17 @@ if [ "$SKIP_ACTIVATION" = false ]; then
 
     mkdir -p "$(dirname "$ACTIVATION_FILE")"
 
+    ACTIVATION_BATCH_SIZE=32
+    if [[ $TASK == *"history"* ]]; then
+        ACTIVATION_BATCH_SIZE=4
+    fi
+
     python -m src.hf_training.compute_router_activations \
         --model "$MODEL" \
         --task "$TASK" \
         --split "validation" \
         --output-file "$ACTIVATION_FILE" \
-        --batch-size 32
+        --batch-size "$ACTIVATION_BATCH_SIZE"
 
     echo "Activations saved to: $ACTIVATION_FILE"
 else
