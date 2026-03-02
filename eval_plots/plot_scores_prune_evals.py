@@ -29,6 +29,7 @@ MODEL_SPECS = {
 
     "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1",
     "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213step30995-hf": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-2",
+    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301step30995-hf": "twolevelbatchlbreducedp512sharedexp1randpool-lr4e-3-lb1e-1",
     # "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-2_sharelb-1e-2_0214step30995-hf": "twolevelbatchlbreducedp512sharedexp4c2-lr4e-3-lb1e-2",
 
     # depricated
@@ -236,6 +237,9 @@ PRUNE_MODE_VARIANTS: Dict[str, str] = {
     "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 32, layerwise)",
     "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise_variable_first2_unpruned": "(keepk 32, lw first2 unpruned)",
     # To add more keepk values, add entries like:
+    "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 8, layerwise)",
+    "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 16, layerwise)",
+    "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 64, layerwise)",
     # "_keepk_16_bs-32_lr-5e-5_epoch-1": "(keepk 16)",
     # "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 16, layerwise)",
     # "_keepk_64_bs-32_lr-5e-5_epoch-1": "(keepk 64)",

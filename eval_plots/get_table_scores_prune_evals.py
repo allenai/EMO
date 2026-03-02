@@ -140,6 +140,10 @@ PRUNE_MODE_VARIANTS: Dict[str, str] = {
     "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 32, layerwise)",
     "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise_variable_first2_unpruned": "(keepk 32, lw first2 unpruned)",
     # To add more keepk values, add entries like:
+    "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 8, layerwise)",
+    "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 16, layerwise)",
+    "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 64, layerwise)",
+
     # "_keepk_16_bs-32_lr-5e-5_epoch-1": "(keepk 16)",
     # "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 16, layerwise)",
     # "_keepk_64_bs-32_lr-5e-5_epoch-1": "(keepk 64)",
