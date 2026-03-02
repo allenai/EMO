@@ -49,38 +49,38 @@ KEEP_K_PER_LAYER="128,128,32,32,32,32,32,32,32,32,32,32,32,32,32,32"
 TASK_GROUPS_LIST=(
   ######### few-shot ##########
   # MC9 tasks
-#  "arc_easy"
-#  "arc_challenge"
-#  "boolq"
-#  "csqa"
-#  "hellaswag"
-#  "openbookqa"
-#  "piqa"
-#  "socialiqa"
-#  "winogrande"
-#  "gsm8k_generation_0shot"
-#  "gsm8k_perplexity_0shot"
-#  "coqa_0shot"
-#  "coqa_full_0shot"
-#  "squad_0shot"
-#
-#  "mmlu_biology"
-#  "mmlu_business"
-#  "mmlu_chemistry"
-#  "mmlu_computer_science"
-#  "mmlu_culture"
-#  "mmlu_economics"
-#  "mmlu_engineering"
-#  "mmlu_geography"
-#  "mmlu_health"
+  "arc_easy"
+  "arc_challenge"
+  "boolq"
+  "csqa"
+  "hellaswag"
+  "openbookqa"
+  "piqa"
+  "socialiqa"
+  "winogrande"
+  "gsm8k_generation_0shot"
+  "gsm8k_perplexity_0shot"
+  "coqa_0shot"
+  "coqa_full_0shot"
+  "squad_0shot"
+
+  "mmlu_biology"
+  "mmlu_business"
+  "mmlu_chemistry"
+  "mmlu_computer_science"
+  "mmlu_culture"
+  "mmlu_economics"
+  "mmlu_engineering"
+  "mmlu_geography"
+  "mmlu_health"
   "mmlu_history"
-#  "mmlu_law"
-#  "mmlu_math"
-#  "mmlu_other"
-#  "mmlu_philosophy_cat"
-#  "mmlu_physics"
-#  "mmlu_politics"
-#  "mmlu_psychology"
+  "mmlu_law"
+  "mmlu_math"
+  "mmlu_other"
+  "mmlu_philosophy_cat"
+  "mmlu_physics"
+  "mmlu_politics"
+  "mmlu_psychology"
 
 #  "synthea_zeroshot"
 
@@ -123,7 +123,7 @@ for MODEL in "${MODELS[@]}"; do
 #        else
 #            gpus=1
 #        fi
-        gpus=8
+        gpus=4
 
         # TODO: choose the right learning rate based on task
         lr=5e-5
