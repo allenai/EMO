@@ -53,12 +53,12 @@ MODEL_SPECS = {
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32, layerwise)"},
         ],
     },
-    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213step30995-hf": {
-        "label": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-2",
-        "variants": [
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32, layerwise)"},
-        ],
-    },
+    # "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213step30995-hf": {
+    #     "label": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-2",
+    #     "variants": [
+    #         {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32, layerwise)"},
+    #     ],
+    # },
     # "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-2_sharelb-1e-2_0214step30995-hf": {
     #     "label": "twolevelbatchlbreducedp512sharedexp4c2-lr4e-3-lb1e-2",
     #     "variants": [
@@ -253,7 +253,7 @@ MODEL_LABELS = {
     if spec.get("label")
 }
 
-DEFAULT_OUTPUT_SUBDIR = "prune_eval_plots_0227"
+DEFAULT_OUTPUT_SUBDIR = "prune_eval_plots_0302"
 
 # Collect all known variant suffixes from MODEL_SPECS for auto-discovery.
 _ALL_VARIANT_SUFFIXES: List[str] = sorted(
@@ -679,23 +679,30 @@ def plot_task(
     show: bool,
     metric_key: str,
     expected_models: Optional[Sequence[str]] = None,
+    task_metrics: Optional[Sequence[str]] = None,
 ) -> None:
     task_df = df[df["task_run"] == task_run]
     if task_df.empty:
         print(f"[WARN] No data for task run: {task_run}")
         return
 
-    # Warn about any expected (base) models that have no data for this
-    # task/metric.  Variant model keys are auto-discovered and optional, so
-    # we only warn for the explicitly selected base models.
+    # Warn when any explicitly configured variant is missing for this
+    # task/metric. Base model keys are not treated as independent entities.
     if expected_models is not None:
         models_present = set(task_df["model"].unique())
+        metrics_info = list(task_metrics) if task_metrics is not None else [metric_key]
         for model in expected_models:
-            if model not in models_present and not _is_variant_task(model):
-                label = MODEL_LABELS.get(model, model)
+            model_label = MODEL_LABELS.get(model, model)
+            variants = _get_model_variants(model)
+            for suffix, label_mod in variants:
+                variant_key = model + suffix
+                if variant_key in models_present:
+                    continue
+                variant_label = model_label + " " + label_mod
                 print(
-                    f"[WARN] Model {label!r} has no data for "
-                    f"task={task_run!r}, metric={metric_key!r}"
+                    f"[WARN] Model {variant_label!r} has no data for "
+                    f"task={task_run!r}, metric={metric_key!r}, "
+                    f"task_metrics={metrics_info!r}"
                 )
 
     sns.set_theme(style=style)
@@ -809,6 +816,7 @@ def main() -> None:
                     args.show,
                     metric_key,
                     expected_models=model_set,
+                    task_metrics=metric_override or TASK_SPECS.get(task_run),
                 )
 
         # --- mmlu_avg (macro average across MMLU categories) ---
