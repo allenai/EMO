@@ -70,3 +70,4 @@ src/offline_evals/data/synthea
 models
 prune
 claude_outputs
+eval_plots/.mplconfig

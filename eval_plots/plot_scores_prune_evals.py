@@ -502,30 +502,29 @@ def collect_mmlu_avg_records(
     prune_evals_root: Path,
     model_names: Sequence[str],
     metric_key: str,
-) -> Dict[int, pd.DataFrame]:
-    """Collect MMLU sub-task records and return macro averages grouped by
-    checkpoint count.
+) -> pd.DataFrame:
+    """Collect MMLU sub-task records and return one left-aligned macro average.
 
-    Instead of truncating all sub-tasks to the minimum checkpoint count,
-    sub-tasks are grouped by how many checkpoints they have (per model).
-    Each group is averaged independently, yielding one DataFrame per
-    distinct checkpoint count.
+    For each (model, subtask), checkpoints are sorted and re-indexed to a
+    zero-based relative index so all curves are aligned at checkpoint 0.
+    Macro averaging is then computed across available sub-tasks at each
+    relative checkpoint index.
 
-    Returns a dict mapping checkpoint count -> averaged DataFrame (same
-    schema as ``collect_records`` output, with ``task_run`` set to
-    ``"mmlu_avg_<N>ckpts"``).  An empty dict is returned when no data is
-    available.
+    Returns a DataFrame with the same schema as ``collect_records`` output,
+    with ``task_run`` set to ``"mmlu_avg"`` and ``checkpoint`` as the
+    left-aligned relative index. An empty DataFrame is returned when no data
+    is available.
     """
     try:
         df, _ = collect_records(
             prune_evals_root, model_names, MMLU_SUBTASKS, metric_key
         )
     except RuntimeError:
-        return {}
+        return pd.DataFrame()
 
     df = df[df["task_run"].isin(MMLU_SUBTASKS)]
     if df.empty:
-        return {}
+        return pd.DataFrame()
 
     # Exclude models missing any MMLU sub-task to avoid misleading partial averages.
     # model keys in the df include variant suffixes, so check all unique keys.
@@ -547,122 +546,82 @@ def collect_mmlu_avg_records(
 
     df = df[df["model"].isin(complete_models)]
     if df.empty:
-        return {}
+        return pd.DataFrame()
 
-    # Assign a 1-based ordinal checkpoint index per (model, subtask).
+    # Assign a 0-based relative checkpoint index per (model, subtask).
     df = df.sort_values(["model", "task_run", "checkpoint"])
-    df["ckpt_idx"] = df.groupby(["model", "task_run"]).cumcount() + 1
+    df["checkpoint_rel"] = df.groupby(["model", "task_run"]).cumcount()
 
-    # Checkpoint count per (model, subtask).
-    ckpt_counts = (
-        df.groupby(["model", "task_run"])["ckpt_idx"]
-        .max()
-        .rename("n_ckpts")
-        .reset_index()
-    )
-    df = df.merge(ckpt_counts, on=["model", "task_run"])
-
-    result: Dict[int, pd.DataFrame] = {}
-    for n in sorted(df["n_ckpts"].unique()):
-        group_df = df[df["n_ckpts"] == n]
-
-        for model_key in sorted(group_df["model"].unique()):
-            mlabel = group_df.loc[
-                group_df["model"] == model_key, "model_label"
-            ].iloc[0]
-            subtasks = sorted(
-                group_df.loc[group_df["model"] == model_key, "task_run"].unique()
-            )
-            print(
-                f"[INFO] mmlu_avg ({n} ckpts, metric={metric_key!r}): "
-                f"model {mlabel!r} averages over {len(subtasks)} sub-task(s)"
-            )
-
-        avg_df = (
-            group_df.groupby(
-                ["model", "model_label", "ckpt_idx"], as_index=False
-            ).agg(metric_value=("metric_value", "mean"))
+    # Log coverage per model after alignment.
+    for model_key in sorted(df["model"].unique()):
+        mlabel = df.loc[df["model"] == model_key, "model_label"].iloc[0]
+        model_subtasks = sorted(
+            df.loc[df["model"] == model_key, "task_run"].unique()
         )
-        avg_df = avg_df.rename(columns={"ckpt_idx": "checkpoint"})
-        avg_df["task_run"] = f"mmlu_avg_{n}ckpts"
-        avg_df["task_label"] = f"MMLU avg ({n} ckpts)"
+        max_rel_ckpt = int(
+            df.loc[df["model"] == model_key, "checkpoint_rel"].max()
+        )
+        print(
+            f"[INFO] mmlu_avg aligned (metric={metric_key!r}): "
+            f"model {mlabel!r} averages over {len(model_subtasks)} sub-task(s), "
+            f"max_relative_checkpoint={max_rel_ckpt}"
+        )
 
-        result[n] = avg_df
+    avg_df = (
+        df.groupby(
+            ["model", "model_label", "checkpoint_rel"], as_index=False
+        ).agg(metric_value=("metric_value", "mean"))
+    )
+    avg_df = avg_df.rename(columns={"checkpoint_rel": "checkpoint"})
+    avg_df["task_run"] = "mmlu_avg"
+    avg_df["task_label"] = "MMLU avg (left-aligned @ checkpoint 0)"
+    return avg_df
 
-    return result
 
-
-def plot_mmlu_avg_subplots(
-    ckpt_groups: Dict[int, pd.DataFrame],
+def plot_mmlu_avg(
+    avg_df: pd.DataFrame,
     output_path: Path,
     style: str,
     show: bool,
     metric_key: str,
 ) -> None:
-    """Plot MMLU macro-avg results as side-by-side subplots, one per checkpoint count."""
-    if not ckpt_groups:
+    """Plot one left-aligned MMLU macro-average curve per model."""
+    if avg_df.empty:
         print("[WARN] No MMLU avg data to plot.")
         return
 
-    sorted_counts = sorted(ckpt_groups)
-    n_groups = len(sorted_counts)
-
-    all_labels = sorted(
-        {
-            label
-            for avg_df in ckpt_groups.values()
-            for label in avg_df["model_label"].unique()
-        }
-    )
+    all_labels = sorted(avg_df["model_label"].unique())
 
     sns.set_theme(style=style)
-    fig, axes = plt.subplots(
-        1, n_groups, figsize=(8 * n_groups, 5), squeeze=False
-    )
+    plt.figure(figsize=(8, 5))
+    ax = plt.gca()
 
     palette = sns.color_palette("colorblind", n_colors=len(all_labels))
     color_map = {label: palette[i] for i, label in enumerate(all_labels)}
 
-    for ax_idx, n_ckpts in enumerate(sorted_counts):
-        ax = axes[0][ax_idx]
-        avg_df = ckpt_groups[n_ckpts]
+    for model_label in sorted(avg_df["model_label"].unique()):
+        model_df = avg_df[
+            avg_df["model_label"] == model_label
+        ].sort_values("checkpoint")
+        ax.plot(
+            model_df["checkpoint"],
+            model_df["metric_value"],
+            marker="o",
+            linewidth=2,
+            markersize=6,
+            color=color_map[model_label],
+            label=_wrap_label(model_label),
+        )
 
-        for model_label in sorted(avg_df["model_label"].unique()):
-            model_df = avg_df[
-                avg_df["model_label"] == model_label
-            ].sort_values("checkpoint")
-            ax.plot(
-                model_df["checkpoint"],
-                model_df["metric_value"],
-                marker="o",
-                linewidth=2,
-                markersize=6,
-                color=color_map[model_label],
-                label=_wrap_label(model_label),
-            )
-
-        ax.set_title(f"MMLU avg ({n_ckpts} checkpoints)")
-        ax.set_xlabel("Checkpoint")
-        ax.set_ylabel(metric_key)
-
-    # Deduplicated legend shared across all subplots.
-    seen: Dict[str, object] = {}
-    for ax_row in axes:
-        for ax in ax_row:
-            for handle, label in zip(*ax.get_legend_handles_labels()):
-                seen.setdefault(label, handle)
-    fig.legend(
-        list(seen.values()),
-        list(seen.keys()),
-        title="Model",
-        loc="center left",
-        bbox_to_anchor=(1.02, 0.5),
-    )
+    ax.set_title("MMLU avg (left-aligned checkpoints)")
+    ax.set_xlabel("Relative checkpoint (starts at 0)")
+    ax.set_ylabel(metric_key)
+    ax.legend(title="Model", loc="center left", bbox_to_anchor=(1.02, 0.5))
 
     plt.tight_layout()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_path, bbox_inches="tight")
-    print(f"[INFO] Saved MMLU avg subplot to {output_path}")
+    print(f"[INFO] Saved MMLU avg plot to {output_path}")
 
     if show:
         plt.show()
@@ -821,10 +780,10 @@ def main() -> None:
 
         # --- mmlu_avg (macro average across MMLU categories) ---
         if has_mmlu_avg:
-            ckpt_groups = collect_mmlu_avg_records(
+            avg_df = collect_mmlu_avg_records(
                 args.prune_evals_root, model_set, metric_key
             )
-            if not ckpt_groups:
+            if avg_df.empty:
                 print(f"[WARN] No MMLU data for metric {metric_key!r}; skipping mmlu_avg.")
             else:
                 metric_output_dir = base_output_dir / sanitize_filename(metric_key)
@@ -832,8 +791,8 @@ def main() -> None:
                     metric_output_dir
                     / f"mmlu_avg_{sanitize_filename(metric_key)}.png"
                 )
-                plot_mmlu_avg_subplots(
-                    ckpt_groups,
+                plot_mmlu_avg(
+                    avg_df,
                     output_file,
                     args.style,
                     args.show,
