@@ -20,22 +20,31 @@ import seaborn as sns
 # Auto-discover models/tasks on disk. Set to False to use the static lists below.
 AUTO_DISCOVER = True
 
-# Current prune_evals inventory (auto-generated at script creation time).
+# Current prune_evals inventory.
 # Key: model directory name.
-# Value: dict with "label" (display name) and optional "variants" (list of
-#   PRUNE_MODE_VARIANTS keys to scan). Omit "variants" to use all variants;
-#   set to [] to skip variant scanning (e.g. dense/small models with no pruning).
+# Value: dict with:
+#   "label"    — display name for plots/tables
+#   "variants" — list of {"suffix": ..., "label": ...} dicts specifying which
+#                task-directory suffixes to scan and their legend labels.
+#                Use [] for models with no pruning (dense, small MoE).
 MODEL_SPECS = {
     "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
         "label": "moe_reduce",
+        "variants": [
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keepk 32)"},
+        ],
     },
     "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212step30995-hf": {
         "label": "moe_1b4b_reduce",
-        "variants": [],
+        "variants": [
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keepk 32)"},
+        ],
     },
     "dense_1b_lr-4e-3_0213step30995-hf": {
         "label": "dense-lr4e-3",
-        "variants": [],
+        "variants": [
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keepk 32)"},
+        ],
     },
 
     "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
@@ -52,14 +61,13 @@ MODEL_SPECS = {
     },
     # "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-2_sharelb-1e-2_0214step30995-hf": {
     #     "label": "twolevelbatchlbreducedp512sharedexp4c2-lr4e-3-lb1e-2",
+    #     "variants": [
+    #         {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keepk 32)"},
+    #     ],
     # },
 
     # deprecated
-    # "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": {"label": "twolevelbatchlb-lr4e-3-lb1e-1"},
-    # "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118step30995-hf": {"label": "twolevelbatchlb-lr4e-3-lb1e-2"},
-    # "moe_1b14b_128experts_lb-1e-1_1217step30995-hf": {"label": "moe-lb1e-1"},
-    # "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121step30995-hf": {"label": "twolevelbatchlb"},
-    # "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123step30995-hf": {"label": "moe"},
+    # "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": {"label": "twolevelbatchlb-lr4e-3-lb1e-1", "variants": [{"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keepk 32)"}]},
     # "dense_1b_olmoe-mix_prenorm_noqknorm_1123step30995-hf": {"label": "dense", "variants": []},
     # "moe_1b4b_32experts_1224step30995-hf": {"label": "moe_1b4b", "variants": []},
 
@@ -247,35 +255,24 @@ MODEL_LABELS = {
 
 DEFAULT_OUTPUT_SUBDIR = "prune_eval_plots_0227"
 
-# Task-directory suffixes that represent alternate pruning strategies rather
-# than separate tasks. Each suffix maps to a label modifier appended to the
-# model's display name in plot legends.  Results from these variant dirs are
-# plotted as additional model lines on the base task's plot.
-PRUNE_MODE_VARIANTS: Dict[str, str] = {
-    # keepk 32 variants
-    "_keepk_32_bs-32_lr-5e-5_epoch-1": "(keepk 32)",
-    "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 32, layerwise)",
-    "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise_variable_first2_unpruned": "(keepk 32, lw first2 unpruned)",
-    # To add more keepk values, add entries like:
-    "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 8, layerwise)",
-    "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 16, layerwise)",
-    "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 64, layerwise)",
-    # "_keepk_16_bs-32_lr-5e-5_epoch-1": "(keepk 16)",
-    # "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 16, layerwise)",
-    # "_keepk_64_bs-32_lr-5e-5_epoch-1": "(keepk 64)",
-}
+# Collect all known variant suffixes from MODEL_SPECS for auto-discovery.
+_ALL_VARIANT_SUFFIXES: List[str] = sorted(
+    {
+        v["suffix"]
+        for spec in MODEL_SPECS.values()
+        for v in spec.get("variants", [])
+    },
+    key=len,
+    reverse=True,  # longest first for greedy stripping
+)
+
 
 def _get_model_variants(model_name: str) -> List[Tuple[str, str]]:
-    """Return (suffix, label) pairs for the variants to scan for a model.
-
-    If the model specifies "variants" in MODEL_SPECS, use those.
-    Otherwise fall back to all PRUNE_MODE_VARIANTS.
-    """
+    """Return (suffix, label) pairs for the variants to scan for a model."""
     spec = MODEL_SPECS.get(model_name)
-    if spec is not None and "variants" in spec:
-        return [(v["suffix"], v["label"]) for v in spec["variants"]]
-    # Default: all global variants.
-    return list(PRUNE_MODE_VARIANTS.items())
+    if spec is not None:
+        return [(v["suffix"], v["label"]) for v in spec.get("variants", [])]
+    return []
 
 # ============================================================================
 # END CONFIGURATION
@@ -335,12 +332,12 @@ def parse_args() -> argparse.Namespace:
 
 
 def _is_variant_task(task_name: str) -> bool:
-    return any(task_name.endswith(suffix) for suffix in PRUNE_MODE_VARIANTS)
+    return any(task_name.endswith(suffix) for suffix in _ALL_VARIANT_SUFFIXES)
 
 
 def _strip_variant_suffix(task_name: str) -> str:
-    """Strip the longest matching PRUNE_MODE_VARIANTS suffix to get the base task name."""
-    for suffix in sorted(PRUNE_MODE_VARIANTS, key=len, reverse=True):
+    """Strip the longest matching variant suffix to get the base task name."""
+    for suffix in _ALL_VARIANT_SUFFIXES:  # already sorted longest-first
         if task_name.endswith(suffix):
             return task_name[: -len(suffix)]
     return task_name
