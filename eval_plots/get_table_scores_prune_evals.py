@@ -22,12 +22,30 @@ import pandas as pd
 AUTO_DISCOVER = True
 
 MODEL_SPECS = {
-    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": "moe_reduce",
-    "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212step30995-hf": "moe_1b4b_reduce",
-    "dense_1b_lr-4e-3_0213step30995-hf": "dense-lr4e-3",
+    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
+        "label": "moe_reduce",
+    },
+    "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212step30995-hf": {
+        "label": "moe_1b4b_reduce",
+        "variants": [],
+    },
+    "dense_1b_lr-4e-3_0213step30995-hf": {
+        "label": "dense-lr4e-3",
+        "variants": [],
+    },
 
-    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1",
-    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213step30995-hf": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-2",
+    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
+        "label": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1",
+        "variants": [
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32, layerwise)"},
+        ],
+    },
+    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213step30995-hf": {
+        "label": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-2",
+        "variants": [
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32, layerwise)"},
+        ],
+    },
 }
 AVAILABLE_MODELS = list(MODEL_SPECS)
 
@@ -130,7 +148,11 @@ AVAILABLE_TASK_RUNS = list(TASK_SPECS)
 SELECTED_MODELS = list(AVAILABLE_MODELS)
 SELECTED_TASK_RUNS = list(AVAILABLE_TASK_RUNS)
 
-MODEL_LABELS = {model: label for model, label in MODEL_SPECS.items() if label}
+MODEL_LABELS = {
+    model: spec["label"]
+    for model, spec in MODEL_SPECS.items()
+    if spec.get("label")
+}
 
 DEFAULT_OUTPUT_SUBDIR = "prune_eval_tables"
 
@@ -148,6 +170,18 @@ PRUNE_MODE_VARIANTS: Dict[str, str] = {
     # "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 16, layerwise)",
     # "_keepk_64_bs-32_lr-5e-5_epoch-1": "(keepk 64)",
 }
+
+
+def _get_model_variants(model_name: str) -> List[Tuple[str, str]]:
+    """Return (suffix, label) pairs for the variants to scan for a model.
+
+    If the model specifies "variants" in MODEL_SPECS, use those.
+    Otherwise fall back to all PRUNE_MODE_VARIANTS.
+    """
+    spec = MODEL_SPECS.get(model_name)
+    if spec is not None and "variants" in spec:
+        return [(v["suffix"], v["label"]) for v in spec["variants"]]
+    return list(PRUNE_MODE_VARIANTS.items())
 
 # ============================================================================
 # END CONFIGURATION
@@ -313,7 +347,7 @@ def collect_table(
             if val is not None:
                 rows.setdefault(model_label, {})[task_run] = val
 
-            for suffix, label_mod in PRUNE_MODE_VARIANTS.items():
+            for suffix, label_mod in _get_model_variants(model_name):
                 variant_dir = model_dir / (task_run + suffix)
                 if not variant_dir.is_dir():
                     continue
@@ -344,17 +378,31 @@ MMLU_EXCLUDE_SETS: Dict[str, List[str]] = {
 
 
 def add_mmlu_avg_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Add mmlu_avg and filtered variants, placed at the front."""
+    """Add mmlu_avg and filtered variants, placed at the front.
+
+    Models missing any MMLU sub-task get NaN for mmlu_avg (and variants)
+    to avoid misleading partial averages.
+    """
     mmlu_cols = [c for c in df.columns if c in MMLU_SUBTASKS]
     if not mmlu_cols:
         return df
 
-    df["mmlu_avg"] = df[mmlu_cols].mean(axis=1)
+    # Warn about models with incomplete MMLU coverage.
+    for model_name in df.index:
+        missing = [c for c in mmlu_cols if pd.isna(df.loc[model_name, c])]
+        if missing:
+            print(
+                f"[WARN] Model {model_name!r} is missing {len(missing)}/{len(mmlu_cols)} "
+                f"MMLU sub-task(s): {missing} — mmlu_avg will be NaN"
+            )
+
+    # skipna=False: any missing sub-task → NaN for that model's average.
+    df["mmlu_avg"] = df[mmlu_cols].mean(axis=1, skipna=False)
 
     for col_name, excluded in MMLU_EXCLUDE_SETS.items():
         filtered = [c for c in mmlu_cols if c not in excluded]
         if filtered and len(filtered) < len(mmlu_cols):
-            df[col_name] = df[filtered].mean(axis=1)
+            df[col_name] = df[filtered].mean(axis=1, skipna=False)
 
     avg_cols = ["mmlu_avg"] + [
         c for c in MMLU_EXCLUDE_SETS if c in df.columns

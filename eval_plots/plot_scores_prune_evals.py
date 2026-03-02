@@ -21,31 +21,47 @@ import seaborn as sns
 AUTO_DISCOVER = True
 
 # Current prune_evals inventory (auto-generated at script creation time).
-# Key: model directory name. Value: label to show in plots (or None to use full name).
+# Key: model directory name.
+# Value: dict with "label" (display name) and optional "variants" (list of
+#   PRUNE_MODE_VARIANTS keys to scan). Omit "variants" to use all variants;
+#   set to [] to skip variant scanning (e.g. dense/small models with no pruning).
 MODEL_SPECS = {
-    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": "moe_reduce",
-    "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212step30995-hf": "moe_1b4b_reduce",
-    "dense_1b_lr-4e-3_0213step30995-hf": "dense-lr4e-3",
+    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
+        "label": "moe_reduce",
+    },
+    "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212step30995-hf": {
+        "label": "moe_1b4b_reduce",
+        "variants": [],
+    },
+    "dense_1b_lr-4e-3_0213step30995-hf": {
+        "label": "dense-lr4e-3",
+        "variants": [],
+    },
 
-    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1",
-    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213step30995-hf": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-2",
-    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301step30995-hf": "twolevelbatchlbreducedp512sharedexp1randpool-lr4e-3-lb1e-1",
-    # "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-2_sharelb-1e-2_0214step30995-hf": "twolevelbatchlbreducedp512sharedexp4c2-lr4e-3-lb1e-2",
+    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
+        "label": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1",
+        "variants": [
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32, layerwise)"},
+        ],
+    },
+    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213step30995-hf": {
+        "label": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-2",
+        "variants": [
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32, layerwise)"},
+        ],
+    },
+    # "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-2_sharelb-1e-2_0214step30995-hf": {
+    #     "label": "twolevelbatchlbreducedp512sharedexp4c2-lr4e-3-lb1e-2",
+    # },
 
-    # depricated
-    # "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": "twolevelbatchlb-lr4e-3-lb1e-1",
-    # "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118step30995-hf": "twolevelbatchlb-lr4e-3-lb1e-2",
-    # "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_0118step30995-hf": "twolevelbatchlb-lr4e-4-lb1e-1",
-    # "twolevelbatchlb-32_1b14b_lr-4e-4_lb-1e-1_poolsched_0119step30995-hf": "twolevelbatchlb-lr4e-4-lb1e-1-poolsched",
-    # "moe_1b14b_128experts_lb-1e-1_1217step30995-hf": "moe-lb1e-1",
-    # "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121step30995-hf": "twolevelbatchlb",
-    # "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123step30995-hf": "moe",
-    # "dense_1b_olmoe-mix_prenorm_noqknorm_1123step30995-hf": "dense",
-    # "moe_1b4b_32experts_1224step30995-hf": "moe_1b4b",
-
-    # "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-1_sharelb-1e-1_0214step30995-hf": "twolevelbatchlbreducedp512sharedexp4c2-lr4e-3-lb1e-1",
-    # "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-2_0207step30995-hf": "twolevelbatchlbreducedp512-lr4e-3-lb1e-2",
-    # "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": "twolevelbatchlbreducedp512-lr4e-3-lb1e-1",
+    # deprecated
+    # "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": {"label": "twolevelbatchlb-lr4e-3-lb1e-1"},
+    # "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118step30995-hf": {"label": "twolevelbatchlb-lr4e-3-lb1e-2"},
+    # "moe_1b14b_128experts_lb-1e-1_1217step30995-hf": {"label": "moe-lb1e-1"},
+    # "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121step30995-hf": {"label": "twolevelbatchlb"},
+    # "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123step30995-hf": {"label": "moe"},
+    # "dense_1b_olmoe-mix_prenorm_noqknorm_1123step30995-hf": {"label": "dense", "variants": []},
+    # "moe_1b4b_32experts_1224step30995-hf": {"label": "moe_1b4b", "variants": []},
 
 }
 AVAILABLE_MODELS = list(MODEL_SPECS)
@@ -223,7 +239,11 @@ SELECTED_TASK_RUNS = list(AVAILABLE_TASK_RUNS)
 
 # Optional display names for models (legend labels).
 # Key: model directory name. Value: label to show in plots.
-MODEL_LABELS = {model: label for model, label in MODEL_SPECS.items() if label}
+MODEL_LABELS = {
+    model: spec["label"]
+    for model, spec in MODEL_SPECS.items()
+    if spec.get("label")
+}
 
 DEFAULT_OUTPUT_SUBDIR = "prune_eval_plots_0227"
 
@@ -244,6 +264,18 @@ PRUNE_MODE_VARIANTS: Dict[str, str] = {
     # "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 16, layerwise)",
     # "_keepk_64_bs-32_lr-5e-5_epoch-1": "(keepk 64)",
 }
+
+def _get_model_variants(model_name: str) -> List[Tuple[str, str]]:
+    """Return (suffix, label) pairs for the variants to scan for a model.
+
+    If the model specifies "variants" in MODEL_SPECS, use those.
+    Otherwise fall back to all PRUNE_MODE_VARIANTS.
+    """
+    spec = MODEL_SPECS.get(model_name)
+    if spec is not None and "variants" in spec:
+        return [(v["suffix"], v["label"]) for v in spec["variants"]]
+    # Default: all global variants.
+    return list(PRUNE_MODE_VARIANTS.items())
 
 # ============================================================================
 # END CONFIGURATION
@@ -451,7 +483,7 @@ def collect_records(
                 task_run=task_run, rows=rows, task_labels=task_labels,
             )
 
-            for suffix, label_mod in PRUNE_MODE_VARIANTS.items():
+            for suffix, label_mod in _get_model_variants(model_name):
                 variant_task_dir = model_dir / (task_run + suffix)
                 if not variant_task_dir.is_dir():
                     continue
@@ -498,8 +530,9 @@ def collect_mmlu_avg_records(
     if df.empty:
         return {}
 
-    # Warn about models missing specific MMLU sub-tasks for this metric.
+    # Exclude models missing any MMLU sub-task to avoid misleading partial averages.
     # model keys in the df include variant suffixes, so check all unique keys.
+    complete_models = []
     for model_key in sorted(df["model"].unique()):
         model_label = df.loc[df["model"] == model_key, "model_label"].iloc[0]
         model_tasks = set(
@@ -508,9 +541,16 @@ def collect_mmlu_avg_records(
         missing = [t for t in MMLU_SUBTASKS if t not in model_tasks]
         if missing:
             print(
-                f"[WARN] Model {model_label!r} is missing {len(missing)} MMLU "
+                f"[WARN] Excluding model {model_label!r} from mmlu_avg: "
+                f"missing {len(missing)}/{len(MMLU_SUBTASKS)} MMLU "
                 f"sub-task(s) for metric={metric_key!r}: {missing}"
             )
+        else:
+            complete_models.append(model_key)
+
+    df = df[df["model"].isin(complete_models)]
+    if df.empty:
+        return {}
 
     # Assign a 1-based ordinal checkpoint index per (model, subtask).
     df = df.sort_values(["model", "task_run", "checkpoint"])
