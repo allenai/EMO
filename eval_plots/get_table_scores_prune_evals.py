@@ -32,94 +32,94 @@ MODEL_SPECS = {
 AVAILABLE_MODELS = list(MODEL_SPECS)
 
 TASK_SPECS = {
-    "arc_challenge_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "arc_challenge": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "arc_easy_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "arc_easy": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "boolq_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "boolq": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "coqa_0shot_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "coqa_0shot": [
         "recall", "f1", "primary_score",
     ],
-    "csqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "csqa": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "gsm8k_generation_0shot_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "gsm8k_generation_0shot": [
         "exact_match", "primary_score",
     ],
-    "gsm8k_perplexity_0shot_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "gsm8k_perplexity_0shot": [
         "bits_per_byte", "primary_score",
     ],
-    "hellaswag_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "hellaswag": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "openbookqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "openbookqa": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "piqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "piqa": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "socialiqa_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "socialiqa": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "squad_0shot_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "squad_0shot": [
         "recall", "f1", "primary_score",
     ],
-    "winogrande_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "winogrande": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "mmlu_biology_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "mmlu_biology": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "mmlu_business_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "mmlu_business": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "mmlu_chemistry_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "mmlu_chemistry": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "mmlu_computer_science_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "mmlu_computer_science": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "mmlu_culture_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "mmlu_culture": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "mmlu_economics_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "mmlu_economics": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "mmlu_engineering_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "mmlu_engineering": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "mmlu_geography_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "mmlu_geography": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "mmlu_health_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "mmlu_health": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "mmlu_history_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "mmlu_history": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "mmlu_law_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "mmlu_law": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "mmlu_math_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "mmlu_math": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "mmlu_other_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "mmlu_other": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "mmlu_philosophy_cat_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "mmlu_philosophy_cat": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "mmlu_physics_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "mmlu_physics": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "mmlu_politics_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "mmlu_politics": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    "mmlu_psychology_keepk_32_bs-32_lr-5e-5_epoch-1": [
+    "mmlu_psychology": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
 }
@@ -135,8 +135,14 @@ MODEL_LABELS = {model: label for model, label in MODEL_SPECS.items() if label}
 DEFAULT_OUTPUT_SUBDIR = "prune_eval_tables"
 
 PRUNE_MODE_VARIANTS: Dict[str, str] = {
-    "_prunemode-layerwise": "(layerwise)",
-    "_prunemode-layerwise_variable_first2_unpruned": "(layerwise first2 unpruned)",
+    # keepk 32 variants
+    "_keepk_32_bs-32_lr-5e-5_epoch-1": "(keepk 32)",
+    "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 32, layerwise)",
+    "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise_variable_first2_unpruned": "(keepk 32, lw first2 unpruned)",
+    # To add more keepk values, add entries like:
+    # "_keepk_16_bs-32_lr-5e-5_epoch-1": "(keepk 16)",
+    # "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise": "(keepk 16, layerwise)",
+    # "_keepk_64_bs-32_lr-5e-5_epoch-1": "(keepk 64)",
 }
 
 # ============================================================================
@@ -193,15 +199,23 @@ def _is_variant_task(task_name: str) -> bool:
     return any(task_name.endswith(suffix) for suffix in PRUNE_MODE_VARIANTS)
 
 
+def _strip_variant_suffix(task_name: str) -> str:
+    """Strip the longest matching PRUNE_MODE_VARIANTS suffix to get the base task name."""
+    for suffix in sorted(PRUNE_MODE_VARIANTS, key=len, reverse=True):
+        if task_name.endswith(suffix):
+            return task_name[: -len(suffix)]
+    return task_name
+
+
 def discover_catalog(prune_evals_root: Path) -> Tuple[List[str], List[str]]:
     models = sorted([p.name for p in prune_evals_root.iterdir() if p.is_dir()])
     task_runs = sorted(
         {
-            t.name
+            _strip_variant_suffix(t.name)
             for model_dir in prune_evals_root.iterdir()
             if model_dir.is_dir()
             for t in model_dir.iterdir()
-            if t.is_dir() and not _is_variant_task(t.name)
+            if t.is_dir()
         }
     )
     return models, task_runs
@@ -315,12 +329,12 @@ def collect_table(
 
 MMLU_EXCLUDE_SETS: Dict[str, List[str]] = {
     "mmlu_avg_no_other": [
-        "mmlu_other_keepk_32_bs-32_lr-5e-5_epoch-1",
+        "mmlu_other",
     ],
     "mmlu_avg_no_other_hist_phil": [
-        "mmlu_other_keepk_32_bs-32_lr-5e-5_epoch-1",
-        "mmlu_history_keepk_32_bs-32_lr-5e-5_epoch-1",
-        "mmlu_philosophy_cat_keepk_32_bs-32_lr-5e-5_epoch-1",
+        "mmlu_other",
+        "mmlu_history",
+        "mmlu_philosophy_cat",
     ],
 }
 
