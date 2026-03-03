@@ -8,7 +8,7 @@
 NUM_NEW_EXPERTS=8 # 4 math + 4 code experts
 TOTAL_EXPERTS=$((128+${NUM_NEW_EXPERTS}))
 
-MERGED_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/extensions/merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise"
+MERGED_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise"
 
 
 NUM_BILLION_TOKENS=1
