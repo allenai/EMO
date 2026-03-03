@@ -205,36 +205,8 @@ def convert_checkpoint_to_hf(
             vocab_size=vocab_size,
             work_dir=work_dir,
             save_overwrite=True,
+            extra_hf_state_dict=extracted_bias if extracted_bias else None,
         )
-
-        # Inject extracted dense bias keys into the saved HF model
-        if extracted_bias:
-            log.info(f"Injecting {len(extracted_bias)} dense bias keys into saved HF model")
-            from safetensors.torch import load_file, save_file
-            from pathlib import Path as _Path
-
-            output_dir = _Path(output_path)
-            # Load all safetensors shards, inject bias keys, re-save
-            shard_files = sorted(output_dir.glob("*.safetensors"))
-            # Add bias keys to the first shard
-            first_shard = shard_files[0]
-            shard_state = load_file(first_shard)
-            if dtype is not None:
-                extracted_bias = {k: v.to(dtype=dtype.as_pt()) for k, v in extracted_bias.items()}
-            shard_state.update(extracted_bias)
-            save_file(shard_state, first_shard)
-
-            # Update the model index if it exists
-            index_file = output_dir / "model.safetensors.index.json"
-            if index_file.exists():
-                with open(index_file, "r") as f:
-                    index = json.load(f)
-                for bias_key in extracted_bias:
-                    index["weight_map"][bias_key] = first_shard.name
-                with open(index_file, "w") as f:
-                    json.dump(index, f, indent=2)
-
-            log.info(f"Successfully injected dense bias keys")
 
         # checkpointer.save(output_path, train_module, train_state={}, format=output_format)
         log.info(f"Successfully saved converted model to '{output_path}'")
