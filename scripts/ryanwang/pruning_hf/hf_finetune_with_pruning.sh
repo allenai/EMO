@@ -318,13 +318,19 @@ for checkpoint in "${all_checkpoints[@]}"; do
     echo "Evaluating checkpoint: $checkpoint"
     # get the checkpoint number
     checkpoint_num=$(basename "$checkpoint" | sed 's/checkpoint-//')
+
+    EVAL_BATCH_SIZE=32
+    if [[ $TASK == *"history"* ]]; then
+        EVAL_BATCH_SIZE=4
+    fi
+
     python -m src.scripts.eval.launch_eval \
         --model "$checkpoint" \
         --model-type hf \
         --task "$TASK-pruned" \
         --pruned_split "test" \
         --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
-        --batch-size 32 \
+        --batch-size $EVAL_BATCH_SIZE \
         --gpus "$NUM_GPUS"
 
 done
