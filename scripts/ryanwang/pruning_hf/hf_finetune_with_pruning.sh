@@ -320,8 +320,14 @@ for checkpoint in "${all_checkpoints[@]}"; do
     checkpoint_num=$(basename "$checkpoint" | sed 's/checkpoint-//')
 
     EVAL_BATCH_SIZE=32
+    # prevent oom for mmlu_history
     if [[ $TASK == *"history"* ]]; then
+      # if keepk is greater than 32, set eval batch size to 2
+      if [ "$PRUNE_KEEP_K" -gt 32 ]; then
+          EVAL_BATCH_SIZE=2
+      else
         EVAL_BATCH_SIZE=4
+      fi
     fi
 
     python -m src.scripts.eval.launch_eval \
