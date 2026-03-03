@@ -5,9 +5,12 @@ The shared expert processes all tokens (no routing) and its output is combined
 with the routed expert output using weighted averaging:
     1/(top_k+1) * shared + top_k/(top_k+1) * routed
 
-The shared expert weights are initialized from a specified base expert.
+The shared expert weights are initialized either from a single base expert
+or from the average of multiple specified experts.
 
-Example:
+Examples:
+
+Initialize from a single expert:
 
 ```bash
 python src/scripts/akshitab/add_finegrained_expert/add_shared_expert.py \
@@ -15,13 +18,24 @@ python src/scripts/akshitab/add_finegrained_expert/add_shared_expert.py \
     -o ${NEW_MODEL_PATH} \
     --shared-expert-init-idx 0
 ```
+
+Initialize from the average of experts 0, 3, and 7:
+
+```bash
+python src/scripts/akshitab/add_finegrained_expert/add_shared_expert.py \
+    -c ${BASE_MODEL_PATH} \
+    -o ${NEW_MODEL_PATH} \
+    --shared-expert-init-idx 0 3 7
+```
 """
 
 import argparse
 import json
 import logging
 import os
+from typing import List
 
+import torch
 
 from olmo_core.distributed.checkpoint import (
     load_model_and_optim_state,
@@ -38,7 +52,7 @@ logger = logging.getLogger(__name__)
 def add_shared_expert(
     checkpoint_path: str,
     save_path: str,
-    shared_expert_init_idx: int,
+    shared_expert_init_indices: List[int],
 ):
     # Load model config
     old_config_path = os.path.join(checkpoint_path, "config.json")
@@ -56,12 +70,16 @@ def add_shared_expert(
 
     num_experts = moe_config.num_experts
     hidden_size = moe_config.hidden_size
-    assert (
-        0 <= shared_expert_init_idx < num_experts
-    ), f"shared_expert_init_idx {shared_expert_init_idx} out of range [0, {num_experts})"
+    for idx in shared_expert_init_indices:
+        assert 0 <= idx < num_experts, (
+            f"shared_expert_init_idx {idx} out of range [0, {num_experts})"
+        )
 
     logger.info(f"Model config: {old_model_config}")
-    logger.info(f"Initializing shared expert from expert {shared_expert_init_idx}")
+    if len(shared_expert_init_indices) == 1:
+        logger.info(f"Initializing shared expert from expert {shared_expert_init_indices[0]}")
+    else:
+        logger.info(f"Initializing shared expert from average of experts {shared_expert_init_indices}")
 
     # Load old model weights
     logger.info(f"Loading model weights from {checkpoint_path}")
@@ -96,13 +114,14 @@ def add_shared_expert(
         else:
             logger.warning(f"Parameter {name} not found in new model")
 
-    # Initialize shared_mlp weights from the specified expert
+    # Initialize shared_mlp weights from the specified expert(s)
     # DroplessMoEMLP stores weights as (num_experts * hidden_size, d_model)
     # viewed as (num_experts, hidden_size, d_model).
     # FeedForward uses nn.Linear:
     #   w1.weight: (hidden_size, d_model) - same layout as expert, direct copy
     #   w2.weight: (d_model, hidden_size) - transposed vs expert, needs .T
     #   w3.weight: (hidden_size, d_model) - same layout as expert, direct copy
+    old_params_dict = dict(old_model.named_parameters())
     for name, param in new_model.named_parameters():
         if "shared_mlp" not in name:
             continue
@@ -112,23 +131,24 @@ def add_shared_expert(
         #   -> "blocks.0.feed_forward_moe.experts.mlp.w1"
         expert_name = name.replace("shared_mlp.", "experts.mlp.").replace(".weight", "")
 
-        if expert_name not in dict(old_model.named_parameters()):
+        if expert_name not in old_params_dict:
             logger.warning(f"Could not find expert parameter {expert_name} for {name}")
             continue
 
-        expert_param = dict(old_model.named_parameters())[expert_name]
+        expert_param = old_params_dict[expert_name]
 
-        # Extract the single expert's weights
+        # Extract expert weights and average if multiple indices
         # Expert param shape: (num_experts * hidden_size, d_model)
-        # -> view as (num_experts, hidden_size, d_model) -> select [init_idx]
-        expert_weight = expert_param.view(num_experts, hidden_size, -1)[shared_expert_init_idx]
+        # -> view as (num_experts, hidden_size, d_model) -> select [indices]
+        all_expert_weights = expert_param.view(num_experts, hidden_size, -1)
+        expert_weight = all_expert_weights[shared_expert_init_indices].mean(dim=0)
 
         # Check if transpose is needed (w2: expert is (hidden_size, d_model), linear expects (d_model, hidden_size))
         if expert_weight.shape == param.shape:
-            logger.info(f"Copying {expert_name}[{shared_expert_init_idx}] -> {name} (direct)")
+            logger.info(f"Copying experts {shared_expert_init_indices} -> {name} (direct)")
             param.data.copy_(expert_weight)
         elif expert_weight.T.shape == param.shape:
-            logger.info(f"Copying {expert_name}[{shared_expert_init_idx}] -> {name} (transposed)")
+            logger.info(f"Copying experts {shared_expert_init_indices} -> {name} (transposed)")
             param.data.copy_(expert_weight.T)
         else:
             raise ValueError(
@@ -171,8 +191,10 @@ def parse_args():
     parser.add_argument(
         "--shared-expert-init-idx",
         type=int,
+        nargs="+",
         required=True,
-        help="Index of the base expert to copy weights from for the shared expert",
+        help="Index (or indices) of the base expert(s) to initialize the shared expert from. "
+        "If multiple indices are provided, the shared expert is initialized with their average.",
     )
     return parser.parse_args()
 
@@ -183,5 +205,5 @@ if __name__ == "__main__":
     add_shared_expert(
         checkpoint_path=args.checkpoint_path,
         save_path=args.save_path,
-        shared_expert_init_idx=args.shared_expert_init_idx,
+        shared_expert_init_indices=args.shared_expert_init_idx,
     )
