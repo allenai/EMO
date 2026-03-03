@@ -338,6 +338,19 @@ def greedy_prune_layerwise(
     if hasattr(model.config, "num_local_experts"):
         model.config.num_local_experts = prune_keep_k
     model.config.num_shared_experts = num_shared_experts
+
+    # Update per-layer expert counts for densefirst (mixed dense/MoE) models
+    if hasattr(model.config, "num_experts_per_layer") and model.config.num_experts_per_layer is not None:
+        model.config.num_experts_per_layer = [
+            prune_keep_k if n > 0 else 0
+            for n in model.config.num_experts_per_layer
+        ]
+    if hasattr(model.config, "num_shared_experts_per_layer") and model.config.num_shared_experts_per_layer is not None:
+        model.config.num_shared_experts_per_layer = [
+            num_shared_experts if n > 0 else 0
+            for n in model.config.num_shared_experts_per_layer
+        ]
+
     # Enable router logit output so load-balancing loss is active during finetuning
     model.config.output_router_logits = True
 
