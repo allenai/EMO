@@ -6,11 +6,11 @@ BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 MODELS=(
 #    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
-    "twolevelbatchlbreducedp512sharedexp1densefirst-32_1b14b_lr-4e-3_lb-1e-1_0227/step30995-hf"
+#    "twolevelbatchlbreducedp512sharedexp1densefirst-32_1b14b_lr-4e-3_lb-1e-1_0227/step30995-hf"
 #    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213/step30995-hf"
 #    "dense_1b_lr-4e-3_0213/step30995-hf"
 #    "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212/step30995-hf"
-#    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
+    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
 
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
 #    "moe_1b14b_128experts_lb-1e-1_1217/step30995-hf"
@@ -34,7 +34,7 @@ model_type=hf
 #               "layerwise"           -- greedy layer-by-layer pruning (each layer conditioned
 #                                        on already-pruned earlier layers)
 #               "layerwise_variable"  -- greedy layerwise with per-layer keep-k schedule
-PRUNING_MODE="layerwise"
+PRUNING_MODE="global"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64)
@@ -52,10 +52,10 @@ TASK_GROUPS_LIST=(
   ######### few-shot ##########
   # MC9 tasks
 #  "arc_easy"
-  "arc_challenge"
-  "boolq"
-  "csqa"
-  "hellaswag"
+#  "arc_challenge"
+#  "boolq"
+#  "csqa"
+#  "hellaswag"
 #  "openbookqa"
 #  "piqa"
 #  "socialiqa"
@@ -75,7 +75,7 @@ TASK_GROUPS_LIST=(
 #  "mmlu_engineering"
 #  "mmlu_geography"
 #  "mmlu_health"
-#  "mmlu_history"
+  "mmlu_history"
 #  "mmlu_law"
 #  "mmlu_math"
 #  "mmlu_other"
