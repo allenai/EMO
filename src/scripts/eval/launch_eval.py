@@ -363,14 +363,16 @@ def launch_eval(args_dict: dict):
 
     # num gpus currently auto-detected when running locally
     # gpus = args_dict.get("gpus", 0)
-    batch_size = args_dict.get("batch_size", 16)
+    batch_size = args_dict.get("batch_size", None)
 
     # Get extra args for Ai2 internal compute resources
     if HAS_AI2_INTERNAL:
         internal_args = process_internal_args(
             args_dict, model_config, model_gantry_args, task_configs, tasks
         )
-        batch_size = internal_args.get("batch_size", batch_size)
+        # Only use internal batch_size if user didn't explicitly pass one
+        if batch_size is None:
+            batch_size = internal_args.get("batch_size", 16)
 
     model_name = model_config.pop("model")
     run_eval_args = {

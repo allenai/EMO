@@ -177,6 +177,26 @@ def convert_checkpoint_to_hf(
                     f"MoE is {moe_config.name}, which may drop activations and cause validation to fail. You can try mitigating this by setting '--moe-capacity-factor' to a higher value."
                 )
 
+        # Extract dense feed_forward bias keys before conversion.
+        # Some densefirst models were accidentally trained with bias=True on dense MLPs
+        # (OLMo Core's FeedForwardConfig defaults bias to True when not explicitly set).
+        # The template-based state converter cannot handle these because bias mappings
+        # would be expanded for all layers (including MoE layers that don't have them).
+        # We pop them out here and inject them into the saved HF model afterward.
+        dense_bias_key_map = {
+            "feed_forward.w1.bias": "mlp.gate_proj.bias",
+            "feed_forward.w2.bias": "mlp.down_proj.bias",
+            "feed_forward.w3.bias": "mlp.up_proj.bias",
+        }
+        extracted_bias = {}
+        for k in list(model_state_dict.keys()):
+            for olmo_suffix, hf_suffix in dense_bias_key_map.items():
+                if k.endswith(olmo_suffix):
+                    layer_num = k.split(".")[1]
+                    new_key = f"model.layers.{layer_num}.{hf_suffix}"
+                    extracted_bias[new_key] = model_state_dict.pop(k)
+                    log.info(f"Extracted dense bias key {k} -> {new_key}")
+
         save_hf_model(
             output_path,
             model_state_dict,
@@ -186,6 +206,36 @@ def convert_checkpoint_to_hf(
             work_dir=work_dir,
             save_overwrite=True,
         )
+
+        # Inject extracted dense bias keys into the saved HF model
+        if extracted_bias:
+            log.info(f"Injecting {len(extracted_bias)} dense bias keys into saved HF model")
+            from safetensors.torch import load_file, save_file
+            from pathlib import Path as _Path
+
+            output_dir = _Path(output_path)
+            # Load all safetensors shards, inject bias keys, re-save
+            shard_files = sorted(output_dir.glob("*.safetensors"))
+            # Add bias keys to the first shard
+            first_shard = shard_files[0]
+            shard_state = load_file(first_shard)
+            if dtype is not None:
+                extracted_bias = {k: v.to(dtype=dtype.as_pt()) for k, v in extracted_bias.items()}
+            shard_state.update(extracted_bias)
+            save_file(shard_state, first_shard)
+
+            # Update the model index if it exists
+            index_file = output_dir / "model.safetensors.index.json"
+            if index_file.exists():
+                with open(index_file, "r") as f:
+                    index = json.load(f)
+                for bias_key in extracted_bias:
+                    index["weight_map"][bias_key] = first_shard.name
+                with open(index_file, "w") as f:
+                    json.dump(index, f, indent=2)
+
+            log.info(f"Successfully injected dense bias keys")
+
         # checkpointer.save(output_path, train_module, train_state={}, format=output_format)
         log.info(f"Successfully saved converted model to '{output_path}'")
 

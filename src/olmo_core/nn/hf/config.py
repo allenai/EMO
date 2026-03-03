@@ -106,6 +106,8 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
     num_shared_experts_per_layer = []
     has_dense_layers = False
 
+    dense_mlp_bias = False
+
     for b in blocks:
         if isinstance(b, TransformerBlock) and not isinstance(b, (MoETransformerBlock, MoEReorderedNormTransformerBlock)):
             # Dense layer
@@ -114,6 +116,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
             num_shared_experts_per_layer.append(0)
             if dense_intermediate_size is None:
                 dense_intermediate_size = b.feed_forward.hidden_size
+                dense_mlp_bias = b.feed_forward.w1.bias is not None
         else:
             # MoE layer
             num_experts_per_layer.append(b.feed_forward_moe.router.num_experts)
@@ -159,6 +162,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
             num_experts_per_layer=num_experts_per_layer if has_dense_layers else None,
             num_shared_experts_per_layer=num_shared_experts_per_layer if has_dense_layers else None,
             dense_intermediate_size=dense_intermediate_size,
+            dense_mlp_bias=dense_mlp_bias,
         )
     elif (
         isinstance(block, MoETransformerBlock)
