@@ -11,4 +11,4 @@ echo $SAVE_PATH
 python src/scripts/akshitab/add_finegrained_expert/add_shared_expert.py \
     -c ${BASE_MODEL_PATH} \
     -o ${SAVE_PATH} \
-    --shared-expert_init-idx ${EXPERT_INIT}
+    --shared-expert-init-idx ${EXPERT_INIT}
