@@ -165,7 +165,7 @@ for MODEL in "${MODELS[@]}"; do
         echo "  num_shared_experts: ${num_shared_experts}"
 
         # if the model is dense or 1b4b, we skip activation and pruning
-        if [[ $MODEL == *"dense"* || $MODEL == *"1b4b"* ]]; then
+        if [[ $MODEL == *"dense_1b"* || $MODEL == *"1b4b"* ]]; then
             echo "  Skipping activation computation and pruning for model: $MODEL"
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
 #                --pruned-model ${BASE_DIR}/models/${MODEL} \
