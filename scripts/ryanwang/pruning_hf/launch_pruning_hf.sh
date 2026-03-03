@@ -51,11 +51,11 @@ KEEP_K_PER_LAYER="128,128,32,32,32,32,32,32,32,32,32,32,32,32,32,32"
 TASK_GROUPS_LIST=(
   ######### few-shot ##########
   # MC9 tasks
-  "arc_easy"
-#  "arc_challenge"
-#  "boolq"
-#  "csqa"
-#  "hellaswag"
+#  "arc_easy"
+  "arc_challenge"
+  "boolq"
+  "csqa"
+  "hellaswag"
 #  "openbookqa"
 #  "piqa"
 #  "socialiqa"
