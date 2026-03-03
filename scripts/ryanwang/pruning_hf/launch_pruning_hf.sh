@@ -305,9 +305,7 @@ for MODEL in "${MODELS[@]}"; do
                     --batch-size ${batch_size} \
                     --micro-batch-size ${micro_batch_size} \
                     --num-epochs ${num_epochs} \
-                    --num-shared-experts ${num_shared_experts} \
-                    --skip-activation \
-                    --skip-prune
+                    --num-shared-experts ${num_shared_experts}
                 "
         else
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \

@@ -324,16 +324,8 @@ for checkpoint in "${all_checkpoints[@]}"; do
     # prevent oom for mmlu_history
     if [[ $TASK == *"history"* ]]; then
       # if keepk is greater than 32, set eval batch size to 2
-      if [ "$PRUNE_KEEP_K" -gt 32 ]; then
-        echo "Setting eval batch size to 1 due to large number of experts"
-          EVAL_BATCH_SIZE=1
-      else
-        echo "Setting eval batch size to 4 for history task"
-        EVAL_BATCH_SIZE=4
-      fi
-    else
-      echo "Setting eval batch size to 32 for non-history task: $TASK"
-      EVAL_BATCH_SIZE=32
+      echo "Setting eval batch size to 4 for history task"
+      EVAL_BATCH_SIZE=4
     fi
 
 
