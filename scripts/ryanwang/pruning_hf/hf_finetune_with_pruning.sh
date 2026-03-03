@@ -316,6 +316,7 @@ all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
 
 for checkpoint in "${all_checkpoints[@]}"; do
     echo "Evaluating checkpoint: $checkpoint"
+    echo "HELLO? "
     # get the checkpoint number
     checkpoint_num=$(basename "$checkpoint" | sed 's/checkpoint-//')
 
@@ -330,7 +331,11 @@ for checkpoint in "${all_checkpoints[@]}"; do
         echo "Setting eval batch size to 4 for history task"
         EVAL_BATCH_SIZE=4
       fi
+    else
+      echo "Setting eval batch size to 32 for non-history task: $TASK"
+      EVAL_BATCH_SIZE=32
     fi
+
 
     python -m src.scripts.eval.launch_eval \
         --model "$checkpoint" \
