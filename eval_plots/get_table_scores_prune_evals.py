@@ -24,18 +24,21 @@ AUTO_DISCOVER = True
 MODEL_SPECS = {
     "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
         "label": "moe_reduce",
+        "baseline": True,
         "variants": [
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keepk 32)"},
         ],
     },
     "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212step30995-hf": {
         "label": "moe_1b4b_reduce",
+        "baseline": True,
         "variants": [
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
         ],
     },
     "dense_1b_lr-4e-3_0213step30995-hf": {
         "label": "dense-lr4e-3",
+        "baseline": True,
         "variants": [
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
         ],
@@ -43,6 +46,7 @@ MODEL_SPECS = {
 
     "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
         "label": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1",
+        "baseline": True,
         "variants": [
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32, layerwise)"},
         ],
@@ -50,6 +54,7 @@ MODEL_SPECS = {
 
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301step30995-hf": {
         "label": "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32-lr4e-3-lb1e-1",
+        "baseline": True,
         "variants": [
             {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8, layerwise)"},
             {"suffix": "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 16, layerwise)"},
@@ -60,6 +65,7 @@ MODEL_SPECS = {
 
     "twolevelbatchlbreducedp512sharedexp1densefirst-32_1b14b_lr-4e-3_lb-1e-1_0227step30995-hf": {
         "label": "twolevelbatchlbreducedp512sharedexp1densefirst-lr4e-3-lb1e-1",
+        "baseline": True,
         "variants": [
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32, layerwise)"},
         ],
@@ -263,10 +269,46 @@ def discover_catalog(prune_evals_root: Path) -> Tuple[List[str], List[str]]:
             for model_dir in prune_evals_root.iterdir()
             if model_dir.is_dir()
             for t in model_dir.iterdir()
-            if t.is_dir()
+            if t.is_dir() and t.name != "original_model"
         }
     )
     return models, task_runs
+
+
+def _load_baseline_metric(
+    prune_evals_root: Path,
+    model_name: str,
+    task_run: str,
+    metric_key: str,
+) -> Optional[float]:
+    """Load the baseline (unpruned, unfinetuned) metric for a model+task.
+
+    Looks in ``<model>/original_model/<task>/results/checkpoint-0/``.
+    """
+    ckpt_dir = (
+        prune_evals_root / model_name / "original_model" / task_run
+        / "results" / "checkpoint-0"
+    )
+    if not ckpt_dir.is_dir():
+        return None
+
+    metrics_files = sorted(ckpt_dir.glob("task-*-metrics.json"))
+    if not metrics_files:
+        return None
+
+    data = read_metrics(metrics_files[0])
+    if data is None:
+        return None
+
+    metric_values = data.get("metrics")
+    if not isinstance(metric_values, dict):
+        return None
+
+    value = metric_values.get(metric_key)
+    try:
+        return float(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
 
 
 def read_metrics(metrics_path: Path) -> Optional[Dict[str, object]]:
@@ -342,7 +384,7 @@ def collect_table(
 ) -> pd.DataFrame:
     """Build a models x tasks table of final-checkpoint metric values.
 
-    Also includes variant (e.g. layerwise) rows automatically.
+    Also includes variant (e.g. layerwise) rows and baseline (original) rows.
     """
     rows: Dict[str, Dict[str, Optional[float]]] = {}
 
@@ -351,6 +393,22 @@ def collect_table(
         if not model_dir.is_dir():
             continue
         model_label = MODEL_LABELS.get(model_name, model_name)
+
+        # Baseline (original model) row
+        spec = MODEL_SPECS.get(model_name)
+        if spec is not None and spec.get("baseline"):
+            baseline_label = model_label + " (original)"
+            for task_run in task_runs:
+                val = _load_baseline_metric(
+                    prune_evals_root, model_name, task_run, metric_key
+                )
+                if val is not None:
+                    rows.setdefault(baseline_label, {})[task_run] = val
+                else:
+                    print(
+                        f"[WARN] Baseline data missing for model {model_label!r}, "
+                        f"task={task_run!r}, metric={metric_key!r}"
+                    )
 
         for task_run in task_runs:
             val = _read_final_metric(model_dir / task_run, metric_key)

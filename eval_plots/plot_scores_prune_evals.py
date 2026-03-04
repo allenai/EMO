@@ -30,18 +30,21 @@ AUTO_DISCOVER = True
 MODEL_SPECS = {
     "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
         "label": "moe_reduce",
+        "baseline": True,
         "variants": [
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keepk 32)"},
         ],
     },
     "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212step30995-hf": {
         "label": "moe_1b4b_reduce",
+        "baseline": True,
         "variants": [
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
         ],
     },
     "dense_1b_lr-4e-3_0213step30995-hf": {
         "label": "dense-lr4e-3",
+        "baseline": True,
         "variants": [
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
         ],
@@ -49,6 +52,7 @@ MODEL_SPECS = {
 
     "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
         "label": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1",
+        "baseline": True,
         "variants": [
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32, layerwise)"},
         ],
@@ -56,6 +60,7 @@ MODEL_SPECS = {
 
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301step30995-hf": {
         "label": "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32-lr4e-3-lb1e-1",
+        "baseline": True,
         "variants": [
             {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8, layerwise)"},
             {"suffix": "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 16, layerwise)"},
@@ -66,6 +71,7 @@ MODEL_SPECS = {
 
     "twolevelbatchlbreducedp512sharedexp1densefirst-32_1b14b_lr-4e-3_lb-1e-1_0227step30995-hf": {
         "label": "twolevelbatchlbreducedp512sharedexp1densefirst-lr4e-3-lb1e-1",
+        "baseline": True,
         "variants": [
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32, layerwise)"},
         ],
@@ -376,10 +382,46 @@ def discover_catalog(prune_evals_root: Path) -> Tuple[List[str], List[str]]:
             for model_dir in prune_evals_root.iterdir()
             if model_dir.is_dir()
             for t in model_dir.iterdir()
-            if t.is_dir()
+            if t.is_dir() and t.name != "original_model"
         }
     )
     return models, task_runs
+
+
+def _load_baseline_metric(
+    prune_evals_root: Path,
+    model_name: str,
+    task_run: str,
+    metric_key: str,
+) -> Optional[float]:
+    """Load the baseline (unpruned, unfinetuned) metric for a model+task.
+
+    Looks in ``<model>/original_model/<task>/results/checkpoint-0/``.
+    """
+    ckpt_dir = (
+        prune_evals_root / model_name / "original_model" / task_run
+        / "results" / "checkpoint-0"
+    )
+    if not ckpt_dir.is_dir():
+        return None
+
+    metrics_files = sorted(ckpt_dir.glob("task-*-metrics.json"))
+    if not metrics_files:
+        return None
+
+    metrics = read_metrics(metrics_files[0])
+    if metrics is None:
+        return None
+
+    metric_values = metrics.get("metrics")
+    if not isinstance(metric_values, dict):
+        return None
+
+    value = metric_values.get(metric_key)
+    try:
+        return float(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
 
 
 def sanitize_filename(value: str) -> str:
@@ -601,6 +643,7 @@ def plot_mmlu_avg(
     style: str,
     show: bool,
     metric_key: str,
+    baselines: Optional[Dict[str, float]] = None,
 ) -> None:
     """Plot one left-aligned MMLU macro-average curve per model."""
     if avg_df.empty:
@@ -616,6 +659,13 @@ def plot_mmlu_avg(
     palette = sns.color_palette("colorblind", n_colors=len(all_labels))
     color_map = {label: palette[i] for i, label in enumerate(all_labels)}
 
+    # Build base label -> color map for baseline lines
+    base_color_map: Dict[str, object] = {}
+    for plotted_label, color in color_map.items():
+        for base_label in MODEL_LABELS.values():
+            if plotted_label.startswith(base_label) and base_label not in base_color_map:
+                base_color_map[base_label] = color
+
     for model_label in sorted(avg_df["model_label"].unique()):
         model_df = avg_df[
             avg_df["model_label"] == model_label
@@ -629,6 +679,20 @@ def plot_mmlu_avg(
             color=color_map[model_label],
             label=_wrap_label(model_label),
         )
+
+    # Draw baseline horizontal lines
+    if baselines:
+        for model_name, baseline_val in baselines.items():
+            model_label = MODEL_LABELS.get(model_name, model_name)
+            baseline_color = base_color_map.get(model_label, "gray")
+            ax.axhline(
+                y=baseline_val,
+                color=baseline_color,
+                linestyle=":",
+                linewidth=1.5,
+                alpha=0.7,
+                label=_wrap_label(f"{model_label} (original)"),
+            )
 
     ax.set_title("MMLU avg (left-aligned checkpoints)")
     ax.set_xlabel("Relative checkpoint (starts at 0)")
@@ -656,6 +720,7 @@ def plot_task(
     metric_key: str,
     expected_models: Optional[Sequence[str]] = None,
     task_metrics: Optional[Sequence[str]] = None,
+    baselines: Optional[Dict[str, float]] = None,
 ) -> None:
     task_df = df[df["task_run"] == task_run]
     if task_df.empty:
@@ -691,6 +756,14 @@ def plot_task(
         for idx, model in enumerate(sorted(task_df["model_label"].unique()))
     }
 
+    # Build a map from base model_label -> color of its first variant,
+    # used for matching baseline lines to variant colors.
+    base_color_map: Dict[str, object] = {}
+    for plotted_label, color in color_map.items():
+        for base_label in MODEL_LABELS.values():
+            if plotted_label.startswith(base_label) and base_label not in base_color_map:
+                base_color_map[base_label] = color
+
     for model_label in sorted(task_df["model_label"].unique()):
         model_df = task_df[task_df["model_label"] == model_label].sort_values("checkpoint")
         ax.plot(
@@ -702,6 +775,20 @@ def plot_task(
             color=color_map[model_label],
             label=_wrap_label(model_label),
         )
+
+    # Draw baseline horizontal lines
+    if baselines:
+        for model_name, baseline_val in baselines.items():
+            model_label = MODEL_LABELS.get(model_name, model_name)
+            baseline_color = base_color_map.get(model_label, "gray")
+            ax.axhline(
+                y=baseline_val,
+                color=baseline_color,
+                linestyle=":",
+                linewidth=1.5,
+                alpha=0.7,
+                label=_wrap_label(f"{model_label} (original)"),
+            )
 
     ax.set_title(f"{task_label} ({task_run})")
     ax.set_xlabel("Checkpoint")
@@ -778,6 +865,24 @@ def main() -> None:
             )
             metric_output_dir = base_output_dir / sanitize_filename(metric_key)
             for task_run in regular_tasks:
+                # Gather baselines for this task
+                task_baselines: Dict[str, float] = {}
+                for model_name in model_set:
+                    spec = MODEL_SPECS.get(model_name)
+                    if spec is None or not spec.get("baseline"):
+                        continue
+                    val = _load_baseline_metric(
+                        args.prune_evals_root, model_name, task_run, metric_key
+                    )
+                    if val is not None:
+                        task_baselines[model_name] = val
+                    else:
+                        model_label = MODEL_LABELS.get(model_name, model_name)
+                        print(
+                            f"[WARN] Baseline data missing for model {model_label!r}, "
+                            f"task={task_run!r}, metric={metric_key!r}"
+                        )
+
                 label = task_labels.get(task_run, task_run)
                 output_file = (
                     metric_output_dir
@@ -793,6 +898,7 @@ def main() -> None:
                     metric_key,
                     expected_models=model_set,
                     task_metrics=metric_override or TASK_SPECS.get(task_run),
+                    baselines=task_baselines if task_baselines else None,
                 )
 
         # --- mmlu_avg (macro average across MMLU categories) ---
@@ -800,6 +906,32 @@ def main() -> None:
             avg_df = collect_mmlu_avg_records(
                 args.prune_evals_root, model_set, metric_key
             )
+            # Gather MMLU avg baselines
+            mmlu_baselines: Dict[str, float] = {}
+            for model_name in model_set:
+                spec = MODEL_SPECS.get(model_name)
+                if spec is None or not spec.get("baseline"):
+                    continue
+                vals = []
+                missing = []
+                for subtask in MMLU_SUBTASKS:
+                    v = _load_baseline_metric(
+                        args.prune_evals_root, model_name, subtask, metric_key
+                    )
+                    if v is not None:
+                        vals.append(v)
+                    else:
+                        missing.append(subtask)
+                model_label = MODEL_LABELS.get(model_name, model_name)
+                if missing:
+                    print(
+                        f"[WARN] Partial MMLU baseline for model {model_label!r}, "
+                        f"metric={metric_key!r}: missing {len(missing)}/{len(MMLU_SUBTASKS)} "
+                        f"sub-task(s): {missing}"
+                    )
+                if len(vals) == len(MMLU_SUBTASKS):
+                    mmlu_baselines[model_name] = sum(vals) / len(vals)
+
             if avg_df.empty:
                 print(f"[WARN] No MMLU data for metric {metric_key!r}; skipping mmlu_avg.")
             else:
@@ -814,6 +946,7 @@ def main() -> None:
                     args.style,
                     args.show,
                     metric_key,
+                    baselines=mmlu_baselines if mmlu_baselines else None,
                 )
 
 
