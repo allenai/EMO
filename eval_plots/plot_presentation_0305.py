@@ -250,8 +250,13 @@ TASK_SPECS = {
         "primary_score",
     ],
 
-    # Virtual aggregated task: macro average across all MMLU categories.
+    # Virtual aggregated tasks: macro average across MMLU categories.
     "mmlu_avg": [
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_avg_no_other": [
         "softloss_corr",
         "acc_per_byte",
         "primary_score",
@@ -259,7 +264,8 @@ TASK_SPECS = {
 
 }
 # MMLU sub-tasks whose metrics are averaged for the "mmlu_avg" virtual task.
-MMLU_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_") and t != "mmlu_avg"]
+MMLU_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_") and t not in ("mmlu_avg", "mmlu_avg_no_other")]
+MMLU_SUBTASKS_NO_OTHER = [t for t in MMLU_SUBTASKS if t != "mmlu_other"]
 
 AVAILABLE_TASK_RUNS = list(TASK_SPECS)
 
@@ -561,6 +567,8 @@ def collect_mmlu_avg_records(
     prune_evals_root: Path,
     model_names: Sequence[str],
     metric_key: str,
+    subtasks: Optional[List[str]] = None,
+    avg_name: str = "mmlu_avg",
 ) -> pd.DataFrame:
     """Collect MMLU sub-task records and return one left-aligned macro average.
 
@@ -569,19 +577,29 @@ def collect_mmlu_avg_records(
     Macro averaging is then computed across available sub-tasks at each
     relative checkpoint index.
 
+    Parameters
+    ----------
+    subtasks : list of str, optional
+        Which MMLU subtasks to average over. Defaults to ``MMLU_SUBTASKS``.
+    avg_name : str
+        Name used for ``task_run`` column and plot title.
+
     Returns a DataFrame with the same schema as ``collect_records`` output,
-    with ``task_run`` set to ``"mmlu_avg"`` and ``checkpoint`` as the
+    with ``task_run`` set to *avg_name* and ``checkpoint`` as the
     left-aligned relative index. An empty DataFrame is returned when no data
     is available.
     """
+    if subtasks is None:
+        subtasks = MMLU_SUBTASKS
+
     try:
         df, _ = collect_records(
-            prune_evals_root, model_names, MMLU_SUBTASKS, metric_key
+            prune_evals_root, model_names, subtasks, metric_key
         )
     except RuntimeError:
         return pd.DataFrame()
 
-    df = df[df["task_run"].isin(MMLU_SUBTASKS)]
+    df = df[df["task_run"].isin(subtasks)]
     if df.empty:
         return pd.DataFrame()
 
@@ -593,11 +611,11 @@ def collect_mmlu_avg_records(
         model_tasks = set(
             df.loc[df["model"] == model_key, "task_run"].unique()
         )
-        missing = [t for t in MMLU_SUBTASKS if t not in model_tasks]
+        missing = [t for t in subtasks if t not in model_tasks]
         if missing:
             print(
-                f"[WARN] Excluding model {model_label!r} from mmlu_avg: "
-                f"missing {len(missing)}/{len(MMLU_SUBTASKS)} MMLU "
+                f"[WARN] Excluding model {model_label!r} from {avg_name}: "
+                f"missing {len(missing)}/{len(subtasks)} MMLU "
                 f"sub-task(s) for metric={metric_key!r}: {missing}"
             )
         else:
@@ -621,7 +639,7 @@ def collect_mmlu_avg_records(
             df.loc[df["model"] == model_key, "checkpoint_rel"].max()
         )
         print(
-            f"[INFO] mmlu_avg aligned (metric={metric_key!r}): "
+            f"[INFO] {avg_name} aligned (metric={metric_key!r}): "
             f"model {mlabel!r} averages over {len(model_subtasks)} sub-task(s), "
             f"max_relative_checkpoint={max_rel_ckpt}"
         )
@@ -633,8 +651,8 @@ def collect_mmlu_avg_records(
     )
     avg_df = avg_df.rename(columns={"checkpoint_rel": "checkpoint"})
     avg_df = avg_df[avg_df["checkpoint"] <= 6]
-    avg_df["task_run"] = "mmlu_avg"
-    avg_df["task_label"] = "MMLU avg (left-aligned @ checkpoint 0)"
+    avg_df["task_run"] = avg_name
+    avg_df["task_label"] = f"{avg_name} (left-aligned @ checkpoint 0)"
     return avg_df
 
 
@@ -828,7 +846,7 @@ def main() -> None:
     selected_tasks = parse_csv_arg(args.tasks) or list(SELECTED_TASK_RUNS)
 
     # Virtual tasks (e.g. mmlu_avg) don't exist on disk; always keep them.
-    VIRTUAL_TASKS = {"mmlu_avg"}
+    VIRTUAL_TASKS = {"mmlu_avg", "mmlu_avg_no_other"}
     model_set = [m for m in selected_models if m in available_models]
     task_set = [t for t in selected_tasks if t in available_tasks or t in VIRTUAL_TASKS]
 
@@ -852,9 +870,10 @@ def main() -> None:
 
     base_output_dir = (args.output_dir / args.output_subdir).resolve()
     for metric_key, tasks_for_metric in metric_to_tasks.items():
-        # Separate the virtual mmlu_avg task from regular on-disk tasks.
-        regular_tasks = [t for t in tasks_for_metric if t != "mmlu_avg"]
+        # Separate virtual mmlu_avg tasks from regular on-disk tasks.
+        regular_tasks = [t for t in tasks_for_metric if t not in VIRTUAL_TASKS]
         has_mmlu_avg = "mmlu_avg" in tasks_for_metric
+        has_mmlu_avg_no_other = "mmlu_avg_no_other" in tasks_for_metric
 
         # --- regular per-task plots ---
         if regular_tasks:
@@ -948,6 +967,56 @@ def main() -> None:
                     args.show,
                     metric_key,
                     baselines=mmlu_baselines if mmlu_baselines else None,
+                )
+
+        # --- mmlu_avg_no_other (excludes mmlu_other) ---
+        if has_mmlu_avg_no_other:
+            avg_no_other_df = collect_mmlu_avg_records(
+                args.prune_evals_root, model_set, metric_key,
+                subtasks=MMLU_SUBTASKS_NO_OTHER,
+                avg_name="mmlu_avg_no_other",
+            )
+            # Gather baselines for mmlu_avg_no_other
+            mmlu_no_other_baselines: Dict[str, float] = {}
+            for model_name in model_set:
+                spec = MODEL_SPECS.get(model_name)
+                if spec is None or not spec.get("baseline"):
+                    continue
+                vals = []
+                missing = []
+                for subtask in MMLU_SUBTASKS_NO_OTHER:
+                    v = _load_baseline_metric(
+                        args.prune_evals_root, model_name, subtask, metric_key
+                    )
+                    if v is not None:
+                        vals.append(v)
+                    else:
+                        missing.append(subtask)
+                model_label = MODEL_LABELS.get(model_name, model_name)
+                if missing:
+                    print(
+                        f"[WARN] Partial MMLU (no other) baseline for model {model_label!r}, "
+                        f"metric={metric_key!r}: missing {len(missing)}/{len(MMLU_SUBTASKS_NO_OTHER)} "
+                        f"sub-task(s): {missing}"
+                    )
+                if len(vals) == len(MMLU_SUBTASKS_NO_OTHER):
+                    mmlu_no_other_baselines[model_name] = sum(vals) / len(vals)
+
+            if avg_no_other_df.empty:
+                print(f"[WARN] No MMLU data for metric {metric_key!r}; skipping mmlu_avg_no_other.")
+            else:
+                metric_output_dir = base_output_dir / sanitize_filename(metric_key)
+                output_file = (
+                    metric_output_dir
+                    / f"mmlu_avg_no_other_{sanitize_filename(metric_key)}.png"
+                )
+                plot_mmlu_avg(
+                    avg_no_other_df,
+                    output_file,
+                    args.style,
+                    args.show,
+                    metric_key,
+                    baselines=mmlu_no_other_baselines if mmlu_no_other_baselines else None,
                 )
 
 
