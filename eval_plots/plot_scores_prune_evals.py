@@ -71,7 +71,7 @@ MODEL_SPECS = {
 
     "twolevelbatchlbreducedp512sharedexp1densefirst-32_1b14b_lr-4e-3_lb-1e-1_0227step30995-hf": {
         "label": "twolevelbatchlbreducedp512sharedexp1densefirst-lr4e-3-lb1e-1",
-        "baseline": True,
+        "baseline": False,
         "variants": [
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32, layerwise)"},
         ],
