@@ -293,6 +293,18 @@ for _idx, (_model_name, _spec) in enumerate(MODEL_SPECS.items()):
     _base_label = _spec.get("label", _model_name)
     _MODEL_BASE_COLORS[_base_label] = _FIXED_PALETTE[_idx % len(_FIXED_PALETTE)]
 
+# Per-variant alpha: first variant is fully opaque, subsequent ones fade.
+_VARIANT_ALPHAS = [1.0, 0.7, 0.5, 0.35]
+_MODEL_VARIANT_ALPHA: Dict[str, float] = {}
+for _model_name, _spec in MODEL_SPECS.items():
+    _base_label = _spec.get("label", _model_name)
+    _variants = _spec.get("variants", [])
+    if not _variants:
+        _MODEL_VARIANT_ALPHA[_base_label] = 1.0
+    for _vi, _v in enumerate(_variants):
+        _full_label = _base_label + " " + _v["label"]
+        _MODEL_VARIANT_ALPHA[_full_label] = _VARIANT_ALPHAS[min(_vi, len(_VARIANT_ALPHAS) - 1)]
+
 # Collect all known variant suffixes from MODEL_SPECS for auto-discovery.
 _ALL_VARIANT_SUFFIXES: List[str] = sorted(
     {
@@ -699,6 +711,7 @@ def plot_mmlu_avg(
         model_df = avg_df[
             avg_df["model_label"] == model_label
         ].sort_values("checkpoint")
+        alpha = _MODEL_VARIANT_ALPHA.get(model_label, 1.0)
         ax.plot(
             model_df["checkpoint"],
             model_df["metric_value"],
@@ -706,6 +719,7 @@ def plot_mmlu_avg(
             linewidth=2,
             markersize=6,
             color=color_map[model_label],
+            alpha=alpha,
             label=_wrap_label(model_label),
         )
 
@@ -794,6 +808,7 @@ def plot_task(
 
     for model_label in sorted(task_df["model_label"].unique()):
         model_df = task_df[task_df["model_label"] == model_label].sort_values("checkpoint")
+        alpha = _MODEL_VARIANT_ALPHA.get(model_label, 1.0)
         ax.plot(
             model_df["checkpoint"],
             model_df["metric_value"],
@@ -801,6 +816,7 @@ def plot_task(
             linewidth=2,
             markersize=6,
             color=color_map[model_label],
+            alpha=alpha,
             label=_wrap_label(model_label),
         )
 
