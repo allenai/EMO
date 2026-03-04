@@ -71,3 +71,4 @@ models
 prune
 claude_outputs
 eval_plots/.mplconfig
+*.csv
