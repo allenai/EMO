@@ -107,6 +107,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
                 num_experts=block.feed_forward_moe.router.num_experts,
                 tie_word_embeddings=False,
             )
+        always_active_experts = getattr(block.feed_forward_moe.router, "always_active_experts", None)
         return FlexOlmoNoQKNormPrenormConfig(
             vocab_size=model.vocab_size,
             hidden_size=model.d_model,
@@ -125,6 +126,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
             num_experts_per_tok=block.feed_forward_moe.router.top_k,
             num_experts=block.feed_forward_moe.router.num_experts,
             tie_word_embeddings=False,
+            always_active_experts=always_active_experts,
         )
     elif (
         isinstance(block, MoETransformerBlock)
