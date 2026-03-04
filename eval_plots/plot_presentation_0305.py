@@ -285,6 +285,15 @@ MODEL_LABELS = {
 
 DEFAULT_OUTPUT_SUBDIR = "presentation_0305_plots"
 
+# Fixed color palette: assign colors based on MODEL_SPECS order so that
+# commenting/uncommenting models doesn't shift other models' colors.
+# Each model's variants share the base model's color.
+_FIXED_PALETTE = sns.color_palette("colorblind", n_colors=max(len(MODEL_SPECS), 10))
+_MODEL_BASE_COLORS: Dict[str, object] = {}
+for _idx, (_model_name, _spec) in enumerate(MODEL_SPECS.items()):
+    _base_label = _spec.get("label", _model_name)
+    _MODEL_BASE_COLORS[_base_label] = _FIXED_PALETTE[_idx % len(_FIXED_PALETTE)]
+
 # Collect all known variant suffixes from MODEL_SPECS for auto-discovery.
 _ALL_VARIANT_SUFFIXES: List[str] = sorted(
     {
@@ -676,15 +685,17 @@ def plot_mmlu_avg(
     plt.figure(figsize=(8, 5))
     ax = plt.gca()
 
-    palette = sns.color_palette("colorblind", n_colors=len(all_labels))
-    color_map = {label: palette[i] for i, label in enumerate(all_labels)}
-
-    # Build base label -> color map for baseline lines
-    base_color_map: Dict[str, object] = {}
-    for plotted_label, color in color_map.items():
-        for base_label in MODEL_LABELS.values():
-            if plotted_label.startswith(base_label) and base_label not in base_color_map:
-                base_color_map[base_label] = color
+    # Use fixed colors: match each plotted label to its base model color.
+    color_map: Dict[str, object] = {}
+    for plotted_label in all_labels:
+        matched = False
+        for base_label, color in _MODEL_BASE_COLORS.items():
+            if plotted_label.startswith(base_label):
+                color_map[plotted_label] = color
+                matched = True
+                break
+        if not matched:
+            color_map[plotted_label] = "gray"
 
     for model_label in sorted(avg_df["model_label"].unique()):
         model_df = avg_df[
@@ -704,7 +715,7 @@ def plot_mmlu_avg(
     if baselines:
         for model_name, baseline_val in baselines.items():
             model_label = MODEL_LABELS.get(model_name, model_name)
-            baseline_color = base_color_map.get(model_label, "gray")
+            baseline_color = _MODEL_BASE_COLORS.get(model_label, "gray")
             ax.axhline(
                 y=baseline_val,
                 color=baseline_color,
@@ -770,19 +781,18 @@ def plot_task(
     plt.figure(figsize=(8, 5))
 
     ax = plt.gca()
-    palette = sns.color_palette("colorblind", n_colors=task_df["model_label"].nunique())
-    color_map = {
-        model: palette[idx]
-        for idx, model in enumerate(sorted(task_df["model_label"].unique()))
-    }
 
-    # Build a map from base model_label -> color of its first variant,
-    # used for matching baseline lines to variant colors.
-    base_color_map: Dict[str, object] = {}
-    for plotted_label, color in color_map.items():
-        for base_label in MODEL_LABELS.values():
-            if plotted_label.startswith(base_label) and base_label not in base_color_map:
-                base_color_map[base_label] = color
+    # Use fixed colors: match each plotted label to its base model color.
+    color_map: Dict[str, object] = {}
+    for plotted_label in sorted(task_df["model_label"].unique()):
+        matched = False
+        for base_label, color in _MODEL_BASE_COLORS.items():
+            if plotted_label.startswith(base_label):
+                color_map[plotted_label] = color
+                matched = True
+                break
+        if not matched:
+            color_map[plotted_label] = "gray"
 
     for model_label in sorted(task_df["model_label"].unique()):
         model_df = task_df[task_df["model_label"] == model_label].sort_values("checkpoint")
@@ -800,7 +810,7 @@ def plot_task(
     if baselines:
         for model_name, baseline_val in baselines.items():
             model_label = MODEL_LABELS.get(model_name, model_name)
-            baseline_color = base_color_map.get(model_label, "gray")
+            baseline_color = _MODEL_BASE_COLORS.get(model_label, "gray")
             ax.axhline(
                 y=baseline_val,
                 color=baseline_color,
