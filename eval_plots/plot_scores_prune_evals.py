@@ -37,13 +37,13 @@ MODEL_SPECS = {
     "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212step30995-hf": {
         "label": "moe_1b4b_reduce",
         "variants": [
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keepk 32)"},
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
         ],
     },
     "dense_1b_lr-4e-3_0213step30995-hf": {
         "label": "dense-lr4e-3",
         "variants": [
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keepk 32)"},
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
         ],
     },
 
