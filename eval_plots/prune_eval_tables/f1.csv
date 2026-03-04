@@ -1,8 +1,0 @@
-model,coqa_0shot,squad_0shot
-moe_reduce,0.1143,0.2167
-moe_1b4b_reduce,0.1425,0.2226
-dense-lr4e-3,0.1361,0.2219
-twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1,0.1457,0.2241
-twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1 (layerwise),0.1223,0.2231
-twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1 (layerwise first2 unpruned),0.1582,0.2236
-twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-2,0.1373,0.2235

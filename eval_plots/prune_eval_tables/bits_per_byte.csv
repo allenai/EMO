@@ -1,8 +1,0 @@
-model,gsm8k_perplexity_0shot
-moe_reduce,0.3600
-moe_1b4b_reduce,0.3223
-dense-lr4e-3,0.3659
-twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1,0.3163
-twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1 (layerwise),0.3151
-twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1 (layerwise first2 unpruned),0.3155
-twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-2,0.3216
