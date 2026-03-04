@@ -35,7 +35,6 @@ import logging
 import os
 from typing import List
 
-import torch
 
 from olmo_core.distributed.checkpoint import (
     load_model_and_optim_state,
@@ -71,15 +70,17 @@ def add_shared_expert(
     num_experts = moe_config.num_experts
     hidden_size = moe_config.hidden_size
     for idx in shared_expert_init_indices:
-        assert 0 <= idx < num_experts, (
-            f"shared_expert_init_idx {idx} out of range [0, {num_experts})"
-        )
+        assert (
+            0 <= idx < num_experts
+        ), f"shared_expert_init_idx {idx} out of range [0, {num_experts})"
 
     logger.info(f"Model config: {old_model_config}")
     if len(shared_expert_init_indices) == 1:
         logger.info(f"Initializing shared expert from expert {shared_expert_init_indices[0]}")
     else:
-        logger.info(f"Initializing shared expert from average of experts {shared_expert_init_indices}")
+        logger.info(
+            f"Initializing shared expert from average of experts {shared_expert_init_indices}"
+        )
 
     # Load old model weights
     logger.info(f"Loading model weights from {checkpoint_path}")

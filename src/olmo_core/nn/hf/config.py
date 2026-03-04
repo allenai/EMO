@@ -20,10 +20,12 @@ try:
     from transformers import (  # type: ignore
         FlexOlmoConfig,
         FlexOlmoNoQKNormPrenormConfig,
+        FlexOlmoNoQKNormPrenormSharedConfig,
         FlexOlmoPrenormConfig,
     )
 except ImportError:
     FlexOlmoConfig = None
+    FlexOlmoNoQKNormPrenormSharedConfig = None
 
 try:
     from transformers import Olmo3Config  # type: ignore
@@ -79,6 +81,32 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
         and block.attention.q_norm is None
         and block.attention.k_norm is None
     ):
+        has_shared_mlp = block.feed_forward_moe.shared_mlp is not None
+        if has_shared_mlp:
+            if FlexOlmoNoQKNormPrenormSharedConfig is None:
+                raise RuntimeError(
+                    "The installed transformers version does not support FlexOlmoNoQKNormPrenormShared"
+                )
+            return FlexOlmoNoQKNormPrenormSharedConfig(
+                vocab_size=model.vocab_size,
+                hidden_size=model.d_model,
+                intermediate_size=block.feed_forward_moe.experts.mlp.hidden_size,
+                shared_expert_intermediate_size=block.feed_forward_moe.shared_mlp.hidden_size,
+                num_hidden_layers=model.n_layers,
+                num_attention_heads=block.attention.n_heads,
+                num_key_value_heads=block.attention.n_kv_heads,
+                hidden_act="silu",
+                max_position_embeddings=-1,
+                attention_bias=block.attention.w_out.bias is not None,
+                rope_theta=block.attention.rope.theta,
+                pad_token_id=None,  # type: ignore
+                bos_token_id=None,
+                eos_token_id=None,  # type: ignore
+                rms_norm_eps=block.feed_forward_norm.eps,
+                num_experts_per_tok=block.feed_forward_moe.router.top_k,
+                num_experts=block.feed_forward_moe.router.num_experts,
+                tie_word_embeddings=False,
+            )
         return FlexOlmoNoQKNormPrenormConfig(
             vocab_size=model.vocab_size,
             hidden_size=model.d_model,

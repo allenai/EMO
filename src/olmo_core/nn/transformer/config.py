@@ -768,6 +768,7 @@ class TransformerConfig(Config):
     @classmethod
     def olmoe_1B_7B(cls, vocab_size: int, **kwargs) -> "TransformerConfig":
         d_model = kwargs.pop("d_model", 2048)
+        always_active_experts = kwargs.pop("always_active_experts", None)
         return cls.llama_like(
             d_model=d_model,
             vocab_size=vocab_size,
@@ -782,7 +783,10 @@ class TransformerConfig(Config):
                 name=MoEType.dropless,
                 num_experts=kwargs.pop("num_experts", 64),
                 hidden_size=int(0.5 * d_model),
-                router=MoERouterConfig(top_k=kwargs.pop("top_k", 8)),
+                router=MoERouterConfig(
+                    top_k=kwargs.pop("top_k", 8),
+                    always_active_experts=always_active_experts,
+                ),
                 lb_loss_weight=0.01,
                 z_loss_weight=0.001,
             ),
