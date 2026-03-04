@@ -35,8 +35,18 @@ MODEL_SPECS = {
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(prune keep 32)"},
         ],
     },
+    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301step30995-hf": {
+        "label": "specialized moe",
+        "baseline": True,
+        "variants": [
+            {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8, layerwise)"},
+            {"suffix": "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 16, layerwise)"},
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32, layerwise)"},
+            {"suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 64, layerwise)"},
+        ],
+    },
     # "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212step30995-hf": {
-    #     "label": "moe_1b4b_reduce",
+    #     "label": "moe_small",
     #     "baseline": True,
     #     "variants": [
     #         {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
@@ -58,16 +68,7 @@ MODEL_SPECS = {
     #     ],
     # },
     #
-    # "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301step30995-hf": {
-    #     "label": "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32-lr4e-3-lb1e-1",
-    #     "baseline": True,
-    #     "variants": [
-    #         {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8, layerwise)"},
-    #         {"suffix": "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 16, layerwise)"},
-    #         {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32, layerwise)"},
-    #         {"suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 64, layerwise)"},
-    #     ],
-    # },
+
     #
     # "twolevelbatchlbreducedp512sharedexp1densefirst-32_1b14b_lr-4e-3_lb-1e-1_0227step30995-hf": {
     #     "label": "twolevelbatchlbreducedp512sharedexp1densefirst-lr4e-3-lb1e-1",
