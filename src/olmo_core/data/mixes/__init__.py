@@ -61,6 +61,8 @@ class DataMix(DataMixBase):
     dolma2_code_python = "dolma2-code-python"
     dolma2_code_java = "dolma2-code-java"
     dolma2_code_cpp = "dolma2-code-cpp"
+    dolma2_code_py10B_other40 = "dolma2-code-py10B-other40"
+    swallow_code_v2_python = "swallow-code-v2-python"
 
     @classmethod
     def _missing_(cls, value: object) -> "DataMix | None":
