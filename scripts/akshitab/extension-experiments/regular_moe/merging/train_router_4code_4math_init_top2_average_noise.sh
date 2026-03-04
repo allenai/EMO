@@ -17,7 +17,7 @@ NUM_TOKENS=$((NUM_BILLION_TOKENS * 1000000000))
 LR=4e-4 #4e-4  # 4e-3, #4e-5
 
 # # Part 2: Train with new expert
-RUN_NAME="rt-merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_${NUM_BILLION_TOKENS}B_lr_${LR}"
+RUN_NAME="rt-realdata-merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_${NUM_BILLION_TOKENS}B_lr_${LR}"
 
 python -m olmo_core.launch.beaker \
   --name ${RUN_NAME} \
@@ -36,7 +36,7 @@ python -m olmo_core.launch.beaker \
     ${RUN_NAME} \
 		--trainer.load_path="${MERGED_MODEL_PATH}/model_and_optim" \
 		--save-folder="/weka/oe-training-default/akshitab/FlexMoE/models/${RUN_NAME}" \
-		--dataset.mix=proxy_mix_base_math_code \
+		--dataset.mix=base_math_code \
 		--work-dir="/weka/oe-training-default/akshitab/dataset-cache" \
 		--trainer.max_duration="{value: ${NUM_TOKENS}, unit: tokens}" \
 		--trainer.callbacks.wandb="{enabled: true, entity: akshitab, project: olmoe-modular, name: ${RUN_NAME}, tags: [extension]}" \

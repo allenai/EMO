@@ -56,6 +56,7 @@ class DataMix(DataMixBase):
     chempile = "chempile"
 
     proxy_mix_base_math_code = "proxy_mix_base_math_code"
+    base_math_code = "base_math_code"
 
     @classmethod
     def _missing_(cls, value: object) -> "DataMix | None":

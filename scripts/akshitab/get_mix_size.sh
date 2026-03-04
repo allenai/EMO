@@ -23,4 +23,4 @@ while IFS= read -r line; do
 done < "$mix_file"
 
 echo ""
-echo "Total: $total bytes ($(echo "scale=2; $total / 1073741824" | bc) GB)"
+echo "Total: $total bytes"
