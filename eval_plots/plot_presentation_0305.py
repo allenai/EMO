@@ -280,12 +280,13 @@ DEFAULT_OUTPUT_SUBDIR = "presentation_0305_plots"
 # Hardcoded color assignments so colors never change regardless of which
 # models are commented in/out.  Colors are from matplotlib's tab10 palette.
 _MODEL_BASE_COLORS: Dict[str, object] = {
-    "moe":                                          (0.1216, 0.4667, 0.7059),  # tab10 blue
-    "moe_small":                                    (1.0000, 0.4980, 0.0549),  # tab10 orange
-    "dense":                                        (0.1725, 0.6275, 0.1725),  # tab10 green
-    "specialized moe":                              (0.8392, 0.1529, 0.1569),  # tab10 red
-    "specialized moe + globallb":                   (0.5804, 0.4039, 0.7412),  # tab10 purple
-    "specialized moe + globallb + 1sharedexp":      (0.5490, 0.3373, 0.2941),  # tab10 brown
+    "moe":                                                  (0.1216, 0.4667, 0.7059),  # tab10 blue
+    "moe_small":                                            (1.0000, 0.4980, 0.0549),  # tab10 orange
+    "dense":                                                (0.1725, 0.6275, 0.1725),  # tab10 green
+    "specialized moe":                                      (0.8392, 0.1529, 0.1569),  # tab10 red
+    "specialized moe + globallb":                           (0.5804, 0.4039, 0.7412),  # tab10 purple
+    "specialized moe + globallb + 1sharedexp":              (0.5490, 0.3373, 0.2941),  # tab10 brown
+    "specialized moe + globallb + 1shardexp + randpool":    (0.8902, 0.4667, 0.7608),  # tab10 pink
 }
 
 # Per-variant alpha: first variant is fully opaque, subsequent ones fade.
