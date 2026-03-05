@@ -64,6 +64,9 @@ class DataMix(DataMixBase):
     dolma2_code_py10B_other40 = "dolma2-code-py10B-other40"
     swallow_code_v2_python = "swallow-code-v2-python"
 
+    medical_o1_en_cot = "medical-o1-en-cot"
+    medical_o1_en_nocot = "medical-o1-en-nocot"
+
     @classmethod
     def _missing_(cls, value: object) -> "DataMix | None":
         """Handle alias lookups."""
