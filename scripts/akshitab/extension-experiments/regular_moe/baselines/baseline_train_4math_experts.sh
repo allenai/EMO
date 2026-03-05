@@ -40,4 +40,4 @@ python -m olmo_core.launch.beaker \
 		--model.block.feed_forward_moe.lb_loss_weight=1e-2 \
         --train_module.scheduler.warmup_fraction=0.1 \
         --lr=${LR} \
-        --train-selected-experts=${EXPERTS_TO_TRAIN}
+        --experts-to-train=${EXPERTS_TO_TRAIN}
