@@ -699,7 +699,7 @@ def plot_mmlu_avg(
     color_map: Dict[str, object] = {}
     for plotted_label in all_labels:
         matched = False
-        for base_label, color in _MODEL_BASE_COLORS.items():
+        for base_label, color in sorted(_MODEL_BASE_COLORS.items(), key=lambda x: len(x[0]), reverse=True):
             if plotted_label.startswith(base_label):
                 color_map[plotted_label] = color
                 matched = True
@@ -798,7 +798,7 @@ def plot_task(
     color_map: Dict[str, object] = {}
     for plotted_label in sorted(task_df["model_label"].unique()):
         matched = False
-        for base_label, color in _MODEL_BASE_COLORS.items():
+        for base_label, color in sorted(_MODEL_BASE_COLORS.items(), key=lambda x: len(x[0]), reverse=True):
             if plotted_label.startswith(base_label):
                 color_map[plotted_label] = color
                 matched = True
