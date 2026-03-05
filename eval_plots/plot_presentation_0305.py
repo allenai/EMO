@@ -277,14 +277,16 @@ MODEL_LABELS = {
 
 DEFAULT_OUTPUT_SUBDIR = "presentation_0305_plots"
 
-# Fixed color palette: assign colors based on MODEL_SPECS order so that
-# commenting/uncommenting models doesn't shift other models' colors.
-# Each model's variants share the base model's color.
-_FIXED_PALETTE = sns.color_palette("tab10", n_colors=max(len(MODEL_SPECS), 10))
-_MODEL_BASE_COLORS: Dict[str, object] = {}
-for _idx, (_model_name, _spec) in enumerate(MODEL_SPECS.items()):
-    _base_label = _spec.get("label", _model_name)
-    _MODEL_BASE_COLORS[_base_label] = _FIXED_PALETTE[_idx % len(_FIXED_PALETTE)]
+# Hardcoded color assignments so colors never change regardless of which
+# models are commented in/out.  Colors are from matplotlib's tab10 palette.
+_MODEL_BASE_COLORS: Dict[str, object] = {
+    "moe":                                          (0.1216, 0.4667, 0.7059),  # tab10 blue
+    "moe_small":                                    (1.0000, 0.4980, 0.0549),  # tab10 orange
+    "dense":                                        (0.1725, 0.6275, 0.1725),  # tab10 green
+    "specialized moe":                              (0.8392, 0.1529, 0.1569),  # tab10 red
+    "specialized moe + globallb":                   (0.5804, 0.4039, 0.7412),  # tab10 purple
+    "specialized moe + globallb + 1sharedexp":      (0.5490, 0.3373, 0.2941),  # tab10 brown
+}
 
 # Per-variant alpha: first variant is fully opaque, subsequent ones fade.
 _VARIANT_ALPHAS = [1.0, 0.7, 0.5, 0.35]
