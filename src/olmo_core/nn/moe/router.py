@@ -723,14 +723,18 @@ class MoERouter(nn.Module):
 
                     # Exclude always-active experts from LB loss: they are routed to
                     # every token so including them skews the balance signal.
+                    # We remove the always-active columns entirely so that num_experts
+                    # matches the last dimension of expert_scores.
                     if (
                         self.always_active_experts is not None
                         and len(self.always_active_experts) > 0
                     ):
-                        lb_scores = scores.clone()
-                        lb_scores[..., self.always_active_experts] = 0.0
-                        lb_batch_size_per_expert = batch_size_per_expert_routing.clone()
-                        lb_batch_size_per_expert[self.always_active_experts] = 0
+                        routed_mask = torch.ones(
+                            self.num_experts, dtype=torch.bool, device=scores.device
+                        )
+                        routed_mask[self.always_active_experts] = False
+                        lb_scores = scores[..., routed_mask]
+                        lb_batch_size_per_expert = batch_size_per_expert_routing[routed_mask]
                         lb_num_experts = self.num_experts - len(self.always_active_experts)
                         lb_top_k = self.top_k - len(self.always_active_experts)
                     else:
