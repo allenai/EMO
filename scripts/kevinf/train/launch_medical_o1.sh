@@ -3,7 +3,7 @@
 #
 # Usage: bash scripts/kevinf/train/launch_medical_o1.sh
 #
-# Runs TWO jobs back-to-back for ablation comparison:
+# Submits TWO jobs in parallel for ablation comparison:
 #   - medical-o1-en-cot:   English Q&A + chain-of-thought reasoning (~12M tokens)
 #   - medical-o1-en-nocot: English Q&A only, no CoT (~3.8M tokens)
 #
@@ -14,7 +14,7 @@
 
 warmup_fraction=0.1
 train_tokens_B=0.1  # in billions (adjust: ~83 epochs of en_cot, ~260 epochs of en_nocot)
-train_tokens_raw=$((train_tokens_B * 1000000000))
+train_tokens_raw=$(python3 -c "print(int(${train_tokens_B} * 1_000_000_000))")
 load_path="/weka/oe-training-default/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995"
 mix_base_dir="/weka/oe-training-default/ai2-llm"
 
@@ -54,10 +54,12 @@ for dataset in medical-o1-en-cot medical-o1-en-nocot; do
       --trainer.callbacks.lm_evaluator.enabled=true \
       --train_module.optim.lr=$lr \
       ${load_path:+--load_path=$load_path} \
-      --train_module.scheduler.warmup_fraction=$warmup_fraction
+      --train_module.scheduler.warmup_fraction=$warmup_fraction \
+      --data_loader.global_batch_size=2097152 &
 
     sleep 5
   done
 done
 
+wait
 echo "All jobs submitted! Check Beaker for status."
