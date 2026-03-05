@@ -49,13 +49,13 @@ MODEL_SPECS = {
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
         ],
     },
-    # "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": {
-    #     "label": "specialized moe",
-    #     "baseline": False,
-    #     "variants": [
-    #         {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keep 32)"},
-    #     ],
-    # },
+    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": {
+        "label": "specialized moe",
+        "baseline": False,
+        "variants": [
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keep 32)"},
+        ],
+    },
     # "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": {
     #     "label": "specialized moe + globallb",
     #     "baseline": False,
@@ -72,7 +72,7 @@ MODEL_SPECS = {
     #     ],
     # },
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301step30995-hf": {
-        "label": "specialized moe",
+        "label": "specialized moe + globallb + 1shardexp + randpool",
         "baseline": True,
         "variants": [
             # {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
