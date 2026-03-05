@@ -287,7 +287,7 @@ DEFAULT_OUTPUT_SUBDIR = "prune_eval_plots_0302"
 # Fixed color palette: assign colors based on MODEL_SPECS order so that
 # commenting/uncommenting models doesn't shift other models' colors.
 # Each model's variants share the base model's color.
-_FIXED_PALETTE = sns.color_palette("colorblind", n_colors=max(len(MODEL_SPECS), 10))
+_FIXED_PALETTE = sns.color_palette("tab10", n_colors=max(len(MODEL_SPECS), 10))
 _MODEL_BASE_COLORS: Dict[str, object] = {}
 for _idx, (_model_name, _spec) in enumerate(MODEL_SPECS.items()):
     _base_label = _spec.get("label", _model_name)
