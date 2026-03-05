@@ -631,7 +631,12 @@ def main(args):
             for _results in results.values()
             if _results.get(task_name) is not None and _results.get(task_name) != "N/A"
         ]
-        best_results[task_name] = np.max(valid_scores) if valid_scores else -1
+        if valid_scores:
+            best_results[task_name] = (
+                np.min(valid_scores) if args.lower_is_better else np.max(valid_scores)
+            )
+        else:
+            best_results[task_name] = -1
 
     def format_model_name(model):
         """Format model name for display. Applies nicknames if configured."""
@@ -849,6 +854,12 @@ Examples:
     parser.add_argument(
         "--nicknames",
         help="Comma-separated pattern:nickname mappings for model names (e.g., 'dolma:Dolma,olmoe:OLMoE')",
+    )
+
+    parser.add_argument(
+        "--lower-is-better",
+        action="store_true",
+        help="Highlight the lowest score per task instead of the highest (e.g. for bpb/perplexity metrics)",
     )
 
     args = parser.parse_args()
