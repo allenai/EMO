@@ -46,7 +46,6 @@ FULL_TASKS_SMALL_COMPUTE = [
     "basic_skills_logical_reasoning_rc_5shot",
     "basic_skills_pattern_rc_5shot",
     "basic_skills_string_operations_rc_5shot",
-    "frenchbench:rc",
 ]
 
 # For training runs where we expect the model to acquire MC

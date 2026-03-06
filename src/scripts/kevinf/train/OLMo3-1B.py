@@ -1,4 +1,3 @@
-# isort: skip_file
 """
 Train OLMo3-1B on OLMoE-mix-0824.
 
@@ -15,7 +14,7 @@ import argparse
 import logging
 import sys
 from dataclasses import dataclass
-from typing import cast, List, Optional
+from typing import List, Optional, cast
 
 import rich
 
@@ -254,7 +253,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                     work_dir=work_dir,
                 ),
                 eval_interval=100,
-                eval_duration=Duration.steps(50),
+                eval_duration=Duration.steps(200),
                 eval_on_startup=True,
                 log_interval=1,
             ),

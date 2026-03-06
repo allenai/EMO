@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added PMC (PubMed Central) data mix and training script for biomedical continued pretraining.
+- Fixed medmcqa eval task and evaluator defaults.
 - Extension code and experiments.
 - Added code and chempile data mixes with training scripts for domain-specific continued pretraining.
 - Added option to skip ranges of steps in the trainer.
