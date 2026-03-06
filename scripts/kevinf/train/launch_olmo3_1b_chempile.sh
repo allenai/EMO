@@ -12,7 +12,7 @@ dataset="chempile"
 warmup_fraction=0.1
 train_tokens_B=10  # in billions
 train_tokens_raw=$((train_tokens_B * 1000000000))
-load_path="/weka/oe-training-default/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995"
+load_path="/weka/oe-training-default/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995"
 
 # LR sweep: conservative (5e-5), moderate (1e-4), aggressive (2e-4)
 for lr in 5e-5 ; do

@@ -14,7 +14,7 @@ dataset="dolma2-code-py10B-other40"
 warmup_fraction=0.1
 train_tokens_B=50  # in billions
 train_tokens_raw=$((train_tokens_B * 1000000000))
-load_path="/weka/oe-training-default/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995"
+load_path="/weka/oe-training-default/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995"
 
 for lr in 5e-5; do
   runname="olmo3-1b-${dataset}-${train_tokens_B}B-lr${lr}-warmup${warmup_fraction}"

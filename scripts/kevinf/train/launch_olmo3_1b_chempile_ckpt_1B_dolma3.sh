@@ -28,4 +28,4 @@ python -m olmo_core.launch.beaker \
   --trainer.hard_stop='{value: 10_000_000_000, unit: tokens}' \
   --trainer.callbacks.downstream_evaluator.eval_interval=250 \
   --dataset.mix=chempile \
-  --load_path="/weka/oe-training-default/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995"
+  --load_path="/weka/oe-training-default/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995"

@@ -6,32 +6,33 @@
 # Configuration
 MODELS=(
     # need: general model, pretrained model (hf versions)
-    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift-ckpt_1B_dolma3/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift-ckpt_1B_dolma3/step2385-hf"
-    # "/data/input/kevinf/checkpoints-new/olmo3-1b-130b-OLMo-mix-0625-150Bsample-dclm/step30995-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-130b-OLMo-mix-0625-150Bsample-dclm/step30995-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift-continued_pt_30B_from_130B_dolma3/step7153-hf"
-    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
-    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
+    # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-the-pile-of-law-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
-    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
-    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
+    # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-chempile-10B-lr2e-4-warmup715-ctd/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-chempile-10B-lr5e-5-warmup715-ctd/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-croissant-10B-lr5e-5-warmup0.1-ctd/step2385-hf/"
     # "/data/input/kevinf/checkpoints/olmo3-1b-croissant-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
-    "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
-    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
+    # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-chempile-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-the-pile-of-law-10B-lr5e-5-warmup0.1-ctd"/step2385-hf
     # "/data/input/kevinf/checkpoints/olmo3-1b-croissant-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-pmc-30B-lr5e-5-warmup0.1-ctd/step7153-hf"
-    "/data/input/kevinf/checkpoints/olmo3-1b-mimic-iv-note-2B-lr5e-5-warmup0.1-ctd/step477-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-mimic-iv-note-2B-lr5e-5-warmup0.1-ctd/step477-hf"
+    "/data/input/kevinf/checkpoints/olmo3-1b-medical-o1-en-cot-0.1B-lr5e-5-warmup0.1-ctd/step24-hf"
+    "/data/input/kevinf/checkpoints/olmo3-1b-medical-o1-en-nocot-0.1B-lr5e-5-warmup0.1-ctd/step48-hf/"
 )
 
-BASE_OUTPUT_DIR="/data/input/kevinf/flexmoe/eval/results"
-# BASE_OUTPUT_DIR="s3://ai2-llm/jacobm/flexolmo/results"
+BASE_OUTPUT_DIR="/data/input/kevinf/eval_results/flexmoe"
 BATCH_SIZE=4
 CLUSTER="ai2/saturn"
 LIMIT=1000
@@ -58,8 +59,8 @@ TASKS=(
     # drop::olmes
 
     # # # MMLU tasks
-    # mmlu:mc::olmes
-    # # mmlu_pro_mc::none
+    mmlu:mc::olmes
+    mmlu_pro_mc::none
 
     # # # AGI eval
     # agi_eval_english:1shot::olmes
@@ -92,6 +93,8 @@ TASKS=(
 
     medqa
     medmcqa:mc
+
+    # mt_mbpp 
 )
 
 # Function to get checkpoint name - extracts run name and step from path

@@ -15,7 +15,7 @@
 warmup_fraction=0.1
 train_tokens_B=0.1  # in billions (adjust: ~83 epochs of en_cot, ~260 epochs of en_nocot)
 train_tokens_raw=$(python3 -c "print(int(${train_tokens_B} * 1_000_000_000))")
-load_path="/weka/oe-training-default/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995"
+load_path="/weka/oe-training-default/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995"
 mix_base_dir="/weka/oe-training-default/ai2-llm"
 
 for dataset in medical-o1-en-cot medical-o1-en-nocot; do

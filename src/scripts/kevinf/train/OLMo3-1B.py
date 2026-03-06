@@ -237,7 +237,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback(
             "post_train_eval",
             PostTrainEvalCallback(
-                eval_output_base_dir="/data/input/kevinf/flexmoe/eval/results",
+                eval_output_base_dir="/data/input/kevinf/eval_results/flexmoe",
                 cluster="ai2/saturn",
                 enabled=True,
             ),

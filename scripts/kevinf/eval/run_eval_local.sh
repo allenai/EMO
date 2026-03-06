@@ -5,7 +5,7 @@
 set -e
 
 # Default configuration
-MODEL_PATH="/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+MODEL_PATH="/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
 OUTPUT_DIR="/tmp/eval-local-$(date +%Y%m%d-%H%M%S)"
 TASKS=(
     "chembench:gen"
