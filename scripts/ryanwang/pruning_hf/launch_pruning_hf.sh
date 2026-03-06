@@ -5,7 +5,7 @@ BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 #BASE_DIR="/root/phdbrainstorm/FlexMoE"
 MODELS=(
 #    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
-#    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
+    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
 #    "twolevelbatchlbreducedp512sharedexp1densefirst-32_1b14b_lr-4e-3_lb-1e-1_0227/step30995-hf"
 #    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213/step30995-hf"
 #    "dense_1b_lr-4e-3_0213/step30995-hf"
@@ -18,7 +18,7 @@ MODELS=(
 #    "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995-hf"
 #    "moe_1b4b_32experts_1224/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
-    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995-hf"
+#    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-2_0118/step30995-hf"
 #    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-2_0207/step30995-hf"
 #    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995-hf"
@@ -34,11 +34,11 @@ model_type=hf
 #               "layerwise"           -- greedy layer-by-layer pruning (each layer conditioned
 #                                        on already-pruned earlier layers)
 #               "layerwise_variable"  -- greedy layerwise with per-layer keep-k schedule
-PRUNING_MODE="global"
+PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64)
-PRUNE_KEEP_K_VALUES=(32)
+PRUNE_KEEP_K_VALUES=(96, 120)
 batch_size=32
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
@@ -51,38 +51,38 @@ KEEP_K_PER_LAYER="128,128,32,32,32,32,32,32,32,32,32,32,32,32,32,32"
 TASK_GROUPS_LIST=(
   ######### few-shot ##########
   # MC9 tasks
-#  "arc_easy"
-#  "arc_challenge"
-#  "boolq"
-#  "csqa"
-#  "hellaswag"
-#  "openbookqa"
-#  "piqa"
-#  "socialiqa"
-#  "winogrande"
-#  "gsm8k_generation_0shot"
-#  "gsm8k_perplexity_0shot"
-#  "coqa_0shot"
-#  "coqa_full_0shot"
-#  "squad_0shot"
+  "arc_easy"
+  "arc_challenge"
+  "boolq"
+  "csqa"
+  "hellaswag"
+  "openbookqa"
+  "piqa"
+  "socialiqa"
+  "winogrande"
+  "gsm8k_generation_0shot"
+  "gsm8k_perplexity_0shot"
+  "coqa_0shot"
+  "coqa_full_0shot"
+  "squad_0shot"
 
-#  "mmlu_biology"
-#  "mmlu_business"
-#  "mmlu_chemistry"
-#  "mmlu_computer_science"
-#  "mmlu_culture"
-#  "mmlu_economics"
-#  "mmlu_engineering"
-#  "mmlu_geography"
-#  "mmlu_health"
+  "mmlu_biology"
+  "mmlu_business"
+  "mmlu_chemistry"
+  "mmlu_computer_science"
+  "mmlu_culture"
+  "mmlu_economics"
+  "mmlu_engineering"
+  "mmlu_geography"
+  "mmlu_health"
   "mmlu_history"
-#  "mmlu_law"
-#  "mmlu_math"
-#  "mmlu_other"
-#  "mmlu_philosophy_cat"
-#  "mmlu_physics"
-#  "mmlu_politics"
-#  "mmlu_psychology"
+  "mmlu_law"
+  "mmlu_math"
+  "mmlu_other"
+  "mmlu_philosophy_cat"
+  "mmlu_physics"
+  "mmlu_politics"
+  "mmlu_psychology"
 
 #  "synthea_zeroshot"
 
