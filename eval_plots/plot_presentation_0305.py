@@ -28,59 +28,59 @@ AUTO_DISCOVER = True
 #                task-directory suffixes to scan and their legend labels.
 #                Use [] for models with no pruning (dense, small MoE).
 MODEL_SPECS = {
-    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
-        "label": "moe",
-        "baseline": True,
-        "variants": [
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keep 32)"},
-        ],
-    },
-    "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212step30995-hf": {
-        "label": "moe_small",
-        "baseline": True,
-        "variants": [
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
-        ],
-    },
-    "dense_1b_lr-4e-3_0213step30995-hf": {
-        "label": "dense",
-        "baseline": True,
-        "variants": [
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
-        ],
-    },
-    "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": {
-        "label": "specialized moe",
+    # "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
+    #     "label": "moe",
+    #     "baseline": True,
+    #     "variants": [
+    #         {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keep 32)"},
+    #     ],
+    # },
+    # "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212step30995-hf": {
+    #     "label": "moe_small",
+    #     "baseline": True,
+    #     "variants": [
+    #         {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
+    #     ],
+    # },
+    # "dense_1b_lr-4e-3_0213step30995-hf": {
+    #     "label": "dense",
+    #     "baseline": True,
+    #     "variants": [
+    #         {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
+    #     ],
+    # },
+    # "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": {
+    #     "label": "specialized moe",
+    #     "baseline": True,
+    #     "variants": [
+    #         {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keep 32)"},
+    #     ],
+    # },
+    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": {
+        "label": "specialized moe + globallb",
         "baseline": False,
         "variants": [
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keep 32)"},
         ],
     },
-    # "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": {
-    #     "label": "specialized moe + globallb",
-    #     "baseline": False,
-    #     "variants": [
-    #         {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keep 32)"},
-    #     ],
-    # },
-    # "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
-    #     "label": "specialized moe + globallb + 1sharedexp",
-    #     "baseline": False,
-    #     "variants": [
-    #         {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keep 32)"},
-    #         {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keep 32)"},
-    #     ],
-    # },
-    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301step30995-hf": {
-        "label": "specialized moe + globallb + 1shardexp + randpool",
-        "baseline": True,
+    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
+        "label": "specialized moe + globallb + 1sharedexp",
+        "baseline": False,
         "variants": [
-            # {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
-            # {"suffix": "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 16)"},
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
-            # {"suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 64)"},
+            # {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keep 32)"},
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keep 32)"},
         ],
     },
+    # "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301step30995-hf": {
+    #     "label": "specialized moe + globallb + 1shardexp + randpool",
+    #     "baseline": True,
+    #     "variants": [
+    #         {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
+    #         {"suffix": "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 16)"},
+    #         {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
+    #         {"suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 64)"},
+    #     ],
+    # },
 
 
 
