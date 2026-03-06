@@ -54,6 +54,12 @@ class DataMix(DataMixBase):
     starcoder = "starcoder"
 
     chempile = "chempile"
+    chempile_paper = "chempile_paper"
+
+    code_fim_python = "code_fim_python"
+    code_fim_java = "code_fim_java"
+    code_fim_cpp = "code_fim_cpp"
+    code_fim_by_lang = "code_fim_by_lang"
     pmc = "pmc"
     mimic_iv_note = "mimic-iv-note"
     mimic_pmc_5B = "mimic-pmc-5B"
