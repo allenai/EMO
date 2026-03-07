@@ -102,6 +102,8 @@ for MODEL in "${MODELS[@]}"; do
     # choose the number of pruned down shared experts
     if [[ $MODEL == *"twolevelbatchlbreducedp512sharedexp1"* ]]; then
         num_shared_experts=1
+    elif [[ $MODEL == *"twolevelbatchlbreducedp512sharedexp2"* ]]; then
+        num_shared_experts=2
     elif [[ $MODEL == *"twolevelbatchlbreducedp512sharedexp4c2"* ]]; then
         num_shared_experts=2
     else

@@ -81,7 +81,7 @@ MODEL_SPECS = {
             {"suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 64)"},
             {"suffix": "_keepk_96_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 96)"},
             {"suffix": "_keepk_120_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 120)"},
-
+            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
         ],
     },
 
@@ -293,7 +293,7 @@ _MODEL_BASE_COLORS: Dict[str, object] = {
 }
 
 # Per-variant alpha: first variant is fully opaque, subsequent ones fade.
-_VARIANT_ALPHAS = [1.0, 0.7, 0.5, 0.35, 0.25, 0.15]
+_VARIANT_ALPHAS = [1.0, 0.7, 0.5, 0.35, 0.25, 0.15, 1.0]
 _MODEL_VARIANT_ALPHA: Dict[str, float] = {}
 for _model_name, _spec in MODEL_SPECS.items():
     _base_label = _spec.get("label", _model_name)
