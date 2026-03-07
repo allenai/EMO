@@ -308,14 +308,15 @@ def greedy_prune_layerwise(
         # are actually different from the pre-pruning hidden states — i.e., that
         # subsequent layers will receive different inputs once this layer is pruned.
         is_first_moe_layer = all(e is None for e in experts_kept_per_layer[:-1])
-        if is_first_moe_layer:
+        actually_pruning = prune_keep_k < current_num_experts
+        if is_first_moe_layer and actually_pruning:
             hidden_before = _capture_layer_output(model, layer_idx, all_batches[0])
 
         # --- Prune layer in-place -----------------------------------------
         target_shared = num_shared_experts if current_num_shared > 0 else 0
         prune_moe_layer_inplace(layer, experts_to_keep, prune_keep_k, target_shared)
 
-        if is_first_moe_layer:
+        if is_first_moe_layer and actually_pruning:
             hidden_after = _capture_layer_output(model, layer_idx, all_batches[0])
             max_diff = (hidden_before - hidden_after).abs().max().item()
             if torch.allclose(hidden_before, hidden_after):
