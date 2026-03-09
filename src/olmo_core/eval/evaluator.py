@@ -36,6 +36,11 @@ class Evaluator(metaclass=ABCMeta):
         Iterator over the evaluator's batches.
         """
         if isinstance(self.batches, DataLoaderBase):
+            # Reset batches_processed before reshuffling so we always start from batch 0.
+            # Without this, early termination (e.g. eval_duration=steps(200)) leaves
+            # batches_processed > 0, causing subsequent eval passes to skip ahead and
+            # evaluate different data each time.
+            self.batches.reset()
             self.batches.reshuffle(epoch=1, in_memory=True)
         for batch in self.batches:
             yield batch
