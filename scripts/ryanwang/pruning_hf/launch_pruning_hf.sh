@@ -6,11 +6,12 @@ BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 MODELS=(
 #    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
-    "twolevelbatchlbreducedp512sharedexp2randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0305/step30995-hf"
+#    "twolevelbatchlbreducedp512sharedexp2randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0305/step30995-hf"
 #    "twolevelbatchlbreducedp512sharedexp1densefirst-32_1b14b_lr-4e-3_lb-1e-1_0227/step30995-hf"
 #    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213/step30995-hf"
 #    "dense_1b_lr-4e-3_0213/step30995-hf"
 #    "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212/step30995-hf"
+    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
 #    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
 
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
@@ -38,8 +39,8 @@ model_type=hf
 PRUNING_MODE="layerwise"
 
 num_epochs=1
-PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-#PRUNE_KEEP_K_VALUES=(128)
+#PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
+PRUNE_KEEP_K_VALUES=(128)
 batch_size=32
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
@@ -107,6 +108,8 @@ for MODEL in "${MODELS[@]}"; do
         num_shared_experts=2
     elif [[ $MODEL == *"twolevelbatchlbreducedp512sharedexp4c2"* ]]; then
         num_shared_experts=2
+    elif [[ $MODEL == *"moereducedp512sharedexp1"* ]]; then
+        num_shared_experts=1
     else
         num_shared_experts=0
     fi
