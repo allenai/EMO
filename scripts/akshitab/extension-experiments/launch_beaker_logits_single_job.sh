@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Usage:
-#   ./launch_beaker_logits_single_job.sh              # run locally
-#   ./launch_beaker_logits_single_job.sh --gantry      # submit as a gantry job
+#   ./launch_beaker_logits_single_job.sh              # run locally (sequentially)
+#   ./launch_beaker_logits_single_job.sh --gantry      # submit one gantry job per model
 
 # Parse flags
 USE_GANTRY=false
@@ -49,7 +49,6 @@ model_type=hf
 
 
 # Define tasks (launch_logits.py already loops over tasks internally, so we pass them all at once)
-# Format: "task_spec" (passed directly to --task)
 TASKS=(
   ######### TEST-only ##########
   # MC9 tasks
@@ -91,12 +90,6 @@ for TASK in "${TASKS[@]}"; do
         max_gpus=$gpus
     fi
 done
-for MODEL_NAME in "${MODELS[@]}"; do
-    if [[ $MODEL_NAME == *"1b35b"* ]]; then
-        max_gpus=$((max_gpus * 2))
-        break
-    fi
-done
 
 echo "Running logits for ${#MODELS[@]} models and ${#TASKS[@]} tasks..."
 echo "Mode: $(if $USE_GANTRY; then echo 'gantry'; else echo 'local'; fi)"
@@ -105,76 +98,88 @@ echo "Tasks: ${TASKS[@]}"
 echo "Base output directory: $BASE_OUTPUT_DIR"
 if $USE_GANTRY; then
     echo "Cluster: $CLUSTER"
-    echo "Max GPUs needed: $max_gpus"
 fi
 echo ""
 
-# Build the eval script: one launch_logits.py call per model with all tasks
-EVAL_SCRIPT="FAILED_MODELS=()"$'\n'
-EVAL_SCRIPT+="NUM_PASSED=0"$'\n'
+FAILED_MODELS=()
+NUM_PASSED=0
 
 for MODEL_NAME in "${MODELS[@]}"; do
     model=$(get_checkpoint_name $MODEL_NAME)
     OUTPUT_DIR="${BASE_OUTPUT_DIR}/$model"
 
-    EVAL_SCRIPT+="echo '=== Computing logits for model: ${MODEL_NAME} ==='"$'\n'
-    EVAL_SCRIPT+="if PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
+    gpus=$max_gpus
+    batch_size=$BATCH_SIZE
+    if [[ $MODEL_NAME == *"1b35b"* ]]; then
+        batch_size=$((batch_size / 4))
+        gpus=$((gpus * 2))
+    fi
+
+    safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g')
+    job_name="logits-${safe_model_name}"
+
+    echo "Processing model: $MODEL_NAME"
+    echo "  Output dir: $OUTPUT_DIR"
+    echo "  GPUs: $gpus"
+    echo "  Batch size: $batch_size"
+
+    CMD="PYTHONPATH=. python -u src/scripts/eval/launch_logits.py \
     --model ${MODEL_DIR}/${MODEL_NAME} \
     --task ${TASKS[*]} \
     --eval-dir ${OUTPUT_DIR} \
     --output-dir ${OUTPUT_DIR} \
-    --batch-size ${BATCH_SIZE} \
-    --gpus ${max_gpus}; then"$'\n'
-    EVAL_SCRIPT+="  NUM_PASSED=\$((NUM_PASSED + 1))"$'\n'
-    EVAL_SCRIPT+="  echo '=== Done: ${MODEL_NAME} ==='"$'\n'
-    EVAL_SCRIPT+="else"$'\n'
-    EVAL_SCRIPT+="  echo '=== FAILED: ${MODEL_NAME} ==='"$'\n'
-    EVAL_SCRIPT+="  FAILED_MODELS+=('${MODEL_NAME}')"$'\n'
-    EVAL_SCRIPT+="fi"$'\n'
+    --batch-size ${batch_size} \
+    --gpus ${gpus}"
 
-    echo "  Added model: $model (${#TASKS[@]} tasks)"
+    if $USE_GANTRY; then
+        gantry run \
+            --name $job_name \
+            --weka oe-training-default:/weka/oe-training-default \
+            --install "uv pip install -e \".[all]\"" \
+            --budget ai2/oceo \
+            --workspace ai2/flex2 \
+            --cluster $CLUSTER \
+            --priority urgent \
+            --allow-dirty \
+            --gpus $gpus \
+            --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+            -- \
+            bash -c "$CMD"
+
+        echo "Launched gantry job: $job_name"
+    else
+        echo "=== Computing logits for model: ${MODEL_NAME} ==="
+        if bash -c "$CMD"; then
+            NUM_PASSED=$((NUM_PASSED + 1))
+            echo "=== Done: ${MODEL_NAME} ==="
+        else
+            echo "=== FAILED: ${MODEL_NAME} ==="
+            FAILED_MODELS+=("${MODEL_NAME}")
+        fi
+    fi
+
+    echo "----------------------------------------"
 done
 
-# Add summary
-EVAL_SCRIPT+="echo ''"$'\n'
-EVAL_SCRIPT+="echo '========================================'"$'\n'
-EVAL_SCRIPT+="echo '           LOGITS SUMMARY'"$'\n'
-EVAL_SCRIPT+="echo '========================================'"$'\n'
-EVAL_SCRIPT+="echo \"Passed: \${NUM_PASSED}/${#MODELS[@]} models\""$'\n'
-EVAL_SCRIPT+="echo \"Failed: \${#FAILED_MODELS[@]}/${#MODELS[@]} models\""$'\n'
-EVAL_SCRIPT+="if [[ \${#FAILED_MODELS[@]} -gt 0 ]]; then"$'\n'
-EVAL_SCRIPT+="  echo ''"$'\n'
-EVAL_SCRIPT+="  echo 'Failed models:'"$'\n'
-EVAL_SCRIPT+="  for m in \"\${FAILED_MODELS[@]}\"; do"$'\n'
-EVAL_SCRIPT+="    echo \"  - \${m}\""$'\n'
-EVAL_SCRIPT+="  done"$'\n'
-EVAL_SCRIPT+="  exit 1"$'\n'
-EVAL_SCRIPT+="fi"$'\n'
-
-echo ""
-
 if $USE_GANTRY; then
-    echo "Launching single gantry job with $max_gpus GPUs..."
-
-    gantry run \
-        --name "logits-all-models" \
-        --weka oe-training-default:/weka/oe-training-default \
-        --install "uv pip install -e \".[all]\"" \
-        --budget ai2/oceo \
-        --workspace ai2/flex2 \
-        --cluster $CLUSTER \
-        --priority urgent \
-        --allow-dirty \
-        --gpus $max_gpus \
-        --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-        --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-        --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-        -- \
-        bash -c "$EVAL_SCRIPT"
-
-    echo "Single beaker logits job launched!"
+    echo ""
+    echo "All ${#MODELS[@]} gantry jobs launched!"
     echo "Check the beaker dashboard for job status."
 else
-    echo "Running logits locally..."
-    bash -c "$EVAL_SCRIPT"
+    echo ""
+    echo "========================================"
+    echo "           LOGITS SUMMARY"
+    echo "========================================"
+    echo "Passed: ${NUM_PASSED}/${#MODELS[@]} models"
+    echo "Failed: ${#FAILED_MODELS[@]}/${#MODELS[@]} models"
+    if [[ ${#FAILED_MODELS[@]} -gt 0 ]]; then
+        echo ""
+        echo "Failed models:"
+        for m in "${FAILED_MODELS[@]}"; do
+            echo "  - ${m}"
+        done
+        exit 1
+    fi
 fi
