@@ -32,6 +32,7 @@ from olmo_core.nn.moe.twolevel_batchlb_nomaskaux_router import (
     MoETwoLevelBatchLBNoMaskAuxRouterConfig,
 )
 from olmo_core.nn.moe.router_lbreducedp import MoELinearLBReduceDPRouterConfig
+from olmo_core.nn.moe.router_lbreducedp_sharedexp import MoELinearLBReduceDPSharedExpRouterConfig
 from olmo_core.nn.moe.twolevel_batchlb_router import MoETwoLevelBatchLBRouterConfig
 from olmo_core.nn.moe.twolevel_pbatchlb_router import MoETwoLevelPBatchLBRouterConfig
 from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouterConfig
@@ -222,6 +223,22 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
         # Replace router config
         model_config.block.feed_forward_moe.router = MoELinearLBReduceDPRouterConfig(**router_kwargs)
+    elif opts.model_type == "moe_lbreducedp_sharedexp":
+        log.info("Applying standard moe routers with data parallel reduced load balancing and shared experts to the model...")
+        if opts.num_shared_experts is None:
+            raise ValueError(
+                "num_shared_experts must be specified for moe_lbreducedp_sharedexp model type."
+            )
+        router_kwargs = model_config.block.feed_forward_moe.router.as_dict(
+            exclude_none=True, recurse=False
+        )
+        router_kwargs.pop("name")
+        router_kwargs.update(
+            num_shared_experts=opts.num_shared_experts,
+        )
+
+        # Replace router config
+        model_config.block.feed_forward_moe.router = MoELinearLBReduceDPSharedExpRouterConfig(**router_kwargs)
     elif opts.model_type == "two-level":
         log.info("Applying two-level routers to the model...")
         if opts.document_expert_pool is None:

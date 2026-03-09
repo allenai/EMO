@@ -12,6 +12,8 @@ from olmo_core.nn.transformer.block import (
 )
 from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexppool_router import MoETwoLevelBatchLBReduceDPSharedExpPoolRouter
 from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_router import MoETwoLevelBatchLBReduceDPSharedExpRouter
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_randpool_router import MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter
+from olmo_core.nn.moe.router_lbreducedp_sharedexp import MoELinearLBReduceDPSharedExpRouter
 from olmo_core.nn.transformer.model import (
     MoETransformer,
     NormalizedTransformer,
@@ -123,7 +125,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
             layer_shared = 0
             if isinstance(b.feed_forward_moe.router, MoETwoLevelBatchLBReduceDPSharedExpPoolRouter):
                 layer_shared = b.feed_forward_moe.router.num_shared_experts_pool
-            elif isinstance(b.feed_forward_moe.router, MoETwoLevelBatchLBReduceDPSharedExpRouter):
+            elif isinstance(b.feed_forward_moe.router, (MoETwoLevelBatchLBReduceDPSharedExpRouter, MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter, MoELinearLBReduceDPSharedExpRouter)):
                 layer_shared = b.feed_forward_moe.router.num_shared_experts
             num_shared_experts_per_layer.append(layer_shared)
 
@@ -138,7 +140,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
             # NOTE: we use the total pool size, and rely on pruning scripts for pruning shared experts down
             # NOTE: we discard the shared_exp_lb_loss_weight, since we by default assume all shared experts are active for all tokens, and any deviation from this will be handled by pruning scripts and not by HF config
             num_shared_experts = block.feed_forward_moe.router.num_shared_experts_pool
-        elif isinstance(block.feed_forward_moe.router, MoETwoLevelBatchLBReduceDPSharedExpRouter):
+        elif isinstance(block.feed_forward_moe.router, (MoETwoLevelBatchLBReduceDPSharedExpRouter, MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter, MoELinearLBReduceDPSharedExpRouter)):
             num_shared_experts = block.feed_forward_moe.router.num_shared_experts
         return FlexOlmoNoQKNormPrenormConfig(
             vocab_size=model.vocab_size,
