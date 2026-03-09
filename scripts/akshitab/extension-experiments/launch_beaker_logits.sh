@@ -13,16 +13,21 @@ MODELS=(
 
     # freeze-fix-moe1b14b_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
     # ff-moe1b14b_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+
     # ff-moe_1b14b_128base_4math_10B_4code_init_top2_code_mix_average_noise_10B_lr_4e-4/step2385-hf
     # merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
 
-    # math extension before training:
+    ## math extension before training:
     # extensions/moe_1b14b_132experts_olmoe-mix_130B_1103_step30995_init_top2_average_noise_10perc-hf
-    # code extension before training:
+    ## code extension before training:
     # extensions/moe_1b14b_132experts_olmoe-mix_130B_1103_step30995_init_top2_code_average_noise-hf
     
-    # merged model
-    merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
+    ## merged model
+    # merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
+
+
+    moe1b14b_128experts_76_5_122_126_trained_math_10B_lr_4e-4/step2385-hf
+    moe1b14b_128experts_76_41_120_3_trained_code_10B_lr_4e-4/step2385-hf
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
@@ -35,24 +40,26 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
   # MC9 tasks
-#  "arc_easy|arc_easy:rc_test::olmes"
-#  "arc_challenge|arc_challenge:rc_test::olmes"
-#  "boolq|boolq:rc_test::olmes"
-#  "csqa|csqa:rc_test::olmes"
- "hellaswag|hellaswag:rc_test::olmes"
-#  "openbookqa|openbookqa:rc_test::olmes"
-#  "piqa|piqa:rc_test::olmes"
-#  "socialiqa|socialiqa:rc_test::olmes"
-#  "winogrande|winogrande:rc_test::olmes"
+ "arc_easy|arc_easy:rc_test::olmes"
+ "arc_challenge|arc_challenge:rc_test::olmes"
+ "boolq|boolq:rc_test::olmes"
+ "csqa|csqa:rc_test::olmes"
+#  "hellaswag|hellaswag:rc_test::olmes"
+ "openbookqa|openbookqa:rc_test::olmes"
+ "piqa|piqa:rc_test::olmes"
+ "socialiqa|socialiqa:rc_test::olmes"
+ "winogrande|winogrande:rc_test::olmes"
 
     # mbpp:3shot:bpb::none
     # codex_humaneval:3shot:bpb::none
 
     "gsm8k::olmes"
-    # "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
-    # "minerva_math_500::olmes"
+    # # "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
+    # # "minerva_math_500::olmes"
     "mbpp"
     "codex_humaneval"
+
+    "squad|squad::olmes"
 )
 
 # Function to get checkpoint name (matching the original script)

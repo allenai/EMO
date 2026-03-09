@@ -68,13 +68,13 @@ MODELS=(
 
     # freeze-fix-moe1b14b_132experts_4trained_math_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
     # freeze-fix-moe1b14b_132experts_4trained_starcoder_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
-    # ff-moe1b14b_132experts_4trained_starcoder_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    ff-moe1b14b_132experts_4trained_starcoder_init_top2_average_noise_10B_lr_4e-4/step2385-hf
     # ff-moe_1b14b_128base_4math_10B_4code_init_top2_starcoder_average_noise_10B_lr_4e-4/step2385-hf
 
     # merged_moe_1b14b_128base_4math_10B_4starcoder_10B_init_top2_average_noise-hf
     # ff-moe_1b14b_128base_4math_10B_4code_init_top2_code_mix_average_noise_10B_lr_4e-4/step2385-hf
     # freeze-fix-moe1b14b_132experts_4trained_code_mix_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
-    # ff-moe1b14b_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    ff-moe1b14b_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
     # merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
 
     # ff-moe1b14b_132experts_4trained_croissant_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
@@ -84,7 +84,7 @@ MODELS=(
 
     # rt-merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_1B_lr_4e-4/step239-hf
 
-    # merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
+    merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
     # freeze-fix-moe1b14b_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
 
     # merged_router_row_norm_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
@@ -96,6 +96,9 @@ MODELS=(
     # merged_moe_1b14b_128base_2math_5B_4code_mix_10B_init_top2_average_noise-hf
     # merged_moe_1b14b_128base_4math_5B_4code_mix_10B_init_top2_average_noise-hf
     rt-realdata-merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_1B_lr_4e-4/step239-hf
+    # ff-moe1b14b_132experts_4trained_sharedexp56math_init_top2_average_10B_lr_4e-4/step2385-hf
+    moe1b14b_128experts_76_5_122_126_trained_math_10B_lr_4e-4/step2385-hf
+    # moe1b14b_128experts_76_41_120_3_trained_code_10B_lr_4e-4/step2385-hf
 
 )
 
@@ -109,25 +112,27 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
     # MC9 tasks
-    "arc_easy|arc_easy:rc_test::olmes"
-    "arc_challenge|arc_challenge:rc_test::olmes"
-    "boolq|boolq:rc_test::olmes"
-    "csqa|csqa:rc_test::olmes"
-    "hellaswag|hellaswag:rc_test::olmes"
-    "openbookqa|openbookqa:rc_test::olmes"
-    "piqa|piqa:rc_test::olmes"
-    "socialiqa|socialiqa:rc_test::olmes"
-    "winogrande|winogrande:rc_test::olmes"
+    # "arc_easy|arc_easy:rc_test::olmes"
+    # "arc_challenge|arc_challenge:rc_test::olmes"
+    # "boolq|boolq:rc_test::olmes"
+    # "csqa|csqa:rc_test::olmes"
+    # "hellaswag|hellaswag:rc_test::olmes"
+    # "openbookqa|openbookqa:rc_test::olmes"
+    # "piqa|piqa:rc_test::olmes"
+    # "socialiqa|socialiqa:rc_test::olmes"
+    # "winogrande|winogrande:rc_test::olmes"
 
-    # math tasks
-    "gsm8k::olmes"
-    "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
-    "minerva_math_500::olmes"
-    "basic_skills::olmes"
+    "squad|squad::olmes"
 
-    # code tasks
-    "mbpp:3shot:bpb::none"
-    "codex_humaneval:3shot:bpb::none"
+    # # math tasks
+    # "gsm8k::olmes"
+    # "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
+    # "minerva_math_500::olmes"
+    # "basic_skills::olmes"
+
+    # # code tasks
+    # "mbpp:3shot:bpb::none"
+    # "codex_humaneval:3shot:bpb::none"
 )
 
 # Function to get checkpoint name (matching the original script)

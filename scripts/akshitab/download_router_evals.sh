@@ -23,6 +23,8 @@ MODELS=(
 
   # merged model:
   merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
+
+  moe1b14b_128experts_76_5_122_126_trained_math_10B_lr_4e-4_step2385-hf
 )
 
 mkdir -p "$OUTPUT_DIR"
