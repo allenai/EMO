@@ -272,6 +272,14 @@ class LMEvaluatorCallbackConfig(CallbackConfig):
                 f"is too long for the train module's maximum eval sequence length ({batch_spec.max_sequence_length:,d} tokens)"
             )
 
+        # TODO(kevinf): The eval batch size below comes from eval_batch_spec which returns
+        # rank_microbatch_size — the training gradient accumulation granularity, NOT a memory
+        # limit. With seq_len=8192 this means only 1 instance per GPU per eval step, wasting
+        # GPU capacity (no backward pass during eval, so memory budget is ~2x training).
+        # Fix: add a rank_eval_instances_per_step config field here, compute
+        # global_eval_batch_size = rank_eval_instances_per_step * seq_len * dp_world_size,
+        # and use that instead. Increasing eval_duration is a workaround (same metric result
+        # but slower throughput).
         global_eval_batch_size: int
         if batch_spec.batch_size_unit == EvalBatchSizeUnit.tokens:
             global_eval_batch_size = batch_spec.rank_batch_size * get_world_size(
