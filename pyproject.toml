@@ -190,4 +190,9 @@ index-strategy = "unsafe-best-match"
 # and works fine with newer versions). Needed for huggingface_hub's maxdepth support.
 override-dependencies = [
     "fsspec>=2024.2.0,<=2025.3.0",
-]                                                  
+    "pytrec-eval>=0.5 ; sys_platform == 'never'",
+]
+
+# Replace pytrec-eval with the maintained fork that builds on modern toolchains
+[tool.uv.dependency-overrides]
+pytrec-eval = "pytrec-eval-terrier"                                                  
