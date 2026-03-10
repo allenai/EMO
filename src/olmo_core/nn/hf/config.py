@@ -165,6 +165,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
             num_shared_experts_per_layer=num_shared_experts_per_layer if has_dense_layers else None,
             dense_intermediate_size=dense_intermediate_size,
             dense_mlp_bias=dense_mlp_bias,
+            output_router_logits=True,
         )
     elif (
         isinstance(block, MoETransformerBlock)
@@ -189,6 +190,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
             num_experts_per_tok=block.feed_forward_moe.router.top_k,
             num_experts=block.feed_forward_moe.router.num_experts,
             tie_word_embeddings=False,
+            output_router_logits=True,
         )
     return FlexOlmoConfig(
         vocab_size=model.vocab_size,
@@ -208,6 +210,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
         num_experts_per_tok=block.feed_forward_moe.router.top_k,
         num_experts=block.feed_forward_moe.router.num_experts,
         tie_word_embeddings=False,
+        output_router_logits=True,
     )
 
 

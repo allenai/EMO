@@ -303,7 +303,7 @@ def register_cluster(name: str, description: str):
 
 
 @register_cluster("kmeans", "MiniBatchKMeans clustering")
-def cluster_kmeans(emb: np.ndarray, k: int) -> np.ndarray:
+def cluster_kmeans(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
     from sklearn.cluster import MiniBatchKMeans
 
     km = MiniBatchKMeans(
@@ -315,8 +315,199 @@ def cluster_kmeans(emb: np.ndarray, k: int) -> np.ndarray:
     return labels
 
 
+@register_cluster("spherical_kmeans", "Spherical KMeans (L2-normalize centroids each iteration)")
+def cluster_spherical_kmeans(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
+    from sklearn.cluster import MiniBatchKMeans
+    from sklearn.preprocessing import normalize
+
+    # Normalize input to unit sphere
+    emb_normed = normalize(emb, norm="l2")
+
+    km = MiniBatchKMeans(
+        n_clusters=k, n_init=10, max_iter=500,
+        batch_size=4096, random_state=42,
+    )
+
+    # Iterative: fit, normalize centroids, reassign
+    km.fit(emb_normed)
+    for iteration in range(20):
+        old_centers = km.cluster_centers_.copy()
+        km.cluster_centers_ = normalize(km.cluster_centers_, norm="l2")
+        labels = km.predict(emb_normed)
+        # Refit centroids from assignments
+        for c in range(k):
+            mask = labels == c
+            if mask.sum() > 0:
+                km.cluster_centers_[c] = normalize(
+                    emb_normed[mask].mean(axis=0, keepdims=True), norm="l2"
+                )[0]
+        # Check convergence
+        delta = np.abs(km.cluster_centers_ - old_centers).max()
+        if delta < 1e-6:
+            logger.info(f"  Spherical KMeans: converged at iteration {iteration + 1}")
+            break
+
+    labels = km.predict(emb_normed)
+    logger.info(f"  Spherical KMeans: k={k}, {iteration + 1} refinement iterations")
+    return labels
+
+
+# ---------------------------------------------------------------------------
+# Hierarchical clustering helpers
+# ---------------------------------------------------------------------------
+
+def _normalize_to_distribution(arr: np.ndarray) -> np.ndarray:
+    """Normalize each row to sum to 1 (for JSD). Clips negatives to 0."""
+    arr = np.clip(arr, 0, None)
+    row_sums = arr.sum(axis=1, keepdims=True)
+    row_sums = np.where(row_sums == 0, 1, row_sums)
+    return arr / row_sums
+
+
+def _pairwise_to_condensed(square: np.ndarray) -> np.ndarray:
+    """Convert a square distance matrix to scipy condensed form (upper triangle)."""
+    from scipy.spatial.distance import squareform
+    return squareform(square, checks=False)
+
+
+def _fast_pairwise(data: np.ndarray, metric: str) -> np.ndarray:
+    """
+    Compute pairwise distances using fast BLAS-based implementations.
+
+    Returns condensed distance matrix (N*(N-1)/2,) as float64.
+
+    - cosine: 1 - X_norm @ X_norm.T (BLAS matmul)
+    - euclidean: sqrt(||x||^2 + ||y||^2 - 2*x.y) via BLAS matmul
+    - jensenshannon: scipy pdist (C-optimized, single-threaded — no good
+      parallel option without OpenBLAS thread issues)
+    """
+    N = data.shape[0]
+
+    if metric == "cosine":
+        from sklearn.preprocessing import normalize
+        X_norm = normalize(data, norm="l2").astype(np.float64)
+        sim = X_norm @ X_norm.T
+        np.clip(sim, -1.0, 1.0, out=sim)
+        dist_square = 1.0 - sim
+        np.fill_diagonal(dist_square, 0.0)
+        return _pairwise_to_condensed(dist_square)
+
+    elif metric == "euclidean":
+        # BLAS matmul: ||x-y||^2 = ||x||^2 + ||y||^2 - 2*x.y
+        X = data.astype(np.float64)
+        sq_norms = (X ** 2).sum(axis=1)
+        gram = X @ X.T
+        dist_sq = sq_norms[:, None] + sq_norms[None, :] - 2 * gram
+        np.maximum(dist_sq, 0.0, out=dist_sq)  # numerical safety
+        dist_square = np.sqrt(dist_sq)
+        np.fill_diagonal(dist_square, 0.0)
+        return _pairwise_to_condensed(dist_square)
+
+    elif metric == "jensenshannon":
+        from scipy.spatial.distance import pdist
+        return pdist(data, metric="jensenshannon").astype(np.float64)
+
+    else:
+        from scipy.spatial.distance import pdist
+        return pdist(data, metric=metric).astype(np.float64)
+
+
+def compute_distance_matrix(
+    emb: np.ndarray,
+    dist_metric: str,
+    dist_mode: str,
+    num_layers: int,
+    num_experts: int,
+) -> np.ndarray:
+    """
+    Compute condensed pairwise distance matrix.
+
+    Uses optimized implementations:
+    - cosine: BLAS matrix multiply (1 - X_norm @ X_norm.T)
+    - euclidean: sklearn parallel pairwise_distances
+    - jensenshannon: sklearn parallel with scipy JSD callable
+
+    Args:
+        emb: (N, num_layers * num_experts) embedding array
+        dist_metric: 'cosine', 'euclidean', or 'jensenshannon'
+        dist_mode: 'flat' (whole vector) or 'per_layer' (average per-layer distances)
+        num_layers, num_experts: MoE dimensions
+
+    Returns:
+        Condensed distance matrix of shape (N*(N-1)/2,) as float64.
+    """
+    import time
+
+    N = emb.shape[0]
+    n_pairs = N * (N - 1) // 2
+    logger.info(f"Computing {dist_metric} distance ({dist_mode} mode) "
+                f"for {N} docs ({n_pairs:,} pairs) ...")
+
+    if dist_mode == "flat":
+        data = emb
+        if dist_metric == "jensenshannon":
+            data = _normalize_to_distribution(data)
+        t0 = time.time()
+        dist = _fast_pairwise(data, dist_metric)
+        logger.info(f"  Flat distance computed in {time.time() - t0:.1f}s")
+
+    elif dist_mode == "per_layer":
+        reshaped = emb.reshape(N, num_layers, num_experts)
+        dist_sum = np.zeros(n_pairs, dtype=np.float64)
+
+        t0 = time.time()
+        for layer_idx in range(num_layers):
+            layer_data = reshaped[:, layer_idx, :].copy()
+            if dist_metric == "jensenshannon":
+                layer_data = _normalize_to_distribution(layer_data)
+            layer_dist = _fast_pairwise(layer_data, dist_metric)
+            dist_sum += layer_dist
+
+            if (layer_idx + 1) % 4 == 0 or layer_idx == num_layers - 1:
+                elapsed = time.time() - t0
+                logger.info(f"  Layer {layer_idx + 1}/{num_layers} done ({elapsed:.1f}s)")
+
+        dist = dist_sum / num_layers
+        logger.info(f"  Per-layer distance computed in {time.time() - t0:.1f}s")
+    else:
+        raise ValueError(f"Unknown dist_mode '{dist_mode}'. Use 'flat' or 'per_layer'.")
+
+    logger.info(f"  Distance matrix: {dist.shape[0]:,} pairs, "
+                f"range=[{dist.min():.4f}, {dist.max():.4f}], "
+                f"mean={dist.mean():.4f}, memory={dist.nbytes / 1e9:.1f}GB")
+    return dist
+
+
+def compute_linkage(dist_condensed: np.ndarray, linkage_method: str) -> np.ndarray:
+    """Compute hierarchical clustering linkage matrix from condensed distances."""
+    import time
+    from scipy.cluster.hierarchy import linkage
+
+    logger.info(f"  Computing linkage (method={linkage_method}) ...")
+    t0 = time.time()
+    Z = linkage(dist_condensed, method=linkage_method)
+    logger.info(f"  Linkage computed in {time.time() - t0:.1f}s")
+    return Z
+
+
+@register_cluster("hierarchical", "Hierarchical agglomerative clustering with precomputed distances")
+def cluster_hierarchical(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
+    """
+    Hierarchical clustering. Requires kwargs:
+        linkage_matrix: precomputed linkage matrix (from compute_linkage)
+    """
+    from scipy.cluster.hierarchy import fcluster
+
+    Z = kwargs["linkage_matrix"]
+    labels = fcluster(Z, t=k, criterion="maxclust")
+    labels = labels - 1  # fcluster returns 1-based labels
+    n_actual = len(set(labels))
+    logger.info(f"  Hierarchical: cut at k={k}, got {n_actual} actual clusters")
+    return labels
+
+
 @register_cluster("gmm", "Gaussian Mixture Model clustering")
-def cluster_gmm(emb: np.ndarray, k: int) -> np.ndarray:
+def cluster_gmm(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
     from sklearn.mixture import GaussianMixture
 
     gmm = GaussianMixture(
@@ -329,7 +520,7 @@ def cluster_gmm(emb: np.ndarray, k: int) -> np.ndarray:
     return labels
 
 
-def run_clustering(emb: np.ndarray, cluster_name: str, k: int) -> np.ndarray:
+def run_clustering(emb: np.ndarray, cluster_name: str, k: int, **kwargs) -> np.ndarray:
     """Run a named clustering algorithm. Returns (N,) int array of labels."""
     if cluster_name not in CLUSTER_REGISTRY:
         raise ValueError(
@@ -337,16 +528,23 @@ def run_clustering(emb: np.ndarray, cluster_name: str, k: int) -> np.ndarray:
             f"Available: {', '.join(sorted(CLUSTER_REGISTRY))}"
         )
     logger.info(f"Clustering: {cluster_name} with k={k}")
-    return CLUSTER_REGISTRY[cluster_name]["fn"](emb, k)
+    return CLUSTER_REGISTRY[cluster_name]["fn"](emb, k, **kwargs)
 
 
 # ---------------------------------------------------------------------------
 # Evaluation metrics
 # ---------------------------------------------------------------------------
 
-def evaluate_clustering(emb: np.ndarray, labels: np.ndarray, meta: list) -> dict:
+def evaluate_clustering(
+    emb: np.ndarray, labels: np.ndarray, meta: list,
+    precomputed_dist: np.ndarray = None,
+) -> dict:
     """
     Compute clustering quality metrics.
+
+    If precomputed_dist is provided (condensed distance matrix), silhouette is
+    computed using that distance. Otherwise, euclidean and cosine silhouette are
+    computed from the embedding vectors.
 
     Returns a dict of metric_name -> value.
     """
@@ -363,16 +561,30 @@ def evaluate_clustering(emb: np.ndarray, labels: np.ndarray, meta: list) -> dict
         logger.warning("  Only 1 cluster — skipping all metrics")
         return metrics
 
-    # Silhouette score: [-1, 1], higher = better separated clusters
     n_sample = min(10_000, len(emb))
     rng = np.random.default_rng(42)
     idx = rng.choice(len(emb), n_sample, replace=False)
-    metrics["silhouette"] = float(silhouette_score(
-        emb[idx], labels[idx], metric="euclidean", sample_size=None
-    ))
-    metrics["silhouette_cosine"] = float(silhouette_score(
-        emb[idx], labels[idx], metric="cosine", sample_size=None
-    ))
+
+    if precomputed_dist is not None:
+        # Use precomputed distance matrix for silhouette
+        from scipy.spatial.distance import squareform
+        dist_square = squareform(precomputed_dist)
+        idx_sorted = np.sort(idx)
+        sub_dist = dist_square[np.ix_(idx_sorted, idx_sorted)]
+        sub_labels = labels[idx_sorted]
+        metrics["silhouette"] = float(silhouette_score(
+            sub_dist, sub_labels, metric="precomputed", sample_size=None
+        ))
+        # No separate cosine silhouette — the precomputed distance already
+        # encodes the chosen metric
+    else:
+        # Silhouette score: [-1, 1], higher = better separated clusters
+        metrics["silhouette"] = float(silhouette_score(
+            emb[idx], labels[idx], metric="euclidean", sample_size=None
+        ))
+        metrics["silhouette_cosine"] = float(silhouette_score(
+            emb[idx], labels[idx], metric="cosine", sample_size=None
+        ))
 
     # Calinski-Harabasz index: higher = denser, well-separated clusters
     metrics["calinski_harabasz"] = float(calinski_harabasz_score(emb, labels))
@@ -547,6 +759,16 @@ def main():
                         help="Layer range to use (e.g. '3-16' for layers 3..15, '11-16' for layers 11..15). "
                              "Uses 1-indexed inclusive start, exclusive end. "
                              "If not specified, uses all layers.")
+    parser.add_argument("--dist-metric", type=str, default="cosine",
+                        help="Distance metric for hierarchical clustering: "
+                             "cosine, euclidean, jensenshannon (default: cosine)")
+    parser.add_argument("--dist-mode", type=str, default="flat",
+                        help="Distance computation mode for hierarchical clustering: "
+                             "flat (whole vector) or per_layer (avg per-layer distances) "
+                             "(default: flat)")
+    parser.add_argument("--linkage-method", type=str, default="average",
+                        help="Linkage method for hierarchical clustering: "
+                             "average, complete (default: average)")
     parser.add_argument("--list", action="store_true",
                         help="List available embeddings, transforms, and clusterers, then exit")
     args = parser.parse_args()
@@ -591,6 +813,30 @@ def main():
     transformed = apply_transform(emb, args.transform, info)
     logger.info(f"  Output shape: {transformed.shape}")
 
+    # For hierarchical clustering: precompute distance matrix + linkage once
+    dist_condensed = None
+    linkage_matrix = None
+    cluster_kwargs = {}
+    if args.cluster == "hierarchical":
+        # For per_layer mode, use the original (untransformed) embedding since
+        # transforms like PCA destroy the layer structure.
+        # For flat mode, use the transformed embedding.
+        if args.dist_mode == "per_layer":
+            if args.transform != "identity":
+                logger.warning(
+                    f"  per_layer distance mode ignores transform '{args.transform}' — "
+                    f"using raw embedding to preserve layer structure"
+                )
+            dist_emb = emb
+        else:
+            dist_emb = transformed
+        dist_condensed = compute_distance_matrix(
+            dist_emb, args.dist_metric, args.dist_mode,
+            info["num_layers"], info["num_standard_experts"],
+        )
+        linkage_matrix = compute_linkage(dist_condensed, args.linkage_method)
+        cluster_kwargs["linkage_matrix"] = linkage_matrix
+
     # Cluster + evaluate for each k
     all_results = []
     for k in args.k:
@@ -598,8 +844,10 @@ def main():
         args_k = argparse.Namespace(**vars(args), **{"k_single": k})  # for save_results
         args_k.k = k
 
-        labels = run_clustering(transformed, args.cluster, k)
-        metrics = evaluate_clustering(transformed, labels, meta)
+        labels = run_clustering(transformed, args.cluster, k, **cluster_kwargs)
+        metrics = evaluate_clustering(
+            transformed, labels, meta, precomputed_dist=dist_condensed,
+        )
         print_metrics(metrics)
         all_results.append({"k": k, **metrics})
 

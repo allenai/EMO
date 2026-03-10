@@ -58,6 +58,7 @@ from src.scripts.analysis.utils import (
     iter_documents,
     load_model_and_tokenizer,
     load_source_documents,
+    load_source_documents_shuffled,
     stream_bytes_from_s3,
     tokens_from_bytes,
 )
@@ -406,6 +407,11 @@ def main():
     parser.add_argument("--sanity-check-only", action="store_true")
     parser.add_argument("--debug", action="store_true",
                         help="Debug mode: only load from the first 2 data sources")
+    parser.add_argument("--shuffle", action="store_true",
+                        help="Randomly sample documents from across all files in each source "
+                             "(instead of reading sequentially from the start)")
+    parser.add_argument("--shuffle-seed", type=int, default=42,
+                        help="Random seed for shuffled sampling (default: 42)")
     parser.add_argument("--embeddings", default="all",
                         help=f"Comma-separated embedding types to compute, or 'all'. "
                              f"Available: {', '.join(all_names)} (default: all)")
@@ -483,9 +489,15 @@ def main():
             continue
 
         logger.info(f"\nSource: {label}  target={target_source_tokens:,} tokens")
-        docs = load_source_documents(
-            info["all_files"], target_source_tokens, args.min_doc_len, args.max_doc_len
-        )
+        if args.shuffle:
+            docs = load_source_documents_shuffled(
+                info["all_files"], target_source_tokens, args.min_doc_len, args.max_doc_len,
+                seed=args.shuffle_seed,
+            )
+        else:
+            docs = load_source_documents(
+                info["all_files"], target_source_tokens, args.min_doc_len, args.max_doc_len
+            )
 
         if not docs:
             logger.warning(f"  No documents collected for {label}, skipping")
@@ -554,6 +566,7 @@ def main():
         "model_path": args.model_path,
         "embedding_types": [et.name for et in embedding_types],
         "source_doc_counts": dict(source_counts),
+        "shuffled": args.shuffle,
     }
     out_info = os.path.join(args.output_dir, "info.json")
     with open(out_info, "w") as f:
