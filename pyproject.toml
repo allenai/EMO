@@ -62,6 +62,7 @@ eval = [
     "ai2-olmes@git+https://github.com/allenai/olmes@721d796d00db4c2044a89ef9e1f81463e06f3090", # "ai2-olmes@git+https://github.com/allenai/olmes@162158ed7878a5d107f5c7e5ad1cebed2a95a26d",
     "beaker-gantry",
     "ai2-olmo-eval @ git+https://github.com/allenai/OLMo-in-loop-evals@kevinf/add-legalbench",
+    "pytrec-eval-terrier",
     "prettytable",
     "s3fs"
 ]
