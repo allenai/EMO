@@ -11,8 +11,8 @@ MODELS=(
 #    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213/step30995-hf"
 #    "dense_1b_lr-4e-3_0213/step30995-hf"
 #    "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212/step30995-hf"
-    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
-#    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
+#    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
+    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
 
 #    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
 #    "moe_1b14b_128experts_lb-1e-1_1217/step30995-hf"
