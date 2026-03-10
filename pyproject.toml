@@ -63,6 +63,7 @@ eval = [
     "beaker-gantry",
     "ai2-olmo-eval @ git+https://github.com/allenai/OLMo-in-loop-evals@kevinf/add-legalbench",
     "pytrec-eval-terrier",
+    "setuptools",
     "prettytable",
     "s3fs"
 ]
