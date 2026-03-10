@@ -42,6 +42,13 @@ MODEL_SPECS = {
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
         ],
     },
+    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308step30995-hf": {
+        "label": "moe_small_sharedexp",
+        "baseline": False,
+        "variants": [
+            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": " "},
+        ],
+    },
     "dense_1b_lr-4e-3_0213step30995-hf": {
         "label": "dense",
         "baseline": True,
@@ -73,7 +80,7 @@ MODEL_SPECS = {
     # },
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301step30995-hf": {
         "label": "specialized moe + globallb + 1shardexp + randpool",
-        "baseline": True,
+        "baseline": False,
         "variants": [
             {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
             # {"suffix": "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 16)"},
@@ -297,6 +304,8 @@ DEFAULT_OUTPUT_SUBDIR = "presentation_0305_plots"
 _MODEL_BASE_COLORS: Dict[str, object] = {
     "moe":                                                  (0.1216, 0.4667, 0.7059),  # tab10 blue
     "moe_small":                                            (1.0000, 0.4980, 0.0549),  # tab10 orange
+    # different shaed of orange
+    "moe_small_sharedexp":                                   (1.0000, 0.6471, 0.0000),  # tab10 orange (darker)
     "dense":                                                (0.1725, 0.6275, 0.1725),  # tab10 green
     "specialized moe":                                      (0.8392, 0.1529, 0.1569),  # tab10 red
     "specialized moe + globallb":                           (0.5804, 0.4039, 0.7412),  # tab10 purple
