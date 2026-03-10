@@ -41,7 +41,8 @@ class Evaluator(metaclass=ABCMeta):
             # batches_processed > 0, causing subsequent eval passes to skip ahead and
             # evaluate different data each time.
             self.batches.reset()
-            self.batches.reshuffle(epoch=1, in_memory=True)
+            # self.batches.reshuffle(epoch=1, in_memory=True)
+            self.batches.reshuffle(in_memory=True)
         for batch in self.batches:
             yield batch
         if isinstance(self.batches, DataLoaderBase):
