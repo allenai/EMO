@@ -248,17 +248,22 @@ def tokenize_and_mask_example(
     Returns:
         Dict with input_ids, attention_mask, and labels
     """
-    # Tokenize
+    # Tokenize (reserve 1 token for EOS)
     tokenized = tokenizer(
         full_text,
         truncation=True,
-        max_length=max_length,
+        max_length=max_length - 1,
         padding=False,
         return_tensors=None,
     )
 
     input_ids = tokenized["input_ids"]
     attention_mask = tokenized["attention_mask"]
+
+    # Append EOS token so the model learns to stop generating
+    eos_token_id = tokenizer.eos_token_id
+    input_ids = input_ids + [eos_token_id]
+    attention_mask = attention_mask + [1]
 
     # Get delimiter token IDs
     delimiter_ids = tokenizer(delimiter, add_special_tokens=False)["input_ids"]
