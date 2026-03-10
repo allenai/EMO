@@ -91,17 +91,42 @@ All embeddings have shape `(num_docs, num_layers * num_experts)` = `(N, 2032)` f
 
 Transform embeddings, cluster, and evaluate. Pass the per-model data directory.
 
-```bash
-DATA_DIR="claude_outputs/analysis/router_clustering_pretraining/<model_name>"
+### Focused sweeps (recommended)
 
-# Sweep all combinations
-bash scripts/ryanwang/analysis/run_sweep_all.sh "$DATA_DIR"
+The `run_sweep_focused*.sh` scripts run targeted sweep grids based on prior results.
+Each script documents its grid and rationale in comments at the top. Edit the
+`DATA_DIR` variable inside the script to point at your model's data directory.
+
+```bash
+# v1: baseline grid — {probs, topk_freq} × {identity, l2} × kmeans × k={32,64,128}
+bash scripts/ryanwang/analysis/run_sweep_focused.sh
+
+# v2: based on v1 findings — topk_freq × mean_pca_l2 × {kmeans, spherical_kmeans} × k={16,32}
+bash scripts/ryanwang/analysis/run_sweep_focused_v2.sh
+
+# v3: hierarchical clustering — {topk_freq, probs} × {cosine, euclidean, jensenshannon} × {flat, per_layer} × average × k={16,32,64,128}
+bash scripts/ryanwang/analysis/run_sweep_focused_v3.sh
+```
+
+Results are saved to `sweep_results_focused*.tsv` in the model's data directory.
+See `sweep_notes.md` (per-model) for full results tables and takeaways.
+
+### Legacy sweep (deprecated)
+
+`run_sweep_all.sh` runs an exhaustive grid over all embedding types, transforms,
+and cluster methods. It was used for the original `router_clustering_pretraining/`
+and `router_clustering_weborganizer/` analyses. Superseded by the focused sweeps above.
+
+### Single run
+
+```bash
+DATA_DIR="claude_outputs/analysis/router_clustering_pretraining_shuffled/<model_name>"
 
 # Single run
-bash scripts/ryanwang/analysis/run_transform_and_cluster.sh "$DATA_DIR" probs mean_pca_l2 gmm 64
+bash scripts/ryanwang/analysis/run_transform_and_cluster.sh "$DATA_DIR" probs mean_pca_l2 spherical_kmeans 32
 
-# Single run with saving
-bash scripts/ryanwang/analysis/run_transform_and_cluster.sh "$DATA_DIR" probs mean_pca_l2 gmm 64 --save
+# Single run with saving (writes assignments.npy, summary.json, run_info.json)
+bash scripts/ryanwang/analysis/run_transform_and_cluster.sh "$DATA_DIR" probs mean_pca_l2 spherical_kmeans 32 --save
 ```
 
 ## Step 4: HTML Visualizer
@@ -132,8 +157,12 @@ bash scripts/ryanwang/analysis/run_expert_coverage.sh models/<model_name>/step<N
 | Script | Args | Description |
 |--------|------|-------------|
 | `run_analyze_data_mix.sh` | (none) | One-time: compute data source fractions |
-| `run_extract_embeddings.sh` | `[MODEL_PATH]` | Extract embeddings (GPU) + sparsify |
-| `run_sweep_all.sh` | `<DATA_DIR>` | Full sweep over all combinations |
+| `run_extract_embeddings.sh` | `[MODEL_PATH]` | Extract embeddings (GPU, sequential sampling) + sparsify |
+| `run_extract_embeddings_shuffled.sh` | (none) | Extract embeddings (GPU, shuffled sampling) for randpool + baseline |
+| `run_sweep_focused.sh` | (none) | Sweep v1: baseline grid (edit DATA_DIR inside) |
+| `run_sweep_focused_v2.sh` | (none) | Sweep v2: PCA + spherical k-means (edit DATA_DIR inside) |
+| `run_sweep_focused_v3.sh` | (none) | Sweep v3: hierarchical clustering (edit DATA_DIR inside) |
+| `run_sweep_all.sh` | `<DATA_DIR>` | **(deprecated)** Full sweep over all combinations |
 | `run_transform_and_cluster.sh` | `<DATA_DIR> <emb> <transform> <cluster> <k> [--save]` | Single transform+cluster run |
 | `run_expert_coverage.sh` | `[MODEL_PATH]` | Expert coverage analysis |
 | `push_router_clustering.sh` | (none) | Sync outputs to S3 |
