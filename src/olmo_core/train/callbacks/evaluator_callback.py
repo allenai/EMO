@@ -253,6 +253,7 @@ class LMEvaluatorCallbackConfig(CallbackConfig):
     log_interval: int = 5
     enabled: bool = True
     deterministic: bool = True
+    name: str = "lm"
 
     def build(self, trainer: "Trainer") -> Optional[Callback]:
         if not self.enabled:
@@ -309,7 +310,7 @@ class LMEvaluatorCallbackConfig(CallbackConfig):
 
         evaluator = LMEvaluator.from_numpy_dataset(
             dataset,
-            name="lm",
+            name=self.name,
             global_batch_size=global_eval_batch_size,
             collator=trainer.data_loader.collator,
             device=trainer.device,
