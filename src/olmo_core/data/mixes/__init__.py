@@ -64,6 +64,10 @@ class DataMix(DataMixBase):
     dolma2_code_py10B_other40 = "dolma2-code-py10B-other40"
     swallow_code_v2_python = "swallow-code-v2-python"
 
+    stack_v2_python_p75 = "stack-v2-python-p75"
+    stack_v2_cpp_p75 = "stack-v2-cpp-p75"
+    stack_v2_java_p75 = "stack-v2-java-p75"
+
     medical_o1_en_cot = "medical-o1-en-cot"
     medical_o1_en_nocot = "medical-o1-en-nocot"
 
