@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 import google.auth
-from beaker import Job, Priority
+from beaker.types import BeakerJob, BeakerJobPriority
 from google.cloud.compute_v1.services.instances.client import InstancesClient
 
 from olmo_core.exceptions import BeakerInsufficientResourcesError
@@ -62,7 +62,7 @@ def get_hosts_metadata_from_gcp(
 
 
 def get_occupied_beaker_hosts(
-    hosts_metadata: dict[str, HostMetadata], beaker_cluster: str, beaker_priority: Priority
+    hosts_metadata: dict[str, HostMetadata], beaker_cluster: str, beaker_priority: BeakerJobPriority
 ) -> set[str]:
     from olmo_core.internal.common import get_beaker_client
 
@@ -101,13 +101,13 @@ def get_occupied_beaker_hosts(
     return occupied_hosts
 
 
-def _is_job_preemptible(job: Job, desired_priority: Priority) -> bool:
+def _is_job_preemptible(job: BeakerJob, desired_priority: BeakerJobPriority) -> bool:
     if not job.is_preemptible:
         return False
 
     assert job.priority is not None
     # Priorities are sorted highest to lowest by default
-    sorted_priorities = list(Priority)
+    sorted_priorities = list(BeakerJobPriority)
     return sorted_priorities.index(desired_priority) < sorted_priorities.index(job.priority)
 
 
@@ -196,7 +196,7 @@ def get_beaker_hostname_constraints(
     gcp_zone: str,
     *,
     beaker_cluster: str,
-    beaker_priority: Priority,
+    beaker_priority: BeakerJobPriority,
     gcp_credentials_path: Optional[Path] = None,
 ) -> list[list[str]]:
     if beaker_cluster != "ai2/augusta":
@@ -204,7 +204,7 @@ def get_beaker_hostname_constraints(
             "Only Augusta is supported. Making this work for other clusters probably would be a bad idea..."
         )
 
-    if beaker_priority != Priority.urgent:
+    if beaker_priority != BeakerJobPriority.urgent:
         log.warning(
             "Host selection depends on the cluster having nodes with jobs running at lower priority. "
             "It is relatively unlikely to work on non-urgent priorities."
@@ -247,8 +247,8 @@ def main():
     # Beaker-related settings
     parser.add_argument(
         "--priority",
-        type=Priority,
-        default=Priority.normal,
+        type=BeakerJobPriority,
+        default=BeakerJobPriority.normal,
         help="Desired beaker job priority.",
     )
     parser.add_argument(

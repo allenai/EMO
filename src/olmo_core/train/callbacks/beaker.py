@@ -138,7 +138,7 @@ class BeakerCallback(Callback):
         self._last_update = time.monotonic()
 
     def _set_description(self, progress: TrainingProgress):
-        from beaker import BeakerError, HTTPError
+        from beaker.exceptions import BeakerError, HTTPError
         from requests.exceptions import RequestException
 
         assert self.experiment_id is not None

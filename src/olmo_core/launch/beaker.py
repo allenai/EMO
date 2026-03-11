@@ -17,19 +17,21 @@ from typing import List, Literal, Optional, Set, Tuple
 
 import requests
 import rich
-from beaker import (
-    Beaker,
-    Dataset,
-    DatasetConflict,
-    DatasetNotFound,
-    Experiment,
-    ExperimentSpec,
-    ImageNotFound,
-    Job,
-    Priority,
-    RetrySpec,
-    TaskResources,
-    TaskSpec,
+from beaker import Beaker
+from beaker.exceptions import (
+    BeakerDatasetConflict,
+    BeakerDatasetNotFound,
+    BeakerImageNotFound,
+)
+from beaker.types import (
+    BeakerDataset,
+    BeakerExperiment,
+    BeakerExperimentSpec,
+    BeakerJob,
+    BeakerJobPriority,
+    BeakerRetrySpec,
+    BeakerTaskResources,
+    BeakerTaskSpec,
 )
 from rich.prompt import Confirm
 
@@ -64,7 +66,7 @@ __all__ = [
 ]
 
 
-BeakerPriority = Priority
+BeakerPriority = BeakerJobPriority
 
 _DEFAULT_TORCH = "2.7.1".replace(".", "")
 _DEFAULT_CUDA = "12.8".replace(".", "")
@@ -251,7 +253,7 @@ class BeakerLaunchConfig(Config):
     shared filesystem (like weka or NFS).
     """
 
-    priority: Priority = Priority.normal
+    priority: BeakerJobPriority = BeakerJobPriority.normal
     """
     The job priority.
     """
@@ -389,7 +391,7 @@ class BeakerLaunchConfig(Config):
 
         return torchrun
 
-    def _create_script_dataset(self, script_name: str, script: List[str]) -> Dataset:
+    def _create_script_dataset(self, script_name: str, script: List[str]) -> BeakerDataset:
         workspace_id = self.beaker.workspace.get(self.workspace).id
 
         # Hash contents.
@@ -400,10 +402,10 @@ class BeakerLaunchConfig(Config):
         # Create unique name for dataset.
         dataset_name = f"olmo-core-v{VERSION}-{workspace_id}-{sha256_hash.hexdigest()[:6]}"
 
-        dataset: Dataset
+        dataset: BeakerDataset
         try:
             dataset = self.beaker.dataset.get(dataset_name)
-        except DatasetNotFound:
+        except BeakerDatasetNotFound:
             # Create it.
             log.info(f"Creating script dataset '{dataset_name}'...")
             try:
@@ -414,7 +416,7 @@ class BeakerLaunchConfig(Config):
                         for line in script:
                             script_file.write(line + "\n")
                     dataset = self.beaker.dataset.create(dataset_name, script_path)
-            except DatasetConflict:  # could be in a race with another process.
+            except BeakerDatasetConflict:  # could be in a race with another process.
                 time.sleep(1.0)
                 dataset = self.beaker.dataset.get(dataset_name)
 
@@ -424,7 +426,7 @@ class BeakerLaunchConfig(Config):
         image = self.beaker_image
         try:
             return self.beaker.image.get(image).id
-        except ImageNotFound as exc:
+        except BeakerImageNotFound as exc:
             # Image name was already a full name, so it probably doesn't exist.
             if "/" in image:
                 raise
@@ -432,12 +434,12 @@ class BeakerLaunchConfig(Config):
             # Try pre-pending 'petew', since that's the account that we usually build the images from.
             try:
                 return self.beaker.image.get(f"petew/{image}").id
-            except ImageNotFound:
+            except BeakerImageNotFound:
                 raise exc
 
     def build_experiment_spec(
         self, torchrun: Optional[bool] = None, entrypoint: Optional[str] = None
-    ) -> ExperimentSpec:
+    ) -> BeakerExperimentSpec:
         """
         Get the Beaker experiment spec corresponding to this config instance.
         """
@@ -527,7 +529,7 @@ class BeakerLaunchConfig(Config):
             constraints_kwargs = {"cluster": self.clusters}
 
         task_spec = (
-            TaskSpec.new(
+            BeakerTaskSpec.new(
                 self.task_name,
                 beaker_image=self._resolve_beaker_image(),
                 priority=self.priority,
@@ -547,7 +549,7 @@ class BeakerLaunchConfig(Config):
                 propagate_failure=True if self.num_nodes > 1 else None,
                 propagate_preemption=True if self.num_nodes > 1 else None,
                 synchronized_start_timeout="90m" if self.num_nodes > 1 else None,
-                resources=TaskResources(gpu_count=self.num_gpus, shared_memory=self.shared_memory),
+                resources=BeakerTaskResources(gpu_count=self.num_gpus, shared_memory=self.shared_memory),
                 result_path=self.result_dir,
             )
             .with_dataset("/olmo-core", beaker=entrypoint_dataset.id)
@@ -575,11 +577,11 @@ class BeakerLaunchConfig(Config):
             for bucket in self.weka_buckets:
                 task_spec = task_spec.with_dataset(bucket.mount, weka=bucket.bucket)
 
-        return ExperimentSpec(
+        return BeakerExperimentSpec(
             description=self.description,
             budget=self.budget,
             tasks=[task_spec],
-            retry=None if not self.retries else RetrySpec(allowed_task_retries=self.retries),
+            retry=None if not self.retries else BeakerRetrySpec(allowed_task_retries=self.retries),
         )
 
     def launch(
@@ -589,7 +591,7 @@ class BeakerLaunchConfig(Config):
         entrypoint: Optional[str] = None,
         slack_notifications: Optional[bool] = None,
         launch_timeout: Optional[int] = None,
-    ) -> Experiment:
+    ) -> BeakerExperiment:
         """
         Launch a Beaker experiment using this config.
 
@@ -662,7 +664,7 @@ class BeakerLaunchConfig(Config):
 
 def follow_experiment(
     beaker: Beaker,
-    experiment: Experiment,
+    experiment: BeakerExperiment,
     tail: bool = False,
     slack_webhook_url: Optional[str] = None,
     launch_timeout: Optional[int] = None,
@@ -670,7 +672,7 @@ def follow_experiment(
     start_time = time.monotonic()
 
     # Wait for job to be created...
-    job: Optional[Job] = beaker.experiment.tasks(experiment.id)[0].latest_job  # type: ignore
+    job: Optional[BeakerJob] = beaker.experiment.tasks(experiment.id)[0].latest_job  # type: ignore
     if job is None:
         log.info("Waiting for job to be created...")
         while job is None:
@@ -749,7 +751,7 @@ def follow_experiment(
 
 def _send_slack_notification_for_event(
     beaker: Beaker,
-    experiment: Experiment,
+    experiment: BeakerExperiment,
     event: Literal["launched", "succeeded", "failed"],
     webhook_url: str,
 ):
@@ -822,8 +824,8 @@ def _parse_args():
     )
     parser.add_argument(
         "--priority",
-        choices=[p.value for p in Priority],
-        default=Priority.normal,
+        choices=[p.value for p in BeakerJobPriority],
+        default=BeakerJobPriority.normal,
         help="The priority level.",
     )
     parser.add_argument(

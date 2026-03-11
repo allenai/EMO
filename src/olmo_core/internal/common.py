@@ -3,7 +3,8 @@ from functools import lru_cache
 from typing import List, Optional
 
 import torch
-from beaker import Beaker, BeakerError, SecretNotFound
+from beaker import Beaker
+from beaker.exceptions import BeakerError, BeakerSecretNotFound
 
 from olmo_core.exceptions import OLMoConfigurationError
 from olmo_core.io import is_url
@@ -51,7 +52,7 @@ def beaker_secret_exists(secret: str, workspace: Optional[str] = None) -> bool:
     try:
         beaker.secret.get(secret, workspace=workspace)
         return True
-    except SecretNotFound:
+    except BeakerSecretNotFound:
         return False
 
 
