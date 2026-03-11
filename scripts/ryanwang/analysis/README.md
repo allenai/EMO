@@ -106,8 +106,11 @@ Also saves source documents for context recovery.
 | — | `metadata_docs.jsonl.gz` | Per-document: source, doc_len |
 
 ```bash
-# Token-level extraction (shuffled, ~100K tokens)
-bash scripts/ryanwang/analysis/run_extract_embeddings_token.sh
+# Token-level extraction (shuffled, ~100K tokens by default)
+bash scripts/ryanwang/analysis/run_extract_embeddings_shuffled_token.sh models/<model_name>/step<N>-hf
+
+# Token-level extraction with custom token count (e.g. 1M tokens)
+bash scripts/ryanwang/analysis/run_extract_embeddings_shuffled_token.sh models/<model_name>/step<N>-hf 1000000
 ```
 
 ## Step 3: Transform, Cluster, and Sweep
@@ -182,7 +185,7 @@ bash scripts/ryanwang/analysis/run_expert_coverage.sh models/<model_name>/step<N
 | `run_analyze_data_mix.sh` | (none) | One-time: compute data source fractions |
 | `run_extract_embeddings.sh` | `[MODEL_PATH]` | Extract embeddings (GPU, sequential sampling) + sparsify |
 | `run_extract_embeddings_shuffled.sh` | (none) | Extract document-level embeddings (GPU, shuffled sampling) for randpool + baseline |
-| `run_extract_embeddings_token.sh` | (none) | Extract token-level embeddings (GPU, shuffled, ~100K tokens) |
+| `run_extract_embeddings_shuffled_token.sh` | `[MODEL_PATH] [TARGET_TOKENS]` | Extract token-level embeddings (GPU, shuffled, default 100K tokens) |
 | `run_sweep_focused.sh` | (none) | Sweep v1: baseline grid (edit DATA_DIR inside) |
 | `run_sweep_focused_v2.sh` | (none) | Sweep v2: PCA + spherical k-means (edit DATA_DIR inside) |
 | `run_sweep_focused_v3.sh` | (none) | Sweep v3: hierarchical clustering (edit DATA_DIR inside) |

@@ -708,12 +708,21 @@ def save_results(
         for idx in closest:
             global_idx = int(c_indices[idx])
             m = meta[global_idx]
-            rep_docs.append({
+            entry = {
+                "idx": global_idx,
                 "doc_index": global_idx,
                 "source": m["source"],
-                "doc_len": m["doc_len"],
-                "preview": m["preview"][:3000],
-            })
+            }
+            # Document-level metadata has doc_len/preview; token-level has token_position/token_id
+            if "doc_len" in m:
+                entry["doc_len"] = m["doc_len"]
+            if "preview" in m:
+                entry["preview"] = m["preview"][:3000]
+            if "token_position" in m:
+                entry["token_position"] = m["token_position"]
+            if "token_id" in m:
+                entry["token_id"] = m["token_id"]
+            rep_docs.append(entry)
 
         summaries.append({
             "cluster": c,
