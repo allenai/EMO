@@ -159,8 +159,9 @@ class EvaluatorCallback(Callback):
                             )
 
                 # Track per-label token counts.
+                # TODO(kevinf): remove this debugging code before merging to production.
                 with cuda_sync_debug_mode(0):
-                    for idx, metadata in enumerate(batch["metadata"]):
+                    for idx, metadata in enumerate(batch.get("metadata", [])):
                         label = metadata["label"]
                         if "label_mask" in batch:
                             n_tokens = int(batch["label_mask"][idx].sum().item())
