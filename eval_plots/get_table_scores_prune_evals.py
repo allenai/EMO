@@ -23,53 +23,82 @@ AUTO_DISCOVER = True
 
 MODEL_SPECS = {
     "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
-        "label": "moe_reduce",
+        "label": "moe",
         "baseline": True,
         "variants": [
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keepk 32)"},
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keep 32)"},
+            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
         ],
     },
     "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212step30995-hf": {
-        "label": "moe_1b4b_reduce",
+        "label": "moe_small",
         "baseline": True,
         "variants": [
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
+        ],
+    },
+    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308step30995-hf": {
+        "label": "moe_small_sharedexp",
+        "baseline": False,
+        "variants": [
+            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": " "},
         ],
     },
     "dense_1b_lr-4e-3_0213step30995-hf": {
-        "label": "dense-lr4e-3",
+        "label": "dense",
         "baseline": True,
         "variants": [
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
         ],
     },
-
-    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
-        "label": "twolevelbatchlbreducedp512sharedexp1-lr4e-3-lb1e-1",
-        "baseline": True,
-        "variants": [
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32, layerwise)"},
-        ],
-    },
-
+    # "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": {
+    #     "label": "specialized moe",
+    #     "baseline": True,
+    #     "variants": [
+    #         {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keep 32)"},
+    #     ],
+    # },
+    # "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": {
+    #     "label": "specialized moe + globallb",
+    #     "baseline": False,
+    #     "variants": [
+    #         {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keep 32)"},
+    #     ],
+    # },
+    # "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
+    #     "label": "specialized moe + globallb + 1sharedexp",
+    #     "baseline": False,
+    #     "variants": [
+    #         # {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keep 32)"},
+    #         {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keep 32)"},
+    #     ],
+    # },
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301step30995-hf": {
-        "label": "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32-lr4e-3-lb1e-1",
-        "baseline": True,
+        "label": "specialized moe + globallb + 1shardexp + randpool",
+        "baseline": False,
         "variants": [
-            {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8, layerwise)"},
-            {"suffix": "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 16, layerwise)"},
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32, layerwise)"},
-            {"suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 64, layerwise)"},
+            {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
+            # {"suffix": "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 16)"},
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
+            # {"suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 64)"},
+            # {"suffix": "_keepk_96_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 96)"},
+            # {"suffix": "_keepk_120_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 120)"},
+            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
         ],
     },
 
-    "twolevelbatchlbreducedp512sharedexp1densefirst-32_1b14b_lr-4e-3_lb-1e-1_0227step30995-hf": {
-        "label": "twolevelbatchlbreducedp512sharedexp1densefirst-lr4e-3-lb1e-1",
-        "baseline": True,
+    "twolevelbatchlbreducedp512sharedexp2randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0305step30995-hf": {
+        "label": "specialized moe + globallb + 2shardexp + randpool",
+        "baseline": False,
         "variants": [
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32, layerwise)"},
+            {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
+            # {"suffix": "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 16)"},
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
+            # {"suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 64)"},
+            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
         ],
-    }
+    },
+
 }
 AVAILABLE_MODELS = list(MODEL_SPECS)
 

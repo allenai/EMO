@@ -33,6 +33,7 @@ MODEL_SPECS = {
         "baseline": True,
         "variants": [
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keep 32)"},
+            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
         ],
     },
     "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212step30995-hf": {
