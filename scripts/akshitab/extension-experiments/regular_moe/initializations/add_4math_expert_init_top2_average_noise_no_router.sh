@@ -30,7 +30,7 @@ NUM_TOKENS=$((NUM_BILLION_TOKENS * 1000000000))
 LR=4e-4 #4e-4  # 4e-3, #4e-5
 
 # # Part 2: Train with new expert
-RUN_NAME="freeze-fix-moe1b14b_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_math_init_top2_average_no_router_${NUM_BILLION_TOKENS}B_lr_${LR}"
+RUN_NAME="ff-moe1b14b_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_math_init_top2_average_no_router_${NUM_BILLION_TOKENS}B_lr_${LR}"
 
 python -m olmo_core.launch.beaker \
   --name ${RUN_NAME} \
