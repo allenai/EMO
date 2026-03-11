@@ -463,6 +463,26 @@ class BeakerLaunchConfig(Config):
                 "custom 'setup_steps' in order to clone the repo."
             )
 
+        # If a custom beaker image is provided (not the default), assume dependencies
+        # are pre-installed and skip full dependency resolution.
+        use_no_deps = self.beaker_image != OLMoCoreBeakerImage.stable
+
+        if self.is_private_repo:
+            if use_no_deps:
+                pip_install_cmd = "pip install --no-deps -e ."
+            else:
+                pip_install_cmd = "pip install -e '.[all]'"
+            private_setup_steps = [
+                "git clone https://ryanyxw:$GITHUB_TOKEN@github.com/allenai/FlexMoE.git .",
+                f'git checkout "${GIT_REF_ENV_VAR}"',
+                "git submodule update --init --recursive",
+                "conda shell.bash activate base",
+                pip_install_cmd,
+                "pip freeze",
+            ]
+        else:
+            private_setup_steps = None
+
         entrypoint_script = (
             [
                 "#!/usr/bin/env bash",
@@ -474,8 +494,8 @@ class BeakerLaunchConfig(Config):
                 "cd /olmo-core-runtime",
             ]
             + self.setup_steps
-            if not self.is_private_repo
-            else list(PRIVATE_REPO_SETUP_STEPS)
+            if private_setup_steps is None
+            else private_setup_steps
         )
 
         if torchrun:

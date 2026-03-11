@@ -38,6 +38,10 @@ EMBEDDING_FILES = {
     "logits_sparse":  "embeddings_logits_sparse.npy",
     "probs_sparse":   "embeddings_probs_sparse.npy",
     "topk_freq":      "embeddings_topk_freq.npy",
+    # Token-level embeddings (from --granularity token)
+    "token_logits":      "embeddings_token_logits.npy",
+    "token_probs":       "embeddings_token_probs.npy",
+    "token_topk_binary": "embeddings_token_topk_binary.npy",
 }
 
 
@@ -58,7 +62,10 @@ def load_embedding(data_dir: str, embedding_name: str) -> tuple:
 
     emb_path = os.path.join(data_dir, EMBEDDING_FILES[embedding_name])
     info_path = os.path.join(data_dir, "info.json")
-    meta_path = os.path.join(data_dir, "metadata.jsonl.gz")
+    # Auto-detect metadata file: token-level uses metadata_tokens.jsonl.gz
+    is_token = embedding_name.startswith("token_")
+    meta_path = os.path.join(data_dir,
+                             "metadata_tokens.jsonl.gz" if is_token else "metadata.jsonl.gz")
 
     logger.info(f"Loading embedding '{embedding_name}' from {emb_path}")
     emb = np.load(emb_path).astype(np.float32)
