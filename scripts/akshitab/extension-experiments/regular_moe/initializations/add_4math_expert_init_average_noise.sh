@@ -37,7 +37,6 @@ python -m olmo_core.launch.beaker \
   --shared-filesystem \
 	--workspace ai2/flex2 \
 	--cluster ai2/jupiter \
-  --is_private_repo \
 	--preemptible \
 	--allow-dirty \
 	--priority urgent \
