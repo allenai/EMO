@@ -2,11 +2,11 @@
 
 # Configuration
 
-# MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
-MODEL_DIR=/weka/oe-training-default/akshitab/FlexMoE/models
+MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
+# MODEL_DIR=/weka/oe-training-default/akshitab/FlexMoE/models
 
 MODELS=(
-    # moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
+    moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
     # moe1b14b_129experts_1trained_math_init_random_expert_5B/step1193-hf
     # moe1b14b_129experts_1trained_math_init_average_5B/step1193-hf
     # moe1b14b_129experts_1trained_math_init_top2_average_5B/step1193-hf
@@ -68,13 +68,13 @@ MODELS=(
 
     # freeze-fix-moe1b14b_132experts_4trained_math_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
     # freeze-fix-moe1b14b_132experts_4trained_starcoder_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
-    ff-moe1b14b_132experts_4trained_starcoder_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # ff-moe1b14b_132experts_4trained_starcoder_init_top2_average_noise_10B_lr_4e-4/step2385-hf
     # ff-moe_1b14b_128base_4math_10B_4code_init_top2_starcoder_average_noise_10B_lr_4e-4/step2385-hf
 
     # merged_moe_1b14b_128base_4math_10B_4starcoder_10B_init_top2_average_noise-hf
     # ff-moe_1b14b_128base_4math_10B_4code_init_top2_code_mix_average_noise_10B_lr_4e-4/step2385-hf
     # freeze-fix-moe1b14b_132experts_4trained_code_mix_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
-    ff-moe1b14b_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # ff-moe1b14b_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
     # merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
 
     # ff-moe1b14b_132experts_4trained_croissant_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
@@ -84,7 +84,7 @@ MODELS=(
 
     # rt-merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_1B_lr_4e-4/step239-hf
 
-    merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
+    # merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
     # freeze-fix-moe1b14b_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
 
     # merged_router_row_norm_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
@@ -95,9 +95,9 @@ MODELS=(
     # merged_moe_1b14b_128base_1math_5B_4code_mix_10B_init_top2_average_noise-hf
     # merged_moe_1b14b_128base_2math_5B_4code_mix_10B_init_top2_average_noise-hf
     # merged_moe_1b14b_128base_4math_5B_4code_mix_10B_init_top2_average_noise-hf
-    rt-realdata-merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_1B_lr_4e-4/step239-hf
+    # rt-realdata-merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_1B_lr_4e-4/step239-hf
     # ff-moe1b14b_132experts_4trained_sharedexp56math_init_top2_average_10B_lr_4e-4/step2385-hf
-    moe1b14b_128experts_76_5_122_126_trained_math_10B_lr_4e-4/step2385-hf
+    # moe1b14b_128experts_76_5_122_126_trained_math_10B_lr_4e-4/step2385-hf
     # moe1b14b_128experts_76_41_120_3_trained_code_10B_lr_4e-4/step2385-hf
 
 )
@@ -122,7 +122,8 @@ TASK_GROUPS_LIST=(
     # "socialiqa|socialiqa:rc_test::olmes"
     # "winogrande|winogrande:rc_test::olmes"
 
-    "squad|squad::olmes"
+    # "squad|squad::olmes"
+    "triviaqa|triviaqa::olmes"
 
     # # math tasks
     # "gsm8k::olmes"
@@ -218,13 +219,14 @@ for MODEL_NAME in "${MODELS[@]}"; do
         gantry run \
             --name $job_name \
             --weka oe-training-default:/weka/oe-training-default \
-            --install "pip install -e \".[all]\"" \
+            --install "uv pip install -e \".[all]\"" \
             --budget ai2/oceo \
             --workspace ai2/flex2 \
             --cluster $CLUSTER \
             --priority urgent \
             --allow-dirty \
             --gpus $gpus \
+            --not-preemptible \
             --env-secret HF_TOKEN=AKSHITAB_HF_TOKEN \
             --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
             --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \

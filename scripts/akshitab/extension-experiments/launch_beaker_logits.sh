@@ -2,11 +2,11 @@
 
 # Configuration
 
-# MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
-MODEL_DIR=/weka/oe-training-default/akshitab/FlexMoE/models
+MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
+# MODEL_DIR=/weka/oe-training-default/akshitab/FlexMoE/models
 
 MODELS=(
-    # moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
+    moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
     # moe1b14b_129experts_1trained_math_init_random_expert_5B/step1193-hf
     # moe1b14b_129experts_1trained_math_init_average_5B/step1193-hf
     # twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf
@@ -26,8 +26,8 @@ MODELS=(
     # merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
 
 
-    moe1b14b_128experts_76_5_122_126_trained_math_10B_lr_4e-4/step2385-hf
-    moe1b14b_128experts_76_41_120_3_trained_code_10B_lr_4e-4/step2385-hf
+    # moe1b14b_128experts_76_5_122_126_trained_math_10B_lr_4e-4/step2385-hf
+    # moe1b14b_128experts_76_41_120_3_trained_code_10B_lr_4e-4/step2385-hf
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
@@ -50,16 +50,16 @@ TASK_GROUPS_LIST=(
  "socialiqa|socialiqa:rc_test::olmes"
  "winogrande|winogrande:rc_test::olmes"
 
-    # mbpp:3shot:bpb::none
-    # codex_humaneval:3shot:bpb::none
+# #     # mbpp:3shot:bpb::none
+# #     # codex_humaneval:3shot:bpb::none
 
-    "gsm8k::olmes"
-    # # "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
-    # # "minerva_math_500::olmes"
-    "mbpp"
-    "codex_humaneval"
+#     "gsm8k::olmes"
+# #     # # "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
+# #     # # "minerva_math_500::olmes"
+#     "mbpp"
+#     "codex_humaneval"
 
-    "squad|squad::olmes"
+#     "squad|squad::olmes"
 )
 
 # Function to get checkpoint name (matching the original script)
@@ -142,13 +142,14 @@ for MODEL_NAME in "${MODELS[@]}"; do
         gantry run \
             --name $job_name \
             --weka oe-training-default:/weka/oe-training-default \
-            --install "pip install -e \".[all]\"" \
+            --install "uv pip install -e \".[eval,transformers]\" " \
             --budget ai2/oceo \
             --workspace ai2/flex2 \
             --cluster $CLUSTER \
             --priority urgent \
             --allow-dirty \
             --gpus $gpus \
+            --not-preemptible \
             --env-secret HF_TOKEN=RYAN_HF_TOKEN \
             --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
             --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
