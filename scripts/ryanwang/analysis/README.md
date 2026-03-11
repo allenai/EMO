@@ -78,6 +78,8 @@ Output goes to `claude_outputs/analysis/router_clustering_pretraining/<model_nam
 
 ### Embedding Types
 
+#### Document-level (default, `--granularity document`)
+
 All embeddings have shape `(num_docs, num_layers * num_experts)` = `(N, 2032)` for a 16-layer, 127-expert model.
 
 | Name | File | Description |
@@ -86,6 +88,27 @@ All embeddings have shape `(num_docs, num_layers * num_experts)` = `(N, 2032)` f
 | `probs` | `embeddings_probs.npy` | Per-token softmax probabilities, averaged per expert per layer |
 | `logits_sparse` | `embeddings_logits_sparse.npy` | Sparse logits: top-32 experts per layer, rest zeroed (~25% density) |
 | `probs_sparse` | `embeddings_probs_sparse.npy` | Sparse probs: top-32 experts per layer, rest zeroed (~25% density) |
+| `topk_freq` | `embeddings_topk_freq.npy` | Top-k expert selection frequency per expert per layer |
+
+#### Token-level (`--granularity token`)
+
+Per-token activations without document-level aggregation. Shape `(num_tokens, num_layers * num_experts)`.
+Also saves source documents for context recovery.
+
+| Name | File | Description |
+|------|------|-------------|
+| `logits` | `embeddings_token_logits.npy` | Raw router logits per token (float16) |
+| `probs` | `embeddings_token_probs.npy` | Softmax probabilities per token (float16) |
+| `topk_binary` | `embeddings_token_topk_binary.npy` | Binary top-k mask per token (uint8) |
+| — | `documents.npy` | All document tokens concatenated (int32) |
+| — | `doc_boundaries.npy` | Document start indices; doc `i` = `documents[bounds[i]:bounds[i+1]]` |
+| — | `metadata_tokens.jsonl.gz` | Per-token: source, doc_index, token_position, token_id |
+| — | `metadata_docs.jsonl.gz` | Per-document: source, doc_len |
+
+```bash
+# Token-level extraction (shuffled, ~100K tokens)
+bash scripts/ryanwang/analysis/run_extract_embeddings_token.sh
+```
 
 ## Step 3: Transform, Cluster, and Sweep
 
@@ -158,7 +181,8 @@ bash scripts/ryanwang/analysis/run_expert_coverage.sh models/<model_name>/step<N
 |--------|------|-------------|
 | `run_analyze_data_mix.sh` | (none) | One-time: compute data source fractions |
 | `run_extract_embeddings.sh` | `[MODEL_PATH]` | Extract embeddings (GPU, sequential sampling) + sparsify |
-| `run_extract_embeddings_shuffled.sh` | (none) | Extract embeddings (GPU, shuffled sampling) for randpool + baseline |
+| `run_extract_embeddings_shuffled.sh` | (none) | Extract document-level embeddings (GPU, shuffled sampling) for randpool + baseline |
+| `run_extract_embeddings_token.sh` | (none) | Extract token-level embeddings (GPU, shuffled, ~100K tokens) |
 | `run_sweep_focused.sh` | (none) | Sweep v1: baseline grid (edit DATA_DIR inside) |
 | `run_sweep_focused_v2.sh` | (none) | Sweep v2: PCA + spherical k-means (edit DATA_DIR inside) |
 | `run_sweep_focused_v3.sh` | (none) | Sweep v3: hierarchical clustering (edit DATA_DIR inside) |
