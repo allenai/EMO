@@ -26,10 +26,12 @@ class Evaluator(metaclass=ABCMeta):
         name: str,
         batches: Iterable[Dict[str, Any]],
         device: Optional[torch.device] = None,
+        deterministic: bool = True,
     ):
         self.name = name
         self.batches = batches
         self.device = device
+        self.deterministic = deterministic
 
     def __iter__(self) -> Iterator[Dict[str, Any]]:
         """
@@ -41,9 +43,17 @@ class Evaluator(metaclass=ABCMeta):
             # batches_processed > 0, causing subsequent eval passes to skip ahead and
             # evaluate different data each time.
             self.batches.reset()
-            self.batches.reshuffle(epoch=1, in_memory=True)
+
+            if self.deterministic:
+                # Deterministic eval repeatedly uses epoch 1 ordering.
+                self.batches.reshuffle(epoch=1, in_memory=True)
+            else:
+                # Non-deterministic eval advances to a new reshuffle ordering each pass.
+                self.batches.reshuffle(in_memory=True)
+
         for batch in self.batches:
             yield batch
+
         if isinstance(self.batches, DataLoaderBase):
             self.batches.reset()
 

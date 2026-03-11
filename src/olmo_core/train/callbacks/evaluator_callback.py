@@ -252,6 +252,7 @@ class LMEvaluatorCallbackConfig(CallbackConfig):
     eval_duration: Duration = field(default_factory=lambda: Duration.epochs(1))
     log_interval: int = 5
     enabled: bool = True
+    deterministic: bool = True
 
     def build(self, trainer: "Trainer") -> Optional[Callback]:
         if not self.enabled:
@@ -313,6 +314,7 @@ class LMEvaluatorCallbackConfig(CallbackConfig):
             collator=trainer.data_loader.collator,
             device=trainer.device,
             dp_process_group=trainer.dp_process_group,
+            deterministic=self.deterministic,
         )
         return EvaluatorCallback(
             evaluators=[evaluator],
