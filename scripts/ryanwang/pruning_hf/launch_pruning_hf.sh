@@ -63,11 +63,11 @@ TASK_GROUPS_LIST=(
   "piqa"
   "socialiqa"
   "winogrande"
-  "gsm8k_generation_0shot"
-  "gsm8k_perplexity_0shot"
-  "coqa_0shot"
-  "coqa_full_0shot"
-  "squad_0shot"
+#  "gsm8k_generation_0shot"
+#  "gsm8k_perplexity_0shot"
+#  "coqa_0shot"
+#  "coqa_full_0shot"
+#  "squad_0shot"
 
   "mmlu_biology"
   "mmlu_business"
@@ -220,7 +220,7 @@ for MODEL in "${MODELS[@]}"; do
                 "
             echo "Launched evaluation for model: $model, task: $TASK"
             echo "----------------------------------------"
-            sleep 300 # brief pause to avoid overwhelming huggingface
+            sleep 30 # brief pause to avoid overwhelming huggingface
             continue
         fi
 
@@ -363,7 +363,7 @@ for MODEL in "${MODELS[@]}"; do
         echo "Launched evaluation for model: $MODEL, task: $TASK"
         echo "----------------------------------------"
 
-        sleep 300 # brief pause to avoid overwhelming huggingface
+        sleep 30 # brief pause to avoid overwhelming huggingface
     done
 
     echo "Completed all tasks for model: $MODEL, keep-k: $prune_keep_k"
