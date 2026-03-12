@@ -298,7 +298,7 @@ MODEL_LABELS = {
     if spec.get("label")
 }
 
-DEFAULT_OUTPUT_SUBDIR = "presentation_0305_plots"
+DEFAULT_OUTPUT_SUBDIR = "presentation_0312_plots"
 
 # Hardcoded color assignments so colors never change regardless of which
 # models are commented in/out.  Colors are from matplotlib's tab10 palette.
