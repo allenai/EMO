@@ -70,7 +70,7 @@ def compute_router_activations(
 
     # Get formatted prompts from the dataset
     logger.info(f"Loading dataset: {task_name} ({split})")
-    prompts = get_formatted_prompts(task_name, split)
+    prompts, _ = get_formatted_prompts(task_name, split)
     logger.info(f"Loaded {len(prompts)} prompts")
 
     # Get model config

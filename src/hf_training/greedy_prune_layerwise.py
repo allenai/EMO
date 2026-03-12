@@ -164,7 +164,7 @@ def greedy_prune_layerwise(
     # Load and tokenize validation data once up front
     # -------------------------------------------------------------------------
     logger.info(f"Loading dataset: {task_name} ({split})")
-    prompts = get_formatted_prompts(task_name, split)
+    prompts, _ = get_formatted_prompts(task_name, split)
     logger.info(f"Loaded {len(prompts)} prompts")
 
     logger.info("Tokenizing prompts into batches...")
