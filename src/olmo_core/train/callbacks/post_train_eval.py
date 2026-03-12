@@ -52,11 +52,12 @@ DEFAULT_EVAL_TASKS = [
     "minerva_math_number_theory::olmes",
     "minerva_math_prealgebra::olmes",
     "minerva_math_precalculus::olmes",
-    # Code4 tasks
+    # Code5 tasks
     "codex_humaneval:temp0.8",
     "codex_humanevalplus:temp0.8",
     "mbpp::none",
     "mbppplus::none",
+    "mt_mbpp",
     # ChemBench
     # "chembench:mc",
     "chembench:gen",
@@ -241,7 +242,15 @@ class PostTrainEvalCallback(Callback):
             # Determine batch size based on task type
             if any(
                 x in task
-                for x in ["cot", "minerva_math_", "mbpp", "bigcodebench", "ruler", "sciriff"]
+                for x in [
+                    "cot",
+                    "minerva_math_",
+                    "mbpp",
+                    "humaneval",
+                    "bigcodebench",
+                    "ruler",
+                    "sciriff",
+                ]
             ):
                 batch_size = 1
             else:
