@@ -270,6 +270,9 @@ echo ""
 echo "Step 4: Evals..."
 echo "========================================"
 
+# Datasets are already cached from steps 1-3; skip HF API calls to avoid rate limits
+export HF_DATASETS_OFFLINE=1
+
 all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
 
 for checkpoint in "${all_checkpoints[@]}"; do
