@@ -137,6 +137,15 @@ def finetune(config: FinetuneConfig):
         tokenizer.pad_token = tokenizer.eos_token
         model.config.pad_token_id = tokenizer.pad_token_id
 
+    # Ensure generation_config has eos_token_id so model.generate() stops at EOS.
+    # Without this, generation_config.json contains only {"_from_model_config": true}
+    # which resolves to eos_token_id=None at runtime, causing model.generate() to
+    # never stop at the EOS token.
+    if model.config.eos_token_id is not None:
+        model.generation_config.eos_token_id = model.config.eos_token_id
+    if model.config.pad_token_id is not None:
+        model.generation_config.pad_token_id = model.config.pad_token_id
+
     # save the checkpoint 0 of the model before any training
     logger.info(f"Saving initial checkpoint to {config.output_dir}/checkpoint-0")
     if not dist.is_initialized() or dist.get_rank() == 0:
