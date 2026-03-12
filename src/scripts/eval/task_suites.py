@@ -75,4 +75,12 @@ def get_task_suite_configs():
         "tasks": [f"mmlu_pro_{sub}:rc_test::olmes" for sub in MMLU_PRO_CATEGORIES],
     }
 
+    # MMLU Pro ::none suites (validation split, 5-shot)
+    TASK_SUITE_CONFIGS["mmlu_pro:mc::none"] = {
+        "tasks": [f"mmlu_pro_{sub}:mc_validation::none" for sub in MMLU_PRO_CATEGORIES],
+    }
+    TASK_SUITE_CONFIGS["mmlu_pro:rc::none"] = {
+        "tasks": [f"mmlu_pro_{sub}:rc_validation::none" for sub in MMLU_PRO_CATEGORIES],
+    }
+
     return TASK_SUITE_CONFIGS

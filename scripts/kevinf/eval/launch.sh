@@ -28,8 +28,15 @@ MODELS=(
     # "/data/input/kevinf/checkpoints/olmo3-1b-croissant-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-pmc-30B-lr5e-5-warmup0.1-ctd/step7153-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-mimic-iv-note-2B-lr5e-5-warmup0.1-ctd/step477-hf"
-    "/data/input/kevinf/checkpoints/olmo3-1b-medical-o1-en-cot-0.1B-lr5e-5-warmup0.1-ctd/step24-hf"
-    "/data/input/kevinf/checkpoints/olmo3-1b-medical-o1-en-nocot-0.1B-lr5e-5-warmup0.1-ctd/step48-hf/"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-medical-o1-en-cot-0.1B-lr5e-5-warmup0.1-ctd/step24-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-medical-o1-en-nocot-0.1B-lr5e-5-warmup0.1-ctd/step48-hf/"
+    # dolma2 code mixes
+    "/data/input/kevinf/checkpoints/train-olmo3-1b-dolma2-code-java-10B-lr5e-5-eval-on-java-only-new-ctd/step2385-hf"
+    "/data/input/kevinf/checkpoints/train-olmo3-1b-dolma2-code-python-10B-lr5e-5-eval-on-python-only-new-ctd/step2385-hf"
+    # stack-v2 code mixes (quality p75+)
+    "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-python-p75-10B-lr5e-5-ctd/step2385-hf"
+    "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-cpp-p75-10B-lr5e-5-ctd/step2385-hf"
+    "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-java-p75-10B-lr5e-5-ctd/step2385-hf"
 )
 
 BASE_OUTPUT_DIR="/data/input/kevinf/eval_results/flexmoe"
@@ -60,7 +67,7 @@ TASKS=(
 
     # # # MMLU tasks
     mmlu:mc::olmes
-    mmlu_pro_mc::none
+    mmlu_pro:mc::none
 
     # # # AGI eval
     # agi_eval_english:1shot::olmes
@@ -79,10 +86,10 @@ TASKS=(
     # minerva_math_precalculus::olmes
 
     # # Code4 tasks
-    # codex_humaneval:temp0.8
-    # codex_humanevalplus:temp0.8
-    # mbpp::none
-    # mbppplus::none
+    codex_humaneval:temp0.8
+    codex_humanevalplus:temp0.8
+    mbpp::none
+    mbppplus::none
 
     # # ChemBench MC and generative tasks
     # chembench:mc
@@ -91,10 +98,10 @@ TASKS=(
     # frenchbench:rc
     # legalbench:rc
 
-    medqa
-    medmcqa:mc
+    # medqa
+    # medmcqa:mc
 
-    # mt_mbpp 
+    mt_mbpp 
 )
 
 # Function to get checkpoint name - extracts run name and step from path
