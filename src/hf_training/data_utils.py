@@ -235,6 +235,7 @@ def tokenize_and_mask_example(
     task_name,
     max_length: int = 4096,
     delimiter: str = "Answer:",
+    append_eos: bool = True,
 ) -> Dict:
     """
     Tokenize prompt+answer and create masked labels.
@@ -244,15 +245,17 @@ def tokenize_and_mask_example(
         tokenizer: HuggingFace tokenizer
         max_length: Maximum sequence length
         delimiter: Delimiter string that separates prompt from answer
+        append_eos: Whether to append EOS token (True for generation tasks,
+                    False for MCQ/loglikelihood tasks where EOS would dominate the short answer)
 
     Returns:
         Dict with input_ids, attention_mask, and labels
     """
-    # Tokenize (reserve 1 token for EOS)
+    # Tokenize (reserve 1 token for EOS if appending)
     tokenized = tokenizer(
         full_text,
         truncation=True,
-        max_length=max_length - 1,
+        max_length=max_length - 1 if append_eos else max_length,
         padding=False,
         return_tensors=None,
     )
@@ -260,10 +263,11 @@ def tokenize_and_mask_example(
     input_ids = tokenized["input_ids"]
     attention_mask = tokenized["attention_mask"]
 
-    # Append EOS token so the model learns to stop generating
-    eos_token_id = tokenizer.eos_token_id
-    input_ids = input_ids + [eos_token_id]
-    attention_mask = attention_mask + [1]
+    # Append EOS token so the model learns to stop generating (only for generation tasks)
+    if append_eos:
+        eos_token_id = tokenizer.eos_token_id
+        input_ids = input_ids + [eos_token_id]
+        attention_mask = attention_mask + [1]
 
     # Get delimiter token IDs
     delimiter_ids = tokenizer(delimiter, add_special_tokens=False)["input_ids"]
@@ -305,7 +309,7 @@ def prepare_finetuning_dataset(
     # Load raw dataset
     # raw_dataset = load_hf_dataset(task_name, split)
 
-    raw_dataset = get_formatted_prompts(task_name, split)
+    raw_dataset, request_type = get_formatted_prompts(task_name, split)
 
     # convert to hf
     raw_dataset = Dataset.from_dict({"text": raw_dataset})
@@ -313,8 +317,13 @@ def prepare_finetuning_dataset(
     # Get delimiter
     delimiter = "Answer:" if "squad" not in task_name else "A:"
 
+    # Only append EOS for generation tasks; for MCQ (loglikelihood) tasks the answer
+    # is very short (e.g. "A") and EOS would dominate the training signal.
+    append_eos = (request_type == "generate_until")
+    logger.info(f"Task request_type={request_type}, append_eos={append_eos}")
+
     def process_example(example):
-        return tokenize_and_mask_example(example["text"], tokenizer, task_name, max_length, delimiter)
+        return tokenize_and_mask_example(example["text"], tokenizer, task_name, max_length, delimiter, append_eos)
 
     # Process all examples
     logger.info(f"Tokenizing {len(raw_dataset)} examples...")
@@ -363,7 +372,7 @@ def get_oe_task_name(task_name, split):
     return f"{task_name}:rc_{split}::olmes"
 
 
-def get_formatted_prompts(task_name: str, split: str) -> List[str]:
+def get_formatted_prompts(task_name: str, split: str) -> Tuple[List[str], str]:
     """
     Get formatted prompts (prompt + answer) for a dataset.
 
@@ -374,7 +383,7 @@ def get_formatted_prompts(task_name: str, split: str) -> List[str]:
         split: Dataset split
 
     Returns:
-        List of formatted prompt+answer strings
+        Tuple of (list of formatted prompt+answer strings, request_type string)
     """
     oe_task_name = get_oe_task_name(task_name, split)
     TASK_CONFIGS = get_task_configs()
@@ -384,8 +393,9 @@ def get_formatted_prompts(task_name: str, split: str) -> List[str]:
     task.build_all_requests()
 
     dataset = []
+    request_type = task._instances[0].request_type
 
-    if task._instances[0].request_type == "loglikelihood":
+    if request_type == "loglikelihood":
 
         for instance in task._instances:
             # we only choose the correct instances
@@ -395,7 +405,7 @@ def get_formatted_prompts(task_name: str, split: str) -> List[str]:
             elif "gsm8k" in task_name:
                 dataset.append(instance.request.context + instance.request.continuation)
 
-    elif task._instances[0].request_type == "generate_until":
+    elif request_type == "generate_until":
         for instance in task._instances:
             # for some tasks (e.g coqa), by default there is no space between context and choice, so we add it here
             if instance.request.context[-1] != " " and instance.doc["choices"][0][0] != " ":
@@ -410,4 +420,4 @@ def get_formatted_prompts(task_name: str, split: str) -> List[str]:
     #     prompt, answer = format_example(example, task_name)
     #     prompts.append(prompt + answer)
 
-    return dataset
+    return dataset, request_type
