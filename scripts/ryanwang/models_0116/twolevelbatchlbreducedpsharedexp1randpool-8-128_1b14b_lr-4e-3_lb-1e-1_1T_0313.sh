@@ -73,4 +73,6 @@ python -m olmo_core.launch.beaker \
 		--model.block.name="moe" \
 		--model.block.attention.qk_norm=null \
 		--lr=${lr} \
-		--model.block.feed_forward_moe.lb_loss_weight=${lb}
+		--model.block.feed_forward_moe.lb_loss_weight=${lb} \
+		--trainer.callbacks.checkpointer.save_interval=20000 \
+		--trainer.callbacks.downstream_evaluator.eval_interval=2500
