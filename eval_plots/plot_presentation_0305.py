@@ -298,7 +298,7 @@ MODEL_LABELS = {
     if spec.get("label")
 }
 
-DEFAULT_OUTPUT_SUBDIR = "presentation_0312_plots"
+DEFAULT_OUTPUT_SUBDIR = "presentation_0313_plots"
 
 # Hardcoded color assignments so colors never change regardless of which
 # models are commented in/out.  Colors are from matplotlib's tab10 palette.
@@ -357,8 +357,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--prune-evals-root",
         type=Path,
-        default=Path(__file__).resolve().parent.parent / "prune_evals",
-        help="Path to prune_evals directory (defaults to repo_root/prune_evals).",
+        default=Path(__file__).resolve().parent.parent / "prune_evals_0313",
+        help="Path to prune_evals directory (defaults to repo_root/prune_evals_0313).",
     )
     parser.add_argument(
         "--output-dir",

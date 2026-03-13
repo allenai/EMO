@@ -207,7 +207,7 @@ MODEL_LABELS = {
     if spec.get("label")
 }
 
-DEFAULT_OUTPUT_SUBDIR = "prune_eval_tables_0312"
+DEFAULT_OUTPUT_SUBDIR = "prune_eval_tables_0313"
 
 # Collect all known variant suffixes from MODEL_SPECS for auto-discovery.
 _ALL_VARIANT_SUFFIXES: List[str] = sorted(
@@ -240,7 +240,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--prune-evals-root",
         type=Path,
-        default=Path(__file__).resolve().parent.parent / "prune_evals",
+        default=Path(__file__).resolve().parent.parent / "prune_evals_0313",
         help="Path to prune_evals directory.",
     )
     parser.add_argument(
