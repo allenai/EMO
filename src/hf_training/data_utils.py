@@ -235,7 +235,6 @@ def tokenize_and_mask_example(
     task_name,
     max_length: int = 4096,
     delimiter: str = "Answer:",
-    append_eos: bool = True,
 ) -> Dict:
     """
     Tokenize prompt+answer and create masked labels.
@@ -245,29 +244,21 @@ def tokenize_and_mask_example(
         tokenizer: HuggingFace tokenizer
         max_length: Maximum sequence length
         delimiter: Delimiter string that separates prompt from answer
-        append_eos: Whether to append EOS token (True for generation tasks,
-                    False for MCQ/loglikelihood tasks where EOS would dominate the short answer)
 
     Returns:
         Dict with input_ids, attention_mask, and labels
     """
-    # Tokenize (reserve 1 token for EOS if appending)
+    # Tokenize
     tokenized = tokenizer(
         full_text,
         truncation=True,
-        max_length=max_length - 1 if append_eos else max_length,
+        max_length=max_length,
         padding=False,
         return_tensors=None,
     )
 
     input_ids = tokenized["input_ids"]
     attention_mask = tokenized["attention_mask"]
-
-    # Append EOS token so the model learns to stop generating (only for generation tasks)
-    if append_eos:
-        eos_token_id = tokenizer.eos_token_id
-        input_ids = input_ids + [eos_token_id]
-        attention_mask = attention_mask + [1]
 
     # Get delimiter token IDs
     delimiter_ids = tokenizer(delimiter, add_special_tokens=False)["input_ids"]
@@ -317,13 +308,8 @@ def prepare_finetuning_dataset(
     # Get delimiter
     delimiter = "Answer:" if "squad" not in task_name else "A:"
 
-    # Only append EOS for generation tasks; for MCQ (loglikelihood) tasks the answer
-    # is very short (e.g. "A") and EOS would dominate the training signal.
-    append_eos = (request_type == "generate_until")
-    logger.info(f"Task request_type={request_type}, append_eos={append_eos}")
-
     def process_example(example):
-        return tokenize_and_mask_example(example["text"], tokenizer, task_name, max_length, delimiter, append_eos)
+        return tokenize_and_mask_example(example["text"], tokenizer, task_name, max_length, delimiter)
 
     # Process all examples
     logger.info(f"Tokenizing {len(raw_dataset)} examples...")
