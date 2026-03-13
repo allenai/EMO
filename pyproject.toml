@@ -63,8 +63,11 @@ eval = [
 torchao = ["torchao"]
 #transformers = ["transformers>=4.57.1"]
 #transformers = ["transformers==4.57.1"]
+#transformers=[
+#    "transformers@git+https://github.com/ryanyxw/transformers.git@flexmoe_v4_57_1"
+#]
 transformers=[
-    "transformers@git+https://github.com/ryanyxw/transformers.git@flexmoe_v4_57_1"
+    "transformers@git+https://github.com/ryanyxw/transformers.git@2a441500fddbaedeb7f22651114825358be6b296"
 ]
 wandb = ["wandb"]
 all = ["ai2-olmo-core[dev,beaker,comet,eval,torchao,transformers,wandb]"]
