@@ -64,6 +64,7 @@ evals/
 s3_sync.sh
 prune_evals
 prune_evals_0311_backup
+prune_evals_0313
 eval_visualizer
 *.png
 transformers

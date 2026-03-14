@@ -4,10 +4,10 @@
 BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 #BASE_DIR="/root/phdbrainstorm/FlexMoE"
 MODELS=(
-    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
-    "dense_1b_lr-4e-3_0213/step30995-hf"
-    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
-    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
+#    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
+#    "dense_1b_lr-4e-3_0213/step30995-hf"
+#    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
+#    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
 
 #    "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212/step30995-hf"
 #    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
@@ -41,7 +41,7 @@ PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(32)
+PRUNE_KEEP_K_VALUES=(8 128)
 batch_size=32
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
@@ -220,7 +220,7 @@ for MODEL in "${MODELS[@]}"; do
                 "
             echo "Launched evaluation for model: $model, task: $TASK"
             echo "----------------------------------------"
-            sleep 300 # brief pause to avoid overwhelming huggingface
+#            sleep 300 # brief pause to avoid overwhelming huggingface
             continue
         fi
 
@@ -363,7 +363,7 @@ for MODEL in "${MODELS[@]}"; do
         echo "Launched evaluation for model: $MODEL, task: $TASK"
         echo "----------------------------------------"
 
-        sleep 300 # brief pause to avoid overwhelming huggingface
+#        sleep 300 # brief pause to avoid overwhelming huggingface
     done
 
     echo "Completed all tasks for model: $MODEL, keep-k: $prune_keep_k"
