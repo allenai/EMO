@@ -28,8 +28,9 @@ MODELS=(
 #    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-2_0213/step30995"
 #    "dense_1b_lr-4e-3_0213/step30995"
 #    "moereducedp256_1b4b_lr-4e-3_lb-1e-1_0212/step30995"
-    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995"
+#    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995"
 #    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995"
+    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995"
 
 
 
