@@ -160,6 +160,12 @@ def greedy_prune_layerwise(
     num_layers = config.num_hidden_layers
     logger.info(f"Model has {num_layers} layers")
 
+    # Disable router logit output during pruning to avoid LB loss computation,
+    # which crashes when layers have different expert counts mid-pruning.
+    # We re-enable it after pruning is complete.
+    if hasattr(model.config, "output_router_logits"):
+        model.config.output_router_logits = False
+
     # -------------------------------------------------------------------------
     # Load and tokenize validation data once up front
     # -------------------------------------------------------------------------
