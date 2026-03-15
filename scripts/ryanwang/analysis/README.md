@@ -44,7 +44,8 @@ The `<model_name>` is the parent directory of the HF checkpoint path
 utils.py                      → shared S3 streaming, token parsing, document loading, model loading
 analyze_data_mix.py           → mix_composition.json (data source fractions)
 analyze_weborganizer.py       → mix_composition.json (uniform fractions across weborganizer topics)
-extract_router_embeddings.py  → embeddings_*.npy + metadata.jsonl.gz + info.json
+extract_router_embeddings.py       → embeddings from pretraining data (S3-based)
+extract_router_embeddings_mmlu.py  → embeddings from MMLU validation data (HF-based)
 sparsify_embeddings.py        → derived embeddings (sparse variants) from existing files
 transform_and_cluster.py      → apply transforms + cluster + evaluate
 generate_cluster_viz.py       → UMAP + interactive HTML visualizer
@@ -112,6 +113,25 @@ bash scripts/ryanwang/analysis/run_extract_embeddings_shuffled_token.sh models/<
 # Token-level extraction with custom token count (e.g. 1M tokens)
 bash scripts/ryanwang/analysis/run_extract_embeddings_shuffled_token.sh models/<model_name>/step<N>-hf 1000000
 ```
+
+### MMLU Validation Embeddings
+
+Extract router embeddings from all 57 MMLU subjects' validation data. Each subject
+is treated as a separate "source" so clustering can discover groupings that may
+differ from the 17 human-defined MMLU categories.
+
+```bash
+# Default model
+bash scripts/ryanwang/analysis/run_extract_embeddings_mmlu.sh
+
+# Specific model
+bash scripts/ryanwang/analysis/run_extract_embeddings_mmlu.sh models/<model_name>/step<N>-hf
+```
+
+Output goes to `claude_outputs/analysis/router_clustering_mmlu_val/<model_name>/`.
+Metadata includes both subject (as `source`) and category for downstream comparison.
+
+**Script**: `src/scripts/analysis/extract_router_embeddings_mmlu.py`
 
 ## Step 3: Transform, Cluster, and Sweep
 
@@ -191,6 +211,7 @@ bash scripts/ryanwang/analysis/run_expert_coverage.sh models/<model_name>/step<N
 | `run_sweep_focused_v3.sh` | (none) | Sweep v3: hierarchical clustering (edit DATA_DIR inside) |
 | `run_sweep_all.sh` | `<DATA_DIR>` | **(deprecated)** Full sweep over all combinations |
 | `run_transform_and_cluster.sh` | `<DATA_DIR> <emb> <transform> <cluster> <k> [--save]` | Single transform+cluster run |
+| `run_extract_embeddings_mmlu.sh` | `[MODEL_PATH]` | Extract embeddings from MMLU validation data (GPU) + sparsify |
 | `run_expert_coverage.sh` | `[MODEL_PATH]` | Expert coverage analysis |
 | `push_router_clustering.sh` | (none) | Sync outputs to S3 |
 | `pull_router_clustering.sh` | (none) | Pull outputs from S3 |
