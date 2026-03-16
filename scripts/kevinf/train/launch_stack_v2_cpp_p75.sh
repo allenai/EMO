@@ -44,9 +44,14 @@ for lr in 5e-5; do
     --trainer.callbacks.downstream_evaluator.eval_interval=100 \
     --dataset.mix=$dataset \
     --dataset.mix_base_dir=s3://ai2-llm \
-    --trainer.callbacks.lm_evaluator.eval_dataset.mix=$dataset \
+    --trainer.callbacks.lm_evaluator.eval_dataset.mix=stack-v2-all-p75 \
     --trainer.callbacks.lm_evaluator.eval_dataset.mix_base_dir=s3://ai2-llm \
+    --trainer.callbacks.lm_evaluator.name=lm_stack_v2_all \
     --trainer.callbacks.lm_evaluator.enabled=true \
+    --trainer.callbacks.lm_evaluator_2.eval_dataset.mix=stack-v2-cpp-p75 \
+    --trainer.callbacks.lm_evaluator_2.eval_dataset.mix_base_dir=s3://ai2-llm \
+    --trainer.callbacks.lm_evaluator_2.name=lm_cpp \
+    --trainer.callbacks.lm_evaluator_2.enabled=true \
     --train_module.optim.lr=$lr \
     ${load_path:+--load_path=$load_path} \
     --train_module.scheduler.warmup_fraction=$warmup_fraction

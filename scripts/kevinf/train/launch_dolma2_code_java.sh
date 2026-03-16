@@ -15,7 +15,7 @@ train_tokens_raw=$((train_tokens_B * 1000000000))
 load_path="/weka/oe-training-default/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995"
 
 for lr in 5e-5; do
-  runname="train-olmo3-1b-${dataset}-${train_tokens_B}B-lr${lr}-eval-on-java-only"
+  runname="train-olmo3-1b-${dataset}-${train_tokens_B}B-lr${lr}-eval-both-evaluators"
   if [ -n "$load_path" ]; then
     runname="${runname}-ctd"
   fi
@@ -23,10 +23,10 @@ for lr in 5e-5; do
   python -m olmo_core.launch.beaker \
     --name $runname \
     --gpus 8 \
-    --nodes 2 \
+    --nodes 1 \
     --weka=oe-training-default \
     --is_private_repo \
-    --priority high \
+    --priority urgent \
     --shared-filesystem \
     --workspace ai2/flex2 \
     --cluster ai2/jupiter \
@@ -43,9 +43,14 @@ for lr in 5e-5; do
     --trainer.callbacks.downstream_evaluator.eval_interval=100 \
     --dataset.mix=$dataset \
     --dataset.mix_base_dir=s3://ai2-llm \
-    --trainer.callbacks.lm_evaluator.eval_dataset.mix=dolma2-code-java \
+    --trainer.callbacks.lm_evaluator.eval_dataset.mix=dolma2-code \
     --trainer.callbacks.lm_evaluator.eval_dataset.mix_base_dir=s3://ai2-llm \
+    --trainer.callbacks.lm_evaluator.name=lm_dolma2_code \
     --trainer.callbacks.lm_evaluator.enabled=true \
+    --trainer.callbacks.lm_evaluator_2.eval_dataset.mix=dolma2-code-java \
+    --trainer.callbacks.lm_evaluator_2.eval_dataset.mix_base_dir=s3://ai2-llm \
+    --trainer.callbacks.lm_evaluator_2.name=lm_java \
+    --trainer.callbacks.lm_evaluator_2.enabled=true \
     --train_module.optim.lr=$lr \
     ${load_path:+--load_path=$load_path} \
     --train_module.scheduler.warmup_fraction=$warmup_fraction
