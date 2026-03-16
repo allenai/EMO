@@ -62,6 +62,7 @@ class DataMix(DataMixBase):
     dolma2_code_java = "dolma2-code-java"
     dolma2_code_cpp = "dolma2-code-cpp"
     dolma2_code_py10B_other40 = "dolma2-code-py10B-other40"
+    dolma50_stackedu_python50 = "dolma50-stackedu-python50"
     swallow_code_v2_python = "swallow-code-v2-python"
 
     stack_v2_python_p75 = "stack-v2-python-p75"
