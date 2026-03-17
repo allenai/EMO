@@ -161,7 +161,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
     gpus=1
     
     # Batch size adjustment (matching original script)
-    if [[ $TASK == *"cot"* || $TASK == "minerva_math_"* || $TASK == "mbpp"* || $TASK == "bigcodebench"* || $TASK == "ruler"* || $TASK == "sciriff"* ]]; then
+    if [[ $TASK == *"cot"* || $TASK == "minerva_math_"* || $TASK == "mbpp"* || $TASK == "bigcodebench"* || $TASK == "ruler"* || $TASK == "sciriff"* || $TASK == *"code_fresh"* ]]; then
         batch_size=1
     else
         batch_size=4
@@ -195,6 +195,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
         bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
             --model $MODEL_PATH \
             --model-type hf \
+            --model-args logits_cache=false \
             --task $TASK \
             --limit $LIMIT \
             --output-dir $OUTPUT_DIR \
