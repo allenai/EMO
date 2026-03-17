@@ -9,7 +9,7 @@ NUM_NEW_EXPERTS=4
 TOTAL_EXPERTS=$((128+${NUM_NEW_EXPERTS}))
 
 # Part 1: Add new expert
-BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
+BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995"
 NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/extensions/twolevelbatchlbreducedp512sharedexp1randpool_1b14b_${TOTAL_EXPERTS}experts_0301_step30995_init_top2_average_noise"
 
 # Run this once; on weka

@@ -81,8 +81,8 @@ HTML_TEMPLATE = """\
   .top-k-group input { width: 80px; }
   #charts {
     display: flex;
-    flex-direction: column;
-    gap: 28px;
+    flex-wrap: wrap;
+    gap: 20px;
   }
   .chart-container {
     background: #fff;
@@ -90,6 +90,7 @@ HTML_TEMPLATE = """\
     border-radius: 8px;
     padding: 16px;
     overflow-x: auto;
+    max-width: fit-content;
   }
   .chart-title {
     font-size: 0.95rem;
@@ -101,6 +102,8 @@ HTML_TEMPLATE = """\
     font-size: 0.78rem;
     color: #888;
     margin-bottom: 10px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
   canvas { display: block; }
   .legend {
@@ -177,6 +180,8 @@ HTML_TEMPLATE = """\
 
 <script>
 const DATA = __DATA_PLACEHOLDER__;
+const NICKNAMES = __NICKNAMES_PLACEHOLDER__;
+function displayName(model) { return NICKNAMES[model] || model.replace(/-hf$/, ''); }
 
 function populateSelects() {
   const modelSel = document.getElementById('modelSelect');
@@ -190,7 +195,7 @@ function populateSelects() {
   for (const m of models) {
     const opt = document.createElement('option');
     opt.value = m;
-    opt.textContent = m.replace(/-hf$/, '');
+    opt.textContent = displayName(m);
     modelSel.appendChild(opt);
   }
   for (const t of tasks) {
@@ -439,7 +444,7 @@ function renderCharts() {
         const taskNames = group.map(g => g.task).join(', ');
         buildChart(
           container, avg, parseInt(ne), topK, topKScope,
-          model.replace(/-hf$/, ''),
+          displayName(model),
           'Tasks (averaged): ' + taskNames
         );
       }
@@ -450,7 +455,7 @@ function renderCharts() {
         const probs = DATA[model][task];
         buildChart(
           container, probs, probs[0].length, topK, topKScope,
-          model.replace(/-hf$/, ''),
+          displayName(model),
           'Task: ' + task
         );
       }
@@ -479,11 +484,18 @@ def main():
     parser = argparse.ArgumentParser(description="Generate router activations dashboard")
     parser.add_argument("--input", default="router_evals", help="Input directory with router eval JSONL files")
     parser.add_argument("--output", default="router_dashboard.html", help="Output HTML file")
+    parser.add_argument("--nicknames", default=None, help="JSON file mapping model directory names to display nicknames")
     args = parser.parse_args()
 
     data = load_data(args.input)
+    nicknames = {}
+    if args.nicknames:
+        with open(args.nicknames) as f:
+            nicknames = json.load(f)
     data_json = json.dumps(data, separators=(",", ":"))
+    nicknames_json = json.dumps(nicknames, separators=(",", ":"))
     html = HTML_TEMPLATE.replace("__DATA_PLACEHOLDER__", data_json)
+    html = html.replace("__NICKNAMES_PLACEHOLDER__", nicknames_json)
 
     with open(args.output, "w") as f:
         f.write(html)
