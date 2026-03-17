@@ -5,8 +5,7 @@
 
 # Configuration
 MODELS=(
-    # need: general model, pretrained model (hf versions)
-    # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    # # need: general model, pretrained model (hf versions)
     # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift-ckpt_1B_dolma3/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift-ckpt_1B_dolma3/step2385-hf"
@@ -30,13 +29,32 @@ MODELS=(
     # "/data/input/kevinf/checkpoints/olmo3-1b-mimic-iv-note-2B-lr5e-5-warmup0.1-ctd/step477-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-medical-o1-en-cot-0.1B-lr5e-5-warmup0.1-ctd/step24-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-medical-o1-en-nocot-0.1B-lr5e-5-warmup0.1-ctd/step48-hf/"
-    # dolma2 code mixes
-    "/data/input/kevinf/checkpoints/train-olmo3-1b-dolma2-code-java-10B-lr5e-5-eval-on-java-only-new-ctd/step2385-hf"
-    "/data/input/kevinf/checkpoints/train-olmo3-1b-dolma2-code-python-10B-lr5e-5-eval-on-python-only-new-ctd/step2385-hf"
-    # stack-v2 code mixes (quality p75+)
+    # # dolma2 code mixes
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-dolma2-code-java-10B-lr5e-5-eval-on-java-only-new-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-dolma2-code-python-10B-lr5e-5-eval-on-python-only-new-ctd/step2385-hf"
+    # # stack-v2 code mixes (quality p75+)
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-python-p75-10B-lr5e-5-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-cpp-p75-10B-lr5e-5-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-java-p75-10B-lr5e-5-ctd/step2385-hf"
+    # # other code models (for reference)
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-dolma2-code-java-10B-lr5e-5-eval-on-java-only-new-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-dolma2-code-python-10B-lr5e-5-eval-on-python-only-new-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-dolma2-code-python-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-dolma2-code-java-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-dolma2-code-cpp-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-cpp-p75-10B-lr5e-5-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-java-p75-10B-lr5e-5-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-code_fim_python-2B-lr5e-5-warmup0.1-pplx-raw-ctd/step477-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-code_fim_cpp-2B-lr5e-5-warmup0.1-pplx-raw-ctd/step477-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-code_fim_java-2B-lr5e-5-warmup0.1-pplx-raw-ctd/step477-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-sponge-code-prose-p75-10B-lr5e-5-ctd/step2385-hf"
+    
+    # code_fresh_rolling:bpb active models (verified)
+    "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    "/data/input/kevinf/checkpoints/olmo3-1b-dolma2-code-python-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
     "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-python-p75-10B-lr5e-5-ctd/step2385-hf"
-    "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-cpp-p75-10B-lr5e-5-ctd/step2385-hf"
-    "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-java-p75-10B-lr5e-5-ctd/step2385-hf"
+    "/data/input/kevinf/checkpoints/train-olmo3-1b-sponge-code-prose-p75-10B-lr5e-5-ctd/step2385-hf"
+    "/data/input/kevinf/checkpoints/olmo3-1b-code_fim_python-2B-lr5e-5-warmup0.1-pplx-raw-ctd/step477-hf"
 )
 
 BASE_OUTPUT_DIR="/data/input/kevinf/eval_results/flexmoe"
@@ -47,6 +65,9 @@ model_type=hf
 
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
+    # code_fresh rolling BPB (all 42 languages)
+    code_fresh_rolling:bpb
+
     # # # MC9 tasks
     # arc_easy:mc::olmes
     # arc_challenge:mc::olmes
@@ -57,7 +78,7 @@ TASKS=(
     # piqa:mc::olmes
     # socialiqa:mc::olmes
     # winogrande:mc::olmes
-    
+
     # # # Gen5 tasks
     # coqa::olmes
     # squad::olmes
@@ -66,8 +87,8 @@ TASKS=(
     # drop::olmes
 
     # # # MMLU tasks
-    mmlu:mc::olmes
-    mmlu_pro:mc::none
+    # mmlu:mc::olmes
+    # mmlu_pro:mc::none
 
     # # # AGI eval
     # agi_eval_english:1shot::olmes
@@ -86,22 +107,22 @@ TASKS=(
     # minerva_math_precalculus::olmes
 
     # # Code4 tasks
-    codex_humaneval:temp0.8
-    codex_humanevalplus:temp0.8
-    mbpp::none
-    mbppplus::none
+    # codex_humaneval:temp0.8
+    # codex_humanevalplus:temp0.8
+    # mbpp::none
+    # mbppplus::none
 
     # # ChemBench MC and generative tasks
     # chembench:mc
     # chembench:gen
-    # chembench:rc    
+    # chembench:rc
     # frenchbench:rc
     # legalbench:rc
 
     # medqa
     # medmcqa:mc
 
-    mt_mbpp 
+    # mt_mbpp
 )
 
 # Function to get checkpoint name - extracts run name and step from path
