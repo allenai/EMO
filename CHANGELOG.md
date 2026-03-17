@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added code_fresh_rolling eval task (rolling log-likelihood perplexity/BPB for 42 programming languages).
 - Added PMC (PubMed Central) data mix and training script for biomedical continued pretraining.
 - Fixed medmcqa eval task and evaluator defaults.
 - Extension code and experiments.

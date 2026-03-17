@@ -2,6 +2,8 @@ from oe_eval.configs.tasks import TASK_CONFIGS
 from oe_eval.data.mmlu_pro_categories import MMLU_PRO_CATEGORIES
 from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 
+from offline_evals.tasks.code_fresh import CODE_FRESH_LANGUAGES
+
 
 def get_task_configs():
     TASK_CONFIGS.update(
@@ -1359,6 +1361,19 @@ def get_task_configs():
             "metadata": {
                 "regimes": [],
             },
+        }
+
+    # code_fresh_rolling task configs
+    for language in CODE_FRESH_LANGUAGES:
+        TASK_CONFIGS[f"code_fresh_rolling:{language}:bpb"] = {
+            "task_name": f"code_fresh_rolling:{language}",
+            "split": "train",
+            "primary_metric": "bits_per_byte",
+        }
+        TASK_CONFIGS[f"code_fresh_rolling:{language}:ppl"] = {
+            "task_name": f"code_fresh_rolling:{language}",
+            "split": "train",
+            "primary_metric": "ppl_token",
         }
 
     return TASK_CONFIGS

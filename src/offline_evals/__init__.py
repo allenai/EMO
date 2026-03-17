@@ -9,6 +9,7 @@ from oe_eval.tasks.oe_eval_tasks.mmlu_pro import create_mmlu_pro_task
 from .tasks import (
     agi_eval,
     chembench,
+    code_fresh,
     frenchbench,
     hatespeech,
     legalbench,
@@ -78,6 +79,7 @@ new_task_registry: Dict = {
     "hatexplain": hatespeech.Hatexplain,
     **agi_eval.create_core_agi_eval_tasks(),
     **chembench.create_chembench_tasks(),
+    **code_fresh.create_core_code_fresh_rolling_tasks(),
     **ruler.create_ruler_tasks(),
     **sciriff.create_bio_sciriff_qa_tasks(),
     "squad": squad.SQuAD,

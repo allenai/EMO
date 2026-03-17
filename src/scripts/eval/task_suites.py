@@ -4,7 +4,7 @@ from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 
 
 def get_task_suite_configs():
-    from offline_evals.tasks import chembench, frenchbench, legalbench
+    from offline_evals.tasks import chembench, code_fresh, frenchbench, legalbench
 
     TASK_SUITE_CONFIGS.update(
         {
@@ -39,6 +39,18 @@ def get_task_suite_configs():
             },
             "frenchbench:rc": {
                 "tasks": list(frenchbench.create_frenchbench_tasks().keys()),
+                "primary_metric": "macro",
+            },
+            "code_fresh_rolling:bpb": {
+                "tasks": [
+                    f"code_fresh_rolling:{lang}:bpb" for lang in code_fresh.CODE_FRESH_LANGUAGES
+                ],
+                "primary_metric": "macro",
+            },
+            "code_fresh_rolling:ppl": {
+                "tasks": [
+                    f"code_fresh_rolling:{lang}:ppl" for lang in code_fresh.CODE_FRESH_LANGUAGES
+                ],
                 "primary_metric": "macro",
             },
         },
