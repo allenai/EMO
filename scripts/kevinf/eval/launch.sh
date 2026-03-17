@@ -50,11 +50,12 @@ MODELS=(
     # "/data/input/kevinf/checkpoints/train-olmo3-1b-sponge-code-prose-p75-10B-lr5e-5-ctd/step2385-hf"
     
     # code_fresh_rolling:bpb active models (verified)
-    "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
-    "/data/input/kevinf/checkpoints/olmo3-1b-dolma2-code-python-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
-    "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-python-p75-10B-lr5e-5-ctd/step2385-hf"
-    "/data/input/kevinf/checkpoints/train-olmo3-1b-sponge-code-prose-p75-10B-lr5e-5-ctd/step2385-hf"
-    "/data/input/kevinf/checkpoints/olmo3-1b-code_fim_python-2B-lr5e-5-warmup0.1-pplx-raw-ctd/step477-hf"
+    # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-dolma2-code-python-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-python-p75-10B-lr5e-5-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-sponge-code-prose-p75-10B-lr5e-5-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-code_fim_python-2B-lr5e-5-warmup0.1-pplx-raw-ctd/step477-hf"
+    "/data/input/kevinf/checkpoints/train-olmo3-1b-dolma50-stackedu-python50-10B-lr5e-5-ctd/step2385-hf"
 )
 
 BASE_OUTPUT_DIR="/data/input/kevinf/eval_results/flexmoe"
@@ -166,7 +167,15 @@ for MODEL_PATH in "${MODELS[@]}"; do
     else
         batch_size=4
     fi
-    
+
+    # Rolling eval tasks need logits_cache disabled to avoid tensor size
+    # mismatches from Collator key collisions (flat ctx+cont key is ambiguous
+    # about the boundary). Safe to leave on for non-rolling tasks (MC etc).
+    model_args=""
+    if [[ $TASK == *"code_fresh"* ]]; then
+        model_args="logits_cache=false"
+    fi
+
     # Create job name - remove invalid characters only
     safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g')
     safe_task_name=$(echo $TASK | sed 's/[^a-zA-Z0-9_-]//g')
@@ -195,7 +204,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
         bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
             --model $MODEL_PATH \
             --model-type hf \
-            --model-args logits_cache=false \
+            ${model_args:+--model-args $model_args} \
             --task $TASK \
             --limit $LIMIT \
             --output-dir $OUTPUT_DIR \
