@@ -56,6 +56,9 @@ MODELS=(
     # "/data/input/kevinf/checkpoints/train-olmo3-1b-sponge-code-prose-p75-10B-lr5e-5-ctd/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-code_fim_python-2B-lr5e-5-warmup0.1-pplx-raw-ctd/step477-hf"
     "/data/input/kevinf/checkpoints/train-olmo3-1b-dolma50-stackedu-python50-10B-lr5e-5-ctd/step2385-hf"
+    "s3://ai2-llm/checkpoints/lucas/olmo3_1b_5xc_50web_alldressed_v2_50spring2code_stack_edu_redux_all/step61007-hf"
+    "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+
 )
 
 BASE_OUTPUT_DIR="/data/input/kevinf/eval_results/flexmoe"
@@ -67,7 +70,7 @@ model_type=hf
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
     # code_fresh rolling BPB (all 42 languages)
-    code_fresh_rolling:bpb
+    # code_fresh_rolling:bpb
 
     # # # MC9 tasks
     # arc_easy:mc::olmes
@@ -123,7 +126,7 @@ TASKS=(
     # medqa
     # medmcqa:mc
 
-    # mt_mbpp
+    mt_mbpp_v2fix
 )
 
 # Function to get checkpoint name - extracts run name and step from path
@@ -147,10 +150,13 @@ for MODEL_PATH in "${MODELS[@]}"; do
     
     # For setting the output_dir (matching original script logic)
     if [[ $MODEL_PATH == "/"* ]]; then
-        # internal model
+        # internal model (absolute local path)
+        model=$(get_checkpoint_name $MODEL_PATH)
+    elif [[ $MODEL_PATH == "s3://"* ]]; then
+        # S3 path
         model=$(get_checkpoint_name $MODEL_PATH)
     else
-        # HF model
+        # HF model (org/model format)
         model=$(echo $MODEL_PATH | cut -d'/' -f2)
     fi
     
@@ -167,7 +173,6 @@ for MODEL_PATH in "${MODELS[@]}"; do
     else
         batch_size=4
     fi
-
     # Rolling eval tasks need logits_cache disabled to avoid tensor size
     # mismatches from Collator key collisions (flat ctx+cont key is ambiguous
     # about the boundary). Safe to leave on for non-rolling tasks (MC etc).
@@ -187,6 +192,15 @@ for MODEL_PATH in "${MODELS[@]}"; do
     echo "  Batch size: $batch_size"
     echo "  Job name: $job_name"
     
+    # For S3 paths, sync to local temp dir first (transformers doesn't support s3:// URIs)
+    if [[ $MODEL_PATH == "s3://"* ]]; then
+        EVAL_MODEL_PATH="/tmp/model_ckpt"
+        SYNC_CMD="pip install awscli -q && aws s3 sync \"$MODEL_PATH\" \"$EVAL_MODEL_PATH\" && "
+    else
+        EVAL_MODEL_PATH="$MODEL_PATH"
+        SYNC_CMD=""
+    fi
+
     uv run gantry run \
         --name $job_name \
         --weka oe-training-default:/data/input \
@@ -201,8 +215,8 @@ for MODEL_PATH in "${MODELS[@]}"; do
         --env-secret AWS_SECRET_ACCESS_KEY=KEVINF_AWS_SECRET_ACCESS_KEY \
         --allow-dirty \
         -- \
-        bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
-            --model $MODEL_PATH \
+        bash -c "${SYNC_CMD}PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+            --model $EVAL_MODEL_PATH \
             --model-type hf \
             ${model_args:+--model-args $model_args} \
             --task $TASK \
