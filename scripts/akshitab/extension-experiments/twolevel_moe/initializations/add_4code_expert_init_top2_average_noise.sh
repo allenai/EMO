@@ -12,15 +12,16 @@ TOTAL_EXPERTS=$((128+${NUM_NEW_EXPERTS}))
 BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995"
 NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/extensions/twolevelbatchlbreducedp512sharedexp1randpool_1b14b_${TOTAL_EXPERTS}experts_0301_step30995_init_top2_code_average_noise"
 
+# top 2: [127, 63]
 # Run this once; on weka
-python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
-	-c ${BASE_MODEL_PATH}\
-	-o ${NEW_BASE_MODEL_PATH} \
-	--num_new_experts ${NUM_NEW_EXPERTS} \
-	--init_method similar \
-    --activation_file s3://ai2-sewonm/akshitab/mose/evals/extensions/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301_step30995-hf/task-mbpp-router.jsonl \
-    -k 2 \
-	--noise_std_fraction 0.1
+# python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
+# 	-c ${BASE_MODEL_PATH}\
+# 	-o ${NEW_BASE_MODEL_PATH} \
+# 	--num_new_experts ${NUM_NEW_EXPERTS} \
+# 	--init_method similar \
+#     --activation_file s3://ai2-sewonm/akshitab/mose/evals/extensions/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301_step30995-hf/task-mbpp-router.jsonl \
+#     -k 2 \
+# 	--noise_std_fraction 0.1
 
 
 # # Part 2: Train with new expert
