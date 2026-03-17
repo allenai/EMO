@@ -2,12 +2,11 @@ from oe_eval.configs.tasks import TASK_CONFIGS
 from oe_eval.data.mmlu_pro_categories import MMLU_PRO_CATEGORIES
 from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 
-
 def get_task_configs():
     TASK_CONFIGS.update(
         {
-            "squad:train_0shot::olmes": {
-                "task_name": "squad:train_0shot",
+            "squad_0shot:train::olmes": {
+                "task_name": "squad_0shot:train",
                 "split": "train",
                 "primary_metric": "exact_match",
                 "num_shots": 0,
@@ -21,8 +20,8 @@ def get_task_configs():
                     "regimes": [],
                 },
             },
-            "squad:validation_0shot::olmes": {
-                "task_name": "squad:validation_0shot",
+            "squad_0shot:validation::olmes": {
+                "task_name": "squad_0shot:validation",
                 "split": "validation",
                 "primary_metric": "exact_match",
                 "num_shots": 0,
@@ -36,8 +35,8 @@ def get_task_configs():
                     "regimes": [],
                 },
             },
-            "squad:test_0shot::olmes": {
-                "task_name": "squad:test_0shot",
+            "squad_0shot:test::olmes": {
+                "task_name": "squad_0shot:test",
                 "split": "test",
                 "primary_metric": "exact_match",
                 "num_shots": 0,
@@ -51,8 +50,8 @@ def get_task_configs():
                     "regimes": [],
                 },
             },
-            "coqa_full:train_0shot::olmes": {
-                "task_name": "coqa_full:train_0shot",
+            "coqa_full_0shot:train::olmes": {
+                "task_name": "coqa_full_0shot:train",
                 "split": "train",
                 "primary_metric": "f1",
                 "num_shots": 0,
@@ -60,8 +59,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "coqa_full:validation_0shot::olmes": {
-                "task_name": "coqa_full:validation_0shot",
+            "coqa_full_0shot:validation::olmes": {
+                "task_name": "coqa_full_0shot:validation",
                 "split": "validation",
                 "primary_metric": "f1",
                 "num_shots": 0,
@@ -69,8 +68,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "coqa_full:test_0shot::olmes": {
-                "task_name": "coqa_full:test_0shot",
+            "coqa_full_0shot:test::olmes": {
+                "task_name": "coqa_full_0shot:test",
                 "split": "test",
                 "primary_metric": "f1",
                 "num_shots": 0,
@@ -78,8 +77,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "coqa:train_0shot::olmes": {
-                "task_name": "coqa:train_0shot",
+            "coqa_0shot:train::olmes": {
+                "task_name": "coqa_0shot:train",
                 "split": "train",
                 "primary_metric": "f1",
                 "num_shots": 0,
@@ -87,8 +86,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "coqa:validation_0shot::olmes": {
-                "task_name": "coqa:validation_0shot",
+            "coqa_0shot:validation::olmes": {
+                "task_name": "coqa_0shot:validation",
                 "split": "validation",
                 "primary_metric": "f1",
                 "num_shots": 0,
@@ -96,8 +95,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "coqa:test_0shot::olmes": {
-                "task_name": "coqa:test_0shot",
+            "coqa_0shot:test::olmes": {
+                "task_name": "coqa_0shot:test",
                 "split": "test",
                 "primary_metric": "f1",
                 "num_shots": 0,
@@ -105,8 +104,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "gsm8k_generation:train_0shot::olmes": {
-                "task_name": "gsm8k_generation:train_0shot",
+            "gsm8k_generation_0shot:train::olmes": {
+                "task_name": "gsm8k_generation_0shot:train",
                 "split": "train",
                 "primary_metric": "bits_per_byte",
                 "num_shots": 0,
@@ -115,8 +114,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "gsm8k_generation:validation_0shot::olmes": {
-                "task_name": "gsm8k_generation:validation_0shot",
+            "gsm8k_generation_0shot:validation::olmes": {
+                "task_name": "gsm8k_generation_0shot:validation",
                 "split": "validation",
                 "primary_metric": "bits_per_byte",
                 "num_shots": 0,
@@ -125,8 +124,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "gsm8k_generation:test_0shot::olmes": {
-                "task_name": "gsm8k_generation:test_0shot",
+            "gsm8k_generation_0shot:test::olmes": {
+                "task_name": "gsm8k_generation_0shot:test",
                 "split": "test",
                 "primary_metric": "exact_match",
                 "num_shots": 0,
@@ -200,7 +199,7 @@ def get_task_configs():
                 },
             },
             "gsm8k_perplexity:train::olmes": {
-                "task_name": "gsm8k:perplexity_train",
+                "task_name": "gsm8k_perplexity:train",
                 "split": "train",
                 "primary_metric": "bits_per_byte",
                 "num_shots": 8,
@@ -210,7 +209,7 @@ def get_task_configs():
                 },
             },
             "gsm8k_perplexity:validation::olmes": {
-                "task_name": "gsm8k:perplexity_validation",
+                "task_name": "gsm8k_perplexity:validation",
                 "split": "validation",
                 "primary_metric": "bits_per_byte",
                 "num_shots": 8,
@@ -219,8 +218,18 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "gsm8k_perplexity:train_0shot::olmes": {
-                "task_name": "gsm8k:perplexity_train_0shot",
+            "gsm8k_perplexity:test::olmes": {
+                "task_name": "gsm8k_perplexity:test",
+                "split": "test",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 8,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k_perplexity_0shot:train::olmes": {
+                "task_name": "gsm8k_perplexity_0shot:train",
                 "split": "train",
                 "primary_metric": "bits_per_byte",
                 "num_shots": 0,
@@ -229,8 +238,8 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "gsm8k_perplexity:validation_0shot::olmes": {
-                "task_name": "gsm8k:perplexity_validation_0shot",
+            "gsm8k_perplexity_0shot:validation::olmes": {
+                "task_name": "gsm8k_perplexity_0shot:validation",
                 "split": "validation",
                 "primary_metric": "bits_per_byte",
                 "num_shots": 0,
@@ -239,11 +248,11 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
-            "gsm8k_perplexity:test::olmes": {
-                "task_name": "gsm8k:perplexity_test",
+            "gsm8k_perplexity_0shot:test::olmes": {
+                "task_name": "gsm8k_perplexity_0shot:test",
                 "split": "test",
                 "primary_metric": "bits_per_byte",
-                "num_shots": 8,
+                "num_shots": 0,
                 "fewshot_source": "STD:GSM8k",
                 "metadata": {
                     "regimes": ["OLMES-v0.2"],
@@ -1272,38 +1281,62 @@ def get_task_configs():
     )
 
     # update MMLU, MMLU_Pro categories and configs
-    for sub in MMLU_SUBJECTS:
-        TASK_CONFIGS[f"mmlu_{sub}:mc_validation::olmes"] = {
-            "task_name": f"mmlu_{sub}:mc_validation",
+    MMLU_CATEGORIES = [
+        "biology",
+        "business",
+        "chemistry",
+        "computer_science",
+        "culture",
+        "economics",
+        "engineering",
+        "geography",
+        "health",
+        "history",
+        "law",
+        "math",
+        "other",
+        "philosophy_cat",
+        "physics",
+        "politics",
+        "psychology",
+    ]
+    for category in MMLU_CATEGORIES:
+        TASK_CONFIGS[f"mmlu_{category}:rc_validation::olmes"] = {
+            "task_name": f"mmlu_{category}:rc_validation",
             "split": "validation",
             "num_shots": 5,
-            "primary_metric": "acc_raw",
+            "primary_metric": "acc_per_char",
+            "category_name": category,
             "metadata": {
                 "regimes": ["OLMES-v0.1"],
             },
         }
-        TASK_CONFIGS[f"mmlu_{sub}:mc_test::olmes"] = {
-            "task_name": f"mmlu_{sub}:mc_test",
+        TASK_CONFIGS[f"mmlu_{category}:rc_test::olmes"] = {
+            "task_name": f"mmlu_{category}:rc_test",
             "split": "test",
             "num_shots": 5,
-            "primary_metric": "acc_raw",
+            "primary_metric": "acc_per_char",
+            "category_name": category,
             "metadata": {
                 "regimes": ["OLMES-v0.1"],
             },
         }
+        TASK_CONFIGS[f"mmlu_{category}:rc_train::olmes"] = {
+            "task_name": f"mmlu_{category}:rc_train",
+            "split": "train",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": category,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+
+    for sub in MMLU_SUBJECTS:
         TASK_CONFIGS[f"mmlu_{sub}:rc_validation::olmes"] = {
             "task_name": f"mmlu_{sub}:rc_validation",
             "split": "validation",
             "num_shots": 5,
-            "primary_metric": "acc_per_char",
-            "metadata": {
-                "regimes": ["OLMES-v0.1"],
-            },
-        }
-        TASK_CONFIGS[f"mmlu_{sub}:rc_validation_0shot::olmes"] = {
-            "task_name": f"mmlu_{sub}:rc_validation_0shot",
-            "split": "validation",
-            "num_shots": 0,
             "primary_metric": "acc_per_char",
             "metadata": {
                 "regimes": ["OLMES-v0.1"],
@@ -1318,47 +1351,56 @@ def get_task_configs():
                 "regimes": ["OLMES-v0.1"],
             },
         }
-
-    for cat in MMLU_PRO_CATEGORIES:
-        TASK_CONFIGS[f"mmlu_pro_{cat}:mc_validation::none"] = {
-            "task_name": f"mmlu_pro_{cat}:mc_validation",
-            "split": "validation",
+        TASK_CONFIGS[f"mmlu_{sub}:rc_train::olmes"] = {
+            "task_name": f"mmlu_{sub}:rc_train",
+            "split": "train",
             "num_shots": 5,
+            "primary_metric": "acc_per_char",
             "metadata": {
-                "regimes": [],
+                "regimes": ["OLMES-v0.1"],
             },
         }
-        TASK_CONFIGS[f"mmlu_pro_{cat}:mc_test::none"] = {
-            "task_name": f"mmlu_pro_{cat}:mc_test",
-            "split": "test",
-            "num_shots": 5,
-            "metadata": {
-                "regimes": [],
-            },
-        }
-        TASK_CONFIGS[f"mmlu_pro_{cat}:rc_validation::none"] = {
-            "task_name": f"mmlu_pro_{cat}:rc_validation",
-            "split": "validation",
-            "num_shots": 5,
-            "metadata": {
-                "regimes": [],
-            },
-        }
-        TASK_CONFIGS[f"mmlu_pro_{cat}:rc_validation_0shot::none"] = {
-            "task_name": f"mmlu_pro_{cat}:rc_validation_0shot",
-            "split": "validation",
-            "num_shots": 0,
-            "metadata": {
-                "regimes": [],
-            },
-        }
-        TASK_CONFIGS[f"mmlu_pro_{cat}:rc_test::none"] = {
-            "task_name": f"mmlu_pro_{cat}:rc_test",
-            "split": "test",
-            "num_shots": 5,
-            "metadata": {
-                "regimes": [],
-            },
-        }
+    #
+    # for cat in MMLU_PRO_CATEGORIES:
+    #     TASK_CONFIGS[f"mmlu_pro_{cat}:mc_validation::none"] = {
+    #         "task_name": f"mmlu_pro_{cat}:mc_validation",
+    #         "split": "validation",
+    #         "num_shots": 5,
+    #         "metadata": {
+    #             "regimes": [],
+    #         },
+    #     }
+    #     TASK_CONFIGS[f"mmlu_pro_{cat}:mc_test::none"] = {
+    #         "task_name": f"mmlu_pro_{cat}:mc_test",
+    #         "split": "test",
+    #         "num_shots": 5,
+    #         "metadata": {
+    #             "regimes": [],
+    #         },
+    #     }
+    #     TASK_CONFIGS[f"mmlu_pro_{cat}:rc_validation::none"] = {
+    #         "task_name": f"mmlu_pro_{cat}:rc_validation",
+    #         "split": "validation",
+    #         "num_shots": 5,
+    #         "metadata": {
+    #             "regimes": [],
+    #         },
+    #     }
+    #     TASK_CONFIGS[f"mmlu_pro_{cat}:rc_validation_0shot::none"] = {
+    #         "task_name": f"mmlu_pro_{cat}:rc_validation_0shot",
+    #         "split": "validation",
+    #         "num_shots": 0,
+    #         "metadata": {
+    #             "regimes": [],
+    #         },
+    #     }
+    #     TASK_CONFIGS[f"mmlu_pro_{cat}:rc_test::none"] = {
+    #         "task_name": f"mmlu_pro_{cat}:rc_test",
+    #         "split": "test",
+    #         "num_shots": 5,
+    #         "metadata": {
+    #             "regimes": [],
+    #         },
+    #     }
 
     return TASK_CONFIGS

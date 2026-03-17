@@ -1,5 +1,6 @@
 from oe_eval.tasks.oe_eval_tasks.boolq import BoolQ, BoolQMC
 
+from ..metrics.mc_softloss import SoftLoss
 
 class BoolQ_RC_Base(BoolQ):
     def has_test_docs(self):
@@ -24,6 +25,14 @@ class BoolQ_RC_Base(BoolQ):
     def test_docs(self):
         # validation set used to be the test set by default if a test set did not exist, so we still set it as test set
         return map(self._process_doc, self.dataset["validation"])
+
+    def make_metrics(self):
+        # run the super
+        super().make_metrics()
+        # add softloss metric
+        self._metrics += [SoftLoss(**self.task_config["metric_kwargs"])]
+
+        return self._metrics
 
 
 class BoolQ_MC_Base(BoolQMC):
@@ -51,24 +60,24 @@ class BoolQ_MC_Base(BoolQMC):
         return map(self._process_doc, self.dataset["validation"])
 
 
-class BoolQ_RC_Train(BoolQ_RC_Base):
-    pass
-
-
-class BoolQ_RC_Validation(BoolQ_RC_Base):
-    pass
-
-
-class BoolQ_RC_Train_0shot(BoolQ_RC_Base):
-    pass
-
-
-class BoolQ_RC_Validation_0shot(BoolQ_RC_Base):
-    pass
-
-
-class BoolQ_RC_Test(BoolQ_RC_Base):
-    pass
+# class BoolQ_RC_Train(BoolQ_RC_Base):
+#     pass
+#
+#
+# class BoolQ_RC_Validation(BoolQ_RC_Base):
+#     pass
+#
+#
+# class BoolQ_RC_Train_0shot(BoolQ_RC_Base):
+#     pass
+#
+#
+# class BoolQ_RC_Validation_0shot(BoolQ_RC_Base):
+#     pass
+#
+#
+# class BoolQ_RC_Test(BoolQ_RC_Base):
+#     pass
 
 
 class BoolQ_MC_Train(BoolQ_MC_Base):

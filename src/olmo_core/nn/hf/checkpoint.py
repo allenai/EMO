@@ -133,6 +133,7 @@ def save_hf_model(
     process_group: Optional[dist.ProcessGroup] = None,
     work_dir: Optional[PathOrStr] = None,
     save_overwrite: bool = False,
+    extra_hf_state_dict: Optional[Dict[str, Any]] = None,
 ):
     """
     Saves an OLMo Core model state dict in Hugging Face transformers format.
@@ -156,6 +157,14 @@ def save_hf_model(
         }
 
     hf_state_dict: Dict[str, torch.Tensor] = convert_state_to_hf(hf_config, model_state_dict)
+
+    # Merge any extra HF state dict entries (e.g., dense bias keys that bypass the converter)
+    if extra_hf_state_dict:
+        if dtype is not None:
+            extra_hf_state_dict = {
+                k: v.to(dtype=dtype.as_pt()) for k, v in extra_hf_state_dict.items()
+            }
+        hf_state_dict.update(extra_hf_state_dict)
 
     # model.save_pretrained fails says `tensor.reshape()` should be used instead of `tensor.view()`
     # if we do not make the state contiguous. Unfortunately this is bad for perf.

@@ -76,6 +76,9 @@ flash-attn = [
     "flash-attn @ https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.7.2/flash_attn-2.8.3+cu128torch2.8-cp310-cp310-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.10'",
     "flash-attn @ https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.7.2/flash_attn-2.8.3+cu128torch2.8-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.11'",
 ]
+#transformers=[
+#    "transformers@git+https://github.com/ryanyxw/transformers.git@2a441500fddbaedeb7f22651114825358be6b296"
+#]
 wandb = ["wandb"]
 all = ["ai2-olmo-core[dev,beaker,comet,eval,flash-attn,torchao,transformers,wandb]"]
 

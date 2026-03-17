@@ -7,8 +7,7 @@ MODELS=(
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995-hf"
 #    "twolevelbatchlb-8_1b7b_stability_1207/step30995-hf"
 
-    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
-#    "moe_1b4b_32experts_1224/step30995-hf"
+#    "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995-hf"
 
 #    "mutualinfo_1b14b_cond-1e-2_uncond-1e-2_1205/step30995-hf"
@@ -45,7 +44,83 @@ TASK_GROUPS_LIST=(
 #  "gsm8k_generation_zeroshot"
 #  "coqa_zeroshot"
 #  "coqa_full_zeroshot"
-  "squad_zeroshot"
+#  "squad_zeroshot"
+
+#  "mmlu_biology"
+#  "mmlu_business"
+#  "mmlu_chemistry"
+#  "mmlu_computer_science"
+#  "mmlu_culture"
+#  "mmlu_economics"
+#  "mmlu_engineering"
+#  "mmlu_geography"
+#  "mmlu_health"
+#  "mmlu_history"
+  "mmlu_law"
+#  "mmlu_math"
+#  "mmlu_other"
+#  "mmlu_philosophy_cat"
+#  "mmlu_physics"
+#  "mmlu_politics"
+#  "mmlu_psychology"
+
+#  "mmlu_abstract_algebra"
+#  "mmlu_anatomy"
+#  "mmlu_astronomy"
+#  "mmlu_business_ethics"
+#  "mmlu_clinical_knowledge"
+#  "mmlu_college_biology"
+#  "mmlu_college_chemistry"
+#  "mmlu_college_computer_science"
+#  "mmlu_college_mathematics"
+#  "mmlu_college_medicine"
+#  "mmlu_college_physics"
+#  "mmlu_computer_security"
+#  "mmlu_conceptual_physics"
+#  "mmlu_econometrics"
+#  "mmlu_electrical_engineering"
+#  "mmlu_elementary_mathematics"
+#  "mmlu_formal_logic"
+#  "mmlu_global_facts"
+#  "mmlu_high_school_biology"
+#  "mmlu_high_school_chemistry"
+#  "mmlu_high_school_computer_science"
+#  "mmlu_high_school_european_history"
+#  "mmlu_high_school_geography"
+#  "mmlu_high_school_government_and_politics"
+#  "mmlu_high_school_macroeconomics"
+#  "mmlu_high_school_mathematics"
+#  "mmlu_high_school_microeconomics"
+#  "mmlu_high_school_physics"
+#  "mmlu_high_school_psychology"
+#  "mmlu_high_school_statistics"
+#  "mmlu_high_school_us_history"
+#  "mmlu_high_school_world_history"
+#  "mmlu_human_aging"
+#  "mmlu_human_sexuality"
+#  "mmlu_international_law"
+#  "mmlu_jurisprudence"
+#  "mmlu_logical_fallacies"
+#  "mmlu_machine_learning"
+#  "mmlu_management"
+#  "mmlu_marketing"
+#  "mmlu_medical_genetics"
+#  "mmlu_miscellaneous"
+#  "mmlu_moral_disputes"
+#  "mmlu_moral_scenarios"
+#  "mmlu_nutrition"
+#  "mmlu_philosophy"
+#  "mmlu_prehistory"
+#  "mmlu_professional_accounting"
+#  "mmlu_professional_law"
+#  "mmlu_professional_medicine"
+#  "mmlu_professional_psychology"
+#  "mmlu_public_relations"
+#  "mmlu_security_studies"
+#  "mmlu_sociology"
+#  "mmlu_us_foreign_policy"
+#  "mmlu_virology"
+#  "mmlu_world_religions"
 
 #   MMLU
 #  "mmlu"
@@ -100,7 +175,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
         TASK="$GROUP_NAME"
 
         # Batch size adjustment (matching original script)
-        if [[ $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* || $TASK == *"boolq"* || $TASK == *"synthea"* || $MODEL_PATH == *"1b35b"* ]]; then
+        if [[ $TASK == *"mmlu_high_school_european_history"* || $TASK == *"mmlu_high_school_us_history"* || $TASK == *"mmlu_history"* || $TASK == *"mmlu_philosophy"* || $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* || $TASK == *"boolq"* || $TASK == *"synthea"* || $MODEL_PATH == *"1b35b"* ]]; then
             batch_size=$((BATCH_SIZE / 4))
         else
             batch_size=$BATCH_SIZE
@@ -111,8 +186,8 @@ for MODEL_PATH in "${MODELS[@]}"; do
             batch_size=$((batch_size / 2))
         fi
 
-        # adjust number of gpus requested if its mmlu, agi_eval, bbh, gsm8k, minerva, codex, mbpp
-        if [[ $TASK == *mmlu* || $TASK == *agi_eval* || $TASK == *bbh* || $TASK == *gsm8k* || $TASK == *minerva_math_* || $TASK == *codex* || $TASK == *mbpp* || $MODEL_PATH == *"1b35b"* ]]; then
+        # adjust number of gpus requested if its agi_eval, bbh, gsm8k, minerva, codex, mbpp
+        if [[ $TASK == *agi_eval* || $TASK == *bbh* || $TASK == *gsm8k* || $TASK == *minerva_math_* || $TASK == *codex* || $TASK == *mbpp* || $MODEL_PATH == *"1b35b"* ]]; then
             gpus=4
         else
             gpus=1
@@ -146,6 +221,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
             --cluster $CLUSTER \
             --priority urgent \
             --gpus $gpus \
+            --allow-dirty \
             --env-secret HF_TOKEN=RYAN_HF_TOKEN \
             --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
             --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
@@ -157,6 +233,8 @@ for MODEL_PATH in "${MODELS[@]}"; do
                 --MODEL_PATH "${MODEL_DIR}/${MODEL_PATH}" \
                 --GPUS "$gpus"
             "
+
+        sleep 15 # to avoid overwhelming huggingface with too many requests
 
         echo "Launched evaluation for model: $model, group: $GROUP_NAME"
         echo "----------------------------------------"

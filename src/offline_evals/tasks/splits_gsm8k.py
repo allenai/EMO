@@ -181,24 +181,24 @@ class GSM8K_Perplexity_Base(Task):
         ]
 
 
-class GSM8K_Perplexity_Train(GSM8K_Perplexity_Base):
-    pass
-
-
-class GSM8K_Perplexity_Validation(GSM8K_Perplexity_Base):
-    pass
-
-
-class GSM8K_Perplexity_Train_0shot(GSM8K_Perplexity_Base):
-    pass
-
-
-class GSM8K_Perplexity_Validation_0shot(GSM8K_Perplexity_Base):
-    pass
-
-
-class GSM8K_Perplexity_Test(GSM8K_Perplexity_Base):
-    pass
+# class GSM8K_Perplexity_Train(GSM8K_Perplexity_Base):
+#     pass
+#
+#
+# class GSM8K_Perplexity_Validation(GSM8K_Perplexity_Base):
+#     pass
+#
+#
+# class GSM8K_Perplexity_Train_0shot(GSM8K_Perplexity_Base):
+#     pass
+#
+#
+# class GSM8K_Perplexity_Validation_0shot(GSM8K_Perplexity_Base):
+#     pass
+#
+#
+# class GSM8K_Perplexity_Test(GSM8K_Perplexity_Base):
+#     pass
 
 
 # For GSM8K Finetuning. For test, we use generation-based. For train and val, we want gold labels to base off of

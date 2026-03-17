@@ -10,6 +10,10 @@ from olmo_core.nn.transformer.block import (
     ReorderedNormTransformerBlock,
     TransformerBlock,
 )
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexppool_router import MoETwoLevelBatchLBReduceDPSharedExpPoolRouter
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_router import MoETwoLevelBatchLBReduceDPSharedExpRouter
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_randpool_router import MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter
+from olmo_core.nn.moe.router_lbreducedp_sharedexp import MoELinearLBReduceDPSharedExpRouter
 from olmo_core.nn.transformer.model import (
     MoETransformer,
     NormalizedTransformer,
@@ -36,6 +40,19 @@ except ImportError:
 def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
     blocks = list(model.blocks.values())
     for block in blocks:
+        # Dense TransformerBlock (e.g., densefirst layers 0-1): validate attention only
+        if isinstance(block, TransformerBlock) and not isinstance(block, (MoETransformerBlock, MoEReorderedNormTransformerBlock)):
+            if not isinstance(block.attention, Attention):
+                raise NotImplementedError(
+                    f"Attention is not a {Attention.__name__}, unable to build HF config for {model.__class__.__name__}"
+                )
+            if block.attention.rope is None:
+                raise NotImplementedError(
+                    f"Attention does not use rope, unable to build HF config for {model.__class__.__name__}"
+                )
+            continue
+
+        # MoE block validation
         if not isinstance(block, MoEReorderedNormTransformerBlock):
             if (
                 isinstance(block, MoETransformerBlock)
@@ -68,13 +85,51 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
                 f"Attention does not use rope, unable to build HF config for {model.__class__.__name__}"
             )
 
-    block = blocks[0]
+    # Find the first MoE block (may not be blocks[0] for densefirst models)
+    first_moe_block = None
+    for block in blocks:
+        if isinstance(block, (MoEReorderedNormTransformerBlock, MoETransformerBlock)):
+            first_moe_block = block
+            break
+    if first_moe_block is None:
+        raise NotImplementedError(
+            f"No MoE block found in model, unable to build HF config for {model.__class__.__name__}"
+        )
+
+    block = first_moe_block
     assert isinstance(block, (MoEReorderedNormTransformerBlock, MoETransformerBlock))
     assert isinstance(block.attention, Attention)
     assert block.attention.rope is not None
 
     if FlexOlmoConfig is None:
         raise RuntimeError("The installed transformers version does not support FlexOlmo")
+
+    # Build per-layer metadata for dense/MoE mixed models
+    dense_intermediate_size = None
+    num_experts_per_layer = []
+    num_shared_experts_per_layer = []
+    has_dense_layers = False
+
+    dense_mlp_bias = False
+
+    for b in blocks:
+        if isinstance(b, TransformerBlock) and not isinstance(b, (MoETransformerBlock, MoEReorderedNormTransformerBlock)):
+            # Dense layer
+            has_dense_layers = True
+            num_experts_per_layer.append(0)
+            num_shared_experts_per_layer.append(0)
+            if dense_intermediate_size is None:
+                dense_intermediate_size = b.feed_forward.hidden_size
+                dense_mlp_bias = b.feed_forward.w1.bias is not None
+        else:
+            # MoE layer
+            num_experts_per_layer.append(b.feed_forward_moe.router.num_experts)
+            layer_shared = 0
+            if isinstance(b.feed_forward_moe.router, MoETwoLevelBatchLBReduceDPSharedExpPoolRouter):
+                layer_shared = b.feed_forward_moe.router.num_shared_experts_pool
+            elif isinstance(b.feed_forward_moe.router, (MoETwoLevelBatchLBReduceDPSharedExpRouter, MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter, MoELinearLBReduceDPSharedExpRouter)):
+                layer_shared = b.feed_forward_moe.router.num_shared_experts
+            num_shared_experts_per_layer.append(layer_shared)
 
     if (
         isinstance(block, MoETransformerBlock)
@@ -108,6 +163,12 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
                 tie_word_embeddings=False,
             )
         always_active_experts = getattr(block.feed_forward_moe.router, "always_active_experts", None)
+        # find the right number of shared experts accordingly
+        num_shared_experts = 0
+        if isinstance(block.feed_forward_moe.router, MoETwoLevelBatchLBReduceDPSharedExpPoolRouter):
+            num_shared_experts = block.feed_forward_moe.router.num_shared_experts_pool
+        elif isinstance(block.feed_forward_moe.router, (MoETwoLevelBatchLBReduceDPSharedExpRouter, MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter, MoELinearLBReduceDPSharedExpRouter)):
+            num_shared_experts = block.feed_forward_moe.router.num_shared_experts
         return FlexOlmoNoQKNormPrenormConfig(
             vocab_size=model.vocab_size,
             hidden_size=model.d_model,
@@ -127,6 +188,12 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
             num_experts=block.feed_forward_moe.router.num_experts,
             tie_word_embeddings=False,
             always_active_experts=always_active_experts,
+            num_shared_experts=num_shared_experts,
+            num_experts_per_layer=num_experts_per_layer if has_dense_layers else None,
+            num_shared_experts_per_layer=num_shared_experts_per_layer if has_dense_layers else None,
+            dense_intermediate_size=dense_intermediate_size,
+            dense_mlp_bias=dense_mlp_bias,
+            output_router_logits=True,
         )
     elif (
         isinstance(block, MoETransformerBlock)
@@ -151,6 +218,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
             num_experts_per_tok=block.feed_forward_moe.router.top_k,
             num_experts=block.feed_forward_moe.router.num_experts,
             tie_word_embeddings=False,
+            output_router_logits=True,
         )
     return FlexOlmoConfig(
         vocab_size=model.vocab_size,
@@ -170,6 +238,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
         num_experts_per_tok=block.feed_forward_moe.router.top_k,
         num_experts=block.feed_forward_moe.router.num_experts,
         tie_word_embeddings=False,
+        output_router_logits=True,
     )
 
 

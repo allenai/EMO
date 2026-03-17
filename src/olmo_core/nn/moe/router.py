@@ -231,10 +231,15 @@ class MoERouter(nn.Module):
         )
         self._score_bias_batch_size_per_expert: Optional[_HiddenTensor] = None
         self._load_balancing_loss: Optional[_HiddenTensor] = None
+        self._load_balancing_loss_shared: Optional[_HiddenTensor] = None
         self._z_loss: Optional[_HiddenTensor] = None
+        self._z_loss_shared: Optional[_HiddenTensor] = None
 
         # add metrics to keep track of unique experts per batch
         self._unique_experts_sum = 0.0
+        self._unique_experts_sum_shared = 0.0
+        self._reducedp_unique_experts_sum = 0.0
+        self._reducedp_unique_experts_sum_shared = 0.0
         self._num_batches_tracked = 0
 
         # add metrics to keep track of router expert entropy
@@ -266,9 +271,11 @@ class MoERouter(nn.Module):
 
         if self.lb_loss_weight is not None:
             self._load_balancing_loss = hide_from_torch(torch.zeros([], device=self.device))
+            self._load_balancing_loss_shared = hide_from_torch(torch.zeros([], device=self.device))
 
         if self.z_loss_weight is not None:
             self._z_loss = hide_from_torch(torch.zeros([], device=self.device))
+            self._z_loss_shared = hide_from_torch(torch.zeros([], device=self.device))
 
     @property
     def device(self) -> torch.device:
@@ -323,6 +330,23 @@ class MoERouter(nn.Module):
         self._load_balancing_loss = hide_from_torch(value)
 
     @property
+    def load_balancing_loss_shared(self) -> Optional[torch.Tensor]:
+        if self.lb_loss_weight is not None:
+            if self._load_balancing_loss_shared is None:
+                self._load_balancing_loss_shared = hide_from_torch(torch.zeros([], device=self.device))
+            elif self._load_balancing_loss_shared.device != self.device:
+                self._load_balancing_loss_shared = self._load_balancing_loss_shared.to(self.device)
+        return (
+            None
+            if self._load_balancing_loss_shared is None
+            else unhide_from_torch(self._load_balancing_loss_shared)
+        )
+
+    @load_balancing_loss_shared.setter
+    def load_balancing_loss_shared(self, value: torch.Tensor):
+        self._load_balancing_loss_shared = hide_from_torch(value)
+
+    @property
     def z_loss(self) -> Optional[torch.Tensor]:
         if self.z_loss_weight is not None:
             if self._z_loss is None:
@@ -334,6 +358,19 @@ class MoERouter(nn.Module):
     @z_loss.setter
     def z_loss(self, value: torch.Tensor):
         self._z_loss = hide_from_torch(value)
+
+    @property
+    def z_loss_shared(self) -> Optional[torch.Tensor]:
+        if self.z_loss_weight is not None:
+            if self._z_loss_shared is None:
+                self._z_loss_shared = hide_from_torch(torch.zeros([], device=self.device))
+            elif self._z_loss_shared.device != self.device:
+                self._z_loss_shared = self._z_loss_shared.to(self.device)
+        return None if self._z_loss_shared is None else unhide_from_torch(self._z_loss_shared)
+
+    @z_loss_shared.setter
+    def z_loss_shared(self, value: torch.Tensor):
+        self._z_loss_shared = hide_from_torch(value)
 
     @torch.no_grad()
     def post_batch(self, dry_run: bool = False):
@@ -476,7 +513,7 @@ class MoERouter(nn.Module):
 
         # Load balancing loss.
         if self.lb_loss_weight is not None:
-            assert self.load_balancing_loss is not None
+            assert self.load_balancing_loss is not None and self.load_balancing_loss_shared is not None
             out["load balancing loss"] = (
                 self.lb_loss_weight * self.load_balancing_loss,
                 ReduceType.mean,
@@ -485,21 +522,43 @@ class MoERouter(nn.Module):
                 self.load_balancing_loss.clone(),
                 ReduceType.mean,
             )
+            out["shared load balancing loss"] = (
+                self.load_balancing_loss_shared.clone(), # we don't scale the shared loss since it's already scaled
+                ReduceType.mean,
+            )
 
         # Router Z loss.
         if self.z_loss_weight is not None:
-            assert self.z_loss is not None
+            assert self.z_loss is not None and self.z_loss_shared is not None
             out["router Z loss"] = (self.z_loss_weight * self.z_loss, ReduceType.mean)
             out["router Z loss unscaled"] = (self.z_loss.clone(), ReduceType.mean)
+
+            out["shared router Z loss"] = (self.z_loss_weight * self.z_loss_shared, ReduceType.mean)
+            out["shared router Z loss unscaled"] = (self.z_loss_shared.clone(), ReduceType.mean)
 
         # Unique experts used per batch
         if self._num_batches_tracked > 0:
             avg_unique_experts = self._unique_experts_sum / self._num_batches_tracked
+            avg_unique_experts_shared = self._unique_experts_sum_shared / self._num_batches_tracked
+            reducedp_avg_unique_experts = self._reducedp_unique_experts_sum / self._num_batches_tracked
+            reducedp_avg_unique_experts_shared = self._reducedp_unique_experts_sum_shared / self._num_batches_tracked
             fraction_unique_experts = avg_unique_experts / self.num_experts
 
             # Convert to tensors for consistency with other metrics
             out["unique experts used per batch"] = (
                 torch.tensor(avg_unique_experts, device=self.device),
+                ReduceType.mean,
+            )
+            out["unique shared experts used per batch"] = (
+                torch.tensor(avg_unique_experts_shared, device=self.device),
+                ReduceType.mean,
+            )
+            out["reducedp unique experts used per batch"] = (
+                torch.tensor(reducedp_avg_unique_experts, device=self.device),
+                ReduceType.mean,
+            )
+            out["reducedp unique shared experts used per batch"] = (
+                torch.tensor(reducedp_avg_unique_experts_shared, device=self.device),
                 ReduceType.mean,
             )
             out["fraction of experts used per batch"] = (
@@ -585,10 +644,17 @@ class MoERouter(nn.Module):
             bz_per_expert.zero_()
         if (lb_loss := self.load_balancing_loss) is not None:
             lb_loss.zero_()
+        if (lb_loss_shared := self.load_balancing_loss_shared) is not None:
+            lb_loss_shared.zero_()
         if (z_loss := self.z_loss) is not None:
             z_loss.zero_()
+        if (z_loss_shared := self.z_loss_shared) is not None:
+            z_loss_shared.zero_()
 
         self._unique_experts_sum = 0.0
+        self._unique_experts_sum_shared = 0.0
+        self._reducedp_unique_experts_sum = 0.0
+        self._reducedp_unique_experts_sum_shared = 0.0
         self._num_batches_tracked = 0
 
         self._router_tokenlevel_expert_entropy = 0.0
@@ -778,9 +844,6 @@ class MoERouter(nn.Module):
             if self.bias_gamma is not None:
                 assert self.score_bias_batch_size_per_expert is not None
                 self.score_bias_batch_size_per_expert += batch_size_per_expert
-
-        # TODOTODOTODOTODOTODOJKDLSJFKLDJLS
-        # check whether we should be passing in the original unchanged expert_indices and expert_weights (i.e does masking happen for CE already)
 
         return expert_weights, expert_indices, batch_size_per_expert_routing, aux_loss
 

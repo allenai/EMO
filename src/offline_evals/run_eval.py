@@ -57,6 +57,9 @@ except ImportError:
 
 from offline_evals import TASK_REGISTRY
 
+# temp fix: add another TASK_DEFAULTS for mmlu categories
+TASK_DEFAULTS["category_name"] = None
+
 
 def task_file_name(output_dir: str, task_idx: int, task_name: str, file_name: str) -> str:
     task_name_safe = task_name.replace(":", "_")
@@ -544,17 +547,27 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
     #     tokenizer = "allenai/dolma2-tokenizer"
     # else:
     #     tokenizer = None
+
+    # if model is an moe model, we set output_router_logits to False
+    if "dense" not in model_load_config["model"]:
+        model_load_config_other["output_router_logits"] = False
+
     model = model_class(
         pretrained=pretrained,
         tokenizer=tokenizer,
         **model_load_config_other,
     )
+
     if pruning_configs["do_prune"]:
         # load the activation file
         with open(pruning_configs["activation_file"], "r") as f:
             line = f.readline()
             activations = json.loads(line)["avg_router_probabilities"]
         limit_expert_usage(model, activations, pruning_configs["prune_keep_k"])
+
+    # if we use a moe model, set output_router_logits to False during inference (or stuff breaks cuz of weird generation tricks)
+    if hasattr(model.config, "output_router_logits"):
+        model.config.output_router_logits = False
 
     return model
 

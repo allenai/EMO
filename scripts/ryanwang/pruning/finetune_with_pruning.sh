@@ -39,7 +39,7 @@ step="step30995"
 num_checkpoints=5
 
 # this is used for ablations
-variation="newdefault_lr-4e-5_bs-128"
+variation="newdefault_lr-4e-5_bs-16"
 
 experiment_tag="pruned_finetuning"
 #experiment_tag="pruned_finetuning_ablate"
@@ -54,6 +54,12 @@ elif [ "$variation" == "newdefault_lr-4e-5" ]; then
 elif [ "$variation" == "newdefault_lr-4e-5_bs-128" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
     variation_flags="--train_module.optim.lr=4e-5 --global_batch_size=128"
+elif [ "$variation" == "newdefault_lr-4e-5_bs-8" ]; then
+    # reinitialize optim and use masked finetuning (should be checked)
+    variation_flags="--train_module.optim.lr=4e-5 --global_batch_size=8"
+elif [ "$variation" == "newdefault_lr-4e-5_bs-16" ]; then
+    # reinitialize optim and use masked finetuning (should be checked)
+    variation_flags="--train_module.optim.lr=4e-5 --global_batch_size=16"
 elif [ "$variation" == "newdefault_lr-4e-4" ]; then
     # reinitialize optim and use masked finetuning (should be checked)
     variation_flags="--train_module.optim.lr=4e-4 --global_batch_size=32"
@@ -83,8 +89,85 @@ task_configs=(
 #  "task-gsm8k_generation_validation_0shot_keepk32|gsm8k_generation:train_0shot::olmes"
 
 #  "task-gsm8k_generation_validation_0shot_keepk128|gsm8k_generation:train_0shot::olmes"
-  "task-coqa_validation_0shot_keepk32|coqa:train_0shot::olmes"
+#  "task-coqa_validation_0shot_keepk32|coqa:train_0shot::olmes"
 #  "task-squad_validation_0shot_keepk32|squad:train_0shot::olmes"
+
+#  "task-mmlu_biology_rc_validation_keepk32|mmlu_biology:rc_train::olmes"
+#  "task-mmlu_business_rc_validation_keepk32|mmlu_business:rc_train::olmes"
+#  "task-mmlu_chemistry_rc_validation_keepk32|mmlu_chemistry:rc_train::olmes"
+#  "task-mmlu_computer_science_rc_validation_keepk32|mmlu_computer_science:rc_train::olmes"
+#  "task-mmlu_culture_rc_validation_keepk32|mmlu_culture:rc_train::olmes"
+#  "task-mmlu_economics_rc_validation_keepk32|mmlu_economics:rc_train::olmes"
+#  "task-mmlu_engineering_rc_validation_keepk32|mmlu_engineering:rc_train::olmes"
+#  "task-mmlu_geography_rc_validation_keepk32|mmlu_geography:rc_train::olmes"
+#  "task-mmlu_health_rc_validation_keepk32|mmlu_health:rc_train::olmes"
+#  "task-mmlu_history_rc_validation_keepk32|mmlu_history:rc_train::olmes"
+#  "task-mmlu_law_rc_validation_keepk32|mmlu_law:rc_train::olmes"
+#  "task-mmlu_math_rc_validation_keepk32|mmlu_math:rc_train::olmes"
+#  "task-mmlu_other_rc_validation_keepk32|mmlu_other:rc_train::olmes"
+  "task-mmlu_philosophy_cat_rc_validation_keepk32|mmlu_philosophy_cat:rc_train::olmes"
+#  "task-mmlu_physics_rc_validation_keepk32|mmlu_physics:rc_train::olmes"
+#  "task-mmlu_politics_rc_validation_keepk32|mmlu_politics:rc_train::olmes"
+#  "task-mmlu_psychology_rc_validation_keepk32|mmlu_psychology:rc_train::olmes"
+
+#  "task-mmlu_abstract_algebra_rc_validation_keepk32|mmlu_abstract_algebra:rc_train::olmes"
+#  "task-mmlu_anatomy_rc_validation_keepk32|mmlu_anatomy:rc_train::olmes"
+#  "task-mmlu_astronomy_rc_validation_keepk32|mmlu_astronomy:rc_train::olmes"
+#  "task-mmlu_business_ethics_rc_validation_keepk32|mmlu_business_ethics:rc_train::olmes"
+#  "task-mmlu_clinical_knowledge_rc_validation_keepk32|mmlu_clinical_knowledge:rc_train::olmes"
+#  "task-mmlu_college_biology_rc_validation_keepk32|mmlu_college_biology:rc_train::olmes"
+#  "task-mmlu_college_chemistry_rc_validation_keepk32|mmlu_college_chemistry:rc_train::olmes"
+#  "task-mmlu_college_computer_science_rc_validation_keepk32|mmlu_college_computer_science:rc_train::olmes"
+#  "task-mmlu_college_mathematics_rc_validation_keepk32|mmlu_college_mathematics:rc_train::olmes"
+#  "task-mmlu_college_medicine_rc_validation_keepk32|mmlu_college_medicine:rc_train::olmes"
+#  "task-mmlu_college_physics_rc_validation_keepk32|mmlu_college_physics:rc_train::olmes"
+#  "task-mmlu_computer_security_rc_validation_keepk32|mmlu_computer_security:rc_train::olmes"
+#  "task-mmlu_conceptual_physics_rc_validation_keepk32|mmlu_conceptual_physics:rc_train::olmes"
+#  "task-mmlu_econometrics_rc_validation_keepk32|mmlu_econometrics:rc_train::olmes"
+#  "task-mmlu_electrical_engineering_rc_validation_keepk32|mmlu_electrical_engineering:rc_train::olmes"
+#  "task-mmlu_elementary_mathematics_rc_validation_keepk32|mmlu_elementary_mathematics:rc_train::olmes"
+#  "task-mmlu_formal_logic_rc_validation_keepk32|mmlu_formal_logic:rc_train::olmes"
+#  "task-mmlu_global_facts_rc_validation_keepk32|mmlu_global_facts:rc_train::olmes"
+#  "task-mmlu_high_school_biology_rc_validation_keepk32|mmlu_high_school_biology:rc_train::olmes"
+#  "task-mmlu_high_school_chemistry_rc_validation_keepk32|mmlu_high_school_chemistry:rc_train::olmes"
+#  "task-mmlu_high_school_computer_science_rc_validation_keepk32|mmlu_high_school_computer_science:rc_train::olmes"
+#  "task-mmlu_high_school_european_history_rc_validation_keepk32|mmlu_high_school_european_history:rc_train::olmes"
+#  "task-mmlu_high_school_geography_rc_validation_keepk32|mmlu_high_school_geography:rc_train::olmes"
+#  "task-mmlu_high_school_government_and_politics_rc_validation_keepk32|mmlu_high_school_government_and_politics:rc_train::olmes"
+#  "task-mmlu_high_school_macroeconomics_rc_validation_keepk32|mmlu_high_school_macroeconomics:rc_train::olmes"
+#  "task-mmlu_high_school_mathematics_rc_validation_keepk32|mmlu_high_school_mathematics:rc_train::olmes"
+#  "task-mmlu_high_school_microeconomics_rc_validation_keepk32|mmlu_high_school_microeconomics:rc_train::olmes"
+#  "task-mmlu_high_school_physics_rc_validation_keepk32|mmlu_high_school_physics:rc_train::olmes"
+#  "task-mmlu_high_school_psychology_rc_validation_keepk32|mmlu_high_school_psychology:rc_train::olmes"
+#  "task-mmlu_high_school_statistics_rc_validation_keepk32|mmlu_high_school_statistics:rc_train::olmes"
+#  "task-mmlu_high_school_us_history_rc_validation_keepk32|mmlu_high_school_us_history:rc_train::olmes"
+#  "task-mmlu_high_school_world_history_rc_validation_keepk32|mmlu_high_school_world_history:rc_train::olmes"
+#  "task-mmlu_human_aging_rc_validation_keepk32|mmlu_human_aging:rc_train::olmes"
+#  "task-mmlu_human_sexuality_rc_validation_keepk32|mmlu_human_sexuality:rc_train::olmes"
+#  "task-mmlu_international_law_rc_validation_keepk32|mmlu_international_law:rc_train::olmes"
+#  "task-mmlu_jurisprudence_rc_validation_keepk32|mmlu_jurisprudence:rc_train::olmes"
+#  "task-mmlu_logical_fallacies_rc_validation_keepk32|mmlu_logical_fallacies:rc_train::olmes"
+#  "task-mmlu_machine_learning_rc_validation_keepk32|mmlu_machine_learning:rc_train::olmes"
+#  "task-mmlu_management_rc_validation_keepk32|mmlu_management:rc_train::olmes"
+#  "task-mmlu_marketing_rc_validation_keepk32|mmlu_marketing:rc_train::olmes"
+#  "task-mmlu_medical_genetics_rc_validation_keepk32|mmlu_medical_genetics:rc_train::olmes"
+#  "task-mmlu_miscellaneous_rc_validation_keepk32|mmlu_miscellaneous:rc_train::olmes"
+#  "task-mmlu_moral_disputes_rc_validation_keepk32|mmlu_moral_disputes:rc_train::olmes"
+#  "task-mmlu_moral_scenarios_rc_validation_keepk32|mmlu_moral_scenarios:rc_train::olmes"
+#  "task-mmlu_nutrition_rc_validation_keepk32|mmlu_nutrition:rc_train::olmes"
+#  "task-mmlu_philosophy_rc_validation_keepk32|mmlu_philosophy:rc_train::olmes"
+#  "task-mmlu_prehistory_rc_validation_keepk32|mmlu_prehistory:rc_train::olmes"
+#  "task-mmlu_professional_accounting_rc_validation_keepk32|mmlu_professional_accounting:rc_train::olmes"
+#  "task-mmlu_professional_law_rc_validation_keepk32|mmlu_professional_law:rc_train::olmes"
+#  "task-mmlu_professional_medicine_rc_validation_keepk32|mmlu_professional_medicine:rc_train::olmes"
+#  "task-mmlu_professional_psychology_rc_validation_keepk32|mmlu_professional_psychology:rc_train::olmes"
+#  "task-mmlu_public_relations_rc_validation_keepk32|mmlu_public_relations:rc_train::olmes"
+#  "task-mmlu_security_studies_rc_validation_keepk32|mmlu_security_studies:rc_train::olmes"
+#  "task-mmlu_sociology_rc_validation_keepk32|mmlu_sociology:rc_train::olmes"
+#  "task-mmlu_us_foreign_policy_rc_validation_keepk32|mmlu_us_foreign_policy:rc_train::olmes"
+#  "task-mmlu_virology_rc_validation_keepk32|mmlu_virology:rc_train::olmes"
+#  "task-mmlu_world_religions_rc_validation_keepk32|mmlu_world_religions:rc_train::olmes"
+
 
 #
 #  "task-arc_easy_rc_validation_keepk8|arc_easy:rc_train::olmes"
@@ -199,9 +282,16 @@ for model_name in "${model_names[@]}"; do
             exit 1
         fi
 
+        # for mmlu, we use less gpus since we have a pretty small batch size
+        if [[ $task_config == *"mmlu"* ]]; then
+            num_gpus=4
+        else
+            num_gpus=8
+        fi
+
         python -m olmo_core.launch.beaker \
           --name $runname \
-          --gpus 8 \
+          --gpus $num_gpus \
           --nodes 1 \
           --is_private_repo \
           --weka=oe-training-default \
@@ -230,6 +320,8 @@ for model_name in "${model_names[@]}"; do
 		        --trainer.load_optim_state=false \
 		        --trainer.load_trainer_state=false \
             $variation_flags
+
+        sleep 20
 
     #        --dataset.label_mask_paths="[${label_mask_paths}]" \
 
