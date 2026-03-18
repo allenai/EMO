@@ -70,6 +70,8 @@ class DataMix(DataMixBase):
     stack_v2_java_p75 = "stack-v2-java-p75"
     stack_v2_all_p75 = "stack-v2-all-p75"
     sponge_code_prose_p75 = "sponge-code-prose-p75"
+    dolma50_swallow_python50 = "dolma50-swallow-python50"
+    dolma50_swallow_stackv2_python50 = "dolma50-swallow-stackv2-python50"
 
     medical_o1_en_cot = "medical-o1-en-cot"
     medical_o1_en_nocot = "medical-o1-en-nocot"
