@@ -340,6 +340,41 @@ for checkpoint in "${all_checkpoints[@]}"; do
 
 done
 
+# Step 5: Per-subject evals (for MMLU category/cluster tasks only)
+MMLU_SUBJECTS=$(python -m src.scripts.eval.get_mmlu_subjects "$TASK" 2>/dev/null)
+
+if [ -n "$MMLU_SUBJECTS" ]; then
+    echo ""
+    echo "Step 5: Per-subject MMLU evals..."
+    echo "========================================"
+
+    for checkpoint in "${all_checkpoints[@]}"; do
+        checkpoint_num=$(basename "$checkpoint" | sed 's/checkpoint-//')
+        echo "Per-subject evals for checkpoint: $checkpoint"
+
+        while IFS= read -r subject; do
+            echo "  Evaluating subject: $subject"
+
+            EVAL_BATCH_SIZE=32
+            if [[ $subject == *"history"* ]]; then
+                EVAL_BATCH_SIZE=4
+            fi
+
+            python -m src.scripts.eval.launch_eval \
+                --model "$checkpoint" \
+                --model-type hf \
+                --task "mmlu_${subject}-pruned" \
+                --pruned_split "test" \
+                --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_0313/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}/per_subject/${subject}" \
+                --batch-size $EVAL_BATCH_SIZE \
+                --gpus "$NUM_GPUS"
+        done <<< "$MMLU_SUBJECTS"
+    done
+else
+    echo ""
+    echo "Skipping per-subject evals (task $TASK is not an MMLU category/cluster)"
+fi
+
 echo ""
 echo "========================================"
 echo "Pipeline complete!"
