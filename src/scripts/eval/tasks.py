@@ -2,6 +2,8 @@ from oe_eval.configs.tasks import TASK_CONFIGS
 from oe_eval.data.mmlu_pro_categories import MMLU_PRO_CATEGORIES
 from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 
+from src.offline_evals.tasks.splits_mmlu import MMLU_CLUSTER_CATEGORIES
+
 def get_task_configs():
     TASK_CONFIGS.update(
         {
@@ -1285,6 +1287,39 @@ def get_task_configs():
             "num_shots": 5,
             "primary_metric": "acc_per_char",
             "category_name": category,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+
+    # Router-clustering-based MMLU categories (16 clusters)
+    for cluster_name in MMLU_CLUSTER_CATEGORIES:
+        TASK_CONFIGS[f"mmlu_{cluster_name}:rc_validation::olmes"] = {
+            "task_name": f"mmlu_{cluster_name}:rc_validation",
+            "split": "validation",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cluster_name,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_{cluster_name}:rc_test::olmes"] = {
+            "task_name": f"mmlu_{cluster_name}:rc_test",
+            "split": "test",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cluster_name,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_{cluster_name}:rc_train::olmes"] = {
+            "task_name": f"mmlu_{cluster_name}:rc_train",
+            "split": "train",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cluster_name,
             "metadata": {
                 "regimes": ["OLMES-v0.1"],
             },

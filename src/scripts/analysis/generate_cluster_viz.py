@@ -159,7 +159,7 @@ CLUSTER_LABELS = {
     127: ("Meet-Prefix Profile Articles", "reference"),
 }
 
-CATEGORY_COLORS = {
+DEFAULT_CATEGORY_COLORS = {
     "code":      "#4A90E2",
     "science":   "#27AE60",
     "news":      "#E67E22",
@@ -171,6 +171,8 @@ CATEGORY_COLORS = {
     "reference": "#7F8C8D",
     "spam":      "#BDC3C7",
 }
+# Will be overridden per-visualization if cluster_labels.json contains "category_colors"
+CATEGORY_COLORS = dict(DEFAULT_CATEGORY_COLORS)
 
 
 # ---------------------------------------------------------------------------
@@ -272,6 +274,10 @@ def main():
         logger.info(f"Loading cluster labels from {labels_path}")
         with open(labels_path) as f:
             external_labels = json.load(f)
+        # Allow cluster_labels.json to define custom category colors
+        if "category_colors" in external_labels:
+            CATEGORY_COLORS.update(external_labels["category_colors"])
+            logger.info(f"  Custom category colors: {list(external_labels['category_colors'].keys())}")
     else:
         logger.warning(f"No cluster_labels.json found in {cluster_dir}. "
                        f"Using fallback labels. Generate labels for better visualization.")
