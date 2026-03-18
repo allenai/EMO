@@ -60,7 +60,7 @@ TASK_GROUPS_LIST=(
 
     # math tasks
     "gsm8k::olmes"
-    "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
+    "gsm8k_generation|gsm8k_generation_0shot:test::olmes"
     # "basic_skills::olmes"
 
     # code tasks

@@ -54,6 +54,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
             eval_document_expert_pool: Optional[int] = None,
             eos_token_id: int,
             num_shared_experts: int,
+            num_forced_experts: int = 0,
             **kwargs,
     ):
         # Pass max_document_expert_pool as document_expert_pool to satisfy parent constructor
@@ -82,6 +83,10 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
 
         self.num_shared_experts = num_shared_experts
         self.num_choose_experts = self.top_k - self.num_shared_experts
+
+        # Number of experts (last N non-shared) that are always forced into the document pool.
+        # Useful when extending the model with new experts that need guaranteed routing.
+        self.num_forced_experts = num_forced_experts
 
     def get_top_k(self, scores: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """ We override the get_top_k to use self.num_choose_experts instead of self.top_k, since we will always activate self.num_shared_experts"""
@@ -185,9 +190,22 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
                     start = end
                     continue
 
-                experts_to_discard = torch.topk(
-                    -document_expert_probs, bot_document_expert_pool
-                ).indices  # shape: (bot_document_expert_pool,)
+                if self.num_forced_experts > 0:
+                    # Forced experts (last num_forced_experts non-shared) are always in the pool.
+                    # Only discard from the non-forced experts.
+                    num_candidates = num_non_shared_experts - self.num_forced_experts
+                    bot_to_discard = min(bot_document_expert_pool, num_candidates)
+                    if bot_to_discard <= 0:
+                        start = end
+                        continue
+                    candidate_probs = document_expert_probs[:num_candidates]
+                    experts_to_discard = torch.topk(
+                        -candidate_probs, bot_to_discard
+                    ).indices  # shape: (bot_to_discard,)
+                else:
+                    experts_to_discard = torch.topk(
+                        -document_expert_probs, bot_document_expert_pool
+                    ).indices  # shape: (bot_document_expert_pool,)
                 # set the logits of these experts to a very large negative value
                 logits_mask[seq_idx, start:end, experts_to_discard] = True
                 start = end
@@ -326,7 +344,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
     def extra_repr(self):
         """Add custom parameter to string representation."""
         base_repr = super().extra_repr()
-        return f"{base_repr}, min_document_expert_pool={self.min_document_expert_pool}, max_document_expert_pool={self.max_document_expert_pool}, eval_document_expert_pool={self.eval_document_expert_pool}, eos_token_id={self.eos_token_id}, num_shared_experts={self.num_shared_experts}"
+        return f"{base_repr}, min_document_expert_pool={self.min_document_expert_pool}, max_document_expert_pool={self.max_document_expert_pool}, eval_document_expert_pool={self.eval_document_expert_pool}, eos_token_id={self.eos_token_id}, num_shared_experts={self.num_shared_experts}, num_forced_experts={self.num_forced_experts}"
 
 
 @dataclass
@@ -335,6 +353,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouterConfig(MoETwoLevelRouterC
     min_document_expert_pool: int = 8
     max_document_expert_pool: int = 128
     eval_document_expert_pool: Optional[int] = None  # defaults to midpoint of min/max
+    num_forced_experts: int = 0  # last N non-shared experts always included in pool
 
     # just update the build to call the correct new class
     def build(

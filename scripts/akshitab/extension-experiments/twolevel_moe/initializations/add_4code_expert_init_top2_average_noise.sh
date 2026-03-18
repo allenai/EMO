@@ -60,4 +60,9 @@ python -m olmo_core.launch.beaker \
 		--model.block.feed_forward_moe.lb_loss_weight=1e-2 \
         --train_module.scheduler.warmup_fraction=0.1 \
         --lr=${LR} \
-        --num-experts-to-train=${NUM_NEW_EXPERTS}
+        --num-experts-to-train=${NUM_NEW_EXPERTS} \
+        --model-type=two-level_lb-batch_reduce-dp_sharedexp_randpool \
+        --min-document-expert-pool=8 \
+        --max-document-expert-pool=128 \
+        --num-shared-experts=1 \
+        --eval-document-expert-pool=32

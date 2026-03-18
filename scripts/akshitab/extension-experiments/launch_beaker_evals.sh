@@ -2,8 +2,8 @@
 
 # Configuration
 
-MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
-# MODEL_DIR=/weka/oe-training-default/akshitab/FlexMoE/models
+# MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
+MODEL_DIR=/weka/oe-training-default/akshitab/FlexMoE/models
 
 MODELS=(
     # moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
@@ -104,8 +104,12 @@ MODELS=(
     # ff-moe1b14b_132experts_4trained_math_init_top2_average_no_router_10B_lr_4e-4/step2385-hf
     # moe1b14b_128experts_76_5_122_126_trained_math_no_router_10B_lr_4e-4/step2385-hf
     # moe1b14b_128experts_76_41_120_3_trained_code_no_router_10B_lr_4e-4/step2385-hf
+    # weight_merge_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
 
-    twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf
+    # twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf
+    # twolevel_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # twolevel_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf    
+    merged_twolevel_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
 
 )
 
@@ -134,7 +138,7 @@ TASK_GROUPS_LIST=(
 
     # # math tasks
     "gsm8k::olmes"
-    "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
+    "gsm8k_generation|gsm8k_generation_0shot:test::olmes"
     # "minerva_math_500::olmes"
     "basic_skills::olmes"
 
