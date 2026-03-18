@@ -43,7 +43,7 @@ PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(8 32 128)
+PRUNE_KEEP_K_VALUES=(8 32)
 batch_size=32
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
