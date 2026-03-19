@@ -287,7 +287,7 @@ done
 # Step 5: Per-subject evals (for MMLU category/cluster tasks only)
 # Evaluates the finetuned model on each individual subject within the category,
 # enabling macro-average computation for fair comparison across grouping schemes.
-MMLU_SUBJECTS=$(python -m src.scripts.eval.get_mmlu_subjects "$TASK" 2>/dev/null | grep -v "^Warning:")
+MMLU_SUBJECTS=$(python -m src.scripts.eval.get_mmlu_subjects "$TASK" 2>/dev/null | grep -v "^Warning:" || true)
 
 if [ -n "$MMLU_SUBJECTS" ]; then
     echo ""

@@ -83,6 +83,22 @@ Scripts like `OLMoE-1B-7B.py` use `olmo_core.internal.experiment.build_config()`
 - `prune_evals/` — Evaluation results for pruned models
 - `evals/` — Standard evaluation results
 
+### S3 Data Access
+
+Eval results are stored on S3 at `s3://ai2-sewonm/ryanwang/prune_evals_0313/`. Use `aws s3 ls`, `aws s3 cp` to browse and read files. Example:
+```bash
+# List models
+aws s3 ls s3://ai2-sewonm/ryanwang/prune_evals_0313/
+
+# List checkpoints for a task
+aws s3 ls s3://ai2-sewonm/ryanwang/prune_evals_0313/<model>/<task>_keepk_<k>_.../results/
+
+# Read a metrics file
+aws s3 cp s3://.../<checkpoint>/task-<name>-metrics.json -
+```
+
+Each checkpoint directory contains `task-*-metrics.json` (aggregate metrics), `task-*-predictions.jsonl` (per-instance), and optionally `per_subject/<subject>/` subdirectories with per-MMLU-subject results.
+
 ### Custom Transformers Fork
 
 The project uses a custom transformers fork (`ryanyxw/transformers#flexmoe_v4_57_1`) for inference/HF integration, referenced in `pyproject.toml` under the `transformers` extra.
