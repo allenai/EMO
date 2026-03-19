@@ -289,7 +289,7 @@ for checkpoint in "${all_checkpoints[@]}"; do
 done
 
 # Step 5: Per-subject evals (for MMLU category/cluster tasks only)
-MMLU_SUBJECTS=$(python -m src.scripts.eval.get_mmlu_subjects "$TASK" 2>/dev/null)
+MMLU_SUBJECTS=$(python -m src.scripts.eval.get_mmlu_subjects "$TASK" 2>/dev/null | grep -v "^Warning:")
 
 if [ -n "$MMLU_SUBJECTS" ]; then
     echo ""
