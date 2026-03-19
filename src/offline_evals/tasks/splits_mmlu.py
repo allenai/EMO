@@ -122,59 +122,81 @@ class GenericMMLU_withsplits(GenericMMLU):
 
         return self._metrics
 
+def _load_and_split_subjects(task_self, categories_dict, data_dir=None, cache_dir=None, download_mode=None):
+    """Load MMLU subjects and split each subject's test set independently before concatenating.
+
+    Each subject's HF "test" split is shuffled (seed=0) and split 60/40 into train/test.
+    The results are concatenated across subjects, so the category's train set = union of
+    per-subject train sets, and likewise for test. This ensures per-subject evals use the
+    exact same test examples as the category eval (no train-test leakage).
+
+    The HF "validation" and other splits (e.g. "dev", "auxiliary_train") are concatenated as-is.
+    """
+    from datasets import concatenate_datasets
+
+    category_name = task_self.task_config["category_name"]
+    if category_name not in categories_dict:
+        raise ValueError(
+            f"Category {category_name} not recognized. "
+            f"Please choose from {list(categories_dict.keys())}"
+        )
+
+    dataset_names = categories_dict[category_name]
+    test_fraction = task_self.TEST_FRACTION
+
+    all_train_splits = []
+    all_test_splits = []
+    all_other_splits = {}  # split_name -> list of datasets
+
+    for dataset_name in dataset_names:
+        dataset = MOUNTED_WEKA_DATASET_WRAPPER.load_dataset(
+            path=task_self.task_config["dataset_path"],
+            name=dataset_name,
+            data_dir=data_dir or task_self.data_dir,
+            cache_dir=cache_dir or task_self.cache_dir,
+            download_mode=download_mode or task_self.download_mode,
+            revision=task_self.task_config.get("revision"),
+            trust_remote_code=True,
+        )
+
+        # Split this subject's test set independently
+        subj_test = dataset["test"]
+        n = len(subj_test)
+        subj_shuffled = subj_test.shuffle(seed=0)
+        cutoff = int(n * test_fraction)
+        all_train_splits.append(subj_shuffled.select(range(0, cutoff)))
+        all_test_splits.append(subj_shuffled.select(range(cutoff, n)))
+
+        # Collect non-test splits
+        for split_name in dataset.keys():
+            if split_name == "test":
+                continue
+            all_other_splits.setdefault(split_name, []).append(dataset[split_name])
+
+    combined = DatasetDict()
+    combined["train"] = concatenate_datasets(all_train_splits)
+    combined["test"] = concatenate_datasets(all_test_splits)
+    for split_name, split_list in all_other_splits.items():
+        combined[split_name] = concatenate_datasets(split_list)
+
+    task_self.dataset = combined
+
+
 class MMLU_17categories_RC(GenericMMLU):
     # choose from one of 17 categories using the task_config in tasks.py
     TEST_FRACTION = 0.6
 
-    # override the download function to download from all MMLU tasks and choose accordingly
     def download(self, data_dir=None, cache_dir=None, download_mode=None):
-        # check that our chosen category is a valid category
-        if self.task_config["category_name"] not in MMLU_CATEGORIES:
-            raise ValueError(f"Category {self.task_config['category_name']} not recognized. Please choose from {list(MMLU_CATEGORIES.keys())}")
-
-        dataset_names = MMLU_CATEGORIES[self.task_config["category_name"]]
-
-        datasets = []
-
-        for dataset_name in dataset_names:
-            dataset = MOUNTED_WEKA_DATASET_WRAPPER.load_dataset(
-                path=self.task_config["dataset_path"],
-                name=dataset_name,
-                data_dir=data_dir or self.data_dir,
-                cache_dir=cache_dir or self.cache_dir,
-                download_mode=download_mode or self.download_mode,
-                revision=self.task_config.get("revision"),
-                trust_remote_code=True,
-            )
-            datasets.append(dataset)
-
-        # make sure all datasets have the same splits
-        for ds in datasets[1:]:
-            if ds.keys() != datasets[0].keys():
-                raise ValueError("All datasets must have the same splits to be merged.")
-
-        # merge the datasets
-        from datasets import concatenate_datasets
-
-        combined_dataset = DatasetDict()
-        for split in datasets[0].keys():
-            split_datasets = [ds[split] for ds in datasets]
-            combined_dataset[split] = concatenate_datasets(split_datasets)
-
-        self.dataset = combined_dataset
+        _load_and_split_subjects(self, MMLU_CATEGORIES, data_dir, cache_dir, download_mode)
 
     def validation_docs(self):
         return self.dataset["validation"].map(self._process_doc, with_indices=True)
 
     def test_docs(self):
-        tot_test_size = len(self.dataset["test"])
-        test_split = self.dataset["test"].shuffle(seed=0).select(range(int(tot_test_size * self.TEST_FRACTION), tot_test_size))
-        return test_split.map(self._process_doc, with_indices=True)
+        return self.dataset["test"].map(self._process_doc, with_indices=True)
 
     def training_docs(self):
-        tot_test_size = len(self.dataset["test"])
-        train_split = self.dataset["test"].shuffle(seed=0).select(range(0, int(tot_test_size * self.TEST_FRACTION)))
-        return train_split.map(self._process_doc, with_indices=True)
+        return self.dataset["train"].map(self._process_doc, with_indices=True)
 
     def make_metrics(self):
         # run the super
@@ -299,52 +321,16 @@ class MMLU_16clusters_RC(GenericMMLU):
     TEST_FRACTION = 0.6
 
     def download(self, data_dir=None, cache_dir=None, download_mode=None):
-        if self.task_config["category_name"] not in MMLU_CLUSTER_CATEGORIES:
-            raise ValueError(
-                f"Cluster category {self.task_config['category_name']} not recognized. "
-                f"Please choose from {list(MMLU_CLUSTER_CATEGORIES.keys())}"
-            )
-
-        dataset_names = MMLU_CLUSTER_CATEGORIES[self.task_config["category_name"]]
-
-        datasets = []
-        for dataset_name in dataset_names:
-            dataset = MOUNTED_WEKA_DATASET_WRAPPER.load_dataset(
-                path=self.task_config["dataset_path"],
-                name=dataset_name,
-                data_dir=data_dir or self.data_dir,
-                cache_dir=cache_dir or self.cache_dir,
-                download_mode=download_mode or self.download_mode,
-                revision=self.task_config.get("revision"),
-                trust_remote_code=True,
-            )
-            datasets.append(dataset)
-
-        for ds in datasets[1:]:
-            if ds.keys() != datasets[0].keys():
-                raise ValueError("All datasets must have the same splits to be merged.")
-
-        from datasets import concatenate_datasets
-
-        combined_dataset = DatasetDict()
-        for split in datasets[0].keys():
-            split_datasets = [ds[split] for ds in datasets]
-            combined_dataset[split] = concatenate_datasets(split_datasets)
-
-        self.dataset = combined_dataset
+        _load_and_split_subjects(self, MMLU_CLUSTER_CATEGORIES, data_dir, cache_dir, download_mode)
 
     def validation_docs(self):
         return self.dataset["validation"].map(self._process_doc, with_indices=True)
 
     def test_docs(self):
-        tot_test_size = len(self.dataset["test"])
-        test_split = self.dataset["test"].shuffle(seed=0).select(range(int(tot_test_size * self.TEST_FRACTION), tot_test_size))
-        return test_split.map(self._process_doc, with_indices=True)
+        return self.dataset["test"].map(self._process_doc, with_indices=True)
 
     def training_docs(self):
-        tot_test_size = len(self.dataset["test"])
-        train_split = self.dataset["test"].shuffle(seed=0).select(range(0, int(tot_test_size * self.TEST_FRACTION)))
-        return train_split.map(self._process_doc, with_indices=True)
+        return self.dataset["train"].map(self._process_doc, with_indices=True)
 
     def make_metrics(self):
         super().make_metrics()
