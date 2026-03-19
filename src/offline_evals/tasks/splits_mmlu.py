@@ -1,4 +1,5 @@
 from datasets import DatasetDict
+from oe_eval.tasks.base_task import Task
 from oe_eval.tasks.oe_eval_tasks.mmlu import GenericMMLU
 from oe_eval.utilities.datasets_wrapper import MOUNTED_WEKA_DATASET_WRAPPER
 
@@ -182,12 +183,51 @@ def _load_and_split_subjects(task_self, categories_dict, data_dir=None, cache_di
     task_self.dataset = combined
 
 
-class MMLU_17categories_RC(GenericMMLU):
-    # choose from one of 17 categories using the task_config in tasks.py
+class _MMLU_PerSubjectContext_RC(GenericMMLU):
+    """Base class for MMLU category tasks that use per-subject prompt context.
+
+    For each question, the prompt header says "about {subject}" (not the category name)
+    and the few-shot examples come from that subject's dev split. This ensures the
+    category eval produces results identical to running per-subject evals independently,
+    so the weighted per-subject average exactly matches the category micro-average.
+    """
     TEST_FRACTION = 0.6
 
     def download(self, data_dir=None, cache_dir=None, download_mode=None):
-        _load_and_split_subjects(self, MMLU_CATEGORIES, data_dir, cache_dir, download_mode)
+        raise NotImplementedError("Subclasses must implement download()")
+
+    def _process_doc(self, doc, index=-1):
+        out_doc = super()._process_doc(doc, index=index)
+        out_doc["subject"] = doc["subject"]
+        return out_doc
+
+    def fewshot_context(self, doc, num_fewshot, **kwargs):
+        subject = doc.get("subject", self.DATASET_NAME)
+        description = f"The following are multiple choice questions (with answers) about {self._format_subject(subject)}.\n\n"
+
+        if (
+            "description" in self.task_config["context_kwargs"]
+            and self.task_config["context_kwargs"]["description"] is not None
+        ):
+            description = self.task_config["context_kwargs"]["description"]
+
+        kwargs["description"] = description
+        # Call Task.fewshot_context directly, skipping GenericMMLU_MC.fewshot_context
+        # which would overwrite description with self.DATASET_NAME
+        return Task.fewshot_context(self, doc=doc, num_fewshot=num_fewshot, **kwargs)
+
+    def fewshot_examples(self, k, rnd, doc):
+        if self._fewshot_docs is None:
+            self._fewshot_docs = {}
+            for dev_doc in self.dataset["dev"]:
+                subject = dev_doc["subject"]
+                if subject not in self._fewshot_docs:
+                    self._fewshot_docs[subject] = []
+                self._fewshot_docs[subject].append(self._process_doc(dev_doc))
+
+        subject = doc.get("subject", self.DATASET_NAME)
+        subject_docs = self._fewshot_docs.get(subject, [])
+        return subject_docs[:k]
 
     def validation_docs(self):
         return self.dataset["validation"].map(self._process_doc, with_indices=True)
@@ -199,12 +239,14 @@ class MMLU_17categories_RC(GenericMMLU):
         return self.dataset["train"].map(self._process_doc, with_indices=True)
 
     def make_metrics(self):
-        # run the super
         super().make_metrics()
-        # add softloss metric
         self._metrics += [SoftLoss(**self.task_config["metric_kwargs"])]
-
         return self._metrics
+
+
+class MMLU_17categories_RC(_MMLU_PerSubjectContext_RC):
+    def download(self, data_dir=None, cache_dir=None, download_mode=None):
+        _load_and_split_subjects(self, MMLU_CATEGORIES, data_dir, cache_dir, download_mode)
 
 def create_mmlu_categories_tasks_withsplits(category):
     class MMLU_Category(MMLU_17categories_RC):
@@ -316,26 +358,10 @@ MMLU_CLUSTER_CATEGORIES = {
 }
 
 
-class MMLU_16clusters_RC(GenericMMLU):
+class MMLU_16clusters_RC(_MMLU_PerSubjectContext_RC):
     """MMLU task that groups subjects by router-based clustering (16 clusters)."""
-    TEST_FRACTION = 0.6
-
     def download(self, data_dir=None, cache_dir=None, download_mode=None):
         _load_and_split_subjects(self, MMLU_CLUSTER_CATEGORIES, data_dir, cache_dir, download_mode)
-
-    def validation_docs(self):
-        return self.dataset["validation"].map(self._process_doc, with_indices=True)
-
-    def test_docs(self):
-        return self.dataset["test"].map(self._process_doc, with_indices=True)
-
-    def training_docs(self):
-        return self.dataset["train"].map(self._process_doc, with_indices=True)
-
-    def make_metrics(self):
-        super().make_metrics()
-        self._metrics += [SoftLoss(**self.task_config["metric_kwargs"])]
-        return self._metrics
 
 
 def create_mmlu_cluster_tasks_withsplits(cluster_name):
