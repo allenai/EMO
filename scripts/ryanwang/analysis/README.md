@@ -112,6 +112,10 @@ bash scripts/ryanwang/analysis/run_extract_embeddings_shuffled_token.sh models/<
 
 # Token-level extraction with custom token count (e.g. 1M tokens)
 bash scripts/ryanwang/analysis/run_extract_embeddings_shuffled_token.sh models/<model_name>/step<N>-hf 1000000
+
+# Token-level extraction with per-doc truncation (1M tokens, 100 tokens/doc → ~10K docs)
+# Increases document diversity by using only the first N tokens per document.
+bash scripts/ryanwang/analysis/run_extract_embeddings_shuffled_token_truncated.sh models/<model_name>/step<N>-hf 1000000 100
 ```
 
 ### MMLU Validation Embeddings
@@ -206,6 +210,7 @@ bash scripts/ryanwang/analysis/run_expert_coverage.sh models/<model_name>/step<N
 | `run_extract_embeddings.sh` | `[MODEL_PATH]` | Extract embeddings (GPU, sequential sampling) + sparsify |
 | `run_extract_embeddings_shuffled.sh` | (none) | Extract document-level embeddings (GPU, shuffled sampling) for randpool + baseline |
 | `run_extract_embeddings_shuffled_token.sh` | `[MODEL_PATH] [TARGET_TOKENS]` | Extract token-level embeddings (GPU, shuffled, default 100K tokens) |
+| `run_extract_embeddings_shuffled_token_truncated.sh` | `[MODEL_PATH] [TARGET_TOKENS] [MAX_TOKENS_PER_DOC]` | Token-level embeddings with per-doc truncation (default 1M tokens, 100 tokens/doc) |
 | `run_sweep_focused.sh` | (none) | Sweep v1: baseline grid (edit DATA_DIR inside) |
 | `run_sweep_focused_v2.sh` | (none) | Sweep v2: PCA + spherical k-means (edit DATA_DIR inside) |
 | `run_sweep_focused_v3.sh` | (none) | Sweep v3: hierarchical clustering (edit DATA_DIR inside) |
