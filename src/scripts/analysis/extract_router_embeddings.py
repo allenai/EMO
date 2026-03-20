@@ -558,6 +558,9 @@ def main():
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--max-doc-len", type=int, default=2048)
     parser.add_argument("--min-doc-len", type=int, default=32)
+    parser.add_argument("--max-tokens-per-doc", type=int, default=None,
+                        help="Truncate each document to at most this many tokens before inference. "
+                             "Useful for increasing document diversity at fixed token budget.")
     parser.add_argument("--sanity-check-only", action="store_true")
     parser.add_argument("--debug", action="store_true",
                         help="Debug mode: only load from the first 2 data sources")
@@ -736,6 +739,10 @@ def _run_token_extraction(args, sources, model, tokenizer, device,
             logger.warning(f"  No documents collected for {label}, skipping")
             continue
 
+        # Truncate documents if requested
+        if args.max_tokens_per_doc is not None:
+            docs = [doc[:args.max_tokens_per_doc] for doc in docs]
+
         # Save document tokens for later context recovery
         for doc in docs:
             all_doc_tokens.append(doc)
@@ -831,6 +838,7 @@ def _run_token_extraction(args, sources, model, tokenizer, device,
         "embedding_types": [et.name for et in embedding_types],
         "source_token_counts": dict(source_token_counts),
         "shuffled": args.shuffle,
+        "max_tokens_per_doc": args.max_tokens_per_doc,
     }
     out_info = os.path.join(args.output_dir, "info.json")
     with open(out_info, "w") as f:
@@ -870,6 +878,10 @@ def _run_document_extraction(args, sources, model, tokenizer, device,
         if not docs:
             logger.warning(f"  No documents collected for {label}, skipping")
             continue
+
+        # Truncate documents if requested
+        if args.max_tokens_per_doc is not None:
+            docs = [doc[:args.max_tokens_per_doc] for doc in docs]
 
         # Batch inference
         batch_embeddings: Dict[str, List[np.ndarray]] = {et.name: [] for et in embedding_types}
@@ -936,6 +948,7 @@ def _run_document_extraction(args, sources, model, tokenizer, device,
         "embedding_types": [et.name for et in embedding_types],
         "source_doc_counts": dict(source_counts),
         "shuffled": args.shuffle,
+        "max_tokens_per_doc": args.max_tokens_per_doc,
     }
     out_info = os.path.join(args.output_dir, "info.json")
     with open(out_info, "w") as f:
