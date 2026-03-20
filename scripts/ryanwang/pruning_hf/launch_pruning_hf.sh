@@ -8,7 +8,7 @@ MODELS=(
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
 #    "dense_1b_lr-4e-3_0213/step30995-hf"
 #    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
-#    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf"
+    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf"
 
 #    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
 
@@ -44,7 +44,7 @@ PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(32)
+PRUNE_KEEP_K_VALUES=(8 128)
 batch_size=32
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
@@ -91,22 +91,22 @@ TASK_GROUPS_LIST=(
   "mmlu_psychology"
 
   # Router-clustering-based MMLU categories (16 clusters)
-  "mmlu_cluster_chemistry"
-  "mmlu_cluster_security_sociology"
-  "mmlu_cluster_moral_scenarios"
-  "mmlu_cluster_psychology"
-  "mmlu_cluster_law_gov"
-  "mmlu_cluster_prehistory_religions"
-  "mmlu_cluster_biomedical"
-  "mmlu_cluster_econ_geography"
-  "mmlu_cluster_philosophy"
-  "mmlu_cluster_quantitative"
-  "mmlu_cluster_accounting"
-  "mmlu_cluster_miscellaneous"
-  "mmlu_cluster_history"
-  "mmlu_cluster_business"
-  "mmlu_cluster_physics_eng"
-  "mmlu_cluster_cs_logic"
+#  "mmlu_cluster_chemistry"
+#  "mmlu_cluster_security_sociology"
+#  "mmlu_cluster_moral_scenarios"
+#  "mmlu_cluster_psychology"
+#  "mmlu_cluster_law_gov"
+#  "mmlu_cluster_prehistory_religions"
+#  "mmlu_cluster_biomedical"
+#  "mmlu_cluster_econ_geography"
+#  "mmlu_cluster_philosophy"
+#  "mmlu_cluster_quantitative"
+#  "mmlu_cluster_accounting"
+#  "mmlu_cluster_miscellaneous"
+#  "mmlu_cluster_history"
+#  "mmlu_cluster_business"
+#  "mmlu_cluster_physics_eng"
+#  "mmlu_cluster_cs_logic"
 
 #  "synthea_zeroshot"
 
@@ -241,7 +241,7 @@ for MODEL in "${MODELS[@]}"; do
                 "
             echo "Launched evaluation for model: $model, task: $TASK"
             echo "----------------------------------------"
-            sleep 300 # brief pause to avoid overwhelming huggingface
+            sleep 400 # brief pause to avoid overwhelming huggingface
             continue
         fi
 
@@ -384,7 +384,7 @@ for MODEL in "${MODELS[@]}"; do
         echo "Launched evaluation for model: $MODEL, task: $TASK"
         echo "----------------------------------------"
 
-        sleep 300 # brief pause to avoid overwhelming huggingface
+        sleep 400 # brief pause to avoid overwhelming huggingface
     done
 
     echo "Completed all tasks for model: $MODEL, keep-k: $prune_keep_k"

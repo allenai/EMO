@@ -60,6 +60,14 @@ MODEL_SPECS = {
         ],
     },
 
+    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313step238419-hf": {
+        "label": "specialized moe 1T",
+        "baseline": False,
+        "variants": [
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
+        ]
+    },
+
 
 }
 AVAILABLE_MODELS = list(MODEL_SPECS)
