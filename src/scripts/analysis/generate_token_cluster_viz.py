@@ -566,6 +566,16 @@ def write_html(clusters_js, docs_js, doc_stats_js, agg_stats, doc_texts_js, uniq
   .doc-token.unsampled {{ color: var(--text-dim); }}
   #doc-reader-tooltip {{ position: fixed; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 11px; pointer-events: none; z-index: 110; display: none; white-space: nowrap; }}
 
+  /* Document preview cards */
+  .doc-preview-card {{ background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }}
+  .doc-preview-header {{ display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); cursor: pointer; }}
+  .doc-preview-header:hover {{ background: var(--bg); }}
+  .doc-preview-pct {{ font-size: 14px; font-weight: 700; min-width: 48px; text-align: right; }}
+  .doc-preview-info {{ font-size: 11px; color: var(--text-dim); flex: 1; }}
+  .doc-preview-body {{ padding: 10px 14px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 12px; line-height: 1.9; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto; }}
+  .doc-preview-body .tok-hl {{ background: var(--highlight); color: #000; padding: 1px 2px; border-radius: 3px; font-weight: 700; }}
+  .doc-preview-body .tok-dim {{ color: var(--text-dim); opacity: 0.5; }}
+
   .badge-dclm {{ background: #1e3a5f; color: #64b0f4; }}
   .badge-starcoder {{ background: #1e3a2f; color: #4caf78; }}
   .badge-pes2o {{ background: #3a2b1e; color: #f4a04a; }}
@@ -610,30 +620,22 @@ def write_html(clusters_js, docs_js, doc_stats_js, agg_stats, doc_texts_js, uniq
         </div>
         <div id="detail-content" style="display:none">
           <div>
-            <div class="section-title">Top Documents (highest proportion of this cluster)</div>
-            <div id="top-docs-list"></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <div class="section-title" style="margin-bottom:0">Document Previews (tokens in cluster highlighted)</div>
+              <select id="doc-preview-count" onchange="renderDocPreviews()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:4px 8px;border-radius:6px;font-size:11px;outline:none;">
+                <option value="10">Top 10</option>
+                <option value="20" selected>Top 20</option>
+                <option value="50">Top 50</option>
+                <option value="100">Top 100</option>
+                <option value="200">Top 200</option>
+              </select>
+            </div>
+            <div id="doc-preview-list"></div>
+            <div id="doc-preview-load-more-wrap" style="text-align:center;padding:8px 0;"></div>
           </div>
           <div>
             <div class="section-title">Source Breakdown</div>
             <div id="src-breakdown"></div>
-          </div>
-          <div>
-            <div class="section-title">Top Experts (summed across all layers)</div>
-            <div id="experts-list"></div>
-          </div>
-          <div>
-            <div class="section-title">Representative Tokens (closest to centroid) — highlighted with ±{ctx_win} context</div>
-            <div id="rep-tokens-list"></div>
-          </div>
-          <div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-              <div class="section-title" id="token-browser-title" style="margin-bottom:0">All Tokens in Cluster</div>
-              <input id="token-search" type="text" placeholder="Filter tokens…" oninput="filterTokenBrowser()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:11px;width:160px;outline:none;">
-              <button onclick="toggleTokenBrowser()" id="token-browser-toggle" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;">Show</button>
-            </div>
-            <div id="token-browser-wrap" style="display:none">
-              <div id="token-browser-list"></div>
-            </div>
           </div>
         </div>
       </div>
@@ -878,35 +880,8 @@ function selectCluster(id) {{
   document.getElementById('detail-placeholder').style.display = 'none';
   document.getElementById('detail-content').style.display = '';
 
-  // Top documents — sorted by proportion of tokens in this cluster
-  const topDocsEl = document.getElementById('top-docs-list');
-  topDocsEl.innerHTML = '';
-  const cid = c.id;
-  const docsWithCluster = DOC_STATS
-    .filter(ds => ds.clusters[cid] !== undefined)
-    .map(ds => {{
-      const cnt = ds.clusters[cid];
-      return {{ ...ds, clusterCount: cnt, pct: cnt / ds.total }};
-    }})
-    .sort((a, b) => b.pct - a.pct);
-  docsWithCluster.slice(0, 10).forEach(ds => {{
-    const pctStr = (ds.pct * 100).toFixed(1);
-    const badgeClass = 'badge-' + ds.s.replace(/[^a-z0-9]/g, '-');
-    const row = document.createElement('div');
-    row.className = 'top-doc-row';
-    row.innerHTML = `
-      <div class="top-doc-pct" style="color:${{c.color}}">${{pctStr}}%</div>
-      <div class="top-doc-bar"><div class="top-doc-bar-fill" style="width:${{pctStr}}%;background:${{c.color}}"></div></div>
-      <span class="source-badge ${{badgeClass}}">${{ds.s}}</span>
-      <div class="top-doc-info">Doc #${{ds.di}} · ${{ds.clusterCount}}/${{ds.total}} tokens · ${{ds.nClusters}} clusters total</div>`;
-    row.onclick = () => openDocReader(ds.di);
-    topDocsEl.appendChild(row);
-  }});
-  if (docsWithCluster.length === 0) {{
-    topDocsEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px;">No documents found</div>';
-  }}
-
   // Sources
+  const cid = c.id;
   const total = c.size;
   const srcEl = document.getElementById('src-breakdown');
   srcEl.innerHTML = '';
@@ -921,36 +896,11 @@ function selectCluster(id) {{
       </div>`;
   }});
 
-  // Experts
-  const expEl = document.getElementById('experts-list');
-  expEl.innerHTML = c.top_experts.map((e,i) =>
-    `<span class="expert-tag" style="opacity:${{1 - i*0.07}}">#${{e}}</span>`).join('');
-
-  // Rep tokens with context + doc spread annotation
-  const repEl = document.getElementById('rep-tokens-list');
-  repEl.innerHTML = '';
-  c.rep_tokens.forEach((tok, i) => {{
-    const badgeClass = 'badge-' + tok.source.replace(/[^a-z0-9]/g, '-');
-    const div = document.createElement('div');
-    div.className = 'token-context';
-    div.innerHTML = `
-      <div class="token-context-header">
-        <span class="source-badge ${{badgeClass}}">${{tok.source}}</span>
-        <span style="color:var(--text-dim);font-size:11px">doc #${{tok.doc_index}} · pos ${{tok.token_position}}</span>
-        <span style="margin-left:auto;color:var(--text-dim);font-size:11px">rep #${{i+1}}</span>
-      </div>
-      <div class="token-context-text"><span class="token-dim">${{escHtml(tok.before)}}</span><span class="token-highlight">${{escHtml(tok.target)}}</span><span class="token-dim">${{escHtml(tok.after)}}</span></div>
-      ${{renderDocSpreadBar(tok.doc_index)}}`;
-    repEl.appendChild(div);
-  }});
-
-  // Load all cluster tokens from DOCS
-  clusterTokens = DOCS.filter(d => d.c === id);
-  filteredClusterTokens = [...clusterTokens];
-  document.getElementById('token-browser-title').textContent =
-    `All Tokens in Cluster (${{clusterTokens.length.toLocaleString()}} shown)`;
-  document.getElementById('token-search').value = '';
-  if (tokenBrowserOpen) renderTokenBrowser();
+  // Render document previews
+  currentClusterId = id;
+  docPreviewsShown = 0;
+  document.getElementById('doc-preview-list').innerHTML = '';
+  renderDocPreviews();
 }}
 
 let clusterTokens = [];
@@ -996,6 +946,81 @@ function renderTokenBrowser() {{
     more.style.cssText = 'color:var(--text-dim);text-align:center;padding:12px;font-size:12px;';
     more.textContent = `… ${{(filteredClusterTokens.length - limit).toLocaleString()}} more tokens (use filter to narrow)`;
     wrap.appendChild(more);
+  }}
+}}
+
+// ── Document previews for cluster detail ──
+let currentClusterId = null;
+let docPreviewsShown = 0;
+let cachedDocsWithCluster = [];
+
+function renderDocPreviews() {{
+  if (currentClusterId === null) return;
+
+  const batchSize = parseInt(document.getElementById('doc-preview-count').value) || 20;
+  const cid = currentClusterId;
+  const wrap = document.getElementById('doc-preview-list');
+  const loadMoreWrap = document.getElementById('doc-preview-load-more-wrap');
+
+  // Rebuild sorted doc list if starting fresh
+  if (docPreviewsShown === 0) {{
+    cachedDocsWithCluster = DOC_STATS
+      .filter(ds => ds.clusters[cid] !== undefined)
+      .map(ds => ({{ ...ds, clusterCount: ds.clusters[cid], pct: ds.clusters[cid] / ds.total }}))
+      .sort((a, b) => b.pct - a.pct);
+  }}
+
+  const c = CLUSTERS.find(x => x.id === cid);
+  const hlColor = c ? c.color : '#fbbf24';
+  const end = Math.min(docPreviewsShown + batchSize, cachedDocsWithCluster.length);
+
+  for (let idx = docPreviewsShown; idx < end; idx++) {{
+    const ds = cachedDocsWithCluster[idx];
+    const dt = docTextLookup[ds.di];
+    if (!dt) continue;
+
+    const pctStr = (ds.pct * 100).toFixed(1);
+    const badgeClass = 'badge-' + ds.s.replace(/[^a-z0-9]/g, '-');
+
+    const card = document.createElement('div');
+    card.className = 'doc-preview-card';
+
+    const header = document.createElement('div');
+    header.className = 'doc-preview-header';
+    header.innerHTML = `
+      <div class="doc-preview-pct" style="color:${{hlColor}}">${{pctStr}}%</div>
+      <span class="source-badge ${{badgeClass}}">${{ds.s}}</span>
+      <div class="doc-preview-info">Doc #${{ds.di}} · ${{ds.clusterCount}}/${{ds.total}} tokens in cluster · ${{ds.nClusters}} clusters total</div>
+      <span style="color:var(--text-dim);font-size:11px;cursor:pointer" title="Open in full reader">⤢</span>`;
+    header.onclick = () => openDocReader(ds.di);
+    card.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'doc-preview-body';
+    dt.tokens.forEach(tok => {{
+      const span = document.createElement('span');
+      span.textContent = tok.t;
+      if (tok.c === cid) {{
+        span.className = 'tok-hl';
+      }} else {{
+        span.className = 'tok-dim';
+      }}
+      body.appendChild(span);
+    }});
+    card.appendChild(body);
+    wrap.appendChild(card);
+  }}
+
+  docPreviewsShown = end;
+
+  // Update load more button
+  const remaining = cachedDocsWithCluster.length - docPreviewsShown;
+  if (remaining > 0) {{
+    loadMoreWrap.innerHTML = `<button onclick="renderDocPreviews()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 24px;border-radius:6px;cursor:pointer;font-size:12px;">Load ${{Math.min(batchSize, remaining)}} more (${{remaining}} remaining)</button>`;
+  }} else {{
+    loadMoreWrap.innerHTML = docPreviewsShown > 0
+      ? `<span style="color:var(--text-dim);font-size:11px;">All ${{cachedDocsWithCluster.length}} documents shown</span>`
+      : '<div style="color:var(--text-dim);font-size:12px;">No documents found</div>';
   }}
 }}
 
