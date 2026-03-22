@@ -4,11 +4,12 @@
 BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 #BASE_DIR="/root/phdbrainstorm/FlexMoE"
 MODELS=(
+    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313/step238419-hf"
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
 #    "dense_1b_lr-4e-3_0213/step30995-hf"
 #    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
-    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf"
+#    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf"
 
 #    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
 
@@ -44,7 +45,7 @@ PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(128)
+PRUNE_KEEP_K_VALUES=(8 32 128)
 batch_size=32
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
@@ -57,38 +58,38 @@ KEEP_K_PER_LAYER="128,128,32,32,32,32,32,32,32,32,32,32,32,32,32,32"
 TASK_GROUPS_LIST=(
   ######### few-shot ##########
 #   MC9 tasks
-#  "arc_easy"
-#  "arc_challenge"
-#  "boolq"
-#  "csqa"
-#  "hellaswag"
-#  "openbookqa"
-#  "piqa"
-#  "socialiqa"
-#  "winogrande"
-#  "gsm8k_generation_0shot"
-#  "gsm8k_perplexity_0shot"
-#  "coqa_0shot"
-#  "coqa_full_0shot"
-#  "squad_0shot"
-#
-#  "mmlu_biology"
-#  "mmlu_business"
-#  "mmlu_chemistry"
-#  "mmlu_computer_science"
-#  "mmlu_culture"
-#  "mmlu_economics"
-#  "mmlu_engineering"
-#  "mmlu_geography"
-#  "mmlu_health"
+  "arc_easy"
+  "arc_challenge"
+  "boolq"
+  "csqa"
+  "hellaswag"
+  "openbookqa"
+  "piqa"
+  "socialiqa"
+  "winogrande"
+  "gsm8k_generation_0shot"
+  "gsm8k_perplexity_0shot"
+  "coqa_0shot"
+  "coqa_full_0shot"
+  "squad_0shot"
+
+  "mmlu_biology"
+  "mmlu_business"
+  "mmlu_chemistry"
+  "mmlu_computer_science"
+  "mmlu_culture"
+  "mmlu_economics"
+  "mmlu_engineering"
+  "mmlu_geography"
+  "mmlu_health"
   "mmlu_history"
-#  "mmlu_law"
-#  "mmlu_math"
-#  "mmlu_other"
-#  "mmlu_philosophy_cat"
-#  "mmlu_physics"
-#  "mmlu_politics"
-#  "mmlu_psychology"
+  "mmlu_law"
+  "mmlu_math"
+  "mmlu_other"
+  "mmlu_philosophy_cat"
+  "mmlu_physics"
+  "mmlu_politics"
+  "mmlu_psychology"
 
   # Router-clustering-based MMLU categories (16 clusters)
 #  "mmlu_cluster_chemistry"
