@@ -6,8 +6,8 @@
 min_document_expert_pool=8
 max_document_expert_pool=128
 eval_document_expert_pool=32
-lr=4e-3  # TODO: set this to the LR at the checkpoint step (check WandB)
 lb=1e-1
+# NOTE: --lr is no longer needed; the anneal script auto-extracts it from the checkpoint
 
 anneal_tokens=50000000000  # 50B tokens
 anneal_checkpoint="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313/step238419"
@@ -19,7 +19,7 @@ lb_global_batch_size=$((nodes * gpus * 4))
 
 num_shared_experts=1 # 1 out of 8 will be shared experts
 
-runname="twolevelbatchlbreducedp${lb_global_batch_size}sharedexp${num_shared_experts}randpool-${min_document_expert_pool}-${max_document_expert_pool}eval${eval_document_expert_pool}_1b14b_lr-${lr}_lb-${lb}_1T_0313_anneal"
+runname="twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419"
 
 
 #torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl_anneal.py \
@@ -39,7 +39,6 @@ runname="twolevelbatchlbreducedp${lb_global_batch_size}sharedexp${num_shared_exp
 #  --dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 #  --model.block.name="moe" \
 #  --model.block.attention.qk_norm=null \
-#  --lr=${lr} \
 #  --model.block.feed_forward_moe.lb_loss_weight=${lb} \
 #  --anneal-tokens=${anneal_tokens} \
 #  --anneal-checkpoint=${anneal_checkpoint}
@@ -75,7 +74,6 @@ python -m olmo_core.launch.beaker \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="moe" \
 		--model.block.attention.qk_norm=null \
-		--lr=${lr} \
 		--model.block.feed_forward_moe.lb_loss_weight=${lb} \
 		--trainer.callbacks.checkpointer.save_interval=20000 \
 		--trainer.callbacks.downstream_evaluator.eval_interval=2500 \

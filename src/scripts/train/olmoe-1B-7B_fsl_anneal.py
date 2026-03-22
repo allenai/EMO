@@ -16,6 +16,8 @@ from typing import List, Optional, cast
 import rich
 import torch
 
+from olmo_core.distributed.checkpoint import load_state_dict as load_checkpoint_state_dict
+
 from olmo_core.config import Config, DType
 from olmo_core.data import (
     NumpyDataLoaderConfig,
@@ -206,6 +208,15 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     trainer_state = torch.load(trainer_state_path, weights_only=False, map_location="cpu")
     checkpoint_step = trainer_state["global_step"]
     log.info(f"Checkpoint is at step {checkpoint_step}")
+
+    # Extract the current learning rate from the checkpoint's optimizer state
+    lr_key = "optim.param_groups.embeddings.weight.lr"
+    lr_state = {lr_key: None}
+    load_checkpoint_state_dict(
+        os.path.join(opts.anneal_checkpoint, "model_and_optim"), lr_state
+    )
+    anneal_lr = float(lr_state[lr_key])
+    log.info(f"Extracted LR from checkpoint: {anneal_lr}")
 
     # Convert anneal token budget to steps
     batch_size_in_tokens = opts.global_batch_size * SEQUENCE_LENGTH
@@ -584,7 +595,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         max_sequence_length=SEQUENCE_LENGTH,
         optim=AdamWConfig(
-            lr=opts.lr,
+            lr=anneal_lr,
             weight_decay=0.1,
             betas=(0.9, 0.95),
             group_overrides=[
@@ -748,12 +759,6 @@ def parser_args():
         "--num_shared_experts_pool",
         type=int,
         help="Number of shared experts to keep in the pool"
-    )
-    parser.add_argument(
-        "--lr",
-        type=float,
-        default=4e-4,
-        help="Learning rate for the optimizer.",
     )
     parser.add_argument(
         "--expert_cond_token_entropy_bias",
