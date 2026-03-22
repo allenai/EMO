@@ -9,8 +9,8 @@ eval_document_expert_pool=32
 lr=4e-3  # TODO: set this to the LR at the checkpoint step (check WandB)
 lb=1e-1
 
-anneal_tokens=100000000000  # 100B tokens
-anneal_checkpoint="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313/step238000"  # TODO: set to actual checkpoint path
+anneal_tokens=50000000000  # 50B tokens
+anneal_checkpoint="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313/step238419"
 
 nodes=16
 gpus=8
