@@ -7,7 +7,9 @@ Launch this with torchrun:
 """
 
 import argparse
+import json
 import logging
+import os
 import sys
 from dataclasses import dataclass
 from typing import Callable, List, Optional, cast
@@ -21,9 +23,6 @@ from olmo_core.data.mixes import DataMix
 from olmo_core.data.numpy_dataset import NumpyDatasetConfig
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_rank
-from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_randpool_router import (
-    MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouterConfig,
-)
 from olmo_core.nn.transformer import PARTIAL_FREEZE_FN_REGISTRY, TransformerConfig
 from olmo_core.optim import AdamWConfig, CosWithWarmup, OptimGroupOverride
 from olmo_core.train import (
@@ -175,75 +174,43 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
     tokenizer_config = TokenizerConfig.dolma2()
 
-    # docs: start-model-config
-
     global PARTIAL_FREEZE_FN_REGISTRY
     PARTIAL_FREEZE_FN_REGISTRY[
         "partial_freeze_router_and_experts"
     ] = partial_freeze_router_and_experts
 
-    # if opts.num_experts_to_train != opts.added_experts:
-    #     log.warning(
-    #         f"num_experts_to_train ({opts.num_experts_to_train}) != added_experts ({opts.added_experts})."
-    #         f" This will train weights for the last {opts.num_experts_to_train} existing expert(s)."
-    #     )
-
-    model_config = TransformerConfig.olmoe_1B_7B(
-        vocab_size=tokenizer_config.padded_vocab_size(),
-        n_layers=16,
-        d_model=2048,
-        n_heads=16,
-        num_experts=128 + opts.num_experts_to_train,
-        top_k=8,
-        freeze_params=[
+    if opts.base_model_config:
+        config_path = os.path.join(opts.base_model_config, "config.json")
+        log.info(f"Loading model config from {config_path}")
+        with open(config_path, "r") as f:
+            base_config = json.load(f)
+        model_config = TransformerConfig.from_dict(base_config["model"])
+        assert model_config.block.feed_forward_moe is not None
+        # NOTE: When --base-model-config points to the checkpoint created by add_new_expert.py,
+        # num_experts already includes the added experts. No bump needed.
+        model_config.freeze_params = [
             "embeddings.*",
             "blocks.*.attention*",
             "blocks.*.feed_forward_norm.*",
             "lm_head.*",
-        ],
-        # NOTE: Hook-based partial_freeze doesn't work with torch.compile.
-        # Use FrozenExpertGradientMaskCallback instead (added to trainer_config).
-        # partial_freeze_params_mask_fn_name="partial_freeze_router_and_experts",
-        # partial_freeze_params_mask_fn_kwargs={"num_experts_to_train": opts.num_experts_to_train},
-    )
-
-    # Apply router replacement for special model types
-    assert model_config.block.feed_forward_moe is not None
-    if opts.model_type == "moe":
-        log.info("Using default routers; no modifications applied.")
-    elif opts.model_type == "two-level_lb-batch_reduce-dp_sharedexp_randpool":
-        log.info("Applying two-level batch LB reduce DP shared exp randpool routers...")
-        if opts.min_document_expert_pool is None or opts.max_document_expert_pool is None:
-            raise ValueError(
-                "Both --min-document-expert-pool and --max-document-expert-pool must be specified "
-                "for two-level_lb-batch_reduce-dp_sharedexp_randpool model type."
-            )
-        if opts.num_shared_experts is None:
-            raise ValueError(
-                "--num-shared-experts must be specified for two-level_lb-batch_reduce-dp_sharedexp_randpool model type."
-            )
-        router_kwargs = model_config.block.feed_forward_moe.router.as_dict(
-            exclude_none=True, recurse=False
-        )
-        router_kwargs.pop("name")
-        router_kwargs.update(
-            min_document_expert_pool=opts.min_document_expert_pool,
-            max_document_expert_pool=opts.max_document_expert_pool,
-            eos_token_id=tokenizer_config.eos_token_id,
-            num_shared_experts=opts.num_shared_experts,
-        )
-        if opts.eval_document_expert_pool is not None:
-            router_kwargs["eval_document_expert_pool"] = opts.eval_document_expert_pool
-        if opts.num_forced_experts > 0:
-            router_kwargs["num_forced_experts"] = opts.num_forced_experts
-        model_config.block.feed_forward_moe.router = (
-            MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouterConfig(**router_kwargs)
-        )
+        ]
     else:
-        raise ValueError(f"Unknown model type: {opts.model_type}")
+        model_config = TransformerConfig.olmoe_1B_7B(
+            vocab_size=tokenizer_config.padded_vocab_size(),
+            n_layers=16,
+            d_model=2048,
+            n_heads=16,
+            num_experts=128 + opts.num_experts_to_train,
+            top_k=8,
+            freeze_params=[
+                "embeddings.*",
+                "blocks.*.attention*",
+                "blocks.*.feed_forward_norm.*",
+                "lm_head.*",
+            ],
+        )
 
     print(model_config)
-    # docs: end-model-config
 
     log.info(f"Using data root: {DATA_ROOT}")
 
@@ -424,7 +391,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback(
             "frozen_expert_gradient_mask",
             FrozenExpertGradientMaskCallback(
-                num_experts=128 + opts.num_experts_to_train,
+                num_experts=model_config.block.feed_forward_moe.num_experts,
                 num_experts_to_train=opts.num_experts_to_train,
                 layer_patterns=["experts", "router"],
             ),
@@ -503,42 +470,11 @@ def parser_args():
         help="Number of experts to train (last n experts). Remaining are frozen.",
     )
     parser.add_argument(
-        "--added-experts",
-        type=int,
-        default=1,
-        help="Number of experts actually added.",
-    )
-    parser.add_argument(
-        "--model-type",
+        "--base-model-config",
         type=str,
-        default="moe",
-        help="Type of MoE model (e.g., moe, two-level_lb-batch_reduce-dp_sharedexp_randpool).",
-    )
-    parser.add_argument(
-        "--min-document-expert-pool",
-        type=int,
-        help="Min experts in document-level pool (for randpool router).",
-    )
-    parser.add_argument(
-        "--max-document-expert-pool",
-        type=int,
-        help="Max experts in document-level pool (for randpool router).",
-    )
-    parser.add_argument(
-        "--num-shared-experts",
-        type=int,
-        help="Number of shared experts always activated.",
-    )
-    parser.add_argument(
-        "--eval-document-expert-pool",
-        type=int,
-        help="Fixed pool size during evaluation (for randpool router).",
-    )
-    parser.add_argument(
-        "--num-forced-experts",
-        type=int,
-        default=0,
-        help="Number of last non-shared experts always forced into the document pool.",
+        help="Path to checkpoint directory containing config.json for the base model. "
+        "When provided, the model config (including router type) is loaded from this file "
+        "instead of using the default olmoe_1B_7B config.",
     )
     parser.add_argument(
         "--eval-only",

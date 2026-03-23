@@ -34,9 +34,8 @@ python -m olmo_core.launch.beaker \
 		--trainer.max_duration="{value: ${NUM_TOKENS}, unit: tokens}" \
 		--trainer.callbacks.wandb="{enabled: true, entity: akshitab, project: olmoe-modular, name: ${RUN_NAME}, tags: [extension]}" \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
-		--model.block.name="moe" \
-		--model.block.attention.qk_norm=null \
 		--model.block.feed_forward_moe.lb_loss_weight=1e-2 \
         --train_module.scheduler.warmup_fraction=0.1 \
         --lr=${LR} \
+        --base-model-config="${BASE_MODEL_PATH}" \
         --experts-to-train=${EXPERTS_TO_TRAIN}

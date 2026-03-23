@@ -11,7 +11,9 @@ Launch this with torchrun:
 """
 
 import argparse
+import json
 import logging
+import os
 import sys
 from dataclasses import dataclass, field
 from typing import ClassVar, List, Optional, cast
@@ -244,20 +246,33 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
     tokenizer_config = TokenizerConfig.dolma2()
 
-    model_config = TransformerConfig.olmoe_1B_7B(
-        vocab_size=tokenizer_config.padded_vocab_size(),
-        n_layers=16,
-        d_model=2048,
-        n_heads=16,
-        num_experts=opts.num_experts,
-        top_k=8,
-        freeze_params=[
+    if opts.base_model_config:
+        config_path = os.path.join(opts.base_model_config, "config.json")
+        log.info(f"Loading model config from {config_path}")
+        with open(config_path, "r") as f:
+            base_config = json.load(f)
+        model_config = TransformerConfig.from_dict(base_config["model"])
+        model_config.freeze_params = [
             "embeddings.*",
             "blocks.*.attention*",
             "blocks.*.feed_forward_norm.*",
             "lm_head.*",
-        ],
-    )
+        ]
+    else:
+        model_config = TransformerConfig.olmoe_1B_7B(
+            vocab_size=tokenizer_config.padded_vocab_size(),
+            n_layers=16,
+            d_model=2048,
+            n_heads=16,
+            num_experts=opts.num_experts,
+            top_k=8,
+            freeze_params=[
+                "embeddings.*",
+                "blocks.*.attention*",
+                "blocks.*.feed_forward_norm.*",
+                "lm_head.*",
+            ],
+        )
 
     print(model_config)
 
@@ -305,7 +320,9 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     experts_to_train = [int(x) for x in opts.experts_to_train.split(",")]
-    log.info(f"Experts to train: {experts_to_train}")
+    assert model_config.block.feed_forward_moe is not None
+    num_experts = model_config.block.feed_forward_moe.num_experts
+    log.info(f"Experts to train: {experts_to_train} (out of {num_experts} total)")
 
     trainer_config = (
         TrainerConfig(
@@ -407,7 +424,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback(
             "selected_expert_gradient_mask",
             SelectedExpertGradientMaskCallback(
-                num_experts=opts.num_experts,
+                num_experts=num_experts,
                 experts_to_train=experts_to_train,
                 layer_patterns=["experts", "router"],
             ),
@@ -451,10 +468,17 @@ def parser_args():
         help="Comma-separated list of expert indices to unfreeze and train (e.g. '5,10,42').",
     )
     parser.add_argument(
+        "--base-model-config",
+        type=str,
+        help="Path to checkpoint directory containing config.json for the base model. "
+        "When provided, the model config (including router type) is loaded from this file "
+        "instead of using the default olmoe_1B_7B config.",
+    )
+    parser.add_argument(
         "--num-experts",
         type=int,
         default=128,
-        help="Total number of experts in the model.",
+        help="Total number of experts in the model (only used when --base-model-config is not provided).",
     )
     parser.add_argument(
         "--save-folder",
@@ -491,11 +515,18 @@ def main():
     setup_logging()
 
     # Validate expert indices
+    if opts.base_model_config:
+        config_path = os.path.join(opts.base_model_config, "config.json")
+        with open(config_path, "r") as f:
+            _cfg = json.load(f)
+        num_experts = _cfg["model"]["block"]["feed_forward_moe"]["num_experts"]
+    else:
+        num_experts = opts.num_experts
     experts_to_train = [int(x) for x in opts.experts_to_train.split(",")]
     for idx in experts_to_train:
-        if idx < 0 or idx >= opts.num_experts:
+        if idx < 0 or idx >= num_experts:
             raise ValueError(
-                f"Expert index {idx} is out of range [0, {opts.num_experts}). "
+                f"Expert index {idx} is out of range [0, {num_experts}). "
                 f"Got --experts-to-train={opts.experts_to_train}"
             )
 
