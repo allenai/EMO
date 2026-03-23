@@ -32,7 +32,14 @@ MODELS=(
     # moe1b14b_128experts_76_5_122_126_trained_math_no_router_10B_lr_4e-4/step2385-hf
     # moe1b14b_128experts_76_41_120_3_trained_code_no_router_10B_lr_4e-4/step2385-hf
 
-    twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf
+    # twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf
+
+    # twolevel_132experts_4trained_forced_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # twolevel_132experts_4trained_forced_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # twolevel_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # twolevel_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+
+    moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
@@ -45,18 +52,18 @@ model_type=hf
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
     # MC9 tasks
-    # "arc_easy|arc_easy:rc_test::olmes"
-    # "arc_challenge|arc_challenge:rc_test::olmes"
-    # "boolq|boolq:rc_test::olmes"
-    # "csqa|csqa:rc_test::olmes"
-    # "hellaswag|hellaswag:rc_test::olmes"
-    # "openbookqa|openbookqa:rc_test::olmes"
-    # "piqa|piqa:rc_test::olmes"
-    # "socialiqa|socialiqa:rc_test::olmes"
-    # "winogrande|winogrande:rc_test::olmes"
+    "arc_easy|arc_easy:rc_test::olmes"
+    "arc_challenge|arc_challenge:rc_test::olmes"
+    "boolq|boolq:rc_test::olmes"
+    "csqa|csqa:rc_test::olmes"
+    "hellaswag|hellaswag:rc_test::olmes"
+    "openbookqa|openbookqa:rc_test::olmes"
+    "piqa|piqa:rc_test::olmes"
+    "socialiqa|socialiqa:rc_test::olmes"
+    "winogrande|winogrande:rc_test::olmes"
 
-    # "squad|squad::olmes"
-    # "triviaqa|triviaqa::olmes"
+    "squad|squad::olmes"
+    "triviaqa|triviaqa::olmes"
 
     # math tasks
     "gsm8k::olmes"
@@ -64,8 +71,8 @@ TASK_GROUPS_LIST=(
     # "basic_skills::olmes"
 
     # code tasks
-    # "mbpp"
-    # "codex_humaneval"
+    "mbpp"
+    "codex_humaneval"
 )
 
 # Function to get checkpoint name (matching the original script)

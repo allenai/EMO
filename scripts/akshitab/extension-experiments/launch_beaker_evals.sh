@@ -109,8 +109,15 @@ MODELS=(
     # twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf
     # twolevel_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
     # twolevel_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf    
-    merged_twolevel_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
+    # merged_twolevel_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
 
+    # twolevel_132experts_4trained_forced_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    twolevel_132experts_4trained_forced_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # twolevel_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # twolevel_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf
+    # moereducedp512sharedexp1_132experts_4trained_math_init_top2_average_10B_lr_4e-4/step2385-hf
+    # moereducedp512sharedexp1_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
@@ -237,7 +244,7 @@ for MODEL_NAME in "${MODELS[@]}"; do
             --priority urgent \
             --allow-dirty \
             --gpus $gpus \
-            --preemptible \
+            --not-preemptible \
             --env-secret HF_TOKEN=AKSHITAB_HF_TOKEN \
             --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
             --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \

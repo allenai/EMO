@@ -32,7 +32,7 @@ NUM_TOKENS=$((NUM_BILLION_TOKENS * 1000000000))
 LR=4e-4 #4e-4  # 4e-3, #4e-5
 
 # # Part 2: Train with new expert
-RUN_NAME="twolevel_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_code_mix_init_top2_average_noise_${NUM_BILLION_TOKENS}B_lr_${LR}"
+RUN_NAME="twolevel_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_forced_code_mix_init_top2_average_noise_${NUM_BILLION_TOKENS}B_lr_${LR}"
 
 python -m olmo_core.launch.beaker \
   --name ${RUN_NAME} \
@@ -65,4 +65,5 @@ python -m olmo_core.launch.beaker \
         --min-document-expert-pool=8 \
         --max-document-expert-pool=128 \
         --num-shared-experts=1 \
-        --eval-document-expert-pool=32
+        --eval-document-expert-pool=32 \
+		--num-forced-experts=4
