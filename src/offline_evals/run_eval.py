@@ -533,12 +533,16 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
     else:
         raise ValueError(f"Model type {model_type} not recognized")
 
-    tokenizer = "allenai/dolma2-tokenizer"
-
-    # if "olmo" in pretrained or "OLMo" in pretrained:
-    #     tokenizer = "allenai/dolma2-tokenizer"
-    # else:
-    #     tokenizer = None
+    # Use dolma2-tokenizer for local checkpoints (which don't bundle the right
+    # tokenizer).  HF hub models (containing '/') ship their own tokenizer, so
+    # forcing dolma2 on them causes a vocab-size mismatch (e.g. OLMoE has 50304
+    # vs dolma2's 100352) and triggers CUDA index-out-of-bounds errors.
+    if "/" not in pretrained or pretrained.startswith("/"):
+        # Local path – use dolma2 tokenizer
+        tokenizer = "allenai/dolma2-tokenizer"
+    else:
+        # HF hub model – let it use its own tokenizer
+        tokenizer = None
 
     # if model is an moe model, we set output_router_logits to False
     if "dense" not in model_load_config["model"]:
