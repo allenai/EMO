@@ -131,7 +131,7 @@ for ENTRY in "${MODEL_ENTRIES[@]}"; do
 
         echo "    Launched: $job_name"
         echo "    ----------------------------------------"
-        sleep 60
+#        sleep 60
     done
 done
 
