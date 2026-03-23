@@ -127,7 +127,6 @@ class FrenchBenchArcChallengeRC(GenericFrenchBenchRC):
             "dataset_path": "manu/french_bench_arc_challenge",
             "native_id_field": "id",
             "split": "test",
-            "fewshot_source": "train",
         },
         GenericFrenchBenchRC.TASK_CONFIG_DEFAULTS,
     )
@@ -281,6 +280,46 @@ class FrenchBenchGrammarVocabReadingRC(GenericFrenchBenchRC):
         }
 
 
+class FrenchBenchBoolQRC_0shot(FrenchBenchBoolQRC):
+    pass
+
+
+class FrenchBenchBoolQRC_5shot(FrenchBenchBoolQRC):
+    pass
+
+
+class FrenchBenchArcChallengeRC_0shot(FrenchBenchArcChallengeRC):
+    pass
+
+
+class FrenchBenchArcChallengeRC_5shot(FrenchBenchArcChallengeRC):
+    pass
+
+
+class FrenchBenchHellaSwagRC_0shot(FrenchBenchHellaSwagRC):
+    pass
+
+
+class FrenchBenchHellaSwagRC_5shot(FrenchBenchHellaSwagRC):
+    pass
+
+
+class FrenchBenchGrammarVocabReadingRC_0shot(FrenchBenchGrammarVocabReadingRC):
+    pass
+
+
+class FrenchBenchGrammarVocabReadingRC_5shot(FrenchBenchGrammarVocabReadingRC):
+    pass
+
+
+FRENCHBENCH_BASE_TASKS = [
+    "frenchbench_boolq",
+    "frenchbench_arc_challenge",
+    "frenchbench_hellaswag",
+    "frenchbench_grammar_vocab_reading",
+]
+
+
 def create_frenchbench_tasks() -> dict:
     """
     Create all FrenchBench RC tasks.
@@ -289,7 +328,15 @@ def create_frenchbench_tasks() -> dict:
     """
     return {
         "frenchbench_boolq:rc": FrenchBenchBoolQRC,
+        "frenchbench_boolq:rc:0shot": FrenchBenchBoolQRC_0shot,
+        "frenchbench_boolq:rc:5shot": FrenchBenchBoolQRC_5shot,
         "frenchbench_arc_challenge:rc": FrenchBenchArcChallengeRC,
+        "frenchbench_arc_challenge:rc:0shot": FrenchBenchArcChallengeRC_0shot,
+        "frenchbench_arc_challenge:rc:5shot": FrenchBenchArcChallengeRC_5shot,
         "frenchbench_hellaswag:rc": FrenchBenchHellaSwagRC,
+        "frenchbench_hellaswag:rc:0shot": FrenchBenchHellaSwagRC_0shot,
+        "frenchbench_hellaswag:rc:5shot": FrenchBenchHellaSwagRC_5shot,
         "frenchbench_grammar_vocab_reading:rc": FrenchBenchGrammarVocabReadingRC,
+        "frenchbench_grammar_vocab_reading:rc:0shot": FrenchBenchGrammarVocabReadingRC_0shot,
+        "frenchbench_grammar_vocab_reading:rc:5shot": FrenchBenchGrammarVocabReadingRC_5shot,
     }

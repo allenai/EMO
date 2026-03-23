@@ -99,6 +99,7 @@ new_task_registry: Dict = {
     "poem_gen": poem_gen.Poem_Gen_LMJudge,
     "medqa": medqa.MedQA,
     "medmcqa:mc": medmcqa.MedMCQAMC,
+    "medmcqa:rc": medmcqa.MedMCQARC,
     "hatespeech18": hatespeech.HateSpeech18,
     "tweet_eval_hate": hatespeech.TweetEvalHate,
     "hate_speech_offensive": hatespeech.HateSpeechOffensive,

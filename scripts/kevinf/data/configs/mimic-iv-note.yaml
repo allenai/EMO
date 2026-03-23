@@ -1,0 +1,37 @@
+# MIMIC-IV-Note: ~331K discharge summaries + ~2.3M radiology reports
+# Usage: ./tokenize_remote.sh configs/mimic-iv-note.yaml
+
+dataset:
+  name: mimic-iv-note
+
+source:
+  format: csv
+  s3_path: s3://ai2-llm/pretraining-data/sources/mimic-iv-note/note/
+  text_field: text
+  id_field: note_id
+  metadata_fields: [subject_id, hadm_id, note_type, note_seq, charttime]
+  files: [discharge.csv.gz, radiology.csv.gz]
+
+destination:
+  s3_dolma_docs: s3://ai2-llm/pretraining-data/sources/mimic-iv-note/dolma_docs/
+  s3_tokenized: s3://ai2-llm/preprocessed/mimic-iv-note/dolma2-tokenizer/
+
+compute:
+  mode: remote
+  instance_type: c6a.48xlarge
+  storage_size: 200
+  num_processes: 192
+  convert_workers: 64
+  docs_per_shard: 50000
+
+tokenizer:
+  name: allenai/dolma2-tokenizer
+  eos_token_id: 100257
+  pad_token_id: 100277
+  dtype: uint32
+  use_uv: true
+  extra_args:
+    - --no-tokenizer.segment_before_tokenization
+    - --tokenizer.encode_special_tokens
+    - --max_size 1_000_000_000
+    - --sample_ring_prop

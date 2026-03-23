@@ -1403,4 +1403,28 @@ def get_task_configs():
     #         },
     #     }
 
+    # FrenchBench RC tasks: 0-shot and 5-shot
+    for fb_task in [
+        "frenchbench_boolq",
+        "frenchbench_arc_challenge",
+        "frenchbench_hellaswag",
+        "frenchbench_grammar_vocab_reading",
+    ]:
+        TASK_CONFIGS[f"{fb_task}:rc:0shot::olmes"] = {
+            "task_name": f"{fb_task}:rc:0shot",
+            "num_shots": 0,
+            "primary_metric": "acc_per_char",
+            "metadata": {
+                "regimes": [],
+            },
+        }
+        TASK_CONFIGS[f"{fb_task}:rc:5shot::olmes"] = {
+            "task_name": f"{fb_task}:rc:5shot",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "metadata": {
+                "regimes": [],
+            },
+        }
+
     return TASK_CONFIGS

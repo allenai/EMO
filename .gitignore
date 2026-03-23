@@ -65,8 +65,6 @@ src/scripts/kevinf/data/get_data_sources.py
 src/scripts/kevinf/test_env.py
 docs/kevinf-branch-changes.md
 docs/env-setup-guide.md
-.claude/
-CLAUDE.md
 DockerFile
 evals/
 s3_sync.sh
