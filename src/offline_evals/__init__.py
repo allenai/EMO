@@ -14,6 +14,7 @@ from .tasks.splits_mmlu import (
 )
 from .tasks.splits_mmlu_pro import (
     create_mmlu_pro_category_tasks_withsplits,
+    create_mmlu_pro_merged_tasks_withsplits,
     MMLU_PRO_CATEGORIES_MAP,
 )
 from .tasks import (
@@ -114,6 +115,16 @@ def create_category_mmlu_pro_tasks_withsplits():
         res[f"mmlu_pro_{cat}:rc_validation"] = create_mmlu_pro_category_tasks_withsplits(cat)
         res[f"mmlu_pro_{cat}:rc_test"] = create_mmlu_pro_category_tasks_withsplits(cat)
         res[f"mmlu_pro_{cat}:rc_train"] = create_mmlu_pro_category_tasks_withsplits(cat)
+    return res
+
+
+def create_merged_mmlu_pro_tasks_withsplits():
+    """Creates MMLU-Pro merged variant: pruning and finetuning use the same combined data."""
+    res = {}
+    for cat in MMLU_PRO_CATEGORIES_MAP:
+        res[f"mmlu_pro_merged_{cat}:rc_validation"] = create_mmlu_pro_merged_tasks_withsplits(cat)
+        res[f"mmlu_pro_merged_{cat}:rc_test"] = create_mmlu_pro_merged_tasks_withsplits(cat)
+        res[f"mmlu_pro_merged_{cat}:rc_train"] = create_mmlu_pro_merged_tasks_withsplits(cat)
     return res
 
 
@@ -218,6 +229,7 @@ new_task_registry: Dict = {
     **create_cluster_mmlu_tasks_withsplits(),
     # **create_core_mmlu_pro_tasks_withsplits(),
     **create_category_mmlu_pro_tasks_withsplits(),
+    **create_merged_mmlu_pro_tasks_withsplits(),
     # GSM8K
     "gsm8k_perplexity:train": splits_gsm8k.GSM8K_Perplexity_Base,
     "gsm8k_perplexity:validation": splits_gsm8k.GSM8K_Perplexity_Base,

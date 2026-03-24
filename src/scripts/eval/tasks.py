@@ -1387,4 +1387,37 @@ def get_task_configs():
             },
         }
 
+    # MMLU-Pro merged variant (pruning and finetuning share the same data)
+    for cat in MMLU_PRO_CATEGORIES_MAP:
+        TASK_CONFIGS[f"mmlu_pro_merged_{cat}:rc_validation::olmes"] = {
+            "task_name": f"mmlu_pro_merged_{cat}:rc_validation",
+            "split": "validation",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cat,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_pro_merged_{cat}:rc_test::olmes"] = {
+            "task_name": f"mmlu_pro_merged_{cat}:rc_test",
+            "split": "test",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cat,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_pro_merged_{cat}:rc_train::olmes"] = {
+            "task_name": f"mmlu_pro_merged_{cat}:rc_train",
+            "split": "train",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cat,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+
     return TASK_CONFIGS
