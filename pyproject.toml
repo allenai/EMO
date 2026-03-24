@@ -63,7 +63,8 @@ eval = [
     "beaker-gantry",
     "ai2-olmo-eval @ git+https://github.com/allenai/OLMo-in-loop-evals@kevinf/add-legalbench",
     "prettytable",
-    "s3fs"
+    "s3fs",
+    "litellm!=1.82.7,!=1.82.8", # For LLM judges (1.82.7 and 1.82.8 were compromised)
 ]
 torchao = ["torchao"]
 #transformers = ["transformers==4.57.1"]
