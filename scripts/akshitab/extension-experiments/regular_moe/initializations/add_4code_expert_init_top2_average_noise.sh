@@ -38,7 +38,7 @@ LR=4e-4 #4e-4  # 4e-3, #4e-5
 # # Part 2: Train with new expert
 NUM_SHARED_EXPERTS=1
 INSERT_POS=$((128 - NUM_SHARED_EXPERTS))
-EXPERTS_TO_TRAIN=$(seq -s, $INSERT_POS $((INSERT_POS + NUM_NEW_EXPERTS - 1)))
+EXPERTS_TO_TRAIN=$(seq -s, $INSERT_POS $((INSERT_POS + NUM_NEW_EXPERTS - 1)) | sed 's/,$//')
 
 RUN_NAME="moereducedp512sharedexp1_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_code_mix_init_top2_average_noise_${NUM_BILLION_TOKENS}B_lr_${LR}"
 

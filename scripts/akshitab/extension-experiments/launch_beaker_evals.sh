@@ -118,6 +118,9 @@ MODELS=(
     # moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf
     # moereducedp512sharedexp1_132experts_4trained_math_init_top2_average_10B_lr_4e-4/step2385-hf
     # moereducedp512sharedexp1_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+
+    # moereducedp512sharedexp1_1b14b_128experts_127_123_1_76_trained_code_10B_lr_4e-4/step2385-hf
+    moereducedp512sharedexp1_1b14b_128experts_127_69_30_3_trained_math_10B_lr_4e-4/step2385-hf
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
