@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Generate CSV/TSV tables of final-checkpoint metrics from prune_evals.
+"""Generate CSV/TSV tables of checkpoint-0 metrics from prune_evals.
 
 For each metric, produces a table where rows = models, columns = tasks,
-and values = the metric at the largest checkpoint.  Mirrors the config
-structure of plot_scores_prune_evals.py.
+and values = the metric at checkpoint-0 (the first finetuning checkpoint).
+Baseline-only models (e.g. OLMoE) read from original_model/<task>/results/checkpoint-0/.
 """
 
 from __future__ import annotations
@@ -16,12 +16,22 @@ from typing import Dict, List, Optional, Sequence, Tuple
 import pandas as pd
 
 # ============================================================================
-# CONFIGURATION - keep in sync with plot_scores_prune_evals.py
+# CONFIGURATION
 # ============================================================================
 
 AUTO_DISCOVER = True
 
 MODEL_SPECS = {
+    "allenaiOLMoE-1B-7B-0924": {
+        "label": "OLMoE-1B-7B",
+        "baseline": True,
+        "variants": [],
+    },
+    "allenaiOLMoE-1B-7B-0924_step240000-tokens1006B": {
+        "label": "OLMoE-1B-7B (1T)",
+        "baseline": True,
+        "variants": [],
+    },
     "dense_1b_lr-4e-3_0213step30995-hf": {
         "label": "dense",
         "baseline": False,
@@ -51,13 +61,8 @@ MODEL_SPECS = {
         "baseline": False,
         "variants": [
             {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
-            # {"suffix": "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 16)"},
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
-            # {"suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 64)"},
-            # {"suffix": "_keepk_96_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 96)"},
-            # {"suffix": "_keepk_120_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 120)"},
             {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
-            # {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise_variable_first2_unpruned", "label": "(keepk 32 first2 unpruned)"},
         ],
     },
 
@@ -233,7 +238,7 @@ MODEL_LABELS = {
     if spec.get("label")
 }
 
-DEFAULT_OUTPUT_SUBDIR = "prune_eval_tables_0319"
+DEFAULT_OUTPUT_SUBDIR = "prune_eval_tables_0319_ckpt0"
 
 # Collect all known variant suffixes from MODEL_SPECS for auto-discovery.
 _ALL_VARIANT_SUFFIXES: List[str] = sorted(
@@ -261,7 +266,7 @@ def _get_model_variants(model_name: str) -> List[Tuple[str, str]]:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Generate metric tables from prune_evals checkpoints."
+        description="Generate metric tables from prune_evals checkpoint-0."
     )
     parser.add_argument(
         "--prune-evals-root",
@@ -379,34 +384,12 @@ def read_metrics(metrics_path: Path) -> Optional[Dict[str, object]]:
     return metrics
 
 
-def _find_largest_checkpoint(results_dir: Path) -> Optional[Path]:
-    """Return the checkpoint-* subdirectory with the highest step number."""
-    best_step = -1
-    best_dir: Optional[Path] = None
-    for ckpt_dir in results_dir.glob("checkpoint-*"):
-        if not ckpt_dir.is_dir():
-            continue
-        step_str = ckpt_dir.name.replace("checkpoint-", "")
-        try:
-            step = int(step_str)
-        except ValueError:
-            continue
-        if step > best_step:
-            best_step = step
-            best_dir = ckpt_dir
-    return best_dir
-
-
-def _read_final_metric(
+def _read_checkpoint0_metric(
     task_dir: Path, metric_key: str
 ) -> Optional[float]:
-    """Read a single metric value from the largest checkpoint in task_dir/results."""
-    results_dir = task_dir / "results"
-    if not results_dir.is_dir():
-        return None
-
-    ckpt_dir = _find_largest_checkpoint(results_dir)
-    if ckpt_dir is None:
+    """Read a single metric value from checkpoint-0 in task_dir/results."""
+    ckpt_dir = task_dir / "results" / "checkpoint-0"
+    if not ckpt_dir.is_dir():
         return None
 
     metrics_files = sorted(ckpt_dir.glob("task-*-metrics.json"))
@@ -437,9 +420,10 @@ def collect_table(
     task_runs: Sequence[str],
     metric_key: str,
 ) -> pd.DataFrame:
-    """Build a models x tasks table of final-checkpoint metric values.
+    """Build a models x tasks table of checkpoint-0 metric values.
 
-    Also includes variant (e.g. layerwise) rows and baseline (original) rows.
+    Baseline-only models read from original_model/<task>/results/checkpoint-0/.
+    Variant models read from <task><suffix>/results/checkpoint-0/.
     """
     rows: Dict[str, Dict[str, Optional[float]]] = {}
 
@@ -449,33 +433,31 @@ def collect_table(
             continue
         model_label = MODEL_LABELS.get(model_name, model_name)
 
-        # Baseline (original model) row
         spec = MODEL_SPECS.get(model_name)
+
+        # Baseline-only models: read from original_model path
         if spec is not None and spec.get("baseline"):
-            baseline_label = model_label + " (original)"
             for task_run in task_runs:
                 val = _load_baseline_metric(
                     prune_evals_root, model_name, task_run, metric_key
                 )
                 if val is not None:
-                    rows.setdefault(baseline_label, {})[task_run] = val
+                    rows.setdefault(model_label, {})[task_run] = val
                 else:
                     print(
                         f"[WARN] Baseline data missing for model {model_label!r}, "
                         f"task={task_run!r}, metric={metric_key!r}"
                     )
+            continue
 
+        # Non-baseline models: read checkpoint-0 from variant task dirs
         for task_run in task_runs:
-            val = _read_final_metric(model_dir / task_run, metric_key)
-            if val is not None:
-                rows.setdefault(model_label, {})[task_run] = val
-
             for suffix, label_mod in _get_model_variants(model_name):
                 variant_dir = model_dir / (task_run + suffix)
                 if not variant_dir.is_dir():
                     continue
                 variant_label = model_label + " " + label_mod
-                val = _read_final_metric(variant_dir, metric_key)
+                val = _read_checkpoint0_metric(variant_dir, metric_key)
                 if val is not None:
                     rows.setdefault(variant_label, {})[task_run] = val
 
@@ -580,6 +562,15 @@ def main() -> None:
 
     selected_models = parse_csv_arg(args.models) or list(SELECTED_MODELS)
     selected_tasks = parse_csv_arg(args.tasks) or list(SELECTED_TASK_RUNS)
+
+    # Baseline-only models may not appear in auto-discovery (no variant task dirs).
+    # Add them if they exist on disk.
+    for model_name in selected_models:
+        spec = MODEL_SPECS.get(model_name)
+        if spec is not None and spec.get("baseline"):
+            model_dir = args.prune_evals_root / model_name
+            if model_dir.is_dir() and model_name not in available_models:
+                available_models.append(model_name)
 
     model_set = [m for m in selected_models if m in available_models]
     task_set = [t for t in selected_tasks if t in available_tasks]

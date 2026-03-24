@@ -244,6 +244,78 @@ TASK_SPECS = {
         "primary_score",
     ],
 
+    # MMLU-Pro per-category tasks.
+    "mmlu_pro_biology": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_business": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_chemistry": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_computer_science": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_economics": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_engineering": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_health": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_history": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_law": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_math": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_other": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_philosophy": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_physics": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_psychology": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+
     # Virtual aggregated tasks: macro average across MMLU categories.
     "mmlu_avg": [
         "softloss_corr",
@@ -255,11 +327,18 @@ TASK_SPECS = {
         "acc_per_byte",
         "primary_score",
     ],
+    "mmlu_pro_avg": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
 
 }
 # MMLU sub-tasks whose metrics are averaged for the "mmlu_avg" virtual task.
-MMLU_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_") and t not in ("mmlu_avg", "mmlu_avg_no_other")]
+_MMLU_VIRTUAL = {"mmlu_avg", "mmlu_avg_no_other", "mmlu_pro_avg"}
+MMLU_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_") and not t.startswith("mmlu_pro_") and t not in _MMLU_VIRTUAL]
 MMLU_SUBTASKS_NO_OTHER = [t for t in MMLU_SUBTASKS if t != "mmlu_other"]
+MMLU_PRO_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_") and t not in _MMLU_VIRTUAL]
 
 AVAILABLE_TASK_RUNS = list(TASK_SPECS)
 
@@ -886,7 +965,7 @@ def main() -> None:
     selected_tasks = parse_csv_arg(args.tasks) or list(SELECTED_TASK_RUNS)
 
     # Virtual tasks (e.g. mmlu_avg) don't exist on disk; always keep them.
-    VIRTUAL_TASKS = {"mmlu_avg", "mmlu_avg_no_other"}
+    VIRTUAL_TASKS = {"mmlu_avg", "mmlu_avg_no_other", "mmlu_pro_avg"}
     model_set = [m for m in selected_models if m in available_models]
     task_set = [t for t in selected_tasks if t in available_tasks or t in VIRTUAL_TASKS]
 
@@ -914,6 +993,7 @@ def main() -> None:
         regular_tasks = [t for t in tasks_for_metric if t not in VIRTUAL_TASKS]
         has_mmlu_avg = "mmlu_avg" in tasks_for_metric
         has_mmlu_avg_no_other = "mmlu_avg_no_other" in tasks_for_metric
+        has_mmlu_pro_avg = "mmlu_pro_avg" in tasks_for_metric
 
         # --- regular per-task plots ---
         if regular_tasks:
@@ -1057,6 +1137,56 @@ def main() -> None:
                     args.show,
                     metric_key,
                     baselines=mmlu_no_other_baselines if mmlu_no_other_baselines else None,
+                )
+
+        # --- mmlu_pro_avg (macro average across MMLU-Pro categories) ---
+        if has_mmlu_pro_avg:
+            mmlu_pro_avg_df = collect_mmlu_avg_records(
+                args.prune_evals_root, model_set, metric_key,
+                subtasks=MMLU_PRO_SUBTASKS,
+                avg_name="mmlu_pro_avg",
+            )
+            # Gather baselines for mmlu_pro_avg
+            mmlu_pro_baselines: Dict[str, float] = {}
+            for model_name in model_set:
+                spec = MODEL_SPECS.get(model_name)
+                if spec is None or not spec.get("baseline"):
+                    continue
+                vals = []
+                missing = []
+                for subtask in MMLU_PRO_SUBTASKS:
+                    v = _load_baseline_metric(
+                        args.prune_evals_root, model_name, subtask, metric_key
+                    )
+                    if v is not None:
+                        vals.append(v)
+                    else:
+                        missing.append(subtask)
+                model_label = MODEL_LABELS.get(model_name, model_name)
+                if missing:
+                    print(
+                        f"[WARN] Partial MMLU-Pro baseline for model {model_label!r}, "
+                        f"metric={metric_key!r}: missing {len(missing)}/{len(MMLU_PRO_SUBTASKS)} "
+                        f"sub-task(s): {missing}"
+                    )
+                if len(vals) == len(MMLU_PRO_SUBTASKS):
+                    mmlu_pro_baselines[model_name] = sum(vals) / len(vals)
+
+            if mmlu_pro_avg_df.empty:
+                print(f"[WARN] No MMLU-Pro data for metric {metric_key!r}; skipping mmlu_pro_avg.")
+            else:
+                metric_output_dir = base_output_dir / sanitize_filename(metric_key)
+                output_file = (
+                    metric_output_dir
+                    / f"mmlu_pro_avg_{sanitize_filename(metric_key)}.png"
+                )
+                plot_mmlu_avg(
+                    mmlu_pro_avg_df,
+                    output_file,
+                    args.style,
+                    args.show,
+                    metric_key,
+                    baselines=mmlu_pro_baselines if mmlu_pro_baselines else None,
                 )
 
 

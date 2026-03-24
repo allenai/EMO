@@ -45,7 +45,7 @@ PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(128)
+PRUNE_KEEP_K_VALUES=(8)
 batch_size=32
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
@@ -111,19 +111,19 @@ TASK_GROUPS_LIST=(
 
   # MMLU-Pro categories (14 categories)
   "mmlu_pro_math"
-#  "mmlu_pro_health"
-#  "mmlu_pro_physics"
-#  "mmlu_pro_business"
-#  "mmlu_pro_biology"
-#  "mmlu_pro_chemistry"
-#  "mmlu_pro_computer_science"
-#  "mmlu_pro_economics"
-#  "mmlu_pro_engineering"
-#  "mmlu_pro_philosophy"
-#  "mmlu_pro_other"
-#  "mmlu_pro_history"
-#  "mmlu_pro_psychology"
-#  "mmlu_pro_law"
+  "mmlu_pro_health"
+  "mmlu_pro_physics"
+  "mmlu_pro_business"
+  "mmlu_pro_biology"
+  "mmlu_pro_chemistry"
+  "mmlu_pro_computer_science"
+  "mmlu_pro_economics"
+  "mmlu_pro_engineering"
+  "mmlu_pro_philosophy"
+  "mmlu_pro_other"
+  "mmlu_pro_history"
+  "mmlu_pro_psychology"
+  "mmlu_pro_law"
 
 #  "synthea_zeroshot"
 
@@ -264,7 +264,7 @@ for MODEL in "${MODELS[@]}"; do
                 "
             echo "Launched evaluation for model: $model, task: $TASK"
             echo "----------------------------------------"
-            sleep 500 # brief pause to avoid overwhelming huggingface
+#            sleep 500 # brief pause to avoid overwhelming huggingface
             continue
         fi
 
@@ -407,7 +407,7 @@ for MODEL in "${MODELS[@]}"; do
         echo "Launched evaluation for model: $MODEL, task: $TASK"
         echo "----------------------------------------"
 
-        sleep 500 # brief pause to avoid overwhelming huggingface
+#        sleep 500 # brief pause to avoid overwhelming huggingface
     done
 
     echo "Completed all tasks for model: $MODEL, keep-k: $prune_keep_k"
