@@ -82,8 +82,8 @@ MODEL_SPECS = {
         "baseline": False,
         "variants": [
             {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
-            # {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
-            # {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
+            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
         ]
     },
 
@@ -290,19 +290,32 @@ _MODEL_BASE_COLORS: Dict[str, object] = {
     "specialized moe + globallb":                           (0.5804, 0.4039, 0.7412),  # tab10 purple
     "specialized moe + globallb + 1sharedexp":              (0.5490, 0.3373, 0.2941),  # tab10 brown
     "specialized moe + globallb + 1shardexp + randpool":    (0.8902, 0.4667, 0.7608),  # tab10 pink
+    "specialized moe 1T + anneal":                          (0.4980, 0.4980, 0.4980),  # tab10 gray
+    "specialized moe 1T":                                   (0.7373, 0.7412, 0.1333),  # tab10 olive
 }
 
-# Per-variant alpha: first variant is fully opaque, subsequent ones fade.
-_VARIANT_ALPHAS = [1.0, 0.7, 0.5, 0.35, 0.25, 0.15, 1.0]
-_MODEL_VARIANT_ALPHA: Dict[str, float] = {}
+# Per-variant visual style: use different line styles, markers, and moderate
+# alpha fading so that up to 6 variants per model family are clearly distinct.
+_VARIANT_LINESTYLES = ["-", "--", "-.", ":", (0, (3, 1, 1, 1)), (0, (5, 1))]
+_VARIANT_MARKERS = ["o", "s", "^", "D", "v", "X"]
+_VARIANT_ALPHAS = [1.0, 0.9, 0.8, 0.7, 0.6, 0.55]
+
+_MODEL_VARIANT_STYLE: Dict[str, Dict[str, object]] = {}
 for _model_name, _spec in MODEL_SPECS.items():
     _base_label = _spec.get("label", _model_name)
     _variants = _spec.get("variants", [])
     if not _variants:
-        _MODEL_VARIANT_ALPHA[_base_label] = 1.0
+        _MODEL_VARIANT_STYLE[_base_label] = {
+            "alpha": 1.0, "linestyle": "-", "marker": "o",
+        }
     for _vi, _v in enumerate(_variants):
         _full_label = _base_label + " " + _v["label"]
-        _MODEL_VARIANT_ALPHA[_full_label] = _VARIANT_ALPHAS[min(_vi, len(_VARIANT_ALPHAS) - 1)]
+        _idx = min(_vi, len(_VARIANT_ALPHAS) - 1)
+        _MODEL_VARIANT_STYLE[_full_label] = {
+            "alpha": _VARIANT_ALPHAS[_idx],
+            "linestyle": _VARIANT_LINESTYLES[_idx],
+            "marker": _VARIANT_MARKERS[_idx],
+        }
 
 # Collect all known variant suffixes from MODEL_SPECS for auto-discovery.
 _ALL_VARIANT_SUFFIXES: List[str] = sorted(
@@ -711,15 +724,16 @@ def plot_mmlu_avg(
         model_df = avg_df[
             avg_df["model_label"] == model_label
         ].sort_values("checkpoint")
-        alpha = _MODEL_VARIANT_ALPHA.get(model_label, 1.0)
+        vstyle = _MODEL_VARIANT_STYLE.get(model_label, {"alpha": 1.0, "linestyle": "-", "marker": "o"})
         ax.plot(
             model_df["checkpoint"],
             model_df["metric_value"],
-            marker="o",
+            marker=vstyle["marker"],
+            linestyle=vstyle["linestyle"],
             linewidth=2,
             markersize=6,
             color=color_map[model_label],
-            alpha=alpha,
+            alpha=vstyle["alpha"],
             label=_wrap_label(model_label),
         )
 
@@ -808,15 +822,16 @@ def plot_task(
 
     for model_label in sorted(task_df["model_label"].unique()):
         model_df = task_df[task_df["model_label"] == model_label].sort_values("checkpoint")
-        alpha = _MODEL_VARIANT_ALPHA.get(model_label, 1.0)
+        vstyle = _MODEL_VARIANT_STYLE.get(model_label, {"alpha": 1.0, "linestyle": "-", "marker": "o"})
         ax.plot(
             model_df["checkpoint"],
             model_df["metric_value"],
-            marker="o",
+            marker=vstyle["marker"],
+            linestyle=vstyle["linestyle"],
             linewidth=2,
             markersize=6,
             color=color_map[model_label],
-            alpha=alpha,
+            alpha=vstyle["alpha"],
             label=_wrap_label(model_label),
         )
 

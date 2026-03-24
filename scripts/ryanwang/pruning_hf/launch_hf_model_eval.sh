@@ -23,7 +23,7 @@ MODEL_ENTRIES=(
 CLUSTER="ai2/jupiter-cirrascale-2"
 
 TASK_GROUPS_LIST=(
-  "arc_easy"
+#  "arc_easy"
   "arc_challenge"
   "boolq"
   "csqa"
