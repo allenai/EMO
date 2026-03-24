@@ -216,3 +216,16 @@ class GSM8K_Generation_Train_0shot(GSM8K_Perplexity_Base):
 
 class GSM8K_Generation_Validation_0shot(GSM8K_Perplexity_Base):
     pass
+
+
+# 8-shot generation variant (same task classes; shot count controlled by TASK_CONFIGS)
+class GSM8K_Generation_Test_8shot(GSM8K):
+    pass
+
+
+class GSM8K_Generation_Train_8shot(GSM8K_Perplexity_Base):
+    pass
+
+
+class GSM8K_Generation_Validation_8shot(GSM8K_Perplexity_Base):
+    pass

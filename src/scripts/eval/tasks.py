@@ -137,6 +137,36 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
+            "gsm8k_generation_8shot:train::olmes": {
+                "task_name": "gsm8k_generation_8shot:train",
+                "split": "train",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 8,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k_generation_8shot:validation::olmes": {
+                "task_name": "gsm8k_generation_8shot:validation",
+                "split": "validation",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 8,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k_generation_8shot:test::olmes": {
+                "task_name": "gsm8k_generation_8shot:test",
+                "split": "test",
+                "primary_metric": "exact_match",
+                "num_shots": 8,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
             "synthea:rc_train_0shot::olmes": {
                 "task_name": "synthea:rc_train_0shot",
                 "split": "train",

@@ -68,6 +68,7 @@ TASK_GROUPS_LIST=(
 #  "socialiqa"
 #  "winogrande"
 #  "gsm8k_generation_0shot"
+#  "gsm8k_generation_8shot"
 #  "gsm8k_perplexity_0shot"
 #  "coqa_0shot"
 #  "coqa_full_0shot"
