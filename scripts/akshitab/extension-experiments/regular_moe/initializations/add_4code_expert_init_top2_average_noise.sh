@@ -21,6 +21,7 @@ NUM_TOKENS=$((NUM_BILLION_TOKENS * 1000000000))
 EVAL_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions/moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308_step30995-hf"
 
 # Run this once; on weka
+# top 2: [123, 1]
 # python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
 # 	-c ${BASE_MODEL_PATH}\
 # 	-o ${NEW_BASE_MODEL_PATH} \
