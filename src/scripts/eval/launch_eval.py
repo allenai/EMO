@@ -429,9 +429,15 @@ def launch_eval(args_dict: dict):
     # Only local eval is supported
     logger.info(f"Running eval locally on {len(all_tasks)} tasks!")
     logger.info(f"Command: {run_eval_command}")
-    return subprocess.run(
-        f"huggingface-cli login --token {os.environ['HF_TOKEN']} && {run_eval_command}", shell=True
-    ).returncode
+    # return subprocess.run(
+    #     f"huggingface-cli login --token {os.environ['HF_TOKEN']} && {run_eval_command}", shell=True
+    # ).returncode
+
+    # HF_TOKEN env var is read directly by transformers/huggingface_hub at runtime,
+    # so explicit CLI login is unnecessary. It also triggers /whoami-v2 rate limits
+    # when many Beaker jobs launch concurrently.
+    full_command = run_eval_command
+    return subprocess.run(full_command, shell=True).returncode
 
 
 def main():
