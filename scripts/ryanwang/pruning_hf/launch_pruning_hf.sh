@@ -109,6 +109,22 @@ TASK_GROUPS_LIST=(
 #  "mmlu_cluster_physics_eng"
 #  "mmlu_cluster_cs_logic"
 
+  # MMLU-Pro categories (14 categories)
+#  "mmlu_pro_math"
+#  "mmlu_pro_health"
+#  "mmlu_pro_physics"
+#  "mmlu_pro_business"
+#  "mmlu_pro_biology"
+#  "mmlu_pro_chemistry"
+#  "mmlu_pro_computer_science"
+#  "mmlu_pro_economics"
+#  "mmlu_pro_engineering"
+#  "mmlu_pro_philosophy"
+#  "mmlu_pro_other"
+#  "mmlu_pro_history"
+#  "mmlu_pro_psychology"
+#  "mmlu_pro_law"
+
 #  "synthea_zeroshot"
 
 )
