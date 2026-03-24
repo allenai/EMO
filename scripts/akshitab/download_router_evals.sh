@@ -33,6 +33,8 @@ MODELS=(
 
   moe1b14b_128experts_76_5_122_126_trained_math_no_router_10B_lr_4e-4_step2385-hf
   moe1b14b_128experts_76_41_120_3_trained_code_no_router_10B_lr_4e-4_step2385-hf
+
+  moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308_step30995-hf
 )
 
 mkdir -p "$OUTPUT_DIR"

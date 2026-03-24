@@ -27,12 +27,17 @@ EVAL_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions/moereducedp512sharedexp
 # 	--num_new_experts ${NUM_NEW_EXPERTS} \
 # 	--init_method similar \
 #     --activation_file ${EVAL_DIR}/task-gsm8k_generation_0shot_test-router.jsonl \
-#     -k 2
+#     -k 2 \
+# 	--num_shared_experts 1 --exclude_experts 127
 
 
 LR=4e-4 #4e-4  # 4e-3, #4e-5
 
 # # Part 2: Train with new expert
+NUM_SHARED_EXPERTS=1
+INSERT_POS=$((128 - NUM_SHARED_EXPERTS))
+EXPERTS_TO_TRAIN=$(seq -s, $INSERT_POS $((INSERT_POS + NUM_NEW_EXPERTS - 1)))
+
 RUN_NAME="moereducedp512sharedexp1_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_math_init_top2_average_${NUM_BILLION_TOKENS}B_lr_${LR}"
 
 python -m olmo_core.launch.beaker \
@@ -47,7 +52,7 @@ python -m olmo_core.launch.beaker \
 	--allow-dirty \
 	--priority urgent \
 	--env-secret "GITHUB_TOKEN=AKSHITAB_GITHUB_TOKEN" "WANDB_API_KEY=AKSHITAB_WANDB_API_KEY" "BEAKER_TOKEN=AKSHITAB_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
-	-- src/scripts/akshitab/add_finegrained_expert/train_new_expert.py \
+	-- src/scripts/akshitab/add_finegrained_expert/train_selected_experts.py \
     ${RUN_NAME} \
 		--trainer.load_path="${NEW_BASE_MODEL_PATH}/model_and_optim" \
 		--save-folder="/weka/oe-training-default/akshitab/FlexMoE/models/${RUN_NAME}" \
@@ -60,4 +65,4 @@ python -m olmo_core.launch.beaker \
         --train_module.scheduler.warmup_fraction=0.1 \
         --lr=${LR} \
         --base-model-config="${NEW_BASE_MODEL_PATH}" \
-        --num-experts-to-train=${NUM_NEW_EXPERTS}
+        --experts-to-train=${EXPERTS_TO_TRAIN}

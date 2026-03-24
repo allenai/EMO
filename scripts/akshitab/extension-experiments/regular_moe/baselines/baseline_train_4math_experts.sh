@@ -1,5 +1,5 @@
 # EXPERTS_TO_TRAIN=76,5,122,126  # top 4 experts as per python src/scripts/eval/router_analysis.py --router-files router_evals/moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123_step30995-hf/task-gsm8k_generation_test_0shot-router.jsonl
-EXPERTS_TO_TRAIN=127,69,30,3 # top 4 experts as per python src/scripts/eval/router_analysis.py --router-files router_evals/moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308_step30995-hf/task-gsm8k_generation_test_0shot-router.jsonl
+EXPERTS_TO_TRAIN=69,30,3,6 # top 4 experts (not counting the shared 127) as per python src/scripts/eval/router_analysis.py --router-files router_evals/moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308_step30995-hf/task-gsm8k_generation_test_0shot-router.jsonl
 
 TOTAL_EXPERTS=128
 

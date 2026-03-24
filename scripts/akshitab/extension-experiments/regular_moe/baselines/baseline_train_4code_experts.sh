@@ -1,15 +1,18 @@
-EXPERTS_TO_TRAIN=76,41,120,3  # top 4 experts as per python src/scripts/eval/router_analysis.py --router-files router_evals/moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123_step30995-hf/task-mbpp-router.jsonl
+# EXPERTS_TO_TRAIN=76,41,120,3  # top 4 experts as per python src/scripts/eval/router_analysis.py --router-files router_evals/moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123_step30995-hf/task-mbpp-router.jsonl
+EXPERTS_TO_TRAIN=123,1,76,6 # top 4 experts (not counting the shared 127) as per python src/scripts/eval/router_analysis.py --router-files router_evals/moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308_step30995-hf/task-mbpp-router.jsonl
 
 TOTAL_EXPERTS=128
 
-BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
+# BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
+BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995"
 
 NUM_BILLION_TOKENS=10
 NUM_TOKENS=$((NUM_BILLION_TOKENS * 1000000000))
 
 LR=4e-4 #4e-4  # 4e-3, #4e-5
 
-RUN_NAME="moe1b14b_${TOTAL_EXPERTS}experts_${EXPERTS_TO_TRAIN//,/_}_trained_code_${NUM_BILLION_TOKENS}B_lr_${LR}"
+# RUN_NAME="moe1b14b_${TOTAL_EXPERTS}experts_${EXPERTS_TO_TRAIN//,/_}_trained_code_${NUM_BILLION_TOKENS}B_lr_${LR}"
+RUN_NAME="moereducedp512sharedexp1_1b14b_${TOTAL_EXPERTS}experts_${EXPERTS_TO_TRAIN//,/_}_trained_code_${NUM_BILLION_TOKENS}B_lr_${LR}"
 
 echo $RUN_NAME
 
