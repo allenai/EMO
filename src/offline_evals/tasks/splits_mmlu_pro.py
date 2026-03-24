@@ -116,3 +116,68 @@ def create_mmlu_pro_category_tasks_withsplits(category_key):
         CATEGORY = MMLU_PRO_CATEGORIES_MAP[category_key]
 
     return MMLUPro_Category
+
+
+class GenericMMLUPro_merged(GenericMMLUPro_withsplits):
+    """MMLU-Pro variant where pruning and finetuning use the same merged data.
+
+    Uses the same test set as GenericMMLUPro_withsplits (same shuffle seed and
+    TEST_FRACTION), but merges the pruning and train portions into a single
+    "train" split used for both pipeline phases:
+      - validation/train: merged set (100 prune + 40% remainder) for both pruning and finetuning
+      - test: 60% of remainder for evaluation (identical to the non-merged variant)
+    """
+
+    def download(self, data_dir=None, cache_dir=None, download_mode=None):
+        from datasets import concatenate_datasets
+
+        full_dataset = MOUNTED_WEKA_DATASET_WRAPPER.load_dataset(
+            path="TIGER-Lab/MMLU-Pro",
+            name=None,
+            data_dir=data_dir or self.data_dir,
+            cache_dir=cache_dir or self.cache_dir,
+            download_mode=download_mode or self.download_mode,
+            revision=self.task_config.get("revision"),
+            trust_remote_code=True,
+        )
+
+        original_category = MMLU_PRO_CATEGORIES_MAP[self.CATEGORY_KEY]
+
+        cat_test = full_dataset["test"].filter(
+            lambda doc: doc["category"] == original_category
+        )
+        cat_dev = full_dataset["validation"].filter(
+            lambda doc: doc["category"] == original_category
+        )
+
+        # Same shuffle + split logic as the non-merged variant to keep test set identical
+        n = len(cat_test)
+        cat_shuffled = cat_test.shuffle(seed=0)
+
+        prune_size = min(PRUNE_SIZE, n)
+        prune_split = cat_shuffled.select(range(prune_size))
+
+        remaining = cat_shuffled.select(range(prune_size, n))
+        n_remaining = len(remaining)
+        test_cutoff = int(n_remaining * TEST_FRACTION)
+
+        test_split = remaining.select(range(test_cutoff))
+        train_split = remaining.select(range(test_cutoff, n_remaining))
+
+        # Merge prune + train into a single set
+        merged_train = concatenate_datasets([prune_split, train_split])
+
+        self.dataset = DatasetDict({
+            "dev": cat_dev,              # 5 examples for few-shot demos
+            "validation": merged_train,  # merged set for pruning
+            "train": merged_train,       # same merged set for finetuning
+            "test": test_split,          # 60% of remainder (identical to non-merged)
+        })
+
+
+def create_mmlu_pro_merged_tasks_withsplits(category_key):
+    class MMLUPro_Merged(GenericMMLUPro_merged):
+        CATEGORY_KEY = category_key
+        CATEGORY = MMLU_PRO_CATEGORIES_MAP[category_key]
+
+    return MMLUPro_Merged
