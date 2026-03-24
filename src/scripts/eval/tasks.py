@@ -3,6 +3,7 @@ from oe_eval.data.mmlu_pro_categories import MMLU_PRO_CATEGORIES
 from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 
 from src.offline_evals.tasks.splits_mmlu import MMLU_CLUSTER_CATEGORIES
+from src.offline_evals.tasks.splits_mmlu_pro import MMLU_PRO_CATEGORIES_MAP
 
 def get_task_configs():
     TASK_CONFIGS.update(
@@ -1353,47 +1354,37 @@ def get_task_configs():
                 "regimes": ["OLMES-v0.1"],
             },
         }
-    #
-    # for cat in MMLU_PRO_CATEGORIES:
-    #     TASK_CONFIGS[f"mmlu_pro_{cat}:mc_validation::none"] = {
-    #         "task_name": f"mmlu_pro_{cat}:mc_validation",
-    #         "split": "validation",
-    #         "num_shots": 5,
-    #         "metadata": {
-    #             "regimes": [],
-    #         },
-    #     }
-    #     TASK_CONFIGS[f"mmlu_pro_{cat}:mc_test::none"] = {
-    #         "task_name": f"mmlu_pro_{cat}:mc_test",
-    #         "split": "test",
-    #         "num_shots": 5,
-    #         "metadata": {
-    #             "regimes": [],
-    #         },
-    #     }
-    #     TASK_CONFIGS[f"mmlu_pro_{cat}:rc_validation::none"] = {
-    #         "task_name": f"mmlu_pro_{cat}:rc_validation",
-    #         "split": "validation",
-    #         "num_shots": 5,
-    #         "metadata": {
-    #             "regimes": [],
-    #         },
-    #     }
-    #     TASK_CONFIGS[f"mmlu_pro_{cat}:rc_validation_0shot::none"] = {
-    #         "task_name": f"mmlu_pro_{cat}:rc_validation_0shot",
-    #         "split": "validation",
-    #         "num_shots": 0,
-    #         "metadata": {
-    #             "regimes": [],
-    #         },
-    #     }
-    #     TASK_CONFIGS[f"mmlu_pro_{cat}:rc_test::none"] = {
-    #         "task_name": f"mmlu_pro_{cat}:rc_test",
-    #         "split": "test",
-    #         "num_shots": 5,
-    #         "metadata": {
-    #             "regimes": [],
-    #         },
-    #     }
+    # MMLU-Pro categories (with custom train/validation/test splits for pruning pipeline)
+    for cat in MMLU_PRO_CATEGORIES_MAP:
+        TASK_CONFIGS[f"mmlu_pro_{cat}:rc_validation::olmes"] = {
+            "task_name": f"mmlu_pro_{cat}:rc_validation",
+            "split": "validation",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cat,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_pro_{cat}:rc_test::olmes"] = {
+            "task_name": f"mmlu_pro_{cat}:rc_test",
+            "split": "test",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cat,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_pro_{cat}:rc_train::olmes"] = {
+            "task_name": f"mmlu_pro_{cat}:rc_train",
+            "split": "train",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cat,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
 
     return TASK_CONFIGS

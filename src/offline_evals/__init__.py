@@ -12,6 +12,10 @@ from .tasks.splits_mmlu import (
     create_mmlu_cluster_tasks_withsplits,
     MMLU_CLUSTER_CATEGORIES,
 )
+from .tasks.splits_mmlu_pro import (
+    create_mmlu_pro_category_tasks_withsplits,
+    MMLU_PRO_CATEGORIES_MAP,
+)
 from .tasks import (
     agi_eval,
     hatespeech,
@@ -100,6 +104,16 @@ def create_core_mmlu_pro_tasks_withsplits():
         res[f"mmlu_pro_{sub}:mc_test"] = create_mmlu_pro_task(sub)
         res[f"mmlu_pro_{sub}:rc_validation"] = create_mmlu_pro_task(sub, is_mc=False)
         res[f"mmlu_pro_{sub}:rc_test"] = create_mmlu_pro_task(sub, is_mc=False)
+    return res
+
+
+def create_category_mmlu_pro_tasks_withsplits():
+    """Creates MMLU-Pro tasks with custom train/validation/test splits for the pruning pipeline."""
+    res = {}
+    for cat in MMLU_PRO_CATEGORIES_MAP:
+        res[f"mmlu_pro_{cat}:rc_validation"] = create_mmlu_pro_category_tasks_withsplits(cat)
+        res[f"mmlu_pro_{cat}:rc_test"] = create_mmlu_pro_category_tasks_withsplits(cat)
+        res[f"mmlu_pro_{cat}:rc_train"] = create_mmlu_pro_category_tasks_withsplits(cat)
     return res
 
 
@@ -203,6 +217,7 @@ new_task_registry: Dict = {
     **create_category_mmlu_tasks_withsplits(),
     **create_cluster_mmlu_tasks_withsplits(),
     # **create_core_mmlu_pro_tasks_withsplits(),
+    **create_category_mmlu_pro_tasks_withsplits(),
     # GSM8K
     "gsm8k_perplexity:train": splits_gsm8k.GSM8K_Perplexity_Base,
     "gsm8k_perplexity:validation": splits_gsm8k.GSM8K_Perplexity_Base,
