@@ -14,6 +14,7 @@ NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/extension
 
 # top 2 (excluding shared expert 127): run with --exclude_experts 127
 # Run this once; on weka
+# top 2: [63, 26]
 # python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
 # 	-c ${BASE_MODEL_PATH}\
 # 	-o ${NEW_BASE_MODEL_PATH} \
@@ -64,4 +65,5 @@ python -m olmo_core.launch.beaker \
         --train_module.scheduler.warmup_fraction=0.1 \
         --lr=${LR} \
         --base-model-config="${NEW_BASE_MODEL_PATH}" \
-        --experts-to-train=${EXPERTS_TO_TRAIN}
+        --experts-to-train=${EXPERTS_TO_TRAIN} \
+		--model.block.feed_forward_moe.router.num_forced_experts=${NUM_NEW_EXPERTS}

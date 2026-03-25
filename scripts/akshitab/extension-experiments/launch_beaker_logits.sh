@@ -39,7 +39,12 @@ MODELS=(
     # twolevel_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
     # twolevel_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
 
-    moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf
+    # moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf
+
+    twolevel_1b14b_128experts_63_26_6_19_trained_code_10B_lr_4e-4/step2385-hf
+    twolevel_1b14b_128experts_99_0_42_88_trained_math_10B_lr_4e-4/step2385-hf
+    moereducedp512sharedexp1_132experts_4trained_math_init_top2_average_10B_lr_4e-4/step2385-hf
+    moereducedp512sharedexp1_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
@@ -162,7 +167,7 @@ for MODEL_NAME in "${MODELS[@]}"; do
             --priority urgent \
             --allow-dirty \
             --gpus $gpus \
-            --not-preemptible \
+            --preemptible \
             --env-secret HF_TOKEN=RYAN_HF_TOKEN \
             --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
             --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
