@@ -449,6 +449,8 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     config = config.merge(overrides)
+    print("Final merged config:")
+    rich.print(config)
 
     return config
 
