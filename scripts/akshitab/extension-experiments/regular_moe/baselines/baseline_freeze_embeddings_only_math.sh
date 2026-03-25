@@ -1,6 +1,6 @@
 TOTAL_EXPERTS=128
 
-# Train all experts (no freezing)
+# Train everything except embeddings and lm_head
 EXPERTS_TO_TRAIN=$(seq -s, 0 $((TOTAL_EXPERTS - 1)) | sed 's/,$//')
 
 # BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995"
@@ -11,7 +11,7 @@ NUM_TOKENS=$((NUM_BILLION_TOKENS * 1000000000))
 
 LR=4e-4 #4e-4  # 4e-3, #4e-5
 
-RUN_NAME="moereducedp512sharedexp1_1b14b_${TOTAL_EXPERTS}experts_all_trained_math_${NUM_BILLION_TOKENS}B_lr_${LR}"
+RUN_NAME="moereducedp512sharedexp1_1b14b_${TOTAL_EXPERTS}experts_freeze_emb_only_math_${NUM_BILLION_TOKENS}B_lr_${LR}"
 
 echo $RUN_NAME
 
@@ -37,6 +37,7 @@ python -m olmo_core.launch.beaker \
 		--trainer.callbacks.wandb="{enabled: true, entity: akshitab, project: olmoe-modular, name: ${RUN_NAME}, tags: [extension]}" \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.feed_forward_moe.lb_loss_weight=1e-2 \
+		--model.freeze_params='[embeddings.*, lm_head.*]' \
         --train_module.scheduler.warmup_fraction=0.1 \
         --lr=${LR} \
         --base-model-config="${BASE_MODEL_PATH}" \
