@@ -370,6 +370,22 @@ class SplitExpertDroplessMoEMLP(DroplessMoEMLP):
                 "https://github.com/tgale96/grouped_gemm"
             )
 
+    # Properties for backward compatibility with code that accesses .w1/.w2/.w3 directly
+    # (e.g., init_feed_forward_moe in transformer/init.py). Returns a reconstructed tensor;
+    # in-place init ops on these are effectively no-ops since the result is not stored back.
+    # This is fine because real weights come from checkpoint loading.
+    @property
+    def w1(self) -> torch.Tensor:
+        return self._reconstruct(self.w1_frozen, self.w1_trainable)
+
+    @property
+    def w2(self) -> torch.Tensor:
+        return self._reconstruct(self.w2_frozen, self.w2_trainable)
+
+    @property
+    def w3(self) -> torch.Tensor:
+        return self._reconstruct(self.w3_frozen, self.w3_trainable)
+
     def reset_parameters(self) -> None:
         # kaiming_uniform_ derives fan_in from the last dimension (d_model), which is
         # the same for both frozen and trainable splits, so the init distribution is
