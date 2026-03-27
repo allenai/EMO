@@ -240,6 +240,15 @@ def train(config: ExperimentConfig, experts_to_train: Optional[List[int]] = None
     model = config.model.build(init_device="meta")
     if split_params and experts_to_train is not None:
         split_expert_mlps(model, experts_to_train)
+        # Re-log param breakdown since build() logged before the split replacement.
+        num_trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        num_frozen = sum(p.numel() for p in model.parameters() if not p.requires_grad)
+        log.info(
+            f"After split expert replacement:\n"
+            f"- {num_trainable + num_frozen:,d} total params\n"
+            f"- {num_trainable:,d} trainable params\n"
+            f"- {num_frozen:,d} frozen params"
+        )
     train_module = config.train_module.build(model)
     dataset = config.dataset.build()
     data_loader = config.data_loader.build(dataset, dp_process_group=train_module.dp_process_group)

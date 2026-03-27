@@ -354,7 +354,10 @@ class TransformerConfig(Config):
                         log.info(f"Param '{name}' will be frozen")
                         break
                 else:
-                    log.info(f"Param '{name}' will be trainable")
+                    if param.requires_grad:
+                        log.info(f"Param '{name}' will be trainable")
+                    else:
+                        log.info(f"Param '{name}' is already frozen (requires_grad=False)")
 
         num_partially_frozen_params = 0
 
