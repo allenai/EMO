@@ -223,9 +223,55 @@ TASK_SPECS = {
     "mmlu_pro_psychology": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
+    "mmlu_pro_merged_biology": [
+        "softloss_corr", "acc_per_byte", "primary_score",
+    ],
+    "mmlu_pro_merged_business": [
+        "softloss_corr", "acc_per_byte", "primary_score",
+    ],
+    "mmlu_pro_merged_chemistry": [
+        "softloss_corr", "acc_per_byte", "primary_score",
+    ],
+    "mmlu_pro_merged_computer_science": [
+        "softloss_corr", "acc_per_byte", "primary_score",
+    ],
+    "mmlu_pro_merged_economics": [
+        "softloss_corr", "acc_per_byte", "primary_score",
+    ],
+    "mmlu_pro_merged_engineering": [
+        "softloss_corr", "acc_per_byte", "primary_score",
+    ],
+    "mmlu_pro_merged_health": [
+        "softloss_corr", "acc_per_byte", "primary_score",
+    ],
+    "mmlu_pro_merged_history": [
+        "softloss_corr", "acc_per_byte", "primary_score",
+    ],
+    "mmlu_pro_merged_law": [
+        "softloss_corr", "acc_per_byte", "primary_score",
+    ],
+    "mmlu_pro_merged_math": [
+        "softloss_corr", "acc_per_byte", "primary_score",
+    ],
+    "mmlu_pro_merged_other": [
+        "softloss_corr", "acc_per_byte", "primary_score",
+    ],
+    "mmlu_pro_merged_philosophy": [
+        "softloss_corr", "acc_per_byte", "primary_score",
+    ],
+    "mmlu_pro_merged_physics": [
+        "softloss_corr", "acc_per_byte", "primary_score",
+    ],
+    "mmlu_pro_merged_psychology": [
+        "softloss_corr", "acc_per_byte", "primary_score",
+    ],
+    "gsm8k_generation_8shot": [
+        "exact_match", "primary_score",
+    ],
 }
 MMLU_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_") and not t.startswith("mmlu_pro_")]
-MMLU_PRO_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_")]
+MMLU_PRO_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_") and not t.startswith("mmlu_pro_merged_")]
+MMLU_PRO_MERGED_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_merged_")]
 
 AVAILABLE_TASK_RUNS = list(TASK_SPECS)
 
@@ -510,7 +556,7 @@ def add_mmlu_avg_columns(df: pd.DataFrame) -> pd.DataFrame:
                 df[col_name] = df[filtered].mean(axis=1, skipna=False)
                 avg_cols_added.append(col_name)
 
-    # --- MMLU-Pro average ---
+    # --- MMLU-Pro averages ---
     mmlu_pro_cols = [c for c in df.columns if c in MMLU_PRO_SUBTASKS]
     if mmlu_pro_cols:
         for model_name in df.index:
@@ -523,6 +569,30 @@ def add_mmlu_avg_columns(df: pd.DataFrame) -> pd.DataFrame:
 
         df["mmlu_pro_avg"] = df[mmlu_pro_cols].mean(axis=1, skipna=False)
         avg_cols_added.append("mmlu_pro_avg")
+
+        pro_no_other = [c for c in mmlu_pro_cols if c != "mmlu_pro_other"]
+        if pro_no_other and len(pro_no_other) < len(mmlu_pro_cols):
+            df["mmlu_pro_avg_no_other"] = df[pro_no_other].mean(axis=1, skipna=False)
+            avg_cols_added.append("mmlu_pro_avg_no_other")
+
+    # --- MMLU-Pro-Merged averages ---
+    mmlu_pro_merged_cols = [c for c in df.columns if c in MMLU_PRO_MERGED_SUBTASKS]
+    if mmlu_pro_merged_cols:
+        for model_name in df.index:
+            missing = [c for c in mmlu_pro_merged_cols if pd.isna(df.loc[model_name, c])]
+            if missing:
+                print(
+                    f"[WARN] Model {model_name!r} is missing {len(missing)}/{len(mmlu_pro_merged_cols)} "
+                    f"MMLU-Pro-Merged sub-task(s): {missing} — mmlu_pro_merged_avg will be NaN"
+                )
+
+        df["mmlu_pro_merged_avg"] = df[mmlu_pro_merged_cols].mean(axis=1, skipna=False)
+        avg_cols_added.append("mmlu_pro_merged_avg")
+
+        merged_no_other = [c for c in mmlu_pro_merged_cols if c != "mmlu_pro_merged_other"]
+        if merged_no_other and len(merged_no_other) < len(mmlu_pro_merged_cols):
+            df["mmlu_pro_merged_avg_no_other"] = df[merged_no_other].mean(axis=1, skipna=False)
+            avg_cols_added.append("mmlu_pro_merged_avg_no_other")
 
     if not avg_cols_added:
         return df

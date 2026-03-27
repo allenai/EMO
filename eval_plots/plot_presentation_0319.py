@@ -63,7 +63,7 @@ MODEL_SPECS = {
             # {"suffix": "_keepk_96_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 96)"},
             # {"suffix": "_keepk_120_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 120)"},
             {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise_variable_first2_unpruned", "label": "(keepk 32 first2 unpruned)"},
+            # {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise_variable_first2_unpruned", "label": "(keepk 32 first2 unpruned)"},
         ],
     },
 
@@ -332,13 +332,113 @@ TASK_SPECS = {
         "acc_per_byte",
         "primary_score",
     ],
+    "mmlu_pro_avg_no_other": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+
+    # MMLU-Pro-Merged per-category tasks.
+    "mmlu_pro_merged_biology": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_merged_business": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_merged_chemistry": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_merged_computer_science": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_merged_economics": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_merged_engineering": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_merged_health": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_merged_history": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_merged_law": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_merged_math": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_merged_other": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_merged_philosophy": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_merged_physics": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_merged_psychology": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+
+    # Virtual aggregated tasks: macro average across MMLU-Pro-Merged categories.
+    "mmlu_pro_merged_avg": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+    "mmlu_pro_merged_avg_no_other": [
+        # "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
+    ],
+
+    "gsm8k_generation_8shot": [
+        "exact_match", "primary_score",
+    ],
 
 }
 # MMLU sub-tasks whose metrics are averaged for the "mmlu_avg" virtual task.
-_MMLU_VIRTUAL = {"mmlu_avg", "mmlu_avg_no_other", "mmlu_pro_avg"}
+_MMLU_VIRTUAL = {
+    "mmlu_avg", "mmlu_avg_no_other",
+    "mmlu_pro_avg", "mmlu_pro_avg_no_other",
+    "mmlu_pro_merged_avg", "mmlu_pro_merged_avg_no_other",
+}
 MMLU_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_") and not t.startswith("mmlu_pro_") and t not in _MMLU_VIRTUAL]
 MMLU_SUBTASKS_NO_OTHER = [t for t in MMLU_SUBTASKS if t != "mmlu_other"]
-MMLU_PRO_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_") and t not in _MMLU_VIRTUAL]
+MMLU_PRO_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_") and not t.startswith("mmlu_pro_merged_") and t not in _MMLU_VIRTUAL]
+MMLU_PRO_SUBTASKS_NO_OTHER = [t for t in MMLU_PRO_SUBTASKS if t != "mmlu_pro_other"]
+MMLU_PRO_MERGED_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_merged_") and t not in _MMLU_VIRTUAL]
+MMLU_PRO_MERGED_SUBTASKS_NO_OTHER = [t for t in MMLU_PRO_MERGED_SUBTASKS if t != "mmlu_pro_merged_other"]
 
 AVAILABLE_TASK_RUNS = list(TASK_SPECS)
 
@@ -965,7 +1065,7 @@ def main() -> None:
     selected_tasks = parse_csv_arg(args.tasks) or list(SELECTED_TASK_RUNS)
 
     # Virtual tasks (e.g. mmlu_avg) don't exist on disk; always keep them.
-    VIRTUAL_TASKS = {"mmlu_avg", "mmlu_avg_no_other", "mmlu_pro_avg"}
+    VIRTUAL_TASKS = _MMLU_VIRTUAL
     model_set = [m for m in selected_models if m in available_models]
     task_set = [t for t in selected_tasks if t in available_tasks or t in VIRTUAL_TASKS]
 
@@ -994,6 +1094,9 @@ def main() -> None:
         has_mmlu_avg = "mmlu_avg" in tasks_for_metric
         has_mmlu_avg_no_other = "mmlu_avg_no_other" in tasks_for_metric
         has_mmlu_pro_avg = "mmlu_pro_avg" in tasks_for_metric
+        has_mmlu_pro_avg_no_other = "mmlu_pro_avg_no_other" in tasks_for_metric
+        has_mmlu_pro_merged_avg = "mmlu_pro_merged_avg" in tasks_for_metric
+        has_mmlu_pro_merged_avg_no_other = "mmlu_pro_merged_avg_no_other" in tasks_for_metric
 
         # --- regular per-task plots ---
         if regular_tasks:
@@ -1187,6 +1290,126 @@ def main() -> None:
                     args.show,
                     metric_key,
                     baselines=mmlu_pro_baselines if mmlu_pro_baselines else None,
+                )
+
+        # --- mmlu_pro_avg_no_other ---
+        if has_mmlu_pro_avg_no_other:
+            mmlu_pro_no_other_df = collect_mmlu_avg_records(
+                args.prune_evals_root, model_set, metric_key,
+                subtasks=MMLU_PRO_SUBTASKS_NO_OTHER,
+                avg_name="mmlu_pro_avg_no_other",
+            )
+            mmlu_pro_no_other_baselines: Dict[str, float] = {}
+            for model_name in model_set:
+                spec = MODEL_SPECS.get(model_name)
+                if spec is None or not spec.get("baseline"):
+                    continue
+                vals = []
+                for subtask in MMLU_PRO_SUBTASKS_NO_OTHER:
+                    v = _load_baseline_metric(
+                        args.prune_evals_root, model_name, subtask, metric_key
+                    )
+                    if v is not None:
+                        vals.append(v)
+                model_label = MODEL_LABELS.get(model_name, model_name)
+                if len(vals) == len(MMLU_PRO_SUBTASKS_NO_OTHER):
+                    mmlu_pro_no_other_baselines[model_name] = sum(vals) / len(vals)
+
+            if mmlu_pro_no_other_df.empty:
+                print(f"[WARN] No MMLU-Pro data for metric {metric_key!r}; skipping mmlu_pro_avg_no_other.")
+            else:
+                metric_output_dir = base_output_dir / sanitize_filename(metric_key)
+                output_file = (
+                    metric_output_dir
+                    / f"mmlu_pro_avg_no_other_{sanitize_filename(metric_key)}.png"
+                )
+                plot_mmlu_avg(
+                    mmlu_pro_no_other_df,
+                    output_file,
+                    args.style,
+                    args.show,
+                    metric_key,
+                    baselines=mmlu_pro_no_other_baselines if mmlu_pro_no_other_baselines else None,
+                )
+
+        # --- mmlu_pro_merged_avg ---
+        if has_mmlu_pro_merged_avg:
+            mmlu_pro_merged_avg_df = collect_mmlu_avg_records(
+                args.prune_evals_root, model_set, metric_key,
+                subtasks=MMLU_PRO_MERGED_SUBTASKS,
+                avg_name="mmlu_pro_merged_avg",
+            )
+            mmlu_pro_merged_baselines: Dict[str, float] = {}
+            for model_name in model_set:
+                spec = MODEL_SPECS.get(model_name)
+                if spec is None or not spec.get("baseline"):
+                    continue
+                vals = []
+                for subtask in MMLU_PRO_MERGED_SUBTASKS:
+                    v = _load_baseline_metric(
+                        args.prune_evals_root, model_name, subtask, metric_key
+                    )
+                    if v is not None:
+                        vals.append(v)
+                model_label = MODEL_LABELS.get(model_name, model_name)
+                if len(vals) == len(MMLU_PRO_MERGED_SUBTASKS):
+                    mmlu_pro_merged_baselines[model_name] = sum(vals) / len(vals)
+
+            if mmlu_pro_merged_avg_df.empty:
+                print(f"[WARN] No MMLU-Pro-Merged data for metric {metric_key!r}; skipping mmlu_pro_merged_avg.")
+            else:
+                metric_output_dir = base_output_dir / sanitize_filename(metric_key)
+                output_file = (
+                    metric_output_dir
+                    / f"mmlu_pro_merged_avg_{sanitize_filename(metric_key)}.png"
+                )
+                plot_mmlu_avg(
+                    mmlu_pro_merged_avg_df,
+                    output_file,
+                    args.style,
+                    args.show,
+                    metric_key,
+                    baselines=mmlu_pro_merged_baselines if mmlu_pro_merged_baselines else None,
+                )
+
+        # --- mmlu_pro_merged_avg_no_other ---
+        if has_mmlu_pro_merged_avg_no_other:
+            mmlu_pro_merged_no_other_df = collect_mmlu_avg_records(
+                args.prune_evals_root, model_set, metric_key,
+                subtasks=MMLU_PRO_MERGED_SUBTASKS_NO_OTHER,
+                avg_name="mmlu_pro_merged_avg_no_other",
+            )
+            mmlu_pro_merged_no_other_baselines: Dict[str, float] = {}
+            for model_name in model_set:
+                spec = MODEL_SPECS.get(model_name)
+                if spec is None or not spec.get("baseline"):
+                    continue
+                vals = []
+                for subtask in MMLU_PRO_MERGED_SUBTASKS_NO_OTHER:
+                    v = _load_baseline_metric(
+                        args.prune_evals_root, model_name, subtask, metric_key
+                    )
+                    if v is not None:
+                        vals.append(v)
+                model_label = MODEL_LABELS.get(model_name, model_name)
+                if len(vals) == len(MMLU_PRO_MERGED_SUBTASKS_NO_OTHER):
+                    mmlu_pro_merged_no_other_baselines[model_name] = sum(vals) / len(vals)
+
+            if mmlu_pro_merged_no_other_df.empty:
+                print(f"[WARN] No MMLU-Pro-Merged data for metric {metric_key!r}; skipping mmlu_pro_merged_avg_no_other.")
+            else:
+                metric_output_dir = base_output_dir / sanitize_filename(metric_key)
+                output_file = (
+                    metric_output_dir
+                    / f"mmlu_pro_merged_avg_no_other_{sanitize_filename(metric_key)}.png"
+                )
+                plot_mmlu_avg(
+                    mmlu_pro_merged_no_other_df,
+                    output_file,
+                    args.style,
+                    args.show,
+                    metric_key,
+                    baselines=mmlu_pro_merged_no_other_baselines if mmlu_pro_merged_no_other_baselines else None,
                 )
 
 
