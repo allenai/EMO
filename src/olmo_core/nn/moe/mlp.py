@@ -379,6 +379,12 @@ class SplitExpertDroplessMoEMLP(DroplessMoEMLP):
                   self.w3_frozen, self.w3_trainable):
             nn.init.kaiming_uniform_(w, a=math.sqrt(5))
 
+    def _shard_experts(self, mesh: DeviceMesh):
+        raise OLMoConfigurationError(
+            "SplitExpertDroplessMoEMLP is not compatible with expert parallelism. "
+            "Use regular DroplessMoEMLP with gradient masking instead."
+        )
+
     def _reconstruct(self, w_frozen: torch.Tensor, w_trainable: torch.Tensor) -> torch.Tensor:
         """Reconstruct the full stacked weight tensor from frozen and trainable parts."""
         full = torch.empty(
