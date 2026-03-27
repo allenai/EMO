@@ -23,7 +23,7 @@ try:
 except ImportError:
     gmm = None
 
-__all__ = ["MoEMLP", "DroplessMoEMLP"]
+__all__ = ["MoEMLP", "DroplessMoEMLP", "SplitExpertDroplessMoEMLP"]
 
 
 log = logging.getLogger(__name__)
@@ -290,3 +290,109 @@ class DroplessMoEMLP(MoEMLPBase):
         x2 = self.gmm(x, w3, batch_size_per_expert, trans_b=True)
         x1 = F.silu(x1) * x2
         return self.gmm(x1, w2, batch_size_per_expert)
+
+
+class SplitExpertDroplessMoEMLP(DroplessMoEMLP):
+    """
+    A variant of :class:`DroplessMoEMLP` that splits expert parameters into separate
+    frozen and trainable ``nn.Parameter`` objects. This allows the optimizer to skip
+    frozen expert params entirely, saving ~100 GB of Adam optimizer state when training
+    only a few experts out of many.
+
+    Use ``convert_split_checkpoint.py`` to convert between regular and split checkpoint
+    formats before and after training.
+
+    .. warning::
+        Not compatible with expert parallelism. Use only with FSDP.
+
+    :param experts_to_train: List of expert indices whose parameters should be trainable.
+        All other experts will have ``requires_grad=False``.
+    """
+
+    def __init__(
+        self,
+        *,
+        d_model: int,
+        hidden_size: int,
+        num_experts: int,
+        experts_to_train: List[int],
+        dtype: torch.dtype = torch.float32,
+        init_device: str = "cpu",
+    ):
+        # Skip DroplessMoEMLP.__init__ to avoid creating full w1/w2/w3.
+        MoEMLPBase.__init__(self, d_model=d_model, hidden_size=hidden_size, num_experts=num_experts)
+
+        self.experts_to_train = sorted(experts_to_train)
+        self.experts_frozen = sorted(set(range(num_experts)) - set(experts_to_train))
+        self.num_trainable = len(self.experts_to_train)
+        self.num_frozen = len(self.experts_frozen)
+
+        # Trainable expert params (optimizer allocates states for these).
+        for name in ("w1", "w2", "w3"):
+            setattr(
+                self,
+                f"{name}_trainable",
+                nn.Parameter(
+                    torch.empty(self.num_trainable * hidden_size, d_model, device=init_device, dtype=dtype)
+                ),
+            )
+            # Frozen expert params (optimizer skips these).
+            setattr(
+                self,
+                f"{name}_frozen",
+                nn.Parameter(
+                    torch.empty(self.num_frozen * hidden_size, d_model, device=init_device, dtype=dtype),
+                    requires_grad=False,
+                ),
+            )
+
+        # Precompute row-index tensors for reconstructing the full stacked weight.
+        # Each expert occupies `hidden_size` contiguous rows in the flattened tensor.
+        frozen_rows = []
+        for idx in self.experts_frozen:
+            frozen_rows.extend(range(idx * hidden_size, (idx + 1) * hidden_size))
+        trainable_rows = []
+        for idx in self.experts_to_train:
+            trainable_rows.extend(range(idx * hidden_size, (idx + 1) * hidden_size))
+
+        self.register_buffer(
+            "_frozen_row_indices", torch.tensor(frozen_rows, dtype=torch.long), persistent=False
+        )
+        self.register_buffer(
+            "_trainable_row_indices", torch.tensor(trainable_rows, dtype=torch.long), persistent=False
+        )
+
+        self._gmm = gmm
+        if self._gmm is None:
+            warnings.warn(
+                "Grouped GEMM not available, so the MoE will be substantially slower. "
+                "Please install the 'grouped_gemm' package if possible.\n"
+                "https://github.com/tgale96/grouped_gemm"
+            )
+
+    def _reconstruct(self, w_frozen: torch.Tensor, w_trainable: torch.Tensor) -> torch.Tensor:
+        """Reconstruct the full stacked weight tensor from frozen and trainable parts."""
+        full = torch.empty(
+            self.num_experts * self.hidden_size,
+            self.d_model,
+            device=w_trainable.device,
+            dtype=w_trainable.dtype,
+        )
+        full[self._frozen_row_indices] = w_frozen
+        full[self._trainable_row_indices] = w_trainable
+        return full
+
+    def forward(self, x: torch.Tensor, batch_size_per_expert: torch.Tensor) -> torch.Tensor:
+        w1 = self._reconstruct(self.w1_frozen, self.w1_trainable)
+        w2 = self._reconstruct(self.w2_frozen, self.w2_trainable)
+        w3 = self._reconstruct(self.w3_frozen, self.w3_trainable)
+
+        w1 = get_local_tensor(w1.view(self.num_experts, self.hidden_size, self.d_model))
+        w2 = get_local_tensor(w2.view(self.num_experts, self.hidden_size, self.d_model))
+        w3 = get_local_tensor(w3.view(self.num_experts, self.hidden_size, self.d_model))
+
+        x1 = self.gmm(x, w1, batch_size_per_expert, trans_b=True)
+        x2 = self.gmm(x, w3, batch_size_per_expert, trans_b=True)
+        x1 = F.silu(x1) * x2
+        return self.gmm(x1, w2, batch_size_per_expert)
+

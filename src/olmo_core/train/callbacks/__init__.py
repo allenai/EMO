@@ -24,6 +24,7 @@ from .post_train_eval import PostTrainEvalCallback
 from .profiler import ProfilerCallback
 from .sequence_length_scheduler import SequenceLengthSchedulerCallback
 from .slack_notifier import SlackNotificationSetting, SlackNotifierCallback
+from .split_expert_converter import SplitExpertConverterCallback
 from .speed_monitor import SpeedMonitorCallback
 from .wandb import WandBCallback
 
@@ -54,6 +55,7 @@ __all__ = [
     "BatchSizeSchedulerCallback",
     "MonkeyPatcherCallback",
     "PostTrainEvalCallback",
+    "SplitExpertConverterCallback",
 ]
 
 __doc__ += "\n"

@@ -163,15 +163,26 @@ class HFConverterCallback(Callback):
             except Exception as e:
                 log.error(f"Failed to load config from checkpoint: {e}")
 
-        # ALL ranks must participate in getting the full model state dict
-        # This is a collective operation required by FSDP
-        log.info("Gathering full model state dict (collective operation)...")
-        try:
-            model_state_dict = self._get_full_model_state_dict()
-        except Exception as e:
-            log.error(f"Failed to get model state dict: {e}")
-            barrier()
-            raise
+        # Check if SplitExpertConverterCallback already gathered and merged the state dict
+        model_state_dict = None
+        for callback in self.trainer.callbacks.values():
+            from .split_expert_converter import SplitExpertConverterCallback
+            if isinstance(callback, SplitExpertConverterCallback) and hasattr(callback, "merged_model_state_dict"):
+                model_state_dict = callback.merged_model_state_dict
+                if model_state_dict is not None:
+                    log.info("Using merged state dict from SplitExpertConverterCallback")
+                break
+
+        if model_state_dict is None:
+            # ALL ranks must participate in getting the full model state dict
+            # This is a collective operation required by FSDP
+            log.info("Gathering full model state dict (collective operation)...")
+            try:
+                model_state_dict = self._get_full_model_state_dict()
+            except Exception as e:
+                log.error(f"Failed to get model state dict: {e}")
+                barrier()
+                raise
 
         # Only rank 0 performs the actual conversion
         if get_rank() == 0:

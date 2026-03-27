@@ -28,6 +28,7 @@ from olmo_core.data.mixes import DataMix
 from olmo_core.data.numpy_dataset import NumpyDatasetConfig
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_local_tensor, get_rank
+from olmo_core.nn.moe.mlp import DroplessMoEMLP, SplitExpertDroplessMoEMLP
 from olmo_core.nn.transformer import TransformerConfig
 from olmo_core.optim import AdamWConfig, CosWithWarmup, OptimGroupOverride
 from olmo_core.train import (
@@ -45,6 +46,7 @@ from olmo_core.train.callbacks import (
     GradientMonitorCallback,
     HFConverterCallback,
     ProfilerCallback,
+    SplitExpertConverterCallback,
     WandBCallback,
 )
 from olmo_core.train.callbacks.callback import Callback
@@ -199,13 +201,45 @@ class ExperimentConfig(Config):
     load_trainer_state: bool = False
 
 
-def train(config: ExperimentConfig, eval_only: bool = False):
+def split_expert_mlps(model, experts_to_train: List[int]):
+    """
+    Replace each :class:`DroplessMoEMLP` in the model with a
+    :class:`SplitExpertDroplessMoEMLP` that has separate frozen/trainable parameters.
+    This must be called after ``model.build()`` but before FSDP wrapping.
+    """
+    for block in model.blocks:
+        if block.feed_forward_moe is None:
+            continue
+        old_mlp = block.feed_forward_moe.experts.mlp
+        if not isinstance(old_mlp, DroplessMoEMLP):
+            log.warning(f"Skipping non-DroplessMoEMLP: {type(old_mlp)}")
+            continue
+        new_mlp = SplitExpertDroplessMoEMLP(
+            d_model=old_mlp.d_model,
+            hidden_size=old_mlp.hidden_size,
+            num_experts=old_mlp.num_experts,
+            experts_to_train=experts_to_train,
+            dtype=torch.float32,
+            init_device="meta",
+        )
+        block.feed_forward_moe.experts.mlp = new_mlp
+        num_experts = old_mlp.num_experts
+    log.info(
+        f"Split expert MLPs: {len(experts_to_train)} trainable, "
+        f"{num_experts - len(experts_to_train)} frozen"
+    )
+
+
+def train(config: ExperimentConfig, experts_to_train: Optional[List[int]] = None,
+          split_params: bool = False, eval_only: bool = False):
     if get_rank() == 0:
         rich.print(config)
 
     seed_all(config.init_seed)
 
     model = config.model.build(init_device="meta")
+    if split_params and experts_to_train is not None:
+        split_expert_mlps(model, experts_to_train)
     train_module = config.train_module.build(model)
     dataset = config.dataset.build()
     data_loader = config.data_loader.build(dataset, dp_process_group=train_module.dp_process_group)
@@ -438,6 +472,13 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                 device="cpu",
             ),
         )
+        .with_callback(
+            "split_expert_converter",
+            SplitExpertConverterCallback(
+                enabled=opts.split_expert_params,
+                experts_to_train=experts_to_train,
+            ),
+        )
     )
 
     config = ExperimentConfig(
@@ -508,6 +549,13 @@ def parser_args():
         action="store_true",
         help="Run evaluations only on existing checkpoint without training.",
     )
+    parser.add_argument(
+        "--split-expert-params",
+        action="store_true",
+        help="Split expert MLP parameters into separate frozen/trainable nn.Parameters. "
+        "Saves optimizer memory by not allocating Adam states for frozen experts. "
+        "Incompatible with expert parallelism.",
+    )
     opts, overrides = parser.parse_known_args()
     return opts, overrides
 
@@ -539,7 +587,12 @@ def main():
         return
 
     prepare_training_environment()
-    train(config, eval_only=opts.eval_only)
+    train(
+        config,
+        experts_to_train=experts_to_train,
+        split_params=opts.split_expert_params,
+        eval_only=opts.eval_only,
+    )
     teardown_training_environment()
 
 
