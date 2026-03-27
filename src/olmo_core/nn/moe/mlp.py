@@ -370,6 +370,15 @@ class SplitExpertDroplessMoEMLP(DroplessMoEMLP):
                 "https://github.com/tgale96/grouped_gemm"
             )
 
+    def reset_parameters(self) -> None:
+        # kaiming_uniform_ derives fan_in from the last dimension (d_model), which is
+        # the same for both frozen and trainable splits, so the init distribution is
+        # identical to the original unsplit parameter. In practice this is rarely called:
+        # weights come from checkpoint loading, and meta-device builds are no-ops.
+        for w in (self.w1_frozen, self.w1_trainable, self.w2_frozen, self.w2_trainable,
+                  self.w3_frozen, self.w3_trainable):
+            nn.init.kaiming_uniform_(w, a=math.sqrt(5))
+
     def _reconstruct(self, w_frozen: torch.Tensor, w_trainable: torch.Tensor) -> torch.Tensor:
         """Reconstruct the full stacked weight tensor from frozen and trainable parts."""
         full = torch.empty(
