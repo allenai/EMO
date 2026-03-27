@@ -70,7 +70,7 @@ def save_model(config: dict, model: torch.nn.Module, save_path: str):
 
 def replace_mlps_with_split(model, experts_to_train: List[int]):
     """Replace DroplessMoEMLP with SplitExpertDroplessMoEMLP in all MoE layers."""
-    for block in model.blocks:
+    for block in model.blocks.values():
         if block.feed_forward_moe is None:
             continue
         old_mlp = block.feed_forward_moe.experts.mlp
@@ -108,7 +108,7 @@ def replace_mlps_with_split(model, experts_to_train: List[int]):
 
 def replace_mlps_with_regular(model, experts_to_train: List[int]):
     """Replace SplitExpertDroplessMoEMLP with DroplessMoEMLP in all MoE layers."""
-    for block in model.blocks:
+    for block in model.blocks.values():
         if block.feed_forward_moe is None:
             continue
         old_mlp = block.feed_forward_moe.experts.mlp
@@ -179,7 +179,7 @@ def convert_to_regular(checkpoint_path: str, save_path: str, experts_to_train: L
 
 def replace_mlps_with_split_empty(model, experts_to_train: List[int]):
     """Replace MLPs with SplitExpertDroplessMoEMLP (empty, for loading split checkpoints)."""
-    for block in model.blocks:
+    for block in model.blocks.values():
         if block.feed_forward_moe is None:
             continue
         old_mlp = block.feed_forward_moe.experts.mlp

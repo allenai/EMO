@@ -207,7 +207,7 @@ def split_expert_mlps(model, experts_to_train: List[int]):
     :class:`SplitExpertDroplessMoEMLP` that has separate frozen/trainable parameters.
     This must be called after ``model.build()`` but before FSDP wrapping.
     """
-    for block in model.blocks:
+    for block in model.blocks.values():
         if block.feed_forward_moe is None:
             continue
         old_mlp = block.feed_forward_moe.experts.mlp

@@ -63,7 +63,7 @@ class SplitExpertConverterCallback(Callback):
     def _merge_split_state_dict(self, state_dict: Dict[str, Any]) -> Dict[str, Any]:
         """Merge w1_frozen/w1_trainable → w1 (and w2, w3) in the state dict."""
         # Get expert layout from the model
-        moe_mlp = self.trainer.train_module.model.blocks[0].feed_forward_moe.experts.mlp
+        moe_mlp = next(iter(self.trainer.train_module.model.blocks.values())).feed_forward_moe.experts.mlp
         num_experts = moe_mlp.num_experts
         hidden_size = moe_mlp.hidden_size
         frozen_indices = sorted(set(range(num_experts)) - set(self.experts_to_train))
