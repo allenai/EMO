@@ -370,21 +370,40 @@ class SplitExpertDroplessMoEMLP(DroplessMoEMLP):
                 "https://github.com/tgale96/grouped_gemm"
             )
 
-    # Properties for backward compatibility with code that accesses .w1/.w2/.w3 directly
-    # (e.g., init_feed_forward_moe in transformer/init.py). Returns a reconstructed tensor;
-    # in-place init ops on these are effectively no-ops since the result is not stored back.
-    # This is fine because real weights come from checkpoint loading.
+    # These properties exist ONLY for init_feed_forward_moe() in transformer/init.py,
+    # which accesses .w1/.w2/.w3 to apply trunc_normal_ init. The init is effectively a
+    # no-op since the returned tensor is a temporary that is never stored back — real
+    # weights come from checkpoint loading. No other code accesses these properties.
+    #
+    # After FSDP sharding, the split params become DTensors. Reconstructing into a plain
+    # torch.Tensor would fail (mixed Tensor/DTensor in index_put). Since the result is
+    # discarded anyway, _compat_weight() returns a plain empty tensor in that case.
+    def _compat_weight(self, w_frozen: torch.Tensor, w_trainable: torch.Tensor) -> torch.Tensor:
+        from torch.distributed.tensor import DTensor
+
+        if isinstance(w_frozen, DTensor) or isinstance(w_trainable, DTensor):
+            # After FSDP, params are DTensors. Return a plain empty tensor since the
+            # init result is discarded anyway (weights come from checkpoint).
+            local = w_trainable._local_tensor if isinstance(w_trainable, DTensor) else w_trainable
+            return torch.empty(
+                self.num_experts * self.hidden_size,
+                self.d_model,
+                device=local.device,
+                dtype=local.dtype,
+            )
+        return self._reconstruct(w_frozen, w_trainable)
+
     @property
     def w1(self) -> torch.Tensor:
-        return self._reconstruct(self.w1_frozen, self.w1_trainable)
+        return self._compat_weight(self.w1_frozen, self.w1_trainable)
 
     @property
     def w2(self) -> torch.Tensor:
-        return self._reconstruct(self.w2_frozen, self.w2_trainable)
+        return self._compat_weight(self.w2_frozen, self.w2_trainable)
 
     @property
     def w3(self) -> torch.Tensor:
-        return self._reconstruct(self.w3_frozen, self.w3_trainable)
+        return self._compat_weight(self.w3_frozen, self.w3_trainable)
 
     def reset_parameters(self) -> None:
         # kaiming_uniform_ derives fan_in from the last dimension (d_model), which is
