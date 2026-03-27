@@ -183,6 +183,45 @@ def test_gradient_only_flows_to_trainable():
     assert split.w1_frozen.grad is None  # requires_grad=False, so no grad
 
 
+def test_split_expert_mlps_on_full_model():
+    """Test split_expert_mlps() on an actual Transformer model with MoE blocks."""
+    from olmo_core.data import TokenizerConfig
+    from olmo_core.nn.transformer import TransformerConfig
+
+    tc = TokenizerConfig.dolma2()
+    mc = TransformerConfig.olmoe_1B_7B(
+        vocab_size=tc.padded_vocab_size(),
+        n_layers=2,
+        d_model=64,
+        n_heads=2,
+        num_experts=8,
+        top_k=2,
+    )
+    model = mc.build(init_device="cpu")
+
+    # Verify blocks are DroplessMoEMLP before split
+    for block in model.blocks.values():
+        mlp = block.feed_forward_moe.experts.mlp
+        assert isinstance(mlp, DroplessMoEMLP)
+        assert not isinstance(mlp, SplitExpertDroplessMoEMLP)
+
+    # Import and call split_expert_mlps
+    import sys
+    sys.path.insert(0, "src/scripts/akshitab/add_finegrained_expert")
+    from train_selected_experts import split_expert_mlps
+
+    experts_to_train = [2, 5]
+    split_expert_mlps(model, experts_to_train)
+
+    # Verify blocks are now SplitExpertDroplessMoEMLP
+    for block in model.blocks.values():
+        mlp = block.feed_forward_moe.experts.mlp
+        assert isinstance(mlp, SplitExpertDroplessMoEMLP)
+        assert mlp.experts_to_train == sorted(experts_to_train)
+        assert mlp.w1_trainable.requires_grad is True
+        assert mlp.w1_frozen.requires_grad is False
+
+
 if __name__ == "__main__":
     test_split_mlp_has_correct_param_shapes()
     print("PASSED: test_split_mlp_has_correct_param_shapes")
@@ -207,5 +246,8 @@ if __name__ == "__main__":
 
     test_gradient_only_flows_to_trainable()
     print("PASSED: test_gradient_only_flows_to_trainable")
+
+    test_split_expert_mlps_on_full_model()
+    print("PASSED: test_split_expert_mlps_on_full_model")
 
     print("\nAll tests passed!")
