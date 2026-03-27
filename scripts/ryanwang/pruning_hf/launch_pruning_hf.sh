@@ -7,8 +7,8 @@ MODELS=(
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313/step238419-hf"
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
-#    "dense_1b_lr-4e-3_0213/step30995-hf"
-#    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
+    "dense_1b_lr-4e-3_0213/step30995-hf"
+    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
     "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf"
 
 #    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
@@ -45,7 +45,7 @@ PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(8)
+PRUNE_KEEP_K_VALUES=(32)
 batch_size=32
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
@@ -68,7 +68,7 @@ TASK_GROUPS_LIST=(
 #  "socialiqa"
 #  "winogrande"
 #  "gsm8k_generation_0shot"
-#  "gsm8k_generation_8shot"
+  "gsm8k_generation_8shot"
 #  "gsm8k_perplexity_0shot"
 #  "coqa_0shot"
 #  "coqa_full_0shot"
@@ -111,20 +111,20 @@ TASK_GROUPS_LIST=(
 #  "mmlu_cluster_cs_logic"
 
   # MMLU-Pro categories (14 categories)
-  "mmlu_pro_math"
-  "mmlu_pro_health"
-  "mmlu_pro_physics"
-  "mmlu_pro_business"
-  "mmlu_pro_biology"
-  "mmlu_pro_chemistry"
-  "mmlu_pro_computer_science"
-  "mmlu_pro_economics"
-  "mmlu_pro_engineering"
-  "mmlu_pro_philosophy"
-  "mmlu_pro_other"
-  "mmlu_pro_history"
-  "mmlu_pro_psychology"
-  "mmlu_pro_law"
+#  "mmlu_pro_math"
+#  "mmlu_pro_health"
+#  "mmlu_pro_physics"
+#  "mmlu_pro_business"
+#  "mmlu_pro_biology"
+#  "mmlu_pro_chemistry"
+#  "mmlu_pro_computer_science"
+#  "mmlu_pro_economics"
+#  "mmlu_pro_engineering"
+#  "mmlu_pro_philosophy"
+#  "mmlu_pro_other"
+#  "mmlu_pro_history"
+#  "mmlu_pro_psychology"
+#  "mmlu_pro_law"
 
   # MMLU-Pro merged variant (pruning + finetuning use same data)
 #  "mmlu_pro_merged_math"
