@@ -280,6 +280,12 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
     tokenizer_config = TokenizerConfig.dolma2()
 
+    # SplitExpertDroplessMoEMLP → frozen expert params are requires_grad=False by construction
+    # so we can use the same config for both SplitExpertDroplessMoEMLP and regular DroplessMoEMLP;
+    # no need to specify separate freeze_params in the config. We don't do this for router
+    # since the router is typically a small fraction of the total parameters, so zeroing out its gradients
+    # is cheaper and doesn't require architectural changes.
+
     if opts.base_model_config:
         config_path = os.path.join(opts.base_model_config, "config.json")
         log.info(f"Loading model config from {config_path}")
