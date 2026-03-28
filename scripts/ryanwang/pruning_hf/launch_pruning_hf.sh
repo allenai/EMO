@@ -110,14 +110,56 @@ TASK_GROUPS_LIST=(
 #  "mmlu_cluster_physics_eng"
 #  "mmlu_cluster_cs_logic"
 
-  # HellaSwag merged + cluster variants
+  # HellaSwag merged (baseline: single model on all data)
 #  "hellaswag_merged"
-#  "hellaswag_cluster_merged_0"
-#  "hellaswag_cluster_merged_1"
-#  "hellaswag_cluster_merged_2"
-#  "hellaswag_cluster_merged_3"
-#  "hellaswag_cluster_merged_4"
-#  "hellaswag_cluster_merged_5"
+
+  # HellaSwag k=6 clusters
+#  "hellaswag_k6_cluster_merged_0"
+#  "hellaswag_k6_cluster_merged_1"
+#  "hellaswag_k6_cluster_merged_2"
+#  "hellaswag_k6_cluster_merged_3"
+#  "hellaswag_k6_cluster_merged_4"
+#  "hellaswag_k6_cluster_merged_5"
+
+  # HellaSwag k=8 clusters
+#  "hellaswag_k8_cluster_merged_0"
+#  "hellaswag_k8_cluster_merged_1"
+#  "hellaswag_k8_cluster_merged_2"
+#  "hellaswag_k8_cluster_merged_3"
+#  "hellaswag_k8_cluster_merged_4"
+#  "hellaswag_k8_cluster_merged_5"
+#  "hellaswag_k8_cluster_merged_6"
+#  "hellaswag_k8_cluster_merged_7"
+
+  # HellaSwag k=10 clusters
+#  "hellaswag_k10_cluster_merged_0"
+#  "hellaswag_k10_cluster_merged_1"
+#  "hellaswag_k10_cluster_merged_2"
+#  "hellaswag_k10_cluster_merged_3"
+#  "hellaswag_k10_cluster_merged_4"
+#  "hellaswag_k10_cluster_merged_5"
+#  "hellaswag_k10_cluster_merged_6"
+#  "hellaswag_k10_cluster_merged_7"
+#  "hellaswag_k10_cluster_merged_8"
+#  "hellaswag_k10_cluster_merged_9"
+
+  # HellaSwag k=16 clusters
+#  "hellaswag_k16_cluster_merged_0"
+#  "hellaswag_k16_cluster_merged_1"
+#  "hellaswag_k16_cluster_merged_2"
+#  "hellaswag_k16_cluster_merged_3"
+#  "hellaswag_k16_cluster_merged_4"
+#  "hellaswag_k16_cluster_merged_5"
+#  "hellaswag_k16_cluster_merged_6"
+#  "hellaswag_k16_cluster_merged_7"
+#  "hellaswag_k16_cluster_merged_8"
+#  "hellaswag_k16_cluster_merged_9"
+#  "hellaswag_k16_cluster_merged_10"
+#  "hellaswag_k16_cluster_merged_11"
+#  "hellaswag_k16_cluster_merged_12"
+#  "hellaswag_k16_cluster_merged_13"
+#  "hellaswag_k16_cluster_merged_14"
+#  "hellaswag_k16_cluster_merged_15"
 
   # MMLU-Pro categories (14 categories)
 #  "mmlu_pro_math"

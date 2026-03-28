@@ -160,17 +160,18 @@ def main():
         "clusters": assignments,
     }
 
-    assignments_file = os.path.join(out_dir, "cluster_assignments.json")
+    k_suffix = f"_k{args.k}"
+    assignments_file = os.path.join(out_dir, f"cluster_assignments{k_suffix}.json")
     with open(assignments_file, "w") as f:
         json.dump(output, f, indent=2)
     print(f"\nSaved: {assignments_file}")
 
-    np.save(os.path.join(out_dir, "train_val_assignments.npy"), tv_labels)
-    np.save(os.path.join(out_dir, "test_assignments.npy"), test_labels)
-    np.save(os.path.join(out_dir, "centroids.npy"), centroids)
-    print(f"Saved: train_val_assignments.npy ({tv_labels.shape})")
-    print(f"Saved: test_assignments.npy ({test_labels.shape})")
-    print(f"Saved: centroids.npy ({centroids.shape})")
+    np.save(os.path.join(out_dir, f"train_val_assignments{k_suffix}.npy"), tv_labels)
+    np.save(os.path.join(out_dir, f"test_assignments{k_suffix}.npy"), test_labels)
+    np.save(os.path.join(out_dir, f"centroids{k_suffix}.npy"), centroids)
+    print(f"Saved: train_val_assignments{k_suffix}.npy ({tv_labels.shape})")
+    print(f"Saved: test_assignments{k_suffix}.npy ({test_labels.shape})")
+    print(f"Saved: centroids{k_suffix}.npy ({centroids.shape})")
 
 
 if __name__ == "__main__":

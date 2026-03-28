@@ -380,7 +380,7 @@ def get_task_configs():
                 }
                 for split in ["train", "validation", "test"]
             },
-            # HellaSwag per-cluster (non-merged)
+            # HellaSwag per-cluster: legacy k=6 aliases + k-prefixed for all k values
             **{
                 f"hellaswag_cluster_{c}:rc_{split}::olmes": {
                     "task_name": f"hellaswag_cluster_{c}:rc_{split}",
@@ -393,7 +393,6 @@ def get_task_configs():
                 for c in range(6)
                 for split in ["train", "validation", "test"]
             },
-            # HellaSwag per-cluster merged (train+val combined per cluster)
             **{
                 f"hellaswag_cluster_merged_{c}:rc_{split}::olmes": {
                     "task_name": f"hellaswag_cluster_merged_{c}:rc_{split}",
@@ -404,6 +403,32 @@ def get_task_configs():
                     "metadata": {"regimes": ["OLMES-v0.1"]},
                 }
                 for c in range(6)
+                for split in ["train", "validation", "test"]
+            },
+            **{
+                f"hellaswag_k{k}_cluster_{c}:rc_{split}::olmes": {
+                    "task_name": f"hellaswag_k{k}_cluster_{c}:rc_{split}",
+                    "split": split,
+                    "primary_metric": "acc_per_char",
+                    "num_shots": 5,
+                    "fewshot_source": "OLMES:hellaswag",
+                    "metadata": {"regimes": ["OLMES-v0.1"]},
+                }
+                for k in [6, 8, 10, 16]
+                for c in range(k)
+                for split in ["train", "validation", "test"]
+            },
+            **{
+                f"hellaswag_k{k}_cluster_merged_{c}:rc_{split}::olmes": {
+                    "task_name": f"hellaswag_k{k}_cluster_merged_{c}:rc_{split}",
+                    "split": split,
+                    "primary_metric": "acc_per_char",
+                    "num_shots": 5,
+                    "fewshot_source": "OLMES:hellaswag",
+                    "metadata": {"regimes": ["OLMES-v0.1"]},
+                }
+                for k in [6, 8, 10, 16]
+                for c in range(k)
                 for split in ["train", "validation", "test"]
             },
             "winogrande:mc_train::olmes": {

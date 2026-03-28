@@ -6,25 +6,23 @@ from oe_eval.tasks.oe_eval_tasks.hellaswag import HellaSwag, HellaSwagMC
 
 from ..metrics.mc_softloss import SoftLoss
 
-# Path to cluster assignments JSON (produced by assign_hellaswag_clusters.py).
-# Set via HELLASWAG_CLUSTER_ASSIGNMENTS_FILE env var or defaults to this path.
-_DEFAULT_CLUSTER_ASSIGNMENTS_FILE = os.path.join(
-    os.path.dirname(__file__), "..", "data", "hellaswag_cluster_assignments.json",
-)
-HELLASWAG_CLUSTER_ASSIGNMENTS_FILE = os.environ.get(
-    "HELLASWAG_CLUSTER_ASSIGNMENTS_FILE",
-    os.path.normpath(_DEFAULT_CLUSTER_ASSIGNMENTS_FILE),
-)
+# Per-k cluster assignment files (produced by assign_hellaswag_clusters.py).
+HELLASWAG_K_VALUES = [6, 8, 10, 16]
 
-_cluster_assignments_cache = None
+_DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
+HELLASWAG_CLUSTER_FILES = {
+    k: os.path.normpath(os.path.join(_DATA_DIR, f"hellaswag_cluster_assignments_k{k}.json"))
+    for k in HELLASWAG_K_VALUES
+}
 
-def _load_cluster_assignments():
-    """Load and cache cluster assignments from JSON file."""
-    global _cluster_assignments_cache
-    if _cluster_assignments_cache is None:
-        with open(HELLASWAG_CLUSTER_ASSIGNMENTS_FILE) as f:
-            _cluster_assignments_cache = json.load(f)
-    return _cluster_assignments_cache
+_cluster_assignments_cache = {}
+
+def _load_cluster_assignments(k):
+    """Load and cache cluster assignments for a given k."""
+    if k not in _cluster_assignments_cache:
+        with open(HELLASWAG_CLUSTER_FILES[k]) as f:
+            _cluster_assignments_cache[k] = json.load(f)
+    return _cluster_assignments_cache[k]
 
 
 class HellaSwag_RC_Base(HellaSwag):
@@ -155,7 +153,7 @@ class HellaSwag_Merged_RC(HellaSwag_RC_Base):
 # Cluster variants: per-cluster subsets of HellaSwag
 # ---------------------------------------------------------------------------
 
-def _get_split_cluster_indices(cluster_id, split):
+def _get_split_cluster_indices(k, cluster_id, split):
     """Get cluster indices mapped to positions within each split's dataset.
 
     The JSON stores indices as positions in the train_val array (0-39904),
@@ -163,11 +161,9 @@ def _get_split_cluster_indices(cluster_id, split):
     This function remaps validation indices from [N_train, N_train+N_val) to [0, N_val).
     Test indices are already positions within the test-only subset.
     """
-    data = _load_cluster_assignments()
+    data = _load_cluster_assignments(k)
     raw_indices = data["clusters"][str(cluster_id)][split]
     if split == "validation":
-        # Remap from train_val positions to validation-only positions
-        # In train_val: train is [0, N_train), validation is [N_train, N_train+N_val)
         n_train = sum(
             len(data["clusters"][str(c)]["train"])
             for c in range(data["k"])
@@ -177,11 +173,8 @@ def _get_split_cluster_indices(cluster_id, split):
 
 
 class HellaSwag_Cluster_RC(HellaSwag_RC_Base):
-    """HellaSwag filtered to a single cluster's examples.
-
-    Uses cluster assignments from a JSON file to select only examples
-    belonging to one cluster. The cluster_id is set via task_config.
-    """
+    """HellaSwag filtered to a single cluster's examples."""
+    K = None           # Set by factory function
     CLUSTER_ID = None  # Set by factory function
 
     def training_docs(self):
@@ -191,7 +184,7 @@ class HellaSwag_Cluster_RC(HellaSwag_RC_Base):
                 .shuffle(seed=0)
                 .select(range(1000, len(self.dataset["train"])))
             )
-            indices = _get_split_cluster_indices(self.CLUSTER_ID, "train")
+            indices = _get_split_cluster_indices(self.K, self.CLUSTER_ID, "train")
             selected = full_train.select(indices)
             self._training_docs = list(map(self._process_doc, selected))
         return self._training_docs
@@ -202,23 +195,19 @@ class HellaSwag_Cluster_RC(HellaSwag_RC_Base):
             .shuffle(seed=0)
             .select(range(0, 1000))
         )
-        indices = _get_split_cluster_indices(self.CLUSTER_ID, "validation")
+        indices = _get_split_cluster_indices(self.K, self.CLUSTER_ID, "validation")
         selected = full_val.select(indices)
         return map(self._process_doc, selected)
 
     def test_docs(self):
-        indices = _get_split_cluster_indices(self.CLUSTER_ID, "test")
+        indices = _get_split_cluster_indices(self.K, self.CLUSTER_ID, "test")
         selected = self.dataset["validation"].select(indices)
         return map(self._process_doc, selected)
 
 
 class HellaSwag_Cluster_Merged_RC(HellaSwag_RC_Base):
-    """Per-cluster HellaSwag with train+val merged for both pruning and finetuning.
-
-    Combines cluster filtering with merging:
-      - validation/train: cluster's train + validation merged
-      - test: cluster's test examples
-    """
+    """Per-cluster HellaSwag with train+val merged for both pruning and finetuning."""
+    K = None           # Set by factory function
     CLUSTER_ID = None  # Set by factory function
 
     def training_docs(self):
@@ -233,8 +222,8 @@ class HellaSwag_Cluster_Merged_RC(HellaSwag_RC_Base):
                 .shuffle(seed=0)
                 .select(range(0, 1000))
             )
-            train_indices = _get_split_cluster_indices(self.CLUSTER_ID, "train")
-            val_indices = _get_split_cluster_indices(self.CLUSTER_ID, "validation")
+            train_indices = _get_split_cluster_indices(self.K, self.CLUSTER_ID, "train")
+            val_indices = _get_split_cluster_indices(self.K, self.CLUSTER_ID, "validation")
             selected_train = full_train.select(train_indices)
             selected_val = full_val.select(val_indices)
             merged = concatenate_datasets([selected_train, selected_val])
@@ -242,11 +231,10 @@ class HellaSwag_Cluster_Merged_RC(HellaSwag_RC_Base):
         return self._training_docs
 
     def validation_docs(self):
-        # Same merged set as training_docs
         return self.training_docs()
 
     def test_docs(self):
-        indices = _get_split_cluster_indices(self.CLUSTER_ID, "test")
+        indices = _get_split_cluster_indices(self.K, self.CLUSTER_ID, "test")
         selected = self.dataset["validation"].select(indices)
         return map(self._process_doc, selected)
 
@@ -255,16 +243,15 @@ class HellaSwag_Cluster_Merged_RC(HellaSwag_RC_Base):
 # Factory functions
 # ---------------------------------------------------------------------------
 
-def create_hellaswag_cluster_task(cluster_id):
+def create_hellaswag_cluster_task(k, cluster_id):
     class HS_Cluster(HellaSwag_Cluster_RC):
+        K = k
         CLUSTER_ID = cluster_id
     return HS_Cluster
 
 
-def create_hellaswag_cluster_merged_task(cluster_id):
+def create_hellaswag_cluster_merged_task(k, cluster_id):
     class HS_ClusterMerged(HellaSwag_Cluster_Merged_RC):
+        K = k
         CLUSTER_ID = cluster_id
     return HS_ClusterMerged
-
-
-NUM_HELLASWAG_CLUSTERS = 6
