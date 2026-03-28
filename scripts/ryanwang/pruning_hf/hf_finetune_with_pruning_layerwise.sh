@@ -327,3 +327,11 @@ echo "Pipeline complete!"
 echo "========================================"
 echo "Pruned model: $PRUNED_MODEL"
 echo "Finetuned model: $FINETUNED_MODEL"
+
+# Step 6: Cleanup — remove local output directory to save disk space (results are on S3)
+echo ""
+echo "Step 6: Cleaning up local output directory..."
+echo "========================================"
+echo "Removing: $OUTPUT_DIR"
+rm -rf "$OUTPUT_DIR"
+echo "Cleanup complete."
