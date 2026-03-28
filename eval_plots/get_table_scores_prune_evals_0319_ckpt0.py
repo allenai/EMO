@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
+import numpy as np
 import pandas as pd
 
 # ============================================================================
@@ -268,10 +269,29 @@ TASK_SPECS = {
     "gsm8k_generation_8shot": [
         "exact_match", "primary_score",
     ],
+    # HellaSwag merged (baseline: single model on all data)
+    "hellaswag_merged": [
+        "softloss_corr", "acc_per_byte", "primary_score",
+    ],
+    # HellaSwag cluster-merged variants (6 clusters)
+    **{
+        f"hellaswag_cluster_merged_{c}": ["softloss_corr", "acc_per_byte", "primary_score"]
+        for c in range(6)
+    },
 }
 MMLU_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_") and not t.startswith("mmlu_pro_")]
 MMLU_PRO_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_") and not t.startswith("mmlu_pro_merged_")]
 MMLU_PRO_MERGED_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_merged_")]
+HELLASWAG_CLUSTER_SUBTASKS = [f"hellaswag_cluster_merged_{c}" for c in range(6)]
+# Weights for weighted average (test set sizes per cluster)
+HELLASWAG_CLUSTER_TEST_SIZES = {
+    "hellaswag_cluster_merged_0": 1044,
+    "hellaswag_cluster_merged_1": 2999,
+    "hellaswag_cluster_merged_2": 1596,
+    "hellaswag_cluster_merged_3": 1529,
+    "hellaswag_cluster_merged_4": 1080,
+    "hellaswag_cluster_merged_5": 1794,
+}
 
 AVAILABLE_TASK_RUNS = list(TASK_SPECS)
 
@@ -593,6 +613,26 @@ def add_mmlu_avg_columns(df: pd.DataFrame) -> pd.DataFrame:
         if merged_no_other and len(merged_no_other) < len(mmlu_pro_merged_cols):
             df["mmlu_pro_merged_avg_no_other"] = df[merged_no_other].mean(axis=1, skipna=False)
             avg_cols_added.append("mmlu_pro_merged_avg_no_other")
+
+    # --- HellaSwag cluster averages (weighted by test set size per cluster) ---
+    hellaswag_cluster_cols = [c for c in df.columns if c in HELLASWAG_CLUSTER_SUBTASKS]
+    if hellaswag_cluster_cols:
+        for model_name in df.index:
+            missing = [c for c in hellaswag_cluster_cols if pd.isna(df.loc[model_name, c])]
+            if missing:
+                print(
+                    f"[WARN] Model {model_name!r} is missing {len(missing)}/{len(hellaswag_cluster_cols)} "
+                    f"HellaSwag cluster sub-task(s): {missing} — hellaswag_cluster_avg will be NaN"
+                )
+
+        weights = np.array([HELLASWAG_CLUSTER_TEST_SIZES[c] for c in hellaswag_cluster_cols], dtype=float)
+        weights /= weights.sum()
+        cluster_vals = df[hellaswag_cluster_cols].values
+        has_nan = np.isnan(cluster_vals).any(axis=1)
+        weighted = (cluster_vals * weights[None, :]).sum(axis=1)
+        weighted[has_nan] = np.nan
+        df["hellaswag_cluster_avg"] = weighted
+        avg_cols_added.append("hellaswag_cluster_avg")
 
     if not avg_cols_added:
         return df
