@@ -6,9 +6,9 @@ BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 MODELS=(
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313/step238419-hf"
-#    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
-    "dense_1b_lr-4e-3_0213/step30995-hf"
-    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
+    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
+#    "dense_1b_lr-4e-3_0213/step30995-hf"
+#    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
 #    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf"
 
 #    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
@@ -45,7 +45,7 @@ PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(32)
+PRUNE_KEEP_K_VALUES=(128)
 batch_size=32
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
@@ -110,14 +110,56 @@ TASK_GROUPS_LIST=(
 #  "mmlu_cluster_physics_eng"
 #  "mmlu_cluster_cs_logic"
 
-  # HellaSwag merged + cluster variants
-  "hellaswag_merged"
-#  "hellaswag_cluster_merged_0"
-#  "hellaswag_cluster_merged_1"
-#  "hellaswag_cluster_merged_2"
-#  "hellaswag_cluster_merged_3"
-#  "hellaswag_cluster_merged_4"
-#  "hellaswag_cluster_merged_5"
+  # HellaSwag merged (baseline: single model on all data)
+#  "hellaswag_merged"
+
+  # HellaSwag k=6 clusters
+#  "hellaswag_k6_cluster_merged_0"
+#  "hellaswag_k6_cluster_merged_1"
+#  "hellaswag_k6_cluster_merged_2"
+#  "hellaswag_k6_cluster_merged_3"
+#  "hellaswag_k6_cluster_merged_4"
+#  "hellaswag_k6_cluster_merged_5"
+
+  # HellaSwag k=8 clusters
+#  "hellaswag_k8_cluster_merged_0"
+#  "hellaswag_k8_cluster_merged_1"
+#  "hellaswag_k8_cluster_merged_2"
+#  "hellaswag_k8_cluster_merged_3"
+#  "hellaswag_k8_cluster_merged_4"
+#  "hellaswag_k8_cluster_merged_5"
+#  "hellaswag_k8_cluster_merged_6"
+#  "hellaswag_k8_cluster_merged_7"
+
+  # HellaSwag k=10 clusters
+#  "hellaswag_k10_cluster_merged_0"
+#  "hellaswag_k10_cluster_merged_1"
+#  "hellaswag_k10_cluster_merged_2"
+#  "hellaswag_k10_cluster_merged_3"
+#  "hellaswag_k10_cluster_merged_4"
+#  "hellaswag_k10_cluster_merged_5"
+#  "hellaswag_k10_cluster_merged_6"
+#  "hellaswag_k10_cluster_merged_7"
+#  "hellaswag_k10_cluster_merged_8"
+#  "hellaswag_k10_cluster_merged_9"
+
+  # HellaSwag k=16 clusters
+#  "hellaswag_k16_cluster_merged_0"
+#  "hellaswag_k16_cluster_merged_1"
+#  "hellaswag_k16_cluster_merged_2"
+#  "hellaswag_k16_cluster_merged_3"
+#  "hellaswag_k16_cluster_merged_4"
+#  "hellaswag_k16_cluster_merged_5"
+#  "hellaswag_k16_cluster_merged_6"
+#  "hellaswag_k16_cluster_merged_7"
+#  "hellaswag_k16_cluster_merged_8"
+#  "hellaswag_k16_cluster_merged_9"
+#  "hellaswag_k16_cluster_merged_10"
+#  "hellaswag_k16_cluster_merged_11"
+#  "hellaswag_k16_cluster_merged_12"
+#  "hellaswag_k16_cluster_merged_13"
+#  "hellaswag_k16_cluster_merged_14"
+#  "hellaswag_k16_cluster_merged_15"
 
   # MMLU-Pro categories (14 categories)
 #  "mmlu_pro_math"

@@ -273,7 +273,13 @@ TASK_SPECS = {
     "hellaswag_merged": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
-    # HellaSwag cluster-merged variants (6 clusters)
+    # HellaSwag cluster-merged variants (all k values)
+    **{
+        f"hellaswag_k{k}_cluster_merged_{c}": ["softloss_corr", "acc_per_byte", "primary_score"]
+        for k in [6, 8, 10, 16]
+        for c in range(k)
+    },
+    # Legacy k=6 aliases
     **{
         f"hellaswag_cluster_merged_{c}": ["softloss_corr", "acc_per_byte", "primary_score"]
         for c in range(6)
@@ -282,15 +288,35 @@ TASK_SPECS = {
 MMLU_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_") and not t.startswith("mmlu_pro_")]
 MMLU_PRO_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_") and not t.startswith("mmlu_pro_merged_")]
 MMLU_PRO_MERGED_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_merged_")]
+HELLASWAG_CLUSTER_SUBTASKS_BY_K = {
+    k: [f"hellaswag_k{k}_cluster_merged_{c}" for c in range(k)]
+    for k in [6, 8, 10, 16]
+}
 HELLASWAG_CLUSTER_SUBTASKS = [f"hellaswag_cluster_merged_{c}" for c in range(6)]
-# Weights for weighted average (test set sizes per cluster)
 HELLASWAG_CLUSTER_TEST_SIZES = {
-    "hellaswag_cluster_merged_0": 1044,
-    "hellaswag_cluster_merged_1": 2999,
-    "hellaswag_cluster_merged_2": 1596,
-    "hellaswag_cluster_merged_3": 1529,
-    "hellaswag_cluster_merged_4": 1080,
-    "hellaswag_cluster_merged_5": 1794,
+    "hellaswag_k6_cluster_merged_0": 1044, "hellaswag_k6_cluster_merged_1": 2999,
+    "hellaswag_k6_cluster_merged_2": 1596, "hellaswag_k6_cluster_merged_3": 1529,
+    "hellaswag_k6_cluster_merged_4": 1080, "hellaswag_k6_cluster_merged_5": 1794,
+    "hellaswag_k8_cluster_merged_0": 870, "hellaswag_k8_cluster_merged_1": 1307,
+    "hellaswag_k8_cluster_merged_2": 1534, "hellaswag_k8_cluster_merged_3": 369,
+    "hellaswag_k8_cluster_merged_4": 1007, "hellaswag_k8_cluster_merged_5": 1921,
+    "hellaswag_k8_cluster_merged_6": 1369, "hellaswag_k8_cluster_merged_7": 1665,
+    "hellaswag_k10_cluster_merged_0": 1901, "hellaswag_k10_cluster_merged_1": 1372,
+    "hellaswag_k10_cluster_merged_2": 1179, "hellaswag_k10_cluster_merged_3": 1631,
+    "hellaswag_k10_cluster_merged_4": 1286, "hellaswag_k10_cluster_merged_5": 953,
+    "hellaswag_k10_cluster_merged_6": 289, "hellaswag_k10_cluster_merged_7": 540,
+    "hellaswag_k10_cluster_merged_8": 341, "hellaswag_k10_cluster_merged_9": 550,
+    "hellaswag_k16_cluster_merged_0": 580, "hellaswag_k16_cluster_merged_1": 238,
+    "hellaswag_k16_cluster_merged_2": 1382, "hellaswag_k16_cluster_merged_3": 319,
+    "hellaswag_k16_cluster_merged_4": 500, "hellaswag_k16_cluster_merged_5": 902,
+    "hellaswag_k16_cluster_merged_6": 582, "hellaswag_k16_cluster_merged_7": 764,
+    "hellaswag_k16_cluster_merged_8": 307, "hellaswag_k16_cluster_merged_9": 126,
+    "hellaswag_k16_cluster_merged_10": 1450, "hellaswag_k16_cluster_merged_11": 926,
+    "hellaswag_k16_cluster_merged_12": 495, "hellaswag_k16_cluster_merged_13": 200,
+    "hellaswag_k16_cluster_merged_14": 437, "hellaswag_k16_cluster_merged_15": 834,
+    "hellaswag_cluster_merged_0": 1044, "hellaswag_cluster_merged_1": 2999,
+    "hellaswag_cluster_merged_2": 1596, "hellaswag_cluster_merged_3": 1529,
+    "hellaswag_cluster_merged_4": 1080, "hellaswag_cluster_merged_5": 1794,
 }
 
 AVAILABLE_TASK_RUNS = list(TASK_SPECS)
@@ -615,19 +641,33 @@ def add_mmlu_avg_columns(df: pd.DataFrame) -> pd.DataFrame:
             avg_cols_added.append("mmlu_pro_merged_avg_no_other")
 
     # --- HellaSwag cluster averages (weighted by test set size per cluster) ---
-    hellaswag_cluster_cols = [c for c in df.columns if c in HELLASWAG_CLUSTER_SUBTASKS]
-    if hellaswag_cluster_cols:
+    for k_val, k_subtasks in HELLASWAG_CLUSTER_SUBTASKS_BY_K.items():
+        k_cols = [c for c in df.columns if c in k_subtasks]
+        if not k_cols:
+            continue
+        avg_name = f"hellaswag_k{k_val}_cluster_avg"
         for model_name in df.index:
-            missing = [c for c in hellaswag_cluster_cols if pd.isna(df.loc[model_name, c])]
+            missing = [c for c in k_cols if pd.isna(df.loc[model_name, c])]
             if missing:
                 print(
-                    f"[WARN] Model {model_name!r} is missing {len(missing)}/{len(hellaswag_cluster_cols)} "
-                    f"HellaSwag cluster sub-task(s): {missing} — hellaswag_cluster_avg will be NaN"
+                    f"[WARN] Model {model_name!r} is missing {len(missing)}/{len(k_cols)} "
+                    f"HellaSwag k={k_val} cluster sub-task(s): {missing} — {avg_name} will be NaN"
                 )
-
-        weights = np.array([HELLASWAG_CLUSTER_TEST_SIZES[c] for c in hellaswag_cluster_cols], dtype=float)
+        weights = np.array([HELLASWAG_CLUSTER_TEST_SIZES[c] for c in k_cols], dtype=float)
         weights /= weights.sum()
-        cluster_vals = df[hellaswag_cluster_cols].values
+        cluster_vals = df[k_cols].values
+        has_nan = np.isnan(cluster_vals).any(axis=1)
+        weighted = (cluster_vals * weights[None, :]).sum(axis=1)
+        weighted[has_nan] = np.nan
+        df[avg_name] = weighted
+        avg_cols_added.append(avg_name)
+
+    # Legacy k=6 alias
+    hellaswag_legacy_cols = [c for c in df.columns if c in HELLASWAG_CLUSTER_SUBTASKS]
+    if hellaswag_legacy_cols:
+        weights = np.array([HELLASWAG_CLUSTER_TEST_SIZES[c] for c in hellaswag_legacy_cols], dtype=float)
+        weights /= weights.sum()
+        cluster_vals = df[hellaswag_legacy_cols].values
         has_nan = np.isnan(cluster_vals).any(axis=1)
         weighted = (cluster_vals * weights[None, :]).sum(axis=1)
         weighted[has_nan] = np.nan

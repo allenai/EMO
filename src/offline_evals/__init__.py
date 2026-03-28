@@ -205,15 +205,29 @@ new_task_registry: Dict = {
     "hellaswag_merged:rc_train": splits_hellaswag.HellaSwag_Merged_RC,
     "hellaswag_merged:rc_validation": splits_hellaswag.HellaSwag_Merged_RC,
     "hellaswag_merged:rc_test": splits_hellaswag.HellaSwag_Merged_RC,
-    # HellaSwag per-cluster and per-cluster merged
+    # HellaSwag per-cluster and per-cluster merged (all k values)
+    # Legacy k=6 aliases (no k prefix)
     **{
-        f"hellaswag_cluster_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_task(c)
-        for c in range(splits_hellaswag.NUM_HELLASWAG_CLUSTERS)
+        f"hellaswag_cluster_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_task(6, c)
+        for c in range(6)
         for split in ["train", "validation", "test"]
     },
     **{
-        f"hellaswag_cluster_merged_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_merged_task(c)
-        for c in range(splits_hellaswag.NUM_HELLASWAG_CLUSTERS)
+        f"hellaswag_cluster_merged_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_merged_task(6, c)
+        for c in range(6)
+        for split in ["train", "validation", "test"]
+    },
+    # k-prefixed tasks for all k values
+    **{
+        f"hellaswag_k{k}_cluster_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_task(k, c)
+        for k in splits_hellaswag.HELLASWAG_K_VALUES
+        for c in range(k)
+        for split in ["train", "validation", "test"]
+    },
+    **{
+        f"hellaswag_k{k}_cluster_merged_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_merged_task(k, c)
+        for k in splits_hellaswag.HELLASWAG_K_VALUES
+        for c in range(k)
         for split in ["train", "validation", "test"]
     },
     "openbookqa:mc_train": splits_openbookqa.OpenBookQA_MC_Train,
