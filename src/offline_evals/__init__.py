@@ -15,6 +15,7 @@ from .tasks.splits_mmlu import (
 from .tasks.splits_mmlu_pro import (
     create_mmlu_pro_category_tasks_withsplits,
     create_mmlu_pro_merged_tasks_withsplits,
+    create_mmlu_pro_merged_nval_tasks,
     MMLU_PRO_CATEGORIES_MAP,
 )
 from .tasks import (
@@ -128,6 +129,21 @@ def create_merged_mmlu_pro_tasks_withsplits():
     return res
 
 
+PRUNE_VALIDATION_SIZES = [50, 100, 200]
+
+
+def create_merged_nval_mmlu_pro_tasks():
+    """Creates MMLU-Pro merged variants with fixed-size validation (pruning) splits."""
+    res = {}
+    for n_val in PRUNE_VALIDATION_SIZES:
+        for cat in MMLU_PRO_CATEGORIES_MAP:
+            prefix = f"mmlu_pro_merged_n{n_val}_{cat}"
+            res[f"{prefix}:rc_validation"] = create_mmlu_pro_merged_nval_tasks(cat, n_val)
+            res[f"{prefix}:rc_test"] = create_mmlu_pro_merged_nval_tasks(cat, n_val)
+            res[f"{prefix}:rc_train"] = create_mmlu_pro_merged_nval_tasks(cat, n_val)
+    return res
+
+
 new_task_registry: Dict = {
     "xsum": xsum.XSum,
     "narrativeqa": narrativeqa.NarrativeQA,
@@ -230,6 +246,7 @@ new_task_registry: Dict = {
     # **create_core_mmlu_pro_tasks_withsplits(),
     **create_category_mmlu_pro_tasks_withsplits(),
     **create_merged_mmlu_pro_tasks_withsplits(),
+    **create_merged_nval_mmlu_pro_tasks(),
     # GSM8K
     "gsm8k_perplexity:train": splits_gsm8k.GSM8K_Perplexity_Base,
     "gsm8k_perplexity:validation": splits_gsm8k.GSM8K_Perplexity_Base,

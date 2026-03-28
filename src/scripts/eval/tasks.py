@@ -1450,4 +1450,39 @@ def get_task_configs():
             },
         }
 
+    # MMLU-Pro merged variants with different pruning validation sizes
+    for n_val in [50, 100, 200]:
+        for cat in MMLU_PRO_CATEGORIES_MAP:
+            prefix = f"mmlu_pro_merged_n{n_val}_{cat}"
+            TASK_CONFIGS[f"{prefix}:rc_validation::olmes"] = {
+                "task_name": f"{prefix}:rc_validation",
+                "split": "validation",
+                "num_shots": 5,
+                "primary_metric": "acc_per_char",
+                "category_name": cat,
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            }
+            TASK_CONFIGS[f"{prefix}:rc_test::olmes"] = {
+                "task_name": f"{prefix}:rc_test",
+                "split": "test",
+                "num_shots": 5,
+                "primary_metric": "acc_per_char",
+                "category_name": cat,
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            }
+            TASK_CONFIGS[f"{prefix}:rc_train::olmes"] = {
+                "task_name": f"{prefix}:rc_train",
+                "split": "train",
+                "num_shots": 5,
+                "primary_metric": "acc_per_char",
+                "category_name": cat,
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            }
+
     return TASK_CONFIGS

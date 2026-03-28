@@ -181,3 +181,29 @@ def create_mmlu_pro_merged_tasks_withsplits(category_key):
         CATEGORY = MMLU_PRO_CATEGORIES_MAP[category_key]
 
     return MMLUPro_Merged
+
+
+class GenericMMLUPro_merged_nval(GenericMMLUPro_merged):
+    """MMLU-Pro merged variant with a fixed-size validation (pruning) split.
+
+    Identical to GenericMMLUPro_merged except the validation split contains
+    exactly VALIDATION_SIZE examples (the first N from merged_train), while
+    the train split remains the full merged_train.
+    """
+
+    VALIDATION_SIZE: int = 100
+
+    def download(self, data_dir=None, cache_dir=None, download_mode=None):
+        super().download(data_dir, cache_dir, download_mode)
+        merged_train = self.dataset["train"]
+        n_val = min(self.VALIDATION_SIZE, len(merged_train))
+        self.dataset["validation"] = merged_train.select(range(n_val))
+
+
+def create_mmlu_pro_merged_nval_tasks(category_key, validation_size):
+    class MMLUPro_Merged_NVal(GenericMMLUPro_merged_nval):
+        CATEGORY_KEY = category_key
+        CATEGORY = MMLU_PRO_CATEGORIES_MAP[category_key]
+        VALIDATION_SIZE = validation_size
+
+    return MMLUPro_Merged_NVal
