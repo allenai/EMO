@@ -368,6 +368,44 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.1"],
                 },
             },
+            # HellaSwag merged (train+val combined for pruning+finetuning)
+            **{
+                f"hellaswag_merged:rc_{split}::olmes": {
+                    "task_name": f"hellaswag_merged:rc_{split}",
+                    "split": split,
+                    "primary_metric": "acc_per_char",
+                    "num_shots": 5,
+                    "fewshot_source": "OLMES:hellaswag",
+                    "metadata": {"regimes": ["OLMES-v0.1"]},
+                }
+                for split in ["train", "validation", "test"]
+            },
+            # HellaSwag per-cluster (non-merged)
+            **{
+                f"hellaswag_cluster_{c}:rc_{split}::olmes": {
+                    "task_name": f"hellaswag_cluster_{c}:rc_{split}",
+                    "split": split,
+                    "primary_metric": "acc_per_char",
+                    "num_shots": 5,
+                    "fewshot_source": "OLMES:hellaswag",
+                    "metadata": {"regimes": ["OLMES-v0.1"]},
+                }
+                for c in range(6)
+                for split in ["train", "validation", "test"]
+            },
+            # HellaSwag per-cluster merged (train+val combined per cluster)
+            **{
+                f"hellaswag_cluster_merged_{c}:rc_{split}::olmes": {
+                    "task_name": f"hellaswag_cluster_merged_{c}:rc_{split}",
+                    "split": split,
+                    "primary_metric": "acc_per_char",
+                    "num_shots": 5,
+                    "fewshot_source": "OLMES:hellaswag",
+                    "metadata": {"regimes": ["OLMES-v0.1"]},
+                }
+                for c in range(6)
+                for split in ["train", "validation", "test"]
+            },
             "winogrande:mc_train::olmes": {
                 "task_name": "winogrande:mc_train",
                 "split": "train",
