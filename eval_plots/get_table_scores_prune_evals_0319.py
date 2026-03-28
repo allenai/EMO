@@ -272,6 +272,15 @@ TASK_SPECS = {
     "gsm8k_generation_8shot": [
         "exact_match", "primary_score",
     ],
+    # HellaSwag merged (baseline: single model on all data)
+    "hellaswag_merged": [
+        "softloss_corr", "acc_per_byte", "primary_score",
+    ],
+    # HellaSwag cluster-merged variants (6 clusters)
+    **{
+        f"hellaswag_cluster_merged_{c}": ["softloss_corr", "acc_per_byte", "primary_score"]
+        for c in range(6)
+    },
 }
 MMLU_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_") and not t.startswith("mmlu_pro_")]
 MMLU_PRO_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_") and not t.startswith("mmlu_pro_merged_")]
@@ -280,6 +289,7 @@ MMLU_PRO_MERGED_NVAL_SUBTASKS = {
     n: [t for t in TASK_SPECS if t.startswith(f"mmlu_pro_merged_n{n}_")]
     for n in [50, 100, 200]
 }
+HELLASWAG_CLUSTER_SUBTASKS = [t for t in TASK_SPECS if t.startswith("hellaswag_cluster_merged_")]
 
 AVAILABLE_TASK_RUNS = list(TASK_SPECS)
 
@@ -646,6 +656,20 @@ def add_mmlu_avg_columns(df: pd.DataFrame) -> pd.DataFrame:
                 no_other_name = f"mmlu_pro_merged_n{n_val}_avg_no_other"
                 df[no_other_name] = df[no_other].mean(axis=1, skipna=False)
                 avg_cols_added.append(no_other_name)
+
+    # --- HellaSwag cluster averages ---
+    hellaswag_cluster_cols = [c for c in df.columns if c in HELLASWAG_CLUSTER_SUBTASKS]
+    if hellaswag_cluster_cols:
+        for model_name in df.index:
+            missing = [c for c in hellaswag_cluster_cols if pd.isna(df.loc[model_name, c])]
+            if missing:
+                print(
+                    f"[WARN] Model {model_name!r} is missing {len(missing)}/{len(hellaswag_cluster_cols)} "
+                    f"HellaSwag cluster sub-task(s): {missing} — hellaswag_cluster_avg will be NaN"
+                )
+
+        df["hellaswag_cluster_avg"] = df[hellaswag_cluster_cols].mean(axis=1, skipna=False)
+        avg_cols_added.append("hellaswag_cluster_avg")
 
     if not avg_cols_added:
         return df
