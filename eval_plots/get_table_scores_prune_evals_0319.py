@@ -260,13 +260,26 @@ TASK_SPECS = {
     "mmlu_pro_merged_psychology": [
         "softloss_corr", "acc_per_byte", "primary_score",
     ],
+    **{
+        f"mmlu_pro_merged_n{n}_{cat}": ["softloss_corr", "acc_per_byte", "primary_score"]
+        for n in [50, 100, 200]
+        for cat in [
+            "biology", "business", "chemistry", "computer_science", "economics",
+            "engineering", "health", "history", "law", "math", "other",
+            "philosophy", "physics", "psychology",
+        ]
+    },
     "gsm8k_generation_8shot": [
         "exact_match", "primary_score",
     ],
 }
 MMLU_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_") and not t.startswith("mmlu_pro_")]
 MMLU_PRO_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_") and not t.startswith("mmlu_pro_merged_")]
-MMLU_PRO_MERGED_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_merged_")]
+MMLU_PRO_MERGED_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_merged_") and not any(t.startswith(f"mmlu_pro_merged_n{n}_") for n in [50, 100, 200])]
+MMLU_PRO_MERGED_NVAL_SUBTASKS = {
+    n: [t for t in TASK_SPECS if t.startswith(f"mmlu_pro_merged_n{n}_")]
+    for n in [50, 100, 200]
+}
 
 AVAILABLE_TASK_RUNS = list(TASK_SPECS)
 
@@ -611,6 +624,28 @@ def add_mmlu_avg_columns(df: pd.DataFrame) -> pd.DataFrame:
         if merged_no_other and len(merged_no_other) < len(mmlu_pro_merged_cols):
             df["mmlu_pro_merged_avg_no_other"] = df[merged_no_other].mean(axis=1, skipna=False)
             avg_cols_added.append("mmlu_pro_merged_avg_no_other")
+
+    # --- MMLU-Pro-Merged N-val averages ---
+    for n_val, nval_subtasks in MMLU_PRO_MERGED_NVAL_SUBTASKS.items():
+        nval_cols = [c for c in df.columns if c in nval_subtasks]
+        if nval_cols:
+            avg_name = f"mmlu_pro_merged_n{n_val}_avg"
+            for model_name in df.index:
+                missing = [c for c in nval_cols if pd.isna(df.loc[model_name, c])]
+                if missing:
+                    print(
+                        f"[WARN] Model {model_name!r} is missing {len(missing)}/{len(nval_cols)} "
+                        f"MMLU-Pro-Merged-N{n_val} sub-task(s): {missing} — {avg_name} will be NaN"
+                    )
+
+            df[avg_name] = df[nval_cols].mean(axis=1, skipna=False)
+            avg_cols_added.append(avg_name)
+
+            no_other = [c for c in nval_cols if c != f"mmlu_pro_merged_n{n_val}_other"]
+            if no_other and len(no_other) < len(nval_cols):
+                no_other_name = f"mmlu_pro_merged_n{n_val}_avg_no_other"
+                df[no_other_name] = df[no_other].mean(axis=1, skipna=False)
+                avg_cols_added.append(no_other_name)
 
     if not avg_cols_added:
         return df
