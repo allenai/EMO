@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
+import numpy as np
 import pandas as pd
 
 # ============================================================================
@@ -657,7 +658,17 @@ def add_mmlu_avg_columns(df: pd.DataFrame) -> pd.DataFrame:
                 df[no_other_name] = df[no_other].mean(axis=1, skipna=False)
                 avg_cols_added.append(no_other_name)
 
-    # --- HellaSwag cluster averages ---
+    # --- HellaSwag cluster averages (weighted by test set size per cluster) ---
+    # Weights reflect the number of test examples in each cluster so that
+    # hellaswag_cluster_avg is directly comparable to hellaswag_merged (micro-avg).
+    HELLASWAG_CLUSTER_TEST_SIZES = {
+        "hellaswag_cluster_merged_0": 1044,
+        "hellaswag_cluster_merged_1": 2999,
+        "hellaswag_cluster_merged_2": 1596,
+        "hellaswag_cluster_merged_3": 1529,
+        "hellaswag_cluster_merged_4": 1080,
+        "hellaswag_cluster_merged_5": 1794,
+    }
     hellaswag_cluster_cols = [c for c in df.columns if c in HELLASWAG_CLUSTER_SUBTASKS]
     if hellaswag_cluster_cols:
         for model_name in df.index:
@@ -668,7 +679,14 @@ def add_mmlu_avg_columns(df: pd.DataFrame) -> pd.DataFrame:
                     f"HellaSwag cluster sub-task(s): {missing} — hellaswag_cluster_avg will be NaN"
                 )
 
-        df["hellaswag_cluster_avg"] = df[hellaswag_cluster_cols].mean(axis=1, skipna=False)
+        weights = np.array([HELLASWAG_CLUSTER_TEST_SIZES[c] for c in hellaswag_cluster_cols], dtype=float)
+        weights /= weights.sum()
+        # Weighted average: any NaN → NaN for that row
+        cluster_vals = df[hellaswag_cluster_cols].values  # (n_models, n_clusters)
+        has_nan = np.isnan(cluster_vals).any(axis=1)
+        weighted = (cluster_vals * weights[None, :]).sum(axis=1)
+        weighted[has_nan] = np.nan
+        df["hellaswag_cluster_avg"] = weighted
         avg_cols_added.append("hellaswag_cluster_avg")
 
     if not avg_cols_added:
