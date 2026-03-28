@@ -201,6 +201,21 @@ new_task_registry: Dict = {
     "hellaswag:rc_train_0shot": splits_hellaswag.HellaSwag_RC_Base,
     "hellaswag:rc_validation_0shot": splits_hellaswag.HellaSwag_RC_Base,
     "hellaswag:rc_test": splits_hellaswag.HellaSwag_RC_Base,
+    # HellaSwag merged (train+val combined)
+    "hellaswag_merged:rc_train": splits_hellaswag.HellaSwag_Merged_RC,
+    "hellaswag_merged:rc_validation": splits_hellaswag.HellaSwag_Merged_RC,
+    "hellaswag_merged:rc_test": splits_hellaswag.HellaSwag_Merged_RC,
+    # HellaSwag per-cluster and per-cluster merged
+    **{
+        f"hellaswag_cluster_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_task(c)
+        for c in range(splits_hellaswag.NUM_HELLASWAG_CLUSTERS)
+        for split in ["train", "validation", "test"]
+    },
+    **{
+        f"hellaswag_cluster_merged_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_merged_task(c)
+        for c in range(splits_hellaswag.NUM_HELLASWAG_CLUSTERS)
+        for split in ["train", "validation", "test"]
+    },
     "openbookqa:mc_train": splits_openbookqa.OpenBookQA_MC_Train,
     "openbookqa:mc_validation": splits_openbookqa.OpenBookQA_MC_Validation,
     "openbookqa:mc_test": splits_openbookqa.OpenBookQA_MC_Test,

@@ -110,6 +110,15 @@ TASK_GROUPS_LIST=(
 #  "mmlu_cluster_physics_eng"
 #  "mmlu_cluster_cs_logic"
 
+  # HellaSwag merged + cluster variants
+#  "hellaswag_merged"
+#  "hellaswag_cluster_merged_0"
+#  "hellaswag_cluster_merged_1"
+#  "hellaswag_cluster_merged_2"
+#  "hellaswag_cluster_merged_3"
+#  "hellaswag_cluster_merged_4"
+#  "hellaswag_cluster_merged_5"
+
   # MMLU-Pro categories (14 categories)
 #  "mmlu_pro_math"
 #  "mmlu_pro_health"
