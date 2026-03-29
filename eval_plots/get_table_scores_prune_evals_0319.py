@@ -82,6 +82,26 @@ MODEL_SPECS = {
         ]
     },
 
+    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322step238419-hf": {
+        "label": "moe 1T",
+        "baseline": False,
+        "variants": [
+            {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
+            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
+        ]
+    },
+
+    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419step250339-hf": {
+        "label": "moe 1T + anneal",
+        "baseline": False,
+        "variants": [
+            {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
+            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
+            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
+        ]
+    },
+
 
 }
 AVAILABLE_MODELS = list(MODEL_SPECS)
