@@ -45,7 +45,7 @@ PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(128)
+PRUNE_KEEP_K_VALUES=(8 32 128)
 batch_size=32
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
@@ -144,22 +144,22 @@ TASK_GROUPS_LIST=(
 #  "hellaswag_k10_cluster_merged_9"
 
   # HellaSwag k=16 clusters
-#  "hellaswag_k16_cluster_merged_0"
-#  "hellaswag_k16_cluster_merged_1"
-#  "hellaswag_k16_cluster_merged_2"
-#  "hellaswag_k16_cluster_merged_3"
-#  "hellaswag_k16_cluster_merged_4"
-#  "hellaswag_k16_cluster_merged_5"
-#  "hellaswag_k16_cluster_merged_6"
-#  "hellaswag_k16_cluster_merged_7"
-#  "hellaswag_k16_cluster_merged_8"
-#  "hellaswag_k16_cluster_merged_9"
-#  "hellaswag_k16_cluster_merged_10"
-#  "hellaswag_k16_cluster_merged_11"
-#  "hellaswag_k16_cluster_merged_12"
-#  "hellaswag_k16_cluster_merged_13"
-#  "hellaswag_k16_cluster_merged_14"
-#  "hellaswag_k16_cluster_merged_15"
+  "hellaswag_k16_cluster_merged_0"
+  "hellaswag_k16_cluster_merged_1"
+  "hellaswag_k16_cluster_merged_2"
+  "hellaswag_k16_cluster_merged_3"
+  "hellaswag_k16_cluster_merged_4"
+  "hellaswag_k16_cluster_merged_5"
+  "hellaswag_k16_cluster_merged_6"
+  "hellaswag_k16_cluster_merged_7"
+  "hellaswag_k16_cluster_merged_8"
+  "hellaswag_k16_cluster_merged_9"
+  "hellaswag_k16_cluster_merged_10"
+  "hellaswag_k16_cluster_merged_11"
+  "hellaswag_k16_cluster_merged_12"
+  "hellaswag_k16_cluster_merged_13"
+  "hellaswag_k16_cluster_merged_14"
+  "hellaswag_k16_cluster_merged_15"
 
   # MMLU-Pro categories (14 categories)
 #  "mmlu_pro_math"
