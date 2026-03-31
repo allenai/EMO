@@ -22,6 +22,8 @@ MODELS=(
     # "/data/input/kevinf/checkpoints/olmo3-1b-croissant-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
     # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
     # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
+    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-chempile-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-the-pile-of-law-10B-lr5e-5-warmup0.1-ctd"/step2385-hf
     # "/data/input/kevinf/checkpoints/olmo3-1b-croissant-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
@@ -116,6 +118,10 @@ TASKS=(
     # mbpp::none
     # mbppplus::none
 
+    # Multilingual MBPP (17 languages, BPB)
+    mt_mbpp
+
+
     # # ChemBench MC and generative tasks
     # chembench:mc
     # chembench:gen
@@ -168,7 +174,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
     gpus=1
     
     # Batch size adjustment (matching original script)
-    if [[ $TASK == *"cot"* || $TASK == "minerva_math_"* || $TASK == "mbpp"* || $TASK == "bigcodebench"* || $TASK == "ruler"* || $TASK == "sciriff"* || $TASK == *"code_fresh"* ]]; then
+    if [[ $TASK == *"cot"* || $TASK == "minerva_math_"* || $TASK == "mbpp"* || $TASK == "mt_mbpp"* || $TASK == "multipl_e_"* || $TASK == "bigcodebench"* || $TASK == "ruler"* || $TASK == "sciriff"* ]]; then
         batch_size=1
     else
         batch_size=4

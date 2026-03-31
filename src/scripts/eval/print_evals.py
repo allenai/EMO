@@ -436,8 +436,6 @@ def main(args):
             results = avg_tasks(results, "mmlu:mc", mmlu_tasks_mc)
             results = avg_tasks(results, "mmlu:rc", mmlu_tasks_rc)
 
-        breakpoint()
-
     if args.avg_mmlu_cat or args.avg_mmlu_subcat:
         mmlu_tasks = [
             task_name
