@@ -1,6 +1,7 @@
 """
 Uses the task of Synthea as a medical MCQ task
 """
+
 import os
 from typing import Optional
 

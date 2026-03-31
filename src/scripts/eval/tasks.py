@@ -1374,6 +1374,8 @@ def get_task_configs():
             "task_name": f"code_fresh_rolling:{language}",
             "split": "train",
             "primary_metric": "ppl_token",
+        }
+
     # FrenchBench RC tasks: 0-shot and 5-shot
     for fb_task in [
         "frenchbench_boolq",
