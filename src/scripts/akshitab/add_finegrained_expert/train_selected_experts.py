@@ -476,7 +476,12 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             SelectedExpertGradientMaskCallback(
                 num_experts=num_experts,
                 experts_to_train=experts_to_train,
-                layer_patterns=["experts", "router"],
+                # With split params, expert MLP gradients are handled by requires_grad=False
+                # on frozen params. Only the router needs gradient masking here.
+                # Using ["experts", "router"] with split params would incorrectly zero out
+                # w1_trainable/w2_trainable/w3_trainable gradients because the mask assumes
+                # all num_experts are stacked in one param.
+                layer_patterns=["router"] if opts.split_expert_params else ["experts", "router"],
             ),
         )
         .with_callback(
