@@ -465,7 +465,8 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback(
             "gradient_monitor",
             GradientMonitorCallback(
-                layer_names=["expert.mlp", "router"],
+                # layer_names=["expert.mlp", "router"],
+                layer_names=[],
                 max_steps_to_monitor=10,
                 log_all_params=True,
             ),
