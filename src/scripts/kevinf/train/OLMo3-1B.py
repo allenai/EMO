@@ -237,7 +237,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback(
             "post_train_eval",
             PostTrainEvalCallback(
-                eval_output_base_dir="/data/input/kevinf/flexmoe/eval/results",
+                eval_output_base_dir="/data/input/kevinf/eval_results/flexmoe",
                 cluster="ai2/saturn",
                 enabled=True,
             ),
@@ -256,6 +256,24 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                 eval_duration=Duration.steps(200),
                 eval_on_startup=True,
                 log_interval=1,
+            ),
+        )
+        .with_callback(
+            "lm_evaluator_2",
+            LMEvaluatorCallbackConfig(
+                eval_dataset=NumpyPaddedFSLDatasetConfig.from_data_mix(
+                    DataMix.dolma2_code,
+                    tokenizer=tokenizer_config,
+                    mix_base_dir=DATA_ROOT,
+                    sequence_length=SEQUENCE_LENGTH,
+                    work_dir=work_dir,
+                ),
+                name="lm_2",
+                eval_interval=100,
+                eval_duration=Duration.steps(200),
+                eval_on_startup=True,
+                log_interval=1,
+                enabled=False,
             ),
         )
     )

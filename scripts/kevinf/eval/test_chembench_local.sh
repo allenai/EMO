@@ -9,7 +9,7 @@ echo "============================================"
 echo
 
 # Configuration
-MODEL_PATH="/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+MODEL_PATH="/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
 OUTPUT_DIR="/tmp/test-chembench-eval-$(date +%s)"
 TASK="chembench_organic_chemistry:gen"
 LIMIT=5  # Only test on 5 examples for speed

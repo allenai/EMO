@@ -791,6 +791,7 @@ def run_eval(args_dict: dict):
     hash_model_config.pop("do_prune")
     hash_model_config.pop("activation_file")
     hash_model_config.pop("prune_keep_k")
+    hash_model_config.pop("logits_cache", None)
     model_hash = hash_dict(hash_model_config, MODEL_DEFAULTS)
 
     if HAS_AI2_INTERNAL:

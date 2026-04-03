@@ -66,9 +66,6 @@ def launch_internal(args_dict, run_eval_command, internal_args, num_tasks):
         subprocess.run(full_command, shell=True)
         return 0
 
-    import pdb
-
-    pdb.set_trace()
     logger.info(f"Launching eval through beaker on {num_tasks} tasks!")
     spec_file, spec_path = tempfile.mkstemp()
     try:

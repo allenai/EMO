@@ -23,7 +23,7 @@ fi
 # Configuration
 # ============================================================================
 
-BASE_OUTPUT_DIR="/data/input/kevinf/flexmoe/eval/results"
+BASE_OUTPUT_DIR="/data/input/kevinf/eval_results/flexmoe"
 CLUSTER="ai2/saturn"
 LIMIT=1000
 MAX_SEQUENCE_LENGTH=65536

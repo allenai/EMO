@@ -32,4 +32,4 @@ python -m olmo_core.launch.beaker \
   --dataset.mix=chempile \
   --train_module.optim.lr=1e-4 \
   --train_module.scheduler.warmup_steps=715 \
-  --load_path="/weka/oe-training-default/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995"
+  --load_path="/weka/oe-training-default/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995"

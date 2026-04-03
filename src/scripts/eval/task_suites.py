@@ -4,7 +4,7 @@ from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 
 
 def get_task_suite_configs():
-    from offline_evals.tasks import chembench, frenchbench, legalbench
+    from offline_evals.tasks import chembench, code_fresh, frenchbench, legalbench
 
     TASK_SUITE_CONFIGS.update(
         {
@@ -49,6 +49,18 @@ def get_task_suite_configs():
                 "tasks": [f"{t}:rc:5shot::olmes" for t in frenchbench.FRENCHBENCH_BASE_TASKS],
                 "primary_metric": "macro",
             },
+            "code_fresh_rolling:bpb": {
+                "tasks": [
+                    f"code_fresh_rolling:{lang}:bpb" for lang in code_fresh.CODE_FRESH_LANGUAGES
+                ],
+                "primary_metric": "macro",
+            },
+            "code_fresh_rolling:ppl": {
+                "tasks": [
+                    f"code_fresh_rolling:{lang}:ppl" for lang in code_fresh.CODE_FRESH_LANGUAGES
+                ],
+                "primary_metric": "macro",
+            },
         },
     )
 
@@ -81,6 +93,14 @@ def get_task_suite_configs():
     }
     TASK_SUITE_CONFIGS["mmlu_pro:rc_test::olmes"] = {
         "tasks": [f"mmlu_pro_{sub}:rc_test::olmes" for sub in MMLU_PRO_CATEGORIES],
+    }
+
+    # MMLU Pro ::none suites (validation split, 5-shot)
+    TASK_SUITE_CONFIGS["mmlu_pro:mc::none"] = {
+        "tasks": [f"mmlu_pro_{sub}:mc_validation::none" for sub in MMLU_PRO_CATEGORIES],
+    }
+    TASK_SUITE_CONFIGS["mmlu_pro:rc::none"] = {
+        "tasks": [f"mmlu_pro_{sub}:rc_validation::none" for sub in MMLU_PRO_CATEGORIES],
     }
 
     return TASK_SUITE_CONFIGS

@@ -1,0 +1,11 @@
+# Token counts (bytes/4 for uint32 .npy files):
+#   Cpp:   49.13B tokens (8 files)
+#   TOTAL: 49.13B tokens (8 files)
+stack-edu-Cpp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Cpp/000000.npy
+stack-edu-Cpp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Cpp/000001.npy
+stack-edu-Cpp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Cpp/000002.npy
+stack-edu-Cpp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Cpp/000003.npy
+stack-edu-Cpp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Cpp/000004.npy
+stack-edu-Cpp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Cpp/000005.npy
+stack-edu-Cpp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Cpp/000006.npy
+stack-edu-Cpp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Cpp/000007.npy
