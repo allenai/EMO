@@ -111,11 +111,32 @@ class EvaluatorCallback(Callback):
             evaluator.reset_metrics()
             eval_step = 0
             eval_tokens = 0
+            first_batch_hash = None
+            label_token_counts: Dict[str, int] = {}
             for batch in evaluator:
                 eval_step += 1
                 eval_tokens += batch["input_ids"].numel() * dp_world_size
 
                 batch = move_to_device(batch, get_default_device())
+
+                # Diagnostic logging for first batch to verify eval determinism.
+                if eval_step == 1:
+                    first_batch_hash = hash(batch["input_ids"][:2].cpu().numpy().tobytes())
+                    log.info(
+                        f"[eval={evaluator.name}] first_batch_hash={first_batch_hash}, "
+                        f"batch_shape={batch['input_ids'].shape}, "
+                        f"total_batches={evaluator.total_batches}"
+                    )
+                    # Log first 20 global instance indices to verify same data across eval passes.
+                    if hasattr(evaluator.batches, "get_global_indices"):
+                        try:
+                            indices = evaluator.batches.get_global_indices()[:20]
+                            log.info(
+                                f"[eval={evaluator.name}] first_20_instance_indices={list(indices)}"
+                            )
+                        except Exception:
+                            pass
+
                 with torch.no_grad():
                     # Run forward pass, get logits and un-reduced CE loss.
                     labels = get_labels(batch)
@@ -127,12 +148,43 @@ class EvaluatorCallback(Callback):
                     with cuda_sync_debug_mode(0):
                         evaluator.update_metrics(batch, ce_loss, logits)
 
+                        # Log per-step CE loss for first 5 steps (diagnostic).
+                        if eval_step <= 5:
+                            batch_mean_loss = (
+                                ce_loss[ce_loss > 0].mean().item() if ce_loss is not None else None
+                            )
+                            log.info(
+                                f"[eval={evaluator.name},step={eval_step}] "
+                                f"batch_mean_ce_loss={batch_mean_loss}"
+                            )
+
+                # Track per-label token counts.
+                # TODO(kevinf): remove this debugging code before merging to production.
+                with cuda_sync_debug_mode(0):
+                    for idx, metadata in enumerate(batch.get("metadata", [])):
+                        label = metadata["label"]
+                        if "label_mask" in batch:
+                            n_tokens = int(batch["label_mask"][idx].sum().item())
+                        else:
+                            n_tokens = batch["input_ids"].shape[-1]
+                        label_token_counts[label] = label_token_counts.get(label, 0) + n_tokens
+
                 if self.eval_duration.due(step=eval_step, tokens=eval_tokens, epoch=1):
                     self._log_progress(evaluator, eval_step)
                     break
 
                 if eval_step % self.log_interval == 0 or eval_step == evaluator.total_batches:
                     self._log_progress(evaluator, eval_step)
+
+            # Log eval completion summary.
+            log.info(
+                f"[eval={evaluator.name}] completed: steps={eval_step}, "
+                f"tokens={eval_tokens:,d}, first_batch_hash={first_batch_hash}"
+            )
+            label_counts_str = ", ".join(
+                f"{k}={v:,d}" for k, v in sorted(label_token_counts.items())
+            )
+            log.info(f"[eval={evaluator.name}] per-label tokens: {label_counts_str}")
 
             # NOTE: going to have a host-device sync here but that's okay. It's only once
             # per evaluator.
@@ -200,6 +252,8 @@ class LMEvaluatorCallbackConfig(CallbackConfig):
     eval_duration: Duration = field(default_factory=lambda: Duration.epochs(1))
     log_interval: int = 5
     enabled: bool = True
+    deterministic: bool = True
+    name: str = "lm"
 
     def build(self, trainer: "Trainer") -> Optional[Callback]:
         if not self.enabled:
@@ -221,6 +275,14 @@ class LMEvaluatorCallbackConfig(CallbackConfig):
                 f"is too long for the train module's maximum eval sequence length ({batch_spec.max_sequence_length:,d} tokens)"
             )
 
+        # TODO(kevinf): The eval batch size below comes from eval_batch_spec which returns
+        # rank_microbatch_size — the training gradient accumulation granularity, NOT a memory
+        # limit. With seq_len=8192 this means only 1 instance per GPU per eval step, wasting
+        # GPU capacity (no backward pass during eval, so memory budget is ~2x training).
+        # Fix: add a rank_eval_instances_per_step config field here, compute
+        # global_eval_batch_size = rank_eval_instances_per_step * seq_len * dp_world_size,
+        # and use that instead. Increasing eval_duration is a workaround (same metric result
+        # but slower throughput).
         global_eval_batch_size: int
         if batch_spec.batch_size_unit == EvalBatchSizeUnit.tokens:
             global_eval_batch_size = batch_spec.rank_batch_size * get_world_size(
@@ -248,11 +310,12 @@ class LMEvaluatorCallbackConfig(CallbackConfig):
 
         evaluator = LMEvaluator.from_numpy_dataset(
             dataset,
-            name="lm",
+            name=self.name,
             global_batch_size=global_eval_batch_size,
             collator=trainer.data_loader.collator,
             device=trainer.device,
             dp_process_group=trainer.dp_process_group,
+            deterministic=self.deterministic,
         )
         return EvaluatorCallback(
             evaluators=[evaluator],

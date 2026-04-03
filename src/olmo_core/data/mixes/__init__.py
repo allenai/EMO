@@ -63,6 +63,24 @@ class DataMix(DataMixBase):
     pmc = "pmc"
     mimic_iv_note = "mimic-iv-note"
     mimic_pmc_5B = "mimic-pmc-5B"
+    dolma2_code = "dolma2-code"
+    dolma2_code_python = "dolma2-code-python"
+    dolma2_code_java = "dolma2-code-java"
+    dolma2_code_cpp = "dolma2-code-cpp"
+    dolma2_code_py10B_other40 = "dolma2-code-py10B-other40"
+    dolma50_stackedu_python50 = "dolma50-stackedu-python50"
+    swallow_code_v2_python = "swallow-code-v2-python"
+
+    stack_v2_python_p75 = "stack-v2-python-p75"
+    stack_v2_cpp_p75 = "stack-v2-cpp-p75"
+    stack_v2_java_p75 = "stack-v2-java-p75"
+    stack_v2_all_p75 = "stack-v2-all-p75"
+    sponge_code_prose_p75 = "sponge-code-prose-p75"
+    dolma50_swallow_python50 = "dolma50-swallow-python50"
+    dolma50_swallow_stackv2_python50 = "dolma50-swallow-stackv2-python50"
+
+    medical_o1_en_cot = "medical-o1-en-cot"
+    medical_o1_en_nocot = "medical-o1-en-nocot"
 
     @classmethod
     def _missing_(cls, value: object) -> "DataMix | None":

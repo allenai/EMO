@@ -1,6 +1,7 @@
 """
 Uses the task of Synthea as a medical MCQ task
 """
+
 import os
 from typing import Optional
 
@@ -77,7 +78,9 @@ class Synthea(MultipleChoiceTask):
         prompt = doc["prompt"]
         question_idx = prompt.rfind("\nA. ")
         if prompt.count("\nA. ") != 1:
-            breakpoint()
+            raise ValueError(
+                f"Expected exactly one '\\nA. ' in prompt, got {prompt.count(chr(10) + 'A. ')}"
+            )
 
         question = prompt[:question_idx].strip()
 

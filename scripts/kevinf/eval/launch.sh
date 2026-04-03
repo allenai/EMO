@@ -5,22 +5,23 @@
 
 # Configuration
 MODELS=(
-    # need: general model, pretrained model (hf versions)
-    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    # # need: general model, pretrained model (hf versions)
     # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift-ckpt_1B_dolma3/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift-ckpt_1B_dolma3/step2385-hf"
-    # "/data/input/kevinf/checkpoints-new/olmo3-1b-130b-OLMo-mix-0625-150Bsample-dclm/step30995-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-130b-OLMo-mix-0625-150Bsample-dclm/step30995-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-10B-chempile-papers_education_lift-continued_pt_30B_from_130B_dolma3/step7153-hf"
-    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
-    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
+    # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-the-pile-of-law-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
-    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
-    # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
+    # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-chempile-10B-lr2e-4-warmup715-ctd/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-chempile-10B-lr5e-5-warmup715-ctd/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-croissant-10B-lr5e-5-warmup0.1-ctd/step2385-hf/"
     # "/data/input/kevinf/checkpoints/olmo3-1b-croissant-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
     # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
     # "/data/input/kevinf/checkpoints-new/new-kevinf-olmo3-1b-130b-olmoemix-0824/step30995-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-chempile-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
@@ -28,10 +29,41 @@ MODELS=(
     # "/data/input/kevinf/checkpoints/olmo3-1b-croissant-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-pmc-30B-lr5e-5-warmup0.1-ctd/step7153-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-mimic-iv-note-2B-lr5e-5-warmup0.1-ctd/step477-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-medical-o1-en-cot-0.1B-lr5e-5-warmup0.1-ctd/step24-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-medical-o1-en-nocot-0.1B-lr5e-5-warmup0.1-ctd/step48-hf/"
+    # # dolma2 code mixes
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-dolma2-code-java-10B-lr5e-5-eval-on-java-only-new-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-dolma2-code-python-10B-lr5e-5-eval-on-python-only-new-ctd/step2385-hf"
+    # # stack-v2 code mixes (quality p75+)
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-python-p75-10B-lr5e-5-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-cpp-p75-10B-lr5e-5-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-java-p75-10B-lr5e-5-ctd/step2385-hf"
+    # # other code models (for reference)
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-dolma2-code-java-10B-lr5e-5-eval-on-java-only-new-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-dolma2-code-python-10B-lr5e-5-eval-on-python-only-new-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-dolma2-code-python-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-dolma2-code-java-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-dolma2-code-cpp-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-cpp-p75-10B-lr5e-5-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-java-p75-10B-lr5e-5-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-code_fim_python-2B-lr5e-5-warmup0.1-pplx-raw-ctd/step477-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-code_fim_cpp-2B-lr5e-5-warmup0.1-pplx-raw-ctd/step477-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-code_fim_java-2B-lr5e-5-warmup0.1-pplx-raw-ctd/step477-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-sponge-code-prose-p75-10B-lr5e-5-ctd/step2385-hf"
+    
+    # code_fresh_rolling:bpb active models (verified)
+    # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-dolma2-code-python-10B-lr5e-5-warmup0.1-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-python-p75-10B-lr5e-5-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-sponge-code-prose-p75-10B-lr5e-5-ctd/step2385-hf"
+    # "/data/input/kevinf/checkpoints/olmo3-1b-code_fim_python-2B-lr5e-5-warmup0.1-pplx-raw-ctd/step477-hf"
+    "/data/input/kevinf/checkpoints/train-olmo3-1b-dolma50-stackedu-python50-10B-lr5e-5-ctd/step2385-hf"
+    "s3://ai2-llm/checkpoints/lucas/olmo3_1b_5xc_50web_alldressed_v2_50spring2code_stack_edu_redux_all/step61007-hf"
+    "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+
 )
 
-BASE_OUTPUT_DIR="/data/input/kevinf/flexmoe/eval/results"
-# BASE_OUTPUT_DIR="s3://ai2-llm/jacobm/flexolmo/results"
+BASE_OUTPUT_DIR="/data/input/kevinf/eval_results/flexmoe"
 BATCH_SIZE=4
 CLUSTER="ai2/saturn"
 LIMIT=1000
@@ -39,6 +71,9 @@ model_type=hf
 
 # Define all available tasks from run_eval.sh (ALL tasks from all groups)
 TASKS=(
+    # code_fresh rolling BPB (all 42 languages)
+    # code_fresh_rolling:bpb
+
     # # # MC9 tasks
     # arc_easy:mc::olmes
     # arc_challenge:mc::olmes
@@ -49,7 +84,7 @@ TASKS=(
     # piqa:mc::olmes
     # socialiqa:mc::olmes
     # winogrande:mc::olmes
-    
+
     # # # Gen5 tasks
     # coqa::olmes
     # squad::olmes
@@ -59,7 +94,7 @@ TASKS=(
 
     # # # MMLU tasks
     # mmlu:mc::olmes
-    # # mmlu_pro_mc::none
+    # mmlu_pro:mc::none
 
     # # # AGI eval
     # agi_eval_english:1shot::olmes
@@ -90,12 +125,14 @@ TASKS=(
     # # ChemBench MC and generative tasks
     # chembench:mc
     # chembench:gen
-    # chembench:rc    
+    # chembench:rc
     # frenchbench:rc
     # legalbench:rc
 
     # medqa
     # medmcqa:mc
+
+    mt_mbpp_v2fix
 )
 
 # Function to get checkpoint name - extracts run name and step from path
@@ -119,10 +156,13 @@ for MODEL_PATH in "${MODELS[@]}"; do
     
     # For setting the output_dir (matching original script logic)
     if [[ $MODEL_PATH == "/"* ]]; then
-        # internal model
+        # internal model (absolute local path)
+        model=$(get_checkpoint_name $MODEL_PATH)
+    elif [[ $MODEL_PATH == "s3://"* ]]; then
+        # S3 path
         model=$(get_checkpoint_name $MODEL_PATH)
     else
-        # HF model
+        # HF model (org/model format)
         model=$(echo $MODEL_PATH | cut -d'/' -f2)
     fi
     
@@ -139,7 +179,14 @@ for MODEL_PATH in "${MODELS[@]}"; do
     else
         batch_size=4
     fi
-    
+    # Rolling eval tasks need logits_cache disabled to avoid tensor size
+    # mismatches from Collator key collisions (flat ctx+cont key is ambiguous
+    # about the boundary). Safe to leave on for non-rolling tasks (MC etc).
+    model_args=""
+    if [[ $TASK == *"code_fresh"* ]]; then
+        model_args="logits_cache=false"
+    fi
+
     # Create job name - remove invalid characters only
     safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g')
     safe_task_name=$(echo $TASK | sed 's/[^a-zA-Z0-9_-]//g')
@@ -151,6 +198,15 @@ for MODEL_PATH in "${MODELS[@]}"; do
     echo "  Batch size: $batch_size"
     echo "  Job name: $job_name"
     
+    # For S3 paths, sync to local temp dir first (transformers doesn't support s3:// URIs)
+    if [[ $MODEL_PATH == "s3://"* ]]; then
+        EVAL_MODEL_PATH="/tmp/model_ckpt"
+        SYNC_CMD="pip install awscli -q && aws s3 sync \"$MODEL_PATH\" \"$EVAL_MODEL_PATH\" && "
+    else
+        EVAL_MODEL_PATH="$MODEL_PATH"
+        SYNC_CMD=""
+    fi
+
     uv run gantry run \
         --name $job_name \
         --weka oe-training-default:/data/input \
@@ -165,9 +221,10 @@ for MODEL_PATH in "${MODELS[@]}"; do
         --env-secret AWS_SECRET_ACCESS_KEY=KEVINF_AWS_SECRET_ACCESS_KEY \
         --allow-dirty \
         -- \
-        bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
-            --model $MODEL_PATH \
+        bash -c "${SYNC_CMD}PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+            --model $EVAL_MODEL_PATH \
             --model-type hf \
+            ${model_args:+--model-args $model_args} \
             --task $TASK \
             --limit $LIMIT \
             --output-dir $OUTPUT_DIR \
