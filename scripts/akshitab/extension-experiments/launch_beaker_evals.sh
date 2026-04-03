@@ -77,8 +77,66 @@ MODELS=(
     # ff-moe1b14b_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
     # merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
 
-    ff-moe1b14b_132experts_4trained_croissant_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
+    # ff-moe1b14b_132experts_4trained_croissant_init_average_noise_10pc_10B_lr_4e-4/step2385-hf
 
+    # extensions/moe_1b14b_132experts_olmoe-mix_130B_1103_step30995_init_top2_average_noise_10perc-hf
+    # extensions/moe_1b14b_132experts_olmoe-mix_130B_1103_step30995_init_top2_code_average_noise-hf
+
+    # rt-merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_1B_lr_4e-4/step239-hf
+
+    # merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
+    # freeze-fix-moe1b14b_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+
+    # merged_router_row_norm_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
+
+    # extensions/moe_1b14b_128experts_1shared_expert_56_init_top2_average-hf
+    # merged_moe_1b14b_128base_1math_10B_4code_mix_10B_init_top2_average_noise-hf
+    # merged_moe_1b14b_128base_2math_10B_4code_mix_10B_init_top2_average_noise-hf
+    # merged_moe_1b14b_128base_1math_5B_4code_mix_10B_init_top2_average_noise-hf
+    # merged_moe_1b14b_128base_2math_5B_4code_mix_10B_init_top2_average_noise-hf
+    # merged_moe_1b14b_128base_4math_5B_4code_mix_10B_init_top2_average_noise-hf
+    # rt-realdata-merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_1B_lr_4e-4/step239-hf
+    # ff-moe1b14b_132experts_4trained_sharedexp56math_init_top2_average_10B_lr_4e-4/step2385-hf
+    # moe1b14b_128experts_76_5_122_126_trained_math_10B_lr_4e-4/step2385-hf
+    # moe1b14b_128experts_76_41_120_3_trained_code_10B_lr_4e-4/step2385-hf
+
+    # ff-moe1b14b_132experts_4trained_code_mix_init_top2_average_noise_no_router_10B_lr_4e-4/step2385-hf
+    # ff-moe1b14b_132experts_4trained_math_init_top2_average_no_router_10B_lr_4e-4/step2385-hf
+    # moe1b14b_128experts_76_5_122_126_trained_math_no_router_10B_lr_4e-4/step2385-hf
+    # moe1b14b_128experts_76_41_120_3_trained_code_no_router_10B_lr_4e-4/step2385-hf
+    # weight_merge_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
+
+    # twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf
+    # twolevel_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # twolevel_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf    
+    # merged_twolevel_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
+
+    # twolevel_132experts_4trained_forced_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # twolevel_132experts_4trained_forced_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # twolevel_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # twolevel_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf
+    # moereducedp512sharedexp1_132experts_4trained_math_init_top2_average_10B_lr_4e-4/step2385-hf
+    # moereducedp512sharedexp1_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+
+    # moereducedp512sharedexp1_1b14b_128experts_127_123_1_76_trained_code_10B_lr_4e-4/step2385-hf
+    # moereducedp512sharedexp1_1b14b_128experts_127_69_30_3_trained_math_10B_lr_4e-4/step2385-hf
+    # twolevel_1b14b_128experts_63_26_6_19_trained_code_10B_lr_4e-4/step2385-hf
+    # twolevel_1b14b_128experts_99_0_42_88_trained_math_10B_lr_4e-4/step2385-hf
+    # moereducedp512sharedexp1_132experts_4trained_math_init_top2_average_10B_lr_4e-4/step2385-hf
+    # moereducedp512sharedexp1_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+
+    # moereducedp512sharedexp1_1b14b_128experts_123_1_76_6_trained_code_10B_lr_4e-4/step2385-hf
+    # moereducedp512sharedexp1_1b14b_128experts_69_30_3_6_trained_math_10B_lr_4e-4/step2385-hf
+
+    # twolevel_132experts_4trained_forced_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # twolevel_132experts_4trained_forced_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+
+    # moereducedp512sharedexp1_1b14b_128experts_all_trained_math_10B_lr_4e-4/step2385-hf
+    # moereducedp512sharedexp1_1b14b_128experts_full_finetune_math_10B_lr_4e-4/step2385-hf
+
+    # merged_twolevel_1b14b_128base_4math_10B_4code_mix_10B_forced_init_top2_average_noise-hf
+    rt-merged_twolevel_1b14b_128base_4math_10B_4code_mix_10B_forced_init_top2_average_noise_1B_lr_4e-4/step239-hf
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
@@ -90,62 +148,29 @@ model_type=hf
 # Define grouped tasks
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
-  # MC9 tasks
-#  "arc_easy|arc_easy:rc_test::olmes"
-#  "arc_challenge|arc_challenge:rc_test::olmes"
-#  "boolq|boolq:rc_test::olmes"
-#  "csqa|csqa:rc_test::olmes"
-#  "hellaswag|hellaswag:rc_test::olmes"
-#  "openbookqa|openbookqa:rc_test::olmes"
-#  "piqa|piqa:rc_test::olmes"
-#  "socialiqa|socialiqa:rc_test::olmes"
-#  "winogrande|winogrande:rc_test::olmes"
-# #  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
-# #  "synthea|synthea:rc_test_0shot::olmes"
-# #   "coqa|coqa:test_0shot::olmes"
-# #  "squad|squad:test_0shot::olmes"
+    # MC9 tasks
+    "arc_easy|arc_easy:rc_test::olmes"
+    "arc_challenge|arc_challenge:rc_test::olmes"
+    "boolq|boolq:rc_test::olmes"
+    "csqa|csqa:rc_test::olmes"
+    "hellaswag|hellaswag:rc_test::olmes"
+    "openbookqa|openbookqa:rc_test::olmes"
+    "piqa|piqa:rc_test::olmes"
+    "socialiqa|socialiqa:rc_test::olmes"
+    "winogrande|winogrande:rc_test::olmes"
 
+    "squad|squad::olmes"
+    "triviaqa|triviaqa::olmes"
 
-# #  "coqa|coqa:train_0shot::olmes"
+    # # math tasks
+    "gsm8k::olmes"
+    "gsm8k_generation|gsm8k_generation_0shot:test::olmes"
+    # "minerva_math_500::olmes"
+    "basic_skills::olmes"
 
-
-# #   MMLU
-# #  "mmlu_rc_test|mmlu:rc_test::olmes"
-
-# #   Gen5 tasks
-# #  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes drop::olmes"
-
-# #   math
-# #   "gsm8k_test|gsm8k:perplexity_test::olmes"
-#   "gsm8k::olmes"
-#   "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
-#     # "gsm8k:bpb::olmes"
-# #   "mmlu:mc::olmes"
-# #   "mmlu_pro:mc::olmes"
-# #   "minerva_math_algebra::olmes"
-# #   "minerva_math_counting_and_probability::olmes"
-# #   "minerva_math_geometry::olmes"
-# #   "minerva_math_intermediate_algebra::olmes"
-# #   "minerva_math_number_theory::olmes"
-# #   "minerva_math_prealgebra::olmes"
-# #   "minerva_math_precalculus::olmes"
-#     # "minerva_math_algebra:bpb::olmes"
-    # "basic_skills::olmes"
-#     "basic_skills_arithmetic:rc::olmes"
-
-
-    # "minerva_math_algebra:bpb::olmes"
-    # minerva_math_500:bpb::olmes
-    # minerva_math_500::olmes
-
-    # mbpp:3shot:bpb::none
-    # codex_humaneval:3shot:bpb::none
-
-    frenchbench_hellaswag:rc
-    frenchbench_boolq:rc
-    frenchbench_arc_challenge:rc
-    frenchbench_grammar_vocab_reading:rc
-    
+    # # code tasks
+    "mbpp:3shot:bpb::none"
+    "codex_humaneval:3shot:bpb::none"
 )
 
 # Function to get checkpoint name (matching the original script)
@@ -231,13 +256,14 @@ for MODEL_NAME in "${MODELS[@]}"; do
         gantry run \
             --name $job_name \
             --weka oe-training-default:/weka/oe-training-default \
-            --install "pip install -e \".[all]\"" \
+            --install "uv pip install -e \".[all]\"" \
             --budget ai2/oceo \
             --workspace ai2/flex2 \
             --cluster $CLUSTER \
             --priority urgent \
             --allow-dirty \
             --gpus $gpus \
+            --preemptible \
             --env-secret HF_TOKEN=AKSHITAB_HF_TOKEN \
             --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
             --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \

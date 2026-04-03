@@ -9,7 +9,9 @@ MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
 MODELS=(
     "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995-hf"
     "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
+    "moe_1b4b_32experts_1224/step30995-hf"
     "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
+
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995-hf"
 #    "twolevelsamplingnolb-32_1b10b_stability_1127/step30995-hf"
 #    "twolevelsamplingnolb-32_1b14b_stability_1127/step30995-hf"
@@ -58,10 +60,40 @@ TASK_GROUPS_LIST=(
 
 #  "synthea|synthea:rc_test_0shot::olmes"
 #  "gsm8k|gsm8k_generation:test_0shot::olmes"
-  "coqa|coqa:test_0shot::olmes"
-  "squad|squad:test_0shot::olmes"
+#  "coqa|coqa:test_0shot::olmes"
+#  "squad|squad:test_0shot::olmes"
 
 #   GSM8K
+  "mmlu_biology|mmlu_biology:rc_test::olmes"
+  "mmlu_business|mmlu_business:rc_test::olmes"
+  "mmlu_chemistry|mmlu_chemistry:rc_test::olmes"
+  "mmlu_computer_science|mmlu_computer_science:rc_test::olmes"
+  "mmlu_culture|mmlu_culture:rc_test::olmes"
+  "mmlu_economics|mmlu_economics:rc_test::olmes"
+  "mmlu_engineering|mmlu_engineering:rc_test::olmes"
+  "mmlu_geography|mmlu_geography:rc_test::olmes"
+  "mmlu_health|mmlu_health:rc_test::olmes"
+  "mmlu_history|mmlu_history:rc_test::olmes"
+  "mmlu_law|mmlu_law:rc_test::olmes"
+  "mmlu_math|mmlu_math:rc_test::olmes"
+  "mmlu_other|mmlu_other:rc_test::olmes"
+  "mmlu_philosophy_cat|mmlu_philosophy_cat:rc_test::olmes"
+  "mmlu_physics|mmlu_physics:rc_test::olmes"
+  "mmlu_politics|mmlu_politics:rc_test::olmes"
+  "mmlu_psychology|mmlu_psychology:rc_test::olmes"
+
+#  "mmlu_abstract_algebra|mmlu_abstract_algebra:rc_test::olmes"
+#  "mmlu_anatomy|mmlu_anatomy:rc_test::olmes"
+#  "mmlu_astronomy|mmlu_astronomy:rc_test::olmes"
+#  "mmlu_business_ethics|mmlu_business_ethics:rc_test::olmes"
+#  "mmlu_clinical_knowledge|mmlu_clinical_knowledge:rc_test::olmes"
+#  "mmlu_college_biology|mmlu_college_biology:rc_test::olmes"
+#  "mmlu_college_chemistry|mmlu_college_chemistry:rc_test::olmes"
+#  "mmlu_college_computer_science|mmlu_college_computer_science:rc_test::olmes"
+#  "mmlu_college_mathematics|mmlu_college_mathematics:rc_test::olmes"
+#  "mmlu_college_medicine|mmlu_college_medicine:rc_test::olmes"
+#  "mmlu_college_physics|mmlu_college_physics:rc_test::olmes"
+#
 #  "gsm8k_test|gsm8k:perplexity_test::olmes"
 
   ######### TRAIN-VAL-TEST ##########
@@ -84,66 +116,6 @@ TASK_GROUPS_LIST=(
 #
 #  # Gen5 tasks
 #  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes drop::olmes"
-
-)
-
-# Define all available tasks from run_eval.sh (ALL tasks from all groups)
-TASKS=(
-    # MC9 tasks
-#    arc_easy:mc::olmes
-#    arc_challenge:mc::olmes
-#    boolq:mc::olmes
-#    csqa:mc::olmes
-#    hellaswag:mc::olmes
-#    openbookqa:mc::olmes
-#    piqa:mc::olmes
-#    socialiqa:mc::olmes
-#    winogrande:mc::olmes
-#
-#    arc_easy:rc::olmes
-#    arc_challenge:rc::olmes
-#    boolq:rc::olmes
-#    csqa:rc::olmes
-#    hellaswag:rc::olmes
-#    openbookqa:rc::olmes
-#    piqa:rc::olmes
-#    socialiqa:rc::olmes
-#    winogrande:rc::olmes
-#
-#    # Gen5 tasks
-#    coqa::olmes
-#    squad::olmes
-#    naturalqs::olmes
-#    triviaqa::olmes
-#    drop::olmes
-
-    # MMLU tasks
-#    mmlu:mc::olmes
-#    mmlu_pro:mc::none
-#
-#    mmlu:rc::olmes
-#
-##    # AGI eval
-#    agi_eval_english:1shot::olmes
-##
-##    # BBH
-#    bbh:cot-v1::olmes
-##
-##    # Math2 tasks
-#    gsm8k::olmes
-#    minerva_math_algebra::olmes
-#    minerva_math_counting_and_probability::olmes
-#    minerva_math_geometry::olmes
-#    minerva_math_intermediate_algebra::olmes
-#    minerva_math_number_theory::olmes
-#    minerva_math_prealgebra::olmes
-#    minerva_math_precalculus::olmes
-#
-##    # Code4 tasks
-#    codex_humaneval:temp0.8
-#    codex_humanevalplus:temp0.8
-#    mbpp::none
-#    mbppplus::none
 
 )
 
@@ -185,14 +157,14 @@ for MODEL_NAME in "${MODELS[@]}"; do
         TASK="${entry#*|}"            # text after '|'
 
         # Batch size adjustment (matching original script)
-        if [[ $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* || $TASK == *"boolq"* || $TASK == *"drop"* ]]; then
+        if [[ $TASK == *"mmlu_high_school_european_history"* || $TASK == *"mmlu_high_school_us_history"* || $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"ruler"* || $TASK == *"sciriff"* || $TASK == *"boolq"* || $TASK == *"drop"* ]]; then
             batch_size=$((BATCH_SIZE / 4))
         else
             batch_size=$BATCH_SIZE
         fi
 
         # adjust number of gpus requested if its mmlu, agi_eval, bbh, gsm8k, minerva, codex, mbpp
-        if [[ $TASK == *mmlu* || $TASK == *agi_eval* || $TASK == *bbh* || $TASK == *gsm8k* || $TASK == *minerva_math_* || $TASK == *codex* || $TASK == *mbpp* || $TASK == *synthea* ]]; then
+        if [[ $TASK == *agi_eval* || $TASK == *bbh* || $TASK == *gsm8k* || $TASK == *minerva_math_* || $TASK == *codex* || $TASK == *mbpp* || $TASK == *synthea* ]]; then
             gpus=4
         else
             gpus=1
@@ -246,6 +218,8 @@ for MODEL_NAME in "${MODELS[@]}"; do
                 --batch-size $batch_size \
                 --gpus $gpus \
                 "
+
+        sleep 20
 
         echo "Launched evaluation for model: $model, group: $GROUP_NAME"
         echo "----------------------------------------"

@@ -88,7 +88,7 @@ else
         train_task_name="$GROUP_NAME:train::olmes"
     elif [[ "$GROUP_NAME" == *mmlu* ]]; then
         validation_task_name="$GROUP_NAME:rc_validation::olmes"
-        train_task_name="" # set to empty string since there's no train set
+        train_task_name="$GROUP_NAME:rc_train::olmes"
     else
         validation_task_name="$GROUP_NAME:rc_validation::olmes"
         train_task_name="$GROUP_NAME:rc_train::olmes"

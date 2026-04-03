@@ -2,14 +2,51 @@
 
 # Configuration
 
-MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
-# MODEL_DIR=/weka/oe-training-default/akshitab/FlexMoE/models
+# MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
+MODEL_DIR=/weka/oe-training-default/akshitab/FlexMoE/models
 
 MODELS=(
-    moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
+    # moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
     # moe1b14b_129experts_1trained_math_init_random_expert_5B/step1193-hf
     # moe1b14b_129experts_1trained_math_init_average_5B/step1193-hf
-    twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf
+    # twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf
+
+    # freeze-fix-moe1b14b_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # ff-moe1b14b_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+
+    # ff-moe_1b14b_128base_4math_10B_4code_init_top2_code_mix_average_noise_10B_lr_4e-4/step2385-hf
+    # merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
+
+    ## math extension before training:
+    # extensions/moe_1b14b_132experts_olmoe-mix_130B_1103_step30995_init_top2_average_noise_10perc-hf
+    ## code extension before training:
+    # extensions/moe_1b14b_132experts_olmoe-mix_130B_1103_step30995_init_top2_code_average_noise-hf
+
+    ## merged model
+    # merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
+
+    # rt-realdata-merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_1B_lr_4e-4/step239-hf
+
+    # moe1b14b_128experts_76_5_122_126_trained_math_10B_lr_4e-4/step2385-hf
+    # moe1b14b_128experts_76_41_120_3_trained_code_10B_lr_4e-4/step2385-hf
+    # moe1b14b_128experts_76_5_122_126_trained_math_no_router_10B_lr_4e-4/step2385-hf
+    # moe1b14b_128experts_76_41_120_3_trained_code_no_router_10B_lr_4e-4/step2385-hf
+
+    # twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf
+
+    # twolevel_132experts_4trained_forced_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # twolevel_132experts_4trained_forced_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # twolevel_132experts_4trained_math_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+    # twolevel_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+
+    # moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf
+
+    # twolevel_1b14b_128experts_63_26_6_19_trained_code_10B_lr_4e-4/step2385-hf
+    # twolevel_1b14b_128experts_99_0_42_88_trained_math_10B_lr_4e-4/step2385-hf
+    # moereducedp512sharedexp1_132experts_4trained_math_init_top2_average_10B_lr_4e-4/step2385-hf
+    # moereducedp512sharedexp1_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385-hf
+
+    merged_twolevel_1b14b_128base_4math_10B_4code_mix_10B_forced_init_top2_average_noise-hf
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
@@ -21,52 +58,28 @@ model_type=hf
 # Define grouped tasks
 TASK_GROUPS_LIST=(
   ######### TEST-only ##########
-  # MC9 tasks
-#  "arc_easy|arc_easy:rc_test::olmes"
-#  "arc_challenge|arc_challenge:rc_test::olmes"
-#  "boolq|boolq:rc_test::olmes"
-#  "csqa|csqa:rc_test::olmes"
-#  "hellaswag|hellaswag:rc_test::olmes"
-#  "openbookqa|openbookqa:rc_test::olmes"
-#  "piqa|piqa:rc_test::olmes"
-#  "socialiqa|socialiqa:rc_test::olmes"
-#  "winogrande|winogrande:rc_test::olmes"
-#  "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
-#  "synthea|synthea:rc_test_0shot::olmes"
-#   "coqa|coqa:test_0shot::olmes"
-#  "squad|squad:test_0shot::olmes"
+    # MC9 tasks
+    "arc_easy|arc_easy:rc_test::olmes"
+    "arc_challenge|arc_challenge:rc_test::olmes"
+    "boolq|boolq:rc_test::olmes"
+    "csqa|csqa:rc_test::olmes"
+    "hellaswag|hellaswag:rc_test::olmes"
+    "openbookqa|openbookqa:rc_test::olmes"
+    "piqa|piqa:rc_test::olmes"
+    "socialiqa|socialiqa:rc_test::olmes"
+    "winogrande|winogrande:rc_test::olmes"
 
+    "squad|squad::olmes"
+    "triviaqa|triviaqa::olmes"
 
-#  "coqa|coqa:train_0shot::olmes"
+    # math tasks
+    "gsm8k::olmes"
+    "gsm8k_generation|gsm8k_generation_0shot:test::olmes"
+    # "basic_skills::olmes"
 
-
-#   MMLU
-#  "mmlu_rc_test|mmlu:rc_test::olmes"
-
-#   Gen5 tasks
-#  "gen5|coqa::olmes squad::olmes naturalqs::olmes triviaqa::olmes drop::olmes"
-
-#   math
-#   "gsm8k_test|gsm8k:perplexity_test::olmes"
-#   "gsm8k::olmes"
-#   "gsm8k_generation|gsm8k_generation:test_0shot::olmes"
-    # "gsm8k:bpb::olmes"
-#   "mmlu:mc::olmes"
-#   "mmlu_pro:mc::olmes"
-  #"minerva_math_algebra::olmes"
-#   "minerva_math_counting_and_probability::olmes"
-#   "minerva_math_geometry::olmes"
-#   "minerva_math_intermediate_algebra::olmes"
-#   "minerva_math_number_theory::olmes"
-#   "minerva_math_prealgebra::olmes"
-#   "minerva_math_precalculus::olmes"
-  #"minerva_math_algebra:bpb::olmes"
-
-    # mbpp:3shot:bpb::none
-    # codex_humaneval:3shot:bpb::none
-    mbpp
-    codex_humaneval
-
+    # code tasks
+    "mbpp"
+    "codex_humaneval"
 )
 
 # Function to get checkpoint name (matching the original script)
@@ -130,7 +143,7 @@ for MODEL_NAME in "${MODELS[@]}"; do
         # Remove invalid characters and truncate long names
         safe_model_name=$(echo $model | sed 's/[^a-zA-Z0-9_-]//g')
         safe_group_name=$(echo $GROUP_NAME | sed 's/[^a-zA-Z0-9_-]//g')
-        job_name="eval-${safe_model_name}-${safe_group_name}"
+        job_name="logits-${safe_model_name}-${safe_group_name}"
 
         echo "  Model name: $model"
         echo "  Output dir: $OUTPUT_DIR"
@@ -149,13 +162,14 @@ for MODEL_NAME in "${MODELS[@]}"; do
         gantry run \
             --name $job_name \
             --weka oe-training-default:/weka/oe-training-default \
-            --install "pip install -e \".[all]\"" \
+            --install "uv pip install -e \".[eval,transformers]\" " \
             --budget ai2/oceo \
             --workspace ai2/flex2 \
             --cluster $CLUSTER \
             --priority urgent \
             --allow-dirty \
             --gpus $gpus \
+            --preemptible \
             --env-secret HF_TOKEN=RYAN_HF_TOKEN \
             --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
             --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \

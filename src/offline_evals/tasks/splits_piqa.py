@@ -1,7 +1,8 @@
 from oe_eval.tasks.oe_eval_tasks.piqa import PiQA, PiQAMC
 
+from ..metrics.mc_softloss import SoftLoss
 
-class PIQA_RC_BASE(PiQA):
+class PIQA_RC_Base(PiQA):
     def has_test_docs(self):
         return True
 
@@ -24,6 +25,14 @@ class PIQA_RC_BASE(PiQA):
     def test_docs(self):
         # validation set used to be the test set by default if a test set did not exist, so we still set it as test set
         return map(self._process_doc, self.dataset["validation"])
+
+    def make_metrics(self):
+        # run the super
+        super().make_metrics()
+        # add softloss metric
+        self._metrics += [SoftLoss(**self.task_config["metric_kwargs"])]
+
+        return self._metrics
 
 
 class PIQA_MC_BASE(PiQAMC):
@@ -51,24 +60,24 @@ class PIQA_MC_BASE(PiQAMC):
         return map(self._process_doc, self.dataset["validation"])
 
 
-class PIQA_RC_Train(PIQA_RC_BASE):
-    pass
-
-
-class PIQA_RC_Validation(PIQA_RC_BASE):
-    pass
-
-
-class PIQA_RC_Train_0shot(PIQA_RC_BASE):
-    pass
-
-
-class PIQA_RC_Validation_0shot(PIQA_RC_BASE):
-    pass
-
-
-class PIQA_RC_Test(PIQA_RC_BASE):
-    pass
+# class PIQA_RC_Train(PIQA_RC_BASE):
+#     pass
+#
+#
+# class PIQA_RC_Validation(PIQA_RC_BASE):
+#     pass
+#
+#
+# class PIQA_RC_Train_0shot(PIQA_RC_BASE):
+#     pass
+#
+#
+# class PIQA_RC_Validation_0shot(PIQA_RC_BASE):
+#     pass
+#
+#
+# class PIQA_RC_Test(PIQA_RC_BASE):
+#     pass
 
 
 class PIQA_MC_Train(PIQA_MC_BASE):

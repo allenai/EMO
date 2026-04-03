@@ -1,5 +1,6 @@
 from oe_eval.tasks.oe_eval_tasks.siqa import SocialIQA, SocialIQAMC
 
+from ..metrics.mc_softloss import SoftLoss
 
 class SocialIQA_RC_Base(SocialIQA):
     def has_test_docs(self):
@@ -25,6 +26,13 @@ class SocialIQA_RC_Base(SocialIQA):
         # validation set used to be the test set by default if a test set did not exist, so we still set it as test set
         return map(self._process_doc, self.dataset["validation"])
 
+    def make_metrics(self):
+        # run the super
+        super().make_metrics()
+        # add softloss metric
+        self._metrics += [SoftLoss(**self.task_config["metric_kwargs"])]
+
+        return self._metrics
 
 class SocialIQAMC_Base(SocialIQAMC):
     def has_test_docs(self):
@@ -51,24 +59,24 @@ class SocialIQAMC_Base(SocialIQAMC):
         return map(self._process_doc, self.dataset["validation"])
 
 
-class SocialIQA_RC_Train(SocialIQA_RC_Base):
-    pass
-
-
-class SocialIQA_RC_Validation(SocialIQA_RC_Base):
-    pass
-
-
-class SocialIQA_RC_Train_0shot(SocialIQA_RC_Base):
-    pass
-
-
-class SocialIQA_RC_Validation_0shot(SocialIQA_RC_Base):
-    pass
-
-
-class SocialIQA_RC_Test(SocialIQA_RC_Base):
-    pass
+# class SocialIQA_RC_Train(SocialIQA_RC_Base):
+#     pass
+#
+#
+# class SocialIQA_RC_Validation(SocialIQA_RC_Base):
+#     pass
+#
+#
+# class SocialIQA_RC_Train_0shot(SocialIQA_RC_Base):
+#     pass
+#
+#
+# class SocialIQA_RC_Validation_0shot(SocialIQA_RC_Base):
+#     pass
+#
+#
+# class SocialIQA_RC_Test(SocialIQA_RC_Base):
+#     pass
 
 
 class SocialIQA_MC_Train(SocialIQAMC_Base):

@@ -7,7 +7,9 @@ Launch this with torchrun:
 """
 
 import argparse
+import json
 import logging
+import os
 import sys
 from dataclasses import dataclass
 from typing import Callable, List, Optional, cast
@@ -172,40 +174,43 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
     tokenizer_config = TokenizerConfig.dolma2()
 
-    # docs: start-model-config
-
     global PARTIAL_FREEZE_FN_REGISTRY
     PARTIAL_FREEZE_FN_REGISTRY[
         "partial_freeze_router_and_experts"
     ] = partial_freeze_router_and_experts
 
-    # if opts.num_experts_to_train != opts.added_experts:
-    #     log.warning(
-    #         f"num_experts_to_train ({opts.num_experts_to_train}) != added_experts ({opts.added_experts})."
-    #         f" This will train weights for the last {opts.num_experts_to_train} existing expert(s)."
-    #     )
-
-    model_config = TransformerConfig.olmoe_1B_7B(
-        vocab_size=tokenizer_config.padded_vocab_size(),
-        n_layers=16,
-        d_model=2048,
-        n_heads=16,
-        num_experts=128 + opts.num_experts_to_train,
-        top_k=8,
-        freeze_params=[
+    if opts.base_model_config:
+        config_path = os.path.join(opts.base_model_config, "config.json")
+        log.info(f"Loading model config from {config_path}")
+        with open(config_path, "r") as f:
+            base_config = json.load(f)
+        model_config = TransformerConfig.from_dict(base_config["model"])
+        assert model_config.block.feed_forward_moe is not None
+        # NOTE: When --base-model-config points to the checkpoint created by add_new_expert.py,
+        # num_experts already includes the added experts. No bump needed.
+        model_config.freeze_params = [
             "embeddings.*",
             "blocks.*.attention*",
             "blocks.*.feed_forward_norm.*",
             "lm_head.*",
-        ],
-        # NOTE: Hook-based partial_freeze doesn't work with torch.compile.
-        # Use FrozenExpertGradientMaskCallback instead (added to trainer_config).
-        # partial_freeze_params_mask_fn_name="partial_freeze_router_and_experts",
-        # partial_freeze_params_mask_fn_kwargs={"num_experts_to_train": opts.num_experts_to_train},
-    )
+        ]
+    else:
+        model_config = TransformerConfig.olmoe_1B_7B(
+            vocab_size=tokenizer_config.padded_vocab_size(),
+            n_layers=16,
+            d_model=2048,
+            n_heads=16,
+            num_experts=128 + opts.num_experts_to_train,
+            top_k=8,
+            freeze_params=[
+                "embeddings.*",
+                "blocks.*.attention*",
+                "blocks.*.feed_forward_norm.*",
+                "lm_head.*",
+            ],
+        )
 
     print(model_config)
-    # docs: end-model-config
 
     log.info(f"Using data root: {DATA_ROOT}")
 
@@ -386,7 +391,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         .with_callback(
             "frozen_expert_gradient_mask",
             FrozenExpertGradientMaskCallback(
-                num_experts=128 + opts.num_experts_to_train,
+                num_experts=model_config.block.feed_forward_moe.num_experts,
                 num_experts_to_train=opts.num_experts_to_train,
                 layer_patterns=["experts", "router"],
             ),
@@ -465,10 +470,11 @@ def parser_args():
         help="Number of experts to train (last n experts). Remaining are frozen.",
     )
     parser.add_argument(
-        "--added-experts",
-        type=int,
-        default=1,
-        help="Number of experts actually added.",
+        "--base-model-config",
+        type=str,
+        help="Path to checkpoint directory containing config.json for the base model. "
+        "When provided, the model config (including router type) is loaded from this file "
+        "instead of using the default olmoe_1B_7B config.",
     )
     parser.add_argument(
         "--eval-only",

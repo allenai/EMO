@@ -82,6 +82,9 @@ class DataMix(DataMixBase):
     medical_o1_en_cot = "medical-o1-en-cot"
     medical_o1_en_nocot = "medical-o1-en-nocot"
 
+    proxy_mix_base_math_code = "proxy_mix_base_math_code"
+    base_math_code = "base_math_code"
+
     @classmethod
     def _missing_(cls, value: object) -> "DataMix | None":
         """Handle alias lookups."""

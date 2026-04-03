@@ -1,5 +1,7 @@
 from oe_eval.tasks.oe_eval_tasks.hellaswag import HellaSwag, HellaSwagMC
 
+from ..metrics.mc_softloss import SoftLoss
+
 
 class HellaSwag_RC_Base(HellaSwag):
     def has_test_docs(self):
@@ -24,6 +26,14 @@ class HellaSwag_RC_Base(HellaSwag):
     def test_docs(self):
         # validation set used to be the test set by default if a test set did not exist, so we still set it as test set
         return map(self._process_doc, self.dataset["validation"])
+
+    def make_metrics(self):
+        # run the super
+        super().make_metrics()
+        # add softloss metric
+        self._metrics += [SoftLoss(**self.task_config["metric_kwargs"])]
+
+        return self._metrics
 
 
 class HellaSwag_MC_Base(HellaSwagMC):

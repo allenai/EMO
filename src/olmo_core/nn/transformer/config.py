@@ -768,6 +768,34 @@ class TransformerConfig(Config):
     @classmethod
     def olmoe_1B_7B(cls, vocab_size: int, **kwargs) -> "TransformerConfig":
         d_model = kwargs.pop("d_model", 2048)
+        always_active_experts = kwargs.pop("always_active_experts", None)
+        return cls.llama_like(
+            d_model=d_model,
+            vocab_size=vocab_size,
+            n_layers=kwargs.pop("n_layers", 16),
+            n_heads=kwargs.pop("n_heads", 16),
+            name=kwargs.pop("name", TransformerType.moe),
+            block_name=kwargs.pop("block_name", TransformerBlockType.moe_reordered_norm),
+            qk_norm=kwargs.pop("qk_norm", True),
+            rope_theta=kwargs.pop("rope_theta", 500_000),
+            layer_norm_eps=1e-6,
+            feed_forward_moe=MoEConfig(
+                name=MoEType.dropless,
+                num_experts=kwargs.pop("num_experts", 64),
+                hidden_size=int(0.5 * d_model),
+                router=MoERouterConfig(
+                    top_k=kwargs.pop("top_k", 8),
+                    always_active_experts=always_active_experts,
+                ),
+                lb_loss_weight=0.01,
+                z_loss_weight=0.001,
+            ),
+            **kwargs,
+        )
+
+    @classmethod
+    def olmoe_1B_7B_shared_expert(cls, vocab_size: int, **kwargs) -> "TransformerConfig":
+        d_model = kwargs.pop("d_model", 2048)
         return cls.llama_like(
             d_model=d_model,
             vocab_size=vocab_size,
@@ -783,6 +811,7 @@ class TransformerConfig(Config):
                 num_experts=kwargs.pop("num_experts", 64),
                 hidden_size=int(0.5 * d_model),
                 router=MoERouterConfig(top_k=kwargs.pop("top_k", 8)),
+                shared_mlp=FeedForwardConfig(hidden_size=0.5 * d_model),
                 lb_loss_weight=0.01,
                 z_loss_weight=0.001,
             ),

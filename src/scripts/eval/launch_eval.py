@@ -8,6 +8,8 @@ import subprocess
 import sys
 from typing import List
 
+from src.hf_training.data_utils import get_oe_task_name
+
 ## This is the main launching script for running evaluations.
 ## It should have minimal dependencies so it can run without installing extra packages
 
@@ -55,8 +57,8 @@ from oe_eval.utils import (
 
 # from oe_eval.configs.task_suites import TASK_SUITE_CONFIGS
 # from oe_eval.configs.tasks import TASK_CONFIGS
-from task_suites import get_task_suite_configs
-from tasks import get_task_configs
+from src.scripts.eval.task_suites import get_task_suite_configs
+from src.scripts.eval.tasks import get_task_configs
 
 TASK_SUITE_CONFIGS = get_task_suite_configs()
 TASK_CONFIGS = get_task_configs()
@@ -101,6 +103,9 @@ _parser.add_argument(
 )
 _parser.add_argument(
     "--split", type=str, default=None, help="Override evaluation split used for each task"
+)
+_parser.add_argument(
+    "--pruned_split", type=str, default=None, help="used to find the name of the task split. Only used when the task name ends with -pruned"
 )
 _parser.add_argument(
     "--use-chat-format", type=bool, default=None, help="Override use_chat_format each task"
@@ -309,7 +314,13 @@ def launch_eval(args_dict: dict):
     all_tasks = []
     task_suite_parent: dict = {}
     for task in tasks:
-        all_tasks += resolve_task_suite(task, task_suite_parent)
+        if task.endswith("-pruned"):
+            task = task[:-7]
+            pruned_split = args_dict["pruned_split"]
+            updated_task_name = get_oe_task_name(task, pruned_split)
+        else:
+            updated_task_name = task
+        all_tasks += resolve_task_suite(updated_task_name, task_suite_parent)
     for task in all_tasks:
         if task.endswith(".jsonl"):
             task_configs += load_jsonl(task)
@@ -365,14 +376,16 @@ def launch_eval(args_dict: dict):
 
     # num gpus currently auto-detected when running locally
     # gpus = args_dict.get("gpus", 0)
-    batch_size = args_dict.get("batch_size", 16)
+    batch_size = args_dict.get("batch_size", None)
 
     # Get extra args for Ai2 internal compute resources
     if HAS_AI2_INTERNAL:
         internal_args = process_internal_args(
             args_dict, model_config, model_gantry_args, task_configs, tasks
         )
-        batch_size = internal_args.get("batch_size", batch_size)
+        # Only use internal batch_size if user didn't explicitly pass one
+        if batch_size is None:
+            batch_size = internal_args.get("batch_size", 16)
 
     model_name = model_config.pop("model")
     run_eval_args = {

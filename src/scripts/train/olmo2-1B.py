@@ -161,7 +161,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
         max_sequence_length=SEQUENCE_LENGTH,
         optim=SkipStepAdamWConfig(
-            lr=4e-4,
+            lr=opts.lr,
             weight_decay=0.033,
             betas=(0.9, 0.95),
             group_overrides=[
@@ -275,6 +275,12 @@ def parser_args():
         "--dry-run",
         action="store_true",
         help="""Print the config and exit.""",
+    )
+    parser.add_argument(
+        "--lr",
+        type=float,
+        default=4e-4,
+        help="Learning rate for the optimizer.",
     )
     opts, overrides = parser.parse_known_args()
     return opts, overrides

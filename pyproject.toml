@@ -47,7 +47,7 @@ dev = [
     "pytest-sphinx",
     "pytest-xdist",
     "ruff",
-    "setuptools",
+    "setuptools==80.10.2",
     "Sphinx>=6.0,<=8.1.3",
     "sphinx-autobuild",
     "sphinx-autodoc-typehints==1.23.3",
@@ -56,12 +56,14 @@ dev = [
     "twine>=1.11.0",
     "wheel",
 ]
-beaker = ["beaker-py>=1.37.0,<2.0", "GitPython>=3.0,<4.0", "google-cloud-compute"]
+beaker = ["beaker-py>=2.5.5", "GitPython>=3.0,<4.0", "google-cloud-compute"]
 comet = ["comet_ml"]
 eval = [
     "ai2-olmes@git+https://github.com/allenai/olmes@721d796d00db4c2044a89ef9e1f81463e06f3090", # "ai2-olmes@git+https://github.com/allenai/olmes@162158ed7878a5d107f5c7e5ad1cebed2a95a26d",
     "beaker-gantry",
     "ai2-olmo-eval @ git+https://github.com/allenai/OLMo-in-loop-evals@kevinf/add-legalbench",
+    "pytrec-eval-terrier",
+    "setuptools==80.10.2",
     "prettytable",
     "s3fs",
     "litellm!=1.82.7,!=1.82.8", # For LLM judges (1.82.7 and 1.82.8 were compromised)
@@ -69,12 +71,15 @@ eval = [
 torchao = ["torchao"]
 #transformers = ["transformers==4.57.1"]
 transformers=[
-    "transformers@git+https://github.com/ryanyxw/transformers.git@32d46178310cca37c0c901045ac9c52973d9f8fb"
+    "transformers@git+https://github.com/ryanyxw/transformers.git@de05b34309baf1c1110a3371031767edba81a317"
 ]
 flash-attn = [
     "flash-attn @ https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.7.2/flash_attn-2.8.3+cu128torch2.8-cp310-cp310-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.10'",
     "flash-attn @ https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.7.2/flash_attn-2.8.3+cu128torch2.8-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.11'",
 ]
+#transformers=[
+#    "transformers@git+https://github.com/ryanyxw/transformers.git@2a441500fddbaedeb7f22651114825358be6b296"
+#]
 wandb = ["wandb"]
 all = ["ai2-olmo-core[dev,beaker,comet,eval,flash-attn,torchao,transformers,wandb]"]
 
@@ -190,4 +195,6 @@ index-strategy = "unsafe-best-match"
 # and works fine with newer versions). Needed for huggingface_hub's maxdepth support.
 override-dependencies = [
     "fsspec>=2024.2.0,<=2025.3.0",
+    # Disable pytrec-eval (won't build); pytrec-eval-terrier is a drop-in replacement
+    "pytrec-eval ; sys_platform == 'never'",
 ]                                                  
