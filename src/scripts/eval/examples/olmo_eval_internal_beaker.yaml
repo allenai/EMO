@@ -1,20 +1,24 @@
 # Template for running FlexMoE checkpoints with olmo-eval-internal.
 #
-# Launch from ~/repos/olmo-eval-internal so Gantry clones the correct repo.
+# Launch from the olmo-eval-internal checkout so Gantry clones the correct repo.
+#
+# Typical shell variables:
+#   USER_TAG=your-name
+#   MODEL=/weka/oe-training-default/kevinf/checkpoints/train-olmo3-1b-dolma50-stackedu-python50-10B-lr5e-5-ctd/step2385-hf
 #
 # Example:
 #   olmo-eval beaker launch \
-#     -f ~/repos/FlexMoE/src/scripts/eval/examples/olmo_eval_internal_beaker.yaml \
-#     -m /weka/oe-training-default/<user>/checkpoints/<run>/step2385-hf \
+#     -f ../FlexMoE/src/scripts/eval/examples/olmo_eval_internal_beaker.yaml \
+#     -m "$MODEL" \
 #     -H default \
-#     -g <user>-flexmoe-olmo-eval-$(date +%Y%m%d) \
+#     -g "${USER_TAG}-flexmoe-olmo-eval-$(date +%Y%m%d)" \
 #     --store \
 #     --dry-run
 #
 # The olmo-eval-internal README currently shows structured model entries like:
 #
 # models:
-#   - name_or_path: /weka/oe-training-default/<user>/checkpoints/<run>/step2385-hf
+#   - name_or_path: /weka/oe-training-default/your-user/checkpoints/your-run/step2385-hf
 #     provider: vllm
 #
 # The live Beaker config loader in this environment accepts plain string model
@@ -24,7 +28,7 @@
 name: flexmoe-olmo-eval-template
 
 models:
-  - /weka/oe-training-default/<user>/checkpoints/<run>/step2385-hf
+  - /weka/oe-training-default/your-user/checkpoints/your-run/step2385-hf
 
 tasks:
   - mt_mbpp_v2fix:3shot:bpb
@@ -39,5 +43,3 @@ preemptible: true
 timeout: 24h
 workspace: ai2/flex2
 budget: ai2/oceo
-groups:
-  - <user>-flexmoe-olmo-eval

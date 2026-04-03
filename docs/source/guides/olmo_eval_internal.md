@@ -1,28 +1,16 @@
 # Running `olmo-eval-internal` on FlexMoE checkpoints
 
-This guide documents how to evaluate FlexMoE checkpoints with a separate checkout
-of `~/repos/olmo-eval-internal`.
+This guide shows how to run FlexMoE evaluations from a separate
+`olmo-eval-internal` checkout.
 
-Use this workflow when you want to compare FlexMoE checkpoints with the newer
-`olmo-eval-internal` stack without changing FlexMoE's existing evaluation code.
-It is intentionally a docs-first, external-usage path rather than an integration
-or migration of `launch_eval.py` / `offline_evals`.
+Use a separate environment for `olmo-eval-internal`.
 
-## What this guide does and does not do
+## Setup
 
-- FlexMoE continues to own training, checkpoint conversion, and checkpoint storage.
-- `olmo-eval-internal` is used as an external benchmark runner.
-- This guide does **not** add `olmo-eval-internal` to FlexMoE's environment.
-- This guide does **not** modify FlexMoE's `pyproject.toml`.
-- This guide does **not** replace FlexMoE's existing `offline_evals` codepaths.
-
-## Use a separate `olmo-eval-internal` environment
-
-Run `olmo-eval-internal` from its own checkout and repo-local `uv` virtual
-environment:
+From the `olmo-eval-internal` repo:
 
 ```bash
-cd ~/repos/olmo-eval-internal
+cd olmo-eval-internal
 uv sync --dev --extra beaker --extra storage
 source .venv/bin/activate
 
@@ -30,60 +18,68 @@ olmo-eval tasks
 olmo-eval suites
 ```
 
-If you prefer not to activate `.venv`, run the same commands with
-`uv run olmo-eval ...` from the `~/repos/olmo-eval-internal` checkout.
+Can also use `uv run olmo-eval ...`.
 
-Keep this environment separate from FlexMoE for three reasons:
+## Task mapping
 
-- `olmo-eval-internal` has a different dependency surface than FlexMoE's current eval stack.
-- `olmo-eval-internal` currently targets a newer Python baseline than FlexMoE.
-- Keeping the environments separate avoids breaking existing FlexMoE training and eval workflows
-  while we decide whether a deeper migration is worth doing.
-
-## Task mapping for current parity targets
+Some common mappings are:
 
 | FlexMoE / historical usage | `olmo-eval-internal` target |
 | --- | --- |
 | `mt_mbpp_*_gold_bpb_3shot` | `mt_mbpp_v2fix:3shot:bpb` |
 | `code_fresh_rolling:bpb` | `code_fresh:bpb` |
 
-The live `olmo-eval-internal` CLI currently exposes the exact suite names used in
-the `main`-branch commands below:
+This is not a complete list. Other evals and suites also exist in
+`olmo-eval-internal`, and more of the OLMo 3 evals are expected to show up on
+`main` as the pending review work lands.
+
+Useful suites:
 
 - `mt_mbpp_v2fix:3shot:bpb`
 - `code_fresh:bpb`
 - `minerva_math_olmo3`
 
-Additional OLMo 3 base-eval suites currently live on David's
-`davidh/olmobasesuite` branch (and are expected to land via PR #117). Those are
-covered in a separate section below because they are not yet part of the
-current `main` checkout.
+## Common variables
 
-## Common launch variables
-
-All launch commands below should be run from `~/repos/olmo-eval-internal`.
-Start by setting the checkpoint path and common Beaker settings you want to use:
+Run the commands below from `olmo-eval-internal`.
 
 ```bash
-MODEL=/weka/oe-training-default/<user>/checkpoints/<run>/step2385-hf
+USER_TAG=your-name
+MODEL=/weka/oe-training-default/kevinf/checkpoints/train-olmo3-1b-dolma50-stackedu-python50-10B-lr5e-5-ctd/step2385-hf
 WORKSPACE=ai2/flex2
 BUDGET=ai2/oceo
 DATE=$(date +%Y%m%d)
 ```
 
-Use `--dry-run` first when you want to inspect the generated Beaker spec before
-submitting a real job.
+Replace `MODEL` with your checkpoint path.
+
+Use `--dry-run` first if you want to inspect the Beaker spec before launching.
+
+## Flags used below
+
+- `-n`: experiment name
+- `-g`: Beaker group name
+- `-m`: model or checkpoint path
+- `-H`: harness preset
+- `-t`: task or suite
+- `-o`: override for the preceding task or harness
+- `-c`: cluster or GPU type
+- `-w`: Beaker workspace
+- `-B`: Beaker budget
+- `-p`: Beaker priority
+- `--gpus`: number of GPUs
+- `--store`: store results in S3 and Postgres
+- `--no-follow`: launch without streaming logs
+- `-y`: skip confirmation
 
 ## Smoke tests
-
-Start with small smoke tests before launching full suites.
 
 ### MT-MBPP smoke test
 
 ```bash
 olmo-eval beaker launch \
-  -n "<user>-mtmbpp-v2fix-python-smoke" \
-  -g "<user>-mtmbpp-v2fix-smoke-${DATE}" \
+  -n "${USER_TAG}-mtmbpp-v2fix-python-smoke" \
+  -g "${USER_TAG}-mtmbpp-v2fix-smoke-${DATE}" \
   -m "$MODEL" \
   -H default \
   -t mt_mbpp_v2fix_python:3shot:bpb -o limit=5 \
@@ -96,53 +92,17 @@ olmo-eval beaker launch \
   -y
 ```
 
-### CodeFresh smoke test
-
-```bash
-olmo-eval beaker launch \
-  -n "<user>-codefresh-python-smoke" \
-  -g "<user>-codefresh-smoke-${DATE}" \
-  -m "$MODEL" \
-  -H default \
-  -t code_fresh_python:bpb -o limit=5 \
-  -c h100 \
-  -w "$WORKSPACE" \
-  -B "$BUDGET" \
-  -p urgent \
-  --store \
-  --no-follow \
-  -y
-```
-
-## Full suite launches
+## Full suite examples
 
 ### Full `mt_mbpp_v2fix:3shot:bpb`
 
 ```bash
 olmo-eval beaker launch \
-  -n "<user>-mtmbpp-v2fix-full" \
-  -g "<user>-mtmbpp-v2fix-${DATE}" \
+  -n "${USER_TAG}-mtmbpp-v2fix-full" \
+  -g "${USER_TAG}-mtmbpp-v2fix-${DATE}" \
   -m "$MODEL" \
   -H default \
   -t mt_mbpp_v2fix:3shot:bpb \
-  -c h100 \
-  -w "$WORKSPACE" \
-  -B "$BUDGET" \
-  -p urgent \
-  --store \
-  --no-follow \
-  -y
-```
-
-### Full `code_fresh:bpb`
-
-```bash
-olmo-eval beaker launch \
-  -n "<user>-codefresh-full" \
-  -g "<user>-codefresh-${DATE}" \
-  -m "$MODEL" \
-  -H default \
-  -t code_fresh:bpb \
   -c h100 \
   -w "$WORKSPACE" \
   -B "$BUDGET" \
@@ -156,8 +116,8 @@ olmo-eval beaker launch \
 
 ```bash
 olmo-eval beaker launch \
-  -n "<user>-minerva-math-olmo3" \
-  -g "<user>-minerva-math-${DATE}" \
+  -n "${USER_TAG}-minerva-math-olmo3" \
+  -g "${USER_TAG}-minerva-math-${DATE}" \
   -m "$MODEL" \
   -H default \
   -t minerva_math_olmo3 \
@@ -175,34 +135,31 @@ olmo-eval beaker launch \
 FlexMoE includes a reusable Beaker template at
 `src/scripts/eval/examples/olmo_eval_internal_beaker.yaml`.
 
-Launch it from the `olmo-eval-internal` checkout:
+Launch it from `olmo-eval-internal`:
 
 ```bash
 olmo-eval beaker launch \
-  -f ~/repos/FlexMoE/src/scripts/eval/examples/olmo_eval_internal_beaker.yaml \
+  -f ../FlexMoE/src/scripts/eval/examples/olmo_eval_internal_beaker.yaml \
   -m "$MODEL" \
   -H default \
-  -g "<user>-flexmoe-olmo-eval-${DATE}" \
+  -g "${USER_TAG}-flexmoe-olmo-eval-${DATE}" \
   --store \
   --dry-run
 ```
 
-The checked-in template keeps shared task and Beaker settings in one place while
-letting you override the model path on the command line.
+The template keeps shared settings in one place while letting you override the
+model path on the command line. If we don't like this can remove and not use
 
-`olmo-eval-internal`'s README currently shows structured model entries such as
-`name_or_path` plus `provider: vllm`. In this environment, the live Beaker config
-loader dry-runs more reliably with plain string model specs in YAML. For
-FlexMoE-style checkpoint paths, the current launcher also auto-detects a vLLM
-provider path during dry-run, so the runnable examples in this guide keep the
-launch shape as close as possible to the maintainer-recommended commands.
+## OLMo 3 base evals
 
-## OLMo 3 base evals on `davidh/olmobasesuite`
+If you want the OLMo 3 base-eval suites from Table 45 & 46 in the paper, make sure the
+`olmo-eval-internal` checkout you launch from already includes those task
+definitions. Once they merge to `main`, the normal `main` checkout is enough.
 
-If you want the OLMo 3 base-eval suites from Table 3, use David's
-`davidh/olmobasesuite` branch (or the equivalent commit after PR #117 merges).
+Right now many of these evals are not on `main` yet. They are expected to
+be available on `main` after TylerM reviews David's PR.
 
-The branch defines these top-level suites:
+The top-level suites look like:
 
 - `olmobase:mcqa_stem`
 - `olmobase:mcqa_non_stem`
@@ -213,12 +170,11 @@ The branch defines these top-level suites:
 - `olmobase:easy:math:bpb`
 - `olmobase:easy:code:bpb`
 
-The maintainer-provided launch shape for "all base evals in the OLMo 3 paper"
-looks like this:
+The launch shape for all base evals in the OLMo 3 paper looks like this:
 
 ```bash
 olmo-eval beaker launch \
-  -n "<user>-olmobase-debug" \
+  -n "${USER_TAG}-olmobase-debug" \
   -m "$MODEL" \
   -H default \
   -c h100 \
@@ -250,46 +206,37 @@ When `--store` is enabled, Beaker runs write artifacts and store queryable metad
 After the run finishes, query results by group:
 
 ```bash
-export OLMO_EVAL_DB_HOST="<database-host>"
-export OLMO_EVAL_DB_SECRET_ARN="arn:aws:secretsmanager:us-west-2:..."
+export OLMO_EVAL_DB_HOST="your-db-host"
+export OLMO_EVAL_DB_SECRET_ARN="your-secret-arn"
 
-olmo-eval results query -G "<user>-mtmbpp-v2fix-${DATE}"
-olmo-eval results query -G "<user>-mtmbpp-v2fix-${DATE}" --format csv
-olmo-eval results query -G "<user>-mtmbpp-v2fix-${DATE}" --format json
+olmo-eval results query -G "${USER_TAG}-mtmbpp-v2fix-${DATE}"
+olmo-eval results query -G "${USER_TAG}-mtmbpp-v2fix-${DATE}" --format csv
+olmo-eval results query -G "${USER_TAG}-mtmbpp-v2fix-${DATE}" --format json
 ```
 
-For parity analysis, CSV output is often the easiest format to diff and inspect locally.
-
-This step requires a shell environment that can actually reach the shared
-results database. In practice that means:
-
-- `OLMO_EVAL_DB_HOST` and `OLMO_EVAL_DB_SECRET_ARN` must be set correctly
-- AWS credentials must be available for secret lookup
-- your current network path / exit node must be able to reach the database host
-
-If those are not set up, `olmo-eval results query` may fall back to `localhost`
-and fail with a PostgreSQL connection error. Even with the correct env vars, a
-misconfigured exit node or VPN path can still fail with a connection timeout.
-
-If you do not have the storage secrets yet, drop `--store` from the launch command.
-The run will still write Beaker `/results`, but it will not be queryable through
-`olmo-eval results query`.
+Local querying needs both `OLMO_EVAL_DB_HOST` and `OLMO_EVAL_DB_SECRET_ARN`.
+If `results query` times out even with those set, switch to the exit node or
+VPN path that can reach the shared Postgres host.
 
 ## Troubleshooting
 
-- Launch from `~/repos/olmo-eval-internal`, not from the FlexMoE checkout. Gantry clones the
-  current repo into `/gantry-runtime`, so launching from the wrong checkout can install the
-  wrong package set.
-- For FlexMoE checkpoint paths, the current launcher auto-detects a vLLM-style provider path on
-  dry-run. Start without a provider override unless you have a specific reason to force one.
-- If you do need to force a provider override, attach it to the harness after `-H default`, for
-  example `-H default -o provider.kind=vllm`.
-- If Beaker install logs mention `ai2-olmo-core @ file:///gantry-runtime` or complain about
-  missing `vllm` extras on the wrong repo, rerun the launch from `~/repos/olmo-eval-internal`.
-- Local macOS is useful for CLI inspection, `--dry-run`, and `results query`, but the actual
-  `vllm` inference path should be expected to run inside Beaker/Linux.
-- `--store` requires the Beaker secrets `olmo_eval_PGHOST` and `olmo_eval_DB_SECRET_ARN`.
-  Local querying uses the corresponding `OLMO_EVAL_DB_HOST` and `OLMO_EVAL_DB_SECRET_ARN`
-  environment variables.
-- Start with `limit=5` smoke tests before scaling to full suites. This catches task-resolution,
-  model-path, and storage issues much earlier.
+- Launch from the `olmo-eval-internal` checkout, not from the FlexMoE checkout.
+- For FlexMoE checkpoint paths, start with `-H default`.
+- `results query` needs `OLMO_EVAL_DB_HOST` and `OLMO_EVAL_DB_SECRET_ARN`.
+- If `results query` times out even with the correct env vars, switch to the exit node or VPN
+  path that can reach the shared Postgres host.
+- If you do not have the storage secrets yet, drop `--store`. The run will still write Beaker
+  `/results`, but it will not be queryable through `olmo-eval results query`.
+- Start with `limit=5` smoke tests before launching full suites.
+
+## Next step
+
+If this workflow looks good and the evals are working as expected, the next step
+is to move toward using this evaluation path in FlexMoE directly.
+
+For the most up-to-date view of which evals are implemented and their current
+parity status, see:
+
+```text
+https://docs.google.com/spreadsheets/d/1fBrMmk0G0VGoKrjlyJ08YVELlZZBB0RPGseK6vz7-SI/edit?gid=1326019620#gid=1326019620
+```
