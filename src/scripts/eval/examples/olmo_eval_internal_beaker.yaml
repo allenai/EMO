@@ -1,0 +1,43 @@
+# Template for running FlexMoE checkpoints with olmo-eval-internal.
+#
+# Launch from ~/repos/olmo-eval-internal so Gantry clones the correct repo.
+#
+# Example:
+#   olmo-eval beaker launch \
+#     -f ~/repos/FlexMoE/src/scripts/eval/examples/olmo_eval_internal_beaker.yaml \
+#     -m /weka/oe-training-default/<user>/checkpoints/<run>/step2385-hf \
+#     -H default \
+#     -g <user>-flexmoe-olmo-eval-$(date +%Y%m%d) \
+#     --store \
+#     --dry-run
+#
+# The olmo-eval-internal README currently shows structured model entries like:
+#
+# models:
+#   - name_or_path: /weka/oe-training-default/<user>/checkpoints/<run>/step2385-hf
+#     provider: vllm
+#
+# The live Beaker config loader in this environment accepts plain string model
+# specs more reliably. For FlexMoE checkpoint paths, the current launcher also
+# auto-detects a vLLM-style provider path during dry-run.
+
+name: flexmoe-olmo-eval-template
+
+models:
+  - /weka/oe-training-default/<user>/checkpoints/<run>/step2385-hf
+
+tasks:
+  - mt_mbpp_v2fix:3shot:bpb
+  - minerva_math_olmo3
+  # Common code-suite addition:
+  # - code_fresh:bpb
+
+cluster: h100
+gpus: 1
+priority: urgent
+preemptible: true
+timeout: 24h
+workspace: ai2/flex2
+budget: ai2/oceo
+groups:
+  - <user>-flexmoe-olmo-eval
