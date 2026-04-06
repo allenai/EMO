@@ -8,6 +8,6 @@ SAVE_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/merged_twolevel_1b1
 python src/scripts/akshitab/add_finegrained_expert/merge_experts.py \
     -b ${BASE_MODEL_PATH} \
     -m ${MERGE_MODEL_PATH1} ${MERGE_MODEL_PATH2} \
-    -e 128 129 130 131 -e 128 129 130 131 \
+    -e 127 128 129 130 -e 127 128 129 130 \
     -o ${SAVE_PATH} \
     --num_shared_experts 1
