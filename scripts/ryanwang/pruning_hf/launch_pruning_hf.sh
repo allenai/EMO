@@ -115,6 +115,35 @@ TASK_GROUPS_LIST=(
   # HellaSwag merged (baseline: single model on all data)
   "hellaswag_merged"
 
+  # Merged variants for the MC9 + perplexity tasks (pruning + finetuning share data)
+#  "arc_easy_merged"
+#  "arc_challenge_merged"
+#  "boolq_merged"
+#  "csqa_merged"
+#  "openbookqa_merged"
+#  "piqa_merged"
+#  "socialiqa_merged"
+#  "winogrande_merged"
+
+  # MMLU 17-category merged variants (pruning + finetuning share data)
+#  "mmlu_merged_biology"
+#  "mmlu_merged_business"
+#  "mmlu_merged_chemistry"
+#  "mmlu_merged_computer_science"
+#  "mmlu_merged_culture"
+#  "mmlu_merged_economics"
+#  "mmlu_merged_engineering"
+#  "mmlu_merged_geography"
+#  "mmlu_merged_health"
+#  "mmlu_merged_history"
+#  "mmlu_merged_law"
+#  "mmlu_merged_math"
+#  "mmlu_merged_other"
+#  "mmlu_merged_philosophy_cat"
+#  "mmlu_merged_physics"
+#  "mmlu_merged_politics"
+#  "mmlu_merged_psychology"
+
   # HellaSwag k=6 clusters
 #  "hellaswag_k6_cluster_merged_0"
 #  "hellaswag_k6_cluster_merged_1"
@@ -318,6 +347,13 @@ for MODEL in "${MODELS[@]}"; do
 
         safe_relative_dir=$(printf '%s' "$relative_dir" | sed 's/[^a-zA-Z0-9_-]//g' | tail -c 100)
         job_name="eval-${safe_relative_dir}"
+
+        # Clean any previous results for this exact (model, keep-k, task, prune-mode)
+        # combination on S3 so re-runs never mix new metrics with stale ones.
+        # aws s3 rm on a non-existent prefix is a no-op (exit 0).
+        s3_clean_prefix="s3://ai2-sewonm/ryanwang/prune_evals_final/${relative_dir}/"
+        echo "  Cleaning stale S3 results: ${s3_clean_prefix}"
+        aws s3 rm --recursive --quiet "${s3_clean_prefix}" || true
 
         echo "  Model name: ${BASE_DIR}/${MODEL}"
         echo "  GPUs: $gpus"

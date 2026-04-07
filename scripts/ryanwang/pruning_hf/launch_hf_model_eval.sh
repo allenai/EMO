@@ -3,7 +3,7 @@
 # Launch baseline evaluations for models hosted on HuggingFace Hub.
 #
 # Results are stored under the same S3 prefix as launch_original_model_eval.sh:
-#   s3://ai2-sewonm/ryanwang/prune_evals_0313/<sanitized_model>/original_model/<task>/results/checkpoint-0/
+#   s3://ai2-sewonm/ryanwang/prune_evals_final/<sanitized_model>/original_model/<task>/results/checkpoint-0/
 #
 # This uses the same beaker-vs-bash pattern as the other launch scripts:
 # commented-out local blocks for running locally, active beaker blocks for cluster.
@@ -90,7 +90,7 @@ for ENTRY in "${MODEL_ENTRIES[@]}"; do
 
         echo "  Launching: task=$TASK, batch_size=$batch_size"
         echo "    Job name: $job_name"
-        echo "    Remote dir: s3://ai2-sewonm/ryanwang/prune_evals_0313/${relative_dir}/results/checkpoint-0"
+        echo "    Remote dir: s3://ai2-sewonm/ryanwang/prune_evals_final/${relative_dir}/results/checkpoint-0"
 
         # Local version (uncomment for local runs):
 #        python -m src.scripts.eval.launch_eval \
@@ -99,7 +99,7 @@ for ENTRY in "${MODEL_ENTRIES[@]}"; do
 #            ${revision_args} \
 #            --task "${TASK}-pruned" \
 #            --pruned_split "test" \
-#            --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_0313/${relative_dir}/results/checkpoint-0" \
+#            --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${relative_dir}/results/checkpoint-0" \
 #            --batch-size $batch_size \
 #            --gpus $gpus
 
@@ -125,7 +125,7 @@ for ENTRY in "${MODEL_ENTRIES[@]}"; do
                 ${revision_args} \
                 --task "${TASK}-pruned" \
                 --pruned_split "test" \
-                --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_0313/${relative_dir}/results/checkpoint-0" \
+                --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${relative_dir}/results/checkpoint-0" \
                 --batch-size $batch_size \
                 --gpus $gpus
 

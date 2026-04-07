@@ -1,4 +1,4 @@
-from datasets import DatasetDict
+from datasets import DatasetDict, concatenate_datasets
 from oe_eval.tasks.base_task import Task
 from oe_eval.tasks.oe_eval_tasks.mmlu import GenericMMLU
 from oe_eval.utilities.datasets_wrapper import MOUNTED_WEKA_DATASET_WRAPPER
@@ -257,6 +257,57 @@ def create_mmlu_tasks_withsplits(subject):
     class MMLU(GenericMMLU_withsplits):
         DATASET_NAME = subject
     return MMLU
+
+
+# ---------------------------------------------------------------------------
+# Merged variants: pruning + finetuning use the same merged data.
+# Per-subject merged: concat the dev "validation" split (5 examples) with the
+#   60% train portion of the shuffled HF test set.
+# Per-category merged: concat the per-subject dev sets with the per-subject
+#   60% train portions (already concatenated by _load_and_split_subjects).
+# In both cases the dev rows would otherwise be tacked onto the end of the
+# concatenated set, so we shuffle the merged set to interleave them.
+# Test split (last 40% of shuffled HF test) is unchanged.
+# ---------------------------------------------------------------------------
+
+class GenericMMLU_Merged_withsplits(GenericMMLU_withsplits):
+    """Per-subject MMLU merged variant: pruning and finetuning use the same data."""
+
+    def training_docs(self):
+        tot_test_size = len(self.dataset["test"])
+        train_split = self.dataset["test"].shuffle(seed=0).select(
+            range(0, int(tot_test_size * self.TEST_FRACTION))
+        )
+        merged = concatenate_datasets([train_split, self.dataset["validation"]]).shuffle(seed=0)
+        return merged.map(self._process_doc, with_indices=True)
+
+    def validation_docs(self):
+        return self.training_docs()
+
+
+def create_mmlu_merged_tasks_withsplits(subject):
+    class MMLU_Merged(GenericMMLU_Merged_withsplits):
+        DATASET_NAME = subject
+    return MMLU_Merged
+
+
+class MMLU_17categories_Merged_RC(MMLU_17categories_RC):
+    """17-category MMLU merged variant: pruning and finetuning use the same data."""
+
+    def training_docs(self):
+        merged = concatenate_datasets(
+            [self.dataset["train"], self.dataset["validation"]]
+        ).shuffle(seed=0)
+        return merged.map(self._process_doc, with_indices=True)
+
+    def validation_docs(self):
+        return self.training_docs()
+
+
+def create_mmlu_categories_merged_tasks_withsplits(category):
+    class MMLU_Category_Merged(MMLU_17categories_Merged_RC):
+        DATASET_NAME = category
+    return MMLU_Category_Merged
 
 
 # ---------------------------------------------------------------------------

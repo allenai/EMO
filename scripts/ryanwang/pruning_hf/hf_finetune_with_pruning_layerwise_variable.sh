@@ -283,7 +283,7 @@ for checkpoint in "${all_checkpoints[@]}"; do
         --model-type hf \
         --task "$TASK-pruned" \
         --pruned_split "test" \
-        --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_0313/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
+        --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
         --batch-size 32 \
         --gpus "$NUM_GPUS"
 done
@@ -295,6 +295,14 @@ if [ -n "$MMLU_SUBJECTS" ]; then
     echo ""
     echo "Step 5: Per-subject MMLU evals..."
     echo "========================================"
+
+    # If the parent task is a merged category (mmlu_merged_<cat>), route per-subject
+    # evals to the merged per-subject task entries so naming stays consistent.
+    if [[ $TASK == mmlu_merged_* ]]; then
+        SUBJECT_TASK_PREFIX="mmlu_merged_"
+    else
+        SUBJECT_TASK_PREFIX="mmlu_"
+    fi
 
     for checkpoint in "${all_checkpoints[@]}"; do
         checkpoint_num=$(basename "$checkpoint" | sed 's/checkpoint-//')
@@ -311,9 +319,9 @@ if [ -n "$MMLU_SUBJECTS" ]; then
             python -m src.scripts.eval.launch_eval \
                 --model "$checkpoint" \
                 --model-type hf \
-                --task "mmlu_${subject}-pruned" \
+                --task "${SUBJECT_TASK_PREFIX}${subject}-pruned" \
                 --pruned_split "test" \
-                --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_0313/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}/per_subject/${subject}" \
+                --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}/per_subject/${subject}" \
                 --batch-size $EVAL_BATCH_SIZE \
                 --gpus "$NUM_GPUS"
         done <<< "$MMLU_SUBJECTS"

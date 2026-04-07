@@ -10,6 +10,8 @@ from .tasks.splits_mmlu import (
     create_mmlu_tasks_withsplits,
     create_mmlu_categories_tasks_withsplits,
     create_mmlu_cluster_tasks_withsplits,
+    create_mmlu_merged_tasks_withsplits,
+    create_mmlu_categories_merged_tasks_withsplits,
     MMLU_CLUSTER_CATEGORIES,
 )
 from .tasks.splits_mmlu_pro import (
@@ -84,6 +86,47 @@ def create_category_mmlu_tasks_withsplits():
         res[f"mmlu_{sub}:rc_validation"] = create_mmlu_categories_tasks_withsplits(sub)
         res[f"mmlu_{sub}:rc_test"] = create_mmlu_categories_tasks_withsplits(sub)
         res[f"mmlu_{sub}:rc_train"] = create_mmlu_categories_tasks_withsplits(sub)
+    return res
+
+
+_MMLU_CATEGORIES_LIST = [
+    "biology",
+    "business",
+    "chemistry",
+    "computer_science",
+    "culture",
+    "economics",
+    "engineering",
+    "geography",
+    "health",
+    "history",
+    "law",
+    "math",
+    "other",
+    "philosophy_cat",
+    "physics",
+    "politics",
+    "psychology",
+]
+
+
+def create_core_mmlu_merged_tasks_withsplits():
+    """Per-subject MMLU merged variants: pruning + finetuning use the same data."""
+    res = {}
+    for sub in MMLU_SUBJECTS:
+        res[f"mmlu_merged_{sub}:rc_validation"] = create_mmlu_merged_tasks_withsplits(sub)
+        res[f"mmlu_merged_{sub}:rc_test"] = create_mmlu_merged_tasks_withsplits(sub)
+        res[f"mmlu_merged_{sub}:rc_train"] = create_mmlu_merged_tasks_withsplits(sub)
+    return res
+
+
+def create_category_mmlu_merged_tasks_withsplits():
+    """17-category MMLU merged variants: pruning + finetuning use the same data."""
+    res = {}
+    for sub in _MMLU_CATEGORIES_LIST:
+        res[f"mmlu_merged_{sub}:rc_validation"] = create_mmlu_categories_merged_tasks_withsplits(sub)
+        res[f"mmlu_merged_{sub}:rc_test"] = create_mmlu_categories_merged_tasks_withsplits(sub)
+        res[f"mmlu_merged_{sub}:rc_train"] = create_mmlu_categories_merged_tasks_withsplits(sub)
     return res
 
 
@@ -262,6 +305,31 @@ new_task_registry: Dict = {
     "winogrande:rc_train_0shot": splits_winogrande.Winogrande_RC_Base,
     "winogrande:rc_validation_0shot": splits_winogrande.Winogrande_RC_Base,
     "winogrande:rc_test": splits_winogrande.Winogrande_RC_Base,
+    # Merged variants (pruning + finetuning use the same merged train+val data)
+    "arc_easy_merged:rc_train": splits_arc.ARCEasy_Merged_RC,
+    "arc_easy_merged:rc_validation": splits_arc.ARCEasy_Merged_RC,
+    "arc_easy_merged:rc_test": splits_arc.ARCEasy_Merged_RC,
+    "arc_challenge_merged:rc_train": splits_arc.ARCChallenge_Merged_RC,
+    "arc_challenge_merged:rc_validation": splits_arc.ARCChallenge_Merged_RC,
+    "arc_challenge_merged:rc_test": splits_arc.ARCChallenge_Merged_RC,
+    "boolq_merged:rc_train": splits_boolq.BoolQ_Merged_RC,
+    "boolq_merged:rc_validation": splits_boolq.BoolQ_Merged_RC,
+    "boolq_merged:rc_test": splits_boolq.BoolQ_Merged_RC,
+    "csqa_merged:rc_train": splits_csqa.CommonsenseQA_Merged_RC,
+    "csqa_merged:rc_validation": splits_csqa.CommonsenseQA_Merged_RC,
+    "csqa_merged:rc_test": splits_csqa.CommonsenseQA_Merged_RC,
+    "openbookqa_merged:rc_train": splits_openbookqa.OpenBookQA_Merged_RC,
+    "openbookqa_merged:rc_validation": splits_openbookqa.OpenBookQA_Merged_RC,
+    "openbookqa_merged:rc_test": splits_openbookqa.OpenBookQA_Merged_RC,
+    "piqa_merged:rc_train": splits_piqa.PIQA_Merged_RC,
+    "piqa_merged:rc_validation": splits_piqa.PIQA_Merged_RC,
+    "piqa_merged:rc_test": splits_piqa.PIQA_Merged_RC,
+    "socialiqa_merged:rc_train": splits_siqa.SocialIQA_Merged_RC,
+    "socialiqa_merged:rc_validation": splits_siqa.SocialIQA_Merged_RC,
+    "socialiqa_merged:rc_test": splits_siqa.SocialIQA_Merged_RC,
+    "winogrande_merged:rc_train": splits_winogrande.Winogrande_Merged_RC,
+    "winogrande_merged:rc_validation": splits_winogrande.Winogrande_Merged_RC,
+    "winogrande_merged:rc_test": splits_winogrande.Winogrande_Merged_RC,
     "synthea:rc_train": splits_synthea.Synthea_RC_Train,
     "synthea:rc_validation": splits_synthea.Synthea_RC_Validation,
     "synthea:rc_test": splits_synthea.Synthea_RC_Test,
@@ -272,6 +340,9 @@ new_task_registry: Dict = {
     **create_core_mmlu_tasks_withsplits(),
     **create_category_mmlu_tasks_withsplits(),
     **create_cluster_mmlu_tasks_withsplits(),
+    # MMLU merged (per-subject and 17-category): pruning + finetuning share data
+    **create_core_mmlu_merged_tasks_withsplits(),
+    **create_category_mmlu_merged_tasks_withsplits(),
     # **create_core_mmlu_pro_tasks_withsplits(),
     **create_category_mmlu_pro_tasks_withsplits(),
     **create_merged_mmlu_pro_tasks_withsplits(),

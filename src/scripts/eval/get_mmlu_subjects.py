@@ -21,6 +21,10 @@ def get_subjects(task_name: str):
 
     key = task_name[len("mmlu_"):]
 
+    # Strip a "merged_" prefix so mmlu_merged_<cat> resolves the same as mmlu_<cat>.
+    if key.startswith("merged_"):
+        key = key[len("merged_"):]
+
     # Check cluster categories first (they have "cluster_" prefix)
     if key in MMLU_CLUSTER_CATEGORIES:
         return MMLU_CLUSTER_CATEGORIES[key]

@@ -1,3 +1,4 @@
+from datasets import concatenate_datasets
 from oe_eval.tasks.oe_eval_tasks.siqa import SocialIQA, SocialIQAMC
 
 from ..metrics.mc_softloss import SoftLoss
@@ -77,6 +78,27 @@ class SocialIQAMC_Base(SocialIQAMC):
 #
 # class SocialIQA_RC_Test(SocialIQA_RC_Base):
 #     pass
+
+
+# ---------------------------------------------------------------------------
+# Merged variant: train+val combined for both pruning and finetuning.
+# Both halves come from the same shuffled train, so no extra shuffle is needed.
+# ---------------------------------------------------------------------------
+
+class SocialIQA_Merged_RC(SocialIQA_RC_Base):
+    """SocialIQA variant where pruning and finetuning use the same merged data."""
+
+    def training_docs(self):
+        if self._training_docs is None:
+            shuffled = self.dataset["train"].shuffle(seed=0)
+            train_part = shuffled.select(range(1000, len(shuffled)))
+            val_part = shuffled.select(range(0, 1000))
+            merged = concatenate_datasets([train_part, val_part])
+            self._training_docs = list(map(self._process_doc, merged))
+        return self._training_docs
+
+    def validation_docs(self):
+        return self.training_docs()
 
 
 class SocialIQA_MC_Train(SocialIQAMC_Base):
