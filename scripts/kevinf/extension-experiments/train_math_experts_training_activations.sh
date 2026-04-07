@@ -1,34 +1,18 @@
 #!/bin/bash
-# PARENT: math_training_data_activations.sh (must run first to produce activation file)
+# PARENT: add_math_experts_training_activations.sh (must run first to create extended checkpoint)
 # DESCRIPTION:
-#     - Extension experiment (math): Add new experts using training-data activations (Issue #26)
-#     - Stage 2: Add 4 new experts initialized from top-2 most activated (on training data)
-#     - Stage 3: Train only the new experts + router on mj_finemath4plus
+#     - Stage 3: Train the 4 new experts + router on mj_finemath4plus
+#     - Extended checkpoint created by add_math_experts_training_activations.sh (Stage 2)
 # STATUS: NEW
 ##############################################################
 
 NUM_NEW_EXPERTS=4
 TOTAL_EXPERTS=$((128+${NUM_NEW_EXPERTS}))
 
-# Stage 2: Add new experts
-BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995"
 NEW_BASE_MODEL_PATH="/weka/oe-training-default/kevinf/FlexMoE/models/extensions/moereducedp512sharedexp1_1b14b_${TOTAL_EXPERTS}experts_0308_step30995_init_top2_average_train_act"
-
-# Activation file from training data (produced by math_training_data_activations.sh)
-ACTIVATION_FILE="s3://ai2-kevinf/FlexMoE/training-activations/moereducedp512sharedexp1_1b14b_0308_step30995/mj_finemath4plus-mj_finemath4plus-router.jsonl"
 
 NUM_BILLION_TOKENS=10
 NUM_TOKENS=$((NUM_BILLION_TOKENS * 1000000000))
-
-# Run this once on a weka node:
-# python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
-# 	-c ${BASE_MODEL_PATH} \
-# 	-o ${NEW_BASE_MODEL_PATH} \
-# 	--num_new_experts ${NUM_NEW_EXPERTS} \
-# 	--init_method similar \
-# 	--activation_file ${ACTIVATION_FILE} \
-# 	-k 2 \
-# 	--num_shared_experts 1 --exclude_experts 127
 
 LR=4e-4
 
