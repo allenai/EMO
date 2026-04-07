@@ -53,7 +53,9 @@ _parser.add_argument(
     default=None,
     help="Max tokens to process (deterministic: always takes the first N tokens from sorted paths)",
 )
-_parser.add_argument("--seed", type=int, default=42, help="Random seed (unused currently, reserved)")
+_parser.add_argument(
+    "--seed", type=int, default=42, help="Random seed (unused currently, reserved)"
+)
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger()
@@ -119,7 +121,7 @@ def launch_logits_training(args_dict):
     logger.info(f"Mix '{args_dict['mix']}' has {len(paths)} paths")
 
     # Group paths by label
-    label_to_paths = {}
+    label_to_paths: dict[str, list[str]] = {}
     for path, label in zip(paths, labels):
         label_to_paths.setdefault(label, []).append(path)
 
@@ -213,9 +215,24 @@ def launch_logits_training(args_dict):
 
             router_probabilities = F.softmax(router_logits, dim=-1)
 
-            summed_router_probabilities = router_probabilities.sum(dim=(1, 2))  # (layers, num_experts)
+            summed_router_probabilities = router_probabilities.sum(
+                dim=(1, 2)
+            )  # (layers, num_experts)
             tot_router_probabilities += summed_router_probabilities
             tot_tokens += input_ids.numel()
+
+            # TODO: Remove this per-batch diagnostic logging once verified
+            # Per-batch diagnostics: average over tokens in this batch, then average over layers
+            batch_avg = summed_router_probabilities / input_ids.numel()  # (layers, num_experts)
+            batch_avg_across_layers = batch_avg.sum(dim=0)  # (num_experts,)
+            top2_vals, top2_idx = torch.topk(batch_avg_across_layers, 2)
+            batch_num = i // batch_size
+            logger.info(
+                f"[Batch {batch_num}] first 10 experts: {batch_avg_across_layers[:10].tolist()}"
+            )
+            logger.info(
+                f"[Batch {batch_num}] top-2: experts {top2_idx.tolist()} values {top2_vals.tolist()}"
+            )
 
         # Compute average router probabilities
         save_router_probabilities = tot_router_probabilities / tot_tokens
