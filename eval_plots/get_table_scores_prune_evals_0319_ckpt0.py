@@ -779,25 +779,113 @@ def main() -> None:
             continue
 
         df = add_mmlu_avg_columns(df)
-
         df = df.rename(columns={c: shorten_task_name(c) for c in df.columns})
 
         safe_metric = sanitize_filename(metric_key)
-        if args.format == "csv":
-            out_path = base_output_dir / f"{safe_metric}.csv"
-            df.to_csv(out_path, float_format="%.4f")
-        elif args.format == "tsv":
-            out_path = base_output_dir / f"{safe_metric}.tsv"
-            df.to_csv(out_path, sep="\t", float_format="%.4f")
-        elif args.format == "markdown":
-            out_path = base_output_dir / f"{safe_metric}.md"
-            out_path.write_text(
-                df.to_markdown(floatfmt=".4f") + "\n", encoding="utf-8"
-            )
+        metric_dir = base_output_dir / safe_metric
+        metric_dir.mkdir(parents=True, exist_ok=True)
 
-        print(f"[INFO] Saved {out_path}")
-        print(df.to_string(float_format=lambda x: f"{x:.4f}"))
-        print()
+        # --- Define output slices ---
+        MC9_TASKS = [
+            "arc_challenge", "arc_easy", "boolq", "csqa", "hellaswag",
+            "openbookqa", "piqa", "socialiqa", "winogrande",
+        ]
+        mc9_cols = [c for c in MC9_TASKS if c in df.columns]
+        if mc9_cols:
+            df["mc9_avg"] = df[mc9_cols].mean(axis=1, skipna=False)
+
+        # 1. Aggregate overview
+        agg_cols = [c for c in [
+            "mc9_avg",
+            "mmlu_avg", "mmlu_avg_no_other", "mmlu_avg_no_other_hist_phil",
+            "mmlu_pro_avg", "mmlu_pro_avg_no_other",
+            "mmlu_pro_merged_avg", "mmlu_pro_merged_avg_no_other",
+        ] if c in df.columns]
+        other_tasks = [c for c in df.columns
+                       if c not in agg_cols
+                       and not c.startswith("mmlu_")
+                       and not c.startswith("hellaswag_")
+                       and c not in MC9_TASKS]
+        agg_cols += other_tasks
+
+        # 2. MC9 detail
+        mc9_cols_all = [c for c in ["mc9_avg"] + MC9_TASKS if c in df.columns]
+
+        # 3. MMLU detail
+        mmlu_avg_cols = [c for c in df.columns if c.startswith("mmlu_avg")]
+        mmlu_topic_cols = [c for c in df.columns
+                          if c.startswith("mmlu_") and not c.startswith("mmlu_pro")
+                          and not c.startswith("mmlu_avg")]
+        mmlu_cols_all = mmlu_avg_cols + mmlu_topic_cols
+
+        # 4. MMLU-Pro detail (not n* or merged)
+        mmlu_pro_avg_cols = [c for c in df.columns if c.startswith("mmlu_pro_avg")]
+        mmlu_pro_topic_cols = [c for c in df.columns
+                               if c.startswith("mmlu_pro_") and not c.startswith("mmlu_pro_merged")
+                               and not c.startswith("mmlu_pro_avg")]
+        mmlu_pro_cols_all = mmlu_pro_avg_cols + mmlu_pro_topic_cols
+
+        # 5. MMLU-Pro-Merged detail (not n*)
+        mmlu_pm_avg_cols = [c for c in df.columns
+                            if c.startswith("mmlu_pro_merged_avg")]
+        mmlu_pm_topic_cols = [c for c in df.columns
+                              if c.startswith("mmlu_pro_merged_")
+                              and not c.startswith("mmlu_pro_merged_avg")
+                              and not any(c.startswith(f"mmlu_pro_merged_n{n}") for n in [50, 100, 200])]
+        mmlu_pm_cols_all = mmlu_pm_avg_cols + mmlu_pm_topic_cols
+
+        # 6. HellaSwag clusters
+        hella_lead = [c for c in ["hellaswag_merged", "hellaswag_cluster_avg"] if c in df.columns]
+        hella_k_avgs = [c for c in [
+            "hellaswag_k8_cluster_avg", "hellaswag_k10_cluster_avg", "hellaswag_k16_cluster_avg",
+        ] if c in df.columns]
+        hella_cols_all = hella_lead + hella_k_avgs
+
+        # 7. MMLU-Pro-Merged N-val
+        nval_cols_all = [c for c in [
+            "mmlu_pro_merged_avg",
+            "mmlu_pro_merged_n50_avg",
+            "mmlu_pro_merged_n100_avg",
+            "mmlu_pro_merged_n200_avg",
+            "mmlu_pro_merged_avg_no_other",
+            "mmlu_pro_merged_n50_avg_no_other",
+            "mmlu_pro_merged_n100_avg_no_other",
+            "mmlu_pro_merged_n200_avg_no_other",
+        ] if c in df.columns]
+
+        slices = {
+            "aggregate": agg_cols,
+            "mc9": mc9_cols_all,
+            "mmlu": mmlu_cols_all,
+            "mmlu_pro": mmlu_pro_cols_all,
+            "mmlu_pro_merged": mmlu_pm_cols_all,
+            "hellaswag_clusters": hella_cols_all,
+            "mmlu_pro_merged_nval": nval_cols_all,
+        }
+
+        for slice_name, cols in slices.items():
+            cols = [c for c in cols if c in df.columns]
+            if not cols:
+                continue
+            slice_df = df[cols]
+            if slice_df.dropna(how="all").empty:
+                continue
+
+            if args.format == "csv":
+                out_path = metric_dir / f"{slice_name}.csv"
+                slice_df.to_csv(out_path, float_format="%.4f")
+            elif args.format == "tsv":
+                out_path = metric_dir / f"{slice_name}.tsv"
+                slice_df.to_csv(out_path, sep="\t", float_format="%.4f")
+            elif args.format == "markdown":
+                out_path = metric_dir / f"{slice_name}.md"
+                out_path.write_text(
+                    slice_df.to_markdown(floatfmt=".4f") + "\n", encoding="utf-8"
+                )
+
+            print(f"[INFO] Saved {out_path}")
+            print(slice_df.to_string(float_format=lambda x: f"{x:.4f}"))
+            print()
 
 
 if __name__ == "__main__":
