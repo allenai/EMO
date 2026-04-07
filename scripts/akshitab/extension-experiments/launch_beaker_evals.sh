@@ -136,6 +136,11 @@ MODELS=(
     # moereducedp512sharedexp1_1b14b_128experts_full_finetune_math_10B_lr_4e-4/step2385-hf
 
     # merged_twolevel_1b14b_128base_4math_10B_4code_mix_10B_forced_init_top2_average_noise-hf
+    # rt-merged_twolevel_1b14b_128base_4math_10B_4code_mix_10B_forced_init_top2_average_noise_1B_lr_4e-4/step239-hf
+
+    # merged_moereducedp512sharedexp1_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise-hf
+    # merged_twolevel_1b14b_128base_4math_10B_4code_mix_10B_forced_init_top2_average_noise-hf
+    rt-merged_moereducedp512sharedexp1_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_1B_lr_4e-4/step239-hf
     rt-merged_twolevel_1b14b_128base_4math_10B_4code_mix_10B_forced_init_top2_average_noise_1B_lr_4e-4/step239-hf
 )
 
