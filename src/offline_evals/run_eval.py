@@ -533,12 +533,28 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
     else:
         raise ValueError(f"Model type {model_type} not recognized")
 
-    # Use dolma2-tokenizer for local checkpoints (which don't bundle the right
-    # tokenizer).  HF hub models (containing '/') ship their own tokenizer, so
-    # forcing dolma2 on them causes a vocab-size mismatch (e.g. OLMoE has 50304
-    # vs dolma2's 100352) and triggers CUDA index-out-of-bounds errors.
-    if "/" not in pretrained or pretrained.startswith("/"):
-        # Local path – use dolma2 tokenizer
+    # Tokenizer selection:
+    # - If the local checkpoint already bundles a tokenizer (tokenizer.json or
+    #   tokenizer_config.json next to the weights), use it directly. Pruned and
+    #   finetuned checkpoints from this pipeline always do, since
+    #   greedy_prune_layerwise.py and finetune.py both call tokenizer.save_pretrained.
+    #   Avoiding the HF Hub round-trip here also dodges an intermittent
+    #   AutoTokenizer/AutoConfig failure on the dolma2-tokenizer repo, which has no
+    #   model_type in its config.json and breaks newer transformers versions.
+    # - Otherwise, for older local checkpoints that don't bundle a tokenizer, fall
+    #   back to allenai/dolma2-tokenizer.
+    # - HF hub models (containing '/' but not starting with '/') ship their own
+    #   tokenizer; forcing dolma2 on them causes a vocab-size mismatch (e.g. OLMoE
+    #   has 50304 vs dolma2's 100352) and triggers CUDA index-out-of-bounds errors.
+    is_local_path = "/" not in pretrained or pretrained.startswith("/")
+    if is_local_path and (
+        os.path.isfile(os.path.join(pretrained, "tokenizer.json"))
+        or os.path.isfile(os.path.join(pretrained, "tokenizer_config.json"))
+    ):
+        # Local checkpoint with bundled tokenizer – use it
+        tokenizer = None
+    elif is_local_path:
+        # Local checkpoint without bundled tokenizer – fall back to dolma2
         tokenizer = "allenai/dolma2-tokenizer"
     else:
         # HF hub model – let it use its own tokenizer
