@@ -1548,4 +1548,90 @@ def get_task_configs():
                 },
             }
 
+    # ------------------------------------------------------------------
+    # Merged variants for the MC9 / Pattern-A/B tasks. Pruning + finetuning
+    # share the same merged train+validation data; the test split used for
+    # eval is unchanged. Each entry's primary_metric / num_shots /
+    # fewshot_source / metadata exactly matches the corresponding non-merged
+    # rc_{train,validation,test}::olmes config.
+    # ------------------------------------------------------------------
+    _MERGED_TASK_DEFAULTS = {
+        "arc_easy_merged": {
+            "primary_metric": "acc_per_char",
+            "fewshot_source": "OLMES:ARC-Easy",
+            "descriptions": {
+                "train": "ARC-Easy (RC) train using OLMES-v0.1",
+                "validation": "ARC-Easy (RC) validation using OLMES-v0.1, on validation split",
+                "test": "ARC-Easy (RC) test using OLMES-v0.1, on test split",
+            },
+        },
+        "arc_challenge_merged": {
+            "primary_metric": "acc_uncond",
+            "fewshot_source": "OLMES:ARC-Challenge",
+        },
+        "boolq_merged": {
+            "primary_metric": "acc_raw",
+            "fewshot_source": "OLMES:BoolQ",
+        },
+        "csqa_merged": {
+            "primary_metric": "acc_uncond",
+            "fewshot_source": "OLMES:commonsense_qa",
+        },
+        "openbookqa_merged": {
+            "primary_metric": "acc_uncond",
+            "fewshot_source": "OLMES:openbookqa",
+        },
+        "piqa_merged": {
+            "primary_metric": "acc_per_char",
+            "fewshot_source": "OLMES:piqa",
+        },
+        "socialiqa_merged": {
+            "primary_metric": "acc_per_char",
+            "fewshot_source": "OLMES:social_i_qa",
+        },
+        "winogrande_merged": {
+            "primary_metric": "acc_raw",
+            "fewshot_source": "OLMES:winogrande",
+        },
+    }
+    for _base, _meta in _MERGED_TASK_DEFAULTS.items():
+        for _split in ["train", "validation", "test"]:
+            _metadata = {"regimes": ["OLMES-v0.1"]}
+            if "descriptions" in _meta:
+                _metadata = {
+                    "description": _meta["descriptions"][_split],
+                    "regimes": ["OLMES-v0.1"],
+                }
+            TASK_CONFIGS[f"{_base}:rc_{_split}::olmes"] = {
+                "task_name": f"{_base}:rc_{_split}",
+                "split": _split,
+                "primary_metric": _meta["primary_metric"],
+                "num_shots": 5,
+                "fewshot_source": _meta["fewshot_source"],
+                "metadata": _metadata,
+            }
+
+    # MMLU 17-category merged variants (matches mmlu_<category>:rc_*::olmes exactly)
+    for category in MMLU_CATEGORIES:
+        for _split in ["train", "validation", "test"]:
+            TASK_CONFIGS[f"mmlu_merged_{category}:rc_{_split}::olmes"] = {
+                "task_name": f"mmlu_merged_{category}:rc_{_split}",
+                "split": _split,
+                "num_shots": 5,
+                "primary_metric": "acc_per_char",
+                "category_name": category,
+                "metadata": {"regimes": ["OLMES-v0.1"]},
+            }
+
+    # MMLU per-subject merged variants (matches mmlu_<subject>:rc_*::olmes exactly)
+    for sub in MMLU_SUBJECTS:
+        for _split in ["train", "validation", "test"]:
+            TASK_CONFIGS[f"mmlu_merged_{sub}:rc_{_split}::olmes"] = {
+                "task_name": f"mmlu_merged_{sub}:rc_{_split}",
+                "split": _split,
+                "num_shots": 5,
+                "primary_metric": "acc_per_char",
+                "metadata": {"regimes": ["OLMES-v0.1"]},
+            }
+
     return TASK_CONFIGS
