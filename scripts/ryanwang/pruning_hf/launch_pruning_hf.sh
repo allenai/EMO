@@ -4,7 +4,7 @@
 BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 #BASE_DIR="/root/phdbrainstorm/FlexMoE"
 MODELS=(
-#    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
+    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313/step238419-hf"
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
 #    "dense_1b_lr-4e-3_0213/step30995-hf"
@@ -47,7 +47,7 @@ PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(128)
+PRUNE_KEEP_K_VALUES=(8 32 64 128)
 batch_size=32
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
@@ -60,39 +60,39 @@ KEEP_K_PER_LAYER="128,128,32,32,32,32,32,32,32,32,32,32,32,32,32,32"
 TASK_GROUPS_LIST=(
   ######### few-shot ##########
 #   MC9 tasks
-  "arc_easy"
-  "arc_challenge"
-  "boolq"
-  "csqa"
-  "hellaswag"
-  "openbookqa"
-  "piqa"
-  "socialiqa"
-  "winogrande"
-  "gsm8k_generation_0shot"
-  "gsm8k_generation_8shot"
-  "gsm8k_perplexity_0shot"
-  "coqa_0shot"
-  "coqa_full_0shot"
-  "squad_0shot"
-#
-  "mmlu_biology"
-  "mmlu_business"
-  "mmlu_chemistry"
-  "mmlu_computer_science"
-  "mmlu_culture"
-  "mmlu_economics"
-  "mmlu_engineering"
-  "mmlu_geography"
-  "mmlu_health"
-  "mmlu_history"
-  "mmlu_law"
-  "mmlu_math"
-  "mmlu_other"
-  "mmlu_philosophy_cat"
-  "mmlu_physics"
-  "mmlu_politics"
-  "mmlu_psychology"
+#  "arc_easy"
+#  "arc_challenge"
+#  "boolq"
+#  "csqa"
+#  "hellaswag"
+#  "openbookqa"
+#  "piqa"
+#  "socialiqa"
+#  "winogrande"
+#  "gsm8k_generation_0shot"
+#  "gsm8k_generation_8shot"
+#  "gsm8k_perplexity_0shot"
+#  "coqa_0shot"
+#  "coqa_full_0shot"
+#  "squad_0shot"
+##
+#  "mmlu_biology"
+#  "mmlu_business"
+#  "mmlu_chemistry"
+#  "mmlu_computer_science"
+#  "mmlu_culture"
+#  "mmlu_economics"
+#  "mmlu_engineering"
+#  "mmlu_geography"
+#  "mmlu_health"
+#  "mmlu_history"
+#  "mmlu_law"
+#  "mmlu_math"
+#  "mmlu_other"
+#  "mmlu_philosophy_cat"
+#  "mmlu_physics"
+#  "mmlu_politics"
+#  "mmlu_psychology"
 
   # Router-clustering-based MMLU categories (16 clusters)
 #  "mmlu_cluster_chemistry"
@@ -113,12 +113,12 @@ TASK_GROUPS_LIST=(
 #  "mmlu_cluster_cs_logic"
 
   # HellaSwag merged (baseline: single model on all data)
-  "hellaswag_merged"
 
   # Merged variants for the MC9 + perplexity tasks (pruning + finetuning share data)
-#  "arc_easy_merged"
+  "arc_easy_merged"
 #  "arc_challenge_merged"
 #  "boolq_merged"
+#  "hellaswag_merged"
 #  "csqa_merged"
 #  "openbookqa_merged"
 #  "piqa_merged"
@@ -209,20 +209,20 @@ TASK_GROUPS_LIST=(
 #  "mmlu_pro_law"
 
   # MMLU-Pro merged variant (pruning + finetuning use same data)
-  "mmlu_pro_merged_math"
-  "mmlu_pro_merged_health"
-  "mmlu_pro_merged_physics"
-  "mmlu_pro_merged_business"
-  "mmlu_pro_merged_biology"
-  "mmlu_pro_merged_chemistry"
-  "mmlu_pro_merged_computer_science"
-  "mmlu_pro_merged_economics"
-  "mmlu_pro_merged_engineering"
-  "mmlu_pro_merged_philosophy"
-  "mmlu_pro_merged_other"
-  "mmlu_pro_merged_history"
-  "mmlu_pro_merged_psychology"
-  "mmlu_pro_merged_law"
+#  "mmlu_pro_merged_math"
+#  "mmlu_pro_merged_health"
+#  "mmlu_pro_merged_physics"
+#  "mmlu_pro_merged_business"
+#  "mmlu_pro_merged_biology"
+#  "mmlu_pro_merged_chemistry"
+#  "mmlu_pro_merged_computer_science"
+#  "mmlu_pro_merged_economics"
+#  "mmlu_pro_merged_engineering"
+#  "mmlu_pro_merged_philosophy"
+#  "mmlu_pro_merged_other"
+#  "mmlu_pro_merged_history"
+#  "mmlu_pro_merged_psychology"
+#  "mmlu_pro_merged_law"
 
   # MMLU-Pro merged variant with N=50 pruning validation examples
 #  "mmlu_pro_merged_n50_math"
