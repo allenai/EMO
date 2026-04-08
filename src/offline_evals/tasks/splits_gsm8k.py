@@ -18,16 +18,13 @@ Homepage: https://github.com/openai/grade-school-math
 """
 
 import re
-from typing import List, Union, cast
+from typing import List, Union
 
 from oe_eval.components.instances import RequestInstance
 from oe_eval.components.requests import LoglikelihoodRequest, RequestType
-from oe_eval.metrics import PerplexityMetric
-from oe_eval.metrics.metric import ExactMatch, MajAtK, MCAccuracy
 from oe_eval.tasks.base_task import Task
 from oe_eval.tasks.oe_eval_tasks.gsm8k import GSM8K
 from oe_eval.tasks.utils import apply_prompt_template
-from oe_eval.utils import get_dict_with_defaults
 
 from ..metrics.custom_perplexity import CustomPerplexityMetric
 
@@ -152,7 +149,6 @@ class GSM8K_Perplexity_Base(Task):
         Original Answer: Janet has 16 eggs and uses 4 for baking and sells 3 for breakfast. Therefore, she makes 16 - 3 - 4 = <<16-3-4=9>>9 eggs sold, leading to a daily income of 9 * 2 = $<<9*2=22>>22.\n#### 22
         New Answer: Janet sells 16 - 3 - 4 = 9 duck eggs a day. She makes 9 * 2 = $18 every day at the farmer’s market. So the answer is 18.
         """
-        import re
 
         answer = re.sub(r"<<.*?>>", "", answer)
         answer = re.sub(r"\s+", " ", answer).strip()

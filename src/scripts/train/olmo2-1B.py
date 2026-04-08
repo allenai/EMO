@@ -19,7 +19,6 @@ from olmo_core.data import (
     NumpyDataLoaderConfig,
     NumpyDatasetConfig,
     NumpyFSLDatasetConfig,
-    NumpyPaddedFSLDatasetConfig,
     TokenizerConfig,
 )
 from olmo_core.data.mixes import DataMix
@@ -28,7 +27,6 @@ from olmo_core.distributed.utils import get_rank
 from olmo_core.nn.transformer import TransformerConfig
 from olmo_core.optim import CosWithWarmup, OptimGroupOverride, SkipStepAdamWConfig
 from olmo_core.train import (
-    Duration,
     TrainerConfig,
     prepare_training_environment,
     teardown_training_environment,
@@ -40,7 +38,6 @@ from olmo_core.train.callbacks import (
     ConfigSaverCallback,
     DownstreamEvaluatorCallbackConfig,
     GPUMemoryMonitorCallback,
-    LMEvaluatorCallbackConfig,
     ProfilerCallback,
     WandBCallback,
 )

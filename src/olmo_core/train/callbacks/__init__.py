@@ -14,10 +14,13 @@ from .evaluator_callback import (
     EvaluatorCallback,
     LMEvaluatorCallbackConfig,
 )
+from .frozen_expert_gradient_mask import FrozenExpertGradientMaskCallback
 from .garbage_collector import GarbageCollectorCallback
 from .gpu_memory_monitor import GPUMemoryMonitorCallback
 from .gradient_monitor import GradientMonitorCallback
+from .hf_converter import HFConverterCallback
 from .monkey_patcher import MonkeyPatcherCallback
+from .post_train_eval import PostTrainEvalCallback
 from .profiler import ProfilerCallback
 from .sequence_length_scheduler import SequenceLengthSchedulerCallback
 from .slack_notifier import SlackNotificationSetting, SlackNotifierCallback
@@ -36,9 +39,11 @@ __all__ = [
     "EvaluatorCallback",
     "LMEvaluatorCallbackConfig",
     "DownstreamEvaluatorCallbackConfig",
+    "FrozenExpertGradientMaskCallback",
     "GarbageCollectorCallback",
     "GPUMemoryMonitorCallback",
     "GradientMonitorCallback",
+    "HFConverterCallback",
     "ProfilerCallback",
     "SlackNotifierCallback",
     "SlackNotificationSetting",
@@ -48,6 +53,7 @@ __all__ = [
     "BeakerCallback",
     "BatchSizeSchedulerCallback",
     "MonkeyPatcherCallback",
+    "PostTrainEvalCallback",
 ]
 
 __doc__ += "\n"

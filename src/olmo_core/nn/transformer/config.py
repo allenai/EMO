@@ -359,7 +359,11 @@ class TransformerConfig(Config):
         num_partially_frozen_params = 0
 
         partial_freeze_params_mask_fn_kwargs = self.partial_freeze_params_mask_fn_kwargs or {}
-        if self.partial_freeze_params_mask_fn_name is not None:
+        if (
+            self.partial_freeze_params_mask_fn_name is not None
+            and PARTIAL_FREEZE_FN_REGISTRY.get(self.partial_freeze_params_mask_fn_name, None)
+            is not None
+        ):
             partial_freeze_params_mask_fn = PARTIAL_FREEZE_FN_REGISTRY[
                 self.partial_freeze_params_mask_fn_name
             ]
@@ -368,7 +372,14 @@ class TransformerConfig(Config):
                     self, name, param, **partial_freeze_params_mask_fn_kwargs
                 )
                 if mask is not None and param.requires_grad:
-                    param.register_hook(lambda grad: grad * mask.to(grad.device))
+                    # BUG FIXED: late binding issue in lambda in a loop; the mask variable is captured by reference, not by value.
+                    # Since this is inside a for loop, all the registered hooks will use the last value of mask computed in the loop,
+                    # not the mask specific to each parameter.
+                    # param.register_hook(lambda grad: grad * mask.to(grad.device))
+                    log.info(
+                        f"Param '{name}' mask sum: {mask.sum().item()}/{mask.numel()} trainable"
+                    )
+                    param.register_hook(lambda grad, mask=mask: grad * mask.to(grad.device))
                     num_partially_frozen_params += mask.numel() - int(mask.sum().item())
                     log.info(f"Param '{name}' will be partially frozen")
 
@@ -666,6 +677,26 @@ class TransformerConfig(Config):
         return config
 
     @classmethod
+    def olmo3_1B(cls, vocab_size: int, **kwargs) -> "TransformerConfig":
+        """
+        A 1B OLMo3 model config.
+        """
+        config = cls.olmo2_1B_v2(
+            vocab_size=vocab_size,
+            sliding_window=kwargs.pop(
+                "sliding_window",
+                SlidingWindowAttentionConfig(
+                    force_full_attention_on_first_layer=False,
+                    force_full_attention_on_last_layer=True,
+                    pattern=[4096, 4096, 4096, -1],
+                ),
+            ),
+            attn_backend=kwargs.pop("attn_backend", AttentionBackendName.flash_2),
+            **kwargs,
+        )
+        return config
+
+    @classmethod
     def olmo3_7B(cls, vocab_size: int, **kwargs) -> "TransformerConfig":
         """
         A 7B OLMo3 model config.
@@ -737,6 +768,34 @@ class TransformerConfig(Config):
     @classmethod
     def olmoe_1B_7B(cls, vocab_size: int, **kwargs) -> "TransformerConfig":
         d_model = kwargs.pop("d_model", 2048)
+        always_active_experts = kwargs.pop("always_active_experts", None)
+        return cls.llama_like(
+            d_model=d_model,
+            vocab_size=vocab_size,
+            n_layers=kwargs.pop("n_layers", 16),
+            n_heads=kwargs.pop("n_heads", 16),
+            name=kwargs.pop("name", TransformerType.moe),
+            block_name=kwargs.pop("block_name", TransformerBlockType.moe_reordered_norm),
+            qk_norm=kwargs.pop("qk_norm", True),
+            rope_theta=kwargs.pop("rope_theta", 500_000),
+            layer_norm_eps=1e-6,
+            feed_forward_moe=MoEConfig(
+                name=MoEType.dropless,
+                num_experts=kwargs.pop("num_experts", 64),
+                hidden_size=int(0.5 * d_model),
+                router=MoERouterConfig(
+                    top_k=kwargs.pop("top_k", 8),
+                    always_active_experts=always_active_experts,
+                ),
+                lb_loss_weight=0.01,
+                z_loss_weight=0.001,
+            ),
+            **kwargs,
+        )
+
+    @classmethod
+    def olmoe_1B_7B_shared_expert(cls, vocab_size: int, **kwargs) -> "TransformerConfig":
+        d_model = kwargs.pop("d_model", 2048)
         return cls.llama_like(
             d_model=d_model,
             vocab_size=vocab_size,
@@ -752,6 +811,7 @@ class TransformerConfig(Config):
                 num_experts=kwargs.pop("num_experts", 64),
                 hidden_size=int(0.5 * d_model),
                 router=MoERouterConfig(top_k=kwargs.pop("top_k", 8)),
+                shared_mlp=FeedForwardConfig(hidden_size=0.5 * d_model),
                 lb_loss_weight=0.01,
                 z_loss_weight=0.001,
             ),

@@ -237,10 +237,20 @@ def map_mmlu_subcat(subtask):
 def avg_tasks(results, label, task_names):
     """Average scores across multiple tasks into a single metric."""
     for model_name in results:
-        if np.all([task_name in results[model_name] for task_name in task_names]):
-            results[model_name][label] = np.mean(
-                [results[model_name][task_name] for task_name in task_names]
-            )
+        # Collect valid (non-None, non-N/A) scores for averaging
+        valid_scores = [
+            results[model_name][task_name]
+            for task_name in task_names
+            if task_name in results[model_name]
+            and results[model_name][task_name] is not None
+            and results[model_name][task_name] != "N/A"
+        ]
+        # Only compute average if we have at least one valid score
+        if valid_scores:
+            results[model_name][label] = np.mean(valid_scores)
+        else:
+            results[model_name][label] = None  # No valid scores to average
+        # Remove individual task scores after averaging
         for task_name in task_names:
             if task_name in results[model_name]:
                 del results[model_name][task_name]
@@ -268,8 +278,10 @@ def main(args):
 
     if not args.load_cache:
         updated = False
+        # Track number of instances per task per model for comparability checking
+        num_instances_tracker: dict = defaultdict(lambda: defaultdict(int))
 
-        def _add_to_results(model_name, task_name, score):
+        def _add_to_results(model_name, task_name, score, num_instances=None):
             if model_name not in results:
                 results[model_name] = {}
             if task_name in results[model_name]:
@@ -281,6 +293,10 @@ def main(args):
                     exit()
             else:
                 results[model_name][task_name] = score
+
+            # Track num_instances if provided
+            if num_instances is not None:
+                num_instances_tracker[task_name][model_name] = num_instances
 
         # Model directory discovery
         # Check if base_dir itself contains metrics files
@@ -329,7 +345,8 @@ def main(args):
                 task_name = metric["task_name"]
                 metrics = metric["metrics"]
                 score = metrics["primary_score"]
-                _add_to_results(model_name, task_name, score)
+                num_instances = metric.get("num_instances", None)
+                _add_to_results(model_name, task_name, score, num_instances)
 
                 visited_paths.add(metric_path)
                 updated = True
@@ -337,6 +354,22 @@ def main(args):
         if updated:
             with open("cached_results.pkl", "wb") as f_out:
                 pkl.dump([results, visited_paths], f_out)
+
+        # Check for tasks with inconsistent number of examples across models
+        print("\n=== Checking task comparability ===")
+        has_warnings = False
+        for task_name, model_counts in num_instances_tracker.items():
+            if len(model_counts) > 1:  # Only check if multiple models have this task
+                counts = list(model_counts.values())
+                if len(set(counts)) > 1:  # Different counts exist
+                    has_warnings = True
+                    print(f"\n⚠️  WARNING: Task '{task_name}' has different numbers of examples:")
+                    for model_name, count in sorted(model_counts.items()):
+                        print(f"   - {model_name}: {count} examples")
+
+        if not has_warnings:
+            print("✓ All tasks have consistent numbers of examples across models")
+        print()
 
     # Common task groupings
     core9_tasks = [
@@ -403,8 +436,6 @@ def main(args):
             results = avg_tasks(results, "mmlu:mc", mmlu_tasks_mc)
             results = avg_tasks(results, "mmlu:rc", mmlu_tasks_rc)
 
-        breakpoint()
-
     if args.avg_mmlu_cat or args.avg_mmlu_subcat:
         mmlu_tasks = [
             task_name
@@ -454,6 +485,55 @@ def main(args):
         sciriff_tasks = [task_name for task_name in task_names if task_name.startswith("sciriff_")]
         if sciriff_tasks:
             results = avg_tasks(results, "sciriff5", sciriff_tasks)
+
+    if args.avg_chembench:
+        # MC tasks (accuracy-based) - averaged separately
+        chembench_mc_tasks = [
+            task_name
+            for task_name in task_names
+            if task_name.startswith("chembench_") and ":mc" in task_name
+        ]
+        if chembench_mc_tasks:
+            results = avg_tasks(results, "chembench:mc", chembench_mc_tasks)
+        # Generative tasks (F1/EM-based) - averaged separately
+        # Note: We don't combine MC and gen scores because they use different metrics
+        # (accuracy vs F1) and are not directly comparable
+        chembench_gen_tasks = [
+            task_name
+            for task_name in task_names
+            if task_name.startswith("chembench_") and ":gen" in task_name
+        ]
+        if chembench_gen_tasks:
+            results = avg_tasks(results, "chembench:gen", chembench_gen_tasks)
+        # RC tasks (length-normalized accuracy) - averaged separately
+        chembench_rc_tasks = [
+            task_name
+            for task_name in task_names
+            if task_name.startswith("chembench_") and ":rc" in task_name
+        ]
+        if chembench_rc_tasks:
+            results = avg_tasks(results, "chembench:rc", chembench_rc_tasks)
+
+    if args.avg_legalbench:
+        # All LegalBench tasks use RC (ranked classification) evaluation
+        # Aggregate all ~110 classification tasks into a single score
+        legalbench_tasks = [
+            task_name
+            for task_name in task_names
+            if task_name.startswith("legalbench_") and ":rc" in task_name
+        ]
+        if legalbench_tasks:
+            results = avg_tasks(results, "legalbench:rc", legalbench_tasks)
+
+    if args.avg_frenchbench:
+        # All FrenchBench tasks use RC (ranked classification) evaluation
+        frenchbench_tasks = [
+            task_name
+            for task_name in task_names
+            if task_name.startswith("frenchbench_") and ":rc" in task_name
+        ]
+        if frenchbench_tasks:
+            results = avg_tasks(results, "frenchbench:rc", frenchbench_tasks)
 
     if args.avg_code:
         code_tasks = [
@@ -543,18 +623,36 @@ def main(args):
     # Compute best scores for highlighting
     best_results = {}
     for task_name in task_names:
-        best_results[task_name] = np.max(
-            [_results.get(task_name, -1) for _results in results.values()]
-        )
+        # Filter out None and N/A values when computing best score
+        valid_scores = [
+            _results.get(task_name, -1)
+            for _results in results.values()
+            if _results.get(task_name) is not None and _results.get(task_name) != "N/A"
+        ]
+        if valid_scores:
+            best_results[task_name] = (
+                np.min(valid_scores) if args.lower_is_better else np.max(valid_scores)
+            )
+        else:
+            best_results[task_name] = -1
 
     def format_model_name(model):
-        """Format model name for display. Override this for custom formatting."""
+        """Format model name for display. Applies nicknames if configured."""
+        if args.nicknames:
+            for mapping in args.nicknames.split(","):
+                if ":" in mapping:
+                    pattern, nickname = mapping.split(":", 1)
+                    if pattern in model:
+                        return nickname
         return model
 
     def format_number(v, task_name):
         """Format score with best result highlighting."""
-        is_best = np.abs(v - best_results[task_name]) < 0.001 if v is not None else False
-        v = f"{v:.3f}" if v is not None else "-"
+        # Handle None, "N/A", or missing scores
+        if v is None or v == "N/A":
+            return "N/A"
+        is_best = np.abs(v - best_results[task_name]) < 0.001
+        v = f"{v:.3f}"
         return colored(v, "red") if is_best else v
 
     def format_task(name):
@@ -562,7 +660,8 @@ def main(args):
         name = name.replace("codex_humaneval", "humaneval")
         name = name.replace("bigcodebench", "bcb")
         name = name.replace("plus", "+")
-        if "medmcqa" not in name:
+        # Keep :mc suffix for chembench and medmcqa tasks
+        if "medmcqa" not in name and "chembench" not in name:
             name = name.replace(":mc", "")
         return name
 
@@ -619,7 +718,10 @@ def main(args):
                         row = [format_model_name(model)]
                         for task in task_names:
                             value = results[model].get(task, None)
-                            row.append(f"{value:.3f}" if value is not None else "-")
+                            if value is None or value == "N/A":
+                                row.append("N/A")
+                            else:
+                                row.append(f"{value:.3f}")
                         writer.writerow(row)
                 else:
                     header = ["Task"] + [format_model_name(m) for m in model_names]
@@ -628,7 +730,10 @@ def main(args):
                         row = [format_task(task)]
                         for m in model_names:
                             value = results[m].get(task, None)
-                            row.append(f"{value:.3f}" if value is not None else "-")
+                            if value is None or value == "N/A":
+                                row.append("N/A")
+                            else:
+                                row.append(f"{value:.3f}")
                         writer.writerow(row)
 
             print(f"Exported results to {args.export_csv}")
@@ -723,7 +828,13 @@ Examples:
     parser.add_argument("--avg-mm", action="store_true", help="Average Minerva Math tasks")
     parser.add_argument("--avg-ruler", action="store_true", help="Average RULER tasks")
     parser.add_argument("--avg-sciriff", action="store_true", help="Average SciRIFF tasks")
+    parser.add_argument("--avg-chembench", action="store_true", help="Average ChemBench tasks")
+    parser.add_argument("--avg-legalbench", action="store_true", help="Average LegalBench tasks")
+    parser.add_argument("--avg-frenchbench", action="store_true", help="Average FrenchBench tasks")
     parser.add_argument("--avg-code", action="store_true", help="Average coding tasks")
+    parser.add_argument(
+        "--avg-all", action="store_true", help="Average all tasks into a single score"
+    )
 
     # Task filtering
     parser.add_argument("--stem-only", action="store_true", help="Show only STEM tasks")
@@ -738,11 +849,37 @@ Examples:
     parser.add_argument("--show-models", help="Comma-separated list of model patterns to show")
     parser.add_argument("--hide-tasks", help="Comma-separated list of task patterns to hide")
     parser.add_argument("--show-tasks", help="Comma-separated list of task patterns to show")
+    parser.add_argument(
+        "--nicknames",
+        help="Comma-separated pattern:nickname mappings for model names (e.g., 'dolma:Dolma,olmoe:OLMoE')",
+    )
+
+    parser.add_argument(
+        "--lower-is-better",
+        action="store_true",
+        help="Highlight the lowest score per task instead of the highest (e.g. for bpb/perplexity metrics)",
+    )
 
     args = parser.parse_args()
 
     # Validate arguments
     if args.avg_mmlu and args.avg_mmlu_cat:
         parser.error("Cannot use both --avg-mmlu and --avg-mmlu-cat")
+
+    # --avg-all enables all averaging flags
+    if args.avg_all:
+        args.avg_core = True
+        args.avg_mmlu = True
+        args.avg_mmlu_pro = True
+        args.avg_agi_eval = True
+        args.avg_bbh = True
+        args.avg_gen = True
+        args.avg_mm = True
+        args.avg_ruler = True
+        args.avg_sciriff = True
+        args.avg_chembench = True
+        args.avg_legalbench = True
+        args.avg_frenchbench = True
+        args.avg_code = True
 
     main(args)

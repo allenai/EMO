@@ -133,7 +133,6 @@ FAST_TASKS = [
     "copycolors_10way_fast",
 ]
 
-
 TASK_GROUPS: Dict[str, List[str]] = {
     "full__small_compute": FULL_TASKS_SMALL_COMPUTE,
     "full__large_compute": FULL_TASKS_LARGE_COMPUTE,

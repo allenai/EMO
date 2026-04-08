@@ -1,0 +1,11 @@
+# Token counts (bytes/4 for uint32 .npy files):
+#   Java:  65.21B tokens (8 files)
+#   TOTAL: 65.21B tokens (8 files)
+stack-edu-Java,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Java/000000.npy
+stack-edu-Java,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Java/000001.npy
+stack-edu-Java,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Java/000002.npy
+stack-edu-Java,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Java/000003.npy
+stack-edu-Java,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Java/000004.npy
+stack-edu-Java,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Java/000005.npy
+stack-edu-Java,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Java/000006.npy
+stack-edu-Java,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Java/000007.npy

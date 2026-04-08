@@ -1,0 +1,137 @@
+# Token counts per subdomain (bytes/4 for uint32 .npy files):
+#   Python:      74.90B tokens (8 files)
+#   Markdown:    68.21B tokens (8 files)
+#   Java:        65.21B tokens (8 files)
+#   Cpp:         49.13B tokens (8 files)
+#   JavaScript:  35.66B tokens (8 files)
+#   CSharp:      24.97B tokens (8 files)
+#   PHP:         24.78B tokens (8 files)
+#   C:           16.32B tokens (8 files)
+#   Shell:       10.51B tokens (8 files)
+#   TypeScript:   9.37B tokens (8 files)
+#   SQL:          7.58B tokens (8 files)
+#   Swift:        5.74B tokens (8 files)
+#   Rust:         5.71B tokens (8 files)
+#   Go:           5.41B tokens (8 files)
+#   Ruby:         5.33B tokens (8 files)
+#   TOTAL:      408.86B tokens (120 files)
+stack-edu-C,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/C/000000.npy
+stack-edu-C,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/C/000001.npy
+stack-edu-C,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/C/000002.npy
+stack-edu-C,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/C/000003.npy
+stack-edu-C,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/C/000004.npy
+stack-edu-C,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/C/000005.npy
+stack-edu-C,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/C/000006.npy
+stack-edu-C,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/C/000007.npy
+stack-edu-CSharp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/CSharp/000000.npy
+stack-edu-CSharp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/CSharp/000001.npy
+stack-edu-CSharp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/CSharp/000002.npy
+stack-edu-CSharp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/CSharp/000003.npy
+stack-edu-CSharp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/CSharp/000004.npy
+stack-edu-CSharp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/CSharp/000005.npy
+stack-edu-CSharp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/CSharp/000006.npy
+stack-edu-CSharp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/CSharp/000007.npy
+stack-edu-Cpp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Cpp/000000.npy
+stack-edu-Cpp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Cpp/000001.npy
+stack-edu-Cpp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Cpp/000002.npy
+stack-edu-Cpp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Cpp/000003.npy
+stack-edu-Cpp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Cpp/000004.npy
+stack-edu-Cpp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Cpp/000005.npy
+stack-edu-Cpp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Cpp/000006.npy
+stack-edu-Cpp,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Cpp/000007.npy
+stack-edu-Go,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Go/000000.npy
+stack-edu-Go,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Go/000001.npy
+stack-edu-Go,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Go/000002.npy
+stack-edu-Go,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Go/000003.npy
+stack-edu-Go,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Go/000004.npy
+stack-edu-Go,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Go/000005.npy
+stack-edu-Go,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Go/000006.npy
+stack-edu-Go,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Go/000007.npy
+stack-edu-Java,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Java/000000.npy
+stack-edu-Java,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Java/000001.npy
+stack-edu-Java,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Java/000002.npy
+stack-edu-Java,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Java/000003.npy
+stack-edu-Java,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Java/000004.npy
+stack-edu-Java,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Java/000005.npy
+stack-edu-Java,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Java/000006.npy
+stack-edu-Java,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Java/000007.npy
+stack-edu-JavaScript,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/JavaScript/000000.npy
+stack-edu-JavaScript,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/JavaScript/000001.npy
+stack-edu-JavaScript,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/JavaScript/000002.npy
+stack-edu-JavaScript,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/JavaScript/000003.npy
+stack-edu-JavaScript,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/JavaScript/000004.npy
+stack-edu-JavaScript,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/JavaScript/000005.npy
+stack-edu-JavaScript,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/JavaScript/000006.npy
+stack-edu-JavaScript,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/JavaScript/000007.npy
+stack-edu-Markdown,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Markdown/000000.npy
+stack-edu-Markdown,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Markdown/000001.npy
+stack-edu-Markdown,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Markdown/000002.npy
+stack-edu-Markdown,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Markdown/000003.npy
+stack-edu-Markdown,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Markdown/000004.npy
+stack-edu-Markdown,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Markdown/000005.npy
+stack-edu-Markdown,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Markdown/000006.npy
+stack-edu-Markdown,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Markdown/000007.npy
+stack-edu-PHP,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/PHP/000000.npy
+stack-edu-PHP,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/PHP/000001.npy
+stack-edu-PHP,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/PHP/000002.npy
+stack-edu-PHP,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/PHP/000003.npy
+stack-edu-PHP,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/PHP/000004.npy
+stack-edu-PHP,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/PHP/000005.npy
+stack-edu-PHP,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/PHP/000006.npy
+stack-edu-PHP,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/PHP/000007.npy
+stack-edu-Python,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Python/000000.npy
+stack-edu-Python,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Python/000001.npy
+stack-edu-Python,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Python/000002.npy
+stack-edu-Python,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Python/000003.npy
+stack-edu-Python,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Python/000004.npy
+stack-edu-Python,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Python/000005.npy
+stack-edu-Python,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Python/000006.npy
+stack-edu-Python,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Python/000007.npy
+stack-edu-Ruby,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Ruby/000000.npy
+stack-edu-Ruby,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Ruby/000001.npy
+stack-edu-Ruby,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Ruby/000002.npy
+stack-edu-Ruby,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Ruby/000003.npy
+stack-edu-Ruby,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Ruby/000004.npy
+stack-edu-Ruby,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Ruby/000005.npy
+stack-edu-Ruby,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Ruby/000006.npy
+stack-edu-Ruby,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Ruby/000007.npy
+stack-edu-Rust,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Rust/000000.npy
+stack-edu-Rust,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Rust/000001.npy
+stack-edu-Rust,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Rust/000002.npy
+stack-edu-Rust,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Rust/000003.npy
+stack-edu-Rust,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Rust/000004.npy
+stack-edu-Rust,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Rust/000005.npy
+stack-edu-Rust,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Rust/000006.npy
+stack-edu-Rust,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Rust/000007.npy
+stack-edu-SQL,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/SQL/000000.npy
+stack-edu-SQL,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/SQL/000001.npy
+stack-edu-SQL,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/SQL/000002.npy
+stack-edu-SQL,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/SQL/000003.npy
+stack-edu-SQL,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/SQL/000004.npy
+stack-edu-SQL,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/SQL/000005.npy
+stack-edu-SQL,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/SQL/000006.npy
+stack-edu-SQL,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/SQL/000007.npy
+stack-edu-Shell,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Shell/000000.npy
+stack-edu-Shell,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Shell/000001.npy
+stack-edu-Shell,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Shell/000002.npy
+stack-edu-Shell,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Shell/000003.npy
+stack-edu-Shell,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Shell/000004.npy
+stack-edu-Shell,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Shell/000005.npy
+stack-edu-Shell,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Shell/000006.npy
+stack-edu-Shell,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Shell/000007.npy
+stack-edu-Swift,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Swift/000000.npy
+stack-edu-Swift,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Swift/000001.npy
+stack-edu-Swift,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Swift/000002.npy
+stack-edu-Swift,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Swift/000003.npy
+stack-edu-Swift,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Swift/000004.npy
+stack-edu-Swift,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Swift/000005.npy
+stack-edu-Swift,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Swift/000006.npy
+stack-edu-Swift,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/Swift/000007.npy
+stack-edu-TypeScript,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/TypeScript/000000.npy
+stack-edu-TypeScript,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/TypeScript/000001.npy
+stack-edu-TypeScript,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/TypeScript/000002.npy
+stack-edu-TypeScript,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/TypeScript/000003.npy
+stack-edu-TypeScript,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/TypeScript/000004.npy
+stack-edu-TypeScript,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/TypeScript/000005.npy
+stack-edu-TypeScript,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/TypeScript/000006.npy
+stack-edu-TypeScript,preprocessed/dolma2-0625/v0.1/allenai/dolma2-tokenizer/stack-edu/TypeScript/000007.npy

@@ -2,6 +2,9 @@ from oe_eval.configs.tasks import TASK_CONFIGS
 from oe_eval.data.mmlu_pro_categories import MMLU_PRO_CATEGORIES
 from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 
+from offline_evals.tasks.code_fresh import CODE_FRESH_LANGUAGES
+
+
 from src.offline_evals.tasks.splits_mmlu import MMLU_CLUSTER_CATEGORIES
 from src.offline_evals.tasks.splits_mmlu_pro import MMLU_PRO_CATEGORIES_MAP
 
@@ -1331,6 +1334,48 @@ def get_task_configs():
                 "split": "validation",
                 "num_shots": 5,
             },
+            "minerva_math_500::olmes": {
+                "task_name": "minerva_math_500",
+                "split": "test",
+                "num_shots": 4,
+                "fewshot_source": "Minerva:MATH:fixed",  # fix double new line within solution in example
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "mbpp:3shot:bpb::none": {
+                "task_name": "mbpp",
+                "primary_metric": "bits_per_byte_corr",
+                "use_chat_format": False,
+                "context_kwargs": {
+                    "prompt_variant": "inloop_bpb",
+                },
+                "generation_kwargs": {
+                    "stop_sequences": [],
+                },
+                "compute_gold_bpb": True,
+                "num_shots": 3,  # like deepseek
+                "limit": 500,
+            },
+            "codex_humaneval:3shot:bpb::none": {
+                "task_name": "codex_humaneval",
+                "primary_metric": "bits_per_byte_corr",
+                "use_chat_format": False,
+                "context_kwargs": {
+                    "prompt_variant": "inloop_bpb",
+                    "answer_prefix": "",
+                },
+                "generation_kwargs": {
+                    "stop_sequences": [],
+                },
+                "chat_overrides": {
+                    "context_kwargs": {
+                        "assistant_prefix": "",
+                    },
+                },
+                "compute_gold_bpb": True,
+                "num_shots": 3,  # like deepseek
+            },
         }
     )
 
@@ -1633,5 +1678,42 @@ def get_task_configs():
                 "primary_metric": "acc_per_char",
                 "metadata": {"regimes": ["OLMES-v0.1"]},
             }
+
+    # code_fresh_rolling task configs
+    for language in CODE_FRESH_LANGUAGES:
+        TASK_CONFIGS[f"code_fresh_rolling:{language}:bpb"] = {
+            "task_name": f"code_fresh_rolling:{language}",
+            "split": "train",
+            "primary_metric": "bits_per_byte",
+        }
+        TASK_CONFIGS[f"code_fresh_rolling:{language}:ppl"] = {
+            "task_name": f"code_fresh_rolling:{language}",
+            "split": "train",
+            "primary_metric": "ppl_token",
+        }
+
+    # FrenchBench RC tasks: 0-shot and 5-shot
+    for fb_task in [
+        "frenchbench_boolq",
+        "frenchbench_arc_challenge",
+        "frenchbench_hellaswag",
+        "frenchbench_grammar_vocab_reading",
+    ]:
+        TASK_CONFIGS[f"{fb_task}:rc:0shot::olmes"] = {
+            "task_name": f"{fb_task}:rc:0shot",
+            "num_shots": 0,
+            "primary_metric": "acc_per_char",
+            "metadata": {
+                "regimes": [],
+            },
+        }
+        TASK_CONFIGS[f"{fb_task}:rc:5shot::olmes"] = {
+            "task_name": f"{fb_task}:rc:5shot",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "metadata": {
+                "regimes": [],
+            },
+        }
 
     return TASK_CONFIGS

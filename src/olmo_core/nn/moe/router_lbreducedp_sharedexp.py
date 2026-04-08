@@ -157,48 +157,43 @@ class MoELinearLBReduceDPSharedExpRouter(MoELinearRouter):
             # shape: (num_standard,)
             batch_size_per_expert_routing = batched_batch_size_per_expert_routing.sum(dim=0)
 
-            # we first filter out the padding tokens (also includes masked tokens)
+            # Compute batch_size_per_expert excluding padding tokens, using static-shape
+            # ops (weighted scatter_add instead of masked_select) to avoid graph breaks
+            # in torch.compile.
             if padding_mask is not None:
-                padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(expert_indices)
-                valid_expert_indices = expert_indices.masked_select(padding_mask_expanded).view(
-                    -1, expert_indices.size(-1)
+                # Use padding_mask as weights so padding tokens contribute 0 to the histogram
+                weights = padding_mask.unsqueeze(-1).expand_as(expert_indices).to(expert_indices.dtype)
+                hist = torch.zeros(
+                    (*expert_indices.shape[:-1], num_standard),
+                    dtype=expert_indices.dtype,
+                    device=expert_indices.device,
                 )
-                padding_mask_expanded = padding_mask.unsqueeze(-1).expand_as(scores)
-                valid_scores = scores.masked_select(padding_mask_expanded).view(
-                    -1, num_standard
-                )
-                valid_logits = logits.masked_select(padding_mask_expanded).view(
-                    -1, num_standard
-                )
-
-                # (valid_tokens, num_standard)
-                batched_batch_size_per_expert = ops.batched_histc(
-                    valid_expert_indices, num_standard
-                )
-                # (num_standard)
+                hist.scatter_add_(-1, expert_indices, weights)
+                # (batch_size, num_standard)
+                batched_batch_size_per_expert = hist.sum(dim=1)
+                # (num_standard,)
                 batch_size_per_expert = batched_batch_size_per_expert.sum(dim=0)
             else:
-                valid_expert_indices = expert_indices.view(-1, expert_indices.size(-1))
-                valid_scores = scores.view(-1, num_standard)
-                valid_logits = logits.view(-1, num_standard)
-
                 batch_size_per_expert = batch_size_per_expert_routing
+                batched_batch_size_per_expert = batched_batch_size_per_expert_routing
 
             # prepare for custom metric
             if self.training:
-                # prepare unique experts metric (add shared experts since they are always active).
-                unique_experts = torch.unique(valid_expert_indices.view(-1))
-                num_unique_experts = unique_experts.numel() + self.num_shared_experts
+                # Count unique experts via histogram (avoids dynamic-shape torch.unique)
+                num_unique_experts = (batch_size_per_expert > 0).sum().item() + self.num_shared_experts
 
                 self._unique_experts_sum += num_unique_experts
                 self._num_batches_tracked += 1
 
-                # Compute router distribution entropy metric
-                # calculate entropy of the router distribution over experts
-                # get entropy per token
-                token_entropies = -torch.sum(valid_scores * torch.log(valid_scores + 1e-10), dim=-1)
-                # average entropy over valid tokens
-                avg_entropy = token_entropies.mean().item()
+                # Compute router distribution entropy metric using masked mean
+                # to avoid dynamic-shape masked_select
+                token_entropies = -torch.sum(scores * torch.log(scores + 1e-10), dim=-1)  # (B, S)
+                if padding_mask is not None:
+                    token_entropies = token_entropies * padding_mask.float()
+                    num_valid = padding_mask.sum().clamp(min=1)
+                    avg_entropy = (token_entropies.sum() / num_valid).item()
+                else:
+                    avg_entropy = token_entropies.mean().item()
                 self._router_tokenlevel_expert_entropy += avg_entropy
 
         # Maybe compute auxiliary losses and accumulate metrics.

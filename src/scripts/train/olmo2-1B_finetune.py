@@ -18,22 +18,14 @@ from olmo_core.config import Config, DType
 from olmo_core.data import (
     NumpyDataLoaderConfig,
     NumpyDatasetConfig,
-    NumpyFSLDatasetConfig,
     NumpyPaddedFSLDatasetConfig,
     TokenizerConfig,
 )
-from olmo_core.data.mixes import DataMix
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_rank
 from olmo_core.nn.transformer import TransformerConfig
-from olmo_core.optim import (
-    CosWithWarmup,
-    LinearWithWarmup,
-    OptimGroupOverride,
-    SkipStepAdamWConfig,
-)
+from olmo_core.optim import LinearWithWarmup, OptimGroupOverride, SkipStepAdamWConfig
 from olmo_core.train import (
-    Duration,
     TrainerConfig,
     prepare_training_environment,
     teardown_training_environment,
@@ -43,9 +35,7 @@ from olmo_core.train.callbacks import (
     CheckpointerCallback,
     CometCallback,
     ConfigSaverCallback,
-    DownstreamEvaluatorCallbackConfig,
     GPUMemoryMonitorCallback,
-    LMEvaluatorCallbackConfig,
     ProfilerCallback,
     WandBCallback,
 )
@@ -107,9 +97,8 @@ def train(opts, config: ExperimentConfig):
     assert (
         config.trainer.max_duration.unit == "epochs"
     ), "we assume we train using epochs to calculate checkpoints"
+    assert data_loader.total_batches is not None, "Cannot determine total batches from dataset"
     total_batches = data_loader.total_batches * config.trainer.max_duration.value
-    if total_batches is None:
-        raise ValueError("Cannot determine total batches from dataset")
     save_interval = max(1, total_batches // opts.num_checkpoints)
     log.info(
         f"Total batches: {total_batches}, Total checkpoints: {opts.num_checkpoints}, Save interval: {save_interval}"

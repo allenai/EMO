@@ -1,38 +1,17 @@
-import json
 import logging
-from abc import abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union, cast
+from typing import Optional, Tuple, Union
 
 import torch
-import torch.distributed as dist
-import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributed import DeviceMesh
-from torch.distributed.tensor import Replicate, Shard, distribute_tensor
-from torch.distributed.tensor.parallel import PrepareModuleInput, parallelize_module
 
 import olmo_core.ops.moe as ops
-from olmo_core.config import Config, DType, StrEnum
-from olmo_core.distributed.utils import (
-    _HiddenTensor,
-    distribute_like,
-    get_local_tensor,
-    hide_from_torch,
-    is_distributed,
-    unhide_from_torch,
-)
 from olmo_core.exceptions import OLMoConfigurationError
 from olmo_core.nn.moe.router import (
     MoELinearRouter,
-    MoELoadBalancingLossGranularity,
-    MoERouter,
     MoERouterConfig,
     MoERouterGatingFunction,
-    MoERouterType,
 )
-from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
-from olmo_core.utils import get_default_device
 
 from .loss import MoELoadBalancingLossGranularity, load_balancing_loss, router_z_loss
 
@@ -109,6 +88,7 @@ class MoETwoLevelTopPBatchLBRouter(MoELinearRouter):
         logits = self.get_expert_logits(x).float()
         logits_mask = torch.zeros_like(logits, dtype=torch.bool, device=logits.device)
 
+        assert document_boundaries is not None
         document_boundaries_cpu = []
         for b in document_boundaries:
             bc = b.detach().cpu().tolist()

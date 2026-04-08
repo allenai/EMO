@@ -1,11 +1,12 @@
 """
 Uses the task of Synthea as a medical MCQ task
 """
+
 import os
 from typing import Optional
 
 from oe_eval.tasks.base_task import MultipleChoiceTask
-from oe_eval.tasks.utils import make_cloze_prompt, make_mcq_prompt
+from oe_eval.tasks.utils import make_cloze_prompt
 from oe_eval.utils import load_jsonl
 
 
@@ -77,7 +78,9 @@ class Synthea(MultipleChoiceTask):
         prompt = doc["prompt"]
         question_idx = prompt.rfind("\nA. ")
         if prompt.count("\nA. ") != 1:
-            breakpoint()
+            raise ValueError(
+                f"Expected exactly one '\\nA. ' in prompt, got {prompt.count(chr(10) + 'A. ')}"
+            )
 
         question = prompt[:question_idx].strip()
 
