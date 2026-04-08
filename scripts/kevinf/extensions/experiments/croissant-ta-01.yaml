@@ -1,0 +1,41 @@
+# French expert extension using training-data activations on croissant
+#
+# Base: moereducedp512sharedexp1 128-expert model (step 30995)
+# Strategy: clone top-2 most-activated experts per training data, then train them
+
+base_model:
+  path: /weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995
+
+experts:
+  num_new: 4
+  num_shared: 1
+  init_method: similar
+  init_k: 2
+  exclude_experts: [127]  # shared expert
+
+data:
+  mix: croissant
+
+stage1:
+  batch_size: 16
+  seq_length: 4096
+  max_tokens: 5000000  # 25M tokens
+  cluster: ai2/jupiter-cirrascale-2
+  gpus: 4
+
+stage2:
+  cluster: ai2/jupiter-cirrascale-2
+  gpus: 1
+
+stage3:
+  lr: 4e-4
+  num_billion_tokens: 10
+  warmup_fraction: 0.1
+  lb_loss_weight: 1e-2
+  cluster: ai2/jupiter
+  gpus: 8
+  nodes: 4
+
+wandb:
+  entity: allennlp
+  project: flex2-extensions-kevinf

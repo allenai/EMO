@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Generic extension pipeline (`scripts/kevinf/extensions/`) with YAML configs and unified WEKA artifact layout.
 - Added code_fresh_rolling eval task (rolling log-likelihood perplexity/BPB for 42 programming languages).
 - Allow `logits_cache` model arg to pass through run_eval without hashing error.
 - Added PMC (PubMed Central) data mix and training script for biomedical continued pretraining.

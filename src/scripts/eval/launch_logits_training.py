@@ -151,99 +151,97 @@ def launch_logits_training(args_dict):
     num_layers = model.config.num_hidden_layers
     num_experts = model.config.num_experts
 
-    # Process each source label
+    # Collect all paths across labels
+    all_paths = []
     for label, label_paths in sorted(label_to_paths.items()):
-        logger.info(f"Processing source label '{label}' ({len(label_paths)} files)")
+        logger.info(f"Source label '{label}': {len(label_paths)} files")
+        all_paths.extend(label_paths)
 
-        if args_dict["output_dir"].startswith("s3://"):
-            output_dir = tempfile.mkdtemp()
-        else:
-            output_dir = args_dict["output_dir"]
-            os.makedirs(output_dir, exist_ok=True)
+    if args_dict["output_dir"].startswith("s3://"):
+        output_dir = tempfile.mkdtemp()
+    else:
+        output_dir = args_dict["output_dir"]
+        os.makedirs(output_dir, exist_ok=True)
 
-        out_fn = os.path.join(output_dir, f"{args_dict['mix']}-{label}-router.jsonl")
+    out_fn = os.path.join(output_dir, f"{args_dict['mix']}-router.jsonl")
 
-        if os.path.exists(out_fn):
-            logger.info(f"Output file {out_fn} already exists, skipping...")
-            continue
+    if os.path.exists(out_fn):
+        logger.info(f"Output file {out_fn} already exists, skipping...")
+        return
 
-        sequences = load_token_ids_from_paths(
-            label_paths,
-            seq_length=args_dict["seq_length"],
-            max_tokens=args_dict["max_tokens"],
-            seed=args_dict["seed"],
+    sequences = load_token_ids_from_paths(
+        all_paths,
+        seq_length=args_dict["seq_length"],
+        max_tokens=args_dict["max_tokens"],
+        seed=args_dict["seed"],
+    )
+
+    if len(sequences) == 0:
+        logger.warning("No sequences loaded, exiting.")
+        return
+
+    # Initialize storage for summed router probabilities
+    tot_router_probabilities = torch.zeros((num_layers, num_experts))
+    tot_tokens = 0
+
+    logger.info(f"Processing {len(sequences)} sequences...")
+
+    batch_size = args_dict["batch_size"]
+    for i in tqdm(range(0, len(sequences), batch_size), desc="Batches"):
+        batch_seqs = sequences[i : i + batch_size]
+        input_ids = torch.tensor(np.stack(batch_seqs), dtype=torch.long).to(model.device)
+        attention_mask = torch.ones_like(input_ids)
+
+        with torch.no_grad():
+            out = model(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                output_router_logits=True,
+            )
+            router_logits_list = [x.cpu() for x in out["router_logits"]]
+            router_logits = torch.stack(
+                router_logits_list
+            )  # (layers, batch * seq_length, num_experts)
+
+        del out
+        torch.cuda.empty_cache()
+
+        # Reshape: (layers, batch, seq_length, num_experts)
+        router_logits = router_logits.view(
+            router_logits.shape[0],
+            input_ids.shape[0],
+            input_ids.shape[1],
+            router_logits.shape[-1],
         )
 
-        if len(sequences) == 0:
-            logger.warning(f"No sequences loaded for label '{label}', skipping.")
-            continue
+        router_probabilities = F.softmax(router_logits, dim=-1)
 
-        # Initialize storage for summed router probabilities
-        tot_router_probabilities = torch.zeros((num_layers, num_experts))
-        tot_tokens = 0
+        summed_router_probabilities = router_probabilities.sum(dim=(1, 2))  # (layers, num_experts)
+        tot_router_probabilities += summed_router_probabilities
+        tot_tokens += input_ids.numel()
 
-        logger.info(f"Processing {len(sequences)} sequences for label '{label}'...")
+        # TODO: Remove this per-batch diagnostic logging once verified
+        batch_avg = summed_router_probabilities / input_ids.numel()  # (layers, num_experts)
+        batch_avg_across_layers = batch_avg.sum(dim=0)  # (num_experts,)
+        top2_vals, top2_idx = torch.topk(batch_avg_across_layers, 2)
+        batch_num = i // batch_size
+        logger.info(
+            f"[Batch {batch_num}] first 10 experts: {batch_avg_across_layers[:10].tolist()}"
+        )
+        logger.info(
+            f"[Batch {batch_num}] top-2: experts {top2_idx.tolist()} values {top2_vals.tolist()}"
+        )
 
-        batch_size = args_dict["batch_size"]
-        for i in tqdm(range(0, len(sequences), batch_size), desc=f"Batches ({label})"):
-            batch_seqs = sequences[i : i + batch_size]
-            input_ids = torch.tensor(np.stack(batch_seqs), dtype=torch.long).to(model.device)
-            # No padding needed — all sequences are exactly seq_length
-            attention_mask = torch.ones_like(input_ids)
+    # Compute average router probabilities
+    save_router_probabilities = tot_router_probabilities / tot_tokens
+    with open(out_fn, "w") as out_file:
+        out_file.write(
+            json.dumps({"avg_router_probabilities": save_router_probabilities.tolist()}) + "\n"
+        )
+    logger.info(f"Saved router probabilities to {out_fn} ({tot_tokens:,} tokens processed)")
 
-            with torch.no_grad():
-                out = model(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    output_router_logits=True,
-                )
-                router_logits_list = [x.cpu() for x in out["router_logits"]]
-                router_logits = torch.stack(
-                    router_logits_list
-                )  # (layers, batch * seq_length, num_experts)
-
-            del out
-            torch.cuda.empty_cache()
-
-            # Reshape: (layers, batch, seq_length, num_experts)
-            router_logits = router_logits.view(
-                router_logits.shape[0],
-                input_ids.shape[0],
-                input_ids.shape[1],
-                router_logits.shape[-1],
-            )
-
-            router_probabilities = F.softmax(router_logits, dim=-1)
-
-            summed_router_probabilities = router_probabilities.sum(
-                dim=(1, 2)
-            )  # (layers, num_experts)
-            tot_router_probabilities += summed_router_probabilities
-            tot_tokens += input_ids.numel()
-
-            # TODO: Remove this per-batch diagnostic logging once verified
-            # Per-batch diagnostics: average over tokens in this batch, then average over layers
-            batch_avg = summed_router_probabilities / input_ids.numel()  # (layers, num_experts)
-            batch_avg_across_layers = batch_avg.sum(dim=0)  # (num_experts,)
-            top2_vals, top2_idx = torch.topk(batch_avg_across_layers, 2)
-            batch_num = i // batch_size
-            logger.info(
-                f"[Batch {batch_num}] first 10 experts: {batch_avg_across_layers[:10].tolist()}"
-            )
-            logger.info(
-                f"[Batch {batch_num}] top-2: experts {top2_idx.tolist()} values {top2_vals.tolist()}"
-            )
-
-        # Compute average router probabilities
-        save_router_probabilities = tot_router_probabilities / tot_tokens
-        with open(out_fn, "w") as out_file:
-            out_file.write(
-                json.dumps({"avg_router_probabilities": save_router_probabilities.tolist()}) + "\n"
-            )
-        logger.info(f"Saved router probabilities to {out_fn} ({tot_tokens:,} tokens processed)")
-
-        if args_dict["output_dir"].startswith("s3://"):
-            upload_directory(output_dir, args_dict["output_dir"])
+    if args_dict["output_dir"].startswith("s3://"):
+        upload_directory(output_dir, args_dict["output_dir"])
 
 
 def main():
