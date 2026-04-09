@@ -170,6 +170,67 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
+            # Merged variants: pruning + finetuning use the same train+val merged set.
+            "gsm8k_generation_0shot_merged:train::olmes": {
+                "task_name": "gsm8k_generation_0shot_merged:train",
+                "split": "train",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 0,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k_generation_0shot_merged:validation::olmes": {
+                "task_name": "gsm8k_generation_0shot_merged:validation",
+                "split": "validation",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 0,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k_generation_0shot_merged:test::olmes": {
+                "task_name": "gsm8k_generation_0shot_merged:test",
+                "split": "test",
+                "primary_metric": "exact_match",
+                "num_shots": 0,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k_generation_8shot_merged:train::olmes": {
+                "task_name": "gsm8k_generation_8shot_merged:train",
+                "split": "train",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 8,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k_generation_8shot_merged:validation::olmes": {
+                "task_name": "gsm8k_generation_8shot_merged:validation",
+                "split": "validation",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 8,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k_generation_8shot_merged:test::olmes": {
+                "task_name": "gsm8k_generation_8shot_merged:test",
+                "split": "test",
+                "primary_metric": "exact_match",
+                "num_shots": 8,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
             "synthea:rc_train_0shot::olmes": {
                 "task_name": "synthea:rc_train_0shot",
                 "split": "train",

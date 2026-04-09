@@ -72,6 +72,8 @@ TASK_GROUPS_LIST=(
 #  "winogrande"
 #  "gsm8k_generation_0shot"
 #  "gsm8k_generation_8shot"
+#  "gsm8k_generation_0shot_merged"
+#  "gsm8k_generation_8shot_merged"
 #  "gsm8k_perplexity_0shot"
 #  "coqa_0shot"
 #  "coqa_full_0shot"
@@ -125,6 +127,10 @@ TASK_GROUPS_LIST=(
   "piqa_merged"
   "socialiqa_merged"
   "winogrande_merged"
+
+  # GSM8K generation merged variants (pruning + finetuning share data)
+  "gsm8k_generation_0shot_merged"
+  "gsm8k_generation_8shot_merged"
 
   # MMLU 17-category merged variants (pruning + finetuning share data)
   "mmlu_merged_biology"
