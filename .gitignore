@@ -85,3 +85,4 @@ claude_outputs
 eval_plots/.mplconfig
 *.csv
 *.html
+prune_evals_final

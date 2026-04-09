@@ -34,7 +34,9 @@ MODELS=(
 #    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995"
 #    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995"
 #    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322/step238419"
-    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419/step250339"
+#    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419/step250339"
+
+    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_twolevel_randpool-8-128_from_step238419/step250339"
 
 
 
