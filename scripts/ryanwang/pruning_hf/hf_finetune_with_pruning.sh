@@ -1,4 +1,7 @@
 #!/bin/bash
+# Make src/ a top-level import root so bare imports like `offline_evals` and
+# `scripts.eval.tasks` resolve. pip install -e . only registers olmo_core*.
+export PYTHONPATH="$(pwd)/src${PYTHONPATH:+:${PYTHONPATH}}"
 #
 # HuggingFace-Native Finetuning Pipeline with Expert Pruning
 #
