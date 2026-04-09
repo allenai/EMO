@@ -20,6 +20,7 @@ Homepage: https://github.com/openai/grade-school-math
 import re
 from typing import List, Union
 
+from datasets import concatenate_datasets
 from oe_eval.components.instances import RequestInstance
 from oe_eval.components.requests import LoglikelihoodRequest, RequestType
 from oe_eval.tasks.base_task import Task
@@ -201,16 +202,75 @@ class GSM8K_Perplexity_Base(Task):
 #     pass
 
 
-# For GSM8K Finetuning. For test, we use generation-based. For train and val, we want gold labels to base off of
+# For GSM8K Finetuning. All splits inherit from upstream GSM8K so the prompt
+# formatting / processing path is identical to the test-time eval. The train
+# and validation classes additionally:
+#   - carve a 1000-example validation slice out of the train set (GSM8K has
+#     no native validation split)
+#   - rewrite doc["answer"] to the *normalized* CoT (the "So the answer is X."
+#     form stored in doc["choices"][0] by upstream _process_doc), so that
+#     doc_to_target matches the targets used historically by the pruning +
+#     finetuning pipeline.
+class GSM8K_Generation_TrainVal_Base(GSM8K):
+    def has_validation_docs(self):
+        return True
+
+    def training_docs(self):
+        if self._training_docs is None:
+            # select training docs excluding 1000 examples used for validation
+            train_dataset = (
+                self.dataset["train"]
+                .shuffle(seed=0)
+                .select(range(1000, len(self.dataset["train"])))
+            )
+            self._training_docs = list(train_dataset.map(self._process_doc, with_indices=True))
+        return self._training_docs
+
+    def validation_docs(self):
+        # select 1000 examples from the train set as validation set
+        val_dataset = self.dataset["train"].shuffle(seed=0).select(range(0, 1000))
+        return val_dataset.map(self._process_doc, with_indices=True)
+
+    def _process_doc(self, doc, index=-1):
+        out_doc = super()._process_doc(doc, index=index)
+        # Upstream leaves doc["answer"] as the raw GSM8K answer (with <<...>>
+        # calculator annotations and the trailing "#### N"). The pruning +
+        # finetuning pipeline historically trained on the *normalized* CoT,
+        # which upstream stores in doc["choices"][0]. Copy it into "answer"
+        # so doc_to_target returns the normalized form.
+        out_doc["answer"] = out_doc["choices"][0]
+        return out_doc
+
+    def normalize_answer_str(self, doc: dict, answer: str) -> str:
+        # Upstream `normalize_answer_str` unconditionally appends
+        # " So the answer is {short_answer}." to the answer. For raw HF GSM8K
+        # rows that's correct (their answers end with "#### N"), but the
+        # STD:GSM8k fewshot exemplars already contain "So the answer is X."
+        # in their raw `answer` field, so the upstream normalizer ends up
+        # emitting the suffix twice in the assembled fewshot prefix. Collapse
+        # a duplicated trailing suffix here so the method is idempotent on
+        # already-suffixed inputs.
+        out = super().normalize_answer_str(doc, answer)
+        suffix = f"So the answer is {doc['short_answer']}."
+        # The trailing portion may have been touched by
+        # add_spaces_around_operators_no_regex; match the post-spacing form.
+        suffix_spaced = self.add_spaces_around_operators_no_regex(suffix).rstrip()
+        doubled = f"{suffix_spaced} {suffix_spaced}"
+        if out.rstrip().endswith(doubled):
+            stripped = out.rstrip()
+            out = stripped[: -len(doubled)] + suffix_spaced
+        return out
+
+
 class GSM8K_Generation_Test_0shot(GSM8K):
     pass
 
 
-class GSM8K_Generation_Train_0shot(GSM8K_Perplexity_Base):
+class GSM8K_Generation_Train_0shot(GSM8K_Generation_TrainVal_Base):
     pass
 
 
-class GSM8K_Generation_Validation_0shot(GSM8K_Perplexity_Base):
+class GSM8K_Generation_Validation_0shot(GSM8K_Generation_TrainVal_Base):
     pass
 
 
@@ -219,9 +279,49 @@ class GSM8K_Generation_Test_8shot(GSM8K):
     pass
 
 
-class GSM8K_Generation_Train_8shot(GSM8K_Perplexity_Base):
+class GSM8K_Generation_Train_8shot(GSM8K_Generation_TrainVal_Base):
     pass
 
 
-class GSM8K_Generation_Validation_8shot(GSM8K_Perplexity_Base):
+class GSM8K_Generation_Validation_8shot(GSM8K_Generation_TrainVal_Base):
+    pass
+
+
+# ---------------------------------------------------------------------------
+# Merged variant: pruning + finetuning use the same merged data
+# (matches the pattern in splits_hellaswag.HellaSwag_Merged_RC and
+# splits_mmlu.GenericMMLU_Merged_withsplits).
+# Concatenates the train slice (6473 docs) with the validation slice (1000
+# docs) into a single 7473-doc set, shuffled so the validation rows interleave
+# with the training rows. Both training_docs() and validation_docs() return
+# this same set, so the pruning calibration data is identical to the
+# finetuning data. The test split is unchanged (official 1319-row GSM8K test).
+# ---------------------------------------------------------------------------
+class GSM8K_Generation_Merged_Base(GSM8K_Generation_TrainVal_Base):
+    def training_docs(self):
+        if self._training_docs is None:
+            train_dataset = (
+                self.dataset["train"]
+                .shuffle(seed=0)
+                .select(range(1000, len(self.dataset["train"])))
+            )
+            val_dataset = (
+                self.dataset["train"]
+                .shuffle(seed=0)
+                .select(range(0, 1000))
+            )
+            merged = concatenate_datasets([train_dataset, val_dataset]).shuffle(seed=0)
+            self._training_docs = list(merged.map(self._process_doc, with_indices=True))
+        return self._training_docs
+
+    def validation_docs(self):
+        # Same merged set as training_docs so pruning + finetuning share data.
+        return self.training_docs()
+
+
+class GSM8K_Generation_Merged_0shot(GSM8K_Generation_Merged_Base):
+    pass
+
+
+class GSM8K_Generation_Merged_8shot(GSM8K_Generation_Merged_Base):
     pass
