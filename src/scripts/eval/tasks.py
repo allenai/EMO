@@ -1364,23 +1364,23 @@ def get_task_configs():
             },
         }
     #
-    # for cat in MMLU_PRO_CATEGORIES:
-    #     TASK_CONFIGS[f"mmlu_pro_{cat}:mc_validation::none"] = {
-    #         "task_name": f"mmlu_pro_{cat}:mc_validation",
-    #         "split": "validation",
-    #         "num_shots": 5,
-    #         "metadata": {
-    #             "regimes": [],
-    #         },
-    #     }
-    #     TASK_CONFIGS[f"mmlu_pro_{cat}:mc_test::none"] = {
-    #         "task_name": f"mmlu_pro_{cat}:mc_test",
-    #         "split": "test",
-    #         "num_shots": 5,
-    #         "metadata": {
-    #             "regimes": [],
-    #         },
-    #     }
+    for cat in MMLU_PRO_CATEGORIES:
+        TASK_CONFIGS[f"mmlu_pro_{cat}:mc_validation::none"] = {
+            "task_name": f"mmlu_pro_{cat}:mc_validation",
+            "split": "validation",
+            "num_shots": 5,
+            "metadata": {
+                "regimes": [],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_pro_{cat}:mc_test::none"] = {
+            "task_name": f"mmlu_pro_{cat}:mc_test",
+            "split": "test",
+            "num_shots": 5,
+            "metadata": {
+                "regimes": [],
+            },
+        }
     #     TASK_CONFIGS[f"mmlu_pro_{cat}:rc_validation::none"] = {
     #         "task_name": f"mmlu_pro_{cat}:rc_validation",
     #         "split": "validation",
