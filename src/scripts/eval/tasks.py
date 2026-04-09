@@ -1363,48 +1363,48 @@ def get_task_configs():
                 "regimes": ["OLMES-v0.1"],
             },
         }
-    #
-    # for cat in MMLU_PRO_CATEGORIES:
-    #     TASK_CONFIGS[f"mmlu_pro_{cat}:mc_validation::none"] = {
-    #         "task_name": f"mmlu_pro_{cat}:mc_validation",
-    #         "split": "validation",
-    #         "num_shots": 5,
-    #         "metadata": {
-    #             "regimes": [],
-    #         },
-    #     }
-    #     TASK_CONFIGS[f"mmlu_pro_{cat}:mc_test::none"] = {
-    #         "task_name": f"mmlu_pro_{cat}:mc_test",
-    #         "split": "test",
-    #         "num_shots": 5,
-    #         "metadata": {
-    #             "regimes": [],
-    #         },
-    #     }
-    #     TASK_CONFIGS[f"mmlu_pro_{cat}:rc_validation::none"] = {
-    #         "task_name": f"mmlu_pro_{cat}:rc_validation",
-    #         "split": "validation",
-    #         "num_shots": 5,
-    #         "metadata": {
-    #             "regimes": [],
-    #         },
-    #     }
-    #     TASK_CONFIGS[f"mmlu_pro_{cat}:rc_validation_0shot::none"] = {
-    #         "task_name": f"mmlu_pro_{cat}:rc_validation_0shot",
-    #         "split": "validation",
-    #         "num_shots": 0,
-    #         "metadata": {
-    #             "regimes": [],
-    #         },
-    #     }
-    #     TASK_CONFIGS[f"mmlu_pro_{cat}:rc_test::none"] = {
-    #         "task_name": f"mmlu_pro_{cat}:rc_test",
-    #         "split": "test",
-    #         "num_shots": 5,
-    #         "metadata": {
-    #             "regimes": [],
-    #         },
-    #     }
+
+    for cat in MMLU_PRO_CATEGORIES:
+        TASK_CONFIGS[f"mmlu_pro_{cat}:mc_validation::none"] = {
+            "task_name": f"mmlu_pro_{cat}:mc_validation",
+            "split": "validation",
+            "num_shots": 5,
+            "metadata": {
+                "regimes": [],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_pro_{cat}:mc_test::none"] = {
+            "task_name": f"mmlu_pro_{cat}:mc_test",
+            "split": "test",
+            "num_shots": 5,
+            "metadata": {
+                "regimes": [],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_pro_{cat}:rc_validation::none"] = {
+            "task_name": f"mmlu_pro_{cat}:rc_validation",
+            "split": "validation",
+            "num_shots": 5,
+            "metadata": {
+                "regimes": [],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_pro_{cat}:rc_validation_0shot::none"] = {
+            "task_name": f"mmlu_pro_{cat}:rc_validation_0shot",
+            "split": "validation",
+            "num_shots": 0,
+            "metadata": {
+                "regimes": [],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_pro_{cat}:rc_test::none"] = {
+            "task_name": f"mmlu_pro_{cat}:rc_test",
+            "split": "test",
+            "num_shots": 5,
+            "metadata": {
+                "regimes": [],
+            },
+        }
 
     # code_fresh_rolling task configs
     for language in CODE_FRESH_LANGUAGES:

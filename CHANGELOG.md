@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Removed redundant `hf auth login` CLI call in `launch_eval.py` that was triggering `/whoami-v2` rate limits when many Beaker eval jobs launched concurrently.
+- Enabled MMLU-Pro tasks in both the task config registry and runtime task registry so `mmlu_pro:mc::none` suite resolves correctly.
 
 ### Added
 
