@@ -11,7 +11,7 @@ MODELS=(
 #    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
 #    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf"
 #    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322/step238419-hf"
-    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419/step250339-hf"
+#    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419/step250339-hf"
 
 #    "moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
 
@@ -47,7 +47,7 @@ PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(8 32 64 128)
+PRUNE_KEEP_K_VALUES=(8)
 batch_size=32
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
@@ -127,22 +127,22 @@ TASK_GROUPS_LIST=(
 
   # MMLU 17-category merged variants (pruning + finetuning share data)
   "mmlu_merged_biology"
-  "mmlu_merged_business"
-  "mmlu_merged_chemistry"
-  "mmlu_merged_computer_science"
-  "mmlu_merged_culture"
-  "mmlu_merged_economics"
-  "mmlu_merged_engineering"
-  "mmlu_merged_geography"
-  "mmlu_merged_health"
-  "mmlu_merged_history"
-  "mmlu_merged_law"
-  "mmlu_merged_math"
-  "mmlu_merged_other"
-  "mmlu_merged_philosophy_cat"
-  "mmlu_merged_physics"
-  "mmlu_merged_politics"
-  "mmlu_merged_psychology"
+#  "mmlu_merged_business"
+#  "mmlu_merged_chemistry"
+#  "mmlu_merged_computer_science"
+#  "mmlu_merged_culture"
+#  "mmlu_merged_economics"
+#  "mmlu_merged_engineering"
+#  "mmlu_merged_geography"
+#  "mmlu_merged_health"
+#  "mmlu_merged_history"
+#  "mmlu_merged_law"
+#  "mmlu_merged_math"
+#  "mmlu_merged_other"
+#  "mmlu_merged_philosophy_cat"
+#  "mmlu_merged_physics"
+#  "mmlu_merged_politics"
+#  "mmlu_merged_psychology"
 
   # HellaSwag k=6 clusters
 #  "hellaswag_k6_cluster_merged_0"
@@ -393,7 +393,6 @@ for MODEL in "${MODELS[@]}"; do
                 --name $job_name \
                 --gpus $gpus \
                 --nodes 1 \
-                --is_private_repo \
                 --weka=oe-training-default \
                 --shared-filesystem \
                 --workspace ai2/flex2 \
@@ -445,7 +444,6 @@ for MODEL in "${MODELS[@]}"; do
                 --name $job_name \
                 --gpus $gpus \
                 --nodes 1 \
-                --is_private_repo \
                 --weka=oe-training-default \
                 --shared-filesystem \
                 --workspace ai2/flex2 \
@@ -490,7 +488,6 @@ for MODEL in "${MODELS[@]}"; do
                 --name $job_name \
                 --gpus $gpus \
                 --nodes 1 \
-                --is_private_repo \
                 --weka=oe-training-default \
                 --shared-filesystem \
                 --workspace ai2/flex2 \
@@ -534,7 +531,6 @@ for MODEL in "${MODELS[@]}"; do
                 --name $job_name \
                 --gpus $gpus \
                 --nodes 1 \
-                --is_private_repo \
                 --weka=oe-training-default \
                 --shared-filesystem \
                 --workspace ai2/flex2 \

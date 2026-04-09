@@ -930,6 +930,12 @@ def _parse_args():
         help="""Send Slack notifications.""",
     )
     parser.add_argument(
+        "--follow",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="""Stream logs and wait for the experiment to finish. Use --no-follow for fire-and-forget.""",
+    )
+    parser.add_argument(
         "--debug",
         action="store_true",
         help="""Set debugging env vars, like 'CUDA_LAUNCH_BLOCKING=1'.""",
@@ -1015,7 +1021,7 @@ def main():
     if opts.dry_run:
         rich.print(config)
     else:
-        config.launch(follow=True)
+        config.launch(follow=opts.follow)
 
 
 if __name__ == "__main__":
