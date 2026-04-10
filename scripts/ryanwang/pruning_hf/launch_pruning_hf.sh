@@ -331,7 +331,7 @@ for MODEL in "${MODELS[@]}"; do
         if [[ $TASK == *"mmlu_history"* ]]; then
             micro_batch_size=2
         fi
-        if [[ $TASK == *"gsm8k_generation_8shot"* ]]; then
+        if [[ $TASK == *"gsm8k_generation_8shot"* || $TASK == *"drop_merged"* || $TASK == *"squad_merged"* ]]; then
             micro_batch_size=2
         fi
 
