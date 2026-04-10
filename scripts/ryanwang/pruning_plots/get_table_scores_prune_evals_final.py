@@ -71,6 +71,10 @@ MODEL_SPECS: Dict[str, Dict[str, object]] = {
         "label": "moe 1T + anneal",
         "variants": DEFAULT_VARIANTS,
     },
+    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_twolevel_randpool-8-128_from_step238419step250339-hf": {
+        "label": "moe 1T + twolevel anneal",
+        "variants": DEFAULT_VARIANTS,
+    },
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419step250339-hf": {
         "label": "specialized moe 1T + anneal",
         "variants": DEFAULT_VARIANTS,
@@ -126,7 +130,7 @@ MMLU_PRO_MERGED_TASKS = [
     "mmlu_pro_merged_law",
 ]
 
-DEFAULT_METRICS = ["softloss_corr", "acc_per_byte", "primary_score"]
+DEFAULT_METRICS = ["softloss_corr", "acc_per_byte", "acc_raw", "primary_score"]
 
 TASK_SPECS: Dict[str, List[str]] = {
     t: list(DEFAULT_METRICS)

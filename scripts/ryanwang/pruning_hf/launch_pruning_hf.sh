@@ -4,7 +4,7 @@
 BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 #BASE_DIR="/root/phdbrainstorm/FlexMoE"
 MODELS=(
-#    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
+    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
 #    "dense_1b_lr-4e-3_0213/step30995-hf"
 #    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
@@ -129,7 +129,7 @@ TASK_GROUPS_LIST=(
 #  "winogrande_merged"
 
   # GSM8K generation merged variants (pruning + finetuning share data)
-  "gsm8k_generation_0shot_merged"
+#  "gsm8k_generation_0shot_merged"
   "gsm8k_generation_8shot_merged"
 
   # MMLU 17-category merged variants (pruning + finetuning share data)
@@ -331,7 +331,7 @@ for MODEL in "${MODELS[@]}"; do
 #            gpus=1
 #        fi
         gpus=4
-        if [[ $TASK == *"mmlu_history"* || $TASK == *"gsm8k_generation_8shot" ]]; then
+        if [[ $TASK == *"mmlu_history"* || $TASK == *"gsm8k_generation_8shot"* ]]; then
             gpus=8
         fi
 

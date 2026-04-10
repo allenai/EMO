@@ -52,6 +52,7 @@ MODEL_LABELS: Dict[str, str] = {
 # (e.g. "moe 1T + anneal") win over shorter ones (e.g. "moe").
 _MODEL_BASE_COLORS: Dict[str, object] = {
     "moe 1T + anneal":             (0.1216, 0.4667, 0.7059),  # tab10 blue
+    "moe 1T + twolevel anneal":    (0.5490, 0.3373, 0.2941),  # tab10 brown
     "specialized moe 1T + anneal": (0.8392, 0.1529, 0.1569),  # tab10 red
     "moe":                                                  (0.1216, 0.4667, 0.7059),  # tab10 blue
     "moe_small":                                            (1.0000, 0.4980, 0.0549),  # tab10 orange
