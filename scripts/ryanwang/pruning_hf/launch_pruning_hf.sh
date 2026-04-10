@@ -343,7 +343,7 @@ for MODEL in "${MODELS[@]}"; do
 #            gpus=1
 #        fi
         gpus=4
-        if [[ $TASK == *"mmlu_history"* || $TASK == *"gsm8k_generation_8shot"* ]]; then
+        if [[ $TASK == *"mmlu_history"* || $TASK == *"gsm8k_generation_8shot"* || $TASK == *"drop_merged"* || $TASK == *"squad_merged"* ]]; then
             gpus=8
         fi
 
