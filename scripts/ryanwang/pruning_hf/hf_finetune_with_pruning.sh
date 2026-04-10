@@ -330,6 +330,10 @@ for checkpoint in "${all_checkpoints[@]}"; do
       echo "Setting eval batch size to 4 for history task"
       EVAL_BATCH_SIZE=4
     fi
+    if [[ $TASK == *"gsm8k_generation_8shot"* ]]; then
+      echo "Setting eval batch size to 16 for gsm8k_generation_8shot task"
+      EVAL_BATCH_SIZE=16
+    fi
 
 
     python -m src.scripts.eval.launch_eval \
