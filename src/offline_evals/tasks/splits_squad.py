@@ -65,9 +65,9 @@ class SQUAD_Merged_Base(SQUAD_Base):
         return self.training_docs()
 
 
-class SQUAD_Merged_0shot(SQUAD_Merged_Base):
+class SQUAD_Merged(SQUAD_Merged_Base):
     pass
 
 
-class SQUAD_Merged_5shot(SQUAD_Merged_Base):
+class SQUAD_Merged_0shot(SQUAD_Merged_Base):
     pass

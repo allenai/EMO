@@ -132,13 +132,16 @@ TASK_GROUPS_LIST=(
 #  "gsm8k_generation_0shot_merged"
   "gsm8k_generation_8shot_merged"
 
-  # SQuAD merged variants
-  "squad_0shot_merged"
-  "squad_5shot_merged"
+  # SQuAD merged variant (matches squad::olmes)
+  "squad_merged"
 
-  # CoQA merged variants
-  "coqa_0shot_merged"
-  "coqa_full_0shot_merged"
+  # CoQA merged variant (matches coqa::olmes)
+  "coqa_merged"
+
+  # NaturalQS, TriviaQA, DROP merged variants
+  "naturalqs_merged"
+  "triviaqa_merged"
+  "drop_merged"
 
   # MMLU 17-category merged variants (pruning + finetuning share data)
 #  "mmlu_merged_biology"

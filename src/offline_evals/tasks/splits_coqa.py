@@ -68,33 +68,8 @@ class COQA_full_Test_0shot(COQA_Full_Base):
 
 
 # ---------------------------------------------------------------------------
-# Merged variants
+# Merged variant (matches coqa::olmes — uses _process_all_docs, all turns)
 # ---------------------------------------------------------------------------
-class COQA_Merged_Base(COQA_Base):
-    def training_docs(self):
-        if self._training_docs is None:
-            train_dataset = (
-                self.dataset["train"]
-                .shuffle(seed=0)
-                .select(range(1000, len(self.dataset["train"])))
-            )
-            val_dataset = (
-                self.dataset["train"]
-                .shuffle(seed=0)
-                .select(range(0, 1000))
-            )
-            merged = concatenate_datasets([train_dataset, val_dataset]).shuffle(seed=0)
-            self._training_docs = list(map(self._process_doc, merged))
-        return self._training_docs
-
-    def validation_docs(self):
-        return self.training_docs()
-
-
-class COQA_Merged_0shot(COQA_Merged_Base):
-    pass
-
-
 class COQA_Full_Merged_Base(COQA_Full_Base):
     def training_docs(self):
         if self._training_docs is None:
@@ -116,7 +91,7 @@ class COQA_Full_Merged_Base(COQA_Full_Base):
         return self.training_docs()
 
 
-class COQA_full_Merged_0shot(COQA_Full_Merged_Base):
+class COQA_Merged(COQA_Full_Merged_Base):
     pass
 
 

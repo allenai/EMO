@@ -357,7 +357,7 @@ def get_oe_task_name(task_name, split):
         Formatted task string
     """
     # if this is a generation-based task, don't specify rc
-    if task_name in ["squad_0shot", "squad_0shot_merged", "squad_5shot_merged", "gsm8k_generation_0shot", "gsm8k_generation_8shot", "gsm8k_generation_0shot_merged", "gsm8k_generation_8shot_merged", "coqa_0shot", "coqa_0shot_merged", "coqa_full_0shot", "coqa_full_0shot_merged", "gsm8k_perplexity_0shot"]:
+    if task_name in ["squad_0shot", "squad_merged", "squad_0shot_merged", "coqa_0shot", "coqa_full_0shot", "coqa_merged", "gsm8k_generation_0shot", "gsm8k_generation_8shot", "gsm8k_generation_0shot_merged", "gsm8k_generation_8shot_merged", "naturalqs_merged", "triviaqa_merged", "drop_merged", "gsm8k_perplexity_0shot"]:
         return f"{task_name}:{split}::olmes"
 
     return f"{task_name}:rc_{split}::olmes"

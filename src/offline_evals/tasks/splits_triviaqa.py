@@ -1,8 +1,8 @@
 from datasets import concatenate_datasets
-from oe_eval.tasks.oe_eval_tasks.naturalqs_open import NaturalQsOpen
+from oe_eval.tasks.oe_eval_tasks.triviaqa import TriviaQA
 
 
-class NaturalQS_Base(NaturalQsOpen):
+class TriviaQA_Base(TriviaQA):
     def has_test_docs(self):
         return True
 
@@ -24,23 +24,22 @@ class NaturalQS_Base(NaturalQsOpen):
         return list(map(self._process_doc, self.dataset["validation"]))
 
 
-class NaturalQS_Train_0shot(NaturalQS_Base):
+class TriviaQA_Train_0shot(TriviaQA_Base):
     pass
 
 
-class NaturalQS_Validation_0shot(NaturalQS_Base):
+class TriviaQA_Validation_0shot(TriviaQA_Base):
     pass
 
 
-class NaturalQS_Test_0shot(NaturalQS_Base):
+class TriviaQA_Test_0shot(TriviaQA_Base):
     pass
 
 
 # ---------------------------------------------------------------------------
-# Merged variant: concatenates train + val into a single set so pruning and
-# finetuning use identical data.  Test split is unchanged (HF validation).
+# Merged variant
 # ---------------------------------------------------------------------------
-class NaturalQS_Merged_Base(NaturalQS_Base):
+class TriviaQA_Merged_Base(TriviaQA_Base):
     def training_docs(self):
         if self._training_docs is None:
             train_dataset = (
@@ -61,5 +60,5 @@ class NaturalQS_Merged_Base(NaturalQS_Base):
         return self.training_docs()
 
 
-class NaturalQS_Merged(NaturalQS_Merged_Base):
+class TriviaQA_Merged(TriviaQA_Merged_Base):
     pass
