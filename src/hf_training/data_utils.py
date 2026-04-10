@@ -398,11 +398,15 @@ def get_formatted_prompts(task_name: str, split: str) -> Tuple[List[str], str]:
 
     elif request_type == "generate_until":
         for instance in task._instances:
+            choice = instance.doc["choices"][0]
+            # DROP stores choices as tuples, e.g. ("answer",) — unwrap to str
+            if isinstance(choice, tuple):
+                choice = choice[0]
             # for some tasks (e.g coqa), by default there is no space between context and choice, so we add it here
-            if instance.request.context[-1] != " " and instance.doc["choices"][0][0] != " ":
-                dataset.append(instance.request.context + " " + instance.doc["choices"][0])
+            if choice and instance.request.context[-1] != " " and choice[0] != " ":
+                dataset.append(instance.request.context + " " + choice)
             else:
-                dataset.append(instance.request.context + instance.doc["choices"][0])
+                dataset.append(instance.request.context + choice)
 
     # raw_dataset = load_hf_dataset(task_name, split)
     #
