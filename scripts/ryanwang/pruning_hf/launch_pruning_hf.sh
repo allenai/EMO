@@ -130,7 +130,7 @@ TASK_GROUPS_LIST=(
 
   # GSM8K generation merged variants (pruning + finetuning share data)
 #  "gsm8k_generation_0shot_merged"
-  "gsm8k_generation_8shot_merged"
+#  "gsm8k_generation_8shot_merged"
 
   # SQuAD merged variants
   "squad_merged"

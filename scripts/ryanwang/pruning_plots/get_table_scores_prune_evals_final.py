@@ -130,12 +130,19 @@ MMLU_PRO_MERGED_TASKS = [
     "mmlu_pro_merged_law",
 ]
 
+GSM8K_TASKS = [
+    "gsm8k_generation_0shot_merged",
+    "gsm8k_generation_8shot_merged",
+]
+GSM8K_METRICS = ["exact_match", "primary_score"]
+
 DEFAULT_METRICS = ["softloss_corr", "acc_per_byte", "acc_raw", "primary_score"]
 
 TASK_SPECS: Dict[str, List[str]] = {
     t: list(DEFAULT_METRICS)
     for t in MC9_TASKS + MMLU_MERGED_TASKS + MMLU_PRO_MERGED_TASKS
 }
+TASK_SPECS.update({t: list(GSM8K_METRICS) for t in GSM8K_TASKS})
 
 DEFAULT_PRUNE_EVALS_ROOT = REPO_ROOT / "prune_evals_final"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "claude_outputs" / "prune_plots"
@@ -463,12 +470,14 @@ def run_one(
         mc9_cols = [c for c in ["mc9_avg"] + MC9_TASKS if c in df.columns]
         mmlu_cols = [c for c in ["mmlu_merged_avg_no_other"] + MMLU_MERGED_TASKS if c in df.columns]
         mmlu_pro_cols = [c for c in ["mmlu_pro_merged_avg_no_other"] + MMLU_PRO_MERGED_TASKS if c in df.columns]
+        gsm8k_cols = [c for c in GSM8K_TASKS if c in df.columns]
 
         slices = {
             "aggregate": agg_cols,
             "mc9": mc9_cols,
             "mmlu_merged": mmlu_cols,
             "mmlu_pro_merged": mmlu_pro_cols,
+            "gsm8k": gsm8k_cols,
         }
 
         for slice_name, cols in slices.items():

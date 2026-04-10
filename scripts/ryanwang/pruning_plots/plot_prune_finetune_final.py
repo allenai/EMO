@@ -24,6 +24,7 @@ import pandas as pd
 import seaborn as sns
 
 from get_table_scores_prune_evals_final import (
+    GSM8K_TASKS,
     MC9_TASKS,
     MMLU_MERGED_TASKS,
     MMLU_PRO_MERGED_TASKS,
