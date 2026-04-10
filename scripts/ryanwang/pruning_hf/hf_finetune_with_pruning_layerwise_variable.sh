@@ -281,13 +281,24 @@ all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
 for checkpoint in "${all_checkpoints[@]}"; do
     echo "Evaluating checkpoint: $checkpoint"
     checkpoint_num=$(basename "$checkpoint" | sed 's/checkpoint-//')
+
+    EVAL_BATCH_SIZE=32
+    if [[ $TASK == *"history"* ]]; then
+      echo "Setting eval batch size to 4 for history task"
+      EVAL_BATCH_SIZE=4
+    fi
+    if [[ $TASK == *"gsm8k_generation_8shot"* ]]; then
+      echo "Setting eval batch size to 16 for gsm8k_generation_8shot task"
+      EVAL_BATCH_SIZE=16
+    fi
+
     python -m src.scripts.eval.launch_eval \
         --model "$checkpoint" \
         --model-type hf \
         --task "$TASK-pruned" \
         --pruned_split "test" \
         --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
-        --batch-size 32 \
+        --batch-size $EVAL_BATCH_SIZE \
         --gpus "$NUM_GPUS"
 done
 
