@@ -132,8 +132,9 @@ TASK_GROUPS_LIST=(
 #  "gsm8k_generation_0shot_merged"
   "gsm8k_generation_8shot_merged"
 
-  # SQuAD merged variant (matches squad::olmes)
+  # SQuAD merged variants
   "squad_merged"
+  "squad_0shot_merged"
 
   # CoQA merged variant (matches coqa::olmes)
   "coqa_merged"
