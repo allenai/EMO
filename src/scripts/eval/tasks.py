@@ -14,46 +14,157 @@ def get_task_configs():
             "squad_0shot:train::olmes": {
                 "task_name": "squad_0shot:train",
                 "split": "train",
-                "primary_metric": "exact_match",
+                "primary_metric": "f1",
                 "num_shots": 0,
                 "generation_kwargs": {
-                    "max_gen_toks": 32,
+                    "max_gen_toks": 50,
                 },
                 "context_kwargs": {
-                    "short_prefix": True,
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
                 },
                 "metadata": {
-                    "regimes": [],
+                    "regimes": ["OLMES-v0.2"],
                 },
             },
             "squad_0shot:validation::olmes": {
                 "task_name": "squad_0shot:validation",
                 "split": "validation",
-                "primary_metric": "exact_match",
+                "primary_metric": "f1",
                 "num_shots": 0,
                 "generation_kwargs": {
-                    "max_gen_toks": 32,
+                    "max_gen_toks": 50,
                 },
                 "context_kwargs": {
-                    "short_prefix": True,
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
                 },
                 "metadata": {
-                    "regimes": [],
+                    "regimes": ["OLMES-v0.2"],
                 },
             },
             "squad_0shot:test::olmes": {
                 "task_name": "squad_0shot:test",
                 "split": "test",
-                "primary_metric": "exact_match",
+                "primary_metric": "f1",
                 "num_shots": 0,
                 "generation_kwargs": {
-                    "max_gen_toks": 32,
+                    "max_gen_toks": 50,
                 },
                 "context_kwargs": {
-                    "short_prefix": True,
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
                 },
                 "metadata": {
-                    "regimes": [],
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "squad_0shot_merged:train::olmes": {
+                "task_name": "squad_0shot_merged:train",
+                "split": "train",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "context_kwargs": {
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "squad_0shot_merged:validation::olmes": {
+                "task_name": "squad_0shot_merged:validation",
+                "split": "validation",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "context_kwargs": {
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "squad_0shot_merged:test::olmes": {
+                "task_name": "squad_0shot_merged:test",
+                "split": "test",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "context_kwargs": {
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "squad_5shot_merged:train::olmes": {
+                "task_name": "squad_5shot_merged:train",
+                "split": "train",
+                "primary_metric": "f1",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:squad",
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "context_kwargs": {
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "squad_5shot_merged:validation::olmes": {
+                "task_name": "squad_5shot_merged:validation",
+                "split": "validation",
+                "primary_metric": "f1",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:squad",
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "context_kwargs": {
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "squad_5shot_merged:test::olmes": {
+                "task_name": "squad_5shot_merged:test",
+                "split": "test",
+                "primary_metric": "f1",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:squad",
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "context_kwargs": {
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
                 },
             },
             "coqa_full_0shot:train::olmes": {
@@ -103,6 +214,60 @@ def get_task_configs():
             },
             "coqa_0shot:test::olmes": {
                 "task_name": "coqa_0shot:test",
+                "split": "test",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "coqa_0shot_merged:train::olmes": {
+                "task_name": "coqa_0shot_merged:train",
+                "split": "train",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "coqa_0shot_merged:validation::olmes": {
+                "task_name": "coqa_0shot_merged:validation",
+                "split": "validation",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "coqa_0shot_merged:test::olmes": {
+                "task_name": "coqa_0shot_merged:test",
+                "split": "test",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "coqa_full_0shot_merged:train::olmes": {
+                "task_name": "coqa_full_0shot_merged:train",
+                "split": "train",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "coqa_full_0shot_merged:validation::olmes": {
+                "task_name": "coqa_full_0shot_merged:validation",
+                "split": "validation",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "coqa_full_0shot_merged:test::olmes": {
+                "task_name": "coqa_full_0shot_merged:test",
                 "split": "test",
                 "primary_metric": "f1",
                 "num_shots": 0,
