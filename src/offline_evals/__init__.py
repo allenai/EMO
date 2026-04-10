@@ -383,9 +383,21 @@ new_task_registry: Dict = {
     "coqa_full_0shot:train": splits_coqa.COQA_full_Train_0shot,
     "coqa_full_0shot:validation": splits_coqa.COQA_full_Validation_0shot,
     "coqa_full_0shot:test": splits_coqa.COQA_full_Test_0shot,
+    "coqa_0shot_merged:train": splits_coqa.COQA_Merged_0shot,
+    "coqa_0shot_merged:validation": splits_coqa.COQA_Merged_0shot,
+    "coqa_0shot_merged:test": splits_coqa.COQA_Test_0shot,
+    "coqa_full_0shot_merged:train": splits_coqa.COQA_full_Merged_0shot,
+    "coqa_full_0shot_merged:validation": splits_coqa.COQA_full_Merged_0shot,
+    "coqa_full_0shot_merged:test": splits_coqa.COQA_full_Test_0shot,
     "squad_0shot:train": splits_squad.SQUAD_Train_0shot,
     "squad_0shot:validation": splits_squad.SQUAD_Validation_0shot,
     "squad_0shot:test": splits_squad.SQUAD_Test_0shot,
+    "squad_0shot_merged:train": splits_squad.SQUAD_Merged_0shot,
+    "squad_0shot_merged:validation": splits_squad.SQUAD_Merged_0shot,
+    "squad_0shot_merged:test": splits_squad.SQUAD_Test_0shot,
+    "squad_5shot_merged:train": splits_squad.SQUAD_Merged_5shot,
+    "squad_5shot_merged:validation": splits_squad.SQUAD_Merged_5shot,
+    "squad_5shot_merged:test": splits_squad.SQUAD_Test_0shot,
 }
 
 TASK_REGISTRY.update(new_task_registry)
