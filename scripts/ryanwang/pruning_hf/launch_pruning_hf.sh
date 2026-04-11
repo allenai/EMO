@@ -46,6 +46,9 @@ model_type=hf
 #               "layerwise"           -- greedy layer-by-layer pruning (each layer conditioned
 #                                        on already-pruned earlier layers)
 #               "layerwise_variable"  -- greedy layerwise with per-layer keep-k schedule
+#               "easy_ep"             -- EASY-EP (arXiv 2504.06792): one-shot domain-specific
+#                                        pruning using gating*||expert_out|| weighted by
+#                                        (1 - cos_sim) of MoE in/out on few-shot calibration
 PRUNING_MODE="layerwise"
 
 num_epochs=1
@@ -487,6 +490,49 @@ for MODEL in "${MODELS[@]}"; do
                     --num-epochs ${num_epochs} \
                     --num-shared-experts ${num_shared_experts} \
                     --prune-mode ${PRUNE_SCHEDULE_NAME}
+                "
+        elif [[ $PRUNING_MODE == "easy_ep" ]]; then
+#            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_easy_ep.sh \
+#                --model ${BASE_DIR}/models/${MODEL} \
+#                --task ${TASK} \
+#                --prune-keep-k ${prune_keep_k} \
+#                --base-dir "${BASE_DIR}/prune_evals" \
+#                --relative-dir ${relative_dir} \
+#                --num-gpus $gpus \
+#                --run-name ${job_name} \
+#                --learning-rate ${lr} \
+#                --batch-size ${batch_size} \
+#                --micro-batch-size ${micro_batch_size} \
+#                --num-epochs ${num_epochs} \
+#                --num-shared-experts ${num_shared_experts}
+
+            python -m olmo_core.launch.beaker \
+                --name $job_name \
+                --gpus $gpus \
+                --nodes 1 \
+                --weka=oe-training-default \
+                --shared-filesystem \
+                --workspace ai2/flex2 \
+                --cluster ai2/jupiter \
+                --preemptible \
+                --allow-dirty \
+                --priority urgent \
+                --no-follow \
+                --no-torchrun \
+                --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
+                -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_easy_ep.sh \
+                    --model ${BASE_DIR}/models/${MODEL} \
+                    --task ${TASK} \
+                    --prune-keep-k ${prune_keep_k} \
+                    --base-dir "${BASE_DIR}/prune_evals" \
+                    --relative-dir ${relative_dir} \
+                    --num-gpus $gpus \
+                    --run-name ${job_name} \
+                    --learning-rate ${lr} \
+                    --batch-size ${batch_size} \
+                    --micro-batch-size ${micro_batch_size} \
+                    --num-epochs ${num_epochs} \
+                    --num-shared-experts ${num_shared_experts}
                 "
         elif [[ $PRUNING_MODE == "layerwise" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
