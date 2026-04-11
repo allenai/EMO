@@ -312,6 +312,7 @@ def easy_ep_prune(
             f"(top score {scores.max().item():.4g}, min kept "
             f"{scores[experts_to_keep].min().item():.4g})"
         )
+        logger.info(f"Layer {layer_idx}: keeping experts {experts_to_keep}")
         experts_kept_per_layer.append(experts_to_keep)
 
     # --- Prune in-place and save ---------------------------------------------
