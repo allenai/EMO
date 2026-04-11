@@ -136,6 +136,21 @@ GSM8K_TASKS = [
 ]
 GSM8K_METRICS = ["exact_match", "primary_score"]
 
+# Gen5: 5-task generation average.
+# squad_0shot_merged is shown as a reference column but excluded from the average.
+GEN5_TASKS = [
+    "squad_merged",
+    "coqa_merged",
+    "naturalqs_merged",
+    "triviaqa_merged",
+    "drop_merged",
+]
+GEN5_REFERENCE_TASKS = [
+    "squad_0shot_merged",
+]
+GEN5_ALL_TASKS = GEN5_TASKS + GEN5_REFERENCE_TASKS
+GEN5_METRICS = ["f1", "exact_match", "recall", "primary_score"]
+
 DEFAULT_METRICS = ["softloss_corr", "acc_per_byte", "acc_raw", "primary_score"]
 
 TASK_SPECS: Dict[str, List[str]] = {
@@ -143,6 +158,7 @@ TASK_SPECS: Dict[str, List[str]] = {
     for t in MC9_TASKS + MMLU_MERGED_TASKS + MMLU_PRO_MERGED_TASKS
 }
 TASK_SPECS.update({t: list(GSM8K_METRICS) for t in GSM8K_TASKS})
+TASK_SPECS.update({t: list(GEN5_METRICS) for t in GEN5_ALL_TASKS})
 
 DEFAULT_PRUNE_EVALS_ROOT = REPO_ROOT / "prune_evals_final"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "claude_outputs" / "prune_plots"
@@ -334,7 +350,25 @@ def collect_table(
     if not rows:
         return pd.DataFrame()
 
+    # Enforce deterministic row order: MODEL_SPECS order × variant order.
+    # Always include all configured model variants, even if they have no data.
+    ordered_labels: List[str] = []
+    for model_name in model_names:
+        spec = MODEL_SPECS.get(model_name)
+        if spec is None:
+            continue
+        model_label = spec.get("label", model_name)
+        for v in spec.get("variants", []):
+            label = f"{model_label} {v['label']}".strip()
+            ordered_labels.append(label)
+            rows.setdefault(label, {})
+    # Append any labels not covered (shouldn't happen, but be safe).
+    for label in rows:
+        if label not in ordered_labels:
+            ordered_labels.append(label)
+
     df = pd.DataFrame.from_dict(rows, orient="index")
+    df = df.reindex(index=ordered_labels)
     df.index.name = "model"
     df = df.reindex(columns=task_runs)
     return df
@@ -347,6 +381,7 @@ def add_group_avg_columns(df: pd.DataFrame) -> pd.DataFrame:
     # (avg_col_name, full_task_list, exclude_set)
     groups: List[Tuple[str, List[str], List[str]]] = [
         ("mc9_avg",                      MC9_TASKS,             []),
+        ("gen5_avg",                     GEN5_TASKS,            []),
         ("mmlu_merged_avg_no_other",     MMLU_MERGED_TASKS,     ["mmlu_merged_other"]),
         ("mmlu_pro_merged_avg_no_other", MMLU_PRO_MERGED_TASKS, ["mmlu_pro_merged_other"]),
     ]
@@ -463,11 +498,17 @@ def run_one(
         # --- Define output slices ---
         agg_cols = [c for c in [
             "mc9_avg",
+            "gen5_avg",
             "mmlu_merged_avg_no_other",
             "mmlu_pro_merged_avg_no_other",
         ] if c in df.columns]
 
         mc9_cols = [c for c in ["mc9_avg"] + MC9_TASKS if c in df.columns]
+        # gen5 slice: avg + core tasks first, then reference tasks (squad_0shot) at end
+        gen5_cols = (
+            [c for c in ["gen5_avg"] + GEN5_TASKS if c in df.columns]
+            + [c for c in GEN5_REFERENCE_TASKS if c in df.columns]
+        )
         mmlu_cols = [c for c in ["mmlu_merged_avg_no_other"] + MMLU_MERGED_TASKS if c in df.columns]
         mmlu_pro_cols = [c for c in ["mmlu_pro_merged_avg_no_other"] + MMLU_PRO_MERGED_TASKS if c in df.columns]
         gsm8k_cols = [c for c in GSM8K_TASKS if c in df.columns]
@@ -475,6 +516,7 @@ def run_one(
         slices = {
             "aggregate": agg_cols,
             "mc9": mc9_cols,
+            "gen5": gen5_cols,
             "mmlu_merged": mmlu_cols,
             "mmlu_pro_merged": mmlu_pro_cols,
             "gsm8k": gsm8k_cols,

@@ -24,6 +24,8 @@ import pandas as pd
 import seaborn as sns
 
 from get_table_scores_prune_evals_final import (
+    GEN5_ALL_TASKS,
+    GEN5_TASKS,
     GSM8K_TASKS,
     MC9_TASKS,
     MMLU_MERGED_TASKS,
@@ -47,6 +49,17 @@ DEFAULT_OUTPUT_SUBDIR = "prune_finetune_plots_final"
 MODEL_LABELS: Dict[str, str] = {
     name: spec.get("label", name) for name, spec in MODEL_SPECS.items()
 }
+
+# Models to include in plots. Comment/uncomment to control what's plotted.
+PLOT_MODELS = [
+    "dense_1b_lr-4e-3_0213step30995-hf",
+    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308step30995-hf",
+    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308step30995-hf",
+    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301step30995-hf",
+    # "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419step250339-hf",
+    # "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_twolevel_randpool-8-128_from_step238419step250339-hf",
+    # "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419step250339-hf",
+]
 
 # Hardcoded base colors so they don't shift when models are added/removed.
 # Color matching is longest-prefix-first in _color_for, so longer labels
@@ -77,10 +90,11 @@ for _model_name, _spec in MODEL_SPECS.items():
             "marker":    _VARIANT_MARKERS[_idx],
         }
 
-LEGEND_WRAP_WIDTH = 30
+LEGEND_WRAP_WIDTH = 35
 
 GROUPS: List[Tuple[str, List[str]]] = [
     ("mc9_avg",             MC9_TASKS),
+    ("gen5_avg",            GEN5_TASKS),
     ("mmlu_merged_avg",     MMLU_MERGED_TASKS),
     ("mmlu_pro_merged_avg", MMLU_PRO_MERGED_TASKS),
 ]
@@ -264,7 +278,7 @@ def plot_curves(
         return
 
     sns.set_theme(style=style)
-    plt.figure(figsize=(8, 5))
+    plt.figure(figsize=(12, 7))
     ax = plt.gca()
 
     for model_label in sorted(df["model_label"].unique()):
@@ -288,7 +302,7 @@ def plot_curves(
     ax.set_title(title)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    ax.legend(title="Model", loc="center left", bbox_to_anchor=(1.02, 0.5))
+    ax.legend(title="Model", loc="center left", bbox_to_anchor=(1.02, 0.5), fontsize=9)
 
     plt.tight_layout()
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -328,7 +342,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
 
-    selected_models = parse_csv_arg(args.models) or list(MODEL_SPECS.keys())
+    selected_models = parse_csv_arg(args.models) or list(PLOT_MODELS)
     selected_tasks = parse_csv_arg(args.tasks) or list(TASK_SPECS.keys())
 
     if not selected_models:
