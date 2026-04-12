@@ -27,12 +27,21 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
-DEFAULT_VARIANTS = [
-    {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",   "label": "(keepk 8)"},
-    {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",  "label": "(keepk 32)"},
-    {"suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",  "label": "(keepk 64)"},
-    {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
+DEFAULT_VARIANTS_LW = [
+    {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",   "label": "(lw keepk 8)"},
+    {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",  "label": "(lw keepk 32)"},
+    {"suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",  "label": "(lw keepk 64)"},
+    {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(lw keepk 128)"},
 ]
+
+DEFAULT_VARIANTS_EP = [
+    {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-easy_ep",   "label": "(ep keepk 8)"},
+    {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-easy_ep",  "label": "(ep keepk 32)"},
+    {"suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-easy_ep",  "label": "(ep keepk 64)"},
+    {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-easy_ep", "label": "(ep keepk 128)"},
+]
+
+DEFAULT_VARIANTS = DEFAULT_VARIANTS_LW + DEFAULT_VARIANTS_EP
 
 # Variant lists for the older 200B-token (step30995) checkpoints, mirroring
 # the configuration in eval_plots/get_table_scores_prune_evals_0319.py.
