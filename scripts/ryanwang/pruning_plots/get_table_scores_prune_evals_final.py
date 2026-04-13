@@ -27,66 +27,68 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
-DEFAULT_VARIANTS_LW = [
-    {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",   "label": "(lw keepk 8)"},
-    {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",  "label": "(lw keepk 32)"},
-    {"suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",  "label": "(lw keepk 64)"},
-    {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(lw keepk 128)"},
+# Prune modes: each variant (keepk value) is scanned for both prunemode suffixes.
+# Results appear as paired columns: "task (lw)" and "task (ep)" per base task.
+PRUNEMODE_SUFFIXES: Dict[str, str] = {
+    "lw": "_prunemode-layerwise",
+    "ep": "_prunemode-easy_ep",
+}
+
+# Variant definitions: just the keepk part (prunemode is added automatically).
+KEEPK_VARIANTS_ALL = [
+    {"keepk_suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1",   "label": "(keepk 8)"},
+    {"keepk_suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1",  "label": "(keepk 32)"},
+    {"keepk_suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1",  "label": "(keepk 64)"},
+    {"keepk_suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1", "label": "(keepk 128)"},
 ]
 
-DEFAULT_VARIANTS_EP = [
-    {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-easy_ep",   "label": "(ep keepk 8)"},
-    {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-easy_ep",  "label": "(ep keepk 32)"},
-    {"suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-easy_ep",  "label": "(ep keepk 64)"},
-    {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-easy_ep", "label": "(ep keepk 128)"},
+KEEPK_VARIANTS_32_ONLY = [
+    {"keepk_suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
 ]
 
-DEFAULT_VARIANTS = DEFAULT_VARIANTS_LW + DEFAULT_VARIANTS_EP
-
-# Variant lists for the older 200B-token (step30995) checkpoints, mirroring
-# the configuration in eval_plots/get_table_scores_prune_evals_0319.py.
-DENSE_VARIANTS = [
-    {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": " "},
-]
-MOE_200B_VARIANTS = [
-    {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",   "label": "(keepk 8)"},
-    {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",  "label": "(keepk 32)"},
-    {"suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",  "label": "(keepk 64)"},
-    {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
-]
-MOE_SMALL_VARIANTS = [
-    {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": " "},
-]
-SPEC_MOE_200B_VARIANTS = MOE_200B_VARIANTS
+# Build "variants" in the old format for backward compat (used by plots, row ordering).
+# These use the layerwise suffix only — the ep lookup is done in collect_table.
+def _build_legacy_variants(keepk_variants):
+    return [
+        {"suffix": v["keepk_suffix"] + PRUNEMODE_SUFFIXES["lw"], "label": v["label"]}
+        for v in keepk_variants
+    ]
 
 MODEL_SPECS: Dict[str, Dict[str, object]] = {
     "dense_1b_lr-4e-3_0213step30995-hf": {
         "label": "dense",
-        "variants": DENSE_VARIANTS,
+        "keepk_variants": KEEPK_VARIANTS_32_ONLY,
+        "variants": _build_legacy_variants(KEEPK_VARIANTS_32_ONLY),
     },
     "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308step30995-hf": {
         "label": "moe_small",
-        "variants": MOE_SMALL_VARIANTS,
+        "keepk_variants": KEEPK_VARIANTS_32_ONLY,
+        "variants": _build_legacy_variants(KEEPK_VARIANTS_32_ONLY),
     },
     "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308step30995-hf": {
         "label": "moe",
-        "variants": MOE_200B_VARIANTS,
+        "keepk_variants": KEEPK_VARIANTS_ALL,
+        "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
     },
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301step30995-hf": {
         "label": "specialized moe + globallb + 1shardexp + randpool",
-        "variants": SPEC_MOE_200B_VARIANTS,
+        "keepk_variants": KEEPK_VARIANTS_ALL,
+        "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
     },
     "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419step250339-hf": {
         "label": "moe 1T + anneal",
-        "variants": DEFAULT_VARIANTS,
+        "keepk_variants": KEEPK_VARIANTS_ALL,
+        "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
     },
     "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_twolevel_randpool-8-128_from_step238419step250339-hf": {
         "label": "moe 1T + twolevel anneal",
-        "variants": DEFAULT_VARIANTS,
+        "keepk_variants": KEEPK_VARIANTS_ALL,
+        "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
     },
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419step250339-hf": {
         "label": "specialized moe 1T + anneal",
-        "variants": DEFAULT_VARIANTS,
+        "keepk_variants": KEEPK_VARIANTS_ALL,
+        "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
     },
 }
 
@@ -336,7 +338,11 @@ def collect_table(
     metric_key: str,
     checkpoint_mode: str,
 ) -> pd.DataFrame:
-    """Build a (model, variant) x task table of checkpoint metric values."""
+    """Build a (model, keepk) × (task, prunemode) table.
+
+    Rows = model + keepk variant label (e.g. "moe 1T + anneal (keepk 32)").
+    Columns = paired per task: "task (lw)" and "task (ep)" for each base task.
+    """
     rows: Dict[str, Dict[str, Optional[float]]] = {}
 
     for model_name in model_names:
@@ -344,69 +350,85 @@ def collect_table(
         if not model_dir.is_dir():
             print(f"[WARN] Model dir missing: {model_dir}")
             continue
-        model_label = MODEL_SPECS.get(model_name, {}).get("label", model_name)
+        spec = MODEL_SPECS.get(model_name, {})
+        model_label = spec.get("label", model_name)
+        keepk_variants = spec.get("keepk_variants", [])
 
-        for suffix, label_mod in _get_model_variants(model_name):
-            variant_label = f"{model_label} {label_mod}".strip()
+        for kv in keepk_variants:
+            variant_label = f"{model_label} {kv['label']}".strip()
             for task_run in task_runs:
-                variant_dir = model_dir / (task_run + suffix)
-                if not variant_dir.is_dir():
-                    continue
-                val = _read_final_metric(variant_dir, metric_key, checkpoint_mode)
-                if val is not None:
-                    rows.setdefault(variant_label, {})[task_run] = val
+                for pm_tag, pm_suffix in PRUNEMODE_SUFFIXES.items():
+                    col_name = f"{task_run} ({pm_tag})"
+                    variant_dir = model_dir / (task_run + kv["keepk_suffix"] + pm_suffix)
+                    if not variant_dir.is_dir():
+                        continue
+                    val = _read_final_metric(variant_dir, metric_key, checkpoint_mode)
+                    if val is not None:
+                        rows.setdefault(variant_label, {})[col_name] = val
 
     if not rows:
         return pd.DataFrame()
 
-    # Enforce deterministic row order: MODEL_SPECS order × variant order.
-    # Always include all configured model variants, even if they have no data.
+    # Enforce deterministic row order: MODEL_SPECS order × keepk variant order.
     ordered_labels: List[str] = []
     for model_name in model_names:
         spec = MODEL_SPECS.get(model_name)
         if spec is None:
             continue
         model_label = spec.get("label", model_name)
-        for v in spec.get("variants", []):
-            label = f"{model_label} {v['label']}".strip()
+        for kv in spec.get("keepk_variants", []):
+            label = f"{model_label} {kv['label']}".strip()
             ordered_labels.append(label)
             rows.setdefault(label, {})
-    # Append any labels not covered (shouldn't happen, but be safe).
     for label in rows:
         if label not in ordered_labels:
             ordered_labels.append(label)
 
+    # Build column order: for each base task, interleave (lw) then (ep).
+    ordered_cols: List[str] = []
+    for task_run in task_runs:
+        for pm_tag in PRUNEMODE_SUFFIXES:
+            ordered_cols.append(f"{task_run} ({pm_tag})")
+
     df = pd.DataFrame.from_dict(rows, orient="index")
     df = df.reindex(index=ordered_labels)
     df.index.name = "model"
-    df = df.reindex(columns=task_runs)
+    # Only keep columns that actually exist in the data.
+    ordered_cols = [c for c in ordered_cols if c in df.columns]
+    df = df.reindex(columns=ordered_cols)
     return df
 
 
 def add_group_avg_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Prepend mc9_avg, mmlu_merged_avg(_no_other), mmlu_pro_merged_avg columns."""
+    """Prepend group averages, computed separately for each prunemode (lw, ep)."""
     avg_cols_added: List[str] = []
 
-    # (avg_col_name, full_task_list, exclude_set)
+    # (avg_base_name, full_task_list, exclude_set)
     groups: List[Tuple[str, List[str], List[str]]] = [
         ("mc9_avg",                      MC9_TASKS,             []),
         ("gen5_avg",                     GEN5_TASKS,            []),
         ("mmlu_merged_avg_no_other",     MMLU_MERGED_TASKS,     ["mmlu_merged_other"]),
         ("mmlu_pro_merged_avg_no_other", MMLU_PRO_MERGED_TASKS, ["mmlu_pro_merged_other"]),
     ]
-    for avg_name, group_tasks, exclude in groups:
-        present = [c for c in group_tasks if c in df.columns and c not in exclude]
-        if not present:
-            continue
-        for model_name in df.index:
-            missing = [c for c in present if pd.isna(df.loc[model_name, c])]
-            if missing:
-                print(
-                    f"[WARN] Model {model_name!r} missing {len(missing)}/{len(present)} "
-                    f"{avg_name} sub-task(s): {missing} — {avg_name} will be NaN"
-                )
-        df[avg_name] = df[present].mean(axis=1, skipna=False)
-        avg_cols_added.append(avg_name)
+    for avg_base, group_tasks, exclude in groups:
+        for pm_tag in PRUNEMODE_SUFFIXES:
+            avg_name = f"{avg_base} ({pm_tag})"
+            present = [
+                f"{t} ({pm_tag})"
+                for t in group_tasks
+                if f"{t} ({pm_tag})" in df.columns and t not in exclude
+            ]
+            if not present:
+                continue
+            for model_name in df.index:
+                missing = [c for c in present if pd.isna(df.loc[model_name, c])]
+                if missing:
+                    print(
+                        f"[WARN] Model {model_name!r} missing {len(missing)}/{len(present)} "
+                        f"{avg_name} sub-task(s): {missing} — {avg_name} will be NaN"
+                    )
+            df[avg_name] = df[present].mean(axis=1, skipna=False)
+            avg_cols_added.append(avg_name)
 
     if not avg_cols_added:
         return df
@@ -504,23 +526,35 @@ def run_one(
         metric_dir = base_output_dir / safe_metric
         metric_dir.mkdir(parents=True, exist_ok=True)
 
-        # --- Define output slices ---
-        agg_cols = [c for c in [
-            "mc9_avg",
-            "gen5_avg",
-            "mmlu_merged_avg_no_other",
-            "mmlu_pro_merged_avg_no_other",
-        ] if c in df.columns]
+        # --- Helper to expand task lists into paired (lw)/(ep) columns ---
+        def _pm_cols(tasks: List[str]) -> List[str]:
+            """Expand base task names to paired (lw)/(ep) columns that exist."""
+            cols = []
+            for t in tasks:
+                for pm_tag in PRUNEMODE_SUFFIXES:
+                    c = f"{t} ({pm_tag})"
+                    if c in df.columns:
+                        cols.append(c)
+            return cols
 
-        mc9_cols = [c for c in ["mc9_avg"] + MC9_TASKS if c in df.columns]
-        # gen5 slice: avg + core tasks first, then reference tasks (squad_0shot) at end
-        gen5_cols = (
-            [c for c in ["gen5_avg"] + GEN5_TASKS if c in df.columns]
-            + [c for c in GEN5_REFERENCE_TASKS if c in df.columns]
+        def _avg_cols(avg_base: str) -> List[str]:
+            """Get the average columns for each prunemode."""
+            return [f"{avg_base} ({pm})" for pm in PRUNEMODE_SUFFIXES
+                    if f"{avg_base} ({pm})" in df.columns]
+
+        # --- Define output slices ---
+        agg_cols = (
+            _avg_cols("mc9_avg")
+            + _avg_cols("gen5_avg")
+            + _avg_cols("mmlu_merged_avg_no_other")
+            + _avg_cols("mmlu_pro_merged_avg_no_other")
         )
-        mmlu_cols = [c for c in ["mmlu_merged_avg_no_other"] + MMLU_MERGED_TASKS if c in df.columns]
-        mmlu_pro_cols = [c for c in ["mmlu_pro_merged_avg_no_other"] + MMLU_PRO_MERGED_TASKS if c in df.columns]
-        gsm8k_cols = [c for c in GSM8K_TASKS if c in df.columns]
+
+        mc9_cols = _avg_cols("mc9_avg") + _pm_cols(MC9_TASKS)
+        gen5_cols = _avg_cols("gen5_avg") + _pm_cols(GEN5_TASKS) + _pm_cols(GEN5_REFERENCE_TASKS)
+        mmlu_cols = _avg_cols("mmlu_merged_avg_no_other") + _pm_cols(MMLU_MERGED_TASKS)
+        mmlu_pro_cols = _avg_cols("mmlu_pro_merged_avg_no_other") + _pm_cols(MMLU_PRO_MERGED_TASKS)
+        gsm8k_cols = _pm_cols(GSM8K_TASKS)
 
         slices = {
             "aggregate": agg_cols,
