@@ -23,7 +23,7 @@ Usage:
     python -m src.scripts.clustering.extract \\
         --source pretraining \\
         --model-path models/.../step30995-hf \\
-        --composition-file .../mix_composition.json \\
+        --composition-file .../pretraining_mix.json \\
         --output-dir .../pretraining/<model>/ \\
         --target-tokens 1000000 --max-tokens-per-doc 100
 

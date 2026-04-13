@@ -16,6 +16,9 @@ visualize.py  →  interactive HTML explorer
 ## Quick Start
 
 ```bash
+# 0. Generate pretraining mix composition (one-time)
+bash scripts/ryanwang/clustering/generate_pretraining_mix.sh
+
 # 1. Extract logits from pretraining data (1M tokens, 100 tok/doc)
 bash scripts/ryanwang/clustering/extract_pretraining.sh
 
@@ -158,6 +161,7 @@ All modules run via `python -m src.scripts.clustering.<module>`.
 
 | Module | Description |
 |--------|-------------|
+| `generate_pretraining_mix` | Generate pretraining data composition |
 | `extract` | Unified extraction for all data sources |
 | `transform` | Derive embeddings + preprocessing |
 | `cluster` | Clustering + evaluation |

@@ -16,7 +16,7 @@ MAX_TOKENS_PER_DOC="${3:-100}"
 
 MODEL_NAME="$(basename "$(dirname "$MODEL_PATH")")"
 BASE_DIR="claude_outputs/clustering/pretraining"
-COMPOSITION_FILE="claude_outputs/analysis/router_clustering_pretraining/mix_composition.json"
+COMPOSITION_FILE="claude_outputs/clustering/pretraining_mix.json"
 OUTPUT_DIR="${BASE_DIR}/${MODEL_NAME}"
 
 echo "Model: $MODEL_PATH"
@@ -26,7 +26,7 @@ echo "Max tokens/doc: $MAX_TOKENS_PER_DOC"
 
 if [ ! -f "$COMPOSITION_FILE" ]; then
     echo "ERROR: ${COMPOSITION_FILE} not found."
-    echo "Run: bash scripts/ryanwang/analysis/run_analyze_data_mix.sh"
+    echo "Run: bash scripts/ryanwang/clustering/generate_pretraining_mix.sh"
     exit 1
 fi
 
