@@ -18,8 +18,6 @@ base_model_path="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
 
 nodes=16
 gpus=8
-# global batch size in instances (nodes * gpus * 4 microbatch) — multiplied by SEQUENCE_LENGTH inside the script
-global_batch_size=$((nodes * gpus * 4))
 
 num_shared_experts=1
 
@@ -69,7 +67,6 @@ python -m olmo_core.launch.beaker \
 		--dataset.mix=mj_finemath4plus \
 		--work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
 		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}, tags: [extension, contpretrain, finemath]}" \
-		--global_batch_size=${global_batch_size} \
 		--num-tokens=${num_tokens} \
 		--lr=${lr} \
 		--load-path=${base_model_path}/model_and_optim \
