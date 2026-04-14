@@ -444,9 +444,16 @@ def main():
 
     os.makedirs(args.output_dir, exist_ok=True)
 
-    # Load model
+    # Load model (device_map="auto" shards across available GPUs)
     model, tokenizer = load_model_and_tokenizer(args.model_path)
-    device = str(next(model.parameters()).device)
+    # With device_map="auto", inputs go to the first device in the model's device map
+    if hasattr(model, 'hf_device_map'):
+        first_device = next(iter(model.hf_device_map.values()))
+        device = f"cuda:{first_device}" if isinstance(first_device, int) else str(first_device)
+        logger.info(f"Multi-device model: {model.hf_device_map}")
+    else:
+        device = str(next(model.parameters()).device)
+    logger.info(f"Input device: {device}")
 
     moe_cfg = get_moe_config(model)
     num_layers = moe_cfg["num_layers"]

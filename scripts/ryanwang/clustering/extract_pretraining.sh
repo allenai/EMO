@@ -1,18 +1,26 @@
 #!/bin/bash
 # Extract token-level router logits from pretraining data.
 #
+# Supports multi-GPU: set CUDA_VISIBLE_DEVICES to control which GPUs to use.
+# The model is loaded with device_map="auto" which shards across available GPUs.
+#
 # Usage:
 #   bash scripts/ryanwang/clustering/extract_pretraining.sh [MODEL_PATH] [TARGET_TOKENS] [MAX_TOKENS_PER_DOC]
 #
 # Examples:
+#   # Default: 20M tokens, 250 tok/doc
 #   bash scripts/ryanwang/clustering/extract_pretraining.sh
+#
+#   # Specific model
 #   bash scripts/ryanwang/clustering/extract_pretraining.sh models/moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf
-#   bash scripts/ryanwang/clustering/extract_pretraining.sh models/.../step30995-hf 2000000 200
+#
+#   # Use specific GPUs
+#   CUDA_VISIBLE_DEVICES=0,1 bash scripts/ryanwang/clustering/extract_pretraining.sh
 set -euo pipefail
 
 MODEL_PATH="${1:-models/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf}"
-TARGET_TOKENS="${2:-1000000}"
-MAX_TOKENS_PER_DOC="${3:-100}"
+TARGET_TOKENS="${2:-20000000}"
+MAX_TOKENS_PER_DOC="${3:-250}"
 
 MODEL_NAME="$(basename "$(dirname "$MODEL_PATH")")"
 BASE_DIR="claude_outputs/clustering/pretraining"
@@ -20,9 +28,11 @@ COMPOSITION_FILE="claude_outputs/clustering/pretraining_mix.json"
 OUTPUT_DIR="${BASE_DIR}/${MODEL_NAME}"
 
 echo "Model: $MODEL_PATH"
+echo "Model name: $MODEL_NAME"
 echo "Output: $OUTPUT_DIR"
 echo "Target tokens: $TARGET_TOKENS (post-truncation)"
 echo "Max tokens/doc: $MAX_TOKENS_PER_DOC"
+echo "GPUs: ${CUDA_VISIBLE_DEVICES:-all}"
 
 if [ ! -f "$COMPOSITION_FILE" ]; then
     echo "ERROR: ${COMPOSITION_FILE} not found."
@@ -40,7 +50,7 @@ PYTHONUNBUFFERED=1 python -u \
     --output-dir "$OUTPUT_DIR" \
     --target-tokens "$TARGET_TOKENS" \
     --max-tokens-per-doc "$MAX_TOKENS_PER_DOC" \
-    --batch-size 32 \
+    --batch-size 256 \
     2>&1 | tee "${OUTPUT_DIR}/extraction.log"
 
 echo ""
