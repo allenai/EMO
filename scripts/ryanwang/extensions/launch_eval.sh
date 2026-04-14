@@ -20,9 +20,13 @@ model_type=hf
 
 # Models (relative to ${BASE_DIR}/models/ — all paths must end in -hf).
 MODELS=(
-    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419_ct-m8_lb0/step2385-hf"
-    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419_ct-math_8/step2385-hf"
-    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238_ct-m8_lb0_wd/step2385-hf"
+    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
+#    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419_ct-m8_lb0/step2385-hf"
+#    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419_ct-math_8/step2385-hf"
+#    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238_ct-m8_lb0_wd/step2385-hf"
+#    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step23_ct-m8_lb0_frz/step2385-hf"
+#    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step23_ct-math_8-128/step2385-hf"
+
 )
 
 # Tasks — pass-through strings. Uncomment the ones you want to run.
@@ -77,6 +81,9 @@ for MODEL in "${MODELS[@]}"; do
         fi
         if [[ $TASK == *"cot"* || $TASK == *"minerva_math_"* || $TASK == *"mbpp"* || $TASK == *"bigcodebench"* || $TASK == *"boolq"* || $TASK == *"drop"* ]]; then
             batch_size=$((batch_size / 4))
+        fi
+        if [[ $TASK == *gsm8k* ]]; then
+            gpus=8
         fi
 
         # Sanitize task name for job name / path components
