@@ -6,7 +6,7 @@
 # STATUS: NEW
 ##############################################################
 min_document_expert_pool=8
-max_document_expert_pool=128
+max_document_expert_pool=8
 eval_document_expert_pool=32
 lb=1e-1
 lr=4e-4
@@ -14,8 +14,7 @@ lr=4e-4
 num_billion_tokens=10
 num_tokens=$((num_billion_tokens * 1000000000))
 
-# Base checkpoint: fill in the final annealed step when the anneal run finishes.
-base_model_path="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_twolevel_1T_annealed_from_step238419/step<FINAL>"
+base_model_path="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_twolevel_1T_annealed_from_step238419/step250339"
 
 nodes=16
 gpus=8
@@ -24,7 +23,7 @@ global_batch_size=$((nodes * gpus * 4))
 
 num_shared_experts=1
 
-runname="twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_twolevel_1T_annealed_from_step238419_contpretrain-finemath4plus"
+runname="twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_twolevel_1T_annealed_from_step238419_contpretrain-finemath4plus_pool8fixed"
 
 
 #torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl_extension.py \
@@ -86,5 +85,5 @@ python -m olmo_core.launch.beaker \
 		--model.block.name="moe" \
 		--model.block.attention.qk_norm=null \
 		--model.block.feed_forward_moe.lb_loss_weight=${lb} \
-		--trainer.callbacks.checkpointer.save_interval=5000 \
+		--trainer.callbacks.checkpointer.save_interval=600 \
 		--trainer.callbacks.downstream_evaluator.eval_interval=250
