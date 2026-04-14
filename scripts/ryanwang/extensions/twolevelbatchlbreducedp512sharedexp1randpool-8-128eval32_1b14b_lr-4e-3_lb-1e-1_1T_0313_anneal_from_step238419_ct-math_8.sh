@@ -58,6 +58,7 @@ python -m olmo_core.launch.beaker \
   --shared-filesystem \
 	--workspace ai2/flex2 \
 	--cluster ai2/jupiter \
+	--beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
 	--preemptible \
 	--allow-dirty \
 	--priority urgent \
@@ -74,7 +75,7 @@ python -m olmo_core.launch.beaker \
 		--load-path=${base_model_path}/model_and_optim \
 		--model.block.feed_forward_moe.num_experts=128 \
 		--dataset.generate_doc_lengths=true \
-		--model.block.attention.backend=flash_3 \
+		--model.block.attention.backend=flash_2 \
 		--model-type="two-level_lb-batch_reduce-dp_sharedexp_randpool" \
 		--min_document_expert_pool=${min_document_expert_pool} \
 		--max_document_expert_pool=${max_document_expert_pool} \
