@@ -14,7 +14,7 @@ lr=4e-4
 num_billion_tokens=10
 num_tokens=$((num_billion_tokens * 1000000000))
 
-base_model_path="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_twolevel_1T_annealed_from_step238419/step250339"
+base_model_path="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339"
 
 nodes=16
 gpus=8
@@ -23,7 +23,7 @@ global_batch_size=$((nodes * gpus * 4))
 
 num_shared_experts=1
 
-runname="twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_twolevel_1T_annealed_from_step238419_contpretrain-finemath4plus_pool8fixed"
+runname="twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419_ct-math_8"
 
 
 #torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl_extension.py \
