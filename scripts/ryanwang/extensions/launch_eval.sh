@@ -20,36 +20,37 @@ model_type=hf
 
 # Models (relative to ${BASE_DIR}/models/ — all paths must end in -hf).
 MODELS=(
-#    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
-#    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419_ct-math_8/step<N>-hf"
+    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419_ct-m8_lb0/step2385-hf"
+    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419_ct-math_8/step2385-hf"
+    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238_ct-m8_lb0_wd/step2385-hf"
 )
 
 # Tasks — pass-through strings. Uncomment the ones you want to run.
 TASK_GROUPS_LIST=(
     # MC9 (test split, rc, olmes default)
-#    "arc_easy:rc_test::olmes"
-#    "arc_challenge:rc_test::olmes"
-#    "boolq:rc_test::olmes"
-#    "csqa:rc_test::olmes"
-#    "hellaswag:rc_test::olmes"
-#    "openbookqa:rc_test::olmes"
-#    "piqa:rc_test::olmes"
-#    "socialiqa:rc_test::olmes"
-#    "winogrande:rc_test::olmes"
+    "arc_easy:rc_test::olmes"
+    "arc_challenge:rc_test::olmes"
+    "boolq:rc_test::olmes"
+    "csqa:rc_test::olmes"
+    "hellaswag:rc_test::olmes"
+    "openbookqa:rc_test::olmes"
+    "piqa:rc_test::olmes"
+    "socialiqa:rc_test::olmes"
+    "winogrande:rc_test::olmes"
 
     # QA / generation
-#    "squad::olmes"
-#    "triviaqa::olmes"
+    "squad::olmes"
+    "triviaqa::olmes"
 
     # Math
-#    "gsm8k::olmes"
-#    "gsm8k_generation_0shot:test::olmes"
-#    "basic_skills::olmes"
-#    "minerva_math_500::olmes"
+    "gsm8k::olmes"
+    "gsm8k_generation_0shot:test::olmes"
+    "basic_skills::olmes"
+    "minerva_math_500::olmes"
 
     # Code
-#    "mbpp:3shot:bpb::none"
-#    "codex_humaneval:3shot:bpb::none"
+    "mbpp:3shot:bpb::none"
+    "codex_humaneval:3shot:bpb::none"
 )
 
 echo "Launching extension evals for ${#MODELS[@]} models and ${#TASK_GROUPS_LIST[@]} tasks..."
