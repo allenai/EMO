@@ -372,11 +372,41 @@ def main():
     if not args.data_dir:
         parser.error("--data-dir is required")
 
-    # Load embedding
-    emb, meta, info = load_embedding(args.data_dir, args.embedding)
+    # Load meta + info (always needed)
+    import gzip
+    info_path = os.path.join(args.data_dir, "info.json")
+    with open(info_path) as f:
+        info = json.load(f)
+    is_doc_level = args.embedding.startswith("doc_")
+    meta_path = os.path.join(
+        args.data_dir,
+        "metadata_docs.jsonl.gz" if is_doc_level else "metadata_tokens.jsonl.gz",
+    )
+    meta = []
+    with gzip.open(meta_path, "rt") as f:
+        for line in f:
+            meta.append(json.loads(line))
 
-    # Preprocess
-    transformed = apply_preprocess(emb, args.preprocess, info)
+    # Try cache — preprocessing is the dominant cost (~2hr for 20M x 2032 probs)
+    cache_path = os.path.join(
+        args.data_dir,
+        f"preprocessed_{args.embedding}_{args.preprocess}.npy",
+    )
+    emb = None
+    if os.path.exists(cache_path):
+        logger.info(f"Loading cached preprocessed: {cache_path}")
+        transformed = np.load(cache_path)
+        logger.info(f"  shape={transformed.shape}")
+        if args.save:
+            emb, _, _ = load_embedding(args.data_dir, args.embedding)
+    else:
+        emb, _, _ = load_embedding(args.data_dir, args.embedding)
+        transformed = apply_preprocess(emb, args.preprocess, info).astype(np.float32)
+        logger.info(f"Saving preprocess cache: {cache_path}  shape={transformed.shape}")
+        np.save(cache_path, transformed)
+        if not args.save:
+            del emb
+            emb = None
     logger.info(f"  Preprocessed shape: {transformed.shape}")
 
     # Hierarchical: precompute distance + linkage once

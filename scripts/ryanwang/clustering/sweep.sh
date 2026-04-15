@@ -5,7 +5,7 @@
 #   bash scripts/ryanwang/clustering/sweep.sh <DATA_DIR> [EMBEDDING]
 #
 # Default grid: {probs} × {mean_pca_l2} × {kmeans, spherical_kmeans} × k={16,32,64,128}
-set -euo pipefail
+set -uo pipefail
 
 DATA_DIR="${1:?Usage: $0 <DATA_DIR> [EMBEDDING]}"
 EMBEDDING="${2:-probs}"
@@ -31,7 +31,8 @@ for METHOD in $METHODS; do
         --embedding "$EMBEDDING" \
         --preprocess "$PREPROCESS" \
         --method "$METHOD" \
-        --k $K_VALUES
+        --k $K_VALUES \
+        || echo "!!! FAILED: ${EMBEDDING} / ${PREPROCESS} / ${METHOD} !!!"
 done
 
 echo ""
