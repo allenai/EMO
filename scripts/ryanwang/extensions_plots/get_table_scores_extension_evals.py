@@ -24,6 +24,9 @@ import pandas as pd
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 MODEL_SPECS: Dict[str, Dict[str, object]] = {
+    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419step250339-hf": {
+        "label": "spec moe 1T + anneal",
+    },
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419_ct-m8_lb0step2385-hf": {
         "label": "spec moe ct-m8 lb0",
     },
