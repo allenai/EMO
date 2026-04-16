@@ -6,14 +6,14 @@ import time
 import numpy as np
 import torch
 
-logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 from src.scripts.clustering.extract import extract_logits
 from src.scripts.clustering.utils import (
     get_moe_config,
     load_model_and_tokenizer,
 )
+
+logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 MODEL_PATH = "models/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
 

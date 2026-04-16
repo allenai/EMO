@@ -1,3 +1,6 @@
+import re
+from collections import defaultdict
+
 text = r"""
     "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step0-hf-hf"
     "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step4-hf-hf"
@@ -381,9 +384,6 @@ text = r"""
     "task-mmlu_world_religions_rc_validation${postfix}/finetune-task-mmlu_world_religions_rc_train/step35-hf"
     "task-mmlu_world_religions_rc_validation${postfix}/finetune-task-mmlu_world_religions_rc_train/step36-hf"
 """
-
-import re
-from collections import defaultdict
 
 # Example line:
 # "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step12-hf-hf"
