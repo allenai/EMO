@@ -2,6 +2,7 @@ import torch
 import torch.distributed as dist
 from transformers import TrainerCallback
 
+
 class LogMoeCallback(TrainerCallback):
     """
     Logs MoE losses during training.
@@ -88,10 +89,10 @@ class LogMoeCallback(TrainerCallback):
             return
 
         use_dist = (
-                self.reduce_across_processes
-                and dist.is_available()
-                and dist.is_initialized()
-                and dist.get_world_size() > 1
+            self.reduce_across_processes
+            and dist.is_available()
+            and dist.is_initialized()
+            and dist.get_world_size() > 1
         )
 
         # --- LB ---
@@ -99,7 +100,9 @@ class LogMoeCallback(TrainerCallback):
         if use_dist:
             # clone so we can reset the window without affecting the reduced value
             lb_reduced = lb.detach().clone()
-            dist.reduce(lb_reduced, dst=0, op=dist.ReduceOp.SUM) # reduce by summing across DP rank (since we have already divided by the global batch size
+            dist.reduce(
+                lb_reduced, dst=0, op=dist.ReduceOp.SUM
+            )  # reduce by summing across DP rank (since we have already divided by the global batch size
         else:
             lb_reduced = lb.detach().clone()
 
@@ -108,7 +111,9 @@ class LogMoeCallback(TrainerCallback):
         ce = self._window_ce_sum
         if use_dist:
             ce_reduced = ce.detach().clone()
-            dist.reduce(ce_reduced, dst=0, op=dist.ReduceOp.SUM) # reduce by summing across DP ranks
+            dist.reduce(
+                ce_reduced, dst=0, op=dist.ReduceOp.SUM
+            )  # reduce by summing across DP ranks
         else:
             ce_reduced = ce.detach().clone()
 

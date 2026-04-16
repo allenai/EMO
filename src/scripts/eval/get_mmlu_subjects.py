@@ -19,11 +19,11 @@ def get_subjects(task_name: str):
     if not task_name.startswith("mmlu_"):
         return None
 
-    key = task_name[len("mmlu_"):]
+    key = task_name[len("mmlu_") :]
 
     # Strip a "merged_" prefix so mmlu_merged_<cat> resolves the same as mmlu_<cat>.
     if key.startswith("merged_"):
-        key = key[len("merged_"):]
+        key = key[len("merged_") :]
 
     # Check cluster categories first (they have "cluster_" prefix)
     if key in MMLU_CLUSTER_CATEGORIES:
@@ -38,7 +38,7 @@ def get_subjects(task_name: str):
 
 def main():
     if len(sys.argv) != 2:
-        print(f"Usage: python -m src.scripts.eval.get_mmlu_subjects <task_name>", file=sys.stderr)
+        print("Usage: python -m src.scripts.eval.get_mmlu_subjects <task_name>", file=sys.stderr)
         sys.exit(1)
 
     task_name = sys.argv[1]

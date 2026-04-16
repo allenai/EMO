@@ -17,6 +17,7 @@ HELLASWAG_CLUSTER_FILES = {
 
 _cluster_assignments_cache = {}
 
+
 def _load_cluster_assignments(k):
     """Load and cache cluster assignments for a given k."""
     if k not in _cluster_assignments_cache:
@@ -120,6 +121,7 @@ class HellaSwag_MC_Test(HellaSwag_MC_Base):
 # (similar to GenericMMLUPro_merged in splits_mmlu_pro.py)
 # ---------------------------------------------------------------------------
 
+
 class HellaSwag_Merged_RC(HellaSwag_RC_Base):
     """HellaSwag variant where pruning and finetuning use the same merged data.
 
@@ -135,11 +137,7 @@ class HellaSwag_Merged_RC(HellaSwag_RC_Base):
                 .shuffle(seed=0)
                 .select(range(1000, len(self.dataset["train"])))
             )
-            val_dataset = (
-                self.dataset["train"]
-                .shuffle(seed=0)
-                .select(range(0, 1000))
-            )
+            val_dataset = self.dataset["train"].shuffle(seed=0).select(range(0, 1000))
             merged = concatenate_datasets([train_dataset, val_dataset])
             self._training_docs = list(map(self._process_doc, merged))
         return self._training_docs
@@ -153,6 +151,7 @@ class HellaSwag_Merged_RC(HellaSwag_RC_Base):
 # Cluster variants: per-cluster subsets of HellaSwag
 # ---------------------------------------------------------------------------
 
+
 def _get_split_cluster_indices(k, cluster_id, split):
     """Get cluster indices mapped to positions within each split's dataset.
 
@@ -164,17 +163,15 @@ def _get_split_cluster_indices(k, cluster_id, split):
     data = _load_cluster_assignments(k)
     raw_indices = data["clusters"][str(cluster_id)][split]
     if split == "validation":
-        n_train = sum(
-            len(data["clusters"][str(c)]["train"])
-            for c in range(data["k"])
-        )
+        n_train = sum(len(data["clusters"][str(c)]["train"]) for c in range(data["k"]))
         return [i - n_train for i in raw_indices]
     return raw_indices
 
 
 class HellaSwag_Cluster_RC(HellaSwag_RC_Base):
     """HellaSwag filtered to a single cluster's examples."""
-    K = None           # Set by factory function
+
+    K = None  # Set by factory function
     CLUSTER_ID = None  # Set by factory function
 
     def training_docs(self):
@@ -190,11 +187,7 @@ class HellaSwag_Cluster_RC(HellaSwag_RC_Base):
         return self._training_docs
 
     def validation_docs(self):
-        full_val = (
-            self.dataset["train"]
-            .shuffle(seed=0)
-            .select(range(0, 1000))
-        )
+        full_val = self.dataset["train"].shuffle(seed=0).select(range(0, 1000))
         indices = _get_split_cluster_indices(self.K, self.CLUSTER_ID, "validation")
         selected = full_val.select(indices)
         return map(self._process_doc, selected)
@@ -207,7 +200,8 @@ class HellaSwag_Cluster_RC(HellaSwag_RC_Base):
 
 class HellaSwag_Cluster_Merged_RC(HellaSwag_RC_Base):
     """Per-cluster HellaSwag with train+val merged for both pruning and finetuning."""
-    K = None           # Set by factory function
+
+    K = None  # Set by factory function
     CLUSTER_ID = None  # Set by factory function
 
     def training_docs(self):
@@ -217,11 +211,7 @@ class HellaSwag_Cluster_Merged_RC(HellaSwag_RC_Base):
                 .shuffle(seed=0)
                 .select(range(1000, len(self.dataset["train"])))
             )
-            full_val = (
-                self.dataset["train"]
-                .shuffle(seed=0)
-                .select(range(0, 1000))
-            )
+            full_val = self.dataset["train"].shuffle(seed=0).select(range(0, 1000))
             train_indices = _get_split_cluster_indices(self.K, self.CLUSTER_ID, "train")
             val_indices = _get_split_cluster_indices(self.K, self.CLUSTER_ID, "validation")
             selected_train = full_train.select(train_indices)
@@ -243,10 +233,12 @@ class HellaSwag_Cluster_Merged_RC(HellaSwag_RC_Base):
 # Factory functions
 # ---------------------------------------------------------------------------
 
+
 def create_hellaswag_cluster_task(k, cluster_id):
     class HS_Cluster(HellaSwag_Cluster_RC):
         K = k
         CLUSTER_ID = cluster_id
+
     return HS_Cluster
 
 
@@ -254,4 +246,5 @@ def create_hellaswag_cluster_merged_task(k, cluster_id):
     class HS_ClusterMerged(HellaSwag_Cluster_Merged_RC):
         K = k
         CLUSTER_ID = cluster_id
+
     return HS_ClusterMerged

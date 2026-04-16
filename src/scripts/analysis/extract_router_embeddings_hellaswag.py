@@ -41,7 +41,9 @@ ALL_SPLITS = ["train", "validation", "test"]
 
 
 def tokenize_prompts(
-    prompts: List[str], tokenizer, max_length: int = 2048,
+    prompts: List[str],
+    tokenizer,
+    max_length: int = 2048,
 ) -> List[np.ndarray]:
     """Tokenize prompt strings into numpy arrays of token IDs."""
     docs = []
@@ -55,20 +57,25 @@ def tokenize_prompts(
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Extract router embeddings from HellaSwag data"
+    parser = argparse.ArgumentParser(description="Extract router embeddings from HellaSwag data")
+    parser.add_argument("--model-path", required=True, help="Path to HF model checkpoint")
+    parser.add_argument(
+        "--output-dir", required=True, help="Output directory for embeddings and metadata"
     )
-    parser.add_argument("--model-path", required=True,
-                        help="Path to HF model checkpoint")
-    parser.add_argument("--output-dir", required=True,
-                        help="Output directory for embeddings and metadata")
     parser.add_argument("--batch-size", type=int, default=32)
-    parser.add_argument("--max-doc-len", type=int, default=2048,
-                        help="Max token length per prompt (default: 2048)")
-    parser.add_argument("--embeddings", default="all",
-                        help="Comma-separated embedding types or 'all' (default: all)")
-    parser.add_argument("--splits", default="train,validation,test",
-                        help="Comma-separated splits to process (default: train,validation,test)")
+    parser.add_argument(
+        "--max-doc-len", type=int, default=2048, help="Max token length per prompt (default: 2048)"
+    )
+    parser.add_argument(
+        "--embeddings",
+        default="all",
+        help="Comma-separated embedding types or 'all' (default: all)",
+    )
+    parser.add_argument(
+        "--splits",
+        default="train,validation,test",
+        help="Comma-separated splits to process (default: train,validation,test)",
+    )
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -81,9 +88,7 @@ def main():
         requested_names = [s.strip() for s in args.embeddings.split(",")]
         for name in requested_names:
             if name not in EMBEDDING_REGISTRY:
-                parser.error(
-                    f"Unknown embedding type '{name}'. Available: {', '.join(all_names)}"
-                )
+                parser.error(f"Unknown embedding type '{name}'. Available: {', '.join(all_names)}")
     embedding_types = [EMBEDDING_REGISTRY[name] for name in requested_names]
     logger.info(f"Will compute embeddings: {[et.name for et in embedding_types]}")
 
@@ -126,17 +131,20 @@ def main():
         logger.info(f"  {len(docs)} prompts, {split_tokens:,} tokens (request_type={req_type})")
 
         # Batch inference
-        batch_embeddings: Dict[str, List[np.ndarray]] = {
-            et.name: [] for et in embedding_types
-        }
+        batch_embeddings: Dict[str, List[np.ndarray]] = {et.name: [] for et in embedding_types}
         num_batches = (len(docs) + args.batch_size - 1) // args.batch_size
         t0 = time.time()
 
         for batch_idx, i in enumerate(range(0, len(docs), args.batch_size)):
             batch = docs[i : i + args.batch_size]
             results = embed_batch(
-                model, batch, device, num_layers, num_standard_experts,
-                embedding_types, routed_top_k=routed_top_k,
+                model,
+                batch,
+                device,
+                num_layers,
+                num_standard_experts,
+                embedding_types,
+                routed_top_k=routed_top_k,
             )
             for name, arr in results.items():
                 batch_embeddings[name].append(arr)
@@ -159,11 +167,13 @@ def main():
 
         # Track metadata: source is the split name
         for doc, prompt in zip(docs, prompts):
-            all_meta.append({
-                "source": split,
-                "doc_len": int(len(doc)),
-                "preview": prompt[:3000],
-            })
+            all_meta.append(
+                {
+                    "source": split,
+                    "doc_len": int(len(doc)),
+                    "preview": prompt[:3000],
+                }
+            )
 
     # Save embeddings
     for et in embedding_types:

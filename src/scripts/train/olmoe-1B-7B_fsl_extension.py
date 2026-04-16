@@ -19,7 +19,6 @@ Launch with torchrun (local) or python -m olmo_core.launch.beaker (cluster):
 
 import argparse
 import logging
-import os
 import sys
 from dataclasses import dataclass, replace
 from typing import List, Optional, cast
@@ -36,29 +35,39 @@ from olmo_core.data import (
 from olmo_core.data.mixes import DataMix
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_rank
+from olmo_core.nn.feed_forward import FeedForwardConfig
 from olmo_core.nn.moe.mutualinfo_router import MoEMutualInfoRouterConfig
+from olmo_core.nn.moe.router_lbreducedp import MoELinearLBReduceDPRouterConfig
+from olmo_core.nn.moe.router_lbreducedp_sharedexp import (
+    MoELinearLBReduceDPSharedExpRouterConfig,
+)
 from olmo_core.nn.moe.twolevel_batchlb_fullzloss_router import (
     MoETwoLevelBatchLBFullZLossRouterConfig,
 )
 from olmo_core.nn.moe.twolevel_batchlb_nomaskaux_router import (
     MoETwoLevelBatchLBNoMaskAuxRouterConfig,
 )
-from olmo_core.nn.moe.router_lbreducedp import MoELinearLBReduceDPRouterConfig
-from olmo_core.nn.moe.router_lbreducedp_sharedexp import MoELinearLBReduceDPSharedExpRouterConfig
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_router import (
+    MoETwoLevelBatchLBReduceDPRouterConfig,
+)
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_randpool_router import (
+    MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouterConfig,
+)
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_router import (
+    MoETwoLevelBatchLBReduceDPSharedExpRouterConfig,
+)
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexppool_router import (
+    MoETwoLevelBatchLBReduceDPSharedExpPoolRouterConfig,
+)
 from olmo_core.nn.moe.twolevel_batchlb_router import MoETwoLevelBatchLBRouterConfig
 from olmo_core.nn.moe.twolevel_pbatchlb_router import MoETwoLevelPBatchLBRouterConfig
 from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouterConfig
-from olmo_core.nn.moe.twolevel_batchlb_reducedp_router import MoETwoLevelBatchLBReduceDPRouterConfig
-from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_router import MoETwoLevelBatchLBReduceDPSharedExpRouterConfig
-from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_randpool_router import MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouterConfig
-from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexppool_router import MoETwoLevelBatchLBReduceDPSharedExpPoolRouterConfig
 from olmo_core.nn.moe.twolevel_sampling_nolb_router import (
     MoETwoLevelSamplingNoLBRouterConfig,
 )
 from olmo_core.nn.moe.twolevel_topp_batchlb_router import (
     MoETwoLevelTopPBatchLBRouterConfig,
 )
-from olmo_core.nn.feed_forward import FeedForwardConfig
 from olmo_core.nn.transformer import TransformerBlockType, TransformerConfig
 from olmo_core.optim import AdamWConfig, CosWithWarmup, OptimGroupOverride
 from olmo_core.train import (
@@ -162,14 +171,20 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         log.info("Using default routers; no modifications applied.")
         pass
     elif opts.model_type == "moe_lbreducedp":
-        log.info("Applying standard moe routers with data parallel reduced load balancing to the model...")
+        log.info(
+            "Applying standard moe routers with data parallel reduced load balancing to the model..."
+        )
         router_kwargs = model_config.block.feed_forward_moe.router.as_dict(
             exclude_none=True, recurse=False
         )
         router_kwargs.pop("name")
-        model_config.block.feed_forward_moe.router = MoELinearLBReduceDPRouterConfig(**router_kwargs)
+        model_config.block.feed_forward_moe.router = MoELinearLBReduceDPRouterConfig(
+            **router_kwargs
+        )
     elif opts.model_type == "moe_lbreducedp_sharedexp":
-        log.info("Applying standard moe routers with data parallel reduced load balancing and shared experts to the model...")
+        log.info(
+            "Applying standard moe routers with data parallel reduced load balancing and shared experts to the model..."
+        )
         if opts.num_shared_experts is None:
             raise ValueError(
                 "num_shared_experts must be specified for moe_lbreducedp_sharedexp model type."
@@ -179,7 +194,9 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         )
         router_kwargs.pop("name")
         router_kwargs.update(num_shared_experts=opts.num_shared_experts)
-        model_config.block.feed_forward_moe.router = MoELinearLBReduceDPSharedExpRouterConfig(**router_kwargs)
+        model_config.block.feed_forward_moe.router = MoELinearLBReduceDPSharedExpRouterConfig(
+            **router_kwargs
+        )
     elif opts.model_type == "two-level":
         log.info("Applying two-level routers to the model...")
         if opts.document_expert_pool is None:
@@ -194,7 +211,9 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         )
         model_config.block.feed_forward_moe.router = MoETwoLevelRouterConfig(**router_kwargs)
     elif opts.model_type == "two-level_lb-batch":
-        log.info("Applying two-level with batch-leve load balancing (olmoe lb) routers to the model...")
+        log.info(
+            "Applying two-level with batch-leve load balancing (olmoe lb) routers to the model..."
+        )
         if opts.document_expert_pool is None:
             raise ValueError("document_expert_pool must be specified for two-level model type.")
         router_kwargs = model_config.block.feed_forward_moe.router.as_dict(
@@ -207,7 +226,9 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         )
         model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBRouterConfig(**router_kwargs)
     elif opts.model_type == "two-level_lb-batch_reduce-dp":
-        log.info("Applying two-level with batch-leve load balancing (olmoe lb) routers that are reduced across dp ranks to the model...")
+        log.info(
+            "Applying two-level with batch-leve load balancing (olmoe lb) routers that are reduced across dp ranks to the model..."
+        )
         if opts.document_expert_pool is None:
             raise ValueError("document_expert_pool must be specified for two-level model type.")
         router_kwargs = model_config.block.feed_forward_moe.router.as_dict(
@@ -218,9 +239,13 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             document_expert_pool=opts.document_expert_pool,
             eos_token_id=tokenizer_config.eos_token_id,
         )
-        model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBReduceDPRouterConfig(**router_kwargs)
+        model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBReduceDPRouterConfig(
+            **router_kwargs
+        )
     elif opts.model_type == "two-level_lb-batch_reduce-dp_sharedexp":
-        log.info("Applying two-level with batch-leve load balancing (olmoe lb) routers that are reduced across dp ranks and have shared routers to the model...")
+        log.info(
+            "Applying two-level with batch-leve load balancing (olmoe lb) routers that are reduced across dp ranks and have shared routers to the model..."
+        )
         if opts.document_expert_pool is None:
             raise ValueError("document_expert_pool must be specified for two-level model type.")
         if opts.num_shared_experts is None:
@@ -236,9 +261,13 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             eos_token_id=tokenizer_config.eos_token_id,
             num_shared_experts=opts.num_shared_experts,
         )
-        model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBReduceDPSharedExpRouterConfig(**router_kwargs)
+        model_config.block.feed_forward_moe.router = (
+            MoETwoLevelBatchLBReduceDPSharedExpRouterConfig(**router_kwargs)
+        )
     elif opts.model_type == "two-level_lb-batch_reduce-dp_sharedexp_densefirst":
-        log.info("Applying two-level with batch-level load balancing (olmoe lb) routers that are reduced across dp ranks and have shared routers to the model, with dense first two layers...")
+        log.info(
+            "Applying two-level with batch-level load balancing (olmoe lb) routers that are reduced across dp ranks and have shared routers to the model, with dense first two layers..."
+        )
         if opts.document_expert_pool is None:
             raise ValueError("document_expert_pool must be specified for two-level model type.")
         if opts.num_shared_experts is None:
@@ -254,9 +283,13 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             eos_token_id=tokenizer_config.eos_token_id,
             num_shared_experts=opts.num_shared_experts,
         )
-        model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBReduceDPSharedExpRouterConfig(**router_kwargs)
+        model_config.block.feed_forward_moe.router = (
+            MoETwoLevelBatchLBReduceDPSharedExpRouterConfig(**router_kwargs)
+        )
     elif opts.model_type == "two-level_lb-batch_reduce-dp_sharedexp_randpool":
-        log.info("Applying two-level with batch-level load balancing (olmoe lb) routers that are reduced across dp ranks, have shared routers, and random document expert pool sizes...")
+        log.info(
+            "Applying two-level with batch-level load balancing (olmoe lb) routers that are reduced across dp ranks, have shared routers, and random document expert pool sizes..."
+        )
         if opts.min_document_expert_pool is None or opts.max_document_expert_pool is None:
             raise ValueError(
                 "Both min_document_expert_pool and max_document_expert_pool must be specified for two-level_lb-batch_reduce-dp_sharedexp_randpool model type."
@@ -277,9 +310,13 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         )
         if opts.eval_document_expert_pool is not None:
             router_kwargs["eval_document_expert_pool"] = opts.eval_document_expert_pool
-        model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouterConfig(**router_kwargs)
+        model_config.block.feed_forward_moe.router = (
+            MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouterConfig(**router_kwargs)
+        )
     elif opts.model_type == "two-level_lb-batch_reduce-dp_sharedexppool":
-        log.info("Applying two-level with batch-leve load balancing (olmoe lb) routers that are reduced across dp ranks and have shared routers (that is a pool) to the model...")
+        log.info(
+            "Applying two-level with batch-leve load balancing (olmoe lb) routers that are reduced across dp ranks and have shared routers (that is a pool) to the model..."
+        )
         if opts.document_expert_pool is None:
             raise ValueError("document_expert_pool must be specified for two-level model type.")
         if opts.num_shared_experts is None:
@@ -306,9 +343,13 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             num_shared_experts_pool=opts.num_shared_experts_pool,
             shared_exp_lb_loss=shared_exp_lb_loss,
         )
-        model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBReduceDPSharedExpPoolRouterConfig(**router_kwargs)
+        model_config.block.feed_forward_moe.router = (
+            MoETwoLevelBatchLBReduceDPSharedExpPoolRouterConfig(**router_kwargs)
+        )
     elif opts.model_type == "two-level_p_lb-batch":
-        log.info("Applying two-level with batch-level load balancing using probabilities to the model...")
+        log.info(
+            "Applying two-level with batch-level load balancing using probabilities to the model..."
+        )
         if opts.document_expert_pool is None:
             raise ValueError("document_expert_pool must be specified for two-level model type.")
         if opts.expert_uncond_entropy_bias is None:
@@ -329,9 +370,13 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             expert_uncond_entropy_bias=opts.expert_uncond_entropy_bias,
             expert_uncond_lb_prob_bias=opts.expert_uncond_lb_prob_bias,
         )
-        model_config.block.feed_forward_moe.router = MoETwoLevelPBatchLBRouterConfig(**router_kwargs)
+        model_config.block.feed_forward_moe.router = MoETwoLevelPBatchLBRouterConfig(
+            **router_kwargs
+        )
     elif opts.model_type == "two-level_topp_lb-batch":
-        log.info("Applying two-level with batch-leve load balancing (olmoe lb) routers and top-p selection to the model...")
+        log.info(
+            "Applying two-level with batch-leve load balancing (olmoe lb) routers and top-p selection to the model..."
+        )
         if opts.top_p is None:
             raise ValueError("top_p must be specified for two-level topp batchlb loss model type.")
         if opts.max_document_expert_pool is None or opts.min_document_expert_pool is None:
@@ -348,9 +393,13 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             min_document_expert_pool=opts.min_document_expert_pool,
             eos_token_id=tokenizer_config.eos_token_id,
         )
-        model_config.block.feed_forward_moe.router = MoETwoLevelTopPBatchLBRouterConfig(**router_kwargs)
+        model_config.block.feed_forward_moe.router = MoETwoLevelTopPBatchLBRouterConfig(
+            **router_kwargs
+        )
     elif opts.model_type == "two-level_lb-batch_nomaskaux":
-        log.info("Applying two-level with batch-leve load balancing with no masking on aux loss routers to the model...")
+        log.info(
+            "Applying two-level with batch-leve load balancing with no masking on aux loss routers to the model..."
+        )
         if opts.document_expert_pool is None:
             raise ValueError("document_expert_pool must be specified for two-level model type.")
         router_kwargs = model_config.block.feed_forward_moe.router.as_dict(
@@ -361,9 +410,13 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             document_expert_pool=opts.document_expert_pool,
             eos_token_id=tokenizer_config.eos_token_id,
         )
-        model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBNoMaskAuxRouterConfig(**router_kwargs)
+        model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBNoMaskAuxRouterConfig(
+            **router_kwargs
+        )
     elif opts.model_type == "two-level_lb-batch_fullzloss":
-        log.info("Applying two-level with batch-leve load balancing (olmoe lb) and full zloss (even for unactivated experts, standard for olmoe) routers to the model...")
+        log.info(
+            "Applying two-level with batch-leve load balancing (olmoe lb) and full zloss (even for unactivated experts, standard for olmoe) routers to the model..."
+        )
         if opts.document_expert_pool is None:
             raise ValueError("document_expert_pool must be specified for two-level model type.")
         router_kwargs = model_config.block.feed_forward_moe.router.as_dict(
@@ -374,7 +427,9 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             document_expert_pool=opts.document_expert_pool,
             eos_token_id=tokenizer_config.eos_token_id,
         )
-        model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBFullZLossRouterConfig(**router_kwargs)
+        model_config.block.feed_forward_moe.router = MoETwoLevelBatchLBFullZLossRouterConfig(
+            **router_kwargs
+        )
     elif opts.model_type == "two-level_sampling_nolb":
         log.info("Applying two-level with sampling and no load balancing routers to the model...")
         if opts.document_expert_pool is None:
@@ -387,7 +442,9 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             document_expert_pool=opts.document_expert_pool,
             eos_token_id=tokenizer_config.eos_token_id,
         )
-        model_config.block.feed_forward_moe.router = MoETwoLevelSamplingNoLBRouterConfig(**router_kwargs)
+        model_config.block.feed_forward_moe.router = MoETwoLevelSamplingNoLBRouterConfig(
+            **router_kwargs
+        )
     elif opts.model_type == "mutual-info":
         log.info("Applying mutual info router to the model...")
         if opts.expert_cond_token_entropy_bias is None or opts.expert_uncond_entropy_bias is None:
@@ -527,9 +584,23 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                 + [
                     f"mt_mbpp_{lang}_gold_bpb_3shot"
                     for lang in [
-                        "haskell", "go", "python", "cpp", "javascript", "swift",
-                        "scala", "bash", "typescript", "c", "php", "rust",
-                        "csharp", "r", "ruby", "java", "matlab",
+                        "haskell",
+                        "go",
+                        "python",
+                        "cpp",
+                        "javascript",
+                        "swift",
+                        "scala",
+                        "bash",
+                        "typescript",
+                        "c",
+                        "php",
+                        "rust",
+                        "csharp",
+                        "r",
+                        "ruby",
+                        "java",
+                        "matlab",
                     ]
                 ],
                 tokenizer=tokenizer_config,
@@ -581,13 +652,25 @@ def parser_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("run_name", type=str, help="""The name of the run.""")
-    parser.add_argument("--save-folder", type=str, help="A local or remote directory to save checkpoints to.")
-    parser.add_argument("--work-dir", type=str, help="A local working directory for dataset preprocessing.")
+    parser.add_argument(
+        "--save-folder", type=str, help="A local or remote directory to save checkpoints to."
+    )
+    parser.add_argument(
+        "--work-dir", type=str, help="A local working directory for dataset preprocessing."
+    )
     parser.add_argument("--dry-run", action="store_true", help="Print the config and exit.")
     parser.add_argument("--model-type", type=str, help="Type of MoE model to use.")
-    parser.add_argument("--document-expert-pool", type=int, help="Number of experts for a specific document to choose top-k from")
-    parser.add_argument("--num_shared_experts", type=int, help="Number of shared experts that are always activated")
-    parser.add_argument("--num_shared_experts_pool", type=int, help="Number of shared experts to keep in the pool")
+    parser.add_argument(
+        "--document-expert-pool",
+        type=int,
+        help="Number of experts for a specific document to choose top-k from",
+    )
+    parser.add_argument(
+        "--num_shared_experts", type=int, help="Number of shared experts that are always activated"
+    )
+    parser.add_argument(
+        "--num_shared_experts_pool", type=int, help="Number of shared experts to keep in the pool"
+    )
     parser.add_argument("--expert_cond_token_entropy_bias", type=float)
     parser.add_argument("--expert_uncond_entropy_bias", type=float)
     parser.add_argument("--expert_uncond_lb_prob_bias", type=float)
@@ -598,9 +681,21 @@ def parser_args():
     parser.add_argument("--min_document_expert_pool", type=int)
     parser.add_argument("--shared_exp_lb_loss", type=float)
     parser.add_argument("--eval_document_expert_pool", type=int)
-    parser.add_argument("--lr", type=float, default=4e-4, help="Peak learning rate for CosWithWarmup.")
-    parser.add_argument("--num-tokens", type=int, required=True, help="Total training token budget (e.g. 10_000_000_000).")
-    parser.add_argument("--load-path", type=str, required=True, help="Path to base checkpoint (e.g. <ckpt>/model_and_optim). Model+optim weights are loaded; trainer state is NOT loaded.")
+    parser.add_argument(
+        "--lr", type=float, default=4e-4, help="Peak learning rate for CosWithWarmup."
+    )
+    parser.add_argument(
+        "--num-tokens",
+        type=int,
+        required=True,
+        help="Total training token budget (e.g. 10_000_000_000).",
+    )
+    parser.add_argument(
+        "--load-path",
+        type=str,
+        required=True,
+        help="Path to base checkpoint (e.g. <ckpt>/model_and_optim). Model+optim weights are loaded; trainer state is NOT loaded.",
+    )
     opts, overrides = parser.parse_known_args()
     return opts, overrides
 

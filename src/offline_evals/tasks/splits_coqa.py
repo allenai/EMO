@@ -78,11 +78,7 @@ class COQA_Full_Merged_Base(COQA_Full_Base):
                 .shuffle(seed=0)
                 .select(range(1000, len(self.dataset["train"])))
             )
-            val_dataset = (
-                self.dataset["train"]
-                .shuffle(seed=0)
-                .select(range(0, 1000))
-            )
+            val_dataset = self.dataset["train"].shuffle(seed=0).select(range(0, 1000))
             merged = concatenate_datasets([train_dataset, val_dataset]).shuffle(seed=0)
             self._training_docs = self._process_all_docs(merged)
         return self._training_docs

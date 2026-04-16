@@ -32,9 +32,6 @@ from src.hf_training.greedy_prune_layerwise import (
     _capture_layer_output,
     prune_moe_layer_inplace,
 )
-from src.hf_training.FlexOlmoNoQKNormPrenormForCausalLMDebug import (
-    FlexOlmoNoQKNormPrenormForCausalLMDebug,
-)
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -83,9 +80,9 @@ def greedy_prune_layerwise_variable(
         tokenizer.pad_token = tokenizer.eos_token
 
     num_layers = config.num_hidden_layers
-    assert len(keep_k_per_layer) == num_layers, (
-        f"keep_k_per_layer has length {len(keep_k_per_layer)} but model has {num_layers} layers"
-    )
+    assert (
+        len(keep_k_per_layer) == num_layers
+    ), f"keep_k_per_layer has length {len(keep_k_per_layer)} but model has {num_layers} layers"
     logger.info(f"Model has {num_layers} layers")
     logger.info(f"Per-layer keep-k schedule: {keep_k_per_layer}")
 
@@ -150,11 +147,13 @@ def greedy_prune_layerwise_variable(
         def make_capture_hook():
             def hook(module, input, output):
                 captured_logits.append(output[1].detach().cpu())
+
             return hook
 
         def make_early_exit_hook():
             def hook(module, input):
                 raise EarlyExit()
+
             return hook
 
         h_capture = layer.mlp.register_forward_hook(make_capture_hook())
@@ -178,9 +177,9 @@ def greedy_prune_layerwise_variable(
                 except EarlyExit:
                     pass
 
-            assert len(captured_logits) == 1, (
-                f"Expected exactly 1 captured logit tensor per batch, got {len(captured_logits)}"
-            )
+            assert (
+                len(captured_logits) == 1
+            ), f"Expected exactly 1 captured logit tensor per batch, got {len(captured_logits)}"
 
             logits = captured_logits[0]
             B, T = batch_inputs["attention_mask"].shape
@@ -276,7 +275,10 @@ def greedy_prune_layerwise_variable(
             actual_num_shared_experts_per_layer.append(0)
 
     min_keep_k = min(keep_k_per_layer)
-    if hasattr(model.config, "num_experts_per_tok") and model.config.num_experts_per_tok > min_keep_k:
+    if (
+        hasattr(model.config, "num_experts_per_tok")
+        and model.config.num_experts_per_tok > min_keep_k
+    ):
         model.config.num_experts_per_tok = min_keep_k
     model.config.num_experts = min_keep_k
     if hasattr(model.config, "num_local_experts"):

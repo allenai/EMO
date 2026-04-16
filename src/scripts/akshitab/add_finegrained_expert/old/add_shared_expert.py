@@ -35,7 +35,6 @@ import logging
 import os
 from typing import List
 
-
 from olmo_core.distributed.checkpoint import (
     load_model_and_optim_state,
     save_model_and_optim_state,

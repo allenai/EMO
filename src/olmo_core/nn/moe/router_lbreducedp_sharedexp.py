@@ -1,37 +1,20 @@
-import json
-import logging
-from abc import abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union, cast
+from typing import Optional, Tuple, Union
 
 import torch
 import torch.distributed as dist
-import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributed import DeviceMesh
-from torch.distributed.tensor import Replicate, Shard, distribute_tensor
-from torch.distributed.tensor.parallel import PrepareModuleInput, parallelize_module
 
 import olmo_core.ops.moe as ops
-from olmo_core.config import Config, DType, StrEnum
 from olmo_core.distributed.utils import (
-    _HiddenTensor,
-    distribute_like,
-    get_local_tensor,
-    hide_from_torch,
     is_distributed,
-    unhide_from_torch,
 )
 from olmo_core.exceptions import OLMoConfigurationError
 from olmo_core.nn.moe.router import (
     MoELinearRouter,
-    MoELoadBalancingLossGranularity,
-    MoERouter,
     MoERouterConfig,
     MoERouterGatingFunction,
-    MoERouterType,
 )
-from olmo_core.utils import get_default_device
 
 from .loss import MoELoadBalancingLossGranularity, load_balancing_loss, router_z_loss
 
@@ -47,10 +30,10 @@ class MoELinearLBReduceDPSharedExpRouter(MoELinearRouter):
     """
 
     def __init__(
-            self,
-            *,
-            num_shared_experts: int,
-            **kwargs,
+        self,
+        *,
+        num_shared_experts: int,
+        **kwargs,
     ):
         super().__init__(**kwargs)
 
@@ -86,12 +69,12 @@ class MoELinearLBReduceDPSharedExpRouter(MoELinearRouter):
         return expert_weights, expert_indices
 
     def forward(
-            self,
-            x: torch.Tensor,
-            *,
-            loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
-            padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
-            **kwargs,
+        self,
+        x: torch.Tensor,
+        *,
+        loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
+        padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
+        **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
         Given the input ``x`` of shape ``(B, S, d_model)``, compute the experts assignment.
@@ -104,9 +87,13 @@ class MoELinearLBReduceDPSharedExpRouter(MoELinearRouter):
 
         # make sure tp and cp are not enabled
         if self.tp_mesh is not None:
-            raise NotImplementedError("Tensor parallelism is not supported in MoELinearLBReduceDPSharedExpRouter.")
+            raise NotImplementedError(
+                "Tensor parallelism is not supported in MoELinearLBReduceDPSharedExpRouter."
+            )
         if self.cp_mesh is not None:
-            raise NotImplementedError("Context parallelism is not supported in MoELinearLBReduceDPSharedExpRouter.")
+            raise NotImplementedError(
+                "Context parallelism is not supported in MoELinearLBReduceDPSharedExpRouter."
+            )
 
         # shape: (batch_size, seq_len, d_model)
         x = self.jitter(x)
@@ -149,9 +136,7 @@ class MoELinearLBReduceDPSharedExpRouter(MoELinearRouter):
             # Histogram the expert ids to identify the number of items/tokens routed to each expert. This is ONLY USED in
             # the return values used for kernels to route tokens to their corresponding experts, NOT for loss computation
             # shape: (batch_size, seq_len, num_standard)
-            batched_batch_size_per_expert_routing = ops.batched_histc(
-                expert_indices, num_standard
-            )
+            batched_batch_size_per_expert_routing = ops.batched_histc(expert_indices, num_standard)
             # shape: (batch_size, num_standard)
             batched_batch_size_per_expert_routing = batched_batch_size_per_expert_routing.sum(dim=1)
             # shape: (num_standard,)
@@ -162,7 +147,9 @@ class MoELinearLBReduceDPSharedExpRouter(MoELinearRouter):
             # in torch.compile.
             if padding_mask is not None:
                 # Use padding_mask as weights so padding tokens contribute 0 to the histogram
-                weights = padding_mask.unsqueeze(-1).expand_as(expert_indices).to(expert_indices.dtype)
+                weights = (
+                    padding_mask.unsqueeze(-1).expand_as(expert_indices).to(expert_indices.dtype)
+                )
                 hist = torch.zeros(
                     (*expert_indices.shape[:-1], num_standard),
                     dtype=expert_indices.dtype,
@@ -180,7 +167,9 @@ class MoELinearLBReduceDPSharedExpRouter(MoELinearRouter):
             # prepare for custom metric
             if self.training:
                 # Count unique experts via histogram (avoids dynamic-shape torch.unique)
-                num_unique_experts = (batch_size_per_expert > 0).sum().item() + self.num_shared_experts
+                num_unique_experts = (
+                    batch_size_per_expert > 0
+                ).sum().item() + self.num_shared_experts
 
                 self._unique_experts_sum += num_unique_experts
                 self._num_batches_tracked += 1
@@ -218,15 +207,21 @@ class MoELinearLBReduceDPSharedExpRouter(MoELinearRouter):
                         scores = scores / scores.sum(dim=-1, keepdim=True)
 
                     # we now do reduction on the tot_batch_size_per_expert to get a dp-global lb loss (still not full global sinze we don't do across gradient accumulation steps)
-                    dp_global_batch_size_per_expert_routing = batch_size_per_expert_routing.clone()  # we clone to not interfere with logging or other routing stuff
+                    dp_global_batch_size_per_expert_routing = (
+                        batch_size_per_expert_routing.clone()
+                    )  # we clone to not interfere with logging or other routing stuff
                     dp_global_loss_div_factor = loss_div_factor.clone()
 
                     if is_distributed():
-                        dist.all_reduce(dp_global_batch_size_per_expert_routing, op=dist.ReduceOp.SUM)
+                        dist.all_reduce(
+                            dp_global_batch_size_per_expert_routing, op=dist.ReduceOp.SUM
+                        )
                         dist.all_reduce(dp_global_loss_div_factor, op=dist.ReduceOp.SUM)
 
                     # collect all non-zero entries of the dp_global_batch_size_per_expert_routing (add shared experts since they are always active)
-                    self._reducedp_unique_experts_sum += (dp_global_batch_size_per_expert_routing > 0).sum().item() + self.num_shared_experts
+                    self._reducedp_unique_experts_sum += (
+                        dp_global_batch_size_per_expert_routing > 0
+                    ).sum().item() + self.num_shared_experts
 
                     lb_loss = load_balancing_loss(
                         num_experts=num_standard,  # LB loss over non-shared experts only
@@ -235,7 +230,7 @@ class MoELinearLBReduceDPSharedExpRouter(MoELinearRouter):
                         # expert_scores=valid_scores,
                         batch_size_per_expert=dp_global_batch_size_per_expert_routing,
                         # batch_size_per_expert=batch_size_per_expert,
-                        batched_batch_size_per_expert=batched_batch_size_per_expert, # we don't even use this in local_batch granularity, but we pass it anyway
+                        batched_batch_size_per_expert=batched_batch_size_per_expert,  # we don't even use this in local_batch granularity, but we pass it anyway
                         granularity=self.lb_loss_granularity,
                         loss_div_factor=dp_global_loss_div_factor,
                         tp_mesh=self.tp_mesh,
@@ -263,9 +258,13 @@ class MoELinearLBReduceDPSharedExpRouter(MoELinearRouter):
 
             if self.batch_size_per_expert.shape[-1] != batch_size_per_expert.shape[-1]:
                 # make sure that the shared expert positions are zero, since it means the parameter was reset
-                extra_counts = self.batch_size_per_expert[batch_size_per_expert.shape[-1]:]
-                assert torch.all(extra_counts == 0), f"Expected extra counts to be zero, but got {extra_counts}"
-                self.batch_size_per_expert = self.batch_size_per_expert[:batch_size_per_expert.shape[-1]]
+                extra_counts = self.batch_size_per_expert[batch_size_per_expert.shape[-1] :]
+                assert torch.all(
+                    extra_counts == 0
+                ), f"Expected extra counts to be zero, but got {extra_counts}"
+                self.batch_size_per_expert = self.batch_size_per_expert[
+                    : batch_size_per_expert.shape[-1]
+                ]
             self.batch_size_per_expert += batch_size_per_expert
             if self.bias_gamma is not None:
                 assert self.score_bias_batch_size_per_expert is not None
@@ -274,15 +273,17 @@ class MoELinearLBReduceDPSharedExpRouter(MoELinearRouter):
         # Append shared experts: weight=1.0, indices = last num_shared_experts experts
         if self.num_shared_experts > 0:
             expert_weights = F.pad(expert_weights, (0, self.num_shared_experts), value=1.0)
-            shared_expert_indices = torch.arange(
-                num_standard, self.num_experts, device=expert_indices.device
-            ).view(1, 1, self.num_shared_experts).expand(
-                expert_indices.size(0), expert_indices.size(1), self.num_shared_experts
+            shared_expert_indices = (
+                torch.arange(num_standard, self.num_experts, device=expert_indices.device)
+                .view(1, 1, self.num_shared_experts)
+                .expand(expert_indices.size(0), expert_indices.size(1), self.num_shared_experts)
             )
             expert_indices = torch.cat([expert_indices, shared_expert_indices], dim=-1)
             # Shared experts are always active for all tokens
             batch_size_per_expert_routing = F.pad(
-                batch_size_per_expert_routing, (0, self.num_shared_experts), value=x.size(0) * x.size(1)
+                batch_size_per_expert_routing,
+                (0, self.num_shared_experts),
+                value=x.size(0) * x.size(1),
             )
 
         return expert_weights, expert_indices, batch_size_per_expert_routing, aux_loss

@@ -27,7 +27,9 @@ def count_params_by_pattern(model_config, freeze_patterns, expert_mask_indices=N
         total_params += n
 
         # Check if frozen by freeze_params patterns
-        is_frozen = any(re.fullmatch(pattern.replace("*", ".*"), name) for pattern in freeze_patterns)
+        is_frozen = any(
+            re.fullmatch(pattern.replace("*", ".*"), name) for pattern in freeze_patterns
+        )
         if is_frozen:
             frozen_params += n
             continue
@@ -41,7 +43,7 @@ def count_params_by_pattern(model_config, freeze_patterns, expert_mask_indices=N
                 num_experts = model_config.block.feed_forward_moe.num_experts
                 expert_size = n // num_experts
                 active = len(expert_mask_indices) * expert_size
-                masked_params += (n - active)
+                masked_params += n - active
                 continue
 
         trained_params += n
@@ -57,8 +59,9 @@ def count_params_by_pattern(model_config, freeze_patterns, expert_mask_indices=N
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config-path", type=str, required=True,
-                        help="Path to checkpoint dir with config.json")
+    parser.add_argument(
+        "--config-path", type=str, required=True, help="Path to checkpoint dir with config.json"
+    )
     args = parser.parse_args()
 
     config_path = os.path.join(args.config_path, "config.json")
@@ -67,8 +70,10 @@ def main():
     model_config = TransformerConfig.from_dict(config["model"])
 
     num_experts = model_config.block.feed_forward_moe.num_experts
-    print(f"Model: {num_experts} experts, num_params={model_config.num_params:,}, "
-          f"num_non_embedding_params={model_config.num_non_embedding_params:,}")
+    print(
+        f"Model: {num_experts} experts, num_params={model_config.num_params:,}, "
+        f"num_non_embedding_params={model_config.num_non_embedding_params:,}"
+    )
     print()
 
     configs = {

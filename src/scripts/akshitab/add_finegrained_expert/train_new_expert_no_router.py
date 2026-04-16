@@ -197,7 +197,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             "blocks.*.attention*",
             "blocks.*.feed_forward_norm.*",
             "lm_head.*",
-            "blocks.*.feed_forward_moe.router.*"
+            "blocks.*.feed_forward_moe.router.*",
         ],
         # NOTE: Hook-based partial_freeze doesn't work with torch.compile.
         # Use FrozenExpertGradientMaskCallback instead (added to trainer_config).

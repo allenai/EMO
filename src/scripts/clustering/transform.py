@@ -46,6 +46,7 @@ DERIVE_REGISTRY = {}
 
 def register_derive(name: str, description: str, output_file: str):
     """Decorator to register a derivation function."""
+
     def decorator(fn):
         DERIVE_REGISTRY[name] = {
             "fn": fn,
@@ -53,6 +54,7 @@ def register_derive(name: str, description: str, output_file: str):
             "output_file": output_file,
         }
         return fn
+
     return decorator
 
 
@@ -70,13 +72,14 @@ def derive_probs(data_dir: str, info: dict) -> np.ndarray:
     probs = softmax(reshaped, axis=2)  # softmax over experts per layer
     result = probs.reshape(N, -1).astype(np.float16)
 
-    logger.info(f"  Derived probs: shape={result.shape}, "
-                f"per-layer sums ~{probs[0].sum(axis=1).mean():.4f}")
+    logger.info(
+        f"  Derived probs: shape={result.shape}, "
+        f"per-layer sums ~{probs[0].sum(axis=1).mean():.4f}"
+    )
     return result
 
 
-@register_derive("topk_binary", "Binary top-k expert mask per token",
-                  "embeddings_topk_binary.npy")
+@register_derive("topk_binary", "Binary top-k expert mask per token", "embeddings_topk_binary.npy")
 def derive_topk_binary(data_dir: str, info: dict) -> np.ndarray:
     """Binary mask of top-k experts per layer per token."""
     logits = np.load(os.path.join(data_dir, "embeddings_logits.npy")).astype(np.float32)
@@ -92,14 +95,16 @@ def derive_topk_binary(data_dir: str, info: dict) -> np.ndarray:
     np.put_along_axis(binary, top_indices, 1, axis=2)
     result = binary.reshape(N, -1)
 
-    logger.info(f"  Derived topk_binary: shape={result.shape}, "
-                f"top_k={routed_top_k}, density={result.mean():.4f}")
+    logger.info(
+        f"  Derived topk_binary: shape={result.shape}, "
+        f"top_k={routed_top_k}, density={result.mean():.4f}"
+    )
     return result
 
 
-@register_derive("doc_probs",
-                  "Document-level mean softmax probabilities",
-                  "embeddings_doc_probs.npy")
+@register_derive(
+    "doc_probs", "Document-level mean softmax probabilities", "embeddings_doc_probs.npy"
+)
 def derive_doc_probs(data_dir: str, info: dict) -> np.ndarray:
     """Average token-level probs per document."""
     probs_path = os.path.join(data_dir, "embeddings_probs.npy")
@@ -110,18 +115,16 @@ def derive_doc_probs(data_dir: str, info: dict) -> np.ndarray:
     return _aggregate_to_docs(data_dir, probs_path, np.float16)
 
 
-@register_derive("doc_logits",
-                  "Document-level mean logits",
-                  "embeddings_doc_logits.npy")
+@register_derive("doc_logits", "Document-level mean logits", "embeddings_doc_logits.npy")
 def derive_doc_logits(data_dir: str, info: dict) -> np.ndarray:
     """Average token-level logits per document."""
     logits_path = os.path.join(data_dir, "embeddings_logits.npy")
     return _aggregate_to_docs(data_dir, logits_path, np.float16)
 
 
-@register_derive("doc_topk_freq",
-                  "Document-level top-k selection frequency",
-                  "embeddings_doc_topk_freq.npy")
+@register_derive(
+    "doc_topk_freq", "Document-level top-k selection frequency", "embeddings_doc_topk_freq.npy"
+)
 def derive_doc_topk_freq(data_dir: str, info: dict) -> np.ndarray:
     """Average token-level topk_binary per document = selection frequency."""
     binary_path = os.path.join(data_dir, "embeddings_topk_binary.npy")
@@ -160,9 +163,11 @@ PREPROCESS_REGISTRY = {}
 
 def register_preprocess(name: str, description: str):
     """Decorator to register a preprocessing transform."""
+
     def decorator(fn):
         PREPROCESS_REGISTRY[name] = {"fn": fn, "description": description}
         return fn
+
     return decorator
 
 
@@ -174,6 +179,7 @@ def preprocess_identity(emb: np.ndarray, info: dict) -> np.ndarray:
 @register_preprocess("l2", "L2 normalize each vector")
 def preprocess_l2(emb: np.ndarray, info: dict) -> np.ndarray:
     from sklearn.preprocessing import normalize
+
     return normalize(emb, norm="l2")
 
 
@@ -193,8 +199,10 @@ def _find_variance_cutoff_k(centered: np.ndarray, variance: float = 0.95) -> int
         rng = np.random.default_rng(42)
         idx = rng.choice(N, _VARIANCE_CUTOFF_SAMPLE_SIZE, replace=False)
         sample = centered[idx]
-        logger.info(f"  Variance-cutoff PCA on {_VARIANCE_CUTOFF_SAMPLE_SIZE:,}-row subsample "
-                    f"(full data has {N:,} rows)")
+        logger.info(
+            f"  Variance-cutoff PCA on {_VARIANCE_CUTOFF_SAMPLE_SIZE:,}-row subsample "
+            f"(full data has {N:,} rows)"
+        )
     else:
         sample = centered
 
@@ -210,6 +218,7 @@ def _find_variance_cutoff_k(centered: np.ndarray, variance: float = 0.95) -> int
 @register_preprocess("mean_pca", "Mean-center then PCA (95% variance)")
 def preprocess_mean_pca(emb: np.ndarray, info: dict) -> np.ndarray:
     from sklearn.decomposition import PCA
+
     centered = emb - emb.mean(axis=0, keepdims=True)
     k = _find_variance_cutoff_k(centered)
     pca_k = PCA(n_components=k, svd_solver="randomized", random_state=42)
@@ -220,6 +229,7 @@ def preprocess_mean_pca(emb: np.ndarray, info: dict) -> np.ndarray:
 def preprocess_mean_pca_l2(emb: np.ndarray, info: dict) -> np.ndarray:
     from sklearn.decomposition import PCA
     from sklearn.preprocessing import normalize
+
     centered = emb - emb.mean(axis=0, keepdims=True)
     k = _find_variance_cutoff_k(centered)
     pca_k = PCA(n_components=k, svd_solver="randomized", random_state=42)
@@ -231,8 +241,7 @@ def apply_preprocess(emb: np.ndarray, name: str, info: dict) -> np.ndarray:
     """Apply a named preprocessing transform."""
     if name not in PREPROCESS_REGISTRY:
         raise ValueError(
-            f"Unknown preprocess '{name}'. "
-            f"Available: {', '.join(sorted(PREPROCESS_REGISTRY))}"
+            f"Unknown preprocess '{name}'. " f"Available: {', '.join(sorted(PREPROCESS_REGISTRY))}"
         )
     logger.info(f"Preprocessing: {name}")
     return PREPROCESS_REGISTRY[name]["fn"](emb, info)
@@ -245,14 +254,14 @@ def apply_preprocess(emb: np.ndarray, name: str, info: dict) -> np.ndarray:
 # Maps name -> filename for all possible embeddings (raw + derived)
 EMBEDDING_FILES = {
     # Raw (from extract.py)
-    "logits":           "embeddings_logits.npy",
+    "logits": "embeddings_logits.npy",
     # Token-level derived
-    "probs":            "embeddings_probs.npy",
-    "topk_binary":      "embeddings_topk_binary.npy",
+    "probs": "embeddings_probs.npy",
+    "topk_binary": "embeddings_topk_binary.npy",
     # Document-level derived
-    "doc_logits":       "embeddings_doc_logits.npy",
-    "doc_probs":        "embeddings_doc_probs.npy",
-    "doc_topk_freq":    "embeddings_doc_topk_freq.npy",
+    "doc_logits": "embeddings_doc_logits.npy",
+    "doc_probs": "embeddings_doc_probs.npy",
+    "doc_topk_freq": "embeddings_doc_topk_freq.npy",
 }
 
 
@@ -267,8 +276,7 @@ def load_embedding(data_dir: str, name: str) -> tuple:
     """
     if name not in EMBEDDING_FILES:
         raise ValueError(
-            f"Unknown embedding '{name}'. "
-            f"Available: {', '.join(sorted(EMBEDDING_FILES))}"
+            f"Unknown embedding '{name}'. " f"Available: {', '.join(sorted(EMBEDDING_FILES))}"
         )
 
     emb_path = os.path.join(data_dir, EMBEDDING_FILES[name])
@@ -294,13 +302,15 @@ def load_embedding(data_dir: str, name: str) -> tuple:
         meta_path = os.path.join(data_dir, "metadata_tokens.jsonl.gz")
 
     import gzip
+
     meta = []
     with gzip.open(meta_path, "rt") as f:
         for line in f:
             meta.append(json.loads(line))
 
-    assert emb.shape[0] == len(meta), \
-        f"Embedding rows ({emb.shape[0]}) != metadata rows ({len(meta)})"
+    assert emb.shape[0] == len(
+        meta
+    ), f"Embedding rows ({emb.shape[0]}) != metadata rows ({len(meta)})"
 
     logger.info(f"  shape={emb.shape}, range=[{emb.min():.4f}, {emb.max():.4f}]")
     return emb, meta, info
@@ -310,17 +320,24 @@ def load_embedding(data_dir: str, name: str) -> tuple:
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Derive embeddings from logits and preprocess for clustering"
     )
-    parser.add_argument("--data-dir", type=str,
-                        help="Directory containing embeddings_logits.npy and info.json")
-    parser.add_argument("--derive", type=str, default=None,
-                        choices=sorted(DERIVE_REGISTRY.keys()),
-                        help="Derivation to compute from raw logits")
-    parser.add_argument("--list", action="store_true",
-                        help="List available derivations and preprocessors")
+    parser.add_argument(
+        "--data-dir", type=str, help="Directory containing embeddings_logits.npy and info.json"
+    )
+    parser.add_argument(
+        "--derive",
+        type=str,
+        default=None,
+        choices=sorted(DERIVE_REGISTRY.keys()),
+        help="Derivation to compute from raw logits",
+    )
+    parser.add_argument(
+        "--list", action="store_true", help="List available derivations and preprocessors"
+    )
     args = parser.parse_args()
 
     if args.list:

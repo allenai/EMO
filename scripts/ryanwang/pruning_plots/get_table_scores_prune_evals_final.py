@@ -36,15 +36,16 @@ PRUNEMODE_SUFFIXES: Dict[str, str] = {
 
 # Variant definitions: just the keepk part (prunemode is added automatically).
 KEEPK_VARIANTS_ALL = [
-    {"keepk_suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1",   "label": "(keepk 8)"},
-    {"keepk_suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1",  "label": "(keepk 32)"},
-    {"keepk_suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1",  "label": "(keepk 64)"},
+    {"keepk_suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1", "label": "(keepk 8)"},
+    {"keepk_suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keepk 32)"},
+    {"keepk_suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1", "label": "(keepk 64)"},
     {"keepk_suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1", "label": "(keepk 128)"},
 ]
 
 KEEPK_VARIANTS_32_ONLY = [
     {"keepk_suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
 ]
+
 
 # Build "variants" in the old format for backward compat (used by plots, row ordering).
 # These use the layerwise suffix only — the ep lookup is done in collect_table.
@@ -53,6 +54,7 @@ def _build_legacy_variants(keepk_variants):
         {"suffix": v["keepk_suffix"] + PRUNEMODE_SUFFIXES["lw"], "label": v["label"]}
         for v in keepk_variants
     ]
+
 
 MODEL_SPECS: Dict[str, Dict[str, object]] = {
     "dense_1b_lr-4e-3_0213step30995-hf": {
@@ -165,8 +167,7 @@ GEN5_METRICS = ["f1", "exact_match", "recall", "primary_score"]
 DEFAULT_METRICS = ["softloss_corr", "acc_per_byte", "acc_raw", "primary_score"]
 
 TASK_SPECS: Dict[str, List[str]] = {
-    t: list(DEFAULT_METRICS)
-    for t in MC9_TASKS + MMLU_MERGED_TASKS + MMLU_PRO_MERGED_TASKS
+    t: list(DEFAULT_METRICS) for t in MC9_TASKS + MMLU_MERGED_TASKS + MMLU_PRO_MERGED_TASKS
 }
 TASK_SPECS.update({t: list(GSM8K_METRICS) for t in GSM8K_TASKS})
 TASK_SPECS.update({t: list(GEN5_METRICS) for t in GEN5_ALL_TASKS})
@@ -284,7 +285,11 @@ def _select_checkpoint(results_dir: Path, mode: str) -> Optional[Path]:
             step = int(ckpt_dir.name.replace("checkpoint-", ""))
         except ValueError:
             continue
-        if best_step is None or (mode == "last" and step > best_step) or (mode == "first" and step < best_step):
+        if (
+            best_step is None
+            or (mode == "last" and step > best_step)
+            or (mode == "first" and step < best_step)
+        ):
             best_step = step
             best_dir = ckpt_dir
     return best_dir
@@ -405,9 +410,9 @@ def add_group_avg_columns(df: pd.DataFrame) -> pd.DataFrame:
 
     # (avg_base_name, full_task_list, exclude_set)
     groups: List[Tuple[str, List[str], List[str]]] = [
-        ("mc9_avg",                      MC9_TASKS,             []),
-        ("gen5_avg",                     GEN5_TASKS,            []),
-        ("mmlu_merged_avg_no_other",     MMLU_MERGED_TASKS,     ["mmlu_merged_other"]),
+        ("mc9_avg", MC9_TASKS, []),
+        ("gen5_avg", GEN5_TASKS, []),
+        ("mmlu_merged_avg_no_other", MMLU_MERGED_TASKS, ["mmlu_merged_other"]),
         ("mmlu_pro_merged_avg_no_other", MMLU_PRO_MERGED_TASKS, ["mmlu_pro_merged_other"]),
     ]
     for avg_base, group_tasks, exclude in groups:
@@ -503,12 +508,13 @@ def run_one(
 ) -> None:
     base_output_dir = (args.output_dir / output_subdir).resolve()
     base_output_dir.mkdir(parents=True, exist_ok=True)
-    print(f"\n=== Generating tables for checkpoint_mode={checkpoint_mode!r} → {base_output_dir} ===\n")
+    print(
+        f"\n=== Generating tables for checkpoint_mode={checkpoint_mode!r} → {base_output_dir} ===\n"
+    )
 
     for metric_key in sorted(all_metrics):
         relevant_tasks = [
-            t for t in selected_tasks
-            if metric_key in (metric_override or TASK_SPECS.get(t, []))
+            t for t in selected_tasks if metric_key in (metric_override or TASK_SPECS.get(t, []))
         ]
         if not relevant_tasks:
             continue
@@ -539,8 +545,11 @@ def run_one(
 
         def _avg_cols(avg_base: str) -> List[str]:
             """Get the average columns for each prunemode."""
-            return [f"{avg_base} ({pm})" for pm in PRUNEMODE_SUFFIXES
-                    if f"{avg_base} ({pm})" in df.columns]
+            return [
+                f"{avg_base} ({pm})"
+                for pm in PRUNEMODE_SUFFIXES
+                if f"{avg_base} ({pm})" in df.columns
+            ]
 
         # --- Define output slices ---
         agg_cols = (
@@ -581,9 +590,7 @@ def run_one(
                 slice_df.to_csv(out_path, sep="\t", float_format="%.4f")
             elif args.format == "markdown":
                 out_path = metric_dir / f"{slice_name}.md"
-                out_path.write_text(
-                    slice_df.to_markdown(floatfmt=".4f") + "\n", encoding="utf-8"
-                )
+                out_path.write_text(slice_df.to_markdown(floatfmt=".4f") + "\n", encoding="utf-8")
 
             print(f"[INFO] Saved {out_path}")
             print(slice_df.to_string(float_format=lambda x: f"{x:.4f}"))

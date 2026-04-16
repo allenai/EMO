@@ -1,4 +1,5 @@
 from typing import Any, Optional, Union
+
 import torch
 import torch.nn as nn
 from transformers import Trainer
@@ -31,7 +32,9 @@ class TrainerDebug(Trainer):
         Subclass and override for custom behavior. If you are not using `num_items_in_batch` when computing your loss,
         make sure to overwrite `self.model_accepts_loss_kwargs` to `False`. Otherwise, the loss calculating might be slightly inaccurate when performing gradient accumulation.
         """
-        if (self.label_smoother is not None or self.compute_loss_func is not None) and "labels" in inputs:
+        if (
+            self.label_smoother is not None or self.compute_loss_func is not None
+        ) and "labels" in inputs:
             labels = inputs.pop("labels")
         else:
             labels = None

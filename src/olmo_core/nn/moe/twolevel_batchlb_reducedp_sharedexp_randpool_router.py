@@ -1,38 +1,19 @@
-import json
-import logging
-from abc import abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union, cast
+from typing import Optional, Tuple, Union
 
 import torch
 import torch.distributed as dist
-import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributed import DeviceMesh
-from torch.distributed.tensor import Replicate, Shard, distribute_tensor
-from torch.distributed.tensor.parallel import PrepareModuleInput, parallelize_module
 
 import olmo_core.ops.moe as ops
-from olmo_core.config import Config, DType, StrEnum
 from olmo_core.distributed.utils import (
-    _HiddenTensor,
-    distribute_like,
-    get_local_tensor,
-    hide_from_torch,
     is_distributed,
-    unhide_from_torch,
 )
 from olmo_core.exceptions import OLMoConfigurationError
 from olmo_core.nn.moe.router import (
-    MoELinearRouter,
-    MoELoadBalancingLossGranularity,
-    MoERouter,
-    MoERouterConfig,
     MoERouterGatingFunction,
-    MoERouterType,
 )
 from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
-from olmo_core.utils import get_default_device
 
 from .loss import MoELoadBalancingLossGranularity, load_balancing_loss, router_z_loss
 
@@ -45,20 +26,20 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
     """
 
     def __init__(
-            self,
-            *,
-            dtype: torch.dtype = torch.float32,
-            init_device: str = "cpu",
-            min_document_expert_pool: int,
-            max_document_expert_pool: int,
-            eval_document_expert_pool: Optional[int] = None,
-            eos_token_id: int,
-            num_shared_experts: int,
-            num_forced_experts: int = 0,
-            extension_finetune_mode: bool = False,
-            extension_finetune_top_e: int = 0,
-            extension_finetune_detach_router: bool = False,
-            **kwargs,
+        self,
+        *,
+        dtype: torch.dtype = torch.float32,
+        init_device: str = "cpu",
+        min_document_expert_pool: int,
+        max_document_expert_pool: int,
+        eval_document_expert_pool: Optional[int] = None,
+        eos_token_id: int,
+        num_shared_experts: int,
+        num_forced_experts: int = 0,
+        extension_finetune_mode: bool = False,
+        extension_finetune_top_e: int = 0,
+        extension_finetune_detach_router: bool = False,
+        **kwargs,
     ):
         # Pass max_document_expert_pool as document_expert_pool to satisfy parent constructor
         # Pop document_expert_pool from kwargs if present (from config's as_dict) to avoid duplicate
@@ -73,7 +54,11 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
 
         self.min_document_expert_pool = min_document_expert_pool
         self.max_document_expert_pool = max_document_expert_pool
-        self.eval_document_expert_pool = eval_document_expert_pool if eval_document_expert_pool is not None else (min_document_expert_pool + max_document_expert_pool) // 2
+        self.eval_document_expert_pool = (
+            eval_document_expert_pool
+            if eval_document_expert_pool is not None
+            else (min_document_expert_pool + max_document_expert_pool) // 2
+        )
 
         # the eos token id
         if eos_token_id is None:
@@ -82,7 +67,9 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
 
         # check that the number of shared experts is less than the top_k
         if num_shared_experts > self.top_k:
-            raise OLMoConfigurationError(f"num_shared_experts ({num_shared_experts}) must be less than or equal to top_k ({self.top_k})")
+            raise OLMoConfigurationError(
+                f"num_shared_experts ({num_shared_experts}) must be less than or equal to top_k ({self.top_k})"
+            )
 
         self.num_shared_experts = num_shared_experts
         self.num_choose_experts = self.top_k - self.num_shared_experts
@@ -111,7 +98,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
         self._detach_mask: Optional[torch.Tensor] = None
 
     def get_top_k(self, scores: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        """ We override the get_top_k to use self.num_choose_experts instead of self.top_k, since we will always activate self.num_shared_experts"""
+        """We override the get_top_k to use self.num_choose_experts instead of self.top_k, since we will always activate self.num_shared_experts"""
         expert_weights: torch.Tensor
         expert_indices: torch.Tensor
         if self.bias_gamma is None:
@@ -128,7 +115,9 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
             expert_weights = scores.gather(-1, expert_indices)
 
         if self.uniform_expert_assignment:
-            raise NotImplementedError("Uniform expert assignment is not supported in MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter.")
+            raise NotImplementedError(
+                "Uniform expert assignment is not supported in MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter."
+            )
 
         return expert_weights, expert_indices
 
@@ -162,7 +151,9 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
         logits = self.get_expert_logits(x).float()
 
         # we remove the last self.num_shared_experts experts (remove from end in case indexing gets weird later?)
-        logits = logits[:, :, :self.num_experts - self.num_shared_experts] # shape: (batch_size, seq_len, num_experts - num_shared_experts)
+        logits = logits[
+            :, :, : self.num_experts - self.num_shared_experts
+        ]  # shape: (batch_size, seq_len, num_experts - num_shared_experts)
         logits_mask = torch.zeros_like(logits, dtype=torch.bool, device=logits.device)
 
         document_boundaries_cpu = []
@@ -181,8 +172,11 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
         # is in the token's document's top-e set. Filled inside the per-doc loop below.
         if _ef_active:
             in_top_e = torch.zeros(
-                x.size(0), x.size(1), num_non_shared_experts,
-                dtype=torch.bool, device=x.device,
+                x.size(0),
+                x.size(1),
+                num_non_shared_experts,
+                dtype=torch.bool,
+                device=x.device,
             )
 
         for seq_idx in range(x.size(0)):
@@ -192,9 +186,13 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
                 if end <= start:
                     start = end
                     continue
-                sequence_logits = logits[seq_idx, start:end, :]  # shape: (doc_len, num_experts - num_shared_experts)
+                sequence_logits = logits[
+                    seq_idx, start:end, :
+                ]  # shape: (doc_len, num_experts - num_shared_experts)
                 # calculate the softmax over the experts
-                expert_probs = F.softmax(sequence_logits, dim=-1)  # shape: (doc_len, num_experts - num_shared_experts)
+                expert_probs = F.softmax(
+                    sequence_logits, dim=-1
+                )  # shape: (doc_len, num_experts - num_shared_experts)
 
                 # get the entropy over experts per token
                 token_entropies = -torch.sum(
@@ -205,7 +203,9 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
                 doc_entropy_count += 1
 
                 # take the sum across the document
-                document_expert_probs = expert_probs.sum(dim=0)  # shape: (num_experts - num_shared_experts,)
+                document_expert_probs = expert_probs.sum(
+                    dim=0
+                )  # shape: (num_experts - num_shared_experts,)
 
                 # Record per-doc top-e for extension_finetune_mode before any pool-sampling control flow
                 # (some branches below early-`continue`, but top-e still applies to those docs).
@@ -289,7 +289,9 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
         with torch.no_grad():
             # Histogram the expert ids to identify the number of items/tokens routed to each expert.
             # shape: (batch_size, seq_len, num_experts - num_shared_experts)
-            tot_batched_batch_size_per_expert = ops.batched_histc(expert_indices, self.num_experts - self.num_shared_experts)
+            tot_batched_batch_size_per_expert = ops.batched_histc(
+                expert_indices, self.num_experts - self.num_shared_experts
+            )
             # shape: (batch_size, num_experts - num_shared_experts)
             tot_batched_batch_size_per_expert = tot_batched_batch_size_per_expert.sum(dim=1)
             # shape: (num_experts - num_shared_experts,)
@@ -300,7 +302,9 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
 
                 # Update unique experts metric.
                 unique_experts = torch.unique(valid_expert_indices)
-                num_unique_experts = unique_experts.numel() + self.num_shared_experts # we add the shared experts since they are always active
+                num_unique_experts = (
+                    unique_experts.numel() + self.num_shared_experts
+                )  # we add the shared experts since they are always active
 
                 self._unique_experts_sum += num_unique_experts
                 self._num_batches_tracked += 1
@@ -326,7 +330,9 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
                         scores = scores / scores.sum(dim=-1, keepdim=True)
 
                     # we now do reduction on the tot_batch_size_per_expert to get a dp-global lb loss (still not full global sinze we don't do across gradient accumulation steps)
-                    dp_global_tot_batch_size_per_expert = tot_batch_size_per_expert.clone() # we clone to not interfere with logging or other routing stuff
+                    dp_global_tot_batch_size_per_expert = (
+                        tot_batch_size_per_expert.clone()
+                    )  # we clone to not interfere with logging or other routing stuff
                     dp_global_loss_div_factor = loss_div_factor.clone()
 
                     if is_distributed():
@@ -334,7 +340,9 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
                         dist.all_reduce(dp_global_loss_div_factor, op=dist.ReduceOp.SUM)
 
                     # collect all non-zero entries of the dp_global_tot_batch_size_per_expert
-                    self._reducedp_unique_experts_sum += (dp_global_tot_batch_size_per_expert > 0).sum().item() + self.num_shared_experts # we add the shared experts since they are always active
+                    self._reducedp_unique_experts_sum += (
+                        dp_global_tot_batch_size_per_expert > 0
+                    ).sum().item() + self.num_shared_experts  # we add the shared experts since they are always active
 
                     # extension_finetune_detach_router: cut LB-loss gradient path into router rows
                     # for non-top-e experts by detaching those columns of the scores tensor.
@@ -345,11 +353,12 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
                         scores_for_lb = scores
 
                     lb_loss = load_balancing_loss(
-                        num_experts=self.num_experts - self.num_shared_experts, # we only calculate the load balancing loss over the non-shared experts
-                        top_k=self.num_choose_experts, # we only choose self.num_choose_experts
+                        num_experts=self.num_experts
+                        - self.num_shared_experts,  # we only calculate the load balancing loss over the non-shared experts
+                        top_k=self.num_choose_experts,  # we only choose self.num_choose_experts
                         expert_scores=scores_for_lb,
                         batch_size_per_expert=dp_global_tot_batch_size_per_expert,
-                        batched_batch_size_per_expert=tot_batched_batch_size_per_expert, # this is not used, so we don't bother reducing it
+                        batched_batch_size_per_expert=tot_batched_batch_size_per_expert,  # this is not used, so we don't bother reducing it
                         granularity=self.lb_loss_granularity,
                         loss_div_factor=dp_global_loss_div_factor,
                         tp_mesh=self.tp_mesh,
@@ -386,9 +395,13 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
 
             if self.batch_size_per_expert.shape[-1] != tot_batch_size_per_expert.shape[-1]:
                 # make sure that the shared expert positions are zero, since it means the parameter was reset
-                extra_counts = self.batch_size_per_expert[tot_batch_size_per_expert.shape[-1]:]
-                assert torch.all(extra_counts == 0), f"Expected extra counts to be zero, but got {extra_counts}"
-                self.batch_size_per_expert = self.batch_size_per_expert[:tot_batch_size_per_expert.shape[-1]]
+                extra_counts = self.batch_size_per_expert[tot_batch_size_per_expert.shape[-1] :]
+                assert torch.all(
+                    extra_counts == 0
+                ), f"Expected extra counts to be zero, but got {extra_counts}"
+                self.batch_size_per_expert = self.batch_size_per_expert[
+                    : tot_batch_size_per_expert.shape[-1]
+                ]
             self.batch_size_per_expert += tot_batch_size_per_expert
             if self.bias_gamma is not None:
                 assert self.score_bias_batch_size_per_expert is not None
@@ -396,12 +409,24 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
 
         # in the end, we add on the shared experts to both expert_weights and expert_indices
         if self.num_shared_experts > 0:
-            expert_weights = F.pad(expert_weights, (0, self.num_shared_experts), value=1.0) # we set the weights of the shared experts to 1 since they are always active
+            expert_weights = F.pad(
+                expert_weights, (0, self.num_shared_experts), value=1.0
+            )  # we set the weights of the shared experts to 1 since they are always active
             # we set the indices of the shared experts to the last num_shared_experts indices since we removed those from the logits earlier
-            shared_expert_indices = torch.arange(self.num_experts - self.num_shared_experts, self.num_experts, device=expert_indices.device).view(1, 1, self.num_shared_experts).expand(expert_indices.size(0), expert_indices.size(1), self.num_shared_experts)
+            shared_expert_indices = (
+                torch.arange(
+                    self.num_experts - self.num_shared_experts,
+                    self.num_experts,
+                    device=expert_indices.device,
+                )
+                .view(1, 1, self.num_shared_experts)
+                .expand(expert_indices.size(0), expert_indices.size(1), self.num_shared_experts)
+            )
             expert_indices = torch.cat([expert_indices, shared_expert_indices], dim=-1)
             # we also set tot_batch_size_per_expert for the shared experts to be the batch size since they are always active
-            tot_batch_size_per_expert = F.pad(tot_batch_size_per_expert, (0, self.num_shared_experts), value=x.size(0) * x.size(1))
+            tot_batch_size_per_expert = F.pad(
+                tot_batch_size_per_expert, (0, self.num_shared_experts), value=x.size(0) * x.size(1)
+            )
 
         # extension_finetune_mode: pad the detach mask with True for the shared-expert slots
         # (shared expert is always detached in this mode; see plan "What exactly gets detached").

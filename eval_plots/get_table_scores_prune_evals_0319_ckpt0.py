@@ -45,8 +45,14 @@ MODEL_SPECS = {
         "baseline": False,
         "variants": [
             {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
-            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
+            {
+                "suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 32)",
+            },
+            {
+                "suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 128)",
+            },
         ],
     },
     "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308step30995-hf": {
@@ -56,241 +62,382 @@ MODEL_SPECS = {
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": " "},
         ],
     },
-
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301step30995-hf": {
         "label": "specialized moe + globallb + 1shardexp + randpool",
         "baseline": False,
         "variants": [
             {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
-            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
+            {
+                "suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 32)",
+            },
+            {
+                "suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 128)",
+            },
         ],
     },
-
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313step238419-hf": {
         "label": "specialized moe 1T",
         "baseline": False,
         "variants": [
             {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
-            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
-        ]
+            {
+                "suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 32)",
+            },
+            {
+                "suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 128)",
+            },
+        ],
     },
-
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419step250339-hf": {
         "label": "specialized moe 1T + anneal",
         "baseline": False,
         "variants": [
             {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
-            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
-        ]
+            {
+                "suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 32)",
+            },
+            {
+                "suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 128)",
+            },
+        ],
     },
     "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322step238419-hf": {
         "label": "moe 1T",
         "baseline": False,
         "variants": [
             {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
-            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
-        ]
+            {
+                "suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 32)",
+            },
+            {
+                "suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 128)",
+            },
+        ],
     },
-
     "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419step250339-hf": {
         "label": "moe 1T + anneal",
         "baseline": False,
         "variants": [
             {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
-            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
-        ]
+            {
+                "suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 32)",
+            },
+            {
+                "suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 128)",
+            },
+        ],
     },
-
-
 }
 AVAILABLE_MODELS = list(MODEL_SPECS)
 
 TASK_SPECS = {
     "arc_challenge": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "arc_easy": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "boolq": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "coqa_0shot": [
-        "recall", "f1", "primary_score",
+        "recall",
+        "f1",
+        "primary_score",
     ],
     "csqa": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "gsm8k_generation_0shot": [
-        "exact_match", "primary_score",
+        "exact_match",
+        "primary_score",
     ],
     "gsm8k_perplexity_0shot": [
-        "bits_per_byte", "primary_score",
+        "bits_per_byte",
+        "primary_score",
     ],
     "hellaswag": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "openbookqa": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "piqa": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "socialiqa": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "squad_0shot": [
-        "recall", "f1", "primary_score",
+        "recall",
+        "f1",
+        "primary_score",
     ],
     "winogrande": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_biology": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_business": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_chemistry": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_computer_science": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_culture": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_economics": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_engineering": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_geography": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_health": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_history": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_law": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_math": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_other": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_philosophy_cat": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_physics": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_politics": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_psychology": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_biology": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_business": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_chemistry": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_computer_science": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_economics": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_engineering": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_health": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_history": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_law": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_math": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_other": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_philosophy": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_physics": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_psychology": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_merged_biology": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_merged_business": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_merged_chemistry": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_merged_computer_science": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_merged_economics": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_merged_engineering": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_merged_health": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_merged_history": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_merged_law": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_merged_math": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_merged_other": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_merged_philosophy": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_merged_physics": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_pro_merged_psychology": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "gsm8k_generation_8shot": [
-        "exact_match", "primary_score",
+        "exact_match",
+        "primary_score",
     ],
     # HellaSwag merged (baseline: single model on all data)
     "hellaswag_merged": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     # HellaSwag cluster-merged variants (all k values)
     **{
@@ -305,37 +452,61 @@ TASK_SPECS = {
     },
 }
 MMLU_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_") and not t.startswith("mmlu_pro_")]
-MMLU_PRO_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_") and not t.startswith("mmlu_pro_merged_")]
+MMLU_PRO_SUBTASKS = [
+    t for t in TASK_SPECS if t.startswith("mmlu_pro_") and not t.startswith("mmlu_pro_merged_")
+]
 MMLU_PRO_MERGED_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_merged_")]
 HELLASWAG_CLUSTER_SUBTASKS_BY_K = {
-    k: [f"hellaswag_k{k}_cluster_merged_{c}" for c in range(k)]
-    for k in [6, 8, 10, 16]
+    k: [f"hellaswag_k{k}_cluster_merged_{c}" for c in range(k)] for k in [6, 8, 10, 16]
 }
 HELLASWAG_CLUSTER_SUBTASKS = [f"hellaswag_cluster_merged_{c}" for c in range(6)]
 HELLASWAG_CLUSTER_TEST_SIZES = {
-    "hellaswag_k6_cluster_merged_0": 1044, "hellaswag_k6_cluster_merged_1": 2999,
-    "hellaswag_k6_cluster_merged_2": 1596, "hellaswag_k6_cluster_merged_3": 1529,
-    "hellaswag_k6_cluster_merged_4": 1080, "hellaswag_k6_cluster_merged_5": 1794,
-    "hellaswag_k8_cluster_merged_0": 870, "hellaswag_k8_cluster_merged_1": 1307,
-    "hellaswag_k8_cluster_merged_2": 1534, "hellaswag_k8_cluster_merged_3": 369,
-    "hellaswag_k8_cluster_merged_4": 1007, "hellaswag_k8_cluster_merged_5": 1921,
-    "hellaswag_k8_cluster_merged_6": 1369, "hellaswag_k8_cluster_merged_7": 1665,
-    "hellaswag_k10_cluster_merged_0": 1901, "hellaswag_k10_cluster_merged_1": 1372,
-    "hellaswag_k10_cluster_merged_2": 1179, "hellaswag_k10_cluster_merged_3": 1631,
-    "hellaswag_k10_cluster_merged_4": 1286, "hellaswag_k10_cluster_merged_5": 953,
-    "hellaswag_k10_cluster_merged_6": 289, "hellaswag_k10_cluster_merged_7": 540,
-    "hellaswag_k10_cluster_merged_8": 341, "hellaswag_k10_cluster_merged_9": 550,
-    "hellaswag_k16_cluster_merged_0": 580, "hellaswag_k16_cluster_merged_1": 238,
-    "hellaswag_k16_cluster_merged_2": 1382, "hellaswag_k16_cluster_merged_3": 319,
-    "hellaswag_k16_cluster_merged_4": 500, "hellaswag_k16_cluster_merged_5": 902,
-    "hellaswag_k16_cluster_merged_6": 582, "hellaswag_k16_cluster_merged_7": 764,
-    "hellaswag_k16_cluster_merged_8": 307, "hellaswag_k16_cluster_merged_9": 126,
-    "hellaswag_k16_cluster_merged_10": 1450, "hellaswag_k16_cluster_merged_11": 926,
-    "hellaswag_k16_cluster_merged_12": 495, "hellaswag_k16_cluster_merged_13": 200,
-    "hellaswag_k16_cluster_merged_14": 437, "hellaswag_k16_cluster_merged_15": 834,
-    "hellaswag_cluster_merged_0": 1044, "hellaswag_cluster_merged_1": 2999,
-    "hellaswag_cluster_merged_2": 1596, "hellaswag_cluster_merged_3": 1529,
-    "hellaswag_cluster_merged_4": 1080, "hellaswag_cluster_merged_5": 1794,
+    "hellaswag_k6_cluster_merged_0": 1044,
+    "hellaswag_k6_cluster_merged_1": 2999,
+    "hellaswag_k6_cluster_merged_2": 1596,
+    "hellaswag_k6_cluster_merged_3": 1529,
+    "hellaswag_k6_cluster_merged_4": 1080,
+    "hellaswag_k6_cluster_merged_5": 1794,
+    "hellaswag_k8_cluster_merged_0": 870,
+    "hellaswag_k8_cluster_merged_1": 1307,
+    "hellaswag_k8_cluster_merged_2": 1534,
+    "hellaswag_k8_cluster_merged_3": 369,
+    "hellaswag_k8_cluster_merged_4": 1007,
+    "hellaswag_k8_cluster_merged_5": 1921,
+    "hellaswag_k8_cluster_merged_6": 1369,
+    "hellaswag_k8_cluster_merged_7": 1665,
+    "hellaswag_k10_cluster_merged_0": 1901,
+    "hellaswag_k10_cluster_merged_1": 1372,
+    "hellaswag_k10_cluster_merged_2": 1179,
+    "hellaswag_k10_cluster_merged_3": 1631,
+    "hellaswag_k10_cluster_merged_4": 1286,
+    "hellaswag_k10_cluster_merged_5": 953,
+    "hellaswag_k10_cluster_merged_6": 289,
+    "hellaswag_k10_cluster_merged_7": 540,
+    "hellaswag_k10_cluster_merged_8": 341,
+    "hellaswag_k10_cluster_merged_9": 550,
+    "hellaswag_k16_cluster_merged_0": 580,
+    "hellaswag_k16_cluster_merged_1": 238,
+    "hellaswag_k16_cluster_merged_2": 1382,
+    "hellaswag_k16_cluster_merged_3": 319,
+    "hellaswag_k16_cluster_merged_4": 500,
+    "hellaswag_k16_cluster_merged_5": 902,
+    "hellaswag_k16_cluster_merged_6": 582,
+    "hellaswag_k16_cluster_merged_7": 764,
+    "hellaswag_k16_cluster_merged_8": 307,
+    "hellaswag_k16_cluster_merged_9": 126,
+    "hellaswag_k16_cluster_merged_10": 1450,
+    "hellaswag_k16_cluster_merged_11": 926,
+    "hellaswag_k16_cluster_merged_12": 495,
+    "hellaswag_k16_cluster_merged_13": 200,
+    "hellaswag_k16_cluster_merged_14": 437,
+    "hellaswag_k16_cluster_merged_15": 834,
+    "hellaswag_cluster_merged_0": 1044,
+    "hellaswag_cluster_merged_1": 2999,
+    "hellaswag_cluster_merged_2": 1596,
+    "hellaswag_cluster_merged_3": 1529,
+    "hellaswag_cluster_merged_4": 1080,
+    "hellaswag_cluster_merged_5": 1794,
 }
 
 AVAILABLE_TASK_RUNS = list(TASK_SPECS)
@@ -343,21 +514,13 @@ AVAILABLE_TASK_RUNS = list(TASK_SPECS)
 SELECTED_MODELS = list(AVAILABLE_MODELS)
 SELECTED_TASK_RUNS = list(AVAILABLE_TASK_RUNS)
 
-MODEL_LABELS = {
-    model: spec["label"]
-    for model, spec in MODEL_SPECS.items()
-    if spec.get("label")
-}
+MODEL_LABELS = {model: spec["label"] for model, spec in MODEL_SPECS.items() if spec.get("label")}
 
 DEFAULT_OUTPUT_SUBDIR = "prune_eval_tables_0319_ckpt0"
 
 # Collect all known variant suffixes from MODEL_SPECS for auto-discovery.
 _ALL_VARIANT_SUFFIXES: List[str] = sorted(
-    {
-        v["suffix"]
-        for spec in MODEL_SPECS.values()
-        for v in spec.get("variants", [])
-    },
+    {v["suffix"] for spec in MODEL_SPECS.values() for v in spec.get("variants", [])},
     key=len,
     reverse=True,  # longest first for greedy stripping
 )
@@ -369,6 +532,7 @@ def _get_model_variants(model_name: str) -> List[Tuple[str, str]]:
     if spec is not None:
         return [(v["suffix"], v["label"]) for v in spec.get("variants", [])]
     return []
+
 
 # ============================================================================
 # END CONFIGURATION
@@ -457,8 +621,7 @@ def _load_baseline_metric(
     Looks in ``<model>/original_model/<task>/results/checkpoint-0/``.
     """
     ckpt_dir = (
-        prune_evals_root / model_name / "original_model" / task_run
-        / "results" / "checkpoint-0"
+        prune_evals_root / model_name / "original_model" / task_run / "results" / "checkpoint-0"
     )
     if not ckpt_dir.is_dir():
         return None
@@ -495,9 +658,7 @@ def read_metrics(metrics_path: Path) -> Optional[Dict[str, object]]:
     return metrics
 
 
-def _read_checkpoint0_metric(
-    task_dir: Path, metric_key: str
-) -> Optional[float]:
+def _read_checkpoint0_metric(task_dir: Path, metric_key: str) -> Optional[float]:
     """Read a single metric value from checkpoint-0 in task_dir/results."""
     ckpt_dir = task_dir / "results" / "checkpoint-0"
     if not ckpt_dir.is_dir():
@@ -549,9 +710,7 @@ def collect_table(
         # Baseline-only models: read from original_model path
         if spec is not None and spec.get("baseline"):
             for task_run in task_runs:
-                val = _load_baseline_metric(
-                    prune_evals_root, model_name, task_run, metric_key
-                )
+                val = _load_baseline_metric(prune_evals_root, model_name, task_run, metric_key)
                 if val is not None:
                     rows.setdefault(model_label, {})[task_run] = val
                 else:
@@ -684,7 +843,9 @@ def add_mmlu_avg_columns(df: pd.DataFrame) -> pd.DataFrame:
     # Legacy k=6 alias
     hellaswag_legacy_cols = [c for c in df.columns if c in HELLASWAG_CLUSTER_SUBTASKS]
     if hellaswag_legacy_cols:
-        weights = np.array([HELLASWAG_CLUSTER_TEST_SIZES[c] for c in hellaswag_legacy_cols], dtype=float)
+        weights = np.array(
+            [HELLASWAG_CLUSTER_TEST_SIZES[c] for c in hellaswag_legacy_cols], dtype=float
+        )
         weights /= weights.sum()
         cluster_vals = df[hellaswag_legacy_cols].values
         has_nan = np.isnan(cluster_vals).any(axis=1)
@@ -765,15 +926,12 @@ def main() -> None:
 
     for metric_key in sorted(all_metrics):
         relevant_tasks = [
-            t for t in task_set
-            if metric_key in (metric_override or TASK_SPECS.get(t, []))
+            t for t in task_set if metric_key in (metric_override or TASK_SPECS.get(t, []))
         ]
         if not relevant_tasks:
             continue
 
-        df = collect_table(
-            args.prune_evals_root, model_set, relevant_tasks, metric_key
-        )
+        df = collect_table(args.prune_evals_root, model_set, relevant_tasks, metric_key)
         if df.empty:
             print(f"[WARN] No data for metric {metric_key!r}; skipping.")
             continue
@@ -787,25 +945,43 @@ def main() -> None:
 
         # --- Define output slices ---
         MC9_TASKS = [
-            "arc_challenge", "arc_easy", "boolq", "csqa", "hellaswag",
-            "openbookqa", "piqa", "socialiqa", "winogrande",
+            "arc_challenge",
+            "arc_easy",
+            "boolq",
+            "csqa",
+            "hellaswag",
+            "openbookqa",
+            "piqa",
+            "socialiqa",
+            "winogrande",
         ]
         mc9_cols = [c for c in MC9_TASKS if c in df.columns]
         if mc9_cols:
             df["mc9_avg"] = df[mc9_cols].mean(axis=1, skipna=False)
 
         # 1. Aggregate overview
-        agg_cols = [c for c in [
-            "mc9_avg",
-            "mmlu_avg", "mmlu_avg_no_other", "mmlu_avg_no_other_hist_phil",
-            "mmlu_pro_avg", "mmlu_pro_avg_no_other",
-            "mmlu_pro_merged_avg", "mmlu_pro_merged_avg_no_other",
-        ] if c in df.columns]
-        other_tasks = [c for c in df.columns
-                       if c not in agg_cols
-                       and not c.startswith("mmlu_")
-                       and not c.startswith("hellaswag_")
-                       and c not in MC9_TASKS]
+        agg_cols = [
+            c
+            for c in [
+                "mc9_avg",
+                "mmlu_avg",
+                "mmlu_avg_no_other",
+                "mmlu_avg_no_other_hist_phil",
+                "mmlu_pro_avg",
+                "mmlu_pro_avg_no_other",
+                "mmlu_pro_merged_avg",
+                "mmlu_pro_merged_avg_no_other",
+            ]
+            if c in df.columns
+        ]
+        other_tasks = [
+            c
+            for c in df.columns
+            if c not in agg_cols
+            and not c.startswith("mmlu_")
+            and not c.startswith("hellaswag_")
+            and c not in MC9_TASKS
+        ]
         agg_cols += other_tasks
 
         # 2. MC9 detail
@@ -813,45 +989,65 @@ def main() -> None:
 
         # 3. MMLU detail
         mmlu_avg_cols = [c for c in df.columns if c.startswith("mmlu_avg")]
-        mmlu_topic_cols = [c for c in df.columns
-                          if c.startswith("mmlu_") and not c.startswith("mmlu_pro")
-                          and not c.startswith("mmlu_avg")]
+        mmlu_topic_cols = [
+            c
+            for c in df.columns
+            if c.startswith("mmlu_")
+            and not c.startswith("mmlu_pro")
+            and not c.startswith("mmlu_avg")
+        ]
         mmlu_cols_all = mmlu_avg_cols + mmlu_topic_cols
 
         # 4. MMLU-Pro detail (not n* or merged)
         mmlu_pro_avg_cols = [c for c in df.columns if c.startswith("mmlu_pro_avg")]
-        mmlu_pro_topic_cols = [c for c in df.columns
-                               if c.startswith("mmlu_pro_") and not c.startswith("mmlu_pro_merged")
-                               and not c.startswith("mmlu_pro_avg")]
+        mmlu_pro_topic_cols = [
+            c
+            for c in df.columns
+            if c.startswith("mmlu_pro_")
+            and not c.startswith("mmlu_pro_merged")
+            and not c.startswith("mmlu_pro_avg")
+        ]
         mmlu_pro_cols_all = mmlu_pro_avg_cols + mmlu_pro_topic_cols
 
         # 5. MMLU-Pro-Merged detail (not n*)
-        mmlu_pm_avg_cols = [c for c in df.columns
-                            if c.startswith("mmlu_pro_merged_avg")]
-        mmlu_pm_topic_cols = [c for c in df.columns
-                              if c.startswith("mmlu_pro_merged_")
-                              and not c.startswith("mmlu_pro_merged_avg")
-                              and not any(c.startswith(f"mmlu_pro_merged_n{n}") for n in [50, 100, 200])]
+        mmlu_pm_avg_cols = [c for c in df.columns if c.startswith("mmlu_pro_merged_avg")]
+        mmlu_pm_topic_cols = [
+            c
+            for c in df.columns
+            if c.startswith("mmlu_pro_merged_")
+            and not c.startswith("mmlu_pro_merged_avg")
+            and not any(c.startswith(f"mmlu_pro_merged_n{n}") for n in [50, 100, 200])
+        ]
         mmlu_pm_cols_all = mmlu_pm_avg_cols + mmlu_pm_topic_cols
 
         # 6. HellaSwag clusters
         hella_lead = [c for c in ["hellaswag_merged", "hellaswag_cluster_avg"] if c in df.columns]
-        hella_k_avgs = [c for c in [
-            "hellaswag_k8_cluster_avg", "hellaswag_k10_cluster_avg", "hellaswag_k16_cluster_avg",
-        ] if c in df.columns]
+        hella_k_avgs = [
+            c
+            for c in [
+                "hellaswag_k8_cluster_avg",
+                "hellaswag_k10_cluster_avg",
+                "hellaswag_k16_cluster_avg",
+            ]
+            if c in df.columns
+        ]
         hella_cols_all = hella_lead + hella_k_avgs
 
         # 7. MMLU-Pro-Merged N-val
-        nval_cols_all = [c for c in [
-            "mmlu_pro_merged_avg",
-            "mmlu_pro_merged_n50_avg",
-            "mmlu_pro_merged_n100_avg",
-            "mmlu_pro_merged_n200_avg",
-            "mmlu_pro_merged_avg_no_other",
-            "mmlu_pro_merged_n50_avg_no_other",
-            "mmlu_pro_merged_n100_avg_no_other",
-            "mmlu_pro_merged_n200_avg_no_other",
-        ] if c in df.columns]
+        nval_cols_all = [
+            c
+            for c in [
+                "mmlu_pro_merged_avg",
+                "mmlu_pro_merged_n50_avg",
+                "mmlu_pro_merged_n100_avg",
+                "mmlu_pro_merged_n200_avg",
+                "mmlu_pro_merged_avg_no_other",
+                "mmlu_pro_merged_n50_avg_no_other",
+                "mmlu_pro_merged_n100_avg_no_other",
+                "mmlu_pro_merged_n200_avg_no_other",
+            ]
+            if c in df.columns
+        ]
 
         slices = {
             "aggregate": agg_cols,
@@ -879,9 +1075,7 @@ def main() -> None:
                 slice_df.to_csv(out_path, sep="\t", float_format="%.4f")
             elif args.format == "markdown":
                 out_path = metric_dir / f"{slice_name}.md"
-                out_path.write_text(
-                    slice_df.to_markdown(floatfmt=".4f") + "\n", encoding="utf-8"
-                )
+                out_path.write_text(slice_df.to_markdown(floatfmt=".4f") + "\n", encoding="utf-8")
 
             print(f"[INFO] Saved {out_path}")
             print(slice_df.to_string(float_format=lambda x: f"{x:.4f}"))

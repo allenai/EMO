@@ -333,7 +333,9 @@ class MoERouter(nn.Module):
     def load_balancing_loss_shared(self) -> Optional[torch.Tensor]:
         if self.lb_loss_weight is not None:
             if self._load_balancing_loss_shared is None:
-                self._load_balancing_loss_shared = hide_from_torch(torch.zeros([], device=self.device))
+                self._load_balancing_loss_shared = hide_from_torch(
+                    torch.zeros([], device=self.device)
+                )
             elif self._load_balancing_loss_shared.device != self.device:
                 self._load_balancing_loss_shared = self._load_balancing_loss_shared.to(self.device)
         return (
@@ -513,7 +515,9 @@ class MoERouter(nn.Module):
 
         # Load balancing loss.
         if self.lb_loss_weight is not None:
-            assert self.load_balancing_loss is not None and self.load_balancing_loss_shared is not None
+            assert (
+                self.load_balancing_loss is not None and self.load_balancing_loss_shared is not None
+            )
             out["load balancing loss"] = (
                 self.lb_loss_weight * self.load_balancing_loss,
                 ReduceType.mean,
@@ -523,7 +527,7 @@ class MoERouter(nn.Module):
                 ReduceType.mean,
             )
             out["shared load balancing loss"] = (
-                self.load_balancing_loss_shared.clone(), # we don't scale the shared loss since it's already scaled
+                self.load_balancing_loss_shared.clone(),  # we don't scale the shared loss since it's already scaled
                 ReduceType.mean,
             )
 
@@ -540,8 +544,12 @@ class MoERouter(nn.Module):
         if self._num_batches_tracked > 0:
             avg_unique_experts = self._unique_experts_sum / self._num_batches_tracked
             avg_unique_experts_shared = self._unique_experts_sum_shared / self._num_batches_tracked
-            reducedp_avg_unique_experts = self._reducedp_unique_experts_sum / self._num_batches_tracked
-            reducedp_avg_unique_experts_shared = self._reducedp_unique_experts_sum_shared / self._num_batches_tracked
+            reducedp_avg_unique_experts = (
+                self._reducedp_unique_experts_sum / self._num_batches_tracked
+            )
+            reducedp_avg_unique_experts_shared = (
+                self._reducedp_unique_experts_sum_shared / self._num_batches_tracked
+            )
             fraction_unique_experts = avg_unique_experts / self.num_experts
 
             # Convert to tensors for consistency with other metrics

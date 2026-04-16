@@ -3,6 +3,7 @@ from oe_eval.tasks.oe_eval_tasks.csqa import CommonsenseQA, CommonsenseQAMC
 
 from ..metrics.mc_softloss import SoftLoss
 
+
 class CommonsenseQA_RC_Base(CommonsenseQA):
     def has_test_docs(self):
         return True
@@ -85,6 +86,7 @@ class CommonsenseQAMC_Base(CommonsenseQAMC):
 # Merged variant: train+val combined for both pruning and finetuning.
 # Both halves come from the same shuffled train, so no extra shuffle is needed.
 # ---------------------------------------------------------------------------
+
 
 class CommonsenseQA_Merged_RC(CommonsenseQA_RC_Base):
     """CommonsenseQA variant where pruning and finetuning use the same merged data."""

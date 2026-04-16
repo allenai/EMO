@@ -55,6 +55,7 @@ logger = logging.getLogger(__name__)
 
 # ── Composition helpers ──────────────────────────────────────────────────────
 
+
 def generate_uniform_composition(output_dir: str) -> Dict[str, Any]:
     """
     Discover weborganizer topics on S3 and build a uniform mix_composition.json.
@@ -68,7 +69,9 @@ def generate_uniform_composition(output_dir: str) -> Dict[str, Any]:
     topic_vigintile: Dict[str, str] = {}
 
     for topic in topics:
-        vigs = sorted(e for e in s3_ls(f"{ALL_DRESSED_PREFIX}/{topic}") if e.startswith("vigintile_"))
+        vigs = sorted(
+            e for e in s3_ls(f"{ALL_DRESSED_PREFIX}/{topic}") if e.startswith("vigintile_")
+        )
         if not vigs:
             logger.warning(f"  [{topic}] no vigintiles, skipping")
             continue
@@ -81,7 +84,9 @@ def generate_uniform_composition(output_dir: str) -> Dict[str, Any]:
             continue
         topic_files[topic] = files
         total_bytes = sum(sz for _, sz in files)
-        logger.info(f"  [{topic}] {max_vig}: {len(files)} files, ~{total_bytes // BYTES_PER_TOKEN:,} tokens")
+        logger.info(
+            f"  [{topic}] {max_vig}: {len(files)} files, ~{total_bytes // BYTES_PER_TOKEN:,} tokens"
+        )
 
     valid_topics = sorted(topic_files.keys())
     num_topics = len(valid_topics)
@@ -112,6 +117,7 @@ def generate_uniform_composition(output_dir: str) -> Dict[str, Any]:
 
 
 # ── Model inference ──────────────────────────────────────────────────────────
+
 
 @torch.no_grad()
 def process_batch(
@@ -171,9 +177,7 @@ def process_batch(
         valid = attention_mask.unsqueeze(-1).expand(-1, -1, routed_top_k).reshape(B, -1)
 
         # scatter_add_ ones at expert indices, masked by valid tokens
-        counts[:, layer_idx, :].scatter_add_(
-            1, flat_indices, valid.to(torch.int32)
-        )
+        counts[:, layer_idx, :].scatter_add_(1, flat_indices, valid.to(torch.int32))
 
     # Normalize: divide by doc_len to get frequencies in [0, 1]
     doc_lens = attention_mask.sum(dim=1, keepdim=True).float()  # (B, 1)
@@ -185,26 +189,40 @@ def process_batch(
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Analyze expert coverage across weborganizer topics"
     )
-    parser.add_argument("--model-path", type=str, required=True,
-                        help="Path to HF MoE model checkpoint")
-    parser.add_argument("--composition-file", type=str, default=None,
-                        help="Path to existing mix_composition.json. "
-                             "If not provided, will discover topics on S3.")
-    parser.add_argument("--output-dir", type=str, default=None,
-                        help="Output directory for results. If not provided, "
-                             "auto-derived as expert_coverage_weborganizer/<model_name>/")
-    parser.add_argument("--target-tokens", type=int, default=20_000_000,
-                        help="Total tokens to sample (distributed uniformly across topics)")
-    parser.add_argument("--batch-size", type=int, default=32,
-                        help="Batch size for model inference")
+    parser.add_argument(
+        "--model-path", type=str, required=True, help="Path to HF MoE model checkpoint"
+    )
+    parser.add_argument(
+        "--composition-file",
+        type=str,
+        default=None,
+        help="Path to existing mix_composition.json. "
+        "If not provided, will discover topics on S3.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default=None,
+        help="Output directory for results. If not provided, "
+        "auto-derived as expert_coverage_weborganizer/<model_name>/",
+    )
+    parser.add_argument(
+        "--target-tokens",
+        type=int,
+        default=20_000_000,
+        help="Total tokens to sample (distributed uniformly across topics)",
+    )
+    parser.add_argument("--batch-size", type=int, default=32, help="Batch size for model inference")
     parser.add_argument("--min-doc-len", type=int, default=32)
     parser.add_argument("--max-doc-len", type=int, default=2048)
-    parser.add_argument("--debug", action="store_true",
-                        help="Debug mode: only load from the first 2 data sources")
+    parser.add_argument(
+        "--debug", action="store_true", help="Debug mode: only load from the first 2 data sources"
+    )
     args = parser.parse_args()
 
     # Derive output dir from model path if not specified
@@ -241,8 +259,10 @@ def main():
         sources = kept
     num_topics = len(sources)
     tokens_per_topic = args.target_tokens // num_topics
-    logger.info(f"{num_topics} topics, {tokens_per_topic:,} tokens per topic "
-                f"({args.target_tokens:,} total)")
+    logger.info(
+        f"{num_topics} topics, {tokens_per_topic:,} tokens per topic "
+        f"({args.target_tokens:,} total)"
+    )
 
     # ── Step 2: Load documents from each topic ───────────────────────────────
     logger.info("\nLoading documents from S3 ...")
@@ -252,17 +272,16 @@ def main():
     for topic, info in sorted(sources.items()):
         s3_files = info["all_files"]
         logger.info(f"  [{topic}] loading ~{tokens_per_topic:,} tokens ...")
-        docs = load_source_documents(
-            s3_files, tokens_per_topic, args.min_doc_len, args.max_doc_len
-        )
+        docs = load_source_documents(s3_files, tokens_per_topic, args.min_doc_len, args.max_doc_len)
         actual_tokens = sum(len(d) for d in docs)
         logger.info(f"  [{topic}] got {len(docs)} docs, {actual_tokens:,} tokens")
         all_docs.extend(docs)
         all_labels.extend([topic] * len(docs))
 
     total_tokens = sum(len(d) for d in all_docs)
-    logger.info(f"\nTotal: {len(all_docs)} docs, {total_tokens:,} tokens "
-                f"across {num_topics} topics")
+    logger.info(
+        f"\nTotal: {len(all_docs)} docs, {total_tokens:,} tokens " f"across {num_topics} topics"
+    )
 
     # ── Step 3: Load model ───────────────────────────────────────────────────
     model, tokenizer = load_model_and_tokenizer(args.model_path)
@@ -274,8 +293,10 @@ def main():
 
     # ── Step 4: Process documents through model ──────────────────────────────
     logger.info("\nProcessing documents through model ...")
-    logger.info(f"  top_k={moe_cfg['top_k']} (routed={routed_top_k}, "
-                f"shared={moe_cfg['num_shared_experts']})")
+    logger.info(
+        f"  top_k={moe_cfg['top_k']} (routed={routed_top_k}, "
+        f"shared={moe_cfg['num_shared_experts']})"
+    )
 
     num_docs = len(all_docs)
     num_batches = (num_docs + args.batch_size - 1) // args.batch_size
@@ -314,13 +335,18 @@ def main():
     # Each layer's frequencies should sum to routed_top_k
     freq_per_layer = all_freq.reshape(num_docs, num_layers, num_standard_experts)
     layer_freq_sums = freq_per_layer.sum(axis=2)
-    assert np.allclose(layer_freq_sums, routed_top_k, atol=1e-4), \
-        f"Per-layer freq sums not close to {routed_top_k}: " \
+    assert np.allclose(layer_freq_sums, routed_top_k, atol=1e-4), (
+        f"Per-layer freq sums not close to {routed_top_k}: "
         f"range [{layer_freq_sums.min():.4f}, {layer_freq_sums.max():.4f}]"
+    )
 
-    logger.info(f"  All freq in [0, 1]: PASSED (range [{all_freq.min():.4f}, {all_freq.max():.4f}])")
-    logger.info(f"  Per-layer freq sums == {routed_top_k}: PASSED "
-                f"(range [{layer_freq_sums.min():.4f}, {layer_freq_sums.max():.4f}])")
+    logger.info(
+        f"  All freq in [0, 1]: PASSED (range [{all_freq.min():.4f}, {all_freq.max():.4f}])"
+    )
+    logger.info(
+        f"  Per-layer freq sums == {routed_top_k}: PASSED "
+        f"(range [{layer_freq_sums.min():.4f}, {layer_freq_sums.max():.4f}])"
+    )
     logger.info(f"  Freq shape: {all_freq.shape}")
 
     # ── Step 4c: Per-topic expert coverage statistics ───────────────────────
@@ -343,10 +369,12 @@ def main():
         layer_sums = topic_freq.sum(axis=2, keepdims=True)  # (n_docs, num_layers, 1)
         layer_dists = topic_freq / layer_sums  # (n_docs, num_layers, num_standard_experts)
         # Entropy per doc per layer (base 2 for bits)
-        entropy_per_doc_layer = np.array([
-            [scipy_entropy(layer_dists[d, l], base=2) for l in range(num_layers)]
-            for d in range(n_docs)
-        ])  # (n_docs, num_layers)
+        entropy_per_doc_layer = np.array(
+            [
+                [scipy_entropy(layer_dists[d, layer_idx], base=2) for layer_idx in range(num_layers)]
+                for d in range(n_docs)
+            ]
+        )  # (n_docs, num_layers)
         avg_entropy_per_layer = entropy_per_doc_layer.mean(axis=0)  # (num_layers,)
         max_entropy = np.log2(num_standard_experts)
 
@@ -360,26 +388,34 @@ def main():
         }
 
         logger.info(f"  [{topic}] ({n_docs} docs)")
-        logger.info(f"    Avg experts/layer: {avg_nonzero_per_layer.mean():.1f} "
-                     f"(min={avg_nonzero_per_layer.min():.1f}, "
-                     f"max={avg_nonzero_per_layer.max():.1f}) "
-                     f"out of {num_standard_experts}")
-        logger.info(f"    Entropy/layer:     {avg_entropy_per_layer.mean():.2f} bits "
-                     f"(min={avg_entropy_per_layer.min():.2f}, "
-                     f"max={avg_entropy_per_layer.max():.2f}) "
-                     f"out of {max_entropy:.2f} max")
+        logger.info(
+            f"    Avg experts/layer: {avg_nonzero_per_layer.mean():.1f} "
+            f"(min={avg_nonzero_per_layer.min():.1f}, "
+            f"max={avg_nonzero_per_layer.max():.1f}) "
+            f"out of {num_standard_experts}"
+        )
+        logger.info(
+            f"    Entropy/layer:     {avg_entropy_per_layer.mean():.2f} bits "
+            f"(min={avg_entropy_per_layer.min():.2f}, "
+            f"max={avg_entropy_per_layer.max():.2f}) "
+            f"out of {max_entropy:.2f} max"
+        )
 
     # Summary table sorted by mean entropy (ascending = most concentrated)
     logger.info("\n" + "=" * 90)
-    logger.info(f"{'TOPIC':<35} {'DOCS':>5} {'AVG_EXPERTS/LAYER':>18} "
-                f"{'ENTROPY (bits)':>15} {'/ MAX':>7}")
+    logger.info(
+        f"{'TOPIC':<35} {'DOCS':>5} {'AVG_EXPERTS/LAYER':>18} "
+        f"{'ENTROPY (bits)':>15} {'/ MAX':>7}"
+    )
     logger.info("=" * 90)
     for topic in sorted(topic_stats, key=lambda t: topic_stats[t]["entropy_per_layer_mean"]):
         ts = topic_stats[topic]
-        logger.info(f"{topic:<35} {ts['num_docs']:>5} "
-                    f"{ts['avg_experts_per_layer_mean']:>18.1f} "
-                    f"{ts['entropy_per_layer_mean']:>15.2f} "
-                    f"/ {ts['max_entropy']:.2f}")
+        logger.info(
+            f"{topic:<35} {ts['num_docs']:>5} "
+            f"{ts['avg_experts_per_layer_mean']:>18.1f} "
+            f"{ts['entropy_per_layer_mean']:>15.2f} "
+            f"/ {ts['max_entropy']:.2f}"
+        )
     logger.info("=" * 90)
 
     # ── Step 5: Save results ─────────────────────────────────────────────────

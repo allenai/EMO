@@ -98,9 +98,9 @@ def parse_duplicate_experts(specs: List[str]) -> Dict[int, List[int]]:
             f"Expert {eid} only listed once (ckpt {ckpt_indices[0]}). "
             f"Need at least 2 entries to duplicate (e.g., {eid}:0 {eid}:1)."
         )
-        assert len(set(ckpt_indices)) == len(ckpt_indices), (
-            f"Expert {eid} has duplicate checkpoint indices: {ckpt_indices}"
-        )
+        assert len(set(ckpt_indices)) == len(
+            ckpt_indices
+        ), f"Expert {eid} has duplicate checkpoint indices: {ckpt_indices}"
     return dict(result)
 
 
@@ -131,9 +131,7 @@ def get_expert_slice(param: torch.Tensor, expert_idx: int, num_experts: int) -> 
     return param[start:end].clone()
 
 
-def set_expert_slice(
-    param: torch.Tensor, expert_idx: int, num_experts: int, value: torch.Tensor
-):
+def set_expert_slice(param: torch.Tensor, expert_idx: int, num_experts: int, value: torch.Tensor):
     """Write a single expert's slice into a flattened parameter."""
     rows_per_expert = param.shape[0] // num_experts
     start = expert_idx * rows_per_expert
@@ -173,7 +171,9 @@ def merge_and_extend(
     num_new_experts = sum(len(cis) - 1 for cis in duplicate_experts.values())
 
     logger.info(f"Merging {n} checkpoints with weights: {weights}")
-    logger.info(f"Duplicating {len(duplicate_experts)} experts, adding {num_new_experts} new experts")
+    logger.info(
+        f"Duplicating {len(duplicate_experts)} experts, adding {num_new_experts} new experts"
+    )
 
     # Load and validate configs
     configs_raw = []
@@ -198,9 +198,7 @@ def merge_and_extend(
         )
 
     for eid in duplicate_experts:
-        assert 0 <= eid < base_num_experts, (
-            f"Expert {eid} out of range [0, {base_num_experts})"
-        )
+        assert 0 <= eid < base_num_experts, f"Expert {eid} out of range [0, {base_num_experts})"
 
     new_num_experts = base_num_experts + num_new_experts
     logger.info(f"Original experts: {base_num_experts}, new total: {new_num_experts}")
@@ -238,8 +236,8 @@ def merge_and_extend(
                     new_s = e * d_model  # same position in new (larger) param
                     # But new param has new_num_experts * d_model rows
                     new_s_actual = e * d_model
-                    param.data[new_s_actual:new_s_actual + d_model].copy_(
-                        src[s:s + d_model] * weights[0]
+                    param.data[new_s_actual : new_s_actual + d_model].copy_(
+                        src[s : s + d_model] * weights[0]
                     )
             else:
                 # Non-MoE param: straightforward copy
@@ -271,9 +269,7 @@ def merge_and_extend(
                     for e in range(base_num_experts):
                         s = e * d_model
                         new_s = e * d_model
-                        param.data[new_s:new_s + d_model].add_(
-                            src[s:s + d_model] * weights[i]
-                        )
+                        param.data[new_s : new_s + d_model].add_(src[s : s + d_model] * weights[i])
                 else:
                     if name in sd_i:
                         param.data.add_(sd_i[name] * weights[i])
@@ -327,9 +323,7 @@ def merge_and_extend(
                     for target_idx, src_expert in placements:
                         src_s = src_expert * d_model
                         tgt_s = target_idx * d_model
-                        param.data[tgt_s:tgt_s + d_model].copy_(
-                            src[src_s:src_s + d_model]
-                        )
+                        param.data[tgt_s : tgt_s + d_model].copy_(src[src_s : src_s + d_model])
 
         del model, sd
 

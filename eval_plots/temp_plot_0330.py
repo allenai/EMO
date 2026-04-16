@@ -21,14 +21,16 @@ import seaborn as sns
 # ============================================================================
 
 MODEL_SPECS = {
-
     "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308step30995-hf": {
         "label": "Standard MoE",
         "baseline": False,
         "variants": [
             {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keep-8)"},
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keep-32)"},
-            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keep-128)"},
+            {
+                "suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keep-128)",
+            },
         ],
     },
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301step30995-hf": {
@@ -37,7 +39,10 @@ MODEL_SPECS = {
         "variants": [
             {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keep-8)"},
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keep-32)"},
-            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keep-128)"},
+            {
+                "suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keep-128)",
+            },
         ],
     },
     "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308step30995-hf": {
@@ -74,24 +79,32 @@ MODEL_SPECS = {
     # },
 }
 
-MODEL_LABELS = {
-    model: spec["label"]
-    for model, spec in MODEL_SPECS.items()
-    if spec.get("label")
-}
+MODEL_LABELS = {model: spec["label"] for model, spec in MODEL_SPECS.items() if spec.get("label")}
 
 MMLU_SUBTASKS_NO_OTHER = [
-    "mmlu_biology", "mmlu_business", "mmlu_chemistry", "mmlu_computer_science",
-    "mmlu_culture", "mmlu_economics", "mmlu_engineering", "mmlu_geography",
-    "mmlu_health", "mmlu_history", "mmlu_law", "mmlu_math",
-    "mmlu_philosophy_cat", "mmlu_physics", "mmlu_politics", "mmlu_psychology",
+    "mmlu_biology",
+    "mmlu_business",
+    "mmlu_chemistry",
+    "mmlu_computer_science",
+    "mmlu_culture",
+    "mmlu_economics",
+    "mmlu_engineering",
+    "mmlu_geography",
+    "mmlu_health",
+    "mmlu_history",
+    "mmlu_law",
+    "mmlu_math",
+    "mmlu_philosophy_cat",
+    "mmlu_physics",
+    "mmlu_politics",
+    "mmlu_psychology",
 ]
 
 _MODEL_BASE_COLORS: Dict[str, object] = {
-    "Standard MoE":                 (0.1216, 0.4667, 0.7059),  # blue
-    "Standard MoE (32 experts)":    (1.0000, 0.4980, 0.0549),  # orange
-    "Dense":                        (0.1725, 0.6275, 0.1725),  # green
-    "MOSE":                         (0.8902, 0.4667, 0.7608),  # pink
+    "Standard MoE": (0.1216, 0.4667, 0.7059),  # blue
+    "Standard MoE (32 experts)": (1.0000, 0.4980, 0.0549),  # orange
+    "Dense": (0.1725, 0.6275, 0.1725),  # green
+    "MOSE": (0.8902, 0.4667, 0.7608),  # pink
 }
 
 _VARIANT_LINESTYLES = ["-", "--", "-.", ":", (0, (3, 1, 1, 1)), (0, (5, 1))]
@@ -104,7 +117,9 @@ for _model_name, _spec in MODEL_SPECS.items():
     _variants = _spec.get("variants", [])
     if not _variants:
         _MODEL_VARIANT_STYLE[_base_label] = {
-            "alpha": 1.0, "linestyle": "-", "marker": "o",
+            "alpha": 1.0,
+            "linestyle": "-",
+            "marker": "o",
         }
     for _vi, _v in enumerate(_variants):
         _full_label = _base_label + " " + _v["label"]
@@ -116,11 +131,7 @@ for _model_name, _spec in MODEL_SPECS.items():
         }
 
 _ALL_VARIANT_SUFFIXES: List[str] = sorted(
-    {
-        v["suffix"]
-        for spec in MODEL_SPECS.values()
-        for v in spec.get("variants", [])
-    },
+    {v["suffix"] for spec in MODEL_SPECS.values() for v in spec.get("variants", [])},
     key=len,
     reverse=True,
 )
@@ -132,6 +143,7 @@ METRIC_KEY = "acc_per_byte"
 # ============================================================================
 # Helpers (copied from plot_presentation_0319.py)
 # ============================================================================
+
 
 def _get_model_variants(model_name: str) -> List[Tuple[str, str]]:
     spec = MODEL_SPECS.get(model_name)
@@ -154,9 +166,7 @@ def _get_color(label: str) -> object:
 
 
 def _get_vstyle(label: str) -> Dict[str, object]:
-    return _MODEL_VARIANT_STYLE.get(
-        label, {"alpha": 1.0, "linestyle": "-", "marker": "o"}
-    )
+    return _MODEL_VARIANT_STYLE.get(label, {"alpha": 1.0, "linestyle": "-", "marker": "o"})
 
 
 def read_metrics(metrics_path: Path) -> Optional[Dict[str, object]]:
@@ -197,13 +207,15 @@ def _scan_checkpoints(
         value = metric_values.get(metric_key)
         if value is None:
             continue
-        rows.append({
-            "model": model_key,
-            "model_label": model_label,
-            "task_run": task_run,
-            "checkpoint": step,
-            "metric_value": value,
-        })
+        rows.append(
+            {
+                "model": model_key,
+                "model_label": model_label,
+                "task_run": task_run,
+                "checkpoint": step,
+                "metric_value": value,
+            }
+        )
 
 
 def collect_records(
@@ -224,10 +236,12 @@ def collect_records(
                 if not variant_dir.is_dir():
                     continue
                 _scan_checkpoints(
-                    variant_dir, metric_key,
+                    variant_dir,
+                    metric_key,
                     model_key=model_name + suffix,
                     model_label=model_label + " " + label_mod,
-                    task_run=task_run, rows=rows,
+                    task_run=task_run,
+                    rows=rows,
                 )
     if not rows:
         return pd.DataFrame()
@@ -265,9 +279,8 @@ def collect_mmlu_avg_no_other(
     df["checkpoint_rel"] = df.groupby(["model", "task_run"]).cumcount()
 
     # Macro average across subtasks at each relative checkpoint
-    avg_df = (
-        df.groupby(["model", "model_label", "checkpoint_rel"], as_index=False)
-        .agg(metric_value=("metric_value", "mean"))
+    avg_df = df.groupby(["model", "model_label", "checkpoint_rel"], as_index=False).agg(
+        metric_value=("metric_value", "mean")
     )
     avg_df = avg_df.rename(columns={"checkpoint_rel": "checkpoint"})
     avg_df = avg_df[avg_df["checkpoint"] <= 6]
@@ -277,6 +290,7 @@ def collect_mmlu_avg_no_other(
 # ============================================================================
 # Plotting
 # ============================================================================
+
 
 def _plot_on_ax(ax, df, title):
     """Plot all model lines on a given axes."""
@@ -336,14 +350,15 @@ def main():
     # Deduplicate (in case some models appear in all panels)
     seen = set()
     unique_handles, unique_labels = [], []
-    for h, l in zip(handles, labels):
-        if l not in seen:
-            seen.add(l)
+    for h, label in zip(handles, labels):
+        if label not in seen:
+            seen.add(label)
             unique_handles.append(h)
-            unique_labels.append(l)
+            unique_labels.append(label)
 
     fig.legend(
-        unique_handles, unique_labels,
+        unique_handles,
+        unique_labels,
         title="Model",
         loc="center left",
         bbox_to_anchor=(1.0, 0.5),

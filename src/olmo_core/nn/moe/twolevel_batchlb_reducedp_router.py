@@ -1,38 +1,18 @@
-import json
-import logging
-from abc import abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union, cast
+from typing import Optional, Tuple, Union
 
 import torch
 import torch.distributed as dist
-import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributed import DeviceMesh
-from torch.distributed.tensor import Replicate, Shard, distribute_tensor
-from torch.distributed.tensor.parallel import PrepareModuleInput, parallelize_module
 
 import olmo_core.ops.moe as ops
-from olmo_core.config import Config, DType, StrEnum
 from olmo_core.distributed.utils import (
-    _HiddenTensor,
-    distribute_like,
-    get_local_tensor,
-    hide_from_torch,
     is_distributed,
-    unhide_from_torch,
 )
-from olmo_core.exceptions import OLMoConfigurationError
 from olmo_core.nn.moe.router import (
-    MoELinearRouter,
-    MoELoadBalancingLossGranularity,
-    MoERouter,
-    MoERouterConfig,
     MoERouterGatingFunction,
-    MoERouterType,
 )
 from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
-from olmo_core.utils import get_default_device
 
 from .loss import MoELoadBalancingLossGranularity, load_balancing_loss, router_z_loss
 
@@ -62,9 +42,13 @@ class MoETwoLevelBatchLBReduceDPRouter(MoETwoLevelRouter):
         """
         # make sure tp and cp are not enabled
         if self.tp_mesh is not None:
-            raise NotImplementedError("Tensor parallelism is not supported in MoETwoLevelBatchLBReduceDPRouter.")
+            raise NotImplementedError(
+                "Tensor parallelism is not supported in MoETwoLevelBatchLBReduceDPRouter."
+            )
         if self.cp_mesh is not None:
-            raise NotImplementedError("Context parallelism is not supported in MoETwoLevelBatchLBReduceDPRouter.")
+            raise NotImplementedError(
+                "Context parallelism is not supported in MoETwoLevelBatchLBReduceDPRouter."
+            )
 
         # shape: (batch_size, seq_len, d_model)
         x = self.jitter(x)
@@ -200,7 +184,9 @@ class MoETwoLevelBatchLBReduceDPRouter(MoETwoLevelRouter):
                         scores = scores / scores.sum(dim=-1, keepdim=True)
 
                     # we now do reduction on the tot_batch_size_per_expert to get a dp-global lb loss (still not full global sinze we don't do across gradient accumulation steps)
-                    dp_global_tot_batch_size_per_expert = tot_batch_size_per_expert.clone() # we clone to not interfere with logging or other routing stuff
+                    dp_global_tot_batch_size_per_expert = (
+                        tot_batch_size_per_expert.clone()
+                    )  # we clone to not interfere with logging or other routing stuff
                     dp_global_loss_div_factor = loss_div_factor.clone()
 
                     if is_distributed():
@@ -208,14 +194,16 @@ class MoETwoLevelBatchLBReduceDPRouter(MoETwoLevelRouter):
                         dist.all_reduce(dp_global_loss_div_factor, op=dist.ReduceOp.SUM)
 
                     # collect all non-zero entries of the dp_global_tot_batch_size_per_expert
-                    self._reducedp_unique_experts_sum += (dp_global_tot_batch_size_per_expert > 0).sum().item()
+                    self._reducedp_unique_experts_sum += (
+                        (dp_global_tot_batch_size_per_expert > 0).sum().item()
+                    )
 
                     lb_loss = load_balancing_loss(
                         num_experts=self.num_experts,
                         top_k=self.top_k,
                         expert_scores=scores,
                         batch_size_per_expert=dp_global_tot_batch_size_per_expert,
-                        batched_batch_size_per_expert=tot_batched_batch_size_per_expert, # this is not used, so we don't bother reducing it
+                        batched_batch_size_per_expert=tot_batched_batch_size_per_expert,  # this is not used, so we don't bother reducing it
                         granularity=self.lb_loss_granularity,
                         loss_div_factor=dp_global_loss_div_factor,
                         tp_mesh=self.tp_mesh,

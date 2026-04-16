@@ -16,44 +16,60 @@ Usage:
 import argparse
 import gzip
 import json
+import logging
 import os
 
 import numpy as np
+import umap as umap_lib
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import normalize
-import umap as umap_lib
 
-import logging
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Category colors (same as document-level viz)
 CATEGORY_COLORS = {
-    "code":      "#4A90E2",
-    "science":   "#27AE60",
-    "news":      "#E67E22",
-    "personal":  "#E91E8C",
-    "business":  "#9B59B6",
-    "health":    "#E74C3C",
-    "arts":      "#F39C12",
+    "code": "#4A90E2",
+    "science": "#27AE60",
+    "news": "#E67E22",
+    "personal": "#E91E8C",
+    "business": "#9B59B6",
+    "health": "#E74C3C",
+    "arts": "#F39C12",
     "education": "#1ABC9C",
     "reference": "#7F8C8D",
-    "spam":      "#BDC3C7",
+    "spam": "#BDC3C7",
 }
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--cluster-dir", required=True,
-                        help="Directory containing assignments.npy, summary.json, run_info.json")
-    parser.add_argument("--data-dir", default=None,
-                        help="Dir with token data files. Defaults to parent of --cluster-dir.")
-    parser.add_argument("--emb-file", default=None,
-                        help="Path to embedding .npy file. Auto-detected from run_info.json.")
-    parser.add_argument("--context-window", type=int, default=10,
-                        help="Number of tokens to show before/after the target token (default: 10)")
-    parser.add_argument("--model-path", default=None,
-                        help="Path to HF model for tokenizer. Auto-detected from info.json.")
+    parser.add_argument(
+        "--cluster-dir",
+        required=True,
+        help="Directory containing assignments.npy, summary.json, run_info.json",
+    )
+    parser.add_argument(
+        "--data-dir",
+        default=None,
+        help="Dir with token data files. Defaults to parent of --cluster-dir.",
+    )
+    parser.add_argument(
+        "--emb-file",
+        default=None,
+        help="Path to embedding .npy file. Auto-detected from run_info.json.",
+    )
+    parser.add_argument(
+        "--context-window",
+        type=int,
+        default=10,
+        help="Number of tokens to show before/after the target token (default: 10)",
+    )
+    parser.add_argument(
+        "--model-path",
+        default=None,
+        help="Path to HF model for tokenizer. Auto-detected from info.json.",
+    )
     args = parser.parse_args()
 
     cluster_dir = args.cluster_dir
@@ -80,6 +96,7 @@ def main():
     model_path = args.model_path or info.get("model_path", "")
     logger.info(f"Loading tokenizer from {model_path}...")
     from transformers import AutoTokenizer
+
     tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
     # Load embeddings + assignments
@@ -126,8 +143,14 @@ def main():
         reduced_normed = normalize(reduced, norm="l2")
 
         logger.info("Running UMAP...")
-        reducer = umap_lib.UMAP(n_components=2, n_neighbors=30, min_dist=0.1,
-                                metric="euclidean", random_state=42, verbose=False)
+        reducer = umap_lib.UMAP(
+            n_components=2,
+            n_neighbors=30,
+            min_dist=0.1,
+            metric="euclidean",
+            random_state=42,
+            verbose=False,
+        )
         coords_2d = reducer.fit_transform(reduced_normed)
         np.save(umap_path, coords_2d)
         logger.info(f"Saved UMAP coords → {umap_path}")
@@ -150,8 +173,8 @@ def main():
 
         # Decode each token individually for accurate highlighting
         before_ids = doc_tokens[ctx_start:pos].tolist()
-        target_id = doc_tokens[pos:pos + 1].tolist()
-        after_ids = doc_tokens[pos + 1:ctx_end].tolist()
+        target_id = doc_tokens[pos : pos + 1].tolist()
+        after_ids = doc_tokens[pos + 1 : ctx_end].tolist()
 
         before_text = tokenizer.decode(before_ids, skip_special_tokens=True) if before_ids else ""
         target_text = tokenizer.decode(target_id, skip_special_tokens=True)
@@ -169,19 +192,21 @@ def main():
         m = meta[token_idx]
         before, target, after = get_token_context(token_idx)
         xy = coords_2d[vi]
-        docs_js.append({
-            "i": int(token_idx),
-            "c": int(labels[token_idx]),
-            "s": m["source"],
-            "di": m["doc_index"],
-            "tp": m["token_position"],
-            "tid": m["token_id"],
-            "before": before,
-            "target": target,
-            "after": after,
-            "x": round(float(xy[0]), 3),
-            "y": round(float(xy[1]), 3),
-        })
+        docs_js.append(
+            {
+                "i": int(token_idx),
+                "c": int(labels[token_idx]),
+                "s": m["source"],
+                "di": m["doc_index"],
+                "tp": m["token_position"],
+                "tid": m["token_id"],
+                "before": before,
+                "target": target,
+                "after": after,
+                "x": round(float(xy[0]), 3),
+                "y": round(float(xy[1]), 3),
+            }
+        )
 
     # Build representative token contexts for each cluster summary
     logger.info("Building representative token contexts for clusters...")
@@ -221,25 +246,29 @@ def main():
 
         rep_tokens = []
         for rd in c.get("representative_docs", []):
-            rep_tokens.append({
-                "source": rd.get("source", ""),
-                "doc_index": rd.get("doc_index", rd.get("idx", -1)),
-                "token_position": rd.get("token_position", -1),
-                "before": rd.get("before", ""),
-                "target": rd.get("target", ""),
-                "after": rd.get("after", ""),
-            })
+            rep_tokens.append(
+                {
+                    "source": rd.get("source", ""),
+                    "doc_index": rd.get("doc_index", rd.get("idx", -1)),
+                    "token_position": rd.get("token_position", -1),
+                    "before": rd.get("before", ""),
+                    "target": rd.get("target", ""),
+                    "after": rd.get("after", ""),
+                }
+            )
 
-        clusters_js.append({
-            "id": cid,
-            "label": label,
-            "category": cat,
-            "color": CATEGORY_COLORS[cat],
-            "size": c["size"],
-            "source_counts": c["source_counts"],
-            "top_experts": c["top10_experts_global"],
-            "rep_tokens": rep_tokens,
-        })
+        clusters_js.append(
+            {
+                "id": cid,
+                "label": label,
+                "category": cat,
+                "color": CATEGORY_COLORS[cat],
+                "size": c["size"],
+                "source_counts": c["source_counts"],
+                "top_experts": c["top10_experts_global"],
+                "rep_tokens": rep_tokens,
+            }
+        )
 
     # Precompute per-document cluster stats (using ALL tokens, not just subsampled)
     logger.info("Computing per-document cluster statistics...")
@@ -259,13 +288,15 @@ def main():
         ds = doc_cluster_map[di]
         n_clusters = len(ds["clusters"])
         spread_counts.append(n_clusters)
-        doc_stats_js.append({
-            "di": di,
-            "s": ds["source"],
-            "total": ds["total"],
-            "nClusters": n_clusters,
-            "clusters": ds["clusters"],  # {cluster_id: count}
-        })
+        doc_stats_js.append(
+            {
+                "di": di,
+                "s": ds["source"],
+                "total": ds["total"],
+                "nClusters": n_clusters,
+                "clusters": ds["clusters"],  # {cluster_id: count}
+            }
+        )
 
     # Aggregate stats
     spread_counts_np = np.array(spread_counts)
@@ -281,10 +312,12 @@ def main():
     for nc in sorted(set(spread_counts)):
         agg_stats["histogram"][nc] = int((spread_counts_np == nc).sum())
 
-    logger.info(f"  {agg_stats['num_docs']} docs, "
-                f"mean {agg_stats['mean_clusters']} clusters/doc, "
-                f"median {agg_stats['median_clusters']}, "
-                f"max {agg_stats['max_clusters']}")
+    logger.info(
+        f"  {agg_stats['num_docs']} docs, "
+        f"mean {agg_stats['mean_clusters']} clusters/doc, "
+        f"median {agg_stats['median_clusters']}, "
+        f"max {agg_stats['max_clusters']}"
+    )
 
     # Build per-document full text with per-token cluster assignments
     logger.info("Building per-document full text with cluster assignments...")
@@ -303,16 +336,21 @@ def main():
             decoded = tokenizer.decode([int(tid)], skip_special_tokens=False)
             cluster_id = pos_to_cluster.get((di, pos), -1)
             tokens_list.append({"t": decoded, "c": cluster_id})
-        doc_texts_js.append({
-            "di": di,
-            "s": doc_cluster_map[di]["source"],
-            "tokens": tokens_list,
-        })
-    logger.info(f"  Decoded {sum(len(d['tokens']) for d in doc_texts_js)} tokens across {len(doc_texts_js)} docs")
+        doc_texts_js.append(
+            {
+                "di": di,
+                "s": doc_cluster_map[di]["source"],
+                "tokens": tokens_list,
+            }
+        )
+    logger.info(
+        f"  Decoded {sum(len(d['tokens']) for d in doc_texts_js)} tokens across {len(doc_texts_js)} docs"
+    )
 
     # Build per-unique-token cluster distribution
     logger.info("Computing per-unique-token cluster distributions...")
     from collections import defaultdict
+
     token_cluster_counts = defaultdict(lambda: defaultdict(int))  # token_id -> {cluster: count}
     token_total_counts = defaultdict(int)
     for i, m in enumerate(meta):
@@ -334,27 +372,53 @@ def main():
         probs_arr = np.array(list(clusters.values()), dtype=np.float64)
         probs_arr = probs_arr / probs_arr.sum()
         entropy = float(-np.sum(probs_arr * np.log2(probs_arr)))
-        unique_tokens_js.append({
-            "id": tid,
-            "t": decoded,
-            "n": total,
-            "nc": n_clusters,
-            "ent": round(entropy, 3),
-            "clusters": clusters,
-        })
-    logger.info(f"  {len(unique_tokens_js)} unique tokens (>= {min_count} occurrences) "
-                f"out of {len(token_total_counts)} total unique tokens")
+        unique_tokens_js.append(
+            {
+                "id": tid,
+                "t": decoded,
+                "n": total,
+                "nc": n_clusters,
+                "ent": round(entropy, 3),
+                "clusters": clusters,
+            }
+        )
+    logger.info(
+        f"  {len(unique_tokens_js)} unique tokens (>= {min_count} occurrences) "
+        f"out of {len(token_total_counts)} total unique tokens"
+    )
 
     emb_label = f"{run_info['embedding']}_{run_info['transform']}_{run_info['cluster']}"
 
     html_path = os.path.join(cluster_dir, "cluster_explorer.html")
-    write_html(clusters_js, docs_js, doc_stats_js, agg_stats, doc_texts_js, unique_tokens_js,
-               info, k, emb_label, html_path, ctx_win)
+    write_html(
+        clusters_js,
+        docs_js,
+        doc_stats_js,
+        agg_stats,
+        doc_texts_js,
+        unique_tokens_js,
+        info,
+        k,
+        emb_label,
+        html_path,
+        ctx_win,
+    )
     logger.info(f"Saved HTML visualizer → {html_path}")
 
 
-def write_html(clusters_js, docs_js, doc_stats_js, agg_stats, doc_texts_js, unique_tokens_js,
-               info, k, emb_label, path, ctx_win):
+def write_html(
+    clusters_js,
+    docs_js,
+    doc_stats_js,
+    agg_stats,
+    doc_texts_js,
+    unique_tokens_js,
+    info,
+    k,
+    emb_label,
+    path,
+    ctx_win,
+):
     def safe_json(obj):
         return json.dumps(obj).replace("</", "<\\/")
 

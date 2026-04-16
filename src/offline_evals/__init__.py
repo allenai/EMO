@@ -6,20 +6,6 @@ from oe_eval.tasks.oe_eval_tasks import TASK_REGISTRY
 from oe_eval.tasks.oe_eval_tasks.mmlu import create_mmlu_task
 from oe_eval.tasks.oe_eval_tasks.mmlu_pro import create_mmlu_pro_task
 
-from .tasks.splits_mmlu import (
-    create_mmlu_tasks_withsplits,
-    create_mmlu_categories_tasks_withsplits,
-    create_mmlu_cluster_tasks_withsplits,
-    create_mmlu_merged_tasks_withsplits,
-    create_mmlu_categories_merged_tasks_withsplits,
-    MMLU_CLUSTER_CATEGORIES,
-)
-from .tasks.splits_mmlu_pro import (
-    create_mmlu_pro_category_tasks_withsplits,
-    create_mmlu_pro_merged_tasks_withsplits,
-    create_mmlu_pro_merged_nval_tasks,
-    MMLU_PRO_CATEGORIES_MAP,
-)
 from .tasks import (
     agi_eval,
     chembench,
@@ -54,6 +40,20 @@ from .tasks import (
     story_gen,
     xsum,
 )
+from .tasks.splits_mmlu import (
+    MMLU_CLUSTER_CATEGORIES,
+    create_mmlu_categories_merged_tasks_withsplits,
+    create_mmlu_categories_tasks_withsplits,
+    create_mmlu_cluster_tasks_withsplits,
+    create_mmlu_merged_tasks_withsplits,
+    create_mmlu_tasks_withsplits,
+)
+from .tasks.splits_mmlu_pro import (
+    MMLU_PRO_CATEGORIES_MAP,
+    create_mmlu_pro_category_tasks_withsplits,
+    create_mmlu_pro_merged_nval_tasks,
+    create_mmlu_pro_merged_tasks_withsplits,
+)
 
 
 def create_core_mmlu_tasks_withsplits():
@@ -65,6 +65,7 @@ def create_core_mmlu_tasks_withsplits():
         res[f"mmlu_{sub}:rc_test"] = create_mmlu_tasks_withsplits(sub)
         res[f"mmlu_{sub}:rc_train"] = create_mmlu_tasks_withsplits(sub)
     return res
+
 
 def create_category_mmlu_tasks_withsplits():
     """Creates a dictionary of tasks from a list of subjects.
@@ -131,7 +132,9 @@ def create_category_mmlu_merged_tasks_withsplits():
     """17-category MMLU merged variants: pruning + finetuning use the same data."""
     res = {}
     for sub in _MMLU_CATEGORIES_LIST:
-        res[f"mmlu_merged_{sub}:rc_validation"] = create_mmlu_categories_merged_tasks_withsplits(sub)
+        res[f"mmlu_merged_{sub}:rc_validation"] = create_mmlu_categories_merged_tasks_withsplits(
+            sub
+        )
         res[f"mmlu_merged_{sub}:rc_test"] = create_mmlu_categories_merged_tasks_withsplits(sub)
         res[f"mmlu_merged_{sub}:rc_train"] = create_mmlu_categories_merged_tasks_withsplits(sub)
     return res
@@ -141,7 +144,9 @@ def create_cluster_mmlu_tasks_withsplits():
     """Creates MMLU tasks grouped by router-based clustering (16 clusters)."""
     res = {}
     for cluster_name in MMLU_CLUSTER_CATEGORIES:
-        res[f"mmlu_{cluster_name}:rc_validation"] = create_mmlu_cluster_tasks_withsplits(cluster_name)
+        res[f"mmlu_{cluster_name}:rc_validation"] = create_mmlu_cluster_tasks_withsplits(
+            cluster_name
+        )
         res[f"mmlu_{cluster_name}:rc_test"] = create_mmlu_cluster_tasks_withsplits(cluster_name)
         res[f"mmlu_{cluster_name}:rc_train"] = create_mmlu_cluster_tasks_withsplits(cluster_name)
     return res
@@ -270,19 +275,25 @@ new_task_registry: Dict = {
         for split in ["train", "validation", "test"]
     },
     **{
-        f"hellaswag_cluster_merged_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_merged_task(6, c)
+        f"hellaswag_cluster_merged_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_merged_task(
+            6, c
+        )
         for c in range(6)
         for split in ["train", "validation", "test"]
     },
     # k-prefixed tasks for all k values
     **{
-        f"hellaswag_k{k}_cluster_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_task(k, c)
+        f"hellaswag_k{k}_cluster_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_task(
+            k, c
+        )
         for k in splits_hellaswag.HELLASWAG_K_VALUES
         for c in range(k)
         for split in ["train", "validation", "test"]
     },
     **{
-        f"hellaswag_k{k}_cluster_merged_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_merged_task(k, c)
+        f"hellaswag_k{k}_cluster_merged_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_merged_task(
+            k, c
+        )
         for k in splits_hellaswag.HELLASWAG_K_VALUES
         for c in range(k)
         for split in ["train", "validation", "test"]

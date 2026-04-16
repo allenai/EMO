@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence
 
 import pandas as pd
 
@@ -79,26 +79,26 @@ QA_METRICS = ["exact_match", "f1", "recall", "primary_score"]
 
 TASK_SPECS: Dict[str, List[str]] = {
     # MC9
-    "arc_easyrc_testolmes":             MC_METRICS,
-    "arc_challengerc_testolmes":        MC_METRICS,
-    "boolqrc_testolmes":                MC_METRICS,
-    "hellaswagrc_testolmes":            MC_METRICS,
-    "csqarc_testolmes":                 MC_METRICS,
-    "openbookqarc_testolmes":           MC_METRICS,
-    "piqarc_testolmes":                 MC_METRICS,
-    "socialiqarc_testolmes":            MC_METRICS,
-    "winogranderc_testolmes":           MC_METRICS,
+    "arc_easyrc_testolmes": MC_METRICS,
+    "arc_challengerc_testolmes": MC_METRICS,
+    "boolqrc_testolmes": MC_METRICS,
+    "hellaswagrc_testolmes": MC_METRICS,
+    "csqarc_testolmes": MC_METRICS,
+    "openbookqarc_testolmes": MC_METRICS,
+    "piqarc_testolmes": MC_METRICS,
+    "socialiqarc_testolmes": MC_METRICS,
+    "winogranderc_testolmes": MC_METRICS,
     # Generation
-    "gsm8k_generation_0shottestolmes":  GEN_METRICS,
-    "gsm8kolmes":                       GEN_METRICS,
-    "minerva_math_500olmes":            ["exact_match", "exact_match_flex", "primary_score"],
-    "basic_skillsolmes":                MC_METRICS,
+    "gsm8k_generation_0shottestolmes": GEN_METRICS,
+    "gsm8kolmes": GEN_METRICS,
+    "minerva_math_500olmes": ["exact_match", "exact_match_flex", "primary_score"],
+    "basic_skillsolmes": MC_METRICS,
     # Code
-    "codex_humaneval3shotbpbnone":      CODE_METRICS,
-    "mbpp3shotbpbnone":                 CODE_METRICS,
+    "codex_humaneval3shotbpbnone": CODE_METRICS,
+    "mbpp3shotbpbnone": CODE_METRICS,
     # QA
-    "squadolmes":                       QA_METRICS,
-    "triviaqaolmes":                    QA_METRICS,
+    "squadolmes": QA_METRICS,
+    "triviaqaolmes": QA_METRICS,
 }
 
 DEFAULT_EVALS_ROOT = REPO_ROOT / "extension_evals_0414"
@@ -117,12 +117,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--evals-root", type=Path, default=DEFAULT_EVALS_ROOT)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--output-subdir", default=DEFAULT_OUTPUT_SUBDIR)
-    parser.add_argument("--metric-key", default=None,
-                        help="Comma-separated metric keys (overrides TASK_SPECS).")
-    parser.add_argument("--models", default=None,
-                        help="Comma-separated model names to include.")
-    parser.add_argument("--tasks", default=None,
-                        help="Comma-separated task names to include.")
+    parser.add_argument(
+        "--metric-key", default=None, help="Comma-separated metric keys (overrides TASK_SPECS)."
+    )
+    parser.add_argument("--models", default=None, help="Comma-separated model names to include.")
+    parser.add_argument("--tasks", default=None, help="Comma-separated task names to include.")
     parser.add_argument("--format", default="csv", choices=["csv", "tsv", "markdown"])
     return parser.parse_args()
 
@@ -267,15 +266,12 @@ def main() -> None:
 
     for metric_key in sorted(all_metrics):
         relevant_tasks = [
-            t for t in selected_tasks
-            if metric_key in (metric_override or TASK_SPECS.get(t, []))
+            t for t in selected_tasks if metric_key in (metric_override or TASK_SPECS.get(t, []))
         ]
         if not relevant_tasks:
             continue
 
-        df = collect_table(
-            args.evals_root, selected_models, relevant_tasks, metric_key
-        )
+        df = collect_table(args.evals_root, selected_models, relevant_tasks, metric_key)
         if df.empty:
             print(f"[WARN] No data for metric {metric_key!r}; skipping.")
             continue
@@ -309,9 +305,7 @@ def main() -> None:
                 slice_df.to_csv(out_path, sep="\t", float_format="%.4f")
             elif args.format == "markdown":
                 out_path = metric_dir / f"{slice_name}.md"
-                out_path.write_text(
-                    slice_df.to_markdown(floatfmt=".4f") + "\n", encoding="utf-8"
-                )
+                out_path.write_text(slice_df.to_markdown(floatfmt=".4f") + "\n", encoding="utf-8")
 
             print(f"[INFO] Saved {out_path}")
             print(slice_df.to_string(float_format=lambda x: f"{x:.4f}"))

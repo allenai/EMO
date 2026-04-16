@@ -10,14 +10,14 @@ Usage:
 import argparse
 import gzip
 import json
+import logging
 import os
 
 import numpy as np
+import umap as umap_lib
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import normalize
-import umap as umap_lib
 
-import logging
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -29,16 +29,16 @@ CLUSTER_LABELS = {
     # --- optB k=128 labels ---
     # Key finding: optB clustering strongly captures document prefix/format patterns
     # (day-of-week blogs, Q&A prefixes, web boilerplate) rather than pure semantics.
-    0:  ("Skip-to-Content Blog Pages", "personal"),
-    1:  ("Miscellaneous Short Web Pages (R-prefix)", "reference"),
-    2:  ("Wednesday Blog Posts", "personal"),
-    3:  ("Currently... Web Pages", "reference"),
-    4:  ("Short Misc S-Prefix Pages", "spam"),
-    5:  ("Sh-Prefix Articles (health/baby/legal)", "reference"),
-    6:  ("Se-Prefix Articles (tech/fashion/religion)", "reference"),
-    7:  ("The-Prefix Articles (Large Diverse Cluster)", "reference"),
-    8:  ("F-Prefix Articles (ocean/Angular/robotics)", "reference"),
-    9:  ("How-To / How-Do Q&A Articles", "reference"),
+    0: ("Skip-to-Content Blog Pages", "personal"),
+    1: ("Miscellaneous Short Web Pages (R-prefix)", "reference"),
+    2: ("Wednesday Blog Posts", "personal"),
+    3: ("Currently... Web Pages", "reference"),
+    4: ("Short Misc S-Prefix Pages", "spam"),
+    5: ("Sh-Prefix Articles (health/baby/legal)", "reference"),
+    6: ("Se-Prefix Articles (tech/fashion/religion)", "reference"),
+    7: ("The-Prefix Articles (Large Diverse Cluster)", "reference"),
+    8: ("F-Prefix Articles (ocean/Angular/robotics)", "reference"),
+    9: ("How-To / How-Do Q&A Articles", "reference"),
     10: ("Person Profile Pages (Jason/Patrick)", "reference"),
     11: ("What-Is / What-Are Q&A Articles", "reference"),
     12: ("Obama Political Commentary", "news"),
@@ -160,16 +160,16 @@ CLUSTER_LABELS = {
 }
 
 DEFAULT_CATEGORY_COLORS = {
-    "code":      "#4A90E2",
-    "science":   "#27AE60",
-    "news":      "#E67E22",
-    "personal":  "#E91E8C",
-    "business":  "#9B59B6",
-    "health":    "#E74C3C",
-    "arts":      "#F39C12",
+    "code": "#4A90E2",
+    "science": "#27AE60",
+    "news": "#E67E22",
+    "personal": "#E91E8C",
+    "business": "#9B59B6",
+    "health": "#E74C3C",
+    "arts": "#F39C12",
     "education": "#1ABC9C",
     "reference": "#7F8C8D",
-    "spam":      "#BDC3C7",
+    "spam": "#BDC3C7",
 }
 # Will be overridden per-visualization if cluster_labels.json contains "category_colors"
 CATEGORY_COLORS = dict(DEFAULT_CATEGORY_COLORS)
@@ -179,17 +179,26 @@ CATEGORY_COLORS = dict(DEFAULT_CATEGORY_COLORS)
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--cluster-dir", required=True,
-                        help="Directory containing assignments.npy, summary.json, and run_info.json "
-                             "(output of transform_and_cluster.py --save)")
-    parser.add_argument("--data-dir", default=None,
-                        help="Dir with shared data files (metadata.jsonl.gz, info.json, embeddings). "
-                             "Defaults to parent of --cluster-dir.")
-    parser.add_argument("--emb-file", default=None,
-                        help="Path to embedding .npy file. "
-                             "Auto-detected from run_info.json if not specified.")
+    parser.add_argument(
+        "--cluster-dir",
+        required=True,
+        help="Directory containing assignments.npy, summary.json, and run_info.json "
+        "(output of transform_and_cluster.py --save)",
+    )
+    parser.add_argument(
+        "--data-dir",
+        default=None,
+        help="Dir with shared data files (metadata.jsonl.gz, info.json, embeddings). "
+        "Defaults to parent of --cluster-dir.",
+    )
+    parser.add_argument(
+        "--emb-file",
+        default=None,
+        help="Path to embedding .npy file. " "Auto-detected from run_info.json if not specified.",
+    )
     args = parser.parse_args()
 
     cluster_dir = args.cluster_dir
@@ -236,8 +245,14 @@ def main():
         reduced_normed = normalize(reduced, norm="l2")
 
         logger.info("Running UMAP...")
-        reducer = umap_lib.UMAP(n_components=2, n_neighbors=30, min_dist=0.1,
-                                metric="euclidean", random_state=42, verbose=False)
+        reducer = umap_lib.UMAP(
+            n_components=2,
+            n_neighbors=30,
+            min_dist=0.1,
+            metric="euclidean",
+            random_state=42,
+            verbose=False,
+        )
         coords_2d = reducer.fit_transform(reduced_normed)
         np.save(umap_path, coords_2d)
         logger.info(f"Saved UMAP coords → {umap_path}")
@@ -246,15 +261,17 @@ def main():
     logger.info("Building document data...")
     docs_js = []
     for i, (m, lbl, xy) in enumerate(zip(meta, labels, coords_2d)):
-        docs_js.append({
-            "i": i,
-            "c": int(lbl),
-            "s": m["source"],
-            "l": m["doc_len"],
-            "p": m["preview"],   # full preview text (up to 3000 chars)
-            "x": round(float(xy[0]), 3),
-            "y": round(float(xy[1]), 3),
-        })
+        docs_js.append(
+            {
+                "i": i,
+                "c": int(lbl),
+                "s": m["source"],
+                "l": m["doc_len"],
+                "p": m["preview"],  # full preview text (up to 3000 chars)
+                "x": round(float(xy[0]), 3),
+                "y": round(float(xy[1]), 3),
+            }
+        )
 
     # Build cluster data for JS
     # ─── Cluster label loading ────────────────────────────────────────────
@@ -277,10 +294,14 @@ def main():
         # Allow cluster_labels.json to define custom category colors
         if "category_colors" in external_labels:
             CATEGORY_COLORS.update(external_labels["category_colors"])
-            logger.info(f"  Custom category colors: {list(external_labels['category_colors'].keys())}")
+            logger.info(
+                f"  Custom category colors: {list(external_labels['category_colors'].keys())}"
+            )
     else:
-        logger.warning(f"No cluster_labels.json found in {cluster_dir}. "
-                       f"Using fallback labels. Generate labels for better visualization.")
+        logger.warning(
+            f"No cluster_labels.json found in {cluster_dir}. "
+            f"Using fallback labels. Generate labels for better visualization."
+        )
 
     clusters_js = []
     for c in summary:
@@ -293,16 +314,18 @@ def main():
                 cat = "reference"
         else:
             label, cat = f"Cluster {cid}", "reference"
-        clusters_js.append({
-            "id": cid,
-            "label": label,
-            "category": cat,
-            "color": CATEGORY_COLORS[cat],
-            "size": c["size"],
-            "source_counts": c["source_counts"],
-            "top_experts": c["top10_experts_global"],
-            "rep_docs": c["representative_docs"],
-        })
+        clusters_js.append(
+            {
+                "id": cid,
+                "label": label,
+                "category": cat,
+                "color": CATEGORY_COLORS[cat],
+                "size": c["size"],
+                "source_counts": c["source_counts"],
+                "top_experts": c["top10_experts_global"],
+                "rep_docs": c["representative_docs"],
+            }
+        )
 
     # Build a descriptive label from run_info
     emb_label = f"{run_info['embedding']}_{run_info['transform']}_{run_info['cluster']}"
@@ -317,16 +340,21 @@ def main():
 # Markdown report
 # ---------------------------------------------------------------------------
 
+
 def write_report(clusters_js, info, k, emb_label, path):
     lines = []
     lines.append(f"# FlexMoE Router Cluster Analysis (k={k}, {emb_label})")
     lines.append("")
     lines.append(f"**Model:** `{info['model_path']}`")
     lines.append(f"**Documents:** {info['num_docs']:,}  |  **Tokens:** {info['total_tokens']:,}")
-    lines.append(f"**Layers:** {info['num_layers']}  |  **Standard experts:** {info['num_standard_experts']}")
-    lines.append(f"**Embedding:** Option A — avg softmax prob per expert per layer → {info['emb_dim']}-dim float16")
+    lines.append(
+        f"**Layers:** {info['num_layers']}  |  **Standard experts:** {info['num_standard_experts']}"
+    )
+    lines.append(
+        f"**Embedding:** Option A — avg softmax prob per expert per layer → {info['emb_dim']}-dim float16"
+    )
     lines.append(f"**Preprocessing:** PCA-50 + L2 norm → MiniBatchKMeans k={k}")
-    lines.append(f"**Silhouette (k=64):** 0.1327")
+    lines.append("**Silhouette (k=64):** 0.1327")
     lines.append("")
 
     lines.append("## Data Composition")
@@ -339,7 +367,9 @@ def write_report(clusters_js, info, k, emb_label, path):
 
     lines.append("## Key Findings")
     lines.append("")
-    lines.append("The model's router has learned semantic domains that **transcend data source boundaries**.")
+    lines.append(
+        "The model's router has learned semantic domains that **transcend data source boundaries**."
+    )
     lines.append("The most diagnostic clusters are those that mix sources — these reveal domains")
     lines.append("the model considers equivalent despite coming from different data pipelines.")
     lines.append("")
@@ -353,8 +383,9 @@ def write_report(clusters_js, info, k, emb_label, path):
         dclm_frac = src.get("dclm", 0) / total
         if dclm_frac < 0.92:
             non_dclm = {k: v for k, v in src.items() if k != "dclm"}
-            mix_str = ", ".join(f"{k} {v/total:.0%}" for k, v in
-                                sorted(non_dclm.items(), key=lambda x: -x[1]))
+            mix_str = ", ".join(
+                f"{k} {v/total:.0%}" for k, v in sorted(non_dclm.items(), key=lambda x: -x[1])
+            )
             lines.append(f"| {c['id']} | {c['label']} | {c['size']} | {mix_str} |")
     lines.append("")
 
@@ -411,6 +442,7 @@ def write_report(clusters_js, info, k, emb_label, path):
 # ---------------------------------------------------------------------------
 # HTML visualizer
 # ---------------------------------------------------------------------------
+
 
 def write_html(clusters_js, docs_js, info, k, emb_label, path):
     # Escape </script> so it can't terminate the <script> block early

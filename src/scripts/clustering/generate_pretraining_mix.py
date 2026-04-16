@@ -60,7 +60,8 @@ def get_s3_file_sizes(s3_paths: List[str]) -> Dict[str, int]:
         logger.info(f"  Listing {prefix} ...")
         result = subprocess.run(
             ["aws", "s3", "ls", prefix],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         if result.returncode != 0:
             logger.warning(f"  Could not list {prefix}: {result.stderr.strip()}")
@@ -87,13 +88,19 @@ def stream_first_bytes(s3_path: str, num_bytes: int) -> bytes:
     try:
         result = subprocess.run(
             [
-                "aws", "s3api", "get-object",
-                "--bucket", "ai2-llm",
-                "--key", s3_path.replace("s3://ai2-llm/", ""),
-                "--range", f"bytes=0-{num_bytes - 1}",
+                "aws",
+                "s3api",
+                "get-object",
+                "--bucket",
+                "ai2-llm",
+                "--key",
+                s3_path.replace("s3://ai2-llm/", ""),
+                "--range",
+                f"bytes=0-{num_bytes - 1}",
                 tmp_path,
             ],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         if result.returncode != 0:
             raise RuntimeError(f"Failed to stream {s3_path}: {result.stderr[:200]}")
@@ -105,17 +112,25 @@ def stream_first_bytes(s3_path: str, num_bytes: int) -> bytes:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Generate pretraining data composition file"
+    parser = argparse.ArgumentParser(description="Generate pretraining data composition file")
+    parser.add_argument(
+        "--mix-file", required=True, help="Path to mix file (e.g. OLMoE-mix-0824.txt)"
     )
-    parser.add_argument("--mix-file", required=True,
-                        help="Path to mix file (e.g. OLMoE-mix-0824.txt)")
-    parser.add_argument("--output", required=True,
-                        help="Output JSON path (e.g. pretraining_mix.json)")
-    parser.add_argument("--num-preview-docs", type=int, default=2,
-                        help="Documents to decode per source for sanity checking")
-    parser.add_argument("--stream-bytes", type=int, default=2_000_000,
-                        help="Bytes to stream from each source for decoding")
+    parser.add_argument(
+        "--output", required=True, help="Output JSON path (e.g. pretraining_mix.json)"
+    )
+    parser.add_argument(
+        "--num-preview-docs",
+        type=int,
+        default=2,
+        help="Documents to decode per source for sanity checking",
+    )
+    parser.add_argument(
+        "--stream-bytes",
+        type=int,
+        default=2_000_000,
+        help="Bytes to stream from each source for decoding",
+    )
     args = parser.parse_args()
 
     os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
@@ -152,27 +167,28 @@ def main():
     logger.info(f"\n{'SOURCE':<45} {'FILES':>6} {'EST_TOKENS':>14} {'FRACTION':>9}")
     logger.info("=" * 80)
     for label, stats in sorted(source_stats.items(), key=lambda x: -x[1]["est_tokens"]):
-        logger.info(f"{label:<45} {stats['num_files']:>6} "
-                     f"{stats['est_tokens']:>14,} {stats['fraction']:>8.2%}")
+        logger.info(
+            f"{label:<45} {stats['num_files']:>6} "
+            f"{stats['est_tokens']:>14,} {stats['fraction']:>8.2%}"
+        )
     logger.info(f"{'TOTAL':<45} {len(all_paths):>6} {grand_total:>14,}")
 
     # Preview docs
     if args.num_preview_docs > 0:
         from transformers import AutoTokenizer
+
         logger.info("\nLoading tokenizer for previews...")
         tokenizer = AutoTokenizer.from_pretrained("allenai/dolma2-tokenizer")
 
         for label, paths in source_to_paths.items():
             try:
                 raw = stream_first_bytes(paths[0], args.stream_bytes)
-                tokens = np.frombuffer(
-                    raw[:len(raw) // 4 * 4], dtype=np.uint32
-                ).astype(np.int32)
+                tokens = np.frombuffer(raw[: len(raw) // 4 * 4], dtype=np.uint32).astype(np.int32)
                 eos_pos = np.where(tokens == EOS_TOKEN_ID)[0]
                 start = 0
                 count = 0
                 for pos in eos_pos:
-                    doc = tokens[start:pos + 1]
+                    doc = tokens[start : pos + 1]
                     if 32 <= len(doc) <= 4096:
                         decoded = tokenizer.decode(doc[:500].tolist(), skip_special_tokens=True)
                         logger.info(f"  [{label}] doc {count+1}: {decoded[:200]!r}")

@@ -29,16 +29,16 @@ logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logg
 logger = logging.getLogger(__name__)
 
 CATEGORY_COLORS = {
-    "code":      "#4A90E2",
-    "science":   "#27AE60",
-    "news":      "#E67E22",
-    "personal":  "#E91E8C",
-    "business":  "#9B59B6",
-    "health":    "#E74C3C",
-    "arts":      "#F39C12",
+    "code": "#4A90E2",
+    "science": "#27AE60",
+    "news": "#E67E22",
+    "personal": "#E91E8C",
+    "business": "#9B59B6",
+    "health": "#E74C3C",
+    "arts": "#F39C12",
     "education": "#1ABC9C",
     "reference": "#7F8C8D",
-    "spam":      "#BDC3C7",
+    "spam": "#BDC3C7",
 }
 
 
@@ -67,8 +67,14 @@ def compute_umap(emb, cache_path, max_points=50000):
     reduced = normalize(pca.fit_transform(emb_sub), norm="l2")
 
     logger.info("Running UMAP...")
-    reducer = umap_lib.UMAP(n_components=2, n_neighbors=30, min_dist=0.1,
-                            metric="euclidean", random_state=42, verbose=False)
+    reducer = umap_lib.UMAP(
+        n_components=2,
+        n_neighbors=30,
+        min_dist=0.1,
+        metric="euclidean",
+        random_state=42,
+        verbose=False,
+    )
     coords = reducer.fit_transform(reduced)
     np.save(cache_path, coords)
     logger.info(f"Saved UMAP coords -> {cache_path}")
@@ -108,6 +114,7 @@ def build_token_data(cluster_dir, data_dir, run_info, info):
     model_path = info.get("model_path", "")
     logger.info(f"Loading tokenizer from {model_path}...")
     from transformers import AutoTokenizer
+
     tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
     ctx_win = 10
@@ -121,9 +128,17 @@ def build_token_data(cluster_dir, data_dir, run_info, info):
         doc_tokens = documents[doc_start:doc_end]
         ctx_start = max(0, pos - ctx_win)
         ctx_end = min(len(doc_tokens), pos + ctx_win + 1)
-        before = tokenizer.decode(doc_tokens[ctx_start:pos].tolist(), skip_special_tokens=True) if pos > ctx_start else ""
-        target = tokenizer.decode(doc_tokens[pos:pos+1].tolist(), skip_special_tokens=True)
-        after = tokenizer.decode(doc_tokens[pos+1:ctx_end].tolist(), skip_special_tokens=True) if pos+1 < ctx_end else ""
+        before = (
+            tokenizer.decode(doc_tokens[ctx_start:pos].tolist(), skip_special_tokens=True)
+            if pos > ctx_start
+            else ""
+        )
+        target = tokenizer.decode(doc_tokens[pos : pos + 1].tolist(), skip_special_tokens=True)
+        after = (
+            tokenizer.decode(doc_tokens[pos + 1 : ctx_end].tolist(), skip_special_tokens=True)
+            if pos + 1 < ctx_end
+            else ""
+        )
         prefix = "\u2026" if ctx_start > 0 else ""
         suffix = "\u2026" if ctx_end < len(doc_tokens) else ""
         return prefix + before, target, after + suffix
@@ -146,13 +161,19 @@ def build_token_data(cluster_dir, data_dir, run_info, info):
     for vi, token_idx in enumerate(umap_idx):
         m = meta[token_idx]
         before, target, after = get_token_context(token_idx)
-        docs_js.append({
-            "i": int(token_idx), "c": int(labels[token_idx]),
-            "s": m["source"], "di": m["doc_index"],
-            "before": before, "target": target, "after": after,
-            "x": round(float(coords[vi][0]), 3),
-            "y": round(float(coords[vi][1]), 3),
-        })
+        docs_js.append(
+            {
+                "i": int(token_idx),
+                "c": int(labels[token_idx]),
+                "s": m["source"],
+                "di": m["doc_index"],
+                "before": before,
+                "target": target,
+                "after": after,
+                "x": round(float(coords[vi][0]), 3),
+                "y": round(float(coords[vi][1]), 3),
+            }
+        )
 
     # Cluster summaries
     external_labels = {}
@@ -180,18 +201,27 @@ def build_token_data(cluster_dir, data_dir, run_info, info):
                 before, target, after = get_token_context(idx)
             else:
                 before, target, after = "", "(unknown)", ""
-            rep_tokens.append({
-                "source": rd.get("source", ""), "before": before,
-                "target": target, "after": after,
-            })
+            rep_tokens.append(
+                {
+                    "source": rd.get("source", ""),
+                    "before": before,
+                    "target": target,
+                    "after": after,
+                }
+            )
 
-        clusters_js.append({
-            "id": cid, "label": label, "category": cat,
-            "color": CATEGORY_COLORS[cat], "size": c["size"],
-            "source_counts": c.get("source_counts", {}),
-            "top_experts": c.get("top10_experts_global", []),
-            "rep_samples": rep_tokens,
-        })
+        clusters_js.append(
+            {
+                "id": cid,
+                "label": label,
+                "category": cat,
+                "color": CATEGORY_COLORS[cat],
+                "size": c["size"],
+                "source_counts": c.get("source_counts", {}),
+                "top_experts": c.get("top10_experts_global", []),
+                "rep_samples": rep_tokens,
+            }
+        )
 
     return clusters_js, docs_js, k, "token"
 
@@ -230,13 +260,17 @@ def build_doc_data(cluster_dir, data_dir, run_info, info):
     for i in range(len(emb)):
         m = meta[i]
         preview = m.get("preview", "")[:500]
-        docs_js.append({
-            "i": i, "c": int(labels[i]), "s": m["source"],
-            "preview": preview,
-            "doc_len": m.get("doc_len", 0),
-            "x": round(float(coords[i][0]), 3),
-            "y": round(float(coords[i][1]), 3),
-        })
+        docs_js.append(
+            {
+                "i": i,
+                "c": int(labels[i]),
+                "s": m["source"],
+                "preview": preview,
+                "doc_len": m.get("doc_len", 0),
+                "x": round(float(coords[i][0]), 3),
+                "y": round(float(coords[i][1]), 3),
+            }
+        )
 
     # Cluster summaries
     external_labels = {}
@@ -259,19 +293,26 @@ def build_doc_data(cluster_dir, data_dir, run_info, info):
 
         rep_docs = []
         for rd in c.get("representative_samples", c.get("representative_docs", [])):
-            rep_docs.append({
-                "source": rd.get("source", ""),
-                "preview": rd.get("preview", "")[:500],
-                "doc_len": rd.get("doc_len", 0),
-            })
+            rep_docs.append(
+                {
+                    "source": rd.get("source", ""),
+                    "preview": rd.get("preview", "")[:500],
+                    "doc_len": rd.get("doc_len", 0),
+                }
+            )
 
-        clusters_js.append({
-            "id": cid, "label": label, "category": cat,
-            "color": CATEGORY_COLORS[cat], "size": c["size"],
-            "source_counts": c.get("source_counts", {}),
-            "top_experts": c.get("top10_experts_global", []),
-            "rep_samples": rep_docs,
-        })
+        clusters_js.append(
+            {
+                "id": cid,
+                "label": label,
+                "category": cat,
+                "color": CATEGORY_COLORS[cat],
+                "size": c["size"],
+                "source_counts": c.get("source_counts", {}),
+                "top_experts": c.get("top10_experts_global", []),
+                "rep_samples": rep_docs,
+            }
+        )
 
     return clusters_js, docs_js, k, "document"
 
@@ -572,13 +613,13 @@ if (CLUSTERS.length) selectCluster(CLUSTERS[0].id);
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Generate interactive HTML cluster explorer"
+    parser = argparse.ArgumentParser(description="Generate interactive HTML cluster explorer")
+    parser.add_argument(
+        "--cluster-dir", required=True, help="Directory with assignments.npy, run_info.json"
     )
-    parser.add_argument("--cluster-dir", required=True,
-                        help="Directory with assignments.npy, run_info.json")
-    parser.add_argument("--data-dir", default=None,
-                        help="Data directory (default: parent of cluster-dir)")
+    parser.add_argument(
+        "--data-dir", default=None, help="Data directory (default: parent of cluster-dir)"
+    )
     args = parser.parse_args()
 
     cluster_dir = args.cluster_dir
@@ -599,12 +640,12 @@ def main():
 
     if is_doc_level:
         logger.info("Detected document-level clustering")
-        clusters_js, docs_js, k, granularity = build_doc_data(
-            cluster_dir, data_dir, run_info, info)
+        clusters_js, docs_js, k, granularity = build_doc_data(cluster_dir, data_dir, run_info, info)
     else:
         logger.info("Detected token-level clustering")
         clusters_js, docs_js, k, granularity = build_token_data(
-            cluster_dir, data_dir, run_info, info)
+            cluster_dir, data_dir, run_info, info
+        )
 
     html_path = os.path.join(cluster_dir, "cluster_explorer.html")
     write_html(clusters_js, docs_js, k, granularity, info, emb_label, html_path)

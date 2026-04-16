@@ -33,14 +33,14 @@ logger = logging.getLogger(__name__)
 
 # Maps embedding name -> filename
 EMBEDDING_FILES = {
-    "logits":         "embeddings_logits.npy",
-    "probs":          "embeddings_probs.npy",
-    "logits_sparse":  "embeddings_logits_sparse.npy",
-    "probs_sparse":   "embeddings_probs_sparse.npy",
-    "topk_freq":      "embeddings_topk_freq.npy",
+    "logits": "embeddings_logits.npy",
+    "probs": "embeddings_probs.npy",
+    "logits_sparse": "embeddings_logits_sparse.npy",
+    "probs_sparse": "embeddings_probs_sparse.npy",
+    "topk_freq": "embeddings_topk_freq.npy",
     # Token-level embeddings (from --granularity token)
-    "token_logits":      "embeddings_token_logits.npy",
-    "token_probs":       "embeddings_token_probs.npy",
+    "token_logits": "embeddings_token_logits.npy",
+    "token_probs": "embeddings_token_probs.npy",
     "token_topk_binary": "embeddings_token_topk_binary.npy",
 }
 
@@ -64,8 +64,9 @@ def load_embedding(data_dir: str, embedding_name: str) -> tuple:
     info_path = os.path.join(data_dir, "info.json")
     # Auto-detect metadata file: token-level uses metadata_tokens.jsonl.gz
     is_token = embedding_name.startswith("token_")
-    meta_path = os.path.join(data_dir,
-                             "metadata_tokens.jsonl.gz" if is_token else "metadata.jsonl.gz")
+    meta_path = os.path.join(
+        data_dir, "metadata_tokens.jsonl.gz" if is_token else "metadata.jsonl.gz"
+    )
 
     logger.info(f"Loading embedding '{embedding_name}' from {emb_path}")
     emb = np.load(emb_path).astype(np.float32)
@@ -74,21 +75,23 @@ def load_embedding(data_dir: str, embedding_name: str) -> tuple:
         info = json.load(f)
 
     import gzip
+
     meta = []
     with gzip.open(meta_path, "rt") as f:
         for line in f:
             meta.append(json.loads(line))
 
-    assert emb.shape[0] == len(meta), \
-        f"Embedding rows ({emb.shape[0]}) != metadata rows ({len(meta)})"
+    assert emb.shape[0] == len(
+        meta
+    ), f"Embedding rows ({emb.shape[0]}) != metadata rows ({len(meta)})"
 
     num_layers = info["num_layers"]
     num_experts = info["num_standard_experts"]
-    assert emb.shape[1] == num_layers * num_experts, \
-        f"Embedding dim ({emb.shape[1]}) != {num_layers} * {num_experts}"
+    assert (
+        emb.shape[1] == num_layers * num_experts
+    ), f"Embedding dim ({emb.shape[1]}) != {num_layers} * {num_experts}"
 
-    logger.info(f"  shape={emb.shape}, dtype=float32, "
-                f"range=[{emb.min():.4f}, {emb.max():.4f}]")
+    logger.info(f"  shape={emb.shape}, dtype=float32, " f"range=[{emb.min():.4f}, {emb.max():.4f}]")
     logger.info(f"  {len(meta)} docs, {num_layers} layers, {num_experts} experts")
 
     return emb, meta, info
@@ -105,9 +108,11 @@ TRANSFORM_REGISTRY = {}
 
 def register_transform(name: str, description: str):
     """Decorator to register a transform function."""
+
     def decorator(fn):
         TRANSFORM_REGISTRY[name] = {"fn": fn, "description": description}
         return fn
+
     return decorator
 
 
@@ -119,7 +124,9 @@ def transform_identity(emb: np.ndarray, info: dict) -> np.ndarray:
 @register_transform("l2", "L2 normalize each document vector")
 def transform_l2(emb: np.ndarray, info: dict) -> np.ndarray:
     from sklearn.preprocessing import normalize
+
     return normalize(emb, norm="l2")
+
 
 @register_transform("mean_pca", "Mean-center then PCA (95% variance)")
 def transform_mean_pca(emb: np.ndarray, info: dict) -> np.ndarray:
@@ -140,6 +147,7 @@ def transform_mean_pca(emb: np.ndarray, info: dict) -> np.ndarray:
     pca_k = PCA(n_components=k, random_state=42)
     return pca_k.fit_transform(centered)
 
+
 @register_transform("mean_pca_l2", "Mean-center then PCA (95% variance) then L2 normalize")
 def transform_mean_pca_l2(emb: np.ndarray, info: dict) -> np.ndarray:
     from sklearn.decomposition import PCA
@@ -159,6 +167,7 @@ def transform_mean_pca_l2(emb: np.ndarray, info: dict) -> np.ndarray:
     pca_k = PCA(n_components=k, random_state=42)
     reduced = pca_k.fit_transform(centered)
     return normalize(reduced, norm="l2")
+
 
 @register_transform("mean_l2_pca", "Mean-center, L2 normalize, then PCA (95% variance)")
 def transform_mean_l2_pca(emb: np.ndarray, info: dict) -> np.ndarray:
@@ -183,6 +192,7 @@ def transform_mean_l2_pca(emb: np.ndarray, info: dict) -> np.ndarray:
     pca_k = PCA(n_components=k, random_state=42)
     return pca_k.fit_transform(normalized)
 
+
 @register_transform("l2_mean_pca", "L2 normalize, mean-center, then PCA (95% variance)")
 def transform_l2_mean_pca(emb: np.ndarray, info: dict) -> np.ndarray:
     from sklearn.decomposition import PCA
@@ -205,6 +215,7 @@ def transform_l2_mean_pca(emb: np.ndarray, info: dict) -> np.ndarray:
 
     pca_k = PCA(n_components=k, random_state=42)
     return pca_k.fit_transform(centered)
+
 
 @register_transform("l2_mean_pca_l2", "L2 normalize, mean-center, PCA (95% variance), L2 normalize")
 def transform_l2_mean_pca_l2(emb: np.ndarray, info: dict) -> np.ndarray:
@@ -232,6 +243,7 @@ def transform_l2_mean_pca_l2(emb: np.ndarray, info: dict) -> np.ndarray:
     # L2 normalize again
     return normalize(reduced, norm="l2")
 
+
 @register_transform("tsvd", "TruncatedSVD (95% variance)")
 def transform_tsvd(emb: np.ndarray, info: dict) -> np.ndarray:
     from sklearn.decomposition import TruncatedSVD
@@ -246,6 +258,7 @@ def transform_tsvd(emb: np.ndarray, info: dict) -> np.ndarray:
 
     tsvd_k = TruncatedSVD(n_components=k, random_state=42)
     return tsvd_k.fit_transform(emb)
+
 
 @register_transform("l2_tsvd", "L2 normalize then TruncatedSVD (95% variance)")
 def transform_l2_tsvd(emb: np.ndarray, info: dict) -> np.ndarray:
@@ -266,6 +279,7 @@ def transform_l2_tsvd(emb: np.ndarray, info: dict) -> np.ndarray:
     tsvd_k = TruncatedSVD(n_components=k, random_state=42)
     return tsvd_k.fit_transform(normalized)
 
+
 @register_transform("tsvd_l2", "TruncatedSVD (95% variance) then L2 normalize")
 def transform_tsvd_l2(emb: np.ndarray, info: dict) -> np.ndarray:
     from sklearn.decomposition import TruncatedSVD
@@ -282,6 +296,7 @@ def transform_tsvd_l2(emb: np.ndarray, info: dict) -> np.ndarray:
     tsvd_k = TruncatedSVD(n_components=k, random_state=42)
     reduced = tsvd_k.fit_transform(emb)
     return normalize(reduced, norm="l2")
+
 
 def apply_transform(emb: np.ndarray, transform_name: str, info: dict) -> np.ndarray:
     """Apply a named transform to an embedding array."""
@@ -303,9 +318,11 @@ CLUSTER_REGISTRY = {}
 
 def register_cluster(name: str, description: str):
     """Decorator to register a clustering algorithm."""
+
     def decorator(fn):
         CLUSTER_REGISTRY[name] = {"fn": fn, "description": description}
         return fn
+
     return decorator
 
 
@@ -314,8 +331,11 @@ def cluster_kmeans(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
     from sklearn.cluster import MiniBatchKMeans
 
     km = MiniBatchKMeans(
-        n_clusters=k, n_init=10, max_iter=500,
-        batch_size=4096, random_state=42,
+        n_clusters=k,
+        n_init=10,
+        max_iter=500,
+        batch_size=4096,
+        random_state=42,
     )
     labels = km.fit_predict(emb)
     logger.info(f"  KMeans: inertia={km.inertia_:.1f}")
@@ -331,8 +351,11 @@ def cluster_spherical_kmeans(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
     emb_normed = normalize(emb, norm="l2")
 
     km = MiniBatchKMeans(
-        n_clusters=k, n_init=10, max_iter=500,
-        batch_size=4096, random_state=42,
+        n_clusters=k,
+        n_init=10,
+        max_iter=500,
+        batch_size=4096,
+        random_state=42,
     )
 
     # Iterative: fit, normalize centroids, reassign
@@ -363,6 +386,7 @@ def cluster_spherical_kmeans(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
 # Hierarchical clustering helpers
 # ---------------------------------------------------------------------------
 
+
 def _normalize_to_distribution(arr: np.ndarray) -> np.ndarray:
     """Normalize each row to sum to 1 (for JSD). Clips negatives to 0."""
     arr = np.clip(arr, 0, None)
@@ -374,6 +398,7 @@ def _normalize_to_distribution(arr: np.ndarray) -> np.ndarray:
 def _pairwise_to_condensed(square: np.ndarray) -> np.ndarray:
     """Convert a square distance matrix to scipy condensed form (upper triangle)."""
     from scipy.spatial.distance import squareform
+
     return squareform(square, checks=False)
 
 
@@ -388,10 +413,11 @@ def _fast_pairwise(data: np.ndarray, metric: str) -> np.ndarray:
     - jensenshannon: scipy pdist (C-optimized, single-threaded — no good
       parallel option without OpenBLAS thread issues)
     """
-    N = data.shape[0]
+    # N = data.shape[0]
 
     if metric == "cosine":
         from sklearn.preprocessing import normalize
+
         X_norm = normalize(data, norm="l2").astype(np.float64)
         sim = X_norm @ X_norm.T
         np.clip(sim, -1.0, 1.0, out=sim)
@@ -402,7 +428,7 @@ def _fast_pairwise(data: np.ndarray, metric: str) -> np.ndarray:
     elif metric == "euclidean":
         # BLAS matmul: ||x-y||^2 = ||x||^2 + ||y||^2 - 2*x.y
         X = data.astype(np.float64)
-        sq_norms = (X ** 2).sum(axis=1)
+        sq_norms = (X**2).sum(axis=1)
         gram = X @ X.T
         dist_sq = sq_norms[:, None] + sq_norms[None, :] - 2 * gram
         np.maximum(dist_sq, 0.0, out=dist_sq)  # numerical safety
@@ -412,10 +438,12 @@ def _fast_pairwise(data: np.ndarray, metric: str) -> np.ndarray:
 
     elif metric == "jensenshannon":
         from scipy.spatial.distance import pdist
+
         return pdist(data, metric="jensenshannon").astype(np.float64)
 
     else:
         from scipy.spatial.distance import pdist
+
         return pdist(data, metric=metric).astype(np.float64)
 
 
@@ -447,8 +475,10 @@ def compute_distance_matrix(
 
     N = emb.shape[0]
     n_pairs = N * (N - 1) // 2
-    logger.info(f"Computing {dist_metric} distance ({dist_mode} mode) "
-                f"for {N} docs ({n_pairs:,} pairs) ...")
+    logger.info(
+        f"Computing {dist_metric} distance ({dist_mode} mode) "
+        f"for {N} docs ({n_pairs:,} pairs) ..."
+    )
 
     if dist_mode == "flat":
         data = emb
@@ -479,15 +509,18 @@ def compute_distance_matrix(
     else:
         raise ValueError(f"Unknown dist_mode '{dist_mode}'. Use 'flat' or 'per_layer'.")
 
-    logger.info(f"  Distance matrix: {dist.shape[0]:,} pairs, "
-                f"range=[{dist.min():.4f}, {dist.max():.4f}], "
-                f"mean={dist.mean():.4f}, memory={dist.nbytes / 1e9:.1f}GB")
+    logger.info(
+        f"  Distance matrix: {dist.shape[0]:,} pairs, "
+        f"range=[{dist.min():.4f}, {dist.max():.4f}], "
+        f"mean={dist.mean():.4f}, memory={dist.nbytes / 1e9:.1f}GB"
+    )
     return dist
 
 
 def compute_linkage(dist_condensed: np.ndarray, linkage_method: str) -> np.ndarray:
     """Compute hierarchical clustering linkage matrix from condensed distances."""
     import time
+
     from scipy.cluster.hierarchy import linkage
 
     logger.info(f"  Computing linkage (method={linkage_method}) ...")
@@ -497,7 +530,9 @@ def compute_linkage(dist_condensed: np.ndarray, linkage_method: str) -> np.ndarr
     return Z
 
 
-@register_cluster("hierarchical", "Hierarchical agglomerative clustering with precomputed distances")
+@register_cluster(
+    "hierarchical", "Hierarchical agglomerative clustering with precomputed distances"
+)
 def cluster_hierarchical(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
     """
     Hierarchical clustering. Requires kwargs:
@@ -518,12 +553,16 @@ def cluster_gmm(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
     from sklearn.mixture import GaussianMixture
 
     gmm = GaussianMixture(
-        n_components=k, covariance_type="full",
-        max_iter=200, n_init=3, random_state=42,
+        n_components=k,
+        covariance_type="full",
+        max_iter=200,
+        n_init=3,
+        random_state=42,
     )
     labels = gmm.fit_predict(emb)
-    logger.info(f"  GMM: converged={gmm.converged_}, "
-                f"BIC={gmm.bic(emb):.1f}, AIC={gmm.aic(emb):.1f}")
+    logger.info(
+        f"  GMM: converged={gmm.converged_}, " f"BIC={gmm.bic(emb):.1f}, AIC={gmm.aic(emb):.1f}"
+    )
     return labels
 
 
@@ -542,8 +581,11 @@ def run_clustering(emb: np.ndarray, cluster_name: str, k: int, **kwargs) -> np.n
 # Evaluation metrics
 # ---------------------------------------------------------------------------
 
+
 def evaluate_clustering(
-    emb: np.ndarray, labels: np.ndarray, meta: list,
+    emb: np.ndarray,
+    labels: np.ndarray,
+    meta: list,
     precomputed_dist: np.ndarray = None,
 ) -> dict:
     """
@@ -556,9 +598,9 @@ def evaluate_clustering(
     Returns a dict of metric_name -> value.
     """
     from sklearn.metrics import (
-        silhouette_score,
         calinski_harabasz_score,
         davies_bouldin_score,
+        silhouette_score,
     )
 
     n_clusters = len(set(labels))
@@ -575,23 +617,24 @@ def evaluate_clustering(
     if precomputed_dist is not None:
         # Use precomputed distance matrix for silhouette
         from scipy.spatial.distance import squareform
+
         dist_square = squareform(precomputed_dist)
         idx_sorted = np.sort(idx)
         sub_dist = dist_square[np.ix_(idx_sorted, idx_sorted)]
         sub_labels = labels[idx_sorted]
-        metrics["silhouette"] = float(silhouette_score(
-            sub_dist, sub_labels, metric="precomputed", sample_size=None
-        ))
+        metrics["silhouette"] = float(
+            silhouette_score(sub_dist, sub_labels, metric="precomputed", sample_size=None)
+        )
         # No separate cosine silhouette — the precomputed distance already
         # encodes the chosen metric
     else:
         # Silhouette score: [-1, 1], higher = better separated clusters
-        metrics["silhouette"] = float(silhouette_score(
-            emb[idx], labels[idx], metric="euclidean", sample_size=None
-        ))
-        metrics["silhouette_cosine"] = float(silhouette_score(
-            emb[idx], labels[idx], metric="cosine", sample_size=None
-        ))
+        metrics["silhouette"] = float(
+            silhouette_score(emb[idx], labels[idx], metric="euclidean", sample_size=None)
+        )
+        metrics["silhouette_cosine"] = float(
+            silhouette_score(emb[idx], labels[idx], metric="cosine", sample_size=None)
+        )
 
     # Calinski-Harabasz index: higher = denser, well-separated clusters
     metrics["calinski_harabasz"] = float(calinski_harabasz_score(emb, labels))
@@ -633,13 +676,17 @@ def print_metrics(metrics: dict):
     if "silhouette" in metrics:
         logger.info(f"  silhouette:          {metrics['silhouette']:.4f}  (higher=better, [-1,1])")
     if "silhouette_cosine" in metrics:
-        logger.info(f"  silhouette_cosine:   {metrics['silhouette_cosine']:.4f}  (higher=better, [-1,1])")
+        logger.info(
+            f"  silhouette_cosine:   {metrics['silhouette_cosine']:.4f}  (higher=better, [-1,1])"
+        )
         logger.info(f"  calinski_harabasz:   {metrics['calinski_harabasz']:.1f}  (higher=better)")
         logger.info(f"  davies_bouldin:      {metrics['davies_bouldin']:.4f}  (lower=better)")
-        logger.info(f"  cluster sizes:       min={metrics['cluster_size_min']}, "
-                    f"max={metrics['cluster_size_max']}, "
-                    f"median={metrics['cluster_size_median']}, "
-                    f"std={metrics['cluster_size_std']:.1f}")
+        logger.info(
+            f"  cluster sizes:       min={metrics['cluster_size_min']}, "
+            f"max={metrics['cluster_size_max']}, "
+            f"median={metrics['cluster_size_median']}, "
+            f"std={metrics['cluster_size_std']:.1f}"
+        )
         logger.info(f"  avg_source_entropy:  {metrics['avg_source_entropy']:.4f} bits")
 
 
@@ -647,10 +694,15 @@ def print_metrics(metrics: dict):
 # Saving results
 # ---------------------------------------------------------------------------
 
+
 def save_results(
-    labels: np.ndarray, metrics: dict, meta: list,
-    emb: np.ndarray, transformed: np.ndarray,
-    args, output_dir: str,
+    labels: np.ndarray,
+    metrics: dict,
+    meta: list,
+    emb: np.ndarray,
+    transformed: np.ndarray,
+    args,
+    output_dir: str,
     n_rep_docs: int = 5,
 ):
     """Save clustering assignments, metrics, and a summary report.
@@ -686,10 +738,15 @@ def save_results(
         c_indices = np.where(mask)[0]
         c_size = int(mask.sum())
         if c_size == 0:
-            summaries.append({
-                "cluster": c, "size": 0, "source_counts": {},
-                "top10_experts_global": [], "representative_docs": [],
-            })
+            summaries.append(
+                {
+                    "cluster": c,
+                    "size": 0,
+                    "source_counts": {},
+                    "top10_experts_global": [],
+                    "representative_docs": [],
+                }
+            )
             continue
 
         # Source counts
@@ -724,69 +781,117 @@ def save_results(
                 entry["token_id"] = m["token_id"]
             rep_docs.append(entry)
 
-        summaries.append({
-            "cluster": c,
-            "size": c_size,
-            "source_counts": source_counts,
-            "top10_experts_global": top10_experts,
-            "representative_docs": rep_docs,
-        })
+        summaries.append(
+            {
+                "cluster": c,
+                "size": c_size,
+                "source_counts": source_counts,
+                "top10_experts_global": top10_experts,
+                "representative_docs": rep_docs,
+            }
+        )
 
     with open(os.path.join(output_dir, "summary.json"), "w") as f:
         json.dump(summaries, f, indent=2)
 
     logger.info(f"  Saved results to {output_dir}/")
-    logger.info(f"    assignments.npy, run_info.json, summary.json")
+    logger.info("    assignments.npy, run_info.json, summary.json")
 
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Load router embeddings, apply transformations, and cluster."
     )
-    parser.add_argument("--data-dir", type=str, required=True,
-                        help="Directory containing embeddings, metadata, and info.json "
-                             "(e.g. claude_outputs/analysis/router_clustering_pretraining/<model_name>)")
-    parser.add_argument("--embedding", type=str, default="logits",
-                        help=f"Embedding type to load. "
-                             f"Available: {', '.join(sorted(EMBEDDING_FILES))} "
-                             f"(default: logits)")
-    parser.add_argument("--transform", type=str, default="identity",
-                        help=f"Transform to apply. "
-                             f"Available: {', '.join(sorted(TRANSFORM_REGISTRY))} "
-                             f"(default: identity)")
-    parser.add_argument("--cluster", type=str, default="kmeans",
-                        help=f"Clustering algorithm. "
-                             f"Available: {', '.join(sorted(CLUSTER_REGISTRY))} "
-                             f"(default: kmeans)")
-    parser.add_argument("--k", type=int, nargs="+", default=[64],
-                        help="Number of clusters. Pass multiple values for sweep. "
-                             "(default: 64)")
-    parser.add_argument("--save", action="store_true",
-                        help="Save clustering results (assignments, metrics, summary). "
-                             "Without this flag, only prints evaluation metrics.")
-    parser.add_argument("--output-dir", type=str, default=None,
-                        help="Output directory when --save is set. "
-                             "Defaults to <data-dir>/<embedding>_<transform>_<cluster>_k<k>/")
-    parser.add_argument("--layers", type=str, default=None,
-                        help="Layer range to use (e.g. '3-16' for layers 3..15, '11-16' for layers 11..15). "
-                             "Uses 1-indexed inclusive start, exclusive end. "
-                             "If not specified, uses all layers.")
-    parser.add_argument("--dist-metric", type=str, default="cosine",
-                        help="Distance metric for hierarchical clustering: "
-                             "cosine, euclidean, jensenshannon (default: cosine)")
-    parser.add_argument("--dist-mode", type=str, default="flat",
-                        help="Distance computation mode for hierarchical clustering: "
-                             "flat (whole vector) or per_layer (avg per-layer distances) "
-                             "(default: flat)")
-    parser.add_argument("--linkage-method", type=str, default="average",
-                        help="Linkage method for hierarchical clustering: "
-                             "average, complete (default: average)")
-    parser.add_argument("--list", action="store_true",
-                        help="List available embeddings, transforms, and clusterers, then exit")
+    parser.add_argument(
+        "--data-dir",
+        type=str,
+        required=True,
+        help="Directory containing embeddings, metadata, and info.json "
+        "(e.g. claude_outputs/analysis/router_clustering_pretraining/<model_name>)",
+    )
+    parser.add_argument(
+        "--embedding",
+        type=str,
+        default="logits",
+        help=f"Embedding type to load. "
+        f"Available: {', '.join(sorted(EMBEDDING_FILES))} "
+        f"(default: logits)",
+    )
+    parser.add_argument(
+        "--transform",
+        type=str,
+        default="identity",
+        help=f"Transform to apply. "
+        f"Available: {', '.join(sorted(TRANSFORM_REGISTRY))} "
+        f"(default: identity)",
+    )
+    parser.add_argument(
+        "--cluster",
+        type=str,
+        default="kmeans",
+        help=f"Clustering algorithm. "
+        f"Available: {', '.join(sorted(CLUSTER_REGISTRY))} "
+        f"(default: kmeans)",
+    )
+    parser.add_argument(
+        "--k",
+        type=int,
+        nargs="+",
+        default=[64],
+        help="Number of clusters. Pass multiple values for sweep. " "(default: 64)",
+    )
+    parser.add_argument(
+        "--save",
+        action="store_true",
+        help="Save clustering results (assignments, metrics, summary). "
+        "Without this flag, only prints evaluation metrics.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default=None,
+        help="Output directory when --save is set. "
+        "Defaults to <data-dir>/<embedding>_<transform>_<cluster>_k<k>/",
+    )
+    parser.add_argument(
+        "--layers",
+        type=str,
+        default=None,
+        help="Layer range to use (e.g. '3-16' for layers 3..15, '11-16' for layers 11..15). "
+        "Uses 1-indexed inclusive start, exclusive end. "
+        "If not specified, uses all layers.",
+    )
+    parser.add_argument(
+        "--dist-metric",
+        type=str,
+        default="cosine",
+        help="Distance metric for hierarchical clustering: "
+        "cosine, euclidean, jensenshannon (default: cosine)",
+    )
+    parser.add_argument(
+        "--dist-mode",
+        type=str,
+        default="flat",
+        help="Distance computation mode for hierarchical clustering: "
+        "flat (whole vector) or per_layer (avg per-layer distances) "
+        "(default: flat)",
+    )
+    parser.add_argument(
+        "--linkage-method",
+        type=str,
+        default="average",
+        help="Linkage method for hierarchical clustering: " "average, complete (default: average)",
+    )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="List available embeddings, transforms, and clusterers, then exit",
+    )
     args = parser.parse_args()
 
     if args.list:
@@ -820,8 +925,10 @@ def main():
         col_end = layer_end * num_experts
         emb = emb[:, col_start:col_end]
         n_selected = layer_end - layer_start
-        logger.info(f"  Sliced layers {layer_start}-{layer_end} "
-                    f"({n_selected} layers): shape={emb.shape}")
+        logger.info(
+            f"  Sliced layers {layer_start}-{layer_end} "
+            f"({n_selected} layers): shape={emb.shape}"
+        )
         # Update info so transforms see correct dimensions
         info = {**info, "num_layers": n_selected}
 
@@ -847,8 +954,11 @@ def main():
         else:
             dist_emb = transformed
         dist_condensed = compute_distance_matrix(
-            dist_emb, args.dist_metric, args.dist_mode,
-            info["num_layers"], info["num_standard_experts"],
+            dist_emb,
+            args.dist_metric,
+            args.dist_mode,
+            info["num_layers"],
+            info["num_standard_experts"],
         )
         linkage_matrix = compute_linkage(dist_condensed, args.linkage_method)
         cluster_kwargs["linkage_matrix"] = linkage_matrix
@@ -862,7 +972,10 @@ def main():
 
         labels = run_clustering(transformed, args.cluster, k, **cluster_kwargs)
         metrics = evaluate_clustering(
-            transformed, labels, meta, precomputed_dist=dist_condensed,
+            transformed,
+            labels,
+            meta,
+            precomputed_dist=dist_condensed,
         )
         print_metrics(metrics)
         all_results.append({"k": k, **metrics})
@@ -870,15 +983,18 @@ def main():
         if args.save:
             layers_suffix = f"_L{args.layers}" if args.layers else ""
             output_dir = args.output_dir or os.path.join(
-                args.data_dir, f"{args.embedding}_{args.transform}_{args.cluster}_k{k}{layers_suffix}"
+                args.data_dir,
+                f"{args.embedding}_{args.transform}_{args.cluster}_k{k}{layers_suffix}",
             )
             save_results(labels, metrics, meta, emb, transformed, args_k, output_dir)
 
     # Print summary table if multiple k values
     if len(args.k) > 1:
         logger.info("\n=== SWEEP SUMMARY ===")
-        header = (f"{'k':>5}  {'silhouette':>11}  {'calinski_h':>11}  {'davies_b':>10}  "
-                  f"{'sz_med':>7}  {'sz_std':>8}  {'src_ent':>8}")
+        header = (
+            f"{'k':>5}  {'silhouette':>11}  {'calinski_h':>11}  {'davies_b':>10}  "
+            f"{'sz_med':>7}  {'sz_std':>8}  {'src_ent':>8}"
+        )
         logger.info(header)
         logger.info("-" * len(header))
         for r in all_results:

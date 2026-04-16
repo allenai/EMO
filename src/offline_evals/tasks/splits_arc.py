@@ -8,6 +8,7 @@ from oe_eval.tasks.oe_eval_tasks.arc import (
 
 from ..metrics.mc_softloss import SoftLoss
 
+
 class ARCEasy_RC_Base(ARCEasy):
     def make_metrics(self):
         # run the super
@@ -17,6 +18,7 @@ class ARCEasy_RC_Base(ARCEasy):
 
         return self._metrics
 
+
 class ARCChallenge_RC_Base(ARCChallenge):
     def make_metrics(self):
         # run the super
@@ -25,6 +27,7 @@ class ARCChallenge_RC_Base(ARCChallenge):
         self._metrics += [SoftLoss(**self.task_config["metric_kwargs"])]
 
         return self._metrics
+
 
 # class ARCEasy_RC_Train(ARCEasy_RC_Base):
 #     pass
@@ -83,6 +86,7 @@ class ARCEasy_MC_Test(ARCEasyMC):
 # finetuning. The two HF splits are independent, so we shuffle the merged set.
 # Test split (HF "test") is unchanged.
 # ---------------------------------------------------------------------------
+
 
 class ARCEasy_Merged_RC(ARCEasy_RC_Base):
     """ARC-Easy variant where pruning and finetuning use the same merged data."""

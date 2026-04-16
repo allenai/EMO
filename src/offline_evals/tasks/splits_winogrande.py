@@ -3,6 +3,7 @@ from oe_eval.tasks.oe_eval_tasks.winogrande import Winogrande, WinograndeMC
 
 from ..metrics.mc_softloss import SoftLoss
 
+
 class Winogrande_RC_Base(Winogrande):
     def has_test_docs(self):
         return True
@@ -85,6 +86,7 @@ class Winogrande_MC_BASE(WinograndeMC):
 # Merged variant: train+val combined for both pruning and finetuning.
 # Both halves come from the same shuffled train, so no extra shuffle is needed.
 # ---------------------------------------------------------------------------
+
 
 class Winogrande_Merged_RC(Winogrande_RC_Base):
     """Winogrande variant where pruning and finetuning use the same merged data."""

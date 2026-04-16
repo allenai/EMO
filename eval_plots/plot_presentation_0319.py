@@ -40,8 +40,14 @@ MODEL_SPECS = {
         "baseline": False,
         "variants": [
             {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
-            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
+            {
+                "suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 32)",
+            },
+            {
+                "suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 128)",
+            },
         ],
     },
     # "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308step30995-hf": {
@@ -57,15 +63,20 @@ MODEL_SPECS = {
         "variants": [
             {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
             # {"suffix": "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 16)"},
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
+            {
+                "suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 32)",
+            },
             # {"suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 64)"},
             # {"suffix": "_keepk_96_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 96)"},
             # {"suffix": "_keepk_120_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 120)"},
-            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
+            {
+                "suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 128)",
+            },
             # {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise_variable_first2_unpruned", "label": "(keepk 32 first2 unpruned)"},
         ],
     },
-
     # "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313step238419-hf": {
     #     "label": "specialized moe 1T",
     #     "baseline": False,
@@ -91,70 +102,19 @@ AVAILABLE_MODELS = list(MODEL_SPECS)
 # Task list + per-task metrics.
 # Key: task run name. Value: list of metric keys to plot for that task.
 TASK_SPECS = {
-    "arc_challenge": [
-        "softloss_corr",
-        "acc_per_byte",
-        "primary_score"
-    ],
-    "arc_easy": [
-        "softloss_corr",
-        "acc_per_byte",
-        "primary_score"
-    ],
-    "boolq": [
-        "softloss_corr",
-        "acc_per_byte",
-        "primary_score"
-    ],
-    "coqa_0shot": [
-        "recall",
-        "f1",
-        "primary_score"
-    ],
-    "csqa": [
-        "softloss_corr",
-        "acc_per_byte",
-        "primary_score"
-    ],
-    "gsm8k_generation_0shot": [
-        "exact_match",
-        "primary_score"
-    ],
-    "gsm8k_perplexity_0shot": [
-        "bits_per_byte",
-        "primary_score"
-    ],
-    "hellaswag": [
-        "softloss_corr",
-        "acc_per_byte",
-        "primary_score"
-    ],
-    "openbookqa": [
-        "softloss_corr",
-        "acc_per_byte",
-        "primary_score"
-    ],
-    "piqa": [
-        "softloss_corr",
-        "acc_per_byte",
-        "primary_score"
-    ],
-    "socialiqa": [
-        "softloss_corr",
-        "acc_per_byte",
-        "primary_score"
-    ],
-    "squad_0shot": [
-        "recall",
-        "f1",
-        "primary_score"
-    ],
-    "winogrande": [
-        "softloss_corr",
-        "acc_per_byte",
-        "primary_score"
-    ],
-
+    "arc_challenge": ["softloss_corr", "acc_per_byte", "primary_score"],
+    "arc_easy": ["softloss_corr", "acc_per_byte", "primary_score"],
+    "boolq": ["softloss_corr", "acc_per_byte", "primary_score"],
+    "coqa_0shot": ["recall", "f1", "primary_score"],
+    "csqa": ["softloss_corr", "acc_per_byte", "primary_score"],
+    "gsm8k_generation_0shot": ["exact_match", "primary_score"],
+    "gsm8k_perplexity_0shot": ["bits_per_byte", "primary_score"],
+    "hellaswag": ["softloss_corr", "acc_per_byte", "primary_score"],
+    "openbookqa": ["softloss_corr", "acc_per_byte", "primary_score"],
+    "piqa": ["softloss_corr", "acc_per_byte", "primary_score"],
+    "socialiqa": ["softloss_corr", "acc_per_byte", "primary_score"],
+    "squad_0shot": ["recall", "f1", "primary_score"],
+    "winogrande": ["softloss_corr", "acc_per_byte", "primary_score"],
     "mmlu_biology": [
         "softloss_corr",
         "acc_per_byte",
@@ -240,7 +200,6 @@ TASK_SPECS = {
         "acc_per_byte",
         "primary_score",
     ],
-
     # MMLU-Pro per-category tasks.
     "mmlu_pro_biology": [
         # "softloss_corr",
@@ -312,7 +271,6 @@ TASK_SPECS = {
         "acc_per_byte",
         "primary_score",
     ],
-
     # Virtual aggregated tasks: macro average across MMLU categories.
     "mmlu_avg": [
         "softloss_corr",
@@ -334,7 +292,6 @@ TASK_SPECS = {
         "acc_per_byte",
         "primary_score",
     ],
-
     # MMLU-Pro-Merged per-category tasks.
     "mmlu_pro_merged_biology": [
         # "softloss_corr",
@@ -406,18 +363,27 @@ TASK_SPECS = {
         "acc_per_byte",
         "primary_score",
     ],
-
     # MMLU-Pro-Merged N-val per-category tasks.
     **{
         f"mmlu_pro_merged_n{n}_{cat}": ["acc_per_byte", "primary_score"]
         for n in [50, 100, 200]
         for cat in [
-            "biology", "business", "chemistry", "computer_science", "economics",
-            "engineering", "health", "history", "law", "math", "other",
-            "philosophy", "physics", "psychology",
+            "biology",
+            "business",
+            "chemistry",
+            "computer_science",
+            "economics",
+            "engineering",
+            "health",
+            "history",
+            "law",
+            "math",
+            "other",
+            "philosophy",
+            "physics",
+            "psychology",
         ]
     },
-
     # Virtual aggregated tasks: macro average across MMLU-Pro-Merged categories.
     "mmlu_pro_merged_avg": [
         # "softloss_corr",
@@ -429,32 +395,49 @@ TASK_SPECS = {
         "acc_per_byte",
         "primary_score",
     ],
-
     # Virtual aggregated tasks: macro average across MMLU-Pro-Merged N-val categories.
     **{
         f"mmlu_pro_merged_n{n}_{agg}": ["acc_per_byte", "primary_score"]
         for n in [50, 100, 200]
         for agg in ["avg", "avg_no_other"]
     },
-
     "gsm8k_generation_8shot": [
-        "exact_match", "primary_score",
+        "exact_match",
+        "primary_score",
     ],
-
 }
 # MMLU sub-tasks whose metrics are averaged for the "mmlu_avg" virtual task.
 _MMLU_VIRTUAL = {
-    "mmlu_avg", "mmlu_avg_no_other",
-    "mmlu_pro_avg", "mmlu_pro_avg_no_other",
-    "mmlu_pro_merged_avg", "mmlu_pro_merged_avg_no_other",
+    "mmlu_avg",
+    "mmlu_avg_no_other",
+    "mmlu_pro_avg",
+    "mmlu_pro_avg_no_other",
+    "mmlu_pro_merged_avg",
+    "mmlu_pro_merged_avg_no_other",
     *(f"mmlu_pro_merged_n{n}_{agg}" for n in [50, 100, 200] for agg in ["avg", "avg_no_other"]),
 }
-MMLU_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_") and not t.startswith("mmlu_pro_") and t not in _MMLU_VIRTUAL]
+MMLU_SUBTASKS = [
+    t
+    for t in TASK_SPECS
+    if t.startswith("mmlu_") and not t.startswith("mmlu_pro_") and t not in _MMLU_VIRTUAL
+]
 MMLU_SUBTASKS_NO_OTHER = [t for t in MMLU_SUBTASKS if t != "mmlu_other"]
-MMLU_PRO_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_") and not t.startswith("mmlu_pro_merged_") and t not in _MMLU_VIRTUAL]
+MMLU_PRO_SUBTASKS = [
+    t
+    for t in TASK_SPECS
+    if t.startswith("mmlu_pro_") and not t.startswith("mmlu_pro_merged_") and t not in _MMLU_VIRTUAL
+]
 MMLU_PRO_SUBTASKS_NO_OTHER = [t for t in MMLU_PRO_SUBTASKS if t != "mmlu_pro_other"]
-MMLU_PRO_MERGED_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_pro_merged_") and not any(t.startswith(f"mmlu_pro_merged_n{n}_") for n in [50, 100, 200]) and t not in _MMLU_VIRTUAL]
-MMLU_PRO_MERGED_SUBTASKS_NO_OTHER = [t for t in MMLU_PRO_MERGED_SUBTASKS if t != "mmlu_pro_merged_other"]
+MMLU_PRO_MERGED_SUBTASKS = [
+    t
+    for t in TASK_SPECS
+    if t.startswith("mmlu_pro_merged_")
+    and not any(t.startswith(f"mmlu_pro_merged_n{n}_") for n in [50, 100, 200])
+    and t not in _MMLU_VIRTUAL
+]
+MMLU_PRO_MERGED_SUBTASKS_NO_OTHER = [
+    t for t in MMLU_PRO_MERGED_SUBTASKS if t != "mmlu_pro_merged_other"
+]
 MMLU_PRO_MERGED_NVAL_SUBTASKS = {
     n: [t for t in TASK_SPECS if t.startswith(f"mmlu_pro_merged_n{n}_") and t not in _MMLU_VIRTUAL]
     for n in [50, 100, 200]
@@ -473,28 +456,24 @@ SELECTED_TASK_RUNS = list(AVAILABLE_TASK_RUNS)
 
 # Optional display names for models (legend labels).
 # Key: model directory name. Value: label to show in plots.
-MODEL_LABELS = {
-    model: spec["label"]
-    for model, spec in MODEL_SPECS.items()
-    if spec.get("label")
-}
+MODEL_LABELS = {model: spec["label"] for model, spec in MODEL_SPECS.items() if spec.get("label")}
 
 DEFAULT_OUTPUT_SUBDIR = "presentation_0319_plots"
 
 # Hardcoded color assignments so colors never change regardless of which
 # models are commented in/out.  Colors are from matplotlib's tab10 palette.
 _MODEL_BASE_COLORS: Dict[str, object] = {
-    "moe":                                                  (0.1216, 0.4667, 0.7059),  # tab10 blue
-    "moe_small":                                            (1.0000, 0.4980, 0.0549),  # tab10 orange
+    "moe": (0.1216, 0.4667, 0.7059),  # tab10 blue
+    "moe_small": (1.0000, 0.4980, 0.0549),  # tab10 orange
     # different shaed of orange
-    "moe_small_sharedexp":                                   (1.0000, 0.6471, 0.0000),  # tab10 orange (darker)
-    "dense":                                                (0.1725, 0.6275, 0.1725),  # tab10 green
-    "specialized moe":                                      (0.8392, 0.1529, 0.1569),  # tab10 red
-    "specialized moe + globallb":                           (0.5804, 0.4039, 0.7412),  # tab10 purple
-    "specialized moe + globallb + 1sharedexp":              (0.5490, 0.3373, 0.2941),  # tab10 brown
-    "specialized moe + globallb + 1shardexp + randpool":    (0.8902, 0.4667, 0.7608),  # tab10 pink
-    "specialized moe 1T + anneal":                          (0.4980, 0.4980, 0.4980),  # tab10 gray
-    "specialized moe 1T":                                   (0.7373, 0.7412, 0.1333),  # tab10 olive
+    "moe_small_sharedexp": (1.0000, 0.6471, 0.0000),  # tab10 orange (darker)
+    "dense": (0.1725, 0.6275, 0.1725),  # tab10 green
+    "specialized moe": (0.8392, 0.1529, 0.1569),  # tab10 red
+    "specialized moe + globallb": (0.5804, 0.4039, 0.7412),  # tab10 purple
+    "specialized moe + globallb + 1sharedexp": (0.5490, 0.3373, 0.2941),  # tab10 brown
+    "specialized moe + globallb + 1shardexp + randpool": (0.8902, 0.4667, 0.7608),  # tab10 pink
+    "specialized moe 1T + anneal": (0.4980, 0.4980, 0.4980),  # tab10 gray
+    "specialized moe 1T": (0.7373, 0.7412, 0.1333),  # tab10 olive
 }
 
 # Per-variant visual style: use different line styles, markers, and moderate
@@ -509,7 +488,9 @@ for _model_name, _spec in MODEL_SPECS.items():
     _variants = _spec.get("variants", [])
     if not _variants:
         _MODEL_VARIANT_STYLE[_base_label] = {
-            "alpha": 1.0, "linestyle": "-", "marker": "o",
+            "alpha": 1.0,
+            "linestyle": "-",
+            "marker": "o",
         }
     for _vi, _v in enumerate(_variants):
         _full_label = _base_label + " " + _v["label"]
@@ -522,11 +503,7 @@ for _model_name, _spec in MODEL_SPECS.items():
 
 # Collect all known variant suffixes from MODEL_SPECS for auto-discovery.
 _ALL_VARIANT_SUFFIXES: List[str] = sorted(
-    {
-        v["suffix"]
-        for spec in MODEL_SPECS.values()
-        for v in spec.get("variants", [])
-    },
+    {v["suffix"] for spec in MODEL_SPECS.values() for v in spec.get("variants", [])},
     key=len,
     reverse=True,  # longest first for greedy stripping
 )
@@ -539,15 +516,14 @@ def _get_model_variants(model_name: str) -> List[Tuple[str, str]]:
         return [(v["suffix"], v["label"]) for v in spec.get("variants", [])]
     return []
 
+
 # ============================================================================
 # END CONFIGURATION
 # ============================================================================
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Plot prune_evals metrics across checkpoints."
-    )
+    parser = argparse.ArgumentParser(description="Plot prune_evals metrics across checkpoints.")
     parser.add_argument(
         "--prune-evals-root",
         type=Path,
@@ -641,8 +617,7 @@ def _load_baseline_metric(
     Looks in ``<model>/original_model/<task>/results/checkpoint-0/``.
     """
     ckpt_dir = (
-        prune_evals_root / model_name / "original_model" / task_run
-        / "results" / "checkpoint-0"
+        prune_evals_root / model_name / "original_model" / task_run / "results" / "checkpoint-0"
     )
     if not ckpt_dir.is_dir():
         return None
@@ -776,9 +751,13 @@ def collect_records(
 
         for task_run in task_runs:
             _scan_checkpoints(
-                model_dir / task_run, metric_key,
-                model_key=model_name, model_label=model_label,
-                task_run=task_run, rows=rows, task_labels=task_labels,
+                model_dir / task_run,
+                metric_key,
+                model_key=model_name,
+                model_label=model_label,
+                task_run=task_run,
+                rows=rows,
+                task_labels=task_labels,
             )
 
             for suffix, label_mod in _get_model_variants(model_name):
@@ -786,10 +765,13 @@ def collect_records(
                 if not variant_task_dir.is_dir():
                     continue
                 _scan_checkpoints(
-                    variant_task_dir, metric_key,
+                    variant_task_dir,
+                    metric_key,
                     model_key=model_name + suffix,
                     model_label=model_label + " " + label_mod,
-                    task_run=task_run, rows=rows, task_labels=task_labels,
+                    task_run=task_run,
+                    rows=rows,
+                    task_labels=task_labels,
                 )
 
     if not rows:
@@ -829,9 +811,7 @@ def collect_mmlu_avg_records(
         subtasks = MMLU_SUBTASKS
 
     try:
-        df, _ = collect_records(
-            prune_evals_root, model_names, subtasks, metric_key
-        )
+        df, _ = collect_records(prune_evals_root, model_names, subtasks, metric_key)
     except RuntimeError:
         return pd.DataFrame()
 
@@ -844,9 +824,7 @@ def collect_mmlu_avg_records(
     complete_models = []
     for model_key in sorted(df["model"].unique()):
         model_label = df.loc[df["model"] == model_key, "model_label"].iloc[0]
-        model_tasks = set(
-            df.loc[df["model"] == model_key, "task_run"].unique()
-        )
+        model_tasks = set(df.loc[df["model"] == model_key, "task_run"].unique())
         missing = [t for t in subtasks if t not in model_tasks]
         if missing:
             print(
@@ -868,22 +846,16 @@ def collect_mmlu_avg_records(
     # Log coverage per model after alignment.
     for model_key in sorted(df["model"].unique()):
         mlabel = df.loc[df["model"] == model_key, "model_label"].iloc[0]
-        model_subtasks = sorted(
-            df.loc[df["model"] == model_key, "task_run"].unique()
-        )
-        max_rel_ckpt = int(
-            df.loc[df["model"] == model_key, "checkpoint_rel"].max()
-        )
+        model_subtasks = sorted(df.loc[df["model"] == model_key, "task_run"].unique())
+        max_rel_ckpt = int(df.loc[df["model"] == model_key, "checkpoint_rel"].max())
         print(
             f"[INFO] {avg_name} aligned (metric={metric_key!r}): "
             f"model {mlabel!r} averages over {len(model_subtasks)} sub-task(s), "
             f"max_relative_checkpoint={max_rel_ckpt}"
         )
 
-    avg_df = (
-        df.groupby(
-            ["model", "model_label", "checkpoint_rel"], as_index=False
-        ).agg(metric_value=("metric_value", "mean"))
+    avg_df = df.groupby(["model", "model_label", "checkpoint_rel"], as_index=False).agg(
+        metric_value=("metric_value", "mean")
     )
     avg_df = avg_df.rename(columns={"checkpoint_rel": "checkpoint"})
     avg_df = avg_df[avg_df["checkpoint"] <= 6]
@@ -915,7 +887,9 @@ def plot_mmlu_avg(
     color_map: Dict[str, object] = {}
     for plotted_label in all_labels:
         matched = False
-        for base_label, color in sorted(_MODEL_BASE_COLORS.items(), key=lambda x: len(x[0]), reverse=True):
+        for base_label, color in sorted(
+            _MODEL_BASE_COLORS.items(), key=lambda x: len(x[0]), reverse=True
+        ):
             if plotted_label.startswith(base_label):
                 color_map[plotted_label] = color
                 matched = True
@@ -924,10 +898,10 @@ def plot_mmlu_avg(
             color_map[plotted_label] = "gray"
 
     for model_label in sorted(avg_df["model_label"].unique()):
-        model_df = avg_df[
-            avg_df["model_label"] == model_label
-        ].sort_values("checkpoint")
-        vstyle = _MODEL_VARIANT_STYLE.get(model_label, {"alpha": 1.0, "linestyle": "-", "marker": "o"})
+        model_df = avg_df[avg_df["model_label"] == model_label].sort_values("checkpoint")
+        vstyle = _MODEL_VARIANT_STYLE.get(
+            model_label, {"alpha": 1.0, "linestyle": "-", "marker": "o"}
+        )
         ax.plot(
             model_df["checkpoint"],
             model_df["metric_value"],
@@ -1015,7 +989,9 @@ def plot_task(
     color_map: Dict[str, object] = {}
     for plotted_label in sorted(task_df["model_label"].unique()):
         matched = False
-        for base_label, color in sorted(_MODEL_BASE_COLORS.items(), key=lambda x: len(x[0]), reverse=True):
+        for base_label, color in sorted(
+            _MODEL_BASE_COLORS.items(), key=lambda x: len(x[0]), reverse=True
+        ):
             if plotted_label.startswith(base_label):
                 color_map[plotted_label] = color
                 matched = True
@@ -1025,7 +1001,9 @@ def plot_task(
 
     for model_label in sorted(task_df["model_label"].unique()):
         model_df = task_df[task_df["model_label"] == model_label].sort_values("checkpoint")
-        vstyle = _MODEL_VARIANT_STYLE.get(model_label, {"alpha": 1.0, "linestyle": "-", "marker": "o"})
+        vstyle = _MODEL_VARIANT_STYLE.get(
+            model_label, {"alpha": 1.0, "linestyle": "-", "marker": "o"}
+        )
         ax.plot(
             model_df["checkpoint"],
             model_df["metric_value"],
@@ -1122,8 +1100,10 @@ def main() -> None:
         has_mmlu_pro_merged_avg = "mmlu_pro_merged_avg" in tasks_for_metric
         has_mmlu_pro_merged_avg_no_other = "mmlu_pro_merged_avg_no_other" in tasks_for_metric
         has_mmlu_pro_merged_nval = {
-            n: (f"mmlu_pro_merged_n{n}_avg" in tasks_for_metric,
-                f"mmlu_pro_merged_n{n}_avg_no_other" in tasks_for_metric)
+            n: (
+                f"mmlu_pro_merged_n{n}_avg" in tasks_for_metric,
+                f"mmlu_pro_merged_n{n}_avg_no_other" in tasks_for_metric,
+            )
             for n in [50, 100, 200]
         }
 
@@ -1175,9 +1155,7 @@ def main() -> None:
 
         # --- mmlu_avg (macro average across MMLU categories) ---
         if has_mmlu_avg:
-            avg_df = collect_mmlu_avg_records(
-                args.prune_evals_root, model_set, metric_key
-            )
+            avg_df = collect_mmlu_avg_records(args.prune_evals_root, model_set, metric_key)
             # Gather MMLU avg baselines
             mmlu_baselines: Dict[str, float] = {}
             for model_name in model_set:
@@ -1208,10 +1186,7 @@ def main() -> None:
                 print(f"[WARN] No MMLU data for metric {metric_key!r}; skipping mmlu_avg.")
             else:
                 metric_output_dir = base_output_dir / sanitize_filename(metric_key)
-                output_file = (
-                    metric_output_dir
-                    / f"mmlu_avg_{sanitize_filename(metric_key)}.png"
-                )
+                output_file = metric_output_dir / f"mmlu_avg_{sanitize_filename(metric_key)}.png"
                 plot_mmlu_avg(
                     avg_df,
                     output_file,
@@ -1224,7 +1199,9 @@ def main() -> None:
         # --- mmlu_avg_no_other (excludes mmlu_other) ---
         if has_mmlu_avg_no_other:
             avg_no_other_df = collect_mmlu_avg_records(
-                args.prune_evals_root, model_set, metric_key,
+                args.prune_evals_root,
+                model_set,
+                metric_key,
                 subtasks=MMLU_SUBTASKS_NO_OTHER,
                 avg_name="mmlu_avg_no_other",
             )
@@ -1259,8 +1236,7 @@ def main() -> None:
             else:
                 metric_output_dir = base_output_dir / sanitize_filename(metric_key)
                 output_file = (
-                    metric_output_dir
-                    / f"mmlu_avg_no_other_{sanitize_filename(metric_key)}.png"
+                    metric_output_dir / f"mmlu_avg_no_other_{sanitize_filename(metric_key)}.png"
                 )
                 plot_mmlu_avg(
                     avg_no_other_df,
@@ -1274,7 +1250,9 @@ def main() -> None:
         # --- mmlu_pro_avg (macro average across MMLU-Pro categories) ---
         if has_mmlu_pro_avg:
             mmlu_pro_avg_df = collect_mmlu_avg_records(
-                args.prune_evals_root, model_set, metric_key,
+                args.prune_evals_root,
+                model_set,
+                metric_key,
                 subtasks=MMLU_PRO_SUBTASKS,
                 avg_name="mmlu_pro_avg",
             )
@@ -1309,8 +1287,7 @@ def main() -> None:
             else:
                 metric_output_dir = base_output_dir / sanitize_filename(metric_key)
                 output_file = (
-                    metric_output_dir
-                    / f"mmlu_pro_avg_{sanitize_filename(metric_key)}.png"
+                    metric_output_dir / f"mmlu_pro_avg_{sanitize_filename(metric_key)}.png"
                 )
                 plot_mmlu_avg(
                     mmlu_pro_avg_df,
@@ -1324,7 +1301,9 @@ def main() -> None:
         # --- mmlu_pro_avg_no_other ---
         if has_mmlu_pro_avg_no_other:
             mmlu_pro_no_other_df = collect_mmlu_avg_records(
-                args.prune_evals_root, model_set, metric_key,
+                args.prune_evals_root,
+                model_set,
+                metric_key,
                 subtasks=MMLU_PRO_SUBTASKS_NO_OTHER,
                 avg_name="mmlu_pro_avg_no_other",
             )
@@ -1345,12 +1324,13 @@ def main() -> None:
                     mmlu_pro_no_other_baselines[model_name] = sum(vals) / len(vals)
 
             if mmlu_pro_no_other_df.empty:
-                print(f"[WARN] No MMLU-Pro data for metric {metric_key!r}; skipping mmlu_pro_avg_no_other.")
+                print(
+                    f"[WARN] No MMLU-Pro data for metric {metric_key!r}; skipping mmlu_pro_avg_no_other."
+                )
             else:
                 metric_output_dir = base_output_dir / sanitize_filename(metric_key)
                 output_file = (
-                    metric_output_dir
-                    / f"mmlu_pro_avg_no_other_{sanitize_filename(metric_key)}.png"
+                    metric_output_dir / f"mmlu_pro_avg_no_other_{sanitize_filename(metric_key)}.png"
                 )
                 plot_mmlu_avg(
                     mmlu_pro_no_other_df,
@@ -1364,7 +1344,9 @@ def main() -> None:
         # --- mmlu_pro_merged_avg ---
         if has_mmlu_pro_merged_avg:
             mmlu_pro_merged_avg_df = collect_mmlu_avg_records(
-                args.prune_evals_root, model_set, metric_key,
+                args.prune_evals_root,
+                model_set,
+                metric_key,
                 subtasks=MMLU_PRO_MERGED_SUBTASKS,
                 avg_name="mmlu_pro_merged_avg",
             )
@@ -1385,12 +1367,13 @@ def main() -> None:
                     mmlu_pro_merged_baselines[model_name] = sum(vals) / len(vals)
 
             if mmlu_pro_merged_avg_df.empty:
-                print(f"[WARN] No MMLU-Pro-Merged data for metric {metric_key!r}; skipping mmlu_pro_merged_avg.")
+                print(
+                    f"[WARN] No MMLU-Pro-Merged data for metric {metric_key!r}; skipping mmlu_pro_merged_avg."
+                )
             else:
                 metric_output_dir = base_output_dir / sanitize_filename(metric_key)
                 output_file = (
-                    metric_output_dir
-                    / f"mmlu_pro_merged_avg_{sanitize_filename(metric_key)}.png"
+                    metric_output_dir / f"mmlu_pro_merged_avg_{sanitize_filename(metric_key)}.png"
                 )
                 plot_mmlu_avg(
                     mmlu_pro_merged_avg_df,
@@ -1404,7 +1387,9 @@ def main() -> None:
         # --- mmlu_pro_merged_avg_no_other ---
         if has_mmlu_pro_merged_avg_no_other:
             mmlu_pro_merged_no_other_df = collect_mmlu_avg_records(
-                args.prune_evals_root, model_set, metric_key,
+                args.prune_evals_root,
+                model_set,
+                metric_key,
                 subtasks=MMLU_PRO_MERGED_SUBTASKS_NO_OTHER,
                 avg_name="mmlu_pro_merged_avg_no_other",
             )
@@ -1425,7 +1410,9 @@ def main() -> None:
                     mmlu_pro_merged_no_other_baselines[model_name] = sum(vals) / len(vals)
 
             if mmlu_pro_merged_no_other_df.empty:
-                print(f"[WARN] No MMLU-Pro-Merged data for metric {metric_key!r}; skipping mmlu_pro_merged_avg_no_other.")
+                print(
+                    f"[WARN] No MMLU-Pro-Merged data for metric {metric_key!r}; skipping mmlu_pro_merged_avg_no_other."
+                )
             else:
                 metric_output_dir = base_output_dir / sanitize_filename(metric_key)
                 output_file = (
@@ -1438,7 +1425,9 @@ def main() -> None:
                     args.style,
                     args.show,
                     metric_key,
-                    baselines=mmlu_pro_merged_no_other_baselines if mmlu_pro_merged_no_other_baselines else None,
+                    baselines=mmlu_pro_merged_no_other_baselines
+                    if mmlu_pro_merged_no_other_baselines
+                    else None,
                 )
 
         # --- mmlu_pro_merged_n{N}_avg and mmlu_pro_merged_n{N}_avg_no_other ---
@@ -1450,7 +1439,9 @@ def main() -> None:
 
             if has_avg:
                 nval_avg_df = collect_mmlu_avg_records(
-                    args.prune_evals_root, model_set, metric_key,
+                    args.prune_evals_root,
+                    model_set,
+                    metric_key,
                     subtasks=nval_subtasks,
                     avg_name=avg_name,
                 )
@@ -1474,8 +1465,7 @@ def main() -> None:
                 else:
                     metric_output_dir = base_output_dir / sanitize_filename(metric_key)
                     output_file = (
-                        metric_output_dir
-                        / f"{avg_name}_{sanitize_filename(metric_key)}.png"
+                        metric_output_dir / f"{avg_name}_{sanitize_filename(metric_key)}.png"
                     )
                     plot_mmlu_avg(
                         nval_avg_df,
@@ -1488,7 +1478,9 @@ def main() -> None:
 
             if has_avg_no_other:
                 nval_no_other_df = collect_mmlu_avg_records(
-                    args.prune_evals_root, model_set, metric_key,
+                    args.prune_evals_root,
+                    model_set,
+                    metric_key,
                     subtasks=nval_subtasks_no_other,
                     avg_name=avg_no_other_name,
                 )
@@ -1508,7 +1500,9 @@ def main() -> None:
                         nval_no_other_baselines[model_name] = sum(vals) / len(vals)
 
                 if nval_no_other_df.empty:
-                    print(f"[WARN] No data for metric {metric_key!r}; skipping {avg_no_other_name}.")
+                    print(
+                        f"[WARN] No data for metric {metric_key!r}; skipping {avg_no_other_name}."
+                    )
                 else:
                     metric_output_dir = base_output_dir / sanitize_filename(metric_key)
                     output_file = (

@@ -257,7 +257,10 @@ class MoEBase(nn.Module):
             shared_out = self.shared_mlp(x)
 
         out = self.experts(
-            x, expert_weights, expert_indices, batch_size_per_expert,
+            x,
+            expert_weights,
+            expert_indices,
+            batch_size_per_expert,
             detach_mask=detach_mask,
             detach_router=detach_router,
         )

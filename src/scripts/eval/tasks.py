@@ -1,12 +1,10 @@
 from oe_eval.configs.tasks import TASK_CONFIGS
-from oe_eval.data.mmlu_pro_categories import MMLU_PRO_CATEGORIES
 from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 
 from offline_evals.tasks.code_fresh import CODE_FRESH_LANGUAGES
-
-
 from src.offline_evals.tasks.splits_mmlu import MMLU_CLUSTER_CATEGORIES
 from src.offline_evals.tasks.splits_mmlu_pro import MMLU_PRO_CATEGORIES_MAP
+
 
 def get_task_configs():
     TASK_CONFIGS.update(

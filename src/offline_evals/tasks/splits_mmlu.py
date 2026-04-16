@@ -99,6 +99,7 @@ MMLU_CATEGORIES = {
     ],
 }
 
+
 class GenericMMLU_withsplits(GenericMMLU):
     TEST_FRACTION = 0.6
 
@@ -107,12 +108,20 @@ class GenericMMLU_withsplits(GenericMMLU):
 
     def test_docs(self):
         tot_test_size = len(self.dataset["test"])
-        test_split = self.dataset["test"].shuffle(seed=0).select(range(int(tot_test_size * self.TEST_FRACTION), tot_test_size))
+        test_split = (
+            self.dataset["test"]
+            .shuffle(seed=0)
+            .select(range(int(tot_test_size * self.TEST_FRACTION), tot_test_size))
+        )
         return test_split.map(self._process_doc, with_indices=True)
 
     def training_docs(self):
         tot_test_size = len(self.dataset["test"])
-        train_split = self.dataset["test"].shuffle(seed=0).select(range(0, int(tot_test_size * self.TEST_FRACTION)))
+        train_split = (
+            self.dataset["test"]
+            .shuffle(seed=0)
+            .select(range(0, int(tot_test_size * self.TEST_FRACTION)))
+        )
         return train_split.map(self._process_doc, with_indices=True)
 
     def make_metrics(self):
@@ -123,7 +132,10 @@ class GenericMMLU_withsplits(GenericMMLU):
 
         return self._metrics
 
-def _load_and_split_subjects(task_self, categories_dict, data_dir=None, cache_dir=None, download_mode=None):
+
+def _load_and_split_subjects(
+    task_self, categories_dict, data_dir=None, cache_dir=None, download_mode=None
+):
     """Load MMLU subjects and split each subject's test set independently before concatenating.
 
     Each subject's HF "test" split is shuffled (seed=0) and split 60/40 into train/test.
@@ -191,6 +203,7 @@ class _MMLU_PerSubjectContext_RC(GenericMMLU):
     category eval produces results identical to running per-subject evals independently,
     so the weighted per-subject average exactly matches the category micro-average.
     """
+
     TEST_FRACTION = 0.6
 
     def download(self, data_dir=None, cache_dir=None, download_mode=None):
@@ -248,14 +261,18 @@ class MMLU_17categories_RC(_MMLU_PerSubjectContext_RC):
     def download(self, data_dir=None, cache_dir=None, download_mode=None):
         _load_and_split_subjects(self, MMLU_CATEGORIES, data_dir, cache_dir, download_mode)
 
+
 def create_mmlu_categories_tasks_withsplits(category):
     class MMLU_Category(MMLU_17categories_RC):
         DATASET_NAME = category
+
     return MMLU_Category
+
 
 def create_mmlu_tasks_withsplits(subject):
     class MMLU(GenericMMLU_withsplits):
         DATASET_NAME = subject
+
     return MMLU
 
 
@@ -270,13 +287,16 @@ def create_mmlu_tasks_withsplits(subject):
 # Test split (last 40% of shuffled HF test) is unchanged.
 # ---------------------------------------------------------------------------
 
+
 class GenericMMLU_Merged_withsplits(GenericMMLU_withsplits):
     """Per-subject MMLU merged variant: pruning and finetuning use the same data."""
 
     def training_docs(self):
         tot_test_size = len(self.dataset["test"])
-        train_split = self.dataset["test"].shuffle(seed=0).select(
-            range(0, int(tot_test_size * self.TEST_FRACTION))
+        train_split = (
+            self.dataset["test"]
+            .shuffle(seed=0)
+            .select(range(0, int(tot_test_size * self.TEST_FRACTION)))
         )
         merged = concatenate_datasets([train_split, self.dataset["validation"]]).shuffle(seed=0)
         return merged.map(self._process_doc, with_indices=True)
@@ -288,6 +308,7 @@ class GenericMMLU_Merged_withsplits(GenericMMLU_withsplits):
 def create_mmlu_merged_tasks_withsplits(subject):
     class MMLU_Merged(GenericMMLU_Merged_withsplits):
         DATASET_NAME = subject
+
     return MMLU_Merged
 
 
@@ -295,9 +316,9 @@ class MMLU_17categories_Merged_RC(MMLU_17categories_RC):
     """17-category MMLU merged variant: pruning and finetuning use the same data."""
 
     def training_docs(self):
-        merged = concatenate_datasets(
-            [self.dataset["train"], self.dataset["validation"]]
-        ).shuffle(seed=0)
+        merged = concatenate_datasets([self.dataset["train"], self.dataset["validation"]]).shuffle(
+            seed=0
+        )
         return merged.map(self._process_doc, with_indices=True)
 
     def validation_docs(self):
@@ -307,6 +328,7 @@ class MMLU_17categories_Merged_RC(MMLU_17categories_RC):
 def create_mmlu_categories_merged_tasks_withsplits(category):
     class MMLU_Category_Merged(MMLU_17categories_Merged_RC):
         DATASET_NAME = category
+
     return MMLU_Category_Merged
 
 
@@ -411,6 +433,7 @@ MMLU_CLUSTER_CATEGORIES = {
 
 class MMLU_16clusters_RC(_MMLU_PerSubjectContext_RC):
     """MMLU task that groups subjects by router-based clustering (16 clusters)."""
+
     def download(self, data_dir=None, cache_dir=None, download_mode=None):
         _load_and_split_subjects(self, MMLU_CLUSTER_CATEGORIES, data_dir, cache_dir, download_mode)
 
@@ -418,4 +441,5 @@ class MMLU_16clusters_RC(_MMLU_PerSubjectContext_RC):
 def create_mmlu_cluster_tasks_withsplits(cluster_name):
     class MMLU_Cluster(MMLU_16clusters_RC):
         DATASET_NAME = cluster_name
+
     return MMLU_Cluster

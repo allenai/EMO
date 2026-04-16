@@ -1,8 +1,8 @@
 from datasets import concatenate_datasets
 from oe_eval.tasks.oe_eval_tasks.openbookqa import OpenBookQA, OpenBookQAMC
 
-
 from ..metrics.mc_softloss import SoftLoss
+
 
 class OpenBookQA_RC_Base(OpenBookQA):
     def make_metrics(self):
@@ -12,6 +12,7 @@ class OpenBookQA_RC_Base(OpenBookQA):
         self._metrics += [SoftLoss(**self.task_config["metric_kwargs"])]
 
         return self._metrics
+
 
 # class OpenBookQA_RC_Train(OpenBookQA_RC_Base):
 #     pass
@@ -38,6 +39,7 @@ class OpenBookQA_RC_Base(OpenBookQA):
 # finetuning. The two HF splits are independent, so we shuffle the merged set.
 # Test split (HF "test") is unchanged.
 # ---------------------------------------------------------------------------
+
 
 class OpenBookQA_Merged_RC(OpenBookQA_RC_Base):
     """OpenBookQA variant where pruning and finetuning use the same merged data."""

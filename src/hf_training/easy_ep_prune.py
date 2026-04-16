@@ -41,9 +41,9 @@ logger = logging.getLogger(__name__)
 
 
 def compute_easy_ep_score_for_batch(
-    hidden_in: torch.Tensor,        # (B*T, D)
-    hidden_out_bar: torch.Tensor,   # (B*T, D)
-    router_logits: torch.Tensor,    # (B*T, N)
+    hidden_in: torch.Tensor,  # (B*T, D)
+    hidden_out_bar: torch.Tensor,  # (B*T, D)
+    router_logits: torch.Tensor,  # (B*T, N)
     experts: torch.nn.ModuleList,
     num_shared_experts: int,
     top_k: int,
@@ -102,10 +102,10 @@ def compute_easy_ep_score_for_batch(
         current_state = hidden_in[top_x]  # (n_routed, D)
         with torch.no_grad():
             expert_out = experts[expert_idx](current_state)  # (n_routed, D)
-        e_norms = expert_out.float().norm(dim=-1)            # (n_routed,)
-        g_vals = routing_weights[top_x, idx].float()          # (n_routed,)
-        c_vals = g_vals * e_norms                             # (n_routed,)
-        s_vals = s_t[top_x]                                   # (n_routed,)
+        e_norms = expert_out.float().norm(dim=-1)  # (n_routed,)
+        g_vals = routing_weights[top_x, idx].float()  # (n_routed,)
+        c_vals = g_vals * e_norms  # (n_routed,)
+        s_vals = s_t[top_x]  # (n_routed,)
         scores[expert_idx] += (c_vals * s_vals).double().sum()
 
     return scores.cpu()
@@ -124,8 +124,7 @@ class _EasyEPCollector:
         self.model = model
         self.num_layers = num_layers
         self.scores: List[Optional[torch.Tensor]] = [
-            torch.zeros(n, dtype=torch.float64) if n > 0 else None
-            for n in num_experts_per_layer
+            torch.zeros(n, dtype=torch.float64) if n > 0 else None for n in num_experts_per_layer
         ]
         self.attn_mask: Optional[torch.Tensor] = None  # (B, T) set per batch
         self._hook_handles: List = []
@@ -135,6 +134,7 @@ class _EasyEPCollector:
         def pre_hook(module, args):
             # args[0]: hidden_states (B, T, D) post-norm
             self._pending_inputs[layer_idx] = args[0].detach()
+
         return pre_hook
 
     def _make_post_hook(self, layer_idx: int, mlp_module):
@@ -163,6 +163,7 @@ class _EasyEPCollector:
                 valid_mask_flat=valid_flat,
             )
             self.scores[layer_idx] += score_delta
+
         return post_hook
 
     def attach(self):
@@ -178,9 +179,7 @@ class _EasyEPCollector:
                     "masked always-active path. Extend _EasyEPCollector if you need this."
                 )
             h_pre = layer.mlp.register_forward_pre_hook(self._make_pre_hook(layer_idx))
-            h_post = layer.mlp.register_forward_hook(
-                self._make_post_hook(layer_idx, layer.mlp)
-            )
+            h_post = layer.mlp.register_forward_hook(self._make_post_hook(layer_idx, layer.mlp))
             self._hook_handles.extend([h_pre, h_post])
 
     def detach(self):
@@ -329,18 +328,27 @@ def easy_ep_prune(
         )
 
     # Update global config
-    if hasattr(model.config, "num_experts_per_tok") and model.config.num_experts_per_tok > prune_keep_k:
+    if (
+        hasattr(model.config, "num_experts_per_tok")
+        and model.config.num_experts_per_tok > prune_keep_k
+    ):
         model.config.num_experts_per_tok = prune_keep_k
     model.config.num_experts = prune_keep_k
     if hasattr(model.config, "num_local_experts"):
         model.config.num_local_experts = prune_keep_k
     model.config.num_shared_experts = num_shared_experts
 
-    if hasattr(model.config, "num_experts_per_layer") and model.config.num_experts_per_layer is not None:
+    if (
+        hasattr(model.config, "num_experts_per_layer")
+        and model.config.num_experts_per_layer is not None
+    ):
         model.config.num_experts_per_layer = [
             prune_keep_k if n > 0 else 0 for n in model.config.num_experts_per_layer
         ]
-    if hasattr(model.config, "num_shared_experts_per_layer") and model.config.num_shared_experts_per_layer is not None:
+    if (
+        hasattr(model.config, "num_shared_experts_per_layer")
+        and model.config.num_shared_experts_per_layer is not None
+    ):
         model.config.num_shared_experts_per_layer = [
             num_shared_experts if n > 0 else 0 for n in model.config.num_shared_experts_per_layer
         ]
@@ -369,7 +377,9 @@ def easy_ep_prune(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="EASY-EP expert pruning for HuggingFace MoE models")
+    parser = argparse.ArgumentParser(
+        description="EASY-EP expert pruning for HuggingFace MoE models"
+    )
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--task", type=str, required=True)
     parser.add_argument("--split", type=str, default="train")

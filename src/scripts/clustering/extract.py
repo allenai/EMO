@@ -45,7 +45,7 @@ import logging
 import os
 import time
 from collections import defaultdict
-from typing import Dict, List
+from typing import List
 
 import numpy as np
 import torch
@@ -65,6 +65,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Core inference
 # ---------------------------------------------------------------------------
+
 
 @torch.no_grad()
 def extract_logits(
@@ -119,8 +120,10 @@ def extract_logits(
 # Sanity checks
 # ---------------------------------------------------------------------------
 
-def run_sanity_checks(model, tokenizer, sample_docs, device,
-                      num_layers, num_standard_experts, routed_top_k):
+
+def run_sanity_checks(
+    model, tokenizer, sample_docs, device, num_layers, num_standard_experts, routed_top_k
+):
     """Quick sanity check on a single document."""
     logger.info("=== Running sanity checks ===")
 
@@ -129,19 +132,21 @@ def run_sanity_checks(model, tokenizer, sample_docs, device,
     doc_len = len(doc)
 
     logits, token_info = extract_logits(
-        model, [doc], device, num_layers, num_standard_experts,
+        model,
+        [doc],
+        device,
+        num_layers,
+        num_standard_experts,
     )
 
     # Shape check
-    assert logits.shape == (doc_len, D), \
-        f"Logits shape {logits.shape} != ({doc_len}, {D})"
+    assert logits.shape == (doc_len, D), f"Logits shape {logits.shape} != ({doc_len}, {D})"
     assert logits.dtype == np.float16
     assert not np.isnan(logits).any(), "Logits contain NaN"
     logger.info(f"  Shape: ({doc_len}, {D}), range=[{logits.min():.4f}, {logits.max():.4f}]")
 
     # Token info length
-    assert len(token_info) == doc_len, \
-        f"token_info length {len(token_info)} != {doc_len}"
+    assert len(token_info) == doc_len, f"token_info length {len(token_info)} != {doc_len}"
 
     # Decode sample
     decoded = tokenizer.decode(doc[:80].tolist(), skip_special_tokens=True)
@@ -153,6 +158,7 @@ def run_sanity_checks(model, tokenizer, sample_docs, device,
 # ---------------------------------------------------------------------------
 # Source loaders
 # ---------------------------------------------------------------------------
+
 
 def load_pretraining_docs(args) -> List[tuple]:
     """
@@ -170,8 +176,10 @@ def load_pretraining_docs(args) -> List[tuple]:
     effective_target = args.target_tokens
     if args.max_tokens_per_doc > 0:
         effective_target = args.target_tokens * 8  # oversample for truncation
-        logger.info(f"Oversampling: {args.target_tokens} post-truncation -> "
-                     f"{effective_target} pre-truncation (8x)")
+        logger.info(
+            f"Oversampling: {args.target_tokens} post-truncation -> "
+            f"{effective_target} pre-truncation (8x)"
+        )
 
     result = []
     for label, info in sorted(sources.items(), key=lambda x: -x[1]["fraction"]):
@@ -181,13 +189,15 @@ def load_pretraining_docs(args) -> List[tuple]:
         logger.info(f"  {label}: {info['fraction']:.2%} -> {alloc:,} tokens")
 
         docs = load_source_documents_shuffled(
-            info["all_files"], alloc,
-            min_doc_len=32, max_doc_len=2048,
+            info["all_files"],
+            alloc,
+            min_doc_len=32,
+            max_doc_len=2048,
             seed=args.shuffle_seed,
         )
 
         if args.max_tokens_per_doc > 0:
-            docs = [doc[:args.max_tokens_per_doc] for doc in docs]
+            docs = [doc[: args.max_tokens_per_doc] for doc in docs]
 
         if docs:
             result.append((label, docs))
@@ -218,6 +228,7 @@ def load_mmlu_docs(args) -> List[tuple]:
 
     # We need the tokenizer for tokenization — load lazily via args
     from transformers import AutoTokenizer
+
     tokenizer = AutoTokenizer.from_pretrained(args.model_path)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -245,6 +256,7 @@ def load_hellaswag_docs(args) -> List[tuple]:
     splits = [s.strip() for s in args.hellaswag_splits.split(",")]
 
     from transformers import AutoTokenizer
+
     tokenizer = AutoTokenizer.from_pretrained(args.model_path)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -266,8 +278,18 @@ def load_hellaswag_docs(args) -> List[tuple]:
 # Main extraction loop
 # ---------------------------------------------------------------------------
 
-def run_extraction(source_docs, model, tokenizer, device, args,
-                   num_layers, num_standard_experts, routed_top_k, emb_dim):
+
+def run_extraction(
+    source_docs,
+    model,
+    tokenizer,
+    device,
+    args,
+    num_layers,
+    num_standard_experts,
+    routed_top_k,
+    emb_dim,
+):
     """
     Extract token-level logits from all source documents and save outputs.
 
@@ -281,11 +303,12 @@ def run_extraction(source_docs, model, tokenizer, device, args,
     all_doc_extra: List[dict] = []  # source-specific extra fields
     global_doc_idx = 0
 
-    subject_to_category = getattr(args, '_subject_to_category', {})
+    subject_to_category = getattr(args, "_subject_to_category", {})
 
     for label, docs in source_docs:
-        logger.info(f"\nSource: {label}  docs={len(docs)}  "
-                     f"tokens={sum(len(d) for d in docs):,}")
+        logger.info(
+            f"\nSource: {label}  docs={len(docs)}  " f"tokens={sum(len(d) for d in docs):,}"
+        )
 
         for doc in docs:
             all_doc_tokens.append(doc)
@@ -302,18 +325,24 @@ def run_extraction(source_docs, model, tokenizer, device, args,
         for batch_idx, i in enumerate(range(0, len(docs), args.batch_size)):
             batch = docs[i : i + args.batch_size]
             logits, token_info = extract_logits(
-                model, batch, device, num_layers, num_standard_experts,
+                model,
+                batch,
+                device,
+                num_layers,
+                num_standard_experts,
             )
             all_logits.append(logits)
 
             for batch_doc_idx, token_pos in token_info:
                 doc = batch[batch_doc_idx]
-                all_meta.append({
-                    "source": label,
-                    "doc_index": global_doc_idx + i + batch_doc_idx,
-                    "token_position": token_pos,
-                    "token_id": int(doc[token_pos]),
-                })
+                all_meta.append(
+                    {
+                        "source": label,
+                        "doc_index": global_doc_idx + i + batch_doc_idx,
+                        "token_position": token_pos,
+                        "token_id": int(doc[token_pos]),
+                    }
+                )
             source_tokens += len(token_info)
 
             if (batch_idx + 1) % 10 == 0 or batch_idx == num_batches - 1:
@@ -404,38 +433,55 @@ def run_extraction(source_docs, model, tokenizer, device, args,
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Extract per-token router logits from a trained MoE model"
     )
-    parser.add_argument("--source", required=True,
-                        choices=["pretraining", "mmlu", "hellaswag"],
-                        help="Data source to extract from")
-    parser.add_argument("--model-path", required=True,
-                        help="Path to HF model checkpoint")
-    parser.add_argument("--output-dir", required=True,
-                        help="Output directory")
+    parser.add_argument(
+        "--source",
+        required=True,
+        choices=["pretraining", "mmlu", "hellaswag"],
+        help="Data source to extract from",
+    )
+    parser.add_argument("--model-path", required=True, help="Path to HF model checkpoint")
+    parser.add_argument("--output-dir", required=True, help="Output directory")
     parser.add_argument("--batch-size", type=int, default=32)
-    parser.add_argument("--max-tokens-per-doc", type=int, default=0,
-                        help="Truncate each document to this many tokens. "
-                             "0 = no truncation (default: 0)")
+    parser.add_argument(
+        "--max-tokens-per-doc",
+        type=int,
+        default=0,
+        help="Truncate each document to this many tokens. " "0 = no truncation (default: 0)",
+    )
 
     # Pretraining-specific
-    parser.add_argument("--composition-file", default=None,
-                        help="mix_composition.json (required for --source pretraining)")
-    parser.add_argument("--target-tokens", type=int, default=1_000_000,
-                        help="Target token count for pretraining (default: 1M)")
+    parser.add_argument(
+        "--composition-file",
+        default=None,
+        help="mix_composition.json (required for --source pretraining)",
+    )
+    parser.add_argument(
+        "--target-tokens",
+        type=int,
+        default=1_000_000,
+        help="Target token count for pretraining (default: 1M)",
+    )
     parser.add_argument("--shuffle-seed", type=int, default=42)
 
     # MMLU-specific
-    parser.add_argument("--mmlu-split", default="validation",
-                        choices=["validation", "test", "train"])
-    parser.add_argument("--subjects", default=None,
-                        help="Comma-separated MMLU subjects (default: all 57)")
+    parser.add_argument(
+        "--mmlu-split", default="validation", choices=["validation", "test", "train"]
+    )
+    parser.add_argument(
+        "--subjects", default=None, help="Comma-separated MMLU subjects (default: all 57)"
+    )
 
     # HellaSwag-specific
-    parser.add_argument("--hellaswag-splits", default="train,validation,test",
-                        help="Comma-separated splits (default: train,validation,test)")
+    parser.add_argument(
+        "--hellaswag-splits",
+        default="train,validation,test",
+        help="Comma-separated splits (default: train,validation,test)",
+    )
 
     args = parser.parse_args()
 
@@ -447,7 +493,7 @@ def main():
     # Load model (device_map="auto" shards across available GPUs)
     model, tokenizer = load_model_and_tokenizer(args.model_path)
     # With device_map="auto", inputs go to the first device in the model's device map
-    if hasattr(model, 'hf_device_map'):
+    if hasattr(model, "hf_device_map"):
         first_device = next(iter(model.hf_device_map.values()))
         device = f"cuda:{first_device}" if isinstance(first_device, int) else str(first_device)
         logger.info(f"Multi-device model: {model.hf_device_map}")
@@ -476,12 +522,22 @@ def main():
 
     # Collect sample docs for sanity check
     sample_docs = [source_docs[0][1][0]]
-    run_sanity_checks(model, tokenizer, sample_docs, device,
-                      num_layers, num_standard_experts, routed_top_k)
+    run_sanity_checks(
+        model, tokenizer, sample_docs, device, num_layers, num_standard_experts, routed_top_k
+    )
 
     # Run extraction
-    run_extraction(source_docs, model, tokenizer, device, args,
-                   num_layers, num_standard_experts, routed_top_k, emb_dim)
+    run_extraction(
+        source_docs,
+        model,
+        tokenizer,
+        device,
+        args,
+        num_layers,
+        num_standard_experts,
+        routed_top_k,
+        emb_dim,
+    )
 
 
 if __name__ == "__main__":

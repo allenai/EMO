@@ -54,13 +54,18 @@ def main():
     all_names = sorted(DERIVATIONS.keys())
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", required=True,
-                        help="Directory containing dense embeddings and info.json")
-    parser.add_argument("--output-dir", default=None,
-                        help="Output directory. Defaults to --data-dir.")
-    parser.add_argument("--embeddings", default="all",
-                        help=f"Comma-separated types to compute, or 'all'. "
-                             f"Available: {', '.join(all_names)} (default: all)")
+    parser.add_argument(
+        "--data-dir", required=True, help="Directory containing dense embeddings and info.json"
+    )
+    parser.add_argument(
+        "--output-dir", default=None, help="Output directory. Defaults to --data-dir."
+    )
+    parser.add_argument(
+        "--embeddings",
+        default="all",
+        help=f"Comma-separated types to compute, or 'all'. "
+        f"Available: {', '.join(all_names)} (default: all)",
+    )
     args = parser.parse_args()
 
     output_dir = args.output_dir or args.data_dir
@@ -94,14 +99,17 @@ def main():
         # Verify sparsity
         reshaped = sparse.reshape(-1, num_layers, num_experts)
         nnz_per_layer = (reshaped != 0).sum(axis=2)
-        assert (nnz_per_layer == TOP_K_SPARSE).all(), \
-            f"Expected {TOP_K_SPARSE} non-zeros per layer, got min={nnz_per_layer.min()}"
+        assert (
+            nnz_per_layer == TOP_K_SPARSE
+        ).all(), f"Expected {TOP_K_SPARSE} non-zeros per layer, got min={nnz_per_layer.min()}"
 
         density = (sparse != 0).mean()
         np.save(out_path, sparse)
         logger.info(f"  Saved: {out_path}")
-        logger.info(f"  shape={sparse.shape}, dtype={sparse.dtype}, "
-                    f"density={density:.1%} ({TOP_K_SPARSE}/{num_experts} per layer)")
+        logger.info(
+            f"  shape={sparse.shape}, dtype={sparse.dtype}, "
+            f"density={density:.1%} ({TOP_K_SPARSE}/{num_experts} per layer)"
+        )
 
     logger.info("\nDone.")
 

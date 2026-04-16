@@ -17,16 +17,13 @@ from __future__ import annotations
 import argparse
 import textwrap
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-
 from get_table_scores_prune_evals_final import (
-    GEN5_ALL_TASKS,
     GEN5_TASKS,
-    GSM8K_TASKS,
     MC9_TASKS,
     MMLU_MERGED_TASKS,
     MMLU_PRO_MERGED_TASKS,
@@ -46,9 +43,7 @@ DEFAULT_PRUNE_EVALS_ROOT = REPO_ROOT / "prune_evals_final"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "claude_outputs" / "prune_plots"
 DEFAULT_OUTPUT_SUBDIR = "prune_finetune_plots_final"
 
-MODEL_LABELS: Dict[str, str] = {
-    name: spec.get("label", name) for name, spec in MODEL_SPECS.items()
-}
+MODEL_LABELS: Dict[str, str] = {name: spec.get("label", name) for name, spec in MODEL_SPECS.items()}
 
 # Models to include in plots. Comment/uncomment to control what's plotted.
 PLOT_MODELS = [
@@ -65,18 +60,18 @@ PLOT_MODELS = [
 # Color matching is longest-prefix-first in _color_for, so longer labels
 # (e.g. "moe 1T + anneal") win over shorter ones (e.g. "moe").
 _MODEL_BASE_COLORS: Dict[str, object] = {
-    "moe 1T + anneal":             (0.1216, 0.4667, 0.7059),  # tab10 blue
-    "moe 1T + twolevel anneal":    (0.5490, 0.3373, 0.2941),  # tab10 brown
+    "moe 1T + anneal": (0.1216, 0.4667, 0.7059),  # tab10 blue
+    "moe 1T + twolevel anneal": (0.5490, 0.3373, 0.2941),  # tab10 brown
     "specialized moe 1T + anneal": (0.8392, 0.1529, 0.1569),  # tab10 red
-    "moe":                                                  (0.1216, 0.4667, 0.7059),  # tab10 blue
-    "moe_small":                                            (1.0000, 0.4980, 0.0549),  # tab10 orange
-    "dense":                                                (0.1725, 0.6275, 0.1725),  # tab10 green
-    "specialized moe + globallb + 1shardexp + randpool":    (0.8902, 0.4667, 0.7608),  # tab10 pink
+    "moe": (0.1216, 0.4667, 0.7059),  # tab10 blue
+    "moe_small": (1.0000, 0.4980, 0.0549),  # tab10 orange
+    "dense": (0.1725, 0.6275, 0.1725),  # tab10 green
+    "specialized moe + globallb + 1shardexp + randpool": (0.8902, 0.4667, 0.7608),  # tab10 pink
 }
 
 _VARIANT_LINESTYLES = ["-", "--", "-.", ":", (0, (3, 1, 1, 1)), (0, (5, 1))]
-_VARIANT_MARKERS    = ["o", "s", "^", "D", "v", "X"]
-_VARIANT_ALPHAS     = [1.0, 0.9, 0.8, 0.7, 0.6, 0.55]
+_VARIANT_MARKERS = ["o", "s", "^", "D", "v", "X"]
+_VARIANT_ALPHAS = [1.0, 0.9, 0.8, 0.7, 0.6, 0.55]
 
 _MODEL_VARIANT_STYLE: Dict[str, Dict[str, object]] = {}
 for _model_name, _spec in MODEL_SPECS.items():
@@ -85,17 +80,17 @@ for _model_name, _spec in MODEL_SPECS.items():
         _full = f"{_base_label} {_v['label']}".strip()
         _idx = min(_vi, len(_VARIANT_ALPHAS) - 1)
         _MODEL_VARIANT_STYLE[_full] = {
-            "alpha":     _VARIANT_ALPHAS[_idx],
+            "alpha": _VARIANT_ALPHAS[_idx],
             "linestyle": _VARIANT_LINESTYLES[_idx],
-            "marker":    _VARIANT_MARKERS[_idx],
+            "marker": _VARIANT_MARKERS[_idx],
         }
 
 LEGEND_WRAP_WIDTH = 35
 
 GROUPS: List[Tuple[str, List[str]]] = [
-    ("mc9_avg",             MC9_TASKS),
-    ("gen5_avg",            GEN5_TASKS),
-    ("mmlu_merged_avg",     MMLU_MERGED_TASKS),
+    ("mc9_avg", MC9_TASKS),
+    ("gen5_avg", GEN5_TASKS),
+    ("mmlu_merged_avg", MMLU_MERGED_TASKS),
     ("mmlu_pro_merged_avg", MMLU_PRO_MERGED_TASKS),
 ]
 
@@ -252,8 +247,8 @@ def collect_group_avg(
 
     avg_df = (
         df.groupby(["model", "model_label", "checkpoint_rel"], as_index=False)
-          .agg(metric_value=("metric_value", "mean"))
-          .rename(columns={"checkpoint_rel": "checkpoint"})
+        .agg(metric_value=("metric_value", "mean"))
+        .rename(columns={"checkpoint_rel": "checkpoint"})
     )
     avg_df["task_run"] = avg_name
     return avg_df
@@ -325,8 +320,8 @@ def parse_args() -> argparse.Namespace:
         description="Plot prune_evals_final metric curves across checkpoints."
     )
     parser.add_argument("--prune-evals-root", type=Path, default=DEFAULT_PRUNE_EVALS_ROOT)
-    parser.add_argument("--output-dir",       type=Path, default=DEFAULT_OUTPUT_DIR)
-    parser.add_argument("--output-subdir",    default=DEFAULT_OUTPUT_SUBDIR)
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument("--output-subdir", default=DEFAULT_OUTPUT_SUBDIR)
     parser.add_argument(
         "--metric-key",
         default=None,
@@ -335,7 +330,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--style", default="darkgrid", help="Seaborn style.")
     parser.add_argument("--show", action="store_true", help="Display plots interactively.")
     parser.add_argument("--models", default=None, help="Comma-separated model names to plot.")
-    parser.add_argument("--tasks",  default=None, help="Comma-separated task names to plot.")
+    parser.add_argument("--tasks", default=None, help="Comma-separated task names to plot.")
     return parser.parse_args()
 
 
@@ -371,9 +366,7 @@ def main() -> None:
         metric_dir = base_output_dir / sanitize_filename(metric_key)
 
         # --- per-task plots ---
-        df = collect_records(
-            args.prune_evals_root, selected_models, tasks_for_metric, metric_key
-        )
+        df = collect_records(args.prune_evals_root, selected_models, tasks_for_metric, metric_key)
         if df.empty:
             print(f"[WARN] No data for metric {metric_key!r}; skipping per-task plots.")
         else:
@@ -383,7 +376,8 @@ def main() -> None:
                     print(f"[WARN] No data for task={task_run!r}, metric={metric_key!r}")
                     continue
                 output_file = (
-                    metric_dir / f"{sanitize_filename(task_run)}_{sanitize_filename(metric_key)}.png"
+                    metric_dir
+                    / f"{sanitize_filename(task_run)}_{sanitize_filename(metric_key)}.png"
                 )
                 plot_curves(
                     task_df,

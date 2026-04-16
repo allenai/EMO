@@ -53,15 +53,20 @@ def register_cluster(name: str, description: str):
     def decorator(fn):
         CLUSTER_REGISTRY[name] = {"fn": fn, "description": description}
         return fn
+
     return decorator
 
 
 @register_cluster("kmeans", "MiniBatchKMeans")
 def cluster_kmeans(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
     from sklearn.cluster import MiniBatchKMeans
+
     km = MiniBatchKMeans(
-        n_clusters=k, n_init=10, max_iter=500,
-        batch_size=4096, random_state=42,
+        n_clusters=k,
+        n_init=10,
+        max_iter=500,
+        batch_size=4096,
+        random_state=42,
     )
     labels = km.fit_predict(emb)
     logger.info(f"  KMeans: inertia={km.inertia_:.1f}")
@@ -75,8 +80,11 @@ def cluster_spherical_kmeans(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
 
     emb_normed = normalize(emb, norm="l2")
     km = MiniBatchKMeans(
-        n_clusters=k, n_init=10, max_iter=500,
-        batch_size=4096, random_state=42,
+        n_clusters=k,
+        n_init=10,
+        max_iter=500,
+        batch_size=4096,
+        random_state=42,
     )
     km.fit(emb_normed)
 
@@ -103,6 +111,7 @@ def cluster_spherical_kmeans(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
 @register_cluster("hierarchical", "Agglomerative (precomputed distances)")
 def cluster_hierarchical(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
     from scipy.cluster.hierarchy import fcluster
+
     Z = kwargs["linkage_matrix"]
     labels = fcluster(Z, t=k, criterion="maxclust") - 1  # 1-based -> 0-based
     n_actual = len(set(labels))
@@ -113,9 +122,13 @@ def cluster_hierarchical(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
 @register_cluster("gmm", "Gaussian Mixture Model")
 def cluster_gmm(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
     from sklearn.mixture import GaussianMixture
+
     gmm = GaussianMixture(
-        n_components=k, covariance_type="full",
-        max_iter=200, n_init=3, random_state=42,
+        n_components=k,
+        covariance_type="full",
+        max_iter=200,
+        n_init=3,
+        random_state=42,
     )
     labels = gmm.fit_predict(emb)
     logger.info(f"  GMM: converged={gmm.converged_}, BIC={gmm.bic(emb):.1f}")
@@ -125,6 +138,7 @@ def cluster_gmm(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # Evaluation
 # ---------------------------------------------------------------------------
+
 
 def evaluate_clustering(emb: np.ndarray, labels: np.ndarray, meta: list) -> dict:
     """Compute clustering quality metrics."""
@@ -146,10 +160,8 @@ def evaluate_clustering(emb: np.ndarray, labels: np.ndarray, meta: list) -> dict
     rng = np.random.default_rng(42)
     idx = rng.choice(len(emb), n_sample, replace=False)
 
-    metrics["silhouette"] = float(silhouette_score(
-        emb[idx], labels[idx], metric="euclidean"))
-    metrics["silhouette_cosine"] = float(silhouette_score(
-        emb[idx], labels[idx], metric="cosine"))
+    metrics["silhouette"] = float(silhouette_score(emb[idx], labels[idx], metric="euclidean"))
+    metrics["silhouette_cosine"] = float(silhouette_score(emb[idx], labels[idx], metric="cosine"))
     metrics["calinski_harabasz"] = float(calinski_harabasz_score(emb, labels))
     metrics["davies_bouldin"] = float(davies_bouldin_score(emb, labels))
 
@@ -191,10 +203,12 @@ def print_metrics(metrics: dict):
     if "davies_bouldin" in metrics:
         logger.info(f"  davies_bouldin:    {metrics['davies_bouldin']:.4f}")
     if "cluster_size_median" in metrics:
-        logger.info(f"  cluster sizes:     min={metrics['cluster_size_min']}, "
-                    f"max={metrics['cluster_size_max']}, "
-                    f"median={metrics['cluster_size_median']}, "
-                    f"std={metrics['cluster_size_std']:.1f}")
+        logger.info(
+            f"  cluster sizes:     min={metrics['cluster_size_min']}, "
+            f"max={metrics['cluster_size_max']}, "
+            f"median={metrics['cluster_size_median']}, "
+            f"std={metrics['cluster_size_std']:.1f}"
+        )
     if "avg_source_entropy" in metrics:
         logger.info(f"  avg_source_entropy: {metrics['avg_source_entropy']:.4f} bits")
 
@@ -203,8 +217,10 @@ def print_metrics(metrics: dict):
 # Save results
 # ---------------------------------------------------------------------------
 
-def save_results(labels, metrics, meta, emb, transformed, output_dir,
-                 embedding, preprocess, method, k):
+
+def save_results(
+    labels, metrics, meta, emb, transformed, output_dir, embedding, preprocess, method, k
+):
     """Save assignments, metrics, and per-cluster summary."""
     os.makedirs(output_dir, exist_ok=True)
 
@@ -250,19 +266,27 @@ def save_results(labels, metrics, meta, emb, transformed, output_dir,
             global_idx = int(c_indices[idx])
             m = meta[global_idx]
             entry = {"idx": global_idx, "source": m["source"]}
-            for key in ("doc_len", "preview", "token_position", "token_id",
-                        "doc_index", "category"):
+            for key in (
+                "doc_len",
+                "preview",
+                "token_position",
+                "token_id",
+                "doc_index",
+                "category",
+            ):
                 if key in m:
                     entry[key] = m[key]
             rep_samples.append(entry)
 
-        summaries.append({
-            "cluster": c,
-            "size": c_size,
-            "source_counts": source_counts,
-            "top10_experts_global": top10_experts,
-            "representative_samples": rep_samples,
-        })
+        summaries.append(
+            {
+                "cluster": c,
+                "size": c_size,
+                "source_counts": source_counts,
+                "top10_experts_global": top10_experts,
+                "representative_samples": rep_samples,
+            }
+        )
 
     with open(os.path.join(output_dir, "summary.json"), "w") as f:
         json.dump(summaries, f, indent=2)
@@ -274,9 +298,11 @@ def save_results(labels, metrics, meta, emb, transformed, output_dir,
 # Hierarchical clustering helpers
 # ---------------------------------------------------------------------------
 
+
 def compute_distance_matrix(emb, metric="cosine"):
     """Compute condensed pairwise distance matrix."""
     import time
+
     from sklearn.preprocessing import normalize
 
     N = emb.shape[0]
@@ -290,19 +316,22 @@ def compute_distance_matrix(emb, metric="cosine"):
         dist_sq = 1.0 - sim
         np.fill_diagonal(dist_sq, 0.0)
         from scipy.spatial.distance import squareform
+
         dist = squareform(dist_sq, checks=False)
     elif metric == "euclidean":
         X = emb.astype(np.float64)
-        sq_norms = (X ** 2).sum(axis=1)
+        sq_norms = (X**2).sum(axis=1)
         gram = X @ X.T
         dist_sq = sq_norms[:, None] + sq_norms[None, :] - 2 * gram
         np.maximum(dist_sq, 0.0, out=dist_sq)
         dist_sq = np.sqrt(dist_sq)
         np.fill_diagonal(dist_sq, 0.0)
         from scipy.spatial.distance import squareform
+
         dist = squareform(dist_sq, checks=False)
     else:
         from scipy.spatial.distance import pdist
+
         dist = pdist(emb, metric=metric).astype(np.float64)
 
     logger.info(f"  Computed in {time.time() - t0:.1f}s")
@@ -311,7 +340,9 @@ def compute_distance_matrix(emb, metric="cosine"):
 
 def compute_linkage(dist_condensed, method="average"):
     import time
+
     from scipy.cluster.hierarchy import linkage
+
     logger.info(f"  Computing linkage (method={method}) ...")
     t0 = time.time()
     Z = linkage(dist_condensed, method=method)
@@ -323,36 +354,66 @@ def compute_linkage(dist_condensed, method="average"):
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="Cluster router embeddings"
+    parser = argparse.ArgumentParser(description="Cluster router embeddings")
+    parser.add_argument(
+        "--data-dir", type=str, default=None, help="Directory with embeddings and info.json"
     )
-    parser.add_argument("--data-dir", type=str, default=None,
-                        help="Directory with embeddings and info.json")
-    parser.add_argument("--embedding", type=str, default="probs",
-                        help=f"Embedding to cluster. "
-                             f"Available: {', '.join(sorted(EMBEDDING_FILES))} "
-                             f"(default: probs)")
-    parser.add_argument("--preprocess", type=str, default="mean_pca_l2",
-                        help=f"Preprocessing. "
-                             f"Available: {', '.join(sorted(PREPROCESS_REGISTRY))} "
-                             f"(default: mean_pca_l2)")
-    parser.add_argument("--method", type=str, default="spherical_kmeans",
-                        help=f"Clustering method. "
-                             f"Available: {', '.join(sorted(CLUSTER_REGISTRY))} "
-                             f"(default: spherical_kmeans)")
-    parser.add_argument("--k", type=int, nargs="+", default=[64],
-                        help="Number of clusters. Multiple values for sweep. (default: 64)")
-    parser.add_argument("--save", action="store_true",
-                        help="Save results (assignments, metrics, summary)")
-    parser.add_argument("--output-dir", type=str, default=None,
-                        help="Custom output dir (default: auto-named subdirectory)")
+    parser.add_argument(
+        "--embedding",
+        type=str,
+        default="probs",
+        help=f"Embedding to cluster. "
+        f"Available: {', '.join(sorted(EMBEDDING_FILES))} "
+        f"(default: probs)",
+    )
+    parser.add_argument(
+        "--preprocess",
+        type=str,
+        default="mean_pca_l2",
+        help=f"Preprocessing. "
+        f"Available: {', '.join(sorted(PREPROCESS_REGISTRY))} "
+        f"(default: mean_pca_l2)",
+    )
+    parser.add_argument(
+        "--method",
+        type=str,
+        default="spherical_kmeans",
+        help=f"Clustering method. "
+        f"Available: {', '.join(sorted(CLUSTER_REGISTRY))} "
+        f"(default: spherical_kmeans)",
+    )
+    parser.add_argument(
+        "--k",
+        type=int,
+        nargs="+",
+        default=[64],
+        help="Number of clusters. Multiple values for sweep. (default: 64)",
+    )
+    parser.add_argument(
+        "--save", action="store_true", help="Save results (assignments, metrics, summary)"
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default=None,
+        help="Custom output dir (default: auto-named subdirectory)",
+    )
 
     # Hierarchical-specific
-    parser.add_argument("--dist-metric", type=str, default="cosine",
-                        help="Distance metric for hierarchical (default: cosine)")
-    parser.add_argument("--linkage-method", type=str, default="average",
-                        help="Linkage method for hierarchical (default: average)")
+    parser.add_argument(
+        "--dist-metric",
+        type=str,
+        default="cosine",
+        help="Distance metric for hierarchical (default: cosine)",
+    )
+    parser.add_argument(
+        "--linkage-method",
+        type=str,
+        default="average",
+        help="Linkage method for hierarchical (default: average)",
+    )
 
     parser.add_argument("--list", action="store_true")
     args = parser.parse_args()
@@ -374,6 +435,7 @@ def main():
 
     # Load meta + info (always needed)
     import gzip
+
     info_path = os.path.join(args.data_dir, "info.json")
     with open(info_path) as f:
         info = json.load(f)
@@ -421,8 +483,10 @@ def main():
     for k in args.k:
         logger.info(f"\n--- k={k} ---")
         if args.method not in CLUSTER_REGISTRY:
-            raise ValueError(f"Unknown method '{args.method}'. "
-                             f"Available: {', '.join(sorted(CLUSTER_REGISTRY))}")
+            raise ValueError(
+                f"Unknown method '{args.method}'. "
+                f"Available: {', '.join(sorted(CLUSTER_REGISTRY))}"
+            )
 
         labels = CLUSTER_REGISTRY[args.method]["fn"](transformed, k, **cluster_kwargs)
         metrics = evaluate_clustering(transformed, labels, meta)
@@ -431,17 +495,28 @@ def main():
 
         if args.save:
             output_dir = args.output_dir or os.path.join(
-                args.data_dir,
-                f"{args.embedding}_{args.preprocess}_{args.method}_k{k}"
+                args.data_dir, f"{args.embedding}_{args.preprocess}_{args.method}_k{k}"
             )
-            save_results(labels, metrics, meta, emb, transformed, output_dir,
-                         args.embedding, args.preprocess, args.method, k)
+            save_results(
+                labels,
+                metrics,
+                meta,
+                emb,
+                transformed,
+                output_dir,
+                args.embedding,
+                args.preprocess,
+                args.method,
+                k,
+            )
 
     # Sweep summary table
     if len(args.k) > 1:
         logger.info("\n=== SWEEP SUMMARY ===")
-        header = (f"{'k':>5}  {'sil_euc':>8}  {'sil_cos':>8}  "
-                  f"{'CH':>10}  {'DB':>8}  {'sz_med':>7}  {'src_ent':>8}")
+        header = (
+            f"{'k':>5}  {'sil_euc':>8}  {'sil_cos':>8}  "
+            f"{'CH':>10}  {'DB':>8}  {'sz_med':>7}  {'src_ent':>8}"
+        )
         logger.info(header)
         logger.info("-" * len(header))
         for r in all_results:

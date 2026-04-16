@@ -55,8 +55,9 @@ def list_vigintiles(topic: str) -> List[str]:
     return vigs
 
 
-def decode_sample_docs(s3_path: str, tokenizer, num_docs: int = 2,
-                       stream_bytes: int = 2_000_000) -> List[str]:
+def decode_sample_docs(
+    s3_path: str, tokenizer, num_docs: int = 2, stream_bytes: int = 2_000_000
+) -> List[str]:
     """Stream a small chunk from S3 and decode a few documents."""
     try:
         raw = stream_bytes_from_s3(s3_path, stream_bytes)
@@ -65,13 +66,13 @@ def decode_sample_docs(s3_path: str, tokenizer, num_docs: int = 2,
         return []
 
     n = len(raw) // BYTES_PER_TOKEN
-    tokens = np.frombuffer(raw[:n * BYTES_PER_TOKEN], dtype=np.uint32).astype(np.int32)
+    tokens = np.frombuffer(raw[: n * BYTES_PER_TOKEN], dtype=np.uint32).astype(np.int32)
 
     eos_pos = np.where(tokens == EOS_TOKEN_ID)[0]
     docs = []
     start = 0
     for pos in eos_pos:
-        doc = tokens[start:pos + 1]
+        doc = tokens[start : pos + 1]
         if 32 <= len(doc) <= 4096:
             docs.append(doc)
         start = pos + 1
@@ -87,15 +88,27 @@ def decode_sample_docs(s3_path: str, tokenizer, num_docs: int = 2,
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output-dir",
-                        default="claude_outputs/analysis/router_clustering_weborganizer")
-    parser.add_argument("--num-preview-docs", type=int, default=2,
-                        help="Documents to decode per topic for sanity checking (0 to skip)")
-    parser.add_argument("--stream-bytes", type=int, default=2_000_000,
-                        help="Bytes to stream per topic for text previews")
-    parser.add_argument("--model-path", default=None,
-                        help="HF model path for tokenizer (only needed for --num-preview-docs > 0). "
-                             "Defaults to the twolevelbatchlbreducedp model.")
+    parser.add_argument(
+        "--output-dir", default="claude_outputs/analysis/router_clustering_weborganizer"
+    )
+    parser.add_argument(
+        "--num-preview-docs",
+        type=int,
+        default=2,
+        help="Documents to decode per topic for sanity checking (0 to skip)",
+    )
+    parser.add_argument(
+        "--stream-bytes",
+        type=int,
+        default=2_000_000,
+        help="Bytes to stream per topic for text previews",
+    )
+    parser.add_argument(
+        "--model-path",
+        default=None,
+        help="HF model path for tokenizer (only needed for --num-preview-docs > 0). "
+        "Defaults to the twolevelbatchlbreducedp model.",
+    )
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -126,8 +139,10 @@ def main():
             continue
         topic_files[topic] = files
         total_bytes = sum(sz for _, sz in files)
-        logger.info(f"  [{topic}] {len(files)} files, {total_bytes / 1e9:.1f} GB, "
-                    f"~{total_bytes // BYTES_PER_TOKEN / 1e9:.1f}B tokens")
+        logger.info(
+            f"  [{topic}] {len(files)} files, {total_bytes / 1e9:.1f} GB, "
+            f"~{total_bytes // BYTES_PER_TOKEN / 1e9:.1f}B tokens"
+        )
 
     # ── Step 3: Compute stats and uniform fractions ───────────────────────────
     valid_topics = sorted(topic_files.keys())
@@ -147,24 +162,33 @@ def main():
         }
 
     grand_total_est_tokens = sum(s["est_tokens"] for s in topic_stats.values())
-    proportional_fraction = {t: topic_stats[t]["est_tokens"] / grand_total_est_tokens
-                              for t in valid_topics}
+    proportional_fraction = {
+        t: topic_stats[t]["est_tokens"] / grand_total_est_tokens for t in valid_topics
+    }
 
     # ── Step 4: Print distribution table ─────────────────────────────────────
     print("\n" + "=" * 100)
-    print(f"{'TOPIC':<40} {'VIGINTILE':<15} {'FILES':>6} {'EST_TOKENS':>14} "
-          f"{'PROP_FRAC':>10} {'UNIFORM_FRAC':>13}")
+    print(
+        f"{'TOPIC':<40} {'VIGINTILE':<15} {'FILES':>6} {'EST_TOKENS':>14} "
+        f"{'PROP_FRAC':>10} {'UNIFORM_FRAC':>13}"
+    )
     print("=" * 100)
     for topic in sorted(valid_topics, key=lambda t: -topic_stats[t]["est_tokens"]):
         s = topic_stats[topic]
-        print(f"{topic:<40} {s['vigintile']:<15} {s['num_files']:>6} "
-              f"{s['est_tokens']:>14,} {proportional_fraction[topic]:>9.2%} "
-              f"{uniform_fraction:>12.2%}")
+        print(
+            f"{topic:<40} {s['vigintile']:<15} {s['num_files']:>6} "
+            f"{s['est_tokens']:>14,} {proportional_fraction[topic]:>9.2%} "
+            f"{uniform_fraction:>12.2%}"
+        )
     print("=" * 100)
-    print(f"{'TOTAL':<40} {'':<15} "
-          f"{sum(s['num_files'] for s in topic_stats.values()):>6} "
-          f"{grand_total_est_tokens:>14,} {'100.00%':>10} {'100.00%':>13}")
-    print(f"\nNote: {num_topics} topics → uniform fraction = {uniform_fraction:.4f} ({uniform_fraction:.2%}) each")
+    print(
+        f"{'TOTAL':<40} {'':<15} "
+        f"{sum(s['num_files'] for s in topic_stats.values()):>6} "
+        f"{grand_total_est_tokens:>14,} {'100.00%':>10} {'100.00%':>13}"
+    )
+    print(
+        f"\nNote: {num_topics} topics → uniform fraction = {uniform_fraction:.4f} ({uniform_fraction:.2%}) each"
+    )
     print(f"Grand total estimated tokens: {grand_total_est_tokens:,}")
 
     # ── Step 5: Optional text previews ───────────────────────────────────────
@@ -175,6 +199,7 @@ def main():
         )
         logger.info(f"\nLoading tokenizer from {model_path} ...")
         from transformers import AutoTokenizer
+
         tokenizer = AutoTokenizer.from_pretrained(model_path)
 
         print("\n" + "=" * 100)
@@ -183,8 +208,9 @@ def main():
         for topic in valid_topics:
             first_file_path = topic_files[topic][0][0]
             print(f"\n[TOPIC: {topic}]  ({first_file_path.split('/')[-1]})")
-            texts = decode_sample_docs(first_file_path, tokenizer,
-                                       args.num_preview_docs, args.stream_bytes)
+            texts = decode_sample_docs(
+                first_file_path, tokenizer, args.num_preview_docs, args.stream_bytes
+            )
             text_samples[topic] = texts
             for i, text in enumerate(texts):
                 print(f"  --- Doc {i+1} ---")
@@ -219,16 +245,22 @@ def main():
     # Save text report
     report_path = os.path.join(args.output_dir, "mix_composition_report.txt")
     with open(report_path, "w") as f:
-        f.write(f"cc_all_dressed (weborganizer) distribution (grand total est. {grand_total_est_tokens:,} tokens)\n")
+        f.write(
+            f"cc_all_dressed (weborganizer) distribution (grand total est. {grand_total_est_tokens:,} tokens)\n"
+        )
         f.write(f"Uniform mixing: {num_topics} topics × {uniform_fraction:.4f} each\n\n")
-        f.write(f"{'TOPIC':<40} {'VIGINTILE':<15} {'FILES':>6} {'EST_TOKENS':>14} "
-                f"{'PROP_FRAC':>10} {'UNIFORM_FRAC':>13}\n")
+        f.write(
+            f"{'TOPIC':<40} {'VIGINTILE':<15} {'FILES':>6} {'EST_TOKENS':>14} "
+            f"{'PROP_FRAC':>10} {'UNIFORM_FRAC':>13}\n"
+        )
         f.write("-" * 100 + "\n")
         for topic in sorted(valid_topics, key=lambda t: -topic_stats[t]["est_tokens"]):
             s = topic_stats[topic]
-            f.write(f"{topic:<40} {s['vigintile']:<15} {s['num_files']:>6} "
-                    f"{s['est_tokens']:>14,} {proportional_fraction[topic]:>9.2%} "
-                    f"{uniform_fraction:>12.2%}\n")
+            f.write(
+                f"{topic:<40} {s['vigintile']:<15} {s['num_files']:>6} "
+                f"{s['est_tokens']:>14,} {proportional_fraction[topic]:>9.2%} "
+                f"{uniform_fraction:>12.2%}\n"
+            )
         if text_samples:
             f.write("\n\n--- TEXT SAMPLES ---\n")
             for topic, texts in text_samples.items():

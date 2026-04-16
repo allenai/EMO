@@ -52,11 +52,7 @@ class SQUAD_Merged_Base(SQUAD_Base):
                 .shuffle(seed=0)
                 .select(range(1000, len(self.dataset["train"])))
             )
-            val_dataset = (
-                self.dataset["train"]
-                .shuffle(seed=0)
-                .select(range(0, 1000))
-            )
+            val_dataset = self.dataset["train"].shuffle(seed=0).select(range(0, 1000))
             merged = concatenate_datasets([train_dataset, val_dataset]).shuffle(seed=0)
             self._training_docs = list(map(self._process_doc, merged))
         return self._training_docs

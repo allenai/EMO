@@ -70,9 +70,11 @@ logger = logging.getLogger(__name__)
 # Embedding type registry
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class EmbeddingType:
     """Definition of an embedding type."""
+
     name: str
     filename: str
     dtype: type
@@ -157,7 +159,9 @@ def compute_logits_sparse_embedding(
     Shape: (B, num_layers * num_experts), dtype float16, ~25% non-zero.
     """
     dense = compute_logits_embedding(per_layer_logits, attention_mask, num_layers, num_experts)
-    return _sparsify_top_k(dense.astype(np.float32), num_layers, num_experts, TOP_K_SPARSE).astype(np.float16)
+    return _sparsify_top_k(dense.astype(np.float32), num_layers, num_experts, TOP_K_SPARSE).astype(
+        np.float16
+    )
 
 
 def compute_probs_sparse_embedding(
@@ -175,7 +179,9 @@ def compute_probs_sparse_embedding(
     Shape: (B, num_layers * num_experts), dtype float16, ~25% non-zero.
     """
     dense = compute_probs_embedding(per_layer_logits, attention_mask, num_layers, num_experts)
-    return _sparsify_top_k(dense.astype(np.float32), num_layers, num_experts, TOP_K_SPARSE).astype(np.float16)
+    return _sparsify_top_k(dense.astype(np.float32), num_layers, num_experts, TOP_K_SPARSE).astype(
+        np.float16
+    )
 
 
 def compute_topk_freq_embedding(
@@ -207,9 +213,7 @@ def compute_topk_freq_embedding(
         # Mask out padding tokens (repeated for each top-k slot)
         valid = attention_mask.unsqueeze(-1).expand(-1, -1, routed_top_k).reshape(B, -1)
 
-        counts[:, layer_idx, :].scatter_add_(
-            1, flat_indices, valid.to(torch.int32)
-        )
+        counts[:, layer_idx, :].scatter_add_(1, flat_indices, valid.to(torch.int32))
 
     # Normalize by document length
     doc_lens = attention_mask.sum(dim=1, keepdim=True).float()  # (B, 1)
@@ -401,7 +405,10 @@ def embed_batch(
     results = {}
     for et in embedding_types:
         results[et.name] = et.compute_fn(
-            per_layer_logits, attention_mask, num_layers, num_standard_experts,
+            per_layer_logits,
+            attention_mask,
+            num_layers,
+            num_standard_experts,
             routed_top_k=routed_top_k,
         )
 
@@ -457,7 +464,10 @@ def embed_batch_tokens(
     results = {}
     for et in embedding_types:
         results[et.name] = et.compute_fn(
-            per_layer_logits, attention_mask, num_layers, num_standard_experts,
+            per_layer_logits,
+            attention_mask,
+            num_layers,
+            num_standard_experts,
             routed_top_k=routed_top_k,
         )
 
@@ -469,9 +479,16 @@ def embed_batch_tokens(
 # Sanity checks
 # ---------------------------------------------------------------------------
 
+
 def run_sanity_checks(
-    model, tokenizer, source_doc_samples, device,
-    num_layers, num_standard_experts, routed_top_k, embedding_types,
+    model,
+    tokenizer,
+    source_doc_samples,
+    device,
+    num_layers,
+    num_standard_experts,
+    routed_top_k,
+    embedding_types,
 ):
     logger.info("=== Running sanity checks ===")
 
@@ -480,7 +497,12 @@ def run_sanity_checks(
 
     # Check 1: shapes and dtypes
     results = embed_batch(
-        model, [sample_doc], device, num_layers, num_standard_experts, embedding_types,
+        model,
+        [sample_doc],
+        device,
+        num_layers,
+        num_standard_experts,
+        embedding_types,
         routed_top_k=routed_top_k,
     )
     for et in embedding_types:
@@ -488,22 +510,28 @@ def run_sanity_checks(
         assert arr.shape == (1, D), f"{et.name} shape {arr.shape} != (1, {D})"
         assert arr.dtype == et.dtype, f"{et.name} dtype {arr.dtype} != {et.dtype}"
         assert not np.isnan(arr).any(), f"{et.name} contains NaN"
-        logger.info(f"  CHECK 1 [{et.name}]: shape=(1, {D}), dtype={et.dtype}, "
-                    f"range=[{arr.min():.4f}, {arr.max():.4f}]")
-    logger.info(f"  CHECK 1 PASSED")
+        logger.info(
+            f"  CHECK 1 [{et.name}]: shape=(1, {D}), dtype={et.dtype}, "
+            f"range=[{arr.min():.4f}, {arr.max():.4f}]"
+        )
+    logger.info("  CHECK 1 PASSED")
 
     # Check 2: probs sum to ~1 per layer
     if "probs" in results:
         per_layer_sum = results["probs"][0].reshape(num_layers, num_standard_experts).sum(axis=1)
-        assert (per_layer_sum > 0.95).all() and (per_layer_sum < 1.05).all(), \
-            f"Softmax row sums off: {per_layer_sum}"
-        logger.info(f"  CHECK 2 PASSED: probs per-layer sums in [0.95, 1.05]")
+        assert (per_layer_sum > 0.95).all() and (
+            per_layer_sum < 1.05
+        ).all(), f"Softmax row sums off: {per_layer_sum}"
+        logger.info("  CHECK 2 PASSED: probs per-layer sums in [0.95, 1.05]")
 
     # Check 2b: topk_freq per-layer sums == routed_top_k
     if "topk_freq" in results:
-        per_layer_sum = results["topk_freq"][0].reshape(num_layers, num_standard_experts).sum(axis=1)
-        assert np.allclose(per_layer_sum, routed_top_k, atol=1e-4), \
-            f"topk_freq per-layer sums not close to {routed_top_k}: {per_layer_sum}"
+        per_layer_sum = (
+            results["topk_freq"][0].reshape(num_layers, num_standard_experts).sum(axis=1)
+        )
+        assert np.allclose(
+            per_layer_sum, routed_top_k, atol=1e-4
+        ), f"topk_freq per-layer sums not close to {routed_top_k}: {per_layer_sum}"
         logger.info(f"  CHECK 2b PASSED: topk_freq per-layer sums == {routed_top_k}")
 
     # Check 3: decoded text looks sane
@@ -514,6 +542,7 @@ def run_sanity_checks(
 
     # Check 4: same-source docs more similar than cross-source
     if len(source_doc_samples) >= 2:
+
         def cos(x, y):
             x, y = x.astype(np.float32), y.astype(np.float32)
             return float(np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y) + 1e-8))
@@ -522,13 +551,39 @@ def run_sanity_checks(
         la, da = source_doc_samples[0]
         lb, db = source_doc_samples[1]
         if len(da) >= 2 and len(db) >= 1:
-            r0 = embed_batch(model, [da[0]], device, num_layers, num_standard_experts, [check_et], routed_top_k=routed_top_k)
-            r1 = embed_batch(model, [da[1]], device, num_layers, num_standard_experts, [check_et], routed_top_k=routed_top_k)
-            r2 = embed_batch(model, [db[0]], device, num_layers, num_standard_experts, [check_et], routed_top_k=routed_top_k)
+            r0 = embed_batch(
+                model,
+                [da[0]],
+                device,
+                num_layers,
+                num_standard_experts,
+                [check_et],
+                routed_top_k=routed_top_k,
+            )
+            r1 = embed_batch(
+                model,
+                [da[1]],
+                device,
+                num_layers,
+                num_standard_experts,
+                [check_et],
+                routed_top_k=routed_top_k,
+            )
+            r2 = embed_batch(
+                model,
+                [db[0]],
+                device,
+                num_layers,
+                num_standard_experts,
+                [check_et],
+                routed_top_k=routed_top_k,
+            )
             same = cos(r0[check_et.name][0], r1[check_et.name][0])
             cross = cos(r0[check_et.name][0], r2[check_et.name][0])
-            logger.info(f"  CHECK 4 ({check_et.name}): same-source ({la}) cos={same:.3f}  "
-                        f"cross-source ({la} vs {lb}) cos={cross:.3f}")
+            logger.info(
+                f"  CHECK 4 ({check_et.name}): same-source ({la}) cos={same:.3f}  "
+                f"cross-source ({la} vs {lb}) cos={cross:.3f}"
+            )
             if same > cross:
                 logger.info("  CHECK 4 PASSED: same-source more similar")
             else:
@@ -541,38 +596,60 @@ def run_sanity_checks(
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
     doc_names = sorted(EMBEDDING_REGISTRY.keys())
     token_names = sorted(TOKEN_EMBEDDING_REGISTRY.keys())
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-path", required=True)
-    parser.add_argument("--composition-file", required=True,
-                        help="mix_composition.json from analyze_data_mix.py")
-    parser.add_argument("--output-dir", required=True,
-                        help="Output directory for embeddings and metadata")
-    parser.add_argument("--granularity", choices=["document", "token"], default="document",
-                        help="Embedding granularity: 'document' aggregates per doc (default), "
-                             "'token' stores per-token activations")
+    parser.add_argument(
+        "--composition-file", required=True, help="mix_composition.json from analyze_data_mix.py"
+    )
+    parser.add_argument(
+        "--output-dir", required=True, help="Output directory for embeddings and metadata"
+    )
+    parser.add_argument(
+        "--granularity",
+        choices=["document", "token"],
+        default="document",
+        help="Embedding granularity: 'document' aggregates per doc (default), "
+        "'token' stores per-token activations",
+    )
     parser.add_argument("--target-tokens", type=int, default=20_000_000)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--max-doc-len", type=int, default=2048)
     parser.add_argument("--min-doc-len", type=int, default=32)
-    parser.add_argument("--max-tokens-per-doc", type=int, default=None,
-                        help="Truncate each document to at most this many tokens before inference. "
-                             "Useful for increasing document diversity at fixed token budget.")
+    parser.add_argument(
+        "--max-tokens-per-doc",
+        type=int,
+        default=None,
+        help="Truncate each document to at most this many tokens before inference. "
+        "Useful for increasing document diversity at fixed token budget.",
+    )
     parser.add_argument("--sanity-check-only", action="store_true")
-    parser.add_argument("--debug", action="store_true",
-                        help="Debug mode: only load from the first 2 data sources")
-    parser.add_argument("--shuffle", action="store_true",
-                        help="Randomly sample documents from across all files in each source "
-                             "(instead of reading sequentially from the start)")
-    parser.add_argument("--shuffle-seed", type=int, default=42,
-                        help="Random seed for shuffled sampling (default: 42)")
-    parser.add_argument("--embeddings", default="all",
-                        help=f"Comma-separated embedding types to compute, or 'all'. "
-                             f"Document types: {', '.join(doc_names)}. "
-                             f"Token types: {', '.join(token_names)}. (default: all)")
+    parser.add_argument(
+        "--debug", action="store_true", help="Debug mode: only load from the first 2 data sources"
+    )
+    parser.add_argument(
+        "--shuffle",
+        action="store_true",
+        help="Randomly sample documents from across all files in each source "
+        "(instead of reading sequentially from the start)",
+    )
+    parser.add_argument(
+        "--shuffle-seed",
+        type=int,
+        default=42,
+        help="Random seed for shuffled sampling (default: 42)",
+    )
+    parser.add_argument(
+        "--embeddings",
+        default="all",
+        help=f"Comma-separated embedding types to compute, or 'all'. "
+        f"Document types: {', '.join(doc_names)}. "
+        f"Token types: {', '.join(token_names)}. (default: all)",
+    )
     args = parser.parse_args()
 
     is_token = args.granularity == "token"
@@ -588,8 +665,10 @@ def main():
         requested_names = [s.strip() for s in args.embeddings.split(",")]
         for name in requested_names:
             if name not in registry:
-                parser.error(f"Unknown {args.granularity}-level embedding type '{name}'. "
-                             f"Available: {', '.join(all_names)}")
+                parser.error(
+                    f"Unknown {args.granularity}-level embedding type '{name}'. "
+                    f"Available: {', '.join(all_names)}"
+                )
 
     embedding_types = [registry[name] for name in requested_names]
     logger.info(f"Granularity: {args.granularity}")
@@ -621,7 +700,9 @@ def main():
 
     logger.info(f"Model: {num_layers} layers, {num_standard_experts} standard experts")
     logger.info(f"Embedding dim: {emb_dim}")
-    logger.info(f"Routed top-k: {routed_top_k} (total top-k={moe_cfg['top_k']}, shared={moe_cfg['num_shared_experts']})")
+    logger.info(
+        f"Routed top-k: {routed_top_k} (total top-k={moe_cfg['top_k']}, shared={moe_cfg['num_shared_experts']})"
+    )
 
     # Collect a few docs per source for sanity checks
     source_doc_samples = []
@@ -634,13 +715,25 @@ def main():
 
     if is_token:
         _run_token_sanity_checks(
-            model, tokenizer, source_doc_samples, device,
-            num_layers, num_standard_experts, routed_top_k, embedding_types,
+            model,
+            tokenizer,
+            source_doc_samples,
+            device,
+            num_layers,
+            num_standard_experts,
+            routed_top_k,
+            embedding_types,
         )
     else:
         run_sanity_checks(
-            model, tokenizer, source_doc_samples, device,
-            num_layers, num_standard_experts, routed_top_k, embedding_types,
+            model,
+            tokenizer,
+            source_doc_samples,
+            device,
+            num_layers,
+            num_standard_experts,
+            routed_top_k,
+            embedding_types,
         )
 
     if args.sanity_check_only:
@@ -648,18 +741,44 @@ def main():
         return
 
     if is_token:
-        _run_token_extraction(args, sources, model, tokenizer, device,
-                              num_layers, num_standard_experts, routed_top_k,
-                              emb_dim, embedding_types, moe_cfg)
+        _run_token_extraction(
+            args,
+            sources,
+            model,
+            tokenizer,
+            device,
+            num_layers,
+            num_standard_experts,
+            routed_top_k,
+            emb_dim,
+            embedding_types,
+            moe_cfg,
+        )
     else:
-        _run_document_extraction(args, sources, model, tokenizer, device,
-                                 num_layers, num_standard_experts, routed_top_k,
-                                 emb_dim, embedding_types, moe_cfg)
+        _run_document_extraction(
+            args,
+            sources,
+            model,
+            tokenizer,
+            device,
+            num_layers,
+            num_standard_experts,
+            routed_top_k,
+            emb_dim,
+            embedding_types,
+            moe_cfg,
+        )
 
 
 def _run_token_sanity_checks(
-    model, tokenizer, source_doc_samples, device,
-    num_layers, num_standard_experts, routed_top_k, embedding_types,
+    model,
+    tokenizer,
+    source_doc_samples,
+    device,
+    num_layers,
+    num_standard_experts,
+    routed_top_k,
+    embedding_types,
 ):
     logger.info("=== Running token-level sanity checks ===")
 
@@ -668,23 +787,28 @@ def _run_token_sanity_checks(
     doc_len = len(sample_doc)
 
     results, token_info = embed_batch_tokens(
-        model, [sample_doc], device, num_layers, num_standard_experts, embedding_types,
+        model,
+        [sample_doc],
+        device,
+        num_layers,
+        num_standard_experts,
+        embedding_types,
         routed_top_k=routed_top_k,
     )
 
     # Check 1: shapes and dtypes
     for et in embedding_types:
         arr = results[et.name]
-        assert arr.shape == (doc_len, D), \
-            f"{et.name} shape {arr.shape} != ({doc_len}, {D})"
+        assert arr.shape == (doc_len, D), f"{et.name} shape {arr.shape} != ({doc_len}, {D})"
         assert arr.dtype == et.dtype, f"{et.name} dtype {arr.dtype} != {et.dtype}"
-        logger.info(f"  CHECK 1 [{et.name}]: shape=({doc_len}, {D}), dtype={et.dtype}, "
-                    f"range=[{arr.min():.4f}, {arr.max():.4f}]")
+        logger.info(
+            f"  CHECK 1 [{et.name}]: shape=({doc_len}, {D}), dtype={et.dtype}, "
+            f"range=[{arr.min():.4f}, {arr.max():.4f}]"
+        )
     logger.info("  CHECK 1 PASSED")
 
     # Check 2: token_info length matches
-    assert len(token_info) == doc_len, \
-        f"token_info length {len(token_info)} != doc_len {doc_len}"
+    assert len(token_info) == doc_len, f"token_info length {len(token_info)} != doc_len {doc_len}"
     logger.info(f"  CHECK 2 PASSED: token_info length matches ({doc_len} tokens)")
 
     # Check 3: probs sum to ~1 per layer per token
@@ -692,8 +816,9 @@ def _run_token_sanity_checks(
         probs = results["probs"]
         per_layer = probs.reshape(doc_len, num_layers, num_standard_experts)
         layer_sums = per_layer.sum(axis=2)  # (doc_len, num_layers)
-        assert (layer_sums > 0.95).all() and (layer_sums < 1.05).all(), \
-            f"Token probs per-layer sums off: min={layer_sums.min():.4f}, max={layer_sums.max():.4f}"
+        assert (layer_sums > 0.95).all() and (
+            layer_sums < 1.05
+        ).all(), f"Token probs per-layer sums off: min={layer_sums.min():.4f}, max={layer_sums.max():.4f}"
         logger.info("  CHECK 3 PASSED: token probs per-layer sums in [0.95, 1.05]")
 
     # Check 4: topk_binary has exactly routed_top_k ones per layer per token
@@ -701,16 +826,27 @@ def _run_token_sanity_checks(
         binary = results["topk_binary"]
         per_layer = binary.reshape(doc_len, num_layers, num_standard_experts)
         layer_sums = per_layer.sum(axis=2)  # (doc_len, num_layers)
-        assert (layer_sums == routed_top_k).all(), \
-            f"topk_binary per-layer sums not {routed_top_k}: min={layer_sums.min()}, max={layer_sums.max()}"
+        assert (
+            layer_sums == routed_top_k
+        ).all(), f"topk_binary per-layer sums not {routed_top_k}: min={layer_sums.min()}, max={layer_sums.max()}"
         logger.info(f"  CHECK 4 PASSED: topk_binary has exactly {routed_top_k} ones per layer")
 
     logger.info("=== Token-level sanity checks complete ===\n")
 
 
-def _run_token_extraction(args, sources, model, tokenizer, device,
-                          num_layers, num_standard_experts, routed_top_k,
-                          emb_dim, embedding_types, moe_cfg):
+def _run_token_extraction(
+    args,
+    sources,
+    model,
+    tokenizer,
+    device,
+    num_layers,
+    num_standard_experts,
+    routed_top_k,
+    emb_dim,
+    embedding_types,
+    moe_cfg,
+):
     """Token-level extraction: stores per-token router activations + source documents."""
     all_embeddings: Dict[str, List[np.ndarray]] = {et.name: [] for et in embedding_types}
     all_meta: List[dict] = []
@@ -727,7 +863,10 @@ def _run_token_extraction(args, sources, model, tokenizer, device,
         logger.info(f"\nSource: {label}  target={target_source_tokens:,} tokens")
         if args.shuffle:
             docs = load_source_documents_shuffled(
-                info["all_files"], target_source_tokens, args.min_doc_len, args.max_doc_len,
+                info["all_files"],
+                target_source_tokens,
+                args.min_doc_len,
+                args.max_doc_len,
                 seed=args.shuffle_seed,
             )
         else:
@@ -741,7 +880,7 @@ def _run_token_extraction(args, sources, model, tokenizer, device,
 
         # Truncate documents if requested
         if args.max_tokens_per_doc is not None:
-            docs = [doc[:args.max_tokens_per_doc] for doc in docs]
+            docs = [doc[: args.max_tokens_per_doc] for doc in docs]
 
         # Save document tokens for later context recovery
         for doc in docs:
@@ -754,7 +893,12 @@ def _run_token_extraction(args, sources, model, tokenizer, device,
         for batch_idx, i in enumerate(range(0, len(docs), args.batch_size)):
             batch = docs[i : i + args.batch_size]
             results, token_info = embed_batch_tokens(
-                model, batch, device, num_layers, num_standard_experts, embedding_types,
+                model,
+                batch,
+                device,
+                num_layers,
+                num_standard_experts,
+                embedding_types,
                 routed_top_k=routed_top_k,
             )
             for name, arr in results.items():
@@ -763,12 +907,14 @@ def _run_token_extraction(args, sources, model, tokenizer, device,
             # Build per-token metadata
             for batch_doc_idx, token_pos in token_info:
                 doc = batch[batch_doc_idx]
-                all_meta.append({
-                    "source": label,
-                    "doc_index": global_doc_idx + i + batch_doc_idx,
-                    "token_position": token_pos,
-                    "token_id": int(doc[token_pos]),
-                })
+                all_meta.append(
+                    {
+                        "source": label,
+                        "doc_index": global_doc_idx + i + batch_doc_idx,
+                        "token_position": token_pos,
+                        "token_id": int(doc[token_pos]),
+                    }
+                )
             source_tokens += len(token_info)
 
             if (batch_idx + 1) % 10 == 0 or batch_idx == num_batches - 1:
@@ -805,7 +951,9 @@ def _run_token_extraction(args, sources, model, tokenizer, device,
     bounds_path = os.path.join(args.output_dir, "doc_boundaries.npy")
     np.save(docs_path, flat_tokens)
     np.save(bounds_path, boundaries)
-    logger.info(f"  documents: {docs_path}  shape={flat_tokens.shape}  ({flat_tokens.nbytes / 1024:.0f} KB)")
+    logger.info(
+        f"  documents: {docs_path}  shape={flat_tokens.shape}  ({flat_tokens.nbytes / 1024:.0f} KB)"
+    )
     logger.info(f"  boundaries: {bounds_path}  shape={boundaries.shape}")
 
     # Save per-token metadata
@@ -851,9 +999,19 @@ def _run_token_extraction(args, sources, model, tokenizer, device,
     logger.info("Done.")
 
 
-def _run_document_extraction(args, sources, model, tokenizer, device,
-                             num_layers, num_standard_experts, routed_top_k,
-                             emb_dim, embedding_types, moe_cfg):
+def _run_document_extraction(
+    args,
+    sources,
+    model,
+    tokenizer,
+    device,
+    num_layers,
+    num_standard_experts,
+    routed_top_k,
+    emb_dim,
+    embedding_types,
+    moe_cfg,
+):
     """Document-level extraction: aggregates per-token activations into per-doc embeddings."""
     all_embeddings: Dict[str, List[np.ndarray]] = {et.name: [] for et in embedding_types}
     all_meta: List[dict] = []
@@ -867,7 +1025,10 @@ def _run_document_extraction(args, sources, model, tokenizer, device,
         logger.info(f"\nSource: {label}  target={target_source_tokens:,} tokens")
         if args.shuffle:
             docs = load_source_documents_shuffled(
-                info["all_files"], target_source_tokens, args.min_doc_len, args.max_doc_len,
+                info["all_files"],
+                target_source_tokens,
+                args.min_doc_len,
+                args.max_doc_len,
                 seed=args.shuffle_seed,
             )
         else:
@@ -881,7 +1042,7 @@ def _run_document_extraction(args, sources, model, tokenizer, device,
 
         # Truncate documents if requested
         if args.max_tokens_per_doc is not None:
-            docs = [doc[:args.max_tokens_per_doc] for doc in docs]
+            docs = [doc[: args.max_tokens_per_doc] for doc in docs]
 
         # Batch inference
         batch_embeddings: Dict[str, List[np.ndarray]] = {et.name: [] for et in embedding_types}
@@ -890,7 +1051,12 @@ def _run_document_extraction(args, sources, model, tokenizer, device,
         for batch_idx, i in enumerate(range(0, len(docs), args.batch_size)):
             batch = docs[i : i + args.batch_size]
             results = embed_batch(
-                model, batch, device, num_layers, num_standard_experts, embedding_types,
+                model,
+                batch,
+                device,
+                num_layers,
+                num_standard_experts,
+                embedding_types,
                 routed_top_k=routed_top_k,
             )
             for name, arr in results.items():

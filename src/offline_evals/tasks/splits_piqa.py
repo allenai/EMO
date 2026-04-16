@@ -3,6 +3,7 @@ from oe_eval.tasks.oe_eval_tasks.piqa import PiQA, PiQAMC
 
 from ..metrics.mc_softloss import SoftLoss
 
+
 class PIQA_RC_Base(PiQA):
     def has_test_docs(self):
         return True
@@ -85,6 +86,7 @@ class PIQA_MC_BASE(PiQAMC):
 # Merged variant: train+val combined for both pruning and finetuning.
 # Both halves come from the same shuffled train, so no extra shuffle is needed.
 # ---------------------------------------------------------------------------
+
 
 class PIQA_Merged_RC(PIQA_RC_Base):
     """PIQA variant where pruning and finetuning use the same merged data."""

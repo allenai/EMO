@@ -4,12 +4,15 @@ then compute cumulative probability mass. Plot as scatterplots per layer.
 """
 
 import argparse
-import numpy as np
+
 import matplotlib
+import numpy as np
+
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from pathlib import Path
 import json
+from pathlib import Path
+
+import matplotlib.pyplot as plt
 
 
 def main():
@@ -32,8 +35,10 @@ def main():
     # Load embeddings: (num_docs, num_layers * num_experts)
     emb = np.load(args.emb_file).astype(np.float32)
     num_docs = emb.shape[0]
-    print(f"Loaded {args.emb_file}: shape={emb.shape}, num_docs={num_docs}, "
-          f"num_layers={num_layers}, num_experts={num_experts}")
+    print(
+        f"Loaded {args.emb_file}: shape={emb.shape}, num_docs={num_docs}, "
+        f"num_layers={num_layers}, num_experts={num_experts}"
+    )
 
     # Reshape to (num_docs, num_layers, num_experts)
     emb = emb.reshape(num_docs, num_layers, num_experts)
@@ -75,19 +80,31 @@ def main():
         # Plot scatter — single vectorized call (tile x for all docs)
         x_tiled = np.tile(x, y_sample.shape[0])
         y_flat = y_sample.ravel()
-        ax.scatter(x_tiled, y_flat, s=0.3, alpha=0.05, color="steelblue",
-                   rasterized=True, edgecolors="none")
+        ax.scatter(
+            x_tiled,
+            y_flat,
+            s=0.3,
+            alpha=0.05,
+            color="steelblue",
+            rasterized=True,
+            edgecolors="none",
+        )
 
         # Overlay percentile lines for readability
         for pct, color, lw in [(50, "red", 1.5), (10, "orange", 1.0), (90, "orange", 1.0)]:
             pct_vals = np.percentile(y_data, pct, axis=0)
-            ax.plot(x, pct_vals, color=color, lw=lw,
-                    label=f"p{pct}" if layer_idx == 0 else None)
+            ax.plot(x, pct_vals, color=color, lw=lw, label=f"p{pct}" if layer_idx == 0 else None)
 
         # Mean line
         mean_vals = y_data.mean(axis=0)
-        ax.plot(x, mean_vals, color="black", lw=1.5, linestyle="--",
-                label="mean" if layer_idx == 0 else None)
+        ax.plot(
+            x,
+            mean_vals,
+            color="black",
+            lw=1.5,
+            linestyle="--",
+            label="mean" if layer_idx == 0 else None,
+        )
 
         ax.set_title(f"Layer {layer_idx}", fontsize=11)
         ax.set_xlabel("Top-k experts")
@@ -127,17 +144,31 @@ def main():
 
         x_tiled = np.tile(x_zoom, y_sample.shape[0])
         y_flat = y_sample.ravel()
-        ax.scatter(x_tiled, y_flat, s=0.8, alpha=0.05, color="steelblue",
-                   rasterized=True, edgecolors="none")
+        ax.scatter(
+            x_tiled,
+            y_flat,
+            s=0.8,
+            alpha=0.05,
+            color="steelblue",
+            rasterized=True,
+            edgecolors="none",
+        )
 
         for pct, color, lw in [(50, "red", 1.5), (10, "orange", 1.0), (90, "orange", 1.0)]:
             pct_vals = np.percentile(y_data, pct, axis=0)
-            ax.plot(x_zoom, pct_vals, color=color, lw=lw,
-                    label=f"p{pct}" if layer_idx == 0 else None)
+            ax.plot(
+                x_zoom, pct_vals, color=color, lw=lw, label=f"p{pct}" if layer_idx == 0 else None
+            )
 
         mean_vals = y_data.mean(axis=0)
-        ax.plot(x_zoom, mean_vals, color="black", lw=1.5, linestyle="--",
-                label="mean" if layer_idx == 0 else None)
+        ax.plot(
+            x_zoom,
+            mean_vals,
+            color="black",
+            lw=1.5,
+            linestyle="--",
+            label="mean" if layer_idx == 0 else None,
+        )
 
         ax.set_title(f"Layer {layer_idx}", fontsize=11)
         ax.set_xlabel("Top-k experts")

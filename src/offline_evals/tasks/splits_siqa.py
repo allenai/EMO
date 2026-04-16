@@ -3,6 +3,7 @@ from oe_eval.tasks.oe_eval_tasks.siqa import SocialIQA, SocialIQAMC
 
 from ..metrics.mc_softloss import SoftLoss
 
+
 class SocialIQA_RC_Base(SocialIQA):
     def has_test_docs(self):
         return True
@@ -34,6 +35,7 @@ class SocialIQA_RC_Base(SocialIQA):
         self._metrics += [SoftLoss(**self.task_config["metric_kwargs"])]
 
         return self._metrics
+
 
 class SocialIQAMC_Base(SocialIQAMC):
     def has_test_docs(self):
@@ -84,6 +86,7 @@ class SocialIQAMC_Base(SocialIQAMC):
 # Merged variant: train+val combined for both pruning and finetuning.
 # Both halves come from the same shuffled train, so no extra shuffle is needed.
 # ---------------------------------------------------------------------------
+
 
 class SocialIQA_Merged_RC(SocialIQA_RC_Base):
     """SocialIQA variant where pruning and finetuning use the same merged data."""

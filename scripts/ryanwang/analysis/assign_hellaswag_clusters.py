@@ -59,8 +59,10 @@ def main():
         for line in f:
             meta.append(json.loads(line))
 
-    print(f"Loading full embeddings to extract test subset...")
-    full_emb = np.load(os.path.join(data_dir, f"embeddings_{args.embedding}.npy")).astype(np.float32)
+    print("Loading full embeddings to extract test subset...")
+    full_emb = np.load(os.path.join(data_dir, f"embeddings_{args.embedding}.npy")).astype(
+        np.float32
+    )
     test_mask = [m["source"] == "test" for m in meta]
     test_emb = full_emb[test_mask]
     print(f"  test embeddings: {test_emb.shape}")
@@ -88,7 +90,9 @@ def main():
 
     # ── Fit spherical k-means on train+val ───────────────────────────────
     print(f"\nFitting spherical k-means (k={args.k}) on train+val...")
-    km = MiniBatchKMeans(n_clusters=args.k, n_init=10, max_iter=500, batch_size=4096, random_state=42)
+    km = MiniBatchKMeans(
+        n_clusters=args.k, n_init=10, max_iter=500, batch_size=4096, random_state=42
+    )
     km.fit(tv_normed)
 
     for iteration in range(20):
@@ -121,13 +125,15 @@ def main():
     # Indices are positions within the train_val array (for train/val)
     # and positions within the test-only portion (for test)
     assignments = {}
-    print(f"\nCluster sizes:")
+    print("\nCluster sizes:")
     print(f"  {'Cluster':<10} {'Train':>8} {'Val':>8} {'Test':>8} {'Total':>8}")
     print(f"  {'-'*10} {'-'*8} {'-'*8} {'-'*8} {'-'*8}")
 
     for c in range(args.k):
         c_train = [i for i, m in enumerate(tv_meta) if tv_labels[i] == c and m["source"] == "train"]
-        c_val = [i for i, m in enumerate(tv_meta) if tv_labels[i] == c and m["source"] == "validation"]
+        c_val = [
+            i for i, m in enumerate(tv_meta) if tv_labels[i] == c and m["source"] == "validation"
+        ]
         c_test = [i for i in range(len(test_labels)) if test_labels[i] == c]
 
         assignments[str(c)] = {
@@ -141,7 +147,9 @@ def main():
     total_train = sum(len(v["train"]) for v in assignments.values())
     total_val = sum(len(v["validation"]) for v in assignments.values())
     total_test = sum(len(v["test"]) for v in assignments.values())
-    print(f"  {'TOTAL':<10} {total_train:>8} {total_val:>8} {total_test:>8} {total_train+total_val+total_test:>8}")
+    print(
+        f"  {'TOTAL':<10} {total_train:>8} {total_val:>8} {total_test:>8} {total_train+total_val+total_test:>8}"
+    )
 
     # ── Save ─────────────────────────────────────────────────────────────
     output = {

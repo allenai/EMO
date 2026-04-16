@@ -3,6 +3,7 @@ from oe_eval.tasks.oe_eval_tasks.boolq import BoolQ, BoolQMC
 
 from ..metrics.mc_softloss import SoftLoss
 
+
 class BoolQ_RC_Base(BoolQ):
     def has_test_docs(self):
         return True
@@ -86,6 +87,7 @@ class BoolQ_MC_Base(BoolQMC):
 # (similar to GenericMMLUPro_merged in splits_mmlu_pro.py)
 # Both halves come from the same shuffled train, so no extra shuffle is needed.
 # ---------------------------------------------------------------------------
+
 
 class BoolQ_Merged_RC(BoolQ_RC_Base):
     """BoolQ variant where pruning and finetuning use the same merged data."""

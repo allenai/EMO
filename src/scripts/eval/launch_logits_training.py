@@ -53,7 +53,9 @@ _parser.add_argument(
     default=None,
     help="Max tokens to process (deterministic: always takes the first N tokens from sorted paths)",
 )
-_parser.add_argument("--seed", type=int, default=42, help="Random seed (unused currently, reserved)")
+_parser.add_argument(
+    "--seed", type=int, default=42, help="Random seed (unused currently, reserved)"
+)
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger()
@@ -213,7 +215,9 @@ def launch_logits_training(args_dict):
 
             router_probabilities = F.softmax(router_logits, dim=-1)
 
-            summed_router_probabilities = router_probabilities.sum(dim=(1, 2))  # (layers, num_experts)
+            summed_router_probabilities = router_probabilities.sum(
+                dim=(1, 2)
+            )  # (layers, num_experts)
             tot_router_probabilities += summed_router_probabilities
             tot_tokens += input_ids.numel()
 

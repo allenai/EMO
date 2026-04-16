@@ -27,16 +27,31 @@ logger = logging.getLogger(__name__)
 
 def main():
     parser = argparse.ArgumentParser(description="Plot expert coverage heatmaps")
-    parser.add_argument("--stats-file", type=str, required=True,
-                        help="Path to topic_stats.json")
-    parser.add_argument("--freq-file", type=str, default=None,
-                        help="Path to expert_freq.npy (defaults to same dir as stats-file)")
-    parser.add_argument("--metadata-file", type=str, default=None,
-                        help="Path to metadata.jsonl.gz (defaults to same dir as stats-file)")
-    parser.add_argument("--info-file", type=str, default=None,
-                        help="Path to info.json (defaults to same dir as stats-file)")
-    parser.add_argument("--output-dir", type=str, default=None,
-                        help="Output directory (defaults to same dir as stats-file)")
+    parser.add_argument("--stats-file", type=str, required=True, help="Path to topic_stats.json")
+    parser.add_argument(
+        "--freq-file",
+        type=str,
+        default=None,
+        help="Path to expert_freq.npy (defaults to same dir as stats-file)",
+    )
+    parser.add_argument(
+        "--metadata-file",
+        type=str,
+        default=None,
+        help="Path to metadata.jsonl.gz (defaults to same dir as stats-file)",
+    )
+    parser.add_argument(
+        "--info-file",
+        type=str,
+        default=None,
+        help="Path to info.json (defaults to same dir as stats-file)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default=None,
+        help="Output directory (defaults to same dir as stats-file)",
+    )
     args = parser.parse_args()
 
     stats_dir = os.path.dirname(args.stats_file)
@@ -54,8 +69,7 @@ def main():
         topic_stats = json.load(f)
 
     # Sort topics by mean entropy (most concentrated first)
-    topics = sorted(topic_stats.keys(),
-                    key=lambda t: topic_stats[t]["entropy_per_layer_mean"])
+    topics = sorted(topic_stats.keys(), key=lambda t: topic_stats[t]["entropy_per_layer_mean"])
     num_topics = len(topics)
     num_layers = len(topic_stats[topics[0]]["avg_experts_per_layer"])
 
@@ -160,8 +174,7 @@ def main():
         ax.set_title(f"Layer {layer_idx}", fontsize=12)
         fig.colorbar(im, ax=ax, shrink=0.8, pad=0.02)
 
-    fig.suptitle("Topic-Topic Cosine Similarity (avg freq vectors per layer)",
-                 fontsize=14, y=1.01)
+    fig.suptitle("Topic-Topic Cosine Similarity (avg freq vectors per layer)", fontsize=14, y=1.01)
     plt.tight_layout()
     out_path = os.path.join(args.output_dir, "topic_similarity_heatmap.png")
     fig.savefig(out_path, dpi=150, bbox_inches="tight")
@@ -178,7 +191,7 @@ def main():
 
         # Pairwise L2 distance
         # ||a - b||^2 = ||a||^2 + ||b||^2 - 2 a·b
-        sq_norms = (vecs ** 2).sum(axis=1)
+        sq_norms = (vecs**2).sum(axis=1)
         dist_sq = sq_norms[:, None] + sq_norms[None, :] - 2 * (vecs @ vecs.T)
         dist = np.sqrt(np.maximum(dist_sq, 0))
 
@@ -190,8 +203,7 @@ def main():
         ax.set_title(f"Layer {layer_idx}", fontsize=12)
         fig.colorbar(im, ax=ax, shrink=0.8, pad=0.02)
 
-    fig.suptitle("Topic-Topic L2 Distance (avg freq vectors per layer)",
-                 fontsize=14, y=1.01)
+    fig.suptitle("Topic-Topic L2 Distance (avg freq vectors per layer)", fontsize=14, y=1.01)
     plt.tight_layout()
     out_path = os.path.join(args.output_dir, "topic_l2_distance_heatmap.png")
     fig.savefig(out_path, dpi=150, bbox_inches="tight")

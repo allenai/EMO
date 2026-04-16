@@ -34,8 +34,14 @@ MODEL_SPECS = {
         "baseline": False,
         "variants": [
             {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
-            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
+            {
+                "suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 32)",
+            },
+            {
+                "suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 128)",
+            },
         ],
     },
     "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308step30995-hf": {
@@ -45,115 +51,176 @@ MODEL_SPECS = {
             {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": " "},
         ],
     },
-
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301step30995-hf": {
         "label": "specialized moe + globallb + 1shardexp + randpool",
         "baseline": False,
         "variants": [
             {"suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 8)"},
             # {"suffix": "_keepk_16_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 16)"},
-            {"suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 32)"},
+            {
+                "suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 32)",
+            },
             # {"suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 64)"},
             # {"suffix": "_keepk_96_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 96)"},
             # {"suffix": "_keepk_120_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 120)"},
-            {"suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise", "label": "(keepk 128)"},
+            {
+                "suffix": "_keepk_128_bs-32_lr-5e-5_epoch-1_prunemode-layerwise",
+                "label": "(keepk 128)",
+            },
         ],
     },
-
-
 }
 AVAILABLE_MODELS = list(MODEL_SPECS)
 
 TASK_SPECS = {
     "arc_challenge": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "arc_easy": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "boolq": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "coqa_0shot": [
-        "recall", "f1", "primary_score",
+        "recall",
+        "f1",
+        "primary_score",
     ],
     "csqa": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "gsm8k_generation_0shot": [
-        "exact_match", "primary_score",
+        "exact_match",
+        "primary_score",
     ],
     "gsm8k_perplexity_0shot": [
-        "bits_per_byte", "primary_score",
+        "bits_per_byte",
+        "primary_score",
     ],
     "hellaswag": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "openbookqa": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "piqa": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "socialiqa": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "squad_0shot": [
-        "recall", "f1", "primary_score",
+        "recall",
+        "f1",
+        "primary_score",
     ],
     "winogrande": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_biology": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_business": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_chemistry": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_computer_science": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_culture": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_economics": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_engineering": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_geography": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_health": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_history": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_law": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_math": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_other": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_philosophy_cat": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_physics": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_politics": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
     "mmlu_psychology": [
-        "softloss_corr", "acc_per_byte", "primary_score",
+        "softloss_corr",
+        "acc_per_byte",
+        "primary_score",
     ],
 }
 MMLU_SUBTASKS = [t for t in TASK_SPECS if t.startswith("mmlu_")]
@@ -163,21 +230,13 @@ AVAILABLE_TASK_RUNS = list(TASK_SPECS)
 SELECTED_MODELS = list(AVAILABLE_MODELS)
 SELECTED_TASK_RUNS = list(AVAILABLE_TASK_RUNS)
 
-MODEL_LABELS = {
-    model: spec["label"]
-    for model, spec in MODEL_SPECS.items()
-    if spec.get("label")
-}
+MODEL_LABELS = {model: spec["label"] for model, spec in MODEL_SPECS.items() if spec.get("label")}
 
 DEFAULT_OUTPUT_SUBDIR = "prune_eval_tables_0318"
 
 # Collect all known variant suffixes from MODEL_SPECS for auto-discovery.
 _ALL_VARIANT_SUFFIXES: List[str] = sorted(
-    {
-        v["suffix"]
-        for spec in MODEL_SPECS.values()
-        for v in spec.get("variants", [])
-    },
+    {v["suffix"] for spec in MODEL_SPECS.values() for v in spec.get("variants", [])},
     key=len,
     reverse=True,  # longest first for greedy stripping
 )
@@ -189,6 +248,7 @@ def _get_model_variants(model_name: str) -> List[Tuple[str, str]]:
     if spec is not None:
         return [(v["suffix"], v["label"]) for v in spec.get("variants", [])]
     return []
+
 
 # ============================================================================
 # END CONFIGURATION
@@ -277,8 +337,7 @@ def _load_baseline_metric(
     Looks in ``<model>/original_model/<task>/results/checkpoint-0/``.
     """
     ckpt_dir = (
-        prune_evals_root / model_name / "original_model" / task_run
-        / "results" / "checkpoint-0"
+        prune_evals_root / model_name / "original_model" / task_run / "results" / "checkpoint-0"
     )
     if not ckpt_dir.is_dir():
         return None
@@ -333,9 +392,7 @@ def _find_largest_checkpoint(results_dir: Path) -> Optional[Path]:
     return best_dir
 
 
-def _read_final_metric(
-    task_dir: Path, metric_key: str
-) -> Optional[float]:
+def _read_final_metric(task_dir: Path, metric_key: str) -> Optional[float]:
     """Read a single metric value from the largest checkpoint in task_dir/results."""
     results_dir = task_dir / "results"
     if not results_dir.is_dir():
@@ -390,9 +447,7 @@ def collect_table(
         if spec is not None and spec.get("baseline"):
             baseline_label = model_label + " (original)"
             for task_run in task_runs:
-                val = _load_baseline_metric(
-                    prune_evals_root, model_name, task_run, metric_key
-                )
+                val = _load_baseline_metric(prune_evals_root, model_name, task_run, metric_key)
                 if val is not None:
                     rows.setdefault(baseline_label, {})[task_run] = val
                 else:
@@ -463,9 +518,7 @@ def add_mmlu_avg_columns(df: pd.DataFrame) -> pd.DataFrame:
         if filtered and len(filtered) < len(mmlu_cols):
             df[col_name] = df[filtered].mean(axis=1, skipna=False)
 
-    avg_cols = ["mmlu_avg"] + [
-        c for c in MMLU_EXCLUDE_SETS if c in df.columns
-    ]
+    avg_cols = ["mmlu_avg"] + [c for c in MMLU_EXCLUDE_SETS if c in df.columns]
     other_cols = [c for c in df.columns if c not in avg_cols]
     df = df[avg_cols + other_cols]
     return df
@@ -526,15 +579,12 @@ def main() -> None:
 
     for metric_key in sorted(all_metrics):
         relevant_tasks = [
-            t for t in task_set
-            if metric_key in (metric_override or TASK_SPECS.get(t, []))
+            t for t in task_set if metric_key in (metric_override or TASK_SPECS.get(t, []))
         ]
         if not relevant_tasks:
             continue
 
-        df = collect_table(
-            args.prune_evals_root, model_set, relevant_tasks, metric_key
-        )
+        df = collect_table(args.prune_evals_root, model_set, relevant_tasks, metric_key)
         if df.empty:
             print(f"[WARN] No data for metric {metric_key!r}; skipping.")
             continue
@@ -552,9 +602,7 @@ def main() -> None:
             df.to_csv(out_path, sep="\t", float_format="%.4f")
         elif args.format == "markdown":
             out_path = base_output_dir / f"{safe_metric}.md"
-            out_path.write_text(
-                df.to_markdown(floatfmt=".4f") + "\n", encoding="utf-8"
-            )
+            out_path.write_text(df.to_markdown(floatfmt=".4f") + "\n", encoding="utf-8")
 
         print(f"[INFO] Saved {out_path}")
         print(df.to_string(float_format=lambda x: f"{x:.4f}"))

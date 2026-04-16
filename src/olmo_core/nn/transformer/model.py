@@ -536,7 +536,11 @@ class Transformer(nn.Module):
             # Mark sizes as dynamic for torch.compile().
             if self.compile_enabled:
                 mark_dynamic(h, (0, 1), strict=False)
-            if is_moe_twolevel_router and hasattr(block, "feed_forward_moe") and block.feed_forward_moe is not None:
+            if (
+                is_moe_twolevel_router
+                and hasattr(block, "feed_forward_moe")
+                and block.feed_forward_moe is not None
+            ):
                 h = block(
                     h, document_boundaries=document_boundaries, **all_block_kwargs, **block_kwargs
                 )

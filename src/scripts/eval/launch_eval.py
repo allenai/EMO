@@ -105,7 +105,10 @@ _parser.add_argument(
     "--split", type=str, default=None, help="Override evaluation split used for each task"
 )
 _parser.add_argument(
-    "--pruned_split", type=str, default=None, help="used to find the name of the task split. Only used when the task name ends with -pruned"
+    "--pruned_split",
+    type=str,
+    default=None,
+    help="used to find the name of the task split. Only used when the task name ends with -pruned",
 )
 _parser.add_argument(
     "--use-chat-format", type=bool, default=None, help="Override use_chat_format each task"

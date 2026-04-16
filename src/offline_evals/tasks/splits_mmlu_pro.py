@@ -1,7 +1,6 @@
-from datasets import Dataset, DatasetDict
+from datasets import DatasetDict
 from oe_eval.tasks.oe_eval_tasks.mmlu_pro import GenericMMLUProRC
 from oe_eval.utilities.datasets_wrapper import MOUNTED_WEKA_DATASET_WRAPPER
-
 
 # Map underscore task names -> original MMLU-Pro category names (for filtering)
 MMLU_PRO_CATEGORIES_MAP = {
@@ -64,9 +63,7 @@ class GenericMMLUPro_withsplits(GenericMMLUProRC):
         original_category = MMLU_PRO_CATEGORIES_MAP[self.CATEGORY_KEY]
 
         # Filter to this category
-        cat_test = full_dataset["test"].filter(
-            lambda doc: doc["category"] == original_category
-        )
+        cat_test = full_dataset["test"].filter(lambda doc: doc["category"] == original_category)
         cat_dev = full_dataset["validation"].filter(
             lambda doc: doc["category"] == original_category
         )
@@ -85,19 +82,19 @@ class GenericMMLUPro_withsplits(GenericMMLUProRC):
         test_split = remaining.select(range(test_cutoff))
         train_split = remaining.select(range(test_cutoff, n_remaining))
 
-        self.dataset = DatasetDict({
-            "dev": cat_dev,          # 5 examples for few-shot demos
-            "validation": prune_split,  # 100 examples for pruning
-            "train": train_split,       # ~40% of remainder for finetuning
-            "test": test_split,         # ~60% of remainder for evaluation
-        })
+        self.dataset = DatasetDict(
+            {
+                "dev": cat_dev,  # 5 examples for few-shot demos
+                "validation": prune_split,  # 100 examples for pruning
+                "train": train_split,  # ~40% of remainder for finetuning
+                "test": test_split,  # ~60% of remainder for evaluation
+            }
+        )
 
     def fewshot_examples(self, k, rnd, doc):
         # Use original validation (now "dev") for few-shot demos, matching upstream behavior
         if self._fewshot_docs is None:
-            self._fewshot_docs = [
-                self._process_doc(doc) for doc in self.dataset["dev"]
-            ]
+            self._fewshot_docs = [self._process_doc(doc) for doc in self.dataset["dev"]]
         return self._fewshot_docs[:k]
 
     def validation_docs(self):
@@ -143,9 +140,7 @@ class GenericMMLUPro_merged(GenericMMLUPro_withsplits):
 
         original_category = MMLU_PRO_CATEGORIES_MAP[self.CATEGORY_KEY]
 
-        cat_test = full_dataset["test"].filter(
-            lambda doc: doc["category"] == original_category
-        )
+        cat_test = full_dataset["test"].filter(lambda doc: doc["category"] == original_category)
         cat_dev = full_dataset["validation"].filter(
             lambda doc: doc["category"] == original_category
         )
@@ -167,12 +162,14 @@ class GenericMMLUPro_merged(GenericMMLUPro_withsplits):
         # Merge prune + train into a single set
         merged_train = concatenate_datasets([prune_split, train_split])
 
-        self.dataset = DatasetDict({
-            "dev": cat_dev,              # 5 examples for few-shot demos
-            "validation": merged_train,  # merged set for pruning
-            "train": merged_train,       # same merged set for finetuning
-            "test": test_split,          # 60% of remainder (identical to non-merged)
-        })
+        self.dataset = DatasetDict(
+            {
+                "dev": cat_dev,  # 5 examples for few-shot demos
+                "validation": merged_train,  # merged set for pruning
+                "train": merged_train,  # same merged set for finetuning
+                "test": test_split,  # 60% of remainder (identical to non-merged)
+            }
+        )
 
 
 def create_mmlu_pro_merged_tasks_withsplits(category_key):

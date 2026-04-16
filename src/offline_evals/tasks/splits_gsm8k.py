@@ -305,11 +305,7 @@ class GSM8K_Generation_Merged_Base(GSM8K_Generation_TrainVal_Base):
                 .shuffle(seed=0)
                 .select(range(1000, len(self.dataset["train"])))
             )
-            val_dataset = (
-                self.dataset["train"]
-                .shuffle(seed=0)
-                .select(range(0, 1000))
-            )
+            val_dataset = self.dataset["train"].shuffle(seed=0).select(range(0, 1000))
             merged = concatenate_datasets([train_dataset, val_dataset]).shuffle(seed=0)
             self._training_docs = list(merged.map(self._process_doc, with_indices=True))
         return self._training_docs

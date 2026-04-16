@@ -18,9 +18,8 @@ from __future__ import annotations
 
 import argparse
 import json
-from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 # ============================================================================
 # CONFIGURATION
@@ -37,6 +36,7 @@ OTHER_SUBJECTS = {"global_facts", "miscellaneous", "professional_accounting"}
 # ============================================================================
 # Helpers (reused from get_table_scores_prune_evals_0319.py)
 # ============================================================================
+
 
 def read_metrics(metrics_path: Path) -> Optional[dict]:
     try:
@@ -65,6 +65,7 @@ def find_largest_checkpoint(results_dir: Path) -> Optional[Path]:
 # ============================================================================
 # Discovery and collection
 # ============================================================================
+
 
 def discover_mmlu_tasks(model_dir: Path, variant_suffix: str) -> Tuple[Dict, Dict]:
     """Discover mmlu category and cluster task directories.
@@ -182,10 +183,14 @@ def compute_averages(
 # Main
 # ============================================================================
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Compare MMLU human-17 vs cluster-16 groupings")
-    parser.add_argument("--prune-evals-root", type=Path,
-                        default=Path(__file__).resolve().parent.parent / "prune_evals_0313")
+    parser.add_argument(
+        "--prune-evals-root",
+        type=Path,
+        default=Path(__file__).resolve().parent.parent / "prune_evals_0313",
+    )
     parser.add_argument("--metric", default=METRIC)
     return parser.parse_args()
 
@@ -208,7 +213,9 @@ def main():
 
     # Discover task directories
     human_tasks, cluster_tasks = discover_mmlu_tasks(model_dir, VARIANT_SUFFIX)
-    print(f"Found {len(human_tasks)} human category tasks, {len(cluster_tasks)} cluster category tasks\n")
+    print(
+        f"Found {len(human_tasks)} human category tasks, {len(cluster_tasks)} cluster category tasks\n"
+    )
 
     # Collect per-subject scores
     h_per_cat, h_all = collect_per_subject_scores(human_tasks, metric_key)
@@ -233,10 +240,18 @@ def main():
     print("=" * 70)
     print(f"{'':>30} {'Human-17':>12} {'Cluster-16':>12} {'Diff':>12}")
     print("-" * 70)
-    print(f"{'avg (mean of cat means)':>30} {fmt(h_avg):>12} {fmt(c_avg):>12} {fmt_diff(h_avg, c_avg):>12}")
-    print(f"{'avg_micro (mean of subjects)':>30} {fmt(h_micro):>12} {fmt(c_micro):>12} {fmt_diff(h_micro, c_micro):>12}")
-    print(f"{'avg_no_other':>30} {fmt(h_avg_no):>12} {fmt(c_avg_no):>12} {fmt_diff(h_avg_no, c_avg_no):>12}")
-    print(f"{'avg_micro_no_other':>30} {fmt(h_micro_no):>12} {fmt(c_micro_no):>12} {fmt_diff(h_micro_no, c_micro_no):>12}")
+    print(
+        f"{'avg (mean of cat means)':>30} {fmt(h_avg):>12} {fmt(c_avg):>12} {fmt_diff(h_avg, c_avg):>12}"
+    )
+    print(
+        f"{'avg_micro (mean of subjects)':>30} {fmt(h_micro):>12} {fmt(c_micro):>12} {fmt_diff(h_micro, c_micro):>12}"
+    )
+    print(
+        f"{'avg_no_other':>30} {fmt(h_avg_no):>12} {fmt(c_avg_no):>12} {fmt_diff(h_avg_no, c_avg_no):>12}"
+    )
+    print(
+        f"{'avg_micro_no_other':>30} {fmt(h_micro_no):>12} {fmt(c_micro_no):>12} {fmt_diff(h_micro_no, c_micro_no):>12}"
+    )
     print("=" * 70)
 
     # Per-subject detail

@@ -7,13 +7,16 @@ cumulative mass curves — i.e., whether higher T makes routing more diffuse.
 """
 
 import argparse
-import numpy as np
+
 import matplotlib
+import numpy as np
+
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from pathlib import Path
-from scipy.special import softmax
 import json
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from scipy.special import softmax
 
 
 def compute_cumulative_mass(probs_3d):
@@ -31,8 +34,7 @@ def main():
     parser.add_argument("--info-file", required=True, help="Path to info.json")
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--model-label", default=None)
-    parser.add_argument("--temperatures", nargs="+", type=float,
-                        default=[0.5, 1.0, 2.0, 4.0, 8.0])
+    parser.add_argument("--temperatures", nargs="+", type=float, default=[0.5, 1.0, 2.0, 4.0, 8.0])
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
@@ -65,8 +67,9 @@ def main():
 
     # --- Plot 1: Full range, percentile bands per temperature ---
     fig, axes = plt.subplots(4, 4, figsize=(28, 24), dpi=100)
-    fig.suptitle(f"Cumulative Expert Prob Mass at Various Temperatures\n{label}",
-                 fontsize=16, y=0.98)
+    fig.suptitle(
+        f"Cumulative Expert Prob Mass at Various Temperatures\n{label}", fontsize=16, y=0.98
+    )
 
     x = np.arange(1, num_experts + 1)
 
@@ -102,8 +105,11 @@ def main():
 
     # --- Plot 2: Zoomed to top-32 ---
     fig2, axes2 = plt.subplots(4, 4, figsize=(28, 24), dpi=100)
-    fig2.suptitle(f"Cumulative Expert Prob Mass — Zoom top-32, Temperature Sweep\n{label}",
-                  fontsize=16, y=0.98)
+    fig2.suptitle(
+        f"Cumulative Expert Prob Mass — Zoom top-32, Temperature Sweep\n{label}",
+        fontsize=16,
+        y=0.98,
+    )
 
     x_zoom = np.arange(1, 33)
 
@@ -117,8 +123,7 @@ def main():
             p90 = np.percentile(y_data, 90, axis=0)
             color = temp_colors[T]
 
-            ax.plot(x_zoom, median, color=color, lw=1.5,
-                    label=f"T={T}" if layer_idx == 0 else None)
+            ax.plot(x_zoom, median, color=color, lw=1.5, label=f"T={T}" if layer_idx == 0 else None)
             ax.fill_between(x_zoom, p10, p90, color=color, alpha=0.15)
 
         ax.set_title(f"Layer {layer_idx}", fontsize=11)
@@ -153,8 +158,14 @@ def main():
                 ks.append(np.median(k_per_doc))
 
             alpha = 0.3 + 0.7 * (layer_idx / (num_layers - 1))
-            ax.plot(temperatures, ks, marker="o", markersize=4, alpha=alpha,
-                    label=f"L{layer_idx}" if thresh_idx == 0 else None)
+            ax.plot(
+                temperatures,
+                ks,
+                marker="o",
+                markersize=4,
+                alpha=alpha,
+                label=f"L{layer_idx}" if thresh_idx == 0 else None,
+            )
 
         ax.set_xlabel("Temperature")
         ax.set_ylabel(f"Median k for {int(thresh*100)}% mass")
