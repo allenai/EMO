@@ -352,7 +352,9 @@ def main():
     logger.info("Computing per-unique-token cluster distributions...")
     from collections import defaultdict
 
-    token_cluster_counts: dict[int, dict[int, int]] = defaultdict(lambda: defaultdict(int))  # token_id -> {cluster: count}
+    token_cluster_counts: dict[int, dict[int, int]] = defaultdict(
+        lambda: defaultdict(int)
+    )  # token_id -> {cluster: count}
     token_total_counts: dict[int, int] = defaultdict(int)
     for i, m in enumerate(meta):
         tid = m["token_id"]
