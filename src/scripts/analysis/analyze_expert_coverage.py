@@ -371,7 +371,10 @@ def main():
         # Entropy per doc per layer (base 2 for bits)
         entropy_per_doc_layer = np.array(
             [
-                [scipy_entropy(layer_dists[d, layer_idx], base=2) for layer_idx in range(num_layers)]
+                [
+                    scipy_entropy(layer_dists[d, layer_idx], base=2)
+                    for layer_idx in range(num_layers)
+                ]
                 for d in range(n_docs)
             ]
         )  # (n_docs, num_layers)

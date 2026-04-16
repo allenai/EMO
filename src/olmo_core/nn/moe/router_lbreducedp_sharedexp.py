@@ -6,9 +6,7 @@ import torch.distributed as dist
 import torch.nn.functional as F
 
 import olmo_core.ops.moe as ops
-from olmo_core.distributed.utils import (
-    is_distributed,
-)
+from olmo_core.distributed.utils import is_distributed
 from olmo_core.exceptions import OLMoConfigurationError
 from olmo_core.nn.moe.router import (
     MoELinearRouter,

@@ -4,10 +4,8 @@ from typing import List, Optional, Union
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from transformers import (
-    Cache,
-    FlexOlmoNoQKNormPrenormConfig,
-)
+
+from transformers import Cache, FlexOlmoNoQKNormPrenormConfig
 from transformers.cache_utils import DynamicCache
 from transformers.generation import GenerationMixin
 from transformers.masking_utils import create_causal_mask

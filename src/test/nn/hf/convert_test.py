@@ -1,8 +1,8 @@
 import pytest
 import torch
-from transformers import Olmo2Config
 
 from olmo_core.nn.hf.convert import convert_state_from_hf, convert_state_to_hf
+from transformers import Olmo2Config
 
 try:
     from transformers import FlexOlmoConfig  # type: ignore

@@ -6,12 +6,8 @@ import torch.distributed as dist
 import torch.nn.functional as F
 
 import olmo_core.ops.moe as ops
-from olmo_core.distributed.utils import (
-    is_distributed,
-)
-from olmo_core.nn.moe.router import (
-    MoERouterGatingFunction,
-)
+from olmo_core.distributed.utils import is_distributed
+from olmo_core.nn.moe.router import MoERouterGatingFunction
 from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
 
 from .loss import MoELoadBalancingLossGranularity, load_balancing_loss, router_z_loss

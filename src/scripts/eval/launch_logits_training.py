@@ -10,9 +10,9 @@ import torch
 import torch.nn.functional as F
 from oe_eval.utilities.remote_utils import upload_directory
 from tqdm import tqdm
-from transformers import AutoModelForCausalLM
 
 from src.olmo_core.data.mixes import DataMix
+from transformers import AutoModelForCausalLM
 
 ## This script computes average router probabilities on training data mixes.
 ## Unlike launch_logits.py (which works on eval task data), this loads

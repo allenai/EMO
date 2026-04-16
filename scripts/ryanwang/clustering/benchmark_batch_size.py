@@ -7,10 +7,7 @@ import numpy as np
 import torch
 
 from src.scripts.clustering.extract import extract_logits
-from src.scripts.clustering.utils import (
-    get_moe_config,
-    load_model_and_tokenizer,
-)
+from src.scripts.clustering.utils import get_moe_config, load_model_and_tokenizer
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)

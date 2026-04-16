@@ -24,7 +24,6 @@ from typing import List, Optional
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 from src.hf_training.data_utils import get_formatted_prompts
 from src.hf_training.greedy_prune_layerwise import (
@@ -32,6 +31,7 @@ from src.hf_training.greedy_prune_layerwise import (
     _capture_layer_output,
     prune_moe_layer_inplace,
 )
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)

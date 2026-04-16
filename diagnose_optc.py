@@ -76,7 +76,9 @@ def check_sparsity(optC, n_sample=500):
         if bad_mask.sum() > 0:
             for i in range(min(10, len(bad_docs))):
                 d, layer_idx = bad_docs[i], bad_layers[i]
-                print(f"    doc={sample_idx[d]}, layer={layer_idx}, nnz={nnz_per_layer[d, layer_idx]}")
+                print(
+                    f"    doc={sample_idx[d]}, layer={layer_idx}, nnz={nnz_per_layer[d, layer_idx]}"
+                )
     else:
         print(
             f"  Passed: all {len(sample_idx)} sampled docs x {NUM_LAYERS} layers have exactly {TOP_K_SPARSE} non-zeros"

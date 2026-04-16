@@ -6,13 +6,9 @@ import torch.distributed as dist
 import torch.nn.functional as F
 
 import olmo_core.ops.moe as ops
-from olmo_core.distributed.utils import (
-    is_distributed,
-)
+from olmo_core.distributed.utils import is_distributed
 from olmo_core.exceptions import OLMoConfigurationError
-from olmo_core.nn.moe.router import (
-    MoERouterGatingFunction,
-)
+from olmo_core.nn.moe.router import MoERouterGatingFunction
 from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
 
 from .loss import MoELoadBalancingLossGranularity, load_balancing_loss, router_z_loss
@@ -288,14 +284,14 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
             raise NotImplementedError(
                 "Expert weight normalization is not supported in MoETwoLevelBatchLBReduceDPSharedExpRouter since it is not clear how to do it with the shared experts (do we normalize over the shared and standard experts together, or separately?)"
             )
-            expert_weights = expert_weights.div(
-                torch.norm(
-                    expert_weights,
-                    p=self.normalize_expert_weights,
-                    dim=-1,
-                    keepdim=True,
-                )
-            )
+            # expert_weights = expert_weights.div(
+            #     torch.norm(
+            #         expert_weights,
+            #         p=self.normalize_expert_weights,
+            #         dim=-1,
+            #         keepdim=True,
+            #     )
+            # )
 
         with torch.no_grad():
             # Histogram the expert ids to identify the number of items/tokens routed to each expert.

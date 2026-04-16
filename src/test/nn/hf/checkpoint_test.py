@@ -2,10 +2,10 @@ from pathlib import Path
 
 import torch
 import torch.distributed.checkpoint.state_dict as dist_cp_sd
-from transformers import AutoModelForCausalLM, Olmo2Config
 
 from olmo_core.nn.hf.checkpoint import load_hf_model, save_hf_model
 from olmo_core.nn.transformer.config import TransformerConfig
+from transformers import AutoModelForCausalLM, Olmo2Config
 
 
 def test_load_hf_model(tmp_path: Path):
