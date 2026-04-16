@@ -131,7 +131,7 @@ class TrainerDebug(Trainer):
             ):
                 torch.cuda.empty_cache()
 
-            kwargs = {}
+            kwargs: dict[str, str] = {}
 
             if self.args.n_gpu > 1:
                 loss = loss.mean()  # mean() to average on multi-gpu parallel training

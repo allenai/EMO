@@ -261,6 +261,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         scheduler=CosWithWarmup(warmup_fraction=0.1),
     )
 
+    assert model_config.block.feed_forward_moe is not None
     trainer_config = (
         TrainerConfig(
             save_folder=save_folder,

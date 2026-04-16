@@ -160,7 +160,7 @@ def run_sanity_checks(
 # ---------------------------------------------------------------------------
 
 
-def load_pretraining_docs(args) -> List[tuple]:
+def load_pretraining_docs(args) -> list[tuple[str, list]]:
     """
     Load documents from pretraining data via S3.
 
@@ -205,7 +205,7 @@ def load_pretraining_docs(args) -> List[tuple]:
     return result
 
 
-def load_mmlu_docs(args) -> List[tuple]:
+def load_mmlu_docs(args) -> list[tuple[str, list]]:
     """Load MMLU prompts as documents. Returns list of (subject, docs) pairs."""
     from src.hf_training.data_utils import get_formatted_prompts
     from src.offline_evals.tasks.splits_mmlu import MMLU_CATEGORIES
@@ -249,7 +249,7 @@ def load_mmlu_docs(args) -> List[tuple]:
     return result
 
 
-def load_hellaswag_docs(args) -> List[tuple]:
+def load_hellaswag_docs(args) -> list[tuple[str, list]]:
     """Load HellaSwag prompts as documents. Returns list of (split, docs) pairs."""
     from src.hf_training.data_utils import get_formatted_prompts
 
@@ -393,10 +393,10 @@ def run_extraction(
             f.write(json.dumps(entry) + "\n")
 
     # Info
-    source_token_counts = defaultdict(int)
+    source_token_counts: dict[str, int] = defaultdict(int)
     for m in all_meta:
         source_token_counts[m["source"]] += 1
-    source_doc_counts = defaultdict(int)
+    source_doc_counts: dict[str, int] = defaultdict(int)
     for s in all_doc_sources:
         source_doc_counts[s] += 1
 

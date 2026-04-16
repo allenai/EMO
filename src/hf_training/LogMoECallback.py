@@ -69,6 +69,8 @@ class LogMoeCallback(TrainerCallback):
         self._window_ce_sum = None
 
     def _accumulate_latest(self):
+        assert self._window_lb_sum is not None
+        assert self._window_ce_sum is not None
         if self._latest_lb_loss is not None:
             self._window_lb_sum += self._latest_lb_loss.float().to(self._window_lb_sum.device)
             self._latest_lb_loss = None
@@ -88,6 +90,8 @@ class LogMoeCallback(TrainerCallback):
     def on_log(self, args, state, control, logs=None, **kwargs):
         if state.global_step <= self._globalstep_last_logged:
             return
+        assert self._window_lb_sum is not None
+        assert self._window_ce_sum is not None
 
         use_dist = (
             self.reduce_across_processes

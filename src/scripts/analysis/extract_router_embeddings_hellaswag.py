@@ -189,7 +189,7 @@ def main():
             f.write(json.dumps(m) + "\n")
 
     # Save info
-    source_counts = defaultdict(int)
+    source_counts: dict[str, int] = defaultdict(int)
     for m in all_meta:
         source_counts[m["source"]] += 1
 

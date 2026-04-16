@@ -391,7 +391,7 @@ def write_report(clusters_js, info, k, emb_label, path):
 
     lines.append("### Category breakdown")
     lines.append("")
-    cat_totals = {}
+    cat_totals: dict[str, int] = {}
     for c in clusters_js:
         cat = c["category"]
         cat_totals[cat] = cat_totals.get(cat, 0) + c["size"]
@@ -406,7 +406,7 @@ def write_report(clusters_js, info, k, emb_label, path):
     lines.append("## All Clusters")
     lines.append("")
 
-    by_cat = {}
+    by_cat: dict[str, list] = {}
     for c in clusters_js:
         by_cat.setdefault(c["category"], []).append(c)
 

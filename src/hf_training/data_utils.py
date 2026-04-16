@@ -9,7 +9,7 @@ Key features:
 """
 
 import logging
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from datasets import Dataset, load_dataset
 
@@ -19,7 +19,7 @@ from scripts.eval.tasks import get_task_configs
 logger = logging.getLogger(__name__)
 
 # Task configurations for HuggingFace datasets
-TASK_CONFIGS = {
+TASK_CONFIGS: Dict[str, Dict[str, Any]] = {
     "gsm8k": {
         "hf_path": "gsm8k",
         "hf_name": "main",
@@ -58,7 +58,7 @@ TASK_CONFIGS = {
 MMLU_ANSWER_MAP = {0: "A", 1: "B", 2: "C", 3: "D"}
 
 
-def get_task_config(task_name: str) -> dict:
+def get_task_config(task_name: str) -> Dict[str, Any]:
     """Get task configuration, handling task variants like 'gsm8k_train'."""
     # Extract base task name
     base_task = task_name.split("_")[0].lower()
@@ -309,10 +309,10 @@ def prepare_finetuning_dataset(
     # Load raw dataset
     # raw_dataset = load_hf_dataset(task_name, split)
 
-    raw_dataset, request_type = get_formatted_prompts(task_name, split)
+    raw_prompts, request_type = get_formatted_prompts(task_name, split)
 
     # convert to hf
-    raw_dataset = Dataset.from_dict({"text": raw_dataset})
+    raw_dataset = Dataset.from_dict({"text": raw_prompts})
 
     # Get delimiter
     delimiter = "Answer:"

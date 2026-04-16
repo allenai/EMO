@@ -167,6 +167,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     # Router branching — identical to olmoe-1B-7B_fsl_anneal.py.
+    assert model_config.block.feed_forward_moe is not None
     if opts.model_type == "dense" or opts.model_type == "moe":
         log.info("Using default routers; no modifications applied.")
         pass
@@ -632,6 +633,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     # (backend, qk_norm, etc.) are inherited by the dense blocks.
     if opts.model_type == "two-level_lb-batch_reduce-dp_sharedexp_densefirst":
         moe_cfg = config.model.block.feed_forward_moe
+        assert moe_cfg is not None
         dense_hidden = moe_cfg.router.top_k * moe_cfg.hidden_size
         dense_block = replace(
             config.model.block,

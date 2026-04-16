@@ -245,7 +245,7 @@ def main():
     print("--- Step 2: Text samples from each source (sanity check) ---")
     print("=" * 90)
 
-    text_samples = {}
+    text_samples: dict[str, list[str]] = {}
     for label, paths in source_to_paths.items():
         first_path = paths[0]
         print(f"\n[SOURCE: {label}]  ({first_path})")

@@ -121,7 +121,7 @@ def launch_logits_training(args_dict):
     logger.info(f"Mix '{args_dict['mix']}' has {len(paths)} paths")
 
     # Group paths by label
-    label_to_paths = {}
+    label_to_paths: dict[str, list[str]] = {}
     for path, label in zip(paths, labels):
         label_to_paths.setdefault(label, []).append(path)
 

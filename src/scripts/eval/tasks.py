@@ -1,3 +1,5 @@
+from typing import Any
+
 from oe_eval.configs.tasks import TASK_CONFIGS
 from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 
@@ -1932,7 +1934,7 @@ def get_task_configs():
     # fewshot_source / metadata exactly matches the corresponding non-merged
     # rc_{train,validation,test}::olmes config.
     # ------------------------------------------------------------------
-    _MERGED_TASK_DEFAULTS = {
+    _MERGED_TASK_DEFAULTS: dict[str, dict[str, Any]] = {
         "arc_easy_merged": {
             "primary_metric": "acc_per_char",
             "fewshot_source": "OLMES:ARC-Easy",

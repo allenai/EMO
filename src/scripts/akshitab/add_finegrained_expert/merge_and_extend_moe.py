@@ -205,6 +205,7 @@ def merge_and_extend(
 
     # Build the output model with the extended expert count
     extended_config = copy.deepcopy(base_config)
+    assert extended_config.block.feed_forward_moe is not None
     extended_config.block.feed_forward_moe.num_experts = new_num_experts
     merged_model = extended_config.build(init_device="cpu")
 

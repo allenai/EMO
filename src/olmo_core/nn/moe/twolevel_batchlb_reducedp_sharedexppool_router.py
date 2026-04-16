@@ -175,6 +175,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
         # logits = logits[:, :, :self.num_experts - self.num_shared_experts] # shape: (batch_size, seq_len, num_experts - num_shared_experts)
         # logits_mask = torch.zeros_like(logits, dtype=torch.bool, device=logits.device)
 
+        assert document_boundaries is not None
         document_boundaries_cpu = []
         for b in document_boundaries:
             bc = b.detach().cpu().tolist()
@@ -374,6 +375,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
                     dp_global_tot_batch_size_per_expert_shared = (
                         tot_batch_size_per_expert_shared.clone()
                     )
+                    assert isinstance(loss_div_factor, torch.Tensor)
                     dp_global_loss_div_factor = loss_div_factor.clone()
 
                     if is_distributed():

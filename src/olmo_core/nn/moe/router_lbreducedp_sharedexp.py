@@ -208,6 +208,7 @@ class MoELinearLBReduceDPSharedExpRouter(MoELinearRouter):
                     dp_global_batch_size_per_expert_routing = (
                         batch_size_per_expert_routing.clone()
                     )  # we clone to not interfere with logging or other routing stuff
+                    assert isinstance(loss_div_factor, torch.Tensor)
                     dp_global_loss_div_factor = loss_div_factor.clone()
 
                     if is_distributed():

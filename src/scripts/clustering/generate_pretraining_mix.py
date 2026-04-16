@@ -150,7 +150,7 @@ def main():
     sizes = get_s3_file_sizes(all_paths)
 
     # Compute per-source stats
-    source_stats = {}
+    source_stats: dict[str, dict[str, float | int]] = {}
     for label, paths in source_to_paths.items():
         total_bytes = sum(sizes.get(p, 0) for p in paths)
         source_stats[label] = {

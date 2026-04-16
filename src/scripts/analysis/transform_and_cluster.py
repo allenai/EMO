@@ -604,7 +604,7 @@ def evaluate_clustering(
     )
 
     n_clusters = len(set(labels))
-    metrics = {"n_clusters": n_clusters, "n_docs": len(labels)}
+    metrics: dict[str, float | int] = {"n_clusters": n_clusters, "n_docs": len(labels)}
 
     if n_clusters < 2:
         logger.warning("  Only 1 cluster — skipping all metrics")

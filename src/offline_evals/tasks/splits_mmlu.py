@@ -159,7 +159,7 @@ def _load_and_split_subjects(
 
     all_train_splits = []
     all_test_splits = []
-    all_other_splits = {}  # split_name -> list of datasets
+    all_other_splits: dict[str, list] = {}  # split_name -> list of datasets
 
     for dataset_name in dataset_names:
         dataset = MOUNTED_WEKA_DATASET_WRAPPER.load_dataset(
@@ -231,7 +231,7 @@ class _MMLU_PerSubjectContext_RC(GenericMMLU):
 
     def fewshot_examples(self, k, rnd, doc):
         if self._fewshot_docs is None:
-            self._fewshot_docs = {}
+            self._fewshot_docs: dict[str, list] = {}
             for dev_doc in self.dataset["dev"]:
                 subject = dev_doc["subject"]
                 if subject not in self._fewshot_docs:

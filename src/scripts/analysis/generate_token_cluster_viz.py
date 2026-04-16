@@ -18,6 +18,7 @@ import gzip
 import json
 import logging
 import os
+from typing import Any
 
 import numpy as np
 import umap as umap_lib
@@ -108,7 +109,7 @@ def main():
     logger.info("Loading token metadata...")
     meta = []
     meta_path = os.path.join(data_dir, "metadata_tokens.jsonl.gz")
-    with gzip.open(meta_path, "rt") as f:
+    with gzip.open(meta_path, "rt") as f:  # type: ignore[assignment]
         for line in f:
             meta.append(json.loads(line))
 
@@ -300,7 +301,7 @@ def main():
 
     # Aggregate stats
     spread_counts_np = np.array(spread_counts)
-    agg_stats = {
+    agg_stats: dict[str, Any] = {
         "num_docs": len(doc_cluster_map),
         "mean_clusters": round(float(spread_counts_np.mean()), 2),
         "median_clusters": int(np.median(spread_counts_np)),
@@ -351,8 +352,8 @@ def main():
     logger.info("Computing per-unique-token cluster distributions...")
     from collections import defaultdict
 
-    token_cluster_counts = defaultdict(lambda: defaultdict(int))  # token_id -> {cluster: count}
-    token_total_counts = defaultdict(int)
+    token_cluster_counts: dict[int, dict[int, int]] = defaultdict(lambda: defaultdict(int))  # token_id -> {cluster: count}
+    token_total_counts: dict[int, int] = defaultdict(int)
     for i, m in enumerate(meta):
         tid = m["token_id"]
         cl = int(labels[i])

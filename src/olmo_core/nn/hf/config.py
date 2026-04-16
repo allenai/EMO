@@ -109,6 +109,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
     assert isinstance(block, (MoEReorderedNormTransformerBlock, MoETransformerBlock))
     assert isinstance(block.attention, Attention)
     assert block.attention.rope is not None
+    assert block.feed_forward_moe is not None
 
     if FlexOlmoConfig is None:
         raise RuntimeError("The installed transformers version does not support FlexOlmo")
@@ -154,8 +155,8 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
         and block.attention.q_norm is None
         and block.attention.k_norm is None
     ):
-        has_shared_mlp = block.feed_forward_moe.shared_mlp is not None
-        if has_shared_mlp:
+        shared_mlp = block.feed_forward_moe.shared_mlp
+        if shared_mlp is not None:
             if FlexOlmoNoQKNormPrenormSharedConfig is None:
                 raise RuntimeError(
                     "The installed transformers version does not support FlexOlmoNoQKNormPrenormShared"
@@ -164,7 +165,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
                 vocab_size=model.vocab_size,
                 hidden_size=model.d_model,
                 intermediate_size=block.feed_forward_moe.experts.mlp.hidden_size,
-                shared_expert_intermediate_size=block.feed_forward_moe.shared_mlp.hidden_size,
+                shared_expert_intermediate_size=shared_mlp.hidden_size,
                 num_hidden_layers=model.n_layers,
                 num_attention_heads=block.attention.n_heads,
                 num_key_value_heads=block.attention.n_kv_heads,

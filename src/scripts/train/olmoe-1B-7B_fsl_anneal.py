@@ -224,6 +224,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     lr_key = "optim.param_groups.embeddings.weight.lr"
     lr_state = {lr_key: None}
     load_checkpoint_state_dict(os.path.join(opts.anneal_checkpoint, "model_and_optim"), lr_state)
+    assert lr_state[lr_key] is not None, f"Failed to load LR from checkpoint at key {lr_key}"
     anneal_lr = float(lr_state[lr_key])
     log.info(f"Extracted LR from checkpoint: {anneal_lr}")
 
@@ -247,6 +248,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     # Apply special routers or other modifications to the model here if needed.
+    assert model_config.block.feed_forward_moe is not None
     if opts.model_type == "dense" or opts.model_type == "moe":
         log.info("Using default routers; no modifications applied.")
         pass
@@ -730,6 +732,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     # (backend, qk_norm, etc.) are inherited by the dense blocks.
     if opts.model_type == "two-level_lb-batch_reduce-dp_sharedexp_densefirst":
         moe_cfg = config.model.block.feed_forward_moe
+        assert moe_cfg is not None
         dense_hidden = moe_cfg.router.top_k * moe_cfg.hidden_size  # 8 * 1024 = 8192
         dense_block = replace(
             config.model.block,

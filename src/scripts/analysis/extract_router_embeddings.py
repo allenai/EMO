@@ -970,7 +970,7 @@ def _run_token_extraction(
             f.write(json.dumps({"doc_index": i, "source": source, "doc_len": doc_len}) + "\n")
 
     # Save info
-    source_token_counts = defaultdict(int)
+    source_token_counts: dict[str, int] = defaultdict(int)
     for m in all_meta:
         source_token_counts[m["source"]] += 1
 
@@ -1098,7 +1098,7 @@ def _run_document_extraction(
             f.write(json.dumps(m) + "\n")
 
     # Save info
-    source_counts = defaultdict(int)
+    source_counts: dict[str, int] = defaultdict(int)
     for m in all_meta:
         source_counts[m["source"]] += 1
 

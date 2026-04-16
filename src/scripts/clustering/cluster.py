@@ -25,6 +25,7 @@ import argparse
 import json
 import logging
 import os
+from typing import Any
 
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "16")
 os.environ.setdefault("OMP_NUM_THREADS", "16")
@@ -149,7 +150,7 @@ def evaluate_clustering(emb: np.ndarray, labels: np.ndarray, meta: list) -> dict
     )
 
     n_clusters = len(set(labels))
-    metrics = {"n_clusters": n_clusters, "n_samples": len(labels)}
+    metrics: dict[str, float | int] = {"n_clusters": n_clusters, "n_samples": len(labels)}
 
     if n_clusters < 2:
         logger.warning("  Only 1 cluster — skipping metrics")
@@ -239,7 +240,7 @@ def save_results(
     # Per-cluster summary
     sources = [m["source"] for m in meta]
     unique_sources = sorted(set(sources))
-    summaries = []
+    summaries: list[dict[str, Any]] = []
 
     for c in range(k):
         mask = labels == c

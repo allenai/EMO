@@ -546,6 +546,8 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(
                 **kwargs,
             )
             if labels is not None:
+                assert isinstance(lb_loss, torch.Tensor)
+                assert loss is not None
                 loss += self.router_aux_loss_coef * lb_loss.to(
                     loss.device
                 )  # make sure to reside in the same device
@@ -560,10 +562,10 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(
             loss=loss,
             aux_loss=lb_loss,
             lb_loss=lb_loss.detach().clone()
-            if lb_loss is not None
+            if isinstance(lb_loss, torch.Tensor)
             else None,  # for logging callback
             ce_loss=ce_loss.detach().clone()
-            if ce_loss is not None
+            if isinstance(ce_loss, torch.Tensor)
             else None,  # for logging callback
             logits=logits,
             past_key_values=outputs.past_key_values,
@@ -664,6 +666,7 @@ def load_balancing_loss_func_olmoe_variable(
             # if there are labels, then we want to ignore the indices that are in the prompt as well (if there is any)
             if labels is not None:
                 attention_mask = labels != ignore_index
+            assert attention_mask is not None
             batch_size, sequence_length = attention_mask.shape
 
             # Compute the mask that masks all padding tokens as 0 with the same shape of expert_mask
@@ -720,6 +723,7 @@ def load_balancing_loss_func_olmoe_variable(
 
     else:
         # Variable expert counts - compute loss per layer and average
+        assert num_experts_per_layer is not None
         if num_shared_experts_per_layer is None:
             num_shared_experts_per_layer = [num_shared_experts] * num_hidden_layers
 
