@@ -120,8 +120,30 @@ MMLU_CATEGORIES = {
     "health": "other (business, health, misc.)",
 }
 
+
+def _get_s3_kwargs() -> Dict[str, Any]:
+    """Read WEKA S3 credentials from AWS profile if available."""
+    try:
+        import configparser
+
+        config = configparser.ConfigParser()
+        config.read(os.path.expanduser("~/.aws/config"))
+        creds = configparser.ConfigParser()
+        creds.read(os.path.expanduser("~/.aws/credentials"))
+        if "WEKA" in creds and "profile WEKA" in config:
+            return {
+                "key": creds["WEKA"].get("aws_access_key_id", ""),
+                "secret": creds["WEKA"].get("aws_secret_access_key", ""),
+                "client_kwargs": {"endpoint_url": config["profile WEKA"].get("endpoint_url", "")},
+            }
+    except Exception:
+        pass
+    return {}
+
+
 FS_KWARGS: Dict[str, Dict[str, Any]] = {
     "": {"auto_mkdir": True},
+    "s3": _get_s3_kwargs(),
 }
 
 RE_GLOB_STAR_ESCAPE = re.compile(r"(?<!\\)\*")
@@ -281,6 +303,21 @@ def main(args):
         # Track number of instances per task per model for comparability checking
         num_instances_tracker: dict = defaultdict(lambda: defaultdict(int))
 
+        # Build smart_open transport params for WEKA S3
+        _s3_tp: dict = {}
+        s3_kw = _get_s3_kwargs()
+        if s3_kw and args.base_dir.startswith("s3://"):
+            import boto3
+
+            _s3_tp = {
+                "client": boto3.client(
+                    "s3",
+                    aws_access_key_id=s3_kw.get("key"),
+                    aws_secret_access_key=s3_kw.get("secret"),
+                    endpoint_url=s3_kw.get("client_kwargs", {}).get("endpoint_url"),
+                )
+            }
+
         def _add_to_results(model_name, task_name, score, num_instances=None):
             if model_name not in results:
                 results[model_name] = {}
@@ -339,7 +376,7 @@ def main(args):
                 if metric_path in visited_paths:
                     continue
 
-                with smart_open.open(metric_path, "r") as f:
+                with smart_open.open(metric_path, "r", transport_params=_s3_tp) as f:
                     metric = json.load(f)
 
                 task_name = metric["task_name"]
@@ -421,19 +458,23 @@ def main(args):
             for task_name in task_names
             if task_name.startswith("mmlu_")
             and not task_name.startswith("mmlu_pro_")
-            and task_name.endswith(":mc_test")
+            and (
+                task_name.endswith(":mc_test")
+                or task_name.endswith("_mc")
+                or task_name.endswith(":mc")
+            )
         ]
         mmlu_tasks_rc = [
             task_name
             for task_name in task_names
             if task_name.startswith("mmlu_")
             and not task_name.startswith("mmlu_pro_")
-            and task_name.endswith(":rc_test")
+            and (task_name.endswith(":rc_test") or task_name.endswith(":rc"))
         ]
 
-        assert len(mmlu_tasks_rc) == len(mmlu_tasks_mc)
-        if mmlu_tasks_mc or mmlu_tasks_rc:
+        if mmlu_tasks_mc:
             results = avg_tasks(results, "mmlu:mc", mmlu_tasks_mc)
+        if mmlu_tasks_rc:
             results = avg_tasks(results, "mmlu:rc", mmlu_tasks_rc)
 
     if args.avg_mmlu_cat or args.avg_mmlu_subcat:

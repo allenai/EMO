@@ -3,7 +3,7 @@
 # Configuration
 
 # MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
-MODEL_DIR=/weka/oe-training-default/akshitab/FlexMoE/models
+MODEL_DIR=/weka/oe-training-default/kevinf/extension-experiments/evals
 
 MODELS=(
     # moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
@@ -136,10 +136,23 @@ MODELS=(
     # moereducedp512sharedexp1_1b14b_128experts_full_finetune_math_10B_lr_4e-4/step2385-hf
 
     # merged_twolevel_1b14b_128base_4math_10B_4code_mix_10B_forced_init_top2_average_noise-hf
-    rt-merged_twolevel_1b14b_128base_4math_10B_4code_mix_10B_forced_init_top2_average_noise_1B_lr_4e-4/step239-hf
+    # rt-merged_twolevel_1b14b_128base_4math_10B_4code_mix_10B_forced_init_top2_average_noise_1B_lr_4e-4/step239-hf
 )
 
-BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
+# Kevin's extension experiments — override MODEL_DIR and MODELS
+MODEL_DIR=""
+MODELS=(
+    # Individual extensions
+    # "/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf"
+    # "/weka/oe-training-default/kevinf/FlexMoE/models/moereducedp512sharedexp1_132experts_4trained_math_init_top2_average_train_act_10B_lr_4e-4_20260407a/step2385-hf"
+    # "/weka/oe-training-default/kevinf/extension-experiments/code-ta-01/step30995/runs/code-ta-01_lr4e-4_10B_20260407-234403/step2385-hf"
+    # "/weka/oe-training-default/kevinf/extension-experiments/croissant-ta-01/step30995/runs/croissant-ta-01_lr4e-4_10B_20260407-234459/step2385-hf"
+
+    # Merged model (128 base + 4 math + 4 code + 4 croissant = 140 experts)
+    "/weka/oe-training-default/kevinf/extension-experiments/merged-math-code-croissant-train-act-hf"
+)
+
+BASE_OUTPUT_DIR="s3://ai2-kevinf/FlexMoE/evals/extensions"
 BATCH_SIZE=16
 CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf
@@ -176,10 +189,9 @@ TASK_GROUPS_LIST=(
 # Function to get checkpoint name (matching the original script)
 function get_checkpoint_name {
     local path=$1
-    local split_path=${path#*OLMo2-7B-}
-    local modified_path=${split_path//\//_}
-    modified_path=$(echo $modified_path | sed 's/^_//;s/_$//')
-    echo "${modified_path}"
+    local step_dir=$(basename "$path")
+    local run_name=$(basename "$(dirname "$path")")
+    echo "${run_name}_${step_dir}"
 }
 
 echo "Launching beaker evaluations for ${#MODELS[@]} models and ${#TASK_GROUPS[@]} task groups..."
@@ -246,7 +258,7 @@ for MODEL_NAME in "${MODELS[@]}"; do
         echo "  Job name: $job_name"
 
 #        PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
-#                --model "${MODEL_DIR}/${MODEL_NAME}" \
+#                --model "${MODEL_DIR:+${MODEL_DIR}/}${MODEL_NAME}" \
 #                --model-type hf \
 #                --task $TASK \
 #                --output-dir $OUTPUT_DIR \
@@ -264,12 +276,12 @@ for MODEL_NAME in "${MODELS[@]}"; do
             --allow-dirty \
             --gpus $gpus \
             --preemptible \
-            --env-secret HF_TOKEN=AKSHITAB_HF_TOKEN \
-            --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-            --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+            --env-secret HF_TOKEN=KEVINF_HF_TOKEN \
+            --env-secret AWS_ACCESS_KEY_ID=KEVINF_AWS_ACCESS_KEY_ID \
+            --env-secret AWS_SECRET_ACCESS_KEY=KEVINF_AWS_SECRET_ACCESS_KEY \
             -- \
             bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
-                --model "${MODEL_DIR}/${MODEL_NAME}" \
+                --model "${MODEL_DIR:+${MODEL_DIR}/}${MODEL_NAME}" \
                 --model-type hf \
                 --task $TASK \
                 --remote-output-dir $OUTPUT_DIR \

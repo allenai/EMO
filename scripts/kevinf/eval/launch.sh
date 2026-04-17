@@ -57,10 +57,18 @@ MODELS=(
     # "/data/input/kevinf/checkpoints/train-olmo3-1b-stack-v2-python-p75-10B-lr5e-5-ctd/step2385-hf"
     # "/data/input/kevinf/checkpoints/train-olmo3-1b-sponge-code-prose-p75-10B-lr5e-5-ctd/step2385-hf"
     # "/data/input/kevinf/checkpoints/olmo3-1b-code_fim_python-2B-lr5e-5-warmup0.1-pplx-raw-ctd/step477-hf"
-    "/data/input/kevinf/checkpoints/train-olmo3-1b-dolma50-stackedu-python50-10B-lr5e-5-ctd/step2385-hf"
-    "s3://ai2-llm/checkpoints/lucas/olmo3_1b_5xc_50web_alldressed_v2_50spring2code_stack_edu_redux_all/step61007-hf"
-    "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
+    # "/data/input/kevinf/checkpoints/train-olmo3-1b-dolma50-stackedu-python50-10B-lr5e-5-ctd/step2385-hf"
+    # "s3://ai2-llm/checkpoints/lucas/olmo3_1b_5xc_50web_alldressed_v2_50spring2code_stack_edu_redux_all/step61007-hf"
+    # "/data/input/kevinf/checkpoints/new-kevinf-olmo3-1b-130b-dolma3-0625-150Bsample/step30995-hf"
 
+    # Extension experiments (base + math/code/croissant extensions)
+    # "/data/input/ryanwang/phdbrainstorm/FlexMoE/models/moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf"
+    # "/data/input/kevinf/FlexMoE/models/moereducedp512sharedexp1_132experts_4trained_math_init_top2_average_train_act_10B_lr_4e-4_20260407a/step2385-hf"  # math-ext
+    # "/data/input/kevinf/extension-experiments/code-ta-01/step30995/runs/code-ta-01_lr4e-4_10B_20260407-234403/step2385-hf"
+    # "/data/input/kevinf/extension-experiments/croissant-ta-01/step30995/runs/croissant-ta-01_lr4e-4_10B_20260407-234459/step2385-hf"
+
+    # Merged model (128 base + 4 math + 4 code + 4 croissant = 140 experts)
+    "/data/input/kevinf/extension-experiments/merged-math-code-croissant-train-act-hf"
 )
 
 BASE_OUTPUT_DIR="/data/input/kevinf/eval_results/flexmoe"
@@ -74,65 +82,66 @@ TASKS=(
     # code_fresh rolling BPB (all 42 languages)
     # code_fresh_rolling:bpb
 
-    # # # MC9 tasks
-    # arc_easy:mc::olmes
-    # arc_challenge:mc::olmes
-    # boolq:mc::olmes
-    # csqa:mc::olmes
-    # hellaswag:mc::olmes
-    # openbookqa:mc::olmes
-    # piqa:mc::olmes
-    # socialiqa:mc::olmes
-    # winogrande:mc::olmes
+    # MC9 tasks
+    arc_easy:mc::olmes
+    arc_challenge:mc::olmes
+    boolq:mc::olmes
+    csqa:mc::olmes
+    hellaswag:mc::olmes
+    openbookqa:mc::olmes
+    piqa:mc::olmes
+    socialiqa:mc::olmes
+    winogrande:mc::olmes
 
-    # # # Gen5 tasks
-    # coqa::olmes
-    # squad::olmes
-    # naturalqs::olmes
-    # triviaqa::olmes
-    # drop::olmes
+    # Gen5 tasks
+    coqa::olmes
+    squad::olmes
+    naturalqs::olmes
+    triviaqa::olmes
+    drop::olmes
 
-    # # # MMLU tasks
-    # mmlu:mc::olmes
-    # mmlu_pro:mc::none
+    # MMLU tasks
+    mmlu:mc::olmes
+    mmlu_pro:mc::none
 
-    # # # AGI eval
-    # agi_eval_english:1shot::olmes
+    # AGI eval
+    agi_eval_english:1shot::olmes
 
-    # # # BBH
-    # # bbh:cot-v1::olmes
+    # BBH
+    bbh:cot-v1::olmes
 
-    # # # Math2 tasks
-    # gsm8k::olmes
-    # minerva_math_algebra::olmes
-    # minerva_math_counting_and_probability::olmes
-    # minerva_math_geometry::olmes
-    # minerva_math_intermediate_algebra::olmes
-    # minerva_math_number_theory::olmes
-    # minerva_math_prealgebra::olmes
-    # minerva_math_precalculus::olmes
+    # Math2 tasks
+    gsm8k::olmes
+    minerva_math_algebra::olmes
+    minerva_math_counting_and_probability::olmes
+    minerva_math_geometry::olmes
+    minerva_math_intermediate_algebra::olmes
+    minerva_math_number_theory::olmes
+    minerva_math_prealgebra::olmes
+    minerva_math_precalculus::olmes
 
-    # # Code4 tasks
-    # codex_humaneval:temp0.8
-    # codex_humanevalplus:temp0.8
-    # mbpp::none
-    # mbppplus::none
+    # Code4 tasks
+    codex_humaneval:temp0.8
+    codex_humanevalplus:temp0.8
+    mbpp::none
+    mbppplus::none
 
     # Multilingual MBPP (17 languages, BPB)
-    mt_mbpp
+    mt_mbpp_v2fix
 
+    # ChemBench MC and generative tasks
+    chembench:mc
+    chembench:gen
+    chembench:rc
+    frenchbench:rc
+    legalbench:rc
 
-    # # ChemBench MC and generative tasks
-    # chembench:mc
-    # chembench:gen
-    # chembench:rc
-    # frenchbench:rc
-    # legalbench:rc
-
-    # medqa
-    # medmcqa:mc
+    medqa
+    medmcqa:mc
 
     mt_mbpp_v2fix
+
+    mmlu_pro:mc::none
 )
 
 # Function to get checkpoint name - extracts run name and step from path
@@ -210,7 +219,7 @@ for MODEL_PATH in "${MODELS[@]}"; do
     uv run gantry run \
         --name $job_name \
         --weka oe-training-default:/data/input \
-        --install "pip install setuptools uv && UV_CACHE_DIR=/tmp/uv-cache uv pip install -e '.[eval]'" \
+        --install "pip install setuptools uv && UV_CACHE_DIR=/tmp/uv-cache uv pip install -e '.[eval,transformers]' && uv pip install 'transformers@git+https://github.com/ryanyxw/transformers.git@de05b34309baf1c1110a3371031767edba81a317'" \
         --budget ai2/oceo \
         --workspace ai2/flex2 \
         --cluster $CLUSTER \
