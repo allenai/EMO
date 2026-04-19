@@ -196,7 +196,7 @@ def easy_ep_prune(
     num_shared_experts: int,
     save_path: str,
     batch_size: int = 8,
-    num_calibration: int = 25,
+    num_calibration: Optional[int] = None,
     max_length: int = 4096,
     device: Optional[str] = None,
 ) -> None:
@@ -227,14 +227,17 @@ def easy_ep_prune(
     # --- Calibration data -----------------------------------------------------
     logger.info(f"Loading calibration data: {task_name} ({split})")
     prompts, _ = get_formatted_prompts(task_name, split)
-    logger.info(f"Loaded {len(prompts)} prompts, subsampling to {num_calibration}")
-
-    # Deterministic subsample: take the first num_calibration after a fixed
-    # permutation (avoids always hitting the same few examples for different
-    # task sizes).
-    g = torch.Generator().manual_seed(0)
-    perm = torch.randperm(len(prompts), generator=g).tolist()
-    prompts = [prompts[i] for i in perm[:num_calibration]]
+    if num_calibration is None:
+        logger.info(f"Loaded {len(prompts)} prompts, using all (no subsampling)")
+    else:
+        n_keep = min(num_calibration, len(prompts))
+        logger.info(f"Loaded {len(prompts)} prompts, subsampling to {n_keep}")
+        # Deterministic subsample: take the first num_calibration after a fixed
+        # permutation (avoids always hitting the same few examples for different
+        # task sizes).
+        g = torch.Generator().manual_seed(0)
+        perm = torch.randperm(len(prompts), generator=g).tolist()
+        prompts = [prompts[i] for i in perm[:n_keep]]
 
     logger.info(f"Tokenizing {len(prompts)} calibration prompts")
     all_batches = []
@@ -387,7 +390,7 @@ def main():
     parser.add_argument("--num-shared-experts", type=int, default=0)
     parser.add_argument("--save-path", type=str, required=True)
     parser.add_argument("--batch-size", type=int, default=8)
-    parser.add_argument("--num-calibration", type=int, default=25)
+    parser.add_argument("--num-calibration", type=int, default=None)
     parser.add_argument("--max-length", type=int, default=4096)
     parser.add_argument("--device", type=str, default=None)
     args = parser.parse_args()
