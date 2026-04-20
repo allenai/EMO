@@ -49,6 +49,9 @@ KEEPK_SUFFIX_TEMPLATE = "_keepk_{k}_bs-32_lr-5e-5_epoch-1"
 # "All" means no nprune suffix (uses all available validation data).
 
 NPRUNE_VARIANTS: List[Tuple[str, str]] = [
+    ("1", "_prunemode-layerwise_nprune-1"),
+    ("5", "_prunemode-layerwise_nprune-5"),
+    ("10", "_prunemode-layerwise_nprune-10"),
     ("100", "_prunemode-layerwise_nprune-100"),
     ("All", "_prunemode-layerwise"),
 ]

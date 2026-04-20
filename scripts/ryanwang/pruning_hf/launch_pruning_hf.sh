@@ -49,17 +49,17 @@ model_type=hf
 #               "easy_ep"             -- EASY-EP (arXiv 2504.06792): one-shot domain-specific
 #                                        pruning using gating*||expert_out|| weighted by
 #                                        (1 - cos_sim) of MoE in/out on few-shot calibration
-PRUNING_MODE="easy_ep"
+PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
+PRUNE_KEEP_K_VALUES=(8 16 32 64)
 batch_size=32
 
 # --- Pruning calibration-set size ---
 # Leave empty to use the full validation pool for pruning (default).
 # Set to an integer (e.g. 50) to subsample that many prompts (deterministic shuffle, seed=0).
-NUM_PRUNE_EXAMPLES=""
+NUM_PRUNE_EXAMPLES="1"
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
 # Schedule name (used in output directory naming)
@@ -153,23 +153,23 @@ TASK_GROUPS_LIST=(
 #  "drop_merged"
 
   # MMLU 17-category merged variants (pruning + finetuning share data)
-#  "mmlu_merged_biology"
-#  "mmlu_merged_business"
-#  "mmlu_merged_chemistry"
-#  "mmlu_merged_computer_science"
-#  "mmlu_merged_culture"
-#  "mmlu_merged_economics"
-#  "mmlu_merged_engineering"
-#  "mmlu_merged_geography"
-#  "mmlu_merged_health"
-#  "mmlu_merged_history"
-#  "mmlu_merged_law"
-#  "mmlu_merged_math"
-#  "mmlu_merged_other"
-#  "mmlu_merged_philosophy_cat"
-#  "mmlu_merged_physics"
-#  "mmlu_merged_politics"
-#  "mmlu_merged_psychology"
+  "mmlu_merged_biology"
+  "mmlu_merged_business"
+  "mmlu_merged_chemistry"
+  "mmlu_merged_computer_science"
+  "mmlu_merged_culture"
+  "mmlu_merged_economics"
+  "mmlu_merged_engineering"
+  "mmlu_merged_geography"
+  "mmlu_merged_health"
+  "mmlu_merged_history"
+  "mmlu_merged_law"
+  "mmlu_merged_math"
+  "mmlu_merged_other"
+  "mmlu_merged_philosophy_cat"
+  "mmlu_merged_physics"
+  "mmlu_merged_politics"
+  "mmlu_merged_psychology"
 
   # HellaSwag k=6 clusters
 #  "hellaswag_k6_cluster_merged_0"
@@ -236,20 +236,20 @@ TASK_GROUPS_LIST=(
 #  "mmlu_pro_law"
 
   # MMLU-Pro merged variant (pruning + finetuning use same data)
-#  "mmlu_pro_merged_math"
-#  "mmlu_pro_merged_health"
-#  "mmlu_pro_merged_physics"
-#  "mmlu_pro_merged_business"
-#  "mmlu_pro_merged_biology"
-#  "mmlu_pro_merged_chemistry"
-#  "mmlu_pro_merged_computer_science"
-#  "mmlu_pro_merged_economics"
-#  "mmlu_pro_merged_engineering"
-#  "mmlu_pro_merged_philosophy"
-#  "mmlu_pro_merged_other"
-#  "mmlu_pro_merged_history"
-#  "mmlu_pro_merged_psychology"
-#  "mmlu_pro_merged_law"
+  "mmlu_pro_merged_math"
+  "mmlu_pro_merged_health"
+  "mmlu_pro_merged_physics"
+  "mmlu_pro_merged_business"
+  "mmlu_pro_merged_biology"
+  "mmlu_pro_merged_chemistry"
+  "mmlu_pro_merged_computer_science"
+  "mmlu_pro_merged_economics"
+  "mmlu_pro_merged_engineering"
+  "mmlu_pro_merged_philosophy"
+  "mmlu_pro_merged_other"
+  "mmlu_pro_merged_history"
+  "mmlu_pro_merged_psychology"
+  "mmlu_pro_merged_law"
 
   # MMLU-Pro merged variant with N=50 pruning validation examples
 #  "mmlu_pro_merged_n50_math"

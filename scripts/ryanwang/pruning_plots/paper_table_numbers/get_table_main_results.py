@@ -16,10 +16,12 @@ trained`` row so the CSV has the same shape):
     Reg. MoE      / 8              -> "moe (keepk 8)"
     Reg. MoE      / 16             -> "moe (keepk 16)"
     Reg. MoE      / 32             -> "moe (keepk 32)"
+    Reg. MoE      / 64             -> "moe (keepk 64)"
     Reg. MoE      / 128 (trained)  -> "moe (keepk 128)"
     FlexMoE       / 8              -> "specialized moe + globallb + 1shardexp + randpool (keepk 8)"
     FlexMoE       / 16             -> "... (keepk 16)"
     FlexMoE       / 32             -> "... (keepk 32)"
+    FlexMoE       / 64             -> "... (keepk 64)"
     FlexMoE       / 128 (trained)  -> "... (keepk 128)"
 
 Win-rate columns count, for each FlexMoE row, the number of MMLU / MMLU Pro
@@ -36,7 +38,7 @@ from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 
 DEFAULT_INFERENCE_DIR = (
     REPO_ROOT / "claude_outputs" / "prune_plots" / "prune_eval_tables_final_ckpt0"
@@ -56,6 +58,7 @@ ROWS: List[Tuple[str, str, Optional[str]]] = [
     ("Reg. MoE", "8", "moe (keepk 8)"),
     ("Reg. MoE", "16", "moe (keepk 16)"),
     ("Reg. MoE", "32", "moe (keepk 32)"),
+    ("Reg. MoE", "64", "moe (keepk 64)"),
     ("Reg. MoE", "128 (trained)", "moe (keepk 128)"),
     (
         "FlexMoE",
@@ -74,6 +77,11 @@ ROWS: List[Tuple[str, str, Optional[str]]] = [
     ),
     (
         "FlexMoE",
+        "64",
+        "specialized moe + globallb + 1shardexp + randpool (keepk 64)",
+    ),
+    (
+        "FlexMoE",
         "128 (trained)",
         "specialized moe + globallb + 1shardexp + randpool (keepk 128)",
     ),
@@ -84,6 +92,7 @@ FLEXMOE_BASELINE = {
     "specialized moe + globallb + 1shardexp + randpool (keepk 8)": "moe (keepk 8)",
     "specialized moe + globallb + 1shardexp + randpool (keepk 16)": "moe (keepk 16)",
     "specialized moe + globallb + 1shardexp + randpool (keepk 32)": "moe (keepk 32)",
+    "specialized moe + globallb + 1shardexp + randpool (keepk 64)": "moe (keepk 64)",
     "specialized moe + globallb + 1shardexp + randpool (keepk 128)": "moe (keepk 128)",
 }
 
