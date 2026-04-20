@@ -50,17 +50,19 @@ runs:
       shell: bash
       run: |
         # Set up virtual environment without cache hit.
+        # NOTE: omit the `flash-attn` extra — it pins a CUDA-linked prebuilt wheel
+        # that installs fine on CPU runners but crashes at import (libcudart.so.12).
         test -d .venv || virtualenv -p $(which python) --copies --reset-app-data .venv
         . .venv/bin/activate
         pip install torch==${{ inputs.torch-version }} torchao==${{ inputs.torchao-version}} --index-url https://download.pytorch.org/${{ inputs.channel }}
-        pip install -e .[all]
+        pip install -e .[dev,beaker,comet,eval,torchao,transformers,wandb]
 
     - if: steps.virtualenv-cache.outputs.cache-hit == 'true'
       shell: bash
       run: |
         # Set up virtual environment from cache hit.
         . .venv/bin/activate
-        pip install --no-deps -e .[all]
+        pip install --no-deps -e .[dev,beaker,comet,eval,torchao,transformers,wandb]
 
     - shell: bash
       run: |
