@@ -94,8 +94,7 @@ def main() -> None:
     args = parse_args()
 
     sources = {
-        relpath: _load_indexed(args.inference_dir / relpath)
-        for _, relpath, _ in METRIC_SOURCES
+        relpath: _load_indexed(args.inference_dir / relpath) for _, relpath, _ in METRIC_SOURCES
     }
 
     records = []

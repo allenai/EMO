@@ -23,9 +23,9 @@ import os
 from typing import List, Optional
 
 import torch
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 from src.hf_training.greedy_prune_layerwise import prune_moe_layer_inplace
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -148,9 +148,7 @@ def random_prune(
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Random expert pruning for HuggingFace MoE models"
-    )
+    parser = argparse.ArgumentParser(description="Random expert pruning for HuggingFace MoE models")
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--prune-keep-k", type=int, required=True)
     parser.add_argument("--num-shared-experts", type=int, default=0)

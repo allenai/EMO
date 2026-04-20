@@ -11,6 +11,7 @@ import torch
 import torch.distributed.checkpoint.state_dict as dist_cp_sd
 import torch.nn.functional as F
 from cached_path import cached_path
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 from olmo_core.aliases import PathOrStr
 from olmo_core.config import DType
@@ -24,7 +25,6 @@ from olmo_core.nn.hf.convert import get_converter_to_hf
 from olmo_core.nn.moe.moe import MoEType
 from olmo_core.nn.transformer.config import TransformerBlockConfig, TransformerConfig
 from olmo_core.nn.transformer.model import Transformer
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 log = logging.getLogger(__name__)
 

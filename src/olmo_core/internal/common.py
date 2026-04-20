@@ -112,7 +112,7 @@ def build_launch_config(
     nccl_debug: bool = False,
     beaker_image: str = OLMoCoreBeakerImage.stable,
     num_nodes: int = 1,
-    use_hostname_constraints: bool = False,
+    # use_hostname_constraints: bool = False,
     num_execution_units: Optional[int] = None,
 ) -> BeakerLaunchConfig:
     weka_buckets: List[BeakerWekaBucket] = []
@@ -195,38 +195,38 @@ def build_launch_config(
         beaker_image=beaker_image,
         num_nodes=num_nodes,
         num_gpus=8,
-        use_hostname_constraints=use_hostname_constraints,
+        # use_hostname_constraints=use_hostname_constraints,
         num_execution_units=num_execution_units,
         shared_filesystem=not is_url(root_dir),
         allow_dirty=False,
         env_vars=[BeakerEnvVar(name="NCCL_DEBUG", value="INFO" if nccl_debug else "WARN")],
         env_secrets=[env_secret for env_secret in env_secrets if env_secret is not None],
-        setup_steps=[
-            # Clone repo.
-            'git clone "$REPO_URL" .',
-            'git checkout "$GIT_REF"',
-            "git submodule update --init --recursive",
-            # Setup python environment.
-            "conda shell.bash activate base",
-            #  "pip install 'ai2-olmo-eval @ git+https://git@github.com/allenai/OLMo-in-loop-evals.git@epwalsh/debug'",
-            "pip install -e '.[all]'",
-            #  "pip install --upgrade beaker-py",
-            # Quickly try a new version of PyTorch like this
-            #  "pip install torch==2.7.1 --index-url https://download.pytorch.org/whl/cu128",
-            "pip freeze",
-            # Move AWS credentials from env to relevant files
-            "mkdir -p ~/.aws",
-            "printenv AWS_CONFIG > ~/.aws/config",
-            "printenv AWS_CREDENTIALS > ~/.aws/credentials",
-        ],
+        # setup_steps=[
+        #     # Clone repo.
+        #     'git clone "$REPO_URL" .',
+        #     'git checkout "$GIT_REF"',
+        #     "git submodule update --init --recursive",
+        #     # Setup python environment.
+        #     "conda shell.bash activate base",
+        #     #  "pip install 'ai2-olmo-eval @ git+https://git@github.com/allenai/OLMo-in-loop-evals.git@epwalsh/debug'",
+        #     "pip install -e '.[all]'",
+        #     #  "pip install --upgrade beaker-py",
+        #     # Quickly try a new version of PyTorch like this
+        #     #  "pip install torch==2.7.1 --index-url https://download.pytorch.org/whl/cu128",
+        #     "pip freeze",
+        #     # Move AWS credentials from env to relevant files
+        #     "mkdir -p ~/.aws",
+        #     "printenv AWS_CONFIG > ~/.aws/config",
+        #     "printenv AWS_CREDENTIALS > ~/.aws/credentials",
+        # ],
     )
 
-    if google_creds:
-        launch_config.setup_steps += [
-            "mkdir -p ~/.google",
-            f"printenv {google_creds.name} > ~/.google/credentials.json",
-            "export GOOGLE_APPLICATION_CREDENTIALS=$HOME/.google/credentials.json",
-        ]
+    # if google_creds:
+    #     launch_config.setup_steps += [
+    #         "mkdir -p ~/.google",
+    #         f"printenv {google_creds.name} > ~/.google/credentials.json",
+    #         "export GOOGLE_APPLICATION_CREDENTIALS=$HOME/.google/credentials.json",
+    #     ]
 
     return launch_config
 

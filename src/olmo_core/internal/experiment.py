@@ -174,7 +174,7 @@ def build_common_components(
     beaker_image: str = OLMoCoreBeakerImage.stable,
     num_nodes: int = 1,
     beaker_workspace: str = "ai2/OLMo-core",
-    use_hostname_constraints: bool = False,
+    # use_hostname_constraints: bool = False,
     num_execution_units: Optional[int] = None,
 ) -> CommonComponents:
     root_dir = get_root_dir(cli_context.cluster)
@@ -192,7 +192,7 @@ def build_common_components(
             beaker_image=beaker_image,
             num_nodes=num_nodes,
             workspace=beaker_workspace,
-            use_hostname_constraints=use_hostname_constraints,
+            # use_hostname_constraints=use_hostname_constraints,
             num_execution_units=num_execution_units,
         )
 
