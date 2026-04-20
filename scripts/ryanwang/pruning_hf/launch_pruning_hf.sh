@@ -452,6 +452,7 @@ for MODEL in "${MODELS[@]}"; do
                 --batch-size ${batch_size} \
                 --micro-batch-size ${micro_batch_size} \
                 --num-epochs ${num_epochs} \
+                --num-checkpoints 1 \
                 --num-shared-experts ${num_shared_experts} \
                 --skip-activation \
                 --skip-prune
@@ -504,6 +505,7 @@ for MODEL in "${MODELS[@]}"; do
                     --batch-size ${batch_size} \
                     --micro-batch-size ${micro_batch_size} \
                     --num-epochs ${num_epochs} \
+                    --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
                     --prune-mode ${PRUNE_SCHEDULE_NAME} \
                     ${NPE_FLAG}
@@ -549,6 +551,7 @@ for MODEL in "${MODELS[@]}"; do
                     --batch-size ${batch_size} \
                     --micro-batch-size ${micro_batch_size} \
                     --num-epochs ${num_epochs} \
+                    --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
                     ${NPE_FLAG}
                 "
@@ -593,6 +596,7 @@ for MODEL in "${MODELS[@]}"; do
                     --batch-size ${batch_size} \
                     --micro-batch-size ${micro_batch_size} \
                     --num-epochs ${num_epochs} \
+                    --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
                     ${NPE_FLAG}
                 "
@@ -637,6 +641,7 @@ for MODEL in "${MODELS[@]}"; do
                     --batch-size ${batch_size} \
                     --micro-batch-size ${micro_batch_size} \
                     --num-epochs ${num_epochs} \
+                    --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
                     ${NPE_FLAG}
                 "
