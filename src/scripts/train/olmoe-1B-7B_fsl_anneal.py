@@ -225,7 +225,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     lr_state = {lr_key: None}
     load_checkpoint_state_dict(os.path.join(opts.anneal_checkpoint, "model_and_optim"), lr_state)
     assert lr_state[lr_key] is not None, f"Failed to load LR from checkpoint at key {lr_key}"
-    anneal_lr = float(lr_state[lr_key])
+    anneal_lr = float(lr_state[lr_key]) # type: ignore
     log.info(f"Extracted LR from checkpoint: {anneal_lr}")
 
     # Convert anneal token budget to steps

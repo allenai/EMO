@@ -285,7 +285,7 @@ def _set_beaker_execution_units(config: ExperimentConfig):
     # Augusta hardware blocks.
     if (
         config.launch
-        and config.launch.use_hostname_constraints
+        # and config.launch.use_hostname_constraints
         and any("augusta" in cluster for cluster in config.launch.clusters)
         and (dp_config := config.train_module.dp_config) is not None
     ):
