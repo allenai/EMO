@@ -56,6 +56,11 @@ num_epochs=1
 PRUNE_KEEP_K_VALUES=(32)
 batch_size=32
 
+# --- Pruning calibration-set size ---
+# Leave empty to use the full validation pool for pruning (default).
+# Set to an integer (e.g. 50) to subsample that many prompts (deterministic shuffle, seed=0).
+NUM_PRUNE_EXAMPLES=""
+
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
 # Schedule name (used in output directory naming)
 PRUNE_SCHEDULE_NAME="first2_unpruned"
@@ -367,8 +372,19 @@ for MODEL in "${MODELS[@]}"; do
           relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}_prunemode-${PRUNING_MODE}"
         fi
 
+        # Append calibration-set-size suffix when overriding the default (use-all) behavior.
+        if [ -n "$NUM_PRUNE_EXAMPLES" ]; then
+            relative_dir="${relative_dir}_nprune-${NUM_PRUNE_EXAMPLES}"
+        fi
+
         safe_relative_dir=$(printf '%s' "$relative_dir" | sed 's/[^a-zA-Z0-9_-]//g' | tail -c 100)
         job_name="eval-${safe_relative_dir}"
+
+        # Optional calibration-size flag forwarded to the per-mode worker scripts.
+        NPE_FLAG=""
+        if [ -n "$NUM_PRUNE_EXAMPLES" ]; then
+            NPE_FLAG="--num-prune-examples ${NUM_PRUNE_EXAMPLES}"
+        fi
 
         # Clean any previous results for this exact (model, keep-k, task, prune-mode)
         # combination on S3 so re-runs never mix new metrics with stale ones.
@@ -489,7 +505,8 @@ for MODEL in "${MODELS[@]}"; do
                     --micro-batch-size ${micro_batch_size} \
                     --num-epochs ${num_epochs} \
                     --num-shared-experts ${num_shared_experts} \
-                    --prune-mode ${PRUNE_SCHEDULE_NAME}
+                    --prune-mode ${PRUNE_SCHEDULE_NAME} \
+                    ${NPE_FLAG}
                 "
         elif [[ $PRUNING_MODE == "easy_ep" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_easy_ep.sh \
@@ -532,7 +549,8 @@ for MODEL in "${MODELS[@]}"; do
                     --batch-size ${batch_size} \
                     --micro-batch-size ${micro_batch_size} \
                     --num-epochs ${num_epochs} \
-                    --num-shared-experts ${num_shared_experts}
+                    --num-shared-experts ${num_shared_experts} \
+                    ${NPE_FLAG}
                 "
         elif [[ $PRUNING_MODE == "layerwise" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
@@ -575,7 +593,8 @@ for MODEL in "${MODELS[@]}"; do
                     --batch-size ${batch_size} \
                     --micro-batch-size ${micro_batch_size} \
                     --num-epochs ${num_epochs} \
-                    --num-shared-experts ${num_shared_experts}
+                    --num-shared-experts ${num_shared_experts} \
+                    ${NPE_FLAG}
                 "
         else
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
@@ -618,7 +637,8 @@ for MODEL in "${MODELS[@]}"; do
                     --batch-size ${batch_size} \
                     --micro-batch-size ${micro_batch_size} \
                     --num-epochs ${num_epochs} \
-                    --num-shared-experts ${num_shared_experts}
+                    --num-shared-experts ${num_shared_experts} \
+                    ${NPE_FLAG}
                 "
         fi
 

@@ -46,6 +46,7 @@ SKIP_PRUNE=false
 PRUNED_MODEL=""
 LEARNING_RATE=5e-5
 RUN_NAME=""
+NUM_PRUNE_EXAMPLES=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -80,6 +81,8 @@ while [[ $# -gt 0 ]]; do
             LEARNING_RATE="$2"; shift 2 ;;
         --run-name)
             RUN_NAME="$2"; shift 2 ;;
+        --num-prune-examples)
+            NUM_PRUNE_EXAMPLES="$2"; shift 2 ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
@@ -167,13 +170,19 @@ if [ "$SKIP_PRUNE" = false ]; then
     echo "Steps 1+2: EASY-EP pruning..."
     echo "========================================"
 
+    NUM_CAL_FLAG=()
+    if [ -n "$NUM_PRUNE_EXAMPLES" ]; then
+        NUM_CAL_FLAG=(--num-calibration "$NUM_PRUNE_EXAMPLES")
+    fi
+
     python -m src.hf_training.easy_ep_prune \
         --model "$MODEL" \
         --task "$TASK" \
         --split "validation" \
         --prune-keep-k "$PRUNE_KEEP_K" \
         --num-shared-experts "$NUM_SHARED_EXPERTS" \
-        --save-path "$PRUNED_MODEL"
+        --save-path "$PRUNED_MODEL" \
+        "${NUM_CAL_FLAG[@]}"
 
     echo "Pruned model saved to: $PRUNED_MODEL"
 else

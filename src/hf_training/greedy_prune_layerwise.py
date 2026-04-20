@@ -131,6 +131,7 @@ def greedy_prune_layerwise(
     num_shared_experts: int,
     save_path: str,
     batch_size: int = 32,
+    num_calibration: Optional[int] = None,
     device: Optional[str] = None,
 ) -> None:
     """
@@ -172,7 +173,14 @@ def greedy_prune_layerwise(
     # -------------------------------------------------------------------------
     logger.info(f"Loading dataset: {task_name} ({split})")
     prompts, _ = get_formatted_prompts(task_name, split)
-    logger.info(f"Loaded {len(prompts)} prompts")
+    if num_calibration is None:
+        logger.info(f"Loaded {len(prompts)} prompts, using all (no subsampling)")
+    else:
+        n_keep = min(num_calibration, len(prompts))
+        logger.info(f"Loaded {len(prompts)} prompts, subsampling to {n_keep}")
+        g = torch.Generator().manual_seed(0)
+        perm = torch.randperm(len(prompts), generator=g).tolist()
+        prompts = [prompts[i] for i in perm[:n_keep]]
 
     logger.info("Tokenizing prompts into batches...")
     all_batches = []
@@ -432,6 +440,12 @@ def main():
         help="Batch size for activation collection forward passes (default: 32)",
     )
     parser.add_argument(
+        "--num-calibration",
+        type=int,
+        default=None,
+        help="Subsample calibration set to this many prompts (default: use all)",
+    )
+    parser.add_argument(
         "--device",
         type=str,
         default=None,
@@ -448,6 +462,7 @@ def main():
         num_shared_experts=args.num_shared_experts,
         save_path=args.save_path,
         batch_size=args.batch_size,
+        num_calibration=args.num_calibration,
         device=args.device,
     )
 

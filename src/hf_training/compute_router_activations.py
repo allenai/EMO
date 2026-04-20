@@ -36,6 +36,7 @@ def compute_router_activations(
     split: str,
     output_file: str,
     batch_size: int = 4,
+    num_calibration: Optional[int] = None,
     device: Optional[str] = None,
     use_correct_only: bool = False,
 ) -> dict:
@@ -69,7 +70,14 @@ def compute_router_activations(
     # Get formatted prompts from the dataset
     logger.info(f"Loading dataset: {task_name} ({split})")
     prompts, _ = get_formatted_prompts(task_name, split)
-    logger.info(f"Loaded {len(prompts)} prompts")
+    if num_calibration is None:
+        logger.info(f"Loaded {len(prompts)} prompts, using all (no subsampling)")
+    else:
+        n_keep = min(num_calibration, len(prompts))
+        logger.info(f"Loaded {len(prompts)} prompts, subsampling to {n_keep}")
+        g = torch.Generator().manual_seed(0)
+        perm = torch.randperm(len(prompts), generator=g).tolist()
+        prompts = [prompts[i] for i in perm[:n_keep]]
 
     # Get model config
     num_layers = model.config.num_hidden_layers
@@ -243,6 +251,12 @@ def main():
         help="Batch size for inference (default: 4)",
     )
     parser.add_argument(
+        "--num-calibration",
+        type=int,
+        default=None,
+        help="Subsample calibration set to this many prompts (default: use all)",
+    )
+    parser.add_argument(
         "--device",
         type=str,
         default=None,
@@ -257,6 +271,7 @@ def main():
         split=args.split,
         output_file=args.output_file,
         batch_size=args.batch_size,
+        num_calibration=args.num_calibration,
         device=args.device,
     )
 

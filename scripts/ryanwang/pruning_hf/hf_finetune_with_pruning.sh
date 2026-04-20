@@ -39,6 +39,7 @@ ACTIVATION_FILE=""
 PRUNED_MODEL=""
 LEARNING_RATE=5e-5
 RUN_NAME=""
+NUM_PRUNE_EXAMPLES=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -109,6 +110,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --run-name)
             RUN_NAME="$2"
+            shift 2
+            ;;
+        --num-prune-examples)
+            NUM_PRUNE_EXAMPLES="$2"
             shift 2
             ;;
         -h|--help)
@@ -240,12 +245,18 @@ if [ "$SKIP_ACTIVATION" = false ]; then
         ACTIVATION_BATCH_SIZE=4
     fi
 
+    NUM_CAL_FLAG=()
+    if [ -n "$NUM_PRUNE_EXAMPLES" ]; then
+        NUM_CAL_FLAG=(--num-calibration "$NUM_PRUNE_EXAMPLES")
+    fi
+
     python -m src.hf_training.compute_router_activations \
         --model "$MODEL" \
         --task "$TASK" \
         --split "validation" \
         --output-file "$ACTIVATION_FILE" \
-        --batch-size "$ACTIVATION_BATCH_SIZE"
+        --batch-size "$ACTIVATION_BATCH_SIZE" \
+        "${NUM_CAL_FLAG[@]}"
 
     echo "Activations saved to: $ACTIVATION_FILE"
 else
