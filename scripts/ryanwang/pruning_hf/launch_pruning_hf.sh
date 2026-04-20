@@ -59,7 +59,9 @@ batch_size=32
 # --- Pruning calibration-set size ---
 # Leave empty to use the full validation pool for pruning (default).
 # Set to an integer (e.g. 50) to subsample that many prompts (deterministic shuffle, seed=0).
-NUM_PRUNE_EXAMPLES="1"
+# Set to "random" to bypass calibration entirely and randomly select experts
+# (seed=0, mode-agnostic — ignores PRUNING_MODE). Output dir uses _prunemode-random.
+NUM_PRUNE_EXAMPLES=""
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
 # Schedule name (used in output directory naming)
@@ -363,8 +365,11 @@ for MODEL in "${MODELS[@]}"; do
 
         stringified_model=$(echo $MODEL | sed 's/[^a-zA-Z0-9_-]//g')
 
-        # if prunemode is global, don't include it in the name
-        if [[ $PRUNING_MODE == "global" ]]; then
+        # Random pruning is mode-agnostic: override prunemode in the output name
+        # and skip the _nprune-... suffix (redundant with _prunemode-random).
+        if [[ $NUM_PRUNE_EXAMPLES == "random" ]]; then
+          relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}_prunemode-random"
+        elif [[ $PRUNING_MODE == "global" ]]; then
           relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}"
         elif [[ $PRUNING_MODE == "layerwise_variable" ]]; then
           relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}_prunemode-${PRUNING_MODE}_${PRUNE_SCHEDULE_NAME}"
@@ -373,7 +378,9 @@ for MODEL in "${MODELS[@]}"; do
         fi
 
         # Append calibration-set-size suffix when overriding the default (use-all) behavior.
-        if [ -n "$NUM_PRUNE_EXAMPLES" ]; then
+        # Skip when NUM_PRUNE_EXAMPLES=="random" since the prunemode-random token
+        # already conveys this.
+        if [ -n "$NUM_PRUNE_EXAMPLES" ] && [[ $NUM_PRUNE_EXAMPLES != "random" ]]; then
             relative_dir="${relative_dir}_nprune-${NUM_PRUNE_EXAMPLES}"
         fi
 
@@ -463,7 +470,52 @@ for MODEL in "${MODELS[@]}"; do
             continue
         fi
 
-        if [[ $PRUNING_MODE == "layerwise_variable" ]]; then
+        if [[ $NUM_PRUNE_EXAMPLES == "random" ]]; then
+#            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_random.sh \
+#                --model ${BASE_DIR}/models/${MODEL} \
+#                --task ${TASK} \
+#                --prune-keep-k ${prune_keep_k} \
+#                --base-dir "${BASE_DIR}/prune_evals" \
+#                --relative-dir ${relative_dir} \
+#                --num-gpus $gpus \
+#                --run-name ${job_name} \
+#                --learning-rate ${lr} \
+#                --batch-size ${batch_size} \
+#                --micro-batch-size ${micro_batch_size} \
+#                --num-epochs ${num_epochs} \
+#                --num-checkpoints 1 \
+#                --num-shared-experts ${num_shared_experts}
+
+            python -m olmo_core.launch.beaker \
+                --name $job_name \
+                --gpus $gpus \
+                --nodes 1 \
+                --weka=oe-training-default \
+                --shared-filesystem \
+                --workspace ai2/flex2 \
+                --cluster ai2/jupiter \
+                --preemptible \
+                --allow-dirty \
+                --priority urgent \
+                --no-follow \
+                --no-torchrun \
+                --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
+                -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_random.sh \
+                    --model ${BASE_DIR}/models/${MODEL} \
+                    --task ${TASK} \
+                    --prune-keep-k ${prune_keep_k} \
+                    --base-dir "${BASE_DIR}/prune_evals" \
+                    --relative-dir ${relative_dir} \
+                    --num-gpus $gpus \
+                    --run-name ${job_name} \
+                    --learning-rate ${lr} \
+                    --batch-size ${batch_size} \
+                    --micro-batch-size ${micro_batch_size} \
+                    --num-epochs ${num_epochs} \
+                    --num-checkpoints 1 \
+                    --num-shared-experts ${num_shared_experts}
+                "
+        elif [[ $PRUNING_MODE == "layerwise_variable" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise_variable.sh \
 #                --model ${BASE_DIR}/models/${MODEL} \
 #                --task ${TASK} \
