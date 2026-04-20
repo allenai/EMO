@@ -65,6 +65,7 @@ GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
 # Gradient mask callback that works with arbitrary expert indices
 # ---------------------------------------------------------------------------
 
+
 def _create_expert_mask_by_indices(
     size: int,
     num_experts: int,
@@ -184,6 +185,7 @@ class SelectedExpertGradientMaskCallback(Callback):
 # ---------------------------------------------------------------------------
 # Experiment config
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ExperimentConfig(Config):
@@ -386,9 +388,23 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
                 + [
                     f"mt_mbpp_{lang}_gold_bpb_3shot"
                     for lang in [
-                        "haskell", "go", "python", "cpp", "javascript", "swift",
-                        "scala", "bash", "typescript", "c", "php", "rust",
-                        "csharp", "r", "ruby", "java", "matlab",
+                        "haskell",
+                        "go",
+                        "python",
+                        "cpp",
+                        "javascript",
+                        "swift",
+                        "scala",
+                        "bash",
+                        "typescript",
+                        "c",
+                        "php",
+                        "rust",
+                        "csharp",
+                        "r",
+                        "ruby",
+                        "java",
+                        "matlab",
                     ]
                 ],
                 tokenizer=tokenizer_config,

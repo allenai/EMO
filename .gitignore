@@ -84,3 +84,7 @@ prune
 claude_outputs
 eval_plots/.mplconfig
 *.csv
+*.html
+prune_evals_final
+extension_evals_0414
+plotting_env/

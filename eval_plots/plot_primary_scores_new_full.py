@@ -39,7 +39,7 @@ TASK_CONFIGS: Dict[str, Dict[str, Any]] = {
     # },
     "hellaswag:rc_test": {
         "steps": [0, 729, 1458, 2187, 2916, 3645],
-        "metric_key": "softloss_per_char_corr"
+        "metric_key": "softloss_per_char_corr",
     },
     # "openbookqa:rc_test": {
     #     "steps": [0, 92, 184, 276, 368, 462],
@@ -888,10 +888,7 @@ def main() -> None:
             metric_key,
         )
 
-        output_file = (
-            base_output_dir
-            / f"{task_name.replace(':', '_')}_{metric_key}_comparison.png"
-        )
+        output_file = base_output_dir / f"{task_name.replace(':', '_')}_{metric_key}_comparison.png"
 
         plot_metric_scores(
             df,

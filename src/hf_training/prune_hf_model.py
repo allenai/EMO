@@ -23,7 +23,7 @@ import os
 from typing import List
 
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -44,7 +44,9 @@ def get_experts_to_keep(activations: List[List[float]], prune_keep_k: int) -> Li
     for layer_idx, layer_activations in enumerate(activations):
         # Get top-k experts by activation probability
         activation_tensor = torch.tensor(layer_activations)
-        top_k_indices = torch.topk(activation_tensor, min(prune_keep_k, len(layer_activations))).indices.tolist()
+        top_k_indices = torch.topk(
+            activation_tensor, min(prune_keep_k, len(layer_activations))
+        ).indices.tolist()
         experts_to_keep.append(sorted(top_k_indices))  # Sort for consistency
         logger.debug(f"Layer {layer_idx}: keeping experts {top_k_indices}")
     return experts_to_keep
@@ -231,24 +233,33 @@ def prune_hf_model(
 
     # Verify activation file matches model
     num_layers = config.num_hidden_layers
-    assert len(activations) == num_layers, (
-        f"Activation file has {len(activations)} layers but model has {num_layers} layers"
-    )
+    assert (
+        len(activations) == num_layers
+    ), f"Activation file has {len(activations)} layers but model has {num_layers} layers"
 
     # Determine experts to keep
     activations = torch.tensor(activations)
     # check if we have shared experts
     if model.config.num_shared_experts > 0:
-        activations_standard = activations[:, :model.config.num_experts - model.config.num_shared_experts]
-        activations_shared = activations[:, model.config.num_experts - model.config.num_shared_experts :]
+        activations_standard = activations[
+            :, : model.config.num_experts - model.config.num_shared_experts
+        ]
+        activations_shared = activations[
+            :, model.config.num_experts - model.config.num_shared_experts :
+        ]
 
-        experts_to_keep_standard = get_experts_to_keep(activations_standard, prune_keep_k - num_shared_experts)
+        experts_to_keep_standard = get_experts_to_keep(
+            activations_standard, prune_keep_k - num_shared_experts
+        )
         experts_to_keep_shared = get_experts_to_keep(activations_shared, num_shared_experts)
 
         experts_to_keep = []
         for layer_idx in range(num_layers):
             layer_experts_to_keep = sorted(experts_to_keep_standard[layer_idx]) + sorted(
-                [idx + model.config.num_experts - model.config.num_shared_experts for idx in experts_to_keep_shared[layer_idx]]
+                [
+                    idx + model.config.num_experts - model.config.num_shared_experts
+                    for idx in experts_to_keep_shared[layer_idx]
+                ]
             )
             experts_to_keep.append(layer_experts_to_keep)
     else:
@@ -259,7 +270,9 @@ def prune_hf_model(
     logger.info(f"Detected model type: {model_type}")
 
     if model_type == "olmoe":
-        model = prune_olmoe_model(model, config, experts_to_keep, prune_keep_k) # we pass prune_keep_k that includes both shared and non-shared experts
+        model = prune_olmoe_model(
+            model, config, experts_to_keep, prune_keep_k
+        )  # we pass prune_keep_k that includes both shared and non-shared experts
     elif model_type == "mixtral":
         model = prune_mixtral_model(model, config, experts_to_keep, prune_keep_k)
     else:

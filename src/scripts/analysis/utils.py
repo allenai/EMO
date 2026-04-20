@@ -21,18 +21,22 @@ logger = logging.getLogger(__name__)
 
 # ── Constants ────────────────────────────────────────────────────────────────
 S3_BASE = "s3://ai2-llm"
-ALL_DRESSED_PREFIX = "preprocessed/cc_all_dressed/all_dressed_v3/dclm_plus2_vigilantes/allenai/dolma2-tokenizer"
+ALL_DRESSED_PREFIX = (
+    "preprocessed/cc_all_dressed/all_dressed_v3/dclm_plus2_vigilantes/allenai/dolma2-tokenizer"
+)
 BYTES_PER_TOKEN = 4  # headerless raw uint32 binary
 EOS_TOKEN_ID = 100257
 
 
 # ── S3 helpers ───────────────────────────────────────────────────────────────
 
+
 def s3_ls(prefix: str) -> List[str]:
     """List immediate children of an S3 prefix (directories and files)."""
     result = subprocess.run(
         ["aws", "s3", "ls", f"s3://ai2-llm/{prefix}/"],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     if result.returncode != 0:
         raise RuntimeError(f"aws s3 ls failed for {prefix}: {result.stderr[:200]}")
@@ -56,7 +60,8 @@ def list_npy_files(topic: str, vigintile: str) -> List[Tuple[str, int]]:
     prefix = f"{ALL_DRESSED_PREFIX}/{topic}/{vigintile}"
     result = subprocess.run(
         ["aws", "s3", "ls", f"s3://ai2-llm/{prefix}/"],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     if result.returncode != 0:
         logger.warning(f"Could not list {prefix}: {result.stderr[:100]}")
@@ -83,13 +88,19 @@ def stream_bytes_from_s3(s3_path: str, num_bytes: int) -> bytes:
     try:
         result = subprocess.run(
             [
-                "aws", "s3api", "get-object",
-                "--bucket", "ai2-llm",
-                "--key", s3_path.replace("s3://ai2-llm/", ""),
-                "--range", f"bytes=0-{num_bytes - 1}",
+                "aws",
+                "s3api",
+                "get-object",
+                "--bucket",
+                "ai2-llm",
+                "--key",
+                s3_path.replace("s3://ai2-llm/", ""),
+                "--range",
+                f"bytes=0-{num_bytes - 1}",
                 tmp_path,
             ],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         if result.returncode != 0:
             raise RuntimeError(f"S3 range-GET failed for {s3_path}: {result.stderr[:200]}")
@@ -108,16 +119,24 @@ def stream_bytes_from_s3_range(s3_path: str, offset: int, num_bytes: int) -> byt
         end = offset + num_bytes - 1
         result = subprocess.run(
             [
-                "aws", "s3api", "get-object",
-                "--bucket", "ai2-llm",
-                "--key", s3_path.replace("s3://ai2-llm/", ""),
-                "--range", f"bytes={offset}-{end}",
+                "aws",
+                "s3api",
+                "get-object",
+                "--bucket",
+                "ai2-llm",
+                "--key",
+                s3_path.replace("s3://ai2-llm/", ""),
+                "--range",
+                f"bytes={offset}-{end}",
                 tmp_path,
             ],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         if result.returncode != 0:
-            raise RuntimeError(f"S3 range-GET failed for {s3_path} [{offset}-{end}]: {result.stderr[:200]}")
+            raise RuntimeError(
+                f"S3 range-GET failed for {s3_path} [{offset}-{end}]: {result.stderr[:200]}"
+            )
         with open(tmp_path, "rb") as f:
             return f.read()
     finally:
@@ -140,7 +159,8 @@ def get_s3_file_sizes(s3_paths: List[str]) -> Dict[str, int]:
         logger.info(f"  Querying file sizes in {prefix.split('/')[-2]}/ ...")
         result = subprocess.run(
             ["aws", "s3", "ls", prefix],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         if result.returncode != 0:
             logger.warning(f"  Could not list {prefix}: {result.stderr[:100]}")
@@ -161,6 +181,7 @@ def get_s3_file_sizes(s3_paths: List[str]) -> Dict[str, int]:
 
 
 # ── Token parsing ────────────────────────────────────────────────────────────
+
 
 def tokens_from_bytes(raw: bytes) -> np.ndarray:
     """Parse headerless raw uint32 binary into token IDs."""
@@ -274,8 +295,10 @@ def load_source_documents_shuffled(
         max_offset = max(0, file_size - chunk_bytes)
         byte_offset = rng.randint(0, max_offset) & ~3  # align to 4 bytes
 
-        logger.info(f"  [{attempts}] Sampling {chunk_bytes / 1e6:.1f} MB from "
-                     f"{s3_path.split('/')[-1]} offset={byte_offset:,} ...")
+        logger.info(
+            f"  [{attempts}] Sampling {chunk_bytes / 1e6:.1f} MB from "
+            f"{s3_path.split('/')[-1]} offset={byte_offset:,} ..."
+        )
         try:
             raw = stream_bytes_from_s3_range(s3_path, byte_offset, chunk_bytes)
         except Exception as e:
@@ -299,12 +322,14 @@ def load_source_documents_shuffled(
             if collected_tokens >= target_tokens:
                 break
 
-    logger.info(f"  Collected {len(docs)} docs / {collected_tokens:,} tokens "
-                f"({attempts} random chunks)")
+    logger.info(
+        f"  Collected {len(docs)} docs / {collected_tokens:,} tokens " f"({attempts} random chunks)"
+    )
     return docs
 
 
 # ── Model loading ────────────────────────────────────────────────────────────
+
 
 def load_model_and_tokenizer(model_path: str):
     """Load an HF MoE model and tokenizer."""
@@ -343,12 +368,15 @@ def get_moe_config(model) -> Dict[str, int]:
     routed_top_k = top_k - num_shared
     emb_dim = num_layers * num_standard_experts
 
-    assert num_shared < top_k, \
-        f"num_shared_experts ({num_shared}) must be less than top_k ({top_k})"
+    assert (
+        num_shared < top_k
+    ), f"num_shared_experts ({num_shared}) must be less than top_k ({top_k})"
 
-    logger.info(f"Model: {num_layers} layers, {num_standard_experts} standard experts "
-                f"({num_shared} shared), top_k={top_k} (routed={routed_top_k}), "
-                f"emb_dim={emb_dim}")
+    logger.info(
+        f"Model: {num_layers} layers, {num_standard_experts} standard experts "
+        f"({num_shared} shared), top_k={top_k} (routed={routed_top_k}), "
+        f"emb_dim={emb_dim}"
+    )
 
     return {
         "num_layers": num_layers,

@@ -3,6 +3,18 @@ from transformers import Olmo2Config, Olmo2NoQKNormPrenormConfig, PretrainedConf
 from olmo_core.doc_utils import beta_feature
 from olmo_core.nn.attention import Attention
 from olmo_core.nn.moe.mlp import DroplessMoEMLP, MoEMLP
+from olmo_core.nn.moe.router_lbreducedp_sharedexp import (
+    MoELinearLBReduceDPSharedExpRouter,
+)
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_randpool_router import (
+    MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter,
+)
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_router import (
+    MoETwoLevelBatchLBReduceDPSharedExpRouter,
+)
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexppool_router import (
+    MoETwoLevelBatchLBReduceDPSharedExpPoolRouter,
+)
 from olmo_core.nn.rope import RoPEScalingConfig
 from olmo_core.nn.transformer.block import (
     MoEReorderedNormTransformerBlock,
@@ -10,10 +22,6 @@ from olmo_core.nn.transformer.block import (
     ReorderedNormTransformerBlock,
     TransformerBlock,
 )
-from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexppool_router import MoETwoLevelBatchLBReduceDPSharedExpPoolRouter
-from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_router import MoETwoLevelBatchLBReduceDPSharedExpRouter
-from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_randpool_router import MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter
-from olmo_core.nn.moe.router_lbreducedp_sharedexp import MoELinearLBReduceDPSharedExpRouter
 from olmo_core.nn.transformer.model import (
     MoETransformer,
     NormalizedTransformer,
@@ -41,7 +49,9 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
     blocks = list(model.blocks.values())
     for block in blocks:
         # Dense TransformerBlock (e.g., densefirst layers 0-1): validate attention only
-        if isinstance(block, TransformerBlock) and not isinstance(block, (MoETransformerBlock, MoEReorderedNormTransformerBlock)):
+        if isinstance(block, TransformerBlock) and not isinstance(
+            block, (MoETransformerBlock, MoEReorderedNormTransformerBlock)
+        ):
             if not isinstance(block.attention, Attention):
                 raise NotImplementedError(
                     f"Attention is not a {Attention.__name__}, unable to build HF config for {model.__class__.__name__}"
@@ -100,6 +110,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
     assert isinstance(block, (MoEReorderedNormTransformerBlock, MoETransformerBlock))
     assert isinstance(block.attention, Attention)
     assert block.attention.rope is not None
+    assert block.feed_forward_moe is not None
 
     if FlexOlmoConfig is None:
         raise RuntimeError("The installed transformers version does not support FlexOlmo")
@@ -113,7 +124,9 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
     dense_mlp_bias = False
 
     for b in blocks:
-        if isinstance(b, TransformerBlock) and not isinstance(b, (MoETransformerBlock, MoEReorderedNormTransformerBlock)):
+        if isinstance(b, TransformerBlock) and not isinstance(
+            b, (MoETransformerBlock, MoEReorderedNormTransformerBlock)
+        ):
             # Dense layer
             has_dense_layers = True
             num_experts_per_layer.append(0)
@@ -127,7 +140,14 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
             layer_shared = 0
             if isinstance(b.feed_forward_moe.router, MoETwoLevelBatchLBReduceDPSharedExpPoolRouter):
                 layer_shared = b.feed_forward_moe.router.num_shared_experts_pool
-            elif isinstance(b.feed_forward_moe.router, (MoETwoLevelBatchLBReduceDPSharedExpRouter, MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter, MoELinearLBReduceDPSharedExpRouter)):
+            elif isinstance(
+                b.feed_forward_moe.router,
+                (
+                    MoETwoLevelBatchLBReduceDPSharedExpRouter,
+                    MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter,
+                    MoELinearLBReduceDPSharedExpRouter,
+                ),
+            ):
                 layer_shared = b.feed_forward_moe.router.num_shared_experts
             num_shared_experts_per_layer.append(layer_shared)
 
@@ -136,8 +156,8 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
         and block.attention.q_norm is None
         and block.attention.k_norm is None
     ):
-        has_shared_mlp = block.feed_forward_moe.shared_mlp is not None
-        if has_shared_mlp:
+        shared_mlp = block.feed_forward_moe.shared_mlp
+        if shared_mlp is not None:
             if FlexOlmoNoQKNormPrenormSharedConfig is None:
                 raise RuntimeError(
                     "The installed transformers version does not support FlexOlmoNoQKNormPrenormShared"
@@ -146,7 +166,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
                 vocab_size=model.vocab_size,
                 hidden_size=model.d_model,
                 intermediate_size=block.feed_forward_moe.experts.mlp.hidden_size,
-                shared_expert_intermediate_size=block.feed_forward_moe.shared_mlp.hidden_size,
+                shared_expert_intermediate_size=shared_mlp.hidden_size,
                 num_hidden_layers=model.n_layers,
                 num_attention_heads=block.attention.n_heads,
                 num_key_value_heads=block.attention.n_kv_heads,
@@ -162,12 +182,21 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
                 num_experts=block.feed_forward_moe.router.num_experts,
                 tie_word_embeddings=False,
             )
-        always_active_experts = getattr(block.feed_forward_moe.router, "always_active_experts", None)
+        always_active_experts = getattr(
+            block.feed_forward_moe.router, "always_active_experts", None
+        )
         # find the right number of shared experts accordingly
         num_shared_experts = 0
         if isinstance(block.feed_forward_moe.router, MoETwoLevelBatchLBReduceDPSharedExpPoolRouter):
             num_shared_experts = block.feed_forward_moe.router.num_shared_experts_pool
-        elif isinstance(block.feed_forward_moe.router, (MoETwoLevelBatchLBReduceDPSharedExpRouter, MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter, MoELinearLBReduceDPSharedExpRouter)):
+        elif isinstance(
+            block.feed_forward_moe.router,
+            (
+                MoETwoLevelBatchLBReduceDPSharedExpRouter,
+                MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter,
+                MoELinearLBReduceDPSharedExpRouter,
+            ),
+        ):
             num_shared_experts = block.feed_forward_moe.router.num_shared_experts
         return FlexOlmoNoQKNormPrenormConfig(
             vocab_size=model.vocab_size,

@@ -1,8 +1,11 @@
+from typing import Any
+
 from oe_eval.configs.tasks import TASK_CONFIGS
-from oe_eval.data.mmlu_pro_categories import MMLU_PRO_CATEGORIES
 from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 
 from offline_evals.tasks.code_fresh import CODE_FRESH_LANGUAGES
+from src.offline_evals.tasks.splits_mmlu import MMLU_CLUSTER_CATEGORIES
+from src.offline_evals.tasks.splits_mmlu_pro import MMLU_PRO_CATEGORIES_MAP
 
 
 def get_task_configs():
@@ -11,46 +14,292 @@ def get_task_configs():
             "squad_0shot:train::olmes": {
                 "task_name": "squad_0shot:train",
                 "split": "train",
-                "primary_metric": "exact_match",
+                "primary_metric": "f1",
                 "num_shots": 0,
                 "generation_kwargs": {
-                    "max_gen_toks": 32,
+                    "max_gen_toks": 50,
                 },
                 "context_kwargs": {
-                    "short_prefix": True,
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
                 },
                 "metadata": {
-                    "regimes": [],
+                    "regimes": ["OLMES-v0.2"],
                 },
             },
             "squad_0shot:validation::olmes": {
                 "task_name": "squad_0shot:validation",
                 "split": "validation",
-                "primary_metric": "exact_match",
+                "primary_metric": "f1",
                 "num_shots": 0,
                 "generation_kwargs": {
-                    "max_gen_toks": 32,
+                    "max_gen_toks": 50,
                 },
                 "context_kwargs": {
-                    "short_prefix": True,
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
                 },
                 "metadata": {
-                    "regimes": [],
+                    "regimes": ["OLMES-v0.2"],
                 },
             },
             "squad_0shot:test::olmes": {
                 "task_name": "squad_0shot:test",
                 "split": "test",
-                "primary_metric": "exact_match",
+                "primary_metric": "f1",
                 "num_shots": 0,
                 "generation_kwargs": {
-                    "max_gen_toks": 32,
+                    "max_gen_toks": 50,
                 },
                 "context_kwargs": {
-                    "short_prefix": True,
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "squad_merged:train::olmes": {
+                "task_name": "squad_merged:train",
+                "split": "train",
+                "primary_metric": "f1",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:squad",
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "context_kwargs": {
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "squad_merged:validation::olmes": {
+                "task_name": "squad_merged:validation",
+                "split": "validation",
+                "primary_metric": "f1",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:squad",
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "context_kwargs": {
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "squad_merged:test::olmes": {
+                "task_name": "squad_merged:test",
+                "split": "test",
+                "primary_metric": "f1",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:squad",
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "context_kwargs": {
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "squad_0shot_merged:train::olmes": {
+                "task_name": "squad_0shot_merged:train",
+                "split": "train",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "context_kwargs": {
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "squad_0shot_merged:validation::olmes": {
+                "task_name": "squad_0shot_merged:validation",
+                "split": "validation",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "context_kwargs": {
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "squad_0shot_merged:test::olmes": {
+                "task_name": "squad_0shot_merged:test",
+                "split": "test",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "context_kwargs": {
+                    "short_prefix": False,
+                    "reduced_spacing": True,
+                    "description": "The following are reading comprehension questions, where the answer to each question is a segment of text from the corresponding background text.\n\n",
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "naturalqs_merged:train::olmes": {
+                "task_name": "naturalqs_merged:train",
+                "split": "train",
+                "primary_metric": "f1",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:naturalqs",
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "naturalqs_merged:validation::olmes": {
+                "task_name": "naturalqs_merged:validation",
+                "split": "validation",
+                "primary_metric": "f1",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:naturalqs",
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "naturalqs_merged:test::olmes": {
+                "task_name": "naturalqs_merged:test",
+                "split": "test",
+                "primary_metric": "f1",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:naturalqs",
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "triviaqa_merged:train::olmes": {
+                "task_name": "triviaqa_merged:train",
+                "split": "train",
+                "primary_metric": "f1",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:triviaqa",
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "context_kwargs": {
+                    "short_prefix": False,
                 },
                 "metadata": {
                     "regimes": [],
+                },
+            },
+            "triviaqa_merged:validation::olmes": {
+                "task_name": "triviaqa_merged:validation",
+                "split": "validation",
+                "primary_metric": "f1",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:triviaqa",
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "context_kwargs": {
+                    "short_prefix": False,
+                },
+                "metadata": {
+                    "regimes": [],
+                },
+            },
+            "triviaqa_merged:test::olmes": {
+                "task_name": "triviaqa_merged:test",
+                "split": "test",
+                "primary_metric": "f1",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:triviaqa",
+                "generation_kwargs": {
+                    "max_gen_toks": 50,
+                },
+                "context_kwargs": {
+                    "short_prefix": False,
+                },
+                "metadata": {
+                    "regimes": [],
+                },
+            },
+            "drop_merged:train::olmes": {
+                "task_name": "drop_merged:train",
+                "split": "train",
+                "primary_metric": "f1",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:drop",
+                "generation_kwargs": {
+                    "max_gen_toks": 100,
+                },
+                "context_kwargs": {
+                    "description": "The following are reading comprehension questions, where the answer to each question is either a segment of text from the corresponding passage, a number, or a date (containing any of the date, month, and/or year components). Some questions may require you to pull together information pieces from the passage and reason over them.\n\n",
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "drop_merged:validation::olmes": {
+                "task_name": "drop_merged:validation",
+                "split": "validation",
+                "primary_metric": "f1",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:drop",
+                "generation_kwargs": {
+                    "max_gen_toks": 100,
+                },
+                "context_kwargs": {
+                    "description": "The following are reading comprehension questions, where the answer to each question is either a segment of text from the corresponding passage, a number, or a date (containing any of the date, month, and/or year components). Some questions may require you to pull together information pieces from the passage and reason over them.\n\n",
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "drop_merged:test::olmes": {
+                "task_name": "drop_merged:test",
+                "split": "test",
+                "primary_metric": "f1",
+                "num_shots": 5,
+                "fewshot_source": "OLMES:drop",
+                "generation_kwargs": {
+                    "max_gen_toks": 100,
+                },
+                "context_kwargs": {
+                    "description": "The following are reading comprehension questions, where the answer to each question is either a segment of text from the corresponding passage, a number, or a date (containing any of the date, month, and/or year components). Some questions may require you to pull together information pieces from the passage and reason over them.\n\n",
+                },
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
                 },
             },
             "coqa_full_0shot:train::olmes": {
@@ -107,6 +356,33 @@ def get_task_configs():
                     "regimes": ["OLMES-v0.2"],
                 },
             },
+            "coqa_merged:train::olmes": {
+                "task_name": "coqa_merged:train",
+                "split": "train",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "coqa_merged:validation::olmes": {
+                "task_name": "coqa_merged:validation",
+                "split": "validation",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "coqa_merged:test::olmes": {
+                "task_name": "coqa_merged:test",
+                "split": "test",
+                "primary_metric": "f1",
+                "num_shots": 0,
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
             "gsm8k_generation_0shot:train::olmes": {
                 "task_name": "gsm8k_generation_0shot:train",
                 "split": "train",
@@ -132,6 +408,97 @@ def get_task_configs():
                 "split": "test",
                 "primary_metric": "exact_match",
                 "num_shots": 0,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k_generation_8shot:train::olmes": {
+                "task_name": "gsm8k_generation_8shot:train",
+                "split": "train",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 8,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k_generation_8shot:validation::olmes": {
+                "task_name": "gsm8k_generation_8shot:validation",
+                "split": "validation",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 8,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k_generation_8shot:test::olmes": {
+                "task_name": "gsm8k_generation_8shot:test",
+                "split": "test",
+                "primary_metric": "exact_match",
+                "num_shots": 8,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            # Merged variants: pruning + finetuning use the same train+val merged set.
+            "gsm8k_generation_0shot_merged:train::olmes": {
+                "task_name": "gsm8k_generation_0shot_merged:train",
+                "split": "train",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 0,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k_generation_0shot_merged:validation::olmes": {
+                "task_name": "gsm8k_generation_0shot_merged:validation",
+                "split": "validation",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 0,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k_generation_0shot_merged:test::olmes": {
+                "task_name": "gsm8k_generation_0shot_merged:test",
+                "split": "test",
+                "primary_metric": "exact_match",
+                "num_shots": 0,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k_generation_8shot_merged:train::olmes": {
+                "task_name": "gsm8k_generation_8shot_merged:train",
+                "split": "train",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 8,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k_generation_8shot_merged:validation::olmes": {
+                "task_name": "gsm8k_generation_8shot_merged:validation",
+                "split": "validation",
+                "primary_metric": "bits_per_byte",
+                "num_shots": 8,
+                "fewshot_source": "STD:GSM8k",
+                "metadata": {
+                    "regimes": ["OLMES-v0.2"],
+                },
+            },
+            "gsm8k_generation_8shot_merged:test::olmes": {
+                "task_name": "gsm8k_generation_8shot_merged:test",
+                "split": "test",
+                "primary_metric": "exact_match",
+                "num_shots": 8,
                 "fewshot_source": "STD:GSM8k",
                 "metadata": {
                     "regimes": ["OLMES-v0.2"],
@@ -337,6 +704,69 @@ def get_task_configs():
                 "metadata": {
                     "regimes": ["OLMES-v0.1"],
                 },
+            },
+            # HellaSwag merged (train+val combined for pruning+finetuning)
+            **{
+                f"hellaswag_merged:rc_{split}::olmes": {
+                    "task_name": f"hellaswag_merged:rc_{split}",
+                    "split": split,
+                    "primary_metric": "acc_per_char",
+                    "num_shots": 5,
+                    "fewshot_source": "OLMES:hellaswag",
+                    "metadata": {"regimes": ["OLMES-v0.1"]},
+                }
+                for split in ["train", "validation", "test"]
+            },
+            # HellaSwag per-cluster: legacy k=6 aliases + k-prefixed for all k values
+            **{
+                f"hellaswag_cluster_{c}:rc_{split}::olmes": {
+                    "task_name": f"hellaswag_cluster_{c}:rc_{split}",
+                    "split": split,
+                    "primary_metric": "acc_per_char",
+                    "num_shots": 5,
+                    "fewshot_source": "OLMES:hellaswag",
+                    "metadata": {"regimes": ["OLMES-v0.1"]},
+                }
+                for c in range(6)
+                for split in ["train", "validation", "test"]
+            },
+            **{
+                f"hellaswag_cluster_merged_{c}:rc_{split}::olmes": {
+                    "task_name": f"hellaswag_cluster_merged_{c}:rc_{split}",
+                    "split": split,
+                    "primary_metric": "acc_per_char",
+                    "num_shots": 5,
+                    "fewshot_source": "OLMES:hellaswag",
+                    "metadata": {"regimes": ["OLMES-v0.1"]},
+                }
+                for c in range(6)
+                for split in ["train", "validation", "test"]
+            },
+            **{
+                f"hellaswag_k{k}_cluster_{c}:rc_{split}::olmes": {
+                    "task_name": f"hellaswag_k{k}_cluster_{c}:rc_{split}",
+                    "split": split,
+                    "primary_metric": "acc_per_char",
+                    "num_shots": 5,
+                    "fewshot_source": "OLMES:hellaswag",
+                    "metadata": {"regimes": ["OLMES-v0.1"]},
+                }
+                for k in [6, 8, 10, 16]
+                for c in range(k)
+                for split in ["train", "validation", "test"]
+            },
+            **{
+                f"hellaswag_k{k}_cluster_merged_{c}:rc_{split}::olmes": {
+                    "task_name": f"hellaswag_k{k}_cluster_merged_{c}:rc_{split}",
+                    "split": split,
+                    "primary_metric": "acc_per_char",
+                    "num_shots": 5,
+                    "fewshot_source": "OLMES:hellaswag",
+                    "metadata": {"regimes": ["OLMES-v0.1"]},
+                }
+                for k in [6, 8, 10, 16]
+                for c in range(k)
+                for split in ["train", "validation", "test"]
             },
             "winogrande:mc_train::olmes": {
                 "task_name": "winogrande:mc_train",
@@ -1335,6 +1765,39 @@ def get_task_configs():
             },
         }
 
+    # Router-clustering-based MMLU categories (16 clusters)
+    for cluster_name in MMLU_CLUSTER_CATEGORIES:
+        TASK_CONFIGS[f"mmlu_{cluster_name}:rc_validation::olmes"] = {
+            "task_name": f"mmlu_{cluster_name}:rc_validation",
+            "split": "validation",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cluster_name,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_{cluster_name}:rc_test::olmes"] = {
+            "task_name": f"mmlu_{cluster_name}:rc_test",
+            "split": "test",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cluster_name,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_{cluster_name}:rc_train::olmes"] = {
+            "task_name": f"mmlu_{cluster_name}:rc_train",
+            "split": "train",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cluster_name,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+
     for sub in MMLU_SUBJECTS:
         TASK_CONFIGS[f"mmlu_{sub}:rc_validation::olmes"] = {
             "task_name": f"mmlu_{sub}:rc_validation",
@@ -1363,48 +1826,192 @@ def get_task_configs():
                 "regimes": ["OLMES-v0.1"],
             },
         }
-    #
-    # for cat in MMLU_PRO_CATEGORIES:
-    #     TASK_CONFIGS[f"mmlu_pro_{cat}:mc_validation::none"] = {
-    #         "task_name": f"mmlu_pro_{cat}:mc_validation",
-    #         "split": "validation",
-    #         "num_shots": 5,
-    #         "metadata": {
-    #             "regimes": [],
-    #         },
-    #     }
-    #     TASK_CONFIGS[f"mmlu_pro_{cat}:mc_test::none"] = {
-    #         "task_name": f"mmlu_pro_{cat}:mc_test",
-    #         "split": "test",
-    #         "num_shots": 5,
-    #         "metadata": {
-    #             "regimes": [],
-    #         },
-    #     }
-    #     TASK_CONFIGS[f"mmlu_pro_{cat}:rc_validation::none"] = {
-    #         "task_name": f"mmlu_pro_{cat}:rc_validation",
-    #         "split": "validation",
-    #         "num_shots": 5,
-    #         "metadata": {
-    #             "regimes": [],
-    #         },
-    #     }
-    #     TASK_CONFIGS[f"mmlu_pro_{cat}:rc_validation_0shot::none"] = {
-    #         "task_name": f"mmlu_pro_{cat}:rc_validation_0shot",
-    #         "split": "validation",
-    #         "num_shots": 0,
-    #         "metadata": {
-    #             "regimes": [],
-    #         },
-    #     }
-    #     TASK_CONFIGS[f"mmlu_pro_{cat}:rc_test::none"] = {
-    #         "task_name": f"mmlu_pro_{cat}:rc_test",
-    #         "split": "test",
-    #         "num_shots": 5,
-    #         "metadata": {
-    #             "regimes": [],
-    #         },
-    #     }
+    # MMLU-Pro categories (with custom train/validation/test splits for pruning pipeline)
+    for cat in MMLU_PRO_CATEGORIES_MAP:
+        TASK_CONFIGS[f"mmlu_pro_{cat}:rc_validation::olmes"] = {
+            "task_name": f"mmlu_pro_{cat}:rc_validation",
+            "split": "validation",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cat,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_pro_{cat}:rc_test::olmes"] = {
+            "task_name": f"mmlu_pro_{cat}:rc_test",
+            "split": "test",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cat,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_pro_{cat}:rc_train::olmes"] = {
+            "task_name": f"mmlu_pro_{cat}:rc_train",
+            "split": "train",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cat,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+
+    # MMLU-Pro merged variant (pruning and finetuning share the same data)
+    for cat in MMLU_PRO_CATEGORIES_MAP:
+        TASK_CONFIGS[f"mmlu_pro_merged_{cat}:rc_validation::olmes"] = {
+            "task_name": f"mmlu_pro_merged_{cat}:rc_validation",
+            "split": "validation",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cat,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_pro_merged_{cat}:rc_test::olmes"] = {
+            "task_name": f"mmlu_pro_merged_{cat}:rc_test",
+            "split": "test",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cat,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+        TASK_CONFIGS[f"mmlu_pro_merged_{cat}:rc_train::olmes"] = {
+            "task_name": f"mmlu_pro_merged_{cat}:rc_train",
+            "split": "train",
+            "num_shots": 5,
+            "primary_metric": "acc_per_char",
+            "category_name": cat,
+            "metadata": {
+                "regimes": ["OLMES-v0.1"],
+            },
+        }
+
+    # MMLU-Pro merged variants with different pruning validation sizes
+    for n_val in [50, 100, 200]:
+        for cat in MMLU_PRO_CATEGORIES_MAP:
+            prefix = f"mmlu_pro_merged_n{n_val}_{cat}"
+            TASK_CONFIGS[f"{prefix}:rc_validation::olmes"] = {
+                "task_name": f"{prefix}:rc_validation",
+                "split": "validation",
+                "num_shots": 5,
+                "primary_metric": "acc_per_char",
+                "category_name": cat,
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            }
+            TASK_CONFIGS[f"{prefix}:rc_test::olmes"] = {
+                "task_name": f"{prefix}:rc_test",
+                "split": "test",
+                "num_shots": 5,
+                "primary_metric": "acc_per_char",
+                "category_name": cat,
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            }
+            TASK_CONFIGS[f"{prefix}:rc_train::olmes"] = {
+                "task_name": f"{prefix}:rc_train",
+                "split": "train",
+                "num_shots": 5,
+                "primary_metric": "acc_per_char",
+                "category_name": cat,
+                "metadata": {
+                    "regimes": ["OLMES-v0.1"],
+                },
+            }
+
+    # ------------------------------------------------------------------
+    # Merged variants for the MC9 / Pattern-A/B tasks. Pruning + finetuning
+    # share the same merged train+validation data; the test split used for
+    # eval is unchanged. Each entry's primary_metric / num_shots /
+    # fewshot_source / metadata exactly matches the corresponding non-merged
+    # rc_{train,validation,test}::olmes config.
+    # ------------------------------------------------------------------
+    _MERGED_TASK_DEFAULTS: dict[str, dict[str, Any]] = {
+        "arc_easy_merged": {
+            "primary_metric": "acc_per_char",
+            "fewshot_source": "OLMES:ARC-Easy",
+            "descriptions": {
+                "train": "ARC-Easy (RC) train using OLMES-v0.1",
+                "validation": "ARC-Easy (RC) validation using OLMES-v0.1, on validation split",
+                "test": "ARC-Easy (RC) test using OLMES-v0.1, on test split",
+            },
+        },
+        "arc_challenge_merged": {
+            "primary_metric": "acc_uncond",
+            "fewshot_source": "OLMES:ARC-Challenge",
+        },
+        "boolq_merged": {
+            "primary_metric": "acc_raw",
+            "fewshot_source": "OLMES:BoolQ",
+        },
+        "csqa_merged": {
+            "primary_metric": "acc_uncond",
+            "fewshot_source": "OLMES:commonsense_qa",
+        },
+        "openbookqa_merged": {
+            "primary_metric": "acc_uncond",
+            "fewshot_source": "OLMES:openbookqa",
+        },
+        "piqa_merged": {
+            "primary_metric": "acc_per_char",
+            "fewshot_source": "OLMES:piqa",
+        },
+        "socialiqa_merged": {
+            "primary_metric": "acc_per_char",
+            "fewshot_source": "OLMES:social_i_qa",
+        },
+        "winogrande_merged": {
+            "primary_metric": "acc_raw",
+            "fewshot_source": "OLMES:winogrande",
+        },
+    }
+    for _base, _meta in _MERGED_TASK_DEFAULTS.items():
+        for _split in ["train", "validation", "test"]:
+            _metadata = {"regimes": ["OLMES-v0.1"]}
+            if "descriptions" in _meta:
+                _metadata = {
+                    "description": _meta["descriptions"][_split],
+                    "regimes": ["OLMES-v0.1"],
+                }
+            TASK_CONFIGS[f"{_base}:rc_{_split}::olmes"] = {
+                "task_name": f"{_base}:rc_{_split}",
+                "split": _split,
+                "primary_metric": _meta["primary_metric"],
+                "num_shots": 5,
+                "fewshot_source": _meta["fewshot_source"],
+                "metadata": _metadata,
+            }
+
+    # MMLU 17-category merged variants (matches mmlu_<category>:rc_*::olmes exactly)
+    for category in MMLU_CATEGORIES:
+        for _split in ["train", "validation", "test"]:
+            TASK_CONFIGS[f"mmlu_merged_{category}:rc_{_split}::olmes"] = {
+                "task_name": f"mmlu_merged_{category}:rc_{_split}",
+                "split": _split,
+                "num_shots": 5,
+                "primary_metric": "acc_per_char",
+                "category_name": category,
+                "metadata": {"regimes": ["OLMES-v0.1"]},
+            }
+
+    # MMLU per-subject merged variants (matches mmlu_<subject>:rc_*::olmes exactly)
+    for sub in MMLU_SUBJECTS:
+        for _split in ["train", "validation", "test"]:
+            TASK_CONFIGS[f"mmlu_merged_{sub}:rc_{_split}::olmes"] = {
+                "task_name": f"mmlu_merged_{sub}:rc_{_split}",
+                "split": _split,
+                "num_shots": 5,
+                "primary_metric": "acc_per_char",
+                "metadata": {"regimes": ["OLMES-v0.1"]},
+            }
 
     # code_fresh_rolling task configs
     for language in CODE_FRESH_LANGUAGES:

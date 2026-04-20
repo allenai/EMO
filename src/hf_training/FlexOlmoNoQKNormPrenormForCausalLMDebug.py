@@ -1,30 +1,23 @@
 from dataclasses import dataclass
-from typing import Optional, Union, List
+from typing import List, Optional, Union
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from transformers.utils import ModelOutput
-from transformers import (
-    FlexOlmoNoQKNormPrenormForCausalLM,
-    FlexOlmoNoQKNormPrenormConfig,
-    Cache,
-)
+from transformers import Cache, FlexOlmoNoQKNormPrenormConfig
+from transformers.cache_utils import DynamicCache
+from transformers.generation import GenerationMixin
+from transformers.masking_utils import create_causal_mask
 from transformers.models.flex_olmo_noqknorm_prenorm.modeling_flex_olmo_noqknorm_prenorm import (
-    FlexOlmoNoQKNormPrenormModel,
-    FlexOlmoNoQKNormPrenormPreTrainedModel,
-    FlexOlmoNoQKNormPrenormDecoderLayer,
-    FlexOlmoNoQKNormPrenormSparseMoeBlock,
-    FlexOlmoNoQKNormPrenormMLP,
     FlexOlmoNoQKNormPrenormAttention,
+    FlexOlmoNoQKNormPrenormDecoderLayer,
+    FlexOlmoNoQKNormPrenormMLP,
+    FlexOlmoNoQKNormPrenormPreTrainedModel,
     FlexOlmoNoQKNormPrenormRMSNorm,
     FlexOlmoNoQKNormPrenormRotaryEmbedding,
     MoeModelOutputWithPast,
 )
-from transformers.generation import GenerationMixin
-from transformers.masking_utils import create_causal_mask
-from transformers.cache_utils import DynamicCache
+from transformers.utils import ModelOutput
 
 
 class FlexOlmoNoQKNormPrenormConfigDebug(FlexOlmoNoQKNormPrenormConfig):
@@ -107,13 +100,16 @@ class FlexOlmoNoQKNormPrenormSparseMoeBlockDebug(nn.Module):
     num_experts and num_shared_experts as constructor arguments instead of reading
     from config, allowing different layers to have different expert counts.
     """
+
     def __init__(self, config, num_experts: int, num_shared_experts: int):
         super().__init__()
         self.num_experts = num_experts
         self.top_k = config.num_experts_per_tok
         self.norm_topk_prob = config.norm_topk_prob
         self.gate = nn.Linear(config.hidden_size, self.num_experts, bias=False)
-        self.experts = nn.ModuleList([FlexOlmoNoQKNormPrenormMLP(config) for _ in range(self.num_experts)])
+        self.experts = nn.ModuleList(
+            [FlexOlmoNoQKNormPrenormMLP(config) for _ in range(self.num_experts)]
+        )
 
         self.num_shared_experts = num_shared_experts
 
@@ -147,14 +143,19 @@ class FlexOlmoNoQKNormPrenormSparseMoeBlockDebug(nn.Module):
             # concatenate the routing weights and selected experts for the standard experts and shared experts
             routing_weights = torch.cat([routing_weights_standard, routing_weights_shared], dim=1)
             selected_experts = torch.cat(
-                [selected_experts_standard, selected_experts_shared + (self.num_experts - self.num_shared_experts)],
+                [
+                    selected_experts_standard,
+                    selected_experts_shared + (self.num_experts - self.num_shared_experts),
+                ],
                 dim=1,
             )  # we need to add the offset to the selected experts for the shared experts since they are at the end of the router logits
 
             # make sure there are self.top_k experts selected in total
-            assert routing_weights.shape == selected_experts.shape == (batch_size * sequence_length, self.top_k), (
-                f"routing_weights and selected_experts should have the same shape of (batch_size * sequence_length, self.top_k), but got {routing_weights.shape} and {selected_experts.shape}"
-            )
+            assert (
+                routing_weights.shape
+                == selected_experts.shape
+                == (batch_size * sequence_length, self.top_k)
+            ), f"routing_weights and selected_experts should have the same shape of (batch_size * sequence_length, self.top_k), but got {routing_weights.shape} and {selected_experts.shape}"
         else:
             routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
             routing_weights, selected_experts = torch.topk(routing_weights, self.top_k, dim=-1)
@@ -170,12 +171,16 @@ class FlexOlmoNoQKNormPrenormSparseMoeBlockDebug(nn.Module):
         routing_weights = routing_weights.to(hidden_states.dtype)
 
         final_hidden_states = torch.zeros(
-            (batch_size * sequence_length, hidden_dim), dtype=hidden_states.dtype, device=hidden_states.device
+            (batch_size * sequence_length, hidden_dim),
+            dtype=hidden_states.dtype,
+            device=hidden_states.device,
         )
 
         # One hot encode the selected experts to create an expert mask
         # this will be used to easily index which expert is going to be selected
-        expert_mask = torch.nn.functional.one_hot(selected_experts, num_classes=self.num_experts).permute(2, 1, 0)
+        expert_mask = torch.nn.functional.one_hot(
+            selected_experts, num_classes=self.num_experts
+        ).permute(2, 1, 0)
 
         # Loop over all available experts in the model and perform the computation on each expert
         for expert_idx in range(self.num_experts):
@@ -202,15 +207,28 @@ class FlexOlmoNoQKNormPrenormDecoderLayerDebug(nn.Module):
     This is identical to FlexOlmoNoQKNormPrenormDecoderLayer except it accepts
     num_experts and num_shared_experts as constructor arguments.
     """
-    def __init__(self, config: FlexOlmoNoQKNormPrenormConfig, layer_idx: int, num_experts: int, num_shared_experts: int):
+
+    def __init__(
+        self,
+        config: FlexOlmoNoQKNormPrenormConfig,
+        layer_idx: int,
+        num_experts: int,
+        num_shared_experts: int,
+    ):
         super().__init__()
         self.hidden_size = config.hidden_size
         self.self_attn = FlexOlmoNoQKNormPrenormAttention(config=config, layer_idx=layer_idx)
 
-        self.mlp = FlexOlmoNoQKNormPrenormSparseMoeBlockDebug(config, num_experts, num_shared_experts)
+        self.mlp = FlexOlmoNoQKNormPrenormSparseMoeBlockDebug(
+            config, num_experts, num_shared_experts
+        )
 
-        self.pre_attention_layernorm = FlexOlmoNoQKNormPrenormRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
-        self.pre_feedforward_layernorm = FlexOlmoNoQKNormPrenormRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.pre_attention_layernorm = FlexOlmoNoQKNormPrenormRMSNorm(
+            config.hidden_size, eps=config.rms_norm_eps
+        )
+        self.pre_feedforward_layernorm = FlexOlmoNoQKNormPrenormRMSNorm(
+            config.hidden_size, eps=config.rms_norm_eps
+        )
 
     def forward(
         self,
@@ -279,6 +297,7 @@ class FlexOlmoNoQKNormPrenormModelDebug(FlexOlmoNoQKNormPrenormPreTrainedModel):
     initialized with that many experts. Otherwise, falls back to config.num_experts.
     Similarly for config.num_shared_experts_per_layer.
     """
+
     config_class = FlexOlmoNoQKNormPrenormConfigDebug
 
     def __init__(self, config):
@@ -289,33 +308,38 @@ class FlexOlmoNoQKNormPrenormModelDebug(FlexOlmoNoQKNormPrenormPreTrainedModel):
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
 
         # Check if per-layer expert counts are specified
-        num_experts_per_layer = getattr(config, 'num_experts_per_layer', None)
-        num_shared_experts_per_layer = getattr(config, 'num_shared_experts_per_layer', None)
+        num_experts_per_layer = getattr(config, "num_experts_per_layer", None)
+        num_shared_experts_per_layer = getattr(config, "num_shared_experts_per_layer", None)
 
         if num_experts_per_layer is not None:
             # Use per-layer expert counts
-            assert len(num_experts_per_layer) == config.num_hidden_layers, (
-                f"num_experts_per_layer has length {len(num_experts_per_layer)} but model has {config.num_hidden_layers} layers"
-            )
+            assert (
+                len(num_experts_per_layer) == config.num_hidden_layers
+            ), f"num_experts_per_layer has length {len(num_experts_per_layer)} but model has {config.num_hidden_layers} layers"
             if num_shared_experts_per_layer is None:
                 # Default: use config.num_shared_experts for all layers, but cap at layer's num_experts
                 num_shared_experts_per_layer = [
                     min(config.num_shared_experts, num_experts_per_layer[i])
                     for i in range(config.num_hidden_layers)
                 ]
-            self.layers = nn.ModuleList([
-                FlexOlmoNoQKNormPrenormDecoderLayerDebug(
-                    config,
-                    layer_idx,
-                    num_experts_per_layer[layer_idx],
-                    num_shared_experts_per_layer[layer_idx]
-                )
-                for layer_idx in range(config.num_hidden_layers)
-            ])
+            self.layers = nn.ModuleList(
+                [
+                    FlexOlmoNoQKNormPrenormDecoderLayerDebug(
+                        config,
+                        layer_idx,
+                        num_experts_per_layer[layer_idx],
+                        num_shared_experts_per_layer[layer_idx],
+                    )
+                    for layer_idx in range(config.num_hidden_layers)
+                ]
+            )
         else:
             # Fall back to original behavior: all layers use config.num_experts
             self.layers = nn.ModuleList(
-                [FlexOlmoNoQKNormPrenormDecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
+                [
+                    FlexOlmoNoQKNormPrenormDecoderLayer(config, layer_idx)
+                    for layer_idx in range(config.num_hidden_layers)
+                ]
             )
 
         self.norm = FlexOlmoNoQKNormPrenormRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
@@ -346,9 +370,13 @@ class FlexOlmoNoQKNormPrenormModelDebug(FlexOlmoNoQKNormPrenormPreTrainedModel):
             inputs_embeds = self.embed_tokens(input_ids)
 
         if cache_position is None:
-            past_seen_tokens = past_key_values.get_seq_length() if past_key_values is not None else 0
+            past_seen_tokens = (
+                past_key_values.get_seq_length() if past_key_values is not None else 0
+            )
             cache_position = torch.arange(
-                past_seen_tokens, past_seen_tokens + inputs_embeds.shape[1], device=inputs_embeds.device
+                past_seen_tokens,
+                past_seen_tokens + inputs_embeds.shape[1],
+                device=inputs_embeds.device,
             )
         if position_ids is None:
             position_ids = cache_position.unsqueeze(0)
@@ -387,7 +415,9 @@ class FlexOlmoNoQKNormPrenormModelDebug(FlexOlmoNoQKNormPrenormPreTrainedModel):
         )
 
 
-class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormPreTrainedModel, GenerationMixin):
+class FlexOlmoNoQKNormPrenormForCausalLMDebug(
+    FlexOlmoNoQKNormPrenormPreTrainedModel, GenerationMixin
+):
     """
     CausalLM that supports per-layer expert counts.
 
@@ -395,6 +425,7 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormPreTrainedM
     1. Uses FlexOlmoNoQKNormPrenormModelDebug which supports num_experts_per_layer
     2. Uses load_balancing_loss_func_olmoe_variable which handles variable-size logits
     """
+
     _tied_weights_keys = ["lm_head.weight"]
     config_class = FlexOlmoNoQKNormPrenormConfigDebug
 
@@ -450,12 +481,18 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormPreTrainedM
         'Hey, are you conscious? Can you talk to me?\nI'm not sure if you're conscious of this, but I'm'
         ```
         """
-        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_attentions = (
+            output_attentions if output_attentions is not None else self.config.output_attentions
+        )
         output_router_logits = (
-            output_router_logits if output_router_logits is not None else self.config.output_router_logits
+            output_router_logits
+            if output_router_logits is not None
+            else self.config.output_router_logits
         )
         output_hidden_states = (
-            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+            output_hidden_states
+            if output_hidden_states is not None
+            else self.config.output_hidden_states
         )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
@@ -476,7 +513,9 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormPreTrainedM
 
         hidden_states = outputs[0]
         # Only compute necessary logits, and do not upcast them to float if we are not computing the loss
-        slice_indices = slice(-logits_to_keep, None) if isinstance(logits_to_keep, int) else logits_to_keep
+        slice_indices = (
+            slice(-logits_to_keep, None) if isinstance(logits_to_keep, int) else logits_to_keep
+        )
         logits = self.lm_head(hidden_states[:, slice_indices, :])
 
         loss = None
@@ -489,8 +528,10 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormPreTrainedM
 
         if output_router_logits:
             # Get per-layer expert counts if available
-            num_experts_per_layer = getattr(self.config, 'num_experts_per_layer', None)
-            num_shared_experts_per_layer = getattr(self.config, 'num_shared_experts_per_layer', None)
+            num_experts_per_layer = getattr(self.config, "num_experts_per_layer", None)
+            num_shared_experts_per_layer = getattr(
+                self.config, "num_shared_experts_per_layer", None
+            )
 
             lb_loss = load_balancing_loss_func_olmoe_variable(
                 outputs.router_logits if return_dict else outputs[-1],
@@ -504,7 +545,11 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormPreTrainedM
                 **kwargs,
             )
             if labels is not None:
-                loss += self.router_aux_loss_coef * lb_loss.to(loss.device)  # make sure to reside in the same device
+                assert isinstance(lb_loss, torch.Tensor)
+                assert loss is not None
+                loss += self.router_aux_loss_coef * lb_loss.to(
+                    loss.device
+                )  # make sure to reside in the same device
 
         if not return_dict:
             output = (logits,) + outputs[1:]
@@ -515,8 +560,12 @@ class FlexOlmoNoQKNormPrenormForCausalLMDebug(FlexOlmoNoQKNormPrenormPreTrainedM
         return MoeCausalLMOutputWithPast(
             loss=loss,
             aux_loss=lb_loss,
-            lb_loss=lb_loss.detach().clone() if lb_loss is not None else None,  # for logging callback
-            ce_loss=ce_loss.detach().clone() if ce_loss is not None else None,  # for logging callback
+            lb_loss=lb_loss.detach().clone()
+            if isinstance(lb_loss, torch.Tensor)
+            else None,  # for logging callback
+            ce_loss=ce_loss.detach().clone()
+            if isinstance(ce_loss, torch.Tensor)
+            else None,  # for logging callback
             logits=logits,
             past_key_values=outputs.past_key_values,
             hidden_states=outputs.hidden_states,
@@ -577,10 +626,7 @@ def load_balancing_loss_func_olmoe_variable(
     num_hidden_layers = len(gate_logits)
 
     # Check if we have variable expert counts
-    has_variable_experts = (
-        num_experts_per_layer is not None and
-        len(set(num_experts_per_layer)) > 1
-    )
+    has_variable_experts = num_experts_per_layer is not None and len(set(num_experts_per_layer)) > 1
 
     if not has_variable_experts:
         # All layers have the same expert count - use the original stacking approach
@@ -612,11 +658,14 @@ def load_balancing_loss_func_olmoe_variable(
             )  # shape: (num_hidden_layers, num_experts)
 
             # Compute the average probability of routing to these experts
-            prob_per_expert = torch.mean(routing_weights, dim=1)  # shape: (num_hidden_layers, num_experts)
+            prob_per_expert = torch.mean(
+                routing_weights, dim=1
+            )  # shape: (num_hidden_layers, num_experts)
         else:
             # if there are labels, then we want to ignore the indices that are in the prompt as well (if there is any)
             if labels is not None:
                 attention_mask = labels != ignore_index
+            assert attention_mask is not None
             batch_size, sequence_length = attention_mask.shape
 
             # Compute the mask that masks all padding tokens as 0 with the same shape of expert_mask
@@ -628,7 +677,9 @@ def load_balancing_loss_func_olmoe_variable(
             )
 
             # Compute the percentage of tokens routed to each experts
-            counts_per_expert = torch.sum(expert_counts_onehot.float() * expert_attention_mask, dim=(1, 2))
+            counts_per_expert = torch.sum(
+                expert_counts_onehot.float() * expert_attention_mask, dim=(1, 2)
+            )
 
             # Compute the mask that masks all padding tokens as 0 with the same shape of frequency_per_expert
             router_per_expert_attention_mask = (
@@ -639,7 +690,9 @@ def load_balancing_loss_func_olmoe_variable(
             )
 
             # average the probability across valid tokens
-            prob_per_expert = torch.sum(routing_weights * router_per_expert_attention_mask, dim=1) / torch.sum(
+            prob_per_expert = torch.sum(
+                routing_weights * router_per_expert_attention_mask, dim=1
+            ) / torch.sum(
                 attention_mask
             )  # shape: (num_hidden_layers, num_experts)
 
@@ -669,6 +722,7 @@ def load_balancing_loss_func_olmoe_variable(
 
     else:
         # Variable expert counts - compute loss per layer and average
+        assert num_experts_per_layer is not None
         if num_shared_experts_per_layer is None:
             num_shared_experts_per_layer = [num_shared_experts] * num_hidden_layers
 
@@ -732,7 +786,9 @@ def load_balancing_loss_func_olmoe_variable(
                     .to(compute_device)
                 )
 
-                counts_per_expert = torch.sum(expert_counts_onehot.float() * expert_attention_mask, dim=(0, 1))
+                counts_per_expert = torch.sum(
+                    expert_counts_onehot.float() * expert_attention_mask, dim=(0, 1)
+                )
 
                 router_attention_mask = (
                     attention_mask[:, :, None]
@@ -741,7 +797,9 @@ def load_balancing_loss_func_olmoe_variable(
                     .to(compute_device)
                 )
 
-                prob_per_expert = torch.sum(routing_weights * router_attention_mask, dim=0) / torch.sum(attention_mask)
+                prob_per_expert = torch.sum(
+                    routing_weights * router_attention_mask, dim=0
+                ) / torch.sum(attention_mask)
 
             layer_loss = torch.sum(counts_per_expert * prob_per_expert)
             layer_loss = layer_loss / (num_items_in_batch * effective_top_k)

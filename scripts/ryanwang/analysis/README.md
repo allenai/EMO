@@ -112,6 +112,10 @@ bash scripts/ryanwang/analysis/run_extract_embeddings_shuffled_token.sh models/<
 
 # Token-level extraction with custom token count (e.g. 1M tokens)
 bash scripts/ryanwang/analysis/run_extract_embeddings_shuffled_token.sh models/<model_name>/step<N>-hf 1000000
+
+# Token-level extraction with per-doc truncation (1M tokens, 100 tokens/doc → ~10K docs)
+# Increases document diversity by using only the first N tokens per document.
+bash scripts/ryanwang/analysis/run_extract_embeddings_shuffled_token_truncated.sh models/<model_name>/step<N>-hf 1000000 100
 ```
 
 ### MMLU Validation Embeddings
@@ -132,6 +136,41 @@ Output goes to `claude_outputs/analysis/router_clustering_mmlu_val/<model_name>/
 Metadata includes both subject (as `source`) and category for downstream comparison.
 
 **Script**: `src/scripts/analysis/extract_router_embeddings_mmlu.py`
+
+### HellaSwag Embeddings
+
+Extract router embeddings from all HellaSwag splits (train: 38,905, validation: 1,000, test: 10,042).
+Each split is a separate "source" in the metadata, enabling downstream clustering on train+validation
+with test set assignment via nearest cluster.
+
+```bash
+# Default model
+bash scripts/ryanwang/analysis/run_extract_embeddings_hellaswag.sh
+
+# Specific model
+bash scripts/ryanwang/analysis/run_extract_embeddings_hellaswag.sh models/<model_name>/step<N>-hf
+```
+
+Output goes to `claude_outputs/analysis/router_clustering_hellaswag/<model_name>/`.
+
+The extraction script also creates a `train_val/` subdirectory with only train+validation
+embeddings (test excluded). **Clustering should be run on `train_val/`**, not the parent
+directory — test embeddings are reserved for nearest-cluster assignment at inference time.
+
+```
+<model_name>/
+  embeddings_*.npy          # all 49,947 examples (train+val+test)
+  metadata.jsonl.gz         # source="train"/"validation"/"test" per row
+  info.json
+  train_val/                # train+val only (39,905 examples)
+    embeddings_*.npy
+    metadata.jsonl.gz
+    info.json
+```
+
+**Scripts**:
+- `src/scripts/analysis/extract_router_embeddings_hellaswag.py` — extraction
+- `scripts/ryanwang/analysis/split_hellaswag_train_val.py` — train+val split (also called by the shell wrapper)
 
 ## Step 3: Transform, Cluster, and Sweep
 
@@ -206,12 +245,14 @@ bash scripts/ryanwang/analysis/run_expert_coverage.sh models/<model_name>/step<N
 | `run_extract_embeddings.sh` | `[MODEL_PATH]` | Extract embeddings (GPU, sequential sampling) + sparsify |
 | `run_extract_embeddings_shuffled.sh` | (none) | Extract document-level embeddings (GPU, shuffled sampling) for randpool + baseline |
 | `run_extract_embeddings_shuffled_token.sh` | `[MODEL_PATH] [TARGET_TOKENS]` | Extract token-level embeddings (GPU, shuffled, default 100K tokens) |
+| `run_extract_embeddings_shuffled_token_truncated.sh` | `[MODEL_PATH] [TARGET_TOKENS] [MAX_TOKENS_PER_DOC]` | Token-level embeddings with per-doc truncation (default 1M tokens, 100 tokens/doc) |
 | `run_sweep_focused.sh` | (none) | Sweep v1: baseline grid (edit DATA_DIR inside) |
 | `run_sweep_focused_v2.sh` | (none) | Sweep v2: PCA + spherical k-means (edit DATA_DIR inside) |
 | `run_sweep_focused_v3.sh` | (none) | Sweep v3: hierarchical clustering (edit DATA_DIR inside) |
 | `run_sweep_all.sh` | `<DATA_DIR>` | **(deprecated)** Full sweep over all combinations |
 | `run_transform_and_cluster.sh` | `<DATA_DIR> <emb> <transform> <cluster> <k> [--save]` | Single transform+cluster run |
 | `run_extract_embeddings_mmlu.sh` | `[MODEL_PATH]` | Extract embeddings from MMLU validation data (GPU) + sparsify |
+| `run_extract_embeddings_hellaswag.sh` | `[MODEL_PATH]` | Extract embeddings from HellaSwag all splits (GPU) + sparsify |
 | `run_expert_coverage.sh` | `[MODEL_PATH]` | Expert coverage analysis |
 | `push_router_clustering.sh` | (none) | Sync outputs to S3 |
 | `pull_router_clustering.sh` | (none) | Pull outputs from S3 |

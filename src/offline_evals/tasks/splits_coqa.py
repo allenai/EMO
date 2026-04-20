@@ -1,3 +1,4 @@
+from datasets import concatenate_datasets
 from oe_eval.tasks.oe_eval_tasks.coqa import CoQA
 
 
@@ -19,11 +20,11 @@ class COQA_Base(CoQA):
     def validation_docs(self):
         # select 1000 examples from the train set as validation set
         val_dataset = self.dataset["train"].shuffle(seed=0).select(range(0, 1000))
-        return map(self._process_doc, val_dataset)
+        return list(map(self._process_doc, val_dataset))
 
     def test_docs(self):
         # validation set used to be the test set by default if a test set did not exist, so we still set it as test set
-        return map(self._process_doc, self.dataset["validation"])
+        return list(map(self._process_doc, self.dataset["validation"]))
 
 
 class COQA_Full_Base(CoQA):
@@ -63,6 +64,30 @@ class COQA_full_Validation_0shot(COQA_Full_Base):
 
 
 class COQA_full_Test_0shot(COQA_Full_Base):
+    pass
+
+
+# ---------------------------------------------------------------------------
+# Merged variant (matches coqa::olmes — uses _process_all_docs, all turns)
+# ---------------------------------------------------------------------------
+class COQA_Full_Merged_Base(COQA_Full_Base):
+    def training_docs(self):
+        if self._training_docs is None:
+            train_dataset = (
+                self.dataset["train"]
+                .shuffle(seed=0)
+                .select(range(1000, len(self.dataset["train"])))
+            )
+            val_dataset = self.dataset["train"].shuffle(seed=0).select(range(0, 1000))
+            merged = concatenate_datasets([train_dataset, val_dataset]).shuffle(seed=0)
+            self._training_docs = self._process_all_docs(merged)
+        return self._training_docs
+
+    def validation_docs(self):
+        return self.training_docs()
+
+
+class COQA_Merged(COQA_Full_Merged_Base):
     pass
 
 

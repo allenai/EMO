@@ -6,7 +6,6 @@ from oe_eval.tasks.oe_eval_tasks import TASK_REGISTRY
 from oe_eval.tasks.oe_eval_tasks.mmlu import create_mmlu_task
 from oe_eval.tasks.oe_eval_tasks.mmlu_pro import create_mmlu_pro_task
 
-from .tasks.splits_mmlu import create_mmlu_tasks_withsplits, create_mmlu_categories_tasks_withsplits
 from .tasks import (
     agi_eval,
     chembench,
@@ -25,18 +24,35 @@ from .tasks import (
     splits_boolq,
     splits_coqa,
     splits_csqa,
+    splits_drop,
     splits_gsm8k,
     splits_hellaswag,
+    splits_naturalqs,
     splits_openbookqa,
     splits_piqa,
     splits_siqa,
     splits_squad,
     splits_synthea,
+    splits_triviaqa,
     splits_winogrande,
     squad,
     squad2,
     story_gen,
     xsum,
+)
+from .tasks.splits_mmlu import (
+    MMLU_CLUSTER_CATEGORIES,
+    create_mmlu_categories_merged_tasks_withsplits,
+    create_mmlu_categories_tasks_withsplits,
+    create_mmlu_cluster_tasks_withsplits,
+    create_mmlu_merged_tasks_withsplits,
+    create_mmlu_tasks_withsplits,
+)
+from .tasks.splits_mmlu_pro import (
+    MMLU_PRO_CATEGORIES_MAP,
+    create_mmlu_pro_category_tasks_withsplits,
+    create_mmlu_pro_merged_nval_tasks,
+    create_mmlu_pro_merged_tasks_withsplits,
 )
 
 
@@ -49,6 +65,7 @@ def create_core_mmlu_tasks_withsplits():
         res[f"mmlu_{sub}:rc_test"] = create_mmlu_tasks_withsplits(sub)
         res[f"mmlu_{sub}:rc_train"] = create_mmlu_tasks_withsplits(sub)
     return res
+
 
 def create_category_mmlu_tasks_withsplits():
     """Creates a dictionary of tasks from a list of subjects.
@@ -80,6 +97,61 @@ def create_category_mmlu_tasks_withsplits():
     return res
 
 
+_MMLU_CATEGORIES_LIST = [
+    "biology",
+    "business",
+    "chemistry",
+    "computer_science",
+    "culture",
+    "economics",
+    "engineering",
+    "geography",
+    "health",
+    "history",
+    "law",
+    "math",
+    "other",
+    "philosophy_cat",
+    "physics",
+    "politics",
+    "psychology",
+]
+
+
+def create_core_mmlu_merged_tasks_withsplits():
+    """Per-subject MMLU merged variants: pruning + finetuning use the same data."""
+    res = {}
+    for sub in MMLU_SUBJECTS:
+        res[f"mmlu_merged_{sub}:rc_validation"] = create_mmlu_merged_tasks_withsplits(sub)
+        res[f"mmlu_merged_{sub}:rc_test"] = create_mmlu_merged_tasks_withsplits(sub)
+        res[f"mmlu_merged_{sub}:rc_train"] = create_mmlu_merged_tasks_withsplits(sub)
+    return res
+
+
+def create_category_mmlu_merged_tasks_withsplits():
+    """17-category MMLU merged variants: pruning + finetuning use the same data."""
+    res = {}
+    for sub in _MMLU_CATEGORIES_LIST:
+        res[f"mmlu_merged_{sub}:rc_validation"] = create_mmlu_categories_merged_tasks_withsplits(
+            sub
+        )
+        res[f"mmlu_merged_{sub}:rc_test"] = create_mmlu_categories_merged_tasks_withsplits(sub)
+        res[f"mmlu_merged_{sub}:rc_train"] = create_mmlu_categories_merged_tasks_withsplits(sub)
+    return res
+
+
+def create_cluster_mmlu_tasks_withsplits():
+    """Creates MMLU tasks grouped by router-based clustering (16 clusters)."""
+    res = {}
+    for cluster_name in MMLU_CLUSTER_CATEGORIES:
+        res[f"mmlu_{cluster_name}:rc_validation"] = create_mmlu_cluster_tasks_withsplits(
+            cluster_name
+        )
+        res[f"mmlu_{cluster_name}:rc_test"] = create_mmlu_cluster_tasks_withsplits(cluster_name)
+        res[f"mmlu_{cluster_name}:rc_train"] = create_mmlu_cluster_tasks_withsplits(cluster_name)
+    return res
+
+
 def create_core_mmlu_pro_tasks_withsplits():
     """Creates a dictionary of MMLU-Pro tasks from a list of categories
     Note that the differences between train, validation, and test is declared in TASK_CONFIGS"""
@@ -89,6 +161,41 @@ def create_core_mmlu_pro_tasks_withsplits():
         res[f"mmlu_pro_{sub}:mc_test"] = create_mmlu_pro_task(sub)
         res[f"mmlu_pro_{sub}:rc_validation"] = create_mmlu_pro_task(sub, is_mc=False)
         res[f"mmlu_pro_{sub}:rc_test"] = create_mmlu_pro_task(sub, is_mc=False)
+    return res
+
+
+def create_category_mmlu_pro_tasks_withsplits():
+    """Creates MMLU-Pro tasks with custom train/validation/test splits for the pruning pipeline."""
+    res = {}
+    for cat in MMLU_PRO_CATEGORIES_MAP:
+        res[f"mmlu_pro_{cat}:rc_validation"] = create_mmlu_pro_category_tasks_withsplits(cat)
+        res[f"mmlu_pro_{cat}:rc_test"] = create_mmlu_pro_category_tasks_withsplits(cat)
+        res[f"mmlu_pro_{cat}:rc_train"] = create_mmlu_pro_category_tasks_withsplits(cat)
+    return res
+
+
+def create_merged_mmlu_pro_tasks_withsplits():
+    """Creates MMLU-Pro merged variant: pruning and finetuning use the same combined data."""
+    res = {}
+    for cat in MMLU_PRO_CATEGORIES_MAP:
+        res[f"mmlu_pro_merged_{cat}:rc_validation"] = create_mmlu_pro_merged_tasks_withsplits(cat)
+        res[f"mmlu_pro_merged_{cat}:rc_test"] = create_mmlu_pro_merged_tasks_withsplits(cat)
+        res[f"mmlu_pro_merged_{cat}:rc_train"] = create_mmlu_pro_merged_tasks_withsplits(cat)
+    return res
+
+
+PRUNE_VALIDATION_SIZES = [50, 100, 200]
+
+
+def create_merged_nval_mmlu_pro_tasks():
+    """Creates MMLU-Pro merged variants with fixed-size validation (pruning) splits."""
+    res = {}
+    for n_val in PRUNE_VALIDATION_SIZES:
+        for cat in MMLU_PRO_CATEGORIES_MAP:
+            prefix = f"mmlu_pro_merged_n{n_val}_{cat}"
+            res[f"{prefix}:rc_validation"] = create_mmlu_pro_merged_nval_tasks(cat, n_val)
+            res[f"{prefix}:rc_test"] = create_mmlu_pro_merged_nval_tasks(cat, n_val)
+            res[f"{prefix}:rc_train"] = create_mmlu_pro_merged_nval_tasks(cat, n_val)
     return res
 
 
@@ -156,6 +263,41 @@ new_task_registry: Dict = {
     "hellaswag:rc_train_0shot": splits_hellaswag.HellaSwag_RC_Base,
     "hellaswag:rc_validation_0shot": splits_hellaswag.HellaSwag_RC_Base,
     "hellaswag:rc_test": splits_hellaswag.HellaSwag_RC_Base,
+    # HellaSwag merged (train+val combined)
+    "hellaswag_merged:rc_train": splits_hellaswag.HellaSwag_Merged_RC,
+    "hellaswag_merged:rc_validation": splits_hellaswag.HellaSwag_Merged_RC,
+    "hellaswag_merged:rc_test": splits_hellaswag.HellaSwag_Merged_RC,
+    # HellaSwag per-cluster and per-cluster merged (all k values)
+    # Legacy k=6 aliases (no k prefix)
+    **{
+        f"hellaswag_cluster_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_task(6, c)
+        for c in range(6)
+        for split in ["train", "validation", "test"]
+    },
+    **{
+        f"hellaswag_cluster_merged_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_merged_task(
+            6, c
+        )
+        for c in range(6)
+        for split in ["train", "validation", "test"]
+    },
+    # k-prefixed tasks for all k values
+    **{
+        f"hellaswag_k{k}_cluster_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_task(
+            k, c
+        )
+        for k in splits_hellaswag.HELLASWAG_K_VALUES
+        for c in range(k)
+        for split in ["train", "validation", "test"]
+    },
+    **{
+        f"hellaswag_k{k}_cluster_merged_{c}:rc_{split}": splits_hellaswag.create_hellaswag_cluster_merged_task(
+            k, c
+        )
+        for k in splits_hellaswag.HELLASWAG_K_VALUES
+        for c in range(k)
+        for split in ["train", "validation", "test"]
+    },
     "openbookqa:mc_train": splits_openbookqa.OpenBookQA_MC_Train,
     "openbookqa:mc_validation": splits_openbookqa.OpenBookQA_MC_Validation,
     "openbookqa:mc_test": splits_openbookqa.OpenBookQA_MC_Test,
@@ -188,6 +330,31 @@ new_task_registry: Dict = {
     "winogrande:rc_train_0shot": splits_winogrande.Winogrande_RC_Base,
     "winogrande:rc_validation_0shot": splits_winogrande.Winogrande_RC_Base,
     "winogrande:rc_test": splits_winogrande.Winogrande_RC_Base,
+    # Merged variants (pruning + finetuning use the same merged train+val data)
+    "arc_easy_merged:rc_train": splits_arc.ARCEasy_Merged_RC,
+    "arc_easy_merged:rc_validation": splits_arc.ARCEasy_Merged_RC,
+    "arc_easy_merged:rc_test": splits_arc.ARCEasy_Merged_RC,
+    "arc_challenge_merged:rc_train": splits_arc.ARCChallenge_Merged_RC,
+    "arc_challenge_merged:rc_validation": splits_arc.ARCChallenge_Merged_RC,
+    "arc_challenge_merged:rc_test": splits_arc.ARCChallenge_Merged_RC,
+    "boolq_merged:rc_train": splits_boolq.BoolQ_Merged_RC,
+    "boolq_merged:rc_validation": splits_boolq.BoolQ_Merged_RC,
+    "boolq_merged:rc_test": splits_boolq.BoolQ_Merged_RC,
+    "csqa_merged:rc_train": splits_csqa.CommonsenseQA_Merged_RC,
+    "csqa_merged:rc_validation": splits_csqa.CommonsenseQA_Merged_RC,
+    "csqa_merged:rc_test": splits_csqa.CommonsenseQA_Merged_RC,
+    "openbookqa_merged:rc_train": splits_openbookqa.OpenBookQA_Merged_RC,
+    "openbookqa_merged:rc_validation": splits_openbookqa.OpenBookQA_Merged_RC,
+    "openbookqa_merged:rc_test": splits_openbookqa.OpenBookQA_Merged_RC,
+    "piqa_merged:rc_train": splits_piqa.PIQA_Merged_RC,
+    "piqa_merged:rc_validation": splits_piqa.PIQA_Merged_RC,
+    "piqa_merged:rc_test": splits_piqa.PIQA_Merged_RC,
+    "socialiqa_merged:rc_train": splits_siqa.SocialIQA_Merged_RC,
+    "socialiqa_merged:rc_validation": splits_siqa.SocialIQA_Merged_RC,
+    "socialiqa_merged:rc_test": splits_siqa.SocialIQA_Merged_RC,
+    "winogrande_merged:rc_train": splits_winogrande.Winogrande_Merged_RC,
+    "winogrande_merged:rc_validation": splits_winogrande.Winogrande_Merged_RC,
+    "winogrande_merged:rc_test": splits_winogrande.Winogrande_Merged_RC,
     "synthea:rc_train": splits_synthea.Synthea_RC_Train,
     "synthea:rc_validation": splits_synthea.Synthea_RC_Validation,
     "synthea:rc_test": splits_synthea.Synthea_RC_Test,
@@ -197,7 +364,14 @@ new_task_registry: Dict = {
     # MMLU
     **create_core_mmlu_tasks_withsplits(),
     **create_category_mmlu_tasks_withsplits(),
+    **create_cluster_mmlu_tasks_withsplits(),
+    # MMLU merged (per-subject and 17-category): pruning + finetuning share data
+    **create_core_mmlu_merged_tasks_withsplits(),
+    **create_category_mmlu_merged_tasks_withsplits(),
     # **create_core_mmlu_pro_tasks_withsplits(),
+    **create_category_mmlu_pro_tasks_withsplits(),
+    **create_merged_mmlu_pro_tasks_withsplits(),
+    **create_merged_nval_mmlu_pro_tasks(),
     # GSM8K
     "gsm8k_perplexity:train": splits_gsm8k.GSM8K_Perplexity_Base,
     "gsm8k_perplexity:validation": splits_gsm8k.GSM8K_Perplexity_Base,
@@ -208,15 +382,42 @@ new_task_registry: Dict = {
     "gsm8k_generation_0shot:train": splits_gsm8k.GSM8K_Generation_Train_0shot,
     "gsm8k_generation_0shot:validation": splits_gsm8k.GSM8K_Generation_Validation_0shot,
     "gsm8k_generation_0shot:test": splits_gsm8k.GSM8K_Generation_Test_0shot,
+    "gsm8k_generation_8shot:train": splits_gsm8k.GSM8K_Generation_Train_8shot,
+    "gsm8k_generation_8shot:validation": splits_gsm8k.GSM8K_Generation_Validation_8shot,
+    "gsm8k_generation_8shot:test": splits_gsm8k.GSM8K_Generation_Test_8shot,
+    "gsm8k_generation_0shot_merged:train": splits_gsm8k.GSM8K_Generation_Merged_0shot,
+    "gsm8k_generation_0shot_merged:validation": splits_gsm8k.GSM8K_Generation_Merged_0shot,
+    "gsm8k_generation_0shot_merged:test": splits_gsm8k.GSM8K_Generation_Test_0shot,
+    "gsm8k_generation_8shot_merged:train": splits_gsm8k.GSM8K_Generation_Merged_8shot,
+    "gsm8k_generation_8shot_merged:validation": splits_gsm8k.GSM8K_Generation_Merged_8shot,
+    "gsm8k_generation_8shot_merged:test": splits_gsm8k.GSM8K_Generation_Test_8shot,
     "coqa_0shot:train": splits_coqa.COQA_Train_0shot,
     "coqa_0shot:validation": splits_coqa.COQA_Validation_0shot,
     "coqa_0shot:test": splits_coqa.COQA_Test_0shot,
     "coqa_full_0shot:train": splits_coqa.COQA_full_Train_0shot,
     "coqa_full_0shot:validation": splits_coqa.COQA_full_Validation_0shot,
     "coqa_full_0shot:test": splits_coqa.COQA_full_Test_0shot,
+    "coqa_merged:train": splits_coqa.COQA_Merged,
+    "coqa_merged:validation": splits_coqa.COQA_Merged,
+    "coqa_merged:test": splits_coqa.COQA_full_Test_0shot,
     "squad_0shot:train": splits_squad.SQUAD_Train_0shot,
     "squad_0shot:validation": splits_squad.SQUAD_Validation_0shot,
     "squad_0shot:test": splits_squad.SQUAD_Test_0shot,
+    "squad_merged:train": splits_squad.SQUAD_Merged,
+    "squad_merged:validation": splits_squad.SQUAD_Merged,
+    "squad_merged:test": splits_squad.SQUAD_Test_0shot,
+    "squad_0shot_merged:train": splits_squad.SQUAD_Merged_0shot,
+    "squad_0shot_merged:validation": splits_squad.SQUAD_Merged_0shot,
+    "squad_0shot_merged:test": splits_squad.SQUAD_Test_0shot,
+    "naturalqs_merged:train": splits_naturalqs.NaturalQS_Merged,
+    "naturalqs_merged:validation": splits_naturalqs.NaturalQS_Merged,
+    "naturalqs_merged:test": splits_naturalqs.NaturalQS_Test_0shot,
+    "triviaqa_merged:train": splits_triviaqa.TriviaQA_Merged,
+    "triviaqa_merged:validation": splits_triviaqa.TriviaQA_Merged,
+    "triviaqa_merged:test": splits_triviaqa.TriviaQA_Test_0shot,
+    "drop_merged:train": splits_drop.DROP_Merged,
+    "drop_merged:validation": splits_drop.DROP_Merged,
+    "drop_merged:test": splits_drop.DROP_Test_0shot,
 }
 
 TASK_REGISTRY.update(new_task_registry)

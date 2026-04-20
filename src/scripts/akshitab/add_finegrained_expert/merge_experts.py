@@ -141,7 +141,7 @@ def merge_experts(
 
                 # Copy shared experts from base model to the end
                 if num_shared_experts > 0:
-                    target_param[insert_pos + total_new_experts:, :].copy_(
+                    target_param[insert_pos + total_new_experts :, :].copy_(
                         source_param[insert_pos:, :]
                     )
                     logger.info(
@@ -158,9 +158,7 @@ def merge_experts(
                 expert_dim = source_rows // base_num_experts
 
                 source_param_3d = source_param.view(base_num_experts, expert_dim, source_columns)
-                target_param = new_param.view(
-                    new_total_experts, expert_dim, source_columns
-                ).clone()
+                target_param = new_param.view(new_total_experts, expert_dim, source_columns).clone()
 
                 # Copy non-shared experts from base model
                 target_param[:insert_pos, :, :].copy_(source_param_3d[:insert_pos, :, :])
@@ -186,7 +184,7 @@ def merge_experts(
 
                 # Copy shared experts from base model to the end
                 if num_shared_experts > 0:
-                    target_param[insert_pos + total_new_experts:, :, :].copy_(
+                    target_param[insert_pos + total_new_experts :, :, :].copy_(
                         source_param_3d[insert_pos:, :, :]
                     )
                     logger.info(

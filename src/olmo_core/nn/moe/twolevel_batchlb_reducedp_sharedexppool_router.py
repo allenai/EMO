@@ -1,38 +1,15 @@
-import json
-import logging
-from abc import abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union, cast
+from typing import Optional, Tuple, Union
 
 import torch
 import torch.distributed as dist
-import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributed import DeviceMesh
-from torch.distributed.tensor import Replicate, Shard, distribute_tensor
-from torch.distributed.tensor.parallel import PrepareModuleInput, parallelize_module
 
 import olmo_core.ops.moe as ops
-from olmo_core.config import Config, DType, StrEnum
-from olmo_core.distributed.utils import (
-    _HiddenTensor,
-    distribute_like,
-    get_local_tensor,
-    hide_from_torch,
-    is_distributed,
-    unhide_from_torch,
-)
+from olmo_core.distributed.utils import is_distributed
 from olmo_core.exceptions import OLMoConfigurationError
-from olmo_core.nn.moe.router import (
-    MoELinearRouter,
-    MoELoadBalancingLossGranularity,
-    MoERouter,
-    MoERouterConfig,
-    MoERouterGatingFunction,
-    MoERouterType,
-)
+from olmo_core.nn.moe.router import MoERouterGatingFunction
 from olmo_core.nn.moe.twolevel_router import MoETwoLevelRouter, MoETwoLevelRouterConfig
-from olmo_core.utils import get_default_device
 
 from .loss import MoELoadBalancingLossGranularity, load_balancing_loss, router_z_loss
 
@@ -43,18 +20,24 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
     """
 
     def __init__(
-            self,
-            *,
-            dtype: torch.dtype = torch.float32,
-            init_device: str = "cpu",
-            document_expert_pool: int,
-            eos_token_id: int,
-            num_shared_experts: int,
-            num_shared_experts_pool: int,
-            shared_exp_lb_loss: Optional[float] = None,
-            **kwargs,
+        self,
+        *,
+        dtype: torch.dtype = torch.float32,
+        init_device: str = "cpu",
+        document_expert_pool: int,
+        eos_token_id: int,
+        num_shared_experts: int,
+        num_shared_experts_pool: int,
+        shared_exp_lb_loss: Optional[float] = None,
+        **kwargs,
     ):
-        super().__init__(dtype=dtype, init_device=init_device, document_expert_pool=document_expert_pool, eos_token_id=eos_token_id, **kwargs)
+        super().__init__(
+            dtype=dtype,
+            init_device=init_device,
+            document_expert_pool=document_expert_pool,
+            eos_token_id=eos_token_id,
+            **kwargs,
+        )
 
         # the number of experts that each document can select their top-k experts from
         self.document_expert_pool = document_expert_pool
@@ -66,24 +49,38 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
 
         # check that the number of shared experts is less than the top_k
         if num_shared_experts > self.top_k:
-            raise OLMoConfigurationError(f"num_shared_experts ({num_shared_experts}) must be less than or equal to top_k ({self.top_k})")
+            raise OLMoConfigurationError(
+                f"num_shared_experts ({num_shared_experts}) must be less than or equal to top_k ({self.top_k})"
+            )
 
         # check that the num_shared_experts is less than the num_shared_experts_pool
         if num_shared_experts > num_shared_experts_pool:
-            raise OLMoConfigurationError(f"num_shared_experts ({num_shared_experts}) must be less than or equal to num_shared_experts_pool ({num_shared_experts_pool})")
+            raise OLMoConfigurationError(
+                f"num_shared_experts ({num_shared_experts}) must be less than or equal to num_shared_experts_pool ({num_shared_experts_pool})"
+            )
 
-        self.num_shared_experts = num_shared_experts # number of shared experts that are always activated
-        self.num_shared_experts_pool = num_shared_experts_pool # number of shared experts in the shared experts pool
-        self.num_choose_experts = self.top_k - self.num_shared_experts # number of experts to choose that are activated
-        self.num_choose_experts_pool = self.num_experts - self.num_shared_experts_pool # number of experts to choose from in the pool (excluding the shared experts in the pool) -> this should be bigger than self.document_expert_pool
+        self.num_shared_experts = (
+            num_shared_experts  # number of shared experts that are always activated
+        )
+        self.num_shared_experts_pool = (
+            num_shared_experts_pool  # number of shared experts in the shared experts pool
+        )
+        self.num_choose_experts = (
+            self.top_k - self.num_shared_experts
+        )  # number of experts to choose that are activated
+        self.num_choose_experts_pool = (
+            self.num_experts - self.num_shared_experts_pool
+        )  # number of experts to choose from in the pool (excluding the shared experts in the pool) -> this should be bigger than self.document_expert_pool
 
         if self.num_choose_experts_pool < self.document_expert_pool:
-            raise OLMoConfigurationError(f"num_choose_experts_pool ({self.num_choose_experts_pool}) must be greater than or equal to document_expert_pool ({self.document_expert_pool})")
+            raise OLMoConfigurationError(
+                f"num_choose_experts_pool ({self.num_choose_experts_pool}) must be greater than or equal to document_expert_pool ({self.document_expert_pool})"
+            )
 
         self.shared_exp_lb_loss_weight = shared_exp_lb_loss
 
     def get_top_k(self, scores: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        """ We override the get_top_k to use self.num_choose_experts instead of self.top_k, since we will always activate self.num_shared_experts"""
+        """We override the get_top_k to use self.num_choose_experts instead of self.top_k, since we will always activate self.num_shared_experts"""
         expert_weights: torch.Tensor
         expert_indices: torch.Tensor
         if self.bias_gamma is None:
@@ -100,12 +97,14 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
             expert_weights = scores.gather(-1, expert_indices)
 
         if self.uniform_expert_assignment:
-            raise NotImplementedError("Uniform expert assignment is not supported in MoETwoLevelBatchLBReduceDPSharedExpRouter. (actually very easy - just copy paste the implementation, but too lazy right now since we don't use this)")
+            raise NotImplementedError(
+                "Uniform expert assignment is not supported in MoETwoLevelBatchLBReduceDPSharedExpRouter. (actually very easy - just copy paste the implementation, but too lazy right now since we don't use this)"
+            )
 
         return expert_weights, expert_indices
 
     def get_top_k_shared(self, scores: torch.Tensor, k) -> Tuple[torch.Tensor, torch.Tensor]:
-        """ We write a function that takes in k (instead of hardcoding the k like before)"""
+        """We write a function that takes in k (instead of hardcoding the k like before)"""
         expert_weights: torch.Tensor
         expert_indices: torch.Tensor
         if self.bias_gamma is None:
@@ -122,7 +121,9 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
             expert_weights = scores.gather(-1, expert_indices)
 
         if self.uniform_expert_assignment:
-            raise NotImplementedError("Uniform expert assignment is not supported in MoETwoLevelBatchLBReduceDPSharedExpRouter. (actually very easy - just copy paste the implementation, but too lazy right now since we don't use this)")
+            raise NotImplementedError(
+                "Uniform expert assignment is not supported in MoETwoLevelBatchLBReduceDPSharedExpRouter. (actually very easy - just copy paste the implementation, but too lazy right now since we don't use this)"
+            )
 
         return expert_weights, expert_indices
 
@@ -157,17 +158,24 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
         logits = self.get_expert_logits(x).float()
 
         # we split the router up into shared experts and standard experts
-        logits_standard_exp = logits[:, :, :self.num_choose_experts_pool]
-        logits_mask_standard_exp = torch.zeros_like(logits_standard_exp, dtype=torch.bool, device=logits.device)
-        logits_shared_exp = logits[:, :, self.num_choose_experts_pool:]
-        logits_mask_shared_exp = torch.zeros_like(logits_shared_exp, dtype=torch.bool, device=logits.device)
+        logits_standard_exp = logits[:, :, : self.num_choose_experts_pool]
+        logits_mask_standard_exp = torch.zeros_like(
+            logits_standard_exp, dtype=torch.bool, device=logits.device
+        )
+        logits_shared_exp = logits[:, :, self.num_choose_experts_pool :]
+        logits_mask_shared_exp = torch.zeros_like(
+            logits_shared_exp, dtype=torch.bool, device=logits.device
+        )
 
-        assert logits_shared_exp.shape[-1] == self.num_shared_experts_pool, f"Expected the number of shared experts in the logits to be {self.num_shared_experts_pool}, but got {logits_shared_exp.shape[-1]}"
+        assert (
+            logits_shared_exp.shape[-1] == self.num_shared_experts_pool
+        ), f"Expected the number of shared experts in the logits to be {self.num_shared_experts_pool}, but got {logits_shared_exp.shape[-1]}"
 
         # # we remove the last self.num_shared_experts experts (remove from end in case indexing gets weird later?)
         # logits = logits[:, :, :self.num_experts - self.num_shared_experts] # shape: (batch_size, seq_len, num_experts - num_shared_experts)
         # logits_mask = torch.zeros_like(logits, dtype=torch.bool, device=logits.device)
 
+        assert document_boundaries is not None
         document_boundaries_cpu = []
         for b in document_boundaries:
             bc = b.detach().cpu().tolist()
@@ -186,11 +194,19 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
                 if end <= start:
                     start = end
                     continue
-                sequence_logits_standard_exp = logits_standard_exp[seq_idx, start:end, :]  # shape: (doc_len, num_standard_experts_pool)
-                sequence_logits_shared_exp = logits_shared_exp[seq_idx, start:end, :] # shape: (doc_len, num_shared_experts_pool)
+                sequence_logits_standard_exp = logits_standard_exp[
+                    seq_idx, start:end, :
+                ]  # shape: (doc_len, num_standard_experts_pool)
+                sequence_logits_shared_exp = logits_shared_exp[
+                    seq_idx, start:end, :
+                ]  # shape: (doc_len, num_shared_experts_pool)
                 # calculate the softmax over the experts
-                expert_probs_standard_exp = F.softmax(sequence_logits_standard_exp, dim=-1)  # shape: (doc_len, num_standard_experts_pool)
-                expert_probs_shared_exp = F.softmax(sequence_logits_shared_exp, dim=-1) # shape: (doc_len, num_shared_experts_pool)
+                expert_probs_standard_exp = F.softmax(
+                    sequence_logits_standard_exp, dim=-1
+                )  # shape: (doc_len, num_standard_experts_pool)
+                expert_probs_shared_exp = F.softmax(
+                    sequence_logits_shared_exp, dim=-1
+                )  # shape: (doc_len, num_shared_experts_pool)
 
                 # get the entropy over experts per token (only for the standard experts)
                 token_entropies = -torch.sum(
@@ -201,11 +217,17 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
                 doc_entropy_count += 1
 
                 # take the sum across the document
-                document_expert_probs_standard_exp = expert_probs_standard_exp.sum(dim=0)  # shape: (num_standard_experts_pool,)
-                document_expert_probs_shared_exp = expert_probs_shared_exp.sum(dim=0) # shape: (num_shared_experts_pool,)
+                document_expert_probs_standard_exp = expert_probs_standard_exp.sum(
+                    dim=0
+                )  # shape: (num_standard_experts_pool,)
+                document_expert_probs_shared_exp = expert_probs_shared_exp.sum(
+                    dim=0
+                )  # shape: (num_shared_experts_pool,)
 
                 # get the bottom experts for the standard experts
-                bot_document_expert_pool_standard = self.num_choose_experts_pool - self.document_expert_pool # the number of experts to discard for each document from the standard expert pool
+                bot_document_expert_pool_standard = (
+                    self.num_choose_experts_pool - self.document_expert_pool
+                )  # the number of experts to discard for each document from the standard expert pool
                 experts_to_discard_standard = torch.topk(
                     -document_expert_probs_standard_exp, bot_document_expert_pool_standard
                 ).indices  # shape: (bot_document_expert_pool_standard,)
@@ -214,7 +236,9 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
 
                 # do the same for the shared experts
                 # get the bottom document_expert_pool experts
-                bot_document_expert_pool_shared = self.num_shared_experts_pool - self.num_shared_experts  # the number of experts to discard for each document from the shared expert pool
+                bot_document_expert_pool_shared = (
+                    self.num_shared_experts_pool - self.num_shared_experts
+                )  # the number of experts to discard for each document from the shared expert pool
                 experts_to_discard_shared = torch.topk(
                     -document_expert_probs_shared_exp, bot_document_expert_pool_shared
                 ).indices  # shape: (bot_document_expert_pool,)
@@ -241,48 +265,68 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
             scores_standard_exp = logits_standard_exp.softmax(dim=-1)
             scores_shared_exp = logits_shared_exp.softmax(dim=-1)
         elif self.gating_function == MoERouterGatingFunction.sigmoid:
-            raise NotImplementedError("Sigmoid gating function is not supported in MoETwoLevelBatchLBReduceDPSharedExpRouter")
+            raise NotImplementedError(
+                "Sigmoid gating function is not supported in MoETwoLevelBatchLBReduceDPSharedExpRouter"
+            )
             scores = F.sigmoid(logits) + 1e-7
         else:
             raise NotImplementedError(self.gating_function)
 
         # shape: (batch_size, seq_len, self.num_choose_experts)
-        expert_weights_standard_exp, expert_indices_standard_exp = self.get_top_k(scores_standard_exp)
+        expert_weights_standard_exp, expert_indices_standard_exp = self.get_top_k(
+            scores_standard_exp
+        )
         # we implement the following using get_top_k, but in reality we just want to get the weighting (the remaining shared experts that has not been masked out will all be used)
-        expert_weights_shared_exp, expert_indices_shared_exp = self.get_top_k_shared(scores_shared_exp, self.num_shared_experts)
+        expert_weights_shared_exp, expert_indices_shared_exp = self.get_top_k_shared(
+            scores_shared_exp, self.num_shared_experts
+        )
 
         if self.normalize_expert_weights is not None:
-            raise NotImplementedError("Expert weight normalization is not supported in MoETwoLevelBatchLBReduceDPSharedExpRouter since it is not clear how to do it with the shared experts (do we normalize over the shared and standard experts together, or separately?)")
-            expert_weights = expert_weights.div(
-                torch.norm(
-                    expert_weights,
-                    p=self.normalize_expert_weights,
-                    dim=-1,
-                    keepdim=True,
-                )
+            raise NotImplementedError(
+                "Expert weight normalization is not supported in MoETwoLevelBatchLBReduceDPSharedExpRouter since it is not clear how to do it with the shared experts (do we normalize over the shared and standard experts together, or separately?)"
             )
+            # expert_weights = expert_weights.div(
+            #     torch.norm(
+            #         expert_weights,
+            #         p=self.normalize_expert_weights,
+            #         dim=-1,
+            #         keepdim=True,
+            #     )
+            # )
 
         with torch.no_grad():
             # Histogram the expert ids to identify the number of items/tokens routed to each expert.
 
             # for standard experts
             # shape: (batch_size, seq_len, num_choose_experts_pool)
-            tot_batched_batch_size_per_expert_standard = ops.batched_histc(expert_indices_standard_exp, self.num_choose_experts_pool)
+            tot_batched_batch_size_per_expert_standard = ops.batched_histc(
+                expert_indices_standard_exp, self.num_choose_experts_pool
+            )
             # shape: (batch_size, num_choose_experts_pool)
-            tot_batched_batch_size_per_expert_standard = tot_batched_batch_size_per_expert_standard.sum(dim=1)
+            tot_batched_batch_size_per_expert_standard = (
+                tot_batched_batch_size_per_expert_standard.sum(dim=1)
+            )
             # shape: (num_choose_experts_pool,)
-            tot_batch_size_per_expert_standard = tot_batched_batch_size_per_expert_standard.sum(dim=0)
+            tot_batch_size_per_expert_standard = tot_batched_batch_size_per_expert_standard.sum(
+                dim=0
+            )
 
             # for shared experts
             # shape: (batch_size, seq_len, num_shared_experts_pool)
-            tot_batched_batch_size_per_expert_shared = ops.batched_histc(expert_indices_shared_exp, self.num_shared_experts_pool)
+            tot_batched_batch_size_per_expert_shared = ops.batched_histc(
+                expert_indices_shared_exp, self.num_shared_experts_pool
+            )
             # shape: (batch_size, num_shared_experts_pool)
-            tot_batched_batch_size_per_expert_shared = tot_batched_batch_size_per_expert_shared.sum(dim=1)
+            tot_batched_batch_size_per_expert_shared = tot_batched_batch_size_per_expert_shared.sum(
+                dim=1
+            )
             # shape: (num_shared_experts_pool,)
             tot_batch_size_per_expert_shared = tot_batched_batch_size_per_expert_shared.sum(dim=0)
 
             # merge the two together for logging and returning (lb loss will not use this term)
-            tot_batch_size_per_expert = torch.cat([tot_batch_size_per_expert_standard, tot_batch_size_per_expert_shared], dim=0)
+            tot_batch_size_per_expert = torch.cat(
+                [tot_batch_size_per_expert_standard, tot_batch_size_per_expert_shared], dim=0
+            )
 
             if self.training:
                 valid_expert_indices_standard_exp = expert_indices_standard_exp.view(-1)
@@ -291,10 +335,14 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
                 # Update unique experts metric.
                 unique_experts_standard_exp = torch.unique(valid_expert_indices_standard_exp)
                 unique_experts_shared_exp = torch.unique(valid_expert_indices_shared_exp)
-                num_unique_experts = unique_experts_standard_exp.numel() + unique_experts_shared_exp.numel()
+                num_unique_experts = (
+                    unique_experts_standard_exp.numel() + unique_experts_shared_exp.numel()
+                )
 
                 self._unique_experts_sum += num_unique_experts
-                self._unique_experts_sum_shared += unique_experts_shared_exp.numel() # also track how many unique experts are used
+                self._unique_experts_sum_shared += (
+                    unique_experts_shared_exp.numel()
+                )  # also track how many unique experts are used
                 self._num_batches_tracked += 1
 
                 # Compute router distribution entropy metric (depricated here - only for standard experts)
@@ -315,30 +363,51 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
 
                     # Make sure scores are normalized, otherwise load balancing loss doesn't work well.
                     if self.gating_function == MoERouterGatingFunction.sigmoid:
-                        raise NotImplementedError("Sigmoid gating function is not supported in MoETwoLevelBatchLBReduceDPSharedExpRouter, so we don't implement load balancing loss for sigmoid gating function")
+                        raise NotImplementedError(
+                            "Sigmoid gating function is not supported in MoETwoLevelBatchLBReduceDPSharedExpRouter, so we don't implement load balancing loss for sigmoid gating function"
+                        )
                         scores = scores / scores.sum(dim=-1, keepdim=True)
 
                     # we now do reduction on the tot_batch_size_per_expert to get a dp-global lb loss (still not full global sinze we don't do across gradient accumulation steps)
-                    dp_global_tot_batch_size_per_expert_standard = tot_batch_size_per_expert_standard.clone() # we clone to not interfere with logging or other routing stuff
-                    dp_global_tot_batch_size_per_expert_shared = tot_batch_size_per_expert_shared.clone()
+                    dp_global_tot_batch_size_per_expert_standard = (
+                        tot_batch_size_per_expert_standard.clone()
+                    )  # we clone to not interfere with logging or other routing stuff
+                    dp_global_tot_batch_size_per_expert_shared = (
+                        tot_batch_size_per_expert_shared.clone()
+                    )
+                    assert isinstance(loss_div_factor, torch.Tensor)
                     dp_global_loss_div_factor = loss_div_factor.clone()
 
                     if is_distributed():
-                        dist.all_reduce(dp_global_tot_batch_size_per_expert_standard, op=dist.ReduceOp.SUM)
-                        dist.all_reduce(dp_global_tot_batch_size_per_expert_shared, op=dist.ReduceOp.SUM)
+                        dist.all_reduce(
+                            dp_global_tot_batch_size_per_expert_standard, op=dist.ReduceOp.SUM
+                        )
+                        dist.all_reduce(
+                            dp_global_tot_batch_size_per_expert_shared, op=dist.ReduceOp.SUM
+                        )
                         dist.all_reduce(dp_global_loss_div_factor, op=dist.ReduceOp.SUM)
 
                     # collect all non-zero entries of the dp_global_tot_batch_size_per_expert
-                    concatenated_bspe = torch.cat([dp_global_tot_batch_size_per_expert_standard, dp_global_tot_batch_size_per_expert_shared], dim=0)
-                    self._reducedp_unique_experts_sum += (concatenated_bspe > 0).sum().item() # we add the shared experts since they are always active
-                    self._reducedp_unique_experts_sum_shared += (dp_global_tot_batch_size_per_expert_shared > 0).sum().item()
+                    concatenated_bspe = torch.cat(
+                        [
+                            dp_global_tot_batch_size_per_expert_standard,
+                            dp_global_tot_batch_size_per_expert_shared,
+                        ],
+                        dim=0,
+                    )
+                    self._reducedp_unique_experts_sum += (
+                        (concatenated_bspe > 0).sum().item()
+                    )  # we add the shared experts since they are always active
+                    self._reducedp_unique_experts_sum_shared += (
+                        (dp_global_tot_batch_size_per_expert_shared > 0).sum().item()
+                    )
 
                     lb_loss_standard = load_balancing_loss(
-                        num_experts=self.num_choose_experts_pool, # we only calculate the load balancing loss over the non-shared experts
-                        top_k=self.num_choose_experts, # we only choose self.num_choose_experts
+                        num_experts=self.num_choose_experts_pool,  # we only calculate the load balancing loss over the non-shared experts
+                        top_k=self.num_choose_experts,  # we only choose self.num_choose_experts
                         expert_scores=scores_standard_exp,
                         batch_size_per_expert=dp_global_tot_batch_size_per_expert_standard,
-                        batched_batch_size_per_expert=tot_batched_batch_size_per_expert_standard, # this is not used, so we don't bother reducing it
+                        batched_batch_size_per_expert=tot_batched_batch_size_per_expert_standard,  # this is not used, so we don't bother reducing it
                         granularity=self.lb_loss_granularity,
                         loss_div_factor=dp_global_loss_div_factor,
                         tp_mesh=self.tp_mesh,
@@ -359,10 +428,17 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
                         cp_mesh=self.cp_mesh,
                     )
 
-                    self.load_balancing_loss += lb_loss_standard.detach() # this is scaled during logging
-                    self.load_balancing_loss_shared += self.shared_exp_lb_loss_weight * lb_loss_shared.detach() # this is scaled now since I don't want to override compute_metrics
+                    self.load_balancing_loss += (
+                        lb_loss_standard.detach()
+                    )  # this is scaled during logging
+                    self.load_balancing_loss_shared += (
+                        self.shared_exp_lb_loss_weight * lb_loss_shared.detach()
+                    )  # this is scaled now since I don't want to override compute_metrics
 
-                    scaled_lb_loss = self.lb_loss_weight * lb_loss_standard + self.shared_exp_lb_loss_weight * lb_loss_shared
+                    scaled_lb_loss = (
+                        self.lb_loss_weight * lb_loss_standard
+                        + self.shared_exp_lb_loss_weight * lb_loss_shared
+                    )
                     aux_loss = scaled_lb_loss
 
                 if self.z_loss_weight is not None:
@@ -396,8 +472,16 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
 
         # in the end, we add on the shared experts to both expert_weights and expert_indices
         if self.num_shared_experts > 0:
-            expert_weights = torch.cat([expert_weights_standard_exp, expert_weights_shared_exp], dim=-1)
-            expert_indices = torch.cat([expert_indices_standard_exp, expert_indices_shared_exp + self.num_choose_experts_pool], dim=-1) # we need to shift the indices of the shared experts since they come after the standard experts in the original logits
+            expert_weights = torch.cat(
+                [expert_weights_standard_exp, expert_weights_shared_exp], dim=-1
+            )
+            expert_indices = torch.cat(
+                [
+                    expert_indices_standard_exp,
+                    expert_indices_shared_exp + self.num_choose_experts_pool,
+                ],
+                dim=-1,
+            )  # we need to shift the indices of the shared experts since they come after the standard experts in the original logits
 
         return expert_weights, expert_indices, tot_batch_size_per_expert, aux_loss
 
@@ -409,7 +493,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpPoolRouter(MoETwoLevelRouter):
 
 @dataclass
 class MoETwoLevelBatchLBReduceDPSharedExpPoolRouterConfig(MoETwoLevelRouterConfig):
-    num_shared_experts: int = 2 # the number of experts to share
+    num_shared_experts: int = 2  # the number of experts to share
     num_shared_experts_pool: int = 2
     shared_exp_lb_loss: Optional[float] = None
 

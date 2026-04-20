@@ -44,6 +44,7 @@ logger = logging.getLogger(__name__)
 
 class EarlyExit(Exception):
     """Raised by a pre-forward hook to abort the model forward pass after a target layer."""
+
     pass
 
 
@@ -130,6 +131,7 @@ def greedy_prune_layerwise(
     num_shared_experts: int,
     save_path: str,
     batch_size: int = 32,
+    num_calibration: Optional[int] = None,
     device: Optional[str] = None,
 ) -> None:
     """
@@ -171,7 +173,14 @@ def greedy_prune_layerwise(
     # -------------------------------------------------------------------------
     logger.info(f"Loading dataset: {task_name} ({split})")
     prompts, _ = get_formatted_prompts(task_name, split)
-    logger.info(f"Loaded {len(prompts)} prompts")
+    if num_calibration is None:
+        logger.info(f"Loaded {len(prompts)} prompts, using all (no subsampling)")
+    else:
+        n_keep = min(num_calibration, len(prompts))
+        logger.info(f"Loaded {len(prompts)} prompts, subsampling to {n_keep}")
+        g = torch.Generator().manual_seed(0)
+        perm = torch.randperm(len(prompts), generator=g).tolist()
+        prompts = [prompts[i] for i in perm[:n_keep]]
 
     logger.info("Tokenizing prompts into batches...")
     all_batches = []
@@ -219,12 +228,14 @@ def greedy_prune_layerwise(
                 # SparseMoeBlock returns (final_hidden_states, router_logits)
                 # router_logits shape: (batch_size * seq_len, num_experts)
                 captured_logits.append(output[1].detach().cpu())
+
             return hook
 
         # Early-exit hook: fires before layer l+1.forward(), aborts the pass
         def make_early_exit_hook():
             def hook(module, input):
                 raise EarlyExit()
+
             return hook
 
         h_capture = layer.mlp.register_forward_hook(make_capture_hook())
@@ -248,9 +259,9 @@ def greedy_prune_layerwise(
                 except EarlyExit:
                     pass
 
-            assert len(captured_logits) == 1, (
-                f"Expected exactly 1 captured logit tensor per batch, got {len(captured_logits)}"
-            )
+            assert (
+                len(captured_logits) == 1
+            ), f"Expected exactly 1 captured logit tensor per batch, got {len(captured_logits)}"
 
             # logits shape: (B*T, current_num_experts)
             logits = captured_logits[0]
@@ -339,7 +350,10 @@ def greedy_prune_layerwise(
     # -------------------------------------------------------------------------
     # Update global model config to reflect pruned expert counts
     # -------------------------------------------------------------------------
-    if hasattr(model.config, "num_experts_per_tok") and model.config.num_experts_per_tok > prune_keep_k:
+    if (
+        hasattr(model.config, "num_experts_per_tok")
+        and model.config.num_experts_per_tok > prune_keep_k
+    ):
         model.config.num_experts_per_tok = prune_keep_k
     model.config.num_experts = prune_keep_k
     if hasattr(model.config, "num_local_experts"):
@@ -347,15 +361,19 @@ def greedy_prune_layerwise(
     model.config.num_shared_experts = num_shared_experts
 
     # Update per-layer expert counts for densefirst (mixed dense/MoE) models
-    if hasattr(model.config, "num_experts_per_layer") and model.config.num_experts_per_layer is not None:
+    if (
+        hasattr(model.config, "num_experts_per_layer")
+        and model.config.num_experts_per_layer is not None
+    ):
         model.config.num_experts_per_layer = [
-            prune_keep_k if n > 0 else 0
-            for n in model.config.num_experts_per_layer
+            prune_keep_k if n > 0 else 0 for n in model.config.num_experts_per_layer
         ]
-    if hasattr(model.config, "num_shared_experts_per_layer") and model.config.num_shared_experts_per_layer is not None:
+    if (
+        hasattr(model.config, "num_shared_experts_per_layer")
+        and model.config.num_shared_experts_per_layer is not None
+    ):
         model.config.num_shared_experts_per_layer = [
-            num_shared_experts if n > 0 else 0
-            for n in model.config.num_shared_experts_per_layer
+            num_shared_experts if n > 0 else 0 for n in model.config.num_shared_experts_per_layer
         ]
 
     # Enable router logit output so load-balancing loss is active during finetuning
@@ -422,6 +440,12 @@ def main():
         help="Batch size for activation collection forward passes (default: 32)",
     )
     parser.add_argument(
+        "--num-calibration",
+        type=int,
+        default=None,
+        help="Subsample calibration set to this many prompts (default: use all)",
+    )
+    parser.add_argument(
         "--device",
         type=str,
         default=None,
@@ -438,6 +462,7 @@ def main():
         num_shared_experts=args.num_shared_experts,
         save_path=args.save_path,
         batch_size=args.batch_size,
+        num_calibration=args.num_calibration,
         device=args.device,
     )
 

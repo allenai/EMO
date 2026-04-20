@@ -130,12 +130,20 @@ class ParallelMLPBase(nn.Module):
         expert_weights: torch.Tensor,
         expert_indices: torch.Tensor,
         batch_size_per_expert: torch.Tensor,
+        detach_mask: Optional[torch.Tensor] = None,
+        detach_router: bool = False,
     ) -> torch.Tensor:
         """
         :param x: The input of shape ``(N, d_model)``.
         :param expert_weights: Expert weights of shape ``(N, top_k)``.
         :param expert_indices: The indices of the top-k experts, shape ``(N, top_k)``.
         :param batch_size_per_expert: The number of items routed to each expert, shape ``(num_experts,)``.
+        :param detach_mask: Optional bool tensor of shape ``(*, top_k)`` matching
+            ``expert_weights``. ``True`` means cut the expert MLP output gradient for that
+            slot (extension_finetune_mode, Hook 1). ``None`` = no detach (default behavior).
+        :param detach_router: When ``True`` and ``detach_mask`` is non-None, also detaches
+            the router weight (``expert_weights``) for those same slots (Hook 2). When
+            ``False`` (default), router gradients flow normally through ``expert_weights``.
 
         :returns: The output with the same shape as ``x``.
         """
@@ -154,6 +162,8 @@ class ParallelMLPBase(nn.Module):
         expert_weights = expert_weights.flatten()
         # shape: (batch_size * top_k,)
         expert_indices = expert_indices.flatten()
+        if detach_mask is not None:
+            detach_mask = get_local_tensor(detach_mask).flatten()
 
         with torch.no_grad():
             indices, bin_ids, bins = self.indices_and_bins(expert_indices, batch_size_per_expert)
@@ -168,8 +178,14 @@ class ParallelMLPBase(nn.Module):
                 bin_ids=bin_ids,
                 bins=bins,
                 batch_size_per_expert=batch_size_per_expert,
+                detach_mask=detach_mask,
+                detach_router=detach_router,
             )
         else:
+            if detach_mask is not None:
+                raise NotImplementedError(
+                    "detach_mask (extension_finetune_mode) is not supported with expert parallelism."
+                )
             x = self.parallel_forward_once(
                 x,
                 expert_weights=expert_weights,
@@ -193,6 +209,8 @@ class ParallelMLPBase(nn.Module):
         bin_ids: torch.Tensor,
         bins: torch.Tensor,
         batch_size_per_expert: torch.Tensor,
+        detach_mask: Optional[torch.Tensor] = None,
+        detach_router: bool = False,
     ) -> torch.Tensor:
         """
         :param x: The input of shape ``(*, d_model)``, typically ``(num_docs, seq_len, d_model)``
@@ -200,6 +218,10 @@ class ParallelMLPBase(nn.Module):
         :param expert_weights: Expert weights of shape ``(batch_size, top_k)``, where ``batch_size``
             typically equals ``num_docs x seq_len``.
         :param expert_indices: The indices of the top-k experts, shape ``(batch_size, top_k)``.
+        :param detach_mask: Optional ``(batch_size * top_k,)`` bool tensor; ``True`` slots have
+            the expert MLP output detached. ``None`` = no detach.
+        :param detach_router: When ``True`` and ``detach_mask`` is non-None, also detaches
+            the router weight (``expert_weights``) for those slots.
         """
         raise NotImplementedError
 
@@ -454,8 +476,15 @@ class ParallelMLP(ParallelMLPBase):
         bin_ids: torch.Tensor,
         bins: torch.Tensor,
         batch_size_per_expert: torch.Tensor,
+        detach_mask: Optional[torch.Tensor] = None,
+        detach_router: bool = False,
     ) -> torch.Tensor:
         del bin_ids, batch_size_per_expert, expert_indices
+
+        if detach_mask is not None:
+            raise NotImplementedError(
+                "detach_mask (extension_finetune_mode) is not supported in capacity-based ParallelMLP; use ParallelDroplessMLP."
+            )
 
         batch_size = expert_weights.numel() // self.top_k
         expert_capacity = self.expert_capacity(batch_size)
@@ -638,6 +667,8 @@ class ParallelDroplessMLP(ParallelMLPBase):
         bin_ids: torch.Tensor,
         bins: torch.Tensor,
         batch_size_per_expert: torch.Tensor,
+        detach_mask: Optional[torch.Tensor] = None,
+        detach_router: bool = False,
     ) -> torch.Tensor:
         del expert_indices
         return self.permute_and_compute(
@@ -648,6 +679,8 @@ class ParallelDroplessMLP(ParallelMLPBase):
             expert_weights=expert_weights,
             bins=bins,
             top_k=self.top_k,
+            detach_mask=detach_mask,
+            detach_router=detach_router,
         )
 
     @torch._dynamo.disable()  # TODO: might be able to relax this, or be more fine-grained
@@ -844,14 +877,32 @@ class ParallelDroplessMLP(ParallelMLPBase):
         expert_weights: Optional[torch.Tensor],
         bins: torch.Tensor,
         top_k: int,
+        detach_mask: Optional[torch.Tensor] = None,
+        detach_router: bool = False,
     ) -> torch.Tensor:
         x = x.view(-1, x.shape[-1])
 
         # Route the tokens for MoE computation.
-        x = ops.gather(x, indices, bin_ids, bins, top_k)
+        x = ops.gather(x, indices, bin_ids, bins, top_k)  # (N*top_k, d_model), sorted by expert
 
         # Perform the expert computation.
         x = self.mlp(x, batch_size_per_expert)
+
+        # extension_finetune_mode: detach the expert MLP output for slots flagged True (Hook 1).
+        # When detach_router is also True, additionally detach expert_weights for those same
+        # slots so CE-via-router gradient is also cut for non-top-e slots (Hook 2).
+        # See plan in /root/.claude/plans/bright-weaving-prism.md.
+        if detach_mask is not None:
+            # detach_mask is (N*top_k,) bool in un-permuted order matching expert_weights.
+            # The dropless layout post-gather is also (N*top_k, d_model) sorted by expert,
+            # so the mask permutation is just `detach_mask[indices.long()]`.
+            sorted_mask = detach_mask[indices.long()]
+            x = torch.where(sorted_mask[:, None], x.detach(), x)  # Hook 1
+            if detach_router:
+                assert expert_weights is not None
+                expert_weights = torch.where(
+                    detach_mask, expert_weights.detach(), expert_weights
+                )  # Hook 2
 
         # Un-route the data for the MoE output.
         return ops.scatter(x, indices, bin_ids, expert_weights, bins, top_k)

@@ -17,13 +17,11 @@ import argparse
 import json
 import logging
 import os
-from typing import List, Optional
+from typing import Optional
 
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
-
-from hf_training.FlexOlmoNoQKNormPrenormForCausalLMDebug import FlexOlmoNoQKNormPrenormForCausalLMDebug
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from src.hf_training.data_utils import get_formatted_prompts
@@ -38,6 +36,7 @@ def compute_router_activations(
     split: str,
     output_file: str,
     batch_size: int = 4,
+    num_calibration: Optional[int] = None,
     device: Optional[str] = None,
     use_correct_only: bool = False,
 ) -> dict:
@@ -71,11 +70,22 @@ def compute_router_activations(
     # Get formatted prompts from the dataset
     logger.info(f"Loading dataset: {task_name} ({split})")
     prompts, _ = get_formatted_prompts(task_name, split)
-    logger.info(f"Loaded {len(prompts)} prompts")
+    if num_calibration is None:
+        logger.info(f"Loaded {len(prompts)} prompts, using all (no subsampling)")
+    else:
+        n_keep = min(num_calibration, len(prompts))
+        logger.info(f"Loaded {len(prompts)} prompts, subsampling to {n_keep}")
+        g = torch.Generator().manual_seed(0)
+        perm = torch.randperm(len(prompts), generator=g).tolist()
+        prompts = [prompts[i] for i in perm[:n_keep]]
 
     # Get model config
     num_layers = model.config.num_hidden_layers
-    num_experts = model.config.num_local_experts if hasattr(model.config, "num_local_experts") else model.config.num_experts
+    num_experts = (
+        model.config.num_local_experts
+        if hasattr(model.config, "num_local_experts")
+        else model.config.num_experts
+    )
 
     logger.info(f"Model has {num_layers} layers and {num_experts} experts")
 
@@ -121,8 +131,12 @@ def compute_router_activations(
 
             # we now take out the shared experts if num_shared_experts > 0
             if model.config.num_shared_experts > 0:
-                router_logits_reshaped_standard = router_logits_reshaped[:, :, :, : num_experts - model.config.num_shared_experts]
-                router_logits_reshaped_shared = router_logits_reshaped[:, :, :, num_experts - model.config.num_shared_experts :]
+                router_logits_reshaped_standard = router_logits_reshaped[
+                    :, :, :, : num_experts - model.config.num_shared_experts
+                ]
+                router_logits_reshaped_shared = router_logits_reshaped[
+                    :, :, :, num_experts - model.config.num_shared_experts :
+                ]
 
                 router_probabilities_standard = F.softmax(router_logits_reshaped_standard, dim=-1)
                 router_probabilities_shared = F.softmax(router_logits_reshaped_shared, dim=-1)
@@ -132,7 +146,12 @@ def compute_router_activations(
                     inputs.attention_mask.cpu()
                     .unsqueeze(0)
                     .unsqueeze(-1)
-                    .expand(num_layers, batch_size_actual, seq_len, num_experts - model.config.num_shared_experts)
+                    .expand(
+                        num_layers,
+                        batch_size_actual,
+                        seq_len,
+                        num_experts - model.config.num_shared_experts,
+                    )
                 )
                 attention_mask_expanded_shared = (
                     inputs.attention_mask.cpu()
@@ -141,14 +160,22 @@ def compute_router_activations(
                     .expand(num_layers, batch_size_actual, seq_len, model.config.num_shared_experts)
                 )
 
-                router_probabilities_standard = router_probabilities_standard * attention_mask_expanded_standard
-                router_probabilities_shared = router_probabilities_shared * attention_mask_expanded_shared
+                router_probabilities_standard = (
+                    router_probabilities_standard * attention_mask_expanded_standard
+                )
+                router_probabilities_shared = (
+                    router_probabilities_shared * attention_mask_expanded_shared
+                )
 
                 summed_router_probabilities_standard = router_probabilities_standard.sum(dim=(1, 2))
                 summed_router_probabilities_shared = router_probabilities_shared.sum(dim=(1, 2))
 
-                tot_router_probabilities[:, : num_experts - model.config.num_shared_experts] += summed_router_probabilities_standard
-                tot_router_probabilities[:, num_experts - model.config.num_shared_experts :] += summed_router_probabilities_shared
+                tot_router_probabilities[
+                    :, : num_experts - model.config.num_shared_experts
+                ] += summed_router_probabilities_standard
+                tot_router_probabilities[
+                    :, num_experts - model.config.num_shared_experts :
+                ] += summed_router_probabilities_shared
 
                 tot_tokens += inputs.attention_mask.sum().item()
             else:
@@ -181,7 +208,9 @@ def compute_router_activations(
     # Save to file
     result = {"avg_router_probabilities": avg_router_probabilities.tolist()}
 
-    os.makedirs(os.path.dirname(output_file) if os.path.dirname(output_file) else ".", exist_ok=True)
+    os.makedirs(
+        os.path.dirname(output_file) if os.path.dirname(output_file) else ".", exist_ok=True
+    )
     with open(output_file, "w") as f:
         f.write(json.dumps(result) + "\n")
 
@@ -222,6 +251,12 @@ def main():
         help="Batch size for inference (default: 4)",
     )
     parser.add_argument(
+        "--num-calibration",
+        type=int,
+        default=None,
+        help="Subsample calibration set to this many prompts (default: use all)",
+    )
+    parser.add_argument(
         "--device",
         type=str,
         default=None,
@@ -236,6 +271,7 @@ def main():
         split=args.split,
         output_file=args.output_file,
         batch_size=args.batch_size,
+        num_calibration=args.num_calibration,
         device=args.device,
     )
 

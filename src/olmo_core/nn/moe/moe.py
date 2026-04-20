@@ -235,6 +235,20 @@ class MoEBase(nn.Module):
             x, loss_div_factor=loss_div_factor, **kwargs
         )
 
+        # extension_finetune_mode: read+clear per-slot detach mask stashed by the router.
+        # None for any router that doesn't set it, preserving default behavior.
+        detach_mask = getattr(self.router, "_detach_mask", None)
+        # extension_finetune_detach_router: read attribute (default False) to decide whether
+        # Hook 2 (router-weight detach via expert_weights) fires alongside Hook 1.
+        detach_router = bool(getattr(self.router, "extension_finetune_detach_router", False))
+        if detach_mask is not None:
+            self.router._detach_mask = None
+            if not isinstance(self.experts, ParallelDroplessMLP):
+                raise RuntimeError(
+                    f"detach_mask (extension_finetune_mode) is only supported with "
+                    f"ParallelDroplessMLP, got {type(self.experts).__name__}."
+                )
+
         if router_aux_loss is not None:
             x = attach_auxiliary_loss(x, router_aux_loss)
 
@@ -242,7 +256,14 @@ class MoEBase(nn.Module):
         if self.shared_mlp is not None:
             shared_out = self.shared_mlp(x)
 
-        out = self.experts(x, expert_weights, expert_indices, batch_size_per_expert)
+        out = self.experts(
+            x,
+            expert_weights,
+            expert_indices,
+            batch_size_per_expert,
+            detach_mask=detach_mask,
+            detach_router=detach_router,
+        )
 
         if shared_out is not None:
             shared_out = shared_out / (self.top_k + 1)

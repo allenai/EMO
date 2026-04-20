@@ -1,4 +1,7 @@
-text=r"""
+import re
+from collections import defaultdict
+
+text = r"""
     "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step0-hf-hf"
     "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step4-hf-hf"
     "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step8-hf-hf"
@@ -382,16 +385,10 @@ text=r"""
     "task-mmlu_world_religions_rc_validation${postfix}/finetune-task-mmlu_world_religions_rc_train/step36-hf"
 """
 
-import re
-from collections import defaultdict
-
-
 # Example line:
 # "task-mmlu_abstract_algebra_rc_validation${postfix}/finetune-task-mmlu_abstract_algebra_rc_train/step12-hf-hf"
 
-pat = re.compile(
-    r'finetune-task-(mmlu_[^/]+)_rc_train/step(\d+)-hf'
-)
+pat = re.compile(r"finetune-task-(mmlu_[^/]+)_rc_train/step(\d+)-hf")
 
 steps = defaultdict(set)
 
@@ -399,8 +396,8 @@ for line in text.splitlines():
     m = pat.search(line)
     if not m:
         continue
-    subj = m.group(1)                # e.g., mmlu_abstract_algebra
-    step = int(m.group(2))           # e.g., 12
+    subj = m.group(1)  # e.g., mmlu_abstract_algebra
+    step = int(m.group(2))  # e.g., 12
     steps[f"{subj}:rc_train"].add(step)
 
 # Build final dict, sorted

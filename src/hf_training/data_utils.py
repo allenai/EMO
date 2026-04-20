@@ -9,7 +9,7 @@ Key features:
 """
 
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 from datasets import Dataset, load_dataset
 
@@ -19,7 +19,7 @@ from scripts.eval.tasks import get_task_configs
 logger = logging.getLogger(__name__)
 
 # Task configurations for HuggingFace datasets
-TASK_CONFIGS = {
+TASK_CONFIGS: Dict[str, Dict[str, Any]] = {
     "gsm8k": {
         "hf_path": "gsm8k",
         "hf_name": "main",
@@ -58,7 +58,7 @@ TASK_CONFIGS = {
 MMLU_ANSWER_MAP = {0: "A", 1: "B", 2: "C", 3: "D"}
 
 
-def get_task_config(task_name: str) -> dict:
+def get_task_config(task_name: str) -> Dict[str, Any]:
     """Get task configuration, handling task variants like 'gsm8k_train'."""
     # Extract base task name
     base_task = task_name.split("_")[0].lower()
@@ -80,7 +80,9 @@ def load_hf_dataset(task_name: str, split: str) -> Dataset:
     """
     config = get_task_config(task_name)
 
-    logger.info(f"Loading dataset {config['hf_path']} ({config.get('hf_name', 'default')}) split={split}")
+    logger.info(
+        f"Loading dataset {config['hf_path']} ({config.get('hf_name', 'default')}) split={split}"
+    )
 
     try:
         if config["hf_name"]:
@@ -220,7 +222,9 @@ def create_masked_labels(
             break
 
     if delimiter_pos == -1:
-        raise ValueError(f"Delimiter not found in input_ids {input_ids} with delimiter_ids {delimiter_ids}")
+        raise ValueError(
+            f"Delimiter not found in input_ids {input_ids} with delimiter_ids {delimiter_ids}"
+        )
 
     # Mask everything before and including the delimiter
     for i in range(delimiter_pos):
@@ -305,16 +309,18 @@ def prepare_finetuning_dataset(
     # Load raw dataset
     # raw_dataset = load_hf_dataset(task_name, split)
 
-    raw_dataset, request_type = get_formatted_prompts(task_name, split)
+    raw_prompts, request_type = get_formatted_prompts(task_name, split)
 
     # convert to hf
-    raw_dataset = Dataset.from_dict({"text": raw_dataset})
+    raw_dataset = Dataset.from_dict({"text": raw_prompts})
 
     # Get delimiter
-    delimiter = "Answer:" if "squad" not in task_name else "A:"
+    delimiter = "Answer:"
 
     def process_example(example):
-        return tokenize_and_mask_example(example["text"], tokenizer, task_name, max_length, delimiter)
+        return tokenize_and_mask_example(
+            example["text"], tokenizer, task_name, max_length, delimiter
+        )
 
     # Process all examples
     logger.info(f"Tokenizing {len(raw_dataset)} examples...")
@@ -328,7 +334,9 @@ def prepare_finetuning_dataset(
     return processed_dataset
 
 
-def load_finetuning_dataset(task_name: str, split: str, tokenizer, max_length: int = 4096) -> Dataset:
+def load_finetuning_dataset(
+    task_name: str, split: str, tokenizer, max_length: int = 4096
+) -> Dataset:
     """
     Load and format HF dataset for finetuning.
 
@@ -345,6 +353,7 @@ def load_finetuning_dataset(task_name: str, split: str, tokenizer, max_length: i
     """
     return prepare_finetuning_dataset(task_name, split, tokenizer, max_length)
 
+
 def get_oe_task_name(task_name, split):
     """
     Get task string for offline evals to recognize which partition to use.
@@ -357,7 +366,22 @@ def get_oe_task_name(task_name, split):
         Formatted task string
     """
     # if this is a generation-based task, don't specify rc
-    if task_name in ["squad_0shot", "gsm8k_generation_0shot", "coqa_0shot", "coqa_full_0shot", "gsm8k_perplexity_0shot"]:
+    if task_name in [
+        "squad_0shot",
+        "squad_merged",
+        "squad_0shot_merged",
+        "coqa_0shot",
+        "coqa_full_0shot",
+        "coqa_merged",
+        "gsm8k_generation_0shot",
+        "gsm8k_generation_8shot",
+        "gsm8k_generation_0shot_merged",
+        "gsm8k_generation_8shot_merged",
+        "naturalqs_merged",
+        "triviaqa_merged",
+        "drop_merged",
+        "gsm8k_perplexity_0shot",
+    ]:
         return f"{task_name}:{split}::olmes"
 
     return f"{task_name}:rc_{split}::olmes"
@@ -387,10 +411,11 @@ def get_formatted_prompts(task_name: str, split: str) -> Tuple[List[str], str]:
     request_type = task._instances[0].request_type
 
     if request_type == "loglikelihood":
-
         for instance in task._instances:
             # we only choose the correct instances
-            if instance.idx == instance.label and not instance.request.context.startswith("Answer:"):
+            if instance.idx == instance.label and not instance.request.context.startswith(
+                "Answer:"
+            ):
                 dataset.append(instance.request.context + instance.request.continuation)
             # gsm8k is an exception - implemented using loglikelihood formatting (but actually generate_until), so doesn't have label or answer
             elif "gsm8k" in task_name:
@@ -398,11 +423,15 @@ def get_formatted_prompts(task_name: str, split: str) -> Tuple[List[str], str]:
 
     elif request_type == "generate_until":
         for instance in task._instances:
+            choice = instance.doc["choices"][0]
+            # DROP stores choices as tuples, e.g. ("answer",) — unwrap to str
+            if isinstance(choice, tuple):
+                choice = choice[0]
             # for some tasks (e.g coqa), by default there is no space between context and choice, so we add it here
-            if instance.request.context[-1] != " " and instance.doc["choices"][0][0] != " ":
-                dataset.append(instance.request.context + " " + instance.doc["choices"][0])
+            if choice and instance.request.context[-1] != " " and choice[0] != " ":
+                dataset.append(instance.request.context + " " + choice)
             else:
-                dataset.append(instance.request.context + instance.doc["choices"][0])
+                dataset.append(instance.request.context + choice)
 
     # raw_dataset = load_hf_dataset(task_name, split)
     #

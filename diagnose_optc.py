@@ -16,16 +16,18 @@ Usage:
     python diagnose_optc.py
 """
 
+import os
+
 import numpy as np
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import normalize
 from sklearn.metrics import pairwise_distances
-import os
+from sklearn.preprocessing import normalize
 
 DATA_DIR = "claude_outputs/analysis/router_clustering_pretraining"
 NUM_LAYERS = 16
 NUM_EXPERTS = 127
 TOP_K_SPARSE = 32
+
 
 def load_embeddings():
     """Load optA and optC embeddings."""
@@ -64,7 +66,7 @@ def check_sparsity(optC, n_sample=500):
     if not all_exact:
         # Show distribution of non-zero counts
         unique, counts = np.unique(nnz_per_layer, return_counts=True)
-        print(f"  Distribution of non-zero counts per layer:")
+        print("  Distribution of non-zero counts per layer:")
         for u, c in zip(unique, counts):
             print(f"    {u} non-zeros: {c} occurrences ({c / nnz_per_layer.size:.1%})")
         # Show which layers/docs are problematic
@@ -73,10 +75,14 @@ def check_sparsity(optC, n_sample=500):
         print(f"  Number of (doc, layer) pairs with wrong count: {bad_mask.sum()}")
         if bad_mask.sum() > 0:
             for i in range(min(10, len(bad_docs))):
-                d, l = bad_docs[i], bad_layers[i]
-                print(f"    doc={sample_idx[d]}, layer={l}, nnz={nnz_per_layer[d, l]}")
+                d, layer_idx = bad_docs[i], bad_layers[i]
+                print(
+                    f"    doc={sample_idx[d]}, layer={layer_idx}, nnz={nnz_per_layer[d, layer_idx]}"
+                )
     else:
-        print(f"  Passed: all {len(sample_idx)} sampled docs x {NUM_LAYERS} layers have exactly {TOP_K_SPARSE} non-zeros")
+        print(
+            f"  Passed: all {len(sample_idx)} sampled docs x {NUM_LAYERS} layers have exactly {TOP_K_SPARSE} non-zeros"
+        )
 
     # Also check overall sparsity
     total_elements = sample.size
@@ -144,7 +150,9 @@ def check_value_match(optA, optC, n_sample=500):
                     if only_in_a and only_in_c:
                         for idx_a in list(only_in_a)[:3]:
                             for idx_c in list(only_in_c)[:3]:
-                                print(f"        A[{idx_a}]={a_layer[idx_a]:.6f} vs A[{idx_c}]={a_layer[idx_c]:.6f}")
+                                print(
+                                    f"        A[{idx_a}]={a_layer[idx_a]:.6f} vs A[{idx_c}]={a_layer[idx_c]:.6f}"
+                                )
 
     total_checks = n_verify * NUM_LAYERS
     print(f"  Mismatches: {mismatches}/{total_checks} layer checks ({mismatches/total_checks:.2%})")
@@ -179,58 +187,70 @@ def compare_cosine_similarity(optA, optC, n_sample=1000):
     sims_a = cos_sim_a[triu_idx]
     sims_c = cos_sim_c[triu_idx]
 
-    print(f"\n  OptA cosine similarity distribution:")
-    print(f"    mean={sims_a.mean():.4f}  std={sims_a.std():.4f}  "
-          f"min={sims_a.min():.4f}  max={sims_a.max():.4f}")
-    print(f"    percentiles: 5%={np.percentile(sims_a, 5):.4f}  "
-          f"25%={np.percentile(sims_a, 25):.4f}  50%={np.percentile(sims_a, 50):.4f}  "
-          f"75%={np.percentile(sims_a, 75):.4f}  95%={np.percentile(sims_a, 95):.4f}")
+    print("\n  OptA cosine similarity distribution:")
+    print(
+        f"    mean={sims_a.mean():.4f}  std={sims_a.std():.4f}  "
+        f"min={sims_a.min():.4f}  max={sims_a.max():.4f}"
+    )
+    print(
+        f"    percentiles: 5%={np.percentile(sims_a, 5):.4f}  "
+        f"25%={np.percentile(sims_a, 25):.4f}  50%={np.percentile(sims_a, 50):.4f}  "
+        f"75%={np.percentile(sims_a, 75):.4f}  95%={np.percentile(sims_a, 95):.4f}"
+    )
 
-    print(f"\n  OptC cosine similarity distribution:")
-    print(f"    mean={sims_c.mean():.4f}  std={sims_c.std():.4f}  "
-          f"min={sims_c.min():.4f}  max={sims_c.max():.4f}")
-    print(f"    percentiles: 5%={np.percentile(sims_c, 5):.4f}  "
-          f"25%={np.percentile(sims_c, 25):.4f}  50%={np.percentile(sims_c, 50):.4f}  "
-          f"75%={np.percentile(sims_c, 75):.4f}  95%={np.percentile(sims_c, 95):.4f}")
+    print("\n  OptC cosine similarity distribution:")
+    print(
+        f"    mean={sims_c.mean():.4f}  std={sims_c.std():.4f}  "
+        f"min={sims_c.min():.4f}  max={sims_c.max():.4f}"
+    )
+    print(
+        f"    percentiles: 5%={np.percentile(sims_c, 5):.4f}  "
+        f"25%={np.percentile(sims_c, 25):.4f}  50%={np.percentile(sims_c, 50):.4f}  "
+        f"75%={np.percentile(sims_c, 75):.4f}  95%={np.percentile(sims_c, 95):.4f}"
+    )
 
     # Key diagnostic: if optC similarities are much higher on average, it means
     # sparsification made embeddings more uniform (less discriminative)
-    print(f"\n  DIAGNOSTIC:")
+    print("\n  DIAGNOSTIC:")
     print(f"    Mean cosine sim difference (optC - optA): {sims_c.mean() - sims_a.mean():.4f}")
     print(f"    Std cosine sim difference (optC - optA): {sims_c.std() - sims_a.std():.4f}")
     if sims_c.mean() > sims_a.mean() + 0.01:
-        print(f"    WARNING: optC embeddings are MORE similar to each other than optA.")
-        print(f"    This means sparsification reduced inter-document discrimination,")
-        print(f"    which directly explains lower silhouette scores.")
+        print("    WARNING: optC embeddings are MORE similar to each other than optA.")
+        print("    This means sparsification reduced inter-document discrimination,")
+        print("    which directly explains lower silhouette scores.")
     if sims_c.std() < sims_a.std() - 0.01:
-        print(f"    WARNING: optC similarity spread is NARROWER than optA.")
-        print(f"    Documents are harder to tell apart in optC space.")
+        print("    WARNING: optC similarity spread is NARROWER than optA.")
+        print("    Documents are harder to tell apart in optC space.")
 
 
 def embedding_statistics(optA, optC):
     """Print statistics about embedding values."""
     print(f"\n{'='*70}")
-    print(f"CHECK 4: Embedding value statistics")
+    print("CHECK 4: Embedding value statistics")
     print(f"{'='*70}")
 
     a = optA.astype(np.float32)
     c = optC.astype(np.float32)
 
     # Overall stats
-    print(f"\n  OptA (all values):")
+    print("\n  OptA (all values):")
     print(f"    mean={a.mean():.6f}  std={a.std():.6f}  min={a.min():.6f}  max={a.max():.6f}")
 
-    print(f"\n  OptC (all values, including zeros):")
+    print("\n  OptC (all values, including zeros):")
     print(f"    mean={c.mean():.6f}  std={c.std():.6f}  min={c.min():.6f}  max={c.max():.6f}")
 
     # Non-zero stats for optC
     c_nonzero = c[c != 0]
-    print(f"\n  OptC (non-zero values only, {c_nonzero.size} of {c.size} = {c_nonzero.size/c.size:.2%}):")
-    print(f"    mean={c_nonzero.mean():.6f}  std={c_nonzero.std():.6f}  "
-          f"min={c_nonzero.min():.6f}  max={c_nonzero.max():.6f}")
+    print(
+        f"\n  OptC (non-zero values only, {c_nonzero.size} of {c.size} = {c_nonzero.size/c.size:.2%}):"
+    )
+    print(
+        f"    mean={c_nonzero.mean():.6f}  std={c_nonzero.std():.6f}  "
+        f"min={c_nonzero.min():.6f}  max={c_nonzero.max():.6f}"
+    )
 
     # Per-layer statistics
-    print(f"\n  Per-layer sum statistics (should be ~1.0 for optA, less for optC):")
+    print("\n  Per-layer sum statistics (should be ~1.0 for optA, less for optC):")
     a_layers = a.reshape(-1, NUM_LAYERS, NUM_EXPERTS).sum(axis=2)  # (N, 16)
     c_layers = c.reshape(-1, NUM_LAYERS, NUM_EXPERTS).sum(axis=2)  # (N, 16)
     print(f"    OptA per-layer sum: mean={a_layers.mean():.4f}  std={a_layers.std():.4f}")
@@ -239,23 +259,25 @@ def embedding_statistics(optA, optC):
     # How much of the probability mass does top-32 capture?
     mass_ratio = c_layers / (a_layers + 1e-10)
     print(f"\n  Probability mass captured by top-{TOP_K_SPARSE} (optC_sum / optA_sum):")
-    print(f"    mean={mass_ratio.mean():.4f}  std={mass_ratio.std():.4f}  "
-          f"min={mass_ratio.min():.4f}  max={mass_ratio.max():.4f}")
+    print(
+        f"    mean={mass_ratio.mean():.4f}  std={mass_ratio.std():.4f}  "
+        f"min={mass_ratio.min():.4f}  max={mass_ratio.max():.4f}"
+    )
 
     # Variance of zero vs non-zero entries in optC
-    print(f"\n  Variance decomposition for optC:")
+    print("\n  Variance decomposition for optC:")
     zero_fraction = (c == 0).mean()
     print(f"    Fraction of zeros: {zero_fraction:.4f}")
     print(f"    Variance of all values: {c.var():.8f}")
     print(f"    Variance of non-zero values only: {c_nonzero.var():.8f}")
     print(f"    NOTE: PCA centering will shift zeros to -mean ({-c.mean():.6f}),")
-    print(f"    making them large negative values. This 'zero structure' dominates PCA variance.")
+    print("    making them large negative values. This 'zero structure' dominates PCA variance.")
 
 
 def pca_analysis(optA, optC):
     """Compare PCA components needed for 95% variance."""
     print(f"\n{'='*70}")
-    print(f"CHECK 5: PCA components for 95% variance")
+    print("CHECK 5: PCA components for 95% variance")
     print(f"{'='*70}")
 
     a = optA.astype(np.float32)
@@ -281,31 +303,37 @@ def pca_analysis(optA, optC):
     print(f"    Variance at that point: {cumvar_c[n_comp_c_95-1]:.4f}")
     print(f"    Top-5 component variances: {pca_c.explained_variance_ratio_[:5]}")
 
-    print(f"\n  DIAGNOSTIC:")
+    print("\n  DIAGNOSTIC:")
     print(f"    PCA components ratio (optC/optA): {n_comp_c_95/n_comp_a_95:.2f}")
     if n_comp_c_95 < n_comp_a_95:
-        print(f"    optC needs FEWER PCA components. This suggests the zero structure")
-        print(f"    is dominating — PCA captures 'which experts are active' (binary-like)")
-        print(f"    rather than the fine-grained probability differences between them.")
+        print("    optC needs FEWER PCA components. This suggests the zero structure")
+        print("    is dominating — PCA captures 'which experts are active' (binary-like)")
+        print("    rather than the fine-grained probability differences between them.")
     if pca_c.explained_variance_ratio_[0] > 0.3:
-        print(f"    WARNING: First PCA component of optC explains {pca_c.explained_variance_ratio_[0]:.1%}")
-        print(f"    of variance. This likely captures the shared sparsity pattern (the zeros),")
-        print(f"    not meaningful routing differences.")
+        print(
+            f"    WARNING: First PCA component of optC explains {pca_c.explained_variance_ratio_[0]:.1%}"
+        )
+        print("    of variance. This likely captures the shared sparsity pattern (the zeros),")
+        print("    not meaningful routing differences.")
 
     # Compare what PCA centering does
-    print(f"\n  Effect of PCA centering (mean subtraction):")
+    print("\n  Effect of PCA centering (mean subtraction):")
     a_mean = a.mean(axis=0)
     c_mean = c.mean(axis=0)
-    print(f"    OptA feature means: range [{a_mean.min():.6f}, {a_mean.max():.6f}], "
-          f"std={a_mean.std():.6f}")
-    print(f"    OptC feature means: range [{c_mean.min():.6f}, {c_mean.max():.6f}], "
-          f"std={c_mean.std():.6f}")
+    print(
+        f"    OptA feature means: range [{a_mean.min():.6f}, {a_mean.max():.6f}], "
+        f"std={a_mean.std():.6f}"
+    )
+    print(
+        f"    OptC feature means: range [{c_mean.min():.6f}, {c_mean.max():.6f}], "
+        f"std={c_mean.std():.6f}"
+    )
 
     # Show the fraction of features that are always zero in optC
     always_zero = (c == 0).all(axis=0).sum()
     sometimes_zero = ((c == 0).any(axis=0) & ~(c == 0).all(axis=0)).sum()
     never_zero = (~(c == 0).any(axis=0)).sum()
-    print(f"\n    OptC feature analysis across all docs:")
+    print("\n    OptC feature analysis across all docs:")
     print(f"      Always zero: {always_zero}/{c.shape[1]} features")
     print(f"      Sometimes zero: {sometimes_zero}/{c.shape[1]} features")
     print(f"      Never zero: {never_zero}/{c.shape[1]} features")
@@ -314,7 +342,7 @@ def pca_analysis(optA, optC):
 def post_transform_comparison(optA, optC):
     """Apply the same pca_l2 transform to both and compare."""
     print(f"\n{'='*70}")
-    print(f"CHECK 6: Post-transform (pca_l2) comparison")
+    print("CHECK 6: Post-transform (pca_l2) comparison")
     print(f"{'='*70}")
 
     a = optA.astype(np.float32)
@@ -330,7 +358,7 @@ def post_transform_comparison(optA, optC):
     a_reduced = pca_a_final.fit_transform(a)
     a_normed = normalize(a_reduced, norm="l2")
 
-    print(f"  Transforming optC with pca_l2...")
+    print("  Transforming optC with pca_l2...")
     pca_c = PCA(n_components=min(c.shape[0], c.shape[1]), svd_solver="randomized", random_state=42)
     pca_c.fit(c)
     cumvar_c = np.cumsum(pca_c.explained_variance_ratio_)
@@ -354,22 +382,26 @@ def post_transform_comparison(optA, optC):
 
     da = dist_a[triu]
     dc = dist_c[triu]
-    print(f"    OptA: mean={da.mean():.4f}  std={da.std():.4f}  range=[{da.min():.4f}, {da.max():.4f}]")
-    print(f"    OptC: mean={dc.mean():.4f}  std={dc.std():.4f}  range=[{dc.min():.4f}, {dc.max():.4f}]")
+    print(
+        f"    OptA: mean={da.mean():.4f}  std={da.std():.4f}  range=[{da.min():.4f}, {da.max():.4f}]"
+    )
+    print(
+        f"    OptC: mean={dc.mean():.4f}  std={dc.std():.4f}  range=[{dc.min():.4f}, {dc.max():.4f}]"
+    )
 
     # Coefficient of variation (std/mean) — higher = more separable
     cv_a = da.std() / da.mean()
     cv_c = dc.std() / dc.mean()
-    print(f"\n    Distance coefficient of variation (std/mean):")
+    print("\n    Distance coefficient of variation (std/mean):")
     print(f"      OptA: {cv_a:.4f}")
     print(f"      OptC: {cv_c:.4f}")
     if cv_c < cv_a:
-        print(f"    WARNING: OptC has lower distance CV, meaning distances are more")
-        print(f"    uniform (less spread). This directly causes lower silhouette scores")
-        print(f"    because K-means can't distinguish clusters as well.")
+        print("    WARNING: OptC has lower distance CV, meaning distances are more")
+        print("    uniform (less spread). This directly causes lower silhouette scores")
+        print("    because K-means can't distinguish clusters as well.")
 
     # Alternative: try l2-only (no PCA) on optC
-    print(f"\n  Alternative: L2-only (no PCA) on optC:")
+    print("\n  Alternative: L2-only (no PCA) on optC:")
     c_l2only = normalize(c, norm="l2")
     dist_c_l2 = pairwise_distances(c_l2only[idx], metric="euclidean")
     dc_l2 = dist_c_l2[triu]
@@ -377,11 +409,15 @@ def post_transform_comparison(optA, optC):
     print(f"    OptC (L2 only): mean={dc_l2.mean():.4f}  std={dc_l2.std():.4f}  CV={cv_c_l2:.4f}")
 
     # Alternative: try standardize_pca_l2 on optC
-    print(f"\n  Alternative: standardize + PCA + L2 on optC:")
+    print("\n  Alternative: standardize + PCA + L2 on optC:")
     from sklearn.preprocessing import StandardScaler
+
     c_scaled = StandardScaler().fit_transform(c)
-    pca_cs = PCA(n_components=min(c_scaled.shape[0], c_scaled.shape[1]),
-                 svd_solver="randomized", random_state=42)
+    pca_cs = PCA(
+        n_components=min(c_scaled.shape[0], c_scaled.shape[1]),
+        svd_solver="randomized",
+        random_state=42,
+    )
     pca_cs.fit(c_scaled)
     cumvar_cs = np.cumsum(pca_cs.explained_variance_ratio_)
     n_cs = int(np.searchsorted(cumvar_cs, 0.95)) + 1
@@ -391,7 +427,9 @@ def post_transform_comparison(optA, optC):
     dist_c_std = pairwise_distances(c_std_normed[idx], metric="euclidean")
     dc_std = dist_c_std[triu]
     cv_c_std = dc_std.std() / dc_std.mean()
-    print(f"    OptC (std+PCA+L2, {n_cs} comps): mean={dc_std.mean():.4f}  std={dc_std.std():.4f}  CV={cv_c_std:.4f}")
+    print(
+        f"    OptC (std+PCA+L2, {n_cs} comps): mean={dc_std.mean():.4f}  std={dc_std.std():.4f}  CV={cv_c_std:.4f}"
+    )
 
 
 def main():
@@ -403,8 +441,9 @@ def main():
     optA, optC = load_embeddings()
 
     assert optA.shape == optC.shape, f"Shape mismatch: optA={optA.shape} vs optC={optC.shape}"
-    assert optA.shape[1] == NUM_LAYERS * NUM_EXPERTS, \
-        f"Unexpected dim: {optA.shape[1]} != {NUM_LAYERS * NUM_EXPERTS}"
+    assert (
+        optA.shape[1] == NUM_LAYERS * NUM_EXPERTS
+    ), f"Unexpected dim: {optA.shape[1]} != {NUM_LAYERS * NUM_EXPERTS}"
 
     check_sparsity(optC, n_sample=500)
     check_value_match(optA, optC, n_sample=500)
@@ -416,7 +455,8 @@ def main():
     print(f"\n{'='*70}")
     print("SUMMARY")
     print(f"{'='*70}")
-    print("""
+    print(
+        """
 Likely root causes for low optC silhouette scores:
 
 1. PCA CENTERING ON SPARSE DATA: PCA subtracts the mean from each feature.
@@ -441,7 +481,8 @@ Potential fixes:
   - Compute optC on float32 values before casting to float16
   - Try a higher TOP_K_SPARSE (e.g., 48 or 64) to retain more signal
   - Consider TF-IDF-like reweighting: upweight rare experts, downweight common ones
-""")
+"""
+    )
 
 
 if __name__ == "__main__":

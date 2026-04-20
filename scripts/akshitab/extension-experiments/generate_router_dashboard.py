@@ -23,8 +23,7 @@ def load_data(input_dir):
             with open(os.path.join(model_path, f)) as fh:
                 line = json.loads(fh.readline())
                 rounded = [
-                    [round(v, 6) for v in layer]
-                    for layer in line["avg_router_probabilities"]
+                    [round(v, 6) for v in layer] for layer in line["avg_router_probabilities"]
                 ]
                 data[model_dir][task] = rounded
     return data
@@ -482,9 +481,15 @@ populateSelects();
 
 def main():
     parser = argparse.ArgumentParser(description="Generate router activations dashboard")
-    parser.add_argument("--input", default="router_evals", help="Input directory with router eval JSONL files")
+    parser.add_argument(
+        "--input", default="router_evals", help="Input directory with router eval JSONL files"
+    )
     parser.add_argument("--output", default="router_dashboard.html", help="Output HTML file")
-    parser.add_argument("--nicknames", default=None, help="JSON file mapping model directory names to display nicknames")
+    parser.add_argument(
+        "--nicknames",
+        default=None,
+        help="JSON file mapping model directory names to display nicknames",
+    )
     args = parser.parse_args()
 
     data = load_data(args.input)

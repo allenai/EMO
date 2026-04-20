@@ -221,7 +221,9 @@ def add_experts(
                     )
                     with torch.no_grad():
                         for i in range(num_new_experts):
-                            target_param[insert_pos + i, :].copy_(source_param[random_expert_ids[i], :])
+                            target_param[insert_pos + i, :].copy_(
+                                source_param[random_expert_ids[i], :]
+                            )
                 elif init_method == AddExpertInitMethod.AVERAGE:
                     logger.info(
                         f"Initializing new expert weights with average of all experts for {name}"
@@ -271,7 +273,7 @@ def add_experts(
 
                 # Copy original experts: non-shared before insert_pos, shared after new experts
                 target_param[:insert_pos, :] = source_param[:insert_pos, :]
-                target_param[insert_pos + num_new_experts:, :] = source_param[insert_pos:, :]
+                target_param[insert_pos + num_new_experts :, :] = source_param[insert_pos:, :]
                 with torch.no_grad():
                     new_param.data.copy_(target_param.view(-1))
 
@@ -349,7 +351,7 @@ def add_experts(
 
                 # Copy original experts: non-shared before insert_pos, shared after new experts
                 target_param[:insert_pos, :, :] = source_param[:insert_pos, :, :]
-                target_param[insert_pos + num_new_experts:, :, :] = source_param[insert_pos:, :, :]
+                target_param[insert_pos + num_new_experts :, :, :] = source_param[insert_pos:, :, :]
                 with torch.no_grad():
                     new_param.data.copy_(target_param.view(-1, source_columns))
 
@@ -432,9 +434,7 @@ if __name__ == "__main__":
     setup_logging()
     args = parse_args()
     exclude_experts = (
-        [int(x) for x in args.exclude_experts.split(",")]
-        if args.exclude_experts
-        else None
+        [int(x) for x in args.exclude_experts.split(",")] if args.exclude_experts else None
     )
     if args.activation_file is not None:
         top_k_expert_indices = get_similar_experts(

@@ -1,4 +1,7 @@
 #!/bin/bash
+# Make src/ a top-level import root so bare imports like `offline_evals` and
+# `scripts.eval.tasks` resolve. pip install -e . only registers olmo_core*.
+export PYTHONPATH="$(pwd)/src${PYTHONPATH:+:${PYTHONPATH}}"
 #
 # HuggingFace-Native Finetuning Pipeline with Greedy Layerwise Variable Expert Pruning
 #
@@ -41,6 +44,7 @@ PRUNED_MODEL=""
 LEARNING_RATE=5e-5
 RUN_NAME=""
 PRUNE_MODE=""
+NUM_PRUNE_EXAMPLES=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -107,6 +111,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --prune-mode)
             PRUNE_MODE="$2"
+            shift 2
+            ;;
+        --num-prune-examples)
+            NUM_PRUNE_EXAMPLES="$2"
             shift 2
             ;;
         -h|--help)
@@ -217,6 +225,11 @@ if [ "$SKIP_PRUNE" = false ]; then
     echo "Steps 1+2: Greedy layerwise variable pruning..."
     echo "========================================"
 
+    NUM_CAL_FLAG=()
+    if [ -n "$NUM_PRUNE_EXAMPLES" ]; then
+        NUM_CAL_FLAG=(--num-calibration "$NUM_PRUNE_EXAMPLES")
+    fi
+
     python -m src.hf_training.greedy_prune_layerwise_variable \
         --model "$MODEL" \
         --task "$TASK" \
@@ -224,7 +237,8 @@ if [ "$SKIP_PRUNE" = false ]; then
         --keep-k-per-layer "$KEEP_K_PER_LAYER" \
         --num-shared-experts "$NUM_SHARED_EXPERTS" \
         --save-path "$PRUNED_MODEL" \
-        --batch-size 32
+        --batch-size 32 \
+        "${NUM_CAL_FLAG[@]}"
 
     echo "Pruned model saved to: $PRUNED_MODEL"
 else
@@ -278,15 +292,69 @@ all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
 for checkpoint in "${all_checkpoints[@]}"; do
     echo "Evaluating checkpoint: $checkpoint"
     checkpoint_num=$(basename "$checkpoint" | sed 's/checkpoint-//')
+
+    EVAL_BATCH_SIZE=32
+    if [[ $TASK == *"history"* ]]; then
+      echo "Setting eval batch size to 4 for history task"
+      EVAL_BATCH_SIZE=4
+    fi
+    if [[ $TASK == *"gsm8k_generation_8shot"* ]]; then
+      echo "Setting eval batch size to 16 for gsm8k_generation_8shot task"
+      EVAL_BATCH_SIZE=16
+    fi
+
     python -m src.scripts.eval.launch_eval \
         --model "$checkpoint" \
         --model-type hf \
         --task "$TASK-pruned" \
         --pruned_split "test" \
-        --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_0313/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
-        --batch-size 32 \
+        --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
+        --batch-size $EVAL_BATCH_SIZE \
         --gpus "$NUM_GPUS"
 done
+
+# Step 5: Per-subject evals (for MMLU category/cluster tasks only)
+MMLU_SUBJECTS=$(python -m src.scripts.eval.get_mmlu_subjects "$TASK" 2>/dev/null | grep -v "^Warning:" || true)
+
+if [ -n "$MMLU_SUBJECTS" ]; then
+    echo ""
+    echo "Step 5: Per-subject MMLU evals..."
+    echo "========================================"
+
+    # If the parent task is a merged category (mmlu_merged_<cat>), route per-subject
+    # evals to the merged per-subject task entries so naming stays consistent.
+    if [[ $TASK == mmlu_merged_* ]]; then
+        SUBJECT_TASK_PREFIX="mmlu_merged_"
+    else
+        SUBJECT_TASK_PREFIX="mmlu_"
+    fi
+
+    for checkpoint in "${all_checkpoints[@]}"; do
+        checkpoint_num=$(basename "$checkpoint" | sed 's/checkpoint-//')
+        echo "Per-subject evals for checkpoint: $checkpoint"
+
+        while IFS= read -r subject; do
+            echo "  Evaluating subject: $subject"
+
+            EVAL_BATCH_SIZE=32
+            if [[ $subject == *"history"* ]]; then
+                EVAL_BATCH_SIZE=4
+            fi
+
+            python -m src.scripts.eval.launch_eval \
+                --model "$checkpoint" \
+                --model-type hf \
+                --task "${SUBJECT_TASK_PREFIX}${subject}-pruned" \
+                --pruned_split "test" \
+                --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}/per_subject/${subject}" \
+                --batch-size $EVAL_BATCH_SIZE \
+                --gpus "$NUM_GPUS"
+        done <<< "$MMLU_SUBJECTS"
+    done
+else
+    echo ""
+    echo "Skipping per-subject evals (task $TASK is not an MMLU category/cluster)"
+fi
 
 echo ""
 echo "========================================"
@@ -294,3 +362,11 @@ echo "Pipeline complete!"
 echo "========================================"
 echo "Pruned model: $PRUNED_MODEL"
 echo "Finetuned model: $FINETUNED_MODEL"
+
+# Step 6: Cleanup — remove local output directory to save disk space (results are on S3)
+echo ""
+echo "Step 6: Cleaning up local output directory..."
+echo "========================================"
+echo "Removing: $OUTPUT_DIR"
+rm -rf "$OUTPUT_DIR"
+echo "Cleanup complete."

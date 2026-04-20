@@ -16,44 +16,61 @@ Usage:
 import argparse
 import gzip
 import json
+import logging
 import os
+from typing import Any
 
 import numpy as np
+import umap as umap_lib
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import normalize
-import umap as umap_lib
 
-import logging
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Category colors (same as document-level viz)
 CATEGORY_COLORS = {
-    "code":      "#4A90E2",
-    "science":   "#27AE60",
-    "news":      "#E67E22",
-    "personal":  "#E91E8C",
-    "business":  "#9B59B6",
-    "health":    "#E74C3C",
-    "arts":      "#F39C12",
+    "code": "#4A90E2",
+    "science": "#27AE60",
+    "news": "#E67E22",
+    "personal": "#E91E8C",
+    "business": "#9B59B6",
+    "health": "#E74C3C",
+    "arts": "#F39C12",
     "education": "#1ABC9C",
     "reference": "#7F8C8D",
-    "spam":      "#BDC3C7",
+    "spam": "#BDC3C7",
 }
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--cluster-dir", required=True,
-                        help="Directory containing assignments.npy, summary.json, run_info.json")
-    parser.add_argument("--data-dir", default=None,
-                        help="Dir with token data files. Defaults to parent of --cluster-dir.")
-    parser.add_argument("--emb-file", default=None,
-                        help="Path to embedding .npy file. Auto-detected from run_info.json.")
-    parser.add_argument("--context-window", type=int, default=10,
-                        help="Number of tokens to show before/after the target token (default: 10)")
-    parser.add_argument("--model-path", default=None,
-                        help="Path to HF model for tokenizer. Auto-detected from info.json.")
+    parser.add_argument(
+        "--cluster-dir",
+        required=True,
+        help="Directory containing assignments.npy, summary.json, run_info.json",
+    )
+    parser.add_argument(
+        "--data-dir",
+        default=None,
+        help="Dir with token data files. Defaults to parent of --cluster-dir.",
+    )
+    parser.add_argument(
+        "--emb-file",
+        default=None,
+        help="Path to embedding .npy file. Auto-detected from run_info.json.",
+    )
+    parser.add_argument(
+        "--context-window",
+        type=int,
+        default=10,
+        help="Number of tokens to show before/after the target token (default: 10)",
+    )
+    parser.add_argument(
+        "--model-path",
+        default=None,
+        help="Path to HF model for tokenizer. Auto-detected from info.json.",
+    )
     args = parser.parse_args()
 
     cluster_dir = args.cluster_dir
@@ -80,6 +97,7 @@ def main():
     model_path = args.model_path or info.get("model_path", "")
     logger.info(f"Loading tokenizer from {model_path}...")
     from transformers import AutoTokenizer
+
     tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
     # Load embeddings + assignments
@@ -91,7 +109,7 @@ def main():
     logger.info("Loading token metadata...")
     meta = []
     meta_path = os.path.join(data_dir, "metadata_tokens.jsonl.gz")
-    with gzip.open(meta_path, "rt") as f:
+    with gzip.open(meta_path, "rt") as f:  # type: ignore[assignment]
         for line in f:
             meta.append(json.loads(line))
 
@@ -126,8 +144,14 @@ def main():
         reduced_normed = normalize(reduced, norm="l2")
 
         logger.info("Running UMAP...")
-        reducer = umap_lib.UMAP(n_components=2, n_neighbors=30, min_dist=0.1,
-                                metric="euclidean", random_state=42, verbose=False)
+        reducer = umap_lib.UMAP(
+            n_components=2,
+            n_neighbors=30,
+            min_dist=0.1,
+            metric="euclidean",
+            random_state=42,
+            verbose=False,
+        )
         coords_2d = reducer.fit_transform(reduced_normed)
         np.save(umap_path, coords_2d)
         logger.info(f"Saved UMAP coords → {umap_path}")
@@ -150,8 +174,8 @@ def main():
 
         # Decode each token individually for accurate highlighting
         before_ids = doc_tokens[ctx_start:pos].tolist()
-        target_id = doc_tokens[pos:pos + 1].tolist()
-        after_ids = doc_tokens[pos + 1:ctx_end].tolist()
+        target_id = doc_tokens[pos : pos + 1].tolist()
+        after_ids = doc_tokens[pos + 1 : ctx_end].tolist()
 
         before_text = tokenizer.decode(before_ids, skip_special_tokens=True) if before_ids else ""
         target_text = tokenizer.decode(target_id, skip_special_tokens=True)
@@ -169,19 +193,21 @@ def main():
         m = meta[token_idx]
         before, target, after = get_token_context(token_idx)
         xy = coords_2d[vi]
-        docs_js.append({
-            "i": int(token_idx),
-            "c": int(labels[token_idx]),
-            "s": m["source"],
-            "di": m["doc_index"],
-            "tp": m["token_position"],
-            "tid": m["token_id"],
-            "before": before,
-            "target": target,
-            "after": after,
-            "x": round(float(xy[0]), 3),
-            "y": round(float(xy[1]), 3),
-        })
+        docs_js.append(
+            {
+                "i": int(token_idx),
+                "c": int(labels[token_idx]),
+                "s": m["source"],
+                "di": m["doc_index"],
+                "tp": m["token_position"],
+                "tid": m["token_id"],
+                "before": before,
+                "target": target,
+                "after": after,
+                "x": round(float(xy[0]), 3),
+                "y": round(float(xy[1]), 3),
+            }
+        )
 
     # Build representative token contexts for each cluster summary
     logger.info("Building representative token contexts for clusters...")
@@ -221,25 +247,29 @@ def main():
 
         rep_tokens = []
         for rd in c.get("representative_docs", []):
-            rep_tokens.append({
-                "source": rd.get("source", ""),
-                "doc_index": rd.get("doc_index", rd.get("idx", -1)),
-                "token_position": rd.get("token_position", -1),
-                "before": rd.get("before", ""),
-                "target": rd.get("target", ""),
-                "after": rd.get("after", ""),
-            })
+            rep_tokens.append(
+                {
+                    "source": rd.get("source", ""),
+                    "doc_index": rd.get("doc_index", rd.get("idx", -1)),
+                    "token_position": rd.get("token_position", -1),
+                    "before": rd.get("before", ""),
+                    "target": rd.get("target", ""),
+                    "after": rd.get("after", ""),
+                }
+            )
 
-        clusters_js.append({
-            "id": cid,
-            "label": label,
-            "category": cat,
-            "color": CATEGORY_COLORS[cat],
-            "size": c["size"],
-            "source_counts": c["source_counts"],
-            "top_experts": c["top10_experts_global"],
-            "rep_tokens": rep_tokens,
-        })
+        clusters_js.append(
+            {
+                "id": cid,
+                "label": label,
+                "category": cat,
+                "color": CATEGORY_COLORS[cat],
+                "size": c["size"],
+                "source_counts": c["source_counts"],
+                "top_experts": c["top10_experts_global"],
+                "rep_tokens": rep_tokens,
+            }
+        )
 
     # Precompute per-document cluster stats (using ALL tokens, not just subsampled)
     logger.info("Computing per-document cluster statistics...")
@@ -259,17 +289,19 @@ def main():
         ds = doc_cluster_map[di]
         n_clusters = len(ds["clusters"])
         spread_counts.append(n_clusters)
-        doc_stats_js.append({
-            "di": di,
-            "s": ds["source"],
-            "total": ds["total"],
-            "nClusters": n_clusters,
-            "clusters": ds["clusters"],  # {cluster_id: count}
-        })
+        doc_stats_js.append(
+            {
+                "di": di,
+                "s": ds["source"],
+                "total": ds["total"],
+                "nClusters": n_clusters,
+                "clusters": ds["clusters"],  # {cluster_id: count}
+            }
+        )
 
     # Aggregate stats
     spread_counts_np = np.array(spread_counts)
-    agg_stats = {
+    agg_stats: dict[str, Any] = {
         "num_docs": len(doc_cluster_map),
         "mean_clusters": round(float(spread_counts_np.mean()), 2),
         "median_clusters": int(np.median(spread_counts_np)),
@@ -281,10 +313,12 @@ def main():
     for nc in sorted(set(spread_counts)):
         agg_stats["histogram"][nc] = int((spread_counts_np == nc).sum())
 
-    logger.info(f"  {agg_stats['num_docs']} docs, "
-                f"mean {agg_stats['mean_clusters']} clusters/doc, "
-                f"median {agg_stats['median_clusters']}, "
-                f"max {agg_stats['max_clusters']}")
+    logger.info(
+        f"  {agg_stats['num_docs']} docs, "
+        f"mean {agg_stats['mean_clusters']} clusters/doc, "
+        f"median {agg_stats['median_clusters']}, "
+        f"max {agg_stats['max_clusters']}"
+    )
 
     # Build per-document full text with per-token cluster assignments
     logger.info("Building per-document full text with cluster assignments...")
@@ -303,18 +337,25 @@ def main():
             decoded = tokenizer.decode([int(tid)], skip_special_tokens=False)
             cluster_id = pos_to_cluster.get((di, pos), -1)
             tokens_list.append({"t": decoded, "c": cluster_id})
-        doc_texts_js.append({
-            "di": di,
-            "s": doc_cluster_map[di]["source"],
-            "tokens": tokens_list,
-        })
-    logger.info(f"  Decoded {sum(len(d['tokens']) for d in doc_texts_js)} tokens across {len(doc_texts_js)} docs")
+        doc_texts_js.append(
+            {
+                "di": di,
+                "s": doc_cluster_map[di]["source"],
+                "tokens": tokens_list,
+            }
+        )
+    logger.info(
+        f"  Decoded {sum(len(d['tokens']) for d in doc_texts_js)} tokens across {len(doc_texts_js)} docs"
+    )
 
     # Build per-unique-token cluster distribution
     logger.info("Computing per-unique-token cluster distributions...")
     from collections import defaultdict
-    token_cluster_counts = defaultdict(lambda: defaultdict(int))  # token_id -> {cluster: count}
-    token_total_counts = defaultdict(int)
+
+    token_cluster_counts: dict[int, dict[int, int]] = defaultdict(
+        lambda: defaultdict(int)
+    )  # token_id -> {cluster: count}
+    token_total_counts: dict[int, int] = defaultdict(int)
     for i, m in enumerate(meta):
         tid = m["token_id"]
         cl = int(labels[i])
@@ -334,27 +375,53 @@ def main():
         probs_arr = np.array(list(clusters.values()), dtype=np.float64)
         probs_arr = probs_arr / probs_arr.sum()
         entropy = float(-np.sum(probs_arr * np.log2(probs_arr)))
-        unique_tokens_js.append({
-            "id": tid,
-            "t": decoded,
-            "n": total,
-            "nc": n_clusters,
-            "ent": round(entropy, 3),
-            "clusters": clusters,
-        })
-    logger.info(f"  {len(unique_tokens_js)} unique tokens (>= {min_count} occurrences) "
-                f"out of {len(token_total_counts)} total unique tokens")
+        unique_tokens_js.append(
+            {
+                "id": tid,
+                "t": decoded,
+                "n": total,
+                "nc": n_clusters,
+                "ent": round(entropy, 3),
+                "clusters": clusters,
+            }
+        )
+    logger.info(
+        f"  {len(unique_tokens_js)} unique tokens (>= {min_count} occurrences) "
+        f"out of {len(token_total_counts)} total unique tokens"
+    )
 
     emb_label = f"{run_info['embedding']}_{run_info['transform']}_{run_info['cluster']}"
 
     html_path = os.path.join(cluster_dir, "cluster_explorer.html")
-    write_html(clusters_js, docs_js, doc_stats_js, agg_stats, doc_texts_js, unique_tokens_js,
-               info, k, emb_label, html_path, ctx_win)
+    write_html(
+        clusters_js,
+        docs_js,
+        doc_stats_js,
+        agg_stats,
+        doc_texts_js,
+        unique_tokens_js,
+        info,
+        k,
+        emb_label,
+        html_path,
+        ctx_win,
+    )
     logger.info(f"Saved HTML visualizer → {html_path}")
 
 
-def write_html(clusters_js, docs_js, doc_stats_js, agg_stats, doc_texts_js, unique_tokens_js,
-               info, k, emb_label, path, ctx_win):
+def write_html(
+    clusters_js,
+    docs_js,
+    doc_stats_js,
+    agg_stats,
+    doc_texts_js,
+    unique_tokens_js,
+    info,
+    k,
+    emb_label,
+    path,
+    ctx_win,
+):
     def safe_json(obj):
         return json.dumps(obj).replace("</", "<\\/")
 
@@ -566,6 +633,16 @@ def write_html(clusters_js, docs_js, doc_stats_js, agg_stats, doc_texts_js, uniq
   .doc-token.unsampled {{ color: var(--text-dim); }}
   #doc-reader-tooltip {{ position: fixed; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 11px; pointer-events: none; z-index: 110; display: none; white-space: nowrap; }}
 
+  /* Document preview cards */
+  .doc-preview-card {{ background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }}
+  .doc-preview-header {{ display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); cursor: pointer; }}
+  .doc-preview-header:hover {{ background: var(--bg); }}
+  .doc-preview-pct {{ font-size: 14px; font-weight: 700; min-width: 48px; text-align: right; }}
+  .doc-preview-info {{ font-size: 11px; color: var(--text-dim); flex: 1; }}
+  .doc-preview-body {{ padding: 10px 14px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 12px; line-height: 1.9; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto; }}
+  .doc-preview-body .tok-hl {{ background: var(--highlight); color: #000; padding: 1px 2px; border-radius: 3px; font-weight: 700; }}
+  .doc-preview-body .tok-dim {{ color: var(--text-dim); opacity: 0.5; }}
+
   .badge-dclm {{ background: #1e3a5f; color: #64b0f4; }}
   .badge-starcoder {{ background: #1e3a2f; color: #4caf78; }}
   .badge-pes2o {{ background: #3a2b1e; color: #f4a04a; }}
@@ -610,30 +687,22 @@ def write_html(clusters_js, docs_js, doc_stats_js, agg_stats, doc_texts_js, uniq
         </div>
         <div id="detail-content" style="display:none">
           <div>
-            <div class="section-title">Top Documents (highest proportion of this cluster)</div>
-            <div id="top-docs-list"></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <div class="section-title" style="margin-bottom:0">Document Previews (tokens in cluster highlighted)</div>
+              <select id="doc-preview-count" onchange="renderDocPreviews()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:4px 8px;border-radius:6px;font-size:11px;outline:none;">
+                <option value="10">Top 10</option>
+                <option value="20" selected>Top 20</option>
+                <option value="50">Top 50</option>
+                <option value="100">Top 100</option>
+                <option value="200">Top 200</option>
+              </select>
+            </div>
+            <div id="doc-preview-list"></div>
+            <div id="doc-preview-load-more-wrap" style="text-align:center;padding:8px 0;"></div>
           </div>
           <div>
             <div class="section-title">Source Breakdown</div>
             <div id="src-breakdown"></div>
-          </div>
-          <div>
-            <div class="section-title">Top Experts (summed across all layers)</div>
-            <div id="experts-list"></div>
-          </div>
-          <div>
-            <div class="section-title">Representative Tokens (closest to centroid) — highlighted with ±{ctx_win} context</div>
-            <div id="rep-tokens-list"></div>
-          </div>
-          <div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-              <div class="section-title" id="token-browser-title" style="margin-bottom:0">All Tokens in Cluster</div>
-              <input id="token-search" type="text" placeholder="Filter tokens…" oninput="filterTokenBrowser()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:11px;width:160px;outline:none;">
-              <button onclick="toggleTokenBrowser()" id="token-browser-toggle" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;">Show</button>
-            </div>
-            <div id="token-browser-wrap" style="display:none">
-              <div id="token-browser-list"></div>
-            </div>
           </div>
         </div>
       </div>
@@ -878,35 +947,8 @@ function selectCluster(id) {{
   document.getElementById('detail-placeholder').style.display = 'none';
   document.getElementById('detail-content').style.display = '';
 
-  // Top documents — sorted by proportion of tokens in this cluster
-  const topDocsEl = document.getElementById('top-docs-list');
-  topDocsEl.innerHTML = '';
-  const cid = c.id;
-  const docsWithCluster = DOC_STATS
-    .filter(ds => ds.clusters[cid] !== undefined)
-    .map(ds => {{
-      const cnt = ds.clusters[cid];
-      return {{ ...ds, clusterCount: cnt, pct: cnt / ds.total }};
-    }})
-    .sort((a, b) => b.pct - a.pct);
-  docsWithCluster.slice(0, 10).forEach(ds => {{
-    const pctStr = (ds.pct * 100).toFixed(1);
-    const badgeClass = 'badge-' + ds.s.replace(/[^a-z0-9]/g, '-');
-    const row = document.createElement('div');
-    row.className = 'top-doc-row';
-    row.innerHTML = `
-      <div class="top-doc-pct" style="color:${{c.color}}">${{pctStr}}%</div>
-      <div class="top-doc-bar"><div class="top-doc-bar-fill" style="width:${{pctStr}}%;background:${{c.color}}"></div></div>
-      <span class="source-badge ${{badgeClass}}">${{ds.s}}</span>
-      <div class="top-doc-info">Doc #${{ds.di}} · ${{ds.clusterCount}}/${{ds.total}} tokens · ${{ds.nClusters}} clusters total</div>`;
-    row.onclick = () => openDocReader(ds.di);
-    topDocsEl.appendChild(row);
-  }});
-  if (docsWithCluster.length === 0) {{
-    topDocsEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px;">No documents found</div>';
-  }}
-
   // Sources
+  const cid = c.id;
   const total = c.size;
   const srcEl = document.getElementById('src-breakdown');
   srcEl.innerHTML = '';
@@ -921,36 +963,11 @@ function selectCluster(id) {{
       </div>`;
   }});
 
-  // Experts
-  const expEl = document.getElementById('experts-list');
-  expEl.innerHTML = c.top_experts.map((e,i) =>
-    `<span class="expert-tag" style="opacity:${{1 - i*0.07}}">#${{e}}</span>`).join('');
-
-  // Rep tokens with context + doc spread annotation
-  const repEl = document.getElementById('rep-tokens-list');
-  repEl.innerHTML = '';
-  c.rep_tokens.forEach((tok, i) => {{
-    const badgeClass = 'badge-' + tok.source.replace(/[^a-z0-9]/g, '-');
-    const div = document.createElement('div');
-    div.className = 'token-context';
-    div.innerHTML = `
-      <div class="token-context-header">
-        <span class="source-badge ${{badgeClass}}">${{tok.source}}</span>
-        <span style="color:var(--text-dim);font-size:11px">doc #${{tok.doc_index}} · pos ${{tok.token_position}}</span>
-        <span style="margin-left:auto;color:var(--text-dim);font-size:11px">rep #${{i+1}}</span>
-      </div>
-      <div class="token-context-text"><span class="token-dim">${{escHtml(tok.before)}}</span><span class="token-highlight">${{escHtml(tok.target)}}</span><span class="token-dim">${{escHtml(tok.after)}}</span></div>
-      ${{renderDocSpreadBar(tok.doc_index)}}`;
-    repEl.appendChild(div);
-  }});
-
-  // Load all cluster tokens from DOCS
-  clusterTokens = DOCS.filter(d => d.c === id);
-  filteredClusterTokens = [...clusterTokens];
-  document.getElementById('token-browser-title').textContent =
-    `All Tokens in Cluster (${{clusterTokens.length.toLocaleString()}} shown)`;
-  document.getElementById('token-search').value = '';
-  if (tokenBrowserOpen) renderTokenBrowser();
+  // Render document previews
+  currentClusterId = id;
+  docPreviewsShown = 0;
+  document.getElementById('doc-preview-list').innerHTML = '';
+  renderDocPreviews();
 }}
 
 let clusterTokens = [];
@@ -996,6 +1013,81 @@ function renderTokenBrowser() {{
     more.style.cssText = 'color:var(--text-dim);text-align:center;padding:12px;font-size:12px;';
     more.textContent = `… ${{(filteredClusterTokens.length - limit).toLocaleString()}} more tokens (use filter to narrow)`;
     wrap.appendChild(more);
+  }}
+}}
+
+// ── Document previews for cluster detail ──
+let currentClusterId = null;
+let docPreviewsShown = 0;
+let cachedDocsWithCluster = [];
+
+function renderDocPreviews() {{
+  if (currentClusterId === null) return;
+
+  const batchSize = parseInt(document.getElementById('doc-preview-count').value) || 20;
+  const cid = currentClusterId;
+  const wrap = document.getElementById('doc-preview-list');
+  const loadMoreWrap = document.getElementById('doc-preview-load-more-wrap');
+
+  // Rebuild sorted doc list if starting fresh
+  if (docPreviewsShown === 0) {{
+    cachedDocsWithCluster = DOC_STATS
+      .filter(ds => ds.clusters[cid] !== undefined)
+      .map(ds => ({{ ...ds, clusterCount: ds.clusters[cid], pct: ds.clusters[cid] / ds.total }}))
+      .sort((a, b) => b.pct - a.pct);
+  }}
+
+  const c = CLUSTERS.find(x => x.id === cid);
+  const hlColor = c ? c.color : '#fbbf24';
+  const end = Math.min(docPreviewsShown + batchSize, cachedDocsWithCluster.length);
+
+  for (let idx = docPreviewsShown; idx < end; idx++) {{
+    const ds = cachedDocsWithCluster[idx];
+    const dt = docTextLookup[ds.di];
+    if (!dt) continue;
+
+    const pctStr = (ds.pct * 100).toFixed(1);
+    const badgeClass = 'badge-' + ds.s.replace(/[^a-z0-9]/g, '-');
+
+    const card = document.createElement('div');
+    card.className = 'doc-preview-card';
+
+    const header = document.createElement('div');
+    header.className = 'doc-preview-header';
+    header.innerHTML = `
+      <div class="doc-preview-pct" style="color:${{hlColor}}">${{pctStr}}%</div>
+      <span class="source-badge ${{badgeClass}}">${{ds.s}}</span>
+      <div class="doc-preview-info">Doc #${{ds.di}} · ${{ds.clusterCount}}/${{ds.total}} tokens in cluster · ${{ds.nClusters}} clusters total</div>
+      <span style="color:var(--text-dim);font-size:11px;cursor:pointer" title="Open in full reader">⤢</span>`;
+    header.onclick = () => openDocReader(ds.di);
+    card.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'doc-preview-body';
+    dt.tokens.forEach(tok => {{
+      const span = document.createElement('span');
+      span.textContent = tok.t;
+      if (tok.c === cid) {{
+        span.className = 'tok-hl';
+      }} else {{
+        span.className = 'tok-dim';
+      }}
+      body.appendChild(span);
+    }});
+    card.appendChild(body);
+    wrap.appendChild(card);
+  }}
+
+  docPreviewsShown = end;
+
+  // Update load more button
+  const remaining = cachedDocsWithCluster.length - docPreviewsShown;
+  if (remaining > 0) {{
+    loadMoreWrap.innerHTML = `<button onclick="renderDocPreviews()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 24px;border-radius:6px;cursor:pointer;font-size:12px;">Load ${{Math.min(batchSize, remaining)}} more (${{remaining}} remaining)</button>`;
+  }} else {{
+    loadMoreWrap.innerHTML = docPreviewsShown > 0
+      ? `<span style="color:var(--text-dim);font-size:11px;">All ${{cachedDocsWithCluster.length}} documents shown</span>`
+      : '<div style="color:var(--text-dim);font-size:12px;">No documents found</div>';
   }}
 }}
 
