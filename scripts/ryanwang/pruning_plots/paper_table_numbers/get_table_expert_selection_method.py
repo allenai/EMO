@@ -13,10 +13,12 @@ annealed models are compared:
     Reg. MoE      / 8              -> "moe 1T + anneal (keepk 8)"
     Reg. MoE      / 16             -> "moe 1T + anneal (keepk 16)"
     Reg. MoE      / 32             -> "moe 1T + anneal (keepk 32)"
+    Reg. MoE      / 64             -> "moe 1T + anneal (keepk 64)"
     Reg. MoE      / 128 (trained)  -> "moe 1T + anneal (keepk 128)"
     FlexMoE       / 8              -> "specialized moe 1T + anneal (keepk 8)"
     FlexMoE       / 16             -> "specialized moe 1T + anneal (keepk 16)"
     FlexMoE       / 32             -> "specialized moe 1T + anneal (keepk 32)"
+    FlexMoE       / 64             -> "specialized moe 1T + anneal (keepk 64)"
     FlexMoE       / 128 (trained)  -> "specialized moe 1T + anneal (keepk 128)"
 """
 
@@ -37,10 +39,12 @@ ROWS: List[Tuple[str, str, str]] = [
     ("Reg. MoE", "8", "moe 1T + anneal (keepk 8)"),
     ("Reg. MoE", "16", "moe 1T + anneal (keepk 16)"),
     ("Reg. MoE", "32", "moe 1T + anneal (keepk 32)"),
+    ("Reg. MoE", "64", "moe 1T + anneal (keepk 64)"),
     ("Reg. MoE", "128 (trained)", "moe 1T + anneal (keepk 128)"),
     ("FlexMoE", "8", "specialized moe 1T + anneal (keepk 8)"),
     ("FlexMoE", "16", "specialized moe 1T + anneal (keepk 16)"),
     ("FlexMoE", "32", "specialized moe 1T + anneal (keepk 32)"),
+    ("FlexMoE", "64", "specialized moe 1T + anneal (keepk 64)"),
     ("FlexMoE", "128 (trained)", "specialized moe 1T + anneal (keepk 128)"),
 ]
 

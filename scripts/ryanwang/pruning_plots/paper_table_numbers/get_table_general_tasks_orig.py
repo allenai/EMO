@@ -8,7 +8,7 @@ produced by ``get_table_scores_prune_evals_final.py`` and writes:
 
 Row mapping (from the .tex source header):
 
-    OLMoE^dagger   5T    -> (no data)
+    OLMoE^dagger   5T    -> "olmoe_1b_7b"
     Dense          1T    -> (no data)
     Reg. MoE       1T    -> "moe 1T + anneal (keepk 128)"
     FlexMoE (Ours) 1T    -> "specialized moe 1T + anneal (keepk 128)"
@@ -37,7 +37,7 @@ DEFAULT_OUTPUT_PATH = REPO_ROOT / "claude_outputs" / "prune_plots" / "general_ta
 
 # (display_name, train_tokens, model_key_in_csvs_or_None)
 ROWS = [
-    ("OLMoE^dagger", "5T", None),
+    ("OLMoE^dagger", "5T", "olmoe_1b_7b"),
     ("Dense", "1T", None),
     ("Reg. MoE", "1T", "moe 1T + anneal (keepk 128)"),
     ("FlexMoE (Ours)", "1T", "specialized moe 1T + anneal (keepk 128)"),

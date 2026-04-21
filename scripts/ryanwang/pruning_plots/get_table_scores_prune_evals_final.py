@@ -47,6 +47,11 @@ KEEPK_VARIANTS_32_ONLY = [
     {"keepk_suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": " "},
 ]
 
+# For external baselines whose task dirs are plain "{task}" (no keepk / prunemode).
+KEEPK_VARIANTS_PLAIN = [
+    {"keepk_suffix": "", "label": " "},
+]
+
 
 # Build "variants" in the old format for backward compat (used by plots, row ordering).
 # These use the layerwise suffix only — the ep lookup is done in collect_table.
@@ -92,6 +97,15 @@ MODEL_SPECS: Dict[str, Dict[str, object]] = {
         "label": "specialized moe 1T + anneal",
         "keepk_variants": KEEPK_VARIANTS_ALL,
         "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
+    },
+    # External baseline: AllenAI OLMoE-1B-7B-0924.
+    # Task dirs are plain "{task}" (no keepk suffix, no prunemode suffix).
+    # Only (lw) column is populated — (ep) has no data for this model.
+    "allenaiOLMoE-1B-7B-0924": {
+        "label": "olmoe_1b_7b",
+        "keepk_variants": KEEPK_VARIANTS_PLAIN,
+        "variants": [{"suffix": "", "label": " "}],
+        "prunemode_override": {"lw": ""},
     },
 }
 
@@ -359,11 +373,12 @@ def collect_table(
         spec = MODEL_SPECS.get(model_name, {})
         model_label = spec.get("label", model_name)
         keepk_variants = spec.get("keepk_variants", [])
+        pm_suffixes = spec.get("prunemode_override", PRUNEMODE_SUFFIXES)
 
         for kv in keepk_variants:
             variant_label = f"{model_label} {kv['label']}".strip()
             for task_run in task_runs:
-                for pm_tag, pm_suffix in PRUNEMODE_SUFFIXES.items():
+                for pm_tag, pm_suffix in pm_suffixes.items():
                     col_name = f"{task_run} ({pm_tag})"
                     variant_dir = model_dir / (task_run + kv["keepk_suffix"] + pm_suffix)
                     if not variant_dir.is_dir():

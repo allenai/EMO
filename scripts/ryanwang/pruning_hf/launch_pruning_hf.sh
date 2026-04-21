@@ -4,7 +4,7 @@
 BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 #BASE_DIR="/root/phdbrainstorm/FlexMoE"
 MODELS=(
-    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
+#    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
 #    "dense_1b_lr-4e-3_0213/step30995-hf"
 #    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
@@ -49,7 +49,7 @@ model_type=hf
 #               "easy_ep"             -- EASY-EP (arXiv 2504.06792): one-shot domain-specific
 #                                        pruning using gating*||expert_out|| weighted by
 #                                        (1 - cos_sim) of MoE in/out on few-shot calibration
-PRUNING_MODE="layerwise"
+PRUNING_MODE="easy_ep"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
@@ -61,7 +61,7 @@ batch_size=32
 # Set to an integer (e.g. 50) to subsample that many prompts (deterministic shuffle, seed=0).
 # Set to "random" to bypass calibration entirely and randomly select experts
 # (seed=0, mode-agnostic — ignores PRUNING_MODE). Output dir uses _prunemode-random.
-NUM_PRUNE_EXAMPLES="random"
+NUM_PRUNE_EXAMPLES="1"
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
 # Schedule name (used in output directory naming)
@@ -71,62 +71,6 @@ KEEP_K_PER_LAYER="128,128,32,32,32,32,32,32,32,32,32,32,32,32,32,32"
 
 # Define grouped tasks
 TASK_GROUPS_LIST=(
-  ######### few-shot ##########
-#   MC9 tasks
-#  "arc_easy"
-#  "arc_challenge"
-#  "boolq"
-#  "csqa"
-#  "hellaswag"
-#  "openbookqa"
-#  "piqa"
-#  "socialiqa"
-#  "winogrande"
-#  "gsm8k_generation_0shot"
-#  "gsm8k_generation_8shot"
-#  "gsm8k_perplexity_0shot"
-#  "coqa_0shot"
-#  "coqa_full_0shot"
-#  "squad_0shot"
-##
-#  "mmlu_biology"
-#  "mmlu_business"
-#  "mmlu_chemistry"
-#  "mmlu_computer_science"
-#  "mmlu_culture"
-#  "mmlu_economics"
-#  "mmlu_engineering"
-#  "mmlu_geography"
-#  "mmlu_health"
-#  "mmlu_history"
-#  "mmlu_law"
-#  "mmlu_math"
-#  "mmlu_other"
-#  "mmlu_philosophy_cat"
-#  "mmlu_physics"
-#  "mmlu_politics"
-#  "mmlu_psychology"
-
-  # Router-clustering-based MMLU categories (16 clusters)
-#  "mmlu_cluster_chemistry"
-#  "mmlu_cluster_security_sociology"
-#  "mmlu_cluster_moral_scenarios"
-#  "mmlu_cluster_psychology"
-#  "mmlu_cluster_law_gov"
-#  "mmlu_cluster_prehistory_religions"
-#  "mmlu_cluster_biomedical"
-#  "mmlu_cluster_econ_geography"
-#  "mmlu_cluster_philosophy"
-#  "mmlu_cluster_quantitative"
-#  "mmlu_cluster_accounting"
-#  "mmlu_cluster_miscellaneous"
-#  "mmlu_cluster_history"
-#  "mmlu_cluster_business"
-#  "mmlu_cluster_physics_eng"
-#  "mmlu_cluster_cs_logic"
-
-  # HellaSwag merged (baseline: single model on all data)
-
   # Merged variants for the MC9 + perplexity tasks (pruning + finetuning share data)
 #  "arc_easy_merged"
 #  "arc_challenge_merged"
@@ -173,70 +117,6 @@ TASK_GROUPS_LIST=(
   "mmlu_merged_politics"
   "mmlu_merged_psychology"
 
-  # HellaSwag k=6 clusters
-#  "hellaswag_k6_cluster_merged_0"
-#  "hellaswag_k6_cluster_merged_1"
-#  "hellaswag_k6_cluster_merged_2"
-#  "hellaswag_k6_cluster_merged_3"
-#  "hellaswag_k6_cluster_merged_4"
-#  "hellaswag_k6_cluster_merged_5"
-
-  # HellaSwag k=8 clusters
-#  "hellaswag_k8_cluster_merged_0"
-#  "hellaswag_k8_cluster_merged_1"
-#  "hellaswag_k8_cluster_merged_2"
-#  "hellaswag_k8_cluster_merged_3"
-#  "hellaswag_k8_cluster_merged_4"
-#  "hellaswag_k8_cluster_merged_5"
-#  "hellaswag_k8_cluster_merged_6"
-#  "hellaswag_k8_cluster_merged_7"
-
-  # HellaSwag k=10 clusters
-#  "hellaswag_k10_cluster_merged_0"
-#  "hellaswag_k10_cluster_merged_1"
-#  "hellaswag_k10_cluster_merged_2"
-#  "hellaswag_k10_cluster_merged_3"
-#  "hellaswag_k10_cluster_merged_4"
-#  "hellaswag_k10_cluster_merged_5"
-#  "hellaswag_k10_cluster_merged_6"
-#  "hellaswag_k10_cluster_merged_7"
-#  "hellaswag_k10_cluster_merged_8"
-#  "hellaswag_k10_cluster_merged_9"
-
-  # HellaSwag k=16 clusters
-#  "hellaswag_k16_cluster_merged_0"
-#  "hellaswag_k16_cluster_merged_1"
-#  "hellaswag_k16_cluster_merged_2"
-#  "hellaswag_k16_cluster_merged_3"
-#  "hellaswag_k16_cluster_merged_4"
-#  "hellaswag_k16_cluster_merged_5"
-#  "hellaswag_k16_cluster_merged_6"
-#  "hellaswag_k16_cluster_merged_7"
-#  "hellaswag_k16_cluster_merged_8"
-#  "hellaswag_k16_cluster_merged_9"
-#  "hellaswag_k16_cluster_merged_10"
-#  "hellaswag_k16_cluster_merged_11"
-#  "hellaswag_k16_cluster_merged_12"
-#  "hellaswag_k16_cluster_merged_13"
-#  "hellaswag_k16_cluster_merged_14"
-#  "hellaswag_k16_cluster_merged_15"
-
-  # MMLU-Pro categories (14 categories)
-#  "mmlu_pro_math"
-#  "mmlu_pro_health"
-#  "mmlu_pro_physics"
-#  "mmlu_pro_business"
-#  "mmlu_pro_biology"
-#  "mmlu_pro_chemistry"
-#  "mmlu_pro_computer_science"
-#  "mmlu_pro_economics"
-#  "mmlu_pro_engineering"
-#  "mmlu_pro_philosophy"
-#  "mmlu_pro_other"
-#  "mmlu_pro_history"
-#  "mmlu_pro_psychology"
-#  "mmlu_pro_law"
-
   # MMLU-Pro merged variant (pruning + finetuning use same data)
   "mmlu_pro_merged_math"
   "mmlu_pro_merged_health"
@@ -252,54 +132,6 @@ TASK_GROUPS_LIST=(
   "mmlu_pro_merged_history"
   "mmlu_pro_merged_psychology"
   "mmlu_pro_merged_law"
-
-  # MMLU-Pro merged variant with N=50 pruning validation examples
-#  "mmlu_pro_merged_n50_math"
-#  "mmlu_pro_merged_n50_health"
-#  "mmlu_pro_merged_n50_physics"
-#  "mmlu_pro_merged_n50_business"
-#  "mmlu_pro_merged_n50_biology"
-#  "mmlu_pro_merged_n50_chemistry"
-#  "mmlu_pro_merged_n50_computer_science"
-#  "mmlu_pro_merged_n50_economics"
-#  "mmlu_pro_merged_n50_engineering"
-#  "mmlu_pro_merged_n50_philosophy"
-#  "mmlu_pro_merged_n50_other"
-#  "mmlu_pro_merged_n50_history"
-#  "mmlu_pro_merged_n50_psychology"
-#  "mmlu_pro_merged_n50_law"
-
-  # MMLU-Pro merged variant with N=100 pruning validation examples
-#  "mmlu_pro_merged_n100_math"
-#  "mmlu_pro_merged_n100_health"
-#  "mmlu_pro_merged_n100_physics"
-#  "mmlu_pro_merged_n100_business"
-#  "mmlu_pro_merged_n100_biology"
-#  "mmlu_pro_merged_n100_chemistry"
-#  "mmlu_pro_merged_n100_computer_science"
-#  "mmlu_pro_merged_n100_economics"
-#  "mmlu_pro_merged_n100_engineering"
-#  "mmlu_pro_merged_n100_philosophy"
-#  "mmlu_pro_merged_n100_other"
-#  "mmlu_pro_merged_n100_history"
-#  "mmlu_pro_merged_n100_psychology"
-#  "mmlu_pro_merged_n100_law"
-
-  # MMLU-Pro merged variant with N=200 pruning validation examples
-#  "mmlu_pro_merged_n200_math"
-#  "mmlu_pro_merged_n200_health"
-#  "mmlu_pro_merged_n200_physics"
-#  "mmlu_pro_merged_n200_business"
-#  "mmlu_pro_merged_n200_biology"
-#  "mmlu_pro_merged_n200_chemistry"
-#  "mmlu_pro_merged_n200_computer_science"
-#  "mmlu_pro_merged_n200_economics"
-#  "mmlu_pro_merged_n200_engineering"
-#  "mmlu_pro_merged_n200_philosophy"
-#  "mmlu_pro_merged_n200_other"
-#  "mmlu_pro_merged_n200_history"
-#  "mmlu_pro_merged_n200_psychology"
-#  "mmlu_pro_merged_n200_law"
 
 #  "synthea_zeroshot"
 
