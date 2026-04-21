@@ -51,7 +51,10 @@ if [[ $TASK == *"gsm8k_generation_8shot"* ]]; then
     EVAL_BATCH_SIZE=16
 fi
 
-export HF_DATASETS_OFFLINE=1
+# NOTE: unlike the pruning wrappers we do NOT set HF_DATASETS_OFFLINE=1 here.
+# The pruning flow's offline flag is safe because the prune step runs first
+# and warms the HF dataset cache. Baseline skips pruning, so we need the
+# online fallback path when the weka mount misses.
 S3_BASE="s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}"
 
 echo "========================================"
