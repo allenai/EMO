@@ -30,9 +30,7 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 
-DEFAULT_OUTPUT_PATH = (
-    REPO_ROOT / "claude_outputs" / "prune_plots" / "expert_selection_method.csv"
-)
+DEFAULT_OUTPUT_PATH = REPO_ROOT / "claude_outputs" / "prune_plots" / "expert_selection_method.csv"
 
 # (display_name, expert_count_label, model_key)
 ROWS: List[Tuple[str, str, str]] = [
@@ -125,12 +123,8 @@ def main() -> None:
             "": name,
             "# Total Experts": experts,
             "MMLU (ft)": _pct(lookup(ft_agg, key, "mmlu_merged_avg_no_other (ep)")),
-            "MMLU Pro (ft)": _pct(
-                lookup(ft_agg, key, "mmlu_pro_merged_avg_no_other (ep)")
-            ),
-            "GSM8K (ft)": _pct(
-                lookup(ft_gsm, key, "gsm8k_generation_8shot_merged (ep)")
-            ),
+            "MMLU Pro (ft)": _pct(lookup(ft_agg, key, "mmlu_pro_merged_avg_no_other (ep)")),
+            "GSM8K (ft)": _pct(lookup(ft_gsm, key, "gsm8k_generation_8shot_merged (ep)")),
         }
         records.append(row)
 

@@ -18,7 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 
@@ -124,7 +124,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--output-subdir", default=DEFAULT_OUTPUT_SUBDIR)
     parser.add_argument(
-        "--checkpoint-mode", default="last", choices=["last", "first"],
+        "--checkpoint-mode",
+        default="last",
+        choices=["last", "first"],
         help="Which checkpoint to read: 'last' (finetuned) or 'first' (ckpt-0).",
     )
     parser.add_argument("--format", default="csv", choices=["csv", "tsv", "markdown"])

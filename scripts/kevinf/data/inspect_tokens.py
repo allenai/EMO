@@ -2,7 +2,6 @@ import os
 
 import click
 import numpy as np
-
 from transformers import AutoTokenizer
 
 

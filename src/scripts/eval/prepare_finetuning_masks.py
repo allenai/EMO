@@ -4,7 +4,6 @@ import os
 import sys
 
 import numpy as np
-
 from transformers import AutoTokenizer
 
 ## This is the main launching script for creating loss masks for finetuning

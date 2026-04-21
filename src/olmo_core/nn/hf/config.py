@@ -1,3 +1,5 @@
+from transformers import Olmo2Config, Olmo2NoQKNormPrenormConfig, PretrainedConfig
+
 from olmo_core.doc_utils import beta_feature
 from olmo_core.nn.attention import Attention
 from olmo_core.nn.moe.mlp import DroplessMoEMLP, MoEMLP
@@ -25,7 +27,6 @@ from olmo_core.nn.transformer.model import (
     NormalizedTransformer,
     Transformer,
 )
-from transformers import Olmo2Config, Olmo2NoQKNormPrenormConfig, PretrainedConfig
 
 try:
     from transformers import (  # type: ignore

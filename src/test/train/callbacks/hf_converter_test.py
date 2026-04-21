@@ -20,10 +20,11 @@ from olmo_core.train.callbacks.hf_converter import HFConverterCallback
 def _hf_conversion_available() -> bool:
     """Check if HF conversion dependencies are available."""
     try:
+        from transformers import AutoConfig, AutoModelForCausalLM  # noqa: F401
+
         from examples.huggingface.convert_checkpoint_to_hf import (  # noqa: F401
             convert_checkpoint_to_hf,
         )
-        from transformers import AutoConfig, AutoModelForCausalLM  # noqa: F401
 
         return True
     except ImportError:

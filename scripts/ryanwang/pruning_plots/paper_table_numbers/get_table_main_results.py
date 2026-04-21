@@ -222,19 +222,11 @@ def main() -> None:
             "": name,
             "# Total Experts": experts,
             "MMLU (inf)": _pct(lookup(inf_agg, key, "mmlu_merged_avg_no_other (lw)")),
-            "MMLU Pro (inf)": _pct(
-                lookup(inf_agg, key, "mmlu_pro_merged_avg_no_other (lw)")
-            ),
-            "GSM8K (inf)": _pct(
-                lookup(inf_gsm, key, "gsm8k_generation_8shot_merged (lw)")
-            ),
+            "MMLU Pro (inf)": _pct(lookup(inf_agg, key, "mmlu_pro_merged_avg_no_other (lw)")),
+            "GSM8K (inf)": _pct(lookup(inf_gsm, key, "gsm8k_generation_8shot_merged (lw)")),
             "MMLU (ft)": _pct(lookup(ft_agg, key, "mmlu_merged_avg_no_other (lw)")),
-            "MMLU Pro (ft)": _pct(
-                lookup(ft_agg, key, "mmlu_pro_merged_avg_no_other (lw)")
-            ),
-            "GSM8K (ft)": _pct(
-                lookup(ft_gsm, key, "gsm8k_generation_8shot_merged (lw)")
-            ),
+            "MMLU Pro (ft)": _pct(lookup(ft_agg, key, "mmlu_pro_merged_avg_no_other (lw)")),
+            "GSM8K (ft)": _pct(lookup(ft_gsm, key, "gsm8k_generation_8shot_merged (lw)")),
             "MMLU winrate vs Reg. MoE (inf)": "",
             "MMLU Pro winrate vs Reg. MoE (inf)": "",
             "MMLU winrate vs Reg. MoE (ft)": "",
