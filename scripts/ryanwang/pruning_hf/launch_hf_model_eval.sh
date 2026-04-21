@@ -2,8 +2,9 @@
 #
 # Launch baseline evaluations for models hosted on HuggingFace Hub.
 #
-# Results are stored under the same S3 prefix as launch_original_model_eval.sh:
-#   s3://ai2-sewonm/ryanwang/prune_evals_final/<sanitized_model>/original_model/<task>/results/checkpoint-0/
+# Output layout matches launch_pruning_hf.sh (no "original_model" extra layer):
+#   s3://ai2-sewonm/ryanwang/prune_evals_final/<sanitized_model>/<task>/results/checkpoint-0/
+#   s3://ai2-sewonm/ryanwang/prune_evals_final/<sanitized_model>/<task>/results/checkpoint-0/per_subject/<subject>/   (MMLU only)
 #
 # This uses the same beaker-vs-bash pattern as the other launch scripts:
 # commented-out local blocks for running locally, active beaker blocks for cluster.
@@ -91,9 +92,6 @@ TASK_GROUPS_LIST=(
 
 )
 
-gpus=4
-EVAL_BATCH_SIZE=32
-
 echo "Launching HF model baseline evals for ${#MODEL_ENTRIES[@]} models and ${#TASK_GROUPS_LIST[@]} tasks..."
 echo ""
 
@@ -104,45 +102,42 @@ for ENTRY in "${MODEL_ENTRIES[@]}"; do
     echo "  Directory name: $SANITIZED_MODEL"
 
     for TASK in "${TASK_GROUPS_LIST[@]}"; do
-        # Batch size adjustment for memory-hungry tasks
-        batch_size=$EVAL_BATCH_SIZE
-        if [[ $TASK == *"history"* ]]; then
-            batch_size=4
+        # Per-task GPU count (matches launch_pruning_hf.sh).
+        gpus=4
+        if [[ $TASK == *"mmlu_history"* || $TASK == *"gsm8k_generation_8shot"* || $TASK == *"drop_merged"* || $TASK == *"squad_merged"* ]]; then
+            gpus=8
         fi
 
         safe_name=$(printf '%s' "${SANITIZED_MODEL}_${TASK}" | sed 's/[^a-zA-Z0-9_-]//g' | tail -c 100)
         job_name="baseline-${safe_name}"
 
-        relative_dir="${SANITIZED_MODEL}/original_model/${TASK}"
+        relative_dir="${SANITIZED_MODEL}/${TASK}"
 
-        # Build revision args
-        if [[ $REVISION == "none" ]]; then
-            revision_args=""
-        else
-            revision_args="--revision ${REVISION}"
-        fi
+        # Clean any previous results for this exact (model, task) combination on
+        # S3 so re-runs never mix new metrics with stale ones. aws s3 rm on a
+        # non-existent prefix is a no-op (exit 0).
+        s3_clean_prefix="s3://ai2-sewonm/ryanwang/prune_evals_final/${relative_dir}/"
+        echo "  Cleaning stale S3 results: ${s3_clean_prefix}"
+        aws s3 rm --recursive --quiet "${s3_clean_prefix}" || true
 
-        echo "  Launching: task=$TASK, batch_size=$batch_size"
+        echo "  Launching: task=$TASK, gpus=$gpus"
         echo "    Job name: $job_name"
         echo "    Remote dir: s3://ai2-sewonm/ryanwang/prune_evals_final/${relative_dir}/results/checkpoint-0"
 
         # Local version (uncomment for local runs):
-#        python -m src.scripts.eval.launch_eval \
+#        bash scripts/ryanwang/pruning_hf/hf_baseline_eval.sh \
 #            --model "${HF_MODEL}" \
-#            --model-type hf \
-#            ${revision_args} \
-#            --task "${TASK}-pruned" \
-#            --pruned_split "test" \
-#            --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${relative_dir}/results/checkpoint-0" \
-#            --batch-size $batch_size \
-#            --gpus $gpus
+#            --revision "${REVISION}" \
+#            --task "${TASK}" \
+#            --relative-dir "${relative_dir}" \
+#            --num-gpus ${gpus} \
+#            --run-name "${job_name}"
 
         # Beaker version:
         python -m olmo_core.launch.beaker \
             --name $job_name \
             --gpus $gpus \
             --nodes 1 \
-            --is_private_repo \
             --weka=oe-training-default \
             --shared-filesystem \
             --workspace ai2/flex2 \
@@ -153,15 +148,14 @@ for ENTRY in "${MODEL_ENTRIES[@]}"; do
             --no-follow \
             --no-torchrun \
             --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
-            -- python -m src.scripts.eval.launch_eval \
-                --model "${HF_MODEL}" \
-                --model-type hf \
-                ${revision_args} \
-                --task "${TASK}-pruned" \
-                --pruned_split "test" \
-                --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${relative_dir}/results/checkpoint-0" \
-                --batch-size $batch_size \
-                --gpus $gpus
+            -- bash -c "scripts/ryanwang/pruning_hf/hf_baseline_eval.sh \
+                --model '${HF_MODEL}' \
+                --revision '${REVISION}' \
+                --task '${TASK}' \
+                --relative-dir '${relative_dir}' \
+                --num-gpus ${gpus} \
+                --run-name '${job_name}'
+            "
 
         echo "    Launched: $job_name"
         echo "    ----------------------------------------"
