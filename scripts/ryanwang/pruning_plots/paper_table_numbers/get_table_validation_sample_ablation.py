@@ -39,9 +39,9 @@ DEFAULT_OUTPUT_PATH = (
 # Column layout: each expert count gets its own list of nprune sub-columns.
 # keepk 128 keeps all experts (no pruning happens), so only "All" is meaningful.
 KEEPK_NPRUNE_TAGS: List[Tuple[int, List[str]]] = [
-    (8, ["1", "5", "10", "100", "All"]),
-    (16, ["1", "5", "10", "100", "All"]),
-    (32, ["1", "5", "10", "100", "All"]),
+    (8, ["Random", "1", "5", "10", "100", "All"]),
+    (16, ["Random", "1", "5", "10", "100", "All"]),
+    (32, ["Random", "1", "5", "10", "100", "All"]),
     (128, ["All"]),
 ]
 

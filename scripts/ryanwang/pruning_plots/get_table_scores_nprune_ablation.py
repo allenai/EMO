@@ -54,6 +54,7 @@ NPRUNE_VARIANTS: List[Tuple[str, str]] = [
     ("10", "_prunemode-layerwise_nprune-10"),
     ("100", "_prunemode-layerwise_nprune-100"),
     ("All", "_prunemode-layerwise"),
+    ("Random", "_prunemode-random"),
 ]
 
 # --- Tasks and metrics -----------------------------------------------------
