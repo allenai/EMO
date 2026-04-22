@@ -7,26 +7,31 @@ and writes:
 
     claude_outputs/prune_plots/main_results_table.csv
 
-Row mapping (follows the .tex source, including the blank ``Reg. MoE / 16
-trained`` row so the CSV has the same shape):
+Row mapping (follows the .tex source):
 
-    Dense^dagger  / 8 (trained)    -> "dense"
-    Reg. MoE      / 16 (trained)   -> (no data available)
-    Reg. MoE      / 32 (trained)   -> "moe_small"
-    Reg. MoE      / 8              -> "moe (keepk 8)"
-    Reg. MoE      / 16             -> "moe (keepk 16)"
-    Reg. MoE      / 32             -> "moe (keepk 32)"
-    Reg. MoE      / 64             -> "moe (keepk 64)"
-    Reg. MoE      / 128 (trained)  -> "moe (keepk 128)"
-    FlexMoE       / 8              -> "specialized moe + globallb + 1shardexp + randpool (keepk 8)"
-    FlexMoE       / 16             -> "... (keepk 16)"
-    FlexMoE       / 32             -> "... (keepk 32)"
-    FlexMoE       / 64             -> "... (keepk 64)"
-    FlexMoE       / 128 (trained)  -> "... (keepk 128)"
+    Dense (130B)^dagger  / 8 (trained)    -> "dense"
+    Reg. MoE (130B)      / 32 (trained)   -> "moe_small"
+    Reg. MoE (130B)      / {8,16,32,64}   -> "moe (keepk {8,16,32,64})"
+    Reg. MoE (130B)      / 128 (trained)  -> "moe (keepk 128)"
+    FlexMoE  (130B)      / {8,...,128 (tr)} -> "specialized moe + globallb + 1shardexp + randpool (keepk N)"
+    Reg. MoE (1T)        / {8,...,128 (tr)} -> "moe 1T + anneal (keepk N)"
+    FlexMoE  (1T)        / {8,...,128 (tr)} -> "specialized moe 1T + anneal (keepk N)"
 
 Win-rate columns count, for each FlexMoE row, the number of MMLU / MMLU Pro
-sub-tasks where FlexMoE beats the Reg. MoE baseline with the same total-expert
-count (same keepk). "other" is excluded from both task groups, mirroring the
+sub-tasks where FlexMoE beats ALL baselines at the matching total-expert
+count and training scale. Specifically:
+
+  * FlexMoE (130B) keepk 8              -> vs Reg. MoE (130B) keepk 8 AND
+                                           Dense (130B, 8 experts trained)
+  * FlexMoE (130B) keepk 16             -> vs Reg. MoE (130B) keepk 16
+  * FlexMoE (130B) keepk 32             -> vs Reg. MoE (130B) keepk 32 AND
+                                           Reg. MoE (130B) 32 (trained, moe_small)
+  * FlexMoE (130B) keepk 64             -> vs Reg. MoE (130B) keepk 64
+  * FlexMoE (130B) keepk 128 (trained)  -> vs Reg. MoE (130B) keepk 128
+  * FlexMoE (1T)   keepk K              -> vs Reg. MoE (1T)   keepk K  (only)
+
+A subtask "wins" only if FlexMoE beats every baseline in the list for that
+subtask. "other" is excluded from both task groups, mirroring the
 ``*_avg_no_other`` averages — so denominators are 16 (MMLU) and 13 (MMLU Pro).
 """
 
@@ -52,48 +57,58 @@ MMLU_PRO_EXCLUDE = {"mmlu_pro_merged_other"}
 
 # (display_name, expert_count_label, model_key_or_None)
 ROWS: List[Tuple[str, str, Optional[str]]] = [
-    ("Dense^dagger", "8 (trained)", "dense"),
-    ("Reg. MoE", "16 (trained)", None),
-    ("Reg. MoE", "32 (trained)", "moe_small"),
-    ("Reg. MoE", "8", "moe (keepk 8)"),
-    ("Reg. MoE", "16", "moe (keepk 16)"),
-    ("Reg. MoE", "32", "moe (keepk 32)"),
-    ("Reg. MoE", "64", "moe (keepk 64)"),
-    ("Reg. MoE", "128 (trained)", "moe (keepk 128)"),
-    (
-        "FlexMoE",
-        "8",
-        "specialized moe + globallb + 1shardexp + randpool (keepk 8)",
-    ),
-    (
-        "FlexMoE",
-        "16",
-        "specialized moe + globallb + 1shardexp + randpool (keepk 16)",
-    ),
-    (
-        "FlexMoE",
-        "32",
-        "specialized moe + globallb + 1shardexp + randpool (keepk 32)",
-    ),
-    (
-        "FlexMoE",
-        "64",
-        "specialized moe + globallb + 1shardexp + randpool (keepk 64)",
-    ),
-    (
-        "FlexMoE",
-        "128 (trained)",
-        "specialized moe + globallb + 1shardexp + randpool (keepk 128)",
-    ),
+    # ---- 130B models ----
+    ("Dense (130B)^dagger", "8 (trained)", "dense"),
+    ("Reg. MoE (130B)", "32 (trained)", "moe_small"),
+    ("Reg. MoE (130B)", "8", "moe (keepk 8)"),
+    ("Reg. MoE (130B)", "16", "moe (keepk 16)"),
+    ("Reg. MoE (130B)", "32", "moe (keepk 32)"),
+    ("Reg. MoE (130B)", "64", "moe (keepk 64)"),
+    ("Reg. MoE (130B)", "128 (trained)", "moe (keepk 128)"),
+    ("FlexMoE (130B)", "8",
+     "specialized moe + globallb + 1shardexp + randpool (keepk 8)"),
+    ("FlexMoE (130B)", "16",
+     "specialized moe + globallb + 1shardexp + randpool (keepk 16)"),
+    ("FlexMoE (130B)", "32",
+     "specialized moe + globallb + 1shardexp + randpool (keepk 32)"),
+    ("FlexMoE (130B)", "64",
+     "specialized moe + globallb + 1shardexp + randpool (keepk 64)"),
+    ("FlexMoE (130B)", "128 (trained)",
+     "specialized moe + globallb + 1shardexp + randpool (keepk 128)"),
+    # ---- 1T models ----
+    ("Reg. MoE (1T)", "8", "moe 1T + anneal (keepk 8)"),
+    ("Reg. MoE (1T)", "16", "moe 1T + anneal (keepk 16)"),
+    ("Reg. MoE (1T)", "32", "moe 1T + anneal (keepk 32)"),
+    ("Reg. MoE (1T)", "64", "moe 1T + anneal (keepk 64)"),
+    ("Reg. MoE (1T)", "128 (trained)", "moe 1T + anneal (keepk 128)"),
+    ("FlexMoE (1T)", "8", "specialized moe 1T + anneal (keepk 8)"),
+    ("FlexMoE (1T)", "16", "specialized moe 1T + anneal (keepk 16)"),
+    ("FlexMoE (1T)", "32", "specialized moe 1T + anneal (keepk 32)"),
+    ("FlexMoE (1T)", "64", "specialized moe 1T + anneal (keepk 64)"),
+    ("FlexMoE (1T)", "128 (trained)", "specialized moe 1T + anneal (keepk 128)"),
 ]
 
-# FlexMoE row keepk -> Reg. MoE comparison key (same total experts).
-FLEXMOE_BASELINE = {
-    "specialized moe + globallb + 1shardexp + randpool (keepk 8)": "moe (keepk 8)",
-    "specialized moe + globallb + 1shardexp + randpool (keepk 16)": "moe (keepk 16)",
-    "specialized moe + globallb + 1shardexp + randpool (keepk 32)": "moe (keepk 32)",
-    "specialized moe + globallb + 1shardexp + randpool (keepk 64)": "moe (keepk 64)",
-    "specialized moe + globallb + 1shardexp + randpool (keepk 128)": "moe (keepk 128)",
+# FlexMoE row key -> list of baseline keys. A subtask counts as a win only if
+# FlexMoE beats EVERY baseline in the list on that subtask. See module docstring
+# for the rationale behind each mapping.
+FLEXMOE_BASELINE: Dict[str, List[str]] = {
+    # 130B
+    "specialized moe + globallb + 1shardexp + randpool (keepk 8)":
+        ["moe (keepk 8)", "dense"],
+    "specialized moe + globallb + 1shardexp + randpool (keepk 16)":
+        ["moe (keepk 16)"],
+    "specialized moe + globallb + 1shardexp + randpool (keepk 32)":
+        ["moe (keepk 32)", "moe_small"],
+    "specialized moe + globallb + 1shardexp + randpool (keepk 64)":
+        ["moe (keepk 64)"],
+    "specialized moe + globallb + 1shardexp + randpool (keepk 128)":
+        ["moe (keepk 128)"],
+    # 1T (compared only against matched Reg. MoE 1T at same keepk)
+    "specialized moe 1T + anneal (keepk 8)":   ["moe 1T + anneal (keepk 8)"],
+    "specialized moe 1T + anneal (keepk 16)":  ["moe 1T + anneal (keepk 16)"],
+    "specialized moe 1T + anneal (keepk 32)":  ["moe 1T + anneal (keepk 32)"],
+    "specialized moe 1T + anneal (keepk 64)":  ["moe 1T + anneal (keepk 64)"],
+    "specialized moe 1T + anneal (keepk 128)": ["moe 1T + anneal (keepk 128)"],
 }
 
 
@@ -165,11 +180,15 @@ def _pct(value) -> str:
 def _winrate(
     mmlu_df: pd.DataFrame,
     model: str,
-    baseline: str,
+    baselines: List[str],
     exclude: set,
     prefix: str,
 ) -> Optional[str]:
-    if model not in mmlu_df.index or baseline not in mmlu_df.index:
+    """Return "wins/total" where FlexMoE must beat ALL baselines per subtask."""
+    if model not in mmlu_df.index:
+        return None
+    present = [b for b in baselines if b in mmlu_df.index]
+    if not present:
         return None
     subject_cols = [
         c
@@ -180,11 +199,14 @@ def _winrate(
     ]
     wins = total = 0
     for col in subject_cols:
-        a, b = mmlu_df.at[model, col], mmlu_df.at[baseline, col]
-        if pd.isna(a) or pd.isna(b):
+        a = mmlu_df.at[model, col]
+        if pd.isna(a):
+            continue
+        baseline_vals = [mmlu_df.at[b, col] for b in present]
+        if any(pd.isna(v) for v in baseline_vals):
             continue
         total += 1
-        if a > b:
+        if all(a > v for v in baseline_vals):
             wins += 1
     if total == 0:
         return None
@@ -234,28 +256,28 @@ def main() -> None:
         }
 
         if key in FLEXMOE_BASELINE:
-            baseline = FLEXMOE_BASELINE[key]
+            baselines = FLEXMOE_BASELINE[key]
             row["MMLU winrate vs Reg. MoE (inf)"] = (
-                _winrate(inf_mmlu, key, baseline, MMLU_EXCLUDE, "mmlu_merged_") or ""
+                _winrate(inf_mmlu, key, baselines, MMLU_EXCLUDE, "mmlu_merged_") or ""
             )
             row["MMLU Pro winrate vs Reg. MoE (inf)"] = (
                 _winrate(
                     inf_mmlu_pro,
                     key,
-                    baseline,
+                    baselines,
                     MMLU_PRO_EXCLUDE,
                     "mmlu_pro_merged_",
                 )
                 or ""
             )
             row["MMLU winrate vs Reg. MoE (ft)"] = (
-                _winrate(ft_mmlu, key, baseline, MMLU_EXCLUDE, "mmlu_merged_") or ""
+                _winrate(ft_mmlu, key, baselines, MMLU_EXCLUDE, "mmlu_merged_") or ""
             )
             row["MMLU Pro winrate vs Reg. MoE (ft)"] = (
                 _winrate(
                     ft_mmlu_pro,
                     key,
-                    baseline,
+                    baselines,
                     MMLU_PRO_EXCLUDE,
                     "mmlu_pro_merged_",
                 )

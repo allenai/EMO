@@ -44,18 +44,37 @@ MODEL_SPECS: Dict[str, Dict[str, str]] = {
 KEEPK_VALUES = [8, 16, 32, 64, 128]
 KEEPK_SUFFIX_TEMPLATE = "_keepk_{k}_bs-32_lr-5e-5_epoch-1"
 
-# --- Nprune variants -------------------------------------------------------
-# Each entry: (tag shown in column headers, suffix appended after prunemode)
-# "All" means no nprune suffix (uses all available validation data).
+# --- Prunemode × nprune variants -------------------------------------------
+# Each prunemode (Router / Easy-EP) produces its own row per (model, task).
+# Inside a prunemode, each entry is (tag shown in columns, suffix on the dir).
+#
+# Row labels in the output CSV look like:
+#   "moe 1T + anneal (Router)  / mmlu_merged"
+#   "moe 1T + anneal (Easy-EP) / mmlu_merged"
+# Column labels look like: "keepk_8 (1)", "keepk_8 (All)", "keepk_8 (Random)".
+#
+# "Random" is a separate prunemode (``prunemode-random``) — it does not depend
+# on validation data, so it shows up with identical values in both the Router
+# and Easy-EP row groups.
 
-NPRUNE_VARIANTS: List[Tuple[str, str]] = [
-    ("1", "_prunemode-layerwise_nprune-1"),
-    ("5", "_prunemode-layerwise_nprune-5"),
-    ("10", "_prunemode-layerwise_nprune-10"),
-    ("100", "_prunemode-layerwise_nprune-100"),
-    ("All", "_prunemode-layerwise"),
-    ("Random", "_prunemode-random"),
-]
+PRUNEMODE_VARIANTS: Dict[str, List[Tuple[str, str]]] = {
+    "Router": [
+        ("Random", "_prunemode-random"),
+        ("1", "_prunemode-layerwise_nprune-1"),
+        ("5", "_prunemode-layerwise_nprune-5"),
+        ("10", "_prunemode-layerwise_nprune-10"),
+        ("100", "_prunemode-layerwise_nprune-100"),
+        ("All", "_prunemode-layerwise"),
+    ],
+    "Easy-EP": [
+        ("Random", "_prunemode-random"),
+        ("1", "_prunemode-easy_ep_nprune-1"),
+        ("5", "_prunemode-easy_ep_nprune-5"),
+        ("10", "_prunemode-easy_ep_nprune-10"),
+        ("100", "_prunemode-easy_ep_nprune-100"),
+        ("All", "_prunemode-easy_ep"),
+    ],
+}
 
 # --- Tasks and metrics -----------------------------------------------------
 
@@ -188,10 +207,15 @@ def collect_nprune_table(
 ) -> pd.DataFrame:
     """Build the nprune ablation table.
 
-    Rows:   (model_label, task_group_name) — e.g. "moe 1T + anneal / mmlu_merged"
+    Rows:   (model_label, prunemode, task_group_name)
+            e.g. "moe 1T + anneal (Router) / mmlu_merged"
     Columns: "keepk_{k} ({nprune_tag})" — e.g. "keepk_8 (100)", "keepk_8 (All)"
     """
     rows: Dict[str, Dict[str, Optional[float]]] = {}
+
+    # Stable column ordering: derive from the first prunemode's variant list.
+    any_prunemode = next(iter(PRUNEMODE_VARIANTS))
+    column_tag_order = [tag for tag, _ in PRUNEMODE_VARIANTS[any_prunemode]]
 
     for model_name, spec in MODEL_SPECS.items():
         model_dir = prune_evals_root / model_name
@@ -200,49 +224,51 @@ def collect_nprune_table(
             continue
         model_label = spec["label"]
 
-        for group_name, subtasks, exclude, metric_key in TASK_GROUPS:
-            row_label = f"{model_label} / {group_name}"
-            active_subtasks = [t for t in subtasks if t not in exclude]
+        for prunemode, variants in PRUNEMODE_VARIANTS.items():
+            for group_name, subtasks, exclude, metric_key in TASK_GROUPS:
+                row_label = f"{model_label} ({prunemode}) / {group_name}"
+                active_subtasks = [t for t in subtasks if t not in exclude]
 
-            for k in KEEPK_VALUES:
-                keepk_suffix = KEEPK_SUFFIX_TEMPLATE.format(k=k)
+                for k in KEEPK_VALUES:
+                    keepk_suffix = KEEPK_SUFFIX_TEMPLATE.format(k=k)
 
-                for nprune_tag, nprune_suffix in NPRUNE_VARIANTS:
-                    col = f"keepk_{k} ({nprune_tag})"
+                    for nprune_tag, nprune_suffix in variants:
+                        col = f"keepk_{k} ({nprune_tag})"
 
-                    # For aggregate tasks (MMLU, MMLU Pro): average over subtasks.
-                    # For single tasks (GSM8K): read directly.
-                    values = []
-                    for subtask in active_subtasks:
-                        task_dir = model_dir / (subtask + keepk_suffix + nprune_suffix)
-                        val = _read_metric(task_dir, metric_key, checkpoint_mode)
-                        if val is not None:
-                            values.append(val)
+                        # For aggregate tasks (MMLU, MMLU Pro): average over subtasks.
+                        # For single tasks (GSM8K): read directly.
+                        values = []
+                        for subtask in active_subtasks:
+                            task_dir = model_dir / (subtask + keepk_suffix + nprune_suffix)
+                            val = _read_metric(task_dir, metric_key, checkpoint_mode)
+                            if val is not None:
+                                values.append(val)
 
-                    if values and len(values) == len(active_subtasks):
-                        avg = sum(values) / len(values)
-                        rows.setdefault(row_label, {})[col] = avg
-                    elif values:
-                        print(
-                            f"[WARN] {row_label} {col}: only {len(values)}/{len(active_subtasks)} "
-                            f"subtasks found — setting to NaN"
-                        )
-                        rows.setdefault(row_label, {})[col] = None
+                        if values and len(values) == len(active_subtasks):
+                            avg = sum(values) / len(values)
+                            rows.setdefault(row_label, {})[col] = avg
+                        elif values:
+                            print(
+                                f"[WARN] {row_label} {col}: only {len(values)}/{len(active_subtasks)} "
+                                f"subtasks found — setting to NaN"
+                            )
+                            rows.setdefault(row_label, {})[col] = None
 
     if not rows:
         return pd.DataFrame()
 
-    # Enforce row order: models × task groups
+    # Enforce row order: models × prunemodes × task groups
     ordered_labels = []
     for spec in MODEL_SPECS.values():
-        for group_name, _, _, _ in TASK_GROUPS:
-            ordered_labels.append(f"{spec['label']} / {group_name}")
+        for prunemode in PRUNEMODE_VARIANTS:
+            for group_name, _, _, _ in TASK_GROUPS:
+                ordered_labels.append(f"{spec['label']} ({prunemode}) / {group_name}")
 
-    # Enforce column order: keepk × nprune
+    # Enforce column order: keepk × nprune (tag order from the first prunemode)
     ordered_cols = []
     for k in KEEPK_VALUES:
-        for nprune_tag, _ in NPRUNE_VARIANTS:
-            ordered_cols.append(f"keepk_{k} ({nprune_tag})")
+        for tag in column_tag_order:
+            ordered_cols.append(f"keepk_{k} ({tag})")
 
     df = pd.DataFrame.from_dict(rows, orient="index")
     df = df.reindex(index=ordered_labels)

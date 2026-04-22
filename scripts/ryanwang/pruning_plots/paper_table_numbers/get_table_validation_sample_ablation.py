@@ -8,15 +8,17 @@ writes:
     claude_outputs/prune_plots/validation_sample_ablation.csv
 
 Source CSV expected layout (rows × columns):
-    rows    : "{model_label} / {task_name}"
-              e.g. "moe 1T + anneal / mmlu_merged"
+    rows    : "{model_label} ({prunemode}) / {task_name}"
+              e.g. "moe 1T + anneal (Router) / mmlu_merged"
+                   "moe 1T + anneal (Easy-EP) / mmlu_merged"
     columns : "keepk_{k} ({nprune_tag})"
               e.g. "keepk_8 (5)", "keepk_128 (All)"
 
-Output CSV layout (one row per (model, task), columns are keepk × nprune):
-    Model, Task,
-    8 Experts (5), 8 Experts (10), 8 Experts (100), 8 Experts (All),
-    16 Experts (5), ..., 128 Experts (All)
+Output CSV layout — one row per (display_model, prunemode, task), columns are
+keepk × nprune:
+    Model, Prunemode, Task,
+    8 Experts (Random), ..., 8 Experts (All),
+    16 Experts (Random), ..., 128 Experts (All)
 """
 
 from __future__ import annotations
@@ -32,8 +34,18 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_INPUT_PATH = (
     REPO_ROOT / "claude_outputs" / "prune_plots" / "nprune_ablation_tables" / "nprune_ablation.csv"
 )
+DEFAULT_CKPT0_INPUT_PATH = (
+    REPO_ROOT
+    / "claude_outputs"
+    / "prune_plots"
+    / "nprune_ablation_tables_ckpt0"
+    / "nprune_ablation.csv"
+)
 DEFAULT_OUTPUT_PATH = (
     REPO_ROOT / "claude_outputs" / "prune_plots" / "validation_sample_ablation.csv"
+)
+DEFAULT_CKPT0_OUTPUT_PATH = (
+    REPO_ROOT / "claude_outputs" / "prune_plots" / "validation_sample_ablation_ckpt0.csv"
 )
 
 # Column layout: each expert count gets its own list of nprune sub-columns.
@@ -45,14 +57,23 @@ KEEPK_NPRUNE_TAGS: List[Tuple[int, List[str]]] = [
     (128, ["All"]),
 ]
 
-# Row layout: (display_model_name, display_task_name, source_row_key).
-ROWS: List[Tuple[str, str, str]] = [
-    ("Reg. MoE", "MMLU", "moe 1T + anneal / mmlu_merged"),
-    ("Reg. MoE", "MMLU Pro", "moe 1T + anneal / mmlu_pro_merged"),
-    ("Reg. MoE", "GSM8K", "moe 1T + anneal / gsm8k"),
-    ("FlexMoE", "MMLU", "specialized moe 1T + anneal / mmlu_merged"),
-    ("FlexMoE", "MMLU Pro", "specialized moe 1T + anneal / mmlu_pro_merged"),
-    ("FlexMoE", "GSM8K", "specialized moe 1T + anneal / gsm8k"),
+# Row layout: (display_model_name, prunemode, display_task_name, source_row_key).
+# Row groups in the output follow this order: Reg. MoE Router, Reg. MoE Easy-EP,
+# FlexMoE Router, FlexMoE Easy-EP. Each group has 3 task rows (MMLU, MMLU Pro,
+# GSM8K).
+ROWS: List[Tuple[str, str, str, str]] = [
+    ("Reg. MoE", "Router",  "MMLU",     "moe 1T + anneal (Router) / mmlu_merged"),
+    ("Reg. MoE", "Router",  "MMLU Pro", "moe 1T + anneal (Router) / mmlu_pro_merged"),
+    ("Reg. MoE", "Router",  "GSM8K",    "moe 1T + anneal (Router) / gsm8k"),
+    ("Reg. MoE", "Easy-EP", "MMLU",     "moe 1T + anneal (Easy-EP) / mmlu_merged"),
+    ("Reg. MoE", "Easy-EP", "MMLU Pro", "moe 1T + anneal (Easy-EP) / mmlu_pro_merged"),
+    ("Reg. MoE", "Easy-EP", "GSM8K",    "moe 1T + anneal (Easy-EP) / gsm8k"),
+    ("FlexMoE",  "Router",  "MMLU",     "specialized moe 1T + anneal (Router) / mmlu_merged"),
+    ("FlexMoE",  "Router",  "MMLU Pro", "specialized moe 1T + anneal (Router) / mmlu_pro_merged"),
+    ("FlexMoE",  "Router",  "GSM8K",    "specialized moe 1T + anneal (Router) / gsm8k"),
+    ("FlexMoE",  "Easy-EP", "MMLU",     "specialized moe 1T + anneal (Easy-EP) / mmlu_merged"),
+    ("FlexMoE",  "Easy-EP", "MMLU Pro", "specialized moe 1T + anneal (Easy-EP) / mmlu_pro_merged"),
+    ("FlexMoE",  "Easy-EP", "GSM8K",    "specialized moe 1T + anneal (Easy-EP) / gsm8k"),
 ]
 
 
@@ -65,10 +86,22 @@ def parse_args() -> argparse.Namespace:
         help="Source nprune_ablation.csv (fine-tuned).",
     )
     parser.add_argument(
+        "--ckpt0-input-path",
+        type=Path,
+        default=DEFAULT_CKPT0_INPUT_PATH,
+        help="Source nprune_ablation.csv for ckpt0 (pre-finetune).",
+    )
+    parser.add_argument(
         "--output-path",
         type=Path,
         default=DEFAULT_OUTPUT_PATH,
-        help="Destination CSV path.",
+        help="Destination CSV path for the fine-tuned table.",
+    )
+    parser.add_argument(
+        "--ckpt0-output-path",
+        type=Path,
+        default=DEFAULT_CKPT0_OUTPUT_PATH,
+        help="Destination CSV path for the ckpt0 (pre-finetune) table.",
     )
     return parser.parse_args()
 
@@ -79,16 +112,14 @@ def _pct(value) -> str:
     return f"{float(value) * 100:.1f}"
 
 
-def main() -> None:
-    args = parse_args()
-    if not args.input_path.is_file():
-        raise FileNotFoundError(f"Missing source CSV: {args.input_path}")
-
-    src = pd.read_csv(args.input_path).set_index("model / task")
-
+def _build_table(src: pd.DataFrame) -> pd.DataFrame:
     records: List[Dict[str, str]] = []
-    for model_name, task_name, src_key in ROWS:
-        row: Dict[str, str] = {"Model": model_name, "Task": task_name}
+    for model_name, prunemode, task_name, src_key in ROWS:
+        row: Dict[str, str] = {
+            "Model": model_name,
+            "Prunemode": prunemode,
+            "Task": task_name,
+        }
         for k, tags in KEEPK_NPRUNE_TAGS:
             for tag in tags:
                 col_out = f"{k} Experts ({tag})"
@@ -98,12 +129,26 @@ def main() -> None:
                 else:
                     row[col_out] = ""
         records.append(row)
+    return pd.DataFrame(records)
 
-    df = pd.DataFrame(records)
-    args.output_path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(args.output_path, index=False)
-    print(f"Wrote {args.output_path}")
+
+def _write_table(src_path: Path, out_path: Path, label: str) -> None:
+    if not src_path.is_file():
+        print(f"[WARN] Skipping {label}: missing source CSV {src_path}")
+        return
+    src = pd.read_csv(src_path).set_index("model / task")
+    df = _build_table(src)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(out_path, index=False)
+    print(f"Wrote {out_path} ({label})")
     print(df.to_string(index=False))
+    print()
+
+
+def main() -> None:
+    args = parse_args()
+    _write_table(args.input_path, args.output_path, "fine-tuned")
+    _write_table(args.ckpt0_input_path, args.ckpt0_output_path, "ckpt0")
 
 
 if __name__ == "__main__":

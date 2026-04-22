@@ -61,7 +61,7 @@ batch_size=32
 # Set to an integer (e.g. 50) to subsample that many prompts (deterministic shuffle, seed=0).
 # Set to "random" to bypass calibration entirely and randomly select experts
 # (seed=0, mode-agnostic — ignores PRUNING_MODE). Output dir uses _prunemode-random.
-NUM_PRUNE_EXAMPLES="1"
+NUM_PRUNE_EXAMPLES="5"
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
 # Schedule name (used in output directory naming)
