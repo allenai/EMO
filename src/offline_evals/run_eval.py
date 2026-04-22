@@ -34,8 +34,8 @@ from oe_eval.utilities.hf_hub_writing import upload_to_hf
 from oe_eval.utilities.model_results_collation import collate_results
 from oe_eval.utilities.remote_utils import cache_s3_folder, upload_directory
 from oe_eval.utilities.wandb_writing import wandb_log_metrics
-from oe_eval.utils import (  # task_file_name,
-    get_dict_with_defaults,
+from oe_eval.utils import get_dict_with_defaults  # task_file_name,
+from oe_eval.utils import (
     get_recorded_inputs,
     hash_dict,
     load_json,

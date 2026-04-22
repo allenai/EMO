@@ -35,8 +35,8 @@ from olmo_core.nn.transformer.model import (
 log = logging.getLogger(__name__)
 
 try:
-    from transformers import (  # type: ignore
-        FlexOlmoConfig,
+    from transformers import FlexOlmoConfig  # type: ignore
+    from transformers import (
         FlexOlmoNoQKNormPrenormConfig,
         FlexOlmoNoQKNormPrenormSharedConfig,
         FlexOlmoPrenormConfig,

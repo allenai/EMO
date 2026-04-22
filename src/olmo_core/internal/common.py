@@ -4,13 +4,10 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 import torch
-<<<<<<< HEAD
-from beaker import Beaker
-from beaker.exceptions import BeakerError, BeakerSecretNotFound
-=======
+
 from beaker import BeakerGpuType
 from beaker.exceptions import BeakerError
->>>>>>> upstream/main
+
 
 from olmo_core.io import is_url
 from olmo_core.launch.beaker import (
