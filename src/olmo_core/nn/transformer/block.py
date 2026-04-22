@@ -14,13 +14,15 @@ from olmo_core.distributed.utils import get_local_tensor
 from olmo_core.doc_utils import beta_feature
 from olmo_core.ops import attach_auxiliary_loss
 
-from ..attention import AttentionConfig, RingAttentionLoadBalancerType
+from ..attention.base import SequenceMixerConfig
+from ..attention.ring import RingContextParallelStyle, UlyssesContextParallelStyle
 from ..buffer_cache import BufferCache
 from ..feed_forward import FeedForward, FeedForwardConfig
 from ..functional import l2_normalize
 from ..layer_norm import LayerNormConfig
 from ..moe import MoEConfig, MoERouter
 from ..moe.parallel_mlp import ParallelMLPBase
+from ..residual_stream import ResidualStream
 from .config import TransformerDataParallelWrappingStrategy
 
 if TYPE_CHECKING:
@@ -68,8 +70,8 @@ class TransformerBlockBase(nn.Module):
     def apply_cp(
         self,
         cp_mesh: DeviceMesh,
-        load_balancer: RingAttentionLoadBalancerType,
-        head_stride: int = 1,
+        ring: Optional[RingContextParallelStyle] = None,
+        uly: Optional[UlyssesContextParallelStyle] = None,
     ):
         raise NotImplementedError
 
@@ -86,6 +88,10 @@ class TransformerBlockBase(nn.Module):
     ):
         raise NotImplementedError
 
+    @abstractmethod
+    def num_flops_per_token(self, seq_len: int) -> int:
+        raise NotImplementedError
+
 
 class TransformerBlock(TransformerBlockBase):
     """
@@ -93,7 +99,7 @@ class TransformerBlock(TransformerBlockBase):
 
     :param d_model: The model dimensionality.
     :param block_idx: The index/position of the block within the model. Ranges from 0 to ``n_layers - 1``.
-    :param attention: The attention module config.
+    :param sequence_mixer: The sequence mixer module config (e.g. attention, recurrent, convolution, etc.).
     :param feed_forward: The feed forward module config.
     :param layer_norm: The layer norm config for both the attention LN and the feed forward LN.
     :param dropout: Dropout probability.
@@ -106,23 +112,34 @@ class TransformerBlock(TransformerBlockBase):
         d_model: int,
         block_idx: int,
         n_layers: int,
-        attention: AttentionConfig,
+        sequence_mixer: SequenceMixerConfig,
         feed_forward: FeedForwardConfig,
         layer_norm: LayerNormConfig,
         dropout: float = 0.0,
+        attention_residual_alpha: float = 1.0,
+        feed_forward_residual_alpha: float = 1.0,
         init_device: str = "cpu",
         cache: Optional[BufferCache] = None,
     ):
         super().__init__(n_layers=n_layers)
         self.d_model = d_model
         self.block_idx = block_idx
-        self.attention = attention.build(
+
+        # NOTE: The `self.attention` naming is kept for backwards compatibility with old checkpoints.
+        # `self.attention` could contain any `SequenceMixer` implementation, such as a `GatedDeltaNet`.
+        # Generally it's ok to think of these as "attention" modules at the block level.
+        self.attention = sequence_mixer.build(
             d_model, layer_idx=block_idx, n_layers=n_layers, init_device=init_device, cache=cache
         )
         self.attention_norm = layer_norm.build(d_model, init_device=init_device)
+        self.attention_residual_stream = ResidualStream(
+            alpha=attention_residual_alpha, dropout=dropout
+        )
         self.feed_forward = feed_forward.build(d_model=d_model, init_device=init_device)
         self.feed_forward_norm = layer_norm.build(d_model, init_device=init_device)
-        self.dropout = nn.Dropout(dropout) if dropout > 0.0 else nn.Identity()
+        self.feed_forward_residual_stream = ResidualStream(
+            alpha=feed_forward_residual_alpha, dropout=dropout
+        )
 
     def forward(
         self,
@@ -132,8 +149,8 @@ class TransformerBlock(TransformerBlockBase):
         **kwargs,
     ) -> torch.Tensor:
         del loss_div_factor
-        h = x + self.dropout(self.attention(self.attention_norm(x), **kwargs))
-        return h + self.dropout(self.feed_forward(self.feed_forward_norm(h)))
+        h = self.attention_residual_stream(x, self.attention(self.attention_norm(x), **kwargs))
+        return self.feed_forward_residual_stream(h, self.feed_forward(self.feed_forward_norm(h)))
 
     def apply_tp(
         self, tp_mesh: DeviceMesh, *, input_layout: Placement, float8_enabled: bool = False
@@ -150,6 +167,11 @@ class TransformerBlock(TransformerBlockBase):
         parallelize_module(
             self.attention_norm, device_mesh=tp_mesh, parallelize_plan=SequenceParallel()
         )
+        parallelize_module(
+            self.attention_residual_stream.dropout,
+            device_mesh=tp_mesh,
+            parallelize_plan=SequenceParallel(),
+        )
 
         self.attention.apply_tp(
             tp_mesh,
@@ -162,6 +184,11 @@ class TransformerBlock(TransformerBlockBase):
         parallelize_module(
             self.feed_forward_norm, device_mesh=tp_mesh, parallelize_plan=SequenceParallel()
         )
+        parallelize_module(
+            self.feed_forward_residual_stream.dropout,
+            device_mesh=tp_mesh,
+            parallelize_plan=SequenceParallel(),
+        )
 
         self.feed_forward.apply_tp(
             tp_mesh,
@@ -171,15 +198,13 @@ class TransformerBlock(TransformerBlockBase):
             float8_enabled=float8_enabled,
         )
 
-        parallelize_module(self.dropout, device_mesh=tp_mesh, parallelize_plan=SequenceParallel())
-
     def apply_cp(
         self,
         cp_mesh: DeviceMesh,
-        load_balancer: RingAttentionLoadBalancerType,
-        head_stride: int = 1,
+        ring: Optional[RingContextParallelStyle] = None,
+        uly: Optional[UlyssesContextParallelStyle] = None,
     ):
-        self.attention.apply_cp(cp_mesh, load_balancer, head_stride=head_stride)
+        self.attention.apply_cp(cp_mesh, ring=ring, uly=uly)
 
     def apply_fsdp(
         self,
@@ -198,10 +223,16 @@ class TransformerBlock(TransformerBlockBase):
         else:
             fully_shard(self, mesh=dp_mesh, **fsdp_kwargs)
 
+    def num_flops_per_token(self, seq_len: int) -> int:
+        attn_flops = self.attention.num_flops_per_token(seq_len)
+        ff_flops = self.feed_forward.num_flops_per_token(seq_len)
+        return attn_flops + ff_flops
+
 
 class LayerNormScaledTransformerBlock(TransformerBlock):
     """
-    A variant of ``TransformerBlock`` that applies LayerNorm Scaling (LNS).
+    A variant of ``TransformerBlock`` that applies
+    `LayerNorm Scaling (LNS) <https://github.com/lmsdss/LayerNorm-Scaling>`_.
 
     Each LayerNorm output is multiplied by ``1 / sqrt(layer_id)`` where ``layer_id`` is the
     1-based position of the block inside the transformer. Keeping this logic in a dedicated
@@ -215,10 +246,12 @@ class LayerNormScaledTransformerBlock(TransformerBlock):
         d_model: int,
         block_idx: int,
         n_layers: int,
-        attention: AttentionConfig,
+        sequence_mixer: SequenceMixerConfig,
         feed_forward: FeedForwardConfig,
         layer_norm: LayerNormConfig,
         dropout: float = 0.0,
+        attention_residual_alpha: float = 1.0,
+        feed_forward_residual_alpha: float = 1.0,
         init_device: str = "cpu",
         cache: Optional[BufferCache] = None,
     ):
@@ -226,10 +259,12 @@ class LayerNormScaledTransformerBlock(TransformerBlock):
             d_model=d_model,
             block_idx=block_idx,
             n_layers=n_layers,
-            attention=attention,
+            sequence_mixer=sequence_mixer,
             feed_forward=feed_forward,
             layer_norm=layer_norm,
             dropout=dropout,
+            attention_residual_alpha=attention_residual_alpha,
+            feed_forward_residual_alpha=feed_forward_residual_alpha,
             init_device=init_device,
             cache=cache,
         )
@@ -247,8 +282,12 @@ class LayerNormScaledTransformerBlock(TransformerBlock):
     ) -> torch.Tensor:
         del loss_div_factor
         scale = self.ln_scale.to(dtype=x.dtype, device=x.device)
-        h = x + self.dropout(self.attention(self.attention_norm(x) * scale, **kwargs))
-        return h + self.dropout(self.feed_forward(self.feed_forward_norm(h) * scale))
+        h = self.attention_residual_stream(
+            x, self.attention(self.attention_norm(x) * scale, **kwargs)
+        )
+        return self.feed_forward_residual_stream(
+            h, self.feed_forward(self.feed_forward_norm(h) * scale)
+        )
 
 
 class ReorderedNormTransformerBlock(TransformerBlock):
@@ -266,8 +305,71 @@ class ReorderedNormTransformerBlock(TransformerBlock):
         **kwargs,
     ) -> torch.Tensor:
         del loss_div_factor
-        h = x + self.dropout(self.attention_norm(self.attention(x, **kwargs)))
-        return h + self.dropout(self.feed_forward_norm(self.feed_forward(h)))
+        h = self.attention_residual_stream(x, self.attention_norm(self.attention(x, **kwargs)))
+        return self.feed_forward_residual_stream(h, self.feed_forward_norm(self.feed_forward(h)))
+
+
+class PeriNormTransformerBlock(TransformerBlock):
+    """
+    A transformer block in the style of `Peri-LN <https://arxiv.org/pdf/2502.02732>`_.
+    """
+
+    def __init__(
+        self,
+        *,
+        d_model: int,
+        block_idx: int,
+        n_layers: int,
+        sequence_mixer: SequenceMixerConfig,
+        feed_forward: FeedForwardConfig,
+        layer_norm: LayerNormConfig,
+        dropout: float = 0.0,
+        attention_residual_alpha: float = 1.0,
+        feed_forward_residual_alpha: float = 1.0,
+        init_device: str = "cpu",
+        cache: Optional[BufferCache] = None,
+    ):
+        super().__init__(
+            d_model=d_model,
+            block_idx=block_idx,
+            n_layers=n_layers,
+            sequence_mixer=sequence_mixer,
+            feed_forward=feed_forward,
+            layer_norm=layer_norm,
+            dropout=dropout,
+            attention_residual_alpha=attention_residual_alpha,
+            feed_forward_residual_alpha=feed_forward_residual_alpha,
+            init_device=init_device,
+            cache=cache,
+        )
+        self.post_attention_norm = layer_norm.build(d_model, init_device=init_device)
+        self.post_feed_forward_norm = layer_norm.build(d_model, init_device=init_device)
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        *,
+        loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
+        **kwargs,
+    ) -> torch.Tensor:
+        del loss_div_factor
+        h = self.attention_residual_stream(
+            x, self.post_attention_norm(self.attention(self.attention_norm(x), **kwargs))
+        )
+        return self.feed_forward_residual_stream(
+            h, self.post_feed_forward_norm(self.feed_forward(self.feed_forward_norm(h)))
+        )
+
+    def apply_tp(
+        self, tp_mesh: DeviceMesh, *, input_layout: Placement, float8_enabled: bool = False
+    ):
+        super().apply_tp(tp_mesh, input_layout=input_layout, float8_enabled=float8_enabled)
+        parallelize_module(
+            self.post_feed_forward_norm, device_mesh=tp_mesh, parallelize_plan=SequenceParallel()
+        )
+        parallelize_module(
+            self.post_attention_norm, device_mesh=tp_mesh, parallelize_plan=SequenceParallel()
+        )
 
 
 @beta_feature
@@ -283,7 +385,7 @@ class NormalizedTransformerBlock(TransformerBlockBase):
         d_model: int,
         block_idx: int,
         n_layers: int,
-        attention: AttentionConfig,
+        sequence_mixer: SequenceMixerConfig,
         feed_forward: FeedForwardConfig,
         init_device: str = "cpu",
         cache: Optional[BufferCache] = None,
@@ -291,7 +393,11 @@ class NormalizedTransformerBlock(TransformerBlockBase):
         super().__init__(n_layers=n_layers)
         self.d_model = d_model
         self.block_idx = block_idx
-        self.attention = attention.build(
+
+        # NOTE: The `self.attention` naming is kept for backwards compatibility with old checkpoints.
+        # `self.attention` could contain any `SequenceMixer` implementation, such as a `GatedDeltaNet`.
+        # Generally it's ok to think of these as "attention" modules at the block level.
+        self.attention = sequence_mixer.build(
             d_model, layer_idx=block_idx, n_layers=n_layers, init_device=init_device, cache=cache
         )
         self.feed_forward = feed_forward.build(d_model=d_model, init_device=init_device)
@@ -352,10 +458,10 @@ class NormalizedTransformerBlock(TransformerBlockBase):
     def apply_cp(
         self,
         cp_mesh: DeviceMesh,
-        load_balancer: RingAttentionLoadBalancerType,
-        head_stride: int = 1,
+        ring: Optional[RingContextParallelStyle] = None,
+        uly: Optional[UlyssesContextParallelStyle] = None,
     ):
-        self.attention.apply_cp(cp_mesh, load_balancer, head_stride=head_stride)
+        self.attention.apply_cp(cp_mesh, ring=ring, uly=uly)
 
     def apply_fsdp(
         self,
@@ -396,6 +502,11 @@ class NormalizedTransformerBlock(TransformerBlockBase):
     def _normalize_matrix(self, w: torch.Tensor, dim: int = -1):
         w.copy_(l2_normalize(w, dim=dim))
 
+    def num_flops_per_token(self, seq_len: int) -> int:
+        attn_flops = self.attention.num_flops_per_token(seq_len)
+        ff_flops = self.feed_forward.num_flops_per_token(seq_len)
+        return attn_flops + ff_flops
+
 
 @beta_feature
 class MoETransformerBlock(TransformerBlockBase):
@@ -410,7 +521,7 @@ class MoETransformerBlock(TransformerBlockBase):
         d_model: int,
         block_idx: int,
         n_layers: int,
-        attention: AttentionConfig,
+        sequence_mixer: SequenceMixerConfig,
         feed_forward_moe: MoEConfig,
         layer_norm: LayerNormConfig,
         dropout: float = 0.0,
@@ -420,7 +531,11 @@ class MoETransformerBlock(TransformerBlockBase):
         super().__init__(n_layers=n_layers)
         self.d_model = d_model
         self.block_idx = block_idx
-        self.attention = attention.build(
+
+        # NOTE: The `self.attention` naming is kept for backwards compatibility with old checkpoints.
+        # `self.attention` could contain any `SequenceMixer` implementation, such as a `GatedDeltaNet`.
+        # Generally it's ok to think of these as "attention" modules at the block level.
+        self.attention = sequence_mixer.build(
             d_model, layer_idx=block_idx, n_layers=n_layers, init_device=init_device, cache=cache
         )
         self.attention_norm = layer_norm.build(d_model, init_device=init_device)
@@ -532,10 +647,10 @@ class MoETransformerBlock(TransformerBlockBase):
     def apply_cp(
         self,
         cp_mesh: DeviceMesh,
-        load_balancer: RingAttentionLoadBalancerType,
-        head_stride: int = 1,
+        ring: Optional[RingContextParallelStyle] = None,
+        uly: Optional[UlyssesContextParallelStyle] = None,
     ):
-        self.attention.apply_cp(cp_mesh, load_balancer, head_stride=head_stride)
+        self.attention.apply_cp(cp_mesh, ring=ring, uly=uly)
         self.feed_forward_moe.apply_cp(cp_mesh)
 
     def apply_fsdp(
@@ -556,6 +671,11 @@ class MoETransformerBlock(TransformerBlockBase):
                 fsdp_att.set_modules_to_forward_prefetch([fsdp_moe])
         else:
             fully_shard(self, mesh=dp_mesh, **fsdp_kwargs)
+
+    def num_flops_per_token(self, seq_len: int) -> int:
+        attn_flops = self.attention.num_flops_per_token(seq_len)
+        moe_flops = self.feed_forward_moe.num_flops_per_token(seq_len)
+        return attn_flops + moe_flops
 
 
 @beta_feature
@@ -607,6 +727,7 @@ class MoEHybridTransformerBlockBase(MoETransformerBlock):
         *,
         d_model: int,
         n_layers: int,
+        sequence_mixer: SequenceMixerConfig,
         layer_norm: LayerNormConfig,
         feed_forward: FeedForwardConfig,
         init_device: str = "cpu",
@@ -615,6 +736,7 @@ class MoEHybridTransformerBlockBase(MoETransformerBlock):
         super().__init__(
             d_model=d_model,
             n_layers=n_layers,
+            sequence_mixer=sequence_mixer,
             layer_norm=layer_norm,
             init_device=init_device,
             **kwargs,

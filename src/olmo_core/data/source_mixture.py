@@ -1,6 +1,5 @@
 import logging
 import math
-import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from itertools import chain
@@ -16,7 +15,7 @@ from olmo_core.aliases import PathOrStr
 from olmo_core.config import Config
 from olmo_core.data.types import NumpyUIntTypes
 from olmo_core.exceptions import OLMoConfigurationError
-from olmo_core.io import file_exists, get_file_size, glob_directory
+from olmo_core.io import deterministic_glob_directory, file_exists, get_file_size
 
 __all__ = [
     "SourceMixtureConfig",
@@ -91,13 +90,33 @@ class SourceMixtureConfig(Config):
         for path in self.paths:
             path_str = str(path)
             if "*" in path_str:
-                matches = sorted(glob_directory(path_str))
+                matches = deterministic_glob_directory(path_str)
                 if not matches:
-                    raise FileNotFoundError(f"Glob pattern '{path_str}' did not match any files")
+                    error_msg = f"Glob pattern '{path_str}' did not match any files"
+                    # Add helpful hint for mix-0625 which has unavailable files
+                    if "0625" in path_str:
+                        error_msg += (
+                            "\n\nNOTE: Some files in OLMo-mix-0625 are not available. "
+                            "If you are resuming training from a checkpoint that used mix-0625, you will need to "
+                            "switch to a newer mix such as OLMo-mix-0925. To continue training with a different "
+                            "dataset mix, set 'ignore_fingerprint_mismatch=True' in your NumpyDataLoaderConfig "
+                            "to bypass the fingerprint mismatch error. This will probably result in a different data order!"
+                        )
+                    raise FileNotFoundError(error_msg)
                 resolved.extend(matches)
             else:
                 if not file_exists(path_str):
-                    raise FileNotFoundError(f"Path '{path_str}' does not exist")
+                    error_msg = f"Path '{path_str}' does not exist"
+                    # Add helpful hint for mix-0625 which has unavailable files
+                    if "0625" in path_str:
+                        error_msg += (
+                            "\n\nNOTE: Some files in OLMo-mix-0625 are not available. "
+                            "If you are resuming training from a checkpoint that used mix-0625, you will need to "
+                            "switch to a newer mix such as OLMo-mix-0925. To continue training with a different "
+                            "dataset mix, set 'ignore_fingerprint_mismatch=True' in your NumpyDataLoaderConfig "
+                            "to bypass the fingerprint mismatch error. This will probably result in a different data order!"
+                        )
+                    raise FileNotFoundError(error_msg)
                 resolved.append(path_str)
 
         self._resolved_paths = resolved
@@ -151,8 +170,8 @@ class SourceTokenDetails:
     def for_table(self, requested_tokens: int) -> Dict:
         return {
             "source_name": self.config.source_name,
-            "source_population": f"{self.population:.2e}",
-            "num_selected": f"{self.num_selected:.2e}",
+            "source_population": f"{self.population}",
+            "num_selected": f"{self.num_selected}",
             "target_ratio": str(self.config.target_ratio),
             "max_repetion_ratio": str(self.config.max_repetition_ratio),
             "max_source_fraction": str(self.config.max_source_fraction),
@@ -252,7 +271,8 @@ class SourceMixtureDatasetConfig(Config):
     """
     seed: int = 42
     """
-    The seed used to generate the dataset.
+    The seed used to generate the dataset. Specifically this seed is used when sampling the actual
+    instances to use from each source.
     """
     render_tables: bool = True
     """
@@ -267,7 +287,6 @@ class SourceMixtureDatasetConfig(Config):
 
     def build(self, *, npdtype: NumpyUIntTypes, sequence_length: int) -> SourceMixtureDataset:
         self.validate()
-        random.seed(self.seed)
         available_tokens_by_source: Dict[str, int] = {}
 
         log.info("---------------------------------------------------------")

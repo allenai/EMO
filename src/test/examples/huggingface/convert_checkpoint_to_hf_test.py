@@ -1,3 +1,5 @@
+import shutil
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -10,8 +12,8 @@ from olmo_core.distributed.checkpoint import (
     load_model_and_optim_state,
     save_model_and_optim_state,
 )
-from olmo_core.nn.attention import AttentionBackendName
-from olmo_core.nn.transformer.config import TransformerConfig
+from olmo_core.nn.attention import AttentionBackendName, AttentionConfig
+from olmo_core.nn.transformer.config import TransformerBlockConfig, TransformerConfig
 from olmo_core.nn.transformer.model import Transformer
 
 try:
@@ -34,11 +36,12 @@ def model_config(request, tokenizer_config: TokenizerConfig) -> tuple[str, Trans
     model_family = request.param
 
     if model_family == "olmo2":
-        config = TransformerConfig.olmo2_190M(tokenizer_config.padded_vocab_size())
+        config = TransformerConfig.olmo2_190M(tokenizer_config.padded_vocab_size(), n_layers=4)
     elif model_family == "olmo3":
         config = TransformerConfig.olmo3_190M(
             tokenizer_config.padded_vocab_size(),
             attn_backend=AttentionBackendName.torch,  # Use torch backend for testing
+            n_layers=4,
         )
     else:
         raise ValueError(f"Unknown model family: {model_family}")
@@ -49,7 +52,7 @@ def model_config(request, tokenizer_config: TokenizerConfig) -> tuple[str, Trans
 @pytest.fixture
 def olmo_core_model_path(
     tmp_path: Path, model_config: tuple[str, TransformerConfig]
-) -> tuple[str, Path]:
+) -> Iterator[tuple[str, Path]]:
     """Returns (model_family, model_path) tuple."""
     model_family, transformer_config = model_config
     model = transformer_config.build()
@@ -57,7 +60,8 @@ def olmo_core_model_path(
     model_path = tmp_path / f"olmo_core_{model_family}"
     save_model_and_optim_state(model_path / "model_and_optim", model)
     del model
-    return model_family, model_path
+    yield model_family, model_path
+    shutil.rmtree(model_path)
 
 
 def _get_expected_hf_config(
@@ -91,7 +95,13 @@ def _get_expected_hf_config(
             pytest.skip("The installed transformers version does not support Olmo3")
 
         # Compute expected layer_types and sliding_window from the transformer config
-        sliding_window_config = transformer_config.block.attention.sliding_window
+        assert isinstance(transformer_config.block, TransformerBlockConfig)
+        attention_config = transformer_config.block.sequence_mixer
+        if not isinstance(attention_config, AttentionConfig):
+            raise NotImplementedError(
+                f"Block has an unsupported sequence mixing config: {attention_config}"
+            )
+        sliding_window_config = attention_config.sliding_window
         assert sliding_window_config is not None
 
         pattern = sliding_window_config.pattern
@@ -167,6 +177,7 @@ def test_convert_checkpoint_to_hf_correct_config(
     hf_config = AutoConfig.from_pretrained(output_dir)
 
     assert hf_config.to_diff_dict() == expected_hf_config.to_diff_dict()
+    shutil.rmtree(output_dir)
 
 
 def test_convert_checkpoint_to_hf_correct_model(
@@ -197,3 +208,4 @@ def test_convert_checkpoint_to_hf_correct_model(
     hf_model = AutoModelForCausalLM.from_pretrained(output_dir)
 
     _validate_models_match(hf_model, olmo_core_model)
+    shutil.rmtree(output_dir)

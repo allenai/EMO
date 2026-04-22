@@ -10,21 +10,25 @@ description = "Core training module for the Open Language Model (OLMo)"
 authors = [
     { name = "Allen Institute for Artificial Intelligence", email = "olmo@allenai.org" },
 ]
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 dependencies = [
     "numpy",
     "torch==2.8.0",
     "torchvision==0.23.0",
     "cached-path>=1.7.2",
+    "filelock>=3.4,<4.0",
     "requests",
     "packaging",
+    "dataclass-extensions>=0.3.0",
+    "pyyaml",
     "rich",
     "omegaconf",
     "torchvision==0.23.0",
     "safetensors",
     "importlib_resources",
     "bettermap",
+    "pandas",
 ]
 
 [project.urls]
@@ -40,6 +44,7 @@ dev = [
     "furo==2024.8.6",
     "google-cloud-storage",
     "isort>=5.12,<5.14",
+    "matplotlib",
     "mypy>=1.0,<1.4",
     "myst-parser>=1.0,<3.0",
     "pytest",
@@ -56,8 +61,9 @@ dev = [
     "twine>=1.11.0",
     "wheel",
 ]
-beaker = ["beaker-py>=2.5.5", "GitPython>=3.0,<4.0", "google-cloud-compute"]
+beaker = ["beaker-py>=2.5.4,<3.0", "beaker-gantry>=3.4.3,<4.0", "GitPython>=3.0,<4.0", "google-cloud-compute"]
 comet = ["comet_ml"]
+dion = ["dion @ git+https://github.com/microsoft/dion.git@7452a5823cf9655b93c3f1d8020b4ebb2535239b ; sys_platform == 'linux'"]
 eval = [
     "ai2-olmes@git+https://github.com/allenai/olmes@721d796d00db4c2044a89ef9e1f81463e06f3090", # "ai2-olmes@git+https://github.com/allenai/olmes@162158ed7878a5d107f5c7e5ad1cebed2a95a26d",
     "beaker-gantry",
@@ -69,21 +75,27 @@ eval = [
     "litellm!=1.82.7,!=1.82.8", # For LLM judges (1.82.7 and 1.82.8 were compromised),
     "huggingface-hub>=0.34.0,<1.0"
 ]
-torchao = ["torchao"]
+fa4 = ["flash-attn-4>=4.0.0b4 ; sys_platform == 'linux'"]
+fla = ["flash-linear-attention>=0.4.1"]
+torchao = ["torchao==0.15.0"]
 #transformers = ["transformers==4.57.1"]
 transformers=[
     "transformers@git+https://github.com/ryanyxw/transformers.git@de05b34309baf1c1110a3371031767edba81a317"
 ]
-flash-attn = [
-    "flash-attn @ https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.7.2/flash_attn-2.8.3+cu128torch2.8-cp310-cp310-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.10'",
-    "flash-attn @ https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.7.2/flash_attn-2.8.3+cu128torch2.8-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.11'",
-]
-#transformers=[
-#    "transformers@git+https://github.com/ryanyxw/transformers.git@2a441500fddbaedeb7f22651114825358be6b296"
-#]
-wandb = ["wandb"]
-all = ["ai2-olmo-core[dev,beaker,comet,eval,flash-attn,torchao,transformers,wandb]"]
+# flash-attn = [
+#     "flash-attn @ https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.7.2/flash_attn-2.8.3+cu128torch2.8-cp310-cp310-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.10'",
+#     "flash-attn @ https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.7.2/flash_attn-2.8.3+cu128torch2.8-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.11'",
+# ]
 
+wandb = ["wandb"]
+all = ["ai2-olmo-core[dev,beaker,comet,dion,eval,fa4,fla,torchao,transformers,wandb]"]
+
+
+[tool.uv]
+environments = [
+    "sys_platform == 'linux'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+]
 
 [tool.setuptools]
 include-package-data = true
@@ -158,8 +170,15 @@ exclude = [
 reportPrivateImportUsage = false
 
 [tool.ty.rules]
-possibly-unbound-attribute = "ignore"
-possibly-unbound-import = "ignore"
+possibly-missing-attribute = "ignore"
+possibly-missing-import = "ignore"
+unresolved-attribute = "warn"
+
+[[tool.ty.overrides]]
+include = ["src/olmo_core/nn/**"]
+
+[tool.ty.overrides.rules]
+unresolved-attribute = "ignore"
 
 [tool.mypy]
 ignore_missing_imports = true
@@ -184,6 +203,7 @@ filterwarnings = [
     'ignore::FutureWarning:huggingface_hub\.file_download',
     'ignore::DeprecationWarning:pkg_resources',
     'ignore::DeprecationWarning:google\.rpc',
+    'ignore::DeprecationWarning:torchao\.dtypes.*',
     'ignore::FutureWarning:torch\.distributed\.checkpoint\.default_planner',
     'ignore::UserWarning:torch\.distributed\.checkpoint\.state_dict_saver',
     'ignore::UserWarning:torch\.distributed\.checkpoint\.state_dict_loader',
