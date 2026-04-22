@@ -29,7 +29,7 @@ import argparse
 import json
 import logging
 import os
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -80,6 +80,65 @@ def prune_moe_layer_inplace(
     moe.top_k = min(moe.top_k, prune_keep_k)
 
 
+def _is_moe_layer(layer) -> bool:
+    return hasattr(layer, "mlp") and hasattr(layer.mlp, "experts")
+
+
+def snapshot_model_state(model) -> Dict[str, Any]:
+    """
+    Capture a snapshot of all state mutated by ``prune_moe_layer_inplace`` plus the
+    ``output_router_logits`` config flag, so that a later call to
+    ``restore_model_state`` returns the model to exactly its pre-pruning state.
+
+    The individual expert ``nn.Module`` instances are never mutated by pruning — only
+    the ``ModuleList`` wrapping them is replaced — so storing the list of module
+    references (not clones) is sufficient.
+    """
+    layer_snaps: List[Optional[Dict[str, Any]]] = []
+    for layer in model.model.layers:
+        if not _is_moe_layer(layer):
+            layer_snaps.append(None)
+            continue
+        moe = layer.mlp
+        layer_snaps.append(
+            {
+                "gate_weight": moe.gate.weight.data.clone(),
+                "gate_bias": (
+                    moe.gate.bias.data.clone() if moe.gate.bias is not None else None
+                ),
+                "gate_out_features": moe.gate.out_features,
+                "experts": list(moe.experts),
+                "num_experts": moe.num_experts,
+                "num_shared_experts": moe.num_shared_experts,
+                "top_k": moe.top_k,
+            }
+        )
+    return {
+        "layers": layer_snaps,
+        "output_router_logits": getattr(model.config, "output_router_logits", None),
+    }
+
+
+def restore_model_state(model, snapshot: Dict[str, Any]) -> None:
+    """Restore model state captured by :func:`snapshot_model_state`."""
+    for layer, snap in zip(model.model.layers, snapshot["layers"]):
+        if snap is None:
+            continue
+        moe = layer.mlp
+        moe.gate.weight = torch.nn.Parameter(snap["gate_weight"].clone())
+        if snap["gate_bias"] is not None:
+            moe.gate.bias = torch.nn.Parameter(snap["gate_bias"].clone())
+        moe.gate.out_features = snap["gate_out_features"]
+        moe.experts = torch.nn.ModuleList(snap["experts"])
+        moe.num_experts = snap["num_experts"]
+        moe.num_shared_experts = snap["num_shared_experts"]
+        moe.top_k = snap["top_k"]
+    if snapshot["output_router_logits"] is not None and hasattr(
+        model.config, "output_router_logits"
+    ):
+        model.config.output_router_logits = snapshot["output_router_logits"]
+
+
 def _capture_layer_output(
     model,
     layer_idx: int,
@@ -123,64 +182,67 @@ def _capture_layer_output(
     return captured[0]
 
 
-def greedy_prune_layerwise(
-    model_name: str,
+def compute_layerwise_keep_sets(
+    model,
+    tokenizer,
     task_name: str,
     split: str,
     prune_keep_k: int,
     num_shared_experts: int,
-    save_path: str,
     batch_size: int = 32,
     num_calibration: Optional[int] = None,
-    device: Optional[str] = None,
-) -> None:
+    prompts: Optional[List[str]] = None,
+) -> Tuple[List[Optional[List[int]]], List[Optional[List[float]]]]:
     """
-    Greedily prune MoE experts one layer at a time.
+    Run greedy layer-by-layer pruning on a preloaded model (in-place) and return the
+    experts kept per layer plus the per-expert average router probabilities used to
+    make the top-k decision.
+
+    The model is left in its fully-pruned state on return. Callers that want to reuse
+    the model should snapshot + restore it around this call via
+    :func:`snapshot_model_state` / :func:`restore_model_state`.
 
     Args:
-        model_name: Path or HF hub name of the full (unpruned) model
-        task_name: Task name used to load the validation set for activation collection
-        split: Dataset split to use (default: validation)
-        prune_keep_k: Total number of experts to keep per layer after pruning
-        num_shared_experts: Number of those experts that are shared experts
-        save_path: Directory to save the pruned model
-        batch_size: Batch size for forward passes during activation collection
-        device: Device override; defaults to "auto" (multi-GPU if available)
-    """
-    logger.info(f"Loading model: {model_name}")
-    config = AutoConfig.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        config=config,
-        torch_dtype=torch.bfloat16,
-        device_map="auto" if device is None else device,
-    )
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
+        model: Preloaded HF causal-LM with MoE layers.
+        tokenizer: Corresponding tokenizer.
+        task_name, split: Forwarded to ``get_formatted_prompts`` when ``prompts`` is None.
+        prune_keep_k: Total experts to keep per MoE layer after pruning.
+        num_shared_experts: Of those, how many are shared experts.
+        batch_size: Batch size for forward passes during activation collection.
+        num_calibration: If not None, subsample the loaded prompts via a seeded
+            permutation (seed=0, matches the eval-pipeline behaviour). Ignored when
+            ``prompts`` is explicitly provided.
+        prompts: Optional pre-loaded / pre-subsampled prompt list. When provided,
+            ``get_formatted_prompts`` is not called and ``num_calibration`` is ignored.
 
-    num_layers = config.num_hidden_layers
+    Returns:
+        (experts_kept_per_layer, avg_probs_per_layer) — both length ``num_hidden_layers``.
+        Entries are ``None`` for non-MoE layers.
+    """
+    num_layers = model.config.num_hidden_layers
     logger.info(f"Model has {num_layers} layers")
 
     # Disable router logit output during pruning to avoid LB loss computation,
     # which crashes when layers have different expert counts mid-pruning.
-    # We re-enable it after pruning is complete.
     if hasattr(model.config, "output_router_logits"):
         model.config.output_router_logits = False
 
     # -------------------------------------------------------------------------
     # Load and tokenize validation data once up front
     # -------------------------------------------------------------------------
-    logger.info(f"Loading dataset: {task_name} ({split})")
-    prompts, _ = get_formatted_prompts(task_name, split)
-    if num_calibration is None:
-        logger.info(f"Loaded {len(prompts)} prompts, using all (no subsampling)")
+    if prompts is None:
+        logger.info(f"Loading dataset: {task_name} ({split})")
+        prompts, _ = get_formatted_prompts(task_name, split)
+        if num_calibration is None:
+            logger.info(f"Loaded {len(prompts)} prompts, using all (no subsampling)")
+        else:
+            n_keep = min(num_calibration, len(prompts))
+            logger.info(f"Loaded {len(prompts)} prompts, subsampling to {n_keep}")
+            g = torch.Generator().manual_seed(0)
+            perm = torch.randperm(len(prompts), generator=g).tolist()
+            prompts = [prompts[i] for i in perm[:n_keep]]
     else:
-        n_keep = min(num_calibration, len(prompts))
-        logger.info(f"Loaded {len(prompts)} prompts, subsampling to {n_keep}")
-        g = torch.Generator().manual_seed(0)
-        perm = torch.randperm(len(prompts), generator=g).tolist()
-        prompts = [prompts[i] for i in perm[:n_keep]]
+        logger.info(f"Using {len(prompts)} caller-provided prompts (skipping load/subsample)")
 
     logger.info("Tokenizing prompts into batches...")
     all_batches = []
@@ -200,13 +262,15 @@ def greedy_prune_layerwise(
     # Layer-by-layer greedy pruning
     # -------------------------------------------------------------------------
     experts_kept_per_layer: List[Optional[List[int]]] = []
+    avg_probs_per_layer: List[Optional[List[float]]] = []
 
     for layer_idx in tqdm(range(num_layers), desc="Pruning layers"):
         layer = model.model.layers[layer_idx]
 
-        if not (hasattr(layer, "mlp") and hasattr(layer.mlp, "experts")):
+        if not _is_moe_layer(layer):
             logger.debug(f"Layer {layer_idx}: not an MoE layer, skipping")
             experts_kept_per_layer.append(None)
+            avg_probs_per_layer.append(None)
             continue
 
         # Expert counts for this layer before pruning
@@ -319,6 +383,7 @@ def greedy_prune_layerwise(
 
         logger.info(f"Layer {layer_idx}: keeping experts {experts_to_keep}")
         experts_kept_per_layer.append(experts_to_keep)
+        avg_probs_per_layer.append(avg_probs.tolist())
 
         # --- Sanity check (first MoE layer only) --------------------------
         # Confirm that after pruning, the hidden states produced by this layer
@@ -346,6 +411,50 @@ def greedy_prune_layerwise(
                 f"Sanity check PASSED at layer {layer_idx}: "
                 f"max hidden-state difference before/after pruning = {max_diff:.6f}"
             )
+
+    return experts_kept_per_layer, avg_probs_per_layer
+
+
+def greedy_prune_layerwise(
+    model_name: str,
+    task_name: str,
+    split: str,
+    prune_keep_k: int,
+    num_shared_experts: int,
+    save_path: str,
+    batch_size: int = 32,
+    num_calibration: Optional[int] = None,
+    device: Optional[str] = None,
+) -> None:
+    """
+    Greedily prune MoE experts one layer at a time, then save the pruned model.
+
+    Thin wrapper over :func:`compute_layerwise_keep_sets` that handles model loading,
+    post-pruning config updates, and disk I/O. Behavior is identical to the pre-refactor
+    implementation.
+    """
+    logger.info(f"Loading model: {model_name}")
+    config = AutoConfig.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        config=config,
+        torch_dtype=torch.bfloat16,
+        device_map="auto" if device is None else device,
+    )
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    experts_kept_per_layer, _ = compute_layerwise_keep_sets(
+        model=model,
+        tokenizer=tokenizer,
+        task_name=task_name,
+        split=split,
+        prune_keep_k=prune_keep_k,
+        num_shared_experts=num_shared_experts,
+        batch_size=batch_size,
+        num_calibration=num_calibration,
+    )
 
     # -------------------------------------------------------------------------
     # Update global model config to reflect pruned expert counts
