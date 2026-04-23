@@ -24,8 +24,7 @@ from matplotlib.patches import FancyBboxPatch
 # ============================================================================
 
 BASE = Path(
-    "/Users/ryanyxw/Desktop/Berkeley/repos/phdbrainstorm/FlexMoE/"
-    "claude_outputs/analysis/router_clustering_pretraining_shuffled_token_truncated"
+    "/claude_outputs/analysis/router_clustering_pretraining_shuffled_token_truncated"
 )
 CLUSTER_SUBDIR = "token_probs_mean_pca_l2_spherical_kmeans_k64"
 
