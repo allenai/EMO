@@ -7,9 +7,10 @@ two CSVs (one per checkpoint mode):
     claude_outputs/prune_plots/expert_selection_method.csv        (fine-tuned)
     claude_outputs/prune_plots/expert_selection_method_ckpt0.csv  (pre-finetune)
 
-For each metric (MMLU, MMLU Pro, GSM8K), reports two columns:
+For each metric (MMLU, MMLU Pro, GSM8K), reports three columns:
   * "Router"  -> layerwise prunemode (``(lw)`` columns from the source CSVs)
   * "Easy-EP" -> Easy-EP prunemode   (``(ep)`` columns from the source CSVs)
+  * "Random"  -> random prunemode    (``(rd)`` columns from the source CSVs)
 
 The two 1T annealed models are compared:
 
@@ -140,16 +141,29 @@ def _build_table(
         val = df.at[key, col]
         return None if pd.isna(val) else float(val)
 
+    def lookup_random(df: pd.DataFrame, key: str, base: str) -> Optional[float]:
+        """Random prunemode value. Falls back to the (lw) value for keepk=128
+        rows, since no actual pruning happens when all experts are kept."""
+        rd = lookup(df, key, f"{base} (rd)")
+        if rd is not None:
+            return rd
+        if key and "keepk 128" in key:
+            return lookup(df, key, f"{base} (lw)")
+        return None
+
     records: List[Dict[str, str]] = []
     for name, experts, key in ROWS:
         row = {
             "": name,
             "# Total Experts": experts,
-            "MMLU Router": _pct(lookup(agg_df, key, "mmlu_merged_avg_no_other (lw)")),
+            "MMLU Random":  _pct(lookup_random(agg_df, key, "mmlu_merged_avg_no_other")),
+            "MMLU Router":  _pct(lookup(agg_df, key, "mmlu_merged_avg_no_other (lw)")),
             "MMLU Easy-EP": _pct(lookup(agg_df, key, "mmlu_merged_avg_no_other (ep)")),
-            "MMLU Pro Router": _pct(lookup(agg_df, key, "mmlu_pro_merged_avg_no_other (lw)")),
+            "MMLU Pro Random":  _pct(lookup_random(agg_df, key, "mmlu_pro_merged_avg_no_other")),
+            "MMLU Pro Router":  _pct(lookup(agg_df, key, "mmlu_pro_merged_avg_no_other (lw)")),
             "MMLU Pro Easy-EP": _pct(lookup(agg_df, key, "mmlu_pro_merged_avg_no_other (ep)")),
-            "GSM8K Router": _pct(lookup(gsm_df, key, "gsm8k_generation_8shot_merged (lw)")),
+            "GSM8K Random":  _pct(lookup_random(gsm_df, key, "gsm8k_generation_8shot_merged")),
+            "GSM8K Router":  _pct(lookup(gsm_df, key, "gsm8k_generation_8shot_merged (lw)")),
             "GSM8K Easy-EP": _pct(lookup(gsm_df, key, "gsm8k_generation_8shot_merged (ep)")),
         }
         records.append(row)

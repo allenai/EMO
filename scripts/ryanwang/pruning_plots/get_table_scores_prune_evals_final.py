@@ -27,11 +27,16 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
-# Prune modes: each variant (keepk value) is scanned for both prunemode suffixes.
-# Results appear as paired columns: "task (lw)" and "task (ep)" per base task.
+# Prune modes: each variant (keepk value) is scanned for all prunemode suffixes.
+# Results appear as paired columns: "task (lw)", "task (ep)", and "task (rd)"
+# per base task.
+#   lw = layerwise (validation-data-based) pruning
+#   ep = Easy-EP   (validation-data-based) pruning
+#   rd = random    (no validation data used)
 PRUNEMODE_SUFFIXES: Dict[str, str] = {
     "lw": "_prunemode-layerwise",
     "ep": "_prunemode-easy_ep",
+    "rd": "_prunemode-random",
 }
 
 # Variant definitions: just the keepk part (prunemode is added automatically).
