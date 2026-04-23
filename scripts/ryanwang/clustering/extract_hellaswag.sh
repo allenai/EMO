@@ -1,5 +1,8 @@
 #!/bin/bash
-# Extract token-level router logits from HellaSwag data.
+# Extract token-level router logits from the hellaswag_merged task
+# (validation split), subsampled using the same seeded shuffle as the
+# pruning calibration pipeline (src/hf_training/easy_ep_prune.py and
+# greedy_prune_layerwise.py).
 #
 # Usage:
 #   bash scripts/ryanwang/clustering/extract_hellaswag.sh [MODEL_PATH]
@@ -20,7 +23,7 @@ PYTHONUNBUFFERED=1 python -u \
     --source hellaswag \
     --model-path "$MODEL_PATH" \
     --output-dir "$OUTPUT_DIR" \
-    --max-tokens-per-doc 0 \
+    --num-calibration 100 \
     --batch-size 32 \
     2>&1 | tee "${OUTPUT_DIR}/extraction.log"
 

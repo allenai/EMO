@@ -1,32 +1,37 @@
 """
-Calibration-size sensitivity analysis for greedy layerwise MoE pruning.
+Zero-shot variant of ``analyze_nprune_keep_sets``.
 
-For a single model, sweeps over (task, keep_k, num_prune_examples) and records the
-kept-expert set plus per-expert average router probabilities at each MoE layer. Results
-are written as per-combo JSON files under ``--output-dir``.
+Identical sweep (model × task × keep_k × N) but forces ``num_shots=0`` when loading
+each task's validation prompts, so the calibration set contains only the raw question
+stems (no 5-/8-shot demonstrations). The rest of the pipeline — subsample seed,
+tokenizer kwargs, pruning algorithm, snapshot/restore, output JSON schema — is
+byte-identical to ``analyze_nprune_keep_sets``.
 
-Calibration data is byte-identical to the eval pipeline's layerwise pruning step
-(``hf_finetune_with_pruning_layerwise.sh`` -> ``greedy_prune_layerwise``):
-    - same ``get_formatted_prompts(task, split)`` call
-    - same ``torch.Generator().manual_seed(0)`` + ``randperm`` subsample (nested subsets)
-    - same tokenizer kwargs, same batch_size default
+Implementation note: we do NOT modify ``data_utils.get_formatted_prompts`` (which
+has a fixed task-config read path). Instead we replicate its body inline, making a
+shallow copy of the TASK_CONFIGS entry and setting ``num_shots = 0`` before handing
+it to ``load_task``. Nothing in the rest of the codebase is affected.
 
-The model is loaded once and snapshot/restored between combos so the sweep runs in a
-single process without accumulating the in-place mutations from prior pruning runs.
+Default output root: ``claude_outputs/prune_plots/nprune_analysis_0shot/`` so results
+do not collide with the 5-/8-shot ``nprune_analysis/`` tree.
 """
 
 import argparse
+import copy
 import json
 import logging
-import os
 import re
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import torch
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
-from src.hf_training.data_utils import get_formatted_prompts
+# Local imports mirror analyze_nprune_keep_sets.py.
+from offline_evals.run_eval import load_task
+from scripts.eval.tasks import get_task_configs
+
+from src.hf_training.data_utils import get_oe_task_name
 from src.hf_training.greedy_prune_layerwise import (
     compute_layerwise_keep_sets,
     restore_model_state,
@@ -37,10 +42,47 @@ logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logg
 logger = logging.getLogger(__name__)
 
 
-def _stringify_model(model_path: str) -> str:
-    """Match the shell stringification in launch_pruning_hf.sh:
-    keep [a-zA-Z0-9_-], applied to the last two path components joined.
+def _get_formatted_prompts_0shot(task_name: str, split: str) -> Tuple[List[str], str]:
+    """Replica of ``data_utils.get_formatted_prompts`` that overrides
+    ``num_shots`` to 0 on a local copy of the task config.
+
+    Keep this function in lock-step with ``get_formatted_prompts`` if that ever
+    changes — we duplicate the body deliberately to avoid editing shared code.
     """
+    oe_task_name = get_oe_task_name(task_name, split)
+    TASK_CONFIGS = get_task_configs()
+    task_config = copy.deepcopy(TASK_CONFIGS[oe_task_name])
+    task_config["num_shots"] = 0
+    task = load_task(task_config, "tmp")
+    task.download()
+    task.build_all_requests()
+
+    dataset = []
+    request_type = task._instances[0].request_type
+
+    if request_type == "loglikelihood":
+        for instance in task._instances:
+            if instance.idx == instance.label and not instance.request.context.startswith(
+                "Answer:"
+            ):
+                dataset.append(instance.request.context + instance.request.continuation)
+            elif "gsm8k" in task_name:
+                dataset.append(instance.request.context + instance.request.continuation)
+
+    elif request_type == "generate_until":
+        for instance in task._instances:
+            choice = instance.doc["choices"][0]
+            if isinstance(choice, tuple):
+                choice = choice[0]
+            if choice and instance.request.context[-1] != " " and choice[0] != " ":
+                dataset.append(instance.request.context + " " + choice)
+            else:
+                dataset.append(instance.request.context + choice)
+
+    return dataset, request_type
+
+
+def _stringify_model(model_path: str) -> str:
     p = Path(model_path)
     rel = f"{p.parent.name}/{p.name}" if p.parent.name else p.name
     return re.sub(r"[^a-zA-Z0-9_-]", "", rel)
@@ -79,28 +121,14 @@ def main():
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="claude_outputs/prune_plots/nprune_analysis",
+        default="claude_outputs/prune_plots/nprune_analysis_0shot",
     )
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--split", type=str, default="validation")
     parser.add_argument("--device", type=str, default=None)
-    parser.add_argument(
-        "--skip-existing",
-        action="store_true",
-        help="Skip combos whose output JSON already exists",
-    )
-    parser.add_argument(
-        "--shard-idx",
-        type=int,
-        default=0,
-        help="Zero-based shard index; process tasks where task_idx %% num_shards == shard_idx",
-    )
-    parser.add_argument(
-        "--num-shards",
-        type=int,
-        default=1,
-        help="Total number of shards; default 1 (no sharding)",
-    )
+    parser.add_argument("--skip-existing", action="store_true")
+    parser.add_argument("--shard-idx", type=int, default=0)
+    parser.add_argument("--num-shards", type=int, default=1)
     args = parser.parse_args()
     if not (0 <= args.shard_idx < args.num_shards):
         raise ValueError(
@@ -147,12 +175,9 @@ def main():
     combo_idx = 0
 
     for _, task in my_tasks:
-        logger.info(f"=== Task: {task} ===")
-        prompts, _ = get_formatted_prompts(task, args.split)
+        logger.info(f"=== Task: {task} (num_shots=0) ===")
+        prompts, _ = _get_formatted_prompts_0shot(task, args.split)
         logger.info(f"Loaded {len(prompts)} validation prompts")
-        # Nested subsample: seed=0 randperm, then slice [:N]. Matches the per-call
-        # behaviour in greedy_prune_layerwise (but computed once per task so nested
-        # N values stay consistent).
         perm = torch.randperm(
             len(prompts), generator=torch.Generator().manual_seed(0)
         ).tolist()
@@ -180,13 +205,11 @@ def main():
                 logger.info(
                     f"[{combo_idx}/{total_combos}] task={task} "
                     f"keepk={keep_k} N={_nprune_tag(n_cal)} "
-                    f"(using {len(sub_prompts)} prompts)"
+                    f"(using {len(sub_prompts)} prompts, 0-shot)"
                 )
 
-                # Reset model to pristine state before each combo.
                 restore_model_state(model, pristine)
 
-                # Cheap sanity check: first MoE layer's gate.weight must match pristine.
                 pristine_gate = pristine["layers"][first_moe_idx]["gate_weight"]
                 current_gate = model.model.layers[first_moe_idx].mlp.gate.weight.data
                 if not torch.equal(pristine_gate.to(current_gate.device), current_gate):
@@ -211,6 +234,7 @@ def main():
                     "model": args.model,
                     "task": task,
                     "split": args.split,
+                    "num_shots": 0,
                     "prune_keep_k": keep_k,
                     "num_shared_experts": args.num_shared_experts,
                     "num_calibration": n_cal,

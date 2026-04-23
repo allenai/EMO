@@ -7,8 +7,13 @@ in transform.py.
 
 Supports three data sources:
   - pretraining: S3-based shuffled sampling with per-document truncation
-  - mmlu: all 57 MMLU subjects (validation split by default)
-  - hellaswag: all HellaSwag splits (train/validation/test)
+  - mmlu: the 57 mmlu_merged_<subject>:rc_validation::olmes tasks
+          (merged test[:60%]+validation pool per subject). All
+          available prompts are used; no subsampling. Each target
+          question is paired with 5 few-shot demos drawn from its own
+          subject's dev split.
+  - hellaswag: the hellaswag_merged task (validation split), subsampled
+               to --num-calibration with the same seeded shuffle.
 
 Output format is identical across sources:
   embeddings_logits.npy      (num_tokens, num_layers * num_experts), float16
@@ -205,29 +210,35 @@ def load_pretraining_docs(args) -> list[tuple[str, list]]:
     return result
 
 
+def _subsample_prompts(prompts, num_calibration, seed):
+    """Deterministic seeded subsample matching easy_ep_prune / greedy_prune_layerwise."""
+    if num_calibration is None or num_calibration >= len(prompts):
+        return prompts
+    g = torch.Generator().manual_seed(seed)
+    perm = torch.randperm(len(prompts), generator=g).tolist()
+    return [prompts[i] for i in perm[:num_calibration]]
+
+
 def load_mmlu_docs(args) -> list[tuple[str, list]]:
-    """Load MMLU prompts as documents. Returns list of (subject, docs) pairs."""
-    from src.hf_training.data_utils import get_formatted_prompts
-    from src.offline_evals.tasks.splits_mmlu import MMLU_CATEGORIES
+    """
+    Load the 57 mmlu_merged_<subject> tasks (rc_validation split).
 
-    # Build subject list
-    all_subjects = []
-    subject_to_category = {}
-    for cat, subjects in MMLU_CATEGORIES.items():
-        for s in subjects:
-            subject_to_category[s] = cat
-            all_subjects.append(s)
-    all_subjects.sort()
-
-    if args.subjects:
-        subjects = [s.strip() for s in args.subjects.split(",")]
-    else:
-        subjects = all_subjects
-
-    logger.info(f"Loading {len(subjects)} MMLU subjects ({args.mmlu_split} split)")
-
-    # We need the tokenizer for tokenization — load lazily via args
+    The "merged validation" split for a per-subject task is
+    concatenate_datasets([test[:60%], validation]).shuffle(seed=0) —
+    see GenericMMLU_Merged_withsplits in
+    src/offline_evals/tasks/splits_mmlu.py. All available prompts are
+    used; no subsampling. Each prompt is wrapped in OLMES's
+    subject-matched 5-shot RC context.
+    """
+    from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
     from transformers import AutoTokenizer
+
+    from src.hf_training.data_utils import get_formatted_prompts
+
+    subjects = sorted(MMLU_SUBJECTS)
+    logger.info(
+        f"Loading {len(subjects)} mmlu_merged_<subject> tasks (rc_validation, no subsample)"
+    )
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_path)
     if tokenizer.pad_token is None:
@@ -237,25 +248,30 @@ def load_mmlu_docs(args) -> list[tuple[str, list]]:
 
     result = []
     for subject in subjects:
-        prompts, _ = get_formatted_prompts(f"mmlu_{subject}", args.mmlu_split)
+        task_name = f"mmlu_merged_{subject}"
+        prompts, _ = get_formatted_prompts(task_name, "validation")
         docs = tokenize_prompts(prompts, tokenizer, max_length=max_len)
         if docs:
-            # Attach category as extra metadata
-            result.append((subject, docs))
-            logger.info(f"  {subject}: {len(docs)} prompts")
+            result.append((task_name, docs))
+            logger.info(f"  {task_name}: {len(docs)} prompts")
 
-    # Store subject_to_category for later metadata saving
-    args._subject_to_category = subject_to_category
     return result
 
 
 def load_hellaswag_docs(args) -> list[tuple[str, list]]:
-    """Load HellaSwag prompts as documents. Returns list of (split, docs) pairs."""
+    """
+    Load the hellaswag_merged task (validation split), subsampled to
+    args.num_calibration with the same seeded shuffle used by the
+    pruning calibration pipeline.
+    """
+    from transformers import AutoTokenizer
+
     from src.hf_training.data_utils import get_formatted_prompts
 
-    splits = [s.strip() for s in args.hellaswag_splits.split(",")]
-
-    from transformers import AutoTokenizer
+    logger.info(
+        f"Loading hellaswag_merged (validation, "
+        f"num_calibration={args.num_calibration}, seed={args.calibration_seed})"
+    )
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_path)
     if tokenizer.pad_token is None:
@@ -263,15 +279,13 @@ def load_hellaswag_docs(args) -> list[tuple[str, list]]:
 
     max_len = args.max_tokens_per_doc if args.max_tokens_per_doc > 0 else 2048
 
-    result = []
-    for split in splits:
-        prompts, _ = get_formatted_prompts("hellaswag", split)
-        docs = tokenize_prompts(prompts, tokenizer, max_length=max_len)
-        if docs:
-            result.append((split, docs))
-            logger.info(f"  {split}: {len(docs)} prompts")
-
-    return result
+    prompts, _ = get_formatted_prompts("hellaswag_merged", "validation")
+    prompts = _subsample_prompts(prompts, args.num_calibration, args.calibration_seed)
+    docs = tokenize_prompts(prompts, tokenizer, max_length=max_len)
+    if not docs:
+        return []
+    logger.info(f"  hellaswag_merged: {len(docs)} prompts")
+    return [("hellaswag_merged", docs)]
 
 
 # ---------------------------------------------------------------------------
@@ -303,8 +317,6 @@ def run_extraction(
     all_doc_extra: List[dict] = []  # source-specific extra fields
     global_doc_idx = 0
 
-    subject_to_category = getattr(args, "_subject_to_category", {})
-
     for label, docs in source_docs:
         logger.info(
             f"\nSource: {label}  docs={len(docs)}  " f"tokens={sum(len(d) for d in docs):,}"
@@ -313,10 +325,7 @@ def run_extraction(
         for doc in docs:
             all_doc_tokens.append(doc)
             all_doc_sources.append(label)
-            extra = {}
-            if args.source == "mmlu" and label in subject_to_category:
-                extra["category"] = subject_to_category[label]
-            all_doc_extra.append(extra)
+            all_doc_extra.append({})
 
         num_batches = (len(docs) + args.batch_size - 1) // args.batch_size
         source_tokens = 0
@@ -417,9 +426,12 @@ def run_extraction(
         info_out["target_tokens"] = args.target_tokens
         info_out["shuffle_seed"] = args.shuffle_seed
     if args.source == "mmlu":
-        info_out["mmlu_split"] = args.mmlu_split
+        info_out["task_prefix"] = "mmlu_merged_"
+        info_out["split"] = "validation"
     if args.source == "hellaswag":
-        info_out["hellaswag_splits"] = args.hellaswag_splits
+        info_out["split"] = "validation"
+        info_out["num_calibration"] = args.num_calibration
+        info_out["calibration_seed"] = args.calibration_seed
 
     out_info = os.path.join(args.output_dir, "info.json")
     with open(out_info, "w") as f:
@@ -468,25 +480,31 @@ def main():
     )
     parser.add_argument("--shuffle-seed", type=int, default=42)
 
-    # MMLU-specific
+    # Calibration subsampling (mmlu / hellaswag)
     parser.add_argument(
-        "--mmlu-split", default="validation", choices=["validation", "test", "train"]
+        "--num-calibration",
+        type=int,
+        default=100,
+        help=(
+            "Per-task prompt cap for mmlu / hellaswag (default: 100). "
+            "Seeded torch.randperm matches src/hf_training/easy_ep_prune.py "
+            "and greedy_prune_layerwise.py. Set <=0 to disable subsampling."
+        ),
     )
     parser.add_argument(
-        "--subjects", default=None, help="Comma-separated MMLU subjects (default: all 57)"
-    )
-
-    # HellaSwag-specific
-    parser.add_argument(
-        "--hellaswag-splits",
-        default="train,validation,test",
-        help="Comma-separated splits (default: train,validation,test)",
+        "--calibration-seed",
+        type=int,
+        default=0,
+        help="Seed for the calibration subsample (default: 0, matches pruning pipeline).",
     )
 
     args = parser.parse_args()
 
     if args.source == "pretraining" and args.composition_file is None:
         parser.error("--composition-file is required for --source pretraining")
+
+    if args.num_calibration is not None and args.num_calibration <= 0:
+        args.num_calibration = None
 
     os.makedirs(args.output_dir, exist_ok=True)
 

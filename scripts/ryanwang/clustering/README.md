@@ -43,10 +43,13 @@ Saves per-token router logits from any data source. Always token-level — docum
 # Pretraining (S3-based, shuffled, truncated)
 bash scripts/ryanwang/clustering/extract_pretraining.sh [MODEL_PATH] [TARGET_TOKENS] [MAX_TOKENS_PER_DOC]
 
-# MMLU (all 57 subjects, validation split)
+# MMLU (57 per-subject mmlu_merged_<subject>:rc_validation::olmes tasks.
+#       The "merged validation" pool is test[:60%]+validation shuffled
+#       per subject. All prompts used — no subsampling. 5-shot
+#       subject-matched demos built by OLMES.)
 bash scripts/ryanwang/clustering/extract_mmlu.sh [MODEL_PATH]
 
-# HellaSwag (all splits)
+# HellaSwag (hellaswag_merged, validation split, subsampled the same way)
 bash scripts/ryanwang/clustering/extract_hellaswag.sh [MODEL_PATH]
 ```
 
@@ -64,11 +67,11 @@ info.json                   # extraction config
 
 | Arg | Default | Description |
 |-----|---------|-------------|
-| `--max-tokens-per-doc` | 100 (pretraining), 0 (tasks) | Truncate docs. 0 = no truncation. |
+| `--max-tokens-per-doc` | 250 (pretraining), 0 (tasks) | Truncate docs. 0 = no truncation. |
 | `--target-tokens` | 1,000,000 | Post-truncation token budget (pretraining only) |
 | `--shuffle-seed` | 42 | Random seed for S3 sampling (pretraining only) |
-| `--subjects` | all 57 | Comma-separated MMLU subjects |
-| `--hellaswag-splits` | train,validation,test | Comma-separated splits |
+| `--num-calibration` | 100 | Per-task prompt cap for mmlu / hellaswag. Seeded torch.randperm matches easy_ep_prune / greedy_prune_layerwise. Set `<=0` to disable. |
+| `--calibration-seed` | 0 | Seed for the calibration subsample. Matches the pruning pipeline default. |
 
 ## Step 2: Transform
 
