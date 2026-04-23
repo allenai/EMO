@@ -5,6 +5,9 @@ Supports both standard architectures (olmo2, olmo3) and hybrid (GDN + attention)
 Hybrid models are saved as raw ``config.json`` + ``model.safetensors`` rather than using
 ``save_pretrained()``.
 
+The conversion logic lives in :mod:`olmo_core.nn.hf.convert_checkpoint`; this script is a
+thin CLI wrapper.
+
 Usage::
 
     # Standard model
@@ -14,16 +17,13 @@ Usage::
     python convert_checkpoint_to_hf.py -i /path/to/hybrid-checkpoint -o /path/to/output
 """
 
-import logging
 from argparse import ArgumentParser
 
 import torch
 
 from olmo_core.config import DType
-from olmo_core.hf_utils import convert_checkpoint_to_hf, load_config
+from olmo_core.nn.hf import convert_checkpoint_to_hf, load_config
 from olmo_core.utils import prepare_cli_environment
-
-log = logging.getLogger(__name__)
 
 
 def parse_args():
