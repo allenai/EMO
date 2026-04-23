@@ -153,7 +153,9 @@ class EvaluatorCallback(Callback):
                         f"total_batches={evaluator.total_batches}"
                     )
                     # Log first 20 global instance indices to verify same data across eval passes.
-                    if hasattr(evaluator.batches, "get_global_indices"):
+                    if evaluator.batches is not None and hasattr(
+                        evaluator.batches, "get_global_indices"
+                    ):
                         try:
                             indices = evaluator.batches.get_global_indices()[:20]
                             log.info(
@@ -281,7 +283,6 @@ class LMEvaluatorCallbackConfig(CallbackConfig):
     log_interval: int = 5
     deterministic: bool = True
     enabled: bool = True
-    deterministic: bool = True
     name: str = "lm"
 
     def build(self, trainer: "Trainer") -> Optional[Callback]:

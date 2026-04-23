@@ -18,7 +18,7 @@ from olmo_core.config import DType
 from olmo_core.data.tokenizer import TokenizerConfig
 from olmo_core.distributed.checkpoint import load_model_and_optim_state
 from olmo_core.io import file_exists, join_path
-from olmo_core.nn.attention import AttentionBackendName, AttentionType
+from olmo_core.nn.attention import AttentionBackendName, AttentionConfig, AttentionType
 from olmo_core.nn.conversion.state_mapping import StateType, TemplatePlaceholder
 from olmo_core.nn.hf.checkpoint import save_hf_model
 from olmo_core.nn.hf.convert import get_converter_to_hf
@@ -79,7 +79,14 @@ def convert_checkpoint_to_hf(
 
     validation_device = validation_device or torch.device("cpu")
 
-    block_entries: list[tuple[str, TransformerBlockConfig]] = [("base block", model_config.block)]
+    block_entries: list[tuple[str, TransformerBlockConfig]] = []
+    if isinstance(model_config.block, dict):
+        block_entries.extend(
+            (f"named block {name}", block_config)
+            for name, block_config in model_config.block.items()
+        )
+    else:
+        block_entries.append(("base block", model_config.block))
     if model_config.block_overrides:
         block_entries.extend(
             (f"block override {idx}", block_config)
@@ -90,7 +97,9 @@ def convert_checkpoint_to_hf(
         block_label: str, block_config: TransformerBlockConfig
     ) -> None:
         nonlocal device, validation_device
-        attention_config = block_config.attention
+        if not isinstance(block_config.sequence_mixer, AttentionConfig):
+            return
+        attention_config = block_config.sequence_mixer
         if attention_config.name == AttentionType.fused:
             backend = attention_config.backend
             if backend is None:
@@ -163,7 +172,12 @@ def convert_checkpoint_to_hf(
             log.info(f"Using provided model state dict, saving to '{output_path}'")
 
         assert model_state_dict is not None
-        if (moe_config := model_config.block.feed_forward_moe) is not None:
+        primary_block = (
+            next(iter(model_config.block.values()))
+            if isinstance(model_config.block, dict)
+            else model_config.block
+        )
+        if (moe_config := primary_block.feed_forward_moe) is not None:
             if moe_config.name == MoEType.dropless:
                 for k, v in model_state_dict.items():
                     # We need to reshape the w1 and w3 weights for the dropless MoE because conversion

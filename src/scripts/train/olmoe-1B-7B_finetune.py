@@ -26,7 +26,7 @@ from olmo_core.distributed.utils import get_rank
 from olmo_core.nn.moe.loss import MoELoadBalancingLossGranularity
 from olmo_core.nn.moe.masked_finetune_router import MoEMaskedFinetuneRouterConfig
 from olmo_core.nn.moe.pruning_router import PruningMoERouterConfig
-from olmo_core.nn.transformer import TransformerConfig
+from olmo_core.nn.transformer import TransformerBlockConfig, TransformerConfig
 from olmo_core.optim import AdamWConfig, LinearWithWarmup, OptimGroupOverride
 from olmo_core.train import (
     TrainerConfig,
@@ -219,6 +219,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             raise ValueError(
                 "Cannot apply both model_type modifications and pruning simultaneously, since pruning will use the pruning_router class"
             )
+        assert isinstance(model_config.block, TransformerBlockConfig)
         assert model_config.block.feed_forward_moe is not None
         if opts.model_type == "masked-finetune":
             log.info("Applying finetuning router that masks masked tokens for losses ...")

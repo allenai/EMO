@@ -62,7 +62,11 @@ from olmo_core.nn.moe.twolevel_sampling_nolb_router import (
 from olmo_core.nn.moe.twolevel_topp_batchlb_router import (
     MoETwoLevelTopPBatchLBRouterConfig,
 )
-from olmo_core.nn.transformer import TransformerBlockType, TransformerConfig
+from olmo_core.nn.transformer import (
+    TransformerBlockConfig,
+    TransformerBlockType,
+    TransformerConfig,
+)
 from olmo_core.optim import AdamWConfig, OptimGroupOverride
 from olmo_core.optim.scheduler import WSD, SchedulerUnits
 from olmo_core.train import (
@@ -248,6 +252,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     # Apply special routers or other modifications to the model here if needed.
+    assert isinstance(model_config.block, TransformerBlockConfig)
     assert model_config.block.feed_forward_moe is not None
     if opts.model_type == "dense" or opts.model_type == "moe":
         log.info("Using default routers; no modifications applied.")
@@ -731,6 +736,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     # Apply dense first layer overrides AFTER merge so CLI overrides
     # (backend, qk_norm, etc.) are inherited by the dense blocks.
     if opts.model_type == "two-level_lb-batch_reduce-dp_sharedexp_densefirst":
+        assert isinstance(config.model.block, TransformerBlockConfig)
         moe_cfg = config.model.block.feed_forward_moe
         assert moe_cfg is not None
         dense_hidden = moe_cfg.router.top_k * moe_cfg.hidden_size  # 8 * 1024 = 8192
