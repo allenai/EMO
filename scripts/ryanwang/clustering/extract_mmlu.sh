@@ -1,5 +1,9 @@
 #!/bin/bash
-# Extract token-level router logits from MMLU validation data.
+# Extract token-level router logits from the 57 per-subject MMLU tasks
+# mmlu_merged_<subject>:rc_validation::olmes — the merged variant uses
+# test[:60%]+validation shuffled (seed=0) per subject. All prompts are
+# used; no subsampling. Each prompt is wrapped in a subject-matched
+# 5-shot OLMES RC context.
 #
 # Usage:
 #   bash scripts/ryanwang/clustering/extract_mmlu.sh [MODEL_PATH]
@@ -20,7 +24,6 @@ PYTHONUNBUFFERED=1 python -u \
     --source mmlu \
     --model-path "$MODEL_PATH" \
     --output-dir "$OUTPUT_DIR" \
-    --max-tokens-per-doc 0 \
     --batch-size 32 \
     2>&1 | tee "${OUTPUT_DIR}/extraction.log"
 
