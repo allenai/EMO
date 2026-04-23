@@ -4,12 +4,12 @@
 BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 #BASE_DIR="/root/phdbrainstorm/FlexMoE"
 MODELS=(
-#    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
+    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
 #    "dense_1b_lr-4e-3_0213/step30995-hf"
 #    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
 #    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf"
-    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419/step250339-hf"
+#    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419/step250339-hf"
 #    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_twolevel_randpool-8-128_from_step238419/step250339-hf"
 
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313/step238419-hf"
@@ -49,7 +49,7 @@ model_type=hf
 #               "easy_ep"             -- EASY-EP (arXiv 2504.06792): one-shot domain-specific
 #                                        pruning using gating*||expert_out|| weighted by
 #                                        (1 - cos_sim) of MoE in/out on few-shot calibration
-PRUNING_MODE="easy_ep"
+PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
