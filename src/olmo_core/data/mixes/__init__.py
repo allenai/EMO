@@ -35,13 +35,12 @@ class DataMix(DataMixBase):
     An enumeration of data mix names.
     """
 
+    # Pretraining mixes
     OLMoE_mix_0824 = "OLMoE-mix-0824"
     dclm_upweight_1012 = "dclm-upweight-1022"
     arc_easy_train = "arc-easy-train"
     dolma17 = "dolma17"
-    v3_small_ppl_validation = "v3-small-ppl-validation"
     OLMo_mix_0625 = "OLMo-mix-0625"
-    OLMo_mix_0925 = "OLMo-mix-0925"
     OLMo_mix_0625_150Bsample = "OLMo-mix-0625-150Bsample"
     OLMo_mix_0625_150Bsample_dclm = "OLMo-mix-0625-150Bsample-dclm"
     OLMoE_mix_0824_cc = "OLMoE-mix-0824-cc"
@@ -84,6 +83,23 @@ class DataMix(DataMixBase):
 
     proxy_mix_base_math_code = "proxy_mix_base_math_code"
     base_math_code = "base_math_code"
+    OLMo_mix_0625_700Bsample = "OLMo-mix-0625-700Bsample"
+    OLMo_mix_0625_official = "OLMo-mix-0625-official"
+    OLMo_mix_0925 = "OLMo-mix-0925"
+    OLMo_mix_0925_official = "OLMo-mix-0925-official"
+
+    # Midtraining mixes
+    OLMo_midtraining_mix_0625_100B = "OLMo-midtraining-mix-0625-100B"
+    OLMo_midtraining_mix_0925_ingredient1_100B = "OLMo-midtraining-mix-0925-ingredient1-100B"
+    OLMo_midtraining_mix_0925_ingredient2_100B = "OLMo-midtraining-mix-0925-ingredient2-100B"
+
+    # Long-context extension mixes
+    OLMo_longmino_mix_0625 = "OLMo-longmino-mix-0625"
+    OLMo_longmino_mix_0925 = "OLMo-longmino-mix-0925"
+
+    # Validation mixes
+    v3_small_ppl_validation = "v3-small-ppl-validation"
+    code_fresh_ppl_validation = "code-fresh-ppl-validation"
 
     @classmethod
     def _missing_(cls, value: object) -> "DataMix | None":
@@ -114,9 +130,25 @@ class DataMix(DataMixBase):
                 tokenizer_id = "gptneox20b"
             elif tokenizer == TokenizerName.dolma2:
                 tokenizer_id = "dolma2-tokenizer"
+        elif self == DataMix.code_fresh_ppl_validation:
+            if tokenizer == TokenizerName.dolma2:
+                tokenizer_id = "dolma2-tokenizer"
         elif self == DataMix.OLMo_mix_0625:
             if tokenizer == TokenizerName.dolma2_sigdig:
                 tokenizer_id = "dolma2-tokenizer-sigdig"
+        elif self in [
+            # Mixes used for OLMo3 training are saved with "dolma3-tokenizer" tokenizer,
+            # which is exactly the same as "dolma2-tokenizer" but with a different name.
+            DataMix.OLMo_mix_0625_official,
+            DataMix.OLMo_mix_0925_official,
+            DataMix.OLMo_midtraining_mix_0625_100B,
+            DataMix.OLMo_midtraining_mix_0925_ingredient1_100B,
+            DataMix.OLMo_midtraining_mix_0925_ingredient2_100B,
+            DataMix.OLMo_longmino_mix_0625,
+            DataMix.OLMo_longmino_mix_0925,
+        ]:
+            if tokenizer == TokenizerName.dolma2:
+                tokenizer_id = "allenai/dolma3-tokenizer"
         elif tokenizer == TokenizerName.gpt_neox_olmo_dolma_v1_5:
             tokenizer_id = "gpt-neox-olmo-dolma-v1_5"
 

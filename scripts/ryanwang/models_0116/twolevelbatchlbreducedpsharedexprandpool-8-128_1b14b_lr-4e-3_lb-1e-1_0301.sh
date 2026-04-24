@@ -9,14 +9,14 @@ eval_document_expert_pool=32
 lr=4e-3
 lb=1e-1
 
-nodes=16
+nodes=8
 gpus=8
 # calculate by taking nodes multiply by gpus multiply by 4 (since we have 4 as micro batch size)
 lb_global_batch_size=$((nodes * gpus * 4))
 
 num_shared_experts=1 # 1 out of 8 will be shared experts
 
-runname="twolevelbatchlbreducedp${lb_global_batch_size}sharedexp${num_shared_experts}randpool-${min_document_expert_pool}-${max_document_expert_pool}eval${eval_document_expert_pool}_1b14b_lr-${lr}_lb-${lb}_0301"
+runname="twolevelbatchlbreducedp${lb_global_batch_size}sharedexp${num_shared_experts}randpool-${min_document_expert_pool}-${max_document_expert_pool}eval${eval_document_expert_pool}_1b14b_lr-${lr}_lb-${lb}_0301_testrun"
 
 
 #torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
@@ -36,7 +36,7 @@ runname="twolevelbatchlbreducedp${lb_global_batch_size}sharedexp${num_shared_exp
 #  --train_module.compile_model=false \
 #  --dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 #  --model.block.name="moe" \
-#  --model.block.attention.qk_norm=null \
+#  --model.block.sequence_mixer.qk_norm=null \
 #  --lr=${lr} \
 #  --model.block.feed_forward_moe.lb_loss_weight=${lb}
 
@@ -49,7 +49,7 @@ python -m olmo_core.launch.beaker \
   --shared-filesystem \
 	--workspace ai2/flex2 \
 	--cluster ai2/jupiter \
-  --is_private_repo \
+	--beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
 	--preemptible \
 	--allow-dirty \
 	--priority urgent \
@@ -60,10 +60,14 @@ python -m olmo_core.launch.beaker \
 		--dataset.mix=OLMoE-mix-0824 \
 		--work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
 		--trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
-		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}, tags: [pretraining]}" \
+		--trainer.callbacks.wandb.enabled=true \
+		--trainer.callbacks.wandb.entity=ryanyxw \
+		--trainer.callbacks.wandb.project=olmoe-modular \
+		--trainer.callbacks.wandb.name="${runname}" \
+		--trainer.callbacks.wandb.tags='[pretraining]' \
 		--model.block.feed_forward_moe.num_experts=128 \
 		--dataset.generate_doc_lengths=true \
-		--model.block.attention.backend=flash_2 \
+		--model.block.sequence_mixer.backend=flash_2 \
 		--model-type="two-level_lb-batch_reduce-dp_sharedexp_randpool" \
 		--min_document_expert_pool=${min_document_expert_pool} \
 		--max_document_expert_pool=${max_document_expert_pool} \
@@ -71,6 +75,6 @@ python -m olmo_core.launch.beaker \
 		--num_shared_experts=$num_shared_experts \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="moe" \
-		--model.block.attention.qk_norm=null \
+		--model.block.sequence_mixer.qk_norm=null \
 		--lr=${lr} \
 		--model.block.feed_forward_moe.lb_loss_weight=${lb}

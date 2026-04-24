@@ -9,7 +9,7 @@ from collections import deque
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import wraps
 from pathlib import Path
-from typing import Any, Callable, Generator, Optional, Tuple, Type, Union
+from typing import Any, Callable, Generator, List, Optional, Tuple, Type, Union
 
 try:
     from functools import cache
@@ -20,6 +20,7 @@ import requests
 import torch
 from cached_path import cached_path
 from cached_path.schemes import S3Client, SchemeClient, add_scheme_client
+from requests.adapters import HTTPAdapter
 from rich.progress import track
 
 from .aliases import PathOrStr
@@ -29,6 +30,7 @@ from .exceptions import (
     OLMoNetworkError,
     OLMoUploadError,
 )
+from .fs_cache import maybe_cache
 
 log = logging.getLogger(__name__)
 
@@ -46,19 +48,36 @@ def normalize_path(path: PathOrStr) -> str:
     return str(path).rstrip("/").replace("file://", "")
 
 
-def join_path(path1: PathOrStr, path2: PathOrStr) -> PathOrStr:
+def join_path(path: PathOrStr, *paths: PathOrStr) -> PathOrStr:
     """
-    Join two paths.
-
-    :param path1: The first path.
-    :param path2: The second path.
+    Join two or more paths.
 
     :returns: The joined result.
     """
-    if is_url(path1):
-        return f"{normalize_path(path1)}/{normalize_path(path2)}"
+    if not paths:
+        return path
+    for p in paths:
+        if is_url(path):
+            path = f"{normalize_path(path)}/{normalize_path(p)}"
+        else:
+            path = Path(path) / p
+    return path
+
+
+def get_parent(path: PathOrStr) -> PathOrStr:
+    """
+    Get the parent directory of a path.
+
+    :param path: The path/URL to get the parent of.
+    """
+    if is_url(path):
+        path = str(normalize_path(path))
+        if path.count("/") > 2:
+            return "/".join(path.split("/")[:-1])
+        else:
+            return path
     else:
-        return Path(path1) / path2
+        return Path(normalize_path(path)).parent
 
 
 def resource_path(folder: PathOrStr, fname: str, local_cache: Optional[PathOrStr] = None) -> Path:
@@ -84,9 +103,14 @@ def is_url(path: PathOrStr) -> bool:
     return re.match(r"[a-z0-9]+://.*", str(path)) is not None
 
 
+@maybe_cache(condition=is_url)
 def get_file_size(path: PathOrStr) -> int:
     """
     Get the size of a local or remote file in bytes.
+
+    .. warning::
+        Uses caching if the argument is URL if the filesystem cache is enabled
+        (see :func:`olmo_core.fs_cache.maybe_cache`).
 
     :param path: Path/URL to the file.
     """
@@ -222,7 +246,7 @@ def copy_dir(
     """
     Copy a directory from ``source`` to ``target``.
 
-    :param source: The path/URL to the source file.
+    :param source: The path/URL to the source directory.
     :param target: The path/URL to the target location.
     :param save_overwrite: Overwrite any existing files.
     :param num_threads: The number of threads to use.
@@ -468,6 +492,18 @@ def glob_directory(pattern: str) -> Generator[str, None, None]:
             yield path
 
 
+@maybe_cache(condition=is_url)
+def deterministic_glob_directory(pattern: str) -> List[str]:
+    """
+    Like :func:`glob_directory` but returns a sorted list for deterministic ordering.
+
+    .. warning::
+        Uses caching if the argument is URL if the filesystem cache is enabled
+        (see :func:`olmo_core.fs_cache.maybe_cache`).
+    """
+    return sorted(glob_directory(pattern))
+
+
 def init_client(remote_path: str):
     """
     Initialize the right client for the given remote resource. This is helpful to avoid threading issues
@@ -528,6 +564,7 @@ def retriable(
     retriable_errors: Tuple[Type[Exception], ...] = (
         requests.exceptions.ConnectionError,
         requests.exceptions.Timeout,
+        requests.exceptions.ChunkedEncodingError,
     ),
     retry_condition: Optional[Callable[[Exception], bool]] = None,
 ):
@@ -570,19 +607,47 @@ def retriable(
 ######################
 
 
+@cache
+def _get_http_session() -> requests.Session:
+    """
+    Get a shared HTTP session with connection pooling.
+    This prevents resource exhaustion when making many HTTP requests.
+    """
+    session = requests.Session()
+    # Configure connection pooling to reuse connections
+    adapter = HTTPAdapter(pool_maxsize=50)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
+
 @retriable()
 def _http_file_size(url: str) -> int:
-    response = requests.head(url, allow_redirects=True)
+    session = _get_http_session()
+    response = session.head(url, allow_redirects=True)
     content_length = response.headers.get("content-length")
-    assert content_length
+    if content_length is None:
+        raise OLMoNetworkError(
+            f"No content-length header found for {url}. "
+            f"This can happen when the server is rate-limiting requests or when DDoS protection flags this request. "
+            f"Headers: {dict(response.headers)}"
+        )
     return int(content_length)
 
 
-@retriable()
+@retriable(
+    retry_condition=lambda exc: (
+        isinstance(exc, requests.exceptions.HTTPError)
+        and exc.response is not None
+        and exc.response.status_code == 502
+    ),
+)
 def _http_get_bytes_range(url: str, bytes_start: int, num_bytes: int) -> bytes:
-    response = requests.get(
+    session = _get_http_session()
+    response = session.get(
         url, headers={"Range": f"bytes={bytes_start}-{bytes_start + num_bytes - 1}"}
     )
+
     if response.status_code == 404:
         raise FileNotFoundError(url)
 
@@ -597,7 +662,8 @@ def _http_get_bytes_range(url: str, bytes_start: int, num_bytes: int) -> bytes:
 
 @retriable()
 def _http_file_exists(url: str) -> bool:
-    response = requests.head(url)
+    session = _get_http_session()
+    response = session.head(url)
     if response.status_code == 404:
         return False
 
@@ -766,8 +832,10 @@ def _gcs_list_directory(
         except NotFound:
             raise FileNotFoundError(f"gs://{bucket_name}/{prefix}")
 
-        if include_files:
-            for blob in blobs:
+        # NOTE: need to iterate over these blobs even if not yielding files, otherwise 'blobs.prefixes'
+        # won't be populated.
+        for blob in blobs:
+            if include_files:
                 yield f"gs://{bucket_name}/{blob.name}"
 
         for folder in blobs.prefixes:

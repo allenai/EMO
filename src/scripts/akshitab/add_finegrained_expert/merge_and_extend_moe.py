@@ -41,8 +41,9 @@ from olmo_core.distributed.checkpoint import (
     load_model_and_optim_state,
     save_model_and_optim_state,
 )
+from olmo_core.nn.attention import AttentionConfig
 from olmo_core.nn.attention.backend import AttentionBackendName
-from olmo_core.nn.transformer import TransformerConfig
+from olmo_core.nn.transformer import TransformerBlockConfig, TransformerConfig
 from olmo_core.utils import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -185,12 +186,15 @@ def merge_and_extend(
         model_configs.append(get_model_config(path))
 
     base_config = model_configs[0]
-    backend = base_config.block.attention.backend
-    base_config.block.attention.backend = AttentionBackendName.torch
+    assert isinstance(base_config.block, TransformerBlockConfig)
+    assert isinstance(base_config.block.sequence_mixer, AttentionConfig)
+    backend = base_config.block.sequence_mixer.backend
+    base_config.block.sequence_mixer.backend = AttentionBackendName.torch
 
     assert base_config.block.feed_forward_moe is not None, "Model is not MoE"
     base_num_experts = base_config.block.feed_forward_moe.num_experts
     for i, mc in enumerate(model_configs[1:], start=1):
+        assert isinstance(mc.block, TransformerBlockConfig)
         assert mc.block.feed_forward_moe is not None, f"Checkpoint {i} is not MoE"
         assert mc.block.feed_forward_moe.num_experts == base_num_experts, (
             f"Checkpoint {i} has {mc.block.feed_forward_moe.num_experts} experts, "
@@ -205,6 +209,7 @@ def merge_and_extend(
 
     # Build the output model with the extended expert count
     extended_config = copy.deepcopy(base_config)
+    assert isinstance(extended_config.block, TransformerBlockConfig)
     assert extended_config.block.feed_forward_moe is not None
     extended_config.block.feed_forward_moe.num_experts = new_num_experts
     merged_model = extended_config.build(init_device="cpu")
@@ -215,7 +220,9 @@ def merge_and_extend(
 
     logger.info(f"Loading checkpoint 0: {checkpoint_paths[0]}")
     cfg_0 = model_configs[0]
-    cfg_0.block.attention.backend = AttentionBackendName.torch
+    assert isinstance(cfg_0.block, TransformerBlockConfig)
+    assert isinstance(cfg_0.block.sequence_mixer, AttentionConfig)
+    cfg_0.block.sequence_mixer.backend = AttentionBackendName.torch
     model_0 = load_checkpoint(cfg_0, checkpoint_paths[0])
     sd_0 = model_0.state_dict()
 
@@ -249,7 +256,9 @@ def merge_and_extend(
     for i in range(1, n):
         logger.info(f"Loading checkpoint {i}: {checkpoint_paths[i]}")
         cfg_i = model_configs[i]
-        cfg_i.block.attention.backend = AttentionBackendName.torch
+        assert isinstance(cfg_i.block, TransformerBlockConfig)
+        assert isinstance(cfg_i.block.sequence_mixer, AttentionConfig)
+        cfg_i.block.sequence_mixer.backend = AttentionBackendName.torch
         model_i = load_checkpoint(cfg_i, checkpoint_paths[i])
         sd_i = model_i.state_dict()
 
@@ -307,7 +316,9 @@ def merge_and_extend(
             f"{[(t, s) for t, s in placements]}"
         )
         cfg = model_configs[ckpt_idx]
-        cfg.block.attention.backend = AttentionBackendName.torch
+        assert isinstance(cfg.block, TransformerBlockConfig)
+        assert isinstance(cfg.block.sequence_mixer, AttentionConfig)
+        cfg.block.sequence_mixer.backend = AttentionBackendName.torch
         model = load_checkpoint(cfg, checkpoint_paths[ckpt_idx])
         sd = model.state_dict()
 
@@ -331,7 +342,8 @@ def merge_and_extend(
     logger.info(f"Merge and extend complete: {new_num_experts} experts")
 
     if save_path is not None:
-        extended_config.block.attention.backend = backend
+        assert isinstance(extended_config.block.sequence_mixer, AttentionConfig)
+        extended_config.block.sequence_mixer.backend = backend
         config_out = configs_raw[0].copy()
         config_out["model"] = extended_config.as_config_dict()
         save_checkpoint(config_out, merged_model, save_path)

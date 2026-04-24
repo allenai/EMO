@@ -18,7 +18,7 @@ from olmo_core.distributed.checkpoint import (
     load_model_and_optim_state,
     save_model_and_optim_state,
 )
-from olmo_core.nn.transformer import TransformerConfig
+from olmo_core.nn.transformer import TransformerBlockConfig, TransformerConfig
 
 logger = logging.getLogger(__name__)
 
@@ -180,6 +180,7 @@ def prune_experts(args):
         config = json.load(f)
 
     model_config = TransformerConfig.from_dict(config["model"])
+    assert isinstance(model_config.block, TransformerBlockConfig)
     logger.info(f"Model config {model_config}")
 
     # Load model weights
@@ -190,6 +191,7 @@ def prune_experts(args):
     # Update config
     logger.info("Adding new expert to the model")
     new_config = model_config.copy()
+    assert isinstance(new_config.block, TransformerBlockConfig)
     assert new_config.block.feed_forward_moe is not None, "Model is not MoE"
     # Set the total number of experts to prune_keep_k
     new_config.block.feed_forward_moe.num_experts = args.prune_keep_k

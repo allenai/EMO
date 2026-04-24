@@ -28,7 +28,7 @@ from olmo_core.data.mixes import DataMix
 from olmo_core.data.numpy_dataset import NumpyDatasetConfig
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_local_tensor, get_rank
-from olmo_core.nn.transformer import TransformerConfig
+from olmo_core.nn.transformer import TransformerBlockConfig, TransformerConfig
 from olmo_core.optim import AdamWConfig, CosWithWarmup, OptimGroupOverride
 from olmo_core.train import (
     TrainerConfig,
@@ -322,6 +322,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     experts_to_train = [int(x) for x in opts.experts_to_train.split(",")]
+    assert isinstance(model_config.block, TransformerBlockConfig)
     assert model_config.block.feed_forward_moe is not None
     num_experts = model_config.block.feed_forward_moe.num_experts
     log.info(f"Experts to train: {experts_to_train} (out of {num_experts} total)")

@@ -26,7 +26,11 @@ from olmo_core.data.mixes import DataMix
 from olmo_core.data.numpy_dataset import NumpyDatasetConfig
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_rank
-from olmo_core.nn.transformer import PARTIAL_FREEZE_FN_REGISTRY, TransformerConfig
+from olmo_core.nn.transformer import (
+    PARTIAL_FREEZE_FN_REGISTRY,
+    TransformerBlockConfig,
+    TransformerConfig,
+)
 from olmo_core.optim import AdamWConfig, CosWithWarmup, OptimGroupOverride
 from olmo_core.train import (
     TrainerConfig,
@@ -92,6 +96,7 @@ def partial_freeze_router_and_experts(
 ) -> Optional[torch.Tensor]:
     if "experts" in name or "router" in name:
         mask = torch.ones_like(param, dtype=torch.bool)
+        assert isinstance(model_config.block, TransformerBlockConfig)
         assert model_config.block.feed_forward_moe is not None
         num_experts = model_config.block.feed_forward_moe.num_experts
         expert_size = param.shape[0] // num_experts

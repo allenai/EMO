@@ -31,30 +31,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.10"]
+        python: ["3.11"]
         task:
           - name: Lint
             run: make lint-check
 
-          # - name: Test Core
-          #   run: |
-          #     pytest -v --color=yes --durations=3 \
-          #       --ignore-glob='src/test/distributed/checkpoint*' \
-          #       --ignore-glob='src/test/train/checkpoint*' \
-          #       src/test/
-
           - name: Test Scripts
             run: |
-              pytest -v --color=yes --durations=3 \
+              pytest -v --color=yes --durations=6 \
                 --ignore-glob='src/test/distributed/checkpoint*' \
                 --ignore-glob='src/test/train/checkpoint*' \
+                --ignore-glob='src/test/scripts/merge*' \
                 src/test/scripts/
-
-          # - name: Test checkpoint
-          #   run: |
-          #     pytest -v --color=yes --durations=3 \
-          #       src/test/distributed/checkpoint* \
-          #       src/test/train/checkpoint*
 
           - name: Type check
             run: make type-check
@@ -69,11 +57,17 @@ jobs:
             run: |
               cd docs && make html SPHINXOPTS="-W --keep-going"
 
+        include:
+          - python: "3.10"
+            task:
+              name: Lint (min Python)
+              run: make lint-check
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Python environment
-        uses: ./.github/actions/setup-venv
+        uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ matrix.python }}
           cache-prefix: ${{ env.CACHE_PREFIX }}
@@ -97,7 +91,6 @@ jobs:
 
       - name: ${{ matrix.task.name }}
         run: |
-          . .venv/bin/activate
           ${{ matrix.task.run }}
 
       - name: Upload package distribution files
@@ -106,12 +99,6 @@ jobs:
         with:
           name: package
           path: dist
-
-      - name: Clean up
-        if: always()
-        run: |
-          . .venv/bin/activate
-          pip uninstall -y ai2-olmo-core
 
   gpu_checks:
     name: ${{ matrix.task.name }}
@@ -124,35 +111,58 @@ jobs:
       matrix:
         task:
           - name: Test (GPU)
-            image: tylerr/olmo-core-tch270cu128-2025-09-24
+            image: &gpu_test_image tylerr/olmo-core-tch291cu128-2025-11-25
             gpus: 2
             run: |
               pytest -v --color=yes --durations=3 -m gpu \
                 --ignore-glob='src/test/distributed/checkpoint*' \
                 --ignore-glob='src/test/nn/transformer*' \
+                --ignore-glob='src/test/nn/attention*' \
                 --ignore-glob='src/test/nn/moe*' \
+                --ignore-glob='src/test/optim*' \
                 src/test/
 
           - name: Test checkpoint (GPU)
-            image: tylerr/olmo-core-tch270cu128-2025-09-24
+            image: *gpu_test_image
             gpus: 2
             run: |
               pytest -v --color=yes --durations=3 -m gpu \
                 src/test/distributed/checkpoint*
 
           - name: Test transformer (GPU)
-            image: tylerr/olmo-core-tch270cu128-2025-09-24
+            image: *gpu_test_image
             gpus: 2
             run: |
               pytest -v --color=yes --durations=3 -m gpu \
                 src/test/nn/transformer*
 
+          - name: Test attention (GPU)
+            image: *gpu_test_image
+            gpus: 2
+            run: |
+              pytest -v --color=yes --durations=3 -m gpu \
+                src/test/nn/attention*
+
           - name: Test MoE (GPU)
-            image: tylerr/olmo-core-tch270cu128-2025-09-24
+            image: *gpu_test_image
             gpus: 2
             run: |
               pytest -v --color=yes --durations=3 -m gpu \
                 src/test/nn/moe*
+
+          - name: Test optim (GPU)
+            image: *gpu_test_image
+            gpus: 2
+            run: |
+              pytest -v --color=yes --durations=3 -m gpu \
+                src/test/optim*
+
+          - name: Integration tests (GPU)
+            image: *gpu_test_image
+            gpus: 2
+            run: |
+              pytest -v --color=yes -m gpu \
+                src/integration_tests/
     steps:
       - uses: actions/checkout@v5
         with:
@@ -165,7 +175,7 @@ jobs:
       - name: Install Gantry
         run:
           # uv tool install git+https://github.com/allenai/beaker-gantry
-          uv tool install 'beaker-gantry>=3.1,<4.0'
+          uv tool install 'beaker-gantry>=3.4.5,<4.0'
 
       - name: Determine Beaker workspace
         if: env.BEAKER_TOKEN != ''
@@ -187,7 +197,7 @@ jobs:
       - name: GPU Tests
         if: env.BEAKER_TOKEN != ''
         run: |
-          gantry run \
+          exec gantry run \
             --show-logs \
             --yes \
             --workspace ${{ env.BEAKER_WORKSPACE }} \
@@ -223,9 +233,9 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Python environment
-        uses: ./.github/actions/setup-venv
+        uses: ./.github/actions/setup-python-env
         with:
-          python-version: "3.10"
+          python-version: "3.11"
           cache-prefix: ${{ env.CACHE_PREFIX }}
           torch-version: '2.8.0'
 
@@ -242,12 +252,10 @@ jobs:
 
       - name: Generate release notes
         run: |
-          . .venv/bin/activate
           python src/scripts/release/release_notes.py > ${{ github.workspace }}-RELEASE_NOTES.md
 
       - name: Publish package to PyPI
         run: |
-          . .venv/bin/activate
           twine upload -u __token__ -p '${{ secrets.PYPI_TOKEN }}' dist/*
 
       - name: Publish GitHub release
@@ -270,5 +278,4 @@ jobs:
       - name: Send Slack notifications about release
         continue-on-error: true
         run: |
-          . .venv/bin/activate
           python ./src/scripts/release/slack_notification.py '${{ secrets.SLACK_WEBHOOK_URL}}'

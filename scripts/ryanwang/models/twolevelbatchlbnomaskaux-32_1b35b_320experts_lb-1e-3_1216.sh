@@ -14,7 +14,10 @@ runname="twolevelbatchlbnomaskaux-${document_expert_pool}_1b35b_320experts_lb-1e
 #  --dataset.mix=arc-easy-train \
 #  --work-dir="/root/ryanwang/dataset-cache" \
 #  --trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
-#  --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
+#  --trainer.callbacks.wandb.enabled=true \
+#  --trainer.callbacks.wandb.entity=ryanyxw \
+#  --trainer.callbacks.wandb.project=olmoe-modular \
+#  --trainer.callbacks.wandb.name="${runname}" \
 #  --model.block.feed_forward_moe.num_experts=16 \
 #  --model-type="two-level" \
 #  --document-expert-pool=${document_expert_pool} \
@@ -31,7 +34,7 @@ python -m olmo_core.launch.beaker \
   --shared-filesystem \
 	--workspace ai2/flex2 \
 	--cluster ai2/jupiter \
-  --is_private_repo \
+  --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
 	--preemptible \
 	--allow-dirty \
 	--priority urgent \
@@ -42,15 +45,19 @@ python -m olmo_core.launch.beaker \
 		--dataset.mix=OLMoE-mix-0824 \
 		--work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
 		--trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
-		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}, tags: [pretraining]}" \
+		--trainer.callbacks.wandb.enabled=true \
+		--trainer.callbacks.wandb.entity=ryanyxw \
+		--trainer.callbacks.wandb.project=olmoe-modular \
+		--trainer.callbacks.wandb.name="${runname}" \
+		--trainer.callbacks.wandb.tags='[pretraining]' \
 		--model.block.feed_forward_moe.num_experts=320 \
 		--dataset.generate_doc_lengths=true \
-		--model.block.attention.backend=flash_2 \
+		--model.block.sequence_mixer.backend=flash_2 \
 		--model-type="two-level_lb-batch_nomaskaux" \
 		--document-expert-pool=${document_expert_pool} \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="moe" \
-		--model.block.attention.qk_norm=null \
+		--model.block.sequence_mixer.qk_norm=null \
 		--model.block.feed_forward_moe.lb_loss_weight=1e-3
 
 

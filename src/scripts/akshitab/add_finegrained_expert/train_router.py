@@ -23,7 +23,7 @@ from olmo_core.distributed.utils import get_rank
 from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_randpool_router import (
     MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouterConfig,
 )
-from olmo_core.nn.transformer import TransformerConfig
+from olmo_core.nn.transformer import TransformerBlockConfig, TransformerConfig
 from olmo_core.optim import AdamWConfig, CosWithWarmup, OptimGroupOverride
 from olmo_core.train import (
     TrainerConfig,
@@ -162,6 +162,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     # Apply router replacement for special model types
+    assert isinstance(model_config.block, TransformerBlockConfig)
     assert model_config.block.feed_forward_moe is not None
     if opts.model_type == "moe":
         log.info("Using default routers; no modifications applied.")

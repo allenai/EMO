@@ -15,16 +15,21 @@ from .evaluator_callback import (
     LMEvaluatorCallbackConfig,
 )
 from .frozen_expert_gradient_mask import FrozenExpertGradientMaskCallback
+from .gap_monitor import GAPMonitorCallback
 from .garbage_collector import GarbageCollectorCallback
 from .gpu_memory_monitor import GPUMemoryMonitorCallback
 from .gradient_monitor import GradientMonitorCallback
 from .hf_converter import HFConverterCallback
+from .list_checkpointer import ListCheckpointerCallback
+from .metric_saver import MetricSaverCallback
+from .model_merger import ModelMergeCallback
 from .monkey_patcher import MonkeyPatcherCallback
 from .post_train_eval import PostTrainEvalCallback
 from .profiler import ProfilerCallback
 from .sequence_length_scheduler import SequenceLengthSchedulerCallback
 from .slack_notifier import SlackNotificationSetting, SlackNotifierCallback
 from .speed_monitor import SpeedMonitorCallback
+from .stability_monitor import StabilityMonitorCallback
 from .wandb import WandBCallback
 
 __all__ = [
@@ -40,6 +45,7 @@ __all__ = [
     "LMEvaluatorCallbackConfig",
     "DownstreamEvaluatorCallbackConfig",
     "FrozenExpertGradientMaskCallback",
+    "GAPMonitorCallback",
     "GarbageCollectorCallback",
     "GPUMemoryMonitorCallback",
     "GradientMonitorCallback",
@@ -49,11 +55,15 @@ __all__ = [
     "SlackNotificationSetting",
     "SequenceLengthSchedulerCallback",
     "SpeedMonitorCallback",
+    "StabilityMonitorCallback",
     "WandBCallback",
     "BeakerCallback",
     "BatchSizeSchedulerCallback",
     "MonkeyPatcherCallback",
     "PostTrainEvalCallback",
+    "MetricSaverCallback",
+    "ModelMergeCallback",
+    "ListCheckpointerCallback",
 ]
 
 __doc__ += "\n"

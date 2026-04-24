@@ -19,7 +19,11 @@ import torch.nn as nn
 from torch.distributed import DeviceMesh
 from torch.distributed.fsdp import FSDPModule, MixedPrecisionPolicy, fully_shard
 from torch.distributed.tensor import Replicate, Shard
-from torch.distributed.tensor.parallel import RowwiseParallel, parallelize_module
+from torch.distributed.tensor.parallel import (
+    RowwiseParallel,
+    SequenceParallel,
+    parallelize_module,
+)
 
 from olmo_core.data.utils import get_cumulative_document_lengths
 from olmo_core.distributed.parallel import get_pp_mesh
@@ -27,16 +31,21 @@ from olmo_core.distributed.utils import hide_from_torch, unhide_from_torch
 from olmo_core.doc_utils import beta_feature
 from olmo_core.exceptions import OLMoConfigurationError
 from olmo_core.float8 import Float8Config
+from olmo_core.nn.attention.ring import (
+    RingContextParallelStyle,
+    UlyssesContextParallelStyle,
+)
 from olmo_core.utils import get_default_device, mark_dynamic, move_to_device
 
 from ..attention import (
     Attention,
     FusedAttention,
     RingAttentionLoadBalancer,
-    RingAttentionLoadBalancerType,
+    SequenceMixer,
 )
 from ..buffer_cache import BufferCache
 from ..functional import l2_normalize
+from ..layer_norm import LayerNormConfig
 from ..lm_head import LMHeadConfig, LMOutputWithLoss
 from ..moe import MoEBase
 from ..moe.twolevel_router import MoETwoLevelRouter
@@ -53,6 +62,7 @@ from .config import (
     TransformerActivationCheckpointingMode,
     TransformerBlockConfig,
     TransformerDataParallelWrappingStrategy,
+    resolve_block_configs,
 )
 from .init import InitMethod
 
@@ -78,11 +88,17 @@ class Transformer(nn.Module):
     :param d_model: The model dimensionality.
     :param vocab_size: The vocab size.
     :param n_layers: The number of transformer layers/blocks.
-    :param block: The block configuration.
+    :param block: The block configuration. Can be a single block config or a dict of named blocks.
     :param layer_norm: The layer norm config for the final layer norm.
     :param bias: Whether to use a bias in the final linear layer.
     :param dtype: The datatype to use for the linear output layer.
     :param init_device: The device used when initializing parameters.
+    :param init_seed: The seed used when initializing parameters.
+    :param init_std: The standard deviation used when initializing parameters.
+    :param embedding_init_std: The standard deviation used when initializing the embeddings.
+    :param block_overrides: Overrides for specific blocks. Not supported if `block` is a dict of named blocks.
+    :param block_pattern: The pattern of blocks to use. Required if `block` is a dict of named blocks.
+    :param embed_scale: The scale factor for the embeddings.
     """
 
     def __init__(
@@ -91,14 +107,18 @@ class Transformer(nn.Module):
         d_model: int,
         vocab_size: int,
         n_layers: int,
-        block: TransformerBlockConfig,
+        block: TransformerBlockConfig | dict[str, TransformerBlockConfig],
         lm_head: LMHeadConfig,
+        embedding_norm: Optional[LayerNormConfig] = None,
         dtype: torch.dtype = torch.float32,
         init_method: InitMethod = InitMethod.normal,
         init_device: str = "cpu",
         init_seed: int = 0,
         init_std: float = 0.02,
+        embedding_init_std: Optional[float] = None,
         block_overrides: Optional[Dict[int, TransformerBlockConfig]] = None,
+        block_pattern: Optional[List[str]] = None,
+        embed_scale: Optional[float] = None,
     ):
         super().__init__()
 
@@ -107,17 +127,30 @@ class Transformer(nn.Module):
         self.d_model = d_model
         self.vocab_size = vocab_size
         self.n_layers = n_layers
-        self.n_attn_heads = block.attention.n_heads
         self.dtype = dtype
+        self.embed_scale = embed_scale
 
         self.embeddings = nn.Embedding(vocab_size, d_model, dtype=dtype, device=init_device)
+        self.embedding_norm = (
+            None
+            if embedding_norm is None
+            else embedding_norm.build(
+                d_model,
+                init_device=init_device,
+            )
+        )
+
+        block_configs: List[TransformerBlockConfig] = resolve_block_configs(
+            n_layers=n_layers,
+            block=block,
+            block_pattern=block_pattern,
+            block_overrides=block_overrides,
+        )
+
         self.blocks = nn.ModuleDict()
         for block_idx in range(n_layers):
-            block_config = block
-            if block_overrides is not None and block_idx in block_overrides:
-                block_config = block_overrides[block_idx]
             self.blocks[str(block_idx)] = self._validate_block(
-                block_config.build(
+                block_configs[block_idx].build(
                     d_model=d_model,
                     block_idx=block_idx,
                     n_layers=n_layers,
@@ -133,6 +166,7 @@ class Transformer(nn.Module):
         self.init_method = InitMethod(init_method)
         self.init_seed = init_seed
         self.init_std = init_std
+        self.embedding_init_std = embedding_init_std
 
         self._cache = cache
         self._pp_enabled = False
@@ -208,8 +242,11 @@ class Transformer(nn.Module):
             device = self.device
         rope_buffers = {}
         for key, block in self.blocks.items():
-            rope = cast(Optional[RotaryEmbeddingBase], block.attention.rope)  # type: ignore
-            rope_buffers[int(key)] = None if rope is None else rope.get_buffers(seq_len, device)
+            if isinstance(block.attention, (Attention, FusedAttention)):
+                rope = cast(Optional[RotaryEmbeddingBase], block.attention.rope)
+                rope_buffers[int(key)] = None if rope is None else rope.get_buffers(seq_len, device)
+            else:
+                rope_buffers[int(key)] = None
         return rope_buffers
 
     @torch.no_grad()
@@ -247,7 +284,10 @@ class Transformer(nn.Module):
             self.init_method.init_embeddings(
                 self.embeddings,
                 d_model=self.d_model,
-                std=self.init_std,
+                embed_scale=self.embed_scale,
+                std=self.embedding_init_std
+                if self.embedding_init_std is not None
+                else self.init_std,
                 generator=generator,
             )
 
@@ -255,7 +295,7 @@ class Transformer(nn.Module):
             # This might fail if it's wrapped.
             #  assert isinstance(block, TransformerBlock)
             block = cast(TransformerBlock, block)
-            att = cast(Union[Attention, FusedAttention], block.attention)
+            att = cast(SequenceMixer, block.attention)
 
             # Attention weights.
             self.init_method.init_attention(
@@ -292,13 +332,14 @@ class Transformer(nn.Module):
                     generator=generator,
                 )
 
-            # Warm up attention backend cache.
-            if max_seq_len is not None and att.backend is not None:
-                att.backend.warmup_cache(max_seq_len, device)
+            if isinstance(att, (Attention, FusedAttention)):
+                # Warm up attention backend cache.
+                if max_seq_len is not None and att.backend is not None:
+                    att.backend.warmup_cache(max_seq_len, device)
 
-            # Warm up RoPE cache.
-            if max_seq_len is not None and att.rope is not None:
-                att.rope.warmup_cache(max_seq_len, device)
+                # Warm up RoPE cache.
+                if max_seq_len is not None and att.rope is not None:
+                    att.rope.warmup_cache(max_seq_len, device)
 
         if self.lm_head is not None:
             self.init_method.init_final_w_out(
@@ -370,6 +411,7 @@ class Transformer(nn.Module):
             # NOTE: initialize buffer(s) on CPU to avoid possible host-device sync when sharding.
             for block_idx, rope_buffers in self.get_rope_buffers(S, torch.device("cpu")).items():
                 if rope_buffers is not None:
+                    # Also shard RoPE buffers based on the context parallelism load balancer.
                     if rope_buffers.pos_sin is not None:
                         inputs.append(rope_buffers.pos_sin)
                         seq_dims.append(0)
@@ -445,6 +487,9 @@ class Transformer(nn.Module):
             if cache_leftpad is not None:
                 all_block_kwargs["cache_leftpad"] = move_to_device(cache_leftpad, self.device)
 
+        if "cu_doc_lens" in all_block_kwargs:
+            mark_dynamic(all_block_kwargs["cu_doc_lens"], 0, strict=False)  # type: ignore[arg-type]
+
         return (
             input_ids,
             labels,
@@ -507,6 +552,10 @@ class Transformer(nn.Module):
         # Get embeddings but pass-through for non-existent layers to allow easy
         # pipeline parallel configuration.
         h = self.embeddings(input_ids) if self.embeddings is not None else input_ids
+        if self.embeddings is not None and self.embed_scale is not None:
+            h = h * self.embed_scale
+        if self.embedding_norm is not None:
+            h = self.embedding_norm(h)
 
         # compute document boundaries here if any block uses a MoETwoLevelRouter
         is_moe_twolevel_router = False
@@ -571,6 +620,8 @@ class Transformer(nn.Module):
         modules_to_ignore = set()
         if self.lm_head is not None:
             modules_to_ignore.add("lm_head.w_out")
+        if float8_config.modules_to_ignore is not None:
+            modules_to_ignore.update(float8_config.modules_to_ignore)
 
         float8_config.apply_float8_linear(self, modules_to_ignore=modules_to_ignore)
 
@@ -613,6 +664,10 @@ class Transformer(nn.Module):
                     use_local_output=False,
                 ),
             )
+        if self.embedding_norm is not None:
+            parallelize_module(
+                self.embedding_norm, device_mesh=tp_mesh, parallelize_plan=SequenceParallel()
+            )
 
         # Apply tensor/sequence parallelism to every transformer block.
         for block in self.blocks.values():
@@ -628,22 +683,25 @@ class Transformer(nn.Module):
     def apply_cp(
         self,
         cp_mesh: DeviceMesh,
-        load_balancer: RingAttentionLoadBalancerType,
-        head_stride: int = 1,
+        ring: RingContextParallelStyle | None = None,
+        uly: UlyssesContextParallelStyle | None = None,
     ):
         """
         Prepare the model for context-parallelism (CP).
 
         :param cp_mesh: The CP device mesh.
-        :param load_balancer: The load balancing method.
+        :param ring: The ring context parallel style.
+        :param uly: The ulysses context parallel style.
         """
-        self._cp_load_balancer = load_balancer.build(cp_mesh)
+        if ring is not None:
+            self._cp_load_balancer = ring.load_balancer.build(cp_mesh)
+        elif uly is not None:
+            self._cp_load_balancer = uly.load_balancer.build(cp_mesh)
+
         for block in self.blocks.values():
-            cast(TransformerBlockBase, block).apply_cp(
-                cp_mesh, load_balancer, head_stride=head_stride
-            )
+            cast(TransformerBlockBase, block).apply_cp(cp_mesh, ring=ring, uly=uly)
         if self.lm_head is not None:
-            self.lm_head.apply_cp(cp_mesh, load_balancer)
+            self.lm_head.apply_cp(cp_mesh)
 
     def apply_activation_checkpointing(
         self,
@@ -759,6 +817,7 @@ class Transformer(nn.Module):
         if self.lm_head is not None:
             self.lm_head.compile(fullgraph=False)
 
+        torch.compiler.config.dynamic_sources += "L['kwargs']['max_doc_len'],"
         self._compile_enabled = True
 
     def apply_fsdp(
@@ -812,11 +871,11 @@ class Transformer(nn.Module):
             # Embedding params are not needed for backwards computation.
             cast(FSDPModule, self.embeddings).set_unshard_in_backward(False)
 
-        if (
-            wrapping_strategy != TransformerDataParallelWrappingStrategy.blocks
-            and self.lm_head is not None
-        ):
-            fully_shard(self.lm_head, reshard_after_forward=False, **fsdp_config)
+        if wrapping_strategy != TransformerDataParallelWrappingStrategy.blocks:
+            if self.embedding_norm is not None:
+                fully_shard(self.embedding_norm, **fsdp_config)
+            if self.lm_head is not None:
+                fully_shard(self.lm_head, reshard_after_forward=False, **fsdp_config)
 
         fully_shard(self, reshard_after_forward=reshard_after_forward, **fsdp_config)
         # Some inputs need to be on CPU initially, but FSDP will move everything to model's
@@ -884,24 +943,16 @@ class Transformer(nn.Module):
 
     def num_flops_per_token(self, seq_len: int) -> int:
         """
-        Get the approximate number of flops per token.
+        Returns the idealized number of flops per token for the given sequence length. Purposefully
+        does not account for wasted flops due to padding, recomputation, etc.
         """
-        n, h, q, t = (
-            self.n_layers,
-            self.n_attn_heads,
-            self.d_model // self.n_attn_heads,
-            seq_len,
-        )
-
-        # Reasoning behind the factor of 12 for the self-attention part of the formula:
-        # 1. each self-attention has 2 matmul in the forward and 4 in the backward (6)
-        # 2. the flash attention does 1 more matmul recomputation in the backward
-        #    but recomputation should not be counted in calculating MFU           (+0)
-        # 3. each matmul performs 1 multiplication and 1 addition                 (*2)
-        # 4. we follow the convention and do not account for sparsity in causal attention
-        flop_per_token = 6 * self.num_non_embedding_params + 12 * n * h * q * t
-
-        return flop_per_token
+        flops_per_token = 0
+        blocks = cast(List[TransformerBlockBase], list(self.blocks.values()))
+        for block in blocks:
+            flops_per_token += block.num_flops_per_token(seq_len)
+        if self.lm_head is not None:
+            flops_per_token += self.lm_head.num_flops_per_token(seq_len)
+        return flops_per_token
 
     def post_batch(self, dry_run: bool = False):
         """
@@ -932,14 +983,16 @@ class NormalizedTransformer(Transformer):
         d_model: int,
         vocab_size: int,
         n_layers: int,
-        block: TransformerBlockConfig,
+        block: TransformerBlockConfig | dict[str, TransformerBlockConfig],
         lm_head: LMHeadConfig,
         dtype: torch.dtype = torch.float32,
         init_method: InitMethod = InitMethod.normalized,
         init_device: str = "cpu",
         init_seed: int = 0,
         init_std: float = 0.02,
+        embedding_init_std: Optional[float] = None,
         block_overrides: Optional[Dict[int, TransformerBlockConfig]] = None,
+        block_pattern: Optional[List[str]] = None,
     ):
         super().__init__(
             d_model=d_model,
@@ -952,7 +1005,9 @@ class NormalizedTransformer(Transformer):
             init_device=init_device,
             init_seed=init_seed,
             init_std=init_std,
+            embedding_init_std=embedding_init_std,
             block_overrides=block_overrides,
+            block_pattern=block_pattern,
         )
 
     def _validate_block(self, block: TransformerBlockBase) -> TransformerBlockBase:

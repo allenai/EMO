@@ -32,10 +32,14 @@ python -m olmo_core.launch.beaker \
 		--dataset.mix=code_mix \
 		--work-dir="/weka/oe-training-default/akshitab/dataset-cache" \
 		--trainer.max_duration="{value: ${NUM_TOKENS}, unit: tokens}" \
-		--trainer.callbacks.wandb="{enabled: true, entity: akshitab, project: olmoe-modular, name: ${RUN_NAME}, tags: [extension]}" \
+		--trainer.callbacks.wandb.enabled=true \
+		--trainer.callbacks.wandb.entity=akshitab \
+		--trainer.callbacks.wandb.project=olmoe-modular \
+		--trainer.callbacks.wandb.name="${RUN_NAME}" \
+		--trainer.callbacks.wandb.tags='[extension]' \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="moe" \
-		--model.block.attention.qk_norm=null \
+		--model.block.sequence_mixer.qk_norm=null \
 		--model.block.feed_forward_moe.lb_loss_weight=1e-2 \
         --train_module.scheduler.warmup_fraction=0.1 \
         --lr=${LR} \

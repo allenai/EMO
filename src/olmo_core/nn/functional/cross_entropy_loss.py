@@ -53,8 +53,8 @@ def cross_entropy_loss(
 _fused_linear_cross_entropy_loss: Optional[Callable] = None
 
 try:
-    from liger_kernel.ops.fused_linear_cross_entropy import (  # type: ignore
-        LigerFusedLinearCrossEntropyFunction,
+    from liger_kernel.ops.fused_linear_cross_entropy import (
+        LigerFusedLinearCrossEntropyFunction,  # type: ignore
     )
 
     _fused_linear_cross_entropy_loss = LigerFusedLinearCrossEntropyFunction.apply
@@ -103,7 +103,7 @@ def fused_linear_cross_entropy_loss(
     """
     if _fused_linear_cross_entropy_loss is None:
         raise RuntimeError("'fused_linear_cross_entropy_loss' requires liger-kernel")
-    ce_loss, z_loss = _fused_linear_cross_entropy_loss(
+    ce_loss, z_loss, per_token_acc = _fused_linear_cross_entropy_loss(
         _input,
         weight,
         labels,
@@ -117,6 +117,7 @@ def fused_linear_cross_entropy_loss(
         compute_z_loss,
         accum_dtype,
     )
+    del per_token_acc
     if compute_z_loss:
         return ce_loss, z_loss
     else:

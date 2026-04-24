@@ -4,10 +4,17 @@ model into a format that can be loaded by OLMo-core for fine-tuning.
 
 Note that this script is architecture-dependent. Some models may work out-of-the-box. Support for
 other models can be added by updating the constants in :mod:`olmo_core.nn.hf.convert`.
+
+Warnings:
+    - Only model weights are converted; optimizer states cannot be recovered from HF-format
+      checkpoints. This means you cannot resume training from the converted checkpoint.
+    - Tokenizer configuration must be specified separately.
+    - Some architecture-specific features may not be fully supported.
 """
 
 import json
 import logging
+import os
 import re
 import tempfile
 from argparse import ArgumentParser
@@ -27,11 +34,12 @@ from olmo_core.aliases import PathOrStr
 from olmo_core.data.tokenizer import TokenizerConfig
 from olmo_core.distributed.checkpoint import save_model_and_optim_state
 from olmo_core.io import copy_file, file_exists, join_path
-from olmo_core.nn.attention import AttentionBackendName, AttentionType
+from olmo_core.nn.attention import AttentionBackendName, AttentionConfig, AttentionType
 from olmo_core.nn.conversion.state_mapping import StateType, TemplatePlaceholder
 from olmo_core.nn.hf.checkpoint import load_hf_model
 from olmo_core.nn.hf.convert import get_converter_from_hf
 from olmo_core.nn.moe.moe import MoEType
+from olmo_core.nn.rope import YaRNRoPEScalingConfig
 from olmo_core.nn.transformer.config import TransformerBlockConfig, TransformerConfig
 from olmo_core.nn.transformer.model import Transformer
 from olmo_core.utils import prepare_cli_environment
@@ -39,7 +47,10 @@ from olmo_core.utils import prepare_cli_environment
 log = logging.getLogger(__name__)
 
 
-def _get_transformer_config(model_arch: str, vocab_size: int) -> TransformerConfig:
+def _get_transformer_config(
+    model_arch: str, vocab_size: int, max_sequence_length: int
+) -> TransformerConfig:
+    model_arch = model_arch.lower()
     transformer_configs = {
         "olmo2_190m": TransformerConfig.olmo2_190M,
         "olmo2_370m": TransformerConfig.olmo2_370M,
@@ -53,6 +64,7 @@ def _get_transformer_config(model_arch: str, vocab_size: int) -> TransformerConf
         "olmo2_32b": TransformerConfig.olmo2_32B,
         "olmo3_190m": TransformerConfig.olmo3_190M,
         "olmo3_7b": TransformerConfig.olmo3_7B,
+        "olmo3_32b": TransformerConfig.olmo3_32B,
         "smallmoe": TransformerConfig.smallmoe,
         "olmoe_1b_7b": TransformerConfig.olmoe_1B_7B,
         "ngpt_271m": TransformerConfig.ngpt_271M,
@@ -69,7 +81,20 @@ def _get_transformer_config(model_arch: str, vocab_size: int) -> TransformerConf
         "llama3_405b": TransformerConfig.llama3_405B,
     }
 
-    return transformer_configs[model_arch.lower()](vocab_size)
+    result = transformer_configs[model_arch](vocab_size)
+
+    if model_arch.startswith("olmo3_") and max_sequence_length > 8192:
+        result = result.with_rope_scaling(
+            YaRNRoPEScalingConfig(
+                factor=max_sequence_length / 8192, beta_fast=32, beta_slow=1, old_context_len=8192
+            )
+        )
+    elif model_arch.startswith("olmo2_") and max_sequence_length != 4096:
+        raise RuntimeError(
+            "If you get here, you have to add code that reflects how you extended RoPE when you did you long context training."
+        )
+
+    return result
 
 
 def _get_tokenizer_config(tokenizer_id: str) -> TokenizerConfig:
@@ -119,6 +144,7 @@ def convert_checkpoint_from_hf(
 
     validation_device = validation_device or torch.device("cpu")
 
+    assert isinstance(model_config.block, TransformerBlockConfig)
     block_entries: list[tuple[str, TransformerBlockConfig]] = [("base block", model_config.block)]
     if model_config.block_overrides:
         block_entries.extend(
@@ -130,7 +156,11 @@ def convert_checkpoint_from_hf(
         block_label: str, block_config: TransformerBlockConfig
     ) -> None:
         nonlocal device, validation_device
-        attention_config = block_config.attention
+        attention_config = block_config.sequence_mixer
+        if not isinstance(attention_config, AttentionConfig):
+            raise NotImplementedError(
+                f"Block {block_label} has an unsupported sequence mixing config: {attention_config}"
+            )
         if attention_config.name == AttentionType.fused:
             backend = attention_config.backend
             if backend is None:
@@ -188,7 +218,10 @@ def convert_checkpoint_from_hf(
             num_embeddings=model.vocab_size,
         )
 
-        if (moe_config := model_config.block.feed_forward_moe) is not None:
+        if (
+            isinstance(model_config.block, TransformerBlockConfig)
+            and (moe_config := model_config.block.feed_forward_moe) is not None
+        ):
             if moe_config.name == MoEType.dropless:
                 for k, v in model_state_dict.items():
                     # We need to reshape the w1 and w3 weights for the dropless MoE because conversion
@@ -228,6 +261,8 @@ def convert_checkpoint_from_hf(
     with tempfile.NamedTemporaryFile(mode="w") as temp_file:
         json.dump(experiment_config_dict, temp_file)
         temp_file.flush()  # make sure data is written to disk, json.dump doesn't flush.
+        if hasattr(os, "fdatasync"):  # only available on linux
+            os.fdatasync(temp_file)  # type: ignore
         copy_file(temp_file.name, config_path, save_overwrite=True)
         log.info(f"Successfully wrote partial experiment config to '{config_path}'")
 
@@ -592,9 +627,19 @@ def main():
         assert args.model_arch is not None
         assert args.tokenizer is not None
         tokenizer_config = _get_tokenizer_config(args.tokenizer)
-        transformer_config_dict = _get_transformer_config(
-            args.model_arch, tokenizer_config.padded_vocab_size()
-        ).as_config_dict()
+
+        # We still need to load the HF config, to get the right sequence length.
+        with cached_path(args.config_path or f"{args.checkpoint_input_path}/config.json").open(
+            "r", encoding="utf-8"
+        ) as f:
+            hf_config_dict = json.load(f)
+
+        transformer_config = _get_transformer_config(
+            args.model_arch,
+            tokenizer_config.padded_vocab_size(),
+            hf_config_dict["max_position_embeddings"],
+        )
+        transformer_config_dict = transformer_config.as_config_dict()
         tokenizer_config_dict = tokenizer_config.as_config_dict()
 
     assert transformer_config_dict is not None
