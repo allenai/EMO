@@ -38,13 +38,14 @@ TWOLEVEL_BASE="${BASE_MODELS}/twolevelbatchlbreducedp512sharedexp1randpool-8-128
 
 ## 1. Initialization + train new experts (regular MoE)
 
-Add `${NUM_NEW_EXPERTS}` new experts to the 128-expert base, then freeze everything except the new experts and train on a domain dataset.
+Add `${NUM_NEW_EXPERTS}` new experts to the 128-expert base, then freeze everything except the new experts and train on a domain dataset. Both extension training and selective-expert training go through the same entry point: `train_selected_experts.py`.
 
 **Part 1 — add experts (run once, locally):**
 
 ```bash
 NUM_NEW_EXPERTS=4
 TOTAL_EXPERTS=$((128 + NUM_NEW_EXPERTS))
+NUM_SHARED_EXPERTS=1   # the moereducedp512sharedexp1 base reserves 1 shared expert
 
 NEW_BASE_MODEL_PATH="${EXTENSIONS}/moereducedp512sharedexp1_1b14b_${TOTAL_EXPERTS}experts_0308_step30995_init_top2_math_average_noise"
 EVAL_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions/moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308_step30995-hf"
@@ -56,10 +57,11 @@ python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
     --init_method similar \
     --activation_file ${EVAL_DIR}/task-gsm8k_generation_test_0shot-router.jsonl \
     -k 2 \
-    --noise_std_fraction 0.1
+    --noise_std_fraction 0.1 \
+    --num_shared_experts ${NUM_SHARED_EXPERTS} --exclude_experts 127
 ```
 
-Alternative `--init_method` values: `average`, `random_expert`, `similar` (with `-k 2`), `similar` with `--noise_std_fraction 0.1`.
+Alternative `--init_method` values: `average`, `random_expert`, `similar` (with `-k 2`), `similar` with `--noise_std_fraction 0.1`. Drop `--num_shared_experts` / `--exclude_experts` for non-shared bases.
 
 **Part 2 — train new experts:**
 
@@ -69,9 +71,15 @@ NUM_TOKENS=$((NUM_BILLION_TOKENS * 1000000000))
 LR=4e-4
 DATA_MIX=mj_finemath4plus   # math: mj_finemath4plus | code: code_mix / starcoder_mix | french: croissant
 
-RUN_NAME="freeze-fix-moe1b14b_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_math_init_top2_average_noise_${NUM_BILLION_TOKENS}B_lr_${LR}"
+# Indices of the newly-added experts. For a base with ${NUM_SHARED_EXPERTS}
+# shared experts at the end of the original 128-expert pool, the new experts
+# get inserted starting at INSERT_POS so the shared-expert slot stays at the end.
+INSERT_POS=$((128 - NUM_SHARED_EXPERTS))
+EXPERTS_TO_TRAIN=$(seq -s, $INSERT_POS $((INSERT_POS + NUM_NEW_EXPERTS - 1)))
 
-${LAUNCH} src/scripts/akshitab/add_finegrained_expert/train_new_expert.py \
+RUN_NAME="moereducedp512sharedexp1_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_math_init_top2_average_noise_${NUM_BILLION_TOKENS}B_lr_${LR}"
+
+${LAUNCH} src/scripts/akshitab/add_finegrained_expert/train_selected_experts.py \
     ${RUN_NAME} \
     --trainer.load_path="${NEW_BASE_MODEL_PATH}/model_and_optim" \
     --save-folder="${MODELS}/${RUN_NAME}" \
@@ -84,17 +92,22 @@ ${LAUNCH} src/scripts/akshitab/add_finegrained_expert/train_new_expert.py \
     --trainer.callbacks.wandb.name="${RUN_NAME}" \
     --trainer.callbacks.wandb.tags='[extension]' \
     --dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
-    --model.block.name="moe" \
-    --model.block.sequence_mixer.qk_norm=null \
     --model.block.feed_forward_moe.lb_loss_weight=1e-2 \
     --train_module.scheduler.warmup_fraction=0.1 \
     --lr=${LR} \
-    --num-experts-to-train=${NUM_NEW_EXPERTS}
+    --base-model-config="${NEW_BASE_MODEL_PATH}" \
+    --experts-to-train=${EXPERTS_TO_TRAIN}
 ```
+
+`train_selected_experts.py` freezes everything except the listed experts (embeddings, attention, feed_forward_norm, lm_head are all frozen by default; router stays trainable). The router type is read from `--base-model-config`'s `config.json`.
 
 Variants:
 - `--init_method` drives the `_init_*` substring in `RUN_NAME`.
-- To freeze the router too, swap `train_new_expert.py` → `train_new_expert_no_router.py` and add `_no_router` to `RUN_NAME`.
+- **Freeze the router too** ("no_router" variant): append `blocks.*.feed_forward_moe.router.*` to the freeze list and add `_no_router` to `RUN_NAME`:
+  ```bash
+  --model.freeze_params='["embeddings.*","blocks.*.attention*","blocks.*.feed_forward_norm.*","lm_head.*","blocks.*.feed_forward_moe.router.*"]'
+  ```
+- **Non-shared 128-expert base** (no shared expert): set `NUM_SHARED_EXPERTS=0`, drop the `--num_shared_experts`/`--exclude_experts` flags from Part 1, and the new experts land at indices `128..128+NUM_NEW_EXPERTS-1`.
 
 ## 2. Num experts / tokens grid
 
@@ -153,21 +166,26 @@ Full-finetune additionally sets `--model.freeze_params='[]'`.
 
 ## 5. Shared / always-active expert
 
-Same as template 1 (part 2), but launch with `train_new_expert_always_active.py` and set `--always-active-experts`.
+Same as template 1 (part 2), with `train_selected_experts.py` plus a router-config override that pins one expert to be always active.
 
 ```bash
 NUM_NEW_EXPERTS=4
 SHARED_EXPERTS=56  # expert index to keep always active, e.g. top global expert
 TOTAL_EXPERTS=$((128 + NUM_NEW_EXPERTS))
+INSERT_POS=$((128 - NUM_SHARED_EXPERTS))
+EXPERTS_TO_TRAIN=$(seq -s, $INSERT_POS $((INSERT_POS + NUM_NEW_EXPERTS - 1)))
 
 RUN_NAME="ff-moe1b14b_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_sharedexp${SHARED_EXPERTS}math_init_top2_average_${NUM_BILLION_TOKENS}B_lr_${LR}"
 
-${LAUNCH} src/scripts/akshitab/add_finegrained_expert/train_new_expert_always_active.py \
+${LAUNCH} src/scripts/akshitab/add_finegrained_expert/train_selected_experts.py \
     ${RUN_NAME} \
     ... \
-    --num-experts-to-train=${NUM_NEW_EXPERTS} \
-    --always-active-experts=${SHARED_EXPERTS}
+    --base-model-config="${NEW_BASE_MODEL_PATH}" \
+    --experts-to-train=${EXPERTS_TO_TRAIN} \
+    --model.block.feed_forward_moe.router.always_active_experts="[${SHARED_EXPERTS}]"
 ```
+
+`always_active_experts` lives on the router config (`olmo_core/nn/moe/router.py`); the router selects `top_k - len(always_active_experts)` dynamically and pins the rest.
 
 ## 6. Merging extensions from multiple domains
 
@@ -234,22 +252,15 @@ Name prefix encodes the merge source: `rt-merged_` for stock merge, `rt-realdata
 
 ## Twolevel MoE variants
 
-Twolevel runs use `${TWOLEVEL_BASE}` and add two extra knobs to the `train_selected_experts.py` invocation:
+Twolevel runs use `${TWOLEVEL_BASE}` and follow template 1 verbatim (same `train_selected_experts.py` entry, same `INSERT_POS` / `EXPERTS_TO_TRAIN` computation with `NUM_SHARED_EXPERTS=1`), with one extra router-config override:
 
 ```bash
-NUM_SHARED_EXPERTS=1                                       # shared experts at the end of the expert pool
-INSERT_POS=$((128 - NUM_SHARED_EXPERTS))                   # where new experts get inserted
-EXPERTS_TO_TRAIN=$(seq -s, $INSERT_POS $((INSERT_POS + NUM_NEW_EXPERTS - 1)))
-```
-
-And the trainer flags include:
-
-```bash
-    --base-model-config="${NEW_BASE_MODEL_PATH}" \
-    --experts-to-train=${EXPERTS_TO_TRAIN} \
     --model.block.feed_forward_moe.router.num_forced_experts=${NUM_NEW_EXPERTS}
 ```
 
-Run-name prefix: `twolevel_` for direct extension, `freeze-fix-twolevel_` for the frozen-everything-else variant, `merged_twolevel_` / `rt-merged_twolevel_` for merge and router-training. The `_forced_` segment in the name signals `num_forced_experts > 0`.
+This forces the router to always pick the new experts (instead of relying on top-k discovery) — the resulting model name will contain `_forced_`.
 
-Initialization (`add_new_expert.py`) takes `--num_shared_experts 1 --exclude_experts 127` to respect the shared-expert slot.
+Run-name prefixes:
+- `twolevel_` — direct extension with forced experts
+- `freeze-fix-twolevel_` — frozen-everything-else variant on twolevel base
+- `merged_twolevel_` / `rt-merged_twolevel_` — merge and router-training variants
