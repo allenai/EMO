@@ -63,14 +63,22 @@ batch_size=32
 # (seed=0, mode-agnostic — ignores PRUNING_MODE). Output dir uses _prunemode-random.
 NUM_PRUNE_EXAMPLES="10"
 
-# --- Shot-count override ---
-# Leave empty to use each task's default num_shots from TASK_CONFIGS
-# (preserves existing behaviour, e.g. mmlu_merged_* = 5-shot,
-#  gsm8k_generation_8shot_merged = 8-shot).
-# Set to an integer (e.g. 0) to force that shot count end-to-end for
-# pruning calibration, finetune, and eval. Output dir gets a "_${N}shot"
-# suffix so 0-shot runs don't collide with few-shot results on S3.
-NUM_SHOTS="0"
+# --- Shot-count overrides (two orthogonal knobs) ---
+# Each var: empty ⇒ each task's default num_shots (e.g. mmlu_merged_* = 5-shot,
+# gsm8k_generation_8shot_merged = 8-shot). Set to an integer to force that
+# shot count for the corresponding stage.
+#
+#   NUM_SHOTS_PRUNE: pruning-calibration shots. Ignored for dense_1b / 1b4b
+#     (no pruning stage) and NUM_PRUNE_EXAMPLES="random" (no calibration).
+#   NUM_SHOTS_EVAL:  finetune + eval shots.
+#
+# Output dir suffix uses _pshots-{X} and/or _eshots-{Y}. Only stages that are
+# actually overridden appear. Examples:
+#   PRUNE="0" EVAL=""  → _pshots-0
+#   PRUNE=""  EVAL="0" → _eshots-0
+#   PRUNE="0" EVAL="0" → _pshots-0_eshots-0
+NUM_SHOTS_PRUNE=""
+NUM_SHOTS_EVAL=""
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
 # Schedule name (used in output directory naming)
@@ -225,10 +233,21 @@ for MODEL in "${MODELS[@]}"; do
             relative_dir="${relative_dir}_nprune-${NUM_PRUNE_EXAMPLES}"
         fi
 
-        # Append shot-count suffix when overriding the task default. Ensures 0-shot
-        # and few-shot runs don't share an S3 output path.
-        if [ -n "$NUM_SHOTS" ]; then
-            relative_dir="${relative_dir}_${NUM_SHOTS}shot"
+        # Append per-stage shot-count suffixes when overriding task defaults.
+        # _pshots-* is skipped for paths that don't run pruning calibration
+        # (dense_1b / 1b4b / random) — avoids misleading directory names.
+        pruning_uses_calibration=true
+        if [[ $NUM_PRUNE_EXAMPLES == "random" ]]; then
+            pruning_uses_calibration=false
+        fi
+        if [[ $MODEL == *"dense_1b"* || $MODEL == *"1b4b"* ]]; then
+            pruning_uses_calibration=false
+        fi
+        if [ "$pruning_uses_calibration" = true ] && [ -n "$NUM_SHOTS_PRUNE" ]; then
+            relative_dir="${relative_dir}_pshots-${NUM_SHOTS_PRUNE}"
+        fi
+        if [ -n "$NUM_SHOTS_EVAL" ]; then
+            relative_dir="${relative_dir}_eshots-${NUM_SHOTS_EVAL}"
         fi
 
         safe_relative_dir=$(printf '%s' "$relative_dir" | sed 's/[^a-zA-Z0-9_-]//g' | tail -c 100)
@@ -240,11 +259,17 @@ for MODEL in "${MODELS[@]}"; do
             NPE_FLAG="--num-prune-examples ${NUM_PRUNE_EXAMPLES}"
         fi
 
-        # Optional shot-count flag forwarded to the per-mode worker scripts, which
-        # cascade it through pruning / finetuning / eval.
-        NSHOTS_FLAG=""
-        if [ -n "$NUM_SHOTS" ]; then
-            NSHOTS_FLAG="--num-shots ${NUM_SHOTS}"
+        # Optional shot-count flags forwarded to the per-mode worker scripts.
+        # --num-shots-prune goes to the pruning Python call; --num-shots-eval
+        # goes to finetune + eval. Worker scripts that skip pruning (random,
+        # dense/1b4b) ignore --num-shots-prune.
+        NSHOTS_PRUNE_FLAG=""
+        if [ -n "$NUM_SHOTS_PRUNE" ]; then
+            NSHOTS_PRUNE_FLAG="--num-shots-prune ${NUM_SHOTS_PRUNE}"
+        fi
+        NSHOTS_EVAL_FLAG=""
+        if [ -n "$NUM_SHOTS_EVAL" ]; then
+            NSHOTS_EVAL_FLAG="--num-shots-eval ${NUM_SHOTS_EVAL}"
         fi
 
         # Clean any previous results for this exact (model, keep-k, task, prune-mode)
@@ -317,7 +342,7 @@ for MODEL in "${MODELS[@]}"; do
                 --num-shared-experts ${num_shared_experts} \
                 --skip-activation \
                 --skip-prune \
-                ${NSHOTS_FLAG}
+                ${NSHOTS_EVAL_FLAG}
                 "
             echo "Launched evaluation for model: $model, task: $TASK"
             echo "----------------------------------------"
@@ -369,7 +394,7 @@ for MODEL in "${MODELS[@]}"; do
                     --num-epochs ${num_epochs} \
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
-                    ${NSHOTS_FLAG}
+                    ${NSHOTS_EVAL_FLAG}
                 "
         elif [[ $PRUNING_MODE == "layerwise_variable" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise_variable.sh \
@@ -417,7 +442,8 @@ for MODEL in "${MODELS[@]}"; do
                     --num-shared-experts ${num_shared_experts} \
                     --prune-mode ${PRUNE_SCHEDULE_NAME} \
                     ${NPE_FLAG} \
-                    ${NSHOTS_FLAG}
+                    ${NSHOTS_PRUNE_FLAG} \
+                    ${NSHOTS_EVAL_FLAG}
                 "
         elif [[ $PRUNING_MODE == "easy_ep" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_easy_ep.sh \
@@ -463,7 +489,8 @@ for MODEL in "${MODELS[@]}"; do
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
                     ${NPE_FLAG} \
-                    ${NSHOTS_FLAG}
+                    ${NSHOTS_PRUNE_FLAG} \
+                    ${NSHOTS_EVAL_FLAG}
                 "
         elif [[ $PRUNING_MODE == "layerwise" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
@@ -509,7 +536,8 @@ for MODEL in "${MODELS[@]}"; do
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
                     ${NPE_FLAG} \
-                    ${NSHOTS_FLAG}
+                    ${NSHOTS_PRUNE_FLAG} \
+                    ${NSHOTS_EVAL_FLAG}
                 "
         else
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
@@ -555,7 +583,8 @@ for MODEL in "${MODELS[@]}"; do
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
                     ${NPE_FLAG} \
-                    ${NSHOTS_FLAG}
+                    ${NSHOTS_PRUNE_FLAG} \
+                    ${NSHOTS_EVAL_FLAG}
                 "
         fi
 

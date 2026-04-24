@@ -36,7 +36,7 @@ SKIP_PRUNE=false
 PRUNED_MODEL=""
 LEARNING_RATE=5e-5
 RUN_NAME=""
-NUM_SHOTS=""
+NUM_SHOTS_EVAL=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -71,8 +71,8 @@ while [[ $# -gt 0 ]]; do
             LEARNING_RATE="$2"; shift 2 ;;
         --run-name)
             RUN_NAME="$2"; shift 2 ;;
-        --num-shots)
-            NUM_SHOTS="$2"; shift 2 ;;
+        --num-shots-eval)
+            NUM_SHOTS_EVAL="$2"; shift 2 ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             exit 0
@@ -135,11 +135,11 @@ echo "Num GPUs: $NUM_GPUS"
 echo "Num epochs: $NUM_EPOCHS"
 echo "========================================"
 
-# Shared --num-shots forwarding flag for finetune + eval (random pruning itself
-# doesn't use task data, so the flag doesn't apply there). Empty ⇒ task config default.
-NUM_SHOTS_FLAG=()
-if [ -n "$NUM_SHOTS" ]; then
-    NUM_SHOTS_FLAG=(--num-shots "$NUM_SHOTS")
+# --num-shots-eval forwarding flag for finetune + eval. Random pruning has no
+# calibration stage, so this only affects downstream. Empty ⇒ task config default.
+NUM_SHOTS_EVAL_FLAG=()
+if [ -n "$NUM_SHOTS_EVAL" ]; then
+    NUM_SHOTS_EVAL_FLAG=(--num-shots "$NUM_SHOTS_EVAL")
 fi
 
 # Steps 1+2: Random pruning (no calibration data)
@@ -191,7 +191,7 @@ torchrun --nproc_per_node="$NUM_GPUS" \
     --per-device-batch-size "$MICRO_BATCH_SIZE" \
     --gradient-accumulation-steps "$gas" \
     $FSDP_FLAG \
-    "${NUM_SHOTS_FLAG[@]}"
+    "${NUM_SHOTS_EVAL_FLAG[@]}"
 
 # Step 4: Evals
 echo ""
@@ -222,7 +222,7 @@ for checkpoint in "${all_checkpoints[@]}"; do
         --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
         --batch-size $EVAL_BATCH_SIZE \
         --gpus "$NUM_GPUS" \
-        "${NUM_SHOTS_FLAG[@]}"
+        "${NUM_SHOTS_EVAL_FLAG[@]}"
 done
 
 # Step 5: Per-subject evals (MMLU only)
@@ -259,7 +259,7 @@ if [ -n "$MMLU_SUBJECTS" ]; then
                 --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}/per_subject/${subject}" \
                 --batch-size $EVAL_BATCH_SIZE \
                 --gpus "$NUM_GPUS" \
-                "${NUM_SHOTS_FLAG[@]}"
+                "${NUM_SHOTS_EVAL_FLAG[@]}"
         done <<< "$MMLU_SUBJECTS"
     done
 else
