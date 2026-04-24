@@ -22,7 +22,12 @@ scripts/ryanwang/clustering/
 ├── common/                        # source-agnostic primitives
 │   ├── transform.sh               # derive <embedding> from logits
 │   ├── cluster.sh                 # single cluster run (with save)
-│   └── visualize.sh               # HTML explorer
+│   ├── visualize.sh               # simple HTML explorer (single view)
+│   ├── visualize_token.sh         # rich 4-view token explorer (Clusters/
+│   │                              # Documents/Tokens/UMAP + doc reader modal)
+│   ├── visualize_compare.sh       # two-model side-by-side comparison HTML
+│   │                              # (Clusters tab + Documents tab)
+│   └── sample_clusters.sh         # per-cluster token contexts for labeling
 ├── pretraining/                   # pretraining-source specific
 │   ├── extract.sh
 │   ├── generate_mix.sh            # one-time S3 mix-composition
@@ -182,11 +187,47 @@ Raw MMLU / pretraining sources have heavily imbalanced class sizes (e.g. `profes
 
 ## Step 4: Visualize
 
+Two explorers:
+
 ```bash
+# Simple single-view (Clusters + UMAP)
 bash scripts/ryanwang/clustering/common/visualize.sh <CLUSTER_DIR>
+
+# Rich 4-view token explorer (token-level only)
+#   Clusters  -- source breakdown + doc previews with per-token highlighting
+#   Documents -- per-doc cluster-spread histogram + full-doc reader modal
+#   Tokens    -- per-unique-token cluster distribution & entropy
+#   UMAP      -- cluster/source/doc-spread colorings
+bash scripts/ryanwang/clustering/common/visualize_token.sh <CLUSTER_DIR>
+
+# Two-model side-by-side comparison (ModMoE vs Standard MoE style)
+#   Clusters tab  -- both cluster lists side-by-side; click a cluster to see
+#                    docs with its tokens highlighted; click a doc to jump.
+#   Documents tab -- same doc rendered twice, each token colored by its
+#                    respective model's cluster; click a cluster legend chip
+#                    to filter-highlight that cluster.
+# Both cluster dirs must come from extraction runs sharing the same
+# shuffle seed (identical documents.npy).
+bash scripts/ryanwang/clustering/common/visualize_compare.sh \
+    <CLUSTER_DIR_1> <CLUSTER_DIR_2> "ModMoE" "Standard MoE" out.html
 ```
 
-Auto-detects token-level vs document-level from the embedding name in `run_info.json`. Generates `cluster_explorer.html` with UMAP scatter plot and cluster detail view.
+Both write `cluster_explorer.html` into `<CLUSTER_DIR>`. Reads optional
+`cluster_labels.json` (`{cluster_id: {label, category}}`) if present to use
+human labels instead of `Cluster N`.
+
+## Step 5: Label clusters (optional)
+
+To human-label clusters, sample token contexts per cluster:
+
+```bash
+bash scripts/ryanwang/clustering/common/sample_clusters.sh <CLUSTER_DIR> [N_SAMPLES]
+```
+
+Writes `<CLUSTER_DIR>/cluster_samples/cluster_NN.txt` — one file per cluster
+with source breakdown, top-frequent and top-enriched tokens, and N sampled
+context snippets. Use the contents to hand-write `<CLUSTER_DIR>/cluster_labels.json`;
+then re-run `visualize_token.sh` to embed the labels.
 
 ## Directory Structure
 
@@ -219,5 +260,8 @@ All modules run via `python -m src.scripts.clustering.<module>`.
 | `extract` | Unified extraction for all data sources |
 | `transform` | Derive embeddings + preprocessing |
 | `cluster` | Clustering + evaluation |
-| `visualize` | HTML explorer |
+| `visualize` | Simple HTML explorer (single view) |
+| `visualize_token` | Rich 4-view token explorer (Clusters/Documents/Tokens/UMAP + doc reader) |
+| `visualize_compare` | Two-model side-by-side comparison (Clusters + Documents tabs) |
+| `sample_clusters` | Per-cluster token sampling for manual labeling |
 | `utils` | Shared S3, tokenization, model loading |

@@ -8,7 +8,7 @@
 #   bash scripts/ryanwang/clustering/pretraining/extract.sh [MODEL_PATH] [TARGET_TOKENS] [MAX_TOKENS_PER_DOC]
 #
 # Examples:
-#   # Default: 20M tokens, 250 tok/doc
+#   # Default: 1M tokens, 100 tok/doc
 #   bash scripts/ryanwang/clustering/pretraining/extract.sh
 #
 #   # Specific model
@@ -19,8 +19,8 @@
 set -euo pipefail
 
 MODEL_PATH="${1:-models/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf}"
-TARGET_TOKENS="${2:-20000000}"
-MAX_TOKENS_PER_DOC="${3:-250}"
+TARGET_TOKENS="${2:-1000000}"
+MAX_TOKENS_PER_DOC="${3:-100}"
 
 MODEL_NAME="$(basename "$(dirname "$MODEL_PATH")")"
 BASE_DIR="claude_outputs/clustering/pretraining"
@@ -50,7 +50,7 @@ PYTHONUNBUFFERED=1 python -u \
     --output-dir "$OUTPUT_DIR" \
     --target-tokens "$TARGET_TOKENS" \
     --max-tokens-per-doc "$MAX_TOKENS_PER_DOC" \
-    --batch-size 256 \
+    --batch-size 32 \
     2>&1 | tee "${OUTPUT_DIR}/extraction.log"
 
 echo ""
