@@ -291,6 +291,7 @@ def prepare_finetuning_dataset(
     split: str,
     tokenizer,
     max_length: int = 4096,
+    num_shots_override: "int | None" = None,
 ) -> Dataset:
     """
     Load and prepare a HuggingFace dataset for finetuning.
@@ -300,6 +301,8 @@ def prepare_finetuning_dataset(
         split: Dataset split (train, validation, test)
         tokenizer: HuggingFace tokenizer
         max_length: Maximum sequence length
+        num_shots_override: Forwarded to ``get_formatted_prompts`` to override
+            ``task_config["num_shots"]``. ``None`` preserves existing behaviour.
 
     Returns:
         HuggingFace Dataset with tokenized examples
@@ -309,7 +312,9 @@ def prepare_finetuning_dataset(
     # Load raw dataset
     # raw_dataset = load_hf_dataset(task_name, split)
 
-    raw_prompts, request_type = get_formatted_prompts(task_name, split)
+    raw_prompts, request_type = get_formatted_prompts(
+        task_name, split, num_shots_override=num_shots_override
+    )
 
     # convert to hf
     raw_dataset = Dataset.from_dict({"text": raw_prompts})
@@ -335,7 +340,11 @@ def prepare_finetuning_dataset(
 
 
 def load_finetuning_dataset(
-    task_name: str, split: str, tokenizer, max_length: int = 4096
+    task_name: str,
+    split: str,
+    tokenizer,
+    max_length: int = 4096,
+    num_shots_override: "int | None" = None,
 ) -> Dataset:
     """
     Load and format HF dataset for finetuning.
@@ -347,11 +356,16 @@ def load_finetuning_dataset(
         split: Dataset split (train, validation, test)
         tokenizer: HuggingFace tokenizer
         max_length: Maximum sequence length
+        num_shots_override: Forwarded to ``prepare_finetuning_dataset`` so the
+            caller can force e.g. 0-shot at runtime without registering a new
+            task name. ``None`` preserves existing behaviour.
 
     Returns:
         HuggingFace Dataset ready for training
     """
-    return prepare_finetuning_dataset(task_name, split, tokenizer, max_length)
+    return prepare_finetuning_dataset(
+        task_name, split, tokenizer, max_length, num_shots_override=num_shots_override
+    )
 
 
 def get_oe_task_name(task_name, split):
@@ -387,7 +401,9 @@ def get_oe_task_name(task_name, split):
     return f"{task_name}:rc_{split}::olmes"
 
 
-def get_formatted_prompts(task_name: str, split: str) -> Tuple[List[str], str]:
+def get_formatted_prompts(
+    task_name: str, split: str, num_shots_override: "int | None" = None
+) -> Tuple[List[str], str]:
     """
     Get formatted prompts (prompt + answer) for a dataset.
 
@@ -396,13 +412,22 @@ def get_formatted_prompts(task_name: str, split: str) -> Tuple[List[str], str]:
     Args:
         task_name: Name of the task
         split: Dataset split
+        num_shots_override: If not None, override ``task_config["num_shots"]`` on a
+            shallow copy of the config before invoking ``load_task``. Lets callers
+            switch a task between 0-shot / few-shot without registering new task
+            names. Default ``None`` leaves behaviour identical to pre-override code.
 
     Returns:
         Tuple of (list of formatted prompt+answer strings, request_type string)
     """
+    import copy as _copy
+
     oe_task_name = get_oe_task_name(task_name, split)
     TASK_CONFIGS = get_task_configs()
     task_config = TASK_CONFIGS[oe_task_name]
+    if num_shots_override is not None:
+        task_config = _copy.deepcopy(task_config)
+        task_config["num_shots"] = num_shots_override
     task = load_task(task_config, "tmp")
     task.download()
     task.build_all_requests()

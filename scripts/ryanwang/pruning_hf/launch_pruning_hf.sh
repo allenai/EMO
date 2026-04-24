@@ -63,6 +63,15 @@ batch_size=32
 # (seed=0, mode-agnostic — ignores PRUNING_MODE). Output dir uses _prunemode-random.
 NUM_PRUNE_EXAMPLES="5"
 
+# --- Shot-count override ---
+# Leave empty to use each task's default num_shots from TASK_CONFIGS
+# (preserves existing behaviour, e.g. mmlu_merged_* = 5-shot,
+#  gsm8k_generation_8shot_merged = 8-shot).
+# Set to an integer (e.g. 0) to force that shot count end-to-end for
+# pruning calibration, finetune, and eval. Output dir gets a "_${N}shot"
+# suffix so 0-shot runs don't collide with few-shot results on S3.
+NUM_SHOTS=""
+
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
 # Schedule name (used in output directory naming)
 PRUNE_SCHEDULE_NAME="first2_unpruned"
@@ -216,6 +225,12 @@ for MODEL in "${MODELS[@]}"; do
             relative_dir="${relative_dir}_nprune-${NUM_PRUNE_EXAMPLES}"
         fi
 
+        # Append shot-count suffix when overriding the task default. Ensures 0-shot
+        # and few-shot runs don't share an S3 output path.
+        if [ -n "$NUM_SHOTS" ]; then
+            relative_dir="${relative_dir}_${NUM_SHOTS}shot"
+        fi
+
         safe_relative_dir=$(printf '%s' "$relative_dir" | sed 's/[^a-zA-Z0-9_-]//g' | tail -c 100)
         job_name="eval-${safe_relative_dir}"
 
@@ -223,6 +238,13 @@ for MODEL in "${MODELS[@]}"; do
         NPE_FLAG=""
         if [ -n "$NUM_PRUNE_EXAMPLES" ]; then
             NPE_FLAG="--num-prune-examples ${NUM_PRUNE_EXAMPLES}"
+        fi
+
+        # Optional shot-count flag forwarded to the per-mode worker scripts, which
+        # cascade it through pruning / finetuning / eval.
+        NSHOTS_FLAG=""
+        if [ -n "$NUM_SHOTS" ]; then
+            NSHOTS_FLAG="--num-shots ${NUM_SHOTS}"
         fi
 
         # Clean any previous results for this exact (model, keep-k, task, prune-mode)
@@ -294,7 +316,8 @@ for MODEL in "${MODELS[@]}"; do
                 --num-checkpoints 1 \
                 --num-shared-experts ${num_shared_experts} \
                 --skip-activation \
-                --skip-prune
+                --skip-prune \
+                ${NSHOTS_FLAG}
                 "
             echo "Launched evaluation for model: $model, task: $TASK"
             echo "----------------------------------------"
@@ -345,7 +368,8 @@ for MODEL in "${MODELS[@]}"; do
                     --micro-batch-size ${micro_batch_size} \
                     --num-epochs ${num_epochs} \
                     --num-checkpoints 1 \
-                    --num-shared-experts ${num_shared_experts}
+                    --num-shared-experts ${num_shared_experts} \
+                    ${NSHOTS_FLAG}
                 "
         elif [[ $PRUNING_MODE == "layerwise_variable" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise_variable.sh \
@@ -392,7 +416,8 @@ for MODEL in "${MODELS[@]}"; do
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
                     --prune-mode ${PRUNE_SCHEDULE_NAME} \
-                    ${NPE_FLAG}
+                    ${NPE_FLAG} \
+                    ${NSHOTS_FLAG}
                 "
         elif [[ $PRUNING_MODE == "easy_ep" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_easy_ep.sh \
@@ -437,7 +462,8 @@ for MODEL in "${MODELS[@]}"; do
                     --num-epochs ${num_epochs} \
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
-                    ${NPE_FLAG}
+                    ${NPE_FLAG} \
+                    ${NSHOTS_FLAG}
                 "
         elif [[ $PRUNING_MODE == "layerwise" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
@@ -482,7 +508,8 @@ for MODEL in "${MODELS[@]}"; do
                     --num-epochs ${num_epochs} \
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
-                    ${NPE_FLAG}
+                    ${NPE_FLAG} \
+                    ${NSHOTS_FLAG}
                 "
         else
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
@@ -527,7 +554,8 @@ for MODEL in "${MODELS[@]}"; do
                     --num-epochs ${num_epochs} \
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
-                    ${NPE_FLAG}
+                    ${NPE_FLAG} \
+                    ${NSHOTS_FLAG}
                 "
         fi
 

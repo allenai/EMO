@@ -39,6 +39,7 @@ def compute_router_activations(
     num_calibration: Optional[int] = None,
     device: Optional[str] = None,
     use_correct_only: bool = False,
+    num_shots_override: Optional[int] = None,
 ) -> dict:
     """
     Compute average router probabilities across validation examples.
@@ -68,8 +69,13 @@ def compute_router_activations(
         tokenizer.pad_token = tokenizer.eos_token
 
     # Get formatted prompts from the dataset
-    logger.info(f"Loading dataset: {task_name} ({split})")
-    prompts, _ = get_formatted_prompts(task_name, split)
+    logger.info(
+        f"Loading dataset: {task_name} ({split})"
+        + (f" [num_shots={num_shots_override}]" if num_shots_override is not None else "")
+    )
+    prompts, _ = get_formatted_prompts(
+        task_name, split, num_shots_override=num_shots_override
+    )
     if num_calibration is None:
         logger.info(f"Loaded {len(prompts)} prompts, using all (no subsampling)")
     else:
@@ -262,6 +268,12 @@ def main():
         default=None,
         help="Device to use (default: auto)",
     )
+    parser.add_argument(
+        "--num-shots",
+        type=int,
+        default=None,
+        help="Override task config's num_shots (default: use config value)",
+    )
 
     args = parser.parse_args()
 
@@ -273,6 +285,7 @@ def main():
         batch_size=args.batch_size,
         num_calibration=args.num_calibration,
         device=args.device,
+        num_shots_override=args.num_shots,
     )
 
 

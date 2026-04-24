@@ -40,6 +40,7 @@ PRUNED_MODEL=""
 LEARNING_RATE=5e-5
 RUN_NAME=""
 NUM_PRUNE_EXAMPLES=""
+NUM_SHOTS=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -114,6 +115,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --num-prune-examples)
             NUM_PRUNE_EXAMPLES="$2"
+            shift 2
+            ;;
+        --num-shots)
+            NUM_SHOTS="$2"
             shift 2
             ;;
         -h|--help)
@@ -232,6 +237,14 @@ echo "Num GPUs: $NUM_GPUS"
 echo "Num epochs: $NUM_EPOCHS"
 echo "========================================"
 
+# Shared --num-shots forwarding flag for activation / finetune / eval stages.
+# Empty array ⇒ downstream falls back to task config defaults (preserves prior
+# behaviour when this worker is invoked without --num-shots).
+NUM_SHOTS_FLAG=()
+if [ -n "$NUM_SHOTS" ]; then
+    NUM_SHOTS_FLAG=(--num-shots "$NUM_SHOTS")
+fi
+
 ## Step 1: Compute router activations
 if [ "$SKIP_ACTIVATION" = false ]; then
     echo ""
@@ -256,7 +269,8 @@ if [ "$SKIP_ACTIVATION" = false ]; then
         --split "validation" \
         --output-file "$ACTIVATION_FILE" \
         --batch-size "$ACTIVATION_BATCH_SIZE" \
-        "${NUM_CAL_FLAG[@]}"
+        "${NUM_CAL_FLAG[@]}" \
+        "${NUM_SHOTS_FLAG[@]}"
 
     echo "Activations saved to: $ACTIVATION_FILE"
 else
@@ -318,7 +332,8 @@ torchrun --nproc_per_node="$NUM_GPUS" \
     --run-name "$RUN_NAME" \
     --per-device-batch-size "$MICRO_BATCH_SIZE" \
     --gradient-accumulation-steps "$gas" \
-    $FSDP_FLAG
+    $FSDP_FLAG \
+    "${NUM_SHOTS_FLAG[@]}"
 
 
 echo ""
@@ -354,7 +369,8 @@ for checkpoint in "${all_checkpoints[@]}"; do
         --pruned_split "test" \
         --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
         --batch-size $EVAL_BATCH_SIZE \
-        --gpus "$NUM_GPUS"
+        --gpus "$NUM_GPUS" \
+        "${NUM_SHOTS_FLAG[@]}"
 
 done
 
@@ -393,7 +409,8 @@ if [ -n "$MMLU_SUBJECTS" ]; then
                 --pruned_split "test" \
                 --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}/per_subject/${subject}" \
                 --batch-size $EVAL_BATCH_SIZE \
-                --gpus "$NUM_GPUS"
+                --gpus "$NUM_GPUS" \
+                "${NUM_SHOTS_FLAG[@]}"
         done <<< "$MMLU_SUBJECTS"
     done
 else

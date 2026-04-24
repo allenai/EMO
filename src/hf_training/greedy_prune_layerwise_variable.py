@@ -47,6 +47,7 @@ def greedy_prune_layerwise_variable(
     batch_size: int = 32,
     num_calibration: Optional[int] = None,
     device: Optional[str] = None,
+    num_shots_override: Optional[int] = None,
 ) -> None:
     """
     Greedily prune MoE experts one layer at a time, with a per-layer keep-k schedule.
@@ -90,8 +91,13 @@ def greedy_prune_layerwise_variable(
     # -------------------------------------------------------------------------
     # Load and tokenize validation data once up front
     # -------------------------------------------------------------------------
-    logger.info(f"Loading dataset: {task_name} ({split})")
-    prompts, _ = get_formatted_prompts(task_name, split)
+    logger.info(
+        f"Loading dataset: {task_name} ({split})"
+        + (f" [num_shots={num_shots_override}]" if num_shots_override is not None else "")
+    )
+    prompts, _ = get_formatted_prompts(
+        task_name, split, num_shots_override=num_shots_override
+    )
     if num_calibration is None:
         logger.info(f"Loaded {len(prompts)} prompts, using all (no subsampling)")
     else:
@@ -370,6 +376,12 @@ def main():
         default=None,
         help="Device override (default: auto)",
     )
+    parser.add_argument(
+        "--num-shots",
+        type=int,
+        default=None,
+        help="Override task config's num_shots (default: use config value)",
+    )
 
     args = parser.parse_args()
 
@@ -385,6 +397,7 @@ def main():
         batch_size=args.batch_size,
         num_calibration=args.num_calibration,
         device=args.device,
+        num_shots_override=args.num_shots,
     )
 
 

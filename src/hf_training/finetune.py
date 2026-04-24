@@ -68,6 +68,7 @@ class FinetuneConfig:
     logging_steps: int = 5
     report_to: str = "wandb"
     run_name: Optional[str] = None
+    num_shots_override: Optional[int] = None
 
 
 class MaskedLossDataCollator(DataCollatorForLanguageModeling):
@@ -159,6 +160,7 @@ def finetune(config: FinetuneConfig):
         split="train",
         tokenizer=tokenizer,
         max_length=config.max_seq_length,
+        num_shots_override=config.num_shots_override,
     )
 
     logger.info(f"Train dataset size: {len(train_dataset)}")
@@ -346,6 +348,13 @@ def main():
         default="wandb",
         help="Where to report metrics (wandb, tensorboard, none)",
     )
+    parser.add_argument(
+        "--num-shots",
+        type=int,
+        default=None,
+        help="Override task config's num_shots for the training dataset "
+        "(default: use config value)",
+    )
 
     args = parser.parse_args()
 
@@ -365,6 +374,7 @@ def main():
         gradient_checkpointing=not args.no_gradient_checkpointing,
         run_name=args.run_name,
         report_to=args.report_to,
+        num_shots_override=args.num_shots,
     )
 
     finetune(config)

@@ -192,6 +192,7 @@ def compute_layerwise_keep_sets(
     batch_size: int = 32,
     num_calibration: Optional[int] = None,
     prompts: Optional[List[str]] = None,
+    num_shots_override: Optional[int] = None,
 ) -> Tuple[List[Optional[List[int]]], List[Optional[List[float]]]]:
     """
     Run greedy layer-by-layer pruning on a preloaded model (in-place) and return the
@@ -231,8 +232,13 @@ def compute_layerwise_keep_sets(
     # Load and tokenize validation data once up front
     # -------------------------------------------------------------------------
     if prompts is None:
-        logger.info(f"Loading dataset: {task_name} ({split})")
-        prompts, _ = get_formatted_prompts(task_name, split)
+        logger.info(
+            f"Loading dataset: {task_name} ({split})"
+            + (f" [num_shots={num_shots_override}]" if num_shots_override is not None else "")
+        )
+        prompts, _ = get_formatted_prompts(
+            task_name, split, num_shots_override=num_shots_override
+        )
         if num_calibration is None:
             logger.info(f"Loaded {len(prompts)} prompts, using all (no subsampling)")
         else:
@@ -425,6 +431,7 @@ def greedy_prune_layerwise(
     batch_size: int = 32,
     num_calibration: Optional[int] = None,
     device: Optional[str] = None,
+    num_shots_override: Optional[int] = None,
 ) -> None:
     """
     Greedily prune MoE experts one layer at a time, then save the pruned model.
@@ -454,6 +461,7 @@ def greedy_prune_layerwise(
         num_shared_experts=num_shared_experts,
         batch_size=batch_size,
         num_calibration=num_calibration,
+        num_shots_override=num_shots_override,
     )
 
     # -------------------------------------------------------------------------
@@ -503,6 +511,7 @@ def greedy_prune_layerwise(
         "pruning_method": "greedy_layerwise",
         "task": task_name,
         "split": split,
+        "num_shots_override": num_shots_override,
         "experts_kept_per_layer": experts_kept_per_layer,
     }
     with open(os.path.join(save_path, "pruning_metadata.json"), "w") as f:
@@ -560,6 +569,12 @@ def main():
         default=None,
         help="Device override (default: auto)",
     )
+    parser.add_argument(
+        "--num-shots",
+        type=int,
+        default=None,
+        help="Override task config's num_shots (default: use config value)",
+    )
 
     args = parser.parse_args()
 
@@ -573,6 +588,7 @@ def main():
         batch_size=args.batch_size,
         num_calibration=args.num_calibration,
         device=args.device,
+        num_shots_override=args.num_shots,
     )
 
 
