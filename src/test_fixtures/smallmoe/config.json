@@ -4,7 +4,7 @@
         "vocab_size": 100,
         "n_layers": 2,
         "block": {
-            "attention": {
+            "sequence_mixer": {
                 "name": "default",
                 "n_heads": 12,
                 "bias": false,
@@ -12,6 +12,7 @@
                     "name": "default",
                     "theta": 500000,
                     "full_precision": true,
+                    "no_global_rope": false,
                     "_CLASS_": "olmo_core.nn.rope.RoPEConfig"
                 },
                 "qk_norm": {
@@ -22,7 +23,9 @@
                     "_CLASS_": "olmo_core.nn.layer_norm.LayerNormConfig"
                 },
                 "dtype": "float32",
-                "_CLASS_": "olmo_core.nn.attention.AttentionConfig"
+                "use_head_qk_norm": false,
+                "_CLASS_": "olmo_core.nn.attention.AttentionConfig",
+                "type": "attention"
             },
             "layer_norm": {
                 "name": "rms",
@@ -45,6 +48,7 @@
                 "shared_mlp": {
                     "hidden_size": 256,
                     "name": "default",
+                    "activation": "silu",
                     "_CLASS_": "olmo_core.nn.feed_forward.FeedForwardConfig"
                 },
                 "lb_loss_weight": 0.01,
