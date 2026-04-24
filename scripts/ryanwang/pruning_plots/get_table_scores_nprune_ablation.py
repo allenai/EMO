@@ -74,6 +74,26 @@ PRUNEMODE_VARIANTS: Dict[str, List[Tuple[str, str]]] = {
         ("100", "_prunemode-easy_ep_nprune-100"),
         ("All", "_prunemode-easy_ep"),
     ],
+    # Router using 0-shot demonstrations for expert selection (instead of the
+    # default few-shot). Only run for FlexMoE so far — Reg. MoE rows will be
+    # empty.
+    "Router (0-shot)": [
+        ("1", "_prunemode-layerwise_nprune-1_0shot"),
+        ("5", "_prunemode-layerwise_nprune-5_0shot"),
+        ("10", "_prunemode-layerwise_nprune-10_0shot"),
+        ("100", "_prunemode-layerwise_nprune-100_0shot"),
+        ("All", "_prunemode-layerwise_0shot"),
+    ],
+    # Easy-EP using 0-shot demonstrations. Currently only partial results are
+    # available (e.g. Reg. MoE nprune-1 at a subset of keepks). Missing cells
+    # remain blank; fully-empty rows get dropped.
+    "Easy-EP (0-shot)": [
+        ("1", "_prunemode-easy_ep_nprune-1_0shot"),
+        ("5", "_prunemode-easy_ep_nprune-5_0shot"),
+        ("10", "_prunemode-easy_ep_nprune-10_0shot"),
+        ("100", "_prunemode-easy_ep_nprune-100_0shot"),
+        ("All", "_prunemode-easy_ep_0shot"),
+    ],
 }
 
 # --- Tasks and metrics -----------------------------------------------------
@@ -274,6 +294,9 @@ def collect_nprune_table(
     df = df.reindex(index=ordered_labels)
     df.index.name = "model / task"
     df = df.reindex(columns=[c for c in ordered_cols if c in df.columns])
+    # Drop rows with no data at all (happens e.g. for Reg. MoE × 0-shot, which
+    # hasn't been run). Row ordering on the remaining rows is preserved.
+    df = df.dropna(axis=0, how="all")
     return df
 
 

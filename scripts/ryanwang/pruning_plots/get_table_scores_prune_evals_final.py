@@ -40,8 +40,11 @@ PRUNEMODE_SUFFIXES: Dict[str, str] = {
 }
 
 # Variant definitions: just the keepk part (prunemode is added automatically).
+# keepk 9 is only populated for specialized moe 1T + anneal so far — other
+# models will simply have empty cells for that column.
 KEEPK_VARIANTS_ALL = [
     {"keepk_suffix": "_keepk_8_bs-32_lr-5e-5_epoch-1", "label": "(keepk 8)"},
+    {"keepk_suffix": "_keepk_9_bs-32_lr-5e-5_epoch-1", "label": "(keepk 9)"},
     {"keepk_suffix": "_keepk_16_bs-32_lr-5e-5_epoch-1", "label": "(keepk 16)"},
     {"keepk_suffix": "_keepk_32_bs-32_lr-5e-5_epoch-1", "label": "(keepk 32)"},
     {"keepk_suffix": "_keepk_64_bs-32_lr-5e-5_epoch-1", "label": "(keepk 64)"},
