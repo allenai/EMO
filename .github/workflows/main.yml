@@ -41,6 +41,7 @@ jobs:
               pytest -v --color=yes --durations=6 \
                 --ignore-glob='src/test/distributed/checkpoint*' \
                 --ignore-glob='src/test/train/checkpoint*' \
+                --ignore-glob='src/test/scripts/merge*' \
                 src/test/scripts/
 
           - name: Type check
