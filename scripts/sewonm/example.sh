@@ -35,7 +35,10 @@ python -m olmo_core.launch.beaker \
 		$runname \
 		--trainer.save_folder=/weka/oe-training-default/$USER/$runname \
 		--trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
-		--trainer.callbacks.wandb='{enabled: true, entity: sewonm, project: olmo1B, name: $runname}' \
+		--trainer.callbacks.wandb.enabled=true \
+		--trainer.callbacks.wandb.entity=sewonm \
+		--trainer.callbacks.wandb.project=olmo1B \
+		--trainer.callbacks.wandb.name="$runname" \
 		--trainer.callbacks.lm_evaluator.enabled=false \
 		--trainer.callbacks.downstream_evaluator.enabled=false \
 		--trainer.no_checkpoints \

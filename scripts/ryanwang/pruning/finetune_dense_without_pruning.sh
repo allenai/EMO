@@ -231,10 +231,13 @@ for train_task_name in "${train_task_names[@]}"; do
 #        --dataset.label_mask_paths="[${label_mask_paths}]" \
 #        --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
 #    		--trainer.max_duration='{value: 3, unit: epochs}' \
-#    		--trainer.callbacks.wandb="{enabled: false, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
+#    		--trainer.callbacks.wandb.enabled=false \
+#    		--trainer.callbacks.wandb.entity=ryanyxw \
+#    		--trainer.callbacks.wandb.project=olmoe-modular \
+#    		--trainer.callbacks.wandb.name="${runname}" \
 #        --train_module.compile_model=false \
 #    		--model.block.name="default" \
-#		    --model.block.attention.qk_norm=null \
+#		    --model.block.sequence_mixer.qk_norm=null \
 #        --train_module.compile_model=false \
 #    		--load_path=$base_model \
 #    		--num_checkpoints=$num_checkpoints \
@@ -260,7 +263,7 @@ for train_task_name in "${train_task_names[@]}"; do
       --name $runname \
       --gpus $num_gpus \
       --nodes 1 \
-      --is_private_repo \
+      --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
       --weka=oe-training-default \
       --shared-filesystem \
       --workspace ai2/flex2 \
@@ -277,9 +280,13 @@ for train_task_name in "${train_task_names[@]}"; do
         --dataset.label_mask_paths="[${label_mask_paths}]" \
         --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
         --trainer.max_duration='{value: 3, unit: epochs}' \
-        --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}, tags: [${task_prefix:0:64}, ${model_name:0:64}, ${expertiment_tag}]}" \
+        --trainer.callbacks.wandb.enabled=true \
+        --trainer.callbacks.wandb.entity=ryanyxw \
+        --trainer.callbacks.wandb.project=olmoe-modular \
+        --trainer.callbacks.wandb.name="${runname}" \
+        --trainer.callbacks.wandb.tags="[${task_prefix:0:64}, ${model_name:0:64}, ${expertiment_tag}]" \
         --model.block.name="default" \
-		    --model.block.attention.qk_norm=null \
+		    --model.block.sequence_mixer.qk_norm=null \
         --load_path=$base_model \
         --num_checkpoints=$num_checkpoints \
         --trainer.load_optim_state=false \

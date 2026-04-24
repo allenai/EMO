@@ -263,13 +263,16 @@ for model_name in "${model_names[@]}"; do
 #            --dataset.label_mask_paths="[${label_mask_paths}]" \
 #            --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
 #        		--trainer.max_duration='{value: 3, unit: epochs}' \
-#        		--trainer.callbacks.wandb="{enabled: false, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
+#        		--trainer.callbacks.wandb.enabled=false \
+#        		--trainer.callbacks.wandb.entity=ryanyxw \
+#        		--trainer.callbacks.wandb.project=olmoe-modular \
+#        		--trainer.callbacks.wandb.name="${runname}" \
 #        		--train_module.compile_model=false \
 #        		--load_path=$base_model \
 #        		--num_checkpoints=$num_checkpoints \
 #		        --model-type="masked-finetune" \
 #            --model.block.name="moe" \
-#            --model.block.attention.qk_norm=null \
+#            --model.block.sequence_mixer.qk_norm=null \
 #        		--model.block.feed_forward_moe.num_experts=${prune_keep_k} \
 #            --trainer.load_optim_state=false \
 #            --trainer.load_trainer_state=false \
@@ -293,7 +296,7 @@ for model_name in "${model_names[@]}"; do
           --name $runname \
           --gpus $num_gpus \
           --nodes 1 \
-          --is_private_repo \
+          --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
           --weka=oe-training-default \
           --shared-filesystem \
           --workspace ai2/flex2 \
@@ -310,12 +313,16 @@ for model_name in "${model_names[@]}"; do
             --dataset.label_mask_paths="[${label_mask_paths}]" \
             --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
             --trainer.max_duration='{value: 3, unit: epochs}' \
-            --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${wandb_name}, tags: [${task_prefix:0:64}, ${model_name:0:64}, ${pruned_model_name}, ${experiment_tag}]}" \
+            --trainer.callbacks.wandb.enabled=true \
+            --trainer.callbacks.wandb.entity=ryanyxw \
+            --trainer.callbacks.wandb.project=olmoe-modular \
+            --trainer.callbacks.wandb.name="${wandb_name}" \
+            --trainer.callbacks.wandb.tags="[${task_prefix:0:64}, ${model_name:0:64}, ${pruned_model_name}, ${experiment_tag}]" \
             --load_path=$base_model \
             --num_checkpoints=$num_checkpoints \
 		        --model-type="masked-finetune" \
             --model.block.name="moe" \
-		        --model.block.attention.qk_norm=null \
+		        --model.block.sequence_mixer.qk_norm=null \
             --model.block.feed_forward_moe.num_experts=${prune_keep_k} \
 		        --trainer.load_optim_state=false \
 		        --trainer.load_trainer_state=false \

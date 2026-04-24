@@ -123,7 +123,10 @@ for run_config in "${run_configs[@]}"; do
     #       --dataset.label_mask_paths="[${label_mask_paths}]" \
     #        --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
     #    		--trainer.max_duration='{value: 3, unit: epochs}' \
-    #    		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}}" \
+    #    		--trainer.callbacks.wandb.enabled=true \
+    #    		--trainer.callbacks.wandb.entity=ryanyxw \
+    #    		--trainer.callbacks.wandb.project=olmoe-modular \
+    #    		--trainer.callbacks.wandb.name="${runname}" \
     #    		--load_path=$base_model \
     #    		--activation_file=$activation_file \
     #    		--prune_keep_k=$prune_keep_k \
@@ -134,7 +137,7 @@ for run_config in "${run_configs[@]}"; do
 #          --name $runname \
 #          --gpus 8 \
 #          --nodes 1 \
-#          --is_private_repo \
+#          --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
 #          --weka=oe-training-default \
 #          --shared-filesystem \
 #          --workspace ai2/flex2 \
@@ -150,7 +153,11 @@ for run_config in "${run_configs[@]}"; do
 #            --dataset.paths="[${dataset_paths}]" \
 #            --work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
 #            --trainer.max_duration='{value: 3, unit: epochs}' \
-#            --trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${wandb_name}, tags: [${task_prefix}, ${model_name}, keepk${prune_keep_k}]}" \
+#            --trainer.callbacks.wandb.enabled=true \
+#            --trainer.callbacks.wandb.entity=ryanyxw \
+#            --trainer.callbacks.wandb.project=olmoe-modular \
+#            --trainer.callbacks.wandb.name="${wandb_name}" \
+#            --trainer.callbacks.wandb.tags="[${task_prefix}, ${model_name}, keepk${prune_keep_k}]" \
 #            --load_path=$base_model \
 #            --activation_file=$activation_file \
 #            --prune_keep_k=$prune_keep_k \

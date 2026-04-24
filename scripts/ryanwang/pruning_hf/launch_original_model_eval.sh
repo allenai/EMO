@@ -101,7 +101,7 @@ for MODEL in "${MODELS[@]}"; do
             --name $job_name \
             --gpus $gpus \
             --nodes 1 \
-            --is_private_repo \
+            --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
             --weka=oe-training-default \
             --shared-filesystem \
             --workspace ai2/flex2 \

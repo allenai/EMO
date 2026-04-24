@@ -32,7 +32,7 @@ for dataset in medical-o1-en-cot medical-o1-en-nocot; do
       --gpus 8 \
       --nodes 1 \
       --weka=oe-training-default \
-      --is_private_repo \
+      --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
       --priority urgent \
       --shared-filesystem \
       --workspace ai2/flex2 \
