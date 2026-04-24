@@ -2,10 +2,10 @@
 # Generate interactive HTML cluster explorer.
 #
 # Usage:
-#   bash scripts/ryanwang/clustering/visualize.sh <CLUSTER_DIR> [DATA_DIR]
+#   bash scripts/ryanwang/clustering/common/visualize.sh <CLUSTER_DIR> [DATA_DIR]
 #
 # Example:
-#   bash scripts/ryanwang/clustering/visualize.sh \
+#   bash scripts/ryanwang/clustering/common/visualize.sh \
 #       claude_outputs/clustering/pretraining/<model>/probs_mean_pca_l2_spherical_kmeans_k64
 set -euo pipefail
 

@@ -33,7 +33,7 @@ for MODEL in "${MODELS[@]}"; do
     for EMB in "${EMBEDDINGS[@]}"; do
         SWEEP_LOG="${DATA_DIR}/${EMB}_mean_pca_l2_sweep.log"
         echo ">>> Sweeping ${EMB} (mean_pca_l2) ..."
-        bash scripts/ryanwang/clustering/sweep.sh "$DATA_DIR" "$EMB" \
+        bash scripts/ryanwang/clustering/pretraining/sweep.sh "$DATA_DIR" "$EMB" \
             2>&1 | tee "$SWEEP_LOG"
     done
 done

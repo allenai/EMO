@@ -6,7 +6,7 @@
 # Output: claude_outputs/clustering/pretraining_mix.json
 #
 # Usage:
-#   bash scripts/ryanwang/clustering/generate_pretraining_mix.sh
+#   bash scripts/ryanwang/clustering/pretraining/generate_mix.sh
 set -euo pipefail
 
 OUTPUT_DIR="claude_outputs/clustering"

@@ -2,20 +2,20 @@
 # Cluster router embeddings.
 #
 # Usage:
-#   bash scripts/ryanwang/clustering/cluster.sh <DATA_DIR> [EMBEDDING] [PREPROCESS] [METHOD] [K] [BALANCE_BY] [BALANCE_N]
+#   bash scripts/ryanwang/clustering/common/cluster.sh <DATA_DIR> [EMBEDDING] [PREPROCESS] [METHOD] [K] [BALANCE_BY] [BALANCE_N]
 #
 # Examples:
 #   # Default: probs / mean_pca_l2 / spherical_kmeans / k=64, with save
-#   bash scripts/ryanwang/clustering/cluster.sh claude_outputs/clustering/pretraining/<model>
+#   bash scripts/ryanwang/clustering/common/cluster.sh claude_outputs/clustering/pretraining/<model>
 #
 #   # Custom config
-#   bash scripts/ryanwang/clustering/cluster.sh claude_outputs/clustering/pretraining/<model> doc_topk_freq mean_pca_l2 spherical_kmeans 32
+#   bash scripts/ryanwang/clustering/common/cluster.sh claude_outputs/clustering/pretraining/<model> doc_topk_freq mean_pca_l2 spherical_kmeans 32
 #
 #   # Balanced by source (stratified subsample to min class count)
-#   bash scripts/ryanwang/clustering/cluster.sh <DIR> doc_probs mean_pca_l2 spherical_kmeans 32 source
+#   bash scripts/ryanwang/clustering/common/cluster.sh <DIR> doc_probs mean_pca_l2 spherical_kmeans 32 source
 #
 #   # Balanced by source, capped at 100 per class
-#   bash scripts/ryanwang/clustering/cluster.sh <DIR> doc_probs mean_pca_l2 spherical_kmeans 32 source 100
+#   bash scripts/ryanwang/clustering/common/cluster.sh <DIR> doc_probs mean_pca_l2 spherical_kmeans 32 source 100
 set -euo pipefail
 
 DATA_DIR="${1:?Usage: $0 <DATA_DIR> [EMBEDDING] [PREPROCESS] [METHOD] [K] [BALANCE_BY] [BALANCE_N]}"

@@ -5,17 +5,17 @@
 # The model is loaded with device_map="auto" which shards across available GPUs.
 #
 # Usage:
-#   bash scripts/ryanwang/clustering/extract_pretraining.sh [MODEL_PATH] [TARGET_TOKENS] [MAX_TOKENS_PER_DOC]
+#   bash scripts/ryanwang/clustering/pretraining/extract.sh [MODEL_PATH] [TARGET_TOKENS] [MAX_TOKENS_PER_DOC]
 #
 # Examples:
 #   # Default: 20M tokens, 250 tok/doc
-#   bash scripts/ryanwang/clustering/extract_pretraining.sh
+#   bash scripts/ryanwang/clustering/pretraining/extract.sh
 #
 #   # Specific model
-#   bash scripts/ryanwang/clustering/extract_pretraining.sh models/moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf
+#   bash scripts/ryanwang/clustering/pretraining/extract.sh models/moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf
 #
 #   # Use specific GPUs
-#   CUDA_VISIBLE_DEVICES=0,1 bash scripts/ryanwang/clustering/extract_pretraining.sh
+#   CUDA_VISIBLE_DEVICES=0,1 bash scripts/ryanwang/clustering/pretraining/extract.sh
 set -euo pipefail
 
 MODEL_PATH="${1:-models/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf}"
@@ -36,7 +36,7 @@ echo "GPUs: ${CUDA_VISIBLE_DEVICES:-all}"
 
 if [ ! -f "$COMPOSITION_FILE" ]; then
     echo "ERROR: ${COMPOSITION_FILE} not found."
-    echo "Run: bash scripts/ryanwang/clustering/generate_pretraining_mix.sh"
+    echo "Run: bash scripts/ryanwang/clustering/pretraining/generate_mix.sh"
     exit 1
 fi
 

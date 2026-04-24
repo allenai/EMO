@@ -2,7 +2,7 @@
 # Sweep clustering configurations.
 #
 # Usage:
-#   bash scripts/ryanwang/clustering/sweep.sh <DATA_DIR> [EMBEDDING] [BALANCE_BY] [BALANCE_N]
+#   bash scripts/ryanwang/clustering/pretraining/sweep.sh <DATA_DIR> [EMBEDDING] [BALANCE_BY] [BALANCE_N]
 #
 # Default grid: {probs} × {mean_pca_l2} × {kmeans, spherical_kmeans} × k={16,32,64,128}
 set -uo pipefail
