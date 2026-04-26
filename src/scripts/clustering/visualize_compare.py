@@ -886,6 +886,13 @@ const STATE = {
 function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
+// Newlines render as zero-width in pre-wrap, making their colored highlight
+// invisible. Prepend non-breaking spaces so the colored span has visible
+// width (like space tokens naturally do); the real newline still breaks the
+// line after.
+function tokenDisplay(t) {
+  return /\n/.test(t) ? "  " + t : t;
+}
 function pad2(n) { return n.toString().padStart(2, "0"); }
 function rgbaFromHex(hex, alpha) {
   const h = hex.replace("#", "");
@@ -1024,7 +1031,7 @@ function renderDocCard(entry, model, cid, spec) {
   let body = "";
   for (let i = 0; i < d.t.length; i++) {
     if (cArr[i] === cid) {
-      body += `<span class="hl">${esc(d.t[i])}</span>`;
+      body += `<span class="hl">${esc(tokenDisplay(d.t[i]))}</span>`;
     } else {
       body += esc(d.t[i]);
     }
@@ -1126,7 +1133,7 @@ function renderDocView(containerId, d, model, spec, byId) {
       : `background:${bg};box-shadow:inset 0 -2px 0 ${color};`;
     const label = c ? `C${pad2(cid)} · ${c.label}` : `Cluster ${cid}`;
     parts.push(
-      `<span class="${cls}" data-cid="${cid}" data-label="${esc(label)}" style="${style}">${esc(d.t[i])}</span>`
+      `<span class="${cls}" data-cid="${cid}" data-label="${esc(label)}" style="${style}">${esc(tokenDisplay(d.t[i]))}</span>`
     );
   }
   const el = document.getElementById(containerId);
