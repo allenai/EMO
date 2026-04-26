@@ -74,25 +74,38 @@ PRUNEMODE_VARIANTS: Dict[str, List[Tuple[str, str]]] = {
         ("100", "_prunemode-easy_ep_nprune-100"),
         ("All", "_prunemode-easy_ep"),
     ],
-    # Router using 0-shot demonstrations for expert selection (instead of the
-    # default few-shot). Only run for FlexMoE so far — Reg. MoE rows will be
-    # empty.
+    # Router using 0-shot demonstrations for both pruning-calibration and eval.
+    # 2026-04-24: dir naming changed from the single `_0shot` suffix to two
+    # orthogonal tokens `_pshots-0_eshots-0` (pruning shots / eval shots). The
+    # old `_0shot` stems are empty after the rename, so we read from the new
+    # tokens directly. Only run for FlexMoE so far — Reg. MoE rows drop out.
     "Router (0-shot)": [
-        ("1", "_prunemode-layerwise_nprune-1_0shot"),
-        ("5", "_prunemode-layerwise_nprune-5_0shot"),
-        ("10", "_prunemode-layerwise_nprune-10_0shot"),
-        ("100", "_prunemode-layerwise_nprune-100_0shot"),
-        ("All", "_prunemode-layerwise_0shot"),
+        ("1", "_prunemode-layerwise_nprune-1_pshots-0_eshots-0"),
+        ("5", "_prunemode-layerwise_nprune-5_pshots-0_eshots-0"),
+        ("10", "_prunemode-layerwise_nprune-10_pshots-0_eshots-0"),
+        ("100", "_prunemode-layerwise_nprune-100_pshots-0_eshots-0"),
+        ("All", "_prunemode-layerwise_pshots-0_eshots-0"),
     ],
-    # Easy-EP using 0-shot demonstrations. Currently only partial results are
-    # available (e.g. Reg. MoE nprune-1 at a subset of keepks). Missing cells
-    # remain blank; fully-empty rows get dropped.
+    # Easy-EP with both pruning-calibration and eval at 0-shot. Same naming
+    # update applies. Partial results only (Reg. MoE nprune-1 at a subset of
+    # keepks); missing cells remain blank; fully-empty rows get dropped.
     "Easy-EP (0-shot)": [
-        ("1", "_prunemode-easy_ep_nprune-1_0shot"),
-        ("5", "_prunemode-easy_ep_nprune-5_0shot"),
-        ("10", "_prunemode-easy_ep_nprune-10_0shot"),
-        ("100", "_prunemode-easy_ep_nprune-100_0shot"),
-        ("All", "_prunemode-easy_ep_0shot"),
+        ("1", "_prunemode-easy_ep_nprune-1_pshots-0_eshots-0"),
+        ("5", "_prunemode-easy_ep_nprune-5_pshots-0_eshots-0"),
+        ("10", "_prunemode-easy_ep_nprune-10_pshots-0_eshots-0"),
+        ("100", "_prunemode-easy_ep_nprune-100_pshots-0_eshots-0"),
+        ("All", "_prunemode-easy_ep_pshots-0_eshots-0"),
+    ],
+    # Router with task-default pruning shots but 0-shot eval. The `_pshots-*`
+    # token is omitted (= task default), only `_eshots-0` is set. Lets us
+    # isolate the effect of eval-time shots while keeping pruning calibration
+    # at the task default.
+    "Router (e0)": [
+        ("1", "_prunemode-layerwise_nprune-1_eshots-0"),
+        ("5", "_prunemode-layerwise_nprune-5_eshots-0"),
+        ("10", "_prunemode-layerwise_nprune-10_eshots-0"),
+        ("100", "_prunemode-layerwise_nprune-100_eshots-0"),
+        ("All", "_prunemode-layerwise_eshots-0"),
     ],
 }
 

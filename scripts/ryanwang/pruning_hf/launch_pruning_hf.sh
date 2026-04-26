@@ -4,12 +4,12 @@
 BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 #BASE_DIR="/root/phdbrainstorm/FlexMoE"
 MODELS=(
-#    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
+    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
 #    "dense_1b_lr-4e-3_0213/step30995-hf"
 #    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
 #    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf"
-    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419/step250339-hf"
+#    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419/step250339-hf"
 #    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_twolevel_randpool-8-128_from_step238419/step250339-hf"
 
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313/step238419-hf"
@@ -49,11 +49,11 @@ model_type=hf
 #               "easy_ep"             -- EASY-EP (arXiv 2504.06792): one-shot domain-specific
 #                                        pruning using gating*||expert_out|| weighted by
 #                                        (1 - cos_sim) of MoE in/out on few-shot calibration
-PRUNING_MODE="easy_ep"
+PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(8 16 32 64)
+PRUNE_KEEP_K_VALUES=(16)
 batch_size=32
 
 # --- Pruning calibration-set size ---
@@ -61,7 +61,7 @@ batch_size=32
 # Set to an integer (e.g. 50) to subsample that many prompts (deterministic shuffle, seed=0).
 # Set to "random" to bypass calibration entirely and randomly select experts
 # (seed=0, mode-agnostic — ignores PRUNING_MODE). Output dir uses _prunemode-random.
-NUM_PRUNE_EXAMPLES="10"
+NUM_PRUNE_EXAMPLES="1"
 
 # --- Shot-count overrides (two orthogonal knobs) ---
 # Each var: empty ⇒ each task's default num_shots (e.g. mmlu_merged_* = 5-shot,
@@ -78,7 +78,7 @@ NUM_PRUNE_EXAMPLES="10"
 #   PRUNE=""  EVAL="0" → _eshots-0
 #   PRUNE="0" EVAL="0" → _pshots-0_eshots-0
 NUM_SHOTS_PRUNE=""
-NUM_SHOTS_EVAL=""
+NUM_SHOTS_EVAL="0"
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
 # Schedule name (used in output directory naming)
@@ -101,7 +101,7 @@ TASK_GROUPS_LIST=(
 
   # GSM8K generation merged variants (pruning + finetuning share data)
 #  "gsm8k_generation_0shot_merged"
-  "gsm8k_generation_8shot_merged"
+#  "gsm8k_generation_8shot_merged"
 
   # SQuAD merged variants
 #  "squad_merged"
@@ -116,39 +116,39 @@ TASK_GROUPS_LIST=(
 #  "drop_merged"
 
   # MMLU 17-category merged variants (pruning + finetuning share data)
-  "mmlu_merged_biology"
-  "mmlu_merged_business"
-  "mmlu_merged_chemistry"
-  "mmlu_merged_computer_science"
-  "mmlu_merged_culture"
-  "mmlu_merged_economics"
-  "mmlu_merged_engineering"
-  "mmlu_merged_geography"
-  "mmlu_merged_health"
-  "mmlu_merged_history"
-  "mmlu_merged_law"
-  "mmlu_merged_math"
-  "mmlu_merged_other"
-  "mmlu_merged_philosophy_cat"
-  "mmlu_merged_physics"
-  "mmlu_merged_politics"
-  "mmlu_merged_psychology"
+#  "mmlu_merged_biology"
+#  "mmlu_merged_business"
+#  "mmlu_merged_chemistry"
+#  "mmlu_merged_computer_science"
+#  "mmlu_merged_culture"
+#  "mmlu_merged_economics"
+#  "mmlu_merged_engineering"
+#  "mmlu_merged_geography"
+#  "mmlu_merged_health"
+#  "mmlu_merged_history"
+#  "mmlu_merged_law"
+#  "mmlu_merged_math"
+#  "mmlu_merged_other"
+#  "mmlu_merged_philosophy_cat"
+#  "mmlu_merged_physics"
+#  "mmlu_merged_politics"
+#  "mmlu_merged_psychology"
 
   # MMLU-Pro merged variant (pruning + finetuning use same data)
-  "mmlu_pro_merged_math"
-  "mmlu_pro_merged_health"
-  "mmlu_pro_merged_physics"
-  "mmlu_pro_merged_business"
-  "mmlu_pro_merged_biology"
+#  "mmlu_pro_merged_math"
+#  "mmlu_pro_merged_health"
+#  "mmlu_pro_merged_physics"
+#  "mmlu_pro_merged_business"
+#  "mmlu_pro_merged_biology"
   "mmlu_pro_merged_chemistry"
   "mmlu_pro_merged_computer_science"
-  "mmlu_pro_merged_economics"
-  "mmlu_pro_merged_engineering"
-  "mmlu_pro_merged_philosophy"
-  "mmlu_pro_merged_other"
-  "mmlu_pro_merged_history"
-  "mmlu_pro_merged_psychology"
-  "mmlu_pro_merged_law"
+#  "mmlu_pro_merged_economics"
+#  "mmlu_pro_merged_engineering"
+#  "mmlu_pro_merged_philosophy"
+#  "mmlu_pro_merged_other"
+#  "mmlu_pro_merged_history"
+#  "mmlu_pro_merged_psychology"
+#  "mmlu_pro_merged_law"
 
 #  "synthea_zeroshot"
 
