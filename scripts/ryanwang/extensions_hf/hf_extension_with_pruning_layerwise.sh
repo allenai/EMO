@@ -306,16 +306,7 @@ torchrun --nproc_per_node="$NUM_GPUS" \
 
 fi  # end: phase != merge_eval (Steps 1-3)
 
-if [[ "$PHASE" == "prune_finetune" ]]; then
-    echo ""
-    echo "Phase=prune_finetune: skipping Steps 4-7 (eval + merge). Artifacts left under:"
-    echo "  $PRUNED_MODEL"
-    echo "  $FINETUNED_MODEL"
-    echo "Run again with --phase merge_eval (same --base-dir + --relative-dir) to do eval + merge."
-    exit 0
-fi
-
-# --- Steps 4-7: per-variant eval + merge + per-subject MMLU ---
+# --- Common setup for any eval-running phase (full, prune_finetune w/ small eval, merge_eval) ---
 #
 # Map a variant name -> extra flags for merge_pruned_experts_back.py.
 # Names ending in "_avg" run in average mode (parent ← (1-α)·parent + α·small);
@@ -353,25 +344,72 @@ if [[ $TASK == *"gsm8k_generation_8shot"* ]]; then
     EVAL_BATCH_SIZE=16
 fi
 
-# Parse --merge-variants into an array
+# Per-subject MMLU eval helper (no-op for non-MMLU tasks). Reused for small + each variant.
+MMLU_SUBJECTS=$(python -m src.scripts.eval.get_mmlu_subjects "$TASK" 2>/dev/null | grep -v "^Warning:" || true)
+if [[ $TASK == mmlu_merged_* ]]; then
+    SUBJECT_TASK_PREFIX="mmlu_merged_"
+else
+    SUBJECT_TASK_PREFIX="mmlu_"
+fi
+
+run_per_subject_evals () {
+    local label="$1"
+    local ckpt="$2"
+    if [ -z "$MMLU_SUBJECTS" ]; then
+        return 0
+    fi
+    echo ""
+    echo "  Per-subject MMLU evals for $label: $ckpt"
+    while IFS= read -r subject; do
+        local SUBJECT_BATCH_SIZE=32
+        if [[ $subject == *"history"* ]]; then
+            SUBJECT_BATCH_SIZE=4
+        fi
+        python -m src.scripts.eval.launch_eval \
+            --model "$ckpt" \
+            --model-type hf \
+            --task "${SUBJECT_TASK_PREFIX}${subject}-pruned" \
+            --pruned_split "test" \
+            --remote-output-dir "${S3_BASE}/${RELATIVE_DIR}/${label}/checkpoint-${final_checkpoint_num}/per_subject/${subject}" \
+            --batch-size $SUBJECT_BATCH_SIZE \
+            --gpus "$NUM_GPUS" \
+            "${NUM_SHOTS_EVAL_FLAG[@]}"
+    done <<< "$MMLU_SUBJECTS"
+}
+
+# Step 4: Eval the small finetuned model (only when we have fresh prune+finetune outputs;
+# skipped in phase=merge_eval so we don't redundantly re-run it 8x across variant jobs).
+if [[ "$PHASE" != "merge_eval" ]]; then
+    echo ""
+    echo "Step 4: Evaluating small finetuned model (final checkpoint)..."
+    echo "========================================"
+    python -m src.scripts.eval.launch_eval \
+        --model "$final_checkpoint" \
+        --model-type hf \
+        --task "${TASK}-pruned" \
+        --pruned_split "test" \
+        --remote-output-dir "${S3_BASE}/${RELATIVE_DIR}/small/checkpoint-${final_checkpoint_num}" \
+        --batch-size $EVAL_BATCH_SIZE \
+        --gpus "$NUM_GPUS" \
+        "${NUM_SHOTS_EVAL_FLAG[@]}"
+
+    run_per_subject_evals small "$final_checkpoint"
+fi
+
+# Exit early when phase=prune_finetune: we've done Steps 1-3 + small eval + small per-subject.
+if [[ "$PHASE" == "prune_finetune" ]]; then
+    echo ""
+    echo "Phase=prune_finetune complete (Steps 1-3 + small-model eval). Artifacts left under:"
+    echo "  $PRUNED_MODEL"
+    echo "  $FINETUNED_MODEL"
+    echo "Run again with --phase merge_eval (same --base-dir + --relative-dir) to do per-variant merge + eval."
+    exit 0
+fi
+
+# --- Steps 5+6 (+ per-subject): per-variant merge + eval ---
 IFS=',' read -ra MERGE_VARIANTS_ARR <<< "$MERGE_VARIANTS"
 echo "Merge variants requested: ${MERGE_VARIANTS_ARR[*]}"
 
-# Step 4: Eval the small finetuned model (final checkpoint only)
-echo ""
-echo "Step 4: Evaluating small finetuned model (final checkpoint)..."
-echo "========================================"
-python -m src.scripts.eval.launch_eval \
-    --model "$final_checkpoint" \
-    --model-type hf \
-    --task "${TASK}-pruned" \
-    --pruned_split "test" \
-    --remote-output-dir "${S3_BASE}/${RELATIVE_DIR}/small/checkpoint-${final_checkpoint_num}" \
-    --batch-size $EVAL_BATCH_SIZE \
-    --gpus "$NUM_GPUS" \
-    "${NUM_SHOTS_EVAL_FLAG[@]}"
-
-# Steps 5+6: For each merge variant, merge then eval
 for variant in "${MERGE_VARIANTS_ARR[@]}"; do
     extra_flags=$(flags_for_variant "$variant")
     merged_ckpt="${OUTPUT_DIR}/merged_${variant}/checkpoint-${final_checkpoint_num}"
@@ -398,60 +436,9 @@ for variant in "${MERGE_VARIANTS_ARR[@]}"; do
         --batch-size $EVAL_BATCH_SIZE \
         --gpus "$NUM_GPUS" \
         "${NUM_SHOTS_EVAL_FLAG[@]}"
+
+    run_per_subject_evals "merged_${variant}" "$merged_ckpt"
 done
-
-# Step 7: Per-subject MMLU evals (if task is an MMLU category/cluster)
-# Mirrors pruning_hf step 5: enables macro-average computation across subjects.
-# Iterates over: small + every merged variant.
-MMLU_SUBJECTS=$(python -m src.scripts.eval.get_mmlu_subjects "$TASK" 2>/dev/null | grep -v "^Warning:" || true)
-
-if [ -n "$MMLU_SUBJECTS" ]; then
-    echo ""
-    echo "Step 7: Per-subject MMLU evals (small + every merged variant, final checkpoint)..."
-    echo "========================================"
-
-    if [[ $TASK == mmlu_merged_* ]]; then
-        SUBJECT_TASK_PREFIX="mmlu_merged_"
-    else
-        SUBJECT_TASK_PREFIX="mmlu_"
-    fi
-
-    # Build parallel arrays of (label, ckpt) to iterate over.
-    LABELS=("small")
-    CKPTS=("$final_checkpoint")
-    for variant in "${MERGE_VARIANTS_ARR[@]}"; do
-        LABELS+=("merged_${variant}")
-        CKPTS+=("${OUTPUT_DIR}/merged_${variant}/checkpoint-${final_checkpoint_num}")
-    done
-
-    for i in "${!LABELS[@]}"; do
-        label="${LABELS[$i]}"
-        ckpt="${CKPTS[$i]}"
-        echo "Per-subject evals for $label: $ckpt"
-
-        while IFS= read -r subject; do
-            echo "  Evaluating subject: $subject"
-
-            SUBJECT_BATCH_SIZE=32
-            if [[ $subject == *"history"* ]]; then
-                SUBJECT_BATCH_SIZE=4
-            fi
-
-            python -m src.scripts.eval.launch_eval \
-                --model "$ckpt" \
-                --model-type hf \
-                --task "${SUBJECT_TASK_PREFIX}${subject}-pruned" \
-                --pruned_split "test" \
-                --remote-output-dir "${S3_BASE}/${RELATIVE_DIR}/${label}/checkpoint-${final_checkpoint_num}/per_subject/${subject}" \
-                --batch-size $SUBJECT_BATCH_SIZE \
-                --gpus "$NUM_GPUS" \
-                "${NUM_SHOTS_EVAL_FLAG[@]}"
-        done <<< "$MMLU_SUBJECTS"
-    done
-else
-    echo ""
-    echo "Skipping per-subject evals (task $TASK is not an MMLU category/cluster)"
-fi
 #
 echo ""
 echo "========================================"

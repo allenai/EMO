@@ -108,13 +108,15 @@ MERGE_VARIANTS="default,shared,router,shared_router,default_avg,shared_avg,route
 
 # --- Pipeline phase ---
 # Lets you split a slow run across multiple beaker jobs:
-#   full           — one beaker job per (model, task) doing prune+finetune+eval+merge.
-#   prune_finetune — one beaker job per (model, task) doing only Steps 1-3.
-#                    Pruned + finetuned artifacts are left on weka for a later phase.
+#   full           — one beaker job per (model, task) doing prune+finetune+small-eval+
+#                    per-variant merge+eval.
+#   prune_finetune — one beaker job per (model, task) doing Steps 1-3 + small-model eval
+#                    (+ small per-subject MMLU if the task is MMLU). Pruned + finetuned
+#                    artifacts and small/ S3 results are left for a later phase.
 #                    MERGE_VARIANTS is ignored.
-#   merge_eval     — ONE beaker job per (model, task, variant) doing only Steps 4-7.
-#                    Requires that prune_finetune (or full) has previously run with the
-#                    same --base-dir + --relative-dir.
+#   merge_eval     — ONE beaker job per (model, task, variant) doing only the per-variant
+#                    merge + eval (+ per-subject MMLU). Requires that prune_finetune (or
+#                    full) has previously run with the same --base-dir + --relative-dir.
 PHASE="full"
 
 # Define grouped tasks
@@ -294,17 +296,14 @@ for MODEL in "${MODELS[@]}"; do
             # Per-job naming + S3 cleanup: scope by phase.
             if [[ "$PHASE" == "merge_eval" ]]; then
                 job_name="ext-${safe_relative_dir:0:90}-${variant_arg}"
-                # Only wipe this variant's prefix (and the small/ prefix, since each merge_eval
-                # job re-runs the small eval). Sibling variants from other beaker jobs are left
-                # alone so concurrent merge_eval jobs don't clobber each other.
-                s3_clean_prefixes=(
-                    "${S3_BASE}/${relative_dir}/merged_${variant_arg}/"
-                    "${S3_BASE}/${relative_dir}/small/"
-                )
+                # Only wipe this variant's prefix. The small/ prefix is owned by the
+                # prune_finetune phase — leave it alone so concurrent merge_eval jobs
+                # don't clobber it (or each other's variants).
+                s3_clean_prefixes=("${S3_BASE}/${relative_dir}/merged_${variant_arg}/")
             elif [[ "$PHASE" == "prune_finetune" ]]; then
                 job_name="ext-pf-${safe_relative_dir}"
-                # Phase produces no eval results; nothing to clean on S3.
-                s3_clean_prefixes=()
+                # Wipe only the small/ prefix (this phase produces small + small per-subject).
+                s3_clean_prefixes=("${S3_BASE}/${relative_dir}/small/")
             else
                 job_name="ext-${safe_relative_dir}"
                 s3_clean_prefixes=("${S3_BASE}/${relative_dir}/")
