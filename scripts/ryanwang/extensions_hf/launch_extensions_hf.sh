@@ -104,7 +104,7 @@ NUM_SHOTS_EVAL=""
 #
 # Average-mode (parent ← 0.5·parent + 0.5·small for the same params, --average):
 #   default_avg, shared_avg, router_avg, shared_router_avg, non_moe_avg
-MERGE_VARIANTS="default,shared,router,shared_router,default_avg,shared_avg,router_avg,shared_router_avg"
+MERGE_VARIANTS="default,shared,router,shared_router"
 
 # --- Selective-finetune freeze pattern ---
 # Forwarded to the worker (and from there to finetune.py --freeze-mode). The relative_dir
@@ -114,7 +114,7 @@ MERGE_VARIANTS="default,shared,router,shared_router,default_avg,shared_avg,route
 #   routed                — only routable expert MLPs trainable.
 #   routed_shared         — routable + shared expert MLPs trainable; router frozen.
 #   routed_shared_router  — routable + shared experts + router trainable.
-FREEZE_MODE="none"
+FREEZE_MODE="routed"
 
 # --- Pipeline phase ---
 # Lets you split a slow run across multiple beaker jobs:
@@ -127,7 +127,7 @@ FREEZE_MODE="none"
 #   merge_eval     — ONE beaker job per (model, task, variant) doing only the per-variant
 #                    merge + eval (+ per-subject MMLU). Requires that prune_finetune (or
 #                    full) has previously run with the same --base-dir + --relative-dir.
-PHASE="full"
+PHASE="merge_eval"
 
 # Define grouped tasks
 TASK_GROUPS_LIST=(
