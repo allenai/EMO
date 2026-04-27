@@ -333,8 +333,13 @@ final_checkpoint=$(ls -d "$FINETUNED_MODEL"/checkpoint-*/ | sed 's:/$::' | awk -
 final_checkpoint_num=$(basename "$final_checkpoint" | sed 's/checkpoint-//')
 echo "Final finetune checkpoint: $final_checkpoint (step $final_checkpoint_num)"
 
-# Datasets are already cached from steps 1-3 (or from a prior phase); skip HF API calls.
-export HF_DATASETS_OFFLINE=1
+# For phase=full / prune_finetune, the prune+finetune steps in this same beaker job
+# populated the dataset cache, so an offline eval would also work. For phase=merge_eval
+# we're in a fresh container with no cache → must allow network. Setting both env vars
+# to 0 covers both: the HF datasets/hub libraries use the cache when present and only
+# hit the network on a miss.
+export HF_DATASETS_OFFLINE=0
+export HF_HUB_OFFLINE=0
 
 EVAL_BATCH_SIZE=32
 if [[ $TASK == *"history"* ]]; then

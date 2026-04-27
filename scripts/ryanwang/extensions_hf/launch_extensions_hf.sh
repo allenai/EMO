@@ -362,6 +362,7 @@ for MODEL in "${MODELS[@]}"; do
                 --shared-filesystem \
                 --workspace ai2/flex2 \
                 --cluster ai2/jupiter \
+                --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
                 --preemptible \
                 --allow-dirty \
                 --priority urgent \
