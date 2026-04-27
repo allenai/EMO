@@ -90,6 +90,33 @@ NUM_PRUNE_EXAMPLES=""
 NUM_SHOTS_PRUNE=""
 NUM_SHOTS_EVAL=""
 
+# --- Merge variants ---
+# Comma-separated list of merge-back variants to produce + eval. Each name maps to a
+# flag combination passed to merge_pruned_experts_back.py (see flags_for_variant in
+# the worker script).
+#
+# Replace-mode (parent's params get overwritten with small's):
+#   default       — only routable expert MLPs
+#   shared        — routable + shared expert MLP
+#   router        — routable + router rows
+#   shared_router — routable + shared expert + router rows
+#   non_moe       — routable + attention/norms/embed/lm_head (≈ full continual-pretrain)
+#
+# Average-mode (parent ← 0.5·parent + 0.5·small for the same params, --average):
+#   default_avg, shared_avg, router_avg, shared_router_avg, non_moe_avg
+MERGE_VARIANTS="default,shared,router,shared_router,default_avg,shared_avg,router_avg,shared_router_avg"
+
+# --- Pipeline phase ---
+# Lets you split a slow run across multiple beaker jobs:
+#   full           — one beaker job per (model, task) doing prune+finetune+eval+merge.
+#   prune_finetune — one beaker job per (model, task) doing only Steps 1-3.
+#                    Pruned + finetuned artifacts are left on weka for a later phase.
+#                    MERGE_VARIANTS is ignored.
+#   merge_eval     — ONE beaker job per (model, task, variant) doing only Steps 4-7.
+#                    Requires that prune_finetune (or full) has previously run with the
+#                    same --base-dir + --relative-dir.
+PHASE="full"
+
 # Define grouped tasks
 TASK_GROUPS_LIST=(
   # Merged variants for the MC9 + perplexity tasks (pruning + finetuning share data)
@@ -236,7 +263,6 @@ for MODEL in "${MODELS[@]}"; do
         fi
 
         safe_relative_dir=$(printf '%s' "$relative_dir" | sed 's/[^a-zA-Z0-9_-]//g' | tail -c 100)
-        job_name="ext-${safe_relative_dir}"
 
         # Optional calibration-size flag forwarded to the worker.
         NPE_FLAG=""
@@ -254,85 +280,120 @@ for MODEL in "${MODELS[@]}"; do
             NSHOTS_EVAL_FLAG="--num-shots-eval ${NUM_SHOTS_EVAL}"
         fi
 
-        # Clean any previous results for this exact (model, keep-k, task) combination
-        # on S3 so re-runs never mix new metrics with stale ones.
-        # aws s3 rm on a non-existent prefix is a no-op (exit 0).
-        s3_clean_prefix="${S3_BASE}/${relative_dir}/"
-        echo "  Cleaning stale S3 results: ${s3_clean_prefix}"
-        aws s3 rm --recursive --quiet "${s3_clean_prefix}" || true
+        # Decide what to launch based on PHASE:
+        #   merge_eval ⇒ one beaker job per merge variant (each gets the full eval pipeline
+        #                for just that variant + the small-model eval).
+        #   full / prune_finetune ⇒ one beaker job, passing the entire MERGE_VARIANTS list.
+        if [[ "$PHASE" == "merge_eval" ]]; then
+            IFS=',' read -ra JOB_VARIANT_LIST <<< "$MERGE_VARIANTS"
+        else
+            JOB_VARIANT_LIST=("$MERGE_VARIANTS")
+        fi
 
-        echo "  Model name: ${BASE_DIR}/models/${MODEL}"
-        echo "  GPUs: $gpus"
-        echo "  Batch size: $batch_size"
-        echo "  Job name: $job_name"
+        for variant_arg in "${JOB_VARIANT_LIST[@]}"; do
+            # Per-job naming + S3 cleanup: scope by phase.
+            if [[ "$PHASE" == "merge_eval" ]]; then
+                job_name="ext-${safe_relative_dir:0:90}-${variant_arg}"
+                # Only wipe this variant's prefix (and the small/ prefix, since each merge_eval
+                # job re-runs the small eval). Sibling variants from other beaker jobs are left
+                # alone so concurrent merge_eval jobs don't clobber each other.
+                s3_clean_prefixes=(
+                    "${S3_BASE}/${relative_dir}/merged_${variant_arg}/"
+                    "${S3_BASE}/${relative_dir}/small/"
+                )
+            elif [[ "$PHASE" == "prune_finetune" ]]; then
+                job_name="ext-pf-${safe_relative_dir}"
+                # Phase produces no eval results; nothing to clean on S3.
+                s3_clean_prefixes=()
+            else
+                job_name="ext-${safe_relative_dir}"
+                s3_clean_prefixes=("${S3_BASE}/${relative_dir}/")
+            fi
 
-        # debug what will be passed
-        echo "  model: ${BASE_DIR}/models/${MODEL}"
-        echo "  task: ${TASK}"
-        echo "  relative-dir: ${relative_dir}"
-        echo "  base-dir: ${BASE_DIR}/extension_evals_hf"
-        echo "  num-gpus: $gpus"
-        echo "  run_name: ${job_name}"
-        echo "  learning-rate: ${lr}"
-        echo "  batch_size: ${batch_size}"
-        echo "  epochs: ${num_epochs}"
-        echo "  num_shared_experts: ${num_shared_experts}"
+            for prefix in "${s3_clean_prefixes[@]}"; do
+                echo "  Cleaning stale S3 results: ${prefix}"
+                aws s3 rm --recursive --quiet "${prefix}" || true
+            done
 
-#        bash scripts/ryanwang/extensions_hf/hf_extension_with_pruning_layerwise.sh \
-#            --model ${BASE_DIR}/models/${MODEL} \
-#            --task ${TASK} \
-#            --prune-keep-k ${prune_keep_k} \
-#            --base-dir "${BASE_DIR}/extension_evals_hf" \
-#            --relative-dir ${relative_dir} \
-#            --num-gpus $gpus \
-#            --run-name ${job_name} \
-#            --learning-rate ${lr} \
-#            --batch-size ${batch_size} \
-#            --micro-batch-size ${micro_batch_size} \
-#            --num-epochs ${num_epochs} \
-#            --num-checkpoints 1 \
-#            --num-shared-experts ${num_shared_experts} \
-#            --s3-base ${S3_BASE} \
-#            ${NPE_FLAG} \
-#            ${NSHOTS_PRUNE_FLAG} \
-#            ${NSHOTS_EVAL_FLAG}
+            echo "  Model name: ${BASE_DIR}/models/${MODEL}"
+            echo "  GPUs: $gpus"
+            echo "  Batch size: $batch_size"
+            echo "  Phase: $PHASE"
+            echo "  Variants for this job: $variant_arg"
+            echo "  Job name: $job_name"
 
-        python -m olmo_core.launch.beaker \
-            --name $job_name \
-            --gpus $gpus \
-            --nodes 1 \
-            --weka=oe-training-default \
-            --shared-filesystem \
-            --workspace ai2/flex2 \
-            --cluster ai2/jupiter \
-            --preemptible \
-            --allow-dirty \
-            --priority urgent \
-            --no-follow \
-            --no-torchrun \
-            --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
-            -- bash -c "scripts/ryanwang/extensions_hf/hf_extension_with_pruning_layerwise.sh \
-                --model ${BASE_DIR}/models/${MODEL} \
-                --task ${TASK} \
-                --prune-keep-k ${prune_keep_k} \
-                --base-dir \"${BASE_DIR}/extension_evals_hf\" \
-                --relative-dir ${relative_dir} \
-                --num-gpus $gpus \
-                --run-name ${job_name} \
-                --learning-rate ${lr} \
-                --batch-size ${batch_size} \
-                --micro-batch-size ${micro_batch_size} \
-                --num-epochs ${num_epochs} \
-                --num-checkpoints 1 \
-                --num-shared-experts ${num_shared_experts} \
-                --s3-base ${S3_BASE} \
-                ${NPE_FLAG} \
-                ${NSHOTS_PRUNE_FLAG} \
-                ${NSHOTS_EVAL_FLAG}
-            "
+            # debug what will be passed
+            echo "  model: ${BASE_DIR}/models/${MODEL}"
+            echo "  task: ${TASK}"
+            echo "  relative-dir: ${relative_dir}"
+            echo "  base-dir: ${BASE_DIR}/extension_evals_hf"
+            echo "  num-gpus: $gpus"
+            echo "  run_name: ${job_name}"
+            echo "  learning-rate: ${lr}"
+            echo "  batch_size: ${batch_size}"
+            echo "  epochs: ${num_epochs}"
+            echo "  num_shared_experts: ${num_shared_experts}"
 
-        echo "Launched extension job for model: $MODEL, task: $TASK"
-        echo "----------------------------------------"
+#            bash scripts/ryanwang/extensions_hf/hf_extension_with_pruning_layerwise.sh \
+#                --model ${BASE_DIR}/models/${MODEL} \
+#                --task ${TASK} \
+#                --prune-keep-k ${prune_keep_k} \
+#                --base-dir "${BASE_DIR}/extension_evals_hf" \
+#                --relative-dir ${relative_dir} \
+#                --num-gpus $gpus \
+#                --run-name ${job_name} \
+#                --learning-rate ${lr} \
+#                --batch-size ${batch_size} \
+#                --micro-batch-size ${micro_batch_size} \
+#                --num-epochs ${num_epochs} \
+#                --num-checkpoints 1 \
+#                --num-shared-experts ${num_shared_experts} \
+#                --s3-base ${S3_BASE} \
+#                --merge-variants ${variant_arg} \
+#                --phase ${PHASE} \
+#                ${NPE_FLAG} \
+#                ${NSHOTS_PRUNE_FLAG} \
+#                ${NSHOTS_EVAL_FLAG}
+
+            python -m olmo_core.launch.beaker \
+                --name $job_name \
+                --gpus $gpus \
+                --nodes 1 \
+                --weka=oe-training-default \
+                --shared-filesystem \
+                --workspace ai2/flex2 \
+                --cluster ai2/jupiter \
+                --preemptible \
+                --allow-dirty \
+                --priority urgent \
+                --no-follow \
+                --no-torchrun \
+                --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
+                -- bash -c "scripts/ryanwang/extensions_hf/hf_extension_with_pruning_layerwise.sh \
+                    --model ${BASE_DIR}/models/${MODEL} \
+                    --task ${TASK} \
+                    --prune-keep-k ${prune_keep_k} \
+                    --base-dir \"${BASE_DIR}/extension_evals_hf\" \
+                    --relative-dir ${relative_dir} \
+                    --num-gpus $gpus \
+                    --run-name ${job_name} \
+                    --learning-rate ${lr} \
+                    --batch-size ${batch_size} \
+                    --micro-batch-size ${micro_batch_size} \
+                    --num-epochs ${num_epochs} \
+                    --num-checkpoints 1 \
+                    --num-shared-experts ${num_shared_experts} \
+                    --s3-base ${S3_BASE} \
+                    --merge-variants ${variant_arg} \
+                    --phase ${PHASE} \
+                    ${NPE_FLAG} \
+                    ${NSHOTS_PRUNE_FLAG} \
+                    ${NSHOTS_EVAL_FLAG}
+                "
+
+            echo "Launched extension job: $job_name"
+            echo "----------------------------------------"
+        done  # variant_arg loop
 
 #        sleep 500 # brief pause to avoid overwhelming huggingface
     done
@@ -343,5 +404,10 @@ for MODEL in "${MODELS[@]}"; do
 done
 
 echo "All beaker extension jobs have been launched!"
-echo "Total jobs: $((${#MODELS[@]} * ${#PRUNE_KEEP_K_VALUES[@]} * ${#TASK_GROUPS_LIST[@]}))"
+if [[ "$PHASE" == "merge_eval" ]]; then
+    n_variants=$(echo "$MERGE_VARIANTS" | tr ',' '\n' | wc -l)
+    echo "Phase=merge_eval: total jobs = ${#MODELS[@]} * ${#PRUNE_KEEP_K_VALUES[@]} * ${#TASK_GROUPS_LIST[@]} * ${n_variants} variants = $((${#MODELS[@]} * ${#PRUNE_KEEP_K_VALUES[@]} * ${#TASK_GROUPS_LIST[@]} * n_variants))"
+else
+    echo "Phase=$PHASE: total jobs = $((${#MODELS[@]} * ${#PRUNE_KEEP_K_VALUES[@]} * ${#TASK_GROUPS_LIST[@]}))"
+fi
 echo "Check the beaker dashboard for job status."

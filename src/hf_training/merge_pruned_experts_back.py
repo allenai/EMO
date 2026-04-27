@@ -41,6 +41,14 @@ def _layer_param_norm(layer) -> float:
     return sum(p.detach().float().norm().item() ** 2 for p in layer.parameters()) ** 0.5
 
 
+def _blend(parent_t: torch.Tensor, small_t: torch.Tensor, average: bool, alpha: float) -> None:
+    """In-place merge of small into parent. average=False ⇒ replace; True ⇒ (1-α)*parent + α*small."""
+    if not average:
+        parent_t.copy_(small_t.to(parent_t.dtype))
+    else:
+        parent_t.mul_(1.0 - alpha).add_(small_t.to(parent_t.dtype), alpha=alpha)
+
+
 def merge_pruned_experts_back(
     parent_model_path: str,
     pruned_trained_model_path: str,
@@ -50,7 +58,19 @@ def merge_pruned_experts_back(
     also_copy_router_rows: bool = False,
     also_copy_shared: bool = False,
     also_copy_non_moe: bool = False,
+    average: bool = False,
+    average_weight: float = 0.5,
 ) -> None:
+    if average:
+        assert 0.0 < average_weight < 1.0, (
+            f"average_weight must be in (0, 1), got {average_weight}"
+        )
+        logger.info(
+            f"Mode: AVERAGE (parent gets (1-α)*parent + α*small for copied params; α={average_weight})"
+        )
+    else:
+        logger.info("Mode: REPLACE (parent's copied params are overwritten with small's values)")
+
     logger.info(f"Loading parent (full) model: {parent_model_path}")
     parent = AutoModelForCausalLM.from_pretrained(
         parent_model_path, torch_dtype=torch.bfloat16
@@ -124,8 +144,14 @@ def merge_pruned_experts_back(
             parent_expert = parent_moe.experts[orig_idx]
             small_expert = small_moe.experts[new_pos]
 
-            # The two Expert modules must have matching submodule structure / shapes
-            parent_expert.load_state_dict(small_expert.state_dict())
+            # The two Expert modules must have matching submodule structure / shapes.
+            small_sd = small_expert.state_dict()
+            for pname, p in parent_expert.named_parameters():
+                if pname not in small_sd:
+                    raise KeyError(
+                        f"Layer {layer_idx} expert {orig_idx}: param {pname} missing from small expert"
+                    )
+                _blend(p.data, small_sd[pname], average, average_weight)
 
             if is_shared:
                 n_shared_copied += 1
@@ -134,9 +160,19 @@ def merge_pruned_experts_back(
 
         if also_copy_router_rows:
             for new_pos, orig_idx in enumerate(kept):
-                parent_moe.gate.weight.data[orig_idx, :] = small_moe.gate.weight.data[new_pos, :]
+                _blend(
+                    parent_moe.gate.weight.data[orig_idx, :],
+                    small_moe.gate.weight.data[new_pos, :],
+                    average,
+                    average_weight,
+                )
                 if parent_moe.gate.bias is not None and small_moe.gate.bias is not None:
-                    parent_moe.gate.bias.data[orig_idx] = small_moe.gate.bias.data[new_pos]
+                    _blend(
+                        parent_moe.gate.bias.data[orig_idx : orig_idx + 1],
+                        small_moe.gate.bias.data[new_pos : new_pos + 1],
+                        average,
+                        average_weight,
+                    )
                 n_router_rows_copied += 1
 
         norm_after = _layer_param_norm(parent_layer)
@@ -168,7 +204,7 @@ def merge_pruned_experts_back(
                     f"parent={parent_state[k].shape} small={small_state[k].shape}"
                 )
                 continue
-            parent_state[k].copy_(small_state[k])
+            _blend(parent_state[k], small_state[k], average, average_weight)
             n_non_moe_copied += 1
         logger.info(f"Copied {n_non_moe_copied} non-MoE params from small → parent")
 
@@ -199,6 +235,8 @@ def merge_pruned_experts_back(
         "n_shared_copied": n_shared_copied,
         "n_router_rows_copied": n_router_rows_copied,
         "n_non_moe_copied": n_non_moe_copied,
+        "merge_mode": "average" if average else "replace",
+        "average_weight": average_weight if average else None,
     }
     with open(os.path.join(output_dir, "merge_metadata.json"), "w") as f:
         json.dump(merge_metadata, f, indent=2)
@@ -245,6 +283,19 @@ def main():
         action="store_true",
         help="Also copy non-MoE params (attention, norms, embeddings, lm_head) back into the parent.",
     )
+    parser.add_argument(
+        "--average",
+        action="store_true",
+        help="Instead of replacing the parent's params with the small model's, blend "
+             "(1-α)*parent + α*small for every selected param. Affects experts, router rows, "
+             "and non-MoE copies — whichever flags are on.",
+    )
+    parser.add_argument(
+        "--average-weight",
+        type=float,
+        default=0.5,
+        help="Weight α on the small model when --average is set (default 0.5 = arithmetic mean).",
+    )
     args = parser.parse_args()
 
     merge_pruned_experts_back(
@@ -255,6 +306,8 @@ def main():
         also_copy_router_rows=args.also_copy_router_rows,
         also_copy_shared=args.also_copy_shared,
         also_copy_non_moe=args.also_copy_non_moe,
+        average=args.average,
+        average_weight=args.average_weight,
     )
 
 

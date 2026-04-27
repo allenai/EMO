@@ -47,6 +47,28 @@ NUM_PRUNE_EXAMPLES=""
 NUM_SHOTS_PRUNE=""
 NUM_SHOTS_EVAL=""
 S3_BASE="s3://ai2-sewonm/ryanwang/extension_evals_hf_0426"
+# Comma-separated list of merge variants to produce + eval. Each name maps to a flag
+# combination (see flags_for_variant() below).
+#
+# Replace-mode variants (parent's params get OVERWRITTEN by the small model's):
+#   default       — only routable expert MLPs
+#   shared        — routable + shared expert MLP
+#   router        — routable + router rows
+#   shared_router — routable + shared expert + router rows
+#   non_moe       — routable + attention/norms/embed/lm_head (full continual-pretrain ish)
+#
+# Average-mode variants (parent ← 0.5·parent + 0.5·small for the same params, --average):
+#   default_avg, shared_avg, router_avg, shared_router_avg, non_moe_avg
+MERGE_VARIANTS="default,shared,router,shared_router,default_avg,shared_avg,router_avg,shared_router_avg"
+
+# Pipeline phase. Lets you split a slow run across multiple beaker jobs.
+#   prune_finetune — only Steps 1-3 (greedy_prune_layerwise + finetune). Leaves
+#                    pruned_model/ + finetuned_model/ on disk for a later phase.
+#   merge_eval     — only Steps 4-7 (eval small + per-variant merge + eval merged
+#                    + per-subject MMLU). Requires pruned_model + finetuned_model
+#                    to already exist under ${OUTPUT_DIR}.
+#   full           — runs everything end-to-end (default).
+PHASE="full"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -119,6 +141,14 @@ while [[ $# -gt 0 ]]; do
             S3_BASE="$2"
             shift 2
             ;;
+        --merge-variants)
+            MERGE_VARIANTS="$2"
+            shift 2
+            ;;
+        --phase)
+            PHASE="$2"
+            shift 2
+            ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             exit 0
@@ -163,13 +193,17 @@ if (( BATCH_SIZE % MICRO_BATCH_SIZE != 0 )); then
     echo "Error: --batch-size must be a multiple of --micro-batch-size"
     exit 1
 fi
+case "$PHASE" in
+    full|prune_finetune|merge_eval) ;;
+    *) echo "Error: --phase must be one of: full, prune_finetune, merge_eval (got '$PHASE')"; exit 1 ;;
+esac
 
 OUTPUT_DIR="${BASE_DIR}/${RELATIVE_DIR}"
 mkdir -p "$OUTPUT_DIR"
 
 PRUNED_MODEL="${OUTPUT_DIR}/pruned_model"
 FINETUNED_MODEL="${OUTPUT_DIR}/finetuned_model"
-MERGED_MODEL="${OUTPUT_DIR}/merged_model"
+# Merged outputs go to ${OUTPUT_DIR}/merged_<variant>/checkpoint-<N>/ — see Steps 5-6 below.
 
 echo "========================================"
 echo "HuggingFace Extension Pipeline (Layerwise Pruning + Merge-Back)"
@@ -182,6 +216,8 @@ echo "Num GPUs: $NUM_GPUS"
 echo "Num epochs: $NUM_EPOCHS"
 echo "Num checkpoints: $NUM_CHECKPOINTS"
 echo "S3 base: $S3_BASE"
+echo "Phase: $PHASE"
+echo "Merge variants: $MERGE_VARIANTS"
 echo "========================================"
 
 # Per-stage --num-shots forwarding flags. Empty ⇒ downstream falls back to task config defaults.
@@ -193,6 +229,25 @@ NUM_SHOTS_EVAL_FLAG=()
 if [ -n "$NUM_SHOTS_EVAL" ]; then
     NUM_SHOTS_EVAL_FLAG=(--num-shots "$NUM_SHOTS_EVAL")
 fi
+
+if [[ "$PHASE" == "merge_eval" ]]; then
+    echo ""
+    echo "Phase=merge_eval: skipping Steps 1-3 (prune + finetune)."
+    echo "Verifying that pre-existing artifacts are present under $OUTPUT_DIR ..."
+    if [ ! -d "$PRUNED_MODEL" ]; then
+        echo "Error: phase=merge_eval requires existing pruned model at $PRUNED_MODEL"
+        exit 1
+    fi
+    if [ ! -f "${PRUNED_MODEL}/pruning_metadata.json" ]; then
+        echo "Error: phase=merge_eval requires ${PRUNED_MODEL}/pruning_metadata.json"
+        exit 1
+    fi
+    if [ ! -d "$FINETUNED_MODEL" ] || ! ls "$FINETUNED_MODEL"/checkpoint-*/ >/dev/null 2>&1; then
+        echo "Error: phase=merge_eval requires existing finetuned checkpoints at $FINETUNED_MODEL/checkpoint-*"
+        exit 1
+    fi
+    echo "Found pruned + finetuned artifacts; jumping to Step 4."
+else
 
 # Steps 1+2: Greedy layerwise activation collection + pruning
 echo ""
@@ -249,127 +304,162 @@ torchrun --nproc_per_node="$NUM_GPUS" \
     $FSDP_FLAG \
     "${NUM_SHOTS_EVAL_FLAG[@]}"
 
-## Identify the final (largest checkpoint number) checkpoint dir for downstream steps.
-#all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
-## Sort by trailing checkpoint number to pick the latest deterministically.
-#final_checkpoint=$(ls -d "$FINETUNED_MODEL"/checkpoint-*/ | sed 's:/$::' | awk -F- '{print $NF, $0}' | sort -n | tail -1 | awk '{print $2}')
-#final_checkpoint_num=$(basename "$final_checkpoint" | sed 's/checkpoint-//')
-#echo "Final finetune checkpoint: $final_checkpoint (step $final_checkpoint_num)"
+fi  # end: phase != merge_eval (Steps 1-3)
+
+if [[ "$PHASE" == "prune_finetune" ]]; then
+    echo ""
+    echo "Phase=prune_finetune: skipping Steps 4-7 (eval + merge). Artifacts left under:"
+    echo "  $PRUNED_MODEL"
+    echo "  $FINETUNED_MODEL"
+    echo "Run again with --phase merge_eval (same --base-dir + --relative-dir) to do eval + merge."
+    exit 0
+fi
+
+# --- Steps 4-7: per-variant eval + merge + per-subject MMLU ---
 #
-## ------------------------------------------------------------------------------
-## Datasets are already cached from steps 1-3; skip HF API calls for evals
-## ------------------------------------------------------------------------------
-#export HF_DATASETS_OFFLINE=1
-#
-#EVAL_BATCH_SIZE=32
-#if [[ $TASK == *"history"* ]]; then
-#    echo "Setting eval batch size to 4 for history task"
-#    EVAL_BATCH_SIZE=4
-#fi
-#if [[ $TASK == *"gsm8k_generation_8shot"* ]]; then
-#    echo "Setting eval batch size to 16 for gsm8k_generation_8shot task"
-#    EVAL_BATCH_SIZE=16
-#fi
-#
-## Step 4: Eval the small finetuned model (final checkpoint only)
-#echo ""
-#echo "Step 4: Evaluating small finetuned model (final checkpoint)..."
-#echo "========================================"
-#
-#python -m src.scripts.eval.launch_eval \
-#    --model "$final_checkpoint" \
-#    --model-type hf \
-#    --task "${TASK}-pruned" \
-#    --pruned_split "test" \
-#    --remote-output-dir "${S3_BASE}/${RELATIVE_DIR}/small/checkpoint-${final_checkpoint_num}" \
-#    --batch-size $EVAL_BATCH_SIZE \
-#    --gpus "$NUM_GPUS" \
-#    "${NUM_SHOTS_EVAL_FLAG[@]}"
-#
-## Step 5: Merge the finetuned small model's experts back into the parent
-#echo ""
-#echo "Step 5: Merging trained experts back into parent..."
-#echo "========================================"
-#
-#merged_checkpoint="${MERGED_MODEL}/checkpoint-${final_checkpoint_num}"
-#python -m src.hf_training.merge_pruned_experts_back \
-#    --parent-model "$MODEL" \
-#    --pruned-trained-model "$final_checkpoint" \
-#    --pruning-metadata "${PRUNED_MODEL}/pruning_metadata.json" \
-#    --output-dir "$merged_checkpoint"
-#
-#echo "Merged model saved to: $merged_checkpoint"
-#
-## Step 6: Eval the merged full-sized model
-#echo ""
-#echo "Step 6: Evaluating merged full-sized model..."
-#echo "========================================"
-#
-#python -m src.scripts.eval.launch_eval \
-#    --model "$merged_checkpoint" \
-#    --model-type hf \
-#    --task "${TASK}-pruned" \
-#    --pruned_split "test" \
-#    --remote-output-dir "${S3_BASE}/${RELATIVE_DIR}/merged/checkpoint-${final_checkpoint_num}" \
-#    --batch-size $EVAL_BATCH_SIZE \
-#    --gpus "$NUM_GPUS" \
-#    "${NUM_SHOTS_EVAL_FLAG[@]}"
-#
-## Step 7: Per-subject MMLU evals (if task is an MMLU category/cluster)
-## Mirrors pruning_hf step 5: enables macro-average computation across subjects.
-## Run for both small and merged final checkpoints.
-#MMLU_SUBJECTS=$(python -m src.scripts.eval.get_mmlu_subjects "$TASK" 2>/dev/null | grep -v "^Warning:" || true)
-#
-#if [ -n "$MMLU_SUBJECTS" ]; then
-#    echo ""
-#    echo "Step 7: Per-subject MMLU evals (small + merged, final checkpoint)..."
-#    echo "========================================"
-#
-#    if [[ $TASK == mmlu_merged_* ]]; then
-#        SUBJECT_TASK_PREFIX="mmlu_merged_"
-#    else
-#        SUBJECT_TASK_PREFIX="mmlu_"
-#    fi
-#
-#    for variant in small merged; do
-#        if [ "$variant" = "small" ]; then
-#            ckpt="$final_checkpoint"
-#        else
-#            ckpt="$merged_checkpoint"
-#        fi
-#        echo "Per-subject evals for $variant: $ckpt"
-#
-#        while IFS= read -r subject; do
-#            echo "  Evaluating subject: $subject"
-#
-#            SUBJECT_BATCH_SIZE=32
-#            if [[ $subject == *"history"* ]]; then
-#                SUBJECT_BATCH_SIZE=4
-#            fi
-#
-#            python -m src.scripts.eval.launch_eval \
-#                --model "$ckpt" \
-#                --model-type hf \
-#                --task "${SUBJECT_TASK_PREFIX}${subject}-pruned" \
-#                --pruned_split "test" \
-#                --remote-output-dir "${S3_BASE}/${RELATIVE_DIR}/${variant}/checkpoint-${final_checkpoint_num}/per_subject/${subject}" \
-#                --batch-size $SUBJECT_BATCH_SIZE \
-#                --gpus "$NUM_GPUS" \
-#                "${NUM_SHOTS_EVAL_FLAG[@]}"
-#        done <<< "$MMLU_SUBJECTS"
-#    done
-#else
-#    echo ""
-#    echo "Skipping per-subject evals (task $TASK is not an MMLU category/cluster)"
-#fi
+# Map a variant name -> extra flags for merge_pruned_experts_back.py.
+# Names ending in "_avg" run in average mode (parent ← (1-α)·parent + α·small);
+# names without that suffix run in replace mode (parent ← small).
+flags_for_variant () {
+    local v="$1"
+    local avg_flag=""
+    if [[ "$v" == *_avg ]]; then
+        avg_flag="--average"
+        v="${v%_avg}"
+    fi
+    case "$v" in
+        default)        echo "$avg_flag" ;;
+        shared)         echo "--also-copy-shared $avg_flag" ;;
+        router)         echo "--also-copy-router-rows $avg_flag" ;;
+        shared_router) echo "--also-copy-shared --also-copy-router-rows $avg_flag" ;;
+        non_moe)        echo "--also-copy-non-moe $avg_flag" ;;
+        *) echo "Unknown merge variant: $1" >&2; exit 1 ;;
+    esac
+}
+
+# Identify the final (largest checkpoint number) checkpoint dir for downstream steps.
+final_checkpoint=$(ls -d "$FINETUNED_MODEL"/checkpoint-*/ | sed 's:/$::' | awk -F- '{print $NF, $0}' | sort -n | tail -1 | awk '{print $2}')
+final_checkpoint_num=$(basename "$final_checkpoint" | sed 's/checkpoint-//')
+echo "Final finetune checkpoint: $final_checkpoint (step $final_checkpoint_num)"
+
+# Datasets are already cached from steps 1-3 (or from a prior phase); skip HF API calls.
+export HF_DATASETS_OFFLINE=1
+
+EVAL_BATCH_SIZE=32
+if [[ $TASK == *"history"* ]]; then
+    EVAL_BATCH_SIZE=4
+fi
+if [[ $TASK == *"gsm8k_generation_8shot"* ]]; then
+    EVAL_BATCH_SIZE=16
+fi
+
+# Parse --merge-variants into an array
+IFS=',' read -ra MERGE_VARIANTS_ARR <<< "$MERGE_VARIANTS"
+echo "Merge variants requested: ${MERGE_VARIANTS_ARR[*]}"
+
+# Step 4: Eval the small finetuned model (final checkpoint only)
+echo ""
+echo "Step 4: Evaluating small finetuned model (final checkpoint)..."
+echo "========================================"
+python -m src.scripts.eval.launch_eval \
+    --model "$final_checkpoint" \
+    --model-type hf \
+    --task "${TASK}-pruned" \
+    --pruned_split "test" \
+    --remote-output-dir "${S3_BASE}/${RELATIVE_DIR}/small/checkpoint-${final_checkpoint_num}" \
+    --batch-size $EVAL_BATCH_SIZE \
+    --gpus "$NUM_GPUS" \
+    "${NUM_SHOTS_EVAL_FLAG[@]}"
+
+# Steps 5+6: For each merge variant, merge then eval
+for variant in "${MERGE_VARIANTS_ARR[@]}"; do
+    extra_flags=$(flags_for_variant "$variant")
+    merged_ckpt="${OUTPUT_DIR}/merged_${variant}/checkpoint-${final_checkpoint_num}"
+
+    echo ""
+    echo "Step 5 [$variant]: merging (extra flags: ${extra_flags:-<none>})..."
+    echo "========================================"
+    python -m src.hf_training.merge_pruned_experts_back \
+        --parent-model "$MODEL" \
+        --pruned-trained-model "$final_checkpoint" \
+        --pruning-metadata "${PRUNED_MODEL}/pruning_metadata.json" \
+        --output-dir "$merged_ckpt" \
+        $extra_flags
+
+    echo ""
+    echo "Step 6 [$variant]: evaluating merged_${variant}..."
+    echo "========================================"
+    python -m src.scripts.eval.launch_eval \
+        --model "$merged_ckpt" \
+        --model-type hf \
+        --task "${TASK}-pruned" \
+        --pruned_split "test" \
+        --remote-output-dir "${S3_BASE}/${RELATIVE_DIR}/merged_${variant}/checkpoint-${final_checkpoint_num}" \
+        --batch-size $EVAL_BATCH_SIZE \
+        --gpus "$NUM_GPUS" \
+        "${NUM_SHOTS_EVAL_FLAG[@]}"
+done
+
+# Step 7: Per-subject MMLU evals (if task is an MMLU category/cluster)
+# Mirrors pruning_hf step 5: enables macro-average computation across subjects.
+# Iterates over: small + every merged variant.
+MMLU_SUBJECTS=$(python -m src.scripts.eval.get_mmlu_subjects "$TASK" 2>/dev/null | grep -v "^Warning:" || true)
+
+if [ -n "$MMLU_SUBJECTS" ]; then
+    echo ""
+    echo "Step 7: Per-subject MMLU evals (small + every merged variant, final checkpoint)..."
+    echo "========================================"
+
+    if [[ $TASK == mmlu_merged_* ]]; then
+        SUBJECT_TASK_PREFIX="mmlu_merged_"
+    else
+        SUBJECT_TASK_PREFIX="mmlu_"
+    fi
+
+    # Build parallel arrays of (label, ckpt) to iterate over.
+    LABELS=("small")
+    CKPTS=("$final_checkpoint")
+    for variant in "${MERGE_VARIANTS_ARR[@]}"; do
+        LABELS+=("merged_${variant}")
+        CKPTS+=("${OUTPUT_DIR}/merged_${variant}/checkpoint-${final_checkpoint_num}")
+    done
+
+    for i in "${!LABELS[@]}"; do
+        label="${LABELS[$i]}"
+        ckpt="${CKPTS[$i]}"
+        echo "Per-subject evals for $label: $ckpt"
+
+        while IFS= read -r subject; do
+            echo "  Evaluating subject: $subject"
+
+            SUBJECT_BATCH_SIZE=32
+            if [[ $subject == *"history"* ]]; then
+                SUBJECT_BATCH_SIZE=4
+            fi
+
+            python -m src.scripts.eval.launch_eval \
+                --model "$ckpt" \
+                --model-type hf \
+                --task "${SUBJECT_TASK_PREFIX}${subject}-pruned" \
+                --pruned_split "test" \
+                --remote-output-dir "${S3_BASE}/${RELATIVE_DIR}/${label}/checkpoint-${final_checkpoint_num}/per_subject/${subject}" \
+                --batch-size $SUBJECT_BATCH_SIZE \
+                --gpus "$NUM_GPUS" \
+                "${NUM_SHOTS_EVAL_FLAG[@]}"
+        done <<< "$MMLU_SUBJECTS"
+    done
+else
+    echo ""
+    echo "Skipping per-subject evals (task $TASK is not an MMLU category/cluster)"
+fi
 #
 echo ""
 echo "========================================"
 echo "Extension pipeline complete!"
 echo "========================================"
-echo "Pruned model:   $PRUNED_MODEL"
+echo "Pruned model:    $PRUNED_MODEL"
 echo "Finetuned model: $FINETUNED_MODEL"
-echo "Merged model:   $MERGED_MODEL"
+echo "Merged variants: ${MERGE_VARIANTS} (each at \${OUTPUT_DIR}/merged_<variant>/checkpoint-<N>)"
 #
 ## Step 8: Cleanup — remove local output directory to save disk space (results are on S3)
 #echo ""
