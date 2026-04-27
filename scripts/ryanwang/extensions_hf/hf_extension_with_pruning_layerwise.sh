@@ -249,120 +249,120 @@ torchrun --nproc_per_node="$NUM_GPUS" \
     $FSDP_FLAG \
     "${NUM_SHOTS_EVAL_FLAG[@]}"
 
-# Identify the final (largest checkpoint number) checkpoint dir for downstream steps.
-all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
-# Sort by trailing checkpoint number to pick the latest deterministically.
-final_checkpoint=$(ls -d "$FINETUNED_MODEL"/checkpoint-*/ | sed 's:/$::' | awk -F- '{print $NF, $0}' | sort -n | tail -1 | awk '{print $2}')
-final_checkpoint_num=$(basename "$final_checkpoint" | sed 's/checkpoint-//')
-echo "Final finetune checkpoint: $final_checkpoint (step $final_checkpoint_num)"
-
-# ------------------------------------------------------------------------------
-# Datasets are already cached from steps 1-3; skip HF API calls for evals
-# ------------------------------------------------------------------------------
-export HF_DATASETS_OFFLINE=1
-
-EVAL_BATCH_SIZE=32
-if [[ $TASK == *"history"* ]]; then
-    echo "Setting eval batch size to 4 for history task"
-    EVAL_BATCH_SIZE=4
-fi
-if [[ $TASK == *"gsm8k_generation_8shot"* ]]; then
-    echo "Setting eval batch size to 16 for gsm8k_generation_8shot task"
-    EVAL_BATCH_SIZE=16
-fi
-
-# Step 4: Eval the small finetuned model (final checkpoint only)
-echo ""
-echo "Step 4: Evaluating small finetuned model (final checkpoint)..."
-echo "========================================"
-
-python -m src.scripts.eval.launch_eval \
-    --model "$final_checkpoint" \
-    --model-type hf \
-    --task "${TASK}-pruned" \
-    --pruned_split "test" \
-    --remote-output-dir "${S3_BASE}/${RELATIVE_DIR}/small/checkpoint-${final_checkpoint_num}" \
-    --batch-size $EVAL_BATCH_SIZE \
-    --gpus "$NUM_GPUS" \
-    "${NUM_SHOTS_EVAL_FLAG[@]}"
-
-# Step 5: Merge the finetuned small model's experts back into the parent
-echo ""
-echo "Step 5: Merging trained experts back into parent..."
-echo "========================================"
-
-merged_checkpoint="${MERGED_MODEL}/checkpoint-${final_checkpoint_num}"
-python -m src.hf_training.merge_pruned_experts_back \
-    --parent-model "$MODEL" \
-    --pruned-trained-model "$final_checkpoint" \
-    --pruning-metadata "${PRUNED_MODEL}/pruning_metadata.json" \
-    --output-dir "$merged_checkpoint"
-
-echo "Merged model saved to: $merged_checkpoint"
-
-# Step 6: Eval the merged full-sized model
-echo ""
-echo "Step 6: Evaluating merged full-sized model..."
-echo "========================================"
-
-python -m src.scripts.eval.launch_eval \
-    --model "$merged_checkpoint" \
-    --model-type hf \
-    --task "${TASK}-pruned" \
-    --pruned_split "test" \
-    --remote-output-dir "${S3_BASE}/${RELATIVE_DIR}/merged/checkpoint-${final_checkpoint_num}" \
-    --batch-size $EVAL_BATCH_SIZE \
-    --gpus "$NUM_GPUS" \
-    "${NUM_SHOTS_EVAL_FLAG[@]}"
-
-# Step 7: Per-subject MMLU evals (if task is an MMLU category/cluster)
-# Mirrors pruning_hf step 5: enables macro-average computation across subjects.
-# Run for both small and merged final checkpoints.
-MMLU_SUBJECTS=$(python -m src.scripts.eval.get_mmlu_subjects "$TASK" 2>/dev/null | grep -v "^Warning:" || true)
-
-if [ -n "$MMLU_SUBJECTS" ]; then
-    echo ""
-    echo "Step 7: Per-subject MMLU evals (small + merged, final checkpoint)..."
-    echo "========================================"
-
-    if [[ $TASK == mmlu_merged_* ]]; then
-        SUBJECT_TASK_PREFIX="mmlu_merged_"
-    else
-        SUBJECT_TASK_PREFIX="mmlu_"
-    fi
-
-    for variant in small merged; do
-        if [ "$variant" = "small" ]; then
-            ckpt="$final_checkpoint"
-        else
-            ckpt="$merged_checkpoint"
-        fi
-        echo "Per-subject evals for $variant: $ckpt"
-
-        while IFS= read -r subject; do
-            echo "  Evaluating subject: $subject"
-
-            SUBJECT_BATCH_SIZE=32
-            if [[ $subject == *"history"* ]]; then
-                SUBJECT_BATCH_SIZE=4
-            fi
-
-            python -m src.scripts.eval.launch_eval \
-                --model "$ckpt" \
-                --model-type hf \
-                --task "${SUBJECT_TASK_PREFIX}${subject}-pruned" \
-                --pruned_split "test" \
-                --remote-output-dir "${S3_BASE}/${RELATIVE_DIR}/${variant}/checkpoint-${final_checkpoint_num}/per_subject/${subject}" \
-                --batch-size $SUBJECT_BATCH_SIZE \
-                --gpus "$NUM_GPUS" \
-                "${NUM_SHOTS_EVAL_FLAG[@]}"
-        done <<< "$MMLU_SUBJECTS"
-    done
-else
-    echo ""
-    echo "Skipping per-subject evals (task $TASK is not an MMLU category/cluster)"
-fi
-
+## Identify the final (largest checkpoint number) checkpoint dir for downstream steps.
+#all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
+## Sort by trailing checkpoint number to pick the latest deterministically.
+#final_checkpoint=$(ls -d "$FINETUNED_MODEL"/checkpoint-*/ | sed 's:/$::' | awk -F- '{print $NF, $0}' | sort -n | tail -1 | awk '{print $2}')
+#final_checkpoint_num=$(basename "$final_checkpoint" | sed 's/checkpoint-//')
+#echo "Final finetune checkpoint: $final_checkpoint (step $final_checkpoint_num)"
+#
+## ------------------------------------------------------------------------------
+## Datasets are already cached from steps 1-3; skip HF API calls for evals
+## ------------------------------------------------------------------------------
+#export HF_DATASETS_OFFLINE=1
+#
+#EVAL_BATCH_SIZE=32
+#if [[ $TASK == *"history"* ]]; then
+#    echo "Setting eval batch size to 4 for history task"
+#    EVAL_BATCH_SIZE=4
+#fi
+#if [[ $TASK == *"gsm8k_generation_8shot"* ]]; then
+#    echo "Setting eval batch size to 16 for gsm8k_generation_8shot task"
+#    EVAL_BATCH_SIZE=16
+#fi
+#
+## Step 4: Eval the small finetuned model (final checkpoint only)
+#echo ""
+#echo "Step 4: Evaluating small finetuned model (final checkpoint)..."
+#echo "========================================"
+#
+#python -m src.scripts.eval.launch_eval \
+#    --model "$final_checkpoint" \
+#    --model-type hf \
+#    --task "${TASK}-pruned" \
+#    --pruned_split "test" \
+#    --remote-output-dir "${S3_BASE}/${RELATIVE_DIR}/small/checkpoint-${final_checkpoint_num}" \
+#    --batch-size $EVAL_BATCH_SIZE \
+#    --gpus "$NUM_GPUS" \
+#    "${NUM_SHOTS_EVAL_FLAG[@]}"
+#
+## Step 5: Merge the finetuned small model's experts back into the parent
+#echo ""
+#echo "Step 5: Merging trained experts back into parent..."
+#echo "========================================"
+#
+#merged_checkpoint="${MERGED_MODEL}/checkpoint-${final_checkpoint_num}"
+#python -m src.hf_training.merge_pruned_experts_back \
+#    --parent-model "$MODEL" \
+#    --pruned-trained-model "$final_checkpoint" \
+#    --pruning-metadata "${PRUNED_MODEL}/pruning_metadata.json" \
+#    --output-dir "$merged_checkpoint"
+#
+#echo "Merged model saved to: $merged_checkpoint"
+#
+## Step 6: Eval the merged full-sized model
+#echo ""
+#echo "Step 6: Evaluating merged full-sized model..."
+#echo "========================================"
+#
+#python -m src.scripts.eval.launch_eval \
+#    --model "$merged_checkpoint" \
+#    --model-type hf \
+#    --task "${TASK}-pruned" \
+#    --pruned_split "test" \
+#    --remote-output-dir "${S3_BASE}/${RELATIVE_DIR}/merged/checkpoint-${final_checkpoint_num}" \
+#    --batch-size $EVAL_BATCH_SIZE \
+#    --gpus "$NUM_GPUS" \
+#    "${NUM_SHOTS_EVAL_FLAG[@]}"
+#
+## Step 7: Per-subject MMLU evals (if task is an MMLU category/cluster)
+## Mirrors pruning_hf step 5: enables macro-average computation across subjects.
+## Run for both small and merged final checkpoints.
+#MMLU_SUBJECTS=$(python -m src.scripts.eval.get_mmlu_subjects "$TASK" 2>/dev/null | grep -v "^Warning:" || true)
+#
+#if [ -n "$MMLU_SUBJECTS" ]; then
+#    echo ""
+#    echo "Step 7: Per-subject MMLU evals (small + merged, final checkpoint)..."
+#    echo "========================================"
+#
+#    if [[ $TASK == mmlu_merged_* ]]; then
+#        SUBJECT_TASK_PREFIX="mmlu_merged_"
+#    else
+#        SUBJECT_TASK_PREFIX="mmlu_"
+#    fi
+#
+#    for variant in small merged; do
+#        if [ "$variant" = "small" ]; then
+#            ckpt="$final_checkpoint"
+#        else
+#            ckpt="$merged_checkpoint"
+#        fi
+#        echo "Per-subject evals for $variant: $ckpt"
+#
+#        while IFS= read -r subject; do
+#            echo "  Evaluating subject: $subject"
+#
+#            SUBJECT_BATCH_SIZE=32
+#            if [[ $subject == *"history"* ]]; then
+#                SUBJECT_BATCH_SIZE=4
+#            fi
+#
+#            python -m src.scripts.eval.launch_eval \
+#                --model "$ckpt" \
+#                --model-type hf \
+#                --task "${SUBJECT_TASK_PREFIX}${subject}-pruned" \
+#                --pruned_split "test" \
+#                --remote-output-dir "${S3_BASE}/${RELATIVE_DIR}/${variant}/checkpoint-${final_checkpoint_num}/per_subject/${subject}" \
+#                --batch-size $SUBJECT_BATCH_SIZE \
+#                --gpus "$NUM_GPUS" \
+#                "${NUM_SHOTS_EVAL_FLAG[@]}"
+#        done <<< "$MMLU_SUBJECTS"
+#    done
+#else
+#    echo ""
+#    echo "Skipping per-subject evals (task $TASK is not an MMLU category/cluster)"
+#fi
+#
 echo ""
 echo "========================================"
 echo "Extension pipeline complete!"
@@ -370,11 +370,11 @@ echo "========================================"
 echo "Pruned model:   $PRUNED_MODEL"
 echo "Finetuned model: $FINETUNED_MODEL"
 echo "Merged model:   $MERGED_MODEL"
-
-# Step 8: Cleanup — remove local output directory to save disk space (results are on S3)
-echo ""
-echo "Step 8: Cleaning up local output directory..."
-echo "========================================"
-echo "Removing: $OUTPUT_DIR"
-rm -rf "$OUTPUT_DIR"
-echo "Cleanup complete."
+#
+## Step 8: Cleanup — remove local output directory to save disk space (results are on S3)
+#echo ""
+#echo "Step 8: Cleaning up local output directory..."
+#echo "========================================"
+#echo "Removing: $OUTPUT_DIR"
+#rm -rf "$OUTPUT_DIR"
+#echo "Cleanup complete."

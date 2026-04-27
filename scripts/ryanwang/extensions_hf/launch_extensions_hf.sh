@@ -63,7 +63,7 @@ model_type=hf
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(16)
+PRUNE_KEEP_K_VALUES=(32)
 batch_size=32
 
 # --- Pruning calibration-set size ---
@@ -71,7 +71,7 @@ batch_size=32
 # Set to an integer (e.g. 50) to subsample that many prompts (deterministic shuffle, seed=0).
 # Set to "random" to bypass calibration entirely and randomly select experts
 # (seed=0, mode-agnostic — ignores PRUNING_MODE). Output dir uses _prunemode-random.
-NUM_PRUNE_EXAMPLES="1"
+NUM_PRUNE_EXAMPLES=""
 
 # --- Shot-count overrides (two orthogonal knobs) ---
 # Each var: empty ⇒ each task's default num_shots (e.g. mmlu_merged_* = 5-shot,
@@ -88,7 +88,7 @@ NUM_PRUNE_EXAMPLES="1"
 #   PRUNE=""  EVAL="0" → _eshots-0
 #   PRUNE="0" EVAL="0" → _pshots-0_eshots-0
 NUM_SHOTS_PRUNE=""
-NUM_SHOTS_EVAL="0"
+NUM_SHOTS_EVAL=""
 
 # Define grouped tasks
 TASK_GROUPS_LIST=(
@@ -105,7 +105,7 @@ TASK_GROUPS_LIST=(
 
   # GSM8K generation merged variants (pruning + finetuning share data)
 #  "gsm8k_generation_0shot_merged"
-#  "gsm8k_generation_8shot_merged"
+  "gsm8k_generation_8shot_merged"
 
   # SQuAD merged variants
 #  "squad_merged"
@@ -144,8 +144,8 @@ TASK_GROUPS_LIST=(
 #  "mmlu_pro_merged_physics"
 #  "mmlu_pro_merged_business"
 #  "mmlu_pro_merged_biology"
-  "mmlu_pro_merged_chemistry"
-  "mmlu_pro_merged_computer_science"
+#  "mmlu_pro_merged_chemistry"
+#  "mmlu_pro_merged_computer_science"
 #  "mmlu_pro_merged_economics"
 #  "mmlu_pro_merged_engineering"
 #  "mmlu_pro_merged_philosophy"
