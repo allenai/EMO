@@ -41,6 +41,8 @@ lr=5e-5
 NUM_PRUNE_EXAMPLES=""
 NUM_SHOTS_PRUNE=""
 NUM_SHOTS_EVAL=""
+# Freeze mode used during finetune; "none" means no suffix (= unfrozen run).
+FREEZE_MODE="none"
 
 TASK_GROUPS_LIST=(
   "gsm8k_generation_8shot_merged"
@@ -79,6 +81,9 @@ for MODEL in "${MODELS[@]}"; do
         fi
         if [ -n "$NUM_SHOTS_EVAL" ]; then
             relative_dir="${relative_dir}_eshots-${NUM_SHOTS_EVAL}"
+        fi
+        if [ "$FREEZE_MODE" != "none" ]; then
+            relative_dir="${relative_dir}_fz-${FREEZE_MODE}"
         fi
 
         safe_relative_dir=$(printf '%s' "$relative_dir" | sed 's/[^a-zA-Z0-9_-]//g' | tail -c 100)

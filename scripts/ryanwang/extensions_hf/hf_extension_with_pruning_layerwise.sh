@@ -61,6 +61,14 @@ S3_BASE="s3://ai2-sewonm/ryanwang/extension_evals_hf_0426"
 #   default_avg, shared_avg, router_avg, shared_router_avg, non_moe_avg
 MERGE_VARIANTS="default,shared,router,shared_router,default_avg,shared_avg,router_avg,shared_router_avg"
 
+# Selective-finetune freeze pattern (forwarded to finetune.py --freeze-mode).
+#   none                  — train everything (default).
+#   routed                — only routable expert MLPs trainable; shared expert + router
+#                           + attention + norms + embed + lm_head all frozen.
+#   routed_shared         — routable + shared expert MLPs trainable; router frozen.
+#   routed_shared_router  — routable + shared expert MLPs + router trainable; rest frozen.
+FREEZE_MODE="none"
+
 # Pipeline phase. Lets you split a slow run across multiple beaker jobs.
 #   prune_finetune — only Steps 1-3 (greedy_prune_layerwise + finetune). Leaves
 #                    pruned_model/ + finetuned_model/ on disk for a later phase.
@@ -149,6 +157,10 @@ while [[ $# -gt 0 ]]; do
             PHASE="$2"
             shift 2
             ;;
+        --freeze-mode)
+            FREEZE_MODE="$2"
+            shift 2
+            ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             exit 0
@@ -217,6 +229,7 @@ echo "Num epochs: $NUM_EPOCHS"
 echo "Num checkpoints: $NUM_CHECKPOINTS"
 echo "S3 base: $S3_BASE"
 echo "Phase: $PHASE"
+echo "Freeze mode: $FREEZE_MODE"
 echo "Merge variants: $MERGE_VARIANTS"
 echo "========================================"
 
@@ -301,6 +314,7 @@ torchrun --nproc_per_node="$NUM_GPUS" \
     --run-name "$RUN_NAME" \
     --per-device-batch-size "$MICRO_BATCH_SIZE" \
     --gradient-accumulation-steps "$gas" \
+    --freeze-mode "$FREEZE_MODE" \
     $FSDP_FLAG \
     "${NUM_SHOTS_EVAL_FLAG[@]}"
 

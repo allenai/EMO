@@ -106,6 +106,16 @@ NUM_SHOTS_EVAL=""
 #   default_avg, shared_avg, router_avg, shared_router_avg, non_moe_avg
 MERGE_VARIANTS="default,shared,router,shared_router,default_avg,shared_avg,router_avg,shared_router_avg"
 
+# --- Selective-finetune freeze pattern ---
+# Forwarded to the worker (and from there to finetune.py --freeze-mode). The relative_dir
+# (and thus S3 prefix + on-disk path) gets a _fz-<mode> suffix when not "none", so freeze
+# variants don't clobber each other or the unfrozen baseline.
+#   none                  — train everything (default; current behavior).
+#   routed                — only routable expert MLPs trainable.
+#   routed_shared         — routable + shared expert MLPs trainable; router frozen.
+#   routed_shared_router  — routable + shared experts + router trainable.
+FREEZE_MODE="none"
+
 # --- Pipeline phase ---
 # Lets you split a slow run across multiple beaker jobs:
 #   full           — one beaker job per (model, task) doing prune+finetune+small-eval+
@@ -263,6 +273,10 @@ for MODEL in "${MODELS[@]}"; do
         if [ -n "$NUM_SHOTS_EVAL" ]; then
             relative_dir="${relative_dir}_eshots-${NUM_SHOTS_EVAL}"
         fi
+        # Append freeze-mode suffix when not the "none" default.
+        if [ "$FREEZE_MODE" != "none" ]; then
+            relative_dir="${relative_dir}_fz-${FREEZE_MODE}"
+        fi
 
         safe_relative_dir=$(printf '%s' "$relative_dir" | sed 's/[^a-zA-Z0-9_-]//g' | tail -c 100)
 
@@ -350,6 +364,7 @@ for MODEL in "${MODELS[@]}"; do
 #                --s3-base ${S3_BASE} \
 #                --merge-variants ${variant_arg} \
 #                --phase ${PHASE} \
+#                --freeze-mode ${FREEZE_MODE} \
 #                ${NPE_FLAG} \
 #                ${NSHOTS_PRUNE_FLAG} \
 #                ${NSHOTS_EVAL_FLAG}
@@ -386,6 +401,7 @@ for MODEL in "${MODELS[@]}"; do
                     --s3-base ${S3_BASE} \
                     --merge-variants ${variant_arg} \
                     --phase ${PHASE} \
+                    --freeze-mode ${FREEZE_MODE} \
                     ${NPE_FLAG} \
                     ${NSHOTS_PRUNE_FLAG} \
                     ${NSHOTS_EVAL_FLAG}
