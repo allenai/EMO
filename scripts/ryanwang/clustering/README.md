@@ -37,8 +37,12 @@ scripts/ryanwang/clustering/
 │   ├── extract.sh                 # 57 mmlu_merged_<subject> tasks
 │   └── sweep.sh                   # MMLU-specific sweep: k=16 fixed,
 │                                  # 3 embeddings × 2 balance × 2 methods
-└── hellaswag/
-    └── extract.sh
+├── hellaswag/
+│   └── extract.sh
+└── weborganizer/                   # standalone doc-level expert coverage
+    ├── extract.sh                  # → embeddings_doc_topk_freq.npy
+    │                               #   embeddings_doc_probs.npy
+    └── plot.sh                     # → 5 heatmaps per embedding type
 ```
 
 ## Quick Start
@@ -250,6 +254,65 @@ claude_outputs/clustering/
 └── hellaswag/<model>/
 ```
 
+## Weborganizer doc-level expert coverage
+
+A **standalone** sub-pipeline for measuring how MoE experts cover the 24
+cc_all_dressed weborganizer topics. Does not share extract.py / transform.py
+with the rest of this folder — extraction goes straight from raw S3 docs to
+per-document aggregates in a single forward pass, so no per-token data is
+ever persisted.
+
+```bash
+# 1. Extract (~20M tokens, uniformly sampled across topics, shuffled seed=42)
+bash scripts/ryanwang/clustering/weborganizer/extract.sh [MODEL_PATH] [TARGET_TOKENS]
+
+# 2. Plot heatmaps (defaults to both embedding types, 10 PNGs)
+bash scripts/ryanwang/clustering/weborganizer/plot.sh <DATA_DIR> [topk_freq|probs|both]
+```
+
+### Two per-doc embeddings (computed in the same forward pass)
+
+| File | Description | Layer slice sums to |
+|------|-------------|---------------------|
+| `embeddings_doc_topk_freq.npy` | Top-k expert selection frequency. For each (doc, layer, expert): (# tokens whose top-`routed_top_k` includes this expert) / doc_len. Mirrors `analyze_expert_coverage.py`. | `routed_top_k` |
+| `embeddings_doc_probs.npy` | Mean softmax probability per expert across the doc's tokens. Softmax is taken over standard experts only (shared experts excluded), matching the slicing convention used by the analysis pipeline. | `1.0` |
+
+Both shape `(num_docs, num_layers * num_standard_experts)`, float32.
+
+### Output layout
+
+```
+claude_outputs/clustering/weborganizer/
+├── mix_composition.json                  # shared across model runs
+└── <model_name>/
+    ├── embeddings_doc_topk_freq.npy
+    ├── embeddings_doc_probs.npy
+    ├── metadata_docs.jsonl.gz            # per-doc {doc_index, source, doc_len, preview}
+    ├── info.json                         # model + extraction config
+    ├── extraction.log
+    └── PNG plots (5 per embedding type, prefixed by emb name)
+```
+
+### Plots
+
+For each `<prefix>` ∈ {`doc_topk_freq`, `doc_probs`}:
+
+| File | Content |
+|------|---------|
+| `<prefix>_coverage_above_uniform_heatmap.png` | topics × layers, # experts with weight `> 1/num_experts`. Universal threshold — directly comparable across the two embedding types. |
+| `<prefix>_coverage_nonzero_heatmap.png` | topics × layers, # experts with weight `> 0`. Meaningful for `topk_freq`; degenerate (= num_experts) for `probs`. Emitted for symmetry. |
+| `<prefix>_entropy_heatmap.png` | topics × layers, entropy in bits of the per-doc, per-layer expert distribution (renormalized to sum to 1 first), averaged over docs. Max = `log2(num_experts)`. |
+| `<prefix>_similarity_heatmap.png` | 2×2 panel of topic-topic cosine similarities at four evenly-spaced layers (`np.linspace(0, num_layers-1, 4)`). |
+| `<prefix>_l2_distance_heatmap.png` | 2×2 panel of topic-topic L2 distances at the same layers. |
+
+Topic ordering is **shared** across all plots and all model runs via
+`claude_outputs/clustering/weborganizer/topic_order.json`. The file is
+created on the first plot invocation (using that embedding's ascending
+mean-entropy order) and reused by every subsequent run, so model-vs-model
+and topk_freq-vs-probs comparisons are visually aligned. To re-derive the
+order from a different reference, delete `topic_order.json` and rerun
+`plot.sh` on the new reference first.
+
 ## Python Modules
 
 All modules run via `python -m src.scripts.clustering.<module>`.
@@ -257,11 +320,13 @@ All modules run via `python -m src.scripts.clustering.<module>`.
 | Module | Description |
 |--------|-------------|
 | `generate_pretraining_mix` | Generate pretraining data composition |
-| `extract` | Unified extraction for all data sources |
+| `extract` | Unified extraction for all data sources (token-level logits) |
+| `extract_document` | Standalone weborganizer doc-level extractor (topk_freq + probs in one pass) |
 | `transform` | Derive embeddings + preprocessing |
 | `cluster` | Clustering + evaluation |
 | `visualize` | Simple HTML explorer (single view) |
 | `visualize_token` | Rich 4-view token explorer (Clusters/Documents/Tokens/UMAP + doc reader) |
 | `visualize_compare` | Two-model side-by-side comparison (Clusters + Documents tabs) |
 | `sample_clusters` | Per-cluster token sampling for manual labeling |
+| `plot_doc_expert_coverage` | Topic-vs-layer + topic-topic heatmaps from extract_document output |
 | `utils` | Shared S3, tokenization, model loading |
