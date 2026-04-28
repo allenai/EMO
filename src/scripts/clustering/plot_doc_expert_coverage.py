@@ -168,7 +168,25 @@ def main():
     parser = argparse.ArgumentParser(
         description="Plot expert-coverage heatmaps from a per-doc embedding file"
     )
-    parser.add_argument("--emb-file", required=True, help="embeddings_doc_*.npy")
+    parser.add_argument(
+        "--emb-file",
+        default=None,
+        help=(
+            "embeddings_doc_*.npy. If --aggregated-file is given and exists, "
+            "loading this big file is skipped."
+        ),
+    )
+    parser.add_argument(
+        "--aggregated-file",
+        default=None,
+        help=(
+            "Sidecar .npz with pre-aggregated per-topic stats "
+            "(default: <emb-dir>/<prefix>_heatmap_data.npz). If exists, used "
+            "instead of recomputing from --emb-file. Otherwise, written after "
+            "computing. Lets you regenerate plots on a machine without the big "
+            "embedding npy."
+        ),
+    )
     parser.add_argument("--metadata-file", default=None, help="default: <emb-dir>/metadata_docs.jsonl.gz")
     parser.add_argument("--info-file", default=None, help="default: <emb-dir>/info.json")
     parser.add_argument("--output-dir", default=None, help="default: <emb-dir>")
@@ -184,7 +202,10 @@ def main():
     )
     args = parser.parse_args()
 
-    emb_dir = os.path.dirname(args.emb_file)
+    if args.emb_file is None and args.aggregated_file is None:
+        parser.error("must give --emb-file or --aggregated-file")
+
+    emb_dir = os.path.dirname(args.emb_file) if args.emb_file else os.path.dirname(args.aggregated_file)
     if args.metadata_file is None:
         args.metadata_file = os.path.join(emb_dir, "metadata_docs.jsonl.gz")
     if args.info_file is None:
@@ -193,8 +214,14 @@ def main():
         args.output_dir = emb_dir
     os.makedirs(args.output_dir, exist_ok=True)
 
-    prefix = _derive_prefix(args.emb_file)
+    if args.emb_file:
+        prefix = _derive_prefix(args.emb_file)
+    else:
+        prefix = _derive_prefix(args.aggregated_file).replace("_heatmap_data", "")
     logger.info(f"Embedding prefix: {prefix}")
+
+    if args.aggregated_file is None:
+        args.aggregated_file = os.path.join(emb_dir, f"{prefix}_heatmap_data.npz")
 
     with open(args.info_file) as f:
         info = json.load(f)
@@ -202,34 +229,56 @@ def main():
     num_experts = info["num_standard_experts"]
     uniform_threshold = 1.0 / num_experts
 
-    logger.info(f"Loading {args.emb_file} ...")
-    emb = np.load(args.emb_file)  # (num_docs, num_layers * num_experts)
-    num_docs = emb.shape[0]
-    emb_3d = emb.reshape(num_docs, num_layers, num_experts)
+    if os.path.exists(args.aggregated_file):
+        logger.info(f"Loading pre-aggregated stats from {args.aggregated_file}")
+        agg = np.load(args.aggregated_file, allow_pickle=False)
+        unique_topics = agg["topics"].tolist()
+        topic_above_uniform = agg["topic_above_uniform"]
+        topic_nonzero = agg["topic_nonzero"]
+        topic_entropy = agg["topic_entropy"]
+        topic_avg_emb = agg["topic_avg_emb"]
+        logger.info(f"Loaded {len(unique_topics)} topics")
+    else:
+        if args.emb_file is None:
+            parser.error(f"--aggregated-file {args.aggregated_file} not found and --emb-file not given")
 
-    labels = _load_labels(args.metadata_file)
-    assert len(labels) == num_docs, f"label count {len(labels)} != num_docs {num_docs}"
+        logger.info(f"Loading {args.emb_file} ...")
+        emb = np.load(args.emb_file)  # (num_docs, num_layers * num_experts)
+        num_docs = emb.shape[0]
+        emb_3d = emb.reshape(num_docs, num_layers, num_experts)
 
-    unique_topics = sorted(set(labels.tolist()))
-    logger.info(f"Loaded {num_docs} docs across {len(unique_topics)} topics")
+        labels = _load_labels(args.metadata_file)
+        assert len(labels) == num_docs, f"label count {len(labels)} != num_docs {num_docs}"
 
-    # ── Per-topic stats ──────────────────────────────────────────────────────
-    above_uniform_per_doc_layer = (emb_3d > uniform_threshold).sum(axis=2)  # (D, L)
-    nonzero_per_doc_layer = (emb_3d > 0).sum(axis=2)  # (D, L)
-    dist_3d = _layer_distribution(emb_3d)
-    entropy_per_doc_layer = _per_doc_entropy(dist_3d)  # (D, L)
+        unique_topics = sorted(set(labels.tolist()))
+        logger.info(f"Loaded {num_docs} docs across {len(unique_topics)} topics")
 
-    topic_above_uniform = np.zeros((len(unique_topics), num_layers))
-    topic_nonzero = np.zeros((len(unique_topics), num_layers))
-    topic_entropy = np.zeros((len(unique_topics), num_layers))
-    topic_avg_emb = np.zeros((len(unique_topics), num_layers, num_experts))
+        above_uniform_per_doc_layer = (emb_3d > uniform_threshold).sum(axis=2)  # (D, L)
+        nonzero_per_doc_layer = (emb_3d > 0).sum(axis=2)  # (D, L)
+        dist_3d = _layer_distribution(emb_3d)
+        entropy_per_doc_layer = _per_doc_entropy(dist_3d)  # (D, L)
 
-    for ti, topic in enumerate(unique_topics):
-        mask = labels == topic
-        topic_above_uniform[ti] = above_uniform_per_doc_layer[mask].mean(axis=0)
-        topic_nonzero[ti] = nonzero_per_doc_layer[mask].mean(axis=0)
-        topic_entropy[ti] = entropy_per_doc_layer[mask].mean(axis=0)
-        topic_avg_emb[ti] = emb_3d[mask].mean(axis=0)
+        topic_above_uniform = np.zeros((len(unique_topics), num_layers))
+        topic_nonzero = np.zeros((len(unique_topics), num_layers))
+        topic_entropy = np.zeros((len(unique_topics), num_layers))
+        topic_avg_emb = np.zeros((len(unique_topics), num_layers, num_experts))
+
+        for ti, topic in enumerate(unique_topics):
+            mask = labels == topic
+            topic_above_uniform[ti] = above_uniform_per_doc_layer[mask].mean(axis=0)
+            topic_nonzero[ti] = nonzero_per_doc_layer[mask].mean(axis=0)
+            topic_entropy[ti] = entropy_per_doc_layer[mask].mean(axis=0)
+            topic_avg_emb[ti] = emb_3d[mask].mean(axis=0)
+
+        np.savez(
+            args.aggregated_file,
+            topics=np.array(unique_topics),
+            topic_above_uniform=topic_above_uniform,
+            topic_nonzero=topic_nonzero,
+            topic_entropy=topic_entropy,
+            topic_avg_emb=topic_avg_emb,
+        )
+        logger.info(f"Wrote aggregated stats -> {args.aggregated_file}")
 
     # Resolve topic ordering. Either load from a shared file, derive from
     # this embedding's mean entropy and persist, or derive without persisting.
