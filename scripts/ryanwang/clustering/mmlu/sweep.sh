@@ -26,7 +26,7 @@ DATA_DIR="${1:?Usage: $0 <MMLU_DATA_DIR>}"
 
 K=16
 PREPROCESS="mean_pca_l2"
-EMBEDDINGS=(doc_probs doc_topk_freq doc_layer0_probs)
+EMBEDDINGS=(doc_probs doc_topk_freq doc_layer0_probs doc_layer15_probs)
 BALANCES=(off source)                 # "off" => unbalanced; anything else => --balance-by <val>
 METHODS=(kmeans spherical_kmeans)
 

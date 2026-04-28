@@ -156,6 +156,46 @@ def derive_doc_layer0_probs(data_dir: str, info: dict) -> np.ndarray:
     return _aggregate_to_docs(data_dir, probs_path, np.float16)
 
 
+@register_derive(
+    "layer15_probs",
+    "Per-token softmax probabilities for layer 15 only (num_experts dims)",
+    "embeddings_layer15_probs.npy",
+)
+def derive_layer15_probs(data_dir: str, info: dict) -> np.ndarray:
+    """Softmax over experts for just layer 15's router logits."""
+    from scipy.special import softmax
+
+    logits = np.load(os.path.join(data_dir, "embeddings_logits.npy")).astype(np.float32)
+    num_layers = info["num_layers"]
+    num_experts = info["num_standard_experts"]
+    N = logits.shape[0]
+
+    reshaped = logits.reshape(N, num_layers, num_experts)
+    layer15 = reshaped[:, 15, :]  # (N, num_experts)
+    probs = softmax(layer15, axis=1)
+    result = probs.astype(np.float16)
+
+    logger.info(
+        f"  Derived layer15_probs: shape={result.shape}, row sums ~{probs[0].sum():.4f}"
+    )
+    return result
+
+
+@register_derive(
+    "doc_layer15_probs",
+    "Document-level mean layer-15 softmax (num_experts dims)",
+    "embeddings_doc_layer15_probs.npy",
+)
+def derive_doc_layer15_probs(data_dir: str, info: dict) -> np.ndarray:
+    """Average layer-15 token probs per document."""
+    probs_path = os.path.join(data_dir, "embeddings_layer15_probs.npy")
+    if not os.path.exists(probs_path):
+        logger.info("  embeddings_layer15_probs.npy not found, deriving layer15_probs first...")
+        probs = derive_layer15_probs(data_dir, info)
+        np.save(probs_path, probs)
+    return _aggregate_to_docs(data_dir, probs_path, np.float16)
+
+
 @register_derive("doc_logits", "Document-level mean logits", "embeddings_doc_logits.npy")
 def derive_doc_logits(data_dir: str, info: dict) -> np.ndarray:
     """Average token-level logits per document."""
@@ -300,11 +340,13 @@ EMBEDDING_FILES = {
     "probs": "embeddings_probs.npy",
     "topk_binary": "embeddings_topk_binary.npy",
     "layer0_probs": "embeddings_layer0_probs.npy",
+    "layer15_probs": "embeddings_layer15_probs.npy",
     # Document-level derived
     "doc_logits": "embeddings_doc_logits.npy",
     "doc_probs": "embeddings_doc_probs.npy",
     "doc_topk_freq": "embeddings_doc_topk_freq.npy",
     "doc_layer0_probs": "embeddings_doc_layer0_probs.npy",
+    "doc_layer15_probs": "embeddings_doc_layer15_probs.npy",
 }
 
 
