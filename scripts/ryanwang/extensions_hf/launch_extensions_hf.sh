@@ -63,7 +63,7 @@ model_type=hf
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(32)
+PRUNE_KEEP_K_VALUES=(8)
 batch_size=32
 
 # --- Pruning calibration-set size ---
@@ -103,8 +103,8 @@ NUM_SHOTS_EVAL=""
 #   non_moe       — routable + attention/norms/embed/lm_head (≈ full continual-pretrain)
 #
 # Average-mode (parent ← 0.5·parent + 0.5·small for the same params, --average):
-#   default_avg, shared_avg, router_avg, shared_router_avg, non_moe_avg
-MERGE_VARIANTS="default,shared,router,shared_router"
+#   default_avg, shared_avg, router_avg, shared_router_avg, non_moe
+MERGE_VARIANTS="shared"
 
 # --- Selective-finetune freeze pattern ---
 # Forwarded to the worker (and from there to finetune.py --freeze-mode). The relative_dir
@@ -114,7 +114,7 @@ MERGE_VARIANTS="default,shared,router,shared_router"
 #   routed                — only routable expert MLPs trainable.
 #   routed_shared         — routable + shared expert MLPs trainable; router frozen.
 #   routed_shared_router  — routable + shared experts + router trainable.
-FREEZE_MODE="routed"
+FREEZE_MODE="routed_shared"
 
 # --- Pipeline phase ---
 # Lets you split a slow run across multiple beaker jobs:
