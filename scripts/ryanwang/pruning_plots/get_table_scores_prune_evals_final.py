@@ -91,6 +91,16 @@ MODEL_SPECS: Dict[str, Dict[str, object]] = {
         "keepk_variants": KEEPK_VARIANTS_ALL,
         "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
     },
+    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
+        "label": "specialized moe + globallb + 1shardexp",
+        "keepk_variants": KEEPK_VARIANTS_ALL,
+        "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
+    },
+    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": {
+        "label": "specialized moe + globallb",
+        "keepk_variants": KEEPK_VARIANTS_ALL,
+        "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
+    },
     "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419step250339-hf": {
         "label": "moe 1T + anneal",
         "keepk_variants": KEEPK_VARIANTS_ALL,

@@ -4,7 +4,7 @@
 BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 #BASE_DIR="/root/phdbrainstorm/FlexMoE"
 MODELS=(
-#    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
+    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
 #    "dense_1b_lr-4e-3_0213/step30995-hf"
 #    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
@@ -12,8 +12,8 @@ MODELS=(
 #    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419/step250339-hf"
 #    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_twolevel_randpool-8-128_from_step238419/step250339-hf"
 
-    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
-    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995-hf"
+#    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"
+#    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119/step30995-hf"
 
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313/step238419-hf"
 #    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322/step238419-hf"
@@ -56,7 +56,7 @@ PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
+PRUNE_KEEP_K_VALUES=(32)
 batch_size=32
 
 # --- Pruning calibration-set size ---
@@ -119,23 +119,40 @@ TASK_GROUPS_LIST=(
 #  "drop_merged"
 
   # MMLU 17-category merged variants (pruning + finetuning share data)
-  "mmlu_merged_biology"
-  "mmlu_merged_business"
-  "mmlu_merged_chemistry"
-  "mmlu_merged_computer_science"
-  "mmlu_merged_culture"
-  "mmlu_merged_economics"
-  "mmlu_merged_engineering"
-  "mmlu_merged_geography"
-  "mmlu_merged_health"
-  "mmlu_merged_history"
-  "mmlu_merged_law"
-  "mmlu_merged_math"
-  "mmlu_merged_other"
-  "mmlu_merged_philosophy_cat"
-  "mmlu_merged_physics"
-  "mmlu_merged_politics"
-  "mmlu_merged_psychology"
+#  "mmlu_merged_biology"
+#  "mmlu_merged_business"
+#  "mmlu_merged_chemistry"
+#  "mmlu_merged_computer_science"
+#  "mmlu_merged_culture"
+#  "mmlu_merged_economics"
+#  "mmlu_merged_engineering"
+#  "mmlu_merged_geography"
+#  "mmlu_merged_health"
+#  "mmlu_merged_history"
+#  "mmlu_merged_law"
+#  "mmlu_merged_math"
+#  "mmlu_merged_other"
+#  "mmlu_merged_philosophy_cat"
+#  "mmlu_merged_physics"
+#  "mmlu_merged_politics"
+#  "mmlu_merged_psychology"
+
+  "mmlu_cluster_chemistry"
+  "mmlu_cluster_security_sociology"
+  "mmlu_cluster_moral_scenarios"
+  "mmlu_cluster_psychology"
+  "mmlu_cluster_law_gov"
+  "mmlu_cluster_prehistory_religions"
+  "mmlu_cluster_biomedical"
+  "mmlu_cluster_econ_geography"
+  "mmlu_cluster_philosophy"
+  "mmlu_cluster_quantitative"
+  "mmlu_cluster_accounting"
+  "mmlu_cluster_miscellaneous"
+  "mmlu_cluster_history"
+  "mmlu_cluster_business"
+  "mmlu_cluster_physics_eng"
+  "mmlu_cluster_cs_logic"
 
   # MMLU-Pro merged variant (pruning + finetuning use same data)
 #  "mmlu_pro_merged_math"
@@ -323,6 +340,7 @@ for MODEL in "${MODELS[@]}"; do
                 --weka=oe-training-default \
                 --shared-filesystem \
                 --workspace ai2/flex2 \
+                --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
                 --cluster ai2/jupiter \
                 --preemptible \
                 --allow-dirty \
@@ -376,6 +394,7 @@ for MODEL in "${MODELS[@]}"; do
                 --weka=oe-training-default \
                 --shared-filesystem \
                 --workspace ai2/flex2 \
+                --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
                 --cluster ai2/jupiter \
                 --preemptible \
                 --allow-dirty \
@@ -422,6 +441,7 @@ for MODEL in "${MODELS[@]}"; do
                 --weka=oe-training-default \
                 --shared-filesystem \
                 --workspace ai2/flex2 \
+                --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
                 --cluster ai2/jupiter \
                 --preemptible \
                 --allow-dirty \
@@ -470,6 +490,7 @@ for MODEL in "${MODELS[@]}"; do
                 --weka=oe-training-default \
                 --shared-filesystem \
                 --workspace ai2/flex2 \
+                --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
                 --cluster ai2/jupiter \
                 --preemptible \
                 --allow-dirty \
@@ -517,6 +538,7 @@ for MODEL in "${MODELS[@]}"; do
                 --weka=oe-training-default \
                 --shared-filesystem \
                 --workspace ai2/flex2 \
+                --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
                 --cluster ai2/jupiter \
                 --preemptible \
                 --allow-dirty \
@@ -564,6 +586,7 @@ for MODEL in "${MODELS[@]}"; do
                 --weka=oe-training-default \
                 --shared-filesystem \
                 --workspace ai2/flex2 \
+                --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
                 --cluster ai2/jupiter \
                 --preemptible \
                 --allow-dirty \
