@@ -25,6 +25,9 @@ DATASET_CACHE="${DATASET_CACHE:-${PREFIX}/dataset-cache}"
 # Root for the OLMo data mix (passed to training scripts as --data-root).
 DATA_ROOT="${DATA_ROOT:-/weka/oe-training-default/ai2-llm}"
 
+# S3 base for eval / logits outputs (used by launch_beaker_evals*.sh and launch_beaker_logits*.sh).
+EVALS_S3_BASE="${EVALS_S3_BASE:-s3://ai2-sewonm/akshitab/mose/evals/extensions}"
+
 # Specific base checkpoints used across templates.
 REGULAR_BASE="${BASE_MODELS}/moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995"
 TWOLEVEL_BASE="${BASE_MODELS}/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995"
