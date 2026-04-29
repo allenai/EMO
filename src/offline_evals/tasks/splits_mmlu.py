@@ -788,3 +788,70 @@ def create_mmlu_cluster_all_tasks_withsplits(cluster_name):
         DATASET_NAME = cluster_name
 
     return MMLU_Cluster_ALL
+
+
+# ---------------------------------------------------------------------------
+# Merged variants of the L0/L15/ALL cluster categories. Pruning calibration
+# and finetuning share the same docs (train+validation merged, shuffled
+# seed=0). Mirrors MMLU_17categories_Merged_RC.
+# ---------------------------------------------------------------------------
+
+
+class MMLU_16clusters_L0_Merged_RC(MMLU_16clusters_L0_RC):
+    """L0-cluster MMLU merged variant: pruning and finetuning use the same data."""
+
+    def training_docs(self):
+        merged = concatenate_datasets([self.dataset["train"], self.dataset["validation"]]).shuffle(
+            seed=0
+        )
+        return merged.map(self._process_doc, with_indices=True)
+
+    def validation_docs(self):
+        return self.training_docs()
+
+
+class MMLU_16clusters_L15_Merged_RC(MMLU_16clusters_L15_RC):
+    """L15-cluster MMLU merged variant: pruning and finetuning use the same data."""
+
+    def training_docs(self):
+        merged = concatenate_datasets([self.dataset["train"], self.dataset["validation"]]).shuffle(
+            seed=0
+        )
+        return merged.map(self._process_doc, with_indices=True)
+
+    def validation_docs(self):
+        return self.training_docs()
+
+
+class MMLU_16clusters_ALL_Merged_RC(MMLU_16clusters_ALL_RC):
+    """ALL-cluster MMLU merged variant: pruning and finetuning use the same data."""
+
+    def training_docs(self):
+        merged = concatenate_datasets([self.dataset["train"], self.dataset["validation"]]).shuffle(
+            seed=0
+        )
+        return merged.map(self._process_doc, with_indices=True)
+
+    def validation_docs(self):
+        return self.training_docs()
+
+
+def create_mmlu_cluster_l0_merged_tasks_withsplits(cluster_name):
+    class MMLU_Cluster_L0_Merged(MMLU_16clusters_L0_Merged_RC):
+        DATASET_NAME = cluster_name
+
+    return MMLU_Cluster_L0_Merged
+
+
+def create_mmlu_cluster_l15_merged_tasks_withsplits(cluster_name):
+    class MMLU_Cluster_L15_Merged(MMLU_16clusters_L15_Merged_RC):
+        DATASET_NAME = cluster_name
+
+    return MMLU_Cluster_L15_Merged
+
+
+def create_mmlu_cluster_all_merged_tasks_withsplits(cluster_name):
+    class MMLU_Cluster_ALL_Merged(MMLU_16clusters_ALL_Merged_RC):
+        DATASET_NAME = cluster_name
+
+    return MMLU_Cluster_ALL_Merged

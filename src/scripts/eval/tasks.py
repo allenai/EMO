@@ -4,7 +4,12 @@ from oe_eval.configs.tasks import TASK_CONFIGS
 from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
 
 from offline_evals.tasks.code_fresh import CODE_FRESH_LANGUAGES
-from src.offline_evals.tasks.splits_mmlu import MMLU_CLUSTER_CATEGORIES
+from src.offline_evals.tasks.splits_mmlu import (
+    MMLU_CLUSTER_CATEGORIES,
+    MMLU_CLUSTER_CATEGORIES_ALL,
+    MMLU_CLUSTER_CATEGORIES_L0,
+    MMLU_CLUSTER_CATEGORIES_L15,
+)
 from src.offline_evals.tasks.splits_mmlu_pro import MMLU_PRO_CATEGORIES_MAP
 
 
@@ -2001,6 +2006,31 @@ def get_task_configs():
                 "category_name": category,
                 "metadata": {"regimes": ["OLMES-v0.1"]},
             }
+
+    # Router-clustering categories (L0/L15/ALL): non-merged + merged variants
+    for cluster_dict in (
+        MMLU_CLUSTER_CATEGORIES_L0,
+        MMLU_CLUSTER_CATEGORIES_L15,
+        MMLU_CLUSTER_CATEGORIES_ALL,
+    ):
+        for cluster_name in cluster_dict:
+            for _split in ["train", "validation", "test"]:
+                TASK_CONFIGS[f"mmlu_{cluster_name}:rc_{_split}::olmes"] = {
+                    "task_name": f"mmlu_{cluster_name}:rc_{_split}",
+                    "split": _split,
+                    "num_shots": 5,
+                    "primary_metric": "acc_per_char",
+                    "category_name": cluster_name,
+                    "metadata": {"regimes": ["OLMES-v0.1"]},
+                }
+                TASK_CONFIGS[f"mmlu_merged_{cluster_name}:rc_{_split}::olmes"] = {
+                    "task_name": f"mmlu_merged_{cluster_name}:rc_{_split}",
+                    "split": _split,
+                    "num_shots": 5,
+                    "primary_metric": "acc_per_char",
+                    "category_name": cluster_name,
+                    "metadata": {"regimes": ["OLMES-v0.1"]},
+                }
 
     # MMLU per-subject merged variants (matches mmlu_<subject>:rc_*::olmes exactly)
     for sub in MMLU_SUBJECTS:

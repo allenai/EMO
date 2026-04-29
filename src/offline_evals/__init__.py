@@ -42,8 +42,17 @@ from .tasks import (
 )
 from .tasks.splits_mmlu import (
     MMLU_CLUSTER_CATEGORIES,
+    MMLU_CLUSTER_CATEGORIES_ALL,
+    MMLU_CLUSTER_CATEGORIES_L0,
+    MMLU_CLUSTER_CATEGORIES_L15,
     create_mmlu_categories_merged_tasks_withsplits,
     create_mmlu_categories_tasks_withsplits,
+    create_mmlu_cluster_all_merged_tasks_withsplits,
+    create_mmlu_cluster_all_tasks_withsplits,
+    create_mmlu_cluster_l0_merged_tasks_withsplits,
+    create_mmlu_cluster_l0_tasks_withsplits,
+    create_mmlu_cluster_l15_merged_tasks_withsplits,
+    create_mmlu_cluster_l15_tasks_withsplits,
     create_mmlu_cluster_tasks_withsplits,
     create_mmlu_merged_tasks_withsplits,
     create_mmlu_tasks_withsplits,
@@ -150,6 +159,62 @@ def create_cluster_mmlu_tasks_withsplits():
         res[f"mmlu_{cluster_name}:rc_test"] = create_mmlu_cluster_tasks_withsplits(cluster_name)
         res[f"mmlu_{cluster_name}:rc_train"] = create_mmlu_cluster_tasks_withsplits(cluster_name)
     return res
+
+
+def _make_cluster_split_tasks(categories_dict, factory):
+    res = {}
+    for cluster_name in categories_dict:
+        for split in ("validation", "test", "train"):
+            res[f"mmlu_{cluster_name}:rc_{split}"] = factory(cluster_name)
+    return res
+
+
+def _make_cluster_merged_split_tasks(categories_dict, merged_factory):
+    res = {}
+    for cluster_name in categories_dict:
+        for split in ("validation", "test", "train"):
+            res[f"mmlu_merged_{cluster_name}:rc_{split}"] = merged_factory(cluster_name)
+    return res
+
+
+def create_cluster_l0_mmlu_tasks_withsplits():
+    """L0-cluster MMLU tasks (non-merged)."""
+    return _make_cluster_split_tasks(MMLU_CLUSTER_CATEGORIES_L0, create_mmlu_cluster_l0_tasks_withsplits)
+
+
+def create_cluster_l15_mmlu_tasks_withsplits():
+    """L15-cluster MMLU tasks (non-merged)."""
+    return _make_cluster_split_tasks(
+        MMLU_CLUSTER_CATEGORIES_L15, create_mmlu_cluster_l15_tasks_withsplits
+    )
+
+
+def create_cluster_all_mmlu_tasks_withsplits():
+    """ALL-layer-cluster MMLU tasks (non-merged)."""
+    return _make_cluster_split_tasks(
+        MMLU_CLUSTER_CATEGORIES_ALL, create_mmlu_cluster_all_tasks_withsplits
+    )
+
+
+def create_cluster_l0_mmlu_merged_tasks_withsplits():
+    """L0-cluster MMLU merged variants (pruning + finetuning share data)."""
+    return _make_cluster_merged_split_tasks(
+        MMLU_CLUSTER_CATEGORIES_L0, create_mmlu_cluster_l0_merged_tasks_withsplits
+    )
+
+
+def create_cluster_l15_mmlu_merged_tasks_withsplits():
+    """L15-cluster MMLU merged variants (pruning + finetuning share data)."""
+    return _make_cluster_merged_split_tasks(
+        MMLU_CLUSTER_CATEGORIES_L15, create_mmlu_cluster_l15_merged_tasks_withsplits
+    )
+
+
+def create_cluster_all_mmlu_merged_tasks_withsplits():
+    """ALL-layer-cluster MMLU merged variants (pruning + finetuning share data)."""
+    return _make_cluster_merged_split_tasks(
+        MMLU_CLUSTER_CATEGORIES_ALL, create_mmlu_cluster_all_merged_tasks_withsplits
+    )
 
 
 def create_core_mmlu_pro_tasks_withsplits():
@@ -365,9 +430,16 @@ new_task_registry: Dict = {
     **create_core_mmlu_tasks_withsplits(),
     **create_category_mmlu_tasks_withsplits(),
     **create_cluster_mmlu_tasks_withsplits(),
+    # Router-clustering categories from layer-0/layer-15/all-layer router probs
+    **create_cluster_l0_mmlu_tasks_withsplits(),
+    **create_cluster_l15_mmlu_tasks_withsplits(),
+    **create_cluster_all_mmlu_tasks_withsplits(),
     # MMLU merged (per-subject and 17-category): pruning + finetuning share data
     **create_core_mmlu_merged_tasks_withsplits(),
     **create_category_mmlu_merged_tasks_withsplits(),
+    **create_cluster_l0_mmlu_merged_tasks_withsplits(),
+    **create_cluster_l15_mmlu_merged_tasks_withsplits(),
+    **create_cluster_all_mmlu_merged_tasks_withsplits(),
     # **create_core_mmlu_pro_tasks_withsplits(),
     **create_category_mmlu_pro_tasks_withsplits(),
     **create_merged_mmlu_pro_tasks_withsplits(),
