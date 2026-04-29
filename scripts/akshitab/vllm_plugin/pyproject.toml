@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flexmoe-vllm-plugin"
+version = "0.1.0"
+description = "vLLM plugin registering FlexOlmoNoQKNormPrenormSharedForCausalLM."
+requires-python = ">=3.10"
+dependencies = []
+
+[project.entry-points."vllm.general_plugins"]
+flex_olmo_noqknorm_prenorm_shared = "flex_olmo_noqknorm_prenorm_shared_plugin:register"
+
+[tool.setuptools]
+py-modules = ["flex_olmo_noqknorm_prenorm_shared_plugin"]
