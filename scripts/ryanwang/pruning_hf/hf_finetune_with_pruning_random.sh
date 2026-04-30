@@ -36,6 +36,7 @@ SKIP_PRUNE=false
 PRUNED_MODEL=""
 LEARNING_RATE=5e-5
 RUN_NAME=""
+TRUST_REMOTE_CODE=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -70,6 +71,11 @@ while [[ $# -gt 0 ]]; do
             LEARNING_RATE="$2"; shift 2 ;;
         --run-name)
             RUN_NAME="$2"; shift 2 ;;
+        --num-prune-examples)
+            # Accepted for launcher compatibility (ignored: random pruning has no calibration)
+            shift 2 ;;
+        --trust-remote-code)
+            TRUST_REMOTE_CODE=true; shift ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             exit 0

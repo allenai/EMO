@@ -40,6 +40,7 @@ PRUNED_MODEL=""
 LEARNING_RATE=5e-5
 RUN_NAME=""
 NUM_PRUNE_EXAMPLES=""
+TRUST_REMOTE_CODE=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -115,6 +116,10 @@ while [[ $# -gt 0 ]]; do
         --num-prune-examples)
             NUM_PRUNE_EXAMPLES="$2"
             shift 2
+            ;;
+        --trust-remote-code)
+            TRUST_REMOTE_CODE=true
+            shift
             ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
@@ -306,6 +311,11 @@ export WANDB_TAGS="finetune,${TASK:0:60},${PRUNED_MODEL: -60}"
 # calculate gas
 gas=$(( BATCH_SIZE / (NUM_GPUS * MICRO_BATCH_SIZE) ))
 
+FT_TRC_FLAG=""
+if [ "$TRUST_REMOTE_CODE" = true ]; then
+    FT_TRC_FLAG="--trust-remote-code"
+fi
+
 torchrun --nproc_per_node="$NUM_GPUS" \
     -m src.hf_training.finetune \
     --model "$PRUNED_MODEL" \
@@ -318,12 +328,20 @@ torchrun --nproc_per_node="$NUM_GPUS" \
     --run-name "$RUN_NAME" \
     --per-device-batch-size "$MICRO_BATCH_SIZE" \
     --gradient-accumulation-steps "$gas" \
-    $FSDP_FLAG
+    $FSDP_FLAG \
+    $FT_TRC_FLAG
 
 
 echo ""
 echo "Step 4: evals..."
 echo "========================================"
+
+# Forward trust_remote_code to launch_eval via --model-args. Saved checkpoints
+# inherit auto_map from the original HF model, so reloading still needs it.
+EVAL_MA_FLAG=""
+if [ "$TRUST_REMOTE_CODE" = true ]; then
+    EVAL_MA_FLAG="--model-args trust_remote_code=true"
+fi
 
 # find all the checkpoints in the finetuned model directory and evaluate each one
 all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
@@ -354,7 +372,8 @@ for checkpoint in "${all_checkpoints[@]}"; do
         --pruned_split "test" \
         --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
         --batch-size $EVAL_BATCH_SIZE \
-        --gpus "$NUM_GPUS"
+        --gpus "$NUM_GPUS" \
+        $EVAL_MA_FLAG
 
 done
 
@@ -393,7 +412,8 @@ if [ -n "$MMLU_SUBJECTS" ]; then
                 --pruned_split "test" \
                 --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}/per_subject/${subject}" \
                 --batch-size $EVAL_BATCH_SIZE \
-                --gpus "$NUM_GPUS"
+                --gpus "$NUM_GPUS" \
+                $EVAL_MA_FLAG
         done <<< "$MMLU_SUBJECTS"
     done
 else

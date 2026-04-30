@@ -47,6 +47,7 @@ PRUNED_MODEL=""
 LEARNING_RATE=5e-5
 RUN_NAME=""
 NUM_PRUNE_EXAMPLES=""
+TRUST_REMOTE_CODE=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -83,6 +84,8 @@ while [[ $# -gt 0 ]]; do
             RUN_NAME="$2"; shift 2 ;;
         --num-prune-examples)
             NUM_PRUNE_EXAMPLES="$2"; shift 2 ;;
+        --trust-remote-code)
+            TRUST_REMOTE_CODE=true; shift ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
