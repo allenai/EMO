@@ -83,10 +83,11 @@ flash-attn = [
 #]
 wandb = ["wandb"]
 # vLLM plugin registering FlexOlmoNoQKNormPrenormForCausalLM as a native vLLM model.
-# Lives under scripts/akshitab/vllm_plugin/. Path resolved via [tool.uv.sources] below.
-# Note: vllm itself is not added here — it's expected to already be in the runtime
-# environment (e.g. the beaker image). Install with: pip install -e '.[vllm-plugin]'.
-vllm-plugin = ["flexmoe-vllm-plugin"]
+# Plugin lives under scripts/akshitab/vllm_plugin/ (path resolved via [tool.uv.sources]).
+# Pulls in vllm itself; pin it tightly if you need a specific version compatible with
+# the cluster's torch build (currently torch==2.8.0+cu128).
+# Install with: pip install -e '.[vllm-plugin]'.
+vllm-plugin = ["vllm", "flexmoe-vllm-plugin"]
 all = ["ai2-olmo-core[dev,beaker,comet,eval,flash-attn,torchao,transformers,vllm-plugin,wandb]"]
 
 
