@@ -21,6 +21,7 @@ from itertools import islice
 from typing import Any
 
 import torch
+import torch.nn.functional as F
 from torch import nn
 from transformers.configuration_utils import PretrainedConfig
 
@@ -85,6 +86,7 @@ class FlexMoEConfig(PretrainedConfig):
         attention_dropout=0.0,
         num_experts_per_tok=8,
         num_experts=128,
+        num_shared_experts=0,
         output_router_logits=False,
         router_aux_loss_coef=0.01,
         norm_topk_prob=False,
@@ -123,6 +125,7 @@ class FlexMoEConfig(PretrainedConfig):
         self.attention_dropout = attention_dropout
         self.num_experts_per_tok = num_experts_per_tok
         self.num_experts = num_experts
+        self.num_shared_experts = num_shared_experts
         self.output_router_logits = output_router_logits
         self.router_aux_loss_coef = router_aux_loss_coef
         self.norm_topk_prob = norm_topk_prob
@@ -158,6 +161,7 @@ class FlexMoEMoE(nn.Module):
         top_k: int,
         hidden_size: int,
         intermediate_size: int,
+        num_shared_experts: int = 0,
         renormalize: bool = False,
         quant_config: QuantizationConfig | None = None,
         tp_size: int | None = None,
@@ -165,6 +169,14 @@ class FlexMoEMoE(nn.Module):
     ):
         super().__init__()
         self.top_k = top_k
+        self.num_experts = num_experts
+        self.num_shared_experts = num_shared_experts
+
+        if num_shared_experts > 0 and renormalize:
+            raise ValueError(
+                "renormalize (norm_topk_prob) is not supported when "
+                "num_shared_experts > 0; HF disables it in this case."
+            )
 
         self.gate = ReplicatedLinear(
             hidden_size,
@@ -172,6 +184,10 @@ class FlexMoEMoE(nn.Module):
             bias=False,
             quant_config=None,
             prefix=f"{prefix}.gate",
+        )
+
+        custom_routing = (
+            self._shared_expert_routing if num_shared_experts > 0 else None
         )
 
         self.experts = FusedMoE(
@@ -183,8 +199,38 @@ class FlexMoEMoE(nn.Module):
             renormalize=renormalize,
             quant_config=quant_config,
             tp_size=tp_size,
+            custom_routing_function=custom_routing,
             prefix=f"{prefix}.experts",
         )
+
+    def _shared_expert_routing(
+        self,
+        hidden_states: torch.Tensor,
+        gating_output: torch.Tensor,
+        topk: int,
+        renormalize: bool,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Mirror HF's split-softmax routing for num_shared_experts > 0.
+
+        The last `num_shared_experts` experts are always-active; standard and
+        shared experts get separate softmax + topk, then are concatenated.
+        See FlexOlmoNoQKNormPrenormSparseMoeBlock.forward in the HF modeling.
+        """
+        num_shared = self.num_shared_experts
+        num_standard = self.num_experts - num_shared
+
+        standard_logits = gating_output[..., :num_standard]
+        shared_logits = gating_output[..., num_standard:]
+
+        standard_weights = F.softmax(standard_logits, dim=-1, dtype=torch.float32)
+        shared_weights = F.softmax(shared_logits, dim=-1, dtype=torch.float32)
+
+        std_w, std_i = standard_weights.topk(topk - num_shared, dim=-1)
+        shr_w, shr_i = shared_weights.topk(num_shared, dim=-1)
+
+        topk_weights = torch.cat([std_w, shr_w], dim=-1)
+        topk_ids = torch.cat([std_i, shr_i + num_standard], dim=-1).to(torch.int32)
+        return topk_weights, topk_ids
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         orig_shape = hidden_states.shape
@@ -298,6 +344,7 @@ class FlexMoEDecoderLayer(nn.Module):
             top_k=config.num_experts_per_tok,
             hidden_size=config.hidden_size,
             intermediate_size=config.intermediate_size,
+            num_shared_experts=getattr(config, "num_shared_experts", 0),
             renormalize=getattr(config, "norm_topk_prob", False),
             quant_config=quant_config,
             prefix=f"{prefix}.mlp",
