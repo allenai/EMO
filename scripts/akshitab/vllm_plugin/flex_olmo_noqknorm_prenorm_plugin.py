@@ -27,12 +27,10 @@ from transformers.configuration_utils import PretrainedConfig
 from vllm.compilation.decorators import support_torch_compile
 from vllm.config import VllmConfig
 from vllm.distributed import get_pp_group, get_tensor_model_parallel_world_size
-from vllm.model_executor.layers.activation import SiluAndMul
 from vllm.attention.layer import Attention
 from vllm.model_executor.layers.fused_moe import FusedMoE
 from vllm.model_executor.layers.layernorm import RMSNorm
 from vllm.model_executor.layers.linear import (
-    MergedColumnParallelLinear,
     QKVParallelLinear,
     ReplicatedLinear,
     RowParallelLinear,
@@ -145,45 +143,13 @@ class FlexMoEConfig(PretrainedConfig):
 # Model layers
 # ---------------------------------------------------------------------------
 
-class FlexMoESharedMLP(nn.Module):
-    """Shared expert MLP with SwiGLU activation."""
-
-    def __init__(
-        self,
-        hidden_size: int,
-        intermediate_size: int,
-        quant_config: QuantizationConfig | None = None,
-        prefix: str = "",
-    ):
-        super().__init__()
-        self.gate_up_proj = MergedColumnParallelLinear(
-            hidden_size,
-            [intermediate_size] * 2,
-            bias=False,
-            quant_config=quant_config,
-            prefix=f"{prefix}.gate_up_proj",
-        )
-        self.down_proj = RowParallelLinear(
-            intermediate_size,
-            hidden_size,
-            bias=False,
-            quant_config=quant_config,
-            prefix=f"{prefix}.down_proj",
-        )
-        self.act_fn = SiluAndMul()
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        gate_up, _ = self.gate_up_proj(x)
-        x = self.act_fn(gate_up)
-        x, _ = self.down_proj(x)
-        return x
-
-
 class FlexMoEMoE(nn.Module):
-    """MoE layer with routed experts and a shared expert.
-    Routed experts use FusedMoE for efficiency. The shared expert processes
-    all tokens unconditionally and outputs are combined:
-        out = shared / (top_k+1) + routed * (top_k / (top_k+1))
+    """MoE layer with top-k routed experts.
+
+    All experts (including any "shared"/always-active ones used during HF
+    training) are stored uniformly under self.experts. vLLM uses plain top-k
+    routing here; if the checkpoint was trained with num_shared_experts > 0
+    or always_active_experts set, output will diverge from the HF model.
     """
 
     def __init__(
@@ -192,7 +158,6 @@ class FlexMoEMoE(nn.Module):
         top_k: int,
         hidden_size: int,
         intermediate_size: int,
-        shared_expert_intermediate_size: int,
         renormalize: bool = False,
         quant_config: QuantizationConfig | None = None,
         tp_size: int | None = None,
@@ -221,32 +186,16 @@ class FlexMoEMoE(nn.Module):
             prefix=f"{prefix}.experts",
         )
 
-        self.shared_mlp = FlexMoESharedMLP(
-            hidden_size=hidden_size,
-            intermediate_size=shared_expert_intermediate_size,
-            quant_config=quant_config,
-            prefix=f"{prefix}.shared_mlp",
-        )
-
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         orig_shape = hidden_states.shape
         hidden_dim = hidden_states.shape[-1]
         hidden_states = hidden_states.view(-1, hidden_dim)
 
-        # Routed experts
         router_logits, _ = self.gate(hidden_states)
         routed_out = self.experts(
             hidden_states=hidden_states, router_logits=router_logits
         )
-
-        # Shared expert processes all tokens
-        shared_out = self.shared_mlp(hidden_states)
-
-        # Weighted combination
-        k = self.top_k
-        out = shared_out / (k + 1) + routed_out * (k / (k + 1))
-
-        return out.view(orig_shape)
+        return routed_out.view(orig_shape)
 
 
 class FlexMoEAttention(nn.Module):
@@ -349,11 +298,6 @@ class FlexMoEDecoderLayer(nn.Module):
             top_k=config.num_experts_per_tok,
             hidden_size=config.hidden_size,
             intermediate_size=config.intermediate_size,
-            shared_expert_intermediate_size=getattr(
-                config,
-                "shared_expert_intermediate_size",
-                config.intermediate_size,
-            ),
             renormalize=getattr(config, "norm_topk_prob", False),
             quant_config=quant_config,
             prefix=f"{prefix}.mlp",
@@ -486,9 +430,6 @@ class FlexMoEModel(nn.Module):
             ("qkv_proj", "q_proj", "q"),
             ("qkv_proj", "k_proj", "k"),
             ("qkv_proj", "v_proj", "v"),
-            # Shared expert MLP: gate_proj + up_proj -> gate_up_proj
-            ("gate_up_proj", "gate_proj", 0),
-            ("gate_up_proj", "up_proj", 1),
         ]
 
         params_dict = dict(self.named_parameters())
@@ -562,7 +503,6 @@ class FlexMoEModel(nn.Module):
 class FlexOlmoNoQKNormPrenormForCausalLM(nn.Module, SupportsPP):
     packed_modules_mapping = {
         "qkv_proj": ["q_proj", "k_proj", "v_proj"],
-        "gate_up_proj": ["gate_proj", "up_proj"],
     }
 
     def __init__(
