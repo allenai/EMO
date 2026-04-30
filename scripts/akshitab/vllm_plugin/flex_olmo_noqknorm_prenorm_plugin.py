@@ -303,7 +303,6 @@ class FlexMoEAttention(nn.Module):
         self.rotary_emb = get_rope(
             self.head_dim,
             max_position=max_position_embeddings,
-            base=getattr(config, "rope_theta", 500000),
             rope_parameters=getattr(config, "rope_parameters", None),
             is_neox_style=True,
         )
