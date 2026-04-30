@@ -3,6 +3,8 @@
 #     - Same as parent except cleaned up name, set learning rate to default
 # STATUS: USED
 ##############################################################
+source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
+
 lr=4e-3
 lb=1e-1
 
@@ -12,24 +14,10 @@ gpus=8
 lb_global_batch_size=$((nodes * gpus * 4))
 
 runname="moereducedp${lb_global_batch_size}_1b14b_lr-4e-3_lb-1e-1_0211"
-python -m olmo_core.launch.beaker \
-  --name $runname \
-	--gpus $gpus \
-  --nodes $nodes \
-	--weka=oe-training-default \
-  --shared-filesystem \
-	--workspace ai2/flex2 \
-	--cluster ai2/jupiter \
-  --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
-	--preemptible \
-	--allow-dirty \
-	--priority urgent \
-	--env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
-	-- src/scripts/train/olmoe-1B-7B_fsl.py \
-    $runname \
-		--save-folder="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/$runname" \
+launch src/scripts/train/olmoe-1B-7B_fsl.py $runname \
+		--save-folder="${MODELS_DIR}/$runname" \
 		--dataset.mix=OLMoE-mix-0824 \
-		--work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
+		--work-dir="${DATASET_CACHE}" \
 		--trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
 		--trainer.callbacks.wandb.enabled=true \
 		--trainer.callbacks.wandb.entity=ryanyxw \

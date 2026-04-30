@@ -1,21 +1,31 @@
 # Run templates for scripts/ryanwang/
 
-General templates for each type of run in this directory. All paths use a single `${PREFIX}` variable — set it once per environment (e.g. `/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE` on Ai2 weka, or `/path/to/local/FlexMoE` locally). All templates use `torchrun` for local / single-node launches; to submit to Beaker instead, wrap the `python ...` call with `python -m olmo_core.launch.beaker --name ${runname} <beaker flags> -- <same args>`.
+General templates for each type of run in this directory. The shared preamble (paths, launcher) lives in [`launch_common.sh`](launch_common.sh); every run script in `models_0116/` and `extensions/` sources it.
 
-## Preamble (put at the top of every run script)
+## Preamble — `launch_common.sh`
+
+Source it from any script:
 
 ```bash
-# Root for model checkpoints, dataset cache, and eval outputs. Override via env var.
-PREFIX=${PREFIX:-/path/to/FlexMoE}
-
-MODELS_DIR="${PREFIX}/models"               # trained checkpoints
-DATASET_CACHE="${PREFIX}/dataset-cache"     # tokenizer-mapped dataset cache
-EVAL_OUTPUT_DIR="${PREFIX}/prune_evals"     # local eval outputs (S3 uploads layered on top)
-
-# Launcher: torchrun on a single node with ${NPROC} GPUs.
-NPROC=${NPROC:-8}
-LAUNCH="torchrun --nproc-per-node=${NPROC}"
+source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
 ```
+
+`launch_common.sh` exports:
+
+- **Paths** (override via env vars before sourcing):
+  - `PREFIX` (default `/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE`) — root for outputs.
+  - `MODELS_DIR` — derived from `PREFIX` (`${PREFIX}/models`).
+  - `DATASET_CACHE` (default `/weka/oe-training-default/ryanwang/dataset-cache`) — tokenizer-mapped dataset cache.
+- **`launch()` function** — wraps either `torchrun --nproc-per-node=${NPROC}` (default, `MODE=local`) or `python -m olmo_core.launch.beaker` with the `tylerr/olmo-core-tch280cu128-2025-11-25` image (when `MODE=beaker`). Call as: `launch <script.py> <run_name> [args...]`.
+
+Switch a script to a beaker submission with:
+```bash
+MODE=beaker bash scripts/ryanwang/models_0116/dense_1b_lr-4e-3_0213.sh
+```
+
+Override cluster sizing per script if needed: `BEAKER_GPUS=8 BEAKER_NODES=4 ...` or set `BEAKER_GPUS=${gpus} BEAKER_NODES=${nodes}` at the top of the script (some scripts already define `gpus=` / `nodes=` for this purpose).
+
+The hand-written templates below (templates 5 and 6) — the eval and pruning loops — are not yet adapted to source `launch_common.sh`; they're standalone references for `extensions/launch_eval.sh` and `pruning_hf/launch_pruning_hf.sh`.
 
 ---
 
@@ -27,8 +37,7 @@ Pretrain a dense 1B model on `OLMoE-mix-0824`. Entry point: `src/scripts/train/o
 lr=4e-3
 runname="dense_1b_lr-${lr}_0213"
 
-${LAUNCH} src/scripts/train/olmo2-1B.py \
-    ${runname} \
+launch src/scripts/train/olmo2-1B.py $runname \
     --save-folder="${MODELS_DIR}/${runname}" \
     --dataset.mix=OLMoE-mix-0824 \
     --work-dir="${DATASET_CACHE}" \
@@ -53,8 +62,7 @@ lr=4e-4
 lb=1e-1
 runname="moe_1b14b_lb-1e-1_0118"
 
-${LAUNCH} src/scripts/train/olmoe-1B-7B_fsl.py \
-    ${runname} \
+launch src/scripts/train/olmoe-1B-7B_fsl.py $runname \
     --save-folder="${MODELS_DIR}/${runname}" \
     --dataset.mix=OLMoE-mix-0824 \
     --work-dir="${DATASET_CACHE}" \
@@ -86,8 +94,7 @@ num_shared_experts=2  # must be ≥2 so softmax gradients backprop
 
 runname="twolevelbatchlbreducedp_sharedexp${num_shared_experts_pool}c${num_shared_experts}-${document_expert_pool}_1b14b_lr-${lr}_lb-${lb}_0214"
 
-${LAUNCH} src/scripts/train/olmoe-1B-7B_fsl.py \
-    ${runname} \
+launch src/scripts/train/olmoe-1B-7B_fsl.py $runname \
     --save-folder="${MODELS_DIR}/${runname}" \
     --dataset.mix=OLMoE-mix-0824 \
     --work-dir="${DATASET_CACHE}" \
@@ -135,8 +142,7 @@ num_tokens=$((num_billion_tokens * 1000000000))
 base_model_path="${MODELS_DIR}/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339"
 runname="twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419_ct-math_8"
 
-${LAUNCH} src/scripts/train/olmoe-1B-7B_fsl_extension.py \
-    ${runname} \
+launch src/scripts/train/olmoe-1B-7B_fsl_extension.py $runname \
     --save-folder="${MODELS_DIR}/${runname}" \
     --dataset.mix=mj_finemath4plus \
     --work-dir="${DATASET_CACHE}" \

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source "$(dirname "${BASH_SOURCE[0]}")/launch_common.sh"
+
 # Usage:
 #   ./launch_beaker_logits_single_job.sh              # run locally (sequentially)
 #   ./launch_beaker_logits_single_job.sh --gantry      # submit one gantry job per model
@@ -14,8 +16,7 @@ done
 
 # Configuration
 
-# MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
-MODEL_DIR=/weka/oe-training-default/akshitab/FlexMoE/models
+MODEL_DIR="${MODELS}"
 
 MODELS=(
     # moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
@@ -42,7 +43,7 @@ MODELS=(
     # moe1b14b_128experts_76_41_120_3_trained_code_10B_lr_4e-4/step2385-hf
 )
 
-BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
+BASE_OUTPUT_DIR="${EVALS_S3_BASE}"
 BATCH_SIZE=16
 CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf

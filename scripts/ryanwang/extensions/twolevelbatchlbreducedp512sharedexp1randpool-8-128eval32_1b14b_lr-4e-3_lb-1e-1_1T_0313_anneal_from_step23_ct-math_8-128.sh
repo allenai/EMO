@@ -8,6 +8,8 @@
 #       beaker name limit. Actual base checkpoint step is 238419 (see base_model_path).
 # STATUS: NEW
 ##############################################################
+source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
+
 min_document_expert_pool=8
 max_document_expert_pool=128
 eval_document_expert_pool=32
@@ -17,7 +19,7 @@ lr=4e-4
 num_billion_tokens=10
 num_tokens=$((num_billion_tokens * 1000000000))
 
-base_model_path="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339"
+base_model_path="${MODELS_DIR}/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339"
 
 nodes=16
 gpus=8
@@ -54,24 +56,10 @@ runname="twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_
 #  --model.block.feed_forward_moe.lb_loss_weight=${lb}
 
 
-python -m olmo_core.launch.beaker \
-  --name $runname \
-	--gpus $gpus \
-  --nodes $nodes \
-	--weka=oe-training-default \
-  --shared-filesystem \
-	--workspace ai2/flex2 \
-	--cluster ai2/jupiter \
-	--beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
-	--preemptible \
-	--allow-dirty \
-	--priority urgent \
-	--env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
-	-- src/scripts/train/olmoe-1B-7B_fsl_extension.py \
-    $runname \
-		--save-folder="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/$runname" \
+launch src/scripts/train/olmoe-1B-7B_fsl_extension.py $runname \
+		--save-folder="${MODELS_DIR}/$runname" \
 		--dataset.mix=mj_finemath4plus \
-		--work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
+		--work-dir="${DATASET_CACHE}" \
 		--trainer.callbacks.wandb.enabled=true \
 		--trainer.callbacks.wandb.entity=ryanyxw \
 		--trainer.callbacks.wandb.project=olmoe-modular \

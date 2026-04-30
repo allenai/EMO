@@ -3,14 +3,16 @@
 #     - Extension experiment (math): Add new expert initialized from AVERAGE, then train only the new expert on math dataset
 # STATUS: USED
 ##############################################################
+source "$(dirname "${BASH_SOURCE[0]}")/../../launch_common.sh"
+
 
 
 NUM_NEW_EXPERTS=2
 TOTAL_EXPERTS=$((128+${NUM_NEW_EXPERTS}))
 
 # Part 1: Add new expert
-BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
-NEW_BASE_MODEL_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/extensions/twolevelbatchlb-32_1b14b_${TOTAL_EXPERTS}experts_stability_prenorm_noqknorm_1121_step30995_init_average_noise_10perc"
+BASE_MODEL_PATH="${BASE_MODELS}/twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995"
+NEW_BASE_MODEL_PATH="${EXTENSIONS}/twolevelbatchlb-32_1b14b_${TOTAL_EXPERTS}experts_stability_prenorm_noqknorm_1121_step30995_init_average_noise_10perc"
 
 # Run this once; on weka
 # python src/scripts/akshitab/add_finegrained_expert/add_new_expert.py \
@@ -29,24 +31,11 @@ LR=4e-4 #4e-4  # 4e-3, #4e-5
 # # Part 2: Train with new expert
 RUN_NAME="freeze-fix-twolevel_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_math_init_average_noise_10pc_${NUM_BILLION_TOKENS}B_lr_${LR}"
 
-python -m olmo_core.launch.beaker \
-  --name ${RUN_NAME} \
-	--gpus 8 \
-  --nodes 4 \
-	--weka=oe-training-default \
-  --shared-filesystem \
-	--workspace ai2/flex2 \
-	--cluster ai2/jupiter \
-	--preemptible \
-	--allow-dirty \
-	--priority urgent \
-	--env-secret "GITHUB_TOKEN=AKSHITAB_GITHUB_TOKEN" "WANDB_API_KEY=AKSHITAB_WANDB_API_KEY" "BEAKER_TOKEN=AKSHITAB_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
-	-- src/scripts/akshitab/add_finegrained_expert/train_new_expert.py \
-    ${RUN_NAME} \
+launch src/scripts/akshitab/add_finegrained_expert/train_new_expert.py ${RUN_NAME} \
 		--trainer.load_path="${NEW_BASE_MODEL_PATH}/model_and_optim" \
-		--save-folder="/weka/oe-training-default/akshitab/FlexMoE/models/${RUN_NAME}" \
+		--save-folder="${MODELS}/${RUN_NAME}" \
 		--dataset.mix=mj_finemath4plus \
-		--work-dir="/weka/oe-training-default/akshitab/dataset-cache" \
+		--work-dir="${DATASET_CACHE}" \
 		--trainer.max_duration="{value: ${NUM_TOKENS}, unit: tokens}" \
 		--trainer.callbacks.wandb.enabled=true \
 		--trainer.callbacks.wandb.entity=akshitab \
