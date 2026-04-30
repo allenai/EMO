@@ -10,7 +10,7 @@ requires-python = ">=3.10"
 dependencies = []
 
 [project.entry-points."vllm.general_plugins"]
-flex_olmo_noqknorm_prenorm_shared = "flex_olmo_noqknorm_prenorm_shared_plugin:register"
+flex_olmo_noqknorm_prenorm_shared = "flex_olmo_noqknorm_prenorm_plugin:register"
 
 [tool.setuptools]
-py-modules = ["flex_olmo_noqknorm_prenorm_shared_plugin"]
+py-modules = ["flex_olmo_noqknorm_prenorm_plugin"]

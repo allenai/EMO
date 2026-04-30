@@ -1,18 +1,18 @@
-"""Standalone plugin model for FlexOlmoNoQKNormPrenormShared.
+"""Standalone plugin model for FlexOlmoNoQKNormPrenorm.
 This file can be used as an out-of-tree vLLM model plugin. It uses only
 absolute imports so it can live anywhere on the filesystem.
 Usage:
     vllm serve /path/to/checkpoint \
-        --model-impl flex_olmo_noqknorm_prenorm_shared_plugin \
+        --model-impl flex_olmo_noqknorm_prenorm_plugin \
         --trust-remote-code
 Or register programmatically:
     from vllm import ModelRegistry
-    from flex_olmo_noqknorm_prenorm_shared_plugin import (
-        FlexOlmoNoQKNormPrenormSharedForCausalLM,
+    from flex_olmo_noqknorm_prenorm_plugin import (
+        FlexOlmoNoQKNormPrenormForCausalLM,
     )
     ModelRegistry.register_model(
-        "FlexOlmoNoQKNormPrenormSharedForCausalLM",
-        FlexOlmoNoQKNormPrenormSharedForCausalLM,
+        "FlexOlmoNoQKNormPrenormForCausalLM",
+        FlexOlmoNoQKNormPrenormForCausalLM,
     )
 """
 
@@ -61,7 +61,7 @@ from vllm.sequence import IntermediateTensors
 # ---------------------------------------------------------------------------
 
 class FlexMoEConfig(PretrainedConfig):
-    model_type = "flex_olmo_noqknorm_prenorm_shared"
+    model_type = "flex_olmo_noqknorm_prenorm"
     keys_to_ignore_at_inference = ["past_key_values"]
 
     def __init__(
@@ -94,7 +94,7 @@ class FlexMoEConfig(PretrainedConfig):
     ):
         if "architectures" not in kwargs:
             kwargs["architectures"] = [
-                "FlexOlmoNoQKNormPrenormSharedForCausalLM"
+                "FlexOlmoNoQKNormPrenormForCausalLM"
             ]
 
         self.vocab_size = vocab_size
@@ -561,7 +561,7 @@ class FlexMoEModel(nn.Module):
         return loaded_params
 
 
-class FlexOlmoNoQKNormPrenormSharedForCausalLM(nn.Module, SupportsPP):
+class FlexOlmoNoQKNormPrenormForCausalLM(nn.Module, SupportsPP):
     packed_modules_mapping = {
         "qkv_proj": ["q_proj", "k_proj", "v_proj"],
         "gate_up_proj": ["gate_proj", "up_proj"],
@@ -625,9 +625,11 @@ class FlexOlmoNoQKNormPrenormSharedForCausalLM(nn.Module, SupportsPP):
 
 
 def register() -> None:
+    from transformers import AutoConfig
     from vllm import ModelRegistry
 
+    AutoConfig.register("flex_olmo_noqknorm_prenorm", FlexMoEConfig)
     ModelRegistry.register_model(
-        "FlexOlmoNoQKNormPrenormSharedForCausalLM",
-        FlexOlmoNoQKNormPrenormSharedForCausalLM,
+        "FlexOlmoNoQKNormPrenormForCausalLM",
+        FlexOlmoNoQKNormPrenormForCausalLM,
     )
