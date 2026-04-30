@@ -46,6 +46,7 @@ RUN_NAME=""
 PRUNE_MODE=""
 NUM_PRUNE_EXAMPLES=""
 TRUST_REMOTE_CODE=false
+EVAL_BACKEND="hf"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -121,6 +122,10 @@ while [[ $# -gt 0 ]]; do
         --trust-remote-code)
             TRUST_REMOTE_CODE=true
             shift
+            ;;
+        --eval-backend)
+            EVAL_BACKEND="$2"
+            shift 2
             ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
@@ -294,6 +299,12 @@ echo "========================================"
 # Datasets are already cached from steps 1-3; skip HF API calls to avoid rate limits
 export HF_DATASETS_OFFLINE=1
 
+# Eval backend: "hf" (default) or "vllm" via flexmoe-vllm-plugin.
+EVAL_MODEL_TYPE="hf"
+if [ "$EVAL_BACKEND" = "vllm" ]; then
+    EVAL_MODEL_TYPE="vllm"
+fi
+
 all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
 
 for checkpoint in "${all_checkpoints[@]}"; do
@@ -312,7 +323,7 @@ for checkpoint in "${all_checkpoints[@]}"; do
 
     python -m src.scripts.eval.launch_eval \
         --model "$checkpoint" \
-        --model-type hf \
+        --model-type "$EVAL_MODEL_TYPE" \
         --task "$TASK-pruned" \
         --pruned_split "test" \
         --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
@@ -350,7 +361,7 @@ if [ -n "$MMLU_SUBJECTS" ]; then
 
             python -m src.scripts.eval.launch_eval \
                 --model "$checkpoint" \
-                --model-type hf \
+                --model-type "$EVAL_MODEL_TYPE" \
                 --task "${SUBJECT_TASK_PREFIX}${subject}-pruned" \
                 --pruned_split "test" \
                 --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}/per_subject/${subject}" \

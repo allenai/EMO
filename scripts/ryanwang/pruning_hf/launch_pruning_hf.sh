@@ -71,6 +71,14 @@ batch_size=32
 # (seed=0, mode-agnostic — ignores PRUNING_MODE). Output dir uses _prunemode-random.
 NUM_PRUNE_EXAMPLES=""
 
+# --- Eval backend ---
+# "hf" (default): HuggingFace transformers via lm-eval-harness HFLM. Stable, slower.
+# "vllm": vLLM with the flexmoe-vllm-plugin (much faster on MoE/MC tasks).
+# Dense entries (skip_prune=true) auto-fall-back to HF since the plugin only
+# covers FlexOlmoNoQKNormPrenormForCausalLM (MoE), not Olmo2NoQKNormPrenormForCausalLM.
+# Override at invocation: EVAL_BACKEND=vllm bash launch_pruning_hf.sh
+EVAL_BACKEND="${EVAL_BACKEND:-hf}"
+
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
 # Schedule name (used in output directory naming)
 PRUNE_SCHEDULE_NAME="first2_unpruned"
@@ -446,6 +454,17 @@ for ENTRY in "${MODELS[@]}"; do
             NPE_FLAG="--num-prune-examples ${NUM_PRUNE_EXAMPLES}"
         fi
 
+        # Eval backend flag: vLLM only for MoE entries. Dense (skip_prune=true)
+        # auto-falls-back to HF since the vLLM plugin doesn't cover Olmo2NoQKNormPrenormForCausalLM.
+        EVAL_BACKEND_FLAG=""
+        if [ "$EVAL_BACKEND" = "vllm" ]; then
+            if [ "$SKIP_PRUNE_DECISION" = "true" ]; then
+                echo "  EVAL_BACKEND=vllm but model is dense (skip_prune=true); falling back to hf for eval"
+            else
+                EVAL_BACKEND_FLAG="--eval-backend vllm"
+            fi
+        fi
+
         # Clean any previous results for this exact (model, keep-k, task, prune-mode)
         # combination on S3 so re-runs never mix new metrics with stale ones.
         # aws s3 rm on a non-existent prefix is a no-op (exit 0).
@@ -518,7 +537,8 @@ for ENTRY in "${MODELS[@]}"; do
                 --num-shared-experts ${num_shared_experts} \
                 --skip-activation \
                 --skip-prune \
-                ${TRC_FLAG}
+                ${TRC_FLAG} \
+                ${EVAL_BACKEND_FLAG}
                 "
             echo "Launched evaluation for model: $model, task: $TASK"
             echo "----------------------------------------"
@@ -571,7 +591,8 @@ for ENTRY in "${MODELS[@]}"; do
                     --num-epochs ${num_epochs} \
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
-                    ${TRC_FLAG}
+                    ${TRC_FLAG} \
+                    ${EVAL_BACKEND_FLAG}
                 "
         elif [[ $PRUNING_MODE == "layerwise_variable" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise_variable.sh \
@@ -620,7 +641,8 @@ for ENTRY in "${MODELS[@]}"; do
                     --num-shared-experts ${num_shared_experts} \
                     --prune-mode ${PRUNE_SCHEDULE_NAME} \
                     ${NPE_FLAG} \
-                    ${TRC_FLAG}
+                    ${TRC_FLAG} \
+                    ${EVAL_BACKEND_FLAG}
                 "
         elif [[ $PRUNING_MODE == "easy_ep" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_easy_ep.sh \
@@ -667,7 +689,8 @@ for ENTRY in "${MODELS[@]}"; do
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
                     ${NPE_FLAG} \
-                    ${TRC_FLAG}
+                    ${TRC_FLAG} \
+                    ${EVAL_BACKEND_FLAG}
                 "
         elif [[ $PRUNING_MODE == "layerwise" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
@@ -714,7 +737,8 @@ for ENTRY in "${MODELS[@]}"; do
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
                     ${NPE_FLAG} \
-                    ${TRC_FLAG}
+                    ${TRC_FLAG} \
+                    ${EVAL_BACKEND_FLAG}
                 "
         else
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
@@ -761,7 +785,8 @@ for ENTRY in "${MODELS[@]}"; do
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
                     ${NPE_FLAG} \
-                    ${TRC_FLAG}
+                    ${TRC_FLAG} \
+                    ${EVAL_BACKEND_FLAG}
                 "
         fi
 

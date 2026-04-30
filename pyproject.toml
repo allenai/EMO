@@ -82,7 +82,12 @@ flash-attn = [
 #    "transformers@git+https://github.com/ryanyxw/transformers.git@2a441500fddbaedeb7f22651114825358be6b296"
 #]
 wandb = ["wandb"]
-all = ["ai2-olmo-core[dev,beaker,comet,eval,flash-attn,torchao,transformers,wandb]"]
+# vLLM plugin registering FlexOlmoNoQKNormPrenormForCausalLM as a native vLLM model.
+# Lives under scripts/akshitab/vllm_plugin/. Path resolved via [tool.uv.sources] below.
+# Note: vllm itself is not added here — it's expected to already be in the runtime
+# environment (e.g. the beaker image). Install with: pip install -e '.[vllm-plugin]'.
+vllm-plugin = ["flexmoe-vllm-plugin"]
+all = ["ai2-olmo-core[dev,beaker,comet,eval,flash-attn,torchao,transformers,vllm-plugin,wandb]"]
 
 
 [tool.setuptools]
@@ -188,6 +193,9 @@ filterwarnings = [
     'ignore::UserWarning:torch\.distributed\.checkpoint\.state_dict_saver',
     'ignore::UserWarning:torch\.distributed\.checkpoint\.state_dict_loader',
 ]
+
+[tool.uv.sources]
+flexmoe-vllm-plugin = { path = "scripts/akshitab/vllm_plugin", editable = true }
 
 [tool.uv]
 extra-index-url = ["https://download.pytorch.org/whl/cu128"]

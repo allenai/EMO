@@ -46,6 +46,7 @@ LEARNING_RATE=5e-5
 RUN_NAME=""
 NUM_PRUNE_EXAMPLES=""
 TRUST_REMOTE_CODE=false
+EVAL_BACKEND="hf"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -117,6 +118,10 @@ while [[ $# -gt 0 ]]; do
         --trust-remote-code)
             TRUST_REMOTE_CODE=true
             shift
+            ;;
+        --eval-backend)
+            EVAL_BACKEND="$2"
+            shift 2
             ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
@@ -301,6 +306,13 @@ if [ "$TRUST_REMOTE_CODE" = true ]; then
     EVAL_MA_FLAG="--model-args trust_remote_code=true"
 fi
 
+# Eval backend selection. Default "hf" (lm-eval HFLM); "vllm" uses vLLM with the
+# flexmoe-vllm-plugin (much faster for MoE inference).
+EVAL_MODEL_TYPE="hf"
+if [ "$EVAL_BACKEND" = "vllm" ]; then
+    EVAL_MODEL_TYPE="vllm"
+fi
+
 all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
 
 for checkpoint in "${all_checkpoints[@]}"; do
@@ -320,7 +332,7 @@ for checkpoint in "${all_checkpoints[@]}"; do
 
     python -m src.scripts.eval.launch_eval \
         --model "$checkpoint" \
-        --model-type hf \
+        --model-type "$EVAL_MODEL_TYPE" \
         --task "$TASK-pruned" \
         --pruned_split "test" \
         --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
@@ -361,7 +373,7 @@ if [ -n "$MMLU_SUBJECTS" ]; then
 
             python -m src.scripts.eval.launch_eval \
                 --model "$checkpoint" \
-                --model-type hf \
+                --model-type "$EVAL_MODEL_TYPE" \
                 --task "${SUBJECT_TASK_PREFIX}${subject}-pruned" \
                 --pruned_split "test" \
                 --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}/per_subject/${subject}" \
