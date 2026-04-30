@@ -260,7 +260,9 @@ fi
 
 export WANDB_PROJECT="olmoe-modular"
 export WANDB_ENTITY="ryanyxw"
-export WANDB_TAGS="finetune,${TASK:0:60},${PRUNED_MODEL: -60}"
+PM_TAG="${PRUNED_MODEL: -60}"
+[ -z "$PM_TAG" ] && PM_TAG="$PRUNED_MODEL"
+export WANDB_TAGS="finetune,${TASK:0:60},${PM_TAG}"
 
 gas=$(( BATCH_SIZE / (NUM_GPUS * MICRO_BATCH_SIZE) ))
 

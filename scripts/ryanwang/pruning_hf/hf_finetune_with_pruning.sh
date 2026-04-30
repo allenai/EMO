@@ -306,7 +306,12 @@ fi
 export WANDB_PROJECT="olmoe-modular"
 export WANDB_ENTITY="ryanyxw"
 # optional:
-export WANDB_TAGS="finetune,${TASK:0:60},${PRUNED_MODEL: -60}"
+# Last 60 chars of PRUNED_MODEL; bash's ${var: -60} returns empty when
+# PRUNED_MODEL is shorter than 60 (e.g. short HF IDs like allenai/Dense_1b_130B),
+# so fall back to the full string in that case to avoid empty wandb tags.
+PM_TAG="${PRUNED_MODEL: -60}"
+[ -z "$PM_TAG" ] && PM_TAG="$PRUNED_MODEL"
+export WANDB_TAGS="finetune,${TASK:0:60},${PM_TAG}"
 
 # calculate gas
 gas=$(( BATCH_SIZE / (NUM_GPUS * MICRO_BATCH_SIZE) ))
