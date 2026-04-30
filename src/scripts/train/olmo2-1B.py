@@ -52,7 +52,6 @@ from olmo_core.utils import seed_all
 
 log = logging.getLogger(__name__)
 
-DATA_ROOT = "/weka/oe-training-default/ai2-llm"
 
 C4_VALIDATION_PATH = [
     "/weka/oe-training-default/ai2-llm/examples/c4-en/gpt2/c4-validation.00000-00008.npy"
@@ -137,12 +136,12 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
     # docs: end-model-config
 
-    log.info(f"Using data root: {DATA_ROOT}")
+    log.info(f"Using data root: {opts.data_root}")
 
     dataset_config = NumpyFSLDatasetConfig.from_data_mix(
         DataMix.OLMo_mix_0625,
         tokenizer=tokenizer_config,
-        mix_base_dir=DATA_ROOT,
+        mix_base_dir=opts.data_root,
         sequence_length=SEQUENCE_LENGTH,
         max_target_sequence_length=max(8192, SEQUENCE_LENGTH),
         work_dir=work_dir,
@@ -281,6 +280,12 @@ def parser_args():
         type=float,
         default=4e-4,
         help="Learning rate for the optimizer.",
+    )
+    parser.add_argument(
+        "--data-root",
+        type=str,
+        default="/weka/oe-training-default/ai2-llm",
+        help="Root directory for the data mix (mix_base_dir).",
     )
     opts, overrides = parser.parse_known_args()
     return opts, overrides

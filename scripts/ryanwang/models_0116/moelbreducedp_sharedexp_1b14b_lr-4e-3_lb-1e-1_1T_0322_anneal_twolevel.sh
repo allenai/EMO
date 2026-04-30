@@ -6,6 +6,8 @@
 #     - Resumes from 1T checkpoint and linearly decays LR to 0 over anneal_tokens
 # STATUS: NEW
 ##############################################################
+source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
+
 min_document_expert_pool=8
 max_document_expert_pool=128
 eval_document_expert_pool=32
@@ -13,7 +15,7 @@ lb=1e-1
 # NOTE: --lr is no longer needed; the anneal script auto-extracts it from the checkpoint
 
 anneal_tokens=50000000000  # 50B tokens
-anneal_checkpoint="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322/step238419"
+anneal_checkpoint="${MODELS_DIR}/moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322/step238419"
 
 nodes=16
 gpus=8
@@ -50,24 +52,10 @@ runname="moereducedp${lb_global_batch_size}sharedexp${num_shared_experts}_1b14b_
 #  --anneal-checkpoint=${anneal_checkpoint}
 
 
-python -m olmo_core.launch.beaker \
-  --name $runname \
-	--gpus $gpus \
-  --nodes $nodes \
-	--weka=oe-training-default \
-  --shared-filesystem \
-	--workspace ai2/flex2 \
-	--cluster ai2/jupiter \
-  --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
-	--preemptible \
-	--allow-dirty \
-	--priority urgent \
-	--env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
-	-- src/scripts/train/olmoe-1B-7B_fsl_anneal.py \
-    $runname \
-		--save-folder="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/$runname" \
+launch src/scripts/train/olmoe-1B-7B_fsl_anneal.py $runname \
+		--save-folder="${MODELS_DIR}/$runname" \
 		--dataset.mix=OLMoE-mix-0824 \
-		--work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
+		--work-dir="${DATASET_CACHE}" \
 		--trainer.callbacks.wandb.enabled=true \
 		--trainer.callbacks.wandb.entity=ryanyxw \
 		--trainer.callbacks.wandb.project=olmoe-modular \

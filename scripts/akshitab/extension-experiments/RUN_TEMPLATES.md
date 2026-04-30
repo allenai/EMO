@@ -1,37 +1,30 @@
 # Extension experiment run templates
 
-General templates for each type of extension-experiment run in this directory. All paths are parametrized by a single `${PREFIX}` variable; set it once per environment (e.g. `/weka/oe-training-default/akshitab/FlexMoE` on Ai2 weka, or `/path/to/local/FlexMoE` locally). All templates use `torchrun` for local / single-node launches — swap in `python -m olmo_core.launch.beaker ... --` to submit to Beaker instead.
+General templates for each type of extension-experiment run in this directory. The shared preamble (paths, launcher, base-model constants) lives in [`launch_common.sh`](launch_common.sh); every run script sources it.
 
-## Preamble (put at the top of every run script)
+## Preamble — `launch_common.sh`
+
+Source it from any script:
 
 ```bash
-# Root for model checkpoints and dataset cache. Override via env var.
-PREFIX=${PREFIX:-/path/to/FlexMoE}
-
-BASE_MODELS="${PREFIX}/base_models"        # pretrained 128-expert bases (from upstream)
-EXTENSIONS="${PREFIX}/models/extensions"   # pre-training extensions (new experts added, not yet trained)
-MODELS="${PREFIX}/models"                  # trained run outputs
-DATASET_CACHE="${PREFIX}/dataset-cache"    # tokenizer-mapped dataset cache
-
-# Launcher: torchrun on a single node with ${NPROC} GPUs.
-# Swap with `python -m olmo_core.launch.beaker --name ${RUN_NAME} <beaker-flags> --`
-# for cluster runs.
-NPROC=${NPROC:-8}
-LAUNCH="torchrun --nproc-per-node=${NPROC}"
+source "$(dirname "${BASH_SOURCE[0]}")/../../launch_common.sh"
 ```
 
-## Regular MoE base model
+`launch_common.sh` exports:
 
-All regular-MoE extensions start from:
+- **Paths** (override via env vars before sourcing):
+  - `PREFIX` (default `/weka/oe-training-default/akshitab/FlexMoE`) — root for outputs.
+  - `BASE_MODELS` (default `/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models`) — root for upstream base checkpoints.
+  - `MODELS`, `EXTENSIONS`, `DATASET_CACHE` — derived from `PREFIX`.
+- **Specific base checkpoints**:
+  - `REGULAR_BASE` — `moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995`
+  - `TWOLEVEL_BASE` — `twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995`
+  - `NONSHARED_BASE` — `moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995`
+- **`launch()` function** — wraps either `torchrun --nproc-per-node=${NPROC}` (default, `MODE=local`) or `python -m olmo_core.launch.beaker` (when `MODE=beaker`). Call as: `launch <script.py> <run_name> [args...]`.
 
+Switch to a beaker submission with:
 ```bash
-REGULAR_BASE="${BASE_MODELS}/moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995"
-```
-
-## Twolevel MoE base model
-
-```bash
-TWOLEVEL_BASE="${BASE_MODELS}/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995"
+MODE=beaker bash scripts/akshitab/extension-experiments/regular_moe/initializations/add_4math_expert_init_top2_average_noise.sh
 ```
 
 ---
@@ -79,8 +72,7 @@ EXPERTS_TO_TRAIN=$(seq -s, $INSERT_POS $((INSERT_POS + NUM_NEW_EXPERTS - 1)))
 
 RUN_NAME="moereducedp512sharedexp1_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_math_init_top2_average_noise_${NUM_BILLION_TOKENS}B_lr_${LR}"
 
-${LAUNCH} src/scripts/akshitab/add_finegrained_expert/train_selected_experts.py \
-    ${RUN_NAME} \
+launch src/scripts/akshitab/add_finegrained_expert/train_selected_experts.py ${RUN_NAME} \
     --trainer.load_path="${NEW_BASE_MODEL_PATH}/model_and_optim" \
     --save-folder="${MODELS}/${RUN_NAME}" \
     --dataset.mix=${DATA_MIX} \
@@ -127,8 +119,7 @@ LR=4e-4
 
 RUN_NAME="moereducedp512sharedexp1_1b14b_${TOTAL_EXPERTS}experts_${EXPERTS_TO_TRAIN//,/_}_trained_math_${NUM_BILLION_TOKENS}B_lr_${LR}"
 
-${LAUNCH} src/scripts/akshitab/add_finegrained_expert/train_selected_experts.py \
-    ${RUN_NAME} \
+launch src/scripts/akshitab/add_finegrained_expert/train_selected_experts.py ${RUN_NAME} \
     --trainer.load_path="${REGULAR_BASE}/model_and_optim" \
     --save-folder="${MODELS}/${RUN_NAME}" \
     --dataset.mix=mj_finemath4plus \
@@ -177,8 +168,7 @@ EXPERTS_TO_TRAIN=$(seq -s, $INSERT_POS $((INSERT_POS + NUM_NEW_EXPERTS - 1)))
 
 RUN_NAME="ff-moe1b14b_${TOTAL_EXPERTS}experts_${NUM_NEW_EXPERTS}trained_sharedexp${SHARED_EXPERTS}math_init_top2_average_${NUM_BILLION_TOKENS}B_lr_${LR}"
 
-${LAUNCH} src/scripts/akshitab/add_finegrained_expert/train_selected_experts.py \
-    ${RUN_NAME} \
+launch src/scripts/akshitab/add_finegrained_expert/train_selected_experts.py ${RUN_NAME} \
     ... \
     --base-model-config="${NEW_BASE_MODEL_PATH}" \
     --experts-to-train=${EXPERTS_TO_TRAIN} \
@@ -225,8 +215,7 @@ LR=4e-4
 
 RUN_NAME="rt-realdata-merged_moe_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_${NUM_BILLION_TOKENS}B_lr_${LR}"
 
-${LAUNCH} src/scripts/akshitab/add_finegrained_expert/train_router.py \
-    ${RUN_NAME} \
+launch src/scripts/akshitab/add_finegrained_expert/train_router.py ${RUN_NAME} \
     --trainer.load_path="${MERGED_MODEL_PATH}/model_and_optim" \
     --save-folder="${MODELS}/${RUN_NAME}" \
     --dataset.mix=base_math_code \
