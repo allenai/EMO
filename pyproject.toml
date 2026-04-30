@@ -87,7 +87,7 @@ wandb = ["wandb"]
 # Pulls in vllm itself; pin it tightly if you need a specific version compatible with
 # the cluster's torch build (currently torch==2.8.0+cu128).
 # Install with: pip install -e '.[vllm-plugin]'.
-vllm-plugin = ["vllm", "flexmoe-vllm-plugin"]
+vllm-plugin = ["vllm>=0.10.0", "flexmoe-vllm-plugin"]
 all = ["ai2-olmo-core[dev,beaker,comet,eval,flash-attn,torchao,transformers,vllm-plugin,wandb]"]
 
 
