@@ -68,6 +68,7 @@ class FinetuneConfig:
     logging_steps: int = 5
     report_to: str = "wandb"
     run_name: Optional[str] = None
+    trust_remote_code: bool = False
 
 
 class MaskedLossDataCollator(DataCollatorForLanguageModeling):
@@ -116,10 +117,13 @@ def compute_save_steps(total_steps: int, num_checkpoints: int) -> int:
 def finetune(config: FinetuneConfig):
     """Run finetuning with the given configuration."""
     logger.info(f"Loading model from {config.model_path}")
-    tokenizer = AutoTokenizer.from_pretrained(config.model_path)
+    tokenizer = AutoTokenizer.from_pretrained(
+        config.model_path, trust_remote_code=config.trust_remote_code
+    )
     model = AutoModelForCausalLM.from_pretrained(
         config.model_path,
         torch_dtype=torch.bfloat16 if config.bf16 else torch.float32,
+        trust_remote_code=config.trust_remote_code,
     )
     # model = FlexOlmoNoQKNormPrenormForCausalLMDebug.from_pretrained(
     #     config.model_path,
@@ -181,7 +185,7 @@ def finetune(config: FinetuneConfig):
     # Setup FSDP config
     fsdp_config = None
     if config.use_fsdp:
-        if "dense_1b" in config.model_path:
+        if "dense_1b" in config.model_path.lower():
             fsdp_config = {
                 "fsdp_transformer_layer_cls_to_wrap": ["Olmo2NoQKNormPrenormDecoderLayer"],
             }
@@ -233,7 +237,7 @@ def finetune(config: FinetuneConfig):
     )
 
     # log the MoE-specific metrics if training a MoE model
-    if "dense" not in config.model_path:
+    if "dense" not in config.model_path.lower():
         trainer.pop_callback(WandbCallback)
         trainer.add_callback(LogMoeCallback())
         trainer.add_callback(WandbCallback())
@@ -346,6 +350,11 @@ def main():
         default="wandb",
         help="Where to report metrics (wandb, tensorboard, none)",
     )
+    parser.add_argument(
+        "--trust-remote-code",
+        action="store_true",
+        help="Trust remote code when loading from HF Hub (default: False)",
+    )
 
     args = parser.parse_args()
 
@@ -365,6 +374,7 @@ def main():
         gradient_checkpointing=not args.no_gradient_checkpointing,
         run_name=args.run_name,
         report_to=args.report_to,
+        trust_remote_code=args.trust_remote_code,
     )
 
     finetune(config)

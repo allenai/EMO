@@ -4,12 +4,12 @@
 BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 #BASE_DIR="/root/phdbrainstorm/FlexMoE"
 MODELS=(
-    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
+#    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
 #    "dense_1b_lr-4e-3_0213/step30995-hf"
 #    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf"
 #    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf"
-    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419/step250339-hf"
+#    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419/step250339-hf"
 #    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_twolevel_randpool-8-128_from_step238419/step250339-hf"
 
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313/step238419-hf"
@@ -37,6 +37,14 @@ MODELS=(
 #    "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-1_sharelb-1e-1_0214/step30995-hf"
 #    "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-2_sharelb-1e-2_0214/step30995-hf"
 
+    # HF Hub entries: format "hf:<id>|shared=<N>|skip_prune=<true|false>"
+    "hf:allenai/Dense_1b_130B|shared=0|skip_prune=true"
+    "hf:allenai/StdMoE_1b4b_130B|shared=1|skip_prune=false"
+    "hf:allenai/StdMoE_1b14b_140B|shared=1|skip_prune=false"
+    "hf:allenai/StdMoE_1b14b_1T|shared=1|skip_prune=false"
+    "hf:allenai/ModMoE_1b14b_130B|shared=1|skip_prune=false"
+    "hf:allenai/ModMoE_1b14b_1T|shared=1|skip_prune=false"
+
     )
 
 CLUSTER="ai2/jupiter-cirrascale-2"
@@ -53,7 +61,7 @@ PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(8 16 32 64)
+PRUNE_KEEP_K_VALUES=(16)
 batch_size=32
 
 # --- Pruning calibration-set size ---
@@ -140,7 +148,7 @@ TASK_GROUPS_LIST=(
 
   # GSM8K generation merged variants (pruning + finetuning share data)
 #  "gsm8k_generation_0shot_merged"
-  "gsm8k_generation_8shot_merged"
+#  "gsm8k_generation_8shot_merged"
 
   # SQuAD merged variants
 #  "squad_merged"
@@ -156,22 +164,22 @@ TASK_GROUPS_LIST=(
 
   # MMLU 17-category merged variants (pruning + finetuning share data)
   "mmlu_merged_biology"
-  "mmlu_merged_business"
-  "mmlu_merged_chemistry"
-  "mmlu_merged_computer_science"
-  "mmlu_merged_culture"
-  "mmlu_merged_economics"
-  "mmlu_merged_engineering"
-  "mmlu_merged_geography"
-  "mmlu_merged_health"
-  "mmlu_merged_history"
-  "mmlu_merged_law"
-  "mmlu_merged_math"
-  "mmlu_merged_other"
-  "mmlu_merged_philosophy_cat"
-  "mmlu_merged_physics"
-  "mmlu_merged_politics"
-  "mmlu_merged_psychology"
+#  "mmlu_merged_business"
+#  "mmlu_merged_chemistry"
+#  "mmlu_merged_computer_science"
+#  "mmlu_merged_culture"
+#  "mmlu_merged_economics"
+#  "mmlu_merged_engineering"
+#  "mmlu_merged_geography"
+#  "mmlu_merged_health"
+#  "mmlu_merged_history"
+#  "mmlu_merged_law"
+#  "mmlu_merged_math"
+#  "mmlu_merged_other"
+#  "mmlu_merged_philosophy_cat"
+#  "mmlu_merged_physics"
+#  "mmlu_merged_politics"
+#  "mmlu_merged_psychology"
 
   # HellaSwag k=6 clusters
 #  "hellaswag_k6_cluster_merged_0"
@@ -238,20 +246,20 @@ TASK_GROUPS_LIST=(
 #  "mmlu_pro_law"
 
   # MMLU-Pro merged variant (pruning + finetuning use same data)
-  "mmlu_pro_merged_math"
-  "mmlu_pro_merged_health"
-  "mmlu_pro_merged_physics"
-  "mmlu_pro_merged_business"
-  "mmlu_pro_merged_biology"
-  "mmlu_pro_merged_chemistry"
-  "mmlu_pro_merged_computer_science"
-  "mmlu_pro_merged_economics"
-  "mmlu_pro_merged_engineering"
-  "mmlu_pro_merged_philosophy"
-  "mmlu_pro_merged_other"
-  "mmlu_pro_merged_history"
-  "mmlu_pro_merged_psychology"
-  "mmlu_pro_merged_law"
+#  "mmlu_pro_merged_math"
+#  "mmlu_pro_merged_health"
+#  "mmlu_pro_merged_physics"
+#  "mmlu_pro_merged_business"
+#  "mmlu_pro_merged_biology"
+#  "mmlu_pro_merged_chemistry"
+#  "mmlu_pro_merged_computer_science"
+#  "mmlu_pro_merged_economics"
+#  "mmlu_pro_merged_engineering"
+#  "mmlu_pro_merged_philosophy"
+#  "mmlu_pro_merged_other"
+#  "mmlu_pro_merged_history"
+#  "mmlu_pro_merged_psychology"
+#  "mmlu_pro_merged_law"
 
   # MMLU-Pro merged variant with N=50 pruning validation examples
 #  "mmlu_pro_merged_n50_math"
@@ -312,11 +320,46 @@ echo "Cluster: $CLUSTER"
 echo ""
 
 # Launch evaluation for each model, keep-k, and task combination
-for MODEL in "${MODELS[@]}"; do
-  for prune_keep_k in "${PRUNE_KEEP_K_VALUES[@]}"; do
-    echo "Processing model: ${MODEL}, keep-k: ${prune_keep_k}"
-
-    # choose the number of pruned down shared experts
+for ENTRY in "${MODELS[@]}"; do
+  # Parse entry: either a bare local-path (legacy) or an HF tag of the form
+  #   "hf:<hf_id>|shared=<N>|skip_prune=<true|false>"
+  # HF entries require explicit 'shared' and 'skip_prune' since the substring
+  # heuristics below don't recognize the new short HF names (StdMoE, ModMoE, …).
+  if [[ "$ENTRY" == hf:* ]]; then
+    IS_HF=true
+    rest="${ENTRY#hf:}"
+    MODEL="${rest%%|*}"
+    num_shared_experts_override=""
+    skip_prune_override=""
+    if [[ "$rest" == *"|"* ]]; then
+      metadata="${rest#*|}"
+      IFS='|' read -ra meta_parts <<< "$metadata"
+      for kv in "${meta_parts[@]}"; do
+        case "$kv" in
+          shared=*) num_shared_experts_override="${kv#shared=}" ;;
+          skip_prune=*) skip_prune_override="${kv#skip_prune=}" ;;
+          *) echo "ERROR: unknown metadata '$kv' in HF entry '$ENTRY'"; exit 1 ;;
+        esac
+      done
+    fi
+    if [ -z "$num_shared_experts_override" ]; then
+      echo "ERROR: HF entry '$ENTRY' missing required 'shared=N' metadata"
+      exit 1
+    fi
+    if [ -z "$skip_prune_override" ]; then
+      echo "ERROR: HF entry '$ENTRY' missing required 'skip_prune=true|false' metadata"
+      exit 1
+    fi
+    MODEL_ARG="$MODEL"
+    TRC_FLAG="--trust-remote-code"
+    num_shared_experts="$num_shared_experts_override"
+    SKIP_PRUNE_DECISION="$skip_prune_override"
+  else
+    IS_HF=false
+    MODEL="$ENTRY"
+    MODEL_ARG="${MODEL_ARG}"
+    TRC_FLAG=""
+    # Auto-detect num_shared_experts from substring on local path
     if [[ $MODEL == *"twolevelbatchlbreducedp512sharedexp1"* ]]; then
         num_shared_experts=1
     elif [[ $MODEL == *"twolevelbatchlbreducedp512sharedexp2"* ]]; then
@@ -328,6 +371,16 @@ for MODEL in "${MODELS[@]}"; do
     else
         num_shared_experts=0
     fi
+    # Auto-detect skip-prune from substring on local path
+    if [[ $MODEL == *"dense_1b"* || $MODEL == *"1b4b"* ]]; then
+        SKIP_PRUNE_DECISION=true
+    else
+        SKIP_PRUNE_DECISION=false
+    fi
+  fi
+
+  for prune_keep_k in "${PRUNE_KEEP_K_VALUES[@]}"; do
+    echo "Processing model: ${MODEL} (hf=${IS_HF}, shared=${num_shared_experts}, skip_prune=${SKIP_PRUNE_DECISION}), keep-k: ${prune_keep_k}"
 
     for TASK in "${TASK_GROUPS_LIST[@]}"; do
         # TODO: choose the right batch size based on the task
@@ -400,13 +453,13 @@ for MODEL in "${MODELS[@]}"; do
         echo "  Cleaning stale S3 results: ${s3_clean_prefix}"
         aws s3 rm --recursive --quiet "${s3_clean_prefix}" || true
 
-        echo "  Model name: ${BASE_DIR}/${MODEL}"
+        echo "  Model name: ${MODEL_ARG}"
         echo "  GPUs: $gpus"
         echo "  Batch size: $batch_size"
         echo "  Job name: $job_name"
 
         # debug what will be passed
-        echo "  model: ${BASE_DIR}/${MODEL}"
+        echo "  model: ${MODEL_ARG}"
         echo "  task: ${TASK}"
         echo "  relative-dir: ${relative_dir}"
         echo "  base-dir: ${BASE_DIR}/prune_evals"
@@ -417,11 +470,12 @@ for MODEL in "${MODELS[@]}"; do
         echo "  epochs: ${num_epochs}"
         echo "  num_shared_experts: ${num_shared_experts}"
 
-        # if the model is dense or 1b4b, we skip activation and pruning
-        if [[ $MODEL == *"dense_1b"* || $MODEL == *"1b4b"* ]]; then
+        # Skip pruning if the model was tagged skip_prune=true (HF) or matched
+        # the dense/1b4b heuristic (local).
+        if [ "$SKIP_PRUNE_DECISION" = true ]; then
             echo "  Skipping activation computation and pruning for model: $MODEL"
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
-#                --pruned-model ${BASE_DIR}/models/${MODEL} \
+#                --pruned-model ${MODEL_ARG} \
 #                --task ${TASK} \
 #                --base-dir "${BASE_DIR}/prune_evals" \
 #                --relative-dir ${relative_dir} \
@@ -441,6 +495,7 @@ for MODEL in "${MODELS[@]}"; do
                 --weka=oe-training-default \
                 --shared-filesystem \
                 --workspace ai2/flex2 \
+                --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
                 --cluster ai2/jupiter \
                 --preemptible \
                 --allow-dirty \
@@ -449,7 +504,7 @@ for MODEL in "${MODELS[@]}"; do
                 --no-torchrun \
                 --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
                 -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
-                --pruned-model ${BASE_DIR}/models/${MODEL} \
+                --pruned-model ${MODEL_ARG} \
                 --task ${TASK} \
                 --base-dir "${BASE_DIR}/prune_evals" \
                 --relative-dir ${relative_dir} \
@@ -462,7 +517,8 @@ for MODEL in "${MODELS[@]}"; do
                 --num-checkpoints 1 \
                 --num-shared-experts ${num_shared_experts} \
                 --skip-activation \
-                --skip-prune
+                --skip-prune \
+                ${TRC_FLAG}
                 "
             echo "Launched evaluation for model: $model, task: $TASK"
             echo "----------------------------------------"
@@ -472,7 +528,7 @@ for MODEL in "${MODELS[@]}"; do
 
         if [[ $NUM_PRUNE_EXAMPLES == "random" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_random.sh \
-#                --model ${BASE_DIR}/models/${MODEL} \
+#                --model ${MODEL_ARG} \
 #                --task ${TASK} \
 #                --prune-keep-k ${prune_keep_k} \
 #                --base-dir "${BASE_DIR}/prune_evals" \
@@ -493,6 +549,7 @@ for MODEL in "${MODELS[@]}"; do
                 --weka=oe-training-default \
                 --shared-filesystem \
                 --workspace ai2/flex2 \
+                --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
                 --cluster ai2/jupiter \
                 --preemptible \
                 --allow-dirty \
@@ -501,7 +558,7 @@ for MODEL in "${MODELS[@]}"; do
                 --no-torchrun \
                 --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
                 -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_random.sh \
-                    --model ${BASE_DIR}/models/${MODEL} \
+                    --model ${MODEL_ARG} \
                     --task ${TASK} \
                     --prune-keep-k ${prune_keep_k} \
                     --base-dir "${BASE_DIR}/prune_evals" \
@@ -513,11 +570,12 @@ for MODEL in "${MODELS[@]}"; do
                     --micro-batch-size ${micro_batch_size} \
                     --num-epochs ${num_epochs} \
                     --num-checkpoints 1 \
-                    --num-shared-experts ${num_shared_experts}
+                    --num-shared-experts ${num_shared_experts} \
+                    ${TRC_FLAG}
                 "
         elif [[ $PRUNING_MODE == "layerwise_variable" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise_variable.sh \
-#                --model ${BASE_DIR}/models/${MODEL} \
+#                --model ${MODEL_ARG} \
 #                --task ${TASK} \
 #                --keep-k-per-layer "${KEEP_K_PER_LAYER}" \
 #                --base-dir "${BASE_DIR}/prune_evals" \
@@ -538,6 +596,7 @@ for MODEL in "${MODELS[@]}"; do
                 --weka=oe-training-default \
                 --shared-filesystem \
                 --workspace ai2/flex2 \
+                --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
                 --cluster ai2/jupiter \
                 --preemptible \
                 --allow-dirty \
@@ -546,7 +605,7 @@ for MODEL in "${MODELS[@]}"; do
                 --no-torchrun \
                 --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
                 -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise_variable.sh \
-                    --model ${BASE_DIR}/models/${MODEL} \
+                    --model ${MODEL_ARG} \
                     --task ${TASK} \
                     --keep-k-per-layer '${KEEP_K_PER_LAYER}' \
                     --base-dir "${BASE_DIR}/prune_evals" \
@@ -560,11 +619,12 @@ for MODEL in "${MODELS[@]}"; do
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
                     --prune-mode ${PRUNE_SCHEDULE_NAME} \
-                    ${NPE_FLAG}
+                    ${NPE_FLAG} \
+                    ${TRC_FLAG}
                 "
         elif [[ $PRUNING_MODE == "easy_ep" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_easy_ep.sh \
-#                --model ${BASE_DIR}/models/${MODEL} \
+#                --model ${MODEL_ARG} \
 #                --task ${TASK} \
 #                --prune-keep-k ${prune_keep_k} \
 #                --base-dir "${BASE_DIR}/prune_evals" \
@@ -584,6 +644,7 @@ for MODEL in "${MODELS[@]}"; do
                 --weka=oe-training-default \
                 --shared-filesystem \
                 --workspace ai2/flex2 \
+                --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
                 --cluster ai2/jupiter \
                 --preemptible \
                 --allow-dirty \
@@ -592,7 +653,7 @@ for MODEL in "${MODELS[@]}"; do
                 --no-torchrun \
                 --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
                 -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_easy_ep.sh \
-                    --model ${BASE_DIR}/models/${MODEL} \
+                    --model ${MODEL_ARG} \
                     --task ${TASK} \
                     --prune-keep-k ${prune_keep_k} \
                     --base-dir "${BASE_DIR}/prune_evals" \
@@ -605,11 +666,12 @@ for MODEL in "${MODELS[@]}"; do
                     --num-epochs ${num_epochs} \
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
-                    ${NPE_FLAG}
+                    ${NPE_FLAG} \
+                    ${TRC_FLAG}
                 "
         elif [[ $PRUNING_MODE == "layerwise" ]]; then
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
-#                --model ${BASE_DIR}/models/${MODEL} \
+#                --model ${MODEL_ARG} \
 #                --task ${TASK} \
 #                --prune-keep-k ${prune_keep_k} \
 #                --base-dir "${BASE_DIR}/prune_evals" \
@@ -629,6 +691,7 @@ for MODEL in "${MODELS[@]}"; do
                 --weka=oe-training-default \
                 --shared-filesystem \
                 --workspace ai2/flex2 \
+                --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
                 --cluster ai2/jupiter \
                 --preemptible \
                 --allow-dirty \
@@ -637,7 +700,7 @@ for MODEL in "${MODELS[@]}"; do
                 --no-torchrun \
                 --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
                 -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
-                    --model ${BASE_DIR}/models/${MODEL} \
+                    --model ${MODEL_ARG} \
                     --task ${TASK} \
                     --prune-keep-k ${prune_keep_k} \
                     --base-dir "${BASE_DIR}/prune_evals" \
@@ -650,11 +713,12 @@ for MODEL in "${MODELS[@]}"; do
                     --num-epochs ${num_epochs} \
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
-                    ${NPE_FLAG}
+                    ${NPE_FLAG} \
+                    ${TRC_FLAG}
                 "
         else
 #            bash scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
-#                --model ${BASE_DIR}/models/${MODEL} \
+#                --model ${MODEL_ARG} \
 #                --task ${TASK} \
 #                --prune-keep-k ${prune_keep_k} \
 #                --base-dir "${BASE_DIR}/prune_evals" \
@@ -674,6 +738,7 @@ for MODEL in "${MODELS[@]}"; do
                 --weka=oe-training-default \
                 --shared-filesystem \
                 --workspace ai2/flex2 \
+                --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
                 --cluster ai2/jupiter \
                 --preemptible \
                 --allow-dirty \
@@ -682,7 +747,7 @@ for MODEL in "${MODELS[@]}"; do
                 --no-torchrun \
                 --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
                 -- bash -c "scripts/ryanwang/pruning_hf/hf_finetune_with_pruning.sh \
-                    --model ${BASE_DIR}/models/${MODEL} \
+                    --model ${MODEL_ARG} \
                     --task ${TASK} \
                     --prune-keep-k ${prune_keep_k} \
                     --base-dir "${BASE_DIR}/prune_evals" \
@@ -695,7 +760,8 @@ for MODEL in "${MODELS[@]}"; do
                     --num-epochs ${num_epochs} \
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
-                    ${NPE_FLAG}
+                    ${NPE_FLAG} \
+                    ${TRC_FLAG}
                 "
         fi
 

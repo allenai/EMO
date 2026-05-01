@@ -16,45 +16,60 @@ BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 # Each entry: "hf_model_id|revision|sanitized_dir_name"
 # Use "none" for revision to use the default branch.
 MODEL_ENTRIES=(
-    "allenai/OLMoE-1B-7B-0924|none|allenaiOLMoE-1B-7B-0924"
-    "allenai/OLMoE-1B-7B-0924|step240000-tokens1006B|allenaiOLMoE-1B-7B-0924_step240000-tokens1006B"
+#    "allenai/OLMoE-1B-7B-0924|none|allenaiOLMoE-1B-7B-0924"
+#    "allenai/OLMoE-1B-7B-0924|step240000-tokens1006B|allenaiOLMoE-1B-7B-0924_step240000-tokens1006B"
+#    "allenai/StdMoE_1b14b_1T|none|allenai_StdMoE_1b14b_1T"
+#    "allenai/StdMoE_1b14b_140B|none|allenai_StdMoE_1b14b_140B"
+#    "allenai/StdMoE_1b4b_130B|none|allenai_StdMoE_1b4b_130B"
+#    "allenai/ModMoE_1b14b_130B|none|allenai_ModMoE_1b14b_130B"
+#    "allenai/ModMoE_1b14b_1T|none|allenai_ModMoE_1b14b_1T"
+    "allenai/Dense_1b_130B|none|allenai_Dense_1b_130B"
+
+    allenai/StdMoE_1b14b_1T
+    allenai/StdMoE_1b14b_140B
+    allenai/StdMoE_1b4b_130B
+    allenai/ModMoE_1b14b_130B
+    allenai/ModMoE_1b14b_1T
+    allenai/Dense_1b_130B
 )
 
 CLUSTER="ai2/jupiter-cirrascale-2"
 
 TASK_GROUPS_LIST=(
-#  "arc_easy"
-  "arc_challenge"
-  "boolq"
-  "csqa"
-  "hellaswag"
-  "openbookqa"
-  "piqa"
-  "socialiqa"
-  "winogrande"
-  "gsm8k_generation_0shot"
-  "gsm8k_perplexity_0shot"
-  "coqa_0shot"
-  "coqa_full_0shot"
-  "squad_0shot"
+  "mmlu_merged_biology"
 
-  "mmlu_biology"
-  "mmlu_business"
-  "mmlu_chemistry"
-  "mmlu_computer_science"
-  "mmlu_culture"
-  "mmlu_economics"
-  "mmlu_engineering"
-  "mmlu_geography"
-  "mmlu_health"
-  "mmlu_history"
-  "mmlu_law"
-  "mmlu_math"
-  "mmlu_other"
-  "mmlu_philosophy_cat"
-  "mmlu_physics"
-  "mmlu_politics"
-  "mmlu_psychology"
+#  "arc_easy"
+#  "arc_challenge"
+#  "boolq"
+#  "csqa"
+#  "hellaswag"
+#  "openbookqa"
+#  "piqa"
+#  "socialiqa"
+#  "winogrande"
+#  "gsm8k_generation_0shot"
+#  "gsm8k_perplexity_0shot"
+#  "coqa_0shot"
+#  "coqa_full_0shot"
+#  "squad_0shot"
+
+#  "mmlu_biology"
+#  "mmlu_business"
+#  "mmlu_chemistry"
+#  "mmlu_computer_science"
+#  "mmlu_culture"
+#  "mmlu_economics"
+#  "mmlu_engineering"
+#  "mmlu_geography"
+#  "mmlu_health"
+#  "mmlu_history"
+#  "mmlu_law"
+#  "mmlu_math"
+#  "mmlu_other"
+#  "mmlu_philosophy_cat"
+#  "mmlu_physics"
+#  "mmlu_politics"
+#  "mmlu_psychology"
 )
 
 gpus=4
@@ -93,6 +108,7 @@ for ENTRY in "${MODEL_ENTRIES[@]}"; do
         echo "    Remote dir: s3://ai2-sewonm/ryanwang/prune_evals_final/${relative_dir}/results/checkpoint-0"
 
         # Local version (uncomment for local runs):
+#        export PYTHONPATH="$(pwd)/src${PYTHONPATH:+:${PYTHONPATH}}"
 #        python -m src.scripts.eval.launch_eval \
 #            --model "${HF_MODEL}" \
 #            --model-type hf \
@@ -101,6 +117,7 @@ for ENTRY in "${MODEL_ENTRIES[@]}"; do
 #            --pruned_split "test" \
 #            --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${relative_dir}/results/checkpoint-0" \
 #            --batch-size $batch_size \
+#            --model-args trust_remote_code=true \
 #            --gpus $gpus
 
         # Beaker version:
@@ -119,15 +136,17 @@ for ENTRY in "${MODEL_ENTRIES[@]}"; do
             --no-follow \
             --no-torchrun \
             --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
-            -- python -m src.scripts.eval.launch_eval \
-                --model "${HF_MODEL}" \
+            -- bash -c "export PYTHONPATH=\"\$(pwd)/src\${PYTHONPATH:+:\${PYTHONPATH}}\" && python -m src.scripts.eval.launch_eval \
+                --model \"${HF_MODEL}\" \
                 --model-type hf \
                 ${revision_args} \
-                --task "${TASK}-pruned" \
-                --pruned_split "test" \
-                --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${relative_dir}/results/checkpoint-0" \
+                --task \"${TASK}-pruned\" \
+                --pruned_split \"test\" \
+                --remote-output-dir \"s3://ai2-sewonm/ryanwang/prune_evals_final/${relative_dir}/results/checkpoint-0\" \
                 --batch-size $batch_size \
+                --model-args trust_remote_code=true \
                 --gpus $gpus
+            "
 
         echo "    Launched: $job_name"
         echo "    ----------------------------------------"

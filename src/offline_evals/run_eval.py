@@ -569,7 +569,7 @@ def load_model(model_load_config: dict) -> HFLM_Verbose:
         tokenizer = None
 
     # if model is an moe model, we set output_router_logits to False
-    if "dense" not in model_load_config["model"]:
+    if "dense" not in model_load_config["model"].lower():
         model_load_config_other["output_router_logits"] = False
 
     model = model_class(

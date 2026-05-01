@@ -70,7 +70,7 @@ eval = [
     "huggingface-hub>=0.34.0,<1.0"
 ]
 torchao = ["torchao"]
-#transformers = ["transformers==4.57.1"]
+# transformers = ["transformers==4.57.1"]
 transformers=[
     "transformers@git+https://github.com/ryanyxw/transformers.git@de05b34309baf1c1110a3371031767edba81a317"
 ]

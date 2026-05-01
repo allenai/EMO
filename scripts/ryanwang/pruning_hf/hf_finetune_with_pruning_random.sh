@@ -36,6 +36,7 @@ SKIP_PRUNE=false
 PRUNED_MODEL=""
 LEARNING_RATE=5e-5
 RUN_NAME=""
+TRUST_REMOTE_CODE=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -70,6 +71,11 @@ while [[ $# -gt 0 ]]; do
             LEARNING_RATE="$2"; shift 2 ;;
         --run-name)
             RUN_NAME="$2"; shift 2 ;;
+        --num-prune-examples)
+            # Accepted for launcher compatibility (ignored: random pruning has no calibration)
+            shift 2 ;;
+        --trust-remote-code)
+            TRUST_REMOTE_CODE=true; shift ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             exit 0
@@ -164,7 +170,9 @@ fi
 
 export WANDB_PROJECT="olmoe-modular"
 export WANDB_ENTITY="ryanyxw"
-export WANDB_TAGS="finetune,${TASK:0:60},${PRUNED_MODEL: -60}"
+PM_TAG="${PRUNED_MODEL: -60}"
+[ -z "$PM_TAG" ] && PM_TAG="$PRUNED_MODEL"
+export WANDB_TAGS="finetune,${TASK:0:60},${PM_TAG}"
 
 gas=$(( BATCH_SIZE / (NUM_GPUS * MICRO_BATCH_SIZE) ))
 
