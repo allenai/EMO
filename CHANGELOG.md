@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added training configuration to train olmoe 1B-7B on 130B tokens of mose natural distribution [10/22]
-- Added offline_evals for FlexMoE.
+- Added offline_evals for ModMoE.
 - Added `partial_freeze_params_mask_fn_name` and `partial_freeze_params_mask_fn_kwargs` arguments to `TransformerConfig`.
 - Added scripts for adding and training new finegrained experts in MoEs.
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FlexMoE is a research extension of **OLMo-core** (Allen AI's open LLM training framework) focused on flexible Mixture-of-Experts (MoE) architectures. The package is named `ai2-olmo-core` (v2.3.0) and lives under `src/olmo_core/`. Custom router implementations are the primary research contribution.
+ModMoE is a research extension of **OLMo-core** (Allen AI's open LLM training framework) focused on flexible Mixture-of-Experts (MoE) architectures. The package is named `ai2-olmo-core` (v2.3.0) and lives under `src/olmo_core/`. Custom router implementations are the primary research contribution.
 
 ## Important Caveats
 

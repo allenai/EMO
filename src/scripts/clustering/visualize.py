@@ -355,7 +355,7 @@ def write_html(clusters_js, docs_js, k, granularity, info, emb_label, path):
         }
         """
 
-    title = f"FlexMoE {'Token' if is_token else 'Document'} Cluster Explorer"
+    title = f"ModMoE {'Token' if is_token else 'Document'} Cluster Explorer"
 
     html = f"""<!DOCTYPE html>
 <html lang="en">

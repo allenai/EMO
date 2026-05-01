@@ -103,7 +103,7 @@ class PostTrainEvalCallback(Callback):
     job_priority: str = "urgent"
     """Job priority for eval jobs."""
 
-    github_repo: str = "allenai/FlexMoE"
+    github_repo: str = "allenai/ModMoE"
     """GitHub repo for gantry (needed when remote URL has embedded token)."""
 
     batch_size: int = 4

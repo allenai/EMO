@@ -11,10 +11,10 @@ Row mapping (from the .tex source header):
     OLMoE^dagger   5T    -> (no data)
     Dense          1T    -> (no data)
     Reg. MoE       1T    -> "moe 1T + anneal (keepk 128)"
-    FlexMoE (Ours) 1T    -> "specialized moe 1T + anneal (keepk 128)"
+    ModMoE (Ours) 1T    -> "specialized moe 1T + anneal (keepk 128)"
     Dense          130B  -> "dense"
     Reg. MoE       130B  -> "moe (keepk 128)"
-    FlexMoE (Ours) 130B  -> "specialized moe + globallb + 1shardexp + randpool (keepk 128)"
+    ModMoE (Ours) 130B  -> "specialized moe + globallb + 1shardexp + randpool (keepk 128)"
 
 All numbers come from the ``(lw)`` (layerwise prunemode) columns, scaled to
 percentages with one decimal place — matching the .tex format.
@@ -40,11 +40,11 @@ ROWS = [
     ("OLMoE^dagger", "5T", None),
     ("Dense", "1T", None),
     ("Reg. MoE", "1T", "moe 1T + anneal (keepk 128)"),
-    ("FlexMoE (Ours)", "1T", "specialized moe 1T + anneal (keepk 128)"),
+    ("ModMoE (Ours)", "1T", "specialized moe 1T + anneal (keepk 128)"),
     ("Dense", "130B", "dense"),
     ("Reg. MoE", "130B", "moe (keepk 128)"),
     (
-        "FlexMoE (Ours)",
+        "ModMoE (Ours)",
         "130B",
         "specialized moe + globallb + 1shardexp + randpool (keepk 128)",
     ),
