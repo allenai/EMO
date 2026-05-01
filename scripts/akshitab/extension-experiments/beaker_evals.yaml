@@ -1,0 +1,51 @@
+# Launch with:
+  # olmo-eval beaker launch \
+  #   -f beaker_evals.yaml \
+  #   -H default \
+  #   -o provider.kind=hf \
+  #   -o 'provider.kwargs={}' \
+  #   -o 'provider.dependencies=[git+https://github.com/ryanyxw/transformers.git@de05b34309baf1c1110a3371031767edba81a317]' \
+  #   --store \
+  #   --s3-bucket ai2-sewonm \
+  #   --s3-prefix akshitab/mose/new_evals/extensions \
+  #   --dry-run
+
+name: flexmoe-extension-evals
+
+models:
+  # - /weka/oe-training-default/akshitab/FlexMoE/models/rt-merged_moereducedp512sharedexp1_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise_1B_lr_4e-4/step239-hf
+  - allenai/ModMoE_1b14b_130B
+  # - /weka/oe-training-default/akshitab/FlexMoE/models/rt-merged_twolevel_1b14b_128base_4math_10B_4code_mix_10B_forced_init_top2_average_noise_1B_lr_4e-4/step239-hf
+
+tasks:
+  # MC9 tasks
+  - arc_easy:rc:olmes
+  # - arc_challenge:rc:olmes
+  # - csqa:rc:olmes
+  # - piqa:rc:olmes
+  # - socialiqa:rc:olmes
+  # - hellaswag:rc:olmo3base       # no olmes variant in olmo-eval-internal
+  # - winogrande:rc:olmo3base      # no olmes variant in olmo-eval-internal
+  # # - boolq:rc:olmes             # not registered in olmo-eval-internal
+  # # - openbookqa:rc:olmes        # not registered in olmo-eval-internal
+
+  # # QA tasks
+  # - squad:rc:olmo3base           # no olmes variant for squad
+  # # - triviaqa:olmes             # not registered in olmo-eval-internal
+
+  # # math tasks
+  # - gsm8k:olmo3base              # no olmes variant for gsm8k
+  # - basic_skills:rc::olmes       # suite of 6 sub-tasks
+  # # - gsm8k_generation_0shot     # not registered in olmo-eval-internal
+  # # - minerva_math_500:olmes
+
+  # # code tasks
+  # - mbpp:3shot:bpb
+  # - codex_humaneval:3shot:bpb
+
+cluster: ai2/jupiter-cirrascale-2
+workspace: ai2/flex2
+budget: ai2/oceo
+priority: urgent
+preemptible: true
+gpus: 1
