@@ -22,7 +22,6 @@ from pathlib import Path
 
 from huggingface_hub import HfApi, create_repo
 
-
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 ARCH_TO_FOLDER = {
@@ -46,14 +45,11 @@ def detect_architecture(config_path: Path) -> str:
     cfg = json.loads(config_path.read_text())
     archs = cfg.get("architectures") or []
     if len(archs) != 1:
-        raise ValueError(
-            f"Expected exactly one architecture in {config_path}, got: {archs}"
-        )
+        raise ValueError(f"Expected exactly one architecture in {config_path}, got: {archs}")
     arch = archs[0]
     if arch not in ARCH_TO_FOLDER:
         raise ValueError(
-            f"Unsupported architecture {arch!r}. "
-            f"Supported: {sorted(ARCH_TO_FOLDER)}"
+            f"Unsupported architecture {arch!r}. " f"Supported: {sorted(ARCH_TO_FOLDER)}"
         )
     return arch
 

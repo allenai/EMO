@@ -203,7 +203,9 @@ class FlexOlmoNoQKNormPrenormConfig(PretrainedConfig):
         if self.rope_scaling is not None and "type" in self.rope_scaling:
             self.rope_scaling["rope_type"] = self.rope_scaling["type"]
         rope_config_validation(self)
-        assert num_shared_experts <= num_experts, "num_shared_experts cannot be greater than num_experts"
+        assert (
+            num_shared_experts <= num_experts
+        ), "num_shared_experts cannot be greater than num_experts"
 
         self.num_shared_experts = num_shared_experts  # note: we don't care about pruning here - pruning should be handled by the pruning script - the model should just assume that it will use all the experts available
         self.num_experts_per_layer = num_experts_per_layer
