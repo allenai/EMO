@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -43,6 +44,15 @@ MODEL_SPECS: Dict[str, Dict[str, str]] = {
 
 KEEPK_VALUES = [8, 16, 32, 64, 128]
 KEEPK_SUFFIX_TEMPLATE = "_keepk_{k}_bs-32_lr-5e-5_epoch-1"
+
+# --- Pruning-calibration seed retries -------------------------------------
+# When a small calibration set (e.g. nprune=1) might pick an unlucky example,
+# we run additional pruning passes with different seeds. Their dirs are tagged
+# with `_pseed-{N}` injected after the `_nprune-N` token (or after
+# `_prunemode-...` if there is no nprune token). For each cell, we compute the
+# mean across all seed variants that exist locally; cells whose retries are
+# absent (most non-GSM8K cells) just use seed-0 and are unchanged.
+PSEED_RETRIES: List[int] = [1, 2]
 
 # --- Prunemode × nprune variants -------------------------------------------
 # Each prunemode (Router / Easy-EP) produces its own row per (model, task).
@@ -234,6 +244,47 @@ def _read_metric(task_dir: Path, metric_key: str, checkpoint_mode: str) -> Optio
         return None
 
 
+def _inject_pseed(suffix: str, seed: int) -> str:
+    """Inject `_pseed-{seed}` into a prunemode suffix.
+
+    Insertion point: immediately after `_nprune-N` if present, else immediately
+    after `_prunemode-XXX`. Returns the suffix unchanged when seed == 0.
+    """
+    if seed == 0:
+        return suffix
+    m = re.search(r"_nprune-\d+", suffix)
+    if m:
+        return suffix[: m.end()] + f"_pseed-{seed}" + suffix[m.end():]
+    m = re.search(r"_prunemode-[a-z_]+", suffix)
+    if m:
+        return suffix[: m.end()] + f"_pseed-{seed}" + suffix[m.end():]
+    return suffix
+
+
+def _read_metric_seed_avg(
+    model_dir: Path,
+    relative: str,
+    nprune_suffix: str,
+    metric_key: str,
+    checkpoint_mode: str,
+) -> Optional[float]:
+    """Mean of the metric across seed-0 + PSEED_RETRIES dirs that exist.
+
+    For cells without any retry dirs on disk (most cells), this is just the
+    seed-0 value, so existing tables are unchanged.
+    """
+    vals: List[float] = []
+    for seed in [0, *PSEED_RETRIES]:
+        suf = _inject_pseed(nprune_suffix, seed)
+        d = model_dir / (relative + suf)
+        v = _read_metric(d, metric_key, checkpoint_mode)
+        if v is not None:
+            vals.append(v)
+    if not vals:
+        return None
+    return sum(vals) / len(vals)
+
+
 def collect_nprune_table(
     prune_evals_root: Path,
     checkpoint_mode: str,
@@ -270,10 +321,17 @@ def collect_nprune_table(
 
                         # For aggregate tasks (MMLU, MMLU Pro): average over subtasks.
                         # For single tasks (GSM8K): read directly.
+                        # Inside each subtask, we also average across pruning-
+                        # seed retries (`_pseed-1`, `_pseed-2`) when those dirs
+                        # exist — cells without retries fall back to seed-0
+                        # alone (unchanged behavior).
                         values = []
                         for subtask in active_subtasks:
-                            task_dir = model_dir / (subtask + keepk_suffix + nprune_suffix)
-                            val = _read_metric(task_dir, metric_key, checkpoint_mode)
+                            relative = subtask + keepk_suffix
+                            val = _read_metric_seed_avg(
+                                model_dir, relative, nprune_suffix,
+                                metric_key, checkpoint_mode,
+                            )
                             if val is not None:
                                 values.append(val)
 

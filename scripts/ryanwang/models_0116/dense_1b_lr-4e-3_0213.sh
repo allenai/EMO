@@ -4,22 +4,22 @@
 # STATUS: USED
 ##############################################################
 
-lr=4e-3
+lr=4e-4
 
-runname="dense_1b_lr-${lr}_0213"
+runname="dense_1b_lr-${lr}_0502"
 python -m olmo_core.launch.beaker \
   --name $runname \
 	--gpus 8 \
-  --nodes 16 \
-  --is_private_repo \
+  --nodes 8 \
 	--weka=oe-training-default \
   --shared-filesystem \
 	--workspace ai2/flex2 \
 	--cluster ai2/jupiter \
+	--beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
 	--preemptible \
 	--allow-dirty \
 	--priority urgent \
-	--env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" \
+	--env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
 	-- src/scripts/train/olmo2-1B.py \
     $runname \
 		--save-folder="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/$runname" \
@@ -30,7 +30,10 @@ python -m olmo_core.launch.beaker \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="default" \
 		--model.block.attention.qk_norm=null \
-		--lr=${lr}
+		--lr=${lr} \
+    --trainer.hard_stop='{value: 3000, unit: steps}'
+
+#  --is_private_repo \
 
 
 
