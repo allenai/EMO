@@ -56,7 +56,7 @@ PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(16 64 128)
+PRUNE_KEEP_K_VALUES=(8 16 32 128)
 batch_size=32
 
 # --- Pruning calibration-set size ---
@@ -64,7 +64,7 @@ batch_size=32
 # Set to an integer (e.g. 50) to subsample that many prompts (deterministic shuffle, seed=0).
 # Set to "random" to bypass calibration entirely and randomly select experts
 # (seed=0, mode-agnostic — ignores PRUNING_MODE). Output dir uses _prunemode-random.
-NUM_PRUNE_EXAMPLES=""
+NUM_PRUNE_EXAMPLES="1"
 
 # --- Shot-count overrides (two orthogonal knobs) ---
 # Each var: empty ⇒ each task's default num_shots (e.g. mmlu_merged_* = 5-shot,
@@ -104,7 +104,7 @@ TASK_GROUPS_LIST=(
 
   # GSM8K generation merged variants (pruning + finetuning share data)
 #  "gsm8k_generation_0shot_merged"
-#  "gsm8k_generation_8shot_merged"
+  "gsm8k_generation_8shot_merged"
 
   # SQuAD merged variants
 #  "squad_merged"
@@ -139,58 +139,58 @@ TASK_GROUPS_LIST=(
 
   # MMLU 16-cluster L0 (layer-0 router probs, k=16 spherical_kmeans, balance off).
   # Merged variants for the pruning pipeline (pruning + finetuning share data).
-  "mmlu_merged_cluster_l0_government_politics"
-  "mmlu_merged_cluster_l0_biology"
-  "mmlu_merged_cluster_l0_miscellaneous"
-  "mmlu_merged_cluster_l0_world_history"
-  "mmlu_merged_cluster_l0_moral_scenarios"
-  "mmlu_merged_cluster_l0_law"
-  "mmlu_merged_cluster_l0_mathematics"
-  "mmlu_merged_cluster_l0_psychology"
-  "mmlu_merged_cluster_l0_moral_disputes"
-  "mmlu_merged_cluster_l0_psychology_2"
-  "mmlu_merged_cluster_l0_mathematics_2"
-  "mmlu_merged_cluster_l0_accounting"
-  "mmlu_merged_cluster_l0_nutrition"
-  "mmlu_merged_cluster_l0_prehistory"
-  "mmlu_merged_cluster_l0_marketing"
-  "mmlu_merged_cluster_l0_macroeconomics"
+#  "mmlu_merged_cluster_l0_government_politics"
+#  "mmlu_merged_cluster_l0_biology"
+#  "mmlu_merged_cluster_l0_miscellaneous"
+#  "mmlu_merged_cluster_l0_world_history"
+#  "mmlu_merged_cluster_l0_moral_scenarios"
+#  "mmlu_merged_cluster_l0_law"
+#  "mmlu_merged_cluster_l0_mathematics"
+#  "mmlu_merged_cluster_l0_psychology"
+#  "mmlu_merged_cluster_l0_moral_disputes"
+#  "mmlu_merged_cluster_l0_psychology_2"
+#  "mmlu_merged_cluster_l0_mathematics_2"
+#  "mmlu_merged_cluster_l0_accounting"
+#  "mmlu_merged_cluster_l0_nutrition"
+#  "mmlu_merged_cluster_l0_prehistory"
+#  "mmlu_merged_cluster_l0_marketing"
+#  "mmlu_merged_cluster_l0_macroeconomics"
 
 #   MMLU 16-cluster L15 (layer-15 router probs).
-  "mmlu_merged_cluster_l15_security_studies"
-  "mmlu_merged_cluster_l15_mathematics"
-  "mmlu_merged_cluster_l15_marketing"
-  "mmlu_merged_cluster_l15_biology"
-  "mmlu_merged_cluster_l15_law"
-  "mmlu_merged_cluster_l15_moral_disputes"
-  "mmlu_merged_cluster_l15_moral_scenarios"
-  "mmlu_merged_cluster_l15_psychology"
-  "mmlu_merged_cluster_l15_macroeconomics"
-  "mmlu_merged_cluster_l15_chemistry"
-  "mmlu_merged_cluster_l15_miscellaneous"
-  "mmlu_merged_cluster_l15_conceptual_physics"
-  "mmlu_merged_cluster_l15_psychology_2"
-  "mmlu_merged_cluster_l15_prehistory"
-  "mmlu_merged_cluster_l15_government_politics"
-  "mmlu_merged_cluster_l15_world_history"
+#  "mmlu_merged_cluster_l15_security_studies"
+#  "mmlu_merged_cluster_l15_mathematics"
+#  "mmlu_merged_cluster_l15_marketing"
+#  "mmlu_merged_cluster_l15_biology"
+#  "mmlu_merged_cluster_l15_law"
+#  "mmlu_merged_cluster_l15_moral_disputes"
+#  "mmlu_merged_cluster_l15_moral_scenarios"
+#  "mmlu_merged_cluster_l15_psychology"
+#  "mmlu_merged_cluster_l15_macroeconomics"
+#  "mmlu_merged_cluster_l15_chemistry"
+#  "mmlu_merged_cluster_l15_miscellaneous"
+#  "mmlu_merged_cluster_l15_conceptual_physics"
+#  "mmlu_merged_cluster_l15_psychology_2"
+#  "mmlu_merged_cluster_l15_prehistory"
+#  "mmlu_merged_cluster_l15_government_politics"
+#  "mmlu_merged_cluster_l15_world_history"
 
 #   MMLU 16-cluster ALL (all-layer router probs, doc_probs 2032d).
-  "mmlu_merged_cluster_all_nutrition"
-  "mmlu_merged_cluster_all_marketing"
-  "mmlu_merged_cluster_all_law"
-  "mmlu_merged_cluster_all_prehistory"
-  "mmlu_merged_cluster_all_mathematics"
-  "mmlu_merged_cluster_all_moral_scenarios"
-  "mmlu_merged_cluster_all_miscellaneous"
-  "mmlu_merged_cluster_all_biology"
-  "mmlu_merged_cluster_all_security_studies"
-  "mmlu_merged_cluster_all_psychology"
-  "mmlu_merged_cluster_all_chemistry"
-  "mmlu_merged_cluster_all_geography"
-  "mmlu_merged_cluster_all_macroeconomics"
-  "mmlu_merged_cluster_all_moral_disputes"
-  "mmlu_merged_cluster_all_accounting"
-  "mmlu_merged_cluster_all_conceptual_physics"
+#  "mmlu_merged_cluster_all_nutrition"
+#  "mmlu_merged_cluster_all_marketing"
+#  "mmlu_merged_cluster_all_law"
+#  "mmlu_merged_cluster_all_prehistory"
+#  "mmlu_merged_cluster_all_mathematics"
+#  "mmlu_merged_cluster_all_moral_scenarios"
+#  "mmlu_merged_cluster_all_miscellaneous"
+#  "mmlu_merged_cluster_all_biology"
+#  "mmlu_merged_cluster_all_security_studies"
+#  "mmlu_merged_cluster_all_psychology"
+#  "mmlu_merged_cluster_all_chemistry"
+#  "mmlu_merged_cluster_all_geography"
+#  "mmlu_merged_cluster_all_macroeconomics"
+#  "mmlu_merged_cluster_all_moral_disputes"
+#  "mmlu_merged_cluster_all_accounting"
+#  "mmlu_merged_cluster_all_conceptual_physics"
 
   # MMLU-Pro merged variant (pruning + finetuning use same data)
 #  "mmlu_pro_merged_math"
