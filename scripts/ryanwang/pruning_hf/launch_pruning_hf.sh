@@ -38,11 +38,11 @@ MODELS=(
 #    "twolevelbatchlbreducedp512sharedexp4c2-32_1b14b_lr-4e-3_lb-1e-2_sharelb-1e-2_0214/step30995-hf"
 
     # HF Hub entries: format "hf:<id>|shared=<N>|skip_prune=<true|false>"
-    "hf:allenai/Dense_1b_130B|shared=0|skip_prune=true"
-    "hf:allenai/StdMoE_1b4b_130B|shared=1|skip_prune=false"
-    "hf:allenai/StdMoE_1b14b_140B|shared=1|skip_prune=false"
-    "hf:allenai/StdMoE_1b14b_1T|shared=1|skip_prune=false"
-    "hf:allenai/ModMoE_1b14b_130B|shared=1|skip_prune=false"
+#    "hf:allenai/Dense_1b_130B|shared=0|skip_prune=true"
+#    "hf:allenai/StdMoE_1b4b_130B|shared=1|skip_prune=false"
+#    "hf:allenai/StdMoE_1b14b_140B|shared=1|skip_prune=false"
+#    "hf:allenai/StdMoE_1b14b_1T|shared=1|skip_prune=false"
+#    "hf:allenai/ModMoE_1b14b_130B|shared=1|skip_prune=false"
     "hf:allenai/ModMoE_1b14b_1T|shared=1|skip_prune=false"
 
     )
@@ -61,7 +61,7 @@ PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(16)
+PRUNE_KEEP_K_VALUES=(128)
 batch_size=32
 
 # --- Pruning calibration-set size ---
@@ -156,7 +156,7 @@ TASK_GROUPS_LIST=(
 
   # GSM8K generation merged variants (pruning + finetuning share data)
 #  "gsm8k_generation_0shot_merged"
-#  "gsm8k_generation_8shot_merged"
+  "gsm8k_generation_8shot_merged"
 
   # SQuAD merged variants
 #  "squad_merged"
