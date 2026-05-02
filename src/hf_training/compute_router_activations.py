@@ -40,6 +40,7 @@ def compute_router_activations(
     device: Optional[str] = None,
     use_correct_only: bool = False,
     num_shots_override: Optional[int] = None,
+    prune_seed: int = 0,
 ) -> dict:
     """
     Compute average router probabilities across validation examples.
@@ -80,8 +81,10 @@ def compute_router_activations(
         logger.info(f"Loaded {len(prompts)} prompts, using all (no subsampling)")
     else:
         n_keep = min(num_calibration, len(prompts))
-        logger.info(f"Loaded {len(prompts)} prompts, subsampling to {n_keep}")
-        g = torch.Generator().manual_seed(0)
+        logger.info(
+            f"Loaded {len(prompts)} prompts, subsampling to {n_keep} (seed={prune_seed})"
+        )
+        g = torch.Generator().manual_seed(prune_seed)
         perm = torch.randperm(len(prompts), generator=g).tolist()
         prompts = [prompts[i] for i in perm[:n_keep]]
 
@@ -274,6 +277,12 @@ def main():
         default=None,
         help="Override task config's num_shots (default: use config value)",
     )
+    parser.add_argument(
+        "--prune-seed",
+        type=int,
+        default=0,
+        help="Seed for the calibration-subsample permutation (default: 0)",
+    )
 
     args = parser.parse_args()
 
@@ -286,6 +295,7 @@ def main():
         num_calibration=args.num_calibration,
         device=args.device,
         num_shots_override=args.num_shots,
+        prune_seed=args.prune_seed,
     )
 
 

@@ -48,6 +48,7 @@ def greedy_prune_layerwise_variable(
     num_calibration: Optional[int] = None,
     device: Optional[str] = None,
     num_shots_override: Optional[int] = None,
+    prune_seed: int = 0,
 ) -> None:
     """
     Greedily prune MoE experts one layer at a time, with a per-layer keep-k schedule.
@@ -102,8 +103,10 @@ def greedy_prune_layerwise_variable(
         logger.info(f"Loaded {len(prompts)} prompts, using all (no subsampling)")
     else:
         n_keep = min(num_calibration, len(prompts))
-        logger.info(f"Loaded {len(prompts)} prompts, subsampling to {n_keep}")
-        g = torch.Generator().manual_seed(0)
+        logger.info(
+            f"Loaded {len(prompts)} prompts, subsampling to {n_keep} (seed={prune_seed})"
+        )
+        g = torch.Generator().manual_seed(prune_seed)
         perm = torch.randperm(len(prompts), generator=g).tolist()
         prompts = [prompts[i] for i in perm[:n_keep]]
 
@@ -319,6 +322,8 @@ def greedy_prune_layerwise_variable(
         "pruning_method": "greedy_layerwise_variable",
         "task": task_name,
         "split": split,
+        "num_calibration": num_calibration,
+        "prune_seed": prune_seed,
         "experts_kept_per_layer": experts_kept_per_layer,
     }
     with open(os.path.join(save_path, "pruning_metadata.json"), "w") as f:
@@ -382,6 +387,12 @@ def main():
         default=None,
         help="Override task config's num_shots (default: use config value)",
     )
+    parser.add_argument(
+        "--prune-seed",
+        type=int,
+        default=0,
+        help="Seed for the calibration-subsample permutation (default: 0)",
+    )
 
     args = parser.parse_args()
 
@@ -398,6 +409,7 @@ def main():
         num_calibration=args.num_calibration,
         device=args.device,
         num_shots_override=args.num_shots,
+        prune_seed=args.prune_seed,
     )
 
 

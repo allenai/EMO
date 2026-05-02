@@ -61,10 +61,19 @@ batch_size=32
 
 # --- Pruning calibration-set size ---
 # Leave empty to use the full validation pool for pruning (default).
-# Set to an integer (e.g. 50) to subsample that many prompts (deterministic shuffle, seed=0).
+# Set to an integer (e.g. 50) to subsample that many prompts (deterministic shuffle).
 # Set to "random" to bypass calibration entirely and randomly select experts
 # (seed=0, mode-agnostic — ignores PRUNING_MODE). Output dir uses _prunemode-random.
 NUM_PRUNE_EXAMPLES="1"
+
+# --- Calibration-subsample seed ---
+# Controls torch.Generator().manual_seed(...) in the calibration permutation.
+# Default 0 reproduces historical behavior (the same single example is picked
+# each run with NUM_PRUNE_EXAMPLES=1). Change to 1, 2, ... to draw a different
+# calibration subset. Output dir gets a _pseed-<N> suffix when != 0 so different
+# seeds don't collide on S3. Ignored when NUM_PRUNE_EXAMPLES is empty (no
+# subsampling) or "random" (no calibration).
+NUM_PRUNE_SEED="0"
 
 # --- Shot-count overrides (two orthogonal knobs) ---
 # Each var: empty ⇒ each task's default num_shots (e.g. mmlu_merged_* = 5-shot,
@@ -291,6 +300,14 @@ for MODEL in "${MODELS[@]}"; do
             relative_dir="${relative_dir}_nprune-${NUM_PRUNE_EXAMPLES}"
         fi
 
+        # Append calibration-seed suffix when overriding the default seed=0.
+        # Only meaningful when calibration is actually subsampled (skip when no
+        # NUM_PRUNE_EXAMPLES or NUM_PRUNE_EXAMPLES==random).
+        if [ -n "$NUM_PRUNE_SEED" ] && [ "$NUM_PRUNE_SEED" != "0" ] \
+             && [ -n "$NUM_PRUNE_EXAMPLES" ] && [[ $NUM_PRUNE_EXAMPLES != "random" ]]; then
+            relative_dir="${relative_dir}_pseed-${NUM_PRUNE_SEED}"
+        fi
+
         # Append per-stage shot-count suffixes when overriding task defaults.
         # _pshots-* is skipped for paths that don't run pruning calibration
         # (dense_1b / 1b4b / random) — avoids misleading directory names.
@@ -315,6 +332,13 @@ for MODEL in "${MODELS[@]}"; do
         NPE_FLAG=""
         if [ -n "$NUM_PRUNE_EXAMPLES" ]; then
             NPE_FLAG="--num-prune-examples ${NUM_PRUNE_EXAMPLES}"
+        fi
+
+        # Optional calibration-seed flag forwarded to the per-mode worker scripts.
+        # Skipped for random / dense / 1b4b paths (no calibration step).
+        NSEED_FLAG=""
+        if [ -n "$NUM_PRUNE_SEED" ]; then
+            NSEED_FLAG="--num-prune-seed ${NUM_PRUNE_SEED}"
         fi
 
         # Optional shot-count flags forwarded to the per-mode worker scripts.
@@ -503,6 +527,7 @@ for MODEL in "${MODELS[@]}"; do
                     --num-shared-experts ${num_shared_experts} \
                     --prune-mode ${PRUNE_SCHEDULE_NAME} \
                     ${NPE_FLAG} \
+                    ${NSEED_FLAG} \
                     ${NSHOTS_PRUNE_FLAG} \
                     ${NSHOTS_EVAL_FLAG}
                 "
@@ -551,6 +576,7 @@ for MODEL in "${MODELS[@]}"; do
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
                     ${NPE_FLAG} \
+                    ${NSEED_FLAG} \
                     ${NSHOTS_PRUNE_FLAG} \
                     ${NSHOTS_EVAL_FLAG}
                 "
@@ -599,6 +625,7 @@ for MODEL in "${MODELS[@]}"; do
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
                     ${NPE_FLAG} \
+                    ${NSEED_FLAG} \
                     ${NSHOTS_PRUNE_FLAG} \
                     ${NSHOTS_EVAL_FLAG}
                 "
@@ -647,6 +674,7 @@ for MODEL in "${MODELS[@]}"; do
                     --num-checkpoints 1 \
                     --num-shared-experts ${num_shared_experts} \
                     ${NPE_FLAG} \
+                    ${NSEED_FLAG} \
                     ${NSHOTS_PRUNE_FLAG} \
                     ${NSHOTS_EVAL_FLAG}
                 "

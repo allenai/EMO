@@ -45,6 +45,7 @@ LEARNING_RATE=5e-5
 RUN_NAME=""
 PRUNE_MODE=""
 NUM_PRUNE_EXAMPLES=""
+NUM_PRUNE_SEED=""
 NUM_SHOTS_PRUNE=""
 NUM_SHOTS_EVAL=""
 
@@ -117,6 +118,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --num-prune-examples)
             NUM_PRUNE_EXAMPLES="$2"
+            shift 2
+            ;;
+        --num-prune-seed)
+            NUM_PRUNE_SEED="$2"
             shift 2
             ;;
         --num-shots-prune)
@@ -249,6 +254,10 @@ if [ "$SKIP_PRUNE" = false ]; then
     if [ -n "$NUM_PRUNE_EXAMPLES" ]; then
         NUM_CAL_FLAG=(--num-calibration "$NUM_PRUNE_EXAMPLES")
     fi
+    PRUNE_SEED_FLAG=()
+    if [ -n "$NUM_PRUNE_SEED" ]; then
+        PRUNE_SEED_FLAG=(--prune-seed "$NUM_PRUNE_SEED")
+    fi
 
     python -m src.hf_training.greedy_prune_layerwise_variable \
         --model "$MODEL" \
@@ -259,6 +268,7 @@ if [ "$SKIP_PRUNE" = false ]; then
         --save-path "$PRUNED_MODEL" \
         --batch-size 32 \
         "${NUM_CAL_FLAG[@]}" \
+        "${PRUNE_SEED_FLAG[@]}" \
         "${NUM_SHOTS_PRUNE_FLAG[@]}"
 
     echo "Pruned model saved to: $PRUNED_MODEL"

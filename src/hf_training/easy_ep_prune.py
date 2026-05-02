@@ -200,6 +200,7 @@ def easy_ep_prune(
     max_length: int = 4096,
     device: Optional[str] = None,
     num_shots_override: Optional[int] = None,
+    prune_seed: int = 0,
 ) -> None:
     """
     One-shot EASY-EP pruning: collect scores with a single forward pass per
@@ -237,11 +238,13 @@ def easy_ep_prune(
         logger.info(f"Loaded {len(prompts)} prompts, using all (no subsampling)")
     else:
         n_keep = min(num_calibration, len(prompts))
-        logger.info(f"Loaded {len(prompts)} prompts, subsampling to {n_keep}")
+        logger.info(
+            f"Loaded {len(prompts)} prompts, subsampling to {n_keep} (seed={prune_seed})"
+        )
         # Deterministic subsample: take the first num_calibration after a fixed
         # permutation (avoids always hitting the same few examples for different
-        # task sizes).
-        g = torch.Generator().manual_seed(0)
+        # task sizes). Seed defaults to 0 to preserve historical behavior.
+        g = torch.Generator().manual_seed(prune_seed)
         perm = torch.randperm(len(prompts), generator=g).tolist()
         prompts = [prompts[i] for i in perm[:n_keep]]
 
@@ -378,6 +381,7 @@ def easy_ep_prune(
         "split": split,
         "num_calibration": num_calibration,
         "num_shots_override": num_shots_override,
+        "prune_seed": prune_seed,
         "experts_kept_per_layer": experts_kept_per_layer,
     }
     with open(os.path.join(save_path, "pruning_metadata.json"), "w") as f:
@@ -406,6 +410,12 @@ def main():
         default=None,
         help="Override task config's num_shots (default: use config value)",
     )
+    parser.add_argument(
+        "--prune-seed",
+        type=int,
+        default=0,
+        help="Seed for the calibration-subsample permutation (default: 0)",
+    )
     args = parser.parse_args()
 
     easy_ep_prune(
@@ -420,6 +430,7 @@ def main():
         max_length=args.max_length,
         device=args.device,
         num_shots_override=args.num_shots,
+        prune_seed=args.prune_seed,
     )
 
 

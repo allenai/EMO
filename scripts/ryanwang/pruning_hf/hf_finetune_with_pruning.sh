@@ -40,6 +40,7 @@ PRUNED_MODEL=""
 LEARNING_RATE=5e-5
 RUN_NAME=""
 NUM_PRUNE_EXAMPLES=""
+NUM_PRUNE_SEED=""
 NUM_SHOTS_PRUNE=""
 NUM_SHOTS_EVAL=""
 
@@ -116,6 +117,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --num-prune-examples)
             NUM_PRUNE_EXAMPLES="$2"
+            shift 2
+            ;;
+        --num-prune-seed)
+            NUM_PRUNE_SEED="$2"
             shift 2
             ;;
         --num-shots-prune)
@@ -270,6 +275,10 @@ if [ "$SKIP_ACTIVATION" = false ]; then
     if [ -n "$NUM_PRUNE_EXAMPLES" ]; then
         NUM_CAL_FLAG=(--num-calibration "$NUM_PRUNE_EXAMPLES")
     fi
+    PRUNE_SEED_FLAG=()
+    if [ -n "$NUM_PRUNE_SEED" ]; then
+        PRUNE_SEED_FLAG=(--prune-seed "$NUM_PRUNE_SEED")
+    fi
 
     python -m src.hf_training.compute_router_activations \
         --model "$MODEL" \
@@ -278,6 +287,7 @@ if [ "$SKIP_ACTIVATION" = false ]; then
         --output-file "$ACTIVATION_FILE" \
         --batch-size "$ACTIVATION_BATCH_SIZE" \
         "${NUM_CAL_FLAG[@]}" \
+        "${PRUNE_SEED_FLAG[@]}" \
         "${NUM_SHOTS_PRUNE_FLAG[@]}"
 
     echo "Activations saved to: $ACTIVATION_FILE"
