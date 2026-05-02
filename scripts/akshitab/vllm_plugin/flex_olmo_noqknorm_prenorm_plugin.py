@@ -24,11 +24,10 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 from transformers.configuration_utils import PretrainedConfig
-
+from vllm.attention.layer import Attention
 from vllm.compilation.decorators import support_torch_compile
 from vllm.config import VllmConfig
 from vllm.distributed import get_pp_group, get_tensor_model_parallel_world_size
-from vllm.attention.layer import Attention
 from vllm.model_executor.layers.fused_moe import FusedMoE
 from vllm.model_executor.layers.layernorm import RMSNorm
 from vllm.model_executor.layers.linear import (
@@ -54,10 +53,10 @@ from vllm.model_executor.models.utils import (
 )
 from vllm.sequence import IntermediateTensors
 
-
 # ---------------------------------------------------------------------------
 # Config — registered so vLLM can load config.json with this model_type
 # ---------------------------------------------------------------------------
+
 
 class FlexMoEConfig(PretrainedConfig):
     model_type = "flex_olmo_noqknorm_prenorm"
@@ -93,9 +92,7 @@ class FlexMoEConfig(PretrainedConfig):
         **kwargs,
     ):
         if "architectures" not in kwargs:
-            kwargs["architectures"] = [
-                "FlexOlmoNoQKNormPrenormForCausalLM"
-            ]
+            kwargs["architectures"] = ["FlexOlmoNoQKNormPrenormForCausalLM"]
 
         self.vocab_size = vocab_size
         self.max_position_embeddings = max_position_embeddings
@@ -113,9 +110,7 @@ class FlexMoEConfig(PretrainedConfig):
         self.use_cache = use_cache
 
         rope_scaling = kwargs.pop("rope_scaling", None)
-        rope_parameters = rope_scaling or rope_parameters or {
-            "rope_type": "default"
-        }
+        rope_parameters = rope_scaling or rope_parameters or {"rope_type": "default"}
         rope_theta = kwargs.pop("rope_theta", 500000.0)
         if "rope_theta" not in rope_parameters:
             rope_parameters["rope_theta"] = rope_theta
@@ -145,6 +140,7 @@ class FlexMoEConfig(PretrainedConfig):
 # ---------------------------------------------------------------------------
 # Model layers
 # ---------------------------------------------------------------------------
+
 
 class FlexMoEMoE(nn.Module):
     """MoE layer with top-k routed experts.
@@ -186,9 +182,7 @@ class FlexMoEMoE(nn.Module):
             prefix=f"{prefix}.gate",
         )
 
-        custom_routing = (
-            self._shared_expert_routing if num_shared_experts > 0 else None
-        )
+        custom_routing = self._shared_expert_routing if num_shared_experts > 0 else None
 
         self.experts = FusedMoE(
             num_experts=num_experts,
@@ -238,9 +232,7 @@ class FlexMoEMoE(nn.Module):
         hidden_states = hidden_states.view(-1, hidden_dim)
 
         router_logits, _ = self.gate(hidden_states)
-        routed_out = self.experts(
-            hidden_states=hidden_states, router_logits=router_logits
-        )
+        routed_out = self.experts(hidden_states=hidden_states, router_logits=router_logits)
         return routed_out.view(orig_shape)
 
 
@@ -254,9 +246,7 @@ class FlexMoEAttention(nn.Module):
         quant_config = vllm_config.quant_config
 
         self.hidden_size = config.hidden_size
-        max_position_embeddings = getattr(
-            config, "max_position_embeddings", 4096
-        )
+        max_position_embeddings = getattr(config, "max_position_embeddings", 4096)
 
         num_heads = config.num_attention_heads
         num_kv_heads = getattr(config, "num_key_value_heads", num_heads)
@@ -271,9 +261,7 @@ class FlexMoEAttention(nn.Module):
         else:
             assert tp_size % self.total_num_kv_heads == 0
         self.num_kv_heads = max(1, self.total_num_kv_heads // tp_size)
-        self.head_dim = getattr(
-            config, "head_dim", self.hidden_size // self.total_num_heads
-        )
+        self.head_dim = getattr(config, "head_dim", self.hidden_size // self.total_num_heads)
         self.q_size = self.num_heads * self.head_dim
         self.kv_size = self.num_kv_heads * self.head_dim
         self.scaling = self.head_dim**-0.5
@@ -317,9 +305,7 @@ class FlexMoEAttention(nn.Module):
         hidden_states: torch.Tensor,
     ) -> torch.Tensor:
         qkv, _ = self.qkv_proj(hidden_states)
-        q, k, v = qkv.split(
-            [self.q_size, self.kv_size, self.kv_size], dim=-1
-        )
+        q, k, v = qkv.split([self.q_size, self.kv_size, self.kv_size], dim=-1)
         q, k = self.rotary_emb(positions, q, k)
         attn_output = self.attn(q, k, v)
         output, _ = self.o_proj(attn_output)
@@ -351,12 +337,8 @@ class FlexMoEDecoderLayer(nn.Module):
         )
 
         rms_norm_eps = getattr(config, "rms_norm_eps", 1e-6)
-        self.pre_attention_layernorm = RMSNorm(
-            config.hidden_size, eps=rms_norm_eps
-        )
-        self.pre_feedforward_layernorm = RMSNorm(
-            config.hidden_size, eps=rms_norm_eps
-        )
+        self.pre_attention_layernorm = RMSNorm(config.hidden_size, eps=rms_norm_eps)
+        self.pre_feedforward_layernorm = RMSNorm(config.hidden_size, eps=rms_norm_eps)
 
     def forward(
         self,
@@ -369,9 +351,7 @@ class FlexMoEDecoderLayer(nn.Module):
             residual = hidden_states
             hidden_states = self.pre_attention_layernorm(hidden_states)
         else:
-            hidden_states, residual = self.pre_attention_layernorm(
-                hidden_states, residual
-            )
+            hidden_states, residual = self.pre_attention_layernorm(hidden_states, residual)
 
         hidden_states = self.self_attn(
             positions=positions,
@@ -379,9 +359,7 @@ class FlexMoEDecoderLayer(nn.Module):
         )
 
         # Pre-norm MoE feed-forward
-        hidden_states, residual = self.pre_feedforward_layernorm(
-            hidden_states, residual
-        )
+        hidden_states, residual = self.pre_feedforward_layernorm(hidden_states, residual)
         hidden_states = self.mlp(hidden_states)
         return hidden_states, residual
 
@@ -389,6 +367,7 @@ class FlexMoEDecoderLayer(nn.Module):
 # ---------------------------------------------------------------------------
 # Full model
 # ---------------------------------------------------------------------------
+
 
 @support_torch_compile
 class FlexMoEModel(nn.Module):
@@ -409,19 +388,15 @@ class FlexMoEModel(nn.Module):
         )
         self.start_layer, self.end_layer, self.layers = make_layers(
             config.num_hidden_layers,
-            lambda prefix: FlexMoEDecoderLayer(
-                vllm_config=vllm_config, prefix=prefix
-            ),
+            lambda prefix: FlexMoEDecoderLayer(vllm_config=vllm_config, prefix=prefix),
             prefix=f"{prefix}.layers",
         )
 
         rms_norm_eps = getattr(config, "rms_norm_eps", 1e-6)
         self.norm = RMSNorm(config.hidden_size, eps=rms_norm_eps)
 
-        self.make_empty_intermediate_tensors = (
-            make_empty_intermediate_tensors_factory(
-                ["hidden_states", "residual"], config.hidden_size
-            )
+        self.make_empty_intermediate_tensors = make_empty_intermediate_tensors_factory(
+            ["hidden_states", "residual"], config.hidden_size
         )
 
     def embed_input_ids(self, input_ids: torch.Tensor) -> torch.Tensor:
@@ -446,14 +421,10 @@ class FlexMoEModel(nn.Module):
             residual = intermediate_tensors["residual"]
 
         for layer in islice(self.layers, self.start_layer, self.end_layer):
-            hidden_states, residual = layer(
-                positions, hidden_states, residual
-            )
+            hidden_states, residual = layer(positions, hidden_states, residual)
 
         if not get_pp_group().is_last_rank:
-            return IntermediateTensors(
-                {"hidden_states": hidden_states, "residual": residual}
-            )
+            return IntermediateTensors({"hidden_states": hidden_states, "residual": residual})
 
         if residual is not None:
             hidden_states, _ = self.norm(hidden_states, residual)
@@ -469,9 +440,7 @@ class FlexMoEModel(nn.Module):
             num_experts=self.config.num_experts,
         )
 
-    def load_weights(
-        self, weights: Iterable[tuple[str, torch.Tensor]]
-    ) -> set[str]:
+    def load_weights(self, weights: Iterable[tuple[str, torch.Tensor]]) -> set[str]:
         stacked_params_mapping = [
             # (param_name, shard_name, shard_id)
             ("qkv_proj", "q_proj", "q"),
@@ -528,9 +497,7 @@ class FlexMoEModel(nn.Module):
                     if is_pp_missing_parameter(name, self):
                         continue
                     if name.endswith("kv_scale"):
-                        remapped_kv_scale_name = name.replace(
-                            ".kv_scale", ".attn.kv_scale"
-                        )
+                        remapped_kv_scale_name = name.replace(".kv_scale", ".attn.kv_scale")
                         if remapped_kv_scale_name not in params_dict:
                             continue
                         else:
@@ -539,9 +506,7 @@ class FlexMoEModel(nn.Module):
                         continue
 
                     param = params_dict[name]
-                    weight_loader = getattr(
-                        param, "weight_loader", default_weight_loader
-                    )
+                    weight_loader = getattr(param, "weight_loader", default_weight_loader)
                     weight_loader(param, loaded_weight)
             loaded_params.add(name)
         return loaded_params
@@ -576,9 +541,7 @@ class FlexOlmoNoQKNormPrenormForCausalLM(nn.Module, SupportsPP):
         )
         self.logits_processor = LogitsProcessor(config.vocab_size)
 
-        self.make_empty_intermediate_tensors = (
-            self.model.make_empty_intermediate_tensors
-        )
+        self.make_empty_intermediate_tensors = self.model.make_empty_intermediate_tensors
 
     def embed_input_ids(self, input_ids: torch.Tensor) -> torch.Tensor:
         return self.model.embed_input_ids(input_ids)
@@ -590,18 +553,14 @@ class FlexOlmoNoQKNormPrenormForCausalLM(nn.Module, SupportsPP):
         intermediate_tensors: IntermediateTensors | None = None,
         inputs_embeds: torch.Tensor | None = None,
     ) -> torch.Tensor | IntermediateTensors:
-        hidden_states = self.model(
-            input_ids, positions, intermediate_tensors, inputs_embeds
-        )
+        hidden_states = self.model(input_ids, positions, intermediate_tensors, inputs_embeds)
         return hidden_states
 
     def compute_logits(self, hidden_states: torch.Tensor) -> torch.Tensor:
         logits = self.logits_processor(self.lm_head, hidden_states)
         return logits
 
-    def load_weights(
-        self, weights: Iterable[tuple[str, torch.Tensor]]
-    ) -> set[str]:
+    def load_weights(self, weights: Iterable[tuple[str, torch.Tensor]]) -> set[str]:
         loader = AutoWeightsLoader(self)
         return loader.load_weights(weights)
 
