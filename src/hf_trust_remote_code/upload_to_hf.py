@@ -25,14 +25,14 @@ from huggingface_hub import HfApi, create_repo
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 ARCH_TO_FOLDER = {
-    "EmoNoQKNormPrenormForCausalLM": "emo_noqknorm_prenorm",
+    "EmoForCausalLM": "emo",
     "Olmo2NoQKNormPrenormForCausalLM": "olmo2_noqknorm_prenorm",
 }
 
 ARCH_TO_AUTO_MAP = {
-    "EmoNoQKNormPrenormForCausalLM": {
-        "AutoConfig": "configuration_emo_noqknorm_prenorm.EmoNoQKNormPrenormConfig",
-        "AutoModelForCausalLM": "modeling_emo_noqknorm_prenorm.EmoNoQKNormPrenormForCausalLM",
+    "EmoForCausalLM": {
+        "AutoConfig": "configuration_emo.EmoConfig",
+        "AutoModelForCausalLM": "modeling_emo.EmoForCausalLM",
     },
     "Olmo2NoQKNormPrenormForCausalLM": {
         "AutoConfig": "configuration_olmo2_noqknorm_prenorm.Olmo2NoQKNormPrenormConfig",

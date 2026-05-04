@@ -35,15 +35,10 @@ from olmo_core.nn.transformer.model import (
 log = logging.getLogger(__name__)
 
 try:
-    from transformers import EmoConfig  # type: ignore
-    from transformers import (
-        EmoNoQKNormPrenormConfig,
-        EmoNoQKNormPrenormSharedConfig,
-        EmoPrenormConfig,
-    )
+    from transformers import EmoConfig, EmoSharedConfig
 except ImportError:
     EmoConfig = None
-    EmoNoQKNormPrenormSharedConfig = None
+    EmoSharedConfig = None
 
 try:
     from transformers import Olmo3Config  # type: ignore
@@ -68,24 +63,19 @@ def _get_emo_config(model: MoETransformer) -> PretrainedConfig:
                 )
             continue
 
-        # MoE block validation
-        if not isinstance(block, MoEReorderedNormTransformerBlock):
-            if (
-                isinstance(block, MoETransformerBlock)
-                and block.attention.q_norm is None
-                and block.attention.k_norm is None
-            ):
-                pass
-            elif (
-                isinstance(block, MoETransformerBlock)
-                and block.attention.q_norm is not None
-                and block.attention.k_norm is not None
-            ):
-                pass
-            else:
-                raise NotImplementedError(
-                    f"Block is not a {MoEReorderedNormTransformerBlock.__name__}, unable to build HF config for {model.__class__.__name__}"
-                )
+        # MoE block validation: only MoETransformerBlock with q_norm=None and k_norm=None is supported.
+        if not isinstance(block, MoETransformerBlock) or isinstance(
+            block, MoEReorderedNormTransformerBlock
+        ):
+            raise NotImplementedError(
+                f"Block is not a plain {MoETransformerBlock.__name__}, "
+                f"unable to build HF config for {model.__class__.__name__}"
+            )
+        if block.attention.q_norm is not None or block.attention.k_norm is not None:
+            raise NotImplementedError(
+                f"Block has q_norm/k_norm; only no-q_norm/no-k_norm is supported for Emo, "
+                f"unable to build HF config for {model.__class__.__name__}"
+            )
 
         if not isinstance(block.experts.mlp, (DroplessMoEMLP, MoEMLP)):
             raise NotImplementedError(
@@ -157,57 +147,15 @@ def _get_emo_config(model: MoETransformer) -> PretrainedConfig:
                 layer_shared = b.feed_forward_moe.router.num_shared_experts
             num_shared_experts_per_layer.append(layer_shared)
 
-    if (
-        isinstance(block, MoETransformerBlock)
-        and block.attention.q_norm is None
-        and block.attention.k_norm is None
-    ):
-        shared_mlp = block.feed_forward_moe.shared_mlp
-        if shared_mlp is not None:
-            if EmoNoQKNormPrenormSharedConfig is None:
-                raise RuntimeError(
-                    "The installed transformers version does not support EmoNoQKNormPrenormShared"
-                )
-            return EmoNoQKNormPrenormSharedConfig(
-                vocab_size=model.vocab_size,
-                hidden_size=model.d_model,
-                intermediate_size=block.feed_forward_moe.experts.mlp.hidden_size,
-                shared_expert_intermediate_size=shared_mlp.hidden_size,
-                num_hidden_layers=model.n_layers,
-                num_attention_heads=block.attention.n_heads,
-                num_key_value_heads=block.attention.n_kv_heads,
-                hidden_act="silu",
-                max_position_embeddings=-1,
-                attention_bias=block.attention.w_out.bias is not None,
-                rope_theta=block.attention.rope.theta,
-                pad_token_id=None,  # type: ignore
-                bos_token_id=None,
-                eos_token_id=None,  # type: ignore
-                rms_norm_eps=block.feed_forward_norm.eps,
-                num_experts_per_tok=block.feed_forward_moe.router.top_k,
-                num_experts=block.feed_forward_moe.router.num_experts,
-                tie_word_embeddings=False,
-            )
-        always_active_experts = getattr(
-            block.feed_forward_moe.router, "always_active_experts", None
-        )
-        # find the right number of shared experts accordingly
-        num_shared_experts = 0
-        if isinstance(block.feed_forward_moe.router, MoETwoLevelBatchLBReduceDPSharedExpPoolRouter):
-            num_shared_experts = block.feed_forward_moe.router.num_shared_experts_pool
-        elif isinstance(
-            block.feed_forward_moe.router,
-            (
-                MoETwoLevelBatchLBReduceDPSharedExpRouter,
-                MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter,
-                MoELinearLBReduceDPSharedExpRouter,
-            ),
-        ):
-            num_shared_experts = block.feed_forward_moe.router.num_shared_experts
-        return EmoNoQKNormPrenormConfig(
+    shared_mlp = block.feed_forward_moe.shared_mlp
+    if shared_mlp is not None:
+        if EmoSharedConfig is None:
+            raise RuntimeError("The installed transformers version does not support EmoShared")
+        return EmoSharedConfig(
             vocab_size=model.vocab_size,
             hidden_size=model.d_model,
             intermediate_size=block.feed_forward_moe.experts.mlp.hidden_size,
+            shared_expert_intermediate_size=shared_mlp.hidden_size,
             num_hidden_layers=model.n_layers,
             num_attention_heads=block.attention.n_heads,
             num_key_value_heads=block.attention.n_kv_heads,
@@ -222,39 +170,21 @@ def _get_emo_config(model: MoETransformer) -> PretrainedConfig:
             num_experts_per_tok=block.feed_forward_moe.router.top_k,
             num_experts=block.feed_forward_moe.router.num_experts,
             tie_word_embeddings=False,
-            always_active_experts=always_active_experts,
-            num_shared_experts=num_shared_experts,
-            num_experts_per_layer=num_experts_per_layer if has_dense_layers else None,
-            num_shared_experts_per_layer=num_shared_experts_per_layer if has_dense_layers else None,
-            dense_intermediate_size=dense_intermediate_size,
-            dense_mlp_bias=dense_mlp_bias,
-            output_router_logits=True,
         )
-    elif (
-        isinstance(block, MoETransformerBlock)
-        and block.attention.q_norm is not None
-        and block.attention.k_norm is not None
+    always_active_experts = getattr(block.feed_forward_moe.router, "always_active_experts", None)
+    # find the right number of shared experts accordingly
+    num_shared_experts = 0
+    if isinstance(block.feed_forward_moe.router, MoETwoLevelBatchLBReduceDPSharedExpPoolRouter):
+        num_shared_experts = block.feed_forward_moe.router.num_shared_experts_pool
+    elif isinstance(
+        block.feed_forward_moe.router,
+        (
+            MoETwoLevelBatchLBReduceDPSharedExpRouter,
+            MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter,
+            MoELinearLBReduceDPSharedExpRouter,
+        ),
     ):
-        return EmoPrenormConfig(
-            vocab_size=model.vocab_size,
-            hidden_size=model.d_model,
-            intermediate_size=block.feed_forward_moe.experts.mlp.hidden_size,
-            num_hidden_layers=model.n_layers,
-            num_attention_heads=block.attention.n_heads,
-            num_key_value_heads=block.attention.n_kv_heads,
-            hidden_act="silu",
-            max_position_embeddings=-1,
-            attention_bias=block.attention.w_out.bias is not None,
-            rope_theta=block.attention.rope.theta,
-            pad_token_id=None,  # type: ignore
-            bos_token_id=None,
-            eos_token_id=None,  # type: ignore
-            rms_norm_eps=block.feed_forward_norm.eps,
-            num_experts_per_tok=block.feed_forward_moe.router.top_k,
-            num_experts=block.feed_forward_moe.router.num_experts,
-            tie_word_embeddings=False,
-            output_router_logits=True,
-        )
+        num_shared_experts = block.feed_forward_moe.router.num_shared_experts
     return EmoConfig(
         vocab_size=model.vocab_size,
         hidden_size=model.d_model,
@@ -273,6 +203,12 @@ def _get_emo_config(model: MoETransformer) -> PretrainedConfig:
         num_experts_per_tok=block.feed_forward_moe.router.top_k,
         num_experts=block.feed_forward_moe.router.num_experts,
         tie_word_embeddings=False,
+        always_active_experts=always_active_experts,
+        num_shared_experts=num_shared_experts,
+        num_experts_per_layer=num_experts_per_layer if has_dense_layers else None,
+        num_shared_experts_per_layer=num_shared_experts_per_layer if has_dense_layers else None,
+        dense_intermediate_size=dense_intermediate_size,
+        dense_mlp_bias=dense_mlp_bias,
         output_router_logits=True,
     )
 

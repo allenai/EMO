@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added training configuration to train olmoe 1B-7B on 130B tokens of mose natural distribution [10/22]
-- Added offline_evals for ModMoE.
+- Added offline_evals for Emo.
 - Added `partial_freeze_params_mask_fn_name` and `partial_freeze_params_mask_fn_kwargs` arguments to `TransformerConfig`.
 - Added scripts for adding and training new finegrained experts in MoEs.
 
@@ -204,7 +204,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added support for sliding window attention to the Torch attention backend. Performance is not optimized, so other backends should be preferred.
 - Added `RoPEScalingConfig.to_hf_config()` for each RoPE scaling method to support automatic conversion to HuggingFace format.
 - Guide to dataset mixing in `docs/source/guides/data_mixing.rst`.
-- Added support for converting FlexOlmo models (with both dropless and default MoEs) between OLMo Core and HF formats.
+- Added support for converting Emo models (with both dropless and default MoEs) between OLMo Core and HF formats.
 - Added `olmo3_7B` model config.
 - Added additional internal configuration tools.
 - Added a new named data mix that we used for the 32B run

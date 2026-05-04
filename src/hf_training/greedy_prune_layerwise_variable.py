@@ -71,7 +71,7 @@ def greedy_prune_layerwise_variable(
         torch_dtype=torch.bfloat16,
         device_map="auto" if device is None else device,
     )
-    # model = EmoNoQKNormPrenormForCausalLMDebug.from_pretrained(
+    # model = EmoForCausalLMDebug.from_pretrained(
     #     model_name,
     #     torch_dtype=torch.bfloat16,
     #     device_map="auto" if device is None else device,
@@ -294,7 +294,7 @@ def greedy_prune_layerwise_variable(
     model.config.num_shared_experts = num_shared_experts
     model.config.output_router_logits = True
 
-    # Store per-layer expert counts for EmoNoQKNormPrenormForCausalLMDebug
+    # Store per-layer expert counts for EmoForCausalLMDebug
     model.config.num_experts_per_layer = actual_num_experts_per_layer
     model.config.num_shared_experts_per_layer = actual_num_shared_experts_per_layer
 

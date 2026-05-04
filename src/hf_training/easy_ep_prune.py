@@ -59,7 +59,7 @@ def compute_easy_ep_score_for_batch(
     num_standard = num_experts - num_shared_experts
 
     # --- Replicate the forward-pass routing -----------------------------------
-    # Matches EmoNoQKNormPrenormSparseMoeBlock.forward exactly for the
+    # Matches EmoSparseMoeBlock.forward exactly for the
     # num_shared_experts > 0 path (two-softmax), and the plain path otherwise.
     if num_shared_experts > 0:
         logits_standard = router_logits[:, :num_standard]

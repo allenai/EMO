@@ -313,15 +313,11 @@ MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_TEMPLATE_MAPPINGS: Dict[
 }
 
 MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_WEIGHT_MAPPINGS: Dict[str, Dict[str, str]] = {
-    "emo_noqknorm_prenorm": {
+    "emo": {
         f"blocks.{LAYER}.attention_norm.weight": f"model.layers.{LAYER}.pre_attention_layernorm.weight",
         f"blocks.{LAYER}.feed_forward_norm.weight": f"model.layers.{LAYER}.pre_feedforward_layernorm.weight",
     },
-    "emo_noqknorm_prenorm_shared": {
-        f"blocks.{LAYER}.attention_norm.weight": f"model.layers.{LAYER}.pre_attention_layernorm.weight",
-        f"blocks.{LAYER}.feed_forward_norm.weight": f"model.layers.{LAYER}.pre_feedforward_layernorm.weight",
-    },
-    "emo_prenorm": {
+    "emo_shared": {
         f"blocks.{LAYER}.attention_norm.weight": f"model.layers.{LAYER}.pre_attention_layernorm.weight",
         f"blocks.{LAYER}.feed_forward_norm.weight": f"model.layers.{LAYER}.pre_feedforward_layernorm.weight",
     },
@@ -332,15 +328,11 @@ MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_WEIGHT_MAPPINGS: Dict[str, Dict[str, str]] =
 }
 
 MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_MODULE_MAPPINGS: Dict[str, Dict[str, str]] = {
-    "emo_noqknorm_prenorm": {
+    "emo": {
         f"blocks.{LAYER}.attention_norm": f"model.layers.{LAYER}.pre_attention_layernorm",
         f"blocks.{LAYER}.feed_forward_norm": f"model.layers.{LAYER}.pre_feedforward_layernorm",
     },
-    "emo_noqknorm_prenorm_shared": {
-        f"blocks.{LAYER}.attention_norm": f"model.layers.{LAYER}.pre_attention_layernorm",
-        f"blocks.{LAYER}.feed_forward_norm": f"model.layers.{LAYER}.pre_feedforward_layernorm",
-    },
-    "emo_prenorm": {
+    "emo_shared": {
         f"blocks.{LAYER}.attention_norm": f"model.layers.{LAYER}.pre_attention_layernorm",
         f"blocks.{LAYER}.feed_forward_norm": f"model.layers.{LAYER}.pre_feedforward_layernorm",
     },

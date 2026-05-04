@@ -34,14 +34,14 @@ from huggingface_hub.errors import (
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 ARCH_TO_FOLDER = {
-    "EmoNoQKNormPrenormForCausalLM": "emo_noqknorm_prenorm",
+    "EmoForCausalLM": "emo",
     "Olmo2NoQKNormPrenormForCausalLM": "olmo2_noqknorm_prenorm",
 }
 
 ARCH_TO_AUTO_MAP = {
-    "EmoNoQKNormPrenormForCausalLM": {
-        "AutoConfig": "configuration_emo_noqknorm_prenorm.EmoNoQKNormPrenormConfig",
-        "AutoModelForCausalLM": "modeling_emo_noqknorm_prenorm.EmoNoQKNormPrenormForCausalLM",
+    "EmoForCausalLM": {
+        "AutoConfig": "configuration_emo.EmoConfig",
+        "AutoModelForCausalLM": "modeling_emo.EmoForCausalLM",
     },
     "Olmo2NoQKNormPrenormForCausalLM": {
         "AutoConfig": "configuration_olmo2_noqknorm_prenorm.Olmo2NoQKNormPrenormConfig",
@@ -51,10 +51,10 @@ ARCH_TO_AUTO_MAP = {
 
 # Old → new mappings for symbols rewritten by the Emo rename.
 OLD_TO_NEW_ARCH = {
-    "FlexOlmoNoQKNormPrenormForCausalLM": "EmoNoQKNormPrenormForCausalLM",
+    "FlexOlmoNoQKNormPrenormForCausalLM": "EmoForCausalLM",
 }
 OLD_TO_NEW_MODEL_TYPE = {
-    "flex_olmo_noqknorm_prenorm": "emo_noqknorm_prenorm",
+    "flex_olmo_noqknorm_prenorm": "emo",
 }
 # Files renamed in the trust_remote_code dir; the old names should be deleted
 # from the repo after the new ones are uploaded.
@@ -140,7 +140,7 @@ def patch_config_json(api: HfApi, repo_id: str, token: str | None) -> str | None
 
 def replace_remote_code(api: HfApi, repo_id: str, arch: str, token: str | None) -> None:
     """Upload the Emo-named .py files; delete the obsolete FlexOlmo-named ones."""
-    if arch != "EmoNoQKNormPrenormForCausalLM":
+    if arch != "EmoForCausalLM":
         print(f"  no remote-code changes needed for arch={arch}")
         return
 

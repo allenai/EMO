@@ -1,7 +1,7 @@
 <div align="center">
   <!-- <img src="https://github.com/allenai/OLMo/assets/8812459/774ac485-a535-4768-8f7c-db7be20f5cc3" width="300"/> -->
-  <h1>ModMoE</h1>
-  <h4>ModMoE modeling and training</h4>
+  <h1>Emo</h1>
+  <h4>Emo modeling and training</h4>
 </div>
 
 
@@ -10,8 +10,8 @@
 First install [PyTorch](https://pytorch.org) according to the instructions specific to your operating system and hardware.
 
 ```bash
-git clone https://github.com/allenai/ModMoE.git
-cd ModMoE
+git clone https://github.com/allenai/Emo.git
+cd Emo
 uv pip install -e .[all]
 ```
 
@@ -74,8 +74,8 @@ The `runname` naming convention (size · router · LR · LB · date · phase) is
 
 The following checkpoints are available on the [Hugging Face Hub](https://huggingface.co/allenai):
 
-- [`allenai/ModMoE_1b14b_1T`](https://huggingface.co/allenai/ModMoE_1b14b_1T)
-- [`allenai/ModMoE_1b14b_130B`](https://huggingface.co/allenai/ModMoE_1b14b_130B)
+- [`allenai/Emo_1b14b_1T`](https://huggingface.co/allenai/Emo_1b14b_1T)
+- [`allenai/Emo_1b14b_130B`](https://huggingface.co/allenai/Emo_1b14b_130B)
 - [`allenai/Dense_1b_130B`](https://huggingface.co/allenai/Dense_1b_130B)
 - [`allenai/StdMoE_1b4b_130B`](https://huggingface.co/allenai/StdMoE_1b4b_130B)
 - [`allenai/StdMoE_1b14b_140B`](https://huggingface.co/allenai/StdMoE_1b14b_140B)
@@ -93,7 +93,7 @@ pip install transformers>=4.57.0
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
-model_id = "allenai/ModMoE_1b14b_1T"
+model_id = "allenai/Emo_1b14b_1T"
 olmo = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True)
 tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
 message = ["Language modeling is "]
@@ -108,7 +108,7 @@ Alternatively, with the Hugging Face pipeline abstraction:
 
 ```python
 from transformers import pipeline
-olmo_pipe = pipeline("text-generation", model="allenai/ModMoE_1b14b_1T", trust_remote_code=True)
+olmo_pipe = pipeline("text-generation", model="allenai/Emo_1b14b_1T", trust_remote_code=True)
 print(olmo_pipe("Language modeling is"))
 ```
 
@@ -122,7 +122,7 @@ pip install vllm>=0.11.0
 
 ```python
 from vllm import LLM, SamplingParams
-llm = LLM(model="allenai/ModMoE_1b14b_1T", trust_remote_code=True)
+llm = LLM(model="allenai/Emo_1b14b_1T", trust_remote_code=True)
 sampling_params = SamplingParams(temperature=1.0, top_p=0.7)
 prompts = ["Language modeling is"]
 outputs = llm.generate(prompts, sampling_params)

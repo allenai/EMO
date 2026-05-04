@@ -1,18 +1,18 @@
-"""Standalone plugin model for EmoNoQKNormPrenorm.
+"""Standalone plugin model for Emo.
 This file can be used as an out-of-tree vLLM model plugin. It uses only
 absolute imports so it can live anywhere on the filesystem.
 Usage:
     vllm serve /path/to/checkpoint \
-        --model-impl emo_noqknorm_prenorm_plugin \
+        --model-impl emo_plugin \
         --trust-remote-code
 Or register programmatically:
     from vllm import ModelRegistry
-    from emo_noqknorm_prenorm_plugin import (
-        EmoNoQKNormPrenormForCausalLM,
+    from emo_plugin import (
+        EmoForCausalLM,
     )
     ModelRegistry.register_model(
-        "EmoNoQKNormPrenormForCausalLM",
-        EmoNoQKNormPrenormForCausalLM,
+        "EmoForCausalLM",
+        EmoForCausalLM,
     )
 """
 
@@ -59,7 +59,7 @@ from vllm.sequence import IntermediateTensors
 
 
 class EmoConfig(PretrainedConfig):
-    model_type = "emo_noqknorm_prenorm"
+    model_type = "emo"
     keys_to_ignore_at_inference = ["past_key_values"]
 
     def __init__(
@@ -92,7 +92,7 @@ class EmoConfig(PretrainedConfig):
         **kwargs,
     ):
         if "architectures" not in kwargs:
-            kwargs["architectures"] = ["EmoNoQKNormPrenormForCausalLM"]
+            kwargs["architectures"] = ["EmoForCausalLM"]
 
         self.vocab_size = vocab_size
         self.max_position_embeddings = max_position_embeddings
@@ -208,7 +208,7 @@ class EmoMoE(nn.Module):
 
         The last `num_shared_experts` experts are always-active; standard and
         shared experts get separate softmax + topk, then are concatenated.
-        See EmoNoQKNormPrenormSparseMoeBlock.forward in the HF modeling.
+        See EmoSparseMoeBlock.forward in the HF modeling.
         """
         num_shared = self.num_shared_experts
         num_standard = self.num_experts - num_shared
@@ -512,7 +512,7 @@ class EmoModel(nn.Module):
         return loaded_params
 
 
-class EmoNoQKNormPrenormForCausalLM(nn.Module, SupportsPP):
+class EmoForCausalLM(nn.Module, SupportsPP):
     packed_modules_mapping = {
         "qkv_proj": ["q_proj", "k_proj", "v_proj"],
     }
@@ -572,8 +572,8 @@ def register() -> None:
     from transformers import AutoConfig
     from vllm import ModelRegistry
 
-    AutoConfig.register("emo_noqknorm_prenorm", EmoConfig)
+    AutoConfig.register("emo", EmoConfig)
     ModelRegistry.register_model(
-        "EmoNoQKNormPrenormForCausalLM",
-        EmoNoQKNormPrenormForCausalLM,
+        "EmoForCausalLM",
+        EmoForCausalLM,
     )

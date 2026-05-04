@@ -4,23 +4,23 @@ from typing import List, Optional, Union
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from transformers import Cache, EmoNoQKNormPrenormConfig
+from transformers import Cache, EmoConfig
 from transformers.cache_utils import DynamicCache
 from transformers.generation import GenerationMixin
 from transformers.masking_utils import create_causal_mask
-from transformers.models.emo_noqknorm_prenorm.modeling_emo_noqknorm_prenorm import (
-    EmoNoQKNormPrenormAttention,
-    EmoNoQKNormPrenormDecoderLayer,
-    EmoNoQKNormPrenormMLP,
-    EmoNoQKNormPrenormPreTrainedModel,
-    EmoNoQKNormPrenormRMSNorm,
-    EmoNoQKNormPrenormRotaryEmbedding,
+from transformers.models.emo.modeling_emo import (
+    EmoAttention,
+    EmoDecoderLayer,
+    EmoMLP,
+    EmoPreTrainedModel,
+    EmoRMSNorm,
+    EmoRotaryEmbedding,
     MoeModelOutputWithPast,
 )
 from transformers.utils import ModelOutput
 
 
-class EmoNoQKNormPrenormConfigDebug(EmoNoQKNormPrenormConfig):
+class EmoConfigDebug(EmoConfig):
     """
     Config class that supports per-layer expert counts.
 
@@ -92,11 +92,11 @@ class MoeCausalLMOutputWithPast(ModelOutput):
     router_logits: Optional[tuple[torch.FloatTensor]] = None
 
 
-class EmoNoQKNormPrenormSparseMoeBlockDebug(nn.Module):
+class EmoSparseMoeBlockDebug(nn.Module):
     """
     MoE block that supports per-layer expert counts.
 
-    This is identical to EmoNoQKNormPrenormSparseMoeBlock except it accepts
+    This is identical to EmoSparseMoeBlock except it accepts
     num_experts and num_shared_experts as constructor arguments instead of reading
     from config, allowing different layers to have different expert counts.
     """
@@ -107,9 +107,7 @@ class EmoNoQKNormPrenormSparseMoeBlockDebug(nn.Module):
         self.top_k = config.num_experts_per_tok
         self.norm_topk_prob = config.norm_topk_prob
         self.gate = nn.Linear(config.hidden_size, self.num_experts, bias=False)
-        self.experts = nn.ModuleList(
-            [EmoNoQKNormPrenormMLP(config) for _ in range(self.num_experts)]
-        )
+        self.experts = nn.ModuleList([EmoMLP(config) for _ in range(self.num_experts)])
 
         self.num_shared_experts = num_shared_experts
 
@@ -200,33 +198,29 @@ class EmoNoQKNormPrenormSparseMoeBlockDebug(nn.Module):
         return final_hidden_states, router_logits
 
 
-class EmoNoQKNormPrenormDecoderLayerDebug(nn.Module):
+class EmoDecoderLayerDebug(nn.Module):
     """
     Decoder layer that supports per-layer expert counts.
 
-    This is identical to EmoNoQKNormPrenormDecoderLayer except it accepts
+    This is identical to EmoDecoderLayer except it accepts
     num_experts and num_shared_experts as constructor arguments.
     """
 
     def __init__(
         self,
-        config: EmoNoQKNormPrenormConfig,
+        config: EmoConfig,
         layer_idx: int,
         num_experts: int,
         num_shared_experts: int,
     ):
         super().__init__()
         self.hidden_size = config.hidden_size
-        self.self_attn = EmoNoQKNormPrenormAttention(config=config, layer_idx=layer_idx)
+        self.self_attn = EmoAttention(config=config, layer_idx=layer_idx)
 
-        self.mlp = EmoNoQKNormPrenormSparseMoeBlockDebug(config, num_experts, num_shared_experts)
+        self.mlp = EmoSparseMoeBlockDebug(config, num_experts, num_shared_experts)
 
-        self.pre_attention_layernorm = EmoNoQKNormPrenormRMSNorm(
-            config.hidden_size, eps=config.rms_norm_eps
-        )
-        self.pre_feedforward_layernorm = EmoNoQKNormPrenormRMSNorm(
-            config.hidden_size, eps=config.rms_norm_eps
-        )
+        self.pre_attention_layernorm = EmoRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.pre_feedforward_layernorm = EmoRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
     def forward(
         self,
@@ -287,7 +281,7 @@ class EmoNoQKNormPrenormDecoderLayerDebug(nn.Module):
         return hidden_states
 
 
-class EmoNoQKNormPrenormModelDebug(EmoNoQKNormPrenormPreTrainedModel):
+class EmoModelDebug(EmoPreTrainedModel):
     """
     Model that supports per-layer expert counts via config.num_experts_per_layer.
 
@@ -296,7 +290,7 @@ class EmoNoQKNormPrenormModelDebug(EmoNoQKNormPrenormPreTrainedModel):
     Similarly for config.num_shared_experts_per_layer.
     """
 
-    config_class = EmoNoQKNormPrenormConfigDebug
+    config_class = EmoConfigDebug
 
     def __init__(self, config):
         super().__init__(config)
@@ -322,7 +316,7 @@ class EmoNoQKNormPrenormModelDebug(EmoNoQKNormPrenormPreTrainedModel):
                 ]
             self.layers = nn.ModuleList(
                 [
-                    EmoNoQKNormPrenormDecoderLayerDebug(
+                    EmoDecoderLayerDebug(
                         config,
                         layer_idx,
                         num_experts_per_layer[layer_idx],
@@ -335,13 +329,13 @@ class EmoNoQKNormPrenormModelDebug(EmoNoQKNormPrenormPreTrainedModel):
             # Fall back to original behavior: all layers use config.num_experts
             self.layers = nn.ModuleList(
                 [
-                    EmoNoQKNormPrenormDecoderLayer(config, layer_idx)
+                    EmoDecoderLayer(config, layer_idx)
                     for layer_idx in range(config.num_hidden_layers)
                 ]
             )
 
-        self.norm = EmoNoQKNormPrenormRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
-        self.rotary_emb = EmoNoQKNormPrenormRotaryEmbedding(config=config)
+        self.norm = EmoRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.rotary_emb = EmoRotaryEmbedding(config=config)
         self.gradient_checkpointing = False
 
         # Initialize weights and apply final processing
@@ -413,21 +407,21 @@ class EmoNoQKNormPrenormModelDebug(EmoNoQKNormPrenormPreTrainedModel):
         )
 
 
-class EmoNoQKNormPrenormForCausalLMDebug(EmoNoQKNormPrenormPreTrainedModel, GenerationMixin):
+class EmoForCausalLMDebug(EmoPreTrainedModel, GenerationMixin):
     """
     CausalLM that supports per-layer expert counts.
 
-    Changes from EmoNoQKNormPrenormForCausalLM:
-    1. Uses EmoNoQKNormPrenormModelDebug which supports num_experts_per_layer
+    Changes from EmoForCausalLM:
+    1. Uses EmoModelDebug which supports num_experts_per_layer
     2. Uses load_balancing_loss_func_olmoe_variable which handles variable-size logits
     """
 
     _tied_weights_keys = ["lm_head.weight"]
-    config_class = EmoNoQKNormPrenormConfigDebug
+    config_class = EmoConfigDebug
 
     def __init__(self, config):
         super().__init__(config)
-        self.model = EmoNoQKNormPrenormModelDebug(config)
+        self.model = EmoModelDebug(config)
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 
@@ -463,10 +457,10 @@ class EmoNoQKNormPrenormForCausalLMDebug(EmoNoQKNormPrenormPreTrainedModel, Gene
         Example:
 
         ```python
-        >>> from transformers import AutoTokenizer, EmoNoQKNormPrenormForCausalLM
+        >>> from transformers import AutoTokenizer, EmoForCausalLM
 
-        >>> model = EmoNoQKNormPrenormForCausalLM.from_pretrained("allenai/EmoNoQKNormPrenorm-1B-7B-0924")
-        >>> tokenizer = AutoTokenizer.from_pretrained("allenai/EmoNoQKNormPrenorm-1B-7B-0924")
+        >>> model = EmoForCausalLM.from_pretrained("allenai/Emo-1B-7B-0924")
+        >>> tokenizer = AutoTokenizer.from_pretrained("allenai/Emo-1B-7B-0924")
 
         >>> prompt = "Hey, are you conscious? Can you talk to me?"
         >>> inputs = tokenizer(prompt, return_tensors="pt")

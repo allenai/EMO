@@ -125,7 +125,7 @@ def finetune(config: FinetuneConfig):
         torch_dtype=torch.bfloat16 if config.bf16 else torch.float32,
         trust_remote_code=config.trust_remote_code,
     )
-    # model = EmoNoQKNormPrenormForCausalLMDebug.from_pretrained(
+    # model = EmoForCausalLMDebug.from_pretrained(
     #     config.model_path,
     #     torch_dtype=torch.bfloat16 if config.bf16 else torch.float32,
     # )
@@ -191,7 +191,7 @@ def finetune(config: FinetuneConfig):
             }
         else:
             fsdp_config = {
-                "fsdp_transformer_layer_cls_to_wrap": ["EmoNoQKNormPrenormDecoderLayer"],
+                "fsdp_transformer_layer_cls_to_wrap": ["EmoDecoderLayer"],
             }
 
     # Training arguments
