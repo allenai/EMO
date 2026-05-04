@@ -24,7 +24,7 @@ PAIRS=(
     "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf|Emo_1b14b_130B"
     "dense_1b_lr-4e-3_0213/step30995-hf|Dense_1b_130B"
     "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308/step30995-hf|StdMoE_1b4b_130B"
-    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf|StdMoE_1b14b_140B"
+    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995-hf|StdMoE_1b14b_130B"
     "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419/step250339-hf|StdMoE_1b14b_1T"
 )
 
