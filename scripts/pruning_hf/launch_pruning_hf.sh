@@ -43,10 +43,10 @@ MODELS=(
     # HF Hub entries: format "hf:<id>|shared=<N>|skip_prune=<true|false>"
     "hf:allenai/Dense_1b_130B|shared=0|skip_prune=true"
     "hf:allenai/StdMoE_1b4b_130B|shared=1|skip_prune=false"
-    "hf:allenai/StdMoE_1b14b_140B|shared=1|skip_prune=false"
+    "hf:allenai/StdMoE_1b14b_130B|shared=1|skip_prune=false"
     "hf:allenai/StdMoE_1b14b_1T|shared=1|skip_prune=false"
-    "hf:allenai/ModMoE_1b14b_130B|shared=1|skip_prune=false"
-    "hf:allenai/ModMoE_1b14b_1T|shared=1|skip_prune=false"
+    "hf:allenai/Emo_1b14b_130B|shared=1|skip_prune=false"
+    "hf:allenai/Emo_1b14b_1T|shared=1|skip_prune=false"
 
     )
 
@@ -64,7 +64,7 @@ PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(8 16 32 64)
+PRUNE_KEEP_K_VALUES=(16)
 batch_size=32
 
 # --- Pruning calibration-set size ---
@@ -72,7 +72,7 @@ batch_size=32
 # Set to an integer (e.g. 50) to subsample that many prompts (deterministic shuffle).
 # Set to "random" to bypass calibration entirely and randomly select experts
 # (seed=0, mode-agnostic — ignores PRUNING_MODE). Output dir uses _prunemode-random.
-NUM_PRUNE_EXAMPLES="10"
+NUM_PRUNE_EXAMPLES=""
 
 # --- Calibration-subsample seed ---
 # Controls torch.Generator().manual_seed(...) in the calibration permutation.
@@ -81,7 +81,7 @@ NUM_PRUNE_EXAMPLES="10"
 # calibration subset. Output dir gets a _pseed-<N> suffix when != 0 so different
 # seeds don't collide on S3. Ignored when NUM_PRUNE_EXAMPLES is empty (no
 # subsampling) or "random" (no calibration).
-NUM_PRUNE_SEED="2"
+NUM_PRUNE_SEED=""
 
 # --- Shot-count overrides (two orthogonal knobs) ---
 # Each var: empty ⇒ each task's default num_shots (e.g. mmlu_merged_* = 5-shot,
@@ -97,8 +97,8 @@ NUM_PRUNE_SEED="2"
 #   PRUNE="0" EVAL=""  → _pshots-0
 #   PRUNE=""  EVAL="0" → _eshots-0
 #   PRUNE="0" EVAL="0" → _pshots-0_eshots-0
-NUM_SHOTS_PRUNE="0"
-NUM_SHOTS_EVAL="0"
+NUM_SHOTS_PRUNE=""
+NUM_SHOTS_EVAL=""
 
 # --- Layerwise-variable settings (only used when PRUNING_MODE="layerwise_variable") ---
 # Schedule name (used in output directory naming)
