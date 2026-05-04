@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FlexMoE is a research extension of **OLMo-core** (Allen AI's open LLM training framework) focused on flexible Mixture-of-Experts (MoE) architectures. The package is named `ai2-olmo-core` (v2.3.0) and lives under `src/olmo_core/`. Custom router implementations are the primary research contribution.
+ModMoE is a research extension of **OLMo-core** (Allen AI's open LLM training framework) focused on flexible Mixture-of-Experts (MoE) architectures. The package is named `ai2-olmo-core` (v2.3.0) and lives under `src/olmo_core/`. Custom router implementations are the primary research contribution.
 
 ## Important Caveats
 
-This codebase was adapted from a well-maintained upstream (OLMo-core). As a result, **many tests, docs, and scripts outside `scripts/ryanwang/` may be outdated or unused**. Treat them as reference rather than ground truth.
+This codebase was adapted from a well-maintained upstream (OLMo-core). As a result, **many tests, docs, and scripts outside `scripts/` may be outdated or unused**. Treat them as reference rather than ground truth.
 
 ## Environment
 
@@ -26,7 +26,7 @@ make style          # Auto-format code
 
 ### Pretraining
 
-Pretraining launch scripts live in `scripts/ryanwang/models_0116/`. Each script contains:
+Pretraining launch scripts live in `scripts/models_0116/`. Each script contains:
 - A **commented-out `torchrun` block** for local/single-node iteration and debugging
 - An active `python -m olmo_core.launch.beaker` block for cluster runs
 
@@ -46,11 +46,11 @@ The beaker paths (`/weka/...`) must be changed to local paths when running local
 
 ### Finetuning / Evaluation
 
-Finetuning/evaluation is launched via `scripts/ryanwang/pruning_hf/test_arc_challenge.sh`. Despite the name, it runs many tasks beyond ARC (MMLU, HellaSwag, BoolQ, GSM8K, etc.) by iterating over `TASK_GROUPS_LIST`.
+Finetuning/evaluation is launched via `scripts/pruning_hf/test_arc_challenge.sh`. Despite the name, it runs many tasks beyond ARC (MMLU, HellaSwag, BoolQ, GSM8K, etc.) by iterating over `TASK_GROUPS_LIST`.
 
-The same beaker-vs-bash pattern applies: the script has commented-out `bash scripts/hf_finetune_with_pruning.sh ...` blocks — **use those directly** instead of the `python -m olmo_core.launch.beaker` blocks when running locally.
+The same beaker-vs-bash pattern applies: the script has commented-out `bash scripts/pruning_hf/hf_finetune_with_pruning.sh ...` blocks — **use those directly** instead of the `python -m olmo_core.launch.beaker` blocks when running locally.
 
-The underlying worker script is `scripts/hf_finetune_with_pruning.sh`.
+The underlying worker script is `scripts/pruning_hf/hf_finetune_with_pruning.sh`.
 
 ## Architecture
 

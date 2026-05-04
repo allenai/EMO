@@ -3,8 +3,8 @@ from collections import defaultdict
 
 import torch
 
-model_path = "/root/ryanwang/phdbrainstorm/FlexMoE/prune/twolevel-32_1b7b_128experts_olmoe-mix_130B_1110_step30995-hf"
-out_dir = "/root/ryanwang/phdbrainstorm/FlexMoE/eval_plots"
+model_path = "/root/ryanwang/phdbrainstorm/Emo/prune/twolevel-32_1b7b_128experts_olmoe-mix_130B_1110_step30995-hf"
+out_dir = "/root/ryanwang/phdbrainstorm/Emo/eval_plots"
 
 router_paths = [
     ("arc_challenge", "task-arc_challenge_rc_validation_0shot-router.jsonl"),

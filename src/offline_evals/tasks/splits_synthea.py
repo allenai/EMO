@@ -19,12 +19,12 @@ class Synthea(MultipleChoiceTask):
     }
 
     def download(self, data_dir=None, cache_dir=None, download_mode=None):
-        train_set_1 = "/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/src/offline_evals/data/synthea/split_1/train.jsonl"
-        train_set_2 = "/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/src/offline_evals/data/synthea/split_2/train.jsonl"
-        val_set_1 = "/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/src/offline_evals/data/synthea/split_1/val.jsonl"
-        val_set_2 = "/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/src/offline_evals/data/synthea/split_2/val.jsonl"
-        test_set_1 = "/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/src/offline_evals/data/synthea/split_1/test.jsonl"
-        test_set_2 = "/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/src/offline_evals/data/synthea/split_2/test.jsonl"
+        train_set_1 = "/weka/oe-training-default/ryanwang/phdbrainstorm/Emo/src/offline_evals/data/synthea/split_1/train.jsonl"
+        train_set_2 = "/weka/oe-training-default/ryanwang/phdbrainstorm/Emo/src/offline_evals/data/synthea/split_2/train.jsonl"
+        val_set_1 = "/weka/oe-training-default/ryanwang/phdbrainstorm/Emo/src/offline_evals/data/synthea/split_1/val.jsonl"
+        val_set_2 = "/weka/oe-training-default/ryanwang/phdbrainstorm/Emo/src/offline_evals/data/synthea/split_2/val.jsonl"
+        test_set_1 = "/weka/oe-training-default/ryanwang/phdbrainstorm/Emo/src/offline_evals/data/synthea/split_1/test.jsonl"
+        test_set_2 = "/weka/oe-training-default/ryanwang/phdbrainstorm/Emo/src/offline_evals/data/synthea/split_2/test.jsonl"
 
         # check that files exist
         if not all(

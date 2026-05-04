@@ -58,7 +58,7 @@ def prune_moe_layer_inplace(
     Prune a single MoE decoder layer in-place.
 
     Args:
-        layer: FlexOlmoNoQKNormPrenormDecoderLayer (or compatible OLMoE-style layer)
+        layer: EmoDecoderLayer (or compatible OLMoE-style layer)
         experts_to_keep: Sorted list of expert indices to retain (length == prune_keep_k)
         prune_keep_k: Total number of experts to keep (standard + shared)
         target_num_shared_experts: Number of shared experts in the pruned layer
@@ -271,7 +271,7 @@ def greedy_prune_layerwise(
             logits_reshaped = logits.view(B, T, current_num_experts)
 
             # Softmax separately for standard vs shared experts (matching
-            # the forward pass in FlexOlmoNoQKNormPrenormSparseMoeBlock)
+            # the forward pass in EmoSparseMoeBlock)
             if current_num_shared > 0:
                 logits_standard = logits_reshaped[:, :, :current_num_standard]
                 logits_shared = logits_reshaped[:, :, current_num_standard:]

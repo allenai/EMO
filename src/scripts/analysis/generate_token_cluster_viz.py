@@ -440,7 +440,7 @@ def write_html(
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>FlexMoE Token Cluster Explorer — k={k} · {emb_label}</title>
+<title>Emo Token Cluster Explorer — k={k} · {emb_label}</title>
 <style>
   :root {{
     --bg: #0f1117;
@@ -655,7 +655,7 @@ def write_html(
 <body>
 
 <div id="header">
-  <h1>FlexMoE Token Cluster Explorer — {emb_label}</h1>
+  <h1>Emo Token Cluster Explorer — {emb_label}</h1>
   <span class="meta">k={k} · {num_tokens:,} tokens · {num_docs:,} docs · context ±{ctx_win} · {model_path.split('/')[-2]}</span>
   <div id="view-tabs">
     <button class="view-tab active" onclick="setView('detail')">Clusters</button>
