@@ -5,9 +5,9 @@ from olmo_core.nn.hf.config import get_hf_config
 from olmo_core.nn.transformer.config import TransformerBlockConfig, TransformerConfig
 
 try:
-    from transformers import FlexOlmoConfig  # type: ignore
+    from transformers import EmoConfig  # type: ignore
 except ImportError:
-    FlexOlmoConfig = None
+    EmoConfig = None
 
 
 def test_get_hf_config():
@@ -36,11 +36,11 @@ def test_get_hf_config_moe():
     model_config = TransformerConfig.smallmoe(vocab_size)
     model = model_config.build()
 
-    if FlexOlmoConfig is None:
-        pytest.skip("The installed transformers version does not support FlexOlmo")
+    if EmoConfig is None:
+        pytest.skip("The installed transformers version does not support Emo")
 
     hf_config = get_hf_config(model)
-    assert isinstance(hf_config, FlexOlmoConfig)
+    assert isinstance(hf_config, EmoConfig)
     assert hf_config.hidden_size == model_config.d_model
     assert isinstance(model_config.block, TransformerBlockConfig)
     assert model_config.block.feed_forward_moe is not None

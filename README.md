@@ -1,108 +1,91 @@
 <div align="center">
   <!-- <img src="https://github.com/allenai/OLMo/assets/8812459/774ac485-a535-4768-8f7c-db7be20f5cc3" width="300"/> -->
-  <img src="https://huggingface.co/datasets/allenai/blog-images/resolve/main/olmo2/olmo.png" alt="OLMo Logo" width="280" style="margin-left:'auto' margin-right:'auto' display:'block'"/>
-  <br>
-  <h1>OLMo-core</h1>
-  <h4>Building blocks for OLMo modeling and training</h4>
+  <h1>Emo</h1>
+  <h4>Emo modeling and training</h4>
 </div>
-<p align="center">
-  <a href="https://olmo-core.readthedocs.io/en/latest/">
-    <img alt="Docs" src="https://img.shields.io/badge/API-docs-red">
-  </a>
-  <a href="https://github.com/allenai/OLMo-core/tree/main/src/examples">
-    <img alt="Examples" src="https://img.shields.io/badge/API-examples-994B00">
-  </a>
-  <a href="https://github.com/allenai/OLMo-core/releases/tag/v1.9.0">
-    <img alt="Pypi" src="https://img.shields.io/pypi/v/ai2-olmo-core.svg">
-  </a>
-  <a href="https://github.com/allenai/OLMo-core/blob/main/LICENSE">
-    <img alt="GitHub License" src="https://img.shields.io/github/license/allenai/OLMo">
-  </a>
-  <a href="https://arxiv.org/pdf/2501.00656.pdf">
-    <img alt="Paper URL" src="https://img.shields.io/badge/arxiv-2402.00838-orange">
-  </a>
-  <a href="https://playground.allenai.org">
-    <img alt="Playground" src="https://img.shields.io/badge/Ai2-Playground-F0529C">
-  </a>
-  <a href="https://discord.gg/sZq3jTNVNG">
-    <img alt="Discord" src="https://img.shields.io/badge/Discord%20-%20blue?style=flat&logo=discord&label=Ai2&color=%235B65E9">
-  </a>
-</p>
+
 
 ## Installation
 
 First install [PyTorch](https://pytorch.org) according to the instructions specific to your operating system and hardware.
 
-For development, we recommend installing from source:
-
 ```bash
-git clone https://github.com/allenai/OLMo-core.git
-cd OLMo-core
-pip install -e .[all]
-```
-Or you can install from PyPI with:
-
-```bash
-pip install ai2-olmo-core
+git clone https://github.com/allenai/Emo.git
+cd Emo
+uv pip install -e .[all]
 ```
 
-There are a number of optional dependencies that must be installed to use certain functionality as well, including:
+## Training scripts
 
-- [flash-attn](https://github.com/Dao-AILab/flash-attention), [ring-flash-attn](https://github.com/zhuzilin/ring-flash-attention), and [TransformerEngine](https://github.com/NVIDIA/TransformerEngine) for the corresponding attention backends.
-- [Liger-Kernel](https://github.com/linkedin/Liger-Kernel) for a low-memory "fused-linear" loss implementation.
-- [torchao](https://github.com/pytorch/ao) for float8 training.
-- [grouped_gemm](https://github.com/tgale96/grouped_gemm) for dropless mixture-of-experts (MoE) models. You may need to compile from source until [PR #21](https://github.com/tgale96/grouped_gemm/pull/21) is released (post v0.1.6).
-- [QuACK](https://github.com/Dao-AILab/quack) for some CuTe-based kernels.
+Project-specific pretraining, continual-training, eval, and pruning recipes live in [`scripts/`](scripts/). Run scripts source [`scripts/launch_common.sh`](scripts/launch_common.sh), which exports shared paths and a `launch()` helper that dispatches to either `torchrun` (default, `MODE=local`) or `python -m olmo_core.launch.beaker` (`MODE=beaker`) if you have Beaker available.
 
-The published [Docker images](https://github.com/orgs/allenai/packages?repo_name=OLMo-core) contain all core and optional dependencies, and are regularly tested on our in-house H100 clusters.
-But there are several things to keep in mind if you intend to use these images:
-
-- They do not come with the OLMo-core package installed, only its dependencies, to accommodate for regular code changes.
-- They may not work on your own cluster if you have different hardware or driver/CUDA versions.
-
-If the published images do not work for your use-case for any of the above reasons, you could adapt our [Dockerfile](https://github.com/allenai/OLMo-core/blob/main/src/Dockerfile) to build your own images.
-
-## Official training scripts
-
-Official training scripts for released models can be found in [`src/scripts/official/`](https://github.com/allenai/OLMo-core/tree/main/src/scripts/official).
-
-These scripts are meant to be launched with ``torchrun``, or with OLMo-core's Beaker launch CLI if you have access to Beaker.
-
-For example:
+Run a script locally:
 
 ```bash
-torchrun --nproc-per-node=8 src/scripts/official/OLMo2/OLMo-2-0325-32B-train.py \
-  --save-folder=/path/to/save/checkpoints
+bash scripts/models_0116/dense_1b_lr-4e-3_0213.sh
 ```
 
-You can override most configuration options from the command-line. For example, to override the learning rate you could launch the script like this:
+Submit it as a Beaker job:
 
 ```bash
-torchrun --nproc-per-node=8 src/scripts/official/OLMo2/OLMo-2-0325-32B-train.py \
-  --save-folder=/path/to/save/checkpoints \
-  --train_module.optim.lr=6e-3
+MODE=beaker bash scripts/models_0116/dense_1b_lr-4e-3_0213.sh
 ```
 
-To continue annealing from a checkpoint, we use a separate script which can be launched like this:
+Override paths via env vars before launching:
 
-```bash
-torchrun --nproc-per-node=8 src/scripts/official/OLMo2/OLMo-2-0325-32B-anneal.py \
-  --save-folder=/path/to/save/checkpoints \
-  --checkpoint=https://olmo-checkpoints.org/ai2-llm/peteish32/step721901
-```
+- `PREFIX` — output root
+- `MODELS_DIR` — derived from `PREFIX` (`${PREFIX}/models`)
+- `DATASET_CACHE` — tokenizer-mapped dataset cache
 
-### Available Training Scripts
+Override Beaker cluster sizing per script with `BEAKER_GPUS=8 BEAKER_NODES=4 ...`.
 
-| Model Family | Directory | Description |
-|--------------|-----------|-------------|
-| **OLMo-2** | [`src/scripts/official/OLMo2/`](https://github.com/allenai/OLMo-core/tree/main/src/scripts/official/OLMo2) | Training scripts and model card for OLMo-2 32B models |
-| **OLMo-3** | [`src/scripts/official/OLMo3/`](https://github.com/allenai/OLMo-core/tree/main/src/scripts/official/OLMo3) | Training scripts and model cards for OLMo-3 7B and 32B models |
+### Run templates
+
+[`scripts/RUN_TEMPLATES.md`](scripts/RUN_TEMPLATES.md) has the full code for each recipe. Summary:
+
+| Template | Description | Entry point |
+|---|---|---|
+| Dense 1B pretrain | Dense 1B on `OLMoE-mix-0824` | `src/scripts/train/olmo2-1B.py` |
+| MoE 1B/14B single-level | 128-expert single-level MoE | `src/scripts/train/olmoe-1B-7B_fsl.py` |
+| MoE 1B/14B two-level (shared experts) | Two-level router with `--document-expert-pool`, `--num_shared_experts*` | `src/scripts/train/olmoe-1B-7B_fsl.py` |
+| Continual pretrain / extension | Resume from a checkpoint on a domain mix (e.g. `mj_finemath4plus`) | `src/scripts/train/olmoe-1B-7B_fsl_extension.py` |
+| Eval | OLMES eval on HF checkpoints, results uploaded to S3 | via [`scripts/extensions/launch_eval.sh`](scripts/extensions/launch_eval.sh) |
+| Pruning + task finetune | Compute router activations → prune to top-k experts → finetune | [`scripts/pruning_hf/hf_finetune_with_pruning.sh`](scripts/pruning_hf/hf_finetune_with_pruning.sh) |
+
+Two-level model variants (`--model-type`):
+
+- `moe` — single-level
+- `two-level_lb-batch_reduce-dp` — two-level, no shared experts
+- `two-level_lb-batch_reduce-dp_sharedexppool` — two-level with fixed shared-expert pool
+- `two-level_lb-batch_reduce-dp_sharedexp_randpool` — two-level with random shared-expert pool sampling (used in anneal runs)
+
+Pruning modes (`PRUNING_MODE`):
+
+- `global` — single-pass activation collection + top-k prune across the whole model
+- `layerwise` — greedy layer-by-layer pruning (each layer conditioned on earlier pruned layers)
+- `layerwise_variable` — greedy layerwise with a per-layer keep-k schedule
+- `easy_ep` — EASY-EP ([arXiv 2504.06792](https://arxiv.org/abs/2504.06792)): domain-specific one-shot prune on calibration data
+
+The `runname` naming convention (size · router · LR · LB · date · phase) is documented in the cheatsheet at the bottom of `scripts/RUN_TEMPLATES.md`.
 
 ## Inference
 
+### Released models
+
+The following checkpoints are available on the [Hugging Face Hub](https://huggingface.co/allenai):
+
+- [`allenai/Emo_1b14b_1T`](https://huggingface.co/allenai/Emo_1b14b_1T)
+- [`allenai/Emo_1b14b_130B`](https://huggingface.co/allenai/Emo_1b14b_130B)
+- [`allenai/Dense_1b_130B`](https://huggingface.co/allenai/Dense_1b_130B)
+- [`allenai/StdMoE_1b4b_130B`](https://huggingface.co/allenai/StdMoE_1b4b_130B)
+- [`allenai/StdMoE_1b14b_140B`](https://huggingface.co/allenai/StdMoE_1b14b_140B)
+- [`allenai/StdMoE_1b14b_1T`](https://huggingface.co/allenai/StdMoE_1b14b_1T)
+
+All inference snippets below require `trust_remote_code=True` since the models use custom modeling code from the [ryanyxw/transformers](https://github.com/ryanyxw/transformers/tree/flexmoe_v4_57_1) fork.
+
 ### With Hugging Face Transformers
 
-You can use our Hugging Face [transformers](https://github.com/huggingface/transformers) integration to run inference on the OLMo checkpoints:
+You can use our Hugging Face [transformers](https://github.com/huggingface/transformers) integration to run inference on the released checkpoints:
 
 ```bash
 pip install transformers>=4.57.0
@@ -110,8 +93,9 @@ pip install transformers>=4.57.0
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
-olmo = AutoModelForCausalLM.from_pretrained("allenai/Olmo-3-1125-32B")
-tokenizer = AutoTokenizer.from_pretrained("allenai/Olmo-3-1125-32B")
+model_id = "allenai/Emo_1b14b_1T"
+olmo = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True)
+tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
 message = ["Language modeling is "]
 inputs = tokenizer(message, return_tensors='pt', return_token_type_ids=False)
 # inputs = {k: v.to('cuda') for k,v in inputs.items()} # optional verifying cuda
@@ -124,13 +108,13 @@ Alternatively, with the Hugging Face pipeline abstraction:
 
 ```python
 from transformers import pipeline
-olmo_pipe = pipeline("text-generation", model="allenai/Olmo-3-1125-32B")
+olmo_pipe = pipeline("text-generation", model="allenai/Emo_1b14b_1T", trust_remote_code=True)
 print(olmo_pipe("Language modeling is"))
 ```
 
 ### With vLLM
 
-[vLLM](https://docs.vllm.ai/en/latest/) provides high-throughput inference for OLMo models. You can use it for offline batched inference:
+[vLLM](https://docs.vllm.ai/en/latest/) provides high-throughput inference. You can use it for offline batched inference:
 
 ```bash
 pip install vllm>=0.11.0
@@ -138,7 +122,7 @@ pip install vllm>=0.11.0
 
 ```python
 from vllm import LLM, SamplingParams
-llm = LLM(model="allenai/Olmo-3-1125-32B")
+llm = LLM(model="allenai/Emo_1b14b_1T", trust_remote_code=True)
 sampling_params = SamplingParams(temperature=1.0, top_p=0.7)
 prompts = ["Language modeling is"]
 outputs = llm.generate(prompts, sampling_params)
@@ -150,39 +134,6 @@ for output in outputs:
 
 For more details, see the [vLLM documentation](https://docs.vllm.ai/en/latest/getting_started/quickstart/#offline-batched-inference).
 
-### With Olmo-core (beta)
-
-Autoregressive generation is supported directly in Olmo-core. Using this capability, we provide a chat-loop demo that can be used to interact with models in an interactive chat session:
-
-```bash
-python -m olmo_core.generate.chat https://olmo-checkpoints.org/ai2-llm/Olmo-3-1025-7B/stage3/step11921/ --max-new-tokens 512
-```
-
-## Evaluation
-
-Additional tools for evaluating OLMo models are available at the [OLMo Eval](https://github.com/allenai/OLMo-eval) and [olmes](https://github.com/allenai/olmes) repositories.
-
-## Development
-
-The Python library source code is located in `src/olmo_core`. The corresponding tests are located in `src/test`. The library docs are located in `docs`. You can build the docs locally with `make docs`.
-
-Code checks:
-
-- We use `pytest` to run tests. You can run all tests with `pytest -v src/test`. You can also point `pytest` at a specific test file to run it individually.
-- We use `isort` and `black` for code formatting. Ideally you should integrate these into your editor, but you can also run them manually or configure them with a pre-commit hook. To validate that all files are formatted correctly, run `make style-check`.
-- We use `ruff` as our primary linter. You can run it with `make lint-check`.
-- We use `mypy` as our type checker. You can run it with `make type-check`.
-
 ## Citing
 
-```bibtex
-@misc{olmo20242olmo2furious,
-      title={{2 OLMo 2 Furious}},
-      author={{Team OLMo} and Pete Walsh and Luca Soldaini and Dirk Groeneveld and Kyle Lo and Shane Arora and Akshita Bhagia and Yuling Gu and Shengyi Huang and Matt Jordan and Nathan Lambert and Dustin Schwenk and Oyvind Tafjord and Taira Anderson and David Atkinson and Faeze Brahman and Christopher Clark and Pradeep Dasigi and Nouha Dziri and Michal Guerquin and Hamish Ivison and Pang Wei Koh and Jiacheng Liu and Saumya Malik and William Merrill and Lester James V. Miranda and Jacob Morrison and Tyler Murray and Crystal Nam and Valentina Pyatkin and Aman Rangapur and Michael Schmitz and Sam Skjonsberg and David Wadden and Christopher Wilhelm and Michael Wilson and Luke Zettlemoyer and Ali Farhadi and Noah A. Smith and Hannaneh Hajishirzi},
-      year={2024},
-      eprint={2501.00656},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2501.00656},
-}
-```
+TODO

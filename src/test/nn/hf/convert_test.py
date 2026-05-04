@@ -5,9 +5,9 @@ from transformers import Olmo2Config
 from olmo_core.nn.hf.convert import convert_state_from_hf, convert_state_to_hf
 
 try:
-    from transformers import FlexOlmoConfig  # type: ignore
+    from transformers import EmoConfig  # type: ignore
 except ImportError:
-    FlexOlmoConfig = None
+    EmoConfig = None
 
 
 def _get_olmo2_config() -> Olmo2Config:
@@ -194,11 +194,11 @@ def test_convert_state_to_hf_and_unflatten():
         )
 
 
-def test_convert_state_to_flex_olmo_hf():
-    if FlexOlmoConfig is None:
-        pytest.skip("The installed transformers version does not support FlexOlmo")
+def test_convert_state_to_emo_hf():
+    if EmoConfig is None:
+        pytest.skip("The installed transformers version does not support Emo")
 
-    hf_config = FlexOlmoConfig(
+    hf_config = EmoConfig(
         vocab_size=64,
         hidden_size=16,
         intermediate_size=32,

@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "emo-vllm-plugin"
+version = "0.1.0"
+description = "vLLM plugin registering EmoSharedForCausalLM."
+requires-python = ">=3.10"
+dependencies = []
+
+[project.entry-points."vllm.general_plugins"]
+emo_shared = "emo_plugin:register"
+
+[tool.setuptools]
+py-modules = ["emo_plugin"]
