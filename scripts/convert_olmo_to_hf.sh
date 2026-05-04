@@ -1,5 +1,5 @@
-#BASE_FOLDER="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models"
-#BASE_FOLDER="/root/ryanwang/phdbrainstorm/FlexMoE/models"
+#BASE_FOLDER="/weka/oe-training-default/ryanwang/phdbrainstorm/Emo/models"
+#BASE_FOLDER="/root/ryanwang/phdbrainstorm/Emo/models"
 
 
 
@@ -52,9 +52,9 @@ MODELS=(
 for MODEL in "${MODELS[@]}"; do
 #
     python src/examples/huggingface/convert_checkpoint_to_hf.py \
-          --checkpoint-input-path "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}" \
+          --checkpoint-input-path "/root/ryanwang/phdbrainstorm/Emo/models/${MODEL}" \
           --max-sequence-length 4096 \
-          --huggingface-output-dir "/root/ryanwang/phdbrainstorm/FlexMoE/models/${MODEL}-hf" \
+          --huggingface-output-dir "/root/ryanwang/phdbrainstorm/Emo/models/${MODEL}-hf" \
           --dtype float32 \
           --skip-validation
 ##  gantry run \

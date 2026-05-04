@@ -3,10 +3,10 @@
 # Script to launch beaker evaluations for mmlu tasks + pruning (just lists the tasks)
 
 # Configuration
-BASE_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
+BASE_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/Emo"
 MODEL_DIR="${BASE_DIR}/models"
 PRUNE_DIR="${BASE_DIR}/prune"
-#MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
+#MODEL_DIR="/root/ryanwang/phdbrainstorm/Emo/models"
 
 PARENT_MODELS=(
 #    "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115/step30995"
@@ -14,7 +14,7 @@ PARENT_MODELS=(
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals"
-#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/evals"
+#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/Emo/evals"
 BATCH_SIZE=16
 prune_keep_k=32
 CLUSTER="ai2/jupiter-cirrascale-2"

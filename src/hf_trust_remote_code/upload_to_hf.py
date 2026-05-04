@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Upload a FlexMoE-trained HF checkpoint to the Hugging Face Hub with the
+Upload a Emo-trained HF checkpoint to the Hugging Face Hub with the
 configuration_*.py / modeling_*.py scripts needed for
 ``trust_remote_code=True`` loading.
 
@@ -25,14 +25,14 @@ from huggingface_hub import HfApi, create_repo
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 ARCH_TO_FOLDER = {
-    "FlexOlmoNoQKNormPrenormForCausalLM": "flex_olmo_noqknorm_prenorm",
+    "EmoNoQKNormPrenormForCausalLM": "emo_noqknorm_prenorm",
     "Olmo2NoQKNormPrenormForCausalLM": "olmo2_noqknorm_prenorm",
 }
 
 ARCH_TO_AUTO_MAP = {
-    "FlexOlmoNoQKNormPrenormForCausalLM": {
-        "AutoConfig": "configuration_flex_olmo_noqknorm_prenorm.FlexOlmoNoQKNormPrenormConfig",
-        "AutoModelForCausalLM": "modeling_flex_olmo_noqknorm_prenorm.FlexOlmoNoQKNormPrenormForCausalLM",
+    "EmoNoQKNormPrenormForCausalLM": {
+        "AutoConfig": "configuration_emo_noqknorm_prenorm.EmoNoQKNormPrenormConfig",
+        "AutoModelForCausalLM": "modeling_emo_noqknorm_prenorm.EmoNoQKNormPrenormForCausalLM",
     },
     "Olmo2NoQKNormPrenormForCausalLM": {
         "AutoConfig": "configuration_olmo2_noqknorm_prenorm.Olmo2NoQKNormPrenormConfig",

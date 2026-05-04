@@ -13,7 +13,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
 `launch_common.sh` exports:
 
 - **Paths** (override via env vars before sourcing):
-  - `PREFIX` (default `/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE`) — root for outputs.
+  - `PREFIX` (default `/weka/oe-training-default/ryanwang/phdbrainstorm/Emo`) — root for outputs.
   - `MODELS_DIR` — derived from `PREFIX` (`${PREFIX}/models`).
   - `DATASET_CACHE` (default `/weka/oe-training-default/ryanwang/dataset-cache`) — tokenizer-mapped dataset cache.
 - **`launch()` function** — wraps either `torchrun --nproc-per-node=${NPROC}` (default, `MODE=local`) or `python -m olmo_core.launch.beaker` with the `tylerr/olmo-core-tch280cu128-2025-11-25` image (when `MODE=beaker`). Call as: `launch <script.py> <run_name> [args...]`.

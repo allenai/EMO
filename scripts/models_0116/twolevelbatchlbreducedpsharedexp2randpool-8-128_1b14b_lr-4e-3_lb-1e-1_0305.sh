@@ -23,7 +23,7 @@ runname="twolevelbatchlbreducedp${lb_global_batch_size}sharedexp${num_shared_exp
 
 #torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
 #  $runname \
-#  --save-folder="/root/ryanwang/phdbrainstorm/FlexMoE/models/$runname" \
+#  --save-folder="/root/ryanwang/phdbrainstorm/Emo/models/$runname" \
 #  --dataset.mix=arc-easy-train \
 #  --work-dir="/root/ryanwang/dataset-cache" \
 #  --trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \

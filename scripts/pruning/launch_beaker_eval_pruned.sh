@@ -3,10 +3,10 @@
 # Script to launch beaker evaluations for pruned models. Requires changing "postfix" accordingly
 
 # Configuration
-BASE_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
+BASE_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/Emo"
 MODEL_DIR="${BASE_DIR}/models"
 PRUNE_DIR="${BASE_DIR}/prune"
-#MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
+#MODEL_DIR="/root/ryanwang/phdbrainstorm/Emo/models"
 
 PARENT_MODELS=(
     "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995"
@@ -618,7 +618,7 @@ FINETUNE_TASKS=(
 )
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals"
-#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/evals"
+#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/Emo/evals"
 BATCH_SIZE=16
 CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf

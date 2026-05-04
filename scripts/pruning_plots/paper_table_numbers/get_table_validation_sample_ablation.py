@@ -50,9 +50,9 @@ ROWS: List[Tuple[str, str, str]] = [
     ("Reg. MoE", "MMLU", "moe 1T + anneal / mmlu_merged"),
     ("Reg. MoE", "MMLU Pro", "moe 1T + anneal / mmlu_pro_merged"),
     ("Reg. MoE", "GSM8K", "moe 1T + anneal / gsm8k"),
-    ("ModMoE", "MMLU", "specialized moe 1T + anneal / mmlu_merged"),
-    ("ModMoE", "MMLU Pro", "specialized moe 1T + anneal / mmlu_pro_merged"),
-    ("ModMoE", "GSM8K", "specialized moe 1T + anneal / gsm8k"),
+    ("Emo", "MMLU", "specialized moe 1T + anneal / mmlu_merged"),
+    ("Emo", "MMLU Pro", "specialized moe 1T + anneal / mmlu_pro_merged"),
+    ("Emo", "GSM8K", "specialized moe 1T + anneal / gsm8k"),
 ]
 
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Configuration
-MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
-#MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
+MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/Emo/models
+#MODEL_DIR="/root/ryanwang/phdbrainstorm/Emo/models"
 MODELS=(
     "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121/step30995-hf"
 #    "twolevelbatchlb-32_1b14b_stability_lr-6e-4_1203/step30995-hf"
@@ -21,8 +21,8 @@ MODELS=(
 
     )
 #BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/prune"
-#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/prune"
-BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/prune"
+#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/Emo/prune"
+BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/Emo/prune"
 BATCH_SIZE=16
 CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf

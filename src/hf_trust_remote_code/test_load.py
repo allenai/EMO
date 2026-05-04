@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Sanity-check that an uploaded FlexMoE checkpoint loads via trust_remote_code
+Sanity-check that an uploaded Emo checkpoint loads via trust_remote_code
 and can run a forward pass + short generation.
 
 Usage:

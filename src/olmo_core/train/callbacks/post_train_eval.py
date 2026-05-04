@@ -85,7 +85,7 @@ class PostTrainEvalCallback(Callback):
 
     priority: ClassVar[int] = -2  # Run after HFConverterCallback (priority=-1)
 
-    eval_output_base_dir: str = "/data/input/kevinf/eval_results/flexmoe"
+    eval_output_base_dir: str = "/data/input/kevinf/eval_results/emo"
     """Base directory for evaluation results."""
 
     tasks: List[str] = field(default_factory=lambda: DEFAULT_EVAL_TASKS.copy())
@@ -103,7 +103,7 @@ class PostTrainEvalCallback(Callback):
     job_priority: str = "urgent"
     """Job priority for eval jobs."""
 
-    github_repo: str = "allenai/ModMoE"
+    github_repo: str = "allenai/Emo"
     """GitHub repo for gantry (needed when remote URL has embedded token)."""
 
     batch_size: int = 4

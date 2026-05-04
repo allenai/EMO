@@ -5,14 +5,14 @@
 #   source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
 #
 # Override defaults via environment variables before sourcing:
-#   PREFIX=/path/to/FlexMoE     # root for model outputs (default: weka path)
+#   PREFIX=/path/to/Emo     # root for model outputs (default: weka path)
 #   DATASET_CACHE=...           # dataset cache root (default: weka path)
 #   MODE=beaker                 # default: local (uses torchrun)
 #   NPROC=8                     # GPUs per node when MODE=local
 #   BEAKER_GPUS / BEAKER_NODES  # cluster sizing when MODE=beaker
 
 # Output root for trained checkpoints.
-PREFIX="${PREFIX:-/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE}"
+PREFIX="${PREFIX:-/weka/oe-training-default/ryanwang/phdbrainstorm/Emo}"
 MODELS_DIR="${MODELS_DIR:-${PREFIX}/models}"
 
 # Dataset cache (lives outside the model output root on weka).

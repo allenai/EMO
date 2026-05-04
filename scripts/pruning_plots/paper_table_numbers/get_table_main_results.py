@@ -18,14 +18,14 @@ trained`` row so the CSV has the same shape):
     Reg. MoE      / 32             -> "moe (keepk 32)"
     Reg. MoE      / 64             -> "moe (keepk 64)"
     Reg. MoE      / 128 (trained)  -> "moe (keepk 128)"
-    ModMoE       / 8              -> "specialized moe + globallb + 1shardexp + randpool (keepk 8)"
-    ModMoE       / 16             -> "... (keepk 16)"
-    ModMoE       / 32             -> "... (keepk 32)"
-    ModMoE       / 64             -> "... (keepk 64)"
-    ModMoE       / 128 (trained)  -> "... (keepk 128)"
+    Emo       / 8              -> "specialized moe + globallb + 1shardexp + randpool (keepk 8)"
+    Emo       / 16             -> "... (keepk 16)"
+    Emo       / 32             -> "... (keepk 32)"
+    Emo       / 64             -> "... (keepk 64)"
+    Emo       / 128 (trained)  -> "... (keepk 128)"
 
-Win-rate columns count, for each ModMoE row, the number of MMLU / MMLU Pro
-sub-tasks where ModMoE beats the Reg. MoE baseline with the same total-expert
+Win-rate columns count, for each Emo row, the number of MMLU / MMLU Pro
+sub-tasks where Emo beats the Reg. MoE baseline with the same total-expert
 count (same keepk). "other" is excluded from both task groups, mirroring the
 ``*_avg_no_other`` averages — so denominators are 16 (MMLU) and 13 (MMLU Pro).
 """
@@ -61,33 +61,33 @@ ROWS: List[Tuple[str, str, Optional[str]]] = [
     ("Reg. MoE", "64", "moe (keepk 64)"),
     ("Reg. MoE", "128 (trained)", "moe (keepk 128)"),
     (
-        "ModMoE",
+        "Emo",
         "8",
         "specialized moe + globallb + 1shardexp + randpool (keepk 8)",
     ),
     (
-        "ModMoE",
+        "Emo",
         "16",
         "specialized moe + globallb + 1shardexp + randpool (keepk 16)",
     ),
     (
-        "ModMoE",
+        "Emo",
         "32",
         "specialized moe + globallb + 1shardexp + randpool (keepk 32)",
     ),
     (
-        "ModMoE",
+        "Emo",
         "64",
         "specialized moe + globallb + 1shardexp + randpool (keepk 64)",
     ),
     (
-        "ModMoE",
+        "Emo",
         "128 (trained)",
         "specialized moe + globallb + 1shardexp + randpool (keepk 128)",
     ),
 ]
 
-# ModMoE row keepk -> Reg. MoE comparison key (same total experts).
+# Emo row keepk -> Reg. MoE comparison key (same total experts).
 FLEXMOE_BASELINE = {
     "specialized moe + globallb + 1shardexp + randpool (keepk 8)": "moe (keepk 8)",
     "specialized moe + globallb + 1shardexp + randpool (keepk 16)": "moe (keepk 16)",

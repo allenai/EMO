@@ -14,8 +14,8 @@
 #       `--trainer.hard_stop.value=100 --trainer.hard_stop.unit=steps`
 
 ##############################################################
-BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE"
-#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE"
+BASE_OUTPUT_DIR="/weka/oe-training-default/ryanwang/phdbrainstorm/Emo"
+#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/Emo"
 
 model_name="dense_1b_olmoe-mix_prenorm_noqknorm_1123"
 step="step30995"

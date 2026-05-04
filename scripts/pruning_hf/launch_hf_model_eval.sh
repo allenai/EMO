@@ -10,8 +10,8 @@
 #
 
 # Configuration
-BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
-#BASE_DIR="/root/phdbrainstorm/FlexMoE"
+BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/Emo
+#BASE_DIR="/root/phdbrainstorm/Emo"
 
 # Each entry: "hf_model_id|revision|sanitized_dir_name"
 # Use "none" for revision to use the default branch.
@@ -21,15 +21,15 @@ MODEL_ENTRIES=(
 #    "allenai/StdMoE_1b14b_1T|none|allenai_StdMoE_1b14b_1T"
 #    "allenai/StdMoE_1b14b_140B|none|allenai_StdMoE_1b14b_140B"
 #    "allenai/StdMoE_1b4b_130B|none|allenai_StdMoE_1b4b_130B"
-#    "allenai/ModMoE_1b14b_130B|none|allenai_ModMoE_1b14b_130B"
-#    "allenai/ModMoE_1b14b_1T|none|allenai_ModMoE_1b14b_1T"
+#    "allenai/Emo_1b14b_130B|none|allenai_Emo_1b14b_130B"
+#    "allenai/Emo_1b14b_1T|none|allenai_Emo_1b14b_1T"
     "allenai/Dense_1b_130B|none|allenai_Dense_1b_130B"
 
     allenai/StdMoE_1b14b_1T
     allenai/StdMoE_1b14b_140B
     allenai/StdMoE_1b4b_130B
-    allenai/ModMoE_1b14b_130B
-    allenai/ModMoE_1b14b_1T
+    allenai/Emo_1b14b_130B
+    allenai/Emo_1b14b_1T
     allenai/Dense_1b_130B
 )
 

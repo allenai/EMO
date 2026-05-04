@@ -10,8 +10,8 @@
 #
 
 # Configuration
-BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
-#BASE_DIR="/root/phdbrainstorm/FlexMoE"
+BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/Emo
+#BASE_DIR="/root/phdbrainstorm/Emo"
 
 MODELS=(
 #    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf"

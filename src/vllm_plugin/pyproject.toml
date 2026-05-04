@@ -3,14 +3,14 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "flexmoe-vllm-plugin"
+name = "emo-vllm-plugin"
 version = "0.1.0"
-description = "vLLM plugin registering FlexOlmoNoQKNormPrenormSharedForCausalLM."
+description = "vLLM plugin registering EmoNoQKNormPrenormSharedForCausalLM."
 requires-python = ">=3.10"
 dependencies = []
 
 [project.entry-points."vllm.general_plugins"]
-flex_olmo_noqknorm_prenorm_shared = "flex_olmo_noqknorm_prenorm_plugin:register"
+emo_noqknorm_prenorm_shared = "emo_noqknorm_prenorm_plugin:register"
 
 [tool.setuptools]
-py-modules = ["flex_olmo_noqknorm_prenorm_plugin"]
+py-modules = ["emo_noqknorm_prenorm_plugin"]

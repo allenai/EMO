@@ -282,7 +282,7 @@ OLMO_CORE_TO_HF_TEMPLATE_MAPPINGS: Dict[str, StateMappingTemplate] = {
 MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_TEMPLATE_MAPPINGS: Dict[
     str, Dict[str, StateMappingTemplate]
 ] = {
-    "flex_olmo": {
+    "emo": {
         f"blocks.{LAYER}.feed_forward_moe.experts.mlp.w1": StateMappingTemplate(
             f"blocks.{LAYER}.feed_forward_moe.experts.mlp.w1",
             f"model.layers.{LAYER}.mlp.experts.{EXPERT}.gate_proj.weight",
@@ -313,15 +313,15 @@ MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_TEMPLATE_MAPPINGS: Dict[
 }
 
 MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_WEIGHT_MAPPINGS: Dict[str, Dict[str, str]] = {
-    "flex_olmo_noqknorm_prenorm": {
+    "emo_noqknorm_prenorm": {
         f"blocks.{LAYER}.attention_norm.weight": f"model.layers.{LAYER}.pre_attention_layernorm.weight",
         f"blocks.{LAYER}.feed_forward_norm.weight": f"model.layers.{LAYER}.pre_feedforward_layernorm.weight",
     },
-    "flex_olmo_noqknorm_prenorm_shared": {
+    "emo_noqknorm_prenorm_shared": {
         f"blocks.{LAYER}.attention_norm.weight": f"model.layers.{LAYER}.pre_attention_layernorm.weight",
         f"blocks.{LAYER}.feed_forward_norm.weight": f"model.layers.{LAYER}.pre_feedforward_layernorm.weight",
     },
-    "flex_olmo_prenorm": {
+    "emo_prenorm": {
         f"blocks.{LAYER}.attention_norm.weight": f"model.layers.{LAYER}.pre_attention_layernorm.weight",
         f"blocks.{LAYER}.feed_forward_norm.weight": f"model.layers.{LAYER}.pre_feedforward_layernorm.weight",
     },
@@ -332,15 +332,15 @@ MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_WEIGHT_MAPPINGS: Dict[str, Dict[str, str]] =
 }
 
 MODEL_TYPE_SPECIFIC_OLMO_CORE_TO_HF_MODULE_MAPPINGS: Dict[str, Dict[str, str]] = {
-    "flex_olmo_noqknorm_prenorm": {
+    "emo_noqknorm_prenorm": {
         f"blocks.{LAYER}.attention_norm": f"model.layers.{LAYER}.pre_attention_layernorm",
         f"blocks.{LAYER}.feed_forward_norm": f"model.layers.{LAYER}.pre_feedforward_layernorm",
     },
-    "flex_olmo_noqknorm_prenorm_shared": {
+    "emo_noqknorm_prenorm_shared": {
         f"blocks.{LAYER}.attention_norm": f"model.layers.{LAYER}.pre_attention_layernorm",
         f"blocks.{LAYER}.feed_forward_norm": f"model.layers.{LAYER}.pre_feedforward_layernorm",
     },
-    "flex_olmo_prenorm": {
+    "emo_prenorm": {
         f"blocks.{LAYER}.attention_norm": f"model.layers.{LAYER}.pre_attention_layernorm",
         f"blocks.{LAYER}.feed_forward_norm": f"model.layers.{LAYER}.pre_feedforward_layernorm",
     },

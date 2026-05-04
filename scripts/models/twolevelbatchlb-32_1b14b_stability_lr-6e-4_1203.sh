@@ -10,7 +10,7 @@ runname="twolevelbatchlb-${document_expert_pool}_1b14b_stability_lr-6e-4_1203"
 
 #torchrun --nproc-per-node=1 src/scripts/train/olmoe-1B-7B_fsl.py \
 #  $runname \
-#  --save-folder="/root/ryanwang/phdbrainstorm/FlexMoE/models/$runname" \
+#  --save-folder="/root/ryanwang/phdbrainstorm/Emo/models/$runname" \
 #  --dataset.mix=arc-easy-train \
 #  --work-dir="/root/ryanwang/dataset-cache" \
 #  --trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
@@ -41,7 +41,7 @@ python -m olmo_core.launch.beaker \
 	--env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
 	-- src/scripts/train/olmoe-1B-7B_fsl.py \
     $runname \
-		--save-folder="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/$runname" \
+		--save-folder="/weka/oe-training-default/ryanwang/phdbrainstorm/Emo/models/$runname" \
 		--dataset.mix=OLMoE-mix-0824 \
 		--work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
 		--lr=6e-4 \

@@ -4,8 +4,8 @@
 # Usage: bash src/scripts/eval/launch_beaker_eval.sh
 
 # Configuration
-MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
-#MODEL_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/models"
+MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/Emo/models
+#MODEL_DIR="/root/ryanwang/phdbrainstorm/Emo/models"
 MODELS=(
     "dense_1b_olmoe-mix_prenorm_noqknorm_1123/step30995-hf"
     "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf"
@@ -31,7 +31,7 @@ MODELS=(
 
 
 BASE_OUTPUT_DIR="s3://ai2-sewonm/ryanwang/evals"
-#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/evals"
+#BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/Emo/evals"
 BATCH_SIZE=16
 CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf

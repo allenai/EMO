@@ -153,10 +153,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 ## set wandb api key if not already set
-## wandb api key is stored in /weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/cred.txt
+## wandb api key is stored in /weka/oe-training-default/ryanwang/phdbrainstorm/Emo/cred.txt
 #if [ -z "$WANDB_API_KEY" ]; then
-#    if [ -f /weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/cred.txt ]; then
-#        export WANDB_API_KEY=$(cat /weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/cred.txt)
+#    if [ -f /weka/oe-training-default/ryanwang/phdbrainstorm/Emo/cred.txt ]; then
+#        export WANDB_API_KEY=$(cat /weka/oe-training-default/ryanwang/phdbrainstorm/Emo/cred.txt)
 #    else
 #        echo "Warning: WANDB_API_KEY not set and cred.txt not found. Wandb logging may fail."
 #    fi

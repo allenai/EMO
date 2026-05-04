@@ -343,7 +343,7 @@ def main():
 
 def write_report(clusters_js, info, k, emb_label, path):
     lines = []
-    lines.append(f"# ModMoE Router Cluster Analysis (k={k}, {emb_label})")
+    lines.append(f"# Emo Router Cluster Analysis (k={k}, {emb_label})")
     lines.append("")
     lines.append(f"**Model:** `{info['model_path']}`")
     lines.append(f"**Documents:** {info['num_docs']:,}  |  **Tokens:** {info['total_tokens']:,}")
@@ -460,7 +460,7 @@ def write_html(clusters_js, docs_js, info, k, emb_label, path):
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ModMoE Cluster Explorer — k={k} · {emb_label}</title>
+<title>Emo Cluster Explorer — k={k} · {emb_label}</title>
 <style>
   :root {{
     --bg: #0f1117;
@@ -606,7 +606,7 @@ def write_html(clusters_js, docs_js, info, k, emb_label, path):
 <body>
 
 <div id="header">
-  <h1>ModMoE Cluster Explorer — {emb_label}</h1>
+  <h1>Emo Cluster Explorer — {emb_label}</h1>
   <span class="meta">k={k} · {num_docs:,} docs · {num_tokens:,} tokens · {model_path.split('/')[-2]}</span>
   <div id="view-tabs">
     <button class="view-tab active" onclick="setView('detail')">Clusters</button>

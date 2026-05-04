@@ -35,15 +35,15 @@ from olmo_core.nn.transformer.model import (
 log = logging.getLogger(__name__)
 
 try:
-    from transformers import FlexOlmoConfig  # type: ignore
+    from transformers import EmoConfig  # type: ignore
     from transformers import (
-        FlexOlmoNoQKNormPrenormConfig,
-        FlexOlmoNoQKNormPrenormSharedConfig,
-        FlexOlmoPrenormConfig,
+        EmoNoQKNormPrenormConfig,
+        EmoNoQKNormPrenormSharedConfig,
+        EmoPrenormConfig,
     )
 except ImportError:
-    FlexOlmoConfig = None
-    FlexOlmoNoQKNormPrenormSharedConfig = None
+    EmoConfig = None
+    EmoNoQKNormPrenormSharedConfig = None
 
 try:
     from transformers import Olmo3Config  # type: ignore
@@ -51,7 +51,7 @@ except ImportError:
     Olmo3Config = None
 
 
-def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
+def _get_emo_config(model: MoETransformer) -> PretrainedConfig:
     blocks = list(model.blocks.values())
     for block in blocks:
         # Dense TransformerBlock (e.g., densefirst layers 0-1): validate attention only
@@ -118,8 +118,8 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
     assert block.attention.rope is not None
     assert block.feed_forward_moe is not None
 
-    if FlexOlmoConfig is None:
-        raise RuntimeError("The installed transformers version does not support FlexOlmo")
+    if EmoConfig is None:
+        raise RuntimeError("The installed transformers version does not support Emo")
 
     # Build per-layer metadata for dense/MoE mixed models
     dense_intermediate_size = None
@@ -164,11 +164,11 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
     ):
         shared_mlp = block.feed_forward_moe.shared_mlp
         if shared_mlp is not None:
-            if FlexOlmoNoQKNormPrenormSharedConfig is None:
+            if EmoNoQKNormPrenormSharedConfig is None:
                 raise RuntimeError(
-                    "The installed transformers version does not support FlexOlmoNoQKNormPrenormShared"
+                    "The installed transformers version does not support EmoNoQKNormPrenormShared"
                 )
-            return FlexOlmoNoQKNormPrenormSharedConfig(
+            return EmoNoQKNormPrenormSharedConfig(
                 vocab_size=model.vocab_size,
                 hidden_size=model.d_model,
                 intermediate_size=block.feed_forward_moe.experts.mlp.hidden_size,
@@ -204,7 +204,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
             ),
         ):
             num_shared_experts = block.feed_forward_moe.router.num_shared_experts
-        return FlexOlmoNoQKNormPrenormConfig(
+        return EmoNoQKNormPrenormConfig(
             vocab_size=model.vocab_size,
             hidden_size=model.d_model,
             intermediate_size=block.feed_forward_moe.experts.mlp.hidden_size,
@@ -235,7 +235,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
         and block.attention.q_norm is not None
         and block.attention.k_norm is not None
     ):
-        return FlexOlmoPrenormConfig(
+        return EmoPrenormConfig(
             vocab_size=model.vocab_size,
             hidden_size=model.d_model,
             intermediate_size=block.feed_forward_moe.experts.mlp.hidden_size,
@@ -255,7 +255,7 @@ def _get_flex_olmo_config(model: MoETransformer) -> PretrainedConfig:
             tie_word_embeddings=False,
             output_router_logits=True,
         )
-    return FlexOlmoConfig(
+    return EmoConfig(
         vocab_size=model.vocab_size,
         hidden_size=model.d_model,
         intermediate_size=block.feed_forward_moe.experts.mlp.hidden_size,
@@ -285,7 +285,7 @@ def get_hf_config(model: Transformer) -> PretrainedConfig:
         )
 
     if isinstance(model, MoETransformer):
-        return _get_flex_olmo_config(model)
+        return _get_emo_config(model)
 
     blocks = list(model.blocks.values())
     first_block = blocks[0]

@@ -299,7 +299,7 @@ def _register_debug_hooks(hf_model: torch.nn.Module, model: Transformer):
             and re.match(r"model.layers.\d+.mlp$", name)
             and isinstance(output, tuple)
         ):
-            # Special casing for FlexOlmo moe
+            # Special casing for Emo moe
             assert isinstance(output[0], torch.Tensor), (name, output)
             output = output[0]
         if (
@@ -311,7 +311,7 @@ def _register_debug_hooks(hf_model: torch.nn.Module, model: Transformer):
             assert isinstance(output[0], torch.Tensor), (name, output)
             output = output[0]
         if model_type == "hf" and re.match(r"model.layers.\d+.mlp.gate$", name):
-            # Special casing for FlexOlmo router
+            # Special casing for Emo router
             assert isinstance(output, torch.Tensor), (name, output)
             router_logits = output.detach().clone()
             routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)

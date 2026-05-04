@@ -2,7 +2,7 @@
 
 set -e
 
-BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/FlexMoE/prune"
+BASE_OUTPUT_DIR="/root/ryanwang/phdbrainstorm/Emo/prune"
 
 get_eval_filename() {
     local task_name="$1"

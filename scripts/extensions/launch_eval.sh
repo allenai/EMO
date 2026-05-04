@@ -13,7 +13,7 @@
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
+BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/Emo
 S3_BASE=s3://ai2-sewonm/ryanwang/extension_evals_0414
 CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf

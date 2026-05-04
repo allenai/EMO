@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Configuration
-BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
-#BASE_DIR="/root/phdbrainstorm/FlexMoE"
+BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/Emo
+#BASE_DIR="/root/phdbrainstorm/Emo"
 MODELS=(
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419/step250339-hf"
 #    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf"
@@ -42,8 +42,8 @@ MODELS=(
     "hf:allenai/StdMoE_1b4b_130B|shared=1|skip_prune=false"
     "hf:allenai/StdMoE_1b14b_140B|shared=1|skip_prune=false"
     "hf:allenai/StdMoE_1b14b_1T|shared=1|skip_prune=false"
-    "hf:allenai/ModMoE_1b14b_130B|shared=1|skip_prune=false"
-    "hf:allenai/ModMoE_1b14b_1T|shared=1|skip_prune=false"
+    "hf:allenai/Emo_1b14b_130B|shared=1|skip_prune=false"
+    "hf:allenai/Emo_1b14b_1T|shared=1|skip_prune=false"
 
     )
 
@@ -324,7 +324,7 @@ for ENTRY in "${MODELS[@]}"; do
   # Parse entry: either a bare local-path (legacy) or an HF tag of the form
   #   "hf:<hf_id>|shared=<N>|skip_prune=<true|false>"
   # HF entries require explicit 'shared' and 'skip_prune' since the substring
-  # heuristics below don't recognize the new short HF names (StdMoE, ModMoE, …).
+  # heuristics below don't recognize the new short HF names (StdMoE, Emo, …).
   if [[ "$ENTRY" == hf:* ]]; then
     IS_HF=true
     rest="${ENTRY#hf:}"
