@@ -283,6 +283,7 @@ class EmoSparseMoeBlock(nn.Module):
         Softmax is computed over all experts, then always-active are masked out for topk selection.
         """
         always_active = self.always_active_experts
+        assert always_active is not None
         num_always_active = len(always_active)
         routed_top_k = self.top_k - num_always_active
 
@@ -836,6 +837,7 @@ def load_balancing_loss_func_olmoe(
             always_active_experts_per_layer is not None
             and len(always_active_experts_per_layer[0]) > 0
         ):
+            assert num_experts is not None
             aa_experts = always_active_experts_per_layer[0]  # uniform across layers in this path
             routed_mask = torch.ones(num_experts, dtype=torch.bool, device=compute_device)
             routed_mask[aa_experts] = False
@@ -865,6 +867,7 @@ def load_balancing_loss_func_olmoe(
             # if there are labels, then we want to ignore the indices that are in the prompt as well (if there is any)
             if labels is not None:
                 attention_mask = labels != ignore_index
+            assert attention_mask is not None
             batch_size, sequence_length = attention_mask.shape
 
             # Compute the mask that masks all padding tokens as 0 with the same shape of expert_mask
@@ -945,6 +948,7 @@ def load_balancing_loss_func_olmoe(
 
         layer_losses = []
 
+        assert num_experts_per_layer is not None
         for layer_idx, layer_gate in enumerate(gate_logits):
             layer_gate = layer_gate.to(compute_device)
             layer_num_experts = num_experts_per_layer[layer_idx]
@@ -1171,6 +1175,8 @@ class EmoForCausalLM(EmoPreTrainedModel, GenerationMixin):
                 **kwargs,
             )
             if labels is not None:
+                assert isinstance(lb_loss, torch.Tensor)
+                assert loss is not None
                 loss += self.router_aux_loss_coef * lb_loss.to(
                     loss.device
                 )  # make sure to reside in the same device
@@ -1185,7 +1191,7 @@ class EmoForCausalLM(EmoPreTrainedModel, GenerationMixin):
             loss=loss,
             aux_loss=lb_loss,
             lb_loss=lb_loss.detach().clone()
-            if lb_loss is not None
+            if isinstance(lb_loss, torch.Tensor)
             else None,  # for logging callback
             ce_loss=ce_loss.detach().clone()
             if ce_loss is not None

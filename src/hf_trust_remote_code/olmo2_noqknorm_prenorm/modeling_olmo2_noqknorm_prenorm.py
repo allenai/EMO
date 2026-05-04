@@ -378,7 +378,7 @@ class Olmo2NoQKNormPrenormModel(Olmo2NoQKNormPrenormPreTrainedModel):
             raise ValueError("You must specify exactly one of input_ids or inputs_embeds")
 
         if inputs_embeds is None:
-            inputs_embeds: torch.Tensor = self.embed_tokens(input_ids)
+            inputs_embeds = self.embed_tokens(input_ids)
 
         if use_cache and past_key_values is None:
             past_key_values = DynamicCache(config=self.config)
@@ -387,7 +387,7 @@ class Olmo2NoQKNormPrenormModel(Olmo2NoQKNormPrenormPreTrainedModel):
             past_seen_tokens = (
                 past_key_values.get_seq_length() if past_key_values is not None else 0
             )
-            cache_position: torch.Tensor = torch.arange(
+            cache_position = torch.arange(
                 past_seen_tokens,
                 past_seen_tokens + inputs_embeds.shape[1],
                 device=inputs_embeds.device,
