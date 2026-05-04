@@ -43,6 +43,7 @@ NUM_PRUNE_EXAMPLES=""
 NUM_PRUNE_SEED=""
 NUM_SHOTS_PRUNE=""
 NUM_SHOTS_EVAL=""
+TRUST_REMOTE_CODE=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -118,6 +119,10 @@ while [[ $# -gt 0 ]]; do
         --num-prune-examples)
             NUM_PRUNE_EXAMPLES="$2"
             shift 2
+            ;;
+        --trust-remote-code)
+            TRUST_REMOTE_CODE=true
+            shift
             ;;
         --num-prune-seed)
             NUM_PRUNE_SEED="$2"
@@ -333,10 +338,20 @@ fi
 export WANDB_PROJECT="olmoe-modular"
 export WANDB_ENTITY="ryanyxw"
 # optional:
-export WANDB_TAGS="finetune,${TASK:0:60},${PRUNED_MODEL: -60}"
+# Last 60 chars of PRUNED_MODEL; bash's ${var: -60} returns empty when
+# PRUNED_MODEL is shorter than 60 (e.g. short HF IDs like allenai/Dense_1b_130B),
+# so fall back to the full string in that case to avoid empty wandb tags.
+PM_TAG="${PRUNED_MODEL: -60}"
+[ -z "$PM_TAG" ] && PM_TAG="$PRUNED_MODEL"
+export WANDB_TAGS="finetune,${TASK:0:60},${PM_TAG}"
 
 # calculate gas
 gas=$(( BATCH_SIZE / (NUM_GPUS * MICRO_BATCH_SIZE) ))
+
+FT_TRC_FLAG=""
+if [ "$TRUST_REMOTE_CODE" = true ]; then
+    FT_TRC_FLAG="--trust-remote-code"
+fi
 
 torchrun --nproc_per_node="$NUM_GPUS" \
     -m src.hf_training.finetune \
@@ -350,6 +365,7 @@ torchrun --nproc_per_node="$NUM_GPUS" \
     --run-name "$RUN_NAME" \
     --per-device-batch-size "$MICRO_BATCH_SIZE" \
     --gradient-accumulation-steps "$gas" \
+    $FT_TRC_FLAG \
     $FSDP_FLAG \
     "${NUM_SHOTS_EVAL_FLAG[@]}"
 
@@ -357,6 +373,13 @@ torchrun --nproc_per_node="$NUM_GPUS" \
 echo ""
 echo "Step 4: evals..."
 echo "========================================"
+
+# Forward trust_remote_code to launch_eval via --model-args. Saved checkpoints
+# inherit auto_map from the original HF model, so reloading still needs it.
+EVAL_MA_FLAG=""
+if [ "$TRUST_REMOTE_CODE" = true ]; then
+    EVAL_MA_FLAG="--model-args trust_remote_code=true"
+fi
 
 # find all the checkpoints in the finetuned model directory and evaluate each one
 all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
@@ -388,6 +411,7 @@ for checkpoint in "${all_checkpoints[@]}"; do
         --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
         --batch-size $EVAL_BATCH_SIZE \
         --gpus "$NUM_GPUS" \
+        $EVAL_MA_FLAG \
         "${NUM_SHOTS_EVAL_FLAG[@]}"
 
 done
@@ -428,6 +452,7 @@ if [ -n "$MMLU_SUBJECTS" ]; then
                 --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}/per_subject/${subject}" \
                 --batch-size $EVAL_BATCH_SIZE \
                 --gpus "$NUM_GPUS" \
+                $EVAL_MA_FLAG \
                 "${NUM_SHOTS_EVAL_FLAG[@]}"
         done <<< "$MMLU_SUBJECTS"
     done

@@ -48,6 +48,7 @@ NUM_PRUNE_EXAMPLES=""
 NUM_PRUNE_SEED=""
 NUM_SHOTS_PRUNE=""
 NUM_SHOTS_EVAL=""
+TRUST_REMOTE_CODE=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -115,6 +116,10 @@ while [[ $# -gt 0 ]]; do
         --num-prune-examples)
             NUM_PRUNE_EXAMPLES="$2"
             shift 2
+            ;;
+        --trust-remote-code)
+            TRUST_REMOTE_CODE=true
+            shift
             ;;
         --num-prune-seed)
             NUM_PRUNE_SEED="$2"
@@ -249,6 +254,11 @@ if [ "$SKIP_PRUNE" = false ]; then
         PRUNE_SEED_FLAG=(--prune-seed "$NUM_PRUNE_SEED")
     fi
 
+    TRC_FLAG=()
+    if [ "$TRUST_REMOTE_CODE" = true ]; then
+        TRC_FLAG=(--trust-remote-code)
+    fi
+
     python -m src.hf_training.greedy_prune_layerwise \
         --model "$MODEL" \
         --task "$TASK" \
@@ -257,6 +267,7 @@ if [ "$SKIP_PRUNE" = false ]; then
         --num-shared-experts "$NUM_SHARED_EXPERTS" \
         --save-path "$PRUNED_MODEL" \
         --batch-size 32 \
+        "${TRC_FLAG[@]}" \
         "${NUM_CAL_FLAG[@]}" \
         "${PRUNE_SEED_FLAG[@]}" \
         "${NUM_SHOTS_PRUNE_FLAG[@]}"
@@ -281,9 +292,16 @@ fi
 
 export WANDB_PROJECT="olmoe-modular"
 export WANDB_ENTITY="ryanyxw"
-export WANDB_TAGS="finetune,${TASK:0:60},${PRUNED_MODEL: -60}"
+PM_TAG="${PRUNED_MODEL: -60}"
+[ -z "$PM_TAG" ] && PM_TAG="$PRUNED_MODEL"
+export WANDB_TAGS="finetune,${TASK:0:60},${PM_TAG}"
 
 gas=$(( BATCH_SIZE / (NUM_GPUS * MICRO_BATCH_SIZE) ))
+
+FT_TRC_FLAG=""
+if [ "$TRUST_REMOTE_CODE" = true ]; then
+    FT_TRC_FLAG="--trust-remote-code"
+fi
 
 torchrun --nproc_per_node="$NUM_GPUS" \
     -m src.hf_training.finetune \
@@ -298,6 +316,7 @@ torchrun --nproc_per_node="$NUM_GPUS" \
     --per-device-batch-size "$MICRO_BATCH_SIZE" \
     --gradient-accumulation-steps "$gas" \
     $FSDP_FLAG \
+    $FT_TRC_FLAG \
     "${NUM_SHOTS_EVAL_FLAG[@]}"
 
 # Step 4: Evals
@@ -307,6 +326,13 @@ echo "========================================"
 
 # Datasets are already cached from steps 1-3; skip HF API calls to avoid rate limits
 export HF_DATASETS_OFFLINE=1
+
+# Forward trust_remote_code to launch_eval via --model-args. Saved checkpoints
+# inherit auto_map from the original HF model, so reloading still needs it.
+EVAL_MA_FLAG=""
+if [ "$TRUST_REMOTE_CODE" = true ]; then
+    EVAL_MA_FLAG="--model-args trust_remote_code=true"
+fi
 
 all_checkpoints=("$FINETUNED_MODEL"/checkpoint-*/)
 
@@ -333,6 +359,7 @@ for checkpoint in "${all_checkpoints[@]}"; do
         --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
         --batch-size $EVAL_BATCH_SIZE \
         --gpus "$NUM_GPUS" \
+        $EVAL_MA_FLAG \
         "${NUM_SHOTS_EVAL_FLAG[@]}"
 done
 
@@ -374,6 +401,7 @@ if [ -n "$MMLU_SUBJECTS" ]; then
                 --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}/per_subject/${subject}" \
                 --batch-size $EVAL_BATCH_SIZE \
                 --gpus "$NUM_GPUS" \
+                $EVAL_MA_FLAG \
                 "${NUM_SHOTS_EVAL_FLAG[@]}"
         done <<< "$MMLU_SUBJECTS"
     done

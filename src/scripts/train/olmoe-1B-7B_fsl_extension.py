@@ -68,7 +68,11 @@ from olmo_core.nn.moe.twolevel_sampling_nolb_router import (
 from olmo_core.nn.moe.twolevel_topp_batchlb_router import (
     MoETwoLevelTopPBatchLBRouterConfig,
 )
-from olmo_core.nn.transformer import TransformerBlockType, TransformerConfig
+from olmo_core.nn.transformer import (
+    TransformerBlockConfig,
+    TransformerBlockType,
+    TransformerConfig,
+)
 from olmo_core.optim import AdamWConfig, CosWithWarmup, OptimGroupOverride
 from olmo_core.train import (
     Duration,
@@ -96,7 +100,6 @@ from olmo_core.utils import seed_all
 
 log = logging.getLogger(__name__)
 
-DATA_ROOT = "/weka/oe-training-default/ai2-llm"
 
 SEQUENCE_LENGTH = 4096
 
@@ -167,6 +170,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     # Router branching — identical to olmoe-1B-7B_fsl_anneal.py.
+    assert isinstance(model_config.block, TransformerBlockConfig)
     assert model_config.block.feed_forward_moe is not None
     if opts.model_type == "dense" or opts.model_type == "moe":
         log.info("Using default routers; no modifications applied.")
@@ -464,12 +468,12 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     else:
         raise ValueError(f"Unknown model type: {opts.model_type}")
 
-    log.info(f"Using data root: {DATA_ROOT}")
+    log.info(f"Using data root: {opts.data_root}")
 
     dataset_config = NumpyFSLDatasetConfig.from_data_mix(
         DataMix.OLMo_mix_0625,
         tokenizer=tokenizer_config,
-        mix_base_dir=DATA_ROOT,
+        mix_base_dir=opts.data_root,
         sequence_length=SEQUENCE_LENGTH,
         max_target_sequence_length=max(8192, SEQUENCE_LENGTH),
         work_dir=work_dir,
@@ -632,6 +636,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     # Apply dense first layer overrides AFTER merge so CLI overrides
     # (backend, qk_norm, etc.) are inherited by the dense blocks.
     if opts.model_type == "two-level_lb-batch_reduce-dp_sharedexp_densefirst":
+        assert isinstance(config.model.block, TransformerBlockConfig)
         moe_cfg = config.model.block.feed_forward_moe
         assert moe_cfg is not None
         dense_hidden = moe_cfg.router.top_k * moe_cfg.hidden_size
@@ -697,6 +702,12 @@ def parser_args():
         type=str,
         required=True,
         help="Path to base checkpoint (e.g. <ckpt>/model_and_optim). Model+optim weights are loaded; trainer state is NOT loaded.",
+    )
+    parser.add_argument(
+        "--data-root",
+        type=str,
+        default="/weka/oe-training-default/ai2-llm",
+        help="Root directory for the data mix (mix_base_dir).",
     )
     opts, overrides = parser.parse_known_args()
     return opts, overrides

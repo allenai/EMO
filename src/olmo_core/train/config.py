@@ -17,7 +17,7 @@ from ..io import is_url
 from ..utils import get_default_device
 from .callbacks import Callback, CallbackConfig
 from .checkpoint import CheckpointerConfig
-from .common import Duration, LoadStrategy
+from .common import Duration, LoadStrategy, StepSkipRange
 from .train_module import TrainModule
 from .trainer import Trainer
 
@@ -51,7 +51,7 @@ class TrainerConfig(Config):
     bookkeeping_soft_timeout: int = 30
     no_checkpoints: bool = False
     no_evals: bool = False
-    steps_to_skip: Optional[List[list[int]]] = None
+    steps_to_skip: Optional[List[StepSkipRange]] = None
 
     def add_callback(self, name: str, callback: Callback):
         """
@@ -96,6 +96,7 @@ class TrainerConfig(Config):
         cluster: str,
         task_set: str = "full",
         eval_interval: int = 10_000,
+        lazy_load: bool = False,
     ) -> "TrainerConfig":
         """
         Return a new trainer config with added callbacks for downstream evaluation and validation sets.
@@ -117,7 +118,11 @@ class TrainerConfig(Config):
         return self.with_callback(
             "downstream_evaluator",
             DownstreamEvaluatorCallbackConfig(
-                tasks=tasks, tokenizer=tokenizer, eval_interval=eval_interval
+                tasks=tasks,
+                tokenizer=tokenizer,
+                eval_interval=eval_interval,
+                lazy=lazy_load,
+                eval_on_finish=True,
             ),
         ).with_callback(
             "lm_evaluator",
@@ -130,6 +135,7 @@ class TrainerConfig(Config):
                     work_dir=get_work_dir(get_root_dir(cluster)),
                 ),
                 eval_interval=eval_interval,
+                eval_on_finish=True,
             ),
         )
 

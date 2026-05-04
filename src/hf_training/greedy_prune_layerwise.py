@@ -435,6 +435,7 @@ def greedy_prune_layerwise(
     batch_size: int = 32,
     num_calibration: Optional[int] = None,
     device: Optional[str] = None,
+    trust_remote_code: bool = False,
     num_shots_override: Optional[int] = None,
     prune_seed: int = 0,
 ) -> None:
@@ -446,14 +447,15 @@ def greedy_prune_layerwise(
     implementation.
     """
     logger.info(f"Loading model: {model_name}")
-    config = AutoConfig.from_pretrained(model_name)
+    config = AutoConfig.from_pretrained(model_name, trust_remote_code=trust_remote_code)
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         config=config,
         torch_dtype=torch.bfloat16,
         device_map="auto" if device is None else device,
+        trust_remote_code=trust_remote_code
     )
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=trust_remote_code)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -578,6 +580,11 @@ def main():
         help="Device override (default: auto)",
     )
     parser.add_argument(
+        "--trust-remote-code",
+        action="store_true",
+        help="Trust remote code when loading from HF Hub (default: False)",
+    )
+    parser.add_argument(
         "--num-shots",
         type=int,
         default=None,
@@ -602,6 +609,7 @@ def main():
         batch_size=args.batch_size,
         num_calibration=args.num_calibration,
         device=args.device,
+        trust_remote_code=args.trust_remote_code,
         num_shots_override=args.num_shots,
         prune_seed=args.prune_seed,
     )

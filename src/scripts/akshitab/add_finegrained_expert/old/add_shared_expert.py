@@ -39,9 +39,10 @@ from olmo_core.distributed.checkpoint import (
     load_model_and_optim_state,
     save_model_and_optim_state,
 )
+from olmo_core.nn.attention import AttentionConfig
 from olmo_core.nn.attention.backend import AttentionBackendName
 from olmo_core.nn.feed_forward import FeedForwardConfig
-from olmo_core.nn.transformer import TransformerConfig
+from olmo_core.nn.transformer import TransformerBlockConfig, TransformerConfig
 from olmo_core.utils import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -59,8 +60,10 @@ def add_shared_expert(
         config = json.load(f)
 
     old_model_config = TransformerConfig.from_dict(config["model"])
-    backend = old_model_config.block.attention.backend
-    old_model_config.block.attention.backend = AttentionBackendName.torch
+    assert isinstance(old_model_config.block, TransformerBlockConfig)
+    assert isinstance(old_model_config.block.sequence_mixer, AttentionConfig)
+    backend = old_model_config.block.sequence_mixer.backend
+    old_model_config.block.sequence_mixer.backend = AttentionBackendName.torch
 
     assert old_model_config.block.feed_forward_moe is not None, "Model is not MoE"
     moe_config = old_model_config.block.feed_forward_moe
@@ -90,6 +93,7 @@ def add_shared_expert(
 
     # Build new config with shared_mlp
     new_model_config = old_model_config.copy()
+    assert isinstance(new_model_config.block, TransformerBlockConfig)
     assert new_model_config.block.feed_forward_moe is not None
     new_model_config.block.feed_forward_moe.shared_mlp = FeedForwardConfig(
         hidden_size=hidden_size, bias=False
@@ -165,7 +169,8 @@ def add_shared_expert(
         os.makedirs(save_path, exist_ok=True)
         logger.info(f"Saving new model checkpoint to {save_path}")
 
-        new_model_config.block.attention.backend = backend
+        assert isinstance(new_model_config.block.sequence_mixer, AttentionConfig)
+        new_model_config.block.sequence_mixer.backend = backend
         config["model"] = new_model_config.as_config_dict()
 
         new_config_path = os.path.join(save_path, "config.json")

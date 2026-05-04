@@ -27,7 +27,7 @@ for lr in 1e-6 5e-6 1e-7 ; do
     --gpus 8 \
     --nodes 1 \
     --weka=oe-training-default \
-    --is_private_repo \
+    --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
     --priority urgent \
     --shared-filesystem \
     --workspace ai2/flex2 \

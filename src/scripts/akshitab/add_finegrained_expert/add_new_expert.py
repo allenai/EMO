@@ -48,8 +48,9 @@ from olmo_core.distributed.checkpoint import (
     load_model_and_optim_state,
     save_model_and_optim_state,
 )
+from olmo_core.nn.attention import AttentionConfig
 from olmo_core.nn.attention.backend import AttentionBackendName
-from olmo_core.nn.transformer import TransformerConfig
+from olmo_core.nn.transformer import TransformerBlockConfig, TransformerConfig
 from olmo_core.utils import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -155,8 +156,10 @@ def add_experts(
         config = json.load(f)
 
     old_model_config = TransformerConfig.from_dict(config["model"])
-    backend = old_model_config.block.attention.backend
-    old_model_config.block.attention.backend = AttentionBackendName.torch
+    assert isinstance(old_model_config.block, TransformerBlockConfig)
+    assert isinstance(old_model_config.block.sequence_mixer, AttentionConfig)
+    backend = old_model_config.block.sequence_mixer.backend
+    old_model_config.block.sequence_mixer.backend = AttentionBackendName.torch
     logger.info(f"Model config {old_model_config}")
 
     # Load model weights
@@ -167,6 +170,7 @@ def add_experts(
     # Update config
     logger.info("Adding new expert to the model")
     new_config = old_model_config.copy()
+    assert isinstance(new_config.block, TransformerBlockConfig)
     assert new_config.block.feed_forward_moe is not None, "Model is not MoE"
     new_config.block.feed_forward_moe.num_experts += num_new_experts
     new_model = new_config.build(init_device="cpu")
@@ -362,7 +366,8 @@ def add_experts(
 
     # Save new model checkpoint
     if save_path is not None:
-        new_config.block.attention.backend = backend
+        assert isinstance(new_config.block.sequence_mixer, AttentionConfig)
+        new_config.block.sequence_mixer.backend = backend
         config["model"] = new_config.as_config_dict()
         save_checkpoint(config, new_model, save_path)
 

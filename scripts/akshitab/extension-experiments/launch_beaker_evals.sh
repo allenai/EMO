@@ -1,9 +1,10 @@
 #!/bin/bash
 
+source "$(dirname "${BASH_SOURCE[0]}")/launch_common.sh"
+
 # Configuration
 
-# MODEL_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models
-MODEL_DIR=/weka/oe-training-default/akshitab/FlexMoE/models
+MODEL_DIR="${MODELS}"
 
 MODELS=(
     # moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123/step30995-hf
@@ -139,7 +140,7 @@ MODELS=(
     rt-merged_twolevel_1b14b_128base_4math_10B_4code_mix_10B_forced_init_top2_average_noise_1B_lr_4e-4/step239-hf
 )
 
-BASE_OUTPUT_DIR="s3://ai2-sewonm/akshitab/mose/evals/extensions"
+BASE_OUTPUT_DIR="${EVALS_S3_BASE}"
 BATCH_SIZE=16
 CLUSTER="ai2/jupiter-cirrascale-2"
 model_type=hf

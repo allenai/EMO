@@ -74,7 +74,8 @@ python -m src.scripts.eval.launch_eval \
     --pruned_split "test" \
     --remote-output-dir "${S3_BASE}/results/checkpoint-0" \
     --batch-size "$EVAL_BATCH_SIZE" \
-    --gpus "$NUM_GPUS"
+    --gpus "$NUM_GPUS" \
+    --model-args trust_remote_code=true
 
 # Per-subject MMLU breakdown (only for MMLU category/cluster tasks)
 MMLU_SUBJECTS=$(python -m src.scripts.eval.get_mmlu_subjects "$TASK" 2>/dev/null | grep -v "^Warning:" || true)
@@ -106,7 +107,8 @@ if [ -n "$MMLU_SUBJECTS" ]; then
             --pruned_split "test" \
             --remote-output-dir "${S3_BASE}/results/checkpoint-0/per_subject/${subject}" \
             --batch-size "$SUBJECT_BATCH_SIZE" \
-            --gpus "$NUM_GPUS"
+            --gpus "$NUM_GPUS" \
+            --model-args trust_remote_code=true
     done <<< "$MMLU_SUBJECTS"
 else
     echo ""

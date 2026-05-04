@@ -17,8 +17,14 @@ BASE_DIR=/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE
 # Each entry: "hf_model_id|revision|sanitized_dir_name"
 # Use "none" for revision to use the default branch.
 MODEL_ENTRIES=(
-    "allenai/OLMoE-1B-7B-0924|none|allenaiOLMoE-1B-7B-0924"
+#    "allenai/OLMoE-1B-7B-0924|none|allenaiOLMoE-1B-7B-0924"
 #    "allenai/OLMoE-1B-7B-0924|step240000-tokens1006B|allenaiOLMoE-1B-7B-0924_step240000-tokens1006B"
+#    "allenai/StdMoE_1b14b_1T|none|allenai_StdMoE_1b14b_1T"
+#    "allenai/StdMoE_1b14b_140B|none|allenai_StdMoE_1b14b_140B"
+#    "allenai/StdMoE_1b4b_130B|none|allenai_StdMoE_1b4b_130B"
+#    "allenai/ModMoE_1b14b_130B|none|allenai_ModMoE_1b14b_130B"
+#    "allenai/ModMoE_1b14b_1T|none|allenai_ModMoE_1b14b_1T"
+    "allenai/Dense_1b_130B|none|allenai_Dense_1b_130B"
 )
 
 CLUSTER="ai2/jupiter-cirrascale-2"
@@ -138,6 +144,7 @@ for ENTRY in "${MODEL_ENTRIES[@]}"; do
             --name $job_name \
             --gpus $gpus \
             --nodes 1 \
+            --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
             --weka=oe-training-default \
             --shared-filesystem \
             --workspace ai2/flex2 \

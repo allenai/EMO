@@ -23,9 +23,9 @@ class HFConverterCallback(Callback):
     """
     Converts the final saved checkpoint to HuggingFace format at the end of a training job.
 
-    This callback runs after training completes and uses the conversion functions from
-    the huggingface conversion script to convert the final OLMo Core checkpoint to
-    a HuggingFace-compatible format.
+    This callback runs after training completes and uses
+    :func:`olmo_core.nn.hf.convert_checkpoint_to_hf` to convert the final OLMo Core
+    checkpoint to a HuggingFace-compatible format.
 
     .. note::
         This callback requires the ``transformers`` library to be installed.
@@ -36,7 +36,7 @@ class HFConverterCallback(Callback):
         Only rank 0 performs the actual HF conversion and saving.
     """
 
-    priority: ClassVar[int] = -1  # Run after checkpointer callback
+    priority: ClassVar[int] = -1  # Run after checkpointer callback.
 
     enabled: bool = True
     """
@@ -46,7 +46,7 @@ class HFConverterCallback(Callback):
     output_folder: Optional[str] = None
     """
     The folder to save the HuggingFace checkpoint to. If not specified, defaults to
-    ``{checkpoint_path}/hf`` where ``checkpoint_path`` is the final checkpoint path.
+    ``{checkpoint_path}-hf`` where ``checkpoint_path`` is the final checkpoint path.
     """
 
     dtype: Optional[DType] = DType.bfloat16
@@ -63,7 +63,7 @@ class HFConverterCallback(Callback):
     debug: bool = False
     """
     Whether to output debug information during validation.
-    Only has an effect if ``validate`` is True.
+    Only has an effect if ``validate`` is ``True``.
     """
 
     tokenizer_id: Optional[str] = None
@@ -90,14 +90,12 @@ class HFConverterCallback(Callback):
     """
 
     def _get_checkpointer_callback(self) -> Optional[CheckpointerCallback]:
-        """Get the checkpointer callback from the trainer."""
         for callback in self.trainer.callbacks.values():
             if isinstance(callback, CheckpointerCallback):
                 return callback
         return None
 
     def _get_latest_checkpoint_path(self) -> Optional[str]:
-        """Get the path to the latest checkpoint."""
         checkpointer = self._get_checkpointer_callback()
         if checkpointer is None:
             log.warning("CheckpointerCallback not found, cannot determine latest checkpoint path")
@@ -106,7 +104,6 @@ class HFConverterCallback(Callback):
         if checkpointer._latest_checkpoint_path:
             return checkpointer._latest_checkpoint_path
 
-        # Fallback: check if there are any saved checkpoints
         if checkpointer._checkpoints:
             return checkpointer._checkpoints[-1]
 
@@ -120,19 +117,15 @@ class HFConverterCallback(Callback):
         The full state dict is gathered to rank 0.
         """
         model = self.trainer.train_module.model
-        # Use full_state_dict=True to gather the complete model state to rank 0
-        # cpu_offload=True to avoid GPU OOM
+        # full_state_dict=True gathers the complete model state to rank 0.
+        # cpu_offload=True avoids GPU OOM for large models.
         sd_options = dist_cp_sd.StateDictOptions(full_state_dict=True, cpu_offload=True)
-        model_state_dict = dist_cp_sd.get_model_state_dict(model, options=sd_options)
-        return model_state_dict
+        return dist_cp_sd.get_model_state_dict(model, options=sd_options)
 
     def post_train(self):
         # NOTE: In distributed training with FSDP, getting the full model state dict requires
-        # ALL ranks to participate in the collective operation. Therefore, we cannot simply
-        # return early on non-rank-0 processes. Instead:
-        # 1. All ranks participate in gathering the full state dict
-        # 2. Only rank 0 performs the actual HF conversion
-        # 3. All ranks synchronize at a barrier before proceeding to trainer shutdown
+        # ALL ranks to participate in the collective operation. Only rank 0 performs the actual
+        # HF conversion; all ranks synchronize at a barrier before returning.
 
         if not self.enabled:
             log.info("HFConverterCallback is disabled, skipping conversion")
@@ -145,26 +138,24 @@ class HFConverterCallback(Callback):
             barrier()
             return
 
-        # Import conversion functions early to fail fast on all ranks
         try:
-            from olmo_core.hf_utils import convert_checkpoint_to_hf, load_config
+            from olmo_core.nn.hf import convert_checkpoint_to_hf, load_config
         except ImportError:
             log.error(
-                "Failed to import conversion functions. Make sure that transformers library is installed."
+                "Failed to import HF conversion utilities. "
+                "Make sure the 'transformers' library is installed."
             )
             barrier()
             return
 
-        # Load config from checkpoint (only rank 0 needs this, but it's fast)
-        experiment_config = None
+        experiment_config: Optional[dict] = None
         if get_rank() == 0:
             try:
                 experiment_config = load_config(checkpoint_path)
             except Exception as e:
                 log.error(f"Failed to load config from checkpoint: {e}")
 
-        # ALL ranks must participate in getting the full model state dict
-        # This is a collective operation required by FSDP
+        # ALL ranks must participate in gathering the full state dict (FSDP collective).
         log.info("Gathering full model state dict (collective operation)...")
         try:
             model_state_dict = self._get_full_model_state_dict()
@@ -173,7 +164,6 @@ class HFConverterCallback(Callback):
             barrier()
             raise
 
-        # Only rank 0 performs the actual conversion
         if get_rank() == 0:
             log.info(f"Converting checkpoint at '{checkpoint_path}' to HuggingFace format")
 
@@ -199,13 +189,11 @@ class HFConverterCallback(Callback):
                 )
                 tokenizer_config_dict = {}
 
-            # Determine output path
             if self.output_folder is not None:
                 output_path = self.output_folder
             else:
                 output_path = checkpoint_path + "-hf"
 
-            # Determine device
             device = torch.device(self.device) if self.device else None
 
             try:
@@ -214,7 +202,7 @@ class HFConverterCallback(Callback):
                     output_path=output_path,
                     transformer_config_dict=transformer_config_dict,
                     tokenizer_config_dict=tokenizer_config_dict,
-                    model_state_dict=model_state_dict,  # Pass the gathered state dict
+                    model_state_dict=model_state_dict,
                     dtype=self.dtype,
                     tokenizer_id=self.tokenizer_id,
                     max_sequence_length=self.max_sequence_length,
@@ -222,7 +210,6 @@ class HFConverterCallback(Callback):
                     debug=self.debug,
                     device=device,
                     moe_capacity_factor=self.moe_capacity_factor,
-                    thread_count=16,
                 )
                 log.info(
                     f"Successfully converted checkpoint to HuggingFace format at '{output_path}'"
@@ -232,5 +219,4 @@ class HFConverterCallback(Callback):
                 barrier()
                 raise
 
-        # Barrier to synchronize all ranks before proceeding to trainer shutdown
         barrier()

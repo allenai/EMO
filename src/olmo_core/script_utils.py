@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple
 
 import rich
+import torch
 
 from olmo_core.aliases import PathOrStr
 from olmo_core.config import Config
@@ -49,15 +50,16 @@ def get_cli_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--sequence-length",
         type=int,
-        default=4096,
-        help="""The sequence length to train and eval on.""",
+        default=None,
+        help="""The sequence length to train and eval on. Different scripts have different default
+        sequence-length values. If a value is not specified here, the default value is used.""",
     )
     parser.add_argument(
         "--data-root",
         type=str,
-        default="http://olmo-data.org",
+        default="https://olmo-data.org",
         help="""The root directory/URL of the data source files.
-        The default 'http://olmo-data.org' is public, but potentially very slow.
+        The default 'https://olmo-data.org' is public, but potentially very slow.
         Ai2 employees should prefer '/weka/oe-training-default/ai2-llm' when using a cluster with weka access,
         otherwise 'gs://ai2-llm' or 's3://ai2-llm'.""",
     )
@@ -80,6 +82,11 @@ def get_cli_parser() -> argparse.ArgumentParser:
         "--dry-run",
         action="store_true",
         help="""Print the config and exit.""",
+    )
+    parser.add_argument(
+        "--train-single",
+        action="store_true",
+        help="""Train on a single rank. Use this for debugging.""",
     )
     return parser
 
@@ -111,7 +118,25 @@ def main(
         rich.print(config)
         return
 
-    prepare_training_environment(shared_filesystem=not is_url(opts.save_folder))
+    if opts.train_single:
+        if (dp_config := getattr(config.train_module, "dp_config", None)) is not None:
+            log.warning(
+                "'dp_config' is set to %s, but you can't use data parallelism when running on a single node. Disabling.",
+                dp_config,
+            )
+            config.train_module.dp_config = None  # type: ignore
+        if (tp_config := getattr(config.train_module, "tp_config", None)) is not None:
+            log.warning(
+                "'tp_config' is set to %s, but you can't use tensor parallelism when running on a single node. Disabling.",
+                tp_config,
+            )
+            config.train_module.tp_config = None  # type: ignore
+
+    if torch.cuda.is_available():
+        backend = "cpu:gloo,cuda:nccl"
+    else:
+        backend = None
+    prepare_training_environment(shared_filesystem=not is_url(opts.save_folder), backend=backend)
 
     # Set RNG states on all devices.
     seed_all(config.init_seed)

@@ -1,9 +1,11 @@
-BASE_MODEL_PATH="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308/step30995"
+source "$(dirname "${BASH_SOURCE[0]}")/../../launch_common.sh"
 
-MERGE_MODEL_PATH1="/weka/oe-training-default/akshitab/FlexMoE/models/moereducedp512sharedexp1_132experts_4trained_math_init_top2_average_10B_lr_4e-4/step2385"
-MERGE_MODEL_PATH2="/weka/oe-training-default/akshitab/FlexMoE/models/moereducedp512sharedexp1_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385"
+BASE_MODEL_PATH="${REGULAR_BASE}"
 
-SAVE_PATH="/weka/oe-training-default/akshitab/FlexMoE/models/merged_moereducedp512sharedexp1_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise"
+MERGE_MODEL_PATH1="${MODELS}/moereducedp512sharedexp1_132experts_4trained_math_init_top2_average_10B_lr_4e-4/step2385"
+MERGE_MODEL_PATH2="${MODELS}/moereducedp512sharedexp1_132experts_4trained_code_mix_init_top2_average_noise_10B_lr_4e-4/step2385"
+
+SAVE_PATH="${MODELS}/merged_moereducedp512sharedexp1_1b14b_128base_4math_10B_4code_mix_10B_init_top2_average_noise"
 
 python src/scripts/akshitab/add_finegrained_expert/merge_experts.py \
     -b ${BASE_MODEL_PATH} \

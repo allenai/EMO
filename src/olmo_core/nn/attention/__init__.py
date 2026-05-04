@@ -1,9 +1,8 @@
 import logging
 import math
 import warnings
-from abc import abstractmethod
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -15,9 +14,12 @@ from olmo_core.config import Config, DType, StrEnum
 from olmo_core.distributed.parallel.tensor_parallel import SequenceParallel
 from olmo_core.doc_utils import beta_feature
 from olmo_core.exceptions import OLMoConfigurationError
+from olmo_core.nn.attention.base import SequenceMixer, SequenceMixerConfig
 from olmo_core.nn.attention.kv_cache import KVCacheManager
+from olmo_core.nn.attention.recurrent import GatedDeltaNet, GatedDeltaNetConfig
 
 from ..buffer_cache import BufferCache
+from ..config import ModuleConfig
 from ..functional import l2_normalize
 from ..layer_norm import LayerNorm, LayerNormConfig
 from ..rope import (
@@ -33,6 +35,7 @@ from .backend import (
     AttentionBackendName,
     FlashAttention2Backend,
     FlashAttention3Backend,
+    FlashAttention4Backend,
     TEAttentionBackend,
     TorchAttentionBackend,
 )
@@ -41,19 +44,27 @@ from .ring import (
     RingAttentionLoadBalancer,
     RingAttentionLoadBalancerType,
     RingAttentionZigZagLoadBalancer,
+    RingContextParallelStyle,
+    UlyssesContextParallelStyle,
+    UlyssesLoadBalancer,
 )
+
+if TYPE_CHECKING:
+    from olmo_core.nn.transformer.init import InitMethod
 
 __all__ = [
     "SlidingWindowAttentionConfig",
+    "GateGranularity",
+    "GateConfig",
     "AttentionType",
     "AttentionBackendName",
     "AttentionBackend",
     "TorchAttentionBackend",
     "FlashAttention2Backend",
     "FlashAttention3Backend",
+    "FlashAttention4Backend",
     "TEAttentionBackend",
     "AttentionConfig",
-    "AttentionBase",
     "Attention",
     "FusedAttention",
     "NormalizedAttention",
@@ -61,9 +72,29 @@ __all__ = [
     "RingAttentionLoadBalancer",
     "RingAttentionZigZagLoadBalancer",
     "RingAttentionLlama3LoadBalancer",
+    "UlyssesLoadBalancer",
+    "RingContextParallelStyle",
+    "UlyssesContextParallelStyle",
+    "GatedDeltaNetConfig",
+    "GatedDeltaNet",
 ]
 
 log = logging.getLogger(__name__)
+
+
+class GateGranularity(StrEnum):
+    headwise = "headwise"
+    """Head-wise gating: one gate value per attention head, broadcast across head dimension."""
+    elementwise = "elementwise"
+    """Element-wise gating: one gate value per output element."""
+
+
+@dataclass
+class GateConfig(Config):
+    granularity: GateGranularity = GateGranularity.headwise
+    """The granularity of gating to use."""
+    full_precision: bool = True
+    """Whether to always apply gating in full precision regardless of the input data type."""
 
 
 @dataclass
@@ -143,8 +174,9 @@ class AttentionType(StrEnum):
     """
 
 
+@SequenceMixerConfig.register("attention")
 @dataclass
-class AttentionConfig(Config):
+class AttentionConfig(SequenceMixerConfig["SequenceMixer"]):
     """
     A configuration class for easily building any of the different attention modules.
 
@@ -157,7 +189,9 @@ class AttentionConfig(Config):
     """
     n_heads: int = 16
     n_kv_heads: Optional[int] = None
+    head_dim: Optional[int] = None
     bias: Optional[bool] = None
+    gate: Optional[GateConfig] = None
     rope: Optional[RoPEConfig] = None
     clip_qkv: Optional[float] = None
     qk_norm: Optional[LayerNormConfig] = None
@@ -176,15 +210,15 @@ class AttentionConfig(Config):
         """
         n_heads = self.n_heads
         n_kv_heads = self.n_kv_heads or n_heads
-        head_dim = d_model // n_heads
+        head_dim = self.head_dim or d_model // n_heads
         bias = self.bias if self.bias is not None else self.name != AttentionType.normalized
 
         params = 0
 
         # Block attention Q projection.
-        params += d_model * d_model
+        params += d_model * n_heads * head_dim
         if bias:
-            params += d_model
+            params += n_heads * head_dim
 
         # Block attention KV projections.
         params += 2 * d_model * n_kv_heads * head_dim
@@ -196,16 +230,27 @@ class AttentionConfig(Config):
             if self.use_head_qk_norm:
                 params += 2 * self.qk_norm.num_params(head_dim)
             else:
-                params += 2 * self.qk_norm.num_params(d_model)
+                params += self.qk_norm.num_params(n_heads * head_dim)  # q_norm
+                params += self.qk_norm.num_params(n_kv_heads * head_dim)  # k_norm
 
         # Block attention out.
-        params += d_model * d_model
+        params += n_heads * head_dim * d_model
         if bias:
             params += d_model
 
+        # Block attention gate projection.
+        if self.gate is not None:
+            if self.gate.granularity == GateGranularity.headwise:
+                params += d_model * n_heads
+                if bias:
+                    params += n_heads
+            elif self.gate.granularity == GateGranularity.elementwise:
+                params += d_model * (n_heads * head_dim)
+                if bias:
+                    params += n_heads * head_dim
+
         # Block QK scaling factors.
         if self.name == AttentionType.normalized:
-            head_dim = d_model // n_heads
             params += n_heads * head_dim
             params += n_kv_heads * head_dim
 
@@ -219,7 +264,7 @@ class AttentionConfig(Config):
         n_layers: int,
         init_device: str = "cpu",
         cache: Optional[BufferCache] = None,
-    ) -> "AttentionBase":
+    ) -> "SequenceMixer":
         """
         Build the corresponding attention module.
 
@@ -236,6 +281,10 @@ class AttentionConfig(Config):
             layer_idx, n_layers
         ):
             kwargs["window_size"] = sliding_window_config.get_window_size(layer_idx, n_layers)
+        else:  # global (non-SWA) layer
+            rope_config: Optional[RoPEConfig] = kwargs.get("rope")
+            if rope_config is not None and rope_config.no_global_rope:
+                kwargs["rope"] = None
 
         kwargs.update(
             dtype=kwargs.pop("dtype").as_pt(),
@@ -268,33 +317,7 @@ class AttentionConfig(Config):
             ) from e
 
 
-class AttentionBase(nn.Module):
-    """
-    Base class for attention modules.
-    """
-
-    @abstractmethod
-    def apply_tp(
-        self,
-        tp_mesh: DeviceMesh,
-        input_layout: Optional[Placement] = None,
-        output_layout: Optional[Placement] = None,
-        use_local_output: bool = True,
-        float8_enabled: bool = False,
-    ):
-        raise NotImplementedError
-
-    @abstractmethod
-    def apply_cp(
-        self,
-        cp_mesh: DeviceMesh,
-        load_balancer: RingAttentionLoadBalancerType,
-        head_stride: int = 1,
-    ):
-        raise NotImplementedError
-
-
-class Attention(AttentionBase):
+class Attention(SequenceMixer):
     """
     An implementation of multi-head self-attention with support for multi-query (MQA)
     and grouped-query (GQA) attention.
@@ -310,6 +333,7 @@ class Attention(AttentionBase):
     :param n_heads: The number of attention heads.
     :param n_kv_heads: The number of key and value heads, if different.
     :param bias: Include biases with linear layers.
+    :param gate: Configuration for attention gating. If None, no gating is applied.
     :param rope: The config for RoPE, if RoPE should be used.
     :param clip_qkv: Clip QKV to this value, if set.
     :param qk_norm: Configuration a layer norm for queries and keys.
@@ -326,7 +350,9 @@ class Attention(AttentionBase):
         d_model: int,
         n_heads: int,
         n_kv_heads: Optional[int] = None,
+        head_dim: Optional[int] = None,
         bias: bool = True,
+        gate: Optional[GateConfig] = None,
         rope: Optional[RoPEConfig] = None,
         clip_qkv: Optional[float] = None,
         qk_norm: Optional[LayerNormConfig] = None,
@@ -344,15 +370,41 @@ class Attention(AttentionBase):
 
         self.n_heads = n_heads
         self.n_kv_heads = n_kv_heads or n_heads
-        self.head_dim = d_model // n_heads
-        self.w_q = nn.Linear(d_model, d_model, bias=bias, dtype=dtype, device=init_device)
+        self.d_model = d_model
+        # Some models (e.g. Qwen3) use explicit head_dim that differs from d_model // n_heads.
+        if head_dim is not None:
+            self.head_dim = head_dim
+        else:
+            self.head_dim = d_model // n_heads
+        self.w_q = nn.Linear(
+            d_model, n_heads * self.head_dim, bias=bias, dtype=dtype, device=init_device
+        )
         self.w_k = nn.Linear(
             d_model, self.n_kv_heads * self.head_dim, bias=bias, dtype=dtype, device=init_device
         )
         self.w_v = nn.Linear(
             d_model, self.n_kv_heads * self.head_dim, bias=bias, dtype=dtype, device=init_device
         )
-        self.w_out = nn.Linear(d_model, d_model, bias=bias, dtype=dtype, device=init_device)
+        self.w_out = nn.Linear(
+            n_heads * self.head_dim, d_model, bias=bias, dtype=dtype, device=init_device
+        )
+
+        self.gate = gate
+        self.w_g: Optional[nn.Linear] = None
+        if gate is not None:
+            if gate.granularity == GateGranularity.headwise:
+                self.w_g = nn.Linear(
+                    d_model, self.n_heads, bias=bias, dtype=dtype, device=init_device
+                )
+            elif gate.granularity == GateGranularity.elementwise:
+                self.w_g = nn.Linear(
+                    d_model,
+                    self.n_heads * self.head_dim,
+                    bias=bias,
+                    dtype=dtype,
+                    device=init_device,
+                )
+
         self.clip_qkv = clip_qkv
         self.use_head_qk_norm = use_head_qk_norm
 
@@ -363,7 +415,7 @@ class Attention(AttentionBase):
                 self.q_norm = qk_norm.build(size=self.head_dim, init_device=init_device)
                 self.k_norm = qk_norm.build(size=self.head_dim, init_device=init_device)
             else:
-                self.q_norm = qk_norm.build(size=d_model, init_device=init_device)
+                self.q_norm = qk_norm.build(size=n_heads * self.head_dim, init_device=init_device)
                 self.k_norm = qk_norm.build(
                     size=self.n_kv_heads * self.head_dim, init_device=init_device
                 )
@@ -393,19 +445,26 @@ class Attention(AttentionBase):
                 backend = AttentionBackendName.flash_2
 
         # Translate window size so that we only look left, not right.
+        self.window_size = window_size
         window_size_tuple: Tuple[int, int] = (-1, -1)
         if window_size is not None:
             if window_size <= 0:
                 raise OLMoConfigurationError(f"'window_size' must be positive (got {window_size})")
 
             if backend is None and flash_attn_api.has_flash_attn_2():
-                # note: flash_3 and te backends are faster than flash_2 and also support SWA
+                # note: flash_3, flash_4, and te backends are faster than flash_2 and also support SWA
                 backend = AttentionBackendName.flash_2
 
             # Window size is [i - window_size[0], i + window_size[1]] inclusive
             window_size_tuple = (window_size - 1, 0)
 
         if backend is None:
+            backend = AttentionBackendName.torch
+
+        if not torch.cuda.is_available() and backend != AttentionBackendName.torch:
+            warnings.warn(
+                f"Backend is set to {backend}, but GPUs are not available. Defaulting to torch."
+            )
             backend = AttentionBackendName.torch
 
         backend.assert_supported()
@@ -553,6 +612,20 @@ class Attention(AttentionBase):
             cache_leftpad=cache_leftpad,
         )
 
+        if self.gate is not None:
+            assert self.w_g is not None
+            g = self.w_g(x)
+            if self.gate.full_precision:
+                g = g.float()
+            gate_values = torch.sigmoid(g).to(att.dtype)
+            if self.gate.granularity == GateGranularity.headwise:
+                # head-wise gating is broadcast across head_dim
+                # shape: (batch_size, seq_len, n_heads, head_dim)
+                att = att * gate_values.unsqueeze(-1)
+            elif self.gate.granularity == GateGranularity.elementwise:
+                att = att.view(B, T, -1) * gate_values
+                # the following att.view op is redundant (a no-op)
+
         # shape: (batch_size, seq_len, d_model)
         att = att.view(B, T, -1)
 
@@ -594,6 +667,10 @@ class Attention(AttentionBase):
                 output_layouts=output_layout, use_local_output=use_local_output
             ),
         }
+
+        if self.w_g is not None:
+            plan["w_g"] = colwise_parallel()
+
         if self.q_norm is not None:
             # if full-dim norm: output is sharded on the embedding dimension (B, T, E [sharded])
             #    which will be reshaped into (B, T, H [sharded], D)
@@ -611,8 +688,8 @@ class Attention(AttentionBase):
     def apply_cp(
         self,
         cp_mesh: DeviceMesh,
-        load_balancer: RingAttentionLoadBalancerType,
-        head_stride: int = 1,
+        ring: Optional[RingContextParallelStyle] = None,
+        uly: Optional[UlyssesContextParallelStyle] = None,
     ):
         """
         Prepare the module for context-parallelism (ring attention).
@@ -621,9 +698,56 @@ class Attention(AttentionBase):
             This requires a backend that supports CP, such as "flash_2" or "te".
 
         :param cp_mesh: The context parallel device sub-mesh.
-        :param load_balancer: The load balancer type.
+        :param ring: The ring context parallel style.
+        :param uly: The ulysses context parallel style.
         """
-        self.backend.apply_cp(cp_mesh, load_balancer, head_stride=head_stride)
+        self.backend.apply_cp(cp_mesh, ring=ring, uly=uly)
+
+    def init_weights(
+        self,
+        *,
+        init_method: "InitMethod",
+        d_model: int,
+        block_idx: int,
+        num_blocks: int,
+        std: float = 0.02,
+        generator: Optional[torch.Generator] = None,
+    ) -> None:
+        from olmo_core.nn.transformer.init import InitMethod, init_linear
+
+        # Compute std for Q/K/V initialization
+        if init_method == InitMethod.fan_in:
+            # For fan_in, use 1/√d_in based on actual weight shape (ignores base std parameter)
+            # Each projection may have different output dims (n_heads * head_dim vs n_kv_heads * head_dim)
+            # but they all have the same input dim
+            for w in (self.w_q, self.w_k, self.w_v):
+                w_std = w.in_features**-0.5
+                init_linear(w, std=w_std, generator=generator)
+        else:
+            if init_method == InitMethod.normalized:
+                std = d_model**-0.5
+            for w in (self.w_q, self.w_k, self.w_v):
+                init_linear(w, std=std, generator=generator)
+
+        # Initialize attention gate projection if present
+        if self.w_g is not None:
+            if init_method == InitMethod.fan_in:
+                g_std = self.w_g.in_features**-0.5
+            else:
+                g_std = std
+            init_linear(self.w_g, std=g_std, generator=generator)
+
+        # Compute std for w_out initialization
+        if init_method == InitMethod.fan_in:
+            std = self.w_out.in_features**-0.5
+        elif init_method == InitMethod.llama:
+            std = std / (2 * num_blocks) ** 0.5
+        elif init_method == InitMethod.llama_depth:
+            std = std / (2 * (block_idx + 1)) ** 0.5
+        elif init_method == InitMethod.normalized:
+            std = std / (2 * num_blocks) ** 0.5
+
+        init_linear(self.w_out, std=std, generator=generator)
 
     def init_kv_cache_manager(self, batch_size: int, max_seq_len: int):
         """
@@ -634,6 +758,7 @@ class Attention(AttentionBase):
         :param max_seq_len: The maximum sequence length for the cache.
         """
         self.backend.assert_supports_kv_cache()
+
         self.kv_cache_manager = KVCacheManager(
             batch_size=batch_size,
             max_seq_len=max_seq_len,
@@ -641,6 +766,26 @@ class Attention(AttentionBase):
             head_dim=self.head_dim,
             device=self.w_k.weight.device,
         )
+
+    def num_flops_per_token(self, seq_len: int) -> int:
+        """
+        This accounts for:
+        - Linear projections (Q, K, V, output, and gating if enabled)
+        - Attention computation (QK^T and softmax(QK^T) @ V)
+        - Sliding window attention (reduced effective sequence length)
+        """
+        # 6 FLOPs per parameter (2 ops * 3 for forward+backward)
+        param_flops = 6 * sum(p.numel() for p in self.parameters())
+
+        # Attention computation (QK^T and Attn*V)
+        # 12x multiplier: 2 matmuls * 2 ops each * 3 for forward+backward
+        # For sliding window attention, effective sequence length is limited by window size
+        # Note that flash attention technically uses more flops (14x multiplier) due to recomputation,
+        # however, we just compute the idealized flops for SDPA.
+        effective_seq_len = min(self.window_size, seq_len) if self.window_size else seq_len
+        attn_flops = 12 * self.n_heads * self.head_dim * effective_seq_len
+
+        return param_flops + attn_flops
 
 
 @beta_feature
@@ -810,7 +955,7 @@ class NormalizedAttention(Attention):
         w.copy_(l2_normalize(w, dim=dim))
 
 
-class FusedAttention(AttentionBase):
+class FusedAttention(SequenceMixer):
     """
     An "fused" implementation of multi-head self-attention.
 
@@ -951,7 +1096,49 @@ class FusedAttention(AttentionBase):
     def apply_cp(
         self,
         cp_mesh: DeviceMesh,
-        load_balancer: RingAttentionLoadBalancerType,
-        head_stride: int = 1,
+        ring: Optional[RingContextParallelStyle] = None,
+        uly: Optional[UlyssesContextParallelStyle] = None,
     ):
-        self.backend.apply_cp(cp_mesh, load_balancer, head_stride=head_stride)
+        self.backend.apply_cp(cp_mesh, ring=ring, uly=uly)
+
+    def init_weights(
+        self,
+        *,
+        init_method: "InitMethod",
+        d_model: int,
+        block_idx: int,
+        num_blocks: int,
+        std: float = 0.02,
+        generator: Optional[torch.Generator] = None,
+    ) -> None:
+        from olmo_core.nn.transformer.init import InitMethod, init_linear
+
+        # Compute std for fused QKV initialization
+        if init_method == InitMethod.fan_in:
+            std = self.w_qkv.in_features**-0.5
+        elif init_method == InitMethod.normalized:
+            std = d_model**-0.5
+
+        init_linear(self.w_qkv, std=std, generator=generator)
+
+        # Compute std for w_out initialization
+        if init_method == InitMethod.fan_in:
+            std = self.w_out.in_features**-0.5
+        elif init_method == InitMethod.llama:
+            std = std / (2 * num_blocks) ** 0.5
+        elif init_method == InitMethod.llama_depth:
+            std = std / (2 * (block_idx + 1)) ** 0.5
+        elif init_method == InitMethod.normalized:
+            std = std / (2 * num_blocks) ** 0.5
+
+        init_linear(self.w_out, std=std, generator=generator)
+
+    def num_flops_per_token(self, seq_len: int) -> int:
+        # 6 FLOPs per parameter (2 ops * 3 for forward+backward)
+        param_flops = 6 * sum(p.numel() for p in self.parameters())
+
+        # Attention computation (QK^T and Attn*V)
+        # 12x multiplier: 2 matmuls * 2 ops each * 3 for forward+backward
+        attn_flops = 12 * self.n_heads * self.head_dim * seq_len
+
+        return param_flops + attn_flops

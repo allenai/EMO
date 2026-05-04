@@ -1,21 +1,29 @@
 """
-Example script to convert a OLMo Core model checkpoint to a HuggingFace model checkpoint.
+Example script to convert an OLMo Core model checkpoint to a HuggingFace model checkpoint.
 
-Note that this script is architecture-dependent, meaning it may only work for OLMo Core model
-architectures that have support in the `transformers` library.
+Supports both standard architectures (olmo2, olmo3) and hybrid (GDN + attention) architectures.
+Hybrid models are saved as raw ``config.json`` + ``model.safetensors`` rather than using
+``save_pretrained()``.
+
+The conversion logic lives in :mod:`olmo_core.nn.hf.convert_checkpoint`; this script is a
+thin CLI wrapper.
+
+Usage::
+
+    # Standard model
+    python convert_checkpoint_to_hf.py -i /path/to/checkpoint -o /path/to/output
+
+    # Hybrid model (auto-detected)
+    python convert_checkpoint_to_hf.py -i /path/to/hybrid-checkpoint -o /path/to/output
 """
 
-import logging
 from argparse import ArgumentParser
-from pathlib import Path
 
 import torch
 
 from olmo_core.config import DType
-from olmo_core.hf_utils import convert_checkpoint_to_hf, load_config
+from olmo_core.nn.hf import convert_checkpoint_to_hf, load_config
 from olmo_core.utils import prepare_cli_environment
-
-log = logging.getLogger(__name__)
 
 
 def parse_args():
@@ -31,7 +39,7 @@ def parse_args():
     parser.add_argument(
         "-o",
         "--huggingface-output-dir",
-        type=Path,
+        type=str,
         required=True,
         help="Local or remote directory where the converted checkpoint should be saved.",
     )

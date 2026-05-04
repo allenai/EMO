@@ -26,7 +26,7 @@ python -m olmo_core.launch.beaker \
   --gpus 2 \
   --nodes 1 \
   --weka=oe-training-default \
-  --is_private_repo \
+  --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
   --priority urgent \
   --shared-filesystem \
   --workspace ai2/flex2 \

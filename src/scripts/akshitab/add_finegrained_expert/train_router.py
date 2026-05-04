@@ -23,7 +23,7 @@ from olmo_core.distributed.utils import get_rank
 from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_randpool_router import (
     MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouterConfig,
 )
-from olmo_core.nn.transformer import TransformerConfig
+from olmo_core.nn.transformer import TransformerBlockConfig, TransformerConfig
 from olmo_core.optim import AdamWConfig, CosWithWarmup, OptimGroupOverride
 from olmo_core.train import (
     TrainerConfig,
@@ -51,7 +51,6 @@ from olmo_core.utils import seed_all, setup_logging
 
 log = logging.getLogger(__name__)
 
-DATA_ROOT = "/weka/oe-training-default/ai2-llm"
 
 SEQUENCE_LENGTH = 4096
 # GLOBAL_BATCH_SIZE = 16 * SEQUENCE_LENGTH
@@ -162,6 +161,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     )
 
     # Apply router replacement for special model types
+    assert isinstance(model_config.block, TransformerBlockConfig)
     assert model_config.block.feed_forward_moe is not None
     if opts.model_type == "moe":
         log.info("Using default routers; no modifications applied.")
@@ -199,12 +199,12 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     print(model_config)
     # docs: end-model-config
 
-    log.info(f"Using data root: {DATA_ROOT}")
+    log.info(f"Using data root: {opts.data_root}")
 
     dataset_config = NumpyFSLDatasetConfig.from_data_mix(
         DataMix.OLMoE_mix_0824,
         tokenizer=tokenizer_config,
-        mix_base_dir=DATA_ROOT,
+        mix_base_dir=opts.data_root,
         sequence_length=SEQUENCE_LENGTH,
         max_target_sequence_length=max(8192, SEQUENCE_LENGTH),
         work_dir=work_dir,
@@ -499,6 +499,12 @@ def parser_args():
         action="store_true",
         help="""Run evaluations only on existing checkpoint without training.
         This will load the latest checkpoint and run downstream evals.""",
+    )
+    parser.add_argument(
+        "--data-root",
+        type=str,
+        default="/weka/oe-training-default/ai2-llm",
+        help="Root directory for the data mix (mix_base_dir).",
     )
     opts, overrides = parser.parse_known_args()
     return opts, overrides

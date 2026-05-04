@@ -58,6 +58,7 @@ from .common import (
     LoadStrategy,
     MetricMergeStrategy,
     ReduceType,
+    StepSkipRange,
 )
 from .config import TrainerConfig
 from .trainer import Trainer
@@ -74,6 +75,7 @@ __all__ = [
     "DurationUnit",
     "ReduceType",
     "MetricMergeStrategy",
+    "StepSkipRange",
 ]
 
 
@@ -84,7 +86,7 @@ def prepare_training_environment(
     *,
     seed: Optional[int] = None,
     backend: Optional[str] = "cpu:gloo,cuda:nccl",
-    timeout: timedelta = timedelta(minutes=30),
+    timeout: timedelta = timedelta(minutes=15),
     log_filter_type: Optional[LogFilterType] = None,
     shared_filesystem: Optional[bool] = None,
 ):

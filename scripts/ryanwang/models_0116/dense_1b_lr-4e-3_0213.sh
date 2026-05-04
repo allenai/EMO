@@ -3,37 +3,26 @@
 #     - Different from parent by removing qknorm and using prenorm
 # STATUS: USED
 ##############################################################
+source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
 
-lr=4e-4
 
-runname="dense_1b_lr-${lr}_0502"
-python -m olmo_core.launch.beaker \
-  --name $runname \
-	--gpus 8 \
-  --nodes 8 \
-	--weka=oe-training-default \
-  --shared-filesystem \
-	--workspace ai2/flex2 \
-	--cluster ai2/jupiter \
-	--beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
-	--preemptible \
-	--allow-dirty \
-	--priority urgent \
-	--env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
-	-- src/scripts/train/olmo2-1B.py \
-    $runname \
-		--save-folder="/weka/oe-training-default/ryanwang/phdbrainstorm/FlexMoE/models/$runname" \
+lr=4e-3
+
+runname="dense_1b_lr-${lr}_0213"
+launch src/scripts/train/olmo2-1B.py $runname \
+		--save-folder="${MODELS_DIR}/$runname" \
 		--dataset.mix=OLMoE-mix-0824 \
-		--work-dir="/weka/oe-training-default/ryanwang/dataset-cache" \
+		--work-dir="${DATASET_CACHE}" \
 		--trainer.max_duration='{value: 130_000_000_000, unit: tokens}' \
-		--trainer.callbacks.wandb="{enabled: true, entity: ryanyxw, project: olmoe-modular, name: ${runname}, tags: [pretraining]}" \
+		--trainer.callbacks.wandb.enabled=true \
+		--trainer.callbacks.wandb.entity=ryanyxw \
+		--trainer.callbacks.wandb.project=olmoe-modular \
+		--trainer.callbacks.wandb.name="${runname}" \
+		--trainer.callbacks.wandb.tags='[pretraining]' \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="default" \
-		--model.block.attention.qk_norm=null \
-		--lr=${lr} \
-    --trainer.hard_stop='{value: 3000, unit: steps}'
-
-#  --is_private_repo \
+		--model.block.sequence_mixer.qk_norm=null \
+		--lr=${lr}
 
 
 

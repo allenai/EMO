@@ -45,6 +45,7 @@ LEARNING_RATE=5e-5
 RUN_NAME=""
 PRUNE_MODE=""
 NUM_PRUNE_EXAMPLES=""
+TRUST_REMOTE_CODE=false
 NUM_PRUNE_SEED=""
 NUM_SHOTS_PRUNE=""
 NUM_SHOTS_EVAL=""
@@ -119,6 +120,10 @@ while [[ $# -gt 0 ]]; do
         --num-prune-examples)
             NUM_PRUNE_EXAMPLES="$2"
             shift 2
+            ;;
+        --trust-remote-code)
+            TRUST_REMOTE_CODE=true
+            shift
             ;;
         --num-prune-seed)
             NUM_PRUNE_SEED="$2"
@@ -291,7 +296,9 @@ fi
 
 export WANDB_PROJECT="olmoe-modular"
 export WANDB_ENTITY="ryanyxw"
-export WANDB_TAGS="finetune,${TASK:0:60},${PRUNED_MODEL: -60}"
+PM_TAG="${PRUNED_MODEL: -60}"
+[ -z "$PM_TAG" ] && PM_TAG="$PRUNED_MODEL"
+export WANDB_TAGS="finetune,${TASK:0:60},${PM_TAG}"
 
 gas=$(( BATCH_SIZE / (NUM_GPUS * MICRO_BATCH_SIZE) ))
 
