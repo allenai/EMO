@@ -78,7 +78,7 @@ The following checkpoints are available on the [Hugging Face Hub](https://huggin
 - [`allenai/Emo_1b14b_130B`](https://huggingface.co/allenai/Emo_1b14b_130B)
 - [`allenai/Dense_1b_130B`](https://huggingface.co/allenai/Dense_1b_130B)
 - [`allenai/StdMoE_1b4b_130B`](https://huggingface.co/allenai/StdMoE_1b4b_130B)
-- [`allenai/StdMoE_1b14b_140B`](https://huggingface.co/allenai/StdMoE_1b14b_140B)
+- [`allenai/StdMoE_1b14b_130B`](https://huggingface.co/allenai/StdMoE_1b14b_130B)
 - [`allenai/StdMoE_1b14b_1T`](https://huggingface.co/allenai/StdMoE_1b14b_1T)
 
 All inference snippets below require `trust_remote_code=True` since the models use custom modeling code from the [ryanyxw/transformers](https://github.com/ryanyxw/transformers/tree/flexmoe_v4_57_1) fork.
