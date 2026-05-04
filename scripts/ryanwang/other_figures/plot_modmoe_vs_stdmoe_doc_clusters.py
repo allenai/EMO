@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Editorial figure comparing ModMoE vs Standard MoE token-level clustering
+"""Editorial figure comparing EMO vs Standard MoE token-level clustering
 on a single representative document.
 
 Sibling of ``figure_token_cluster_comparison.py`` but reads from the
 combined comparison page ``claude_outputs/clustering/pretraining/modmoe_vs_stdmoe_comparison.html``.
 
 Picks a document where:
-    - ModMoE concentrates ~96% of the document's tokens into ONE *domain*
+    - EMO concentrates ~96% of the document's tokens into ONE *domain*
       cluster ("Health, medical & wellness"). The few divergent tokens
       cluster at the very start of the document (first sentence).
     - Standard MoE's most-common cluster on the same document is a pure
@@ -22,7 +22,7 @@ The default target is doc#1624 (DCLM, abdominal-exercise advice). Pass
 --target-doc-id to swap in a different document; pass -1 to auto-select
 via an offline scan.
 
-Output: claude_outputs/other_figures/modmoe_vs_stdmoe_doc_clusters.png
+Output: claude_outputs/other_figures/modmoe_vs_stdmoe_doc_clusters.pdf
 """
 
 from __future__ import annotations
@@ -45,10 +45,10 @@ DEFAULT_HTML = (
 )
 DEFAULT_OUTPUT = (
     REPO_ROOT / "claude_outputs" / "other_figures"
-    / "modmoe_vs_stdmoe_doc_clusters.png"
+    / "modmoe_vs_stdmoe_doc_clusters.pdf"
 )
 
-# Pre-selected via an offline scan: high ModMoE concentration in a topical
+# Pre-selected via an offline scan: high EMO concentration in a topical
 # cluster, with Standard MoE's top cluster being a syntactic surface pattern.
 DEFAULT_TARGET_DOC_ID = 1624
 TOP_N_CLUSTERS = 18  # fewer rows so each row has room for the bigger label
@@ -65,15 +65,15 @@ DIVIDER = "#eef0f3"
 
 # Per-model accent palette — matches the paper figures in
 # scripts/ryanwang/pruning_plots/paper_figure_codes (Reg. MoE = green
-# family, ModMoE = magenta/pink family). The accent_soft tints are the
-# same green / pink legend washes used in main_results_abs_bars_1t.png.
+# family, EMO = magenta/pink family). The accent_soft tints are the
+# same green / pink legend washes used in main_results_abs_bars_1t.pdf.
 STDMOE_ACCENT = {
     "accent":      "#5B8E3F",  # REG_PALETTE[1]  — medium green
     "accent_soft": "#EEF6E4",  # green wash used in legend backgrounds
     "accent_dark": "#225C2E",  # REG_PALETTE[0]  — dark forest green
 }
 MODMOE_ACCENT = {
-    "accent":      "#B8327C",  # FLEX_PALETTE[2] — ModMoE magenta
+    "accent":      "#B8327C",  # FLEX_PALETTE[2] — EMO magenta
     "accent_soft": "#FBE7EF",  # pink wash used in legend backgrounds
     "accent_dark": "#3F1052",  # FLEX_PALETTE[0] — deep purple
 }
@@ -121,14 +121,14 @@ def auto_select_doc(
     m2_clusters: List[dict],
     top_n: int,
 ) -> int:
-    """Pick the doc with the strongest ModMoE-concentrates-semantic /
+    """Pick the doc with the strongest EMO-concentrates-semantic /
     StdMoE-concentrates-syntactic contrast, additionally requiring both
     of the doc's top-cluster IDs to live in their model's global top-N
     by size — so they show up in the rendered cluster cards naturally
     without any pinning."""
     # Pure function-word / punctuation StdMoE clusters only.
     SYNTACTIC_M2 = {2, 5, 6, 8, 10, 13, 15, 19, 20, 21, 22, 27}
-    # Only count ModMoE clusters in clear topical-domain categories.
+    # Only count EMO clusters in clear topical-domain categories.
     DOMAIN_M1_CATS = {
         "arts", "business", "code", "education", "health", "news", "science",
     }
@@ -415,7 +415,7 @@ def main() -> None:
     m2_top_pct = m2_top_n / n_tokens * 100
 
     print(f"Doc #{target_id}  ({target_doc['s']}, {n_tokens} tokens)")
-    print(f"  ModMoE       top: C{m1_top:02d} {m1_by_id[m1_top]['label']!r}  "
+    print(f"  EMO       top: C{m1_top:02d} {m1_by_id[m1_top]['label']!r}  "
           f"{m1_top_pct:.1f}% of tokens")
     print(f"  Standard MoE top: C{m2_top:02d} {m2_by_id[m2_top]['label']!r}  "
           f"{m2_top_pct:.1f}% of tokens")
@@ -439,7 +439,7 @@ def main() -> None:
                 "total_tokens": sum(c["size"] for c in M1["clusters"]),
             },
             "doc_cluster_ids": target_doc["c1"],
-            "label": "ModMoE",
+            "label": "EMO",
             "highlight_cluster_id": m1_top,
             "highlight_cluster_label": m1_by_id[m1_top]["label"],
             "highlight_cluster_pct": m1_top_pct,

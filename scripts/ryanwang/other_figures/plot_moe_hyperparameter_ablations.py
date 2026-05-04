@@ -12,11 +12,11 @@ Single-panel grad-norm-style line plot, sibling of
 
 Color scheme matches the rest of the paper figures: the three lb=1e-2
 LR variants form a green gradient (light to dark = low to high lr) and
-the lr=4e-3 / lb=1e-1 alternative gets ModMoE magenta as the "preferred
+the lr=4e-3 / lb=1e-1 alternative gets EMO magenta as the "preferred
 config" highlight.
 
 Reads : claude_outputs/other_figures/moe_hyperparameter_ablations.csv
-Writes: claude_outputs/other_figures/moe_hyperparameter_ablations.png
+Writes: claude_outputs/other_figures/moe_hyperparameter_ablations.pdf
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ CSV_PATH = (
     REPO_ROOT / "claude_outputs" / "other_figures" / "moe_hyperparameter_ablations.csv"
 )
 OUT_PATH = (
-    REPO_ROOT / "claude_outputs" / "other_figures" / "moe_hyperparameter_ablations.png"
+    REPO_ROOT / "claude_outputs" / "other_figures" / "moe_hyperparameter_ablations.pdf"
 )
 
 METRIC_SUFFIX = " - train/CE loss"
@@ -46,7 +46,7 @@ RUNS: List[Tuple[str, str, str]] = [
     ("lr=4e-2, lb=1e-2", "moe_1b14b_lr-4e-2-ablations_0116",         "#225C2E"),  # dark green
     ("lr=4e-3, lb=1e-2", "moe_1b14b_lr-4e-3-ablations_0116",         "#5B8E3F"),  # medium green
     ("lr=4e-4, lb=1e-2", "moe_1b14b_lr-4e-4-ablations_0116",         "#C5DD93"),  # light green
-    ("lr=4e-3, lb=1e-1", "moe_1b14b_lr-4e-3_lb-1e-1-ablations_0116", "#B8327C"),  # ModMoE magenta
+    ("lr=4e-3, lb=1e-1", "moe_1b14b_lr-4e-3_lb-1e-1-ablations_0116", "#B8327C"),  # EMO magenta
 ]
 
 

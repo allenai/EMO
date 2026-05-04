@@ -7,15 +7,15 @@ to three training-scale clumps (5T, 1T, 130B). Inside each clump, one
 bar per available model:
 
     5T:    OLMoE†                                 (orange)
-    1T:    Reg. MoE,  ModMoE (Ours)               (green, magenta)
-    130B:  Dense, Reg. MoE,  ModMoE (Ours)        (gray, green, magenta)
+    1T:    Reg. MoE,  EMO (Ours)               (green, magenta)
+    130B:  Dense, Reg. MoE,  EMO (Ours)        (gray, green, magenta)
 
 Color scheme matches the rest of the paper figures (Reg. MoE green,
-ModMoE magenta, Dense neutral gray, OLMoE warm orange for the external
+EMO magenta, Dense neutral gray, OLMoE warm orange for the external
 baseline).
 
 Outputs:
-    claude_outputs/prune_plots/general_tasks_orig.png
+    claude_outputs/prune_plots/general_tasks_orig.pdf
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ import seaborn as sns
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_INPUT = REPO_ROOT / "claude_outputs" / "prune_plots" / "general_tasks_orig.csv"
-DEFAULT_OUTPUT = REPO_ROOT / "claude_outputs" / "prune_plots" / "general_tasks_orig.png"
+DEFAULT_OUTPUT = REPO_ROOT / "claude_outputs" / "prune_plots" / "general_tasks_orig.pdf"
 
 TASKS = ["MC9", "Gen5", "MMLU", "MMLU Pro", "GSM8K"]
 
@@ -41,7 +41,7 @@ MODEL_COLOR: Dict[str, str] = {
     "OLMoE^dagger":   "#E78532",  # warm orange — external baseline
     "Dense":          "#888888",  # gray — vanilla dense baseline
     "Reg. MoE":       "#5B8E3F",  # green — same as abs_bars REG_PALETTE[1]
-    "FlexMoE (Ours)": "#B8327C",  # magenta — same as ModMoE in abs_bars
+    "FlexMoE (Ours)": "#B8327C",  # magenta — same as EMO in abs_bars
 }
 
 # Display name for the legend.
@@ -49,7 +49,7 @@ MODEL_DISPLAY: Dict[str, str] = {
     "OLMoE^dagger":   "OLMoE†",
     "Dense":          "Dense",
     "Reg. MoE":       "Reg. MoE",
-    "FlexMoE (Ours)": "ModMoE (Ours)",
+    "FlexMoE (Ours)": "EMO (Ours)",
 }
 
 # Scale clumps in display order (left -> right within each panel).

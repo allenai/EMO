@@ -2,12 +2,12 @@
 """Combined-models version of the expert-selection-method figure.
 
 1x3 grid (MMLU, MMLU Pro, GSM8K). Each panel shows six lines — two models
-(Reg. MoE, ModMoE) crossed with three selection methods (Random, Router,
-Easy-EP). Color encodes model (green = Reg. MoE, pink = ModMoE);
+(Reg. MoE, EMO) crossed with three selection methods (Random, Router,
+Easy-EP). Color encodes model (green = Reg. MoE, pink = EMO);
 linestyle + marker encode method.
 
 Outputs:
-    claude_outputs/prune_plots/expert_selection_method_ckpt0_combined.png
+    claude_outputs/prune_plots/expert_selection_method_ckpt0_combined.pdf
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ DEFAULT_INPUT = (
 )
 DEFAULT_OUTPUT = (
     REPO_ROOT / "claude_outputs" / "prune_plots"
-    / "expert_selection_method_ckpt0_combined.png"
+    / "expert_selection_method_ckpt0_combined.pdf"
 )
 
 PANEL_TITLES = ["MMLU", "MMLU Pro", "GSM8K"]
@@ -36,7 +36,7 @@ KEEPK_VALUES = [8, 16, 32, 64, 128]
 # (display label, model name in CSV, color)
 MODELS: List[Tuple[str, str, str]] = [
     ("Reg. MoE", "Reg. MoE", "#5B8E3F"),  # medium green (matches abs_bars REG_PALETTE[1])
-    ("ModMoE", "FlexMoE", "#B8327C"),     # magenta-pink (matches abs_bars FLEX_PALETTE[2])
+    ("EMO", "FlexMoE", "#B8327C"),     # magenta-pink (matches abs_bars FLEX_PALETTE[2])
 ]
 
 # (display label, csv column suffix, linestyle, marker)
@@ -138,7 +138,7 @@ def _draw_panel(ax, df: pd.DataFrame, panel_title: str,
 def _draw_legend(fig) -> None:
     """Two centered tinted boxes — one per model. Each box lists the three
     selection methods as line entries drawn in that model's color, matching
-    the aesthetic used in main_results_abs_bars_1t.png.
+    the aesthetic used in main_results_abs_bars_1t.pdf.
     """
     common_kw = dict(
         frameon=True,
@@ -176,7 +176,7 @@ def _draw_legend(fig) -> None:
     leg_r.get_frame().set_linewidth(1.1)
     fig.add_artist(leg_r)
 
-    # ModMoE box (right of center) — pink wash + pink border.
+    # EMO box (right of center) — pink wash + pink border.
     flex_color = MODELS[1][2]
     flex_handles = [
         mlines.Line2D(
@@ -188,7 +188,7 @@ def _draw_legend(fig) -> None:
     ]
     leg_f = fig.legend(
         flex_handles, method_labels,
-        title="ModMoE",
+        title="EMO",
         ncol=len(METHODS),
         loc="lower center", bbox_to_anchor=(0.68, 0.005),
         facecolor="#FBE7EF", edgecolor=flex_color,

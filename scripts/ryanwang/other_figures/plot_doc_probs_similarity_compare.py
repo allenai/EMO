@@ -13,7 +13,7 @@ dir (produced by the upstream extraction pipeline). The npz contains
 num_experts), which is all we need to compute topic-topic similarities.
 
 Output:
-    claude_outputs/other_figures/doc_probs_similarity_compare.png
+    claude_outputs/other_figures/doc_probs_similarity_compare.pdf
 """
 
 from __future__ import annotations
@@ -41,10 +41,10 @@ DEFAULT_RIGHT_MODEL = (
 )
 
 LEFT_LABEL = "Reg. MoE (1T)"
-RIGHT_LABEL = "ModMoE (1T)"
+RIGHT_LABEL = "EMO (1T)"
 
 DEFAULT_OUTPUT = (
-    REPO_ROOT / "claude_outputs" / "other_figures" / "doc_probs_similarity_compare.png"
+    REPO_ROOT / "claude_outputs" / "other_figures" / "doc_probs_similarity_compare.pdf"
 )
 
 AGGREGATED_FILENAME = "doc_probs_heatmap_data.npz"

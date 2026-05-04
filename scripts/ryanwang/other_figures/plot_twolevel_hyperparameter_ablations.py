@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""ModMoE (two-level batch LB) LR ablations, first 3000 steps.
+"""EMO (two-level batch LB) LR ablations, first 3000 steps.
 
 Single-panel sibling of ``plot_moe_hyperparameter_ablations.py``. Plots
-``train/CE loss`` for the three ModMoE runs at lb=1e-1 with different
+``train/CE loss`` for the three EMO runs at lb=1e-1 with different
 learning rates:
 
     lr=4e-2  (high)
@@ -10,11 +10,11 @@ learning rates:
     lr=4e-4  (low — sparser logging in the early steps)
 
 Color scheme matches the rest of the paper figures: a magenta/pink
-gradient on the FlexMoE/ModMoE family, with the lr=4e-3 line at the
+gradient on the FlexMoE/EMO family, with the lr=4e-3 line at the
 saturated brand magenta as the "preferred config" highlight.
 
 Reads : claude_outputs/other_figures/twolevel_hyperparameter_ablations.csv
-Writes: claude_outputs/other_figures/twolevel_hyperparameter_ablations.png
+Writes: claude_outputs/other_figures/twolevel_hyperparameter_ablations.pdf
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ CSV_PATH = (
 )
 OUT_PATH = (
     REPO_ROOT / "claude_outputs" / "other_figures"
-    / "twolevel_hyperparameter_ablations.png"
+    / "twolevel_hyperparameter_ablations.pdf"
 )
 
 METRIC_SUFFIX = " - train/CE loss"
@@ -50,7 +50,7 @@ RUNS: List[Tuple[str, str, str]] = [
     (
         "lr=4e-3",
         "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119",
-        "#B8327C",  # ModMoE magenta (preferred)
+        "#B8327C",  # EMO magenta (preferred)
     ),
     (
         "lr=4e-4",
@@ -103,7 +103,7 @@ def main() -> None:
         ax=ax,
     )
 
-    ax.set_title("ModMoE: learning rate ablations", fontweight="bold")
+    ax.set_title("EMO: learning rate ablations", fontweight="bold")
     ax.set_xlabel("training step")
     ax.set_ylabel("train CE loss")
     ax.set_xlim(0, MAX_STEP)
@@ -118,13 +118,13 @@ def main() -> None:
     ]
     leg = fig.legend(
         handles, [h.get_label() for h in handles],
-        title="ModMoE Hyperparameters",
+        title="EMO Hyperparameters",
         ncol=len(handles),
         loc="lower center", bbox_to_anchor=(0.5, 0.005),
         frameon=True, fontsize=11, title_fontsize=12,
         handletextpad=0.6, columnspacing=1.2,
         borderpad=0.7, labelspacing=0.4, handlelength=2.4,
-        facecolor="#FBE7EF", edgecolor="#B8327C",  # ModMoE pink-tinted frame
+        facecolor="#FBE7EF", edgecolor="#B8327C",  # EMO pink-tinted frame
     )
     leg.get_title().set_fontweight("bold")
     leg.get_title().set_color("#3F1052")

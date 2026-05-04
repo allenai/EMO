@@ -24,8 +24,8 @@ Reads the per-subject CSVs produced by
                    plain dir doesn't exist).
 
 Outputs:
-    claude_outputs/prune_plots/mmlu_other_abs_bars_130b.png
-    claude_outputs/prune_plots/mmlu_other_abs_bars_1t.png
+    claude_outputs/prune_plots/mmlu_other_abs_bars_130b.pdf
+    claude_outputs/prune_plots/mmlu_other_abs_bars_1t.pdf
 """
 
 from __future__ import annotations
@@ -194,7 +194,7 @@ def _build_clumps(
 
     clumps: List[Dict[str, object]] = [
         {"legend_label": "Reg. MoE", "x_label": "Reg. MoE", "bars": reg_bars},
-        {"legend_label": "ModMoE",   "x_label": "ModMoE",   "bars": flex_bars},
+        {"legend_label": "EMO",   "x_label": "EMO",   "bars": flex_bars},
     ]
 
     overlays: List[Dict[str, object]] = []
@@ -364,7 +364,7 @@ def _draw_per_shade_legend(fig, *, with_refs: bool) -> None:
         for i in range(len(KEEPK_VALUES))
     ]
     leg_f = fig.legend(
-        flex_handles, keepk_labels, title="ModMoE",
+        flex_handles, keepk_labels, title="EMO",
         ncol=len(flex_handles),
         loc="lower center", bbox_to_anchor=(flex_x, 0.005),
         facecolor="#FBE7EF", edgecolor=FLEX_PALETTE[2],
@@ -477,7 +477,7 @@ def main() -> None:
         render_figure(
             inf_dfs,
             scale=scale,
-            output_path=args.output_dir / f"mmlu_other_abs_bars_{scale}.png",
+            output_path=args.output_dir / f"mmlu_other_abs_bars_{scale}.pdf",
         )
 
 

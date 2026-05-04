@@ -14,8 +14,8 @@ Within Reg. MoE / FlexMoE clumps, color saturation goes from dark (keepk
 128) to light (keepk 8) so the "decay" is visible at a glance.
 
 Outputs:
-    claude_outputs/prune_plots/main_results_abs_bars_inf.png
-    claude_outputs/prune_plots/main_results_abs_bars_ft.png
+    claude_outputs/prune_plots/main_results_abs_bars_inf.pdf
+    claude_outputs/prune_plots/main_results_abs_bars_ft.pdf
 """
 
 from __future__ import annotations
@@ -86,8 +86,8 @@ SCALES = {
         "reg_model": "Reg. MoE (130B)",
         "flex_model": "FlexMoE (130B)",
         "refs": [
-            ("Dense, trained @8", "Dense (130B)^dagger", 8, DENSE_COLOR),
-            ("Reg. MoE, trained @32", "Reg. MoE (130B)", 32, REGSMALL_COLOR),
+            ("Dense @8 (trained)", "Dense (130B)^dagger", 8, DENSE_COLOR),
+            ("Reg. MoE @32 (trained)", "Reg. MoE (130B)", 32, REGSMALL_COLOR),
         ],
     },
     "1t": {
@@ -407,7 +407,7 @@ def _draw_per_shade_legend(fig, *, with_refs: bool) -> None:
     ]
     leg_f = fig.legend(
         flex_handles, keepk_labels,
-        title="ModMoE",
+        title="EMO",
         ncol=len(flex_handles),
         loc="lower center", bbox_to_anchor=(flex_x, 0.005),
         facecolor="#FBE7EF", edgecolor=FLEX_PALETTE[2],
@@ -504,7 +504,7 @@ def main() -> None:
         render_figure(
             df,
             scale=scale,
-            output_path=args.output_dir / f"main_results_abs_bars_{scale}.png",
+            output_path=args.output_dir / f"main_results_abs_bars_{scale}.pdf",
         )
 
 

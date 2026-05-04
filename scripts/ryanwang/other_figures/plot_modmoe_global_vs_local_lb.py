@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""ModMoE-only grad-norm: local vs global load balancing, first 5000 steps.
+"""EMO-only grad-norm: local vs global load balancing, first 5000 steps.
 
 Single-panel sibling of ``plot_global_vs_local_lb.py`` that keeps only the
-two ModMoE (formerly MOSE) runs and clips the x-axis to the early
+two EMO (formerly MOSE) runs and clips the x-axis to the early
 training regime where the global vs local LB difference is most visible.
 
-Color theme matches the rest of the paper figures (ModMoE magenta + a
+Color theme matches the rest of the paper figures (EMO magenta + a
 warm orange contrast, with a green-tinted legend frame).
 
 Reads : claude_outputs/other_figures/global_vs_local_lb.csv
-Writes: claude_outputs/other_figures/modmoe_global_vs_local_lb.png
+Writes: claude_outputs/other_figures/modmoe_global_vs_local_lb.pdf
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ import seaborn as sns
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CSV_PATH = REPO_ROOT / "claude_outputs" / "other_figures" / "global_vs_local_lb.csv"
-OUT_PATH = REPO_ROOT / "claude_outputs" / "other_figures" / "modmoe_global_vs_local_lb.png"
+OUT_PATH = REPO_ROOT / "claude_outputs" / "other_figures" / "modmoe_global_vs_local_lb.pdf"
 
 METRIC_SUFFIX = " - optim/total grad norm"
 MAX_STEP = 3000
@@ -31,16 +31,16 @@ MAX_STEP = 3000
 LOCAL = "local load balance"
 GLOBAL = "global load balance"
 
-# Same wandb runs as plot_global_vs_local_lb.py for the MOSE / ModMoE panel.
+# Same wandb runs as plot_global_vs_local_lb.py for the MOSE / EMO panel.
 RUNS = {
     LOCAL: "twolevelbatchlb-32_1b14b_lr-4e-3_lb-1e-1_0119",
     GLOBAL: "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119",
 }
 
-# Palette from the paper figures: ModMoE magenta and Dense-baseline orange.
+# Palette from the paper figures: EMO magenta and Dense-baseline orange.
 PALETTE = {
     LOCAL: "#E78532",   # warm orange
-    GLOBAL: "#B8327C",  # ModMoE magenta
+    GLOBAL: "#B8327C",  # EMO magenta
 }
 
 
@@ -81,7 +81,7 @@ def main() -> None:
         ax=ax,
     )
 
-    ax.set_title("ModMoE: global vs. local load balancing", fontweight="bold")
+    ax.set_title("EMO: global vs. local load balancing", fontweight="bold")
     ax.set_xlabel("training step")
     ax.set_ylabel("gradient norm")
     ax.set_xlim(0, MAX_STEP)
@@ -97,13 +97,13 @@ def main() -> None:
     ]
     leg = fig.legend(
         handles, [h.get_label() for h in handles],
-        title="ModMoE",
+        title="EMO",
         ncol=len(handles),
         loc="lower center", bbox_to_anchor=(0.5, 0.005),
         frameon=True, fontsize=11, title_fontsize=12,
         handletextpad=0.6, columnspacing=1.2,
         borderpad=0.7, labelspacing=0.4, handlelength=2.4,
-        facecolor="#FBE7EF", edgecolor="#B8327C",  # keep the ModMoE-themed frame
+        facecolor="#FBE7EF", edgecolor="#B8327C",  # keep the EMO-themed frame
     )
     leg.get_title().set_fontweight("bold")
     leg.get_title().set_color("#3F1052")

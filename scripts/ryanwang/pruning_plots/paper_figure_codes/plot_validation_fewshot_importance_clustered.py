@@ -19,7 +19,7 @@ Note on GSM8K seed averaging:
     keepk=128) are unchanged seed-0 values.
 
 Outputs:
-    claude_outputs/prune_plots/validation_fewshot_importance_clustered_ckpt0.png
+    claude_outputs/prune_plots/validation_fewshot_importance_clustered_ckpt0.pdf
 """
 
 from __future__ import annotations
@@ -39,17 +39,17 @@ DEFAULT_INPUT = (
 )
 DEFAULT_OUTPUT = (
     REPO_ROOT / "claude_outputs" / "prune_plots"
-    / "validation_fewshot_importance_clustered_ckpt0.png"
+    / "validation_fewshot_importance_clustered_ckpt0.pdf"
 )
 
 KEEPK_VALUES = [128, 32, 16, 8]  # bin order, left -> right
 TASKS = ["MMLU", "MMLU Pro", "GSM8K"]
 
 # (display label, prunemode in CSV, color). Picked to be cohesive with the
-# rest of the paper figures (ModMoE pink, Dense-baseline orange, weak gray)
+# rest of the paper figures (EMO pink, Dense-baseline orange, weak gray)
 # while staying clearly separable from each other.
 CONFIGS: List[Tuple[str, str, str]] = [
-    ("few-shot select + few-shot eval", "Router",          "#B8327C"),  # ModMoE magenta
+    ("few-shot select + few-shot eval", "Router",          "#B8327C"),  # EMO magenta
     ("few-shot select + 0-shot eval",   "Router (e0)",     "#E78532"),  # Dense-baseline orange
     ("0-shot select + 0-shot eval",     "Router (0-shot)", "#888888"),  # neutral gray
 ]

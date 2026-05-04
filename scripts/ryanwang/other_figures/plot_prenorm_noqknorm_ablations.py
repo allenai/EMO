@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Architecture-norm ablation: Prenorm + No QK-norm vs. ReorderedNorm,
-crossed with model family (Standard MoE vs. ModMoE), first 3000 steps.
+crossed with model family (Standard MoE vs. EMO), first 3000 steps.
 
 Single-panel sibling of ``plot_moe_hyperparameter_ablations.py`` and
 ``plot_twolevel_hyperparameter_ablations.py``. Plots ``train/CE loss``
@@ -8,15 +8,15 @@ for the 2x2 cross of (family, norm config):
 
     Standard MoE | Prenorm + No QK-norm
     Standard MoE | ReorderedNorm
-    ModMoE       | Prenorm + No QK-norm
-    ModMoE       | ReorderedNorm
+    EMO       | Prenorm + No QK-norm
+    EMO       | ReorderedNorm
 
-Color encodes family (green = Standard MoE / Reg. MoE, magenta = ModMoE),
+Color encodes family (green = Standard MoE / Reg. MoE, magenta = EMO),
 linestyle encodes the norm config (solid = Prenorm + No QK-norm, dashed
 = ReorderedNorm).
 
 Reads : claude_outputs/other_figures/prenorm_noqknorm_ablations.csv
-Writes: claude_outputs/other_figures/prenorm_noqknorm_ablations.png
+Writes: claude_outputs/other_figures/prenorm_noqknorm_ablations.pdf
 """
 
 from __future__ import annotations
@@ -36,13 +36,13 @@ CSV_PATH = (
 )
 OUT_PATH = (
     REPO_ROOT / "claude_outputs" / "other_figures"
-    / "prenorm_noqknorm_ablations.png"
+    / "prenorm_noqknorm_ablations.pdf"
 )
 
 METRIC_SUFFIX = " - train/CE loss"
 MAX_STEP = 3000
 
-# Four distinct colors: greens for Standard MoE, pinks for ModMoE.
+# Four distinct colors: greens for Standard MoE, pinks for EMO.
 # Within each family the darker shade = Prenorm + No QK-norm; the lighter
 # shade = ReorderedNorm. All four lines are solid so color/shade alone
 # carries the family-and-norm distinction.
@@ -58,12 +58,12 @@ RUNS: List[Tuple[str, str, str, str]] = [
         "#93C265", "-",  # light green
     ),
     (
-        "ModMoE, Prenorm + No QK-norm",
+        "EMO, Prenorm + No QK-norm",
         "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121",
         "#6E1F73", "-",  # deep purple
     ),
     (
-        "ModMoE, ReorderedNorm",
+        "EMO, ReorderedNorm",
         "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115",
         "#E48AB5", "-",  # light pink
     ),
