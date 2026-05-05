@@ -2,7 +2,7 @@
 """Replicate ``validation_sample_ablation.tex`` as a CSV.
 
 Reads the fine-tuned nprune ablation table produced by
-``scripts/pruning_plots/get_table_scores_nprune_ablation.py`` and
+``scripts/plotting/get_table_scores_nprune_ablation.py`` and
 writes:
 
     claude_outputs/prune_plots/validation_sample_ablation.csv

@@ -13,7 +13,7 @@ Note on GSM8K seed averaging:
     For GSM8K, each (config, keepk, n ∈ {1, 5, 10}) point is the mean across
     three pruning-calibration seeds (seed-0 + `_pseed-1` + `_pseed-2` dirs).
     The averaging happens upstream in
-    `scripts/pruning_plots/get_table_scores_nprune_ablation.py`, so
+    `scripts/plotting/get_table_scores_nprune_ablation.py`, so
     this script only needs to consume the validation_sample_ablation_ckpt0.csv
     and plot the cell value as-is. All other points (other tasks, larger n,
     keepk=128) are unchanged seed-0 values.

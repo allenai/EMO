@@ -137,6 +137,8 @@ Override paths via env vars before launching:
 
 Override Beaker cluster sizing per script with `BEAKER_GPUS=8 BEAKER_NODES=4 ...`.
 
+After training, OLMo-core checkpoints can be converted to the HuggingFace format (suitable for inference and the evaluation pipelines below) with [`scripts/convert_olmo_to_hf.sh`](scripts/convert_olmo_to_hf.sh).
+
 ## Evaluation scripts
 
 ### Selective Expert Usage
@@ -292,6 +294,15 @@ The `runname` naming convention (size · router · LR · LB · date · phase) is
 WebOrganizer Domain Similarity Analysis
 
 -->
+
+## Contact and Contributing
+
+If you have a fix, improvement, or extension you'd like to share, **please open a pull request** — direct contributions are the best way to help the project, and we're happy to review them.
+
+For other interactions:
+
+- **Public questions, bug reports, or feature suggestions**: please file a [GitHub issue](https://github.com/allenai/EMO/issues). This keeps the conversation visible to everyone and lets others benefit from the answer.
+- **Private or sensitive inquiries** (e.g. anything you'd rather not discuss in public): email [ryanyxw@berkeley.edu](mailto:ryanyxw@berkeley.edu).
 
 ## Citing
 
