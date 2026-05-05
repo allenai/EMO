@@ -11,13 +11,12 @@ NUM_GPUS="${NUM_GPUS:-1}"
 
 MODELS=(
     # HF Hub entries: format "hf:<id>|shared=<N>|skip_selective=<true|false>"
-#    "hf:allenai/Dense_1b_130B|shared=0|skip_selective=true"
-#    "hf:allenai/StdMoE_1b4b_130B|shared=1|skip_selective=false"
+    "hf:allenai/Dense_1b_130B|shared=0|skip_selective=true"
+    "hf:allenai/StdMoE_1b4b_130B|shared=1|skip_selective=false"
     "hf:allenai/StdMoE_1b14b_130B|shared=1|skip_selective=false"
-#    "hf:allenai/StdMoE_1b14b_1T|shared=1|skip_selective=false"
+    "hf:allenai/StdMoE_1b14b_1T|shared=1|skip_selective=false"
     "hf:allenai/Emo_1b14b_130B|shared=1|skip_selective=false"
-#    "hf:allenai/Emo_1b14b_1T|shared=1|skip_selective=false"
-
+    "hf:allenai/Emo_1b14b_1T|shared=1|skip_selective=false"
     )
 
 # Selective mode: "layerwise"           -- greedy layer-by-layer expert selection
@@ -31,8 +30,7 @@ MODELS=(
 SELECTIVE_MODE="layerwise"
 
 num_epochs=1
-#SELECTIVE_KEEP_K_VALUES=(8 16 32 64 128)
-SELECTIVE_KEEP_K_VALUES=(64)
+SELECTIVE_KEEP_K_VALUES=(8 16 32 64 128)
 batch_size=32
 
 # --- Selective calibration-set size ---
@@ -49,7 +47,7 @@ NUM_SELECTIVE_EXAMPLES=""
 # calibration subset. Output dir gets a _pseed-<N> suffix when != 0 so different
 # seeds don't collide on disk. Ignored when NUM_SELECTIVE_EXAMPLES is empty (no
 # subsampling) or "random" (no calibration).
-NUM_SELECTIVE_SEED="1"
+NUM_SELECTIVE_SEED=""
 
 # --- Shot-count overrides (two orthogonal knobs) ---
 # Each var: empty ⇒ each task's default num_shots (e.g. mmlu_merged_* = 5-shot,
@@ -66,71 +64,65 @@ NUM_SELECTIVE_SEED="1"
 #   SELECTIVE=""  EVAL="0" → _eshots-0
 #   SELECTIVE="0" EVAL="0" → _pshots-0_eshots-0
 NUM_SHOTS_SELECTIVE=""
-NUM_SHOTS_EVAL="0"
+NUM_SHOTS_EVAL=""
 
 # Define grouped tasks
 TASK_GROUPS_LIST=(
   # Merged variants for the MC9 + perplexity tasks (selection + finetuning share data)
-#  "arc_easy_merged"
-#  "arc_challenge_merged"
-#  "boolq_merged"
-#  "hellaswag_merged"
-#  "csqa_merged"
-#  "openbookqa_merged"
-#  "piqa_merged"
-#  "socialiqa_merged"
-#  "winogrande_merged"
+  "arc_easy_merged"
+  "arc_challenge_merged"
+  "boolq_merged"
+  "hellaswag_merged"
+  "csqa_merged"
+  "openbookqa_merged"
+  "piqa_merged"
+  "socialiqa_merged"
+  "winogrande_merged"
 
-  # GSM8K generation merged variants (selection + finetuning share data)
-#  "gsm8k_generation_0shot_merged"
-#  "gsm8k_generation_8shot_merged"
+  # GSM8K generation merged variant (selection + finetuning share data)
+  "gsm8k_generation_8shot_merged"
 
-  # SQuAD merged variants
-#  "squad_merged"
-#  "squad_0shot_merged"
-
-  # CoQA merged variant (matches coqa::olmes)
-#  "coqa_merged"
-
-  # NaturalQS, TriviaQA, DROP merged variants
-#  "naturalqs_merged"
-#  "triviaqa_merged"
-#  "drop_merged"
+  # Gen5 merged variants (selection + finetuning share data)
+  "squad_merged"
+  "coqa_merged"
+  "naturalqs_merged"
+  "triviaqa_merged"
+  "drop_merged"
 
   # MMLU 17-category merged variants (selection + finetuning share data)
   "mmlu_merged_biology"
-#  "mmlu_merged_business"
-#  "mmlu_merged_chemistry"
-#  "mmlu_merged_computer_science"
-#  "mmlu_merged_culture"
-#  "mmlu_merged_economics"
-#  "mmlu_merged_engineering"
-#  "mmlu_merged_geography"
-#  "mmlu_merged_health"
-#  "mmlu_merged_history"
-#  "mmlu_merged_law"
-#  "mmlu_merged_math"
-#  "mmlu_merged_other"
-#  "mmlu_merged_philosophy_cat"
-#  "mmlu_merged_physics"
-#  "mmlu_merged_politics"
-#  "mmlu_merged_psychology"
+  "mmlu_merged_business"
+  "mmlu_merged_chemistry"
+  "mmlu_merged_computer_science"
+  "mmlu_merged_culture"
+  "mmlu_merged_economics"
+  "mmlu_merged_engineering"
+  "mmlu_merged_geography"
+  "mmlu_merged_health"
+  "mmlu_merged_history"
+  "mmlu_merged_law"
+  "mmlu_merged_math"
+  "mmlu_merged_other"
+  "mmlu_merged_philosophy_cat"
+  "mmlu_merged_physics"
+  "mmlu_merged_politics"
+  "mmlu_merged_psychology"
 
   # MMLU-Pro merged variant (selection + finetuning use same data)
-#  "mmlu_pro_merged_math"
-#  "mmlu_pro_merged_health"
-#  "mmlu_pro_merged_physics"
-#  "mmlu_pro_merged_business"
-#  "mmlu_pro_merged_biology"
-#  "mmlu_pro_merged_chemistry"
-#  "mmlu_pro_merged_computer_science"
-#  "mmlu_pro_merged_economics"
-#  "mmlu_pro_merged_engineering"
-#  "mmlu_pro_merged_philosophy"
-#  "mmlu_pro_merged_other"
-#  "mmlu_pro_merged_history"
-#  "mmlu_pro_merged_psychology"
-#  "mmlu_pro_merged_law"
+  "mmlu_pro_merged_math"
+  "mmlu_pro_merged_health"
+  "mmlu_pro_merged_physics"
+  "mmlu_pro_merged_business"
+  "mmlu_pro_merged_biology"
+  "mmlu_pro_merged_chemistry"
+  "mmlu_pro_merged_computer_science"
+  "mmlu_pro_merged_economics"
+  "mmlu_pro_merged_engineering"
+  "mmlu_pro_merged_philosophy"
+  "mmlu_pro_merged_other"
+  "mmlu_pro_merged_history"
+  "mmlu_pro_merged_psychology"
+  "mmlu_pro_merged_law"
 
 )
 
