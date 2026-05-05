@@ -1,19 +1,67 @@
 <div align="center">
-  <!-- <img src="https://github.com/allenai/OLMo/assets/8812459/774ac485-a535-4768-8f7c-db7be20f5cc3" width="300"/> -->
-  <h1>Emo</h1>
-  <h4>Emo modeling and training</h4>
+  <img src="assets/Emo_Logo.png" alt="Emo Logo" style="width: 300px; margin-left:'auto' margin-right:'auto' display:'block'"/>
+  <br>
+  <br>
 </div>
 
+<p align="center">
+  <a href="LICENSE">
+    <img alt="GitHub License" src="https://img.shields.io/badge/license-TODO-lightgrey">
+  </a>
+  <a href="#">
+    <img alt="Blog Post" src="https://img.shields.io/badge/Emo-blog-F0529C">
+  </a>
+  <a href="#">
+    <img alt="Paper URL" src="https://img.shields.io/badge/Emo-arxiv-blue">
+  </a>
+  <a href="https://huggingface.co/collections/allenai/modmoe">
+    <img alt="Model Checkpoints" src="https://img.shields.io/badge/%F0%9F%A4%97%20HF-Models-yellow">
+  </a>
+</p>
+
+EMO is a new Mixture-of-Experts model trained so that modular structure emerges during pretraining without requiring human-defined priors. EMO enables selective expert use, down to 12.5% of total experts, with minimal performance degradation. We find that its expert groups specialize to higher-level topics and capabilities rather than low-level lexical patterns.
 
 ## Installation
 
 First install [PyTorch](https://pytorch.org) according to the instructions specific to your operating system and hardware.
 
 ```bash
-git clone https://github.com/allenai/Emo.git
-cd Emo
+git clone https://github.com/allenai/EMO.git
+cd EMO
+conda create -n emo python==3.12
 uv pip install -e .[all]
 ```
+
+## Released Models
+
+All checkpoints are available in the [ModMoE collection](https://huggingface.co/collections/allenai/modmoe) on the Hugging Face Hub.
+
+### Main Release (1T tokens)
+
+| Model | Active | Total | Pretraining (1T) | Annealing (50B) | Description |
+|---|---|---|---|---|---|
+| [`allenai/Emo_1b14b_1T`](https://huggingface.co/allenai/Emo_1b14b_1T) | 1B | 14B | EMO | EMO | Main EMO release |
+| [`allenai/StdMoE_1b14b_1T`](https://huggingface.co/allenai/StdMoE_1b14b_1T) | 1B | 14B | standard | standard | Architecture-matched standard MoE baseline |
+
+### Ablation Models (130B tokens)
+
+Smaller-scale checkpoints used for memory-matched comparisons. These models were not midtrained. 
+
+| Model | Active | Total | Pretraining (130B) | Description |
+|---|---|---|---|---|
+| [`allenai/Emo_1b14b_130B`](https://huggingface.co/allenai/Emo_1b14b_130B) | 1B | 14B | EMO | EMO at the 130B-token ablation scale |
+| [`allenai/StdMoE_1b14b_130B`](https://huggingface.co/allenai/StdMoE_1b14b_130B) | 1B | 14B | standard | Standard MoE baseline at the 130B-token scale |
+| [`allenai/StdMoE_1b4b_130B`](https://huggingface.co/allenai/StdMoE_1b4b_130B) | 1B | 4B | standard | Memory-matched standard MoE with 32 experts ("Reg. MoE @ 32" in Figure 4), used as a memory-matched baseline for EMO's 32-expert subsets |
+| [`allenai/Dense_1b_130B`](https://huggingface.co/allenai/Dense_1b_130B) | 1B | 1B | dense LM | Dense baseline matched to active parameters ("Dense @ 8" in Figure 4), used as a memory-matched baseline for EMO's 8-expert subsets |
+
+### Midtraining Ablation Models
+
+Checkpoints used in Appendix B.3 to test whether modularity can be induced after pretraining via annealing alone, rather than during pretraining.
+
+| Model | Active | Total | Pretraining (1T) | Annealing (50B) | Description                                                                                                             |
+|---|---|---|---|---|-------------------------------------------------------------------------------------------------------------------------|
+| [`allenai/StdMoE_1b14b_1T_Preanneal`](https://huggingface.co/allenai/StdMoE_1b14b_1T_Preanneal) | 1B | 14B | standard | — | Standard MoE checkpoint after 1T-token pretraining, before any annealing. Starting point for the EMO-anneal experiment |
+| [`allenai/StdMoE_1b14b_1T_EmoAnnealed`](https://huggingface.co/allenai/StdMoE_1b14b_1T_EmoAnnealed) | 1B | 14B | standard | EMO | EMO-anneal: a standard MoE annealed under the document-level expert pool constraint for 50B tokens |
 
 ## Training scripts
 
@@ -70,18 +118,7 @@ The `runname` naming convention (size · router · LR · LB · date · phase) is
 
 ## Inference
 
-### Released models
-
-The following checkpoints are available on the [Hugging Face Hub](https://huggingface.co/allenai):
-
-- [`allenai/Emo_1b14b_1T`](https://huggingface.co/allenai/Emo_1b14b_1T)
-- [`allenai/Emo_1b14b_130B`](https://huggingface.co/allenai/Emo_1b14b_130B)
-- [`allenai/Dense_1b_130B`](https://huggingface.co/allenai/Dense_1b_130B)
-- [`allenai/StdMoE_1b4b_130B`](https://huggingface.co/allenai/StdMoE_1b4b_130B)
-- [`allenai/StdMoE_1b14b_130B`](https://huggingface.co/allenai/StdMoE_1b14b_130B)
-- [`allenai/StdMoE_1b14b_1T`](https://huggingface.co/allenai/StdMoE_1b14b_1T)
-
-All inference snippets below require `trust_remote_code=True` since the models use custom modeling code from the [ryanyxw/transformers](https://github.com/ryanyxw/transformers/tree/flexmoe_v4_57_1) fork.
+See [Released Models](#released-models) for the available checkpoints. All inference snippets below require `trust_remote_code=True` since the models use custom modeling code from the [ryanyxw/transformers](https://github.com/ryanyxw/transformers/tree/flexmoe_v4_57_1) fork.
 
 ### With Hugging Face Transformers
 
