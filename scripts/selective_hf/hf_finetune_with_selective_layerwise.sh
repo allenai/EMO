@@ -3,28 +3,28 @@
 # `scripts.eval.tasks` resolve. pip install -e . only registers olmo_core*.
 export PYTHONPATH="$(pwd)/src${PYTHONPATH:+:${PYTHONPATH}}"
 #
-# HuggingFace-Native Finetuning Pipeline with Greedy Layerwise Expert Pruning
+# HuggingFace-Native Finetuning Pipeline with Greedy Layerwise Expert Selection
 #
 # Pipeline:
-#   1. Greedy layerwise pruning via greedy_prune_layerwise.py — prunes one
-#      layer at a time so each layer's activation statistics are conditioned
-#      on the already-pruned earlier layers.
-#   2. Finetune the pruned model on the task's training set.
+#   1. Greedy layerwise expert selection via greedy_prune_layerwise.py — selects
+#      experts one layer at a time so each layer's activation statistics are
+#      conditioned on the already-selected earlier layers.
+#   2. Finetune the selected-expert model on the task's training set.
 #   3. Evaluate.
 #
 # Usage:
-#   ./scripts/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
+#   ./scripts/selective_hf/hf_finetune_with_selective_layerwise.sh \
 #       --model /path/to/model \
 #       --task arc_challenge \
-#       --prune-keep-k 32 \
+#       --selective-keep-k 32 \
 #       --num-shared-experts 1 \
-#       --base-dir /path/to/prune_evals \
+#       --base-dir /path/to/output \
 #       --relative-dir <run_subdir> \
 #       --num-gpus 4 \
 #       --run-name <job_name>
 #
-# For dense / already-pruned models pass --pruned-model and --skip-prune to
-# jump straight to finetuning.
+# For dense / already-selected models pass --selected-model and --skip-selective
+# to jump straight to finetuning.
 #
 
 set -e
@@ -32,7 +32,7 @@ set -e
 # Default values
 MODEL=""
 TASK=""
-PRUNE_KEEP_K=4
+SELECTIVE_KEEP_K=4
 NUM_SHARED_EXPERTS=0
 RELATIVE_DIR=""
 BASE_DIR=""
@@ -41,13 +41,13 @@ NUM_EPOCHS=3
 NUM_CHECKPOINTS=5
 BATCH_SIZE=4
 MICRO_BATCH_SIZE=1
-SKIP_PRUNE=false
-PRUNED_MODEL=""
+SKIP_SELECTIVE=false
+SELECTED_MODEL=""
 LEARNING_RATE=5e-5
 RUN_NAME=""
-NUM_PRUNE_EXAMPLES=""
-NUM_PRUNE_SEED=""
-NUM_SHOTS_PRUNE=""
+NUM_SELECTIVE_EXAMPLES=""
+NUM_SELECTIVE_SEED=""
+NUM_SHOTS_SELECTIVE=""
 NUM_SHOTS_EVAL=""
 TRUST_REMOTE_CODE=false
 
@@ -62,8 +62,8 @@ while [[ $# -gt 0 ]]; do
             TASK="$2"
             shift 2
             ;;
-        --prune-keep-k)
-            PRUNE_KEEP_K="$2"
+        --selective-keep-k)
+            SELECTIVE_KEEP_K="$2"
             shift 2
             ;;
         --num-shared-experts)
@@ -98,12 +98,12 @@ while [[ $# -gt 0 ]]; do
             MICRO_BATCH_SIZE="$2"
             shift 2
             ;;
-        --skip-prune)
-            SKIP_PRUNE=true
+        --skip-selective)
+            SKIP_SELECTIVE=true
             shift
             ;;
-        --pruned-model)
-            PRUNED_MODEL="$2"
+        --selected-model)
+            SELECTED_MODEL="$2"
             shift 2
             ;;
         --learning-rate)
@@ -114,20 +114,20 @@ while [[ $# -gt 0 ]]; do
             RUN_NAME="$2"
             shift 2
             ;;
-        --num-prune-examples)
-            NUM_PRUNE_EXAMPLES="$2"
+        --num-selective-examples)
+            NUM_SELECTIVE_EXAMPLES="$2"
             shift 2
             ;;
         --trust-remote-code)
             TRUST_REMOTE_CODE=true
             shift
             ;;
-        --num-prune-seed)
-            NUM_PRUNE_SEED="$2"
+        --num-selective-seed)
+            NUM_SELECTIVE_SEED="$2"
             shift 2
             ;;
-        --num-shots-prune)
-            NUM_SHOTS_PRUNE="$2"
+        --num-shots-selective)
+            NUM_SHOTS_SELECTIVE="$2"
             shift 2
             ;;
         --num-shots-eval)
@@ -138,23 +138,23 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Required:"
-            echo "  --model           Path to the full (unpruned) HF model"
+            echo "  --model           Path to the full (unselected) HF model"
             echo "  --task            Task name (arc_challenge, mmlu, etc.)"
             echo "  --relative-dir    Relative output subdirectory"
             echo "  --base-dir        Base output directory"
             echo "  --run-name        Run name for logging"
             echo ""
             echo "Optional:"
-            echo "  --prune-keep-k       Number of experts to keep per layer (default: 4)"
-            echo "  --num-shared-experts Number of shared experts to keep (default: 0)"
-            echo "  --num-gpus           Number of GPUs for finetuning (default: 1)"
-            echo "  --num-epochs         Number of finetuning epochs (default: 3)"
-            echo "  --num-checkpoints    Number of checkpoints to save (default: 5)"
-            echo "  --batch-size         Global batch size (default: 4)"
-            echo "  --micro-batch-size   Per-device batch size for finetuning (default: 1)"
-            echo "  --skip-prune         Skip pruning; requires --pruned-model"
-            echo "  --pruned-model       Path to an already-pruned model (used with --skip-prune)"
-            echo "  --learning-rate      Learning rate (default: 5e-5)"
+            echo "  --selective-keep-k     Number of experts to keep per layer (default: 4)"
+            echo "  --num-shared-experts   Number of shared experts to keep (default: 0)"
+            echo "  --num-gpus             Number of GPUs for finetuning (default: 1)"
+            echo "  --num-epochs           Number of finetuning epochs (default: 3)"
+            echo "  --num-checkpoints      Number of checkpoints to save (default: 5)"
+            echo "  --batch-size           Global batch size (default: 4)"
+            echo "  --micro-batch-size     Per-device batch size for finetuning (default: 1)"
+            echo "  --skip-selective       Skip selection; requires --selected-model"
+            echo "  --selected-model       Path to an already-selected model (used with --skip-selective)"
+            echo "  --learning-rate        Learning rate (default: 5e-5)"
             exit 0
             ;;
         *)
@@ -165,13 +165,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate required arguments
-if [ -z "$MODEL" ] && [ "$SKIP_PRUNE" = false ]; then
-    echo "Error: --model is required unless --skip-prune is set"
+if [ -z "$MODEL" ] && [ "$SKIP_SELECTIVE" = false ]; then
+    echo "Error: --model is required unless --skip-selective is set"
     exit 1
 fi
 
-if [ "$SKIP_PRUNE" = true ] && [ -z "$PRUNED_MODEL" ]; then
-    echo "Error: --pruned-model is required when --skip-prune is set"
+if [ "$SKIP_SELECTIVE" = true ] && [ -z "$SELECTED_MODEL" ]; then
+    echo "Error: --selected-model is required when --skip-selective is set"
     exit 1
 fi
 
@@ -212,18 +212,18 @@ fi
 OUTPUT_DIR="${BASE_DIR}/${RELATIVE_DIR}"
 mkdir -p "$OUTPUT_DIR"
 
-if [ -z "$PRUNED_MODEL" ]; then
-    PRUNED_MODEL="${OUTPUT_DIR}/pruned_model"
+if [ -z "$SELECTED_MODEL" ]; then
+    SELECTED_MODEL="${OUTPUT_DIR}/selected_model"
 fi
 
 FINETUNED_MODEL="${OUTPUT_DIR}/finetuned_model"
 
 echo "========================================"
-echo "HuggingFace Finetuning Pipeline (Layerwise Pruning)"
+echo "HuggingFace Finetuning Pipeline (Layerwise Selection)"
 echo "========================================"
 echo "Model: $MODEL"
 echo "Task: $TASK"
-echo "Prune keep k: $PRUNE_KEEP_K"
+echo "Selective keep k: $SELECTIVE_KEEP_K"
 echo "Output dir: $OUTPUT_DIR"
 echo "Num GPUs: $NUM_GPUS"
 echo "Num epochs: $NUM_EPOCHS"
@@ -231,28 +231,28 @@ echo "========================================"
 
 # Per-stage --num-shots forwarding flags. Empty ⇒ downstream falls back to
 # task config defaults.
-NUM_SHOTS_PRUNE_FLAG=()
-if [ -n "$NUM_SHOTS_PRUNE" ]; then
-    NUM_SHOTS_PRUNE_FLAG=(--num-shots "$NUM_SHOTS_PRUNE")
+NUM_SHOTS_SELECTIVE_FLAG=()
+if [ -n "$NUM_SHOTS_SELECTIVE" ]; then
+    NUM_SHOTS_SELECTIVE_FLAG=(--num-shots "$NUM_SHOTS_SELECTIVE")
 fi
 NUM_SHOTS_EVAL_FLAG=()
 if [ -n "$NUM_SHOTS_EVAL" ]; then
     NUM_SHOTS_EVAL_FLAG=(--num-shots "$NUM_SHOTS_EVAL")
 fi
 
-# Steps 1+2: Greedy layerwise activation collection + pruning (fused into one script)
-if [ "$SKIP_PRUNE" = false ]; then
+# Steps 1+2: Greedy layerwise activation collection + selection (fused into one script)
+if [ "$SKIP_SELECTIVE" = false ]; then
     echo ""
-    echo "Steps 1+2: Greedy layerwise pruning..."
+    echo "Steps 1+2: Greedy layerwise expert selection..."
     echo "========================================"
 
     NUM_CAL_FLAG=()
-    if [ -n "$NUM_PRUNE_EXAMPLES" ]; then
-        NUM_CAL_FLAG=(--num-calibration "$NUM_PRUNE_EXAMPLES")
+    if [ -n "$NUM_SELECTIVE_EXAMPLES" ]; then
+        NUM_CAL_FLAG=(--num-calibration "$NUM_SELECTIVE_EXAMPLES")
     fi
-    PRUNE_SEED_FLAG=()
-    if [ -n "$NUM_PRUNE_SEED" ]; then
-        PRUNE_SEED_FLAG=(--prune-seed "$NUM_PRUNE_SEED")
+    SELECTIVE_SEED_FLAG=()
+    if [ -n "$NUM_SELECTIVE_SEED" ]; then
+        SELECTIVE_SEED_FLAG=(--prune-seed "$NUM_SELECTIVE_SEED")
     fi
 
     TRC_FLAG=()
@@ -264,20 +264,20 @@ if [ "$SKIP_PRUNE" = false ]; then
         --model "$MODEL" \
         --task "$TASK" \
         --split "validation" \
-        --prune-keep-k "$PRUNE_KEEP_K" \
+        --prune-keep-k "$SELECTIVE_KEEP_K" \
         --num-shared-experts "$NUM_SHARED_EXPERTS" \
-        --save-path "$PRUNED_MODEL" \
+        --save-path "$SELECTED_MODEL" \
         --batch-size 32 \
         "${TRC_FLAG[@]}" \
         "${NUM_CAL_FLAG[@]}" \
-        "${PRUNE_SEED_FLAG[@]}" \
-        "${NUM_SHOTS_PRUNE_FLAG[@]}"
+        "${SELECTIVE_SEED_FLAG[@]}" \
+        "${NUM_SHOTS_SELECTIVE_FLAG[@]}"
 
-    echo "Pruned model saved to: $PRUNED_MODEL"
+    echo "Selected-expert model saved to: $SELECTED_MODEL"
 else
     echo ""
-    echo "Steps 1+2: Skipping pruning (using existing pruned model)"
-    echo "Pruned model: $PRUNED_MODEL"
+    echo "Steps 1+2: Skipping selection (using existing selected model)"
+    echo "Selected model: $SELECTED_MODEL"
 fi
 
 # Step 3: Finetune
@@ -293,9 +293,9 @@ fi
 
 export WANDB_PROJECT="olmoe-modular"
 export WANDB_ENTITY="ryanyxw"
-PM_TAG="${PRUNED_MODEL: -60}"
-[ -z "$PM_TAG" ] && PM_TAG="$PRUNED_MODEL"
-export WANDB_TAGS="finetune,${TASK:0:60},${PM_TAG}"
+SM_TAG="${SELECTED_MODEL: -60}"
+[ -z "$SM_TAG" ] && SM_TAG="$SELECTED_MODEL"
+export WANDB_TAGS="finetune,${TASK:0:60},${SM_TAG}"
 
 gas=$(( BATCH_SIZE / (NUM_GPUS * MICRO_BATCH_SIZE) ))
 
@@ -306,7 +306,7 @@ fi
 
 torchrun --nproc_per_node="$NUM_GPUS" \
     -m src.hf_training.finetune \
-    --model "$PRUNED_MODEL" \
+    --model "$SELECTED_MODEL" \
     --task "$TASK" \
     --split "train" \
     --output-dir "$FINETUNED_MODEL" \
@@ -415,13 +415,6 @@ echo ""
 echo "========================================"
 echo "Pipeline complete!"
 echo "========================================"
-echo "Pruned model: $PRUNED_MODEL"
+echo "Selected model: $SELECTED_MODEL"
 echo "Finetuned model: $FINETUNED_MODEL"
-
-# Step 6: Cleanup — remove local output directory to save disk space (results are on S3)
-echo ""
-echo "Step 6: Cleaning up local output directory..."
-echo "========================================"
-echo "Removing: $OUTPUT_DIR"
-rm -rf "$OUTPUT_DIR"
-echo "Cleanup complete."
+echo "Results: $OUTPUT_DIR/results"

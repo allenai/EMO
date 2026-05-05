@@ -3,16 +3,16 @@
 # `scripts.eval.tasks` resolve. pip install -e . only registers olmo_core*.
 export PYTHONPATH="$(pwd)/src${PYTHONPATH:+:${PYTHONPATH}}"
 #
-# HuggingFace-Native Finetuning Pipeline with RANDOM Expert Pruning
+# HuggingFace-Native Finetuning Pipeline with RANDOM Expert Selection
 # (baseline/control: no calibration data, seed=0 random selection per layer).
 #
 # Usage:
-#   ./scripts/pruning_hf/hf_finetune_with_pruning_random.sh \
+#   ./scripts/selective_hf/hf_finetune_with_selective_random.sh \
 #       --model /path/to/model \
 #       --task arc_challenge \
-#       --prune-keep-k 32 \
+#       --selective-keep-k 32 \
 #       --num-shared-experts 1 \
-#       --base-dir /path/to/prune_evals \
+#       --base-dir /path/to/output \
 #       --relative-dir <run_subdir> \
 #       --num-gpus 4 \
 #       --run-name <job_name>
@@ -23,7 +23,7 @@ set -e
 # Default values
 MODEL=""
 TASK=""
-PRUNE_KEEP_K=""
+SELECTIVE_KEEP_K=""
 NUM_SHARED_EXPERTS=0
 RELATIVE_DIR=""
 BASE_DIR=""
@@ -32,8 +32,8 @@ NUM_EPOCHS=3
 NUM_CHECKPOINTS=5
 BATCH_SIZE=4
 MICRO_BATCH_SIZE=1
-SKIP_PRUNE=false
-PRUNED_MODEL=""
+SKIP_SELECTIVE=false
+SELECTED_MODEL=""
 LEARNING_RATE=5e-5
 RUN_NAME=""
 NUM_SHOTS_EVAL=""
@@ -46,8 +46,8 @@ while [[ $# -gt 0 ]]; do
             MODEL="$2"; shift 2 ;;
         --task)
             TASK="$2"; shift 2 ;;
-        --prune-keep-k)
-            PRUNE_KEEP_K="$2"; shift 2 ;;
+        --selective-keep-k)
+            SELECTIVE_KEEP_K="$2"; shift 2 ;;
         --num-shared-experts)
             NUM_SHARED_EXPERTS="$2"; shift 2 ;;
         --relative-dir)
@@ -64,18 +64,18 @@ while [[ $# -gt 0 ]]; do
             BATCH_SIZE="$2"; shift 2 ;;
         --micro-batch-size)
             MICRO_BATCH_SIZE="$2"; shift 2 ;;
-        --skip-prune)
-            SKIP_PRUNE=true; shift ;;
-        --pruned-model)
-            PRUNED_MODEL="$2"; shift 2 ;;
+        --skip-selective)
+            SKIP_SELECTIVE=true; shift ;;
+        --selected-model)
+            SELECTED_MODEL="$2"; shift 2 ;;
         --learning-rate)
             LEARNING_RATE="$2"; shift 2 ;;
         --run-name)
             RUN_NAME="$2"; shift 2 ;;
         --num-shots-eval)
             NUM_SHOTS_EVAL="$2"; shift 2 ;;
-        --num-prune-examples)
-            # Accepted for launcher compatibility (ignored: random pruning has no calibration)
+        --num-selective-examples)
+            # Accepted for launcher compatibility (ignored: random selection has no calibration)
             shift 2 ;;
         --trust-remote-code)
             TRUST_REMOTE_CODE=true; shift ;;
@@ -90,14 +90,14 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate required arguments
-if [ -z "$MODEL" ] && [ "$SKIP_PRUNE" = false ]; then
-    echo "Error: --model is required unless --skip-prune is set"; exit 1
+if [ -z "$MODEL" ] && [ "$SKIP_SELECTIVE" = false ]; then
+    echo "Error: --model is required unless --skip-selective is set"; exit 1
 fi
-if [ "$SKIP_PRUNE" = true ] && [ -z "$PRUNED_MODEL" ]; then
-    echo "Error: --pruned-model is required when --skip-prune is set"; exit 1
+if [ "$SKIP_SELECTIVE" = true ] && [ -z "$SELECTED_MODEL" ]; then
+    echo "Error: --selected-model is required when --skip-selective is set"; exit 1
 fi
-if [ "$SKIP_PRUNE" = false ] && [ -z "$PRUNE_KEEP_K" ]; then
-    echo "Error: --prune-keep-k is required unless --skip-prune is set"; exit 1
+if [ "$SKIP_SELECTIVE" = false ] && [ -z "$SELECTIVE_KEEP_K" ]; then
+    echo "Error: --selective-keep-k is required unless --skip-selective is set"; exit 1
 fi
 if [ -z "$TASK" ]; then
     echo "Error: --task is required"; exit 1
@@ -124,47 +124,47 @@ fi
 OUTPUT_DIR="${BASE_DIR}/${RELATIVE_DIR}"
 mkdir -p "$OUTPUT_DIR"
 
-if [ -z "$PRUNED_MODEL" ]; then
-    PRUNED_MODEL="${OUTPUT_DIR}/pruned_model"
+if [ -z "$SELECTED_MODEL" ]; then
+    SELECTED_MODEL="${OUTPUT_DIR}/selected_model"
 fi
 
 FINETUNED_MODEL="${OUTPUT_DIR}/finetuned_model"
 
 echo "========================================"
-echo "HuggingFace Finetuning Pipeline (RANDOM Pruning)"
+echo "HuggingFace Finetuning Pipeline (RANDOM Selection)"
 echo "========================================"
 echo "Model: $MODEL"
 echo "Task: $TASK"
-echo "Prune keep-k: $PRUNE_KEEP_K  (shared: $NUM_SHARED_EXPERTS)"
+echo "Selective keep-k: $SELECTIVE_KEEP_K  (shared: $NUM_SHARED_EXPERTS)"
 echo "Output dir: $OUTPUT_DIR"
 echo "Num GPUs: $NUM_GPUS"
 echo "Num epochs: $NUM_EPOCHS"
 echo "========================================"
 
-# --num-shots-eval forwarding flag for finetune + eval. Random pruning has no
+# --num-shots-eval forwarding flag for finetune + eval. Random selection has no
 # calibration stage, so this only affects downstream. Empty ⇒ task config default.
 NUM_SHOTS_EVAL_FLAG=()
 if [ -n "$NUM_SHOTS_EVAL" ]; then
     NUM_SHOTS_EVAL_FLAG=(--num-shots "$NUM_SHOTS_EVAL")
 fi
 
-# Steps 1+2: Random pruning (no calibration data)
-if [ "$SKIP_PRUNE" = false ]; then
+# Steps 1+2: Random expert selection (no calibration data)
+if [ "$SKIP_SELECTIVE" = false ]; then
     echo ""
-    echo "Steps 1+2: Random pruning..."
+    echo "Steps 1+2: Random expert selection..."
     echo "========================================"
 
     python -m src.hf_training.random_prune \
         --model "$MODEL" \
-        --prune-keep-k "$PRUNE_KEEP_K" \
+        --prune-keep-k "$SELECTIVE_KEEP_K" \
         --num-shared-experts "$NUM_SHARED_EXPERTS" \
-        --save-path "$PRUNED_MODEL"
+        --save-path "$SELECTED_MODEL"
 
-    echo "Pruned model saved to: $PRUNED_MODEL"
+    echo "Selected-expert model saved to: $SELECTED_MODEL"
 else
     echo ""
-    echo "Steps 1+2: Skipping pruning (using existing pruned model)"
-    echo "Pruned model: $PRUNED_MODEL"
+    echo "Steps 1+2: Skipping selection (using existing selected model)"
+    echo "Selected model: $SELECTED_MODEL"
 fi
 
 # Step 3: Finetune
@@ -180,15 +180,15 @@ fi
 
 export WANDB_PROJECT="olmoe-modular"
 export WANDB_ENTITY="ryanyxw"
-PM_TAG="${PRUNED_MODEL: -60}"
-[ -z "$PM_TAG" ] && PM_TAG="$PRUNED_MODEL"
-export WANDB_TAGS="finetune,${TASK:0:60},${PM_TAG}"
+SM_TAG="${SELECTED_MODEL: -60}"
+[ -z "$SM_TAG" ] && SM_TAG="$SELECTED_MODEL"
+export WANDB_TAGS="finetune,${TASK:0:60},${SM_TAG}"
 
 gas=$(( BATCH_SIZE / (NUM_GPUS * MICRO_BATCH_SIZE) ))
 
 torchrun --nproc_per_node="$NUM_GPUS" \
     -m src.hf_training.finetune \
-    --model "$PRUNED_MODEL" \
+    --model "$SELECTED_MODEL" \
     --task "$TASK" \
     --split "train" \
     --output-dir "$FINETUNED_MODEL" \
@@ -279,13 +279,6 @@ echo ""
 echo "========================================"
 echo "Pipeline complete!"
 echo "========================================"
-echo "Pruned model: $PRUNED_MODEL"
+echo "Selected model: $SELECTED_MODEL"
 echo "Finetuned model: $FINETUNED_MODEL"
-
-# Step 6: Cleanup
-echo ""
-echo "Step 6: Cleaning up local output directory..."
-echo "========================================"
-echo "Removing: $OUTPUT_DIR"
-rm -rf "$OUTPUT_DIR"
-echo "Cleanup complete."
+echo "Results: $OUTPUT_DIR/results"

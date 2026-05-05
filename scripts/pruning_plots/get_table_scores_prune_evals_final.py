@@ -34,9 +34,9 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 #   ep = Easy-EP   (validation-data-based) pruning
 #   rd = random    (no validation data used)
 PRUNEMODE_SUFFIXES: Dict[str, str] = {
-    "lw": "_prunemode-layerwise",
-    "ep": "_prunemode-easy_ep",
-    "rd": "_prunemode-random",
+    "lw": "_selectivemode-layerwise",
+    "ep": "_selectivemode-easy_ep",
+    "rd": "_selectivemode-random",
 }
 
 # Variant definitions: just the keepk part (prunemode is added automatically).

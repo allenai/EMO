@@ -1,73 +1,76 @@
 #!/bin/bash
 
 # Output root. Each (model, task, config) gets its own subdir under here
-# containing the pruned model, finetuned checkpoints, and eval results.
+# containing the selected-expert model, finetuned checkpoints, and eval results.
 # Override via env var before invoking this script.
-OUTPUT_DIR="${OUTPUT_DIR:-$(pwd)/prune_evals_final}"
+OUTPUT_DIR="${OUTPUT_DIR:-$(pwd)/selective_evals_final}"
 
 # Number of GPUs to use per worker run. Forwarded to torchrun inside each
 # worker script. Override via env var.
 NUM_GPUS="${NUM_GPUS:-1}"
 
 MODELS=(
-    # HF Hub entries: format "hf:<id>|shared=<N>|skip_prune=<true|false>"
-#    "hf:allenai/Dense_1b_130B|shared=0|skip_prune=true"
-#    "hf:allenai/StdMoE_1b4b_130B|shared=1|skip_prune=false"
-    "hf:allenai/StdMoE_1b14b_130B|shared=1|skip_prune=false"
-#    "hf:allenai/StdMoE_1b14b_1T|shared=1|skip_prune=false"
-    "hf:allenai/Emo_1b14b_130B|shared=1|skip_prune=false"
-#    "hf:allenai/Emo_1b14b_1T|shared=1|skip_prune=false"
+    # HF Hub entries: format "hf:<id>|shared=<N>|skip_selective=<true|false>"
+#    "hf:allenai/Dense_1b_130B|shared=0|skip_selective=true"
+#    "hf:allenai/StdMoE_1b4b_130B|shared=1|skip_selective=false"
+    "hf:allenai/StdMoE_1b14b_130B|shared=1|skip_selective=false"
+#    "hf:allenai/StdMoE_1b14b_1T|shared=1|skip_selective=false"
+    "hf:allenai/Emo_1b14b_130B|shared=1|skip_selective=false"
+#    "hf:allenai/Emo_1b14b_1T|shared=1|skip_selective=false"
 
     )
 
-# Pruning mode: "layerwise"           -- greedy layer-by-layer pruning (each layer conditioned
-#                                        on already-pruned earlier layers)
-#               "easy_ep"             -- EASY-EP (arXiv 2504.06792): one-shot domain-specific
-#                                        pruning using gating*||expert_out|| weighted by
-#                                        (1 - cos_sim) of MoE in/out on few-shot calibration
-PRUNING_MODE="layerwise"
+# Selective mode: "layerwise"           -- greedy layer-by-layer expert selection
+#                                          (each layer conditioned on already-selected
+#                                          earlier layers)
+#                 "easy_ep"             -- EASY-EP (arXiv 2504.06792): one-shot
+#                                          domain-specific selection using
+#                                          gating*||expert_out|| weighted by
+#                                          (1 - cos_sim) of MoE in/out on few-shot
+#                                          calibration
+SELECTIVE_MODE="layerwise"
 
 num_epochs=1
-#PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(64)
+#SELECTIVE_KEEP_K_VALUES=(8 16 32 64 128)
+SELECTIVE_KEEP_K_VALUES=(64)
 batch_size=32
 
-# --- Pruning calibration-set size ---
-# Leave empty to use the full validation pool for pruning (default).
+# --- Selective calibration-set size ---
+# Leave empty to use the full validation pool for selection (default).
 # Set to an integer (e.g. 50) to subsample that many prompts (deterministic shuffle).
 # Set to "random" to bypass calibration entirely and randomly select experts
-# (seed=0, mode-agnostic — ignores PRUNING_MODE). Output dir uses _prunemode-random.
-NUM_PRUNE_EXAMPLES=""
+# (seed=0, mode-agnostic — ignores SELECTIVE_MODE). Output dir uses _selectivemode-random.
+NUM_SELECTIVE_EXAMPLES=""
 
 # --- Calibration-subsample seed ---
 # Controls torch.Generator().manual_seed(...) in the calibration permutation.
 # Default 0 reproduces historical behavior (the same single example is picked
-# each run with NUM_PRUNE_EXAMPLES=1). Change to 1, 2, ... to draw a different
+# each run with NUM_SELECTIVE_EXAMPLES=1). Change to 1, 2, ... to draw a different
 # calibration subset. Output dir gets a _pseed-<N> suffix when != 0 so different
-# seeds don't collide on S3. Ignored when NUM_PRUNE_EXAMPLES is empty (no
+# seeds don't collide on disk. Ignored when NUM_SELECTIVE_EXAMPLES is empty (no
 # subsampling) or "random" (no calibration).
-NUM_PRUNE_SEED="1"
+NUM_SELECTIVE_SEED="1"
 
 # --- Shot-count overrides (two orthogonal knobs) ---
 # Each var: empty ⇒ each task's default num_shots (e.g. mmlu_merged_* = 5-shot,
 # gsm8k_generation_8shot_merged = 8-shot). Set to an integer to force that
 # shot count for the corresponding stage.
 #
-#   NUM_SHOTS_PRUNE: pruning-calibration shots. Ignored for skip-prune models
-#     (no pruning stage) and NUM_PRUNE_EXAMPLES="random" (no calibration).
-#   NUM_SHOTS_EVAL:  finetune + eval shots.
+#   NUM_SHOTS_SELECTIVE: selection-calibration shots. Ignored for skip-selective
+#     models (no selection stage) and NUM_SELECTIVE_EXAMPLES="random" (no calibration).
+#   NUM_SHOTS_EVAL:      finetune + eval shots.
 #
 # Output dir suffix uses _pshots-{X} and/or _eshots-{Y}. Only stages that are
 # actually overridden appear. Examples:
-#   PRUNE="0" EVAL=""  → _pshots-0
-#   PRUNE=""  EVAL="0" → _eshots-0
-#   PRUNE="0" EVAL="0" → _pshots-0_eshots-0
-NUM_SHOTS_PRUNE=""
+#   SELECTIVE="0" EVAL=""  → _pshots-0
+#   SELECTIVE=""  EVAL="0" → _eshots-0
+#   SELECTIVE="0" EVAL="0" → _pshots-0_eshots-0
+NUM_SHOTS_SELECTIVE=""
 NUM_SHOTS_EVAL="0"
 
 # Define grouped tasks
 TASK_GROUPS_LIST=(
-  # Merged variants for the MC9 + perplexity tasks (pruning + finetuning share data)
+  # Merged variants for the MC9 + perplexity tasks (selection + finetuning share data)
 #  "arc_easy_merged"
 #  "arc_challenge_merged"
 #  "boolq_merged"
@@ -78,7 +81,7 @@ TASK_GROUPS_LIST=(
 #  "socialiqa_merged"
 #  "winogrande_merged"
 
-  # GSM8K generation merged variants (pruning + finetuning share data)
+  # GSM8K generation merged variants (selection + finetuning share data)
 #  "gsm8k_generation_0shot_merged"
 #  "gsm8k_generation_8shot_merged"
 
@@ -94,7 +97,7 @@ TASK_GROUPS_LIST=(
 #  "triviaqa_merged"
 #  "drop_merged"
 
-  # MMLU 17-category merged variants (pruning + finetuning share data)
+  # MMLU 17-category merged variants (selection + finetuning share data)
   "mmlu_merged_biology"
 #  "mmlu_merged_business"
 #  "mmlu_merged_chemistry"
@@ -113,7 +116,7 @@ TASK_GROUPS_LIST=(
 #  "mmlu_merged_politics"
 #  "mmlu_merged_psychology"
 
-  # MMLU-Pro merged variant (pruning + finetuning use same data)
+  # MMLU-Pro merged variant (selection + finetuning use same data)
 #  "mmlu_pro_merged_math"
 #  "mmlu_pro_merged_health"
 #  "mmlu_pro_merged_physics"
@@ -131,9 +134,9 @@ TASK_GROUPS_LIST=(
 
 )
 
-echo "Launching evals for ${#MODELS[@]} models, ${#PRUNE_KEEP_K_VALUES[@]} keep-k values, and ${#TASK_GROUPS_LIST[@]} task groups..."
+echo "Launching evals for ${#MODELS[@]} models, ${#SELECTIVE_KEEP_K_VALUES[@]} keep-k values, and ${#TASK_GROUPS_LIST[@]} task groups..."
 echo "Models: ${MODELS[@]}"
-echo "Keep-k values: ${PRUNE_KEEP_K_VALUES[@]}"
+echo "Keep-k values: ${SELECTIVE_KEEP_K_VALUES[@]}"
 echo "GPUs: $NUM_GPUS"
 echo "Output dir: $OUTPUT_DIR"
 echo ""
@@ -141,22 +144,22 @@ echo ""
 # Launch evaluation for each model, keep-k, and task combination
 for ENTRY in "${MODELS[@]}"; do
   # Parse entry: either a bare local-path (legacy) or an HF tag of the form
-  #   "hf:<hf_id>|shared=<N>|skip_prune=<true|false>"
-  # HF entries require explicit 'shared' and 'skip_prune' since the substring
+  #   "hf:<hf_id>|shared=<N>|skip_selective=<true|false>"
+  # HF entries require explicit 'shared' and 'skip_selective' since the substring
   # heuristics below don't recognize the new short HF names (StdMoE, ModMoE, …).
   if [[ "$ENTRY" == hf:* ]]; then
     IS_HF=true
     rest="${ENTRY#hf:}"
     MODEL="${rest%%|*}"
     num_shared_experts_override=""
-    skip_prune_override=""
+    skip_selective_override=""
     if [[ "$rest" == *"|"* ]]; then
       metadata="${rest#*|}"
       IFS='|' read -ra meta_parts <<< "$metadata"
       for kv in "${meta_parts[@]}"; do
         case "$kv" in
           shared=*) num_shared_experts_override="${kv#shared=}" ;;
-          skip_prune=*) skip_prune_override="${kv#skip_prune=}" ;;
+          skip_selective=*) skip_selective_override="${kv#skip_selective=}" ;;
           *) echo "ERROR: unknown metadata '$kv' in HF entry '$ENTRY'"; exit 1 ;;
         esac
       done
@@ -165,14 +168,14 @@ for ENTRY in "${MODELS[@]}"; do
       echo "ERROR: HF entry '$ENTRY' missing required 'shared=N' metadata"
       exit 1
     fi
-    if [ -z "$skip_prune_override" ]; then
-      echo "ERROR: HF entry '$ENTRY' missing required 'skip_prune=true|false' metadata"
+    if [ -z "$skip_selective_override" ]; then
+      echo "ERROR: HF entry '$ENTRY' missing required 'skip_selective=true|false' metadata"
       exit 1
     fi
     MODEL_ARG="$MODEL"
     TRC_FLAG="--trust-remote-code"
     num_shared_experts="$num_shared_experts_override"
-    SKIP_PRUNE_DECISION="$skip_prune_override"
+    SKIP_SELECTIVE_DECISION="$skip_selective_override"
   else
     IS_HF=false
     MODEL="$ENTRY"
@@ -190,16 +193,16 @@ for ENTRY in "${MODELS[@]}"; do
     else
         num_shared_experts=0
     fi
-    # Auto-detect skip-prune from substring on local path
+    # Auto-detect skip-selective from substring on local path
     if [[ $MODEL == *"dense_1b"* || $MODEL == *"1b4b"* ]]; then
-        SKIP_PRUNE_DECISION=true
+        SKIP_SELECTIVE_DECISION=true
     else
-        SKIP_PRUNE_DECISION=false
+        SKIP_SELECTIVE_DECISION=false
     fi
   fi
 
-  for prune_keep_k in "${PRUNE_KEEP_K_VALUES[@]}"; do
-    echo "Processing model: ${MODEL} (hf=${IS_HF}, shared=${num_shared_experts}, skip_prune=${SKIP_PRUNE_DECISION}), keep-k: ${prune_keep_k}"
+  for selective_keep_k in "${SELECTIVE_KEEP_K_VALUES[@]}"; do
+    echo "Processing model: ${MODEL} (hf=${IS_HF}, shared=${num_shared_experts}, skip_selective=${SKIP_SELECTIVE_DECISION}), keep-k: ${selective_keep_k}"
 
     for TASK in "${TASK_GROUPS_LIST[@]}"; do
         # Per-task micro-batch overrides (memory-bound: longer prompts / generation tasks
@@ -221,38 +224,38 @@ for ENTRY in "${MODELS[@]}"; do
 
         stringified_model=$(echo $MODEL | sed 's/[^a-zA-Z0-9_-]//g')
 
-        # Random pruning is mode-agnostic: override prunemode in the output name
-        # and skip the _nprune-... suffix (redundant with _prunemode-random).
-        if [[ $NUM_PRUNE_EXAMPLES == "random" ]]; then
-          relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}_prunemode-random"
+        # Random selection is mode-agnostic: override selectivemode in the output name
+        # and skip the _nselective-... suffix (redundant with _selectivemode-random).
+        if [[ $NUM_SELECTIVE_EXAMPLES == "random" ]]; then
+          relative_dir="${stringified_model}/${TASK}_keepk_${selective_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}_selectivemode-random"
         else
-          relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}_prunemode-${PRUNING_MODE}"
+          relative_dir="${stringified_model}/${TASK}_keepk_${selective_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}_selectivemode-${SELECTIVE_MODE}"
         fi
 
         # Append calibration-set-size suffix when overriding the default (use-all) behavior.
-        # Skip when NUM_PRUNE_EXAMPLES=="random" since the prunemode-random token
+        # Skip when NUM_SELECTIVE_EXAMPLES=="random" since the selectivemode-random token
         # already conveys this.
-        if [ -n "$NUM_PRUNE_EXAMPLES" ] && [[ $NUM_PRUNE_EXAMPLES != "random" ]]; then
-            relative_dir="${relative_dir}_nprune-${NUM_PRUNE_EXAMPLES}"
+        if [ -n "$NUM_SELECTIVE_EXAMPLES" ] && [[ $NUM_SELECTIVE_EXAMPLES != "random" ]]; then
+            relative_dir="${relative_dir}_nselective-${NUM_SELECTIVE_EXAMPLES}"
         fi
 
         # Append calibration-seed suffix when overriding the default seed=0.
         # Only meaningful when calibration is actually subsampled (skip when no
-        # NUM_PRUNE_EXAMPLES or NUM_PRUNE_EXAMPLES==random).
-        if [ -n "$NUM_PRUNE_SEED" ] && [ "$NUM_PRUNE_SEED" != "0" ] \
-             && [ -n "$NUM_PRUNE_EXAMPLES" ] && [[ $NUM_PRUNE_EXAMPLES != "random" ]]; then
-            relative_dir="${relative_dir}_pseed-${NUM_PRUNE_SEED}"
+        # NUM_SELECTIVE_EXAMPLES or NUM_SELECTIVE_EXAMPLES==random).
+        if [ -n "$NUM_SELECTIVE_SEED" ] && [ "$NUM_SELECTIVE_SEED" != "0" ] \
+             && [ -n "$NUM_SELECTIVE_EXAMPLES" ] && [[ $NUM_SELECTIVE_EXAMPLES != "random" ]]; then
+            relative_dir="${relative_dir}_pseed-${NUM_SELECTIVE_SEED}"
         fi
 
         # Append per-stage shot-count suffixes when overriding task defaults.
-        # _pshots-* is skipped for runs that don't have a pruning-calibration
-        # stage (skip-prune models or random pruning) — avoids misleading names.
-        pruning_uses_calibration=true
-        if [[ $NUM_PRUNE_EXAMPLES == "random" ]] || [ "$SKIP_PRUNE_DECISION" = true ]; then
-            pruning_uses_calibration=false
+        # _pshots-* is skipped for runs that don't have a selection-calibration
+        # stage (skip-selective models or random selection) — avoids misleading names.
+        selective_uses_calibration=true
+        if [[ $NUM_SELECTIVE_EXAMPLES == "random" ]] || [ "$SKIP_SELECTIVE_DECISION" = true ]; then
+            selective_uses_calibration=false
         fi
-        if [ "$pruning_uses_calibration" = true ] && [ -n "$NUM_SHOTS_PRUNE" ]; then
-            relative_dir="${relative_dir}_pshots-${NUM_SHOTS_PRUNE}"
+        if [ "$selective_uses_calibration" = true ] && [ -n "$NUM_SHOTS_SELECTIVE" ]; then
+            relative_dir="${relative_dir}_pshots-${NUM_SHOTS_SELECTIVE}"
         fi
         if [ -n "$NUM_SHOTS_EVAL" ]; then
             relative_dir="${relative_dir}_eshots-${NUM_SHOTS_EVAL}"
@@ -262,25 +265,25 @@ for ENTRY in "${MODELS[@]}"; do
         job_name="eval-${safe_relative_dir}"
 
         # Optional calibration-size flag forwarded to the per-mode worker scripts.
-        NPE_FLAG=""
-        if [ -n "$NUM_PRUNE_EXAMPLES" ]; then
-            NPE_FLAG="--num-prune-examples ${NUM_PRUNE_EXAMPLES}"
+        NSE_FLAG=""
+        if [ -n "$NUM_SELECTIVE_EXAMPLES" ]; then
+            NSE_FLAG="--num-selective-examples ${NUM_SELECTIVE_EXAMPLES}"
         fi
 
         # Optional calibration-seed flag forwarded to the per-mode worker scripts.
-        # Skipped for random / skip-prune paths (no calibration step).
+        # Skipped for random / skip-selective paths (no calibration step).
         NSEED_FLAG=""
-        if [ -n "$NUM_PRUNE_SEED" ]; then
-            NSEED_FLAG="--num-prune-seed ${NUM_PRUNE_SEED}"
+        if [ -n "$NUM_SELECTIVE_SEED" ]; then
+            NSEED_FLAG="--num-selective-seed ${NUM_SELECTIVE_SEED}"
         fi
 
         # Optional shot-count flags forwarded to the per-mode worker scripts.
-        # --num-shots-prune goes to the pruning Python call; --num-shots-eval
-        # goes to finetune + eval. Worker scripts that skip pruning (random,
-        # skip-prune) ignore --num-shots-prune.
-        NSHOTS_PRUNE_FLAG=""
-        if [ -n "$NUM_SHOTS_PRUNE" ]; then
-            NSHOTS_PRUNE_FLAG="--num-shots-prune ${NUM_SHOTS_PRUNE}"
+        # --num-shots-selective goes to the selection Python call; --num-shots-eval
+        # goes to finetune + eval. Worker scripts that skip selection (random,
+        # skip-selective) ignore --num-shots-selective.
+        NSHOTS_SELECTIVE_FLAG=""
+        if [ -n "$NUM_SHOTS_SELECTIVE" ]; then
+            NSHOTS_SELECTIVE_FLAG="--num-shots-selective ${NUM_SHOTS_SELECTIVE}"
         fi
         NSHOTS_EVAL_FLAG=""
         if [ -n "$NUM_SHOTS_EVAL" ]; then
@@ -297,12 +300,12 @@ for ENTRY in "${MODELS[@]}"; do
         echo "  epochs: ${num_epochs}"
         echo "  num_shared_experts: ${num_shared_experts}"
 
-        # Skip pruning if the model was tagged skip_prune=true (HF) or matched
+        # Skip selection if the model was tagged skip_selective=true (HF) or matched
         # the legacy dense/1b4b substring heuristic (non-HF branch).
-        if [ "$SKIP_PRUNE_DECISION" = true ]; then
-            echo "  Skipping pruning for model: $MODEL"
-            bash scripts/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
-                --pruned-model ${MODEL_ARG} \
+        if [ "$SKIP_SELECTIVE_DECISION" = true ]; then
+            echo "  Skipping selection for model: $MODEL"
+            bash scripts/selective_hf/hf_finetune_with_selective_layerwise.sh \
+                --selected-model ${MODEL_ARG} \
                 --task ${TASK} \
                 --base-dir "${OUTPUT_DIR}" \
                 --relative-dir ${relative_dir} \
@@ -314,7 +317,7 @@ for ENTRY in "${MODELS[@]}"; do
                 --num-epochs ${num_epochs} \
                 --num-checkpoints 1 \
                 --num-shared-experts ${num_shared_experts} \
-                --skip-prune \
+                --skip-selective \
                 ${TRC_FLAG} \
                 ${NSHOTS_EVAL_FLAG}
             echo "Ran evaluation for model: $MODEL, task: $TASK"
@@ -322,11 +325,11 @@ for ENTRY in "${MODELS[@]}"; do
             continue
         fi
 
-        if [[ $NUM_PRUNE_EXAMPLES == "random" ]]; then
-            bash scripts/pruning_hf/hf_finetune_with_pruning_random.sh \
+        if [[ $NUM_SELECTIVE_EXAMPLES == "random" ]]; then
+            bash scripts/selective_hf/hf_finetune_with_selective_random.sh \
                 --model ${MODEL_ARG} \
                 --task ${TASK} \
-                --prune-keep-k ${prune_keep_k} \
+                --selective-keep-k ${selective_keep_k} \
                 --base-dir "${OUTPUT_DIR}" \
                 --relative-dir ${relative_dir} \
                 --num-gpus $NUM_GPUS \
@@ -339,11 +342,11 @@ for ENTRY in "${MODELS[@]}"; do
                 --num-shared-experts ${num_shared_experts} \
                 ${TRC_FLAG} \
                 ${NSHOTS_EVAL_FLAG}
-        elif [[ $PRUNING_MODE == "easy_ep" ]]; then
-            bash scripts/pruning_hf/hf_finetune_with_pruning_easy_ep.sh \
+        elif [[ $SELECTIVE_MODE == "easy_ep" ]]; then
+            bash scripts/selective_hf/hf_finetune_with_selective_easy_ep.sh \
                 --model ${MODEL_ARG} \
                 --task ${TASK} \
-                --prune-keep-k ${prune_keep_k} \
+                --selective-keep-k ${selective_keep_k} \
                 --base-dir "${OUTPUT_DIR}" \
                 --relative-dir ${relative_dir} \
                 --num-gpus $NUM_GPUS \
@@ -355,15 +358,15 @@ for ENTRY in "${MODELS[@]}"; do
                 --num-checkpoints 1 \
                 --num-shared-experts ${num_shared_experts} \
                 ${TRC_FLAG} \
-                ${NPE_FLAG} \
+                ${NSE_FLAG} \
                 ${NSEED_FLAG} \
-                ${NSHOTS_PRUNE_FLAG} \
+                ${NSHOTS_SELECTIVE_FLAG} \
                 ${NSHOTS_EVAL_FLAG}
-        elif [[ $PRUNING_MODE == "layerwise" ]]; then
-            bash scripts/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
+        elif [[ $SELECTIVE_MODE == "layerwise" ]]; then
+            bash scripts/selective_hf/hf_finetune_with_selective_layerwise.sh \
                 --model ${MODEL_ARG} \
                 --task ${TASK} \
-                --prune-keep-k ${prune_keep_k} \
+                --selective-keep-k ${selective_keep_k} \
                 --base-dir "${OUTPUT_DIR}" \
                 --relative-dir ${relative_dir} \
                 --num-gpus $NUM_GPUS \
@@ -375,12 +378,12 @@ for ENTRY in "${MODELS[@]}"; do
                 --num-checkpoints 1 \
                 --num-shared-experts ${num_shared_experts} \
                 ${TRC_FLAG} \
-                ${NPE_FLAG} \
+                ${NSE_FLAG} \
                 ${NSEED_FLAG} \
-                ${NSHOTS_PRUNE_FLAG} \
+                ${NSHOTS_SELECTIVE_FLAG} \
                 ${NSHOTS_EVAL_FLAG}
         else
-            echo "ERROR: unsupported PRUNING_MODE='${PRUNING_MODE}' (valid: layerwise, easy_ep)"
+            echo "ERROR: unsupported SELECTIVE_MODE='${SELECTIVE_MODE}' (valid: layerwise, easy_ep)"
             exit 1
         fi
 
@@ -388,10 +391,10 @@ for ENTRY in "${MODELS[@]}"; do
         echo "----------------------------------------"
     done
 
-    echo "Completed all tasks for model: $MODEL, keep-k: $prune_keep_k"
+    echo "Completed all tasks for model: $MODEL, keep-k: $selective_keep_k"
     echo "========================================"
   done
 done
 
 echo "All evaluations have completed!"
-echo "Total runs: $((${#MODELS[@]} * ${#PRUNE_KEEP_K_VALUES[@]} * ${#TASK_GROUPS_LIST[@]}))"
+echo "Total runs: $((${#MODELS[@]} * ${#SELECTIVE_KEEP_K_VALUES[@]} * ${#TASK_GROUPS_LIST[@]}))"

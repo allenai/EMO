@@ -70,10 +70,6 @@ See [Released Models](#released-models) for the available checkpoints. All infer
 
 You can use our Hugging Face [transformers](https://github.com/huggingface/transformers) integration to run inference on the released checkpoints:
 
-```bash
-pip install transformers>=4.57.0
-```
-
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
 model_id = "allenai/Emo_1b14b_1T"

@@ -2,9 +2,9 @@
 #
 # Launch baseline evaluations for models hosted on HuggingFace Hub.
 #
-# Output layout matches launch_pruning_hf.sh (no "original_model" extra layer):
-#   s3://ai2-sewonm/ryanwang/prune_evals_final/<sanitized_model>/<task>/results/checkpoint-0/
-#   s3://ai2-sewonm/ryanwang/prune_evals_final/<sanitized_model>/<task>/results/checkpoint-0/per_subject/<subject>/   (MMLU only)
+# Output layout matches launch_selective_hf.sh (no "original_model" extra layer):
+#   s3://ai2-sewonm/ryanwang/selective_evals_final/<sanitized_model>/<task>/results/checkpoint-0/
+#   s3://ai2-sewonm/ryanwang/selective_evals_final/<sanitized_model>/<task>/results/checkpoint-0/per_subject/<subject>/   (MMLU only)
 #
 # This uses the same beaker-vs-bash pattern as the other launch scripts:
 # commented-out local blocks for running locally, active beaker blocks for cluster.
@@ -31,7 +31,7 @@ CLUSTER="ai2/jupiter-cirrascale-2"
 
 # Define grouped tasks
 TASK_GROUPS_LIST=(
-  # Merged variants for the MC9 + perplexity tasks (pruning + finetuning share data)
+  # Merged variants for the MC9 + perplexity tasks (selection + finetuning share data)
   "arc_easy_merged"
   "arc_challenge_merged"
   "boolq_merged"
@@ -42,7 +42,7 @@ TASK_GROUPS_LIST=(
   "socialiqa_merged"
   "winogrande_merged"
 
-  # GSM8K generation merged variants (pruning + finetuning share data)
+  # GSM8K generation merged variants (selection + finetuning share data)
   "gsm8k_generation_0shot_merged"
   "gsm8k_generation_8shot_merged"
 
@@ -58,7 +58,7 @@ TASK_GROUPS_LIST=(
   "triviaqa_merged"
   "drop_merged"
 
-  # MMLU 17-category merged variants (pruning + finetuning share data)
+  # MMLU 17-category merged variants (selection + finetuning share data)
   "mmlu_merged_biology"
   "mmlu_merged_business"
   "mmlu_merged_chemistry"
@@ -78,7 +78,7 @@ TASK_GROUPS_LIST=(
   "mmlu_merged_psychology"
 
 
-  # MMLU-Pro merged variant (pruning + finetuning use same data)
+  # MMLU-Pro merged variant (selection + finetuning use same data)
   "mmlu_pro_merged_math"
   "mmlu_pro_merged_health"
   "mmlu_pro_merged_physics"
@@ -108,7 +108,7 @@ for ENTRY in "${MODEL_ENTRIES[@]}"; do
     echo "  Directory name: $SANITIZED_MODEL"
 
     for TASK in "${TASK_GROUPS_LIST[@]}"; do
-        # Per-task GPU count (matches launch_pruning_hf.sh).
+        # Per-task GPU count (matches launch_selective_hf.sh).
         gpus=4
         if [[ $TASK == *"mmlu_history"* || $TASK == *"gsm8k_generation_8shot"* || $TASK == *"drop_merged"* || $TASK == *"squad_merged"* ]]; then
             gpus=8
@@ -122,16 +122,16 @@ for ENTRY in "${MODEL_ENTRIES[@]}"; do
         # Clean any previous results for this exact (model, task) combination on
         # S3 so re-runs never mix new metrics with stale ones. aws s3 rm on a
         # non-existent prefix is a no-op (exit 0).
-        s3_clean_prefix="s3://ai2-sewonm/ryanwang/prune_evals_final/${relative_dir}/"
+        s3_clean_prefix="s3://ai2-sewonm/ryanwang/selective_evals_final/${relative_dir}/"
         echo "  Cleaning stale S3 results: ${s3_clean_prefix}"
         aws s3 rm --recursive --quiet "${s3_clean_prefix}" || true
 
         echo "  Launching: task=$TASK, gpus=$gpus"
         echo "    Job name: $job_name"
-        echo "    Remote dir: s3://ai2-sewonm/ryanwang/prune_evals_final/${relative_dir}/results/checkpoint-0"
+        echo "    Remote dir: s3://ai2-sewonm/ryanwang/selective_evals_final/${relative_dir}/results/checkpoint-0"
 
         # Local version (uncomment for local runs):
-#        bash scripts/pruning_hf/hf_baseline_eval.sh \
+#        bash scripts/selective_hf/hf_baseline_eval.sh \
 #            --model "${HF_MODEL}" \
 #            --revision "${REVISION}" \
 #            --task "${TASK}" \
@@ -155,7 +155,7 @@ for ENTRY in "${MODEL_ENTRIES[@]}"; do
             --no-follow \
             --no-torchrun \
             --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
-            -- bash -c "scripts/pruning_hf/hf_baseline_eval.sh \
+            -- bash -c "scripts/selective_hf/hf_baseline_eval.sh \
                 --model '${HF_MODEL}' \
                 --revision '${REVISION}' \
                 --task '${TASK}' \

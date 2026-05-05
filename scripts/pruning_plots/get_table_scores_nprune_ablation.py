@@ -48,8 +48,8 @@ KEEPK_SUFFIX_TEMPLATE = "_keepk_{k}_bs-32_lr-5e-5_epoch-1"
 # --- Pruning-calibration seed retries -------------------------------------
 # When a small calibration set (e.g. nprune=1) might pick an unlucky example,
 # we run additional pruning passes with different seeds. Their dirs are tagged
-# with `_pseed-{N}` injected after the `_nprune-N` token (or after
-# `_prunemode-...` if there is no nprune token). For each cell, we compute the
+# with `_pseed-{N}` injected after the `_nselective-N` token (or after
+# `_selectivemode-...` if there is no nprune token). For each cell, we compute the
 # mean across all seed variants that exist locally; cells whose retries are
 # absent (most non-GSM8K cells) just use seed-0 and are unchanged.
 PSEED_RETRIES: List[int] = [1, 2]
@@ -69,20 +69,20 @@ PSEED_RETRIES: List[int] = [1, 2]
 
 PRUNEMODE_VARIANTS: Dict[str, List[Tuple[str, str]]] = {
     "Router": [
-        ("Random", "_prunemode-random"),
-        ("1", "_prunemode-layerwise_nprune-1"),
-        ("5", "_prunemode-layerwise_nprune-5"),
-        ("10", "_prunemode-layerwise_nprune-10"),
-        ("100", "_prunemode-layerwise_nprune-100"),
-        ("All", "_prunemode-layerwise"),
+        ("Random", "_selectivemode-random"),
+        ("1", "_selectivemode-layerwise_nselective-1"),
+        ("5", "_selectivemode-layerwise_nselective-5"),
+        ("10", "_selectivemode-layerwise_nselective-10"),
+        ("100", "_selectivemode-layerwise_nselective-100"),
+        ("All", "_selectivemode-layerwise"),
     ],
     "Easy-EP": [
-        ("Random", "_prunemode-random"),
-        ("1", "_prunemode-easy_ep_nprune-1"),
-        ("5", "_prunemode-easy_ep_nprune-5"),
-        ("10", "_prunemode-easy_ep_nprune-10"),
-        ("100", "_prunemode-easy_ep_nprune-100"),
-        ("All", "_prunemode-easy_ep"),
+        ("Random", "_selectivemode-random"),
+        ("1", "_selectivemode-easy_ep_nselective-1"),
+        ("5", "_selectivemode-easy_ep_nselective-5"),
+        ("10", "_selectivemode-easy_ep_nselective-10"),
+        ("100", "_selectivemode-easy_ep_nselective-100"),
+        ("All", "_selectivemode-easy_ep"),
     ],
     # Router using 0-shot demonstrations for both pruning-calibration and eval.
     # 2026-04-24: dir naming changed from the single `_0shot` suffix to two
@@ -90,32 +90,32 @@ PRUNEMODE_VARIANTS: Dict[str, List[Tuple[str, str]]] = {
     # old `_0shot` stems are empty after the rename, so we read from the new
     # tokens directly. Only run for FlexMoE so far — Reg. MoE rows drop out.
     "Router (0-shot)": [
-        ("1", "_prunemode-layerwise_nprune-1_pshots-0_eshots-0"),
-        ("5", "_prunemode-layerwise_nprune-5_pshots-0_eshots-0"),
-        ("10", "_prunemode-layerwise_nprune-10_pshots-0_eshots-0"),
-        ("100", "_prunemode-layerwise_nprune-100_pshots-0_eshots-0"),
-        ("All", "_prunemode-layerwise_pshots-0_eshots-0"),
+        ("1", "_selectivemode-layerwise_nselective-1_pshots-0_eshots-0"),
+        ("5", "_selectivemode-layerwise_nselective-5_pshots-0_eshots-0"),
+        ("10", "_selectivemode-layerwise_nselective-10_pshots-0_eshots-0"),
+        ("100", "_selectivemode-layerwise_nselective-100_pshots-0_eshots-0"),
+        ("All", "_selectivemode-layerwise_pshots-0_eshots-0"),
     ],
     # Easy-EP with both pruning-calibration and eval at 0-shot. Same naming
     # update applies. Partial results only (Reg. MoE nprune-1 at a subset of
     # keepks); missing cells remain blank; fully-empty rows get dropped.
     "Easy-EP (0-shot)": [
-        ("1", "_prunemode-easy_ep_nprune-1_pshots-0_eshots-0"),
-        ("5", "_prunemode-easy_ep_nprune-5_pshots-0_eshots-0"),
-        ("10", "_prunemode-easy_ep_nprune-10_pshots-0_eshots-0"),
-        ("100", "_prunemode-easy_ep_nprune-100_pshots-0_eshots-0"),
-        ("All", "_prunemode-easy_ep_pshots-0_eshots-0"),
+        ("1", "_selectivemode-easy_ep_nselective-1_pshots-0_eshots-0"),
+        ("5", "_selectivemode-easy_ep_nselective-5_pshots-0_eshots-0"),
+        ("10", "_selectivemode-easy_ep_nselective-10_pshots-0_eshots-0"),
+        ("100", "_selectivemode-easy_ep_nselective-100_pshots-0_eshots-0"),
+        ("All", "_selectivemode-easy_ep_pshots-0_eshots-0"),
     ],
     # Router with task-default pruning shots but 0-shot eval. The `_pshots-*`
     # token is omitted (= task default), only `_eshots-0` is set. Lets us
     # isolate the effect of eval-time shots while keeping pruning calibration
     # at the task default.
     "Router (e0)": [
-        ("1", "_prunemode-layerwise_nprune-1_eshots-0"),
-        ("5", "_prunemode-layerwise_nprune-5_eshots-0"),
-        ("10", "_prunemode-layerwise_nprune-10_eshots-0"),
-        ("100", "_prunemode-layerwise_nprune-100_eshots-0"),
-        ("All", "_prunemode-layerwise_eshots-0"),
+        ("1", "_selectivemode-layerwise_nselective-1_eshots-0"),
+        ("5", "_selectivemode-layerwise_nselective-5_eshots-0"),
+        ("10", "_selectivemode-layerwise_nselective-10_eshots-0"),
+        ("100", "_selectivemode-layerwise_nselective-100_eshots-0"),
+        ("All", "_selectivemode-layerwise_eshots-0"),
     ],
 }
 
@@ -247,15 +247,15 @@ def _read_metric(task_dir: Path, metric_key: str, checkpoint_mode: str) -> Optio
 def _inject_pseed(suffix: str, seed: int) -> str:
     """Inject `_pseed-{seed}` into a prunemode suffix.
 
-    Insertion point: immediately after `_nprune-N` if present, else immediately
-    after `_prunemode-XXX`. Returns the suffix unchanged when seed == 0.
+    Insertion point: immediately after `_nselective-N` if present, else immediately
+    after `_selectivemode-XXX`. Returns the suffix unchanged when seed == 0.
     """
     if seed == 0:
         return suffix
-    m = re.search(r"_nprune-\d+", suffix)
+    m = re.search(r"_nselective-\d+", suffix)
     if m:
         return suffix[: m.end()] + f"_pseed-{seed}" + suffix[m.end():]
-    m = re.search(r"_prunemode-[a-z_]+", suffix)
+    m = re.search(r"_selectivemode-[a-z_]+", suffix)
     if m:
         return suffix[: m.end()] + f"_pseed-{seed}" + suffix[m.end():]
     return suffix

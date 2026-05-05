@@ -4,10 +4,10 @@
 export PYTHONPATH="$(pwd)/src${PYTHONPATH:+:${PYTHONPATH}}"
 #
 # Baseline eval wrapper for a HuggingFace-Hub model (or any unmodified HF
-# checkpoint). No pruning, no finetuning. Mirrors the tail of the pruning
+# checkpoint). No selection, no finetuning. Mirrors the tail of the selective
 # wrappers (launch_eval + per-subject MMLU loop).
 #
-# Output layout (under s3://ai2-sewonm/ryanwang/prune_evals_final/):
+# Output layout (under s3://ai2-sewonm/ryanwang/selective_evals_final/):
 #   ${RELATIVE_DIR}/results/checkpoint-0/
 #   ${RELATIVE_DIR}/results/checkpoint-0/per_subject/<subject>/   (MMLU only)
 #
@@ -51,11 +51,11 @@ if [[ $TASK == *"gsm8k_generation_8shot"* ]]; then
     EVAL_BATCH_SIZE=16
 fi
 
-# NOTE: unlike the pruning wrappers we do NOT set HF_DATASETS_OFFLINE=1 here.
-# The pruning flow's offline flag is safe because the prune step runs first
-# and warms the HF dataset cache. Baseline skips pruning, so we need the
-# online fallback path when the weka mount misses.
-S3_BASE="s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}"
+# NOTE: unlike the selective wrappers we do NOT set HF_DATASETS_OFFLINE=1 here.
+# The selective flow's offline flag is safe because the selection step runs
+# first and warms the HF dataset cache. Baseline skips selection, so we need
+# the online fallback path when the weka mount misses.
+S3_BASE="s3://ai2-sewonm/ryanwang/selective_evals_final/${RELATIVE_DIR}"
 
 echo "========================================"
 echo "HF model baseline eval"
