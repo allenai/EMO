@@ -179,6 +179,31 @@ Each script writes its config (`MODELS`, `SELECTIVE_KEEP_K_VALUES`, `TASK_GROUPS
 
 We recommend running these on a slurm or other scheduling system, since each script launches many sequential worker invocations.
 
+#### Aggregating results into tables
+
+Once one of the launchers above has populated `selective_evals_final/`, two scripts in [`scripts/plotting/`](scripts/plotting/) walk the per-run subdirectories and produce flat CSV/TSV/markdown tables suitable for downstream analysis:
+
+| Script | Source launcher | What it produces |
+|---|---|---|
+| [`get_table_scores_selective_evals_final.py`](scripts/plotting/get_table_scores_selective_evals_final.py) | `launch_selective_hf.sh` and `launch_selective_method_hf.sh` | Per-metric tables with rows = (model × keep-k variant) and paired columns "task (lw) / task (ep) / task (rd)" — one column per selection method. Group averages (`mc9_avg`, `gen5_avg`, `mmlu_merged_avg_no_other`, `mmlu_pro_merged_avg_no_other`) are prepended automatically. Both `last`-checkpoint (post-finetune) and `first`-checkpoint (pre-finetune) variants are emitted by default. |
+| [`get_table_scores_nselective_ablation.py`](scripts/plotting/get_table_scores_nselective_ablation.py) | `launch_selective_validation_hf.sh` | Validation-data-ablation tables: rows = (model, selection-method, task group), columns = `keepk_K (1) / keepk_K (5) / keepk_K (10) / keepk_K (100) / keepk_K (All) / keepk_K (Random)`. Includes optional 0-shot variants when `_pshots-0`/`_eshots-0` runs are present. |
+
+Both scripts default to reading from `<repo>/selective_evals_final/` and writing to `<repo>/plots/`. Overrides:
+
+```bash
+# Main + method-comparison tables
+python -m scripts.plotting.get_table_scores_selective_evals_final \
+    --selective-evals-root selective_evals_final \
+    --output-dir plots
+
+# Validation-size ablation tables
+python -m scripts.plotting.get_table_scores_nselective_ablation \
+    --selective-evals-root selective_evals_final \
+    --output-dir plots
+```
+
+The model registries (`MODEL_SPECS` at the top of each file) currently list the released HF Hub checkpoints — add new entries there if you point either script at a directory built from a different model.
+
 ### Clustering Pretraining Document Tokens
 
 [`scripts/clustering/run_pretraining_compare.sh`](scripts/clustering/run_pretraining_compare.sh) reproduces the side-by-side router-activation clustering used to compare EMO and the standard MoE baseline (Section 5.3 / Figure 6 of the paper). For each of `allenai/Emo_1b14b_1T` and `allenai/StdMoE_1b14b_1T` it:

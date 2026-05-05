@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Generate CSV tables for the nprune (validation data quantity) ablation.
+"""Generate CSV tables for the nselective (validation data quantity) ablation.
 
 Compares expert selection quality when using different amounts of validation
-data for layerwise pruning.  Two models are compared (Reg. MoE vs \methodname)
-across keepk values and nprune settings.
+data for layerwise selection.  Two models are compared (Reg. MoE vs \methodname)
+across keepk values and nselective settings.
 
-Reads from   : <repo>/prune_evals_final/
-Writes into  : <repo>/claude_outputs/prune_plots/<output-subdir>/<metric>/
+Reads from   : <repo>/selective_evals_final/
+Writes into  : <repo>/plots/<output-subdir>/<metric>/
 
 Table layout (per metric):
     rows    = (model, task)   e.g. "moe 1T + anneal / mmlu_merged"
@@ -31,11 +31,18 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 
 # --- Models ----------------------------------------------------------------
 
+# Keys are the directory names that launch_selective_validation_hf.sh writes
+# under selective_evals_final/. For HF Hub models, this is the model id with
+# the org slash stripped: "allenai/Emo_1b14b_1T" -> "allenaiEmo_1b14b_1T".
+#
+# Labels are preserved from the legacy local-path setup ("moe 1T + anneal",
+# "specialized moe 1T + anneal") because downstream paper_table_numbers/
+# scripts hardcode them as row keys.
 MODEL_SPECS: Dict[str, Dict[str, str]] = {
-    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419step250339-hf": {
+    "allenaiStdMoE_1b14b_1T": {
         "label": "moe 1T + anneal",
     },
-    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419step250339-hf": {
+    "allenaiEmo_1b14b_1T": {
         "label": "specialized moe 1T + anneal",
     },
 }
@@ -169,8 +176,8 @@ TASK_GROUPS = [
     ("gsm8k", GSM8K_TASKS, [], "exact_match"),
 ]
 
-DEFAULT_PRUNE_EVALS_ROOT = REPO_ROOT / "prune_evals_final"
-DEFAULT_OUTPUT_DIR = REPO_ROOT / "claude_outputs" / "prune_plots"
+DEFAULT_SELECTIVE_EVALS_ROOT = REPO_ROOT / "selective_evals_final"
+DEFAULT_OUTPUT_DIR = REPO_ROOT / "plots"
 DEFAULT_OUTPUT_SUBDIR = "nprune_ablation_tables"
 
 # ============================================================================
@@ -180,9 +187,9 @@ DEFAULT_OUTPUT_SUBDIR = "nprune_ablation_tables"
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Generate nprune ablation tables from prune_evals_final."
+        description="Generate nselective ablation tables from selective_evals_final."
     )
-    parser.add_argument("--prune-evals-root", type=Path, default=DEFAULT_PRUNE_EVALS_ROOT)
+    parser.add_argument("--selective-evals-root", type=Path, default=DEFAULT_SELECTIVE_EVALS_ROOT)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--output-subdir", default=DEFAULT_OUTPUT_SUBDIR)
     parser.add_argument(
@@ -286,7 +293,7 @@ def _read_metric_seed_avg(
 
 
 def collect_nprune_table(
-    prune_evals_root: Path,
+    selective_evals_root: Path,
     checkpoint_mode: str,
 ) -> pd.DataFrame:
     """Build the nprune ablation table.
@@ -302,7 +309,7 @@ def collect_nprune_table(
     column_tag_order = [tag for tag, _ in PRUNEMODE_VARIANTS[any_prunemode]]
 
     for model_name, spec in MODEL_SPECS.items():
-        model_dir = prune_evals_root / model_name
+        model_dir = selective_evals_root / model_name
         if not model_dir.is_dir():
             print(f"[WARN] Model dir missing: {model_dir}")
             continue
@@ -374,7 +381,7 @@ def collect_nprune_table(
 def main() -> None:
     args = parse_args()
 
-    df = collect_nprune_table(args.prune_evals_root, args.checkpoint_mode)
+    df = collect_nprune_table(args.selective_evals_root, args.checkpoint_mode)
     if df.empty:
         print("[ERROR] No data collected.")
         return

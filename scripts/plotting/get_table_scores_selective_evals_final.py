@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
-"""Generate CSV/TSV tables of final-checkpoint metrics from prune_evals_final.
+"""Generate CSV/TSV tables of final-checkpoint metrics from selective_evals_final.
 
-Slimmed-down sibling of eval_plots/get_table_scores_prune_evals_0319.py,
-targeting the *_merged task suite for the two annealed 1T models.
-
-Reads from   : <repo>/prune_evals_final/
-Writes into  : <repo>/claude_outputs/prune_plots/<output-subdir>/<metric>/
+Reads from   : <repo>/selective_evals_final/
+Writes into  : <repo>/plots/<output-subdir>/<metric>/
 
 For each metric a table is produced with rows = (model, variant) and
 columns = tasks, where values come from the largest checkpoint of each
@@ -27,11 +24,12 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
-# Prune modes: each variant (keepk value) is scanned for all prunemode suffixes.
+# Selective modes: each variant (keepk value) is scanned for all suffixes.
 # Results appear as paired columns: "task (lw)", "task (ep)", and "task (rd)"
-# per base task.
-#   lw = layerwise (validation-data-based) pruning
-#   ep = Easy-EP   (validation-data-based) pruning
+# per base task. Tag names are kept as lw/ep/rd because the downstream
+# paper_table_numbers/ and paper_figure_codes/ scripts hardcode them.
+#   lw = layerwise (validation-data-based) selection
+#   ep = Easy-EP   (validation-data-based) selection
 #   rd = random    (no validation data used)
 PRUNEMODE_SUFFIXES: Dict[str, str] = {
     "lw": "_selectivemode-layerwise",
@@ -70,54 +68,60 @@ def _build_legacy_variants(keepk_variants):
     ]
 
 
+# Keys are the directory names that launch_selective_hf.sh writes under
+# selective_evals_final/. For HF Hub models, this is the model id with the
+# org slash stripped: "allenai/Emo_1b14b_1T" -> "allenaiEmo_1b14b_1T".
+#
+# Labels are deliberately preserved from the legacy local-path setup
+# ("moe 1T + anneal", "specialized moe 1T + anneal", "moe_small", "dense",
+# "olmoe_1b_7b") because downstream paper_table_numbers/ scripts hardcode
+# them as row keys.
 MODEL_SPECS: Dict[str, Dict[str, object]] = {
-    "dense_1b_lr-4e-3_0213step30995-hf": {
+    # 130B-token ablation models ----------------------------------------------
+    "allenaiDense_1b_130B": {
         "label": "dense",
         "keepk_variants": KEEPK_VARIANTS_32_ONLY,
         "variants": _build_legacy_variants(KEEPK_VARIANTS_32_ONLY),
     },
-    "moereducedp512sharedexp1_1b4b_lr-4e-3_lb-1e-1_0308step30995-hf": {
+    "allenaiStdMoE_1b4b_130B": {
         "label": "moe_small",
         "keepk_variants": KEEPK_VARIANTS_32_ONLY,
         "variants": _build_legacy_variants(KEEPK_VARIANTS_32_ONLY),
     },
-    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_0308step30995-hf": {
-        "label": "moe",
+    "allenaiStdMoE_1b14b_130B": {
+        "label": "moe 130B",
         "keepk_variants": KEEPK_VARIANTS_ALL,
         "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
     },
-    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301step30995-hf": {
-        "label": "specialized moe + globallb + 1shardexp + randpool",
+    "allenaiEmo_1b14b_130B": {
+        "label": "specialized moe 130B",
         "keepk_variants": KEEPK_VARIANTS_ALL,
         "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
     },
-    "twolevelbatchlbreducedp512sharedexp1-32_1b14b_lr-4e-3_lb-1e-1_0211step30995-hf": {
-        "label": "specialized moe + globallb + 1shardexp",
-        "keepk_variants": KEEPK_VARIANTS_ALL,
-        "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
-    },
-    "twolevelbatchlbreducedp512-32_1b14b_lr-4e-3_lb-1e-1_0119step30995-hf": {
-        "label": "specialized moe + globallb",
-        "keepk_variants": KEEPK_VARIANTS_ALL,
-        "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
-    },
-    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419step250339-hf": {
+    # Main release (1T tokens) -----------------------------------------------
+    "allenaiStdMoE_1b14b_1T": {
         "label": "moe 1T + anneal",
         "keepk_variants": KEEPK_VARIANTS_ALL,
         "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
     },
-    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_twolevel_randpool-8-128_from_step238419step250339-hf": {
-        "label": "moe 1T + twolevel anneal",
-        "keepk_variants": KEEPK_VARIANTS_ALL,
-        "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
-    },
-    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419step250339-hf": {
+    "allenaiEmo_1b14b_1T": {
         "label": "specialized moe 1T + anneal",
         "keepk_variants": KEEPK_VARIANTS_ALL,
         "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
     },
+    # Midtraining ablations --------------------------------------------------
+    "allenaiStdMoE_1b14b_1T_Preanneal": {
+        "label": "moe 1T (preanneal)",
+        "keepk_variants": KEEPK_VARIANTS_ALL,
+        "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
+    },
+    "allenaiStdMoE_1b14b_1T_EmoAnnealed": {
+        "label": "moe 1T + emo-anneal",
+        "keepk_variants": KEEPK_VARIANTS_ALL,
+        "variants": _build_legacy_variants(KEEPK_VARIANTS_ALL),
+    },
     # External baseline: AllenAI OLMoE-1B-7B-0924.
-    # Task dirs are plain "{task}" (no keepk suffix, no prunemode suffix).
+    # Task dirs are plain "{task}" (no keepk suffix, no selectivemode suffix).
     # Only (lw) column is populated — (ep) has no data for this model.
     "allenaiOLMoE-1B-7B-0924": {
         "label": "olmoe_1b_7b",
@@ -205,8 +209,8 @@ TASK_SPECS: Dict[str, List[str]] = {
 TASK_SPECS.update({t: list(GSM8K_METRICS) for t in GSM8K_TASKS})
 TASK_SPECS.update({t: list(GEN5_METRICS) for t in GEN5_ALL_TASKS})
 
-DEFAULT_PRUNE_EVALS_ROOT = REPO_ROOT / "prune_evals_final"
-DEFAULT_OUTPUT_DIR = REPO_ROOT / "claude_outputs" / "prune_plots"
+DEFAULT_SELECTIVE_EVALS_ROOT = REPO_ROOT / "selective_evals_final"
+DEFAULT_OUTPUT_DIR = REPO_ROOT / "plots"
 DEFAULT_OUTPUT_SUBDIR = "prune_eval_tables_final"
 DEFAULT_OUTPUT_SUBDIR_CKPT0 = "prune_eval_tables_final_ckpt0"
 
@@ -225,13 +229,13 @@ CHECKPOINT_MODES: List[Tuple[str, str]] = [
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Generate metric tables from prune_evals_final checkpoints."
+        description="Generate metric tables from selective_evals_final checkpoints."
     )
     parser.add_argument(
-        "--prune-evals-root",
+        "--selective-evals-root",
         type=Path,
-        default=DEFAULT_PRUNE_EVALS_ROOT,
-        help="Path to prune_evals_final directory.",
+        default=DEFAULT_SELECTIVE_EVALS_ROOT,
+        help="Path to selective_evals_final directory.",
     )
     parser.add_argument(
         "--output-dir",
@@ -370,7 +374,7 @@ def _get_model_variants(model_name: str) -> List[Tuple[str, str]]:
 
 
 def collect_table(
-    prune_evals_root: Path,
+    selective_evals_root: Path,
     model_names: Sequence[str],
     task_runs: Sequence[str],
     metric_key: str,
@@ -384,7 +388,7 @@ def collect_table(
     rows: Dict[str, Dict[str, Optional[float]]] = {}
 
     for model_name in model_names:
-        model_dir = prune_evals_root / model_name
+        model_dir = selective_evals_root / model_name
         if not model_dir.is_dir():
             print(f"[WARN] Model dir missing: {model_dir}")
             continue
@@ -554,7 +558,7 @@ def run_one(
             continue
 
         df = collect_table(
-            args.prune_evals_root, selected_models, relevant_tasks, metric_key, checkpoint_mode
+            args.selective_evals_root, selected_models, relevant_tasks, metric_key, checkpoint_mode
         )
         if df.empty:
             print(f"[WARN] No data for metric {metric_key!r}; skipping.")
