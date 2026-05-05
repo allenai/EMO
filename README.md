@@ -21,6 +21,24 @@
 
 EMO is a new Mixture-of-Experts model trained so that modular structure emerges during pretraining without requiring human-defined priors. EMO enables selective expert use, down to 12.5% of total experts, with minimal performance degradation. We find that its expert groups specialize to higher-level topics and capabilities rather than low-level lexical patterns.
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Released Models](#released-models)
+    - [Main Release (1T tokens)](#main-release-1t-tokens)
+    - [Ablation Models (130B tokens)](#ablation-models-130b-tokens)
+    - [Midtraining Ablation Models](#midtraining-ablation-models)
+- [Inference](#inference)
+    - [With Hugging Face Transformers](#with-hugging-face-transformers)
+    - [With vLLM](#with-vllm)
+- [Training scripts](#training-scripts)
+- [Evaluation scripts](#evaluation-scripts)
+    - [Selective Expert Usage](#selective-expert-usage)
+    - [Clustering Pretraining Document Tokens](#clustering-pretraining-document-tokens)
+    - [Weborganizer Expert Coverage](#weborganizer-expert-coverage)
+- [Contact and Contributing](#contact-and-contributing)
+- [Citing](#citing)
+
 ## Installation
 
 ```bash
