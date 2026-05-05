@@ -11,25 +11,29 @@ NUM_GPUS="${NUM_GPUS:-1}"
 
 MODELS=(
     # HF Hub entries: format "hf:<id>|shared=<N>|skip_selective=<true|false>"
-    "hf:allenai/StdMoE_1b14b_1T|shared=1|skip_selective=false"
     "hf:allenai/Emo_1b14b_1T|shared=1|skip_selective=false"
     )
 
-# Methods to sweep. Each entry is one of:
-#   - "layerwise" / "easy_ep"  : SELECTIVE_MODE, calibrated on full validation pool
-#   - "random"                 : bypass calibration, randomly select experts
-#     (mode-agnostic — uses the random worker)
-METHODS=(
-    "layerwise"
-    "easy_ep"
-    "random"
-)
+# Selective mode: "layerwise"           -- greedy layer-by-layer expert selection
+#                                          (each layer conditioned on already-selected
+#                                          earlier layers)
+#                 "easy_ep"             -- EASY-EP (arXiv 2504.06792): one-shot
+#                                          domain-specific selection using
+#                                          gating*||expert_out|| weighted by
+#                                          (1 - cos_sim) of MoE in/out on few-shot
+#                                          calibration
+SELECTIVE_MODE="layerwise"
 
 num_epochs=1
-SELECTIVE_KEEP_K_VALUES=(8 16 32 64 128)
+SELECTIVE_KEEP_K_VALUES=(8 16 32 128)
 batch_size=32
 
-# NUM_SELECTIVE_EXAMPLES is now controlled by the METHODS array above.
+# --- Selective calibration-set size ---
+# Leave empty to use the full validation pool for selection (default).
+# Set to an integer (e.g. 50) to subsample that many prompts (deterministic shuffle).
+# Set to "random" to bypass calibration entirely and randomly select experts
+# (seed=0, mode-agnostic — ignores SELECTIVE_MODE). Output dir uses _selectivemode-random.
+NUM_SELECTIVE_EXAMPLES=""
 
 # --- Calibration-subsample seed ---
 # Controls torch.Generator().manual_seed(...) in the calibration permutation.
@@ -117,29 +121,12 @@ TASK_GROUPS_LIST=(
 
 )
 
-echo "Launching evals for ${#METHODS[@]} methods, ${#MODELS[@]} models, ${#SELECTIVE_KEEP_K_VALUES[@]} keep-k values, and ${#TASK_GROUPS_LIST[@]} task groups..."
-echo "Methods: ${METHODS[@]}"
+echo "Launching evals for ${#MODELS[@]} models, ${#SELECTIVE_KEEP_K_VALUES[@]} keep-k values, and ${#TASK_GROUPS_LIST[@]} task groups..."
 echo "Models: ${MODELS[@]}"
 echo "Keep-k values: ${SELECTIVE_KEEP_K_VALUES[@]}"
 echo "GPUs: $NUM_GPUS"
 echo "Output dir: $OUTPUT_DIR"
 echo ""
-
-# Outer sweep over selection methods. Each iteration sets SELECTIVE_MODE and
-# NUM_SELECTIVE_EXAMPLES from the METHODS array, then runs the full
-# (model × keep-k × task) cross-product for that method.
-for METHOD in "${METHODS[@]}"; do
-  if [[ "$METHOD" == "random" ]]; then
-    SELECTIVE_MODE=""
-    NUM_SELECTIVE_EXAMPLES="random"
-  else
-    SELECTIVE_MODE="$METHOD"
-    NUM_SELECTIVE_EXAMPLES=""
-  fi
-  echo ""
-  echo "=========================================="
-  echo "=== Method: $METHOD"
-  echo "=========================================="
 
 # Launch evaluation for each model, keep-k, and task combination
 for ENTRY in "${MODELS[@]}"; do
@@ -396,7 +383,5 @@ for ENTRY in "${MODELS[@]}"; do
   done
 done
 
-done  # end of METHODS loop
-
 echo "All evaluations have completed!"
-echo "Total runs: $((${#METHODS[@]} * ${#MODELS[@]} * ${#SELECTIVE_KEEP_K_VALUES[@]} * ${#TASK_GROUPS_LIST[@]}))"
+echo "Total runs: $((${#MODELS[@]} * ${#SELECTIVE_KEEP_K_VALUES[@]} * ${#TASK_GROUPS_LIST[@]}))"
