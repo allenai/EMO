@@ -11,11 +11,11 @@ NUM_GPUS="${NUM_GPUS:-1}"
 
 MODELS=(
     # HF Hub entries: format "hf:<id>|shared=<N>|skip_prune=<true|false>"
-    "hf:allenai/Dense_1b_130B|shared=0|skip_prune=true"
+#    "hf:allenai/Dense_1b_130B|shared=0|skip_prune=true"
 #    "hf:allenai/StdMoE_1b4b_130B|shared=1|skip_prune=false"
-#    "hf:allenai/StdMoE_1b14b_130B|shared=1|skip_prune=false"
+    "hf:allenai/StdMoE_1b14b_130B|shared=1|skip_prune=false"
 #    "hf:allenai/StdMoE_1b14b_1T|shared=1|skip_prune=false"
-#    "hf:allenai/Emo_1b14b_130B|shared=1|skip_prune=false"
+    "hf:allenai/Emo_1b14b_130B|shared=1|skip_prune=false"
 #    "hf:allenai/Emo_1b14b_1T|shared=1|skip_prune=false"
 
     )
@@ -29,7 +29,7 @@ PRUNING_MODE="layerwise"
 
 num_epochs=1
 #PRUNE_KEEP_K_VALUES=(8 16 32 64 128)
-PRUNE_KEEP_K_VALUES=(16)
+PRUNE_KEEP_K_VALUES=(64)
 batch_size=32
 
 # --- Pruning calibration-set size ---
@@ -46,7 +46,7 @@ NUM_PRUNE_EXAMPLES=""
 # calibration subset. Output dir gets a _pseed-<N> suffix when != 0 so different
 # seeds don't collide on S3. Ignored when NUM_PRUNE_EXAMPLES is empty (no
 # subsampling) or "random" (no calibration).
-NUM_PRUNE_SEED=""
+NUM_PRUNE_SEED="1"
 
 # --- Shot-count overrides (two orthogonal knobs) ---
 # Each var: empty ⇒ each task's default num_shots (e.g. mmlu_merged_* = 5-shot,
@@ -63,7 +63,7 @@ NUM_PRUNE_SEED=""
 #   PRUNE=""  EVAL="0" → _eshots-0
 #   PRUNE="0" EVAL="0" → _pshots-0_eshots-0
 NUM_SHOTS_PRUNE=""
-NUM_SHOTS_EVAL=""
+NUM_SHOTS_EVAL="0"
 
 # Define grouped tasks
 TASK_GROUPS_LIST=(
