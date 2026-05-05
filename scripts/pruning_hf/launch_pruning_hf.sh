@@ -12,11 +12,11 @@ NUM_GPUS="${NUM_GPUS:-1}"
 MODELS=(
     # HF Hub entries: format "hf:<id>|shared=<N>|skip_prune=<true|false>"
     "hf:allenai/Dense_1b_130B|shared=0|skip_prune=true"
-    "hf:allenai/StdMoE_1b4b_130B|shared=1|skip_prune=false"
-    "hf:allenai/StdMoE_1b14b_130B|shared=1|skip_prune=false"
-    "hf:allenai/StdMoE_1b14b_1T|shared=1|skip_prune=false"
-    "hf:allenai/Emo_1b14b_130B|shared=1|skip_prune=false"
-    "hf:allenai/Emo_1b14b_1T|shared=1|skip_prune=false"
+#    "hf:allenai/StdMoE_1b4b_130B|shared=1|skip_prune=false"
+#    "hf:allenai/StdMoE_1b14b_130B|shared=1|skip_prune=false"
+#    "hf:allenai/StdMoE_1b14b_1T|shared=1|skip_prune=false"
+#    "hf:allenai/Emo_1b14b_130B|shared=1|skip_prune=false"
+#    "hf:allenai/Emo_1b14b_1T|shared=1|skip_prune=false"
 
     )
 
@@ -95,7 +95,7 @@ TASK_GROUPS_LIST=(
 #  "drop_merged"
 
   # MMLU 17-category merged variants (pruning + finetuning share data)
-#  "mmlu_merged_biology"
+  "mmlu_merged_biology"
 #  "mmlu_merged_business"
 #  "mmlu_merged_chemistry"
 #  "mmlu_merged_computer_science"
