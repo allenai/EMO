@@ -23,8 +23,6 @@ EMO is a new Mixture-of-Experts model trained so that modular structure emerges 
 
 ## Installation
 
-First install [PyTorch](https://pytorch.org) according to the instructions specific to your operating system and hardware.
-
 ```bash
 git clone https://github.com/allenai/EMO.git
 cd EMO
@@ -40,8 +38,8 @@ All checkpoints are available in the [ModMoE collection](https://huggingface.co/
 
 | Model | Active | Total | Pretraining (1T) | Annealing (50B) | Description |
 |---|---|---|---|---|---|
-| [`allenai/Emo_1b14b_1T`](https://huggingface.co/allenai/Emo_1b14b_1T) | 1B | 14B | EMO | EMO | Main EMO release |
-| [`allenai/StdMoE_1b14b_1T`](https://huggingface.co/allenai/StdMoE_1b14b_1T) | 1B | 14B | standard | standard | Architecture-matched standard MoE baseline |
+| [`allenai/Emo_1b14b_1T`](https://huggingface.co/allenai/Emo_1b14b_1T) | 1B | 14B | EMO [\[train_script\]](scripts/models/emo_1b14b_1t.sh) | EMO [\[train_script\]](scripts/models/emo_1b14b_1t_emoanneal.sh) | Main EMO release |
+| [`allenai/StdMoE_1b14b_1T`](https://huggingface.co/allenai/StdMoE_1b14b_1T) | 1B | 14B | standard [\[train_script\]](scripts/models/stdmoe_1b14b_1t.sh) | standard [\[train_script\]](scripts/models/stdmoe_1b14b_1t_stdanneal.sh) | Architecture-matched standard MoE baseline |
 
 ### Ablation Models (130B tokens)
 
@@ -49,10 +47,10 @@ Smaller-scale checkpoints used for memory-matched comparisons. These models were
 
 | Model | Active | Total | Pretraining (130B) | Description |
 |---|---|---|---|---|
-| [`allenai/Emo_1b14b_130B`](https://huggingface.co/allenai/Emo_1b14b_130B) | 1B | 14B | EMO | EMO at the 130B-token ablation scale |
-| [`allenai/StdMoE_1b14b_130B`](https://huggingface.co/allenai/StdMoE_1b14b_130B) | 1B | 14B | standard | Standard MoE baseline at the 130B-token scale |
-| [`allenai/StdMoE_1b4b_130B`](https://huggingface.co/allenai/StdMoE_1b4b_130B) | 1B | 4B | standard | Memory-matched standard MoE with 32 experts ("Reg. MoE @ 32" in Figure 4), used as a memory-matched baseline for EMO's 32-expert subsets |
-| [`allenai/Dense_1b_130B`](https://huggingface.co/allenai/Dense_1b_130B) | 1B | 1B | dense LM | Dense baseline matched to active parameters ("Dense @ 8" in Figure 4), used as a memory-matched baseline for EMO's 8-expert subsets |
+| [`allenai/Emo_1b14b_130B`](https://huggingface.co/allenai/Emo_1b14b_130B) | 1B | 14B | EMO [\[train_script\]](scripts/models/emo_1b14b_130b.sh) | EMO at the 130B-token ablation scale |
+| [`allenai/StdMoE_1b14b_130B`](https://huggingface.co/allenai/StdMoE_1b14b_130B) | 1B | 14B | standard [\[train_script\]](scripts/models/stdmoe_1b14b_130b.sh) | Standard MoE baseline at the 130B-token scale |
+| [`allenai/StdMoE_1b4b_130B`](https://huggingface.co/allenai/StdMoE_1b4b_130B) | 1B | 4B | standard [\[train_script\]](scripts/models/stdmoe_1b4b_130b.sh) | Memory-matched standard MoE with 32 experts ("Reg. MoE @ 32" in Figure 4), used as a memory-matched baseline for EMO's 32-expert subsets |
+| [`allenai/Dense_1b_130B`](https://huggingface.co/allenai/Dense_1b_130B) | 1B | 1B | dense LM [\[train_script\]](scripts/models/dense_1b_130b.sh) | Dense baseline matched to active parameters ("Dense @ 8" in Figure 4), used as a memory-matched baseline for EMO's 8-expert subsets |
 
 ### Midtraining Ablation Models
 
@@ -60,65 +58,13 @@ Checkpoints used in Appendix B.3 to test whether modularity can be induced after
 
 | Model | Active | Total | Pretraining (1T) | Annealing (50B) | Description                                                                                                             |
 |---|---|---|---|---|-------------------------------------------------------------------------------------------------------------------------|
-| [`allenai/StdMoE_1b14b_1T_Preanneal`](https://huggingface.co/allenai/StdMoE_1b14b_1T_Preanneal) | 1B | 14B | standard | — | Standard MoE checkpoint after 1T-token pretraining, before any annealing. Starting point for the EMO-anneal experiment |
-| [`allenai/StdMoE_1b14b_1T_EmoAnnealed`](https://huggingface.co/allenai/StdMoE_1b14b_1T_EmoAnnealed) | 1B | 14B | standard | EMO | EMO-anneal: a standard MoE annealed under the document-level expert pool constraint for 50B tokens |
+| [`allenai/StdMoE_1b14b_1T_Preanneal`](https://huggingface.co/allenai/StdMoE_1b14b_1T_Preanneal) | 1B | 14B | standard [\[train_script\]](scripts/models/stdmoe_1b14b_1t.sh) | — | Standard MoE checkpoint after 1T-token pretraining, before any annealing. Starting point for the EMO-anneal experiment |
+| [`allenai/StdMoE_1b14b_1T_EmoAnnealed`](https://huggingface.co/allenai/StdMoE_1b14b_1T_EmoAnnealed) | 1B | 14B | standard [\[train_script\]](scripts/models/stdmoe_1b14b_1t.sh) | EMO [\[train_script\]](scripts/models/stdmoe_1b14b_1t_emoanneal.sh) | EMO-anneal: a standard MoE annealed under the document-level expert pool constraint for 50B tokens |
 
-## Training scripts
-
-Project-specific pretraining, continual-training, eval, and pruning recipes live in [`scripts/`](scripts/). Run scripts source [`scripts/launch_common.sh`](scripts/launch_common.sh), which exports shared paths and a `launch()` helper that dispatches to either `torchrun` (default, `MODE=local`) or `python -m olmo_core.launch.beaker` (`MODE=beaker`) if you have Beaker available.
-
-Run a script locally:
-
-```bash
-bash scripts/models_0116/dense_1b_lr-4e-3_0213.sh
-```
-
-Submit it as a Beaker job:
-
-```bash
-MODE=beaker bash scripts/models_0116/dense_1b_lr-4e-3_0213.sh
-```
-
-Override paths via env vars before launching:
-
-- `PREFIX` — output root
-- `MODELS_DIR` — derived from `PREFIX` (`${PREFIX}/models`)
-- `DATASET_CACHE` — tokenizer-mapped dataset cache
-
-Override Beaker cluster sizing per script with `BEAKER_GPUS=8 BEAKER_NODES=4 ...`.
-
-### Run templates
-
-[`scripts/RUN_TEMPLATES.md`](scripts/RUN_TEMPLATES.md) has the full code for each recipe. Summary:
-
-| Template | Description | Entry point |
-|---|---|---|
-| Dense 1B pretrain | Dense 1B on `OLMoE-mix-0824` | `src/scripts/train/olmo2-1B.py` |
-| MoE 1B/14B single-level | 128-expert single-level MoE | `src/scripts/train/olmoe-1B-7B_fsl.py` |
-| MoE 1B/14B two-level (shared experts) | Two-level router with `--document-expert-pool`, `--num_shared_experts*` | `src/scripts/train/olmoe-1B-7B_fsl.py` |
-| Continual pretrain / extension | Resume from a checkpoint on a domain mix (e.g. `mj_finemath4plus`) | `src/scripts/train/olmoe-1B-7B_fsl_extension.py` |
-| Eval | OLMES eval on HF checkpoints, results uploaded to S3 | via [`scripts/extensions/launch_eval.sh`](scripts/extensions/launch_eval.sh) |
-| Pruning + task finetune | Compute router activations → prune to top-k experts → finetune | [`scripts/pruning_hf/hf_finetune_with_pruning.sh`](scripts/pruning_hf/hf_finetune_with_pruning.sh) |
-
-Two-level model variants (`--model-type`):
-
-- `moe` — single-level
-- `two-level_lb-batch_reduce-dp` — two-level, no shared experts
-- `two-level_lb-batch_reduce-dp_sharedexppool` — two-level with fixed shared-expert pool
-- `two-level_lb-batch_reduce-dp_sharedexp_randpool` — two-level with random shared-expert pool sampling (used in anneal runs)
-
-Pruning modes (`PRUNING_MODE`):
-
-- `global` — single-pass activation collection + top-k prune across the whole model
-- `layerwise` — greedy layer-by-layer pruning (each layer conditioned on earlier pruned layers)
-- `layerwise_variable` — greedy layerwise with a per-layer keep-k schedule
-- `easy_ep` — EASY-EP ([arXiv 2504.06792](https://arxiv.org/abs/2504.06792)): domain-specific one-shot prune on calibration data
-
-The `runname` naming convention (size · router · LR · LB · date · phase) is documented in the cheatsheet at the bottom of `scripts/RUN_TEMPLATES.md`.
 
 ## Inference
 
-See [Released Models](#released-models) for the available checkpoints. All inference snippets below require `trust_remote_code=True` since the models use custom modeling code from the [ryanyxw/transformers](https://github.com/ryanyxw/transformers/tree/flexmoe_v4_57_1) fork.
+See [Released Models](#released-models) for the available checkpoints. All inference snippets below require `trust_remote_code=True` since the models use custom modeling code from the [ryanyxw/transformers](https://github.com/ryanyxw/transformers/tree/flexmoe_v4_57_1) fork (Note: you do not need to clone this fork yourself, the Hugging Face Hub will pull the necessary code when you load the model with `trust_remote_code=True`).
 
 ### With Hugging Face Transformers
 
@@ -170,6 +116,67 @@ for output in outputs:
 ```
 
 For more details, see the [vLLM documentation](https://docs.vllm.ai/en/latest/getting_started/quickstart/#offline-batched-inference).
+
+## Training scripts
+
+Project-specific pretraining recipes live in [`scripts`](scripts/). Please refer to #[Released Models](#released-models) for the training scripts corresponding to each released checkpoint.
+
+Run a script locally:
+
+```bash
+bash scripts/models/dense_1b_lr-4e-3_0213.sh
+```
+
+Submit it as a Beaker job:
+
+```bash
+MODE=beaker bash scripts/models/dense_1b_lr-4e-3_0213.sh
+```
+
+Override paths via env vars before launching:
+
+- `PREFIX` — output root
+- `MODELS_DIR` — derived from `PREFIX` (`${PREFIX}/models`)
+- `DATASET_CACHE` — tokenizer-mapped dataset cache
+
+Override Beaker cluster sizing per script with `BEAKER_GPUS=8 BEAKER_NODES=4 ...`.
+
+## Evaluation scripts
+
+
+
+<!--
+
+### Run templates
+
+[`scripts/RUN_TEMPLATES.md`](scripts/RUN_TEMPLATES.md) has the full code for each recipe. Summary:
+
+| Template | Description | Entry point |
+|---|---|---|
+| Dense 1B pretrain | Dense 1B on `OLMoE-mix-0824` | `src/scripts/train/olmo2-1B.py` |
+| MoE 1B/14B single-level | 128-expert single-level MoE | `src/scripts/train/olmoe-1B-7B_fsl.py` |
+| MoE 1B/14B two-level (shared experts) | Two-level router with `--document-expert-pool`, `--num_shared_experts*` | `src/scripts/train/olmoe-1B-7B_fsl.py` |
+| Continual pretrain / extension | Resume from a checkpoint on a domain mix (e.g. `mj_finemath4plus`) | `src/scripts/train/olmoe-1B-7B_fsl_extension.py` |
+| Eval | OLMES eval on HF checkpoints, results uploaded to S3 | via [`scripts/extensions/launch_eval.sh`](scripts/extensions/launch_eval.sh) |
+| Pruning + task finetune | Compute router activations → prune to top-k experts → finetune | [`scripts/pruning_hf/hf_finetune_with_pruning.sh`](scripts/pruning_hf/hf_finetune_with_pruning.sh) |
+
+Two-level model variants (`--model-type`):
+
+- `moe` — single-level
+- `two-level_lb-batch_reduce-dp` — two-level, no shared experts
+- `two-level_lb-batch_reduce-dp_sharedexppool` — two-level with fixed shared-expert pool
+- `two-level_lb-batch_reduce-dp_sharedexp_randpool` — two-level with random shared-expert pool sampling (used in anneal runs)
+
+Pruning modes (`PRUNING_MODE`):
+
+- `global` — single-pass activation collection + top-k prune across the whole model
+- `layerwise` — greedy layer-by-layer pruning (each layer conditioned on earlier pruned layers)
+- `layerwise_variable` — greedy layerwise with a per-layer keep-k schedule
+- `easy_ep` — EASY-EP ([arXiv 2504.06792](https://arxiv.org/abs/2504.06792)): domain-specific one-shot prune on calibration data
+
+The `runname` naming convention (size · router · LR · LB · date · phase) is documented in the cheatsheet at the bottom of `scripts/RUN_TEMPLATES.md`.
+
+-->
 
 ## Citing
 
