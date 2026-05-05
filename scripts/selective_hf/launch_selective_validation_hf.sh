@@ -28,12 +28,10 @@ num_epochs=1
 SELECTIVE_KEEP_K_VALUES=(8 16 32 128)
 batch_size=32
 
-# --- Selective calibration-set size ---
-# Leave empty to use the full validation pool for selection (default).
-# Set to an integer (e.g. 50) to subsample that many prompts (deterministic shuffle).
-# Set to "random" to bypass calibration entirely and randomly select experts
-# (seed=0, mode-agnostic — ignores SELECTIVE_MODE). Output dir uses _selectivemode-random.
-NUM_SELECTIVE_EXAMPLES=""
+# --- Selective calibration-set sizes to sweep ---
+# Each entry: integer ⇒ deterministic subsample of that many prompts;
+# empty string ⇒ full validation pool ("All").
+NUM_SELECTIVE_EXAMPLES_VALUES=(1 5 10 100 "")
 
 # --- Calibration-subsample seed ---
 # Controls torch.Generator().manual_seed(...) in the calibration permutation.
@@ -58,8 +56,10 @@ NUM_SELECTIVE_SEED=""
 #   SELECTIVE="0" EVAL=""  → _pshots-0
 #   SELECTIVE=""  EVAL="0" → _eshots-0
 #   SELECTIVE="0" EVAL="0" → _pshots-0_eshots-0
-NUM_SHOTS_SELECTIVE=""
-NUM_SHOTS_EVAL=""
+# Three (NUM_SHOTS_SELECTIVE, NUM_SHOTS_EVAL) configurations to sweep, parallel arrays.
+# Empty string ⇒ each task's default num_shots.
+SHOT_CONFIGS_SELECTIVE=("" "" "0")
+SHOT_CONFIGS_EVAL=(""    "0"  "0")
 
 # Define grouped tasks
 TASK_GROUPS_LIST=(
@@ -121,12 +121,24 @@ TASK_GROUPS_LIST=(
 
 )
 
-echo "Launching evals for ${#MODELS[@]} models, ${#SELECTIVE_KEEP_K_VALUES[@]} keep-k values, and ${#TASK_GROUPS_LIST[@]} task groups..."
+echo "Launching evals for ${#SHOT_CONFIGS_SELECTIVE[@]} shot configs, ${#NUM_SELECTIVE_EXAMPLES_VALUES[@]} validation sizes, ${#MODELS[@]} models, ${#SELECTIVE_KEEP_K_VALUES[@]} keep-k values, and ${#TASK_GROUPS_LIST[@]} task groups..."
 echo "Models: ${MODELS[@]}"
 echo "Keep-k values: ${SELECTIVE_KEEP_K_VALUES[@]}"
+echo "Validation sizes: ${NUM_SELECTIVE_EXAMPLES_VALUES[@]}"
 echo "GPUs: $NUM_GPUS"
 echo "Output dir: $OUTPUT_DIR"
 echo ""
+
+# Outer sweep over (NUM_SHOTS_SELECTIVE, NUM_SHOTS_EVAL) shot configurations.
+# Each iteration sets both vars, then runs the full
+# (model × keep-k × NUM_SELECTIVE_EXAMPLES × task) cross-product for that config.
+for shot_idx in "${!SHOT_CONFIGS_SELECTIVE[@]}"; do
+  NUM_SHOTS_SELECTIVE="${SHOT_CONFIGS_SELECTIVE[$shot_idx]}"
+  NUM_SHOTS_EVAL="${SHOT_CONFIGS_EVAL[$shot_idx]}"
+  echo ""
+  echo "=========================================="
+  echo "=== Shots: SELECTIVE=${NUM_SHOTS_SELECTIVE:-(empty)}, EVAL=${NUM_SHOTS_EVAL:-(empty)}"
+  echo "=========================================="
 
 # Launch evaluation for each model, keep-k, and task combination
 for ENTRY in "${MODELS[@]}"; do
@@ -190,6 +202,9 @@ for ENTRY in "${MODELS[@]}"; do
 
   for selective_keep_k in "${SELECTIVE_KEEP_K_VALUES[@]}"; do
     echo "Processing model: ${MODEL} (hf=${IS_HF}, shared=${num_shared_experts}, skip_selective=${SKIP_SELECTIVE_DECISION}), keep-k: ${selective_keep_k}"
+
+    for NUM_SELECTIVE_EXAMPLES in "${NUM_SELECTIVE_EXAMPLES_VALUES[@]}"; do
+      echo "  Validation size: ${NUM_SELECTIVE_EXAMPLES:-All}"
 
     for TASK in "${TASK_GROUPS_LIST[@]}"; do
         # Per-task micro-batch overrides (memory-bound: longer prompts / generation tasks
@@ -378,10 +393,14 @@ for ENTRY in "${MODELS[@]}"; do
         echo "----------------------------------------"
     done
 
+    done  # end NUM_SELECTIVE_EXAMPLES loop
+
     echo "Completed all tasks for model: $MODEL, keep-k: $selective_keep_k"
     echo "========================================"
   done
 done
 
+done  # end SHOT_CONFIGS loop
+
 echo "All evaluations have completed!"
-echo "Total runs: $((${#MODELS[@]} * ${#SELECTIVE_KEEP_K_VALUES[@]} * ${#TASK_GROUPS_LIST[@]}))"
+echo "Total runs: $((${#SHOT_CONFIGS_SELECTIVE[@]} * ${#NUM_SELECTIVE_EXAMPLES_VALUES[@]} * ${#MODELS[@]} * ${#SELECTIVE_KEEP_K_VALUES[@]} * ${#TASK_GROUPS_LIST[@]}))"
