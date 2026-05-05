@@ -33,12 +33,6 @@ scripts/clustering/
 │   ├── generate_mix.sh            # one-time S3 mix-composition
 │   ├── sweep.sh                   # generic k-sweep (2 methods × 4 k)
 │   └── sweep_two_models.sh        # two-1T-model harness over probs/topk
-├── mmlu/
-│   ├── extract.sh                 # 57 mmlu_merged_<subject> tasks
-│   └── sweep.sh                   # MMLU-specific sweep: k=16 fixed,
-│                                  # 3 embeddings × 2 balance × 2 methods
-├── hellaswag/
-│   └── extract.sh
 └── weborganizer/                   # standalone doc-level expert coverage
     ├── extract.sh                  # → embeddings_doc_topk_freq.npy
     │                               #   embeddings_doc_probs.npy
@@ -74,19 +68,6 @@ Saves per-token router logits from any data source. Always token-level — docum
 ```bash
 # Pretraining (S3-based, shuffled, truncated)
 bash scripts/clustering/pretraining/extract.sh [MODEL_PATH] [TARGET_TOKENS] [MAX_TOKENS_PER_DOC]
-
-# MMLU (57 per-subject mmlu_merged_<subject>:rc_validation::olmes tasks.
-#       The "merged validation" pool is test[:60%]+validation shuffled
-#       per subject. All prompts used — no subsampling. 5-shot
-#       subject-matched demos built by OLMES. Source label in metadata
-#       is "mmlu_merged_<subject>".)
-bash scripts/clustering/mmlu/extract.sh [MODEL_PATH]
-
-# HellaSwag (hellaswag_merged:rc_validation::olmes — merged train+val
-#           set. Subsampled to --num-calibration (default 100) via the
-#           same seeded torch.randperm as easy_ep_prune. Source label
-#           "hellaswag_merged".)
-bash scripts/clustering/hellaswag/extract.sh [MODEL_PATH]
 ```
 
 **Output format** (identical across sources):
@@ -106,7 +87,7 @@ info.json                   # extraction config
 | `--max-tokens-per-doc` | 250 (pretraining), 0 (tasks) | Truncate docs. 0 = no truncation. |
 | `--target-tokens` | 1,000,000 | Post-truncation token budget (pretraining only) |
 | `--shuffle-seed` | 42 | Random seed for S3 sampling (pretraining only) |
-| `--num-calibration` | 100 | Per-task prompt cap for mmlu / hellaswag. Seeded torch.randperm matches easy_ep_prune / greedy_prune_layerwise. Set `<=0` to disable. |
+| `--num-calibration` | 100 | Per-task prompt cap (when extracting from a task-style source). Seeded torch.randperm matches easy_ep_prune / greedy_prune_layerwise. Set `<=0` to disable. |
 | `--calibration-seed` | 0 | Seed for the calibration subsample. Matches the pruning pipeline default. |
 
 ## Step 2: Transform
@@ -143,9 +124,6 @@ bash scripts/clustering/common/cluster.sh <DATA_DIR> doc_topk_freq mean_pca_l2 s
 # Generic k-sweep (pretraining-shaped harness)
 bash scripts/clustering/pretraining/sweep.sh <DATA_DIR>
 
-# MMLU-specific sweep (k fixed to 16, iterates embeddings × balance × method)
-bash scripts/clustering/mmlu/sweep.sh <MMLU_DATA_DIR>
-
 # Class-balanced clustering (stratified subsample before PCA)
 bash scripts/clustering/common/cluster.sh <DATA_DIR> doc_probs mean_pca_l2 spherical_kmeans 32 source
 bash scripts/clustering/common/cluster.sh <DATA_DIR> doc_probs mean_pca_l2 spherical_kmeans 32 source 100
@@ -153,7 +131,7 @@ bash scripts/clustering/common/cluster.sh <DATA_DIR> doc_probs mean_pca_l2 spher
 
 ### Class balancing
 
-Raw MMLU / pretraining sources have heavily imbalanced class sizes (e.g. `professional_law` is 1090 docs vs `college_chemistry` at 68). Balancing stratified-subsamples the rows by a metadata field before preprocessing, so PCA and k-means see equal-weight classes.
+Raw pretraining sources have heavily imbalanced class sizes (e.g. one source can have an order of magnitude more docs than another). Balancing stratified-subsamples the rows by a metadata field before preprocessing, so PCA and k-means see equal-weight classes.
 
 | Flag | Default | Description |
 |------|---------|-------------|
@@ -237,21 +215,19 @@ then re-run `visualize_token.sh` to embed the labels.
 
 ```
 claude_outputs/clustering/
-├── pretraining/<model>/
-├── mmlu/<model>/
-│   ├── embeddings_logits.npy              # raw (from extract)
-│   ├── embeddings_{probs,topk_binary,layer0_probs}.npy  # token-level derived
-│   ├── embeddings_doc_{probs,logits,topk_freq,layer0_probs}.npy  # doc-level derived
-│   ├── documents.npy, doc_boundaries.npy
-│   ├── metadata_tokens.jsonl.gz, metadata_docs.jsonl.gz
-│   ├── info.json, extraction.log
-│   ├── preprocessed_<emb>_<prep>.npy                    # preprocess cache (unbalanced)
-│   ├── preprocessed_<emb>_<prep>_bal<key>N<n>seed<s>.{npy,meta.json}
-│   │                                                    # preprocess cache (balanced)
-│   └── <emb>_<prep>_<method>_k<K>/
-│       ├── assignments.npy, run_info.json, summary.json
-│       └── cluster_explorer.html
-└── hellaswag/<model>/
+└── pretraining/<model>/
+    ├── embeddings_logits.npy              # raw (from extract)
+    ├── embeddings_{probs,topk_binary,layer0_probs}.npy  # token-level derived
+    ├── embeddings_doc_{probs,logits,topk_freq,layer0_probs}.npy  # doc-level derived
+    ├── documents.npy, doc_boundaries.npy
+    ├── metadata_tokens.jsonl.gz, metadata_docs.jsonl.gz
+    ├── info.json, extraction.log
+    ├── preprocessed_<emb>_<prep>.npy                    # preprocess cache (unbalanced)
+    ├── preprocessed_<emb>_<prep>_bal<key>N<n>seed<s>.{npy,meta.json}
+    │                                                    # preprocess cache (balanced)
+    └── <emb>_<prep>_<method>_k<K>/
+        ├── assignments.npy, run_info.json, summary.json
+        └── cluster_explorer.html
 ```
 
 ## Weborganizer doc-level expert coverage

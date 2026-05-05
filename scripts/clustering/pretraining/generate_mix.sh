@@ -3,13 +3,14 @@
 # Queries S3 for file sizes and computes per-source token fractions.
 # Only needs to be run once — the mix doesn't change.
 #
-# Output: claude_outputs/clustering/pretraining_mix.json
+# Output: ${OUTPUT_DIR}/pretraining_mix.json (default: claude_outputs/clustering/)
 #
 # Usage:
 #   bash scripts/clustering/pretraining/generate_mix.sh
+#   OUTPUT_DIR=cluster_eval_final bash scripts/clustering/pretraining/generate_mix.sh
 set -euo pipefail
 
-OUTPUT_DIR="claude_outputs/clustering"
+OUTPUT_DIR="${OUTPUT_DIR:-claude_outputs/clustering}"
 mkdir -p "$OUTPUT_DIR"
 
 python -u -m src.scripts.clustering.generate_pretraining_mix \

@@ -307,17 +307,22 @@ def load_source_documents_shuffled(
 
 
 def load_model_and_tokenizer(model_path: str):
-    """Load an HF MoE model and tokenizer."""
+    """Load an HF MoE model and tokenizer.
+
+    `trust_remote_code=True` is required for the released HF Hub checkpoints
+    (allenai/Emo_*, allenai/StdMoE_*) which ship custom modeling code.
+    """
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     logger.info(f"Loading model from {model_path}")
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     model = AutoModelForCausalLM.from_pretrained(
         model_path,
         device_map="auto",
         torch_dtype=torch.float16,
+        trust_remote_code=True,
     )
     model.eval()
     return model, tokenizer

@@ -139,7 +139,43 @@ Override Beaker cluster sizing per script with `BEAKER_GPUS=8 BEAKER_NODES=4 ...
 
 ## Evaluation scripts
 
-We recommend reproducing our evals using some sort of slurm or scheduling system, since there will be many jobs launched. 
+### Selective Expert Usage
+
+The launch scripts in [`scripts/selective_hf/`](scripts/selective_hf/) exercise the full router-activation → expert selection → finetuning → eval pipeline on the released checkpoints. Each (model × keep-k × task × method) combination lands in its own subdirectory under `selective_evals_final/<model>/...`, with the pruned-expert model, finetuned checkpoint, and per-checkpoint metrics all colocated. Three scripts target different questions:
+
+| Script | Investigates | Sweep |
+|---|---|---|
+| [`launch_selective_hf.sh`](scripts/selective_hf/launch_selective_hf.sh) | Main selective-expert evaluation — how each released model performs when only a subset of experts is retained for a given task (Figures 3 and 4 of the paper). | All released models × keep-k ∈ {8, 16, 32, 64, 128} × MC9 / Gen5 / MMLU / MMLU-Pro / GSM8K task groups. |
+| [`launch_selective_method_hf.sh`](scripts/selective_hf/launch_selective_method_hf.sh) | Robustness to the choice of expert-selection method (Figure 5 of the paper). | {`layerwise`, `easy_ep`, `random`} selection methods × main 1T models × keep-k × tasks. |
+| [`launch_selective_validation_hf.sh`](scripts/selective_hf/launch_selective_validation_hf.sh) | Calibration-data ablation — how much validation data and how many few-shot examples are needed to identify the right experts (Appendix B.1 of the paper). | Validation-set sizes ∈ {1, 5, 10, 100, All} × 3 shot-count configurations × `Emo_1b14b_1T` × keep-k ∈ {8, 16, 32, 128} × tasks. |
+
+#### Output layout
+
+Every (model × keep-k × task × method) combination produces one self-contained subdirectory under `selective_evals_final/`:
+
+```
+selective_evals_final/
+└── <sanitized_model>/                            # e.g. allenaiEmo_1b14b_1T
+    └── <task>_keepk_<K>_bs-<B>_lr-<LR>_epoch-<E>_selectivemode-{layerwise,easy_ep,random}[_nselective-<N>][_pseed-<S>][_pshots-<X>][_eshots-<Y>]/
+        ├── selected_model/                       # pruned-expert HF checkpoint + pruning_metadata.json
+        ├── finetuned_model/
+        │   └── checkpoint-<N>/                   # HF Trainer-format finetuned weights
+        └── results/
+            └── checkpoint-<N>/
+                ├── task-<name>-metrics.json      # aggregate metrics for the task
+                ├── task-<name>-predictions.jsonl # per-instance predictions
+                └── per_subject/                  # only for MMLU category tasks
+                    └── <subject>/
+                        └── task-<name>-metrics.json
+```
+
+The optional `_nselective-`, `_pseed-`, `_pshots-`, `_eshots-` suffixes only appear when the corresponding override is set (e.g. you'll only see `_nselective-100` when running with a sub-sampled calibration set).
+
+#### Customization
+
+Each script writes its config (`MODELS`, `SELECTIVE_KEEP_K_VALUES`, `TASK_GROUPS_LIST`, etc.) at the top — comment lines out to skip combinations. Override the output root with `OUTPUT_DIR=…` and the per-worker GPU count with `NUM_GPUS=…`.
+
+We recommend running these on a slurm or other scheduling system, since each script launches many sequential worker invocations.
 
 <!--
 

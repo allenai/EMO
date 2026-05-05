@@ -5,26 +5,35 @@
 # The model is loaded with device_map="auto" which shards across available GPUs.
 #
 # Usage:
-#   bash scripts/clustering/pretraining/extract.sh [MODEL_PATH] [TARGET_TOKENS] [MAX_TOKENS_PER_DOC]
+#   bash scripts/clustering/pretraining/extract.sh <MODEL_PATH> [TARGET_TOKENS] [MAX_TOKENS_PER_DOC]
+#
+# MODEL_PATH may be a local checkpoint dir or an HF Hub id
+# (e.g. allenai/Emo_1b14b_1T). HF Hub models load via trust_remote_code=True.
 #
 # Examples:
-#   # Default: 1M tokens, 100 tok/doc
-#   bash scripts/clustering/pretraining/extract.sh
-#
-#   # Specific model
+#   # Local checkpoint (output subdir defaults to the local run name)
 #   bash scripts/clustering/pretraining/extract.sh models/moereducedp512_1b14b_lr-4e-3_lb-1e-1_0211/step30995-hf
 #
+#   # HF Hub id (set MODEL_NAME to control the output subdir name; otherwise
+#   # the basename(dirname()) derivation gives e.g. "allenai", which collides
+#   # across models from the same org)
+#   MODEL_NAME=Emo_1b14b_1T bash scripts/clustering/pretraining/extract.sh allenai/Emo_1b14b_1T
+#
 #   # Use specific GPUs
-#   CUDA_VISIBLE_DEVICES=0,1 bash scripts/clustering/pretraining/extract.sh
+#   CUDA_VISIBLE_DEVICES=0,1 bash scripts/clustering/pretraining/extract.sh <MODEL_PATH>
 set -euo pipefail
 
-MODEL_PATH="${1:-models/twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301/step30995-hf}"
+MODEL_PATH="${1:?Usage: $0 <MODEL_PATH> [TARGET_TOKENS] [MAX_TOKENS_PER_DOC]}"
 TARGET_TOKENS="${2:-1000000}"
 MAX_TOKENS_PER_DOC="${3:-100}"
 
-MODEL_NAME="$(basename "$(dirname "$MODEL_PATH")")"
-BASE_DIR="claude_outputs/clustering/pretraining"
-COMPOSITION_FILE="claude_outputs/clustering/pretraining_mix.json"
+# Output subdir name. Defaults to the local-path convention
+# (basename(dirname(MODEL_PATH))). Override via the MODEL_NAME env var when
+# MODEL_PATH is an HF Hub id, where dirname would give the org name (e.g.
+# "allenai") and collide across different models from the same org.
+MODEL_NAME="${MODEL_NAME:-$(basename "$(dirname "$MODEL_PATH")")}"
+BASE_DIR="${BASE_DIR:-claude_outputs/clustering/pretraining}"
+COMPOSITION_FILE="${COMPOSITION_FILE:-claude_outputs/clustering/pretraining_mix.json}"
 OUTPUT_DIR="${BASE_DIR}/${MODEL_NAME}"
 
 echo "Model: $MODEL_PATH"
