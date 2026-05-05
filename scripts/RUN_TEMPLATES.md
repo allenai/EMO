@@ -224,10 +224,10 @@ done
 
 ## 6. Pruning + task-specific finetuning
 
-For each (model, keep-k, task), compute router activations → prune to top-k experts → finetune. Worker: `scripts/pruning_hf/hf_finetune_with_pruning.sh`.
+For each (model, keep-k, task), compute router activations → prune to top-k experts → finetune. Worker: `scripts/pruning_hf/hf_finetune_with_pruning_layerwise.sh` (or `_easy_ep.sh` / `_random.sh`, depending on `PRUNING_MODE`).
 
 ```bash
-PRUNING_MODE="layerwise"   # global | layerwise | layerwise_variable | easy_ep
+PRUNING_MODE="layerwise"   # layerwise | easy_ep
 PRUNE_KEEP_K_VALUES=(8 16 32 64)
 num_epochs=1
 batch_size=32
@@ -263,7 +263,7 @@ for MODEL in "${MODELS[@]}"; do
 
             relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}_prunemode-${PRUNING_MODE}"
 
-            bash scripts/pruning_hf/hf_finetune_with_pruning.sh \
+            bash scripts/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
                 --model "${MODEL}" \
                 --task "${TASK}" \
                 --prune-keep-k ${prune_keep_k} \
@@ -281,9 +281,7 @@ done
 ```
 
 Pruning-mode variants (pick one `PRUNING_MODE`):
-- `global` — single-pass activation collection + top-k prune across the whole model
 - `layerwise` — greedy layer-by-layer pruning (each layer conditioned on earlier pruned layers)
-- `layerwise_variable` — greedy layerwise with a per-layer keep-k schedule (`KEEP_K_PER_LAYER=128,128,32,...`)
 - `easy_ep` — EASY-EP (arXiv 2504.06792): domain-specific one-shot prune on calibration data
 
 Optional calibration-size control:

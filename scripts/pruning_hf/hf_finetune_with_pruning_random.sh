@@ -227,7 +227,7 @@ for checkpoint in "${all_checkpoints[@]}"; do
         --model-type hf \
         --task "$TASK-pruned" \
         --pruned_split "test" \
-        --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
+        --output-dir "${OUTPUT_DIR}/results/checkpoint-${checkpoint_num}" \
         --batch-size $EVAL_BATCH_SIZE \
         --gpus "$NUM_GPUS" \
         "${NUM_SHOTS_EVAL_FLAG[@]}"
@@ -264,7 +264,7 @@ if [ -n "$MMLU_SUBJECTS" ]; then
                 --model-type hf \
                 --task "${SUBJECT_TASK_PREFIX}${subject}-pruned" \
                 --pruned_split "test" \
-                --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}/per_subject/${subject}" \
+                --output-dir "${OUTPUT_DIR}/results/checkpoint-${checkpoint_num}/per_subject/${subject}" \
                 --batch-size $EVAL_BATCH_SIZE \
                 --gpus "$NUM_GPUS" \
                 "${NUM_SHOTS_EVAL_FLAG[@]}"

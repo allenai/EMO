@@ -5,11 +5,12 @@ export PYTHONPATH="$(pwd)/src${PYTHONPATH:+:${PYTHONPATH}}"
 #
 # HuggingFace-Native Finetuning Pipeline with Greedy Layerwise Expert Pruning
 #
-# Identical to hf_finetune_with_pruning.sh except that steps 1+2
-# (activation collection and pruning) are replaced by a single call to
-# greedy_prune_layerwise.py, which prunes one layer at a time so that each
-# layer's activation statistics are conditioned on the already-pruned
-# earlier layers.
+# Pipeline:
+#   1. Greedy layerwise pruning via greedy_prune_layerwise.py — prunes one
+#      layer at a time so each layer's activation statistics are conditioned
+#      on the already-pruned earlier layers.
+#   2. Finetune the pruned model on the task's training set.
+#   3. Evaluate.
 #
 # Usage:
 #   ./scripts/pruning_hf/hf_finetune_with_pruning_layerwise.sh \
@@ -356,7 +357,7 @@ for checkpoint in "${all_checkpoints[@]}"; do
         --model-type hf \
         --task "$TASK-pruned" \
         --pruned_split "test" \
-        --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}" \
+        --output-dir "${OUTPUT_DIR}/results/checkpoint-${checkpoint_num}" \
         --batch-size $EVAL_BATCH_SIZE \
         --gpus "$NUM_GPUS" \
         $EVAL_MA_FLAG \
@@ -398,7 +399,7 @@ if [ -n "$MMLU_SUBJECTS" ]; then
                 --model-type hf \
                 --task "${SUBJECT_TASK_PREFIX}${subject}-pruned" \
                 --pruned_split "test" \
-                --remote-output-dir "s3://ai2-sewonm/ryanwang/prune_evals_final/${RELATIVE_DIR}/results/checkpoint-${checkpoint_num}/per_subject/${subject}" \
+                --output-dir "${OUTPUT_DIR}/results/checkpoint-${checkpoint_num}/per_subject/${subject}" \
                 --batch-size $EVAL_BATCH_SIZE \
                 --gpus "$NUM_GPUS" \
                 $EVAL_MA_FLAG \

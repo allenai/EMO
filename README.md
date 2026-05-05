@@ -119,7 +119,7 @@ For more details, see the [vLLM documentation](https://docs.vllm.ai/en/latest/ge
 
 ## Training scripts
 
-Project-specific pretraining recipes live in [`scripts`](scripts/). Please refer to #[Released Models](#released-models) for the training scripts corresponding to each released checkpoint.
+Project-specific pretraining recipes live in [`scripts`](scripts/). Please refer to [Released Models](#released-models) for the training scripts corresponding to each released checkpoint.
 
 Run a script locally:
 
@@ -143,7 +143,7 @@ Override Beaker cluster sizing per script with `BEAKER_GPUS=8 BEAKER_NODES=4 ...
 
 ## Evaluation scripts
 
-
+We recommend reproducing our evals using some sort of slurm or scheduling system, since there will be many jobs launched. 
 
 <!--
 
