@@ -177,6 +177,87 @@ Each script writes its config (`MODELS`, `SELECTIVE_KEEP_K_VALUES`, `TASK_GROUPS
 
 We recommend running these on a slurm or other scheduling system, since each script launches many sequential worker invocations.
 
+### Clustering Pretraining Document Tokens
+
+[`scripts/clustering/run_pretraining_compare.sh`](scripts/clustering/run_pretraining_compare.sh) reproduces the side-by-side router-activation clustering used to compare EMO and the standard MoE baseline (Section 5.3 / Figure 6 of the paper). For each of `allenai/Emo_1b14b_1T` and `allenai/StdMoE_1b14b_1T` it:
+
+1. Streams ~1M tokens of the OLMoE pretraining mix from S3
+2. Runs a forward pass and saves token-level router logits
+3. Derives softmax probs, runs PCA + spherical k-means at `k=32`
+4. Renders an interactive side-by-side HTML explorer of both models' clusters
+
+```bash
+bash scripts/clustering/run_pretraining_compare.sh
+# → cluster_eval_final/pretraining/compare_Emo_1b14b_1T_vs_StdMoE_1b14b_1T.html
+```
+
+#### Output layout
+
+```
+cluster_eval_final/
+├── pretraining_mix.json                   # generated once, then reused
+└── pretraining/
+    ├── Emo_1b14b_1T/
+    │   ├── embeddings_logits.npy + ...    # extract outputs (tokens, doc boundaries, metadata)
+    │   ├── embeddings_probs.npy           # transform output
+    │   └── probs_mean_pca_l2_spherical_kmeans_k32/
+    │       ├── assignments.npy, run_info.json, summary.json
+    │       └── cluster_explorer.html
+    ├── StdMoE_1b14b_1T/
+    │   └── (same structure)
+    └── compare_Emo_1b14b_1T_vs_StdMoE_1b14b_1T.html
+```
+
+The underlying primitives (extract / transform / cluster / visualize) live in [`scripts/clustering/`](scripts/clustering/) — see its [README](scripts/clustering/README.md) for the modular pipeline.
+
+#### Customization
+
+- `CLUSTER_ROOT=…` overrides the output root (default `cluster_eval_final/`).
+- `TARGET_TOKENS=…` and `MAX_TOKENS_PER_DOC=…` change the extraction budget and per-doc truncation.
+- `CUDA_VISIBLE_DEVICES=…` restricts which GPUs the model is sharded across.
+
+Pretraining shards stream directly from `s3://ai2-llm/…` (no weka mount required), so the pipeline needs AWS credentials with read access to the `ai2-llm` bucket.
+
+### Weborganizer Expert Coverage
+
+[`scripts/clustering/run_weborganizer_compare.sh`](scripts/clustering/run_weborganizer_compare.sh) reproduces the per-domain expert-activation heatmaps used to compare EMO and the standard MoE baseline (Section 5.3 / Figure 7 of the paper). For each of `allenai/Emo_1b14b_1T` and `allenai/StdMoE_1b14b_1T` it:
+
+1. Streams ~20M tokens of the cc_all_dressed weborganizer mix from S3, sampled uniformly across the 24 topics
+2. Runs a single forward pass and aggregates router activations into per-document expert vectors (top-k frequency + softmax probs)
+3. Renders 5 expert-coverage heatmaps per embedding type (10 PNGs total per model)
+
+Both models share a single `topic_order.json` (stratified row/column ordering) so the resulting heatmaps are directly comparable side-by-side.
+
+```bash
+bash scripts/clustering/run_weborganizer_compare.sh
+# → cluster_eval_final/weborganizer/{Emo_1b14b_1T,StdMoE_1b14b_1T}/*.png
+```
+
+#### Output layout
+
+```
+cluster_eval_final/
+└── weborganizer/
+    ├── mix_composition.json      # auto-generated on first run by extract_document.py
+    ├── topic_order.json          # shared row/column ordering for cross-model comparison
+    ├── Emo_1b14b_1T/
+    │   ├── embeddings_doc_topk_freq.npy
+    │   ├── embeddings_doc_probs.npy
+    │   └── *.png                 # 5 heatmaps × 2 embedding types = 10 PNGs
+    └── StdMoE_1b14b_1T/
+        └── (same structure)
+```
+
+The underlying primitives (extract_document / plot_doc_expert_coverage) live in [`scripts/clustering/weborganizer/`](scripts/clustering/weborganizer/).
+
+#### Customization
+
+- `CLUSTER_ROOT=…` overrides the output root (default `cluster_eval_final/`).
+- `TARGET_TOKENS=…` changes the extraction budget (default 20M).
+- `CUDA_VISIBLE_DEVICES=…` restricts which GPUs the model is sharded across.
+
+Same data dependency as the pretraining-clustering flow: cc_all_dressed shards stream directly from `s3://ai2-llm/…`, so AWS credentials with read access to the `ai2-llm` bucket are required.
+
 <!--
 
 ### Run templates
@@ -207,6 +288,8 @@ Pruning modes (`PRUNING_MODE`):
 - `easy_ep` — EASY-EP ([arXiv 2504.06792](https://arxiv.org/abs/2504.06792)): domain-specific one-shot prune on calibration data
 
 The `runname` naming convention (size · router · LR · LB · date · phase) is documented in the cheatsheet at the bottom of `scripts/RUN_TEMPLATES.md`.
+
+WebOrganizer Domain Similarity Analysis
 
 -->
 
