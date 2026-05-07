@@ -209,7 +209,7 @@ def _draw_legend(fig) -> None:
     ]
     leg_n = fig.legend(
         n_handles, [h.get_label() for h in n_handles],
-        title="n (calibration samples)",
+        title="n (validation examples)",
         ncol=len(n_handles),
         loc="lower center", bbox_to_anchor=(0.70, 0.005),
         facecolor="#F5F5F5", edgecolor="#888888",

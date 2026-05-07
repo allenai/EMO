@@ -142,7 +142,10 @@ def _draw_quad(
         ax.set_xticks(range(len(topics)))
         ax.set_yticks(range(len(topics)))
         if row == 1:
-            ax.set_xticklabels(topics, fontsize=6, rotation=90)
+            ax.set_xticklabels(
+                topics, fontsize=6, rotation=45,
+                ha="right", rotation_mode="anchor",
+            )
         else:
             ax.set_xticklabels([])
         if col == 0:
