@@ -46,6 +46,7 @@ git clone https://github.com/allenai/EMO.git
 cd EMO
 conda create -n emo python==3.12
 uv pip install -e .[all]
+uv pip install --upgrade 'chardet>=7'
 ```
 
 ## Released Models
@@ -137,6 +138,8 @@ For more details, see the [vLLM documentation](https://docs.vllm.ai/en/latest/ge
 ## Training scripts
 
 Project-specific pretraining recipes live in [`scripts`](scripts/). Please refer to [Released Models](#released-models) for the training scripts corresponding to each released checkpoint.
+
+**Note**: these scripts are trained on the exact same data as OLMoE, which is publicly accessible [here](https://huggingface.co/datasets/allenai/OLMoE-mix-0924). The current pretraining script draws data from a tokenized version of this dataset hosted internally. You can tokenize the dataset yourself following instructions [here](https://github.com/allenai/dolma/tree/main/docs). We will also be releasing an endpoint for the data we used directly soon.
 
 Run a script locally:
 
@@ -264,7 +267,7 @@ The underlying primitives (extract / transform / cluster / visualize) live in [`
 - `TARGET_TOKENS=…` and `MAX_TOKENS_PER_DOC=…` change the extraction budget and per-doc truncation.
 - `CUDA_VISIBLE_DEVICES=…` restricts which GPUs the model is sharded across.
 
-Pretraining shards stream directly from `s3://ai2-llm/…` (no weka mount required), so the pipeline needs AWS credentials with read access to the `ai2-llm` bucket.
+**Note**: this script uses the exact same data as OLMoE, which is publicly accessible [here](https://huggingface.co/datasets/allenai/OLMoE-mix-0924). The current script draws data from a tokenized version of this dataset hosted internally. You can tokenize the dataset yourself following instructions [here](https://github.com/allenai/dolma/tree/main/docs). We will also be releasing an endpoint for the data we used directly soon.
 
 ### Weborganizer Expert Coverage
 
@@ -304,7 +307,8 @@ The underlying primitives (extract_document / plot_doc_expert_coverage) live in 
 - `TARGET_TOKENS=…` changes the extraction budget (default 20M).
 - `CUDA_VISIBLE_DEVICES=…` restricts which GPUs the model is sharded across.
 
-Same data dependency as the pretraining-clustering flow: cc_all_dressed shards stream directly from `s3://ai2-llm/…`, so AWS credentials with read access to the `ai2-llm` bucket are required.
+**Note**: this script uses the WebOrganizer dataset, which is publicly accessible [here](https://huggingface.co/WebOrganizer). The current script draws data from a tokenized version of this dataset hosted internally. You can tokenize the dataset yourself following instructions [here](https://github.com/allenai/dolma/tree/main/docs). We will also be releasing an endpoint for the data we used directly soon.
+
 
 <!--
 
