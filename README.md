@@ -111,11 +111,14 @@ print(olmo_pipe("Language modeling is"))
 
 ### With vLLM
 
-[vLLM](https://docs.vllm.ai/en/latest/) provides high-throughput inference. You can use it for offline batched inference:
+[vLLM](https://docs.vllm.ai/en/latest/) provides high-throughput inference. We ship a small out-of-tree plugin at [`src/vllm_plugin/`](src/vllm_plugin/) that registers `EmoForCausalLM` with vLLM's native model registry
 
 ```bash
 pip install vllm>=0.11.0
+pip install -e src/vllm_plugin  # optional; only needed for the native path
 ```
+
+You can run offline batched inference:
 
 ```python
 from vllm import LLM, SamplingParams
