@@ -14,7 +14,7 @@
   <a href="#">
     <img alt="Paper URL" src="https://img.shields.io/badge/Emo-arxiv-blue">
   </a>
-  <a href="https://huggingface.co/collections/allenai/modmoe">
+  <a href="https://huggingface.co/collections/allenai/emo">
     <img alt="Model Checkpoints" src="https://img.shields.io/badge/%F0%9F%A4%97%20HF-Models-yellow">
   </a>
 </p>
@@ -50,7 +50,7 @@ uv pip install -e .[all]
 
 ## Released Models
 
-All checkpoints are available in the [ModMoE collection](https://huggingface.co/collections/allenai/modmoe) on the Hugging Face Hub.
+All checkpoints are available in the [EMO collection](https://huggingface.co/collections/allenai/emo) on the Hugging Face Hub.
 
 ### Main Release (1T tokens)
 
