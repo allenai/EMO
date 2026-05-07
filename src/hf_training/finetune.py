@@ -23,6 +23,7 @@ import argparse
 import logging
 import math
 import os
+import re
 from dataclasses import dataclass
 from typing import Optional
 
@@ -69,6 +70,14 @@ class FinetuneConfig:
     report_to: str = "wandb"
     run_name: Optional[str] = None
     trust_remote_code: bool = False
+    num_shots_override: Optional[int] = None
+    # Freeze pattern for selective finetuning. Names are interpreted by apply_freeze_mode().
+    #   none                  — train everything (default).
+    #   routed                — only routable expert MLPs trainable; shared expert + router
+    #                           + attention + norms + embed + lm_head all frozen.
+    #   routed_shared         — routable + shared expert MLPs trainable; router frozen.
+    #   routed_shared_router  — routable + shared expert MLPs + router trainable; rest frozen.
+    freeze_mode: str = "none"
 
 
 class MaskedLossDataCollator(DataCollatorForLanguageModeling):
@@ -114,6 +123,72 @@ def compute_save_steps(total_steps: int, num_checkpoints: int) -> int:
     return max(1, total_steps // num_checkpoints)
 
 
+_EXPERT_RE = re.compile(r"^model\.layers\.\d+\.mlp\.experts\.(\d+)\.")
+_ROUTER_RE = re.compile(r"^model\.layers\.\d+\.mlp\.gate\.")
+
+
+def apply_freeze_mode(model, mode: str) -> None:
+    """
+    Freeze model parameters according to ``mode``. See FinetuneConfig.freeze_mode for the
+    allowed values. The shared expert is identified by index range (last
+    ``num_shared_experts`` indices in each layer's expert ModuleList) — matches the
+    convention used by greedy_prune_layerwise.py and merge_pruned_experts_back.py.
+    """
+    if mode == "none":
+        return
+    if mode not in ("routed", "routed_shared", "routed_shared_router"):
+        raise ValueError(
+            f"Unknown freeze_mode {mode!r}. Expected one of: "
+            "none, routed, routed_shared, routed_shared_router"
+        )
+
+    num_experts = int(model.config.num_experts)
+    num_shared = int(getattr(model.config, "num_shared_experts", 0))
+    num_standard = num_experts - num_shared
+
+    n_train = 0
+    n_frozen = 0
+    train_categories: dict = {"routable_expert": 0, "shared_expert": 0, "router": 0}
+
+    for name, param in model.named_parameters():
+        unfreeze = False
+
+        m_expert = _EXPERT_RE.match(name)
+        if m_expert is not None:
+            expert_idx = int(m_expert.group(1))
+            is_routable = expert_idx < num_standard
+            if is_routable:
+                unfreeze = True
+                train_categories["routable_expert"] += 1
+            else:
+                # Shared expert: unfreeze only in modes that include it
+                if mode in ("routed_shared", "routed_shared_router"):
+                    unfreeze = True
+                    train_categories["shared_expert"] += 1
+        elif _ROUTER_RE.match(name) is not None:
+            if mode == "routed_shared_router":
+                unfreeze = True
+                train_categories["router"] += 1
+
+        param.requires_grad = unfreeze
+        if unfreeze:
+            n_train += 1
+        else:
+            n_frozen += 1
+
+    n_train_elts = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    n_total_elts = sum(p.numel() for p in model.parameters())
+    logger.info(
+        f"freeze_mode={mode}: {n_train} trainable params / {n_train + n_frozen} total "
+        f"({n_train_elts:,} / {n_total_elts:,} elements, "
+        f"{100.0 * n_train_elts / max(n_total_elts, 1):.2f}%)"
+    )
+    logger.info(
+        f"  trainable breakdown: routable_expert={train_categories['routable_expert']}, "
+        f"shared_expert={train_categories['shared_expert']}, router={train_categories['router']}"
+    )
+
+
 def finetune(config: FinetuneConfig):
     """Run finetuning with the given configuration."""
     logger.info(f"Loading model from {config.model_path}")
@@ -144,6 +219,11 @@ def finetune(config: FinetuneConfig):
     if model.config.pad_token_id is not None:
         model.generation_config.pad_token_id = model.config.pad_token_id
 
+    # Apply freeze pattern (no-op for freeze_mode="none"). Done before checkpoint-0 save
+    # is irrelevant for the saved weights, but keeps requires_grad consistent for any
+    # introspection callbacks that look at the saved checkpoint.
+    apply_freeze_mode(model, config.freeze_mode)
+
     # save the checkpoint 0 of the model before any training
     logger.info(f"Saving initial checkpoint to {config.output_dir}/checkpoint-0")
     if not dist.is_initialized() or dist.get_rank() == 0:
@@ -163,6 +243,7 @@ def finetune(config: FinetuneConfig):
         split="train",
         tokenizer=tokenizer,
         max_length=config.max_seq_length,
+        num_shots_override=config.num_shots_override,
     )
 
     logger.info(f"Train dataset size: {len(train_dataset)}")
@@ -355,6 +436,21 @@ def main():
         action="store_true",
         help="Trust remote code when loading from HF Hub (default: False)",
     )
+    parser.add_argument(
+        "--num-shots",
+        type=int,
+        default=None,
+        help="Override task config's num_shots for the training dataset "
+        "(default: use config value)",
+    )
+    parser.add_argument(
+        "--freeze-mode",
+        type=str,
+        default="none",
+        choices=["none", "routed", "routed_shared", "routed_shared_router"],
+        help="Selective-finetune freeze pattern (default: none = train everything). "
+        "See FinetuneConfig.freeze_mode for what each mode unfreezes.",
+    )
 
     args = parser.parse_args()
 
@@ -375,6 +471,8 @@ def main():
         run_name=args.run_name,
         report_to=args.report_to,
         trust_remote_code=args.trust_remote_code,
+        num_shots_override=args.num_shots,
+        freeze_mode=args.freeze_mode,
     )
 
     finetune(config)

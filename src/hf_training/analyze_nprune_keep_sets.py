@@ -1,0 +1,224 @@
+"""
+Calibration-size sensitivity analysis for greedy layerwise MoE pruning.
+
+For a single model, sweeps over (task, keep_k, num_prune_examples) and records the
+kept-expert set plus per-expert average router probabilities at each MoE layer. Results
+are written as per-combo JSON files under ``--output-dir``.
+
+Calibration data is byte-identical to the eval pipeline's layerwise pruning step
+(``hf_finetune_with_pruning_layerwise.sh`` -> ``greedy_prune_layerwise``):
+    - same ``get_formatted_prompts(task, split)`` call
+    - same ``torch.Generator().manual_seed(0)`` + ``randperm`` subsample (nested subsets)
+    - same tokenizer kwargs, same batch_size default
+
+The model is loaded once and snapshot/restored between combos so the sweep runs in a
+single process without accumulating the in-place mutations from prior pruning runs.
+"""
+
+import argparse
+import json
+import logging
+import re
+from pathlib import Path
+from typing import List, Optional
+
+import torch
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
+
+from src.hf_training.data_utils import get_formatted_prompts
+from src.hf_training.greedy_prune_layerwise import (
+    compute_layerwise_keep_sets,
+    restore_model_state,
+    snapshot_model_state,
+)
+
+logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+def _stringify_model(model_path: str) -> str:
+    """Match the shell stringification in launch_pruning_hf.sh:
+    keep [a-zA-Z0-9_-], applied to the last two path components joined.
+    """
+    p = Path(model_path)
+    rel = f"{p.parent.name}/{p.name}" if p.parent.name else p.name
+    return re.sub(r"[^a-zA-Z0-9_-]", "", rel)
+
+
+def _parse_nprune(v: str) -> Optional[int]:
+    if v.lower() == "all":
+        return None
+    return int(v)
+
+
+def _nprune_tag(n: Optional[int]) -> str:
+    return "all" if n is None else str(n)
+
+
+def _first_moe_layer_idx(model) -> Optional[int]:
+    for i, layer in enumerate(model.model.layers):
+        if hasattr(layer, "mlp") and hasattr(layer.mlp, "experts"):
+            return i
+    return None
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", type=str, required=True, help="Path to HF model")
+    parser.add_argument("--num-shared-experts", type=int, default=0)
+    parser.add_argument("--tasks", type=str, nargs="+", required=True)
+    parser.add_argument("--prune-keep-k-values", type=int, nargs="+", required=True)
+    parser.add_argument(
+        "--num-prune-examples-values",
+        type=str,
+        nargs="+",
+        required=True,
+        help="List of calibration sizes; accepts integers and the literal 'all'",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="claude_outputs/prune_plots/nprune_analysis",
+    )
+    parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument("--split", type=str, default="validation")
+    parser.add_argument("--device", type=str, default=None)
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="Skip combos whose output JSON already exists",
+    )
+    parser.add_argument(
+        "--shard-idx",
+        type=int,
+        default=0,
+        help="Zero-based shard index; process tasks where task_idx %% num_shards == shard_idx",
+    )
+    parser.add_argument(
+        "--num-shards",
+        type=int,
+        default=1,
+        help="Total number of shards; default 1 (no sharding)",
+    )
+    args = parser.parse_args()
+    if not (0 <= args.shard_idx < args.num_shards):
+        raise ValueError(
+            f"--shard-idx must be in [0, --num-shards); got {args.shard_idx} / {args.num_shards}"
+        )
+
+    nprune_values: List[Optional[int]] = [_parse_nprune(v) for v in args.num_prune_examples_values]
+    stringified_model = _stringify_model(args.model)
+    model_out_root = Path(args.output_dir) / stringified_model
+    model_out_root.mkdir(parents=True, exist_ok=True)
+
+    logger.info(f"Loading model: {args.model}")
+    config = AutoConfig.from_pretrained(args.model)
+    model = AutoModelForCausalLM.from_pretrained(
+        args.model,
+        config=config,
+        torch_dtype=torch.bfloat16,
+        device_map="auto" if args.device is None else args.device,
+    )
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    first_moe_idx = _first_moe_layer_idx(model)
+    if first_moe_idx is None:
+        raise RuntimeError("No MoE layers found in model")
+    logger.info(f"First MoE layer index: {first_moe_idx}")
+
+    pristine = snapshot_model_state(model)
+    logger.info(
+        f"Snapshotted pristine state for "
+        f"{sum(1 for s in pristine['layers'] if s is not None)} MoE layers"
+    )
+
+    my_tasks = [(i, t) for i, t in enumerate(args.tasks) if i % args.num_shards == args.shard_idx]
+    logger.info(
+        f"Shard {args.shard_idx}/{args.num_shards}: handling {len(my_tasks)} of "
+        f"{len(args.tasks)} tasks: {[t for _, t in my_tasks]}"
+    )
+
+    total_combos = len(my_tasks) * len(nprune_values) * len(args.prune_keep_k_values)
+    combo_idx = 0
+
+    for _, task in my_tasks:
+        logger.info(f"=== Task: {task} ===")
+        prompts, _ = get_formatted_prompts(task, args.split)
+        logger.info(f"Loaded {len(prompts)} validation prompts")
+        # Nested subsample: seed=0 randperm, then slice [:N]. Matches the per-call
+        # behaviour in greedy_prune_layerwise (but computed once per task so nested
+        # N values stay consistent).
+        perm = torch.randperm(len(prompts), generator=torch.Generator().manual_seed(0)).tolist()
+
+        for n_cal in nprune_values:
+            if n_cal is None:
+                sub_prompts = prompts
+            else:
+                n_keep = min(n_cal, len(prompts))
+                sub_prompts = [prompts[i] for i in perm[:n_keep]]
+
+            for keep_k in args.prune_keep_k_values:
+                combo_idx += 1
+                out_dir = model_out_root / task / f"keepk-{keep_k}"
+                out_dir.mkdir(parents=True, exist_ok=True)
+                out_path = out_dir / f"nprune-{_nprune_tag(n_cal)}.json"
+
+                if args.skip_existing and out_path.exists():
+                    logger.info(
+                        f"[{combo_idx}/{total_combos}] SKIP (exists): "
+                        f"{task} keepk={keep_k} N={_nprune_tag(n_cal)}"
+                    )
+                    continue
+
+                logger.info(
+                    f"[{combo_idx}/{total_combos}] task={task} "
+                    f"keepk={keep_k} N={_nprune_tag(n_cal)} "
+                    f"(using {len(sub_prompts)} prompts)"
+                )
+
+                # Reset model to pristine state before each combo.
+                restore_model_state(model, pristine)
+
+                # Cheap sanity check: first MoE layer's gate.weight must match pristine.
+                pristine_gate = pristine["layers"][first_moe_idx]["gate_weight"]
+                current_gate = model.model.layers[first_moe_idx].mlp.gate.weight.data
+                if not torch.equal(pristine_gate.to(current_gate.device), current_gate):
+                    raise RuntimeError(
+                        f"restore_model_state did not produce a byte-identical gate "
+                        f"weight at layer {first_moe_idx}"
+                    )
+
+                experts_kept, avg_probs = compute_layerwise_keep_sets(
+                    model=model,
+                    tokenizer=tokenizer,
+                    task_name=task,
+                    split=args.split,
+                    prune_keep_k=keep_k,
+                    num_shared_experts=args.num_shared_experts,
+                    batch_size=args.batch_size,
+                    num_calibration=n_cal,
+                    prompts=sub_prompts,
+                )
+
+                payload = {
+                    "model": args.model,
+                    "task": task,
+                    "split": args.split,
+                    "prune_keep_k": keep_k,
+                    "num_shared_experts": args.num_shared_experts,
+                    "num_calibration": n_cal,
+                    "num_calibration_effective": len(sub_prompts),
+                    "experts_kept_per_layer": experts_kept,
+                    "avg_probs_per_layer": avg_probs,
+                }
+                with open(out_path, "w") as f:
+                    json.dump(payload, f)
+                logger.info(f"Wrote {out_path}")
+
+    logger.info(f"Done. {combo_idx} combos processed.")
+
+
+if __name__ == "__main__":
+    main()

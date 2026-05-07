@@ -39,6 +39,61 @@ from src.scripts.clustering.transform import (
     load_embedding,
 )
 
+
+def balance_by_class(
+    emb: np.ndarray,
+    meta: list,
+    key: str,
+    n: int | None,
+    seed: int,
+) -> tuple[np.ndarray, list, np.ndarray]:
+    """Stratified subsample: keep at most ``n`` rows per unique value of meta[key].
+
+    If ``n`` is None or larger than a class's count, all rows for that class
+    are kept. Returns ``(emb_sub, meta_sub, kept_indices)`` with the original
+    row order preserved.
+    """
+    rng = np.random.default_rng(seed)
+    by_class: dict = {}
+    for i, m in enumerate(meta):
+        if key not in m:
+            raise KeyError(
+                f"balance_by_class: metadata row {i} has no '{key}' field. "
+                f"Keys present: {sorted(m.keys())}"
+            )
+        by_class.setdefault(m[key], []).append(i)
+
+    counts = {cls: len(idxs) for cls, idxs in by_class.items()}
+    min_cnt = min(counts.values())
+    max_cnt = max(counts.values())
+    target = n if n is not None else min_cnt
+    logger.info(
+        f"Balancing by '{key}': {len(counts)} classes, "
+        f"min={min_cnt}, max={max_cnt}  ->  cap={target}/class"
+    )
+
+    kept: list[int] = []
+    for cls in sorted(by_class.keys()):
+        idxs = by_class[cls]
+        if len(idxs) <= target:
+            kept.extend(idxs)
+        else:
+            chosen = rng.choice(idxs, size=target, replace=False)
+            kept.extend(chosen.tolist())
+
+    kept.sort()
+    kept_arr = np.asarray(kept, dtype=np.int64)
+    post_counts: dict = {}
+    meta_sub = [meta[i] for i in kept]
+    for m in meta_sub:
+        post_counts[m[key]] = post_counts.get(m[key], 0) + 1
+    logger.info(
+        f"  Balanced: {len(kept_arr)} rows "
+        f"(min={min(post_counts.values())}, max={max(post_counts.values())})"
+    )
+    return emb[kept_arr], meta_sub, kept_arr
+
+
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -416,6 +471,33 @@ def main():
         help="Linkage method for hierarchical (default: average)",
     )
 
+    # Class balancing (stratified subsample before preprocessing)
+    parser.add_argument(
+        "--balance-by",
+        type=str,
+        default=None,
+        help=(
+            "Metadata key to balance by (e.g., 'source'). If unset, no "
+            "balancing. Applied after load, before preprocess, so PCA is fit "
+            "on the balanced set."
+        ),
+    )
+    parser.add_argument(
+        "--balance-n",
+        type=int,
+        default=None,
+        help=(
+            "Per-class cap when --balance-by is set. Default = min count "
+            "across classes. Classes with fewer rows are kept in full."
+        ),
+    )
+    parser.add_argument(
+        "--balance-seed",
+        type=int,
+        default=42,
+        help="Seed for stratified subsample (default: 42).",
+    )
+
     parser.add_argument("--list", action="store_true")
     args = parser.parse_args()
 
@@ -434,39 +516,70 @@ def main():
     if not args.data_dir:
         parser.error("--data-dir is required")
 
-    # Load meta + info (always needed)
-    import gzip
-
+    # Load info (always needed)
     info_path = os.path.join(args.data_dir, "info.json")
     with open(info_path) as f:
         info = json.load(f)
-    is_doc_level = args.embedding.startswith("doc_")
-    meta_path = os.path.join(
-        args.data_dir,
-        "metadata_docs.jsonl.gz" if is_doc_level else "metadata_tokens.jsonl.gz",
-    )
-    meta = []
-    with gzip.open(meta_path, "rt") as f:
-        for line in f:
-            meta.append(json.loads(line))
 
-    # Try cache — preprocessing is the dominant cost (~2hr for 20M x 2032 probs)
+    # Cache key: include balancing so balanced/unbalanced runs don't collide
+    if args.balance_by is not None:
+        bal_tag = f"_bal{args.balance_by}N{args.balance_n}seed{args.balance_seed}"
+    else:
+        bal_tag = ""
     cache_path = os.path.join(
         args.data_dir,
-        f"preprocessed_{args.embedding}_{args.preprocess}.npy",
+        f"preprocessed_{args.embedding}_{args.preprocess}{bal_tag}.npy",
     )
+    # When balancing, also cache the subsampled meta so we can reload without
+    # redoing the stratified draw.
+    meta_cache_path = cache_path.replace(".npy", ".meta.json") if bal_tag else None
+
     emb = None
-    if os.path.exists(cache_path):
+    transformed: np.ndarray
+    meta: list
+
+    if os.path.exists(cache_path) and (meta_cache_path is None or os.path.exists(meta_cache_path)):
         logger.info(f"Loading cached preprocessed: {cache_path}")
         transformed = np.load(cache_path)
         logger.info(f"  shape={transformed.shape}")
-        if args.save:
-            emb, _, _ = load_embedding(args.data_dir, args.embedding)
+        if meta_cache_path:
+            with open(meta_cache_path) as f:
+                meta = json.load(f)
+            logger.info(f"  loaded balanced meta ({len(meta)} rows)")
+        else:
+            emb_loaded, meta, _ = load_embedding(args.data_dir, args.embedding)
+            if args.save:
+                emb = emb_loaded
+            else:
+                del emb_loaded
+        if args.save and emb is None:
+            emb, full_meta, _ = load_embedding(args.data_dir, args.embedding)
+            if args.balance_by is not None:
+                # Deterministic reapply so emb rows align with cached transformed.
+                emb, _, _ = balance_by_class(
+                    emb,
+                    full_meta,
+                    args.balance_by,
+                    args.balance_n,
+                    args.balance_seed,
+                )
+                assert emb.shape[0] == transformed.shape[0], (
+                    f"Balance reapply mismatch: emb {emb.shape[0]} vs cached "
+                    f"transformed {transformed.shape[0]}"
+                )
     else:
-        emb, _, _ = load_embedding(args.data_dir, args.embedding)
+        emb, meta, _ = load_embedding(args.data_dir, args.embedding)
+        if args.balance_by is not None:
+            emb, meta, _ = balance_by_class(
+                emb, meta, args.balance_by, args.balance_n, args.balance_seed
+            )
         transformed = apply_preprocess(emb, args.preprocess, info).astype(np.float32)
         logger.info(f"Saving preprocess cache: {cache_path}  shape={transformed.shape}")
         np.save(cache_path, transformed)
+        if meta_cache_path:
+            with open(meta_cache_path, "w") as f:
+                json.dump(meta, f)
+            logger.info(f"  saved balanced meta: {meta_cache_path}")
         if not args.save:
             del emb
             emb = None

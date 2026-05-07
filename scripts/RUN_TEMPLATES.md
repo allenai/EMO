@@ -25,7 +25,7 @@ MODE=beaker bash scripts/models_0116/dense_1b_lr-4e-3_0213.sh
 
 Override cluster sizing per script if needed: `BEAKER_GPUS=8 BEAKER_NODES=4 ...` or set `BEAKER_GPUS=${gpus} BEAKER_NODES=${nodes}` at the top of the script (some scripts already define `gpus=` / `nodes=` for this purpose).
 
-The hand-written templates below (templates 5 and 6) — the eval and pruning loops — are not yet adapted to source `launch_common.sh`; they're standalone references for `extensions/launch_eval.sh` and `pruning_hf/launch_pruning_hf.sh`.
+The hand-written templates below (templates 5 and 6) — the eval and selective-expert loops — are not yet adapted to source `launch_common.sh`; they're standalone references for `extensions/launch_eval.sh` and `selective_hf/launch_selective_hf.sh`.
 
 ---
 
@@ -224,10 +224,10 @@ done
 
 ## 6. Pruning + task-specific finetuning
 
-For each (model, keep-k, task), compute router activations → prune to top-k experts → finetune. Worker: `scripts/pruning_hf/hf_finetune_with_pruning.sh`.
+For each (model, keep-k, task), compute router activations → select top-k experts → finetune. Worker: `scripts/selective_hf/hf_finetune_with_selective_layerwise.sh` (or `_easy_ep.sh` / `_random.sh`, depending on `SELECTIVE_MODE`).
 
 ```bash
-PRUNING_MODE="layerwise"   # global | layerwise | layerwise_variable | easy_ep
+PRUNING_MODE="layerwise"   # layerwise | easy_ep
 PRUNE_KEEP_K_VALUES=(8 16 32 64)
 num_epochs=1
 batch_size=32
@@ -263,7 +263,7 @@ for MODEL in "${MODELS[@]}"; do
 
             relative_dir="${stringified_model}/${TASK}_keepk_${prune_keep_k}_bs-${batch_size}_lr-${lr}_epoch-${num_epochs}_prunemode-${PRUNING_MODE}"
 
-            bash scripts/pruning_hf/hf_finetune_with_pruning.sh \
+            bash scripts/selective_hf/hf_finetune_with_selective_layerwise.sh \
                 --model "${MODEL}" \
                 --task "${TASK}" \
                 --prune-keep-k ${prune_keep_k} \
@@ -281,9 +281,7 @@ done
 ```
 
 Pruning-mode variants (pick one `PRUNING_MODE`):
-- `global` — single-pass activation collection + top-k prune across the whole model
 - `layerwise` — greedy layer-by-layer pruning (each layer conditioned on earlier pruned layers)
-- `layerwise_variable` — greedy layerwise with a per-layer keep-k schedule (`KEEP_K_PER_LAYER=128,128,32,...`)
 - `easy_ep` — EASY-EP (arXiv 2504.06792): domain-specific one-shot prune on calibration data
 
 Optional calibration-size control:

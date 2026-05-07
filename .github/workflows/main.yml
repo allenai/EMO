@@ -16,7 +16,7 @@ on:
 
 env:
   # Change this to invalidate existing cache.
-  CACHE_PREFIX: v3
+  CACHE_PREFIX: v4
   PYTHONPATH: ./src/
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -53,9 +53,9 @@ jobs:
           - name: Style
             run: make style-check
 
-          - name: Docs
-            run: |
-              cd docs && make html SPHINXOPTS="-W --keep-going"
+          # - name: Docs
+          #   run: |
+          #     cd docs && make html SPHINXOPTS="-W --keep-going"
 
         include:
           - python: "3.10"

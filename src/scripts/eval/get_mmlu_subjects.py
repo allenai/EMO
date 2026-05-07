@@ -10,7 +10,13 @@ category/cluster task (e.g., arc_challenge), printing nothing.
 
 import sys
 
-from src.offline_evals.tasks.splits_mmlu import MMLU_CATEGORIES, MMLU_CLUSTER_CATEGORIES
+from src.offline_evals.tasks.splits_mmlu import (
+    MMLU_CATEGORIES,
+    MMLU_CLUSTER_CATEGORIES,
+    MMLU_CLUSTER_CATEGORIES_ALL,
+    MMLU_CLUSTER_CATEGORIES_L0,
+    MMLU_CLUSTER_CATEGORIES_L15,
+)
 
 
 def get_subjects(task_name: str):
@@ -25,9 +31,16 @@ def get_subjects(task_name: str):
     if key.startswith("merged_"):
         key = key[len("merged_") :]
 
-    # Check cluster categories first (they have "cluster_" prefix)
-    if key in MMLU_CLUSTER_CATEGORIES:
-        return MMLU_CLUSTER_CATEGORIES[key]
+    # Check all cluster dicts (each has its own prefix: cluster_, cluster_l0_,
+    # cluster_l15_, cluster_all_) so collisions across dicts are impossible.
+    for cluster_dict in (
+        MMLU_CLUSTER_CATEGORIES,
+        MMLU_CLUSTER_CATEGORIES_L0,
+        MMLU_CLUSTER_CATEGORIES_L15,
+        MMLU_CLUSTER_CATEGORIES_ALL,
+    ):
+        if key in cluster_dict:
+            return cluster_dict[key]
 
     # Check human categories
     if key in MMLU_CATEGORIES:

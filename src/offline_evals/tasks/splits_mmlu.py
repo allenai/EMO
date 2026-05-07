@@ -443,3 +443,415 @@ def create_mmlu_cluster_tasks_withsplits(cluster_name):
         DATASET_NAME = cluster_name
 
     return MMLU_Cluster
+
+
+# ---------------------------------------------------------------------------
+# Router-clustering categories from k=16 spherical_kmeans on doc-level router
+# embeddings (mean_pca_l2, balance off). Three variants by which router
+# layers' probabilities are used:
+#   _L0:   layer 0 only (127d)         — early-layer routing
+#   _L15:  layer 15 only (127d)        — last-layer routing
+#   _ALL:  all 16 layers (2032d)       — full-stack routing
+#
+# Model: twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32 step 30995
+# Each subject is assigned to its dominant cluster (majority of its docs).
+# Cluster names are auto-generated from each cluster's top-1 subject; the
+# `_2` suffix on duplicates indicates the source clustering produced two
+# distinct clusters whose top subjects strip to the same short name.
+# Per-subject distributions saved alongside each clustering output:
+#   claude_outputs/clustering/mmlu/<model>/<emb>_mean_pca_l2_spherical_kmeans_k16/
+#       subject_distribution.{json,md}
+# ---------------------------------------------------------------------------
+
+MMLU_CLUSTER_CATEGORIES_L0 = {
+    "cluster_l0_government_politics": [
+        "global_facts",
+        "high_school_government_and_politics",
+        "international_law",
+        "public_relations",
+        "us_foreign_policy",
+    ],
+    "cluster_l0_biology": [
+        "anatomy",
+        "astronomy",
+        "college_biology",
+        "college_physics",
+        "conceptual_physics",
+        "high_school_biology",
+        "high_school_chemistry",
+        "medical_genetics",
+        "virology",
+    ],
+    "cluster_l0_miscellaneous": [
+        "miscellaneous",
+    ],
+    "cluster_l0_world_history": [
+        "high_school_european_history",
+        "high_school_us_history",
+        "high_school_world_history",
+        "jurisprudence",
+    ],
+    "cluster_l0_moral_scenarios": [
+        "moral_scenarios",
+    ],
+    "cluster_l0_law": [
+        "professional_law",
+    ],
+    "cluster_l0_mathematics": [
+        "elementary_mathematics",
+        "high_school_computer_science",
+    ],
+    "cluster_l0_psychology": [
+        "business_ethics",
+        "high_school_psychology",
+        "management",
+    ],
+    "cluster_l0_moral_disputes": [
+        "moral_disputes",
+        "philosophy",
+        "security_studies",
+        "sociology",
+    ],
+    "cluster_l0_psychology_2": [
+        "human_aging",
+        "professional_psychology",
+    ],
+    "cluster_l0_mathematics_2": [
+        "abstract_algebra",
+        "college_chemistry",
+        "college_computer_science",
+        "college_mathematics",
+        "econometrics",
+        "electrical_engineering",
+        "formal_logic",
+        "high_school_mathematics",
+        "high_school_physics",
+        "high_school_statistics",
+        "machine_learning",
+    ],
+    "cluster_l0_accounting": [
+        "professional_accounting",
+    ],
+    "cluster_l0_nutrition": [
+        "clinical_knowledge",
+        "college_medicine",
+        "human_sexuality",
+        "nutrition",
+        "professional_medicine",
+    ],
+    "cluster_l0_prehistory": [
+        "prehistory",
+        "world_religions",
+    ],
+    "cluster_l0_marketing": [
+        "computer_security",
+        "logical_fallacies",
+        "marketing",
+    ],
+    "cluster_l0_macroeconomics": [
+        "high_school_geography",
+        "high_school_macroeconomics",
+        "high_school_microeconomics",
+    ],
+}
+
+
+MMLU_CLUSTER_CATEGORIES_L15 = {
+    "cluster_l15_security_studies": [
+        "global_facts",
+        "security_studies",
+        "us_foreign_policy",
+    ],
+    "cluster_l15_mathematics": [
+        "abstract_algebra",
+        "college_computer_science",
+        "college_mathematics",
+        "elementary_mathematics",
+        "formal_logic",
+        "high_school_computer_science",
+        "high_school_mathematics",
+    ],
+    "cluster_l15_marketing": [
+        "business_ethics",
+        "management",
+        "marketing",
+        "public_relations",
+    ],
+    "cluster_l15_biology": [
+        "anatomy",
+        "clinical_knowledge",
+        "college_biology",
+        "college_medicine",
+        "high_school_biology",
+        "human_sexuality",
+        "medical_genetics",
+        "nutrition",
+        "professional_medicine",
+        "virology",
+    ],
+    "cluster_l15_law": [
+        "international_law",
+        "jurisprudence",
+        "professional_accounting",
+        "professional_law",
+    ],
+    "cluster_l15_moral_disputes": [
+        "logical_fallacies",
+        "moral_disputes",
+        "philosophy",
+        "sociology",
+    ],
+    "cluster_l15_moral_scenarios": [
+        "computer_security",
+        "moral_scenarios",
+    ],
+    "cluster_l15_psychology": [
+        "high_school_geography",
+        "high_school_psychology",
+        "human_aging",
+    ],
+    "cluster_l15_macroeconomics": [
+        "high_school_macroeconomics",
+        "high_school_microeconomics",
+    ],
+    "cluster_l15_chemistry": [
+        "college_chemistry",
+        "high_school_chemistry",
+    ],
+    "cluster_l15_miscellaneous": [
+        "miscellaneous",
+    ],
+    "cluster_l15_conceptual_physics": [
+        "astronomy",
+        "college_physics",
+        "conceptual_physics",
+        "electrical_engineering",
+        "high_school_physics",
+    ],
+    "cluster_l15_psychology_2": [
+        "econometrics",
+        "high_school_statistics",
+        "machine_learning",
+        "professional_psychology",
+    ],
+    "cluster_l15_prehistory": [
+        "prehistory",
+    ],
+    "cluster_l15_government_politics": [
+        "high_school_government_and_politics",
+    ],
+    "cluster_l15_world_history": [
+        "high_school_european_history",
+        "high_school_us_history",
+        "high_school_world_history",
+        "world_religions",
+    ],
+}
+
+
+MMLU_CLUSTER_CATEGORIES_ALL = {
+    "cluster_all_nutrition": [
+        "anatomy",
+        "clinical_knowledge",
+        "human_sexuality",
+        "nutrition",
+        "professional_medicine",
+    ],
+    "cluster_all_marketing": [
+        "business_ethics",
+        "computer_security",
+        "management",
+        "marketing",
+        "public_relations",
+    ],
+    "cluster_all_law": [
+        "international_law",
+        "professional_law",
+    ],
+    "cluster_all_prehistory": [
+        "high_school_european_history",
+        "high_school_us_history",
+        "high_school_world_history",
+        "prehistory",
+        "world_religions",
+    ],
+    "cluster_all_mathematics": [
+        "abstract_algebra",
+        "college_computer_science",
+        "college_mathematics",
+        "econometrics",
+        "elementary_mathematics",
+        "formal_logic",
+        "high_school_computer_science",
+        "high_school_mathematics",
+        "high_school_statistics",
+        "machine_learning",
+    ],
+    "cluster_all_moral_scenarios": [
+        "moral_scenarios",
+    ],
+    "cluster_all_miscellaneous": [
+        "miscellaneous",
+    ],
+    "cluster_all_biology": [
+        "college_biology",
+        "college_medicine",
+        "high_school_biology",
+        "medical_genetics",
+        "virology",
+    ],
+    "cluster_all_security_studies": [
+        "security_studies",
+        "sociology",
+        "us_foreign_policy",
+    ],
+    "cluster_all_psychology": [
+        "high_school_psychology",
+        "human_aging",
+        "professional_psychology",
+    ],
+    "cluster_all_chemistry": [
+        "college_chemistry",
+        "high_school_chemistry",
+    ],
+    "cluster_all_geography": [
+        "global_facts",
+        "high_school_geography",
+        "high_school_government_and_politics",
+    ],
+    "cluster_all_macroeconomics": [
+        "high_school_macroeconomics",
+        "high_school_microeconomics",
+    ],
+    "cluster_all_moral_disputes": [
+        "jurisprudence",
+        "logical_fallacies",
+        "moral_disputes",
+        "philosophy",
+    ],
+    "cluster_all_accounting": [
+        "professional_accounting",
+    ],
+    "cluster_all_conceptual_physics": [
+        "astronomy",
+        "college_physics",
+        "conceptual_physics",
+        "electrical_engineering",
+        "high_school_physics",
+    ],
+}
+
+
+class MMLU_16clusters_L0_RC(_MMLU_PerSubjectContext_RC):
+    """MMLU task grouped by router clustering on layer-0 probs (16 clusters)."""
+
+    def download(self, data_dir=None, cache_dir=None, download_mode=None):
+        _load_and_split_subjects(
+            self, MMLU_CLUSTER_CATEGORIES_L0, data_dir, cache_dir, download_mode
+        )
+
+
+class MMLU_16clusters_L15_RC(_MMLU_PerSubjectContext_RC):
+    """MMLU task grouped by router clustering on layer-15 probs (16 clusters)."""
+
+    def download(self, data_dir=None, cache_dir=None, download_mode=None):
+        _load_and_split_subjects(
+            self, MMLU_CLUSTER_CATEGORIES_L15, data_dir, cache_dir, download_mode
+        )
+
+
+class MMLU_16clusters_ALL_RC(_MMLU_PerSubjectContext_RC):
+    """MMLU task grouped by router clustering on all-layer probs (16 clusters)."""
+
+    def download(self, data_dir=None, cache_dir=None, download_mode=None):
+        _load_and_split_subjects(
+            self, MMLU_CLUSTER_CATEGORIES_ALL, data_dir, cache_dir, download_mode
+        )
+
+
+def create_mmlu_cluster_l0_tasks_withsplits(cluster_name):
+    class MMLU_Cluster_L0(MMLU_16clusters_L0_RC):
+        DATASET_NAME = cluster_name
+
+    return MMLU_Cluster_L0
+
+
+def create_mmlu_cluster_l15_tasks_withsplits(cluster_name):
+    class MMLU_Cluster_L15(MMLU_16clusters_L15_RC):
+        DATASET_NAME = cluster_name
+
+    return MMLU_Cluster_L15
+
+
+def create_mmlu_cluster_all_tasks_withsplits(cluster_name):
+    class MMLU_Cluster_ALL(MMLU_16clusters_ALL_RC):
+        DATASET_NAME = cluster_name
+
+    return MMLU_Cluster_ALL
+
+
+# ---------------------------------------------------------------------------
+# Merged variants of the L0/L15/ALL cluster categories. Pruning calibration
+# and finetuning share the same docs (train+validation merged, shuffled
+# seed=0). Mirrors MMLU_17categories_Merged_RC.
+# ---------------------------------------------------------------------------
+
+
+class MMLU_16clusters_L0_Merged_RC(MMLU_16clusters_L0_RC):
+    """L0-cluster MMLU merged variant: pruning and finetuning use the same data."""
+
+    def training_docs(self):
+        merged = concatenate_datasets([self.dataset["train"], self.dataset["validation"]]).shuffle(
+            seed=0
+        )
+        return merged.map(self._process_doc, with_indices=True)
+
+    def validation_docs(self):
+        return self.training_docs()
+
+
+class MMLU_16clusters_L15_Merged_RC(MMLU_16clusters_L15_RC):
+    """L15-cluster MMLU merged variant: pruning and finetuning use the same data."""
+
+    def training_docs(self):
+        merged = concatenate_datasets([self.dataset["train"], self.dataset["validation"]]).shuffle(
+            seed=0
+        )
+        return merged.map(self._process_doc, with_indices=True)
+
+    def validation_docs(self):
+        return self.training_docs()
+
+
+class MMLU_16clusters_ALL_Merged_RC(MMLU_16clusters_ALL_RC):
+    """ALL-cluster MMLU merged variant: pruning and finetuning use the same data."""
+
+    def training_docs(self):
+        merged = concatenate_datasets([self.dataset["train"], self.dataset["validation"]]).shuffle(
+            seed=0
+        )
+        return merged.map(self._process_doc, with_indices=True)
+
+    def validation_docs(self):
+        return self.training_docs()
+
+
+def create_mmlu_cluster_l0_merged_tasks_withsplits(cluster_name):
+    class MMLU_Cluster_L0_Merged(MMLU_16clusters_L0_Merged_RC):
+        DATASET_NAME = cluster_name
+
+    return MMLU_Cluster_L0_Merged
+
+
+def create_mmlu_cluster_l15_merged_tasks_withsplits(cluster_name):
+    class MMLU_Cluster_L15_Merged(MMLU_16clusters_L15_Merged_RC):
+        DATASET_NAME = cluster_name
+
+    return MMLU_Cluster_L15_Merged
+
+
+def create_mmlu_cluster_all_merged_tasks_withsplits(cluster_name):
+    class MMLU_Cluster_ALL_Merged(MMLU_16clusters_ALL_Merged_RC):
+        DATASET_NAME = cluster_name
+
+    return MMLU_Cluster_ALL_Merged
