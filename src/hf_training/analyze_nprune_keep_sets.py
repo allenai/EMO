@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import torch
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 from src.hf_training.data_utils import get_formatted_prompts
 from src.hf_training.greedy_prune_layerwise import (
@@ -30,7 +31,6 @@ from src.hf_training.greedy_prune_layerwise import (
     restore_model_state,
     snapshot_model_state,
 )
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)

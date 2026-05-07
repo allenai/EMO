@@ -20,9 +20,9 @@ from typing import Dict, List, Optional
 
 import click
 import torch
+from transformers import AutoConfig, AutoModelForCausalLM
 
 from olmo_core.utils import prepare_cli_environment
-from transformers import AutoConfig, AutoModelForCausalLM
 
 log = logging.getLogger(__name__)
 

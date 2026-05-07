@@ -5,6 +5,13 @@ from pathlib import Path
 import pytest
 import torch
 import torch.distributed.checkpoint.state_dict as dist_cp_sd
+from transformers import (
+    AutoConfig,
+    AutoModelForCausalLM,
+    Olmo2Config,
+    Olmo3Config,
+    PreTrainedModel,
+)
 
 from olmo_core.data.tokenizer import TokenizerConfig
 from olmo_core.distributed.checkpoint import (
@@ -15,13 +22,6 @@ from olmo_core.nn.attention import AttentionBackendName, AttentionConfig
 from olmo_core.nn.hf import convert_checkpoint_to_hf
 from olmo_core.nn.transformer.config import TransformerBlockConfig, TransformerConfig
 from olmo_core.nn.transformer.model import Transformer
-from transformers import (
-    AutoConfig,
-    AutoModelForCausalLM,
-    Olmo2Config,
-    Olmo3Config,
-    PreTrainedModel,
-)
 
 
 @pytest.fixture

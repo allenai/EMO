@@ -23,6 +23,7 @@ import torch
 import torch.distributed.checkpoint.state_dict as dist_cp_sd
 import torch.nn.functional as F
 from cached_path import cached_path
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 from olmo_core.aliases import PathOrStr
 from olmo_core.config import DType
@@ -34,7 +35,6 @@ from olmo_core.nn.conversion.state_mapping import StateType, TemplatePlaceholder
 from olmo_core.nn.moe.moe import MoEType
 from olmo_core.nn.transformer.config import TransformerBlockConfig, TransformerConfig
 from olmo_core.nn.transformer.model import Transformer
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 from .checkpoint import save_hf_hybrid_model, save_hf_model
 from .config import is_olmo_hybrid_model

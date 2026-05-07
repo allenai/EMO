@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 import torch
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 # Local imports mirror analyze_nprune_keep_sets.py.
 from offline_evals.run_eval import load_task
@@ -35,7 +36,6 @@ from src.hf_training.greedy_prune_layerwise import (
     restore_model_state,
     snapshot_model_state,
 )
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)

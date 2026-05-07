@@ -23,9 +23,9 @@ import os
 from typing import List, Optional
 
 import torch
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 from src.hf_training.greedy_prune_layerwise import prune_moe_layer_inplace
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)

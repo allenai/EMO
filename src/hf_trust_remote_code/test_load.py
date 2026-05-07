@@ -12,7 +12,6 @@ Usage:
 import argparse
 
 import torch
-
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 

@@ -29,9 +29,6 @@ from typing import Optional
 
 import torch
 import torch.distributed as dist
-
-from hf_training.LogMoECallback import LogMoeCallback
-from src.hf_training.data_utils import load_finetuning_dataset
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -40,6 +37,9 @@ from transformers import (
     TrainingArguments,
 )
 from transformers.integrations import WandbCallback
+
+from hf_training.LogMoECallback import LogMoeCallback
+from src.hf_training.data_utils import load_finetuning_dataset
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
