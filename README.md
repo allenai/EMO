@@ -67,12 +67,12 @@ Smaller-scale checkpoints used for memory-matched comparisons. These models were
 |---|---|---|---|---|
 | [`allenai/Emo_1b14b_130B`](https://huggingface.co/allenai/Emo_1b14b_130B) | 1B | 14B | EMO [\[train_script\]](scripts/models/emo_1b14b_130b.sh) | EMO at the 130B-token ablation scale |
 | [`allenai/StdMoE_1b14b_130B`](https://huggingface.co/allenai/StdMoE_1b14b_130B) | 1B | 14B | standard [\[train_script\]](scripts/models/stdmoe_1b14b_130b.sh) | Standard MoE baseline at the 130B-token scale |
-| [`allenai/StdMoE_1b4b_130B`](https://huggingface.co/allenai/StdMoE_1b4b_130B) | 1B | 4B | standard [\[train_script\]](scripts/models/stdmoe_1b4b_130b.sh) | Memory-matched standard MoE with 32 experts ("Reg. MoE @ 32" in Figure 4), used as a memory-matched baseline for EMO's 32-expert subsets |
-| [`allenai/Dense_1b_130B`](https://huggingface.co/allenai/Dense_1b_130B) | 1B | 1B | dense LM [\[train_script\]](scripts/models/dense_1b_130b.sh) | Dense baseline matched to active parameters ("Dense @ 8" in Figure 4), used as a memory-matched baseline for EMO's 8-expert subsets |
+| [`allenai/StdMoE_1b4b_130B`](https://huggingface.co/allenai/StdMoE_1b4b_130B) | 1B | 4B | standard [\[train_script\]](scripts/models/stdmoe_1b4b_130b.sh) | Memory-matched standard MoE with 32 experts ("Reg. MoE @ 32" in Figure 1), used as a memory-matched baseline for EMO's 32-expert subsets |
+| [`allenai/Dense_1b_130B`](https://huggingface.co/allenai/Dense_1b_130B) | 1B | 1B | dense LM [\[train_script\]](scripts/models/dense_1b_130b.sh) | Dense baseline matched to active parameters ("Dense @ 8" in Figure 1), used as a memory-matched baseline for EMO's 8-expert subsets |
 
 ### Midtraining Ablation Models
 
-Checkpoints used in Appendix B.3 to test whether modularity can be induced after pretraining via annealing alone, rather than during pretraining.
+Checkpoints used in Appendix B.4 to test whether modularity can be induced after pretraining via annealing alone, rather than during pretraining.
 
 | Model | Active | Total | Pretraining (1T) | Annealing (50B) | Description                                                                                                             |
 |---|---|---|---|---|-------------------------------------------------------------------------------------------------------------------------|
@@ -168,9 +168,9 @@ The launch scripts in [`scripts/selective_hf/`](scripts/selective_hf/) exercise 
 
 | Script | Investigates | Sweep |
 |---|---|---|
-| [`launch_selective_hf.sh`](scripts/selective_hf/launch_selective_hf.sh) | Main selective-expert evaluation — how each released model performs when only a subset of experts is retained for a given task (Figures 3 and 4 of the paper). | All released models × keep-k ∈ {8, 16, 32, 64, 128} × MC9 / Gen5 / MMLU / MMLU-Pro / GSM8K task groups. |
-| [`launch_selective_method_hf.sh`](scripts/selective_hf/launch_selective_method_hf.sh) | Robustness to the choice of expert-selection method (Figure 5 of the paper). | {`layerwise`, `easy_ep`, `random`} selection methods × main 1T models × keep-k × tasks. |
-| [`launch_selective_validation_hf.sh`](scripts/selective_hf/launch_selective_validation_hf.sh) | Calibration-data ablation — how much validation data and how many few-shot examples are needed to identify the right experts (Appendix B.1 of the paper). | Validation-set sizes ∈ {1, 5, 10, 100, All} × 3 shot-count configurations × `Emo_1b14b_1T` × keep-k ∈ {8, 16, 32, 128} × tasks. |
+| [`launch_selective_hf.sh`](scripts/selective_hf/launch_selective_hf.sh) | Main selective-expert evaluation — how each released model performs when only a subset of experts is retained for a given task (Figure 3 of the paper). | All released models × keep-k ∈ {8, 16, 32, 64, 128} × MC9 / Gen5 / MMLU / MMLU-Pro / GSM8K task groups. |
+| [`launch_selective_method_hf.sh`](scripts/selective_hf/launch_selective_method_hf.sh) | Robustness to the choice of expert-selection method (Figure 4 of the paper). | {`layerwise`, `easy_ep`, `random`} selection methods × main 1T models × keep-k × tasks. |
+| [`launch_selective_validation_hf.sh`](scripts/selective_hf/launch_selective_validation_hf.sh) | Calibration-data ablation — how much validation data and how many few-shot examples are needed to identify the right experts (Appendix B.2 of the paper). | Validation-set sizes ∈ {1, 5, 10, 100, All} × 3 shot-count configurations × `Emo_1b14b_1T` × keep-k ∈ {8, 16, 32, 128} × tasks. |
 
 #### Output layout
 
@@ -227,7 +227,7 @@ The model registries (`MODEL_SPECS` at the top of each file) currently list the 
 
 ### Clustering Pretraining Document Tokens
 
-[`scripts/clustering/run_pretraining_compare.sh`](scripts/clustering/run_pretraining_compare.sh) reproduces the side-by-side router-activation clustering used to compare EMO and the standard MoE baseline (Section 5.3 / Figure 6 of the paper). For each of `allenai/Emo_1b14b_1T` and `allenai/StdMoE_1b14b_1T` it:
+[`scripts/clustering/run_pretraining_compare.sh`](scripts/clustering/run_pretraining_compare.sh) reproduces the side-by-side router-activation clustering used to compare EMO and the standard MoE baseline (Section 5.3 / Figure 5 of the paper). For each of `allenai/Emo_1b14b_1T` and `allenai/StdMoE_1b14b_1T` it:
 
 1. Streams ~1M tokens of the OLMoE pretraining mix from S3
 2. Runs a forward pass and saves token-level router logits
@@ -268,7 +268,7 @@ Pretraining shards stream directly from `s3://ai2-llm/…` (no weka mount requir
 
 ### Weborganizer Expert Coverage
 
-[`scripts/clustering/run_weborganizer_compare.sh`](scripts/clustering/run_weborganizer_compare.sh) reproduces the per-domain expert-activation heatmaps used to compare EMO and the standard MoE baseline (Section 5.3 / Figure 7 of the paper). For each of `allenai/Emo_1b14b_1T` and `allenai/StdMoE_1b14b_1T` it:
+[`scripts/clustering/run_weborganizer_compare.sh`](scripts/clustering/run_weborganizer_compare.sh) reproduces the per-domain expert-activation heatmaps used to compare EMO and the standard MoE baseline (Section 5.3 / Figure 6 of the paper). For each of `allenai/Emo_1b14b_1T` and `allenai/StdMoE_1b14b_1T` it:
 
 1. Streams ~20M tokens of the cc_all_dressed weborganizer mix from S3, sampled uniformly across the 24 topics
 2. Runs a single forward pass and aggregates router activations into per-document expert vectors (top-k frequency + softmax probs)
