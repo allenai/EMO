@@ -27,13 +27,25 @@ logger = logging.getLogger(__name__)
 
 def main():
     parser = argparse.ArgumentParser(description="Per-cluster token sampling for labeling")
-    parser.add_argument("--cluster-dir", required=True, help="Dir with assignments.npy, summary.json")
-    parser.add_argument("--data-dir", default=None, help="Dir with metadata_tokens, documents, etc.")
-    parser.add_argument("--n-samples", type=int, default=200, help="Samples per cluster (default 200)")
-    parser.add_argument("--context-window", type=int, default=10, help="Context tokens before/after")
+    parser.add_argument(
+        "--cluster-dir", required=True, help="Dir with assignments.npy, summary.json"
+    )
+    parser.add_argument(
+        "--data-dir", default=None, help="Dir with metadata_tokens, documents, etc."
+    )
+    parser.add_argument(
+        "--n-samples", type=int, default=200, help="Samples per cluster (default 200)"
+    )
+    parser.add_argument(
+        "--context-window", type=int, default=10, help="Context tokens before/after"
+    )
     parser.add_argument("--top-k-tokens", type=int, default=30, help="Top tokens to report")
-    parser.add_argument("--min-token-count", type=int, default=3,
-                        help="Min within-cluster count for enrichment calc")
+    parser.add_argument(
+        "--min-token-count",
+        type=int,
+        default=3,
+        help="Min within-cluster count for enrichment calc",
+    )
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -57,8 +69,8 @@ def main():
 
     logger.info("Loading token metadata...")
     meta = []
-    with gzip.open(os.path.join(data_dir, "metadata_tokens.jsonl.gz"), "rt") as f:
-        for line in f:
+    with gzip.open(os.path.join(data_dir, "metadata_tokens.jsonl.gz"), "rt") as gz:
+        for line in gz:
             meta.append(json.loads(line))
 
     documents = np.load(os.path.join(data_dir, "documents.npy"))
@@ -147,10 +159,7 @@ def main():
                 f.write(f"  {src:<30s} {cnt:>8,}  ({100 * cnt / src_total:5.1f}%)\n")
             f.write("\n")
             f.write(f"Top {args.top_k_tokens} frequent tokens (within-cluster):\n  ")
-            f.write(
-                ", ".join(f"{decode_compact(tid)!r}:{cnt}" for tid, cnt in top_freq)
-                + "\n\n"
-            )
+            f.write(", ".join(f"{decode_compact(tid)!r}:{cnt}" for tid, cnt in top_freq) + "\n\n")
             f.write(f"Top {args.top_k_tokens} enriched tokens (within/background ratio):\n  ")
             f.write(
                 ", ".join(

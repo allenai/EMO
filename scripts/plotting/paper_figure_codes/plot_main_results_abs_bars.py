@@ -57,8 +57,8 @@ KEEPK_VALUES = [128, 64, 32, 16, 8]  # left -> right within each clump
 #   - overlay_text_overrides: {keepk: {**ax.annotate kwargs}} to nudge the
 #     trained-baseline overlay annotation for one specific bar.
 PANEL_Y_CONFIG: Dict[str, Dict[str, object]] = {
-    "MMLU": {"ymin": 20.0, "random_chance": 25.0},      # 4-option MC -> 25%
-    "MMLU Pro": {"ymin": 7.0, "random_chance": 10.0},   # 10-option MC -> 10%
+    "MMLU": {"ymin": 20.0, "random_chance": 25.0},  # 4-option MC -> 25%
+    "MMLU Pro": {"ymin": 7.0, "random_chance": 10.0},  # 10-option MC -> 10%
     # GSM8K fine-tune values are tightly packed; nudge the Reg. MoE @32
     # trained overlay annotation upward so it doesn't collide with the
     # FlexMoE keepk=16 annotation to its right.
@@ -77,7 +77,7 @@ PANEL_Y_CONFIG: Dict[str, Dict[str, object]] = {
 FLEX_PALETTE = ["#3F1052", "#6E1F73", "#B8327C", "#E48AB5", "#F2C7DC"]
 REG_PALETTE = ["#225C2E", "#5B8E3F", "#93C265", "#C5DD93", "#E4EFC8"]
 
-DENSE_COLOR = "#E78532"     # warm orange — Dense trained baseline overlay
+DENSE_COLOR = "#E78532"  # warm orange — Dense trained baseline overlay
 REGSMALL_COLOR = "#1F6E7C"  # dark teal — Reg. MoE trained @32 baseline overlay
 
 SCALES = {
@@ -101,7 +101,7 @@ SCALES = {
 # Layout knobs.
 BAR_WIDTH = 0.8
 INTRA_BAR_STEP = 1.0  # x-distance between adjacent bars within a clump
-CLUMP_GAP = 1.4       # extra x-gap between clumps
+CLUMP_GAP = 1.4  # extra x-gap between clumps
 
 
 def parse_args() -> argparse.Namespace:
@@ -109,7 +109,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument(
-        "--scale", choices=["130b", "1t", "both"], default="both",
+        "--scale",
+        choices=["130b", "1t", "both"],
+        default="both",
         help="Which training-scale figure to render. Default: both.",
     )
     return parser.parse_args()
@@ -127,8 +129,12 @@ def _is_trained(value: str) -> bool:
 
 
 def _lookup(
-    df: pd.DataFrame, model_name: str, keepk: int, metric_col: str,
-    *, prefer_trained: bool = False,
+    df: pd.DataFrame,
+    model_name: str,
+    keepk: int,
+    metric_col: str,
+    *,
+    prefer_trained: bool = False,
 ) -> Optional[float]:
     sub = df[df.iloc[:, 0] == model_name].copy()
     sub = sub[sub["# Total Experts"].map(_parse_experts) == keepk]
@@ -154,10 +160,7 @@ def _gradient(base_hex: str, n: int, min_weight: float) -> List[str]:
     spread of shades."""
     if n <= 1:
         return [_shade(base_hex, 1.0)]
-    return [
-        _shade(base_hex, 1.0 - (1.0 - min_weight) * (i / (n - 1)))
-        for i in range(n)
-    ]
+    return [_shade(base_hex, 1.0 - (1.0 - min_weight) * (i / (n - 1))) for i in range(n)]
 
 
 def _build_clumps(
@@ -185,10 +188,8 @@ def _build_clumps(
     reg_bars = []
     flex_bars = []
     for i, k in enumerate(KEEPK_VALUES):
-        reg_bars.append((str(k), _lookup(df, reg_model, k, metric_col),
-                         REG_PALETTE[i], ""))
-        flex_bars.append((str(k), _lookup(df, flex_model, k, metric_col),
-                          FLEX_PALETTE[i], ""))
+        reg_bars.append((str(k), _lookup(df, reg_model, k, metric_col), REG_PALETTE[i], ""))
+        flex_bars.append((str(k), _lookup(df, flex_model, k, metric_col), FLEX_PALETTE[i], ""))
 
     clumps: List[Dict[str, object]] = [
         {"legend_label": "Reg. MoE", "x_label": "Reg. MoE", "bars": reg_bars},
@@ -255,8 +256,12 @@ def _draw_panel(
                 all_vals.append(val)
 
         bc = ax.bar(
-            xs, ys, BAR_WIDTH,
-            color=colors, edgecolor="black", linewidth=0.6,
+            xs,
+            ys,
+            BAR_WIDTH,
+            color=colors,
+            edgecolor="black",
+            linewidth=0.6,
             label=clump["legend_label"],
         )
         for rect, hatch in zip(bc, hatches):
@@ -268,9 +273,13 @@ def _draw_panel(
         for (sub, val, _c, _h), x in zip(bars, positions):
             if val is not None:
                 ax.annotate(
-                    f"{val:.1f}", xy=(x, val), xytext=(0, 2),
-                    textcoords="offset points", ha="center",
-                    fontsize=8.5, color="#222222",
+                    f"{val:.1f}",
+                    xy=(x, val),
+                    xytext=(0, 2),
+                    textcoords="offset points",
+                    ha="center",
+                    fontsize=8.5,
+                    color="#222222",
                 )
             sub_positions.append(x)
             sub_labels.append(sub)
@@ -294,35 +303,53 @@ def _draw_panel(
         color = ov["color"]
         # Translucent vertical fill from 0 -> baseline value.
         ax.bar(
-            x, v, BAR_WIDTH * 1.02,
-            color="white", edgecolor=color, linewidth=1.6,
-            hatch="///", alpha=0.6, zorder=4,
+            x,
+            v,
+            BAR_WIDTH * 1.02,
+            color="white",
+            edgecolor=color,
+            linewidth=1.6,
+            hatch="///",
+            alpha=0.6,
+            zorder=4,
             label=ov["legend_label"],
         )
         # Solid colored cap line emphasising the baseline level.
         ax.plot(
             [x - BAR_WIDTH / 2, x + BAR_WIDTH / 2],
             [v, v],
-            color=color, linewidth=2.6, solid_capstyle="butt", zorder=5,
+            color=color,
+            linewidth=2.6,
+            solid_capstyle="butt",
+            zorder=5,
         )
         annotate_kwargs = {
             "xytext": (BAR_WIDTH * 14, 0),
-            "ha": "left", "va": "center",
+            "ha": "left",
+            "va": "center",
         }
         annotate_kwargs.update(overlay_overrides.get(ov["target_keepk"], {}))
         ax.annotate(
-            f"{v:.1f}", xy=(x, v),
+            f"{v:.1f}",
+            xy=(x, v),
             textcoords="offset points",
-            fontsize=8.5, color=color, fontweight="bold", zorder=6,
-            arrowprops=dict(arrowstyle="-", color=color, lw=0.8,
-                            shrinkA=0, shrinkB=2),
+            fontsize=8.5,
+            color=color,
+            fontweight="bold",
+            zorder=6,
+            arrowprops=dict(arrowstyle="-", color=color, lw=0.8, shrinkA=0, shrinkB=2),
             **annotate_kwargs,
         )
         # Track legend handle (use a representative patch).
         if ov["legend_label"] not in handles_for_legend:
             handles_for_legend[ov["legend_label"]] = plt.Rectangle(
-                (0, 0), 1, 1,
-                facecolor="white", edgecolor=color, hatch="///", linewidth=1.6,
+                (0, 0),
+                1,
+                1,
+                facecolor="white",
+                edgecolor=color,
+                hatch="///",
+                linewidth=1.6,
                 label=ov["legend_label"],
             )
 
@@ -339,14 +366,25 @@ def _draw_panel(
     chance = panel_config.get("random_chance")
     if chance is not None:
         ax.axhline(
-            chance, color="#222222", linewidth=1.6,
-            linestyle=(0, (4, 3)), zorder=6, alpha=0.85,
+            chance,
+            color="#222222",
+            linewidth=1.6,
+            linestyle=(0, (4, 3)),
+            zorder=6,
+            alpha=0.85,
         )
         x_right = ax.get_xlim()[1]
         ax.text(
-            x_right, chance, "  random",
-            ha="left", va="center", fontsize=9, color="#222222",
-            fontweight="bold", clip_on=False, zorder=6,
+            x_right,
+            chance,
+            "  random",
+            ha="left",
+            va="center",
+            fontsize=9,
+            color="#222222",
+            fontweight="bold",
+            clip_on=False,
+            zorder=6,
         )
 
 
@@ -388,11 +426,14 @@ def _draw_per_shade_legend(fig, *, with_refs: bool) -> None:
         for i in range(len(KEEPK_VALUES))
     ]
     leg_r = fig.legend(
-        reg_handles, keepk_labels,
+        reg_handles,
+        keepk_labels,
         title="Reg. MoE",
         ncol=len(reg_handles),
-        loc="lower center", bbox_to_anchor=(reg_x, 0.005),
-        facecolor="#EEF6E4", edgecolor=REG_PALETTE[1],
+        loc="lower center",
+        bbox_to_anchor=(reg_x, 0.005),
+        facecolor="#EEF6E4",
+        edgecolor=REG_PALETTE[1],
         **common_kw,
     )
     leg_r.get_title().set_fontweight("bold")
@@ -406,11 +447,14 @@ def _draw_per_shade_legend(fig, *, with_refs: bool) -> None:
         for i in range(len(KEEPK_VALUES))
     ]
     leg_f = fig.legend(
-        flex_handles, keepk_labels,
+        flex_handles,
+        keepk_labels,
         title="EMO",
         ncol=len(flex_handles),
-        loc="lower center", bbox_to_anchor=(flex_x, 0.005),
-        facecolor="#FBE7EF", edgecolor=FLEX_PALETTE[2],
+        loc="lower center",
+        bbox_to_anchor=(flex_x, 0.005),
+        facecolor="#FBE7EF",
+        edgecolor=FLEX_PALETTE[2],
         **common_kw,
     )
     leg_f.get_title().set_fontweight("bold")
@@ -421,18 +465,19 @@ def _draw_per_shade_legend(fig, *, with_refs: bool) -> None:
     # ---- Trained baselines box (only when overlays are present) ----
     if with_refs:
         ref_handles = [
-            mpatches.Patch(facecolor="white", edgecolor=DENSE_COLOR,
-                           hatch="///", linewidth=1.4),
-            mpatches.Patch(facecolor="white", edgecolor=REGSMALL_COLOR,
-                           hatch="///", linewidth=1.4),
+            mpatches.Patch(facecolor="white", edgecolor=DENSE_COLOR, hatch="///", linewidth=1.4),
+            mpatches.Patch(facecolor="white", edgecolor=REGSMALL_COLOR, hatch="///", linewidth=1.4),
         ]
         ref_labels = ["Dense @8 (trained)", "Reg. MoE @32 (trained)"]
         leg_x = fig.legend(
-            ref_handles, ref_labels,
+            ref_handles,
+            ref_labels,
             title="Trained baselines",
             ncol=len(ref_handles),
-            loc="lower center", bbox_to_anchor=(refs_x, 0.005),
-            facecolor="#F5F5F5", edgecolor="#999999",
+            loc="lower center",
+            bbox_to_anchor=(refs_x, 0.005),
+            facecolor="#F5F5F5",
+            edgecolor="#999999",
             **common_kw,
         )
         leg_x.get_title().set_fontweight("bold")
@@ -460,18 +505,14 @@ def render_figure(
 
     n_rows = len(row_specs)
     n_cols = len(PANEL_TITLES)
-    fig, axes = plt.subplots(
-        n_rows, n_cols, figsize=(14, 3.4 * n_rows + 1.2)
-    )
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(14, 3.4 * n_rows + 1.2))
     handles_for_legend: Dict[str, plt.Artist] = {}
 
     for r, (suffix, row_label) in enumerate(row_specs):
         for c, panel_title in enumerate(PANEL_TITLES):
             ax = axes[r][c]
             metric_col = f"{panel_title} ({suffix})"
-            clumps, overlays = _build_clumps(
-                df, metric_col, reg_model, flex_model, refs
-            )
+            clumps, overlays = _build_clumps(df, metric_col, reg_model, flex_model, refs)
             panel_cfg = {
                 **PANEL_Y_CONFIG.get(panel_title, {}),
                 **PANEL_Y_CONFIG.get(metric_col, {}),

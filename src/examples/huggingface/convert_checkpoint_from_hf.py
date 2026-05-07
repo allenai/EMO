@@ -28,7 +28,6 @@ import torch
 import torch.distributed.checkpoint.state_dict as dist_cp_sd
 import torch.nn.functional as F
 from cached_path import cached_path
-from transformers import AutoConfig, AutoModelForCausalLM
 
 from olmo_core.aliases import PathOrStr
 from olmo_core.data.tokenizer import TokenizerConfig
@@ -43,6 +42,7 @@ from olmo_core.nn.rope import YaRNRoPEScalingConfig
 from olmo_core.nn.transformer.config import TransformerBlockConfig, TransformerConfig
 from olmo_core.nn.transformer.model import Transformer
 from olmo_core.utils import prepare_cli_environment
+from transformers import AutoConfig, AutoModelForCausalLM
 
 log = logging.getLogger(__name__)
 

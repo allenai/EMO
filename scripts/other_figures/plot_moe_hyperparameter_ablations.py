@@ -30,12 +30,8 @@ import pandas as pd
 import seaborn as sns
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-CSV_PATH = (
-    REPO_ROOT / "claude_outputs" / "other_figures" / "moe_hyperparameter_ablations.csv"
-)
-OUT_PATH = (
-    REPO_ROOT / "claude_outputs" / "other_figures" / "moe_hyperparameter_ablations.pdf"
-)
+CSV_PATH = REPO_ROOT / "claude_outputs" / "other_figures" / "moe_hyperparameter_ablations.csv"
+OUT_PATH = REPO_ROOT / "claude_outputs" / "other_figures" / "moe_hyperparameter_ablations.pdf"
 
 METRIC_SUFFIX = " - train/CE loss"
 MAX_STEP = 3000
@@ -43,15 +39,14 @@ MAX_STEP = 3000
 # (display label, wandb run name, color)
 # Order = legend order; the lb=1e-1 alternative comes last as the "winner".
 RUNS: List[Tuple[str, str, str]] = [
-    ("lr=4e-2, lb=1e-2", "moe_1b14b_lr-4e-2-ablations_0116",         "#225C2E"),  # dark green
-    ("lr=4e-3, lb=1e-2", "moe_1b14b_lr-4e-3-ablations_0116",         "#5B8E3F"),  # medium green
-    ("lr=4e-4, lb=1e-2", "moe_1b14b_lr-4e-4-ablations_0116",         "#C5DD93"),  # light green
+    ("lr=4e-2, lb=1e-2", "moe_1b14b_lr-4e-2-ablations_0116", "#225C2E"),  # dark green
+    ("lr=4e-3, lb=1e-2", "moe_1b14b_lr-4e-3-ablations_0116", "#5B8E3F"),  # medium green
+    ("lr=4e-4, lb=1e-2", "moe_1b14b_lr-4e-4-ablations_0116", "#C5DD93"),  # light green
     ("lr=4e-3, lb=1e-1", "moe_1b14b_lr-4e-3_lb-1e-1-ablations_0116", "#B8327C"),  # EMO magenta
 ]
 
 
-def load_long(df: pd.DataFrame, runs: List[Tuple[str, str, str]],
-              max_step: int) -> pd.DataFrame:
+def load_long(df: pd.DataFrame, runs: List[Tuple[str, str, str]], max_step: int) -> pd.DataFrame:
     frames = []
     for label, run, _color in runs:
         col = f"{run}{METRIC_SUFFIX}"
@@ -85,7 +80,8 @@ def main() -> None:
     fig, ax = plt.subplots(figsize=(8.5, 5.0))
     sns.lineplot(
         data=long_df,
-        x="step", y="ce_loss",
+        x="step",
+        y="ce_loss",
         hue="config",
         hue_order=hue_order,
         palette=palette,
@@ -103,19 +99,31 @@ def main() -> None:
         ax.get_legend().remove()
     handles = [
         mlines.Line2D(
-            [], [], color=palette[label], linewidth=2.8, label=label,
+            [],
+            [],
+            color=palette[label],
+            linewidth=2.8,
+            label=label,
         )
         for label in hue_order
     ]
     leg = fig.legend(
-        handles, [h.get_label() for h in handles],
+        handles,
+        [h.get_label() for h in handles],
         title="Standard MoE Hyperparameters",
         ncol=len(handles),
-        loc="lower center", bbox_to_anchor=(0.5, 0.005),
-        frameon=True, fontsize=11, title_fontsize=12,
-        handletextpad=0.6, columnspacing=1.2,
-        borderpad=0.7, labelspacing=0.4, handlelength=2.4,
-        facecolor="#EEF6E4", edgecolor="#5B8E3F",  # green-tinted, matches Reg. MoE family
+        loc="lower center",
+        bbox_to_anchor=(0.5, 0.005),
+        frameon=True,
+        fontsize=11,
+        title_fontsize=12,
+        handletextpad=0.6,
+        columnspacing=1.2,
+        borderpad=0.7,
+        labelspacing=0.4,
+        handlelength=2.4,
+        facecolor="#EEF6E4",
+        edgecolor="#5B8E3F",  # green-tinted, matches Reg. MoE family
     )
     leg.get_title().set_fontweight("bold")
     leg.get_title().set_color("#225C2E")

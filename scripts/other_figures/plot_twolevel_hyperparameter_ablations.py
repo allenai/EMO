@@ -28,14 +28,8 @@ import pandas as pd
 import seaborn as sns
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-CSV_PATH = (
-    REPO_ROOT / "claude_outputs" / "other_figures"
-    / "twolevel_hyperparameter_ablations.csv"
-)
-OUT_PATH = (
-    REPO_ROOT / "claude_outputs" / "other_figures"
-    / "twolevel_hyperparameter_ablations.pdf"
-)
+CSV_PATH = REPO_ROOT / "claude_outputs" / "other_figures" / "twolevel_hyperparameter_ablations.csv"
+OUT_PATH = REPO_ROOT / "claude_outputs" / "other_figures" / "twolevel_hyperparameter_ablations.pdf"
 
 METRIC_SUFFIX = " - train/CE loss"
 MAX_STEP = 3000
@@ -60,8 +54,7 @@ RUNS: List[Tuple[str, str, str]] = [
 ]
 
 
-def load_long(df: pd.DataFrame, runs: List[Tuple[str, str, str]],
-              max_step: int) -> pd.DataFrame:
+def load_long(df: pd.DataFrame, runs: List[Tuple[str, str, str]], max_step: int) -> pd.DataFrame:
     frames = []
     for label, run, _color in runs:
         col = f"{run}{METRIC_SUFFIX}"
@@ -95,7 +88,8 @@ def main() -> None:
     fig, ax = plt.subplots(figsize=(8.5, 5.0))
     sns.lineplot(
         data=long_df,
-        x="step", y="ce_loss",
+        x="step",
+        y="ce_loss",
         hue="config",
         hue_order=hue_order,
         palette=palette,
@@ -112,19 +106,31 @@ def main() -> None:
         ax.get_legend().remove()
     handles = [
         mlines.Line2D(
-            [], [], color=palette[label], linewidth=2.8, label=label,
+            [],
+            [],
+            color=palette[label],
+            linewidth=2.8,
+            label=label,
         )
         for label in hue_order
     ]
     leg = fig.legend(
-        handles, [h.get_label() for h in handles],
+        handles,
+        [h.get_label() for h in handles],
         title="EMO Hyperparameters",
         ncol=len(handles),
-        loc="lower center", bbox_to_anchor=(0.5, 0.005),
-        frameon=True, fontsize=11, title_fontsize=12,
-        handletextpad=0.6, columnspacing=1.2,
-        borderpad=0.7, labelspacing=0.4, handlelength=2.4,
-        facecolor="#FBE7EF", edgecolor="#B8327C",  # EMO pink-tinted frame
+        loc="lower center",
+        bbox_to_anchor=(0.5, 0.005),
+        frameon=True,
+        fontsize=11,
+        title_fontsize=12,
+        handletextpad=0.6,
+        columnspacing=1.2,
+        borderpad=0.7,
+        labelspacing=0.4,
+        handlelength=2.4,
+        facecolor="#FBE7EF",
+        edgecolor="#B8327C",  # EMO pink-tinted frame
     )
     leg.get_title().set_fontweight("bold")
     leg.get_title().set_color("#3F1052")

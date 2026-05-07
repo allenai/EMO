@@ -121,10 +121,7 @@ def derive_layer0_probs(data_dir: str, info: dict) -> np.ndarray:
     probs = softmax(layer0, axis=1)
     result = probs.astype(np.float16)
 
-    logger.info(
-        f"  Derived layer0_probs: shape={result.shape}, "
-        f"row sums ~{probs[0].sum():.4f}"
-    )
+    logger.info(f"  Derived layer0_probs: shape={result.shape}, " f"row sums ~{probs[0].sum():.4f}")
     return result
 
 
@@ -175,9 +172,7 @@ def derive_layer15_probs(data_dir: str, info: dict) -> np.ndarray:
     probs = softmax(layer15, axis=1)
     result = probs.astype(np.float16)
 
-    logger.info(
-        f"  Derived layer15_probs: shape={result.shape}, row sums ~{probs[0].sum():.4f}"
-    )
+    logger.info(f"  Derived layer15_probs: shape={result.shape}, row sums ~{probs[0].sum():.4f}")
     return result
 
 

@@ -33,19 +33,13 @@ logger = logging.getLogger(__name__)
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_DATA_ROOT = REPO_ROOT / "claude_outputs" / "clustering" / "weborganizer"
 
-DEFAULT_LEFT_MODEL = (
-    "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419"
-)
-DEFAULT_RIGHT_MODEL = (
-    "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419"
-)
+DEFAULT_LEFT_MODEL = "moereducedp512sharedexp1_1b14b_lr-4e-3_lb-1e-1_1T_0322_anneal_from_step238419"
+DEFAULT_RIGHT_MODEL = "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_1T_0313_anneal_from_step238419"
 
 LEFT_LABEL = "Reg. MoE (1T)"
 RIGHT_LABEL = "EMO (1T)"
 
-DEFAULT_OUTPUT = (
-    REPO_ROOT / "claude_outputs" / "other_figures" / "doc_probs_similarity_compare.pdf"
-)
+DEFAULT_OUTPUT = REPO_ROOT / "claude_outputs" / "other_figures" / "doc_probs_similarity_compare.pdf"
 
 AGGREGATED_FILENAME = "doc_probs_heatmap_data.npz"
 
@@ -57,7 +51,9 @@ SIMILARITY_CMAP = "RdPu"
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--data-root", type=Path, default=DEFAULT_DATA_ROOT,
+        "--data-root",
+        type=Path,
+        default=DEFAULT_DATA_ROOT,
         help="Parent directory containing the per-model subdirectories.",
     )
     parser.add_argument("--left-model", default=DEFAULT_LEFT_MODEL)
@@ -65,7 +61,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--left-label", default=LEFT_LABEL)
     parser.add_argument("--right-label", default=RIGHT_LABEL)
     parser.add_argument(
-        "--topic-order-file", type=Path, default=None,
+        "--topic-order-file",
+        type=Path,
+        default=None,
         help="Default: <data-root>/topic_order.json",
     )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
@@ -110,10 +108,7 @@ def _load_model_similarity_matrices(
     topic_avg = topic_avg[perm]
 
     selected_layers = np.linspace(0, num_layers - 1, 4).astype(int).tolist()
-    sim_mats = [
-        _topic_similarity(topic_avg[:, layer_idx, :])
-        for layer_idx in selected_layers
-    ]
+    sim_mats = [_topic_similarity(topic_avg[:, layer_idx, :]) for layer_idx in selected_layers]
     return sim_mats, selected_layers, list(topic_order)
 
 
@@ -136,7 +131,11 @@ def _draw_quad(
         row, col = idx // 2, idx % 2
         ax = axes_block[row][col]
         im = ax.imshow(
-            mat, aspect="equal", cmap=SIMILARITY_CMAP, vmin=vmin, vmax=vmax,
+            mat,
+            aspect="equal",
+            cmap=SIMILARITY_CMAP,
+            vmin=vmin,
+            vmax=vmax,
         )
         images.append(im)
         ax.set_xticks(range(len(topics)))
@@ -162,9 +161,7 @@ def main() -> None:
         else args.data_root / "topic_order.json"
     )
     if not topic_order_file.exists():
-        raise FileNotFoundError(
-            f"Topic-order file not found at {topic_order_file}."
-        )
+        raise FileNotFoundError(f"Topic-order file not found at {topic_order_file}.")
     with open(topic_order_file) as f:
         topic_order = json.load(f)
     logger.info(f"Topic order from {topic_order_file} ({len(topic_order)} topics)")
@@ -172,17 +169,11 @@ def main() -> None:
     left_dir = args.data_root / args.left_model
     right_dir = args.data_root / args.right_model
 
-    left_mats, left_layers, left_topics = _load_model_similarity_matrices(
-        left_dir, topic_order
-    )
-    right_mats, right_layers, right_topics = _load_model_similarity_matrices(
-        right_dir, topic_order
-    )
+    left_mats, left_layers, left_topics = _load_model_similarity_matrices(left_dir, topic_order)
+    right_mats, right_layers, right_topics = _load_model_similarity_matrices(right_dir, topic_order)
 
     # Shared color range so the two halves are directly comparable.
-    all_vals = np.concatenate(
-        [m.flatten() for m in left_mats] + [m.flatten() for m in right_mats]
-    )
+    all_vals = np.concatenate([m.flatten() for m in left_mats] + [m.flatten() for m in right_mats])
     vmin = max(0.0, float(np.min(all_vals)))
     vmax = min(1.0, float(np.max(all_vals)))
 
@@ -191,8 +182,11 @@ def main() -> None:
     # the left block's rightmost panel.
     fig = plt.figure(figsize=(22, 11))
     gs = fig.add_gridspec(
-        2, 5, width_ratios=[1.0, 1.0, 0.30, 1.0, 1.0],
-        wspace=0.06, hspace=-0.08,
+        2,
+        5,
+        width_ratios=[1.0, 1.0, 0.30, 1.0, 1.0],
+        wspace=0.06,
+        hspace=-0.08,
     )
     left_block = [
         [fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[0, 1])],
@@ -210,20 +204,31 @@ def main() -> None:
     # Group titles centered above each 2x2 block, in figure coords.
     # y chosen to sit just above the per-panel "Layer X" subplot titles.
     fig.text(
-        0.27, 0.88, args.left_label,
-        ha="center", va="bottom", fontsize=15, fontweight="bold",
+        0.27,
+        0.88,
+        args.left_label,
+        ha="center",
+        va="bottom",
+        fontsize=15,
+        fontweight="bold",
     )
     fig.text(
-        0.72, 0.88, args.right_label,
-        ha="center", va="bottom", fontsize=15, fontweight="bold",
+        0.72,
+        0.88,
+        args.right_label,
+        ha="center",
+        va="bottom",
+        fontsize=15,
+        fontweight="bold",
     )
 
-    all_axes = [
-        ax for block in (left_block, right_block) for row in block for ax in row
-    ]
+    all_axes = [ax for block in (left_block, right_block) for row in block for ax in row]
     cbar = fig.colorbar(
-        images[0], ax=all_axes,
-        shrink=0.85, pad=0.02, fraction=0.025,
+        images[0],
+        ax=all_axes,
+        shrink=0.85,
+        pad=0.02,
+        fraction=0.025,
     )
     cbar.set_label("Cosine similarity (topic vs. topic)", fontsize=11)
 

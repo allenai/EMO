@@ -65,16 +65,15 @@ ROWS: List[Tuple[str, str, Optional[str]]] = [
     ("Reg. MoE (130B)", "32", "moe (keepk 32)"),
     ("Reg. MoE (130B)", "64", "moe (keepk 64)"),
     ("Reg. MoE (130B)", "128 (trained)", "moe (keepk 128)"),
-    ("FlexMoE (130B)", "8",
-     "specialized moe + globallb + 1shardexp + randpool (keepk 8)"),
-    ("FlexMoE (130B)", "16",
-     "specialized moe + globallb + 1shardexp + randpool (keepk 16)"),
-    ("FlexMoE (130B)", "32",
-     "specialized moe + globallb + 1shardexp + randpool (keepk 32)"),
-    ("FlexMoE (130B)", "64",
-     "specialized moe + globallb + 1shardexp + randpool (keepk 64)"),
-    ("FlexMoE (130B)", "128 (trained)",
-     "specialized moe + globallb + 1shardexp + randpool (keepk 128)"),
+    ("FlexMoE (130B)", "8", "specialized moe + globallb + 1shardexp + randpool (keepk 8)"),
+    ("FlexMoE (130B)", "16", "specialized moe + globallb + 1shardexp + randpool (keepk 16)"),
+    ("FlexMoE (130B)", "32", "specialized moe + globallb + 1shardexp + randpool (keepk 32)"),
+    ("FlexMoE (130B)", "64", "specialized moe + globallb + 1shardexp + randpool (keepk 64)"),
+    (
+        "FlexMoE (130B)",
+        "128 (trained)",
+        "specialized moe + globallb + 1shardexp + randpool (keepk 128)",
+    ),
     # ---- 1T models ----
     ("Reg. MoE (1T)", "8", "moe 1T + anneal (keepk 8)"),
     ("Reg. MoE (1T)", "16", "moe 1T + anneal (keepk 16)"),
@@ -93,21 +92,16 @@ ROWS: List[Tuple[str, str, Optional[str]]] = [
 # for the rationale behind each mapping.
 FLEXMOE_BASELINE: Dict[str, List[str]] = {
     # 130B
-    "specialized moe + globallb + 1shardexp + randpool (keepk 8)":
-        ["moe (keepk 8)", "dense"],
-    "specialized moe + globallb + 1shardexp + randpool (keepk 16)":
-        ["moe (keepk 16)"],
-    "specialized moe + globallb + 1shardexp + randpool (keepk 32)":
-        ["moe (keepk 32)", "moe_small"],
-    "specialized moe + globallb + 1shardexp + randpool (keepk 64)":
-        ["moe (keepk 64)"],
-    "specialized moe + globallb + 1shardexp + randpool (keepk 128)":
-        ["moe (keepk 128)"],
+    "specialized moe + globallb + 1shardexp + randpool (keepk 8)": ["moe (keepk 8)", "dense"],
+    "specialized moe + globallb + 1shardexp + randpool (keepk 16)": ["moe (keepk 16)"],
+    "specialized moe + globallb + 1shardexp + randpool (keepk 32)": ["moe (keepk 32)", "moe_small"],
+    "specialized moe + globallb + 1shardexp + randpool (keepk 64)": ["moe (keepk 64)"],
+    "specialized moe + globallb + 1shardexp + randpool (keepk 128)": ["moe (keepk 128)"],
     # 1T (compared only against matched Reg. MoE 1T at same keepk)
-    "specialized moe 1T + anneal (keepk 8)":   ["moe 1T + anneal (keepk 8)"],
-    "specialized moe 1T + anneal (keepk 16)":  ["moe 1T + anneal (keepk 16)"],
-    "specialized moe 1T + anneal (keepk 32)":  ["moe 1T + anneal (keepk 32)"],
-    "specialized moe 1T + anneal (keepk 64)":  ["moe 1T + anneal (keepk 64)"],
+    "specialized moe 1T + anneal (keepk 8)": ["moe 1T + anneal (keepk 8)"],
+    "specialized moe 1T + anneal (keepk 16)": ["moe 1T + anneal (keepk 16)"],
+    "specialized moe 1T + anneal (keepk 32)": ["moe 1T + anneal (keepk 32)"],
+    "specialized moe 1T + anneal (keepk 64)": ["moe 1T + anneal (keepk 64)"],
     "specialized moe 1T + anneal (keepk 128)": ["moe 1T + anneal (keepk 128)"],
 }
 

@@ -31,10 +31,10 @@ from typing import Dict, List, Optional
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 from src.hf_training.data_utils import get_formatted_prompts
 from src.hf_training.greedy_prune_layerwise import prune_moe_layer_inplace
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -231,16 +231,12 @@ def easy_ep_prune(
         f"Loading calibration data: {task_name} ({split})"
         + (f" [num_shots={num_shots_override}]" if num_shots_override is not None else "")
     )
-    prompts, _ = get_formatted_prompts(
-        task_name, split, num_shots_override=num_shots_override
-    )
+    prompts, _ = get_formatted_prompts(task_name, split, num_shots_override=num_shots_override)
     if num_calibration is None:
         logger.info(f"Loaded {len(prompts)} prompts, using all (no subsampling)")
     else:
         n_keep = min(num_calibration, len(prompts))
-        logger.info(
-            f"Loaded {len(prompts)} prompts, subsampling to {n_keep} (seed={prune_seed})"
-        )
+        logger.info(f"Loaded {len(prompts)} prompts, subsampling to {n_keep} (seed={prune_seed})")
         # Deterministic subsample: take the first num_calibration after a fixed
         # permutation (avoids always hitting the same few examples for different
         # task sizes). Seed defaults to 0 to preserve historical behavior.

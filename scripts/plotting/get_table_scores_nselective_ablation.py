@@ -261,10 +261,10 @@ def _inject_pseed(suffix: str, seed: int) -> str:
         return suffix
     m = re.search(r"_nselective-\d+", suffix)
     if m:
-        return suffix[: m.end()] + f"_pseed-{seed}" + suffix[m.end():]
+        return suffix[: m.end()] + f"_pseed-{seed}" + suffix[m.end() :]
     m = re.search(r"_selectivemode-[a-z_]+", suffix)
     if m:
-        return suffix[: m.end()] + f"_pseed-{seed}" + suffix[m.end():]
+        return suffix[: m.end()] + f"_pseed-{seed}" + suffix[m.end() :]
     return suffix
 
 
@@ -336,8 +336,11 @@ def collect_nprune_table(
                         for subtask in active_subtasks:
                             relative = subtask + keepk_suffix
                             val = _read_metric_seed_avg(
-                                model_dir, relative, nprune_suffix,
-                                metric_key, checkpoint_mode,
+                                model_dir,
+                                relative,
+                                nprune_suffix,
+                                metric_key,
+                                checkpoint_mode,
                             )
                             if val is not None:
                                 values.append(val)

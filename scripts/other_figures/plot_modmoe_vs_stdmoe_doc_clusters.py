@@ -31,7 +31,7 @@ import argparse
 import json
 from collections import Counter
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, List
 
 import matplotlib as mpl
 import matplotlib.patches as patches
@@ -40,12 +40,10 @@ from matplotlib.patches import FancyBboxPatch
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_HTML = (
-    REPO_ROOT / "claude_outputs" / "clustering" / "pretraining"
-    / "modmoe_vs_stdmoe_comparison.html"
+    REPO_ROOT / "claude_outputs" / "clustering" / "pretraining" / "modmoe_vs_stdmoe_comparison.html"
 )
 DEFAULT_OUTPUT = (
-    REPO_ROOT / "claude_outputs" / "other_figures"
-    / "modmoe_vs_stdmoe_doc_clusters.pdf"
+    REPO_ROOT / "claude_outputs" / "other_figures" / "modmoe_vs_stdmoe_doc_clusters.pdf"
 )
 
 # Pre-selected via an offline scan: high EMO concentration in a topical
@@ -68,12 +66,12 @@ DIVIDER = "#eef0f3"
 # family, EMO = magenta/pink family). The accent_soft tints are the
 # same green / pink legend washes used in main_results_abs_bars_1t.pdf.
 STDMOE_ACCENT = {
-    "accent":      "#5B8E3F",  # REG_PALETTE[1]  — medium green
+    "accent": "#5B8E3F",  # REG_PALETTE[1]  — medium green
     "accent_soft": "#EEF6E4",  # green wash used in legend backgrounds
     "accent_dark": "#225C2E",  # REG_PALETTE[0]  — dark forest green
 }
 MODMOE_ACCENT = {
-    "accent":      "#B8327C",  # FLEX_PALETTE[2] — EMO magenta
+    "accent": "#B8327C",  # FLEX_PALETTE[2] — EMO magenta
     "accent_soft": "#FBE7EF",  # pink wash used in legend backgrounds
     "accent_dark": "#3F1052",  # FLEX_PALETTE[0] — deep purple
 }
@@ -130,15 +128,17 @@ def auto_select_doc(
     SYNTACTIC_M2 = {2, 5, 6, 8, 10, 13, 15, 19, 20, 21, 22, 27}
     # Only count EMO clusters in clear topical-domain categories.
     DOMAIN_M1_CATS = {
-        "arts", "business", "code", "education", "health", "news", "science",
+        "arts",
+        "business",
+        "code",
+        "education",
+        "health",
+        "news",
+        "science",
     }
 
-    m1_top_ids = {
-        c["id"] for c in sorted(m1_clusters, key=lambda c: -c["size"])[:top_n]
-    }
-    m2_top_ids = {
-        c["id"] for c in sorted(m2_clusters, key=lambda c: -c["size"])[:top_n]
-    }
+    m1_top_ids = {c["id"] for c in sorted(m1_clusters, key=lambda c: -c["size"])[:top_n]}
+    m2_top_ids = {c["id"] for c in sorted(m2_clusters, key=lambda c: -c["size"])[:top_n]}
     m1_by_id = {c["id"]: c for c in m1_clusters}
 
     best = None
@@ -176,10 +176,14 @@ def auto_select_doc(
 def add_rounded_card(ax, x, y, w, h, facecolor, edgecolor, lw=1.0, rounding=0.025):
     box = FancyBboxPatch(
         (x + rounding, y + rounding),
-        w - 2 * rounding, h - 2 * rounding,
+        w - 2 * rounding,
+        h - 2 * rounding,
         boxstyle=f"round,pad={rounding},rounding_size={rounding}",
-        facecolor=facecolor, edgecolor=edgecolor, linewidth=lw,
-        transform=ax.transAxes, zorder=0,
+        facecolor=facecolor,
+        edgecolor=edgecolor,
+        linewidth=lw,
+        transform=ax.transAxes,
+        zorder=0,
     )
     ax.add_patch(box)
 
@@ -234,21 +238,46 @@ def render_cluster_card(ax, model_data: dict, spec: dict, top_n: int):
     add_rounded_card(ax, 0.0, 0.0, 1.0, 1.0, BG_CARD, BORDER, lw=0.8)
 
     # Top accent stripe.
-    ax.add_patch(patches.Rectangle(
-        (0, 0.96), 1, 0.04,
-        facecolor=accent, edgecolor="none",
-        transform=ax.transAxes, zorder=1,
-    ))
+    ax.add_patch(
+        patches.Rectangle(
+            (0, 0.96),
+            1,
+            0.04,
+            facecolor=accent,
+            edgecolor="none",
+            transform=ax.transAxes,
+            zorder=1,
+        )
+    )
 
-    ax.text(0.05, 0.91, spec["label"], fontsize=22, fontweight="bold",
-            color=FG, transform=ax.transAxes, ha="left", va="top",
-            family="sans-serif")
+    ax.text(
+        0.05,
+        0.91,
+        spec["label"],
+        fontsize=22,
+        fontweight="bold",
+        color=FG,
+        transform=ax.transAxes,
+        ha="left",
+        va="top",
+        family="sans-serif",
+    )
 
-    ax.plot([0.05, 0.95], [0.825, 0.825],
-            color=DIVIDER, linewidth=1.0, transform=ax.transAxes, zorder=1)
-    ax.text(0.05, 0.806, "TOP CLUSTERS  ·  BY TOKEN COUNT",
-            fontsize=10, color=FG_FAINT, fontweight="bold",
-            transform=ax.transAxes, ha="left", va="top", family="sans-serif")
+    ax.plot(
+        [0.05, 0.95], [0.825, 0.825], color=DIVIDER, linewidth=1.0, transform=ax.transAxes, zorder=1
+    )
+    ax.text(
+        0.05,
+        0.806,
+        "TOP CLUSTERS  ·  BY TOKEN COUNT",
+        fontsize=10,
+        color=FG_FAINT,
+        fontweight="bold",
+        transform=ax.transAxes,
+        ha="left",
+        va="top",
+        family="sans-serif",
+    )
 
     clusters = model_data["clusters"]
     total_tokens = model_data["total_tokens"]
@@ -264,49 +293,90 @@ def render_cluster_card(ax, model_data: dict, spec: dict, top_n: int):
         pct = c["size"] / total_tokens * 100
 
         if is_highlight:
-            ax.add_patch(FancyBboxPatch(
-                (0.035, y - row_h * 0.42), 0.93, row_h * 0.84,
-                boxstyle="round,pad=0,rounding_size=0.012",
-                facecolor=accent_soft, edgecolor="none",
-                transform=ax.transAxes, zorder=1,
-            ))
-            ax.add_patch(FancyBboxPatch(
-                (0.038, y - row_h * 0.38), 0.009, row_h * 0.76,
-                boxstyle="round,pad=0,rounding_size=0.003",
-                facecolor=accent, edgecolor="none",
-                transform=ax.transAxes, zorder=2,
-            ))
+            ax.add_patch(
+                FancyBboxPatch(
+                    (0.035, y - row_h * 0.42),
+                    0.93,
+                    row_h * 0.84,
+                    boxstyle="round,pad=0,rounding_size=0.012",
+                    facecolor=accent_soft,
+                    edgecolor="none",
+                    transform=ax.transAxes,
+                    zorder=1,
+                )
+            )
+            ax.add_patch(
+                FancyBboxPatch(
+                    (0.038, y - row_h * 0.38),
+                    0.009,
+                    row_h * 0.76,
+                    boxstyle="round,pad=0,rounding_size=0.003",
+                    facecolor=accent,
+                    edgecolor="none",
+                    transform=ax.transAxes,
+                    zorder=2,
+                )
+            )
 
-        ax.add_patch(patches.Circle(
-            (0.075, y), row_h * 0.17,
-            facecolor=accent if is_highlight else DOT_DIM,
-            edgecolor="none", transform=ax.transAxes, zorder=3,
-        ))
+        ax.add_patch(
+            patches.Circle(
+                (0.075, y),
+                row_h * 0.17,
+                facecolor=accent if is_highlight else DOT_DIM,
+                edgecolor="none",
+                transform=ax.transAxes,
+                zorder=3,
+            )
+        )
 
         label_short = c["label"] if len(c["label"]) <= 38 else c["label"][:36] + "…"
-        ax.text(0.115, y, label_short,
-                fontsize=12,
-                fontweight="bold" if is_highlight else "normal",
-                color=accent_dark if is_highlight else FG,
-                transform=ax.transAxes, va="center", family="sans-serif")
-        ax.text(0.955, y, f"{pct:4.1f}%",
-                fontsize=11,
-                color=accent_dark if is_highlight else FG_MUTED,
-                fontweight="bold" if is_highlight else "normal",
-                transform=ax.transAxes, va="center", ha="right",
-                family="monospace")
+        ax.text(
+            0.115,
+            y,
+            label_short,
+            fontsize=12,
+            fontweight="bold" if is_highlight else "normal",
+            color=accent_dark if is_highlight else FG,
+            transform=ax.transAxes,
+            va="center",
+            family="sans-serif",
+        )
+        ax.text(
+            0.955,
+            y,
+            f"{pct:4.1f}%",
+            fontsize=11,
+            color=accent_dark if is_highlight else FG_MUTED,
+            fontweight="bold" if is_highlight else "normal",
+            transform=ax.transAxes,
+            va="center",
+            ha="right",
+            family="monospace",
+        )
 
-    ax.plot([0.05, 0.95], [0.045, 0.045],
-            color=DIVIDER, linewidth=1.0, transform=ax.transAxes, zorder=1)
-    ax.text(0.5, 0.022,
-            f"Top {top_n} of {len(clusters)} clusters",
-            fontsize=9.5, color=FG_FAINT, style="italic",
-            transform=ax.transAxes, ha="center", va="center")
+    ax.plot(
+        [0.05, 0.95], [0.045, 0.045], color=DIVIDER, linewidth=1.0, transform=ax.transAxes, zorder=1
+    )
+    ax.text(
+        0.5,
+        0.022,
+        f"Top {top_n} of {len(clusters)} clusters",
+        fontsize=9.5,
+        color=FG_FAINT,
+        style="italic",
+        transform=ax.transAxes,
+        ha="center",
+        va="center",
+    )
 
 
 def render_doc_zoom_card(
-    ax, doc_tokens: List[str], doc_cluster_ids: List[int],
-    spec: dict, cluster_label: str, target_pct: float,
+    ax,
+    doc_tokens: List[str],
+    doc_cluster_ids: List[int],
+    spec: dict,
+    cluster_label: str,
+    target_pct: float,
 ):
     ax.axis("off")
 
@@ -323,39 +393,67 @@ def render_doc_zoom_card(
     hid = spec["highlight_cluster_id"]
 
     card = FancyBboxPatch(
-        (-0.8, 0.1), chars_per_line + 1.6, total_h - 0.1,
+        (-0.8, 0.1),
+        chars_per_line + 1.6,
+        total_h - 0.1,
         boxstyle="round,pad=0,rounding_size=1.0",
-        facecolor=BG_CARD, edgecolor=BORDER, linewidth=0.9, zorder=0,
+        facecolor=BG_CARD,
+        edgecolor=BORDER,
+        linewidth=0.9,
+        zorder=0,
     )
     ax.add_patch(card)
 
     pill = FancyBboxPatch(
-        (0.2, total_h - 1.05), 0.7, 0.6,
+        (0.2, total_h - 1.05),
+        0.7,
+        0.6,
         boxstyle="round,pad=0,rounding_size=0.3",
-        facecolor=accent, edgecolor="none", zorder=1,
+        facecolor=accent,
+        edgecolor="none",
+        zorder=1,
     )
     ax.add_patch(pill)
 
     header_y = total_h - 0.75
-    ax.text(1.5, header_y, cluster_label,
-            fontsize=14, fontweight="bold", color=accent_dark,
-            ha="left", va="center", family="sans-serif", zorder=3)
+    ax.text(
+        1.5,
+        header_y,
+        cluster_label,
+        fontsize=14,
+        fontweight="bold",
+        color=accent_dark,
+        ha="left",
+        va="center",
+        family="sans-serif",
+        zorder=3,
+    )
 
-    ax.plot([0.5, chars_per_line - 0.5],
-            [max_lines + 0.1, max_lines + 0.1],
-            color=DIVIDER, linewidth=0.8, zorder=2)
+    ax.plot(
+        [0.5, chars_per_line - 0.5],
+        [max_lines + 0.1, max_lines + 0.1],
+        color=DIVIDER,
+        linewidth=0.8,
+        zorder=2,
+    )
 
     placements = wrap_tokens_into_lines(doc_tokens, chars_per_line, max_lines)
 
     for row, col, text, ti in placements:
         y = max_lines - row - 0.55
         if doc_cluster_ids[ti] == hid:
-            ax.add_patch(FancyBboxPatch(
-                (col - 0.08, y - 0.3), len(text) + 0.16, 0.62,
-                boxstyle="round,pad=0,rounding_size=0.22",
-                facecolor=accent_soft, edgecolor=accent, linewidth=0.45,
-                zorder=2,
-            ))
+            ax.add_patch(
+                FancyBboxPatch(
+                    (col - 0.08, y - 0.3),
+                    len(text) + 0.16,
+                    0.62,
+                    boxstyle="round,pad=0,rounding_size=0.22",
+                    facecolor=accent_soft,
+                    edgecolor=accent,
+                    linewidth=0.45,
+                    zorder=2,
+                )
+            )
 
     for row, col, text, ti in placements:
         y = max_lines - row - 0.55
@@ -363,9 +461,18 @@ def render_doc_zoom_card(
             color, weight = accent_dark, "bold"
         else:
             color, weight = "#b4bac4", "normal"
-        ax.text(col, y, text, fontsize=10, family="monospace",
-                color=color, fontweight=weight,
-                va="center", ha="left", zorder=3)
+        ax.text(
+            col,
+            y,
+            text,
+            fontsize=10,
+            family="monospace",
+            color=color,
+            fontweight=weight,
+            va="center",
+            ha="left",
+            zorder=3,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -378,7 +485,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--html", type=Path, default=DEFAULT_HTML)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument(
-        "--target-doc-id", type=int, default=DEFAULT_TARGET_DOC_ID,
+        "--target-doc-id",
+        type=int,
+        default=DEFAULT_TARGET_DOC_ID,
         help="Document index `di` to render. Pass -1 to auto-select.",
     )
     return parser.parse_args()
@@ -398,9 +507,7 @@ def main() -> None:
 
     target_id = args.target_doc_id
     if target_id == -1:
-        target_id = auto_select_doc(
-            DOCS, M1["clusters"], M2["clusters"], TOP_N_CLUSTERS
-        )
+        target_id = auto_select_doc(DOCS, M1["clusters"], M2["clusters"], TOP_N_CLUSTERS)
         print(f"Auto-selected doc#{target_id}")
 
     target_doc = next((d for d in DOCS if d["di"] == target_id), None)
@@ -415,54 +522,72 @@ def main() -> None:
     m2_top_pct = m2_top_n / n_tokens * 100
 
     print(f"Doc #{target_id}  ({target_doc['s']}, {n_tokens} tokens)")
-    print(f"  EMO       top: C{m1_top:02d} {m1_by_id[m1_top]['label']!r}  "
-          f"{m1_top_pct:.1f}% of tokens")
-    print(f"  Standard MoE top: C{m2_top:02d} {m2_by_id[m2_top]['label']!r}  "
-          f"{m2_top_pct:.1f}% of tokens")
+    print(
+        f"  EMO       top: C{m1_top:02d} {m1_by_id[m1_top]['label']!r}  "
+        f"{m1_top_pct:.1f}% of tokens"
+    )
+    print(
+        f"  Standard MoE top: C{m2_top:02d} {m2_by_id[m2_top]['label']!r}  "
+        f"{m2_top_pct:.1f}% of tokens"
+    )
 
     models = [
-        ("stdmoe", {
-            "model_data": {
-                "clusters": M2["clusters"],
-                "total_tokens": sum(c["size"] for c in M2["clusters"]),
+        (
+            "stdmoe",
+            {
+                "model_data": {
+                    "clusters": M2["clusters"],
+                    "total_tokens": sum(c["size"] for c in M2["clusters"]),
+                },
+                "doc_cluster_ids": target_doc["c2"],
+                "label": "Standard MoE",
+                "highlight_cluster_id": m2_top,
+                "highlight_cluster_label": m2_by_id[m2_top]["label"],
+                "highlight_cluster_pct": m2_top_pct,
+                **STDMOE_ACCENT,
             },
-            "doc_cluster_ids": target_doc["c2"],
-            "label": "Standard MoE",
-            "highlight_cluster_id": m2_top,
-            "highlight_cluster_label": m2_by_id[m2_top]["label"],
-            "highlight_cluster_pct": m2_top_pct,
-            **STDMOE_ACCENT,
-        }),
-        ("modmoe", {
-            "model_data": {
-                "clusters": M1["clusters"],
-                "total_tokens": sum(c["size"] for c in M1["clusters"]),
+        ),
+        (
+            "modmoe",
+            {
+                "model_data": {
+                    "clusters": M1["clusters"],
+                    "total_tokens": sum(c["size"] for c in M1["clusters"]),
+                },
+                "doc_cluster_ids": target_doc["c1"],
+                "label": "EMO",
+                "highlight_cluster_id": m1_top,
+                "highlight_cluster_label": m1_by_id[m1_top]["label"],
+                "highlight_cluster_pct": m1_top_pct,
+                **MODMOE_ACCENT,
             },
-            "doc_cluster_ids": target_doc["c1"],
-            "label": "EMO",
-            "highlight_cluster_id": m1_top,
-            "highlight_cluster_label": m1_by_id[m1_top]["label"],
-            "highlight_cluster_pct": m1_top_pct,
-            **MODMOE_ACCENT,
-        }),
+        ),
     ]
 
-    mpl.rcParams.update({
-        "font.family": "sans-serif",
-        "font.sans-serif": ["DejaVu Sans", "Helvetica", "Arial"],
-        "axes.edgecolor": BORDER,
-        "savefig.facecolor": BG_PAGE,
-        "figure.facecolor": BG_PAGE,
-    })
+    mpl.rcParams.update(
+        {
+            "font.family": "sans-serif",
+            "font.sans-serif": ["DejaVu Sans", "Helvetica", "Arial"],
+            "axes.edgecolor": BORDER,
+            "savefig.facecolor": BG_PAGE,
+            "figure.facecolor": BG_PAGE,
+        }
+    )
 
     fig = plt.figure(figsize=(15, 11))
     fig.patch.set_facecolor(BG_PAGE)
 
     gs = fig.add_gridspec(
-        nrows=2, ncols=2,
-        width_ratios=[1, 1], height_ratios=[2.4, 1.0],
-        hspace=0.14, wspace=0.05,
-        left=0.03, right=0.97, top=0.965, bottom=0.035,
+        nrows=2,
+        ncols=2,
+        width_ratios=[1, 1],
+        height_ratios=[2.4, 1.0],
+        hspace=0.14,
+        wspace=0.05,
+        left=0.03,
+        right=0.97,
+        top=0.965,
+        bottom=0.035,
     )
 
     for col_idx, (_key, spec) in enumerate(models):
@@ -481,10 +606,15 @@ def main() -> None:
         )
 
     fig.text(
-        0.5, 0.3,
+        0.5,
+        0.3,
         f"Doc #{target_id}  ({target_doc['s']}, {n_tokens} tokens)",
-        fontsize=13, color=FG_MUTED, style="italic",
-        ha="center", va="center", family="sans-serif",
+        fontsize=13,
+        color=FG_MUTED,
+        style="italic",
+        ha="center",
+        va="center",
+        family="sans-serif",
     )
 
     args.output.parent.mkdir(parents=True, exist_ok=True)

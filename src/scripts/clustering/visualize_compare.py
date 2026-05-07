@@ -25,6 +25,7 @@ import gzip
 import json
 import logging
 import os
+
 import numpy as np
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
@@ -152,12 +153,8 @@ def build_shared_doc_data(m1, m2, max_docs=None):
 
     # Build per-doc positional cluster assignment arrays for each model
     logger.info("Building per-doc cluster assignment arrays...")
-    c1_by_doc = [
-        [-1] * (int(boundaries[i + 1]) - int(boundaries[i])) for i in range(num_docs)
-    ]
-    c2_by_doc = [
-        [-1] * (int(boundaries[i + 1]) - int(boundaries[i])) for i in range(num_docs)
-    ]
+    c1_by_doc = [[-1] * (int(boundaries[i + 1]) - int(boundaries[i])) for i in range(num_docs)]
+    c2_by_doc = [[-1] * (int(boundaries[i + 1]) - int(boundaries[i])) for i in range(num_docs)]
     for i, m in enumerate(meta1):
         di = m["doc_index"]
         if di >= num_docs:
@@ -184,9 +181,7 @@ def build_shared_doc_data(m1, m2, max_docs=None):
         start = int(boundaries[di])
         end = int(boundaries[di + 1])
         token_ids = documents[start:end].tolist()
-        tokens = [
-            tokenizer.decode([int(tid)], skip_special_tokens=False) for tid in token_ids
-        ]
+        tokens = [tokenizer.decode([int(tid)], skip_special_tokens=False) for tid in token_ids]
         source = meta_docs[di].get("source", "") if di < len(meta_docs) else ""
         docs.append(
             {

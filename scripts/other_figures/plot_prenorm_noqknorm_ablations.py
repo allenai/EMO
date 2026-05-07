@@ -30,14 +30,8 @@ import pandas as pd
 import seaborn as sns
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-CSV_PATH = (
-    REPO_ROOT / "claude_outputs" / "other_figures"
-    / "prenorm_noqknorm_ablations.csv"
-)
-OUT_PATH = (
-    REPO_ROOT / "claude_outputs" / "other_figures"
-    / "prenorm_noqknorm_ablations.pdf"
-)
+CSV_PATH = REPO_ROOT / "claude_outputs" / "other_figures" / "prenorm_noqknorm_ablations.csv"
+OUT_PATH = REPO_ROOT / "claude_outputs" / "other_figures" / "prenorm_noqknorm_ablations.pdf"
 
 METRIC_SUFFIX = " - train/CE loss"
 MAX_STEP = 3000
@@ -50,28 +44,33 @@ RUNS: List[Tuple[str, str, str, str]] = [
     (
         "Standard MoE, Prenorm + No QK-norm",
         "moe_1b14b_128experts_olmoe-mix_130B_prenorm_noqknorm_1123",
-        "#225C2E", "-",  # dark green
+        "#225C2E",
+        "-",  # dark green
     ),
     (
         "Standard MoE, ReorderedNorm",
         "moe_1b14b_128experts_olmoe-mix_130B_1117",
-        "#93C265", "-",  # light green
+        "#93C265",
+        "-",  # light green
     ),
     (
         "EMO, Prenorm + No QK-norm",
         "twolevelbatchlb-32_1b14b_stability_prenorm_noqknorm_1121",
-        "#6E1F73", "-",  # deep purple
+        "#6E1F73",
+        "-",  # deep purple
     ),
     (
         "EMO, ReorderedNorm",
         "twolevelbatchlb-32_1b14b_stability_filter-true_zlossweight-1e-3_1115",
-        "#E48AB5", "-",  # light pink
+        "#E48AB5",
+        "-",  # light pink
     ),
 ]
 
 
-def load_long(df: pd.DataFrame, runs: List[Tuple[str, str, str, str]],
-              max_step: int) -> pd.DataFrame:
+def load_long(
+    df: pd.DataFrame, runs: List[Tuple[str, str, str, str]], max_step: int
+) -> pd.DataFrame:
     frames = []
     for label, run, _color, _ls in runs:
         col = f"{run}{METRIC_SUFFIX}"
@@ -101,17 +100,19 @@ def main() -> None:
 
     palette: Dict[str, str] = {label: color for label, _run, color, _ls in RUNS}
     dashes: Dict[str, Tuple] = {
-        label: (1, 0) if ls == "-" else (5, 2)
-        for label, _run, _color, ls in RUNS
+        label: (1, 0) if ls == "-" else (5, 2) for label, _run, _color, ls in RUNS
     }
     hue_order = [label for label, _run, _color, _ls in RUNS]
 
     fig, ax = plt.subplots(figsize=(8.5, 5.0))
     sns.lineplot(
         data=long_df,
-        x="step", y="ce_loss",
-        hue="config", hue_order=hue_order,
-        style="config", style_order=hue_order,
+        x="step",
+        y="ce_loss",
+        hue="config",
+        hue_order=hue_order,
+        style="config",
+        style_order=hue_order,
         palette=palette,
         dashes=dashes,
         linewidth=2.5,
@@ -131,19 +132,32 @@ def main() -> None:
         ax.get_legend().remove()
     handles = [
         mlines.Line2D(
-            [], [], color=color, linestyle=ls, linewidth=2.8, label=label,
+            [],
+            [],
+            color=color,
+            linestyle=ls,
+            linewidth=2.8,
+            label=label,
         )
         for label, _run, color, ls in RUNS
     ]
     leg = fig.legend(
-        handles, [h.get_label() for h in handles],
+        handles,
+        [h.get_label() for h in handles],
         title="Family,  Norm",
         ncol=2,
-        loc="lower center", bbox_to_anchor=(0.5, 0.005),
-        frameon=True, fontsize=11, title_fontsize=12,
-        handletextpad=0.6, columnspacing=1.4,
-        borderpad=0.7, labelspacing=0.4, handlelength=2.6,
-        facecolor="#F5F5F5", edgecolor="#888888",
+        loc="lower center",
+        bbox_to_anchor=(0.5, 0.005),
+        frameon=True,
+        fontsize=11,
+        title_fontsize=12,
+        handletextpad=0.6,
+        columnspacing=1.4,
+        borderpad=0.7,
+        labelspacing=0.4,
+        handlelength=2.6,
+        facecolor="#F5F5F5",
+        edgecolor="#888888",
     )
     leg.get_title().set_fontweight("bold")
     leg.get_frame().set_linewidth(1.0)

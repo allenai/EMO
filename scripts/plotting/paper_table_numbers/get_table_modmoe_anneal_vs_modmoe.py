@@ -29,38 +29,38 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_INFERENCE_DIR = (
     REPO_ROOT / "claude_outputs" / "prune_plots" / "prune_eval_tables_final_ckpt0"
 )
-DEFAULT_OUTPUT_CSV = (
-    REPO_ROOT / "claude_outputs" / "prune_plots" / "modmoe_anneal_vs_modmoe.csv"
-)
-DEFAULT_OUTPUT_TEX = (
-    REPO_ROOT / "claude_outputs" / "prune_plots" / "modmoe_anneal_vs_modmoe.tex"
-)
+DEFAULT_OUTPUT_CSV = REPO_ROOT / "claude_outputs" / "prune_plots" / "modmoe_anneal_vs_modmoe.csv"
+DEFAULT_OUTPUT_TEX = REPO_ROOT / "claude_outputs" / "prune_plots" / "modmoe_anneal_vs_modmoe.tex"
 
 # (display_name, expert_count_label, csv row name).
 # ModMoE-anneal block first, then ModMoE block.
 ROWS: List[Tuple[str, str, str]] = [
-    ("ModMoE-anneal", "8",   "moe 1T + twolevel anneal (keepk 8)"),
-    ("ModMoE-anneal", "16",  "moe 1T + twolevel anneal (keepk 16)"),
-    ("ModMoE-anneal", "32",  "moe 1T + twolevel anneal (keepk 32)"),
-    ("ModMoE-anneal", "64",  "moe 1T + twolevel anneal (keepk 64)"),
+    ("ModMoE-anneal", "8", "moe 1T + twolevel anneal (keepk 8)"),
+    ("ModMoE-anneal", "16", "moe 1T + twolevel anneal (keepk 16)"),
+    ("ModMoE-anneal", "32", "moe 1T + twolevel anneal (keepk 32)"),
+    ("ModMoE-anneal", "64", "moe 1T + twolevel anneal (keepk 64)"),
     ("ModMoE-anneal", "128 (trained)", "moe 1T + twolevel anneal (keepk 128)"),
-    ("ModMoE",        "8",   "specialized moe 1T + anneal (keepk 8)"),
-    ("ModMoE",        "16",  "specialized moe 1T + anneal (keepk 16)"),
-    ("ModMoE",        "32",  "specialized moe 1T + anneal (keepk 32)"),
-    ("ModMoE",        "64",  "specialized moe 1T + anneal (keepk 64)"),
-    ("ModMoE",        "128 (trained)", "specialized moe 1T + anneal (keepk 128)"),
+    ("ModMoE", "8", "specialized moe 1T + anneal (keepk 8)"),
+    ("ModMoE", "16", "specialized moe 1T + anneal (keepk 16)"),
+    ("ModMoE", "32", "specialized moe 1T + anneal (keepk 32)"),
+    ("ModMoE", "64", "specialized moe 1T + anneal (keepk 64)"),
+    ("ModMoE", "128 (trained)", "specialized moe 1T + anneal (keepk 128)"),
 ]
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--inference-dir", type=Path, default=DEFAULT_INFERENCE_DIR,
+        "--inference-dir",
+        type=Path,
+        default=DEFAULT_INFERENCE_DIR,
     )
     parser.add_argument(
-        "--finetune-dir", type=Path, default=None,
+        "--finetune-dir",
+        type=Path,
+        default=None,
         help="Defaults to <repo>/claude_outputs/prune_plots/prune_eval_tables_final "
-             "with a backup fallback.",
+        "with a backup fallback.",
     )
     parser.add_argument("--output-csv", type=Path, default=DEFAULT_OUTPUT_CSV)
     parser.add_argument("--output-tex", type=Path, default=DEFAULT_OUTPUT_TEX)
@@ -84,9 +84,7 @@ def _resolve_finetune_dir(arg_dir: Optional[Path]) -> Path:
         if (c / "acc_raw" / "aggregate.csv").is_file():
             print(f"[INFO] Using backup fine-tuning dir: {c}")
             return c
-    raise FileNotFoundError(
-        f"Could not locate fine-tuning dir at {primary} or *backup* siblings."
-    )
+    raise FileNotFoundError(f"Could not locate fine-tuning dir at {primary} or *backup* siblings.")
 
 
 def _load(p: Path) -> pd.DataFrame:
@@ -104,8 +102,8 @@ def _pct(value) -> str:
 def build_records(inf_dir: Path, ft_dir: Path) -> List[Dict[str, str]]:
     inf_agg = _load(inf_dir / "acc_raw" / "aggregate.csv")
     inf_gsm = _load(inf_dir / "exact_match" / "gsm8k.csv")
-    ft_agg  = _load(ft_dir  / "acc_raw" / "aggregate.csv")
-    ft_gsm  = _load(ft_dir  / "exact_match" / "gsm8k.csv")
+    ft_agg = _load(ft_dir / "acc_raw" / "aggregate.csv")
+    ft_gsm = _load(ft_dir / "exact_match" / "gsm8k.csv")
 
     def lookup(df: pd.DataFrame, key: str, col: str) -> Optional[float]:
         if key not in df.index:
@@ -115,16 +113,18 @@ def build_records(inf_dir: Path, ft_dir: Path) -> List[Dict[str, str]]:
 
     records: List[Dict[str, str]] = []
     for name, experts, key in ROWS:
-        records.append({
-            "": name,
-            "# Experts": experts,
-            "MMLU (inf)":     _pct(lookup(inf_agg, key, "mmlu_merged_avg_no_other (lw)")),
-            "MMLU-Pro (inf)": _pct(lookup(inf_agg, key, "mmlu_pro_merged_avg_no_other (lw)")),
-            "GSM8K (inf)":    _pct(lookup(inf_gsm, key, "gsm8k_generation_8shot_merged (lw)")),
-            "MMLU (ft)":      _pct(lookup(ft_agg, key, "mmlu_merged_avg_no_other (lw)")),
-            "MMLU-Pro (ft)":  _pct(lookup(ft_agg, key, "mmlu_pro_merged_avg_no_other (lw)")),
-            "GSM8K (ft)":     _pct(lookup(ft_gsm, key, "gsm8k_generation_8shot_merged (lw)")),
-        })
+        records.append(
+            {
+                "": name,
+                "# Experts": experts,
+                "MMLU (inf)": _pct(lookup(inf_agg, key, "mmlu_merged_avg_no_other (lw)")),
+                "MMLU-Pro (inf)": _pct(lookup(inf_agg, key, "mmlu_pro_merged_avg_no_other (lw)")),
+                "GSM8K (inf)": _pct(lookup(inf_gsm, key, "gsm8k_generation_8shot_merged (lw)")),
+                "MMLU (ft)": _pct(lookup(ft_agg, key, "mmlu_merged_avg_no_other (lw)")),
+                "MMLU-Pro (ft)": _pct(lookup(ft_agg, key, "mmlu_pro_merged_avg_no_other (lw)")),
+                "GSM8K (ft)": _pct(lookup(ft_gsm, key, "gsm8k_generation_8shot_merged (lw)")),
+            }
+        )
     return records
 
 
@@ -202,12 +202,10 @@ def _format_row(rec: Dict[str, str]) -> str:
 
 def render_tex(records: List[Dict[str, str]]) -> str:
     anneal_recs = [r for r in records if r[""] == "ModMoE-anneal"]
-    flex_recs   = [r for r in records if r[""] == "ModMoE"]
+    flex_recs = [r for r in records if r[""] == "ModMoE"]
     anneal_rows = "\n".join(_format_row(r) for r in anneal_recs)
-    flex_rows   = "\n".join(_format_row(r) for r in flex_recs)
-    return TEX_HEADER + TEX_TEMPLATE.format(
-        anneal_rows=anneal_rows, flex_rows=flex_rows
-    )
+    flex_rows = "\n".join(_format_row(r) for r in flex_recs)
+    return TEX_HEADER + TEX_TEMPLATE.format(anneal_rows=anneal_rows, flex_rows=flex_rows)
 
 
 def main() -> None:

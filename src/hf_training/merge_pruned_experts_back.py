@@ -27,6 +27,7 @@ import os
 from typing import List, Optional
 
 import torch
+
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
@@ -62,9 +63,7 @@ def merge_pruned_experts_back(
     average_weight: float = 0.5,
 ) -> None:
     if average:
-        assert 0.0 < average_weight < 1.0, (
-            f"average_weight must be in (0, 1), got {average_weight}"
-        )
+        assert 0.0 < average_weight < 1.0, f"average_weight must be in (0, 1), got {average_weight}"
         logger.info(
             f"Mode: AVERAGE (parent gets (1-α)*parent + α*small for copied params; α={average_weight})"
         )
@@ -72,9 +71,7 @@ def merge_pruned_experts_back(
         logger.info("Mode: REPLACE (parent's copied params are overwritten with small's values)")
 
     logger.info(f"Loading parent (full) model: {parent_model_path}")
-    parent = AutoModelForCausalLM.from_pretrained(
-        parent_model_path, torch_dtype=torch.bfloat16
-    )
+    parent = AutoModelForCausalLM.from_pretrained(parent_model_path, torch_dtype=torch.bfloat16)
 
     logger.info(f"Loading pruned-and-trained model: {pruned_trained_model_path}")
     small = AutoModelForCausalLM.from_pretrained(
@@ -111,9 +108,9 @@ def merge_pruned_experts_back(
         small_layer = small.model.layers[layer_idx]
 
         if kept is None:
-            assert not _is_moe_layer(parent_layer), (
-                f"Layer {layer_idx}: metadata says non-MoE but parent has MoE"
-            )
+            assert not _is_moe_layer(
+                parent_layer
+            ), f"Layer {layer_idx}: metadata says non-MoE but parent has MoE"
             continue
 
         assert _is_moe_layer(parent_layer), f"Layer {layer_idx}: parent missing MoE structure"
@@ -127,16 +124,16 @@ def merge_pruned_experts_back(
         parent_num_standard = parent_num_experts - parent_num_shared
         small_num_experts = small_moe.num_experts
 
-        assert len(kept) == small_num_experts, (
-            f"Layer {layer_idx}: kept indices {len(kept)} != small num_experts {small_num_experts}"
-        )
+        assert (
+            len(kept) == small_num_experts
+        ), f"Layer {layer_idx}: kept indices {len(kept)} != small num_experts {small_num_experts}"
 
         norm_before = _layer_param_norm(parent_layer)
 
         for new_pos, orig_idx in enumerate(kept):
-            assert 0 <= orig_idx < parent_num_experts, (
-                f"Layer {layer_idx}: orig_idx {orig_idx} out of range [0, {parent_num_experts})"
-            )
+            assert (
+                0 <= orig_idx < parent_num_experts
+            ), f"Layer {layer_idx}: orig_idx {orig_idx} out of range [0, {parent_num_experts})"
             is_shared = orig_idx >= parent_num_standard
             if is_shared and not also_copy_shared:
                 continue
@@ -287,8 +284,8 @@ def main():
         "--average",
         action="store_true",
         help="Instead of replacing the parent's params with the small model's, blend "
-             "(1-α)*parent + α*small for every selected param. Affects experts, router rows, "
-             "and non-MoE copies — whichever flags are on.",
+        "(1-α)*parent + α*small for every selected param. Affects experts, router rows, "
+        "and non-MoE copies — whichever flags are on.",
     )
     parser.add_argument(
         "--average-weight",

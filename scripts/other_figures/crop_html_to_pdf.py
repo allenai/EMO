@@ -55,6 +55,7 @@ CHROME_BIN = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 class _CDP:
     def __init__(self, ws_url: str):
         from urllib.parse import urlparse
+
         u = urlparse(ws_url)
         self.s = socket.create_connection((u.hostname, u.port))
         key = base64.b64encode(os.urandom(16)).decode()
@@ -101,8 +102,8 @@ class _CDP:
                 off = 10
             while len(self._buf) < off + ln:
                 self._buf += self.s.recv(8192)
-            payload = self._buf[off:off + ln]
-            self._buf = self._buf[off + ln:]
+            payload = self._buf[off : off + ln]
+            self._buf = self._buf[off + ln :]
             d = json.loads(payload)
             if d.get("id") == self._id:
                 return d
@@ -116,12 +117,17 @@ def _launch_chrome() -> Tuple[subprocess.Popen, _CDP]:
     profile_dir = f"/tmp/chrome_cdp_{port}"
     proc = subprocess.Popen(
         [
-            CHROME_BIN, "--headless=new", "--disable-gpu",
+            CHROME_BIN,
+            "--headless=new",
+            "--disable-gpu",
             f"--remote-debugging-port={port}",
             f"--user-data-dir={profile_dir}",
-            "--no-first-run", "--no-default-browser-check", "about:blank",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "about:blank",
         ],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
     for _ in range(50):
         try:
@@ -140,26 +146,33 @@ def _launch_chrome() -> Tuple[subprocess.Popen, _CDP]:
     return proc, _CDP(target["webSocketDebuggerUrl"])
 
 
-def _navigate_and_wait(cdp: _CDP, html: Path, viewport_w: int, viewport_h: int,
-                       scale: int, wait_seconds: float) -> None:
+def _navigate_and_wait(
+    cdp: _CDP, html: Path, viewport_w: int, viewport_h: int, scale: int, wait_seconds: float
+) -> None:
     cdp.call("Page.enable")
     cdp.call("Runtime.enable")
-    cdp.call("Emulation.setDeviceMetricsOverride", {
-        "width": viewport_w, "height": viewport_h,
-        "deviceScaleFactor": scale, "mobile": False,
-    })
+    cdp.call(
+        "Emulation.setDeviceMetricsOverride",
+        {
+            "width": viewport_w,
+            "height": viewport_h,
+            "deviceScaleFactor": scale,
+            "mobile": False,
+        },
+    )
     cdp.call("Page.navigate", {"url": f"file://{html.resolve()}"})
     time.sleep(wait_seconds)
 
 
-def _save_preview(cdp: _CDP, viewport_w: int, viewport_h: int, scale: int,
-                  out_path: Path) -> None:
+def _save_preview(cdp: _CDP, viewport_w: int, viewport_h: int, scale: int, out_path: Path) -> None:
     """Full-viewport screenshot with axis ticks every 100 px."""
     res = cdp.call("Page.captureScreenshot", {"format": "png"})
     png_b = base64.b64decode(res["result"]["data"])
     from PIL import Image, ImageDraw, ImageFont
+
     im = Image.open_io = Image.open  # quiet a linter
     from io import BytesIO
+
     im = Image.open(BytesIO(png_b)).convert("RGB")
     draw = ImageDraw.Draw(im)
     # Try to load a default font; fall back if unavailable.
@@ -184,8 +197,9 @@ def _save_preview(cdp: _CDP, viewport_w: int, viewport_h: int, scale: int,
     im.save(out_path)
 
 
-def _crop_to_pdf(cdp: _CDP, x1: int, y1: int, x2: int, y2: int,
-                 scale: int, out_pdf: Path, dpi: int) -> Tuple[float, float]:
+def _crop_to_pdf(
+    cdp: _CDP, x1: int, y1: int, x2: int, y2: int, scale: int, out_pdf: Path, dpi: int
+) -> Tuple[float, float]:
     """Raster path: capture clip (x1,y1)→(x2,y2) as PNG and save as a tightly-sized PDF."""
     w_px = x2 - x1
     h_px = y2 - y1
@@ -198,7 +212,9 @@ def _crop_to_pdf(cdp: _CDP, x1: int, y1: int, x2: int, y2: int,
     )
     png_b = base64.b64decode(res["result"]["data"])
     from io import BytesIO
+
     from PIL import Image
+
     im = Image.open(BytesIO(png_b)).convert("RGB")
     page_w_in = w_px / 96.0
     page_h_in = h_px / 96.0
@@ -210,9 +226,9 @@ def _crop_to_pdf(cdp: _CDP, x1: int, y1: int, x2: int, y2: int,
     return page_w_in, page_h_in
 
 
-def _crop_to_pdf_vector(cdp: _CDP, x1: int, y1: int, x2: int, y2: int,
-                        viewport_w: int, viewport_h: int,
-                        out_pdf: Path) -> Tuple[float, float]:
+def _crop_to_pdf_vector(
+    cdp: _CDP, x1: int, y1: int, x2: int, y2: int, viewport_w: int, viewport_h: int, out_pdf: Path
+) -> Tuple[float, float]:
     """Vector path: full-page Page.printToPDF, then crop the MediaBox/CropBox.
 
     Chrome's printToPDF preserves SVG/text as vector data, so the output is a
@@ -228,11 +244,20 @@ def _crop_to_pdf_vector(cdp: _CDP, x1: int, y1: int, x2: int, y2: int,
 
     paper_w_in = viewport_w / 96.0
     paper_h_in = viewport_h / 96.0
-    res = cdp.call("Page.printToPDF", {
-        "paperWidth": paper_w_in, "paperHeight": paper_h_in,
-        "marginTop": 0, "marginBottom": 0, "marginLeft": 0, "marginRight": 0,
-        "printBackground": True, "scale": 1.0, "preferCSSPageSize": False,
-    })
+    res = cdp.call(
+        "Page.printToPDF",
+        {
+            "paperWidth": paper_w_in,
+            "paperHeight": paper_h_in,
+            "marginTop": 0,
+            "marginBottom": 0,
+            "marginLeft": 0,
+            "marginRight": 0,
+            "printBackground": True,
+            "scale": 1.0,
+            "preferCSSPageSize": False,
+        },
+    )
     pdf_full = base64.b64decode(res["result"]["data"])
     full_path = out_pdf.with_suffix(".full.pdf")
     out_pdf.parent.mkdir(parents=True, exist_ok=True)
@@ -242,6 +267,7 @@ def _crop_to_pdf_vector(cdp: _CDP, x1: int, y1: int, x2: int, y2: int,
     # is bottom-left, while CSS origin is top-left → flip y.
     from pypdf import PdfReader, PdfWriter
     from pypdf.generic import RectangleObject
+
     reader = PdfReader(str(full_path))
     page = reader.pages[0]
     page_h_pt = float(page.mediabox.height)
@@ -249,14 +275,16 @@ def _crop_to_pdf_vector(cdp: _CDP, x1: int, y1: int, x2: int, y2: int,
     PT_PER_PX = 72.0 / 96.0
     pdf_x1 = x1 * PT_PER_PX
     pdf_x2 = x2 * PT_PER_PX
-    pdf_y_top = y1 * PT_PER_PX        # top edge in CSS (smaller y)
-    pdf_y_bot = y2 * PT_PER_PX        # bottom edge in CSS (larger y)
-    new_box = RectangleObject([
-        pdf_x1,
-        page_h_pt - pdf_y_bot,
-        pdf_x2,
-        page_h_pt - pdf_y_top,
-    ])
+    pdf_y_top = y1 * PT_PER_PX  # top edge in CSS (smaller y)
+    pdf_y_bot = y2 * PT_PER_PX  # bottom edge in CSS (larger y)
+    new_box = RectangleObject(
+        [
+            pdf_x1,
+            page_h_pt - pdf_y_bot,
+            pdf_x2,
+            page_h_pt - pdf_y_top,
+        ]
+    )
     page.mediabox = new_box
     page.cropbox = new_box
     writer = PdfWriter()
@@ -276,25 +304,40 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--output", type=Path, default=DEFAULT_PDF, help="Output PDF path.")
     p.add_argument("--viewport-width", type=int, default=2400)
     p.add_argument("--viewport-height", type=int, default=1200)
-    p.add_argument("--scale", type=int, default=2,
-                   help="Device-scale-factor for the screenshot (capture DPI multiplier). 2 ≈ retina.")
-    p.add_argument("--dpi", type=int, default=300,
-                   help="DPI of the final PDF (raster resampling target).")
-    p.add_argument("--wait-seconds", type=float, default=15.0,
-                   help="How long to wait after navigation for JS-driven content to render.")
+    p.add_argument(
+        "--scale",
+        type=int,
+        default=2,
+        help="Device-scale-factor for the screenshot (capture DPI multiplier). 2 ≈ retina.",
+    )
+    p.add_argument(
+        "--dpi", type=int, default=300, help="DPI of the final PDF (raster resampling target)."
+    )
+    p.add_argument(
+        "--wait-seconds",
+        type=float,
+        default=15.0,
+        help="How long to wait after navigation for JS-driven content to render.",
+    )
     # Crop rectangle in CSS pixel coordinates (NOT screenshot pixels).
     # Defaults are the canonical crop for eval_pipeline.html.
     p.add_argument("--x1", type=int, default=270, help="Top-left X (CSS px).")
     p.add_argument("--y1", type=int, default=40, help="Top-left Y (CSS px).")
     p.add_argument("--x2", type=int, default=1840, help="Bottom-right X (CSS px).")
     p.add_argument("--y2", type=int, default=480, help="Bottom-right Y (CSS px).")
-    p.add_argument("--preview", action="store_true",
-                   help="Save a full-viewport screenshot annotated with axis ticks "
-                        "next to the output PDF and exit. Use this to read off coordinates.")
-    p.add_argument("--vector", action="store_true",
-                   help="Produce a vector PDF (Chrome printToPDF + MediaBox crop) "
-                        "instead of the default raster PNG-in-PDF. Output is much "
-                        "sharper at any zoom and usually smaller for SVG-heavy pages.")
+    p.add_argument(
+        "--preview",
+        action="store_true",
+        help="Save a full-viewport screenshot annotated with axis ticks "
+        "next to the output PDF and exit. Use this to read off coordinates.",
+    )
+    p.add_argument(
+        "--vector",
+        action="store_true",
+        help="Produce a vector PDF (Chrome printToPDF + MediaBox crop) "
+        "instead of the default raster PNG-in-PDF. Output is much "
+        "sharper at any zoom and usually smaller for SVG-heavy pages.",
+    )
     return p.parse_args()
 
 
@@ -306,34 +349,53 @@ def main() -> None:
     proc, cdp = _launch_chrome()
     try:
         _navigate_and_wait(
-            cdp, args.html, args.viewport_width, args.viewport_height,
-            args.scale, args.wait_seconds,
+            cdp,
+            args.html,
+            args.viewport_width,
+            args.viewport_height,
+            args.scale,
+            args.wait_seconds,
         )
         if args.preview:
             preview_path = args.output.with_name(args.output.stem + "_preview.png")
-            _save_preview(cdp, args.viewport_width, args.viewport_height,
-                          args.scale, preview_path)
+            _save_preview(cdp, args.viewport_width, args.viewport_height, args.scale, preview_path)
             print(f"[preview] wrote {preview_path}")
-            print("Open that image, read off pixel coordinates of the top-left and "
-                  "bottom-right corners of your desired crop region, then re-run with:")
-            print(f"  --x1 ... --y1 ... --x2 ... --y2 ...")
+            print(
+                "Open that image, read off pixel coordinates of the top-left and "
+                "bottom-right corners of your desired crop region, then re-run with:"
+            )
+            print("  --x1 ... --y1 ... --x2 ... --y2 ...")
             return
         if args.vector:
             w_in, h_in = _crop_to_pdf_vector(
-                cdp, args.x1, args.y1, args.x2, args.y2,
-                args.viewport_width, args.viewport_height, args.output,
+                cdp,
+                args.x1,
+                args.y1,
+                args.x2,
+                args.y2,
+                args.viewport_width,
+                args.viewport_height,
+                args.output,
             )
             mode = "vector"
         else:
             w_in, h_in = _crop_to_pdf(
-                cdp, args.x1, args.y1, args.x2, args.y2,
-                args.scale, args.output, args.dpi,
+                cdp,
+                args.x1,
+                args.y1,
+                args.x2,
+                args.y2,
+                args.scale,
+                args.output,
+                args.dpi,
             )
             mode = "raster"
         size_kb = args.output.stat().st_size / 1024.0
         print(f"[pdf] {args.output}  ({mode})")
-        print(f"      crop : ({args.x1}, {args.y1}) → ({args.x2}, {args.y2})  "
-              f"(CSS px: {args.x2 - args.x1} × {args.y2 - args.y1})")
+        print(
+            f"      crop : ({args.x1}, {args.y1}) → ({args.x2}, {args.y2})  "
+            f"(CSS px: {args.x2 - args.x1} × {args.y2 - args.y1})"
+        )
         print(f"      page : {w_in:.4f}in × {h_in:.4f}in  ({size_kb:.1f} KB)")
     finally:
         try:

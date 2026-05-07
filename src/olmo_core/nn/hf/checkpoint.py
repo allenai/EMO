@@ -7,7 +7,6 @@ import torch
 import torch.distributed as dist
 from huggingface_hub import repo_exists
 from torch.distributed.tensor import DTensor, distribute_tensor
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from olmo_core.aliases import PathOrStr
 from olmo_core.config import DType
@@ -25,6 +24,7 @@ from olmo_core.nn.hf.convert import (
     convert_state_to_hf,
 )
 from olmo_core.nn.transformer.model import Transformer
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 try:
     from accelerate import init_empty_weights  # type: ignore

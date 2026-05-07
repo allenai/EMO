@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pytest
 import torch
-from transformers import AutoModelForCausalLM, Olmo2Config, PreTrainedModel
 
 from examples.huggingface.convert_checkpoint_from_hf import convert_checkpoint_from_hf
 from olmo_core.data.tokenizer import TokenizerConfig
@@ -11,6 +10,7 @@ from olmo_core.distributed.checkpoint import load_model_and_optim_state
 from olmo_core.nn.attention import AttentionBackendName
 from olmo_core.nn.transformer.config import TransformerConfig
 from olmo_core.nn.transformer.model import Transformer
+from transformers import AutoModelForCausalLM, Olmo2Config, PreTrainedModel
 
 try:
     from transformers import Olmo3Config

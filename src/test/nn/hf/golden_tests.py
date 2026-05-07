@@ -2,8 +2,8 @@ import os
 
 import pytest
 import torch
-import transformers
 
+import transformers
 from olmo_core.nn.attention import AttentionBackendName
 from olmo_core.nn.hf.convert import convert_state_from_hf
 from olmo_core.nn.transformer import TransformerConfig

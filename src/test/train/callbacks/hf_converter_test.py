@@ -5,13 +5,13 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
-from transformers import AutoConfig
 
 from olmo_core.data.tokenizer import TokenizerConfig
 from olmo_core.distributed.checkpoint import save_model_and_optim_state
 from olmo_core.nn.transformer.config import TransformerConfig
 from olmo_core.train.callbacks.checkpointer import CheckpointerCallback
 from olmo_core.train.callbacks.hf_converter import HFConverterCallback
+from transformers import AutoConfig
 
 
 @pytest.fixture

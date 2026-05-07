@@ -27,7 +27,6 @@ from rich.console import Console, Group
 from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.text import Text
-from transformers import AutoTokenizer
 
 from olmo_core.aliases import PathOrStr
 from olmo_core.config import DType
@@ -36,6 +35,7 @@ from olmo_core.generate import GenerationConfig, TransformerGenerationModule
 from olmo_core.io import join_path, normalize_path
 from olmo_core.nn.attention import AttentionBackendName
 from olmo_core.utils import get_default_device, log_or_print, prepare_cli_environment
+from transformers import AutoTokenizer
 
 log = logging.getLogger(__name__)
 console = Console()

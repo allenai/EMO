@@ -38,7 +38,9 @@ DEFAULT_INPUT = (
     REPO_ROOT / "claude_outputs" / "prune_plots" / "validation_sample_ablation_ckpt0.csv"
 )
 DEFAULT_OUTPUT = (
-    REPO_ROOT / "claude_outputs" / "prune_plots"
+    REPO_ROOT
+    / "claude_outputs"
+    / "prune_plots"
     / "validation_fewshot_importance_clustered_ckpt0.pdf"
 )
 
@@ -49,9 +51,9 @@ TASKS = ["MMLU", "MMLU Pro", "GSM8K"]
 # rest of the paper figures (EMO pink, Dense-baseline orange, weak gray)
 # while staying clearly separable from each other.
 CONFIGS: List[Tuple[str, str, str]] = [
-    ("few-shot select + few-shot eval", "Router",          "#B8327C"),  # EMO magenta
-    ("few-shot select + 0-shot eval",   "Router (e0)",     "#E78532"),  # Dense-baseline orange
-    ("0-shot select + 0-shot eval",     "Router (0-shot)", "#888888"),  # neutral gray
+    ("few-shot select + few-shot eval", "Router", "#B8327C"),  # EMO magenta
+    ("few-shot select + 0-shot eval", "Router (e0)", "#E78532"),  # Dense-baseline orange
+    ("0-shot select + 0-shot eval", "Router (0-shot)", "#888888"),  # neutral gray
 ]
 
 # (display label, csv n token, marker shape). Order = sub-position order
@@ -59,9 +61,9 @@ CONFIGS: List[Tuple[str, str, str]] = [
 N_LEVELS: List[Tuple[str, str, str]] = [
     ("All", "All", "o"),  # circle  (leftmost: largest n)
     ("100", "100", "^"),  # up triangle
-    ("10",  "10",  "D"),  # diamond
-    ("5",   "5",   "s"),  # square
-    ("1",   "1",   "v"),  # down triangle (rightmost: smallest n)
+    ("10", "10", "D"),  # diamond
+    ("5", "5", "s"),  # square
+    ("1", "1", "v"),  # down triangle (rightmost: smallest n)
 ]
 
 PANEL_Y_CONFIG: Dict[str, Dict[str, float]] = {
@@ -85,8 +87,7 @@ def parse_args() -> argparse.Namespace:
 def _value(
     df: pd.DataFrame, prunemode: str, task: str, keepk: int, n_label: str
 ) -> Optional[float]:
-    sub = df[(df["Model"] == "FlexMoE") & (df["Prunemode"] == prunemode)
-             & (df["Task"] == task)]
+    sub = df[(df["Model"] == "FlexMoE") & (df["Prunemode"] == prunemode) & (df["Task"] == task)]
     if sub.empty:
         return None
     col = f"{keepk} Experts ({n_label})"
@@ -119,8 +120,7 @@ def _config_inner_offsets(n_configs: int) -> List[float]:
     return [(i - center) * CONFIG_OFFSET for i in range(n_configs)]
 
 
-def _draw_panel(ax, df: pd.DataFrame, task: str,
-                panel_cfg: Dict[str, float]) -> None:
+def _draw_panel(ax, df: pd.DataFrame, task: str, panel_cfg: Dict[str, float]) -> None:
     bin_centers = list(range(len(KEEPK_VALUES)))
     n_offsets = _n_offsets(len(N_LEVELS))
     cfg_offsets = _config_inner_offsets(len(CONFIGS))
@@ -140,17 +140,25 @@ def _draw_panel(ax, df: pd.DataFrame, task: str,
             if not xs:
                 continue
             ax.scatter(
-                xs, ys,
-                color=color, marker=marker, s=85,
-                edgecolor="black", linewidth=0.6, zorder=3,
+                xs,
+                ys,
+                color=color,
+                marker=marker,
+                s=85,
+                edgecolor="black",
+                linewidth=0.6,
+                zorder=3,
                 clip_on=False,
             )
 
     # Light vertical separator between bins for readability.
     for b_idx in range(len(KEEPK_VALUES) - 1):
         ax.axvline(
-            b_idx + 0.5, color="#cccccc", linewidth=0.8,
-            linestyle="-", zorder=1,
+            b_idx + 0.5,
+            color="#cccccc",
+            linewidth=0.8,
+            linestyle="-",
+            zorder=1,
         )
 
     ax.set_xticks(bin_centers)
@@ -182,17 +190,27 @@ def _draw_legend(fig) -> None:
     # Config legend (color), drawn with neutral circles.
     cfg_handles = [
         mlines.Line2D(
-            [], [], color=color, marker="o", linestyle="None", markersize=10,
-            markeredgecolor="black", markeredgewidth=0.6, label=lbl,
+            [],
+            [],
+            color=color,
+            marker="o",
+            linestyle="None",
+            markersize=10,
+            markeredgecolor="black",
+            markeredgewidth=0.6,
+            label=lbl,
         )
         for lbl, _pm, color in CONFIGS
     ]
     leg_c = fig.legend(
-        cfg_handles, [h.get_label() for h in cfg_handles],
+        cfg_handles,
+        [h.get_label() for h in cfg_handles],
         title="Few-shot configuration",
         ncol=1,
-        loc="lower center", bbox_to_anchor=(0.32, 0.005),
-        facecolor="#F5F5F5", edgecolor="#888888",
+        loc="lower center",
+        bbox_to_anchor=(0.32, 0.005),
+        facecolor="#F5F5F5",
+        edgecolor="#888888",
         **common_kw,
     )
     leg_c.get_title().set_fontweight("bold")
@@ -202,17 +220,27 @@ def _draw_legend(fig) -> None:
     # n legend (marker shape), drawn in neutral gray to focus on shape.
     n_handles = [
         mlines.Line2D(
-            [], [], color="#444444", marker=marker, linestyle="None", markersize=10,
-            markeredgecolor="black", markeredgewidth=0.6, label=lbl,
+            [],
+            [],
+            color="#444444",
+            marker=marker,
+            linestyle="None",
+            markersize=10,
+            markeredgecolor="black",
+            markeredgewidth=0.6,
+            label=lbl,
         )
         for lbl, _tok, marker in N_LEVELS
     ]
     leg_n = fig.legend(
-        n_handles, [h.get_label() for h in n_handles],
+        n_handles,
+        [h.get_label() for h in n_handles],
         title="n (calibration samples)",
         ncol=len(n_handles),
-        loc="lower center", bbox_to_anchor=(0.70, 0.005),
-        facecolor="#F5F5F5", edgecolor="#888888",
+        loc="lower center",
+        bbox_to_anchor=(0.70, 0.005),
+        facecolor="#F5F5F5",
+        edgecolor="#888888",
         **common_kw,
     )
     leg_n.get_title().set_fontweight("bold")

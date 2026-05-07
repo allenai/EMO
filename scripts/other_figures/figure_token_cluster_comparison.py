@@ -23,9 +23,7 @@ from matplotlib.patches import FancyBboxPatch
 # CONFIG
 # ============================================================================
 
-BASE = Path(
-    "/claude_outputs/analysis/router_clustering_pretraining_shuffled_token_truncated"
-)
+BASE = Path("/claude_outputs/analysis/router_clustering_pretraining_shuffled_token_truncated")
 CLUSTER_SUBDIR = "token_probs_mean_pca_l2_spherical_kmeans_k64"
 
 # ---- Model specs (first entry goes LEFT) ----

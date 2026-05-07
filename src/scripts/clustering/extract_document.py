@@ -159,9 +159,7 @@ def process_batch(
     )
 
     counts = torch.zeros(B, num_layers, num_standard_experts, dtype=torch.float32, device=device)
-    prob_sums = torch.zeros(
-        B, num_layers, num_standard_experts, dtype=torch.float32, device=device
-    )
+    prob_sums = torch.zeros(B, num_layers, num_standard_experts, dtype=torch.float32, device=device)
 
     valid_mask = attention_mask.to(torch.float32)  # (B, S)
 
@@ -172,7 +170,10 @@ def process_batch(
         top_indices = logits.topk(routed_top_k, dim=-1).indices  # (B, S, k)
         flat_indices = top_indices.reshape(B, -1)  # (B, S*k)
         valid_repeated = (
-            attention_mask.unsqueeze(-1).expand(-1, -1, routed_top_k).reshape(B, -1).to(torch.float32)
+            attention_mask.unsqueeze(-1)
+            .expand(-1, -1, routed_top_k)
+            .reshape(B, -1)
+            .to(torch.float32)
         )
         counts[:, layer_idx, :].scatter_add_(1, flat_indices, valid_repeated)
 
@@ -251,8 +252,7 @@ def main():
     num_topics = len(sources)
     tokens_per_topic = args.target_tokens // num_topics
     logger.info(
-        f"{num_topics} topics, {tokens_per_topic:,} tokens/topic "
-        f"({args.target_tokens:,} total)"
+        f"{num_topics} topics, {tokens_per_topic:,} tokens/topic " f"({args.target_tokens:,} total)"
     )
 
     # ── Step 2: load docs (shuffled per topic) ───────────────────────────────
@@ -313,9 +313,7 @@ def main():
         be = min(bs + args.batch_size, num_docs)
         batch = all_docs[bs:be]
 
-        tk, mp = process_batch(
-            model, batch, device, num_layers, num_standard_experts, routed_top_k
-        )
+        tk, mp = process_batch(model, batch, device, num_layers, num_standard_experts, routed_top_k)
         topk_freq_arr[bs:be] = tk
         mean_probs_arr[bs:be] = mp
 

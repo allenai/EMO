@@ -25,18 +25,17 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 import torch
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 # Local imports mirror analyze_nprune_keep_sets.py.
 from offline_evals.run_eval import load_task
 from scripts.eval.tasks import get_task_configs
-
 from src.hf_training.data_utils import get_oe_task_name
 from src.hf_training.greedy_prune_layerwise import (
     compute_layerwise_keep_sets,
     restore_model_state,
     snapshot_model_state,
 )
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -163,9 +162,7 @@ def main():
         f"{sum(1 for s in pristine['layers'] if s is not None)} MoE layers"
     )
 
-    my_tasks = [
-        (i, t) for i, t in enumerate(args.tasks) if i % args.num_shards == args.shard_idx
-    ]
+    my_tasks = [(i, t) for i, t in enumerate(args.tasks) if i % args.num_shards == args.shard_idx]
     logger.info(
         f"Shard {args.shard_idx}/{args.num_shards}: handling {len(my_tasks)} of "
         f"{len(args.tasks)} tasks: {[t for _, t in my_tasks]}"
@@ -178,9 +175,7 @@ def main():
         logger.info(f"=== Task: {task} (num_shots=0) ===")
         prompts, _ = _get_formatted_prompts_0shot(task, args.split)
         logger.info(f"Loaded {len(prompts)} validation prompts")
-        perm = torch.randperm(
-            len(prompts), generator=torch.Generator().manual_seed(0)
-        ).tolist()
+        perm = torch.randperm(len(prompts), generator=torch.Generator().manual_seed(0)).tolist()
 
         for n_cal in nprune_values:
             if n_cal is None:

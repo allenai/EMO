@@ -1,8 +1,6 @@
 import logging
 from typing import Any, Dict, List, Optional
 
-from transformers import Olmo2Config, Olmo2NoQKNormPrenormConfig, PretrainedConfig
-
 from olmo_core.doc_utils import beta_feature
 from olmo_core.nn.attention import Attention
 from olmo_core.nn.attention.recurrent import GatedDeltaNet
@@ -31,6 +29,7 @@ from olmo_core.nn.transformer.model import (
     NormalizedTransformer,
     Transformer,
 )
+from transformers import Olmo2Config, Olmo2NoQKNormPrenormConfig, PretrainedConfig
 
 log = logging.getLogger(__name__)
 

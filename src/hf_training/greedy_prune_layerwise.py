@@ -34,9 +34,9 @@ from typing import Any, Dict, List, Optional, Tuple
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 from src.hf_training.data_utils import get_formatted_prompts
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -103,9 +103,7 @@ def snapshot_model_state(model) -> Dict[str, Any]:
         layer_snaps.append(
             {
                 "gate_weight": moe.gate.weight.data.clone(),
-                "gate_bias": (
-                    moe.gate.bias.data.clone() if moe.gate.bias is not None else None
-                ),
+                "gate_bias": (moe.gate.bias.data.clone() if moe.gate.bias is not None else None),
                 "gate_out_features": moe.gate.out_features,
                 "experts": list(moe.experts),
                 "num_experts": moe.num_experts,
@@ -238,9 +236,7 @@ def compute_layerwise_keep_sets(
             f"Loading dataset: {task_name} ({split})"
             + (f" [num_shots={num_shots_override}]" if num_shots_override is not None else "")
         )
-        prompts, _ = get_formatted_prompts(
-            task_name, split, num_shots_override=num_shots_override
-        )
+        prompts, _ = get_formatted_prompts(task_name, split, num_shots_override=num_shots_override)
         if num_calibration is None:
             logger.info(f"Loaded {len(prompts)} prompts, using all (no subsampling)")
         else:
@@ -453,7 +449,7 @@ def greedy_prune_layerwise(
         config=config,
         torch_dtype=torch.bfloat16,
         device_map="auto" if device is None else device,
-        trust_remote_code=trust_remote_code
+        trust_remote_code=trust_remote_code,
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=trust_remote_code)
     if tokenizer.pad_token is None:

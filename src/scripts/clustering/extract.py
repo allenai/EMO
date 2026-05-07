@@ -231,9 +231,9 @@ def load_mmlu_docs(args) -> list[tuple[str, list]]:
     subject-matched 5-shot RC context.
     """
     from oe_eval.data.mmlu_tasks import MMLU_SUBJECTS
-    from transformers import AutoTokenizer
 
     from src.hf_training.data_utils import get_formatted_prompts
+    from transformers import AutoTokenizer
 
     subjects = sorted(MMLU_SUBJECTS)
     logger.info(
@@ -264,9 +264,8 @@ def load_hellaswag_docs(args) -> list[tuple[str, list]]:
     args.num_calibration with the same seeded shuffle used by the
     pruning calibration pipeline.
     """
-    from transformers import AutoTokenizer
-
     from src.hf_training.data_utils import get_formatted_prompts
+    from transformers import AutoTokenizer
 
     logger.info(
         f"Loading hellaswag_merged (validation, "

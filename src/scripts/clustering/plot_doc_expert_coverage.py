@@ -187,7 +187,9 @@ def main():
             "embedding npy."
         ),
     )
-    parser.add_argument("--metadata-file", default=None, help="default: <emb-dir>/metadata_docs.jsonl.gz")
+    parser.add_argument(
+        "--metadata-file", default=None, help="default: <emb-dir>/metadata_docs.jsonl.gz"
+    )
     parser.add_argument("--info-file", default=None, help="default: <emb-dir>/info.json")
     parser.add_argument("--output-dir", default=None, help="default: <emb-dir>")
     parser.add_argument(
@@ -205,7 +207,9 @@ def main():
     if args.emb_file is None and args.aggregated_file is None:
         parser.error("must give --emb-file or --aggregated-file")
 
-    emb_dir = os.path.dirname(args.emb_file) if args.emb_file else os.path.dirname(args.aggregated_file)
+    emb_dir = (
+        os.path.dirname(args.emb_file) if args.emb_file else os.path.dirname(args.aggregated_file)
+    )
     if args.metadata_file is None:
         args.metadata_file = os.path.join(emb_dir, "metadata_docs.jsonl.gz")
     if args.info_file is None:
@@ -240,7 +244,9 @@ def main():
         logger.info(f"Loaded {len(unique_topics)} topics")
     else:
         if args.emb_file is None:
-            parser.error(f"--aggregated-file {args.aggregated_file} not found and --emb-file not given")
+            parser.error(
+                f"--aggregated-file {args.aggregated_file} not found and --emb-file not given"
+            )
 
         logger.info(f"Loading {args.emb_file} ...")
         emb = np.load(args.emb_file)  # (num_docs, num_layers * num_experts)
@@ -317,9 +323,7 @@ def main():
         num_layers,
         title=f"Avg # experts with weight > 1/{num_experts}  ({prefix})",
         cbar_label=f"# experts above uniform (out of {num_experts})",
-        out_path=os.path.join(
-            args.output_dir, f"{prefix}_coverage_above_uniform_heatmap.png"
-        ),
+        out_path=os.path.join(args.output_dir, f"{prefix}_coverage_above_uniform_heatmap.png"),
     )
 
     # ── Heatmap 2: nonzero coverage ──────────────────────────────────────────

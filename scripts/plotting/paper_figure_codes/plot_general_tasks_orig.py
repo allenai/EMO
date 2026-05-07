@@ -26,7 +26,6 @@ from typing import Dict, List, Optional, Tuple
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -38,25 +37,25 @@ TASKS = ["MC9", "Gen5", "MMLU", "MMLU Pro", "GSM8K"]
 
 # Per-model color (from the paper-figure palette).
 MODEL_COLOR: Dict[str, str] = {
-    "OLMoE^dagger":   "#E78532",  # warm orange — external baseline
-    "Dense":          "#888888",  # gray — vanilla dense baseline
-    "Reg. MoE":       "#5B8E3F",  # green — same as abs_bars REG_PALETTE[1]
+    "OLMoE^dagger": "#E78532",  # warm orange — external baseline
+    "Dense": "#888888",  # gray — vanilla dense baseline
+    "Reg. MoE": "#5B8E3F",  # green — same as abs_bars REG_PALETTE[1]
     "FlexMoE (Ours)": "#B8327C",  # magenta — same as EMO in abs_bars
 }
 
 # Display name for the legend.
 MODEL_DISPLAY: Dict[str, str] = {
-    "OLMoE^dagger":   "OLMoE†",
-    "Dense":          "Dense",
-    "Reg. MoE":       "Reg. MoE",
+    "OLMoE^dagger": "OLMoE†",
+    "Dense": "Dense",
+    "Reg. MoE": "Reg. MoE",
     "FlexMoE (Ours)": "EMO (Ours)",
 }
 
 # Scale clumps in display order (left -> right within each panel).
 # Each entry: (scale_label, [model_keys to render in that clump]).
 SCALES: List[Tuple[str, List[str]]] = [
-    ("5T",   ["OLMoE^dagger"]),
-    ("1T",   ["Reg. MoE", "FlexMoE (Ours)"]),
+    ("5T", ["OLMoE^dagger"]),
+    ("1T", ["Reg. MoE", "FlexMoE (Ours)"]),
     ("130B", ["Dense", "Reg. MoE", "FlexMoE (Ours)"]),
 ]
 
@@ -112,15 +111,22 @@ def _draw_panel(ax, df: pd.DataFrame, task: str) -> None:
             continue
 
         ax.bar(
-            positions, heights, BAR_WIDTH,
-            color=colors, edgecolor="black", linewidth=0.6,
+            positions,
+            heights,
+            BAR_WIDTH,
+            color=colors,
+            edgecolor="black",
+            linewidth=0.6,
         )
         for x, v in zip(positions, heights):
             ax.annotate(
                 f"{v:.1f}",
-                xy=(x, v), xytext=(0, 3),
-                textcoords="offset points", ha="center",
-                fontsize=9, color="#222222",
+                xy=(x, v),
+                xytext=(0, 3),
+                textcoords="offset points",
+                ha="center",
+                fontsize=9,
+                color="#222222",
             )
 
         clump_start = positions[0]
@@ -142,9 +148,16 @@ def _draw_panel(ax, df: pd.DataFrame, task: str) -> None:
 
     for cx, cl in zip(clump_centers, clump_labels):
         ax.text(
-            cx, y_text, cl, ha="center", va="top",
-            fontsize=11, fontweight="bold", color="#333333",
-            transform=ax.transData, clip_on=False,
+            cx,
+            y_text,
+            cl,
+            ha="center",
+            va="top",
+            fontsize=11,
+            fontweight="bold",
+            color="#333333",
+            transform=ax.transData,
+            clip_on=False,
         )
 
 
@@ -162,17 +175,22 @@ def _draw_legend(fig) -> None:
     )
     handles = [
         mpatches.Patch(
-            facecolor=MODEL_COLOR[m], edgecolor="black", linewidth=0.6,
+            facecolor=MODEL_COLOR[m],
+            edgecolor="black",
+            linewidth=0.6,
             label=MODEL_DISPLAY[m],
         )
         for m in ("OLMoE^dagger", "Dense", "Reg. MoE", "FlexMoE (Ours)")
     ]
     leg = fig.legend(
-        handles, [h.get_label() for h in handles],
+        handles,
+        [h.get_label() for h in handles],
         title="Model",
         ncol=len(handles),
-        loc="lower center", bbox_to_anchor=(0.5, 0.005),
-        facecolor="#F5F5F5", edgecolor="#888888",
+        loc="lower center",
+        bbox_to_anchor=(0.5, 0.005),
+        facecolor="#F5F5F5",
+        edgecolor="#888888",
         **common_kw,
     )
     leg.get_title().set_fontweight("bold")

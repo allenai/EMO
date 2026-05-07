@@ -132,9 +132,7 @@ def _pct(value) -> str:
     return f"{float(value) * 100:.1f}"
 
 
-def _build_table(
-    agg_df: pd.DataFrame, gsm_df: pd.DataFrame
-) -> pd.DataFrame:
+def _build_table(agg_df: pd.DataFrame, gsm_df: pd.DataFrame) -> pd.DataFrame:
     def lookup(df: pd.DataFrame, key: str, col: str) -> Optional[float]:
         if key not in df.index:
             return None
@@ -156,14 +154,14 @@ def _build_table(
         row = {
             "": name,
             "# Total Experts": experts,
-            "MMLU Random":  _pct(lookup_random(agg_df, key, "mmlu_merged_avg_no_other")),
-            "MMLU Router":  _pct(lookup(agg_df, key, "mmlu_merged_avg_no_other (lw)")),
+            "MMLU Random": _pct(lookup_random(agg_df, key, "mmlu_merged_avg_no_other")),
+            "MMLU Router": _pct(lookup(agg_df, key, "mmlu_merged_avg_no_other (lw)")),
             "MMLU Easy-EP": _pct(lookup(agg_df, key, "mmlu_merged_avg_no_other (ep)")),
-            "MMLU Pro Random":  _pct(lookup_random(agg_df, key, "mmlu_pro_merged_avg_no_other")),
-            "MMLU Pro Router":  _pct(lookup(agg_df, key, "mmlu_pro_merged_avg_no_other (lw)")),
+            "MMLU Pro Random": _pct(lookup_random(agg_df, key, "mmlu_pro_merged_avg_no_other")),
+            "MMLU Pro Router": _pct(lookup(agg_df, key, "mmlu_pro_merged_avg_no_other (lw)")),
             "MMLU Pro Easy-EP": _pct(lookup(agg_df, key, "mmlu_pro_merged_avg_no_other (ep)")),
-            "GSM8K Random":  _pct(lookup_random(gsm_df, key, "gsm8k_generation_8shot_merged")),
-            "GSM8K Router":  _pct(lookup(gsm_df, key, "gsm8k_generation_8shot_merged (lw)")),
+            "GSM8K Random": _pct(lookup_random(gsm_df, key, "gsm8k_generation_8shot_merged")),
+            "GSM8K Router": _pct(lookup(gsm_df, key, "gsm8k_generation_8shot_merged (lw)")),
             "GSM8K Easy-EP": _pct(lookup(gsm_df, key, "gsm8k_generation_8shot_merged (ep)")),
         }
         records.append(row)

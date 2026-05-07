@@ -1,8 +1,8 @@
 import pytest
-from transformers import Olmo2Config
 
 from olmo_core.nn.hf.config import get_hf_config
 from olmo_core.nn.transformer.config import TransformerBlockConfig, TransformerConfig
+from transformers import Olmo2Config
 
 try:
     from transformers import EmoConfig  # type: ignore

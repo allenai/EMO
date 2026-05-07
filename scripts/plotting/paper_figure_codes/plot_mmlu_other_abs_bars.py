@@ -64,7 +64,7 @@ REGSMALL_COLOR = "#1F6E7C"
 # Per-panel: which CSV file under acc_raw/ holds it, and which "(lw)" column
 # represents the "other" subject's accuracy.
 PANEL_SOURCE: Dict[str, Tuple[str, str]] = {
-    "MMLU other":     ("mmlu_merged.csv",     "mmlu_merged_other (lw)"),
+    "MMLU other": ("mmlu_merged.csv", "mmlu_merged_other (lw)"),
     "MMLU Pro other": ("mmlu_pro_merged.csv", "mmlu_pro_merged_other (lw)"),
 }
 
@@ -75,9 +75,7 @@ SCALES: Dict[str, Dict[str, object]] = {
     "130b": {
         "label": "130B",
         "reg_row_template": "moe (keepk {k})",
-        "flex_row_template": (
-            "specialized moe + globallb + 1shardexp + randpool (keepk {k})"
-        ),
+        "flex_row_template": ("specialized moe + globallb + 1shardexp + randpool (keepk {k})"),
         "refs": [
             # (display label, exact CSV row name, target keepk on FlexMoE, color)
             ("Dense @8 (trained)", "dense", 8, DENSE_COLOR),
@@ -106,11 +104,15 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument(
-        "--inference-dir", type=Path, default=None,
+        "--inference-dir",
+        type=Path,
+        default=None,
         help="Path to prune_eval_tables_final_ckpt0/. Default: under output-dir.",
     )
     parser.add_argument(
-        "--finetune-dir", type=Path, default=None,
+        "--finetune-dir",
+        type=Path,
+        default=None,
         help=(
             "Path to prune_eval_tables_final/. Defaults to the canonical "
             "location with a fallback to the most recent "
@@ -118,7 +120,9 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
-        "--scale", choices=["130b", "1t", "both"], default="both",
+        "--scale",
+        choices=["130b", "1t", "both"],
+        default="both",
         help="Which training-scale figure to render. Default: both.",
     )
     return parser.parse_args()
@@ -140,9 +144,7 @@ def _resolve_finetune_dir(arg_dir: Optional[Path]) -> Path:
         if (c / "acc_raw" / "mmlu_merged.csv").is_file():
             print(f"[INFO] Using backup fine-tuning dir: {c}")
             return c
-    raise FileNotFoundError(
-        f"No fine-tune table dir found at {primary} or in *backup* siblings."
-    )
+    raise FileNotFoundError(f"No fine-tune table dir found at {primary} or in *backup* siblings.")
 
 
 # ---------------------------------------------------------------------------
@@ -181,20 +183,26 @@ def _build_clumps(
     reg_bars = []
     flex_bars = []
     for i, k in enumerate(KEEPK_VALUES):
-        reg_bars.append((
-            str(k),
-            _lookup(panel_df, reg_template.format(k=k), metric_col),
-            REG_PALETTE[i], "",
-        ))
-        flex_bars.append((
-            str(k),
-            _lookup(panel_df, flex_template.format(k=k), metric_col),
-            FLEX_PALETTE[i], "",
-        ))
+        reg_bars.append(
+            (
+                str(k),
+                _lookup(panel_df, reg_template.format(k=k), metric_col),
+                REG_PALETTE[i],
+                "",
+            )
+        )
+        flex_bars.append(
+            (
+                str(k),
+                _lookup(panel_df, flex_template.format(k=k), metric_col),
+                FLEX_PALETTE[i],
+                "",
+            )
+        )
 
     clumps: List[Dict[str, object]] = [
         {"legend_label": "Reg. MoE", "x_label": "Reg. MoE", "bars": reg_bars},
-        {"legend_label": "EMO",   "x_label": "EMO",   "bars": flex_bars},
+        {"legend_label": "EMO", "x_label": "EMO", "bars": flex_bars},
     ]
 
     overlays: List[Dict[str, object]] = []
@@ -204,13 +212,15 @@ def _build_clumps(
         v = _lookup(panel_df, row_name, metric_col)
         if v is None:
             continue
-        overlays.append({
-            "legend_label": label,
-            "target_clump_idx": 1,  # FlexMoE
-            "target_keepk": k,
-            "value": v,
-            "color": color,
-        })
+        overlays.append(
+            {
+                "legend_label": label,
+                "target_clump_idx": 1,  # FlexMoE
+                "target_keepk": k,
+                "value": v,
+                "color": color,
+            }
+        )
     return clumps, overlays
 
 
@@ -239,8 +249,12 @@ def _draw_panel(
                 all_vals.append(val)
 
         bc = ax.bar(
-            xs, ys, BAR_WIDTH,
-            color=colors, edgecolor="black", linewidth=0.6,
+            xs,
+            ys,
+            BAR_WIDTH,
+            color=colors,
+            edgecolor="black",
+            linewidth=0.6,
             label=clump["legend_label"],
         )
         for rect, hatch in zip(bc, hatches):
@@ -251,9 +265,13 @@ def _draw_panel(
         for (sub, val, _c, _h), x in zip(bars, positions):
             if val is not None:
                 ax.annotate(
-                    f"{val:.1f}", xy=(x, val), xytext=(0, 2),
-                    textcoords="offset points", ha="center",
-                    fontsize=8.5, color="#222222",
+                    f"{val:.1f}",
+                    xy=(x, val),
+                    xytext=(0, 2),
+                    textcoords="offset points",
+                    ha="center",
+                    fontsize=8.5,
+                    color="#222222",
                 )
 
         cursor = positions[-1] + INTRA_BAR_STEP + CLUMP_GAP
@@ -271,31 +289,51 @@ def _draw_panel(
         v = ov["value"]
         color = ov["color"]
         ax.bar(
-            x, v, BAR_WIDTH * 1.02,
-            color="white", edgecolor=color, linewidth=1.6,
-            hatch="///", alpha=0.6, zorder=4,
+            x,
+            v,
+            BAR_WIDTH * 1.02,
+            color="white",
+            edgecolor=color,
+            linewidth=1.6,
+            hatch="///",
+            alpha=0.6,
+            zorder=4,
             label=ov["legend_label"],
         )
         ax.plot(
-            [x - BAR_WIDTH / 2, x + BAR_WIDTH / 2], [v, v],
-            color=color, linewidth=2.6, solid_capstyle="butt", zorder=5,
+            [x - BAR_WIDTH / 2, x + BAR_WIDTH / 2],
+            [v, v],
+            color=color,
+            linewidth=2.6,
+            solid_capstyle="butt",
+            zorder=5,
         )
         annotate_kwargs = {
             "xytext": (BAR_WIDTH * 14, 0),
-            "ha": "left", "va": "center",
+            "ha": "left",
+            "va": "center",
         }
         annotate_kwargs.update(overlay_overrides.get(ov["target_keepk"], {}))
         ax.annotate(
-            f"{v:.1f}", xy=(x, v), textcoords="offset points",
-            fontsize=8.5, color=color, fontweight="bold", zorder=6,
-            arrowprops=dict(arrowstyle="-", color=color, lw=0.8,
-                            shrinkA=0, shrinkB=2),
+            f"{v:.1f}",
+            xy=(x, v),
+            textcoords="offset points",
+            fontsize=8.5,
+            color=color,
+            fontweight="bold",
+            zorder=6,
+            arrowprops=dict(arrowstyle="-", color=color, lw=0.8, shrinkA=0, shrinkB=2),
             **annotate_kwargs,
         )
         if ov["legend_label"] not in handles_for_legend:
             handles_for_legend[ov["legend_label"]] = plt.Rectangle(
-                (0, 0), 1, 1,
-                facecolor="white", edgecolor=color, hatch="///", linewidth=1.6,
+                (0, 0),
+                1,
+                1,
+                facecolor="white",
+                edgecolor=color,
+                hatch="///",
+                linewidth=1.6,
                 label=ov["legend_label"],
             )
 
@@ -309,14 +347,25 @@ def _draw_panel(
     chance = panel_config.get("random_chance")
     if chance is not None:
         ax.axhline(
-            chance, color="#222222", linewidth=1.6,
-            linestyle=(0, (4, 3)), zorder=6, alpha=0.85,
+            chance,
+            color="#222222",
+            linewidth=1.6,
+            linestyle=(0, (4, 3)),
+            zorder=6,
+            alpha=0.85,
         )
         x_right = ax.get_xlim()[1]
         ax.text(
-            x_right, chance, "  random",
-            ha="left", va="center", fontsize=9, color="#222222",
-            fontweight="bold", clip_on=False, zorder=6,
+            x_right,
+            chance,
+            "  random",
+            ha="left",
+            va="center",
+            fontsize=9,
+            color="#222222",
+            fontweight="bold",
+            clip_on=False,
+            zorder=6,
         )
 
 
@@ -332,10 +381,15 @@ def _shade_label(k: int) -> str:
 def _draw_per_shade_legend(fig, *, with_refs: bool) -> None:
     keepk_labels = [_shade_label(k) for k in KEEPK_VALUES]
     common_kw = dict(
-        frameon=True, fontsize=9.5, title_fontsize=11,
-        handletextpad=0.4, columnspacing=0.8,
-        handlelength=1.3, handleheight=1.0,
-        borderpad=0.7, labelspacing=0.4,
+        frameon=True,
+        fontsize=9.5,
+        title_fontsize=11,
+        handletextpad=0.4,
+        columnspacing=0.8,
+        handlelength=1.3,
+        handleheight=1.0,
+        borderpad=0.7,
+        labelspacing=0.4,
     )
 
     if with_refs:
@@ -348,10 +402,14 @@ def _draw_per_shade_legend(fig, *, with_refs: bool) -> None:
         for i in range(len(KEEPK_VALUES))
     ]
     leg_r = fig.legend(
-        reg_handles, keepk_labels, title="Reg. MoE",
+        reg_handles,
+        keepk_labels,
+        title="Reg. MoE",
         ncol=len(reg_handles),
-        loc="lower center", bbox_to_anchor=(reg_x, 0.005),
-        facecolor="#EEF6E4", edgecolor=REG_PALETTE[1],
+        loc="lower center",
+        bbox_to_anchor=(reg_x, 0.005),
+        facecolor="#EEF6E4",
+        edgecolor=REG_PALETTE[1],
         **common_kw,
     )
     leg_r.get_title().set_fontweight("bold")
@@ -364,10 +422,14 @@ def _draw_per_shade_legend(fig, *, with_refs: bool) -> None:
         for i in range(len(KEEPK_VALUES))
     ]
     leg_f = fig.legend(
-        flex_handles, keepk_labels, title="EMO",
+        flex_handles,
+        keepk_labels,
+        title="EMO",
         ncol=len(flex_handles),
-        loc="lower center", bbox_to_anchor=(flex_x, 0.005),
-        facecolor="#FBE7EF", edgecolor=FLEX_PALETTE[2],
+        loc="lower center",
+        bbox_to_anchor=(flex_x, 0.005),
+        facecolor="#FBE7EF",
+        edgecolor=FLEX_PALETTE[2],
         **common_kw,
     )
     leg_f.get_title().set_fontweight("bold")
@@ -377,17 +439,19 @@ def _draw_per_shade_legend(fig, *, with_refs: bool) -> None:
 
     if with_refs:
         ref_handles = [
-            mpatches.Patch(facecolor="white", edgecolor=DENSE_COLOR,
-                           hatch="///", linewidth=1.4),
-            mpatches.Patch(facecolor="white", edgecolor=REGSMALL_COLOR,
-                           hatch="///", linewidth=1.4),
+            mpatches.Patch(facecolor="white", edgecolor=DENSE_COLOR, hatch="///", linewidth=1.4),
+            mpatches.Patch(facecolor="white", edgecolor=REGSMALL_COLOR, hatch="///", linewidth=1.4),
         ]
         ref_labels = ["Dense @8 (trained)", "Reg. MoE @32 (trained)"]
         leg_x = fig.legend(
-            ref_handles, ref_labels, title="Trained baselines",
+            ref_handles,
+            ref_labels,
+            title="Trained baselines",
             ncol=len(ref_handles),
-            loc="lower center", bbox_to_anchor=(refs_x, 0.005),
-            facecolor="#F5F5F5", edgecolor="#999999",
+            loc="lower center",
+            bbox_to_anchor=(refs_x, 0.005),
+            facecolor="#F5F5F5",
+            edgecolor="#999999",
             **common_kw,
         )
         leg_x.get_title().set_fontweight("bold")
@@ -431,7 +495,9 @@ def render_figure(
     # legend boxes (which are sized by content, not figure width) sit with
     # the same horizontal proportions as the main figure.
     fig, axes = plt.subplots(
-        1, n_cols, figsize=(14, 4.6),
+        1,
+        n_cols,
+        figsize=(14, 4.6),
     )
     handles_for_legend: Dict[str, plt.Artist] = {}
 
@@ -440,8 +506,11 @@ def render_figure(
         df = inf_dfs[mode][panel_title]
         metric_col = PANEL_SOURCE[panel_title][1]
         clumps, overlays = _build_clumps(
-            df, metric_col,
-            spec["reg_row_template"], spec["flex_row_template"], refs,
+            df,
+            metric_col,
+            spec["reg_row_template"],
+            spec["flex_row_template"],
+            refs,
         )
         panel_cfg = PANEL_Y_CONFIG.get(panel_title, {})
         _draw_panel(ax, clumps, overlays, panel_cfg, handles_for_legend)

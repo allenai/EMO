@@ -65,15 +65,35 @@ KEEPK_NPRUNE_TAGS: List[Tuple[int, List[str]]] = [
 #   2) Router (0-shot) — pruning + eval both 0-shot      (_pshots-0_eshots-0)
 #   3) Router (e0)     — pruning at task default, eval 0-shot (_eshots-0)
 ROWS: List[Tuple[str, str, str, str]] = [
-    ("FlexMoE", "Router",          "MMLU",     "specialized moe 1T + anneal (Router) / mmlu_merged"),
-    ("FlexMoE", "Router",          "MMLU Pro", "specialized moe 1T + anneal (Router) / mmlu_pro_merged"),
-    ("FlexMoE", "Router",          "GSM8K",    "specialized moe 1T + anneal (Router) / gsm8k"),
-    ("FlexMoE", "Router (0-shot)", "MMLU",     "specialized moe 1T + anneal (Router (0-shot)) / mmlu_merged"),
-    ("FlexMoE", "Router (0-shot)", "MMLU Pro", "specialized moe 1T + anneal (Router (0-shot)) / mmlu_pro_merged"),
-    ("FlexMoE", "Router (0-shot)", "GSM8K",    "specialized moe 1T + anneal (Router (0-shot)) / gsm8k"),
-    ("FlexMoE", "Router (e0)",     "MMLU",     "specialized moe 1T + anneal (Router (e0)) / mmlu_merged"),
-    ("FlexMoE", "Router (e0)",     "MMLU Pro", "specialized moe 1T + anneal (Router (e0)) / mmlu_pro_merged"),
-    ("FlexMoE", "Router (e0)",     "GSM8K",    "specialized moe 1T + anneal (Router (e0)) / gsm8k"),
+    ("FlexMoE", "Router", "MMLU", "specialized moe 1T + anneal (Router) / mmlu_merged"),
+    ("FlexMoE", "Router", "MMLU Pro", "specialized moe 1T + anneal (Router) / mmlu_pro_merged"),
+    ("FlexMoE", "Router", "GSM8K", "specialized moe 1T + anneal (Router) / gsm8k"),
+    (
+        "FlexMoE",
+        "Router (0-shot)",
+        "MMLU",
+        "specialized moe 1T + anneal (Router (0-shot)) / mmlu_merged",
+    ),
+    (
+        "FlexMoE",
+        "Router (0-shot)",
+        "MMLU Pro",
+        "specialized moe 1T + anneal (Router (0-shot)) / mmlu_pro_merged",
+    ),
+    (
+        "FlexMoE",
+        "Router (0-shot)",
+        "GSM8K",
+        "specialized moe 1T + anneal (Router (0-shot)) / gsm8k",
+    ),
+    ("FlexMoE", "Router (e0)", "MMLU", "specialized moe 1T + anneal (Router (e0)) / mmlu_merged"),
+    (
+        "FlexMoE",
+        "Router (e0)",
+        "MMLU Pro",
+        "specialized moe 1T + anneal (Router (e0)) / mmlu_pro_merged",
+    ),
+    ("FlexMoE", "Router (e0)", "GSM8K", "specialized moe 1T + anneal (Router (e0)) / gsm8k"),
 ]
 
 

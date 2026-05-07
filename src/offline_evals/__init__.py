@@ -179,7 +179,9 @@ def _make_cluster_merged_split_tasks(categories_dict, merged_factory):
 
 def create_cluster_l0_mmlu_tasks_withsplits():
     """L0-cluster MMLU tasks (non-merged)."""
-    return _make_cluster_split_tasks(MMLU_CLUSTER_CATEGORIES_L0, create_mmlu_cluster_l0_tasks_withsplits)
+    return _make_cluster_split_tasks(
+        MMLU_CLUSTER_CATEGORIES_L0, create_mmlu_cluster_l0_tasks_withsplits
+    )
 
 
 def create_cluster_l15_mmlu_tasks_withsplits():

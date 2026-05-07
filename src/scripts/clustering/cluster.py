@@ -93,6 +93,7 @@ def balance_by_class(
     )
     return emb[kept_arr], meta_sub, kept_arr
 
+
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -537,9 +538,7 @@ def main():
     transformed: np.ndarray
     meta: list
 
-    if os.path.exists(cache_path) and (
-        meta_cache_path is None or os.path.exists(meta_cache_path)
-    ):
+    if os.path.exists(cache_path) and (meta_cache_path is None or os.path.exists(meta_cache_path)):
         logger.info(f"Loading cached preprocessed: {cache_path}")
         transformed = np.load(cache_path)
         logger.info(f"  shape={transformed.shape}")

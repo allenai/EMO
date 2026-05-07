@@ -39,7 +39,7 @@ RUNS = {
 
 # Palette from the paper figures: EMO magenta and Dense-baseline orange.
 PALETTE = {
-    LOCAL: "#E78532",   # warm orange
+    LOCAL: "#E78532",  # warm orange
     GLOBAL: "#B8327C",  # EMO magenta
 }
 
@@ -73,7 +73,8 @@ def main() -> None:
     fig, ax = plt.subplots(figsize=(8.5, 5.0))
     sns.lineplot(
         data=long_df,
-        x="step", y="grad_norm",
+        x="step",
+        y="grad_norm",
         hue="load balance",
         hue_order=[LOCAL, GLOBAL],
         palette=PALETTE,
@@ -91,19 +92,31 @@ def main() -> None:
         ax.get_legend().remove()
     handles = [
         mlines.Line2D(
-            [], [], color=PALETTE[label], linewidth=2.8, label=label,
+            [],
+            [],
+            color=PALETTE[label],
+            linewidth=2.8,
+            label=label,
         )
         for label in (LOCAL, GLOBAL)
     ]
     leg = fig.legend(
-        handles, [h.get_label() for h in handles],
+        handles,
+        [h.get_label() for h in handles],
         title="EMO",
         ncol=len(handles),
-        loc="lower center", bbox_to_anchor=(0.5, 0.005),
-        frameon=True, fontsize=11, title_fontsize=12,
-        handletextpad=0.6, columnspacing=1.2,
-        borderpad=0.7, labelspacing=0.4, handlelength=2.4,
-        facecolor="#FBE7EF", edgecolor="#B8327C",  # keep the EMO-themed frame
+        loc="lower center",
+        bbox_to_anchor=(0.5, 0.005),
+        frameon=True,
+        fontsize=11,
+        title_fontsize=12,
+        handletextpad=0.6,
+        columnspacing=1.2,
+        borderpad=0.7,
+        labelspacing=0.4,
+        handlelength=2.4,
+        facecolor="#FBE7EF",
+        edgecolor="#B8327C",  # keep the EMO-themed frame
     )
     leg.get_title().set_fontweight("bold")
     leg.get_title().set_color("#3F1052")

@@ -23,7 +23,6 @@ from typing import Any
 import torch
 import torch.nn.functional as F
 from torch import nn
-from transformers.configuration_utils import PretrainedConfig
 from vllm.attention.layer import Attention
 from vllm.compilation.decorators import support_torch_compile
 from vllm.config import VllmConfig
@@ -52,6 +51,8 @@ from vllm.model_executor.models.utils import (
     maybe_prefix,
 )
 from vllm.sequence import IntermediateTensors
+
+from transformers.configuration_utils import PretrainedConfig
 
 # ---------------------------------------------------------------------------
 # Config — registered so vLLM can load config.json with this model_type
@@ -569,8 +570,9 @@ class EmoForCausalLM(nn.Module, SupportsPP):
 
 
 def register() -> None:
-    from transformers import AutoConfig
     from vllm import ModelRegistry
+
+    from transformers import AutoConfig
 
     AutoConfig.register("emo", EmoConfig)
     ModelRegistry.register_model(

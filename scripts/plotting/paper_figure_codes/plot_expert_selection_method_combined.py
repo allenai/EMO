@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
@@ -22,12 +22,9 @@ import pandas as pd
 import seaborn as sns
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
-DEFAULT_INPUT = (
-    REPO_ROOT / "claude_outputs" / "prune_plots" / "expert_selection_method_ckpt0.csv"
-)
+DEFAULT_INPUT = REPO_ROOT / "claude_outputs" / "prune_plots" / "expert_selection_method_ckpt0.csv"
 DEFAULT_OUTPUT = (
-    REPO_ROOT / "claude_outputs" / "prune_plots"
-    / "expert_selection_method_ckpt0_combined.pdf"
+    REPO_ROOT / "claude_outputs" / "prune_plots" / "expert_selection_method_ckpt0_combined.pdf"
 )
 
 PANEL_TITLES = ["MMLU", "MMLU Pro", "GSM8K"]
@@ -36,13 +33,13 @@ KEEPK_VALUES = [8, 16, 32, 64, 128]
 # (display label, model name in CSV, color)
 MODELS: List[Tuple[str, str, str]] = [
     ("Reg. MoE", "Reg. MoE", "#5B8E3F"),  # medium green (matches abs_bars REG_PALETTE[1])
-    ("EMO", "FlexMoE", "#B8327C"),     # magenta-pink (matches abs_bars FLEX_PALETTE[2])
+    ("EMO", "FlexMoE", "#B8327C"),  # magenta-pink (matches abs_bars FLEX_PALETTE[2])
 ]
 
 # (display label, csv column suffix, linestyle, marker)
 METHODS: List[Tuple[str, str, str, str]] = [
-    ("Random",  "Random",  ":",  "X"),
-    ("Router",  "Router",  "-",  "o"),
+    ("Random", "Random", ":", "X"),
+    ("Router", "Router", "-", "o"),
     ("Easy-EP", "Easy-EP", "--", "s"),
 ]
 
@@ -85,18 +82,22 @@ def _series(
     return xs, ys
 
 
-def _draw_panel(ax, df: pd.DataFrame, panel_title: str,
-                panel_cfg: Dict[str, float]) -> None:
+def _draw_panel(ax, df: pd.DataFrame, panel_title: str, panel_cfg: Dict[str, float]) -> None:
     all_ys: List[float] = []
     for model_label, model_name, color in MODELS:
         for method_label, suffix, linestyle, marker in METHODS:
             xs, ys = _series(df, model_name, panel_title, suffix)
             all_ys.extend(ys)
             ax.plot(
-                xs, ys,
-                color=color, linestyle=linestyle, marker=marker,
-                linewidth=3.0, markersize=10,
-                markeredgecolor="black", markeredgewidth=0.6,
+                xs,
+                ys,
+                color=color,
+                linestyle=linestyle,
+                marker=marker,
+                linewidth=3.0,
+                markersize=10,
+                markeredgecolor="black",
+                markeredgewidth=0.6,
                 alpha=0.95,
                 clip_on=False,  # don't clip markers that sit at the axis bound
             )
@@ -124,14 +125,25 @@ def _draw_panel(ax, df: pd.DataFrame, panel_title: str,
     chance = panel_cfg.get("random_chance")
     if chance is not None:
         ax.axhline(
-            chance, color="#222222", linewidth=1.4,
-            linestyle=(0, (4, 3)), zorder=1, alpha=0.7,
+            chance,
+            color="#222222",
+            linewidth=1.4,
+            linestyle=(0, (4, 3)),
+            zorder=1,
+            alpha=0.7,
         )
         x_right = ax.get_xlim()[1]
         ax.text(
-            x_right, chance, "  random",
-            ha="left", va="center", fontsize=8.5, color="#222222",
-            fontweight="bold", clip_on=False, zorder=1,
+            x_right,
+            chance,
+            "  random",
+            ha="left",
+            va="center",
+            fontsize=8.5,
+            color="#222222",
+            fontweight="bold",
+            clip_on=False,
+            zorder=1,
         )
 
 
@@ -157,18 +169,27 @@ def _draw_legend(fig) -> None:
     reg_color = MODELS[0][2]
     reg_handles = [
         mlines.Line2D(
-            [], [], color=reg_color, linestyle=linestyle, marker=marker,
-            linewidth=3.0, markersize=10,
-            markeredgecolor="black", markeredgewidth=0.6,
+            [],
+            [],
+            color=reg_color,
+            linestyle=linestyle,
+            marker=marker,
+            linewidth=3.0,
+            markersize=10,
+            markeredgecolor="black",
+            markeredgewidth=0.6,
         )
         for _label, _suffix, linestyle, marker in METHODS
     ]
     leg_r = fig.legend(
-        reg_handles, method_labels,
+        reg_handles,
+        method_labels,
         title="Reg. MoE",
         ncol=len(METHODS),
-        loc="lower center", bbox_to_anchor=(0.32, 0.005),
-        facecolor="#EEF6E4", edgecolor=reg_color,
+        loc="lower center",
+        bbox_to_anchor=(0.32, 0.005),
+        facecolor="#EEF6E4",
+        edgecolor=reg_color,
         **common_kw,
     )
     leg_r.get_title().set_fontweight("bold")
@@ -180,18 +201,27 @@ def _draw_legend(fig) -> None:
     flex_color = MODELS[1][2]
     flex_handles = [
         mlines.Line2D(
-            [], [], color=flex_color, linestyle=linestyle, marker=marker,
-            linewidth=3.0, markersize=10,
-            markeredgecolor="black", markeredgewidth=0.6,
+            [],
+            [],
+            color=flex_color,
+            linestyle=linestyle,
+            marker=marker,
+            linewidth=3.0,
+            markersize=10,
+            markeredgecolor="black",
+            markeredgewidth=0.6,
         )
         for _label, _suffix, linestyle, marker in METHODS
     ]
     leg_f = fig.legend(
-        flex_handles, method_labels,
+        flex_handles,
+        method_labels,
         title="EMO",
         ncol=len(METHODS),
-        loc="lower center", bbox_to_anchor=(0.68, 0.005),
-        facecolor="#FBE7EF", edgecolor=flex_color,
+        loc="lower center",
+        bbox_to_anchor=(0.68, 0.005),
+        facecolor="#FBE7EF",
+        edgecolor=flex_color,
         **common_kw,
     )
     leg_f.get_title().set_fontweight("bold")
@@ -203,7 +233,9 @@ def _draw_legend(fig) -> None:
 def render_figure(df: pd.DataFrame, output_path: Path) -> None:
     n_cols = len(PANEL_TITLES)
     fig, axes = plt.subplots(
-        1, n_cols, figsize=(16, 5.8),
+        1,
+        n_cols,
+        figsize=(16, 5.8),
     )
 
     for c, panel_title in enumerate(PANEL_TITLES):
