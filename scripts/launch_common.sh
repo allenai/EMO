@@ -68,6 +68,7 @@ launch() {
             --allow-dirty \
             --priority "${BEAKER_PRIORITY}" \
             --env-secret "${BEAKER_ENV_SECRETS[@]}" \
+            --env "S3_PROFILE=" \
             -- "${script}" "${run_name}" --data-root="${DATA_ROOT}" "$@"
     else
         torchrun --nproc-per-node="${NPROC}" "${script}" "${run_name}" --data-root="${DATA_ROOT}" "$@"
