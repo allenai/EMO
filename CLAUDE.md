@@ -6,6 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **EMO** is a Mixture-of-Experts model where modular structure emerges during pretraining without human-defined priors. EMO enables selective expert use (down to 12.5% of total experts) with minimal performance degradation. The repository is a research extension of **OLMo-core**; the underlying package is still named `ai2-olmo-core` (v2.3.0) and lives under `src/olmo_core/`. See `README.md` for the public-facing description, released checkpoints (under the `allenai/emo` HF collection), and the inference snippets for HF Transformers and vLLM.
 
+## Session Type
+
+At the start of every session, confirm with the user which of these two modes applies:
+
+1. **GPU-attached session** — direct access to GPU resources. Used for debugging and testing code pipelines: run training/eval scripts locally, iterate on routers and configs, reproduce failures end-to-end.
+2. **Launch-and-monitor session** — no direct GPU access. Used for launching jobs (Beaker submissions, S3-staged eval sweeps) and monitoring their progress, results, and logs.
+
+The two modes call for different defaults: a GPU-attached session can just `torchrun`/`bash` a script and inspect outputs; a launch-and-monitor session should prefer `MODE=beaker`, queue up sweeps, and rely on `aws s3` / `beaker` CLIs to check state. Ask up front rather than guessing.
+
 ## Important Caveats
 
 This codebase was adapted from a well-maintained upstream (OLMo-core). As a result, **many tests, docs, and scripts outside `scripts/` and `src/scripts/` may be outdated or unused**. Treat them as reference rather than ground truth.
@@ -36,6 +45,17 @@ MODE=beaker bash scripts/models/emo_1b14b_1t.sh  # submit to Beaker
 Override I/O roots via env vars before invoking: `PREFIX` (output root), `MODELS_DIR` (defaults to `${PREFIX}/models`), `DATASET_CACHE`, `DATA_ROOT`. For local runs, also `NPROC` (GPUs per node). For Beaker runs, `BEAKER_GPUS`, `BEAKER_NODES`, etc.
 
 Some older training scripts in `scripts/models/` still carry a commented-out `torchrun` block above the `launch` call — these are leftover debugging snippets, not the way to run locally. The `launch` helper is the supported path.
+
+**Always launch big pretraining jobs from a checked-in bash file, not from an ad-hoc one-liner.** When the user asks for a pretraining (or other large) job, create a dedicated script under `scripts/models/` (or a logically-equivalent subdir) that hardcodes every env-var override and CLI arg, then run `bash <that script>`. This keeps the exact config — runname, save path, data root, node count, dataset overrides, env-var tweaks — versioned alongside the launch so the job can be reconstructed later. Don't paste `MODELS_DIR=... DATASET_CACHE=... BEAKER_NODES=... bash scripts/models/foo.sh` into the terminal; instead write `scripts/models/foo_<variant>.sh` that sets those values and invokes the launcher.
+
+**Experiment conventions for new pretraining jobs.** Each new pretraining experiment (e.g. a size-scaling sweep, an architecture ablation) lives in a dedicated subfolder of `scripts/` (e.g. `scripts/models_sizescaling/`). Within an experiment subfolder, every script must:
+
+- **WandB project**: log to `emo-extension`. All new pretraining runs go to this project, regardless of which subfolder they live in.
+- **WandB tags**: include the subfolder name as a tag (e.g. `[pretraining, models_sizescaling]`) so runs can be filtered by experiment.
+- **Save path**: `MODELS_DIR="/weka/oe-training-default/ryanwang/EMO/{experiment_name}"`, where `{experiment_name}` matches the subfolder name. Checkpoints land under `${MODELS_DIR}/${runname}/`.
+- **Data root**: `DATA_ROOT="s3://ai2-llm"`. The weka mirror at `/weka/oe-training-default/ai2-llm/` is incomplete; S3 is the source of truth for tokenized data.
+
+Each script should set these as bash variables after sourcing `scripts/launch_common.sh` so they override the launcher's defaults.
 
 ### Selective-Expert Evaluation
 
