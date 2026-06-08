@@ -48,6 +48,8 @@ Some older training scripts in `scripts/models/` still carry a commented-out `to
 
 **Always launch big pretraining jobs from a checked-in bash file, not from an ad-hoc one-liner.** When the user asks for a pretraining (or other large) job, create a dedicated script under `scripts/models/` (or a logically-equivalent subdir) that hardcodes every env-var override and CLI arg, then run `bash <that script>`. This keeps the exact config — runname, save path, data root, node count, dataset overrides, env-var tweaks — versioned alongside the launch so the job can be reconstructed later. Don't paste `MODELS_DIR=... DATASET_CACHE=... BEAKER_NODES=... bash scripts/models/foo.sh` into the terminal; instead write `scripts/models/foo_<variant>.sh` that sets those values and invokes the launcher.
 
+**Before every Beaker launch, commit AND push your changes.** Gantry clones the source for each replica from the GitHub remote — it does not bundle your local working tree. The launcher's `--allow-dirty` flag only tolerates uncommitted diffs locally; on the workers, any commit you haven't pushed will fail with `upload-pack: not our ref` and crash all replicas within ~20s. Workflow for every launch: `git add ... && git commit -m ... && git push origin <branch>`, then `MODE=beaker bash <script>`. Pushing is non-optional — skipping it wastes a scheduling slot.
+
 **Experiment conventions for new pretraining jobs.** Each new pretraining experiment (e.g. a size-scaling sweep, an architecture ablation) lives in a dedicated subfolder of `scripts/` (e.g. `scripts/models_sizescaling/`). Within an experiment subfolder, every script must:
 
 - **WandB project**: log to `emo-extension`. All new pretraining runs go to this project, regardless of which subfolder they live in.
@@ -56,6 +58,15 @@ Some older training scripts in `scripts/models/` still carry a commented-out `to
 - **Data root**: `DATA_ROOT="s3://ai2-llm"`. The weka mirror at `/weka/oe-training-default/ai2-llm/` is incomplete; S3 is the source of truth for tokenized data.
 
 Each script should set these as bash variables after sourcing `scripts/launch_common.sh` so they override the launcher's defaults.
+
+**Beaker operational notes.** Hard-won during the `models_sizescaling` sweep:
+
+- **Diagnosing failures: read the `failed` replica's logs, not the cancelled ones.** When one replica crashes, Beaker cancels all siblings, so the experiment summary typically reads `15 canceled, 1 failed`. Only the `failed` replica's traceback is informative — the cancelled ones just show the cancellation signal. Find the failing task from the launcher output (it lists `failed with exit code N - see https://beaker.org/job/<jobid>`), then pull just that one: `gantry logs <experiment_id> --tail=500 --task=main-replica-<N>`.
+- **`--allow-dirty` is a launcher-only flag.** It only suppresses the launcher's own "uncommitted changes" guard locally. Gantry on the workers always `git fetch`es from origin, so unpushed commits crash all replicas in ~20s with `upload-pack: not our ref` regardless of `--allow-dirty`. The flag is convenient for ad-hoc local launches; it does not substitute for `git push`.
+- **`MODE=beaker bash <script>` blocks by default until the experiment finalizes**, streaming logs the whole time (the launcher passes `--follow` to `olmo_core.launch.beaker` implicitly). Pass `--no-follow` to make it fire-and-forget (verified — confirmed in `python -m olmo_core.launch.beaker --help`). Implications of the default: (a) for any real run, launch in background or you lose the shell; (b) `Ctrl+C` only kills your local watcher — the Beaker job keeps running; (c) the launcher's exit code is itself a coarse "did the experiment succeed" monitor.
+- **Cancel a live Beaker experiment with `beaker experiment stop <id>`**, not Ctrl+C on the launcher. The experiment ID is in the launcher output (Beaker URL `https://beaker.org/ex/<id>`) or via `beaker workspace experiments ai2/flex2 --format=json | jq '.[].id'`.
+- **`X canceled` paired with `running` or `succeeded` is preemption noise, not failure.** Preemptible replicas on jupiter get cancelled and rescheduled mid-run; the cancellation count grows over time without it being a problem. Only treat `canceled` as a failure signal when it's paired with `failed`.
+- **Walltime calibration**: a 130B-token EMO run on 128 GPUs (16 nodes × 8 H100s) takes roughly **15–16 hours** end-to-end. Useful for deciding when to come back and check.
 
 ### Selective-Expert Evaluation
 
