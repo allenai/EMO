@@ -10,6 +10,7 @@ architectures. Hybrid models are saved as raw ``config.json`` + ``model.safetens
 rather than using ``save_pretrained()``.
 """
 
+import gc
 import json
 import logging
 import re
@@ -423,6 +424,12 @@ def validate_conversion(
         hf_logits = hf_model(input_ids=input_ids).logits
 
     del hf_model
+    # Reference cycles in the HF model keep its (potentially tens of GB of)
+    # parameters alive past `del`; force collection so the OLMo core model can
+    # fit on the same device.
+    gc.collect()
+    if device.type == "cuda":
+        torch.cuda.empty_cache()
 
     # apply sliding_window size override if provided
     if is_sliding and sliding_window is not None:

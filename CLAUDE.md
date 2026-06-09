@@ -68,6 +68,12 @@ Each script should set these as bash variables after sourcing `scripts/launch_co
 - **`X canceled` paired with `running` or `succeeded` is preemption noise, not failure.** Preemptible replicas on jupiter get cancelled and rescheduled mid-run; the cancellation count grows over time without it being a problem. Only treat `canceled` as a failure signal when it's paired with `failed`.
 - **Walltime calibration**: a 130B-token EMO run on 128 GPUs (16 nodes × 8 H100s) takes roughly **15–16 hours** end-to-end. Useful for deciding when to come back and check.
 
+### OLMo-core → HF Conversion
+
+`scripts/convert_emo_to_hf.py` converts an EMO OLMo-core checkpoint to a HuggingFace checkpoint and stages the `trust_remote_code` files into the output dir, so the result is directly loadable with `AutoModelForCausalLM.from_pretrained(..., trust_remote_code=True)` on stock transformers. Validation (logit comparison against the OLMo-core model) is on by default; run with `--validation-device cuda` and leave conversion on CPU.
+
+`scripts/models_sizescaling/convert_to_hf.sh` is the checked-in sweep wrapper (idempotent — skips outputs that already exist). It matches the released-checkpoint settings: `--dtype float32 --max-sequence-length 4096`.
+
 ### Selective-Expert Evaluation
 
 The full pipeline (router activations → expert selection → finetune → eval) is driven by three launchers in `scripts/selective_hf/`:
@@ -124,9 +130,9 @@ Key subsystems:
 - `claude_outputs/` — scratch root for ad-hoc runs (synced to S3, see below)
 - `plots/` — table aggregations from `scripts/plotting/`
 
-## Custom Transformers Fork
+## HF Modeling Code (`src/hf_trust_remote_code/`)
 
-The released HF checkpoints require a custom transformers fork (`ryanyxw/transformers#flexmoe_v4_57_1`), referenced in `pyproject.toml` under the `transformers` extra. End users load checkpoints with `trust_remote_code=True`; the Hub pulls the necessary modeling code automatically.
+This project uses stock transformers — no custom fork. The `EmoForCausalLM` modeling code lives in `src/hf_trust_remote_code/` and ships inside each checkpoint; everything (conversion, evals, end users) loads checkpoints with `trust_remote_code=True`. The fork referenced in `pyproject.toml` (`ryanyxw/transformers#flexmoe_v4_57_1`) is a leftover from the pre-release workflow and is not needed.
 
 ## S3 Sync for Scratch Outputs
 

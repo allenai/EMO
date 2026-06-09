@@ -81,6 +81,7 @@ eval_visualizer
 transformers
 src/offline_evals/data/synthea
 /models/
+/models_sizescaling/
 prune
 claude_outputs
 eval_plots/.mplconfig
