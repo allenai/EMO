@@ -62,7 +62,8 @@ four models and calls a generic tool (from `scripts/clustering/` or
    `claude_outputs/models_sizescaling/report.html`.
 To publish the report to the web, this experiment is registered in the
 repo-level `scripts/publish_reports.sh` (one entry per experiment; rebuilds
-every registered report and pushes them to the secret reports gist).
+every registered report and deploys them to Cloudflare Pages at
+`https://emo-reports.pages.dev/`).
 
 ## Output layout
 
