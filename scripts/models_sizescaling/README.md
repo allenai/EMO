@@ -55,6 +55,11 @@ four models and calls a generic tool (from `scripts/clustering/` or
    similarity matrices, Hungarian matching, splitting / redundancy / novelty
    statistics for consecutive pairs + 32↔128. Wraps
    `src/scripts/clustering/match_experts.py`.
+5. `build_report.py` — assembles the figures + summary JSONs from analyses
+   1–4 into a single self-contained tabbed HTML report (one tab per analysis:
+   goal / method / results, all images base64-embedded):
+   `python scripts/models_sizescaling/build_report.py` →
+   `claude_outputs/models_sizescaling/report.html`.
 
 ## Output layout
 
@@ -66,6 +71,7 @@ claude_outputs/models_sizescaling/weborganizer/<run>/ # analysis 1 (+ profiles f
 claude_outputs/models_sizescaling/trends/             # analysis 2
 claude_outputs/models_sizescaling/profiles/           # analysis 3 plots
 claude_outputs/models_sizescaling/matching/           # analysis 4
+claude_outputs/models_sizescaling/report.html         # build_report.py
 ```
 
 `.npy`/`.npz` files are excluded from the S3 push (regenerable); plots, JSONs,
