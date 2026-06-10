@@ -144,3 +144,7 @@ bash scripts/push_claude_outputs.sh   # push to S3 (--delete enabled)
 ```
 
 `push_claude_outputs.sh` excludes regeneratable large files (`*.npy`, `*.safetensors`, `*.bin`, `*.parquet`, archives, etc.) but includes `cluster_explorer.html`. Pass `--dryrun` first when in doubt — push uses `--delete` and will remove S3 objects that don't exist locally.
+
+## Web-Published Experiment Reports
+
+`bash scripts/publish_reports.sh` rebuilds every registered experiment report (`scripts/<experiment>/build_report.py` → `claude_outputs/<experiment>/report.html`) and force-pushes them to a secret GitHub gist, served rendered at stable `gist.githack.com` URLs (an index page plus one page per experiment). New experiments register with one `name|blurb` line in the script. The gist ID lives in the untracked `claude_outputs/.report_gist_id` — never commit it; this repo is public and the URL is meant to stay unlisted. The publish step pushes repo-derived content to an external host, so the user must run it (or explicitly approve it) rather than Claude pushing autonomously.

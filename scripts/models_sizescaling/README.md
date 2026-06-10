@@ -60,10 +60,9 @@ four models and calls a generic tool (from `scripts/clustering/` or
    goal / method / results, all images base64-embedded):
    `python scripts/models_sizescaling/build_report.py` →
    `claude_outputs/models_sizescaling/report.html`.
-6. `publish_report.sh` — rebuilds the report and force-pushes it to a secret
-   GitHub gist, served rendered at a stable gist.githack.com URL. The gist ID
-   is read from the untracked `claude_outputs/.report_gist_id` (this repo is
-   public, so the unlisted URL must not be committed).
+To publish the report to the web, this experiment is registered in the
+repo-level `scripts/publish_reports.sh` (one entry per experiment; rebuilds
+every registered report and pushes them to the secret reports gist).
 
 ## Output layout
 
