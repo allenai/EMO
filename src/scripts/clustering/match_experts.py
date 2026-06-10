@@ -31,9 +31,9 @@ Outputs into --output-dir:
 Usage
 -----
     python -u -m src.scripts.clustering.match_experts \\
-        --dir-a claude_outputs/clustering/weborganizer/emo_1b4b_130b \\
-        --dir-b claude_outputs/clustering/weborganizer/emo_1b14b_130b \\
-        --output-dir claude_outputs/clustering/sizescaling/matching/1b4b_vs_1b14b
+        --dir-a claude_outputs/models_sizescaling/weborganizer/emo_1b4b_130b \\
+        --dir-b claude_outputs/models_sizescaling/weborganizer/emo_1b14b_130b \\
+        --output-dir claude_outputs/models_sizescaling/matching/1b4b_vs_1b14b
 """
 
 import argparse

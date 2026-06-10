@@ -5,8 +5,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
-BASE_DIR="claude_outputs/clustering/weborganizer"
-OUT_BASE="claude_outputs/clustering/sizescaling/matching"
+BASE_DIR="claude_outputs/models_sizescaling/weborganizer"
+OUT_BASE="claude_outputs/models_sizescaling/matching"
 
 # "<smaller>|<larger>" by expert count
 PAIRS=(

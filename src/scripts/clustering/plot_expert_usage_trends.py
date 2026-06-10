@@ -23,8 +23,8 @@ Outputs into --output-dir, prefixed by embedding type:
 Usage
 -----
     python -u -m src.scripts.clustering.plot_expert_usage_trends \\
-        --model-dirs claude_outputs/clustering/weborganizer/emo_1b{4,7,11,14}b_130b \\
-        --output-dir claude_outputs/clustering/sizescaling/trends
+        --model-dirs claude_outputs/models_sizescaling/weborganizer/emo_1b{4,7,11,14}b_130b \\
+        --output-dir claude_outputs/models_sizescaling/trends
 """
 
 import argparse

@@ -25,8 +25,8 @@ Cross-model plots + summary into --output-dir:
 Usage
 -----
     python -u -m src.scripts.clustering.expert_topic_profiles \\
-        --model-dirs claude_outputs/clustering/weborganizer/emo_1b{4,7,11,14}b_130b \\
-        --output-dir claude_outputs/clustering/sizescaling/profiles
+        --model-dirs claude_outputs/models_sizescaling/weborganizer/emo_1b{4,7,11,14}b_130b \\
+        --output-dir claude_outputs/models_sizescaling/profiles
 """
 
 import argparse

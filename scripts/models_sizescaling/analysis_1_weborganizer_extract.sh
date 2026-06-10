@@ -15,14 +15,14 @@
 #   bash scripts/models_sizescaling/analysis_1_weborganizer_extract.sh
 #
 # Runtime: ~40 min/model on one A100-80GB (33 min forward + S3 doc loading).
-# Output:  claude_outputs/clustering/weborganizer/<run_name>/
+# Output:  claude_outputs/models_sizescaling/weborganizer/<run_name>/
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 MODELS=(emo_1b4b_130b emo_1b7b_130b emo_1b11b_130b emo_1b14b_130b)
 TARGET_TOKENS="${TARGET_TOKENS:-20000000}"
 STEP="${STEP:-step30995}"
-BASE_DIR="claude_outputs/clustering/weborganizer"
+export BASE_DIR="claude_outputs/models_sizescaling/weborganizer"
 
 for m in "${MODELS[@]}"; do
     ckpt="models_sizescaling/${m}/${STEP}-hf"

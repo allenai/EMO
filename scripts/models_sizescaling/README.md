@@ -58,11 +58,14 @@ four models and calls a generic tool (from `scripts/clustering/` or
 
 ## Output layout
 
+Outputs live under `claude_outputs/models_sizescaling/`, matching the
+experiment name:
+
 ```
-claude_outputs/clustering/weborganizer/<run>/   # analysis 1 (+ profiles from 3)
-claude_outputs/clustering/sizescaling/trends/   # analysis 2
-claude_outputs/clustering/sizescaling/profiles/ # analysis 3 plots
-claude_outputs/clustering/sizescaling/matching/ # analysis 4
+claude_outputs/models_sizescaling/weborganizer/<run>/ # analysis 1 (+ profiles from 3)
+claude_outputs/models_sizescaling/trends/             # analysis 2
+claude_outputs/models_sizescaling/profiles/           # analysis 3 plots
+claude_outputs/models_sizescaling/matching/           # analysis 4
 ```
 
 `.npy`/`.npz` files are excluded from the S3 push (regenerable); plots, JSONs,
