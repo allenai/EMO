@@ -136,7 +136,7 @@ This project uses stock transformers — no custom fork. The `EmoForCausalLM` mo
 
 ## S3 Sync for Scratch Outputs
 
-The `claude_outputs/` tree round-trips to `s3://ai2-sewonm/ryanwang/claude_outputs/` via:
+The `claude_outputs/` tree round-trips to `s3://ai2-sewonm/ryanwang/emo_extend/claude_outputs/` via:
 
 ```bash
 bash scripts/pull_claude_outputs.sh   # pull from S3 (no --delete)

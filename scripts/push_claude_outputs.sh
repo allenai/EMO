@@ -1,7 +1,9 @@
 #!/bin/bash
 # Push the entire claude_outputs/ tree to S3, excluding large regeneratable files.
 #
-# S3 destination: s3://ai2-sewonm/ryanwang/claude_outputs/
+# S3 destination: s3://ai2-sewonm/ryanwang/emo_extend/claude_outputs/
+# (the EMO-extension scratch tree; the original paper's scratch lives at
+#  s3://ai2-sewonm/ryanwang/claude_outputs/ and is no longer synced here)
 #
 # Uses --delete so that files deleted locally are also removed on S3. Only run this
 # from a machine whose local claude_outputs/ is at least a superset of the S3 copy —
@@ -31,4 +33,4 @@ aws s3 sync --delete "$@" \
     --exclude "*.tar" \
     --exclude "*.tar.gz" \
     --exclude "*.zip" \
-    claude_outputs s3://ai2-sewonm/ryanwang/claude_outputs
+    claude_outputs s3://ai2-sewonm/ryanwang/emo_extend/claude_outputs

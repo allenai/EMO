@@ -8,4 +8,4 @@
 set -euo pipefail
 
 aws s3 sync "$@" \
-    s3://ai2-sewonm/ryanwang/claude_outputs claude_outputs
+    s3://ai2-sewonm/ryanwang/emo_extend/claude_outputs claude_outputs
