@@ -305,4 +305,8 @@ All modules run via `python -m src.scripts.clustering.<module>`.
 | `visualize_compare` | Two-model side-by-side comparison (Clusters + Documents tabs) |
 | `sample_clusters` | Per-cluster token sampling for manual labeling |
 | `plot_doc_expert_coverage` | Topic-vs-layer + topic-topic heatmaps from extract_document output |
+| `doc_embeddings` | Shared loaders for extract_document outputs (used by the three modules below) |
+| `plot_expert_usage_trends` | Cross-model usage-metric trend curves vs total expert count |
+| `expert_topic_profiles` | Per-expert topic profiles + specialization-score distributions |
+| `match_experts` | Cross-model expert matching on per-doc usage fingerprints (requires shared doc set) |
 | `utils` | Shared S3, tokenization, model loading |
