@@ -37,41 +37,49 @@ def table(headers: list, rows: list) -> str:
     return f"<table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
 
 
-# uPlot chart init — plain string (braces are not f-string), data injected via replace.
-# Exposes window.ceResize() so the tabbed page can resize the chart when its tab opens.
-_CE_CHART_JS = r"""
+# uPlot multi-chart init — plain string (braces are not f-string), data injected via
+# replace. Renders one chart per metric (CURVES.charts) with per-run consistent colors,
+# a per-chart log-y toggle, hover-focus, and box-zoom on both axes. Exposes window.ceResize().
+_CHARTS_JS = r"""
 <script>
 (function(){
-  const D = __CE_DATA__;
+  const C = __CURVES__;
   const palette = ["#64748b","#2563eb","#7c3aed","#059669","#dc2626","#d97706"];
-  const el = document.getElementById("ce-chart");
-  const xs = D.x;
-  const data = [xs].concat(D.series.map(s => s.y));
-  let plot = null, logY = false;
-  function width(){ return (el && el.clientWidth) ? el.clientWidth : 900; }
-  function build(){
+  const colorOf = {};
+  C.runs.forEach((r,i) => { colorOf[r.label] = palette[i % palette.length]; });
+  const reg = {};
+  function build(key){
+    const st = reg[key], chart = st.chart, el = st.el;
+    const data = [chart.x].concat(chart.series.map(s => s.y));
     const series = [{ value: (u,v) => v==null ? "--" : v }].concat(
-      D.series.map((s,i) => ({
-        label: s.label, stroke: palette[i % palette.length], width: 1.6,
-        spanGaps: false, value: (u,v) => v==null ? "--" : v.toFixed(4),
+      chart.series.map(s => ({
+        label: s.label, stroke: colorOf[s.label] || "#888", width: 1.6,
+        spanGaps: false, value: (u,v) => v==null ? "--" : (+v).toFixed(4),
       })));
     const opts = {
-      width: width(), height: 440,
+      width: (el.clientWidth || 900), height: 360,
       focus: { alpha: 0.25 },
-      scales: { x: { time:false }, y: { distr: logY ? 3 : 1 } },
+      scales: { x: { time:false }, y: { distr: st.logY ? 3 : 1 } },
       cursor: { focus: { prox: 30 }, drag: { x:true, y:true, uni:10 } },
       axes: [
         { label: "step", values: (u,vals) => vals.map(v => v>=1000 ? (v/1000)+"k" : v) },
-        { label: "train/CE loss" },
+        { label: chart.title },
       ],
       series: series,
     };
-    if (plot) plot.destroy();
-    plot = new uPlot(opts, data, el);
+    if (st.plot) st.plot.destroy();
+    st.plot = new uPlot(opts, data, el);
   }
-  window.ceToggleLog = function(){ logY = !logY; build(); };
-  window.ceResize = function(){ if (plot) plot.setSize({ width: width(), height: 440 }); };
-  build();
+  C.charts.forEach(chart => {
+    reg[chart.key] = { plot:null, logY:false, chart:chart, el:document.getElementById("chart-"+chart.key) };
+    if (reg[chart.key].el) build(chart.key);
+  });
+  document.querySelectorAll("button.logtoggle").forEach(b => {
+    b.addEventListener("click", () => { const k=b.dataset.chart; reg[k].logY=!reg[k].logY; build(k); });
+  });
+  window.ceResize = function(){
+    Object.keys(reg).forEach(k => { const st=reg[k]; if (st.plot && st.el) st.plot.setSize({ width: st.el.clientWidth||900, height: 360 }); });
+  };
   window.addEventListener("resize", window.ceResize);
 })();
 </script>
@@ -82,14 +90,26 @@ def build_ce_chart(base: Path) -> str:
     p = base / "ce_curves.json"
     if not p.is_file():
         return ""
-    js = _CE_CHART_JS.replace("__CE_DATA__", p.read_text())
-    return (
-        '<div class="chart-controls">'
-        '<button onclick="ceToggleLog()">toggle log-y</button>'
-        '<span class="note">drag to zoom (x &amp; y) &middot; double-click to reset '
-        '&middot; click a legend label to toggle a run &middot; hover for values</span>'
-        '</div><div id="ce-chart"></div>' + js
+    raw = p.read_text()
+    import json as _json
+
+    data = _json.loads(raw)
+    links = " &middot; ".join(
+        f'<a href="{r["url"]}" target="_blank" rel="noopener">{r["label"]}</a>'
+        for r in data.get("runs", [])
     )
+    blocks = [f'<p class="note"><strong>Pretraining runs:</strong> {links}</p>']
+    for c in data.get("charts", []):
+        blocks.append(
+            f'<h4>{c["title"]}</h4>'
+            '<div class="chart-controls">'
+            f'<button class="logtoggle" data-chart="{c["key"]}">toggle log-y</button>'
+            '<span class="note">drag to zoom (x &amp; y) &middot; double-click reset '
+            '&middot; hover to highlight a run &middot; click legend to toggle</span>'
+            '</div>'
+            f'<div class="ce-chart" id="chart-{c["key"]}"></div>'
+        )
+    return "".join(blocks) + _CHARTS_JS.replace("__CURVES__", raw)
 
 
 # --------------------------------------------------------------------------
@@ -253,22 +273,22 @@ aggressive coupling and move on.</li>
 
 {card("results", "Configs", runs)}
 
-{card("results", "CE loss vs no-ghost baseline", '''
-<p>The apples-to-apples reference is the <strong>identical EMO randpool recipe
-without the ghost</strong> (128 experts, 1 shared, pool 8&ndash;128 / eval 32,
-lr 4e-3, lb 1e-1), from a prior project &mdash; WandB <code>olmoe-modular</code> /
+{card("results", "Training &amp; eval curves (interactive)", '''
+<p>All runs share the identical recipe &mdash; the no-ghost reference is WandB
+<code>olmoe-modular</code> /
 <code>twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301</code>
-(final CE 2.448 at the full 130B). Ghost configs hard-stop at 50B (step 11,921);
-the baseline runs to 130B.</p>''' + chart + '''
-<p style="margin-top:14px">Step-aligned values up to config #1's 50B hard-stop:</p>''' + cmp + '''
+(runs to 130B; ghost configs hard-stop at 50B = step 11,921). Use the links to open
+each run in WandB.</p>''' + chart)}
+
+{card("results", "CE loss vs no-ghost baseline (exact values)", '''
+<p>Step-aligned CE up to config #1's 50B hard-stop:</p>''' + cmp + '''
 <p>The two curves are <strong>statistically indistinguishable</strong> (mean gap
 &asymp; &minus;0.005 over the run), with the ghost a touch ahead by 50B
 (&minus;0.034). Training with a perpetually-simulated new expert costs nothing in
 LM loss &mdash; the open question (next) is whether it makes <em>actually adding</em> a
 new expert cleaner.</p>
-<p class="note">Loss trajectories for the remaining configs and the downstream
-&ldquo;instantiate a real new expert and measure degradation&rdquo; evaluation will be added
-here as runs finish.</p>''')}
+<p class="note">The downstream &ldquo;instantiate a real new expert and measure
+degradation&rdquo; evaluation will be added as configs finish.</p>''')}
 """
 
 
@@ -311,7 +331,7 @@ pre { background:#0f172a; color:#e2e8f0; padding:12px 14px; border-radius:6px; o
 pre code { background:transparent; padding:0; color:inherit; }
 code { background:#eef2f7; padding:1px 5px; border-radius:4px; font-size:0.9em; }
 h4 { margin:18px 0 4px; }
-#ce-chart { width:100%; }
+.ce-chart { width:100%; margin-bottom:6px; }
 .chart-controls { display:flex; align-items:center; gap:12px; margin:8px 0 4px; }
 .chart-controls button { border:1px solid var(--line); background:#fff; border-radius:6px;
                          padding:5px 10px; font-size:13px; cursor:pointer; }

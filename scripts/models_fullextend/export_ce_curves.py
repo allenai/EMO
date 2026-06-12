@@ -1,12 +1,12 @@
-"""Export CE-loss curves for the models_fullextend ghost runs + the no-ghost baseline
-into a single JSON that build_report.py embeds as an interactive (uPlot) chart.
+"""Export training/eval curves for the models_fullextend ghost runs + the no-ghost
+baseline into a single JSON that build_report.py embeds as interactive (uPlot) charts.
 
-Pulls each run's full train/CE-loss history from WandB, resamples every series onto
-one shared step grid (so uPlot can plot them together), and writes
+Pulls each run's history for a set of metrics from WandB, resamples every series onto
+a per-metric shared step grid, records each run's WandB URL, and writes
 ``claude_outputs/models_fullextend/ce_curves.json``.
 
-Re-run this whenever you want the report's chart refreshed with the latest steps
-(e.g. as sweep configs progress / finish), then rebuild + publish the report.
+Re-run whenever you want the report's charts refreshed (e.g. as sweep configs
+progress / finish), then rebuild + publish the report.
 
     python scripts/models_fullextend/export_ce_curves.py
 
@@ -16,6 +16,7 @@ Requires WANDB_API_KEY in the environment.
 import argparse
 import json
 from bisect import bisect_left
+from math import ceil
 from pathlib import Path
 
 import wandb
@@ -30,47 +31,53 @@ RUNS = [
         "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301",
         "no-ghost baseline (128e)",
     ),
-    (
-        "ryanyxw/emo-extension",
-        "emo_1b14b_130b_ghost_usage_always_detachF",
-        "usage / always / detachF",
-    ),
-    (
-        "ryanyxw/emo-extension",
-        "emo_1b14b_130b_ghost_uniform_always_detachF",
-        "uniform / always / detachF",
-    ),
+    ("ryanyxw/emo-extension", "emo_1b14b_130b_ghost_usage_always_detachF", "usage / always / detachF"),
+    ("ryanyxw/emo-extension", "emo_1b14b_130b_ghost_uniform_always_detachF", "uniform / always / detachF"),
 ]
 
-GRID_POINTS = 2000  # shared x-grid resolution
+# (chart key, wandb metric key, chart title). One interactive chart per entry.
+METRICS = [
+    ("ce", "train/CE loss", "CE loss"),
+    ("grad_norm", "optim/total grad norm", "Grad norm"),
+    ("lb", "train/load balancing loss", "Load-balancing loss"),
+    ("unique_experts", "train/unique experts used per batch", "Unique experts used / batch"),
+    ("hellaswag", "eval/downstream/hellaswag (soft loss v2)", "HellaSwag (soft loss v2)"),
+    ("arc", "eval/downstream/arc_challenge (soft loss v2)", "ARC-Challenge (soft loss v2)"),
+]
+
+GRID_POINTS = 2000  # max shared x-grid resolution per metric
 
 
 def fetch(project: str, name: str):
+    """Return (run, {wandb_key: [(step, val), ...]}) or None.
+
+    One scan_history per metric (single-key): a multi-key scan over metrics of
+    different cadences collapses a *running* run to the sparsest metric's steps.
+    """
     runs = list(wandb.Api().runs(project, filters={"display_name": name}))
     if not runs:
         return None
     r = runs[0]
-    steps, ces = [], []
-    for row in r.scan_history(keys=["_step", "train/CE loss"]):
-        s, v = row.get("_step"), row.get("train/CE loss")
-        if s is None or v is None:
-            continue
-        steps.append(int(s))
-        ces.append(float(v))
-    if not steps:
-        return None
-    pairs = sorted(zip(steps, ces))
-    return [p[0] for p in pairs], [p[1] for p in pairs]
+    series = {}
+    for _, wk, _ in METRICS:
+        pairs = []
+        for row in r.scan_history(keys=["_step", wk]):
+            s, v = row.get("_step"), row.get(wk)
+            if s is not None and v is not None:
+                pairs.append((int(s), float(v)))
+        series[wk] = pairs
+    return r, series
 
 
-def nearest(steps, ces, x):
-    """CE at the step nearest to x (steps sorted ascending)."""
+def nearest(pairs, x):
+    """val at the step nearest to x; pairs is sorted [(step,val)]."""
+    steps = [p[0] for p in pairs]
     i = bisect_left(steps, x)
     if i == 0:
-        return ces[0]
-    if i >= len(steps):
-        return ces[-1]
-    return ces[i] if (steps[i] - x) < (x - steps[i - 1]) else ces[i - 1]
+        return pairs[0][1]
+    if i >= len(pairs):
+        return pairs[-1][1]
+    return pairs[i][1] if (steps[i] - x) < (x - steps[i - 1]) else pairs[i - 1][1]
 
 
 def main():
@@ -79,38 +86,49 @@ def main():
                     default=Path("claude_outputs/models_fullextend/ce_curves.json"))
     args = ap.parse_args()
 
-    fetched = []
+    fetched = []  # (label, url, {wandb_key: sorted pairs})
     for proj, name, label in RUNS:
-        cur = fetch(proj, name)
-        if cur is None:
-            print(f"  skip (not found / no data): {label}")
+        got = fetch(proj, name)
+        if got is None:
+            print(f"  skip (not found): {label}")
             continue
-        fetched.append((label, name, cur))
-        print(f"  {label}: {len(cur[0])} points, steps {cur[0][0]}..{cur[0][-1]}")
-
+        r, series = got
+        series = {k: sorted(v) for k, v in series.items()}
+        fetched.append((label, r.url, series))
+        ce = series.get("train/CE loss", [])
+        print(f"  {label}: url={r.url} ce_steps={len(ce)}"
+              + (f" last_step={ce[-1][0]}" if ce else ""))
     if not fetched:
         raise SystemExit("no runs fetched")
 
-    max_step = max(cur[0][-1] for _, _, cur in fetched)
-    n = min(GRID_POINTS, max_step)
-    grid = [round(1 + i * (max_step - 1) / (n - 1)) for i in range(n)]
-
-    series = []
-    for label, name, (steps, ces) in fetched:
-        run_max = steps[-1]
-        y = [round(nearest(steps, ces, x), 5) if x <= run_max else None for x in grid]
-        series.append({"label": label, "run": name, "max_step": run_max, "y": y})
+    charts = []
+    for key, wk, title in METRICS:
+        present = [(label, s[wk]) for label, _, s in fetched if s.get(wk)]
+        if not present:
+            print(f"  metric '{key}': no data, skipping")
+            continue
+        all_steps = sorted({st for _, pairs in present for st, _ in pairs})
+        if len(all_steps) > GRID_POINTS:
+            stride = ceil(len(all_steps) / GRID_POINTS)
+            grid = all_steps[::stride]
+        else:
+            grid = all_steps
+        cseries = []
+        for label, pairs in present:
+            run_max = pairs[-1][0]
+            y = [round(nearest(pairs, x), 6) if x <= run_max else None for x in grid]
+            cseries.append({"label": label, "y": y})
+        charts.append({"key": key, "title": title, "x": grid, "series": cseries})
+        print(f"  metric '{key}': {len(cseries)} series, {len(grid)} x-points")
 
     out = {
-        "metric": "train/CE loss",
         "tokens_per_step": TOKENS_PER_STEP,
-        "x": grid,
-        "series": series,
+        "runs": [{"label": label, "url": url} for label, url, _ in fetched],
+        "charts": charts,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(out))
-    print(f"Wrote {args.output} ({args.output.stat().st_size/1e3:.1f} KB, "
-          f"{len(series)} series, {len(grid)} x-points)")
+    print(f"Wrote {args.output} ({args.output.stat().st_size/1e3:.1f} KB, {len(charts)} charts)")
 
 
 if __name__ == "__main__":
