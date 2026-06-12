@@ -86,20 +86,39 @@ _CHARTS_JS = r"""
 """
 
 
-def build_ce_chart(base: Path) -> str:
+def _load_curves(base: Path):
     p = base / "ce_curves.json"
     if not p.is_file():
-        return ""
-    raw = p.read_text()
+        return None, None
     import json as _json
 
-    data = _json.loads(raw)
+    raw = p.read_text()
+    return _json.loads(raw), raw
+
+
+def build_run_links(base: Path) -> str:
+    data, _ = _load_curves(base)
+    if not data:
+        return ""
     links = " &middot; ".join(
         f'<a href="{r["url"]}" target="_blank" rel="noopener">{r["label"]}</a>'
         for r in data.get("runs", [])
     )
-    blocks = [f'<p class="note"><strong>Pretraining runs:</strong> {links}</p>']
-    for c in data.get("charts", []):
+    return f'<p class="note"><strong>Pretraining runs:</strong> {links}</p>'
+
+
+def build_chart_blocks(base: Path, keys: list) -> str:
+    """Chart container(s) for the given metric keys (the shared <script> is emitted
+    once via build_charts_script). uPlot only draws keys whose div exists in the DOM."""
+    data, _ = _load_curves(base)
+    if not data:
+        return ""
+    by_key = {c["key"]: c for c in data.get("charts", [])}
+    blocks = []
+    for k in keys:
+        c = by_key.get(k)
+        if not c:
+            continue
         blocks.append(
             f'<h4>{c["title"]}</h4>'
             '<div class="chart-controls">'
@@ -109,7 +128,12 @@ def build_ce_chart(base: Path) -> str:
             '</div>'
             f'<div class="ce-chart" id="chart-{c["key"]}"></div>'
         )
-    return "".join(blocks) + _CHARTS_JS.replace("__CURVES__", raw)
+    return "".join(blocks)
+
+
+def build_charts_script(base: Path) -> str:
+    _, raw = _load_curves(base)
+    return "" if raw is None else _CHARTS_JS.replace("__CURVES__", raw)
 
 
 def build_speed_table(base: Path) -> str:
@@ -245,7 +269,11 @@ adds <code>gate * ghost_out</code> to the output.</p>''')}
 
 
 def build_sweep(base: Path) -> str:
-    chart = build_ce_chart(base)
+    run_links = build_run_links(base)
+    loss_charts = build_chart_blocks(
+        base, ["ce", "grad_norm", "lb", "unique_experts", "hellaswag", "arc"]
+    )
+    tps_chart = build_chart_blocks(base, ["tps"])
     speed = build_speed_table(base)
     fixed = table(
         ["Held fixed", "Value"],
@@ -306,7 +334,7 @@ aggressive coupling and move on.</li>
 <code>olmoe-modular</code> /
 <code>twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301</code>
 (runs to 130B; ghost configs hard-stop at 50B = step 11,921). Use the links to open
-each run in WandB.</p>''' + chart)}
+each run in WandB.</p>''' + run_links + loss_charts)}
 
 {card("results", "Training speed (TPS / MFU)", '''
 <p>How much does the ghost mechanism cost in throughput? <strong>TPS</strong>
@@ -316,8 +344,7 @@ i.e. past compile warmup).</p>''' + speed + '''
 <p>The ghost adds roughly a <strong>20&ndash;30% throughput hit</strong> versus the
 no-ghost baseline &mdash; the per-document blend (einsum over the pool),
 the grouped-GEMM ghost MLP, and the routing renormalization all run in eager (the
-router already falls back to eager under <code>torch.compile</code>). See the
-interactive <em>Throughput</em> chart above for the per-step curve.</p>
+router already falls back to eager under <code>torch.compile</code>).</p>''' + tps_chart + '''
 <p class="note">&sup1; MFU is shown only for the same-project ghost runs. The
 no-ghost baseline is from an older project that logs MFU on a different
 (non-comparable) convention (&asymp;165%), so only its TPS is used here.</p>''')}
@@ -331,6 +358,7 @@ LM loss &mdash; the open question (next) is whether it makes <em>actually adding
 new expert cleaner.</p>
 <p class="note">The downstream &ldquo;instantiate a real new expert and measure
 degradation&rdquo; evaluation will be added as configs finish.</p>''')}
+{build_charts_script(base)}
 """
 
 
@@ -348,17 +376,24 @@ header h1 { margin:0 0 2px; font-size:20px; }
 header p { margin:0; color:#94a3b8; font-size:13px; }
 .home-link { display:inline-block; margin-bottom:8px; color:#94a3b8; font-size:13px; text-decoration:none; }
 .home-link:hover { color:#f1f5f9; }
-nav { display:flex; gap:6px; flex-wrap:wrap; padding:10px 28px; background:#1e293b; position:sticky; top:0; z-index:10; }
+.topbar { position:sticky; top:0; z-index:10; }
+nav { display:flex; gap:6px; flex-wrap:wrap; padding:10px 28px; background:#1e293b; }
 nav button { border:0; border-radius:6px; padding:7px 14px; font-size:14px; cursor:pointer;
              background:transparent; color:#cbd5e1; }
 nav button:hover { background:#334155; }
 nav button.active { background:#3b82f6; color:#fff; }
+#subnav { display:flex; gap:6px 16px; flex-wrap:wrap; padding:8px 28px; background:#eef2f7;
+          border-bottom:1px solid var(--line); font-size:13px; }
+#subnav a { color:#475569; text-decoration:none; white-space:nowrap; }
+#subnav a:hover { color:#2563eb; text-decoration:underline; }
+#subnav:empty { display:none; }
 main { max-width:1180px; margin:0 auto; padding:24px 28px 80px; }
 section.tab { display:none; }
 section.tab.active { display:block; }
 .card { background:var(--card); border:1px solid var(--line); border-left:4px solid var(--line);
         border-radius:8px; padding:16px 20px; margin:16px 0; }
-.card h3 { margin:0 0 8px; font-size:15px; text-transform:uppercase; letter-spacing:0.05em; }
+.card h3 { margin:0 0 8px; font-size:15px; text-transform:uppercase; letter-spacing:0.05em;
+           scroll-margin-top:96px; }
 .card.goal { border-left-color:#2563eb; } .card.goal h3 { color:#2563eb; }
 .card.method { border-left-color:#7c3aed; } .card.method h3 { color:#7c3aed; }
 .card.results { border-left-color:#059669; } .card.results h3 { color:#059669; }
@@ -382,10 +417,26 @@ h4 { margin:18px 0 4px; }
 """
 
 JS = """
+function slug(t){ return t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
+function buildSubnav(id) {
+  const sec = document.getElementById(id);
+  const sub = document.getElementById('subnav');
+  sub.innerHTML = '';
+  if (!sec) return;
+  sec.querySelectorAll('.card > h3').forEach(h => {
+    if (!h.id) h.id = id + '--' + slug(h.textContent);
+    const a = document.createElement('a');
+    a.href = '#' + h.id;
+    a.textContent = h.textContent;
+    a.addEventListener('click', e => { e.preventDefault(); h.scrollIntoView({behavior:'smooth', block:'start'}); });
+    sub.appendChild(a);
+  });
+}
 function show(id) {
   document.querySelectorAll('section.tab').forEach(s => s.classList.toggle('active', s.id === id));
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.target === id));
   history.replaceState(null, '', '#' + id);
+  buildSubnav(id);
   if (window.ceResize) window.ceResize();
 }
 document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => show(b.dataset.target)));
@@ -431,7 +482,7 @@ def main():
 <p>models_fullextend &mdash; ghost-expert training &middot; experiment in progress
 &middot; generated by scripts/models_fullextend/build_report.py</p>
 </header>
-<nav>{nav}</nav>
+<div class="topbar"><nav>{nav}</nav><div id="subnav"></div></div>
 <main>{sections}</main>
 <script>{JS}</script>
 </body>
