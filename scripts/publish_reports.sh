@@ -52,8 +52,9 @@ for spec in "${EXPERIMENTS[@]}"; do
         continue
     fi
     cp "$report" "${stage}/${name}.html"
+    updated="$(TZ=America/Los_Angeles date -r "$report" '+%Y-%m-%d %H:%M %Z')"
     entries+="<li><a href=\"/${name}.html\">${name}</a>
-— ${blurb} <span class=\"date\">updated $(date -r "$report" +%F)</span></li>
+— ${blurb} <span class=\"date\">updated ${updated}</span></li>
 "
 done
 
