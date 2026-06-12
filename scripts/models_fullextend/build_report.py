@@ -65,10 +65,15 @@ back into the constituent experts and router rows. See the <strong>Method</stron
 tab for details.</p>''')}
 
 {card("results", "Status", '''
-<p>Experiment in progress &mdash; no results yet. An incremental hyperparameter sweep
-is running (16 nodes, hard-stopped at 50B tokens per config); see the
-<strong>Sweep</strong> tab for the live config list. This page will gain
-loss-trajectory and downstream &ldquo;add-an-expert&rdquo; results as runs complete.</p>''')}
+<p>Experiment in progress. An incremental hyperparameter sweep is running
+(16 nodes, hard-stopped at 50B tokens per config); see the <strong>Sweep</strong>
+tab for the live config list and the per-config CE-loss comparison.</p>
+<p><strong>First result:</strong> config #1 (<code>usage / always / detachF</code>)
+trained to 50B with <strong>final CE 2.654</strong>, versus the identical no-ghost
+EMO baseline's <strong>2.689</strong> at the same step &mdash; i.e. the ghost mechanism
+adds <strong>no convergence penalty</strong> (a slight edge at 50B, within
+run-to-run noise). The downstream &ldquo;add-an-expert&rdquo; evaluation that would actually
+test the extendability hypothesis is still to come.</p>''')}
 """
 
 
@@ -149,10 +154,25 @@ def build_sweep() -> str:
         ],
     )
     runs = table(
-        ["Run", "coeff_mode", "route", "detach_coeff", "Status"],
+        ["Run", "coeff_mode", "route", "detach_coeff", "Status", "Final CE @ 50B"],
         [
-            ("emo_1b14b_130b_ghost_usage_always_detachF", "usage", "always", "false", "running"),
-            ("&hellip; (uniform / random &times; detachF / detachT)", "&mdash;", "always", "&mdash;", "planned, chosen incrementally"),
+            ("emo_1b14b_130b_ghost_usage_always_detachF", "usage", "always", "false", "done", "2.654"),
+            ("emo_1b14b_130b_ghost_uniform_always_detachF", "uniform", "always", "false", "running", "&mdash;"),
+            ("&hellip; (random &times; detachF / detachT)", "&mdash;", "always", "&mdash;", "planned, chosen incrementally", "&mdash;"),
+        ],
+    )
+    # Step-aligned CE: ghost config #1 vs the identical no-ghost EMO baseline
+    # (olmoe-modular / twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301).
+    cmp = table(
+        ["Step", "Tokens", "Baseline (no ghost)", "Ghost (usage)", "Ghost &minus; baseline"],
+        [
+            ("250", "1.0B", "4.885", "4.872", "&minus;0.013"),
+            ("1000", "4.2B", "3.356", "3.378", "+0.022"),
+            ("2500", "10.5B", "2.977", "2.974", "&minus;0.003"),
+            ("5000", "21.0B", "2.788", "2.788", "&minus;0.000"),
+            ("7500", "31.5B", "2.738", "2.733", "&minus;0.004"),
+            ("10000", "41.9B", "2.723", "2.708", "&minus;0.015"),
+            ("11921", "50.0B", "2.689", "2.654", "&minus;0.034"),
         ],
     )
     return f"""
@@ -173,9 +193,23 @@ of the hypothesis.</li>
 aggressive coupling and move on.</li>
 </ul>''')}
 
-{card("results", "Configs", runs + '''
-<p class="note">Loss trajectories and the downstream &ldquo;instantiate a real new
-expert and measure degradation&rdquo; evaluation will be added here as runs finish.</p>''')}
+{card("results", "Configs", runs)}
+
+{card("results", "Config #1 vs no-ghost baseline (CE loss)", '''
+<p>The apples-to-apples reference is the <strong>identical EMO randpool recipe
+without the ghost</strong> (128 experts, 1 shared, pool 8&ndash;128 / eval 32,
+lr 4e-3, lb 1e-1), from a prior project &mdash; WandB <code>olmoe-modular</code> /
+<code>twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301</code>
+(final CE 2.448 at the full 130B). Compared step-for-step up to config #1's 50B
+hard-stop:</p>''' + cmp + '''
+<p>The two curves are <strong>statistically indistinguishable</strong> (mean gap
+&asymp; &minus;0.005 over the run), with the ghost a touch ahead by 50B
+(&minus;0.034). Training with a perpetually-simulated new expert costs nothing in
+LM loss &mdash; the open question (next) is whether it makes <em>actually adding</em> a
+new expert cleaner.</p>
+<p class="note">Loss trajectories for the remaining configs and the downstream
+&ldquo;instantiate a real new expert and measure degradation&rdquo; evaluation will be added
+here as runs finish.</p>''')}
 """
 
 

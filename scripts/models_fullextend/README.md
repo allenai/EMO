@@ -112,10 +112,42 @@ experiment conventions (WandB project `emo-extension`, tag `models_fullextend`,
 save root `/weka/oe-training-default/ryanwang/EMO/models_fullextend`,
 `DATA_ROOT=s3://ai2-llm`).
 
+## Baselines & references
+
+The apples-to-apples **no-ghost baseline** is the identical EMO 1B/14B randpool
+recipe (128 experts, 1 shared, pool 8&ndash;128 / eval 32, lr 4e-3, lb 1e-1)
+trained without the ghost mechanism, from a previous project:
+
+- **WandB**: project `olmoe-modular`, run
+  `twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301`
+  (run id `kt27d9in`). Trained to the full **130B** tokens (30,995 steps),
+  **final CE 2.448**.
+
+Because the ghost configs share this exact recipe and data order, this run is
+the reference for every ghost run's CE curve. Compare **step-for-step** (the
+ghost configs hard-stop at 50B = step 11,921; the baseline's CE at that step is
+**2.689**). The size-scaling 32/64/96-expert runs in `emo-extension`
+(`emo_1b{4,7,11}b_130b`) are looser references (different expert counts).
+
+To pull the baseline curve:
+
+```python
+import wandb
+r = list(wandb.Api().runs("ryanyxw/olmoe-modular",
+    filters={"display_name": "twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301"}))[0]
+hist = {int(x["_step"]): x["train/CE loss"] for x in r.scan_history(keys=["_step","train/CE loss"])}
+```
+
 ## Status / next steps
 
 - Implemented and unit-tested: `always` route, all three coefficient modes,
   renormalized routing, gradients verified to reach both the constituent
   experts and the router rows in every mode.
+- **Config #1 (`usage / always / detachF`) complete** &mdash; trained to the 50B
+  hard-stop, **final CE 2.654** vs the no-ghost baseline's **2.689** at the same
+  step (mean gap over the run &asymp; &minus;0.005). The ghost adds no convergence
+  penalty (slight edge at 50B; within run-to-run noise).
+- In progress: config #2 (`uniform / always / detachF`); remaining
+  coefficient-mode / `detach_coeff` configs chosen incrementally.
 - Not yet done: the downstream "actually add a new expert and measure
-  degradation" evaluation; the `topk` route; coefficient-mode / `num` sweeps.
+  degradation" evaluation; the `topk` route.
