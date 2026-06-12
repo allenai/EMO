@@ -17,6 +17,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
+# olmo_core.launch.beaker pulls in a gRPC client whose epoll event-engine corrupts file
+# descriptors inherited by forked `git` subprocesses (gantry runs `git diff` for the dirty
+# check), crashing git with SIGABRT ("epoll_wait error: Bad file descriptor"). Enable gRPC
+# fork support + the poll strategy so the forked git survives.
+export GRPC_ENABLE_FORK_SUPPORT=1
+export GRPC_POLL_STRATEGY=poll
+
 WEKA_ROOT="/weka/oe-training-default/ryanwang/EMO"
 OUTPUT_ROOT="${OUTPUT_ROOT:-${WEKA_ROOT}/models_fullextend/mc9_evals}"
 CLUSTER="${CLUSTER:-ai2/jupiter}"
@@ -79,6 +86,7 @@ launch_one() {
     --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
     --cluster "$CLUSTER" \
     --preemptible \
+    --allow-dirty \
     --priority urgent \
     --no-follow \
     --no-torchrun \
