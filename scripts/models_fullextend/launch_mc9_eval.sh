@@ -66,6 +66,8 @@ launch_one() {
 
   gantry run \
     --name "$job" \
+    --yes \
+    --allow-dirty \
     --weka oe-training-default:/weka/oe-training-default \
     --install "bash src/scripts/eval/setup_eval_env_olmoe-replicate.sh;" \
     --budget ai2/oe-base \
