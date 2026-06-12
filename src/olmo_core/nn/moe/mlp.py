@@ -290,3 +290,54 @@ class DroplessMoEMLP(MoEMLPBase):
         x2 = self.gmm(x, w3, batch_size_per_expert, trans_b=True)
         x1 = F.silu(x1) * x2
         return self.gmm(x1, w2, batch_size_per_expert)
+
+    def ghost_forward(
+        self,
+        x: torch.Tensor,
+        coeffs: torch.Tensor,
+        doc_sizes: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Compute per-document "ghost" expert outputs (models_fullextend experiment).
+
+        For each document ``g`` a ghost expert is materialized on the fly as a linear
+        combination of the first ``coeffs.shape[1]`` experts' weights:
+        ``W_ghost[g] = sum_i coeffs[g, i] * W_i``. That blended SwiGLU is then applied to
+        the document's tokens. The blend is never stored as a parameter (hence "ghost");
+        autograd routes its gradient straight back into the constituent experts (and,
+        when ``coeffs`` carries grad, into the router that produced ``coeffs``).
+
+        :param x: Tokens in document order, shape ``(N, d_model)`` with
+            ``N == doc_sizes.sum()``.
+        :param coeffs: Per-document blend weights over the first ``E'`` experts, shape
+            ``(G, E')``. ``E'`` is typically ``num_experts - num_shared_experts``.
+        :param doc_sizes: 1-D ``LongTensor`` of shape ``(G,)`` giving the number of tokens
+            in each document (the grouped-GEMM group sizes).
+
+        :returns: The ghost output, shape ``(N, d_model)``.
+        """
+        num_blend = coeffs.shape[1]
+        # shape (all): (num_blend, hidden_size, d_model)
+        w1, w2, w3 = (
+            get_local_tensor(self.w1.view(self.num_experts, self.hidden_size, self.d_model))[
+                :num_blend
+            ],
+            get_local_tensor(self.w2.view(self.num_experts, self.hidden_size, self.d_model))[
+                :num_blend
+            ],
+            get_local_tensor(self.w3.view(self.num_experts, self.hidden_size, self.d_model))[
+                :num_blend
+            ],
+        )
+        coeffs = coeffs.to(w1.dtype)
+
+        # Blend per document: (G, hidden_size, d_model).
+        w1g = torch.einsum("ge,ehd->ghd", coeffs, w1)
+        w2g = torch.einsum("ge,ehd->ghd", coeffs, w2)
+        w3g = torch.einsum("ge,ehd->ghd", coeffs, w3)
+
+        # Same SwiGLU as the expert path, grouped by document instead of by expert.
+        x1 = self.gmm(x, w1g, doc_sizes, trans_b=True)
+        x2 = self.gmm(x, w3g, doc_sizes, trans_b=True)
+        x1 = F.silu(x1) * x2
+        return self.gmm(x1, w2g, doc_sizes)

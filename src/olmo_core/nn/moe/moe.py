@@ -270,6 +270,26 @@ class MoEBase(nn.Module):
             shared_out = shared_out / (self.top_k + 1)
             out = shared_out.add(out, alpha=self.top_k / (self.top_k + 1))
 
+        # Ghost-expert training (models_fullextend): add per-document ghost outputs. The router
+        # stashes blend coefficients during training; eval leaves the stash None so the base model
+        # is measured unchanged. Each ghost is a blend of its document's pool experts, so the added
+        # gradient flows straight back into the constituent experts (and the router, for "usage").
+        ghost_stash = getattr(self.router, "_ghost_extend_stash", None)
+        if ghost_stash is not None:
+            self.router._ghost_extend_stash = None
+            if not isinstance(self.experts, ParallelDroplessMLP):
+                raise RuntimeError(
+                    f"ghost_extend_mode is only supported with ParallelDroplessMLP, got "
+                    f"{type(self.experts).__name__}."
+                )
+            doc_sizes, coeff_list, gate_list = ghost_stash
+            out_flat = out.reshape(-1, out.shape[-1])
+            for coeffs, gate in zip(coeff_list, gate_list):
+                # gate: (N,) per-token routing weight from the ghost's blended router row.
+                g = self.experts.compute_ghost(x, coeffs, doc_sizes)
+                out_flat = out_flat + gate.unsqueeze(-1).to(out_flat.dtype) * g.to(out_flat.dtype)
+            out = out_flat.view_as(out)
+
         return out
 
     def apply_pp(self, pp_mesh: DeviceMesh):

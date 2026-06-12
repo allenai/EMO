@@ -671,6 +671,25 @@ class ParallelDroplessMLP(ParallelMLPBase):
     def __init__(self, *, mlp: DroplessMoEMLP, top_k: int, cache: Optional[BufferCache] = None):
         super().__init__(mlp=mlp, top_k=top_k, cache=cache)
 
+    def compute_ghost(
+        self,
+        x: torch.Tensor,
+        coeffs: torch.Tensor,
+        doc_sizes: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Compute per-document ghost-expert outputs (models_fullextend experiment).
+
+        See :meth:`DroplessMoEMLP.ghost_forward`. ``x`` is flattened to ``(N, d_model)`` in
+        document order; the returned tensor has shape ``(N, d_model)``.
+        """
+        if self._expert_parallel_enabled:
+            raise NotImplementedError(
+                "ghost_extend_mode is not supported with expert/tensor parallelism."
+            )
+        x = get_local_tensor(x).view(-1, x.shape[-1])
+        return self.mlp.ghost_forward(x, coeffs, doc_sizes)
+
     def forward_once(
         self,
         x: torch.Tensor,

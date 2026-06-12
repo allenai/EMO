@@ -35,6 +35,12 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
         extension_finetune_mode: bool = False,
         extension_finetune_top_e: int = 0,
         extension_finetune_detach_router: bool = False,
+        ghost_extend_mode: bool = False,
+        ghost_extend_num: int = 1,
+        ghost_extend_coeff_mode: str = "usage",
+        ghost_extend_random_k: int = 8,
+        ghost_extend_route: str = "always",
+        ghost_extend_detach_coeff: bool = False,
         **kwargs,
     ):
         # Pass max_document_expert_pool as document_expert_pool to satisfy parent constructor
@@ -93,6 +99,31 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
         # Per-forward stash; read+cleared by MoE.forward.
         self._detach_mask: Optional[torch.Tensor] = None
 
+        # Ghost-expert training (models_fullextend). For each document a "ghost" expert is
+        # simulated as a linear combination of the document pool's expert weights; the model
+        # is trained with this perpetually-blended new expert present so that, at the end of
+        # training, instantiating and adding a real new expert is well-conditioned.
+        self.ghost_extend_mode = ghost_extend_mode
+        self.ghost_extend_num = ghost_extend_num
+        self.ghost_extend_coeff_mode = ghost_extend_coeff_mode
+        self.ghost_extend_random_k = ghost_extend_random_k
+        self.ghost_extend_route = ghost_extend_route
+        self.ghost_extend_detach_coeff = ghost_extend_detach_coeff
+        if self.ghost_extend_mode:
+            if self.ghost_extend_route != "always":
+                raise OLMoConfigurationError(
+                    f"ghost_extend_route={self.ghost_extend_route!r} is not implemented yet; "
+                    "only 'always' is currently supported."
+                )
+            if self.ghost_extend_coeff_mode not in ("usage", "uniform", "random"):
+                raise OLMoConfigurationError(
+                    f"ghost_extend_coeff_mode={self.ghost_extend_coeff_mode!r} must be one of "
+                    "'usage', 'uniform', 'random'."
+                )
+        # Per-forward stash consumed by MoE.forward: (doc_sizes, coeff_list, gate_list) or None,
+        # where coeff_list/gate_list hold one entry per ghost (ghost_extend_num).
+        self._ghost_extend_stash: Optional[Tuple[torch.Tensor, list, list]] = None
+
     def get_top_k(self, scores: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """We override the get_top_k to use self.num_choose_experts instead of self.top_k, since we will always activate self.num_shared_experts"""
         expert_weights: torch.Tensor
@@ -117,6 +148,46 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
 
         return expert_weights, expert_indices
 
+    def _build_ghost_alpha(
+        self,
+        kept_mask: torch.Tensor,
+        document_expert_probs: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Build the blend coefficients alpha (over non-shared experts) for one document's ghost.
+
+        :param kept_mask: Bool tensor ``(num_non_shared_experts,)``; ``True`` for experts in the
+            document pool (the candidates the ghost is blended from).
+        :param document_expert_probs: ``(num_non_shared_experts,)`` document-level summed softmax
+            probabilities. Carries grad to the router; used by the "usage" coefficient mode.
+        """
+        E = document_expert_probs.shape[0]
+        mode = self.ghost_extend_coeff_mode
+        if mode == "usage":
+            # Document-usage-weighted average over the pool. Stays in the graph (unless detached)
+            # so the router rows are trained to be averageable.
+            weights = document_expert_probs * kept_mask
+            alpha = weights / (weights.sum() + 1e-9)
+            if self.ghost_extend_detach_coeff:
+                alpha = alpha.detach()
+            return alpha
+        elif mode == "uniform":
+            kf = kept_mask.to(document_expert_probs.dtype)
+            return kf / kf.sum().clamp_min(1.0)
+        elif mode == "random":
+            # Uniform average over a random sample of ghost_extend_random_k pool experts.
+            kept_idx = kept_mask.nonzero(as_tuple=False).flatten()
+            k = min(self.ghost_extend_random_k, int(kept_idx.numel()))
+            alpha = torch.zeros(E, dtype=document_expert_probs.dtype, device=kept_mask.device)
+            if k > 0:
+                perm = torch.randperm(int(kept_idx.numel()), device=kept_idx.device)[:k]
+                alpha[kept_idx[perm]] = 1.0 / k
+            return alpha
+        else:
+            raise OLMoConfigurationError(
+                f"unknown ghost_extend_coeff_mode {self.ghost_extend_coeff_mode!r}"
+            )
+
     def forward(
         self,
         x: torch.Tensor,
@@ -139,6 +210,13 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
         # Clear any stale detach_mask from a previous forward (read+consumed by MoE.forward).
         self._detach_mask = None
         _ef_active = bool(self.extension_finetune_mode) and int(self.extension_finetune_top_e) > 0
+
+        # Ghost-expert training (models_fullextend). Only active during training; eval measures the
+        # base model (no ghost). Per-document blend specs are collected in the doc loop below and
+        # assembled into self._ghost_extend_stash, which MoE.forward reads to run the ghost(s).
+        self._ghost_extend_stash = None
+        _ghost_active = bool(self.ghost_extend_mode) and self.training
+        ghost_doc_specs: list = []  # (token_count, kept_mask, document_expert_probs) per document
 
         # shape: (batch_size, seq_len, d_model)
         x = self.jitter(x)
@@ -223,29 +301,40 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
 
                 # get the bottom document_expert_pool experts (including removing the shared experts since we already took that out of the logits)
                 bot_document_expert_pool = num_non_shared_experts - document_expert_pool
-                if bot_document_expert_pool <= 0:
-                    # pool covers all non-shared experts, no masking needed
-                    start = end
-                    continue
 
-                if self.num_forced_experts > 0:
-                    # Forced experts (last num_forced_experts non-shared) are always in the pool.
-                    # Only discard from the non-forced experts.
-                    num_candidates = num_non_shared_experts - self.num_forced_experts
-                    bot_to_discard = min(bot_document_expert_pool, num_candidates)
-                    if bot_to_discard <= 0:
-                        start = end
-                        continue
-                    candidate_probs = document_expert_probs[:num_candidates]
-                    experts_to_discard = torch.topk(
-                        -candidate_probs, bot_to_discard
-                    ).indices  # shape: (bot_to_discard,)
-                else:
-                    experts_to_discard = torch.topk(
-                        -document_expert_probs, bot_document_expert_pool
-                    ).indices  # shape: (bot_document_expert_pool,)
+                # Determine which experts to discard from the document pool (None => pool covers
+                # all non-shared experts, nothing discarded).
+                experts_to_discard: Optional[torch.Tensor] = None
+                if bot_document_expert_pool > 0:
+                    if self.num_forced_experts > 0:
+                        # Forced experts (last num_forced_experts non-shared) are always in the pool.
+                        # Only discard from the non-forced experts.
+                        num_candidates = num_non_shared_experts - self.num_forced_experts
+                        bot_to_discard = min(bot_document_expert_pool, num_candidates)
+                        if bot_to_discard > 0:
+                            candidate_probs = document_expert_probs[:num_candidates]
+                            experts_to_discard = torch.topk(
+                                -candidate_probs, bot_to_discard
+                            ).indices  # shape: (bot_to_discard,)
+                    else:
+                        experts_to_discard = torch.topk(
+                            -document_expert_probs, bot_document_expert_pool
+                        ).indices  # shape: (bot_document_expert_pool,)
+
                 # set the logits of these experts to a very large negative value
-                logits_mask[seq_idx, start:end, experts_to_discard] = True
+                if experts_to_discard is not None:
+                    logits_mask[seq_idx, start:end, experts_to_discard] = True
+
+                # Ghost-expert bookkeeping: record this document's pool (kept experts) and its
+                # token span so MoE.forward can blend a ghost expert from the pool weights.
+                if _ghost_active:
+                    kept_mask = torch.ones(
+                        num_non_shared_experts, dtype=torch.bool, device=logits.device
+                    )
+                    if experts_to_discard is not None:
+                        kept_mask[experts_to_discard] = False
+                    ghost_doc_specs.append((end - start, kept_mask, document_expert_probs))
+
                 start = end
 
         logits.masked_fill_(logits_mask, float("-inf"))
@@ -254,16 +343,75 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
             avg_doc_entropy = (doc_entropy_sum / doc_entropy_count).detach()
             self._router_documentlevel_expert_entropy += avg_doc_entropy.item()
 
-        # shape: (batch_size, seq_len, num_experts)
+        # Ghost-expert routing (models_fullextend): each ghost is a new expert whose router row is an
+        # alpha-blend of its document pool's router rows, so its logit is ghost_logit = sum_i alpha_i
+        # * logit_i. The ghost logits join the routing-softmax denominator below, so the real pool
+        # experts and the ghost(s) form a single distribution (the real experts shrink to make room).
+        ghost_coeff_list: list = []
+        ghost_logits_list: list = []  # each (B, S)
+        if _ghost_active and len(ghost_doc_specs) > 0:
+            counts = [c for (c, _, _) in ghost_doc_specs]
+            # alpha is 0 off-pool, so zero out the -inf pool-mask entries to keep the dot finite.
+            logits_clean_flat = torch.where(
+                torch.isinf(logits), torch.zeros_like(logits), logits
+            ).reshape(
+                -1, num_non_shared_experts
+            )  # (N, E')
+            for _ in range(self.ghost_extend_num):
+                # One blend per document; "random" re-samples per ghost, "usage"/"uniform" are
+                # deterministic across ghosts.
+                alpha_rows = [
+                    self._build_ghost_alpha(kept_mask, dep)
+                    for (_, kept_mask, dep) in ghost_doc_specs
+                ]
+                ghost_coeff_list.append(torch.stack(alpha_rows, dim=0))  # (G, E')
+                # Expand each doc's alpha over its tokens (flattened doc order == token order).
+                token_alpha = torch.cat(
+                    [a.unsqueeze(0).expand(c, -1) for a, c in zip(alpha_rows, counts)], dim=0
+                )  # (N, E')
+                ghost_logits_list.append(
+                    (token_alpha * logits_clean_flat).sum(dim=-1).reshape(x.size(0), x.size(1))
+                )  # (B, S)
+
+        # Routing scores. `scores_pool` is the softmax over the real (non-shared) pool experts only;
+        # `scores` is renormalized so the pool experts and the ghost(s) form one distribution. They
+        # are identical when no ghost is active. get_top_k / expert_weights use `scores`; the
+        # auxiliary lb-loss and the entropy metric use `scores_pool` (the ghost is a transient blend,
+        # not a real expert to load-balance).
+        ghost_gates: list = []  # each (N,) per-token ghost routing weight
         if self.gating_function == MoERouterGatingFunction.softmax:
-            scores = logits.softmax(dim=-1)
+            lse_pool = torch.logsumexp(logits, dim=-1)  # (B, S)
+            scores_pool = torch.exp(logits - lse_pool.unsqueeze(-1))
+            if ghost_logits_list:
+                # logsumexp over pool ∪ ghosts == logsumexp([lse_pool, ghost_logit_1, ...]).
+                lse_aug = torch.logsumexp(
+                    torch.stack([lse_pool, *ghost_logits_list], dim=-1), dim=-1
+                )  # (B, S)
+                scores = torch.exp(logits - lse_aug.unsqueeze(-1))
+                ghost_gates = [torch.exp(gl - lse_aug).reshape(-1) for gl in ghost_logits_list]
+            else:
+                scores = scores_pool
         elif self.gating_function == MoERouterGatingFunction.sigmoid:
+            if ghost_logits_list:
+                raise NotImplementedError(
+                    "ghost_extend_mode currently requires softmax gating; the ghost "
+                    "renormalization is defined for the routing softmax."
+                )
             scores = F.sigmoid(logits) + 1e-7
+            scores_pool = scores
         else:
             raise NotImplementedError(self.gating_function)
 
         # shape: (batch_size, seq_len, self.num_choose_experts)
         expert_weights, expert_indices = self.get_top_k(scores)
+
+        # Stash the ghost specs (blend coefficients + per-token gates) for MoE.forward.
+        if _ghost_active and ghost_logits_list:
+            self._ghost_extend_stash = (
+                torch.tensor(counts, dtype=torch.long, device=x.device),
+                ghost_coeff_list,
+                ghost_gates,
+            )
 
         # extension_finetune_mode: build per-slot detach mask based on top-e membership.
         # True = detach (backward-disabled) for this (token, k) slot.
@@ -306,8 +454,8 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
                 self._unique_experts_sum += num_unique_experts
                 self._num_batches_tracked += 1
 
-                # Compute router distribution entropy metric
-                valid_scores = scores.view(-1, self.num_experts - self.num_shared_experts)
+                # Compute router distribution entropy metric (over the real pool experts).
+                valid_scores = scores_pool.view(-1, self.num_experts - self.num_shared_experts)
                 # get entropy per token
                 token_entropies = -torch.sum(valid_scores * torch.log(valid_scores + 1e-10), dim=-1)
                 # average entropy over valid tokens
@@ -324,7 +472,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
 
                     # Make sure scores are normalized, otherwise load balancing loss doesn't work well.
                     if self.gating_function == MoERouterGatingFunction.sigmoid:
-                        scores = scores / scores.sum(dim=-1, keepdim=True)
+                        scores_pool = scores_pool / scores_pool.sum(dim=-1, keepdim=True)
 
                     # we now do reduction on the tot_batch_size_per_expert to get a dp-global lb loss (still not full global sinze we don't do across gradient accumulation steps)
                     dp_global_tot_batch_size_per_expert = (
@@ -346,9 +494,9 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
                     # for non-top-e experts by detaching those columns of the scores tensor.
                     # Top-e columns still flow grad → router can still learn via LB for kept experts.
                     if _ef_active and self.extension_finetune_detach_router:
-                        scores_for_lb = torch.where(in_top_e, scores, scores.detach())
+                        scores_for_lb = torch.where(in_top_e, scores_pool, scores_pool.detach())
                     else:
-                        scores_for_lb = scores
+                        scores_for_lb = scores_pool
 
                     lb_loss = load_balancing_loss(
                         num_experts=self.num_experts
@@ -448,7 +596,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
     def extra_repr(self):
         """Add custom parameter to string representation."""
         base_repr = super().extra_repr()
-        return f"{base_repr}, min_document_expert_pool={self.min_document_expert_pool}, max_document_expert_pool={self.max_document_expert_pool}, eval_document_expert_pool={self.eval_document_expert_pool}, eos_token_id={self.eos_token_id}, num_shared_experts={self.num_shared_experts}, num_forced_experts={self.num_forced_experts}, extension_finetune_mode={self.extension_finetune_mode}, extension_finetune_top_e={self.extension_finetune_top_e}, extension_finetune_detach_router={self.extension_finetune_detach_router}"
+        return f"{base_repr}, min_document_expert_pool={self.min_document_expert_pool}, max_document_expert_pool={self.max_document_expert_pool}, eval_document_expert_pool={self.eval_document_expert_pool}, eos_token_id={self.eos_token_id}, num_shared_experts={self.num_shared_experts}, num_forced_experts={self.num_forced_experts}, extension_finetune_mode={self.extension_finetune_mode}, extension_finetune_top_e={self.extension_finetune_top_e}, extension_finetune_detach_router={self.extension_finetune_detach_router}, ghost_extend_mode={self.ghost_extend_mode}, ghost_extend_num={self.ghost_extend_num}, ghost_extend_coeff_mode={self.ghost_extend_coeff_mode}, ghost_extend_random_k={self.ghost_extend_random_k}, ghost_extend_route={self.ghost_extend_route}, ghost_extend_detach_coeff={self.ghost_extend_detach_coeff}"
 
 
 @dataclass
@@ -461,6 +609,13 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouterConfig(MoETwoLevelRouterC
     extension_finetune_mode: bool = False
     extension_finetune_top_e: int = 0
     extension_finetune_detach_router: bool = False
+    # --- ghost-expert training (models_fullextend) ---
+    ghost_extend_mode: bool = False
+    ghost_extend_num: int = 1
+    ghost_extend_coeff_mode: str = "usage"  # "usage" | "uniform" | "random"
+    ghost_extend_random_k: int = 8
+    ghost_extend_route: str = "always"  # "always" | "topk" (topk not yet implemented)
+    ghost_extend_detach_coeff: bool = False
 
     # just update the build to call the correct new class
     def build(
