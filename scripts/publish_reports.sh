@@ -52,7 +52,9 @@ for spec in "${EXPERIMENTS[@]}"; do
         continue
     fi
     cp "$report" "${stage}/${name}.html"
-    updated="$(TZ=America/Los_Angeles date -r "$report" '+%Y-%m-%d %H:%M %Z')"
+    # NOTE: the system `date` ignores $TZ here (prints UTC), so use python's zoneinfo
+    # for a correct California-time stamp.
+    updated="$(python -c "import os,datetime; from zoneinfo import ZoneInfo; print(datetime.datetime.fromtimestamp(os.path.getmtime('$report'), ZoneInfo('America/Los_Angeles')).strftime('%Y-%m-%d %H:%M %Z'))")"
     entries+="<li><a href=\"/${name}.html\">${name}</a>
 — ${blurb} <span class=\"date\">updated ${updated}</span></li>
 "
