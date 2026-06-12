@@ -57,6 +57,8 @@ Some older training scripts in `scripts/models/` still carry a commented-out `to
 - **Save path**: `MODELS_DIR="/weka/oe-training-default/ryanwang/EMO/{experiment_name}"`, where `{experiment_name}` matches the subfolder name. Checkpoints land under `${MODELS_DIR}/${runname}/`.
 - **Data root**: `DATA_ROOT="s3://ai2-llm"`. The weka mirror at `/weka/oe-training-default/ai2-llm/` is incomplete; S3 is the source of truth for tokenized data.
 
+**Weka save paths resolve into the repo in a GPU-attached session.** The literal `/weka/oe-training-default/...` path is only mounted at that location *inside launched Beaker workers*. In a GPU-attached session it does **not** `ls` at `/weka/...`; instead `/weka/oe-training-default/ryanwang` corresponds to the home directory `~`, and since the repo lives at `~/EMO` (`/root/EMO`), the save root `MODELS_DIR=/weka/oe-training-default/ryanwang/EMO/{experiment_name}` is the *same storage* as `~/EMO/{experiment_name}` = **inside the repo working tree**. Consequences: (a) Beaker-run checkpoints show up in this session as untracked dirs at the repo root (e.g. `models_fullextend/`, `models_sizescaling/`) — these are training outputs (often >100GB each), the same bytes the run wrote to its weka save path; (b) **never `git add` them** (stage explicit paths, never `git add -A`); (c) don't be alarmed that the literal `/weka/...` path is missing from the session — it is expected.
+
 Each script should set these as bash variables after sourcing `scripts/launch_common.sh` so they override the launcher's defaults.
 
 **Beaker operational notes.** Hard-won during the `models_sizescaling` sweep:
