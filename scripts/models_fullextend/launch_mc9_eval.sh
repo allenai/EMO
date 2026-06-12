@@ -74,8 +74,9 @@ launch_one() {
 
   # Launch via olmo_core.launch.beaker (workers git-clone from origin, so the huge
   # untracked checkpoint tree is never uploaded). --no-torchrun: launch_eval manages
-  # its own GPUs. --no-follow: fire-and-forget. setup_eval_env installs oe-eval in the
-  # worker before the eval runs.
+  # its own GPUs. --no-follow: fire-and-forget. The olmo-core beaker image already has
+  # oe-eval + a working flash-attn; do NOT re-run setup_eval_env (it reinstalls deps and
+  # breaks flash-attn's ABI against the image's torch).
   python -m olmo_core.launch.beaker \
     --name "$job" \
     --gpus "$GPUS" \
@@ -91,7 +92,7 @@ launch_one() {
     --no-follow \
     --no-torchrun \
     --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
-    -- bash -c "bash src/scripts/eval/setup_eval_env_olmoe-replicate.sh && PYTHONPATH=. python -u src/scripts/eval/launch_eval.py --model ${hf_path} --model-type hf --task ${task} --limit ${LIMIT} --output-dir ${out} --batch-size 4 --gpus ${GPUS} --model-args ${model_args}"
+    -- bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py --model ${hf_path} --model-type hf --task ${task} --limit ${LIMIT} --output-dir ${out} --batch-size 4 --gpus ${GPUS} --model-args ${model_args}"
 }
 
 n=0
