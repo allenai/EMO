@@ -18,6 +18,7 @@ import json
 from bisect import bisect_left
 from math import ceil
 from pathlib import Path
+from statistics import median
 
 import wandb
 
@@ -35,15 +36,22 @@ RUNS = [
     ("ryanyxw/emo-extension", "emo_1b14b_130b_ghost_uniform_always_detachF", "uniform / always / detachF"),
 ]
 
-# (chart key, wandb metric key, chart title). One interactive chart per entry.
+# (chart key, wandb metric key, chart title, make_chart). make_chart=False metrics are
+# still fetched (for the speed summary) but not drawn -- e.g. MFU, whose convention
+# differs in the older baseline project so it can't share an axis.
 METRICS = [
-    ("ce", "train/CE loss", "CE loss"),
-    ("grad_norm", "optim/total grad norm", "Grad norm"),
-    ("lb", "train/load balancing loss", "Load-balancing loss"),
-    ("unique_experts", "train/unique experts used per batch", "Unique experts used / batch"),
-    ("hellaswag", "eval/downstream/hellaswag (soft loss v2)", "HellaSwag (soft loss v2)"),
-    ("arc", "eval/downstream/arc_challenge (soft loss v2)", "ARC-Challenge (soft loss v2)"),
+    ("ce", "train/CE loss", "CE loss", True),
+    ("grad_norm", "optim/total grad norm", "Grad norm", True),
+    ("lb", "train/load balancing loss", "Load-balancing loss", True),
+    ("unique_experts", "train/unique experts used per batch", "Unique experts used / batch", True),
+    ("hellaswag", "eval/downstream/hellaswag (soft loss v2)", "HellaSwag (soft loss v2)", True),
+    ("arc", "eval/downstream/arc_challenge (soft loss v2)", "ARC-Challenge (soft loss v2)", True),
+    ("tps", "throughput/device/TPS", "Throughput (tokens/sec/device)", True),
+    ("mfu", "throughput/device/MFU", "MFU (%)", False),
 ]
+
+# Steady-state speed summary: median over steps >= this (skips compile/warmup).
+SPEED_WARMUP_STEPS = 1000
 
 GRID_POINTS = 2000  # max shared x-grid resolution per metric
 
@@ -59,7 +67,7 @@ def fetch(project: str, name: str):
         return None
     r = runs[0]
     series = {}
-    for _, wk, _ in METRICS:
+    for _, wk, *_ in METRICS:
         pairs = []
         for row in r.scan_history(keys=["_step", wk]):
             s, v = row.get("_step"), row.get(wk)
@@ -102,7 +110,9 @@ def main():
         raise SystemExit("no runs fetched")
 
     charts = []
-    for key, wk, title in METRICS:
+    for key, wk, title, make_chart in METRICS:
+        if not make_chart:
+            continue
         present = [(label, s[wk]) for label, _, s in fetched if s.get(wk)]
         if not present:
             print(f"  metric '{key}': no data, skipping")
@@ -121,10 +131,24 @@ def main():
         charts.append({"key": key, "title": title, "x": grid, "series": cseries})
         print(f"  metric '{key}': {len(cseries)} series, {len(grid)} x-points")
 
+    # Steady-state speed summary (median of per-step TPS/MFU after warmup).
+    def steady(pairs):
+        vals = [v for s, v in pairs if s >= SPEED_WARMUP_STEPS] or [v for _, v in pairs]
+        return round(median(vals), 2) if vals else None
+
+    speed = []
+    for label, _, s in fetched:
+        tps = s.get("throughput/device/TPS", [])
+        mfu = s.get("throughput/device/MFU", [])
+        speed.append({"label": label, "tps": steady(tps) if tps else None,
+                      "mfu": steady(mfu) if mfu else None})
+        print(f"  speed[{label}]: TPS={speed[-1]['tps']} MFU={speed[-1]['mfu']}")
+
     out = {
         "tokens_per_step": TOKENS_PER_STEP,
         "runs": [{"label": label, "url": url} for label, url, _ in fetched],
         "charts": charts,
+        "speed": speed,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(out))

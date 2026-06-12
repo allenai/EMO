@@ -112,6 +112,33 @@ def build_ce_chart(base: Path) -> str:
     return "".join(blocks) + _CHARTS_JS.replace("__CURVES__", raw)
 
 
+def build_speed_table(base: Path) -> str:
+    """Steady-state training-speed table (TPS comparable across runs; baseline MFU n/c)."""
+    p = base / "ce_curves.json"
+    if not p.is_file():
+        return ""
+    import json as _json
+
+    speed = _json.loads(p.read_text()).get("speed", [])
+    if not speed:
+        return ""
+    base_tps = speed[0].get("tps")  # RUNS[0] is the no-ghost baseline
+    rows = []
+    for i, s in enumerate(speed):
+        tps, mfu = s.get("tps"), s.get("mfu")
+        if i == 0:
+            vs = "(reference)"
+        elif tps and base_tps:
+            vs = f"{(tps / base_tps - 1) * 100:+.0f}%"
+        else:
+            vs = "&mdash;"
+        mfu_disp = "n/c&sup1;" if (mfu is None or mfu > 100) else f"{mfu:.1f}%"
+        rows.append((s["label"], f"{tps:,.0f}" if tps else "&mdash;", mfu_disp, vs))
+    return table(
+        ["Run", "TPS / device (steady median)", "MFU", "vs baseline TPS"], rows
+    )
+
+
 # --------------------------------------------------------------------------
 # Tabs
 # --------------------------------------------------------------------------
@@ -219,6 +246,7 @@ adds <code>gate * ghost_out</code> to the output.</p>''')}
 
 def build_sweep(base: Path) -> str:
     chart = build_ce_chart(base)
+    speed = build_speed_table(base)
     fixed = table(
         ["Held fixed", "Value"],
         [
@@ -279,6 +307,20 @@ aggressive coupling and move on.</li>
 <code>twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301</code>
 (runs to 130B; ghost configs hard-stop at 50B = step 11,921). Use the links to open
 each run in WandB.</p>''' + chart)}
+
+{card("results", "Training speed (TPS / MFU)", '''
+<p>How much does the ghost mechanism cost in throughput? <strong>TPS</strong>
+(tokens/sec per device) is a hardware-measured, convention-free number, so it is
+comparable across runs; values below are the steady-state median (steps &ge; 1000,
+i.e. past compile warmup).</p>''' + speed + '''
+<p>The ghost adds roughly a <strong>20&ndash;30% throughput hit</strong> versus the
+no-ghost baseline &mdash; the per-document blend (einsum over the pool),
+the grouped-GEMM ghost MLP, and the routing renormalization all run in eager (the
+router already falls back to eager under <code>torch.compile</code>). See the
+interactive <em>Throughput</em> chart above for the per-step curve.</p>
+<p class="note">&sup1; MFU is shown only for the same-project ghost runs. The
+no-ghost baseline is from an older project that logs MFU on a different
+(non-comparable) convention (&asymp;165%), so only its TPS is used here.</p>''')}
 
 {card("results", "CE loss vs no-ghost baseline (exact values)", '''
 <p>Step-aligned CE up to config #1's 50B hard-stop:</p>''' + cmp + '''
