@@ -164,6 +164,14 @@ class EmoConfig(PretrainedConfig):
         always_active_experts_per_layer: Optional[list[list[int]]] = None,
         dense_intermediate_size: Optional[int] = None,
         dense_mlp_bias: bool = False,  # Some densefirst models were accidentally trained with bias=True on dense MLPs due to OLMo Core's FeedForwardConfig defaulting bias to True when not explicitly set
+        # --- ghost-expert eval (models_fullextend) ---
+        # When ghost_extend_eval=True, each MoE layer adds a per-sequence "ghost" expert at
+        # inference: a blend of ALL standard experts (pool = all experts; no document-pool
+        # masking), joined to the routing softmax (renormalized) exactly as during ghost
+        # pretraining. Purely a probe for distribution shift; default off = stock inference.
+        ghost_extend_eval: bool = False,
+        ghost_extend_coeff_mode: str = "usage",  # usage | uniform | random
+        ghost_extend_random_k: int = 8,
         **kwargs,
     ):
         super().__init__(
@@ -214,6 +222,9 @@ class EmoConfig(PretrainedConfig):
         self.always_active_experts_per_layer = always_active_experts_per_layer
         self.dense_intermediate_size = dense_intermediate_size
         self.dense_mlp_bias = dense_mlp_bias
+        self.ghost_extend_eval = ghost_extend_eval
+        self.ghost_extend_coeff_mode = ghost_extend_coeff_mode
+        self.ghost_extend_random_k = ghost_extend_random_k
 
 
 __all__ = ["EmoConfig"]

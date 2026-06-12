@@ -275,6 +275,11 @@ class EmoSparseMoeBlock(nn.Module):
         expert_config.dense_mlp_bias = False
         self.experts = nn.ModuleList([EmoMLP(expert_config) for _ in range(self.num_experts)])
 
+        # Ghost-expert eval (models_fullextend): see EmoConfig.ghost_extend_eval.
+        self.ghost_extend_eval = getattr(config, "ghost_extend_eval", False)
+        self.ghost_extend_coeff_mode = getattr(config, "ghost_extend_coeff_mode", "usage")
+        self.ghost_extend_random_k = getattr(config, "ghost_extend_random_k", 8)
+
     def _get_top_k_with_always_active(
         self, scores: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -315,7 +320,92 @@ class EmoSparseMoeBlock(nn.Module):
 
         return routing_weights, selected_experts
 
+    def _ghost_alpha(self, doc_probs: torch.Tensor) -> torch.Tensor:
+        """Blend coefficients alpha over standard experts, per sequence. doc_probs: (B, Es)."""
+        mode = self.ghost_extend_coeff_mode
+        B, Es = doc_probs.shape
+        if mode == "usage":
+            return doc_probs / doc_probs.sum(dim=-1, keepdim=True).clamp_min(1e-9)
+        if mode == "uniform":
+            return doc_probs.new_full((B, Es), 1.0 / Es)
+        if mode == "random":
+            k = min(int(self.ghost_extend_random_k), Es)
+            alpha = doc_probs.new_zeros(B, Es)
+            for b in range(B):
+                idx = torch.randperm(Es, device=doc_probs.device)[:k]
+                alpha[b, idx] = 1.0 / k
+            return alpha
+        raise ValueError(f"unknown ghost_extend_coeff_mode {mode!r}")
+
+    def _ghost_mlp(self, x_bsh: torch.Tensor, alpha: torch.Tensor, n_std: int) -> torch.Tensor:
+        """Per-sequence ghost MLP: SwiGLU with weights blended over the first n_std experts.
+        x_bsh: (B, S, H); alpha: (B, n_std). Returns (B, S, H)."""
+        wg = torch.stack([self.experts[e].gate_proj.weight for e in range(n_std)])  # (Es, I, H)
+        wu = torch.stack([self.experts[e].up_proj.weight for e in range(n_std)])  # (Es, I, H)
+        wd = torch.stack([self.experts[e].down_proj.weight for e in range(n_std)])  # (Es, H, I)
+        a = alpha.to(wg.dtype)
+        wg_g = torch.einsum("be,eih->bih", a, wg)  # (B, I, H)
+        wu_g = torch.einsum("be,eih->bih", a, wu)
+        wd_g = torch.einsum("be,ehi->bhi", a, wd)  # (B, H, I)
+        x = x_bsh.to(wg.dtype)
+        h1 = torch.bmm(x, wg_g.transpose(1, 2))  # (B, S, I)
+        h2 = torch.bmm(x, wu_g.transpose(1, 2))
+        out = torch.bmm(self.act_fn(h1) * h2, wd_g.transpose(1, 2))  # (B, S, H)
+        return out
+
+    def _forward_with_ghost(self, hidden_states: torch.Tensor):
+        """Ghost-expert eval forward (models_fullextend). Adds, per sequence, a ghost expert
+        that is an alpha-blend of ALL standard experts (pool = all experts), joined to the
+        standard-expert routing softmax with renormalization, exactly as during ghost
+        pretraining (with the eval document pool = all experts). Shared experts unchanged."""
+        if not (self.num_shared_experts > 0 and self.always_active_experts is None):
+            raise NotImplementedError(
+                "ghost_extend_eval requires num_shared_experts>0 and no always_active_experts."
+            )
+        self.act_fn = self.experts[0].act_fn
+        B, S, H = hidden_states.shape
+        x = hidden_states.view(-1, H)  # (N, H)
+        router_logits = self.gate(x)  # (N, num_experts)
+        Es = self.num_experts - self.num_shared_experts
+        logits_std = router_logits[:, :Es].float()  # (N, Es)
+        logits_shared = router_logits[:, Es:].float()  # (N, num_shared)
+
+        # Per-sequence blend coefficients over standard experts (pool = all standard experts).
+        logits_std_bs = logits_std.view(B, S, Es)
+        doc_probs = F.softmax(logits_std_bs, dim=-1).sum(dim=1)  # (B, Es)
+        alpha = self._ghost_alpha(doc_probs)  # (B, Es)
+        ghost_logit = torch.einsum("be,bse->bs", alpha, logits_std_bs).reshape(-1)  # (N,)
+
+        # Renormalized standard softmax: denominator includes the ghost (stable).
+        lse_std = torch.logsumexp(logits_std, dim=-1)  # (N,)
+        lse_aug = torch.logaddexp(lse_std, ghost_logit)  # (N,)
+        scores_std = torch.exp(logits_std - lse_aug[:, None])  # (N, Es) shrunk
+        ghost_gate = torch.exp(ghost_logit - lse_aug)  # (N,)
+
+        # Standard top-k (renormalized) + shared experts (weight 1.0 for a single shared expert).
+        rw_std, sel_std = torch.topk(scores_std, self.top_k - self.num_shared_experts, dim=-1)
+        rw_shared = F.softmax(logits_shared, dim=-1)
+        rw_shared, sel_shared = torch.topk(rw_shared, self.num_shared_experts, dim=-1)
+        sel_shared = sel_shared + Es
+        routing_weights = torch.cat([rw_std, rw_shared], dim=1).to(x.dtype)
+        selected_experts = torch.cat([sel_std, sel_shared], dim=1)
+
+        final = torch.zeros((B * S, H), dtype=x.dtype, device=x.device)
+        expert_mask = F.one_hot(selected_experts, num_classes=self.num_experts).permute(2, 1, 0)
+        for expert_idx in range(self.num_experts):
+            idx, top_x = torch.where(expert_mask[expert_idx])
+            cur = x[None, top_x].reshape(-1, H)
+            out = self.experts[expert_idx](cur) * routing_weights[top_x, idx, None]
+            final.index_add_(0, top_x, out.to(x.dtype))
+
+        # Ghost contribution: per-sequence blended MLP, gated by its renormalized routing share.
+        ghost_out = self._ghost_mlp(hidden_states, alpha, Es).reshape(B * S, H)
+        final = final + ghost_gate[:, None].to(x.dtype) * ghost_out.to(x.dtype)
+        return final.reshape(B, S, H), router_logits
+
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        if self.ghost_extend_eval:
+            return self._forward_with_ghost(hidden_states)
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         hidden_states = hidden_states.view(-1, hidden_dim)
         # router_logits: (batch * sequence_length, n_experts)
