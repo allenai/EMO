@@ -268,8 +268,44 @@ adds <code>gate * ghost_out</code> to the output.</p>''')}
 """
 
 
+def build_mc9_table(base: Path) -> str:
+    p = base / "mc9_results.json"
+    if not p.is_file():
+        return ""
+    import json as _json
+
+    d = _json.loads(p.read_text())
+    tasks, cols = d["tasks"], d["columns"]
+    off = next((c for c in cols if c["mode"] == "standard" and "ghost-trained" in c["label"]), None)
+    on = next((c for c in cols if c["mode"] == "ghost"), None)
+    headers = ["task"] + [c["label"] for c in cols] + ["&Delta; ghost (on&minus;off)"]
+    rows = []
+    for t in tasks:
+        r = [t]
+        for c in cols:
+            v = c["scores"].get(t)
+            r.append(f"{v:.3f}" if v is not None else "&mdash;")
+        if off and on and off["scores"].get(t) is not None and on["scores"].get(t) is not None:
+            r.append(f"{on['scores'][t] - off['scores'][t]:+.3f}")
+        else:
+            r.append("&mdash;")
+        rows.append(tuple(r))
+    avg = ["MC9 avg"] + [
+        (f"{c['avg']:.3f} (n={c['n']})" if c["avg"] is not None else "&mdash;") for c in cols
+    ]
+    if off and on:
+        common = [t for t in tasks if off["scores"].get(t) is not None and on["scores"].get(t) is not None]
+        davg = sum(on["scores"][t] - off["scores"][t] for t in common) / len(common) if common else None
+        avg.append(f"{davg:+.3f}" if davg is not None else "&mdash;")
+    else:
+        avg.append("&mdash;")
+    rows.append(tuple(avg))
+    return table(headers, rows)
+
+
 def build_sweep(base: Path) -> str:
     run_links = build_run_links(base)
+    mc9 = build_mc9_table(base)
     loss_charts = build_chart_blocks(
         base, ["ce", "grad_norm", "lb", "unique_experts", "hellaswag", "arc"]
     )
@@ -328,6 +364,23 @@ aggressive coupling and move on.</li>
 </ul>''')}
 
 {card("results", "Configs", runs)}
+
+{card("results", "MC9 downstream eval (rc) &mdash; standard vs ghost", '''
+<p>Does the ghost-trained model still work <em>without</em> the ghost it trained with, and
+does turning the ghost on at eval shift its behavior? MC9 with the OLMES rank-classification
+(rc) metric &mdash; the mc letter-picking variant scores these base models near chance, so it is
+not used. The ghost-ON arm uses pool = ALL experts (no document-pool masking), per the eval
+design.</p>''' + mc9 + '''
+<p><strong>Reading it:</strong> the ghost-trained model in <strong>standard (ghost-off)</strong>
+mode is healthy and well above chance (MC9 0.57) &mdash; it is <strong>not</strong> broken without
+the ghost. The clean isolation of the ghost is <strong>off vs on</strong> on the same model:
+turning the ghost on at eval moves MC9 by only ~&minus;0.02 on average (mixed by task &mdash;
+boolq/openbookqa/arc_challenge down, arc_easy/socialiqa/hellaswag up). So there is <strong>no
+large distribution shift</strong>, with at most a mild net cost.</p>
+<p class="note">The no-ghost baseline trained to 130B vs the ghost run's 50B, so most of the
+baseline gap is the token budget, not the ghost &mdash; treat it as a loose reference, not a
+controlled comparison. Config #1 (usage) only so far; preliminary (probe, not the eventual
+&ldquo;permanently add an expert&rdquo; protocol).</p>''')}
 
 {card("results", "Training &amp; eval curves (interactive)", '''
 <p>All runs share the identical recipe &mdash; the no-ghost reference is WandB
