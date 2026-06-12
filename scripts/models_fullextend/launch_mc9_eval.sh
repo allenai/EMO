@@ -60,34 +60,31 @@ launch_one() {
 
   echo ">>> ${name} | ${mode} | ${task}  ->  ${out}"
   if [ "$DRY_RUN" = "1" ]; then
+    echo "    model: ${hf_path}"
     echo "    model-args: ${model_args}"
     return
   fi
 
-  gantry run \
+  # Launch via olmo_core.launch.beaker (workers git-clone from origin, so the huge
+  # untracked checkpoint tree is never uploaded). --no-torchrun: launch_eval manages
+  # its own GPUs. --no-follow: fire-and-forget. setup_eval_env installs oe-eval in the
+  # worker before the eval runs.
+  python -m olmo_core.launch.beaker \
     --name "$job" \
-    --yes \
-    --allow-dirty \
-    --weka oe-training-default:/weka/oe-training-default \
-    --install "bash src/scripts/eval/setup_eval_env_olmoe-replicate.sh;" \
-    --budget ai2/oe-other \
-    --workspace ai2/flex2 \
-    --cluster "$CLUSTER" \
-    --priority urgent \
     --gpus "$GPUS" \
-    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
-    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
-    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
-    -- \
-    bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
-        --model ${hf_path} \
-        --model-type hf \
-        --task ${task} \
-        --limit ${LIMIT} \
-        --output-dir ${out} \
-        --batch-size 4 \
-        --gpus ${GPUS} \
-        --model-args ${model_args}"
+    --nodes 1 \
+    --weka=oe-training-default \
+    --shared-filesystem \
+    --workspace ai2/flex2 \
+    --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
+    --cluster "$CLUSTER" \
+    --preemptible \
+    --allow-dirty \
+    --priority urgent \
+    --no-follow \
+    --no-torchrun \
+    --env-secret "GITHUB_TOKEN=RYAN_GITHUB_TOKEN" "WANDB_API_KEY=RYAN_WANDB_API_KEY" "BEAKER_TOKEN=RYAN_BEAKER_TOKEN" "AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY" "HF_TOKEN=RYAN_HF_TOKEN" \
+    -- bash -c "bash src/scripts/eval/setup_eval_env_olmoe-replicate.sh && PYTHONPATH=. python -u src/scripts/eval/launch_eval.py --model ${hf_path} --model-type hf --task ${task} --limit ${LIMIT} --output-dir ${out} --batch-size 4 --gpus ${GPUS} --model-args ${model_args}"
 }
 
 n=0

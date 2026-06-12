@@ -94,3 +94,6 @@ plotting_env/
 extension_evals_hf_0426
 AI2_Colors.pdf
 paper.pdf
+# HF/OLMo-core checkpoints written into the repo via the weka mapping (never track)
+/models_fullextend/
+.wrangler/
