@@ -33,7 +33,7 @@ must be discovered functionally (see `analysis_4`), never by index.
 ### Specialization analysis
 
 The `analysis_N_` prefix encodes dependency order: analysis 1 produces the
-embeddings that 2–4 consume; 4 also reads 3's profiles. Each wrapper pins the
+embeddings that 2–5 consume; 4 also reads 3's profiles. Each wrapper pins the
 four models and calls a generic tool (from `scripts/clustering/` or
 `src/scripts/clustering/`); all model-agnostic logic lives in those tools.
 
@@ -55,8 +55,14 @@ four models and calls a generic tool (from `scripts/clustering/` or
    similarity matrices, Hungarian matching, splitting / redundancy / novelty
    statistics for consecutive pairs + 32↔128. Wraps
    `src/scripts/clustering/match_experts.py`.
-5. `build_report.py` — assembles the figures + summary JSONs from analyses
-   1–4 into a single self-contained tabbed HTML report (one tab per analysis:
+5. `analysis_5_cluster_attribution.sh` — are the k=32 document clusters
+   (the published doc_probs clustering recipe) driven by a few individual
+   (layer, expert) dims or by the broad activation pattern? Signature
+   concentration, single-dim AUC, and drop/keep re-clustering ablations with
+   matched random controls. Wraps
+   `src/scripts/clustering/cluster_expert_attribution.py`.
+6. `build_report.py` — assembles the figures + summary JSONs from analyses
+   1–5 into a single self-contained tabbed HTML report (one tab per analysis:
    goal / method / results, all images base64-embedded):
    `python scripts/models_sizescaling/build_report.py` →
    `claude_outputs/models_sizescaling/report.html`.
@@ -75,6 +81,7 @@ claude_outputs/models_sizescaling/weborganizer/<run>/ # analysis 1 (+ profiles f
 claude_outputs/models_sizescaling/trends/             # analysis 2
 claude_outputs/models_sizescaling/profiles/           # analysis 3 plots
 claude_outputs/models_sizescaling/matching/           # analysis 4
+claude_outputs/models_sizescaling/expert_attribution/ # analysis 5
 claude_outputs/models_sizescaling/report.html         # build_report.py
 ```
 

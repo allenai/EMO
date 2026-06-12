@@ -112,6 +112,9 @@ effectively use, as a number and as a fraction of the pool?</li>
 topic-specialized as the pool grows?</li>
 <li><strong>Expert matching</strong> &mdash; match experts across models by their
 usage fingerprints: splitting vs redundancy vs novelty.</li>
+<li><strong>Cluster attribution</strong> &mdash; are the semantically meaningful
+document clusters (k-means on router probs) driven by a few individual experts
+or by the broad activation pattern?</li>
 </ol>''')}
 
 {card("results", "Headline findings", '''
@@ -131,6 +134,13 @@ and only 0.4&ndash;3.5% of larger-model experts are novel.</li>
 <li><strong>Mildly rising redundancy</strong> &mdash; within-model nearest-neighbor
 similarity creeps up (0.56 &rarr; 0.61) with pool size, consistent with EMO's
 prunability.</li>
+<li><strong>Clusters are pattern-driven, with experts as redundant markers</strong>
+&mdash; the document clusters are not caused by particular experts: each cluster's
+signature is spread over hundreds of (layer, expert) dims, and deleting its
+strongest dims still re-forms an equally topic-aligned clustering. Yet single
+near-perfect marker experts exist for every cluster (AUC ~0.99), and ~32 dims
+suffice to nearly recover the structure &mdash; the information is massively
+redundant (Analysis 5).</li>
 </ul>'''
 )}
 """
@@ -370,6 +380,137 @@ consistent with EMO's tolerance to expert pruning.</p>'''
 """
 
 
+def _attr_summary(base: Path, run: str) -> dict:
+    path = base / "expert_attribution" / run / "attribution_summary.json"
+    return json.loads(path.read_text()) if path.is_file() else {}
+
+
+def _attr_ablation(s: dict, kind: str, m: int, key: str):
+    for r in s.get("ablations", []):
+        if r["kind"] == kind and r["m"] == m:
+            return r[key]
+    return None
+
+
+def build_attribution(base: Path) -> str:
+    at = base / "expert_attribution"
+
+    overview_rows = []
+    ablation_rows = []
+    for run, lbl, _ in MODELS:
+        s = _attr_summary(base, run)
+        if not s:
+            continue
+        c = s["concentration_mean"]
+        overview_rows.append((
+            lbl,
+            s["n_dims"],
+            f"{100*c['top1_mass']:.1f}%",
+            f"{100*c['top5_mass']:.1f}%",
+            f"{100*c['top32_mass']:.1f}%",
+            f"{s['effective_dims_median']:.0f} ({100*s['effective_dims_median']/s['n_dims']:.0f}%)",
+            f"{s['best_single_dim_auc']['median']:.3f}",
+            f"{s['full_pattern_auc_median']:.3f}",
+        ))
+        ablation_rows.append((
+            lbl,
+            f"{_attr_ablation(s, 'baseline', 0, 'ari_vs_original'):.2f}",
+            f"{_attr_ablation(s, 'drop_top', 16, 'ari_vs_original'):.2f} / "
+            f"{_attr_ablation(s, 'drop_random', 16, 'ari_vs_original'):.2f}",
+            f"{_attr_ablation(s, 'baseline', 0, 'nmi_vs_topics'):.2f}",
+            f"{_attr_ablation(s, 'drop_top', 16, 'nmi_vs_topics'):.2f} / "
+            f"{_attr_ablation(s, 'drop_random', 16, 'nmi_vs_topics'):.2f}",
+            f"{_attr_ablation(s, 'keep_top', 1, 'nmi_vs_topics'):.2f}",
+        ))
+
+    featured_run, featured_lbl = MODELS[-1][0], MODELS[-1][1]
+    other_details = []
+    for run, lbl, _ in MODELS[:-1]:
+        d = at / run
+        other_details.append(details(
+            f"{lbl} figures",
+            fig_row(img_tag(d / "ablation_curves.png", f"{lbl}: drop/keep ablation curves"),
+                    img_tag(d / "single_dim_vs_full_auc.png", f"{lbl}: single-dim vs full-pattern AUC"))
+            + fig_row(img_tag(d / "signature_concentration.png", f"{lbl}: signature concentration"))))
+
+    return f"""
+{card("goal", "Goal", '''<p>The published clustering result shows that k-means on
+router-probability embeddings yields semantically meaningful document clusters.
+<strong>Did each cluster form because of a few individual, particular experts, or
+because of the general expert-activation pattern?</strong> All tests run in the raw
+(layer&nbsp;&times;&nbsp;expert) probability space, where every dimension is one
+expert at one layer, on the same k=32 spherical k-means clustering recipe as the
+published runs (<code>doc_probs</code>, mean-center &rarr; PCA 95% &rarr; L2).</p>''')}
+
+{card("method", "Method", '''<p>Three complementary tests per model:</p>
+<ol>
+<li><strong>Signature concentration</strong> (descriptive) &mdash; per cluster, take the
+centroid's deviation from the global mean and ask how much of its |mass| sits in the
+top-m (layer, expert) dims. Few dims dominating &rArr; individual experts.</li>
+<li><strong>Single-dim separability</strong> (markers) &mdash; for every cluster, the best
+single dim's one-vs-rest AUC (rank-based, counting under-activation markers too),
+vs the full-pattern baseline (cosine similarity to the cluster centroid).</li>
+<li><strong>Drop / keep ablations</strong> (causal) &mdash; remove the union of every
+cluster's top-m |deviation| dims, re-run the <em>entire</em> pipeline
+(PCA &rarr; L2 &rarr; spherical k-means), and compare the new clustering to the
+original (ARI) and to the 24 weborganizer topic labels (NMI). Matched random-dim
+drops calibrate re-run instability; the converse keep-only-top-m run tests
+sufficiency.</li>
+</ol>
+<p class="note">Calibration caveat: re-running k-means after <em>any</em>
+perturbation lands at ARI ~0.6&ndash;0.75 (see the random-drop control), because the
+solution is only marginally stable &mdash; for the 32e model even float-level noise
+flips it to ARI 0.62. ARI must therefore be read against the random-control floor,
+not against 1.0; NMI vs topics is the cleaner external anchor.</p>''')}
+
+{card("results", "Results", table(
+        ["Model", "Dims (layers &times; experts)", "Top-1 dim share of signature",
+         "Top-5", "Top-32", "Effective dims (median)",
+         "Best single-dim AUC (median)", "Full-pattern AUC"], overview_rows)
++ table(
+        ["Model", "Rerun baseline ARI", "ARI after drop top-16/cluster (vs random)",
+         "NMI topics: baseline", "NMI topics: drop top-16 (vs random)",
+         "NMI topics: keep ONLY top-1/cluster (~32 dims)"], ablation_rows) + '''
+<p><strong>Answer: the clusters are carried by the broad activation pattern, with
+individual experts as redundant markers &mdash; not the cause.</strong></p>
+<ul>
+<li><strong>Signatures are highly distributed</strong> &mdash; a cluster's single
+strongest dim carries only ~1.4&ndash;2.1% of its deviation mass, the top 32 dims
+only ~20&ndash;29%, and the effective dimensionality is roughly <em>half the whole
+space</em> (e.g. ~1,038 of 2,032 dims at 128e).</li>
+<li><strong>Yet near-perfect marker experts exist</strong> &mdash; every cluster has
+at least one single (layer, expert) dim with one-vs-rest AUC ~0.98&ndash;0.99,
+barely below the full-pattern 0.996. Individual experts are excellent
+<em>identifiers</em> of each cluster.</li>
+<li><strong>But they are not necessary</strong> &mdash; deleting every cluster's
+top-16 dims (~460 dims at 128e) hurts cluster identity more than random deletions
+(ARI 0.39 vs 0.67) yet the re-formed clustering is <em>still almost as
+topic-aligned</em> (NMI 0.40 vs 0.45 baseline): remove the markers and an
+equivalent semantic organization re-emerges from the remaining pattern.</li>
+<li><strong>And a few markers are nearly sufficient</strong> &mdash; keeping ONLY each
+cluster's single top dim (~32 of 2,032 dims, 1.6%) already recovers NMI-vs-topics
+0.41 of the 0.45 baseline; ~240 dims fully match it.</li>
+<li><strong>Stable across pool sizes</strong> &mdash; the same picture holds at 32e,
+64e, 96e and 128e; signatures spread slightly wider as the pool grows (top-5 mass
+8.4% &rarr; 5.5%).</li>
+</ul>
+<p>In short: cluster information in the router space is <em>massively
+redundant</em>. A handful of expert dims would suffice to reconstruct the clusters,
+and no handful is load-bearing &mdash; the semantic structure lives in the
+correlated activation pattern of hundreds of experts simultaneously.</p>'''
++ f"<h4>Featured: {featured_lbl}</h4>"
++ fig_row(
+    img_tag(at / featured_run / "ablation_curves.png",
+            f"{featured_lbl}: drop/keep ablations. Red (drop top-m) falls below gray (drop random) in ARI, but NMI-vs-topics (right) barely moves; green (keep only top-m) climbs to baseline with ~240 dims"),
+    img_tag(at / featured_run / "single_dim_vs_full_auc.png",
+            f"{featured_lbl}: every cluster has a single (layer, expert) dim with AUC ~0.96-1.0 (red), nearly matching the full pattern (blue)"))
++ fig_row(
+    img_tag(at / featured_run / "signature_concentration.png",
+            f"{featured_lbl}: even each cluster's top-32 dims carry only ~10-34% of its centroid-deviation mass"))
++ "<h4>Other models</h4>" + "".join(other_details))}
+"""
+
+
 # --------------------------------------------------------------------------
 # Page assembly
 # --------------------------------------------------------------------------
@@ -465,6 +606,7 @@ def main():
         ("trends", "2 · Usage trends", build_trends(base)),
         ("profiles", "3 · Expert profiles", build_profiles(base)),
         ("matching", "4 · Expert matching", build_matching(base)),
+        ("attribution", "5 · Cluster attribution", build_attribution(base)),
     ]
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
     sections = "".join(f'<section class="tab" id="{tid}">{body}</section>'
