@@ -14,6 +14,8 @@ Usage:
 import argparse
 from pathlib import Path
 
+VENDOR = Path(__file__).parent / "vendor"
+
 # --------------------------------------------------------------------------
 # HTML helpers (kept in sync with scripts/models_sizescaling/build_report.py)
 # --------------------------------------------------------------------------
@@ -33,6 +35,60 @@ def table(headers: list, rows: list) -> str:
         "<tr>" + "".join(f"<td>{c}</td>" for c in row) + "</tr>" for row in rows
     )
     return f"<table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
+
+
+# uPlot chart init — plain string (braces are not f-string), data injected via replace.
+# Exposes window.ceResize() so the tabbed page can resize the chart when its tab opens.
+_CE_CHART_JS = r"""
+<script>
+(function(){
+  const D = __CE_DATA__;
+  const palette = ["#64748b","#2563eb","#7c3aed","#059669","#dc2626","#d97706"];
+  const el = document.getElementById("ce-chart");
+  const xs = D.x;
+  const data = [xs].concat(D.series.map(s => s.y));
+  let plot = null, logY = false;
+  function width(){ return (el && el.clientWidth) ? el.clientWidth : 900; }
+  function build(){
+    const series = [{ value: (u,v) => v==null ? "--" : v }].concat(
+      D.series.map((s,i) => ({
+        label: s.label, stroke: palette[i % palette.length], width: 1.6,
+        spanGaps: false, value: (u,v) => v==null ? "--" : v.toFixed(4),
+      })));
+    const opts = {
+      width: width(), height: 440,
+      scales: { x: { time:false }, y: { distr: logY ? 3 : 1 } },
+      cursor: { drag: { x:true, y:true, uni:10 } },
+      axes: [
+        { label: "step", values: (u,vals) => vals.map(v => v>=1000 ? (v/1000)+"k" : v) },
+        { label: "train/CE loss" },
+      ],
+      series: series,
+    };
+    if (plot) plot.destroy();
+    plot = new uPlot(opts, data, el);
+  }
+  window.ceToggleLog = function(){ logY = !logY; build(); };
+  window.ceResize = function(){ if (plot) plot.setSize({ width: width(), height: 440 }); };
+  build();
+  window.addEventListener("resize", window.ceResize);
+})();
+</script>
+"""
+
+
+def build_ce_chart(base: Path) -> str:
+    p = base / "ce_curves.json"
+    if not p.is_file():
+        return ""
+    js = _CE_CHART_JS.replace("__CE_DATA__", p.read_text())
+    return (
+        '<div class="chart-controls">'
+        '<button onclick="ceToggleLog()">toggle log-y</button>'
+        '<span class="note">drag to zoom (x &amp; y) &middot; double-click to reset '
+        '&middot; click a legend label to toggle a run &middot; hover for values</span>'
+        '</div><div id="ce-chart"></div>' + js
+    )
 
 
 # --------------------------------------------------------------------------
@@ -140,7 +196,8 @@ adds <code>gate * ghost_out</code> to the output.</p>''')}
 """
 
 
-def build_sweep() -> str:
+def build_sweep(base: Path) -> str:
+    chart = build_ce_chart(base)
     fixed = table(
         ["Held fixed", "Value"],
         [
@@ -195,13 +252,14 @@ aggressive coupling and move on.</li>
 
 {card("results", "Configs", runs)}
 
-{card("results", "Config #1 vs no-ghost baseline (CE loss)", '''
+{card("results", "CE loss vs no-ghost baseline", '''
 <p>The apples-to-apples reference is the <strong>identical EMO randpool recipe
 without the ghost</strong> (128 experts, 1 shared, pool 8&ndash;128 / eval 32,
 lr 4e-3, lb 1e-1), from a prior project &mdash; WandB <code>olmoe-modular</code> /
 <code>twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301</code>
-(final CE 2.448 at the full 130B). Compared step-for-step up to config #1's 50B
-hard-stop:</p>''' + cmp + '''
+(final CE 2.448 at the full 130B). Ghost configs hard-stop at 50B (step 11,921);
+the baseline runs to 130B.</p>''' + chart + '''
+<p style="margin-top:14px">Step-aligned values up to config #1's 50B hard-stop:</p>''' + cmp + '''
 <p>The two curves are <strong>statistically indistinguishable</strong> (mean gap
 &asymp; &minus;0.005 over the run), with the ghost a touch ahead by 50B
 (&minus;0.034). Training with a perpetually-simulated new expert costs nothing in
@@ -250,6 +308,12 @@ pre { background:#0f172a; color:#e2e8f0; padding:12px 14px; border-radius:6px; o
 pre code { background:transparent; padding:0; color:inherit; }
 code { background:#eef2f7; padding:1px 5px; border-radius:4px; font-size:0.9em; }
 h4 { margin:18px 0 4px; }
+#ce-chart { width:100%; }
+.chart-controls { display:flex; align-items:center; gap:12px; margin:8px 0 4px; }
+.chart-controls button { border:1px solid var(--line); background:#fff; border-radius:6px;
+                         padding:5px 10px; font-size:13px; cursor:pointer; }
+.chart-controls button:hover { background:#f1f5f9; }
+.u-legend { font-size:12.5px; }
 """
 
 JS = """
@@ -257,6 +321,7 @@ function show(id) {
   document.querySelectorAll('section.tab').forEach(s => s.classList.toggle('active', s.id === id));
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.target === id));
   history.replaceState(null, '', '#' + id);
+  if (window.ceResize) window.ceResize();
 }
 document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => show(b.dataset.target)));
 show(location.hash && document.getElementById(location.hash.slice(1)) ? location.hash.slice(1) : 'overview');
@@ -268,11 +333,16 @@ def main():
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args()
     out = args.output or Path("claude_outputs/models_fullextend/report.html")
+    base = out.parent
+
+    # Inline uPlot (self-contained; no external scripts) when present.
+    uplot_css = (VENDOR / "uPlot.min.css").read_text() if (VENDOR / "uPlot.min.css").is_file() else ""
+    uplot_js = (VENDOR / "uPlot.iife.min.js").read_text() if (VENDOR / "uPlot.iife.min.js").is_file() else ""
 
     tabs = [
         ("overview", "Overview", build_overview()),
         ("method", "Method", build_method()),
-        ("sweep", "Sweep", build_sweep()),
+        ("sweep", "Sweep", build_sweep(base)),
     ]
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
     sections = "".join(
@@ -286,6 +356,8 @@ def main():
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EMO models_fullextend: ghost-expert extendability</title>
 <style>{CSS}</style>
+<style>{uplot_css}</style>
+<script>{uplot_js}</script>
 </head>
 <body>
 <header>
