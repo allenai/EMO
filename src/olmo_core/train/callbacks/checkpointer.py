@@ -73,6 +73,13 @@ class CheckpointerCallback(Callback):
     It can be useful to set this to a relatively frequent interval for preemptible jobs.
     """
 
+    keep_ephemeral: int = 1
+    """
+    How many of the most-recent ephemeral checkpoints to retain. Older ones are removed when a new
+    ephemeral checkpoint is saved. Defaults to ``1`` (previous behavior); set to ``2`` to keep a
+    fallback in case a crash corrupts the latest checkpoint mid-save.
+    """
+
     pre_train_checkpoint: Optional[bool] = None
     """
     Save a pretrain checkpoint. Defaults to ``True`` unless the trainer resumes from a checkpoint.
@@ -289,8 +296,8 @@ class CheckpointerCallback(Callback):
 
             self._ephemeral_checkpoints.append(self._save_checkpoint(ephemeral=True))
 
-            # Remove old ephemeral checkpoints.
-            while len(self._ephemeral_checkpoints) > 1:
+            # Remove old ephemeral checkpoints, keeping the most-recent `keep_ephemeral`.
+            while len(self._ephemeral_checkpoints) > max(1, self.keep_ephemeral):
                 oldest_path = self._ephemeral_checkpoints.pop(0)
                 self._schedule_for_removal(oldest_path)
 
