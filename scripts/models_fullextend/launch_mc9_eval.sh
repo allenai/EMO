@@ -70,7 +70,7 @@ launch_one() {
     --allow-dirty \
     --weka oe-training-default:/weka/oe-training-default \
     --install "bash src/scripts/eval/setup_eval_env_olmoe-replicate.sh;" \
-    --budget ai2/oe-base \
+    --budget ai2/oe-other \
     --workspace ai2/flex2 \
     --cluster "$CLUSTER" \
     --priority urgent \
