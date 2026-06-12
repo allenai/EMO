@@ -79,7 +79,6 @@ launch_one() {
     --beaker-image tylerr/olmo-core-tch280cu128-2025-11-25 \
     --cluster "$CLUSTER" \
     --preemptible \
-    --allow-dirty \
     --priority urgent \
     --no-follow \
     --no-torchrun \
