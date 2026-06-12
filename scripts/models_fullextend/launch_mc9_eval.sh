@@ -38,17 +38,20 @@ MODELS=(
   "no_ghost_baseline_130b|${WEKA_ROOT}/models_sizescaling/emo_1b14b_130b/step30995-hf|standard"
 )
 
-# MC9 (multiple-choice, OLMES "mc" formulation).
+# MC9, OLMES "rc" (rank-classification / cloze) formulation — the base-model-appropriate
+# metric. The "mc" (letter-picking) variant scores base models near chance, so use rc.
+# Override with TASK_SUFFIX=:mc::olmes if you specifically want the mc variant.
+TASK_SUFFIX="${TASK_SUFFIX:-:rc::olmes}"
 MC9_TASKS=(
-  arc_easy:mc::olmes
-  arc_challenge:mc::olmes
-  boolq:mc::olmes
-  csqa:mc::olmes
-  hellaswag:mc::olmes
-  openbookqa:mc::olmes
-  piqa:mc::olmes
-  socialiqa:mc::olmes
-  winogrande:mc::olmes
+  "arc_easy${TASK_SUFFIX}"
+  "arc_challenge${TASK_SUFFIX}"
+  "boolq${TASK_SUFFIX}"
+  "csqa${TASK_SUFFIX}"
+  "hellaswag${TASK_SUFFIX}"
+  "openbookqa${TASK_SUFFIX}"
+  "piqa${TASK_SUFFIX}"
+  "socialiqa${TASK_SUFFIX}"
+  "winogrande${TASK_SUFFIX}"
 )
 
 launch_one() {
