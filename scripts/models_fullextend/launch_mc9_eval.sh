@@ -1,0 +1,101 @@
+#!/bin/bash
+# MC9 evaluation for models_fullextend ghost models, launched on Beaker (one job per
+# model x mode x task). Two modes:
+#   standard  -- stock inference (ghost OFF): does the ghost-trained model still work
+#                without the ghost it trained with?
+#   ghost     -- ghost ON: each MoE layer adds a per-sequence ghost expert = blend of
+#                ALL standard experts (pool = all; no document-pool masking), via the
+#                EmoConfig.ghost_extend_eval toggle in the trust_remote_code modeling.
+# This is a preliminary distribution-shift probe (not finetuning, not selective).
+#
+# Prereq: HF checkpoints must already exist (run scripts/models_fullextend/convert_to_hf.sh).
+# Paths are the absolute weka paths the Beaker workers see; in this GPU session the same
+# bytes live at ~/EMO/... (= /weka/oe-training-default/ryanwang/EMO/...).
+#
+#   bash scripts/models_fullextend/launch_mc9_eval.sh            # launch
+#   DRY_RUN=1 bash scripts/models_fullextend/launch_mc9_eval.sh  # print commands only
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+
+WEKA_ROOT="/weka/oe-training-default/ryanwang/EMO"
+OUTPUT_ROOT="${OUTPUT_ROOT:-${WEKA_ROOT}/models_fullextend/mc9_evals}"
+CLUSTER="${CLUSTER:-ai2/jupiter}"
+LIMIT="${LIMIT:-1000}"
+GPUS="${GPUS:-2}"
+COEFF_MODE="${COEFF_MODE:-usage}"   # ghost blend mode at eval (matches config #1 training)
+DRY_RUN="${DRY_RUN:-0}"
+
+# "name|hf_path|modes"  (modes = space-separated subset of {standard, ghost})
+MODELS=(
+  "ghost_usage_50b|${WEKA_ROOT}/models_fullextend/emo_1b14b_130b_ghost_usage_always_detachF/step11921-hf|standard ghost"
+  "no_ghost_baseline_130b|${WEKA_ROOT}/models_sizescaling/emo_1b14b_130b/step30995-hf|standard"
+)
+
+# MC9 (multiple-choice, OLMES "mc" formulation).
+MC9_TASKS=(
+  arc_easy:mc::olmes
+  arc_challenge:mc::olmes
+  boolq:mc::olmes
+  csqa:mc::olmes
+  hellaswag:mc::olmes
+  openbookqa:mc::olmes
+  piqa:mc::olmes
+  socialiqa:mc::olmes
+  winogrande:mc::olmes
+)
+
+launch_one() {
+  local name="$1" hf_path="$2" mode="$3" task="$4"
+  local model_args job out
+  # The ghost toggle lives in the variant's config.json (see make_ghost_hf_variant.py),
+  # so --model-args only needs trust_remote_code for the custom modeling code.
+  model_args="trust_remote_code=true"
+  if [ "$mode" = "ghost" ]; then
+    hf_path="${hf_path}-ghost"
+  fi
+  out="${OUTPUT_ROOT}/${name}/${mode}/${task}"
+  local safe_task; safe_task=$(echo "$task" | sed 's/[^a-zA-Z0-9]//g' | cut -c1-14)
+  job="mc9-${name}-${mode}-${safe_task}"
+  job=$(echo "$job" | sed 's/[^a-zA-Z0-9_-]//g' | cut -c1-80)
+
+  echo ">>> ${name} | ${mode} | ${task}  ->  ${out}"
+  if [ "$DRY_RUN" = "1" ]; then
+    echo "    model-args: ${model_args}"
+    return
+  fi
+
+  gantry run \
+    --name "$job" \
+    --weka oe-training-default:/weka/oe-training-default \
+    --install "bash src/scripts/eval/setup_eval_env_olmoe-replicate.sh;" \
+    --budget ai2/oe-base \
+    --workspace ai2/flex2 \
+    --cluster "$CLUSTER" \
+    --priority urgent \
+    --gpus "$GPUS" \
+    --env-secret HF_TOKEN=RYAN_HF_TOKEN \
+    --env-secret AWS_ACCESS_KEY_ID=RYAN_AWS_ACCESS_KEY_ID \
+    --env-secret AWS_SECRET_ACCESS_KEY=RYAN_AWS_SECRET_ACCESS_KEY \
+    -- \
+    bash -c "PYTHONPATH=. python -u src/scripts/eval/launch_eval.py \
+        --model ${hf_path} \
+        --model-type hf \
+        --task ${task} \
+        --limit ${LIMIT} \
+        --output-dir ${out} \
+        --batch-size 4 \
+        --gpus ${GPUS} \
+        --model-args ${model_args}"
+}
+
+n=0
+for entry in "${MODELS[@]}"; do
+  IFS='|' read -r name hf_path modes <<< "$entry"
+  for mode in $modes; do
+    for task in "${MC9_TASKS[@]}"; do
+      launch_one "$name" "$hf_path" "$mode" "$task"
+      n=$((n+1))
+    done
+  done
+done
+echo "Total eval jobs: $n  (DRY_RUN=${DRY_RUN})"

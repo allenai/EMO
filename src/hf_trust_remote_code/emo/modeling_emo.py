@@ -276,9 +276,12 @@ class EmoSparseMoeBlock(nn.Module):
         self.experts = nn.ModuleList([EmoMLP(expert_config) for _ in range(self.num_experts)])
 
         # Ghost-expert eval (models_fullextend): see EmoConfig.ghost_extend_eval.
-        self.ghost_extend_eval = getattr(config, "ghost_extend_eval", False)
+        # Coerce to bool so it works whether set in config.json (bool) or passed via
+        # eval --model-args as the string "true"/"false".
+        _ge = getattr(config, "ghost_extend_eval", False)
+        self.ghost_extend_eval = (_ge is True) or (str(_ge).strip().lower() in ("true", "1", "yes"))
         self.ghost_extend_coeff_mode = getattr(config, "ghost_extend_coeff_mode", "usage")
-        self.ghost_extend_random_k = getattr(config, "ghost_extend_random_k", 8)
+        self.ghost_extend_random_k = int(getattr(config, "ghost_extend_random_k", 8))
 
     def _get_top_k_with_always_active(
         self, scores: torch.Tensor
