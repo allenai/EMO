@@ -34,6 +34,7 @@ RUNS = [
     ),
     ("ryanyxw/emo-extension", "emo_1b14b_130b_ghost_usage_always_detachF", "usage / always / detachF"),
     ("ryanyxw/emo-extension", "emo_1b14b_130b_ghost_uniform_always_detachF", "uniform / always / detachF"),
+    ("ryanyxw/emo-extension", "emo_1b14b_130b_ghost_random_always_detachF", "random / always / detachF"),
 ]
 
 # (chart key, wandb metric key, chart title, make_chart). make_chart=False metrics are

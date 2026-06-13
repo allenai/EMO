@@ -35,6 +35,7 @@ DRY_RUN="${DRY_RUN:-0}"
 # "name|hf_path|modes"  (modes = space-separated subset of {standard, ghost})
 MODELS=(
   "ghost_usage_50b|${WEKA_ROOT}/models_fullextend/emo_1b14b_130b_ghost_usage_always_detachF/step11921-hf|standard ghost"
+  "ghost_uniform_50b|${WEKA_ROOT}/models_fullextend/emo_1b14b_130b_ghost_uniform_always_detachF/step11921-hf|standard ghost"
   "no_ghost_baseline_130b|${WEKA_ROOT}/models_sizescaling/emo_1b14b_130b/step30995-hf|standard"
 )
 
@@ -67,6 +68,13 @@ launch_one() {
   local safe_task; safe_task=$(echo "$task" | sed 's/[^a-zA-Z0-9]//g' | cut -c1-14)
   job="mc9-${name}-${mode}-${safe_task}"
   job=$(echo "$job" | sed 's/[^a-zA-Z0-9_-]//g' | cut -c1-80)
+
+  # Idempotent: skip configs already scored (so re-running to add a new model doesn't
+  # re-submit the finished usage/baseline jobs). Set FORCE=1 to re-run regardless.
+  if [ "${FORCE:-0}" != "1" ] && [ -f "${out}/metrics.json" ]; then
+    echo "=== skip ${name} | ${mode} | ${task} (metrics.json exists) ==="
+    return
+  fi
 
   echo ">>> ${name} | ${mode} | ${task}  ->  ${out}"
   if [ "$DRY_RUN" = "1" ]; then

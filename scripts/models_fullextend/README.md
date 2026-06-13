@@ -147,7 +147,13 @@ hist = {int(x["_step"]): x["train/CE loss"] for x in r.scan_history(keys=["_step
   hard-stop, **final CE 2.654** vs the no-ghost baseline's **2.689** at the same
   step (mean gap over the run &asymp; &minus;0.005). The ghost adds no convergence
   penalty (slight edge at 50B; within run-to-run noise).
-- In progress: config #2 (`uniform / always / detachF`); remaining
-  coefficient-mode / `detach_coeff` configs chosen incrementally.
-- Not yet done: the downstream "actually add a new expert and measure
-  degradation" evaluation; the `topk` route.
+- **Config #2 (`uniform / always / detachF`) complete** &mdash; trained to the 50B
+  hard-stop, **final CE 2.690** vs the no-ghost baseline's **2.689** at the same
+  step (essentially identical, +0.001). A naive uniform pool-average ghost is
+  convergence-neutral; the usage-weighted blend's slight edge does not transfer
+  to the uniform mode.
+- **Config #3 (`random / always / detachF`) launched** &mdash; completes the
+  coefficient-mode sweep. `detach_coeff` is a no-op for `random` (alpha constant).
+- Not yet done: MC9 distribution-shift probe for config #2 (HF conversion + eval
+  in flight); the downstream "actually add a new expert and measure degradation"
+  evaluation; the `topk` route.
