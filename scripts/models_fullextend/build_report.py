@@ -196,12 +196,19 @@ tab for details.</p>''')}
 <p>Experiment in progress. An incremental hyperparameter sweep is running
 (16 nodes, hard-stopped at 50B tokens per config); see the <strong>Sweep</strong>
 tab for the live config list and the per-config CE-loss comparison.</p>
-<p><strong>First result:</strong> config #1 (<code>usage / always / detachF</code>)
-trained to 50B with <strong>final CE 2.654</strong>, versus the identical no-ghost
-EMO baseline's <strong>2.689</strong> at the same step &mdash; i.e. the ghost mechanism
-adds <strong>no convergence penalty</strong> (a slight edge at 50B, within
-run-to-run noise). The downstream &ldquo;add-an-expert&rdquo; evaluation that would actually
-test the extendability hypothesis is still to come.</p>''')}
+<p><strong>Results so far (both at the 50B hard-stop, vs the identical no-ghost EMO
+baseline's CE 2.689 at the same step):</strong></p>
+<ul>
+<li>Config #1 (<code>usage / always / detachF</code>) &mdash; <strong>final CE 2.654</strong>
+(&minus;0.035): a slight edge, within run-to-run noise.</li>
+<li>Config #2 (<code>uniform / always / detachF</code>) &mdash; <strong>final CE 2.690</strong>
+(+0.001): essentially identical to baseline. A naive uniform pool-average ghost is
+convergence-neutral; the usage-weighted blend's small edge does not transfer.</li>
+</ul>
+<p>Either way the ghost mechanism adds <strong>no convergence penalty</strong>. Config #3
+(<code>random / always / detachF</code>) is launched to complete the coefficient-mode
+sweep. The downstream &ldquo;add-an-expert&rdquo; evaluation that would actually test the
+extendability hypothesis is still to come.</p>''')}
 """
 
 
@@ -327,22 +334,23 @@ def build_sweep(base: Path) -> str:
         ["Run", "coeff_mode", "route", "detach_coeff", "Status", "Final CE @ 50B"],
         [
             ("emo_1b14b_130b_ghost_usage_always_detachF", "usage", "always", "false", "done", "2.654"),
-            ("emo_1b14b_130b_ghost_uniform_always_detachF", "uniform", "always", "false", "running", "&mdash;"),
-            ("&hellip; (random &times; detachF / detachT)", "&mdash;", "always", "&mdash;", "planned, chosen incrementally", "&mdash;"),
+            ("emo_1b14b_130b_ghost_uniform_always_detachF", "uniform", "always", "false", "done", "2.690"),
+            ("emo_1b14b_130b_ghost_random_always_detachF", "random", "always", "false (no-op)", "launched", "&mdash;"),
+            ("&hellip; (usage &times; detachT)", "usage", "always", "true", "planned, chosen incrementally", "&mdash;"),
         ],
     )
     # Step-aligned CE: ghost config #1 vs the identical no-ghost EMO baseline
     # (olmoe-modular / twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301).
     cmp = table(
-        ["Step", "Tokens", "Baseline (no ghost)", "Ghost (usage)", "Ghost &minus; baseline"],
+        ["Step", "Tokens", "Baseline", "Usage", "Uniform", "&Delta; usage", "&Delta; uniform"],
         [
-            ("250", "1.0B", "4.885", "4.872", "&minus;0.013"),
-            ("1000", "4.2B", "3.356", "3.378", "+0.022"),
-            ("2500", "10.5B", "2.977", "2.974", "&minus;0.003"),
-            ("5000", "21.0B", "2.788", "2.788", "&minus;0.000"),
-            ("7500", "31.5B", "2.738", "2.733", "&minus;0.004"),
-            ("10000", "41.9B", "2.723", "2.708", "&minus;0.015"),
-            ("11921", "50.0B", "2.689", "2.654", "&minus;0.034"),
+            ("250", "1.0B", "4.885", "4.872", "4.898", "&minus;0.013", "+0.014"),
+            ("1000", "4.2B", "3.356", "3.378", "3.377", "+0.022", "+0.020"),
+            ("2500", "10.5B", "2.977", "2.974", "2.975", "&minus;0.003", "&minus;0.002"),
+            ("5000", "21.0B", "2.788", "2.788", "2.789", "&minus;0.000", "+0.002"),
+            ("7500", "31.5B", "2.738", "2.733", "2.734", "&minus;0.004", "&minus;0.004"),
+            ("10000", "41.9B", "2.723", "2.708", "2.723", "&minus;0.015", "&minus;0.000"),
+            ("11921", "50.0B", "2.689", "2.654", "2.690", "&minus;0.034", "+0.001"),
         ],
     )
     return f"""
@@ -403,12 +411,14 @@ no-ghost baseline is from an older project that logs MFU on a different
 (non-comparable) convention (&asymp;165%), so only its TPS is used here.</p>''')}
 
 {card("results", "CE loss vs no-ghost baseline (exact values)", '''
-<p>Step-aligned CE up to config #1's 50B hard-stop:</p>''' + cmp + '''
-<p>The two curves are <strong>statistically indistinguishable</strong> (mean gap
-&asymp; &minus;0.005 over the run), with the ghost a touch ahead by 50B
-(&minus;0.034). Training with a perpetually-simulated new expert costs nothing in
-LM loss &mdash; the open question (next) is whether it makes <em>actually adding</em> a
-new expert cleaner.</p>
+<p>Step-aligned CE for both ghost configs vs the identical no-ghost baseline, up to
+the shared 50B-token hard-stop (&Delta; = ghost &minus; baseline; negative = ghost ahead):</p>''' + cmp + '''
+<p>Both ghost curves are <strong>statistically indistinguishable</strong> from the
+baseline. <strong>Usage</strong> ends a touch ahead at 50B (&minus;0.034; mean gap
+&asymp; &minus;0.007 over the run); <strong>uniform</strong> lands right on top of the
+baseline (+0.001; mean gap &asymp; +0.004). Training with a perpetually-simulated new
+expert costs nothing in LM loss, in either coefficient mode &mdash; the open question
+(next) is whether it makes <em>actually adding</em> a new expert cleaner.</p>
 <p class="note">The downstream &ldquo;instantiate a real new expert and measure
 degradation&rdquo; evaluation will be added as configs finish.</p>''')}
 {build_charts_script(base)}
