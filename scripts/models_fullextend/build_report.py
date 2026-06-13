@@ -329,7 +329,7 @@ def build_sweep(base: Path) -> str:
     fixed = table(
         ["Held fixed", "Value"],
         [
-            ("nodes", "16 (128 &times; H100)"),
+            ("nodes", "16 (128 &times; H100) for #1/#2; #3 runs at 8&sup2;"),
             ("ghost_extend_num", "1"),
             ("ghost_extend_random_k", "8"),
             ("ghost_extend_route", "always (topk not implemented)"),
@@ -343,7 +343,7 @@ def build_sweep(base: Path) -> str:
         [
             ("emo_1b14b_130b_ghost_usage_always_detachF", "usage", "always", "false", "done", "2.654"),
             ("emo_1b14b_130b_ghost_uniform_always_detachF", "uniform", "always", "false", "done", "2.690"),
-            ("emo_1b14b_130b_ghost_random_always_detachF", "random", "always", "false (no-op)", "launched", "&mdash;"),
+            ("emo_1b14b_130b_ghost_random_always_detachF", "random", "always", "false (no-op)", "launched (8 nodes&sup2;)", "&mdash;"),
             ("&hellip; (usage &times; detachT)", "usage", "always", "true", "planned, chosen incrementally", "&mdash;"),
         ],
     )
@@ -379,7 +379,11 @@ of the hypothesis.</li>
 aggressive coupling and move on.</li>
 </ul>''')}
 
-{card("results", "Configs", runs)}
+{card("results", "Configs", runs + '''
+<p class="note">&sup2; Config #3 runs on <strong>8 nodes</strong> (compute-limited) vs 16 for
+#1/#2. This router does <code>reduce-dp</code> batch-level load balancing, so halving the
+data-parallel world reduces the sequence population the LB statistics are reduced over &mdash;
+a weaker LB signal, so #3 is not a strict apples-to-apples coeff_mode comparison.</p>''')}
 
 {card("results", "MC9 downstream eval (rc) &mdash; standard vs ghost", '''
 <p>Does the ghost-trained model still work <em>without</em> the ghost it trained with, and

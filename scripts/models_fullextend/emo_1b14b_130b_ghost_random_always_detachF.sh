@@ -5,8 +5,12 @@
 #       Completes the coeff_mode sweep (usage / uniform / random). Each ghost is the
 #       uniform average over a random sample of random_k=8 document-pool experts
 #       (re-sampled per forward). detach_coeff is a no-op for random (alpha is constant).
-#     - 16 nodes, max_duration=130B, hard_stop=50B. 2-deep rolling checkpoints + final;
-#       pre_train_checkpoint disabled (skip the useless random-init step0).
+#     - 8 nodes (compute-limited; configs #1/#2 used 16). max_duration=130B, hard_stop=50B.
+#       2-deep rolling checkpoints + final; pre_train_checkpoint disabled (skip step0).
+#       CAVEAT vs #1/#2: this router does reduce-dp batch-level load balancing, so halving
+#       the DP world (64 vs 128 GPUs) reduces the sequence population the LB statistics are
+#       reduced over -- the LB signal is weaker, so this run is not a strict apples-to-apples
+#       coeff_mode comparison against the 16-node usage/uniform runs.
 ##############################################################
 source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
 
@@ -14,7 +18,7 @@ EXPERIMENT_NAME="models_fullextend"
 MODELS_DIR="/weka/oe-training-default/ryanwang/EMO/${EXPERIMENT_NAME}"
 DATA_ROOT="s3://ai2-llm"
 
-BEAKER_NODES=16
+BEAKER_NODES=8
 BEAKER_GPUS=8
 
 min_document_expert_pool=8
