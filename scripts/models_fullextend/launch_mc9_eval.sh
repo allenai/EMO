@@ -71,7 +71,11 @@ launch_one() {
 
   # Idempotent: skip configs already scored (so re-running to add a new model doesn't
   # re-submit the finished usage/baseline jobs). Set FORCE=1 to re-run regardless.
-  if [ "${FORCE:-0}" != "1" ] && [ -f "${out}/metrics.json" ]; then
+  # The output paths are the absolute weka paths the Beaker workers see; in this GPU
+  # session that storage is mounted at ${HOME} instead (so /weka/oe-training-default/
+  # ryanwang/... == ${HOME}/...). Map it back for the local existence check.
+  local local_out="${out/\/weka\/oe-training-default\/ryanwang/${HOME}}"
+  if [ "${FORCE:-0}" != "1" ] && [ -f "${local_out}/metrics.json" ]; then
     echo "=== skip ${name} | ${mode} | ${task} (metrics.json exists) ==="
     return
   fi
