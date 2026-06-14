@@ -36,6 +36,7 @@ DRY_RUN="${DRY_RUN:-0}"
 MODELS=(
   "ghost_usage_50b|${WEKA_ROOT}/models_fullextend/emo_1b14b_130b_ghost_usage_always_detachF/step11921-hf|standard ghost"
   "ghost_uniform_50b|${WEKA_ROOT}/models_fullextend/emo_1b14b_130b_ghost_uniform_always_detachF/step11921-hf|standard ghost"
+  "ghost_random_50b|${WEKA_ROOT}/models_fullextend/emo_1b14b_130b_ghost_random_always_detachF/step11921-hf|standard ghost"
   "no_ghost_baseline_130b|${WEKA_ROOT}/models_sizescaling/emo_1b14b_130b/step30995-hf|standard"
 )
 

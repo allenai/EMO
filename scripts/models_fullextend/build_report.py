@@ -193,21 +193,27 @@ back into the constituent experts and router rows. See the <strong>Method</stron
 tab for details.</p>''')}
 
 {card("results", "Status", '''
-<p>Experiment in progress. An incremental hyperparameter sweep is running
-(16 nodes, hard-stopped at 50B tokens per config); see the <strong>Sweep</strong>
-tab for the live config list and the per-config CE-loss comparison.</p>
-<p><strong>Results so far (both at the 50B hard-stop, vs the identical no-ghost EMO
-baseline's CE 2.689 at the same step):</strong></p>
+<p>The coefficient-mode sweep is <strong>complete</strong>: all three blend modes
+(<code>usage</code> / <code>uniform</code> / <code>random</code>) trained to the 50B-token
+hard stop. See the <strong>Sweep</strong> tab for the config list and the per-config
+CE-loss comparison.</p>
+<p><strong>Final CE at the 50B hard-stop, vs the identical no-ghost EMO baseline's
+CE 2.689 at the same step:</strong></p>
 <ul>
 <li>Config #1 (<code>usage / always / detachF</code>) &mdash; <strong>final CE 2.654</strong>
 (&minus;0.035): a slight edge, within run-to-run noise.</li>
 <li>Config #2 (<code>uniform / always / detachF</code>) &mdash; <strong>final CE 2.690</strong>
 (+0.001): essentially identical to baseline. A naive uniform pool-average ghost is
 convergence-neutral; the usage-weighted blend's small edge does not transfer.</li>
+<li>Config #3 (<code>random / always / detachF</code>) &mdash; <strong>final CE 2.690</strong>
+(+0.001): also convergence-neutral. Sampling <code>random_k</code> pool experts per ghost
+behaves like the uniform average at this budget.</li>
 </ul>
-<p>Either way the ghost mechanism adds <strong>no convergence penalty</strong>. Config #3
-(<code>random / always / detachF</code>) is launched to complete the coefficient-mode
-sweep. The downstream &ldquo;add-an-expert&rdquo; evaluation that would actually test the
+<p>Across all three modes the ghost mechanism adds <strong>no convergence penalty</strong>.
+<strong>Two no-ghost reference runs are now launched at matched 8-node / 64-GPU compute</strong>
+(<code>emo_1b14b_130b</code> and the standard top-k MoE <code>stdmoe_1b14b_130b</code>, both
+max_duration 130B / hard_stop 50B) to anchor the comparison at the same DP world as config #3.
+The downstream &ldquo;add-an-expert&rdquo; evaluation that would actually test the
 extendability hypothesis is still to come.</p>''')}
 """
 
@@ -343,22 +349,23 @@ def build_sweep(base: Path) -> str:
         [
             ("emo_1b14b_130b_ghost_usage_always_detachF", "usage", "always", "false", "done", "2.654"),
             ("emo_1b14b_130b_ghost_uniform_always_detachF", "uniform", "always", "false", "done", "2.690"),
-            ("emo_1b14b_130b_ghost_random_always_detachF", "random", "always", "false (no-op)", "launched (8 nodes&sup2;)", "&mdash;"),
-            ("&hellip; (usage &times; detachT)", "usage", "always", "true", "planned, chosen incrementally", "&mdash;"),
+            ("emo_1b14b_130b_ghost_random_always_detachF", "random", "always", "false (no-op)", "done (8 nodes&sup2;)", "2.690"),
+            ("emo_1b14b_130b (no-ghost EMO baseline)", "&mdash;", "&mdash;", "&mdash;", "launched (8 nodes&sup2;)", "&mdash;"),
+            ("stdmoe_1b14b_130b (standard top-k MoE)", "&mdash;", "&mdash;", "&mdash;", "launched (8 nodes&sup2;)", "&mdash;"),
         ],
     )
     # Step-aligned CE: ghost config #1 vs the identical no-ghost EMO baseline
     # (olmoe-modular / twolevelbatchlbreducedp512sharedexp1randpool-8-128eval32_1b14b_lr-4e-3_lb-1e-1_0301).
     cmp = table(
-        ["Step", "Tokens", "Baseline", "Usage", "Uniform", "&Delta; usage", "&Delta; uniform"],
+        ["Step", "Tokens", "Baseline", "Usage", "Uniform", "Random", "&Delta; usage", "&Delta; uniform", "&Delta; random"],
         [
-            ("250", "1.0B", "4.885", "4.872", "4.898", "&minus;0.013", "+0.014"),
-            ("1000", "4.2B", "3.356", "3.378", "3.377", "+0.022", "+0.020"),
-            ("2500", "10.5B", "2.977", "2.974", "2.975", "&minus;0.003", "&minus;0.002"),
-            ("5000", "21.0B", "2.788", "2.788", "2.789", "&minus;0.000", "+0.002"),
-            ("7500", "31.5B", "2.738", "2.733", "2.734", "&minus;0.004", "&minus;0.004"),
-            ("10000", "41.9B", "2.723", "2.708", "2.723", "&minus;0.015", "&minus;0.000"),
-            ("11921", "50.0B", "2.689", "2.654", "2.690", "&minus;0.034", "+0.001"),
+            ("250", "1.0B", "4.885", "4.872", "4.898", "4.926", "&minus;0.013", "+0.014", "+0.041"),
+            ("1000", "4.2B", "3.356", "3.378", "3.377", "3.375", "+0.022", "+0.020", "+0.019"),
+            ("2500", "10.5B", "2.977", "2.974", "2.975", "2.980", "&minus;0.003", "&minus;0.002", "+0.003"),
+            ("5000", "21.0B", "2.788", "2.788", "2.789", "2.790", "&minus;0.000", "+0.002", "+0.002"),
+            ("7500", "31.5B", "2.738", "2.733", "2.734", "2.736", "&minus;0.004", "&minus;0.004", "&minus;0.002"),
+            ("10000", "41.9B", "2.723", "2.708", "2.723", "2.723", "&minus;0.015", "&minus;0.000", "&minus;0.000"),
+            ("11921", "50.0B", "2.689", "2.654", "2.690", "2.690", "&minus;0.034", "+0.001", "+0.001"),
         ],
     )
     return f"""
@@ -380,10 +387,12 @@ aggressive coupling and move on.</li>
 </ul>''')}
 
 {card("results", "Configs", runs + '''
-<p class="note">&sup2; Config #3 runs on <strong>8 nodes</strong> (compute-limited) vs 16 for
-#1/#2. This router does <code>reduce-dp</code> batch-level load balancing, so halving the
-data-parallel world reduces the sequence population the LB statistics are reduced over &mdash;
-a weaker LB signal, so #3 is not a strict apples-to-apples coeff_mode comparison.</p>''')}
+<p class="note">&sup2; Config #3 and the two no-ghost reference runs train on <strong>8 nodes</strong>
+(compute-limited) vs 16 for #1/#2. The EMO router does <code>reduce-dp</code> batch-level load
+balancing, so halving the data-parallel world reduces the sequence population the LB statistics
+are reduced over &mdash; a weaker LB signal, so #3 is not a strict apples-to-apples coeff_mode
+comparison against #1/#2. The 8-node baselines are matched to #3's DP world precisely to
+anchor that comparison.</p>''')}
 
 {card("results", "MC9 downstream eval (rc) &mdash; standard vs ghost", '''
 <p>Does the ghost-trained model still work <em>without</em> the ghost it trained with, and

@@ -21,6 +21,8 @@ COLUMNS = [
     ("ghost_usage_50b", "ghost", "usage ghost-trained, ghost ON (50B)"),
     ("ghost_uniform_50b", "standard", "uniform ghost-trained, ghost OFF (50B)"),
     ("ghost_uniform_50b", "ghost", "uniform ghost-trained, ghost ON (50B)"),
+    ("ghost_random_50b", "standard", "random ghost-trained, ghost OFF (50B)"),
+    ("ghost_random_50b", "ghost", "random ghost-trained, ghost ON (50B)"),
 ]
 
 

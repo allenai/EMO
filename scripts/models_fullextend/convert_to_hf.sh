@@ -13,6 +13,7 @@ MODELS_DIR="${MODELS_DIR:-models_fullextend}"
 MODELS=(
     "${MODELS_DIR}/emo_1b14b_130b_ghost_usage_always_detachF/step11921|${MODELS_DIR}/emo_1b14b_130b_ghost_usage_always_detachF/step11921-hf"
     "${MODELS_DIR}/emo_1b14b_130b_ghost_uniform_always_detachF/step11921|${MODELS_DIR}/emo_1b14b_130b_ghost_uniform_always_detachF/step11921-hf"
+    "${MODELS_DIR}/emo_1b14b_130b_ghost_random_always_detachF/step11921|${MODELS_DIR}/emo_1b14b_130b_ghost_random_always_detachF/step11921-hf"
 )
 
 for PAIR in "${MODELS[@]}"; do
