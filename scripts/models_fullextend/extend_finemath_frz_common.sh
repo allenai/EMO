@@ -15,17 +15,20 @@
 # The hypothesis: a model pretrained with ghost experts absorbs the new expert better
 # (more activation, larger downstream gains, less forgetting) than one that wasn't.
 #
-# Usage:
-#   bash scripts/models_fullextend/extend_finemath_frz.sh <uniform|usage|random>
-#   MODE=beaker bash scripts/models_fullextend/extend_finemath_frz.sh uniform
+# This is the SHARED RECIPE -- NOT launched directly. Each ghost variant has its own entry
+# script that sets VARIANT and sources this file, so there is one launchable script per model:
+#   MODE=beaker bash scripts/models_fullextend/extend_finemath_frz_uniform.sh
+#   MODE=beaker bash scripts/models_fullextend/extend_finemath_frz_usage.sh
+#   MODE=beaker bash scripts/models_fullextend/extend_finemath_frz_random.sh
 set -euo pipefail
-source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
 
-VARIANT="${1:?usage: extend_finemath_frz.sh <uniform|usage|random>}"
+: "${VARIANT:?source via a per-model entry script (extend_finemath_frz_<variant>.sh) that sets VARIANT}"
 case "$VARIANT" in
     uniform|usage|random) ;;
     *) echo "VARIANT must be one of uniform|usage|random (got '$VARIANT')"; exit 1 ;;
 esac
+
+source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
 
 EXPERIMENT_NAME="models_fullextend"
 MODELS_DIR="/weka/oe-training-default/ryanwang/EMO/${EXPERIMENT_NAME}"

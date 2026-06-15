@@ -152,8 +152,9 @@ better at absorbing a brand-new, real expert added after training?** Pipeline:
    The new config sets `num_forced_experts=1` (force the new expert into every doc pool) and
    `num_new_experts=1` (enables the activation metric). Output: `step11921-plus1/` (model-only).
 
-2. **Continual-pretrain with everything but the new expert frozen** — `extend_finemath_frz.sh
-   <uniform|usage|random>` trains on FineMath (`mj_finemath4plus`, 10B tokens, lr 4e-4,
+2. **Continual-pretrain with everything but the new expert frozen** — one entry script per
+   model (`extend_finemath_frz_{uniform,usage,random}.sh`, sharing the recipe in
+   `extend_finemath_frz_common.sh`) trains on FineMath (`mj_finemath4plus`, 10B tokens, lr 4e-4,
    **WD 0.1**, lb 0, document pool sampled in [8, 128] / eval 32, matching the ghost
    pretraining recipe). The backbone (embeddings, attention, norms, **router**, lm_head) is
    hard-frozen via `--model.freeze_params`; the expert MLP tensor stays trainable but
