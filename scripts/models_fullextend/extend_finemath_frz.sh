@@ -31,11 +31,15 @@ EXPERIMENT_NAME="models_fullextend"
 MODELS_DIR="/weka/oe-training-default/ryanwang/EMO/${EXPERIMENT_NAME}"
 DATA_ROOT="s3://ai2-llm"
 
-# 10B-token continual-pretrain. Kept at 8 nodes to match the ghost pretraining runs: the
-# reduce-dp load-balancing is reduced across data-parallel groups, so the number of DP
-# groups (i.e. node count) affects training dynamics, not just throughput.
-BEAKER_NODES="${BEAKER_NODES:-8}"
-BEAKER_GPUS="${BEAKER_GPUS:-8}"
+# 10B-token continual-pretrain. Node count is scientifically FREE here: the only cross-DP
+# reduction in the randpool router (the reduce-dp batch-level LB stat, router lines ~518-519)
+# is gated by the LB-loss block, and we run with lb=0, so it contributes zero gradient; the
+# expert-pool routing decision itself is purely per-rank/local. With the global batch fixed in
+# config, 8 and 16 nodes give identical training dynamics -- pick by available compute.
+# NB: assign UNCONDITIONALLY (not `${BEAKER_NODES:-N}`). launch_common.sh, sourced above,
+# already sets BEAKER_NODES=16 at source-time, so a `:-` default here would silently no-op.
+BEAKER_NODES=16
+BEAKER_GPUS=8
 
 # Router / model geometry (matches the ghost recipe, now with one added expert).
 min_document_expert_pool=8
