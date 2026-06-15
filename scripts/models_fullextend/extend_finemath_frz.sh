@@ -31,9 +31,10 @@ EXPERIMENT_NAME="models_fullextend"
 MODELS_DIR="/weka/oe-training-default/ryanwang/EMO/${EXPERIMENT_NAME}"
 DATA_ROOT="s3://ai2-llm"
 
-# 10B-token continual-pretrain; modest node count (only one expert trains, but the full
-# forward still runs all experts). Override BEAKER_NODES to go faster.
-BEAKER_NODES="${BEAKER_NODES:-4}"
+# 10B-token continual-pretrain. Kept at 8 nodes to match the ghost pretraining runs: the
+# reduce-dp load-balancing is reduced across data-parallel groups, so the number of DP
+# groups (i.e. node count) affects training dynamics, not just throughput.
+BEAKER_NODES="${BEAKER_NODES:-8}"
 BEAKER_GPUS="${BEAKER_GPUS:-8}"
 
 # Router / model geometry (matches the ghost recipe, now with one added expert).
