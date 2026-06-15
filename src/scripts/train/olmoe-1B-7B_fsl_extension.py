@@ -86,6 +86,8 @@ from olmo_core.train.callbacks import (
     CometCallback,
     ConfigSaverCallback,
     DownstreamEvaluatorCallbackConfig,
+    FrozenExpertGradientMaskCallback,
+    FrozenWeightRestorerCallback,
     GPUMemoryMonitorCallback,
     ProfilerCallback,
     WandBCallback,
@@ -149,7 +151,11 @@ def train(opts, config: ExperimentConfig):
         log.info(
             f"Loading checkpoint from {config.load_path} since no checkpoints were found in the save folder..."
         )
-        trainer.load_checkpoint(config.load_path, load_trainer_state=config.load_trainer_state)
+        trainer.load_checkpoint(
+            config.load_path,
+            load_trainer_state=config.load_trainer_state,
+            load_optim_state=opts.load_optim_state,
+        )
 
     trainer.fit()
 
@@ -492,7 +498,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         max_sequence_length=SEQUENCE_LENGTH,
         optim=AdamWConfig(
             lr=opts.lr,
-            weight_decay=0.0,
+            weight_decay=opts.weight_decay,
             betas=(0.9, 0.95),
             group_overrides=[
                 OptimGroupOverride(params=["embeddings.weight"], opts=dict(weight_decay=0.0))
@@ -648,6 +654,44 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         )
         config.model.block_overrides = {0: dense_block, 1: dense_block}
 
+    # New-expert freezing (models_fullextend extendability eval). When enabled, the
+    # backbone (embeddings, attention, norms, router, lm_head) is hard-frozen via
+    # --model.freeze_params, but the expert MLP tensor stays trainable -- so we mask
+    # its gradient to update only the last `num_new_experts` non-shared experts (the
+    # ones added by add_expert_to_checkpoint.py), and restore the frozen rows each step
+    # to undo AdamW weight decay. Configured AFTER merge so num_experts/num_shared_experts
+    # reflect the CLI overrides (e.g. num_experts=129). See the experiment README.
+    if opts.freeze_new_expert:
+        assert isinstance(config.model.block, TransformerBlockConfig)
+        moe_cfg = config.model.block.feed_forward_moe
+        assert moe_cfg is not None
+        num_experts = moe_cfg.num_experts
+        num_shared = int(getattr(moe_cfg.router, "num_shared_experts", 0))
+        log.info(
+            f"freeze_new_expert: training only the last {opts.num_new_experts} non-shared "
+            f"expert(s) of {num_experts} (num_shared_experts={num_shared}); "
+            f"weight_decay={opts.weight_decay}"
+        )
+        # NOTE: with_callback returns a NEW TrainerConfig (it does not mutate in place).
+        config.trainer = config.trainer.with_callback(
+            "frozen_expert_grad_mask",
+            FrozenExpertGradientMaskCallback(
+                num_experts=num_experts,
+                num_experts_to_train=opts.num_new_experts,
+                num_shared_experts=num_shared,
+                layer_patterns=["experts"],
+            ),
+        ).with_callback(
+            "frozen_weight_restorer",
+            FrozenWeightRestorerCallback(
+                num_experts=num_experts,
+                num_experts_to_train=opts.num_new_experts,
+                num_shared_experts=num_shared,
+                layer_patterns=["experts"],
+                log_drift=True,
+            ),
+        )
+
     return config
 
 
@@ -691,6 +735,31 @@ def parser_args():
     parser.add_argument(
         "--lr", type=float, default=4e-4, help="Peak learning rate for CosWithWarmup."
     )
+    parser.add_argument(
+        "--weight-decay", type=float, default=0.0, help="AdamW weight decay (base recipe uses 0.1)."
+    )
+    parser.add_argument(
+        "--freeze-new-expert",
+        action="store_true",
+        help="Freeze everything except the last --num-new-experts non-shared expert MLP(s) "
+        "via gradient masking + frozen-weight restoration. Pair with "
+        "--model.freeze_params for the backbone (embeddings/attention/norms/router/lm_head).",
+    )
+    parser.add_argument(
+        "--num-new-experts",
+        type=int,
+        default=1,
+        help="Number of newly added experts (last N non-shared) to keep trainable when "
+        "--freeze-new-expert is set.",
+    )
+    parser.add_argument(
+        "--no-load-optim-state",
+        dest="load_optim_state",
+        action="store_false",
+        help="Do not load optimizer state from --load-path (use a fresh optimizer). Required "
+        "when the base checkpoint is model-only, e.g. the add_expert_to_checkpoint.py output.",
+    )
+    parser.set_defaults(load_optim_state=True)
     parser.add_argument(
         "--num-tokens",
         type=int,

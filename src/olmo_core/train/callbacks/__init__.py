@@ -15,6 +15,7 @@ from .evaluator_callback import (
     LMEvaluatorCallbackConfig,
 )
 from .frozen_expert_gradient_mask import FrozenExpertGradientMaskCallback
+from .frozen_weight_restorer import FrozenWeightRestorerCallback
 from .gap_monitor import GAPMonitorCallback
 from .garbage_collector import GarbageCollectorCallback
 from .gpu_memory_monitor import GPUMemoryMonitorCallback
@@ -45,6 +46,7 @@ __all__ = [
     "LMEvaluatorCallbackConfig",
     "DownstreamEvaluatorCallbackConfig",
     "FrozenExpertGradientMaskCallback",
+    "FrozenWeightRestorerCallback",
     "GAPMonitorCallback",
     "GarbageCollectorCallback",
     "GPUMemoryMonitorCallback",

@@ -643,6 +643,25 @@ class MoERouter(nn.Module):
                 ReduceType.mean,
             )
 
+        # New-expert activation (set only by routers that track added experts, e.g. the randpool
+        # router with num_new_experts>0). Fraction of tokens / documents per batch that route to
+        # the newly added expert(s), averaged over the tracked batches.
+        if getattr(self, "num_new_experts", 0) > 0 and self._num_batches_tracked > 0:
+            out["new expert token activation fraction"] = (
+                torch.tensor(
+                    self._new_expert_token_activation / self._num_batches_tracked,
+                    device=self.device,
+                ),
+                ReduceType.mean,
+            )
+            out["new expert document activation fraction"] = (
+                torch.tensor(
+                    self._new_expert_doc_activation / self._num_batches_tracked,
+                    device=self.device,
+                ),
+                ReduceType.mean,
+            )
+
         if reset:
             self.reset_metrics()
 
@@ -676,6 +695,10 @@ class MoERouter(nn.Module):
         self._router_expert_cond_token_entropy = 0.0
         self._router_expert_uncond_entropy = 0.0
         self._router_expert_uncond_lb_prob = 0.0
+
+        if hasattr(self, "_new_expert_token_activation"):
+            self._new_expert_token_activation = 0.0
+            self._new_expert_doc_activation = 0.0
 
     def forward(
         self,

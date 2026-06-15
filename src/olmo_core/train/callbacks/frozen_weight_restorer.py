@@ -10,8 +10,12 @@ from dataclasses import dataclass, field
 from typing import Any, ClassVar, Dict, List
 
 import torch
+from torch.distributed.tensor import DTensor, distribute_tensor
+
+from olmo_core.distributed.utils import get_local_tensor
 
 from .callback import Callback
+from .frozen_expert_gradient_mask import _create_expert_mask_1d
 
 log = logging.getLogger(__name__)
 
@@ -29,8 +33,12 @@ class FrozenWeightRestorerCallback(Callback):
     restores them after each optimizer step.
 
     :param num_experts: Total number of experts in the model.
-    :param num_experts_to_train: Number of experts to train (from the end).
-        The first (num_experts - num_experts_to_train) experts will be frozen.
+    :param num_experts_to_train: Number of experts to train (the last k non-shared
+        experts). All other experts (including the shared experts at the very end)
+        are frozen and restored each step.
+    :param num_shared_experts: Number of shared experts, which occupy the last
+        ``num_shared_experts`` indices and are always frozen. Default 0 reduces to
+        the original "freeze all but the last k experts" behavior.
     :param layer_patterns: List of parameter name patterns to match for freezing.
         Defaults to ["experts", "router"].
     :param restore_interval: How often to restore weights. Default 1 (every step).
@@ -42,71 +50,82 @@ class FrozenWeightRestorerCallback(Callback):
 
     num_experts: int = 128
     num_experts_to_train: int = 1
+    num_shared_experts: int = 0
     layer_patterns: List[str] = field(default_factory=lambda: ["experts", "router"])
     restore_interval: int = 1
     log_drift: bool = False
 
-    # Internal state (not serialized)
-    _frozen_weights: Dict[str, torch.Tensor] = field(default_factory=dict, repr=False)
+    # Internal state. Per matching param we keep a *local* (FSDP shard) trainable
+    # mask (1.0 = trainable row, 0.0 = frozen) and a *local* snapshot of the frozen
+    # rows (= local_weights * (1 - mask) at save time). Restore is the FSDP/compile-
+    # safe elementwise op  local <- local * mask + frozen_snapshot: trainable rows
+    # are kept, frozen rows are forced back to the snapshot.
+    _train_mask: Dict[str, torch.Tensor] = field(default_factory=dict, repr=False)
+    _frozen_snapshot: Dict[str, torch.Tensor] = field(default_factory=dict, repr=False)
     _initialized: bool = field(default=False, repr=False)
-
-    def _get_frozen_slice(self, param: torch.Tensor) -> slice:
-        """Get the slice for frozen portion of a parameter."""
-        num_frozen = self.num_experts - self.num_experts_to_train
-        expert_size = param.shape[0] // self.num_experts
-        return slice(0, expert_size * num_frozen)
 
     def _should_freeze(self, name: str) -> bool:
         """Check if a parameter should have partial freezing applied."""
         return any(pattern in name for pattern in self.layer_patterns)
 
+    def _build_local_mask(self, param: torch.Tensor) -> torch.Tensor:
+        """Local (FSDP-shard-aligned) float mask, 1.0 on trainable rows, broadcastable to param."""
+        full_shape = param.shape
+        full_mask = _create_expert_mask_1d(
+            size=full_shape[0],
+            num_experts=self.num_experts,
+            num_experts_to_train=self.num_experts_to_train,
+            dtype=param.dtype,
+            device="cpu",
+            num_shared_experts=self.num_shared_experts,
+        )
+        if len(full_shape) > 1:
+            full_mask = full_mask.view(-1, *([1] * (len(full_shape) - 1)))
+            full_mask = full_mask.expand(full_shape).contiguous()
+        if isinstance(param.data, DTensor):
+            local_dev = get_local_tensor(param.data).device
+            mask_dt = distribute_tensor(
+                full_mask.to(local_dev), param.data.device_mesh, param.data.placements
+            )
+            return get_local_tensor(mask_dt)
+        return full_mask.to(param.device)
+
     def _save_frozen_weights(self):
-        """Save the frozen portions of all matching parameters."""
-        self._frozen_weights.clear()
+        """Snapshot the frozen rows (local) of all matching parameters."""
+        self._train_mask.clear()
+        self._frozen_snapshot.clear()
 
         for name, param in self.trainer.train_module.model.named_parameters():
             if not self._should_freeze(name):
                 continue
-
-            frozen_slice = self._get_frozen_slice(param)
-            # Clone and detach to avoid keeping computation graph
-            # Use .cpu() to save GPU memory if needed (optional)
-            self._frozen_weights[name] = param.data[frozen_slice].clone()
+            mask = self._build_local_mask(param)
+            local = get_local_tensor(param.data)
+            self._train_mask[name] = mask
+            self._frozen_snapshot[name] = (local * (1.0 - mask)).clone()
 
         log.info(
-            f"FrozenWeightRestorer: Saved frozen weights for {len(self._frozen_weights)} parameters"
+            f"FrozenWeightRestorer: Saved frozen weights for {len(self._frozen_snapshot)} parameters"
         )
-        for name in list(self._frozen_weights.keys())[:3]:
-            frozen_slice = self._get_frozen_slice(self._frozen_weights[name])
-            log.info(f"  - {name}: shape {self._frozen_weights[name].shape}")
-        if len(self._frozen_weights) > 3:
-            log.info(f"  ... and {len(self._frozen_weights) - 3} more")
 
     def _restore_frozen_weights(self):
-        """Restore the frozen portions of all matching parameters."""
+        """Restore the frozen rows of all matching parameters (local, FSDP-safe)."""
         total_drift = 0.0
-        num_restored = 0
 
         for name, param in self.trainer.train_module.model.named_parameters():
-            if name not in self._frozen_weights:
+            if name not in self._frozen_snapshot:
                 continue
 
-            frozen_slice = self._get_frozen_slice(param)
-            saved_weights = self._frozen_weights[name]
+            mask = self._train_mask[name]
+            frozen = self._frozen_snapshot[name]
+            local = get_local_tensor(param.data)
 
             if self.log_drift:
-                # Calculate drift before restoring
-                current_weights = param.data[frozen_slice]
-                drift = (
-                    (current_weights - saved_weights.to(current_weights.device)).abs().max().item()
-                )
+                drift = ((local * (1.0 - mask)) - frozen).abs().max().item()
                 total_drift = max(total_drift, drift)
 
-            # Restore frozen weights
+            # local <- local * mask + frozen_snapshot
             with torch.no_grad():
-                param.data[frozen_slice].copy_(saved_weights.to(param.device))
-
-            num_restored += 1
+                local.mul_(mask).add_(frozen)
 
         if self.log_drift and self.step % self.trainer.metrics_collect_interval == 0:
             log.info(f"Step {self.step}: Max frozen weight drift before restore: {total_drift:.6e}")
@@ -135,18 +154,10 @@ class FrozenWeightRestorerCallback(Callback):
         self._restore_frozen_weights()
 
     def state_dict(self) -> Dict[str, Any]:
-        """Save frozen weights to checkpoint."""
-        return {
-            "frozen_weights": {k: v.cpu() for k, v in self._frozen_weights.items()},
-            "initialized": self._initialized,
-        }
+        # Only persist the init flag; the local frozen snapshot is rebuilt from the
+        # (unchanged) frozen weights in post_checkpoint_loaded, which avoids tying the
+        # serialized state to a particular FSDP world size / shard layout.
+        return {"initialized": self._initialized}
 
     def load_state_dict(self, state_dict: Dict[str, Any]):
-        """Load frozen weights from checkpoint."""
-        if "frozen_weights" in state_dict:
-            self._frozen_weights = state_dict["frozen_weights"]
-            self._initialized = state_dict.get("initialized", True)
-            log.info(
-                f"FrozenWeightRestorer: Loaded frozen weights for "
-                f"{len(self._frozen_weights)} parameters from checkpoint"
-            )
+        self._initialized = state_dict.get("initialized", False)

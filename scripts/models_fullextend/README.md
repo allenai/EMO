@@ -138,6 +138,41 @@ r = list(wandb.Api().runs("ryanyxw/olmoe-modular",
 hist = {int(x["_step"]): x["train/CE loss"] for x in r.scan_history(keys=["_step","train/CE loss"])}
 ```
 
+## New-expert extension eval (the downstream "add a real expert" test)
+
+This is the experiment's core question: **does ghost-expert pretraining make a model
+better at absorbing a brand-new, real expert added after training?** Pipeline:
+
+1. **Grow the checkpoint** — `add_expert_to_checkpoint.py` (run via `add_expert_all.sh`)
+   instantiates one new expert per model (128&rarr;129). The new expert is the **uniform
+   average of the original non-shared experts** (MLP `w1/w2/w3` + router row), matching the
+   uniform ghost's blend. **Layout gotcha:** the randpool router treats the *last*
+   `num_shared_experts` indices as shared, so the new expert is inserted as the **last
+   non-shared expert** (index 127) and the shared expert is shifted to the end (index 128).
+   The new config sets `num_forced_experts=1` (force the new expert into every doc pool) and
+   `num_new_experts=1` (enables the activation metric). Output: `step11921-plus1/` (model-only).
+
+2. **Continual-pretrain with everything but the new expert frozen** — `extend_finemath_frz.sh
+   <uniform|usage|random>` trains on FineMath (`mj_finemath4plus`, 10B tokens, lr 4e-4,
+   **WD 0.1**, lb 0, document pool sampled in [8, 128] / eval 32, matching the ghost
+   pretraining recipe). The backbone (embeddings, attention, norms, **router**, lm_head) is
+   hard-frozen via `--model.freeze_params`; the expert MLP tensor stays trainable but
+   `--freeze-new-expert` masks its gradient to update **only** index 127 and restores the
+   frozen rows each step (so AdamW weight decay can't drift them). Mechanism:
+   `FrozenExpertGradientMaskCallback` + `FrozenWeightRestorerCallback` (generalized to be
+   shared-expert-aware), wired into `olmoe-1B-7B_fsl_extension.py`. The base checkpoint is
+   loaded model-only (`--no-load-optim-state`). WandB logs **new-expert token/document
+   activation fraction** per batch.
+
+3. **Convert + eval** — `convert_extension_to_hf.sh` (auto-discovers the final step) then
+   `launch_extension_eval.sh` evaluates each model **before** (`step11921-hf`) and **after**
+   extension on a math + general suite (gsm8k, minerva_math_500, basic_skills + MC9 +
+   squad/triviaqa + mbpp/humaneval). Plain standard inference — the new expert is real now,
+   no ghost toggle.
+
+All three ghost variants (uniform/usage/random) go through this; the no-ghost control is a
+separate 50B run trained elsewhere (added later).
+
 ## Status / next steps
 
 - Implemented and unit-tested: `always` route, all three coefficient modes,

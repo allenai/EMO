@@ -27,19 +27,28 @@ def _create_expert_mask_1d(
     num_experts_to_train: int,
     dtype: torch.dtype,
     device: torch.device,
+    num_shared_experts: int = 0,
 ) -> torch.Tensor:
     """
-    Create a 1D mask for expert parameters.
+    Create a 1D mask for expert parameters (experts stacked along dimension 0).
 
-    Returns a mask where frozen expert indices are 0.0 and trainable are 1.0.
-    Assumes experts are stacked along dimension 0.
+    Returns a mask where trainable expert rows are 1.0 and frozen rows are 0.0.
+
+    The trainable experts are the **last ``num_experts_to_train`` non-shared
+    experts**, i.e. indices ``[nonshared - k, nonshared)`` where
+    ``nonshared = num_experts - num_shared_experts``. This matters for the EMO
+    randpool router, whose **shared experts occupy the last ``num_shared_experts``
+    indices** -- so a newly added expert sits just *before* the shared tail, not
+    at the very end, and the shared experts must stay frozen. With
+    ``num_shared_experts=0`` this reduces to the original "train the last k
+    experts" behavior.
     """
-    mask = torch.ones(size, dtype=dtype, device=device)
-    num_frozen = num_experts - num_experts_to_train
-    if num_frozen > 0:
-        expert_size = size // num_experts
-        frozen_end = expert_size * num_frozen
-        mask[:frozen_end] = 0.0
+    mask = torch.zeros(size, dtype=dtype, device=device)
+    expert_size = size // num_experts
+    nonshared = num_experts - num_shared_experts
+    train_start = nonshared - num_experts_to_train
+    train_end = nonshared
+    mask[train_start * expert_size : train_end * expert_size] = 1.0
     return mask
 
 
@@ -58,8 +67,12 @@ class FrozenExpertGradientMaskCallback(Callback):
     3. Runs at a well-defined point in the training loop
 
     :param num_experts: Total number of experts in the model.
-    :param num_experts_to_train: Number of experts to train (from the end).
-        The first (num_experts - num_experts_to_train) experts will be frozen.
+    :param num_experts_to_train: Number of experts to train (the last k non-shared
+        experts). All other experts (including the shared experts at the very end)
+        are frozen.
+    :param num_shared_experts: Number of shared experts, which occupy the last
+        ``num_shared_experts`` indices and are always frozen. Default 0 reduces to
+        the original "train the last k experts" behavior.
     :param layer_patterns: List of parameter name patterns to match for freezing.
         Defaults to ["experts", "router"].
     """
@@ -68,6 +81,7 @@ class FrozenExpertGradientMaskCallback(Callback):
 
     num_experts: int = 128
     num_experts_to_train: int = 1
+    num_shared_experts: int = 0
     layer_patterns: List[str] = field(default_factory=lambda: ["experts", "router"])
 
     # Internal state
@@ -101,6 +115,7 @@ class FrozenExpertGradientMaskCallback(Callback):
                     num_experts_to_train=self.num_experts_to_train,
                     dtype=local_grad.dtype,
                     device="cpu",  # Create on CPU first
+                    num_shared_experts=self.num_shared_experts,
                 )
                 # Reshape to match full parameter shape
                 if len(full_shape) > 1:
@@ -124,6 +139,7 @@ class FrozenExpertGradientMaskCallback(Callback):
                     num_experts_to_train=self.num_experts_to_train,
                     dtype=local_grad.dtype,
                     device=local_grad.device,
+                    num_shared_experts=self.num_shared_experts,
                 )
                 # Reshape and broadcast for 2D+ params
                 if len(full_shape) > 1:

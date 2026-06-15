@@ -32,6 +32,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
         eos_token_id: int,
         num_shared_experts: int,
         num_forced_experts: int = 0,
+        num_new_experts: int = 0,
         extension_finetune_mode: bool = False,
         extension_finetune_top_e: int = 0,
         extension_finetune_detach_router: bool = False,
@@ -79,6 +80,13 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
         # Number of experts (last N non-shared) that are always forced into the document pool.
         # Useful when extending the model with new experts that need guaranteed routing.
         self.num_forced_experts = num_forced_experts
+
+        # Number of "new" experts (the last N non-shared experts) added post-pretraining. When
+        # >0, the router logs (metric-only) what fraction of tokens and what fraction of documents
+        # in each batch route to (any of) these new experts. Default 0 => no-op for normal runs.
+        self.num_new_experts = num_new_experts
+        self._new_expert_token_activation = 0.0
+        self._new_expert_doc_activation = 0.0
 
         # Extension finetune mode: when True, per-slot expert MLP outputs are detached for slots
         # whose chosen expert is not in the doc's top-e set (and for the shared expert slots).
@@ -462,6 +470,31 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
                 avg_entropy = token_entropies.mean().item()
                 self._router_tokenlevel_expert_entropy += avg_entropy
 
+                # New-expert activation tracking (metric-only; default num_new_experts=0 => skip).
+                # expert_indices: (B, S, num_choose), values in [0, num_non_shared_experts); the
+                # new experts are the last self.num_new_experts non-shared indices. A token
+                # "activates" the new expert if any of its top-k picks lands in that range; a
+                # document activates it if any of its tokens does.
+                if self.num_new_experts > 0:
+                    new_lo = num_non_shared_experts - self.num_new_experts
+                    token_activ = (expert_indices >= new_lo).any(dim=-1)  # (B, S) bool
+                    self._new_expert_token_activation += token_activ.float().mean().item()
+                    token_activ_cpu = token_activ.cpu()
+                    doc_total = 0
+                    doc_active = 0
+                    for _seq_idx in range(x.size(0)):
+                        _start = 0
+                        _row = token_activ_cpu[_seq_idx]
+                        for _end in document_boundaries_cpu[_seq_idx]:
+                            if _end <= _start:
+                                _start = _end
+                                continue
+                            doc_total += 1
+                            if bool(_row[_start:_end].any()):
+                                doc_active += 1
+                            _start = _end
+                    self._new_expert_doc_activation += doc_active / max(doc_total, 1)
+
         # Maybe compute auxiliary losses and accumulate metrics.
         aux_loss: Optional[torch.Tensor] = None
         if self.training and torch.is_grad_enabled():
@@ -606,6 +639,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouterConfig(MoETwoLevelRouterC
     max_document_expert_pool: int = 128
     eval_document_expert_pool: Optional[int] = None  # defaults to midpoint of min/max
     num_forced_experts: int = 0  # last N non-shared experts always included in pool
+    num_new_experts: int = 0  # last N non-shared experts are "new" (metric-only: log token/doc activation)
     extension_finetune_mode: bool = False
     extension_finetune_top_e: int = 0
     extension_finetune_detach_router: bool = False
