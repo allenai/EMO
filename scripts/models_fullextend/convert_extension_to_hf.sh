@@ -19,7 +19,9 @@ for v in "${VARIANTS[@]}"; do
         continue
     fi
     # Latest step dir (numeric), excluding already-converted *-hf dirs.
-    latest=$(ls -d "${run}"/step* 2>/dev/null | grep -vE -- '-hf$' | sed 's#.*/step##' | sort -n | tail -1)
+    # Trailing `|| true`: an empty run dir (job started, no checkpoints yet) makes the `ls`
+    # glob fail, and under `set -o pipefail` a bare `var=$(...)` failure trips `set -e`.
+    latest=$(ls -d "${run}"/step* 2>/dev/null | grep -vE -- '-hf$' | sed 's#.*/step##' | sort -n | tail -1 || true)
     if [ -z "$latest" ]; then
         echo "=== skip ${v}: no step checkpoints in ${run} ==="
         continue

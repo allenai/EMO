@@ -41,7 +41,8 @@ for v in "${VARIANTS[@]}"; do
         echo "!!! skip ghost_${v}_pre: ${pre_local} not found"
     fi
     ext_run="${LOCAL_ROOT}/models_fullextend/emo_1b14b_130b_ghost_${v}_extend${NUM_NEW_EXPERTS}_finemath_frz"
-    ext_hf=$(ls -d "${ext_run}"/step*-hf 2>/dev/null | sed 's#.*/step##; s#-hf$##' | sort -n | tail -1)
+    # `|| true`: empty/absent run dir => `ls` glob fails => pipefail+`set -e` would abort.
+    ext_hf=$(ls -d "${ext_run}"/step*-hf 2>/dev/null | sed 's#.*/step##; s#-hf$##' | sort -n | tail -1 || true)
     if [ -n "${ext_hf}" ]; then
         MODELS+=("ghost_${v}_ext|${WEKA_ROOT}/models_fullextend/emo_1b14b_130b_ghost_${v}_extend${NUM_NEW_EXPERTS}_finemath_frz/step${ext_hf}-hf")
     else
