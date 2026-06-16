@@ -1,4 +1,4 @@
-# PARENT: "scripts/models_fullextend/emo_1b14b_130b_ghostexpert.sh"
+# PARENT: "scripts/models_fullextend/emo_1b14b_130b.sh"
 # DESCRIPTION:
 #     - models_fullextend ghost-expert SWEEP run, config #1.
 #       Ghost knobs: coeff_mode=usage, route=always, detach_coeff=false, num=1, random_k=8.

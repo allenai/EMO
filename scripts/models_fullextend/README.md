@@ -103,9 +103,12 @@ model-type or argparse args):
 - `emo_1b14b_130b.sh` — **baseline**: the unmodified EMO 1B/14B 130B-token
   randpool recipe (carried over from `models_sizescaling`, repointed to this
   experiment) for an apples-to-apples reference.
-- `emo_1b14b_130b_ghostexpert.sh` — the ghost-expert run. Same recipe plus the
-  `ghost_extend_*` overrides (currently `coeff_mode=usage`, `route=always`,
-  `num=1`).
+- `emo_1b14b_130b_ghost_{usage,uniform,random}_always_detachF.sh` — the
+  ghost-expert coefficient-mode sweep. Same recipe plus the `ghost_extend_*`
+  overrides, identical to each other except `ghost_extend_coeff_mode` (the three
+  swept blend schemes) and `runname`. Each hard-stops at 50B tokens
+  (`max_duration` stays 130B so the LR cosine still decays toward 130B) and keeps
+  `num=1` / `random_k=8` / `route=always` / `detach_coeff=false` fixed.
 
 See the top-level `CLAUDE.md` for `MODE=local|beaker` launch usage and the
 experiment conventions (WandB project `emo-extension`, tag `models_fullextend`,
