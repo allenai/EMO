@@ -24,8 +24,8 @@ set -euo pipefail
 
 : "${VARIANT:?source via a per-model entry script (extend_finemath_frz_<variant>.sh) that sets VARIANT}"
 case "$VARIANT" in
-    uniform|usage|random) ;;
-    *) echo "VARIANT must be one of uniform|usage|random (got '$VARIANT')"; exit 1 ;;
+    uniform|usage|random|noghost) ;;
+    *) echo "VARIANT must be one of uniform|usage|random|noghost (got '$VARIANT')"; exit 1 ;;
 esac
 
 source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
@@ -59,8 +59,23 @@ lb=0                             # no load-balancing loss during the frozen cont
 num_billion_tokens=10
 num_tokens=$((num_billion_tokens * 1000000000))
 
-base_model_path="${MODELS_DIR}/emo_1b14b_130b_ghost_${VARIANT}_always_detachF/step11921-plus${num_new_experts}"
-runname="emo_1b14b_130b_ghost_${VARIANT}_extend${num_new_experts}_finemath_frz"
+# Source 50B checkpoint (already grown by one expert via add_expert_all.sh) + output runname.
+# The ghost variants extend their own ghost-trained checkpoint; `noghost` extends the
+# unmodified EMO baseline -- the apples-to-apples control (same grow+freeze recipe, but the
+# base was pretrained WITHOUT the ghost mechanism).
+case "$VARIANT" in
+    noghost)
+        base_run_dir="emo_1b14b_130b"
+        runname="emo_1b14b_130b_noghost_extend${num_new_experts}_finemath_frz"
+        variant_tag="noghost"
+        ;;
+    *)
+        base_run_dir="emo_1b14b_130b_ghost_${VARIANT}_always_detachF"
+        runname="emo_1b14b_130b_ghost_${VARIANT}_extend${num_new_experts}_finemath_frz"
+        variant_tag="ghost_${VARIANT}"
+        ;;
+esac
+base_model_path="${MODELS_DIR}/${base_run_dir}/step11921-plus${num_new_experts}"
 
 launch src/scripts/train/olmoe-1B-7B_fsl_extension.py "$runname" \
     --save-folder="${MODELS_DIR}/${runname}" \
@@ -97,4 +112,4 @@ launch src/scripts/train/olmoe-1B-7B_fsl_extension.py "$runname" \
     --trainer.callbacks.wandb.entity=ryanyxw \
     --trainer.callbacks.wandb.project=emo-extension \
     --trainer.callbacks.wandb.name="${runname}" \
-    --trainer.callbacks.wandb.tags="[extension, contpretrain, finemath, frz, ${EXPERIMENT_NAME}, ghost_${VARIANT}]"
+    --trainer.callbacks.wandb.tags="[extension, contpretrain, finemath, frz, ${EXPERIMENT_NAME}, ${variant_tag}]"
