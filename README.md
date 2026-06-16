@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="LICENSE">
-    <img alt="GitHub License" src="https://img.shields.io/badge/license-TODO-lightgrey">
+    <img alt="GitHub License" src="https://img.shields.io/badge/license-Apache%202.0-blue">
   </a>
   <a href="#">
     <img alt="Blog Post" src="https://img.shields.io/badge/Emo-blog-F0529C">
@@ -31,6 +31,7 @@ EMO is a new Mixture-of-Experts model trained so that modular structure emerges 
 - [Inference](#inference)
     - [With Hugging Face Transformers](#with-hugging-face-transformers)
     - [With vLLM](#with-vllm)
+- [Data](#data)
 - [Training scripts](#training-scripts)
 - [Evaluation scripts](#evaluation-scripts)
     - [Selective Expert Usage](#selective-expert-usage)
@@ -45,6 +46,7 @@ EMO is a new Mixture-of-Experts model trained so that modular structure emerges 
 git clone https://github.com/allenai/EMO.git
 cd EMO
 conda create -n emo python==3.12
+conda activate emo
 uv pip install -e .[all]
 uv pip install --upgrade 'chardet>=7'
 ```
@@ -135,11 +137,51 @@ for output in outputs:
 
 For more details, see the [vLLM documentation](https://docs.vllm.ai/en/latest/getting_started/quickstart/#offline-batched-inference).
 
+## Data
+
+All EMO models are pretrained on the exact same data as OLMoE, whose raw (text) form is publicly available on the Hugging Face Hub as **[`allenai/OLMoE-mix-0924`](https://huggingface.co/datasets/allenai/OLMoE-mix-0924)**. The clustering/coverage analyses additionally use the publicly available [WebOrganizer](https://huggingface.co/WebOrganizer) dataset.
+
+These are raw-text datasets. Before they can be used by the scripts in this repo, they must be tokenized into `.npy` files and then registered as a *data mix* — a config file in this repo (under `src/olmo_core/data/mixes/`) that lists the tokenized files. The two steps are described below.
+
+### Tokenizing the data
+
+The training and analysis scripts read pre-tokenized data, i.e. a collection of `.npy` files where each file holds a flat array of token IDs. To produce these files from the raw datasets above, tokenize them yourself with **[Dolma](https://github.com/allenai/dolma/tree/main/docs)** (follow the tokenization instructions there). Use the same tokenizer as the released models (`allenai/dolma2-tokenizer`).
+
+### Registering a data mix
+
+Once the data has been prepared, you will have a directory of `.npy` files. To make them usable by the pretraining scripts, register them as a named **data mix**:
+
+1. **Create a mix file.** Add a new `.txt` file under [`src/olmo_core/data/mixes/`](src/olmo_core/data/mixes/), e.g. `my-olmoe-mix.txt`. Each non-comment line is `label,path`, one per `.npy` file. The `label` is an arbitrary source/domain tag (used for per-source logging); `path` is appended to the `--data-root` base directory at runtime, so list paths relative to that root (or set `--data-root=/` and use absolute paths). For example:
+
+    ```
+    # my-olmoe-mix.txt
+    cc,tokenized/cc/part-00-00000.npy
+    cc,tokenized/cc/part-01-00000.npy
+    starcoder,tokenized/starcoder/part-00-00000.npy
+    ```
+
+    You can also use the `{TOKENIZER}` placeholder in a path (it is substituted with the tokenizer id at load time) — see [`OLMoE-mix-0824.txt`](src/olmo_core/data/mixes/OLMoE-mix-0824.txt) for a full example.
+
+2. **Register the mix name.** Add a corresponding member to the `DataMix` enum in [`src/olmo_core/data/mixes/__init__.py`](src/olmo_core/data/mixes/__init__.py), where the value matches the file's basename:
+
+    ```python
+    class DataMix(DataMixBase):
+        ...
+        my_olmoe_mix = "my-olmoe-mix"
+    ```
+
+3. **Point the launch script at the mix.** In your pretraining launch script (see [Training scripts](#training-scripts)), select the mix and point `--data-root` at the directory containing the `.npy` files:
+
+    ```bash
+    --dataset.mix=my-olmoe-mix \
+    --data-root=/path/to/tokenized/data \
+    ```
+
+    (`--data-root` defaults to the internal `/weka/...` path, so set it to your local/remote data root.)
+
 ## Training scripts
 
-Project-specific pretraining recipes live in [`scripts`](scripts/). Please refer to [Released Models](#released-models) for the training scripts corresponding to each released checkpoint.
-
-**Note**: these scripts are trained on the exact same data as OLMoE, which is publicly accessible [here](https://huggingface.co/datasets/allenai/OLMoE-mix-0924). The current pretraining script draws data from a tokenized version of this dataset hosted internally. You can tokenize the dataset yourself following instructions [here](https://github.com/allenai/dolma/tree/main/docs). We will also be releasing an endpoint for the data we used directly soon.
+Project-specific pretraining recipes live in [`scripts`](scripts/). Please refer to [Released Models](#released-models) for the training scripts corresponding to each released checkpoint. See [Data](#data) for how to prepare and register the tokenized data these scripts read.
 
 Run a script locally:
 
@@ -267,7 +309,7 @@ The underlying primitives (extract / transform / cluster / visualize) live in [`
 - `TARGET_TOKENS=…` and `MAX_TOKENS_PER_DOC=…` change the extraction budget and per-doc truncation.
 - `CUDA_VISIBLE_DEVICES=…` restricts which GPUs the model is sharded across.
 
-**Note**: this script uses the exact same data as OLMoE, which is publicly accessible [here](https://huggingface.co/datasets/allenai/OLMoE-mix-0924). The current script draws data from a tokenized version of this dataset hosted internally. You can tokenize the dataset yourself following instructions [here](https://github.com/allenai/dolma/tree/main/docs). We will also be releasing an endpoint for the data we used directly soon.
+**Note**: this script uses the exact same data as OLMoE ([`allenai/OLMoE-mix-0924`](https://huggingface.co/datasets/allenai/OLMoE-mix-0924)). See [Data](#data) for how to obtain, tokenize, and register this data.
 
 ### Weborganizer Expert Coverage
 
@@ -307,7 +349,7 @@ The underlying primitives (extract_document / plot_doc_expert_coverage) live in 
 - `TARGET_TOKENS=…` changes the extraction budget (default 20M).
 - `CUDA_VISIBLE_DEVICES=…` restricts which GPUs the model is sharded across.
 
-**Note**: this script uses the WebOrganizer dataset, which is publicly accessible [here](https://huggingface.co/WebOrganizer). The current script draws data from a tokenized version of this dataset hosted internally. You can tokenize the dataset yourself following instructions [here](https://github.com/allenai/dolma/tree/main/docs). We will also be releasing an endpoint for the data we used directly soon.
+**Note**: this script uses the WebOrganizer dataset, which is publicly accessible [here](https://huggingface.co/WebOrganizer). See [Data](#data) for how to tokenize and register this data.
 
 
 <!--
@@ -356,4 +398,14 @@ For other interactions:
 
 ## Citing
 
-TODO
+```bibtex
+@misc{wang2026emopretrainingmixtureexperts,
+      title={EMO: Pretraining Mixture of Experts for Emergent Modularity}, 
+      author={Ryan Wang and Akshita Bhagia and Sewon Min},
+      year={2026},
+      eprint={2605.06663},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2605.06663}, 
+}
+```
