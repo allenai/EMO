@@ -50,7 +50,7 @@ launch src/scripts/train/olmoe-1B-7B_fsl.py $runname \
 		--model.block.feed_forward_moe.num_experts=128 \
 		--dataset.generate_doc_lengths=true \
 		--model.block.sequence_mixer.backend=flash_2 \
-		--model-type="two-level_lb-batch_reduce-dp_sharedexp_randpool" \
+		--model-type="two-level_lb-batch_reduce-dp_sharedexp_randpool_ghost" \
 		--min_document_expert_pool=${min_document_expert_pool} \
 		--max_document_expert_pool=${max_document_expert_pool} \
 		--eval_document_expert_pool=${eval_document_expert_pool} \

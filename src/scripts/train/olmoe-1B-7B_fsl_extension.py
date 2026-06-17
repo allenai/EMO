@@ -50,6 +50,9 @@ from olmo_core.nn.moe.twolevel_batchlb_nomaskaux_router import (
 from olmo_core.nn.moe.twolevel_batchlb_reducedp_router import (
     MoETwoLevelBatchLBReduceDPRouterConfig,
 )
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_randpool_ghost_router import (
+    MoETwoLevelBatchLBReduceDPSharedExpRandPoolGhostRouterConfig,
+)
 from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_randpool_router import (
     MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouterConfig,
 )
@@ -323,6 +326,39 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             router_kwargs["eval_document_expert_pool"] = opts.eval_document_expert_pool
         model_config.block.feed_forward_moe.router = (
             MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouterConfig(**router_kwargs)
+        )
+    elif opts.model_type == "two-level_lb-batch_reduce-dp_sharedexp_randpool_ghost":
+        # Ghost-expert / new-expert-extension variant (models_fullextend). Identical to the
+        # randpool router above, plus the opt-in ghost_extend_* and num_new_experts knobs, which
+        # arrive as dotted --model.block.feed_forward_moe.router.<name>=... overrides. The
+        # extension-eval continual-pretrain uses this model-type for num_new_experts.
+        log.info(
+            "Applying the ghost-expert randpool router (models_fullextend): two-level batch-level "
+            "load balancing, reduced across dp ranks, shared experts, random document expert pool, "
+            "plus the ghost-expert / new-expert-activation extensions..."
+        )
+        if opts.min_document_expert_pool is None or opts.max_document_expert_pool is None:
+            raise ValueError(
+                "Both min_document_expert_pool and max_document_expert_pool must be specified for two-level_lb-batch_reduce-dp_sharedexp_randpool_ghost model type."
+            )
+        if opts.num_shared_experts is None:
+            raise ValueError(
+                "num_shared_experts must be specified for two-level_lb-batch_reduce-dp_sharedexp_randpool_ghost model type."
+            )
+        router_kwargs = model_config.block.feed_forward_moe.router.as_dict(
+            exclude_none=True, recurse=False
+        )
+        router_kwargs.pop("name")
+        router_kwargs.update(
+            min_document_expert_pool=opts.min_document_expert_pool,
+            max_document_expert_pool=opts.max_document_expert_pool,
+            eos_token_id=tokenizer_config.eos_token_id,
+            num_shared_experts=opts.num_shared_experts,
+        )
+        if opts.eval_document_expert_pool is not None:
+            router_kwargs["eval_document_expert_pool"] = opts.eval_document_expert_pool
+        model_config.block.feed_forward_moe.router = (
+            MoETwoLevelBatchLBReduceDPSharedExpRandPoolGhostRouterConfig(**router_kwargs)
         )
     elif opts.model_type == "two-level_lb-batch_reduce-dp_sharedexppool":
         log.info(

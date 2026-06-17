@@ -88,7 +88,7 @@ launch src/scripts/train/olmoe-1B-7B_fsl_extension.py "$runname" \
     --weight-decay=${wd} \
     --freeze-new-expert \
     --num-new-experts=${num_new_experts} \
-    --model-type="two-level_lb-batch_reduce-dp_sharedexp_randpool" \
+    --model-type="two-level_lb-batch_reduce-dp_sharedexp_randpool_ghost" \
     --min_document_expert_pool=${min_document_expert_pool} \
     --max_document_expert_pool=${max_document_expert_pool} \
     --eval_document_expert_pool=${eval_document_expert_pool} \
