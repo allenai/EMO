@@ -27,26 +27,36 @@ OUTPUT_ROOT="${OUTPUT_ROOT:-${WEKA_ROOT}/models_fullextend/extension_evals}"
 CLUSTER="${CLUSTER:-ai2/jupiter}"
 NUM_NEW_EXPERTS="${NUM_NEW_EXPERTS:-1}"
 DRY_RUN="${DRY_RUN:-0}"
-VARIANTS=(uniform usage random)
+# "label | pre-extension run dir (50B step11921) | extension run dir". The ghost variants
+# extend their own ghost-trained checkpoint; `noghost` is the apples-to-apples control (the
+# unmodified EMO baseline through the identical grow+freeze recipe -- note its pre/ext dirs
+# carry no `_ghost_*_always_detachF` suffix, hence the explicit table).
+ENTRIES=(
+    "ghost_uniform|emo_1b14b_130b_ghost_uniform_always_detachF|emo_1b14b_130b_ghost_uniform_extend${NUM_NEW_EXPERTS}_finemath_frz"
+    "ghost_usage|emo_1b14b_130b_ghost_usage_always_detachF|emo_1b14b_130b_ghost_usage_extend${NUM_NEW_EXPERTS}_finemath_frz"
+    "ghost_random|emo_1b14b_130b_ghost_random_always_detachF|emo_1b14b_130b_ghost_random_extend${NUM_NEW_EXPERTS}_finemath_frz"
+    "noghost|emo_1b14b_130b|emo_1b14b_130b_noghost_extend${NUM_NEW_EXPERTS}_finemath_frz"
+)
 
-# Build the model list. For each variant: the pre-extension ghost model (step11921-hf) and
-# the extended model (latest step*-hf under the extend run). Entries are "name|weka_hf_path";
+# Build the model list. For each entry: the pre-extension model (step11921-hf) and the
+# extended model (latest step*-hf under the extend run). Entries are "name|weka_hf_path";
 # missing checkpoints are skipped with a warning.
 MODELS=()
-for v in "${VARIANTS[@]}"; do
-    pre_local="${LOCAL_ROOT}/models_fullextend/emo_1b14b_130b_ghost_${v}_always_detachF/step11921-hf"
+for entry in "${ENTRIES[@]}"; do
+    IFS='|' read -r label pre_run ext_run <<< "$entry"
+    pre_local="${LOCAL_ROOT}/models_fullextend/${pre_run}/step11921-hf"
     if [ -f "${pre_local}/config.json" ]; then
-        MODELS+=("ghost_${v}_pre|${WEKA_ROOT}/models_fullextend/emo_1b14b_130b_ghost_${v}_always_detachF/step11921-hf")
+        MODELS+=("${label}_pre|${WEKA_ROOT}/models_fullextend/${pre_run}/step11921-hf")
     else
-        echo "!!! skip ghost_${v}_pre: ${pre_local} not found"
+        echo "!!! skip ${label}_pre: ${pre_local} not found (run convert_to_hf.sh)"
     fi
-    ext_run="${LOCAL_ROOT}/models_fullextend/emo_1b14b_130b_ghost_${v}_extend${NUM_NEW_EXPERTS}_finemath_frz"
+    ext_run_local="${LOCAL_ROOT}/models_fullextend/${ext_run}"
     # `|| true`: empty/absent run dir => `ls` glob fails => pipefail+`set -e` would abort.
-    ext_hf=$(ls -d "${ext_run}"/step*-hf 2>/dev/null | sed 's#.*/step##; s#-hf$##' | sort -n | tail -1 || true)
+    ext_hf=$(ls -d "${ext_run_local}"/step*-hf 2>/dev/null | sed 's#.*/step##; s#-hf$##' | sort -n | tail -1 || true)
     if [ -n "${ext_hf}" ]; then
-        MODELS+=("ghost_${v}_ext|${WEKA_ROOT}/models_fullextend/emo_1b14b_130b_ghost_${v}_extend${NUM_NEW_EXPERTS}_finemath_frz/step${ext_hf}-hf")
+        MODELS+=("${label}_ext|${WEKA_ROOT}/models_fullextend/${ext_run}/step${ext_hf}-hf")
     else
-        echo "!!! skip ghost_${v}_ext: no step*-hf under ${ext_run} (run convert_extension_to_hf.sh)"
+        echo "!!! skip ${label}_ext: no step*-hf under ${ext_run_local} (run convert_extension_to_hf.sh)"
     fi
 done
 

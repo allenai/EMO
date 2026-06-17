@@ -9,11 +9,14 @@ cd "$(dirname "$0")/../.."
 
 MODELS_DIR="${MODELS_DIR:-models_fullextend}"
 
-# "<olmo-core checkpoint dir>|<HF output dir>". Add configs as they finish.
+# "<olmo-core checkpoint dir>|<HF output dir>". Add configs as they finish. The no-ghost
+# baseline is the pre-extension control for the extension eval (plain 128-expert model, no
+# ghost-on variant -- the loop below skips it).
 MODELS=(
     "${MODELS_DIR}/emo_1b14b_130b_ghost_usage_always_detachF/step11921|${MODELS_DIR}/emo_1b14b_130b_ghost_usage_always_detachF/step11921-hf"
     "${MODELS_DIR}/emo_1b14b_130b_ghost_uniform_always_detachF/step11921|${MODELS_DIR}/emo_1b14b_130b_ghost_uniform_always_detachF/step11921-hf"
     "${MODELS_DIR}/emo_1b14b_130b_ghost_random_always_detachF/step11921|${MODELS_DIR}/emo_1b14b_130b_ghost_random_always_detachF/step11921-hf"
+    "${MODELS_DIR}/emo_1b14b_130b/step11921|${MODELS_DIR}/emo_1b14b_130b/step11921-hf"
 )
 
 for PAIR in "${MODELS[@]}"; do
@@ -43,7 +46,8 @@ for PAIR in "${MODELS[@]}"; do
         case "$OUTPUT" in
             *_ghost_uniform_*) COEFF_MODE=uniform ;;
             *_ghost_random_*)  COEFF_MODE=random ;;
-            *)                 COEFF_MODE=usage ;;
+            *_ghost_usage_*)   COEFF_MODE=usage ;;
+            *) echo "=== ${OUTPUT}: non-ghost model, skipping ghost-on variant ==="; continue ;;
         esac
         python scripts/models_fullextend/make_ghost_hf_variant.py --src "${OUTPUT}" --coeff-mode "${COEFF_MODE}"
     fi

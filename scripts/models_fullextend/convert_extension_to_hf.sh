@@ -10,12 +10,19 @@ cd "$(dirname "$0")/../.."
 
 MODELS_DIR="${MODELS_DIR:-models_fullextend}"
 NUM_NEW_EXPERTS="${NUM_NEW_EXPERTS:-1}"
-VARIANTS=(uniform usage random)
 
-for v in "${VARIANTS[@]}"; do
-    run="${MODELS_DIR}/emo_1b14b_130b_ghost_${v}_extend${NUM_NEW_EXPERTS}_finemath_frz"
+# Extension run-dir names to convert (3 ghost variants + the no-ghost baseline control).
+RUNS=(
+    emo_1b14b_130b_ghost_uniform_extend${NUM_NEW_EXPERTS}_finemath_frz
+    emo_1b14b_130b_ghost_usage_extend${NUM_NEW_EXPERTS}_finemath_frz
+    emo_1b14b_130b_ghost_random_extend${NUM_NEW_EXPERTS}_finemath_frz
+    emo_1b14b_130b_noghost_extend${NUM_NEW_EXPERTS}_finemath_frz
+)
+
+for rn in "${RUNS[@]}"; do
+    run="${MODELS_DIR}/${rn}"
     if [ ! -d "$run" ]; then
-        echo "=== skip ${v}: ${run} not found (run extend_finemath_frz.sh first) ==="
+        echo "=== skip ${rn}: ${run} not found (run extend_finemath_frz_*.sh first) ==="
         continue
     fi
     # Latest step dir (numeric), excluding already-converted *-hf dirs.
@@ -23,16 +30,16 @@ for v in "${VARIANTS[@]}"; do
     # glob fail, and under `set -o pipefail` a bare `var=$(...)` failure trips `set -e`.
     latest=$(ls -d "${run}"/step* 2>/dev/null | grep -vE -- '-hf$' | sed 's#.*/step##' | sort -n | tail -1 || true)
     if [ -z "$latest" ]; then
-        echo "=== skip ${v}: no step checkpoints in ${run} ==="
+        echo "=== skip ${rn}: no step checkpoints in ${run} ==="
         continue
     fi
     input="${run}/step${latest}"
     output="${input}-hf"
     if [ -f "${output}/config.json" ]; then
-        echo "=== skip ${v}: ${output} already exists ==="
+        echo "=== skip ${rn}: ${output} already exists ==="
         continue
     fi
-    echo "=== converting ${v}: ${input} -> ${output} ==="
+    echo "=== converting ${rn}: ${input} -> ${output} ==="
     python scripts/convert_emo_to_hf.py \
         --checkpoint-input-path "${input}" \
         --huggingface-output-dir "${output}" \
