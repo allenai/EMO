@@ -197,24 +197,32 @@ tab for details.</p>''')}
 (<code>usage</code> / <code>uniform</code> / <code>random</code>) trained to the 50B-token
 hard stop. See the <strong>Sweep</strong> tab for the config list and the per-config
 CE-loss comparison.</p>
-<p><strong>Final CE at the 50B hard-stop, vs the identical no-ghost EMO baseline's
-CE 2.689 at the same step:</strong></p>
+<p><strong>The two matched no-ghost baselines have now also finished</strong> at the
+same 8-node / 64-GPU compute (both <code>max_duration</code> 130B, <code>hard_stop</code>
+50B = step 11,921), giving an apples-to-apples DP-world reference for every ghost config:</p>
+<ul>
+<li><strong>EMO no-ghost baseline</strong> (<code>emo_1b14b_130b</code>) &mdash;
+<strong>final CE 2.692</strong>. This 8-node run lands right on top of the older
+16-node step-aligned reference (2.689), confirming the DP-world halving barely moves CE.</li>
+<li><strong>stdMoE baseline</strong> (standard top-k MoE, <code>stdmoe_1b14b_130b</code>)
+&mdash; <strong>final CE 2.680</strong>.</li>
+</ul>
+<p><strong>Final CE at the 50B hard-stop, vs the matched EMO no-ghost baseline (2.692):</strong></p>
 <ul>
 <li>Config #1 (<code>usage / always / detachF</code>) &mdash; <strong>final CE 2.654</strong>
-(&minus;0.035): a slight edge, within run-to-run noise.</li>
+(&minus;0.038): a slight edge, within run-to-run noise.</li>
 <li>Config #2 (<code>uniform / always / detachF</code>) &mdash; <strong>final CE 2.690</strong>
-(+0.001): essentially identical to baseline. A naive uniform pool-average ghost is
+(&minus;0.002): essentially identical to baseline. A naive uniform pool-average ghost is
 convergence-neutral; the usage-weighted blend's small edge does not transfer.</li>
 <li>Config #3 (<code>random / always / detachF</code>) &mdash; <strong>final CE 2.690</strong>
-(+0.001): also convergence-neutral. Sampling <code>random_k</code> pool experts per ghost
+(&minus;0.002): also convergence-neutral. Sampling <code>random_k</code> pool experts per ghost
 behaves like the uniform average at this budget.</li>
 </ul>
-<p>Across all three modes the ghost mechanism adds <strong>no convergence penalty</strong>.
-<strong>Two no-ghost reference runs are now launched at matched 8-node / 64-GPU compute</strong>
-(<code>emo_1b14b_130b</code> and the standard top-k MoE <code>stdmoe_1b14b_130b</code>, both
-max_duration 130B / hard_stop 50B) to anchor the comparison at the same DP world as config #3.
-The downstream &ldquo;add-an-expert&rdquo; evaluation that would actually test the
-extendability hypothesis is still to come.</p>''')}
+<p>Across all three modes the ghost mechanism adds <strong>no convergence penalty</strong> &mdash;
+every ghost config sits at or below its matched no-ghost EMO baseline, and all three (and the
+baseline) are within &asymp;0.01 CE of the stdMoE baseline. The downstream
+&ldquo;add-an-expert&rdquo; evaluation that would actually test the extendability hypothesis
+is still to come.</p>''')}
 """
 
 
@@ -350,8 +358,8 @@ def build_sweep(base: Path) -> str:
             ("emo_1b14b_130b_ghost_usage_always_detachF", "usage", "always", "false", "done", "2.654"),
             ("emo_1b14b_130b_ghost_uniform_always_detachF", "uniform", "always", "false", "done", "2.690"),
             ("emo_1b14b_130b_ghost_random_always_detachF", "random", "always", "false (no-op)", "done (8 nodes&sup2;)", "2.690"),
-            ("emo_1b14b_130b (no-ghost EMO baseline)", "&mdash;", "&mdash;", "&mdash;", "launched (8 nodes&sup2;)", "&mdash;"),
-            ("stdmoe_1b14b_130b (standard top-k MoE)", "&mdash;", "&mdash;", "&mdash;", "launched (8 nodes&sup2;)", "&mdash;"),
+            ("emo_1b14b_130b (no-ghost EMO baseline)", "&mdash;", "&mdash;", "&mdash;", "done (8 nodes&sup2;)", "2.692"),
+            ("stdmoe_1b14b_130b (standard top-k MoE)", "&mdash;", "&mdash;", "&mdash;", "done (8 nodes&sup2;)", "2.680"),
         ],
     )
     # Step-aligned CE: ghost config #1 vs the identical no-ghost EMO baseline
@@ -400,19 +408,20 @@ does turning the ghost on at eval shift its behavior? MC9 with the OLMES rank-cl
 (rc) metric &mdash; the mc letter-picking variant scores these base models near chance, so it is
 not used. The ghost-ON arm uses pool = ALL experts (no document-pool masking), per the eval
 design.</p>''' + mc9 + '''
-<p><strong>Reading it:</strong> both ghost-trained models in <strong>standard (ghost-off)</strong>
-mode are healthy and well above chance (MC9 0.57 usage / 0.59 uniform) &mdash; neither is
-<strong>broken</strong> without the ghost. The clean isolation of the ghost is <strong>off vs on</strong>
-on the same model: turning the ghost on at eval moves MC9 by only ~&minus;0.02 for the
-<strong>usage</strong> model (mixed by task &mdash; boolq/openbookqa/arc_challenge down,
-arc_easy/socialiqa/hellaswag up) and essentially <strong>zero</strong> (&minus;0.000) for the
-<strong>uniform</strong> model. So there is <strong>no large distribution shift</strong> either way;
-the uniform-trained model is even more eval-stable to the ghost than the usage one (consistent with
-its blend being a smoother, more redundant average).</p>
+<p><strong>Reading it:</strong> all three ghost-trained models in <strong>standard (ghost-off)</strong>
+mode are healthy and well above chance (MC9 0.57 usage / 0.59 uniform / 0.57 random) &mdash; none
+is <strong>broken</strong> without the ghost. The clean isolation of the ghost is
+<strong>off vs on</strong> on the same model: turning the ghost on at eval moves MC9 by only
+~&minus;0.02 for the <strong>usage</strong> model (mixed by task &mdash; boolq/openbookqa/arc_challenge
+down, arc_easy/socialiqa/hellaswag up) and essentially <strong>zero</strong> (&minus;0.000) for both
+the <strong>uniform</strong> and the <strong>random</strong> models. So there is <strong>no large
+distribution shift</strong> either way; the uniform- and random-trained models are even more
+eval-stable to the ghost than the usage one (consistent with their blends being smoother, more
+redundant averages).</p>
 <p class="note">The no-ghost baseline trained to 130B vs the ghost runs' 50B, so most of the
 baseline gap is the token budget, not the ghost &mdash; treat it as a loose reference, not a
-controlled comparison. Configs #1 (usage) and #2 (uniform) so far; preliminary (probe, not the
-eventual &ldquo;permanently add an expert&rdquo; protocol).</p>''')}
+controlled comparison. All three configs (usage / uniform / random) shown; preliminary (probe,
+not the eventual &ldquo;permanently add an expert&rdquo; protocol).</p>''')}
 
 {card("results", "Training &amp; eval curves (interactive)", '''
 <p>All runs share the identical recipe &mdash; the no-ghost reference is WandB
@@ -443,6 +452,13 @@ baseline. <strong>Usage</strong> ends a touch ahead at 50B (&minus;0.034; mean g
 baseline (+0.001; mean gap &asymp; +0.004). Training with a perpetually-simulated new
 expert costs nothing in LM loss, in either coefficient mode &mdash; the open question
 (next) is whether it makes <em>actually adding</em> a new expert cleaner.</p>
+<p>The <strong>matched 8-node no-ghost baselines</strong> (added to the interactive CE chart
+above) close the loop: the <strong>EMO no-ghost</strong> run ends at <strong>2.692</strong> at
+the 50B hard-stop &mdash; indistinguishable from the 16-node step-aligned reference (2.689) and
+from the uniform/random ghost configs (2.690), and a touch behind usage (2.654). The
+<strong>stdMoE</strong> baseline ends at <strong>2.680</strong>, between usage and the EMO
+baseline. So the ghost mechanism is convergence-neutral whether measured against the EMO
+recipe with or without ghosts, or against a standard top-k MoE at the same compute.</p>
 <p class="note">The downstream &ldquo;instantiate a real new expert and measure
 degradation&rdquo; evaluation will be added as configs finish.</p>''')}
 {build_charts_script(base)}
@@ -531,6 +547,71 @@ show(location.hash && document.getElementById(location.hash.slice(1)) ? location
 """
 
 
+def build_extension_eval_table(base: Path) -> str:
+    p = base / "extension_eval_results.json"
+    if not p.is_file():
+        return ""
+    import json as _json
+
+    d = _json.loads(p.read_text())
+    cols = d["columns"]
+    GB = "border-left:2px solid #cbd5e1"  # group separator between benchmarks
+    h1 = "<th rowspan='2'>Model</th>" + "".join(
+        f"<th colspan='2' style='{GB}'>{c['label']}{' &darr;' if c['lower_better'] else ''}</th>"
+        for c in cols
+    )
+    h2 = "".join(f"<th style='{GB}'>before</th><th>after</th>" for _ in cols)
+
+    def fmt(v):
+        return f"{v:.3f}" if v is not None else "&mdash;"
+
+    body = ""
+    for m in d["models"]:
+        cells = f"<td style='text-align:left'>{m['label']}</td>"
+        for c in cols:
+            pre, ext = m["pre"].get(c["key"]), m["ext"].get(c["key"])
+            cells += f"<td style='{GB}'>{fmt(pre)}</td><td>{fmt(ext)}</td>"
+        body += f"<tr>{cells}</tr>"
+    return (
+        "<div style='overflow-x:auto'><table class='ext-eval'>"
+        f"<thead><tr>{h1}</tr><tr>{h2}</tr></thead><tbody>{body}</tbody></table></div>"
+    )
+
+
+def build_extension_eval(base: Path) -> str:
+    tbl = build_extension_eval_table(base)
+    if not tbl:
+        return card("goal", "New-expert extension eval", "<p>No results yet "
+                    "(run export_extension_evals.py once the eval jobs finish).</p>")
+    return f"""
+{card("goal", "New-expert extension eval &mdash; before vs after", '''<p>The headline
+test: <strong>does ghost-expert pretraining make a model better at absorbing a brand-new,
+real expert added after training?</strong> Each of the four models is evaluated in two
+phases &mdash; <strong>before</strong> extension (the original 128-expert checkpoint,
+<code>step11921</code>) and <strong>after</strong> extension (129 experts: one new expert
+added as the uniform average of the originals, then continually pretrained on FineMath for
+10B tokens with <em>everything but the new expert's MLP frozen</em>, <code>step2385</code>).
+Inference is plain standard routing &mdash; the new expert is real now, no ghost.</p>''')}
+
+{card("results", "Results", tbl + '''
+<p class="note"><strong>Direction:</strong> MC9 (mean of 9 OLMES rc tasks), SQuAD/TriviaQA
+(F1), GSM8K/Minerva (exact-match) and BasicSkills (acc) are <strong>higher-is-better</strong>;
+<strong>MBPP and HumanEval are bits-per-byte (&darr;, lower-is-better)</strong>, so for those
+two columns an improvement means <em>after &lt; before</em>. &mdash; = job not yet finished.</p>
+<p><strong>Reading it:</strong> the before&rarr;after movement is <strong>tiny across every
+benchmark and every model</strong> (sub-0.01 on almost all cells). That is expected given the
+recipe: the extension trains <em>only the single new expert's MLP</em> while the router is
+frozen, so the new expert is forced into each document pool but its routing share is fixed at
+its averaged-init value &mdash; it can refine what it computes but not how much it is used.
+Adding the averaged expert also does not <strong>degrade</strong> any model (before&asymp;after
+everywhere), i.e. a freshly averaged expert drops in cleanly for the no-ghost baseline as well
+as the ghost-trained models. The ghost-vs-baseline absorption gap this experiment was built to
+measure is, on these downstream metrics, within eval noise so far.</p>
+<p class="note">Minerva MATH-500 for the no-ghost baseline is still running (shown &mdash;).
+Re-run <code>export_extension_evals.py</code> + rebuild to refresh.</p>''')}
+"""
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=None)
@@ -546,6 +627,7 @@ def main():
         ("overview", "Overview", build_overview()),
         ("method", "Method", build_method()),
         ("sweep", "Sweep", build_sweep(base)),
+        ("extension", "Extension eval", build_extension_eval(base)),
     ]
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
     sections = "".join(
