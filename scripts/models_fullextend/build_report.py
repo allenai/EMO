@@ -77,17 +77,21 @@ _CHARTS_JS = r"""
   document.querySelectorAll("button.logtoggle").forEach(b => {
     b.addEventListener("click", () => { const k=b.dataset.chart; reg[k].logY=!reg[k].logY; build(k); });
   });
-  window.ceResize = function(){
-    Object.keys(reg).forEach(k => { const st=reg[k]; if (st.plot && st.el) st.plot.setSize({ width: st.el.clientWidth||900, height: 360 }); });
-  };
-  window.addEventListener("resize", window.ceResize);
+  window.__ceReg = Object.assign(window.__ceReg || {}, reg);  // merge so multiple chart sets coexist
+  if (!window.__ceResizeBound) {
+    window.__ceResizeBound = true;
+    window.ceResize = function(){
+      Object.keys(window.__ceReg).forEach(k => { const st=window.__ceReg[k]; if (st.plot && st.el) st.plot.setSize({ width: st.el.clientWidth||900, height: 360 }); });
+    };
+    window.addEventListener("resize", window.ceResize);
+  }
 })();
 </script>
 """
 
 
-def _load_curves(base: Path):
-    p = base / "ce_curves.json"
+def _load_curves(base: Path, fname: str = "ce_curves.json"):
+    p = base / fname
     if not p.is_file():
         return None, None
     import json as _json
@@ -107,10 +111,10 @@ def build_run_links(base: Path) -> str:
     return f'<p class="note"><strong>Pretraining runs:</strong> {links}</p>'
 
 
-def build_chart_blocks(base: Path, keys: list) -> str:
+def build_chart_blocks(base: Path, keys: list, fname: str = "ce_curves.json") -> str:
     """Chart container(s) for the given metric keys (the shared <script> is emitted
     once via build_charts_script). uPlot only draws keys whose div exists in the DOM."""
-    data, _ = _load_curves(base)
+    data, _ = _load_curves(base, fname)
     if not data:
         return ""
     by_key = {c["key"]: c for c in data.get("charts", [])}
@@ -131,8 +135,8 @@ def build_chart_blocks(base: Path, keys: list) -> str:
     return "".join(blocks)
 
 
-def build_charts_script(base: Path) -> str:
-    _, raw = _load_curves(base)
+def build_charts_script(base: Path, fname: str = "ce_curves.json") -> str:
+    _, raw = _load_curves(base, fname)
     return "" if raw is None else _CHARTS_JS.replace("__CURVES__", raw)
 
 
@@ -583,6 +587,38 @@ def build_extension_eval(base: Path) -> str:
     if not tbl:
         return card("goal", "New-expert extension eval", "<p>No results yet "
                     "(run export_extension_evals.py once the eval jobs finish).</p>")
+
+    # New-expert activation-fraction curves (from export_extension_curves.py).
+    act_charts = build_chart_blocks(
+        base, ["ext_doc_activation", "ext_token_activation"], "extension_curves.json")
+    act_script = build_charts_script(base, "extension_curves.json")
+    ext_data, _ = _load_curves(base, "extension_curves.json")
+    ext_links = ""
+    if ext_data and ext_data.get("runs"):
+        ext_links = ('<p class="note"><strong>Extension runs (WandB):</strong> '
+                     + " &middot; ".join(
+                         f'<a href="{r["url"]}" target="_blank" rel="noopener">{r["label"]}</a>'
+                         for r in ext_data["runs"]) + "</p>")
+    activation_card = ""
+    if act_charts:
+        activation_card = card(
+            "results", "New-expert activation during extension training", '''<p>During the
+10B-token FineMath extension, the randpool router logs &mdash; per batch &mdash; the fraction of
+<strong>tokens</strong> and <strong>documents</strong> that route to the freshly added 129th
+expert. It is force-added to every document pool (<code>num_forced_experts=1</code>), so this
+measures how often it actually <em>wins</em> a top-k slot, not whether it is available. Both
+metrics are <strong>summed across the model's 16 MoE layers</strong>, so a document value of
+~2.0 means ~0.125 (12.5%) per layer &mdash; divide by 16 for the per-layer fraction.</p>
+<p><strong>Reading it:</strong> document activation (&asymp;1.7&ndash;2.6 summed, ~11&ndash;16%
+per layer) is far higher than token activation (&asymp;0.05&ndash;0.10 summed, ~0.3&ndash;0.6%
+per layer): only a small fraction of individual tokens pick the new expert, but those tokens are
+spread across many documents. The new expert is absorbed at a <strong>similar rate by the no-ghost
+baseline as by the ghost-trained models</strong> (uniform/random a touch higher, usage a touch
+lower), and the rate is roughly flat / slightly declining over training &mdash; consistent with the
+downstream metrics being unchanged before vs after. Document activation weights every document
+equally; token activation is token-weighted (long documents count more).</p>''' + ext_links
+            + act_charts) + act_script
+
     return f"""
 {card("goal", "New-expert extension eval &mdash; before vs after", '''<p>The headline
 test: <strong>does ghost-expert pretraining make a model better at absorbing a brand-new,
@@ -609,6 +645,8 @@ as the ghost-trained models. The ghost-vs-baseline absorption gap this experimen
 measure is, on these downstream metrics, within eval noise so far.</p>
 <p class="note">Minerva MATH-500 for the no-ghost baseline is still running (shown &mdash;).
 Re-run <code>export_extension_evals.py</code> + rebuild to refresh.</p>''')}
+
+{activation_card}
 """
 
 
