@@ -27,6 +27,9 @@ OUTPUT_ROOT="${OUTPUT_ROOT:-${WEKA_ROOT}/models_fullextend/extension_evals}"
 CLUSTER="${CLUSTER:-ai2/jupiter}"
 NUM_NEW_EXPERTS="${NUM_NEW_EXPERTS:-1}"
 DRY_RUN="${DRY_RUN:-0}"
+ONLY="${ONLY:-}"   # optional: restrict to entries whose label contains this substring
+                   # (e.g. ONLY=noghost to launch only the baseline without re-touching
+                   # ghost jobs whose metrics.json doesn't exist yet)
 # "label | pre-extension run dir (50B step11921) | extension run dir". The ghost variants
 # extend their own ghost-trained checkpoint; `noghost` is the apples-to-apples control (the
 # unmodified EMO baseline through the identical grow+freeze recipe -- note its pre/ext dirs
@@ -44,6 +47,7 @@ ENTRIES=(
 MODELS=()
 for entry in "${ENTRIES[@]}"; do
     IFS='|' read -r label pre_run ext_run <<< "$entry"
+    if [ -n "$ONLY" ] && [[ "$label" != *"$ONLY"* ]]; then continue; fi
     pre_local="${LOCAL_ROOT}/models_fullextend/${pre_run}/step11921-hf"
     if [ -f "${pre_local}/config.json" ]; then
         MODELS+=("${label}_pre|${WEKA_ROOT}/models_fullextend/${pre_run}/step11921-hf")
