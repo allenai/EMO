@@ -24,7 +24,7 @@ cd "$(dirname "$0")/.."
 
 EXPERIMENTS=(
     "models_sizescaling|expert specialization vs pool size (32/64/96/128 experts)"
-    "models_fullextend|ghost-expert pretraining so new experts can be added post-training (coeff-mode sweep complete; no-ghost baselines running)"
+    "models_fullextend|ghost-expert pretraining so new experts can be added post-training (coeff-mode sweep + matched no-ghost/stdMoE baselines complete; all convergence-neutral)"
 )
 
 PROJECT="emo-reports"

@@ -55,6 +55,14 @@ four models and calls a generic tool (from `scripts/clustering/` or
    similarity matrices, Hungarian matching, splitting / redundancy / novelty
    statistics for consecutive pairs + 32↔128. Wraps
    `src/scripts/clustering/match_experts.py`.
+   - `analysis_4b_token_extract.sh` / `analysis_4c_token_match.sh` — the
+     token-level twin of analyses 1+4. `4b` (GPU, ~10 min/model) re-runs the
+     four models over the identical documents but keeps every token as its own
+     row (first 100 tokens of ~10k topic-balanced docs ≈ 1M token rows), via
+     `src/scripts/clustering/extract_document_tokens.py`; `4c` (CPU) reruns
+     `match_experts.py` unchanged on those per-token fingerprints. Tests whether
+     the doc-level matching story (split, not copy/novel) is an averaging
+     artifact or holds token-by-token. Outputs feed report tab 4.1.
 5. `analysis_5_cluster_attribution.sh` — are the k=32 document clusters
    (the published doc_probs clustering recipe) driven by a few individual
    (layer, expert) dims or by the broad activation pattern? Signature
@@ -62,7 +70,8 @@ four models and calls a generic tool (from `scripts/clustering/` or
    matched random controls. Wraps
    `src/scripts/clustering/cluster_expert_attribution.py`.
 6. `build_report.py` — assembles the figures + summary JSONs from analyses
-   1–5 into a single self-contained tabbed HTML report (one tab per analysis:
+   1–5 (plus the token-level matching tab 4.1 from 4b/4c) into a single
+   self-contained tabbed HTML report (one tab per analysis:
    goal / method / results, all images base64-embedded):
    `python scripts/models_sizescaling/build_report.py` →
    `claude_outputs/models_sizescaling/report.html`.
@@ -81,6 +90,8 @@ claude_outputs/models_sizescaling/weborganizer/<run>/ # analysis 1 (+ profiles f
 claude_outputs/models_sizescaling/trends/             # analysis 2
 claude_outputs/models_sizescaling/profiles/           # analysis 3 plots
 claude_outputs/models_sizescaling/matching/           # analysis 4
+claude_outputs/models_sizescaling/weborganizer_tokens/<run>/ # analysis 4b (per-token)
+claude_outputs/models_sizescaling/matching_tokens/    # analysis 4c (token-level)
 claude_outputs/models_sizescaling/expert_attribution/ # analysis 5
 claude_outputs/models_sizescaling/report.html         # build_report.py
 ```
