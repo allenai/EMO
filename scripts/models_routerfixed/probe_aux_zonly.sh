@@ -6,8 +6,9 @@
 # scales ~||W||^2, and the grafted trained router has large ||W|| ~59-69). If this NaNs while the
 # lbonly sibling survives, the router z-loss is confirmed as the culprit.
 #
-# Short + cheap: 1 node, ~400 steps, eval off, no checkpoints. Loads the same grafted init + frozen
-# router as keepaux.
+# ~400 steps, eval off, no checkpoints. Loads the same grafted init + frozen router as keepaux.
+# Runs at 8 nodes to mirror keepaux exactly. (The z-loss itself is per-token and node-count-invariant,
+# but we match nodes anyway so the two probes are directly comparable.)
 ##############################################################
 source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
 
@@ -15,7 +16,7 @@ EXPERIMENT_NAME="models_routerfixed"
 MODELS_DIR="/weka/oe-training-default/ryanwang/EMO/${EXPERIMENT_NAME}"
 DATA_ROOT="s3://ai2-llm"
 
-BEAKER_NODES=1
+BEAKER_NODES=8
 BEAKER_GPUS=8
 
 min_document_expert_pool=8

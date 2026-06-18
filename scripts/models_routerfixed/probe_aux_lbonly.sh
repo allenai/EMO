@@ -8,10 +8,10 @@
 # THIS PROBE = LB ONLY (lb=1e-1, z=0). Prediction: roughly STABLE past step ~119.
 # Sibling probe_aux_zonly.sh = Z ONLY (lb=0, z=1e-3) -- predicted to NaN.
 #
-# Short + cheap: 1 node, ~400 steps, eval off, no checkpoints. Loads the same grafted init + frozen
-# router as keepaux. (Node count is not part of the hypothesis -- the ||W||^2 overflow is per-token in
-# the backward -- so 1 node is used for fast scheduling; the exact NaN step may differ from the 8-node
-# keepaux run, but a systematic z-loss overflow should still appear within a few hundred steps.)
+# ~400 steps, eval off, no checkpoints. Loads the same grafted init + frozen router as keepaux.
+# Runs at 8 nodes to EXACTLY mirror keepaux: the batch-level LB statistic is reduced over a sequence
+# population that scales with GPU count, so a faithful LB test must use the same node count (a 1-node
+# run would compute the LB loss over ~8x fewer sequences -> noisier, confounded).
 ##############################################################
 source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
 
@@ -19,7 +19,7 @@ EXPERIMENT_NAME="models_routerfixed"
 MODELS_DIR="/weka/oe-training-default/ryanwang/EMO/${EXPERIMENT_NAME}"
 DATA_ROOT="s3://ai2-llm"
 
-BEAKER_NODES=1
+BEAKER_NODES=8
 BEAKER_GPUS=8
 
 min_document_expert_pool=8
