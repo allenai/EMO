@@ -137,6 +137,10 @@ class ExperimentConfig(Config):
     """Whether to load the trainer state (including data loader state) when loading from `load_path`.
     This only makes sense when trainer state is available in the checkpoint and you're resuming
     on the same dataset."""
+    load_optim_state: bool = True
+    """Whether to load the optimizer state when loading from `load_path`. Set false to start with a
+    fresh optimizer (e.g. when `load_path` points at a model-only checkpoint and you want a clean
+    step-0 run)."""
     # docs: end-define-config
 
 
@@ -168,7 +172,11 @@ def train(opts, config: ExperimentConfig):
         log.info(
             f"Loading checkpoint from {config.load_path} since no checkpoints were found in the save folder..."
         )
-        trainer.load_checkpoint(config.load_path, load_trainer_state=config.load_trainer_state)
+        trainer.load_checkpoint(
+            config.load_path,
+            load_trainer_state=config.load_trainer_state,
+            load_optim_state=config.load_optim_state,
+        )
     # docs: end-load-path
 
     # Train.

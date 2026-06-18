@@ -96,4 +96,5 @@ AI2_Colors.pdf
 paper.pdf
 # HF/OLMo-core checkpoints written into the repo via the weka mapping (never track)
 /models_fullextend/
+/models_routerfixed/
 .wrangler/
