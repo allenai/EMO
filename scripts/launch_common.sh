@@ -57,10 +57,14 @@ launch() {
     if [[ "${MODE}" == "beaker" ]]; then
         # Extra plain env vars to forward to the workers (in addition to S3_PROFILE). Set
         # BEAKER_ENV_VARS=(KEY=VAL ...) in the calling script before `launch`; defaults to none.
-        local extra_env_args=()
+        # NOTE: the launcher's `--env` is argparse nargs="*" with NO append action, so repeated
+        # `--env` flags clobber each other (only the last wins). All values MUST go under a single
+        # `--env`. Putting them after S3_PROFILE= keeps that empty-string override intact (otherwise
+        # S3_PROFILE falls back to the launcher default "S3", a nonexistent profile -> ProfileNotFound).
+        local env_vars=("S3_PROFILE=")
         local kv
         for kv in "${BEAKER_ENV_VARS[@]:-}"; do
-            [[ -n "${kv}" ]] && extra_env_args+=(--env "${kv}")
+            [[ -n "${kv}" ]] && env_vars+=("${kv}")
         done
         python -m olmo_core.launch.beaker \
             --name "${run_name}" \
@@ -75,8 +79,7 @@ launch() {
             --allow-dirty \
             --priority "${BEAKER_PRIORITY}" \
             --env-secret "${BEAKER_ENV_SECRETS[@]}" \
-            --env "S3_PROFILE=" \
-            "${extra_env_args[@]}" \
+            --env "${env_vars[@]}" \
             -- "${script}" "${run_name}" --data-root="${DATA_ROOT}" "$@"
     else
         torchrun --nproc-per-node="${NPROC}" "${script}" "${run_name}" --data-root="${DATA_ROOT}" "$@"
