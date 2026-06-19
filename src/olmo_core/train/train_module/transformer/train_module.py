@@ -1,5 +1,6 @@
 import contextlib
 import logging
+import os
 from dataclasses import replace
 from functools import cached_property, lru_cache
 from typing import Any, Dict, Generator, Literal, Optional, Tuple, Union
@@ -512,6 +513,13 @@ class TransformerTrainModule(TrainModule):
         return output
 
     def optim_step(self):
+        # Per-parameter-group gradient diagnostics (opt-in via EMO_GRAD_DIAG=1). Computed BEFORE
+        # clipping so the raw pre-clip grad norms are recorded. Used to localize where a NaN/overflow
+        # originates (e.g. the models_routerfixed frozen-router probes: is the blow-up on the prenorm
+        # gain `feed_forward_norm.weight` group, as the aux-loss-dumps-onto-gamma hypothesis predicts?).
+        if os.environ.get("EMO_GRAD_DIAG") == "1":
+            self._record_grad_diagnostics()
+
         # Maybe clip gradients.
         if self.max_grad_norm is not None:
             grad_norm = self._clip_grad_norm(self.max_grad_norm)
@@ -636,6 +644,48 @@ class TransformerTrainModule(TrainModule):
 
         torch.nn.utils.clip_grads_with_norm_(parameters, max_grad_norm, total_norm, foreach=foreach)
         return total_norm
+
+    @staticmethod
+    def _grad_diag_bucket(name: str) -> str:
+        """Map a parameter name to a diagnostic bucket (priority-ordered)."""
+        if "router" in name:
+            return "router"  # frozen in routerfixed -> should read ~0 (freeze sanity check)
+        if "feed_forward_norm" in name:
+            return "ff_norm_gamma"  # the prenorm gain feeding the MoE -- the hypothesized lever
+        if "attention_norm" in name:
+            return "attn_norm"
+        if "feed_forward_moe" in name or "experts" in name or "feed_forward" in name:
+            return "experts"
+        if "attention" in name or "sequence_mixer" in name:
+            return "attention"
+        return "other"
+
+    def _record_grad_diagnostics(self, norm_type: float = 2.0) -> None:
+        """Record per-bucket grad L2 norm and max-abs grad (globally reduced) under the
+        `graddiag` namespace. Opt-in; reuses the same DTensor-aware norm path as grad clipping."""
+        buckets: Dict[str, list] = {}
+        for name, p in self.model.named_parameters():
+            if p.grad is None:
+                continue
+            buckets.setdefault(self._grad_diag_bucket(name), []).append(p.grad)
+        for bucket, grads in buckets.items():
+            total_norm = nn.utils.get_total_norm(
+                grads, norm_type=norm_type, error_if_nonfinite=False
+            )
+            if isinstance(total_norm, DTensor):
+                total_norm = total_norm.full_tensor()
+            self.trainer.record_metric(
+                f"grad norm ({bucket})", total_norm, reduce_type=None, namespace="graddiag"
+            )
+            # Max-abs grad: catches a single overflowing element a sum-of-squares norm can mask.
+            local_max = torch.stack(
+                [g.to_local().abs().max() if isinstance(g, DTensor) else g.abs().max() for g in grads]
+            ).max()
+            if is_distributed():
+                dist.all_reduce(local_max, op=dist.ReduceOp.MAX)
+            self.trainer.record_metric(
+                f"grad max-abs ({bucket})", local_max, reduce_type=None, namespace="graddiag"
+            )
 
     def _prepare_batch(
         self, batch: Dict[str, Any], labels: Optional[torch.Tensor] = None

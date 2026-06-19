@@ -55,6 +55,13 @@ launch() {
     shift 2
 
     if [[ "${MODE}" == "beaker" ]]; then
+        # Extra plain env vars to forward to the workers (in addition to S3_PROFILE). Set
+        # BEAKER_ENV_VARS=(KEY=VAL ...) in the calling script before `launch`; defaults to none.
+        local extra_env_args=()
+        local kv
+        for kv in "${BEAKER_ENV_VARS[@]:-}"; do
+            [[ -n "${kv}" ]] && extra_env_args+=(--env "${kv}")
+        done
         python -m olmo_core.launch.beaker \
             --name "${run_name}" \
             --gpus "${BEAKER_GPUS}" \
@@ -69,6 +76,7 @@ launch() {
             --priority "${BEAKER_PRIORITY}" \
             --env-secret "${BEAKER_ENV_SECRETS[@]}" \
             --env "S3_PROFILE=" \
+            "${extra_env_args[@]}" \
             -- "${script}" "${run_name}" --data-root="${DATA_ROOT}" "$@"
     else
         torchrun --nproc-per-node="${NPROC}" "${script}" "${run_name}" --data-root="${DATA_ROOT}" "$@"
