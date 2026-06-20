@@ -194,17 +194,18 @@ def build_results() -> str:
         [
             ("<code>emo_1b14b_130b</code> (baseline)", "learnable", "lb=1e-1, z=1e-3", "<strong>2.692</strong>", "0.769", "&#10003; complete"),
             ("<code>noaux</code>", "frozen (grafted)", "<strong>none</strong>", "<strong>2.715</strong> (+0.023)", "0.774", "&#10003; complete (robust)"),
-            ("<code>keepaux</code>", "frozen (grafted)", "lb=1e-1, z=1e-3", "&mdash;", "&mdash;", "&#10007; NaN @ ~120 (1st run) &middot; &#10003; clean @ 500 on 2 reruns"),
+            ("<code>keepaux</code>", "frozen (grafted)", "lb=1e-1, z=1e-3", "<strong>2.723</strong>&sup1;", "0.776", "&#10007; NaN @ ~120 (1st run) &middot; &#10003; full 50B run on relaunch"),
             ("probe <code>lbonly</code>", "frozen (grafted)", "lb=1e-1 only", "&mdash;", "&mdash;", "&#10007; NaN @ 105 (1st run) &middot; &#10003; clean @ 150 on rerun"),
             ("probe <code>zonly</code>", "frozen (grafted)", "z=1e-3 only", "&mdash;", "&mdash;", "&#10007; NaN @ 289 (1st run)"),
         ],
     )
     return f"""
 {card("results", "Outcome table", runs + '''
-<p class="note">Baseline final CE read from the run's WandB summary (step 11,921). The
-frozen-router <code>noaux</code> run reached the same 50B-token hard stop and logged
-&ldquo;Training complete&rdquo;. The aux-on rows are the headline of Finding 2: they NaN'd on the
-first attempt but reran clean &mdash; see below.</p>''')}
+<p class="note">Baseline / <code>noaux</code> CE columns are the <em>smoothed</em> WandB reading
+(step 11,921). &sup1; <code>keepaux</code>'s 2.723 is the <em>raw final-batch</em> <code>train/CE</code>;
+on that same raw metric the others read baseline 2.692, <code>noaux</code> 2.736 &mdash; so keepaux
+lands <em>between</em> baseline and noaux (see Finding 2). The aux-on rows are the headline of
+Finding 2: they NaN'd on the first attempt but reran clean.</p>''')}
 
 {card("results", "Finding 1 &mdash; a frozen trained router converges", '''
 <p>The headline: a router that is <em>fixed</em> to its trained values, with every other
@@ -225,7 +226,15 @@ it carries a marginal numerical instability (a bf16 overflow that NaN'd the loss
 <em>nondeterministically</em> &mdash; plausibly from cross-node NCCL bf16 reduction rounding or transient
 data/hardware effects &mdash; rather than a reproducible divergence. So aux-on <em>can</em> train, it is just
 risky; <strong><code>noaux</code> is the robust choice</strong> (and a frozen router has nothing for the
-shaping losses to shape anyway).</p>''')}
+shaping losses to shape anyway).</p>
+<p><strong>Confirmed end-to-end.</strong> The full production <code>keepaux</code> run was relaunched and
+this time <strong>cleared the danger zone (all three original NaNs were &le; step 289) and trained clean to
+the 50B hard stop</strong>, final raw <code>train/CE</code> <strong>2.723</strong> &mdash; <em>marginally
+better</em> than <code>noaux</code> (2.736, same metric) and closest of the frozen runs to the learnable
+baseline (2.692). So the aux losses are <strong>not a final-loss penalty</strong> on a frozen router (a
+slight help if anything); they are purely an <em>early stability</em> risk. When the metastable config
+survives its first few hundred steps, it converges as well as &mdash; or better than &mdash; turning the aux
+losses off.</p>''')}
 
 {card("results", "What we got wrong (kept for the record)", '''
 <p>An earlier version of this report asserted a confident <strong>mechanism</strong> for the NaN: that the
