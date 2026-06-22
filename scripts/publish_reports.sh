@@ -25,7 +25,7 @@ cd "$(dirname "$0")/.."
 EXPERIMENTS=(
     "models_sizescaling|expert specialization vs pool size (32/64/96/128 experts)"
     "models_fullextend|ghost-expert pretraining so new experts can be added post-training (coeff-mode sweep + matched no-ghost/stdMoE baselines complete; all convergence-neutral)"
-    "models_routerfixed|can the router be frozen? a grafted trained router + frozen retrain converges to baseline CE (2.715 vs 2.692), but only with the router-shaping aux losses off (aux-on variants NaN)"
+    "models_routerfixed|can the router be frozen? a grafted trained router + frozen retrain converges to baseline CE (2.715 vs 2.692), but only with the router-shaping aux losses off (aux-on variants NaN); follow-up: the frozen router does NOT pin the experts — weights diverge to ~0 cosine and the same-index expert function is at chance"
 )
 
 PROJECT="emo-reports"

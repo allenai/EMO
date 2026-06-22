@@ -28,10 +28,10 @@ GRID_POINTS = 2000
 
 # (wandb project, run display name, chart-series label). Order = legend/color order.
 RUNS = [
-    ("ryanyxw/emo-extension", "emo_1b14b_130b_noghost_extend1_finemath_frz", "no-ghost baseline"),
-    ("ryanyxw/emo-extension", "emo_1b14b_130b_ghost_uniform_extend1_finemath_frz", "uniform ghost"),
-    ("ryanyxw/emo-extension", "emo_1b14b_130b_ghost_usage_extend1_finemath_frz", "usage ghost"),
-    ("ryanyxw/emo-extension", "emo_1b14b_130b_ghost_random_extend1_finemath_frz", "random ghost"),
+    ("ryanyxw/emo-extension", "emo_1b14b_50bof130b_noghost_extend1_finemath_frz", "no-ghost baseline"),
+    ("ryanyxw/emo-extension", "emo_1b14b_50bof130b_ghost_uniform_extend1_finemath_frz", "uniform ghost"),
+    ("ryanyxw/emo-extension", "emo_1b14b_50bof130b_ghost_usage_extend1_finemath_frz", "usage ghost"),
+    ("ryanyxw/emo-extension", "emo_1b14b_50bof130b_ghost_random_extend1_finemath_frz", "random ghost"),
 ]
 
 # (chart key, wandb metric key, chart title).

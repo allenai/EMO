@@ -1,6 +1,10 @@
-# PARENT: "scripts/models_sizescaling/emo_1b14b_130b.sh"
+# PARENT: "scripts/models_fullextend/emo_1b14b_50bof130b.sh"
 # DESCRIPTION:
-#     - No-ghost EMO baseline for the models_fullextend experiment, run at the SAME
+#     - models_v2 home for the EMO 1B/14B 50B-token (130B LR schedule) baseline. Same
+#       recipe as the models_fullextend baseline, repointed to the models_v2 experiment
+#       (wandb tag models_v2, save root .../EMO/models_v2). The trained checkpoints are
+#       symlinked into models_v2/ from models_fullextend rather than retrained.
+#     - No-ghost EMO baseline, run at the SAME
 #       compute as the ghost coeff-mode sweep's config #3: 8 nodes / 64 GPUs,
 #       max_duration=130B but hard_stop=50B (= step 11921), so it is apples-to-apples
 #       with the 8-node random ghost run. The unmodified EMO 1B/14B randpool recipe
@@ -12,7 +16,7 @@
 ##############################################################
 source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
 
-EXPERIMENT_NAME="models_fullextend"
+EXPERIMENT_NAME="models_v2"
 MODELS_DIR="/weka/oe-training-default/ryanwang/EMO/${EXPERIMENT_NAME}"
 DATA_ROOT="s3://ai2-llm"
 
@@ -27,7 +31,7 @@ lb=1e-1
 
 num_shared_experts=1 # 1 out of 8 will be shared experts
 
-runname="emo_1b14b_130b"
+runname="emo_1b14b_50bof130b"
 
 launch src/scripts/train/olmoe-1B-7B_fsl.py $runname \
 		--save-folder="${MODELS_DIR}/$runname" \

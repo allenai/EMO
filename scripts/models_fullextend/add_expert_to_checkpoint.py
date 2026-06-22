@@ -33,8 +33,8 @@ Only model weights are written (``optim=None``); the continual-pretrain run load
 them with a fresh optimizer/schedule.
 
     python scripts/models_fullextend/add_expert_to_checkpoint.py \
-        --checkpoint-path models_fullextend/emo_1b14b_130b_ghost_uniform_always_detachF/step11921 \
-        --save-path     models_fullextend/emo_1b14b_130b_ghost_uniform_always_detachF/step11921-plus1 \
+        --checkpoint-path models_fullextend/emo_1b14b_50bof130b_ghost_uniform_always_detachF/step11921 \
+        --save-path     models_fullextend/emo_1b14b_50bof130b_ghost_uniform_always_detachF/step11921-plus1 \
         --num-new-experts 1
 """
 

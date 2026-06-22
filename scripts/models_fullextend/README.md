@@ -100,10 +100,11 @@ model-type or argparse args):
 
 ## Scripts
 
-- `emo_1b14b_130b.sh` — **baseline**: the unmodified EMO 1B/14B 130B-token
-  randpool recipe (carried over from `models_sizescaling`, repointed to this
-  experiment) for an apples-to-apples reference.
-- `emo_1b14b_130b_ghost_{usage,uniform,random}_always_detachF.sh` — the
+- `emo_1b14b_50bof130b.sh` — **baseline**: the unmodified EMO 1B/14B randpool
+  recipe (130B-token LR schedule, hard-stopped at 50B tokens; carried over from
+  `models_sizescaling`, repointed to this experiment) for an apples-to-apples
+  reference.
+- `emo_1b14b_50bof130b_ghost_{usage,uniform,random}_always_detachF.sh` — the
   ghost-expert coefficient-mode sweep. Same recipe plus the `ghost_extend_*`
   overrides, identical to each other except `ghost_extend_coeff_mode` (the three
   swept blend schemes) and `runname`. Each hard-stops at 50B tokens

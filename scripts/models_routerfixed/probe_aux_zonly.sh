@@ -1,4 +1,4 @@
-# PARENT: "scripts/models_routerfixed/emo_1b14b_130b_routerfixed_keepaux.sh"
+# PARENT: "scripts/models_routerfixed/emo_1b14b_50bof130b_routerfixed_keepaux.sh"
 # DIAGNOSTIC PROBE (models_routerfixed): isolate which auxiliary loss destabilizes the frozen-router
 # run. See probe_aux_lbonly.sh header for the full rationale.
 #

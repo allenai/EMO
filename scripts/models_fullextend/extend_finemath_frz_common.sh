@@ -65,13 +65,13 @@ num_tokens=$((num_billion_tokens * 1000000000))
 # base was pretrained WITHOUT the ghost mechanism).
 case "$VARIANT" in
     noghost)
-        base_run_dir="emo_1b14b_130b"
-        runname="emo_1b14b_130b_noghost_extend${num_new_experts}_finemath_frz"
+        base_run_dir="emo_1b14b_50bof130b"
+        runname="emo_1b14b_50bof130b_noghost_extend${num_new_experts}_finemath_frz"
         variant_tag="noghost"
         ;;
     *)
-        base_run_dir="emo_1b14b_130b_ghost_${VARIANT}_always_detachF"
-        runname="emo_1b14b_130b_ghost_${VARIANT}_extend${num_new_experts}_finemath_frz"
+        base_run_dir="emo_1b14b_50bof130b_ghost_${VARIANT}_always_detachF"
+        runname="emo_1b14b_50bof130b_ghost_${VARIANT}_extend${num_new_experts}_finemath_frz"
         variant_tag="ghost_${VARIANT}"
         ;;
 esac

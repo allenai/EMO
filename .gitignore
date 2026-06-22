@@ -97,4 +97,5 @@ paper.pdf
 # HF/OLMo-core checkpoints written into the repo via the weka mapping (never track)
 /models_fullextend/
 /models_routerfixed/
+/models_v2/
 .wrangler/

@@ -12,11 +12,11 @@ cd "$(git rev-parse --show-toplevel)"
 export PYTHONPATH="$(pwd)/src"
 
 EXPERIMENT_DIR="models_routerfixed"
-SRC_RUN="emo_1b14b_130b"                              # the trained baseline (models_fullextend)
+SRC_RUN="emo_1b14b_50bof130b"                              # the trained baseline (models_fullextend)
 SRC_STEP="step11921"
 OUT_NAME="init_routerfixed_step0"
 
-# Provenance symlink: models_routerfixed/emo_1b14b_130b -> models_fullextend/emo_1b14b_130b.
+# Provenance symlink: models_routerfixed/emo_1b14b_50bof130b -> models_fullextend/emo_1b14b_50bof130b.
 # Gives the builder a stable read path inside the experiment dir and documents the source.
 mkdir -p "${EXPERIMENT_DIR}"
 if [[ ! -e "${EXPERIMENT_DIR}/${SRC_RUN}" ]]; then

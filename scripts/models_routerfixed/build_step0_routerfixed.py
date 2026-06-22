@@ -4,7 +4,7 @@ Question under test: does the router need to be *learned* during pretraining, or
 good router (found once) be frozen while the rest of the model trains around it?
 
 This script produces the starting checkpoint for that experiment. It takes a *source*
-checkpoint (the fully-trained ``emo_1b14b_130b`` run, step 11921 = 50B tokens) and writes a
+checkpoint (the fully-trained ``emo_1b14b_50bof130b`` run, step 11921 = 50B tokens) and writes a
 new, model-only checkpoint whose weights are:
 
   - **non-router params**: a *fresh* EMO init, **bit-identical** to the original run's step-0
@@ -25,7 +25,7 @@ Mirrors ``scripts/models_fullextend/add_expert_to_checkpoint.py``: runs single-p
 source ``config.json``, and writes model weights only (``optim=None``).
 
     python scripts/models_routerfixed/build_step0_routerfixed.py \
-        --src-checkpoint models_routerfixed/emo_1b14b_130b/step11921 \
+        --src-checkpoint models_routerfixed/emo_1b14b_50bof130b/step11921 \
         --out-dir       models_routerfixed/init_routerfixed_step0
 """
 

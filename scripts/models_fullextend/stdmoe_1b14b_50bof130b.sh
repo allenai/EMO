@@ -24,7 +24,7 @@ lb=1e-1
 
 num_shared_experts=1
 
-runname="stdmoe_1b14b_130b"
+runname="stdmoe_1b14b_50bof130b"
 
 launch src/scripts/train/olmoe-1B-7B_fsl.py $runname \
 		--save-folder="${MODELS_DIR}/$runname" \

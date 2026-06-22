@@ -13,10 +13,10 @@ MODELS_DIR="${MODELS_DIR:-models_fullextend}"
 # baseline is the pre-extension control for the extension eval (plain 128-expert model, no
 # ghost-on variant -- the loop below skips it).
 MODELS=(
-    "${MODELS_DIR}/emo_1b14b_130b_ghost_usage_always_detachF/step11921|${MODELS_DIR}/emo_1b14b_130b_ghost_usage_always_detachF/step11921-hf"
-    "${MODELS_DIR}/emo_1b14b_130b_ghost_uniform_always_detachF/step11921|${MODELS_DIR}/emo_1b14b_130b_ghost_uniform_always_detachF/step11921-hf"
-    "${MODELS_DIR}/emo_1b14b_130b_ghost_random_always_detachF/step11921|${MODELS_DIR}/emo_1b14b_130b_ghost_random_always_detachF/step11921-hf"
-    "${MODELS_DIR}/emo_1b14b_130b/step11921|${MODELS_DIR}/emo_1b14b_130b/step11921-hf"
+    "${MODELS_DIR}/emo_1b14b_50bof130b_ghost_usage_always_detachF/step11921|${MODELS_DIR}/emo_1b14b_50bof130b_ghost_usage_always_detachF/step11921-hf"
+    "${MODELS_DIR}/emo_1b14b_50bof130b_ghost_uniform_always_detachF/step11921|${MODELS_DIR}/emo_1b14b_50bof130b_ghost_uniform_always_detachF/step11921-hf"
+    "${MODELS_DIR}/emo_1b14b_50bof130b_ghost_random_always_detachF/step11921|${MODELS_DIR}/emo_1b14b_50bof130b_ghost_random_always_detachF/step11921-hf"
+    "${MODELS_DIR}/emo_1b14b_50bof130b/step11921|${MODELS_DIR}/emo_1b14b_50bof130b/step11921-hf"
 )
 
 for PAIR in "${MODELS[@]}"; do

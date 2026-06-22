@@ -13,10 +13,10 @@ NUM_NEW_EXPERTS="${NUM_NEW_EXPERTS:-1}"
 
 # Extension run-dir names to convert (3 ghost variants + the no-ghost baseline control).
 RUNS=(
-    emo_1b14b_130b_ghost_uniform_extend${NUM_NEW_EXPERTS}_finemath_frz
-    emo_1b14b_130b_ghost_usage_extend${NUM_NEW_EXPERTS}_finemath_frz
-    emo_1b14b_130b_ghost_random_extend${NUM_NEW_EXPERTS}_finemath_frz
-    emo_1b14b_130b_noghost_extend${NUM_NEW_EXPERTS}_finemath_frz
+    emo_1b14b_50bof130b_ghost_uniform_extend${NUM_NEW_EXPERTS}_finemath_frz
+    emo_1b14b_50bof130b_ghost_usage_extend${NUM_NEW_EXPERTS}_finemath_frz
+    emo_1b14b_50bof130b_ghost_random_extend${NUM_NEW_EXPERTS}_finemath_frz
+    emo_1b14b_50bof130b_noghost_extend${NUM_NEW_EXPERTS}_finemath_frz
 )
 
 for rn in "${RUNS[@]}"; do

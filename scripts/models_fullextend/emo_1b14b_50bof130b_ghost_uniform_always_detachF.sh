@@ -1,13 +1,10 @@
-# PARENT: "scripts/models_fullextend/emo_1b14b_130b.sh"
+# PARENT: "scripts/models_fullextend/emo_1b14b_50bof130b_ghost_usage_always_detachF.sh"
 # DESCRIPTION:
-#     - models_fullextend ghost-expert SWEEP run, config #1.
-#       Ghost knobs: coeff_mode=usage, route=always, detach_coeff=false, num=1, random_k=8.
-#       (num and random_k are held fixed across the whole sweep; the runname encodes the
-#       three varied knobs: coeff_mode / route / detach_coeff.)
-#     - 16 nodes. Trains on the full 130B-token schedule (max_duration=130B so the LR
-#       cosine decay targets 130B) but HARD-STOPS at 50B tokens for the sweep.
-#     - Checkpointing: keep the 2 most-recent rolling (ephemeral) checkpoints for
-#       crash-resume + the final model; no permanent intermediates accumulate.
+#     - models_fullextend ghost-expert SWEEP run, config #2.
+#       Ghost knobs: coeff_mode=uniform, route=always, detach_coeff=false, num=1, random_k=8.
+#       Compares a naive uniform pool-average ghost against config #1's usage-weighted blend.
+#     - 16 nodes, max_duration=130B, hard_stop=50B. 2-deep rolling checkpoints + final;
+#       pre_train_checkpoint disabled (skip the useless random-init step0).
 ##############################################################
 source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
 
@@ -29,11 +26,11 @@ num_shared_experts=1 # 1 out of 8 will be shared experts
 # --- ghost-expert knobs (this run) ---
 ghost_extend_num=1               # fixed across the sweep
 ghost_extend_random_k=8          # fixed across the sweep
-ghost_extend_coeff_mode="usage"  # swept: usage | uniform | random
+ghost_extend_coeff_mode="uniform"  # swept: usage | uniform | random
 ghost_extend_route="always"      # swept: always (topk not implemented)
 ghost_extend_detach_coeff=false  # swept: false | true
 
-runname="emo_1b14b_130b_ghost_usage_always_detachF"
+runname="emo_1b14b_50bof130b_ghost_uniform_always_detachF"
 
 launch src/scripts/train/olmoe-1B-7B_fsl.py $runname \
 		--save-folder="${MODELS_DIR}/$runname" \
@@ -44,6 +41,7 @@ launch src/scripts/train/olmoe-1B-7B_fsl.py $runname \
 		--trainer.callbacks.checkpointer.save_interval=1000000 \
 		--trainer.callbacks.checkpointer.ephemeral_save_interval=500 \
 		--trainer.callbacks.checkpointer.keep_ephemeral=2 \
+		--trainer.callbacks.checkpointer.pre_train_checkpoint=false \
 		--trainer.callbacks.wandb.enabled=true \
 		--trainer.callbacks.wandb.entity=ryanyxw \
 		--trainer.callbacks.wandb.project=emo-extension \

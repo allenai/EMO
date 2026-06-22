@@ -1,21 +1,25 @@
-# PARENT: "scripts/models_fullextend/emo_1b14b_130b.sh"
-# EXPERIMENT: models_routerfixed -- does the router need to be LEARNED during pretraining?
+# PARENT: "scripts/models_routerfixed/emo_1b14b_50bof130b_routerfixed_noaux.sh"
+# EXPERIMENT: models_routerfixed -- does the FROZEN router need to be TRAINED, or does any fixed routing work?
 # DESCRIPTION:
-#     Take the trained routers from emo_1b14b_130b (step 11921 = 50B tokens), graft them onto a
-#     FRESH model init (everything else random-init, byte-exact to the original run's step 0),
-#     FREEZE the routers, and retrain from scratch on the identical EMO recipe. If loss still
-#     converges, a good routing function found once can be held fixed while the experts organise
-#     around it.
+#     Control for the noaux run. The noaux run grafted the TRAINED step-11921 routers onto a fresh
+#     init and froze them. This run is identical in every way EXCEPT we DON'T graft anything: the
+#     model is FULLY RANDOMLY INITIALIZED from scratch and we freeze its own RANDOM router init.
 #
-#     This is the NOAUX ablation: since the router can no longer move, the router-shaping auxiliary
-#     losses are switched OFF (lb_loss_weight=0, z_loss_weight=0) so the rest of the model trains on
-#     pure LM loss against the fixed routing. NB lb=0 also disables the randpool reduce-dp all-reduce
-#     path (it is gated by the LB-loss block). The KEEPAUX sibling keeps them at the baseline values.
+#     No --load_path / init checkpoint is needed. The non-router weights come out identical to the
+#     noaux run for free: EMO's weight init is topology-independent and seed-deterministic (driven by
+#     the model-level init_seed), and noaux's non-router weights are themselves just that same fresh
+#     init (init_routerfixed_step0 grafted ONLY the routers onto the fresh init). So same seed/config
+#     => same non-router weights; the ONLY difference between this run and noaux is random-vs-trained
+#     FROZEN routers.
 #
-#     The init checkpoint is built once by scripts/models_routerfixed/build_step0.sh and loaded with
-#     a fresh optimizer at step 0 (--load_trainer_state/--load_optim_state false). Freezing uses the
-#     existing TransformerConfig.freeze_params glob mechanism (same as extend_finemath_frz_*).
-#     Same compute/recipe as the baseline: 8 nodes / 64 GPUs, max_duration=130B, hard_stop=50B.
+#     If this converges as well as noaux, freezing the trained router was not special -- any fixed
+#     routing function suffices. If it does markedly worse, the trained routing function genuinely
+#     matters. Still a NOAUX run: lb_loss_weight=0, z_loss_weight=0 (router is frozen, so the
+#     router-shaping aux losses are off; this also disables the randpool reduce-dp all-reduce).
+#
+#     Same compute/recipe as noaux: 8 nodes / 64 GPUs, max_duration=130B, hard_stop=50B. Routers
+#     frozen via the existing TransformerConfig.freeze_params glob (requires_grad=False before FSDP,
+#     so the random routers never move and are excluded from the optimizer).
 ##############################################################
 source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
 
@@ -34,16 +38,11 @@ lb=0   # noaux: router-shaping LB loss switched off (router is frozen)
 
 num_shared_experts=1 # 1 out of 8 will be shared experts
 
-runname="emo_1b14b_130b_routerfixed_noaux"
+runname="emo_1b14b_50bof130b_routerrandom_noaux"
 
-# Router-fixed init checkpoint (built once by build_step0.sh): fresh weights + trained, grafted routers.
-INIT_CHECKPOINT="${MODELS_DIR}/init_routerfixed_step0/model_and_optim"
-
+# No init checkpoint: train fully from scratch and freeze the model's own random router init.
 launch src/scripts/train/olmoe-1B-7B_fsl.py $runname \
 		--save-folder="${MODELS_DIR}/$runname" \
-		--load_path="${INIT_CHECKPOINT}" \
-		--load_trainer_state=false \
-		--load_optim_state=false \
 		--model.freeze_params='[blocks.*.feed_forward_moe.router.*]' \
 		--dataset.mix=OLMoE-mix-0824 \
 		--work-dir="${DATASET_CACHE}" \
@@ -57,7 +56,7 @@ launch src/scripts/train/olmoe-1B-7B_fsl.py $runname \
 		--trainer.callbacks.wandb.entity=ryanyxw \
 		--trainer.callbacks.wandb.project=emo-extension \
 		--trainer.callbacks.wandb.name="${runname}" \
-		--trainer.callbacks.wandb.tags="[pretraining, ${EXPERIMENT_NAME}, routerfixed, noaux]" \
+		--trainer.callbacks.wandb.tags="[pretraining, ${EXPERIMENT_NAME}, routerrandom, noaux]" \
 		--model.block.feed_forward_moe.num_experts=128 \
 		--dataset.generate_doc_lengths=true \
 		--model.block.sequence_mixer.backend=flash_2 \

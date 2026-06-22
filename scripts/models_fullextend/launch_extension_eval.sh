@@ -35,10 +35,10 @@ ONLY="${ONLY:-}"   # optional: restrict to entries whose label contains this sub
 # unmodified EMO baseline through the identical grow+freeze recipe -- note its pre/ext dirs
 # carry no `_ghost_*_always_detachF` suffix, hence the explicit table).
 ENTRIES=(
-    "ghost_uniform|emo_1b14b_130b_ghost_uniform_always_detachF|emo_1b14b_130b_ghost_uniform_extend${NUM_NEW_EXPERTS}_finemath_frz"
-    "ghost_usage|emo_1b14b_130b_ghost_usage_always_detachF|emo_1b14b_130b_ghost_usage_extend${NUM_NEW_EXPERTS}_finemath_frz"
-    "ghost_random|emo_1b14b_130b_ghost_random_always_detachF|emo_1b14b_130b_ghost_random_extend${NUM_NEW_EXPERTS}_finemath_frz"
-    "noghost|emo_1b14b_130b|emo_1b14b_130b_noghost_extend${NUM_NEW_EXPERTS}_finemath_frz"
+    "ghost_uniform|emo_1b14b_50bof130b_ghost_uniform_always_detachF|emo_1b14b_50bof130b_ghost_uniform_extend${NUM_NEW_EXPERTS}_finemath_frz"
+    "ghost_usage|emo_1b14b_50bof130b_ghost_usage_always_detachF|emo_1b14b_50bof130b_ghost_usage_extend${NUM_NEW_EXPERTS}_finemath_frz"
+    "ghost_random|emo_1b14b_50bof130b_ghost_random_always_detachF|emo_1b14b_50bof130b_ghost_random_extend${NUM_NEW_EXPERTS}_finemath_frz"
+    "noghost|emo_1b14b_50bof130b|emo_1b14b_50bof130b_noghost_extend${NUM_NEW_EXPERTS}_finemath_frz"
 )
 
 # Build the model list. For each entry: the pre-extension model (step11921-hf) and the

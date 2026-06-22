@@ -1,4 +1,4 @@
-# PARENT: "scripts/models_routerfixed/emo_1b14b_130b_routerfixed_keepaux.sh"
+# PARENT: "scripts/models_routerfixed/emo_1b14b_50bof130b_routerfixed_keepaux.sh"
 # DIAGNOSTIC PROBE (models_routerfixed): isolate which auxiliary loss destabilizes the frozen-router
 # run. keepaux (lb=1e-1 AND z=1e-3) NaN'd at step ~119 -- the NaN was in the GRADIENT (grad norm went
 # NaN while every loss term stayed finite), pointing at an aux-loss backward overflowing bf16. Theory:

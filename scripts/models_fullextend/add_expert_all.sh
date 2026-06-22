@@ -16,10 +16,10 @@ NUM_NEW_EXPERTS="${NUM_NEW_EXPERTS:-1}"
 
 # Source run-dir names of the 50B checkpoints to grow.
 RUNS=(
-    emo_1b14b_130b_ghost_uniform_always_detachF
-    emo_1b14b_130b_ghost_usage_always_detachF
-    emo_1b14b_130b_ghost_random_always_detachF
-    emo_1b14b_130b   # no-ghost EMO baseline (control)
+    emo_1b14b_50bof130b_ghost_uniform_always_detachF
+    emo_1b14b_50bof130b_ghost_usage_always_detachF
+    emo_1b14b_50bof130b_ghost_random_always_detachF
+    emo_1b14b_50bof130b   # no-ghost EMO baseline (control)
 )
 
 for run in "${RUNS[@]}"; do

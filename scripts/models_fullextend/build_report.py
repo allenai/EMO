@@ -205,10 +205,10 @@ CE-loss comparison.</p>
 same 8-node / 64-GPU compute (both <code>max_duration</code> 130B, <code>hard_stop</code>
 50B = step 11,921), giving an apples-to-apples DP-world reference for every ghost config:</p>
 <ul>
-<li><strong>EMO no-ghost baseline</strong> (<code>emo_1b14b_130b</code>) &mdash;
+<li><strong>EMO no-ghost baseline</strong> (<code>emo_1b14b_50bof130b</code>) &mdash;
 <strong>final CE 2.692</strong>. This 8-node run lands right on top of the older
 16-node step-aligned reference (2.689), confirming the DP-world halving barely moves CE.</li>
-<li><strong>stdMoE baseline</strong> (standard top-k MoE, <code>stdmoe_1b14b_130b</code>)
+<li><strong>stdMoE baseline</strong> (standard top-k MoE, <code>stdmoe_1b14b_50bof130b</code>)
 &mdash; <strong>final CE 2.680</strong>.</li>
 </ul>
 <p><strong>Final CE at the 50B hard-stop, vs the matched EMO no-ghost baseline (2.692):</strong></p>
@@ -359,11 +359,11 @@ def build_sweep(base: Path) -> str:
     runs = table(
         ["Run", "coeff_mode", "route", "detach_coeff", "Status", "Final CE @ 50B"],
         [
-            ("emo_1b14b_130b_ghost_usage_always_detachF", "usage", "always", "false", "done", "2.654"),
-            ("emo_1b14b_130b_ghost_uniform_always_detachF", "uniform", "always", "false", "done", "2.690"),
-            ("emo_1b14b_130b_ghost_random_always_detachF", "random", "always", "false (no-op)", "done (8 nodes&sup2;)", "2.690"),
-            ("emo_1b14b_130b (no-ghost EMO baseline)", "&mdash;", "&mdash;", "&mdash;", "done (8 nodes&sup2;)", "2.692"),
-            ("stdmoe_1b14b_130b (standard top-k MoE)", "&mdash;", "&mdash;", "&mdash;", "done (8 nodes&sup2;)", "2.680"),
+            ("emo_1b14b_50bof130b_ghost_usage_always_detachF", "usage", "always", "false", "done", "2.654"),
+            ("emo_1b14b_50bof130b_ghost_uniform_always_detachF", "uniform", "always", "false", "done", "2.690"),
+            ("emo_1b14b_50bof130b_ghost_random_always_detachF", "random", "always", "false (no-op)", "done (8 nodes&sup2;)", "2.690"),
+            ("emo_1b14b_50bof130b (no-ghost EMO baseline)", "&mdash;", "&mdash;", "&mdash;", "done (8 nodes&sup2;)", "2.692"),
+            ("stdmoe_1b14b_50bof130b (standard top-k MoE)", "&mdash;", "&mdash;", "&mdash;", "done (8 nodes&sup2;)", "2.680"),
         ],
     )
     # Step-aligned CE: ghost config #1 vs the identical no-ghost EMO baseline

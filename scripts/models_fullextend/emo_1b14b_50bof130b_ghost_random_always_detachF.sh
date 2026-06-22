@@ -1,4 +1,4 @@
-# PARENT: "scripts/models_fullextend/emo_1b14b_130b_ghost_uniform_always_detachF.sh"
+# PARENT: "scripts/models_fullextend/emo_1b14b_50bof130b_ghost_uniform_always_detachF.sh"
 # DESCRIPTION:
 #     - models_fullextend ghost-expert SWEEP run, config #3.
 #       Ghost knobs: coeff_mode=random, route=always, detach_coeff=false, num=1, random_k=8.
@@ -36,7 +36,7 @@ ghost_extend_coeff_mode="random" # swept: usage | uniform | random
 ghost_extend_route="always"      # swept: always (topk not implemented)
 ghost_extend_detach_coeff=false  # swept: false | true (no-op for random)
 
-runname="emo_1b14b_130b_ghost_random_always_detachF"
+runname="emo_1b14b_50bof130b_ghost_random_always_detachF"
 
 launch src/scripts/train/olmoe-1B-7B_fsl.py $runname \
 		--save-folder="${MODELS_DIR}/$runname" \

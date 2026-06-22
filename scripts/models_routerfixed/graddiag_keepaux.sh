@@ -1,4 +1,4 @@
-# PARENT: "scripts/models_routerfixed/emo_1b14b_130b_routerfixed_keepaux.sh"
+# PARENT: "scripts/models_routerfixed/emo_1b14b_50bof130b_routerfixed_keepaux.sh"
 # PHASE B grad-norm diagnostic (models_routerfixed) -- FAITHFUL capture run.
 #
 # The lbonly-only diagnostic run trained clean to 150 steps even though lbonly NaN'd as a probe at

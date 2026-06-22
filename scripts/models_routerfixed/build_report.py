@@ -1,7 +1,7 @@
 """Build a self-contained HTML report for the models_routerfixed experiment.
 
 Tests whether EMO's router must be *learned* during pretraining or can be *fixed*:
-graft the fully-trained step-11921 routers from emo_1b14b_130b onto a fresh,
+graft the fully-trained step-11921 routers from emo_1b14b_50bof130b onto a fresh,
 byte-exact init, freeze them, and retrain everything else from scratch on the
 identical recipe. The experiment is results-complete (noaux converged; the aux-on
 variants NaN'd on first launch but reran clean — a metastable instability). Static
@@ -103,7 +103,7 @@ def build_overview() -> str:
 router that assigns tokens/documents to experts &mdash; <em>emerges</em> during
 pretraining. This experiment tests a counterfactual: <strong>does the router need to
 be learnable at all?</strong> We take the routers from the fully-trained
-<code>emo_1b14b_130b</code> run (step 11,921 = 50B tokens), graft them onto a
+<code>emo_1b14b_50bof130b</code> run (step 11,921 = 50B tokens), graft them onto a
 <em>fresh</em> model init, <strong>freeze</strong> them, and retrain everything else
 from scratch on the identical recipe.</p>
 
@@ -192,7 +192,7 @@ def build_results() -> str:
     runs = table(
         ["Run", "Router", "Aux losses", "Final CE @ 50B (step 11,921)", "arc_challenge (CE loss)", "Outcome"],
         [
-            ("<code>emo_1b14b_130b</code> (baseline)", "learnable", "lb=1e-1, z=1e-3", "<strong>2.692</strong>", "0.769", "&#10003; complete"),
+            ("<code>emo_1b14b_50bof130b</code> (baseline)", "learnable", "lb=1e-1, z=1e-3", "<strong>2.692</strong>", "0.769", "&#10003; complete"),
             ("<code>noaux</code>", "frozen (grafted)", "<strong>none</strong>", "<strong>2.715</strong> (+0.023)", "0.774", "&#10003; complete (robust)"),
             ("<code>keepaux</code>", "frozen (grafted)", "lb=1e-1, z=1e-3", "<strong>2.723</strong>&sup1;", "0.776", "&#10007; NaN @ ~120 (1st run) &middot; &#10003; full 50B run on relaunch"),
             ("probe <code>lbonly</code>", "frozen (grafted)", "lb=1e-1 only", "&mdash;", "&mdash;", "&#10007; NaN @ 105 (1st run) &middot; &#10003; clean @ 150 on rerun"),
