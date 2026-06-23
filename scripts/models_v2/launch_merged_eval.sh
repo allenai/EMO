@@ -56,7 +56,8 @@ MODELS=(
     "stdmoe_1b14b_50bof130b|11921"
     "stdmoe_64exp_50b|11921"
     "stdmoe_64exp_25b|5961"
-    "stdmoe_128exp_50b|11921"
+    # Still training (latest < step11921); uncomment once the 50B checkpoint lands.
+    # "stdmoe_128exp_50b|11921"
 )
 
 # --- MMLU 17 categories (match mmlu_merged_<cat>:rc_test::olmes in src/scripts/eval/tasks.py) ---
