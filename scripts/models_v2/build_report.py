@@ -108,8 +108,12 @@ def load_evals() -> dict:
         mmlu_vals = [v["val"] for k, v in r.items() if k.startswith("mmlu_merged_")]
         mmlu = _avg(mmlu_vals)
         gsm = r.get(GSM8K_TASK, {}).get("val")
+        # Only treat a model as fully scored when every expected task landed (32 = 9 MC9 + 5
+        # Gen5 + GSM8K + 17 MMLU). Avoids showing misleading partial averages mid-sweep.
+        complete = (all(t in r for t in MC9_TASKS) and all(t in r for t in GEN5_TASKS)
+                    and GSM8K_TASK in r and len(mmlu_vals) == 17)
         models.append({
-            "label": label, "run": run, "present": bool(r),
+            "label": label, "run": run, "present": complete,
             "summary": {"mc9": mc9, "mmlu": mmlu, "gen5": gen5, "gsm8k": gsm,
                         "n_mmlu": len(mmlu_vals)},
             "tasks": {t: r.get(t, {}).get("val") for t in MC9_TASKS + GEN5_TASKS},
