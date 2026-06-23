@@ -2,8 +2,9 @@
 """Build the models_v2 experiment report (styled to match models_fullextend).
 
 Pulls six training/eval curves from W&B for the models_v2 stdMoE runs and renders
-a self-contained HTML report (dark header, tab nav, uPlot charts with log-y toggle
-and drag-zoom) to claude_outputs/models_v2/report.html.
+a self-contained HTML report (dark header, tab nav, compact 2-up uPlot charts with
+per-chart log-y toggle, drag-zoom, and a click-to-expand modal) to
+claude_outputs/models_v2/report.html.
 
 Run:  python scripts/models_v2/build_report.py            # pull from W&B + render
       python scripts/models_v2/build_report.py --no-wandb # render from cached curves.json
@@ -32,6 +33,7 @@ RUNS = [
 METRICS = [
     ("CE loss",                      "train/CE loss"),
     ("Grad norm",                    "optim/total grad norm"),
+    ("Learning rate",                "optim/LR (group 0)"),
     ("Load balancing loss",          "train/load balancing loss"),
     ("Unique experts used / batch",  "train/unique experts used per batch"),
     ("HellaSwag (soft loss v2)",     "eval/downstream/hellaswag (soft loss v2)"),
@@ -43,7 +45,7 @@ def slug(t: str) -> str:
     return re.sub(r"(^-|-$)", "", re.sub(r"[^a-z0-9]+", "-", t.lower()))
 
 
-# ---- styling lifted verbatim from scripts/models_fullextend/build_report.py ----
+# ---- styling: models_fullextend chrome + compact 2-up grid + expand modal ----
 CSS = """
 :root { --fg:#1e293b; --muted:#64748b; --bg:#f8fafc; --card:#ffffff; --line:#e2e8f0; }
 * { box-sizing:border-box; }
@@ -82,19 +84,32 @@ tbody tr:nth-child(even) { background:#f8fafc; }
 details { margin:12px 0; }
 summary { cursor:pointer; color:#2563eb; font-size:14px; }
 .note { font-size:13px; color:var(--muted); }
-pre { background:#0f172a; color:#e2e8f0; padding:12px 14px; border-radius:6px; overflow:auto; font-size:13px; }
-pre code { background:transparent; padding:0; color:inherit; }
 code { background:#eef2f7; padding:1px 5px; border-radius:4px; font-size:0.9em; }
-h4 { margin:18px 0 4px; }
-.ce-chart { width:100%; margin-bottom:6px; }
-.chart-controls { display:flex; align-items:center; gap:12px; margin:8px 0 4px; }
+.ce-chart { width:100%; }
+/* compact 2-up grid */
+.chart-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px 20px; margin-top:6px; }
+@media (max-width:760px){ .chart-grid { grid-template-columns:1fr; } }
+.chart-cell { min-width:0; border:1px solid var(--line); border-radius:8px; padding:8px 10px 4px; }
+.chart-cell h4 { margin:0 0 2px; font-size:13px; }
+.chart-controls { display:flex; align-items:center; gap:8px; margin:2px 0 4px; }
 .chart-controls button { border:1px solid var(--line); background:#fff; border-radius:6px;
-                         padding:5px 10px; font-size:13px; cursor:pointer; }
+                         padding:3px 9px; font-size:12px; cursor:pointer; }
 .chart-controls button:hover { background:#f1f5f9; }
-.u-legend { font-size:12.5px; }
+.u-legend { font-size:12px; }
+/* expand modal */
+.ce-modal { position:fixed; inset:0; background:rgba(15,23,42,.55); display:none; z-index:50;
+            align-items:center; justify-content:center; padding:24px; }
+.ce-modal.open { display:flex; }
+.ce-modal-inner { background:#fff; border-radius:10px; padding:14px 16px; box-shadow:0 10px 40px rgba(0,0,0,.3); }
+.ce-modal-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:16px; }
+.ce-modal-bar strong { font-size:15px; }
+.ce-modal-bar button { border:1px solid var(--line); background:#fff; border-radius:6px; padding:5px 10px;
+                       font-size:13px; cursor:pointer; }
+.ce-modal-bar button:hover { background:#f1f5f9; }
 """
 
-# uPlot multi-chart init (from models_fullextend; spanGaps:true so per-run sampling overlays cleanly).
+# uPlot init: compact grid charts + click-to-expand modal. Plain string (literal braces);
+# data injected via __CURVES__ replace.
 _CHARTS_JS = r"""
 <script>
 (function(){
@@ -102,41 +117,58 @@ _CHARTS_JS = r"""
   const palette = ["#64748b","#2563eb","#7c3aed","#059669","#dc2626","#d97706"];
   const colorOf = {};
   C.runs.forEach((r,i) => { colorOf[r.label] = palette[i % palette.length]; });
-  const reg = {};
-  function build(key){
-    const st = reg[key], chart = st.chart, el = st.el;
-    const data = [chart.x].concat(chart.series.map(s => s.y));
-    const series = [{ value: (u,v) => v==null ? "--" : v }].concat(
-      chart.series.map(s => ({
-        label: s.label, stroke: colorOf[s.label] || "#888", width: 1.6,
-        spanGaps: true, value: (u,v) => v==null ? "--" : (+v).toFixed(4),
-      })));
-    const opts = {
-      width: (el.clientWidth || 900), height: 360,
-      focus: { alpha: 0.25 },
-      scales: { x: { time:false }, y: { distr: st.logY ? 3 : 1 } },
-      cursor: { focus: { prox: 30 }, drag: { x:true, y:true, uni:10 } },
-      axes: [
-        { label: "step", values: (u,vals) => vals.map(v => v>=1000 ? (v/1000)+"k" : v) },
-        { label: chart.title },
-      ],
-      series: series,
+  const SMALL_H = 230, reg = {};
+  function opts(chart, logY, w, h){
+    return {
+      width:w, height:h, focus:{ alpha:0.25 },
+      scales:{ x:{ time:false }, y:{ distr: logY ? 3 : 1 } },
+      cursor:{ focus:{ prox:30 }, drag:{ x:true, y:true, uni:10 } },
+      axes:[ { label:"step", values:(u,vals)=>vals.map(v=>v>=1000?(v/1000)+"k":v) }, { label:chart.title } ],
+      series:[ { value:(u,v)=>v==null?"--":v } ].concat(chart.series.map(s=>({
+        label:s.label, stroke:colorOf[s.label]||"#888", width:1.6, spanGaps:true,
+        value:(u,v)=>v==null?"--":(+v).toFixed(4) }))),
     };
-    if (st.plot) st.plot.destroy();
-    st.plot = new uPlot(opts, data, el);
+  }
+  const dataOf = chart => [chart.x].concat(chart.series.map(s=>s.y));
+  function build(key){
+    const st=reg[key], el=st.el; if(!el) return;
+    if(st.plot) st.plot.destroy();
+    st.plot = new uPlot(opts(st.chart, st.logY, el.clientWidth||430, SMALL_H), dataOf(st.chart), el);
   }
   C.charts.forEach(chart => {
     reg[chart.key] = { plot:null, logY:false, chart:chart, el:document.getElementById("chart-"+chart.key) };
-    if (reg[chart.key].el) build(chart.key);
+    build(chart.key);
   });
-  document.querySelectorAll("button.logtoggle").forEach(b => {
-    b.addEventListener("click", () => { const k=b.dataset.chart; reg[k].logY=!reg[k].logY; build(k); });
-  });
+  document.querySelectorAll("button.logtoggle").forEach(b =>
+    b.addEventListener("click", () => { const k=b.dataset.chart; reg[k].logY=!reg[k].logY; build(k); }));
+
+  // ---- expand modal ----
+  const modal=document.createElement("div"); modal.className="ce-modal";
+  modal.innerHTML='<div class="ce-modal-inner"><div class="ce-modal-bar"><strong></strong>'
+    +'<span><button class="ce-mlog">toggle log-y</button> <button class="ce-mclose">close ✕</button></span>'
+    +'</div><div class="ce-modal-chart"></div></div>';
+  document.body.appendChild(modal);
+  const mEl=modal.querySelector(".ce-modal-chart"), mTitle=modal.querySelector("strong");
+  let m=null;  // { key, logY, plot }
+  const mSize=()=>({ w:Math.min(window.innerWidth*0.94,1180)|0, h:Math.min(window.innerHeight*0.72,700)|0 });
+  function drawM(){ const c=reg[m.key].chart, s=mSize(); if(m.plot) m.plot.destroy();
+    m.plot=new uPlot(opts(c, m.logY, s.w, s.h), dataOf(c), mEl); }
+  function openM(key){ m={ key:key, logY:reg[key].logY, plot:null }; mTitle.textContent=reg[key].chart.title;
+    modal.classList.add("open"); drawM(); }
+  function closeM(){ if(m&&m.plot) m.plot.destroy(); m=null; modal.classList.remove("open"); }
+  document.querySelectorAll("button.expand").forEach(b => b.addEventListener("click", ()=>openM(b.dataset.chart)));
+  modal.querySelector(".ce-mclose").addEventListener("click", closeM);
+  modal.querySelector(".ce-mlog").addEventListener("click", ()=>{ if(m){ m.logY=!m.logY; drawM(); } });
+  modal.addEventListener("click", e=>{ if(e.target===modal) closeM(); });
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeM(); });
+
   window.__ceReg = Object.assign(window.__ceReg || {}, reg);
-  if (!window.__ceResizeBound) {
-    window.__ceResizeBound = true;
-    window.ceResize = function(){
-      Object.keys(window.__ceReg).forEach(k => { const st=window.__ceReg[k]; if (st.plot && st.el) st.plot.setSize({ width: st.el.clientWidth||900, height: 360 }); });
+  if(!window.__ceResizeBound){
+    window.__ceResizeBound=true;
+    window.ceResize=function(){
+      Object.keys(window.__ceReg).forEach(k=>{ const st=window.__ceReg[k];
+        if(st.plot && st.el && st.el.clientWidth) st.plot.setSize({ width:st.el.clientWidth, height:SMALL_H }); });
+      if(m && m.plot){ const s=mSize(); m.plot.setSize({ width:s.w, height:s.h }); }
     };
     window.addEventListener("resize", window.ceResize);
   }
@@ -179,7 +211,6 @@ def fetch_from_wandb() -> dict:
     runs_meta, per = [], {}
     for label, rid in RUNS:
         run = api.run(f"{ENTITY_PROJECT}/{rid}")
-        last_ce, last_step = None, None
         for title, key in METRICS:
             d = per.setdefault(key, {}).setdefault(label, {})
             for row in run.history(keys=[key], samples=600, pandas=False):
@@ -194,11 +225,9 @@ def fetch_from_wandb() -> dict:
                     continue
                 d[int(s)] = fv
         ce = per["train/CE loss"][label]
-        if ce:
-            last_step = max(ce)
-            last_ce = round(ce[last_step], 3)
+        last_step = max(ce) if ce else None
         runs_meta.append({"label": label, "url": run.url, "state": run.state, "id": rid,
-                          "last_ce": last_ce,
+                          "last_ce": round(ce[last_step], 3) if ce else None,
                           "last_tok": round(last_step * TOK_PER_STEP / 1e9, 1) if last_step else None})
     labels = [l for l, _ in RUNS]
     charts = []
@@ -210,18 +239,19 @@ def fetch_from_wandb() -> dict:
 
 
 def chart_blocks(charts: list) -> str:
-    out = []
+    cells = []
     for c in charts:
-        out.append(
+        cells.append(
+            '<div class="chart-cell">'
             f'<h4>{c["title"]}</h4>'
             '<div class="chart-controls">'
-            f'<button class="logtoggle" data-chart="{c["key"]}">toggle log-y</button>'
-            '<span class="note">drag to zoom (x &amp; y) &middot; double-click reset '
-            '&middot; hover to highlight a run &middot; click legend to toggle</span>'
+            f'<button class="logtoggle" data-chart="{c["key"]}">log-y</button>'
+            f'<button class="expand" data-chart="{c["key"]}">expand &#10530;</button>'
             '</div>'
             f'<div class="ce-chart" id="chart-{c["key"]}"></div>'
+            '</div>'
         )
-    return "".join(out)
+    return f'<div class="chart-grid">{"".join(cells)}</div>'
 
 
 def render(payload: dict, uplot_css: str, uplot_js: str) -> str:
@@ -235,7 +265,7 @@ def render(payload: dict, uplot_css: str, uplot_js: str) -> str:
                  f"<th>latest CE</th></tr></thead><tbody>{body_rows}</tbody></table>")
 
     overview = (
-        f'<div class="card goal"><h3>Goal</h3>'
+        '<div class="card goal"><h3>Goal</h3>'
         '<p>A standard top-k MoE (<code>moe_lbreducedp_sharedexp</code>) token-budget / '
         'expert-count sweep. Unlike the released baselines (130B LR schedule hard-stopped at '
         '50B), every run here decays the LR cosine <strong>directly over its true token '
@@ -250,8 +280,9 @@ def render(payload: dict, uplot_css: str, uplot_js: str) -> str:
     )
     curves = (
         '<div class="card results"><h3>Training &amp; eval curves</h3>'
-        '<p class="note">x-axis = optimizer step (k). Pulled live from W&amp;B; grad norm reads '
-        'best on a log y-axis (toggle per chart).</p>'
+        '<p class="note">x-axis = optimizer step (k). Drag to zoom (double-click resets), toggle '
+        'log-y per chart, or hit <strong>expand &#10530;</strong> to open a chart full-size. '
+        'Pulled live from W&amp;B.</p>'
         f'{chart_blocks(payload["charts"])}</div>'
     )
 
