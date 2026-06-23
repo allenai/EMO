@@ -45,6 +45,78 @@ def slug(t: str) -> str:
     return re.sub(r"(^-|-$)", "", re.sub(r"[^a-z0-9]+", "-", t.lower()))
 
 
+# ---- merged-test-split evals (scripts/models_v2/launch_merged_eval.sh outputs) ----
+# Outputs live at models_v2/merged_evals/<run>/<group>/task-<task>-metrics.json. Each model is
+# scored on the selective project's `*_merged` test splits (no selection/finetuning). We read
+# every task's primary_metric and aggregate into MC9 / MMLU / Gen5 / GSM8K, matching the
+# selective project's headline groupings.
+EVAL_ROOT = Path(__file__).resolve().parents[2] / "models_v2" / "merged_evals"
+
+# (run dir, display label) in report order. EMO baseline first, then the stdMoE sweep.
+EVAL_MODELS = [
+    ("emo_1b14b_50bof130b",    "EMO 128e · 50Bof130B"),
+    ("stdmoe_1b14b_50bof130b", "stdMoE 128e · 50Bof130B"),
+    ("stdmoe_128exp_50b",      "stdMoE 128e · 50B"),
+    ("stdmoe_64exp_50b",       "stdMoE 64e · 50B"),
+    ("stdmoe_64exp_25b",       "stdMoE 64e · 25B"),
+]
+
+# MC9 = 9 rank-classification tasks (incl. hellaswag); Gen5 = 5 generative QA tasks. Base task
+# names (the `*_merged` prefix before the `:rc_test`/`:test` split suffix).
+MC9_TASKS = ["arc_easy_merged", "arc_challenge_merged", "boolq_merged", "csqa_merged",
+             "hellaswag_merged", "openbookqa_merged", "piqa_merged", "socialiqa_merged",
+             "winogrande_merged"]
+GEN5_TASKS = ["squad_merged", "coqa_merged", "naturalqs_merged", "triviaqa_merged", "drop_merged"]
+GSM8K_TASK = "gsm8k_generation_8shot_merged"
+# Short column headers for the per-task detail table.
+TASK_SHORT = {"arc_easy_merged": "ARC-e", "arc_challenge_merged": "ARC-c", "boolq_merged": "BoolQ",
+              "csqa_merged": "CSQA", "hellaswag_merged": "HSwag", "openbookqa_merged": "OBQA",
+              "piqa_merged": "PIQA", "socialiqa_merged": "SIQA", "winogrande_merged": "WinoG",
+              "squad_merged": "SQuAD", "coqa_merged": "CoQA", "naturalqs_merged": "NQ",
+              "triviaqa_merged": "TriviaQA", "drop_merged": "DROP"}
+
+
+def _load_eval_model(run: str) -> dict:
+    """Return {base_task_name: {"metric","val","n"}} for one run, or {} if none scored yet."""
+    res: dict = {}
+    for f in sorted(EVAL_ROOT.glob(f"{run}/**/task-*-metrics.json")):
+        try:
+            d = json.loads(f.read_text())
+        except (OSError, ValueError):
+            continue
+        base = str(d.get("task_name", "")).split(":")[0]
+        if not base:
+            continue
+        pm = d.get("primary_metric") or d.get("task_config", {}).get("primary_metric")
+        val = (d.get("metrics") or {}).get(pm)
+        res[base] = {"metric": pm, "val": val, "n": d.get("num_instances")}
+    return res
+
+
+def _avg(vals: list):
+    vals = [v for v in vals if isinstance(v, (int, float))]
+    return sum(vals) / len(vals) if vals else None
+
+
+def load_evals() -> dict:
+    """Aggregate per-model merged-eval scores into MC9 / MMLU / Gen5 / GSM8K + per-task detail."""
+    models = []
+    for run, label in EVAL_MODELS:
+        r = _load_eval_model(run)
+        mc9 = _avg([r[t]["val"] for t in MC9_TASKS if t in r])
+        gen5 = _avg([r[t]["val"] for t in GEN5_TASKS if t in r])
+        mmlu_vals = [v["val"] for k, v in r.items() if k.startswith("mmlu_merged_")]
+        mmlu = _avg(mmlu_vals)
+        gsm = r.get(GSM8K_TASK, {}).get("val")
+        models.append({
+            "label": label, "run": run, "present": bool(r),
+            "summary": {"mc9": mc9, "mmlu": mmlu, "gen5": gen5, "gsm8k": gsm,
+                        "n_mmlu": len(mmlu_vals)},
+            "tasks": {t: r.get(t, {}).get("val") for t in MC9_TASKS + GEN5_TASKS},
+        })
+    return {"models": models}
+
+
 # ---- styling: models_fullextend chrome + compact 2-up grid + expand modal ----
 CSS = """
 :root { --fg:#1e293b; --muted:#64748b; --bg:#f8fafc; --card:#ffffff; --line:#e2e8f0; }
@@ -254,6 +326,67 @@ def chart_blocks(charts: list) -> str:
     return f'<div class="chart-grid">{"".join(cells)}</div>'
 
 
+def _pct(x):
+    return f"{x * 100:.1f}" if isinstance(x, (int, float)) else "&mdash;"
+
+
+def eval_tab(evals: dict) -> str:
+    models = evals["models"]
+    any_present = any(m["present"] for m in models)
+
+    # Summary table: models x {MC9, MMLU, Gen5, GSM8K}.
+    head = ("<tr><th>model</th><th>MC9<br><span class='note'>acc</span></th>"
+            "<th>MMLU<br><span class='note'>acc</span></th>"
+            "<th>Gen5<br><span class='note'>F1</span></th>"
+            "<th>GSM8K<br><span class='note'>EM</span></th></tr>")
+    rows = []
+    for m in models:
+        s = m["summary"]
+        if m["present"]:
+            cells = (f"<td>{_pct(s['mc9'])}</td><td>{_pct(s['mmlu'])}</td>"
+                     f"<td>{_pct(s['gen5'])}</td><td>{_pct(s['gsm8k'])}</td>")
+        else:
+            cells = "<td colspan='4' class='note'>evals in flight / not scored yet</td>"
+        rows.append(f"<tr><td>{m['label']}</td>{cells}</tr>")
+    summary = (f"<table><thead>{head}</thead><tbody>{''.join(rows)}</tbody></table>")
+
+    # Per-task detail (MC9 9 + Gen5 5), collapsible.
+    detail_tasks = MC9_TASKS + GEN5_TASKS
+    dhead = "<tr><th>model</th>" + "".join(
+        f"<th>{TASK_SHORT.get(t, t)}</th>" for t in detail_tasks) + "</tr>"
+    drows = []
+    for m in models:
+        if not m["present"]:
+            continue
+        tds = "".join(f"<td>{_pct(m['tasks'].get(t))}</td>" for t in detail_tasks)
+        drows.append(f"<tr><td>{m['label']}</td>{tds}</tr>")
+    detail = (
+        "<details><summary>Per-task breakdown (MC9 + Gen5, primary metric &times;100)</summary>"
+        f"<div style='overflow-x:auto'><table><thead>{dhead}</thead><tbody>"
+        f"{''.join(drows)}</tbody></table></div>"
+        "<p class='note'>MC9 uses each task's OLMES primary metric (acc_per_char / acc_uncond / "
+        "acc_raw); Gen5 uses F1. MMLU is the macro-average over 17 categories (acc_per_char).</p>"
+        "</details>") if drows else ""
+
+    note = "" if any_present else (
+        "<p class='note'>No metrics found under <code>models_v2/merged_evals/</code> yet.</p>")
+
+    return (
+        '<div class="card goal"><h3>What</h3>'
+        '<p>Plain base-model eval (no expert selection, no finetuning) of each models_v2 '
+        'checkpoint on the selective project\'s <strong>merged test-split</strong> tasks &mdash; '
+        'the same task definitions/splits the selective project reports, so these numbers are '
+        'comparable to its base scores. Launched by '
+        '<code>scripts/models_v2/launch_merged_eval.sh</code> (8 size-balanced Beaker jobs/model).'
+        '</p></div>'
+        f'<div class="card results"><h3>Headline scores</h3>{note}{summary}'
+        '<p class="note">MC9 = 9-task rank-classification average (incl. HellaSwag); '
+        'MMLU = 17-category macro-average; Gen5 = SQuAD/CoQA/NQ/TriviaQA/DROP F1 average; '
+        'GSM8K = 8-shot exact-match. All values &times;100.</p>'
+        f'{detail}</div>'
+    )
+
+
 def render(payload: dict, uplot_css: str, uplot_js: str) -> str:
     runs = payload["runs"]
     links = " &middot; ".join(
@@ -286,7 +419,9 @@ def render(payload: dict, uplot_css: str, uplot_js: str) -> str:
         f'{chart_blocks(payload["charts"])}</div>'
     )
 
-    tabs = [("overview", "Overview", overview), ("curves", "Curves", curves)]
+    evals_html = eval_tab(payload["evals"])
+    tabs = [("overview", "Overview", overview), ("evals", "Evals", evals_html),
+            ("curves", "Curves", curves)]
     nav = "".join(f'<button data-target="{t}">{n}</button>' for t, n, _ in tabs)
     sections = "".join(f'<section class="tab" id="{t}">{b}</section>' for t, _, b in tabs)
     charts_js = _CHARTS_JS.replace("__CURVES__", json.dumps(payload))
@@ -328,6 +463,7 @@ def main():
     else:
         payload = fetch_from_wandb()
         CACHE.write_text(json.dumps(payload))
+    payload["evals"] = load_evals()  # always re-read merged_evals/ from disk
     uplot_css = (VENDOR / "uPlot.min.css").read_text() if (VENDOR / "uPlot.min.css").is_file() else ""
     uplot_js = (VENDOR / "uPlot.iife.min.js").read_text() if (VENDOR / "uPlot.iife.min.js").is_file() else ""
     args.output.write_text(render(payload, uplot_css, uplot_js))
