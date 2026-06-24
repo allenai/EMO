@@ -22,13 +22,16 @@ CACHE = BASE / "curves.json"
 ENTITY_PROJECT = "ryanyxw/emo-extension"
 TOK_PER_STEP = 1024 * 4096  # global_batch_size(1024) * seq_len(4096) = 4,194,304 tokens/step
 
-# (label, W&B run id) — pinned to the healthy/current runs (crashed restarts excluded).
-# stdmoe_64exp_50b_wsd is the WSD-scheduler twin of stdmoe_64exp_50b (same arch/data/budget,
-# warmup-stable-decay instead of cosine) — kept adjacent so the LR/loss curves compare directly.
+# (label, W&B run id-or-ids) — pinned to the healthy/current runs. A label may map to a LIST of
+# run ids when the run crashed and resumed: histories are merged in order, later (resumed) runs
+# winning on overlapping steps. stdmoe_64exp_50b_wsd is the WSD-scheduler twin of
+# stdmoe_64exp_50b (same arch/data/budget, warmup-stable-decay instead of cosine) — kept adjacent
+# so the LR/loss curves compare directly. Its run crashed at step ~2759 (n6zg596k) and resumed
+# from step 2501 (96odpdqg), so both are merged to recover the full 1-11913 history.
 RUNS = [
     ("stdmoe_64exp_25b",      "lsq79eb5"),
     ("stdmoe_64exp_50b",      "r5kyiexy"),
-    ("stdmoe_64exp_50b_wsd",  "96odpdqg"),
+    ("stdmoe_64exp_50b_wsd",  ["n6zg596k", "96odpdqg"]),
     ("stdmoe_128exp_50b",     "yuafg0dw"),
 ]
 
@@ -289,23 +292,30 @@ def fetch_from_wandb() -> dict:
     api = wandb.Api()
     runs_meta, per = [], {}
     for label, rid in RUNS:
-        run = api.run(f"{ENTITY_PROJECT}/{rid}")
-        for title, key in METRICS:
-            d = per.setdefault(key, {}).setdefault(label, {})
-            for row in run.history(keys=[key], samples=600, pandas=False):
-                v, s = row.get(key), row.get("_step")
-                if v is None or s is None:
-                    continue
-                try:
-                    fv = float(v)
-                except (TypeError, ValueError):
-                    continue
-                if math.isnan(fv) or math.isinf(fv):
-                    continue
-                d[int(s)] = fv
+        # A label may be backed by several W&B runs (a crashed run + its resume). Fetch each in
+        # order and merge into the same per-step dict so later runs overwrite the overlap.
+        rids = [rid] if isinstance(rid, str) else list(rid)
+        last_run = None
+        for one in rids:
+            run = api.run(f"{ENTITY_PROJECT}/{one}")
+            last_run = run
+            for title, key in METRICS:
+                d = per.setdefault(key, {}).setdefault(label, {})
+                for row in run.history(keys=[key], samples=600, pandas=False):
+                    v, s = row.get(key), row.get("_step")
+                    if v is None or s is None:
+                        continue
+                    try:
+                        fv = float(v)
+                    except (TypeError, ValueError):
+                        continue
+                    if math.isnan(fv) or math.isinf(fv):
+                        continue
+                    d[int(s)] = fv
         ce = per["train/CE loss"][label]
         last_step = max(ce) if ce else None
-        runs_meta.append({"label": label, "url": run.url, "state": run.state, "id": rid,
+        runs_meta.append({"label": label, "url": last_run.url, "state": last_run.state,
+                          "id": "+".join(rids),
                           "last_ce": round(ce[last_step], 3) if ce else None,
                           "last_tok": round(last_step * TOK_PER_STEP / 1e9, 1) if last_step else None})
     labels = [l for l, _ in RUNS]
