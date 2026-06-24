@@ -28,11 +28,15 @@ TOK_PER_STEP = 1024 * 4096  # global_batch_size(1024) * seq_len(4096) = 4,194,30
 # stdmoe_64exp_50b (same arch/data/budget, warmup-stable-decay instead of cosine) — kept adjacent
 # so the LR/loss curves compare directly. Its run crashed at step ~2759 (n6zg596k) and resumed
 # from step 2501 (96odpdqg), so both are merged to recover the full 1-11913 history.
+# stdmoe_64exp_50b_wsd_anneal_s8941_12p5b is a WSD DECAY BRANCH: forked from the wsd trunk's 37.5B
+# stable checkpoint (step8941) and decayed LR 4e-3->0 over 12.5B tokens to 50B (steps 8942-11921),
+# so its curve diverges from the trunk's stable line at step 8941 — kept adjacent to the trunk.
 RUNS = [
-    ("stdmoe_64exp_25b",      "lsq79eb5"),
-    ("stdmoe_64exp_50b",      "r5kyiexy"),
-    ("stdmoe_64exp_50b_wsd",  ["n6zg596k", "96odpdqg"]),
-    ("stdmoe_128exp_50b",     "yuafg0dw"),
+    ("stdmoe_64exp_25b",                        "lsq79eb5"),
+    ("stdmoe_64exp_50b",                        "r5kyiexy"),
+    ("stdmoe_64exp_50b_wsd",                    ["n6zg596k", "96odpdqg"]),
+    ("stdmoe_64exp_50b_wsd_decay@37.5B_12.5B",  "hbq6004e"),
+    ("stdmoe_128exp_50b",                       "yuafg0dw"),
 ]
 
 # (chart title, W&B metric key)
