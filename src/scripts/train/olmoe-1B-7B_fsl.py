@@ -66,6 +66,7 @@ from olmo_core.nn.transformer import (
     TransformerConfig,
 )
 from olmo_core.optim import AdamWConfig, CosWithWarmup, OptimGroupOverride
+from olmo_core.optim.scheduler import WSD, SchedulerUnits
 from olmo_core.train import (
     TrainerConfig,
     prepare_training_environment,
@@ -641,6 +642,21 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         num_workers=4,
     )
 
+    if opts.scheduler == "wsd":
+        # Warmup-stable-decay: linear warmup, flat at peak LR, then linear decay over the
+        # final `decay_steps`. Units are steps so `decay_steps` is portable across run lengths
+        # (e.g. 1192 steps = 5B tokens decay regardless of total max_duration).
+        scheduler = WSD(
+            units=SchedulerUnits.steps,
+            warmup=opts.warmup_steps,
+            warmup_fraction=None,
+            decay=opts.decay_steps,
+            decay_fraction=None,
+            decay_min_lr=0.0,
+        )
+    else:
+        scheduler = CosWithWarmup(warmup=opts.warmup_steps)
+
     train_module_config = TransformerTrainModuleConfig(
         rank_microbatch_size=4
         * SEQUENCE_LENGTH,  # NOTE: this is specified in tokens, not instances
@@ -663,7 +679,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         ),
         z_loss_multiplier=1e-5,
         max_grad_norm=1.0,
-        scheduler=CosWithWarmup(warmup_steps=2000),
+        scheduler=scheduler,
     )
 
     trainer_config = (
@@ -804,6 +820,28 @@ def parser_args():
         type=float,
         default=4e-4,
         help="Learning rate for the optimizer.",
+    )
+    parser.add_argument(
+        "--scheduler",
+        type=str,
+        default="cos",
+        choices=["cos", "wsd"],
+        help="LR scheduler: 'cos' (cosine-with-warmup, default) or 'wsd' (warmup-stable-decay).",
+    )
+    parser.add_argument(
+        "--warmup_steps",
+        type=int,
+        default=2000,
+        help="Number of linear warmup steps (applies to both 'cos' and 'wsd' schedulers).",
+    )
+    parser.add_argument(
+        "--decay_steps",
+        type=int,
+        default=1192,
+        help=(
+            "Number of linear decay steps at the end of training (WSD scheduler only). "
+            "Default 1192 = 5B tokens at global_batch_size 1024 * seq 4096."
+        ),
     )
     parser.add_argument(
         "--expert_cond_token_entropy_bias",
