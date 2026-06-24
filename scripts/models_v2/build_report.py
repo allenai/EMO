@@ -23,10 +23,13 @@ ENTITY_PROJECT = "ryanyxw/emo-extension"
 TOK_PER_STEP = 1024 * 4096  # global_batch_size(1024) * seq_len(4096) = 4,194,304 tokens/step
 
 # (label, W&B run id) — pinned to the healthy/current runs (crashed restarts excluded).
+# stdmoe_64exp_50b_wsd is the WSD-scheduler twin of stdmoe_64exp_50b (same arch/data/budget,
+# warmup-stable-decay instead of cosine) — kept adjacent so the LR/loss curves compare directly.
 RUNS = [
-    ("stdmoe_64exp_25b",  "lsq79eb5"),
-    ("stdmoe_64exp_50b",  "r5kyiexy"),
-    ("stdmoe_128exp_50b", "yuafg0dw"),
+    ("stdmoe_64exp_25b",      "lsq79eb5"),
+    ("stdmoe_64exp_50b",      "r5kyiexy"),
+    ("stdmoe_64exp_50b_wsd",  "96odpdqg"),
+    ("stdmoe_128exp_50b",     "yuafg0dw"),
 ]
 
 # (chart title, W&B metric key)
@@ -405,9 +408,13 @@ def render(payload: dict, uplot_css: str, uplot_js: str) -> str:
         '<div class="card goal"><h3>Goal</h3>'
         '<p>A standard top-k MoE (<code>moe_lbreducedp_sharedexp</code>) token-budget / '
         'expert-count sweep. Unlike the released baselines (130B LR schedule hard-stopped at '
-        '50B), every run here decays the LR cosine <strong>directly over its true token '
-        'budget</strong> &mdash; "what if we only had this many tokens." Three runs vary the '
-        'expert pool (64 vs 128) and budget (25B vs 50B).</p></div>'
+        '50B), every run here decays the LR <strong>directly over its true token '
+        'budget</strong> &mdash; "what if we only had this many tokens." Runs vary the '
+        'expert pool (64 vs 128) and budget (25B vs 50B); '
+        '<code>stdmoe_64exp_50b_wsd</code> additionally swaps the cosine schedule for '
+        'warmup-stable-decay (WSD: warmup 2000 / decay 1192 steps &asymp; 5B tokens) to compare '
+        'schedulers at fixed 64e&middot;50B against its cosine twin <code>stdmoe_64exp_50b</code>.'
+        '</p></div>'
         f'<div class="card results"><h3>Runs</h3>{run_table}'
         f'<p class="note"><strong>W&amp;B runs:</strong> {links}</p></div>'
         '<div class="card method"><h3>Setup</h3>'
