@@ -57,6 +57,12 @@ MODELS=(
     "stdmoe_64exp_50b|11921"
     "stdmoe_64exp_25b|5961"
     "stdmoe_128exp_50b|11921"
+    # WSD family (run keys may be hierarchical -- slashes resolve into paths/output dirs and are
+    # sanitized out of the Beaker job name). Both reach 50B and are comparable to the 50B baselines:
+    #   the trunk's own final = WSD with a 5B end-of-run decay (45B->50B);
+    #   the branch = forked at 37.5B (step8941) and decayed 12.5B to 50B.
+    "stdmoe_64exp_50b_wsd|11921"
+    "stdmoe_64exp_50b_wsd/anneals/s8941_12p5b|11921"
 )
 
 # --- MMLU 17 categories (match mmlu_merged_<cat>:rc_test::olmes in src/scripts/eval/tasks.py) ---
