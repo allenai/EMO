@@ -66,6 +66,9 @@ MODELS=(
     # lr2e-3 stable trunk's decay branches (both end at 50B): 5B decay from 45B, 10B decay from 40B.
     "stdmoe_64exp_50b_wsd_lr2e-3/anneals/s10729_5b|11921"
     "stdmoe_64exp_50b_wsd_lr2e-3/anneals/s9537_10b|11921"
+    # lr4e-4 stable trunk's decay branches (both end at 50B): 5B decay from 45B, 10B decay from 40B.
+    "stdmoe_64exp_50b_wsd_lr4e-4/anneals/s10729_5b|11921"
+    "stdmoe_64exp_50b_wsd_lr4e-4/anneals/s9537_10b|11921"
 )
 
 # --- MMLU 17 categories (match mmlu_merged_<cat>:rc_test::olmes in src/scripts/eval/tasks.py) ---
