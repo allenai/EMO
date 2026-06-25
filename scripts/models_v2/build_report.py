@@ -72,6 +72,9 @@ EVAL_MODELS = [
     # forked at 37.5B. Branch run dir is hierarchical (under the trunk's anneals/).
     ("stdmoe_64exp_50b_wsd",                       "stdMoE 64e · 50B wsd (5B decay)"),
     ("stdmoe_64exp_50b_wsd/anneals/s8941_12p5b",   "stdMoE 64e · wsd decay@37.5B/12.5B"),
+    # lr2e-3 stable trunk decay branches (peak LR 2e-3): 5B decay from 45B, 10B decay from 40B.
+    ("stdmoe_64exp_50b_wsd_lr2e-3/anneals/s10729_5b", "stdMoE 64e · lr2e-3 decay@45B/5B"),
+    ("stdmoe_64exp_50b_wsd_lr2e-3/anneals/s9537_10b", "stdMoE 64e · lr2e-3 decay@40B/10B"),
     ("stdmoe_64exp_25b",       "stdMoE 64e · 25B"),
 ]
 

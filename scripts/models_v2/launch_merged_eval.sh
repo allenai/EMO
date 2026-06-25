@@ -63,6 +63,9 @@ MODELS=(
     #   the branch = forked at 37.5B (step8941) and decayed 12.5B to 50B.
     "stdmoe_64exp_50b_wsd|11921"
     "stdmoe_64exp_50b_wsd/anneals/s8941_12p5b|11921"
+    # lr2e-3 stable trunk's decay branches (both end at 50B): 5B decay from 45B, 10B decay from 40B.
+    "stdmoe_64exp_50b_wsd_lr2e-3/anneals/s10729_5b|11921"
+    "stdmoe_64exp_50b_wsd_lr2e-3/anneals/s9537_10b|11921"
 )
 
 # --- MMLU 17 categories (match mmlu_merged_<cat>:rc_test::olmes in src/scripts/eval/tasks.py) ---
