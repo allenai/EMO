@@ -68,6 +68,10 @@ EVAL_MODELS = [
     ("stdmoe_1b14b_50bof130b", "stdMoE 128e · 50Bof130B"),
     ("stdmoe_128exp_50b",      "stdMoE 128e · 50B"),
     ("stdmoe_64exp_50b",       "stdMoE 64e · 50B"),
+    # WSD family at 50B: the trunk's own final (5B end-of-run decay) and the 12.5B decay branch
+    # forked at 37.5B. Branch run dir is hierarchical (under the trunk's anneals/).
+    ("stdmoe_64exp_50b_wsd",                       "stdMoE 64e · 50B wsd (5B decay)"),
+    ("stdmoe_64exp_50b_wsd/anneals/s8941_12p5b",   "stdMoE 64e · wsd decay@37.5B/12.5B"),
     ("stdmoe_64exp_25b",       "stdMoE 64e · 25B"),
 ]
 
@@ -89,7 +93,10 @@ TASK_SHORT = {"arc_easy_merged": "ARC-e", "arc_challenge_merged": "ARC-c", "bool
 def _load_eval_model(run: str) -> dict:
     """Return {base_task_name: {"metric","val","n"}} for one run, or {} if none scored yet."""
     res: dict = {}
-    for f in sorted(EVAL_ROOT.glob(f"{run}/**/task-*-metrics.json")):
+    # Metrics live exactly one level below the run dir (<run>/<group>/task-*.json). Use a single
+    # `*` (not `**`) so a trunk run (e.g. stdmoe_64exp_50b_wsd) does NOT recurse into a decay
+    # branch nested beneath it (e.g. stdmoe_64exp_50b_wsd/anneals/s8941_12p5b/...).
+    for f in sorted(EVAL_ROOT.glob(f"{run}/*/task-*-metrics.json")):
         try:
             d = json.loads(f.read_text())
         except (OSError, ValueError):
