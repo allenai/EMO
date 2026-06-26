@@ -42,6 +42,10 @@ RUNS = [
     ("stdmoe_64exp_50b_wsd_lr2e-3",             "0ucu7x8n"),
     ("stdmoe_64exp_50b_wsd_lr2e-3_decay@45B_5B",  "69drqnz8"),
     ("stdmoe_64exp_50b_wsd_lr2e-3_decay@40B_10B", "opp7l86a"),
+    # lr4e-4 stable trunk (flat peak LR 4e-4) + its two decay branches (45B/step10729, 40B/step9537).
+    ("stdmoe_64exp_50b_wsd_lr4e-4",             "fcvnftxd"),
+    ("stdmoe_64exp_50b_wsd_lr4e-4_decay@45B_5B",  "e1munm14"),
+    ("stdmoe_64exp_50b_wsd_lr4e-4_decay@40B_10B", "qx8e61ny"),
 ]
 
 # (chart title, W&B metric key)
@@ -80,6 +84,9 @@ EVAL_MODELS = [
     # lr2e-3 stable trunk decay branches (peak LR 2e-3): 5B decay from 45B, 10B decay from 40B.
     ("stdmoe_64exp_50b_wsd_lr2e-3/anneals/s10729_5b", "stdMoE 64e · lr2e-3 decay@45B/5B"),
     ("stdmoe_64exp_50b_wsd_lr2e-3/anneals/s9537_10b", "stdMoE 64e · lr2e-3 decay@40B/10B"),
+    # lr4e-4 stable trunk decay branches (peak LR 4e-4): 5B decay from 45B, 10B decay from 40B.
+    ("stdmoe_64exp_50b_wsd_lr4e-4/anneals/s10729_5b", "stdMoE 64e · lr4e-4 decay@45B/5B"),
+    ("stdmoe_64exp_50b_wsd_lr4e-4/anneals/s9537_10b", "stdMoE 64e · lr4e-4 decay@40B/10B"),
     ("stdmoe_64exp_25b",       "stdMoE 64e · 25B"),
 ]
 
