@@ -78,6 +78,7 @@ EVAL_MODELS = [
     ("emo_1b14b_50bof130b",    "EMO 128e · 50Bof130B"),
     ("stdmoe_1b14b_50bof130b", "stdMoE 128e · 50Bof130B"),
     ("stdmoe_128exp_50b",      "stdMoE 128e · 50B"),
+    ("stdmoe_128exp_50b_wsd",  "stdMoE 128e · 50B wsd"),
     ("stdmoe_64exp_50b",       "stdMoE 64e · 50B"),
     # WSD family at 50B: the trunk's own final (5B end-of-run decay) and the 12.5B decay branch
     # forked at 37.5B. Branch run dir is hierarchical (under the trunk's anneals/).

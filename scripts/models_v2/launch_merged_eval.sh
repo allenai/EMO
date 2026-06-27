@@ -57,6 +57,8 @@ MODELS=(
     "stdmoe_64exp_50b|11921"
     "stdmoe_64exp_25b|5961"
     "stdmoe_128exp_50b|11921"
+    # 128-expert WSD stable trunk (flat peak LR 4e-3, end-of-run only touches 0); 50B final.
+    "stdmoe_128exp_50b_wsd|11921"
     # WSD family (run keys may be hierarchical -- slashes resolve into paths/output dirs and are
     # sanitized out of the Beaker job name). Both reach 50B and are comparable to the 50B baselines:
     #   the trunk's own final = WSD with a 5B end-of-run decay (45B->50B);
