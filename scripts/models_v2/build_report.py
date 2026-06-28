@@ -22,34 +22,77 @@ CACHE = BASE / "curves.json"
 ENTITY_PROJECT = "ryanyxw/emo-extension"
 TOK_PER_STEP = 1024 * 4096  # global_batch_size(1024) * seq_len(4096) = 4,194,304 tokens/step
 
-# (label, W&B run id-or-ids) — pinned to the healthy/current runs. A label may map to a LIST of
-# run ids when the run crashed and resumed: histories are merged in order, later (resumed) runs
-# winning on overlapping steps. stdmoe_64exp_50b_wsd is the WSD-scheduler twin of
-# stdmoe_64exp_50b (same arch/data/budget, warmup-stable-decay instead of cosine) — kept adjacent
-# so the LR/loss curves compare directly. Its run crashed at step ~2759 (n6zg596k) and resumed
-# from step 2501 (96odpdqg), so both are merged to recover the full 1-11913 history.
-# stdmoe_64exp_50b_wsd_anneal_s8941_12p5b is a WSD DECAY BRANCH: forked from the wsd trunk's 37.5B
-# stable checkpoint (step8941) and decayed LR 4e-3->0 over 12.5B tokens to 50B (steps 8942-11921),
-# so its curve diverges from the trunk's stable line at step 8941 — kept adjacent to the trunk.
-RUNS = [
-    ("stdmoe_64exp_25b",                        "lsq79eb5"),
-    ("stdmoe_64exp_50b",                        "r5kyiexy"),
-    ("stdmoe_64exp_50b_wsd",                    ["n6zg596k", "96odpdqg"]),
-    ("stdmoe_64exp_50b_wsd_decay@37.5B_12.5B",  "hbq6004e"),
-    ("stdmoe_128exp_50b",                       "yuafg0dw"),
-    # 128-expert WSD stable trunk (flat peak LR 4e-3, no baked-in decay, every-5B checkpoints) +
-    # its 10B decay branch forked at 40B (step9537), which diverges from the trunk's flat line there.
-    ("stdmoe_128exp_50b_wsd",                   "f2u26et2"),
-    ("stdmoe_128exp_50b_wsd_decay@40B_10B",     "uk48bfrl"),
-    # lr2e-3 stable trunk (flat peak LR 2e-3, no baked-in decay) + its two decay branches, which
-    # diverge from the trunk's flat LR line at their branch steps (45B/step10729, 40B/step9537).
-    ("stdmoe_64exp_50b_wsd_lr2e-3",             "0ucu7x8n"),
-    ("stdmoe_64exp_50b_wsd_lr2e-3_decay@45B_5B",  "69drqnz8"),
-    ("stdmoe_64exp_50b_wsd_lr2e-3_decay@40B_10B", "opp7l86a"),
-    # lr4e-4 stable trunk (flat peak LR 4e-4) + its two decay branches (45B/step10729, 40B/step9537).
-    ("stdmoe_64exp_50b_wsd_lr4e-4",             "fcvnftxd"),
-    ("stdmoe_64exp_50b_wsd_lr4e-4_decay@45B_5B",  "e1munm14"),
-    ("stdmoe_64exp_50b_wsd_lr4e-4_decay@40B_10B", "qx8e61ny"),
+# Curves are organized into THEMATIC GROUPS, each rendered as its own card with its own set of
+# per-metric charts, so the runs for one question don't get mushed together with unrelated runs.
+# Each run is (label, W&B run id-or-ids); a label maps to a LIST of ids when a run crashed and
+# resumed (histories merged in order, later runs win on overlapping steps — e.g. the 64e wsd 4e-3
+# trunk crashed at ~2759 / n6zg596k and resumed from 2501 / 96odpdqg). A run may appear in more
+# than one group (e.g. the 64e wsd-4e-3 trunk is a reference in both the LR and expert-count groups).
+RUN_GROUPS = [
+    {
+        "key": "sched_lr",
+        "title": "Scheduler & peak-LR (64e · 50B)",
+        "blurb": "Baseline recipe: does warmup-stable-decay (WSD) work, and what peak LR? Cosine vs "
+                 "WSD at 64 experts, plus the WSD peak-LR sweep (4e-3 / 2e-3 / 4e-4). Every run "
+                 "decays the LR over its true token budget.",
+        "runs": [
+            ("64e·25B cos",  "lsq79eb5"),
+            ("64e·50B cos",  "r5kyiexy"),
+            ("64e wsd 4e-3", ["n6zg596k", "96odpdqg"]),
+            ("64e wsd 2e-3", "0ucu7x8n"),
+            ("64e wsd 4e-4", "fcvnftxd"),
+        ],
+    },
+    {
+        "key": "decay",
+        "title": "Decay-amount ablations (64e WSD branches)",
+        "blurb": "From a flat-LR stable trunk, fork a cheap decay branch over the last N·B tokens "
+                 "(LR→0) and measure final performance vs how much you decay, across peak LRs. Each "
+                 "branch diverges from its trunk's flat line at the fork step.",
+        "runs": [
+            ("4e-3 @37.5B/12.5B", "hbq6004e"),
+            ("2e-3 @45B/5B",      "69drqnz8"),
+            ("2e-3 @40B/10B",     "opp7l86a"),
+            ("4e-4 @45B/5B",      "e1munm14"),
+            ("4e-4 @40B/10B",     "qx8e61ny"),
+        ],
+    },
+    {
+        "key": "expert_count",
+        "title": "Expert count: 64e → 128e",
+        "blurb": "Scaling the routed-expert pool from 64 to 128 at fixed 50B budget: 128e trunks at "
+                 "cosine / WSD-4e-3 / WSD-2e-3 plus a 128e decay branch, against the 64e WSD-4e-3 "
+                 "reference.",
+        "runs": [
+            ("64e wsd 4e-3",                ["n6zg596k", "96odpdqg"]),
+            ("128e·50B cos",                "yuafg0dw"),
+            ("128e wsd 4e-3",               "f2u26et2"),
+            ("128e wsd 2e-3",               "sswartor"),
+            ("128e wsd 4e-3 decay@40B/10B", "uk48bfrl"),
+        ],
+    },
+    {
+        "key": "upcycle",
+        "title": "Extension methods — expert upcycling 64→128 (NEW)",
+        "blurb": "First extension-method experiment. Take the 64e WSD-2e-3 trunk at 25B (step5960), "
+                 "expand it to 128 experts (63 standard kept + 64 new + shared moved to the last "
+                 "slot), and continue WSD training. 5B convergence check (25B→30B) over a 3×2 grid: "
+                 "new-expert init {random, upcycle-copy, upcycle+jitter} × optimizer {carry/reset "
+                 "kept moments, copy/zero new-expert moments}. Compared against the from-scratch 128e "
+                 "WSD-2e-3 trunk (whose final 50B CE is the target; see the expert-count group). "
+                 "Upcycle variants resume at CE≈2.80 (weights preserved); random init starts at "
+                 "CE≈9.4 (64/127 standard experts random) and recovers.",
+        "runs": [
+            ("copy·carry·copy",   "85nhg564"),
+            ("copy·carry·zero",   "2hnes1fe"),
+            ("copy·reset",        "kkummxiv"),
+            ("random·carry",      "eus6qsqh"),
+            ("random·reset",      "s4bq4kvw"),
+            ("jitter·carry·copy", "uar2nr44"),
+            ("jitter·carry·zero", "r6yj95lk"),
+            ("jitter·reset",      "t36ixfxn"),
+        ],
+    },
 ]
 
 # (chart title, W&B metric key)
@@ -228,9 +271,9 @@ _CHARTS_JS = r"""
 <script>
 (function(){
   const C = __CURVES__;
-  const palette = ["#64748b","#2563eb","#7c3aed","#059669","#dc2626","#d97706"];
-  const colorOf = {};
-  C.runs.forEach((r,i) => { colorOf[r.label] = palette[i % palette.length]; });
+  // Color by series index WITHIN each chart, so each group's runs are visually distinct (and
+  // consistent across that group's charts, since all its charts share the same series order).
+  const palette = ["#2563eb","#dc2626","#059669","#7c3aed","#d97706","#0891b2","#db2777","#65a30d","#475569","#9333ea"];
   const SMALL_H = 230, reg = {};
   function opts(chart, logY, w, h){
     return {
@@ -238,8 +281,8 @@ _CHARTS_JS = r"""
       scales:{ x:{ time:false }, y:{ distr: logY ? 3 : 1 } },
       cursor:{ focus:{ prox:30 }, drag:{ x:true, y:true, uni:10 } },
       axes:[ { label:"step", values:(u,vals)=>vals.map(v=>v>=1000?(v/1000)+"k":v) }, { label:chart.title } ],
-      series:[ { value:(u,v)=>v==null?"--":v } ].concat(chart.series.map(s=>({
-        label:s.label, stroke:colorOf[s.label]||"#888", width:1.6, spanGaps:true,
+      series:[ { value:(u,v)=>v==null?"--":v } ].concat(chart.series.map((s,i)=>({
+        label:s.label, stroke:palette[i % palette.length], width:1.6, spanGaps:true,
         value:(u,v)=>v==null?"--":(+v).toFixed(4) }))),
     };
   }
@@ -319,20 +362,18 @@ show(location.hash && document.getElementById(location.hash.slice(1)) ? location
 """
 
 
-def fetch_from_wandb() -> dict:
-    import wandb
-    api = wandb.Api()
-    runs_meta, per = [], {}
-    for label, rid in RUNS:
-        # A label may be backed by several W&B runs (a crashed run + its resume). Fetch each in
-        # order and merge into the same per-step dict so later runs overwrite the overlap.
-        rids = [rid] if isinstance(rid, str) else list(rid)
-        last_run = None
-        for one in rids:
+def _fetch_run(api, ids, cache) -> tuple:
+    """Fetch + merge metric histories for one run (a list of ids merged in order, later wins on
+    overlap). Returns (last_run, {key: {step: val}}). Caches per-id so runs shared across groups
+    are only pulled once."""
+    merged: dict = {}
+    last_run = None
+    for one in ids:
+        if one not in cache:
             run = api.run(f"{ENTITY_PROJECT}/{one}")
-            last_run = run
-            for title, key in METRICS:
-                d = per.setdefault(key, {}).setdefault(label, {})
+            hist: dict = {}
+            for _, key in METRICS:
+                d: dict = {}
                 for row in run.history(keys=[key], samples=600, pandas=False):
                     v, s = row.get(key), row.get("_step")
                     if v is None or s is None:
@@ -344,19 +385,45 @@ def fetch_from_wandb() -> dict:
                     if math.isnan(fv) or math.isinf(fv):
                         continue
                     d[int(s)] = fv
-        ce = per["train/CE loss"][label]
-        last_step = max(ce) if ce else None
-        runs_meta.append({"label": label, "url": last_run.url, "state": last_run.state,
-                          "id": "+".join(rids),
-                          "last_ce": round(ce[last_step], 3) if ce else None,
-                          "last_tok": round(last_step * TOK_PER_STEP / 1e9, 1) if last_step else None})
-    labels = [l for l, _ in RUNS]
-    charts = []
-    for title, key in METRICS:
-        steps = sorted(set().union(*[set(per[key][l]) for l in labels]) or {0})
-        series = [{"label": l, "y": [per[key][l].get(s) for s in steps]} for l in labels]
-        charts.append({"key": slug(title), "title": title, "x": steps, "series": series})
-    return {"runs": runs_meta, "charts": charts}
+                hist[key] = d
+            cache[one] = (run, hist)
+        run, hist = cache[one]
+        last_run = run
+        for key, d in hist.items():
+            merged.setdefault(key, {}).update(d)
+    return last_run, merged
+
+
+def fetch_from_wandb() -> dict:
+    import wandb
+    api = wandb.Api()
+    cache: dict = {}
+    groups_out, all_charts = [], []
+    for g in RUN_GROUPS:
+        labels = [lbl for lbl, _ in g["runs"]]
+        per = {key: {} for _, key in METRICS}  # key -> label -> {step: val}
+        runs_meta = []
+        for lbl, rid in g["runs"]:
+            ids = [rid] if isinstance(rid, str) else list(rid)
+            last_run, merged = _fetch_run(api, ids, cache)
+            for _, key in METRICS:
+                per[key][lbl] = merged.get(key, {})
+            ce = per["train/CE loss"][lbl]
+            last_step = max(ce) if ce else None
+            runs_meta.append({"label": lbl, "url": last_run.url, "state": last_run.state,
+                              "id": "+".join(ids),
+                              "last_ce": round(ce[last_step], 3) if ce else None,
+                              "last_tok": round(last_step * TOK_PER_STEP / 1e9, 1) if last_step else None})
+        charts = []
+        for title, key in METRICS:
+            steps = sorted(set().union(*[set(per[key][l]) for l in labels]) or {0})
+            series = [{"label": l, "y": [per[key][l].get(s) for s in steps]} for l in labels]
+            chart = {"key": f'{g["key"]}__{slug(title)}', "title": title, "x": steps, "series": series}
+            charts.append(chart)
+            all_charts.append(chart)
+        groups_out.append({"key": g["key"], "title": g["title"], "blurb": g["blurb"],
+                           "charts": charts, "runs": runs_meta})
+    return {"groups": groups_out, "charts": all_charts}
 
 
 def chart_blocks(charts: list) -> str:
@@ -437,40 +504,49 @@ def eval_tab(evals: dict) -> str:
 
 
 def render(payload: dict, uplot_css: str, uplot_js: str) -> str:
-    runs = payload["runs"]
-    links = " &middot; ".join(
-        f'<a href="{r["url"]}" target="_blank" rel="noopener">{r["label"]}</a>' for r in runs)
-    body_rows = "".join(
-        f"<tr><td>{r['label']}</td><td>{r['state']}</td>"
-        f"<td>{r['last_tok']}B</td><td>{r['last_ce']}</td></tr>" for r in runs)
-    run_table = ("<table><thead><tr><th>run</th><th>state</th><th>tokens</th>"
-                 f"<th>latest CE</th></tr></thead><tbody>{body_rows}</tbody></table>")
+    groups = payload["groups"]
 
-    overview = (
+    # Overview: intro + common setup + one run-table card per group.
+    overview_cards = [
         '<div class="card goal"><h3>Goal</h3>'
-        '<p>A standard top-k MoE (<code>moe_lbreducedp_sharedexp</code>) token-budget / '
-        'expert-count sweep. Unlike the released baselines (130B LR schedule hard-stopped at '
-        '50B), every run here decays the LR <strong>directly over its true token '
-        'budget</strong> &mdash; "what if we only had this many tokens." Runs vary the '
-        'expert pool (64 vs 128) and budget (25B vs 50B); '
-        '<code>stdmoe_64exp_50b_wsd</code> additionally swaps the cosine schedule for '
-        'warmup-stable-decay (WSD: warmup 2000 / decay 1192 steps &asymp; 5B tokens) to compare '
-        'schedulers at fixed 64e&middot;50B against its cosine twin <code>stdmoe_64exp_50b</code>.'
-        '</p></div>'
-        f'<div class="card results"><h3>Runs</h3>{run_table}'
-        f'<p class="note"><strong>W&amp;B runs:</strong> {links}</p></div>'
+        '<p>A standard top-k MoE (<code>moe_lbreducedp_sharedexp</code>) study, organized by the '
+        'question each set of runs answers. <strong>Baselines</strong> (now settled): the WSD '
+        'scheduler, the peak-LR sweep, and decay-amount ablations, plus 64&rarr;128 expert scaling. '
+        '<strong>Extension methods</strong> (in progress): ways to grow an already-trained model &mdash; '
+        'starting with expert upcycling. Each group below has its own curves on the Curves tab, so '
+        'runs are compared <em>within</em> their question rather than mushed onto shared axes.</p></div>'
         '<div class="card method"><h3>Setup</h3>'
         '<p>Common to all: OLMoE-mix-0824, <code>d_model</code> 2048 / 16 layers, top-8 routed '
-        '+ 1 shared expert, lr 4e-3, lb 1e-1, 8 nodes / 64 GPUs, global batch 4.19M tokens/step. '
-        'Permanent checkpoints saved at 25/50/75% of each run.</p></div>'
-    )
-    curves = (
-        '<div class="card results"><h3>Training &amp; eval curves</h3>'
+        '+ 1 shared expert, lb 1e-1, 8 nodes / 64 GPUs, global batch 4.19M tokens/step. WSD runs '
+        'decay the LR over their true token budget; trunks keep permanent checkpoints every 5B.</p></div>'
+    ]
+    for g in groups:
+        rows = "".join(
+            f"<tr><td>{r['label']}</td><td>{r['state']}</td>"
+            f"<td>{r['last_tok']}B</td><td>{r['last_ce']}</td></tr>" for r in g["runs"])
+        links = " &middot; ".join(
+            f'<a href="{r["url"]}" target="_blank" rel="noopener">{r["label"]}</a>' for r in g["runs"])
+        overview_cards.append(
+            f'<div class="card results"><h3>{g["title"]}</h3>'
+            f'<p class="note">{g["blurb"]}</p>'
+            '<table><thead><tr><th>run</th><th>state</th><th>tokens</th><th>latest CE</th></tr></thead>'
+            f'<tbody>{rows}</tbody></table>'
+            f'<p class="note"><strong>W&amp;B:</strong> {links}</p></div>')
+    overview = "".join(overview_cards)
+
+    # Curves: one card per group, each with its own per-metric chart grid (colors are per-group).
+    curve_cards = [
+        '<div class="card goal"><h3>How to read</h3>'
         '<p class="note">x-axis = optimizer step (k). Drag to zoom (double-click resets), toggle '
-        'log-y per chart, or hit <strong>expand &#10530;</strong> to open a chart full-size. '
-        'Pulled live from W&amp;B.</p>'
-        f'{chart_blocks(payload["charts"])}</div>'
-    )
+        'log-y per chart, or hit <strong>expand &#10530;</strong> for full size. Each group is an '
+        'independent set of charts; line colors are assigned per group. Pulled live from W&amp;B.</p></div>'
+    ]
+    for g in groups:
+        curve_cards.append(
+            f'<div class="card results"><h3>{g["title"]}</h3>'
+            f'<p class="note">{g["blurb"]}</p>'
+            f'{chart_blocks(g["charts"])}</div>')
+    curves = "".join(curve_cards)
 
     evals_html = eval_tab(payload["evals"])
     tabs = [("overview", "Overview", overview), ("evals", "Evals", evals_html),
