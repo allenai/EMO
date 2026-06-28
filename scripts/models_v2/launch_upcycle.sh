@@ -97,9 +97,17 @@ else
         --seed "${SEED}"
 fi
 
-# --- Step 2: launch training (auto-resumes from the seeded step5960) ---
+# --- Step 2: launch training ---
+# The trainer's auto-resume (maybe_load_checkpoint) does NOT recognize our hand-built step5960
+# (it lacks the checkpointer's discovery marker), so we load it EXPLICITLY via --load_path with
+# --load_trainer_state (continues global_step=5960 + data cursor) and --load_optim_state. load_path
+# is only used when the save folder has no trainer-written checkpoint, so on the MAX_B=50 extend
+# pass the run auto-resumes from its OWN later checkpoint and ignores load_path.
 launch src/scripts/train/olmoe-1B-7B_fsl.py "$runname" \
 		--save-folder="${save_folder}" \
+		--load_path="${save_folder}/step${FROM_STEP}" \
+		--load_trainer_state=true \
+		--load_optim_state=true \
 		--dataset.mix=OLMoE-mix-0824 \
 		--work-dir="${DATASET_CACHE}" \
 		--trainer.max_duration="{value: ${max_duration}, unit: tokens}" \
