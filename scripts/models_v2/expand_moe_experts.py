@@ -260,7 +260,9 @@ def main():
         except Exception:
             pass
         json.dump(cfg, open(out_cfg, "w"), indent=2)
-    for extra in ("data_paths.txt",):
+    # .metadata.json is the checkpointer's marker that makes dir_is_checkpoint() recognize this as a
+    # valid, loadable checkpoint (required by trainer auto-resume AND --load_path); copy it verbatim.
+    for extra in ("data_paths.txt", ".metadata.json"):
         if (src_dir / extra).exists():
             shutil.copy2(src_dir / extra, out_dir / extra)
 
