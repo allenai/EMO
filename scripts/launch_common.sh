@@ -77,6 +77,7 @@ launch() {
             --beaker-image "${BEAKER_IMAGE}" \
             --preemptible \
             --allow-dirty \
+            ${BEAKER_NO_FOLLOW:+--no-follow} \
             --priority "${BEAKER_PRIORITY}" \
             --env-secret "${BEAKER_ENV_SECRETS[@]}" \
             --env "${env_vars[@]}" \
