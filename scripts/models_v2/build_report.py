@@ -37,8 +37,10 @@ RUNS = [
     ("stdmoe_64exp_50b_wsd",                    ["n6zg596k", "96odpdqg"]),
     ("stdmoe_64exp_50b_wsd_decay@37.5B_12.5B",  "hbq6004e"),
     ("stdmoe_128exp_50b",                       "yuafg0dw"),
-    # 128-expert WSD stable trunk (flat peak LR 4e-3, no baked-in decay, every-5B checkpoints).
+    # 128-expert WSD stable trunk (flat peak LR 4e-3, no baked-in decay, every-5B checkpoints) +
+    # its 10B decay branch forked at 40B (step9537), which diverges from the trunk's flat line there.
     ("stdmoe_128exp_50b_wsd",                   "f2u26et2"),
+    ("stdmoe_128exp_50b_wsd_decay@40B_10B",     "uk48bfrl"),
     # lr2e-3 stable trunk (flat peak LR 2e-3, no baked-in decay) + its two decay branches, which
     # diverge from the trunk's flat LR line at their branch steps (45B/step10729, 40B/step9537).
     ("stdmoe_64exp_50b_wsd_lr2e-3",             "0ucu7x8n"),
@@ -79,6 +81,7 @@ EVAL_MODELS = [
     ("stdmoe_1b14b_50bof130b", "stdMoE 128e · 50Bof130B"),
     ("stdmoe_128exp_50b",      "stdMoE 128e · 50B"),
     ("stdmoe_128exp_50b_wsd",  "stdMoE 128e · 50B wsd"),
+    ("stdmoe_128exp_50b_wsd/anneals/s9537_10b", "stdMoE 128e · wsd decay@40B/10B"),
     ("stdmoe_64exp_50b",       "stdMoE 64e · 50B"),
     # WSD family at 50B: the trunk's own final (5B end-of-run decay) and the 12.5B decay branch
     # forked at 37.5B. Branch run dir is hierarchical (under the trunk's anneals/).
