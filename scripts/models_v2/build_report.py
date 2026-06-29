@@ -62,6 +62,10 @@ RUNS = [
      "branch": {"parent": "128wsd4e3", "fork_step": 9537}},
     {"key": "128dec_2e3_10", "label": "128e 2e-3 decay@40B/10B",   "cat": "128e baselines", "ids": "rwgtpu7e",
      "branch": {"parent": "128wsd2e3", "fork_step": 9537}},
+    # --- low-capacity WSD-2e-3 trunks (top_k still 8, only total experts shrink): extra lower
+    #     bounds that widen the lower->upper gap for the extension story. ---
+    {"key": "32wsd2e3",      "label": "32e wsd 2e-3",              "cat": "low-capacity baselines", "ids": "eisvi21h"},
+    {"key": "16wsd2e3",      "label": "16e wsd 2e-3",              "cat": "low-capacity baselines", "ids": "sswulp41"},
     # --- Extension methods: expert upcycling 64→128 (5B convergence check) ---
     {"key": "up_copy_cc",    "label": "upcycle copy·carry·copy",   "cat": "upcycle 64→128", "ids": "85nhg564"},
     {"key": "up_copy_cz",    "label": "upcycle copy·carry·zero",   "cat": "upcycle 64→128", "ids": "2hnes1fe"},
@@ -119,16 +123,21 @@ TABS = [
                  "<strong>random</strong> (fresh). Two reference bounds bracket the result (drawn "
                  "dashed): the <strong>upperbound</strong> = from-scratch 128e WSD-2e-3 (the ceiling "
                  "if you trained 128 experts from scratch), and the <strong>lowerbound</strong> = the "
-                 "64e WSD-2e-3 trunk we extended from. The reference lines are excluded from the "
-                 "x-auto-fit, so the 5B upcycle window stays readable while the bounds show through it.",
+                 "64e WSD-2e-3 trunk we extended from. Extra dashed lower bounds at 32e and 16e WSD-2e-3 "
+                 "show the full capacity ladder — the 64e→128e gap is small, so 32e/16e sources make the "
+                 "headroom (and thus extension's potential payoff) much larger. The reference lines are "
+                 "excluded from the x-auto-fit, so the upcycle window stays readable while the bounds "
+                 "show through it.",
         "groups": [
             {"name": "Upcycle: copy",   "runs": ["up_copy_cc", "up_copy_cz", "up_copy_reset"]},
             {"name": "Upcycle: jitter", "runs": ["up_jit_cc", "up_jit_cz", "up_jit_reset"]},
             {"name": "Upcycle: random", "runs": ["up_rand_carry", "up_rand_reset"]},
             {"name": "Upperbound: 128e WSD 2e-3 (from-scratch)", "runs": ["128wsd2e3"], "ref": True},
             {"name": "Lowerbound: 64e WSD 2e-3 (source)",        "runs": ["64wsd2e3"],  "ref": True},
+            {"name": "Lowerbound: 32e WSD 2e-3",                 "runs": ["32wsd2e3"],  "ref": True},
+            {"name": "Lowerbound: 16e WSD 2e-3",                 "runs": ["16wsd2e3"],  "ref": True},
         ],
-        "default": [0, 3, 4],  # copy family bracketed by both bounds
+        "default": [0, 3, 4, 5, 6],  # copy family + the full 16/32/64e -> 128e bound ladder
     },
 ]
 
