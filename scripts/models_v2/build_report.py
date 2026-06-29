@@ -54,7 +54,8 @@ RUNS = [
     {"key": "64dec_4e4_10",  "label": "64e 4e-4 decay@40B/10B",     "cat": "64e decay branches", "ids": "qx8e61ny",
      "branch": {"parent": "64wsd4e4", "fork_step": 9537}},
     # --- 128-expert baselines (+ a decay branch) ---
-    {"key": "128cos",        "label": "128e·50B cos",              "cat": "128e baselines", "ids": "yuafg0dw"},
+    {"key": "128cos",        "label": "128e·50B cos (4e-3)",       "cat": "128e baselines", "ids": "yuafg0dw"},
+    {"key": "128cos2e3",     "label": "128e·50B cos (2e-3)",       "cat": "128e baselines", "ids": "mzms8us0"},
     {"key": "128wsd4e3",     "label": "128e wsd 4e-3",             "cat": "128e baselines", "ids": "f2u26et2"},
     {"key": "128wsd2e3",     "label": "128e wsd 2e-3",             "cat": "128e baselines", "ids": "sswartor"},
     {"key": "128dec_4e3_10", "label": "128e 4e-3 decay@40B/10B",   "cat": "128e baselines", "ids": "uk48bfrl",
@@ -96,7 +97,7 @@ TABS = [
                  "record a point at the fork).",
         "groups": [
             {"name": "64e cosine",              "runs": ["64cos25", "64cos50"]},
-            {"name": "128e cosine",             "runs": ["128cos"]},
+            {"name": "128e cosine",             "runs": ["128cos", "128cos2e3"]},
             {"name": "64e WSD 4e-3 (+decays)",  "runs": ["64wsd4e3", "64dec_4e3_125"]},
             {"name": "64e WSD 2e-3 (+decays)",  "runs": ["64wsd2e3", "64dec_2e3_5", "64dec_2e3_10"]},
             {"name": "64e WSD 4e-4 (+decays)",  "runs": ["64wsd4e4", "64dec_4e4_5", "64dec_4e4_10"]},
