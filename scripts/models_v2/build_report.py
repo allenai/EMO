@@ -91,16 +91,24 @@ TABS = [
         "id": "ext",
         "label": "Extension methods",
         "title": "Extension methods: expert upcycling 64→128",
-        "intro": "Provisional — shaping this tab next. Take the 64e WSD-2e-3 trunk at 25B, expand it "
-                 "to 128 experts, and continue training (5B convergence check). Each group is an init "
-                 "family; compare against the from-scratch 128e WSD-2e-3 trunk.",
+        "intro": "Can we grow a trained 64e model into a 128e one cheaply? Take the 64e WSD-2e-3 trunk "
+                 "at 25B (step5960), expand it to 128 experts (63 standard kept + 64 new + shared "
+                 "moved to the last slot), and continue WSD training — a 5B convergence check (25B→30B, "
+                 "flat LR 2e-3). Three init families × optimizer treatments: <strong>copy</strong> "
+                 "(new experts duplicate sources), <strong>jitter</strong> (copy + noise), "
+                 "<strong>random</strong> (fresh). Two reference bounds bracket the result (drawn "
+                 "dashed): the <strong>upperbound</strong> = from-scratch 128e WSD-2e-3 (the ceiling "
+                 "if you trained 128 experts from scratch), and the <strong>lowerbound</strong> = the "
+                 "64e WSD-2e-3 trunk we extended from. The reference lines are excluded from the "
+                 "x-auto-fit, so the 5B upcycle window stays readable while the bounds show through it.",
         "groups": [
             {"name": "Upcycle: copy",   "runs": ["up_copy_cc", "up_copy_cz", "up_copy_reset"]},
             {"name": "Upcycle: jitter", "runs": ["up_jit_cc", "up_jit_cz", "up_jit_reset"]},
             {"name": "Upcycle: random", "runs": ["up_rand_carry", "up_rand_reset"]},
-            {"name": "from-scratch 128e WSD 2e-3", "runs": ["128wsd2e3"]},
+            {"name": "Upperbound: 128e WSD 2e-3 (from-scratch)", "runs": ["128wsd2e3"], "ref": True},
+            {"name": "Lowerbound: 64e WSD 2e-3 (source)",        "runs": ["64wsd2e3"],  "ref": True},
         ],
-        "default": [0, 3],  # copy family vs from-scratch
+        "default": [0, 3, 4],  # copy family bracketed by both bounds
     },
 ]
 
@@ -296,6 +304,7 @@ code { background:#eef2f7; padding:1px 5px; border-radius:4px; font-size:0.9em; 
 .exp-dot { width:11px; height:11px; border-radius:3px; flex:0 0 auto; border:1px solid rgba(0,0,0,.15);
            background:#fff; }
 .exp-group[aria-pressed="true"] .exp-dot { background:#2563eb; border-color:#2563eb; }
+.exp-group.ref { border-style:dashed; }  /* reference bound -> dashed line on the charts */
 .exp-fitx-l { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted);
               margin:10px 2px 0; cursor:pointer; }
 @media (max-width:900px){ .explorer { flex-direction:column; }
@@ -317,7 +326,7 @@ _CHARTS_JS = r"""
   const SMALL_H = 240;
   const allReg = [];   // every {plot,el} across tabs, for resize
 
-  function makeOpts(chart, logY, w, h, vis, legend){
+  function makeOpts(chart, logY, w, h, vis, legend, refSet){
     return {
       width:w, height:h, focus:{ alpha:0.3 }, legend:{ show:!!legend },
       scales:{ x:{ time:false }, y:{ distr: logY ? 3 : 1 } },
@@ -325,6 +334,7 @@ _CHARTS_JS = r"""
       axes:[ { label:"step", values:(u,vals)=>vals.map(v=>v>=1000?(v/1000)+"k":v) }, { label:chart.title } ],
       series:[ { value:(u,v)=>v==null?"--":v } ].concat(chart.series.map((s,i)=>({
         label:s.label, stroke:palette[i % palette.length], width:1.8, spanGaps:true, show:!!vis[i],
+        dash:(refSet && refSet.has(i)) ? [7,4] : undefined,
         value:(u,v)=>v==null?"--":(+v).toFixed(4) }))),
     };
   }
@@ -344,13 +354,13 @@ _CHARTS_JS = r"""
     +'</div><div class="ce-modal-chart"></div></div>';
   document.body.appendChild(modal);
   const mEl=modal.querySelector(".ce-modal-chart"), mTitle=modal.querySelector("strong");
-  let M=null;  // { chart, vis, logY, plot }
+  let M=null;  // { chart, vis, fitVis, refSet, logY, plot }
   const mSize=()=>({ w:Math.min(window.innerWidth*0.94,1180)|0, h:Math.min(window.innerHeight*0.72,700)|0 });
   function drawModal(){ const s=mSize(); if(M.plot) M.plot.destroy();
-    M.plot=new uPlot(makeOpts(M.chart, M.logY, s.w, s.h, M.vis, true), dataOf(M.chart), mEl);
-    const r=visRange(M.chart, M.vis); if(r) M.plot.setScale("x", { min:r[0], max:r[1] }); }
-  function openModal(chart, vis, logY){ M={ chart, vis, logY, plot:null }; mTitle.textContent=chart.title;
-    modal.classList.add("open"); drawModal(); }
+    M.plot=new uPlot(makeOpts(M.chart, M.logY, s.w, s.h, M.vis, true, M.refSet), dataOf(M.chart), mEl);
+    const r=visRange(M.chart, M.fitVis); if(r) M.plot.setScale("x", { min:r[0], max:r[1] }); }
+  function openModal(chart, vis, fitVis, refSet, logY){ M={ chart, vis, fitVis, refSet, logY, plot:null };
+    mTitle.textContent=chart.title; modal.classList.add("open"); drawModal(); }
   function closeModal(){ if(M&&M.plot) M.plot.destroy(); M=null; modal.classList.remove("open"); }
   modal.querySelector(".ce-mclose").addEventListener("click", closeModal);
   modal.querySelector(".ce-mlog").addEventListener("click", ()=>{ if(M){ M.logY=!M.logY; drawModal(); } });
@@ -363,18 +373,26 @@ _CHARTS_JS = r"""
     const fitxEl = root.querySelector(".exp-fitx");
     const fitx = () => !fitxEl || fitxEl.checked;
     const reg = {};   // metric slug -> { plot, logY, chart, el }
-    function vis(){
+    // Reference groups (e.g. upper/lower bounds): drawn dashed and excluded from the x-auto-fit so
+    // the focus runs define the window. Built once from the static group markup.
+    const refSet = new Set();
+    groupBtns.forEach(b => { if(b.dataset.ref==="1")
+      b.dataset.runs.split(",").filter(Boolean).forEach(k => { if(k in idxOf) refSet.add(idxOf[k]); }); });
+    function selected(includeRef){
       const s = new Set();
-      groupBtns.forEach(b => { if(b.getAttribute("aria-pressed")==="true")
+      groupBtns.forEach(b => { if(b.getAttribute("aria-pressed")==="true" && (includeRef || b.dataset.ref!=="1"))
         b.dataset.runs.split(",").filter(Boolean).forEach(k => { if(k in idxOf) s.add(idxOf[k]); }); });
-      return RUNKEYS.map((k,i)=>s.has(i));
+      return s;
     }
+    const vis = () => { const s=selected(true);  return RUNKEYS.map((k,i)=>s.has(i)); };
+    // x-fit driven by non-ref (focus) runs; if only refs are selected, fall back to all selected.
+    function fitVis(){ const f=selected(false); const s=f.size?f:selected(true); return RUNKEYS.map((k,i)=>s.has(i)); }
     function build(slug){
       const st=reg[slug], el=st.el; if(!el) return;
       const v=vis();
       if(st.plot) st.plot.destroy();
-      st.plot=new uPlot(makeOpts(st.chart, st.logY, el.clientWidth||440, SMALL_H, v, false), dataOf(st.chart), el);
-      if(fitx()){ const r=visRange(st.chart, v); if(r) st.plot.setScale("x", { min:r[0], max:r[1] }); }
+      st.plot=new uPlot(makeOpts(st.chart, st.logY, el.clientWidth||440, SMALL_H, v, false, refSet), dataOf(st.chart), el);
+      if(fitx()){ const r=visRange(st.chart, fitVis()); if(r) st.plot.setScale("x", { min:r[0], max:r[1] }); }
     }
     function rebuildAll(){ Object.keys(reg).forEach(build); }
     root.querySelectorAll(".chart-cell").forEach(cell => {
@@ -390,7 +408,7 @@ _CHARTS_JS = r"""
     root.querySelectorAll("button.logtoggle").forEach(b => b.addEventListener("click", () => {
       reg[b.dataset.metric].logY=!reg[b.dataset.metric].logY; build(b.dataset.metric); }));
     root.querySelectorAll("button.expand").forEach(b => b.addEventListener("click", () => {
-      const st=reg[b.dataset.metric]; openModal(st.chart, vis(), st.logY); }));
+      const st=reg[b.dataset.metric]; openModal(st.chart, vis(), fitVis(), refSet, st.logY); }));
     rebuildAll();
   }
   document.querySelectorAll(".explorer").forEach(setupExplorer);
@@ -520,8 +538,10 @@ def explorer_html(tab: dict, charts: list) -> str:
     btns = []
     for i, g in enumerate(tab["groups"]):
         pressed = "true" if i in default else "false"
+        ref = ' data-ref="1"' if g.get("ref") else ""
+        cls = "exp-group ref" if g.get("ref") else "exp-group"
         btns.append(
-            f'<button class="exp-group" aria-pressed="{pressed}" data-runs="{",".join(g["runs"])}">'
+            f'<button class="{cls}" aria-pressed="{pressed}" data-runs="{",".join(g["runs"])}"{ref}>'
             f'<span class="exp-dot"></span><span>{g["name"]}</span></button>')
     panel = (
         '<div class="exp-panel">'
