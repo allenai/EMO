@@ -530,10 +530,18 @@ def fetch_from_wandb() -> dict:
         for _, key in METRICS:
             cd = child.setdefault(key, {})
             if any(s <= fs for s in cd):
-                continue  # child already covers the fork region for this metric
-            below = [s for s in parent.get(key, {}) if s <= fs]
-            if below:
-                cd[fs] = parent[key][max(below)]
+                continue  # child already has a sample at/before the fork
+            pk = parent.get(key, {})
+            below = [s for s in pk if s <= fs]
+            above = [s for s in pk if s > fs]
+            if below and above:
+                # Linearly interpolate the parent between the two samples straddling the fork, so
+                # the anchor lands exactly ON the parent's drawn (straight-segment) line at the fork
+                # -- not on the previous sample's stale value, which sits just off the line.
+                a, b = max(below), min(above)
+                cd[fs] = pk[a] + (fs - a) / (b - a) * (pk[b] - pk[a])
+            elif below:
+                cd[fs] = pk[max(below)]
     # One chart per metric; every run is a series, in RUNS order (so series index == run index ==
     # palette index == sidebar checkbox data-idx). Runs without data for a metric are all-null.
     charts = []
