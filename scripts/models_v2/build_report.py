@@ -39,16 +39,26 @@ RUNS = [
     {"key": "64wsd2e3", "label": "64e wsd 2e-3", "cat": "64e baselines", "ids": "0ucu7x8n"},
     {"key": "64wsd4e4", "label": "64e wsd 4e-4", "cat": "64e baselines", "ids": "fcvnftxd"},
     # --- 64-expert WSD decay branches (forked off a flat-LR stable trunk) ---
-    {"key": "64dec_4e3_125", "label": "64e 4e-3 decay@37.5B/12.5B", "cat": "64e decay branches", "ids": "hbq6004e"},
-    {"key": "64dec_2e3_5",   "label": "64e 2e-3 decay@45B/5B",      "cat": "64e decay branches", "ids": "69drqnz8"},
-    {"key": "64dec_2e3_10",  "label": "64e 2e-3 decay@40B/10B",     "cat": "64e decay branches", "ids": "opp7l86a"},
-    {"key": "64dec_4e4_5",   "label": "64e 4e-4 decay@45B/5B",      "cat": "64e decay branches", "ids": "e1munm14"},
-    {"key": "64dec_4e4_10",  "label": "64e 4e-4 decay@40B/10B",     "cat": "64e decay branches", "ids": "qx8e61ny"},
+    # `branch` anchors the child's curves to the parent's value at the fork step so they visibly
+    # branch off it (evals are logged sparsely, so the child's first eval lands well after the fork
+    # -> a gap without this). fork_step = round(forkB * 5e9-ish / 4,194,304): 37.5B=8941, 40B=9537,
+    # 45B=10729.
+    {"key": "64dec_4e3_125", "label": "64e 4e-3 decay@37.5B/12.5B", "cat": "64e decay branches", "ids": "hbq6004e",
+     "branch": {"parent": "64wsd4e3", "fork_step": 8941}},
+    {"key": "64dec_2e3_5",   "label": "64e 2e-3 decay@45B/5B",      "cat": "64e decay branches", "ids": "69drqnz8",
+     "branch": {"parent": "64wsd2e3", "fork_step": 10729}},
+    {"key": "64dec_2e3_10",  "label": "64e 2e-3 decay@40B/10B",     "cat": "64e decay branches", "ids": "opp7l86a",
+     "branch": {"parent": "64wsd2e3", "fork_step": 9537}},
+    {"key": "64dec_4e4_5",   "label": "64e 4e-4 decay@45B/5B",      "cat": "64e decay branches", "ids": "e1munm14",
+     "branch": {"parent": "64wsd4e4", "fork_step": 10729}},
+    {"key": "64dec_4e4_10",  "label": "64e 4e-4 decay@40B/10B",     "cat": "64e decay branches", "ids": "qx8e61ny",
+     "branch": {"parent": "64wsd4e4", "fork_step": 9537}},
     # --- 128-expert baselines (+ a decay branch) ---
     {"key": "128cos",        "label": "128e·50B cos",              "cat": "128e baselines", "ids": "yuafg0dw"},
     {"key": "128wsd4e3",     "label": "128e wsd 4e-3",             "cat": "128e baselines", "ids": "f2u26et2"},
     {"key": "128wsd2e3",     "label": "128e wsd 2e-3",             "cat": "128e baselines", "ids": "sswartor"},
-    {"key": "128dec_4e3_10", "label": "128e 4e-3 decay@40B/10B",   "cat": "128e baselines", "ids": "uk48bfrl"},
+    {"key": "128dec_4e3_10", "label": "128e 4e-3 decay@40B/10B",   "cat": "128e baselines", "ids": "uk48bfrl",
+     "branch": {"parent": "128wsd4e3", "fork_step": 9537}},
     # --- Extension methods: expert upcycling 64→128 (5B convergence check) ---
     {"key": "up_copy_cc",    "label": "upcycle copy·carry·copy",   "cat": "upcycle 64→128", "ids": "85nhg564"},
     {"key": "up_copy_cz",    "label": "upcycle copy·carry·zero",   "cat": "upcycle 64→128", "ids": "2hnes1fe"},
@@ -75,7 +85,9 @@ TABS = [
                  "for some trunks forked explicit decay branches over the last N·B tokens. Pick a "
                  "recipe on the left to plot its trunk plus all of its decay lines; pick several to "
                  "compare. The x-axis auto-fits to the selection and the y-axis rescales to what's "
-                 "shown.",
+                 "shown. Each decay branch is anchored to its parent trunk's value at the fork step, "
+                 "so it visibly branches off the trunk (evals are logged too sparsely to otherwise "
+                 "record a point at the fork).",
         "groups": [
             {"name": "64e cosine",              "runs": ["64cos25", "64cos50"]},
             {"name": "128e cosine",             "runs": ["128cos"]},
@@ -504,6 +516,24 @@ def fetch_from_wandb() -> dict:
             "last_ce": round(ce[last_step], 3) if ce else None,
             "last_tok": round(last_step * TOK_PER_STEP / 1e9, 1) if last_step else None,
         })
+    # Branch stitching: a decay child resumes the trunk's global step but its first eval is logged
+    # well after the fork (evals are sparse), leaving a visual gap. For each branched run, anchor an
+    # extra point at the fork step equal to the parent's value there (nearest sample at/below the
+    # fork), so the child's curve starts ON the parent's curve and visibly branches off it. Only
+    # added where the child has no real sample at/before the fork, so real data is never overwritten.
+    for r in RUNS:
+        br = r.get("branch")
+        if not br:
+            continue
+        child, parent = per_run[r["key"]], per_run.get(br["parent"], {})
+        fs = br["fork_step"]
+        for _, key in METRICS:
+            cd = child.setdefault(key, {})
+            if any(s <= fs for s in cd):
+                continue  # child already covers the fork region for this metric
+            below = [s for s in parent.get(key, {}) if s <= fs]
+            if below:
+                cd[fs] = parent[key][max(below)]
     # One chart per metric; every run is a series, in RUNS order (so series index == run index ==
     # palette index == sidebar checkbox data-idx). Runs without data for a metric are all-null.
     charts = []
