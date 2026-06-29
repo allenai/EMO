@@ -22,77 +22,83 @@ CACHE = BASE / "curves.json"
 ENTITY_PROJECT = "ryanyxw/emo-extension"
 TOK_PER_STEP = 1024 * 4096  # global_batch_size(1024) * seq_len(4096) = 4,194,304 tokens/step
 
-# Curves are organized into THEMATIC GROUPS, each rendered as its own card with its own set of
-# per-metric charts, so the runs for one question don't get mushed together with unrelated runs.
-# Each run is (label, W&B run id-or-ids); a label maps to a LIST of ids when a run crashed and
-# resumed (histories merged in order, later runs win on overlapping steps — e.g. the 64e wsd 4e-3
-# trunk crashed at ~2759 / n6zg596k and resumed from 2501 / 96odpdqg). A run may appear in more
-# than one group (e.g. the 64e wsd-4e-3 trunk is a reference in both the LR and expert-count groups).
-RUN_GROUPS = [
-    {
-        "key": "sched_lr",
-        "title": "Scheduler & peak-LR (64e · 50B)",
-        "blurb": "Baseline recipe: does warmup-stable-decay (WSD) work, and what peak LR? Cosine vs "
-                 "WSD at 64 experts, plus the WSD peak-LR sweep (4e-3 / 2e-3 / 4e-4). Every run "
-                 "decays the LR over its true token budget.",
-        "runs": [
-            ("64e·25B cos",  "lsq79eb5"),
-            ("64e·50B cos",  "r5kyiexy"),
-            ("64e wsd 4e-3", ["n6zg596k", "96odpdqg"]),
-            ("64e wsd 2e-3", "0ucu7x8n"),
-            ("64e wsd 4e-4", "fcvnftxd"),
-        ],
-    },
-    {
-        "key": "decay",
-        "title": "Decay-amount ablations (64e WSD branches)",
-        "blurb": "From a flat-LR stable trunk, fork a cheap decay branch over the last N·B tokens "
-                 "(LR→0) and measure final performance vs how much you decay, across peak LRs. Each "
-                 "branch diverges from its trunk's flat line at the fork step.",
-        "runs": [
-            ("4e-3 @37.5B/12.5B", "hbq6004e"),
-            ("2e-3 @45B/5B",      "69drqnz8"),
-            ("2e-3 @40B/10B",     "opp7l86a"),
-            ("4e-4 @45B/5B",      "e1munm14"),
-            ("4e-4 @40B/10B",     "qx8e61ny"),
-        ],
-    },
-    {
-        "key": "expert_count",
-        "title": "Expert count: 64e → 128e",
-        "blurb": "Scaling the routed-expert pool from 64 to 128 at fixed 50B budget: 128e trunks at "
-                 "cosine / WSD-4e-3 / WSD-2e-3 plus a 128e decay branch, against the 64e WSD-4e-3 "
-                 "reference.",
-        "runs": [
-            ("64e wsd 4e-3",                ["n6zg596k", "96odpdqg"]),
-            ("128e·50B cos",                "yuafg0dw"),
-            ("128e wsd 4e-3",               "f2u26et2"),
-            ("128e wsd 2e-3",               "sswartor"),
-            ("128e wsd 4e-3 decay@40B/10B", "uk48bfrl"),
-        ],
-    },
-    {
-        "key": "upcycle",
-        "title": "Extension methods — expert upcycling 64→128 (NEW)",
-        "blurb": "First extension-method experiment. Take the 64e WSD-2e-3 trunk at 25B (step5960), "
-                 "expand it to 128 experts (63 standard kept + 64 new + shared moved to the last "
-                 "slot), and continue WSD training. 5B convergence check (25B→30B) over a 3×2 grid: "
-                 "new-expert init {random, upcycle-copy, upcycle+jitter} × optimizer {carry/reset "
-                 "kept moments, copy/zero new-expert moments}. Compared against the from-scratch 128e "
-                 "WSD-2e-3 trunk (whose final 50B CE is the target; see the expert-count group). "
-                 "Upcycle variants resume at CE≈2.80 (weights preserved); random init starts at "
-                 "CE≈9.4 (64/127 standard experts random) and recovers.",
-        "runs": [
-            ("copy·carry·copy",   "85nhg564"),
-            ("copy·carry·zero",   "2hnes1fe"),
-            ("copy·reset",        "kkummxiv"),
-            ("random·carry",      "eus6qsqh"),
-            ("random·reset",      "s4bq4kvw"),
-            ("jitter·carry·copy", "uar2nr44"),
-            ("jitter·carry·zero", "r6yj95lk"),
-            ("jitter·reset",      "t36ixfxn"),
-        ],
-    },
+# ---------------------------------------------------------------------------
+# Master run inventory + preset groupings (drives the interactive Curves tab).
+#
+# The Curves tab renders ONE shared set of metric charts; every run is a series on every chart,
+# in THIS list's order — so a run's color is stable across all charts and matches its sidebar
+# swatch. A side panel toggles individual runs on/off; PRESETS are one-click groupings that select
+# a meaningful set of runs (a trunk + all of its decay/anneal branches, an upcycle family, ...).
+# `ids` is a single W&B run id, or a LIST when a run crashed + resumed (histories merged in order,
+# later wins on overlapping steps — e.g. the 64e wsd 4e-3 trunk crashed at ~2759/n6zg596k and
+# resumed from 2501/96odpdqg).
+RUNS = [
+    # --- 64-expert baselines ---
+    {"key": "64cos25",  "label": "64e·25B cos",  "cat": "64e baselines", "ids": "lsq79eb5"},
+    {"key": "64cos50",  "label": "64e·50B cos",  "cat": "64e baselines", "ids": "r5kyiexy"},
+    {"key": "64wsd4e3", "label": "64e wsd 4e-3", "cat": "64e baselines", "ids": ["n6zg596k", "96odpdqg"]},
+    {"key": "64wsd2e3", "label": "64e wsd 2e-3", "cat": "64e baselines", "ids": "0ucu7x8n"},
+    {"key": "64wsd4e4", "label": "64e wsd 4e-4", "cat": "64e baselines", "ids": "fcvnftxd"},
+    # --- 64-expert WSD decay branches (forked off a flat-LR stable trunk) ---
+    {"key": "64dec_4e3_125", "label": "64e 4e-3 decay@37.5B/12.5B", "cat": "64e decay branches", "ids": "hbq6004e"},
+    {"key": "64dec_2e3_5",   "label": "64e 2e-3 decay@45B/5B",      "cat": "64e decay branches", "ids": "69drqnz8"},
+    {"key": "64dec_2e3_10",  "label": "64e 2e-3 decay@40B/10B",     "cat": "64e decay branches", "ids": "opp7l86a"},
+    {"key": "64dec_4e4_5",   "label": "64e 4e-4 decay@45B/5B",      "cat": "64e decay branches", "ids": "e1munm14"},
+    {"key": "64dec_4e4_10",  "label": "64e 4e-4 decay@40B/10B",     "cat": "64e decay branches", "ids": "qx8e61ny"},
+    # --- 128-expert baselines (+ a decay branch) ---
+    {"key": "128cos",        "label": "128e·50B cos",              "cat": "128e baselines", "ids": "yuafg0dw"},
+    {"key": "128wsd4e3",     "label": "128e wsd 4e-3",             "cat": "128e baselines", "ids": "f2u26et2"},
+    {"key": "128wsd2e3",     "label": "128e wsd 2e-3",             "cat": "128e baselines", "ids": "sswartor"},
+    {"key": "128dec_4e3_10", "label": "128e 4e-3 decay@40B/10B",   "cat": "128e baselines", "ids": "uk48bfrl"},
+    # --- Extension methods: expert upcycling 64→128 (5B convergence check) ---
+    {"key": "up_copy_cc",    "label": "upcycle copy·carry·copy",   "cat": "upcycle 64→128", "ids": "85nhg564"},
+    {"key": "up_copy_cz",    "label": "upcycle copy·carry·zero",   "cat": "upcycle 64→128", "ids": "2hnes1fe"},
+    {"key": "up_copy_reset", "label": "upcycle copy·reset",        "cat": "upcycle 64→128", "ids": "kkummxiv"},
+    {"key": "up_rand_carry", "label": "upcycle random·carry",      "cat": "upcycle 64→128", "ids": "eus6qsqh"},
+    {"key": "up_rand_reset", "label": "upcycle random·reset",      "cat": "upcycle 64→128", "ids": "s4bq4kvw"},
+    {"key": "up_jit_cc",     "label": "upcycle jitter·carry·copy", "cat": "upcycle 64→128", "ids": "uar2nr44"},
+    {"key": "up_jit_cz",     "label": "upcycle jitter·carry·zero", "cat": "upcycle 64→128", "ids": "r6yj95lk"},
+    {"key": "up_jit_reset",  "label": "upcycle jitter·reset",      "cat": "upcycle 64→128", "ids": "t36ixfxn"},
+]
+
+_UP_ALL = ["up_copy_cc", "up_copy_cz", "up_copy_reset", "up_rand_carry", "up_rand_reset",
+           "up_jit_cc", "up_jit_cz", "up_jit_reset"]
+_ALL_64 = ["64cos25", "64cos50", "64wsd4e3", "64wsd2e3", "64wsd4e4",
+           "64dec_4e3_125", "64dec_2e3_5", "64dec_2e3_10", "64dec_4e4_5", "64dec_4e4_10"]
+_ALL_128 = ["128cos", "128wsd4e3", "128wsd2e3", "128dec_4e3_10"]
+
+# One-click groupings shown as buttons in the Curves sidebar. Each selects a meaningful set of runs
+# (a trunk + all its decay branches, an upcycle family, a head-to-head). `default: True` marks the
+# set shown on first load.
+PRESETS = [
+    {"cat": "Baselines", "items": [
+        {"name": "64e cosine",             "runs": ["64cos25", "64cos50"]},
+        {"name": "64e WSD 4e-3 (+decay)",  "runs": ["64wsd4e3", "64dec_4e3_125"]},
+        {"name": "64e WSD 2e-3 (+decay)",  "runs": ["64wsd2e3", "64dec_2e3_5", "64dec_2e3_10"]},
+        {"name": "64e WSD 4e-4 (+decay)",  "runs": ["64wsd4e4", "64dec_4e4_5", "64dec_4e4_10"]},
+        {"name": "128e cosine",            "runs": ["128cos"]},
+        {"name": "128e WSD 4e-3 (+decay)", "runs": ["128wsd4e3", "128dec_4e3_10"]},
+        {"name": "128e WSD 2e-3",          "runs": ["128wsd2e3"]},
+    ]},
+    {"cat": "By expert count", "items": [
+        {"name": "All 64e",  "runs": _ALL_64},
+        {"name": "All 128e", "runs": _ALL_128},
+    ]},
+    {"cat": "Extension methods", "items": [
+        {"name": "Upcycle: all 8",  "runs": _UP_ALL},
+        {"name": "Upcycle: copy",   "runs": ["up_copy_cc", "up_copy_cz", "up_copy_reset"]},
+        {"name": "Upcycle: jitter", "runs": ["up_jit_cc", "up_jit_cz", "up_jit_reset"]},
+        {"name": "Upcycle: random", "runs": ["up_rand_carry", "up_rand_reset"]},
+        {"name": "Upcycle vs from-scratch 128e", "runs": _UP_ALL + ["128wsd2e3"], "default": True},
+    ]},
+]
+
+# Stable per-run color palette (indexed by position in RUNS; reused for sidebar swatches AND chart
+# strokes so they always agree). 22 runs -> 24 reasonably-distinct colors.
+PALETTE = [
+    "#2563eb", "#dc2626", "#059669", "#7c3aed", "#d97706", "#0891b2", "#db2777", "#65a30d",
+    "#475569", "#9333ea", "#0d9488", "#e11d48", "#4f46e5", "#ca8a04", "#15803d", "#b91c1c",
+    "#7c2d12", "#1d4ed8", "#be123c", "#047857", "#a21caf", "#92400e", "#0369a1", "#4d7c0f",
 ]
 
 # (chart title, W&B metric key)
@@ -263,43 +269,108 @@ code { background:#eef2f7; padding:1px 5px; border-radius:4px; font-size:0.9em; 
 .ce-modal-bar button { border:1px solid var(--line); background:#fff; border-radius:6px; padding:5px 10px;
                        font-size:13px; cursor:pointer; }
 .ce-modal-bar button:hover { background:#f1f5f9; }
+/* curves layout: sticky run sidebar + chart area */
+.curves-layout { display:flex; gap:18px; align-items:flex-start; }
+.run-panel { flex:0 0 252px; position:sticky; top:104px; max-height:calc(100vh - 124px);
+             overflow:auto; background:var(--card); border:1px solid var(--line);
+             border-radius:8px; padding:12px 14px; font-size:13px; }
+.curves-main { flex:1 1 auto; min-width:0; }
+.rp-h { font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.05em;
+        color:var(--muted); margin:12px 0 6px; display:flex; justify-content:space-between;
+        align-items:center; }
+.rp-h:first-child { margin-top:0; }
+.rp-mini button { border:1px solid var(--line); background:#fff; border-radius:5px; cursor:pointer;
+                  font-size:11px; padding:2px 7px; margin-left:4px; }
+.rp-mini button:hover { background:#f1f5f9; }
+.rp-cat { font-size:11px; color:var(--muted); margin:9px 0 3px; font-weight:600; }
+.rp-btns { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:2px; }
+.rp-btns button { border:1px solid #c7d2fe; background:#eef2ff; color:#3730a3; border-radius:12px;
+                  font-size:11px; padding:3px 9px; cursor:pointer; }
+.rp-btns button:hover { background:#e0e7ff; }
+.rp-fitx-l { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted);
+             margin:6px 0 2px; cursor:pointer; }
+.rp-runs { margin-top:2px; }
+.rp-run { display:flex; align-items:center; gap:7px; padding:2px 0; cursor:pointer; line-height:1.3; }
+.rp-run input { margin:0; flex:0 0 auto; }
+.rp-sw { display:inline-block; width:11px; height:11px; border-radius:3px; flex:0 0 auto; }
+@media (max-width:900px){ .curves-layout { flex-direction:column; }
+  .run-panel { position:static; flex-basis:auto; width:100%; max-height:none; } }
 """
 
-# uPlot init: compact grid charts + click-to-expand modal. Plain string (literal braces);
-# data injected via __CURVES__ replace.
+# uPlot init: ONE shared set of metric charts; every run is a series (same order on every chart, so
+# colors/indices line up). A side panel toggles runs on/off, presets select run groups, and the
+# x-axis auto-fits to the visible selection. Plain string (literal braces); data injected via
+# __CURVES__ / __PALETTE__ replace.
 _CHARTS_JS = r"""
 <script>
 (function(){
   const C = __CURVES__;
-  // Color by series index WITHIN each chart, so each group's runs are visually distinct (and
-  // consistent across that group's charts, since all its charts share the same series order).
-  const palette = ["#2563eb","#dc2626","#059669","#7c3aed","#d97706","#0891b2","#db2777","#65a30d","#475569","#9333ea"];
+  const palette = __PALETTE__;
+  const nRuns = C.runs.length;
   const SMALL_H = 230, reg = {};
-  function opts(chart, logY, w, h){
+  // Per-run visibility, seeded from each sidebar checkbox's initial checked state (set server-side
+  // from the default preset). Series index i  <->  run i  <->  palette[i]  <->  checkbox data-idx=i.
+  const vis = new Array(nRuns).fill(false);
+  const cbs = Array.from(document.querySelectorAll(".rp-run input[type=checkbox]"));
+  cbs.forEach(cb => { vis[+cb.dataset.idx] = cb.checked; });
+  const fitxEl = document.getElementById("rp-fitx");
+
+  function opts(chart, logY, w, h, legend){
     return {
-      width:w, height:h, focus:{ alpha:0.25 },
+      width:w, height:h, focus:{ alpha:0.25 }, legend:{ show:!!legend },
       scales:{ x:{ time:false }, y:{ distr: logY ? 3 : 1 } },
       cursor:{ focus:{ prox:30 }, drag:{ x:true, y:true, uni:10 } },
       axes:[ { label:"step", values:(u,vals)=>vals.map(v=>v>=1000?(v/1000)+"k":v) }, { label:chart.title } ],
       series:[ { value:(u,v)=>v==null?"--":v } ].concat(chart.series.map((s,i)=>({
-        label:s.label, stroke:palette[i % palette.length], width:1.6, spanGaps:true,
+        label:s.label, stroke:palette[i % palette.length], width:1.6, spanGaps:true, show:vis[i],
         value:(u,v)=>v==null?"--":(+v).toFixed(4) }))),
     };
   }
   const dataOf = chart => [chart.x].concat(chart.series.map(s=>s.y));
+  // x-range covering every visible series' non-null samples (null if nothing visible has data).
+  function visRange(c){
+    let lo=Infinity, hi=-Infinity;
+    for(let i=0;i<c.series.length;i++){ if(!vis[i]) continue; const y=c.series[i].y;
+      for(let j=0;j<y.length;j++){ if(y[j]!=null){ const x=c.x[j]; if(x<lo)lo=x; if(x>hi)hi=x; } } }
+    return lo<=hi ? [lo,hi] : null;
+  }
   function build(key){
     const st=reg[key], el=st.el; if(!el) return;
     if(st.plot) st.plot.destroy();
-    st.plot = new uPlot(opts(st.chart, st.logY, el.clientWidth||430, SMALL_H), dataOf(st.chart), el);
+    st.plot = new uPlot(opts(st.chart, st.logY, el.clientWidth||430, SMALL_H, false), dataOf(st.chart), el);
   }
   C.charts.forEach(chart => {
     reg[chart.key] = { plot:null, logY:false, chart:chart, el:document.getElementById("chart-"+chart.key) };
     build(chart.key);
   });
-  document.querySelectorAll("button.logtoggle").forEach(b =>
-    b.addEventListener("click", () => { const k=b.dataset.chart; reg[k].logY=!reg[k].logY; build(k); }));
+  function applyVis(){
+    Object.keys(reg).forEach(k => { const st=reg[k]; if(!st.plot) return;
+      for(let i=0;i<nRuns;i++) st.plot.setSeries(i+1, { show:vis[i] });
+      if(fitxEl && fitxEl.checked){ const r=visRange(st.chart); if(r) st.plot.setScale("x", { min:r[0], max:r[1] }); }
+    });
+    if(m && m.plot) drawM();
+  }
+  applyVis();  // sync initial fit to the default selection
 
-  // ---- expand modal ----
+  // ---- sidebar wiring: per-run checkboxes, presets, all/none, auto-fit ----
+  cbs.forEach(cb => cb.addEventListener("change", () => { vis[+cb.dataset.idx]=cb.checked; applyVis(); }));
+  function setVis(keys){
+    const set = new Set(keys);
+    for(let i=0;i<nRuns;i++) vis[i] = set.has(C.runs[i].key);
+    cbs.forEach(cb => { cb.checked = vis[+cb.dataset.idx]; });
+    applyVis();
+  }
+  document.querySelectorAll("button.preset").forEach(b =>
+    b.addEventListener("click", () => setVis(b.dataset.runs.split(",").filter(Boolean))));
+  const allBtn=document.getElementById("rp-all"), noneBtn=document.getElementById("rp-none");
+  if(allBtn) allBtn.addEventListener("click", () => setVis(C.runs.map(r=>r.key)));
+  if(noneBtn) noneBtn.addEventListener("click", () => setVis([]));
+  if(fitxEl) fitxEl.addEventListener("change", applyVis);
+
+  document.querySelectorAll("button.logtoggle").forEach(b =>
+    b.addEventListener("click", () => { const k=b.dataset.chart; reg[k].logY=!reg[k].logY; build(k); applyVis(); }));
+
+  // ---- expand modal (full-size single chart; legend on so values are readable) ----
   const modal=document.createElement("div"); modal.className="ce-modal";
   modal.innerHTML='<div class="ce-modal-inner"><div class="ce-modal-bar"><strong></strong>'
     +'<span><button class="ce-mlog">toggle log-y</button> <button class="ce-mclose">close ✕</button></span>'
@@ -309,7 +380,8 @@ _CHARTS_JS = r"""
   let m=null;  // { key, logY, plot }
   const mSize=()=>({ w:Math.min(window.innerWidth*0.94,1180)|0, h:Math.min(window.innerHeight*0.72,700)|0 });
   function drawM(){ const c=reg[m.key].chart, s=mSize(); if(m.plot) m.plot.destroy();
-    m.plot=new uPlot(opts(c, m.logY, s.w, s.h), dataOf(c), mEl); }
+    m.plot=new uPlot(opts(c, m.logY, s.w, s.h, true), dataOf(c), mEl);
+    if(fitxEl && fitxEl.checked){ const r=visRange(c); if(r) m.plot.setScale("x", { min:r[0], max:r[1] }); } }
   function openM(key){ m={ key:key, logY:reg[key].logY, plot:null }; mTitle.textContent=reg[key].chart.title;
     modal.classList.add("open"); drawM(); }
   function closeM(){ if(m&&m.plot) m.plot.destroy(); m=null; modal.classList.remove("open"); }
@@ -398,32 +470,30 @@ def fetch_from_wandb() -> dict:
     import wandb
     api = wandb.Api()
     cache: dict = {}
-    groups_out, all_charts = [], []
-    for g in RUN_GROUPS:
-        labels = [lbl for lbl, _ in g["runs"]]
-        per = {key: {} for _, key in METRICS}  # key -> label -> {step: val}
-        runs_meta = []
-        for lbl, rid in g["runs"]:
-            ids = [rid] if isinstance(rid, str) else list(rid)
-            last_run, merged = _fetch_run(api, ids, cache)
-            for _, key in METRICS:
-                per[key][lbl] = merged.get(key, {})
-            ce = per["train/CE loss"][lbl]
-            last_step = max(ce) if ce else None
-            runs_meta.append({"label": lbl, "url": last_run.url, "state": last_run.state,
-                              "id": "+".join(ids),
-                              "last_ce": round(ce[last_step], 3) if ce else None,
-                              "last_tok": round(last_step * TOK_PER_STEP / 1e9, 1) if last_step else None})
-        charts = []
-        for title, key in METRICS:
-            steps = sorted(set().union(*[set(per[key][l]) for l in labels]) or {0})
-            series = [{"label": l, "y": [per[key][l].get(s) for s in steps]} for l in labels]
-            chart = {"key": f'{g["key"]}__{slug(title)}', "title": title, "x": steps, "series": series}
-            charts.append(chart)
-            all_charts.append(chart)
-        groups_out.append({"key": g["key"], "title": g["title"], "blurb": g["blurb"],
-                           "charts": charts, "runs": runs_meta})
-    return {"groups": groups_out, "charts": all_charts}
+    # Pull each run's merged history once, in RUNS order.
+    per_run: dict = {}   # run key -> {metric_key: {step: val}}
+    runs_meta = []
+    for r in RUNS:
+        ids = [r["ids"]] if isinstance(r["ids"], str) else list(r["ids"])
+        last_run, merged = _fetch_run(api, ids, cache)
+        per_run[r["key"]] = merged
+        ce = merged.get("train/CE loss", {})
+        last_step = max(ce) if ce else None
+        runs_meta.append({
+            "key": r["key"], "label": r["label"], "cat": r["cat"], "id": "+".join(ids),
+            "url": last_run.url, "state": last_run.state,
+            "last_ce": round(ce[last_step], 3) if ce else None,
+            "last_tok": round(last_step * TOK_PER_STEP / 1e9, 1) if last_step else None,
+        })
+    # One chart per metric; every run is a series, in RUNS order (so series index == run index ==
+    # palette index == sidebar checkbox data-idx). Runs without data for a metric are all-null.
+    charts = []
+    for title, key in METRICS:
+        steps = sorted(set().union(*[set(per_run[r["key"]].get(key, {})) for r in RUNS]) or {0})
+        series = [{"label": r["label"], "y": [per_run[r["key"]].get(key, {}).get(s) for s in steps]}
+                  for r in RUNS]
+        charts.append({"key": slug(title), "title": title, "x": steps, "series": series})
+    return {"runs": runs_meta, "charts": charts}
 
 
 def chart_blocks(charts: list) -> str:
@@ -503,57 +573,103 @@ def eval_tab(evals: dict) -> str:
     )
 
 
-def render(payload: dict, uplot_css: str, uplot_js: str) -> str:
-    groups = payload["groups"]
+def run_panel_html(runs: list) -> str:
+    """The Curves sidebar: preset group buttons + a per-run checkbox list (grouped by category,
+    color swatches matching the chart strokes). `runs` is payload["runs"] in RUNS order, so the
+    enumerate index == series index == PALETTE index == checkbox data-idx."""
+    default_keys: set = set()
+    for cat in PRESETS:
+        for it in cat["items"]:
+            if it.get("default"):
+                default_keys = set(it["runs"])
+    presets = []
+    for cat in PRESETS:
+        btns = "".join(
+            f'<button class="preset" data-runs="{",".join(it["runs"])}">{it["name"]}</button>'
+            for it in cat["items"])
+        presets.append(f'<div class="rp-cat">{cat["cat"]}</div><div class="rp-btns">{btns}</div>')
+    rows, last_cat = [], None
+    for i, r in enumerate(runs):
+        if r["cat"] != last_cat:
+            rows.append(f'<div class="rp-cat">{r["cat"]}</div>')
+            last_cat = r["cat"]
+        checked = " checked" if r["key"] in default_keys else ""
+        sw = PALETTE[i % len(PALETTE)]
+        rows.append(
+            f'<label class="rp-run"><input type="checkbox" data-idx="{i}"{checked}>'
+            f'<span class="rp-sw" style="background:{sw}"></span>{r["label"]}</label>')
+    return (
+        '<div class="run-panel">'
+        '<div class="rp-h">Presets</div>'
+        f'<div class="rp-presets">{"".join(presets)}</div>'
+        '<div class="rp-h">Runs <span class="rp-mini">'
+        '<button id="rp-all">all</button><button id="rp-none">none</button></span></div>'
+        '<label class="rp-fitx-l"><input type="checkbox" id="rp-fitx" checked>'
+        ' auto-fit x to selection</label>'
+        f'<div class="rp-runs">{"".join(rows)}</div>'
+        '</div>')
 
-    # Overview: intro + common setup + one run-table card per group.
+
+def render(payload: dict, uplot_css: str, uplot_js: str) -> str:
+    runs = payload["runs"]
+
+    # Overview: intro + common setup + one run-table card per category.
     overview_cards = [
         '<div class="card goal"><h3>Goal</h3>'
-        '<p>A standard top-k MoE (<code>moe_lbreducedp_sharedexp</code>) study, organized by the '
-        'question each set of runs answers. <strong>Baselines</strong> (now settled): the WSD '
-        'scheduler, the peak-LR sweep, and decay-amount ablations, plus 64&rarr;128 expert scaling. '
-        '<strong>Extension methods</strong> (in progress): ways to grow an already-trained model &mdash; '
-        'starting with expert upcycling. Each group below has its own curves on the Curves tab, so '
-        'runs are compared <em>within</em> their question rather than mushed onto shared axes.</p></div>'
+        '<p>A standard top-k MoE (<code>moe_lbreducedp_sharedexp</code>) study. '
+        '<strong>Baselines</strong> (now settled): the WSD scheduler, the peak-LR sweep, and '
+        'decay-amount ablations, plus 64&rarr;128 expert scaling. <strong>Extension methods</strong> '
+        '(in progress): ways to grow an already-trained model &mdash; starting with expert '
+        'upcycling. The <strong>Curves</strong> tab plots every run on one shared set of charts; '
+        'use the sidebar to toggle individual runs or click a <em>preset</em> to focus on one '
+        'question (e.g. &ldquo;128e WSD 4e-3 (+decay)&rdquo; or &ldquo;Upcycle vs from-scratch&rdquo;).</p></div>'
         '<div class="card method"><h3>Setup</h3>'
         '<p>Common to all: OLMoE-mix-0824, <code>d_model</code> 2048 / 16 layers, top-8 routed '
         '+ 1 shared expert, lb 1e-1, 8 nodes / 64 GPUs, global batch 4.19M tokens/step. WSD runs '
         'decay the LR over their true token budget; trunks keep permanent checkpoints every 5B.</p></div>'
     ]
-    for g in groups:
-        rows = "".join(
+    cats: list = []
+    by_cat: dict = {}
+    for r in runs:
+        if r["cat"] not in by_cat:
+            cats.append(r["cat"])
+            by_cat[r["cat"]] = []
+        by_cat[r["cat"]].append(r)
+    for cat in cats:
+        crs = by_cat[cat]
+        body = "".join(
             f"<tr><td>{r['label']}</td><td>{r['state']}</td>"
-            f"<td>{r['last_tok']}B</td><td>{r['last_ce']}</td></tr>" for r in g["runs"])
-        links = " &middot; ".join(
-            f'<a href="{r["url"]}" target="_blank" rel="noopener">{r["label"]}</a>' for r in g["runs"])
+            f"<td>{r['last_tok']}B</td><td>{r['last_ce']}</td>"
+            f'<td><a href="{r["url"]}" target="_blank" rel="noopener">W&amp;B</a></td></tr>' for r in crs)
         overview_cards.append(
-            f'<div class="card results"><h3>{g["title"]}</h3>'
-            f'<p class="note">{g["blurb"]}</p>'
-            '<table><thead><tr><th>run</th><th>state</th><th>tokens</th><th>latest CE</th></tr></thead>'
-            f'<tbody>{rows}</tbody></table>'
-            f'<p class="note"><strong>W&amp;B:</strong> {links}</p></div>')
+            f'<div class="card results"><h3>{cat}</h3>'
+            '<table><thead><tr><th>run</th><th>state</th><th>tokens</th><th>latest CE</th>'
+            '<th>link</th></tr></thead>'
+            f'<tbody>{body}</tbody></table></div>')
     overview = "".join(overview_cards)
 
-    # Curves: one card per group, each with its own per-metric chart grid (colors are per-group).
-    curve_cards = [
+    # Curves: how-to card, then a sticky run-selector sidebar + ONE shared chart grid.
+    curves = (
         '<div class="card goal"><h3>How to read</h3>'
-        '<p class="note">x-axis = optimizer step (k). Drag to zoom (double-click resets), toggle '
-        'log-y per chart, or hit <strong>expand &#10530;</strong> for full size. Each group is an '
-        'independent set of charts; line colors are assigned per group. Pulled live from W&amp;B.</p></div>'
-    ]
-    for g in groups:
-        curve_cards.append(
-            f'<div class="card results"><h3>{g["title"]}</h3>'
-            f'<p class="note">{g["blurb"]}</p>'
-            f'{chart_blocks(g["charts"])}</div>')
-    curves = "".join(curve_cards)
+        '<p class="note">Every run is plotted on the same charts. In the sidebar, toggle individual '
+        'runs or click a <strong>preset</strong> to show a meaningful group (a trunk + its decay '
+        'branches, an upcycle family, a head-to-head). With <strong>auto-fit x</strong> on, the '
+        'x-axis snaps to the selected runs&rsquo; range (so a 5B upcycle window isn&rsquo;t squashed '
+        'next to a full 50B run); the y-axis always rescales to what&rsquo;s shown. Drag to zoom '
+        '(double-click resets), toggle log-y per chart, or <strong>expand &#10530;</strong> for '
+        'full size. Colors are stable per run and match the sidebar swatches. Live from W&amp;B.</p></div>'
+        '<div class="curves-layout">'
+        f'{run_panel_html(runs)}'
+        f'<div class="curves-main">{chart_blocks(payload["charts"])}</div>'
+        '</div>')
 
     evals_html = eval_tab(payload["evals"])
     tabs = [("overview", "Overview", overview), ("evals", "Evals", evals_html),
             ("curves", "Curves", curves)]
     nav = "".join(f'<button data-target="{t}">{n}</button>' for t, n, _ in tabs)
     sections = "".join(f'<section class="tab" id="{t}">{b}</section>' for t, _, b in tabs)
-    charts_js = _CHARTS_JS.replace("__CURVES__", json.dumps(payload))
+    charts_js = (_CHARTS_JS.replace("__CURVES__", json.dumps(payload))
+                 .replace("__PALETTE__", json.dumps(PALETTE)))
 
     return f"""<!DOCTYPE html>
 <html lang="en">
