@@ -70,7 +70,9 @@ RUNS = [
     # jitter·carry·copy: 5B-check run (uar2nr44, 25B->30B) merged with the 50B extend pass
     # (byow8llp, 30B-> ; in flight) so the curve shows the full continuation.
     {"key": "up_jit_cc",     "label": "upcycle jitter·carry·copy", "cat": "upcycle 64→128", "ids": ["uar2nr44", "byow8llp"]},
-    {"key": "up_jit_cz",     "label": "upcycle jitter·carry·zero", "cat": "upcycle 64→128", "ids": "r6yj95lk"},
+    # jitter·carry·zero: 5B-check run (r6yj95lk, 25B->30B) merged with the 50B extend pass
+    # (nrjavgbl, 30B-> ; in flight).
+    {"key": "up_jit_cz",     "label": "upcycle jitter·carry·zero", "cat": "upcycle 64→128", "ids": ["r6yj95lk", "nrjavgbl"]},
     {"key": "up_jit_reset",  "label": "upcycle jitter·reset",      "cat": "upcycle 64→128", "ids": "t36ixfxn"},
 ]
 
