@@ -23,15 +23,14 @@ ENTITY_PROJECT = "ryanyxw/emo-extension"
 TOK_PER_STEP = 1024 * 4096  # global_batch_size(1024) * seq_len(4096) = 4,194,304 tokens/step
 
 # ---------------------------------------------------------------------------
-# Master run inventory + preset groupings (drives the interactive Curves tab).
+# Master run inventory (drives the interactive explorer tabs).
 #
-# The Curves tab renders ONE shared set of metric charts; every run is a series on every chart,
-# in THIS list's order — so a run's color is stable across all charts and matches its sidebar
-# swatch. A side panel toggles individual runs on/off; PRESETS are one-click groupings that select
-# a meaningful set of runs (a trunk + all of its decay/anneal branches, an upcycle family, ...).
-# `ids` is a single W&B run id, or a LIST when a run crashed + resumed (histories merged in order,
-# later wins on overlapping steps — e.g. the 64e wsd 4e-3 trunk crashed at ~2759/n6zg596k and
-# resumed from 2501/96odpdqg).
+# Each explorer tab renders a SHARED set of metric charts on the right; every run is a series on
+# every chart, in THIS list's order — so a run's color (PALETTE[index]) is stable everywhere. The
+# left column lists named recipe GROUPS (see TABS); clicking a group toggles its runs (a trunk +
+# all its decay branches) onto the plots. `ids` is a single W&B run id, or a LIST when a run
+# crashed + resumed (histories merged in order, later wins on overlap — e.g. the 64e wsd 4e-3 trunk
+# crashed at ~2759/n6zg596k and resumed from 2501/96odpdqg).
 RUNS = [
     # --- 64-expert baselines ---
     {"key": "64cos25",  "label": "64e·25B cos",  "cat": "64e baselines", "ids": "lsq79eb5"},
@@ -61,36 +60,48 @@ RUNS = [
     {"key": "up_jit_reset",  "label": "upcycle jitter·reset",      "cat": "upcycle 64→128", "ids": "t36ixfxn"},
 ]
 
-_UP_ALL = ["up_copy_cc", "up_copy_cz", "up_copy_reset", "up_rand_carry", "up_rand_reset",
-           "up_jit_cc", "up_jit_cz", "up_jit_reset"]
-_ALL_64 = ["64cos25", "64cos50", "64wsd4e3", "64wsd2e3", "64wsd4e4",
-           "64dec_4e3_125", "64dec_2e3_5", "64dec_2e3_10", "64dec_4e4_5", "64dec_4e4_10"]
-_ALL_128 = ["128cos", "128wsd4e3", "128wsd2e3", "128dec_4e3_10"]
-
-# One-click groupings shown as buttons in the Curves sidebar. Each selects a meaningful set of runs
-# (a trunk + all its decay branches, an upcycle family, a head-to-head). `default: True` marks the
-# set shown on first load.
-PRESETS = [
-    {"cat": "Baselines", "items": [
-        {"name": "64e cosine",             "runs": ["64cos25", "64cos50"]},
-        {"name": "64e WSD 4e-3 (+decay)",  "runs": ["64wsd4e3", "64dec_4e3_125"]},
-        {"name": "64e WSD 2e-3 (+decay)",  "runs": ["64wsd2e3", "64dec_2e3_5", "64dec_2e3_10"]},
-        {"name": "64e WSD 4e-4 (+decay)",  "runs": ["64wsd4e4", "64dec_4e4_5", "64dec_4e4_10"]},
-        {"name": "128e cosine",            "runs": ["128cos"]},
-        {"name": "128e WSD 4e-3 (+decay)", "runs": ["128wsd4e3", "128dec_4e3_10"]},
-        {"name": "128e WSD 2e-3",          "runs": ["128wsd2e3"]},
-    ]},
-    {"cat": "By expert count", "items": [
-        {"name": "All 64e",  "runs": _ALL_64},
-        {"name": "All 128e", "runs": _ALL_128},
-    ]},
-    {"cat": "Extension methods", "items": [
-        {"name": "Upcycle: all 8",  "runs": _UP_ALL},
-        {"name": "Upcycle: copy",   "runs": ["up_copy_cc", "up_copy_cz", "up_copy_reset"]},
-        {"name": "Upcycle: jitter", "runs": ["up_jit_cc", "up_jit_cz", "up_jit_reset"]},
-        {"name": "Upcycle: random", "runs": ["up_rand_carry", "up_rand_reset"]},
-        {"name": "Upcycle vs from-scratch 128e", "runs": _UP_ALL + ["128wsd2e3"], "default": True},
-    ]},
+# ---------------------------------------------------------------------------
+# Explorer tabs. Each tab = a left column of named recipe GROUPS + a shared right-column chart grid.
+# Clicking a group toggles its runs (trunk + all its decay branches) onto every chart. `default` is
+# the list of group indices shown on first load. Tab 1 is the LR-scheduling story (cosine vs WSD ×
+# peak-LR × decay); tab 2 is the extension-method ablation (still being shaped — provisional).
+TABS = [
+    {
+        "id": "lr",
+        "label": "LR scheduling",
+        "title": "Learning-rate scheduling: cosine vs WSD",
+        "intro": "Cosine (peak LR 4e-3) vs warmup-stable-decay (WSD) at 64 and 128 experts. WSD keeps "
+                 "a flat trunk then decays the LR to 0; I swept the peak LR (4e-3 / 2e-3 / 4e-4), and "
+                 "for some trunks forked explicit decay branches over the last N·B tokens. Pick a "
+                 "recipe on the left to plot its trunk plus all of its decay lines; pick several to "
+                 "compare. The x-axis auto-fits to the selection and the y-axis rescales to what's "
+                 "shown.",
+        "groups": [
+            {"name": "64e cosine",              "runs": ["64cos25", "64cos50"]},
+            {"name": "128e cosine",             "runs": ["128cos"]},
+            {"name": "64e WSD 4e-3 (+decays)",  "runs": ["64wsd4e3", "64dec_4e3_125"]},
+            {"name": "64e WSD 2e-3 (+decays)",  "runs": ["64wsd2e3", "64dec_2e3_5", "64dec_2e3_10"]},
+            {"name": "64e WSD 4e-4 (+decays)",  "runs": ["64wsd4e4", "64dec_4e4_5", "64dec_4e4_10"]},
+            {"name": "128e WSD 4e-3 (+decays)", "runs": ["128wsd4e3", "128dec_4e3_10"]},
+            {"name": "128e WSD 2e-3 (+decays)", "runs": ["128wsd2e3"]},
+        ],
+        "default": [2],  # 64e WSD 4e-3 (+decays)
+    },
+    {
+        "id": "ext",
+        "label": "Extension methods",
+        "title": "Extension methods: expert upcycling 64→128",
+        "intro": "Provisional — shaping this tab next. Take the 64e WSD-2e-3 trunk at 25B, expand it "
+                 "to 128 experts, and continue training (5B convergence check). Each group is an init "
+                 "family; compare against the from-scratch 128e WSD-2e-3 trunk.",
+        "groups": [
+            {"name": "Upcycle: copy",   "runs": ["up_copy_cc", "up_copy_cz", "up_copy_reset"]},
+            {"name": "Upcycle: jitter", "runs": ["up_jit_cc", "up_jit_cz", "up_jit_reset"]},
+            {"name": "Upcycle: random", "runs": ["up_rand_carry", "up_rand_reset"]},
+            {"name": "from-scratch 128e WSD 2e-3", "runs": ["128wsd2e3"]},
+        ],
+        "default": [0, 3],  # copy family vs from-scratch
+    },
 ]
 
 # Stable per-run color palette (indexed by position in RUNS; reused for sidebar swatches AND chart
@@ -269,138 +280,128 @@ code { background:#eef2f7; padding:1px 5px; border-radius:4px; font-size:0.9em; 
 .ce-modal-bar button { border:1px solid var(--line); background:#fff; border-radius:6px; padding:5px 10px;
                        font-size:13px; cursor:pointer; }
 .ce-modal-bar button:hover { background:#f1f5f9; }
-/* curves layout: sticky run sidebar + chart area */
-.curves-layout { display:flex; gap:18px; align-items:flex-start; }
-.run-panel { flex:0 0 252px; position:sticky; top:104px; max-height:calc(100vh - 124px);
+/* explorer: left recipe selector + right shared chart grid */
+.explorer { display:flex; gap:18px; align-items:flex-start; }
+.exp-panel { flex:0 0 232px; position:sticky; top:104px; max-height:calc(100vh - 124px);
              overflow:auto; background:var(--card); border:1px solid var(--line);
-             border-radius:8px; padding:12px 14px; font-size:13px; }
-.curves-main { flex:1 1 auto; min-width:0; }
-.rp-h { font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.05em;
-        color:var(--muted); margin:12px 0 6px; display:flex; justify-content:space-between;
-        align-items:center; }
-.rp-h:first-child { margin-top:0; }
-.rp-mini button { border:1px solid var(--line); background:#fff; border-radius:5px; cursor:pointer;
-                  font-size:11px; padding:2px 7px; margin-left:4px; }
-.rp-mini button:hover { background:#f1f5f9; }
-.rp-cat { font-size:11px; color:var(--muted); margin:9px 0 3px; font-weight:600; }
-.rp-btns { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:2px; }
-.rp-btns button { border:1px solid #c7d2fe; background:#eef2ff; color:#3730a3; border-radius:12px;
-                  font-size:11px; padding:3px 9px; cursor:pointer; }
-.rp-btns button:hover { background:#e0e7ff; }
-.rp-fitx-l { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted);
-             margin:6px 0 2px; cursor:pointer; }
-.rp-runs { margin-top:2px; }
-.rp-run { display:flex; align-items:center; gap:7px; padding:2px 0; cursor:pointer; line-height:1.3; }
-.rp-run input { margin:0; flex:0 0 auto; }
-.rp-sw { display:inline-block; width:11px; height:11px; border-radius:3px; flex:0 0 auto; }
-@media (max-width:900px){ .curves-layout { flex-direction:column; }
-  .run-panel { position:static; flex-basis:auto; width:100%; max-height:none; } }
+             border-radius:8px; padding:12px 12px 14px; }
+.exp-charts { flex:1 1 auto; min-width:0; }
+.exp-h { font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.05em;
+         color:var(--muted); margin:0 0 8px; }
+.exp-group { display:flex; align-items:center; gap:8px; width:100%; text-align:left; cursor:pointer;
+             border:1px solid var(--line); background:#fff; border-radius:7px; padding:8px 10px;
+             margin:5px 0; font-size:13px; color:var(--fg); line-height:1.25; }
+.exp-group:hover { background:#f8fafc; }
+.exp-group[aria-pressed="true"] { border-color:#2563eb; background:#eff6ff; font-weight:600; }
+.exp-dot { width:11px; height:11px; border-radius:3px; flex:0 0 auto; border:1px solid rgba(0,0,0,.15);
+           background:#fff; }
+.exp-group[aria-pressed="true"] .exp-dot { background:#2563eb; border-color:#2563eb; }
+.exp-fitx-l { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted);
+              margin:10px 2px 0; cursor:pointer; }
+@media (max-width:900px){ .explorer { flex-direction:column; }
+  .exp-panel { position:static; flex-basis:auto; width:100%; max-height:none; } }
 """
 
-# uPlot init: ONE shared set of metric charts; every run is a series (same order on every chart, so
-# colors/indices line up). A side panel toggles runs on/off, presets select run groups, and the
-# x-axis auto-fits to the visible selection. Plain string (literal braces); data injected via
-# __CURVES__ / __PALETTE__ replace.
+# uPlot init for the explorer tabs. Each `.explorer` container (one per tab) has a left column of
+# `.exp-group` toggle buttons (data-runs="key,key,...") and a right `.exp-charts` grid of
+# `.chart-cell` (data-metric=slug). All runs are series on every chart in RUNKEYS order, so series
+# index i <-> RUNKEYS[i] <-> PALETTE[i]; a group toggle just unions its run indices into a per-tab
+# visibility set and rebuilds. x auto-fits to the selection; y rescales to shown series. Plain
+# string (literal braces); data injected via __CHARTS__ / __RUNKEYS__ / __PALETTE__ replace.
 _CHARTS_JS = r"""
 <script>
 (function(){
-  const C = __CURVES__;
-  const palette = __PALETTE__;
-  const nRuns = C.runs.length;
-  const SMALL_H = 230, reg = {};
-  // Per-run visibility, seeded from each sidebar checkbox's initial checked state (set server-side
-  // from the default preset). Series index i  <->  run i  <->  palette[i]  <->  checkbox data-idx=i.
-  const vis = new Array(nRuns).fill(false);
-  const cbs = Array.from(document.querySelectorAll(".rp-run input[type=checkbox]"));
-  cbs.forEach(cb => { vis[+cb.dataset.idx] = cb.checked; });
-  const fitxEl = document.getElementById("rp-fitx");
+  const CHARTS = __CHARTS__, RUNKEYS = __RUNKEYS__, palette = __PALETTE__;
+  const idxOf = {}; RUNKEYS.forEach((k,i)=>idxOf[k]=i);
+  const chartByKey = {}; CHARTS.forEach(c=>chartByKey[c.key]=c);
+  const SMALL_H = 240;
+  const allReg = [];   // every {plot,el} across tabs, for resize
 
-  function opts(chart, logY, w, h, legend){
+  function makeOpts(chart, logY, w, h, vis, legend){
     return {
-      width:w, height:h, focus:{ alpha:0.25 }, legend:{ show:!!legend },
+      width:w, height:h, focus:{ alpha:0.3 }, legend:{ show:!!legend },
       scales:{ x:{ time:false }, y:{ distr: logY ? 3 : 1 } },
       cursor:{ focus:{ prox:30 }, drag:{ x:true, y:true, uni:10 } },
       axes:[ { label:"step", values:(u,vals)=>vals.map(v=>v>=1000?(v/1000)+"k":v) }, { label:chart.title } ],
       series:[ { value:(u,v)=>v==null?"--":v } ].concat(chart.series.map((s,i)=>({
-        label:s.label, stroke:palette[i % palette.length], width:1.6, spanGaps:true, show:vis[i],
+        label:s.label, stroke:palette[i % palette.length], width:1.8, spanGaps:true, show:!!vis[i],
         value:(u,v)=>v==null?"--":(+v).toFixed(4) }))),
     };
   }
   const dataOf = chart => [chart.x].concat(chart.series.map(s=>s.y));
-  // x-range covering every visible series' non-null samples (null if nothing visible has data).
-  function visRange(c){
+  // x-range over visible series' non-null samples (null if nothing visible has data).
+  function visRange(chart, vis){
     let lo=Infinity, hi=-Infinity;
-    for(let i=0;i<c.series.length;i++){ if(!vis[i]) continue; const y=c.series[i].y;
-      for(let j=0;j<y.length;j++){ if(y[j]!=null){ const x=c.x[j]; if(x<lo)lo=x; if(x>hi)hi=x; } } }
+    for(let i=0;i<chart.series.length;i++){ if(!vis[i]) continue; const y=chart.series[i].y;
+      for(let j=0;j<y.length;j++){ if(y[j]!=null){ const x=chart.x[j]; if(x<lo)lo=x; if(x>hi)hi=x; } } }
     return lo<=hi ? [lo,hi] : null;
   }
-  function build(key){
-    const st=reg[key], el=st.el; if(!el) return;
-    if(st.plot) st.plot.destroy();
-    st.plot = new uPlot(opts(st.chart, st.logY, el.clientWidth||430, SMALL_H, false), dataOf(st.chart), el);
-  }
-  C.charts.forEach(chart => {
-    reg[chart.key] = { plot:null, logY:false, chart:chart, el:document.getElementById("chart-"+chart.key) };
-    build(chart.key);
-  });
-  function applyVis(){
-    Object.keys(reg).forEach(k => { const st=reg[k]; if(!st.plot) return;
-      for(let i=0;i<nRuns;i++) st.plot.setSeries(i+1, { show:vis[i] });
-      if(fitxEl && fitxEl.checked){ const r=visRange(st.chart); if(r) st.plot.setScale("x", { min:r[0], max:r[1] }); }
-    });
-    if(m && m.plot) drawM();
-  }
-  applyVis();  // sync initial fit to the default selection
 
-  // ---- sidebar wiring: per-run checkboxes, presets, all/none, auto-fit ----
-  cbs.forEach(cb => cb.addEventListener("change", () => { vis[+cb.dataset.idx]=cb.checked; applyVis(); }));
-  function setVis(keys){
-    const set = new Set(keys);
-    for(let i=0;i<nRuns;i++) vis[i] = set.has(C.runs[i].key);
-    cbs.forEach(cb => { cb.checked = vis[+cb.dataset.idx]; });
-    applyVis();
-  }
-  document.querySelectorAll("button.preset").forEach(b =>
-    b.addEventListener("click", () => setVis(b.dataset.runs.split(",").filter(Boolean))));
-  const allBtn=document.getElementById("rp-all"), noneBtn=document.getElementById("rp-none");
-  if(allBtn) allBtn.addEventListener("click", () => setVis(C.runs.map(r=>r.key)));
-  if(noneBtn) noneBtn.addEventListener("click", () => setVis([]));
-  if(fitxEl) fitxEl.addEventListener("change", applyVis);
-
-  document.querySelectorAll("button.logtoggle").forEach(b =>
-    b.addEventListener("click", () => { const k=b.dataset.chart; reg[k].logY=!reg[k].logY; build(k); applyVis(); }));
-
-  // ---- expand modal (full-size single chart; legend on so values are readable) ----
+  // ---- shared expand modal ----
   const modal=document.createElement("div"); modal.className="ce-modal";
   modal.innerHTML='<div class="ce-modal-inner"><div class="ce-modal-bar"><strong></strong>'
-    +'<span><button class="ce-mlog">toggle log-y</button> <button class="ce-mclose">close ✕</button></span>'
+    +'<span><button class="ce-mlog">toggle log-y</button> <button class="ce-mclose">close &#10005;</button></span>'
     +'</div><div class="ce-modal-chart"></div></div>';
   document.body.appendChild(modal);
   const mEl=modal.querySelector(".ce-modal-chart"), mTitle=modal.querySelector("strong");
-  let m=null;  // { key, logY, plot }
+  let M=null;  // { chart, vis, logY, plot }
   const mSize=()=>({ w:Math.min(window.innerWidth*0.94,1180)|0, h:Math.min(window.innerHeight*0.72,700)|0 });
-  function drawM(){ const c=reg[m.key].chart, s=mSize(); if(m.plot) m.plot.destroy();
-    m.plot=new uPlot(opts(c, m.logY, s.w, s.h, true), dataOf(c), mEl);
-    if(fitxEl && fitxEl.checked){ const r=visRange(c); if(r) m.plot.setScale("x", { min:r[0], max:r[1] }); } }
-  function openM(key){ m={ key:key, logY:reg[key].logY, plot:null }; mTitle.textContent=reg[key].chart.title;
-    modal.classList.add("open"); drawM(); }
-  function closeM(){ if(m&&m.plot) m.plot.destroy(); m=null; modal.classList.remove("open"); }
-  document.querySelectorAll("button.expand").forEach(b => b.addEventListener("click", ()=>openM(b.dataset.chart)));
-  modal.querySelector(".ce-mclose").addEventListener("click", closeM);
-  modal.querySelector(".ce-mlog").addEventListener("click", ()=>{ if(m){ m.logY=!m.logY; drawM(); } });
-  modal.addEventListener("click", e=>{ if(e.target===modal) closeM(); });
-  document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeM(); });
+  function drawModal(){ const s=mSize(); if(M.plot) M.plot.destroy();
+    M.plot=new uPlot(makeOpts(M.chart, M.logY, s.w, s.h, M.vis, true), dataOf(M.chart), mEl);
+    const r=visRange(M.chart, M.vis); if(r) M.plot.setScale("x", { min:r[0], max:r[1] }); }
+  function openModal(chart, vis, logY){ M={ chart, vis, logY, plot:null }; mTitle.textContent=chart.title;
+    modal.classList.add("open"); drawModal(); }
+  function closeModal(){ if(M&&M.plot) M.plot.destroy(); M=null; modal.classList.remove("open"); }
+  modal.querySelector(".ce-mclose").addEventListener("click", closeModal);
+  modal.querySelector(".ce-mlog").addEventListener("click", ()=>{ if(M){ M.logY=!M.logY; drawModal(); } });
+  modal.addEventListener("click", e=>{ if(e.target===modal) closeModal(); });
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeModal(); });
 
-  window.__ceReg = Object.assign(window.__ceReg || {}, reg);
-  if(!window.__ceResizeBound){
-    window.__ceResizeBound=true;
-    window.ceResize=function(){
-      Object.keys(window.__ceReg).forEach(k=>{ const st=window.__ceReg[k];
-        if(st.plot && st.el && st.el.clientWidth) st.plot.setSize({ width:st.el.clientWidth, height:SMALL_H }); });
-      if(m && m.plot){ const s=mSize(); m.plot.setSize({ width:s.w, height:s.h }); }
-    };
-    window.addEventListener("resize", window.ceResize);
+  // ---- per-explorer wiring ----
+  function setupExplorer(root){
+    const groupBtns = Array.from(root.querySelectorAll(".exp-group"));
+    const fitxEl = root.querySelector(".exp-fitx");
+    const fitx = () => !fitxEl || fitxEl.checked;
+    const reg = {};   // metric slug -> { plot, logY, chart, el }
+    function vis(){
+      const s = new Set();
+      groupBtns.forEach(b => { if(b.getAttribute("aria-pressed")==="true")
+        b.dataset.runs.split(",").filter(Boolean).forEach(k => { if(k in idxOf) s.add(idxOf[k]); }); });
+      return RUNKEYS.map((k,i)=>s.has(i));
+    }
+    function build(slug){
+      const st=reg[slug], el=st.el; if(!el) return;
+      const v=vis();
+      if(st.plot) st.plot.destroy();
+      st.plot=new uPlot(makeOpts(st.chart, st.logY, el.clientWidth||440, SMALL_H, v, false), dataOf(st.chart), el);
+      if(fitx()){ const r=visRange(st.chart, v); if(r) st.plot.setScale("x", { min:r[0], max:r[1] }); }
+    }
+    function rebuildAll(){ Object.keys(reg).forEach(build); }
+    root.querySelectorAll(".chart-cell").forEach(cell => {
+      const slug=cell.dataset.metric, el=cell.querySelector(".ce-chart");
+      reg[slug]={ plot:null, logY:false, chart:chartByKey[slug], el:el };
+      allReg.push(reg[slug]);
+    });
+    groupBtns.forEach(b => b.addEventListener("click", () => {
+      b.setAttribute("aria-pressed", b.getAttribute("aria-pressed")==="true" ? "false" : "true");
+      rebuildAll();
+    }));
+    if(fitxEl) fitxEl.addEventListener("change", rebuildAll);
+    root.querySelectorAll("button.logtoggle").forEach(b => b.addEventListener("click", () => {
+      reg[b.dataset.metric].logY=!reg[b.dataset.metric].logY; build(b.dataset.metric); }));
+    root.querySelectorAll("button.expand").forEach(b => b.addEventListener("click", () => {
+      const st=reg[b.dataset.metric]; openModal(st.chart, vis(), st.logY); }));
+    rebuildAll();
   }
+  document.querySelectorAll(".explorer").forEach(setupExplorer);
+
+  // resize (also re-fit after a tab becomes visible: width was 0 while display:none)
+  window.ceResize = function(){
+    allReg.forEach(st => { if(st.plot && st.el && st.el.clientWidth)
+      st.plot.setSize({ width:st.el.clientWidth, height:SMALL_H }); });
+    if(M && M.plot){ const s=mSize(); M.plot.setSize({ width:s.w, height:s.h }); }
+  };
+  window.addEventListener("resize", window.ceResize);
 })();
 </script>
 """
@@ -496,20 +497,41 @@ def fetch_from_wandb() -> dict:
     return {"runs": runs_meta, "charts": charts}
 
 
-def chart_blocks(charts: list) -> str:
+def chart_blocks(charts: list, tab_id: str) -> str:
     cells = []
     for c in charts:
         cells.append(
-            '<div class="chart-cell">'
+            f'<div class="chart-cell" data-metric="{c["key"]}">'
             f'<h4>{c["title"]}</h4>'
             '<div class="chart-controls">'
-            f'<button class="logtoggle" data-chart="{c["key"]}">log-y</button>'
-            f'<button class="expand" data-chart="{c["key"]}">expand &#10530;</button>'
+            f'<button class="logtoggle" data-metric="{c["key"]}">log-y</button>'
+            f'<button class="expand" data-metric="{c["key"]}">expand &#10530;</button>'
             '</div>'
-            f'<div class="ce-chart" id="chart-{c["key"]}"></div>'
+            f'<div class="ce-chart" id="chart-{tab_id}-{c["key"]}"></div>'
             '</div>'
         )
     return f'<div class="chart-grid">{"".join(cells)}</div>'
+
+
+def explorer_html(tab: dict, charts: list) -> str:
+    """One explorer: left column of recipe-group toggles + right shared chart grid. Group buttons
+    carry data-runs (comma-joined run keys); the JS unions selected groups into chart visibility."""
+    default = set(tab.get("default", []))
+    btns = []
+    for i, g in enumerate(tab["groups"]):
+        pressed = "true" if i in default else "false"
+        btns.append(
+            f'<button class="exp-group" aria-pressed="{pressed}" data-runs="{",".join(g["runs"])}">'
+            f'<span class="exp-dot"></span><span>{g["name"]}</span></button>')
+    panel = (
+        '<div class="exp-panel">'
+        '<div class="exp-h">Recipe</div>'
+        f'{"".join(btns)}'
+        '<label class="exp-fitx-l"><input type="checkbox" class="exp-fitx" checked>'
+        ' auto-fit x to selection</label>'
+        '</div>')
+    return (f'<div class="explorer" data-tab="{tab["id"]}">'
+            f'{panel}<div class="exp-charts">{chart_blocks(charts, tab["id"])}</div></div>')
 
 
 def _pct(x):
@@ -573,43 +595,6 @@ def eval_tab(evals: dict) -> str:
     )
 
 
-def run_panel_html(runs: list) -> str:
-    """The Curves sidebar: preset group buttons + a per-run checkbox list (grouped by category,
-    color swatches matching the chart strokes). `runs` is payload["runs"] in RUNS order, so the
-    enumerate index == series index == PALETTE index == checkbox data-idx."""
-    default_keys: set = set()
-    for cat in PRESETS:
-        for it in cat["items"]:
-            if it.get("default"):
-                default_keys = set(it["runs"])
-    presets = []
-    for cat in PRESETS:
-        btns = "".join(
-            f'<button class="preset" data-runs="{",".join(it["runs"])}">{it["name"]}</button>'
-            for it in cat["items"])
-        presets.append(f'<div class="rp-cat">{cat["cat"]}</div><div class="rp-btns">{btns}</div>')
-    rows, last_cat = [], None
-    for i, r in enumerate(runs):
-        if r["cat"] != last_cat:
-            rows.append(f'<div class="rp-cat">{r["cat"]}</div>')
-            last_cat = r["cat"]
-        checked = " checked" if r["key"] in default_keys else ""
-        sw = PALETTE[i % len(PALETTE)]
-        rows.append(
-            f'<label class="rp-run"><input type="checkbox" data-idx="{i}"{checked}>'
-            f'<span class="rp-sw" style="background:{sw}"></span>{r["label"]}</label>')
-    return (
-        '<div class="run-panel">'
-        '<div class="rp-h">Presets</div>'
-        f'<div class="rp-presets">{"".join(presets)}</div>'
-        '<div class="rp-h">Runs <span class="rp-mini">'
-        '<button id="rp-all">all</button><button id="rp-none">none</button></span></div>'
-        '<label class="rp-fitx-l"><input type="checkbox" id="rp-fitx" checked>'
-        ' auto-fit x to selection</label>'
-        f'<div class="rp-runs">{"".join(rows)}</div>'
-        '</div>')
-
-
 def render(payload: dict, uplot_css: str, uplot_js: str) -> str:
     runs = payload["runs"]
 
@@ -620,9 +605,9 @@ def render(payload: dict, uplot_css: str, uplot_js: str) -> str:
         '<strong>Baselines</strong> (now settled): the WSD scheduler, the peak-LR sweep, and '
         'decay-amount ablations, plus 64&rarr;128 expert scaling. <strong>Extension methods</strong> '
         '(in progress): ways to grow an already-trained model &mdash; starting with expert '
-        'upcycling. The <strong>Curves</strong> tab plots every run on one shared set of charts; '
-        'use the sidebar to toggle individual runs or click a <em>preset</em> to focus on one '
-        'question (e.g. &ldquo;128e WSD 4e-3 (+decay)&rdquo; or &ldquo;Upcycle vs from-scratch&rdquo;).</p></div>'
+        'upcycling. Use the <strong>LR scheduling</strong> and <strong>Extension methods</strong> '
+        'tabs: pick a recipe on the left and its runs (a trunk plus all of its decay branches) plot '
+        'on the right.</p></div>'
         '<div class="card method"><h3>Setup</h3>'
         '<p>Common to all: OLMoE-mix-0824, <code>d_model</code> 2048 / 16 layers, top-8 routed '
         '+ 1 shared expert, lb 1e-1, 8 nodes / 64 GPUs, global batch 4.19M tokens/step. WSD runs '
@@ -648,27 +633,21 @@ def render(payload: dict, uplot_css: str, uplot_js: str) -> str:
             f'<tbody>{body}</tbody></table></div>')
     overview = "".join(overview_cards)
 
-    # Curves: how-to card, then a sticky run-selector sidebar + ONE shared chart grid.
-    curves = (
-        '<div class="card goal"><h3>How to read</h3>'
-        '<p class="note">Every run is plotted on the same charts. In the sidebar, toggle individual '
-        'runs or click a <strong>preset</strong> to show a meaningful group (a trunk + its decay '
-        'branches, an upcycle family, a head-to-head). With <strong>auto-fit x</strong> on, the '
-        'x-axis snaps to the selected runs&rsquo; range (so a 5B upcycle window isn&rsquo;t squashed '
-        'next to a full 50B run); the y-axis always rescales to what&rsquo;s shown. Drag to zoom '
-        '(double-click resets), toggle log-y per chart, or <strong>expand &#10530;</strong> for '
-        'full size. Colors are stable per run and match the sidebar swatches. Live from W&amp;B.</p></div>'
-        '<div class="curves-layout">'
-        f'{run_panel_html(runs)}'
-        f'<div class="curves-main">{chart_blocks(payload["charts"])}</div>'
-        '</div>')
+    # One explorer tab per TABS entry (intro card + left recipe selector + right shared chart grid).
+    tab_sections = []
+    for t in TABS:
+        body = (f'<div class="card goal"><h3>{t["title"]}</h3>'
+                f'<p class="note">{t["intro"]}</p></div>'
+                f'{explorer_html(t, payload["charts"])}')
+        tab_sections.append((t["id"], t["label"], body))
 
     evals_html = eval_tab(payload["evals"])
-    tabs = [("overview", "Overview", overview), ("evals", "Evals", evals_html),
-            ("curves", "Curves", curves)]
+    tabs = [("overview", "Overview", overview)] + tab_sections + [("evals", "Evals", evals_html)]
     nav = "".join(f'<button data-target="{t}">{n}</button>' for t, n, _ in tabs)
     sections = "".join(f'<section class="tab" id="{t}">{b}</section>' for t, _, b in tabs)
-    charts_js = (_CHARTS_JS.replace("__CURVES__", json.dumps(payload))
+    charts_js = (_CHARTS_JS
+                 .replace("__CHARTS__", json.dumps(payload["charts"]))
+                 .replace("__RUNKEYS__", json.dumps([r["key"] for r in runs]))
                  .replace("__PALETTE__", json.dumps(PALETTE)))
 
     return f"""<!DOCTYPE html>
