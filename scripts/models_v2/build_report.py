@@ -59,6 +59,8 @@ RUNS = [
     {"key": "128wsd2e3",     "label": "128e wsd 2e-3",             "cat": "128e baselines", "ids": "sswartor"},
     {"key": "128dec_4e3_10", "label": "128e 4e-3 decay@40B/10B",   "cat": "128e baselines", "ids": "uk48bfrl",
      "branch": {"parent": "128wsd4e3", "fork_step": 9537}},
+    {"key": "128dec_2e3_10", "label": "128e 2e-3 decay@40B/10B",   "cat": "128e baselines", "ids": "rwgtpu7e",
+     "branch": {"parent": "128wsd2e3", "fork_step": 9537}},
     # --- Extension methods: expert upcycling 64→128 (5B convergence check) ---
     {"key": "up_copy_cc",    "label": "upcycle copy·carry·copy",   "cat": "upcycle 64→128", "ids": "85nhg564"},
     {"key": "up_copy_cz",    "label": "upcycle copy·carry·zero",   "cat": "upcycle 64→128", "ids": "2hnes1fe"},
@@ -97,7 +99,7 @@ TABS = [
             {"name": "64e WSD 2e-3 (+decays)",  "runs": ["64wsd2e3", "64dec_2e3_5", "64dec_2e3_10"]},
             {"name": "64e WSD 4e-4 (+decays)",  "runs": ["64wsd4e4", "64dec_4e4_5", "64dec_4e4_10"]},
             {"name": "128e WSD 4e-3 (+decays)", "runs": ["128wsd4e3", "128dec_4e3_10"]},
-            {"name": "128e WSD 2e-3 (+decays)", "runs": ["128wsd2e3"]},
+            {"name": "128e WSD 2e-3 (+decays)", "runs": ["128wsd2e3", "128dec_2e3_10"]},
         ],
         "default": [2],  # 64e WSD 4e-3 (+decays)
     },
