@@ -97,14 +97,15 @@ TABS = [
                  "record a point at the fork).",
         "groups": [
             {"name": "64e cosine",              "runs": ["64cos25", "64cos50"]},
-            {"name": "128e cosine",             "runs": ["128cos", "128cos2e3"]},
+            {"name": "128e cosine 4e-3",        "runs": ["128cos"]},
+            {"name": "128e cosine 2e-3",        "runs": ["128cos2e3"]},
             {"name": "64e WSD 4e-3 (+decays)",  "runs": ["64wsd4e3", "64dec_4e3_125"]},
             {"name": "64e WSD 2e-3 (+decays)",  "runs": ["64wsd2e3", "64dec_2e3_5", "64dec_2e3_10"]},
             {"name": "64e WSD 4e-4 (+decays)",  "runs": ["64wsd4e4", "64dec_4e4_5", "64dec_4e4_10"]},
             {"name": "128e WSD 4e-3 (+decays)", "runs": ["128wsd4e3", "128dec_4e3_10"]},
             {"name": "128e WSD 2e-3 (+decays)", "runs": ["128wsd2e3", "128dec_2e3_10"]},
         ],
-        "default": [2],  # 64e WSD 4e-3 (+decays)
+        "default": [3],  # 64e WSD 4e-3 (+decays)
     },
     {
         "id": "ext",
