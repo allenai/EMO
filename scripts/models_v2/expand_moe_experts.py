@@ -188,7 +188,7 @@ def main():
     print(f"=== expand {e_old}->{e_new} experts (shared={num_shared}); standard {ns_old}->{ns_new}")
     print(f"    init-mode={args.init_mode} kept-optim={args.kept_optim} new-optim={args.new_optim} "
           f"jitter-std={args.jitter_std} seed={args.seed}")
-    print(f"    new-standard slot 126 (the one extra) copies old standard {src_slots[ns_new-1]}")
+    print(f"    last new-standard slot {ns_new-1} copies old standard {src_slots[ns_new-1]}")
 
     print(f"=== loading model+optim state from {src_mao} (single process, no dist) ===")
     model_sd, optim_sd = list(load_keys(str(src_mao), ["model", "optim"]))
@@ -282,10 +282,11 @@ def main():
     ov = src_w1.reshape(e_old, per_w1, -1)
     nv = new_w1.reshape(e_new, per_w1, -1)
     assert torch.equal(nv[0], ov[0]), "kept slot 0 mismatch"
-    assert torch.equal(nv[62], ov[62]), "kept slot 62 mismatch"
+    assert torch.equal(nv[ns_old - 1], ov[ns_old - 1]), "last kept standard slot mismatch"
     assert torch.equal(nv[ns_new], ov[ns_old]), "shared slot not moved correctly"
     if args.init_mode == "upcycle":
-        assert torch.equal(nv[63], ov[0]), "upcycle new slot 63 should copy old standard 0"
+        # first new standard slot copies source j=0 (src_slots[ns_old])
+        assert torch.equal(nv[ns_old], ov[src_slots[ns_old]]), "upcycle first new slot mismatch"
     print(f"    OK: w1 {tuple(new_w1.shape)} router {tuple(new_r.shape)}; kept/shared slots verified")
     print(f"=== DONE: {out_dir} ===")
 

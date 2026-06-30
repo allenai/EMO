@@ -60,9 +60,9 @@ JITTER_STD="${JITTER_STD:-0.02}"
 SEED="${SEED:-0}"
 MAX_B="${MAX_B:-30}"
 
-runname="stdmoe_128exp_up64to128_lr2e-3_${LEAF}"
-save_folder="${MODELS_DIR}/upcycle_64to128/${LEAF}"               # weka path (workers)
-local_save_folder="${LOCAL_MODELS_DIR}/upcycle_64to128/${LEAF}"   # local mount (seeding)
+runname="stdmoe_128exp_up${FROM_EXPERTS}to128_lr2e-3_${LEAF}"
+save_folder="${MODELS_DIR}/upcycle_${FROM_EXPERTS}to128/${LEAF}"               # weka path (workers)
+local_save_folder="${LOCAL_MODELS_DIR}/upcycle_${FROM_EXPERTS}to128/${LEAF}"   # local mount (seeding)
 local_src="${LOCAL_MODELS_DIR}/${FROM_RUN}/step${FROM_STEP}"
 seed_step_dir="${local_save_folder}/step${FROM_STEP}"
 max_duration="$(awk "BEGIN{printf \"%.0f\", ${MAX_B}*1000000000}")"
