@@ -66,6 +66,11 @@ RUNS = [
     #     bounds that widen the lower->upper gap for the extension story. ---
     {"key": "32wsd2e3",      "label": "32e wsd 2e-3",              "cat": "low-capacity baselines", "ids": "eisvi21h"},
     {"key": "16wsd2e3",      "label": "16e wsd 2e-3",              "cat": "low-capacity baselines", "ids": "sswulp41"},
+    # --- EMO architecture (two-level_lb-batch_reduce-dp_sharedexp_randpool, doc-expert pool
+    # min=8/max=64/eval=64): EMO objective only, all run conventions = models_v2 WSD trunk. Direct
+    # head-to-head vs the stdmoe_64exp_50b_wsd 4e-3/2e-3 pair. In flight (from scratch).
+    {"key": "emo64wsd4e3",   "label": "EMO 64e wsd 4e-3",          "cat": "EMO 64e baselines", "ids": "6z52ewdb"},
+    {"key": "emo64wsd2e3",   "label": "EMO 64e wsd 2e-3",          "cat": "EMO 64e baselines", "ids": "s9024txw"},
     # --- Extension methods: expert upcycling 64→128 (5B convergence check) ---
     {"key": "up_copy_cc",    "label": "upcycle copy·carry·copy",   "cat": "upcycle 64→128", "ids": "85nhg564"},
     {"key": "up_copy_cz",    "label": "upcycle copy·carry·zero",   "cat": "upcycle 64→128", "ids": "2hnes1fe"},
@@ -103,7 +108,10 @@ TABS = [
                  "compare. The x-axis auto-fits to the selection and the y-axis rescales to what's "
                  "shown. Each decay branch is anchored to its parent trunk's value at the fork step, "
                  "so it visibly branches off the trunk (evals are logged too sparsely to otherwise "
-                 "record a point at the fork).",
+                 "record a point at the fork). The two <strong>EMO 64e WSD</strong> recipes are the EMO "
+                 "architecture + objective (random document-expert pooling, two-level batch LB) trained "
+                 "on the same models_v2 WSD trunk at matched peak LR — a direct EMO-vs-stdMoE head-to-head "
+                 "against the 64e WSD 4e-3 / 2e-3 stdMoE recipes (both in flight, from scratch).",
         "groups": [
             {"name": "64e cosine",              "runs": ["64cos25", "64cos50"]},
             {"name": "128e cosine 4e-3",        "runs": ["128cos"]},
@@ -113,8 +121,10 @@ TABS = [
             {"name": "64e WSD 4e-4 (+decays)",  "runs": ["64wsd4e4", "64dec_4e4_5", "64dec_4e4_10"]},
             {"name": "128e WSD 4e-3 (+decays)", "runs": ["128wsd4e3", "128dec_4e3_10"]},
             {"name": "128e WSD 2e-3 (+decays)", "runs": ["128wsd2e3", "128dec_2e3_10"]},
+            {"name": "EMO 64e WSD 4e-3",        "runs": ["emo64wsd4e3"]},
+            {"name": "EMO 64e WSD 2e-3",        "runs": ["emo64wsd2e3"]},
         ],
-        "default": [3],  # 64e WSD 4e-3 (+decays)
+        "default": [3, 8],  # stdMoE 64e WSD 4e-3 vs EMO 64e WSD 4e-3 (matched-LR head-to-head)
     },
     {
         "id": "ext",
