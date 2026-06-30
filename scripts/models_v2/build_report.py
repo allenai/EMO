@@ -79,6 +79,11 @@ RUNS = [
     # (nrjavgbl, 30B-> ; in flight).
     {"key": "up_jit_cz",     "label": "upcycle jitter·carry·zero", "cat": "upcycle 64→128", "ids": ["r6yj95lk", "nrjavgbl"]},
     {"key": "up_jit_reset",  "label": "upcycle jitter·reset",      "cat": "upcycle 64→128", "ids": "t36ixfxn"},
+    # --- Extension methods: expert upcycling 16→128 (wide-gap source; full 25B→50B in one pass) ---
+    # Source = stdmoe_16exp_50b_wsd_lr2e-3 @ step5960 (25B); 15 standard kept + 112 new (each of 15
+    # sources copied once, remainder seeded-random) + shared moved to last slot.
+    {"key": "up16_jit_cc",   "label": "upcycle 16→128 jitter·carry·copy", "cat": "upcycle 16→128", "ids": "rfghcblw"},
+    {"key": "up16_jit_cz",   "label": "upcycle 16→128 jitter·carry·zero", "cat": "upcycle 16→128", "ids": "wpiq8qom"},
 ]
 
 # ---------------------------------------------------------------------------
@@ -125,19 +130,25 @@ TABS = [
                  "if you trained 128 experts from scratch), and the <strong>lowerbound</strong> = the "
                  "64e WSD-2e-3 trunk we extended from. Extra dashed lower bounds at 32e and 16e WSD-2e-3 "
                  "show the full capacity ladder — the 64e→128e gap is small, so 32e/16e sources make the "
-                 "headroom (and thus extension's potential payoff) much larger. The reference lines are "
+                 "headroom (and thus extension's potential payoff) much larger. The "
+                 "<strong>Upcycle 16→128: jitter</strong> group is the wide-gap experiment itself: the "
+                 "16e WSD-2e-3 trunk at 25B expanded to 128e (15 standard kept + 112 new jittered copies "
+                 "+ shared moved) and trained the full remaining 25B to 50B — measuring how much of the "
+                 "large 16e→128e gap upcycling can close (carry·copy vs carry·zero new-expert momentum). "
+                 "The reference lines are "
                  "excluded from the x-auto-fit, so the upcycle window stays readable while the bounds "
                  "show through it.",
         "groups": [
             {"name": "Upcycle: copy",   "runs": ["up_copy_cc", "up_copy_cz", "up_copy_reset"]},
             {"name": "Upcycle: jitter", "runs": ["up_jit_cc", "up_jit_cz", "up_jit_reset"]},
             {"name": "Upcycle: random", "runs": ["up_rand_carry", "up_rand_reset"]},
+            {"name": "Upcycle 16→128: jitter", "runs": ["up16_jit_cc", "up16_jit_cz"]},
             {"name": "Upperbound: 128e WSD 2e-3 (from-scratch)", "runs": ["128wsd2e3"], "ref": True},
             {"name": "Lowerbound: 64e WSD 2e-3 (source)",        "runs": ["64wsd2e3"],  "ref": True},
             {"name": "Lowerbound: 32e WSD 2e-3",                 "runs": ["32wsd2e3"],  "ref": True},
             {"name": "Lowerbound: 16e WSD 2e-3",                 "runs": ["16wsd2e3"],  "ref": True},
         ],
-        "default": [0, 3, 4, 5, 6],  # copy family + the full 16/32/64e -> 128e bound ladder
+        "default": [3, 4, 5, 6, 7],  # 16→128 jitter (wide gap) + the full 16/32/64e -> 128e bound ladder
     },
 ]
 
