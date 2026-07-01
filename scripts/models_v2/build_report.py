@@ -155,24 +155,28 @@ TABS = [
         "id": "ext",
         "label": "Extension methods",
         "title": "Extension methods: expert upcycling 64→128",
-        "intro": "<p>Can we grow a trained 64e model into a 128e one cheaply? Take the 64e WSD-2e-3 trunk "
-                 "at 25B (step5960), expand it to 128 experts (63 standard kept + 64 new + shared "
-                 "moved to the last slot), and continue WSD training — a 5B convergence check (25B→30B, "
-                 "flat LR 2e-3). Three init families × optimizer treatments: <strong>copy</strong> "
-                 "(new experts duplicate sources), <strong>jitter</strong> (copy + noise), "
-                 "<strong>random</strong> (fresh). Two reference bounds bracket the result (drawn "
-                 "dashed): the <strong>upperbound</strong> = from-scratch 128e WSD-2e-3 (the ceiling "
-                 "if you trained 128 experts from scratch), and the <strong>lowerbound</strong> = the "
-                 "64e WSD-2e-3 trunk we extended from. Extra dashed lower bounds at 32e and 16e WSD-2e-3 "
-                 "show the full capacity ladder — the 64e→128e gap is small, so 32e/16e sources make the "
-                 "headroom (and thus extension's potential payoff) much larger. The "
-                 "<strong>Upcycle 16→128: jitter</strong> group is the wide-gap experiment itself: the "
-                 "16e WSD-2e-3 trunk at 25B expanded to 128e (15 standard kept + 112 new jittered copies "
-                 "+ shared moved) and trained the full remaining 25B to 50B — measuring how much of the "
-                 "large 16e→128e gap upcycling can close (carry·copy vs carry·zero new-expert momentum). "
-                 "The reference lines are "
-                 "excluded from the x-auto-fit, so the upcycle window stays readable while the bounds "
-                 "show through it.</p>",
+        "intro": "<p>Can we grow an already-trained model into a bigger one cheaply? Take a WSD-2e-3 "
+                 "trunk at 25B, expand its expert count (seed each new expert from an existing one and "
+                 "move the shared expert to the last slot), and continue WSD training. Each run is "
+                 "bracketed by two dashed reference bounds: the <strong>upperbound</strong> = a "
+                 "from-scratch model at the target expert count (the ceiling), and the "
+                 "<strong>lowerbound</strong> = the source trunk it was expanded from.</p>"
+                 "<p>Two independent choices define a run &mdash; how the new experts' "
+                 "<strong>weights</strong> are initialized, and how the <strong>optimizer (Adam) "
+                 "state</strong> is treated on resume:</p>"
+                 "<ul>"
+                 "<li><strong>Weight init:</strong> <em>copy</em> (new experts duplicate existing ones), "
+                 "<em>jitter</em> (copy + small noise), <em>random</em> (fresh init).</li>"
+                 "<li><strong>carry&middot;copy:</strong> kept experts keep their Adam moments; each new "
+                 "expert inherits its source expert's moments.</li>"
+                 "<li><strong>carry&middot;zero:</strong> kept experts keep their Adam moments; new "
+                 "experts start with zeroed moments.</li>"
+                 "<li><strong>reset:</strong> optimizer state is discarded &mdash; both kept and new "
+                 "experts restart with fresh (zero) Adam moments.</li>"
+                 "</ul>"
+                 "<p>Pick a finding below for a one-click comparison, or toggle recipes on the left. The "
+                 "sidebar also carries 32e/16e lower bounds for the full capacity ladder; reference "
+                 "bounds are excluded from the x-auto-fit so the upcycle window stays readable.</p>",
         "groups": [
             {"name": "Upcycle: copy",   "runs": ["up_copy_cc", "up_copy_cz", "up_copy_reset"]},
             {"name": "Upcycle: jitter", "runs": ["up_jit_cc", "up_jit_cz", "up_jit_reset"]},
@@ -183,7 +187,21 @@ TABS = [
             {"name": "Lowerbound: 32e WSD 2e-3",                 "runs": ["32wsd2e3"],  "ref": True},
             {"name": "Lowerbound: 16e WSD 2e-3",                 "runs": ["16wsd2e3"],  "ref": True},
         ],
-        "default": [3, 4, 5, 6, 7],  # 16→128 jitter (wide gap) + the full 16/32/64e -> 128e bound ladder
+        "sections": [
+            {"heading": "64 &rarr; 128 upcycling",
+             "text": "Expand the 64e trunk to 128 experts and keep training. The 64e&rarr;128e gap is "
+                     "small, so all init families land close to the from-scratch 128e upperbound.",
+             "button": "Plot 64&rarr;128 (copy / jitter / random + bounds)",
+             "groups": ["Upcycle: copy", "Upcycle: jitter", "Upcycle: random",
+                        "Upperbound: 128e WSD 2e-3 (from-scratch)", "Lowerbound: 64e WSD 2e-3 (source)"]},
+            {"heading": "16 &rarr; 128 upcycling",
+             "text": "A much wider gap: expand the 16e trunk to 128 experts. The large headroom over the "
+                     "16e source makes upcycling's payoff easier to see.",
+             "button": "Plot 16&rarr;128 (jitter + bounds)",
+             "groups": ["Upcycle 16→128: jitter",
+                        "Upperbound: 128e WSD 2e-3 (from-scratch)", "Lowerbound: 16e WSD 2e-3"]},
+        ],
+        "default": [],  # nothing selected on first load
     },
 ]
 
@@ -664,12 +682,12 @@ def findings_html(tab: dict) -> str:
     cards = []
     for s in secs:
         idxs = ",".join(str(name_to_idx[n]) for n in s["groups"] if n in name_to_idx)
-        picks = " vs ".join(s["groups"])
+        label = s.get("button") or f'Plot {" vs ".join(s["groups"])}'
         cards.append(
             f'<div class="card finding"><h3>{s["heading"]}</h3>'
             f'<p>{s["text"]}</p>'
             f'<button class="exp-jump" data-explorer="{tab["id"]}" data-select="{idxs}">'
-            f'Plot {picks} &rarr;</button></div>')
+            f'{label} &rarr;</button></div>')
     return "".join(cards)
 
 
