@@ -188,16 +188,28 @@ TABS = [
             {"name": "Lowerbound: 16e WSD 2e-3",                 "runs": ["16wsd2e3"],  "ref": True},
         ],
         "sections": [
-            {"heading": "64 &rarr; 128 upcycling",
-             "text": "Expand the 64e trunk to 128 experts and keep training. The 64e&rarr;128e gap is "
-                     "small, so all init families land close to the from-scratch 128e upperbound.",
-             "button": "Plot 64&rarr;128 (copy / jitter / random + bounds)",
-             "groups": ["Upcycle: copy", "Upcycle: jitter", "Upcycle: random",
+            {"heading": "64 &rarr; 128: random init",
+             "text": "Random new experts spike the loss hard at expansion and never recover to the "
+                     "from-scratch 128e &mdash; fresh experts throw away the trunk's learned structure.",
+             "button": "Plot random 64&rarr;128 + bounds",
+             "groups": ["Upcycle: random",
                         "Upperbound: 128e WSD 2e-3 (from-scratch)", "Lowerbound: 64e WSD 2e-3 (source)"]},
-            {"heading": "16 &rarr; 128 upcycling",
-             "text": "A much wider gap: expand the 16e trunk to 128 experts. The large headroom over the "
-                     "16e source makes upcycling's payoff easier to see.",
-             "button": "Plot 16&rarr;128 (jitter + bounds)",
+            {"heading": "64 &rarr; 128: copy init",
+             "text": "Copying existing experts recovers cleanly. <em>reset</em> is clearly worse; "
+                     "<em>carry&middot;copy</em> vs <em>carry&middot;zero</em> barely differ.",
+             "button": "Plot copy 64&rarr;128 + bounds",
+             "groups": ["Upcycle: copy",
+                        "Upperbound: 128e WSD 2e-3 (from-scratch)", "Lowerbound: 64e WSD 2e-3 (source)"]},
+            {"heading": "64 &rarr; 128: jitter init",
+             "text": "Same story as copy &mdash; <em>reset</em> worse, <em>carry&middot;copy</em> "
+                     "&asymp; <em>carry&middot;zero</em> &mdash; but jitter edges out copy slightly.",
+             "button": "Plot jitter vs copy 64&rarr;128 + bounds",
+             "groups": ["Upcycle: jitter", "Upcycle: copy",
+                        "Upperbound: 128e WSD 2e-3 (from-scratch)", "Lowerbound: 64e WSD 2e-3 (source)"]},
+            {"heading": "16 &rarr; 128: jitter",
+             "text": "A much wider gap, focusing on jitter: upcycling never recovers from-scratch 128e "
+                     "performance, and there's a clear loss jump right after initialization.",
+             "button": "Plot jitter 16&rarr;128 + bounds",
              "groups": ["Upcycle 16→128: jitter",
                         "Upperbound: 128e WSD 2e-3 (from-scratch)", "Lowerbound: 16e WSD 2e-3"]},
         ],
