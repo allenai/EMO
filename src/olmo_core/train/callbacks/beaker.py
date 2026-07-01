@@ -69,11 +69,16 @@ class BeakerCallback(Callback):
             for callback in self.trainer.callbacks.values():
                 if isinstance(callback, WandBCallback):
                     if callback.enabled and callback.run is not None:
+                        # allow_val_change: when a W&B run is RESUMED from a different Beaker
+                        # experiment (e.g. continual-training a finished run in place), these keys
+                        # already hold the original experiment's values. Without allow_val_change,
+                        # wandb raises ConfigError and crashes training at init.
                         callback.run.config.update(
                             {
                                 "beaker_experiment_url": beaker_url,
                                 "beaker_experiment_id": self.experiment_id,
-                            }
+                            },
+                            allow_val_change=True,
                         )
                         log.info(f"Added beaker_experiment_url to W&B config: {beaker_url}")
                         log.info(f"Added beaker_experiment_id to W&B config: {self.experiment_id}")
