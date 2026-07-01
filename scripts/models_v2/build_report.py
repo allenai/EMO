@@ -263,6 +263,8 @@ EVAL_MODELS = [
     # lr2e-3 stable trunk decay branches (peak LR 2e-3): 5B decay from 45B, 10B decay from 40B.
     ("stdmoe_64exp_50b_wsd_lr2e-3/anneals/s10729_5b", "stdMoE 64e · lr2e-3 decay@45B/5B"),
     ("stdmoe_64exp_50b_wsd_lr2e-3/anneals/s9537_10b", "stdMoE 64e · lr2e-3 decay@40B/10B"),
+    # EMO counterpart of the row above (same 40B/10B decay recipe, EMO architecture) — head-to-head.
+    ("emo_64exp_50b_wsd_lr2e-3/anneals/s9537_10b",    "EMO 64e · lr2e-3 decay@40B/10B"),
     # lr4e-4 stable trunk decay branches (peak LR 4e-4): 5B decay from 45B, 10B decay from 40B.
     ("stdmoe_64exp_50b_wsd_lr4e-4/anneals/s10729_5b", "stdMoE 64e · lr4e-4 decay@45B/5B"),
     ("stdmoe_64exp_50b_wsd_lr4e-4/anneals/s9537_10b", "stdMoE 64e · lr4e-4 decay@40B/10B"),
