@@ -73,6 +73,9 @@ MODELS=(
     # lr4e-4 stable trunk's decay branches (both end at 50B): 5B decay from 45B, 10B decay from 40B.
     "stdmoe_64exp_50b_wsd_lr4e-4/anneals/s10729_5b|11921"
     "stdmoe_64exp_50b_wsd_lr4e-4/anneals/s9537_10b|11921"
+    # EMO architecture (two-level randpool) lr2e-3 decay branch: forked at 40B (step9537), decayed
+    # 10B to 50B. Head-to-head vs stdmoe_64exp_50b_wsd_lr2e-3/anneals/s9537_10b on the merged evals.
+    "emo_64exp_50b_wsd_lr2e-3/anneals/s9537_10b|11921"
 )
 
 # --- MMLU 17 categories (match mmlu_merged_<cat>:rc_test::olmes in src/scripts/eval/tasks.py) ---
