@@ -146,7 +146,13 @@ TABS = [
              "text": "When fully annealed, WSD 2e-3 still slightly underperforms cosine.",
              "groups": ["128e WSD 2e-3 (+decays)", "128e cosine 2e-3", "128e cosine 4e-3"]},
             {"heading": "EMO vs stdMoE (WSD 2e-3)",
-             "text": "At matched WSD 2e-3, EMO trains slightly worse than stdMoE.",
+             "text": "At matched WSD 2e-3, EMO trains slightly worse than stdMoE &mdash; and it mostly "
+                     "carries into downstream evals (decay@40B/10B checkpoints, merged test splits): "
+                     "EMO trails on MC9 and Gen5, edges MMLU, ties GSM8K.",
+             "eval_table": {"caption": "Merged test-split evals &middot; decay@40B/10B &middot; primary "
+                                       "metric &times;100 (higher is better)",
+                            "cols": [("stdMoE", "stdmoe_64exp_50b_wsd_lr2e-3/anneals/s9537_10b"),
+                                     ("EMO", "emo_64exp_50b_wsd_lr2e-3/anneals/s9537_10b")]},
              "groups": ["EMO 64e WSD 2e-3 (+decays)", "64e WSD 2e-3 (+decays)"]},
         ],
         "default": [],  # nothing selected on first load
@@ -686,20 +692,48 @@ def chart_blocks(charts: list, tab_id: str) -> str:
     return f'<div class="chart-grid">{"".join(cells)}</div>'
 
 
-def findings_html(tab: dict) -> str:
+def _eval_table_html(spec: dict, run2sum: dict) -> str:
+    """Small MC9/MMLU/Gen5/GSM8K comparison table for a finding, built from the live merged-eval
+    scores. `spec["cols"]` is a list of (column label, EVAL_MODELS run path); the better value in
+    each row is bolded (ties left plain)."""
+    metrics = [("MC9", "mc9"), ("MMLU", "mmlu"), ("Gen5", "gen5"), ("GSM8K", "gsm8k")]
+    cols = spec["cols"]
+    head = "<tr><th>metric</th>" + "".join(f"<th>{c[0]}</th>" for c in cols) + "</tr>"
+    rows = []
+    for mlabel, mkey in metrics:
+        vals = [run2sum.get(c[1], {}).get(mkey) for c in cols]
+        nums = [v for v in vals if isinstance(v, (int, float))]
+        best = max(nums) if nums else None
+        tds = []
+        for v in vals:
+            cell = _pct(v)
+            if isinstance(v, (int, float)) and best is not None and v == best and len(set(nums)) > 1:
+                cell = f"<strong>{cell}</strong>"
+            tds.append(f"<td>{cell}</td>")
+        rows.append(f"<tr><td>{mlabel}</td>{''.join(tds)}</tr>")
+    cap = spec.get("caption", "")
+    caphtml = f"<p class='note' style='margin:6px 0 4px'>{cap}</p>" if cap else ""
+    return f"{caphtml}<table><thead>{head}</thead><tbody>{''.join(rows)}</tbody></table>"
+
+
+def findings_html(tab: dict, evals: dict | None = None) -> str:
     """Short prose 'finding' cards rendered above the explorer. Each carries a button that selects
-    exactly the named groups (clearing the rest) and scrolls down to the charts."""
+    exactly the named groups (clearing the rest) and scrolls down to the charts. A section may also
+    carry an `eval_table` spec, rendered inline from the live merged-eval scores."""
     secs = tab.get("sections")
     if not secs:
         return ""
     name_to_idx = {g["name"]: i for i, g in enumerate(tab["groups"])}
+    run2sum = {m["run"]: m["summary"] for m in (evals or {}).get("models", [])}
     cards = []
     for s in secs:
         idxs = ",".join(str(name_to_idx[n]) for n in s["groups"] if n in name_to_idx)
         label = s.get("button") or f'Plot {" vs ".join(s["groups"])}'
+        table = _eval_table_html(s["eval_table"], run2sum) if s.get("eval_table") else ""
         cards.append(
             f'<div class="card finding"><h3>{s["heading"]}</h3>'
             f'<p>{s["text"]}</p>'
+            f'{table}'
             f'<button class="exp-jump" data-explorer="{tab["id"]}" data-select="{idxs}">'
             f'{label} &rarr;</button></div>')
     return "".join(cards)
@@ -832,7 +866,7 @@ def render(payload: dict, uplot_css: str, uplot_js: str) -> str:
     for t in TABS:
         body = (f'<div class="card goal"><h3>{t["title"]}</h3>'
                 f'<div class="intro note">{t["intro"]}</div></div>'
-                f'{findings_html(t)}'
+                f'{findings_html(t, payload["evals"])}'
                 f'{explorer_html(t, payload["charts"])}')
         tab_sections.append((t["id"], t["label"], body))
 
