@@ -30,9 +30,11 @@
 #       min=8/max=64/eval=64, OLMoE-mix-0824, WSD warmup=2000 / decay_steps=1, peak LR 2e-3, 8 nodes
 #       (reduce-dp batch-LB stats depend on node count at lb!=0; keeping 8 also matches world_size ->
 #       RNG restore).
-#     - Opportunistic run: normal priority + preemptible (fills idle capacity, yields to others),
-#       fire-and-forget (--no-follow). Permanent checkpoints every ~100B tokens so any 100B point is
-#       usable even if stopped/preempted early; 2-deep rolling ephemerals for restart safety.
+#     - Same treatment as the trunk: urgent priority + preemptible, fire-and-forget (--no-follow).
+#       Permanent checkpoints every ~100B tokens so any 100B point is usable even if stopped/preempted
+#       early; 2-deep rolling ephemerals for restart safety. Nothing changes vs the trunk except the
+#       token budget (50B -> 1T) and the periodic-permanent cadence (the trunk's every-5B fixed_steps
+#       are all in the past, so a periodic save_interval is needed to keep saving as it extends).
 #
 #   git add . && git commit && git push origin <branch>      # gantry clones from origin
 #   MODE=beaker bash scripts/models_v2/emo_64exp_wsd_lr2e-3_extend1t.sh
@@ -45,7 +47,7 @@ DATA_ROOT="s3://ai2-llm"
 
 BEAKER_NODES=8              # match the trunk (reduce-dp batch-LB + world_size/RNG continuity)
 BEAKER_GPUS=8
-BEAKER_PRIORITY=normal      # opportunistic idle-fill (not urgent): yield to higher-priority jobs
+BEAKER_PRIORITY=urgent      # same treatment as the trunk (launch_common default) -- just trained longer
 BEAKER_NO_FOLLOW=1          # fire-and-forget: submit and return, monitor via W&B
 
 # Resume the trunk's EXISTING W&B run so the curve stays one continuous line (id verified: s9024txw,
