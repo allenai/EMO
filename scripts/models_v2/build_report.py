@@ -231,7 +231,9 @@ PALETTE = [
     "#7c2d12", "#1d4ed8", "#be123c", "#047857", "#a21caf", "#92400e", "#0369a1", "#4d7c0f",
 ]
 
-# (chart title, W&B metric key)
+# Each entry is (chart title, W&B key) for a single metric, OR (chart title, [keys]) for a DERIVED
+# metric = per-step average of several W&B keys. MMLU BPB v2 is only logged per category (no
+# pre-aggregated key), so the headline is the macro-average over the 4 category keys.
 METRICS = [
     ("CE loss",                      "train/CE loss"),
     ("Grad norm",                    "optim/total grad norm"),
@@ -240,7 +242,21 @@ METRICS = [
     ("Unique experts used / batch",  "train/unique experts used per batch"),
     ("HellaSwag (soft loss v2)",     "eval/downstream/hellaswag (soft loss v2)"),
     ("ARC-Challenge (soft loss v2)", "eval/downstream/arc_challenge (soft loss v2)"),
+    ("MMLU (BPB v2)",                ["eval/downstream/mmlu_humanities (BPB v2)",
+                                      "eval/downstream/mmlu_other (BPB v2)",
+                                      "eval/downstream/mmlu_social_sciences (BPB v2)",
+                                      "eval/downstream/mmlu_stem (BPB v2)"]),
 ]
+
+
+def _metric_keys(m) -> list:
+    """Component W&B keys for a METRICS entry (single key -> [key]; derived -> its list of keys)."""
+    k = m[1]
+    return list(k) if isinstance(k, list) else [k]
+
+
+# Flat, de-duplicated list of every W&B key we need to pull.
+ALL_METRIC_KEYS = list(dict.fromkeys(k for m in METRICS for k in _metric_keys(m)))
 
 
 def slug(t: str) -> str:
@@ -598,7 +614,7 @@ def _fetch_run(api, ids, cache) -> tuple:
         if one not in cache:
             run = api.run(f"{ENTITY_PROJECT}/{one}")
             hist: dict = {}
-            for _, key in METRICS:
+            for key in ALL_METRIC_KEYS:
                 d: dict = {}
                 for row in run.history(keys=[key], samples=600, pandas=False):
                     v, s = row.get(key), row.get("_step")
@@ -650,7 +666,7 @@ def fetch_from_wandb() -> dict:
             continue
         child, parent = per_run[r["key"]], per_run.get(br["parent"], {})
         fs = br["fork_step"]
-        for _, key in METRICS:
+        for key in ALL_METRIC_KEYS:
             cd = child.setdefault(key, {})
             if any(s <= fs for s in cd):
                 continue  # child already has a sample at/before the fork
@@ -668,10 +684,19 @@ def fetch_from_wandb() -> dict:
     # One chart per metric; every run is a series, in RUNS order (so series index == run index ==
     # palette index == sidebar checkbox data-idx). Runs without data for a metric are all-null.
     charts = []
-    for title, key in METRICS:
-        steps = sorted(set().union(*[set(per_run[r["key"]].get(key, {})) for r in RUNS]) or {0})
-        series = [{"label": r["label"], "y": [per_run[r["key"]].get(key, {}).get(s) for s in steps]}
-                  for r in RUNS]
+    for m in METRICS:
+        title, comp = m[0], _metric_keys(m)
+        steps = sorted(set().union(
+            *[set(per_run[r["key"]].get(k, {})) for r in RUNS for k in comp]) or {0})
+        series = []
+        for r in RUNS:
+            y = []
+            for s in steps:
+                # single key -> its value; derived -> mean over the components present at this step.
+                vals = [per_run[r["key"]].get(k, {}).get(s) for k in comp]
+                vals = [v for v in vals if v is not None]
+                y.append(sum(vals) / len(vals) if vals else None)
+            series.append({"label": r["label"], "y": y})
         charts.append({"key": slug(title), "title": title, "x": steps, "series": series})
     return {"runs": runs_meta, "charts": charts}
 
