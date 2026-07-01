@@ -719,7 +719,7 @@ def explorer_html(tab: dict, charts: list) -> str:
         '<div class="exp-panel">'
         '<div class="exp-h">Recipe</div>'
         f'{"".join(btns)}'
-        '<label class="exp-fitx-l"><input type="checkbox" class="exp-fitx" checked>'
+        '<label class="exp-fitx-l"><input type="checkbox" class="exp-fitx">'
         ' auto-fit x to selection</label>'
         '</div>')
     return (f'<div class="explorer" data-tab="{tab["id"]}">'
