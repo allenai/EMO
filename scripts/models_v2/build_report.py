@@ -129,7 +129,23 @@ TABS = [
             {"name": "EMO 64e WSD 4e-3",        "runs": ["emo64wsd4e3"]},
             {"name": "EMO 64e WSD 2e-3 (+decays)", "runs": ["emo64wsd2e3", "emo64dec_2e3_10"]},
         ],
-        "default": [3, 8],  # stdMoE 64e WSD 4e-3 vs EMO 64e WSD 4e-3 (matched-LR head-to-head)
+        # Guided findings: each renders a short prose card above the explorer with a button that
+        # selects exactly the named groups (clearing the rest) and scrolls to the charts.
+        "sections": [
+            {"heading": "Cosine: 4e-3 &gt; 2e-3",
+             "text": "With cosine decay, peak LR 4e-3 clearly beats 2e-3.",
+             "groups": ["128e cosine 4e-3", "128e cosine 2e-3"]},
+            {"heading": "WSD: 2e-3 &gt; 4e-3",
+             "text": "With WSD, the ordering flips — peak LR 2e-3 beats 4e-3.",
+             "groups": ["128e WSD 4e-3 (+decays)", "128e WSD 2e-3 (+decays)"]},
+            {"heading": "WSD anneal vs cosine",
+             "text": "Even fully annealed, WSD 2e-3 still slightly underperforms cosine.",
+             "groups": ["128e WSD 2e-3 (+decays)", "128e cosine 2e-3", "128e cosine 4e-3"]},
+            {"heading": "EMO vs stdMoE (WSD 2e-3)",
+             "text": "At matched WSD 2e-3, EMO trains slightly worse than stdMoE.",
+             "groups": ["EMO 64e WSD 2e-3 (+decays)", "64e WSD 2e-3 (+decays)"]},
+        ],
+        "default": [],  # nothing selected on first load
     },
     {
         "id": "ext",
@@ -314,6 +330,11 @@ section.tab.active { display:block; }
 .card.goal { border-left-color:#2563eb; } .card.goal h3 { color:#2563eb; }
 .card.method { border-left-color:#7c3aed; } .card.method h3 { color:#7c3aed; }
 .card.results { border-left-color:#059669; } .card.results h3 { color:#059669; }
+.card.finding { border-left-color:#0891b2; } .card.finding h3 { color:#0891b2; }
+.card.finding p { margin:0 0 10px; }
+.exp-jump { border:1px solid #0891b2; background:#ecfeff; color:#0e7490; border-radius:6px;
+            padding:6px 12px; font-size:13px; font-weight:600; cursor:pointer; }
+.exp-jump:hover { background:#cffafe; }
 table { border-collapse:collapse; margin:12px 0; font-size:14px; width:auto; }
 th, td { border:1px solid var(--line); padding:6px 12px; text-align:left; vertical-align:top; }
 th { background:#f1f5f9; }
@@ -464,9 +485,23 @@ _CHARTS_JS = r"""
       reg[b.dataset.metric].logY=!reg[b.dataset.metric].logY; build(b.dataset.metric); }));
     root.querySelectorAll("button.expand").forEach(b => b.addEventListener("click", () => {
       const st=reg[b.dataset.metric]; openModal(st.chart, vis(), fitVis(), refSet, st.logY); }));
+    // Programmatic selection for the guided-finding buttons: press exactly `idxs`, clear the rest.
+    root.selectGroups = function(idxs){
+      groupBtns.forEach((b,i)=> b.setAttribute("aria-pressed", idxs.indexOf(i)>=0 ? "true" : "false"));
+      rebuildAll();
+    };
     rebuildAll();
   }
   document.querySelectorAll(".explorer").forEach(setupExplorer);
+
+  // Guided-finding buttons (prose cards above an explorer): select their groups + scroll to charts.
+  document.querySelectorAll(".exp-jump").forEach(btn => btn.addEventListener("click", () => {
+    const exp = document.querySelector('.explorer[data-tab="'+btn.dataset.explorer+'"]');
+    if(!exp || !exp.selectGroups) return;
+    const idx = (btn.dataset.select||"").split(",").filter(s=>s!=="").map(Number);
+    exp.selectGroups(idx);
+    exp.scrollIntoView({behavior:"smooth", block:"start"});
+  }));
 
   // resize (also re-fit after a tab becomes visible: width was 0 while display:none)
   window.ceResize = function(){
@@ -612,6 +647,25 @@ def chart_blocks(charts: list, tab_id: str) -> str:
     return f'<div class="chart-grid">{"".join(cells)}</div>'
 
 
+def findings_html(tab: dict) -> str:
+    """Short prose 'finding' cards rendered above the explorer. Each carries a button that selects
+    exactly the named groups (clearing the rest) and scrolls down to the charts."""
+    secs = tab.get("sections")
+    if not secs:
+        return ""
+    name_to_idx = {g["name"]: i for i, g in enumerate(tab["groups"])}
+    cards = []
+    for s in secs:
+        idxs = ",".join(str(name_to_idx[n]) for n in s["groups"] if n in name_to_idx)
+        picks = " vs ".join(s["groups"])
+        cards.append(
+            f'<div class="card finding"><h3>{s["heading"]}</h3>'
+            f'<p>{s["text"]}</p>'
+            f'<button class="exp-jump" data-explorer="{tab["id"]}" data-select="{idxs}">'
+            f'Plot {picks} &rarr;</button></div>')
+    return "".join(cards)
+
+
 def explorer_html(tab: dict, charts: list) -> str:
     """One explorer: left column of recipe-group toggles + right shared chart grid. Group buttons
     carry data-runs (comma-joined run keys); the JS unions selected groups into chart visibility."""
@@ -739,6 +793,7 @@ def render(payload: dict, uplot_css: str, uplot_js: str) -> str:
     for t in TABS:
         body = (f'<div class="card goal"><h3>{t["title"]}</h3>'
                 f'<p class="note">{t["intro"]}</p></div>'
+                f'{findings_html(t)}'
                 f'{explorer_html(t, payload["charts"])}')
         tab_sections.append((t["id"], t["label"], body))
 
