@@ -11,24 +11,26 @@
 #           persisted in the checkpoint. current = trainer.global_step (absolute). At the resume step
 #           (11921, past warmup=2000, far below t_max-1) get_lr returns the peak LR -> flat.
 #         * Data order is deterministic in (seed, epoch) and cached in the work-dir, INDEPENDENT of
-#           max_duration. Resume restores epoch / batches_processed / tokens_processed, so training
-#           continues from the exact 50B data position; when epoch 1 is exhausted the loader
-#           reshuffles into epoch 2, etc. (standard multi-epoch). OLMoE-mix-0824 is far larger than
-#           50B, so no repetition until well into the run, and any repetition is a clean reshuffle.
-#     - This is a SEPARATE run (its own W&B id + save folder) that LOADS the trunk's 50B checkpoint
-#       (step11921) with full trainer state -- it does NOT mutate the published 50B trunk, so the
-#       matched-50B-compute upperbound stays intact as a reference. step11921 is an exact stable
-#       checkpoint: the trunk's final step ran at LR=0 (zero-effect update), so its weights ARE the
-#       50B stable-trunk weights and its data position is exactly 50B. Same load_path + full-state
-#       pattern the WSD decay branches use.
-#     - Model flags MUST match the trunk exactly (the model is rebuilt from CLI then the checkpoint
-#       state is loaded into it -- a mismatch would fail the load): model-type moe_lbreducedp_sharedexp,
-#       128 experts / 1 shared, lb 1e-1, OLMoE-mix-0824, WSD warmup=2000 / decay_steps=1, peak LR 2e-3.
+#           max_duration. Resume restores epoch / batches_processed / tokens_processed (verified:
+#           step11921 = epoch 1, 50.00B, seed 0), so training continues from the exact 50B data
+#           position; when epoch 1 is exhausted the loader reshuffles into epoch 2, etc. (standard
+#           multi-epoch). OLMoE-mix-0824 is far larger than 50B, so no repetition until well in.
+#     - THIS IS THE SAME RUN, CONTINUED IN PLACE (not a separate run/line):
+#         * save-folder = the trunk's OWN folder, so the trainer auto-resumes from its latest
+#           checkpoint (step11921) with full trainer + optimizer state. No load_path needed.
+#         * W&B: we resume the trunk's existing run (id sswartor) via WANDB_RUN_ID + WANDB_RESUME=allow
+#           (the WandBCallback doesn't expose id/resume, but wandb.init honors these env vars). So the
+#           curve simply continues past 50B on the SAME W&B run -- and since the report's `128wsd2e3`
+#           key already points at sswartor, the report upperbound extends on the same line too.
+#         * On a preemption restart the (non-empty) save folder auto-resumes; WANDB_RESUME=allow keeps
+#           re-attaching to the same run.
+#     - Model flags MUST match the trunk exactly (model rebuilt from CLI then checkpoint state loaded
+#       in -- a mismatch fails the load): model-type moe_lbreducedp_sharedexp, 128 experts / 1 shared,
+#       lb 1e-1, OLMoE-mix-0824, WSD warmup=2000 / decay_steps=1, peak LR 2e-3, 8 nodes (reduce-dp
+#       batch-LB stats depend on node count at lb!=0; keeping 8 also matches world_size -> RNG restore).
 #     - Opportunistic run: normal priority + preemptible (fills idle capacity, yields to others),
 #       fire-and-forget (--no-follow). Permanent checkpoints every ~100B tokens so any 100B point is
-#       usable even if the run is stopped/preempted early; 2-deep rolling ephemerals for restart
-#       safety. On a preemption restart, the (now non-empty) save folder auto-resumes with full
-#       trainer state, so load_path only matters for the very first launch.
+#       usable even if stopped/preempted early; 2-deep rolling ephemerals for restart safety.
 #
 #   git add . && git commit && git push origin <branch>      # gantry clones from origin
 #   MODE=beaker bash scripts/models_v2/stdmoe_128exp_wsd_lr2e-3_extend1t.sh
@@ -39,10 +41,16 @@ EXPERIMENT_NAME="models_v2"
 MODELS_DIR="/weka/oe-training-default/ryanwang/EMO/${EXPERIMENT_NAME}"
 DATA_ROOT="s3://ai2-llm"
 
-BEAKER_NODES=8              # match the trunk: at lb!=0 the reduce-dp batch-LB stats depend on node count
+BEAKER_NODES=8              # match the trunk (reduce-dp batch-LB + world_size/RNG continuity)
 BEAKER_GPUS=8
 BEAKER_PRIORITY=normal      # opportunistic idle-fill (not urgent): yield to higher-priority jobs
 BEAKER_NO_FOLLOW=1          # fire-and-forget: submit and return, monitor via W&B
+
+# Resume the trunk's EXISTING W&B run so the curve stays one continuous line (id verified: sswartor,
+# name stdmoe_128exp_50b_wsd_lr2e-3). wandb.init picks these env vars up on every (re)start.
+TRUNK_RUN="stdmoe_128exp_50b_wsd_lr2e-3"
+WANDB_ID="sswartor"
+BEAKER_ENV_VARS=("WANDB_RUN_ID=${WANDB_ID}" "WANDB_RESUME=allow")
 
 # --- match the trunk's model/objective exactly ---
 lr=2e-3
@@ -52,31 +60,23 @@ num_experts=128
 warmup_steps=2000
 decay_steps=1              # pure stable trunk: flat at peak LR; only the final step touches 0.
 
-# --- continuation spec ---
-TRUNK_RUN="stdmoe_128exp_50b_wsd_lr2e-3"
-LOAD_STEP=11921            # the trunk's 50B checkpoint (exact stable weights, data at 50B)
 MAX_TOKENS=1000000000000   # 1T-token cap for the extended stable trunk
+save_folder="${MODELS_DIR}/${TRUNK_RUN}"        # the trunk's OWN folder -> auto-resume from step11921
+save_interval=23842        # permanent ckpt ~every 100B tokens (100e9 / 4,194,304 tok/step)
 
-runname="stdmoe_128exp_50b_wsd_lr2e-3_extend1t"
-load_path="${MODELS_DIR}/${TRUNK_RUN}/step${LOAD_STEP}"
-save_folder="${MODELS_DIR}/${runname}"
+# Beaker job label (findable as the extend job); the W&B run + save folder stay the trunk's.
+runname="${TRUNK_RUN}_extend1t"
 
-# Permanent checkpoint cadence: ~every 100B tokens. 100B / 4,194,304 tok/step = 23,842 steps.
-save_interval=23842
-
-echo "Continual-training the 128e WSD-2e-3 trunk:"
-echo "  load_path (50B ckpt): ${load_path}"
-echo "  save_folder:          ${save_folder}"
-echo "  max tokens:           ${MAX_TOKENS} (1T)"
-echo "  permanent every:      ${save_interval} steps (~100B tokens)"
+echo "Continual-training the 128e WSD-2e-3 trunk IN PLACE (same run/line):"
+echo "  save_folder (auto-resume): ${save_folder}"
+echo "  W&B run (resumed):         ${WANDB_ID} (${TRUNK_RUN})"
+echo "  max tokens:                ${MAX_TOKENS} (1T)"
+echo "  permanent every:           ${save_interval} steps (~100B tokens)"
 
 launch src/scripts/train/olmoe-1B-7B_fsl.py $runname \
 		--save-folder="${save_folder}" \
 		--dataset.mix=OLMoE-mix-0824 \
 		--work-dir="${DATASET_CACHE}" \
-		--trainer.load_path="${load_path}" \
-		--trainer.load_trainer_state=true \
-		--trainer.load_optim_state=true \
 		--trainer.max_duration="{value: ${MAX_TOKENS}, unit: tokens}" \
 		--scheduler=wsd \
 		--warmup_steps=${warmup_steps} \
@@ -88,7 +88,7 @@ launch src/scripts/train/olmoe-1B-7B_fsl.py $runname \
 		--trainer.callbacks.wandb.enabled=true \
 		--trainer.callbacks.wandb.entity=ryanyxw \
 		--trainer.callbacks.wandb.project=emo-extension \
-		--trainer.callbacks.wandb.name="${runname}" \
+		--trainer.callbacks.wandb.name="${TRUNK_RUN}" \
 		--trainer.callbacks.wandb.tags="[pretraining, ${EXPERIMENT_NAME}]" \
 		--model-type="moe_lbreducedp_sharedexp" \
 		--num_shared_experts=$num_shared_experts \
