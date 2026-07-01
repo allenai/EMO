@@ -71,6 +71,10 @@ RUNS = [
     # head-to-head vs the stdmoe_64exp_50b_wsd 4e-3/2e-3 pair. In flight (from scratch).
     {"key": "emo64wsd4e3",   "label": "EMO 64e wsd 4e-3",          "cat": "EMO 64e baselines", "ids": "6z52ewdb"},
     {"key": "emo64wsd2e3",   "label": "EMO 64e wsd 2e-3",          "cat": "EMO 64e baselines", "ids": "s9024txw"},
+    # EMO decay branch: forked off the EMO 64e WSD-2e-3 trunk at 40B (step9537), LR annealed 2e-3->0
+    # over 10B tokens (self-contained anneal launcher, EMO model flags). Mirrors 64dec_2e3_10.
+    {"key": "emo64dec_2e3_10", "label": "EMO 64e 2e-3 decay@40B/10B", "cat": "EMO 64e baselines", "ids": "a5ukqwab",
+     "branch": {"parent": "emo64wsd2e3", "fork_step": 9537}},
     # --- Extension methods: expert upcycling 64→128 (5B convergence check) ---
     {"key": "up_copy_cc",    "label": "upcycle copy·carry·copy",   "cat": "upcycle 64→128", "ids": "85nhg564"},
     {"key": "up_copy_cz",    "label": "upcycle copy·carry·zero",   "cat": "upcycle 64→128", "ids": "2hnes1fe"},
@@ -111,7 +115,8 @@ TABS = [
                  "record a point at the fork). The two <strong>EMO 64e WSD</strong> recipes are the EMO "
                  "architecture + objective (random document-expert pooling, two-level batch LB) trained "
                  "on the same models_v2 WSD trunk at matched peak LR — a direct EMO-vs-stdMoE head-to-head "
-                 "against the 64e WSD 4e-3 / 2e-3 stdMoE recipes (both in flight, from scratch).",
+                 "against the 64e WSD 4e-3 / 2e-3 stdMoE recipes. Both trunks are complete (50B); the "
+                 "2e-3 trunk also carries a decay@40B/10B branch (LR annealed to 0 over the last 10B).",
         "groups": [
             {"name": "64e cosine",              "runs": ["64cos25", "64cos50"]},
             {"name": "128e cosine 4e-3",        "runs": ["128cos"]},
@@ -122,7 +127,7 @@ TABS = [
             {"name": "128e WSD 4e-3 (+decays)", "runs": ["128wsd4e3", "128dec_4e3_10"]},
             {"name": "128e WSD 2e-3 (+decays)", "runs": ["128wsd2e3", "128dec_2e3_10"]},
             {"name": "EMO 64e WSD 4e-3",        "runs": ["emo64wsd4e3"]},
-            {"name": "EMO 64e WSD 2e-3",        "runs": ["emo64wsd2e3"]},
+            {"name": "EMO 64e WSD 2e-3 (+decays)", "runs": ["emo64wsd2e3", "emo64dec_2e3_10"]},
         ],
         "default": [3, 8],  # stdMoE 64e WSD 4e-3 vs EMO 64e WSD 4e-3 (matched-LR head-to-head)
     },
