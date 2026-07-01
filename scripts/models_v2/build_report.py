@@ -104,19 +104,23 @@ TABS = [
     {
         "id": "lr",
         "label": "LR scheduling",
-        "title": "Learning-rate scheduling: cosine vs WSD",
-        "intro": "Cosine (peak LR 4e-3) vs warmup-stable-decay (WSD) at 64 and 128 experts. WSD keeps "
-                 "a flat trunk then decays the LR to 0; I swept the peak LR (4e-3 / 2e-3 / 4e-4), and "
-                 "for some trunks forked explicit decay branches over the last N·B tokens. Pick a "
-                 "recipe on the left to plot its trunk plus all of its decay lines; pick several to "
-                 "compare. The x-axis auto-fits to the selection and the y-axis rescales to what's "
-                 "shown. Each decay branch is anchored to its parent trunk's value at the fork step, "
-                 "so it visibly branches off the trunk (evals are logged too sparsely to otherwise "
-                 "record a point at the fork). The two <strong>EMO 64e WSD</strong> recipes are the EMO "
-                 "architecture + objective (random document-expert pooling, two-level batch LB) trained "
-                 "on the same models_v2 WSD trunk at matched peak LR — a direct EMO-vs-stdMoE head-to-head "
-                 "against the 64e WSD 4e-3 / 2e-3 stdMoE recipes. Both trunks are complete (50B); the "
-                 "2e-3 trunk also carries a decay@40B/10B branch (LR annealed to 0 over the last 10B).",
+        "title": "Investigating Cosine vs WSD, stdMoE vs EMO",
+        "intro": "<p>How should we set the learning-rate schedule, and does it interact with the "
+                 "architecture? A two-axis sweep &mdash; <strong>scheduler</strong> (cosine vs WSD) "
+                 "&times; <strong>architecture</strong> (stdMoE vs EMO) &mdash; on a top-8 MoE trained "
+                 "on OLMoE-mix-0824. Pick a finding below for a one-click comparison, or toggle recipes "
+                 "on the left.</p>"
+                 "<ul>"
+                 "<li><strong>Experts:</strong> 64 and 128 (stdMoE); 64 (EMO). Top-8 routed + 1 shared.</li>"
+                 "<li><strong>Peak LR:</strong> 4e-3 and 2e-3 (plus 4e-4 at 64e).</li>"
+                 "<li><strong>Scheduler:</strong> cosine (LR decays to 0 across the run) vs WSD "
+                 "(flat-LR trunk, then a decay branch annealing LR to 0 over the final 5&ndash;12.5B "
+                 "tokens, forked at 37.5&ndash;45B).</li>"
+                 "<li><strong>EMO:</strong> two-level batch load-balancing + random document-expert "
+                 "pooling (pool min 8 / max 64); all other settings matched to stdMoE.</li>"
+                 "<li><strong>Common:</strong> <code>d_model</code> 2048 / 16 layers, 50B tokens, "
+                 "global batch 4.19M tokens/step, 8 nodes / 64 GPUs.</li>"
+                 "</ul>",
         "groups": [
             {"name": "64e cosine",              "runs": ["64cos25", "64cos50"]},
             {"name": "128e cosine 4e-3",        "runs": ["128cos"]},
@@ -139,7 +143,7 @@ TABS = [
              "text": "With WSD, the ordering flips — peak LR 2e-3 beats 4e-3.",
              "groups": ["128e WSD 4e-3 (+decays)", "128e WSD 2e-3 (+decays)"]},
             {"heading": "WSD anneal vs cosine",
-             "text": "Even fully annealed, WSD 2e-3 still slightly underperforms cosine.",
+             "text": "When fully annealed, WSD 2e-3 still slightly underperforms cosine.",
              "groups": ["128e WSD 2e-3 (+decays)", "128e cosine 2e-3", "128e cosine 4e-3"]},
             {"heading": "EMO vs stdMoE (WSD 2e-3)",
              "text": "At matched WSD 2e-3, EMO trains slightly worse than stdMoE.",
@@ -151,7 +155,7 @@ TABS = [
         "id": "ext",
         "label": "Extension methods",
         "title": "Extension methods: expert upcycling 64→128",
-        "intro": "Can we grow a trained 64e model into a 128e one cheaply? Take the 64e WSD-2e-3 trunk "
+        "intro": "<p>Can we grow a trained 64e model into a 128e one cheaply? Take the 64e WSD-2e-3 trunk "
                  "at 25B (step5960), expand it to 128 experts (63 standard kept + 64 new + shared "
                  "moved to the last slot), and continue WSD training — a 5B convergence check (25B→30B, "
                  "flat LR 2e-3). Three init families × optimizer treatments: <strong>copy</strong> "
@@ -168,7 +172,7 @@ TABS = [
                  "large 16e→128e gap upcycling can close (carry·copy vs carry·zero new-expert momentum). "
                  "The reference lines are "
                  "excluded from the x-auto-fit, so the upcycle window stays readable while the bounds "
-                 "show through it.",
+                 "show through it.</p>",
         "groups": [
             {"name": "Upcycle: copy",   "runs": ["up_copy_cc", "up_copy_cz", "up_copy_reset"]},
             {"name": "Upcycle: jitter", "runs": ["up_jit_cc", "up_jit_cz", "up_jit_reset"]},
@@ -330,6 +334,9 @@ section.tab.active { display:block; }
 .card.goal { border-left-color:#2563eb; } .card.goal h3 { color:#2563eb; }
 .card.method { border-left-color:#7c3aed; } .card.method h3 { color:#7c3aed; }
 .card.results { border-left-color:#059669; } .card.results h3 { color:#059669; }
+.intro p { margin:0 0 8px; }
+.intro ul { margin:0; padding-left:20px; }
+.intro li { margin:2px 0; }
 .card.finding { border-left-color:#0891b2; } .card.finding h3 { color:#0891b2; }
 .card.finding p { margin:0 0 10px; }
 .exp-jump { border:1px solid #0891b2; background:#ecfeff; color:#0e7490; border-radius:6px;
@@ -792,7 +799,7 @@ def render(payload: dict, uplot_css: str, uplot_js: str) -> str:
     tab_sections = []
     for t in TABS:
         body = (f'<div class="card goal"><h3>{t["title"]}</h3>'
-                f'<p class="note">{t["intro"]}</p></div>'
+                f'<div class="intro note">{t["intro"]}</div></div>'
                 f'{findings_html(t)}'
                 f'{explorer_html(t, payload["charts"])}')
         tab_sections.append((t["id"], t["label"], body))
