@@ -38,14 +38,14 @@ def main():
     args = p.parse_args()
 
     labels = np.load(os.path.join(args.result_dir, "assignments.npy"))
-    ids = np.load(os.path.join(args.data_dir, "doc_ids.npz"), allow_pickle=False)
-    files = [str(x) for x in np.load(os.path.join(args.data_dir, "doc_ids.npz"), allow_pickle=True)["files"]]
+    ids = np.load(os.path.join(args.data_dir, "doc_ids.npz"), allow_pickle=True)
+    source_paths = [str(x) for x in ids["source_paths"]]  # true S3 token files
     info = json.load(open(os.path.join(args.data_dir, "info.json")))
 
     n = len(labels)
     assert n == len(ids["doc_start_offset"]) == info["num_docs"], "row misalignment"
 
-    fi = ids["file_index"]
+    si = ids["source_index"]
     off = ids["doc_start_offset"]
     dl = ids["doc_len"]
 
@@ -58,14 +58,14 @@ def main():
         for i in range(n):
             c = int(labels[i])
             f.write(json.dumps({
-                "source_path": files[fi[i]],
+                "source_path": source_paths[si[i]],
                 "doc_start_offset": int(off[i]),
                 "doc_len": int(dl[i]),
                 "cluster": c,
             }) + "\n")
             doc_counts[c] += 1
             token_counts[c] += int(dl[i])
-            src_counts[c][source_from_path(files[fi[i]])] += 1
+            src_counts[c][source_from_path(source_paths[si[i]])] += 1
 
     k = int(labels.max()) + 1
     summary = {

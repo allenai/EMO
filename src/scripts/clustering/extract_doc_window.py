@@ -148,6 +148,8 @@ def run_shard(args, model, tokenizer, moe, device, shard: int):
 
     probs_rows, topk_rows = [], []
     ids_g, ids_fi, ids_off, ids_len, ids_embtok = [], [], [], [], []
+    ids_src = []
+    src_table: dict = {}  # true source_path (S3 token file) -> compact index
     n_docs = 0
     n_tokens = 0
     t0 = time.monotonic()
@@ -169,6 +171,8 @@ def run_shard(args, model, tokenizer, moe, device, shard: int):
                 ids_off.append(rec["doc_start_offset"])
                 ids_len.append(rec["doc_len"])
                 ids_embtok.append(len(toks))
+                sp = rec["source_path"]
+                ids_src.append(src_table.setdefault(sp, len(src_table)))
                 n_tokens += len(toks)
             n_docs += len(batch)
         elapsed = time.monotonic() - t0
@@ -190,7 +194,8 @@ def run_shard(args, model, tokenizer, moe, device, shard: int):
             for g, fi, rec in iter_shard_docs(files, shard, args.num_shards, args.limit):
                 toks = np.asarray(rec["token_ids"][: args.max_tokens_per_doc], dtype=np.int64)
                 chunk.append((g, fi, {"doc_start_offset": rec["doc_start_offset"],
-                                      "doc_len": rec["doc_len"]}, toks))
+                                      "doc_len": rec["doc_len"],
+                                      "source_path": rec["source_path"]}, toks))
                 if len(chunk) >= CHUNK_DOCS:
                     q.put(chunk)
                     chunk = []
@@ -211,6 +216,9 @@ def run_shard(args, model, tokenizer, moe, device, shard: int):
     os.makedirs(args.output_dir, exist_ok=True)
     np.save(out_probs, np.concatenate(probs_rows) if probs_rows else np.zeros((0, moe["emb_dim"]), np.float16))
     np.save(out_topk, np.concatenate(topk_rows) if topk_rows else np.zeros((0, moe["emb_dim"]), np.float16))
+    sources = [None] * len(src_table)
+    for sp, i in src_table.items():
+        sources[i] = sp
     np.savez(
         out_ids,
         global_doc_index=np.asarray(ids_g, dtype=np.int64),
@@ -218,6 +226,8 @@ def run_shard(args, model, tokenizer, moe, device, shard: int):
         doc_start_offset=np.asarray(ids_off, dtype=np.int64),
         doc_len=np.asarray(ids_len, dtype=np.int64),
         n_embed_tokens=np.asarray(ids_embtok, dtype=np.int32),
+        source_index=np.asarray(ids_src, dtype=np.int32),
+        sources=np.asarray(sources),  # fixed-width str dtype loads without pickle
     )
     elapsed = time.monotonic() - t0
     with open(out_info, "w") as f:

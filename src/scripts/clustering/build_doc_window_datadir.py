@@ -77,7 +77,7 @@ def main():
         assert not missing, f"shard {s} missing outputs: {missing}"
         pr = np.load(paths["probs"])
         tk = np.load(paths["topk"])
-        ids = np.load(paths["ids"])
+        ids = np.load(paths["ids"], allow_pickle=True)  # sources may be object-dtype
         info = json.load(open(paths["info"]))
         assert pr.shape == tk.shape and pr.shape[0] == len(ids["global_doc_index"]) == info["num_docs"], \
             f"shard {s}: inconsistent row counts"
@@ -95,6 +95,24 @@ def main():
         k: np.concatenate([ids[k] for ids in ids_list])
         for k in ("global_doc_index", "file_index", "doc_start_offset", "doc_len", "n_embed_tokens")
     }
+    # Re-key each shard's compact source table into one global table of true source paths
+    # (the S3 token files). Shards lacking source_index need backfill_doc_sources.py first.
+    global_table: dict = {}
+    src_idx_parts = []
+    for s, ids in zip(shards, ids_list):
+        assert "source_index" in ids, (
+            f"shard {s} doc_ids lacks source_index -- run backfill_doc_sources.py "
+            f"(or re-extract with the current extractor)"
+        )
+        shard_sources = [str(x) for x in ids["sources"]]
+        remap = np.array([global_table.setdefault(sp, len(global_table)) for sp in shard_sources],
+                         dtype=np.int32)
+        src_idx_parts.append(remap[ids["source_index"]])
+    merged_ids["source_index"] = np.concatenate(src_idx_parts)
+    source_paths = [None] * len(global_table)
+    for sp, i in global_table.items():
+        source_paths[i] = sp
+
     n = probs.shape[0]
     assert len(np.unique(merged_ids["global_doc_index"])) == n, "duplicate docs across shards"
     if args.expect_docs is not None:
@@ -102,7 +120,7 @@ def main():
 
     files = infos[0]["files"]
     assert all(i["files"] == files for i in infos), "shards saw different file lists"
-    sources = [source_from_path(f) for f in files]
+    sources = [source_from_path(sp) for sp in source_paths]  # compact mix-source labels
 
     os.makedirs(args.data_dir, exist_ok=True)
     # cluster.py caches preprocessed_*.npy keyed by embedding/preprocess name only; a
@@ -112,15 +130,16 @@ def main():
         os.remove(stale)
     np.save(os.path.join(args.data_dir, "embeddings_doc_probs.npy"), probs)
     np.save(os.path.join(args.data_dir, "embeddings_doc_topk_freq.npy"), topk)
-    np.savez(os.path.join(args.data_dir, "doc_ids.npz"), **merged_ids, files=np.array(files))
+    np.savez(os.path.join(args.data_dir, "doc_ids.npz"), **merged_ids,
+             files=np.array(files), source_paths=np.asarray(source_paths))
 
     with gzip.open(os.path.join(args.data_dir, "metadata_docs.jsonl.gz"), "wt") as f:
-        fi = merged_ids["file_index"]
+        si = merged_ids["source_index"]
         dl = merged_ids["doc_len"]
         for i in range(n):
             f.write(json.dumps({
                 "doc_index": i,
-                "source": sources[fi[i]],
+                "source": sources[si[i]],
                 "doc_len": int(dl[i]),
             }) + "\n")
 
