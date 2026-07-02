@@ -27,6 +27,7 @@ EXPERIMENTS=(
     "models_fullextend|ghost-expert pretraining so new experts can be added post-training (coeff-mode sweep + matched no-ghost/stdMoE baselines complete; all convergence-neutral)"
     "models_routerfixed|can the router be frozen? a grafted trained router + frozen retrain converges to baseline CE (2.715 vs 2.692), but only with the router-shaping aux losses off (aux-on variants NaN); follow-up: the frozen router does NOT pin the experts — weights diverge to ~0 cosine and the same-index expert function is at chance"
     "models_v2|stdMoE token-budget / expert-count sweep (64exp@25B, 64exp@50B, 128exp@50B) with the LR cosine decayed over the true token budget; live training + eval curves from W&B"
+    "modular_extension|document-level router clustering of the EMO 100B–110B training window (k=64), and what distinguishes each cluster: a few consistently-used experts vs subtle distributed usage (soft affinity vs hard selection)"
 )
 
 PROJECT="emo-reports"
