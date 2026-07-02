@@ -293,6 +293,16 @@ def save_results(
         json.dump(run_info, f, indent=2)
 
     # Per-cluster summary
+    # Empirical centroids in the preprocessed (transformed) space, one row per cluster
+    # (zero row for empty clusters) -- persisted so groups can be characterized / new
+    # points assigned by nearest-centroid without refitting.
+    centroids = np.zeros((k, transformed.shape[1]), dtype=np.float32)
+    for c in range(k):
+        c_mask = labels == c
+        if c_mask.any():
+            centroids[c] = transformed[c_mask].mean(axis=0)
+    np.save(os.path.join(output_dir, "centroids.npy"), centroids)
+
     sources = [m["source"] for m in meta]
     unique_sources = sorted(set(sources))
     summaries: list[dict[str, Any]] = []

@@ -63,3 +63,37 @@ done
 
 Outputs land under `modular_extension/data/` on weka (not `claude_outputs/` — too large
 for the S3 report sync).
+
+## Document-level router clustering (k=64 partition of the window)
+
+Partitions the extracted documents into k groups by clustering **document-level router
+embeddings** from the EMO **100B checkpoint** (`step23842`): the published pretraining
+clustering recipe (`probs` → `mean_pca_l2` → `spherical_kmeans`; see
+`scripts/clustering/`), but with each document represented by its router softmax
+probabilities **averaged over its first 2048 tokens** (in-forward pooling, math identical
+to `src/scripts/clustering/extract_document.py`; `doc_topk_freq` is saved too).
+
+Stages (all idempotent; sharding is docs `i::128` of the global doc enumeration, so a
+small run's shards count toward a later full sweep):
+
+```bash
+# 1. one-time: convert the 100B checkpoint to HF (local GPU validates logits)
+bash scripts/modular_extension/convert_100b_to_hf.sh
+
+# 2. embed docs on Beaker (default: shards 0-15 = ~12.5% ≈ 1.2B capped tokens, 2 jobs x 8 GPUs)
+bash scripts/modular_extension/launch_embed_docs.sh
+# full sweep (only with explicit approval -- ~10B capped tokens):
+#   SHARDS="$(seq -s, 0 127)" JOBS=4 bash scripts/modular_extension/launch_embed_docs.sh
+
+# 3. merge + cluster + export partition (CPU, local)
+SHARDS=0-15 bash scripts/modular_extension/cluster_docs.sh
+```
+
+Outputs: embeddings under `modular_extension/cluster/emo100b_step23842/embeddings/`
+(`doc_probs-*.npy` fp16 + ids + per-shard info), cluster.py artifacts under
+`modular_extension/cluster/emo100b_step23842/doc_probs_mean_pca_l2_spherical_kmeans_k64/`
+(assignments, centroids, metrics, summary), and the partition at
+`modular_extension/data/<run>_100B-110B/doc_clusters_k64.jsonl.gz`
+(`{source_path, doc_start_offset, doc_len, cluster}` — joinable back onto the doc data).
+Re-clustering at another k reuses the saved embeddings: `K=32 SHARDS=... bash
+scripts/modular_extension/cluster_docs.sh`.
