@@ -223,6 +223,14 @@ def main():
         num_threads=10,  # 10 is the default connection pool size
     )
 
+    # Match NumpyDataLoaderBase.wrap_numpy_dataset: when the dataset has a
+    # 'max_target_sequence_length', the trainer shuffles in chunks of
+    # max_target_sequence_length // sequence_length consecutive instances. Without this
+    # the reconstructed order is a different (chunk_size=1) permutation than training used.
+    if dataset.max_target_sequence_length is not None:
+        data_loader.chunk_size = dataset.max_target_sequence_length // dataset.sequence_length
+        log.info(f"Using chunk_size={data_loader.chunk_size} (from max_target_sequence_length)")
+
     # Reshuffle to regenerate the same global indices as during training
     data_loader.reshuffle(epoch=data_loader_state["epoch"], in_memory=True)
 
