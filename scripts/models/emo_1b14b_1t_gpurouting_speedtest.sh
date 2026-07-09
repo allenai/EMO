@@ -13,6 +13,10 @@ source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
 # Fresh, non-colliding output root (no models_gpurouting dir exists on weka/in the repo tree).
 MODELS_DIR="/weka/oe-training-default/ryanwang/EMO/models_gpurouting"
 
+# The weka ai2-llm mirror is incomplete (missing e.g. proof-pile-2/algebraic-stack shards);
+# S3 is the source of truth for the tokenized OLMoE-mix-0824 data.
+DATA_ROOT="s3://ai2-llm"
+
 min_document_expert_pool=8
 max_document_expert_pool=128
 eval_document_expert_pool=32
