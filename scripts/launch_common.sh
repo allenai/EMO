@@ -67,6 +67,9 @@ launch() {
             --preemptible \
             --allow-dirty \
             --priority "${BEAKER_PRIORITY}" \
+            `# override the launcher's default S3_PROFILE=S3 (no such profile on this image);` \
+            `# empty => boto3 falls back to the AWS_* env-secret credentials for s3:// data roots` \
+            --env "S3_PROFILE=" \
             --env-secret "${BEAKER_ENV_SECRETS[@]}" \
             -- "${script}" "${run_name}" --data-root="${DATA_ROOT}" "$@"
     else
