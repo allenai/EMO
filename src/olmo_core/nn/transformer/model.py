@@ -35,6 +35,7 @@ from olmo_core.nn.attention.ring import (
     RingContextParallelStyle,
     UlyssesContextParallelStyle,
 )
+from olmo_core.ops.moe import segment_ids_from_eos
 from olmo_core.utils import get_default_device, mark_dynamic, move_to_device
 
 from ..attention import (
@@ -557,18 +558,34 @@ class Transformer(nn.Module):
         if self.embedding_norm is not None:
             h = self.embedding_norm(h)
 
-        # compute document boundaries here if any block uses a MoETwoLevelRouter
-        is_moe_twolevel_router = False
+        # Two-level MoE routers need per-token document information. The vectorized routers
+        # consume an on-GPU `seg_id` tensor (per-token document id, computed sync-free); the
+        # older variants still consume the CPU `document_boundaries` list (per-sequence EOS
+        # positions). Compute whichever the routers actually present require.
+        needs_seg_id = False
+        needs_boundaries = False
+        eos_token_id = None
         for blk in self.blocks.values():
             if hasattr(blk, "feed_forward_moe") and blk.feed_forward_moe is not None:
-                if isinstance(blk.feed_forward_moe.router, MoETwoLevelRouter) or isinstance(
-                    blk.feed_forward_moe.router, MoETwoLevelTopPBatchLBRouter
-                ):
-                    is_moe_twolevel_router = True
-                    eos_token_id = blk.feed_forward_moe.router.eos_token_id
-                    break
-        document_boundaries = []
-        if is_moe_twolevel_router:
+                router = blk.feed_forward_moe.router
+                if isinstance(router, (MoETwoLevelRouter, MoETwoLevelTopPBatchLBRouter)):
+                    eos_token_id = router.eos_token_id
+                    if getattr(router, "uses_seg_id", False):
+                        needs_seg_id = True
+                    else:
+                        needs_boundaries = True
+        is_moe_twolevel_router = needs_seg_id or needs_boundaries
+
+        seg_id = None
+        if needs_seg_id:
+            assert eos_token_id is not None
+            seg_id = segment_ids_from_eos(input_ids, eos_token_id)
+            if self.compile_enabled:
+                mark_dynamic(seg_id, (0, 1), strict=False)
+
+        document_boundaries: List[torch.Tensor] = []
+        if needs_boundaries:
+            assert eos_token_id is not None
             matches = input_ids == eos_token_id
             # Get indices for each sequence in batch, output is (num_sequences, num_documents)
             for row in matches:
@@ -591,7 +608,11 @@ class Transformer(nn.Module):
                 and block.feed_forward_moe is not None
             ):
                 h = block(
-                    h, document_boundaries=document_boundaries, **all_block_kwargs, **block_kwargs
+                    h,
+                    document_boundaries=document_boundaries,
+                    seg_id=seg_id,
+                    **all_block_kwargs,
+                    **block_kwargs,
                 )
             else:
                 h = block(h, **all_block_kwargs, **block_kwargs)

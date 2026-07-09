@@ -21,6 +21,11 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
     during training. At eval time, uses a fixed eval_document_expert_pool.
     """
 
+    # Marks this router as consuming the on-GPU `seg_id` tensor (per-token document id)
+    # instead of the CPU `document_boundaries` list. Read by TransformerModel.forward to
+    # decide which document representation to compute (sync-free seg_id vs. host-side list).
+    uses_seg_id = True
+
     def __init__(
         self,
         *,
@@ -123,12 +128,16 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
         *,
         loss_div_factor: Optional[Union[torch.Tensor, float]] = None,
         padding_mask: Optional[torch.Tensor] = None,  # shape: (B, S)
-        document_boundaries: Optional[torch.Tensor] = None,
+        seg_id: Optional[torch.Tensor] = None,  # shape: (B, S), per-token document id
         **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """
         Custom forward pass with modifications to implement two level routing
         with random document expert pool sizes.
+
+        Fully vectorized on-device: document membership arrives as ``seg_id`` (per-token
+        document id, computed sync-free in ``TransformerModel.forward``), so there is no
+        host round-trip and no per-document Python loop.
         """
         # make sure tp and cp are not enabled
         if self.tp_mesh is not None:
@@ -150,109 +159,65 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
         logits = logits[
             :, :, : self.num_experts - self.num_shared_experts
         ]  # shape: (batch_size, seq_len, num_experts - num_shared_experts)
-        logits_mask = torch.zeros_like(logits, dtype=torch.bool, device=logits.device)
 
-        assert document_boundaries is not None
-        document_boundaries_cpu = []
-        for b in document_boundaries:
-            bc = b.detach().cpu().tolist()
-            if not bc or bc[-1] != x.size(1):
-                bc.append(int(x.size(1)))
-            document_boundaries_cpu.append(bc)
-
-        doc_entropy_sum = logits.new_zeros(())
-        doc_entropy_count = 0
+        assert seg_id is not None, (
+            "seg_id (per-token document id) must be provided; it is computed on-device in "
+            "TransformerModel.forward for routers with uses_seg_id=True."
+        )
 
         num_non_shared_experts = self.num_experts - self.num_shared_experts
+        B, S, E = logits.shape
 
-        # extension_finetune_mode: per-token boolean indicating whether each non-shared expert
-        # is in the token's document's top-e set. Filled inside the per-doc loop below.
-        if _ef_active:
-            in_top_e = torch.zeros(
-                x.size(0),
-                x.size(1),
-                num_non_shared_experts,
-                dtype=torch.bool,
-                device=x.device,
-            )
+        # Per-token softmax over the non-shared experts (on UNMASKED logits, as before), summed
+        # within each document and broadcast back to every token in that document. Replaces the
+        # per-document Python loop with a single scatter_add + gather (sync-free).
+        expert_probs = F.softmax(logits, dim=-1)  # (B, S, E)
+        doc_prob_per_token = ops.doc_sum_scatter(expert_probs, seg_id)  # (B, S, E)
 
-        for seq_idx in range(x.size(0)):
-            start = 0
-            document_boundary = document_boundaries_cpu[seq_idx]
-            for end in document_boundary:
-                if end <= start:
-                    start = end
-                    continue
-                sequence_logits = logits[
-                    seq_idx, start:end, :
-                ]  # shape: (doc_len, num_experts - num_shared_experts)
-                # calculate the softmax over the experts
-                expert_probs = F.softmax(
-                    sequence_logits, dim=-1
-                )  # shape: (doc_len, num_experts - num_shared_experts)
-
-                # get the entropy over experts per token
-                token_entropies = -torch.sum(
-                    expert_probs * torch.log(expert_probs + 1e-10), dim=-1
-                )  # shape: (doc_len,)
-                # average entropy over the document
-                doc_entropy_sum += token_entropies.mean()
-                doc_entropy_count += 1
-
-                # take the sum across the document
-                document_expert_probs = expert_probs.sum(
-                    dim=0
-                )  # shape: (num_experts - num_shared_experts,)
-
-                # Record per-doc top-e for extension_finetune_mode before any pool-sampling control flow
-                # (some branches below early-`continue`, but top-e still applies to those docs).
-                if _ef_active:
-                    top_e = min(int(self.extension_finetune_top_e), num_non_shared_experts)
-                    top_e_indices = torch.topk(document_expert_probs, top_e).indices
-                    in_top_e[seq_idx, start:end, top_e_indices] = True
-
-                # Sample random pool size per document
-                if self.training:
-                    document_expert_pool = torch.randint(
-                        self.min_document_expert_pool,
-                        self.max_document_expert_pool + 1,
-                        (1,),
-                    ).item()
-                else:
-                    document_expert_pool = self.eval_document_expert_pool
-
-                # get the bottom document_expert_pool experts (including removing the shared experts since we already took that out of the logits)
-                bot_document_expert_pool = num_non_shared_experts - document_expert_pool
-                if bot_document_expert_pool <= 0:
-                    # pool covers all non-shared experts, no masking needed
-                    start = end
-                    continue
-
-                if self.num_forced_experts > 0:
-                    # Forced experts (last num_forced_experts non-shared) are always in the pool.
-                    # Only discard from the non-forced experts.
-                    num_candidates = num_non_shared_experts - self.num_forced_experts
-                    bot_to_discard = min(bot_document_expert_pool, num_candidates)
-                    if bot_to_discard <= 0:
-                        start = end
-                        continue
-                    candidate_probs = document_expert_probs[:num_candidates]
-                    experts_to_discard = torch.topk(
-                        -candidate_probs, bot_to_discard
-                    ).indices  # shape: (bot_to_discard,)
-                else:
-                    experts_to_discard = torch.topk(
-                        -document_expert_probs, bot_document_expert_pool
-                    ).indices  # shape: (bot_document_expert_pool,)
-                # set the logits of these experts to a very large negative value
-                logits_mask[seq_idx, start:end, experts_to_discard] = True
-                start = end
-
-        logits.masked_fill_(logits_mask, float("-inf"))
-
+        # Document-level expert entropy metric: mean over documents of (mean over tokens-in-doc
+        # of per-token entropy). Vectorized via scatter_add by document id.
         if self.training:
-            avg_doc_entropy = (doc_entropy_sum / doc_entropy_count).detach()
+            token_entropies = -torch.sum(
+                expert_probs * torch.log(expert_probs + 1e-10), dim=-1
+            )  # (B, S)
+            doc_entropy_sum = torch.zeros_like(token_entropies).scatter_add_(
+                1, seg_id, token_entropies
+            )
+            doc_token_count = torch.zeros_like(token_entropies).scatter_add_(
+                1, seg_id, torch.ones_like(token_entropies)
+            )
+            # per-doc mean entropy (0 for empty doc slots), then mean over non-empty docs.
+            doc_mean_entropy = doc_entropy_sum / doc_token_count.clamp(min=1.0)
+            num_docs = (doc_token_count > 0).sum().clamp(min=1)
+            avg_doc_entropy = (doc_mean_entropy.sum() / num_docs).detach()
             self._router_documentlevel_expert_entropy += avg_doc_entropy.item()
+
+        # extension_finetune_mode: per-token boolean of whether each non-shared expert is in the
+        # document's top-e set. Uses the FULL-E rank (forced experts included), matching the old
+        # topk(document_expert_probs, top_e).
+        if _ef_active:
+            top_e = min(int(self.extension_finetune_top_e), num_non_shared_experts)
+            rank_full = ops.doc_rank(doc_prob_per_token)  # (B, S, E), 0 = largest
+            in_top_e = rank_full < top_e  # (B, S, E) bool
+
+        # Sample the per-document pool size (constant within a document) and build the keep mask.
+        if self.training:
+            pool_docid = torch.randint(
+                self.min_document_expert_pool,
+                self.max_document_expert_pool + 1,
+                (B, S),
+                device=logits.device,
+            )
+        else:
+            pool_docid = torch.full(
+                (B, S), self.eval_document_expert_pool, device=logits.device, dtype=torch.long
+            )
+        pool_per_token = pool_docid.gather(1, seg_id)  # (B, S), same pool for tokens in a doc
+
+        # Keep the top `pool` experts per document (forced experts always kept, excluded from the
+        # ranking); mask the rest. See ops.pool_keep_mask for the forced-expert semantics.
+        keep = ops.pool_keep_mask(doc_prob_per_token, pool_per_token, self.num_forced_experts)
+        logits = logits.masked_fill(~keep, float("-inf"))
 
         # shape: (batch_size, seq_len, num_experts)
         if self.gating_function == MoERouterGatingFunction.softmax:
