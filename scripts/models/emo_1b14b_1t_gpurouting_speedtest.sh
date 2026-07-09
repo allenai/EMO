@@ -55,5 +55,5 @@ launch src/scripts/train/olmoe-1B-7B_fsl.py $runname \
 		--lr=${lr} \
 		--model.block.feed_forward_moe.lb_loss_weight=${lb} \
 		--trainer.callbacks.checkpointer.save_interval=1000000 \
-		--trainer.callbacks.checkpointer.ephemeral_save_interval=1000000 \
+		--trainer.callbacks.checkpointer.ephemeral_save_interval=500000 \
 		--trainer.callbacks.downstream_evaluator.eval_interval=1000000
