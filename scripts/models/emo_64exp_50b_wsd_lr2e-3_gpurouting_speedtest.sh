@@ -28,8 +28,9 @@ min_document_expert_pool=8
 max_document_expert_pool=64
 eval_document_expert_pool=64
 
-warmup_steps=2000
-decay_steps=1
+# NOTE: this branch predates the emo_extend WSD scheduler args (--scheduler/--warmup_steps/
+# --decay_steps), so we use the default cosine schedule. The scheduler only changes the per-step
+# LR value, not per-step compute, so training throughput is unaffected — the comparison holds.
 
 runname="emo_64exp_50b_wsd_lr2e-3_gpurouting_speedtest_0709"
 
@@ -41,9 +42,6 @@ launch src/scripts/train/olmoe-1B-7B_fsl.py $runname \
 		--dataset.mix=OLMoE-mix-0824 \
 		--work-dir="${DATASET_CACHE}" \
 		--trainer.max_duration="{value: ${max_tokens}, unit: tokens}" \
-		--scheduler=wsd \
-		--warmup_steps=${warmup_steps} \
-		--decay_steps=${decay_steps} \
 		--trainer.callbacks.checkpointer.save_interval=2000000 \
 		--trainer.callbacks.checkpointer.ephemeral_save_interval=1000000 \
 		--trainer.callbacks.checkpointer.fixed_steps="[]" \
