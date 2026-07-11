@@ -19,12 +19,11 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
     Same as MoETwoLevelBatchLBReduceDPSharedExpRouter but with a random document_expert_pool
     sampled uniformly from [min_document_expert_pool, max_document_expert_pool] per document
     during training. At eval time, uses a fixed eval_document_expert_pool.
-    """
 
-    # Marks this router as consuming the on-GPU `seg_id` tensor (per-token document id)
-    # instead of the CPU `document_boundaries` list. Read by TransformerModel.forward to
-    # decide which document representation to compute (sync-free seg_id vs. host-side list).
-    uses_seg_id = True
+    This router consumes the on-GPU `seg_id` tensor (per-token document id) built by
+    TransformerModel.forward, instead of the CPU `document_boundaries` list used by the
+    other two-level routers, so its document routing stays sync-free and in-graph.
+    """
 
     def __init__(
         self,
@@ -162,7 +161,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
 
         assert seg_id is not None, (
             "seg_id (per-token document id) must be provided; it is computed on-device in "
-            "TransformerModel.forward for routers with uses_seg_id=True."
+            "TransformerModel.forward for this router."
         )
 
         num_non_shared_experts = self.num_experts - self.num_shared_experts

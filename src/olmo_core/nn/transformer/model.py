@@ -49,6 +49,9 @@ from ..functional import l2_normalize
 from ..layer_norm import LayerNormConfig
 from ..lm_head import LMHeadConfig, LMOutputWithLoss
 from ..moe import MoEBase
+from ..moe.twolevel_batchlb_reducedp_sharedexp_randpool_router import (
+    MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter,
+)
 from ..moe.twolevel_router import MoETwoLevelRouter
 from ..moe.twolevel_topp_batchlb_router import MoETwoLevelTopPBatchLBRouter
 from ..rope import RoPEBuffers, RotaryEmbeddingBase
@@ -558,10 +561,10 @@ class Transformer(nn.Module):
         if self.embedding_norm is not None:
             h = self.embedding_norm(h)
 
-        # Two-level MoE routers need per-token document information. The vectorized routers
-        # consume an on-GPU `seg_id` tensor (per-token document id, computed sync-free); the
-        # older variants still consume the CPU `document_boundaries` list (per-sequence EOS
-        # positions). Compute whichever the routers actually present require.
+        # Two-level MoE routers need per-token document information. The flagship randpool
+        # router consumes an on-GPU `seg_id` tensor (per-token document id, computed
+        # sync-free); the older variants still consume the CPU `document_boundaries` list
+        # (per-sequence EOS positions). Compute whichever the routers actually present require.
         needs_seg_id = False
         needs_boundaries = False
         eos_token_id = None
@@ -570,7 +573,9 @@ class Transformer(nn.Module):
                 router = blk.feed_forward_moe.router
                 if isinstance(router, (MoETwoLevelRouter, MoETwoLevelTopPBatchLBRouter)):
                     eos_token_id = router.eos_token_id
-                    if getattr(router, "uses_seg_id", False):
+                    # The flagship randpool router consumes the on-GPU `seg_id` tensor; all
+                    # other two-level routers still consume the CPU `document_boundaries` list.
+                    if isinstance(router, MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter):
                         needs_seg_id = True
                     else:
                         needs_boundaries = True
