@@ -169,7 +169,7 @@ def _headline_table(soft, hard) -> str:
     )
 
 
-def build_method(soft) -> str:
+def build_method(soft, ill) -> str:
     n_layers, n_exp = soft["n_layers"], soft["n_experts_per_layer"]
     thr = int(0.1 * soft["n_dims"])
     return f"""
@@ -197,33 +197,75 @@ seed 42. The characterization below re-uses that single assignment for <em>both<
 soft and hard are measured on exactly the same clusters. (Per-document embeddings are saved, so other
 <em>k</em> can be explored later without re-running the model.)</p>''')}
 
-{card("method", "The two hypotheses, made measurable", table(
-    ["Metric", "What it measures", "How to read it"],
+{card("method", "Metric 1 &mdash; deviation from the mean (breadth, tests H1)", f'''
+<p>Take one cluster and one expert <code>j</code>. Average that expert's routing probability over the
+cluster's documents (<code>mean_in[j]</code>) and over the whole corpus (<code>mean_global[j]</code>).
+Their difference is the cluster's per-expert <strong>deviation</strong>:</p>
+<p style="text-align:center"><code>&delta;[j] = mean_in[j] &minus; mean_global[j]</code>
+&mdash; how much more (or less) this cluster routes to expert <code>j</code> than a typical document.</p>
+<p>&delta; is a {soft['n_dims']}-vector (one entry per layer&times;expert). We summarize how its
+<em>size</em> is spread with two numbers:</p>
+<ul>
+<li><strong><code>top5 mass</code></strong> = share of the total shift &Sigma;|&delta;| held by the 5
+largest-deviation experts.</li>
+<li><strong><code>eff. dims</code></strong> = the effective number of experts carrying the shift,
+exp(entropy of |&delta;|) &mdash; near 5 if a handful dominate, near {soft['n_dims']} if it's spread evenly.</li>
+</ul>
+<p><strong>H1 (a few signature experts)</strong> predicts the shift piles onto a few experts: high
+<code>top5 mass</code>, small <code>eff. dims</code>. Note &delta; only compares <em>averages</em> &mdash;
+it says nothing yet about whether individual documents are consistent. That's Metric 2.</p>''')}
+
+{card("method", "Metric 2 &mdash; single-expert AUC (strength, separates H1 from H2)", f'''
+<p>For expert <code>j</code>, form two piles of numbers: the routing values <code>x[doc,j]</code> for the
+cluster's documents (<em>in-pile</em>) and for all other documents (<em>out-pile</em>). The
+<strong>AUC</strong> is the probability that a random in-doc has a higher value than a random out-doc,
+<code>P(x_in &gt; x_out)</code> &mdash; run every in&times;out pair as a &ldquo;higher value wins&rdquo;
+contest and take the in-pile's win rate. 0.5 = indistinguishable (a coin flip); 1.0 = every cluster doc
+routes higher than every non-cluster doc (perfect separation). We compute it the fast, identical way (rank
+all values, sum the in-pile's ranks: <code>AUC = (R_in &minus; n_in(n_in+1)/2) / (n_in&middot;n_out)</code>),
+and fold both directions into a separability <code>|AUC&minus;0.5|+0.5</code> so an expert the cluster
+routes <em>away</em> from counts too. (This win-rate equals the area under the ROC curve &mdash; same
+quantity, ranking view.)</p>
+<p><strong>Why AUC is signal-to-noise, and why that matters here.</strong> Whether the two piles separate
+depends on the gap between their means <em>relative to their spread</em>: AUC rises with
+<code>|&delta;| / &sigma;</code> (the gap over the doc-to-doc standard deviation, i.e. Cohen's&nbsp;d).
+So an expert with a <em>small</em> shift can still separate a cluster near-perfectly if that shift is
+<em>consistent</em> (&sigma; even smaller). Metric&nbsp;1 (<code>top5 mass</code>) ranks experts by the raw
+size of &delta;; Metric&nbsp;2 (AUC) ranks them by &delta; relative to noise &mdash; so a broad,
+low-magnitude signature (Metric&nbsp;1 says &ldquo;spread out&rdquo;) can still give strong single-expert
+classifiers (Metric&nbsp;2 says &ldquo;decisive&rdquo;). That apparent tension is the whole finding; it is
+resolved concretely in <strong>Findings</strong>.</p>
+<ul>
+<li><strong><code>best-AUC</code></strong> = the single most-telling expert's separability &mdash; can one
+expert alone identify the cluster?</li>
+<li><strong><code>full-AUC</code></strong> = the ceiling, using the whole joint pattern (cosine-to-centroid,
+one-vs-rest). <strong><code>ratio</code></strong> = (best&minus;0.5)/(full&minus;0.5), the fraction of the
+full separability one expert already recovers.</li>
+</ul>
+<p><strong>H2 (subtle)</strong> predicts weak <code>best-AUC</code> and low <code>ratio</code> &mdash; no
+single expert separates the cluster, only the joint pattern does.</p>''')}
+
+{card("method", "Cheat-sheet + verdict rule", table(
+    ["Metric", "One-line meaning", "Which hypothesis it bears on"],
     [
-        ("<code>eff. dims</code>",
-         "effective # of experts carrying the deviation &delta;=&mu;<sub>c</sub>&minus;&mu;<sub>global</sub>, exp(entropy of |&delta;|)",
-         "<strong>breadth.</strong> low &rArr; a few experts define the cluster (H1); high &rArr; spread out"),
-        ("<code>top5 mass</code>",
-         "share of |&delta;| held by the 5 largest-deviation experts",
-         "<strong>breadth.</strong> high &rArr; concentrated signature (H1)"),
+        ("<code>eff. dims</code> / <code>top5 mass</code>",
+         "how spread vs concentrated the mean shift &delta; is",
+         "<strong>breadth</strong> &mdash; H1 wants concentrated"),
         ("<code>best-AUC</code>",
-         "best single (layer,expert) one-vs-rest Mann&ndash;Whitney AUC",
-         "<strong>strength.</strong> how well the single most telling expert alone separates the cluster"),
-        ("<code>full-AUC</code>",
-         "cosine-to-centroid one-vs-rest AUC (whole joint pattern)",
-         "the ceiling &mdash; every expert used together"),
-        ("<code>ratio</code>",
-         "(best-AUC &minus; 0.5) / (full-AUC &minus; 0.5)",
-         "fraction of separability one expert already recovers; low &rArr; only the joint pattern works (H2)"),
+         "can the single best expert separate the cluster?",
+         "<strong>strength</strong> &mdash; H2 wants this weak"),
+        ("<code>full-AUC</code> / <code>ratio</code>",
+         "whole-pattern ceiling, and how much one expert recovers",
+         "strength &mdash; low ratio ⇒ only joint pattern (H2)"),
         ("<code>exp. used</code>",
-         "effective experts the cluster routes to per layer, exp(mean-layer entropy of &mu;<sub>c</sub>)",
-         "absolute peakedness vs the corpus's ~%.0f" % soft["global_effective_experts"]),
+         "effective experts the cluster routes to per layer, vs corpus ~%.0f" % soft["global_effective_experts"],
+         "absolute peakedness (is it more focused than average?)"),
         ("<code>cos</code>",
          "mean cosine of a cluster's docs to their centroid",
-         "within-cluster consistency (1 = every doc routes identically)"),
+         "within-cluster consistency (feeds the &sigma; in AUC)"),
     ]) + f'''
-<p class="note"><strong>Verdict rule.</strong> A cluster is <em>strong</em> when its best single expert
-reaches AUC&nbsp;&ge;&nbsp;0.8 <em>and</em> its <code>ratio</code>&nbsp;&ge;&nbsp;0.7; <em>sparse</em>
+<p class="note"><strong>Verdict rule.</strong> A cluster is <em>strong</em> when
+<code>best-AUC</code>&nbsp;&ge;&nbsp;0.8 <em>and</em> <code>ratio</code>&nbsp;&ge;&nbsp;0.7; <em>sparse</em>
 when its deviation lives in &le;10% of experts (&le;{thr} of {soft['n_dims']}). Then:
 strong&nbsp;&amp;&nbsp;sparse&nbsp;&rarr;&nbsp;<span class="v-few-expert">few-expert</span> (H1);
 strong&nbsp;&amp;&nbsp;broad&nbsp;&rarr;&nbsp;<span class="v-broad-redundant">broad-redundant</span>;
@@ -231,7 +273,14 @@ not&nbsp;strong&nbsp;&rarr;&nbsp;<span class="v-subtle">subtle</span> (H2).</p>'
 """
 
 
-def build_findings(soft, hard, code) -> str:
+def build_findings(soft, hard, code, ill) -> str:
+    cc = ill.get("cluster", 5)
+    be = ill.get("best_expert", {})
+    st = ill.get("strong_experts", {})
+    cnt = ill.get("counts", {})
+    n_exp = soft["n_dims"]
+    ge90 = cnt.get("ge_0.90", "—")
+    ge95 = cnt.get("ge_0.95", "—")
     return f"""
 {card("results", "Finding 1 &mdash; the signal is broad, not a few experts (H1 refuted)", f'''
 <p>If a cluster were defined by a few signature experts, its deviation would pile onto those experts and
@@ -251,17 +300,20 @@ The specialization is real; it is just <em>distributed</em> over dozens of exper
         "Per-cluster expert deviation (z-scored), 64 clusters × 1008 experts. Diffuse, not blocky vertical stripes."),
 ))}
 
-{card("results", "Finding 2 &mdash; yet each expert's shift is large, not subtle (H2 refuted)", f'''
+{card("results", "Finding 2 &mdash; yet hundreds of experts each classify the cluster (H2 refuted)", f'''
 <p>Breadth alone could still mean H2: many experts, each nudged imperceptibly, separable only in the
-joint pattern. The strength metrics say otherwise. The single best expert separates the median cluster
+joint pattern. The strength metric says otherwise. The single best expert separates the median cluster
 with AUC <strong>{soft['median_best_single_dim_auc']:.3f}</strong> &mdash; almost the full-pattern
 {soft['median_full_pattern_auc']:.3f}, a <code>ratio</code> of {soft['median_single_vs_full_ratio']:.2f},
 i.e. <strong>one expert alone already recovers {pct(soft['median_single_vs_full_ratio'])} of what the
-entire {soft['n_dims']}-dimensional pattern achieves.</strong> Points sit tight against the diagonal in
-the scatter below; the gap that would mark subtlety isn't there.</p>
-<p>Documents also route <em>consistently</em>: the median within-cluster cosine to the centroid is
-{soft['median_cosine_to_centroid']:.2f}, so these per-expert shifts are a stable property of the cluster,
-not noise averaged over a loose bag of documents. Combined with Finding&nbsp;1, every cluster is
+entire {soft['n_dims']}-dimensional pattern achieves.</strong></p>
+<p>And it is not <em>one</em> privileged expert &mdash; it is a crowd. For the code cluster
+(#{cc}), <strong>{ge90} of {n_exp} experts individually reach AUC&nbsp;&ge;&nbsp;0.9</strong>
+({ge95} reach &ge;&nbsp;0.95); the &ldquo;best&rdquo; expert is merely the top of that pile. So the cluster's
+identity is written <strong>redundantly</strong>: no single expert is necessary, because many carry the
+same signal. Documents also route <em>consistently</em> (median within-cluster cosine to centroid
+{soft['median_cosine_to_centroid']:.2f}), so these shifts are a stable property of the cluster, not noise
+averaged over a loose bag of docs. Combined with Finding&nbsp;1, every cluster is
 <strong>strong &amp; broad</strong> &rarr; <span class="v-broad-redundant">broad-redundant</span>
 ({soft['verdict_counts']['broad-redundant']}/{soft['k']}).</p>'''
 + fig_row(
@@ -270,6 +322,31 @@ not noise averaged over a loose bag of documents. Combined with Finding&nbsp;1, 
     fig("doc_probs", "verdict_scatter.png",
         "Breadth (effective deviating experts, x) vs peakedness (y), sized by #docs. All clusters fall in the broad-redundant regime."),
 ))}
+
+{card("results", "How can both be true? Magnitude vs signal-to-noise", f'''
+<p>Findings 1 and 2 sound contradictory &mdash; &ldquo;no few experts carry the deviation&rdquo; yet
+&ldquo;one expert separates the cluster&rdquo; &mdash; but they measure different things (see
+<strong>Method</strong>). Metric&nbsp;1 ranks experts by the <em>size</em> of the mean shift |&delta;|;
+AUC ranks them by the shift <em>relative to the doc-to-doc noise</em>, |&delta;|/&sigma;. A small shift that
+is highly consistent scores low on the first and high on the second. The panels below make this concrete on
+the code cluster (#{cc}, {ill.get("n_in", 0):,} docs):</p>'''
++ fig_row(img_tag(ATTR / "auc_illustration.png",
+    f"(A) the single best expert (L{be.get('layer','?')}·E{be.get('expert','?')}): the in-pile and "
+    f"out-pile barely overlap → AUC {be.get('auc','?')}. (B) {ge90}/{n_exp} experts individually reach "
+    f"AUC≥0.9 — redundant, not one signature expert. (C) magnitude |δ| and separability AUC are only "
+    f"weakly correlated (ρ={ill.get('spearman_absdelta_sep','?')}): the biggest-shift expert is AUC-rank "
+    f"{ill.get('biggest_shift_expert',{}).get('auc_rank','?')}, the best separator only magnitude-rank "
+    f"{be.get('mag_rank','?')}."))
++ f'''
+<p>The many redundant classifiers are mostly <em>small</em> shifts: among the {st.get("n","—")} experts
+with AUC&nbsp;&ge;&nbsp;0.9, the median shift is only |&delta;|&nbsp;&asymp;&nbsp;{st.get("median_abs_delta","—")}
+(a ~1-percentage-point change in a routing probability), but the doc-to-doc spread is even smaller
+(&sigma;&nbsp;&asymp;&nbsp;{st.get("median_std","—")}), so |&delta;|/&sigma;&nbsp;&asymp;&nbsp;{st.get("median_cohen_d","—")}
+&mdash; the two piles barely overlap and the expert separates near-perfectly. <strong>Why so many experts
+at once?</strong> Routing is coupled: within a layer the softmax sums to 1, so leaning toward some experts
+pulls weight off others (they move together), and the same document content re-drives routing at all
+{soft['n_layers']} layers. One latent &ldquo;this is code&rdquo; factor is re-expressed as small, reliable
+shifts on hundreds of expert dimensions &mdash; each an individually-decisive shadow of it.</p>''')}
 
 {card("results", "Finding 3 &mdash; it's real selection, not a soft-affinity artifact", f'''
 <p>Could the signal live only in soft leanings that never become routing decisions? No. Re-running the
@@ -490,13 +567,15 @@ def main():
     soft = json.load(open(ATTR / "doc_probs/metrics.json"))
     hard = json.load(open(ATTR / "doc_topk_freq/metrics.json"))
     part = {c["cluster"]: c for c in json.load(open(PART))["clusters"]} if PART.exists() else {}
+    ill_path = ATTR / "auc_illustration.json"
+    ill = json.load(open(ill_path)) if ill_path.exists() else {}
     n_docs = sum(c["size"] for c in soft["per_cluster"])
     code = _code_cluster(soft, part)
 
     tabs = [
         ("overview", "Overview", build_overview(soft, hard, n_docs)),
-        ("method", "Method", build_method(soft)),
-        ("findings", "Findings", build_findings(soft, hard, code)),
+        ("method", "Method", build_method(soft, ill)),
+        ("findings", "Findings", build_findings(soft, hard, code, ill)),
         ("per-cluster", "Per-cluster", build_per_cluster(soft, hard, part)),
     ]
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
