@@ -40,7 +40,10 @@ def table(headers: list, rows: list) -> str:
     body = "".join(
         "<tr>" + "".join(f"<td>{c}</td>" for c in row) + "</tr>" for row in rows
     )
-    return f"<table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
+    # wrapped so a wide table scrolls inside its own box on mobile instead of
+    # pushing the whole page out of bounds.
+    return (f'<div class="scroll"><table><thead><tr>{head}</tr></thead>'
+            f"<tbody>{body}</tbody></table></div>")
 
 
 def img_tag(path: Path, caption: str) -> str:
@@ -115,24 +118,29 @@ selection.</p>''')}
 
 
 def _headline_table(soft, hard) -> str:
-    def row(s):
+    # Transposed: metrics as rows, the two signals as the only two value columns.
+    # (An 8-wide row-per-signal table overflowed the card; this stays narrow.)
+    def split(s):
         vc = s["verdict_counts"]
-        return [
-            f"<code>{s['embedding']}</code>",
-            f'<span class="v-few-expert">{vc["few-expert"]}</span>',
-            f'<span class="v-broad-redundant">{vc["broad-redundant"]}</span>',
-            f'<span class="v-subtle">{vc["subtle"]}</span>',
-            f"{s['median_effective_dims']:.1f} / {s['n_dims']}",
-            f"{s['median_best_single_dim_auc']:.3f}",
-            f"{s['median_full_pattern_auc']:.3f}",
-            f"{s['median_effective_experts_used']:.1f} / {s['n_experts_per_layer']}",
-        ]
+        return (f'<span class="v-few-expert">{vc["few-expert"]}</span> / '
+                f'<span class="v-broad-redundant">{vc["broad-redundant"]}</span> / '
+                f'<span class="v-subtle">{vc["subtle"]}</span>')
 
+    metrics = [
+        ("verdict split &mdash; few-expert / broad-redundant / subtle",
+         split(soft), split(hard)),
+        (f"median effective deviation experts (of {soft['n_dims']})",
+         f"{soft['median_effective_dims']:.1f}", f"{hard['median_effective_dims']:.1f}"),
+        ("median best single-expert AUC",
+         f"{soft['median_best_single_dim_auc']:.3f}", f"{hard['median_best_single_dim_auc']:.3f}"),
+        ("median full-pattern AUC",
+         f"{soft['median_full_pattern_auc']:.3f}", f"{hard['median_full_pattern_auc']:.3f}"),
+        (f"median experts used / layer (of {soft['n_experts_per_layer']})",
+         f"{soft['median_effective_experts_used']:.1f}", f"{hard['median_effective_experts_used']:.1f}"),
+    ]
     return table(
-        ["signal", "few-expert", "broad-redundant", "subtle",
-         "median eff. deviation dims", "median best-single AUC",
-         "median full-pattern AUC", "median experts used / layer"],
-        [row(soft), row(hard)],
+        ["metric", "doc_probs<br>(soft affinity)", "doc_topk_freq<br>(hard selection)"],
+        metrics,
     )
 
 
@@ -316,14 +324,16 @@ section.tab.active { display:block; }
 .card.goal { border-left-color:#2563eb; } .card.goal h3 { color:#2563eb; }
 .card.method { border-left-color:#7c3aed; } .card.method h3 { color:#7c3aed; }
 .card.results { border-left-color:#059669; } .card.results h3 { color:#059669; }
-table { border-collapse:collapse; margin:12px 0; font-size:14px; width:auto; }
+table { border-collapse:collapse; margin:12px 0; font-size:14px; width:auto; max-width:100%; }
 th, td { border:1px solid var(--line); padding:6px 12px; text-align:left; vertical-align:top; }
 th { background:#f1f5f9; }
 tbody tr:nth-child(even) { background:#f8fafc; }
+.scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:12px 0; }
+.scroll table { margin:0; }
 .note { font-size:13px; color:var(--muted); }
 code { background:#eef2f7; padding:1px 5px; border-radius:4px; font-size:0.9em; }
 .figrow { display:flex; gap:16px; flex-wrap:wrap; margin:14px 0; }
-figure { flex:1 1 380px; min-width:300px; max-width:560px; margin:0; }
+figure { flex:1 1 380px; min-width:0; max-width:560px; margin:0; }
 figure img { width:100%; border:1px solid var(--line); border-radius:6px; cursor:zoom-in; background:#fff; }
 figure img.zoom { max-width:none; width:auto; max-height:90vh; position:fixed; inset:0; margin:auto;
                   z-index:100; box-shadow:0 0 0 100vmax rgba(15,23,42,.75); cursor:zoom-out; }
@@ -339,6 +349,14 @@ td.sig, td.src { color:var(--muted); font-size:12px; white-space:normal; }
 .v-few-expert { color:#dc2626; font-weight:600; }
 .v-broad-redundant { color:#7c3aed; font-weight:600; }
 .v-subtle { color:#2563eb; font-weight:600; }
+@media (max-width:640px) {
+  header, nav, #subnav { padding-left:14px; padding-right:14px; }
+  main { padding:16px 14px 60px; }
+  nav button { padding:6px 10px; font-size:13px; }
+  table { font-size:12.5px; }
+  th, td { padding:5px 8px; }
+  figure { flex-basis:100%; max-width:100%; }
+}
 """
 
 JS = """
