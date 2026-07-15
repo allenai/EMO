@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Build the modular_extension experiment report (self-contained HTML).
 
-A question/hypothesis-driven writeup (structured like
-scripts/models_routerfixed/build_report.py) of the per-cluster expert-usage
-characterization in modular_extension/cluster/emo100b_step23842/expert_attribution/.
-Renders to claude_outputs/modular_extension/report.html: the question and the two
-competing hypotheses, the method, three numbered findings with base64-embedded
-figures, and a sortable per-cluster metrics table.
+A goal-driven writeup (structured like scripts/models_routerfixed/build_report.py) of the
+modular_extension program: grow an EMO MoE by adding experts during continued pretraining
+under a fixed 64-expert memory budget, using EMO's emergent data clusters to keep added
+experts non-redundant. The report leads with the goal + a staged roadmap (Overview), then
+documents Stage 1 -- characterizing the emergent clusters (Method/Findings/Per-cluster,
+from modular_extension/cluster/emo100b_step23842/expert_attribution/) -- and sketches
+Stage 2, a cheap cluster router (Next steps).
 
 CSS/JS/tab structure kept in sync with scripts/models_routerfixed/build_report.py so this
 report matches the rest of the reports on https://emo-reports.pages.dev/.
@@ -82,60 +83,55 @@ def pct(x: float) -> str:
 
 def build_overview(soft, hard, n_docs) -> str:
     return f"""
-<p><strong>Question:</strong> EMO's premise is that a useful division of labour among experts
-<em>emerges</em> during pretraining. If it does, then documents should sort into groups with
-<em>distinct</em> routing behaviour &mdash; which we can see directly: we took the
-{soft['n_dims'] // soft['n_experts_per_layer']}-layer &times; {soft['n_experts_per_layer']}-expert
-router of the EMO 100B checkpoint, gave every document a routing fingerprint, and clustered
-{n_docs:,} documents from the 100B&ndash;110B training window into <strong>{soft['k']} groups</strong>.
-This report asks the obvious follow-up: <strong>what actually makes one cluster different from
-another?</strong></p>
+<p><strong>Goal:</strong> grow an EMO mixture-of-experts model <em>beyond the expert count it was trained
+with</em> (e.g. 64&nbsp;&rarr;&nbsp;128 experts) by adding experts <em>during</em> continued pretraining
+&mdash; while never holding more than 64 experts in memory at once. If this works, model capacity grows
+but the per-step training footprint stays flat: at any moment we train some 64-expert subset, and over
+time those subsets compose into a larger model.</p>
 
-{card("goal", "Two hypotheses", '''
-<p>There are two natural stories for how a cluster could be &ldquo;distinct&rdquo;, and they have
-opposite implications for the model:</p>
-<ul>
-<li><strong>H1 &mdash; a few signature experts.</strong> Each cluster routes heavily and consistently
-to a small handful of experts (its &ldquo;code experts&rdquo;, its &ldquo;math experts&rdquo;), and
-those few experts are what set it apart. This is the strong form of modularity: crisp, nameable,
-prunable specialists.</li>
-<li><strong>H2 &mdash; subtle distributed usage.</strong> Every cluster uses essentially all experts at
-near-average rates, and clusters differ only through a faint, high-dimensional pattern that no single
-expert reveals &mdash; you need the whole joint activation to tell them apart.</li>
-</ul>
-<p>These aren't the only outcomes: a cluster could also be <em>broad</em> (many experts involved) yet
-<em>not subtle</em> (each of those experts shifts a lot). Keeping that third possibility on the table is
-the whole point of measuring breadth and strength separately.</p>''')}
+{card("goal", "Why it's hard &mdash; added experts go redundant", '''
+<p>The naive version &mdash; spawn fresh experts, train random 64-expert subsets on the usual data stream
+&mdash; wastes the new capacity. With nothing steering them apart, added experts relearn what existing
+experts already do; the extra parameters buy little. To make added capacity pay off, training has to push
+new experts toward <em>distinct</em> regions of the data.</p>''')}
 
-{card("method", "How we test it, in one paragraph", f'''
-<p>For each cluster we compute its mean routing minus the corpus mean &mdash; its <em>deviation</em>
-&delta; over all {soft['n_dims']} layer&times;expert dimensions &mdash; and measure two independent
-things. <strong>Breadth:</strong> how many experts carry that deviation (effective # of deviating
-dimensions; how much of it the top-5 experts hold). <strong>Strength:</strong> how well a
-<em>single</em> best expert separates the cluster one-vs-rest (AUC) versus the whole joint pattern.
-H1 predicts <em>narrow</em> breadth; H2 predicts <em>weak</em> single-expert strength. We run this on
-two views of routing &mdash; soft affinity and hard selection (defined in <strong>Method</strong>) &mdash;
-so a &ldquo;subtle&rdquo; verdict can't hide in soft scores that never become real routing decisions.</p>''')}
+{card("goal", "The idea &mdash; let EMO's emergent clusters route the capacity", '''
+<p>EMO already sorts data into behaviourally distinct groups <em>on its own</em> during pretraining &mdash;
+no human-defined priors. That gives us a free partition of the data, which the plan uses directly:</p>
+<ol>
+<li><strong>Start</strong> from a 64-expert EMO checkpoint that has developed these emergent clusters.</li>
+<li><strong>Partition</strong> the upcoming pretraining stream by EMO cluster.</li>
+<li><strong>Grow &amp; train</strong> new experts against specific cluster-partitions, so each added expert
+gets a distinct slice of data &mdash; minimizing redundancy with what's already there.</li>
+</ol>
+<p>Everything shipped so far is <strong>Stage&nbsp;1</strong> below: before relying on the clusters we had
+to confirm they are real and understand what defines them, because the whole plan rests on them being a
+meaningful partition.</p>''')}
 
-{card("results", "Answer &mdash; broad-redundant: neither H1 nor H2", f'''
-<p><strong>The distinguishing signal is broad but not subtle.</strong> It is spread across most of the
-{soft['n_dims']} experts &mdash; the top-5 hold only ~{pct(soft['median_top5_mass'])} of a cluster's
-deviation, and a median of ~{soft['median_effective_dims']:.0f} experts deviate &mdash; so
-<strong>H1 (a few signature experts) is refuted.</strong> Yet a single well-chosen expert already
-separates a cluster with median AUC <strong>{soft['median_best_single_dim_auc']:.3f}</strong>, recovering
-{pct(soft['median_single_vs_full_ratio'])} of the full-pattern AUC ({soft['median_full_pattern_auc']:.3f})
-&mdash; the per-expert differences are large, not faint, so <strong>H2 (subtle) is refuted too.</strong>
-Every one of the {soft['k']} clusters lands in this same third regime.</p>
-<p>So each cluster is a <strong>broad, redundant expert-usage signature</strong>: many experts each shift
-consistently and substantially for that cluster, and any one of them is already enough to flag it. The
-experts specialize &mdash; clusters do concentrate onto ~{soft['median_effective_experts_used']:.0f} of
-{soft['n_experts_per_layer']} experts per layer vs the corpus's ~{soft['global_effective_experts']:.0f}
-&mdash; but a document's identity is written redundantly across dozens of them, not stamped by a few.</p>''')}
+{card("method", "Roadmap", _roadmap_table() + '''
+<p class="note">Status reflects what's in this report. Stage&nbsp;1 (cluster structure) is complete and
+written up in <strong>Method</strong>/<strong>Findings</strong>/<strong>Per-cluster</strong>;
+Stage&nbsp;2 (a cheap cluster router) is the next investigation, sketched in <strong>Next steps</strong>.</p>''')}
 
-{card("results", "Headline numbers", _headline_table(soft, hard) + '''
-<p class="note">Both routing views give the same verdict (all 64 clusters broad-redundant), which is
-itself the answer to &ldquo;a few experts vs subtle patterns&rdquo;: broad in <em>which</em> experts,
-strong in <em>how much</em> each one moves.</p>''')}
+{card("results", "Stage 1 result &mdash; the clusters are real, and broad-redundant", f'''
+<p>We fingerprinted {n_docs:,} documents from the 100B&ndash;110B window by their router behaviour and
+clustered them into <strong>{soft['k']} groups</strong>, then asked <em>what makes one cluster different
+from another</em>. Answer: each cluster is a <strong>broad, redundant expert-usage signature</strong>. The
+distinguishing signal is spread across most of the {soft['n_dims']} experts (the top-5 hold only
+~{pct(soft['median_top5_mass'])} of a cluster's deviation), yet any one of hundreds of experts separates
+the cluster near-perfectly (best single-expert AUC <strong>{soft['median_best_single_dim_auc']:.3f}</strong>,
+~{pct(soft['median_single_vs_full_ratio'])} of the full-pattern {soft['median_full_pattern_auc']:.3f}). So
+the clusters are genuine and strongly identifiable &mdash; but they are <em>not</em> owned by a nameable
+handful of experts. Full detail in <strong>Findings</strong>.</p>
+<p><strong>Why that's encouraging for Stage&nbsp;2.</strong> If a cluster's identity is written redundantly
+across hundreds of experts and even a single expert flags it at AUC&nbsp;&asymp;&nbsp;0.99, then a much
+<em>cheaper</em> view of a document (e.g. only the first block's activations) plausibly keeps enough of that
+signal to classify the cluster <em>without a full forward pass</em> &mdash; which is exactly what
+partitioning the data stream at scale needs. That is the hypothesis <strong>Next steps</strong> lays out.</p>''')}
+
+{card("results", "Stage 1 headline numbers", _headline_table(soft, hard) + '''
+<p class="note">Both routing views (soft affinity and hard selection) give the same verdict: all 64 clusters
+broad-redundant &mdash; broad in <em>which</em> experts, strong in <em>how much</em> each one moves.</p>''')}
 """
 
 
@@ -173,6 +169,10 @@ def build_method(soft, ill) -> str:
     n_layers, n_exp = soft["n_layers"], soft["n_experts_per_layer"]
     thr = int(0.1 * soft["n_dims"])
     return f"""
+<p class="note">This tab and <strong>Findings</strong> document <strong>Stage&nbsp;1</strong> of the roadmap
+(see <strong>Overview</strong>): confirming the emergent clusters are real and characterizing what defines
+them, so the extension plan can rely on them as a data partition.</p>
+
 {card("goal", "A routing fingerprint per document", f'''
 <p>The published EMO clustering pipeline fingerprints individual <em>tokens</em>. To reason about
 <em>documents</em>, we pool: run the EMO 100B checkpoint (step 23,842) with router logits exposed and
@@ -363,15 +363,91 @@ about as identifying in what the model <em>did</em> as in what it <em>leaned</em
         "Selection-frequency deviation per cluster — diffuse, mirroring the soft view."),
 ))}
 
-{card("method", "Takeaway", f'''
+{card("method", "Takeaway &mdash; and what it means for the extension plan", f'''
 <p>The router does carve documents into behaviourally distinct groups &mdash; specialization is present
 and consistent. But that specialization is written <strong>redundantly across dozens of experts</strong>
-rather than concentrated in a nameable few. Practically: you can identify a cluster from almost any one of
-its deviating experts (handy for probing/attribution), but you cannot prune down to &ldquo;the cluster's
-experts&rdquo; &mdash; the code cluster below (#{code['cluster']}, {code['num_docs']:,} docs, dominated by
-<code>{html.escape(code['top'].split('/')[0])}</code>) reads as broad-redundant like all the others, its
-single most telling expert at AUC&nbsp;&asymp;&nbsp;{code['auc']:.3f} but its deviation spread over
-hundreds of experts. Whether this stays true at the full 9.17M-document scale is the natural next check.</p>''')}
+rather than concentrated in a nameable few. The code cluster below (#{code['cluster']},
+{code['num_docs']:,} docs, dominated by <code>{html.escape(code['top'].split('/')[0])}</code>) reads as
+broad-redundant like all the others: its single most telling expert at AUC&nbsp;&asymp;&nbsp;{code['auc']:.3f}
+but its deviation spread over hundreds of experts.</p>
+<p>Two consequences for the roadmap (see <strong>Overview</strong> / <strong>Next steps</strong>):</p>
+<ul>
+<li><strong>Good news for Stage&nbsp;2 (cheap cluster router).</strong> Because the cluster is <em>strongly</em>
+and <em>redundantly</em> identifiable &mdash; not a subtle joint pattern &mdash; a truncated, much cheaper
+view of a document should retain enough signal to recover its cluster without a full forward pass.</li>
+<li><strong>It shapes Stage&nbsp;3 (adding experts).</strong> Since a cluster is not owned by a nameable few
+experts, you can't extend by carving out &ldquo;the cluster's experts&rdquo; from the existing pool &mdash;
+which is exactly why the plan <em>adds new</em> experts and trains them on cluster-partitioned data, rather
+than reusing or splitting current ones. (Note this is <em>routing-signature</em> redundancy; the redundancy
+Stage&nbsp;3 must actually reduce is <em>functional</em> &mdash; a distinct probe, flagged in Next steps.)</li>
+</ul>
+<p>Whether the broad-redundant picture holds at the full 9.17M-document scale is the natural next check on
+Stage&nbsp;1 itself.</p>''')}
+"""
+
+
+def _roadmap_table() -> str:
+    done = '<span class="v-broad-redundant">done</span>'
+    nxt = '<span class="v-subtle">next</span>'
+    fut = '<span class="note">future</span>'
+    rows = [
+        ("0", "Base model",
+         "A 64-expert EMO checkpoint with emergent, unsupervised data clusters.",
+         f"{done} &mdash; released EMO 64-expert model"),
+        ("1", "Characterize the clusters",
+         "Are the emergent clusters real, and what defines them? (must hold before the plan can rely on them)",
+         f"{done} &mdash; this report"),
+        ("2", "Cheap cluster router",
+         "Label streaming docs with their EMO cluster <em>without a full forward pass</em>, to partition data at scale.",
+         nxt),
+        ("3", "Add experts + partitioned training",
+         "Initialize new experts and train 64-expert subsets against cluster-partitioned data; measure "
+         "redundancy and quality vs a naive baseline.",
+         fut),
+    ]
+    return table(["stage", "what", "why", "status"], rows)
+
+
+def build_nextsteps(soft) -> str:
+    return f"""
+<p><strong>Next question:</strong> to partition the continued-pretraining stream by EMO cluster at scale
+(Stage&nbsp;2), we need to label each incoming document with its cluster <em>cheaply</em>. The fingerprints
+in this report came from a full {soft['n_layers']}-layer forward pass per document &mdash; far too expensive
+to run over an entire pretraining corpus. So Stage&nbsp;2 asks: <strong>can we classify a document into its
+EMO cluster without a full forward pass?</strong></p>
+
+{card("goal", "Why we expect this to be possible", '''
+<p>Stage&nbsp;1 found the cluster signal is <em>broad and redundant</em>: hundreds of experts each separate a
+cluster near-perfectly, and it is not hidden in a subtle joint pattern. Redundant, strong signal is exactly
+what survives aggressive truncation. If the &ldquo;this is code&rdquo; factor is already legible in, say, the
+first block's routing, we don't need the other layers to recover the cluster label. The Stage&nbsp;1 finding
+turns this from a hope into a testable hypothesis.</p>''')}
+
+{card("method", "Candidate cheap classifiers (to compare)", table(
+    ["input", "cost", "role"],
+    [
+        ("full doc router embedding (all layers)", "full forward pass",
+         "<strong>oracle / upper bound</strong> &mdash; the fingerprint we clustered on; defines the ceiling"),
+        ("first-block expert activations / router logits", "one transformer block",
+         "main candidate &mdash; cheap, still EMO-native"),
+        ("off-the-shelf text embedding or n-gram features", "no EMO forward pass",
+         "cheapest &mdash; tests whether the partition is recoverable from surface text alone"),
+    ]) + '''
+<p>The experiment: freeze the k=64 assignments as labels, hold out documents, train a small classifier on
+each input above, and report cluster-recovery accuracy (plus top-k and confusion vs cluster size) against the
+full-embedding oracle. The cheapest input that recovers the partition well enough wins.</p>''')}
+
+{card("results", "Open questions before we start", '''
+<ul>
+<li><strong>Which input?</strong> First-block activations vs a generic text embedding vs something in
+between &mdash; the main fork for Stage&nbsp;2.</li>
+<li><strong>How good is good enough?</strong> Partitioning tolerates some misclassification; the target
+cluster-recovery accuracy should be tied to Stage&nbsp;3's tolerance, not to perfection.</li>
+<li><strong>Redundancy &mdash; which kind?</strong> Stage&nbsp;1 measured <em>routing-signature</em>
+redundancy (many experts' routing correlates with a cluster). Stage&nbsp;3 cares about <em>functional</em>
+redundancy (two experts computing the same map). These are different axes &mdash; a functional-redundancy
+probe may be needed to confirm cluster-partitioned training actually reduces the redundancy that matters.</li>
+</ul>''')}
 """
 
 
@@ -577,6 +653,7 @@ def main():
         ("method", "Method", build_method(soft, ill)),
         ("findings", "Findings", build_findings(soft, hard, code, ill)),
         ("per-cluster", "Per-cluster", build_per_cluster(soft, hard, part)),
+        ("next-steps", "Next steps", build_nextsteps(soft)),
     ]
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
     sections = "".join(
@@ -588,16 +665,16 @@ def main():
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EMO modular_extension: what makes a document-router cluster distinct?</title>
+<title>EMO modular_extension: adding experts during training under a fixed budget</title>
 <style>{CSS}</style>
 </head>
 <body>
 <header>
 <a class="home-link" href="/">&larr; all reports</a>
-<h1>EMO modular_extension: what makes a document-router cluster distinct?</h1>
-<p>modular_extension &mdash; document-level router clustering of the EMO 100B&ndash;110B training window
-(k={soft['k']}) &middot; a few signature experts, or subtle distributed usage? &middot; generated by
-scripts/modular_extension/build_report.py</p>
+<h1>EMO modular_extension: adding experts during training under a fixed budget</h1>
+<p>modular_extension &mdash; grow a 64-expert EMO MoE toward more experts via cluster-partitioned continued
+training &middot; Stage 1: what defines the emergent clusters (k={soft['k']}, 100B&ndash;110B window)
+&middot; generated by scripts/modular_extension/build_report.py</p>
 </header>
 <div class="topbar"><nav>{nav}</nav><div id="subnav"></div></div>
 <main>{sections}</main>
