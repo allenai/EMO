@@ -375,11 +375,10 @@ but its deviation spread over hundreds of experts.</p>
 <li><strong>Good news for Stage&nbsp;2 (cheap cluster router).</strong> Because the cluster is <em>strongly</em>
 and <em>redundantly</em> identifiable &mdash; not a subtle joint pattern &mdash; a truncated, much cheaper
 view of a document should retain enough signal to recover its cluster without a full forward pass.</li>
-<li><strong>It shapes Stage&nbsp;3 (adding experts).</strong> Since a cluster is not owned by a nameable few
-experts, you can't extend by carving out &ldquo;the cluster's experts&rdquo; from the existing pool &mdash;
-which is exactly why the plan <em>adds new</em> experts and trains them on cluster-partitioned data, rather
-than reusing or splitting current ones. (Note this is <em>routing-signature</em> redundancy; the redundancy
-Stage&nbsp;3 must actually reduce is <em>functional</em> &mdash; a distinct probe, flagged in Next steps.)</li>
+<li><strong>It shapes Stage&nbsp;3 (adding experts).</strong> Because a cluster's &ldquo;relevant experts&rdquo;
+are a soft, broad set rather than a nameable few, Stage&nbsp;3 doesn't try to hard-assign experts to clusters:
+per partition it reuses the <em>n</em> most-relevant pool experts, adds 64&minus;n <em>new</em> experts born
+pointed at that cluster, and lets training sort out the specialization (see <strong>Next steps</strong>).</li>
 </ul>
 <p>Whether the broad-redundant picture holds at the full 9.17M-document scale is the natural next check on
 Stage&nbsp;1 itself.</p>''')}
@@ -401,8 +400,9 @@ def _roadmap_table() -> str:
          "Label streaming docs with their EMO cluster <em>without a full forward pass</em>, to partition data at scale.",
          nxt),
         ("3", "Add experts + partitioned training",
-         "Initialize new experts and train 64-expert subsets against cluster-partitioned data; measure "
-         "redundancy and quality vs a naive baseline.",
+         "Per cluster partition: reuse the <em>n</em> most-relevant pool experts, initialize 64&minus;n new "
+         "ones, train the 64-expert working set, then grow the pool with the new experts and write the reused "
+         "ones back.",
          fut),
     ]
     return table(["stage", "what", "why", "status"], rows)
@@ -423,31 +423,55 @@ what survives aggressive truncation. If the &ldquo;this is code&rdquo; factor is
 first block's routing, we don't need the other layers to recover the cluster label. The Stage&nbsp;1 finding
 turns this from a hope into a testable hypothesis.</p>''')}
 
-{card("method", "Candidate cheap classifiers (to compare)", table(
+{card("method", "Candidate cheap classifiers (in the order we'll try them)", table(
     ["input", "cost", "role"],
     [
+        ("mean-pooled token embeddings (the model's own embedding matrix)", "embedding lookup, no block forward",
+         "<strong>first to try</strong> &mdash; essentially free, still EMO-native"),
+        ("n-gram / bag-of-words features", "no model at all",
+         "next &mdash; is the partition recoverable from surface text alone?"),
+        ("first-block expert activations / router logits", "one transformer block",
+         "later, if the above underperform"),
         ("full doc router embedding (all layers)", "full forward pass",
          "<strong>oracle / upper bound</strong> &mdash; the fingerprint we clustered on; defines the ceiling"),
-        ("first-block expert activations / router logits", "one transformer block",
-         "main candidate &mdash; cheap, still EMO-native"),
-        ("off-the-shelf text embedding or n-gram features", "no EMO forward pass",
-         "cheapest &mdash; tests whether the partition is recoverable from surface text alone"),
     ]) + '''
 <p>The experiment: freeze the k=64 assignments as labels, hold out documents, train a small classifier on
 each input above, and report cluster-recovery accuracy (plus top-k and confusion vs cluster size) against the
-full-embedding oracle. The cheapest input that recovers the partition well enough wins.</p>''')}
+full-embedding oracle. We start from the cheapest, EMO-native option (the model's own embedding matrix) and
+only climb the cost ladder if it doesn't recover the partition well enough.</p>''')}
 
 {card("results", "Open questions before we start", '''
 <ul>
-<li><strong>Which input?</strong> First-block activations vs a generic text embedding vs something in
-between &mdash; the main fork for Stage&nbsp;2.</li>
+<li><strong>How cheap can we go?</strong> The bet is that the model's own token embeddings (no block forward)
+already recover the clusters; n-gram features test whether even the model is unnecessary. First-block
+activations are the fallback if surface-level views fall short.</li>
 <li><strong>How good is good enough?</strong> Partitioning tolerates some misclassification; the target
 cluster-recovery accuracy should be tied to Stage&nbsp;3's tolerance, not to perfection.</li>
-<li><strong>Redundancy &mdash; which kind?</strong> Stage&nbsp;1 measured <em>routing-signature</em>
-redundancy (many experts' routing correlates with a cluster). Stage&nbsp;3 cares about <em>functional</em>
-redundancy (two experts computing the same map). These are different axes &mdash; a functional-redundancy
-probe may be needed to confirm cluster-partitioned training actually reduces the redundancy that matters.</li>
-</ul>''')}
+</ul>
+<p class="note">Stage&nbsp;1's expert-usage detail was exploratory &mdash; useful for intuition, but the only
+requirement it needs to have established is that a cheap view of a document recovers its cluster. Whichever
+redundancy the added experts do or don't share is left for training to sort out (see Stage&nbsp;3).</p>''')}
+
+{card("goal", "Stage 3 preview &mdash; the expert-addition loop", '''
+<p>Once data can be cheaply partitioned by cluster, capacity is grown one partition at a time while the
+training working set stays capped at 64 experts. Keeping a growing <em>pool</em> of experts, for each cluster
+partition in turn:</p>
+<ol>
+<li><strong>Select</strong> the <em>n</em> experts already in the pool most relevant to this cluster.</li>
+<li><strong>Initialize</strong> 64&minus;n new experts.</li>
+<li><strong>Train</strong> the resulting 64-expert working set on this cluster's data partition &mdash; only
+64 experts are ever in memory, so the training footprint stays fixed.</li>
+<li><strong>Write back:</strong> push the 64&minus;n new experts into the pool (capacity grows) and update the
+<em>n</em> reused experts in the pool.</li>
+<li>Move to the next partition.</li>
+</ol>
+<p>Across partitions the pool grows past 64 (toward 128+) while every step touches only 64. New experts are
+born pointed at a specific cluster, so they specialize instead of duplicating existing ones &mdash; the
+redundancy the whole design is built to avoid.</p>
+<p class="note">Two design questions this raises, for later: (a) <strong>routing over a growing pool</strong>
+&mdash; at inference the gate must route among all pool experts (e.g. 128) though training only ever exposed
+64 at a time; (b) <strong>sequential forgetting</strong> &mdash; training partitions in turn may erode reused
+experts' behaviour on earlier clusters, so some interleaving or replay may be needed.</p>''')}
 """
 
 
