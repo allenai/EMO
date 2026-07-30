@@ -14,7 +14,7 @@ lr=4e-3
 
 runname="dense_1b_1b"
 launch src/scripts/train/olmo2-1B.py $runname \
-		--save-folder="${MODELS_DIR}/$runname" \
+		--save-folder="${MODELS_DIR}/${runname}_warmup20" \
 		--dataset.mix=codelion-dclm-baseline-1B \
 		--work-dir="${DATASET_CACHE}" \
 		--trainer.max_duration='{value: 1_000_000_000, unit: tokens}' \
