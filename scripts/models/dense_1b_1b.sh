@@ -26,4 +26,5 @@ launch src/scripts/train/olmo2-1B.py $runname \
 		--dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
 		--model.block.name="default" \
 		--model.block.sequence_mixer.qk_norm=null \
+		--train_module.scheduler.warmup=20 \
 		--lr=${lr}
