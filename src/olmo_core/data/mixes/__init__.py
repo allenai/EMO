@@ -37,6 +37,7 @@ class DataMix(DataMixBase):
 
     # Pretraining mixes
     OLMoE_mix_0824 = "OLMoE-mix-0824"
+    codelion_dclm_baseline_1B = "codelion-dclm-baseline-1B"
     dclm_upweight_1012 = "dclm-upweight-1022"
     arc_easy_train = "arc-easy-train"
     dolma17 = "dolma17"

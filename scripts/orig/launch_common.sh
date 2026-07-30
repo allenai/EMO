@@ -12,11 +12,11 @@
 #   BEAKER_GPUS / BEAKER_NODES  # cluster sizing when MODE=beaker
 
 # Output root for trained checkpoints.
-PREFIX="${PREFIX:-/weka/oe-training-default/sewonm/icsl}"
+PREFIX="${PREFIX:-/weka/oe-training-default/ryanwang/phdbrainstorm/Emo}"
 MODELS_DIR="${MODELS_DIR:-${PREFIX}/models}"
 
 # Dataset cache (lives outside the model output root on weka).
-DATASET_CACHE="${DATASET_CACHE:-/weka/oe-training-default/sewonm/dataset-cache}"
+DATASET_CACHE="${DATASET_CACHE:-/weka/oe-training-default/ryanwang/dataset-cache}"
 
 # Root for the OLMo data mix (passed to training scripts as --data-root).
 DATA_ROOT="${DATA_ROOT:-/weka/oe-training-default/ai2-llm}"
@@ -29,7 +29,7 @@ NPROC="${NPROC:-8}"
 
 # Beaker launcher knobs (used only when MODE=beaker).
 BEAKER_GPUS="${BEAKER_GPUS:-8}"
-BEAKER_NODES="${BEAKER_NODES:-1}"
+BEAKER_NODES="${BEAKER_NODES:-16}"
 BEAKER_WORKSPACE="${BEAKER_WORKSPACE:-ai2/flex2}"
 BEAKER_CLUSTER="${BEAKER_CLUSTER:-ai2/jupiter}"
 BEAKER_PRIORITY="${BEAKER_PRIORITY:-urgent}"

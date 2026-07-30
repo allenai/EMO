@@ -1,0 +1,10 @@
+# CodeLion DCLM baseline sample, tokenized with allenai/dolma2-tokenizer.
+codelion-dclm-baseline-1B,tokenized_data/codelion/dclm-baseline-1B/allenai/dolma2-tokenizer/part-0-00000.npy
+codelion-dclm-baseline-1B,tokenized_data/codelion/dclm-baseline-1B/allenai/dolma2-tokenizer/part-1-00000.npy
+codelion-dclm-baseline-1B,tokenized_data/codelion/dclm-baseline-1B/allenai/dolma2-tokenizer/part-2-00000.npy
+codelion-dclm-baseline-1B,tokenized_data/codelion/dclm-baseline-1B/allenai/dolma2-tokenizer/part-3-00000.npy
+codelion-dclm-baseline-1B,tokenized_data/codelion/dclm-baseline-1B/allenai/dolma2-tokenizer/part-4-00000.npy
+codelion-dclm-baseline-1B,tokenized_data/codelion/dclm-baseline-1B/allenai/dolma2-tokenizer/part-5-00000.npy
+codelion-dclm-baseline-1B,tokenized_data/codelion/dclm-baseline-1B/allenai/dolma2-tokenizer/part-6-00000.npy
+codelion-dclm-baseline-1B,tokenized_data/codelion/dclm-baseline-1B/allenai/dolma2-tokenizer/part-7-00000.npy
+codelion-dclm-baseline-1B,tokenized_data/codelion/dclm-baseline-1B/allenai/dolma2-tokenizer/part-8-00000.npy
