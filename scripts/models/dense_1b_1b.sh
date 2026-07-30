@@ -19,7 +19,7 @@ launch src/scripts/train/olmo2-1B.py $runname \
 		--work-dir="${DATASET_CACHE}" \
 		--trainer.max_duration='{value: 1_000_000_000, unit: tokens}' \
 		--trainer.callbacks.wandb.enabled=true \
-		--trainer.callbacks.wandb.entity=sewonmin \
+		--trainer.callbacks.wandb.entity=ai2-llm \
 		--trainer.callbacks.wandb.project=sewonm-icsl \
 		--trainer.callbacks.wandb.name="${runname}" \
 		--trainer.callbacks.wandb.tags='[pretraining]' \
