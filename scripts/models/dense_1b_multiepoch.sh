@@ -40,6 +40,9 @@ esac
 
 # One epoch is 239 optimizer steps, so round(10%) is 24 steps.
 warmup_steps=24
+# Future runs evaluate the OLMES core nine-task suite on completion. This remains
+# a CLI override, and can be changed per submission with DOWNSTREAM_TASKS.
+downstream_tasks="${DOWNSTREAM_TASKS:-[arc_easy, arc_challenge, boolq, csqa, hellaswag, openbookqa, piqa, socialiqa, winogrande]}"
 load_args=()
 checkpoint_args=()
 dry_run_args=()
@@ -92,7 +95,7 @@ launch src/scripts/train/olmo2-1B.py "${runname}" \
 		--trainer.callbacks.wandb.project=sewonm-icsl \
 		--trainer.callbacks.wandb.name="${runname}" \
 		--trainer.callbacks.wandb.tags="[pretraining, multiepoch, ${scheduler}, warmup24]" \
-		--trainer.callbacks.downstream_evaluator.tasks='[hellaswag]' \
+		--trainer.callbacks.downstream_evaluator.tasks="${downstream_tasks}" \
 		--trainer.callbacks.downstream_evaluator.eval_interval=null \
 		--trainer.callbacks.downstream_evaluator.eval_on_finish=true \
 		--trainer.callbacks.heldout_evaluator='{_CLASS_: olmo_core.train.callbacks.evaluator_callback.LMEvaluatorCallbackConfig, eval_dataset: {_CLASS_: olmo_core.data.numpy_dataset.NumpyPaddedFSLDatasetConfig, tokenizer: {_CLASS_: olmo_core.data.tokenizer.TokenizerConfig, vocab_size: 100278, eos_token_id: 100257, pad_token_id: 100277, identifier: allenai/dolma2-tokenizer}, paths: [/weka/oe-training-default/ai2-llm/eval-data/perplexity/v3_small_dolma2-tokenizer/c4_en/val/part-0-00000.npy], metadata: [{label: c4_en-validation}], sequence_length: 4096, work_dir: /weka/oe-training-default/sewonm/dataset-cache}, eval_interval: null, eval_on_finish: true, name: heldout}' \
