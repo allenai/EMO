@@ -42,7 +42,7 @@ esac
 warmup_steps=24
 # Future runs evaluate the OLMES core nine-task suite on completion. This remains
 # a CLI override, and can be changed per submission with DOWNSTREAM_TASKS.
-downstream_tasks="${DOWNSTREAM_TASKS:-[arc_easy, arc_challenge, boolq, csqa, hellaswag, openbookqa, piqa, socialiqa, winogrande]}"
+downstream_tasks="${DOWNSTREAM_TASKS:-[arc_easy, arc_challenge, boolq, csqa_val_rc_5shot, hellaswag, openbookqa_test_rc_5shot, piqa, socialiqa_val_rc_5shot, winogrande]}"
 load_args=()
 checkpoint_args=()
 dry_run_args=()
