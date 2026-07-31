@@ -7,6 +7,8 @@
 # USAGE:
 #     SCHEDULER=cosine EPOCHS=3 LR=2.5e-4 MODE=beaker \
 #       bash scripts/models/dense_1b_multiepoch.sh
+#     SCHEDULER=cosine COSINE_ALPHA_F=0 EPOCHS=1 LR=2.5e-4 MODE=beaker \
+#       bash scripts/models/dense_1b_multiepoch.sh
 #     SCHEDULER=wsd EPOCHS=2 LR=5e-4 \
 #       LOAD_PATH=/weka/.../dense_1b_multiepoch_wsd_e1_lr5e-4_warmup24/step214 \
 #       MODE=beaker bash scripts/models/dense_1b_multiepoch.sh
@@ -46,6 +48,8 @@ downstream_tasks="${DOWNSTREAM_TASKS:-[arc_easy, arc_challenge, boolq, csqa_val_
 load_args=()
 checkpoint_args=()
 dry_run_args=()
+scheduler_suffix=""
+scheduler_tag="${scheduler}"
 
 if [[ "${DRY_RUN:-0}" == "1" ]]; then
 	dry_run_args+=(--dry-run)
@@ -57,7 +61,13 @@ case "${scheduler}" in
 			echo "Cosine targets must train from scratch; do not set LOAD_PATH" >&2
 			exit 2
 		fi
-		scheduler_config="{_CLASS_: olmo_core.optim.scheduler.CosWithWarmup, units: steps, warmup: ${warmup_steps}, alpha_f: 0.1}"
+		cosine_alpha_f="${COSINE_ALPHA_F:-0.1}"
+		if [[ "${cosine_alpha_f}" != "0.1" ]]; then
+			alpha_name="${cosine_alpha_f//./p}"
+			scheduler_suffix="_alpha${alpha_name}"
+		fi
+		scheduler_tag="cosine-alpha${cosine_alpha_f}"
+		scheduler_config="{_CLASS_: olmo_core.optim.scheduler.CosWithWarmup, units: steps, warmup: ${warmup_steps}, alpha_f: ${cosine_alpha_f}}"
 		;;
 	wsd)
 		scheduler_config="{_CLASS_: olmo_core.optim.scheduler.WSD, units: steps, warmup: ${warmup_steps}, decay_fraction: 0.1}"
@@ -83,7 +93,7 @@ case "${scheduler}" in
 		;;
 esac
 
-runname="dense_1b_multiepoch_${scheduler}_e${epochs}_lr${lr}_warmup${warmup_steps}"
+runname="dense_1b_multiepoch_${scheduler}_e${epochs}_lr${lr}_warmup${warmup_steps}${scheduler_suffix}"
 launch src/scripts/train/olmo2-1B.py "${runname}" \
 		"${dry_run_args[@]}" \
 		--save-folder="${MODELS_DIR}/${runname}" \
@@ -94,7 +104,7 @@ launch src/scripts/train/olmo2-1B.py "${runname}" \
 		--trainer.callbacks.wandb.entity=ai2-llm \
 		--trainer.callbacks.wandb.project=sewonm-icsl \
 		--trainer.callbacks.wandb.name="${runname}" \
-		--trainer.callbacks.wandb.tags="[pretraining, multiepoch, ${scheduler}, warmup24]" \
+		--trainer.callbacks.wandb.tags="[pretraining, multiepoch, ${scheduler_tag}, warmup24]" \
 		--trainer.callbacks.downstream_evaluator.tasks="${downstream_tasks}" \
 		--trainer.callbacks.downstream_evaluator.eval_interval=null \
 		--trainer.callbacks.downstream_evaluator.eval_on_finish=true \
