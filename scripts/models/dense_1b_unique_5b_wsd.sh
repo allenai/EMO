@@ -28,7 +28,8 @@ if [[ "${DRY_RUN:-0}" == "1" ]]; then
 fi
 
 scheduler_config="{_CLASS_: olmo_core.optim.scheduler.WSD, units: steps, warmup: ${warmup_steps}, decay_fraction: 0.1}"
-runname="dense_1b_unique5b_${dataset_mix}_wsd_lr${lr}_wd${wd}_warmup${warmup_steps}"
+run_suffix="${RUN_SUFFIX:-}"
+runname="dense_1b_unique5b_${dataset_mix}_wsd_lr${lr}_wd${wd}_warmup${warmup_steps}${run_suffix}"
 
 launch src/scripts/train/olmo2-1B.py "${runname}" \
 		"${dry_run_args[@]}" \

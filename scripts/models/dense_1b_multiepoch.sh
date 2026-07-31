@@ -24,16 +24,16 @@ epochs="${EPOCHS:?Set EPOCHS to an integer from 1 through 10}"
 lr="${LR:?Set LR}"
 
 case "${epochs}" in
-	1) max_tokens=1000000000; stable_step=214 ;;
-	2) max_tokens=2000000000; stable_step=428 ;;
-	3) max_tokens=3000000000; stable_step=643 ;;
-	4) max_tokens=4000000000; stable_step=858 ;;
-	5) max_tokens=5000000000; stable_step=1073 ;;
-	6) max_tokens=6000000000; stable_step=1287 ;;
-	7) max_tokens=7000000000; stable_step=1501 ;;
-	8) max_tokens=8000000000; stable_step=1716 ;;
-	9) max_tokens=9000000000; stable_step=1930 ;;
-	10) max_tokens=10000000000; stable_step=2146 ;;
+	1) max_tokens=1000000000; stable_step=214; epoch_checkpoint_steps='[239]' ;;
+	2) max_tokens=2000000000; stable_step=428; epoch_checkpoint_steps='[239, 477]' ;;
+	3) max_tokens=3000000000; stable_step=643; epoch_checkpoint_steps='[239, 477, 716]' ;;
+	4) max_tokens=4000000000; stable_step=858; epoch_checkpoint_steps='[239, 477, 716, 954]' ;;
+	5) max_tokens=5000000000; stable_step=1073; epoch_checkpoint_steps='[239, 477, 716, 954, 1193]' ;;
+	6) max_tokens=6000000000; stable_step=1287; epoch_checkpoint_steps='[239, 477, 716, 954, 1193, 1431]' ;;
+	7) max_tokens=7000000000; stable_step=1501; epoch_checkpoint_steps='[239, 477, 716, 954, 1193, 1431, 1670]' ;;
+	8) max_tokens=8000000000; stable_step=1716; epoch_checkpoint_steps='[239, 477, 716, 954, 1193, 1431, 1670, 1908]' ;;
+	9) max_tokens=9000000000; stable_step=1930; epoch_checkpoint_steps='[239, 477, 716, 954, 1193, 1431, 1670, 1908, 2147]' ;;
+	10) max_tokens=10000000000; stable_step=2146; epoch_checkpoint_steps='[239, 477, 716, 954, 1193, 1431, 1670, 1908, 2147, 2385]' ;;
 	*)
 		echo "EPOCHS must be an integer from 1 through 10" >&2
 		exit 2
@@ -68,6 +68,10 @@ case "${scheduler}" in
 		fi
 		scheduler_tag="cosine-alpha${cosine_alpha_f}"
 		scheduler_config="{_CLASS_: olmo_core.optim.scheduler.CosWithWarmup, units: steps, warmup: ${warmup_steps}, alpha_f: ${cosine_alpha_f}}"
+		# Preserve every completed epoch so downstream evaluation is recoverable.
+		checkpoint_args+=(
+			"--trainer.callbacks.checkpointer.fixed_steps=${epoch_checkpoint_steps}"
+		)
 		;;
 	wsd)
 		scheduler_config="{_CLASS_: olmo_core.optim.scheduler.WSD, units: steps, warmup: ${warmup_steps}, decay_fraction: 0.1}"
