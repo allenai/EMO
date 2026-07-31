@@ -46,7 +46,7 @@ class DataMix(DataMixBase):
     OLMo_mix_0625_150Bsample_dclm = "OLMo-mix-0625-150Bsample-dclm"
     # DCLM-only views: 119.064B, 672.146B, and 3.685T verified dolma2 tokens.
     dclm_120B = "dclm-120B"
-    dclm_700B = "dclm-700B"
+    dclm_670B = "dclm-670B"
     dclm_full = "dclm-full"
     OLMoE_mix_0824_cc = "OLMoE-mix-0824-cc"
     the_pile_of_law = "the-pile-of-law"
@@ -141,12 +141,12 @@ class DataMix(DataMixBase):
         elif self == DataMix.OLMo_mix_0625:
             if tokenizer == TokenizerName.dolma2_sigdig:
                 tokenizer_id = "dolma2-tokenizer-sigdig"
-        elif self in [DataMix.OLMo_mix_0625_700Bsample, DataMix.dclm_700B]:
+        elif self in [DataMix.OLMo_mix_0625_700Bsample, DataMix.dclm_670B]:
             # This sample is only present under the short sigdig tokenizer directory name.
             if tokenizer == TokenizerName.dolma2_sigdig:
                 tokenizer_id = "dolma2-tokenizer-sigdig"
-            elif self == DataMix.dclm_700B:
-                raise ValueError("dclm-700B is only available with the dolma2 sigdig tokenizer")
+            elif self == DataMix.dclm_670B:
+                raise ValueError("dclm-670B is only available with the dolma2 sigdig tokenizer")
         elif self in [
             # Mixes used for OLMo3 training are saved with "dolma3-tokenizer" tokenizer,
             # which is exactly the same as "dolma2-tokenizer" but with a different name.
@@ -169,7 +169,7 @@ class DataMix(DataMixBase):
         if self == DataMix.dclm_120B:
             mix_source = DataMix.OLMo_mix_0625_150Bsample_dclm
             label_filter = "dclm"
-        elif self == DataMix.dclm_700B:
+        elif self == DataMix.dclm_670B:
             mix_source = DataMix.OLMo_mix_0625_700Bsample
             label_filter = "dclm"
         elif self == DataMix.dclm_full:

@@ -31,7 +31,7 @@ def test_olmoe_mix():
             "allenai/dolma2-tokenizer/part-005-00004.npy",
         ),
         (
-            DataMix.dclm_700B,
+            DataMix.dclm_670B,
             TokenizerName.dolma2_sigdig,
             192,
             "dolma2-tokenizer-sigdig/tokenizer.json_bos/part-00-00000.npy",
@@ -57,9 +57,9 @@ def test_dclm_data_only_mixes(mix, tokenizer, expected_count, first_suffix, last
     assert paths[-1].endswith(last_suffix)
 
 
-def test_dclm_700b_rejects_unavailable_tokenizer():
+def test_dclm_670b_rejects_unavailable_tokenizer():
     with pytest.raises(ValueError, match="only available with the dolma2 sigdig tokenizer"):
-        DataMix.dclm_700B.build("s3://ai2-llm", TokenizerName.dolma2)
+        DataMix.dclm_670B.build("s3://ai2-llm", TokenizerName.dolma2)
 
 
 def test_dolma17_mix():
