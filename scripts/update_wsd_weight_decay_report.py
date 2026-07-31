@@ -17,6 +17,7 @@ JS_PATH = ROOT / "reports/data/wsd_weight_decay_1b.js"
 
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser()
+    p.add_argument("--series", choices=("wd", "unique"), default="wd")
     p.add_argument("--epoch", type=int, required=True)
     p.add_argument("--lr", required=True)
     p.add_argument("--wd", required=True)
@@ -34,23 +35,25 @@ def main() -> None:
     args = parser().parse_args()
     state = json.loads(JSON_PATH.read_text())
     key = (args.epoch, args.lr, args.wd)
+    runs_key = "runs" if args.series == "wd" else "uniqueRuns"
+    state.setdefault(runs_key, [])
     run = next(
-        (r for r in state["runs"] if (r["epoch"], r["lr"], r["wd"]) == key),
+        (r for r in state[runs_key] if (r["epoch"], r["lr"], r["wd"]) == key),
         None,
     )
     if run is None:
         run = {"epoch": args.epoch, "lr": args.lr, "wd": args.wd}
-        state["runs"].append(run)
+        state[runs_key].append(run)
     for name in ("status", "train", "c4", "acc", "bpb", "wandb", "beaker"):
         value = getattr(args, name)
         if value is not None:
             run[name] = value
-    state["runs"].sort(key=lambda r: (r["epoch"], float(r["wd"]), float(r["lr"])))
+    state[runs_key].sort(key=lambda r: (r["epoch"], float(r["wd"]), float(r["lr"])))
     state["updated"] = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %H:%M %Z")
     rendered = json.dumps(state, indent=2, sort_keys=False) + "\n"
     JSON_PATH.write_text(rendered)
     JS_PATH.write_text("window.WD_REPORT_DATA = " + json.dumps(state, separators=(",", ":")) + ";\n")
-    print(f"updated epoch={args.epoch} lr={args.lr} wd={args.wd} status={args.status}")
+    print(f"updated series={args.series} epoch={args.epoch} lr={args.lr} wd={args.wd} status={args.status}")
 
 
 if __name__ == "__main__":
