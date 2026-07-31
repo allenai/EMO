@@ -49,5 +49,6 @@ launch src/scripts/train/olmo2-1B.py "${runname}" \
 		--model.block.name=default \
 		--model.block.sequence_mixer.qk_norm=null \
 		--train_module.scheduler="${scheduler_config}" \
+		--trainer.callbacks.checkpointer.fixed_steps="[239, 477, 716, 954]" \
 		--train_module.optim.weight_decay="${wd}" \
 		--lr="${lr}"
