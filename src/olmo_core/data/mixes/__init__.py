@@ -44,6 +44,10 @@ class DataMix(DataMixBase):
     OLMo_mix_0625 = "OLMo-mix-0625"
     OLMo_mix_0625_150Bsample = "OLMo-mix-0625-150Bsample"
     OLMo_mix_0625_150Bsample_dclm = "OLMo-mix-0625-150Bsample-dclm"
+    # DCLM-only views: 119.064B, 672.146B, and 3.685T verified dolma2 tokens.
+    dclm_120B = "dclm-120B"
+    dclm_700B = "dclm-700B"
+    dclm_full = "dclm-full"
     OLMoE_mix_0824_cc = "OLMoE-mix-0824-cc"
     the_pile_of_law = "the-pile-of-law"
     tpol_70_dclm_30 = "tpol-70-dclm-30"
@@ -137,6 +141,12 @@ class DataMix(DataMixBase):
         elif self == DataMix.OLMo_mix_0625:
             if tokenizer == TokenizerName.dolma2_sigdig:
                 tokenizer_id = "dolma2-tokenizer-sigdig"
+        elif self in [DataMix.OLMo_mix_0625_700Bsample, DataMix.dclm_700B]:
+            # This sample is only present under the short sigdig tokenizer directory name.
+            if tokenizer == TokenizerName.dolma2_sigdig:
+                tokenizer_id = "dolma2-tokenizer-sigdig"
+            elif self == DataMix.dclm_700B:
+                raise ValueError("dclm-700B is only available with the dolma2 sigdig tokenizer")
         elif self in [
             # Mixes used for OLMo3 training are saved with "dolma3-tokenizer" tokenizer,
             # which is exactly the same as "dolma2-tokenizer" but with a different name.
@@ -153,18 +163,39 @@ class DataMix(DataMixBase):
         elif tokenizer == TokenizerName.gpt_neox_olmo_dolma_v1_5:
             tokenizer_id = "gpt-neox-olmo-dolma-v1_5"
 
+        mix_source: DataMix = self
+        label_filter: str | None = None
+        deduplicate_paths = False
+        if self == DataMix.dclm_120B:
+            mix_source = DataMix.OLMo_mix_0625_150Bsample_dclm
+            label_filter = "dclm"
+        elif self == DataMix.dclm_700B:
+            mix_source = DataMix.OLMo_mix_0625_700Bsample
+            label_filter = "dclm"
+        elif self == DataMix.dclm_full:
+            mix_source = DataMix.OLMoE_mix_0824
+            label_filter = "dclm"
+            # The source mix repeats the five part-104 shards; a unique-data view should not.
+            deduplicate_paths = True
+
         paths = []
         labels = []
-        with _get_data_mix_path(self) as mix_path:
+        seen_paths = set()
+        with _get_data_mix_path(mix_source) as mix_path:
             with mix_path.open() as f:
                 for line_num, line in enumerate(f):
                     line = line.strip()
                     if not line or line.startswith("#"):
                         continue
                     label, path = line.split(",")
+                    if label_filter is not None and label != label_filter:
+                        continue
                     # if "{TOKENIZER}" not in path:
                     #     raise ValueError(f"line {line_num+1} in data mix '{self}' is invalid")
                     path = path.replace("{TOKENIZER}", tokenizer_id)
+                    if deduplicate_paths and path in seen_paths:
+                        continue
+                    seen_paths.add(path)
                     paths.append(f"{base_dir}{path}")
                     labels.append(label)
         return paths, labels
