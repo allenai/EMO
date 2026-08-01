@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cosine vs. WSD — 1B Model, 1B Tokens</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #657087;
+      --paper: #f7f8fb;
+      --card: #ffffff;
+      --line: #dde2ec;
+      --cosine: #2563eb;
+      --cosine-zero: #7c3aed;
+      --wsd: #dc5a39;
+      --good: #157f5b;
+      --good-bg: #eaf8f2;
+      --shadow: 0 10px 30px rgba(28, 39, 64, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { width: min(1160px, calc(100% - 36px)); margin: 36px auto 64px; }
+    header {
+      padding: 34px 38px;
+      border-radius: 20px;
+      color: white;
+      background: linear-gradient(120deg, #172033 0%, #263c68 58%, #304e87 100%);
+      box-shadow: var(--shadow);
+    }
+    h1 { margin: 0 0 8px; font-size: clamp(28px, 4vw, 46px); line-height: 1.08; letter-spacing: -0.035em; }
+    header p { max-width: 760px; margin: 0; color: #dce7ff; font-size: 17px; }
+    .eyebrow { margin-bottom: 12px; color: #a9c4ff; font-size: 12px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    .grid { display: grid; gap: 18px; }
+    .card {
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+    section { margin-top: 30px; }
+    h2 { margin: 0 0 12px; font-size: 25px; letter-spacing: -.02em; }
+    h3 { margin: 0 0 4px; font-size: 17px; }
+    p { margin: 7px 0; }
+    .charts { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .charts .card { padding: 18px; }
+    .chart { min-width: 0; }
+    .chart svg { display: block; width: 100%; height: auto; margin-top: 10px; overflow: visible; }
+    .chart-mount { min-height: 220px; }
+    .legend { display: flex; gap: 16px; margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+    .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 50%; }
+    .legend .cos::before { background: var(--cosine); }
+    .legend .cos-zero::before { background: var(--cosine-zero); }
+    .legend .wsd::before { background: var(--wsd); }
+    .best-legend { flex-wrap: wrap; }
+    .best-legend label { display:flex; align-items:center; gap:5px; cursor:pointer; }
+    .best-legend .swatch { width:18px; height:3px; border-radius:2px; background:currentColor; }
+    .best-legend .swatch::before { display:none; }
+    .best-legend .cos { color:var(--cosine); }
+    .best-legend .cos-zero { color:var(--cosine-zero); }
+    .best-legend .wsd { color:var(--wsd); }
+    #best-epoch-charts { grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:calc((100% - 36px)/4); overflow-x:auto; padding-bottom:10px; scroll-snap-type:x proximity; scrollbar-gutter:stable; }
+    #best-epoch-charts .chart { scroll-snap-align:start; }
+    .explorer-controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: end; margin: 14px 0; }
+    .explorer-controls label { display: grid; gap: 4px; color: var(--muted); font-size: 12px; font-weight: 750; letter-spacing: .05em; text-transform: uppercase; }
+    .explorer-controls select { min-width: 150px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; }
+    .coverage { margin: 10px 0 14px; font-size: 12px; }
+    .coverage th, .coverage td { padding: 7px 9px; text-align: center; white-space: normal; }
+    .coverage th:first-child, .coverage td:first-child { text-align: left; white-space: nowrap; }
+    .coverage .active { color: #9a5a00; font-weight: 400; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 13px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+    th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+    th { color: var(--muted); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+    tr.best-loss { background: #f1fbf7; }
+    tr.best-acc { box-shadow: inset 4px 0 var(--wsd); }
+    .scheduler { font-weight: 760; text-transform: capitalize; }
+    .cosine { color: var(--cosine); }
+    .cosine-zero { color: var(--cosine-zero); }
+    .wsd { color: var(--wsd); }
+    .winner { color: var(--good); font-weight: 800; }
+    .status-complete { color: var(--good); font-weight: 760; }
+    .status-running { color: #9a5a00; font-weight: 760; }
+    .pending { color: var(--muted); }
+    .live-stamp { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+    .table-wrap { overflow-x: auto; }
+    a { color: #245bc5; text-underline-offset: 2px; }
+    .notes { color: var(--muted); font-size: 13px; }
+    .method-grid { grid-template-columns: 1fr 1fr; }
+    code { padding: 2px 5px; border-radius: 5px; background: #eef1f6; font-size: .92em; }
+    footer { margin-top: 30px; color: var(--muted); font-size: 12px; text-align: center; }
+    @media (max-width: 900px) {
+      .charts { grid-template-columns: 1fr; }
+      #best-epoch-charts { grid-template-columns:none; grid-auto-columns:calc((100% - 12px)/2); }
+      .method-grid { grid-template-columns: 1fr; }
+    }
+    @media print {
+      body { background: white; }
+      main { width: 100%; margin: 0; }
+      .card, header { box-shadow: none; break-inside: avoid; }
+      a { color: inherit; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Pretraining scheduler study · July 30, 2026</div>
+    <h1>Cosine vs. WSD</h1>
+    <p>Dense 1B model on codelion/dclm-baseline-1B with a completed one-epoch sweep and live per-epoch tuning through epoch 5.</p>
+  </header>
+
+  <section id="multi-epoch-live">
+    <h2>Multi-epoch comparison — live</h2>
+    <p class="live-stamp"><strong>Step 0 cosine-to-zero extension complete:</strong> updated 2026-07-31 23:33 PDT · epoch-1 through epoch-5 LR gates resolved · all selected checkpoints now have the full nine-task suite · no active Step 0 runs · <a href="wsd_weight_decay_1b.html">Step 1 WD report</a></p>
+
+    <div class="legend best-legend" aria-label="Selected-series chart controls"><label class="cos"><span class="swatch"></span><input type="checkbox" data-best-toggle="cosine" checked>Cosine · best C4 LR per epoch</label><label class="cos-zero"><span class="swatch"></span><input type="checkbox" data-best-toggle="cosineAlpha0" checked>Cosine (alpha_f=0) · best C4 LR per epoch</label><label class="wsd"><span class="swatch"></span><input type="checkbox" data-best-toggle="wsd" checked>WSD · best C4 LR per epoch</label></div>
+    <div class="table-wrap">
+      <table class="coverage" aria-label="Evaluated learning rates by scheduler and epoch">
+        <thead><tr><th>Evaluated LRs</th><th>Epoch 1</th><th>Epoch 2</th><th>Epoch 3</th><th>Epoch 4</th><th>Epoch 5</th></tr></thead>
+        <tbody>
+          <tr><td class="scheduler cosine">Cosine</td><td><strong>2.5e-4</strong> · 5e-4 · 1e-3 · 2e-3 · 4e-3 · 8e-3</td><td>2.5e-4 · <strong>5e-4</strong> · 1e-3</td><td>2.5e-4 · 5e-4 · <strong>1e-3</strong></td><td>2.5e-4 · 5e-4 · <strong>1e-3</strong> · 2e-3</td><td>2.5e-4 · 5e-4 · <strong>1e-3</strong> · 2e-3</td></tr>
+          <tr><td class="scheduler cosine-zero">Cosine (alpha_f=0)</td><td>2.5e-4 · <strong>5e-4</strong> · 1e-3</td><td><strong>5e-4</strong> · 1e-3</td><td><strong>5e-4</strong> · 1e-3</td><td>5e-4 · <strong>1e-3</strong></td><td><strong>1e-3</strong> · 2e-3</td></tr>
+          <tr><td class="scheduler wsd">WSD</td><td>2.5e-4 · <strong>5e-4</strong> · 1e-3 · 2e-3 · 4e-3 · 8e-3</td><td><strong>5e-4</strong> · 1e-3 · 2e-3</td><td><strong>5e-4</strong> · 1e-3 · 2e-3</td><td>5e-4 · <strong>1e-3</strong> · 2e-3</td><td>5e-4 · <strong>1e-3</strong> · 2e-3</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="notes">Epoch 1 coverage includes the warmup20 sweep, while charts prefer the matched warmup24 baseline when the same LR exists.</p>
+    <p class="notes">The epoch-1 cosine alpha_f=0 sweep selects LR 5e-4 at C4 CE 5.797, which remains worse than the original cosine alpha_f=0.1 optimum of 5.745 at LR 2.5e-4.</p>
+    <p class="notes">At epoch 2, cosine alpha_f=0 selects LR 5e-4 at C4 CE 4.882 over LR 1e-3 at 5.071.</p>
+    <p class="notes">At epoch 4, cosine alpha_f=0 selects LR 1e-3 at C4 CE 3.993 over LR 5e-4 at 4.031.</p>
+    <p class="notes">At epoch 5, cosine alpha_f=0 selects LR 1e-3 at C4 CE 3.809 over LR 2e-3 at 4.167.</p>
+    <div class="grid charts" id="best-epoch-charts" tabindex="0" aria-label="Scrollable selected-series charts; four charts are visible at a time">
+      <article class="card chart"><h3>Final training CE</h3><div class="notes">Each point uses the run with the lowest C4 CE at that epoch.</div><div class="chart-mount" data-best-metric="train"></div></article>
+      <article class="card chart"><h3>Held-out C4 CE</h3><div class="notes">Lower is better.</div><div class="chart-mount" data-best-metric="c4"></div></article>
+      <article class="card chart"><h3>HellaSwag accuracy</h3><div class="notes">Higher is better.</div><div class="chart-mount" data-best-metric="acc"></div></article>
+      <article class="card chart"><h3>HellaSwag BPB</h3><div class="notes">Lower is better.</div><div class="chart-mount" data-best-metric="bpb"></div></article>
+      <article class="card chart"><h3>8-task average accuracy · no BoolQ</h3><div class="notes">Higher is better.</div><div class="chart-mount" data-best-metric="avg8_acc"></div></article>
+      <article class="card chart"><h3>3-task stable average · ARC-E, HS, PIQA</h3><div class="notes">Higher is better.</div><div class="chart-mount" data-best-metric="avg3_acc"></div></article>
+      <article class="card chart"><h3>ARC-Challenge normalized accuracy</h3><div class="notes">Higher is better.</div><div class="chart-mount" data-best-metric="ds_arc_challenge"></div></article>
+      <article class="card chart"><h3>ARC-Easy accuracy</h3><div class="notes">Higher is better.</div><div class="chart-mount" data-best-metric="ds_arc_easy"></div></article>
+      <article class="card chart"><h3>CSQA 5-shot normalized accuracy</h3><div class="notes">Higher is better.</div><div class="chart-mount" data-best-metric="ds_csqa"></div></article>
+      <article class="card chart"><h3>OpenBookQA 5-shot normalized accuracy</h3><div class="notes">Higher is better.</div><div class="chart-mount" data-best-metric="ds_openbookqa"></div></article>
+      <article class="card chart"><h3>PIQA normalized accuracy</h3><div class="notes">Higher is better.</div><div class="chart-mount" data-best-metric="ds_piqa"></div></article>
+      <article class="card chart"><h3>SocialIQA 5-shot normalized accuracy</h3><div class="notes">Higher is better.</div><div class="chart-mount" data-best-metric="ds_socialiqa"></div></article>
+      <article class="card chart"><h3>Winogrande accuracy</h3><div class="notes">Higher is better.</div><div class="chart-mount" data-best-metric="ds_winogrande"></div></article>
+    </div>
+    <p class="notes">Scroll horizontally to inspect the remaining figures. The 8-task average excludes BoolQ; the stable 3-task average uses ARC-Easy, HellaSwag, and PIQA.</p>
+
+    <h2 style="margin-top:18px">Full-suite checkpoint evaluation provenance</h2>
+    <div class="card table-wrap"><table><thead><tr><th>Series</th><th>Epoch</th><th>LR</th><th>Status</th><th>W&amp;B</th><th>Beaker</th></tr></thead><tbody id="full-suite-evals-body"></tbody></table></div>
+
+    <section id="lr-explorer">
+      <h2>Interactive LR comparison</h2>
+      <div class="explorer-controls" aria-label="Learning-rate comparison controls">
+        <label for="explorer-cosine-lr">Cosine LR<select id="explorer-cosine-lr"><option value="2.5e-4">2.5e-4</option><option value="5e-4">5e-4</option><option value="1e-3">1e-3</option><option value="2e-3">2e-3</option><option value="4e-3">4e-3</option><option value="8e-3">8e-3</option></select></label>
+        <label for="explorer-cosine-zero-lr">Cosine (alpha_f=0) LR<select id="explorer-cosine-zero-lr"><option value="2.5e-4">2.5e-4</option><option value="5e-4" selected>5e-4</option><option value="1e-3">1e-3</option><option value="2e-3">2e-3</option></select></label>
+        <label for="explorer-wsd-lr">WSD LR<select id="explorer-wsd-lr"><option value="2.5e-4">2.5e-4</option><option value="5e-4" selected>5e-4</option><option value="1e-3">1e-3</option><option value="2e-3">2e-3</option><option value="4e-3">4e-3</option><option value="8e-3">8e-3</option></select></label>
+      </div>
+      <div class="legend"><span class="cos" id="explorer-cosine-label">Cosine · 2.5e-4</span><span class="cos-zero" id="explorer-cosine-zero-label">Cosine (alpha_f=0) · 5e-4</span><span class="wsd" id="explorer-wsd-label">WSD · 5e-4</span></div>
+      <div class="grid charts" id="lr-explorer-charts" aria-live="polite">
+        <article class="card chart"><h3>Final training CE</h3><div class="notes">Lower is better.</div><div class="chart-mount" data-explorer-metric="train"></div></article>
+        <article class="card chart"><h3>Held-out C4 CE</h3><div class="notes">Lower is better.</div><div class="chart-mount" data-explorer-metric="c4"></div></article>
+        <article class="card chart"><h3>HellaSwag accuracy</h3><div class="notes">Higher is better.</div><div class="chart-mount" data-explorer-metric="acc"></div></article>
+        <article class="card chart"><h3>HellaSwag BPB</h3><div class="notes">Lower is better.</div><div class="chart-mount" data-explorer-metric="bpb"></div></article>
+      </div>
+      <p class="notes">The explorer draws completed runs only.</p>
+    </section>
+
+    <div class="card table-wrap" style="margin-top: 18px">
+      <table>
+        <thead><tr><th>Epochs</th><th>Scheduler</th><th>Status</th><th>Final train CE ↓</th><th>C4 CE ↓</th><th>HS acc ↑</th><th>HS BPB ↓</th><th>W&amp;B</th><th>Beaker</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="scheduler cosine">Cosine</td><td class="status-complete">Complete</td><td>5.338*</td><td>5.745*</td><td>25.045%</td><td>1.67334</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/hld1nske">hld1nske</a></td><td><a href="https://beaker.org/ex/01KYSXCMHC6EXWHTN6ZKBA3VN3">experiment</a></td></tr>
+          <tr><td>1</td><td class="scheduler cosine-zero">Cosine (alpha_f=0) · LR 2.5e-4</td><td class="status-complete">Complete · control</td><td>5.442*</td><td>5.858*</td><td>24.990%*</td><td>1.710*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/3fv5stnc">3fv5stnc</a></td><td><a href="https://beaker.org/ex/01KYW7BHENKQ6BV79E0VKAKK3Y">experiment</a></td></tr>
+          <tr><td>1</td><td class="scheduler cosine-zero">Cosine (alpha_f=0) · LR 5e-4</td><td class="status-complete">Complete · control</td><td>5.401*</td><td>5.797*</td><td>24.990%*</td><td>1.683*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/6jp8lizb">6jp8lizb</a></td><td><a href="https://beaker.org/ex/01KYW7D52NHM2KX4RKFWKQW055">experiment</a></td></tr>
+          <tr><td>1</td><td class="scheduler cosine-zero">Cosine (alpha_f=0) · LR 1e-3</td><td class="status-complete">Complete · control</td><td>5.761*</td><td>6.146*</td><td>25.270%*</td><td>1.778*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/y6uawtz5">y6uawtz5</a></td><td><a href="https://beaker.org/ex/01KYW7ENA7BH6YJ1DJTQFTC4Z7">experiment</a></td></tr>
+          <tr><td>2</td><td class="scheduler cosine-zero">Cosine (alpha_f=0) · LR 5e-4</td><td class="status-complete">Complete · selected</td><td>4.480*</td><td>4.882*</td><td>25.260%*</td><td>1.382*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/5zprlznq">5zprlznq</a></td><td><a href="https://beaker.org/ex/01KYWCNVK9HVJWPRJ8HW4E14Q4">experiment</a></td></tr>
+          <tr><td>2</td><td class="scheduler cosine-zero">Cosine (alpha_f=0) · LR 1e-3</td><td class="status-complete">Complete</td><td>4.673*</td><td>5.071*</td><td>24.630%*</td><td>1.432*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/p0db6flu">p0db6flu</a></td><td><a href="https://beaker.org/ex/01KYWCPZT88TQ1D10C55B0ASNT">experiment</a></td></tr>
+          <tr><td>3</td><td class="scheduler cosine-zero">Cosine (alpha_f=0) · LR 5e-4</td><td class="status-complete">Complete · selected</td><td>3.938*</td><td>4.309*</td><td>25.900%*</td><td>1.217*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/dzje3lpd">dzje3lpd</a></td><td><a href="https://beaker.org/ex/01KYWJG6VE7W2N3FJ71EM7Q7HN">experiment</a></td></tr>
+          <tr><td>3</td><td class="scheduler cosine-zero">Cosine (alpha_f=0) · LR 1e-3</td><td class="status-complete">Complete</td><td>3.956*</td><td>4.322*</td><td>25.810%*</td><td>1.222*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/ejbhxwvq">ejbhxwvq</a></td><td><a href="https://beaker.org/ex/01KYWJH68EXNF80EYVSH0MEPZ2">experiment</a></td></tr>
+          <tr><td>4</td><td class="scheduler cosine-zero">Cosine (alpha_f=0) · LR 5e-4</td><td class="status-complete">Complete</td><td>3.678*</td><td>4.031*</td><td>26.130%*</td><td>1.138*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/jaq1kv4n">jaq1kv4n</a></td><td><a href="https://beaker.org/ex/01KYWX26YPK7B4A2QREWXJZZ75">experiment</a></td></tr>
+          <tr><td>4</td><td class="scheduler cosine-zero">Cosine (alpha_f=0) · LR 1e-3</td><td class="status-complete">Complete · selected</td><td>3.655*</td><td>3.993*</td><td>26.530%*</td><td>1.120*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/0sa71s2d">0sa71s2d</a></td><td><a href="https://beaker.org/ex/01KYX16W3SF1M85NVP1802CTKB">experiment</a></td></tr>
+          <tr><td>5</td><td class="scheduler cosine-zero">Cosine (alpha_f=0) · LR 1e-3</td><td class="status-complete">Complete · selected</td><td>3.422*</td><td>3.809*</td><td>28.090%*</td><td>1.067*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/kx6yfp71">kx6yfp71</a></td><td><a href="https://beaker.org/ex/01KYXASNFJZKZR6RVGDVD73FVR">experiment</a></td></tr>
+          <tr><td>5</td><td class="scheduler cosine-zero">Cosine (alpha_f=0) · LR 2e-3</td><td class="status-complete">Complete</td><td>3.802*</td><td>4.167*</td><td>25.870%*</td><td>1.173*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/wy03rcl1">wy03rcl1</a></td><td><a href="https://beaker.org/ex/01KYXASPPYHKCZQ519380NEN5H">experiment</a></td></tr>
+          <tr><td>1</td><td class="scheduler wsd">WSD</td><td class="status-complete">Complete</td><td>5.025*</td><td>5.394*</td><td>25.095%</td><td>1.53507</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/brbweepb">brbweepb</a></td><td><a href="https://beaker.org/ex/01KYSXCMH5F9R1T8WZEXPNC1RQ">experiment</a></td></tr>
+          <tr><td>2</td><td class="scheduler cosine">Cosine</td><td class="status-complete">Complete</td><td>4.555*</td><td>4.992*</td><td>25.095%</td><td>1.43411</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/8wt5pa40">8wt5pa40</a></td><td><a href="https://beaker.org/ex/01KYSXCMKM1ZW6BXZXGYDV0M5B">experiment</a></td></tr>
+          <tr><td>2</td><td class="scheduler wsd">WSD</td><td class="status-complete">Complete</td><td>3.982*</td><td>4.305*</td><td>25.931%</td><td>1.21155</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/hgoyq9yp">hgoyq9yp</a></td><td><a href="https://beaker.org/ex/01KYT0G2AM8PD2EQQP2589XB1X">experiment</a></td></tr>
+          <tr><td>3</td><td class="scheduler cosine">Cosine</td><td class="status-complete">Complete</td><td>4.118*</td><td>4.537*</td><td>25.822%</td><td>1.29414</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/8pdl09n3">8pdl09n3</a></td><td><a href="https://beaker.org/ex/01KYSXCNV03MKN3A9KWC3TMT3P">experiment</a></td></tr>
+          <tr><td>3</td><td class="scheduler wsd">WSD</td><td class="status-complete">Complete</td><td>3.571*</td><td>3.910*</td><td>27.524%</td><td>1.09211</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/a1g9kxvn">a1g9kxvn</a></td><td><a href="https://beaker.org/ex/01KYT3457Y0TQTVXC64241JGY8">experiment</a></td></tr>
+          <tr><td>4</td><td class="scheduler cosine">Cosine</td><td class="status-complete">Complete</td><td>3.894*</td><td>4.283*</td><td>26.120%</td><td>1.21473</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/y22bp7b1">y22bp7b1</a></td><td><a href="https://beaker.org/ex/01KYT02NYDJSWZ7S858W92SJHG">experiment</a></td></tr>
+          <tr><td>4</td><td class="scheduler wsd">WSD</td><td class="status-complete">Complete</td><td>3.380*</td><td>3.741*</td><td>29.496%</td><td>1.04104</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/rnhcwd8h">rnhcwd8h</a></td><td><a href="https://beaker.org/ex/01KYT5GNFS7VTS4X3MYVBC43P5">experiment</a></td></tr>
+          <tr><td>5</td><td class="scheduler cosine">Cosine</td><td class="status-complete">Complete</td><td>3.712*</td><td>4.118*</td><td>26.110%</td><td>1.16602</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/0aehj2r4">0aehj2r4</a></td><td><a href="https://beaker.org/ex/01KYSXCR5ABEYGZXBQ6AESA8CH">experiment</a></td></tr>
+          <tr><td>5</td><td class="scheduler wsd">WSD</td><td class="status-complete">Complete</td><td>3.221*</td><td>3.660*</td><td>31.199%</td><td>1.01472</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/qd31flpr">qd31flpr</a></td><td><a href="https://beaker.org/ex/01KYTBMCJRCJA0HN2FTZMZKB18">retry experiment</a></td></tr>
+          <tr><td>6</td><td class="scheduler cosine">Cosine</td><td class="status-complete">Complete · untuned baseline</td><td>3.603*</td><td>4.016*</td><td>27.196%</td><td>1.13420</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/9vsyqnnv">9vsyqnnv</a></td><td><a href="https://beaker.org/ex/01KYSXCP0NGDNMTV7A1V9XNDCZ">experiment</a></td></tr>
+          <tr><td>2</td><td class="scheduler cosine">Cosine · LR 5e-4</td><td class="status-complete">Complete</td><td>4.330*</td><td>4.717*</td><td>25.453%</td><td>1.33476</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/nrcwlfgo">nrcwlfgo</a></td><td><a href="https://beaker.org/ex/01KYTBJQ3NEX1JDZC1H40SGWE6">experiment</a></td></tr>
+          <tr><td>3</td><td class="scheduler cosine">Cosine · LR 5e-4</td><td class="status-complete">Complete</td><td>3.845*</td><td>4.208*</td><td>26.210%</td><td>1.18635</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/zvwm77c7">zvwm77c7</a></td><td><a href="https://beaker.org/ex/01KYTCATNA6XWK2ZH0SYADWQWY">experiment</a></td></tr>
+          <tr><td>2</td><td class="scheduler cosine">Cosine · LR 1e-3</td><td class="status-complete">Complete · exit code 0</td><td>4.475*</td><td>4.859*</td><td>25.130%*</td><td>1.367*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/ne3zo8aj">ne3zo8aj</a></td><td><a href="https://beaker.org/ex/01KYTHK3SCTVM43Z78N6AEA01J">experiment</a></td></tr>
+          <tr><td>3</td><td class="scheduler cosine">Cosine · LR 1e-3</td><td class="status-complete">Complete · exit code 0</td><td>3.834*</td><td>4.191*</td><td>26.310%*</td><td>1.177*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/75hwfabc">75hwfabc</a></td><td><a href="https://beaker.org/ex/01KYTHM0XE58GYJ8825G35ZG9T">experiment</a></td></tr>
+          <tr><td>1 prefix</td><td class="scheduler wsd">WSD · LR 1e-3</td><td class="status-complete">Complete · stable step 214 saved</td><td>5.440*</td><td>5.800*</td><td>24.796%</td><td>1.65583</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/9mr43lsp">9mr43lsp</a></td><td><a href="https://beaker.org/ex/01KYTCMG0DEZSXVW75EDEFWQYV">experiment</a></td></tr>
+          <tr><td>1 prefix</td><td class="scheduler wsd">WSD · LR 2e-3</td><td class="status-complete">Complete · stable step 214 saved</td><td>5.897*</td><td>6.262*</td><td>25.070%*</td><td>1.826*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/4yv7fqom">4yv7fqom</a></td><td><a href="https://beaker.org/ex/01KYTVD91JFMBS9HZN49Z9V5X2">experiment</a></td></tr>
+          <tr><td>2</td><td class="scheduler wsd">WSD · LR 1e-3</td><td class="status-complete">Complete · stable step 428 saved</td><td>4.144*</td><td>4.495*</td><td>25.710%*</td><td>1.262*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/bfklutxz">bfklutxz</a></td><td><a href="https://beaker.org/ex/01KYTFCTKM1AEZTKRHBEJ3M5W2">experiment</a></td></tr>
+          <tr><td>3</td><td class="scheduler wsd">WSD · LR 1e-3</td><td class="status-complete">Complete · exit code 0</td><td>3.575*</td><td>3.915*</td><td>27.380%*</td><td>1.092*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/yu8fstov">yu8fstov</a></td><td><a href="https://beaker.org/ex/01KYTJ7WDSWV5NRWMS6KTS2T4M">experiment</a></td></tr>
+          <tr><td>4</td><td class="scheduler wsd">WSD · LR 1e-3</td><td class="status-complete">Complete · stable step 858 saved</td><td>3.350*</td><td>3.702*</td><td>29.890%*</td><td>1.028*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/byb6zm1s">byb6zm1s</a></td><td><a href="https://beaker.org/ex/01KYTP7NMCAP8KGA92DRVFFMES">experiment</a></td></tr>
+          <tr><td>5</td><td class="scheduler wsd">WSD · LR 1e-3</td><td class="status-complete">Complete · exit code 0</td><td>3.184*</td><td>3.602*</td><td>31.760%*</td><td>0.9959*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/1lnzmcsr">1lnzmcsr</a></td><td><a href="https://beaker.org/ex/01KYTSSJ286TB6APX11Z2YD0EM">experiment</a></td></tr>
+          <tr><td>4</td><td class="scheduler cosine">Cosine · LR 5e-4</td><td class="status-complete">Complete · exit code 0</td><td>3.610*</td><td>3.966*</td><td>27.280%*</td><td>1.114*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/ad7u548a">ad7u548a</a></td><td><a href="https://beaker.org/ex/01KYTPF8B0HZ42TYWABD0GSQZV">experiment</a></td></tr>
+          <tr><td>5</td><td class="scheduler cosine">Cosine · LR 5e-4</td><td class="status-complete">Complete · exit code 0</td><td>3.428*</td><td>3.840*</td><td>28.160%*</td><td>1.076*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/ybkqc1dz">ybkqc1dz</a></td><td><a href="https://beaker.org/ex/01KYTPH2S3VWCAXHW6S9VHBM26">experiment</a></td></tr>
+          <tr><td>4</td><td class="scheduler cosine">Cosine · LR 1e-3</td><td class="status-complete">Complete · exit code 0</td><td>3.585*</td><td>3.930*</td><td>26.960%*</td><td>1.100*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/4katc6ms">4katc6ms</a></td><td><a href="https://beaker.org/ex/01KYTPJKRF736MJA8V4K3GDKY9">experiment</a></td></tr>
+          <tr><td>5</td><td class="scheduler cosine">Cosine · LR 1e-3</td><td class="status-complete">Complete · exit code 0</td><td>3.356*</td><td>3.766*</td><td>29.150%*</td><td>1.050*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/kr2xx98v">kr2xx98v</a></td><td><a href="https://beaker.org/ex/01KYTPMAMWEJPMM19FM8AS7Q6V">experiment</a></td></tr>
+          <tr><td>4</td><td class="scheduler cosine">Cosine · LR 2e-3</td><td class="status-complete">Complete · exit code 0</td><td>3.895*</td><td>4.241*</td><td>26.030%*</td><td>1.196*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/lbm92e80">lbm92e80</a></td><td><a href="https://beaker.org/ex/01KYTVA2KTPJG5F8HA8FGMD3T1">experiment</a></td></tr>
+          <tr><td>5</td><td class="scheduler cosine">Cosine · LR 2e-3</td><td class="status-complete">Complete · exit code 0</td><td>3.688*</td><td>4.043*</td><td>27.040%*</td><td>1.133*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/ear556q1">ear556q1</a></td><td><a href="https://beaker.org/ex/01KYTVBN6TPRE08DX620MW2X8J">experiment</a></td></tr>
+          <tr><td>2</td><td class="scheduler wsd">WSD · LR 2e-3</td><td class="status-complete">Complete · stable step 428 saved</td><td>5.058*</td><td>5.521*</td><td>24.880%*</td><td>1.598*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/fql87zjq">fql87zjq</a></td><td><a href="https://beaker.org/ex/01KYTYFJ4HZZQZG0K93KT9TGJ1">experiment</a></td></tr>
+          <tr><td>3</td><td class="scheduler wsd">WSD · LR 2e-3</td><td class="status-complete">Complete · stable step 643 saved</td><td>4.515*</td><td>4.978*</td><td>25.110%*</td><td>1.430*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/sc6qqx3p">sc6qqx3p</a></td><td><a href="https://beaker.org/ex/01KYV36NB5E89H7CKRMDWTPTHQ">experiment</a></td></tr>
+          <tr><td>4</td><td class="scheduler wsd">WSD · LR 2e-3</td><td class="status-complete">Complete · stable step 858 saved</td><td>4.189*</td><td>4.609*</td><td>25.920%*</td><td>1.328*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/rde4dgnb">rde4dgnb</a></td><td><a href="https://beaker.org/ex/01KYV61SPWSYERY7WEXF1CXDTT">experiment</a></td></tr>
+          <tr><td>5</td><td class="scheduler wsd">WSD · LR 2e-3</td><td class="status-complete">Complete · exit code 0</td><td>4.018*</td><td>4.448*</td><td>26.020%*</td><td>1.282*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/364j6qgc">364j6qgc</a></td><td><a href="https://beaker.org/ex/01KYV8PXJ7BZ3RWFW5Y9B3ZWF9">experiment</a></td></tr>
+        </tbody>
+      </table>
+      <p class="notes">* Starred values use Beaker console precision pending exact W&amp;B extraction.</p>
+      <p class="notes">Cosine epoch 6 is historical, untuned, and excluded.</p>
+      <p class="notes">Higher-LR WSD runs resume from same-LR stable checkpoints, while cosine trains from scratch.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Lower-LR sweep completion</h2>
+    <div class="card table-wrap">
+      <table>
+        <thead><tr><th>Scheduler</th><th>LR</th><th>Status</th><th>Step</th><th>W&amp;B</th></tr></thead>
+        <tbody>
+          <tr><td class="scheduler cosine">Cosine</td><td>5e-4</td><td>Completed</td><td>239 / 239</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/uvbq908i">uvbq908i</a></td></tr>
+          <tr><td class="scheduler wsd">WSD</td><td>5e-4</td><td>Completed</td><td>239 / 239</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/ivvn8q6z">ivvn8q6z</a></td></tr>
+          <tr><td class="scheduler cosine">Cosine</td><td>2.5e-4</td><td>Completed</td><td>239 / 239</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/x1a66vcj">x1a66vcj</a></td></tr>
+          <tr><td class="scheduler wsd">WSD</td><td>2.5e-4</td><td>Completed</td><td>239 / 239</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/g7wfzk4h">g7wfzk4h</a></td></tr>
+        </tbody>
+      </table>
+      <p class="notes">All four lower-LR runs completed with exit code 0 and final evaluation at step 239.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Learning-rate sensitivity</h2>
+    <div class="legend"><span class="cos">Cosine</span><span class="wsd">WSD</span></div>
+    <div class="grid charts">
+      <article class="card chart">
+        <h3>Final training CE</h3>
+        <div class="notes">Lower is better · exact W&amp;B step 239</div>
+        <svg viewBox="0 0 330 230" role="img" aria-label="Final training CE by learning rate">
+          <g stroke="#dde2ec" stroke-width="1">
+            <line x1="46" y1="28" x2="312" y2="28"/><line x1="46" y1="88" x2="312" y2="88"/>
+            <line x1="46" y1="148" x2="312" y2="148"/><line x1="46" y1="188" x2="312" y2="188"/>
+          </g>
+          <g fill="#657087" font-size="11">
+            <text x="8" y="32">6.7</text><text x="8" y="92">6.1</text><text x="8" y="152">5.5</text>
+            <text x="38" y="213">2.5e-4</text><text x="90" y="213">5e-4</text><text x="140" y="213">1e-3</text><text x="190" y="213">2e-3</text><text x="240" y="213">4e-3</text><text x="283" y="213">8e-3</text>
+          </g>
+          <polyline points="50,156 100,154 150,121 200,84 250,61 300,39" fill="none" stroke="#2563eb" stroke-width="3"/>
+          <polyline points="50,183 100,180 150,142 200,88 250,64 300,46" fill="none" stroke="#dc5a39" stroke-width="3"/>
+          <g fill="#2563eb"><circle cx="50" cy="156" r="5"/><circle cx="100" cy="154" r="5"/><circle cx="150" cy="121" r="5"/><circle cx="200" cy="84" r="5"/><circle cx="250" cy="61" r="5"/><circle cx="300" cy="39" r="5"/></g>
+          <g fill="#dc5a39"><circle cx="50" cy="183" r="5"/><circle cx="100" cy="180" r="5"/><circle cx="150" cy="142" r="5"/><circle cx="200" cy="88" r="5"/><circle cx="250" cy="64" r="5"/><circle cx="300" cy="46" r="5"/></g>
+        </svg>
+      </article>
+      <article class="card chart">
+        <h3>Held-out C4 CE</h3>
+        <div class="notes">Lower is better · 109,648 label tokens</div>
+        <svg viewBox="0 0 330 230" role="img" aria-label="Held-out C4 CE by learning rate">
+          <g stroke="#dde2ec" stroke-width="1">
+            <line x1="46" y1="28" x2="312" y2="28"/><line x1="46" y1="88" x2="312" y2="88"/>
+            <line x1="46" y1="148" x2="312" y2="148"/><line x1="46" y1="188" x2="312" y2="188"/>
+          </g>
+          <g fill="#657087" font-size="11">
+            <text x="8" y="32">6.9</text><text x="8" y="92">6.3</text><text x="8" y="152">5.7</text>
+            <text x="38" y="213">2.5e-4</text><text x="90" y="213">5e-4</text><text x="140" y="213">1e-3</text><text x="190" y="213">2e-3</text><text x="240" y="213">4e-3</text><text x="283" y="213">8e-3</text>
+          </g>
+          <polyline points="50,149 100,148 150,113 200,75 250,53 300,34" fill="none" stroke="#2563eb" stroke-width="3"/>
+          <polyline points="50,181 100,181 150,138 200,79 250,57 300,38" fill="none" stroke="#dc5a39" stroke-width="3"/>
+          <g fill="#2563eb"><circle cx="50" cy="149" r="5"/><circle cx="100" cy="148" r="5"/><circle cx="150" cy="113" r="5"/><circle cx="200" cy="75" r="5"/><circle cx="250" cy="53" r="5"/><circle cx="300" cy="34" r="5"/></g>
+          <g fill="#dc5a39"><circle cx="50" cy="181" r="5"/><circle cx="100" cy="181" r="5"/><circle cx="150" cy="138" r="5"/><circle cx="200" cy="79" r="5"/><circle cx="250" cy="57" r="5"/><circle cx="300" cy="38" r="5"/></g>
+        </svg>
+      </article>
+      <article class="card chart">
+        <h3>HellaSwag accuracy</h3>
+        <div class="notes">Higher is better · length-normalized</div>
+        <svg viewBox="0 0 330 230" role="img" aria-label="HellaSwag accuracy by learning rate">
+          <g stroke="#dde2ec" stroke-width="1">
+            <line x1="46" y1="28" x2="312" y2="28"/><line x1="46" y1="88" x2="312" y2="88"/>
+            <line x1="46" y1="148" x2="312" y2="148"/><line x1="46" y1="188" x2="312" y2="188"/>
+          </g>
+          <g fill="#657087" font-size="11">
+            <text x="3" y="32">26.2%</text><text x="3" y="92">25.6%</text><text x="3" y="152">25.0%</text>
+            <text x="38" y="213">2.5e-4</text><text x="90" y="213">5e-4</text><text x="140" y="213">1e-3</text><text x="190" y="213">2e-3</text><text x="240" y="213">4e-3</text><text x="283" y="213">8e-3</text>
+          </g>
+          <polyline points="50,167 100,135 150,126 200,108 250,93 300,98" fill="none" stroke="#2563eb" stroke-width="3"/>
+          <polyline points="50,170 100,146 150,126 200,94 250,43 300,81" fill="none" stroke="#dc5a39" stroke-width="3"/>
+          <g fill="#2563eb"><circle cx="50" cy="167" r="5"/><circle cx="100" cy="135" r="5"/><circle cx="150" cy="126" r="5"/><circle cx="200" cy="108" r="5"/><circle cx="250" cy="93" r="5"/><circle cx="300" cy="98" r="5"/></g>
+          <g fill="#dc5a39"><circle cx="50" cy="170" r="5"/><circle cx="100" cy="146" r="5"/><circle cx="150" cy="126" r="5"/><circle cx="200" cy="94" r="5"/><circle cx="250" cy="43" r="5"/><circle cx="300" cy="81" r="5"/></g>
+        </svg>
+      </article>
+      <article class="card chart">
+        <h3>HellaSwag BPB</h3>
+        <div class="notes">Lower is better · primary non-v2 metric</div>
+        <svg viewBox="0 0 330 230" role="img" aria-label="HellaSwag bits per byte by learning rate">
+          <g stroke="#dde2ec" stroke-width="1">
+            <line x1="46" y1="28" x2="312" y2="28"/><line x1="46" y1="88" x2="312" y2="88"/>
+            <line x1="46" y1="148" x2="312" y2="148"/><line x1="46" y1="188" x2="312" y2="188"/>
+          </g>
+          <g fill="#657087" font-size="11">
+            <text x="8" y="32">2.05</text><text x="8" y="92">1.85</text><text x="8" y="152">1.65</text>
+            <text x="38" y="213">2.5e-4</text><text x="90" y="213">5e-4</text><text x="140" y="213">1e-3</text><text x="190" y="213">2e-3</text><text x="240" y="213">4e-3</text><text x="283" y="213">8e-3</text>
+          </g>
+          <polyline points="50,135 100,137 150,107 200,66 250,51 300,38" fill="none" stroke="#2563eb" stroke-width="3"/>
+          <polyline points="50,168 100,171 150,135 200,71 250,54 300,43" fill="none" stroke="#dc5a39" stroke-width="3"/>
+          <g fill="#2563eb"><circle cx="50" cy="135" r="5"/><circle cx="100" cy="137" r="5"/><circle cx="150" cy="107" r="5"/><circle cx="200" cy="66" r="5"/><circle cx="250" cy="51" r="5"/><circle cx="300" cy="38" r="5"/></g>
+          <g fill="#dc5a39"><circle cx="50" cy="168" r="5"/><circle cx="100" cy="171" r="5"/><circle cx="150" cy="135" r="5"/><circle cx="200" cy="71" r="5"/><circle cx="250" cy="54" r="5"/><circle cx="300" cy="43" r="5"/></g>
+        </svg>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <h2>Exact results</h2>
+    <div class="card table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Scheduler</th><th>Peak LR</th><th>Final train CE ↓</th>
+            <th>Held-out C4 CE ↓</th><th>HellaSwag ↑</th><th>HS BPB ↓</th><th>W&amp;B</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="best-loss">
+            <td class="scheduler cosine">Cosine</td><td>2.5e-4</td><td class="winner">5.339872</td><td class="winner">5.766735</td><td>24.7261%</td><td>1.680812</td>
+            <td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/x1a66vcj">x1a66vcj</a></td>
+          </tr>
+          <tr>
+            <td class="scheduler cosine">Cosine</td><td>5e-4</td><td>5.363315</td><td>5.773904</td><td>25.0647%</td><td class="winner">1.676276</td>
+            <td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/uvbq908i">uvbq908i</a></td>
+          </tr>
+          <tr>
+            <td class="scheduler cosine">Cosine</td><td>1e-3</td><td>5.711180</td><td>6.104700</td><td>25.1544%</td><td>1.778159</td>
+            <td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/3bwlnwfs">3bwlnwfs</a></td>
+          </tr>
+          <tr>
+            <td class="scheduler cosine">Cosine</td><td>2e-3</td><td>6.107027</td><td>6.455493</td><td>25.3535%</td><td>1.918156</td>
+            <td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/ko1sjq4v">ko1sjq4v</a></td>
+          </tr>
+          <tr>
+            <td class="scheduler cosine">Cosine</td><td>4e-3</td><td>6.349750</td><td>6.665292</td><td class="winner">25.5128%</td><td>1.971449</td>
+            <td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/7iha1qzu">7iha1qzu</a></td>
+          </tr>
+          <tr>
+            <td class="scheduler cosine">Cosine</td><td>8e-3</td><td>6.583728</td><td>6.848837</td><td>25.4531%</td><td>2.015111</td>
+            <td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/4lcqkeyx">4lcqkeyx</a></td>
+          </tr>
+          <tr>
+            <td class="scheduler wsd">WSD</td><td>2.5e-4</td><td class="winner">5.048845</td><td>5.466372</td><td>24.6963%</td><td>1.569405</td>
+            <td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/g7wfzk4h">g7wfzk4h</a></td>
+          </tr>
+          <tr class="best-loss">
+            <td class="scheduler wsd">WSD</td><td>5e-4</td><td>5.081851</td><td class="winner">5.465569</td><td>24.9452%</td><td class="winner">1.558956</td>
+            <td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/ivvn8q6z">ivvn8q6z</a></td>
+          </tr>
+          <tr>
+            <td class="scheduler wsd">WSD</td><td>1e-3</td><td>5.492155</td><td>5.870142</td><td>25.1544%</td><td>1.683197</td>
+            <td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/k70hao3y">k70hao3y</a></td>
+          </tr>
+          <tr>
+            <td class="scheduler wsd">WSD</td><td>2e-3</td><td>6.059770</td><td>6.419499</td><td>25.5029%</td><td>1.903430</td>
+            <td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/8lerrmug">8lerrmug</a></td>
+          </tr>
+          <tr class="best-acc">
+            <td class="scheduler wsd">WSD</td><td>4e-3</td><td>6.314847</td><td>6.631231</td><td class="winner">26.0406%</td><td>1.959347</td>
+            <td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/m1daju61">m1daju61</a></td>
+          </tr>
+          <tr>
+            <td class="scheduler wsd">WSD</td><td>8e-3</td><td>6.514256</td><td>6.802851</td><td>25.6423%</td><td>1.997938</td>
+            <td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/nw8p2tnc">nw8p2tnc</a></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="notes">Green cells mark each scheduler’s best value, while the orange rule marks the overall HellaSwag winner.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Matched comparisons</h2>
+    <div class="card table-wrap">
+      <table>
+        <thead><tr><th>LR</th><th>WSD Δ train CE</th><th>WSD Δ held-out CE</th><th>WSD Δ HellaSwag</th><th>WSD Δ HS BPB</th></tr></thead>
+        <tbody>
+          <tr><td>2.5e-4</td><td class="winner">−0.29103</td><td class="winner">−0.30036</td><td>−0.0299 pp</td><td class="winner">−0.11141</td></tr>
+          <tr><td>5e-4</td><td class="winner">−0.28146</td><td class="winner">−0.30833</td><td>−0.1195 pp</td><td class="winner">−0.11732</td></tr>
+          <tr><td>1e-3</td><td class="winner">−0.21903</td><td class="winner">−0.23456</td><td>0.0000 pp</td><td class="winner">−0.09496</td></tr>
+          <tr><td>2e-3</td><td class="winner">−0.04726</td><td class="winner">−0.03599</td><td class="winner">+0.1494 pp</td><td class="winner">−0.01473</td></tr>
+          <tr><td>4e-3</td><td class="winner">−0.03490</td><td class="winner">−0.03406</td><td class="winner">+0.5278 pp</td><td class="winner">−0.01210</td></tr>
+          <tr><td>8e-3</td><td class="winner">−0.06947</td><td class="winner">−0.04599</td><td class="winner">+0.1892 pp</td><td class="winner">−0.01717</td></tr>
+        </tbody>
+      </table>
+      <p class="notes">Deltas are WSD minus cosine, so negative CE and positive accuracy deltas favor WSD.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Interpretation</h2>
+    <div class="grid method-grid">
+      <article class="card">
+        <h3>What the sweep supports</h3>
+        <p>For this model, dataset, token budget, and 20-step warmup, WSD consistently improves training CE, held-out C4 CE, and BPB at matched LR.</p>
+        <p>Held-out C4 CE selects cosine 2.5e-4 and WSD 5e-4, though WSD’s 0.000803 advantage over 2.5e-4 weakly identifies its precise optimum.</p>
+      </article>
+      <article class="card">
+        <h3>What remains uncertain</h3>
+        <p>HellaSwag differences are small, seed variance is unmeasured, and the LR optimum differs by objective.</p>
+        <p>This result should be treated as a one-epoch finding, not yet a claim about longer training or smaller models.</p>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <h2>Method and metric definitions</h2>
+    <div class="card">
+      <p><strong>Training:</strong> all 12 runs used a dense 1B model, the 1B-token codelion/dclm-baseline-1B mixture, 239 optimizer steps, eight H100s, 20 warmup steps, and commit <code>f6073a59</code>.</p>
+      <p><strong>Final training CE:</strong> unsmoothed <code>train/CE loss</code> from the exact W&amp;B history row at <code>_step=239</code>.</p>
+      <p><strong>Held-out validation CE:</strong> <code>eval/heldout/c4_en-validation/CE loss</code> uses the fixed 65-batch C4 validation array with 109,648 label tokens.</p>
+      <p><strong>HellaSwag:</strong> <code>eval/downstream/hellaswag (length-normalized accuracy)</code> is evaluated after training, while the logged v2 value is identical for every run.</p>
+      <p><strong>HellaSwag BPB:</strong> <code>eval/downstream/hellaswag (BPB)</code> is the primary non-v2 confidence metric normalized by bytes, and lower is better.</p>
+      <p><strong>Raw HellaSwag accuracy:</strong> an unnormalized accuracy metric was not emitted by this evaluator, so the report uses the requested primary length-normalized accuracy only.</p>
+      <p><strong>Verification:</strong> terminal state, step count, and rounded metrics were cross-checked against Beaker execution logs; exact values come from W&amp;B summaries/history.</p>
+    </div>
+  </section>
+
+  <footer>Generated from completed Beaker experiments owned by sewonm · ai2/flex2 · ai2/jupiter</footer>
+</main>
+<script>
+  const completedRuns = {
+    cosine: {
+      "2.5e-4": [
+        {epoch: 1, train: 5.338, c4: 5.745, acc: 25.045, bpb: 1.67334, downstream:{arc_challenge:24.08,arc_easy:27.89,boolq:38.96,csqa:23.91,openbookqa:24.40,piqa:51.09,socialiqa:39.00,winogrande:49.80}},
+        {epoch: 2, train: 4.555, c4: 4.992, acc: 25.095, bpb: 1.43411},
+        {epoch: 3, train: 4.118, c4: 4.537, acc: 25.822, bpb: 1.29414},
+        {epoch: 4, train: 3.894, c4: 4.283, acc: 26.120, bpb: 1.21473},
+        {epoch: 5, train: 3.712, c4: 4.118, acc: 26.110, bpb: 1.16602}
+      ],
+      "5e-4": [
+        {epoch: 1, train: 5.363315, c4: 5.773904, acc: 25.0647, bpb: 1.676276},
+        {epoch: 2, train: 4.330, c4: 4.717, acc: 25.453, bpb: 1.33476, downstream:{arc_challenge:21.07,arc_easy:31.75,boolq:46.45,csqa:24.73,openbookqa:22.40,piqa:53.92,socialiqa:40.48,winogrande:50.91}},
+        {epoch: 3, train: 3.845, c4: 4.208, acc: 26.210, bpb: 1.18635},
+        {epoch: 4, train: 3.610, c4: 3.966, acc: 27.280, bpb: 1.114},
+        {epoch: 5, train: 3.428, c4: 3.840, acc: 28.160, bpb: 1.076}
+      ],
+      "1e-3": [
+        {epoch: 1, train: 5.711180, c4: 6.104700, acc: 25.1544, bpb: 1.778159},
+        {epoch: 2, train: 4.475, c4: 4.859, acc: 25.130, bpb: 1.367},
+        {epoch: 3, train: 3.834, c4: 4.191, acc: 26.310, bpb: 1.177, downstream:{arc_challenge:22.74,arc_easy:36.49,boolq:57.25,csqa:26.86,openbookqa:23.80,piqa:56.69,socialiqa:39.41,winogrande:49.80}},
+        {epoch: 4, train: 3.585, c4: 3.930, acc: 26.960, bpb: 1.100, downstream:{arc_challenge:23.08,arc_easy:41.40,boolq:61.10,csqa:31.04,openbookqa:23.80,piqa:58.76,socialiqa:40.63,winogrande:51.54}},
+        {epoch: 5, train: 3.356, c4: 3.766, acc: 29.150, bpb: 1.050, downstream:{arc_challenge:21.40,arc_easy:41.58,boolq:58.29,csqa:34.40,openbookqa:25.20,piqa:59.47,socialiqa:41.61,winogrande:50.12}}
+      ],
+      "2e-3": [
+        {epoch: 1, train: 6.107027, c4: 6.455493, acc: 25.3535, bpb: 1.918156},
+        {epoch: 4, train: 3.895, c4: 4.241, acc: 26.030, bpb: 1.196},
+        {epoch: 5, train: 3.688, c4: 4.043, acc: 27.040, bpb: 1.133}
+      ],
+      "4e-3": [{epoch: 1, train: 6.349750, c4: 6.665292, acc: 25.5128, bpb: 1.971449}],
+      "8e-3": [{epoch: 1, train: 6.583728, c4: 6.848837, acc: 25.4531, bpb: 2.015111}]
+    },
+    cosineAlpha0: {
+      "2.5e-4": [{epoch: 1, train: 5.442, c4: 5.858, acc: 24.990, bpb: 1.710}],
+      "5e-4": [
+        {epoch: 1, train: 5.401, c4: 5.797, acc: 24.990, bpb: 1.683, downstream:{arc_challenge:24.41,arc_easy:27.02,boolq:37.83,csqa:24.32,openbookqa:23.60,piqa:51.41,socialiqa:39.00,winogrande:50.20}},
+        {epoch: 2, train: 4.480, c4: 4.882, acc: 25.260, bpb: 1.382, downstream:{arc_challenge:21.07,arc_easy:29.65,boolq:49.11,csqa:25.23,openbookqa:23.00,piqa:52.45,socialiqa:39.61,winogrande:50.51}},
+        {epoch: 3, train: 3.938, c4: 4.309, acc: 25.900, bpb: 1.217, downstream:{arc_challenge:19.73,arc_easy:32.11,boolq:47.46,csqa:26.04,openbookqa:22.20,piqa:56.15,socialiqa:39.15,winogrande:50.51}},
+        {epoch: 4, train: 3.678, c4: 4.031, acc: 26.130, bpb: 1.138}
+      ],
+      "1e-3": [
+        {epoch: 1, train: 5.761, c4: 6.146, acc: 25.270, bpb: 1.778},
+        {epoch: 2, train: 4.673, c4: 5.071, acc: 24.630, bpb: 1.432},
+        {epoch: 3, train: 3.956, c4: 4.322, acc: 25.810, bpb: 1.222},
+        {epoch: 4, train: 3.655, c4: 3.993, acc: 26.530, bpb: 1.120, downstream:{arc_challenge:21.07,arc_easy:39.30,boolq:61.13,csqa:30.38,openbookqa:20.80,piqa:58.00,socialiqa:40.58,winogrande:51.22}},
+        {epoch: 5, train: 3.422, c4: 3.809, acc: 28.090, bpb: 1.067, downstream:{arc_challenge:21.40,arc_easy:40.18,boolq:61.25,csqa:32.92,openbookqa:22.20,piqa:60.66,socialiqa:40.89,winogrande:50.28}}
+      ],
+      "2e-3": [{epoch: 5, train: 3.802, c4: 4.167, acc: 25.870, bpb: 1.173}]
+    },
+    wsd: {
+      "2.5e-4": [{epoch: 1, train: 5.048845, c4: 5.466372, acc: 24.6963, bpb: 1.569405}],
+      "5e-4": [
+        {epoch: 1, train: 5.025, c4: 5.394, acc: 25.095, bpb: 1.53507, downstream:{arc_challenge:22.07,arc_easy:28.25,boolq:38.01,csqa:23.91,openbookqa:24.00,piqa:51.47,socialiqa:39.10,winogrande:48.46}},
+        {epoch: 2, train: 3.982, c4: 4.305, acc: 25.931, bpb: 1.21155, downstream:{arc_challenge:21.07,arc_easy:31.75,boolq:44.77,csqa:25.06,openbookqa:22.00,piqa:56.96,socialiqa:38.95,winogrande:50.75}},
+        {epoch: 3, train: 3.571, c4: 3.910, acc: 27.524, bpb: 1.09211, downstream:{arc_challenge:19.06,arc_easy:38.25,boolq:60.12,csqa:30.63,openbookqa:21.40,piqa:59.36,socialiqa:40.23,winogrande:50.51}},
+        {epoch: 4, train: 3.380, c4: 3.741, acc: 29.496, bpb: 1.04104},
+        {epoch: 5, train: 3.221, c4: 3.660, acc: 31.199, bpb: 1.01472}
+      ],
+      "1e-3": [
+        {epoch: 1, train: 5.440, c4: 5.800, acc: 24.796, bpb: 1.65583},
+        {epoch: 2, train: 4.144, c4: 4.495, acc: 25.710, bpb: 1.262},
+        {epoch: 3, train: 3.575, c4: 3.915, acc: 27.380, bpb: 1.092},
+        {epoch: 4, train: 3.350, c4: 3.702, acc: 29.890, bpb: 1.028, downstream:{arc_challenge:21.40,arc_easy:44.04,boolq:53.30,csqa:36.45,openbookqa:23.80,piqa:62.24,socialiqa:40.84,winogrande:50.59}},
+        {epoch: 5, train: 3.184, c4: 3.602, acc: 31.760, bpb: 0.9959, downstream:{arc_challenge:22.74,arc_easy:46.84,boolq:56.06,csqa:38.90,openbookqa:24.40,piqa:62.62,socialiqa:42.99,winogrande:50.83}}
+      ],
+      "2e-3": [
+        {epoch: 1, train: 5.897, c4: 6.262, acc: 25.070, bpb: 1.826},
+        {epoch: 2, train: 5.058, c4: 5.521, acc: 24.880, bpb: 1.598},
+        {epoch: 3, train: 4.515, c4: 4.978, acc: 25.110, bpb: 1.430},
+        {epoch: 4, train: 4.189, c4: 4.609, acc: 25.920, bpb: 1.328},
+        {epoch: 5, train: 4.018, c4: 4.448, acc: 26.020, bpb: 1.282}
+      ],
+      "4e-3": [{epoch: 1, train: 6.314847, c4: 6.631231, acc: 26.0406, bpb: 1.959347}],
+      "8e-3": [{epoch: 1, train: 6.514256, c4: 6.802851, acc: 25.6423, bpb: 1.997938}]
+    }
+  };
+
+  const metricLabels = {
+    train: "Final training CE",
+    c4: "Held-out C4 CE",
+    acc: "HellaSwag accuracy",
+    bpb: "HellaSwag BPB",
+    avg8_acc: "8-task average accuracy",
+    avg3_acc: "3-task stable average accuracy",
+    ds_arc_challenge: "ARC-Challenge accuracy",
+    ds_arc_easy: "ARC-Easy accuracy",
+    ds_csqa: "CSQA accuracy",
+    ds_openbookqa: "OpenBookQA accuracy",
+    ds_piqa: "PIQA accuracy",
+    ds_socialiqa: "SocialIQA accuracy",
+    ds_winogrande: "Winogrande accuracy"
+  };
+
+  const colors = {cosine: "#2563eb", cosineAlpha0: "#7c3aed", wsd: "#dc5a39"};
+  const fullSuiteEvals=[
+    {series:"Cosine",epoch:1,lr:"2.5e-4",wandb:"i663verx",beaker:"01KYXZCD0F5CFG0MCKF0WQPE2V"},{series:"Cosine",epoch:2,lr:"5e-4",wandb:"umccvstq",beaker:"01KYXZCC2Z4EJ6KZGGFA3YAZDK"},{series:"Cosine",epoch:3,lr:"1e-3",wandb:"3wckngpw",beaker:"01KYXZPXBRTH2JZPYYPPKWMJQC"},{series:"Cosine",epoch:4,lr:"1e-3",wandb:"7a9wh7f8",beaker:"01KYXZCCEKYR3P73RA8T0MZXDK"},{series:"Cosine",epoch:5,lr:"1e-3",wandb:"k77orr5t",beaker:"01KYXZCDD65E3Y3M9QCMDBSPY0"},
+    {series:"WSD",epoch:1,lr:"5e-4",wandb:"8b3c4wl4",beaker:"01KYXZCD7P17M457Q1Q4BPDASY"},{series:"WSD",epoch:2,lr:"5e-4",wandb:"ljfxsxo6",beaker:"01KYXZCD9CJHF0AZS5CE4ZJGWJ"},{series:"WSD",epoch:3,lr:"5e-4",wandb:"fp98wxlz",beaker:"01KYY0636HMT3A2G15K1QZV5PR"},{series:"WSD",epoch:4,lr:"1e-3",wandb:"sfx1sm30",beaker:"01KYXZCCZH6Q18CWK2GXDSZEM0"},{series:"WSD",epoch:5,lr:"1e-3",wandb:"d9g9lca5",beaker:"01KYXZCD3GTMZGRYMZ1HYJ0JTA"}
+  ];
+  document.querySelector("#full-suite-evals-body").innerHTML=fullSuiteEvals.map(r=>`<tr><td>${r.series}</td><td>${r.epoch}</td><td>${r.lr}</td><td class="status-complete">Complete</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}">${r.wandb}</a></td><td><a href="https://beaker.org/ex/${r.beaker}">experiment</a></td></tr>`).join("");
+
+  function bestByEpoch(scheduler) {
+    const byEpoch = new Map();
+    Object.entries(completedRuns[scheduler]).forEach(([lr, runs]) => {
+      runs.forEach(run => {
+        const candidate = {...run, lr};
+        if (!byEpoch.has(run.epoch) || run.c4 < byEpoch.get(run.epoch).c4) byEpoch.set(run.epoch, candidate);
+      });
+    });
+    return [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch);
+  }
+
+  function valueLabel(metric, value) {
+    if (metric === "acc" || metric.startsWith("avg") || metric.startsWith("ds_")) return `${value.toFixed(1)}%`;
+    if (metric === "bpb") return value.toFixed(3);
+    return value.toFixed(2);
+  }
+
+  const downstreamKeys8=["arc_challenge","arc_easy","csqa","hellaswag","openbookqa","piqa","socialiqa","winogrande"];
+  const downstreamKeys3=["arc_easy","hellaswag","piqa"];
+  const downstreamValue=(run,task)=>task==="hellaswag"?run.acc:run.downstream?.[task];
+  function metricValue(run, metric) {
+    if (metric === "avg8_acc" || metric === "avg3_acc") {
+      const keys=metric === "avg8_acc" ? downstreamKeys8 : downstreamKeys3;
+      const values=keys.map(task=>downstreamValue(run,task));
+      return values.every(Number.isFinite) ? values.reduce((a,b)=>a+b,0)/values.length : null;
+    }
+    if (metric.startsWith("ds_")) return run.downstream?.[metric.slice(3)];
+    return run[metric];
+  }
+
+  function drawEpochChart(target, metric, series, annotateLr, wide = false) {
+    const width = wide ? 1000 : 330;
+    const height = wide ? 310 : 245;
+    const margin = wide ? {left: 62, right: 24, top: 36, bottom: 48} : {left: 44, right: 12, top: 36, bottom: 42};
+    const innerW = width - margin.left - margin.right;
+    const innerH = height - margin.top - margin.bottom;
+    const points = series.flatMap(item => item.runs.map(run => metricValue(run,metric))).filter(Number.isFinite);
+    if (!points.length) { target.innerHTML='<div class="notes" style="padding:80px 12px;text-align:center">No completed evaluation yet.</div>'; return; }
+    let min = Math.min(...points);
+    let max = Math.max(...points);
+    const padding = Math.max((max - min) * 0.16, metric === "acc" ? 0.35 : 0.03);
+    min -= padding;
+    max += padding;
+    const x = epoch => margin.left + ((epoch - 1) / 4) * innerW;
+    const y = value => margin.top + ((max - value) / (max - min)) * innerH;
+    const axis = [];
+    for (let i = 0; i < 4; i += 1) {
+      const value = max - ((max - min) * i / 3);
+      const cy = margin.top + innerH * i / 3;
+      axis.push(`<line x1="${margin.left}" y1="${cy}" x2="${width - margin.right}" y2="${cy}" stroke="#dde2ec"/>`);
+      axis.push(`<text x="${margin.left - 7}" y="${cy + 4}" text-anchor="end" fill="#657087" font-size="${wide ? 12 : 10}">${valueLabel(metric, value)}</text>`);
+    }
+    const xTicks = [1, 2, 3, 4, 5].map(epoch =>
+      `<text x="${x(epoch)}" y="${height - 16}" text-anchor="middle" fill="#657087" font-size="${wide ? 12 : 10}">${epoch}</text>`
+    ).join("");
+    const plotted = series.map((item, seriesIndex) => {
+      const plottedRuns=item.runs.map(run=>({...run,_metricValue:metricValue(run,metric)})).filter(run=>Number.isFinite(run._metricValue));
+      const pts = plottedRuns.map(run => `${x(run.epoch)},${y(run._metricValue)}`).join(" ");
+      const marks = plottedRuns.map(run => {
+        const cx = x(run.epoch);
+        const cy = y(run._metricValue);
+        const labelY = cy + (seriesIndex === 0 ? -10 : 17);
+        const label = annotateLr ? run.lr : valueLabel(metric, run[metric]);
+        return `<circle cx="${cx}" cy="${cy}" r="${wide ? 5 : 4}" fill="${item.color}"/><text x="${cx}" y="${Math.max(12, Math.min(height - 28, labelY))}" text-anchor="middle" fill="${item.color}" font-size="${wide ? 12 : 9}" font-weight="700">${label}</text>`;
+      }).join("");
+      return `<polyline points="${pts}" fill="none" stroke="${item.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${marks}`;
+    }).join("");
+    const legend = wide ? series.map((item, index) =>
+      `<g transform="translate(${margin.left + index * 190},17)"><line x1="0" y1="0" x2="22" y2="0" stroke="${item.color}" stroke-width="3"/><text x="29" y="4" fill="#374151" font-size="12">${item.label}</text></g>`
+    ).join("") : "";
+    target.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${metricLabels[metric]} by epoch number">${axis.join("")}${xTicks}${legend}${plotted}<text x="${margin.left + innerW / 2}" y="${height - 2}" text-anchor="middle" fill="#657087" font-size="${wide ? 12 : 10}">Epoch number</text></svg>`;
+  }
+
+  const bestSeries = [
+    {key:"cosine",label: "Cosine", color: colors.cosine, runs: bestByEpoch("cosine")},
+    {key:"cosineAlpha0",label: "Cosine (alpha_f=0)", color: colors.cosineAlpha0, runs: bestByEpoch("cosineAlpha0")},
+    {key:"wsd",label: "WSD", color: colors.wsd, runs: bestByEpoch("wsd")}
+  ];
+
+  function renderBestCharts() {
+    const enabled=new Set([...document.querySelectorAll("[data-best-toggle]:checked")].map(el=>el.dataset.bestToggle));
+    const visible=bestSeries.filter(series=>enabled.has(series.key));
+    document.querySelectorAll("[data-best-metric]").forEach(target => drawEpochChart(target,target.dataset.bestMetric,visible,true));
+  }
+  document.querySelectorAll("[data-best-toggle]").forEach(el=>el.addEventListener("change",renderBestCharts));
+  renderBestCharts();
+
+  function renderExplorer() {
+    const cosineLr = document.getElementById("explorer-cosine-lr").value;
+    const cosineZeroLr = document.getElementById("explorer-cosine-zero-lr").value;
+    const wsdLr = document.getElementById("explorer-wsd-lr").value;
+    document.getElementById("explorer-cosine-label").textContent = `Cosine · ${cosineLr}`;
+    document.getElementById("explorer-cosine-zero-label").textContent = `Cosine (alpha_f=0) · ${cosineZeroLr}`;
+    document.getElementById("explorer-wsd-label").textContent = `WSD · ${wsdLr}`;
+    const series = [
+      {label: `Cosine · ${cosineLr}`, color: colors.cosine, runs: completedRuns.cosine[cosineLr]},
+      {label: `Cosine (alpha_f=0) · ${cosineZeroLr}`, color: colors.cosineAlpha0, runs: completedRuns.cosineAlpha0[cosineZeroLr]},
+      {label: `WSD · ${wsdLr}`, color: colors.wsd, runs: completedRuns.wsd[wsdLr]}
+    ];
+    document.querySelectorAll("[data-explorer-metric]").forEach(target => {
+      drawEpochChart(target, target.dataset.explorerMetric, series, false);
+    });
+  }
+
+  ["explorer-cosine-lr", "explorer-cosine-zero-lr", "explorer-wsd-lr"].forEach(id => {
+    document.getElementById(id).addEventListener("change", renderExplorer);
+  });
+  renderExplorer();
+</script>
+</body>
+</html>

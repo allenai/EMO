@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-07-31 23:21 PDT",
+  "updated": "2026-07-31 23:33 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -623,7 +623,19 @@ window.STEP2_REPORT_DATA = {
       "c4": 5.394,
       "acc": 25.095,
       "bpb": 1.53507,
-      "reason": "Existing completed WSD run on repeated Codelion 1B pool; reused without new training or evaluation"
+      "downstream": {
+        "arc_challenge": 22.07,
+        "arc_easy": 28.25,
+        "boolq": 38.01,
+        "csqa": 23.91,
+        "openbookqa": 24.0,
+        "piqa": 51.47,
+        "socialiqa": 39.1,
+        "winogrande": 48.46
+      },
+      "evaluationBeaker": "01KYXZCD7P17M457Q1Q4BPDASY",
+      "evaluationWandb": "8b3c4wl4",
+      "reason": "Existing completed WSD run on repeated Codelion 1B pool; full nine-task suite recovered from its preserved checkpoint"
     },
     {
       "epoch": 2,
@@ -636,7 +648,19 @@ window.STEP2_REPORT_DATA = {
       "c4": 4.305,
       "acc": 25.931,
       "bpb": 1.21155,
-      "reason": "Existing completed WSD run on repeated Codelion 1B pool; reused without new training or evaluation"
+      "downstream": {
+        "arc_challenge": 21.07,
+        "arc_easy": 31.75,
+        "boolq": 44.77,
+        "csqa": 25.06,
+        "openbookqa": 22.0,
+        "piqa": 56.96,
+        "socialiqa": 38.95,
+        "winogrande": 50.75
+      },
+      "evaluationBeaker": "01KYXZCD9CJHF0AZS5CE4ZJGWJ",
+      "evaluationWandb": "ljfxsxo6",
+      "reason": "Existing completed WSD run on repeated Codelion 1B pool; full nine-task suite recovered from its preserved checkpoint"
     },
     {
       "epoch": 3,
@@ -649,7 +673,19 @@ window.STEP2_REPORT_DATA = {
       "c4": 3.91,
       "acc": 27.524,
       "bpb": 1.09211,
-      "reason": "Existing completed WSD run on repeated Codelion 1B pool; reused without new training or evaluation"
+      "downstream": {
+        "arc_challenge": 19.06,
+        "arc_easy": 38.25,
+        "boolq": 60.12,
+        "csqa": 30.63,
+        "openbookqa": 21.4,
+        "piqa": 59.36,
+        "socialiqa": 40.23,
+        "winogrande": 50.51
+      },
+      "evaluationBeaker": "01KYY0636HMT3A2G15K1QZV5PR",
+      "evaluationWandb": "fp98wxlz",
+      "reason": "Existing completed WSD run on repeated Codelion 1B pool; full nine-task suite recovered from its preserved checkpoint"
     },
     {
       "epoch": 4,
@@ -662,7 +698,19 @@ window.STEP2_REPORT_DATA = {
       "c4": 3.702,
       "acc": 29.89,
       "bpb": 1.028,
-      "reason": "Existing completed WSD run on repeated Codelion 1B pool; reused without new training or evaluation"
+      "downstream": {
+        "arc_challenge": 21.4,
+        "arc_easy": 44.04,
+        "boolq": 53.3,
+        "csqa": 36.45,
+        "openbookqa": 23.8,
+        "piqa": 62.24,
+        "socialiqa": 40.84,
+        "winogrande": 50.59
+      },
+      "evaluationBeaker": "01KYXZCCZH6Q18CWK2GXDSZEM0",
+      "evaluationWandb": "sfx1sm30",
+      "reason": "Existing completed WSD run on repeated Codelion 1B pool; full nine-task suite recovered from its preserved checkpoint"
     },
     {
       "epoch": 5,
@@ -675,7 +723,19 @@ window.STEP2_REPORT_DATA = {
       "c4": 3.602,
       "acc": 31.76,
       "bpb": 0.9959,
-      "reason": "Existing completed WSD run on repeated Codelion 1B pool; reused without new training or evaluation"
+      "downstream": {
+        "arc_challenge": 22.74,
+        "arc_easy": 46.84,
+        "boolq": 56.06,
+        "csqa": 38.9,
+        "openbookqa": 24.4,
+        "piqa": 62.62,
+        "socialiqa": 42.99,
+        "winogrande": 50.83
+      },
+      "evaluationBeaker": "01KYXZCD3GTMZGRYMZ1HYJ0JTA",
+      "evaluationWandb": "d9g9lca5",
+      "reason": "Existing completed WSD run on repeated Codelion 1B pool; full nine-task suite recovered from its preserved checkpoint"
     }
   ],
   "evaluationRuns": [
@@ -683,19 +743,21 @@ window.STEP2_REPORT_DATA = {
       "condition": "Cosine",
       "epoch": 1,
       "lr": "2.5e-4",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYXZCD0F5CFG0MCKF0WQPE2V",
+      "wandb": "i663verx",
       "revision": "4ecd9242",
-      "reason": "Evaluation-only recovery of the selected historical checkpoint on C4 plus all nine downstream tasks"
+      "reason": "Evaluation-only recovery completed on C4 plus all nine downstream tasks"
     },
     {
       "condition": "Cosine",
       "epoch": 2,
       "lr": "5e-4",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYXZCC2Z4EJ6KZGGFA3YAZDK",
+      "wandb": "umccvstq",
       "revision": "4ecd9242",
-      "reason": "Evaluation-only recovery of the selected historical checkpoint on C4 plus all nine downstream tasks"
+      "reason": "Evaluation-only recovery completed on C4 plus all nine downstream tasks"
     },
     {
       "condition": "Cosine",
@@ -710,46 +772,51 @@ window.STEP2_REPORT_DATA = {
       "condition": "Cosine",
       "epoch": 3,
       "lr": "1e-3",
-      "status": "queued",
+      "status": "complete",
       "beaker": "01KYXZPXBRTH2JZPYYPPKWMJQC",
+      "wandb": "3wckngpw",
       "revision": "4ecd9242",
-      "reason": "Evaluation-only retry on a fresh output path after a cordoned-node failure"
+      "reason": "Evaluation-only retry completed on C4 plus all nine downstream tasks after the original cordoned-node failure"
     },
     {
       "condition": "Cosine",
       "epoch": 4,
       "lr": "1e-3",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYXZCCEKYR3P73RA8T0MZXDK",
+      "wandb": "7a9wh7f8",
       "revision": "4ecd9242",
-      "reason": "Evaluation-only recovery of the selected historical checkpoint on C4 plus all nine downstream tasks"
+      "reason": "Evaluation-only recovery completed on C4 plus all nine downstream tasks"
     },
     {
       "condition": "Cosine",
       "epoch": 5,
       "lr": "1e-3",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYXZCDD65E3Y3M9QCMDBSPY0",
+      "wandb": "k77orr5t",
       "revision": "4ecd9242",
-      "reason": "Evaluation-only recovery of the selected historical checkpoint on C4 plus all nine downstream tasks"
+      "reason": "Evaluation-only recovery completed on C4 plus all nine downstream tasks"
     },
     {
       "condition": "Repeated Codelion 1B",
       "epoch": 1,
       "lr": "5e-4",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYXZCD7P17M457Q1Q4BPDASY",
+      "wandb": "8b3c4wl4",
       "revision": "4ecd9242",
-      "reason": "Evaluation-only recovery of the selected historical checkpoint on C4 plus all nine downstream tasks"
+      "reason": "Evaluation-only recovery completed on C4 plus all nine downstream tasks"
     },
     {
       "condition": "Repeated Codelion 1B",
       "epoch": 2,
       "lr": "5e-4",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYXZCD9CJHF0AZS5CE4ZJGWJ",
+      "wandb": "ljfxsxo6",
       "revision": "4ecd9242",
-      "reason": "Evaluation-only recovery of the selected historical checkpoint on C4 plus all nine downstream tasks"
+      "reason": "Evaluation-only recovery completed on C4 plus all nine downstream tasks"
     },
     {
       "condition": "Repeated Codelion 1B",
@@ -764,28 +831,40 @@ window.STEP2_REPORT_DATA = {
       "condition": "Repeated Codelion 1B",
       "epoch": 3,
       "lr": "5e-4",
-      "status": "queued",
+      "status": "failed",
       "beaker": "01KYXZPXA5M95ZNYZZGK41R5RS",
       "revision": "4ecd9242",
-      "reason": "Evaluation-only retry on a fresh output path after a cordoned-node failure"
+      "reason": "Configuration error: the first retry used a checkpoint path with a nonexistent wd0.033 name component; corrected exact historical path verified on Weka before retry2"
+    },
+    {
+      "condition": "Repeated Codelion 1B",
+      "epoch": 3,
+      "lr": "5e-4",
+      "status": "complete",
+      "beaker": "01KYY0636HMT3A2G15K1QZV5PR",
+      "wandb": "fp98wxlz",
+      "revision": "4ecd9242",
+      "reason": "Evaluation-only retry2 completed using the exact Weka-verified historical checkpoint path without the erroneous wd0.033 component"
     },
     {
       "condition": "Repeated Codelion 1B",
       "epoch": 4,
       "lr": "1e-3",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYXZCCZH6Q18CWK2GXDSZEM0",
+      "wandb": "sfx1sm30",
       "revision": "4ecd9242",
-      "reason": "Evaluation-only recovery of the selected historical checkpoint on C4 plus all nine downstream tasks"
+      "reason": "Evaluation-only recovery completed on C4 plus all nine downstream tasks"
     },
     {
       "condition": "Repeated Codelion 1B",
       "epoch": 5,
       "lr": "1e-3",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYXZCD3GTMZGRYMZ1HYJ0JTA",
+      "wandb": "d9g9lca5",
       "revision": "4ecd9242",
-      "reason": "Evaluation-only recovery of the selected historical checkpoint on C4 plus all nine downstream tasks"
+      "reason": "Evaluation-only recovery completed on C4 plus all nine downstream tasks"
     }
   ]
 };

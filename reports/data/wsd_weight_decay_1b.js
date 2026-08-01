@@ -1,5 +1,5 @@
 window.WD_REPORT_DATA = {
-  "updated": "2026-07-31 20:00 PDT",
+  "updated": "2026-07-31 23:32 PDT",
   "runs": [
     {
       "epoch": 1,
@@ -23,7 +23,17 @@ window.WD_REPORT_DATA = {
       "c4": 5.377,
       "acc": 25.27,
       "bpb": 1.534,
-      "wandb": "u4ws1w9t"
+      "wandb": "u4ws1w9t",
+      "downstream": {
+        "arc_challenge": 21.07,
+        "arc_easy": 28.07,
+        "boolq": 37.77,
+        "csqa": 24.41,
+        "openbookqa": 23.4,
+        "piqa": 52.72,
+        "socialiqa": 38.33,
+        "winogrande": 47.67
+      }
     },
     {
       "epoch": 1,
@@ -155,7 +165,17 @@ window.WD_REPORT_DATA = {
       "c4": 4.305,
       "acc": 25.931,
       "bpb": 1.21155,
-      "wandb": "hgoyq9yp"
+      "wandb": "hgoyq9yp",
+      "downstream": {
+        "arc_challenge": 21.07,
+        "arc_easy": 31.75,
+        "boolq": 44.77,
+        "csqa": 25.06,
+        "openbookqa": 22.0,
+        "piqa": 56.96,
+        "socialiqa": 38.95,
+        "winogrande": 50.75
+      }
     },
     {
       "epoch": 2,
@@ -287,7 +307,17 @@ window.WD_REPORT_DATA = {
       "c4": 3.875,
       "acc": 27.13,
       "bpb": 1.083,
-      "wandb": "0z6iy9lt"
+      "wandb": "0z6iy9lt",
+      "downstream": {
+        "arc_challenge": 24.41,
+        "arc_easy": 42.11,
+        "boolq": 61.65,
+        "csqa": 32.92,
+        "openbookqa": 24.6,
+        "piqa": 59.09,
+        "socialiqa": 41.66,
+        "winogrande": 49.8
+      }
     },
     {
       "epoch": 3,
@@ -347,7 +377,17 @@ window.WD_REPORT_DATA = {
       "c4": 3.662,
       "acc": 29.64,
       "bpb": 1.02,
-      "wandb": "u77r5ruq"
+      "wandb": "u77r5ruq",
+      "downstream": {
+        "arc_challenge": 24.75,
+        "arc_easy": 46.14,
+        "boolq": 55.2,
+        "csqa": 37.67,
+        "openbookqa": 23.2,
+        "piqa": 60.5,
+        "socialiqa": 41.15,
+        "winogrande": 48.78
+      }
     },
     {
       "epoch": 4,
@@ -395,7 +435,17 @@ window.WD_REPORT_DATA = {
       "c4": 3.558,
       "acc": 31.96,
       "bpb": 0.9861,
-      "wandb": "8s1isuyj"
+      "wandb": "8s1isuyj",
+      "downstream": {
+        "arc_challenge": 26.09,
+        "arc_easy": 48.42,
+        "boolq": 58.04,
+        "csqa": 40.46,
+        "openbookqa": 25.0,
+        "piqa": 63.71,
+        "socialiqa": 41.86,
+        "winogrande": 49.01
+      }
     },
     {
       "epoch": 5,

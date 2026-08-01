@@ -1,8 +1,8 @@
 {
-  "updated": "2026-07-31 20:00 PDT",
+  "updated": "2026-07-31 23:32 PDT",
   "runs": [
     {"epoch":1,"lr":"5e-4","wd":"0.0004","status":"complete","beaker":"01KYVJ5PK43F4055SXG1N3SRZG","train":5.031,"c4":5.410,"acc":24.79,"bpb":1.540,"wandb":"oyre2xql"},
-    {"epoch":1,"lr":"5e-4","wd":"0.0012","status":"complete","beaker":"01KYVEPR7PX3X0VBB9N5GGNX68","train":5.009,"c4":5.377,"acc":25.27,"bpb":1.534,"wandb":"u4ws1w9t"},
+    {"epoch":1,"lr":"5e-4","wd":"0.0012","status":"complete","beaker":"01KYVEPR7PX3X0VBB9N5GGNX68","train":5.009,"c4":5.377,"acc":25.27,"bpb":1.534,"wandb":"u4ws1w9t","downstream":{"arc_challenge":21.07,"arc_easy":28.07,"boolq":37.77,"csqa":24.41,"openbookqa":23.40,"piqa":52.72,"socialiqa":38.33,"winogrande":47.67}},
     {"epoch":1,"lr":"5e-4","wd":"0.0037","status":"complete","beaker":"01KYVB9MQ7CCKDXT09VR0Y0XED","train":5.022,"c4":5.389,"acc":24.98,"bpb":1.536,"wandb":"ybp7vvx5"},
     {"epoch":1,"lr":"5e-4","wd":"0.011","status":"complete","beaker":"01KYV7YZQDF0AB7ZRG6S3HVDA3","train":5.022,"c4":5.390,"acc":25.29,"bpb":1.539,"wandb":"4xafru31"},
     {"epoch":1,"lr":"5e-4","wd":"0.033","status":"complete","beaker":"01KYSXCMH5F9R1T8WZEXPNC1RQ","train":5.025,"c4":5.394,"acc":25.095,"bpb":1.53507,"wandb":"brbweepb"},
@@ -13,7 +13,7 @@
     {"epoch":1,"lr":"5e-4","wd":"0.9","status":"complete","beaker":"01KYVR666EA4WRMM7DERC7YWEE","train":5.037,"c4":5.399,"acc":25.02,"bpb":1.540,"wandb":"3l80sszq"},
     {"epoch":1,"lr":"1e-3","wd":"0.9","status":"complete","beaker":"01KYVX9PHQQ0H1A0DCP7KK7R5H","train":5.387,"c4":5.740,"acc":24.79,"bpb":1.633,"wandb":"oqhtohj8"},
     {"epoch":2,"lr":"5e-4","wd":"0.011","status":"complete","beaker":"01KYVB857X2WFF45152B2T14B6","train":3.979,"c4":4.308,"acc":26.09,"bpb":1.216,"wandb":"ub6pvq64"},
-    {"epoch":2,"lr":"5e-4","wd":"0.033","status":"complete","beaker":"01KYT0G2AM8PD2EQQP2589XB1X","train":3.982,"c4":4.305,"acc":25.931,"bpb":1.21155,"wandb":"hgoyq9yp"},
+    {"epoch":2,"lr":"5e-4","wd":"0.033","status":"complete","beaker":"01KYT0G2AM8PD2EQQP2589XB1X","train":3.982,"c4":4.305,"acc":25.931,"bpb":1.21155,"wandb":"hgoyq9yp","downstream":{"arc_challenge":21.07,"arc_easy":31.75,"boolq":44.77,"csqa":25.06,"openbookqa":22.00,"piqa":56.96,"socialiqa":38.95,"winogrande":50.75}},
     {"epoch":2,"lr":"5e-4","wd":"0.1","status":"complete","beaker":"01KYV7W8BQ9T3RWCVMWTVF05S4","train":3.979,"c4":4.305,"acc":26.24,"bpb":1.212,"wandb":"9c9lc4wi"},
     {"epoch":2,"lr":"1e-3","wd":"0.1","status":"complete","beaker":"01KYV70BXS1M0TSXVT6MCZ4G65","train":4.112,"c4":4.453,"acc":25.62,"bpb":1.252,"wandb":"y5fdidxk"},
     {"epoch":2,"lr":"5e-4","wd":"0.3","status":"complete","beaker":"01KYVGEQZTHYAF8T696R8T8514","train":3.988,"c4":4.309,"acc":25.84,"bpb":1.216,"wandb":"ugf2ev0l"},
@@ -24,16 +24,16 @@
     {"epoch":3,"lr":"5e-4","wd":"0.1","status":"complete","beaker":"01KYVAF8DM6PEMHPFQRAXWQVSK","train":3.569,"c4":3.908,"acc":27.05,"bpb":1.093,"wandb":"mwgovdnv"},
     {"epoch":3,"lr":"1e-3","wd":"0.1","status":"complete","beaker":"01KYV9QZ2ZT3YE0EBNXRX21K9T","train":3.565,"c4":3.896,"acc":27.26,"bpb":1.086,"wandb":"1itzqa5j"},
     {"epoch":3,"lr":"5e-4","wd":"0.3","status":"complete","beaker":"01KYVKZYDA6ZX6CJ41X422RF5Y","train":3.571,"c4":3.900,"acc":27.28,"bpb":1.091,"wandb":"gqafczq6"},
-    {"epoch":3,"lr":"1e-3","wd":"0.3","status":"complete","beaker":"01KYVSWHM80B5WTBEAAT4K34YS","train":3.553,"c4":3.875,"acc":27.13,"bpb":1.083,"wandb":"0z6iy9lt"},
+    {"epoch":3,"lr":"1e-3","wd":"0.3","status":"complete","beaker":"01KYVSWHM80B5WTBEAAT4K34YS","train":3.553,"c4":3.875,"acc":27.13,"bpb":1.083,"wandb":"0z6iy9lt","downstream":{"arc_challenge":24.41,"arc_easy":42.11,"boolq":61.65,"csqa":32.92,"openbookqa":24.60,"piqa":59.09,"socialiqa":41.66,"winogrande":49.80}},
     {"epoch":3,"lr":"5e-4","wd":"0.9","status":"complete","beaker":"01KYVZ18EH7DA9FZPQDK4VBDVQ","train":3.601,"c4":3.905,"acc":26.83,"bpb":1.093,"wandb":"j0qmt6pw"},
     {"epoch":3,"lr":"1e-3","wd":"0.9","status":"complete","beaker":"01KYW3AEQYFE3PDBQ9D733RQDA","train":3.640,"c4":3.928,"acc":26.94,"bpb":1.099,"wandb":"w8om546x"},
     {"epoch":4,"lr":"1e-3","wd":"0.033","status":"complete","beaker":"01KYTP7NMCAP8KGA92DRVFFMES","train":3.350,"c4":3.702,"acc":29.89,"bpb":1.028,"wandb":"byb6zm1s"},
     {"epoch":4,"lr":"1e-3","wd":"0.1","status":"complete","beaker":"01KYVCZCB4VXZ970WTCQP665QW","train":3.338,"c4":3.680,"acc":29.48,"bpb":1.024,"wandb":"o0kk29mw"},
-    {"epoch":4,"lr":"1e-3","wd":"0.3","status":"complete","beaker":"01KYVWF28TTM7JCZ29RQEN513J","train":3.336,"c4":3.662,"acc":29.64,"bpb":1.020,"wandb":"u77r5ruq"},
+    {"epoch":4,"lr":"1e-3","wd":"0.3","status":"complete","beaker":"01KYVWF28TTM7JCZ29RQEN513J","train":3.336,"c4":3.662,"acc":29.64,"bpb":1.020,"wandb":"u77r5ruq","downstream":{"arc_challenge":24.75,"arc_easy":46.14,"boolq":55.20,"csqa":37.67,"openbookqa":23.20,"piqa":60.50,"socialiqa":41.15,"winogrande":48.78}},
     {"epoch":4,"lr":"1e-3","wd":"0.9","status":"complete","beaker":"01KYW5WGWYB8ZFC4N29JC0TMKM","train":3.449,"c4":3.713,"acc":28.79,"bpb":1.033,"wandb":"7zwclm5u"},
     {"epoch":5,"lr":"1e-3","wd":"0.033","status":"complete","beaker":"01KYTSSJ286TB6APX11Z2YD0EM","train":3.184,"c4":3.602,"acc":31.76,"bpb":0.9959,"wandb":"1lnzmcsr"},
     {"epoch":5,"lr":"1e-3","wd":"0.1","status":"complete","beaker":"01KYVFS8W1J97B4PVZ39P56G8N","train":3.172,"c4":3.583,"acc":32.09,"bpb":0.9923,"wandb":"0n4ihldp"},
-    {"epoch":5,"lr":"1e-3","wd":"0.3","status":"complete","beaker":"01KYVZY5CBPYFJZEG9XZNWBTZE","train":3.173,"c4":3.558,"acc":31.96,"bpb":0.9861,"wandb":"8s1isuyj"},
+    {"epoch":5,"lr":"1e-3","wd":"0.3","status":"complete","beaker":"01KYVZY5CBPYFJZEG9XZNWBTZE","train":3.173,"c4":3.558,"acc":31.96,"bpb":0.9861,"wandb":"8s1isuyj","downstream":{"arc_challenge":26.09,"arc_easy":48.42,"boolq":58.04,"csqa":40.46,"openbookqa":25.00,"piqa":63.71,"socialiqa":41.86,"winogrande":49.01}},
     {"epoch":5,"lr":"1e-3","wd":"0.9","status":"complete","beaker":"01KYWAP1S4ARG1S85RMHG25CYX","train":3.306,"c4":3.593,"acc":30.59,"bpb":0.9954,"wandb":"we7u47pi"}
   ]
 }
