@@ -98,19 +98,19 @@
 <script src="data/wsd_unique_vs_repeated_1b.js"></script>
 <script>
   const state=window.STEP2_REPORT_DATA;
-  const uniqueRuns=state.uniqueRuns||[], repeatedRuns=state.repeatedRuns||[], codelionRuns=state.codelionRuns||[];
+  const uniqueRuns=state.uniqueRuns||[], repeatedRuns=state.repeatedRuns||[], codelionRuns=state.codelionRuns||[], evaluationRuns=state.evaluationRuns||[];
   const validComplete=r=>r.status==="complete"&&Number.isFinite(r.c4);
   const bestByTarget=runs=>[1,2,3,4,5].map(epoch=>runs.filter(r=>r.epoch===epoch&&validComplete(r)).sort((a,b)=>a.c4-b.c4)[0]).filter(Boolean);
   const uniqueBest=bestByTarget(uniqueRuns), repeatedBest=bestByTarget(repeatedRuns), codelionBest=bestByTarget(codelionRuns);
-  const activeCount=[...uniqueRuns,...repeatedRuns,...codelionRuns].filter(r=>["active","queued"].includes(r.status)).length;
+  const activeCount=[...uniqueRuns,...repeatedRuns,...codelionRuns,...evaluationRuns].filter(r=>["active","queued"].includes(r.status)).length;
   const statusLabel={planned:"Planned",queued:"Queued",active:"Active",complete:"Complete",canceled:"Canceled",failed:"Failed",invalid:"Invalid · missing endpoint decay"};
   const metric=(r,k,d=3)=>Number.isFinite(r[k])?r[k].toFixed(d):"—";
   const link=(url,label)=>url?`<a href="${url}">${label}</a>`:'<span class="pending">—</span>';
   document.querySelector("#live-stamp").innerHTML=`<strong>Step 2:</strong> updated ${state.updated} · ${uniqueBest.length} unique targets resolved · ${repeatedBest.length} fixed-DCLM repeat targets resolved · ${codelionBest.length} Codelion repeat targets available · ${activeCount} active/queued trials.`;
   document.querySelector("#manifest-note").textContent=`Repeated subset: ${state.manifest.selectedTokens.toLocaleString()} tokens · ${state.manifest.selectedInstances.toLocaleString()} instances · ${state.manifest.sourcePaths} paths · entries SHA-256 ${state.manifest.sha256}.`;
 
-  const row=(r,condition)=>`<tr title="${r.reason||''}"><td>${condition}</td><td>${r.epoch}B</td><td>${r.lr}</td><td>${r.wd}</td><td class="${r.status}">${statusLabel[r.status]||r.status}</td><td>${metric(r,"train")}</td><td>${metric(r,"c4")}</td><td>${Number.isFinite(r.acc)?r.acc.toFixed(3)+"%":"—"}</td><td>${metric(r,"bpb",5)}</td><td>${link(r.wandb?`https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}`:null,r.wandb)}</td><td>${link(r.beaker?`https://beaker.org/ex/${r.beaker}`:null,"experiment")}</td></tr>`;
-  document.querySelector("#runs-body").innerHTML=uniqueRuns.map(r=>row(r,"Unique DCLM")).join("")+repeatedRuns.map(r=>row(r,"Repeated fixed DCLM 1B")).join("")+codelionRuns.map(r=>row(r,"Repeated Codelion 1B")).join("");
+  const row=(r,condition)=>`<tr title="${r.reason||''}"><td>${condition}</td><td>${r.epoch}B</td><td>${r.lr}</td><td>${r.wd||"—"}</td><td class="${r.status}">${statusLabel[r.status]||r.status}</td><td>${metric(r,"train")}</td><td>${metric(r,"c4")}</td><td>${Number.isFinite(r.acc)?r.acc.toFixed(3)+"%":"—"}</td><td>${metric(r,"bpb",5)}</td><td>${link(r.wandb?`https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}`:null,r.wandb)}</td><td>${link(r.beaker?`https://beaker.org/ex/${r.beaker}`:null,"experiment")}</td></tr>`;
+  document.querySelector("#runs-body").innerHTML=uniqueRuns.map(r=>row(r,"Unique DCLM")).join("")+repeatedRuns.map(r=>row(r,"Repeated fixed DCLM 1B")).join("")+codelionRuns.map(r=>row(r,"Repeated Codelion 1B")).join("")+evaluationRuns.map(r=>row(r,`${r.condition} · 9-task eval`)).join("");
 
   const grid=(runs,best,mount)=>mount.innerHTML=[1,2,3,4,5].map(epoch=>{
     const points=runs.filter(r=>r.epoch===epoch&&!r.duplicate&&!["invalid","canceled","failed"].includes(r.status)).sort((a,b)=>Number(a.lr)-Number(b.lr));

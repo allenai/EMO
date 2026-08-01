@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-07-31 22:40 PDT",
+  "updated": "2026-07-31 23:21 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -398,7 +398,7 @@ window.STEP2_REPORT_DATA = {
         "arc_easy": 43.68,
         "boolq": 58.59,
         "csqa": 34.81,
-        "openbookqa": 22,
+        "openbookqa": 22.0,
         "piqa": 60.61,
         "socialiqa": 41.81,
         "winogrande": 49.64
@@ -471,7 +471,7 @@ window.STEP2_REPORT_DATA = {
         "arc_easy": 46.67,
         "boolq": 54.28,
         "csqa": 38.98,
-        "openbookqa": 23,
+        "openbookqa": 23.0,
         "piqa": 63.87,
         "socialiqa": 42.32,
         "winogrande": 50.12
@@ -591,6 +591,24 @@ window.STEP2_REPORT_DATA = {
       "duplicate": true,
       "beaker": "01KYXP4Y95T83FR9KB46Q1KJXP",
       "reason": "Canceled late duplicate submission; original 1e-3 experiment retained"
+    },
+    {
+      "epoch": 2,
+      "lr": "4e-4",
+      "wd": "0.033",
+      "status": "active",
+      "beaker": "01KYXZCC3RJG3BD289145AVPKQ",
+      "revision": "4ecd9242",
+      "reason": "Selected epoch-1 LR; resumed the preserved pre-decay step214 checkpoint; endpoint-specific WSD decay to 2B; minRuntime 0; autoResume false"
+    },
+    {
+      "epoch": 2,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "active",
+      "beaker": "01KYXZCCHRK9TTTSC2NQZDWMH3",
+      "revision": "4ecd9242",
+      "reason": "Required next-higher LR; resumed the preserved pre-decay step214 checkpoint; endpoint-specific WSD decay to 2B; minRuntime 0; autoResume false"
     }
   ],
   "codelionRuns": [
@@ -658,6 +676,116 @@ window.STEP2_REPORT_DATA = {
       "acc": 31.76,
       "bpb": 0.9959,
       "reason": "Existing completed WSD run on repeated Codelion 1B pool; reused without new training or evaluation"
+    }
+  ],
+  "evaluationRuns": [
+    {
+      "condition": "Cosine",
+      "epoch": 1,
+      "lr": "2.5e-4",
+      "status": "active",
+      "beaker": "01KYXZCD0F5CFG0MCKF0WQPE2V",
+      "revision": "4ecd9242",
+      "reason": "Evaluation-only recovery of the selected historical checkpoint on C4 plus all nine downstream tasks"
+    },
+    {
+      "condition": "Cosine",
+      "epoch": 2,
+      "lr": "5e-4",
+      "status": "active",
+      "beaker": "01KYXZCC2Z4EJ6KZGGFA3YAZDK",
+      "revision": "4ecd9242",
+      "reason": "Evaluation-only recovery of the selected historical checkpoint on C4 plus all nine downstream tasks"
+    },
+    {
+      "condition": "Cosine",
+      "epoch": 3,
+      "lr": "1e-3",
+      "status": "failed",
+      "beaker": "01KYXZCC4DP3BGWYP8XGGAQ652",
+      "revision": "4ecd9242",
+      "reason": "Infrastructure failure before startup on a cordoned node; no model evaluation occurred; replaced by retry1"
+    },
+    {
+      "condition": "Cosine",
+      "epoch": 3,
+      "lr": "1e-3",
+      "status": "queued",
+      "beaker": "01KYXZPXBRTH2JZPYYPPKWMJQC",
+      "revision": "4ecd9242",
+      "reason": "Evaluation-only retry on a fresh output path after a cordoned-node failure"
+    },
+    {
+      "condition": "Cosine",
+      "epoch": 4,
+      "lr": "1e-3",
+      "status": "active",
+      "beaker": "01KYXZCCEKYR3P73RA8T0MZXDK",
+      "revision": "4ecd9242",
+      "reason": "Evaluation-only recovery of the selected historical checkpoint on C4 plus all nine downstream tasks"
+    },
+    {
+      "condition": "Cosine",
+      "epoch": 5,
+      "lr": "1e-3",
+      "status": "active",
+      "beaker": "01KYXZCDD65E3Y3M9QCMDBSPY0",
+      "revision": "4ecd9242",
+      "reason": "Evaluation-only recovery of the selected historical checkpoint on C4 plus all nine downstream tasks"
+    },
+    {
+      "condition": "Repeated Codelion 1B",
+      "epoch": 1,
+      "lr": "5e-4",
+      "status": "active",
+      "beaker": "01KYXZCD7P17M457Q1Q4BPDASY",
+      "revision": "4ecd9242",
+      "reason": "Evaluation-only recovery of the selected historical checkpoint on C4 plus all nine downstream tasks"
+    },
+    {
+      "condition": "Repeated Codelion 1B",
+      "epoch": 2,
+      "lr": "5e-4",
+      "status": "active",
+      "beaker": "01KYXZCD9CJHF0AZS5CE4ZJGWJ",
+      "revision": "4ecd9242",
+      "reason": "Evaluation-only recovery of the selected historical checkpoint on C4 plus all nine downstream tasks"
+    },
+    {
+      "condition": "Repeated Codelion 1B",
+      "epoch": 3,
+      "lr": "5e-4",
+      "status": "failed",
+      "beaker": "01KYXZCKSCP41770VCKK65YT6J",
+      "revision": "4ecd9242",
+      "reason": "Infrastructure failure before startup on a cordoned node; no model evaluation occurred; replaced by retry1"
+    },
+    {
+      "condition": "Repeated Codelion 1B",
+      "epoch": 3,
+      "lr": "5e-4",
+      "status": "queued",
+      "beaker": "01KYXZPXA5M95ZNYZZGK41R5RS",
+      "revision": "4ecd9242",
+      "reason": "Evaluation-only retry on a fresh output path after a cordoned-node failure"
+    },
+    {
+      "condition": "Repeated Codelion 1B",
+      "epoch": 4,
+      "lr": "1e-3",
+      "status": "active",
+      "beaker": "01KYXZCCZH6Q18CWK2GXDSZEM0",
+      "revision": "4ecd9242",
+      "reason": "Evaluation-only recovery of the selected historical checkpoint on C4 plus all nine downstream tasks"
+    },
+    {
+      "condition": "Repeated Codelion 1B",
+      "epoch": 5,
+      "lr": "1e-3",
+      "status": "active",
+      "beaker": "01KYXZCD3GTMZGRYMZ1HYJ0JTA",
+      "revision": "4ecd9242",
+      "reason": "Evaluation-only recovery of the selected historical checkpoint on C4 plus all nine downstream tasks"
     }
   ]
 };
