@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-31 23:33 PDT",
+  "updated": "2026-07-31 23:46 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -49,8 +49,8 @@
     {"epoch":1,"lr":"1e-3","wd":"0.033","status":"complete","beaker":"01KYXRH5MHS61SPAT1KNXH385M","wandb":"2zpfask1","revision":"5ea16918","train":5.431,"c4":5.784,"acc":24.62,"bpb":1.652,"downstream":{"arc_challenge":23.08,"arc_easy":29.30,"boolq":37.95,"csqa":22.85,"openbookqa":25.80,"piqa":51.80,"socialiqa":39.46,"winogrande":49.64},"reason":"Corrected uint32 manifest; completed endpoint-specific WSD decay; nearest logged train CE; minRuntime 0"},
     {"epoch":1,"lr":"1e-3","wd":"0.033","status":"failed","beaker":"01KYXQQEV4W1CM1QD97472MS73","revision":"f01bc124","reason":"Manifest dtype mismatch; no usable training progress"},
     {"epoch":1,"lr":"1e-3","wd":"0.033","status":"canceled","duplicate":true,"beaker":"01KYXP4Y95T83FR9KB46Q1KJXP","reason":"Canceled late duplicate submission; original 1e-3 experiment retained"},
-    {"epoch":2,"lr":"4e-4","wd":"0.033","status":"active","beaker":"01KYXZCC3RJG3BD289145AVPKQ","revision":"4ecd9242","reason":"Selected epoch-1 LR; resumed the preserved pre-decay step214 checkpoint; endpoint-specific WSD decay to 2B; minRuntime 0; autoResume false"},
-    {"epoch":2,"lr":"1e-3","wd":"0.033","status":"active","beaker":"01KYXZCCHRK9TTTSC2NQZDWMH3","revision":"4ecd9242","reason":"Required next-higher LR; resumed the preserved pre-decay step214 checkpoint; endpoint-specific WSD decay to 2B; minRuntime 0; autoResume false"}
+    {"epoch":2,"lr":"4e-4","wd":"0.033","status":"active","beaker":"01KYXZCC3RJG3BD289145AVPKQ","wandb":"ssg89023","revision":"4ecd9242","reason":"Selected epoch-1 LR; resumed the preserved pre-decay step214 checkpoint; endpoint-specific WSD decay to 2B; minRuntime 0; autoResume false"},
+    {"epoch":2,"lr":"1e-3","wd":"0.033","status":"active","beaker":"01KYXZCCHRK9TTTSC2NQZDWMH3","wandb":"z7tr7n9a","revision":"4ecd9242","reason":"Required next-higher LR; resumed the preserved pre-decay step214 checkpoint; endpoint-specific WSD decay to 2B; minRuntime 0; autoResume false"}
   ],
   "codelionRuns": [
     {"epoch":1,"lr":"5e-4","wd":"0.033","status":"complete","beaker":"01KYSXCMH5F9R1T8WZEXPNC1RQ","wandb":"brbweepb","train":5.025,"c4":5.394,"acc":25.095,"bpb":1.53507,"downstream":{"arc_challenge":22.07,"arc_easy":28.25,"boolq":38.01,"csqa":23.91,"openbookqa":24.00,"piqa":51.47,"socialiqa":39.10,"winogrande":48.46},"evaluationBeaker":"01KYXZCD7P17M457Q1Q4BPDASY","evaluationWandb":"8b3c4wl4","reason":"Existing completed WSD run on repeated Codelion 1B pool; full nine-task suite recovered from its preserved checkpoint"},
