@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 15:24 PDT",
+  "updated": "2026-08-01 15:28 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -697,6 +697,28 @@ window.STEP2_REPORT_DATA = {
       },
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e3_lr1e-3_wd0.033_warmup24_uniformdocs_seed0_corrected_retry1",
       "reason": "Selected at corrected epoch 3 by lower held-out C4 (3.904 versus 3.972 for 4e-4); confirmed infrastructure retry after pre-start node cancellation; nearest final logged train CE at step715; full nine-task and C4 evaluation; preserved step643; minRuntime 0; autoResume false; no experiment retries"
+    },
+    {
+      "epoch": 4,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "active",
+      "correctedSubset": true,
+      "beaker": "01KYZPYZTRY03VVK5SSY1BHTWX",
+      "revision": "bf4c3dfe",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e4_lr1e-3_wd0.033_warmup24_uniformdocs_seed0_corrected_retry1",
+      "reason": "Corrected epoch-3 selected LR; active on Jupiter; resumes verified matching corrected pre-decay step643; endpoint-specific WSD decay to 4B; full nine-task and C4 evaluation; preserves step858; minRuntime 0; autoResume false; no experiment retries"
+    },
+    {
+      "epoch": 4,
+      "lr": "2e-3",
+      "wd": "0.033",
+      "status": "queued",
+      "correctedSubset": true,
+      "beaker": "01KYZQ1AKQRDHM7M8AZDFYK2PR",
+      "revision": "bf4c3dfe",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e4_lr2e-3_wd0.033_warmup24_uniformdocs_seed0_corrected",
+      "reason": "Required corrected epoch-4 next-higher LR; fresh 4B trajectory because no corrected 2e-3 stable chain exists; endpoint-specific WSD decay to 4B; full nine-task and C4 evaluation; preserves step858; minRuntime 0; autoResume false; no experiment retries"
     }
   ],
   "oldRepeatedRuns": [
