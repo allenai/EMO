@@ -1,21 +1,33 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-07-31 20:36 PDT",
+  "updated": "2026-07-31 21:13 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
     "selectedInstances": 244736,
     "sourcePaths": 940,
-    "sha256": "c3d5f8b228040e859c7d1f8e3281adb8887d96ef38fad57ab3933764fc6144c7"
+    "sha256": "0ac09b82321ff156866a8191641f5755ec2a050ad5f082c7d2f7626811e74a4d"
   },
   "uniqueRuns": [
     {
       "epoch": 1,
       "lr": "4e-4",
       "wd": "0.033",
-      "status": "queued",
+      "status": "active",
       "corrected": true,
+      "beaker": "01KYXQK1MBQ3C7X5VE233F6G9R",
+      "revision": "f01bc124",
+      "reason": "Fresh endpoint-specific trajectory; minRuntime 0"
+    },
+    {
+      "epoch": 1,
+      "lr": "4e-4",
+      "wd": "0.033",
+      "status": "canceled",
+      "corrected": true,
+      "duplicate": true,
       "beaker": "01KYXP872NNTVRSGGQ8PC7QHWQ",
-      "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818"
+      "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818",
+      "reason": "Canceled mistaken fresh run; existing trajectory checkpoint should be reused"
     },
     {
       "epoch": 1,
@@ -34,8 +46,20 @@ window.STEP2_REPORT_DATA = {
       "wd": "0.033",
       "status": "active",
       "corrected": true,
-      "beaker": "01KYXNP0NFKN4G0BBG16J13WH6",
-      "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818"
+      "beaker": "01KYXQX8FT6DF1MMP0EMHPX9VD",
+      "revision": "f01bc124",
+      "reason": "Fresh endpoint-specific trajectory; minRuntime 0"
+    },
+    {
+      "epoch": 1,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "canceled",
+      "corrected": true,
+      "duplicate": true,
+      "beaker": "01KYXQMXHPG12T1Y28V0N4NGJ5",
+      "revision": "f01bc124",
+      "reason": "Canceled by unhealthy cordoned node before training; replacement active"
     },
     {
       "epoch": 1,
@@ -69,7 +93,7 @@ window.STEP2_REPORT_DATA = {
       "wandb": "8kvm55rf",
       "train": 5.606,
       "c4": 5.907,
-      "acc": 25,
+      "acc": 25.0,
       "bpb": 1.695,
       "reason": "Intermediate checkpoint evaluated before endpoint-specific WSD decay"
     },
@@ -127,6 +151,26 @@ window.STEP2_REPORT_DATA = {
     },
     {
       "epoch": 2,
+      "lr": "4e-4",
+      "wd": "0.033",
+      "status": "active",
+      "corrected": true,
+      "beaker": "01KYXQX8BXPM47ZRF8PMRGAYZN",
+      "revision": "f01bc124",
+      "reason": "Resumed source step239; endpoint-specific decay to 2B; minRuntime 0"
+    },
+    {
+      "epoch": 2,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "active",
+      "corrected": true,
+      "beaker": "01KYXQX7P7C4TE0VSJRCV7X61P",
+      "revision": "f01bc124",
+      "reason": "Resumed source step239; endpoint-specific decay to 2B; minRuntime 0"
+    },
+    {
+      "epoch": 2,
       "lr": "2e-3",
       "wd": "0.033",
       "status": "invalid",
@@ -179,6 +223,26 @@ window.STEP2_REPORT_DATA = {
     },
     {
       "epoch": 3,
+      "lr": "4e-4",
+      "wd": "0.033",
+      "status": "active",
+      "corrected": true,
+      "beaker": "01KYXQX64NSP8BPZ34EBQZNS22",
+      "revision": "f01bc124",
+      "reason": "Resumed source step477; endpoint-specific decay to 3B; minRuntime 0"
+    },
+    {
+      "epoch": 3,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "active",
+      "corrected": true,
+      "beaker": "01KYXQX92WVD4X4GX4FV4ETMXV",
+      "revision": "f01bc124",
+      "reason": "Resumed source step477; endpoint-specific decay to 3B; minRuntime 0"
+    },
+    {
+      "epoch": 3,
       "lr": "2e-3",
       "wd": "0.033",
       "status": "invalid",
@@ -215,6 +279,26 @@ window.STEP2_REPORT_DATA = {
       "acc": 29.18,
       "bpb": 1.043,
       "reason": "Intermediate checkpoint evaluated before endpoint-specific WSD decay"
+    },
+    {
+      "epoch": 4,
+      "lr": "4e-4",
+      "wd": "0.033",
+      "status": "active",
+      "corrected": true,
+      "beaker": "01KYXQX8RD33EV970DN12VZWMK",
+      "revision": "f01bc124",
+      "reason": "Resumed source step716; endpoint-specific decay to 4B; minRuntime 0"
+    },
+    {
+      "epoch": 4,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "active",
+      "corrected": true,
+      "beaker": "01KYXQX7EKQN8VBEENP1P89KJ3",
+      "revision": "f01bc124",
+      "reason": "Resumed source step716; endpoint-specific decay to 4B; minRuntime 0"
     },
     {
       "epoch": 4,
@@ -279,9 +363,17 @@ window.STEP2_REPORT_DATA = {
       "epoch": 1,
       "lr": "4e-4",
       "wd": "0.033",
-      "status": "queued",
-      "beaker": "01KYXP9G8EE2K7XKMTMTCAFC4H",
-      "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818"
+      "status": "planned",
+      "reason": "Manifest corrected to uint32; corrected launch pending pushed revision and output check"
+    },
+    {
+      "epoch": 1,
+      "lr": "4e-4",
+      "wd": "0.033",
+      "status": "failed",
+      "beaker": "01KYXQP5XKZX7RE45JYB9YJ69K",
+      "revision": "f01bc124",
+      "reason": "Stopped after manifest dtype mismatch; no usable training progress"
     },
     {
       "epoch": 1,
@@ -305,9 +397,17 @@ window.STEP2_REPORT_DATA = {
       "epoch": 1,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "queued",
-      "beaker": "01KYXNRWDW20EE7FTZ2TH4QTEH",
-      "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818"
+      "status": "planned",
+      "reason": "Manifest corrected to uint32; corrected launch pending pushed revision and output check"
+    },
+    {
+      "epoch": 1,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "failed",
+      "beaker": "01KYXQQEV4W1CM1QD97472MS73",
+      "revision": "f01bc124",
+      "reason": "Manifest dtype mismatch; no usable training progress"
     },
     {
       "epoch": 1,

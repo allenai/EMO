@@ -193,7 +193,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--source-mix", type=Path, default=DEFAULT_SOURCE_MIX)
     parser.add_argument("--label", default="dclm")
     parser.add_argument("--tokenizer", default="allenai/dolma2-tokenizer")
-    parser.add_argument("--dtype", default="uint16")
+    parser.add_argument(
+        "--dtype",
+        default="uint32",
+        help="Raw token dtype (DCLM-full with the Dolma2 tokenizer uses uint32).",
+    )
     parser.add_argument("--sequence-length", type=int, default=4096)
     parser.add_argument("--alignment-tokens", type=parse_token_count, default=4_194_304)
     return parser.parse_args()
