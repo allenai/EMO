@@ -21,6 +21,7 @@ import argparse
 import concurrent.futures
 import gzip
 import hashlib
+import io
 import json
 import math
 import os
@@ -203,6 +204,46 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def deterministic_gzip_text_writer(path: Path):
+    raw = path.open("wb")
+    compressed = gzip.GzipFile(filename="", mode="wb", fileobj=raw, mtime=0)
+    return io.TextIOWrapper(compressed)
+
+
+def write_shard_audit(
+    *, shards: list[dict], output_path: Path, manifest_base_dir: Path
+) -> dict[str, int | float | str]:
+    audit_path = output_path.with_suffix(".shards.json.gz")
+    if audit_path.exists():
+        raise FileExistsError(f"refusing to overwrite existing shard audit: {audit_path}")
+    payload = json.dumps(shards, sort_keys=True, separators=(",", ":")).encode()
+    tmp_path = audit_path.with_name(audit_path.name + ".tmp")
+    try:
+        with tmp_path.open("wb") as raw:
+            with gzip.GzipFile(filename="", mode="wb", fileobj=raw, mtime=0) as f:
+                f.write(payload)
+        os.replace(tmp_path, audit_path)
+    except BaseException:
+        tmp_path.unlink(missing_ok=True)
+        raise
+    differences = [shard["selected_tokens"] - shard["token_quota"] for shard in shards]
+    return {
+        "path": os.path.relpath(audit_path, manifest_base_dir),
+        "sha256": _sha256_file(audit_path),
+        "contents_sha256": hashlib.sha256(payload).hexdigest(),
+        "num_shards": len(shards),
+        "sum_available_tokens": sum(shard["available_tokens"] for shard in shards),
+        "sum_token_quotas": sum(shard["token_quota"] for shard in shards),
+        "sum_selected_document_tokens": sum(shard["selected_tokens"] for shard in shards),
+        "max_absolute_token_deviation_from_quota": max(map(abs, differences)),
+        "mean_absolute_token_deviation_from_quota": sum(map(abs, differences)) / len(shards),
+        "max_relative_deviation_from_quota": max(
+            abs(difference) / shard["token_quota"]
+            for difference, shard in zip(differences, shards)
+        ),
+    }
+
+
 def materialize(
     *,
     documents: list[Document],
@@ -227,7 +268,9 @@ def materialize(
     offset = 0
     token_digest = hashlib.sha256()
     try:
-        with token_tmp.open("wb") as token_out, gzip.open(metadata_tmp, "wt") as metadata_out:
+        with token_tmp.open("wb") as token_out, deterministic_gzip_text_writer(
+            metadata_tmp
+        ) as metadata_out:
             for shard in sorted(by_shard):
                 source = sources[shard]
                 array = np.memmap(source["absolute_path"], mode="r", dtype=dtype)
@@ -364,6 +407,11 @@ def build_and_materialize(args: argparse.Namespace) -> dict:
                 "selected_tokens": selected_tokens,
             }
         )
+    shard_audit = write_shard_audit(
+        shards=shard_stats,
+        output_path=args.materialized_output,
+        manifest_base_dir=args.manifest_base_dir,
+    )
 
     source_mix_sha256 = hashlib.sha256(args.source_mix.read_bytes()).hexdigest()
     return {
@@ -403,7 +451,7 @@ def build_and_materialize(args: argparse.Namespace) -> dict:
             ),
             "document_metadata_sha256": metadata_sha256,
         },
-        "shards": shard_stats,
+        "shard_audit": shard_audit,
         "entries_sha256": manifest_digest(entries),
         "entries": entries,
     }
