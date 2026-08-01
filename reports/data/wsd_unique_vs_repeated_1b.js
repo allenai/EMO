@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 15:19 PDT",
+  "updated": "2026-08-01 15:24 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -674,14 +674,29 @@ window.STEP2_REPORT_DATA = {
       "epoch": 3,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
+      "selected": true,
       "correctedSubset": true,
       "retryOf": "01KYZKG01F24H7BQ1NKCEQBKMR",
       "beaker": "01KYZKSQQ8XXJCJYABPPZ8SE58",
       "wandb": "kin38izx",
       "revision": "bf4c3dfe",
+      "train": 3.639,
+      "c4": 3.904,
+      "acc": 27.0,
+      "bpb": 1.087,
+      "downstream": {
+        "arc_challenge": 23.08,
+        "arc_easy": 39.12,
+        "boolq": 59.85,
+        "csqa": 31.2,
+        "openbookqa": 24.2,
+        "piqa": 59.52,
+        "socialiqa": 40.33,
+        "winogrande": 51.07
+      },
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e3_lr1e-3_wd0.033_warmup24_uniformdocs_seed0_corrected_retry1",
-      "reason": "Confirmed infrastructure retry after pre-start node cancellation; active on Jupiter at step660/716 with training ETA about 10 minutes as of 15:13 PDT; exact corrected pre-decay step428 source verified in Jupiter-mounted Weka view and retry output verified absent; required corrected epoch-3 next-higher LR; endpoint-specific WSD decay to 3B; full nine-task and C4 evaluation; preserved step643; minRuntime 0; autoResume false; no experiment retries"
+      "reason": "Selected at corrected epoch 3 by lower held-out C4 (3.904 versus 3.972 for 4e-4); confirmed infrastructure retry after pre-start node cancellation; nearest final logged train CE at step715; full nine-task and C4 evaluation; preserved step643; minRuntime 0; autoResume false; no experiment retries"
     }
   ],
   "oldRepeatedRuns": [
