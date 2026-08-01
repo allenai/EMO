@@ -35,6 +35,7 @@ BEAKER_CLUSTER="${BEAKER_CLUSTER:-ai2/jupiter}"
 BEAKER_PRIORITY="${BEAKER_PRIORITY:-urgent}"
 BEAKER_WEKA="${BEAKER_WEKA:-oe-training-default}"
 BEAKER_IMAGE="${BEAKER_IMAGE:-tylerr/olmo-core-tch280cu128-2025-11-25}"
+BEAKER_PREEMPTIBLE="${BEAKER_PREEMPTIBLE:-1}"
 BEAKER_ENV_SECRETS=(
     "GITHUB_TOKEN=GITHUB_TOKEN"
     "WANDB_API_KEY=SEWONM_WANDB_API_KEY"
@@ -53,6 +54,10 @@ launch() {
     shift 2
 
     if [[ "${MODE}" == "beaker" ]]; then
+        local preemptible_args=()
+        if [[ "${BEAKER_PREEMPTIBLE}" == "1" ]]; then
+            preemptible_args+=(--preemptible)
+        fi
         python -m olmo_core.launch.beaker \
             --name "${run_name}" \
             --gpus "${BEAKER_GPUS}" \
@@ -62,7 +67,7 @@ launch() {
             --workspace "${BEAKER_WORKSPACE}" \
             --cluster "${BEAKER_CLUSTER}" \
             --beaker-image "${BEAKER_IMAGE}" \
-            --preemptible \
+            "${preemptible_args[@]}" \
             --allow-dirty \
             --priority "${BEAKER_PRIORITY}" \
             --env-secret "${BEAKER_ENV_SECRETS[@]}" \
