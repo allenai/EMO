@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-07-31 20:28 PDT",
+  "updated": "2026-07-31 20:29 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -22,6 +22,7 @@ window.STEP2_REPORT_DATA = {
       "status": "active",
       "corrected": true,
       "beaker": "01KYXNM1BW9CFAXEVHMWC41384",
+      "wandb": "elzr3v6t",
       "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818"
     },
     {

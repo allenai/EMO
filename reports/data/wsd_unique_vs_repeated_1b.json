@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-31 20:28 PDT",
+  "updated": "2026-07-31 20:29 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -9,7 +9,7 @@
   },
   "uniqueRuns": [
     {"epoch":1,"lr":"4e-4","wd":"0.033","status":"planned","corrected":true},
-    {"epoch":1,"lr":"5e-4","wd":"0.033","status":"active","corrected":true,"beaker":"01KYXNM1BW9CFAXEVHMWC41384","revision":"115d5585cbe0adeadbe67e9ce6215af8bf75f818"},
+    {"epoch":1,"lr":"5e-4","wd":"0.033","status":"active","corrected":true,"beaker":"01KYXNM1BW9CFAXEVHMWC41384","wandb":"elzr3v6t","revision":"115d5585cbe0adeadbe67e9ce6215af8bf75f818"},
     {"epoch":1,"lr":"1e-3","wd":"0.033","status":"queued","corrected":true,"beaker":"01KYXNP0NFKN4G0BBG16J13WH6","revision":"115d5585cbe0adeadbe67e9ce6215af8bf75f818"},
     {"epoch":1,"lr":"4e-4","wd":"0.033","status":"invalid","beaker":"01KYWFEXJM1YTFFVT1EJD8QET8","wandb":"t4saj7y1","train":5.035,"c4":5.427,"acc":25.28,"bpb":1.545,"reason":"Intermediate checkpoint evaluated before endpoint-specific WSD decay"},
     {"epoch":1,"lr":"1e-3","wd":"0.033","status":"invalid","beaker":"01KYWRR7BZ2CM11NTJC0MNW05C","wandb":"8kvm55rf","train":5.606,"c4":5.907,"acc":25.00,"bpb":1.695,"reason":"Intermediate checkpoint evaluated before endpoint-specific WSD decay"},
