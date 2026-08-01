@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 12:07 PDT",
+  "updated": "2026-08-01 12:14 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -524,6 +524,30 @@ window.STEP2_REPORT_DATA = {
       "revision": "d8740f83",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e1_lr1e-3_wd0.033_warmup24_uniformdocs_seed0_corrected",
       "reason": "Failed before the first training step: generated manifest omitted selection.selected_instances, so loader validation saw metadata None; diagnosed as retryable manifest-generation bug"
+    },
+    {
+      "epoch": 1,
+      "lr": "4e-4",
+      "wd": "0.033",
+      "status": "active",
+      "correctedSubset": true,
+      "retry": 1,
+      "beaker": "01KYZBWYGQ9A4AEMFCEPRM4E5K",
+      "revision": "bf4c3dfe",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e1_lr4e-4_wd0.033_warmup24_uniformdocs_seed0_corrected_retry1",
+      "reason": "Retry after manifest-generation fix; mounted runtime validation 01KYZBQMG09H3GQRHBM74WA8HS passed 244,736 instances and 1,002,438,656 tokens; fresh output confirmed absent; full nine-task and C4 evaluation; fixed checkpoint step214; minRuntime 0; autoResume false; no retries"
+    },
+    {
+      "epoch": 1,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "active",
+      "correctedSubset": true,
+      "retry": 1,
+      "beaker": "01KYZBYCXVZV4DHE8KCQ5D9SZZ",
+      "revision": "bf4c3dfe",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e1_lr1e-3_wd0.033_warmup24_uniformdocs_seed0_corrected_retry1",
+      "reason": "Retry after manifest-generation fix; mounted runtime validation 01KYZBQMG09H3GQRHBM74WA8HS passed 244,736 instances and 1,002,438,656 tokens; fresh output confirmed absent; full nine-task and C4 evaluation; fixed checkpoint step214; minRuntime 0; autoResume false; no retries"
     }
   ],
   "oldRepeatedRuns": [
