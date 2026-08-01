@@ -22,6 +22,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
 scheduler="${SCHEDULER:?Set SCHEDULER to cosine or wsd}"
 epochs="${EPOCHS:?Set EPOCHS to an integer from 1 through 10}"
 lr="${LR:?Set LR}"
+run_suffix="${RUN_SUFFIX:-}"
 
 case "${epochs}" in
 	1) max_tokens=1000000000; stable_step=214; epoch_checkpoint_steps='[239]' ;;
@@ -97,7 +98,7 @@ case "${scheduler}" in
 		;;
 esac
 
-runname="dense_1b_multiepoch_${scheduler}_e${epochs}_lr${lr}_warmup${warmup_steps}${scheduler_suffix}"
+runname="dense_1b_multiepoch_${scheduler}_e${epochs}_lr${lr}_warmup${warmup_steps}${scheduler_suffix}${run_suffix}"
 launch src/scripts/train/olmo2-1B.py "${runname}" \
 		"${dry_run_args[@]}" \
 		--save-folder="${MODELS_DIR}/${runname}" \
