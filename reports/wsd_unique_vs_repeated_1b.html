@@ -58,6 +58,7 @@
   <p class="stamp" id="live-stamp"><strong>Intermediate report:</strong> loading run state.</p>
   <p class="note">Unique-data endpoints train on fresh DCLM tokens. Repeated-data endpoints cycle the explicit 1B DCLM subset manifest; membership never depends on a sampling seed.</p>
   <p class="note">Only target-specific WSD evaluations after their terminal 10% LR decay can be selected or plotted. Earlier checkpoint-only evaluations remain visible as invalid provenance.</p>
+  <p class="note"><strong>Planned</strong> means required by the LR grid but not submitted yet; it is never treated as evaluated or selected. Step 2 does not evaluate LR below 4e-4.</p>
 
   <h2>Model comparison — interactive</h2>
   <div class="legend" aria-label="Chart series">

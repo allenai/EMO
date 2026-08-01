@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-07-31 20:00 PDT",
+  "updated": "2026-07-31 20:28 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -10,7 +10,7 @@ window.STEP2_REPORT_DATA = {
   "uniqueRuns": [
     {
       "epoch": 1,
-      "lr": "2.5e-4",
+      "lr": "4e-4",
       "wd": "0.033",
       "status": "planned",
       "corrected": true
@@ -19,15 +19,19 @@ window.STEP2_REPORT_DATA = {
       "epoch": 1,
       "lr": "5e-4",
       "wd": "0.033",
-      "status": "planned",
-      "corrected": true
+      "status": "active",
+      "corrected": true,
+      "beaker": "01KYXNM1BW9CFAXEVHMWC41384",
+      "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818"
     },
     {
       "epoch": 1,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "planned",
-      "corrected": true
+      "status": "queued",
+      "corrected": true,
+      "beaker": "01KYXNP0NFKN4G0BBG16J13WH6",
+      "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818"
     },
     {
       "epoch": 1,
@@ -259,7 +263,7 @@ window.STEP2_REPORT_DATA = {
   "repeatedRuns": [
     {
       "epoch": 1,
-      "lr": "2.5e-4",
+      "lr": "4e-4",
       "wd": "0.033",
       "status": "planned"
     },
@@ -267,13 +271,17 @@ window.STEP2_REPORT_DATA = {
       "epoch": 1,
       "lr": "5e-4",
       "wd": "0.033",
-      "status": "planned"
+      "status": "queued",
+      "beaker": "01KYXNQEWJ050S0QV2YGT5XQGR",
+      "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818"
     },
     {
       "epoch": 1,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "planned"
+      "status": "queued",
+      "beaker": "01KYXNRWDW20EE7FTZ2TH4QTEH",
+      "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818"
     }
   ]
 };
