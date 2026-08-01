@@ -101,7 +101,7 @@
   document.querySelector("#runs-body").innerHTML=uniqueRuns.map(r=>row(r,"Unique DCLM")).join("")+repeatedRuns.map(r=>row(r,"Repeated DCLM 1B")).join("");
 
   const grid=(runs,best,mount)=>mount.innerHTML=[1,2,3,4,5].map(epoch=>{
-    const points=runs.filter(r=>r.epoch===epoch&&!r.duplicate&&!["invalid","canceled"].includes(r.status)).sort((a,b)=>Number(a.lr)-Number(b.lr));
+    const points=runs.filter(r=>r.epoch===epoch&&!r.duplicate&&!["invalid","canceled","failed"].includes(r.status)).sort((a,b)=>Number(a.lr)-Number(b.lr));
     const chosen=best.find(r=>r.epoch===epoch);
     const chips=points.map(r=>{
       const selected=chosen&&chosen.lr===r.lr;
