@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-07-31 20:29 PDT",
+  "updated": "2026-07-31 20:36 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -12,27 +12,40 @@ window.STEP2_REPORT_DATA = {
       "epoch": 1,
       "lr": "4e-4",
       "wd": "0.033",
-      "status": "planned",
-      "corrected": true
+      "status": "queued",
+      "corrected": true,
+      "beaker": "01KYXP872NNTVRSGGQ8PC7QHWQ",
+      "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818"
     },
     {
       "epoch": 1,
       "lr": "5e-4",
       "wd": "0.033",
-      "status": "active",
+      "status": "canceled",
       "corrected": true,
       "beaker": "01KYXNM1BW9CFAXEVHMWC41384",
       "wandb": "elzr3v6t",
+      "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818",
+      "reason": "Stopped by user: 4e-4 and 5e-4 are too close; retain 4e-4 only"
+    },
+    {
+      "epoch": 1,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "active",
+      "corrected": true,
+      "beaker": "01KYXNP0NFKN4G0BBG16J13WH6",
       "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818"
     },
     {
       "epoch": 1,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "queued",
+      "status": "canceled",
       "corrected": true,
-      "beaker": "01KYXNP0NFKN4G0BBG16J13WH6",
-      "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818"
+      "duplicate": true,
+      "beaker": "01KYXP1KTKQVP1NVSZ4XTC560G",
+      "reason": "Canceled duplicate submission; original 1e-3 experiment retained"
     },
     {
       "epoch": 1,
@@ -266,15 +279,27 @@ window.STEP2_REPORT_DATA = {
       "epoch": 1,
       "lr": "4e-4",
       "wd": "0.033",
-      "status": "planned"
+      "status": "queued",
+      "beaker": "01KYXP9G8EE2K7XKMTMTCAFC4H",
+      "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818"
     },
     {
       "epoch": 1,
       "lr": "5e-4",
       "wd": "0.033",
-      "status": "queued",
+      "status": "canceled",
       "beaker": "01KYXNQEWJ050S0QV2YGT5XQGR",
-      "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818"
+      "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818",
+      "reason": "Stopped by user: 4e-4 and 5e-4 are too close; retain 4e-4 only"
+    },
+    {
+      "epoch": 1,
+      "lr": "5e-4",
+      "wd": "0.033",
+      "status": "canceled",
+      "duplicate": true,
+      "beaker": "01KYXP3EPFKDVJSRBNSPCC4S42",
+      "reason": "Canceled late duplicate submission"
     },
     {
       "epoch": 1,
@@ -283,6 +308,15 @@ window.STEP2_REPORT_DATA = {
       "status": "queued",
       "beaker": "01KYXNRWDW20EE7FTZ2TH4QTEH",
       "revision": "115d5585cbe0adeadbe67e9ce6215af8bf75f818"
+    },
+    {
+      "epoch": 1,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "canceled",
+      "duplicate": true,
+      "beaker": "01KYXP4Y95T83FR9KB46Q1KJXP",
+      "reason": "Canceled late duplicate submission; original 1e-3 experiment retained"
     }
   ]
 };

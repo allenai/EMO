@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-31 20:29 PDT",
+  "updated": "2026-07-31 20:36 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -8,9 +8,10 @@
     "sha256": "c3d5f8b228040e859c7d1f8e3281adb8887d96ef38fad57ab3933764fc6144c7"
   },
   "uniqueRuns": [
-    {"epoch":1,"lr":"4e-4","wd":"0.033","status":"planned","corrected":true},
-    {"epoch":1,"lr":"5e-4","wd":"0.033","status":"active","corrected":true,"beaker":"01KYXNM1BW9CFAXEVHMWC41384","wandb":"elzr3v6t","revision":"115d5585cbe0adeadbe67e9ce6215af8bf75f818"},
-    {"epoch":1,"lr":"1e-3","wd":"0.033","status":"queued","corrected":true,"beaker":"01KYXNP0NFKN4G0BBG16J13WH6","revision":"115d5585cbe0adeadbe67e9ce6215af8bf75f818"},
+    {"epoch":1,"lr":"4e-4","wd":"0.033","status":"queued","corrected":true,"beaker":"01KYXP872NNTVRSGGQ8PC7QHWQ","revision":"115d5585cbe0adeadbe67e9ce6215af8bf75f818"},
+    {"epoch":1,"lr":"5e-4","wd":"0.033","status":"canceled","corrected":true,"beaker":"01KYXNM1BW9CFAXEVHMWC41384","wandb":"elzr3v6t","revision":"115d5585cbe0adeadbe67e9ce6215af8bf75f818","reason":"Stopped by user: 4e-4 and 5e-4 are too close; retain 4e-4 only"},
+    {"epoch":1,"lr":"1e-3","wd":"0.033","status":"active","corrected":true,"beaker":"01KYXNP0NFKN4G0BBG16J13WH6","revision":"115d5585cbe0adeadbe67e9ce6215af8bf75f818"},
+    {"epoch":1,"lr":"1e-3","wd":"0.033","status":"canceled","corrected":true,"duplicate":true,"beaker":"01KYXP1KTKQVP1NVSZ4XTC560G","reason":"Canceled duplicate submission; original 1e-3 experiment retained"},
     {"epoch":1,"lr":"4e-4","wd":"0.033","status":"invalid","beaker":"01KYWFEXJM1YTFFVT1EJD8QET8","wandb":"t4saj7y1","train":5.035,"c4":5.427,"acc":25.28,"bpb":1.545,"reason":"Intermediate checkpoint evaluated before endpoint-specific WSD decay"},
     {"epoch":1,"lr":"1e-3","wd":"0.033","status":"invalid","beaker":"01KYWRR7BZ2CM11NTJC0MNW05C","wandb":"8kvm55rf","train":5.606,"c4":5.907,"acc":25.00,"bpb":1.695,"reason":"Intermediate checkpoint evaluated before endpoint-specific WSD decay"},
     {"epoch":1,"lr":"2e-3","wd":"0.033","status":"invalid","beaker":"01KYWJXRJKMW3MPP0A2SQD9GW3","wandb":"t8ydrr6e","train":5.866,"c4":6.270,"acc":25.12,"bpb":1.818,"reason":"Intermediate checkpoint evaluated before endpoint-specific WSD decay"},
@@ -31,8 +32,10 @@
     {"epoch":5,"lr":"4e-3","wd":"0.033","status":"canceled","beaker":"01KYWHNB0R1YHN1Z1RWQV9TR18","wandb":"aonw0wmk"}
   ],
   "repeatedRuns": [
-    {"epoch":1,"lr":"4e-4","wd":"0.033","status":"planned"},
-    {"epoch":1,"lr":"5e-4","wd":"0.033","status":"queued","beaker":"01KYXNQEWJ050S0QV2YGT5XQGR","revision":"115d5585cbe0adeadbe67e9ce6215af8bf75f818"},
-    {"epoch":1,"lr":"1e-3","wd":"0.033","status":"queued","beaker":"01KYXNRWDW20EE7FTZ2TH4QTEH","revision":"115d5585cbe0adeadbe67e9ce6215af8bf75f818"}
+    {"epoch":1,"lr":"4e-4","wd":"0.033","status":"queued","beaker":"01KYXP9G8EE2K7XKMTMTCAFC4H","revision":"115d5585cbe0adeadbe67e9ce6215af8bf75f818"},
+    {"epoch":1,"lr":"5e-4","wd":"0.033","status":"canceled","beaker":"01KYXNQEWJ050S0QV2YGT5XQGR","revision":"115d5585cbe0adeadbe67e9ce6215af8bf75f818","reason":"Stopped by user: 4e-4 and 5e-4 are too close; retain 4e-4 only"},
+    {"epoch":1,"lr":"5e-4","wd":"0.033","status":"canceled","duplicate":true,"beaker":"01KYXP3EPFKDVJSRBNSPCC4S42","reason":"Canceled late duplicate submission"},
+    {"epoch":1,"lr":"1e-3","wd":"0.033","status":"queued","beaker":"01KYXNRWDW20EE7FTZ2TH4QTEH","revision":"115d5585cbe0adeadbe67e9ce6215af8bf75f818"},
+    {"epoch":1,"lr":"1e-3","wd":"0.033","status":"canceled","duplicate":true,"beaker":"01KYXP4Y95T83FR9KB46Q1KJXP","reason":"Canceled late duplicate submission; original 1e-3 experiment retained"}
   ]
 }
