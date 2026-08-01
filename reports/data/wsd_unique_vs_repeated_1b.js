@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-07-31 21:16 PDT",
+  "updated": "2026-07-31 21:49 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -12,11 +12,16 @@ window.STEP2_REPORT_DATA = {
       "epoch": 1,
       "lr": "4e-4",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "corrected": true,
       "beaker": "01KYXQK1MBQ3C7X5VE233F6G9R",
+      "wandb": "ev68xsli",
       "revision": "f01bc124",
-      "reason": "Fresh endpoint-specific trajectory; minRuntime 0"
+      "train": 5.031,
+      "c4": 5.4,
+      "acc": 25.09,
+      "bpb": 1.544,
+      "reason": "Fresh endpoint-specific trajectory; nearest logged train CE at step235; minRuntime 0"
     },
     {
       "epoch": 1,
@@ -284,11 +289,16 @@ window.STEP2_REPORT_DATA = {
       "epoch": 4,
       "lr": "4e-4",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "corrected": true,
       "beaker": "01KYXQX8RD33EV970DN12VZWMK",
+      "wandb": "1bonfan6",
       "revision": "f01bc124",
-      "reason": "Resumed source step716; endpoint-specific decay to 4B; minRuntime 0"
+      "train": 3.551,
+      "c4": 3.767,
+      "acc": 28.19,
+      "bpb": 1.05,
+      "reason": "Resumed source step716; endpoint-specific decay to 4B; nearest logged train CE; minRuntime 0"
     },
     {
       "epoch": 4,

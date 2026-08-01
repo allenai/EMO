@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-31 21:16 PDT",
+  "updated": "2026-07-31 21:49 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -8,7 +8,7 @@
     "sha256": "0ac09b82321ff156866a8191641f5755ec2a050ad5f082c7d2f7626811e74a4d"
   },
   "uniqueRuns": [
-    {"epoch":1,"lr":"4e-4","wd":"0.033","status":"active","corrected":true,"beaker":"01KYXQK1MBQ3C7X5VE233F6G9R","revision":"f01bc124","reason":"Fresh endpoint-specific trajectory; minRuntime 0"},
+    {"epoch":1,"lr":"4e-4","wd":"0.033","status":"complete","corrected":true,"beaker":"01KYXQK1MBQ3C7X5VE233F6G9R","wandb":"ev68xsli","revision":"f01bc124","train":5.031,"c4":5.400,"acc":25.09,"bpb":1.544,"reason":"Fresh endpoint-specific trajectory; nearest logged train CE at step235; minRuntime 0"},
     {"epoch":1,"lr":"4e-4","wd":"0.033","status":"canceled","corrected":true,"duplicate":true,"beaker":"01KYXP872NNTVRSGGQ8PC7QHWQ","revision":"115d5585cbe0adeadbe67e9ce6215af8bf75f818","reason":"Canceled mistaken fresh run; existing trajectory checkpoint should be reused"},
     {"epoch":1,"lr":"5e-4","wd":"0.033","status":"canceled","corrected":true,"beaker":"01KYXNM1BW9CFAXEVHMWC41384","wandb":"elzr3v6t","revision":"115d5585cbe0adeadbe67e9ce6215af8bf75f818","reason":"Stopped by user: 4e-4 and 5e-4 are too close; retain 4e-4 only"},
     {"epoch":1,"lr":"1e-3","wd":"0.033","status":"active","corrected":true,"beaker":"01KYXQX8FT6DF1MMP0EMHPX9VD","revision":"f01bc124","reason":"Fresh endpoint-specific trajectory; minRuntime 0"},
@@ -31,7 +31,7 @@
     {"epoch":3,"lr":"2e-3","wd":"0.033","status":"invalid","beaker":"01KYXA935BB64DDC1Q3NDB13NH","wandb":"10c9pkvv","train":4.782,"c4":5.257,"acc":24.62,"bpb":1.530,"reason":"Intermediate checkpoint evaluated before endpoint-specific WSD decay"},
     {"epoch":4,"lr":"4e-4","wd":"0.033","status":"invalid","beaker":"01KYWGENCFW03VC7NQM255ZTPQ","wandb":"59rgn1z0","train":3.585,"c4":3.797,"acc":28.04,"bpb":1.059,"reason":"Intermediate checkpoint evaluated before endpoint-specific WSD decay"},
     {"epoch":4,"lr":"1e-3","wd":"0.033","status":"invalid","beaker":"01KYWRRN1S9PJZ5RH6357BVHXW","wandb":"bqw839kg","train":3.536,"c4":3.752,"acc":29.18,"bpb":1.043,"reason":"Intermediate checkpoint evaluated before endpoint-specific WSD decay"},
-    {"epoch":4,"lr":"4e-4","wd":"0.033","status":"active","corrected":true,"beaker":"01KYXQX8RD33EV970DN12VZWMK","revision":"f01bc124","reason":"Resumed source step716; endpoint-specific decay to 4B; minRuntime 0"},
+    {"epoch":4,"lr":"4e-4","wd":"0.033","status":"complete","corrected":true,"beaker":"01KYXQX8RD33EV970DN12VZWMK","wandb":"1bonfan6","revision":"f01bc124","train":3.551,"c4":3.767,"acc":28.19,"bpb":1.050,"reason":"Resumed source step716; endpoint-specific decay to 4B; nearest logged train CE; minRuntime 0"},
     {"epoch":4,"lr":"1e-3","wd":"0.033","status":"active","corrected":true,"beaker":"01KYXQX7EKQN8VBEENP1P89KJ3","revision":"f01bc124","reason":"Resumed source step716; endpoint-specific decay to 4B; minRuntime 0"},
     {"epoch":4,"lr":"2e-3","wd":"0.033","status":"invalid","beaker":"01KYXBNMRY6S68V88P5CVMSV2M","wandb":"c3sptchr","train":4.677,"c4":5.178,"acc":25.52,"bpb":1.527,"reason":"Intermediate checkpoint evaluated before endpoint-specific WSD decay"},
     {"epoch":5,"lr":"4e-4","wd":"0.033","status":"complete","beaker":"01KYWCM4H58ZBKRF7BGGVMV8N6","wandb":"xobbgt7e","train":3.428,"c4":3.632,"acc":29.86,"bpb":1.012},
