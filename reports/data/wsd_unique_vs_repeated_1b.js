@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 12:17 PDT",
+  "updated": "2026-08-01 13:01 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -529,27 +529,56 @@ window.STEP2_REPORT_DATA = {
       "epoch": 1,
       "lr": "4e-4",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
+      "selected": true,
       "correctedSubset": true,
       "retry": 1,
       "beaker": "01KYZBWYGQ9A4AEMFCEPRM4E5K",
       "wandb": "syjre3n7",
       "revision": "bf4c3dfe",
+      "train": 4.986,
+      "c4": 5.373,
+      "acc": 25.1,
+      "bpb": 1.532,
+      "downstream": {
+        "arc_challenge": 24.08,
+        "arc_easy": 28.95,
+        "boolq": 40.52,
+        "csqa": 24.41,
+        "openbookqa": 21.8,
+        "piqa": 51.31,
+        "socialiqa": 39.3,
+        "winogrande": 50.67
+      },
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e1_lr4e-4_wd0.033_warmup24_uniformdocs_seed0_corrected_retry1",
-      "reason": "Active real training on corrected subset; passed mounted runtime validation and forward/backward dry-run; optimizer steps confirmed. Runtime validation 01KYZBQMG09H3GQRHBM74WA8HS passed 244,736 instances and 1,002,438,656 tokens; full nine-task and C4 evaluation; fixed checkpoint step214; minRuntime 0; autoResume false; no retries"
+      "reason": "Selected at corrected epoch 1 by lower held-out C4; nearest logged train CE at step235; full nine-task and C4 evaluation; preserved pre-decay step214; minRuntime 0; autoResume false; no retries"
     },
     {
       "epoch": 1,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "correctedSubset": true,
       "retry": 1,
       "beaker": "01KYZBYCXVZV4DHE8KCQ5D9SZZ",
       "wandb": "jpn3i49i",
       "revision": "bf4c3dfe",
+      "train": 5.346,
+      "c4": 5.726,
+      "acc": 24.61,
+      "bpb": 1.63,
+      "downstream": {
+        "arc_challenge": 25.08,
+        "arc_easy": 30.53,
+        "boolq": 37.86,
+        "csqa": 22.52,
+        "openbookqa": 24.0,
+        "piqa": 52.23,
+        "socialiqa": 39.3,
+        "winogrande": 50.04
+      },
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e1_lr1e-3_wd0.033_warmup24_uniformdocs_seed0_corrected_retry1",
-      "reason": "Active real training on corrected subset; passed mounted runtime validation and forward/backward dry-run; epoch started. Runtime validation 01KYZBQMG09H3GQRHBM74WA8HS passed 244,736 instances and 1,002,438,656 tokens; full nine-task and C4 evaluation; fixed checkpoint step214; minRuntime 0; autoResume false; no retries"
+      "reason": "Required corrected epoch-1 next-higher comparison; nearest logged train CE at step235; full nine-task and C4 evaluation; preserved pre-decay step214; minRuntime 0; autoResume false; no retries"
     }
   ],
   "oldRepeatedRuns": [
