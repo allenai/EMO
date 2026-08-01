@@ -7,6 +7,8 @@
 # USAGE:
 #     EPOCHS=1 LR=5e-4 MODE=beaker \
 #       bash scripts/models/dense_1b_step2_repeated_wsd.sh
+#     START_FRESH=1 may be used at a later endpoint when introducing a new,
+#     higher LR that has no preceding stable checkpoint yet.
 ##############################################################
 set -eo pipefail
 
@@ -19,6 +21,7 @@ epochs="${EPOCHS:?Set EPOCHS to an integer from 1 through 5}"
 lr="${LR:?Set LR}"
 wd="${WD:-0.033}"
 subset_manifest="${SUBSET_MANIFEST:-src/olmo_core/data/subsets/dclm_full_1b.json}"
+start_fresh="${START_FRESH:-0}"
 
 case "${epochs}" in
 	1) max_tokens=1000000000; stable_step=214 ;;
@@ -39,13 +42,18 @@ downstream_tasks="${DOWNSTREAM_TASKS:-[arc_easy, arc_challenge, boolq, csqa_val_
 load_args=()
 dry_run_args=()
 
+if [[ "${start_fresh}" != "0" && "${start_fresh}" != "1" ]]; then
+	echo "START_FRESH must be 0 or 1" >&2
+	exit 2
+fi
+
 if [[ "${DRY_RUN:-0}" == "1" ]]; then
 	dry_run_args+=(--dry-run)
 fi
 
-if [[ "${epochs}" -eq 1 ]]; then
+if [[ "${epochs}" -eq 1 || "${start_fresh}" == "1" ]]; then
 	if [[ -n "${LOAD_PATH:-}" ]]; then
-		echo "Epoch 1 starts a fresh LR chain; do not set LOAD_PATH" >&2
+		echo "A fresh LR chain must not set LOAD_PATH" >&2
 		exit 2
 	fi
 else
