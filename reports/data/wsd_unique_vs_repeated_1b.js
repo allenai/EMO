@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 11:52 PDT",
+  "updated": "2026-08-01 12:03 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -507,17 +507,23 @@ window.STEP2_REPORT_DATA = {
       "epoch": 1,
       "lr": "4e-4",
       "wd": "0.033",
-      "status": "planned",
+      "status": "active",
       "correctedSubset": true,
-      "reason": "Corrected uniformly sampled, document-aligned fixed DCLM pool; awaiting submission audit"
+      "beaker": "01KYZB8A9EMR67V8S50Z2Q0YRA",
+      "revision": "d8740f83",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e1_lr4e-4_wd0.033_warmup24_uniformdocs_seed0_corrected",
+      "reason": "Corrected uniformly sampled, document-aligned fixed DCLM pool; fresh epoch-1 trajectory; full nine-task and C4 evaluation; fixed checkpoint step214; minRuntime 0; autoResume false; no retries"
     },
     {
       "epoch": 1,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "planned",
+      "status": "active",
       "correctedSubset": true,
-      "reason": "Corrected uniformly sampled, document-aligned fixed DCLM pool; awaiting submission audit"
+      "beaker": "01KYZBA6G92M50WW2DB77BJ68B",
+      "revision": "d8740f83",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e1_lr1e-3_wd0.033_warmup24_uniformdocs_seed0_corrected",
+      "reason": "Corrected uniformly sampled, document-aligned fixed DCLM pool; fresh epoch-1 trajectory; full nine-task and C4 evaluation; fixed checkpoint step214; minRuntime 0; autoResume false; no retries"
     }
   ],
   "oldRepeatedRuns": [

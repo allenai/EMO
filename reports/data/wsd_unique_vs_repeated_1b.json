@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-01 11:52 PDT",
+  "updated": "2026-08-01 12:03 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -46,8 +46,8 @@
     {"epoch":5,"lr":"4e-3","wd":"0.033","status":"canceled","beaker":"01KYWHNB0R1YHN1Z1RWQV9TR18","wandb":"aonw0wmk"}
   ],
   "repeatedRuns": [
-    {"epoch":1,"lr":"4e-4","wd":"0.033","status":"planned","correctedSubset":true,"reason":"Corrected uniformly sampled, document-aligned fixed DCLM pool; awaiting submission audit"},
-    {"epoch":1,"lr":"1e-3","wd":"0.033","status":"planned","correctedSubset":true,"reason":"Corrected uniformly sampled, document-aligned fixed DCLM pool; awaiting submission audit"}
+    {"epoch":1,"lr":"4e-4","wd":"0.033","status":"active","correctedSubset":true,"beaker":"01KYZB8A9EMR67V8S50Z2Q0YRA","revision":"d8740f83","output":"/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e1_lr4e-4_wd0.033_warmup24_uniformdocs_seed0_corrected","reason":"Corrected uniformly sampled, document-aligned fixed DCLM pool; fresh epoch-1 trajectory; full nine-task and C4 evaluation; fixed checkpoint step214; minRuntime 0; autoResume false; no retries"},
+    {"epoch":1,"lr":"1e-3","wd":"0.033","status":"active","correctedSubset":true,"beaker":"01KYZBA6G92M50WW2DB77BJ68B","revision":"d8740f83","output":"/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e1_lr1e-3_wd0.033_warmup24_uniformdocs_seed0_corrected","reason":"Corrected uniformly sampled, document-aligned fixed DCLM pool; fresh epoch-1 trajectory; full nine-task and C4 evaluation; fixed checkpoint step214; minRuntime 0; autoResume false; no retries"}
   ],
   "oldRepeatedRuns": [
     {"epoch":1,"lr":"4e-4","wd":"0.033","status":"complete","beaker":"01KYXRGWW3FV3PJQRSMXD1MCCC","wandb":"93yjhrwt","revision":"5ea16918","train":5.017,"c4":5.373,"acc":25.07,"bpb":1.540,"downstream":{"arc_challenge":22.41,"arc_easy":29.82,"boolq":39.60,"csqa":24.82,"openbookqa":25.00,"piqa":51.90,"socialiqa":38.64,"winogrande":48.38},"reason":"Corrected uint32 manifest; completed endpoint-specific WSD decay; nearest logged train CE; minRuntime 0"},
