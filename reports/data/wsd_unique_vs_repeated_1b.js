@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-07-31 21:13 PDT",
+  "updated": "2026-07-31 21:16 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -363,8 +363,10 @@ window.STEP2_REPORT_DATA = {
       "epoch": 1,
       "lr": "4e-4",
       "wd": "0.033",
-      "status": "planned",
-      "reason": "Manifest corrected to uint32; corrected launch pending pushed revision and output check"
+      "status": "queued",
+      "beaker": "01KYXRGWW3FV3PJQRSMXD1MCCC",
+      "revision": "5ea16918",
+      "reason": "Corrected uint32 manifest; minRuntime 0"
     },
     {
       "epoch": 1,
@@ -397,8 +399,10 @@ window.STEP2_REPORT_DATA = {
       "epoch": 1,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "planned",
-      "reason": "Manifest corrected to uint32; corrected launch pending pushed revision and output check"
+      "status": "queued",
+      "beaker": "01KYXRH5MHS61SPAT1KNXH385M",
+      "revision": "5ea16918",
+      "reason": "Corrected uint32 manifest; minRuntime 0"
     },
     {
       "epoch": 1,

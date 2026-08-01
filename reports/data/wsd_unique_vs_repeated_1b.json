@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-31 21:13 PDT",
+  "updated": "2026-07-31 21:16 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -40,11 +40,11 @@
     {"epoch":5,"lr":"4e-3","wd":"0.033","status":"canceled","beaker":"01KYWHNB0R1YHN1Z1RWQV9TR18","wandb":"aonw0wmk"}
   ],
   "repeatedRuns": [
-    {"epoch":1,"lr":"4e-4","wd":"0.033","status":"planned","reason":"Manifest corrected to uint32; corrected launch pending pushed revision and output check"},
+    {"epoch":1,"lr":"4e-4","wd":"0.033","status":"queued","beaker":"01KYXRGWW3FV3PJQRSMXD1MCCC","revision":"5ea16918","reason":"Corrected uint32 manifest; minRuntime 0"},
     {"epoch":1,"lr":"4e-4","wd":"0.033","status":"failed","beaker":"01KYXQP5XKZX7RE45JYB9YJ69K","revision":"f01bc124","reason":"Stopped after manifest dtype mismatch; no usable training progress"},
     {"epoch":1,"lr":"5e-4","wd":"0.033","status":"canceled","beaker":"01KYXNQEWJ050S0QV2YGT5XQGR","revision":"115d5585cbe0adeadbe67e9ce6215af8bf75f818","reason":"Stopped by user: 4e-4 and 5e-4 are too close; retain 4e-4 only"},
     {"epoch":1,"lr":"5e-4","wd":"0.033","status":"canceled","duplicate":true,"beaker":"01KYXP3EPFKDVJSRBNSPCC4S42","reason":"Canceled late duplicate submission"},
-    {"epoch":1,"lr":"1e-3","wd":"0.033","status":"planned","reason":"Manifest corrected to uint32; corrected launch pending pushed revision and output check"},
+    {"epoch":1,"lr":"1e-3","wd":"0.033","status":"queued","beaker":"01KYXRH5MHS61SPAT1KNXH385M","revision":"5ea16918","reason":"Corrected uint32 manifest; minRuntime 0"},
     {"epoch":1,"lr":"1e-3","wd":"0.033","status":"failed","beaker":"01KYXQQEV4W1CM1QD97472MS73","revision":"f01bc124","reason":"Manifest dtype mismatch; no usable training progress"},
     {"epoch":1,"lr":"1e-3","wd":"0.033","status":"canceled","duplicate":true,"beaker":"01KYXP4Y95T83FR9KB46Q1KJXP","reason":"Canceled late duplicate submission; original 1e-3 experiment retained"}
   ]
