@@ -2,7 +2,8 @@
 # DESCRIPTION:
 #     - Runs one target-specific WSD endpoint by repeatedly cycling the fixed
 #       DCLM subset recorded in dclm_full_1b.json.
-#     - Subset membership comes from explicit instance ranges, never a seed.
+#     - Subset membership comes from the committed, uniformly sampled,
+#       document-aligned manifest; never reconstruct it from a runtime seed.
 #     - Later targets resume the preceding stable checkpoint from the same LR chain.
 # USAGE:
 #     EPOCHS=1 LR=5e-4 MODE=beaker \
@@ -77,7 +78,7 @@ launch src/scripts/train/olmo2-1B.py "${runname}" \
 		--trainer.callbacks.wandb.entity=ai2-llm \
 		--trainer.callbacks.wandb.project=sewonm-icsl \
 		--trainer.callbacks.wandb.name="${runname}" \
-		--trainer.callbacks.wandb.tags="[pretraining, step2, repeated-data, dclm-subset-1b, wsd, warmup24]" \
+		--trainer.callbacks.wandb.tags="[pretraining, step2, repeated-data, dclm-subset-1b, uniform-doc-sample, corrected-subset, wsd, warmup24]" \
 		--trainer.callbacks.downstream_evaluator.tasks="${downstream_tasks}" \
 		--trainer.callbacks.downstream_evaluator.eval_interval=null \
 		--trainer.callbacks.downstream_evaluator.eval_on_finish=true \
