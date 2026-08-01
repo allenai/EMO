@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-07-31 21:49 PDT",
+  "updated": "2026-07-31 21:51 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -49,11 +49,16 @@ window.STEP2_REPORT_DATA = {
       "epoch": 1,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "corrected": true,
       "beaker": "01KYXQX8FT6DF1MMP0EMHPX9VD",
+      "wandb": "owwdf3d4",
       "revision": "f01bc124",
-      "reason": "Fresh endpoint-specific trajectory; minRuntime 0"
+      "train": 5.447,
+      "c4": 5.813,
+      "acc": 25.21,
+      "bpb": 1.66,
+      "reason": "Fresh endpoint-specific trajectory; nearest logged train CE; minRuntime 0"
     },
     {
       "epoch": 1,
@@ -158,21 +163,31 @@ window.STEP2_REPORT_DATA = {
       "epoch": 2,
       "lr": "4e-4",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "corrected": true,
       "beaker": "01KYXQX8BXPM47ZRF8PMRGAYZN",
+      "wandb": "f7jf7n0u",
       "revision": "f01bc124",
-      "reason": "Resumed source step239; endpoint-specific decay to 2B; minRuntime 0"
+      "train": 4.044,
+      "c4": 4.376,
+      "acc": 26.02,
+      "bpb": 1.234,
+      "reason": "Resumed source step239; endpoint-specific decay to 2B; nearest logged train CE; minRuntime 0"
     },
     {
       "epoch": 2,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "corrected": true,
       "beaker": "01KYXQX7P7C4TE0VSJRCV7X61P",
+      "wandb": "eqhgipim",
       "revision": "f01bc124",
-      "reason": "Resumed source step239; endpoint-specific decay to 2B; minRuntime 0"
+      "train": 4.206,
+      "c4": 4.562,
+      "acc": 25.69,
+      "bpb": 1.284,
+      "reason": "Resumed source step239; endpoint-specific decay to 2B; nearest logged train CE; minRuntime 0"
     },
     {
       "epoch": 2,
@@ -230,21 +245,39 @@ window.STEP2_REPORT_DATA = {
       "epoch": 3,
       "lr": "4e-4",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "corrected": true,
       "beaker": "01KYXQX64NSP8BPZ34EBQZNS22",
+      "wandb": "1ckjjvpn",
       "revision": "f01bc124",
-      "reason": "Resumed source step477; endpoint-specific decay to 3B; minRuntime 0"
+      "train": 3.703,
+      "c4": 3.97,
+      "acc": 27.06,
+      "bpb": 1.112,
+      "reason": "Resumed source step477; endpoint-specific decay to 3B; nearest logged train CE; minRuntime 0"
     },
     {
       "epoch": 3,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "corrected": true,
       "beaker": "01KYXQX92WVD4X4GX4FV4ETMXV",
+      "wandb": "bu3iigrq",
       "revision": "f01bc124",
-      "reason": "Resumed source step477; endpoint-specific decay to 3B; minRuntime 0"
+      "train": 3.669,
+      "c4": 3.936,
+      "acc": 27.15,
+      "bpb": 1.101,
+      "reason": "Resumed source step477; endpoint-specific decay to 3B; nearest logged train CE; minRuntime 0"
+    },
+    {
+      "epoch": 3,
+      "lr": "2e-3",
+      "wd": "0.033",
+      "status": "planned",
+      "corrected": true,
+      "reason": "Required next-higher comparison because corrected 1e-3 has lower held-out C4"
     },
     {
       "epoch": 3,
@@ -304,11 +337,24 @@ window.STEP2_REPORT_DATA = {
       "epoch": 4,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "corrected": true,
       "beaker": "01KYXQX7EKQN8VBEENP1P89KJ3",
+      "wandb": "110cfw3f",
       "revision": "f01bc124",
-      "reason": "Resumed source step716; endpoint-specific decay to 4B; minRuntime 0"
+      "train": 3.478,
+      "c4": 3.684,
+      "acc": 29.37,
+      "bpb": 1.025,
+      "reason": "Resumed source step716; endpoint-specific decay to 4B; nearest logged train CE; minRuntime 0"
+    },
+    {
+      "epoch": 4,
+      "lr": "2e-3",
+      "wd": "0.033",
+      "status": "planned",
+      "corrected": true,
+      "reason": "Required next-higher comparison because corrected 1e-3 has lower held-out C4"
     },
     {
       "epoch": 4,
@@ -373,7 +419,7 @@ window.STEP2_REPORT_DATA = {
       "epoch": 1,
       "lr": "4e-4",
       "wd": "0.033",
-      "status": "queued",
+      "status": "active",
       "beaker": "01KYXRGWW3FV3PJQRSMXD1MCCC",
       "revision": "5ea16918",
       "reason": "Corrected uint32 manifest; minRuntime 0"
@@ -409,7 +455,7 @@ window.STEP2_REPORT_DATA = {
       "epoch": 1,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "queued",
+      "status": "active",
       "beaker": "01KYXRH5MHS61SPAT1KNXH385M",
       "revision": "5ea16918",
       "reason": "Corrected uint32 manifest; minRuntime 0"
