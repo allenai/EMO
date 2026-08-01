@@ -297,10 +297,16 @@ class BeakerLaunchConfig(Config):
     The job priority.
     """
 
-    preemptible: bool = True
+    preemptible: bool | None = None
     """
-    If the job should be preemptible.
+    Deprecated Gantry preemption setting. Prefer ``min_runtime`` and ``auto_resume``.
     """
+
+    min_runtime: str | None = None
+    """Minimum guaranteed runtime, or ``None`` to leave it unset."""
+
+    auto_resume: bool | None = None
+    """Whether Beaker should automatically resume a preempted job."""
 
     retries: int | None = None
     """
@@ -631,6 +637,8 @@ class BeakerLaunchConfig(Config):
             budget=self.budget,
             priority=self.priority,
             preemptible=self.preemptible,
+            min_runtime=self.min_runtime,
+            auto_resume=self.auto_resume,
             # Inputs.
             beaker_image=self._resolve_beaker_image(),
             env_vars=self._get_env_vars(),
@@ -896,7 +904,21 @@ def _parse_args():
     parser.add_argument(
         "--preemptible",
         action="store_true",
+        default=None,
         help="""If the job should be preemptible.""",
+    )
+    parser.add_argument(
+        "--min-runtime",
+        type=str,
+        default=None,
+        help="""Minimum guaranteed runtime, e.g. '1h'. Omit to leave it unset.""",
+    )
+    parser.add_argument(
+        "--no-auto-resume",
+        dest="auto_resume",
+        action="store_false",
+        default=None,
+        help="""Disable automatic resumption after preemption.""",
     )
     parser.add_argument(
         "--allow-dirty",
@@ -1001,6 +1023,8 @@ def _build_config(opts: argparse.Namespace, command: list[str]) -> BeakerLaunchC
         num_nodes=opts.nodes,
         num_gpus=opts.gpus,
         preemptible=opts.preemptible,
+        min_runtime=opts.min_runtime,
+        auto_resume=opts.auto_resume,
         priority=opts.priority,
         beaker_image=opts.beaker_image,
         slack_notifications=opts.slack_notifications,
