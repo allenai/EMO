@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-31 21:54 PDT",
+  "updated": "2026-07-31 21:56 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -28,13 +28,13 @@
     {"epoch":3,"lr":"1e-3","wd":"0.033","status":"invalid","beaker":"01KYWRRR69YPHWT7WGAJ2MWYFS","wandb":"d6z4uuvs","train":3.725,"c4":3.986,"acc":27.41,"bpb":1.114,"reason":"Intermediate checkpoint evaluated before endpoint-specific WSD decay"},
     {"epoch":3,"lr":"4e-4","wd":"0.033","status":"complete","corrected":true,"beaker":"01KYXQX64NSP8BPZ34EBQZNS22","wandb":"1ckjjvpn","revision":"f01bc124","train":3.703,"c4":3.970,"acc":27.06,"bpb":1.112,"reason":"Resumed source step477; endpoint-specific decay to 3B; nearest logged train CE; minRuntime 0"},
     {"epoch":3,"lr":"1e-3","wd":"0.033","status":"complete","corrected":true,"beaker":"01KYXQX92WVD4X4GX4FV4ETMXV","wandb":"bu3iigrq","revision":"f01bc124","train":3.669,"c4":3.936,"acc":27.15,"bpb":1.101,"reason":"Resumed source step477; endpoint-specific decay to 3B; nearest logged train CE; minRuntime 0"},
-    {"epoch":3,"lr":"2e-3","wd":"0.033","status":"planned","corrected":true,"reason":"Required next-higher comparison because corrected 1e-3 has lower held-out C4"},
+    {"epoch":3,"lr":"2e-3","wd":"0.033","status":"queued","corrected":true,"beaker":"01KYXTTSR84A3V19YFR8STC9EF","revision":"faadffd1","reason":"Required next-higher comparison; resumed source step477; endpoint-specific decay; minRuntime 0"},
     {"epoch":3,"lr":"2e-3","wd":"0.033","status":"invalid","beaker":"01KYXA935BB64DDC1Q3NDB13NH","wandb":"10c9pkvv","train":4.782,"c4":5.257,"acc":24.62,"bpb":1.530,"reason":"Intermediate checkpoint evaluated before endpoint-specific WSD decay"},
     {"epoch":4,"lr":"4e-4","wd":"0.033","status":"invalid","beaker":"01KYWGENCFW03VC7NQM255ZTPQ","wandb":"59rgn1z0","train":3.585,"c4":3.797,"acc":28.04,"bpb":1.059,"reason":"Intermediate checkpoint evaluated before endpoint-specific WSD decay"},
     {"epoch":4,"lr":"1e-3","wd":"0.033","status":"invalid","beaker":"01KYWRRN1S9PJZ5RH6357BVHXW","wandb":"bqw839kg","train":3.536,"c4":3.752,"acc":29.18,"bpb":1.043,"reason":"Intermediate checkpoint evaluated before endpoint-specific WSD decay"},
     {"epoch":4,"lr":"4e-4","wd":"0.033","status":"complete","corrected":true,"beaker":"01KYXQX8RD33EV970DN12VZWMK","wandb":"1bonfan6","revision":"f01bc124","train":3.551,"c4":3.767,"acc":28.19,"bpb":1.050,"reason":"Resumed source step716; endpoint-specific decay to 4B; nearest logged train CE; minRuntime 0"},
     {"epoch":4,"lr":"1e-3","wd":"0.033","status":"complete","corrected":true,"beaker":"01KYXQX7EKQN8VBEENP1P89KJ3","wandb":"110cfw3f","revision":"f01bc124","train":3.478,"c4":3.684,"acc":29.37,"bpb":1.025,"reason":"Resumed source step716; endpoint-specific decay to 4B; nearest logged train CE; minRuntime 0"},
-    {"epoch":4,"lr":"2e-3","wd":"0.033","status":"planned","corrected":true,"reason":"Required next-higher comparison because corrected 1e-3 has lower held-out C4"},
+    {"epoch":4,"lr":"2e-3","wd":"0.033","status":"queued","corrected":true,"beaker":"01KYXTTSV40RPF0NWQV8EESFE4","revision":"faadffd1","reason":"Required next-higher comparison; resumed source step716; endpoint-specific decay; minRuntime 0"},
     {"epoch":4,"lr":"2e-3","wd":"0.033","status":"invalid","beaker":"01KYXBNMRY6S68V88P5CVMSV2M","wandb":"c3sptchr","train":4.677,"c4":5.178,"acc":25.52,"bpb":1.527,"reason":"Intermediate checkpoint evaluated before endpoint-specific WSD decay"},
     {"epoch":5,"lr":"4e-4","wd":"0.033","status":"complete","beaker":"01KYWCM4H58ZBKRF7BGGVMV8N6","wandb":"xobbgt7e","train":3.428,"c4":3.632,"acc":29.86,"bpb":1.012},
     {"epoch":5,"lr":"1e-3","wd":"0.033","status":"complete","beaker":"01KYWMRC10YPFN01SV63W3AXA6","wandb":"d4m50vkx","train":3.343,"c4":3.530,"acc":31.61,"bpb":0.9827},

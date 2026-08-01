@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-07-31 21:54 PDT",
+  "updated": "2026-07-31 21:56 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -275,9 +275,11 @@ window.STEP2_REPORT_DATA = {
       "epoch": 3,
       "lr": "2e-3",
       "wd": "0.033",
-      "status": "planned",
+      "status": "queued",
       "corrected": true,
-      "reason": "Required next-higher comparison because corrected 1e-3 has lower held-out C4"
+      "beaker": "01KYXTTSR84A3V19YFR8STC9EF",
+      "revision": "faadffd1",
+      "reason": "Required next-higher comparison; resumed source step477; endpoint-specific decay; minRuntime 0"
     },
     {
       "epoch": 3,
@@ -352,9 +354,11 @@ window.STEP2_REPORT_DATA = {
       "epoch": 4,
       "lr": "2e-3",
       "wd": "0.033",
-      "status": "planned",
+      "status": "queued",
       "corrected": true,
-      "reason": "Required next-higher comparison because corrected 1e-3 has lower held-out C4"
+      "beaker": "01KYXTTSV40RPF0NWQV8EESFE4",
+      "revision": "faadffd1",
+      "reason": "Required next-higher comparison; resumed source step716; endpoint-specific decay; minRuntime 0"
     },
     {
       "epoch": 4,
