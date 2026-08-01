@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 13:38 PDT",
+  "updated": "2026-08-01 14:23 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -584,25 +584,54 @@ window.STEP2_REPORT_DATA = {
       "epoch": 2,
       "lr": "4e-4",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
+      "selected": true,
       "correctedSubset": true,
       "beaker": "01KYZG7VRQQ3Z5HYQ4RHFXBY47",
       "wandb": "p3nr9u0t",
       "revision": "bf4c3dfe",
+      "train": 4.034,
+      "c4": 4.368,
+      "acc": 25.52,
+      "bpb": 1.227,
+      "downstream": {
+        "arc_challenge": 21.07,
+        "arc_easy": 33.33,
+        "boolq": 57.34,
+        "csqa": 26.37,
+        "openbookqa": 24.2,
+        "piqa": 55.33,
+        "socialiqa": 39.15,
+        "winogrande": 49.09
+      },
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e2_lr4e-4_wd0.033_warmup24_uniformdocs_seed0_corrected",
-      "reason": "Corrected epoch-1 selected LR; healthy real training on Jupiter; resumes matching corrected pre-decay step214; endpoint-specific WSD decay to 2B; full nine-task and C4 evaluation; preserves step428; minRuntime 0; autoResume false; no retries"
+      "reason": "Selected at corrected epoch 2 by lower held-out C4; nearest logged train CE at step475; resumed matching corrected pre-decay step214; full nine-task and C4 evaluation; preserved step428; minRuntime 0; autoResume false; no retries"
     },
     {
       "epoch": 2,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "correctedSubset": true,
       "beaker": "01KYZG96GQCMYNQD7KX6GDXVF1",
       "wandb": "xm5jfoaf",
       "revision": "bf4c3dfe",
+      "train": 4.108,
+      "c4": 4.443,
+      "acc": 25.75,
+      "bpb": 1.244,
+      "downstream": {
+        "arc_challenge": 21.74,
+        "arc_easy": 35.79,
+        "boolq": 52.78,
+        "csqa": 25.8,
+        "openbookqa": 24.8,
+        "piqa": 54.62,
+        "socialiqa": 39.92,
+        "winogrande": 49.72
+      },
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e2_lr1e-3_wd0.033_warmup24_uniformdocs_seed0_corrected",
-      "reason": "Required corrected epoch-2 next-higher LR; healthy real training on Jupiter; resumes matching corrected pre-decay step214; endpoint-specific WSD decay to 2B; full nine-task and C4 evaluation; preserves step428; minRuntime 0; autoResume false; no retries"
+      "reason": "Required corrected epoch-2 next-higher comparison; nearest logged train CE at step475; resumed matching corrected pre-decay step214; full nine-task and C4 evaluation; preserved step428; minRuntime 0; autoResume false; no retries"
     }
   ],
   "oldRepeatedRuns": [
