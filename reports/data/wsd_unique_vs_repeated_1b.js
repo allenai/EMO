@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 15:31 PDT",
+  "updated": "2026-08-01 16:12 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -708,7 +708,7 @@ window.STEP2_REPORT_DATA = {
       "wandb": "pwsak997",
       "revision": "bf4c3dfe",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e4_lr1e-3_wd0.033_warmup24_uniformdocs_seed0_corrected_retry1",
-      "reason": "Corrected epoch-3 selected LR; active on Jupiter at step655/954 with ETA about 49 minutes as of 15:31 PDT; resumes verified matching corrected pre-decay step643; endpoint-specific WSD decay to 4B; full nine-task and C4 evaluation; preserves step858; minRuntime 0; autoResume false; no experiment retries"
+      "reason": "Corrected epoch-3 selected LR; active on Jupiter at step900/954 with ETA about 9 minutes as of 16:12 PDT; resumes verified matching corrected pre-decay step643; endpoint-specific WSD decay to 4B; full nine-task and C4 evaluation; preserved step858; minRuntime 0; autoResume false; no experiment retries"
     },
     {
       "epoch": 4,
@@ -720,7 +720,7 @@ window.STEP2_REPORT_DATA = {
       "wandb": "lgjv6tde",
       "revision": "bf4c3dfe",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e4_lr2e-3_wd0.033_warmup24_uniformdocs_seed0_corrected",
-      "reason": "Required corrected epoch-4 next-higher LR; active on Jupiter at step5/954 with ETA about 2h33m as of 15:31 PDT; fresh 4B trajectory because no corrected 2e-3 stable chain exists; endpoint-specific WSD decay to 4B; full nine-task and C4 evaluation; preserves step858; minRuntime 0; autoResume false; no experiment retries"
+      "reason": "Required corrected epoch-4 next-higher LR; active on Jupiter at step255/954 with ETA about 1h55m as of 16:12 PDT; fresh 4B trajectory because no corrected 2e-3 stable chain exists; endpoint-specific WSD decay to 4B; full nine-task and C4 evaluation; preserves step858; minRuntime 0; autoResume false; no experiment retries"
     }
   ],
   "oldRepeatedRuns": [
