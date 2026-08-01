@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 04:14 PDT",
+  "updated": "2026-08-01 04:19 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -735,6 +735,24 @@ window.STEP2_REPORT_DATA = {
         "winogrande": 50.51
       },
       "reason": "Required next-higher LR introduced at epoch 4; fresh 4B trajectory because no matching 2e-3 stable chain existed; completed endpoint-specific WSD decay and full nine-task evaluation; nearest train CE at step950; preserved step858; minRuntime 0; autoResume false; no retries"
+    },
+    {
+      "epoch": 5,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "active",
+      "beaker": "01KYYGP52GJVV5WA511G3VJG21",
+      "revision": "56ea18f6",
+      "reason": "Epoch-4 selected LR; resumed exact matching preserved pre-decay epoch-4 step858; endpoint-specific WSD decay to 5B; full nine-task evaluation; fixed checkpoint step1073; minRuntime 0; autoResume false; no retries"
+    },
+    {
+      "epoch": 5,
+      "lr": "2e-3",
+      "wd": "0.033",
+      "status": "active",
+      "beaker": "01KYYGQDRQKT60QZH38EA7SHRW",
+      "revision": "56ea18f6",
+      "reason": "Required next-higher epoch-5 comparison; resumed exact matching preserved pre-decay epoch-4 step858; endpoint-specific WSD decay to 5B; full nine-task evaluation; fixed checkpoint step1073; minRuntime 0; autoResume false; no retries"
     }
   ],
   "codelionRuns": [
