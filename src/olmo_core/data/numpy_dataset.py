@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import concurrent.futures
 import hashlib
+import json
 import logging
 import math
 import os
@@ -69,6 +70,7 @@ __all__ = [
     "NumpyDatasetBase",
     "NumpyFSLDatasetBase",
     "NumpyFSLDataset",
+    "NumpyFSLSubsetDataset",
     "NumpyFSLDatasetMixture",
     "NumpyPaddedFSLDataset",
     "NumpyPackedFSLDataset",
@@ -686,6 +688,64 @@ class NumpyFSLDataset(NumpyFSLDatasetBase):
             )
         else:
             raise RuntimeError("invalid 'max_target_sequence_length' or 'sequence_length'")
+
+
+class NumpyFSLSubsetDataset(NumpyFSLDataset):
+    """An FSL dataset backed by explicit contiguous instance ranges."""
+
+    def __init__(
+        self,
+        *paths: PathOrStr,
+        instance_ranges: Sequence[Tuple[int, int]],
+        subset_digest: str,
+        **kwargs: Any,
+    ):
+        if len(instance_ranges) != len(paths):
+            raise OLMoConfigurationError(
+                "'instance_ranges' must contain one range for every source path"
+            )
+        if len(set(str(path) for path in paths)) != len(paths):
+            raise OLMoConfigurationError("subset manifests cannot contain duplicate paths")
+        for start_instance, num_instances in instance_ranges:
+            if start_instance < 0 or num_instances <= 0:
+                raise OLMoConfigurationError(
+                    "subset instance ranges require start_instance >= 0 and num_instances > 0"
+                )
+        self._instance_range_by_path = {
+            str(path): instance_range for path, instance_range in zip(paths, instance_ranges)
+        }
+        self._subset_digest = subset_digest
+        super().__init__(*paths, **kwargs)
+
+    @property
+    def fingerprint_fields(self) -> Tuple[str, ...]:
+        return super().fingerprint_fields + ("subset_digest",)
+
+    @property
+    def subset_digest(self) -> str:
+        return self._subset_digest
+
+    def _read_chunk_from_array(self, path: PathOrStr, index: int, dtype=None) -> torch.Tensor:
+        start_instance, _ = self._instance_range_by_path[str(path)]
+        start_idx = (start_instance + index) * self.sequence_length
+        return load_array_slice_into_tensor(
+            path,
+            start_idx,
+            start_idx + self.sequence_length,
+            dtype or self.dtype,
+        )
+
+    def _get_file_size_and_length(self, path: PathOrStr, idx: int, dtype=None) -> Tuple[int, int]:
+        del idx
+        dtype = dtype or self.dtype
+        start_instance, num_instances = self._instance_range_by_path[str(path)]
+        available_instances = get_file_size(path) // (dtype(0).itemsize * self.sequence_length)
+        if start_instance + num_instances > available_instances:
+            raise OLMoConfigurationError(
+                f"subset range [{start_instance}, {start_instance + num_instances}) exceeds "
+                f"the {available_instances:,} available instances in '{path}'"
+            )
+        return num_instances * self.sequence_length * dtype(0).itemsize, num_instances
 
 
 class NumpyFSLDatasetMixture(NumpyFSLDataset):
@@ -2547,6 +2607,11 @@ class NumpyFSLDatasetConfig(NumpyDatasetConfig):
     """
     A source mixture dataset config. If set, the dataset will be built from a mixture of sources.
     """
+    subset_manifest: Optional[str] = None
+    """
+    Path to an ``olmo-token-subset-v1`` manifest containing exact source instance ranges.
+    Relative source paths in the manifest are resolved against :data:`mix_base_dir`.
+    """
 
     @classmethod
     def from_src_mix(
@@ -2563,18 +2628,107 @@ class NumpyFSLDatasetConfig(NumpyDatasetConfig):
     def validate(self):
         if self.sequence_length <= 0:
             raise OLMoConfigurationError("'sequence_length' must be positive")
+        configured_sources = sum(
+            source is not None
+            for source in (self.paths, self.mix, self.source_mixture_config, self.subset_manifest)
+        )
+        if configured_sources != 1:
+            raise OLMoConfigurationError(
+                "Specify exactly one of 'paths', 'mix', 'source_mixture_config', or 'subset_manifest'"
+            )
         if self.source_mixture_config is not None:
-            if self.paths is not None or self.mix is not None:
-                raise OLMoConfigurationError(
-                    "Specify only one of 'paths', 'mix', or 'source_mixture_config'"
-                )
             if self.label_mask_paths is not None:
                 raise OLMoConfigurationError(
                     "'label_mask_paths' is not supported alongside 'source_mixture_config'"
                 )
+        if self.subset_manifest is not None:
+            if self.mix_base_dir is None:
+                raise OLMoConfigurationError(
+                    "'mix_base_dir' is required to resolve subset manifest source paths"
+                )
+            if self.label_mask_paths is not None:
+                raise OLMoConfigurationError(
+                    "'label_mask_paths' is not supported alongside 'subset_manifest'"
+                )
+            if self.source_permutation_seed is not None:
+                raise OLMoConfigurationError(
+                    "'source_permutation_seed' is not supported alongside 'subset_manifest'"
+                )
 
     def build(self) -> NumpyDatasetBase:
         self.validate()
+
+        if self.subset_manifest is not None:
+            manifest_path = Path(self.subset_manifest)
+            with manifest_path.open() as f:
+                manifest = json.load(f)
+            if manifest.get("format") != "olmo-token-subset-v1":
+                raise OLMoConfigurationError(
+                    f"unsupported subset manifest format in '{manifest_path}'"
+                )
+            selection = manifest.get("selection", {})
+            if selection.get("sequence_length") != self.sequence_length:
+                raise OLMoConfigurationError(
+                    f"subset manifest sequence length {selection.get('sequence_length')} does not "
+                    f"match configured sequence length {self.sequence_length}"
+                )
+            manifest_dtype = manifest.get("source", {}).get("dtype")
+            configured_dtype = np.dtype(self.get_dtype()).name
+            if manifest_dtype != configured_dtype:
+                raise OLMoConfigurationError(
+                    f"subset manifest dtype '{manifest_dtype}' does not match configured dtype "
+                    f"'{configured_dtype}'"
+                )
+
+            entries = manifest.get("entries")
+            if not isinstance(entries, list) or not entries:
+                raise OLMoConfigurationError("subset manifest must contain non-empty 'entries'")
+            entries_payload = json.dumps(
+                entries, sort_keys=True, separators=(",", ":")
+            ).encode()
+            entries_digest = hashlib.sha256(entries_payload).hexdigest()
+            if entries_digest != manifest.get("entries_sha256"):
+                raise OLMoConfigurationError(
+                    f"subset manifest entry checksum mismatch in '{manifest_path}'"
+                )
+
+            paths: List[str] = []
+            instance_ranges: List[Tuple[int, int]] = []
+            for entry in entries:
+                try:
+                    relative_path = str(entry["path"])
+                    start_instance = int(entry["start_instance"])
+                    num_instances = int(entry["num_instances"])
+                except (KeyError, TypeError, ValueError) as exc:
+                    raise OLMoConfigurationError(
+                        f"invalid subset entry in '{manifest_path}': {entry!r}"
+                    ) from exc
+                paths.append(os.path.join(self.mix_base_dir, relative_path.lstrip("/")))
+                instance_ranges.append((start_instance, num_instances))
+
+            total_instances = sum(num_instances for _, num_instances in instance_ranges)
+            if total_instances != selection.get("selected_instances"):
+                raise OLMoConfigurationError(
+                    f"subset manifest selects {total_instances:,} instances but metadata declares "
+                    f"{selection.get('selected_instances')!r}"
+                )
+            dataset = NumpyFSLSubsetDataset(
+                *paths,
+                instance_ranges=instance_ranges,
+                subset_digest=entries_digest,
+                sequence_length=self.sequence_length,
+                max_target_sequence_length=self.max_target_sequence_length,
+                pad_token_id=self.tokenizer.pad_token_id,
+                eos_token_id=self.tokenizer.eos_token_id,
+                vocab_size=self.tokenizer.vocab_size,
+                dtype=self.get_dtype(),
+                metadata=self.metadata,
+                include_instance_metadata=self.include_instance_metadata,
+                generate_doc_lengths=self.generate_doc_lengths,
+                bos_token_id=self.tokenizer.bos_token_id,
+                instance_filter_config=self.instance_filter_config,
+            )
+            return self._finalize(dataset)
 
         if self.source_mixture_config is not None:
             mixture = self.source_mixture_config.build(

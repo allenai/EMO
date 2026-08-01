@@ -1,3 +1,5 @@
+import hashlib
+import json
 import math
 from pathlib import Path
 from typing import List
@@ -47,6 +49,47 @@ def test_numpy_fsl_dataset(tmp_path: Path):
     assert ds[1]["input_ids"].tolist() == [4, 5, 6, 7]
     assert ds[7]["input_ids"].tolist() == [28, 29, 30, 31]
     assert len(ds) == 8
+
+
+def test_numpy_fsl_subset_manifest(tmp_path: Path):
+    mmap1 = np.memmap(tmp_path / "mmap1.npy", mode="w+", dtype=np.uint16, shape=(24,))
+    mmap1[:] = list(range(24))
+    mmap1.flush()
+    mmap2 = np.memmap(tmp_path / "mmap2.npy", mode="w+", dtype=np.uint16, shape=(24,))
+    mmap2[:] = list(range(24, 48))
+    mmap2.flush()
+
+    entries = [
+        {"path": "mmap1.npy", "start_instance": 1, "num_instances": 2},
+        {"path": "mmap2.npy", "start_instance": 3, "num_instances": 1},
+    ]
+    entries_digest = hashlib.sha256(
+        json.dumps(entries, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    manifest = {
+        "format": "olmo-token-subset-v1",
+        "source": {"dtype": "uint16"},
+        "selection": {"sequence_length": 4, "selected_instances": 3},
+        "entries_sha256": entries_digest,
+        "entries": entries,
+    }
+    manifest_path = tmp_path / "subset.json"
+    manifest_path.write_text(json.dumps(manifest))
+
+    ds = NumpyFSLDatasetConfig(
+        tokenizer=TokenizerConfig(vocab_size=32_000, eos_token_id=0, pad_token_id=-1),
+        mix_base_dir=str(tmp_path),
+        subset_manifest=str(manifest_path),
+        sequence_length=4,
+        dtype=NumpyDatasetDType.uint16,
+        include_instance_metadata=False,
+    ).build()
+
+    assert len(ds) == 3
+    assert ds.num_tokens == 12
+    assert ds[0]["input_ids"].tolist() == [4, 5, 6, 7]
+    assert ds[1]["input_ids"].tolist() == [8, 9, 10, 11]
+    assert ds[2]["input_ids"].tolist() == [36, 37, 38, 39]
 
 
 def test_numpy_fsl_dataset_doc_lengths(tmp_path: Path):

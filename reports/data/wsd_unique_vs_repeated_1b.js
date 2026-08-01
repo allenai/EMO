@@ -1,0 +1,279 @@
+window.STEP2_REPORT_DATA = {
+  "updated": "2026-07-31 20:00 PDT",
+  "manifest": {
+    "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
+    "selectedTokens": 1002438656,
+    "selectedInstances": 244736,
+    "sourcePaths": 940,
+    "sha256": "c3d5f8b228040e859c7d1f8e3281adb8887d96ef38fad57ab3933764fc6144c7"
+  },
+  "uniqueRuns": [
+    {
+      "epoch": 1,
+      "lr": "2.5e-4",
+      "wd": "0.033",
+      "status": "planned",
+      "corrected": true
+    },
+    {
+      "epoch": 1,
+      "lr": "5e-4",
+      "wd": "0.033",
+      "status": "planned",
+      "corrected": true
+    },
+    {
+      "epoch": 1,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "planned",
+      "corrected": true
+    },
+    {
+      "epoch": 1,
+      "lr": "4e-4",
+      "wd": "0.033",
+      "status": "invalid",
+      "beaker": "01KYWFEXJM1YTFFVT1EJD8QET8",
+      "wandb": "t4saj7y1",
+      "train": 5.035,
+      "c4": 5.427,
+      "acc": 25.28,
+      "bpb": 1.545,
+      "reason": "Intermediate checkpoint evaluated before endpoint-specific WSD decay"
+    },
+    {
+      "epoch": 1,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "invalid",
+      "beaker": "01KYWRR7BZ2CM11NTJC0MNW05C",
+      "wandb": "8kvm55rf",
+      "train": 5.606,
+      "c4": 5.907,
+      "acc": 25,
+      "bpb": 1.695,
+      "reason": "Intermediate checkpoint evaluated before endpoint-specific WSD decay"
+    },
+    {
+      "epoch": 1,
+      "lr": "2e-3",
+      "wd": "0.033",
+      "status": "invalid",
+      "beaker": "01KYWJXRJKMW3MPP0A2SQD9GW3",
+      "wandb": "t8ydrr6e",
+      "train": 5.866,
+      "c4": 6.27,
+      "acc": 25.12,
+      "bpb": 1.818,
+      "reason": "Intermediate checkpoint evaluated before endpoint-specific WSD decay"
+    },
+    {
+      "epoch": 1,
+      "lr": "4e-3",
+      "wd": "0.033",
+      "status": "invalid",
+      "beaker": "01KYWJYRGNZ5REVE5G028M9F6E",
+      "wandb": "ftfkolur",
+      "train": 6.373,
+      "c4": 6.719,
+      "acc": 25.76,
+      "bpb": 2.003,
+      "reason": "Intermediate checkpoint evaluated before endpoint-specific WSD decay"
+    },
+    {
+      "epoch": 2,
+      "lr": "4e-4",
+      "wd": "0.033",
+      "status": "invalid",
+      "beaker": "01KYWFG74MCGTYFFZCG6T13FDA",
+      "wandb": "q92iwunw",
+      "train": 4.139,
+      "c4": 4.412,
+      "acc": 25.96,
+      "bpb": 1.249,
+      "reason": "Intermediate checkpoint evaluated before endpoint-specific WSD decay"
+    },
+    {
+      "epoch": 2,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "invalid",
+      "beaker": "01KYWRRNPSPBC9PQY38NCF8V1R",
+      "wandb": "jsafnct6",
+      "train": 4.243,
+      "c4": 4.603,
+      "acc": 25.87,
+      "bpb": 1.312,
+      "reason": "Intermediate checkpoint evaluated before endpoint-specific WSD decay"
+    },
+    {
+      "epoch": 2,
+      "lr": "2e-3",
+      "wd": "0.033",
+      "status": "invalid",
+      "beaker": "01KYWKDEQ1A11YS674GWJJYH4N",
+      "wandb": "5cma0saw",
+      "train": 5.228,
+      "c4": 5.665,
+      "acc": 24.94,
+      "bpb": 1.662,
+      "reason": "Intermediate checkpoint evaluated before endpoint-specific WSD decay"
+    },
+    {
+      "epoch": 2,
+      "lr": "4e-3",
+      "wd": "0.033",
+      "status": "invalid",
+      "beaker": "01KYWKEE1PBE9N4ZZ5RKKJ6GXP",
+      "wandb": "oj6atpr7",
+      "train": 6.452,
+      "c4": 6.83,
+      "acc": 25.67,
+      "bpb": 2.012,
+      "reason": "Intermediate checkpoint evaluated before endpoint-specific WSD decay"
+    },
+    {
+      "epoch": 3,
+      "lr": "4e-4",
+      "wd": "0.033",
+      "status": "invalid",
+      "beaker": "01KYWGDEKR9C28E1VBF1NQV3PV",
+      "wandb": "ttctqyt7",
+      "train": 3.732,
+      "c4": 3.993,
+      "acc": 27.22,
+      "bpb": 1.122,
+      "reason": "Intermediate checkpoint evaluated before endpoint-specific WSD decay"
+    },
+    {
+      "epoch": 3,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "invalid",
+      "beaker": "01KYWRRR69YPHWT7WGAJ2MWYFS",
+      "wandb": "d6z4uuvs",
+      "train": 3.725,
+      "c4": 3.986,
+      "acc": 27.41,
+      "bpb": 1.114,
+      "reason": "Intermediate checkpoint evaluated before endpoint-specific WSD decay"
+    },
+    {
+      "epoch": 3,
+      "lr": "2e-3",
+      "wd": "0.033",
+      "status": "invalid",
+      "beaker": "01KYXA935BB64DDC1Q3NDB13NH",
+      "wandb": "10c9pkvv",
+      "train": 4.782,
+      "c4": 5.257,
+      "acc": 24.62,
+      "bpb": 1.53,
+      "reason": "Intermediate checkpoint evaluated before endpoint-specific WSD decay"
+    },
+    {
+      "epoch": 4,
+      "lr": "4e-4",
+      "wd": "0.033",
+      "status": "invalid",
+      "beaker": "01KYWGENCFW03VC7NQM255ZTPQ",
+      "wandb": "59rgn1z0",
+      "train": 3.585,
+      "c4": 3.797,
+      "acc": 28.04,
+      "bpb": 1.059,
+      "reason": "Intermediate checkpoint evaluated before endpoint-specific WSD decay"
+    },
+    {
+      "epoch": 4,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "invalid",
+      "beaker": "01KYWRRN1S9PJZ5RH6357BVHXW",
+      "wandb": "bqw839kg",
+      "train": 3.536,
+      "c4": 3.752,
+      "acc": 29.18,
+      "bpb": 1.043,
+      "reason": "Intermediate checkpoint evaluated before endpoint-specific WSD decay"
+    },
+    {
+      "epoch": 4,
+      "lr": "2e-3",
+      "wd": "0.033",
+      "status": "invalid",
+      "beaker": "01KYXBNMRY6S68V88P5CVMSV2M",
+      "wandb": "c3sptchr",
+      "train": 4.677,
+      "c4": 5.178,
+      "acc": 25.52,
+      "bpb": 1.527,
+      "reason": "Intermediate checkpoint evaluated before endpoint-specific WSD decay"
+    },
+    {
+      "epoch": 5,
+      "lr": "4e-4",
+      "wd": "0.033",
+      "status": "complete",
+      "beaker": "01KYWCM4H58ZBKRF7BGGVMV8N6",
+      "wandb": "xobbgt7e",
+      "train": 3.428,
+      "c4": 3.632,
+      "acc": 29.86,
+      "bpb": 1.012
+    },
+    {
+      "epoch": 5,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "complete",
+      "beaker": "01KYWMRC10YPFN01SV63W3AXA6",
+      "wandb": "d4m50vkx",
+      "train": 3.343,
+      "c4": 3.53,
+      "acc": 31.61,
+      "bpb": 0.9827
+    },
+    {
+      "epoch": 5,
+      "lr": "2e-3",
+      "wd": "0.033",
+      "status": "complete",
+      "beaker": "01KYX1EXWDPQ2EEVRREKPX042S",
+      "wandb": "hf7jttrz",
+      "train": 4.376,
+      "c4": 4.838,
+      "acc": 25.37,
+      "bpb": 1.425
+    },
+    {
+      "epoch": 5,
+      "lr": "4e-3",
+      "wd": "0.033",
+      "status": "canceled",
+      "beaker": "01KYWHNB0R1YHN1Z1RWQV9TR18",
+      "wandb": "aonw0wmk"
+    }
+  ],
+  "repeatedRuns": [
+    {
+      "epoch": 1,
+      "lr": "2.5e-4",
+      "wd": "0.033",
+      "status": "planned"
+    },
+    {
+      "epoch": 1,
+      "lr": "5e-4",
+      "wd": "0.033",
+      "status": "planned"
+    },
+    {
+      "epoch": 1,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "planned"
+    }
+  ]
+};

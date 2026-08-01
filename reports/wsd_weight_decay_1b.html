@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>WSD Weight-Decay Tuning — Dense 1B</title>
+  <style>
+    :root { --ink:#18212b; --muted:#66717d; --line:#dce2e8; --paper:#f6f7f9; --card:#fff; --blue:#1565c0; --orange:#a45b00; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--paper); font:13px/1.35 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    main { max-width:1500px; margin:0 auto; padding:22px; }
+    header { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:14px; }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { margin-bottom:4px; font-size:29px; letter-spacing:-.7px; }
+    h2 { margin:18px 0 8px; font-size:18px; }
+    h3 { margin-bottom:3px; font-size:13px; }
+    p { margin-bottom:7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    a { color:var(--blue); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    .stamp,.note { color:var(--muted); }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:9px; padding:11px; }
+    .charts { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+    .chart svg { width:100%; height:210px; display:block; }
+    .legend { display:flex; flex-wrap:wrap; gap:8px 16px; margin:7px 0 9px; color:var(--muted); }
+    .legend label { display:flex; align-items:center; gap:5px; cursor:pointer; }
+    .legend .swatch { width:18px; height:3px; border-radius:2px; background:var(--blue); }
+    .legend .wsd-untuned .swatch { background:#d97706; }
+    .legend .cosine .swatch { height:0; background:none; border-top:3px dashed #64748b; border-radius:0; }
+    .table-wrap { overflow:auto; }
+    table { width:100%; border-collapse:collapse; background:var(--card); }
+    th,td { padding:7px 9px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap; }
+    th:first-child,td:first-child,th:nth-child(2),td:nth-child(2),th:nth-child(3),td:nth-child(3) { text-align:left; }
+    th { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.4px; }
+    .active { color:var(--orange); font-weight:400; }
+    .complete { color:#26723b; }
+    .pending { color:var(--muted); }
+    .coverage th,.coverage td { text-align:left; vertical-align:top; }
+    .tuple-list { display:flex; flex-wrap:wrap; gap:5px; }
+    .tuple { display:inline-block; padding:2px 6px; border:1px solid var(--line); border-radius:999px; color:var(--muted); background:#fafbfc; }
+    .tuple.selected { color:var(--ink); border-color:#7ba5d3; background:#eef5fc; font-weight:700; }
+    .tuple.active { color:var(--orange); border-color:#e4bd89; background:#fff8ed; font-weight:400; }
+    footer { margin-top:14px; color:var(--muted); font-size:11px; }
+    @media (max-width:900px) { .charts { grid-template-columns:repeat(2,minmax(0,1fr)); } p { white-space:normal; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>WSD weight-decay tuning — live</h1>
+      <p>Dense 1B · codelion/dclm-baseline-1B · WSD · warmup 24 · fresh trajectory per epoch/LR/WD tuple.</p>
+    </div>
+    <div><a href="cosine_vs_wsd_1b.html">← Step 0</a> · <a href="wsd_unique_vs_repeated_1b.html">Step 2 →</a></div>
+  </header>
+
+  <p class="stamp" id="live-stamp"><strong>Intermediate report:</strong> loading run state.</p>
+  <p class="note">Held-out C4 CE selects each coordinate, while train CE, HellaSwag accuracy, and BPB remain diagnostics.</p>
+  <p class="note">Each plotted point is the completed (LR, WD) tuple with the lowest held-out C4 CE for that epoch.</p>
+
+  <h2>Model comparison — interactive</h2>
+  <div class="legend" aria-label="Chart series">
+    <label><span class="swatch"></span><input type="checkbox" data-category-toggle="tuned" checked>WSD · tuned LR and WD</label>
+    <label class="wsd-untuned"><span class="swatch"></span><input type="checkbox" data-category-toggle="wsd-untuned" checked>WSD · tuned LR, untuned WD 0.033</label>
+    <label class="cosine"><span class="swatch"></span><input type="checkbox" data-category-toggle="cosine">Cosine · tuned LR</label>
+  </div>
+  <div class="charts">
+    <article class="card chart"><h3>Final training CE ↓</h3><div data-metric="train"></div></article>
+    <article class="card chart"><h3>Held-out C4 CE ↓</h3><div data-metric="c4"></div></article>
+    <article class="card chart"><h3>HellaSwag accuracy ↑</h3><div data-metric="acc"></div></article>
+    <article class="card chart"><h3>HellaSwag BPB ↓</h3><div data-metric="bpb"></div></article>
+  </div>
+
+  <h2>Weight-decay evaluation coordinate grid</h2>
+  <div class="card table-wrap">
+    <table class="coverage">
+      <thead><tr><th>Epoch</th><th>Evaluated and active (LR, WD) tuples</th><th>Selected by C4</th></tr></thead>
+      <tbody id="coverage-body">
+        <tr><td>—</td><td>Loading evaluated grid.</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Runs and provenance</h2>
+  <div class="card table-wrap">
+    <table>
+      <thead><tr><th>Category</th><th>Epoch / tokens</th><th>LR</th><th>WD</th><th>Status</th><th>Train CE</th><th>C4 CE</th><th>HS acc</th><th>HS BPB</th><th>W&amp;B</th><th>Beaker</th></tr></thead>
+      <tbody id="runs-body">
+        <tr><td>1</td><td>5e-4</td><td>0.033</td><td class="complete">Baseline complete</td><td>5.025*</td><td>5.394*</td><td>25.095%</td><td>1.53507</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/brbweepb">brbweepb</a></td><td><a href="https://beaker.org/ex/01KYSXCMH5F9R1T8WZEXPNC1RQ">experiment</a></td></tr>
+        <tr><td>2</td><td>5e-4</td><td>0.033</td><td class="complete">Baseline complete</td><td>3.982*</td><td>4.305*</td><td>25.931%</td><td>1.21155</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/hgoyq9yp">hgoyq9yp</a></td><td><a href="https://beaker.org/ex/01KYT0G2AM8PD2EQQP2589XB1X">experiment</a></td></tr>
+        <tr><td>3</td><td>5e-4</td><td>0.033</td><td class="complete">Baseline complete</td><td>3.571*</td><td>3.910*</td><td>27.524%</td><td>1.09211</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/a1g9kxvn">a1g9kxvn</a></td><td><a href="https://beaker.org/ex/01KYT3457Y0TQTVXC64241JGY8">experiment</a></td></tr>
+        <tr><td>4</td><td>1e-3</td><td>0.033</td><td class="complete">Baseline complete</td><td>3.350*</td><td>3.702*</td><td>29.890%</td><td>1.028*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/byb6zm1s">byb6zm1s</a></td><td><a href="https://beaker.org/ex/01KYTP7NMCAP8KGA92DRVFFMES">experiment</a></td></tr>
+        <tr><td>5</td><td>1e-3</td><td>0.033</td><td class="complete">Baseline complete</td><td>3.184*</td><td>3.602*</td><td>31.760%</td><td>0.9959*</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/1lnzmcsr">1lnzmcsr</a></td><td><a href="https://beaker.org/ex/01KYTSSJ286TB6APX11Z2YD0EM">experiment</a></td></tr>
+        <tr><td>1</td><td>5e-4</td><td>0.1</td><td class="active">Active</td><td class="pending">—</td><td class="pending">—</td><td class="pending">—</td><td class="pending">—</td><td><a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/nq7h30y5">nq7h30y5</a></td><td><a href="https://beaker.org/ex/01KYV38MBGA07P3RKHW7C31H0J">experiment</a></td></tr>
+        <tr><td>2</td><td>5e-4</td><td>0.1</td><td class="active">Active</td><td class="pending">—</td><td class="pending">—</td><td class="pending">—</td><td class="pending">—</td><td class="pending">initializing</td><td><a href="https://beaker.org/ex/01KYV3AA5PCD5KDMDG0FPAGCBJ">experiment</a></td></tr>
+        <tr><td>3</td><td>5e-4</td><td>0.1</td><td class="active">Queued</td><td class="pending">—</td><td class="pending">—</td><td class="pending">—</td><td class="pending">—</td><td class="pending">pending</td><td><a href="https://beaker.org/ex/01KYV3C4DBMWRYMWPYBSJKD6VQ">experiment</a></td></tr>
+        <tr><td>4</td><td>1e-3</td><td>0.1</td><td class="active">Queued</td><td class="pending">—</td><td class="pending">—</td><td class="pending">—</td><td class="pending">—</td><td class="pending">pending</td><td><a href="https://beaker.org/ex/01KYV3DSJWKABYJBNVCPBH8CWB">experiment</a></td></tr>
+        <tr><td>5</td><td>1e-3</td><td>0.1</td><td class="active">Queued</td><td class="pending">—</td><td class="pending">—</td><td class="pending">—</td><td class="pending">—</td><td class="pending">pending</td><td><a href="https://beaker.org/ex/01KYV3FK02Y2VT8E0Z2F24ABMC">experiment</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>* Console precision pending exact W&amp;B extraction · all jobs owned by sewonm · report metrics exclude optional extra downstream tasks.</footer>
+</main>
+<script src="data/wsd_weight_decay_1b.js"></script>
+<script>
+  const state = window.WD_REPORT_DATA;
+  const allRuns = state.runs;
+  const runs = allRuns.filter(r => r.status === "complete" && Number.isFinite(r.c4));
+  const best = [...new Set(runs.map(r=>r.epoch))].map(epoch => runs.filter(r=>r.epoch===epoch).sort((a,b)=>a.c4-b.c4)[0]);
+  const labels = {train:"Train CE",c4:"C4 CE",acc:"HS accuracy",bpb:"HS BPB"};
+  const statusLabel = {queued:"Queued",active:"Active",complete:"Complete",canceled:"Canceled",failed:"Failed"};
+  const metric = (r,k,d=3) => Number.isFinite(r[k]) ? r[k].toFixed(d) : "—";
+  const link = (url,label) => url ? `<a href="${url}">${label}</a>` : `<span class="pending">pending</span>`;
+  document.querySelector("#live-stamp").innerHTML = `<strong>Step 1:</strong> updated ${state.updated} · ${runs.length} WSD weight-decay tuples complete.`;
+  const runRow = (r,category,point) => `<tr><td>${category}</td><td>${point}</td><td>${r.lr}</td><td>${r.wd}</td><td class="${r.status==="complete"?"complete":r.status==="failed"?"pending":"active"}">${statusLabel[r.status]}</td><td>${metric(r,"train")}</td><td>${metric(r,"c4")}</td><td>${Number.isFinite(r.acc)?r.acc.toFixed(3)+"%":"—"}</td><td>${metric(r,"bpb",5)}</td><td>${link(r.wandb?`https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}`:null,r.wandb)}</td><td>${link(r.beaker?`https://beaker.org/ex/${r.beaker}`:null,"experiment")}</td></tr>`;
+  document.querySelector("#runs-body").innerHTML = allRuns.map(r=>runRow(r,"WSD WD sweep",`epoch ${r.epoch}`)).join("");
+  const tupleLabel = r => `(${r.lr}, ${r.wd})`;
+  const untunedWsd = [
+    {epoch:1,lr:"5e-4",wd:"0.033",train:5.025,c4:5.394,acc:25.095,bpb:1.53507},
+    {epoch:2,lr:"5e-4",wd:"0.033",train:3.982,c4:4.305,acc:25.931,bpb:1.21155},
+    {epoch:3,lr:"5e-4",wd:"0.033",train:3.571,c4:3.910,acc:27.524,bpb:1.09211},
+    {epoch:4,lr:"1e-3",wd:"0.033",train:3.350,c4:3.702,acc:29.890,bpb:1.028},
+    {epoch:5,lr:"1e-3",wd:"0.033",train:3.184,c4:3.602,acc:31.760,bpb:0.9959}
+  ];
+  const cosine = [
+    {epoch:1,lr:"2.5e-4",train:5.338,c4:5.745,acc:25.045,bpb:1.67334},
+    {epoch:2,lr:"5e-4",train:4.330,c4:4.717,acc:25.453,bpb:1.33476},
+    {epoch:3,lr:"1e-3",train:3.834,c4:4.191,acc:26.310,bpb:1.177},
+    {epoch:4,lr:"1e-3",train:3.585,c4:3.930,acc:26.960,bpb:1.100},
+    {epoch:5,lr:"1e-3",train:3.356,c4:3.766,acc:29.150,bpb:1.050}
+  ];
+  document.querySelector("#coverage-body").innerHTML = [1,2,3,4,5].map(epoch => {
+    const epochRuns=allRuns.filter(r=>r.epoch===epoch).sort((a,b)=>Number(a.lr.replace("e-", "e-"))-Number(b.lr.replace("e-", "e-")) || Number(a.wd)-Number(b.wd));
+    const chosen=best.find(r=>r.epoch===epoch);
+    const chips=epochRuns.map(r=>{
+      const selected=chosen&&chosen.lr===r.lr&&chosen.wd===r.wd;
+      const active=r.status==="active"||r.status==="queued";
+      const cls=selected?"tuple selected":active?"tuple active":"tuple";
+      return `<span class="${cls}" title="${statusLabel[r.status]}">${tupleLabel(r)}${active?" · active":""}</span>`;
+    }).join("");
+    return `<tr><td><strong>${epoch}</strong></td><td><div class="tuple-list">${chips}</div></td><td>${chosen?`<strong>${tupleLabel(chosen)}</strong> · C4 ${chosen.c4.toFixed(3)}`:"—"}</td></tr>`;
+  }).join("");
+  function chart(metric,mount) {
+    const enabled=new Set([...document.querySelectorAll("[data-category-toggle]:checked")].map(el=>el.dataset.categoryToggle));
+    const series=[
+      {key:"tuned",runs:best,color:"#1565c0",width:2.4,dash:"",annotate:true},
+      {key:"wsd-untuned",runs:untunedWsd,color:"#d97706",width:1.7,dash:""},
+      {key:"cosine",runs:cosine,color:"#64748b",width:1.7,dash:"7 4"}
+    ].filter(s=>enabled.has(s.key));
+    const w=320,h=210,p={l:48,r:12,t:30,b:32}, vals=series.flatMap(s=>s.runs.map(r=>r[metric])), min=Math.min(...vals),max=Math.max(...vals),pad=Math.max((max-min)*.14,0.02);
+    if (!vals.length) { mount.innerHTML='<div class="note" style="padding:70px 12px;text-align:center">Select at least one model category.</div>'; return; }
+    const lo=min-pad,hi=max+pad,x=e=>p.l+(e-1)*(w-p.l-p.r)/4,y=v=>p.t+(hi-v)*(h-p.t-p.b)/(hi-lo);
+    const ticks=Array.from({length:5},(_,i)=>lo+(hi-lo)*i/4);
+    const tickText=v=>metric==="acc"?v.toFixed(1):v.toFixed(2);
+    mount.innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${labels[metric]} by epoch">
+      ${ticks.map(v=>`<line x1="${p.l}" y1="${y(v)}" x2="${w-p.r}" y2="${y(v)}" stroke="#edf0f3"/><text x="${p.l-6}" y="${y(v)+3}" text-anchor="end" font-size="8" fill="#66717d">${tickText(v)}</text>`).join("")}
+      <line x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${h-p.b}" stroke="#aeb8c2"/><line x1="${p.l}" y1="${h-p.b}" x2="${w-p.r}" y2="${h-p.b}" stroke="#aeb8c2"/>
+      ${series.map(s=>`<polyline points="${s.runs.map(r=>`${x(r.epoch)},${y(r[metric])}`).join(" ")}" fill="none" stroke="${s.color}" stroke-width="${s.width}" stroke-dasharray="${s.dash}"/>${s.runs.map(r=>`<circle cx="${x(r.epoch)}" cy="${y(r[metric])}" r="3" fill="${s.color}"/>${s.annotate?`<text x="${x(r.epoch)}" y="${Math.max(y(r[metric])-9,12)}" text-anchor="middle" font-size="7" fill="${s.color}">${tupleLabel(r)}</text>`:""}`).join("")}`).join("")}
+      ${[1,2,3,4,5].map(e=>`<text x="${x(e)}" y="${h-11}" text-anchor="middle" font-size="9" fill="#66717d">${e}</text>`).join("")}
+    </svg>`;
+  }
+  const renderCharts=()=>document.querySelectorAll("[data-metric]").forEach(el=>chart(el.dataset.metric,el));
+  document.querySelectorAll("[data-category-toggle]").forEach(el=>el.addEventListener("change",renderCharts));
+  renderCharts();
+</script>
+</body>
+</html>
