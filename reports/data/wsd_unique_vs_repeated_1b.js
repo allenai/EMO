@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 02:27 PDT",
+  "updated": "2026-08-01 04:14 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -710,17 +710,31 @@ window.STEP2_REPORT_DATA = {
         "socialiqa": 40.28,
         "winogrande": 50.67
       },
-      "reason": "Epoch-3 selected LR; resumed matching preserved pre-decay step643; completed endpoint-specific WSD decay to 4B and full evaluation; nearest train CE at step950; minRuntime 0; autoResume false; no retries"
+      "reason": "Selected at epoch 4 by lower held-out C4; resumed matching preserved pre-decay step643; completed endpoint-specific WSD decay to 4B and full evaluation; nearest train CE at step950; preserved step858; minRuntime 0; autoResume false; no retries"
     },
     {
       "epoch": 4,
       "lr": "2e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYY73PTE21FDYHTYA8HEWKW5",
       "wandb": "jbx73po2",
       "revision": "50dd3b54",
-      "reason": "Required next-higher LR introduced at epoch 4; fresh 4B trajectory because no matching 2e-3 stable chain existed; endpoint-specific WSD decay; preserves step858; full nine-task evaluation; minRuntime 0; autoResume false; no retries"
+      "train": 4.293,
+      "c4": 4.74,
+      "acc": 25.34,
+      "bpb": 1.376,
+      "downstream": {
+        "arc_challenge": 23.75,
+        "arc_easy": 30.7,
+        "boolq": 55.2,
+        "csqa": 25.55,
+        "openbookqa": 22.2,
+        "piqa": 52.07,
+        "socialiqa": 39.25,
+        "winogrande": 50.51
+      },
+      "reason": "Required next-higher LR introduced at epoch 4; fresh 4B trajectory because no matching 2e-3 stable chain existed; completed endpoint-specific WSD decay and full nine-task evaluation; nearest train CE at step950; preserved step858; minRuntime 0; autoResume false; no retries"
     }
   ],
   "codelionRuns": [
