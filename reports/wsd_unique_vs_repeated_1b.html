@@ -72,17 +72,17 @@
     <article class="card chart"><h3>Held-out C4 CE ↓</h3><div data-metric="c4"></div></article>
     <article class="card chart"><h3>HellaSwag length-normalized accuracy ↑</h3><div data-metric="acc"></div></article>
     <article class="card chart"><h3>HellaSwag non-v2 BPB ↓</h3><div data-metric="bpb"></div></article>
-    <article class="card chart"><h3>9-task average accuracy ↑</h3><div data-metric="avg_acc"></div></article>
+    <article class="card chart"><h3>8-task average accuracy · no BoolQ ↑</h3><div data-metric="avg8_acc"></div></article>
+    <article class="card chart"><h3>3-task stable average · ARC-E, HS, PIQA ↑</h3><div data-metric="avg3_acc"></div></article>
     <article class="card chart"><h3>ARC-Challenge normalized accuracy ↑</h3><div data-metric="ds_arc_challenge"></div></article>
     <article class="card chart"><h3>ARC-Easy accuracy ↑</h3><div data-metric="ds_arc_easy"></div></article>
-    <article class="card chart"><h3>BoolQ accuracy ↑</h3><div data-metric="ds_boolq"></div></article>
     <article class="card chart"><h3>CSQA 5-shot normalized accuracy ↑</h3><div data-metric="ds_csqa"></div></article>
     <article class="card chart"><h3>OpenBookQA 5-shot normalized accuracy ↑</h3><div data-metric="ds_openbookqa"></div></article>
     <article class="card chart"><h3>PIQA normalized accuracy ↑</h3><div data-metric="ds_piqa"></div></article>
     <article class="card chart"><h3>SocialIQA 5-shot normalized accuracy ↑</h3><div data-metric="ds_socialiqa"></div></article>
     <article class="card chart"><h3>Winogrande accuracy ↑</h3><div data-metric="ds_winogrande"></div></article>
   </div>
-  <p class="note">Scroll horizontally to inspect the remaining figures. Historical Codelion runs emitted only HellaSwag, so the expanded task and 9-task-average charts show conditions with complete nine-task evaluations.</p>
+  <p class="note">Scroll horizontally to inspect the remaining figures. The 8-task average excludes BoolQ; the stable 3-task average uses ARC-Easy, HellaSwag, and PIQA. Historical WD 0.033 Codelion runs emitted only HellaSwag, so aggregate and expanded-task charts show only conditions with the required evaluations.</p>
 
   <h2>Unique-data LR coordinate grid</h2>
   <div class="card table-wrap"><table class="coverage"><thead><tr><th>Target</th><th>Evaluated, active, and invalid LRs</th><th>Selected by C4</th></tr></thead><tbody id="unique-grid"></tbody></table></div>
@@ -125,16 +125,19 @@
   grid(uniqueRuns,uniqueBest,document.querySelector("#unique-grid"));
   grid(repeatedRuns,repeatedBest,document.querySelector("#repeated-grid"));
 
-  const downstreamKeys=["arc_challenge","arc_easy","boolq","csqa","hellaswag","openbookqa","piqa","socialiqa","winogrande"];
+  const downstreamKeys8=["arc_challenge","arc_easy","csqa","hellaswag","openbookqa","piqa","socialiqa","winogrande"];
+  const downstreamKeys3=["arc_easy","hellaswag","piqa"];
+  const downstreamValue=(r,task)=>task==="hellaswag"?r.acc:r.downstream?.[task];
   const metricValue=(r,k)=>{
-    if(k==="avg_acc"){
-      const vals=downstreamKeys.map(task=>task==="hellaswag"?r.acc:r.downstream?.[task]);
+    if(k==="avg8_acc"||k==="avg3_acc"){
+      const keys=k==="avg8_acc"?downstreamKeys8:downstreamKeys3;
+      const vals=keys.map(task=>downstreamValue(r,task));
       return vals.every(Number.isFinite)?vals.reduce((a,b)=>a+b,0)/vals.length:null;
     }
     if(k.startsWith("ds_")) return r.downstream?.[k.slice(3)];
     return r[k];
   };
-  const labels={train:"Train CE",c4:"C4 CE",acc:"HellaSwag accuracy",bpb:"HellaSwag BPB",avg_acc:"9-task average accuracy",ds_arc_challenge:"ARC-Challenge accuracy",ds_arc_easy:"ARC-Easy accuracy",ds_boolq:"BoolQ accuracy",ds_csqa:"CSQA accuracy",ds_openbookqa:"OpenBookQA accuracy",ds_piqa:"PIQA accuracy",ds_socialiqa:"SocialIQA accuracy",ds_winogrande:"Winogrande accuracy"};
+  const labels={train:"Train CE",c4:"C4 CE",acc:"HellaSwag accuracy",bpb:"HellaSwag BPB",avg8_acc:"8-task average accuracy",avg3_acc:"3-task stable average accuracy",ds_arc_challenge:"ARC-Challenge accuracy",ds_arc_easy:"ARC-Easy accuracy",ds_csqa:"CSQA accuracy",ds_openbookqa:"OpenBookQA accuracy",ds_piqa:"PIQA accuracy",ds_socialiqa:"SocialIQA accuracy",ds_winogrande:"Winogrande accuracy"};
   function chart(metricName,mount){
     const enabled=new Set([...document.querySelectorAll("[data-category-toggle]:checked")].map(el=>el.dataset.categoryToggle));
     const series=[
@@ -146,7 +149,7 @@
     if(!vals.length){mount.innerHTML='<div class="note" style="padding:70px 12px;text-align:center">No valid completed endpoint yet.</div>';return;}
     const w=320,h=210,p={l:48,r:12,t:26,b:32},min=Math.min(...vals),max=Math.max(...vals),pad=Math.max((max-min)*.14,0.02),lo=min-pad,hi=max+pad;
     const x=e=>p.l+(e-1)*(w-p.l-p.r)/4,y=v=>p.t+(hi-v)*(h-p.t-p.b)/(hi-lo),ticks=Array.from({length:5},(_,i)=>lo+(hi-lo)*i/4);
-    const tickText=v=>(metricName==="acc"||metricName==="avg_acc"||metricName.startsWith("ds_"))?v.toFixed(1):v.toFixed(2);
+    const tickText=v=>(metricName==="acc"||metricName.startsWith("avg")||metricName.startsWith("ds_"))?v.toFixed(1):v.toFixed(2);
     mount.innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${labels[metricName]} by token target">
       ${ticks.map(v=>`<line x1="${p.l}" y1="${y(v)}" x2="${w-p.r}" y2="${y(v)}" stroke="#edf0f3"/><text x="${p.l-6}" y="${y(v)+3}" text-anchor="end" font-size="8" fill="#66717d">${tickText(v)}</text>`).join("")}
       <line x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${h-p.b}" stroke="#aeb8c2"/><line x1="${p.l}" y1="${h-p.b}" x2="${w-p.r}" y2="${h-p.b}" stroke="#aeb8c2"/>
