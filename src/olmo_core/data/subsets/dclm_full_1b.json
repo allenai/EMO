@@ -20,6 +20,7 @@
     "alignment_tokens": 4194304,
     "sequence_length": 4096,
     "selected_tokens": 1002438656,
+    "selected_instances": 244736,
     "selected_real_document_tokens": 1002438649,
     "padding_eos_tokens": 7,
     "selected_documents": 810130,

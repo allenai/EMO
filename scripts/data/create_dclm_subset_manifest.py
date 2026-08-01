@@ -436,6 +436,7 @@ def build_and_materialize(args: argparse.Namespace) -> dict:
             "alignment_tokens": args.alignment_tokens,
             "sequence_length": args.sequence_length,
             "selected_tokens": aligned_tokens,
+            "selected_instances": aligned_tokens // args.sequence_length,
             "selected_real_document_tokens": real_tokens,
             "padding_eos_tokens": padding_tokens,
             "selected_documents": len(documents),
