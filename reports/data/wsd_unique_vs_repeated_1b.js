@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 15:28 PDT",
+  "updated": "2026-08-01 15:29 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -705,6 +705,7 @@ window.STEP2_REPORT_DATA = {
       "status": "active",
       "correctedSubset": true,
       "beaker": "01KYZPYZTRY03VVK5SSY1BHTWX",
+      "wandb": "pwsak997",
       "revision": "bf4c3dfe",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e4_lr1e-3_wd0.033_warmup24_uniformdocs_seed0_corrected_retry1",
       "reason": "Corrected epoch-3 selected LR; active on Jupiter; resumes verified matching corrected pre-decay step643; endpoint-specific WSD decay to 4B; full nine-task and C4 evaluation; preserves step858; minRuntime 0; autoResume false; no experiment retries"
@@ -713,12 +714,12 @@ window.STEP2_REPORT_DATA = {
       "epoch": 4,
       "lr": "2e-3",
       "wd": "0.033",
-      "status": "queued",
+      "status": "active",
       "correctedSubset": true,
       "beaker": "01KYZQ1AKQRDHM7M8AZDFYK2PR",
       "revision": "bf4c3dfe",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e4_lr2e-3_wd0.033_warmup24_uniformdocs_seed0_corrected",
-      "reason": "Required corrected epoch-4 next-higher LR; fresh 4B trajectory because no corrected 2e-3 stable chain exists; endpoint-specific WSD decay to 4B; full nine-task and C4 evaluation; preserves step858; minRuntime 0; autoResume false; no experiment retries"
+      "reason": "Required corrected epoch-4 next-higher LR; active on Jupiter as a fresh 4B trajectory because no corrected 2e-3 stable chain exists; endpoint-specific WSD decay to 4B; full nine-task and C4 evaluation; preserves step858; minRuntime 0; autoResume false; no experiment retries"
     }
   ],
   "oldRepeatedRuns": [
