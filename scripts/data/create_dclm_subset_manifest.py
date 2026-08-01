@@ -3,8 +3,11 @@
 
 The source DCLM arrays are split into shards of different sizes. This script
 allocates the requested token budget across shards in proportion to their
-usable token counts, samples documents uniformly without replacement inside
-each shard, and copies only complete documents into a new token array.
+usable token counts, chooses a uniform random token anchor in each shard, and
+copies a document-aligned cluster following that anchor. This is proportional
+uniform cluster sampling: every token position has the same marginal chance of
+anchoring its shard's sample, while large contiguous reads keep materialization
+practical on remote object storage.
 
 The materialized array is padded with EOS tokens to the requested training
 alignment. Padding happens only after a document boundary, so no source
@@ -76,14 +79,6 @@ def resolve_source_paths(source_mix: Path, *, label: str, tokenizer: str) -> lis
     return paths
 
 
-def _count_lines(path: Path) -> int:
-    count = 0
-    with gzip.open(path, "rb") as f:
-        while chunk := f.read(8 * 1024 * 1024):
-            count += chunk.count(b"\n")
-    return count
-
-
 def inspect_source(args: tuple[int, str, str, int]) -> dict[str, int | str]:
     index, relative_path, data_root_str, item_size = args
     absolute_path = Path(data_root_str) / relative_path.lstrip("/")
@@ -101,7 +96,6 @@ def inspect_source(args: tuple[int, str, str, int]) -> dict[str, int | str]:
         "absolute_path": str(absolute_path),
         "metadata_path": str(metadata_path),
         "available_tokens": file_size // item_size,
-        "num_documents": _count_lines(metadata_path),
     }
 
 
@@ -131,43 +125,43 @@ def _shard_seed(seed: int, relative_path: str) -> int:
 def sample_candidates(args: tuple[dict, int, int, float]) -> tuple[int, list[Document]]:
     source, quota, seed, candidate_multiplier = args
     shard = int(source["index"])
-    num_documents = int(source["num_documents"])
     available_tokens = int(source["available_tokens"])
-    if num_documents <= 0:
-        raise ValueError(f"no documents found in {source['metadata_path']}")
-
-    mean_doc_length = available_tokens / num_documents
-    candidate_count = min(
-        num_documents,
-        max(64, math.ceil(candidate_multiplier * quota / mean_doc_length) + 64),
-    )
     rng = np.random.default_rng(_shard_seed(seed, str(source["path"])))
-    selected_indices = np.sort(rng.choice(num_documents, size=candidate_count, replace=False))
-
+    anchor = int(rng.integers(0, available_tokens))
+    candidate_token_target = min(available_tokens, math.ceil(candidate_multiplier * quota))
     candidates: list[Document] = []
-    next_pos = 0
-    wanted = int(selected_indices[next_pos])
-    with gzip.open(str(source["metadata_path"]), "rt") as f:
-        for doc_index, line in enumerate(f):
-            if doc_index != wanted:
-                continue
-            start_str, end_str, *_ = line.split(",")
-            start, end = int(start_str), int(end_str)
-            if not 0 <= start < end <= available_tokens:
-                raise ValueError(
-                    f"invalid document [{start}, {end}) in {source['metadata_path']}"
-                )
-            candidates.append(Document(shard, start, end))
-            next_pos += 1
-            if next_pos == len(selected_indices):
-                break
-            wanted = int(selected_indices[next_pos])
-    if len(candidates) != candidate_count:
+
+    def collect(*, before_anchor: bool) -> None:
+        collected = sum(doc.length for doc in candidates)
+        with gzip.open(str(source["metadata_path"]), "rt") as f:
+            for line in f:
+                if collected >= candidate_token_target:
+                    break
+                start_str, end_str, *_ = line.split(",")
+                start, end = int(start_str), int(end_str)
+                if before_anchor:
+                    if start >= anchor:
+                        break
+                elif start < anchor:
+                    continue
+                if not 0 <= start < end <= available_tokens:
+                    raise ValueError(
+                        f"invalid document [{start}, {end}) in {source['metadata_path']}"
+                    )
+                candidates.append(Document(shard, start, end))
+                collected += end - start
+
+    # Start at the first complete document whose beginning is at or after the
+    # uniform token anchor. Wrap to the beginning only when the anchor falls
+    # too close to the end to provide the requested candidate mass.
+    collect(before_anchor=False)
+    if sum(doc.length for doc in candidates) < candidate_token_target:
+        collect(before_anchor=True)
+    if sum(doc.length for doc in candidates) < min(quota, available_tokens):
         raise RuntimeError(
-            f"read {len(candidates):,} of {candidate_count:,} sampled documents from "
-            f"{source['metadata_path']}"
+            f"unable to collect enough complete documents around token anchor {anchor:,} "
+            f"in {source['metadata_path']}"
         )
-    rng.shuffle(candidates)
     return shard, candidates
 
 
@@ -237,18 +231,29 @@ def materialize(
             for shard in sorted(by_shard):
                 source = sources[shard]
                 array = np.memmap(source["absolute_path"], mode="r", dtype=dtype)
-                for doc in by_shard[shard]:
-                    values = np.asarray(array[doc.start : doc.end])
-                    if int(values[-1]) != eos_token_id:
-                        raise ValueError(
-                            f"document [{doc.start}, {doc.end}) in {source['path']} does not end "
-                            f"with EOS token {eos_token_id}"
-                        )
+                shard_documents = sorted(by_shard[shard], key=lambda doc: doc.start)
+                spans: list[list] = []
+                for doc in shard_documents:
+                    if spans and spans[-1][1] == doc.start:
+                        spans[-1][1] = doc.end
+                        spans[-1][2].append(doc)
+                    else:
+                        spans.append([doc.start, doc.end, [doc]])
+                for span_start, span_end, span_docs in spans:
+                    values = np.asarray(array[span_start:span_end])
                     payload = values.tobytes(order="C")
                     token_out.write(payload)
                     token_digest.update(payload)
-                    metadata_out.write(f"{offset},{offset + doc.length}\n")
-                    offset += doc.length
+                    local_offset = 0
+                    for doc in span_docs:
+                        local_offset += doc.length
+                        if int(values[local_offset - 1]) != eos_token_id:
+                            raise ValueError(
+                                f"document [{doc.start}, {doc.end}) in {source['path']} does "
+                                f"not end with EOS token {eos_token_id}"
+                            )
+                        metadata_out.write(f"{offset},{offset + doc.length}\n")
+                        offset += doc.length
                 del array
 
             padding_tokens = target_tokens - offset
@@ -353,7 +358,7 @@ def build_and_materialize(args: argparse.Namespace) -> dict:
             {
                 "path": source["path"],
                 "available_tokens": source["available_tokens"],
-                "num_documents": source["num_documents"],
+                "uniform_token_anchor_seed": _shard_seed(args.seed, str(source["path"])),
                 "token_quota": quota,
                 "selected_documents": doc_counts[int(source["index"])],
                 "selected_tokens": selected_tokens,
@@ -377,7 +382,7 @@ def build_and_materialize(args: argparse.Namespace) -> dict:
             "original_available_tokens": sum(int(s["available_tokens"]) for s in sources),
         },
         "selection": {
-            "method": "proportional-shard-uniform-documents-without-replacement",
+            "method": "proportional-shard-uniform-token-anchor-document-clusters",
             "seed": args.seed,
             "requested_tokens": args.target_tokens,
             "alignment_tokens": args.alignment_tokens,
