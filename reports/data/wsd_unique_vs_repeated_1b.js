@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-07-31 22:07 PDT",
+  "updated": "2026-07-31 22:15 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -21,6 +21,16 @@ window.STEP2_REPORT_DATA = {
       "c4": 5.4,
       "acc": 25.09,
       "bpb": 1.544,
+      "downstream": {
+        "arc_challenge": 24.08,
+        "arc_easy": 30.18,
+        "boolq": 39.45,
+        "csqa": 24.65,
+        "openbookqa": 23.4,
+        "piqa": 51.36,
+        "socialiqa": 39.15,
+        "winogrande": 51.22
+      },
       "reason": "Fresh endpoint-specific trajectory; nearest logged train CE at step235; minRuntime 0"
     },
     {
@@ -172,6 +182,16 @@ window.STEP2_REPORT_DATA = {
       "c4": 4.376,
       "acc": 26.02,
       "bpb": 1.234,
+      "downstream": {
+        "arc_challenge": 23.75,
+        "arc_easy": 35.26,
+        "boolq": 60.98,
+        "csqa": 26.95,
+        "openbookqa": 23.2,
+        "piqa": 55.71,
+        "socialiqa": 41.35,
+        "winogrande": 48.3
+      },
       "reason": "Resumed source step239; endpoint-specific decay to 2B; nearest logged train CE; minRuntime 0"
     },
     {
@@ -269,6 +289,16 @@ window.STEP2_REPORT_DATA = {
       "c4": 3.936,
       "acc": 27.15,
       "bpb": 1.101,
+      "downstream": {
+        "arc_challenge": 24.41,
+        "arc_easy": 40.88,
+        "boolq": 62.02,
+        "csqa": 29.89,
+        "openbookqa": 22.4,
+        "piqa": 58.16,
+        "socialiqa": 40.63,
+        "winogrande": 51.22
+      },
       "reason": "Resumed source step477; endpoint-specific decay to 3B; nearest logged train CE; minRuntime 0"
     },
     {
@@ -348,6 +378,16 @@ window.STEP2_REPORT_DATA = {
       "c4": 3.684,
       "acc": 29.37,
       "bpb": 1.025,
+      "downstream": {
+        "arc_challenge": 24.41,
+        "arc_easy": 43.68,
+        "boolq": 58.59,
+        "csqa": 34.81,
+        "openbookqa": 22,
+        "piqa": 60.61,
+        "socialiqa": 41.81,
+        "winogrande": 49.64
+      },
       "reason": "Resumed source step716; endpoint-specific decay to 4B; nearest logged train CE; minRuntime 0"
     },
     {
@@ -395,7 +435,17 @@ window.STEP2_REPORT_DATA = {
       "train": 3.343,
       "c4": 3.53,
       "acc": 31.61,
-      "bpb": 0.9827
+      "bpb": 0.9827,
+      "downstream": {
+        "arc_challenge": 22.74,
+        "arc_easy": 46.67,
+        "boolq": 54.28,
+        "csqa": 38.98,
+        "openbookqa": 23,
+        "piqa": 63.87,
+        "socialiqa": 42.32,
+        "winogrande": 50.12
+      }
     },
     {
       "epoch": 5,

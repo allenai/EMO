@@ -19,7 +19,8 @@
     a:hover { text-decoration:underline; }
     .stamp,.note { color:var(--muted); }
     .card { background:var(--card); border:1px solid var(--line); border-radius:9px; padding:11px; }
-    .charts { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+    .charts { display:grid; grid-auto-flow:column; grid-auto-columns:calc((100% - 30px)/4); gap:10px; overflow-x:auto; padding-bottom:9px; scroll-snap-type:x proximity; scrollbar-gutter:stable; }
+    .chart { scroll-snap-align:start; }
     .chart svg { width:100%; height:210px; display:block; }
     .legend { display:flex; flex-wrap:wrap; gap:8px 16px; margin:7px 0 9px; color:var(--muted); }
     .legend label { display:flex; align-items:center; gap:5px; cursor:pointer; }
@@ -43,7 +44,6 @@
     .tuple.active { color:var(--orange); border-color:#e4bd89; background:#fff8ed; }
     .tuple.invalid { color:#a33030; border-color:#e4aaaa; background:#fff3f3; }
     footer { margin-top:14px; color:var(--muted); font-size:11px; }
-    @media (max-width:900px) { .charts { grid-template-columns:repeat(2,minmax(0,1fr)); } }
   </style>
 </head>
 <body>
@@ -67,12 +67,22 @@
     <label class="repeated"><span class="swatch"></span><input type="checkbox" data-category-toggle="repeated" checked>Repeated fixed DCLM 1B · best LR</label>
     <label class="codelion"><span class="swatch"></span><input type="checkbox" data-category-toggle="codelion" checked>Repeated Codelion 1B · completed best LR</label>
   </div>
-  <div class="charts">
+  <div class="charts" tabindex="0" aria-label="Scrollable model-comparison charts; four charts are visible at a time">
     <article class="card chart"><h3>Final / nearest training CE ↓</h3><div data-metric="train"></div></article>
     <article class="card chart"><h3>Held-out C4 CE ↓</h3><div data-metric="c4"></div></article>
     <article class="card chart"><h3>HellaSwag length-normalized accuracy ↑</h3><div data-metric="acc"></div></article>
     <article class="card chart"><h3>HellaSwag non-v2 BPB ↓</h3><div data-metric="bpb"></div></article>
+    <article class="card chart"><h3>9-task average accuracy ↑</h3><div data-metric="avg_acc"></div></article>
+    <article class="card chart"><h3>ARC-Challenge normalized accuracy ↑</h3><div data-metric="ds_arc_challenge"></div></article>
+    <article class="card chart"><h3>ARC-Easy accuracy ↑</h3><div data-metric="ds_arc_easy"></div></article>
+    <article class="card chart"><h3>BoolQ accuracy ↑</h3><div data-metric="ds_boolq"></div></article>
+    <article class="card chart"><h3>CSQA 5-shot normalized accuracy ↑</h3><div data-metric="ds_csqa"></div></article>
+    <article class="card chart"><h3>OpenBookQA 5-shot normalized accuracy ↑</h3><div data-metric="ds_openbookqa"></div></article>
+    <article class="card chart"><h3>PIQA normalized accuracy ↑</h3><div data-metric="ds_piqa"></div></article>
+    <article class="card chart"><h3>SocialIQA 5-shot normalized accuracy ↑</h3><div data-metric="ds_socialiqa"></div></article>
+    <article class="card chart"><h3>Winogrande accuracy ↑</h3><div data-metric="ds_winogrande"></div></article>
   </div>
+  <p class="note">Scroll horizontally to inspect the remaining figures. Historical Codelion runs emitted only HellaSwag, so the expanded task and 9-task-average charts show conditions with complete nine-task evaluations.</p>
 
   <h2>Unique-data LR coordinate grid</h2>
   <div class="card table-wrap"><table class="coverage"><thead><tr><th>Target</th><th>Evaluated, active, and invalid LRs</th><th>Selected by C4</th></tr></thead><tbody id="unique-grid"></tbody></table></div>
@@ -115,23 +125,32 @@
   grid(uniqueRuns,uniqueBest,document.querySelector("#unique-grid"));
   grid(repeatedRuns,repeatedBest,document.querySelector("#repeated-grid"));
 
-  const labels={train:"Train CE",c4:"C4 CE",acc:"HS accuracy",bpb:"HS BPB"};
+  const downstreamKeys=["arc_challenge","arc_easy","boolq","csqa","hellaswag","openbookqa","piqa","socialiqa","winogrande"];
+  const metricValue=(r,k)=>{
+    if(k==="avg_acc"){
+      const vals=downstreamKeys.map(task=>task==="hellaswag"?r.acc:r.downstream?.[task]);
+      return vals.every(Number.isFinite)?vals.reduce((a,b)=>a+b,0)/vals.length:null;
+    }
+    if(k.startsWith("ds_")) return r.downstream?.[k.slice(3)];
+    return r[k];
+  };
+  const labels={train:"Train CE",c4:"C4 CE",acc:"HellaSwag accuracy",bpb:"HellaSwag BPB",avg_acc:"9-task average accuracy",ds_arc_challenge:"ARC-Challenge accuracy",ds_arc_easy:"ARC-Easy accuracy",ds_boolq:"BoolQ accuracy",ds_csqa:"CSQA accuracy",ds_openbookqa:"OpenBookQA accuracy",ds_piqa:"PIQA accuracy",ds_socialiqa:"SocialIQA accuracy",ds_winogrande:"Winogrande accuracy"};
   function chart(metricName,mount){
     const enabled=new Set([...document.querySelectorAll("[data-category-toggle]:checked")].map(el=>el.dataset.categoryToggle));
     const series=[
       {key:"unique",runs:uniqueBest,color:"#15803d"},
       {key:"repeated",runs:repeatedBest,color:"#7c3aed"},
       {key:"codelion",runs:codelionBest,color:"#d97706"}
-    ].filter(s=>enabled.has(s.key)&&s.runs.length);
-    const vals=series.flatMap(s=>s.runs.map(r=>r[metricName]).filter(Number.isFinite));
+    ].filter(s=>enabled.has(s.key)).map(s=>({...s,points:s.runs.map(r=>({r,v:metricValue(r,metricName)})).filter(p=>Number.isFinite(p.v))})).filter(s=>s.points.length);
+    const vals=series.flatMap(s=>s.points.map(p=>p.v));
     if(!vals.length){mount.innerHTML='<div class="note" style="padding:70px 12px;text-align:center">No valid completed endpoint yet.</div>';return;}
     const w=320,h=210,p={l:48,r:12,t:26,b:32},min=Math.min(...vals),max=Math.max(...vals),pad=Math.max((max-min)*.14,0.02),lo=min-pad,hi=max+pad;
     const x=e=>p.l+(e-1)*(w-p.l-p.r)/4,y=v=>p.t+(hi-v)*(h-p.t-p.b)/(hi-lo),ticks=Array.from({length:5},(_,i)=>lo+(hi-lo)*i/4);
-    const tickText=v=>metricName==="acc"?v.toFixed(1):v.toFixed(2);
+    const tickText=v=>(metricName==="acc"||metricName==="avg_acc"||metricName.startsWith("ds_"))?v.toFixed(1):v.toFixed(2);
     mount.innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${labels[metricName]} by token target">
       ${ticks.map(v=>`<line x1="${p.l}" y1="${y(v)}" x2="${w-p.r}" y2="${y(v)}" stroke="#edf0f3"/><text x="${p.l-6}" y="${y(v)+3}" text-anchor="end" font-size="8" fill="#66717d">${tickText(v)}</text>`).join("")}
       <line x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${h-p.b}" stroke="#aeb8c2"/><line x1="${p.l}" y1="${h-p.b}" x2="${w-p.r}" y2="${h-p.b}" stroke="#aeb8c2"/>
-      ${series.map(s=>`<polyline points="${s.runs.map(r=>`${x(r.epoch)},${y(r[metricName])}`).join(" ")}" fill="none" stroke="${s.color}" stroke-width="2.4"/>${s.runs.map(r=>`<circle cx="${x(r.epoch)}" cy="${y(r[metricName])}" r="3" fill="${s.color}"/><text x="${x(r.epoch)}" y="${Math.max(y(r[metricName])-9,12)}" text-anchor="middle" font-size="7" fill="${s.color}">${r.lr}</text>`).join("")}`).join("")}
+      ${series.map(s=>`<polyline points="${s.points.map(p=>`${x(p.r.epoch)},${y(p.v)}`).join(" ")}" fill="none" stroke="${s.color}" stroke-width="2.4"/>${s.points.map(p=>`<circle cx="${x(p.r.epoch)}" cy="${y(p.v)}" r="3" fill="${s.color}"/><text x="${x(p.r.epoch)}" y="${Math.max(y(p.v)-9,12)}" text-anchor="middle" font-size="7" fill="${s.color}">${p.r.lr}</text>`).join("")}`).join("")}
       ${[1,2,3,4,5].map(e=>`<text x="${x(e)}" y="${h-11}" text-anchor="middle" font-size="9" fill="#66717d">${e}B</text>`).join("")}
     </svg>`;
   }
