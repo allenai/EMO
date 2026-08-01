@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-07-31 21:51 PDT",
+  "updated": "2026-07-31 21:54 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -477,6 +477,73 @@ window.STEP2_REPORT_DATA = {
       "duplicate": true,
       "beaker": "01KYXP4Y95T83FR9KB46Q1KJXP",
       "reason": "Canceled late duplicate submission; original 1e-3 experiment retained"
+    }
+  ],
+  "codelionRuns": [
+    {
+      "epoch": 1,
+      "lr": "5e-4",
+      "wd": "0.033",
+      "status": "complete",
+      "beaker": "01KYSXCMH5F9R1T8WZEXPNC1RQ",
+      "wandb": "brbweepb",
+      "train": 5.025,
+      "c4": 5.394,
+      "acc": 25.095,
+      "bpb": 1.53507,
+      "reason": "Existing completed WSD run on repeated Codelion 1B pool; reused without new training or evaluation"
+    },
+    {
+      "epoch": 2,
+      "lr": "5e-4",
+      "wd": "0.033",
+      "status": "complete",
+      "beaker": "01KYT0G2AM8PD2EQQP2589XB1X",
+      "wandb": "hgoyq9yp",
+      "train": 3.982,
+      "c4": 4.305,
+      "acc": 25.931,
+      "bpb": 1.21155,
+      "reason": "Existing completed WSD run on repeated Codelion 1B pool; reused without new training or evaluation"
+    },
+    {
+      "epoch": 3,
+      "lr": "5e-4",
+      "wd": "0.033",
+      "status": "complete",
+      "beaker": "01KYT3457Y0TQTVXC64241JGY8",
+      "wandb": "a1g9kxvn",
+      "train": 3.571,
+      "c4": 3.91,
+      "acc": 27.524,
+      "bpb": 1.09211,
+      "reason": "Existing completed WSD run on repeated Codelion 1B pool; reused without new training or evaluation"
+    },
+    {
+      "epoch": 4,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "complete",
+      "beaker": "01KYTP7NMCAP8KGA92DRVFFMES",
+      "wandb": "byb6zm1s",
+      "train": 3.35,
+      "c4": 3.702,
+      "acc": 29.89,
+      "bpb": 1.028,
+      "reason": "Existing completed WSD run on repeated Codelion 1B pool; reused without new training or evaluation"
+    },
+    {
+      "epoch": 5,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "complete",
+      "beaker": "01KYTSSJ286TB6APX11Z2YD0EM",
+      "wandb": "1lnzmcsr",
+      "train": 3.184,
+      "c4": 3.602,
+      "acc": 31.76,
+      "bpb": 0.9959,
+      "reason": "Existing completed WSD run on repeated Codelion 1B pool; reused without new training or evaluation"
     }
   ]
 };

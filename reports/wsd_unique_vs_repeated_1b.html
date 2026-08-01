@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>WSD Unique vs. Repeated DCLM — Dense 1B</title>
+  <title>WSD Unique vs. Repeated 1B Pools — Dense 1B</title>
   <style>
     :root { --ink:#18212b; --muted:#66717d; --line:#dce2e8; --paper:#f6f7f9; --card:#fff; --blue:#1565c0; --orange:#a45b00; }
     * { box-sizing:border-box; }
@@ -26,6 +26,7 @@
     .legend .swatch { width:18px; height:3px; border-radius:2px; }
     .legend .unique .swatch { background:#15803d; }
     .legend .repeated .swatch { background:#7c3aed; }
+    .legend .codelion .swatch { background:#d97706; }
     .table-wrap { overflow:auto; }
     table { width:100%; border-collapse:collapse; background:var(--card); }
     th,td { padding:7px 9px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap; }
@@ -49,14 +50,14 @@
 <main>
   <header>
     <div>
-      <h1>Step 2 — unique vs. repeated DCLM</h1>
+      <h1>Step 2 — unique vs. repeated 1B pools</h1>
       <p>Dense 1B · WSD · WD 0.033 · warmup 24 · held-out C4 selects LR at each matched token target.</p>
     </div>
     <a href="wsd_weight_decay_1b.html">← Step 1 WD report</a>
   </header>
 
   <p class="stamp" id="live-stamp"><strong>Intermediate report:</strong> loading run state.</p>
-  <p class="note">Unique-data endpoints train on fresh DCLM tokens. Repeated-data endpoints cycle the explicit 1B DCLM subset manifest; membership never depends on a sampling seed.</p>
+  <p class="note">Unique-data endpoints train on fresh DCLM tokens. The two repeated-data series use either the explicit fixed 1B DCLM subset or the previously completed 1B Codelion pool.</p>
   <p class="note">Only target-specific WSD evaluations after their terminal 10% LR decay can be selected or plotted. Earlier checkpoint-only evaluations remain visible as invalid provenance.</p>
   <p class="note"><strong>Planned</strong> means required by the LR grid but not submitted yet; it is never treated as evaluated or selected. Step 2 does not evaluate LR below 4e-4, and its epoch-1 grid uses 4e-4 and 1e-3 only; canceled 5e-4 attempts are excluded.</p>
 
@@ -64,6 +65,7 @@
   <div class="legend" aria-label="Chart series">
     <label class="unique"><span class="swatch"></span><input type="checkbox" data-category-toggle="unique" checked>Unique DCLM · best LR</label>
     <label class="repeated"><span class="swatch"></span><input type="checkbox" data-category-toggle="repeated" checked>Repeated fixed DCLM 1B · best LR</label>
+    <label class="codelion"><span class="swatch"></span><input type="checkbox" data-category-toggle="codelion" checked>Repeated Codelion 1B · completed best LR</label>
   </div>
   <div class="charts">
     <article class="card chart"><h3>Final / nearest training CE ↓</h3><div data-metric="train"></div></article>
@@ -75,7 +77,7 @@
   <h2>Unique-data LR coordinate grid</h2>
   <div class="card table-wrap"><table class="coverage"><thead><tr><th>Target</th><th>Evaluated, active, and invalid LRs</th><th>Selected by C4</th></tr></thead><tbody id="unique-grid"></tbody></table></div>
 
-  <h2>Repeated-data LR coordinate grid</h2>
+  <h2>Fixed-DCLM repeated-data LR coordinate grid</h2>
   <div class="card table-wrap"><table class="coverage"><thead><tr><th>Target</th><th>Evaluated and active LRs</th><th>Selected by C4</th></tr></thead><tbody id="repeated-grid"></tbody></table></div>
 
   <h2>Runs and provenance</h2>
@@ -86,19 +88,19 @@
 <script src="data/wsd_unique_vs_repeated_1b.js"></script>
 <script>
   const state=window.STEP2_REPORT_DATA;
-  const uniqueRuns=state.uniqueRuns||[], repeatedRuns=state.repeatedRuns||[];
+  const uniqueRuns=state.uniqueRuns||[], repeatedRuns=state.repeatedRuns||[], codelionRuns=state.codelionRuns||[];
   const validComplete=r=>r.status==="complete"&&Number.isFinite(r.c4);
   const bestByTarget=runs=>[1,2,3,4,5].map(epoch=>runs.filter(r=>r.epoch===epoch&&validComplete(r)).sort((a,b)=>a.c4-b.c4)[0]).filter(Boolean);
-  const uniqueBest=bestByTarget(uniqueRuns), repeatedBest=bestByTarget(repeatedRuns);
-  const activeCount=[...uniqueRuns,...repeatedRuns].filter(r=>["active","queued"].includes(r.status)).length;
+  const uniqueBest=bestByTarget(uniqueRuns), repeatedBest=bestByTarget(repeatedRuns), codelionBest=bestByTarget(codelionRuns);
+  const activeCount=[...uniqueRuns,...repeatedRuns,...codelionRuns].filter(r=>["active","queued"].includes(r.status)).length;
   const statusLabel={planned:"Planned",queued:"Queued",active:"Active",complete:"Complete",canceled:"Canceled",failed:"Failed",invalid:"Invalid · missing endpoint decay"};
   const metric=(r,k,d=3)=>Number.isFinite(r[k])?r[k].toFixed(d):"—";
   const link=(url,label)=>url?`<a href="${url}">${label}</a>`:'<span class="pending">—</span>';
-  document.querySelector("#live-stamp").innerHTML=`<strong>Step 2:</strong> updated ${state.updated} · ${uniqueBest.length} unique targets resolved · ${repeatedBest.length} repeated targets resolved · ${activeCount} active/queued trials.`;
+  document.querySelector("#live-stamp").innerHTML=`<strong>Step 2:</strong> updated ${state.updated} · ${uniqueBest.length} unique targets resolved · ${repeatedBest.length} fixed-DCLM repeat targets resolved · ${codelionBest.length} Codelion repeat targets available · ${activeCount} active/queued trials.`;
   document.querySelector("#manifest-note").textContent=`Repeated subset: ${state.manifest.selectedTokens.toLocaleString()} tokens · ${state.manifest.selectedInstances.toLocaleString()} instances · ${state.manifest.sourcePaths} paths · entries SHA-256 ${state.manifest.sha256}.`;
 
   const row=(r,condition)=>`<tr title="${r.reason||''}"><td>${condition}</td><td>${r.epoch}B</td><td>${r.lr}</td><td>${r.wd}</td><td class="${r.status}">${statusLabel[r.status]||r.status}</td><td>${metric(r,"train")}</td><td>${metric(r,"c4")}</td><td>${Number.isFinite(r.acc)?r.acc.toFixed(3)+"%":"—"}</td><td>${metric(r,"bpb",5)}</td><td>${link(r.wandb?`https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}`:null,r.wandb)}</td><td>${link(r.beaker?`https://beaker.org/ex/${r.beaker}`:null,"experiment")}</td></tr>`;
-  document.querySelector("#runs-body").innerHTML=uniqueRuns.map(r=>row(r,"Unique DCLM")).join("")+repeatedRuns.map(r=>row(r,"Repeated DCLM 1B")).join("");
+  document.querySelector("#runs-body").innerHTML=uniqueRuns.map(r=>row(r,"Unique DCLM")).join("")+repeatedRuns.map(r=>row(r,"Repeated fixed DCLM 1B")).join("")+codelionRuns.map(r=>row(r,"Repeated Codelion 1B")).join("");
 
   const grid=(runs,best,mount)=>mount.innerHTML=[1,2,3,4,5].map(epoch=>{
     const points=runs.filter(r=>r.epoch===epoch&&!r.duplicate&&!["invalid","canceled","failed"].includes(r.status)).sort((a,b)=>Number(a.lr)-Number(b.lr));
@@ -118,7 +120,8 @@
     const enabled=new Set([...document.querySelectorAll("[data-category-toggle]:checked")].map(el=>el.dataset.categoryToggle));
     const series=[
       {key:"unique",runs:uniqueBest,color:"#15803d"},
-      {key:"repeated",runs:repeatedBest,color:"#7c3aed"}
+      {key:"repeated",runs:repeatedBest,color:"#7c3aed"},
+      {key:"codelion",runs:codelionBest,color:"#d97706"}
     ].filter(s=>enabled.has(s.key)&&s.runs.length);
     const vals=series.flatMap(s=>s.runs.map(r=>r[metricName]).filter(Number.isFinite));
     if(!vals.length){mount.innerHTML='<div class="note" style="padding:70px 12px;text-align:center">No valid completed endpoint yet.</div>';return;}
