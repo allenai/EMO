@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 00:16 PDT",
+  "updated": "2026-08-01 00:23 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -646,6 +646,7 @@ window.STEP2_REPORT_DATA = {
       "wd": "0.033",
       "status": "active",
       "beaker": "01KYY2VN039K26HZDNPV2NZ6EV",
+      "wandb": "tmqqti2r",
       "revision": "548a2be8",
       "reason": "Epoch-2 selected LR; resumed matching preserved pre-decay step428; endpoint-specific WSD decay to 3B; minRuntime 0; autoResume false"
     },
@@ -655,6 +656,7 @@ window.STEP2_REPORT_DATA = {
       "wd": "0.033",
       "status": "active",
       "beaker": "01KYY2VN05ZFY4G36Z0K9E88YP",
+      "wandb": "idcue7jn",
       "revision": "548a2be8",
       "reason": "Required next-higher LR; resumed matching preserved pre-decay step428; endpoint-specific WSD decay to 3B; minRuntime 0; autoResume false"
     }

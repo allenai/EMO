@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-01 00:16 PDT",
+  "updated": "2026-08-01 00:23 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -51,8 +51,8 @@
     {"epoch":1,"lr":"1e-3","wd":"0.033","status":"canceled","duplicate":true,"beaker":"01KYXP4Y95T83FR9KB46Q1KJXP","reason":"Canceled late duplicate submission; original 1e-3 experiment retained"},
     {"epoch":2,"lr":"4e-4","wd":"0.033","status":"complete","beaker":"01KYXZCC3RJG3BD289145AVPKQ","wandb":"ssg89023","revision":"4ecd9242","train":4.070,"c4":4.373,"acc":26.26,"bpb":1.232,"downstream":{"arc_challenge":22.07,"arc_easy":33.33,"boolq":61.38,"csqa":26.62,"openbookqa":21.60,"piqa":55.60,"socialiqa":38.84,"winogrande":48.86},"reason":"Selected at epoch 2 by lower held-out C4; resumed preserved pre-decay step214; endpoint-specific WSD decay; nearest train CE at step477; minRuntime 0; autoResume false"},
     {"epoch":2,"lr":"1e-3","wd":"0.033","status":"complete","beaker":"01KYXZCCHRK9TTTSC2NQZDWMH3","wandb":"z7tr7n9a","revision":"4ecd9242","train":4.158,"c4":4.465,"acc":25.67,"bpb":1.252,"downstream":{"arc_challenge":20.40,"arc_easy":32.63,"boolq":61.71,"csqa":26.29,"openbookqa":24.40,"piqa":54.68,"socialiqa":38.79,"winogrande":50.91},"reason":"Required next-higher epoch-2 comparison; resumed preserved pre-decay step214; endpoint-specific WSD decay; nearest train CE at step477; minRuntime 0; autoResume false"},
-    {"epoch":3,"lr":"4e-4","wd":"0.033","status":"active","beaker":"01KYY2VN039K26HZDNPV2NZ6EV","revision":"548a2be8","reason":"Epoch-2 selected LR; resumed matching preserved pre-decay step428; endpoint-specific WSD decay to 3B; minRuntime 0; autoResume false"},
-    {"epoch":3,"lr":"1e-3","wd":"0.033","status":"active","beaker":"01KYY2VN05ZFY4G36Z0K9E88YP","revision":"548a2be8","reason":"Required next-higher LR; resumed matching preserved pre-decay step428; endpoint-specific WSD decay to 3B; minRuntime 0; autoResume false"}
+    {"epoch":3,"lr":"4e-4","wd":"0.033","status":"active","beaker":"01KYY2VN039K26HZDNPV2NZ6EV","wandb":"tmqqti2r","revision":"548a2be8","reason":"Epoch-2 selected LR; resumed matching preserved pre-decay step428; endpoint-specific WSD decay to 3B; minRuntime 0; autoResume false"},
+    {"epoch":3,"lr":"1e-3","wd":"0.033","status":"active","beaker":"01KYY2VN05ZFY4G36Z0K9E88YP","wandb":"idcue7jn","revision":"548a2be8","reason":"Required next-higher LR; resumed matching preserved pre-decay step428; endpoint-specific WSD decay to 3B; minRuntime 0; autoResume false"}
   ],
   "codelionRuns": [
     {"epoch":1,"lr":"5e-4","wd":"0.033","status":"complete","beaker":"01KYSXCMH5F9R1T8WZEXPNC1RQ","wandb":"brbweepb","train":5.025,"c4":5.394,"acc":25.095,"bpb":1.53507,"downstream":{"arc_challenge":22.07,"arc_easy":28.25,"boolq":38.01,"csqa":23.91,"openbookqa":24.00,"piqa":51.47,"socialiqa":39.10,"winogrande":48.46},"evaluationBeaker":"01KYXZCD7P17M457Q1Q4BPDASY","evaluationWandb":"8b3c4wl4","reason":"Existing completed WSD run on repeated Codelion 1B pool; full nine-task suite recovered from its preserved checkpoint"},
