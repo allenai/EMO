@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 00:23 PDT",
+  "updated": "2026-08-01 01:13 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -644,21 +644,49 @@ window.STEP2_REPORT_DATA = {
       "epoch": 3,
       "lr": "4e-4",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYY2VN039K26HZDNPV2NZ6EV",
       "wandb": "tmqqti2r",
       "revision": "548a2be8",
-      "reason": "Epoch-2 selected LR; resumed matching preserved pre-decay step428; endpoint-specific WSD decay to 3B; minRuntime 0; autoResume false"
+      "train": 3.729,
+      "c4": 3.976,
+      "acc": 26.98,
+      "bpb": 1.114,
+      "downstream": {
+        "arc_challenge": 23.41,
+        "arc_easy": 37.89,
+        "boolq": 62.17,
+        "csqa": 28.42,
+        "openbookqa": 22.6,
+        "piqa": 58.22,
+        "socialiqa": 41.71,
+        "winogrande": 50.12
+      },
+      "reason": "Epoch-2 selected LR; resumed matching preserved pre-decay step428; completed endpoint-specific WSD decay to 3B and full evaluation; nearest train CE at step715; minRuntime 0; autoResume false"
     },
     {
       "epoch": 3,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYY2VN05ZFY4G36Z0K9E88YP",
       "wandb": "idcue7jn",
       "revision": "548a2be8",
-      "reason": "Required next-higher LR; resumed matching preserved pre-decay step428; endpoint-specific WSD decay to 3B; minRuntime 0; autoResume false"
+      "train": 3.675,
+      "c4": 3.907,
+      "acc": 27.46,
+      "bpb": 1.088,
+      "downstream": {
+        "arc_challenge": 24.41,
+        "arc_easy": 41.4,
+        "boolq": 62.29,
+        "csqa": 30.71,
+        "openbookqa": 22.2,
+        "piqa": 59.14,
+        "socialiqa": 40.33,
+        "winogrande": 50.99
+      },
+      "reason": "Selected at epoch 3 by lower held-out C4; required next-higher LR; resumed matching preserved pre-decay step428; completed endpoint-specific WSD decay to 3B and full evaluation; nearest train CE at step715; minRuntime 0; autoResume false"
     }
   ],
   "codelionRuns": [
