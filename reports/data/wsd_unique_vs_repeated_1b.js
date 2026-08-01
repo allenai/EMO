@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 15:13 PDT",
+  "updated": "2026-08-01 15:16 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -637,13 +637,14 @@ window.STEP2_REPORT_DATA = {
       "epoch": 3,
       "lr": "4e-4",
       "wd": "0.033",
-      "status": "active",
+      "status": "evaluating",
       "correctedSubset": true,
       "beaker": "01KYZKEMHBGA39TMRDEFNA31AY",
       "wandb": "t8iprj28",
       "revision": "bf4c3dfe",
+      "train": 3.693,
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e3_lr4e-4_wd0.033_warmup24_uniformdocs_seed0_corrected",
-      "reason": "Corrected epoch-2 selected LR; active on Jupiter at step695/716 with training ETA about 4 minutes as of 15:13 PDT; resumes matching corrected pre-decay step428; endpoint-specific WSD decay to 3B; full nine-task and C4 evaluation; preserved step643; minRuntime 0; autoResume false; no retries"
+      "reason": "Training completed at step716 and final checkpoint saved; full nine-task and C4 evaluation in progress; nearest final logged train CE at step715; resumed matching corrected pre-decay step428; endpoint-specific WSD decay to 3B; preserved step643; minRuntime 0; autoResume false; no retries"
     },
     {
       "epoch": 3,
