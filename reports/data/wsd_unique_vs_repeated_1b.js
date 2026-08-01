@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 01:33 PDT",
+  "updated": "2026-08-01 02:27 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -692,11 +692,25 @@ window.STEP2_REPORT_DATA = {
       "epoch": 4,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYY71TJYAMS7BT71XJ22XDFB",
       "wandb": "mv8l8r20",
       "revision": "50dd3b54",
-      "reason": "Epoch-3 selected LR; resumed matching preserved pre-decay step643; endpoint-specific WSD decay to 4B; full nine-task evaluation; minRuntime 0; autoResume false; no retries"
+      "train": 3.426,
+      "c4": 3.691,
+      "acc": 29.15,
+      "bpb": 1.023,
+      "downstream": {
+        "arc_challenge": 24.08,
+        "arc_easy": 46.49,
+        "boolq": 57.74,
+        "csqa": 34.07,
+        "openbookqa": 22.2,
+        "piqa": 60.83,
+        "socialiqa": 40.28,
+        "winogrande": 50.67
+      },
+      "reason": "Epoch-3 selected LR; resumed matching preserved pre-decay step643; completed endpoint-specific WSD decay to 4B and full evaluation; nearest train CE at step950; minRuntime 0; autoResume false; no retries"
     },
     {
       "epoch": 4,
