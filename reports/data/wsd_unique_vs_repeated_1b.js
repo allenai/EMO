@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 04:26 PDT",
+  "updated": "2026-08-01 05:22 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -740,21 +740,49 @@ window.STEP2_REPORT_DATA = {
       "epoch": 5,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYYGP52GJVV5WA511G3VJG21",
       "wandb": "d7t8j9ha",
       "revision": "56ea18f6",
-      "reason": "Epoch-4 selected LR; resumed exact matching preserved pre-decay epoch-4 step858; endpoint-specific WSD decay to 5B; full nine-task evaluation; fixed checkpoint step1073; minRuntime 0; autoResume false; no retries"
+      "train": 3.303,
+      "c4": 3.586,
+      "acc": 30.91,
+      "bpb": 0.9914,
+      "downstream": {
+        "arc_challenge": 24.08,
+        "arc_easy": 50.88,
+        "boolq": 50.43,
+        "csqa": 38.25,
+        "openbookqa": 22.2,
+        "piqa": 63.06,
+        "socialiqa": 42.68,
+        "winogrande": 50.99
+      },
+      "reason": "Selected at epoch 5 by lower held-out C4; resumed exact matching preserved pre-decay epoch-4 step858; completed endpoint-specific WSD decay to 5B and full nine-task evaluation; nearest train CE at step1190; preserved fixed checkpoint step1073; minRuntime 0; autoResume false; no retries"
     },
     {
       "epoch": 5,
       "lr": "2e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYYGQDRQKT60QZH38EA7SHRW",
       "wandb": "32h3ym9o",
       "revision": "56ea18f6",
-      "reason": "Required next-higher epoch-5 comparison; resumed exact matching preserved pre-decay epoch-4 step858; endpoint-specific WSD decay to 5B; full nine-task evaluation; fixed checkpoint step1073; minRuntime 0; autoResume false; no retries"
+      "train": 4.225,
+      "c4": 4.669,
+      "acc": 25.51,
+      "bpb": 1.37,
+      "downstream": {
+        "arc_challenge": 23.08,
+        "arc_easy": 31.05,
+        "boolq": 54.53,
+        "csqa": 25.96,
+        "openbookqa": 22.6,
+        "piqa": 52.83,
+        "socialiqa": 40.23,
+        "winogrande": 51.07
+      },
+      "reason": "Required next-higher epoch-5 comparison; resumed exact matching preserved pre-decay epoch-4 step858; completed endpoint-specific WSD decay to 5B and full nine-task evaluation; nearest train CE at step1190; preserved fixed checkpoint step1073; minRuntime 0; autoResume false; no retries"
     }
   ],
   "codelionRuns": [
