@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-07-31 21:56 PDT",
+  "updated": "2026-07-31 22:07 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -275,7 +275,7 @@ window.STEP2_REPORT_DATA = {
       "epoch": 3,
       "lr": "2e-3",
       "wd": "0.033",
-      "status": "queued",
+      "status": "active",
       "corrected": true,
       "beaker": "01KYXTTSR84A3V19YFR8STC9EF",
       "revision": "faadffd1",
@@ -354,7 +354,7 @@ window.STEP2_REPORT_DATA = {
       "epoch": 4,
       "lr": "2e-3",
       "wd": "0.033",
-      "status": "queued",
+      "status": "active",
       "corrected": true,
       "beaker": "01KYXTTSV40RPF0NWQV8EESFE4",
       "revision": "faadffd1",
