@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-07-31 23:46 PDT",
+  "updated": "2026-08-01 00:16 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -596,21 +596,67 @@ window.STEP2_REPORT_DATA = {
       "epoch": 2,
       "lr": "4e-4",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYXZCC3RJG3BD289145AVPKQ",
       "wandb": "ssg89023",
       "revision": "4ecd9242",
-      "reason": "Selected epoch-1 LR; resumed the preserved pre-decay step214 checkpoint; endpoint-specific WSD decay to 2B; minRuntime 0; autoResume false"
+      "train": 4.07,
+      "c4": 4.373,
+      "acc": 26.26,
+      "bpb": 1.232,
+      "downstream": {
+        "arc_challenge": 22.07,
+        "arc_easy": 33.33,
+        "boolq": 61.38,
+        "csqa": 26.62,
+        "openbookqa": 21.6,
+        "piqa": 55.6,
+        "socialiqa": 38.84,
+        "winogrande": 48.86
+      },
+      "reason": "Selected at epoch 2 by lower held-out C4; resumed preserved pre-decay step214; endpoint-specific WSD decay; nearest train CE at step477; minRuntime 0; autoResume false"
     },
     {
       "epoch": 2,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYXZCCHRK9TTTSC2NQZDWMH3",
       "wandb": "z7tr7n9a",
       "revision": "4ecd9242",
-      "reason": "Required next-higher LR; resumed the preserved pre-decay step214 checkpoint; endpoint-specific WSD decay to 2B; minRuntime 0; autoResume false"
+      "train": 4.158,
+      "c4": 4.465,
+      "acc": 25.67,
+      "bpb": 1.252,
+      "downstream": {
+        "arc_challenge": 20.4,
+        "arc_easy": 32.63,
+        "boolq": 61.71,
+        "csqa": 26.29,
+        "openbookqa": 24.4,
+        "piqa": 54.68,
+        "socialiqa": 38.79,
+        "winogrande": 50.91
+      },
+      "reason": "Required next-higher epoch-2 comparison; resumed preserved pre-decay step214; endpoint-specific WSD decay; nearest train CE at step477; minRuntime 0; autoResume false"
+    },
+    {
+      "epoch": 3,
+      "lr": "4e-4",
+      "wd": "0.033",
+      "status": "active",
+      "beaker": "01KYY2VN039K26HZDNPV2NZ6EV",
+      "revision": "548a2be8",
+      "reason": "Epoch-2 selected LR; resumed matching preserved pre-decay step428; endpoint-specific WSD decay to 3B; minRuntime 0; autoResume false"
+    },
+    {
+      "epoch": 3,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "active",
+      "beaker": "01KYY2VN05ZFY4G36Z0K9E88YP",
+      "revision": "548a2be8",
+      "reason": "Required next-higher LR; resumed matching preserved pre-decay step428; endpoint-specific WSD decay to 3B; minRuntime 0; autoResume false"
     }
   ],
   "codelionRuns": [
