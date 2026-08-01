@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-07-31 22:21 PDT",
+  "updated": "2026-07-31 22:40 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -305,11 +305,26 @@ window.STEP2_REPORT_DATA = {
       "epoch": 3,
       "lr": "2e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "corrected": true,
       "beaker": "01KYXTTSR84A3V19YFR8STC9EF",
+      "wandb": "k8uyvw9c",
       "revision": "faadffd1",
-      "reason": "Required next-higher comparison; resumed source step477; endpoint-specific decay; minRuntime 0"
+      "train": 4.673,
+      "c4": 5.14,
+      "acc": 25.03,
+      "bpb": 1.475,
+      "downstream": {
+        "arc_challenge": 22.07,
+        "arc_easy": 30.53,
+        "boolq": 38.04,
+        "csqa": 23.59,
+        "openbookqa": 24.2,
+        "piqa": 53.59,
+        "socialiqa": 39.36,
+        "winogrande": 48.93
+      },
+      "reason": "Required next-higher comparison; resumed source step477; completed endpoint-specific decay; nearest logged train CE; minRuntime 0"
     },
     {
       "epoch": 3,
@@ -394,11 +409,26 @@ window.STEP2_REPORT_DATA = {
       "epoch": 4,
       "lr": "2e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "corrected": true,
       "beaker": "01KYXTTSV40RPF0NWQV8EESFE4",
+      "wandb": "woub0bmb",
       "revision": "faadffd1",
-      "reason": "Required next-higher comparison; resumed source step716; endpoint-specific decay; minRuntime 0"
+      "train": 4.468,
+      "c4": 4.899,
+      "acc": 25.37,
+      "bpb": 1.432,
+      "downstream": {
+        "arc_challenge": 26.09,
+        "arc_easy": 30.0,
+        "boolq": 39.24,
+        "csqa": 23.83,
+        "openbookqa": 23.0,
+        "piqa": 53.16,
+        "socialiqa": 40.63,
+        "winogrande": 49.72
+      },
+      "reason": "Required next-higher comparison; resumed source step716; completed endpoint-specific decay; nearest logged train CE; minRuntime 0"
     },
     {
       "epoch": 4,
@@ -473,10 +503,25 @@ window.STEP2_REPORT_DATA = {
       "epoch": 1,
       "lr": "4e-4",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYXRGWW3FV3PJQRSMXD1MCCC",
+      "wandb": "93yjhrwt",
       "revision": "5ea16918",
-      "reason": "Corrected uint32 manifest; minRuntime 0"
+      "train": 5.017,
+      "c4": 5.373,
+      "acc": 25.07,
+      "bpb": 1.54,
+      "downstream": {
+        "arc_challenge": 22.41,
+        "arc_easy": 29.82,
+        "boolq": 39.6,
+        "csqa": 24.82,
+        "openbookqa": 25.0,
+        "piqa": 51.9,
+        "socialiqa": 38.64,
+        "winogrande": 48.38
+      },
+      "reason": "Corrected uint32 manifest; completed endpoint-specific WSD decay; nearest logged train CE; minRuntime 0"
     },
     {
       "epoch": 1,
@@ -509,10 +554,25 @@ window.STEP2_REPORT_DATA = {
       "epoch": 1,
       "lr": "1e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "beaker": "01KYXRH5MHS61SPAT1KNXH385M",
+      "wandb": "2zpfask1",
       "revision": "5ea16918",
-      "reason": "Corrected uint32 manifest; minRuntime 0"
+      "train": 5.431,
+      "c4": 5.784,
+      "acc": 24.62,
+      "bpb": 1.652,
+      "downstream": {
+        "arc_challenge": 23.08,
+        "arc_easy": 29.3,
+        "boolq": 37.95,
+        "csqa": 22.85,
+        "openbookqa": 25.8,
+        "piqa": 51.8,
+        "socialiqa": 39.46,
+        "winogrande": 49.64
+      },
+      "reason": "Corrected uint32 manifest; completed endpoint-specific WSD decay; nearest logged train CE; minRuntime 0"
     },
     {
       "epoch": 1,
