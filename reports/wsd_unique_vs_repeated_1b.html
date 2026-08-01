@@ -27,6 +27,7 @@
     .legend .swatch { width:18px; height:3px; border-radius:2px; }
     .legend .unique .swatch { background:#15803d; }
     .legend .repeated .swatch { background:#7c3aed; }
+    .legend .repeated-old .swatch { background:repeating-linear-gradient(90deg,#7c3aed 0 5px,transparent 5px 8px); }
     .legend .codelion .swatch { background:#d97706; }
     .table-wrap { overflow:auto; }
     table { width:100%; border-collapse:collapse; background:var(--card); }
@@ -57,14 +58,15 @@
   </header>
 
   <p class="stamp" id="live-stamp"><strong>Intermediate report:</strong> loading run state.</p>
-  <p class="note">Unique-data endpoints train on fresh DCLM tokens. The two repeated-data series use either the explicit fixed 1B DCLM subset or the previously completed 1B Codelion pool.</p>
+  <p class="note">Unique-data endpoints train on fresh DCLM tokens. The corrected fixed-DCLM series uses the new uniformly sampled, document-aligned 1B pool. Earlier fixed-DCLM results used a nonuniform subset and are retained only as <strong>old</strong> provenance.</p>
   <p class="note">Only target-specific WSD evaluations after their terminal 10% LR decay can be selected or plotted. Earlier checkpoint-only evaluations remain visible as invalid provenance.</p>
   <p class="note"><strong>Planned</strong> means required by the LR grid but not submitted yet; it is never treated as evaluated or selected. Step 2 does not evaluate LR below 4e-4, and its epoch-1 grid uses 4e-4 and 1e-3 only; canceled 5e-4 attempts are excluded.</p>
 
   <h2>Model comparison — interactive</h2>
   <div class="legend" aria-label="Chart series">
     <label class="unique"><span class="swatch"></span><input type="checkbox" data-category-toggle="unique" checked>Unique DCLM · best LR</label>
-    <label class="repeated"><span class="swatch"></span><input type="checkbox" data-category-toggle="repeated" checked>Repeated fixed DCLM 1B · best LR</label>
+    <label class="repeated"><span class="swatch"></span><input type="checkbox" data-category-toggle="repeated" checked>Repeated fixed DCLM 1B · corrected subset</label>
+    <label class="repeated-old"><span class="swatch"></span><input type="checkbox" data-category-toggle="repeated-old">Repeated fixed DCLM 1B (old · invalid subset)</label>
     <label class="codelion"><span class="swatch"></span><input type="checkbox" data-category-toggle="codelion" checked>Repeated Codelion 1B · completed best LR</label>
   </div>
   <div class="charts" tabindex="0" aria-label="Scrollable model-comparison charts; four charts are visible at a time">
@@ -98,19 +100,19 @@
 <script src="data/wsd_unique_vs_repeated_1b.js"></script>
 <script>
   const state=window.STEP2_REPORT_DATA;
-  const uniqueRuns=state.uniqueRuns||[], repeatedRuns=state.repeatedRuns||[], codelionRuns=state.codelionRuns||[], evaluationRuns=state.evaluationRuns||[];
+  const uniqueRuns=state.uniqueRuns||[], repeatedRuns=state.repeatedRuns||[], oldRepeatedRuns=state.oldRepeatedRuns||[], codelionRuns=state.codelionRuns||[], evaluationRuns=state.evaluationRuns||[];
   const validComplete=r=>r.status==="complete"&&Number.isFinite(r.c4);
   const bestByTarget=runs=>[1,2,3,4,5].map(epoch=>runs.filter(r=>r.epoch===epoch&&validComplete(r)).sort((a,b)=>a.c4-b.c4)[0]).filter(Boolean);
-  const uniqueBest=bestByTarget(uniqueRuns), repeatedBest=bestByTarget(repeatedRuns), codelionBest=bestByTarget(codelionRuns);
-  const activeCount=[...uniqueRuns,...repeatedRuns,...codelionRuns,...evaluationRuns].filter(r=>["active","queued"].includes(r.status)).length;
+  const uniqueBest=bestByTarget(uniqueRuns), repeatedBest=bestByTarget(repeatedRuns), oldRepeatedBest=bestByTarget(oldRepeatedRuns), codelionBest=bestByTarget(codelionRuns);
+  const activeCount=[...uniqueRuns,...repeatedRuns,...oldRepeatedRuns,...codelionRuns,...evaluationRuns].filter(r=>["active","queued"].includes(r.status)).length;
   const statusLabel={planned:"Planned",queued:"Queued",active:"Active",complete:"Complete",canceled:"Canceled",failed:"Failed",invalid:"Invalid · missing endpoint decay"};
   const metric=(r,k,d=3)=>Number.isFinite(r[k])?r[k].toFixed(d):"—";
   const link=(url,label)=>url?`<a href="${url}">${label}</a>`:'<span class="pending">—</span>';
   document.querySelector("#live-stamp").innerHTML=`<strong>Step 2:</strong> updated ${state.updated} · ${uniqueBest.length} unique targets resolved · ${repeatedBest.length} fixed-DCLM repeat targets resolved · ${codelionBest.length} Codelion repeat targets available · ${activeCount} active/queued trials.`;
-  document.querySelector("#manifest-note").textContent=`Repeated subset: ${state.manifest.selectedTokens.toLocaleString()} tokens · ${state.manifest.selectedInstances.toLocaleString()} instances · ${state.manifest.sourcePaths} paths · entries SHA-256 ${state.manifest.sha256}.`;
+  document.querySelector("#manifest-note").textContent=`Corrected repeated subset: ${state.manifest.selectedTokens.toLocaleString()} tokens · ${state.manifest.selectedDocuments.toLocaleString()} complete documents · ${state.manifest.selectedInstances.toLocaleString()} instances · sampled proportionally across ${state.manifest.originalSourcePaths} source shards · ${state.manifest.paddingEosTokens} EOS padding tokens · entries SHA-256 ${state.manifest.sha256} · token SHA-256 ${state.manifest.tokenSha256}.`;
 
   const row=(r,condition)=>`<tr title="${r.reason||''}"><td>${condition}</td><td>${r.epoch}B</td><td>${r.lr}</td><td>${r.wd||"—"}</td><td class="${r.status}">${statusLabel[r.status]||r.status}</td><td>${metric(r,"train")}</td><td>${metric(r,"c4")}</td><td>${Number.isFinite(r.acc)?r.acc.toFixed(3)+"%":"—"}</td><td>${metric(r,"bpb",5)}</td><td>${link(r.wandb?`https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}`:null,r.wandb)}</td><td>${link(r.beaker?`https://beaker.org/ex/${r.beaker}`:null,"experiment")}</td></tr>`;
-  document.querySelector("#runs-body").innerHTML=uniqueRuns.map(r=>row(r,"Unique DCLM")).join("")+repeatedRuns.map(r=>row(r,"Repeated fixed DCLM 1B")).join("")+codelionRuns.map(r=>row(r,"Repeated Codelion 1B")).join("")+evaluationRuns.map(r=>row(r,`${r.condition} · 9-task eval`)).join("");
+  document.querySelector("#runs-body").innerHTML=uniqueRuns.map(r=>row(r,"Unique DCLM")).join("")+repeatedRuns.map(r=>row(r,"Repeated fixed DCLM 1B · corrected subset")).join("")+oldRepeatedRuns.map(r=>row(r,"Repeated fixed DCLM 1B (old · invalid subset)")).join("")+codelionRuns.map(r=>row(r,"Repeated Codelion 1B")).join("")+evaluationRuns.map(r=>row(r,`${r.condition} · 9-task eval`)).join("");
 
   const grid=(runs,best,mount)=>mount.innerHTML=[1,2,3,4,5].map(epoch=>{
     const points=runs.filter(r=>r.epoch===epoch&&!r.duplicate&&!["invalid","canceled","failed"].includes(r.status)).sort((a,b)=>Number(a.lr)-Number(b.lr));
@@ -143,6 +145,7 @@
     const series=[
       {key:"unique",runs:uniqueBest,color:"#15803d"},
       {key:"repeated",runs:repeatedBest,color:"#7c3aed"},
+      {key:"repeated-old",runs:oldRepeatedBest,color:"#7c3aed",dash:"6 4"},
       {key:"codelion",runs:codelionBest,color:"#d97706"}
     ].filter(s=>enabled.has(s.key)).map(s=>({...s,points:s.runs.map(r=>({r,v:metricValue(r,metricName)})).filter(p=>Number.isFinite(p.v))})).filter(s=>s.points.length);
     const vals=series.flatMap(s=>s.points.map(p=>p.v));
@@ -153,7 +156,7 @@
     mount.innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${labels[metricName]} by token target">
       ${ticks.map(v=>`<line x1="${p.l}" y1="${y(v)}" x2="${w-p.r}" y2="${y(v)}" stroke="#edf0f3"/><text x="${p.l-6}" y="${y(v)+3}" text-anchor="end" font-size="8" fill="#66717d">${tickText(v)}</text>`).join("")}
       <line x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${h-p.b}" stroke="#aeb8c2"/><line x1="${p.l}" y1="${h-p.b}" x2="${w-p.r}" y2="${h-p.b}" stroke="#aeb8c2"/>
-      ${series.map(s=>`<polyline points="${s.points.map(p=>`${x(p.r.epoch)},${y(p.v)}`).join(" ")}" fill="none" stroke="${s.color}" stroke-width="2.4"/>${s.points.map(p=>`<circle cx="${x(p.r.epoch)}" cy="${y(p.v)}" r="3" fill="${s.color}"/><text x="${x(p.r.epoch)}" y="${Math.max(y(p.v)-9,12)}" text-anchor="middle" font-size="7" fill="${s.color}">${p.r.lr}</text>`).join("")}`).join("")}
+      ${series.map(s=>`<polyline points="${s.points.map(p=>`${x(p.r.epoch)},${y(p.v)}`).join(" ")}" fill="none" stroke="${s.color}" stroke-width="2.4" ${s.dash?`stroke-dasharray="${s.dash}"`:""}/>${s.points.map(p=>`<circle cx="${x(p.r.epoch)}" cy="${y(p.v)}" r="3" fill="${s.color}"/><text x="${x(p.r.epoch)}" y="${Math.max(y(p.v)-9,12)}" text-anchor="middle" font-size="7" fill="${s.color}">${p.r.lr}</text>`).join("")}`).join("")}
       ${[1,2,3,4,5].map(e=>`<text x="${x(e)}" y="${h-11}" text-anchor="middle" font-size="9" fill="#66717d">${e}B</text>`).join("")}
     </svg>`;
   }

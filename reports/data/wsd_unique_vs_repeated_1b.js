@@ -1,11 +1,15 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 05:22 PDT",
+  "updated": "2026-08-01 11:52 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
     "selectedInstances": 244736,
-    "sourcePaths": 940,
-    "sha256": "0ac09b82321ff156866a8191641f5755ec2a050ad5f082c7d2f7626811e74a4d"
+    "sourcePaths": 1,
+    "originalSourcePaths": 940,
+    "selectedDocuments": 810130,
+    "paddingEosTokens": 7,
+    "sha256": "144fde3553e5257b5d533f88732214d72ce63d21d6ff50a2ba5075992b605034",
+    "tokenSha256": "c577eca4c365a255425589d62c18d285757e947a805a0ab1c35d0208d3bd4af6"
   },
   "uniqueRuns": [
     {
@@ -499,6 +503,24 @@ window.STEP2_REPORT_DATA = {
     }
   ],
   "repeatedRuns": [
+    {
+      "epoch": 1,
+      "lr": "4e-4",
+      "wd": "0.033",
+      "status": "planned",
+      "correctedSubset": true,
+      "reason": "Corrected uniformly sampled, document-aligned fixed DCLM pool; awaiting submission audit"
+    },
+    {
+      "epoch": 1,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "planned",
+      "correctedSubset": true,
+      "reason": "Corrected uniformly sampled, document-aligned fixed DCLM pool; awaiting submission audit"
+    }
+  ],
+  "oldRepeatedRuns": [
     {
       "epoch": 1,
       "lr": "4e-4",

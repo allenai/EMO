@@ -1,11 +1,15 @@
 {
-  "updated": "2026-08-01 05:22 PDT",
+  "updated": "2026-08-01 11:52 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
     "selectedInstances": 244736,
-    "sourcePaths": 940,
-    "sha256": "0ac09b82321ff156866a8191641f5755ec2a050ad5f082c7d2f7626811e74a4d"
+    "sourcePaths": 1,
+    "originalSourcePaths": 940,
+    "selectedDocuments": 810130,
+    "paddingEosTokens": 7,
+    "sha256": "144fde3553e5257b5d533f88732214d72ce63d21d6ff50a2ba5075992b605034",
+    "tokenSha256": "c577eca4c365a255425589d62c18d285757e947a805a0ab1c35d0208d3bd4af6"
   },
   "uniqueRuns": [
     {"epoch":1,"lr":"4e-4","wd":"0.033","status":"complete","corrected":true,"beaker":"01KYXQK1MBQ3C7X5VE233F6G9R","wandb":"ev68xsli","revision":"f01bc124","train":5.031,"c4":5.400,"acc":25.09,"bpb":1.544,"downstream":{"arc_challenge":24.08,"arc_easy":30.18,"boolq":39.45,"csqa":24.65,"openbookqa":23.40,"piqa":51.36,"socialiqa":39.15,"winogrande":51.22},"reason":"Fresh endpoint-specific trajectory; nearest logged train CE at step235; minRuntime 0"},
@@ -42,6 +46,10 @@
     {"epoch":5,"lr":"4e-3","wd":"0.033","status":"canceled","beaker":"01KYWHNB0R1YHN1Z1RWQV9TR18","wandb":"aonw0wmk"}
   ],
   "repeatedRuns": [
+    {"epoch":1,"lr":"4e-4","wd":"0.033","status":"planned","correctedSubset":true,"reason":"Corrected uniformly sampled, document-aligned fixed DCLM pool; awaiting submission audit"},
+    {"epoch":1,"lr":"1e-3","wd":"0.033","status":"planned","correctedSubset":true,"reason":"Corrected uniformly sampled, document-aligned fixed DCLM pool; awaiting submission audit"}
+  ],
+  "oldRepeatedRuns": [
     {"epoch":1,"lr":"4e-4","wd":"0.033","status":"complete","beaker":"01KYXRGWW3FV3PJQRSMXD1MCCC","wandb":"93yjhrwt","revision":"5ea16918","train":5.017,"c4":5.373,"acc":25.07,"bpb":1.540,"downstream":{"arc_challenge":22.41,"arc_easy":29.82,"boolq":39.60,"csqa":24.82,"openbookqa":25.00,"piqa":51.90,"socialiqa":38.64,"winogrande":48.38},"reason":"Corrected uint32 manifest; completed endpoint-specific WSD decay; nearest logged train CE; minRuntime 0"},
     {"epoch":1,"lr":"4e-4","wd":"0.033","status":"failed","beaker":"01KYXQP5XKZX7RE45JYB9YJ69K","revision":"f01bc124","reason":"Stopped after manifest dtype mismatch; no usable training progress"},
     {"epoch":1,"lr":"5e-4","wd":"0.033","status":"canceled","beaker":"01KYXNQEWJ050S0QV2YGT5XQGR","revision":"115d5585cbe0adeadbe67e9ce6215af8bf75f818","reason":"Stopped by user: 4e-4 and 5e-4 are too close; retain 4e-4 only"},
