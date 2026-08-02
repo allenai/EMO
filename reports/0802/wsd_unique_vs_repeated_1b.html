@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>0802 WSD Unique vs. Repeated DCLM — Dense 1B</title>
+  <title>0802 WSD Unique vs. Repeated DCLM</title>
   <style>
     :root { --ink:#18212b; --muted:#66717d; --line:#dce2e8; --paper:#f6f7f9; --card:#fff; --blue:#1565c0; --orange:#a45b00; }
     * { box-sizing:border-box; }
@@ -18,6 +18,8 @@
     a { color:var(--blue); text-decoration:none; }
     a:hover { text-decoration:underline; }
     .stamp,.note { color:var(--muted); }
+    .model-picker { display:flex; align-items:center; gap:8px; color:var(--muted); font-weight:700; }
+    .model-picker select { color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:7px; padding:6px 28px 6px 9px; font:inherit; font-weight:700; }
     .card { background:var(--card); border:1px solid var(--line); border-radius:9px; padding:11px; }
     .charts { display:grid; grid-auto-flow:column; grid-auto-columns:calc((100% - 30px)/4); gap:10px; overflow-x:auto; padding-bottom:9px; scroll-snap-type:x proximity; scrollbar-gutter:stable; }
     .chart { scroll-snap-align:start; }
@@ -52,9 +54,17 @@
   <header>
     <div>
       <h1>0802 Step 2 — unique vs. repeated DCLM</h1>
-      <p>Dense 1B · WSD · WD 0.033 · warmup 24 · disjoint 100M-token DCLM validation selects LR.</p>
+      <p id="model-subtitle">Dense model · WSD · WD 0.033 · disjoint 100M-token DCLM validation selects LR.</p>
     </div>
-    <a href="../0731/wsd_unique_vs_repeated_1b.html">0731 Step 2 archive</a>
+    <div>
+      <label class="model-picker">Model size
+        <select id="model-size-select" aria-label="Select model size">
+          <option value="1B">Dense 1B</option>
+          <option value="153M">Dense 153M</option>
+        </select>
+      </label>
+      <a href="../0731/wsd_unique_vs_repeated_1b.html">0731 Step 2 archive</a>
+    </div>
   </header>
 
   <p class="stamp" id="live-stamp"><strong>Intermediate report:</strong> loading run state.</p>
@@ -99,7 +109,14 @@
 <script src="data/wsd_unique_vs_repeated_1b.js"></script>
 <script>
   const state=window.STEP2_REPORT_DATA;
-  const uniqueRuns=state.uniqueRuns||[], repeatedRuns=state.repeatedRuns||[], seedProbeRuns=state.seedProbeRuns||[], oldRepeatedRuns=state.oldRepeatedRuns||[], codelionRuns=state.codelionRuns||[], evaluationRuns=state.evaluationRuns||[], dataGeneration=state.dataGeneration||[];
+  const modelSize=new URLSearchParams(window.location.search).get("model")==="153M"?"153M":"1B";
+  const modelSelect=document.querySelector("#model-size-select");
+  modelSelect.value=modelSize;
+  modelSelect.addEventListener("change",()=>{const url=new URL(window.location.href);url.searchParams.set("model",modelSelect.value);window.location.href=url;});
+  const smallModel=modelSize==="153M";
+  const uniqueRuns=(smallModel?state.smallUniqueRuns:state.uniqueRuns)||[], repeatedRuns=(smallModel?state.smallRepeatedRuns:state.repeatedRuns)||[], seedProbeRuns=(smallModel?state.smallSeedProbeRuns:state.seedProbeRuns)||[], oldRepeatedRuns=smallModel?[]:(state.oldRepeatedRuns||[]), codelionRuns=smallModel?[]:(state.codelionRuns||[]), evaluationRuns=(smallModel?state.smallEvaluationRuns:state.evaluationRuns)||[], dataGeneration=state.dataGeneration||[];
+  const modelInfo=state.modelSizes?.[modelSize]||{};
+  document.querySelector("#model-subtitle").textContent=`${modelInfo.label||`Dense ${modelSize}`} · ${Number(modelInfo.totalParameters||0).toLocaleString()} total parameters · WSD · WD 0.033 · warmup ${modelInfo.warmupSteps||"—"} · disjoint 100M-token DCLM validation selects LR.`;
   const validComplete=r=>r.status==="complete"&&Number.isFinite(r.c4);
   const bestByTarget=runs=>[1,2,3,4,5].map(epoch=>runs.filter(r=>r.epoch===epoch&&validComplete(r)).sort((a,b)=>a.c4-b.c4)[0]).filter(Boolean);
   const uniqueBest=bestByTarget(uniqueRuns), repeatedBest=bestByTarget(repeatedRuns), oldRepeatedBest=bestByTarget(oldRepeatedRuns), codelionBest=bestByTarget(codelionRuns);
@@ -107,13 +124,13 @@
   const statusLabel={planned:"Planned",queued:"Queued",active:"Active",complete:"Complete",canceled:"Canceled",failed:"Failed",invalid:"Invalid · missing endpoint decay"};
   const metric=(r,k,d=3)=>Number.isFinite(r[k])?r[k].toFixed(d):"—";
   const link=(url,label)=>url?`<a href="${url}">${label}</a>`:'<span class="pending">—</span>';
-  document.querySelector("#live-stamp").innerHTML=`<strong>0802 Step 2:</strong> updated ${state.updated} · ${uniqueBest.length} unique targets resolved · ${repeatedBest.length} repeated targets resolved · ${activeCount} active/queued trials.`;
+  document.querySelector("#live-stamp").innerHTML=`<strong>0802 Step 2 · ${modelInfo.label||modelSize}:</strong> updated ${state.updated} · ${uniqueBest.length} unique targets resolved · ${repeatedBest.length} repeated targets resolved · ${activeCount} active/queued trials.`;
   const generationProvenance=dataGeneration.map(run=>`${run.beaker}: ${run.status}${run.reason?` (${run.reason})`:""}`).join(" · ");
   document.querySelector("#manifest-note").textContent=(state.manifest.status==="verified"?`Partition verified: ${state.manifest.sourceTokens.toLocaleString()} source tokens · validation ${state.manifest.validationTokens.toLocaleString()} real tokens · test ${state.manifest.testTokens.toLocaleString()} real tokens · train ${state.manifest.trainTokens.toLocaleString()} real tokens · repeated sample ${state.manifest.repeatedTokens.toLocaleString()} real tokens · unique sample ${state.manifest.uniqueTokens.toLocaleString()} real tokens · partition SHA-256 ${state.manifest.sha256}.`:`Data partition status: ${state.manifest.status}. Training will not start before the audit is verified.`)+(generationProvenance?` Generation provenance: ${generationProvenance}.`:"");
 
   const row=(r,condition)=>`<tr title="${r.reason||''}"><td>${condition}</td><td>${r.epoch}B</td><td>${r.lr}</td><td>${r.wd||"—"}</td><td class="${r.status}">${statusLabel[r.status]||r.status}</td><td>${metric(r,"train")}</td><td>${metric(r,"c4")}</td><td>${Number.isFinite(r.acc)?r.acc.toFixed(3)+"%":"—"}</td><td>${metric(r,"bpb",5)}</td><td>${link(r.wandb?`https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}`:null,r.wandb)}</td><td>${link(r.beaker?`https://beaker.org/ex/${r.beaker}`:null,"experiment")}</td></tr>`;
   const visibleProvenance=r=>r.status!=="failed"&&r.lr!=="4e-4";
-  document.querySelector("#runs-body").innerHTML=uniqueRuns.filter(visibleProvenance).map(r=>row(r,"Unique DCLM 5B sample")).join("")+repeatedRuns.filter(visibleProvenance).map(r=>row(r,"Repeated DCLM 1B sample")).join("")+seedProbeRuns.filter(visibleProvenance).map(r=>row(r,`Seed probe · ${r.name}`)).join("")+evaluationRuns.filter(visibleProvenance).map(r=>row(r,`${r.condition||r.regime||"paired"} · evaluation`)).join("");
+  document.querySelector("#runs-body").innerHTML=uniqueRuns.filter(visibleProvenance).map(r=>row(r,"Unique DCLM 5B sample · aggregate")).join("")+repeatedRuns.filter(visibleProvenance).map(r=>row(r,"Repeated DCLM 1B sample · aggregate")).join("")+seedProbeRuns.filter(visibleProvenance).map(r=>row(r,`${r.regime||"seed"} · ${r.name}`)).join("")+evaluationRuns.filter(visibleProvenance).map(r=>row(r,`${r.condition||r.regime||"paired"} · evaluation`)).join("");
 
   const grid=(runs,best,mount)=>mount.innerHTML=[1,2,3,4,5].map(epoch=>{
     const points=runs.filter(r=>r.epoch===epoch&&!r.duplicate&&!["invalid","canceled","failed"].includes(r.status)).sort((a,b)=>Number(a.lr)-Number(b.lr));
