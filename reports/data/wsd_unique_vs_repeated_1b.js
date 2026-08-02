@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 16:56 PDT",
+  "updated": "2026-08-01 18:08 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -703,6 +703,7 @@ window.STEP2_REPORT_DATA = {
       "lr": "1e-3",
       "wd": "0.033",
       "status": "complete",
+      "selected": true,
       "correctedSubset": true,
       "beaker": "01KYZPYZTRY03VVK5SSY1BHTWX",
       "wandb": "pwsak997",
@@ -722,19 +723,33 @@ window.STEP2_REPORT_DATA = {
         "winogrande": 51.38
       },
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e4_lr1e-3_wd0.033_warmup24_uniformdocs_seed0_corrected_retry1",
-      "reason": "Completed corrected epoch-4 selected-LR candidate with full nine-task and held-out C4 evaluation; nearest final logged train CE at step953; resumed verified matching corrected pre-decay step643; endpoint-specific WSD decay to 4B; preserved step858; minRuntime 0; autoResume false; no experiment retries"
+      "reason": "Selected at corrected epoch 4 by lower held-out C4 (3.689 versus 4.991 for 2e-3); nearest final logged train CE at step953; resumed verified matching corrected pre-decay step643; endpoint-specific WSD decay to 4B; full nine-task and C4 evaluation; preserved step858; minRuntime 0; autoResume false; no experiment retries"
     },
     {
       "epoch": 4,
       "lr": "2e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "correctedSubset": true,
       "beaker": "01KYZQ1AKQRDHM7M8AZDFYK2PR",
       "wandb": "lgjv6tde",
       "revision": "bf4c3dfe",
+      "train": 4.508,
+      "c4": 4.991,
+      "acc": 25.31,
+      "bpb": 1.453,
+      "downstream": {
+        "arc_challenge": 21.4,
+        "arc_easy": 31.4,
+        "boolq": 40.31,
+        "csqa": 23.67,
+        "openbookqa": 22.6,
+        "piqa": 52.67,
+        "socialiqa": 40.17,
+        "winogrande": 50.59
+      },
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e4_lr2e-3_wd0.033_warmup24_uniformdocs_seed0_corrected",
-      "reason": "Required corrected epoch-4 next-higher LR; active on Jupiter at step885/954 with ETA about 12 minutes as of 16:55 PDT; fresh 4B trajectory because no corrected 2e-3 stable chain exists; endpoint-specific WSD decay to 4B; full nine-task and C4 evaluation; preserved step858; minRuntime 0; autoResume false; no experiment retries"
+      "reason": "Required corrected epoch-4 next-higher LR; completed full nine-task and held-out C4 evaluation; nearest final logged train CE at step950; fresh 4B trajectory because no corrected 2e-3 stable chain existed; endpoint-specific WSD decay to 4B; preserved step858; minRuntime 0; autoResume false; no experiment retries"
     }
   ],
   "oldRepeatedRuns": [
