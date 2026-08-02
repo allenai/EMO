@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-02 01:03 PDT · exhaustive partition scan active",
+  "updated": "2026-08-02 03:40 PDT · partition retry active after system preemption",
   "manifest": {
     "status": "pending exhaustive document scan and independent audit"
   },
@@ -23,8 +23,16 @@
       "resultDataset": "01KZ0QXYCQX1VTYJH6W5RNCQNV",
       "sourceDataset": "01KZ0QXCDPRAZNDBEK437CXJ7D",
       "revision": "0834a592",
+      "status": "preempted",
+      "reason": "System-preempted during I/O-bound materialization by urgent job 01KZ0ZQ3GSH726K4J01MDNHHZV; exited 143 before validation and partial Weka paths were retained untouched"
+    },
+    {
+      "beaker": "01KZ10SYHTRDAAE7QQ0HZYDX6J",
+      "resultDataset": "01KZ10SYBBGJ72R0CX7W5RPX0E",
+      "sourceDataset": "01KZ0QXCDPRAZNDBEK437CXJ7D",
+      "revision": "0834a592",
       "status": "active",
-      "reason": "Confirmed retry using a minimal immutable Beaker source snapshot; no GitHub access is required and the same output paths were still absent"
+      "reason": "Confirmed infrastructure retry at urgent priority after zero-active-H100 audit, using fresh output and candidate suffixes"
     }
   ],
   "uniqueRuns": [
