@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-02 11:11 PDT · partition and samples independently verified",
+  "updated": "2026-08-02 11:28 PDT · epoch-1 unique and repeated LR comparisons submitted",
   "manifest": {
     "status": "verified",
     "sourceTokens": 3684671294617,
@@ -57,12 +57,12 @@
     }
   ],
   "uniqueRuns": [
-    {"epoch": 1, "lr": "4e-4", "wd": "0.033", "status": "planned", "reason": "Pending verified 0802 split"},
-    {"epoch": 1, "lr": "1e-3", "wd": "0.033", "status": "planned", "reason": "Pending verified 0802 split"}
+    {"epoch": 1, "lr": "4e-4", "wd": "0.033", "status": "active", "beaker": "01KZ1VH9WSTTJ9MY04WBKVX013", "job": "01KZ1VHA1R0MBNNAXSDVG7PHS7", "revision": "3b96fba5", "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_0802_unique_dclm5b_wsd_e1_lr4e-4_wd0.033_warmup24", "reason": "Fresh epoch-1 chain; verified unique training-only sample and disjoint DCLM validation; full nine-task evaluation; preserve step214; minRuntime 0; autoResume false; no experiment retries"},
+    {"epoch": 1, "lr": "1e-3", "wd": "0.033", "status": "active", "beaker": "01KZ1VJXNRQNDNZN0J9G9F5STR", "job": "01KZ1VJXSCEK2X13RW6HFEJTN8", "revision": "3b96fba5", "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_0802_unique_dclm5b_wsd_e1_lr1e-3_wd0.033_warmup24", "reason": "Fresh epoch-1 chain; verified unique training-only sample and disjoint DCLM validation; full nine-task evaluation; preserve step214; minRuntime 0; autoResume false; no experiment retries"}
   ],
   "repeatedRuns": [
-    {"epoch": 1, "lr": "4e-4", "wd": "0.033", "status": "planned", "reason": "Pending verified 0802 split"},
-    {"epoch": 1, "lr": "1e-3", "wd": "0.033", "status": "planned", "reason": "Pending verified 0802 split"}
+    {"epoch": 1, "lr": "4e-4", "wd": "0.033", "status": "active", "beaker": "01KZ1VMKTGWG74B7M5ZREXR4QQ", "job": "01KZ1VMKXY8EX0ER5X0AZFR5Y2", "revision": "3b96fba5", "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_0802_repeated_dclm1b_wsd_e1_lr4e-4_wd0.033_warmup24", "reason": "Fresh epoch-1 chain; verified repeated training-only sample and disjoint DCLM validation; full nine-task evaluation; preserve step214; minRuntime 0; autoResume false; no experiment retries"},
+    {"epoch": 1, "lr": "1e-3", "wd": "0.033", "status": "active", "beaker": "01KZ1VP92657VW72NQH88XW69X", "job": "01KZ1VP95N2D1KA997C7HJ51XC", "revision": "3b96fba5", "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd0.033_warmup24", "reason": "Fresh epoch-1 chain; verified repeated training-only sample and disjoint DCLM validation; full nine-task evaluation; preserve step214; minRuntime 0; autoResume false; no experiment retries"}
   ],
   "oldRepeatedRuns": [],
   "codelionRuns": [],
