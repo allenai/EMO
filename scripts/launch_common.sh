@@ -37,6 +37,7 @@ BEAKER_WEKA="${BEAKER_WEKA:-oe-training-default}"
 BEAKER_IMAGE="${BEAKER_IMAGE:-tylerr/olmo-core-tch280cu128-2025-11-25}"
 BEAKER_PREEMPTIBLE="${BEAKER_PREEMPTIBLE:-1}"
 BEAKER_AUTO_RESUME="${BEAKER_AUTO_RESUME:-1}"
+BEAKER_MIN_RUNTIME="${BEAKER_MIN_RUNTIME:-0}"
 BEAKER_ENV_SECRETS=(
     "GITHUB_TOKEN=GITHUB_TOKEN"
     "WANDB_API_KEY=SEWONM_WANDB_API_KEY"
@@ -76,6 +77,7 @@ launch() {
             "${auto_resume_args[@]}" \
             --allow-dirty \
             --priority "${BEAKER_PRIORITY}" \
+            --min-runtime "${BEAKER_MIN_RUNTIME}" \
             --env-secret "${BEAKER_ENV_SECRETS[@]}" \
             -- "${script}" "${run_name}" --data-root="${DATA_ROOT}" "$@"
     else
