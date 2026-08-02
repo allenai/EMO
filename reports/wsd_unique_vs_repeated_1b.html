@@ -148,10 +148,10 @@
   function chart(metricName,mount){
     const enabled=new Set([...document.querySelectorAll("[data-category-toggle]:checked")].map(el=>el.dataset.categoryToggle));
     const series=[
-      {key:"unique",runs:uniqueBest,color:"#15803d"},
-      {key:"repeated",runs:repeatedBest,color:"#7c3aed"},
-      {key:"repeated-old",runs:oldRepeatedBest,color:"#7c3aed",dash:"6 4"},
-      {key:"codelion",runs:codelionBest,color:"#d97706"}
+      {key:"unique",runs:uniqueBest,color:"#15803d",dx:-15,dy:-11},
+      {key:"repeated",runs:repeatedBest,color:"#7c3aed",dx:15,dy:13},
+      {key:"repeated-old",runs:oldRepeatedBest,color:"#7c3aed",dash:"6 4",dx:-15,dy:13},
+      {key:"codelion",runs:codelionBest,color:"#d97706",dx:15,dy:-11}
     ].filter(s=>enabled.has(s.key)).map(s=>({...s,points:s.runs.map(r=>({r,v:metricValue(r,metricName)})).filter(p=>Number.isFinite(p.v))})).filter(s=>s.points.length);
     const vals=series.flatMap(s=>s.points.map(p=>p.v));
     if(!vals.length){mount.innerHTML='<div class="note" style="padding:70px 12px;text-align:center">No valid completed endpoint yet.</div>';return;}
@@ -159,11 +159,13 @@
     const tickCount=4,tickStep=(hi-lo)/(tickCount-1),digits=tickDigits(metricName,tickStep);
     const x=e=>p.l+(e-1)*(w-p.l-p.r)/4,y=v=>p.t+(hi-v)*(h-p.t-p.b)/(hi-lo),ticks=Array.from({length:tickCount},(_,i)=>lo+tickStep*i);
     const tickText=v=>v.toFixed(digits);
+    const annotationX=(s,point)=>Math.min(w-19,Math.max(19,x(point.r.epoch)+s.dx));
+    const annotationY=(s,point)=>Math.min(h-p.b-5,Math.max(12,y(point.v)+s.dy));
     mount.innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${labels[metricName]} by token target">
       ${ticks.map(v=>`<line x1="${p.l}" y1="${y(v)}" x2="${w-p.r}" y2="${y(v)}" stroke="#e3e8ed"/><text x="${p.l-10}" y="${y(v)+4}" text-anchor="end" font-size="11" font-weight="650" fill="#34414e">${tickText(v)}</text>`).join("")}
       <text x="17" y="${(p.t+h-p.b)/2}" text-anchor="middle" font-size="11" font-weight="700" fill="#34414e" transform="rotate(-90 17 ${(p.t+h-p.b)/2})">${axisLabel(metricName)}</text>
       <line x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${h-p.b}" stroke="#aeb8c2"/><line x1="${p.l}" y1="${h-p.b}" x2="${w-p.r}" y2="${h-p.b}" stroke="#aeb8c2"/>
-      ${series.map(s=>`<polyline points="${s.points.map(p=>`${x(p.r.epoch)},${y(p.v)}`).join(" ")}" fill="none" stroke="${s.color}" stroke-width="2.4" ${s.dash?`stroke-dasharray="${s.dash}"`:""}/>${s.points.map(p=>`<circle cx="${x(p.r.epoch)}" cy="${y(p.v)}" r="3.5" fill="${s.color}"><title>${labels[metricName]} ${tickText(p.v)} · ${p.r.epoch}B · LR ${p.r.lr}</title></circle><text x="${x(p.r.epoch)}" y="${Math.max(y(p.v)-9,12)}" text-anchor="middle" font-size="8" font-weight="650" fill="${s.color}">${p.r.lr}</text>`).join("")}`).join("")}
+      ${series.map(s=>`<polyline points="${s.points.map(point=>`${x(point.r.epoch)},${y(point.v)}`).join(" ")}" fill="none" stroke="${s.color}" stroke-width="2.4" ${s.dash?`stroke-dasharray="${s.dash}"`:""}/>${s.points.map(point=>`<line x1="${x(point.r.epoch)}" y1="${y(point.v)}" x2="${annotationX(s,point)}" y2="${annotationY(s,point)}" stroke="${s.color}" stroke-width="0.8" opacity="0.7"/><circle cx="${x(point.r.epoch)}" cy="${y(point.v)}" r="3.5" fill="${s.color}"><title>${labels[metricName]} ${tickText(point.v)} · ${point.r.epoch}B · LR ${point.r.lr}</title></circle><text x="${annotationX(s,point)}" y="${annotationY(s,point)+3}" text-anchor="middle" font-size="8" font-weight="700" fill="${s.color}" stroke="#fff" stroke-width="3" paint-order="stroke">${tickText(point.v)}</text>`).join("")}`).join("")}
       ${[1,2,3,4,5].map(e=>`<text x="${x(e)}" y="${h-13}" text-anchor="middle" font-size="11" font-weight="600" fill="#4b5967">${e}B</text>`).join("")}
     </svg>`;
   }
