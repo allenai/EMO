@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-02 00:59 PDT · exhaustive partition scan retry starting",
+  "updated": "2026-08-02 01:03 PDT · exhaustive partition scan active",
   "manifest": {
     "status": "pending exhaustive document scan and independent audit"
   },
@@ -15,8 +15,16 @@
       "beaker": "01KZ0QPSJYSDP2T9BASQXFNC53",
       "resultDataset": "01KZ0QPSFVX4V4VVHH42K07GPH",
       "revision": "0834a592",
+      "status": "canceled",
+      "reason": "Confirmed startup failure: shallow Git clone also stalled before checkout or Weka output, isolating the problem to GitHub access from the image"
+    },
+    {
+      "beaker": "01KZ0QXYG49R34RXMR1M79EWVE",
+      "resultDataset": "01KZ0QXYCQX1VTYJH6W5RNCQNV",
+      "sourceDataset": "01KZ0QXCDPRAZNDBEK437CXJ7D",
+      "revision": "0834a592",
       "status": "active",
-      "reason": "Infrastructure retry using a shallow single-branch clone and the same verified-empty output paths"
+      "reason": "Confirmed retry using a minimal immutable Beaker source snapshot; no GitHub access is required and the same output paths were still absent"
     }
   ],
   "uniqueRuns": [
