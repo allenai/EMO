@@ -32,6 +32,7 @@ import io
 import json
 import math
 import os
+import shutil
 import struct
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -329,6 +330,81 @@ def write_ledger(
     return {"path": str(path), "sha256": sha256_file(path), "documents": len(records)}
 
 
+def materialize_shard(args: tuple) -> dict:
+    (
+        shard,
+        records,
+        source,
+        fragment_dir_str,
+        dtype_str,
+        eos_token_id,
+    ) = args
+    dtype = np.dtype(dtype_str)
+    fragment_dir = Path(fragment_dir_str)
+    token_path = fragment_dir / f"shard-{shard:04d}.tokens.bin"
+    lengths_path = fragment_dir / f"shard-{shard:04d}.lengths.bin"
+    marker_path = fragment_dir / f"shard-{shard:04d}.complete.json"
+    expected_lengths = records["end"].astype(np.uint64) - records["start"].astype(np.uint64)
+    expected_tokens = int(expected_lengths.sum(dtype=np.uint64))
+    if marker_path.exists():
+        marker = json.loads(marker_path.read_text())
+        if (
+            int(marker["documents"]) != len(records)
+            or int(marker["tokens"]) != expected_tokens
+            or token_path.stat().st_size != expected_tokens * dtype.itemsize
+            or lengths_path.stat().st_size != len(records) * np.dtype("<u8").itemsize
+        ):
+            raise RuntimeError(f"invalid resumable shard fragment: {marker_path}")
+        return {
+            "shard": shard,
+            "token_path": str(token_path),
+            "lengths_path": str(lengths_path),
+            "documents": len(records),
+            "tokens": expected_tokens,
+            "resumed": True,
+        }
+
+    token_tmp = token_path.with_name(token_path.name + ".tmp")
+    lengths_tmp = lengths_path.with_name(lengths_path.name + ".tmp")
+    array = np.memmap(str(source["absolute_path"]), mode="r", dtype=dtype)
+    try:
+        with token_tmp.open("wb") as token_out:
+            for record in records:
+                start, end = int(record["start"]), int(record["end"])
+                values = np.asarray(array[start:end])
+                if int(values[-1]) != eos_token_id:
+                    raise ValueError(
+                        f"document {int(record['doc_index'])} in {source['path']} does not end in EOS"
+                    )
+                token_out.write(values.tobytes(order="C"))
+        expected_lengths.astype("<u8", copy=False).tofile(lengths_tmp)
+        if token_tmp.stat().st_size != expected_tokens * dtype.itemsize:
+            raise RuntimeError(f"short shard token fragment: {token_tmp}")
+        os.replace(token_tmp, token_path)
+        os.replace(lengths_tmp, lengths_path)
+        marker_path.write_text(
+            json.dumps(
+                {"shard": shard, "documents": len(records), "tokens": expected_tokens},
+                sort_keys=True,
+            )
+            + "\n"
+        )
+    except BaseException:
+        token_tmp.unlink(missing_ok=True)
+        lengths_tmp.unlink(missing_ok=True)
+        raise
+    finally:
+        del array
+    return {
+        "shard": shard,
+        "token_path": str(token_path),
+        "lengths_path": str(lengths_path),
+        "documents": len(records),
+        "tokens": expected_tokens,
+        "resumed": False,
+    }
+
+
 def materialize(
     records: np.ndarray,
     sources: list[dict],
@@ -337,6 +413,7 @@ def materialize(
     dtype: np.dtype,
     eos_token_id: int,
     alignment_tokens: int,
+    workers: int,
 ) -> dict:
     metadata_path = output_path.with_suffix(".csv.gz")
     for path in (output_path, metadata_path):
@@ -354,27 +431,54 @@ def materialize(
     padding_tokens = materialized_tokens - real_tokens
     digest = hashlib.sha256()
     offset = 0
+    fragment_dir = output_path.with_name(output_path.name + ".fragments")
+    fragment_dir.mkdir(parents=True, exist_ok=True)
+    shard_args = []
+    for shard_value in np.unique(ordered["shard"]):
+        shard = int(shard_value)
+        shard_args.append(
+            (
+                shard,
+                ordered[ordered["shard"] == shard].copy(),
+                sources[shard],
+                str(fragment_dir),
+                dtype.str,
+                eos_token_id,
+            )
+        )
+    fragments = []
+    if workers == 1:
+        for index, shard_arg in enumerate(shard_args, start=1):
+            fragments.append(materialize_shard(shard_arg))
+            print(
+                f"materialized {output_path.name}: {index}/{len(shard_args)} shards",
+                flush=True,
+            )
+    else:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as pool:
+            futures = [pool.submit(materialize_shard, shard_arg) for shard_arg in shard_args]
+            for index, future in enumerate(concurrent.futures.as_completed(futures), start=1):
+                fragments.append(future.result())
+                if index == 1 or index % 25 == 0 or index == len(futures):
+                    print(
+                        f"materialized {output_path.name}: {index}/{len(futures)} shards",
+                        flush=True,
+                    )
+    fragments.sort(key=lambda fragment: int(fragment["shard"]))
     try:
         with token_tmp.open("wb") as token_out, deterministic_gzip_text_writer(
             metadata_tmp
         ) as metadata_out:
-            for shard in np.unique(ordered["shard"]):
-                source = sources[int(shard)]
-                array = np.memmap(str(source["absolute_path"]), mode="r", dtype=dtype)
-                shard_records = ordered[ordered["shard"] == shard]
-                for record in shard_records:
-                    start, end = int(record["start"]), int(record["end"])
-                    values = np.asarray(array[start:end])
-                    if int(values[-1]) != eos_token_id:
-                        raise ValueError(
-                            f"document {int(record['doc_index'])} in {source['path']} does not end in EOS"
-                        )
-                    payload = values.tobytes(order="C")
-                    token_out.write(payload)
-                    digest.update(payload)
-                    metadata_out.write(f"{offset},{offset + len(values)}\n")
-                    offset += len(values)
-                del array
+            for fragment in fragments:
+                with Path(fragment["token_path"]).open("rb") as token_in:
+                    while payload := token_in.read(16 * 1024 * 1024):
+                        token_out.write(payload)
+                        digest.update(payload)
+                lengths = np.fromfile(fragment["lengths_path"], dtype="<u8")
+                for length_value in lengths:
+                    length = int(length_value)
+                    metadata_out.write(f"{offset},{offset + length}\n")
+                    offset += length
             if padding_tokens:
                 padding = np.full(padding_tokens, eos_token_id, dtype=dtype)
                 payload = padding.tobytes(order="C")
@@ -386,6 +490,7 @@ def materialize(
             raise AssertionError((offset, materialized_tokens))
         os.replace(token_tmp, output_path)
         os.replace(metadata_tmp, metadata_path)
+        shutil.rmtree(fragment_dir)
     except BaseException:
         token_tmp.unlink(missing_ok=True)
         metadata_tmp.unlink(missing_ok=True)
@@ -644,6 +749,7 @@ def build(args: argparse.Namespace) -> dict:
             dtype=dtype,
             eos_token_id=args.eos_token_id,
             alignment_tokens=alignment,
+            workers=args.workers,
         )
         ledger = write_ledger(
             ledger_path,
