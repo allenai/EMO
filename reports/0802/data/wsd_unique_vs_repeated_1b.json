@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-02 13:45 PDT · epoch 2 paused; two repeated-corpus epoch-1 seed probes authorized",
+  "updated": "2026-08-02 13:43 PDT · epoch 2 paused; two repeated-corpus epoch-1 seed probes submitted",
   "manifest": {
     "status": "verified",
     "sourceTokens": 3684671294617,
@@ -37,8 +37,8 @@
     "purpose": "Separate exact-seed reproducibility from sensitivity to initialization and data-order seeds before interpreting independent-sample unique-vs-repeated gaps. These diagnostics are excluded from the LR coordinate grid."
   },
   "seedProbeRuns": [
-    {"name": "same-seed reproducibility", "status": "pending-submission", "epoch": 1, "lr": "5e-4", "wd": "0.033", "initSeed": 12536, "dataSeed": 0, "runSuffix": "_seedprobe_same_seed", "reason": "Exact same corpus and explicit original initialization/data-order seeds; measures reproducibility and residual runtime nondeterminism."},
-    {"name": "alternate-seed sensitivity", "status": "pending-submission", "epoch": 1, "lr": "5e-4", "wd": "0.033", "initSeed": 12537, "dataSeed": 1, "runSuffix": "_seedprobe_alt_seed", "reason": "Exact same corpus with different initialization and data-order seeds; measures seed sensitivity. Excluded from LR selection grid."}
+    {"name": "same-seed reproducibility", "status": "queued", "epoch": 1, "lr": "5e-4", "wd": "0.033", "initSeed": 12536, "dataSeed": 0, "runSuffix": "_seedprobe_same_seed", "beaker": "01KZ23D3W3H2FCPN2YRMN447MF", "job": "01KZ23D3ZHRY3NAFKC9M0Q4QYD", "revision": "8e32e686", "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_0802_repeated_dclm1b_wsd_e1_lr5e-4_wd0.033_warmup24_seedprobe_same_seed", "reason": "Exact same corpus and explicit original initialization/data-order seeds; measures reproducibility and residual runtime nondeterminism. Eight H100; minRuntime 0; autoResume false; no experiment retries; fixed step214 configured."},
+    {"name": "alternate-seed sensitivity", "status": "queued", "epoch": 1, "lr": "5e-4", "wd": "0.033", "initSeed": 12537, "dataSeed": 1, "runSuffix": "_seedprobe_alt_seed", "beaker": "01KZ23ED5W6NNE11CYSPKHH1YM", "job": "01KZ23ED9CDN9ACP1XV66JG1VK", "revision": "8e32e686", "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_0802_repeated_dclm1b_wsd_e1_lr5e-4_wd0.033_warmup24_seedprobe_alt_seed", "reason": "Exact same corpus with different initialization and data-order seeds; measures seed sensitivity. Eight H100; minRuntime 0; autoResume false; no experiment retries; fixed step214 configured. Excluded from LR selection grid."}
   ],
   "dataGeneration": [
     {

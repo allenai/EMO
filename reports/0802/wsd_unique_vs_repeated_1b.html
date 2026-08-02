@@ -99,11 +99,11 @@
 <script src="data/wsd_unique_vs_repeated_1b.js"></script>
 <script>
   const state=window.STEP2_REPORT_DATA;
-  const uniqueRuns=state.uniqueRuns||[], repeatedRuns=state.repeatedRuns||[], oldRepeatedRuns=state.oldRepeatedRuns||[], codelionRuns=state.codelionRuns||[], evaluationRuns=state.evaluationRuns||[], dataGeneration=state.dataGeneration||[];
+  const uniqueRuns=state.uniqueRuns||[], repeatedRuns=state.repeatedRuns||[], seedProbeRuns=state.seedProbeRuns||[], oldRepeatedRuns=state.oldRepeatedRuns||[], codelionRuns=state.codelionRuns||[], evaluationRuns=state.evaluationRuns||[], dataGeneration=state.dataGeneration||[];
   const validComplete=r=>r.status==="complete"&&Number.isFinite(r.c4);
   const bestByTarget=runs=>[1,2,3,4,5].map(epoch=>runs.filter(r=>r.epoch===epoch&&validComplete(r)).sort((a,b)=>a.c4-b.c4)[0]).filter(Boolean);
   const uniqueBest=bestByTarget(uniqueRuns), repeatedBest=bestByTarget(repeatedRuns), oldRepeatedBest=bestByTarget(oldRepeatedRuns), codelionBest=bestByTarget(codelionRuns);
-  const activeCount=[...uniqueRuns,...repeatedRuns,...oldRepeatedRuns,...codelionRuns,...evaluationRuns].filter(r=>["active","queued"].includes(r.status)).length;
+  const activeCount=[...uniqueRuns,...repeatedRuns,...seedProbeRuns,...oldRepeatedRuns,...codelionRuns,...evaluationRuns].filter(r=>["active","queued"].includes(r.status)).length;
   const statusLabel={planned:"Planned",queued:"Queued",active:"Active",complete:"Complete",canceled:"Canceled",failed:"Failed",invalid:"Invalid · missing endpoint decay"};
   const metric=(r,k,d=3)=>Number.isFinite(r[k])?r[k].toFixed(d):"—";
   const link=(url,label)=>url?`<a href="${url}">${label}</a>`:'<span class="pending">—</span>';
@@ -113,7 +113,7 @@
 
   const row=(r,condition)=>`<tr title="${r.reason||''}"><td>${condition}</td><td>${r.epoch}B</td><td>${r.lr}</td><td>${r.wd||"—"}</td><td class="${r.status}">${statusLabel[r.status]||r.status}</td><td>${metric(r,"train")}</td><td>${metric(r,"c4")}</td><td>${Number.isFinite(r.acc)?r.acc.toFixed(3)+"%":"—"}</td><td>${metric(r,"bpb",5)}</td><td>${link(r.wandb?`https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}`:null,r.wandb)}</td><td>${link(r.beaker?`https://beaker.org/ex/${r.beaker}`:null,"experiment")}</td></tr>`;
   const visibleProvenance=r=>r.status!=="failed"&&r.lr!=="4e-4";
-  document.querySelector("#runs-body").innerHTML=uniqueRuns.filter(visibleProvenance).map(r=>row(r,"Unique DCLM 5B sample")).join("")+repeatedRuns.filter(visibleProvenance).map(r=>row(r,"Repeated DCLM 1B sample")).join("")+evaluationRuns.filter(visibleProvenance).map(r=>row(r,`${r.condition} · evaluation`)).join("");
+  document.querySelector("#runs-body").innerHTML=uniqueRuns.filter(visibleProvenance).map(r=>row(r,"Unique DCLM 5B sample")).join("")+repeatedRuns.filter(visibleProvenance).map(r=>row(r,"Repeated DCLM 1B sample")).join("")+seedProbeRuns.filter(visibleProvenance).map(r=>row(r,`Seed probe · ${r.name}`)).join("")+evaluationRuns.filter(visibleProvenance).map(r=>row(r,`${r.condition||r.regime||"paired"} · evaluation`)).join("");
 
   const grid=(runs,best,mount)=>mount.innerHTML=[1,2,3,4,5].map(epoch=>{
     const points=runs.filter(r=>r.epoch===epoch&&!r.duplicate&&!["invalid","canceled","failed"].includes(r.status)).sort((a,b)=>Number(a.lr)-Number(b.lr));
