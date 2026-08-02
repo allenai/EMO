@@ -24,7 +24,7 @@ from olmo_core.data import (
 from olmo_core.data.mixes import DataMix
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_rank
-from olmo_core.nn.transformer import TransformerConfig
+from olmo_core.nn.transformer import TransformerBlockType, TransformerConfig
 from olmo_core.optim import CosWithWarmup, OptimGroupOverride, SkipStepAdamWConfig
 from olmo_core.train import (
     TrainerConfig,
@@ -131,9 +131,25 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
     tokenizer_config = TokenizerConfig.dolma2()
 
-    model_config = TransformerConfig.olmo2_1B_v2(
-        vocab_size=tokenizer_config.padded_vocab_size(),  # a little bigger than actual vocab size to make it a multiple of 128
-    )
+    vocab_size = tokenizer_config.padded_vocab_size()
+    if opts.model_size == "153M":
+        # Keep the active dense-1B architecture choices and change only the
+        # size-controlling dimensions. In particular this is standard
+        # Llama-style pre-norm without QK norm, rather than the reordered-norm
+        # and QK-norm defaults of the legacy olmo2_100M preset.
+        model_config = TransformerConfig.llama_like(
+            d_model=512,
+            hidden_size_multiplier=1.5,  # resolves to a 2,048-wide FFN
+            n_layers=12,
+            n_heads=8,
+            vocab_size=vocab_size,
+            block_name=TransformerBlockType.default,
+            qk_norm=False,
+            rope_theta=500_000,
+            layer_norm_eps=1e-6,
+        )
+    else:
+        model_config = TransformerConfig.olmo2_1B_v2(vocab_size=vocab_size)
     # docs: end-model-config
 
     log.info(f"Using data root: {opts.data_root}")
@@ -280,6 +296,12 @@ def parser_args():
         type=float,
         default=4e-4,
         help="Learning rate for the optimizer.",
+    )
+    parser.add_argument(
+        "--model-size",
+        choices=["153M", "1B"],
+        default="1B",
+        help="Dense model size. 153M retains the active dense-1B architecture and changes only width, depth, head count, and FFN size.",
     )
     parser.add_argument(
         "--data-root",
