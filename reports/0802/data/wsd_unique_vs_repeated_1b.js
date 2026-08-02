@@ -1,7 +1,7 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-02 09:12 PDT · parallel partition materialization retry active",
+  "updated": "2026-08-02 11:09 PDT · generation complete; independent audit active",
   "manifest": {
-    "status": "pending exhaustive document scan and independent audit"
+    "status": "generated; independent audit active"
   },
   "dataGeneration": [
     {
@@ -39,8 +39,8 @@ window.STEP2_REPORT_DATA = {
       "resultDataset": "01KZ1KTFRQD1VWAVYDCMS4CQSQ",
       "sourceDataset": "01KZ1KSH835PMYNB0S6Z00Y59A",
       "revision": "0ee8c2d9",
-      "status": "active",
-      "reason": "Urgent retry after zero-active-H100 audit using parallel resumable per-shard materialization, sequential hash-preserving assembly, and fresh output/candidate paths"
+      "status": "validating",
+      "reason": "Generation completed after parallel resumable per-shard materialization and sequential hash-preserving assembly. Generator checks report 2,949,254,346 source documents and 3,684,671,294,617 source tokens; train/validation/test document intersections are all zero, the split is exhaustive, and the 4,096-bucket key-uniformity sanity check passed. Independent audit is active before training."
     }
   ],
   "uniqueRuns": [
