@@ -1,7 +1,20 @@
 {
-  "updated": "2026-08-02 11:09 PDT · generation complete; independent audit active",
+  "updated": "2026-08-02 11:11 PDT · partition and samples independently verified",
   "manifest": {
-    "status": "generated; independent audit active"
+    "status": "verified",
+    "sourceTokens": 3684671294617,
+    "sourceDocuments": 2949254346,
+    "validationTokens": 100000118,
+    "validationDocuments": 79690,
+    "testTokens": 100002095,
+    "testDocuments": 79680,
+    "trainTokens": 3684471292404,
+    "trainDocuments": 2949094976,
+    "repeatedTokens": 1000031666,
+    "repeatedDocuments": 801407,
+    "uniqueTokens": 5000000058,
+    "uniqueDocuments": 4002478,
+    "sha256": "2f3984482b51e499b1c854706dcd64e9bdd8cc567ac52d6546d3325a7ef68fe9"
   },
   "dataGeneration": [
     {
@@ -39,8 +52,8 @@
       "resultDataset": "01KZ1KTFRQD1VWAVYDCMS4CQSQ",
       "sourceDataset": "01KZ1KSH835PMYNB0S6Z00Y59A",
       "revision": "0ee8c2d9",
-      "status": "validating",
-      "reason": "Generation completed after parallel resumable per-shard materialization and sequential hash-preserving assembly. Generator checks report 2,949,254,346 source documents and 3,684,671,294,617 source tokens; train/validation/test document intersections are all zero, the split is exhaustive, and the 4,096-bucket key-uniformity sanity check passed. Independent audit is active before training."
+      "status": "succeeded",
+      "reason": "Generation and independent validation passed. Across 2,949,254,346 source documents and 3,684,671,294,617 source tokens, train/validation/test are exhaustive with zero document intersections; both training samples are training-only; all artifact and metadata hashes verified; and the 4,096-bucket key-uniformity sanity check passed."
     }
   ],
   "uniqueRuns": [
