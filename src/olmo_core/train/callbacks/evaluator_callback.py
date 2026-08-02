@@ -2,8 +2,10 @@ import logging
 import time
 from dataclasses import dataclass, field
 from functools import cache
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
+import numpy as np
 import torch
 import torch.distributed as dist
 from torch.utils.data import DataLoader, DistributedSampler
@@ -90,6 +92,12 @@ class EvaluatorCallback(Callback):
     How often to log eval progress to the console during an eval loop.
     """
 
+    paired_document_metadata_path: Optional[str] = None
+    """CSV/CSV.GZ document offsets used to emit paired document-level loss statistics."""
+
+    paired_stats_output_path: Optional[str] = None
+    """Output ``.npz`` path for paired document-level loss sufficient statistics."""
+
     def post_attach(self):
         if not isinstance(self.trainer.train_module, TransformerTrainModule):
             raise OLMoConfigurationError(
@@ -138,6 +146,46 @@ class EvaluatorCallback(Callback):
             eval_tokens = 0
             first_batch_hash = None
             label_token_counts: Dict[str, int] = {}
+            paired_doc_starts: Optional[np.ndarray] = None
+            paired_doc_ends: Optional[np.ndarray] = None
+            paired_loss_sums: Optional[np.ndarray] = None
+            paired_token_counts: Optional[np.ndarray] = None
+            paired_global_indices: Optional[np.ndarray] = None
+            paired_sequence_length: Optional[int] = None
+            if self.paired_stats_output_path is not None:
+                if self.paired_document_metadata_path is None:
+                    raise OLMoConfigurationError(
+                        "'paired_document_metadata_path' is required with "
+                        "'paired_stats_output_path'"
+                    )
+                if dp_world_size != 1:
+                    raise OLMoConfigurationError(
+                        "paired document statistics currently require a single data-parallel rank"
+                    )
+                if evaluator.batches is None or not hasattr(
+                    evaluator.batches, "get_global_indices"
+                ):
+                    raise OLMoConfigurationError(
+                        "paired document statistics require a numpy data loader"
+                    )
+                dataset = getattr(evaluator.batches, "dataset", None)
+                if not isinstance(dataset, NumpyFSLDatasetBase):
+                    raise OLMoConfigurationError(
+                        "paired document statistics require an FSL numpy dataset"
+                    )
+                paired_sequence_length = dataset.sequence_length
+                offsets = np.loadtxt(
+                    self.paired_document_metadata_path,
+                    delimiter=",",
+                    dtype=np.int64,
+                ).reshape(-1, 2)
+                num_real_tokens = getattr(dataset, "num_real_tokens", None)
+                if num_real_tokens is not None:
+                    offsets = offsets[offsets[:, 1] <= int(num_real_tokens)]
+                paired_doc_starts = offsets[:, 0]
+                paired_doc_ends = offsets[:, 1]
+                paired_loss_sums = np.zeros(len(offsets), dtype=np.float64)
+                paired_token_counts = np.zeros(len(offsets), dtype=np.int64)
             for batch in evaluator:
                 eval_step += 1
                 eval_tokens += batch["input_ids"].numel() * dp_world_size
@@ -170,6 +218,50 @@ class EvaluatorCallback(Callback):
                     output = self.trainer.train_module.eval_batch(batch, labels=labels)
                     assert isinstance(output, LMOutputWithLoss)
                     logits, _, ce_loss, _ = output
+
+                    if paired_loss_sums is not None:
+                        assert paired_sequence_length is not None
+                        assert paired_doc_starts is not None
+                        assert paired_doc_ends is not None
+                        assert paired_token_counts is not None
+                        if batch["input_ids"].shape[0] != 1:
+                            raise OLMoConfigurationError(
+                                "paired document statistics require one instance per eval batch"
+                            )
+                        if paired_global_indices is None:
+                            paired_global_indices = np.asarray(
+                                evaluator.batches.get_global_indices()  # type: ignore[union-attr]
+                            )
+                        instance_index = int(paired_global_indices[eval_step - 1])
+                        token_losses = ce_loss[0].detach().float().cpu().numpy()
+                        valid = labels[0].detach().cpu().numpy() != -100
+                        target_positions = (
+                            instance_index * paired_sequence_length
+                            + np.arange(paired_sequence_length, dtype=np.int64)
+                            + 1
+                        )
+                        valid &= target_positions < paired_doc_ends[-1]
+                        token_losses = token_losses[valid]
+                        target_positions = target_positions[valid]
+                        doc_indices = np.searchsorted(
+                            paired_doc_ends, target_positions, side="right"
+                        )
+                        in_document = doc_indices < len(paired_doc_starts)
+                        valid_doc_indices = doc_indices[in_document]
+                        in_document[in_document] &= (
+                            paired_doc_starts[valid_doc_indices]
+                            <= target_positions[in_document]
+                        )
+                        np.add.at(
+                            paired_loss_sums,
+                            doc_indices[in_document],
+                            token_losses[in_document].astype(np.float64),
+                        )
+                        np.add.at(
+                            paired_token_counts,
+                            doc_indices[in_document],
+                            1,
+                        )
 
                     # NOTE: might have host-device syncs here but that's okay.
                     with cuda_sync_debug_mode(0):
@@ -212,6 +304,31 @@ class EvaluatorCallback(Callback):
                 f"{k}={v:,d}" for k, v in sorted(label_token_counts.items())
             )
             log.info(f"[eval={evaluator.name}] per-label tokens: {label_counts_str}")
+
+            if paired_loss_sums is not None:
+                assert paired_token_counts is not None
+                assert paired_doc_starts is not None
+                assert paired_doc_ends is not None
+                output_path = Path(self.paired_stats_output_path)  # type: ignore[arg-type]
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                tmp_path = output_path.with_name(output_path.name + ".tmp.npz")
+                np.savez_compressed(
+                    tmp_path,
+                    loss_sums=paired_loss_sums,
+                    token_counts=paired_token_counts,
+                    document_starts=paired_doc_starts,
+                    document_ends=paired_doc_ends,
+                )
+                tmp_path.replace(output_path)
+                log.info(
+                    "[eval=%s] paired document statistics saved to '%s': "
+                    "documents=%s, included_documents=%s, scored_tokens=%s",
+                    evaluator.name,
+                    output_path,
+                    f"{len(paired_doc_starts):,d}",
+                    f"{int(np.count_nonzero(paired_token_counts)):,d}",
+                    f"{int(paired_token_counts.sum()):,d}",
+                )
 
             # NOTE: going to have a host-device sync here but that's okay. It's only once
             # per evaluator.
@@ -284,6 +401,8 @@ class LMEvaluatorCallbackConfig(CallbackConfig):
     deterministic: bool = True
     enabled: bool = True
     name: str = "lm"
+    paired_document_metadata_path: Optional[str] = None
+    paired_stats_output_path: Optional[str] = None
 
     def build(self, trainer: "Trainer") -> Optional[Callback]:
         if not self.enabled:
@@ -357,6 +476,8 @@ class LMEvaluatorCallbackConfig(CallbackConfig):
             cancel_after_first_eval=self.cancel_after_first_eval,
             eval_duration=self.eval_duration,
             eval_on_finish=self.eval_on_finish,
+            paired_document_metadata_path=self.paired_document_metadata_path,
+            paired_stats_output_path=self.paired_stats_output_path,
         )
 
 
