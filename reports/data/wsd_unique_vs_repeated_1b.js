@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 16:24 PDT",
+  "updated": "2026-08-01 16:56 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -734,7 +734,7 @@ window.STEP2_REPORT_DATA = {
       "wandb": "lgjv6tde",
       "revision": "bf4c3dfe",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e4_lr2e-3_wd0.033_warmup24_uniformdocs_seed0_corrected",
-      "reason": "Required corrected epoch-4 next-higher LR; active on Jupiter at step320/954 with ETA about 1h44m as of 16:23 PDT; fresh 4B trajectory because no corrected 2e-3 stable chain exists; endpoint-specific WSD decay to 4B; full nine-task and C4 evaluation; preserves step858; minRuntime 0; autoResume false; no experiment retries"
+      "reason": "Required corrected epoch-4 next-higher LR; active on Jupiter at step885/954 with ETA about 12 minutes as of 16:55 PDT; fresh 4B trajectory because no corrected 2e-3 stable chain exists; endpoint-specific WSD decay to 4B; full nine-task and C4 evaluation; preserved step858; minRuntime 0; autoResume false; no experiment retries"
     }
   ],
   "oldRepeatedRuns": [
