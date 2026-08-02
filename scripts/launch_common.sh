@@ -38,6 +38,7 @@ BEAKER_IMAGE="${BEAKER_IMAGE:-tylerr/olmo-core-tch280cu128-2025-11-25}"
 BEAKER_PREEMPTIBLE="${BEAKER_PREEMPTIBLE:-1}"
 BEAKER_AUTO_RESUME="${BEAKER_AUTO_RESUME:-1}"
 BEAKER_MIN_RUNTIME="${BEAKER_MIN_RUNTIME:-0}"
+BEAKER_TORCHRUN="${BEAKER_TORCHRUN:-auto}"
 BEAKER_ENV_SECRETS=(
     "GITHUB_TOKEN=GITHUB_TOKEN"
     "WANDB_API_KEY=SEWONM_WANDB_API_KEY"
@@ -58,12 +59,19 @@ launch() {
     if [[ "${MODE}" == "beaker" ]]; then
         local preemptible_args=()
         local auto_resume_args=()
+        local torchrun_args=()
         if [[ "${BEAKER_PREEMPTIBLE}" == "1" ]]; then
             preemptible_args+=(--preemptible)
         fi
         if [[ "${BEAKER_AUTO_RESUME}" == "0" ]]; then
             auto_resume_args+=(--no-auto-resume)
         fi
+        case "${BEAKER_TORCHRUN}" in
+            auto) ;;
+            1) torchrun_args+=(--torchrun) ;;
+            0) torchrun_args+=(--no-torchrun) ;;
+            *) echo "BEAKER_TORCHRUN must be one of: auto, 0, 1" >&2; return 2 ;;
+        esac
         python -m olmo_core.launch.beaker \
             --name "${run_name}" \
             --gpus "${BEAKER_GPUS}" \
@@ -75,6 +83,7 @@ launch() {
             --beaker-image "${BEAKER_IMAGE}" \
             "${preemptible_args[@]}" \
             "${auto_resume_args[@]}" \
+            "${torchrun_args[@]}" \
             --allow-dirty \
             --priority "${BEAKER_PRIORITY}" \
             --min-runtime "${BEAKER_MIN_RUNTIME}" \

@@ -6,6 +6,7 @@ DATA_ROOT="${DATA_ROOT:-/weka/oe-training-default/ai2-llm}"
 BEAKER_GPUS="${BEAKER_GPUS:-1}"
 BEAKER_PREEMPTIBLE="${BEAKER_PREEMPTIBLE:-0}"
 BEAKER_AUTO_RESUME="${BEAKER_AUTO_RESUME:-0}"
+BEAKER_TORCHRUN="${BEAKER_TORCHRUN:-1}"
 source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
 
 checkpoint_path="${CHECKPOINT_PATH:?Set CHECKPOINT_PATH to the exact decayed endpoint checkpoint}"

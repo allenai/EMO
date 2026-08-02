@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-02 12:47 PDT · both epoch-1 5e-4 runs complete; paired significance pending",
+  "updated": "2026-08-02 13:04 PDT · paired-eval launcher failure diagnosed and fixed",
   "manifest": {
     "status": "verified",
     "sourceTokens": 3684671294617,
@@ -82,5 +82,10 @@
   ],
   "oldRepeatedRuns": [],
   "codelionRuns": [],
-  "evaluationRuns": []
+  "evaluationRuns": [
+    {"kind": "paired-document-loss", "regime": "unique", "epoch": 1, "lr": "5e-4", "status": "failed", "beaker": "01KZ210CPV406PVXRCBAEH2QZC", "job": "01KZ210CT8HY78XAVSE7MAADZF", "revision": "3bdc6751", "reason": "Configuration failure before model loading or evaluation: the one-GPU Beaker launcher did not enable torchrun, so LOCAL_RANK was unset. Exit 1; no paired-stat artifact; excluded from comparisons."},
+    {"kind": "paired-document-loss", "regime": "unique", "epoch": 1, "lr": "1e-3", "status": "failed", "beaker": "01KZ211VDVGPPBPBVMH9RS44BH", "job": "01KZ211VHDDVDJF3ADHP2T38SP", "revision": "3bdc6751", "reason": "Same confirmed one-GPU LOCAL_RANK configuration failure before model loading or evaluation. Exit 1; no paired-stat artifact; excluded from comparisons."},
+    {"kind": "paired-document-loss", "regime": "repeated", "epoch": 1, "lr": "5e-4", "status": "canceled", "beaker": "01KZ213WK71JWSBJR5P3BEPRN8", "job": "01KZ213WQ8GHG7J4ENP3JBYW1Y", "revision": "3bdc6751", "reason": "Canceled after the shared one-GPU LOCAL_RANK configuration failure was diagnosed; no paired-stat artifact; excluded from comparisons."},
+    {"kind": "paired-document-loss", "regime": "repeated", "epoch": 1, "lr": "1e-3", "status": "canceled", "beaker": "01KZ215D5DMXWJ4GD07ZWK6VCH", "job": "01KZ215D8THPB4ZEKC7WVZ8JHE", "revision": "3bdc6751", "reason": "Canceled after the shared one-GPU LOCAL_RANK configuration failure was diagnosed; no paired-stat artifact; excluded from comparisons."}
+  ]
 }
