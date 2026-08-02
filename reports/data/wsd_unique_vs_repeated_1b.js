@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 18:21 PDT",
+  "updated": "2026-08-01 18:25 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -762,7 +762,7 @@ window.STEP2_REPORT_DATA = {
       "wandb": "9bsxklmt",
       "revision": "27a9fc6c",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e5_lr1e-3_wd0.033_warmup24_uniformdocs_seed0_corrected_retry1",
-      "reason": "Corrected epoch-4 selected LR; active on Jupiter and W&B initialized; submitted after 0-active-H100 audit under 128-H100 night cap and Jupiter-mounted verification of exact step858 source plus absent output; resumes matching corrected pre-decay step858; endpoint-specific WSD decay to 5B; full nine-task and C4 evaluation; preserves step1073; minRuntime 0; autoResume false; no experiment retries"
+      "reason": "Corrected epoch-4 selected LR; active on Jupiter at step900/1193 with ETA about 49 minutes as of 18:24 PDT; submitted after 0-active-H100 audit under 128-H100 night cap and Jupiter-mounted verification of exact step858 source plus absent output; resumes matching corrected pre-decay step858; endpoint-specific WSD decay to 5B; full nine-task and C4 evaluation; preserves step1073; minRuntime 0; autoResume false; no experiment retries"
     },
     {
       "epoch": 5,
@@ -785,9 +785,10 @@ window.STEP2_REPORT_DATA = {
       "retryOf": "01KZ00K6P25ERJVKFDHZRNSZQK",
       "beaker": "01KZ00WSNKCE45TQKEHFWWSCDV",
       "job": "01KZ00WSSFQNM8M5SDNXZ3V0WM",
+      "wandb": "pt9nba9m",
       "revision": "65f94d19",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e5_lr2e-3_wd0.033_warmup24_uniformdocs_seed0_corrected_retry1",
-      "reason": "Confirmed infrastructure retry after pre-start SXid-12028 node cancellation; submitted at 16 total active/requested H100s under 128-H100 night cap after Jupiter-mounted verification of exact corrected step858 source and absent fresh retry output; resumes matching corrected pre-decay step858; endpoint-specific WSD decay to 5B; full nine-task and C4 evaluation; preserves step1073; minRuntime 0; autoResume false; no experiment retries"
+      "reason": "Confirmed infrastructure retry after pre-start SXid-12028 node cancellation; active on Jupiter at step865/1193 with ETA about 53 minutes as of 18:24 PDT; submitted at 16 total active/requested H100s under 128-H100 night cap after Jupiter-mounted verification of exact corrected step858 source and absent fresh retry output; resumes matching corrected pre-decay step858; endpoint-specific WSD decay to 5B; full nine-task and C4 evaluation; preserves step1073; minRuntime 0; autoResume false; no experiment retries"
     }
   ],
   "oldRepeatedRuns": [
