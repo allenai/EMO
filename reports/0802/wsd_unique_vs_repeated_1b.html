@@ -72,6 +72,7 @@
   <p class="note">The repeated 1B and unique 5B samples are independent uniform document samples from the training partition. No 0731 checkpoint or data artifact is reused.</p>
   <p class="note"><strong>Planned</strong> means required by the LR ladder but not submitted. Each endpoint selects the lower validation CE, then compares that LR with exactly one discrete step higher on 5e-4 → 1e-3 → 2e-3 → 4e-3.</p>
   <p class="note"><strong>Statistical significance:</strong> every LR and unique-vs-repeated conclusion reports the paired difference, a two-sided 95% confidence interval, and yes/no significance. Validation-loss intervals use a paired document-level bootstrap over the same 79,690 documents (100,000,118 real tokens); accuracy intervals use paired downstream examples. A result is significant only when its interval excludes zero.</p>
+  <p class="note" id="seed-probe-conclusion"></p>
 
   <h2>Model comparison — interactive</h2>
   <div class="legend" aria-label="Chart series">
@@ -116,6 +117,9 @@
   const smallModel=modelSize==="153M";
   const uniqueRuns=(smallModel?state.smallUniqueRuns:state.uniqueRuns)||[], repeatedRuns=(smallModel?state.smallRepeatedRuns:state.repeatedRuns)||[], seedProbeRuns=(smallModel?state.smallSeedProbeRuns:state.seedProbeRuns)||[], oldRepeatedRuns=smallModel?[]:(state.oldRepeatedRuns||[]), codelionRuns=smallModel?[]:(state.codelionRuns||[]), evaluationRuns=(smallModel?state.smallEvaluationRuns:state.evaluationRuns)||[], dataGeneration=state.dataGeneration||[];
   const modelInfo=state.modelSizes?.[modelSize]||{};
+  const seedConclusion=state.seedProbeConclusion;
+  const seedConclusionNode=document.querySelector("#seed-probe-conclusion");
+  if(!smallModel&&seedConclusion?.summary){seedConclusionNode.innerHTML=`<strong>Seed-probe conclusion (${seedConclusion.status}):</strong> ${seedConclusion.summary}`;}else{seedConclusionNode.hidden=true;}
   document.querySelector("#model-subtitle").textContent=`${modelInfo.label||`Dense ${modelSize}`} · ${Number(modelInfo.totalParameters||0).toLocaleString()} total parameters · WSD · WD 0.033 · warmup ${modelInfo.warmupSteps||"—"} · disjoint 100M-token DCLM validation selects LR.`;
   const validComplete=r=>r.status==="complete"&&Number.isFinite(r.c4);
   const bestByTarget=runs=>[1,2,3,4,5].map(epoch=>runs.filter(r=>r.epoch===epoch&&validComplete(r)).sort((a,b)=>a.c4-b.c4)[0]).filter(Boolean);
