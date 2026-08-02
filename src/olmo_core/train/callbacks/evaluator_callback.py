@@ -215,6 +215,9 @@ class EvaluatorCallback(Callback):
                 with torch.no_grad():
                     # Run forward pass, get logits and un-reduced CE loss.
                     labels = get_labels(batch)
+                    # ``eval_batch()`` may consume ``input_ids`` while preparing the
+                    # model inputs, so retain the batch size before calling it.
+                    paired_batch_size = batch["input_ids"].shape[0]
                     output = self.trainer.train_module.eval_batch(batch, labels=labels)
                     assert isinstance(output, LMOutputWithLoss)
                     logits, _, ce_loss, _ = output
@@ -224,7 +227,7 @@ class EvaluatorCallback(Callback):
                         assert paired_doc_starts is not None
                         assert paired_doc_ends is not None
                         assert paired_token_counts is not None
-                        if batch["input_ids"].shape[0] != 1:
+                        if paired_batch_size != 1:
                             raise OLMoConfigurationError(
                                 "paired document statistics require one instance per eval batch"
                             )
