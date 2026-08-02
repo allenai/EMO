@@ -6,6 +6,7 @@
 # USAGE:
 #     EPOCHS=1 LR=5e-4 MODE=beaker \
 #       bash scripts/models/dense_1b_step2_repeated_wsd.sh
+#     INIT_SEED and DATA_SEED make diagnostic reruns explicit and reproducible.
 #     START_FRESH=1 may be used at a later endpoint when introducing a new,
 #     higher LR that has no preceding stable checkpoint yet.
 ##############################################################
@@ -22,6 +23,13 @@ wd="${WD:-0.033}"
 subset_manifest="${SUBSET_MANIFEST:-src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b.json}"
 validation_manifest="${VALIDATION_MANIFEST:-src/olmo_core/data/subsets/0802/dclm_0802_validation.json}"
 start_fresh="${START_FRESH:-0}"
+init_seed="${INIT_SEED:-12536}"
+data_seed="${DATA_SEED:-0}"
+
+if [[ ! "${init_seed}" =~ ^[0-9]+$ || ! "${data_seed}" =~ ^[0-9]+$ ]]; then
+	echo "INIT_SEED and DATA_SEED must be non-negative integers" >&2
+	exit 2
+fi
 
 case "${lr}" in
 	5e-4|1e-3|2e-3|4e-3) ;;
@@ -95,5 +103,7 @@ launch src/scripts/train/olmo2-1B.py "${runname}" \
 		--train_module.scheduler="${scheduler_config}" \
 		--trainer.callbacks.checkpointer.fixed_steps="[${stable_step}]" \
 		"${load_args[@]}" \
+		--init_seed="${init_seed}" \
+		--data_loader.seed="${data_seed}" \
 		--train_module.optim.weight_decay="${wd}" \
 		--lr="${lr}"

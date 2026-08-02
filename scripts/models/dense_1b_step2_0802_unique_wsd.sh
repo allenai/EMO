@@ -20,6 +20,13 @@ lr="${LR:?Set LR}"
 wd="${WD:-0.033}"
 subset_manifest="${SUBSET_MANIFEST:-src/olmo_core/data/subsets/0802/dclm_0802_unique_train_5b.json}"
 validation_manifest="${VALIDATION_MANIFEST:-src/olmo_core/data/subsets/0802/dclm_0802_validation.json}"
+init_seed="${INIT_SEED:-12536}"
+data_seed="${DATA_SEED:-0}"
+
+if [[ ! "${init_seed}" =~ ^[0-9]+$ || ! "${data_seed}" =~ ^[0-9]+$ ]]; then
+	echo "INIT_SEED and DATA_SEED must be non-negative integers" >&2
+	exit 2
+fi
 
 case "${lr}" in
 	5e-4|1e-3|2e-3|4e-3) ;;
@@ -88,5 +95,7 @@ launch src/scripts/train/olmo2-1B.py "${runname}" \
 		--train_module.scheduler="${scheduler_config}" \
 		--trainer.callbacks.checkpointer.fixed_steps="[${stable_step}]" \
 		"${load_args[@]}" \
+		--init_seed="${init_seed}" \
+		--data_loader.seed="${data_seed}" \
 		--train_module.optim.weight_decay="${wd}" \
 		--lr="${lr}"

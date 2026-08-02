@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-02 13:30 PDT · first paired document-loss artifact complete; epoch 2 frozen for unmatched training samples",
+  "updated": "2026-08-02 13:45 PDT · epoch 2 paused; two repeated-corpus epoch-1 seed probes authorized",
   "manifest": {
     "status": "verified",
     "sourceTokens": 3684671294617,
@@ -25,6 +25,21 @@ window.STEP2_REPORT_DATA = {
     "significanceRule": "statistically significant only when the two-sided 95% confidence interval for the paired difference excludes zero",
     "requiredReportFields": ["difference", "95% confidence interval", "statistically significant yes/no"]
   },
+  "seedProbePolicy": {
+    "status": "authorized",
+    "epoch2Paused": true,
+    "regime": "repeated",
+    "epoch": 1,
+    "lr": "5e-4",
+    "wd": "0.033",
+    "trainingCorpus": "the exact existing repeated 1B corpus",
+    "baseline": {"initSeed": 12536, "dataSeed": 0, "wandb": "v8uxyvfb"},
+    "purpose": "Separate exact-seed reproducibility from sensitivity to initialization and data-order seeds before interpreting independent-sample unique-vs-repeated gaps. These diagnostics are excluded from the LR coordinate grid."
+  },
+  "seedProbeRuns": [
+    {"name": "same-seed reproducibility", "status": "pending-submission", "epoch": 1, "lr": "5e-4", "wd": "0.033", "initSeed": 12536, "dataSeed": 0, "runSuffix": "_seedprobe_same_seed", "reason": "Exact same corpus and explicit original initialization/data-order seeds; measures reproducibility and residual runtime nondeterminism."},
+    {"name": "alternate-seed sensitivity", "status": "pending-submission", "epoch": 1, "lr": "5e-4", "wd": "0.033", "initSeed": 12537, "dataSeed": 1, "runSuffix": "_seedprobe_alt_seed", "reason": "Exact same corpus with different initialization and data-order seeds; measures seed sensitivity. Excluded from LR selection grid."}
+  ],
   "dataGeneration": [
     {
       "beaker": "01KZ0PV76Y6JDEFWPHJXMFRJ5S",
