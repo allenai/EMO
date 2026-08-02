@@ -61,6 +61,7 @@
   <p class="note">The exhaustive DCLM document universe is assigned by a SHA-256 ordering over seed, canonical shard path, and zero-based document index. Validation, test, and training are mutually exclusive; their union is the complete source pool.</p>
   <p class="note">The repeated 1B and unique 5B samples are independent uniform document samples from the training partition. No 0731 checkpoint or data artifact is reused.</p>
   <p class="note"><strong>Planned</strong> means required by the LR ladder but not submitted. Each endpoint selects the lower validation CE, then compares that LR with exactly one discrete step higher on 5e-4 → 1e-3 → 2e-3 → 4e-3.</p>
+  <p class="note"><strong>Statistical significance:</strong> every LR and unique-vs-repeated conclusion reports the paired difference, a two-sided 95% confidence interval, and yes/no significance. Validation-loss intervals use a paired document-level bootstrap over the same 79,690 documents (100,000,118 real tokens); accuracy intervals use paired downstream examples. A result is significant only when its interval excludes zero.</p>
 
   <h2>Model comparison — interactive</h2>
   <div class="legend" aria-label="Chart series">

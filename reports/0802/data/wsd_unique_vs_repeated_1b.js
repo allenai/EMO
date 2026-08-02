@@ -16,6 +16,15 @@ window.STEP2_REPORT_DATA = {
     "uniqueDocuments": 4002478,
     "sha256": "2f3984482b51e499b1c854706dcd64e9bdd8cc567ac52d6546d3325a7ef68fe9"
   },
+  "statisticsPolicy": {
+    "confidenceLevel": 0.95,
+    "validationTokens": 100000118,
+    "validationDocuments": 79690,
+    "lossMethod": "paired document-level bootstrap on the identical DCLM validation documents",
+    "accuracyMethod": "paired item-level bootstrap on identical downstream examples",
+    "significanceRule": "statistically significant only when the two-sided 95% confidence interval for the paired difference excludes zero",
+    "requiredReportFields": ["difference", "95% confidence interval", "statistically significant yes/no"]
+  },
   "dataGeneration": [
     {
       "beaker": "01KZ0PV76Y6JDEFWPHJXMFRJ5S",
