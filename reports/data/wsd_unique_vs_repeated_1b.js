@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 18:08 PDT",
+  "updated": "2026-08-01 18:15 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -750,6 +750,30 @@ window.STEP2_REPORT_DATA = {
       },
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e4_lr2e-3_wd0.033_warmup24_uniformdocs_seed0_corrected",
       "reason": "Required corrected epoch-4 next-higher LR; completed full nine-task and held-out C4 evaluation; nearest final logged train CE at step950; fresh 4B trajectory because no corrected 2e-3 stable chain existed; endpoint-specific WSD decay to 4B; preserved step858; minRuntime 0; autoResume false; no experiment retries"
+    },
+    {
+      "epoch": 5,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "status": "active",
+      "correctedSubset": true,
+      "beaker": "01KZ00HSJCM5QA3JV67AZMWF5D",
+      "job": "01KZ00HSP5B511Z37N8QBQDAWS",
+      "revision": "27a9fc6c",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e5_lr1e-3_wd0.033_warmup24_uniformdocs_seed0_corrected_retry1",
+      "reason": "Corrected epoch-4 selected LR; submitted after 0-active-H100 audit under 128-H100 night cap and Jupiter-mounted verification of exact step858 source plus absent output; resumes matching corrected pre-decay step858; endpoint-specific WSD decay to 5B; full nine-task and C4 evaluation; preserves step1073; minRuntime 0; autoResume false; no experiment retries"
+    },
+    {
+      "epoch": 5,
+      "lr": "2e-3",
+      "wd": "0.033",
+      "status": "active",
+      "correctedSubset": true,
+      "beaker": "01KZ00K6P25ERJVKFDHZRNSZQK",
+      "job": "01KZ00K6SKZ0C19PAC8EC1KEMG",
+      "revision": "27a9fc6c",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e5_lr2e-3_wd0.033_warmup24_uniformdocs_seed0_corrected",
+      "reason": "Required corrected epoch-5 next-higher LR; submitted within 128-H100 night cap after Jupiter-mounted verification of exact step858 source plus absent output; resumes matching corrected pre-decay step858; endpoint-specific WSD decay to 5B; full nine-task and C4 evaluation; preserves step1073; minRuntime 0; autoResume false; no experiment retries"
     }
   ],
   "oldRepeatedRuns": [
