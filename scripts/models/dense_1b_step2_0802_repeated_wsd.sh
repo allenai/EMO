@@ -23,6 +23,11 @@ subset_manifest="${SUBSET_MANIFEST:-src/olmo_core/data/subsets/0802/dclm_0802_re
 validation_manifest="${VALIDATION_MANIFEST:-src/olmo_core/data/subsets/0802/dclm_0802_validation.json}"
 start_fresh="${START_FRESH:-0}"
 
+case "${lr}" in
+	5e-4|1e-3|2e-3|4e-3) ;;
+	*) echo "LR must be one of: 5e-4, 1e-3, 2e-3, 4e-3" >&2; exit 2 ;;
+esac
+
 case "${epochs}" in
 	1) max_tokens=1000000000; stable_step=214 ;;
 	2) max_tokens=2000000000; stable_step=428 ;;

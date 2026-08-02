@@ -60,7 +60,7 @@
   <p class="stamp" id="live-stamp"><strong>Intermediate report:</strong> loading run state.</p>
   <p class="note">The exhaustive DCLM document universe is assigned by a SHA-256 ordering over seed, canonical shard path, and zero-based document index. Validation, test, and training are mutually exclusive; their union is the complete source pool.</p>
   <p class="note">The repeated 1B and unique 5B samples are independent uniform document samples from the training partition. No 0731 checkpoint or data artifact is reused.</p>
-  <p class="note"><strong>Planned</strong> means required by the LR ladder but not submitted. Each endpoint selects the lower validation CE, then compares that LR with exactly one discrete step higher on 4e-4 → 1e-3 → 2e-3 → 4e-3.</p>
+  <p class="note"><strong>Planned</strong> means required by the LR ladder but not submitted. Each endpoint selects the lower validation CE, then compares that LR with exactly one discrete step higher on 5e-4 → 1e-3 → 2e-3 → 4e-3.</p>
 
   <h2>Model comparison — interactive</h2>
   <div class="legend" aria-label="Chart series">
@@ -85,10 +85,10 @@
   <p class="note">Scroll horizontally to inspect the remaining figures. The 8-task average excludes BoolQ; the stable 3-task average uses ARC-Easy, HellaSwag, and PIQA. The sealed DCLM test split is not used for LR selection.</p>
 
   <h2>Unique-data LR coordinate grid</h2>
-  <div class="card table-wrap"><table class="coverage"><thead><tr><th>Target</th><th>Evaluated, active, and invalid LRs</th><th>Selected by C4</th></tr></thead><tbody id="unique-grid"></tbody></table></div>
+  <div class="card table-wrap"><table class="coverage"><thead><tr><th>Target</th><th>Evaluated, active, and invalid LRs</th><th>Selected by DCLM validation CE</th></tr></thead><tbody id="unique-grid"></tbody></table></div>
 
   <h2>Repeated-DCLM 1B LR coordinate grid</h2>
-  <div class="card table-wrap"><table class="coverage"><thead><tr><th>Target</th><th>Evaluated and active LRs</th><th>Selected by C4</th></tr></thead><tbody id="repeated-grid"></tbody></table></div>
+  <div class="card table-wrap"><table class="coverage"><thead><tr><th>Target</th><th>Evaluated and active LRs</th><th>Selected by DCLM validation CE</th></tr></thead><tbody id="repeated-grid"></tbody></table></div>
 
   <h2>Runs and provenance</h2>
   <div class="card table-wrap"><table><thead><tr><th>Condition</th><th>Target</th><th>LR</th><th>WD</th><th>Status</th><th>Train CE</th><th>C4 CE</th><th>HS acc</th><th>HS BPB</th><th>W&amp;B</th><th>Beaker</th></tr></thead><tbody id="runs-body"></tbody></table></div>

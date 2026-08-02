@@ -21,6 +21,11 @@ wd="${WD:-0.033}"
 subset_manifest="${SUBSET_MANIFEST:-src/olmo_core/data/subsets/0802/dclm_0802_unique_train_5b.json}"
 validation_manifest="${VALIDATION_MANIFEST:-src/olmo_core/data/subsets/0802/dclm_0802_validation.json}"
 
+case "${lr}" in
+	5e-4|1e-3|2e-3|4e-3) ;;
+	*) echo "LR must be one of: 5e-4, 1e-3, 2e-3, 4e-3" >&2; exit 2 ;;
+esac
+
 for manifest in "${subset_manifest}" "${validation_manifest}"; do
 	if [[ ! -f "${manifest}" ]]; then
 		echo "Required 0802 manifest does not exist: ${manifest}" >&2
