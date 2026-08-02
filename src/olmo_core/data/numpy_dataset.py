@@ -698,6 +698,7 @@ class NumpyFSLSubsetDataset(NumpyFSLDataset):
         *paths: PathOrStr,
         instance_ranges: Sequence[Tuple[int, int]],
         subset_digest: str,
+        num_real_tokens: Optional[int] = None,
         **kwargs: Any,
     ):
         if len(instance_ranges) != len(paths):
@@ -715,15 +716,30 @@ class NumpyFSLSubsetDataset(NumpyFSLDataset):
             str(path): instance_range for path, instance_range in zip(paths, instance_ranges)
         }
         self._subset_digest = subset_digest
+        self._num_real_tokens = num_real_tokens
         super().__init__(*paths, **kwargs)
 
     @property
     def fingerprint_fields(self) -> Tuple[str, ...]:
-        return super().fingerprint_fields + ("subset_digest",)
+        return super().fingerprint_fields + ("subset_digest", "num_real_tokens")
 
     @property
     def subset_digest(self) -> str:
         return self._subset_digest
+
+    @property
+    def num_real_tokens(self) -> Optional[int]:
+        return self._num_real_tokens
+
+    def __getitem__(self, index: int) -> Dict[str, Any]:
+        item = super().__getitem__(index)
+        if self.num_real_tokens is not None:
+            pos_index = int(index) if index >= 0 else len(self) + int(index)
+            token_start = pos_index * self.sequence_length
+            item["label_mask"] = (
+                torch.arange(self.sequence_length) + token_start < self.num_real_tokens
+            )
+        return item
 
     def _read_chunk_from_array(self, path: PathOrStr, index: int, dtype=None) -> torch.Tensor:
         start_instance, _ = self._instance_range_by_path[str(path)]
@@ -2712,10 +2728,34 @@ class NumpyFSLDatasetConfig(NumpyDatasetConfig):
                     f"subset manifest selects {total_instances:,} instances but metadata declares "
                     f"{selection.get('selected_instances')!r}"
                 )
+            num_real_tokens = selection.get("selected_real_document_tokens")
+            padding_tokens = selection.get("padding_eos_tokens")
+            if num_real_tokens is not None or padding_tokens is not None:
+                if not isinstance(num_real_tokens, int) or not isinstance(padding_tokens, int):
+                    raise OLMoConfigurationError(
+                        "subset manifest must declare integer 'selected_real_document_tokens' "
+                        "and 'padding_eos_tokens' together"
+                    )
+                selected_tokens = total_instances * self.sequence_length
+                if num_real_tokens < 0 or padding_tokens < 0:
+                    raise OLMoConfigurationError(
+                        "subset manifest real and alignment token counts must be non-negative"
+                    )
+                if num_real_tokens + padding_tokens != selected_tokens:
+                    raise OLMoConfigurationError(
+                        f"subset manifest declares {num_real_tokens:,} real tokens and "
+                        f"{padding_tokens:,} alignment tokens, but its instance ranges contain "
+                        f"{selected_tokens:,} tokens"
+                    )
+                if selection.get("selected_tokens", selected_tokens) != selected_tokens:
+                    raise OLMoConfigurationError(
+                        "subset manifest 'selected_tokens' does not match its instance ranges"
+                    )
             dataset = NumpyFSLSubsetDataset(
                 *paths,
                 instance_ranges=instance_ranges,
                 subset_digest=entries_digest,
+                num_real_tokens=num_real_tokens,
                 sequence_length=self.sequence_length,
                 max_target_sequence_length=self.max_target_sequence_length,
                 pad_token_id=self.tokenizer.pad_token_id,
