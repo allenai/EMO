@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 19:15 PDT",
+  "updated": "2026-08-01 19:20 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -756,6 +756,7 @@ window.STEP2_REPORT_DATA = {
       "lr": "1e-3",
       "wd": "0.033",
       "status": "complete",
+      "selected": true,
       "correctedSubset": true,
       "beaker": "01KZ00HSJCM5QA3JV67AZMWF5D",
       "job": "01KZ00HSP5B511Z37N8QBQDAWS",
@@ -776,7 +777,7 @@ window.STEP2_REPORT_DATA = {
         "winogrande": 50.51
       },
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e5_lr1e-3_wd0.033_warmup24_uniformdocs_seed0_corrected_retry1",
-      "reason": "Completed corrected epoch-5 selected-LR candidate with full nine-task and held-out C4 evaluation; nearest final logged train CE at step1190; resumed matching corrected pre-decay step858; endpoint-specific WSD decay to 5B; preserved step1073; minRuntime 0; autoResume false; no experiment retries"
+      "reason": "Selected at corrected epoch 5 by lower held-out C4 (3.584 versus 4.956 for 2e-3); nearest final logged train CE at step1190; resumed matching corrected pre-decay step858; endpoint-specific WSD decay to 5B; full nine-task and C4 evaluation; preserved step1073; minRuntime 0; autoResume false; no experiment retries"
     },
     {
       "epoch": 5,
@@ -794,15 +795,29 @@ window.STEP2_REPORT_DATA = {
       "epoch": 5,
       "lr": "2e-3",
       "wd": "0.033",
-      "status": "active",
+      "status": "complete",
       "correctedSubset": true,
       "retryOf": "01KZ00K6P25ERJVKFDHZRNSZQK",
       "beaker": "01KZ00WSNKCE45TQKEHFWWSCDV",
       "job": "01KZ00WSSFQNM8M5SDNXZ3V0WM",
       "wandb": "pt9nba9m",
       "revision": "65f94d19",
+      "train": 4.456,
+      "c4": 4.956,
+      "acc": 25.78,
+      "bpb": 1.461,
+      "downstream": {
+        "arc_challenge": 25.42,
+        "arc_easy": 28.25,
+        "boolq": 41.93,
+        "csqa": 24.16,
+        "openbookqa": 23.0,
+        "piqa": 52.23,
+        "socialiqa": 39.25,
+        "winogrande": 49.25
+      },
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e5_lr2e-3_wd0.033_warmup24_uniformdocs_seed0_corrected_retry1",
-      "reason": "Confirmed infrastructure retry after pre-start SXid-12028 node cancellation; active on Jupiter at step1175/1193 with ETA about 3 minutes as of 19:15 PDT; submitted at 16 total active/requested H100s under 128-H100 night cap after Jupiter-mounted verification of exact corrected step858 source and absent fresh retry output; resumes matching corrected pre-decay step858; endpoint-specific WSD decay to 5B; full nine-task and C4 evaluation; preserved step1073; minRuntime 0; autoResume false; no experiment retries"
+      "reason": "Confirmed infrastructure retry after pre-start SXid-12028 node cancellation; completed full nine-task and held-out C4 evaluation; nearest final logged train CE at step1190; resumed matching corrected pre-decay step858; endpoint-specific WSD decay to 5B; preserved step1073; minRuntime 0; autoResume false; no experiment retries"
     }
   ],
   "oldRepeatedRuns": [
