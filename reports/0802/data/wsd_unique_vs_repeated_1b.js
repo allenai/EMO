@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-02 03:40 PDT · partition retry active after system preemption",
+  "updated": "2026-08-02 09:12 PDT · parallel partition materialization retry active",
   "manifest": {
     "status": "pending exhaustive document scan and independent audit"
   },
@@ -31,8 +31,16 @@ window.STEP2_REPORT_DATA = {
       "resultDataset": "01KZ10SYBBGJ72R0CX7W5RPX0E",
       "sourceDataset": "01KZ0QXCDPRAZNDBEK437CXJ7D",
       "revision": "0834a592",
+      "status": "canceled",
+      "reason": "Diagnosed non-completable implementation: after 5.5 hours the single-threaded writer had completed validation/test but only 1.85/4.0 GB of the 1B repeated artifact; stopped before the eight-hour timeout, partial paths retained"
+    },
+    {
+      "beaker": "01KZ1KTFZ6KGG8Z44VF4DPRYT8",
+      "resultDataset": "01KZ1KTFRQD1VWAVYDCMS4CQSQ",
+      "sourceDataset": "01KZ1KSH835PMYNB0S6Z00Y59A",
+      "revision": "0ee8c2d9",
       "status": "active",
-      "reason": "Confirmed infrastructure retry at urgent priority after zero-active-H100 audit, using fresh output and candidate suffixes"
+      "reason": "Urgent retry after zero-active-H100 audit using parallel resumable per-shard materialization, sequential hash-preserving assembly, and fresh output/candidate paths"
     }
   ],
   "uniqueRuns": [
