@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-01 18:18 PDT",
+  "updated": "2026-08-01 18:21 PDT",
   "manifest": {
     "path": "src/olmo_core/data/subsets/dclm_full_1b.json",
     "selectedTokens": 1002438656,
@@ -775,6 +775,19 @@ window.STEP2_REPORT_DATA = {
       "revision": "27a9fc6c",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e5_lr2e-3_wd0.033_warmup24_uniformdocs_seed0_corrected",
       "reason": "Canceled while starting before W&B or training because its assigned Jupiter node was cordoned after unrecoverable SXid error code 12028; no output produced; diagnosed as retryable infrastructure failure; retained in detailed provenance and excluded from coordinate grids"
+    },
+    {
+      "epoch": 5,
+      "lr": "2e-3",
+      "wd": "0.033",
+      "status": "active",
+      "correctedSubset": true,
+      "retryOf": "01KZ00K6P25ERJVKFDHZRNSZQK",
+      "beaker": "01KZ00WSNKCE45TQKEHFWWSCDV",
+      "job": "01KZ00WSSFQNM8M5SDNXZ3V0WM",
+      "revision": "65f94d19",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_repeated_dclm1b_wsd_e5_lr2e-3_wd0.033_warmup24_uniformdocs_seed0_corrected_retry1",
+      "reason": "Confirmed infrastructure retry after pre-start SXid-12028 node cancellation; submitted at 16 total active/requested H100s under 128-H100 night cap after Jupiter-mounted verification of exact corrected step858 source and absent fresh retry output; resumes matching corrected pre-decay step858; endpoint-specific WSD decay to 5B; full nine-task and C4 evaluation; preserves step1073; minRuntime 0; autoResume false; no experiment retries"
     }
   ],
   "oldRepeatedRuns": [
