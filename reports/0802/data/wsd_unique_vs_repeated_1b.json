@@ -1,8 +1,24 @@
 {
-  "updated": "2026-08-02 · partition implementation in progress",
+  "updated": "2026-08-02 00:59 PDT · exhaustive partition scan retry starting",
   "manifest": {
-    "status": "pending exhaustive document scan and audit"
+    "status": "pending exhaustive document scan and independent audit"
   },
+  "dataGeneration": [
+    {
+      "beaker": "01KZ0PV76Y6JDEFWPHJXMFRJ5S",
+      "resultDataset": "01KZ0PV72R27GKATHXP8SNTZ74",
+      "revision": "0834a592",
+      "status": "canceled",
+      "reason": "Confirmed startup failure: full-history Git clone stalled for more than 14 minutes before any Weka output was created"
+    },
+    {
+      "beaker": "01KZ0QPSJYSDP2T9BASQXFNC53",
+      "resultDataset": "01KZ0QPSFVX4V4VVHH42K07GPH",
+      "revision": "0834a592",
+      "status": "active",
+      "reason": "Infrastructure retry using a shallow single-branch clone and the same verified-empty output paths"
+    }
+  ],
   "uniqueRuns": [
     {"epoch": 1, "lr": "4e-4", "wd": "0.033", "status": "planned", "reason": "Pending verified 0802 split"},
     {"epoch": 1, "lr": "1e-3", "wd": "0.033", "status": "planned", "reason": "Pending verified 0802 split"}
