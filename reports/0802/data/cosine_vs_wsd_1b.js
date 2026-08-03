@@ -1,0 +1,7 @@
+window.ICSL_REPORT_DATA = {
+  "updated": "2026-08-02 20:05 PDT",
+  "title": "Step 0 — Cosine vs. Cosine (alpha_f=0) vs. WSD",
+  "setup": "Dense 1B; verified 0802 Pool-A train-only 1B corpus; 100M-token DCLM validation; sealed test unused; WD 0.033; init seed 12536; data seed 0.",
+  "selection": "Compare cosine, cosine alpha_f=0, and WSD at each 1B-token endpoint. Cosine endpoints train from scratch. WSD reuses the original Pool-A Step-2 chain and resumes only matching pre-decay checkpoints.",
+  "runs": []
+};

@@ -1,0 +1,7 @@
+window.ICSL_REPORT_DATA = {
+  "updated": "2026-08-02 20:05 PDT",
+  "title": "Step 1 — WSD Weight-Decay Tuning",
+  "setup": "Dense 1B; verified 0802 Pool-A train-only 1B corpus; 100M-token DCLM validation; sealed test unused; LR 5e-4; init seed 12536; data seed 0.",
+  "selection": "Tune WD independently by DCLM validation CE. Every WD has its own WSD chain and later endpoints resume only that chain's pre-decay checkpoint. WD 0.033 reuses the original Pool-A Step-2 WSD chain.",
+  "runs": []
+};
