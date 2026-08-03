@@ -7,6 +7,8 @@
 # USAGE:
 #     EPOCHS=2 LR=5e-4 LOAD_PATH=/weka/.../step214 MODE=beaker \
 #       bash scripts/models/dense_1b_step2_unique_wsd.sh
+#     START_FRESH=1 may be used at a later endpoint when introducing a new,
+#     higher LR that has no preceding stable checkpoint yet.
 ##############################################################
 set -eo pipefail
 
@@ -22,6 +24,7 @@ subset_manifest="${SUBSET_MANIFEST:-src/olmo_core/data/subsets/0802/dclm_0802_un
 validation_manifest="${VALIDATION_MANIFEST:-src/olmo_core/data/subsets/0802/dclm_0802_validation.json}"
 init_seed="${INIT_SEED:-12536}"
 data_seed="${DATA_SEED:-0}"
+start_fresh="${START_FRESH:-0}"
 
 if [[ ! "${init_seed}" =~ ^[0-9]+$ || ! "${data_seed}" =~ ^[0-9]+$ ]]; then
 	echo "INIT_SEED and DATA_SEED must be non-negative integers" >&2
@@ -54,13 +57,18 @@ downstream_tasks="${DOWNSTREAM_TASKS:-[arc_easy, arc_challenge, boolq, csqa_val_
 load_args=()
 dry_run_args=()
 
+if [[ "${start_fresh}" != "0" && "${start_fresh}" != "1" ]]; then
+	echo "START_FRESH must be 0 or 1" >&2
+	exit 2
+fi
+
 if [[ "${DRY_RUN:-0}" == "1" ]]; then
 	dry_run_args+=(--dry-run)
 fi
 
-if [[ "${epochs}" -eq 1 ]]; then
+if [[ "${epochs}" -eq 1 || "${start_fresh}" == "1" ]]; then
 	if [[ -n "${LOAD_PATH:-}" ]]; then
-		echo "Epoch 1 starts a fresh LR chain; do not set LOAD_PATH" >&2
+		echo "A fresh LR chain must not set LOAD_PATH" >&2
 		exit 2
 	fi
 else
