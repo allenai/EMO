@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-02 17:48 PDT · B/C generation stopped after Beaker assigned GPUs to a CPU-only request",
+  "updated": "2026-08-02 17:58 PDT · exact-zero-GPU Phobos preflight queued for B/C generation",
   "modelSizes": {
     "1B": {"label": "Dense 1B", "factory": "olmo2_1B_v2", "totalParameters": 1484916736, "nonEmbeddingParameters": 1279395840, "globalBatchTokens": 4194304, "warmupSteps": 24},
     "153M": {"label": "Dense 153M", "factory": "explicit current-architecture dimensions", "totalParameters": 153104896, "nonEmbeddingParameters": 101724672, "globalBatchTokens": 1048576, "warmupSteps": 95}
@@ -45,7 +45,7 @@ window.STEP2_REPORT_DATA = {
     "summary": "All four dense-1B seed probes are complete. Same-seed reproducibility is strong for loss: the repeated rerun matches its baseline train and validation CE at three-decimal precision (4.972 and 5.000), while the unique rerun matches train CE (5.013) and differs by only -0.001 validation CE (4.995 versus 4.996). Downstream accuracies still move despite identical explicit seeds, showing residual runtime/evaluation variability. The alternate probes changed both initialization and data-order seeds, so they measure combined seed sensitivity rather than data ordering alone: repeated validation CE remains 5.000 at displayed precision, while unique validation CE worsens by +0.019 (5.015 versus 4.996); train CE changes by +0.053 repeated and +0.027 unique. This supports validation CE being substantially more stable than individual downstream tasks, but does not isolate the data-order effect and does not establish a unique-vs-repeated regime effect because the 1B training realizations are unmatched. Paired 95% confidence intervals for these probe checkpoints are not yet available, so statistical significance is pending."
   },
   "poolRobustness": {
-    "status": "generation paused pending verified zero-GPU placement",
+    "status": "CPU-only Phobos preflight queued; B/C not generated or verified yet",
     "epoch2Paused": true,
     "referencePool": {"name": "A", "selectionDomain": "dclm-train-repeated-sample-v1", "selectionSeed": 1},
     "newPools": [{"name": "B", "selectionSeed": 3}, {"name": "C", "selectionSeed": 4}],
@@ -120,6 +120,14 @@ window.STEP2_REPORT_DATA = {
       "revision": "50f2499c",
       "status": "canceled",
       "reason": "Stopped after 5m52s when allocation inspection showed three assigned H100s despite the command explicitly passing --gpus 0 and the recorded request containing CPU/memory only with no gpuCount. No training ran; partial generation paths remain untouched. A follow-up regular experiment with resources.gpuCount: 0 was also stopped before execution after Beaker assigned one GPU. Generation will not resume until realized allocation is verified as exactly zero GPUs."
+    },
+    {
+      "beaker": "01KZ2HTTZF6QHCPNQHPBB284J8",
+      "job": "01KZ2HTV33HWWHE3Y445AV1QPB",
+      "sourceDataset": "01KZ2GK6K0ANPPFJYTBSXQ0Z19",
+      "revision": "50f2499c",
+      "status": "queued",
+      "reason": "Tiny preflight constrained to ai2/phobos, whose only node has 180 CPUs and exactly zero GPUs. It must verify realized BEAKER_ASSIGNED_GPU_COUNT=0, Weka source visibility, and fresh B/C output paths before generation is submitted."
     }
   ],
   "uniqueRuns": [
