@@ -32,6 +32,11 @@
     .legend .repeated-old .swatch { background:repeating-linear-gradient(90deg,#7c3aed 0 5px,transparent 5px 8px); }
     .legend .codelion .swatch { background:#d97706; }
     .table-wrap { overflow:auto; }
+    .run-family-legend { display:flex; flex-wrap:wrap; gap:6px 14px; margin:6px 0 8px; color:var(--muted); font-size:12px; }
+    .run-family-key { display:inline-flex; align-items:center; gap:6px; }
+    .run-family-dot { display:inline-block; width:9px; height:9px; border-radius:50%; flex:0 0 9px; box-shadow:0 0 0 1px rgba(0,0,0,.12); }
+    .condition-wrap { display:inline-flex; align-items:center; gap:7px; }
+    .seed-tag { margin-left:5px; color:var(--muted); font-size:11px; }
     table { width:100%; border-collapse:collapse; background:var(--card); }
     th,td { padding:7px 9px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap; }
     th:first-child,td:first-child,th:nth-child(2),td:nth-child(2),th:nth-child(3),td:nth-child(3) { text-align:left; }
@@ -103,6 +108,7 @@
   <div class="card table-wrap"><table class="coverage"><thead><tr><th>Target</th><th>Evaluated and active LRs</th><th>Selected by DCLM validation CE</th></tr></thead><tbody id="repeated-grid"></tbody></table></div>
 
   <h2>Runs and provenance</h2>
+  <div class="run-family-legend" id="run-family-legend" aria-label="Run-family color legend"></div>
   <div class="card table-wrap"><table><thead><tr><th>Condition</th><th>Target</th><th>LR</th><th>WD</th><th>Status</th><th>Train CE</th><th>C4 CE</th><th>HS acc</th><th>HS BPB</th><th>W&amp;B</th><th>Beaker</th></tr></thead><tbody id="runs-body"></tbody></table></div>
 
   <footer id="manifest-note"></footer>
@@ -132,9 +138,23 @@
   const generationProvenance=dataGeneration.map(run=>`${run.beaker}: ${run.status}${run.reason?` (${run.reason})`:""}`).join(" · ");
   document.querySelector("#manifest-note").textContent=(state.manifest.status==="verified"?`Partition verified: ${state.manifest.sourceTokens.toLocaleString()} source tokens · validation ${state.manifest.validationTokens.toLocaleString()} real tokens · test ${state.manifest.testTokens.toLocaleString()} real tokens · train ${state.manifest.trainTokens.toLocaleString()} real tokens · repeated sample ${state.manifest.repeatedTokens.toLocaleString()} real tokens · unique sample ${state.manifest.uniqueTokens.toLocaleString()} real tokens · partition SHA-256 ${state.manifest.sha256}.`:`Data partition status: ${state.manifest.status}. Training will not start before the audit is verified.`)+(generationProvenance?` Generation provenance: ${generationProvenance}.`:"");
 
-  const row=(r,condition)=>`<tr title="${r.reason||''}"><td>${condition}</td><td>${r.epoch}B</td><td>${r.lr}</td><td>${r.wd||"—"}</td><td class="${r.status}">${statusLabel[r.status]||r.status}</td><td>${metric(r,"train")}</td><td>${metric(r,"c4")}</td><td>${Number.isFinite(r.acc)?r.acc.toFixed(3)+"%":"—"}</td><td>${metric(r,"bpb",5)}</td><td>${link(r.wandb?`https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}`:null,r.wandb)}</td><td>${link(r.beaker?`https://beaker.org/ex/${r.beaker}`:null,"experiment")}</td></tr>`;
   const visibleProvenance=r=>r.status!=="failed"&&r.lr!=="4e-4";
-  document.querySelector("#runs-body").innerHTML=uniqueRuns.filter(visibleProvenance).map(r=>row(r,"Unique DCLM 5B sample · aggregate")).join("")+repeatedRuns.filter(visibleProvenance).map(r=>row(r,"Repeated DCLM 1B sample · aggregate")).join("")+seedProbeRuns.filter(visibleProvenance).map(r=>row(r,`${r.regime||"seed"} · ${r.name}`)).join("")+evaluationRuns.filter(visibleProvenance).map(r=>row(r,`${r.condition||r.regime||"paired"} · evaluation`)).join("");
+  const familyForMain=(r,regime)=>!smallModel&&r.epoch===1&&r.lr==="5e-4"?`Dense 1B · ${regime} corpus · epoch 1 · 5e-4`:null;
+  const familyForProbe=r=>smallModel?"Dense 153M · matched repeated 1B corpus · epoch 1 · 5e-4":`Dense 1B · ${r.regime} corpus · epoch ${r.epoch} · ${r.lr}`;
+  const provenanceRows=[
+    ...uniqueRuns.filter(visibleProvenance).map(r=>({r,condition:"Unique DCLM 5B sample · aggregate",family:familyForMain(r,"unique")})),
+    ...repeatedRuns.filter(visibleProvenance).map(r=>({r,condition:"Repeated DCLM 1B sample · aggregate",family:familyForMain(r,"repeated")})),
+    ...seedProbeRuns.filter(visibleProvenance).map(r=>({r,condition:`${r.regime||"seed"} · ${r.name}`,family:familyForProbe(r)})),
+    ...evaluationRuns.filter(visibleProvenance).map(r=>({r,condition:`${r.condition||r.regime||"paired"} · evaluation`,family:null}))
+  ];
+  const familyCounts=provenanceRows.reduce((counts,{family})=>{if(family)counts[family]=(counts[family]||0)+1;return counts;},{});
+  const familyNames=Object.keys(familyCounts).filter(family=>familyCounts[family]>1);
+  const familyPalette=["#2563eb","#dc2626","#059669","#9333ea","#d97706","#0891b2"];
+  const familyColors=Object.fromEntries(familyNames.map((family,index)=>[family,familyPalette[index%familyPalette.length]]));
+  const seedTag=(r,family)=>{const init=Number.isInteger(r.initSeed)?r.initSeed:family?.startsWith("Dense 1B")?12536:null;const data=Number.isInteger(r.dataSeed)?r.dataSeed:init===12536?0:null;return init!==null?`<span class="seed-tag">init ${init} · data ${data}</span>`:"";};
+  const row=({r,condition,family})=>{const color=familyColors[family];const dot=color?`<span class="run-family-dot" style="background:${color}" title="Same run family: ${family}"></span>`:"";return `<tr title="${r.reason||''}"><td><span class="condition-wrap">${dot}<span>${condition}${seedTag(r,family)}</span></span></td><td>${r.epoch}B</td><td>${r.lr}</td><td>${r.wd||"—"}</td><td class="${r.status}">${statusLabel[r.status]||r.status}</td><td>${metric(r,"train")}</td><td>${metric(r,"c4")}</td><td>${Number.isFinite(r.acc)?r.acc.toFixed(3)+"%":"—"}</td><td>${metric(r,"bpb",5)}</td><td>${link(r.wandb?`https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}`:null,r.wandb)}</td><td>${link(r.beaker?`https://beaker.org/ex/${r.beaker}`:null,"experiment")}</td></tr>`;};
+  document.querySelector("#run-family-legend").innerHTML=familyNames.length?`<strong>Same-run families:</strong> ${familyNames.map(family=>`<span class="run-family-key"><span class="run-family-dot" style="background:${familyColors[family]}"></span>${family}</span>`).join("")}`:"";
+  document.querySelector("#runs-body").innerHTML=provenanceRows.map(row).join("");
 
   const grid=(runs,best,mount)=>mount.innerHTML=[1,2,3,4,5].map(epoch=>{
     const points=runs.filter(r=>r.epoch===epoch&&!r.duplicate&&!["invalid","canceled","failed"].includes(r.status)).sort((a,b)=>Number(a.lr)-Number(b.lr));
