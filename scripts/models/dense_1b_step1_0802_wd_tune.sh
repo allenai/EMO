@@ -14,6 +14,7 @@ subset_manifest="${SUBSET_MANIFEST:-src/olmo_core/data/subsets/0802/dclm_0802_re
 validation_manifest="${VALIDATION_MANIFEST:-src/olmo_core/data/subsets/0802/dclm_0802_validation.json}"
 init_seed="${INIT_SEED:-12536}"
 data_seed="${DATA_SEED:-0}"
+run_suffix="${RUN_SUFFIX:-}"
 
 case "${lr}" in 2.5e-4|5e-4|1e-3|2e-3|4e-3) ;; *) echo "Unsupported LR: ${lr}" >&2; exit 2 ;; esac
 case "${epochs}" in
@@ -38,7 +39,7 @@ fi
 warmup_steps=24
 downstream_tasks="${DOWNSTREAM_TASKS:-[arc_easy, arc_challenge, boolq, csqa_val_rc_5shot, hellaswag, openbookqa_test_rc_5shot, piqa, socialiqa_val_rc_5shot, winogrande]}"
 scheduler_config="{_CLASS_: olmo_core.optim.scheduler.WSD, units: steps, warmup: ${warmup_steps}, decay_fraction: 0.1}"
-runname="dense_1b_step1_0802_repeated_dclm1b_wsd_e${epochs}_lr${lr}_wd${wd}_warmup${warmup_steps}"
+runname="dense_1b_step1_0802_repeated_dclm1b_wsd_e${epochs}_lr${lr}_wd${wd}_warmup${warmup_steps}${run_suffix}"
 
 launch src/scripts/train/olmo2-1B.py "${runname}" \
   --save-folder="${MODELS_DIR}/${runname}" \
