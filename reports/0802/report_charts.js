@@ -25,7 +25,7 @@
     if(d.coordinateMode==='fixed-step2-lr'){
       const section=gridMount.closest('section'),table=gridMount.closest('table');
       section.querySelector('h2').textContent='Step 1 coordinate grid — (LR, WD), one flat row per epoch';
-      table.querySelector('thead tr').innerHTML='<th>Epoch</th><th>Completed (LR, WD) coordinates</th><th>Selected at inherited Step 2 LR</th>';
+      table.querySelector('thead tr').innerHTML='<th>Epoch</th><th>Completed (LR, WD) coordinates</th>';
       const epochs=[...new Set(visibleRuns.map(r=>r.epoch))].sort((a,b)=>a-b);
       gridMount.innerHTML=epochs.map(epoch=>{
         const ordered=visibleRuns.filter(r=>r.epoch===epoch).sort((a,b)=>Number(a.wd)-Number(b.wd)||Number(a.lr)-Number(b.lr));
@@ -34,13 +34,13 @@
         const eligible=complete.filter(r=>r.lr===fixed);
         const selected=eligible.length?eligible.reduce((winner,r)=>(r.validation??r.c4)<(winner.validation??winner.c4)?r:winner):null;
         const chips=ordered.map(r=>`<span class="tuple ${selected===r?'selected':['active','queued','planned'].includes(r.status)?'active':''}">(LR ${r.lr||'—'}, WD ${r.wd||'—'}) · ${r.status}${Number.isFinite(r.validation??r.c4)?` · CE ${(r.validation??r.c4).toFixed(3)}`:''}</span>`).join('');
-        const outcome=selected?`<strong>(LR ${selected.lr}, WD ${selected.wd})</strong> · DCLM validation CE ${(selected.validation??selected.c4).toFixed(3)}`:'Pending inherited-LR result';
-        return `<tr><td><strong>E${epoch}</strong></td><td><div class="tuple-list">${chips||'<span class="pending">—</span>'}</div></td><td>${outcome}</td></tr>`;
+        return `<tr><td><strong>E${epoch}</strong></td><td><div class="tuple-list">${chips||'<span class="pending">—</span>'}</div></td></tr>`;
       }).join('');
     }else{
+      gridMount.closest('table').querySelector('thead tr').innerHTML='<th>Epoch</th><th>Series</th><th>Evaluated and active LRs</th>';
       const groups=new Map();
       visibleRuns.forEach(r=>{const g=`${r.epoch}|${key(r)}`;if(!groups.has(g))groups.set(g,[]);groups.get(g).push(r);});
-      gridMount.innerHTML=[...groups.entries()].sort((a,b)=>{const [ae,ak]=a[0].split('|'),[be,bk]=b[0].split('|');return Number(ae)-Number(be)||ak.localeCompare(bk)}).map(([g,runs])=>{const [epoch,label]=g.split('|');const ordered=runs.sort((a,b)=>Number(a.lr)-Number(b.lr));const complete=ordered.filter(r=>r.status==='complete'&&Number.isFinite(r.validation??r.c4));const unresolved=ordered.some(r=>['active','queued','planned'].includes(r.status));const best=complete.length?complete.reduce((winner,r)=>(r.validation??r.c4)<(winner.validation??winner.c4)?r:winner):null;const selected=!unresolved&&complete.length>=2?best:null;const chips=ordered.map(r=>`<span class="tuple ${best===r?'selected':['active','queued','planned'].includes(r.status)?'active':''}">${r.lr||'—'} · ${r.status}${Number.isFinite(r.validation??r.c4)?` · ${(r.validation??r.c4).toFixed(3)}`:''}</span>`).join('');const outcome=selected?`<strong>${selected.lr}</strong> · DCLM validation CE ${(selected.validation??selected.c4).toFixed(3)}`:best?`<strong>Provisional ${best.lr}</strong> · DCLM validation CE ${(best.validation??best.c4).toFixed(3)}${unresolved?' · comparison active':' · only completed result'}`:'Pending results';return `<tr><td><strong>E${epoch}</strong></td><td>${label}</td><td><div class="tuple-list">${chips}</div></td><td>${outcome}</td></tr>`;}).join('');
+      gridMount.innerHTML=[...groups.entries()].sort((a,b)=>{const [ae,ak]=a[0].split('|'),[be,bk]=b[0].split('|');return Number(ae)-Number(be)||ak.localeCompare(bk)}).map(([g,runs])=>{const [epoch,label]=g.split('|');const ordered=runs.sort((a,b)=>Number(a.lr)-Number(b.lr));const complete=ordered.filter(r=>r.status==='complete'&&Number.isFinite(r.validation??r.c4));const best=complete.length?complete.reduce((winner,r)=>(r.validation??r.c4)<(winner.validation??winner.c4)?r:winner):null;const chips=ordered.map(r=>`<span class="tuple ${best===r?'selected':['active','queued','planned'].includes(r.status)?'active':''}">${r.lr||'—'} · ${r.status}${Number.isFinite(r.validation??r.c4)?` · ${(r.validation??r.c4).toFixed(3)}`:''}</span>`).join('');return `<tr><td><strong>E${epoch}</strong></td><td>${label}</td><td><div class="tuple-list">${chips}</div></td></tr>`;}).join('');
     }
   }
 })();
