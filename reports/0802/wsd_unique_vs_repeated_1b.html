@@ -121,7 +121,7 @@
   modelSelect.value=modelSize;
   modelSelect.addEventListener("change",()=>{const url=new URL(window.location.href);url.searchParams.set("model",modelSelect.value);window.location.href=url;});
   const smallModel=modelSize==="153M";
-  const uniqueRuns=(smallModel?state.smallUniqueRuns:state.uniqueRuns)||[], repeatedRuns=(smallModel?state.smallRepeatedRuns:state.repeatedRuns)||[], seedProbeRuns=(smallModel?state.smallSeedProbeRuns:state.seedProbeRuns)||[], oldRepeatedRuns=smallModel?[]:(state.oldRepeatedRuns||[]), codelionRuns=smallModel?[]:(state.codelionRuns||[]), evaluationRuns=(smallModel?state.smallEvaluationRuns:state.evaluationRuns)||[], dataGeneration=state.dataGeneration||[];
+  const uniqueRuns=(smallModel?state.smallUniqueRuns:state.uniqueRuns)||[], repeatedRuns=(smallModel?state.smallRepeatedRuns:state.repeatedRuns)||[], seedProbeRuns=(smallModel?state.smallSeedProbeRuns:state.seedProbeRuns)||[], poolProbeRuns=smallModel?[]:(state.poolProbeRuns||[]), oldRepeatedRuns=smallModel?[]:(state.oldRepeatedRuns||[]), codelionRuns=smallModel?[]:(state.codelionRuns||[]), evaluationRuns=(smallModel?state.smallEvaluationRuns:state.evaluationRuns)||[], dataGeneration=state.dataGeneration||[];
   const modelInfo=state.modelSizes?.[modelSize]||{};
   const seedConclusion=state.seedProbeConclusion;
   const seedConclusionNode=document.querySelector("#seed-probe-conclusion");
@@ -130,7 +130,7 @@
   const validComplete=r=>r.status==="complete"&&Number.isFinite(r.c4);
   const bestByTarget=runs=>[1,2,3,4,5].map(epoch=>runs.filter(r=>r.epoch===epoch&&validComplete(r)).sort((a,b)=>a.c4-b.c4)[0]).filter(Boolean);
   const uniqueBest=bestByTarget(uniqueRuns), repeatedBest=bestByTarget(repeatedRuns), oldRepeatedBest=bestByTarget(oldRepeatedRuns), codelionBest=bestByTarget(codelionRuns);
-  const activeCount=[...uniqueRuns,...repeatedRuns,...seedProbeRuns,...oldRepeatedRuns,...codelionRuns,...evaluationRuns].filter(r=>["active","queued"].includes(r.status)).length;
+  const activeCount=[...uniqueRuns,...repeatedRuns,...seedProbeRuns,...poolProbeRuns,...oldRepeatedRuns,...codelionRuns,...evaluationRuns].filter(r=>["active","queued"].includes(r.status)).length;
   const statusLabel={planned:"Planned",queued:"Queued",active:"Active",complete:"Complete",canceled:"Canceled",failed:"Failed",invalid:"Invalid · missing endpoint decay"};
   const metric=(r,k,d=3)=>Number.isFinite(r[k])?r[k].toFixed(d):"—";
   const link=(url,label)=>url?`<a href="${url}">${label}</a>`:'<span class="pending">—</span>';
@@ -145,6 +145,7 @@
     ...uniqueRuns.filter(visibleProvenance).map(r=>({r,condition:"Unique DCLM 5B sample · aggregate",family:familyForMain(r,"unique")})),
     ...repeatedRuns.filter(visibleProvenance).map(r=>({r,condition:"Repeated DCLM 1B sample · aggregate",family:familyForMain(r,"repeated")})),
     ...seedProbeRuns.filter(visibleProvenance).map(r=>({r,condition:`${r.regime||"seed"} · ${r.name}`,family:familyForProbe(r)})),
+    ...poolProbeRuns.filter(visibleProvenance).map(r=>({r,condition:`Repeated DCLM 1B · pool ${r.pool} robustness probe`,family:`Dense 1B · repeated pool ${r.pool} · epoch ${r.epoch}`})),
     ...evaluationRuns.filter(visibleProvenance).map(r=>({r,condition:`${r.condition||r.regime||"paired"} · evaluation`,family:null}))
   ];
   const familyCounts=provenanceRows.reduce((counts,{family})=>{if(family)counts[family]=(counts[family]||0)+1;return counts;},{});
