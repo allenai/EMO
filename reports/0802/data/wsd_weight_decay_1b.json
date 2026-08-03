@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-02 23:10 PDT",
+  "updated": "2026-08-02 23:55 PDT",
   "title": "Step 1 — WSD Weight-Decay Tuning",
   "setup": "Dense 1B; verified 0802 Pool-A train-only 1B corpus; 100M-token DCLM validation; sealed test unused; LR 5e-4; init seed 12536; data seed 0.",
   "selection": "Tune WD independently by DCLM validation CE with at most two WD candidates under comparison at once. Tune LR for both candidates at each epoch and select before advancing. Every WD has its own WSD chain and later endpoints resume only that chain's selected-LR pre-decay checkpoint. WD 0.033 reuses the original Pool-A Step-2 WSD chain.",
