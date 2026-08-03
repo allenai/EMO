@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-02 18:01 PDT · B/C generation and independent validation active on Jupiter",
+  "updated": "2026-08-02 18:04 PDT · B/C epoch-1 LR sweeps authorized to overlap independent validation",
   "modelSizes": {
     "1B": {"label": "Dense 1B", "factory": "olmo2_1B_v2", "totalParameters": 1484916736, "nonEmbeddingParameters": 1279395840, "globalBatchTokens": 4194304, "warmupSteps": 24},
     "153M": {"label": "Dense 153M", "factory": "explicit current-architecture dimensions", "totalParameters": 153104896, "nonEmbeddingParameters": 101724672, "globalBatchTokens": 1048576, "warmupSteps": 95}
@@ -50,7 +50,7 @@ window.STEP2_REPORT_DATA = {
     "referencePool": {"name": "A", "selectionDomain": "dclm-train-repeated-sample-v1", "selectionSeed": 1},
     "newPools": [{"name": "B", "selectionSeed": 3}, {"name": "C", "selectionSeed": 4}],
     "sampling": "Each pool is an independent whole-document global SHA-256-order prefix of the same sealed DCLM train partition. Natural cross-pool document overlap is allowed and will be measured.",
-    "training": "After generator and independent full-universe validation pass, run dense-1B repeated-data epoch1 for B and C at LR 5e-4, WD 0.033, init seed 12536, and data-order seed 0.",
+    "training": "Once both B/C materialized files and manifests are complete and independent validation has entered its full-universe scan, launch dense-1B repeated-data epoch1 for each pool at LR 5e-4 and 1e-3, WD 0.033, init seed 12536, and data-order seed 0. If validation later fails, cancel all four runs and delete their outputs.",
     "interpretation": "A/B/C dispersion estimates training-data-pool sensitivity with method and training seeds fixed; later methodology conclusions must be robust across pools."
   },
   "seedProbeRuns": [
