@@ -138,15 +138,14 @@
   const generationProvenance=dataGeneration.map(run=>`${run.beaker}: ${run.status}${run.reason?` (${run.reason})`:""}`).join(" · ");
   document.querySelector("#manifest-note").textContent=(state.manifest.status==="verified"?`Partition verified: ${state.manifest.sourceTokens.toLocaleString()} source tokens · validation ${state.manifest.validationTokens.toLocaleString()} real tokens · test ${state.manifest.testTokens.toLocaleString()} real tokens · train ${state.manifest.trainTokens.toLocaleString()} real tokens · repeated sample ${state.manifest.repeatedTokens.toLocaleString()} real tokens · unique sample ${state.manifest.uniqueTokens.toLocaleString()} real tokens · partition SHA-256 ${state.manifest.sha256}.`:`Data partition status: ${state.manifest.status}. Training will not start before the audit is verified.`)+(generationProvenance?` Generation provenance: ${generationProvenance}.`:"");
 
-  const visibleProvenance=r=>r.status!=="failed"&&r.lr!=="4e-4";
+  const visibleProvenance=r=>!["failed","canceled"].includes(r.status)&&r.lr!=="4e-4";
   const familyForMain=(r,regime)=>!smallModel&&r.epoch===1&&r.lr==="5e-4"?`Dense 1B · ${regime} corpus · epoch 1 · 5e-4`:null;
   const familyForProbe=r=>smallModel?"Dense 153M · matched repeated 1B corpus · epoch 1 · 5e-4":`Dense 1B · ${r.regime} corpus · epoch ${r.epoch} · ${r.lr}`;
   const provenanceRows=[
     ...uniqueRuns.filter(visibleProvenance).map(r=>({r,condition:"Unique DCLM 5B sample · aggregate",family:familyForMain(r,"unique")})),
     ...repeatedRuns.filter(visibleProvenance).map(r=>({r,condition:"Repeated DCLM 1B sample · aggregate",family:familyForMain(r,"repeated")})),
     ...seedProbeRuns.filter(visibleProvenance).map(r=>({r,condition:`${r.regime||"seed"} · ${r.name}`,family:familyForProbe(r)})),
-    ...poolProbeRuns.filter(visibleProvenance).map(r=>({r,condition:`Repeated DCLM 1B · pool ${r.pool} robustness probe`,family:`Dense 1B · repeated pool ${r.pool} · epoch ${r.epoch}`})),
-    ...evaluationRuns.filter(visibleProvenance).map(r=>({r,condition:`${r.condition||r.regime||"paired"} · evaluation`,family:null}))
+    ...poolProbeRuns.filter(visibleProvenance).map(r=>({r,condition:`Repeated DCLM 1B · pool ${r.pool} robustness probe`,family:`Dense 1B · repeated pool ${r.pool} · epoch ${r.epoch}`}))
   ];
   const familyCounts=provenanceRows.reduce((counts,{family})=>{if(family)counts[family]=(counts[family]||0)+1;return counts;},{});
   const familyNames=Object.keys(familyCounts).filter(family=>familyCounts[family]>1);
