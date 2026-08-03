@@ -2,7 +2,7 @@ window.ICSL_REPORT_DATA = {
   "updated": "2026-08-03 09:22 PDT · Step 1 now inherits the LR selected by Step 2 and tunes WD only",
   "title": "Step 1 — WSD Weight-Decay Tuning",
   "setup": "Dense 1B; verified 0802 Pool-A train-only corpus; 100M-token DCLM validation; sealed test unused; LR inherited from Step 2 at each endpoint; init seed 12536; data seed 0.",
-  "selection": "Step 1 tunes WD only at the LR already selected by Step 2 for the same epoch. At epoch 1 that LR is 5e-4. The current best is WD 0.011 with DCLM validation CE 4.996; WD 0.0012 is next at 4.999 and WD 0.033 follows at 5.000, all within the observed run-to-run noise band. WD 0.9 gives 5.028. Historical off-policy LR results remain provenance only and do not affect the WD ranking.",
+  "selection": "Step 1 tunes WD only at the LR already selected by Step 2 for the same epoch. At epoch 1 that LR is 5e-4. The current best is WD 0.011 with DCLM validation CE 4.996; WD 0.0012 is next at 4.999 and WD 0.033 follows at 5.000, all within the observed run-to-run noise band. WD 0.9 gives 5.028. All completed LR runs remain visible in the coordinate grid and provenance, but off-policy LRs do not affect the WD ranking and no new LR companions will launch.",
   "coordinateMode": "fixed-step2-lr",
   "fixedLrByEpoch": {"1":"5e-4","2":"5e-4","3":"5e-4","4":"1e-3","5":"1e-3"},
   "runs": [
