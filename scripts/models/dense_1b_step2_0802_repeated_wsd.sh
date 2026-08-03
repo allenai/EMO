@@ -32,8 +32,8 @@ if [[ ! "${init_seed}" =~ ^[0-9]+$ || ! "${data_seed}" =~ ^[0-9]+$ ]]; then
 fi
 
 case "${lr}" in
-	5e-4|1e-3|2e-3|4e-3) ;;
-	*) echo "LR must be one of: 5e-4, 1e-3, 2e-3, 4e-3" >&2; exit 2 ;;
+	2.5e-4|5e-4|1e-3|2e-3|4e-3) ;;
+	*) echo "LR must be one of: 2.5e-4, 5e-4, 1e-3, 2e-3, 4e-3" >&2; exit 2 ;;
 esac
 
 case "${epochs}" in

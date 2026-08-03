@@ -18,7 +18,7 @@ validation_manifest="${VALIDATION_MANIFEST:-src/olmo_core/data/subsets/0802/dclm
 init_seed="${INIT_SEED:-12536}"
 data_seed="${DATA_SEED:-0}"
 
-case "${lr}" in 5e-4|1e-3|2e-3|4e-3) ;; *) echo "Unsupported LR: ${lr}" >&2; exit 2 ;; esac
+case "${lr}" in 2.5e-4|5e-4|1e-3|2e-3|4e-3) ;; *) echo "Unsupported LR: ${lr}" >&2; exit 2 ;; esac
 case "${epochs}" in
   1) max_tokens=1000000000; checkpoint_steps='[239]' ;;
   2) max_tokens=2000000000; checkpoint_steps='[239,477]' ;;
