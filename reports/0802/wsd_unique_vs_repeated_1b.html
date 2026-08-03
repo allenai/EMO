@@ -152,7 +152,7 @@
   const familyPalette=["#2563eb","#dc2626","#059669","#9333ea","#d97706","#0891b2"];
   const familyColors=Object.fromEntries(familyNames.map((family,index)=>[family,familyPalette[index%familyPalette.length]]));
   const seedTag=(r,family)=>{const init=Number.isInteger(r.initSeed)?r.initSeed:family?.startsWith("Dense 1B")?12536:null;const data=Number.isInteger(r.dataSeed)?r.dataSeed:init===12536?0:null;return init!==null?`<span class="seed-tag">init ${init} · data ${data}</span>`:"";};
-  const row=({r,condition,family})=>{const color=familyColors[family];const dot=color?`<span class="run-family-dot" style="background:${color}" title="Same run family: ${family}"></span>`:"";return `<tr title="${r.reason||''}"><td><span class="condition-wrap">${dot}<span>${condition}${seedTag(r,family)}</span></span></td><td>${r.epoch}B</td><td>${r.lr}</td><td>${r.wd||"—"}</td><td class="${r.status}">${statusLabel[r.status]||r.status}</td><td>${metric(r,"train")}</td><td>${metric(r,"c4")}</td><td>${Number.isFinite(r.acc)?r.acc.toFixed(3)+"%":"—"}</td><td>${metric(r,"bpb",5)}</td><td>${link(r.wandb?`https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}`:null,r.wandb)}</td><td>${link(r.beaker?`https://beaker.org/ex/${r.beaker}`:null,"experiment")}</td></tr>`;};
+  const row=({r,condition,family})=>{const color=familyColors[family];const dot=color?`<span class="run-family-dot" style="background:${color}" title="Same run family: ${family}"></span>`:"";return `<tr title="${r.reason||''}"><td><span class="condition-wrap">${dot}<span>${condition}${seedTag(r,family)}</span></span></td><td>${r.epoch}B</td><td>${r.lr}</td><td>${r.wd||"—"}</td><td class="${r.status}">${statusLabel[r.status]||r.status}</td><td>${metric(r,"train")}</td><td>${metric(r,"c4")}</td><td>${Number.isFinite(r.acc)?r.acc.toFixed(3)+"%":"—"}</td><td>${metric(r,"bpb")}</td><td>${link(r.wandb?`https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}`:null,r.wandb)}</td><td>${link(r.beaker?`https://beaker.org/ex/${r.beaker}`:null,"experiment")}</td></tr>`;};
   document.querySelector("#run-family-legend").innerHTML=familyNames.length?`<strong>Same-run families:</strong> ${familyNames.map(family=>`<span class="run-family-key"><span class="run-family-dot" style="background:${familyColors[family]}"></span>${family}</span>`).join("")}`:"";
   document.querySelector("#runs-body").innerHTML=provenanceRows.map(row).join("");
 
@@ -198,7 +198,7 @@
     const vals=series.flatMap(s=>s.points.map(p=>p.v));
     if(!vals.length){mount.innerHTML='<div class="note" style="padding:70px 12px;text-align:center">No valid completed endpoint yet.</div>';return;}
     const w=360,h=260,p={l:72,r:16,t:22,b:38},min=Math.min(...vals),max=Math.max(...vals),pad=Math.max((max-min)*.14,0.02),lo=min-pad,hi=max+pad;
-    const tickCount=4,tickStep=(hi-lo)/(tickCount-1),digits=tickDigits(metricName,tickStep);
+    const tickCount=4,tickStep=(hi-lo)/(tickCount-1),digits=3;
     const x=e=>p.l+(e-1)*(w-p.l-p.r)/4,y=v=>p.t+(hi-v)*(h-p.t-p.b)/(hi-lo),ticks=Array.from({length:tickCount},(_,i)=>lo+tickStep*i);
     const tickText=v=>v.toFixed(digits);
     const annotationX=(s,point)=>Math.min(w-19,Math.max(19,x(point.r.epoch)+s.dx));
