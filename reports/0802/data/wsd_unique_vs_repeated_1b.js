@@ -1,5 +1,5 @@
 window.STEP2_REPORT_DATA = {
-  "updated": "2026-08-02 19:20 PDT · pool C materialized and preflight queued; pool B 5e-4 active",
+  "updated": "2026-08-02 19:23 PDT · pool C materialized and preflighted; manifest ready to push; pool B 5e-4 active",
   "modelSizes": {
     "1B": {"label": "Dense 1B", "factory": "olmo2_1B_v2", "totalParameters": 1484916736, "nonEmbeddingParameters": 1279395840, "globalBatchTokens": 4194304, "warmupSteps": 24},
     "153M": {"label": "Dense 153M", "factory": "explicit current-architecture dimensions", "totalParameters": 153104896, "nonEmbeddingParameters": 101724672, "globalBatchTokens": 1048576, "warmupSteps": 95}
@@ -45,12 +45,12 @@ window.STEP2_REPORT_DATA = {
     "summary": "All four dense-1B seed probes are complete. Same-seed reproducibility is strong for loss: the repeated rerun matches its baseline train and validation CE at three-decimal precision (4.972 and 5.000), while the unique rerun matches train CE (5.013) and differs by only -0.001 validation CE (4.995 versus 4.996). Downstream accuracies still move despite identical explicit seeds, showing residual runtime/evaluation variability. The alternate probes changed both initialization and data-order seeds, so they measure combined seed sensitivity rather than data ordering alone: repeated validation CE remains 5.000 at displayed precision, while unique validation CE worsens by +0.019 (5.015 versus 4.996); train CE changes by +0.053 repeated and +0.027 unique. This supports validation CE being substantially more stable than individual downstream tasks, but does not isolate the data-order effect and does not establish a unique-vs-repeated regime effect because the 1B training realizations are unmatched. Paired 95% confidence intervals for these probe checkpoints are not yet available, so statistical significance is pending."
   },
   "poolRobustness": {
-    "status": "pools B and C materialized; B preflighted and training; C preflight queued; independent validation pending",
+    "status": "pools B and C materialized and preflighted; B training; C 5e-4 launch pending pushed manifest; independent validation pending",
     "epoch2Paused": true,
     "referencePool": {"name": "A", "selectionDomain": "dclm-train-repeated-sample-v1", "selectionSeed": 1},
     "newPools": [
       {"name": "B", "selectionSeed": 3, "status": "materialized and preflighted; epoch-1 5e-4 active; independent validation pending", "documents": 798912, "realTokens": 1000002772, "alignedTokens": 1002438656, "manifestSha256": "42e48a4a1c9ae2af9bbb623c4855bf9d2284d668480bf75c25df9766c5139e6f", "tokenSha256": "8208aacc8b87788f6124d05ea8c3f66f7a9909b4e51ccdc316225bcd89e9b7e3", "ledgerSha256": "bc6b0a84ab8a17e7634123ba5af075cc3a41b28c353b1a8eb512350e71037a32"},
-      {"name": "C", "selectionSeed": 4, "status": "materialized; preflight queued; independent validation pending", "documents": 798225, "realTokens": 1000003322, "alignedTokens": 1002438656, "manifestSha256": "29c5ef932a9f090242ea0861492c09fcb831e552856d05a5924781ed6884f9a8", "tokenSha256": "21d409858de90f7b75861daf626d5a0f12c59db4bf8180844d4f951b3cc7c394", "ledgerSha256": "cec59c58cf4c6a97f4db03498806fd580664e95bc395d9c4c24484de8997a38f"}
+      {"name": "C", "selectionSeed": 4, "status": "materialized and preflighted; 5e-4 launch pending pushed manifest; independent validation pending", "documents": 798225, "realTokens": 1000003322, "alignedTokens": 1002438656, "manifestSha256": "29c5ef932a9f090242ea0861492c09fcb831e552856d05a5924781ed6884f9a8", "tokenSha256": "21d409858de90f7b75861daf626d5a0f12c59db4bf8180844d4f951b3cc7c394", "ledgerSha256": "cec59c58cf4c6a97f4db03498806fd580664e95bc395d9c4c24484de8997a38f", "preflightBeaker": "01KZ2PQFZMZ09Y290HV2K63PVV"}
     ],
     "sampling": "Each pool is an independent whole-document global SHA-256-order prefix of the same sealed DCLM train partition. Natural cross-pool document overlap is allowed and will be measured.",
     "training": "Pool B dense-1B repeated-data epoch1 is active at LR 5e-4; its 1e-3 comparison was canceled after the user concluded the existing evidence makes 5e-4 sufficiently stable. Pool C will therefore run only 5e-4 after materialization and preflight. Runs use WD 0.033, init seed 12536, and data-order seed 0. If independent validation later fails, cancel B/C runs and delete their outputs.",
