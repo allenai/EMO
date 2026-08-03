@@ -1,7 +1,13 @@
 window.ICSL_REPORT_DATA = {
-  "updated": "2026-08-02 20:05 PDT",
+  "updated": "2026-08-02 20:18 PDT",
   "title": "Step 1 — WSD Weight-Decay Tuning",
   "setup": "Dense 1B; verified 0802 Pool-A train-only 1B corpus; 100M-token DCLM validation; sealed test unused; LR 5e-4; init seed 12536; data seed 0.",
   "selection": "Tune WD independently by DCLM validation CE. Every WD has its own WSD chain and later endpoints resume only that chain's pre-decay checkpoint. WD 0.033 reuses the original Pool-A Step-2 WSD chain.",
-  "runs": []
+  "runs": [
+    {"series":"WD 0.033","epoch":1,"lr":"5e-4","wd":"0.033","status":"complete","beaker":"01KZ1XPEAY432MQ8NDJQR62ETB","job":"01KZ1XPEEQS5F93JDMY2WQ9T12","wandb":"v8uxyvfb","revision":"a55cb850","train":4.972,"validation":5.000,"acc":25.02,"bpb":1.528,"downstream":{"arc_challenge":23.75,"arc_easy":29.82,"boolq":38.10,"csqa":25.31,"openbookqa":24.00,"piqa":52.29,"socialiqa":39.10,"winogrande":47.83}},
+    {"series":"WD 0.033","epoch":2,"lr":"5e-4","wd":"0.033","status":"active","beaker":"01KZ2RRCGB5CHHZRSS1V5B1QPK","job":"01KZ2RRCKXA6RS1CNC4223K4A6","wandb":"jrnkkho3","revision":"919253d4"},
+    {"series":"WD 0.0037","epoch":1,"lr":"5e-4","wd":"0.0037","status":"queued","beaker":"01KZ2SVQSYWVYR3HEYBNTMN463","job":"01KZ2SVQXPTHJYH798H1EPVACE","revision":"1cad5bd1"},
+    {"series":"WD 0.1","epoch":1,"lr":"5e-4","wd":"0.1","status":"queued","beaker":"01KZ2SX1RZVJBXE3Q4CR4VQXRZ","job":"01KZ2SX1XZPXP2Q60V0J25DXBP","revision":"1cad5bd1"},
+    {"series":"WD 0.9","epoch":1,"lr":"5e-4","wd":"0.9","status":"queued","beaker":"01KZ2SYE0HP95G8TACTMS0TW2A","job":"01KZ2SYE427TDZGRC09WKS5SPA","revision":"1cad5bd1"}
+  ]
 };
