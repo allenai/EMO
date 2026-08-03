@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-02 17:10 PDT · all four dense-1B seed probes and all six dense-153M probes complete",
+  "updated": "2026-08-02 17:44 PDT · independent repeated pools B/C generation and full-universe validation active",
   "modelSizes": {
     "1B": {"label": "Dense 1B", "factory": "olmo2_1B_v2", "totalParameters": 1484916736, "nonEmbeddingParameters": 1279395840, "globalBatchTokens": 4194304, "warmupSteps": 24},
     "153M": {"label": "Dense 153M", "factory": "explicit current-architecture dimensions", "totalParameters": 153104896, "nonEmbeddingParameters": 101724672, "globalBatchTokens": 1048576, "warmupSteps": 95}
@@ -43,6 +43,15 @@
   "seedProbeConclusion": {
     "status": "complete probes · interpretation pending approval",
     "summary": "All four dense-1B seed probes are complete. Same-seed reproducibility is strong for loss: the repeated rerun matches its baseline train and validation CE at three-decimal precision (4.972 and 5.000), while the unique rerun matches train CE (5.013) and differs by only -0.001 validation CE (4.995 versus 4.996). Downstream accuracies still move despite identical explicit seeds, showing residual runtime/evaluation variability. The alternate probes changed both initialization and data-order seeds, so they measure combined seed sensitivity rather than data ordering alone: repeated validation CE remains 5.000 at displayed precision, while unique validation CE worsens by +0.019 (5.015 versus 4.996); train CE changes by +0.053 repeated and +0.027 unique. This supports validation CE being substantially more stable than individual downstream tasks, but does not isolate the data-order effect and does not establish a unique-vs-repeated regime effect because the 1B training realizations are unmatched. Paired 95% confidence intervals for these probe checkpoints are not yet available, so statistical significance is pending."
+  },
+  "poolRobustness": {
+    "status": "generation and independent validation active",
+    "epoch2Paused": true,
+    "referencePool": {"name": "A", "selectionDomain": "dclm-train-repeated-sample-v1", "selectionSeed": 1},
+    "newPools": [{"name": "B", "selectionSeed": 3}, {"name": "C", "selectionSeed": 4}],
+    "sampling": "Each pool is an independent whole-document global SHA-256-order prefix of the same sealed DCLM train partition. Natural cross-pool document overlap is allowed and will be measured.",
+    "training": "After generator and independent full-universe validation pass, run dense-1B repeated-data epoch1 for B and C at LR 5e-4, WD 0.033, init seed 12536, and data-order seed 0.",
+    "interpretation": "A/B/C dispersion estimates training-data-pool sensitivity with method and training seeds fixed; later methodology conclusions must be robust across pools."
   },
   "seedProbeRuns": [
     {"name": "same-seed reproducibility", "regime": "repeated", "status": "complete", "epoch": 1, "lr": "5e-4", "wd": "0.033", "initSeed": 12536, "dataSeed": 0, "runSuffix": "_seedprobe_same_seed", "beaker": "01KZ23D3W3H2FCPN2YRMN447MF", "job": "01KZ23D3ZHRY3NAFKC9M0Q4QYD", "wandb": "a9rdjrf9", "revision": "8e32e686", "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_0802_repeated_dclm1b_wsd_e1_lr5e-4_wd0.033_warmup24_seedprobe_same_seed", "train": 4.972, "c4": 5.000, "acc": 24.78, "bpb": 1.528, "downstream": {"arc_challenge": 24.08, "arc_easy": 29.47, "boolq": 38.01, "csqa": 24.16, "openbookqa": 23.00, "piqa": 52.07, "socialiqa": 38.33, "winogrande": 49.80}, "reason": "Exact same corpus and explicit original initialization/data-order seeds. Completed with full DCLM validation and nine tasks; fixed step214 preserved; eight H100; minRuntime 0; autoResume false; no experiment retries. Measures reproducibility and residual runtime nondeterminism; excluded from LR selection grid."},
@@ -103,6 +112,14 @@
       "revision": "0ee8c2d9",
       "status": "succeeded",
       "reason": "Generation and independent validation passed. Across 2,949,254,346 source documents and 3,684,671,294,617 source tokens, train/validation/test are exhaustive with zero document intersections; both training samples are training-only; all artifact and metadata hashes verified; and the 4,096-bucket key-uniformity sanity check passed."
+    },
+    {
+      "beaker": "01KZ2GNW6WNWMX24WQ2EYPB2RN",
+      "resultDataset": "01KZ2GNW20TZ1SP26T5GZNKRCK",
+      "sourceDataset": "01KZ2GK6K0ANPPFJYTBSXQ0Z19",
+      "revision": "50f2499c",
+      "status": "active",
+      "reason": "Zero-GPU Jupiter/Weka job generating independent whole-document repeated pools B (selection seed 3) and C (selection seed 4), then independently rescanning all 2.949B source documents in one pass to prove A/B/C are exact train-only cryptographic-key prefixes and verify artifact hashes and pairwise overlaps. Training remains blocked until it passes."
     }
   ],
   "uniqueRuns": [
