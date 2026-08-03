@@ -9,7 +9,7 @@
   // the lowest DCLM validation CE. The coordinate grid and provenance table
   // continue to expose every evaluated or active LR.
   const chartGroups=new Map();
-  visibleRuns.filter(r=>r.status==='complete'&&Number.isFinite(r.validation??r.c4)).forEach(r=>{
+  visibleRuns.filter(r=>r.status==='complete'&&Number.isFinite(r.validation??r.c4)&&(d.coordinateMode!=='fixed-step2-lr'||r.lr===d.fixedLrByEpoch?.[r.epoch])).forEach(r=>{
     const group=`${key(r)}|${r.epoch}`, current=chartGroups.get(group);
     if(!current||(r.validation??r.c4)<(current.validation??current.c4))chartGroups.set(group,r);
   });
@@ -22,8 +22,13 @@
   visibleRuns.forEach(r=>rows.insertAdjacentHTML('beforeend',`<tr><td>${key(r)}</td><td>${r.epoch}</td><td>${r.lr||'—'}</td><td>${r.wd||'—'}</td><td>${r.status}</td><td>${tableMetric(r.train)}</td><td>${tableMetric(r.validation??r.c4)}</td><td>${tableMetric(r.acc)}</td><td>${tableMetric(r.bpb)}</td><td>${r.wandb?`<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}">${r.wandb}</a>`:'—'}</td><td>${r.beaker?`<a href="https://beaker.org/ex/${r.beaker}">experiment</a>`:'—'}</td></tr>`));
   const gridMount=document.querySelector('#coordinate-grid');
   if(gridMount){
+    if(d.coordinateMode==='fixed-step2-lr'){
+      gridMount.closest('section').querySelector('h2').textContent='WD coordinate grid (LR inherited from Step 2)';
+      const headers=gridMount.closest('table').querySelectorAll('th');
+      headers[2].textContent='Step 2 LR result'; headers[3].textContent='DCLM validation CE';
+    }
     const groups=new Map();
     visibleRuns.forEach(r=>{const g=`${r.epoch}|${key(r)}`;if(!groups.has(g))groups.set(g,[]);groups.get(g).push(r);});
-    gridMount.innerHTML=[...groups.entries()].sort((a,b)=>{const [ae,ak]=a[0].split('|'),[be,bk]=b[0].split('|');return Number(ae)-Number(be)||ak.localeCompare(bk)}).map(([g,runs])=>{const [epoch,label]=g.split('|');const ordered=runs.sort((a,b)=>Number(a.lr)-Number(b.lr));const complete=ordered.filter(r=>r.status==='complete'&&Number.isFinite(r.validation??r.c4));const unresolved=ordered.some(r=>['active','queued','planned'].includes(r.status));const best=complete.length?complete.reduce((winner,r)=>(r.validation??r.c4)<(winner.validation??winner.c4)?r:winner):null;const selected=!unresolved&&complete.length>=2?best:null;const chips=ordered.map(r=>`<span class="tuple ${best===r?'selected':['active','queued','planned'].includes(r.status)?'active':''}">${r.lr||'—'} · ${r.status}${Number.isFinite(r.validation??r.c4)?` · ${(r.validation??r.c4).toFixed(3)}`:''}</span>`).join('');const outcome=selected?`<strong>${selected.lr}</strong> · DCLM validation CE ${(selected.validation??selected.c4).toFixed(3)}`:best?`<strong>Provisional ${best.lr}</strong> · DCLM validation CE ${(best.validation??best.c4).toFixed(3)}${unresolved?' · comparison active':' · only completed result'}`:'Pending results';return `<tr><td><strong>E${epoch}</strong></td><td>${label}</td><td><div class="tuple-list">${chips}</div></td><td>${outcome}</td></tr>`;}).join('');
+    gridMount.innerHTML=[...groups.entries()].sort((a,b)=>{const [ae,ak]=a[0].split('|'),[be,bk]=b[0].split('|');return Number(ae)-Number(be)||ak.localeCompare(bk)}).map(([g,runs])=>{const [epoch,label]=g.split('|');const fixed=d.coordinateMode==='fixed-step2-lr'?d.fixedLrByEpoch?.[epoch]:null;const ordered=(fixed?runs.filter(r=>r.lr===fixed):runs).sort((a,b)=>Number(a.lr)-Number(b.lr));const complete=ordered.filter(r=>r.status==='complete'&&Number.isFinite(r.validation??r.c4));const unresolved=ordered.some(r=>['active','queued','planned'].includes(r.status));const best=complete.length?complete.reduce((winner,r)=>(r.validation??r.c4)<(winner.validation??winner.c4)?r:winner):null;const selected=fixed?best:!unresolved&&complete.length>=2?best:null;const chips=ordered.map(r=>`<span class="tuple ${best===r?'selected':['active','queued','planned'].includes(r.status)?'active':''}">${r.lr||'—'} · ${r.status}${Number.isFinite(r.validation??r.c4)?` · ${(r.validation??r.c4).toFixed(3)}`:''}</span>`).join('');const outcome=fixed&&selected?`<strong>Step 2 LR ${selected.lr}</strong> · DCLM validation CE ${(selected.validation??selected.c4).toFixed(3)}`:selected?`<strong>${selected.lr}</strong> · DCLM validation CE ${(selected.validation??selected.c4).toFixed(3)}`:best?`<strong>Provisional ${best.lr}</strong> · DCLM validation CE ${(best.validation??best.c4).toFixed(3)}${unresolved?' · comparison active':' · only completed result'}`:'Pending results';return `<tr><td><strong>E${epoch}</strong></td><td>${label}</td><td><div class="tuple-list">${chips}</div></td><td>${outcome}</td></tr>`;}).join('');
   }
 })();
