@@ -119,7 +119,7 @@
       "sourceDataset": "01KZ2GK6K0ANPPFJYTBSXQ0Z19",
       "revision": "50f2499c",
       "status": "active",
-      "reason": "Zero-GPU Jupiter/Weka job generating independent whole-document repeated pools B (selection seed 3) and C (selection seed 4), then independently rescanning all 2.949B source documents in one pass to prove A/B/C are exact train-only cryptographic-key prefixes and verify artifact hashes and pairwise overlaps. Training remains blocked until it passes."
+      "reason": "Jupiter/Weka job requested CPU and memory only (no GPU request), but the selected node exposed three assigned H100s. The all-account Jupiter audit found this as the only active/requested job, totaling 3/128 H100s under the weekend cap. It is generating independent whole-document repeated pools B (selection seed 3) and C (selection seed 4), then independently rescanning all 2.949B source documents in one pass to prove A/B/C are exact train-only cryptographic-key prefixes and verify artifact hashes and pairwise overlaps. Training remains blocked until it passes."
     }
   ],
   "uniqueRuns": [
