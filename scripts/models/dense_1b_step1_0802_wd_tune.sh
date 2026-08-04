@@ -7,7 +7,7 @@ BEAKER_PREEMPTIBLE="${BEAKER_PREEMPTIBLE:-0}"
 BEAKER_AUTO_RESUME="${BEAKER_AUTO_RESUME:-0}"
 source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
 
-epochs="${EPOCHS:?Set EPOCHS from 1 through 5}"
+epochs="${EPOCHS:?Set EPOCHS to one of 1, 2, 3, 4, 5, 6, 8, or 10}"
 lr="${LR:-5e-4}"
 wd="${WD:?Set WD}"
 subset_manifest="${SUBSET_MANIFEST:-src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b.json}"
@@ -18,12 +18,15 @@ run_suffix="${RUN_SUFFIX:-}"
 
 case "${lr}" in 2.5e-4|5e-4|1e-3|2e-3|4e-3) ;; *) echo "Unsupported LR: ${lr}" >&2; exit 2 ;; esac
 case "${epochs}" in
-  1) max_tokens=1000000000; stable_step=214 ;;
-  2) max_tokens=2000000000; stable_step=428 ;;
-  3) max_tokens=3000000000; stable_step=643 ;;
-  4) max_tokens=4000000000; stable_step=858 ;;
-  5) max_tokens=5000000000; stable_step=1073 ;;
-  *) echo "EPOCHS must be 1 through 5" >&2; exit 2 ;;
+  1) max_tokens=1000000000; checkpoint_steps='[214]' ;;
+  2) max_tokens=2000000000; checkpoint_steps='[428]' ;;
+  3) max_tokens=3000000000; checkpoint_steps='[643]' ;;
+  4) max_tokens=4000000000; checkpoint_steps='[858]' ;;
+  5) max_tokens=5000000000; checkpoint_steps='[1073]' ;;
+  6) max_tokens=6000000000; checkpoint_steps='[1287]' ;;
+  8) max_tokens=8000000000; checkpoint_steps='[1502,1716]' ;;
+  10) max_tokens=10000000000; checkpoint_steps='[1931,2145]' ;;
+  *) echo "EPOCHS must be one of 1, 2, 3, 4, 5, 6, 8, or 10" >&2; exit 2 ;;
 esac
 for manifest in "${subset_manifest}" "${validation_manifest}"; do
   [[ -f "${manifest}" ]] || { echo "Missing manifest: ${manifest}" >&2; exit 2; }
@@ -61,7 +64,7 @@ launch src/scripts/train/olmo2-1B.py "${runname}" \
   --model.block.name=default \
   --model.block.sequence_mixer.qk_norm=null \
   --train_module.scheduler="${scheduler_config}" \
-  --trainer.callbacks.checkpointer.fixed_steps="[${stable_step}]" \
+  --trainer.callbacks.checkpointer.fixed_steps="${checkpoint_steps}" \
   "${load_args[@]}" \
   --init_seed="${init_seed}" \
   --data_loader.seed="${data_seed}" \
