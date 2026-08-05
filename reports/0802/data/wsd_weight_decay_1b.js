@@ -1,8 +1,8 @@
 window.ICSL_REPORT_DATA = {
-  "updated": "2026-08-05 09:36 PDT · WD0.1 epoch 10 active at step 1764/2385",
+  "updated": "2026-08-05 09:48 PDT · WD0.1 epoch 10 active; WD0.333 chain authorized",
   "title": "Step 1 — WSD Weight-Decay Tuning",
   "setup": "Dense 1B; verified 0802 Pool-A train-only corpus; 100M-token DCLM validation; sealed test unused; LR inherited from Step 2 at each endpoint; init seed 12536; data seed 0.",
-  "selection": "WD0.1 epoch 8 completed at DCLM validation CE 3.258, which is 0.035 lower than WD0.033 CE 3.293. This is a scalar fixed-checkpoint gap; paired significance is pending because paired document-loss artifacts are not available. Terminal epoch 10 is active at LR 1e-3 from the exact WD0.1 epoch-8 step1716 checkpoint; at 09:36 PDT it was step1764/2385 with an ETA of about1h42m. It will preserve steps1931 and2145, then compare with fixed WD0.033 epoch10 CE3.332. Total running/assigned usage is112 H100s, below the128 cap.",
+  "selection": "WD0.1 epoch 8 completed at DCLM validation CE 3.258, which is 0.035 lower than WD0.033 CE 3.293. This is a scalar fixed-checkpoint gap; paired significance is pending because paired document-loss artifacts are not available. Terminal WD0.1 epoch 10 is active at LR 1e-3 from the exact WD0.1 epoch-8 step1716 checkpoint; at 09:36 PDT it was step1764/2385 with an ETA of about1h42m. The user authorized a new WD0.333 chain at LR1e-3 across epochs1–6,8,10. Its epoch1 Jupiter source/output preflight is queued; after PREFLIGHT_OK, epoch1 will start fresh and every later endpoint will resume only the matching WD0.333 pre-decay checkpoint. At most one WD0.333 endpoint will run at a time.",
   "concluded": false,
   "coordinateMode": "fixed-step2-lr",
   "chartMode": "untuned-vs-tuned",
