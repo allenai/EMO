@@ -1,8 +1,8 @@
 window.ICSL_REPORT_DATA = {
-  "updated": "2026-08-05 12:40 PDT · WD0.333 epoch 1 complete at CE5.389; epoch 2 preflight next",
+  "updated": "2026-08-05 12:43 PDT · WD0.333 epoch 1 complete at CE5.389; epoch 2 preflight queued",
   "title": "Step 1 — WSD Weight-Decay Tuning",
   "setup": "Dense 1B; verified 0802 Pool-A train-only corpus; 100M-token DCLM validation; sealed test unused; LR inherited from Step 2 at each endpoint; init seed 12536; data seed 0.",
-  "selection": "WD0.1 epoch 10 completed at DCLM validation CE 3.286, which is 0.046 lower than WD0.033 CE 3.332; paired significance is pending because paired document-loss artifacts are unavailable. WD0.333 epoch1 completed at CE5.389, 0.021 below WD0.033 CE5.410 and 0.009 below WD0.1 CE5.398 at the same LR1e-3. These are scalar fixed-checkpoint gaps with paired significance pending. WD0.333 preserved step214; epoch2 will resume only that matching pre-decay checkpoint after an exact Jupiter source/output preflight. At most one WD0.333 endpoint is active at a time.",
+  "selection": "WD0.1 epoch 10 completed at DCLM validation CE 3.286, which is 0.046 lower than WD0.033 CE 3.332; paired significance is pending because paired document-loss artifacts are unavailable. WD0.333 epoch1 completed at CE5.389, 0.021 below WD0.033 CE5.410 and 0.009 below WD0.1 CE5.398 at the same LR1e-3. These are scalar fixed-checkpoint gaps with paired significance pending. WD0.333 preserved step214. The exact epoch2 Jupiter preflight (01KZ9Q672J826CXZC9RWD1Q98P) is queued to verify that checkpoint and absent epoch2 output; epoch2 will resume only step214 after PREFLIGHT_OK. At most one WD0.333 endpoint is active at a time.",
   "concluded": false,
   "coordinateMode": "fixed-step2-lr",
   "chartMode": "untuned-vs-tuned",
