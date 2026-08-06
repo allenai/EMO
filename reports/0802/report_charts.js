@@ -33,9 +33,43 @@
   const chartKey=r=>r.chartSeries||key(r);
   const series=d.chartMode==='untuned-vs-tuned'?['Untuned WD (0.033)','Tuned WD']:[...new Set(visibleRuns.map(key))];
   series.forEach((s,i)=>legend.insertAdjacentHTML('beforeend',`<label><span class="dot" style="background:${colors[i%colors.length]}"></span>${s}</label>`));
-  const metrics=[['train','Train CE'],['validation','DCLM validation CE'],['acc','HellaSwag accuracy'],['bpb','HellaSwag BPB'],['avg8','8-task average (no BoolQ)'],['stable3','Stable 3-task average'],['arc_easy','ARC-Easy'],['arc_challenge','ARC-Challenge'],['csqa','CSQA'],['openbookqa','OpenBookQA'],['piqa','PIQA'],['socialiqa','SocialIQA'],['winogrande','Winogrande']];
-  const value=(r,k)=>{if(k==='validation')return r.validation??r.c4;if(k==='avg8'){const q=['arc_challenge','arc_easy','csqa','acc','openbookqa','piqa','socialiqa','winogrande'].map(x=>x==='acc'?r.acc:r.downstream?.[x]).filter(Number.isFinite);return q.length===8?q.reduce((a,b)=>a+b,0)/8:null}if(k==='stable3'){const q=[r.downstream?.arc_easy,r.acc,r.downstream?.piqa].filter(Number.isFinite);return q.length===3?q.reduce((a,b)=>a+b,0)/3:null}return r[k]??r.downstream?.[k]};
-  metrics.forEach(([m,label])=>{const pts=chartRuns.map((r,i)=>({r,i,v:value(r,m)})).filter(x=>Number.isFinite(x.v));const card=document.createElement('div');card.className='card chart';card.innerHTML=`<h3>${label}</h3>`;const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 310 240');card.append(svg);charts.append(card);if(!pts.length){svg.innerHTML='<text x="18" y="36">Pending results</text>';return}const lo=Math.min(...pts.map(x=>x.v)),hi=Math.max(...pts.map(x=>x.v)),pad=Math.max((hi-lo)*.18,.01),y=v=>200-(v-(lo-pad))/(hi-lo+2*pad)*160,minEpoch=Math.min(...pts.map(x=>x.r.epoch)),maxEpoch=Math.max(...pts.map(x=>x.r.epoch)),x=e=>maxEpoch===minEpoch?164:42+(e-minEpoch)/(maxEpoch-minEpoch)*244,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));svg.innerHTML=`<line x1="36" y1="200" x2="286" y2="200" stroke="#aeb7c7"/><text x="2" y="203">${(lo-pad).toFixed(3)}</text><text x="2" y="42">${(hi+pad).toFixed(3)}</text>`;series.forEach((s,si)=>{const p=pts.filter(z=>chartKey(z.r)===s).sort((a,b)=>a.r.epoch-b.r.epoch);const color=colors[si%colors.length],paired=d.chartMode==='untuned-vs-tuned',dx=paired?(si===0?-24:24):((si%3)-1)*15,dy=paired?(si===0?-16:18):-12-(Math.floor(si/3)%2)*13;if(p.length>1)svg.insertAdjacentHTML('beforeend',`<polyline fill="none" stroke="${color}" stroke-width="2" points="${p.map(z=>`${x(z.r.epoch)},${y(z.v)}`).join(' ')}"/>`);p.forEach(z=>{const ax=clamp(x(z.r.epoch)+dx,20,290),ay=clamp(y(z.v)+dy,12,190);svg.insertAdjacentHTML('beforeend',`<line x1="${x(z.r.epoch)}" y1="${y(z.v)}" x2="${ax}" y2="${ay}" stroke="${color}" stroke-width="0.8" opacity="0.7"/><circle cx="${x(z.r.epoch)}" cy="${y(z.v)}" r="4" fill="${color}"><title>${label} ${z.v.toFixed(3)} · epoch ${z.r.epoch} · LR ${z.r.lr||'—'} · WD ${z.r.wd||'—'}</title></circle><text class="value" text-anchor="middle" x="${ax}" y="${ay+3}" fill="${color}">${z.v.toFixed(3)}</text><text x="${x(z.r.epoch)-5}" y="218">E${z.r.epoch}</text>`);})})});
+  const metrics=d.chartMode==='untuned-vs-tuned'
+    ? [['validation','DCLM validation CE'],['bpb','HellaSwag non-v2 BPB'],['acc','HellaSwag length-normalized accuracy'],['avg8_bpb','8-task average BPB · no BoolQ'],['avg8_acc','8-task average accuracy · no BoolQ']]
+    : [['train','Train CE'],['validation','DCLM validation CE'],['acc','HellaSwag accuracy'],['bpb','HellaSwag BPB'],['avg8','8-task average (no BoolQ)'],['stable3','Stable 3-task average'],['arc_easy','ARC-Easy'],['arc_challenge','ARC-Challenge'],['csqa','CSQA'],['openbookqa','OpenBookQA'],['piqa','PIQA'],['socialiqa','SocialIQA'],['winogrande','Winogrande']];
+  const value=(r,k)=>{if(k==='validation')return r.validation??r.c4;if(k==='avg8'||k==='avg8_acc'){const q=['arc_challenge','arc_easy','csqa','acc','openbookqa','piqa','socialiqa','winogrande'].map(x=>x==='acc'?r.acc:r.downstream?.[x]).filter(Number.isFinite);return q.length===8?q.reduce((a,b)=>a+b,0)/8:null}if(k==='avg8_bpb')return r.avg8Bpb??d.avg8BpbByWandb?.[r.wandb]??null;if(k==='stable3'){const q=[r.downstream?.arc_easy,r.acc,r.downstream?.piqa].filter(Number.isFinite);return q.length===3?q.reduce((a,b)=>a+b,0)/3:null}return r[k]??r.downstream?.[k]};
+  const layoutValueLabels=(svg,bounds)=>{
+    const occupied=[];
+    [...svg.querySelectorAll('text.value')].forEach(node=>{
+      const leader=svg.querySelector(`line[data-label-id="${node.dataset.labelId}"]`);
+      const preferredX=Number(node.getAttribute('x')),preferredY=Number(node.getAttribute('y'))-3,direction=Number(node.dataset.direction)||1;
+      const candidates=[];
+      [0,12,24,36,48,60,72,84].forEach(distance=>[0,-10,10,-20,20,-30,30].forEach(horizontal=>candidates.push({x:preferredX+horizontal,y:preferredY+direction*distance})));
+      [12,24,36,48,60,72,84].forEach(distance=>[0,-10,10,-20,20,-30,30].forEach(horizontal=>candidates.push({x:preferredX+horizontal,y:preferredY-direction*distance})));
+      let chosen=null;
+      for(const candidate of candidates){
+        const x=Math.max(bounds.minX,Math.min(bounds.maxX,candidate.x)),y=Math.max(bounds.minY,Math.min(bounds.maxY,candidate.y));
+        node.setAttribute('x',x);node.setAttribute('y',y+3);
+        const box=node.getBBox(),rect={left:box.x-2,right:box.x+box.width+2,top:box.y-1,bottom:box.y+box.height+1};
+        if(!occupied.some(other=>rect.left<other.right&&rect.right>other.left&&rect.top<other.bottom&&rect.bottom>other.top)){chosen={x,y,rect};break;}
+      }
+      if(!chosen){const x=Math.max(bounds.minX,Math.min(bounds.maxX,preferredX)),y=Math.max(bounds.minY,Math.min(bounds.maxY,preferredY));node.setAttribute('x',x);node.setAttribute('y',y+3);const box=node.getBBox();chosen={x,y,rect:{left:box.x-2,right:box.x+box.width+2,top:box.y-1,bottom:box.y+box.height+1}};}
+      occupied.push(chosen.rect);if(leader){leader.setAttribute('x2',chosen.x);leader.setAttribute('y2',chosen.y);}
+    });
+  };
+  metrics.forEach(([m,label])=>{
+    const pts=chartRuns.map((r,i)=>({r,i,v:value(r,m)})).filter(x=>Number.isFinite(x.v));
+    const card=document.createElement('div');card.className='card chart';card.innerHTML=`<h3>${label}</h3>`;
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 310 240');card.append(svg);charts.append(card);
+    if(!pts.length){svg.innerHTML='<text x="18" y="36">Pending results</text>';return;}
+    const lo=Math.min(...pts.map(x=>x.v)),hi=Math.max(...pts.map(x=>x.v)),pad=Math.max((hi-lo)*.18,.01),y=v=>200-(v-(lo-pad))/(hi-lo+2*pad)*160,minEpoch=Math.min(...pts.map(x=>x.r.epoch)),maxEpoch=Math.max(...pts.map(x=>x.r.epoch)),x=e=>maxEpoch===minEpoch?164:42+(e-minEpoch)/(maxEpoch-minEpoch)*244,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+    svg.innerHTML=`<line x1="36" y1="200" x2="286" y2="200" stroke="#aeb7c7"/><text x="2" y="203">${(lo-pad).toFixed(3)}</text><text x="2" y="42">${(hi+pad).toFixed(3)}</text>`;
+    series.forEach((s,si)=>{
+      const p=pts.filter(z=>chartKey(z.r)===s).sort((a,b)=>a.r.epoch-b.r.epoch),color=colors[si%colors.length],paired=d.chartMode==='untuned-vs-tuned',dx=paired?(si===0?-24:24):((si%3)-1)*15,dy=paired?(si===0?-16:18):-12-(Math.floor(si/3)%2)*13;
+      if(p.length>1)svg.insertAdjacentHTML('beforeend',`<polyline fill="none" stroke="${color}" stroke-width="2" points="${p.map(z=>`${x(z.r.epoch)},${y(z.v)}`).join(' ')}"/>`);
+      p.forEach((z,pi)=>{const ax=clamp(x(z.r.epoch)+dx,20,290),ay=clamp(y(z.v)+dy,12,190),id=`${m}-${si}-${pi}`;svg.insertAdjacentHTML('beforeend',`<line data-label-id="${id}" x1="${x(z.r.epoch)}" y1="${y(z.v)}" x2="${ax}" y2="${ay}" stroke="${color}" stroke-width="0.8" opacity="0.7"/><circle cx="${x(z.r.epoch)}" cy="${y(z.v)}" r="4" fill="${color}"><title>${label} ${z.v.toFixed(3)} · epoch ${z.r.epoch} · LR ${z.r.lr||'—'} · WD ${z.r.wd||'—'}</title></circle><text class="value" data-label-id="${id}" data-direction="${dy>=0?1:-1}" text-anchor="middle" x="${ax}" y="${ay+3}" fill="${color}">${z.v.toFixed(3)}</text><text x="${x(z.r.epoch)-5}" y="218">E${z.r.epoch}</text>`);});
+    });
+    layoutValueLabels(svg,{minX:20,maxX:290,minY:12,maxY:190});
+  });
   const tableMetric=v=>Number.isFinite(v)?v.toFixed(3):'—';
   visibleRuns.forEach(r=>rows.insertAdjacentHTML('beforeend',`<tr><td>${key(r)}</td><td>${r.epoch}</td><td>${r.lr||'—'}</td><td>${r.wd||'—'}</td><td class="${isActiveStatus(r)?'run-active':''}">${r.status}</td><td>${tableMetric(r.train)}</td><td>${tableMetric(r.validation??r.c4)}</td><td>${tableMetric(r.acc)}</td><td>${tableMetric(r.bpb)}</td><td>${r.wandb?`<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}">${r.wandb}</a>`:'—'}</td><td>${r.beaker?`<a href="https://beaker.org/ex/${r.beaker}">experiment</a>`:'—'}</td></tr>`));
   const gridMount=document.querySelector('#coordinate-grid');

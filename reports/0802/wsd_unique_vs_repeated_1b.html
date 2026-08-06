@@ -34,6 +34,7 @@
     .legend .swatch { width:18px; height:3px; border-radius:2px; }
     .legend .unique .swatch { background:#15803d; }
     .legend .repeated .swatch { background:#7c3aed; }
+    .legend .step1-tuned .swatch { background:repeating-linear-gradient(90deg,#0f6f9e 0 5px,transparent 5px 8px); }
     .legend .repeated-old .swatch { background:repeating-linear-gradient(90deg,#7c3aed 0 5px,transparent 5px 8px); }
     .legend .codelion .swatch { background:#d97706; }
     .table-wrap { overflow:auto; }
@@ -51,6 +52,12 @@
     .invalid { color:#a33030; }
     .pending { color:var(--muted); }
     .coverage th,.coverage td { text-align:left; vertical-align:top; }
+    .comparison th,.comparison td { text-align:right; }
+    .comparison th:first-child,.comparison td:first-child { text-align:left; }
+    .comparison .delta-better { color:#26723b; }
+    .comparison .delta-worse { color:#a33030; }
+    .comparison .delta-tied { color:var(--ink); }
+    .comparison td:not(:first-child) { font-variant-numeric:tabular-nums; }
     .tuple-list { display:flex; flex-wrap:wrap; gap:5px; }
     .tuple { display:inline-block; padding:2px 6px; border:1px solid var(--line); border-radius:999px; color:var(--muted); background:#fafbfc; }
     .tuple.selected { color:var(--ink); border-color:#7ba5d3; background:#eef5fc; font-weight:700; }
@@ -71,6 +78,7 @@
         <select id="model-size-select" aria-label="Select model size">
           <option value="1B">Dense 1B</option>
           <option value="153M">Dense 153M</option>
+          <option value="474M">Dense 474M</option>
         </select>
       </label>
       <a href="../0731/wsd_unique_vs_repeated_1b.html">0731 Step 2 archive</a>
@@ -80,7 +88,7 @@
   <p class="stamp" id="live-stamp"><strong>Intermediate report:</strong> loading run state.</p>
   <p class="note">The exhaustive DCLM document universe is assigned by a SHA-256 ordering over seed, canonical shard path, and zero-based document index. Validation, test, and training are mutually exclusive; their union is the complete source pool.</p>
   <p class="note">The repeated 1B and unique 5B samples are independent uniform document samples from the training partition. No 0731 checkpoint or data artifact is reused.</p>
-  <p class="note"><strong>Planned</strong> means required by the LR ladder but not submitted. Each endpoint selects the lower DCLM validation CE on 2.5e-4 → 5e-4 → 1e-3 → 2e-3 → 4e-3. A new rung advances only through its own matching pre-decay chain.</p>
+  <p class="note" id="lr-policy-note"><strong>Planned</strong> means required by the LR ladder but not submitted. Each endpoint selects the lower DCLM validation CE on 2.5e-4 → 5e-4 → 1e-3 → 2e-3 → 4e-3. A new rung advances only through its own matching pre-decay chain.</p>
   <p class="note"><strong>Statistical significance:</strong> every LR and unique-vs-repeated conclusion reports the paired difference, a two-sided 95% confidence interval, and yes/no significance. Validation-loss intervals use a paired document-level bootstrap over the same 79,690 documents (100,000,118 real tokens); accuracy intervals use paired downstream examples. A result is significant only when its interval excludes zero.</p>
   <p class="note" id="seed-probe-conclusion"></p>
 
@@ -88,23 +96,20 @@
   <div class="legend" aria-label="Chart series">
     <label class="unique"><span class="swatch"></span><input type="checkbox" data-category-toggle="unique" checked>Unique DCLM 5B sample · best LR</label>
     <label class="repeated"><span class="swatch"></span><input type="checkbox" data-category-toggle="repeated" checked>Repeated DCLM 1B sample · best LR</label>
+    <label class="step1-tuned" id="step1-tuned-reference-toggle"><span class="swatch"></span><input type="checkbox" data-category-toggle="step1-tuned" checked>Step 1 repeated data · tuned WD reference</label>
   </div>
   <div class="charts" tabindex="0" aria-label="Scrollable model-comparison charts; four charts are visible at a time">
-    <article class="card chart"><h3>Final / nearest training CE ↓</h3><div data-metric="train"></div></article>
     <article class="card chart"><h3>Held-out DCLM validation CE ↓</h3><div data-metric="c4"></div></article>
-    <article class="card chart"><h3>HellaSwag length-normalized accuracy ↑</h3><div data-metric="acc"></div></article>
     <article class="card chart"><h3>HellaSwag non-v2 BPB ↓</h3><div data-metric="bpb"></div></article>
+    <article class="card chart"><h3>HellaSwag length-normalized accuracy ↑</h3><div data-metric="acc"></div></article>
+    <article class="card chart"><h3>8-task average BPB · no BoolQ ↓</h3><div data-metric="avg8_bpb"></div></article>
     <article class="card chart"><h3>8-task average accuracy · no BoolQ ↑</h3><div data-metric="avg8_acc"></div></article>
-    <article class="card chart"><h3>3-task stable average · ARC-E, HS, PIQA ↑</h3><div data-metric="avg3_acc"></div></article>
-    <article class="card chart"><h3>ARC-Challenge normalized accuracy ↑</h3><div data-metric="ds_arc_challenge"></div></article>
-    <article class="card chart"><h3>ARC-Easy accuracy ↑</h3><div data-metric="ds_arc_easy"></div></article>
-    <article class="card chart"><h3>CSQA 5-shot normalized accuracy ↑</h3><div data-metric="ds_csqa"></div></article>
-    <article class="card chart"><h3>OpenBookQA 5-shot normalized accuracy ↑</h3><div data-metric="ds_openbookqa"></div></article>
-    <article class="card chart"><h3>PIQA normalized accuracy ↑</h3><div data-metric="ds_piqa"></div></article>
-    <article class="card chart"><h3>SocialIQA 5-shot normalized accuracy ↑</h3><div data-metric="ds_socialiqa"></div></article>
-    <article class="card chart"><h3>Winogrande accuracy ↑</h3><div data-metric="ds_winogrande"></div></article>
   </div>
-  <p class="note">Scroll horizontally to inspect the remaining figures. The 8-task average excludes BoolQ; the stable 3-task average uses ARC-Easy, HellaSwag, and PIQA. The sealed DCLM test split is not used for LR selection.</p>
+  <p class="note">The 8-task macro-averages exclude BoolQ and include ARC-Challenge, ARC-Easy, CSQA, HellaSwag, OpenBookQA, PIQA, SocialIQA, and WinoGrande. The sealed DCLM test split is not used for LR selection. <span id="step1-tuned-reference-note">The dashed Step-1 tuned-WD series is a graph-only repeated-data reference and is intentionally omitted from every table; it appears on all five metric panels.</span></p>
+
+  <h2>Selected-endpoint comparison</h2>
+  <div class="card table-wrap"><table class="comparison"><thead><tr><th>Token target</th><th>DCLM CE ↓<br>U / R / &Delta;</th><th>HS BPB ↓<br>U / R / &Delta;</th><th>HS accuracy ↑<br>U / R / &Delta;</th><th>Avg-8 BPB ↓<br>U / R / &Delta;</th><th>Avg-8 accuracy ↑<br>U / R / &Delta;</th></tr></thead><tbody id="comparison-body"></tbody></table></div>
+  <p class="note">Each cell reports unique / repeated / &Delta;, where &Delta; = unique &minus; repeated. Negative deltas favor unique data for CE and BPB; positive deltas favor unique data for accuracy. Each regime uses the endpoint selected independently by held-out DCLM validation CE.</p>
 
   <h2>Unique-data LR coordinate grid</h2>
   <div class="card table-wrap"><table class="coverage"><thead><tr><th>Target</th><th>Evaluated, active, and invalid LRs</th><th>Selected by DCLM validation CE</th></tr></thead><tbody id="unique-grid"></tbody></table></div>
@@ -118,23 +123,46 @@
 
   <footer id="manifest-note"></footer>
 </main>
+<script src="data/wsd_weight_decay_1b.js"></script>
 <script src="data/wsd_unique_vs_repeated_1b.js"></script>
 <script>
   const state=window.STEP2_REPORT_DATA;
-  const modelSize=new URLSearchParams(window.location.search).get("model")==="153M"?"153M":"1B";
+  const step1State=window.ICSL_REPORT_DATA||{};
+  const requestedModel=new URLSearchParams(window.location.search).get("model");
+  const modelSize=["1B","153M","474M"].includes(requestedModel)?requestedModel:"1B";
   const modelSelect=document.querySelector("#model-size-select");
   modelSelect.value=modelSize;
   modelSelect.addEventListener("change",()=>{const url=new URL(window.location.href);url.searchParams.set("model",modelSelect.value);window.location.href=url;});
-  const smallModel=modelSize==="153M";
-  const uniqueRuns=(smallModel?state.smallUniqueRuns:state.uniqueRuns)||[], repeatedRuns=(smallModel?state.smallRepeatedRuns:state.repeatedRuns)||[], seedProbeRuns=(smallModel?state.smallSeedProbeRuns:state.seedProbeRuns)||[], poolProbeRuns=smallModel?[]:(state.poolProbeRuns||[]), oldRepeatedRuns=smallModel?[]:(state.oldRepeatedRuns||[]), codelionRuns=smallModel?[]:(state.codelionRuns||[]), evaluationRuns=(smallModel?state.smallEvaluationRuns:state.evaluationRuns)||[], dataGeneration=state.dataGeneration||[];
+  const scaledModel=modelSize!=="1B";
+  document.querySelector("#step1-tuned-reference-toggle").hidden=scaledModel;
+  document.querySelector("#step1-tuned-reference-note").hidden=scaledModel;
+  const targetEpochs=scaledModel?[1,2,4,8,12,16]:[1,2,3,4,5,6,8,10];
+  const scaledRuns=modelSize==="153M"?{unique:state.smallUniqueRuns,repeated:state.smallRepeatedRuns,seeds:state.smallSeedProbeRuns,evaluations:state.smallEvaluationRuns}:{unique:state.mediumUniqueRuns,repeated:state.mediumRepeatedRuns,seeds:state.mediumSeedProbeRuns,evaluations:state.mediumEvaluationRuns};
+  const baseUniqueRuns=(scaledModel?scaledRuns.unique:state.uniqueRuns)||[], baseRepeatedRuns=(scaledModel?scaledRuns.repeated:state.repeatedRuns)||[], seedProbeRuns=(scaledModel?scaledRuns.seeds:state.seedProbeRuns)||[], poolProbeRuns=scaledModel?[]:(state.poolProbeRuns||[]), oldRepeatedRuns=scaledModel?[]:(state.oldRepeatedRuns||[]), codelionRuns=scaledModel?[]:(state.codelionRuns||[]), evaluationRuns=(scaledModel?scaledRuns.evaluations:state.evaluationRuns)||[], dataGeneration=state.dataGeneration||[];
   const modelInfo=state.modelSizes?.[modelSize]||{};
+  const queuedChainRows=(regime,existing)=>{
+    const coordinates=new Set(existing.filter(r=>!["canceled","failed","invalid"].includes(r.status)).map(r=>`${r.epoch}:${r.lr}`));
+    return (state.chainExperiments||[]).filter(chain=>scaledModel&&String(chain.modelSize).startsWith(modelSize)&&chain.regime===regime&&["queued","active"].includes(chain.status)).flatMap(chain=>{
+      const missing=targetEpochs.filter(epoch=>epoch>=chain.startTarget&&epoch<=chain.endTarget&&!coordinates.has(`${epoch}:${chain.lr}`));
+      return missing.map((epoch,index)=>({epoch,lr:chain.lr,wd:"0.033",status:chain.status==="active"&&index===0?"active":"queued",beaker:chain.beaker,reason:`Persistent ${chain.lr} chain: targets ${chain.startTarget}B through ${chain.endTarget}B.`}));
+    });
+  };
+  const uniqueRuns=[...baseUniqueRuns,...queuedChainRows("unique",baseUniqueRuns)], repeatedRuns=[...baseRepeatedRuns,...queuedChainRows("repeated",baseRepeatedRuns)];
   const seedConclusion=state.seedProbeConclusion;
   const seedConclusionNode=document.querySelector("#seed-probe-conclusion");
-  if(!smallModel&&seedConclusion?.summary){seedConclusionNode.innerHTML=`<strong>Seed-probe conclusion (${seedConclusion.status}):</strong> ${seedConclusion.summary}`;}else{seedConclusionNode.hidden=true;}
+  if(!scaledModel&&seedConclusion?.summary){seedConclusionNode.innerHTML=`<strong>Seed-probe conclusion (${seedConclusion.status}):</strong> ${seedConclusion.summary}`;}else{seedConclusionNode.hidden=true;}
   document.querySelector("#model-subtitle").textContent=`${modelInfo.label||`Dense ${modelSize}`} · ${Number(modelInfo.totalParameters||0).toLocaleString()} total parameters · WSD · WD 0.033 · warmup ${modelInfo.warmupSteps||"—"} · disjoint 100M-token DCLM validation selects LR.`;
+  if(scaledModel)document.querySelector("#lr-policy-note").innerHTML="<strong>Small-model schedule:</strong> epoch 1 starts at 1e-3 and 2e-3, then adds one adjacent higher or lower rung based on held-out DCLM validation CE. Selected chains advance through 1, 2, 4, 8, 12, and 16B tokens. Every intervening integer-billion-token pre-decay checkpoint is preserved so intermediate endpoints can be evaluated later without retraining.";
   const validComplete=r=>r.status==="complete"&&Number.isFinite(r.c4);
-  const bestByTarget=runs=>[1,2,3,4,5].map(epoch=>runs.filter(r=>r.epoch===epoch&&validComplete(r)).sort((a,b)=>a.c4-b.c4)[0]).filter(Boolean);
+  const bestByTarget=runs=>targetEpochs.map(epoch=>runs.filter(r=>r.epoch===epoch&&validComplete(r)).sort((a,b)=>a.c4-b.c4)[0]).filter(Boolean);
   const uniqueBest=bestByTarget(uniqueRuns), repeatedBest=bestByTarget(repeatedRuns), oldRepeatedBest=bestByTarget(oldRepeatedRuns), codelionBest=bestByTarget(codelionRuns);
+  const step1TunedWdReference=scaledModel?[]:targetEpochs.flatMap(epoch=>{
+    const fixedLr=step1State.fixedLrByEpoch?.[epoch]??step1State.fixedLrByEpoch?.[String(epoch)];
+    const eligible=(step1State.runs||[]).filter(r=>r.epoch===epoch&&r.lr===fixedLr&&r.status==="complete"&&Number.isFinite(r.validation??r.c4));
+    if(!eligible.some(r=>String(r.wd)!=="0.033"))return [];
+    const selected=eligible.sort((a,b)=>(a.validation??a.c4)-(b.validation??b.c4))[0];
+    return [{...selected,c4:selected.validation??selected.c4}];
+  });
   const activeCount=[...uniqueRuns,...repeatedRuns,...seedProbeRuns,...poolProbeRuns,...oldRepeatedRuns,...codelionRuns,...evaluationRuns].filter(r=>["active","queued"].includes(r.status)).length;
   const statusLabel={planned:"Planned",queued:"Queued",active:"Active",complete:"Complete",canceled:"Canceled",failed:"Failed",invalid:"Invalid · missing endpoint decay"};
   const metric=(r,k,d=3)=>Number.isFinite(r[k])?r[k].toFixed(d):"—";
@@ -143,9 +171,12 @@
   const generationProvenance=dataGeneration.map(run=>`${run.beaker}: ${run.status}${run.reason?` (${run.reason})`:""}`).join(" · ");
   document.querySelector("#manifest-note").textContent=(state.manifest.status==="verified"?`Partition verified: ${state.manifest.sourceTokens.toLocaleString()} source tokens · validation ${state.manifest.validationTokens.toLocaleString()} real tokens · test ${state.manifest.testTokens.toLocaleString()} real tokens · train ${state.manifest.trainTokens.toLocaleString()} real tokens · repeated sample ${state.manifest.repeatedTokens.toLocaleString()} real tokens · unique sample ${state.manifest.uniqueTokens.toLocaleString()} real tokens · partition SHA-256 ${state.manifest.sha256}.`:`Data partition status: ${state.manifest.status}. Training will not start before the audit is verified.`)+(generationProvenance?` Generation provenance: ${generationProvenance}.`:"");
 
+  const signedMetric=(value,digits=3)=>Number.isFinite(value)?`${value>0?"+":""}${value.toFixed(digits)}`:"—";
+  const deltaClass=(value,higherIsBetter=false)=>!Number.isFinite(value)?"":Math.abs(value)<0.01?"delta-tied":(higherIsBetter?value>0:value<0)?"delta-better":"delta-worse";
+
   const visibleProvenance=r=>!["failed","canceled"].includes(r.status)&&r.lr!=="4e-4";
-  const familyForMain=(r,regime)=>!smallModel&&r.epoch===1&&r.lr==="5e-4"?`Dense 1B · ${regime} corpus · epoch 1 · 5e-4`:null;
-  const familyForProbe=r=>smallModel?"Dense 153M · matched repeated 1B corpus · epoch 1 · 5e-4":`Dense 1B · ${r.regime} corpus · epoch ${r.epoch} · ${r.lr}`;
+  const familyForMain=(r,regime)=>!scaledModel&&r.epoch===1&&r.lr==="5e-4"?`Dense 1B · ${regime} corpus · epoch 1 · 5e-4`:scaledModel?`${modelInfo.label||modelSize} · ${regime} corpus · LR ${r.lr}`:null;
+  const familyForProbe=r=>scaledModel?`${modelInfo.label||modelSize} · matched repeated 1B corpus · epoch ${r.epoch} · ${r.lr}`:`Dense 1B · ${r.regime} corpus · epoch ${r.epoch} · ${r.lr}`;
   const provenanceRows=[
     ...uniqueRuns.filter(visibleProvenance).map(r=>({r,condition:"Unique DCLM 5B sample · aggregate",family:familyForMain(r,"unique")})),
     ...repeatedRuns.filter(visibleProvenance).map(r=>({r,condition:"Repeated DCLM 1B sample · aggregate",family:familyForMain(r,"repeated")})),
@@ -161,7 +192,7 @@
   document.querySelector("#run-family-legend").innerHTML=familyNames.length?`<strong>Same-run families:</strong> ${familyNames.map(family=>`<span class="run-family-key"><span class="run-family-dot" style="background:${familyColors[family]}"></span>${family}</span>`).join("")}`:"";
   document.querySelector("#runs-body").innerHTML=provenanceRows.map(row).join("");
 
-  const grid=(runs,best,mount)=>mount.innerHTML=[1,2,3,4,5].map(epoch=>{
+  const grid=(runs,best,mount)=>mount.innerHTML=targetEpochs.map(epoch=>{
     const points=runs.filter(r=>r.epoch===epoch&&!r.duplicate&&!["invalid","canceled","failed"].includes(r.status)).sort((a,b)=>Number(a.lr)-Number(b.lr));
     const chosen=best.find(r=>r.epoch===epoch);
     const chips=points.map(r=>{
@@ -175,28 +206,58 @@
   grid(repeatedRuns,repeatedBest,document.querySelector("#repeated-grid"));
 
   const downstreamKeys8=["arc_challenge","arc_easy","csqa","hellaswag","openbookqa","piqa","socialiqa","winogrande"];
-  const downstreamKeys3=["arc_easy","hellaswag","piqa"];
   const downstreamValue=(r,task)=>task==="hellaswag"?r.acc:r.downstream?.[task];
+  const downstreamBpbValue=(r,task)=>task==="hellaswag"?r.bpb:r.downstreamBpb?.[task]??state.downstreamBpbByWandb?.[r.wandb]?.[task];
   const metricValue=(r,k)=>{
-    if(k==="avg8_acc"||k==="avg3_acc"){
-      const keys=k==="avg8_acc"?downstreamKeys8:downstreamKeys3;
-      const vals=keys.map(task=>downstreamValue(r,task));
+    if(k==="avg8_acc"){
+      const vals=downstreamKeys8.map(task=>downstreamValue(r,task));
       return vals.every(Number.isFinite)?vals.reduce((a,b)=>a+b,0)/vals.length:null;
     }
-    if(k.startsWith("ds_")) return r.downstream?.[k.slice(3)];
+    if(k==="avg8_bpb"){
+      if(Number.isFinite(r.avg8Bpb))return r.avg8Bpb;
+      const step1Average=step1State.avg8BpbByWandb?.[r.wandb];
+      if(Number.isFinite(step1Average))return step1Average;
+      const vals=downstreamKeys8.map(task=>downstreamBpbValue(r,task));
+      return vals.every(Number.isFinite)?vals.reduce((a,b)=>a+b,0)/vals.length:null;
+    }
     return r[k];
   };
-  const labels={train:"Train CE",c4:"DCLM validation CE",acc:"HellaSwag accuracy",bpb:"HellaSwag BPB",avg8_acc:"8-task average accuracy",avg3_acc:"3-task stable average accuracy",ds_arc_challenge:"ARC-Challenge accuracy",ds_arc_easy:"ARC-Easy accuracy",ds_csqa:"CSQA accuracy",ds_openbookqa:"OpenBookQA accuracy",ds_piqa:"PIQA accuracy",ds_socialiqa:"SocialIQA accuracy",ds_winogrande:"Winogrande accuracy"};
-  const axisLabel=metricName=>metricName==="train"||metricName==="c4"?"CE loss":metricName==="bpb"?"BPB":"Accuracy (%)";
-  const tickDigits=(metricName,step)=>{
-    const minimum=(metricName==="acc"||metricName.startsWith("avg")||metricName.startsWith("ds_"))?1:2;
-    return Math.min(5,Math.max(minimum,Math.ceil(-Math.log10(Math.max(Math.abs(step),Number.EPSILON)))+1));
+  const comparisonCell=(unique,repeated,key,higherIsBetter=false)=>{
+    const u=unique?metricValue(unique,key):null,r=repeated?metricValue(repeated,key):null,d=Number.isFinite(u)&&Number.isFinite(r)?u-r:null;
+    return `<td class="${deltaClass(d,higherIsBetter)}">${Number.isFinite(u)?u.toFixed(3):"—"} / ${Number.isFinite(r)?r.toFixed(3):"—"} / ${signedMetric(d)}</td>`;
+  };
+  document.querySelector("#comparison-body").innerHTML=targetEpochs.map(epoch=>{
+    const unique=uniqueBest.find(r=>r.epoch===epoch),repeated=repeatedBest.find(r=>r.epoch===epoch);
+    if(!unique&&!repeated)return "";
+    return `<tr><td><strong>${epoch}B</strong></td>${comparisonCell(unique,repeated,"c4")}${comparisonCell(unique,repeated,"bpb")}${comparisonCell(unique,repeated,"acc",true)}${comparisonCell(unique,repeated,"avg8_bpb")}${comparisonCell(unique,repeated,"avg8_acc",true)}</tr>`;
+  }).join("");
+  const labels={c4:"DCLM validation CE",acc:"HellaSwag accuracy",bpb:"HellaSwag BPB",avg8_acc:"8-task average accuracy",avg8_bpb:"8-task average BPB"};
+  const axisLabel=metricName=>metricName==="c4"?"CE loss":metricName==="bpb"||metricName==="avg8_bpb"?"BPB":"Accuracy (%)";
+  const layoutValueLabels=(svg,bounds)=>{
+    const occupied=[];
+    [...svg.querySelectorAll("text.value")].forEach(node=>{
+      const leader=svg.querySelector(`line[data-label-id="${node.dataset.labelId}"]`);
+      const preferredX=Number(node.getAttribute("x")),preferredY=Number(node.getAttribute("y"))-3,direction=Number(node.dataset.direction)||1;
+      const candidates=[];
+      [0,12,24,36,48,60,72,84].forEach(distance=>[0,-10,10,-20,20,-30,30].forEach(horizontal=>candidates.push({x:preferredX+horizontal,y:preferredY+direction*distance})));
+      [12,24,36,48,60,72,84].forEach(distance=>[0,-10,10,-20,20,-30,30].forEach(horizontal=>candidates.push({x:preferredX+horizontal,y:preferredY-direction*distance})));
+      let chosen=null;
+      for(const candidate of candidates){
+        const x=Math.max(bounds.minX,Math.min(bounds.maxX,candidate.x)),y=Math.max(bounds.minY,Math.min(bounds.maxY,candidate.y));
+        node.setAttribute("x",x);node.setAttribute("y",y+3);
+        const box=node.getBBox(),rect={left:box.x-2,right:box.x+box.width+2,top:box.y-1,bottom:box.y+box.height+1};
+        if(!occupied.some(other=>rect.left<other.right&&rect.right>other.left&&rect.top<other.bottom&&rect.bottom>other.top)){chosen={x,y,rect};break;}
+      }
+      if(!chosen){const x=Math.max(bounds.minX,Math.min(bounds.maxX,preferredX)),y=Math.max(bounds.minY,Math.min(bounds.maxY,preferredY));node.setAttribute("x",x);node.setAttribute("y",y+3);const box=node.getBBox();chosen={x,y,rect:{left:box.x-2,right:box.x+box.width+2,top:box.y-1,bottom:box.y+box.height+1}};}
+      occupied.push(chosen.rect);if(leader){leader.setAttribute("x2",chosen.x);leader.setAttribute("y2",chosen.y);}
+    });
   };
   function chart(metricName,mount){
     const enabled=new Set([...document.querySelectorAll("[data-category-toggle]:checked")].map(el=>el.dataset.categoryToggle));
     const series=[
       {key:"unique",runs:uniqueBest,color:"#15803d",dx:-15,dy:-11},
       {key:"repeated",runs:repeatedBest,color:"#7c3aed",dx:15,dy:13},
+      {key:"step1-tuned",runs:step1TunedWdReference,color:"#0f6f9e",dash:"4 3",dx:-16,dy:22},
       {key:"repeated-old",runs:oldRepeatedBest,color:"#7c3aed",dash:"6 4",dx:-15,dy:13},
       {key:"codelion",runs:codelionBest,color:"#d97706",dx:15,dy:-11}
     ].filter(s=>enabled.has(s.key)).map(s=>({...s,points:s.runs.map(r=>({r,v:metricValue(r,metricName)})).filter(p=>Number.isFinite(p.v))})).filter(s=>s.points.length);
@@ -204,7 +265,8 @@
     if(!vals.length){mount.innerHTML='<div class="note" style="padding:70px 12px;text-align:center">No valid completed endpoint yet.</div>';return;}
     const w=360,h=260,p={l:72,r:16,t:22,b:38},min=Math.min(...vals),max=Math.max(...vals),pad=Math.max((max-min)*.14,0.02),lo=min-pad,hi=max+pad;
     const tickCount=4,tickStep=(hi-lo)/(tickCount-1),digits=3;
-    const x=e=>p.l+(e-1)*(w-p.l-p.r)/4,y=v=>p.t+(hi-v)*(h-p.t-p.b)/(hi-lo),ticks=Array.from({length:tickCount},(_,i)=>lo+tickStep*i);
+    const minEpoch=targetEpochs[0],maxEpoch=targetEpochs[targetEpochs.length-1];
+    const x=e=>p.l+(e-minEpoch)*(w-p.l-p.r)/Math.max(1,maxEpoch-minEpoch),y=v=>p.t+(hi-v)*(h-p.t-p.b)/(hi-lo),ticks=Array.from({length:tickCount},(_,i)=>lo+tickStep*i);
     const tickText=v=>v.toFixed(digits);
     const annotationX=(s,point)=>Math.min(w-19,Math.max(19,x(point.r.epoch)+s.dx));
     const annotationY=(s,point)=>Math.min(h-p.b-5,Math.max(12,y(point.v)+s.dy));
@@ -212,9 +274,10 @@
       ${ticks.map(v=>`<line x1="${p.l}" y1="${y(v)}" x2="${w-p.r}" y2="${y(v)}" stroke="#e3e8ed"/><text x="${p.l-10}" y="${y(v)+4}" text-anchor="end" font-size="11" font-weight="650" fill="#34414e">${tickText(v)}</text>`).join("")}
       <text x="17" y="${(p.t+h-p.b)/2}" text-anchor="middle" font-size="11" font-weight="700" fill="#34414e" transform="rotate(-90 17 ${(p.t+h-p.b)/2})">${axisLabel(metricName)}</text>
       <line x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${h-p.b}" stroke="#aeb8c2"/><line x1="${p.l}" y1="${h-p.b}" x2="${w-p.r}" y2="${h-p.b}" stroke="#aeb8c2"/>
-      ${series.map(s=>`<polyline points="${s.points.map(point=>`${x(point.r.epoch)},${y(point.v)}`).join(" ")}" fill="none" stroke="${s.color}" stroke-width="2.4" ${s.dash?`stroke-dasharray="${s.dash}"`:""}/>${s.points.map(point=>`<line x1="${x(point.r.epoch)}" y1="${y(point.v)}" x2="${annotationX(s,point)}" y2="${annotationY(s,point)}" stroke="${s.color}" stroke-width="0.8" opacity="0.7"/><circle cx="${x(point.r.epoch)}" cy="${y(point.v)}" r="3.5" fill="${s.color}"><title>${labels[metricName]} ${tickText(point.v)} · ${point.r.epoch}B · LR ${point.r.lr}</title></circle><text x="${annotationX(s,point)}" y="${annotationY(s,point)+3}" text-anchor="middle" font-size="8" font-weight="700" fill="${s.color}" stroke="#fff" stroke-width="3" paint-order="stroke">${tickText(point.v)}</text>`).join("")}`).join("")}
-      ${[1,2,3,4,5].map(e=>`<text x="${x(e)}" y="${h-13}" text-anchor="middle" font-size="11" font-weight="600" fill="#4b5967">${e}B</text>`).join("")}
+      ${series.map((s,si)=>`<polyline points="${s.points.map(point=>`${x(point.r.epoch)},${y(point.v)}`).join(" ")}" fill="none" stroke="${s.color}" stroke-width="2.4" ${s.dash?`stroke-dasharray="${s.dash}"`:""}/>${s.points.map((point,pi)=>{const id=`${metricName}-${si}-${pi}`;return `<line data-label-id="${id}" x1="${x(point.r.epoch)}" y1="${y(point.v)}" x2="${annotationX(s,point)}" y2="${annotationY(s,point)}" stroke="${s.color}" stroke-width="0.8" opacity="0.7"/><circle cx="${x(point.r.epoch)}" cy="${y(point.v)}" r="3.5" fill="${s.color}"><title>${labels[metricName]} ${tickText(point.v)} · ${point.r.epoch}B · LR ${point.r.lr} · WD ${point.r.wd||"—"}</title></circle><text class="value" data-label-id="${id}" data-direction="${s.dy>=0?1:-1}" x="${annotationX(s,point)}" y="${annotationY(s,point)+3}" text-anchor="middle" font-size="8" font-weight="700" fill="${s.color}" stroke="#fff" stroke-width="3" paint-order="stroke">${tickText(point.v)}</text>`;}).join("")}`).join("")}
+      ${targetEpochs.map(e=>`<text x="${x(e)}" y="${h-13}" text-anchor="middle" font-size="10" font-weight="600" fill="#4b5967">${e}B</text>`).join("")}
     </svg>`;
+    layoutValueLabels(mount.querySelector("svg"),{minX:19,maxX:w-19,minY:12,maxY:h-p.b-5});
   }
   const renderCharts=()=>document.querySelectorAll("[data-metric]").forEach(el=>chart(el.dataset.metric,el));
   document.querySelectorAll("[data-category-toggle]").forEach(el=>el.addEventListener("change",renderCharts));
