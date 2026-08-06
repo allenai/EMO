@@ -1,12 +1,12 @@
 window.ICSL_REPORT_DATA = {
-  "updated": "2026-08-06 08:05 PDT · five-panel downstream summary and tuned-WD BPB coverage",
+  "updated": "2026-08-06 08:37 PDT · WD1.0 extension reopened for chained epoch12/16 gate",
   "title": "Step 1 — WSD Weight-Decay Tuning",
   "setup": "Dense 1B; verified 0802 Pool-A train-only corpus; 100M-token DCLM validation; sealed test unused; LR inherited from Step 2 at each endpoint; init seed 12536; data seed 0.",
-  "selection": "Step1 is concluded. At epoch10 and fixed LR1e-3, WD1.0 achieved the lowest observed DCLM validation CE3.213: 0.119 lower than untuned WD0.033 CE3.332, 0.073 lower than WD0.1 CE3.286, and 0.034 lower than WD0.333 CE3.247. These are scalar fixed-checkpoint gaps; paired significance is pending because paired document-loss artifacts are unavailable. The WD1.0 chain loaded only exact matching same-WD pre-decay checkpoints and preserved required steps1931 and2145. Step2's tuned-WD graph reads these completed Step1 coordinates directly, so the final result updates both reports.",
-  "concluded": true,
+  "selection": "Step1 is reopened because WD1.0 DCLM validation CE continued decreasing through epoch10 (CE3.213). One persistent LR1e-3, WD1.0 job will load the exact epoch10 step2145 checkpoint and run epoch12 while preserving the skipped epoch11 pre-decay checkpoint step2360 and epoch12 step2574. Epoch16 is chained in the same job and runs only if epoch12 CE is below3.213; it will preserve skipped epoch13/14/15 checkpoints steps2789,3003,3218 and epoch16 step3432. Step2's tuned-WD graph reads these coordinates directly.",
+  "concluded": false,
   "coordinateMode": "fixed-step2-lr",
   "chartMode": "untuned-vs-tuned",
-  "fixedLrByEpoch": {"1":"5e-4","2":"5e-4","3":"5e-4","4":"1e-3","5":"1e-3","6":"1e-3","8":"1e-3","10":"1e-3"},
+  "fixedLrByEpoch": {"1":"5e-4","2":"5e-4","3":"5e-4","4":"1e-3","5":"1e-3","6":"1e-3","8":"1e-3","10":"1e-3","12":"1e-3","16":"1e-3"},
   "avg8BpbByWandb": {"v8uxyvfb":2.1565,"sv10yiql":2.161875,"jrnkkho3":1.81125,"acedxrv7":1.701125,"ukcio6rh":1.57575,"pdaunczc":1.5385,"hjhc8spr":1.5267125,"uieehqud":1.47855,"evkd3dzf":1.499125,"qezxvden":1.45935,"n7vll93h":1.504,"bo5cbnlx":1.4293375,"k55t74nc":1.5297,"ecc8ngbb":1.4144125},
   "runs": [
     {"series":"WD 0.033","epoch":1,"lr":"2.5e-4","wd":"0.033","status":"complete","beaker":"01KZ37C34Z76NAHRQVBTDG6YRC","job":"01KZ37C38PCX2TD68F16EE95W9","wandb":"oe2ispur","revision":"5ecb001c","preflightJob":"01KZ378AVH9BPF7MKY4P87VMVH","train":5.015,"validation":5.046,"acc":25.00,"bpb":1.567,"downstream":{"arc_challenge":21.40,"arc_easy":29.65,"boolq":39.79,"csqa":24.65,"openbookqa":23.60,"piqa":51.03,"socialiqa":39.30,"winogrande":48.22},"reason":"Completed; 5e-4 remains the best LR for WD0.033 at epoch 1 by DCLM validation CE 5.000 versus 5.046."},

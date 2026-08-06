@@ -20,7 +20,7 @@ import sys
 from typing import Any
 
 
-TARGETS = (1, 2, 3, 4, 5, 6, 8, 10)
+TARGETS = (1, 2, 3, 4, 5, 6, 8, 10, 12, 16)
 MAX_TOKENS = {target: target * 1_000_000_000 for target in TARGETS}
 FIXED_STEPS = {
     1: (214,),
@@ -31,8 +31,21 @@ FIXED_STEPS = {
     6: (1287,),
     8: (1502, 1716),
     10: (1931, 2145),
+    12: (2360, 2574),
+    16: (2789, 3003, 3218, 3432),
 }
-LOAD_STEPS = {2: 214, 3: 428, 4: 643, 5: 858, 6: 1073, 8: 1287, 10: 1716}
+LOAD_STEPS = {
+    2: 214,
+    3: 428,
+    4: 643,
+    5: 858,
+    6: 1073,
+    8: 1287,
+    10: 1716,
+    12: 2145,
+    16: 2574,
+}
+PRECEDING_TARGET = {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 6, 10: 8, 12: 10, 16: 12}
 
 
 def parse_args() -> argparse.Namespace:
@@ -45,8 +58,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--start-epoch", type=int, choices=TARGETS, default=1)
     parser.add_argument("--weight-decay", required=True)
     parser.add_argument("--nproc", type=int, default=8)
+    parser.add_argument(
+        "--gate-epoch",
+        type=int,
+        choices=TARGETS,
+        help="After this endpoint, continue only if its DCLM validation CE improves.",
+    )
+    parser.add_argument(
+        "--continue-if-below",
+        type=float,
+        help="DCLM validation CE threshold paired with --gate-epoch.",
+    )
     parser.add_argument("--print-only", action="store_true")
-    return parser.parse_args()
+    args = parser.parse_args()
+    if (args.gate_epoch is None) != (args.continue_if_below is None):
+        parser.error("--gate-epoch and --continue-if-below must be supplied together")
+    return args
 
 
 def get_base_spec(experiment: str) -> dict[str, Any]:
@@ -68,7 +95,9 @@ def replace_argument(arguments: list[str], prefix: str, replacement: str) -> lis
 
 
 def run_name_for(base_name: str, target: int) -> str:
-    name, replacements = re.subn(r"_e1_(lr[^_]+_wd[^_]+_warmup\d+)$", rf"_e{target}_\1", base_name)
+    name, replacements = re.subn(
+        r"_e\d+_(lr[^_]+_wd[^_]+_warmup\d+)$", rf"_e{target}_\1", base_name
+    )
     if replacements != 1:
         raise ValueError(f"Unexpected Step1 base run name: {base_name}")
     return name
@@ -81,6 +110,13 @@ def base_name_for_weight_decay(base_name: str, weight_decay: str) -> str:
     if replacements != 1:
         raise ValueError(f"Unexpected Step1 base run name: {base_name}")
     return name
+
+
+def epoch_from_run_name(run_name: str) -> int:
+    match = re.search(r"_e(\d+)_lr", run_name)
+    if match is None:
+        raise ValueError(f"Could not infer endpoint from run name: {run_name}")
+    return int(match.group(1))
 
 
 def stage_arguments(
@@ -126,6 +162,8 @@ def build_chain(
     weight_decay: str,
     nproc: int,
     priority: str,
+    gate_epoch: int | None,
+    continue_if_below: float | None,
 ) -> dict[str, Any]:
     spec = copy.deepcopy(base_spec)
     task = spec["tasks"][0]
@@ -134,6 +172,7 @@ def build_chain(
         raise ValueError("Expected a Gantry Python training task")
     training_script = original[1]
     base_name = base_name_for_weight_decay(original[2], weight_decay)
+    base_epoch = epoch_from_run_name(base_name)
     base_arguments = original[3:]
     if argument_value(base_arguments, "--lr=") != "1e-3":
         raise ValueError("The authorized WD chain must use LR1e-3")
@@ -153,6 +192,14 @@ def build_chain(
     )
 
     selected_targets = TARGETS[TARGETS.index(start_epoch) :]
+    if start_epoch != 1 and PRECEDING_TARGET[start_epoch] != base_epoch:
+        raise ValueError(
+            f"Endpoint {start_epoch} must start from endpoint {PRECEDING_TARGET[start_epoch]}, "
+            f"but the base experiment is endpoint {base_epoch}"
+        )
+    if gate_epoch is not None:
+        if gate_epoch not in selected_targets[:-1]:
+            raise ValueError("--gate-epoch must be a non-terminal selected endpoint")
     commands = ["set -euo pipefail"]
     previous_output: str | None = None if start_epoch == 1 else base_output
     for target in selected_targets:
@@ -172,11 +219,32 @@ def build_chain(
                     ]
                 ),
                 shlex.join(["python", training_script, run_name, "--dry-run", *arguments]),
-                shlex.join(
-                    ["torchrun", f"--nproc-per-node={nproc}", training_script, run_name, *arguments]
-                ),
             )
         )
+        train_command = shlex.join(
+            ["torchrun", f"--nproc-per-node={nproc}", training_script, run_name, *arguments]
+        )
+        if target == gate_epoch:
+            gate_log = f"/tmp/{run_name}.log"
+            commands.extend(
+                (
+                    f"{train_command} 2>&1 | tee {shlex.quote(gate_log)}",
+                    "gate_ce=$(sed -n "
+                    + shlex.quote(
+                        r"s/.*dclm-validation-0802\/CE loss=\([0-9][0-9.]*\).*/\1/p"
+                    )
+                    + f" {shlex.quote(gate_log)} | tail -n 1)",
+                    'test -n "${gate_ce}"',
+                    f'echo "CHAIN_GATE epoch={target} observed=${{gate_ce}} '
+                    f'threshold={continue_if_below}"',
+                    f"if ! awk -v observed=\"${{gate_ce}}\" -v threshold={continue_if_below} "
+                    + shlex.quote("BEGIN { exit !(observed < threshold) }")
+                    + f'; then echo "CHAIN_STOP epoch={target} observed=${{gate_ce}}"; exit 0; fi',
+                    f'echo "CHAIN_CONTINUE next_epoch={selected_targets[selected_targets.index(target) + 1]}"',
+                )
+            )
+        else:
+            commands.append(train_command)
         previous_output = output
 
     task["arguments"] = ["bash", "-lc", "\n".join(commands)]
@@ -208,6 +276,8 @@ def main() -> None:
         weight_decay=args.weight_decay,
         nproc=args.nproc,
         priority=args.priority,
+        gate_epoch=args.gate_epoch,
+        continue_if_below=args.continue_if_below,
     )
     if args.print_only:
         json.dump(spec, sys.stdout, indent=2)

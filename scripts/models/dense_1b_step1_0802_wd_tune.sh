@@ -7,7 +7,7 @@ BEAKER_PREEMPTIBLE="${BEAKER_PREEMPTIBLE:-0}"
 BEAKER_AUTO_RESUME="${BEAKER_AUTO_RESUME:-0}"
 source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
 
-epochs="${EPOCHS:?Set EPOCHS to one of 1, 2, 3, 4, 5, 6, 8, or 10}"
+epochs="${EPOCHS:?Set EPOCHS to one of 1, 2, 3, 4, 5, 6, 8, 10, 12, or 16}"
 lr="${LR:-5e-4}"
 wd="${WD:?Set WD}"
 subset_manifest="${SUBSET_MANIFEST:-src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b.json}"
@@ -26,7 +26,9 @@ case "${epochs}" in
   6) max_tokens=6000000000; checkpoint_steps='[1287]' ;;
   8) max_tokens=8000000000; checkpoint_steps='[1502,1716]' ;;
   10) max_tokens=10000000000; checkpoint_steps='[1931,2145]' ;;
-  *) echo "EPOCHS must be one of 1, 2, 3, 4, 5, 6, 8, or 10" >&2; exit 2 ;;
+  12) max_tokens=12000000000; checkpoint_steps='[2360,2574]' ;;
+  16) max_tokens=16000000000; checkpoint_steps='[2789,3003,3218,3432]' ;;
+  *) echo "EPOCHS must be one of 1, 2, 3, 4, 5, 6, 8, 10, 12, or 16" >&2; exit 2 ;;
 esac
 for manifest in "${subset_manifest}" "${validation_manifest}"; do
   [[ -f "${manifest}" ]] || { echo "Missing manifest: ${manifest}" >&2; exit 2; }
