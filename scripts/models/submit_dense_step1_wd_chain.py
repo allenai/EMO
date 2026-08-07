@@ -20,7 +20,7 @@ import sys
 from typing import Any
 
 
-TARGETS = (1, 2, 3, 4, 5, 6, 8, 10, 12, 16)
+TARGETS = (1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24)
 MAX_TOKENS = {target: target * 1_000_000_000 for target in TARGETS}
 FIXED_STEPS = {
     1: (214,),
@@ -33,6 +33,8 @@ FIXED_STEPS = {
     10: (1931, 2145),
     12: (2360, 2574),
     16: (2789, 3003, 3218, 3432),
+    20: (3647, 3861, 4076, 4290),
+    24: (4505, 4719, 4934, 5148),
 }
 LOAD_STEPS = {
     2: 214,
@@ -44,8 +46,22 @@ LOAD_STEPS = {
     10: 1716,
     12: 2145,
     16: 2574,
+    20: 3432,
+    24: 4290,
 }
-PRECEDING_TARGET = {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 6, 10: 8, 12: 10, 16: 12}
+PRECEDING_TARGET = {
+    2: 1,
+    3: 2,
+    4: 3,
+    5: 4,
+    6: 5,
+    8: 6,
+    10: 8,
+    12: 10,
+    16: 12,
+    20: 16,
+    24: 20,
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -56,6 +72,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workspace", default="ai2/flex2")
     parser.add_argument("--priority", default="urgent")
     parser.add_argument("--start-epoch", type=int, choices=TARGETS, default=1)
+    parser.add_argument(
+        "--source-epoch",
+        type=int,
+        choices=TARGETS,
+        help="Override the endpoint encoded by the base experiment's run name.",
+    )
     parser.add_argument("--weight-decay", required=True)
     parser.add_argument("--nproc", type=int, default=8)
     parser.add_argument(
@@ -164,6 +186,7 @@ def build_chain(
     priority: str,
     gate_epoch: int | None,
     continue_if_below: float | None,
+    source_epoch: int | None,
 ) -> dict[str, Any]:
     spec = copy.deepcopy(base_spec)
     task = spec["tasks"][0]
@@ -172,6 +195,8 @@ def build_chain(
         raise ValueError("Expected a Gantry Python training task")
     training_script = original[1]
     base_name = base_name_for_weight_decay(original[2], weight_decay)
+    if source_epoch is not None:
+        base_name = run_name_for(base_name, source_epoch)
     base_epoch = epoch_from_run_name(base_name)
     base_arguments = original[3:]
     if argument_value(base_arguments, "--lr=") != "1e-3":
@@ -278,6 +303,7 @@ def main() -> None:
         priority=args.priority,
         gate_epoch=args.gate_epoch,
         continue_if_below=args.continue_if_below,
+        source_epoch=args.source_epoch,
     )
     if args.print_only:
         json.dump(spec, sys.stdout, indent=2)

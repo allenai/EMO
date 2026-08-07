@@ -136,7 +136,7 @@
   const scaledModel=modelSize!=="1B";
   document.querySelector("#step1-tuned-reference-toggle").hidden=scaledModel;
   document.querySelector("#step1-tuned-reference-note").hidden=scaledModel;
-  const targetEpochs=scaledModel?[1,2,4,8,12,16]:[1,2,3,4,5,6,8,10,12,16];
+  const targetEpochs=scaledModel?[1,2,4,8,12,16]:[1,2,3,4,5,6,8,10,12,16,20,24];
   const scaledRuns=modelSize==="153M"?{unique:state.smallUniqueRuns,repeated:state.smallRepeatedRuns,seeds:state.smallSeedProbeRuns,evaluations:state.smallEvaluationRuns}:{unique:state.mediumUniqueRuns,repeated:state.mediumRepeatedRuns,seeds:state.mediumSeedProbeRuns,evaluations:state.mediumEvaluationRuns};
   const baseUniqueRuns=(scaledModel?scaledRuns.unique:state.uniqueRuns)||[], baseRepeatedRuns=(scaledModel?scaledRuns.repeated:state.repeatedRuns)||[], seedProbeRuns=(scaledModel?scaledRuns.seeds:state.seedProbeRuns)||[], poolProbeRuns=scaledModel?[]:(state.poolProbeRuns||[]), oldRepeatedRuns=scaledModel?[]:(state.oldRepeatedRuns||[]), codelionRuns=scaledModel?[]:(state.codelionRuns||[]), evaluationRuns=(scaledModel?scaledRuns.evaluations:state.evaluationRuns)||[], dataGeneration=state.dataGeneration||[];
   const modelInfo=state.modelSizes?.[modelSize]||{};
