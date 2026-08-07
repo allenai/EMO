@@ -36,24 +36,39 @@
   const metrics=d.chartMode==='untuned-vs-tuned'
     ? [['validation','DCLM validation CE'],['bpb','HellaSwag non-v2 BPB'],['acc','HellaSwag length-normalized accuracy'],['avg8_bpb','8-task average BPB · no BoolQ'],['avg8_acc','8-task average accuracy · no BoolQ']]
     : [['train','Train CE'],['validation','DCLM validation CE'],['acc','HellaSwag accuracy'],['bpb','HellaSwag BPB'],['avg8','8-task average (no BoolQ)'],['stable3','Stable 3-task average'],['arc_easy','ARC-Easy'],['arc_challenge','ARC-Challenge'],['csqa','CSQA'],['openbookqa','OpenBookQA'],['piqa','PIQA'],['socialiqa','SocialIQA'],['winogrande','Winogrande']];
+  const bestOnly=String(d.title||'').startsWith('Step 1');
   const value=(r,k)=>{if(k==='validation')return r.validation??r.c4;if(k==='avg8'||k==='avg8_acc'){const q=['arc_challenge','arc_easy','csqa','acc','openbookqa','piqa','socialiqa','winogrande'].map(x=>x==='acc'?r.acc:r.downstream?.[x]).filter(Number.isFinite);return q.length===8?q.reduce((a,b)=>a+b,0)/8:null}if(k==='avg8_bpb')return r.avg8Bpb??d.avg8BpbByWandb?.[r.wandb]??null;if(k==='stable3'){const q=[r.downstream?.arc_easy,r.acc,r.downstream?.piqa].filter(Number.isFinite);return q.length===3?q.reduce((a,b)=>a+b,0)/3:null}return r[k]??r.downstream?.[k]};
-  const layoutValueLabels=(svg,bounds)=>{
+  const higherIsBetter=k=>['acc','avg8','avg8_acc','stable3','arc_easy','arc_challenge','csqa','openbookqa','piqa','socialiqa','winogrande'].includes(k);
+  const bestPoint=(points,k)=>points.reduce((best,point)=>(higherIsBetter(k)?point.v>best.v:point.v<best.v)?point:best);
+  const layoutBestLabels=(svg,bounds)=>{
     const occupied=[];
-    [...svg.querySelectorAll('text.value')].forEach(node=>{
-      const leader=svg.querySelector(`line[data-label-id="${node.dataset.labelId}"]`);
-      const preferredX=Number(node.getAttribute('x')),preferredY=Number(node.getAttribute('y'))-3,direction=Number(node.dataset.direction)||1;
+    [...svg.querySelectorAll('text.series-best')].forEach(node=>{
+      const leader=svg.querySelector(`line[data-best-label-id="${node.dataset.bestLabelId}"]`);
+      const pointX=Number(node.dataset.pointX),pointY=Number(node.dataset.pointY),direction=Number(node.dataset.direction)||1;
       const candidates=[];
-      [0,12,24,36,48,60,72,84].forEach(distance=>[0,-10,10,-20,20,-30,30].forEach(horizontal=>candidates.push({x:preferredX+horizontal,y:preferredY+direction*distance})));
-      [12,24,36,48,60,72,84].forEach(distance=>[0,-10,10,-20,20,-30,30].forEach(horizontal=>candidates.push({x:preferredX+horizontal,y:preferredY-direction*distance})));
+      [18,30,42,54,66,78].forEach(distance=>[0,-35,35,-70,70].forEach(horizontal=>candidates.push({x:pointX+horizontal,y:pointY+direction*distance})));
+      [18,30,42,54,66,78].forEach(distance=>[0,-35,35,-70,70].forEach(horizontal=>candidates.push({x:pointX+horizontal,y:pointY-direction*distance})));
       let chosen=null;
       for(const candidate of candidates){
-        const x=Math.max(bounds.minX,Math.min(bounds.maxX,candidate.x)),y=Math.max(bounds.minY,Math.min(bounds.maxY,candidate.y));
-        node.setAttribute('x',x);node.setAttribute('y',y+3);
-        const box=node.getBBox(),rect={left:box.x-2,right:box.x+box.width+2,top:box.y-1,bottom:box.y+box.height+1};
+        node.setAttribute('x',candidate.x);node.setAttribute('y',candidate.y);
+        let box=node.getBBox(),x=candidate.x,y=candidate.y;
+        if(box.x<bounds.minX)x+=bounds.minX-box.x;if(box.x+box.width>bounds.maxX)x-=box.x+box.width-bounds.maxX;
+        if(box.y<bounds.minY)y+=bounds.minY-box.y;if(box.y+box.height>bounds.maxY)y-=box.y+box.height-bounds.maxY;
+        node.setAttribute('x',x);node.setAttribute('y',y);box=node.getBBox();
+        const rect={left:box.x-3,right:box.x+box.width+3,top:box.y-2,bottom:box.y+box.height+2};
         if(!occupied.some(other=>rect.left<other.right&&rect.right>other.left&&rect.top<other.bottom&&rect.bottom>other.top)){chosen={x,y,rect};break;}
       }
-      if(!chosen){const x=Math.max(bounds.minX,Math.min(bounds.maxX,preferredX)),y=Math.max(bounds.minY,Math.min(bounds.maxY,preferredY));node.setAttribute('x',x);node.setAttribute('y',y+3);const box=node.getBBox();chosen={x,y,rect:{left:box.x-2,right:box.x+box.width+2,top:box.y-1,bottom:box.y+box.height+1}};}
+      if(!chosen){const box=node.getBBox();chosen={x:Number(node.getAttribute('x')),y:Number(node.getAttribute('y')),rect:{left:box.x-3,right:box.x+box.width+3,top:box.y-2,bottom:box.y+box.height+2}};}
       occupied.push(chosen.rect);if(leader){leader.setAttribute('x2',chosen.x);leader.setAttribute('y2',chosen.y);}
+    });
+  };
+  const layoutPointLabels=(svg,bounds)=>{
+    const occupied=[];
+    [...svg.querySelectorAll('text.value')].forEach(node=>{
+      const leader=svg.querySelector(`line[data-label-id="${node.dataset.labelId}"]`),preferredX=Number(node.getAttribute('x')),preferredY=Number(node.getAttribute('y'))-3,direction=Number(node.dataset.direction)||1,candidates=[];
+      [0,12,24,36,48,60,72,84].forEach(distance=>[0,-10,10,-20,20,-30,30].forEach(horizontal=>candidates.push({x:preferredX+horizontal,y:preferredY+direction*distance})));[12,24,36,48,60,72,84].forEach(distance=>[0,-10,10,-20,20,-30,30].forEach(horizontal=>candidates.push({x:preferredX+horizontal,y:preferredY-direction*distance})));
+      let chosen=null;for(const candidate of candidates){const x=Math.max(bounds.minX,Math.min(bounds.maxX,candidate.x)),y=Math.max(bounds.minY,Math.min(bounds.maxY,candidate.y));node.setAttribute('x',x);node.setAttribute('y',y+3);const box=node.getBBox(),rect={left:box.x-2,right:box.x+box.width+2,top:box.y-1,bottom:box.y+box.height+1};if(!occupied.some(other=>rect.left<other.right&&rect.right>other.left&&rect.top<other.bottom&&rect.bottom>other.top)){chosen={x,y,rect};break;}}
+      if(!chosen){const x=Math.max(bounds.minX,Math.min(bounds.maxX,preferredX)),y=Math.max(bounds.minY,Math.min(bounds.maxY,preferredY));node.setAttribute('x',x);node.setAttribute('y',y+3);const box=node.getBBox();chosen={x,y,rect:{left:box.x-2,right:box.x+box.width+2,top:box.y-1,bottom:box.y+box.height+1}};}occupied.push(chosen.rect);if(leader){leader.setAttribute('x2',chosen.x);leader.setAttribute('y2',chosen.y);}
     });
   };
   metrics.forEach(([m,label])=>{
@@ -66,9 +81,14 @@
     series.forEach((s,si)=>{
       const p=pts.filter(z=>chartKey(z.r)===s).sort((a,b)=>a.r.epoch-b.r.epoch),color=colors[si%colors.length],paired=d.chartMode==='untuned-vs-tuned',dx=paired?(si===0?-24:24):((si%3)-1)*15,dy=paired?(si===0?-16:18):-12-(Math.floor(si/3)%2)*13;
       if(p.length>1)svg.insertAdjacentHTML('beforeend',`<polyline fill="none" stroke="${color}" stroke-width="2" points="${p.map(z=>`${x(z.r.epoch)},${y(z.v)}`).join(' ')}"/>`);
-      p.forEach((z,pi)=>{const ax=clamp(x(z.r.epoch)+dx,20,290),ay=clamp(y(z.v)+dy,12,190),id=`${m}-${si}-${pi}`;svg.insertAdjacentHTML('beforeend',`<line data-label-id="${id}" x1="${x(z.r.epoch)}" y1="${y(z.v)}" x2="${ax}" y2="${ay}" stroke="${color}" stroke-width="0.8" opacity="0.7"/><circle cx="${x(z.r.epoch)}" cy="${y(z.v)}" r="4" fill="${color}"><title>${label} ${z.v.toFixed(3)} · epoch ${z.r.epoch} · LR ${z.r.lr||'—'} · WD ${z.r.wd||'—'}</title></circle><text class="value" data-label-id="${id}" data-direction="${dy>=0?1:-1}" text-anchor="middle" x="${ax}" y="${ay+3}" fill="${color}">${z.v.toFixed(3)}</text><text x="${x(z.r.epoch)-5}" y="218">E${z.r.epoch}</text>`);});
+      if(bestOnly){
+        p.forEach(z=>svg.insertAdjacentHTML('beforeend',`<circle cx="${x(z.r.epoch)}" cy="${y(z.v)}" r="4" fill="${color}"><title>${label} ${z.v.toFixed(3)} · epoch ${z.r.epoch} · LR ${z.r.lr||'—'} · WD ${z.r.wd||'—'}</title></circle><text x="${x(z.r.epoch)-5}" y="218">E${z.r.epoch}</text>`));
+        if(p.length){const best=bestPoint(p,m),id=`${m}-best-${si}`,bx=x(best.r.epoch),by=y(best.v),direction=si%2?1:-1;svg.insertAdjacentHTML('beforeend',`<line data-best-label-id="${id}" x1="${bx}" y1="${by}" x2="${bx}" y2="${by+direction*18}" stroke="${color}" stroke-width="1"/><text class="series-best" data-best-label-id="${id}" data-point-x="${bx}" data-point-y="${by}" data-direction="${direction}" x="${bx}" y="${by+direction*18}" text-anchor="middle" font-size="8" font-weight="800" fill="${color}" stroke="#fff" stroke-width="3" paint-order="stroke">${s} · best ${best.v.toFixed(3)}</text>`);}
+      }else{
+        p.forEach((z,pi)=>{const ax=clamp(x(z.r.epoch)+dx,20,290),ay=clamp(y(z.v)+dy,12,190),id=`${m}-${si}-${pi}`;svg.insertAdjacentHTML('beforeend',`<line data-label-id="${id}" x1="${x(z.r.epoch)}" y1="${y(z.v)}" x2="${ax}" y2="${ay}" stroke="${color}" stroke-width="0.8" opacity="0.7"/><circle cx="${x(z.r.epoch)}" cy="${y(z.v)}" r="4" fill="${color}"><title>${label} ${z.v.toFixed(3)} · epoch ${z.r.epoch} · LR ${z.r.lr||'—'} · WD ${z.r.wd||'—'}</title></circle><text class="value" data-label-id="${id}" data-direction="${dy>=0?1:-1}" text-anchor="middle" x="${ax}" y="${ay+3}" fill="${color}">${z.v.toFixed(3)}</text><text x="${x(z.r.epoch)-5}" y="218">E${z.r.epoch}</text>`);});
+      }
     });
-    layoutValueLabels(svg,{minX:20,maxX:290,minY:12,maxY:190});
+    (bestOnly?layoutBestLabels:layoutPointLabels)(svg,{minX:20,maxX:290,minY:12,maxY:190});
   });
   const tableMetric=v=>Number.isFinite(v)?v.toFixed(3):'—';
   visibleRuns.forEach(r=>rows.insertAdjacentHTML('beforeend',`<tr><td>${key(r)}</td><td>${r.epoch}</td><td>${r.lr||'—'}</td><td>${r.wd||'—'}</td><td class="${isActiveStatus(r)?'run-active':''}">${r.status}</td><td>${tableMetric(r.train)}</td><td>${tableMetric(r.validation??r.c4)}</td><td>${tableMetric(r.acc)}</td><td>${tableMetric(r.bpb)}</td><td>${r.wandb?`<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}">${r.wandb}</a>`:'—'}</td><td>${r.beaker?`<a href="https://beaker.org/ex/${r.beaker}">experiment</a>`:'—'}</td></tr>`));

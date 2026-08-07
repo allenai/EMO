@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>0802 Step 1-1</title>
+<style>
+:root{--ink:#162033;--muted:#667085;--paper:#f4f6fa;--card:#fff;--line:#dfe4ed}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.5 Inter,system-ui,sans-serif}main{width:min(1500px,calc(100% - 32px));margin:28px auto 60px}header,.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 8px 24px #17203312}header{background:linear-gradient(120deg,#172033,#31548c);color:#fff}h1{margin:0 0 8px;font-size:34px}header p{color:#dce7ff}.stamp{color:var(--muted)}section{margin-top:24px}.legend{display:flex;flex-wrap:wrap;gap:14px;margin:12px 0}.legend label{display:flex;align-items:center;gap:6px}.dot{width:10px;height:10px;border-radius:50%;display:inline-block}.charts{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 36px)/4);gap:12px;overflow-x:auto;padding-bottom:10px}.chart{min-width:0}.chart svg{width:100%;height:240px;overflow:visible}.chart text{font-size:10px;fill:#59647a}.chart .value{font-size:9px;font-weight:750;paint-order:stroke;stroke:#fff;stroke-width:3px}.table-wrap{overflow:auto}.table-wrap table{font-size:11px}table{width:100%;border-collapse:collapse}th,td{padding:6px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:right}th:first-child,td:first-child{text-align:left}th{font-size:9px;color:var(--muted);text-transform:uppercase}.run-active{color:#d99a00;font-weight:700}.tuple-list{display:flex;flex-wrap:wrap;gap:4px}.tuple{border:1px solid #cfd6e3;border-radius:999px;padding:2px 6px;background:#fff;font-size:10px}.tuple.active{color:#a16207;border-color:#d99a00;background:#fff7db;font-weight:700}.tuple.selected{border-color:#15803d;background:#eaf8ee;font-weight:700}a{color:#275fc2}
+</style>
+</head>
+<body>
+<main>
+<header><h1 id="title"></h1><p id="setup"></p></header>
+<section class="card"><p class="stamp" id="updated"></p><p id="selection"></p><div class="legend" id="legend"></div><div class="charts" id="charts"></div></section>
+<section class="card"><h2>Batch size × LR coordinate grid</h2><div class="table-wrap"><table><thead><tr><th>Epoch</th><th>Global sequences</th><th>Evaluated and active (LR, WD) coordinates</th><th>Selected by DCLM validation CE</th></tr></thead><tbody id="coordinate-grid"></tbody></table></div></section>
+<section class="card"><h2>Runs and provenance</h2><div class="table-wrap"><table><thead><tr><th>Batch</th><th>Epoch</th><th>LR</th><th>WD</th><th>Status</th><th>Train CE</th><th>DCLM val CE</th><th>HS acc</th><th>BPB</th><th>W&amp;B</th><th>Beaker</th></tr></thead><tbody id="rows"></tbody></table></div></section>
+</main>
+<script src="data/wsd_weight_decay_1b.js"></script>
+<script>window.ICSL_WD_BASELINE_DATA=window.ICSL_REPORT_DATA;</script>
+<script src="data/wsd_batch_size_1b.js"></script>
+<script src="batch_size_charts.js"></script>
+</body>
+</html>
