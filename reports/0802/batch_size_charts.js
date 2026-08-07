@@ -1,5 +1,15 @@
 (() => {
   const d=window.ICSL_REPORT_DATA||{batchSweeps:[],targetEpochs:[]};
+  const healthStyles=document.createElement('style');
+  healthStyles.textContent=`
+    .health-key{display:inline-block;width:14px;height:14px;border:0;border-radius:4px;background:#fecaca;vertical-align:-2px}
+    .health-key.suspicious{background:#fb923c}
+    .tuple.unhealthy{background:#fff1f2!important;font-weight:400!important}
+    .tuple.suspicious{background:#fed7aa!important;color:#9a3412!important;font-weight:400!important}
+    .run-unhealthy td{background:#fff1f2;font-weight:400}
+    .run-suspicious td{background:#ffedd5;font-weight:400}
+  `;
+  document.head.append(healthStyles);
   const baseline=window.ICSL_WD_BASELINE_DATA||{runs:[],fixedLrByEpoch:{}};
   document.querySelector('#title').textContent=d.title;
   document.querySelector('#setup').textContent=d.setup;
@@ -8,22 +18,36 @@
 
   const colors={'BS 64':'#2563eb','BS 256':'#7c3aed','BS 1024':'#dc5a39'};
   const series=['BS 64','BS 256','BS 1024'];
-  const visible=r=>!['failed','canceled'].includes(r.status)&&r.kind!=='evaluation';
+  const health={...(baseline.healthAudit?.unhealthy||{}),...(d.healthAudit?.unhealthy||{})};
+  const suspiciousHealth={...(baseline.healthAudit?.suspicious||{}),...(d.healthAudit?.suspicious||{})};
+  const wandbId=r=>r.wandb||r.activeWandb;
+  const healthRecord=r=>health[wandbId(r)];
+  const suspiciousRecord=r=>suspiciousHealth[wandbId(r)];
+  const unhealthy=r=>Boolean(healthRecord(r));
+  const suspicious=r=>Boolean(suspiciousRecord(r)&&!unhealthy(r));
+  const statusRecord=r=>healthRecord(r)||suspiciousRecord(r);
+  const escapeAttribute=value=>String(value||'').replaceAll('&','&amp;').replaceAll('"','&quot;');
+  const visible=r=>(!['failed','canceled'].includes(r.status)||unhealthy(r)||suspicious(r))&&r.kind!=='evaluation';
   const active=r=>['active','running','submitted','pending','queued','planned'].includes(r.status);
   const metric=r=>r.validation??r.c4;
   const complete=r=>r.status==='complete'&&Number.isFinite(metric(r));
+  const admissibleCoordinate=r=>['5e-4','1e-3','2e-3'].includes(r.lr);
   const key=r=>`${r.batchSequences}|${r.epoch}`;
 
-  const newRuns=(d.batchSweeps||[]).flatMap(sweep=>(d.targetEpochs||[]).map((epoch,index)=>{
-    const result=sweep.results?.[epoch]||{};
-    return {...sweep,...result,epoch,series:`BS ${sweep.batchSequences}`,status:result.status||(epoch===sweep.activeEpoch?sweep.status:'queued')};
-  })).filter(visible);
+  const newRuns=(d.batchSweeps||[]).flatMap(sweep=>(d.targetEpochs||[]).map(epoch=>{
+    if(epoch>12)return null;
+    const result=sweep.results?.[epoch];
+    if(result)return {...sweep,...result,epoch,series:`BS ${sweep.batchSequences}`,status:result.status};
+    const candidate={...sweep,wandb:sweep.activeWandb,epoch,series:`BS ${sweep.batchSequences}`};
+    if(epoch===sweep.activeEpoch&&(active(sweep)||unhealthy(candidate)))return candidate;
+    return null;
+  })).filter(Boolean).filter(visible);
   const baselineRuns=(baseline.runs||[]).filter(r=>
     visible(r)&&r.status!=='queued'&&d.targetEpochs.includes(r.epoch)
   ).map(r=>({...r,batchSequences:1024,contextLength:4096,series:'BS 1024'}));
   const coordinateRuns=[...newRuns,...baselineRuns];
   const selected=new Map();
-  coordinateRuns.filter(complete).forEach(r=>{
+  coordinateRuns.filter(complete).filter(admissibleCoordinate).filter(r=>!unhealthy(r)).forEach(r=>{
     const current=selected.get(key(r));
     if(!current||metric(r)<metric(current))selected.set(key(r),r);
   });
@@ -31,6 +55,8 @@
 
   const legend=document.querySelector('#legend');
   series.forEach(s=>legend.insertAdjacentHTML('beforeend',`<label><span class="dot" style="background:${colors[s]}"></span>${s}</label>`));
+  if(Object.keys(suspiciousHealth).length)legend.insertAdjacentHTML('beforeend','<label><span class="health-key suspicious"></span>Suspicious / monitor</label>');
+  legend.insertAdjacentHTML('beforeend','<label><span class="health-key unhealthy"></span>Unhealthy / policy-inadmissible</label>');
   const avg8Acc=r=>{const q=['arc_challenge','arc_easy','csqa','acc','openbookqa','piqa','socialiqa','winogrande'].map(x=>x==='acc'?r.acc:r.downstream?.[x]).filter(Number.isFinite);return q.length===8?q.reduce((a,b)=>a+b,0)/8:null;};
   const value=(r,k)=>{
     if(k==='validation')return metric(r);
@@ -68,20 +94,38 @@
     layoutBestLabels(svg,{minX:20,maxX:290,minY:12,maxY:190});
   });
 
+  const summaryBatches=[64,256,1024];
+  const bestByBatch=new Map();
+  summaryBatches.forEach(batch=>{
+    const completed=(d.targetEpochs||[]).map(epoch=>selected.get(`${batch}|${epoch}`)).filter(Boolean);
+    if(completed.length)bestByBatch.set(batch,completed.reduce((best,run)=>metric(run)<metric(best)?run:best));
+  });
+  const validationSummary=document.querySelector('#validation-summary');
+  validationSummary.innerHTML=(d.targetEpochs||[]).map(epoch=>{
+    const cells=summaryBatches.map(batch=>{
+      const run=selected.get(`${batch}|${epoch}`);
+      if(!run)return '<td>—</td>';
+      const best=bestByBatch.get(batch)===run;
+      return `<td class="${best?'summary-best':''}">${best?`<strong>${metric(run).toFixed(3)}</strong>`:metric(run).toFixed(3)}</td>`;
+    }).join('');
+    return `<tr><td><strong>E${epoch}</strong></td>${cells}</tr>`;
+  }).join('');
+
   const grid=document.querySelector('#coordinate-grid');
   const groups=new Map();
   coordinateRuns.forEach(r=>{const g=key(r);if(!groups.has(g))groups.set(g,[]);groups.get(g).push(r);});
-  grid.innerHTML=[...groups.entries()].sort((a,b)=>{const [ab,ae]=a[0].split('|'),[bb,be]=b[0].split('|');return Number(ae)-Number(be)||Number(ab)-Number(bb)}).map(([g,runs])=>{
+  grid.innerHTML=[...groups.entries()].sort((a,b)=>{const [ab,ae]=a[0].split('|'),[bb,be]=b[0].split('|');return Number(ab)-Number(bb)||Number(ae)-Number(be)}).map(([g,runs])=>{
     const [batch,epoch]=g.split('|'),best=selected.get(g);
     const ordered=runs.sort((a,b)=>Number(a.wd)-Number(b.wd)||Number(a.lr)-Number(b.lr));
-    const chips=ordered.map(r=>`<span class="tuple ${best===r?'selected':active(r)?'active':''}">(LR ${r.lr}, WD ${r.wd}) · ${r.status}${Number.isFinite(metric(r))?` · CE ${metric(r).toFixed(3)}`:''}</span>`).join('');
+    const chips=ordered.map(r=>`<span class="tuple ${best===r?'selected':active(r)?'active':''} ${unhealthy(r)?'unhealthy':suspicious(r)?'suspicious':''}"${unhealthy(r)||suspicious(r)?` title="${escapeAttribute(statusRecord(r).reason)}"`:''}>(LR ${r.lr}, WD ${r.wd}) · ${r.status}${Number.isFinite(metric(r))?` · CE ${metric(r).toFixed(3)}`:''}</span>`).join('');
     const selection=best?`LR ${best.lr}, WD ${best.wd} · CE ${metric(best).toFixed(3)}`:'pending';
     return `<tr><td><strong>E${epoch}</strong></td><td>${batch}</td><td><div class="tuple-list">${chips}</div></td><td>${selection}</td></tr>`;
   }).join('');
 
   const tableMetric=v=>Number.isFinite(v)?v.toFixed(3):'—';
   const selectedBaseline=[...selected.values()].filter(r=>r.batchSequences===1024);
-  const provenance=[...newRuns,...selectedBaseline].sort((a,b)=>a.epoch-b.epoch||a.batchSequences-b.batchSequences||Number(a.lr)-Number(b.lr));
+  const provenanceMap=new Map([...newRuns,...selectedBaseline,...baselineRuns.filter(r=>unhealthy(r)||suspicious(r))].map(r=>[`${r.batchSequences}|${r.epoch}|${r.lr}|${r.wd}|${wandbId(r)||r.beaker}`,r]));
+  const provenance=[...provenanceMap.values()].sort((a,b)=>a.batchSequences-b.batchSequences||a.epoch-b.epoch||Number(a.lr)-Number(b.lr));
   const rows=document.querySelector('#rows');
-  provenance.forEach(r=>rows.insertAdjacentHTML('beforeend',`<tr><td>${r.batchSequences}</td><td>${r.epoch}</td><td>${r.lr}</td><td>${r.wd}</td><td class="${active(r)?'run-active':''}">${r.status}</td><td>${tableMetric(r.train)}</td><td>${tableMetric(metric(r))}</td><td>${tableMetric(r.acc)}</td><td>${tableMetric(r.bpb)}</td><td>${r.wandb?`<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}">${r.wandb}</a>`:'—'}</td><td>${r.beaker?`<a href="https://beaker.org/ex/${r.beaker}">experiment</a>`:'—'}</td></tr>`));
+  provenance.forEach(r=>rows.insertAdjacentHTML('beforeend',`<tr class="${unhealthy(r)?'run-unhealthy':suspicious(r)?'run-suspicious':''}"${unhealthy(r)||suspicious(r)?` title="${escapeAttribute(statusRecord(r).reason)}"`:''}><td>${r.batchSequences}</td><td>${r.epoch}</td><td>${r.lr}</td><td>${r.wd}</td><td class="${active(r)?'run-active':''}">${r.status}</td><td>${tableMetric(r.train)}</td><td>${tableMetric(metric(r))}</td><td>${tableMetric(r.acc)}</td><td>${tableMetric(r.bpb)}</td><td>${wandbId(r)?`<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${wandbId(r)}">${wandbId(r)}</a>`:'—'}</td><td>${r.beaker?`<a href="https://beaker.org/ex/${r.beaker}">experiment</a>`:'—'}</td></tr>`));
 })();

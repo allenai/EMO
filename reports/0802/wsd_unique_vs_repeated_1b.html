@@ -41,6 +41,8 @@
     .run-family-legend { display:flex; flex-wrap:wrap; gap:6px 14px; margin:6px 0 8px; color:var(--muted); font-size:12px; }
     .run-family-key { display:inline-flex; align-items:center; gap:6px; }
     .run-family-dot { display:inline-block; width:9px; height:9px; border-radius:50%; flex:0 0 9px; box-shadow:0 0 0 1px rgba(0,0,0,.12); }
+    .health-key { display:inline-block; width:18px; height:10px; border:0; border-radius:3px; background:#fecaca; }
+    .health-key.suspicious { background:#fb923c; }
     .condition-wrap { display:inline-flex; align-items:center; gap:7px; }
     .seed-tag { margin-left:5px; color:var(--muted); font-size:11px; }
     table { width:100%; border-collapse:collapse; background:var(--card); }
@@ -51,6 +53,7 @@
     .complete { color:#26723b; }
     .invalid { color:#a33030; }
     .pending { color:var(--muted); }
+    .active,.running,.queued,.planned,.canceled,.cancelled,.failed,.invalid { font-weight:400; }
     .coverage th,.coverage td { text-align:left; vertical-align:top; }
     .comparison th,.comparison td { text-align:right; }
     .comparison th:first-child,.comparison td:first-child { text-align:left; }
@@ -61,8 +64,12 @@
     .tuple-list { display:flex; flex-wrap:wrap; gap:5px; }
     .tuple { display:inline-block; padding:2px 6px; border:1px solid var(--line); border-radius:999px; color:var(--muted); background:#fafbfc; }
     .tuple.selected { color:var(--ink); border-color:#7ba5d3; background:#eef5fc; font-weight:700; }
-    .tuple.active { color:var(--orange); border-color:#e4bd89; background:#fff8ed; }
-    .tuple.invalid { color:#a33030; border-color:#e4aaaa; background:#fff3f3; }
+    .tuple.active { color:var(--orange); border-color:#e4bd89; background:#fff8ed; font-weight:400; }
+    .tuple.invalid { color:#a33030; border-color:#e4aaaa; background:#fff3f3; font-weight:400; }
+    .tuple.unhealthy { color:#991b1b; background:#fff1f2; font-weight:400; }
+    .tuple.suspicious { color:#9a3412; background:#fed7aa; font-weight:400; }
+    .run-unhealthy td { background:#fff1f2; font-weight:400; }
+    .run-suspicious td { background:#ffedd5; font-weight:400; }
     footer { margin-top:14px; color:var(--muted); font-size:11px; }
   </style>
 </head>
@@ -109,7 +116,13 @@
 
   <h2>Selected-endpoint comparison</h2>
   <div class="card table-wrap"><table class="comparison"><thead><tr><th>Token target</th><th>DCLM CE ↓<br>U / R / &Delta;</th><th>HS BPB ↓<br>U / R / &Delta;</th><th>HS accuracy ↑<br>U / R / &Delta;</th><th>Avg-8 BPB ↓<br>U / R / &Delta;</th><th>Avg-8 accuracy ↑<br>U / R / &Delta;</th></tr></thead><tbody id="comparison-body"></tbody></table></div>
-  <p class="note">Each cell reports unique / repeated / &Delta;, where &Delta; = unique &minus; repeated. Negative deltas favor unique data for CE and BPB; positive deltas favor unique data for accuracy. Each regime uses the endpoint selected independently by held-out DCLM validation CE.</p>
+  <p class="note">Each cell reports unique / repeated / &Delta;, where &Delta; = unique &minus; repeated. Negative deltas favor unique data for CE and BPB; positive deltas favor unique data for accuracy. Each regime uses the endpoint selected independently by held-out DCLM validation CE. Bold marks each method's best value across token targets for that metric.</p>
+
+  <section id="tuned-wd-comparison-section">
+    <h2>Selected-endpoint comparison — repeated-data WD tuned</h2>
+    <div class="card table-wrap"><table class="comparison"><thead><tr><th>Token target</th><th>DCLM CE ↓<br>U / R / &Delta;</th><th>HS BPB ↓<br>U / R / &Delta;</th><th>HS accuracy ↑<br>U / R / &Delta;</th><th>Avg-8 BPB ↓<br>U / R / &Delta;</th><th>Avg-8 accuracy ↑<br>U / R / &Delta;</th></tr></thead><tbody id="tuned-wd-comparison-body"></tbody></table></div>
+    <p class="note">This intentionally asymmetric comparison reports unique data with WD fixed at 0.033 versus repeated data with WD tuned independently at each token target. The repeated-data LR is inherited from Step 2, and its WD is selected by the lowest held-out DCLM validation CE among completed Step-1 candidates. Each metric cell reports unique / repeated-tuned-WD / &Delta;, where &Delta; = unique &minus; repeated-tuned-WD. Bold marks each method's best value across token targets for that metric.</p>
+  </section>
 
   <h2>Unique-data LR coordinate grid</h2>
   <div class="card table-wrap"><table class="coverage"><thead><tr><th>Target</th><th>Evaluated, active, and invalid LRs</th><th>Selected by DCLM validation CE</th></tr></thead><tbody id="unique-grid"></tbody></table></div>
@@ -127,6 +140,11 @@
 <script src="data/wsd_unique_vs_repeated_1b.js"></script>
 <script>
   const state=window.STEP2_REPORT_DATA;
+  const healthMap=state.healthAudit?.unhealthy||{};
+  const suspiciousMap=state.healthAudit?.suspicious||{};
+  const isUnhealthy=r=>Boolean(r.wandb&&healthMap[r.wandb]);
+  const isSuspicious=r=>Boolean(r.wandb&&suspiciousMap[r.wandb]&&!isUnhealthy(r));
+  const healthReason=r=>healthMap[r.wandb]?.reason||suspiciousMap[r.wandb]?.reason||"Health status unavailable.";
   const step1State=window.ICSL_REPORT_DATA||{};
   const requestedModel=new URLSearchParams(window.location.search).get("model");
   const modelSize=["1B","153M","474M"].includes(requestedModel)?requestedModel:"1B";
@@ -136,13 +154,14 @@
   const scaledModel=modelSize!=="1B";
   document.querySelector("#step1-tuned-reference-toggle").hidden=scaledModel;
   document.querySelector("#step1-tuned-reference-note").hidden=scaledModel;
+  document.querySelector("#tuned-wd-comparison-section").hidden=scaledModel;
   const targetEpochs=scaledModel?[1,2,4,8,12,16]:[1,2,3,4,5,6,8,10,12,16,20,24];
   const scaledRuns=modelSize==="153M"?{unique:state.smallUniqueRuns,repeated:state.smallRepeatedRuns,seeds:state.smallSeedProbeRuns,evaluations:state.smallEvaluationRuns}:{unique:state.mediumUniqueRuns,repeated:state.mediumRepeatedRuns,seeds:state.mediumSeedProbeRuns,evaluations:state.mediumEvaluationRuns};
   const baseUniqueRuns=(scaledModel?scaledRuns.unique:state.uniqueRuns)||[], baseRepeatedRuns=(scaledModel?scaledRuns.repeated:state.repeatedRuns)||[], seedProbeRuns=(scaledModel?scaledRuns.seeds:state.seedProbeRuns)||[], poolProbeRuns=scaledModel?[]:(state.poolProbeRuns||[]), oldRepeatedRuns=scaledModel?[]:(state.oldRepeatedRuns||[]), codelionRuns=scaledModel?[]:(state.codelionRuns||[]), evaluationRuns=(scaledModel?scaledRuns.evaluations:state.evaluationRuns)||[], dataGeneration=state.dataGeneration||[];
   const modelInfo=state.modelSizes?.[modelSize]||{};
   const queuedChainRows=(regime,existing)=>{
     const coordinates=new Set(existing.filter(r=>!["canceled","failed","invalid"].includes(r.status)).map(r=>`${r.epoch}:${r.lr}`));
-    return (state.chainExperiments||[]).filter(chain=>scaledModel&&String(chain.modelSize).startsWith(modelSize)&&chain.regime===regime&&["queued","active"].includes(chain.status)).flatMap(chain=>{
+    return (state.chainExperiments||[]).filter(chain=>String(chain.modelSize).startsWith(modelSize)&&chain.regime===regime&&["queued","active"].includes(chain.status)).flatMap(chain=>{
       const missing=targetEpochs.filter(epoch=>epoch>=chain.startTarget&&epoch<=chain.endTarget&&!coordinates.has(`${epoch}:${chain.lr}`));
       return missing.map((epoch,index)=>({epoch,lr:chain.lr,wd:"0.033",status:chain.status==="active"&&index===0?"active":"queued",beaker:chain.beaker,reason:`Persistent ${chain.lr} chain: targets ${chain.startTarget}B through ${chain.endTarget}B.`}));
     });
@@ -153,7 +172,7 @@
   if(!scaledModel&&seedConclusion?.summary){seedConclusionNode.innerHTML=`<strong>Seed-probe conclusion (${seedConclusion.status}):</strong> ${seedConclusion.summary}`;}else{seedConclusionNode.hidden=true;}
   document.querySelector("#model-subtitle").textContent=`${modelInfo.label||`Dense ${modelSize}`} · ${Number(modelInfo.totalParameters||0).toLocaleString()} total parameters · WSD · WD 0.033 · warmup ${modelInfo.warmupSteps||"—"} · disjoint 100M-token DCLM validation selects LR.`;
   if(scaledModel)document.querySelector("#lr-policy-note").innerHTML="<strong>Small-model schedule:</strong> epoch 1 starts at 1e-3 and 2e-3, then adds one adjacent higher or lower rung based on held-out DCLM validation CE. Selected chains advance through 1, 2, 4, 8, 12, and 16B tokens. Every intervening integer-billion-token pre-decay checkpoint is preserved so intermediate endpoints can be evaluated later without retraining.";
-  const validComplete=r=>r.status==="complete"&&Number.isFinite(r.c4);
+  const validComplete=r=>r.status==="complete"&&!isUnhealthy(r)&&Number.isFinite(r.c4);
   const bestByTarget=runs=>targetEpochs.map(epoch=>runs.filter(r=>r.epoch===epoch&&validComplete(r)).sort((a,b)=>a.c4-b.c4)[0]).filter(Boolean);
   const uniqueBest=bestByTarget(uniqueRuns), repeatedBest=bestByTarget(repeatedRuns), oldRepeatedBest=bestByTarget(oldRepeatedRuns), codelionBest=bestByTarget(codelionRuns);
   const step1TunedWdReference=scaledModel?[]:targetEpochs.flatMap(epoch=>{
@@ -188,8 +207,8 @@
   const familyPalette=["#2563eb","#dc2626","#059669","#9333ea","#d97706","#0891b2"];
   const familyColors=Object.fromEntries(familyNames.map((family,index)=>[family,familyPalette[index%familyPalette.length]]));
   const seedTag=(r,family)=>{const init=Number.isInteger(r.initSeed)?r.initSeed:family?.startsWith("Dense 1B")?12536:null;const data=Number.isInteger(r.dataSeed)?r.dataSeed:init===12536?0:null;return init!==null?`<span class="seed-tag">init ${init} · data ${data}</span>`:"";};
-  const row=({r,condition,family})=>{const color=familyColors[family];const dot=color?`<span class="run-family-dot" style="background:${color}" title="Same run family: ${family}"></span>`:"";return `<tr title="${r.reason||''}"><td><span class="condition-wrap">${dot}<span>${condition}${seedTag(r,family)}</span></span></td><td>${r.epoch}B</td><td>${r.lr}</td><td>${r.wd||"—"}</td><td class="${r.status}">${statusLabel[r.status]||r.status}</td><td>${metric(r,"train")}</td><td>${metric(r,"c4")}</td><td>${Number.isFinite(r.acc)?r.acc.toFixed(3)+"%":"—"}</td><td>${metric(r,"bpb")}</td><td>${link(r.wandb?`https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}`:null,r.wandb)}</td><td>${link(r.beaker?`https://beaker.org/ex/${r.beaker}`:null,"experiment")}</td></tr>`;};
-  document.querySelector("#run-family-legend").innerHTML=familyNames.length?`<strong>Same-run families:</strong> ${familyNames.map(family=>`<span class="run-family-key"><span class="run-family-dot" style="background:${familyColors[family]}"></span>${family}</span>`).join("")}`:"";
+  const row=({r,condition,family})=>{const color=familyColors[family];const dot=color?`<span class="run-family-dot" style="background:${color}" title="Same run family: ${family}"></span>`:"";const healthClass=isUnhealthy(r)?'run-unhealthy':isSuspicious(r)?'run-suspicious':'';return `<tr class="${healthClass}" title="${isUnhealthy(r)||isSuspicious(r)?healthReason(r):(r.reason||'')}"><td><span class="condition-wrap">${dot}<span>${condition}${seedTag(r,family)}</span></span></td><td>${r.epoch}B</td><td>${r.lr}</td><td>${r.wd||"—"}</td><td class="${r.status}">${statusLabel[r.status]||r.status}</td><td>${metric(r,"train")}</td><td>${metric(r,"c4")}</td><td>${Number.isFinite(r.acc)?r.acc.toFixed(3)+"%":"—"}</td><td>${metric(r,"bpb")}</td><td>${link(r.wandb?`https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}`:null,r.wandb)}</td><td>${link(r.beaker?`https://beaker.org/ex/${r.beaker}`:null,"experiment")}</td></tr>`;};
+  document.querySelector("#run-family-legend").innerHTML=`${Object.keys(suspiciousMap).length?'<span class="run-family-key" title="Advisory only; remains eligible for endpoint selection"><span class="health-key suspicious"></span>Orange = suspicious; monitor</span>':''}${Object.keys(healthMap).length?'<span class="run-family-key" title="Excluded from endpoint selection and never continued to later epochs"><span class="health-key"></span>Red = unhealthy</span>':''}${familyNames.length?`<strong>Same-run families:</strong> ${familyNames.map(family=>`<span class="run-family-key"><span class="run-family-dot" style="background:${familyColors[family]}"></span>${family}</span>`).join("")}`:""}`;
   document.querySelector("#runs-body").innerHTML=provenanceRows.map(row).join("");
 
   const grid=(runs,best,mount)=>mount.innerHTML=targetEpochs.map(epoch=>{
@@ -197,8 +216,8 @@
     const chosen=best.find(r=>r.epoch===epoch);
     const chips=points.map(r=>{
       const selected=chosen&&chosen.lr===r.lr;
-      const cls=selected?'tuple selected':["active","queued","planned"].includes(r.status)?'tuple active':r.status==="invalid"?'tuple invalid':'tuple';
-      return `<span class="${cls}" title="${r.reason||statusLabel[r.status]||r.status}">${r.lr} · ${statusLabel[r.status]||r.status}</span>`;
+      const cls=isUnhealthy(r)?'tuple unhealthy':isSuspicious(r)?'tuple suspicious':selected?'tuple selected':["active","queued","planned"].includes(r.status)?'tuple active':r.status==="invalid"?'tuple invalid':'tuple';
+      return `<span class="${cls}" title="${isUnhealthy(r)||isSuspicious(r)?healthReason(r):(r.reason||statusLabel[r.status]||r.status)}">${r.lr} · ${statusLabel[r.status]||r.status}</span>`;
     }).join("");
     return `<tr><td><strong>${epoch}B</strong></td><td><div class="tuple-list">${chips||'<span class="pending">—</span>'}</div></td><td>${chosen?`<strong>${chosen.lr}</strong> · DCLM validation CE ${chosen.c4.toFixed(3)}`:'—'}</td></tr>`;
   }).join("");
@@ -222,14 +241,26 @@
     }
     return r[k];
   };
-  const comparisonCell=(unique,repeated,key,higherIsBetter=false)=>{
+  const comparisonWinner=(runs,key,higherIsBetter=false)=>runs.filter(run=>Number.isFinite(metricValue(run,key))).reduce((winner,run)=>!winner||(higherIsBetter?metricValue(run,key)>metricValue(winner,key):metricValue(run,key)<metricValue(winner,key))?run:winner,null);
+  const comparisonWinners=(uniqueRuns,repeatedRuns)=>Object.fromEntries([
+    ["c4",false],["bpb",false],["acc",true],["avg8_bpb",false],["avg8_acc",true]
+  ].map(([key,higherIsBetter])=>[key,{unique:comparisonWinner(uniqueRuns,key,higherIsBetter),repeated:comparisonWinner(repeatedRuns,key,higherIsBetter)}]));
+  const selectedWinners=comparisonWinners(uniqueBest,repeatedBest),tunedWdWinners=comparisonWinners(uniqueBest,step1TunedWdReference);
+  const comparisonCell=(unique,repeated,key,higherIsBetter=false,winners=selectedWinners)=>{
     const u=unique?metricValue(unique,key):null,r=repeated?metricValue(repeated,key):null,d=Number.isFinite(u)&&Number.isFinite(r)?u-r:null;
-    return `<td class="${deltaClass(d,higherIsBetter)}">${Number.isFinite(u)?u.toFixed(3):"—"} / ${Number.isFinite(r)?r.toFixed(3):"—"} / ${signedMetric(d)}</td>`;
+    const uBest=unique===winners[key].unique,rBest=repeated===winners[key].repeated;
+    const value=(v,best)=>Number.isFinite(v)?best?`<strong>${v.toFixed(3)}</strong>`:v.toFixed(3):"—";
+    return `<td class="${deltaClass(d,higherIsBetter)}">${value(u,uBest)} / ${value(r,rBest)} / ${signedMetric(d)}</td>`;
   };
   document.querySelector("#comparison-body").innerHTML=targetEpochs.map(epoch=>{
     const unique=uniqueBest.find(r=>r.epoch===epoch),repeated=repeatedBest.find(r=>r.epoch===epoch);
     if(!unique&&!repeated)return "";
-    return `<tr><td><strong>${epoch}B</strong></td>${comparisonCell(unique,repeated,"c4")}${comparisonCell(unique,repeated,"bpb")}${comparisonCell(unique,repeated,"acc",true)}${comparisonCell(unique,repeated,"avg8_bpb")}${comparisonCell(unique,repeated,"avg8_acc",true)}</tr>`;
+    return `<tr><td><strong>${epoch}B</strong></td>${comparisonCell(unique,repeated,"c4",false,selectedWinners)}${comparisonCell(unique,repeated,"bpb",false,selectedWinners)}${comparisonCell(unique,repeated,"acc",true,selectedWinners)}${comparisonCell(unique,repeated,"avg8_bpb",false,selectedWinners)}${comparisonCell(unique,repeated,"avg8_acc",true,selectedWinners)}</tr>`;
+  }).join("");
+  document.querySelector("#tuned-wd-comparison-body").innerHTML=targetEpochs.map(epoch=>{
+    const unique=uniqueBest.find(r=>r.epoch===epoch),repeated=step1TunedWdReference.find(r=>r.epoch===epoch);
+    if(!unique&&!repeated)return "";
+    return `<tr><td><strong>${epoch}B</strong></td>${comparisonCell(unique,repeated,"c4",false,tunedWdWinners)}${comparisonCell(unique,repeated,"bpb",false,tunedWdWinners)}${comparisonCell(unique,repeated,"acc",true,tunedWdWinners)}${comparisonCell(unique,repeated,"avg8_bpb",false,tunedWdWinners)}${comparisonCell(unique,repeated,"avg8_acc",true,tunedWdWinners)}</tr>`;
   }).join("");
   const labels={c4:"DCLM validation CE",acc:"HellaSwag accuracy",bpb:"HellaSwag BPB",avg8_acc:"8-task average accuracy",avg8_bpb:"8-task average BPB"};
   const axisLabel=metricName=>metricName==="c4"?"CE loss":metricName==="bpb"||metricName==="avg8_bpb"?"BPB":"Accuracy (%)";

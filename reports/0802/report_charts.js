@@ -1,8 +1,25 @@
 (() => {
   const d=window.ICSL_REPORT_DATA||{runs:[]};
+  const healthStyles=document.createElement('style');
+  healthStyles.textContent=`
+    .health-key{display:inline-block;width:14px;height:14px;border:0;border-radius:4px;background:#fecaca;vertical-align:-2px}
+    .health-key.suspicious{background:#fb923c}
+    .tuple.unhealthy{background:#fff1f2!important;font-weight:400!important}
+    .tuple.suspicious{background:#fed7aa!important;color:#9a3412!important;font-weight:400!important}
+    .run-unhealthy td{background:#fff1f2;font-weight:400}
+    .run-suspicious td{background:#ffedd5;font-weight:400}
+  `;
+  document.head.append(healthStyles);
   title.textContent=d.title; setup.textContent=d.setup; updated.textContent=`Updated ${d.updated}`; selection.textContent=d.selection;
   const colors=['#2563eb','#7c3aed','#dc5a39','#0f9d76','#e09200','#ca3f64','#1874a8','#7f6752'];
-  const visible=r=>!['failed','canceled'].includes(r.status)&&r.kind!=='evaluation';
+  const healthMap=d.healthAudit?.unhealthy||{};
+  const suspiciousMap=d.healthAudit?.suspicious||{};
+  const isUnhealthy=r=>Boolean(r.wandb&&healthMap[r.wandb]);
+  const isSuspicious=r=>Boolean(r.wandb&&suspiciousMap[r.wandb]&&!isUnhealthy(r));
+  const healthReason=r=>healthMap[r.wandb]?.reason||suspiciousMap[r.wandb]?.reason||'Health status unavailable.';
+  const healthClass=r=>isUnhealthy(r)?'run-unhealthy':isSuspicious(r)?'run-suspicious':'';
+  const tupleHealthClass=r=>isUnhealthy(r)?'unhealthy':isSuspicious(r)?'suspicious':'';
+  const visible=r=>(!['failed','canceled'].includes(r.status)||isUnhealthy(r)||isSuspicious(r))&&r.kind!=='evaluation';
   const isActiveStatus=r=>['active','running','queued','planned'].includes(r.status);
   const visibleRuns=d.runs.filter(visible);
   const key=r=>r.series||r.scheduler||`WD ${r.wd}`;
@@ -10,7 +27,7 @@
   // the lowest DCLM validation CE. The coordinate grid and provenance table
   // continue to expose every evaluated or active LR.
   const chartGroups=new Map();
-  visibleRuns.filter(r=>r.status==='complete'&&Number.isFinite(r.validation??r.c4)&&(d.coordinateMode!=='fixed-step2-lr'||r.lr===d.fixedLrByEpoch?.[r.epoch])).forEach(r=>{
+  visibleRuns.filter(r=>r.status==='complete'&&!isUnhealthy(r)&&Number.isFinite(r.validation??r.c4)&&(d.coordinateMode!=='fixed-step2-lr'||r.lr===d.fixedLrByEpoch?.[r.epoch])).forEach(r=>{
     const group=`${key(r)}|${r.epoch}`, current=chartGroups.get(group);
     if(!current||(r.validation??r.c4)<(current.validation??current.c4))chartGroups.set(group,r);
   });
@@ -20,7 +37,7 @@
     const epochs=[...new Set(visibleRuns.map(r=>r.epoch))].sort((a,b)=>a-b);
     epochs.forEach(epoch=>{
       const fixed=d.fixedLrByEpoch?.[epoch];
-      const eligible=visibleRuns.filter(r=>r.epoch===epoch&&r.status==='complete'&&r.lr===fixed&&Number.isFinite(r.validation??r.c4));
+      const eligible=visibleRuns.filter(r=>r.epoch===epoch&&r.status==='complete'&&!isUnhealthy(r)&&r.lr===fixed&&Number.isFinite(r.validation??r.c4));
       const baseline=eligible.filter(r=>String(r.wd)==='0.033').sort((a,b)=>(a.validation??a.c4)-(b.validation??b.c4))[0];
       if(baseline)chartRuns.push({...baseline,chartSeries:'Untuned WD (0.033)'});
       const tunedCandidates=eligible.filter(r=>String(r.wd)!=='0.033');
@@ -33,6 +50,8 @@
   const chartKey=r=>r.chartSeries||key(r);
   const series=d.chartMode==='untuned-vs-tuned'?['Untuned WD (0.033)','Tuned WD']:[...new Set(visibleRuns.map(key))];
   series.forEach((s,i)=>legend.insertAdjacentHTML('beforeend',`<label><span class="dot" style="background:${colors[i%colors.length]}"></span>${s}</label>`));
+  if(Object.keys(suspiciousMap).length)legend.insertAdjacentHTML('beforeend','<label title="Advisory only; remains eligible for selection"><span class="health-key suspicious"></span>Suspicious CE/gradient trajectory</label>');
+  if(Object.keys(healthMap).length)legend.insertAdjacentHTML('beforeend','<label title="Excluded from endpoint selection"><span class="health-key unhealthy"></span>Unhealthy CE/gradient trajectory</label>');
   const metrics=d.chartMode==='untuned-vs-tuned'
     ? [['validation','DCLM validation CE'],['bpb','HellaSwag non-v2 BPB'],['acc','HellaSwag length-normalized accuracy'],['avg8_bpb','8-task average BPB · no BoolQ'],['avg8_acc','8-task average accuracy · no BoolQ']]
     : [['train','Train CE'],['validation','DCLM validation CE'],['acc','HellaSwag accuracy'],['bpb','HellaSwag BPB'],['avg8','8-task average (no BoolQ)'],['stable3','Stable 3-task average'],['arc_easy','ARC-Easy'],['arc_challenge','ARC-Challenge'],['csqa','CSQA'],['openbookqa','OpenBookQA'],['piqa','PIQA'],['socialiqa','SocialIQA'],['winogrande','Winogrande']];
@@ -95,7 +114,7 @@
     (bestOnly?layoutBestLabels:layoutPointLabels)(svg,{minX:20,maxX:290,minY:12,maxY:190});
   });
   const tableMetric=v=>Number.isFinite(v)?v.toFixed(3):'—';
-  visibleRuns.forEach(r=>rows.insertAdjacentHTML('beforeend',`<tr><td>${key(r)}</td><td>${r.epoch}</td><td>${r.lr||'—'}</td><td>${r.wd||'—'}</td><td class="${isActiveStatus(r)?'run-active':''}">${r.status}</td><td>${tableMetric(r.train)}</td><td>${tableMetric(r.validation??r.c4)}</td><td>${tableMetric(r.acc)}</td><td>${tableMetric(r.bpb)}</td><td>${r.wandb?`<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}">${r.wandb}</a>`:'—'}</td><td>${r.beaker?`<a href="https://beaker.org/ex/${r.beaker}">experiment</a>`:'—'}</td></tr>`));
+  visibleRuns.forEach(r=>rows.insertAdjacentHTML('beforeend',`<tr class="${healthClass(r)}" title="${isUnhealthy(r)||isSuspicious(r)?healthReason(r):(r.reason||'')}"><td>${key(r)}</td><td>${r.epoch}</td><td>${r.lr||'—'}</td><td>${r.wd||'—'}</td><td class="${isActiveStatus(r)?'run-active':''}">${r.status}</td><td>${tableMetric(r.train)}</td><td>${tableMetric(r.validation??r.c4)}</td><td>${tableMetric(r.acc)}</td><td>${tableMetric(r.bpb)}</td><td>${r.wandb?`<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${r.wandb}">${r.wandb}</a>`:'—'}</td><td>${r.beaker?`<a href="https://beaker.org/ex/${r.beaker}">experiment</a>`:'—'}</td></tr>`));
   const gridMount=document.querySelector('#coordinate-grid');
   if(gridMount){
     if(d.coordinateMode==='fixed-step2-lr'){
@@ -105,18 +124,18 @@
       const epochs=[...new Set(visibleRuns.map(r=>r.epoch))].sort((a,b)=>a-b);
       gridMount.innerHTML=epochs.map(epoch=>{
         const ordered=visibleRuns.filter(r=>r.epoch===epoch).sort((a,b)=>Number(a.wd)-Number(b.wd)||Number(a.lr)-Number(b.lr));
-        const complete=ordered.filter(r=>r.status==='complete'&&Number.isFinite(r.validation??r.c4));
+        const complete=ordered.filter(r=>r.status==='complete'&&!isUnhealthy(r)&&Number.isFinite(r.validation??r.c4));
         const fixed=d.fixedLrByEpoch?.[epoch];
         const eligible=complete.filter(r=>r.lr===fixed);
         const selected=eligible.length?eligible.reduce((winner,r)=>(r.validation??r.c4)<(winner.validation??winner.c4)?r:winner):null;
-        const chips=ordered.map(r=>`<span class="tuple ${selected===r?'selected':isActiveStatus(r)?'active':''}">(LR ${r.lr||'—'}, WD ${r.wd||'—'}) · ${r.status}${Number.isFinite(r.validation??r.c4)?` · CE ${(r.validation??r.c4).toFixed(3)}`:''}</span>`).join('');
+        const chips=ordered.map(r=>`<span class="tuple ${tupleHealthClass(r)|| (selected===r?'selected':isActiveStatus(r)?'active':'')}" title="${isUnhealthy(r)||isSuspicious(r)?healthReason(r):(r.reason||'')}">(LR ${r.lr||'—'}, WD ${r.wd||'—'}) · ${r.status}${Number.isFinite(r.validation??r.c4)?` · CE ${(r.validation??r.c4).toFixed(3)}`:''}</span>`).join('');
         return `<tr><td><strong>E${epoch}</strong></td><td><div class="tuple-list">${chips||'<span class="pending">—</span>'}</div></td></tr>`;
       }).join('');
     }else{
       gridMount.closest('table').querySelector('thead tr').innerHTML='<th>Epoch</th><th>Series</th><th>Evaluated and active LRs</th>';
       const groups=new Map();
       visibleRuns.forEach(r=>{const g=`${r.epoch}|${key(r)}`;if(!groups.has(g))groups.set(g,[]);groups.get(g).push(r);});
-      gridMount.innerHTML=[...groups.entries()].sort((a,b)=>{const [ae,ak]=a[0].split('|'),[be,bk]=b[0].split('|');return Number(ae)-Number(be)||ak.localeCompare(bk)}).map(([g,runs])=>{const [epoch,label]=g.split('|');const ordered=runs.sort((a,b)=>Number(a.lr)-Number(b.lr));const complete=ordered.filter(r=>r.status==='complete'&&Number.isFinite(r.validation??r.c4));const best=complete.length?complete.reduce((winner,r)=>(r.validation??r.c4)<(winner.validation??winner.c4)?r:winner):null;const chips=ordered.map(r=>`<span class="tuple ${best===r?'selected':isActiveStatus(r)?'active':''}">${r.lr||'—'} · ${r.status}${Number.isFinite(r.validation??r.c4)?` · ${(r.validation??r.c4).toFixed(3)}`:''}</span>`).join('');return `<tr><td><strong>E${epoch}</strong></td><td>${label}</td><td><div class="tuple-list">${chips}</div></td></tr>`;}).join('');
+      gridMount.innerHTML=[...groups.entries()].sort((a,b)=>{const [ae,ak]=a[0].split('|'),[be,bk]=b[0].split('|');return Number(ae)-Number(be)||ak.localeCompare(bk)}).map(([g,runs])=>{const [epoch,label]=g.split('|');const ordered=runs.sort((a,b)=>Number(a.lr)-Number(b.lr));const complete=ordered.filter(r=>r.status==='complete'&&!isUnhealthy(r)&&Number.isFinite(r.validation??r.c4));const best=complete.length?complete.reduce((winner,r)=>(r.validation??r.c4)<(winner.validation??winner.c4)?r:winner):null;const chips=ordered.map(r=>`<span class="tuple ${tupleHealthClass(r)||(best===r?'selected':isActiveStatus(r)?'active':'')}" title="${isUnhealthy(r)||isSuspicious(r)?healthReason(r):(r.reason||'')}">${r.lr||'—'} · ${r.status}${Number.isFinite(r.validation??r.c4)?` · ${(r.validation??r.c4).toFixed(3)}`:''}</span>`).join('');return `<tr><td><strong>E${epoch}</strong></td><td>${label}</td><td><div class="tuple-list">${chips}</div></td></tr>`;}).join('');
     }
   }
 })();
