@@ -19,7 +19,7 @@
     return {...sweep,...result,epoch,series:`BS ${sweep.batchSequences}`,status:result.status||(epoch===sweep.activeEpoch?sweep.status:'queued')};
   })).filter(visible);
   const baselineRuns=(baseline.runs||[]).filter(r=>
-    visible(r)&&d.targetEpochs.includes(r.epoch)
+    visible(r)&&r.status!=='queued'&&d.targetEpochs.includes(r.epoch)
   ).map(r=>({...r,batchSequences:1024,contextLength:4096,series:'BS 1024'}));
   const coordinateRuns=[...newRuns,...baselineRuns];
   const selected=new Map();
