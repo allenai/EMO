@@ -42,14 +42,13 @@
   const higherIsBetter=name=>['acc','avg8_acc'].includes(name);
   const bestPoint=(points,name)=>points.reduce((best,point)=>(higherIsBetter(name)?point.v>best.v:point.v<best.v)?point:best);
   const layoutBestLabels=(svg,bounds)=>{
-    const occupied=[];
-    [...svg.querySelectorAll('text.series-best')].forEach(node=>{
-      const leader=svg.querySelector(`line[data-best-label-id="${node.dataset.bestLabelId}"]`),pointX=Number(node.dataset.pointX),pointY=Number(node.dataset.pointY),direction=Number(node.dataset.direction)||1;
-      const candidates=[];[18,30,42,54,66,78].forEach(distance=>[0,-35,35,-70,70].forEach(horizontal=>candidates.push({x:pointX+horizontal,y:pointY+direction*distance})));[18,30,42,54,66,78].forEach(distance=>[0,-35,35,-70,70].forEach(horizontal=>candidates.push({x:pointX+horizontal,y:pointY-direction*distance})));
-      let chosen=null;
-      for(const candidate of candidates){node.setAttribute('x',candidate.x);node.setAttribute('y',candidate.y);let box=node.getBBox(),x=candidate.x,y=candidate.y;if(box.x<bounds.minX)x+=bounds.minX-box.x;if(box.x+box.width>bounds.maxX)x-=box.x+box.width-bounds.maxX;if(box.y<bounds.minY)y+=bounds.minY-box.y;if(box.y+box.height>bounds.maxY)y-=box.y+box.height-bounds.maxY;node.setAttribute('x',x);node.setAttribute('y',y);box=node.getBBox();const rect={left:box.x-3,right:box.x+box.width+3,top:box.y-2,bottom:box.y+box.height+2};if(!occupied.some(other=>rect.left<other.right&&rect.right>other.left&&rect.top<other.bottom&&rect.bottom>other.top)){chosen={x,y,rect};break;}}
-      if(!chosen){const box=node.getBBox();chosen={x:Number(node.getAttribute('x')),y:Number(node.getAttribute('y')),rect:{left:box.x-3,right:box.x+box.width+3,top:box.y-2,bottom:box.y+box.height+2}};}occupied.push(chosen.rect);if(leader){leader.setAttribute('x2',chosen.x);leader.setAttribute('y2',chosen.y);}
-    });
+    const items=[...svg.querySelectorAll('text.series-best')].map((node,index)=>{const pointX=Number(node.dataset.pointX),pointY=Number(node.dataset.pointY);node.setAttribute('x',pointX);node.setAttribute('y',pointY);const box=node.getBBox();return {node,index,pointX,pointY,height:box.height,topOffset:box.y-pointY,leader:svg.querySelector(`line[data-best-label-id="${node.dataset.bestLabelId}"]`)};}).sort((a,b)=>a.pointY-b.pointY||a.index-b.index);
+    if(!items.length)return;
+    const textHeight=items.reduce((sum,item)=>sum+item.height,0),gap=items.length>1?Math.max(0,Math.min(3,(bounds.maxY-bounds.minY-textHeight)/(items.length-1))):0;
+    items.forEach((item,index)=>{const desired=Math.max(bounds.minY,Math.min(bounds.maxY-item.height,item.pointY+item.topOffset));item.top=index?Math.max(desired,items[index-1].top+items[index-1].height+gap):desired;});
+    for(let index=items.length-1;index>=0;index--){const ceiling=index===items.length-1?bounds.maxY-items[index].height:items[index+1].top-items[index].height-gap;items[index].top=Math.min(items[index].top,ceiling);}
+    if(items[0].top<bounds.minY){items[0].top=bounds.minY;for(let index=1;index<items.length;index++)items[index].top=Math.max(items[index].top,items[index-1].top+items[index-1].height+gap);}
+    items.forEach(item=>{const y=item.top-item.topOffset;let x=item.pointX;item.node.setAttribute('x',x);item.node.setAttribute('y',y);const box=item.node.getBBox();if(box.x<bounds.minX)x+=bounds.minX-box.x;if(box.x+box.width>bounds.maxX)x-=box.x+box.width-bounds.maxX;item.node.setAttribute('x',x);if(item.leader){item.leader.setAttribute('x2',x);item.leader.setAttribute('y2',y);}});
   };
   const charts=document.querySelector('#charts');
   metrics.forEach(([name,label])=>{
