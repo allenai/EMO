@@ -21,6 +21,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workers", type=int, default=64)
     parser.add_argument("--cpu-count", type=float, default=64)
     parser.add_argument("--memory", default="512 GiB")
+    parser.add_argument("--gpu-count", type=int, default=3)
+    parser.add_argument("--cluster", default="ai2/jupiter")
     parser.add_argument("--print-only", action="store_true")
     return parser.parse_args()
 
@@ -43,6 +45,8 @@ def build_spec(
     workers: int,
     cpu_count: float,
     memory: str,
+    gpu_count: int,
+    cluster: str,
 ) -> dict[str, Any]:
     spec = copy.deepcopy(base_spec)
     task = spec["tasks"][0]
@@ -76,9 +80,14 @@ def build_spec(
             break
     else:
         task["envVars"].append({"name": "GIT_REF", "value": revision})
-    task["resources"] = {"cpuCount": cpu_count, "memory": memory, "sharedMemory": "16 GiB"}
+    task["resources"] = {
+        "cpuCount": cpu_count,
+        "gpuCount": gpu_count,
+        "memory": memory,
+        "sharedMemory": "16 GiB",
+    }
     task["context"] = {"priority": priority, "minRuntime": "0s", "autoResume": False}
-    task.pop("constraints", None)
+    task["constraints"] = {"cluster": [cluster]}
     task["propagateFailure"] = False
     task["propagatePreemption"] = False
     spec.pop("description", None)
@@ -94,6 +103,8 @@ def main() -> None:
         workers=args.workers,
         cpu_count=args.cpu_count,
         memory=args.memory,
+        gpu_count=args.gpu_count,
+        cluster=args.cluster,
     )
     if args.print_only:
         json.dump(spec, sys.stdout, indent=2)
