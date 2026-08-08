@@ -197,6 +197,11 @@ class Trainer:
     if it exists in the checkpoint, but will not error if it doesn't.
     """
 
+    reset_data_loader_state_on_load_path: bool = False
+    """When loading from :data:`load_path`, restore trainer progress but initialize the
+    configured data loader at batch zero. This must only be used with an audited disjoint
+    continuation dataset. It does not apply when recovering from :data:`save_folder`."""
+
     metrics_collect_interval: int = 5
     """
     How often (in steps) to collect, reduce, and pass on metrics to the
@@ -691,7 +696,10 @@ class Trainer:
             # Then fallback to the load path, if provided.
             if self.load_path is not None:
                 if not self.checkpoint_loaded:
-                    self.maybe_load_checkpoint(self.load_path)
+                    self.maybe_load_checkpoint(
+                        self.load_path,
+                        reset_data_loader_state=self.reset_data_loader_state_on_load_path,
+                    )
                 else:
                     log.warning(
                         f"Ignoring load path ('{self.load_path}') since checkpoint was found in save folder"
@@ -800,9 +808,15 @@ class Trainer:
             "callbacks": {k: cb.state_dict() for k, cb in self.callbacks.items()},
         }
 
-    def load_state_dict(self, state_dict: TrainerStateDict):
+    def load_state_dict(
+        self, state_dict: TrainerStateDict, *, reset_data_loader_state: bool = False
+    ):
         """
         Load trainer state (not model or optimizer state).
+
+        :param reset_data_loader_state: Restore global training progress, RNG, and callback
+            state while leaving the newly built data loader at its initial position. This is
+            intended for a checkpoint continuation onto a provably disjoint dataset.
         """
         # For backwards compatibility.
         if "data_loader" not in state_dict:
@@ -823,7 +837,13 @@ class Trainer:
                     "epoch": state_dict["epoch"],
                 }
 
-        self.data_loader.load_state_dict(state_dict["data_loader"])
+        if reset_data_loader_state:
+            log.warning(
+                "Resetting data loader state while restoring the remaining trainer state; "
+                "the configured dataset must be a fresh, disjoint continuation dataset"
+            )
+        else:
+            self.data_loader.load_state_dict(state_dict["data_loader"])
         self.global_step = state_dict["global_step"]
         self.global_train_tokens_seen = state_dict["global_train_tokens_seen"]
         self.global_train_petaflops = state_dict.get("global_train_petaflops", 0.0)
@@ -853,6 +873,7 @@ class Trainer:
         *,
         load_trainer_state: Optional[bool] = None,
         load_optim_state: Optional[bool] = None,
+        reset_data_loader_state: bool = False,
     ):
         """
         Load a checkpoint.
@@ -863,11 +884,18 @@ class Trainer:
         :param dir: The path/URL to a checkpoint or a folder of checkpoints.
         :param load_trainer_state: Load trainer state (data loader state, RNG states, and other bookkeeping).
         :param load_optim_state: Load optimizer state in the train module.
+        :param reset_data_loader_state: If trainer state is loaded, restore all of it except
+            the data loader position. The newly configured dataset then starts from its first
+            batch while global step, token count, scheduler progress, RNG, and callbacks resume.
         """
         load_trainer_state = (
             self.load_trainer_state if load_trainer_state is None else load_trainer_state
         )
         load_optim_state = self.load_optim_state if load_optim_state is None else load_optim_state
+        if reset_data_loader_state and load_trainer_state is False:
+            raise ValueError(
+                "reset_data_loader_state=True requires load_trainer_state=True or None"
+            )
         if dir == self.save_folder:
             if load_trainer_state is False:
                 log.warning(
@@ -907,7 +935,10 @@ class Trainer:
             load_optim_state=load_optim_state,
         )
         if trainer_state is not None:
-            self.load_state_dict(cast(TrainerStateDict, trainer_state))
+            self.load_state_dict(
+                cast(TrainerStateDict, trainer_state),
+                reset_data_loader_state=reset_data_loader_state,
+            )
 
         for callback in self._iter_callbacks():
             callback.post_checkpoint_loaded(dir)
@@ -921,6 +952,7 @@ class Trainer:
         *,
         load_trainer_state: Optional[bool] = None,
         load_optim_state: Optional[bool] = None,
+        reset_data_loader_state: bool = False,
     ) -> bool:
         """
         Like :meth:`load_checkpoint()` but is a no-op if there is no checkpoint in the ``dir`` provided.
@@ -941,6 +973,7 @@ class Trainer:
                 dir,
                 load_trainer_state=load_trainer_state,
                 load_optim_state=load_optim_state,
+                reset_data_loader_state=reset_data_loader_state,
             )
             assert self.checkpoint_loaded
             return True
