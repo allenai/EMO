@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>0802 Step 2-1 — Batch-tuned unique vs. repeated DCLM</title>
+  <style>
+    :root { --ink:#18212b; --muted:#66717d; --line:#dce2e8; --paper:#f6f7f9; --card:#fff; --blue:#1565c0; --orange:#a45b00; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--paper); font:13px/1.35 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    main { max-width:1500px; margin:0 auto; padding:22px; }
+    header { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:14px; }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { margin-bottom:4px; font-size:29px; letter-spacing:-.7px; }
+    h2 { margin:18px 0 8px; font-size:18px; }
+    h3 { margin-bottom:3px; font-size:13px; }
+    p { margin-bottom:7px; }
+    a { color:var(--blue); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    .stamp,.note { color:var(--muted); }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:9px; padding:11px; }
+    .charts { display:grid; grid-auto-flow:column; grid-auto-columns:calc((100% - 30px)/4); gap:10px; overflow-x:auto; padding-bottom:9px; scroll-snap-type:x proximity; scrollbar-gutter:stable; }
+    .chart { min-width:0; scroll-snap-align:start; }
+    .chart svg { width:100%; height:260px; display:block; overflow:visible; }
+    .legend { display:flex; flex-wrap:wrap; gap:8px 16px; margin:7px 0 9px; color:var(--muted); }
+    .legend label { display:flex; align-items:center; gap:5px; }
+    .dot { display:inline-block; width:18px; height:3px; border-radius:2px; }
+    .health-key { display:inline-block; width:18px; height:10px; border:0; border-radius:3px; background:#fecaca; }
+    .table-wrap { overflow:auto; }
+    .table-wrap table { font-size:11px; }
+    .table-wrap th,.table-wrap td { padding:4px 6px; }
+    .table-wrap th { font-size:9px; }
+    table { width:100%; border-collapse:collapse; background:var(--card); }
+    th,td { padding:7px 9px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap; }
+    th:first-child,td:first-child,th:nth-child(2),td:nth-child(2),th:nth-child(3),td:nth-child(3) { text-align:left; }
+    th { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.4px; }
+    .comparison th,.comparison td { text-align:right; }
+    .comparison th:first-child,.comparison td:first-child { text-align:left; }
+    .validation-summary { margin-top:18px; }
+    .summary-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:20px; }
+    .summary-panel { min-width:0; }
+    .summary-panel h2 { margin:0 0 8px; font-size:16px; }
+    .summary-note { margin:-2px 0 8px; color:var(--muted); font-size:11px; }
+    .summary-best { background:#eaf8ee; color:#14532d; }
+    .summary-best strong { font-weight:800; }
+    .matched-value { font-variant-numeric:tabular-nums; }
+    .endpoint-cell { font-variant-numeric:tabular-nums; }
+    .endpoint-cell .delta-better { color:#15803d; }
+    .endpoint-cell .delta-worse { color:#a45b00; }
+    .coverage th,.coverage td { text-align:left; vertical-align:top; }
+    .run-active { color:var(--orange); }
+    .tuple-list { display:flex; flex-wrap:wrap; gap:3px; }
+    .tuple { display:inline-block; padding:1px 4px; border:1px solid var(--line); border-radius:999px; color:var(--muted); background:#fafbfc; font-size:10px; }
+    .tuple.active { color:var(--orange); border-color:#e4bd89; background:#fff8ed; font-weight:400; }
+    .tuple.selected { color:var(--ink); border-color:#7ba5d3; background:#eef5fc; font-weight:700; }
+    .tuple.unhealthy { color:#991b1b; background:#fff1f2; font-weight:400; }
+    .run-unhealthy td { background:#fff1f2; font-weight:400; }
+    footer { margin-top:14px; color:var(--muted); font-size:11px; }
+    @media(max-width:900px) { .summary-grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1 id="title">0802 Step 2-1 — batch-tuned unique vs. repeated DCLM</h1>
+      <p id="setup">Dense 1B · WSD · unique BS/LR tuned · repeated BS/LR/WD tuned.</p>
+    </div>
+    <a href="wsd_unique_vs_repeated_1b.html?model=1B">0802 Step 2 baseline</a>
+  </header>
+
+  <p class="stamp" id="updated"><strong>Intermediate report:</strong> loading run state.</p>
+  <p class="note" id="selection"></p>
+  <p class="note">Unique data uses the 5B unique pool with WD fixed at 0.033 and selects across BS64, BS256, and the existing BS1024 Step-2 baseline. Repeated data is imported dynamically from Step 1-1 and selects jointly across its completed BS/LR/WD coordinates. The sealed DCLM test split is not used for selection.</p>
+
+  <h2>Model comparison — interactive</h2>
+  <div class="legend" id="legend" aria-label="Chart series"></div>
+  <div class="charts" id="charts" tabindex="0" aria-label="Selected validation-loss comparison from 1B through 16B"></div>
+  <p class="note">Each line uses the lowest healthy completed DCLM validation CE available at that token target. The unique line selects globally across eligible batch sizes; repeated lines expose every Step-1-1 batch size while keeping those runs out of the coordinate and provenance tables below.</p>
+
+  <h2>Selected-endpoint comparison</h2>
+  <p class="note">DCLM validation CE only. Within each batch size and target, unique selects the best healthy eligible LR at WD 0.033; repeated selects the best healthy Step-1-1 LR/WD coordinate. Every cell is <strong>U / R / Δ</strong>, with Δ = U − R, so a negative delta favors unique data.</p>
+  <div class="card table-wrap">
+    <table class="comparison">
+      <thead><tr><th>Target</th><th>BS 64 · U / R / Δ</th><th>BS 256 · U / R / Δ</th><th>BS 1024 · U / R / Δ</th></tr></thead>
+      <tbody id="selected-endpoint-comparison"></tbody>
+    </table>
+  </div>
+
+  <div class="card validation-summary">
+    <div class="summary-grid">
+      <div class="summary-panel">
+        <h2>Best unique-data validation loss by data size</h2>
+        <p class="summary-note">Each cell selects the best healthy LR for that batch size and amount of training data. The lowest CE within each batch-size column is bold.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Target</th><th>BS 64</th><th>BS 256</th><th>BS 1024</th></tr></thead>
+            <tbody id="unique-5b-summary"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="summary-panel">
+        <h2>Best unique-data validation loss at matched optimizer steps</h2>
+        <p class="summary-note">Each cell shows training data size · validation CE. Only rows with at least two available batch sizes are shown; the lowest CE in each row is bold.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Optimizer steps</th><th>BS 64</th><th>BS 256</th><th>BS 1024</th></tr></thead>
+            <tbody id="unique-optimizer-step-summary"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Unique-data batch size × LR coordinate grid</h2>
+  <p class="note">WD is fixed at 0.033. Only LR 5e-4 and 1e-3 are eligible. BS1024 is imported from Step 2; BS64 and BS256 are Step 2-1.</p>
+  <div class="card table-wrap">
+    <table class="coverage">
+      <thead><tr><th>Target</th><th>Global sequences</th><th>Evaluated and active LR coordinates</th><th>Selected by DCLM validation CE</th></tr></thead>
+      <tbody id="coordinate-grid"></tbody>
+    </table>
+  </div>
+
+  <h2>Runs and provenance</h2>
+  <div class="card table-wrap">
+    <table>
+      <thead><tr><th>Condition</th><th>Batch</th><th>Target</th><th>LR</th><th>WD</th><th>Status</th><th>Train CE</th><th>DCLM validation CE</th><th>HS acc</th><th>HS BPB</th><th>W&amp;B</th><th>Beaker</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <footer>Repeated-data runs are intentionally shown only in the selected graph and endpoint comparison; their coordinate grid and provenance remain in Step 1-1.</footer>
+</main>
+<script src="data/wsd_weight_decay_1b.js"></script>
+<script>window.STEP2_1_WD_DATA=window.ICSL_REPORT_DATA;</script>
+<script src="data/wsd_batch_size_1b.js"></script>
+<script>window.STEP2_1_BATCH_DATA=window.ICSL_REPORT_DATA;</script>
+<script src="data/wsd_unique_vs_repeated_1b.js"></script>
+<script>window.STEP2_1_STEP2_DATA=window.STEP2_REPORT_DATA;</script>
+<script src="data/wsd_unique_vs_repeated_batch_tuned_1b.js"></script>
+<script src="step2_1_charts.js"></script>
+</body>
+</html>
