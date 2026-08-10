@@ -1786,7 +1786,8 @@
         }
       ],
       "job": "01KZNFSCX1Y04X6H58FHGW9DKP",
-      "resultDataset": "01KZNFSCRZJ010BATCS6BRNDJM"
+      "resultDataset": "01KZNFSCRZJ010BATCS6BRNDJM",
+      "activeWandb": "3ifb7avg"
     },
     {
       "batchSequences": 128,

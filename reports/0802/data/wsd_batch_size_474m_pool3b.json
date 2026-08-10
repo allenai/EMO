@@ -1188,7 +1188,8 @@
         }
       ],
       "job": "01KZNFS6C29YQRSS2R9KNBK0KY",
-      "resultDataset": "01KZNFS66FH52C5BJJVZ39HBVD"
+      "resultDataset": "01KZNFS66FH52C5BJJVZ39HBVD",
+      "activeWandb": "js93gcfl"
     },
     {
       "batchSequences": 256,
