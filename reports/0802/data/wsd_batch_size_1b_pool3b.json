@@ -1,7 +1,7 @@
 {
   "updated": "2026-08-10",
   "title": "0802 Step 1-1 \u00b7 Dense 1.5B \u00b7 nested 3B pool",
-  "setup": "Dense 1.5B; nested 3B pool = sealed 1B + disjoint new 2B; sequence length 4096; global batches 64, 128, and 256 sequences.",
+  "setup": "Dense 1.5B; nested 3B pool = sealed 1B + disjoint new 2B; sequence length 4096; global batches 64, 128, 256, and 512 sequences.",
   "selection": "LR is frozen to the selected 1B-pool value for the same model and batch. At E1 branch the exact selected 1B pre-decay model/optimizer checkpoint: continue once at the selected WD and once with WD lowered by one ladder step. At later frontiers compare the selected WD with at most one higher ladder step, capped by the same-epoch 1B WD. Stop on validation-CE non-improvement or at the same-model/same-batch 1B optimum.",
   "integerSearchFrontiers": [
     1,
@@ -173,6 +173,12 @@
       4,
       8,
       12
+    ],
+    "512": [
+      1,
+      2,
+      4,
+      8
     ]
   },
   "optimizerStepComparisons": [],
@@ -1757,7 +1763,7 @@
         7725,
         10300
       ],
-      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs256_e4_lr1e-3_wd0.333_warmup96_p3e4-r10a/step10300",
+      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs256_e4_lr1e-3_wd0.333_warmup96_p3e4-r12a/step10300",
       "recoverySourceStep": 5150,
       "actualTargetTokens": 12000000000,
       "revision": "a4a3267e24154c0c1256b4b404ebbd3daaedc661",
@@ -1785,7 +1791,7 @@
           ],
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs256_e4_lr1e-3_wd0.333_warmup96_p3e4-r12a",
           "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs256_e2_lr1e-3_wd0.333_warmup96_p3e2-r02/step5150",
-          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs256_e4_lr1e-3_wd0.333_warmup96_p3e4-r10a/step10300",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs256_e4_lr1e-3_wd0.333_warmup96_p3e4-r12a/step10300",
           "retainedPreDecaySteps": [
             7725,
             10300
@@ -1915,7 +1921,7 @@
       "newRetainedPreDecaySteps": [
         20599
       ],
-      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e4_lr1e-3_wd0.3_warmup192_p3e4-r10b/step20599",
+      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e4_lr1e-3_wd0.3_warmup192_p3e4-r12b/step20599",
       "recoverySourceStep": 15449,
       "actualTargetTokens": 12000000000,
       "revision": "a4a3267e24154c0c1256b4b404ebbd3daaedc661",
@@ -1939,7 +1945,7 @@
           ],
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e4_lr1e-3_wd0.3_warmup192_p3e4-r12b",
           "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e4_lr1e-3_wd0.3_warmup192_p3e4-r03a/step15449",
-          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e4_lr1e-3_wd0.3_warmup192_p3e4-r10b/step20599",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e4_lr1e-3_wd0.3_warmup192_p3e4-r12b/step20599",
           "retainedPreDecaySteps": [
             15449,
             20599
@@ -2046,7 +2052,7 @@
         30899,
         41198
       ],
-      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e4_lr1e-3_wd0.1_warmup384_p3e4-r10c/step41198",
+      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e4_lr1e-3_wd0.1_warmup384_p3e4-r12c/step41198",
       "recoverySourceStep": 20599,
       "actualTargetTokens": 12000000000,
       "revision": "a4a3267e24154c0c1256b4b404ebbd3daaedc661",
@@ -2068,7 +2074,7 @@
           ],
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e4_lr1e-3_wd0.1_warmup384_p3e4-r12c",
           "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e2_lr1e-3_wd0.1_warmup384_p3e2-r05/step20599",
-          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e4_lr1e-3_wd0.1_warmup384_p3e4-r10c/step41198",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e4_lr1e-3_wd0.1_warmup384_p3e4-r12c/step41198",
           "retainedPreDecaySteps": [
             30899,
             41198
@@ -2319,7 +2325,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 1,
       "gpuCount": 8,
-      "status": "running",
+      "status": "failed",
       "activeEpoch": 8,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZP0B8Q3Z69AFJMKC7VF19MP",
@@ -2356,17 +2362,19 @@
       "jobStates": [
         {
           "job": "01KZP0B8TNWC82KYMG2JYJSPA0",
-          "state": "running",
+          "state": "failed",
           "created": "2026-08-10T14:13:40.195495Z",
           "started": "2026-08-10T14:15:00.915089Z",
-          "finalized": null,
-          "exitCode": null,
+          "finalized": "2026-08-10T14:22:39.586996Z",
+          "exitCode": 1,
           "reason": null,
           "resultDataset": "01KZP0B8Q8XPB4TTJX5XG4FT67"
         }
       ],
       "job": "01KZP0B8TNWC82KYMG2JYJSPA0",
-      "resultDataset": "01KZP0B8Q8XPB4TTJX5XG4FT67"
+      "resultDataset": "01KZP0B8Q8XPB4TTJX5XG4FT67",
+      "failureClass": "infrastructure",
+      "failureReason": "01KZP0B8TNWC82KYMG2JYJSPA0: exit 1"
     },
     {
       "batchSequences": 64,
@@ -2380,7 +2388,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 1,
       "gpuCount": 8,
-      "status": "running",
+      "status": "failed",
       "activeEpoch": 8,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZP0B75XVQFRW6GGMEP78FDW",
@@ -2417,17 +2425,319 @@
       "jobStates": [
         {
           "job": "01KZP0B79R0E4A8MNTH8HMH53N",
-          "state": "running",
+          "state": "failed",
           "created": "2026-08-10T14:13:38.621115Z",
           "started": "2026-08-10T14:14:22.103809Z",
-          "finalized": null,
-          "exitCode": null,
+          "finalized": "2026-08-10T14:22:40.435612Z",
+          "exitCode": 1,
           "reason": null,
           "resultDataset": "01KZP0B76BC78HFYMECV7J75GS"
         }
       ],
       "job": "01KZP0B79R0E4A8MNTH8HMH53N",
-      "resultDataset": "01KZP0B76BC78HFYMECV7J75GS"
+      "resultDataset": "01KZP0B76BC78HFYMECV7J75GS",
+      "failureClass": "infrastructure",
+      "failureReason": "01KZP0B79R0E4A8MNTH8HMH53N: exit 1"
+    },
+    {
+      "batchSequences": 128,
+      "globalBatchTokens": 524288,
+      "contextLength": 4096,
+      "lr": "1e-3",
+      "wd": "0.3",
+      "warmupSteps": 192,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 2,
+      "gpuCount": 16,
+      "status": "failed",
+      "activeEpoch": 8,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZP29DGEQCK9V53RFEG5XKG8",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e8_lr1e-3_wd0.3_warmup192_p3e8-r20f",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e4_lr1e-3_wd0.3_warmup192_p3e4-r10b/step20599",
+      "sourceEpoch": 4,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": true,
+      "dataLoaderSeed": 80208,
+      "retainedPreDecaySteps": [
+        25749,
+        30899,
+        36048,
+        41198
+      ],
+      "newRetainedPreDecaySteps": [
+        25749,
+        30899,
+        36048,
+        41198
+      ],
+      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e8_lr1e-3_wd0.3_warmup192_p3e8-r20f/step41198",
+      "recoverySourceStep": 20599,
+      "actualTargetTokens": 24000000000,
+      "revision": "c7dc38a7f20a3c867bc0934bec9dc2e0c6ca755a",
+      "recoveryOf": "01KZNNTHREK0EF8QFFNQGT5D9E",
+      "results": {},
+      "jobs": [
+        "01KZP29DQV39VWJRSBZ05Y0WXF",
+        "01KZP29DY0SEVDVBZM1VSJMK4T"
+      ],
+      "resultDatasets": [
+        "01KZP29DGV7MV6W9QM0MHCEB5J",
+        "01KZP29DR28TGSXKVBKNM7CKRZ"
+      ],
+      "jobStates": [
+        {
+          "job": "01KZP29DQV39VWJRSBZ05Y0WXF",
+          "state": "failed",
+          "created": "2026-08-10T14:47:36.718662Z",
+          "started": "2026-08-10T14:50:24.138728Z",
+          "finalized": "2026-08-10T14:51:11.008027Z",
+          "exitCode": 1,
+          "reason": null,
+          "resultDataset": "01KZP29DGV7MV6W9QM0MHCEB5J"
+        },
+        {
+          "job": "01KZP29DY0SEVDVBZM1VSJMK4T",
+          "state": "canceled",
+          "created": "2026-08-10T14:47:36.718662Z",
+          "started": "2026-08-10T14:50:24.109831Z",
+          "finalized": "2026-08-10T14:51:14.940959Z",
+          "exitCode": 143,
+          "reason": "job \"01KZP29DQV39VWJRSBZ05Y0WXF\" from sibling task \"01KZP29DGR1BEXTDFNF5F3BBN5\" failed with propagate-failure enabled",
+          "resultDataset": "01KZP29DR28TGSXKVBKNM7CKRZ"
+        }
+      ],
+      "job": "01KZP29DQV39VWJRSBZ05Y0WXF",
+      "resultDataset": "01KZP29DGV7MV6W9QM0MHCEB5J",
+      "failureClass": "infrastructure",
+      "failureReason": "01KZP29DQV39VWJRSBZ05Y0WXF: exit 1; 01KZP29DY0SEVDVBZM1VSJMK4T: job \"01KZP29DQV39VWJRSBZ05Y0WXF\" from sibling task \"01KZP29DGR1BEXTDFNF5F3BBN5\" failed with propagate-failure enabled"
+    },
+    {
+      "batchSequences": 256,
+      "globalBatchTokens": 1048576,
+      "contextLength": 4096,
+      "lr": "1e-3",
+      "wd": "0.333",
+      "warmupSteps": 96,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 4,
+      "gpuCount": 32,
+      "status": "failed",
+      "activeEpoch": 8,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZP29KHJGGM3YMWMVRX3X39X",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs256_e8_lr1e-3_wd0.333_warmup96_p3e8-r20g",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs256_e4_lr1e-3_wd0.333_warmup96_p3e4-r10a/step10300",
+      "sourceEpoch": 4,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": true,
+      "dataLoaderSeed": 80208,
+      "retainedPreDecaySteps": [
+        12874,
+        15449,
+        18024,
+        20599
+      ],
+      "newRetainedPreDecaySteps": [
+        12874,
+        15449,
+        18024,
+        20599
+      ],
+      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs256_e8_lr1e-3_wd0.333_warmup96_p3e8-r20g/step20599",
+      "recoverySourceStep": 10300,
+      "actualTargetTokens": 24000000000,
+      "revision": "c7dc38a7f20a3c867bc0934bec9dc2e0c6ca755a",
+      "recoveryOf": "01KZNKVRMM7R2W8YDC69SY7GQ6",
+      "results": {},
+      "jobs": [
+        "01KZP29KN483QQQC3NNSC79XA5",
+        "01KZP29KRJT8K9A8XM8X2269M2",
+        "01KZP29KWF2FTMXM2VT5TH6WZA",
+        "01KZP29KZYW1A0S91Z4K9DWBY8"
+      ],
+      "resultDatasets": [
+        "01KZP29KHQJ6DEECPGRSRZYDPD",
+        "01KZP29KN7M6HYCRKPSPY7GS0T",
+        "01KZP29KRPNKGNAS6VY9KC9RVB",
+        "01KZP29KWKGXDYTX6DWJ80D992"
+      ],
+      "jobStates": [
+        {
+          "job": "01KZP29KN483QQQC3NNSC79XA5",
+          "state": "failed",
+          "created": "2026-08-10T14:47:42.89787Z",
+          "started": "2026-08-10T14:50:10.066899Z",
+          "finalized": "2026-08-10T14:51:01.100948Z",
+          "exitCode": 1,
+          "reason": null,
+          "resultDataset": "01KZP29KHQJ6DEECPGRSRZYDPD"
+        },
+        {
+          "job": "01KZP29KRJT8K9A8XM8X2269M2",
+          "state": "canceled",
+          "created": "2026-08-10T14:47:42.89787Z",
+          "started": "2026-08-10T14:50:09.520169Z",
+          "finalized": "2026-08-10T14:51:01.068916Z",
+          "exitCode": 143,
+          "reason": "job \"01KZP29KN483QQQC3NNSC79XA5\" from sibling task \"01KZP29KHPTKDR4337F29TGPPP\" failed with propagate-failure enabled",
+          "resultDataset": "01KZP29KN7M6HYCRKPSPY7GS0T"
+        },
+        {
+          "job": "01KZP29KWF2FTMXM2VT5TH6WZA",
+          "state": "canceled",
+          "created": "2026-08-10T14:47:42.89787Z",
+          "started": "2026-08-10T14:50:09.730412Z",
+          "finalized": "2026-08-10T14:51:01.06185Z",
+          "exitCode": 143,
+          "reason": "job \"01KZP29KN483QQQC3NNSC79XA5\" from sibling task \"01KZP29KHPTKDR4337F29TGPPP\" failed with propagate-failure enabled",
+          "resultDataset": "01KZP29KRPNKGNAS6VY9KC9RVB"
+        },
+        {
+          "job": "01KZP29KZYW1A0S91Z4K9DWBY8",
+          "state": "canceled",
+          "created": "2026-08-10T14:47:42.89787Z",
+          "started": "2026-08-10T14:50:10.332106Z",
+          "finalized": "2026-08-10T14:51:01.439376Z",
+          "exitCode": 143,
+          "reason": "job \"01KZP29KN483QQQC3NNSC79XA5\" from sibling task \"01KZP29KHPTKDR4337F29TGPPP\" failed with propagate-failure enabled",
+          "resultDataset": "01KZP29KWKGXDYTX6DWJ80D992"
+        }
+      ],
+      "job": "01KZP29KN483QQQC3NNSC79XA5",
+      "resultDataset": "01KZP29KHQJ6DEECPGRSRZYDPD",
+      "failureClass": "infrastructure",
+      "failureReason": "01KZP29KN483QQQC3NNSC79XA5: exit 1; 01KZP29KRJT8K9A8XM8X2269M2: job \"01KZP29KN483QQQC3NNSC79XA5\" from sibling task \"01KZP29KHPTKDR4337F29TGPPP\" failed with propagate-failure enabled; 01KZP29KWF2FTMXM2VT5TH6WZA: job \"01KZP29KN483QQQC3NNSC79XA5\" from sibling task \"01KZP29KHPTKDR4337F29TGPPP\" failed with propagate-failure enabled; 01KZP29KZYW1A0S91Z4K9DWBY8: job \"01KZP29KN483QQQC3NNSC79XA5\" from sibling task \"01KZP29KHPTKDR4337F29TGPPP\" failed with propagate-failure enabled"
+    },
+    {
+      "batchSequences": 64,
+      "globalBatchTokens": 262144,
+      "contextLength": 4096,
+      "lr": "1e-3",
+      "wd": "0.1",
+      "warmupSteps": 384,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 1,
+      "gpuCount": 8,
+      "status": "failed",
+      "activeEpoch": 8,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZP2DA1H3W8FY6K1WGD1CVCF",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e8_lr1e-3_wd0.1_warmup384_p3e8-r21a",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e4_lr1e-3_wd0.1_warmup384_p3e4-r10c/step41198",
+      "sourceEpoch": 4,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": true,
+      "dataLoaderSeed": 80208,
+      "retainedPreDecaySteps": [
+        51498,
+        61798,
+        72097,
+        82397
+      ],
+      "newRetainedPreDecaySteps": [
+        51498,
+        61798,
+        72097,
+        82397
+      ],
+      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e8_lr1e-3_wd0.1_warmup384_p3e8-r21a/step82397",
+      "recoverySourceStep": 41198,
+      "actualTargetTokens": 24000000000,
+      "revision": "c7dc38a7f20a3c867bc0934bec9dc2e0c6ca755a",
+      "recoveryOf": "01KZP0B8Q3Z69AFJMKC7VF19MP",
+      "results": {},
+      "jobs": [
+        "01KZP2DA50MAG0AX2C1CESV4H4"
+      ],
+      "resultDatasets": [
+        "01KZP2DA1SVYN4AVFPVR2JFEN9"
+      ],
+      "jobStates": [
+        {
+          "job": "01KZP2DA50MAG0AX2C1CESV4H4",
+          "state": "failed",
+          "created": "2026-08-10T14:49:44.241574Z",
+          "started": "2026-08-10T14:50:49.5423Z",
+          "finalized": "2026-08-10T14:52:12.285609Z",
+          "exitCode": 1,
+          "reason": null,
+          "resultDataset": "01KZP2DA1SVYN4AVFPVR2JFEN9"
+        }
+      ],
+      "job": "01KZP2DA50MAG0AX2C1CESV4H4",
+      "resultDataset": "01KZP2DA1SVYN4AVFPVR2JFEN9",
+      "failureClass": "infrastructure",
+      "failureReason": "01KZP2DA50MAG0AX2C1CESV4H4: exit 1"
+    },
+    {
+      "batchSequences": 64,
+      "globalBatchTokens": 262144,
+      "contextLength": 4096,
+      "lr": "1e-3",
+      "wd": "0.3",
+      "warmupSteps": 384,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 1,
+      "gpuCount": 8,
+      "status": "failed",
+      "activeEpoch": 8,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZP2DN1WMR1HQNVVR8RR45NV",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e8_lr1e-3_wd0.3_warmup384_p3e8-r21b",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e4_lr1e-3_wd0.1_warmup384_p3e4-r10c/step41198",
+      "sourceEpoch": 4,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": true,
+      "dataLoaderSeed": 80208,
+      "retainedPreDecaySteps": [
+        51498,
+        61798,
+        72097,
+        82397
+      ],
+      "newRetainedPreDecaySteps": [
+        51498,
+        61798,
+        72097,
+        82397
+      ],
+      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e8_lr1e-3_wd0.3_warmup384_p3e8-r21b/step82397",
+      "recoverySourceStep": 41198,
+      "actualTargetTokens": 24000000000,
+      "revision": "c7dc38a7f20a3c867bc0934bec9dc2e0c6ca755a",
+      "recoveryOf": "01KZP0B75XVQFRW6GGMEP78FDW",
+      "results": {},
+      "jobs": [
+        "01KZP2DN550CQN22VNKMBKJ8Y9"
+      ],
+      "resultDatasets": [
+        "01KZP2DN23HQ79MNZ9YXE7TP9A"
+      ],
+      "jobStates": [
+        {
+          "job": "01KZP2DN550CQN22VNKMBKJ8Y9",
+          "state": "failed",
+          "created": "2026-08-10T14:49:55.516409Z",
+          "started": "2026-08-10T14:51:36.901101Z",
+          "finalized": "2026-08-10T14:52:25.113021Z",
+          "exitCode": 1,
+          "reason": null,
+          "resultDataset": "01KZP2DN23HQ79MNZ9YXE7TP9A"
+        }
+      ],
+      "job": "01KZP2DN550CQN22VNKMBKJ8Y9",
+      "resultDataset": "01KZP2DN23HQ79MNZ9YXE7TP9A",
+      "failureClass": "infrastructure",
+      "failureReason": "01KZP2DN550CQN22VNKMBKJ8Y9: exit 1"
     }
   ],
   "baseline1b": {
@@ -16969,18 +17279,21 @@
     "trustedOptimalEpochByBatch": {
       "64": 20,
       "128": 16,
-      "256": 10
+      "256": 10,
+      "512": 8
     },
     "stopCeilingByBatch": {
       "64": 20,
       "128": 16,
-      "256": 12
+      "256": 12,
+      "512": 8
     }
   },
   "summaryBatches": [
     64,
     128,
-    256
+    256,
+    512
   ],
   "poolPlan": {
     "poolTokens": 3000000000,
@@ -16991,7 +17304,8 @@
     "fixedLearningRateByBatch": {
       "64": "1e-3",
       "128": "1e-3",
-      "256": "1e-3"
+      "256": "1e-3",
+      "512": "5e-4"
     },
     "initialWeightDecayByBatch": {
       "64": [
@@ -17005,12 +17319,17 @@
       "256": [
         "0.333",
         "0.1"
+      ],
+      "512": [
+        "1.0",
+        "0.333"
       ]
     },
     "epochOneSourceWeightDecayByBatch": {
       "64": "0.3",
       "128": "0.3",
-      "256": "0.333"
+      "256": "0.333",
+      "512": "1.0"
     },
     "rankMicrobatchSequences": 8,
     "gradientAccumulation": 1,
@@ -17029,6 +17348,11 @@
         "gpuCountPerNode": 8,
         "nodeCount": 4,
         "totalGpuCount": 32
+      },
+      "512": {
+        "gpuCountPerNode": 8,
+        "nodeCount": 8,
+        "totalGpuCount": 64
       }
     },
     "epochOneMode": "restore-predecay-model-optimizer-progress-reset-loader-on-new-2b",
@@ -17036,12 +17360,41 @@
     "sourceOptimalEpochByBatch": {
       "64": 20,
       "128": 16,
-      "256": 10
+      "256": 10,
+      "512": 8
     },
     "stopCeilingByBatch": {
       "64": 20,
       "128": 16,
-      "256": 12
+      "256": 12,
+      "512": 8
     }
+  },
+  "gpuTopology": {
+    "64": {
+      "gpuCountPerNode": 8,
+      "nodeCount": 1,
+      "gpuCount": 8,
+      "gradientAccumulation": 1
+    },
+    "128": {
+      "gpuCountPerNode": 8,
+      "nodeCount": 2,
+      "gpuCount": 16,
+      "gradientAccumulation": 1
+    },
+    "256": {
+      "gpuCountPerNode": 8,
+      "nodeCount": 4,
+      "gpuCount": 32,
+      "gradientAccumulation": 1
+    },
+    "512": {
+      "gpuCountPerNode": 8,
+      "nodeCount": 8,
+      "gpuCount": 64,
+      "gradientAccumulation": 1
+    },
+    "rankMicrobatchSequences": 8
   }
 }

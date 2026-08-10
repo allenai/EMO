@@ -4,20 +4,34 @@
 from __future__ import annotations
 
 import json
+import re
 from copy import deepcopy
 from decimal import Decimal
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA = ROOT / "reports" / "0802" / "data"
+REPORT_DIR = ROOT / "reports" / "0802"
+DATA = REPORT_DIR / "data"
 TARGETS = (1, 2, 4, 8, 12, 16, 20, 24, 32, 40, 48, 56, 64, 72, 80, 88)
 MODELS = {
-    "153m": "2e-3",
-    "474m": "2e-3",
-    "1b": "1e-3",
+    "153m": {
+        "rank_mb": 16,
+        "lr": {64: "2e-3", 128: "2e-3", 256: "2e-3", 512: "2e-3"},
+        "initial_wd": {64: ["0.1", "0.033"], 128: ["0.1", "0.033"], 256: ["0.033", "0.01"], 512: ["0.1", "0.033"]},
+    },
+    "474m": {
+        "rank_mb": 16,
+        "lr": {64: "2e-3", 128: "2e-3", 256: "2e-3", 512: "2e-3"},
+        "initial_wd": {64: ["0.1", "0.033"], 128: ["0.1", "0.033"], 256: ["0.1", "0.033"], 512: ["0.3", "0.1"]},
+    },
+    "1b": {
+        "rank_mb": 8,
+        "lr": {64: "1e-3", 128: "1e-3", 256: "1e-3", 512: "5e-4"},
+        "initial_wd": {64: ["0.3", "0.1"], 128: ["0.3", "0.1"], 256: ["0.333", "0.1"], 512: ["1.0", "0.333"]},
+    },
 }
-BATCHES = (64, 128, 256)
+BATCHES = (64, 128, 256, 512)
 
 
 def trusted_optimum(source: dict, batch: int, lr: str) -> tuple[int, Decimal]:
@@ -66,16 +80,60 @@ def write_report(path: Path, report: dict) -> None:
     )
 
 
+def repair_recovery_resume_checkpoints(report: dict) -> int:
+    """Repair stale target paths inherited from pre-success recovery attempts."""
+    repaired = 0
+    for sweep in report.get("batchSweeps", []):
+        if sweep.get("status") != "complete" or not sweep.get("recoveryOf"):
+            continue
+        retained = [int(step) for step in sweep.get("retainedPreDecaySteps", [])]
+        if not retained:
+            continue
+        target_step = retained[-1]
+        recovery_step = sweep.get("recoverySourceStep")
+        if recovery_step is not None and int(recovery_step) >= target_step:
+            continue
+        checkpoint = f"{sweep['output']}/step{target_step}"
+        if sweep.get("targetPreDecayCheckpoint") != checkpoint:
+            sweep["targetPreDecayCheckpoint"] = checkpoint
+            repaired += 1
+        result = sweep.get("results", {}).get(str(sweep.get("activeEpoch")))
+        if isinstance(result, dict) and result.get("resumeCheckpoint") != checkpoint:
+            result["resumeCheckpoint"] = checkpoint
+            repaired += 1
+    return repaired
+
+
+def refresh_html(model: str) -> None:
+    path = REPORT_DIR / f"wsd_batch_size_{model}_pool3b.html"
+    html = path.read_text()
+    headers = "".join(f"<th>BS {batch}</th>" for batch in BATCHES)
+    for first_header, body_id in (
+        ("Epoch", "validation-summary"),
+        ("Optimizer steps", "optimizer-step-summary"),
+        ("Epoch", "coordinate-summary"),
+    ):
+        html = re.sub(
+            rf'(<thead><tr><th>{re.escape(first_header)}</th>)'
+            rf'(?:<th>BS \d+</th>)+'
+            rf'(</tr></thead><tbody id="{body_id}">)',
+            rf'\1{headers}\2',
+            html,
+        )
+    path.write_text(html)
+
+
 def main() -> None:
-    for model, lr in MODELS.items():
+    for model, plan in MODELS.items():
         source_path = DATA / f"wsd_batch_size_{model}.json"
         report_path = DATA / f"wsd_batch_size_{model}_pool3b.json"
         source = json.loads(source_path.read_text())
         report = json.loads(report_path.read_text())
+        repaired = repair_recovery_resume_checkpoints(report)
         optimums: dict[str, int] = {}
         ceilings: dict[str, int] = {}
         for batch in BATCHES:
-            optimum, _ = trusted_optimum(source, batch, lr)
+            optimum, _ = trusted_optimum(source, batch, plan["lr"][batch])
             ceiling = next((target for target in TARGETS if target >= optimum), TARGETS[-1])
             optimums[str(batch)] = optimum
             ceilings[str(batch)] = ceiling
@@ -88,6 +146,32 @@ def main() -> None:
         }
         report["poolPlan"]["sourceOptimalEpochByBatch"] = optimums
         report["poolPlan"]["stopCeilingByBatch"] = ceilings
+        report["poolPlan"]["fixedLearningRateByBatch"] = {
+            str(batch): plan["lr"][batch] for batch in BATCHES
+        }
+        report["poolPlan"]["initialWeightDecayByBatch"] = {
+            str(batch): plan["initial_wd"][batch] for batch in BATCHES
+        }
+        report["poolPlan"]["epochOneSourceWeightDecayByBatch"] = {
+            str(batch): plan["initial_wd"][batch][0] for batch in BATCHES
+        }
+        report["poolPlan"]["gpuTopologyByBatch"] = {
+            str(batch): {
+                "gpuCountPerNode": min(batch // plan["rank_mb"], 8),
+                "nodeCount": max((batch // plan["rank_mb"]) // 8, 1),
+                "totalGpuCount": batch // plan["rank_mb"],
+            }
+            for batch in BATCHES
+        }
+        report["gpuTopology"] = {
+            str(batch): {
+                "gpuCountPerNode": min(batch // plan["rank_mb"], 8),
+                "nodeCount": max((batch // plan["rank_mb"]) // 8, 1),
+                "gpuCount": batch // plan["rank_mb"],
+                "gradientAccumulation": 1,
+            }
+            for batch in BATCHES
+        } | {"rankMicrobatchSequences": plan["rank_mb"]}
         report["batchTargetEpochs"] = {
             str(batch): [target for target in TARGETS if target <= ceilings[str(batch)]]
             for batch in BATCHES
@@ -95,11 +179,16 @@ def main() -> None:
         report["targetEpochs"] = sorted(
             {target for values in report["batchTargetEpochs"].values() for target in values}
         )
+        report["summaryBatches"] = list(BATCHES)
+        report["setup"] = report["setup"].replace(
+            "64, 128, and 256", "64, 128, 256, and 512"
+        )
         report["updated"] = "2026-08-10"
         write_report(report_path, report)
+        refresh_html(model)
         print(
             f"{model}: optimums={optimums} stopCeilings={ceilings} "
-            f"source={source_path.relative_to(ROOT)}"
+            f"repairedResumeFields={repaired} source={source_path.relative_to(ROOT)}"
         )
 
 

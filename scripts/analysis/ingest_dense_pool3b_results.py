@@ -156,8 +156,17 @@ def ingest(path: Path) -> list[dict]:
             "resultDatasets": result_datasets,
             "output": sweep["output"],
             "sourceCheckpoint": sweep["sourceCheckpoint"],
-            "resumeCheckpoint": sweep.get(
-                "targetPreDecayCheckpoint", f"{sweep['output']}/step{retained[-1]}"
+            # A successful recovery writes newly retained checkpoints under its
+            # own output directory.  Do not inherit a target path recorded on
+            # an older failed attempt: doing so makes the next frontier point
+            # at a directory that was never materialized.
+            "resumeCheckpoint": (
+                sweep["sourceCheckpoint"]
+                if (
+                    sweep.get("recoverySourceStep") is not None
+                    and int(sweep["recoverySourceStep"]) >= retained[-1]
+                )
+                else f"{sweep['output']}/step{retained[-1]}"
             ),
             "retainedPreDecaySteps": retained,
             "dataManifest": sweep.get("dataManifest"),

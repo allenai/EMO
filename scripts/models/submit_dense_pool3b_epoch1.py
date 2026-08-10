@@ -35,19 +35,19 @@ PREDECESSOR = dict(zip(TARGETS[1:], TARGETS[:-1]))
 WD_LADDER = tuple(Decimal(x) for x in ("0.01", "0.033", "0.1", "0.3", "0.333", "1.0"))
 MODELS = {
     "153m": {
-        "lr": {64: "2e-3", 128: "2e-3", 256: "2e-3"},
+        "lr": {64: "2e-3", 128: "2e-3", 256: "2e-3", 512: "2e-3"},
         "rank_mb": 16,
         "size": "153M",
         "report": "wsd_batch_size_153m_pool3b.json",
     },
     "474m": {
-        "lr": {64: "2e-3", 128: "2e-3", 256: "2e-3"},
+        "lr": {64: "2e-3", 128: "2e-3", 256: "2e-3", 512: "2e-3"},
         "rank_mb": 16,
         "size": "474M",
         "report": "wsd_batch_size_474m_pool3b.json",
     },
     "1b": {
-        "lr": {64: "1e-3", 128: "1e-3", 256: "1e-3"},
+        "lr": {64: "1e-3", 128: "1e-3", 256: "1e-3", 512: "5e-4"},
         "rank_mb": 8,
         "size": "1B",
         "report": "wsd_batch_size_1b_pool3b.json",
@@ -58,7 +58,7 @@ MODELS = {
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--model", choices=MODELS, required=True)
-    p.add_argument("--global-sequences", choices=(64, 128, 256), type=int, required=True)
+    p.add_argument("--global-sequences", choices=(64, 128, 256, 512), type=int, required=True)
     p.add_argument("--target-epoch", choices=TARGETS, type=int, default=1)
     p.add_argument("--weight-decay", required=True)
     p.add_argument("--source-checkpoint", required=True)
@@ -426,6 +426,20 @@ def audit_recovery(
         f"{failed['output']}/step{int(step)}"
         for step in failed.get("retainedPreDecaySteps", [])
     }
+    # A no-step preflight failure may itself have been caused by stale
+    # provenance that named a checkpoint under an older failed recovery output.
+    # Also allow the currently selected predecessor's exact, report-verified
+    # resume checkpoint. This stays on the same model/BS/LR/WD target tuple.
+    if a.target_epoch > 1:
+        _, _, _, selected_predecessor_result = selected_3b(
+            report,
+            a.global_sequences,
+            PREDECESSOR[a.target_epoch],
+            lr_for(a.model, a.global_sequences),
+        )
+        selected_checkpoint = selected_predecessor_result.get("resumeCheckpoint")
+        if selected_checkpoint:
+            allowed_checkpoints.add(selected_checkpoint)
     if a.source_checkpoint not in allowed_checkpoints:
         raise SystemExit(
             "recovery source is neither the original exact predecessor nor one "
@@ -795,11 +809,6 @@ def register(a: argparse.Namespace, experiment: str, output: str) -> None:
         else all_retained
     )
     target_pre_decay = (
-        predecessors[0].get(
-            "targetPreDecayCheckpoint", f"{output}/step{all_retained[-1]}"
-        )
-        if retrying_same_recovery_source
-        else
         a.source_checkpoint
         if recovery_inside_target
         and resume_step is not None

@@ -19,20 +19,20 @@ PLANS = {
     "153m": {
         "label": "153M",
         "rankMb": 16,
-        "lr": {"64": "2e-3", "128": "2e-3", "256": "2e-3"},
-        "initialWd": {"64": ["0.1", "0.033"], "128": ["0.1", "0.033"], "256": ["0.033", "0.01"]},
+        "lr": {"64": "2e-3", "128": "2e-3", "256": "2e-3", "512": "2e-3"},
+        "initialWd": {"64": ["0.1", "0.033"], "128": ["0.1", "0.033"], "256": ["0.033", "0.01"], "512": ["0.1", "0.033"]},
     },
     "474m": {
         "label": "474M",
         "rankMb": 16,
-        "lr": {"64": "2e-3", "128": "2e-3", "256": "2e-3"},
-        "initialWd": {"64": ["0.1", "0.033"], "128": ["0.1", "0.033"], "256": ["0.1", "0.033"]},
+        "lr": {"64": "2e-3", "128": "2e-3", "256": "2e-3", "512": "2e-3"},
+        "initialWd": {"64": ["0.1", "0.033"], "128": ["0.1", "0.033"], "256": ["0.1", "0.033"], "512": ["0.3", "0.1"]},
     },
     "1b": {
         "label": "1.5B",
         "rankMb": 8,
-        "lr": {"64": "1e-3", "128": "1e-3", "256": "1e-3"},
-        "initialWd": {"64": ["0.3", "0.1"], "128": ["0.3", "0.1"], "256": ["0.333", "0.1"]},
+        "lr": {"64": "1e-3", "128": "1e-3", "256": "1e-3", "512": "5e-4"},
+        "initialWd": {"64": ["0.3", "0.1"], "128": ["0.3", "0.1"], "256": ["0.333", "0.1"], "512": ["1.0", "0.333"]},
     },
 }
 
@@ -72,8 +72,8 @@ def main() -> None:
         }
         report["batchSweeps"] = []
         report["targetEpochs"] = TARGETS
-        report["batchTargetEpochs"] = {batch: TARGETS for batch in ("64", "128", "256")}
-        report["summaryBatches"] = [64, 128, 256]
+        report["batchTargetEpochs"] = {batch: TARGETS for batch in ("64", "128", "256", "512")}
+        report["summaryBatches"] = [64, 128, 256, 512]
         report["optimizerStepComparisons"] = []
         report.pop("pausedBatches", None)
         report["gpuTopology"] = {
@@ -83,7 +83,7 @@ def main() -> None:
                 "gpuCount": int(batch) // plan["rankMb"],
                 "gradientAccumulation": 1,
             }
-            for batch in ("64", "128", "256")
+            for batch in ("64", "128", "256", "512")
         } | {"rankMicrobatchSequences": plan["rankMb"]}
         report["poolPlan"] = {
             "poolTokens": 3_000_000_000,
@@ -104,7 +104,7 @@ def main() -> None:
                     "nodeCount": max((int(batch) // plan["rankMb"]) // 8, 1),
                     "totalGpuCount": int(batch) // plan["rankMb"],
                 }
-                for batch in ("64", "128", "256")
+                for batch in ("64", "128", "256", "512")
             },
             "epochOneMode": "restore-predecay-model-optimizer-progress-reset-loader-on-new-2b",
             "laterEpochMode": "exact-coordinate-resume-reset-loader-and-reshuffle-full-3b",
@@ -118,7 +118,7 @@ def main() -> None:
             f"data/wsd_batch_size_{model}.js",
             f"data/wsd_batch_size_{model}_pool3b.js",
         )
-        batch_headers = "".join(f"<th>BS {batch}</th>" for batch in (64, 128, 256))
+        batch_headers = "".join(f"<th>BS {batch}</th>" for batch in (64, 128, 256, 512))
         for first_header, body_id in (
             ("Epoch", "validation-summary"),
             ("Optimizer steps", "optimizer-step-summary"),
