@@ -595,13 +595,25 @@ def build(
     recovery_inside_target = bool(
         failed_output and a.source_checkpoint.startswith(f"{failed_output}/step")
     )
+    retrying_same_recovery_source = bool(
+        a.recover_failed_experiment
+        and predecessor.get("recoveryOf")
+        and a.source_checkpoint == predecessor.get("sourceCheckpoint")
+    )
     resume_step = checkpoint_step(a.source_checkpoint)
     fixed_steps = (
+        [int(step) for step in predecessor.get("newRetainedPreDecaySteps", all_retained)]
+        if retrying_same_recovery_source
+        else
         [step for step in all_retained if step > int(resume_step)]
         if recovery_inside_target and resume_step is not None
         else all_retained
     )
-    reset_loader = not recovery_inside_target
+    reset_loader = (
+        bool(predecessor.get("dataLoaderReset"))
+        if retrying_same_recovery_source
+        else not recovery_inside_target
+    )
     data_manifest = (
         predecessor.get("dataManifest", EXTENSION if a.target_epoch == 1 else FULL_POOL)
         if a.recover_failed_experiment
@@ -763,20 +775,40 @@ def register(a: argparse.Namespace, experiment: str, output: str) -> None:
         a.recover_failed_experiment
         and a.source_checkpoint.startswith(f"{predecessors[0]['output']}/step")
     )
+    retrying_same_recovery_source = bool(
+        a.recover_failed_experiment
+        and predecessors[0].get("recoveryOf")
+        and a.source_checkpoint == predecessors[0].get("sourceCheckpoint")
+    )
     resume_step = checkpoint_step(a.source_checkpoint)
     new_retained = (
+        [
+            int(step)
+            for step in predecessors[0].get("newRetainedPreDecaySteps", all_retained)
+        ]
+        if retrying_same_recovery_source
+        else
         [step for step in all_retained if step > int(resume_step)]
         if recovery_inside_target and resume_step is not None
         else all_retained
     )
     target_pre_decay = (
+        predecessors[0].get(
+            "targetPreDecayCheckpoint", f"{output}/step{all_retained[-1]}"
+        )
+        if retrying_same_recovery_source
+        else
         a.source_checkpoint
         if recovery_inside_target
         and resume_step is not None
         and resume_step >= all_retained[-1]
         else f"{output}/step{all_retained[-1]}"
     )
-    data_loader_reset = not recovery_inside_target
+    data_loader_reset = (
+        bool(predecessors[0].get("dataLoaderReset"))
+        if retrying_same_recovery_source
+        else not recovery_inside_target
+    )
     report["batchSweeps"].append({
         "batchSequences": a.global_sequences,
         "globalBatchTokens": a.global_sequences * SEQ,
