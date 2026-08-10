@@ -1801,7 +1801,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 4,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZNFSEMXPV6B93T9PCQWT4M9",
@@ -1835,9 +1835,9 @@
       "jobStates": [
         {
           "job": "01KZNFSESJT674NG2QQQGW4HGD",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T09:24:19.229278Z",
-          "started": null,
+          "started": "2026-08-10T09:35:52.857682Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -1845,9 +1845,9 @@
         },
         {
           "job": "01KZNFSEXGYD4CDQ0HFFZNQY28",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T09:24:19.229278Z",
-          "started": null,
+          "started": "2026-08-10T09:35:53.824733Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -1855,7 +1855,8 @@
         }
       ],
       "job": "01KZNFSESJT674NG2QQQGW4HGD",
-      "resultDataset": "01KZNFSEN34TSBTB2ETQSDN88X"
+      "resultDataset": "01KZNFSEN34TSBTB2ETQSDN88X",
+      "activeWandb": "kpee5o1l"
     },
     {
       "batchSequences": 64,
@@ -1869,7 +1870,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 1,
       "gpuCount": 8,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 4,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZNFSFZMF6C644BEK0D3R9P5",
@@ -1902,9 +1903,9 @@
       "jobStates": [
         {
           "job": "01KZNFSG6BNEG57ET3H6JADBZA",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T09:24:20.596552Z",
-          "started": null,
+          "started": "2026-08-10T09:35:34.564344Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -1912,7 +1913,8 @@
         }
       ],
       "job": "01KZNFSG6BNEG57ET3H6JADBZA",
-      "resultDataset": "01KZNFSFZRN50CA6FDZ5K4M7J2"
+      "resultDataset": "01KZNFSFZRN50CA6FDZ5K4M7J2",
+      "activeWandb": "hfkagc4a"
     }
   ],
   "baseline1b": {
