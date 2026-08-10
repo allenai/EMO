@@ -2,7 +2,25 @@
   "updated": "2026-08-10",
   "title": "0802 Step 1-1 \u00b7 Dense 1.5B \u00b7 nested 3B pool",
   "setup": "Dense 1.5B; nested 3B pool = sealed 1B + disjoint new 2B; sequence length 4096; global batches 64, 128, 256, and 512 sequences.",
-  "selection": "LR is frozen to the selected 1B-pool value for the same model and batch. At E1 branch the exact selected 1B pre-decay model/optimizer checkpoint: continue once at the selected WD and once with WD lowered by one ladder step. At later frontiers compare the selected WD with at most one higher ladder step, capped by the same-epoch 1B WD. Stop on validation-CE non-improvement or at the same-model/same-batch 1B optimum.",
+  "selection": "LR is frozen to the selected 1B-pool value for the same model and batch. Finish every WD comparison already registered at the 2026-08-10 policy frontier, select by validation CE with lower WD winning exact ties, then freeze that WD and run exactly one coordinate at every later frontier. Stop on validation-CE non-improvement or at the same-model/same-batch 1B optimum.",
+  "wdFreezePolicy": {
+    "effective": "2026-08-10",
+    "mode": "freeze-after-registered-policy-frontier",
+    "policyFrontierByBatch": {
+      "64": 8,
+      "128": 8,
+      "256": 12,
+      "512": 2
+    },
+    "frozenContinuationWdByBatch": {},
+    "laterFrontierCoordinatesPerBatch": 1
+  },
+  "gpuBudgetPolicy": {
+    "maxRunningGpus": 128,
+    "countActualRunningReplicaJobs": true,
+    "includePendingExposureBeforeSubmission": true,
+    "grandfatherRegisteredPolicyFrontiers": true
+  },
   "integerSearchFrontiers": [
     1,
     2,

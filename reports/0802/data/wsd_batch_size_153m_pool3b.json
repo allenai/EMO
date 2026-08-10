@@ -1,8 +1,28 @@
 {
-  "updated": "2026-08-09",
+  "updated": "2026-08-10",
   "title": "0802 Step 1-1 \u00b7 Dense 153M \u00b7 nested 3B pool",
   "setup": "Dense 153M; nested 3B pool = sealed 1B + disjoint new 2B; sequence length 4096; global batches 64, 128, 256, and 512 sequences.",
-  "selection": "LR is frozen to the selected 1B-pool value for the same model and batch. At E1 branch the exact selected 1B pre-decay model/optimizer checkpoint: continue once at the selected WD and once with WD lowered by one ladder step. At later frontiers compare the selected WD with at most one higher ladder step, capped by the same-epoch 1B WD. Stop on validation-CE non-improvement or at the same-model/same-batch 1B optimum.",
+  "selection": "LR is frozen to the selected 1B-pool value for the same model and batch. Finish every WD comparison already registered at the 2026-08-10 policy frontier, select by validation CE with lower WD winning exact ties, then freeze that WD and run exactly one coordinate at every later frontier. Stop on validation-CE non-improvement or at the same-model/same-batch 1B optimum.",
+  "wdFreezePolicy": {
+    "effective": "2026-08-10",
+    "mode": "freeze-after-registered-policy-frontier",
+    "policyFrontierByBatch": {
+      "64": 12,
+      "128": 16,
+      "256": 32,
+      "512": 4
+    },
+    "frozenContinuationWdByBatch": {
+      "128": "0.1"
+    },
+    "laterFrontierCoordinatesPerBatch": 1
+  },
+  "gpuBudgetPolicy": {
+    "maxRunningGpus": 128,
+    "countActualRunningReplicaJobs": true,
+    "includePendingExposureBeforeSubmission": true,
+    "grandfatherRegisteredPolicyFrontiers": true
+  },
   "selectionPolicy": {
     "allowAllCompletedCoordinates": true,
     "nondecreasingWd": true,
@@ -6291,7 +6311,8 @@
         }
       ],
       "job": "01KZPH108Y8CQD5ATMYDEEYTGH",
-      "resultDataset": "01KZPH105HZ4BM3S1ZJ8PKM23W"
+      "resultDataset": "01KZPH105HZ4BM3S1ZJ8PKM23W",
+      "activeWandb": "onearult"
     },
     {
       "batchSequences": 256,
@@ -6305,7 +6326,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 32,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPH16VR914PM382KVXTSKMX",
@@ -6352,9 +6373,9 @@
       "jobStates": [
         {
           "job": "01KZPH16ZNTQWHX5WC9RNVAMXM",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T19:05:16.407914Z",
-          "started": null,
+          "started": "2026-08-10T19:31:50.49767Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -6362,9 +6383,9 @@
         },
         {
           "job": "01KZPH1731FNEM3J8FPTZBZ6RN",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T19:05:16.407914Z",
-          "started": null,
+          "started": "2026-08-10T19:31:50.446337Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -6372,7 +6393,8 @@
         }
       ],
       "job": "01KZPH16ZNTQWHX5WC9RNVAMXM",
-      "resultDataset": "01KZPH16VXMZZCMWMA5W76H06A"
+      "resultDataset": "01KZPH16VXMZZCMWMA5W76H06A",
+      "activeWandb": "2p4q8mbf"
     },
     {
       "batchSequences": 256,
