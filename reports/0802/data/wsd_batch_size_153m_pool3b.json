@@ -114,7 +114,8 @@
     ],
     "512": [
       1,
-      2
+      2,
+      4
     ]
   },
   "optimizerStepComparisons": [],
@@ -4161,7 +4162,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 20,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZP4F73EYYZZRWJV0QTC8WF5",
@@ -4200,9 +4201,9 @@
       "jobStates": [
         {
           "job": "01KZP4F78VPE2FC77FSBAF6QQK",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T15:25:43.918425Z",
-          "started": null,
+          "started": "2026-08-10T15:27:43.089035Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4210,9 +4211,9 @@
         },
         {
           "job": "01KZP4F7DPTTX6XVW14AMYWA9N",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T15:25:43.918425Z",
-          "started": null,
+          "started": "2026-08-10T15:27:42.451144Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4220,7 +4221,8 @@
         }
       ],
       "job": "01KZP4F78VPE2FC77FSBAF6QQK",
-      "resultDataset": "01KZP4F73KF4XWFAX11JEM7APQ"
+      "resultDataset": "01KZP4F73KF4XWFAX11JEM7APQ",
+      "activeWandb": "1b268b6r"
     },
     {
       "batchSequences": 256,
@@ -4234,7 +4236,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 20,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZP4FBD7DY1ACBF482GW2KNB",
@@ -4273,9 +4275,9 @@
       "jobStates": [
         {
           "job": "01KZP4FC6K6C4Z5QG5MPTP1ZC1",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T15:25:48.327122Z",
-          "started": null,
+          "started": "2026-08-10T15:39:17.665586Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4283,9 +4285,9 @@
         },
         {
           "job": "01KZP4FCFZJC1Z494F63MA737F",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T15:25:48.327122Z",
-          "started": null,
+          "started": "2026-08-10T15:39:18.082669Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4293,7 +4295,8 @@
         }
       ],
       "job": "01KZP4FC6K6C4Z5QG5MPTP1ZC1",
-      "resultDataset": "01KZP4FBDCFR263VT8DP3ZP9M1"
+      "resultDataset": "01KZP4FBDCFR263VT8DP3ZP9M1",
+      "activeWandb": "fckuvplb"
     }
   ],
   "summaryBatches": [
@@ -12238,8 +12241,8 @@
         "job": "01KZNY1GQ1H2X5P0PNYM80VBF1",
         "resultDataset": "01KZNY1GK2J8T63SMXYN04N7FB",
         "activeWandb": "mf19mbji",
-        "progressPercent": 93,
-        "progressStep": 227810,
+        "progressPercent": 97,
+        "progressStep": 238195,
         "progressTotalSteps": 244141
       },
       {
@@ -12252,7 +12255,7 @@
         "rankMicrobatchSequences": 16,
         "gradientAccumulation": 1,
         "gpuCount": 8,
-        "status": "running",
+        "status": "complete",
         "activeEpoch": 56,
         "search": "small-model-adaptive-coordinate",
         "beaker": "01KZNZW1F7MPYJX7D3QFR7E5DJ",
@@ -12268,13 +12271,66 @@
           94414,
           96130
         ],
-        "results": {},
-        "reason": "Adaptive small-model Step 1-1 coordinate search; exact-coordinate resumes, empirically tuned per-batch WD cap, and nondecreasing-WD frontier policy apply.",
+        "results": {
+          "56": {
+            "epoch": 56,
+            "lr": "2e-3",
+            "wd": "0.3",
+            "status": "complete",
+            "job": "01KZNZW1K7CQ39F5F8E0S5A4SW",
+            "beaker": "01KZNZW1F7MPYJX7D3QFR7E5DJ",
+            "resultDataset": "01KZNZW1FDC5P6YM8RAG78K47S",
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs128_e56_lr2e-3_wd0.3_warmup192_sm0810bs128wd03e56a",
+            "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs128_e48_lr2e-3_wd0.3_warmup192_sm0810bs128wd03e48a/step82397",
+            "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs128_e56_lr2e-3_wd0.3_warmup192_sm0810bs128wd03e56a/step96130",
+            "retainedPreDecaySteps": [
+              84114,
+              85830,
+              87546,
+              89264,
+              90980,
+              92696,
+              94414,
+              96130
+            ],
+            "train": 3.236,
+            "validation": 3.363,
+            "wandb": "qr5n9eg2",
+            "downstream": {
+              "arc_challenge": 24.08,
+              "arc_easy": 49.3,
+              "boolq": 59.36,
+              "csqa": 40.62,
+              "hellaswag": 31.85,
+              "openbookqa": 21.8,
+              "piqa": 64.25,
+              "socialiqa": 41.81,
+              "winogrande": 49.72
+            },
+            "downstreamBpb": {
+              "arc_challenge": 1.532,
+              "arc_easy": 1.56,
+              "boolq": 1.819,
+              "csqa": 1.598,
+              "hellaswag": 0.9802,
+              "openbookqa": 1.775,
+              "piqa": 1.293,
+              "socialiqa": 1.363,
+              "winogrande": 1.578
+            },
+            "acc": 31.85,
+            "bpb": 0.9802,
+            "avg8Bpb": 1.4599,
+            "c4": 3.363,
+            "reason": "Completed successfully with full held-out DCLM validation and all nine downstream evaluations; the exact pre-decay checkpoint is retained."
+          }
+        },
+        "reason": "Completed successfully with full held-out DCLM validation and all nine downstream evaluations; the exact pre-decay checkpoint is retained.",
         "job": "01KZNZW1K7CQ39F5F8E0S5A4SW",
         "resultDataset": "01KZNZW1FDC5P6YM8RAG78K47S",
         "activeWandb": "qr5n9eg2",
-        "progressPercent": 99,
-        "progressStep": 105880,
+        "progressPercent": 100,
+        "progressStep": 106812,
         "progressTotalSteps": 106812
       },
       {
@@ -12308,8 +12364,8 @@
         "job": "01KZP1VP9R3605E1DKJZTRK9B3",
         "resultDataset": "01KZP1VP62B2CB6XEYRZZAWY3N",
         "activeWandb": "i75joq37",
-        "progressPercent": 88,
-        "progressStep": 134930,
+        "progressPercent": 95,
+        "progressStep": 144960,
         "progressTotalSteps": 152588
       },
       {
@@ -12322,7 +12378,7 @@
         "rankMicrobatchSequences": 16,
         "gradientAccumulation": 4,
         "gpuCount": 8,
-        "status": "running",
+        "status": "complete",
         "activeEpoch": 4,
         "search": "small-model-adaptive-coordinate",
         "beaker": "01KZP38KQDG3CKZTF2KA5GQQ7E",
@@ -12332,14 +12388,127 @@
           1287,
           1716
         ],
-        "results": {},
-        "reason": "Adaptive small-model Step 1-1 coordinate search; exact-coordinate resumes, empirically tuned per-batch WD cap, and nondecreasing-WD frontier policy apply.",
+        "results": {
+          "4": {
+            "epoch": 4,
+            "lr": "2e-3",
+            "wd": "0.1",
+            "status": "complete",
+            "job": "01KZP38KY440SHDCPG0Y6CRTB9",
+            "beaker": "01KZP38KQDG3CKZTF2KA5GQQ7E",
+            "resultDataset": "01KZP38KQJEVAV54V92JVKZNT2",
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs512_e4_lr2e-3_wd0.1_warmup48_sm0810bs512e4a",
+            "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs512_e2_lr2e-3_wd0.1_warmup48_sm0810bs512e2replayb/step858",
+            "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs512_e4_lr2e-3_wd0.1_warmup48_sm0810bs512e4a/step1716",
+            "retainedPreDecaySteps": [
+              1287,
+              1716
+            ],
+            "train": 3.707,
+            "validation": 3.706,
+            "wandb": "680bb404",
+            "downstream": {
+              "arc_challenge": 21.740000000000002,
+              "arc_easy": 42.46,
+              "boolq": 59.97,
+              "csqa": 29.32,
+              "hellaswag": 26.790000000000003,
+              "openbookqa": 21.6,
+              "piqa": 59.14,
+              "socialiqa": 39.56,
+              "winogrande": 49.33
+            },
+            "downstreamBpb": {
+              "arc_challenge": 1.749,
+              "arc_easy": 1.902,
+              "boolq": 1.932,
+              "csqa": 1.817,
+              "hellaswag": 1.087,
+              "openbookqa": 1.928,
+              "piqa": 1.425,
+              "socialiqa": 1.674,
+              "winogrande": 1.657
+            },
+            "acc": 26.790000000000003,
+            "bpb": 1.087,
+            "avg8Bpb": 1.654875,
+            "c4": 3.706,
+            "reason": "Completed successfully with full held-out DCLM validation and all nine downstream evaluations; the exact pre-decay checkpoint is retained."
+          }
+        },
+        "reason": "Completed successfully with full held-out DCLM validation and all nine downstream evaluations; the exact pre-decay checkpoint is retained.",
         "job": "01KZP38KY440SHDCPG0Y6CRTB9",
         "resultDataset": "01KZP38KQJEVAV54V92JVKZNT2",
         "activeWandb": "680bb404",
-        "progressPercent": 71,
-        "progressStep": 1355,
+        "progressPercent": 100,
+        "progressStep": 1908,
         "progressTotalSteps": 1908
+      },
+      {
+        "batchSequences": 512,
+        "globalBatchTokens": 2097152,
+        "contextLength": 4096,
+        "lr": "2e-3",
+        "wd": "0.1",
+        "warmupSteps": 48,
+        "rankMicrobatchSequences": 16,
+        "gradientAccumulation": 4,
+        "gpuCount": 8,
+        "status": "running",
+        "activeEpoch": 8,
+        "search": "small-model-adaptive-coordinate",
+        "beaker": "01KZP4Y882ZMNEX3H7V366969P",
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs512_e8_lr2e-3_wd0.1_warmup48_sm0810bs512e8a",
+        "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs512_e4_lr2e-3_wd0.1_warmup48_sm0810bs512e4a/step1716",
+        "retainedPreDecaySteps": [
+          2146,
+          2575,
+          3003,
+          3432
+        ],
+        "results": {},
+        "reason": "Adaptive small-model Step 1-1 coordinate search; exact-coordinate resumes, empirically tuned per-batch WD cap, and nondecreasing-WD frontier policy apply.",
+        "job": "01KZP4Y8BTWB4XWC4S68608DZZ",
+        "resultDataset": "01KZP4Y8879PWGYRV7FANQZE0H",
+        "activeWandb": "xkiqeluz",
+        "progressPercent": 62,
+        "progressStep": 2390,
+        "progressTotalSteps": 3815
+      },
+      {
+        "batchSequences": 128,
+        "globalBatchTokens": 524288,
+        "contextLength": 4096,
+        "lr": "2e-3",
+        "wd": "0.3",
+        "warmupSteps": 192,
+        "rankMicrobatchSequences": 16,
+        "gradientAccumulation": 1,
+        "gpuCount": 8,
+        "status": "running",
+        "activeEpoch": 64,
+        "search": "small-model-adaptive-coordinate",
+        "beaker": "01KZP4Y9N9W7M0F4NSHXB1987V",
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs128_e64_lr2e-3_wd0.3_warmup192_sm0810bs128wd03e64a",
+        "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs128_e56_lr2e-3_wd0.3_warmup192_sm0810bs128wd03e56a/step96130",
+        "retainedPreDecaySteps": [
+          97846,
+          99563,
+          101280,
+          102996,
+          104713,
+          106429,
+          108146,
+          109863
+        ],
+        "results": {},
+        "reason": "Adaptive small-model Step 1-1 coordinate search; exact-coordinate resumes, empirically tuned per-batch WD cap, and nondecreasing-WD frontier policy apply.",
+        "job": "01KZP4Y9S8S6CYASREBE5696TF",
+        "resultDataset": "01KZP4Y9NHTTKNQ24Z9ZMSBKGE",
+        "activeWandb": "pa9rlqne",
+        "progressPercent": 80,
+        "progressStep": 97840,
+        "progressTotalSteps": 122071
       }
     ],
     "healthAudit": {
@@ -12353,13 +12522,13 @@
       "64": 56,
       "128": 72,
       "256": 48,
-      "512": 2
+      "512": 4
     },
     "stopCeilingByBatch": {
       "64": 56,
       "128": 72,
       "256": 48,
-      "512": 2
+      "512": 4
     }
   },
   "poolPlan": {
@@ -12428,13 +12597,13 @@
       "64": 56,
       "128": 72,
       "256": 48,
-      "512": 2
+      "512": 4
     },
     "stopCeilingByBatch": {
       "64": 56,
       "128": 72,
       "256": 48,
-      "512": 2
+      "512": 4
     }
   }
 }
