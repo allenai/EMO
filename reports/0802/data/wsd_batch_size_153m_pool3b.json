@@ -145,6 +145,37 @@
       "resultDataset": "01KZMQK69D0B52NHE06CZ7Q9RF",
       "reason": "Infrastructure-only failure before repository checkout: the submitted GIT_REF was not a real remote commit. No training process, W&B run, optimizer step, or checkpoint was created.",
       "results": {}
+    },
+    {
+      "batchSequences": 64,
+      "globalBatchTokens": 262144,
+      "contextLength": 4096,
+      "lr": "2e-3",
+      "wd": "0.1",
+      "warmupSteps": 384,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 4,
+      "nodeCount": 1,
+      "gpuCount": 4,
+      "status": "failed",
+      "activeEpoch": 1,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZMQS36GFXP52S00MDXXY67W",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs64_e1_lr2e-3_wd0.1_warmup384_p3e1-r02",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs64_e1_lr2e-3_wd0.1_warmup384_sm0909a/step3432",
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_extension_1b_to_3b.json",
+      "dataLoaderReset": true,
+      "retainedPreDecaySteps": [
+        10300
+      ],
+      "actualTargetTokens": 3000000000,
+      "revision": "d230704849587285c7544900429d92044d0ba817",
+      "recoveryOf": "01KZMQK697SS9H15BY47EYYZWJ",
+      "job": "01KZMQS3BEP8GJSPZEXWTY6XHQ",
+      "resultDataset": "01KZMQS36RJ5AFYMZKNE7B5G3X",
+      "reason": "Infrastructure-only launcher failure after all pool/source/config guards passed: Gantry's torchrun mode required a two-argument task command, but received the training script directly. No training process, W&B run, optimizer step, or checkpoint was created.",
+      "results": {}
     }
   ],
   "summaryBatches": [

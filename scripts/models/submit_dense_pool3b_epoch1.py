@@ -241,11 +241,13 @@ def audit(
         )
     ]
     if duplicates:
-        if (
-            len(duplicates) != 1
-            or duplicates[0].get("status") != "failed"
-            or duplicates[0].get("beaker") != a.recover_failed_experiment
-        ):
+        live = [s for s in duplicates if s.get("status") != "failed"]
+        recovered = [
+            s for s in duplicates
+            if s.get("status") == "failed"
+            and s.get("beaker") == a.recover_failed_experiment
+        ]
+        if live or len(recovered) != 1:
             raise SystemExit("refusing duplicate registered E1 tuple")
     elif a.recover_failed_experiment:
         raise SystemExit("recovery experiment does not match a registered failed tuple")
@@ -312,7 +314,35 @@ def build(
         shlex.join(["python", script, name, "--dry-run", *args]),
     ]
     gpus_per_node, nodes, _ = topology(a.model, a.global_sequences)
-    task["arguments"] = [script, name, *args]
+    preflight = "\n".join(checks[1:])
+    if nodes == 1:
+        launch = (
+            'torchrun --nproc-per-node="$BEAKER_ASSIGNED_GPU_COUNT" '
+            + shlex.join([script, name, *args])
+        )
+    else:
+        launch = (
+            'torchrun '
+            '--nnodes="$BEAKER_REPLICA_COUNT:$BEAKER_REPLICA_COUNT" '
+            '--nproc-per-node="$BEAKER_ASSIGNED_GPU_COUNT" '
+            '--rdzv-id="$GANTRY_RDZV_ID" '
+            '--rdzv-backend=static '
+            '--rdzv-endpoint="$BEAKER_LEADER_REPLICA_HOSTNAME:$GANTRY_RDZV_PORT" '
+            '--node-rank="$BEAKER_REPLICA_RANK" '
+            '--rdzv-conf="read_timeout=420" '
+            + shlex.join([script, name, *args])
+        )
+    task["arguments"] = [
+        "bash",
+        "-lc",
+        (
+            'set -euo pipefail\n'
+            'if [ "${BEAKER_REPLICA_RANK:-0}" = 0 ]; then\n'
+            f'{preflight}\n'
+            'fi\n'
+            f'{launch}'
+        ),
+    ]
     blocked_env = {
         "GANTRY_POST_SETUP_CMD",
         "GANTRY_RDZV_ID",
@@ -330,8 +360,6 @@ def build(
     else:
         task["envVars"].append({"name": "GIT_REF", "value": a.revision})
     task["envVars"] += [
-        {"name": "GANTRY_POST_SETUP_CMD", "value": "\n".join(checks)},
-        {"name": "GANTRY_USE_TORCHRUN", "value": "1"},
         {"name": "NUM_NODES", "value": str(nodes)},
     ]
     if nodes > 1:
