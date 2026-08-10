@@ -1742,7 +1742,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "pending",
+      "status": "failed",
       "activeEpoch": 2,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZNJ7C8KQPREG4B0MYK43AGT",
@@ -1785,17 +1785,19 @@
         },
         {
           "job": "01KZNJ7CGEX12SWNTHN0RA7BTD",
-          "state": "running",
+          "state": "canceled",
           "created": "2026-08-10T10:06:52.691485Z",
           "started": "2026-08-10T10:10:02.821424Z",
-          "finalized": null,
+          "finalized": "2026-08-10T10:10:54.784412Z",
           "exitCode": 143,
           "reason": "job \"01KZNJ7CCZKVSWD9HWZW52F243\" from sibling task \"01KZNJ7C8W0384BF5TDC0DZ31Q\" failed with propagate-failure enabled",
           "resultDataset": "01KZNJ7CD8F3JN6GV5G39H3XJT"
         }
       ],
       "job": "01KZNJ7CCZKVSWD9HWZW52F243",
-      "resultDataset": "01KZNJ7C8ZAVJN7WXCP4T25CNC"
+      "resultDataset": "01KZNJ7C8ZAVJN7WXCP4T25CNC",
+      "failureClass": "infrastructure",
+      "failureReason": "01KZNJ7CCZKVSWD9HWZW52F243: exit 1; 01KZNJ7CGEX12SWNTHN0RA7BTD: job \"01KZNJ7CCZKVSWD9HWZW52F243\" from sibling task \"01KZNJ7C8W0384BF5TDC0DZ31Q\" failed with propagate-failure enabled"
     },
     {
       "batchSequences": 64,
