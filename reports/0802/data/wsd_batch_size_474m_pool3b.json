@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-09",
+  "updated": "2026-08-10",
   "title": "0802 Step 1-1 \u00b7 Dense 474M \u00b7 nested 3B pool",
   "setup": "Dense 474M; nested 3B pool = sealed 1B + disjoint new 2B; sequence length 4096; global batches 64, 128, 256, and 512 sequences.",
   "selection": "LR is frozen to the selected 1B-pool value for the same model and batch. At E1 branch the exact selected 1B pre-decay model/optimizer checkpoint: continue once at the selected WD and once with WD lowered by one ladder step. At later frontiers compare the selected WD with at most one higher ladder step, capped by the same-epoch 1B WD. Stop on validation-CE non-improvement or at the same-model/same-batch 1B optimum.",
@@ -10608,8 +10608,8 @@
         "job": "01KZP1YJWNBJNNJ8A1KXNS489N",
         "resultDataset": "01KZP1YJSC1BP0PEYYXH9GGQZT",
         "activeWandb": "k9xva2i0",
-        "progressPercent": 93,
-        "progressStep": 35630,
+        "progressPercent": 99,
+        "progressStep": 38135,
         "progressTotalSteps": 38147
       },
       {
@@ -10731,8 +10731,8 @@
         "job": "01KZNZZC7TCEEFR9WSKJQAWDPW",
         "resultDataset": "01KZNZZBWA74YGXEP76T6T671T",
         "activeWandb": "bgs3ag6c",
-        "progressPercent": 84,
-        "progressStep": 103525,
+        "progressPercent": 89,
+        "progressStep": 108650,
         "progressTotalSteps": 122071
       }
     ],

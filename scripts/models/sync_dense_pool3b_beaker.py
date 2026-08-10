@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shlex
 import subprocess
 from pathlib import Path
 
@@ -17,9 +18,23 @@ REPORTS = {
 WANDB_RE = re.compile(r"wandb\.ai/ai2-llm/sewonm-icsl/runs/([a-z0-9]+)")
 
 
+SSH_HOST: str | None = None
+
+
 def experiment(experiment_id: str) -> dict:
+    command = ["beaker", "experiment", "get", experiment_id, "--format", "json"]
+    if SSH_HOST:
+        command = [
+            "ssh",
+            "-o",
+            "BatchMode=yes",
+            "-o",
+            "ConnectTimeout=15",
+            SSH_HOST,
+            shlex.join(command),
+        ]
     result = subprocess.run(
-        ["beaker", "experiment", "get", experiment_id, "--format", "json"],
+        command,
         check=True,
         text=True,
         stdout=subprocess.PIPE,
@@ -91,7 +106,7 @@ def sync(path: Path) -> int:
     report = json.loads(path.read_text())
     changed = 0
     for sweep in report.get("batchSweeps", []):
-        if not sweep.get("beaker") or sweep.get("status") == "complete":
+        if not sweep.get("beaker") or sweep.get("status") in {"complete", "failed"}:
             continue
         payload = experiment(sweep["beaker"])
         jobs = payload.get("jobs", [])
@@ -169,9 +184,15 @@ def sync(path: Path) -> int:
 
 
 def main() -> None:
+    global SSH_HOST
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", choices=tuple(REPORTS))
+    parser.add_argument(
+        "--ssh-host",
+        help="Query Beaker through this authenticated SSH host.",
+    )
     args = parser.parse_args()
+    SSH_HOST = args.ssh_host
     models = (args.model,) if args.model else tuple(REPORTS)
     for model in models:
         print(f"{model}: {sync(REPORTS[model])} fields updated")

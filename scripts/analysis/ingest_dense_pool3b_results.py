@@ -7,6 +7,7 @@ import argparse
 import json
 import math
 import re
+import shlex
 import subprocess
 from pathlib import Path
 
@@ -34,6 +35,17 @@ AVG8 = (
     "arc_challenge", "arc_easy", "csqa", "hellaswag", "openbookqa",
     "piqa", "socialiqa", "winogrande",
 )
+SSH_HOST: str | None = None
+
+
+def beaker_command(*args: str) -> list[str]:
+    command = ["beaker", *args]
+    if SSH_HOST:
+        return [
+            "ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15",
+            SSH_HOST, shlex.join(command),
+        ]
+    return command
 
 
 def clean(text: str) -> str:
@@ -79,7 +91,7 @@ def parse(text: str) -> dict:
 
 def beaker_payload(experiment: str) -> dict:
     result = subprocess.run(
-        ["beaker", "experiment", "get", experiment, "--format", "json"],
+        beaker_command("experiment", "get", experiment, "--format", "json"),
         check=True, text=True, stdout=subprocess.PIPE,
     )
     payload = json.loads(result.stdout)
@@ -104,7 +116,7 @@ def successful(payload: dict, expected_replicas: int) -> bool:
 
 def logs(experiment: str) -> str:
     result = subprocess.run(
-        ["beaker", "experiment", "logs", experiment],
+        beaker_command("experiment", "logs", experiment),
         check=True, text=True, stdout=subprocess.PIPE,
     )
     return result.stdout
@@ -119,26 +131,66 @@ def write(path: Path, report: dict) -> None:
     )
 
 
-def ingest(path: Path) -> list[dict]:
+def ingest(
+    path: Path,
+    only_experiment: str | None = None,
+    metrics_override: dict | None = None,
+) -> list[dict]:
     report = json.loads(path.read_text())
     ingested = []
     changed = False
     for sweep in report.get("batchSweeps", []):
+        if only_experiment and sweep.get("beaker") != only_experiment:
+            continue
         if not sweep.get("beaker") or sweep.get("status") in {"failed", "canceled"}:
             continue
         epoch = str(sweep["activeEpoch"])
+        successful_state = next(
+            (
+                row
+                for row in sweep.get("jobStates", [])
+                if row.get("state") == "succeeded"
+            ),
+            None,
+        )
+        if successful_state:
+            primary_job = successful_state.get("job")
+            primary_result = successful_state.get("resultDataset")
+            endpoint = sweep.get("results", {}).get(epoch, {})
+            if primary_job and sweep.get("job") != primary_job:
+                sweep["job"] = primary_job
+                changed = True
+            if primary_job and endpoint.get("job") != primary_job:
+                endpoint["job"] = primary_job
+                changed = True
+            if primary_result and sweep.get("resultDataset") != primary_result:
+                sweep["resultDataset"] = primary_result
+                changed = True
+            if primary_result and endpoint.get("resultDataset") != primary_result:
+                endpoint["resultDataset"] = primary_result
+                changed = True
         if sweep.get("results", {}).get(epoch, {}).get("status") == "complete":
             continue
-        payload = beaker_payload(sweep["beaker"])
-        if not successful(payload, int(sweep.get("nodeCount", 1))):
-            continue
-        jobs = [job["id"] for job in payload.get("jobs", []) if job.get("id")]
-        result_datasets = [
-            job.get("execution", {}).get("result", {}).get("beaker")
-            for job in payload.get("jobs", [])
-        ]
-        result_datasets = [dataset for dataset in result_datasets if dataset]
-        metrics = parse(logs(sweep["beaker"]))
+        synchronized_success = (
+            sweep.get("status") == "complete"
+            and sweep.get("jobs")
+            and sweep.get("resultDatasets")
+            and any(row.get("state") == "succeeded" for row in sweep.get("jobStates", []))
+        )
+        if synchronized_success:
+            jobs = list(sweep["jobs"])
+            result_datasets = list(sweep["resultDatasets"])
+        else:
+            payload = beaker_payload(sweep["beaker"])
+            if not successful(payload, int(sweep.get("nodeCount", 1))):
+                continue
+            jobs = [job["id"] for job in payload.get("jobs", []) if job.get("id")]
+            result_datasets = [
+                job.get("execution", {}).get("result", {}).get("beaker")
+                for job in payload.get("jobs", [])
+            ]
+            result_datasets = [dataset for dataset in result_datasets if dataset]
+        metrics = metrics_override or parse(logs(sweep["beaker"]))
         retained = [int(step) for step in sweep.get("retainedPreDecaySteps", [])]
         if not retained:
             raise ValueError(f"{sweep['beaker']} has no retained pre-decay checkpoint")
@@ -207,11 +259,29 @@ def ingest(path: Path) -> list[dict]:
 
 
 def main() -> None:
+    global SSH_HOST
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", choices=tuple(REPORTS))
+    parser.add_argument(
+        "--ssh-host",
+        help="Query Beaker through this authenticated SSH host.",
+    )
+    parser.add_argument("--experiment", help="Ingest only this experiment ID.")
+    parser.add_argument(
+        "--metrics-json",
+        help="Use these already-parsed endpoint metrics for --experiment.",
+    )
     args = parser.parse_args()
+    SSH_HOST = args.ssh_host
+    metrics_override = json.loads(args.metrics_json) if args.metrics_json else None
+    if metrics_override and not args.experiment:
+        parser.error("--metrics-json requires --experiment")
     models = (args.model,) if args.model else tuple(REPORTS)
-    rows = [row for model in models for row in ingest(REPORTS[model])]
+    rows = [
+        row
+        for model in models
+        for row in ingest(REPORTS[model], args.experiment, metrics_override)
+    ]
     print(json.dumps(rows, sort_keys=True))
 
 
