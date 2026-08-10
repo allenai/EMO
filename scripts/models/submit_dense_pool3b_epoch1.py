@@ -602,10 +602,16 @@ def build(
         else all_retained
     )
     reset_loader = not recovery_inside_target
-    data_manifest = predecessor.get(
-        "dataManifest", EXTENSION if a.target_epoch == 1 else FULL_POOL
+    data_manifest = (
+        predecessor.get("dataManifest", EXTENSION if a.target_epoch == 1 else FULL_POOL)
+        if a.recover_failed_experiment
+        else EXTENSION if a.target_epoch == 1 else FULL_POOL
     )
-    loader_seed = int(predecessor.get("dataLoaderSeed", 80_200 + a.target_epoch))
+    loader_seed = (
+        int(predecessor.get("dataLoaderSeed", 80_200 + a.target_epoch))
+        if a.recover_failed_experiment
+        else 80_200 + a.target_epoch
+    )
     name = (
         f"dense_{a.model}_step1_pool3b_nested_bs{a.global_sequences}_e{a.target_epoch}_"
         f"lr{lr}_wd{a.weight_decay}_warmup{warmup}_{a.suffix}"
@@ -792,7 +798,11 @@ def register(a: argparse.Namespace, experiment: str, output: str) -> None:
         "sourceEpoch": source_epoch,
         "dataManifest": EXTENSION if a.target_epoch == 1 else FULL_POOL,
         "dataLoaderReset": data_loader_reset,
-        "dataLoaderSeed": int(predecessors[0].get("dataLoaderSeed", 80_200 + a.target_epoch)),
+        "dataLoaderSeed": (
+            int(predecessors[0].get("dataLoaderSeed", 80_200 + a.target_epoch))
+            if a.recover_failed_experiment
+            else 80_200 + a.target_epoch
+        ),
         "retainedPreDecaySteps": all_retained,
         "newRetainedPreDecaySteps": new_retained,
         "targetPreDecayCheckpoint": target_pre_decay,
