@@ -3373,7 +3373,8 @@
         }
       ],
       "job": "01KZNNTF25E2KHMDYSWN7XWKHP",
-      "resultDataset": "01KZNNTEX9N9J9V2Z2JNAJX1EW"
+      "resultDataset": "01KZNNTEX9N9J9V2Z2JNAJX1EW",
+      "activeWandb": "po5nax74"
     },
     {
       "batchSequences": 256,
@@ -3387,7 +3388,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 16,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZNNTGC8TYPJBADX3NCW676V",
@@ -3426,9 +3427,9 @@
       "jobStates": [
         {
           "job": "01KZNNTGFQ3RQ2YVYJ3T3NP54V",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T11:09:45.224104Z",
-          "started": null,
+          "started": "2026-08-10T11:12:12.424313Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -3436,9 +3437,9 @@
         },
         {
           "job": "01KZNNTGK19AGNYQMWFYAHJ0AS",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T11:09:45.224104Z",
-          "started": null,
+          "started": "2026-08-10T11:12:12.91211Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -3446,7 +3447,8 @@
         }
       ],
       "job": "01KZNNTGFQ3RQ2YVYJ3T3NP54V",
-      "resultDataset": "01KZNNTGCFJKX151YWGTWVP8NF"
+      "resultDataset": "01KZNNTGCFJKX151YWGTWVP8NF",
+      "activeWandb": "t5w9axlg"
     }
   ],
   "summaryBatches": [
