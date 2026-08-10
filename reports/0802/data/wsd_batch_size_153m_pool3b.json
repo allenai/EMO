@@ -1297,6 +1297,166 @@
       "job": "01KZN3VKDDQDYANV0CTH8QS2DE",
       "resultDataset": "01KZN3VK9K8GMYPXEJQCFSR4BH",
       "activeWandb": "hk9adynk"
+    },
+    {
+      "batchSequences": 64,
+      "globalBatchTokens": 262144,
+      "contextLength": 4096,
+      "lr": "2e-3",
+      "wd": "0.033",
+      "warmupSteps": 384,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 4,
+      "nodeCount": 1,
+      "gpuCount": 4,
+      "status": "pending",
+      "activeEpoch": 4,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZN5MRXT5GAEVM9A51WHGD1Y",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs64_e4_lr2e-3_wd0.033_warmup384_p3e4-r07a",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs64_e2_lr2e-3_wd0.033_warmup384_p3e2-r05a/step20599",
+      "sourceEpoch": 2,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": true,
+      "dataLoaderSeed": 80204,
+      "retainedPreDecaySteps": [
+        30899,
+        41198
+      ],
+      "actualTargetTokens": 12000000000,
+      "revision": "062c3e75e3a6a8da76521a1c503eb2d40001f76f",
+      "recoveryOf": null,
+      "results": {},
+      "jobs": [
+        "01KZN5MS15AZCV547GVF8FN35T"
+      ],
+      "resultDatasets": [
+        "01KZN5MRXZP98VKZC4BBYXHC5H"
+      ],
+      "job": "01KZN5MS15AZCV547GVF8FN35T",
+      "resultDataset": "01KZN5MRXZP98VKZC4BBYXHC5H"
+    },
+    {
+      "batchSequences": 64,
+      "globalBatchTokens": 262144,
+      "contextLength": 4096,
+      "lr": "2e-3",
+      "wd": "0.1",
+      "warmupSteps": 384,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 4,
+      "nodeCount": 1,
+      "gpuCount": 4,
+      "status": "pending",
+      "activeEpoch": 4,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZN5MSXV2H2041KCY0DKJKGZ",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs64_e4_lr2e-3_wd0.1_warmup384_p3e4-r07b",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs64_e2_lr2e-3_wd0.033_warmup384_p3e2-r05a/step20599",
+      "sourceEpoch": 2,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": true,
+      "dataLoaderSeed": 80204,
+      "retainedPreDecaySteps": [
+        30899,
+        41198
+      ],
+      "actualTargetTokens": 12000000000,
+      "revision": "062c3e75e3a6a8da76521a1c503eb2d40001f76f",
+      "recoveryOf": null,
+      "results": {},
+      "jobs": [
+        "01KZN5MT1JJ38DPM2YK9WPF04T"
+      ],
+      "resultDatasets": [
+        "01KZN5MSY0HZCZ59C5HAMFJRVY"
+      ],
+      "job": "01KZN5MT1JJ38DPM2YK9WPF04T",
+      "resultDataset": "01KZN5MSY0HZCZ59C5HAMFJRVY"
+    },
+    {
+      "batchSequences": 256,
+      "globalBatchTokens": 1048576,
+      "contextLength": 4096,
+      "lr": "2e-3",
+      "wd": "0.01",
+      "warmupSteps": 95,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 2,
+      "gpuCount": 16,
+      "status": "pending",
+      "activeEpoch": 4,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZN5MTY9ZC19G0PXSMX63HMH",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs256_e4_lr2e-3_wd0.01_warmup95_p3e4-r07c",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs256_e2_lr2e-3_wd0.01_warmup95_p3e2-r05d/step5150",
+      "sourceEpoch": 2,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": true,
+      "dataLoaderSeed": 80204,
+      "retainedPreDecaySteps": [
+        7725,
+        10300
+      ],
+      "actualTargetTokens": 12000000000,
+      "revision": "062c3e75e3a6a8da76521a1c503eb2d40001f76f",
+      "recoveryOf": null,
+      "results": {},
+      "jobs": [
+        "01KZN5MV29M4CREVZZE93N2C72",
+        "01KZN5MV608M8QSD3EA3CZRGG9"
+      ],
+      "resultDatasets": [
+        "01KZN5MTYE1BX285V7E975A6YP",
+        "01KZN5MV2CP9WJT177GT5A1Q5B"
+      ],
+      "job": "01KZN5MV29M4CREVZZE93N2C72",
+      "resultDataset": "01KZN5MTYE1BX285V7E975A6YP"
+    },
+    {
+      "batchSequences": 256,
+      "globalBatchTokens": 1048576,
+      "contextLength": 4096,
+      "lr": "2e-3",
+      "wd": "0.033",
+      "warmupSteps": 95,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 2,
+      "gpuCount": 16,
+      "status": "pending",
+      "activeEpoch": 4,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZN5MW9KHKTSV603M200VAK3",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs256_e4_lr2e-3_wd0.033_warmup95_p3e4-r07d",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs256_e2_lr2e-3_wd0.01_warmup95_p3e2-r05d/step5150",
+      "sourceEpoch": 2,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": true,
+      "dataLoaderSeed": 80204,
+      "retainedPreDecaySteps": [
+        7725,
+        10300
+      ],
+      "actualTargetTokens": 12000000000,
+      "revision": "062c3e75e3a6a8da76521a1c503eb2d40001f76f",
+      "recoveryOf": null,
+      "results": {},
+      "jobs": [
+        "01KZN5MWCV9PDF6YXZ8D79GTF9",
+        "01KZN5MWG13RTV99E5KBT16AVA"
+      ],
+      "resultDatasets": [
+        "01KZN5MW9R1DZ58VSY7DRHY13C",
+        "01KZN5MWCX60K6T3D9W2K6APT3"
+      ],
+      "job": "01KZN5MWCV9PDF6YXZ8D79GTF9",
+      "resultDataset": "01KZN5MW9R1DZ58VSY7DRHY13C"
     }
   ],
   "summaryBatches": [
