@@ -3938,8 +3938,8 @@
       "job": "01KZPG614WRQDBXPZ1G5CW2GW6",
       "resultDataset": "01KZPG611NHEP13XH8QGQAN98P",
       "failureClass": "infrastructure",
-      "failureReason": "Infrastructure-only failure before training: Gantry could not fetch pushed revision f37af75383bd430c9b74423eb3cfa9b2f13216cc (fatal remote error: upload-pack: not our ref). No W&B run, training process, optimizer step, or checkpoint was created; sibling cancellations were propagate-failure fallout.",
-      "reason": "Infrastructure-only failure before training: Gantry could not fetch pushed revision f37af75383bd430c9b74423eb3cfa9b2f13216cc (fatal remote error: upload-pack: not our ref). No W&B run, training process, optimizer step, or checkpoint was created; sibling cancellations were propagate-failure fallout."
+      "failureReason": "Infrastructure-only failure before training: the submitted 40-character revision f37af75383bd430c9b74423eb3cfa9b2f13216cc does not exist; the real commit sharing that short prefix is f37af753c5269adb03ec32db81354f7342148dfa. Gantry failed at git fetch with upload-pack: not our ref. No W&B run, training process, optimizer step, or checkpoint was created; sibling cancellations were propagate-failure fallout.",
+      "reason": "Infrastructure-only failure before training: the submitted 40-character revision f37af75383bd430c9b74423eb3cfa9b2f13216cc does not exist; the real commit sharing that short prefix is f37af753c5269adb03ec32db81354f7342148dfa. Gantry failed at git fetch with upload-pack: not our ref. No W&B run, training process, optimizer step, or checkpoint was created; sibling cancellations were propagate-failure fallout."
     },
     {
       "batchSequences": 512,
@@ -4080,7 +4080,8 @@
       "job": "01KZPG6DFKNG262T2QQZAV86N1",
       "resultDataset": "01KZPG6DCECNNQD2SSJYTKESJA",
       "failureClass": "infrastructure",
-      "failureReason": "01KZPG6DFKNG262T2QQZAV86N1: exit 1; 01KZPG6DJV3MWXJEAWKQDKX4AD: job \"01KZPG6DFKNG262T2QQZAV86N1\" from sibling task \"01KZPG6DCDTRH32ME09C19T19Z\" failed with propagate-failure enabled; 01KZPG6DPB3K2B9R62P4131VVV: job \"01KZPG6DFKNG262T2QQZAV86N1\" from sibling task \"01KZPG6DCDTRH32ME09C19T19Z\" failed with propagate-failure enabled; 01KZPG6DTD6ACR48BJMZGA13XP: job \"01KZPG6DFKNG262T2QQZAV86N1\" from sibling task \"01KZPG6DCDTRH32ME09C19T19Z\" failed with propagate-failure enabled; 01KZPG6DXKB7YYND9R7JTKDF7N: job \"01KZPG6DFKNG262T2QQZAV86N1\" from sibling task \"01KZPG6DCDTRH32ME09C19T19Z\" failed with propagate-failure enabled; 01KZPG6E0ZSJYM7RZA1X00GWP6: job \"01KZPG6DFKNG262T2QQZAV86N1\" from sibling task \"01KZPG6DCDTRH32ME09C19T19Z\" failed with propagate-failure enabled; 01KZPG6E4MPMNCBN9M6Z5M0E4V: job \"01KZPG6DFKNG262T2QQZAV86N1\" from sibling task \"01KZPG6DCDTRH32ME09C19T19Z\" failed with propagate-failure enabled; 01KZPG6E820395609E7VHG93CG: job \"01KZPG6DFKNG262T2QQZAV86N1\" from sibling task \"01KZPG6DCDTRH32ME09C19T19Z\" failed with propagate-failure enabled"
+      "failureReason": "Infrastructure-only failure before training: the submitted 40-character revision f37af75383bd430c9b74423eb3cfa9b2f13216cc does not exist; the real commit sharing that short prefix is f37af753c5269adb03ec32db81354f7342148dfa. Gantry failed at git fetch with upload-pack: not our ref. No W&B run, training process, optimizer step, or checkpoint was created; sibling cancellations were propagate-failure fallout.",
+      "reason": "Infrastructure-only failure before training: the submitted 40-character revision f37af75383bd430c9b74423eb3cfa9b2f13216cc does not exist; the real commit sharing that short prefix is f37af753c5269adb03ec32db81354f7342148dfa. Gantry failed at git fetch with upload-pack: not our ref. No W&B run, training process, optimizer step, or checkpoint was created; sibling cancellations were propagate-failure fallout."
     },
     {
       "batchSequences": 256,
@@ -4094,7 +4095,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 4,
       "gpuCount": 32,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 12,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPH0SGYG01K37K2344M8NPD",
@@ -4137,9 +4138,9 @@
       "jobStates": [
         {
           "job": "01KZPH0SN06BN1YWXY1WJGFZN9",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T19:05:02.749976Z",
-          "started": null,
+          "started": "2026-08-10T19:09:59.476734Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4147,9 +4148,9 @@
         },
         {
           "job": "01KZPH0SRVR6BCF5HGVJJJXE6T",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T19:05:02.749976Z",
-          "started": null,
+          "started": "2026-08-10T19:09:58.9531Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4157,9 +4158,9 @@
         },
         {
           "job": "01KZPH0SW8TG3AWDPBBF54SBK4",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T19:05:02.749976Z",
-          "started": null,
+          "started": "2026-08-10T19:09:58.911108Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4167,9 +4168,9 @@
         },
         {
           "job": "01KZPH0SZR271CXGX3THNAQHDQ",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T19:05:02.749976Z",
-          "started": null,
+          "started": "2026-08-10T19:09:58.96581Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4177,7 +4178,147 @@
         }
       ],
       "job": "01KZPH0SN06BN1YWXY1WJGFZN9",
-      "resultDataset": "01KZPH0SHDQVY30W97JYMWNNYE"
+      "resultDataset": "01KZPH0SHDQVY30W97JYMWNNYE",
+      "activeWandb": "yvbkz59s"
+    },
+    {
+      "batchSequences": 512,
+      "globalBatchTokens": 2097152,
+      "contextLength": 4096,
+      "lr": "5e-4",
+      "wd": "0.333",
+      "warmupSteps": 48,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 8,
+      "gpuCount": 64,
+      "status": "pending",
+      "activeEpoch": 2,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZPHF4YF5WBCYBBACW4PYGX7",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs512_e2_lr5e-4_wd0.333_warmup48_p3e2-r28i",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs512_e1_lr5e-4_wd0.333_warmup48_p3e1-bs512-r01f/step1287",
+      "sourceEpoch": 1,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": true,
+      "dataLoaderSeed": 80202,
+      "retainedPreDecaySteps": [
+        2575
+      ],
+      "newRetainedPreDecaySteps": [
+        2575
+      ],
+      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs512_e2_lr5e-4_wd0.333_warmup48_p3e2-r28i/step2575",
+      "recoverySourceStep": 1287,
+      "actualTargetTokens": 6000000000,
+      "revision": "337cfb641b7dee926a6faacef5e782df7f21261b",
+      "recoveryOf": "01KZPG6DC842TFM4PYBC5HRDE3",
+      "results": {},
+      "jobs": [
+        "01KZPHF520BTF0MYBFDD3540MW",
+        "01KZPHF55A97V80YHX3GKCHXXR",
+        "01KZPHF58VFZ9C10K6E7551SQD",
+        "01KZPHF5C6P64YR0RECFA2NQGE",
+        "01KZPHF5GMZ9RQY820GVC5FCHP",
+        "01KZPHF5MFJ81VBK4EZ84GQTGX",
+        "01KZPHF5RHMSYWX573F9CYPEJX",
+        "01KZPHF5WPKFJSV7RPMH9M9GG5"
+      ],
+      "resultDatasets": [
+        "01KZPHF4YPEM1GQQ33ZDM77Q9S",
+        "01KZPHF52318GYNXEQX7BVGTCT",
+        "01KZPHF55DY9PTZY4SRQSVRTZN",
+        "01KZPHF58Y1VJ2FDQSENJTYAKT",
+        "01KZPHF5CARY9F1469GDQ1RCJT",
+        "01KZPHF5GPQ0EG4MD21ZA66YCC",
+        "01KZPHF5MJWEQYVPXXCJ80FM61",
+        "01KZPHF5RM7BWTN4FB1NEDPPMA"
+      ],
+      "jobStates": [
+        {
+          "job": "01KZPHF520BTF0MYBFDD3540MW",
+          "state": "pending",
+          "created": "2026-08-10T19:12:53.199142Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPHF4YPEM1GQQ33ZDM77Q9S"
+        },
+        {
+          "job": "01KZPHF55A97V80YHX3GKCHXXR",
+          "state": "pending",
+          "created": "2026-08-10T19:12:53.199142Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPHF52318GYNXEQX7BVGTCT"
+        },
+        {
+          "job": "01KZPHF58VFZ9C10K6E7551SQD",
+          "state": "pending",
+          "created": "2026-08-10T19:12:53.199142Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPHF55DY9PTZY4SRQSVRTZN"
+        },
+        {
+          "job": "01KZPHF5C6P64YR0RECFA2NQGE",
+          "state": "pending",
+          "created": "2026-08-10T19:12:53.199142Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPHF58Y1VJ2FDQSENJTYAKT"
+        },
+        {
+          "job": "01KZPHF5GMZ9RQY820GVC5FCHP",
+          "state": "pending",
+          "created": "2026-08-10T19:12:53.199142Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPHF5CARY9F1469GDQ1RCJT"
+        },
+        {
+          "job": "01KZPHF5MFJ81VBK4EZ84GQTGX",
+          "state": "pending",
+          "created": "2026-08-10T19:12:53.199142Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPHF5GPQ0EG4MD21ZA66YCC"
+        },
+        {
+          "job": "01KZPHF5RHMSYWX573F9CYPEJX",
+          "state": "pending",
+          "created": "2026-08-10T19:12:53.199142Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPHF5MJWEQYVPXXCJ80FM61"
+        },
+        {
+          "job": "01KZPHF5WPKFJSV7RPMH9M9GG5",
+          "state": "pending",
+          "created": "2026-08-10T19:12:53.199142Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPHF5RM7BWTN4FB1NEDPPMA"
+        }
+      ],
+      "job": "01KZPHF520BTF0MYBFDD3540MW",
+      "resultDataset": "01KZPHF4YPEM1GQQ33ZDM77Q9S"
     }
   ],
   "baseline1b": {

@@ -4069,8 +4069,8 @@
       "job": "01KZPG5XS2HHTNMHXCDPWWYTW3",
       "resultDataset": "01KZPG5XNRSFVN2ZRS3J7SEK8T",
       "failureClass": "infrastructure",
-      "failureReason": "Infrastructure-only failure before training: Gantry could not fetch pushed revision f37af75383bd430c9b74423eb3cfa9b2f13216cc (fatal remote error: upload-pack: not our ref). No W&B run, training process, optimizer step, or checkpoint was created; sibling cancellations were propagate-failure fallout.",
-      "reason": "Infrastructure-only failure before training: Gantry could not fetch pushed revision f37af75383bd430c9b74423eb3cfa9b2f13216cc (fatal remote error: upload-pack: not our ref). No W&B run, training process, optimizer step, or checkpoint was created; sibling cancellations were propagate-failure fallout."
+      "failureReason": "Infrastructure-only failure before training: the submitted 40-character revision f37af75383bd430c9b74423eb3cfa9b2f13216cc does not exist; the real commit sharing that short prefix is f37af753c5269adb03ec32db81354f7342148dfa. Gantry failed at git fetch with upload-pack: not our ref. No W&B run, training process, optimizer step, or checkpoint was created; sibling cancellations were propagate-failure fallout.",
+      "reason": "Infrastructure-only failure before training: the submitted 40-character revision f37af75383bd430c9b74423eb3cfa9b2f13216cc does not exist; the real commit sharing that short prefix is f37af753c5269adb03ec32db81354f7342148dfa. Gantry failed at git fetch with upload-pack: not our ref. No W&B run, training process, optimizer step, or checkpoint was created; sibling cancellations were propagate-failure fallout."
     },
     {
       "batchSequences": 512,
