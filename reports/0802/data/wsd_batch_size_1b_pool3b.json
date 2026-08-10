@@ -4215,7 +4215,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 8,
       "gpuCount": 64,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 2,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPHF4YF5WBCYBBACW4PYGX7",
@@ -4245,7 +4245,10 @@
         "01KZPHF5GMZ9RQY820GVC5FCHP",
         "01KZPHF5MFJ81VBK4EZ84GQTGX",
         "01KZPHF5RHMSYWX573F9CYPEJX",
-        "01KZPHF5WPKFJSV7RPMH9M9GG5"
+        "01KZPHF5WPKFJSV7RPMH9M9GG5",
+        "01KZPV3KZQED77GX51NERWTJS2",
+        "01KZPV42K8PTYAX61HE52A0N5E",
+        "01KZPV6BPJRYAGP7FEWEN5WWFD"
       ],
       "resultDatasets": [
         "01KZPHF4YPEM1GQQ33ZDM77Q9S",
@@ -4255,14 +4258,17 @@
         "01KZPHF5CARY9F1469GDQ1RCJT",
         "01KZPHF5GPQ0EG4MD21ZA66YCC",
         "01KZPHF5MJWEQYVPXXCJ80FM61",
-        "01KZPHF5RM7BWTN4FB1NEDPPMA"
+        "01KZPHF5RM7BWTN4FB1NEDPPMA",
+        "01KZPV3KVQNMPQBPHFSDSP57YJ",
+        "01KZPV42FMM05CCKZ4QG5BA5V9",
+        "01KZPV6BJMZP34HX7M2N2JRAPC"
       ],
       "jobStates": [
         {
           "job": "01KZPHF520BTF0MYBFDD3540MW",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T19:12:53.199142Z",
-          "started": null,
+          "started": "2026-08-10T22:04:50.758934Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4270,9 +4276,9 @@
         },
         {
           "job": "01KZPHF55A97V80YHX3GKCHXXR",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T19:12:53.199142Z",
-          "started": null,
+          "started": "2026-08-10T22:04:50.618306Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4280,9 +4286,9 @@
         },
         {
           "job": "01KZPHF58VFZ9C10K6E7551SQD",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T19:12:53.199142Z",
-          "started": null,
+          "started": "2026-08-10T22:04:50.810911Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4290,9 +4296,9 @@
         },
         {
           "job": "01KZPHF5C6P64YR0RECFA2NQGE",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T19:12:53.199142Z",
-          "started": null,
+          "started": "2026-08-10T22:04:50.604932Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4300,19 +4306,19 @@
         },
         {
           "job": "01KZPHF5GMZ9RQY820GVC5FCHP",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T19:12:53.199142Z",
           "started": null,
-          "finalized": null,
+          "finalized": "2026-08-10T22:01:21.009013Z",
           "exitCode": null,
-          "reason": null,
+          "reason": "healthcheck for job 01KZPHF5GMZ9RQY820GVC5FCHP failed",
           "resultDataset": "01KZPHF5CARY9F1469GDQ1RCJT"
         },
         {
           "job": "01KZPHF5MFJ81VBK4EZ84GQTGX",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T19:12:53.199142Z",
-          "started": null,
+          "started": "2026-08-10T22:04:50.596502Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4320,27 +4326,58 @@
         },
         {
           "job": "01KZPHF5RHMSYWX573F9CYPEJX",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T19:12:53.199142Z",
           "started": null,
-          "finalized": null,
+          "finalized": "2026-08-10T22:01:35.983541Z",
           "exitCode": null,
-          "reason": null,
+          "reason": "healthcheck for job 01KZPHF5RHMSYWX573F9CYPEJX failed",
           "resultDataset": "01KZPHF5MJWEQYVPXXCJ80FM61"
         },
         {
           "job": "01KZPHF5WPKFJSV7RPMH9M9GG5",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T19:12:53.199142Z",
-          "started": null,
+          "started": "2026-08-10T22:04:50.320077Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
           "resultDataset": "01KZPHF5RM7BWTN4FB1NEDPPMA"
+        },
+        {
+          "job": "01KZPV3KZQED77GX51NERWTJS2",
+          "state": "running",
+          "created": "2026-08-10T22:01:21.009013Z",
+          "started": "2026-08-10T22:04:51.792682Z",
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPV3KVQNMPQBPHFSDSP57YJ"
+        },
+        {
+          "job": "01KZPV42K8PTYAX61HE52A0N5E",
+          "state": "canceled",
+          "created": "2026-08-10T22:01:35.983541Z",
+          "started": null,
+          "finalized": "2026-08-10T22:02:50.831755Z",
+          "exitCode": null,
+          "reason": "healthcheck for job 01KZPV42K8PTYAX61HE52A0N5E failed",
+          "resultDataset": "01KZPV42FMM05CCKZ4QG5BA5V9"
+        },
+        {
+          "job": "01KZPV6BPJRYAGP7FEWEN5WWFD",
+          "state": "running",
+          "created": "2026-08-10T22:02:50.831755Z",
+          "started": "2026-08-10T22:04:50.268702Z",
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPV6BJMZP34HX7M2N2JRAPC"
         }
       ],
       "job": "01KZPHF520BTF0MYBFDD3540MW",
-      "resultDataset": "01KZPHF4YPEM1GQQ33ZDM77Q9S"
+      "resultDataset": "01KZPHF4YPEM1GQQ33ZDM77Q9S",
+      "activeWandb": "qk2za9s7"
     }
   ],
   "baseline1b": {

@@ -6264,7 +6264,7 @@
       "gpuCountPerNode": 4,
       "nodeCount": 1,
       "gpuCount": 4,
-      "status": "running",
+      "status": "failed",
       "activeEpoch": 12,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPH105BJCHH3E65G2T3818J",
@@ -6301,18 +6301,20 @@
       "jobStates": [
         {
           "job": "01KZPH108Y8CQD5ATMYDEEYTGH",
-          "state": "running",
+          "state": "canceled",
           "created": "2026-08-10T19:05:09.547369Z",
           "started": "2026-08-10T19:23:44.247941Z",
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "finalized": "2026-08-10T21:56:36.18403Z",
+          "exitCode": 1,
+          "reason": "node \"01JRK7H08EY7QJKCPHWGSMNYVY\" is cordoned: healthcheck for job 01KZPTNJM35HKCBSY40Z40YBCY failed",
           "resultDataset": "01KZPH105HZ4BM3S1ZJ8PKM23W"
         }
       ],
       "job": "01KZPH108Y8CQD5ATMYDEEYTGH",
       "resultDataset": "01KZPH105HZ4BM3S1ZJ8PKM23W",
-      "activeWandb": "onearult"
+      "activeWandb": "onearult",
+      "failureClass": "infrastructure",
+      "failureReason": "Infrastructure-only cancellation after finite stable training: the assigned node was cordoned after its healthcheck failed. Mounted Weka audit verified exact complete steps92696,102996,113296; latest exact step113296 is the only admissible recovery source and must restore loader state without reset."
     },
     {
       "batchSequences": 256,
@@ -6882,6 +6884,64 @@
       ],
       "job": "01KZPST8NXKRAN4CR1J82J6Z62",
       "resultDataset": "01KZPST8GEPT6J46XSHJQPYPJK"
+    },
+    {
+      "batchSequences": 64,
+      "globalBatchTokens": 262144,
+      "contextLength": 4096,
+      "lr": "2e-3",
+      "wd": "0.1",
+      "warmupSteps": 384,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 4,
+      "nodeCount": 1,
+      "gpuCount": 4,
+      "status": "pending",
+      "activeEpoch": 12,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZPVGF59FME7VKD4Y2ENSJGK",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs64_e12_lr2e-3_wd0.1_warmup384_p3e12-r34a",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs64_e12_lr2e-3_wd0.1_warmup384_p3e12-r28b/step113296",
+      "sourceEpoch": 8,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": false,
+      "dataLoaderSeed": 80212,
+      "retainedPreDecaySteps": [
+        92696,
+        102996,
+        113296,
+        123596
+      ],
+      "newRetainedPreDecaySteps": [
+        123596
+      ],
+      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs64_e12_lr2e-3_wd0.1_warmup384_p3e12-r34a/step123596",
+      "recoverySourceStep": 113296,
+      "actualTargetTokens": 36000000000,
+      "revision": "c407fea481baa30c7811f5125441ab3ad8205acb",
+      "recoveryOf": "01KZPH105BJCHH3E65G2T3818J",
+      "results": {},
+      "jobs": [
+        "01KZPVGF9T3RW588HYM5CYQKWD"
+      ],
+      "resultDatasets": [
+        "01KZPVGF5EWXGB5S0WAH377211"
+      ],
+      "jobStates": [
+        {
+          "job": "01KZPVGF9T3RW588HYM5CYQKWD",
+          "state": "pending",
+          "created": "2026-08-10T22:08:22.185073Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPVGF5EWXGB5S0WAH377211"
+        }
+      ],
+      "job": "01KZPVGF9T3RW588HYM5CYQKWD",
+      "resultDataset": "01KZPVGF5EWXGB5S0WAH377211"
     }
   ],
   "summaryBatches": [
