@@ -1697,7 +1697,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 8,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZN90RRTV1ZVTHZCJ58XJ4PJ",
@@ -1726,7 +1726,8 @@
         "01KZN90S6PHADKM5ZHW4BHRT8S"
       ],
       "job": "01KZN90S6HZQ1582ASWMC5FSXX",
-      "resultDataset": "01KZN90RS4MHH01YYP07GH8CF5"
+      "resultDataset": "01KZN90RS4MHH01YYP07GH8CF5",
+      "activeWandb": "hk7xgw76"
     },
     {
       "batchSequences": 256,
@@ -1740,7 +1741,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 8,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZN90ZAHSFK8RB45NVX2DSW8",
@@ -1769,7 +1770,8 @@
         "01KZN90ZTQYMD3G3RK7GSYH802"
       ],
       "job": "01KZN90ZTHRBQE1ZYFTD8P8DF1",
-      "resultDataset": "01KZN90ZAPCERCCPKVQFDV41WN"
+      "resultDataset": "01KZN90ZAPCERCCPKVQFDV41WN",
+      "activeWandb": "rxn6wgmr"
     }
   ],
   "summaryBatches": [
