@@ -5,6 +5,8 @@ import pytest
 import torch
 import torch.distributed as dist
 from torch import nn
+from torch.distributed.device_mesh import init_device_mesh
+from torch.distributed.fsdp import fully_shard
 
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.exceptions import OLMoConfigurationError
@@ -183,6 +185,17 @@ def test_local_sgd_sync_interval_gate():
         assert train_module._local_sgd_steps_since_sync == 0
 
 
+def test_local_sgd_rejects_optimizer_step_without_materialized_gradients():
+    train_module = object.__new__(TransformerTrainModule)
+    train_module.model = nn.Linear(1, 1)
+
+    with pytest.raises(RuntimeError, match="no materialized gradients"):
+        train_module._ensure_local_sgd_gradients_materialized()
+
+    train_module.model(torch.ones(1, 1)).sum().backward()
+    train_module._ensure_local_sgd_gradients_materialized()
+
+
 def _check_local_sgd_state_average():
     rank = dist.get_rank()
     module = nn.Linear(1, 1, bias=False)
@@ -208,4 +221,101 @@ def test_local_sgd_averages_parameters_and_adam_state():
         _check_local_sgd_state_average,
         backend="gloo",
         world_size=2,
+    )
+
+
+def _check_local_sgd_replica_gradients_materialize_and_step():
+    rank = dist.get_rank()
+    world_mesh = init_device_mesh(
+        "cpu",
+        (2, 1),
+        mesh_dim_names=("dp_replicate", "dp_shard"),
+    )
+
+    module = nn.Linear(2, 1, bias=False)
+    module.weight.data.fill_(1.0)
+    # The model is sharded only within a replica. With a shard degree of one this
+    # is a one-rank FSDP group, while the replicate dimension remains available
+    # for explicit periodic parameter/state averaging.
+    fully_shard(module, mesh=world_mesh["dp_shard"])
+    optimizer = torch.optim.AdamW(module.parameters(), lr=0.1, weight_decay=0.0)
+
+    input_ = torch.tensor([[float(rank + 1), 1.0]])
+    second_input = torch.tensor([[float(rank + 2), 1.0]])
+    target = torch.tensor([[0.0]])
+    before = next(module.parameters()).detach().to_local().clone()
+    loss = (module(input_) - target).square().sum()
+    loss.backward()
+
+    local_grad = next(module.parameters()).grad
+    assert local_grad is not None
+    assert torch.linalg.vector_norm(local_grad.to_local()).item() > 0.0
+    first_grad = local_grad.to_local().clone()
+
+    # A rank can still split its simulated local batch into multiple microbatches.
+    # The per-replica FSDP wrapper must accumulate those gradients before the one
+    # local optimizer step, instead of replacing or hiding the first backward.
+    second_loss = (module(second_input) - target).square().sum()
+    second_loss.backward()
+    accumulated_grad = next(module.parameters()).grad
+    assert accumulated_grad is not None
+    assert not torch.equal(first_grad, accumulated_grad.to_local())
+
+    optimizer.step()
+    after_local_step = next(module.parameters()).detach().to_local().clone()
+    assert not torch.equal(before, after_local_step)
+
+    replica_group = world_mesh["dp_replicate"].get_group()
+    average_module_and_optimizer_state(module, optimizer, replica_group)
+    after_average = next(module.parameters()).detach().to_local().clone()
+    gathered = [torch.empty_like(after_average) for _ in range(2)]
+    dist.all_gather(gathered, after_average, group=replica_group)
+    assert torch.equal(gathered[0], gathered[1])
+
+
+def test_local_sgd_replica_fsdp_materializes_gradients_and_updates_parameters():
+    run_distributed_test(
+        _check_local_sgd_replica_gradients_materialize_and_step,
+        backend="gloo",
+        world_size=2,
+        start_method="spawn",
+    )
+
+
+def _check_local_sgd_tiny_training_reduces_loss():
+    rank = dist.get_rank()
+    world_mesh = init_device_mesh(
+        "cpu",
+        (2, 1),
+        mesh_dim_names=("dp_replicate", "dp_shard"),
+    )
+    module = nn.Linear(2, 1, bias=False)
+    module.weight.data.fill_(1.0)
+    fully_shard(module, mesh=world_mesh["dp_shard"])
+    optimizer = torch.optim.AdamW(module.parameters(), lr=0.05, weight_decay=0.0)
+    replica_group = world_mesh["dp_replicate"].get_group()
+
+    input_ = torch.tensor([[float(rank + 1), 1.0]])
+    target = torch.tensor([[0.0]])
+    initial_loss = (module(input_) - target).square().detach()
+
+    for step in range(6):
+        optimizer.zero_grad(set_to_none=True)
+        loss = (module(input_) - target).square().sum()
+        loss.backward()
+        assert next(module.parameters()).grad is not None
+        optimizer.step()
+        if (step + 1) % 2 == 0:
+            average_module_and_optimizer_state(module, optimizer, replica_group)
+
+    final_loss = (module(input_) - target).square().detach()
+    assert final_loss.item() < initial_loss.item()
+
+
+def test_local_sgd_tiny_training_reduces_loss():
+    run_distributed_test(
+        _check_local_sgd_tiny_training_reduces_loss,
+        backend="gloo",
+        world_size=2,
+        start_method="spawn",
     )

@@ -134,6 +134,7 @@ class TransformerTrainModule(TrainModule):
         batch_simulation: Optional[BatchSimulationConfig] = None,
     ):
         super().__init__()
+        batch_simulation = batch_simulation or BatchSimulationConfig()
 
         # Validate some options.
         if rank_microbatch_size % max_sequence_length != 0:
@@ -169,10 +170,24 @@ class TransformerTrainModule(TrainModule):
                 "Activation checkpointing with 'budget' mode requires compilation to be enabled"
             )
 
-        # Parallelize model.
+        # Parallelize model. Local SGD uses the full HSDP-shaped world mesh for data
+        # assignment and replica groups, but each replica must expose its own local
+        # gradients to its optimizer. Native HSDP's ``set_requires_all_reduce(False)``
+        # is an accumulation mode: it retains gradients in a private partial-reduction
+        # buffer until a later all-reduce, so an optimizer step in between sees no grads.
+        # Wrapping on the shard sub-mesh gives every replica an independent FSDP model;
+        # ``_maybe_sync_local_sgd`` remains the only cross-replica synchronization.
+        dp_model_mesh: Optional[DeviceMesh] = None
+        if (
+            batch_simulation.method == BatchSimulationMethod.local_sgd
+            and self.world_mesh is not None
+        ):
+            dp_model_mesh = get_dp_shard_mesh(self.world_mesh)
+
         self.model = parallelize_model(
             model,
             world_mesh=self.world_mesh,
+            dp_model_mesh=dp_model_mesh,
             device=self.device,
             max_sequence_length=max_sequence_length,
             rank_microbatch_size=rank_microbatch_size,
@@ -197,7 +212,7 @@ class TransformerTrainModule(TrainModule):
         self.autocast_precision = autocast_precision
         self.max_grad_norm = max_grad_norm
         self.scheduler = scheduler
-        self.batch_simulation = batch_simulation or BatchSimulationConfig()
+        self.batch_simulation = batch_simulation
         self._local_sgd_steps_since_sync = 0
         self.state_dict_save_opts = state_dict_save_opts or dist_cp_sd.StateDictOptions(
             flatten_optimizer_state_dict=True, cpu_offload=True
@@ -605,6 +620,9 @@ class TransformerTrainModule(TrainModule):
         return output
 
     def optim_step(self):
+        if self.batch_simulation.method == BatchSimulationMethod.local_sgd:
+            self._ensure_local_sgd_gradients_materialized()
+
         # Maybe clip gradients.
         if self.max_grad_norm is not None:
             if self.batch_simulation.method == BatchSimulationMethod.local_sgd:
@@ -683,13 +701,14 @@ class TransformerTrainModule(TrainModule):
                 # On the last backward FSDP waits on pending gradient reduction and clears internal data
                 # data structures for backward prefetching.
                 self.model.set_is_last_backward(is_last_mb)
-                # For HSDP we can delay the gradients all-reduce until the final micro-batch.
-                if self.dp_config.name == DataParallelType.hsdp:
-                    requires_all_reduce = (
-                        is_last_mb
-                        and self.batch_simulation.method != BatchSimulationMethod.local_sgd
-                    )
-                    self.model.set_requires_all_reduce(requires_all_reduce)
+                # For native HSDP we can delay the gradients all-reduce until the final
+                # micro-batch. Local SGD is wrapped on each replica's shard sub-mesh, so
+                # it must leave gradient materialization enabled on every micro-batch.
+                if (
+                    self.dp_config.name == DataParallelType.hsdp
+                    and self.batch_simulation.method != BatchSimulationMethod.local_sgd
+                ):
+                    self.model.set_requires_all_reduce(is_last_mb)
             elif isinstance(self.model, DDP):
                 # For DDP, only sync gradients on the final micro-batch.
                 if not is_last_mb:
@@ -770,6 +789,15 @@ class TransformerTrainModule(TrainModule):
         for gradient in gradients:
             gradient.mul_(clip_coefficient.to(gradient.device, dtype=gradient.dtype))
         return total_norm
+
+    def _ensure_local_sgd_gradients_materialized(self) -> None:
+        if any(parameter.grad is not None for parameter in self.model.parameters()):
+            return
+        raise RuntimeError(
+            "local SGD optimizer step has no materialized gradients; the model must be "
+            "wrapped independently within each replica rather than using HSDP's deferred "
+            "all-reduce accumulation mode"
+        )
 
     def _maybe_sync_local_sgd(self, *, force: bool = False) -> bool:
         if self.batch_simulation.method != BatchSimulationMethod.local_sgd:
