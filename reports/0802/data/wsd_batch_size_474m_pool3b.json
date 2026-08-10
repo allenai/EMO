@@ -3990,7 +3990,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 4,
       "gpuCount": 32,
-      "status": "pending",
+      "status": "failed",
       "activeEpoch": 2,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPG5XNKTDVPCES0MDDPK453",
@@ -4027,47 +4027,141 @@
       "jobStates": [
         {
           "job": "01KZPG5XS2HHTNMHXCDPWWYTW3",
-          "state": "pending",
+          "state": "failed",
           "created": "2026-08-10T18:50:22.259627Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
+          "started": "2026-08-10T18:56:48.935148Z",
+          "finalized": "2026-08-10T18:57:10.958958Z",
+          "exitCode": 1,
           "reason": null,
           "resultDataset": "01KZPG5XNRSFVN2ZRS3J7SEK8T"
         },
         {
           "job": "01KZPG5XWEQAAVANR8XV70NA20",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T18:50:22.259627Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "started": "2026-08-10T18:56:48.647296Z",
+          "finalized": "2026-08-10T18:57:11.309612Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPG5XS2HHTNMHXCDPWWYTW3\" from sibling task \"01KZPG5XNQZGF2HDGXPFRKX6YD\" failed with propagate-failure enabled",
           "resultDataset": "01KZPG5XS52QDZ3NQDAAR958G7"
         },
         {
           "job": "01KZPG5Y0G6DAYKHTQ2KPC7VMX",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T18:50:22.259627Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "started": "2026-08-10T18:56:49.389604Z",
+          "finalized": "2026-08-10T18:57:11.826522Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPG5XS2HHTNMHXCDPWWYTW3\" from sibling task \"01KZPG5XNQZGF2HDGXPFRKX6YD\" failed with propagate-failure enabled",
           "resultDataset": "01KZPG5XWJAFGG3EPDXEC4BD06"
         },
         {
           "job": "01KZPG5Y3ZXAA1VQHPQ0G2SY6P",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T18:50:22.259627Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "started": "2026-08-10T18:56:49.267577Z",
+          "finalized": "2026-08-10T18:57:11.318107Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPG5XS2HHTNMHXCDPWWYTW3\" from sibling task \"01KZPG5XNQZGF2HDGXPFRKX6YD\" failed with propagate-failure enabled",
           "resultDataset": "01KZPG5Y0M7V4G0AW6S0S6V012"
         }
       ],
       "job": "01KZPG5XS2HHTNMHXCDPWWYTW3",
-      "resultDataset": "01KZPG5XNRSFVN2ZRS3J7SEK8T"
+      "resultDataset": "01KZPG5XNRSFVN2ZRS3J7SEK8T",
+      "failureClass": "infrastructure",
+      "failureReason": "Infrastructure-only failure before training: Gantry could not fetch pushed revision f37af75383bd430c9b74423eb3cfa9b2f13216cc (fatal remote error: upload-pack: not our ref). No W&B run, training process, optimizer step, or checkpoint was created; sibling cancellations were propagate-failure fallout.",
+      "reason": "Infrastructure-only failure before training: Gantry could not fetch pushed revision f37af75383bd430c9b74423eb3cfa9b2f13216cc (fatal remote error: upload-pack: not our ref). No W&B run, training process, optimizer step, or checkpoint was created; sibling cancellations were propagate-failure fallout."
+    },
+    {
+      "batchSequences": 512,
+      "globalBatchTokens": 2097152,
+      "contextLength": 4096,
+      "lr": "2e-3",
+      "wd": "0.1",
+      "warmupSteps": 48,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 4,
+      "gpuCount": 32,
+      "status": "pending",
+      "activeEpoch": 2,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZPH0V8QZCBJEVX624QCQMR9",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_pool3b_nested_bs512_e2_lr2e-3_wd0.1_warmup48_p3e2-r28d",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_pool3b_nested_bs512_e1_lr2e-3_wd0.1_warmup48_p3e1-bs512-r01d/step1287",
+      "sourceEpoch": 1,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": true,
+      "dataLoaderSeed": 80202,
+      "retainedPreDecaySteps": [
+        2575
+      ],
+      "newRetainedPreDecaySteps": [
+        2575
+      ],
+      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_pool3b_nested_bs512_e2_lr2e-3_wd0.1_warmup48_p3e2-r28d/step2575",
+      "recoverySourceStep": 1287,
+      "actualTargetTokens": 6000000000,
+      "revision": "337cfb641b7dee926a6faacef5e782df7f21261b",
+      "recoveryOf": "01KZPG5XNKTDVPCES0MDDPK453",
+      "results": {},
+      "jobs": [
+        "01KZPH0VCQ4SY7N5YWX172R625",
+        "01KZPH0VG49QK3537EEEMAEBDJ",
+        "01KZPH0VKBX20KXHC8463ZEPAM",
+        "01KZPH0VPQ97MCSKHXRX4V7ZHJ"
+      ],
+      "resultDatasets": [
+        "01KZPH0V8X2B45QCQBAF17KSCV",
+        "01KZPH0VCV4ZBK3EXHPR61B6PV",
+        "01KZPH0VG6PD382VC2F1J68DD6",
+        "01KZPH0VKEZ9VB0ZPSZRJQJN8V"
+      ],
+      "jobStates": [
+        {
+          "job": "01KZPH0VCQ4SY7N5YWX172R625",
+          "state": "pending",
+          "created": "2026-08-10T19:05:04.535218Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPH0V8X2B45QCQBAF17KSCV"
+        },
+        {
+          "job": "01KZPH0VG49QK3537EEEMAEBDJ",
+          "state": "pending",
+          "created": "2026-08-10T19:05:04.535218Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPH0VCV4ZBK3EXHPR61B6PV"
+        },
+        {
+          "job": "01KZPH0VKBX20KXHC8463ZEPAM",
+          "state": "pending",
+          "created": "2026-08-10T19:05:04.535218Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPH0VG6PD382VC2F1J68DD6"
+        },
+        {
+          "job": "01KZPH0VPQ97MCSKHXRX4V7ZHJ",
+          "state": "pending",
+          "created": "2026-08-10T19:05:04.535218Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPH0VKEZ9VB0ZPSZRJQJN8V"
+        }
+      ],
+      "job": "01KZPH0VCQ4SY7N5YWX172R625",
+      "resultDataset": "01KZPH0V8X2B45QCQBAF17KSCV"
     }
   ],
   "summaryBatches": [
@@ -10989,8 +11083,8 @@
         "job": "01KZNZZC7TCEEFR9WSKJQAWDPW",
         "resultDataset": "01KZNZZBWA74YGXEP76T6T671T",
         "activeWandb": "bgs3ag6c",
-        "progressPercent": 93,
-        "progressStep": 113675,
+        "progressPercent": 99,
+        "progressStep": 121720,
         "progressTotalSteps": 122071
       }
     ],
