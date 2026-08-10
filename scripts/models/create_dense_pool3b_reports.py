@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 from copy import deepcopy
 from pathlib import Path
 
@@ -117,7 +118,19 @@ def main() -> None:
             f"data/wsd_batch_size_{model}.js",
             f"data/wsd_batch_size_{model}_pool3b.js",
         )
-        html = html.replace("<th>BS 512</th>", "")
+        batch_headers = "".join(f"<th>BS {batch}</th>" for batch in (64, 128, 256))
+        for first_header, body_id in (
+            ("Epoch", "validation-summary"),
+            ("Optimizer steps", "optimizer-step-summary"),
+            ("Epoch", "coordinate-summary"),
+        ):
+            html = re.sub(
+                rf'(<thead><tr><th>{re.escape(first_header)}</th>)'
+                rf'(?:<th>BS \d+</th>)+'
+                rf'(</tr></thead><tbody id="{body_id}">)',
+                rf'\1{batch_headers}\2',
+                html,
+            )
         (REPORT_DIR / f"wsd_batch_size_{model}_pool3b.html").write_text(html)
 
 
