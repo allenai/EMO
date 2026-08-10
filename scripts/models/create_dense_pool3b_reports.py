@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 REPORT_DIR = ROOT / "reports" / "0802"
 DATA_DIR = REPORT_DIR / "data"
-TARGETS = [1, 2, 4, 8, 12, 16, 20, 24, 32, 40, 48, 56, 64]
+TARGETS = [1, 2, 4, 8, 12, 16, 20, 24, 32, 40, 48, 56, 64, 72, 80, 88]
 POOL_ROOT = "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b"
 
 PLANS = {

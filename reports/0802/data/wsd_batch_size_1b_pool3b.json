@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-09",
+  "updated": "2026-08-10",
   "title": "0802 Step 1-1 \u00b7 Dense 1.5B \u00b7 nested 3B pool",
   "setup": "Dense 1.5B; nested 3B pool = sealed 1B + disjoint new 2B; sequence length 4096; global batches 64, 128, and 256 sequences.",
   "selection": "LR is frozen to the selected 1B-pool value for the same model and batch. At E1 branch the exact selected 1B pre-decay model/optimizer checkpoint: continue once at the selected WD and once with WD lowered by one ladder step. At later frontiers compare the selected WD with at most one higher ladder step, capped by the same-epoch 1B WD. Stop on validation-CE non-improvement or at the same-model/same-batch 1B optimum.",
@@ -147,13 +147,7 @@
     8,
     12,
     16,
-    20,
-    24,
-    32,
-    40,
-    48,
-    56,
-    64
+    20
   ],
   "batchTargetEpochs": {
     "64": [
@@ -163,13 +157,7 @@
       8,
       12,
       16,
-      20,
-      24,
-      32,
-      40,
-      48,
-      56,
-      64
+      20
     ],
     "128": [
       1,
@@ -177,29 +165,14 @@
       4,
       8,
       12,
-      16,
-      20,
-      24,
-      32,
-      40,
-      48,
-      56,
-      64
+      16
     ],
     "256": [
       1,
       2,
       4,
       8,
-      12,
-      16,
-      20,
-      24,
-      32,
-      40,
-      48,
-      56,
-      64
+      12
     ]
   },
   "optimizerStepComparisons": [],
@@ -16569,11 +16542,11 @@
         "gpuCount": 4,
         "rankMicrobatchSequences": 4,
         "gradAccumSteps": 1,
-        "status": "running",
-        "activeEpoch": 28,
-        "activeStage": 20,
+        "status": "failed",
+        "activeEpoch": 24,
+        "activeStage": 24,
         "chainThrough": 28,
-        "activeWandb": "toayluvu",
+        "activeWandb": "g0ftl60h",
         "search": "selected-coordinate-horizon-extension",
         "beaker": "01KZM8N4X2BREAKQ4TXVZBHETR",
         "job": "01KZM8N50K7N62AZJYR4A13CTZ",
@@ -16592,7 +16565,13 @@
           28
         ],
         "retainedPreDecaySteps": [
-          219726
+          219726,
+          233459,
+          247192,
+          260924,
+          274657,
+          305176,
+          288390
         ],
         "plannedRetainedPreDecaySteps": [
           233459,
@@ -16608,8 +16587,56 @@
           370788,
           384521
         ],
-        "results": {},
-        "reason": "User-authorized one-job selected-coordinate BS16 horizon extension at LR5e-4/WD0.1. The chain loads exact E16 pre-decay step219726. E24 runs only if E20 validation CE strictly improves on E16 CE3.021; E28 runs only if E24 strictly improves on E20. No coordinate search or additional BS16 tuple is authorized."
+        "results": {
+          "20": {
+            "status": "complete",
+            "job": "01KZM8N50K7N62AZJYR4A13CTZ",
+            "wandb": "toayluvu",
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs16_e20_lr5e-4_wd0.1_warmup1536_selected-ext-r52",
+            "train": 2.752,
+            "validation": 3.017,
+            "acc": 49.03,
+            "bpb": 0.8738,
+            "avg8Bpb": 1.270475,
+            "downstream": {
+              "arc_challenge": 27.76,
+              "arc_easy": 57.54,
+              "boolq": 53.91,
+              "csqa": 54.14,
+              "hellaswag": 49.03,
+              "openbookqa": 29.0,
+              "piqa": 70.13,
+              "socialiqa": 48.52,
+              "winogrande": 55.09
+            },
+            "downstreamBpb": {
+              "arc_challenge": 1.306,
+              "arc_easy": 1.302,
+              "boolq": 1.732,
+              "csqa": 1.277,
+              "hellaswag": 0.8738,
+              "openbookqa": 1.562,
+              "piqa": 1.167,
+              "socialiqa": 1.197,
+              "winogrande": 1.479
+            },
+            "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs16_e16_lr5e-4_wd0.1_warmup1536_e16-infra-r49/step219726",
+            "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs16_e20_lr5e-4_wd0.1_warmup1536_selected-ext-r52/step305176",
+            "reason": "Completed healthy selected-coordinate BS16 E20 endpoint at validation CE3.017, improving on E16 CE3.021 by 0.004; the strict gate continued the existing chain to E24."
+          },
+          "24": {
+            "status": "failed",
+            "job": "01KZM8N50K7N62AZJYR4A13CTZ",
+            "wandb": "g0ftl60h",
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs16_e24_lr5e-4_wd0.1_warmup1536_selected-ext-r52",
+            "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs16_e20_lr5e-4_wd0.1_warmup1536_selected-ext-r52/step274657",
+            "lastObservedStep": 293259,
+            "retainedCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs16_e24_lr5e-4_wd0.1_warmup1536_selected-ext-r52/step288390",
+            "failure": "Infrastructure failure: NCCL ALLREDUCE watchdog timeout after approximately 902 seconds, followed by SIGABRT and exit code 1. No E24 endpoint or evaluation exists.",
+            "reason": "The E24 trajectory was healthy through its last telemetry and is not red. Exact step288390 was saved successfully; later planned checkpoints and the E24 endpoint were not reached. Stop without replay pending a fresh explicit infrastructure basis."
+          }
+        },
+        "reason": "BS16 selected LR5e-4/WD0.1 completed E20 healthy at validation CE3.017. Its E24 continuation failed at last observed optimizer step293259 due to an NCCL ALLREDUCE watchdog timeout, not model instability. Exact checkpoint step288390 was saved successfully; no E24 endpoint exists and E28 was not attempted. Do not replay without a fresh explicit infrastructure basis."
       },
       {
         "batchSequences": 32,
@@ -16620,11 +16647,11 @@
         "gpuCount": 8,
         "rankMicrobatchSequences": 4,
         "gradAccumSteps": 1,
-        "status": "running",
-        "activeEpoch": 28,
-        "activeStage": 20,
+        "status": "complete",
+        "activeEpoch": 24,
+        "activeStage": 24,
         "chainThrough": 28,
-        "activeWandb": "8cf0gl0z",
+        "activeWandb": "sse3qdkh",
         "search": "selected-coordinate-horizon-extension",
         "beaker": "01KZM8NFFG1A4M15C91WFNJK2F",
         "job": "01KZM8NFK18V74D3T2FYSRKVB8",
@@ -16643,7 +16670,17 @@
           28
         ],
         "retainedPreDecaySteps": [
-          109863
+          109863,
+          116729,
+          123596,
+          130462,
+          137328,
+          152588,
+          144195,
+          151061,
+          157928,
+          164794,
+          183106
         ],
         "plannedRetainedPreDecaySteps": [
           116729,
@@ -16659,12 +16696,222 @@
           185394,
           192261
         ],
+        "results": {
+          "20": {
+            "status": "complete",
+            "job": "01KZM8NFK18V74D3T2FYSRKVB8",
+            "wandb": "8cf0gl0z",
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs32_e20_lr5e-4_wd0.3_warmup768_selected-ext-r52",
+            "train": 2.881,
+            "validation": 3.001,
+            "acc": 47.7,
+            "bpb": 0.8681,
+            "avg8Bpb": 1.2691375,
+            "downstream": {
+              "arc_challenge": 28.43,
+              "arc_easy": 59.47,
+              "boolq": 50.12,
+              "csqa": 52.33,
+              "hellaswag": 47.7,
+              "openbookqa": 28.4,
+              "piqa": 70.35,
+              "socialiqa": 47.24,
+              "winogrande": 53.28
+            },
+            "downstreamBpb": {
+              "arc_challenge": 1.303,
+              "arc_easy": 1.314,
+              "boolq": 1.535,
+              "csqa": 1.278,
+              "hellaswag": 0.8681,
+              "openbookqa": 1.567,
+              "piqa": 1.153,
+              "socialiqa": 1.193,
+              "winogrande": 1.477
+            },
+            "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs32_e16_lr5e-4_wd0.3_warmup768_e16-infra-r49/step109863",
+            "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs32_e20_lr5e-4_wd0.3_warmup768_selected-ext-r52/step152588",
+            "reason": "Completed healthy selected-coordinate BS32 E20 endpoint at validation CE3.001, improving on E16 CE3.005 by 0.004; the strict gate continued the existing chain to E24."
+          },
+          "24": {
+            "status": "complete",
+            "job": "01KZM8NFK18V74D3T2FYSRKVB8",
+            "wandb": "sse3qdkh",
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs32_e24_lr5e-4_wd0.3_warmup768_selected-ext-r52",
+            "train": 2.785,
+            "validation": 3.001,
+            "acc": 48.81,
+            "bpb": 0.8676,
+            "avg8Bpb": 1.25945,
+            "downstream": {
+              "arc_challenge": 26.76,
+              "arc_easy": 59.12,
+              "boolq": 51.74,
+              "csqa": 52.74,
+              "hellaswag": 48.81,
+              "openbookqa": 29.2,
+              "piqa": 70.57,
+              "socialiqa": 46.47,
+              "winogrande": 54.7
+            },
+            "downstreamBpb": {
+              "arc_challenge": 1.261,
+              "arc_easy": 1.261,
+              "boolq": 1.828,
+              "csqa": 1.278,
+              "hellaswag": 0.8676,
+              "openbookqa": 1.575,
+              "piqa": 1.152,
+              "socialiqa": 1.193,
+              "winogrande": 1.488
+            },
+            "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs32_e20_lr5e-4_wd0.3_warmup768_selected-ext-r52/step137328",
+            "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs32_e24_lr5e-4_wd0.3_warmup768_selected-ext-r52/step183106",
+            "reason": "Completed healthy selected-coordinate BS32 E24 endpoint at validation CE3.001, tying E20 CE3.001; the strict improvement gate stopped the chain and pruned E28."
+          }
+        },
+        "reason": "BS32 selected LR5e-4/WD0.3 completed E24 healthy at validation CE3.001, tying E20 rather than strictly improving. The guarded chain stopped, E28 is pruned, and no BS32 work remains."
+      },
+      {
+        "batchSequences": 512,
+        "contextLength": 4096,
+        "lr": "1e-3",
+        "wd": "0.333",
+        "warmupSteps": 48,
+        "gpuCount": 8,
+        "rankMicrobatchSequences": 4,
+        "gradAccumSteps": 16,
+        "status": "complete",
+        "activeEpoch": 12,
+        "activeWandb": "fcdhq0bn",
+        "search": "selected-e8-coordinate-e12-extension",
+        "beaker": "01KZMVHGKW2YKW2H4W9SHH49VE",
+        "job": "01KZMVHGQK3WBMV62MHF07Z6J2",
+        "resultDataset": "01KZMVHGM8CE4WTZV4VSPMFMAA",
+        "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e8_lr1e-3_wd0.333_warmup48_e8_selected_wd0333_r30/step3432",
+        "revision": "2bd97e768f166bebd9b289b76136098f6f9feda9",
+        "targetLadder": [
+          1,
+          2,
+          4,
+          8,
+          12,
+          16
+        ],
+        "retainedPreDecaySteps": [
+          3432,
+          3862,
+          4291,
+          4720,
+          5150,
+          5723
+        ],
+        "plannedRetainedPreDecaySteps": [
+          3862,
+          4291,
+          4720,
+          5150
+        ],
+        "results": {
+          "12": {
+            "status": "complete",
+            "job": "01KZMVHGQK3WBMV62MHF07Z6J2",
+            "wandb": "fcdhq0bn",
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e12_lr1e-3_wd0.333_warmup48_e12-wd0333-r52",
+            "train": 2.667,
+            "validation": 3.198,
+            "acc": 42.77,
+            "bpb": 0.9367,
+            "avg8Bpb": 1.4054625,
+            "downstream": {
+              "arc_challenge": 24.08,
+              "arc_easy": 51.75,
+              "boolq": 48.53,
+              "csqa": 46.68,
+              "hellaswag": 42.77,
+              "openbookqa": 27.8,
+              "piqa": 68.06,
+              "socialiqa": 45.29,
+              "winogrande": 50.28
+            },
+            "downstreamBpb": {
+              "arc_challenge": 1.461,
+              "arc_easy": 1.435,
+              "boolq": 1.68,
+              "csqa": 1.482,
+              "hellaswag": 0.9367,
+              "openbookqa": 1.729,
+              "piqa": 1.298,
+              "socialiqa": 1.317,
+              "winogrande": 1.585
+            },
+            "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e8_lr1e-3_wd0.333_warmup48_e8_selected_wd0333_r30/step3432",
+            "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e12_lr1e-3_wd0.333_warmup48_e12-wd0333-r52/step5723",
+            "reason": "Completed healthy user-authorized BS512 E12 exception from exact E8 pre-decay step3432. Validation CE3.198 improves on the previous E12 winner CE3.232 by 0.034 and becomes selected."
+          }
+        },
+        "reason": "Completed healthy user-authorized single-coordinate BS512 E12 continuation at LR1e-3/WD0.333 from exact E8 pre-decay step3432. Its validation CE3.198 improves on the prior E12 winner CE3.232 and is now selected. No additional BS512 continuation or coordinate search is authorized."
+      },
+      {
+        "batchSequences": 16,
+        "contextLength": 4096,
+        "lr": "5e-4",
+        "wd": "0.1",
+        "warmupSteps": 1536,
+        "gpuCount": 4,
+        "rankMicrobatchSequences": 4,
+        "gradAccumSteps": 1,
+        "status": "running",
+        "activeEpoch": 24,
+        "activeStage": 24,
+        "chainThrough": 28,
+        "search": "selected-coordinate-horizon-extension-infrastructure-recovery",
+        "recoveryOf": "01KZM8N4X2BREAKQ4TXVZBHETR",
+        "beaker": "01KZNEZ4EPJ49GYDVK59HTZB0B",
+        "job": "01KZNEZ4J9WQ021VQYMV79NBGH",
+        "resultDataset": "01KZNEZ4F1VG1PGKESYX1B465P",
+        "activeWandb": "utmpw7yp",
+        "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs16_e24_lr5e-4_wd0.1_warmup1536_selected-ext-r52/step288390",
+        "revision": "2bd97e768f166bebd9b289b76136098f6f9feda9",
+        "targetLadder": [
+          1,
+          2,
+          4,
+          8,
+          12,
+          16,
+          20,
+          24,
+          28
+        ],
+        "retainedPreDecaySteps": [
+          288390,
+          302124
+        ],
+        "plannedRetainedPreDecaySteps": [
+          288390,
+          302124,
+          315857,
+          329589,
+          343322,
+          357055,
+          370788,
+          384521
+        ],
         "results": {},
-        "reason": "User-authorized one-job selected-coordinate BS32 horizon extension at LR5e-4/WD0.3. The chain loads exact E16 pre-decay step109863. E24 runs only if E20 validation CE strictly improves on E16 CE3.005; E28 runs only if E24 strictly improves on E20. No coordinate search or additional BS32 tuple is authorized."
+        "infrastructureBasis": {
+          "probeExperiment": "01KZNETCYEWETD5PFNVZE2X1CG",
+          "probeJob": "01KZNETCYPB605JJ70R0VY4QD4",
+          "checkedAt": "2026-08-10T09:08:12Z",
+          "wekaFree": "76T",
+          "wekaFreeInodes": 93870211419,
+          "checkpointBytesHuman": "17G"
+        },
+        "reason": "User-authorized exact-coordinate recovery of the healthy BS16 E24 trajectory after its NCCL ALLREDUCE watchdog infrastructure failure. A fresh read-only probe verified 76 TB free, 93.9B free inodes, the exact 17 GB step288390 checkpoint with optimizer state, and a healthy H100. Local guards and print-only remote-spec audit passed; recovery resumes from exact step288390 with trainer state. E28 remains strictly gated on E24 validation CE improving on E20 CE3.017."
       }
     ],
     "healthAudit": {
-      "updated": "2026-08-09 09:43 PDT",
+      "updated": "2026-08-10 02:14 PDT",
       "criterion": "Orange is advisory and remains selection-eligible. Red requires sustained CE regression corroborated by persistent gradient instability, NaN/Inf, or divergence; red exact trajectories never continue.",
       "suspicious": {
         "jaur973b": {
@@ -16718,6 +16965,16 @@
           "reason": "BS512 E12 LR1e-3/WD1.0 was stopped red at E9 step3925 after sustained CE regression (10-minute tail delta 0.193, maximum 4.736) with persistent gradient instability (maximum 10.17, median 0.573, p95 1.397). No E12 endpoint exists; exact E9 pre-decay checkpoint step3862 is retained and this exact trajectory must never continue."
         }
       }
+    },
+    "trustedOptimalEpochByBatch": {
+      "64": 20,
+      "128": 16,
+      "256": 10
+    },
+    "stopCeilingByBatch": {
+      "64": 20,
+      "128": 16,
+      "256": 12
     }
   },
   "summaryBatches": [
@@ -16775,6 +17032,16 @@
       }
     },
     "epochOneMode": "restore-predecay-model-optimizer-progress-reset-loader-on-new-2b",
-    "laterEpochMode": "exact-coordinate-resume-reset-loader-and-reshuffle-full-3b"
+    "laterEpochMode": "exact-coordinate-resume-reset-loader-and-reshuffle-full-3b",
+    "sourceOptimalEpochByBatch": {
+      "64": 20,
+      "128": 16,
+      "256": 10
+    },
+    "stopCeilingByBatch": {
+      "64": 20,
+      "128": 16,
+      "256": 12
+    }
   }
 }
