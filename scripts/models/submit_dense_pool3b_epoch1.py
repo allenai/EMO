@@ -306,9 +306,11 @@ def audit_later(
             "base experiment must be the selected preceding 3B-pool frontier"
         )
     source_output = selected_result.get("output") or selected_sweep.get("output")
-    expected_checkpoint = (
-        f"{source_output}/step{stable_step(predecessor_epoch * POOL_TOKENS, batch)}"
-    )
+    expected_checkpoint = selected_result.get("resumeCheckpoint")
+    if not expected_checkpoint:
+        expected_checkpoint = (
+            f"{source_output}/step{stable_step(predecessor_epoch * POOL_TOKENS, batch)}"
+        )
     if a.source_checkpoint != expected_checkpoint:
         raise SystemExit(
             f"wrong selected predecessor checkpoint: expected {expected_checkpoint}"
