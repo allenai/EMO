@@ -2461,7 +2461,7 @@
       "gpuCountPerNode": 4,
       "nodeCount": 1,
       "gpuCount": 4,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 8,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZNYBX3Q1B846YTJJZ8W6TKV",
@@ -2498,9 +2498,9 @@
       "jobStates": [
         {
           "job": "01KZNYBX747KGM9CP42B8KSNH1",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T13:39:03.927822Z",
-          "started": null,
+          "started": "2026-08-10T13:43:52.392274Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -2508,7 +2508,8 @@
         }
       ],
       "job": "01KZNYBX747KGM9CP42B8KSNH1",
-      "resultDataset": "01KZNYBX400P0ZDJ5CTHHSKFMF"
+      "resultDataset": "01KZNYBX400P0ZDJ5CTHHSKFMF",
+      "activeWandb": "stf5j4w5"
     },
     {
       "batchSequences": 64,
@@ -2569,7 +2570,8 @@
         }
       ],
       "job": "01KZNYBY73AK7DBGJ1XAPPCED7",
-      "resultDataset": "01KZNYBY3YDVD1X2QDQ7DK59P8"
+      "resultDataset": "01KZNYBY3YDVD1X2QDQ7DK59P8",
+      "activeWandb": "q5x4gg6z"
     }
   ],
   "summaryBatches": [
