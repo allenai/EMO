@@ -56,6 +56,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--suffix", required=True)
     p.add_argument("--workspace", default="ai2/flex2")
     p.add_argument("--priority", default="urgent")
+    p.add_argument("--recover-failed-experiment")
     p.add_argument("--print-only", action="store_true")
     p.add_argument("--register", action="store_true")
     a = p.parse_args()
@@ -229,14 +230,25 @@ def audit(
             f"Beaker predecessor mismatch: requested={source_tuple}, beaker={beaker_tuple}"
         )
     audit_model_args(a.model, base_arguments)
-    for sweep in report.get("batchSweeps", []):
+    duplicates = [
+        sweep
+        for sweep in report.get("batchSweeps", [])
         if (
             sweep.get("batchSequences") == a.global_sequences
             and Decimal(str(sweep.get("lr"))) == Decimal(lr)
             and Decimal(str(sweep.get("wd"))) == Decimal(a.weight_decay)
             and sweep.get("activeEpoch") == 1
+        )
+    ]
+    if duplicates:
+        if (
+            len(duplicates) != 1
+            or duplicates[0].get("status") != "failed"
+            or duplicates[0].get("beaker") != a.recover_failed_experiment
         ):
             raise SystemExit("refusing duplicate registered E1 tuple")
+    elif a.recover_failed_experiment:
+        raise SystemExit("recovery experiment does not match a registered failed tuple")
     return predecessor
 
 
@@ -381,6 +393,8 @@ def register(a: argparse.Namespace, experiment: str, output: str) -> None:
         "dataLoaderReset": True,
         "retainedPreDecaySteps": [stable_step(POOL_TOKENS, a.global_sequences)],
         "actualTargetTokens": POOL_TOKENS,
+        "revision": a.revision,
+        "recoveryOf": a.recover_failed_experiment,
         "results": {},
     })
     report["updated"] = "2026-08-09"

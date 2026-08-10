@@ -115,7 +115,38 @@
     ]
   },
   "optimizerStepComparisons": [],
-  "batchSweeps": [],
+  "batchSweeps": [
+    {
+      "batchSequences": 64,
+      "globalBatchTokens": 262144,
+      "contextLength": 4096,
+      "lr": "2e-3",
+      "wd": "0.1",
+      "warmupSteps": 384,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 4,
+      "nodeCount": 1,
+      "gpuCount": 4,
+      "status": "failed",
+      "activeEpoch": 1,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZMQK697SS9H15BY47EYYZWJ",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs64_e1_lr2e-3_wd0.1_warmup384_p3e1-r01",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs64_e1_lr2e-3_wd0.1_warmup384_sm0909a/step3432",
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_extension_1b_to_3b.json",
+      "dataLoaderReset": true,
+      "retainedPreDecaySteps": [
+        10300
+      ],
+      "actualTargetTokens": 3000000000,
+      "revision": "eaca106e5852e61d00a4d68a9d4f4240d8fc4017",
+      "job": "01KZMQK6DBFAHP31KFX6ZC1ZHV",
+      "resultDataset": "01KZMQK69D0B52NHE06CZ7Q9RF",
+      "reason": "Infrastructure-only failure before repository checkout: the submitted GIT_REF was not a real remote commit. No training process, W&B run, optimizer step, or checkpoint was created.",
+      "results": {}
+    }
+  ],
   "summaryBatches": [
     64,
     128,
@@ -5809,9 +5840,21 @@
     "rankMicrobatchSequences": 16,
     "gradientAccumulation": 1,
     "gpuTopologyByBatch": {
-      "64": {"gpuCountPerNode": 4, "nodeCount": 1, "totalGpuCount": 4},
-      "128": {"gpuCountPerNode": 8, "nodeCount": 1, "totalGpuCount": 8},
-      "256": {"gpuCountPerNode": 8, "nodeCount": 2, "totalGpuCount": 16}
+      "64": {
+        "gpuCountPerNode": 4,
+        "nodeCount": 1,
+        "totalGpuCount": 4
+      },
+      "128": {
+        "gpuCountPerNode": 8,
+        "nodeCount": 1,
+        "totalGpuCount": 8
+      },
+      "256": {
+        "gpuCountPerNode": 8,
+        "nodeCount": 2,
+        "totalGpuCount": 16
+      }
     },
     "epochOneMode": "restore-predecay-model-optimizer-progress-reset-loader-on-new-2b",
     "laterEpochMode": "exact-coordinate-resume-reset-loader-and-reshuffle-full-3b"
