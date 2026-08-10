@@ -1985,7 +1985,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 1,
       "gpuCount": 8,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 4,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZNKVSAWFEQ89B6G9BS68E1Y",
@@ -2018,9 +2018,9 @@
       "jobStates": [
         {
           "job": "01KZNKVSE9XE4CHBVQMASFNBFS",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T10:35:30.012692Z",
-          "started": null,
+          "started": "2026-08-10T10:36:09.654725Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -2042,7 +2042,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 1,
       "gpuCount": 8,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 4,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZNKVSFEQM93B4ERRNYWQC4H",
@@ -2075,9 +2075,9 @@
       "jobStates": [
         {
           "job": "01KZNKVSK721P5K08JA5NPQF6M",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T10:35:30.15875Z",
-          "started": null,
+          "started": "2026-08-10T10:36:10.582496Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
