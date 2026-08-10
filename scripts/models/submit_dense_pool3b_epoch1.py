@@ -898,8 +898,6 @@ def main() -> None:
             name,
             "--workspace",
             a.workspace,
-            "--priority",
-            a.priority,
         ),
         check=True, input=json.dumps(spec), text=True, stdout=subprocess.PIPE,
     )
