@@ -176,6 +176,43 @@
       "resultDataset": "01KZMQS36RJ5AFYMZKNE7B5G3X",
       "reason": "Infrastructure-only launcher failure after all pool/source/config guards passed: Gantry's torchrun mode required a two-argument task command, but received the training script directly. No training process, W&B run, optimizer step, or checkpoint was created.",
       "results": {}
+    },
+    {
+      "batchSequences": 64,
+      "globalBatchTokens": 262144,
+      "contextLength": 4096,
+      "lr": "2e-3",
+      "wd": "0.1",
+      "warmupSteps": 384,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 4,
+      "nodeCount": 1,
+      "gpuCount": 4,
+      "status": "running",
+      "activeEpoch": 1,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZMR55M1FMBD7Q0467JT5FY7",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs64_e1_lr2e-3_wd0.1_warmup384_p3e1-r03",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs64_e1_lr2e-3_wd0.1_warmup384_sm0909a/step3432",
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_extension_1b_to_3b.json",
+      "dataLoaderReset": true,
+      "retainedPreDecaySteps": [
+        10300
+      ],
+      "actualTargetTokens": 3000000000,
+      "revision": "09f78f13024a1f19a4e3bdd271136ddb87756379",
+      "recoveryOf": "01KZMQS36GFXP52S00MDXXY67W",
+      "results": {},
+      "jobs": [
+        "01KZMR55QB44MRJ8YRMSBCMZJS"
+      ],
+      "resultDatasets": [
+        "01KZMR55M52DDDWG07E8REBTHN"
+      ],
+      "job": "01KZMR55QB44MRJ8YRMSBCMZJS",
+      "resultDataset": "01KZMR55M52DDDWG07E8REBTHN",
+      "activeWandb": "7p24uazm"
     }
   ],
   "summaryBatches": [
@@ -186,20 +223,22 @@
   "gpuTopology": {
     "rankMicrobatchSequences": 16,
     "64": {
+      "gpuCountPerNode": 4,
+      "nodeCount": 1,
       "gpuCount": 4,
       "gradientAccumulation": 1
     },
     "128": {
+      "gpuCountPerNode": 8,
+      "nodeCount": 1,
       "gpuCount": 8,
       "gradientAccumulation": 1
     },
     "256": {
-      "gpuCount": 8,
-      "gradientAccumulation": 2
-    },
-    "512": {
-      "gpuCount": 8,
-      "gradientAccumulation": 4
+      "gpuCountPerNode": 8,
+      "nodeCount": 2,
+      "gpuCount": 16,
+      "gradientAccumulation": 1
     }
   },
   "baseline1b": {

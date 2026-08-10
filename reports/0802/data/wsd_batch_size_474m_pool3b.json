@@ -132,20 +132,22 @@
   "gpuTopology": {
     "rankMicrobatchSequences": 16,
     "64": {
+      "gpuCountPerNode": 4,
+      "nodeCount": 1,
       "gpuCount": 4,
       "gradientAccumulation": 1
     },
     "128": {
+      "gpuCountPerNode": 8,
+      "nodeCount": 1,
       "gpuCount": 8,
       "gradientAccumulation": 1
     },
     "256": {
-      "gpuCount": 8,
-      "gradientAccumulation": 2
-    },
-    "512": {
-      "gpuCount": 8,
-      "gradientAccumulation": 4
+      "gpuCountPerNode": 8,
+      "nodeCount": 2,
+      "gpuCount": 16,
+      "gradientAccumulation": 1
     }
   },
   "baseline1b": {

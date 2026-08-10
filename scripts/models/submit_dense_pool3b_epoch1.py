@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Submit one guarded nested-3B E1 continuation from a 1B pre-decay checkpoint."""
+"""Submit one guarded nested-3B continuation.
+
+E1 restores the selected 1B-pool pre-decay model/optimizer state, resets the
+loader, and consumes only the disjoint 2B extension. Later frontiers restore
+the selected preceding 3B-pool checkpoint, reset/reshuffle the loader, and
+repeat the complete nested 3B pool. LR is fixed per model/batch throughout.
+"""
 
 from __future__ import annotations
 
@@ -22,7 +28,11 @@ POOL_TOKENS = 3_000_000_000
 DECAY = 0.1
 ROOT = "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b"
 EXTENSION = f"{ROOT}/manifests/dclm_0802_nested_extension_1b_to_3b.json"
+FULL_POOL = f"{ROOT}/manifests/dclm_0802_nested_train_3b.json"
 POOL_MANIFEST = f"{ROOT}/manifests/dclm_0802_nested_1b_3b_9b.pool.json"
+TARGETS = (1, 2, 4, 8, 12, 16, 20, 24, 32, 40, 48, 56, 64)
+PREDECESSOR = dict(zip(TARGETS[1:], TARGETS[:-1]))
+WD_LADDER = tuple(Decimal(x) for x in ("0.01", "0.033", "0.1", "0.3", "0.333", "1.0"))
 MODELS = {
     "153m": {
         "lr": {64: "2e-3", 128: "2e-3", 256: "2e-3"},
@@ -49,6 +59,7 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--model", choices=MODELS, required=True)
     p.add_argument("--global-sequences", choices=(64, 128, 256), type=int, required=True)
+    p.add_argument("--target-epoch", choices=TARGETS, type=int, default=1)
     p.add_argument("--weight-decay", required=True)
     p.add_argument("--source-checkpoint", required=True)
     p.add_argument("--base-experiment", required=True)
@@ -62,9 +73,14 @@ def parse_args() -> argparse.Namespace:
     a = p.parse_args()
     if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", a.suffix):
         p.error("suffix must be a lowercase run-name component")
-    expected = stable_step(1_000_000_000, a.global_sequences)
+    source_tokens = (
+        1_000_000_000
+        if a.target_epoch == 1
+        else PREDECESSOR[a.target_epoch] * POOL_TOKENS
+    )
+    expected = stable_step(source_tokens, a.global_sequences)
     if not a.source_checkpoint.endswith(f"/step{expected}"):
-        p.error(f"source must be the exact 1B pre-decay checkpoint /step{expected}")
+        p.error(f"source must be the exact pre-decay checkpoint /step{expected}")
     return a
 
 
@@ -94,6 +110,13 @@ def stable_step(tokens: int, batch: int) -> int:
     return end - round(DECAY * end) - 1
 
 
+def retained_steps(source_epoch: int, target_epoch: int, batch: int) -> list[int]:
+    return [
+        stable_step(epoch * POOL_TOKENS, batch)
+        for epoch in range(source_epoch + 1, target_epoch + 1)
+    ]
+
+
 def upsert(args: list[str], prefix: str, value: str) -> list[str]:
     return [item for item in args if not item.startswith(prefix)] + [value]
 
@@ -117,12 +140,17 @@ def extract_training_command(task: dict[str, Any]) -> tuple[str, str, list[str]]
     if arguments[:2] == ["bash", "-lc"] and len(arguments) == 3:
         for line in arguments[2].splitlines():
             parts = shlex.split(line)
-            if (
-                len(parts) >= 4
-                and parts[0] == "torchrun"
-                and parts[1].startswith("--nproc-per-node=")
-            ):
-                return parts[2], parts[3], parts[4:]
+            if len(parts) >= 4 and parts[0] == "torchrun":
+                script_index = next(
+                    (index for index, part in enumerate(parts[1:], 1) if part.endswith(".py")),
+                    None,
+                )
+                if script_index is not None and script_index + 1 < len(parts):
+                    return (
+                        parts[script_index],
+                        parts[script_index + 1],
+                        parts[script_index + 2 :],
+                    )
     raise ValueError("expected a direct Python task or a bash task containing torchrun")
 
 
@@ -177,9 +205,179 @@ def result_checkpoint(result: dict[str, Any], batch: int) -> str | None:
     return None
 
 
+def unhealthy_ids(report: dict[str, Any], baseline: bool = False) -> set[str]:
+    health = (
+        report.get("baseline1b", {}).get("healthAudit", {})
+        if baseline
+        else report.get("healthAudit", {})
+    )
+    return set(health.get("unhealthy", {}))
+
+
+def completed_candidates(
+    sweeps: list[dict[str, Any]], batch: int, epoch: int, lr: str,
+    unhealthy: set[str],
+) -> list[tuple[Decimal, Decimal, dict[str, Any], dict[str, Any]]]:
+    candidates = []
+    for sweep in sweeps:
+        if (
+            sweep.get("batchSequences") != batch
+            or Decimal(str(sweep.get("lr"))) != Decimal(lr)
+        ):
+            continue
+        result = sweep.get("results", {}).get(str(epoch))
+        if (
+            not isinstance(result, dict)
+            or result.get("status") != "complete"
+            or result.get("validation") is None
+            or result.get("wandb") in unhealthy
+        ):
+            continue
+        candidates.append(
+            (
+                Decimal(str(result["validation"])),
+                Decimal(str(sweep["wd"])),
+                sweep,
+                result,
+            )
+        )
+    return sorted(candidates, key=lambda item: (item[0], item[1]))
+
+
+def selected_3b(report: dict[str, Any], batch: int, epoch: int, lr: str):
+    candidates = completed_candidates(
+        report.get("batchSweeps", []), batch, epoch, lr, unhealthy_ids(report)
+    )
+    if not candidates:
+        raise SystemExit(f"E{epoch} is not resolved for BS{batch} at fixed LR {lr}")
+    return candidates[0]
+
+
+def baseline_wd_cap(report: dict[str, Any], batch: int, epoch: int, lr: str) -> Decimal:
+    candidates = completed_candidates(
+        report.get("baseline1b", {}).get("batchSweeps", []),
+        batch,
+        epoch,
+        lr,
+        unhealthy_ids(report, baseline=True),
+    )
+    if not candidates:
+        raise SystemExit(
+            f"the embedded 1B-pool report has no trusted BS{batch} E{epoch} result "
+            f"at fixed LR {lr}; refusing to invent a WD cap"
+        )
+    return candidates[0][1]
+
+
+def baseline_horizon(report: dict[str, Any], batch: int, lr: str) -> int:
+    """Return the first configured target at/after the best trusted 1B epoch."""
+    sweeps = report.get("baseline1b", {}).get("batchSweeps", [])
+    bad = unhealthy_ids(report, baseline=True)
+    rows = []
+    epochs = {
+        int(epoch)
+        for sweep in sweeps
+        if sweep.get("batchSequences") == batch
+        for epoch in sweep.get("results", {})
+        if str(epoch).isdigit() and int(epoch) >= 1
+    }
+    for epoch in epochs:
+        candidates = completed_candidates(sweeps, batch, epoch, lr, bad)
+        if candidates:
+            rows.append((candidates[0][0], epoch))
+    if not rows:
+        raise SystemExit(f"no trusted 1B-pool horizon exists for BS{batch} at LR {lr}")
+    optimum = min(rows)[1]
+    return next((target for target in TARGETS if target >= optimum), TARGETS[-1])
+
+
+def audit_later(
+    a: argparse.Namespace, report: dict[str, Any], source: dict[str, Any]
+) -> dict[str, Any]:
+    batch = a.global_sequences
+    lr = lr_for(a.model, batch)
+    predecessor_epoch = PREDECESSOR[a.target_epoch]
+    selected_ce, selected_wd, selected_sweep, selected_result = selected_3b(
+        report, batch, predecessor_epoch, lr
+    )
+    if selected_sweep.get("beaker") != a.base_experiment:
+        raise SystemExit(
+            "base experiment must be the selected preceding 3B-pool frontier"
+        )
+    source_output = selected_result.get("output") or selected_sweep.get("output")
+    expected_checkpoint = (
+        f"{source_output}/step{stable_step(predecessor_epoch * POOL_TOKENS, batch)}"
+    )
+    if a.source_checkpoint != expected_checkpoint:
+        raise SystemExit(
+            f"wrong selected predecessor checkpoint: expected {expected_checkpoint}"
+        )
+    requested_wd = Decimal(a.weight_decay)
+    if selected_wd not in WD_LADDER:
+        raise SystemExit(f"selected WD {selected_wd} is not on the configured ladder")
+    selected_index = WD_LADDER.index(selected_wd)
+    allowed = {selected_wd}
+    if selected_index + 1 < len(WD_LADDER):
+        allowed.add(WD_LADDER[selected_index + 1])
+    if requested_wd not in allowed:
+        raise SystemExit(
+            f"E{a.target_epoch} WD must be selected predecessor WD {selected_wd} "
+            "or exactly one ladder step higher"
+        )
+    cap = baseline_wd_cap(report, batch, a.target_epoch, lr)
+    if requested_wd > cap:
+        raise SystemExit(
+            f"WD {requested_wd} exceeds the trusted 1B-pool BS{batch} "
+            f"E{a.target_epoch} cap {cap}"
+        )
+    horizon = baseline_horizon(report, batch, lr)
+    if a.target_epoch > horizon:
+        raise SystemExit(
+            f"E{a.target_epoch} exceeds the 1B-pool stopping horizon E{horizon}"
+        )
+    earlier_epoch = PREDECESSOR.get(predecessor_epoch)
+    if earlier_epoch is not None:
+        earlier_ce, _, _, _ = selected_3b(report, batch, earlier_epoch, lr)
+        if selected_ce >= earlier_ce:
+            raise SystemExit(
+                f"strict stop: selected E{predecessor_epoch} validation {selected_ce} "
+                f"did not improve on E{earlier_epoch} validation {earlier_ce}"
+            )
+    duplicates = [
+        sweep for sweep in report.get("batchSweeps", [])
+        if sweep.get("batchSequences") == batch
+        and Decimal(str(sweep.get("lr"))) == Decimal(lr)
+        and Decimal(str(sweep.get("wd"))) == requested_wd
+        and sweep.get("activeEpoch") == a.target_epoch
+    ]
+    if duplicates:
+        live = [s for s in duplicates if s.get("status") != "failed"]
+        recovered = [
+            s for s in duplicates
+            if s.get("status") == "failed"
+            and s.get("beaker") == a.recover_failed_experiment
+        ]
+        if live or len(recovered) != 1:
+            raise SystemExit("refusing duplicate registered later-frontier tuple")
+    elif a.recover_failed_experiment:
+        raise SystemExit("recovery experiment does not match a registered failed tuple")
+    _, _, source_args = extract_training_command(source["tasks"][0])
+    if (
+        Decimal(unique_arg(source_args, "--lr=")) != Decimal(lr)
+        or Decimal(unique_arg(source_args, "--train_module.optim.weight_decay="))
+        != selected_wd
+        or unique_arg(source_args, "--save-folder=") != source_output
+    ):
+        raise SystemExit("selected predecessor disagrees with its Beaker specification")
+    audit_model_args(a.model, source_args)
+    return selected_sweep
+
+
 def audit(
     a: argparse.Namespace, report: dict[str, Any], source: dict[str, Any]
 ) -> dict[str, Any]:
+    if a.target_epoch != 1:
+        return audit_later(a, report, source)
     plan = report["poolPlan"]
     batch = str(a.global_sequences)
     lr = lr_for(a.model, a.global_sequences)
@@ -237,7 +435,7 @@ def audit(
             sweep.get("batchSequences") == a.global_sequences
             and Decimal(str(sweep.get("lr"))) == Decimal(lr)
             and Decimal(str(sweep.get("wd"))) == Decimal(a.weight_decay)
-            and sweep.get("activeEpoch") == 1
+            and sweep.get("activeEpoch") == a.target_epoch
         )
     ]
     if duplicates:
@@ -270,21 +468,24 @@ def build(
     args = [item for item in args if not item.startswith(blocked)]
     lr = lr_for(a.model, a.global_sequences)
     warmup = int(predecessor["warmupSteps"])
+    source_epoch = 0 if a.target_epoch == 1 else PREDECESSOR[a.target_epoch]
+    data_manifest = EXTENSION if a.target_epoch == 1 else FULL_POOL
     name = (
-        f"dense_{a.model}_step1_pool3b_nested_bs{a.global_sequences}_e1_"
+        f"dense_{a.model}_step1_pool3b_nested_bs{a.global_sequences}_e{a.target_epoch}_"
         f"lr{lr}_wd{a.weight_decay}_warmup{warmup}_{a.suffix}"
     )
     output = f"/weka/oe-training-default/sewonm/icsl/models/{name}"
     replacements = (
         ("--save-folder=", f"--save-folder={output}"),
-        ("--dataset.subset_manifest=", f"--dataset.subset_manifest={EXTENSION}"),
+        ("--dataset.subset_manifest=", f"--dataset.subset_manifest={data_manifest}"),
         ("--dataset.mix=", "--dataset.mix=null"),
-        ("--trainer.max_duration=", f"--trainer.max_duration={{value: {POOL_TOKENS}, unit: tokens}}"),
+        ("--trainer.max_duration=", f"--trainer.max_duration={{value: {a.target_epoch * POOL_TOKENS}, unit: tokens}}"),
         ("--trainer.callbacks.wandb.name=", f"--trainer.callbacks.wandb.name={name}"),
         ("--trainer.callbacks.wandb.tags=", "--trainer.callbacks.wandb.tags=" +
-         f"[pretraining,step1,nested-3b,new-2b-loader-reset,dense-{a.model},bs{a.global_sequences},wsd]"),
-        ("--trainer.callbacks.checkpointer.fixed_steps=", f"--trainer.callbacks.checkpointer.fixed_steps=[{stable_step(POOL_TOKENS, a.global_sequences)}]"),
+         f"[pretraining,step1,nested-3b,loader-reset,dense-{a.model},bs{a.global_sequences},e{a.target_epoch},wsd]"),
+        ("--trainer.callbacks.checkpointer.fixed_steps=", "--trainer.callbacks.checkpointer.fixed_steps=" + json.dumps(retained_steps(source_epoch, a.target_epoch, a.global_sequences), separators=(",", ":"))),
         ("--data_loader.global_batch_size=", f"--data_loader.global_batch_size={a.global_sequences * SEQ}"),
+        ("--data_loader.seed=", f"--data_loader.seed={80_200 + a.target_epoch}"),
         ("--train_module.rank_microbatch_size=", f"--train_module.rank_microbatch_size={MODELS[a.model]['rank_mb'] * SEQ}"),
         ("--train_module.scheduler=", "--train_module.scheduler=" +
          f"{{_CLASS_: olmo_core.optim.scheduler.WSD, units: steps, warmup: {warmup}, decay_fraction: {DECAY}}}"),
@@ -304,13 +505,13 @@ def build(
     checks = [
         "set -euo pipefail",
         shlex.join(["test", "-d", a.source_checkpoint]),
-        shlex.join(["test", "-f", EXTENSION]),
+        shlex.join(["test", "-f", data_manifest]),
         shlex.join(["test", "-f", POOL_MANIFEST]),
         "python - <<'PY'\nimport json\np=json.load(open('" + POOL_MANIFEST + "'))\n"
         "assert p['audit']['passed'] is True\nassert p['audit']['base_document_overlap']==0\n"
         "assert p['audit']['chunk_document_overlap']==0\nprint('POOL3B_AUDIT_OK')\nPY",
         shlex.join(["test", "!", "-e", output]),
-        shlex.join(["echo", f"POOL3B_E1_PREFLIGHT model={a.model} bs={a.global_sequences} lr={lr} wd={a.weight_decay} source={a.source_checkpoint} reset_loader=true"]),
+        shlex.join(["echo", f"POOL3B_PREFLIGHT model={a.model} bs={a.global_sequences} epoch={a.target_epoch} lr={lr} wd={a.weight_decay} source={a.source_checkpoint} manifest={data_manifest} reset_loader=true seed={80_200 + a.target_epoch}"]),
         shlex.join(["python", script, name, "--dry-run", *args]),
     ]
     gpus_per_node, nodes, _ = topology(a.model, a.global_sequences)
@@ -392,10 +593,13 @@ def register(a: argparse.Namespace, experiment: str, output: str) -> None:
     report = json.loads(path.read_text())
     gpus_per_node, nodes, total_gpus = topology(a.model, a.global_sequences)
     rank_mb = MODELS[a.model]["rank_mb"]
+    predecessor_pool = (
+        report["baseline1b"]["batchSweeps"]
+        if a.target_epoch == 1
+        else report["batchSweeps"]
+    )
     predecessors = [
-        sweep
-        for sweep in report["baseline1b"]["batchSweeps"]
-        if sweep.get("beaker") == a.base_experiment
+        sweep for sweep in predecessor_pool if sweep.get("beaker") == a.base_experiment
     ]
     if len(predecessors) != 1:
         raise RuntimeError("registered source predecessor is no longer unique")
@@ -412,15 +616,21 @@ def register(a: argparse.Namespace, experiment: str, output: str) -> None:
         "nodeCount": nodes,
         "gpuCount": total_gpus,
         "status": "pending",
-        "activeEpoch": 1,
+        "activeEpoch": a.target_epoch,
         "search": "nested-3b-fixed-lr-adaptive-wd",
         "beaker": experiment,
         "output": output,
         "sourceCheckpoint": a.source_checkpoint,
-        "dataManifest": EXTENSION,
+        "sourceEpoch": 0 if a.target_epoch == 1 else PREDECESSOR[a.target_epoch],
+        "dataManifest": EXTENSION if a.target_epoch == 1 else FULL_POOL,
         "dataLoaderReset": True,
-        "retainedPreDecaySteps": [stable_step(POOL_TOKENS, a.global_sequences)],
-        "actualTargetTokens": POOL_TOKENS,
+        "dataLoaderSeed": 80_200 + a.target_epoch,
+        "retainedPreDecaySteps": retained_steps(
+            0 if a.target_epoch == 1 else PREDECESSOR[a.target_epoch],
+            a.target_epoch,
+            a.global_sequences,
+        ),
+        "actualTargetTokens": a.target_epoch * POOL_TOKENS,
         "revision": a.revision,
         "recoveryOf": a.recover_failed_experiment,
         "results": {},

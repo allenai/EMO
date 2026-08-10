@@ -75,6 +75,15 @@ def main() -> None:
         report["summaryBatches"] = [64, 128, 256]
         report["optimizerStepComparisons"] = []
         report.pop("pausedBatches", None)
+        report["gpuTopology"] = {
+            batch: {
+                "gpuCountPerNode": min(int(batch) // plan["rankMb"], 8),
+                "nodeCount": max((int(batch) // plan["rankMb"]) // 8, 1),
+                "gpuCount": int(batch) // plan["rankMb"],
+                "gradientAccumulation": 1,
+            }
+            for batch in ("64", "128", "256")
+        } | {"rankMicrobatchSequences": plan["rankMb"]}
         report["poolPlan"] = {
             "poolTokens": 3_000_000_000,
             "baseTokens": 1_000_000_000,

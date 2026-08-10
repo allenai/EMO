@@ -203,7 +203,246 @@
     ]
   },
   "optimizerStepComparisons": [],
-  "batchSweeps": [],
+  "batchSweeps": [
+    {
+      "batchSequences": 128,
+      "globalBatchTokens": 524288,
+      "contextLength": 4096,
+      "lr": "1e-3",
+      "wd": "0.3",
+      "warmupSteps": 192,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 2,
+      "gpuCount": 16,
+      "status": "running",
+      "activeEpoch": 1,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZMRANZNZKC827K3FDKC9R06",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e1_lr1e-3_wd0.3_warmup192_p3e1-r01",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs128_e1_lr1e-3_wd0.3_warmup192_e1_grid_r19/step1716",
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_extension_1b_to_3b.json",
+      "dataLoaderReset": true,
+      "retainedPreDecaySteps": [
+        5150
+      ],
+      "actualTargetTokens": 3000000000,
+      "revision": "09f78f13024a1f19a4e3bdd271136ddb87756379",
+      "recoveryOf": null,
+      "results": {},
+      "jobs": [
+        "01KZMRAP32VDCCAQW6Y899ZH0C",
+        "01KZMRAP6SSKX024VY9EN8KZ1A"
+      ],
+      "resultDatasets": [
+        "01KZMRANZVSQVDY966EKKQ13HW",
+        "01KZMRAP37J8SY85QVBHYRCR10"
+      ],
+      "job": "01KZMRAP32VDCCAQW6Y899ZH0C",
+      "resultDataset": "01KZMRANZVSQVDY966EKKQ13HW",
+      "activeWandb": "cs6087u5"
+    },
+    {
+      "batchSequences": 64,
+      "globalBatchTokens": 262144,
+      "contextLength": 4096,
+      "lr": "1e-3",
+      "wd": "0.3",
+      "warmupSteps": 384,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 1,
+      "gpuCount": 8,
+      "status": "running",
+      "activeEpoch": 1,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZMRJT9J1TX4AAKR7P3KZJW8",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e1_lr1e-3_wd0.3_warmup384_p3e1-r01",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_e1_lr1e-3_wd0.3_warmup384_coord_e1_r2/step3432",
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_extension_1b_to_3b.json",
+      "dataLoaderReset": true,
+      "retainedPreDecaySteps": [
+        10300
+      ],
+      "actualTargetTokens": 3000000000,
+      "revision": "09f78f13024a1f19a4e3bdd271136ddb87756379",
+      "recoveryOf": null,
+      "results": {},
+      "jobs": [
+        "01KZMRJTCZYQA4GGFMCJTCZBQH"
+      ],
+      "resultDatasets": [
+        "01KZMRJT9SK5AWCHAHNTK03H9G"
+      ],
+      "job": "01KZMRJTCZYQA4GGFMCJTCZBQH",
+      "resultDataset": "01KZMRJT9SK5AWCHAHNTK03H9G",
+      "activeWandb": "g26x0nwf"
+    },
+    {
+      "batchSequences": 64,
+      "globalBatchTokens": 262144,
+      "contextLength": 4096,
+      "lr": "1e-3",
+      "wd": "0.1",
+      "warmupSteps": 384,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 1,
+      "gpuCount": 8,
+      "status": "running",
+      "activeEpoch": 1,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZMRK8ZYVM72GPJ81Q28Z4F3",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e1_lr1e-3_wd0.1_warmup384_p3e1-r01",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_e1_lr1e-3_wd0.3_warmup384_coord_e1_r2/step3432",
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_extension_1b_to_3b.json",
+      "dataLoaderReset": true,
+      "retainedPreDecaySteps": [
+        10300
+      ],
+      "actualTargetTokens": 3000000000,
+      "revision": "09f78f13024a1f19a4e3bdd271136ddb87756379",
+      "recoveryOf": null,
+      "results": {},
+      "jobs": [
+        "01KZMRK93A8DSBMEXYMF5Z8WYA"
+      ],
+      "resultDatasets": [
+        "01KZMRK903GEGPKPF7192NZ5MN"
+      ],
+      "job": "01KZMRK93A8DSBMEXYMF5Z8WYA",
+      "resultDataset": "01KZMRK903GEGPKPF7192NZ5MN",
+      "activeWandb": "c0np0ick"
+    },
+    {
+      "batchSequences": 128,
+      "globalBatchTokens": 524288,
+      "contextLength": 4096,
+      "lr": "1e-3",
+      "wd": "0.1",
+      "warmupSteps": 192,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 2,
+      "gpuCount": 16,
+      "status": "running",
+      "activeEpoch": 1,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZMRKPXKKC8SY8SVD0F24MXA",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e1_lr1e-3_wd0.1_warmup192_p3e1-r01",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs128_e1_lr1e-3_wd0.3_warmup192_e1_grid_r19/step1716",
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_extension_1b_to_3b.json",
+      "dataLoaderReset": true,
+      "retainedPreDecaySteps": [
+        5150
+      ],
+      "actualTargetTokens": 3000000000,
+      "revision": "09f78f13024a1f19a4e3bdd271136ddb87756379",
+      "recoveryOf": null,
+      "results": {},
+      "jobs": [
+        "01KZMRKQ13B4YT7P6CM9WE45W1",
+        "01KZMRKQ4871YDGBP8XD97PR0G"
+      ],
+      "resultDatasets": [
+        "01KZMRKPXSYQ7GSW550HP162TQ",
+        "01KZMRKQ15EKT733CT39N3VX1E"
+      ],
+      "job": "01KZMRKQ13B4YT7P6CM9WE45W1",
+      "resultDataset": "01KZMRKPXSYQ7GSW550HP162TQ",
+      "activeWandb": "v624fswe"
+    },
+    {
+      "batchSequences": 256,
+      "globalBatchTokens": 1048576,
+      "contextLength": 4096,
+      "lr": "1e-3",
+      "wd": "0.333",
+      "warmupSteps": 96,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 4,
+      "gpuCount": 32,
+      "status": "running",
+      "activeEpoch": 1,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZMRM48XDVPYZPM3XGXW0MFE",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs256_e1_lr1e-3_wd0.333_warmup96_p3e1-r01",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs256_e1_lr1e-3_wd0.333_warmup96/step858",
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_extension_1b_to_3b.json",
+      "dataLoaderReset": true,
+      "retainedPreDecaySteps": [
+        2575
+      ],
+      "actualTargetTokens": 3000000000,
+      "revision": "09f78f13024a1f19a4e3bdd271136ddb87756379",
+      "recoveryOf": null,
+      "results": {},
+      "jobs": [
+        "01KZMRM4CDB46B7K5KFF3DTZVK",
+        "01KZMRM4FZ2W4W9AH9EK0427F6",
+        "01KZMRM4KJ2868E6AK1FTAKCK7",
+        "01KZMRM4Q1BKD4YYA1KXDJADZR"
+      ],
+      "resultDatasets": [
+        "01KZMRM49525EN4GJT31M1YWKQ",
+        "01KZMRM4CNZRW8W9PT8X6H5BXQ",
+        "01KZMRM4G5RNEC6P9YJKJV45NV",
+        "01KZMRM4KRQT1Y5W0XS0YF002Y"
+      ],
+      "job": "01KZMRM4CDB46B7K5KFF3DTZVK",
+      "resultDataset": "01KZMRM49525EN4GJT31M1YWKQ",
+      "activeWandb": "qfe6du1b"
+    },
+    {
+      "batchSequences": 256,
+      "globalBatchTokens": 1048576,
+      "contextLength": 4096,
+      "lr": "1e-3",
+      "wd": "0.1",
+      "warmupSteps": 96,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 4,
+      "gpuCount": 32,
+      "status": "running",
+      "activeEpoch": 1,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZMRMGTVVSFVS0JCGEVXC98J",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs256_e1_lr1e-3_wd0.1_warmup96_p3e1-r01",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs256_e1_lr1e-3_wd0.333_warmup96/step858",
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_extension_1b_to_3b.json",
+      "dataLoaderReset": true,
+      "retainedPreDecaySteps": [
+        2575
+      ],
+      "actualTargetTokens": 3000000000,
+      "revision": "09f78f13024a1f19a4e3bdd271136ddb87756379",
+      "recoveryOf": null,
+      "results": {},
+      "jobs": [
+        "01KZMRMGYZR9PERXQSYHC4G15G",
+        "01KZMRMH33X3BSNEA4BJ1SPDA2",
+        "01KZMRMH7HH239713FAJ18J16Y",
+        "01KZMRMHBGGR52TY5M9EMKWBR5"
+      ],
+      "resultDatasets": [
+        "01KZMRMGV1J2T7ZWE7EZMA9ESQ",
+        "01KZMRMGZ5X7S6EVX0X53BF441",
+        "01KZMRMH38PH96K4JZW7XMAM54",
+        "01KZMRMH7NCQ2G44H3GTVHA0T6"
+      ],
+      "job": "01KZMRMGYZR9PERXQSYHC4G15G",
+      "resultDataset": "01KZMRMGV1J2T7ZWE7EZMA9ESQ",
+      "activeWandb": "0cmakmk5"
+    }
+  ],
   "baseline1b": {
     "source": "reports/0802/data/wsd_batch_size_1b.json",
     "batchSweeps": [
@@ -14505,9 +14744,21 @@
     "rankMicrobatchSequences": 8,
     "gradientAccumulation": 1,
     "gpuTopologyByBatch": {
-      "64": {"gpuCountPerNode": 8, "nodeCount": 1, "totalGpuCount": 8},
-      "128": {"gpuCountPerNode": 8, "nodeCount": 2, "totalGpuCount": 16},
-      "256": {"gpuCountPerNode": 8, "nodeCount": 4, "totalGpuCount": 32}
+      "64": {
+        "gpuCountPerNode": 8,
+        "nodeCount": 1,
+        "totalGpuCount": 8
+      },
+      "128": {
+        "gpuCountPerNode": 8,
+        "nodeCount": 2,
+        "totalGpuCount": 16
+      },
+      "256": {
+        "gpuCountPerNode": 8,
+        "nodeCount": 4,
+        "totalGpuCount": 32
+      }
     },
     "epochOneMode": "restore-predecay-model-optimizer-progress-reset-loader-on-new-2b",
     "laterEpochMode": "exact-coordinate-resume-reset-loader-and-reshuffle-full-3b"
