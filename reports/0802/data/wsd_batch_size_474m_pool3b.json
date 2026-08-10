@@ -2206,6 +2206,128 @@
       "resultDataset": "01KZNKVSFMFR3355HB598CSZZA",
       "activeWandb": "df9owqnn",
       "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+    },
+    {
+      "batchSequences": 128,
+      "globalBatchTokens": 524288,
+      "contextLength": 4096,
+      "lr": "2e-3",
+      "wd": "0.033",
+      "warmupSteps": 192,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 1,
+      "gpuCount": 8,
+      "status": "pending",
+      "activeEpoch": 8,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZNTXWDTBE8SNNHXYBRRDEXV",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_pool3b_nested_bs128_e8_lr2e-3_wd0.033_warmup192_p3e8-r17a",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_pool3b_nested_bs128_e4_lr2e-3_wd0.033_warmup192_p3e4-r15c/step20599",
+      "sourceEpoch": 4,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": true,
+      "dataLoaderSeed": 80208,
+      "retainedPreDecaySteps": [
+        25749,
+        30899,
+        36048,
+        41198
+      ],
+      "newRetainedPreDecaySteps": [
+        25749,
+        30899,
+        36048,
+        41198
+      ],
+      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_pool3b_nested_bs128_e8_lr2e-3_wd0.033_warmup192_p3e8-r17a/step41198",
+      "recoverySourceStep": null,
+      "actualTargetTokens": 24000000000,
+      "revision": "df39bcaf3b74b0a1ef12e41e863bb9e1f9396bdf",
+      "recoveryOf": null,
+      "results": {},
+      "jobs": [
+        "01KZNTXWJ7N1AWSPTSQY8GADC3"
+      ],
+      "resultDatasets": [
+        "01KZNTXWE0HX9CS8SGMK99S5X3"
+      ],
+      "jobStates": [
+        {
+          "job": "01KZNTXWJ7N1AWSPTSQY8GADC3",
+          "state": "pending",
+          "created": "2026-08-10T12:38:58.746774Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZNTXWE0HX9CS8SGMK99S5X3"
+        }
+      ],
+      "job": "01KZNTXWJ7N1AWSPTSQY8GADC3",
+      "resultDataset": "01KZNTXWE0HX9CS8SGMK99S5X3"
+    },
+    {
+      "batchSequences": 128,
+      "globalBatchTokens": 524288,
+      "contextLength": 4096,
+      "lr": "2e-3",
+      "wd": "0.1",
+      "warmupSteps": 192,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 1,
+      "gpuCount": 8,
+      "status": "pending",
+      "activeEpoch": 8,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZNTXXJZYQD06VDF5NJKA8WY",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_pool3b_nested_bs128_e8_lr2e-3_wd0.1_warmup192_p3e8-r17b",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_pool3b_nested_bs128_e4_lr2e-3_wd0.033_warmup192_p3e4-r15c/step20599",
+      "sourceEpoch": 4,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": true,
+      "dataLoaderSeed": 80208,
+      "retainedPreDecaySteps": [
+        25749,
+        30899,
+        36048,
+        41198
+      ],
+      "newRetainedPreDecaySteps": [
+        25749,
+        30899,
+        36048,
+        41198
+      ],
+      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_pool3b_nested_bs128_e8_lr2e-3_wd0.1_warmup192_p3e8-r17b/step41198",
+      "recoverySourceStep": null,
+      "actualTargetTokens": 24000000000,
+      "revision": "df39bcaf3b74b0a1ef12e41e863bb9e1f9396bdf",
+      "recoveryOf": null,
+      "results": {},
+      "jobs": [
+        "01KZNTXXXXKGK6X77GR96N9CR1"
+      ],
+      "resultDatasets": [
+        "01KZNTXXK54JEX1WE3AZVB600C"
+      ],
+      "jobStates": [
+        {
+          "job": "01KZNTXXXXKGK6X77GR96N9CR1",
+          "state": "pending",
+          "created": "2026-08-10T12:38:59.935153Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZNTXXK54JEX1WE3AZVB600C"
+        }
+      ],
+      "job": "01KZNTXXXXKGK6X77GR96N9CR1",
+      "resultDataset": "01KZNTXXK54JEX1WE3AZVB600C"
     }
   ],
   "summaryBatches": [
