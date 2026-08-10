@@ -1138,6 +1138,47 @@
       ],
       "job": "01KZMYQSKDF5GAY9JR6EA4CH1X",
       "resultDataset": "01KZMYQSG66PN2FZ3EZH4089VF"
+    },
+    {
+      "batchSequences": 128,
+      "globalBatchTokens": 524288,
+      "contextLength": 4096,
+      "lr": "1e-3",
+      "wd": "0.3",
+      "warmupSteps": 192,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 2,
+      "gpuCount": 16,
+      "status": "pending",
+      "activeEpoch": 4,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZN0YCC7A7QJVRKEWDKEH97F",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e4_lr1e-3_wd0.3_warmup192_p3e4-r03a",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e2_lr1e-3_wd0.3_warmup192_p3e2-r02/step10300",
+      "sourceEpoch": 2,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": true,
+      "dataLoaderSeed": 80204,
+      "retainedPreDecaySteps": [
+        15449,
+        20599
+      ],
+      "actualTargetTokens": 12000000000,
+      "revision": "d0a8079c92a63ab4ccfbd8870b44af5812eb8dbc",
+      "recoveryOf": null,
+      "results": {},
+      "jobs": [
+        "01KZN0YCKGBMHAERSWNMGMBFD0",
+        "01KZN0YCPXWSGDPE8DT1Z6BTEA"
+      ],
+      "resultDatasets": [
+        "01KZN0YCCBYM2G5BJR1BYNT255",
+        "01KZN0YCKPBRA3S9VXJ41GX7GS"
+      ],
+      "job": "01KZN0YCKGBMHAERSWNMGMBFD0",
+      "resultDataset": "01KZN0YCCBYM2G5BJR1BYNT255"
     }
   ],
   "baseline1b": {
