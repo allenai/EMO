@@ -108,9 +108,30 @@ def sync(path: Path) -> int:
             "resultDatasets": results,
             "jobStates": [job_state(job) for job in jobs],
         }
-        if job_ids:
-            updates["job"] = job_ids[0]
-        if results:
+        # Point the singular compatibility fields at the live replacement when
+        # Beaker has canceled an earlier attempt.  Keep every attempt in the
+        # plural provenance fields above.
+        primary_job = (
+            next((job for job in jobs if running(job)), None)
+            or next(
+                (
+                    job
+                    for job in jobs
+                    if not job.get("status", {}).get("finalized")
+                ),
+                None,
+            )
+            or next((job for job in jobs if completed_successfully(job)), None)
+            or (jobs[0] if jobs else None)
+        )
+        if primary_job and primary_job.get("id"):
+            updates["job"] = primary_job["id"]
+            primary_result = (
+                primary_job.get("execution", {}).get("result", {}).get("beaker")
+            )
+            if primary_result:
+                updates["resultDataset"] = primary_result
+        elif results:
             updates["resultDataset"] = results[0]
         if match:
             updates["activeWandb"] = match.group(1)

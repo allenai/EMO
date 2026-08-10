@@ -3781,7 +3781,7 @@
       "gpuCountPerNode": 4,
       "nodeCount": 1,
       "gpuCount": 4,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 8,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZP3GMKWVTG1A5N15P6PD09N",
@@ -3830,17 +3830,18 @@
         },
         {
           "job": "01KZP3N2CQTWEJ8RQHAKFE891T",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T15:11:26.997082Z",
-          "started": null,
+          "started": "2026-08-10T15:12:39.404708Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
           "resultDataset": "01KZP3N28T3MBMPFBQK9VS4RJM"
         }
       ],
-      "job": "01KZP3GMQTEA50MP5K1Z1AZ8TM",
-      "resultDataset": "01KZP3GMM20WVH5HP20X15P81D"
+      "job": "01KZP3N2CQTWEJ8RQHAKFE891T",
+      "resultDataset": "01KZP3N28T3MBMPFBQK9VS4RJM",
+      "activeWandb": "mnny75db"
     },
     {
       "batchSequences": 64,
@@ -3901,7 +3902,8 @@
         }
       ],
       "job": "01KZP3GRZBCVJ1M9QWK5QG326H",
-      "resultDataset": "01KZP3GRW1JZRXG770VG1VYDHB"
+      "resultDataset": "01KZP3GRW1JZRXG770VG1VYDHB",
+      "activeWandb": "t08e87uw"
     },
     {
       "batchSequences": 128,
@@ -12090,8 +12092,8 @@
         "job": "01KZNY1GQ1H2X5P0PNYM80VBF1",
         "resultDataset": "01KZNY1GK2J8T63SMXYN04N7FB",
         "activeWandb": "mf19mbji",
-        "progressPercent": 91,
-        "progressStep": 222825,
+        "progressPercent": 93,
+        "progressStep": 227810,
         "progressTotalSteps": 244141
       },
       {
@@ -12125,8 +12127,8 @@
         "job": "01KZNZW1K7CQ39F5F8E0S5A4SW",
         "resultDataset": "01KZNZW1FDC5P6YM8RAG78K47S",
         "activeWandb": "qr5n9eg2",
-        "progressPercent": 94,
-        "progressStep": 101105,
+        "progressPercent": 99,
+        "progressStep": 105880,
         "progressTotalSteps": 106812
       },
       {
@@ -12160,9 +12162,38 @@
         "job": "01KZP1VP9R3605E1DKJZTRK9B3",
         "resultDataset": "01KZP1VP62B2CB6XEYRZZAWY3N",
         "activeWandb": "i75joq37",
-        "progressPercent": 85,
-        "progressStep": 130085,
+        "progressPercent": 88,
+        "progressStep": 134930,
         "progressTotalSteps": 152588
+      },
+      {
+        "batchSequences": 512,
+        "globalBatchTokens": 2097152,
+        "contextLength": 4096,
+        "lr": "2e-3",
+        "wd": "0.1",
+        "warmupSteps": 48,
+        "rankMicrobatchSequences": 16,
+        "gradientAccumulation": 4,
+        "gpuCount": 8,
+        "status": "running",
+        "activeEpoch": 4,
+        "search": "small-model-adaptive-coordinate",
+        "beaker": "01KZP38KQDG3CKZTF2KA5GQQ7E",
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs512_e4_lr2e-3_wd0.1_warmup48_sm0810bs512e4a",
+        "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs512_e2_lr2e-3_wd0.1_warmup48_sm0810bs512e2replayb/step858",
+        "retainedPreDecaySteps": [
+          1287,
+          1716
+        ],
+        "results": {},
+        "reason": "Adaptive small-model Step 1-1 coordinate search; exact-coordinate resumes, empirically tuned per-batch WD cap, and nondecreasing-WD frontier policy apply.",
+        "job": "01KZP38KY440SHDCPG0Y6CRTB9",
+        "resultDataset": "01KZP38KQJEVAV54V92JVKZNT2",
+        "activeWandb": "680bb404",
+        "progressPercent": 71,
+        "progressStep": 1355,
+        "progressTotalSteps": 1908
       }
     ],
     "healthAudit": {

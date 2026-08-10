@@ -2907,7 +2907,8 @@
         }
       ],
       "job": "01KZP3HCP6WGKMYW3W27VM3M2H",
-      "resultDataset": "01KZP3HCJ6VEMGP27XHVA2V0HF"
+      "resultDataset": "01KZP3HCJ6VEMGP27XHVA2V0HF",
+      "activeWandb": "z4rpib5i"
     },
     {
       "batchSequences": 64,
@@ -2968,7 +2969,8 @@
         }
       ],
       "job": "01KZP3HKDFJR23BDCV8PJAWT8J",
-      "resultDataset": "01KZP3HKA7EMXX717RB2CBN0JQ"
+      "resultDataset": "01KZP3HKA7EMXX717RB2CBN0JQ",
+      "activeWandb": "sv2rsk2g"
     },
     {
       "batchSequences": 64,
@@ -3029,7 +3031,8 @@
         }
       ],
       "job": "01KZP3HQ1MM20ESYVGCQ6X6CQ4",
-      "resultDataset": "01KZP3HPXADBVYMMJ8PRSKPHHT"
+      "resultDataset": "01KZP3HPXADBVYMMJ8PRSKPHHT",
+      "activeWandb": "81c40ytq"
     },
     {
       "batchSequences": 512,

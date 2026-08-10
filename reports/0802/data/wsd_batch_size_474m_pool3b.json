@@ -2771,7 +2771,8 @@
         }
       ],
       "job": "01KZP3H149VHZE1NM90CWQM9Z4",
-      "resultDataset": "01KZP3H10F64P9J8EZHZK3VGYK"
+      "resultDataset": "01KZP3H10F64P9J8EZHZK3VGYK",
+      "activeWandb": "2bvn4unm"
     },
     {
       "batchSequences": 256,
@@ -2838,7 +2839,8 @@
         }
       ],
       "job": "01KZP3H4RF3H3JZK2AADJSHBGF",
-      "resultDataset": "01KZP3H4N70E1S7G3EYH2454ZG"
+      "resultDataset": "01KZP3H4N70E1S7G3EYH2454ZG",
+      "activeWandb": "wslchfao"
     },
     {
       "batchSequences": 512,
@@ -9766,8 +9768,8 @@
         "job": "01KZP1YJWNBJNNJ8A1KXNS489N",
         "resultDataset": "01KZP1YJSC1BP0PEYYXH9GGQZT",
         "activeWandb": "k9xva2i0",
-        "progressPercent": 75,
-        "progressStep": 28655,
+        "progressPercent": 77,
+        "progressStep": 29585,
         "progressTotalSteps": 38147
       },
       {
@@ -9801,8 +9803,8 @@
         "job": "01KZNX668PR9WGSMS4DHMVP3FB",
         "resultDataset": "01KZNX664J1N540M7ZA38QRG1T",
         "activeWandb": "ytc3j5w5",
-        "progressPercent": 89,
-        "progressStep": 82105,
+        "progressPercent": 91,
+        "progressStep": 83965,
         "progressTotalSteps": 91553
       },
       {
@@ -9836,8 +9838,8 @@
         "job": "01KZNZZC7TCEEFR9WSKJQAWDPW",
         "resultDataset": "01KZNZZBWA74YGXEP76T6T671T",
         "activeWandb": "bgs3ag6c",
-        "progressPercent": 73,
-        "progressStep": 89350,
+        "progressPercent": 74,
+        "progressStep": 91275,
         "progressTotalSteps": 122071
       }
     ],
