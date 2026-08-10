@@ -6,6 +6,8 @@ from .train_module import (
     TrainModule,
 )
 from .transformer import (
+    BatchSimulationConfig,
+    BatchSimulationMethod,
     TransformerActivationCheckpointingConfig,
     TransformerActivationCheckpointingMode,
     TransformerContextParallelConfig,
@@ -21,21 +23,23 @@ from .transformer import (
 )
 
 __all__ = [
-    "TrainModuleConfig",
-    "TrainModule",
-    "EvalBatchSpec",
-    "EvalBatchSizeUnit",
     "BasicTrainModule",
-    "TransformerTrainModule",
-    "TransformerTrainModuleConfig",
-    "TransformerPipelineTrainModule",
-    "TransformerPipelineTrainModuleConfig",
+    "BatchSimulationConfig",
+    "BatchSimulationMethod",
+    "EvalBatchSizeUnit",
+    "EvalBatchSpec",
+    "TrainModule",
+    "TrainModuleConfig",
     "TransformerActivationCheckpointingConfig",
     "TransformerActivationCheckpointingMode",
+    "TransformerContextParallelConfig",
     "TransformerDataParallelConfig",
     "TransformerDataParallelWrappingStrategy",
     "TransformerExpertParallelConfig",
-    "TransformerTensorParallelConfig",
-    "TransformerContextParallelConfig",
     "TransformerPipelineParallelConfig",
+    "TransformerPipelineTrainModule",
+    "TransformerPipelineTrainModuleConfig",
+    "TransformerTensorParallelConfig",
+    "TransformerTrainModule",
+    "TransformerTrainModuleConfig",
 ]

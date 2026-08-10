@@ -1,6 +1,6 @@
 import copy
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
 
 import torch
@@ -8,10 +8,11 @@ import torch.distributed.checkpoint.state_dict as dist_cp_sd
 from torch.distributed import DeviceMesh
 from torch.distributed.pipelining import PipelineStage
 
-from olmo_core.config import Config, DType
+from olmo_core.config import Config, DType, StrEnum
 from olmo_core.distributed.parallel import (
     ContextParallelConfig,
     DataParallelConfig,
+    DataParallelType,
     ExpertParallelConfig,
     PipelineParallelConfig,
     TensorParallelConfig,
@@ -38,6 +39,62 @@ if TYPE_CHECKING:
     from .train_module import TransformerTrainModule
 
 log = logging.getLogger(__name__)
+
+
+class BatchSimulationMethod(StrEnum):
+    """Opt-in methods for making a global batch optimize like a smaller batch."""
+
+    none = "none"
+    structured_noise = "structured_noise"
+    local_sgd = "local_sgd"
+
+
+@dataclass
+class BatchSimulationConfig(Config):
+    """
+    Configure an opt-in smaller-batch optimization simulation.
+
+    The default :data:`method` is ``none`` and exactly preserves normal OLMo-core training.
+    Batch sizes are expressed in tokens, consistent with the trainer and data loader.
+    """
+
+    method: BatchSimulationMethod = BatchSimulationMethod.none
+    global_batch_size: Optional[int] = None
+    simulated_batch_size: Optional[int] = None
+    local_sgd_sync_interval: int = 1
+    seed: int = 0
+
+    def __post_init__(self):
+        if self.method == BatchSimulationMethod.none:
+            return
+        if self.global_batch_size is None or self.global_batch_size <= 0:
+            raise OLMoConfigurationError(
+                "'global_batch_size' must be a positive token count when batch simulation is enabled"
+            )
+        if self.simulated_batch_size is None or self.simulated_batch_size <= 0:
+            raise OLMoConfigurationError(
+                "'simulated_batch_size' must be a positive token count when batch simulation is enabled"
+            )
+        if self.simulated_batch_size > self.global_batch_size:
+            raise OLMoConfigurationError("'simulated_batch_size' cannot exceed 'global_batch_size'")
+        if self.global_batch_size % self.simulated_batch_size != 0:
+            raise OLMoConfigurationError(
+                "'global_batch_size' must be divisible by 'simulated_batch_size'"
+            )
+        if self.local_sgd_sync_interval < 1:
+            raise OLMoConfigurationError("'local_sgd_sync_interval' must be at least 1")
+
+    @property
+    def num_ghost_batches(self) -> int:
+        if self.method == BatchSimulationMethod.none:
+            return 1
+        assert self.global_batch_size is not None
+        assert self.simulated_batch_size is not None
+        return self.global_batch_size // self.simulated_batch_size
+
+    @property
+    def enabled(self) -> bool:
+        return self.method != BatchSimulationMethod.none
 
 
 @beta_feature
@@ -322,6 +379,7 @@ class TransformerTrainModuleConfig(TrainModuleConfig):
 
     autocast_precision: Optional[DType] = None
     label_ignore_index: int = -100
+    batch_simulation: BatchSimulationConfig = field(default_factory=BatchSimulationConfig)
 
     def build(
         self,
@@ -338,6 +396,7 @@ class TransformerTrainModuleConfig(TrainModuleConfig):
         from .train_module import TransformerTrainModule
 
         kwargs = self.as_dict(exclude_none=True, recurse=False)
+        batch_simulation = kwargs.pop("batch_simulation")
         if (autocast_precision := kwargs.pop("autocast_precision", None)) is not None:
             kwargs["autocast_precision"] = cast(DType, autocast_precision).as_pt()
         if (state_dict_save_opts := kwargs.pop("state_dict_save_opts", None)) is not None:
@@ -346,15 +405,48 @@ class TransformerTrainModuleConfig(TrainModuleConfig):
             kwargs["state_dict_load_opts"] = dist_cp_sd.StateDictOptions(**state_dict_load_opts)
 
         if self.pp_config is not None:
+            if batch_simulation.enabled:
+                raise OLMoConfigurationError(
+                    "batch simulation is not currently compatible with pipeline parallelism"
+                )
             return TransformerPipelineTrainModule(
                 model=model,
                 device=device,
                 **kwargs,
             )
         else:
+            if batch_simulation.method == BatchSimulationMethod.local_sgd:
+                if (
+                    self.tp_config is not None
+                    or self.cp_config is not None
+                    or self.ep_config is not None
+                ):
+                    raise OLMoConfigurationError(
+                        "local SGD batch simulation currently requires pure data parallelism"
+                    )
+                if self.dp_config is None or self.dp_config.name not in (
+                    DataParallelType.fsdp,
+                    DataParallelType.hsdp,
+                ):
+                    raise OLMoConfigurationError(
+                        "local SGD batch simulation requires FSDP or HSDP data parallelism"
+                    )
+
+                # Each HSDP replica consumes one simulated batch while parameters remain sharded
+                # within a replica if there are more ranks than replicas.
+                effective_dp_config = replace(
+                    self.dp_config,
+                    name=DataParallelType.hsdp,
+                    num_replicas=batch_simulation.num_ghost_batches,
+                    shard_degree=None,
+                )
+                self.dp_config = effective_dp_config
+                kwargs["dp_config"] = effective_dp_config
+
             return TransformerTrainModule(
                 model=model,
                 device=device,
+                batch_simulation=batch_simulation,
                 **kwargs,
             )
 

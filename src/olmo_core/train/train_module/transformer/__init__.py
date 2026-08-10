@@ -1,4 +1,6 @@
 from .config import (
+    BatchSimulationConfig,
+    BatchSimulationMethod,
     TransformerActivationCheckpointingConfig,
     TransformerActivationCheckpointingMode,
     TransformerContextParallelConfig,
@@ -14,16 +16,18 @@ from .pipeline_train_module import TransformerPipelineTrainModule
 from .train_module import TransformerTrainModule
 
 __all__ = [
-    "TransformerTrainModule",
-    "TransformerTrainModuleConfig",
-    "TransformerPipelineTrainModule",
-    "TransformerPipelineTrainModuleConfig",
+    "BatchSimulationConfig",
+    "BatchSimulationMethod",
     "TransformerActivationCheckpointingConfig",
     "TransformerActivationCheckpointingMode",
+    "TransformerContextParallelConfig",
     "TransformerDataParallelConfig",
     "TransformerDataParallelWrappingStrategy",
     "TransformerExpertParallelConfig",
-    "TransformerTensorParallelConfig",
-    "TransformerContextParallelConfig",
     "TransformerPipelineParallelConfig",
+    "TransformerPipelineTrainModule",
+    "TransformerPipelineTrainModuleConfig",
+    "TransformerTensorParallelConfig",
+    "TransformerTrainModule",
+    "TransformerTrainModuleConfig",
 ]

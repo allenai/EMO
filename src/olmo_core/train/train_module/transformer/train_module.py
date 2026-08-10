@@ -26,6 +26,8 @@ from olmo_core.distributed.parallel import (
     DataParallelType,
     build_world_mesh,
     get_dp_process_group,
+    get_dp_replicate_mesh,
+    get_dp_shard_mesh,
 )
 from olmo_core.distributed.utils import (
     get_local_tensor,
@@ -50,8 +52,14 @@ from olmo_core.utils import (
 
 from ...common import ReduceType
 from ..train_module import EvalBatchSpec, TrainModule
+from .batch_simulation import (
+    average_module_and_optimizer_state,
+    structured_noise_loss_scales,
+)
 from .common import parallelize_model
 from .config import (
+    BatchSimulationConfig,
+    BatchSimulationMethod,
     TransformerActivationCheckpointingConfig,
     TransformerContextParallelConfig,
     TransformerDataParallelConfig,
@@ -97,6 +105,8 @@ class TransformerTrainModule(TrainModule):
         when loading a checkpoint.
     :param load_key_mapping: Can be used to load a checkpoint where certain parameter have different names.
         This dictionary should map current keys to keys in the checkpoint to be loaded.
+    :param batch_simulation: Optional structured-noise or local-SGD smaller-batch simulation.
+        The default configuration is disabled and preserves normal optimization.
     """
 
     def __init__(
@@ -121,6 +131,7 @@ class TransformerTrainModule(TrainModule):
         state_dict_load_opts: Optional[dist_cp_sd.StateDictOptions] = None,
         load_key_mapping: Optional[Dict[str, str]] = None,
         label_ignore_index: int = -100,
+        batch_simulation: Optional[BatchSimulationConfig] = None,
     ):
         super().__init__()
 
@@ -186,6 +197,8 @@ class TransformerTrainModule(TrainModule):
         self.autocast_precision = autocast_precision
         self.max_grad_norm = max_grad_norm
         self.scheduler = scheduler
+        self.batch_simulation = batch_simulation or BatchSimulationConfig()
+        self._local_sgd_steps_since_sync = 0
         self.state_dict_save_opts = state_dict_save_opts or dist_cp_sd.StateDictOptions(
             flatten_optimizer_state_dict=True, cpu_offload=True
         )
@@ -245,7 +258,48 @@ class TransformerTrainModule(TrainModule):
                 f"micro-batch size ({self.rank_microbatch_size:,d}) x DP world size ({dp_ws})"
             )
 
+        if self.batch_simulation.enabled:
+            configured_global_batch_size = self.batch_simulation.global_batch_size
+            assert configured_global_batch_size is not None
+            if configured_global_batch_size != self.trainer.global_batch_size:
+                raise OLMoConfigurationError(
+                    "batch simulation 'global_batch_size' "
+                    f"({configured_global_batch_size:,d}) does not match the trainer's global "
+                    f"batch size ({self.trainer.global_batch_size:,d})"
+                )
+            assert self.batch_simulation.simulated_batch_size is not None
+            if self.batch_simulation.simulated_batch_size % self.max_sequence_length != 0:
+                raise OLMoConfigurationError(
+                    "batch simulation 'simulated_batch_size' must be divisible by "
+                    "'max_sequence_length'"
+                )
+
+        if self.batch_simulation.method == BatchSimulationMethod.structured_noise:
+            rank_batch_size = self.trainer.global_batch_size // dp_ws
+            if rank_batch_size % self.batch_simulation.num_ghost_batches != 0:
+                raise OLMoConfigurationError(
+                    "each rank's batch must divide evenly into structured-noise ghost batches"
+                )
+            rank_ghost_batch_size = rank_batch_size // self.batch_simulation.num_ghost_batches
+            if rank_ghost_batch_size % self.max_sequence_length != 0:
+                raise OLMoConfigurationError(
+                    "each rank's structured-noise ghost batch must contain a whole number of sequences"
+                )
+
+        if self.batch_simulation.method == BatchSimulationMethod.local_sgd:
+            if self.world_mesh is None or self.dp_config is None:
+                raise OLMoConfigurationError("local SGD batch simulation requires distributed HSDP")
+            if self.dp_config.name != DataParallelType.hsdp:
+                raise OLMoConfigurationError("local SGD batch simulation requires HSDP")
+            replica_count = get_dp_replicate_mesh(self.world_mesh).size()
+            if replica_count != self.batch_simulation.num_ghost_batches:
+                raise OLMoConfigurationError(
+                    f"local SGD expected {self.batch_simulation.num_ghost_batches} replicas, "
+                    f"but the world mesh contains {replica_count}"
+                )
+
     def state_dict(self, *, optim: Optional[bool] = None) -> Dict[str, Any]:
+        self._maybe_sync_local_sgd(force=True)
         if optim is None:
             optim = True
         return self._get_state_dict(self.state_dict_save_opts, optim=optim)
@@ -305,6 +359,7 @@ class TransformerTrainModule(TrainModule):
         return state_dict
 
     def state_dict_to_save(self, *, optim: Optional[bool] = None) -> Dict[str, Any]:
+        self._maybe_sync_local_sgd(force=True)
         if optim is None:
             optim = True
         return self._get_state_dict(self.state_dict_save_opts, optim=optim)
@@ -341,6 +396,7 @@ class TransformerTrainModule(TrainModule):
                 options=self.state_dict_load_opts,
             )
             gc_cuda()
+        self._local_sgd_steps_since_sync = 0
 
     def train_batch(self, batch: Dict[str, Any], dry_run: bool = False):
         # Set model to train mode if it isn't already.
@@ -390,8 +446,28 @@ class TransformerTrainModule(TrainModule):
             raise RuntimeError(
                 f"Microbatch size ({self.rank_microbatch_size}) is too small relative to sequence length ({seq_len})"
             )
-        micro_batches = split_batch(batch, self.rank_microbatch_size // seq_len)
+        microbatch_instances = self.rank_microbatch_size // seq_len
+        if self.batch_simulation.method == BatchSimulationMethod.structured_noise:
+            rank_ghost_batch_tokens = batch_num_tokens // self.batch_simulation.num_ghost_batches
+            microbatch_instances = min(microbatch_instances, rank_ghost_batch_tokens // seq_len)
+        micro_batches = split_batch(batch, microbatch_instances)
         num_micro_batches = len(micro_batches)
+
+        structured_noise_scales: Optional[Tuple[float, ...]] = None
+        micro_batches_per_ghost = 0
+        if self.batch_simulation.method == BatchSimulationMethod.structured_noise:
+            ghost_count = self.batch_simulation.num_ghost_batches
+            if num_micro_batches % ghost_count != 0:
+                raise OLMoConfigurationError(
+                    "the number of rank microbatches must be divisible by the number of "
+                    "structured-noise ghost batches"
+                )
+            micro_batches_per_ghost = num_micro_batches // ghost_count
+            structured_noise_scales = structured_noise_loss_scales(
+                ghost_count,
+                seed=self.batch_simulation.seed,
+                step=self.trainer.global_step,
+            )
 
         # Train one micro-batch at a time.
         for micro_batch_idx, micro_batch in enumerate(micro_batches):
@@ -419,6 +495,9 @@ class TransformerTrainModule(TrainModule):
                     del z_loss
 
                 # Run backward pass.
+                if structured_noise_scales is not None:
+                    ghost_batch_idx = micro_batch_idx // micro_batches_per_ghost
+                    loss = loss * structured_noise_scales[ghost_batch_idx]
                 loss.backward()
 
         del batch  # In case this helps with memory utilization.
@@ -428,6 +507,18 @@ class TransformerTrainModule(TrainModule):
         if dry_run:
             self.model.reset_auxiliary_metrics()
             return
+
+        if structured_noise_scales is not None:
+            self.record_metric(
+                "simulated batch size",
+                float(self.batch_simulation.simulated_batch_size or 0),
+                namespace="batch simulation",
+            )
+            self.record_metric(
+                "structured noise RMS multiplier",
+                float((self.batch_simulation.num_ghost_batches - 1) ** 0.5),
+                namespace="batch simulation",
+            )
 
         # Record loss metrics.
         if isinstance(self.optim, SkipStepOptimizer):
@@ -470,6 +561,8 @@ class TransformerTrainModule(TrainModule):
     def eval_batch(
         self, batch: Dict[str, Any], labels: Optional[torch.Tensor] = None
     ) -> Union[torch.Tensor, LMOutputWithLoss]:
+        # Evaluation and checkpointing should always observe one coherent averaged model.
+        self._maybe_sync_local_sgd(force=True)
         # CP and TP are supported for PPL evals (LMEvaluator) since they only need per-token
         # CE loss. Downstream evals that require full logits will fail naturally if attempted
         # with CP or TP.
@@ -514,10 +607,18 @@ class TransformerTrainModule(TrainModule):
     def optim_step(self):
         # Maybe clip gradients.
         if self.max_grad_norm is not None:
-            grad_norm = self._clip_grad_norm(self.max_grad_norm)
-            # NOTE: grad norm is already reduced over ranks, so we set `reduce_type` to `None`.
+            if self.batch_simulation.method == BatchSimulationMethod.local_sgd:
+                grad_norm = self._clip_local_sgd_grad_norm(self.max_grad_norm)
+                grad_norm_reduce_type: Optional[ReduceType] = ReduceType.mean
+            else:
+                grad_norm = self._clip_grad_norm(self.max_grad_norm)
+                # Normal DP grad norm is already reduced over ranks.
+                grad_norm_reduce_type = None
             self.trainer.record_metric(
-                "total grad norm", grad_norm, reduce_type=None, namespace="optim"
+                "total grad norm",
+                grad_norm,
+                reduce_type=grad_norm_reduce_type,
+                namespace="optim",
             )
             if isinstance(self.optim, SkipStepOptimizer):
                 self.optim.latest_grad_norm = grad_norm
@@ -534,6 +635,15 @@ class TransformerTrainModule(TrainModule):
             self.record_metric("step skipped", self.optim.step_skipped, namespace="optim")
 
         self.model.post_optim_step()
+
+        if self.batch_simulation.method == BatchSimulationMethod.local_sgd:
+            self._local_sgd_steps_since_sync += 1
+            synced = self._maybe_sync_local_sgd()
+            self.record_metric(
+                "replica synchronization",
+                float(synced),
+                namespace="local SGD",
+            )
 
     def zero_grads(self):
         self.optim.zero_grad(set_to_none=True)
@@ -575,7 +685,11 @@ class TransformerTrainModule(TrainModule):
                 self.model.set_is_last_backward(is_last_mb)
                 # For HSDP we can delay the gradients all-reduce until the final micro-batch.
                 if self.dp_config.name == DataParallelType.hsdp:
-                    self.model.set_requires_all_reduce(is_last_mb)
+                    requires_all_reduce = (
+                        is_last_mb
+                        and self.batch_simulation.method != BatchSimulationMethod.local_sgd
+                    )
+                    self.model.set_requires_all_reduce(requires_all_reduce)
             elif isinstance(self.model, DDP):
                 # For DDP, only sync gradients on the final micro-batch.
                 if not is_last_mb:
@@ -636,6 +750,43 @@ class TransformerTrainModule(TrainModule):
 
         torch.nn.utils.clip_grads_with_norm_(parameters, max_grad_norm, total_norm, foreach=foreach)
         return total_norm
+
+    def _clip_local_sgd_grad_norm(self, max_grad_norm: float) -> torch.Tensor:
+        """Clip independently within each local-SGD replica (across its HSDP shards)."""
+        assert self.world_mesh is not None
+        local_norm_squared = torch.zeros((), device=self.device, dtype=torch.float32)
+        gradients = []
+        for parameter in self.model.parameters():
+            if parameter.grad is not None:
+                gradient = get_local_tensor(parameter.grad)
+                gradients.append(gradient)
+                local_norm_squared.add_(gradient.detach().float().square().sum())
+
+        shard_group = get_dp_shard_mesh(self.world_mesh).get_group()
+        if dist.get_world_size(shard_group) > 1:
+            dist.all_reduce(local_norm_squared, op=dist.ReduceOp.SUM, group=shard_group)
+        total_norm = local_norm_squared.sqrt()
+        clip_coefficient = torch.clamp(max_grad_norm / (total_norm + 1e-6), max=1.0)
+        for gradient in gradients:
+            gradient.mul_(clip_coefficient.to(gradient.device, dtype=gradient.dtype))
+        return total_norm
+
+    def _maybe_sync_local_sgd(self, *, force: bool = False) -> bool:
+        if self.batch_simulation.method != BatchSimulationMethod.local_sgd:
+            return False
+        if self._local_sgd_steps_since_sync == 0:
+            return False
+        if (
+            not force
+            and self._local_sgd_steps_since_sync < self.batch_simulation.local_sgd_sync_interval
+        ):
+            return False
+
+        assert self.world_mesh is not None
+        replica_group = get_dp_replicate_mesh(self.world_mesh).get_group()
+        average_module_and_optimizer_state(self.model, self.optim, replica_group)
+        self._local_sgd_steps_since_sync = 0
+        return True
 
     def _prepare_batch(
         self, batch: Dict[str, Any], labels: Optional[torch.Tensor] = None
