@@ -160,7 +160,7 @@ def update_env(task: dict[str, Any], *, revision: str, nodes: int, rdzv_id: str)
     env = task.setdefault("envVars", [])
     updates = {
         "GIT_REF": revision,
-        "GIT_BRANCH": "codex/batch-sim-bs1024",
+        "GIT_BRANCH": "sewonm/icsl-noise",
         "NUM_NODES": str(nodes),
     }
     if nodes > 1:
