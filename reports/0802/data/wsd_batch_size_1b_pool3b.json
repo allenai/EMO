@@ -1151,7 +1151,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 4,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZN0YCC7A7QJVRKEWDKEH97F",
@@ -1178,7 +1178,8 @@
         "01KZN0YCKPBRA3S9VXJ41GX7GS"
       ],
       "job": "01KZN0YCKGBMHAERSWNMGMBFD0",
-      "resultDataset": "01KZN0YCCBYM2G5BJR1BYNT255"
+      "resultDataset": "01KZN0YCCBYM2G5BJR1BYNT255",
+      "activeWandb": "z70cdtrw"
     }
   ],
   "baseline1b": {
