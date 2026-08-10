@@ -36,6 +36,11 @@ def running(job: dict) -> bool:
     )
 
 
+def completed_successfully(job: dict) -> bool:
+    status = job.get("status", {})
+    return bool(status.get("finalized")) and status.get("exitCode") == 0
+
+
 def sync(path: Path) -> int:
     report = json.loads(path.read_text())
     changed = 0
@@ -64,6 +69,8 @@ def sync(path: Path) -> int:
             updates["activeWandb"] = match.group(1)
         if jobs and all(running(job) for job in jobs):
             updates["status"] = "running"
+        elif jobs and all(completed_successfully(job) for job in jobs):
+            updates["status"] = "complete"
         for key, value in updates.items():
             if sweep.get(key) != value:
                 sweep[key] = value

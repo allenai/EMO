@@ -457,6 +457,12 @@ def build(
 ) -> tuple[dict[str, Any], str, str]:
     spec = copy.deepcopy(source)
     task = spec["tasks"][0]
+    # ``beaker experiment spec`` materializes one task per replica for an
+    # already-submitted multi-node predecessor. Reconstruct one clean logical
+    # task before applying the requested replica topology; otherwise a later
+    # frontier would accidentally retain stale replica tasks and env values.
+    spec["tasks"] = [task]
+    task["name"] = "main"
     script, _, args = extract_training_command(task)
     blocked = (
         "--load_path=", "--load_trainer_state=", "--trainer.load_path=",
@@ -552,7 +558,13 @@ def build(
         "NUM_NODES",
     }
     task["envVars"] = [
-        x for x in task.get("envVars", []) if x.get("name") not in blocked_env
+        x
+        for x in task.get("envVars", [])
+        if x.get("name") not in blocked_env
+        and not (
+            str(x.get("name", "")).startswith("BEAKER_")
+            and x.get("name") != "BEAKER_TOKEN"
+        )
     ]
     for env in task["envVars"]:
         if env.get("name") == "GIT_REF":
