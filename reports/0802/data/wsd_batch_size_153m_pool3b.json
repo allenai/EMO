@@ -3314,7 +3314,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 16,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZNNTEX0AWM9ARF17SJ8J23R",
@@ -3353,9 +3353,9 @@
       "jobStates": [
         {
           "job": "01KZNNTF25E2KHMDYSWN7XWKHP",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T11:09:43.712106Z",
-          "started": null,
+          "started": "2026-08-10T11:11:01.393469Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -3363,9 +3363,9 @@
         },
         {
           "job": "01KZNNTF7FAFZ6DVPXNHED61KR",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T11:09:43.712106Z",
-          "started": null,
+          "started": "2026-08-10T11:11:01.65093Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
