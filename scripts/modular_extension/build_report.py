@@ -221,11 +221,15 @@ cluster's documents (<em>in-pile</em>) and for all other documents (<em>out-pile
 <strong>AUC</strong> is the probability that a random in-doc has a higher value than a random out-doc,
 <code>P(x_in &gt; x_out)</code> &mdash; run every in&times;out pair as a &ldquo;higher value wins&rdquo;
 contest and take the in-pile's win rate. 0.5 = indistinguishable (a coin flip); 1.0 = every cluster doc
-routes higher than every non-cluster doc (perfect separation). We compute it the fast, identical way (rank
-all values, sum the in-pile's ranks: <code>AUC = (R_in &minus; n_in(n_in+1)/2) / (n_in&middot;n_out)</code>),
-and fold both directions into a separability <code>|AUC&minus;0.5|+0.5</code> so an expert the cluster
-routes <em>away</em> from counts too. (This win-rate equals the area under the ROC curve &mdash; same
-quantity, ranking view.)</p>
+routes higher than every non-cluster doc (perfect separation). In practice we don't enumerate pairs;
+writing <code>n_in</code> and <code>n_out</code> for the number of docs in the in-pile and out-pile, we
+pool all <code>n_in+n_out</code> values, rank them from smallest (rank&nbsp;1) to largest, and let
+<code>R_in</code> = the sum of the in-pile's ranks. An in-doc's rank is 1 plus the number of values below
+it, so <code>R_in &minus; n_in(n_in+1)/2</code> is exactly the number of in&times;out contests the in-pile
+wins, giving <code>AUC = (R_in &minus; n_in(n_in+1)/2) / (n_in&middot;n_out)</code> &mdash; the same
+win rate, computed by sorting once. We fold both directions into a separability
+<code>|AUC&minus;0.5|+0.5</code> so an expert the cluster routes <em>away</em> from counts too. (This
+win-rate equals the area under the ROC curve &mdash; same quantity, ranking view.)</p>
 <p><strong>Why AUC is signal-to-noise, and why that matters here.</strong> Whether the two piles separate
 depends on the gap between their means <em>relative to their spread</em>: AUC rises with
 <code>|&delta;| / &sigma;</code> (the gap over the doc-to-doc standard deviation, i.e. Cohen's&nbsp;d).
@@ -238,9 +242,13 @@ resolved concretely in <strong>Findings</strong>.</p>
 <ul>
 <li><strong><code>best-AUC</code></strong> = the single most-telling expert's separability &mdash; can one
 expert alone identify the cluster?</li>
-<li><strong><code>full-AUC</code></strong> = the ceiling, using the whole joint pattern (cosine-to-centroid,
-one-vs-rest). <strong><code>ratio</code></strong> = (best&minus;0.5)/(full&minus;0.5), the fraction of the
-full separability one expert already recovers.</li>
+<li><strong><code>full-AUC</code></strong> = the same AUC, but with the score for each document being not
+one expert's routing value but its <em>entire</em> fingerprint compared against the cluster: score =
+cosine similarity between the document's full {soft['n_dims']}-dim routing vector and the cluster's mean
+vector (centroid). Because this score uses every expert at once, it is the best &ldquo;use everything&rdquo;
+separability we measure &mdash; the <em>whole-pattern ceiling</em> that any single expert is judged against.
+<strong><code>ratio</code></strong> = (best&minus;0.5)/(full&minus;0.5), the fraction of that ceiling the
+single best expert already recovers on its own.</li>
 </ul>
 <p><strong>H2 (subtle)</strong> predicts weak <code>best-AUC</code> and low <code>ratio</code> &mdash; no
 single expert separates the cluster, only the joint pattern does.</p>''')}
@@ -255,7 +263,8 @@ single expert separates the cluster, only the joint pattern does.</p>''')}
          "can the single best expert separate the cluster?",
          "<strong>strength</strong> &mdash; H2 wants this weak"),
         ("<code>full-AUC</code> / <code>ratio</code>",
-         "whole-pattern ceiling, and how much one expert recovers",
+         "AUC when scoring docs by cosine to the cluster's mean fingerprint (all experts at once) "
+         "= the ceiling; ratio = fraction of it one expert recovers",
          "strength &mdash; low ratio ⇒ only joint pattern (H2)"),
         ("<code>exp. used</code>",
          "effective experts the cluster routes to per layer, vs corpus ~%.0f" % soft["global_effective_experts"],
@@ -287,8 +296,12 @@ def build_findings(soft, hard, code, ill) -> str:
 its effective-dimension count would be small. It does not. The top-5 experts hold only
 ~{pct(soft['median_top5_mass'])} of the median cluster's deviation (~{pct(hard['median_top5_mass'])}
 under hard selection), and a median of <strong>~{soft['median_effective_dims']:.0f} of {soft['n_dims']}</strong>
-experts carry meaningful deviation. The concentration curves are shallow and the deviation heatmap is
-diffuse, not blocky &mdash; no small set of columns dominates.</p>
+experts carry meaningful deviation. The concentration curves are shallow, and the deviation heatmap (one
+row per cluster, one column per layer&times;expert) shows it visually: under H1 each row would concentrate
+into a few saturated cells &mdash; that cluster's signature experts &mdash; with the rest of the row
+near-white (and if clusters <em>shared</em> signature experts, those cells would line up into strong
+vertical stripes). Neither pattern appears: every row spreads its deviation thinly across hundreds of
+columns, and no expert column stands out across clusters.</p>
 <p>This is not the same as &ldquo;the cluster uses every expert equally&rdquo;: clusters <em>are</em> more
 peaked than the corpus, routing to an effective ~{soft['median_effective_experts_used']:.0f} of
 {soft['n_experts_per_layer']} experts per layer vs the corpus's ~{soft['global_effective_experts']:.0f}.
@@ -297,7 +310,9 @@ The specialization is real; it is just <em>distributed</em> over dozens of exper
     fig("doc_probs", "signature_concentration.png",
         "Share of each cluster's deviation carried by its top-m experts. Shallow curves ⇒ no small signature set."),
     fig("doc_probs", "deviation_heatmap.png",
-        "Per-cluster expert deviation (z-scored), 64 clusters × 1008 experts. Diffuse, not blocky vertical stripes."),
+        "Per-cluster expert deviation (z-scored), one row per cluster × 1008 layer·expert columns. "
+        "H1 would show a few saturated cells per row (signature experts); instead each row's deviation "
+        "is spread thinly across hundreds of columns."),
 ))}
 
 {card("results", "Finding 2 &mdash; yet hundreds of experts each classify the cluster (H2 refuted)", f'''
