@@ -27,8 +27,11 @@ RUN="emo_64exp_50b_wsd_lr2e-3"
 STEP=23842
 
 MODEL_HF="${WEKA_ROOT}/models_v2/${RUN}/step${STEP}-hf"
-DOCS_GLOB="${WEKA_ROOT}/${EXP}/data/${RUN}_100B-110B/docs-*.jsonl.gz"
-OUTPUT_DIR="${WEKA_ROOT}/${EXP}/cluster/emo100b_step${STEP}/embeddings"
+# Window-specific paths, overridable so other doc windows (e.g. 110B-130B) reuse this
+# launcher via thin wrapper scripts.
+DOCS_GLOB="${DOCS_GLOB:-${WEKA_ROOT}/${EXP}/data/${RUN}_100B-110B/docs-*.jsonl.gz}"
+OUTPUT_DIR="${OUTPUT_DIR:-${WEKA_ROOT}/${EXP}/cluster/emo100b_step${STEP}/embeddings}"
+JOB_PREFIX="${JOB_PREFIX:-modext-embed-docs}"
 
 NUM_SHARDS="${NUM_SHARDS:-128}"
 SHARDS="${SHARDS:-0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}"   # small run default (~12.5%)
@@ -66,7 +69,7 @@ for j in $(seq 0 $((JOBS - 1))); do
     [ -z "$inner" ] && continue
     inner+="wait; ok=1; for f in ${job_infos}; do [ -f \"\$f\" ] || { echo \"MISSING \$f\"; ok=0; }; done; tail -n2 /results/shard_gpu*.log; [ \"\$ok\" -eq 1 ]"
 
-    job="modext-embed-docs-j${j}"
+    job="${JOB_PREFIX}-j${j}"
     echo ">>> job ${job}: $(echo "$inner" | grep -o '\--shards [0-9,]*' | tr '\n' ' ')"
     if [ "${DRY_RUN}" = "1" ]; then
         echo "    ${inner}"
