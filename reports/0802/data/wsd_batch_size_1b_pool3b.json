@@ -3797,7 +3797,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "running",
+      "status": "failed",
       "activeEpoch": 8,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPAWJ672C11JH7C6XC9R4GC",
@@ -3836,28 +3836,30 @@
       "jobStates": [
         {
           "job": "01KZPAWJAJ09DJEF8XMAG5EF3N",
-          "state": "running",
+          "state": "failed",
           "created": "2026-08-10T17:17:52.711559Z",
           "started": "2026-08-10T18:06:50.719755Z",
-          "finalized": null,
-          "exitCode": null,
+          "finalized": "2026-08-10T21:09:31.480265Z",
+          "exitCode": 1,
           "reason": null,
           "resultDataset": "01KZPAWJ6J514DC2RHHP4FRQTG"
         },
         {
           "job": "01KZPAWJDZ6B28V3W56DZ16BS7",
-          "state": "running",
+          "state": "canceled",
           "created": "2026-08-10T17:17:52.711559Z",
           "started": "2026-08-10T18:06:50.775546Z",
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "finalized": "2026-08-10T21:10:05.75378Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPAWJAJ09DJEF8XMAG5EF3N\" from sibling task \"01KZPAWJ6GVAFXDSJCH07FDRH8\" failed with propagate-failure enabled",
           "resultDataset": "01KZPAWJAQGKYN576509ZJRJG4"
         }
       ],
       "job": "01KZPAWJAJ09DJEF8XMAG5EF3N",
       "resultDataset": "01KZPAWJ6J514DC2RHHP4FRQTG",
-      "activeWandb": "dn5hk056"
+      "activeWandb": "dn5hk056",
+      "failureClass": "infrastructure",
+      "failureReason": "Infrastructure-only failure after finite training: NCCL ALLGATHER timed out during distributed checkpointing; sibling cancellation was propagate-failure fallout. Mounted Weka audit verified exact complete steps25749 and30899; latest exact step30899 is the only admissible recovery source and must restore loader state without reset."
     },
     {
       "batchSequences": 256,
@@ -4113,7 +4115,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 4,
       "gpuCount": 32,
-      "status": "running",
+      "status": "failed",
       "activeEpoch": 12,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPH0SGYG01K37K2344M8NPD",
@@ -4156,48 +4158,50 @@
       "jobStates": [
         {
           "job": "01KZPH0SN06BN1YWXY1WJGFZN9",
-          "state": "running",
+          "state": "canceled",
           "created": "2026-08-10T19:05:02.749976Z",
           "started": "2026-08-10T19:09:59.476734Z",
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "finalized": "2026-08-10T20:49:51.584783Z",
+          "exitCode": 137,
+          "reason": "job \"01KZPH0SW8TG3AWDPBBF54SBK4\" from sibling task \"01KZPH0SS0GP183WHH4PPJ2HF8\" failed with propagate-failure enabled",
           "resultDataset": "01KZPH0SHDQVY30W97JYMWNNYE"
         },
         {
           "job": "01KZPH0SRVR6BCF5HGVJJJXE6T",
-          "state": "running",
+          "state": "canceled",
           "created": "2026-08-10T19:05:02.749976Z",
           "started": "2026-08-10T19:09:58.9531Z",
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "finalized": "2026-08-10T20:50:03.173873Z",
+          "exitCode": 137,
+          "reason": "job \"01KZPH0SW8TG3AWDPBBF54SBK4\" from sibling task \"01KZPH0SS0GP183WHH4PPJ2HF8\" failed with propagate-failure enabled",
           "resultDataset": "01KZPH0SN8P0EM5HYECJ84VYVA"
         },
         {
           "job": "01KZPH0SW8TG3AWDPBBF54SBK4",
-          "state": "running",
+          "state": "failed",
           "created": "2026-08-10T19:05:02.749976Z",
           "started": "2026-08-10T19:09:58.911108Z",
-          "finalized": null,
-          "exitCode": null,
+          "finalized": "2026-08-10T20:44:30.568744Z",
+          "exitCode": 1,
           "reason": null,
           "resultDataset": "01KZPH0SS2JRVM93SVNHKKJR8V"
         },
         {
           "job": "01KZPH0SZR271CXGX3THNAQHDQ",
-          "state": "running",
+          "state": "canceled",
           "created": "2026-08-10T19:05:02.749976Z",
           "started": "2026-08-10T19:09:58.96581Z",
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "finalized": "2026-08-10T20:45:08.468179Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPH0SW8TG3AWDPBBF54SBK4\" from sibling task \"01KZPH0SS0GP183WHH4PPJ2HF8\" failed with propagate-failure enabled",
           "resultDataset": "01KZPH0SWE1C9A7933BT4FTC5N"
         }
       ],
       "job": "01KZPH0SN06BN1YWXY1WJGFZN9",
       "resultDataset": "01KZPH0SHDQVY30W97JYMWNNYE",
-      "activeWandb": "yvbkz59s"
+      "activeWandb": "yvbkz59s",
+      "failureClass": "infrastructure",
+      "failureReason": "Infrastructure-only failure after finite training: NCCL peer connection closed during distributed checkpointing and the failed rank exited after SIGSEGV; sibling exit-137/cancellations were propagate-failure fallout. Mounted Weka audit verified exact complete steps23174,25749,28324; latest exact step28324 is the only admissible recovery source and must restore loader state without reset."
     },
     {
       "batchSequences": 512,

@@ -6326,7 +6326,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "running",
+      "status": "failed",
       "activeEpoch": 32,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPH16VR914PM382KVXTSKMX",
@@ -6373,28 +6373,30 @@
       "jobStates": [
         {
           "job": "01KZPH16ZNTQWHX5WC9RNVAMXM",
-          "state": "running",
+          "state": "failed",
           "created": "2026-08-10T19:05:16.407914Z",
           "started": "2026-08-10T19:31:50.49767Z",
-          "finalized": null,
-          "exitCode": null,
+          "finalized": "2026-08-10T21:09:38.733559Z",
+          "exitCode": 1,
           "reason": null,
           "resultDataset": "01KZPH16VXMZZCMWMA5W76H06A"
         },
         {
           "job": "01KZPH1731FNEM3J8FPTZBZ6RN",
-          "state": "running",
+          "state": "canceled",
           "created": "2026-08-10T19:05:16.407914Z",
           "started": "2026-08-10T19:31:50.446337Z",
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "finalized": "2026-08-10T21:10:19.407275Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPH16ZNTQWHX5WC9RNVAMXM\" from sibling task \"01KZPH16VV2N0GYBH2MZRRT5TS\" failed with propagate-failure enabled",
           "resultDataset": "01KZPH16ZS5GPDTPXFV2QSKZT6"
         }
       ],
       "job": "01KZPH16ZNTQWHX5WC9RNVAMXM",
       "resultDataset": "01KZPH16VXMZZCMWMA5W76H06A",
-      "activeWandb": "2p4q8mbf"
+      "activeWandb": "2p4q8mbf",
+      "failureClass": "infrastructure",
+      "failureReason": "Infrastructure-only failure after finite stable training: NCCL connection reset by peer and watchdog failure during distributed checkpointing, followed by SIGSEGV; sibling cancellation was propagate-failure fallout. Mounted Weka audit verified every exact retained checkpoint through step82397, which is the only admissible recovery source."
     },
     {
       "batchSequences": 256,
@@ -6408,7 +6410,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 32,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPHF2GG1Y2B58RFSACYG23Z",
@@ -6455,9 +6457,9 @@
       "jobStates": [
         {
           "job": "01KZPHF2MEMV105W5FJRE2CSR6",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T19:12:50.703914Z",
-          "started": null,
+          "started": "2026-08-10T19:54:56.356661Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -6465,9 +6467,9 @@
         },
         {
           "job": "01KZPHF2RDQGYE6HHXSK6WSDSD",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T19:12:50.703914Z",
-          "started": null,
+          "started": "2026-08-10T19:54:56.960725Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -6475,7 +6477,8 @@
         }
       ],
       "job": "01KZPHF2MEMV105W5FJRE2CSR6",
-      "resultDataset": "01KZPHF2GPWFHPZQE8CPVW3275"
+      "resultDataset": "01KZPHF2GPWFHPZQE8CPVW3275",
+      "activeWandb": "vib0b9kh"
     },
     {
       "batchSequences": 512,
@@ -6489,7 +6492,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 4,
       "gpuCount": 32,
-      "status": "pending",
+      "status": "failed",
       "activeEpoch": 4,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPHFAJQ7PAYV1CYPS5XMGG4",
@@ -6517,58 +6520,73 @@
         "01KZPHFAP7K5WTQG1XPQ0TC0YM",
         "01KZPHFATB63J4HMK1MNNNQ9VB",
         "01KZPHFAYJPMQP9JKQB4X0XH30",
-        "01KZPHFB2Q86BJ02YBYDHGW5WR"
+        "01KZPHFB2Q86BJ02YBYDHGW5WR",
+        "01KZPPAT7W9SPVPWDBC9EX4V7R"
       ],
       "resultDatasets": [
         "01KZPHFAJX1N60P0XFDGSADWEE",
         "01KZPHFAPAG174FKEJ1T3A1B0B",
         "01KZPHFATG8FGZKVD19B99T4JE",
-        "01KZPHFAYPPNN8YX4ZPA9X1AGF"
+        "01KZPHFAYPPNN8YX4ZPA9X1AGF",
+        "01KZPPAT4KRK8WEKMRH939JJV5"
       ],
       "jobStates": [
         {
           "job": "01KZPHFAP7K5WTQG1XPQ0TC0YM",
-          "state": "pending",
+          "state": "failed",
           "created": "2026-08-10T19:12:58.967261Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
+          "started": "2026-08-10T20:41:39.009174Z",
+          "finalized": "2026-08-10T21:01:44.628861Z",
+          "exitCode": 1,
           "reason": null,
           "resultDataset": "01KZPHFAJX1N60P0XFDGSADWEE"
         },
         {
           "job": "01KZPHFATB63J4HMK1MNNNQ9VB",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T19:12:58.967261Z",
           "started": null,
-          "finalized": null,
+          "finalized": "2026-08-10T20:37:53.933201Z",
           "exitCode": null,
-          "reason": null,
+          "reason": "healthcheck for job 01KZPHFATB63J4HMK1MNNNQ9VB failed",
           "resultDataset": "01KZPHFAPAG174FKEJ1T3A1B0B"
         },
         {
           "job": "01KZPHFAYJPMQP9JKQB4X0XH30",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T19:12:58.967261Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "started": "2026-08-10T20:41:39.199031Z",
+          "finalized": "2026-08-10T21:03:38.280484Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPHFAP7K5WTQG1XPQ0TC0YM\" from sibling task \"01KZPHFAJVTMBE550JBNTJ0BZ1\" failed with propagate-failure enabled",
           "resultDataset": "01KZPHFATG8FGZKVD19B99T4JE"
         },
         {
           "job": "01KZPHFB2Q86BJ02YBYDHGW5WR",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T19:12:58.967261Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "started": "2026-08-10T20:41:39.513511Z",
+          "finalized": "2026-08-10T21:01:45.123812Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPHFAP7K5WTQG1XPQ0TC0YM\" from sibling task \"01KZPHFAJVTMBE550JBNTJ0BZ1\" failed with propagate-failure enabled",
           "resultDataset": "01KZPHFAYPPNN8YX4ZPA9X1AGF"
+        },
+        {
+          "job": "01KZPPAT7W9SPVPWDBC9EX4V7R",
+          "state": "canceled",
+          "created": "2026-08-10T20:37:53.933201Z",
+          "started": "2026-08-10T20:41:39.327551Z",
+          "finalized": "2026-08-10T21:01:44.687103Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPHFAP7K5WTQG1XPQ0TC0YM\" from sibling task \"01KZPHFAJVTMBE550JBNTJ0BZ1\" failed with propagate-failure enabled",
+          "resultDataset": "01KZPPAT4KRK8WEKMRH939JJV5"
         }
       ],
       "job": "01KZPHFAP7K5WTQG1XPQ0TC0YM",
-      "resultDataset": "01KZPHFAJX1N60P0XFDGSADWEE"
+      "resultDataset": "01KZPHFAJX1N60P0XFDGSADWEE",
+      "activeWandb": "o7gj7k7q",
+      "failureClass": "infrastructure",
+      "failureReason": "Infrastructure-only failure: NCCL ALLGATHER timed out after 900 seconds during distributed checkpointing with InfiniBand vendor error 136; one sibling had a node healthcheck cancellation and the remaining cancellations were propagate-failure fallout. Mounted Weka audit found no complete target-run checkpoint, so recovery must restart from the exact selected E2 step2575 with the normal loader reset."
     },
     {
       "batchSequences": 512,
@@ -6582,7 +6600,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 4,
       "gpuCount": 32,
-      "status": "pending",
+      "status": "failed",
       "activeEpoch": 4,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPHFKR2CKW18PSRAQGPPM50",
@@ -6621,47 +6639,110 @@
       "jobStates": [
         {
           "job": "01KZPHFKW0Q9HZD70GQ3A0FEK3",
-          "state": "pending",
+          "state": "failed",
           "created": "2026-08-10T19:13:08.353941Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
+          "started": "2026-08-10T20:52:56.657412Z",
+          "finalized": "2026-08-10T21:08:58.237861Z",
+          "exitCode": 1,
           "reason": null,
           "resultDataset": "01KZPHFKRG8G9M1RGM73W1XBWZ"
         },
         {
           "job": "01KZPHFM0H1PYFWKT45TSMX148",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T19:13:08.353941Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "started": "2026-08-10T20:52:56.047944Z",
+          "finalized": "2026-08-10T21:09:01.001584Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPHFKW0Q9HZD70GQ3A0FEK3\" from sibling task \"01KZPHFKRB4R1NE05673ZJG9F1\" failed with propagate-failure enabled",
           "resultDataset": "01KZPHFKWAQJ3HS2YDKPEVW851"
         },
         {
           "job": "01KZPHFM48WKHC8BNTVC79DBZW",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T19:13:08.353941Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "started": "2026-08-10T20:52:56.090093Z",
+          "finalized": "2026-08-10T21:09:00.881363Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPHFKW0Q9HZD70GQ3A0FEK3\" from sibling task \"01KZPHFKRB4R1NE05673ZJG9F1\" failed with propagate-failure enabled",
           "resultDataset": "01KZPHFM0RZA49PRE2SKVH9RHG"
         },
         {
           "job": "01KZPHFM7WX3PBP46PSHV1ZBY1",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T19:13:08.353941Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "started": "2026-08-10T20:52:56.839766Z",
+          "finalized": "2026-08-10T21:08:58.566175Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPHFKW0Q9HZD70GQ3A0FEK3\" from sibling task \"01KZPHFKRB4R1NE05673ZJG9F1\" failed with propagate-failure enabled",
           "resultDataset": "01KZPHFM4FG73CTEJFAA9JXQSK"
         }
       ],
       "job": "01KZPHFKW0Q9HZD70GQ3A0FEK3",
-      "resultDataset": "01KZPHFKRG8G9M1RGM73W1XBWZ"
+      "resultDataset": "01KZPHFKRG8G9M1RGM73W1XBWZ",
+      "failureClass": "infrastructure",
+      "failureReason": "Infrastructure-only failure: NCCL peer connection closures during distributed checkpointing led to SIGSEGV; sibling cancellations were propagate-failure fallout. Mounted Weka audit found no complete target-run checkpoint, so recovery must restart from the exact selected E2 step2575 with the normal loader reset."
+    },
+    {
+      "batchSequences": 128,
+      "globalBatchTokens": 524288,
+      "contextLength": 4096,
+      "lr": "2e-3",
+      "wd": "0.1",
+      "warmupSteps": 192,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 1,
+      "gpuCount": 8,
+      "status": "pending",
+      "activeEpoch": 20,
+      "search": "nested-3b-fixed-lr-frozen-wd",
+      "beaker": "01KZPS94YEZ0PA2X6QQNFQK9XB",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs128_e20_lr2e-3_wd0.1_warmup192_p3e20-r32a",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs128_e16_lr2e-3_wd0.1_warmup192_p3e16-r25a/step82397",
+      "sourceEpoch": 16,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": true,
+      "dataLoaderSeed": 80220,
+      "retainedPreDecaySteps": [
+        87546,
+        92696,
+        97846,
+        102996
+      ],
+      "newRetainedPreDecaySteps": [
+        87546,
+        92696,
+        97846,
+        102996
+      ],
+      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs128_e20_lr2e-3_wd0.1_warmup192_p3e20-r32a/step102996",
+      "recoverySourceStep": null,
+      "actualTargetTokens": 60000000000,
+      "revision": "a53c0189ed2358c45701e44c77f940aa6fc41016",
+      "recoveryOf": null,
+      "results": {},
+      "jobs": [
+        "01KZPS9579S6KT9H8EHGRP8EPV"
+      ],
+      "resultDatasets": [
+        "01KZPS94YQYW70YX425CT2AXAN"
+      ],
+      "jobStates": [
+        {
+          "job": "01KZPS9579S6KT9H8EHGRP8EPV",
+          "state": "pending",
+          "created": "2026-08-10T21:29:25.19871Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPS94YQYW70YX425CT2AXAN"
+        }
+      ],
+      "job": "01KZPS9579S6KT9H8EHGRP8EPV",
+      "resultDataset": "01KZPS94YQYW70YX425CT2AXAN"
     }
   ],
   "summaryBatches": [

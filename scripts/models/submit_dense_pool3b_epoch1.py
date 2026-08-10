@@ -333,23 +333,42 @@ def audit_later(
             f"wrong selected predecessor checkpoint: expected {expected_checkpoint}"
         )
     requested_wd = Decimal(a.weight_decay)
-    if selected_wd not in WD_LADDER:
-        raise SystemExit(f"selected WD {selected_wd} is not on the configured ladder")
-    selected_index = WD_LADDER.index(selected_wd)
-    allowed = {selected_wd}
-    if selected_index + 1 < len(WD_LADDER):
-        allowed.add(WD_LADDER[selected_index + 1])
-    if requested_wd not in allowed:
-        raise SystemExit(
-            f"E{a.target_epoch} WD must be selected predecessor WD {selected_wd} "
-            "or exactly one ladder step higher"
-        )
-    cap = baseline_wd_cap(report, batch, a.target_epoch, lr)
-    if requested_wd > cap:
-        raise SystemExit(
-            f"WD {requested_wd} exceeds the trusted 1B-pool BS{batch} "
-            f"E{a.target_epoch} cap {cap}"
-        )
+    freeze_policy = report.get("wdFreezePolicy", {})
+    frozen_value = freeze_policy.get("frozenContinuationWdByBatch", {}).get(
+        str(batch)
+    )
+    policy_frontier = freeze_policy.get("policyFrontierByBatch", {}).get(str(batch))
+    frozen_continuation = bool(
+        frozen_value is not None
+        and policy_frontier is not None
+        and a.target_epoch > int(policy_frontier)
+    )
+    if frozen_continuation:
+        frozen_wd = Decimal(str(frozen_value))
+        if requested_wd != frozen_wd or selected_wd != frozen_wd:
+            raise SystemExit(
+                f"post-policy-frontier E{a.target_epoch} must continue exact frozen "
+                f"WD {frozen_wd}; predecessor selected {selected_wd}, requested "
+                f"{requested_wd}"
+            )
+    else:
+        if selected_wd not in WD_LADDER:
+            raise SystemExit(f"selected WD {selected_wd} is not on the configured ladder")
+        selected_index = WD_LADDER.index(selected_wd)
+        allowed = {selected_wd}
+        if selected_index + 1 < len(WD_LADDER):
+            allowed.add(WD_LADDER[selected_index + 1])
+        if requested_wd not in allowed:
+            raise SystemExit(
+                f"E{a.target_epoch} WD must be selected predecessor WD {selected_wd} "
+                "or exactly one ladder step higher"
+            )
+        cap = baseline_wd_cap(report, batch, a.target_epoch, lr)
+        if requested_wd > cap:
+            raise SystemExit(
+                f"WD {requested_wd} exceeds the trusted 1B-pool BS{batch} "
+                f"E{a.target_epoch} cap {cap}"
+            )
     horizon = baseline_horizon(report, batch, lr)
     if a.target_epoch > horizon:
         raise SystemExit(
@@ -851,7 +870,20 @@ def register(a: argparse.Namespace, experiment: str, output: str) -> None:
         "gpuCount": total_gpus,
         "status": "pending",
         "activeEpoch": a.target_epoch,
-        "search": "nested-3b-fixed-lr-adaptive-wd",
+        "search": (
+            "nested-3b-fixed-lr-frozen-wd"
+            if a.target_epoch
+            > int(
+                report.get("wdFreezePolicy", {})
+                .get("policyFrontierByBatch", {})
+                .get(str(a.global_sequences), a.target_epoch)
+            )
+            and report.get("wdFreezePolicy", {})
+            .get("frozenContinuationWdByBatch", {})
+            .get(str(a.global_sequences))
+            is not None
+            else "nested-3b-fixed-lr-adaptive-wd"
+        ),
         "beaker": experiment,
         "output": output,
         "sourceCheckpoint": a.source_checkpoint,
