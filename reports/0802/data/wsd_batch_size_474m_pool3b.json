@@ -238,7 +238,8 @@
         "01KZMYKB3KB3XF33T146087KSP"
       ],
       "job": "01KZMYKB6ZYBH9N4MF28H8P7VS",
-      "resultDataset": "01KZMYKB3KB3XF33T146087KSP"
+      "resultDataset": "01KZMYKB3KB3XF33T146087KSP",
+      "activeWandb": "5f8dvv9m"
     },
     {
       "batchSequences": 128,

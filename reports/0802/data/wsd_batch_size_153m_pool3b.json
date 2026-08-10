@@ -468,7 +468,8 @@
         "01KZMYK7DAHKXARD5ASSNM21P1"
       ],
       "job": "01KZMYK7D3WGQ74MDJ4Z8XXPXN",
-      "resultDataset": "01KZMYK79SNY08Y9F4DMBD00TF"
+      "resultDataset": "01KZMYK79SNY08Y9F4DMBD00TF",
+      "activeWandb": "e43zw7us"
     }
   ],
   "summaryBatches": [
