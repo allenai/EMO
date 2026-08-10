@@ -6811,7 +6811,8 @@
         }
       ],
       "job": "01KZPS9579S6KT9H8EHGRP8EPV",
-      "resultDataset": "01KZPS94YQYW70YX425CT2AXAN"
+      "resultDataset": "01KZPS94YQYW70YX425CT2AXAN",
+      "activeWandb": "yzks8s14"
     },
     {
       "batchSequences": 256,
@@ -6825,7 +6826,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 32,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPST8G2R6WMQ2N619E10QHF",
@@ -6863,9 +6864,9 @@
       "jobStates": [
         {
           "job": "01KZPST8NXKRAN4CR1J82J6Z62",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T21:38:45.890285Z",
-          "started": null,
+          "started": "2026-08-10T22:54:52.755477Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -6873,9 +6874,9 @@
         },
         {
           "job": "01KZPST8XBHSVK0ZM4X8VAT1CQ",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T21:38:45.890285Z",
-          "started": null,
+          "started": "2026-08-10T22:54:53.241232Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -6883,7 +6884,8 @@
         }
       ],
       "job": "01KZPST8NXKRAN4CR1J82J6Z62",
-      "resultDataset": "01KZPST8GEPT6J46XSHJQPYPJK"
+      "resultDataset": "01KZPST8GEPT6J46XSHJQPYPJK",
+      "activeWandb": "mrr8uwqk"
     },
     {
       "batchSequences": 64,
@@ -6897,7 +6899,7 @@
       "gpuCountPerNode": 4,
       "nodeCount": 1,
       "gpuCount": 4,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 12,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPVGF59FME7VKD4Y2ENSJGK",
@@ -6931,9 +6933,9 @@
       "jobStates": [
         {
           "job": "01KZPVGF9T3RW588HYM5CYQKWD",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T22:08:22.185073Z",
-          "started": null,
+          "started": "2026-08-10T22:56:06.376828Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -6941,7 +6943,8 @@
         }
       ],
       "job": "01KZPVGF9T3RW588HYM5CYQKWD",
-      "resultDataset": "01KZPVGF5EWXGB5S0WAH377211"
+      "resultDataset": "01KZPVGF5EWXGB5S0WAH377211",
+      "activeWandb": "2mxm95i9"
     }
   ],
   "summaryBatches": [

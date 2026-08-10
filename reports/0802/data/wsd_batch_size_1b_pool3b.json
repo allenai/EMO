@@ -3251,7 +3251,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 1,
       "gpuCount": 8,
-      "status": "running",
+      "status": "failed",
       "activeEpoch": 8,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZP3HKA00NZSVGN2A5NVQHCA",
@@ -3288,18 +3288,20 @@
       "jobStates": [
         {
           "job": "01KZP3HKDFJR23BDCV8PJAWT8J",
-          "state": "running",
+          "state": "failed",
           "created": "2026-08-10T15:09:33.376714Z",
           "started": "2026-08-10T15:11:24.744841Z",
-          "finalized": null,
-          "exitCode": null,
+          "finalized": "2026-08-10T22:58:29.282898Z",
+          "exitCode": 1,
           "reason": null,
           "resultDataset": "01KZP3HKA7EMXX717RB2CBN0JQ"
         }
       ],
       "job": "01KZP3HKDFJR23BDCV8PJAWT8J",
       "resultDataset": "01KZP3HKA7EMXX717RB2CBN0JQ",
-      "activeWandb": "sv2rsk2g"
+      "activeWandb": "sv2rsk2g",
+      "failureClass": "infrastructure",
+      "failureReason": "Infrastructure-only failure after finite stable training: NCCL ALLGATHER timed out during distributed checkpointing. Mounted Weka audit verified exact complete steps51498,61798,72097; latest exact step72097 is the only admissible recovery source and must restore loader state without reset."
     },
     {
       "batchSequences": 64,
@@ -3313,7 +3315,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 1,
       "gpuCount": 8,
-      "status": "running",
+      "status": "failed",
       "activeEpoch": 8,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZP3HPX5PD6EY9WV2GQK4EEJ",
@@ -3350,18 +3352,20 @@
       "jobStates": [
         {
           "job": "01KZP3HQ1MM20ESYVGCQ6X6CQ4",
-          "state": "running",
+          "state": "failed",
           "created": "2026-08-10T15:09:37.061115Z",
           "started": "2026-08-10T15:11:13.822245Z",
-          "finalized": null,
-          "exitCode": null,
+          "finalized": "2026-08-10T22:52:07.899135Z",
+          "exitCode": 1,
           "reason": null,
           "resultDataset": "01KZP3HPXADBVYMMJ8PRSKPHHT"
         }
       ],
       "job": "01KZP3HQ1MM20ESYVGCQ6X6CQ4",
       "resultDataset": "01KZP3HPXADBVYMMJ8PRSKPHHT",
-      "activeWandb": "81c40ytq"
+      "activeWandb": "81c40ytq",
+      "failureClass": "infrastructure",
+      "failureReason": "Infrastructure-only failure after finite stable training: NCCL ALLGATHER timed out during distributed checkpointing. Mounted Weka audit verified exact complete steps51498,61798,72097; latest exact step72097 is the only admissible recovery source and must restore loader state without reset."
     },
     {
       "batchSequences": 512,
@@ -4473,7 +4477,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 8,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPXE4SZXW5YEH4PSH2280DA",
@@ -4510,9 +4514,9 @@
       "jobStates": [
         {
           "job": "01KZPXE4YS2ZPWARK91VY0RD5G",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T22:42:03.199835Z",
-          "started": null,
+          "started": "2026-08-10T22:55:48.327248Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4520,9 +4524,9 @@
         },
         {
           "job": "01KZPXE52QAHXV5TDMKHTSP435",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T22:42:03.199835Z",
-          "started": null,
+          "started": "2026-08-10T22:55:48.265559Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4530,7 +4534,8 @@
         }
       ],
       "job": "01KZPXE4YS2ZPWARK91VY0RD5G",
-      "resultDataset": "01KZPXE4TAE8KVPTA48VWDBGWS"
+      "resultDataset": "01KZPXE4TAE8KVPTA48VWDBGWS",
+      "activeWandb": "v30mgm14"
     },
     {
       "batchSequences": 256,
@@ -4544,7 +4549,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 4,
       "gpuCount": 32,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 12,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPXECA5KCW58Z3ABN0F8426",
@@ -4584,9 +4589,9 @@
       "jobStates": [
         {
           "job": "01KZPXECDWT9GK4C3HGJFJS1RB",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T22:42:10.885171Z",
-          "started": null,
+          "started": "2026-08-10T22:56:55.284648Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4594,9 +4599,9 @@
         },
         {
           "job": "01KZPXECHYKAXHND4QE81G0V55",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T22:42:10.885171Z",
-          "started": null,
+          "started": "2026-08-10T22:56:54.818303Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4604,9 +4609,9 @@
         },
         {
           "job": "01KZPXECNNX73RF393612ZH37F",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T22:42:10.885171Z",
-          "started": null,
+          "started": "2026-08-10T22:56:55.640457Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4614,9 +4619,9 @@
         },
         {
           "job": "01KZPXECSZ0EF49HR6SK8D4FZ5",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T22:42:10.885171Z",
-          "started": null,
+          "started": "2026-08-10T22:56:54.880505Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -4624,7 +4629,124 @@
         }
       ],
       "job": "01KZPXECDWT9GK4C3HGJFJS1RB",
-      "resultDataset": "01KZPXECAC46TQ2PVJ29VGPMFZ"
+      "resultDataset": "01KZPXECAC46TQ2PVJ29VGPMFZ",
+      "activeWandb": "5j9gxo40"
+    },
+    {
+      "batchSequences": 64,
+      "globalBatchTokens": 262144,
+      "contextLength": 4096,
+      "lr": "1e-3",
+      "wd": "0.1",
+      "warmupSteps": 384,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 1,
+      "gpuCount": 8,
+      "status": "pending",
+      "activeEpoch": 8,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZPZ126WAF8QSMAS3QE7F776",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e8_lr1e-3_wd0.1_warmup384_p3e8-r36a",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e8_lr1e-3_wd0.1_warmup384_p3e8-r22h/step72097",
+      "sourceEpoch": 4,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": false,
+      "dataLoaderSeed": 80208,
+      "retainedPreDecaySteps": [
+        51498,
+        61798,
+        72097,
+        82397
+      ],
+      "newRetainedPreDecaySteps": [
+        82397
+      ],
+      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e8_lr1e-3_wd0.1_warmup384_p3e8-r36a/step82397",
+      "recoverySourceStep": 72097,
+      "actualTargetTokens": 24000000000,
+      "revision": "643d58000f4200dd02b35a1e9111c6d9ca5ebb3c",
+      "recoveryOf": "01KZP3HKA00NZSVGN2A5NVQHCA",
+      "results": {},
+      "jobs": [
+        "01KZPZ12AABC9WN1KQC42NKAJ4"
+      ],
+      "resultDatasets": [
+        "01KZPZ12710YJ6BPCZ9N9ACZ9A"
+      ],
+      "jobStates": [
+        {
+          "job": "01KZPZ12AABC9WN1KQC42NKAJ4",
+          "state": "pending",
+          "created": "2026-08-10T23:09:51.708656Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPZ12710YJ6BPCZ9N9ACZ9A"
+        }
+      ],
+      "job": "01KZPZ12AABC9WN1KQC42NKAJ4",
+      "resultDataset": "01KZPZ12710YJ6BPCZ9N9ACZ9A"
+    },
+    {
+      "batchSequences": 64,
+      "globalBatchTokens": 262144,
+      "contextLength": 4096,
+      "lr": "1e-3",
+      "wd": "0.3",
+      "warmupSteps": 384,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulation": 1,
+      "gpuCountPerNode": 8,
+      "nodeCount": 1,
+      "gpuCount": 8,
+      "status": "running",
+      "activeEpoch": 8,
+      "search": "nested-3b-fixed-lr-adaptive-wd",
+      "beaker": "01KZPZ1991QWBW6H0WH2A5Z8EH",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e8_lr1e-3_wd0.3_warmup384_p3e8-r36b",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e8_lr1e-3_wd0.3_warmup384_p3e8-r22i/step72097",
+      "sourceEpoch": 4,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": false,
+      "dataLoaderSeed": 80208,
+      "retainedPreDecaySteps": [
+        51498,
+        61798,
+        72097,
+        82397
+      ],
+      "newRetainedPreDecaySteps": [
+        82397
+      ],
+      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs64_e8_lr1e-3_wd0.3_warmup384_p3e8-r36b/step82397",
+      "recoverySourceStep": 72097,
+      "actualTargetTokens": 24000000000,
+      "revision": "643d58000f4200dd02b35a1e9111c6d9ca5ebb3c",
+      "recoveryOf": "01KZP3HPX5PD6EY9WV2GQK4EEJ",
+      "results": {},
+      "jobs": [
+        "01KZPZ19CEQKSQHP2TC29NZXJG"
+      ],
+      "resultDatasets": [
+        "01KZPZ19964XDQY8D7NMS5ZRVV"
+      ],
+      "jobStates": [
+        {
+          "job": "01KZPZ19CEQKSQHP2TC29NZXJG",
+          "state": "running",
+          "created": "2026-08-10T23:09:58.94487Z",
+          "started": "2026-08-10T23:11:02.353205Z",
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZPZ19964XDQY8D7NMS5ZRVV"
+        }
+      ],
+      "job": "01KZPZ19CEQKSQHP2TC29NZXJG",
+      "resultDataset": "01KZPZ19964XDQY8D7NMS5ZRVV"
     }
   ],
   "baseline1b": {
