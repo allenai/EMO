@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Submit one guarded dense-1B BS1024 batch-simulation EP4 run.
+"""Submit one guarded dense-1B BS512 batch-simulation EP4 run.
 
 The experiment uses the sealed 1B-token Step 1 pool, fixed LR 1e-3, WSD with
 10% terminal decay, and simulated batch size 64 sequences.  Structured-noise
-runs use one 8-GPU node.  Local-SGD runs use two 8-GPU nodes so that the HSDP
-replica degree is exactly 1024 / 64 = 16.
+All runs use one 8-GPU node. Local-SGD uses eight one-rank HSDP replicas so
+that each replica sees exactly 512 / 8 = 64 sequences per optimizer step.
 """
 
 from __future__ import annotations
@@ -12,7 +12,6 @@ from __future__ import annotations
 import argparse
 import copy
 import json
-import secrets
 import shlex
 import subprocess
 import sys
@@ -20,13 +19,13 @@ from pathlib import Path
 from typing import Any
 
 SEQUENCE_LENGTH = 4096
-GLOBAL_SEQUENCES = 1024
+GLOBAL_SEQUENCES = 512
 SIMULATED_SEQUENCES = 64
 GLOBAL_BATCH_TOKENS = GLOBAL_SEQUENCES * SEQUENCE_LENGTH
 SIMULATED_BATCH_TOKENS = SIMULATED_SEQUENCES * SEQUENCE_LENGTH
 TARGET_TOKENS = 4_000_000_000
-TARGET_STEP = 954
-PRE_DECAY_STEP = 858
+TARGET_STEP = 1908
+PRE_DECAY_STEP = 1716
 LEARNING_RATE = "1e-3"
 WEIGHT_DECAYS = ("0.1", "0.333")
 METHODS = ("structured_noise", "local_sgd_h4", "local_sgd_h16")
@@ -40,7 +39,6 @@ REPORT = Path("reports/0802/data/wsd_batch_simulation_1b.json")
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-single-node-experiment", required=True)
-    parser.add_argument("--base-multi-node-experiment", required=True)
     parser.add_argument("--revision", required=True)
     parser.add_argument("--method", choices=METHODS, required=True)
     parser.add_argument("--weight-decay", choices=WEIGHT_DECAYS, required=True)
@@ -61,25 +59,25 @@ def get_spec(experiment: str) -> dict[str, Any]:
     return json.loads(completed.stdout)
 
 
-def method_config(method: str) -> tuple[str, int | None, int]:
+def method_config(method: str) -> tuple[str, int | None]:
     if method == "structured_noise":
-        return "structured_noise", None, 1
+        return "structured_noise", None
     if method == "local_sgd_h4":
-        return "local_sgd", 4, 2
+        return "local_sgd", 4
     if method == "local_sgd_h16":
-        return "local_sgd", 16, 2
+        return "local_sgd", 16
     raise ValueError(method)
 
 
 def run_name(method: str, weight_decay: str) -> str:
     return (
-        "dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_simbs64_"
-        f"{method}_e4_lr{LEARNING_RATE}_wd{weight_decay}_warmup24"
+        "dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_simbs64_"
+        f"{method}_e4_lr{LEARNING_RATE}_wd{weight_decay}_warmup48"
     )
 
 
 def training_arguments(method: str, weight_decay: str) -> list[str]:
-    config_method, sync_interval, _ = method_config(method)
+    config_method, sync_interval = method_config(method)
     name = run_name(method, weight_decay)
     output = f"{OUTPUT_ROOT}/{name}"
     args = [
@@ -97,7 +95,7 @@ def training_arguments(method: str, weight_decay: str) -> list[str]:
         "--trainer.callbacks.wandb.project=sewonm-icsl",
         f"--trainer.callbacks.wandb.name={name}",
         "--trainer.callbacks.wandb.tags="
-        + f"[pretraining,step1,0802,repeated-data,dclm-train-only,wsd,bs1024,simbs64,{method},wd{weight_decay}]",
+        + f"[pretraining,step1,0802,repeated-data,dclm-train-only,wsd,bs512,simbs64,{method},wd{weight_decay}]",
         "--trainer.callbacks.downstream_evaluator.tasks="
         + "[arc_easy,arc_challenge,boolq,csqa_val_rc_5shot,hellaswag,openbookqa_test_rc_5shot,piqa,socialiqa_val_rc_5shot,winogrande]",
         "--trainer.callbacks.downstream_evaluator.eval_interval=null",
@@ -117,7 +115,7 @@ def training_arguments(method: str, weight_decay: str) -> list[str]:
         "--model.block.sequence_mixer.qk_norm=null",
         f"--data_loader.global_batch_size={GLOBAL_BATCH_TOKENS}",
         f"--train_module.rank_microbatch_size={4 * SEQUENCE_LENGTH}",
-        "--train_module.scheduler={_CLASS_: olmo_core.optim.scheduler.WSD, units: steps, warmup: 24, decay_fraction: 0.1}",
+        "--train_module.scheduler={_CLASS_: olmo_core.optim.scheduler.WSD, units: steps, warmup: 48, decay_fraction: 0.1}",
         f"--trainer.callbacks.checkpointer.fixed_steps=[{PRE_DECAY_STEP}]",
         "--trainer.callbacks.checkpointer.save_interval=1000000000",
         "--trainer.callbacks.checkpointer.ephemeral_save_interval=999999999",
@@ -141,6 +139,8 @@ def validate_registered_tuple(method: str, weight_decay: str) -> None:
         run
         for run in data["runs"]
         if run["method"] == method
+        and run["batchSequences"] == GLOBAL_SEQUENCES
+        and run["simulatedBatchSequences"] == SIMULATED_SEQUENCES
         and run["lr"] == LEARNING_RATE
         and run["wd"] == weight_decay
         and run["targetEpoch"] == 4
@@ -156,15 +156,13 @@ def validate_registered_tuple(method: str, weight_decay: str) -> None:
         )
 
 
-def update_env(task: dict[str, Any], *, revision: str, nodes: int, rdzv_id: str) -> None:
+def update_env(task: dict[str, Any], *, revision: str) -> None:
     env = task.setdefault("envVars", [])
     updates = {
         "GIT_REF": revision,
         "GIT_BRANCH": "sewonm/icsl-noise",
-        "NUM_NODES": str(nodes),
+        "NUM_NODES": "1",
     }
-    if nodes > 1:
-        updates.update({"GANTRY_RDZV_ID": rdzv_id, "GANTRY_RDZV_PORT": "29400"})
     for key, value in updates.items():
         for item in env:
             if item.get("name") == key:
@@ -177,86 +175,52 @@ def update_env(task: dict[str, Any], *, revision: str, nodes: int, rdzv_id: str)
 def build_spec(
     *,
     single_spec: dict[str, Any],
-    multi_spec: dict[str, Any],
     revision: str,
     method: str,
     weight_decay: str,
     priority: str,
 ) -> dict[str, Any]:
-    _, sync_interval, nodes = method_config(method)
-    spec = copy.deepcopy(single_spec if nodes == 1 else multi_spec)
-    if len(spec["tasks"]) != nodes:
-        raise RuntimeError(f"base spec has {len(spec['tasks'])} tasks, expected {nodes}")
+    _, sync_interval = method_config(method)
+    spec = copy.deepcopy(single_spec)
+    if len(spec["tasks"]) != 1:
+        raise RuntimeError(f"base spec has {len(spec['tasks'])} tasks, expected 1")
 
     name = run_name(method, weight_decay)
     output = f"{OUTPUT_ROOT}/{name}"
     args = training_arguments(method, weight_decay)
     dry_run = [*args[:2], "--dry-run", *args[2:]]
-    rdzv_id = secrets.token_hex(6)
-
-    for replica_rank, task in enumerate(spec["tasks"]):
+    for task in spec["tasks"]:
         commands = ["set -euo pipefail"]
-        if nodes == 1:
-            commands.extend(
-                (
-                    shlex.join(["test", "-f", SUBSET_MANIFEST]),
-                    shlex.join(["test", "-f", VALIDATION_MANIFEST]),
-                    shlex.join(["test", "!", "-e", output]),
-                    shlex.join(
-                        [
-                            "echo",
-                            (
-                                f"BATCH_SIM_PREFLIGHT method={method} global_bs=1024 "
-                                f"simulated_bs=64 lr={LEARNING_RATE} wd={weight_decay} "
-                                f"target=e4 pre_decay_step={PRE_DECAY_STEP}"
-                            ),
-                        ]
-                    ),
-                    shlex.join(["python", *dry_run]),
-                    shlex.join(["torchrun", "--nproc-per-node=8", *args]),
-                )
+        local_sgd_detail = f" H={sync_interval} replicas=8" if sync_interval is not None else ""
+        commands.extend(
+            (
+                shlex.join(["test", "-f", SUBSET_MANIFEST]),
+                shlex.join(["test", "-f", VALIDATION_MANIFEST]),
+                shlex.join(["test", "!", "-e", output]),
+                shlex.join(
+                    [
+                        "echo",
+                        (
+                            f"BATCH_SIM_PREFLIGHT method={method} global_bs=512 "
+                            f"simulated_bs=64 lr={LEARNING_RATE} wd={weight_decay}"
+                            f"{local_sgd_detail} target=e4 target_step={TARGET_STEP} "
+                            f"pre_decay_step={PRE_DECAY_STEP}"
+                        ),
+                    ]
+                ),
+                shlex.join(["python", *dry_run]),
+                shlex.join(["torchrun", "--nproc-per-node=8", *args]),
             )
-        else:
-            commands.extend(
-                (
-                    'if [ "${BEAKER_REPLICA_RANK:-0}" = 0 ]; then',
-                    shlex.join(["test", "-f", SUBSET_MANIFEST]),
-                    shlex.join(["test", "-f", VALIDATION_MANIFEST]),
-                    shlex.join(["test", "!", "-e", output]),
-                    shlex.join(
-                        [
-                            "echo",
-                            (
-                                f"BATCH_SIM_PREFLIGHT method={method} global_bs=1024 "
-                                f"simulated_bs=64 lr={LEARNING_RATE} wd={weight_decay} "
-                                f"H={sync_interval} replicas=16 target=e4 "
-                                f"pre_decay_step={PRE_DECAY_STEP}"
-                            ),
-                        ]
-                    ),
-                    shlex.join(["python", *dry_run]),
-                    "fi",
-                    "torchrun "
-                    + '--nnodes="$BEAKER_REPLICA_COUNT:$BEAKER_REPLICA_COUNT" '
-                    + '--nproc-per-node="$BEAKER_ASSIGNED_GPU_COUNT" '
-                    + '--rdzv-id="$GANTRY_RDZV_ID" --rdzv-backend=static '
-                    + '--rdzv-endpoint="$BEAKER_LEADER_REPLICA_HOSTNAME:$GANTRY_RDZV_PORT" '
-                    + '--node-rank="$BEAKER_REPLICA_RANK" --rdzv-conf="read_timeout=420" '
-                    + shlex.join(args),
-                )
-            )
-        task["name"] = "main" if nodes == 1 else f"main-replica-{replica_rank}"
+        )
+        task["name"] = "main"
         task["arguments"] = ["bash", "-lc", "\n".join(commands)]
         task["resources"] = {"gpuCount": 8, "sharedMemory": "10 GiB"}
         task["context"] = {"priority": priority, "minRuntime": 0, "autoResume": False}
-        task["hostNetworking"] = nodes > 1
-        task["propagateFailure"] = nodes > 1
-        task["propagatePreemption"] = nodes > 1
-        if nodes > 1:
-            task["synchronizedStartTimeout"] = 5_400_000_000_000
-        else:
-            task.pop("synchronizedStartTimeout", None)
-        update_env(task, revision=revision, nodes=nodes, rdzv_id=rdzv_id)
+        task["hostNetworking"] = False
+        task["propagateFailure"] = False
+        task["propagatePreemption"] = False
+        task.pop("synchronizedStartTimeout", None)
+        update_env(task, revision=revision)
 
     spec.pop("description", None)
     return spec
@@ -267,7 +231,6 @@ def main() -> None:
     validate_registered_tuple(args.method, args.weight_decay)
     spec = build_spec(
         single_spec=get_spec(args.base_single_node_experiment),
-        multi_spec=get_spec(args.base_multi_node_experiment),
         revision=args.revision,
         method=args.method,
         weight_decay=args.weight_decay,

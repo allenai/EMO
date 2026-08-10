@@ -5904,7 +5904,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "pending",
+      "status": "failed",
       "activeEpoch": 32,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPG6HRMMY1PKERTMTXYJA5C",
@@ -5951,27 +5951,29 @@
       "jobStates": [
         {
           "job": "01KZPG6HVX5WEVT3G23ZYDZQ51",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T18:50:42.835941Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "started": "2026-08-10T19:06:28.441998Z",
+          "finalized": "2026-08-10T19:06:51.315034Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPG6HZ6KYJJDBBT9CS57MXY\" from sibling task \"01KZPG6HW0BSM3FTSRG2E91G54\" failed with propagate-failure enabled",
           "resultDataset": "01KZPG6HRSMPTQVHFPTZPXRE8S"
         },
         {
           "job": "01KZPG6HZ6KYJJDBBT9CS57MXY",
-          "state": "pending",
+          "state": "failed",
           "created": "2026-08-10T18:50:42.835941Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
+          "started": "2026-08-10T19:06:28.262076Z",
+          "finalized": "2026-08-10T19:06:50.300454Z",
+          "exitCode": 1,
           "reason": null,
           "resultDataset": "01KZPG6HW18K06MRZE4YGMXWF7"
         }
       ],
       "job": "01KZPG6HVX5WEVT3G23ZYDZQ51",
-      "resultDataset": "01KZPG6HRSMPTQVHFPTZPXRE8S"
+      "resultDataset": "01KZPG6HRSMPTQVHFPTZPXRE8S",
+      "failureClass": "infrastructure",
+      "failureReason": "01KZPG6HVX5WEVT3G23ZYDZQ51: job \"01KZPG6HZ6KYJJDBBT9CS57MXY\" from sibling task \"01KZPG6HW0BSM3FTSRG2E91G54\" failed with propagate-failure enabled; 01KZPG6HZ6KYJJDBBT9CS57MXY: exit 1"
     },
     {
       "batchSequences": 512,
@@ -5985,7 +5987,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 4,
       "gpuCount": 32,
-      "status": "pending",
+      "status": "failed",
       "activeEpoch": 4,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPG6SDH9NYMS7F31NRYK9SH",
@@ -6024,47 +6026,49 @@
       "jobStates": [
         {
           "job": "01KZPG6SHAZDQ6MC790BB0M5T2",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T18:50:50.673326Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "started": "2026-08-10T19:06:31.299285Z",
+          "finalized": "2026-08-10T19:06:54.017245Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPG6SRSCXPQPFSGDZT34868\" from sibling task \"01KZPG6SNB7BSYW1E84PB0H49B\" failed with propagate-failure enabled",
           "resultDataset": "01KZPG6SDRRY57Y0XW1F74MQKM"
         },
         {
           "job": "01KZPG6SN9G6XZX02X18D3299Y",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T18:50:50.673326Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "started": "2026-08-10T19:06:31.891119Z",
+          "finalized": "2026-08-10T19:06:54.564408Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPG6SRSCXPQPFSGDZT34868\" from sibling task \"01KZPG6SNB7BSYW1E84PB0H49B\" failed with propagate-failure enabled",
           "resultDataset": "01KZPG6SHDJJNJV3ZAZJ1AT83H"
         },
         {
           "job": "01KZPG6SRSCXPQPFSGDZT34868",
-          "state": "pending",
+          "state": "failed",
           "created": "2026-08-10T18:50:50.673326Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
+          "started": "2026-08-10T19:06:31.662903Z",
+          "finalized": "2026-08-10T19:06:53.523472Z",
+          "exitCode": 1,
           "reason": null,
           "resultDataset": "01KZPG6SNCWQPT65BBPCBVCBPE"
         },
         {
           "job": "01KZPG6SWQYTRZYEXNX76NH0N5",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T18:50:50.673326Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "started": "2026-08-10T19:06:31.666009Z",
+          "finalized": "2026-08-10T19:06:53.744374Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPG6SRSCXPQPFSGDZT34868\" from sibling task \"01KZPG6SNB7BSYW1E84PB0H49B\" failed with propagate-failure enabled",
           "resultDataset": "01KZPG6SRVP86ABQMESG89VBG7"
         }
       ],
       "job": "01KZPG6SHAZDQ6MC790BB0M5T2",
-      "resultDataset": "01KZPG6SDRRY57Y0XW1F74MQKM"
+      "resultDataset": "01KZPG6SDRRY57Y0XW1F74MQKM",
+      "failureClass": "infrastructure",
+      "failureReason": "01KZPG6SHAZDQ6MC790BB0M5T2: job \"01KZPG6SRSCXPQPFSGDZT34868\" from sibling task \"01KZPG6SNB7BSYW1E84PB0H49B\" failed with propagate-failure enabled; 01KZPG6SN9G6XZX02X18D3299Y: job \"01KZPG6SRSCXPQPFSGDZT34868\" from sibling task \"01KZPG6SNB7BSYW1E84PB0H49B\" failed with propagate-failure enabled; 01KZPG6SRSCXPQPFSGDZT34868: exit 1; 01KZPG6SWQYTRZYEXNX76NH0N5: job \"01KZPG6SRSCXPQPFSGDZT34868\" from sibling task \"01KZPG6SNB7BSYW1E84PB0H49B\" failed with propagate-failure enabled"
     },
     {
       "batchSequences": 512,
@@ -6078,7 +6082,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 4,
       "gpuCount": 32,
-      "status": "pending",
+      "status": "failed",
       "activeEpoch": 4,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPG72BBAW12P8CJMTZYTQT6",
@@ -6117,47 +6121,49 @@
       "jobStates": [
         {
           "job": "01KZPG72JVHK8W4H2VDHE0PRQN",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T18:50:59.819013Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "started": "2026-08-10T19:08:15.192096Z",
+          "finalized": "2026-08-10T19:08:37.739002Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPG734NN4E5TK6P20ZC8MCB\" from sibling task \"01KZPG72YC1Q2F2T80ZGDSQW1T\" failed with propagate-failure enabled",
           "resultDataset": "01KZPG72BK3T0MPV6G9KDNGZM5"
         },
         {
           "job": "01KZPG72Y9SN8WBY07G684MAYK",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T18:50:59.819013Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "started": "2026-08-10T19:08:15.085471Z",
+          "finalized": "2026-08-10T19:08:39.552852Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPG734NN4E5TK6P20ZC8MCB\" from sibling task \"01KZPG72YC1Q2F2T80ZGDSQW1T\" failed with propagate-failure enabled",
           "resultDataset": "01KZPG72JZV5D4FA2GTRZ5A2JC"
         },
         {
           "job": "01KZPG734NN4E5TK6P20ZC8MCB",
-          "state": "pending",
+          "state": "failed",
           "created": "2026-08-10T18:50:59.819013Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
+          "started": "2026-08-10T19:08:14.841771Z",
+          "finalized": "2026-08-10T19:08:37.340727Z",
+          "exitCode": 1,
           "reason": null,
           "resultDataset": "01KZPG72YEMCWXXQ92WTG8D5T6"
         },
         {
           "job": "01KZPG73BTRBY5YMXS5GEVN1E5",
-          "state": "pending",
+          "state": "canceled",
           "created": "2026-08-10T18:50:59.819013Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
+          "started": "2026-08-10T19:08:14.996763Z",
+          "finalized": "2026-08-10T19:08:37.53111Z",
+          "exitCode": 1,
+          "reason": "job \"01KZPG734NN4E5TK6P20ZC8MCB\" from sibling task \"01KZPG72YC1Q2F2T80ZGDSQW1T\" failed with propagate-failure enabled",
           "resultDataset": "01KZPG734SSDGBCSQ1PS0DNNDQ"
         }
       ],
       "job": "01KZPG72JVHK8W4H2VDHE0PRQN",
-      "resultDataset": "01KZPG72BK3T0MPV6G9KDNGZM5"
+      "resultDataset": "01KZPG72BK3T0MPV6G9KDNGZM5",
+      "failureClass": "infrastructure",
+      "failureReason": "01KZPG72JVHK8W4H2VDHE0PRQN: job \"01KZPG734NN4E5TK6P20ZC8MCB\" from sibling task \"01KZPG72YC1Q2F2T80ZGDSQW1T\" failed with propagate-failure enabled; 01KZPG72Y9SN8WBY07G684MAYK: job \"01KZPG734NN4E5TK6P20ZC8MCB\" from sibling task \"01KZPG72YC1Q2F2T80ZGDSQW1T\" failed with propagate-failure enabled; 01KZPG734NN4E5TK6P20ZC8MCB: exit 1; 01KZPG73BTRBY5YMXS5GEVN1E5: job \"01KZPG734NN4E5TK6P20ZC8MCB\" from sibling task \"01KZPG72YC1Q2F2T80ZGDSQW1T\" failed with propagate-failure enabled"
     },
     {
       "batchSequences": 64,
@@ -6171,7 +6177,7 @@
       "gpuCountPerNode": 4,
       "nodeCount": 1,
       "gpuCount": 4,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 12,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPH0SF1G3WGQZDGY2TTQ5C8",
@@ -6208,9 +6214,9 @@
       "jobStates": [
         {
           "job": "01KZPH0SJVBG478TSEEV3QAHXY",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T19:05:02.689304Z",
-          "started": null,
+          "started": "2026-08-10T19:07:37.197892Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
