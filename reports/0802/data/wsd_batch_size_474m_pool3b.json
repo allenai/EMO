@@ -2028,7 +2028,8 @@
         }
       ],
       "job": "01KZNKVSE9XE4CHBVQMASFNBFS",
-      "resultDataset": "01KZNKVSB2N6YFQFNH4RT8HWQT"
+      "resultDataset": "01KZNKVSB2N6YFQFNH4RT8HWQT",
+      "activeWandb": "o554id84"
     },
     {
       "batchSequences": 128,
@@ -2085,7 +2086,8 @@
         }
       ],
       "job": "01KZNKVSK721P5K08JA5NPQF6M",
-      "resultDataset": "01KZNKVSFMFR3355HB598CSZZA"
+      "resultDataset": "01KZNKVSFMFR3355HB598CSZZA",
+      "activeWandb": "df9owqnn"
     }
   ],
   "summaryBatches": [
