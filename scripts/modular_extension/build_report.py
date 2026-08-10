@@ -282,7 +282,7 @@ not&nbsp;strong&nbsp;&rarr;&nbsp;<span class="v-subtle">subtle</span> (H2).</p>'
 """
 
 
-def build_findings(soft, hard, code, ill) -> str:
+def build_findings(soft, hard, code, ill, share) -> str:
     cc = ill.get("cluster", 5)
     be = ill.get("best_expert", {})
     st = ill.get("strong_experts", {})
@@ -290,6 +290,10 @@ def build_findings(soft, hard, code, ill) -> str:
     n_exp = soft["n_dims"]
     ge90 = cnt.get("ge_0.90", "—")
     ge95 = cnt.get("ge_0.95", "—")
+    pcs = share.get("per_cluster_strong_dims", {})
+    sh = share.get("sharing", {})
+    ex = share.get("shared_expert_example", {})
+    us = share.get("best_expert_usage", {})
     return f"""
 {card("results", "Finding 1 &mdash; the signal is broad, not a few experts (H1 refuted)", f'''
 <p>If a cluster were defined by a few signature experts, its deviation would pile onto those experts and
@@ -324,9 +328,13 @@ i.e. <strong>one expert alone already recovers {pct(soft['median_single_vs_full_
 entire {soft['n_dims']}-dimensional pattern achieves.</strong></p>
 <p>And it is not <em>one</em> privileged expert &mdash; it is a crowd. For the code cluster
 (#{cc}), <strong>{ge90} of {n_exp} experts individually reach AUC&nbsp;&ge;&nbsp;0.9</strong>
-({ge95} reach &ge;&nbsp;0.95); the &ldquo;best&rdquo; expert is merely the top of that pile. So the cluster's
-identity is written <strong>redundantly</strong>: no single expert is necessary, because many carry the
-same signal. Documents also route <em>consistently</em> (median within-cluster cosine to centroid
+({ge95} reach &ge;&nbsp;0.95); the &ldquo;best&rdquo; expert is merely the top of that pile. The code
+cluster is the extreme of that redundancy, not the norm: across all {soft['k']} clusters the count of
+&ge;0.9 experts ranges <strong>{pcs.get('min', '—')}&ndash;{pcs.get('max', '—')}</strong> with a median of
+~{pcs.get('median', 0):.0f} &mdash; but even the least redundant cluster has over a dozen individually
+strong separators, and <em>every</em> cluster's best expert is near-perfect (see the spectrum figure
+below). So the cluster's identity is written <strong>redundantly</strong>: no single expert is necessary,
+because many carry the same signal. Documents also route <em>consistently</em> (median within-cluster cosine to centroid
 {soft['median_cosine_to_centroid']:.2f}), so these shifts are a stable property of the cluster, not noise
 averaged over a loose bag of docs. Combined with Finding&nbsp;1, every cluster is
 <strong>strong &amp; broad</strong> &rarr; <span class="v-broad-redundant">broad-redundant</span>
@@ -336,7 +344,12 @@ averaged over a loose bag of docs. Combined with Finding&nbsp;1, every cluster i
         "Best single expert vs full joint pattern, per cluster. Near the diagonal ⇒ one expert ≈ the whole pattern."),
     fig("doc_probs", "verdict_scatter.png",
         "Breadth (effective deviating experts, x) vs peakedness (y), sized by #docs. All clusters fall in the broad-redundant regime."),
-))}
+)
++ fig_row(img_tag(ATTR / "best_expert_spectrum.png",
+    "No cherry-picking: best-expert in/out routing histograms for 12 clusters spanning the "
+    "redundancy spectrum (fewest → most experts ≥0.9). Every cluster's best expert separates it "
+    "near-perfectly, always via a large routing lean (|δ| ≈ 0.08–0.30), mostly in late layers."))
+)}
 
 {card("results", "How can both be true? Magnitude vs signal-to-noise", f'''
 <p>Findings 1 and 2 sound contradictory &mdash; &ldquo;no few experts carry the deviation&rdquo; yet
@@ -362,6 +375,43 @@ at once?</strong> Routing is coupled: within a layer the softmax sums to 1, so l
 pulls weight off others (they move together), and the same document content re-drives routing at all
 {soft['n_layers']} layers. One latent &ldquo;this is code&rdquo; factor is re-expressed as small, reliable
 shifts on hundreds of expert dimensions &mdash; each an individually-decisive shadow of it.</p>''')}
+
+{card("results", "Is a high-AUC expert cluster-specific? Leaned-on, yes &mdash; owned, no", f'''
+<p>A natural reading of &ldquo;one expert separates the cluster at AUC&nbsp;0.99&rdquo; is that the expert
+<em>belongs</em> to that cluster. The full {soft['k']}&times;{soft['n_dims']} separability matrix says it's
+subtler, in both directions:</p>
+<ul>
+<li><strong>Strong separators are shared.</strong> {sh.get('n_dims_strong_for_someone', '—')} of
+{sh.get('n_dims', soft['n_dims'])} experts are a &ge;0.9 separator for <em>somebody</em>; the median such
+expert strongly separates <strong>{sh.get('median_clusters_per_strong_dim', 0):.0f} clusters</strong>
+(max {sh.get('max_clusters_per_strong_dim', '—')}), and {pct(sh.get('frac_strong_dims_shared_by_ge2', 0))}
+serve &ge;2. This is possible because the AUC is one-vs-<em>rest</em> and clusters are small
+(~1&ndash;2% of docs each): in the figure below, the same expert
+(L{ex.get('layer', '?')}&middot;E{ex.get('expert', '?')}) separates
+{ex.get('n_clusters_ge_strong', '—')} clusters, and for any one of them the <em>other</em> leaning
+clusters are only ~{pct(ex.get('max_other_leaners_out_pile_share', 0.14))} of its out-pile &mdash; they cost
+a few AUC points, not fifty. The flip side: those co-leaning clusters occupy overlapping bands, so the
+shared expert cannot tell them apart, only each-from-the-bulk &mdash; used as a <em>detector</em> for one
+cluster it would have poor precision.</li>
+<li><strong>But the top expert is strongly leaned on.</strong> The median cluster's best expert receives
+{pct(us.get('median_share_of_experts_mass_from_cluster', 0.14))} of its total corpus routing mass from that
+cluster, which holds only {pct(us.get('median_cluster_doc_share', 0.015))} of documents &mdash; a
+~{us.get('median_amplification', 8.5):.0f}&times; over-use, with typically just
+{us.get('median_n_other_clusters_using_ge_50pct', 1):.0f} other cluster using it at even half that level.
+Under hard selection the median cluster's tokens pick their best expert
+{pct(us.get('median_hard_selection_in_cluster', 0.83))} of the time vs
+{pct(us.get('median_hard_selection_global', 0.12))} corpus-wide.</li>
+</ul>
+<p>So high-AUC experts are <em>relatively</em> cluster-specific &mdash; a cluster leans on its top experts
+~8&times; harder than anyone else &mdash; but never exclusively theirs: most of even the best expert's
+traffic still comes from other clusters, because the cluster itself is small. This is the concrete sense
+behind &ldquo;broad-redundant, not owned&rdquo;, and why Stage&nbsp;3 reuses a cluster's most-relevant
+experts softly instead of hard-assigning experts to clusters.</p>'''
++ fig_row(img_tag(ATTR / "one_expert_shared.png",
+    "How one expert has high AUC on many clusters: the same expert scored one-vs-rest against each "
+    "cluster it separates at ≥0.9. Each cluster sits away from the near-zero bulk (some by routing "
+    "toward it, two by avoiding it); the other leaning clusters are a tiny share of any one cluster's "
+    "out-pile, so they barely dent the AUC.")))}
 
 {card("results", "Finding 3 &mdash; it's real selection, not a soft-affinity artifact", f'''
 <p>Could the signal live only in soft leanings that never become routing decisions? No. Re-running the
@@ -684,13 +734,15 @@ def main():
     part = {c["cluster"]: c for c in json.load(open(PART))["clusters"]} if PART.exists() else {}
     ill_path = ATTR / "auc_illustration.json"
     ill = json.load(open(ill_path)) if ill_path.exists() else {}
+    share_path = ATTR / "expert_sharing.json"
+    share = json.load(open(share_path)) if share_path.exists() else {}
     n_docs = sum(c["size"] for c in soft["per_cluster"])
     code = _code_cluster(soft, part)
 
     tabs = [
         ("overview", "Overview", build_overview(soft, hard, n_docs)),
         ("method", "Method", build_method(soft, ill)),
-        ("findings", "Findings", build_findings(soft, hard, code, ill)),
+        ("findings", "Findings", build_findings(soft, hard, code, ill, share)),
         ("per-cluster", "Per-cluster", build_per_cluster(soft, hard, part)),
         ("next-steps", "Next steps", build_nextsteps(soft)),
     ]
