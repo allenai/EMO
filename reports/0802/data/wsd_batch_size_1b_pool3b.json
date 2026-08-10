@@ -818,7 +818,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "running",
+      "status": "complete",
       "activeEpoch": 2,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZMVJ0KNYQHGWJVR9WWXF8KD",
@@ -834,7 +834,66 @@
       "actualTargetTokens": 6000000000,
       "revision": "2c779dccb1f3324488026286c3e746463ccd7ef6",
       "recoveryOf": null,
-      "results": {},
+      "results": {
+        "2": {
+          "epoch": 2,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "status": "complete",
+          "job": "01KZMVJ0Q89T7MDTGMKNXDJ7NT",
+          "jobs": [
+            "01KZMVJ0Q89T7MDTGMKNXDJ7NT",
+            "01KZMVJ0TM40M3WCD4JFHY6SA3"
+          ],
+          "beaker": "01KZMVJ0KNYQHGWJVR9WWXF8KD",
+          "resultDataset": "01KZMVJ0KXKZAK4CH4CNMST94Q",
+          "resultDatasets": [
+            "01KZMVJ0KXKZAK4CH4CNMST94Q",
+            "01KZMVJ0QFSS50ACS8T4053GRV"
+          ],
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e2_lr1e-3_wd0.3_warmup192_p3e2-r02",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e1_lr1e-3_wd0.3_warmup192_p3e1-r01/step5150",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e2_lr1e-3_wd0.3_warmup192_p3e2-r02/step10300",
+          "retainedPreDecaySteps": [
+            10300
+          ],
+          "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+          "dataLoaderReset": true,
+          "dataLoaderSeed": 80202,
+          "actualTargetTokens": 6000000000,
+          "actualTargetSteps": 11445,
+          "train": 2.858,
+          "validation": 3.019,
+          "c4": 3.019,
+          "wandb": "hhmeu70r",
+          "acc": 43.8,
+          "bpb": 0.8769,
+          "avg8Bpb": 1.2708625,
+          "downstream": {
+            "arc_challenge": 28.09,
+            "arc_easy": 57.54,
+            "boolq": 60.4,
+            "csqa": 50.86000000000001,
+            "hellaswag": 43.8,
+            "openbookqa": 28.199999999999996,
+            "piqa": 67.95,
+            "socialiqa": 46.26,
+            "winogrande": 51.459999999999994
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.317,
+            "arc_easy": 1.277,
+            "boolq": 1.552,
+            "csqa": 1.327,
+            "hellaswag": 0.8769,
+            "openbookqa": 1.542,
+            "piqa": 1.163,
+            "socialiqa": 1.196,
+            "winogrande": 1.468
+          },
+          "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+        }
+      },
       "jobs": [
         "01KZMVJ0Q89T7MDTGMKNXDJ7NT",
         "01KZMVJ0TM40M3WCD4JFHY6SA3"
@@ -845,7 +904,8 @@
       ],
       "job": "01KZMVJ0Q89T7MDTGMKNXDJ7NT",
       "resultDataset": "01KZMVJ0KXKZAK4CH4CNMST94Q",
-      "activeWandb": "hhmeu70r"
+      "activeWandb": "hhmeu70r",
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
     },
     {
       "batchSequences": 256,
@@ -968,7 +1028,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 1,
       "gpuCount": 8,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 2,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZMYQQBXPZXJ93SMTYM90MK7",
@@ -992,7 +1052,8 @@
         "01KZMYQQC6X0T5T30ZDSKM6FPX"
       ],
       "job": "01KZMYQQFVZYSMBZ2F2Z1Q0YEM",
-      "resultDataset": "01KZMYQQC6X0T5T30ZDSKM6FPX"
+      "resultDataset": "01KZMYQQC6X0T5T30ZDSKM6FPX",
+      "activeWandb": "okacih4a"
     },
     {
       "batchSequences": 64,
@@ -1006,7 +1067,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 1,
       "gpuCount": 8,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 2,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZMYQRE46V7CF45NDERJRS43",
@@ -1030,7 +1091,8 @@
         "01KZMYQREE4TT8A6JRTCFKJWW0"
       ],
       "job": "01KZMYQRHPCSKYP6XQ1N9TY3WG",
-      "resultDataset": "01KZMYQREE4TT8A6JRTCFKJWW0"
+      "resultDataset": "01KZMYQREE4TT8A6JRTCFKJWW0",
+      "activeWandb": "uu1lp8iz"
     },
     {
       "batchSequences": 256,
