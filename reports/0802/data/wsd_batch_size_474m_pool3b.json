@@ -2219,7 +2219,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 1,
       "gpuCount": 8,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 8,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZNTXWDTBE8SNNHXYBRRDEXV",
@@ -2256,9 +2256,9 @@
       "jobStates": [
         {
           "job": "01KZNTXWJ7N1AWSPTSQY8GADC3",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T12:38:58.746774Z",
-          "started": null,
+          "started": "2026-08-10T12:40:40.978744Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -2266,7 +2266,8 @@
         }
       ],
       "job": "01KZNTXWJ7N1AWSPTSQY8GADC3",
-      "resultDataset": "01KZNTXWE0HX9CS8SGMK99S5X3"
+      "resultDataset": "01KZNTXWE0HX9CS8SGMK99S5X3",
+      "activeWandb": "k1ui7n95"
     },
     {
       "batchSequences": 128,
@@ -2280,7 +2281,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 1,
       "gpuCount": 8,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 8,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZNTXXJZYQD06VDF5NJKA8WY",
@@ -2317,9 +2318,9 @@
       "jobStates": [
         {
           "job": "01KZNTXXXXKGK6X77GR96N9CR1",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T12:38:59.935153Z",
-          "started": null,
+          "started": "2026-08-10T12:40:12.825567Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -2327,7 +2328,8 @@
         }
       ],
       "job": "01KZNTXXXXKGK6X77GR96N9CR1",
-      "resultDataset": "01KZNTXXK54JEX1WE3AZVB600C"
+      "resultDataset": "01KZNTXXK54JEX1WE3AZVB600C",
+      "activeWandb": "3c746g6f"
     }
   ],
   "summaryBatches": [
