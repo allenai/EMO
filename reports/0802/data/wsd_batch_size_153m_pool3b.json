@@ -6764,7 +6764,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 1,
       "gpuCount": 8,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 20,
       "search": "nested-3b-fixed-lr-frozen-wd",
       "beaker": "01KZPS94YEZ0PA2X6QQNFQK9XB",
@@ -6801,9 +6801,9 @@
       "jobStates": [
         {
           "job": "01KZPS9579S6KT9H8EHGRP8EPV",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-10T21:29:25.19871Z",
-          "started": null,
+          "started": "2026-08-10T22:36:28.08451Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,

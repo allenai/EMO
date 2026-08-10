@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 import json
 import math
 import re
@@ -111,7 +112,26 @@ def successful(payload: dict, expected_replicas: int) -> bool:
     for job in successes:
         created = str(job.get("status", {}).get("created", ""))
         by_attempt.setdefault(created, []).append(job)
-    return any(len(attempt) >= expected_replicas for attempt in by_attempt.values())
+    if any(len(attempt) >= expected_replicas for attempt in by_attempt.values()):
+        return True
+
+    # Replacement replicas have different creation timestamps, but Beaker
+    # can still launch them as one synchronized distributed attempt.  Accept
+    # that case only when the full expected set started in the same tight
+    # window; this avoids combining unrelated successful attempts.
+    starts = sorted(
+        datetime.fromisoformat(str(job["status"]["started"]).replace("Z", "+00:00"))
+        for job in successes
+        if job.get("status", {}).get("started")
+    )
+    for left, started in enumerate(starts):
+        synchronized = sum(
+            1 for candidate in starts[left:]
+            if (candidate - started).total_seconds() <= 60
+        )
+        if synchronized >= expected_replicas:
+            return True
+    return False
 
 
 def logs(experiment: str) -> str:
@@ -142,7 +162,12 @@ def ingest(
     for sweep in report.get("batchSweeps", []):
         if only_experiment and sweep.get("beaker") != only_experiment:
             continue
-        if not sweep.get("beaker") or sweep.get("status") in {"failed", "canceled"}:
+        # Beaker can mark a multi-replica experiment failed when an early
+        # node-health replacement is canceled even though a later,
+        # synchronized replica set completes successfully.  Judge endpoint
+        # admissibility from the replica attempts below, not the aggregate
+        # experiment label.
+        if not sweep.get("beaker"):
             continue
         epoch = str(sweep["activeEpoch"])
         successful_state = next(
