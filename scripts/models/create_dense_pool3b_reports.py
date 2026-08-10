@@ -17,16 +17,19 @@ POOL_ROOT = "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9
 PLANS = {
     "153m": {
         "label": "153M",
+        "rankMb": 16,
         "lr": {"64": "2e-3", "128": "2e-3", "256": "2e-3"},
         "initialWd": {"64": ["0.1", "0.033"], "128": ["0.1", "0.033"], "256": ["0.033", "0.01"]},
     },
     "474m": {
         "label": "474M",
+        "rankMb": 16,
         "lr": {"64": "2e-3", "128": "2e-3", "256": "2e-3"},
         "initialWd": {"64": ["0.1", "0.033"], "128": ["0.1", "0.033"], "256": ["0.1", "0.033"]},
     },
     "1b": {
         "label": "1.5B",
+        "rankMb": 8,
         "lr": {"64": "1e-3", "128": "1e-3", "256": "1e-3"},
         "initialWd": {"64": ["0.3", "0.1"], "128": ["0.3", "0.1"], "256": ["0.333", "0.1"]},
     },
@@ -55,8 +58,9 @@ def main() -> None:
         )
         report["selection"] = (
             "LR is frozen to the selected 1B-pool value for the same model and batch. "
-            "At E1 compare the selected 1B WD with one lower WD when an exact matching "
-            "pre-decay predecessor exists. At later frontiers compare the selected WD "
+            "At E1 branch the exact selected 1B pre-decay model/optimizer checkpoint: "
+            "continue once at the selected WD and once with WD lowered by one ladder step. "
+            "At later frontiers compare the selected WD "
             "with at most one higher ladder step, capped by the same-epoch 1B WD. Stop "
             "on validation-CE non-improvement or at the same-model/same-batch 1B optimum."
         )
@@ -79,6 +83,19 @@ def main() -> None:
             "fullPoolManifest": f"{POOL_ROOT}/manifests/dclm_0802_nested_train_3b.json",
             "fixedLearningRateByBatch": plan["lr"],
             "initialWeightDecayByBatch": plan["initialWd"],
+            "epochOneSourceWeightDecayByBatch": {
+                batch: candidates[0] for batch, candidates in plan["initialWd"].items()
+            },
+            "rankMicrobatchSequences": plan["rankMb"],
+            "gradientAccumulation": 1,
+            "gpuTopologyByBatch": {
+                batch: {
+                    "gpuCountPerNode": min(int(batch) // plan["rankMb"], 8),
+                    "nodeCount": max((int(batch) // plan["rankMb"]) // 8, 1),
+                    "totalGpuCount": int(batch) // plan["rankMb"],
+                }
+                for batch in ("64", "128", "256")
+            },
             "epochOneMode": "restore-predecay-model-optimizer-progress-reset-loader-on-new-2b",
             "laterEpochMode": "exact-coordinate-resume-reset-loader-and-reshuffle-full-3b",
         }
