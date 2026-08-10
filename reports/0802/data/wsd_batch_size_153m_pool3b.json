@@ -144,7 +144,27 @@
       "job": "01KZMQK6DBFAHP31KFX6ZC1ZHV",
       "resultDataset": "01KZMQK69D0B52NHE06CZ7Q9RF",
       "reason": "Infrastructure-only failure before repository checkout: the submitted GIT_REF was not a real remote commit. No training process, W&B run, optimizer step, or checkpoint was created.",
-      "results": {}
+      "results": {},
+      "jobs": [
+        "01KZMQK6DBFAHP31KFX6ZC1ZHV"
+      ],
+      "resultDatasets": [
+        "01KZMQK69D0B52NHE06CZ7Q9RF"
+      ],
+      "jobStates": [
+        {
+          "job": "01KZMQK6DBFAHP31KFX6ZC1ZHV",
+          "state": "failed",
+          "created": "2026-08-10T02:21:28.231195Z",
+          "started": "2026-08-10T02:21:54.108319Z",
+          "finalized": "2026-08-10T02:22:17.159762Z",
+          "exitCode": 1,
+          "reason": null,
+          "resultDataset": "01KZMQK69D0B52NHE06CZ7Q9RF"
+        }
+      ],
+      "failureClass": "infrastructure",
+      "failureReason": "01KZMQK6DBFAHP31KFX6ZC1ZHV: exit 1"
     },
     {
       "batchSequences": 64,
@@ -175,7 +195,27 @@
       "job": "01KZMQS3BEP8GJSPZEXWTY6XHQ",
       "resultDataset": "01KZMQS36RJ5AFYMZKNE7B5G3X",
       "reason": "Infrastructure-only launcher failure after all pool/source/config guards passed: Gantry's torchrun mode required a two-argument task command, but received the training script directly. No training process, W&B run, optimizer step, or checkpoint was created.",
-      "results": {}
+      "results": {},
+      "jobs": [
+        "01KZMQS3BEP8GJSPZEXWTY6XHQ"
+      ],
+      "resultDatasets": [
+        "01KZMQS36RJ5AFYMZKNE7B5G3X"
+      ],
+      "jobStates": [
+        {
+          "job": "01KZMQS3BEP8GJSPZEXWTY6XHQ",
+          "state": "failed",
+          "created": "2026-08-10T02:24:41.680412Z",
+          "started": "2026-08-10T02:25:04.18355Z",
+          "finalized": "2026-08-10T02:26:01.261824Z",
+          "exitCode": 1,
+          "reason": null,
+          "resultDataset": "01KZMQS36RJ5AFYMZKNE7B5G3X"
+        }
+      ],
+      "failureClass": "infrastructure",
+      "failureReason": "01KZMQS3BEP8GJSPZEXWTY6XHQ: exit 1"
     },
     {
       "batchSequences": 64,
@@ -1369,7 +1409,7 @@
       "gpuCountPerNode": 4,
       "nodeCount": 1,
       "gpuCount": 4,
-      "status": "running",
+      "status": "failed",
       "activeEpoch": 4,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZN5MRXT5GAEVM9A51WHGD1Y",
@@ -1395,7 +1435,21 @@
       ],
       "job": "01KZN5MS15AZCV547GVF8FN35T",
       "resultDataset": "01KZN5MRXZP98VKZC4BBYXHC5H",
-      "activeWandb": "pdldawfu"
+      "activeWandb": "pdldawfu",
+      "jobStates": [
+        {
+          "job": "01KZN5MS15AZCV547GVF8FN35T",
+          "state": "canceled",
+          "created": "2026-08-10T06:27:00.154626Z",
+          "started": "2026-08-10T06:39:16.361224Z",
+          "finalized": "2026-08-10T07:40:55.33716Z",
+          "exitCode": 1,
+          "reason": "node \"01KQ0MFSCB5MJE2HZ3CVBAHTQJ\" is cordoned: healthcheck for job 01KZN9M69M68E5KJ6JNS7RXN6R failed",
+          "resultDataset": "01KZN5MRXZP98VKZC4BBYXHC5H"
+        }
+      ],
+      "failureClass": "infrastructure",
+      "failureReason": "01KZN5MS15AZCV547GVF8FN35T: node \"01KQ0MFSCB5MJE2HZ3CVBAHTQJ\" is cordoned: healthcheck for job 01KZN9M69M68E5KJ6JNS7RXN6R failed"
     },
     {
       "batchSequences": 64,
@@ -1409,7 +1463,7 @@
       "gpuCountPerNode": 4,
       "nodeCount": 1,
       "gpuCount": 4,
-      "status": "running",
+      "status": "failed",
       "activeEpoch": 4,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZN5MSXV2H2041KCY0DKJKGZ",
@@ -1435,7 +1489,21 @@
       ],
       "job": "01KZN5MT1JJ38DPM2YK9WPF04T",
       "resultDataset": "01KZN5MSY0HZCZ59C5HAMFJRVY",
-      "activeWandb": "setrj2om"
+      "activeWandb": "setrj2om",
+      "jobStates": [
+        {
+          "job": "01KZN5MT1JJ38DPM2YK9WPF04T",
+          "state": "canceled",
+          "created": "2026-08-10T06:27:01.179551Z",
+          "started": "2026-08-10T06:37:13.737214Z",
+          "finalized": "2026-08-10T07:39:01.05441Z",
+          "exitCode": 1,
+          "reason": "node \"01KWCYTWACRV5ZEWSDD0TEZDRJ\" is cordoned: healthcheck for job 01KZN9MRF2FDW5AWT4PSG5JMCJ failed",
+          "resultDataset": "01KZN5MSY0HZCZ59C5HAMFJRVY"
+        }
+      ],
+      "failureClass": "infrastructure",
+      "failureReason": "01KZN5MT1JJ38DPM2YK9WPF04T: node \"01KWCYTWACRV5ZEWSDD0TEZDRJ\" is cordoned: healthcheck for job 01KZN9MRF2FDW5AWT4PSG5JMCJ failed"
     },
     {
       "batchSequences": 256,
@@ -1655,7 +1723,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 1,
       "gpuCount": 8,
-      "status": "running",
+      "status": "failed",
       "activeEpoch": 8,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZN7J1ZZP8M29P6AFNS0229A",
@@ -1683,7 +1751,21 @@
       ],
       "job": "01KZN7J2459VFS729VDTG33J1M",
       "resultDataset": "01KZN7J206GFGFHPMYXM80G3ZX",
-      "activeWandb": "6jsld983"
+      "activeWandb": "6jsld983",
+      "jobStates": [
+        {
+          "job": "01KZN7J2459VFS729VDTG33J1M",
+          "state": "failed",
+          "created": "2026-08-10T07:00:28.287125Z",
+          "started": "2026-08-10T07:01:16.329098Z",
+          "finalized": "2026-08-10T07:49:00.320861Z",
+          "exitCode": 1,
+          "reason": null,
+          "resultDataset": "01KZN7J206GFGFHPMYXM80G3ZX"
+        }
+      ],
+      "failureClass": "infrastructure",
+      "failureReason": "01KZN7J2459VFS729VDTG33J1M: exit 1"
     },
     {
       "batchSequences": 256,
@@ -1697,7 +1779,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "running",
+      "status": "failed",
       "activeEpoch": 8,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZN90RRTV1ZVTHZCJ58XJ4PJ",
@@ -1727,7 +1809,31 @@
       ],
       "job": "01KZN90S6HZQ1582ASWMC5FSXX",
       "resultDataset": "01KZN90RS4MHH01YYP07GH8CF5",
-      "activeWandb": "hk7xgw76"
+      "activeWandb": "hk7xgw76",
+      "jobStates": [
+        {
+          "job": "01KZN90S6HZQ1582ASWMC5FSXX",
+          "state": "canceled",
+          "created": "2026-08-10T07:25:58.938497Z",
+          "started": "2026-08-10T07:28:30.961469Z",
+          "finalized": "2026-08-10T08:47:15.652385Z",
+          "exitCode": 137,
+          "reason": "job \"01KZN90SWW4GTVV6ZBBVZ1KBKE\" from sibling task \"01KZN90S6NMV9KH6MRMXWZ36Y6\" failed with propagate-failure enabled",
+          "resultDataset": "01KZN90RS4MHH01YYP07GH8CF5"
+        },
+        {
+          "job": "01KZN90SWW4GTVV6ZBBVZ1KBKE",
+          "state": "failed",
+          "created": "2026-08-10T07:25:58.938497Z",
+          "started": "2026-08-10T07:28:30.940694Z",
+          "finalized": "2026-08-10T08:42:08.158477Z",
+          "exitCode": 1,
+          "reason": null,
+          "resultDataset": "01KZN90S6PHADKM5ZHW4BHRT8S"
+        }
+      ],
+      "failureClass": "infrastructure",
+      "failureReason": "01KZN90S6HZQ1582ASWMC5FSXX: job \"01KZN90SWW4GTVV6ZBBVZ1KBKE\" from sibling task \"01KZN90S6NMV9KH6MRMXWZ36Y6\" failed with propagate-failure enabled; 01KZN90SWW4GTVV6ZBBVZ1KBKE: exit 1"
     },
     {
       "batchSequences": 256,
@@ -1741,7 +1847,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "running",
+      "status": "failed",
       "activeEpoch": 8,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZN90ZAHSFK8RB45NVX2DSW8",
@@ -1771,7 +1877,31 @@
       ],
       "job": "01KZN90ZTHRBQE1ZYFTD8P8DF1",
       "resultDataset": "01KZN90ZAPCERCCPKVQFDV41WN",
-      "activeWandb": "rxn6wgmr"
+      "activeWandb": "rxn6wgmr",
+      "jobStates": [
+        {
+          "job": "01KZN90ZTHRBQE1ZYFTD8P8DF1",
+          "state": "canceled",
+          "created": "2026-08-10T07:26:05.649065Z",
+          "started": "2026-08-10T07:27:22.713029Z",
+          "finalized": "2026-08-10T08:54:43.098005Z",
+          "exitCode": 137,
+          "reason": "job \"01KZN9115TCGPNBMV6WNTQJVB2\" from sibling task \"01KZN90ZTP8BPVR4PZ6HKND4MK\" failed with propagate-failure enabled",
+          "resultDataset": "01KZN90ZAPCERCCPKVQFDV41WN"
+        },
+        {
+          "job": "01KZN9115TCGPNBMV6WNTQJVB2",
+          "state": "failed",
+          "created": "2026-08-10T07:26:05.649065Z",
+          "started": "2026-08-10T07:27:21.829082Z",
+          "finalized": "2026-08-10T08:49:41.511188Z",
+          "exitCode": 1,
+          "reason": null,
+          "resultDataset": "01KZN90ZTQYMD3G3RK7GSYH802"
+        }
+      ],
+      "failureClass": "infrastructure",
+      "failureReason": "01KZN90ZTHRBQE1ZYFTD8P8DF1: job \"01KZN9115TCGPNBMV6WNTQJVB2\" from sibling task \"01KZN90ZTP8BPVR4PZ6HKND4MK\" failed with propagate-failure enabled; 01KZN9115TCGPNBMV6WNTQJVB2: exit 1"
     }
   ],
   "summaryBatches": [

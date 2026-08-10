@@ -427,7 +427,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 1,
       "gpuCount": 8,
-      "status": "pending",
+      "status": "complete",
       "activeEpoch": 1,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZMYKC3AAG8SHARDPW9AKGA1",
@@ -443,7 +443,66 @@
       "actualTargetTokens": 3000000000,
       "revision": "0c3d6eecbca4a6da73b1a0e45a09ee8f97c73e1f",
       "recoveryOf": null,
-      "results": {},
+      "results": {
+        "1": {
+          "epoch": 1,
+          "lr": "2e-3",
+          "wd": "0.033",
+          "status": "complete",
+          "job": "01KZMYKC6QQFX9ENEJ8SQZ8HKM",
+          "jobs": [
+            "01KZMYKC6QQFX9ENEJ8SQZ8HKM",
+            "01KZMYP629CFZJ4KK2Z40RGP67"
+          ],
+          "beaker": "01KZMYKC3AAG8SHARDPW9AKGA1",
+          "resultDataset": "01KZMYKC3HTCJYYMRMCWHW4399",
+          "resultDatasets": [
+            "01KZMYKC3HTCJYYMRMCWHW4399",
+            "01KZMYP5Z2DCX114N1XXQ7HPNK"
+          ],
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_pool3b_nested_bs128_e1_lr2e-3_wd0.033_warmup192_p3e1-r04",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_0802_repeated_dclm1b_bs128_e1_lr2e-3_wd0.1_warmup192_sm0909a/step1716",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_pool3b_nested_bs128_e1_lr2e-3_wd0.033_warmup192_p3e1-r04/step5150",
+          "retainedPreDecaySteps": [
+            5150
+          ],
+          "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_extension_1b_to_3b.json",
+          "dataLoaderReset": true,
+          "dataLoaderSeed": 80201,
+          "actualTargetTokens": 3000000000,
+          "actualTargetSteps": 5723,
+          "train": 3.294,
+          "validation": 3.29,
+          "c4": 3.29,
+          "wandb": "ie5aui93",
+          "acc": 33.21,
+          "bpb": 0.9584,
+          "avg8Bpb": 1.4271749999999999,
+          "downstream": {
+            "arc_challenge": 24.75,
+            "arc_easy": 52.459999999999994,
+            "boolq": 57.489999999999995,
+            "csqa": 41.44,
+            "hellaswag": 33.21,
+            "openbookqa": 22.6,
+            "piqa": 64.09,
+            "socialiqa": 42.730000000000004,
+            "winogrande": 49.09
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.493,
+            "arc_easy": 1.541,
+            "boolq": 1.992,
+            "csqa": 1.501,
+            "hellaswag": 0.9584,
+            "openbookqa": 1.744,
+            "piqa": 1.291,
+            "socialiqa": 1.341,
+            "winogrande": 1.548
+          },
+          "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+        }
+      },
       "jobs": [
         "01KZMYKC6QQFX9ENEJ8SQZ8HKM",
         "01KZMYP629CFZJ4KK2Z40RGP67"
@@ -454,7 +513,30 @@
       ],
       "job": "01KZMYKC6QQFX9ENEJ8SQZ8HKM",
       "resultDataset": "01KZMYKC3HTCJYYMRMCWHW4399",
-      "activeWandb": "ie5aui93"
+      "activeWandb": "ie5aui93",
+      "jobStates": [
+        {
+          "job": "01KZMYKC6QQFX9ENEJ8SQZ8HKM",
+          "state": "canceled",
+          "created": "2026-08-10T04:23:54.218678Z",
+          "started": null,
+          "finalized": "2026-08-10T04:25:26.237153Z",
+          "exitCode": null,
+          "reason": "node cordoned before job started",
+          "resultDataset": "01KZMYKC3HTCJYYMRMCWHW4399"
+        },
+        {
+          "job": "01KZMYP629CFZJ4KK2Z40RGP67",
+          "state": "succeeded",
+          "created": "2026-08-10T04:25:26.237153Z",
+          "started": "2026-08-10T04:33:53.076611Z",
+          "finalized": "2026-08-10T05:06:40.941824Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZMYP5Z2DCX114N1XXQ7HPNK"
+        }
+      ],
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
     },
     {
       "batchSequences": 256,
@@ -468,7 +550,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "pending",
+      "status": "failed",
       "activeEpoch": 1,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZMYKD23DTTQ978W6G7N8M9S",
@@ -494,7 +576,31 @@
         "01KZMYKD5NHP30FK2TEG5M952B"
       ],
       "job": "01KZMYKD5JXCEAPPE6VGPR1FNA",
-      "resultDataset": "01KZMYKD29FMR2SR0WZ5RT40FT"
+      "resultDataset": "01KZMYKD29FMR2SR0WZ5RT40FT",
+      "jobStates": [
+        {
+          "job": "01KZMYKD5JXCEAPPE6VGPR1FNA",
+          "state": "canceled",
+          "created": "2026-08-10T04:23:55.203587Z",
+          "started": null,
+          "finalized": "2026-08-10T04:25:14.327001Z",
+          "exitCode": null,
+          "reason": "node \"01KRF84RGRQAHZ385SYG33HWME\" is cordoned: Node unhealthy due to unrecoverable SXid error code 12028",
+          "resultDataset": "01KZMYKD29FMR2SR0WZ5RT40FT"
+        },
+        {
+          "job": "01KZMYKD9HZR7FTW1FADG9FSQQ",
+          "state": "canceled",
+          "created": "2026-08-10T04:23:55.203587Z",
+          "started": null,
+          "finalized": "2026-08-10T04:25:34.103176Z",
+          "exitCode": null,
+          "reason": "node \"01KT4H3Z2HYVDTHSBY2FRD390N\" is cordoned: Node unhealthy due to unrecoverable SXid error code 12028",
+          "resultDataset": "01KZMYKD5NHP30FK2TEG5M952B"
+        }
+      ],
+      "failureClass": "infrastructure",
+      "failureReason": "01KZMYKD5JXCEAPPE6VGPR1FNA: node \"01KRF84RGRQAHZ385SYG33HWME\" is cordoned: Node unhealthy due to unrecoverable SXid error code 12028; 01KZMYKD9HZR7FTW1FADG9FSQQ: node \"01KT4H3Z2HYVDTHSBY2FRD390N\" is cordoned: Node unhealthy due to unrecoverable SXid error code 12028"
     },
     {
       "batchSequences": 256,
@@ -508,7 +614,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "pending",
+      "status": "failed",
       "activeEpoch": 1,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZMYKEB0SNBV4Z6JBNHVCERY",
@@ -534,7 +640,31 @@
         "01KZMYKEEYRHT0H79E2CHWV9D1"
       ],
       "job": "01KZMYKEEP58XG3KVSH0BC5K96",
-      "resultDataset": "01KZMYKEBDYCNPMJE9Y767ZVBD"
+      "resultDataset": "01KZMYKEBDYCNPMJE9Y767ZVBD",
+      "jobStates": [
+        {
+          "job": "01KZMYKEEP58XG3KVSH0BC5K96",
+          "state": "canceled",
+          "created": "2026-08-10T04:23:56.512786Z",
+          "started": null,
+          "finalized": "2026-08-10T05:55:09.953492Z",
+          "exitCode": null,
+          "reason": "timed out after waiting 1h30m0s for synchronized replica start",
+          "resultDataset": "01KZMYKEBDYCNPMJE9Y767ZVBD"
+        },
+        {
+          "job": "01KZMYKEJ4GNGZE3KG79YN50FF",
+          "state": "canceled",
+          "created": "2026-08-10T04:23:56.512786Z",
+          "started": null,
+          "finalized": "2026-08-10T04:25:44.476535Z",
+          "exitCode": null,
+          "reason": "node \"01KTT9VFGB3WWWJV7CGA21J53W\" is cordoned: Node unhealthy due to unrecoverable SXid error code 12028",
+          "resultDataset": "01KZMYKEEYRHT0H79E2CHWV9D1"
+        }
+      ],
+      "failureClass": "infrastructure",
+      "failureReason": "01KZMYKEEP58XG3KVSH0BC5K96: timed out after waiting 1h30m0s for synchronized replica start; 01KZMYKEJ4GNGZE3KG79YN50FF: node \"01KTT9VFGB3WWWJV7CGA21J53W\" is cordoned: Node unhealthy due to unrecoverable SXid error code 12028"
     },
     {
       "batchSequences": 64,
@@ -645,7 +775,7 @@
       "gpuCountPerNode": 4,
       "nodeCount": 1,
       "gpuCount": 4,
-      "status": "running",
+      "status": "failed",
       "activeEpoch": 2,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZN3VN8Y0DEVBVSEBG8VWB5A",
@@ -670,7 +800,21 @@
       ],
       "job": "01KZN3VNEE1NGJBMWAPSRTFSP0",
       "resultDataset": "01KZN3VN9276TYJB2H25N8B9YY",
-      "activeWandb": "j79ivotd"
+      "activeWandb": "j79ivotd",
+      "jobStates": [
+        {
+          "job": "01KZN3VNEE1NGJBMWAPSRTFSP0",
+          "state": "canceled",
+          "created": "2026-08-10T05:55:48.637977Z",
+          "started": "2026-08-10T06:09:43.458905Z",
+          "finalized": "2026-08-10T07:41:47.090926Z",
+          "exitCode": 1,
+          "reason": "node \"01KTT0D8DR4SXYPJWJYPPGYWA9\" is cordoned: healthcheck for job 01KZN9M2D5VSQTCZB6YQTPRPHD failed",
+          "resultDataset": "01KZN3VN9276TYJB2H25N8B9YY"
+        }
+      ],
+      "failureClass": "infrastructure",
+      "failureReason": "01KZN3VNEE1NGJBMWAPSRTFSP0: node \"01KTT0D8DR4SXYPJWJYPPGYWA9\" is cordoned: healthcheck for job 01KZN9M2D5VSQTCZB6YQTPRPHD failed"
     }
   ],
   "summaryBatches": [

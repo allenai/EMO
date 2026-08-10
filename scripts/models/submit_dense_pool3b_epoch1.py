@@ -73,14 +73,15 @@ def parse_args() -> argparse.Namespace:
     a = p.parse_args()
     if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", a.suffix):
         p.error("suffix must be a lowercase run-name component")
-    source_tokens = (
-        1_000_000_000
-        if a.target_epoch == 1
-        else PREDECESSOR[a.target_epoch] * POOL_TOKENS
-    )
-    expected = stable_step(source_tokens, a.global_sequences)
-    if not a.source_checkpoint.endswith(f"/step{expected}"):
-        p.error(f"source must be the exact pre-decay checkpoint /step{expected}")
+    if not a.recover_failed_experiment:
+        source_tokens = (
+            1_000_000_000
+            if a.target_epoch == 1
+            else PREDECESSOR[a.target_epoch] * POOL_TOKENS
+        )
+        expected = stable_step(source_tokens, a.global_sequences)
+        if not a.source_checkpoint.endswith(f"/step{expected}"):
+            p.error(f"source must be the exact pre-decay checkpoint /step{expected}")
     return a
 
 
@@ -373,9 +374,123 @@ def audit_later(
     return selected_sweep
 
 
+def checkpoint_step(checkpoint: str) -> int | None:
+    match = re.search(r"/step(\d+)$", checkpoint)
+    return int(match.group(1)) if match else None
+
+
+def audit_recovery(
+    a: argparse.Namespace, report: dict[str, Any], source: dict[str, Any]
+) -> dict[str, Any]:
+    """Audit an infrastructure recovery of one already-registered exact tuple.
+
+    A recovery may use either the original frontier source or one of the failed
+    run's fixed pre-decay checkpoints.  It may never use an ephemeral or partial
+    ``*-tmp`` directory, an arbitrary optimizer step, or another coordinate.
+    """
+    if a.base_experiment != a.recover_failed_experiment:
+        raise SystemExit(
+            "recovery base experiment must be the exact failed experiment"
+        )
+    matches = [
+        sweep for sweep in report.get("batchSweeps", [])
+        if sweep.get("beaker") == a.recover_failed_experiment
+    ]
+    if len(matches) != 1:
+        raise SystemExit("recovery experiment is not a unique registered tuple")
+    failed = matches[0]
+    if failed.get("status") not in {"failed", "canceled"}:
+        raise SystemExit("recovery ancestor is not finalized as failed/canceled")
+    expected_tuple = (
+        failed.get("batchSequences"),
+        failed.get("activeEpoch"),
+        Decimal(str(failed.get("lr"))),
+        Decimal(str(failed.get("wd"))),
+    )
+    requested_tuple = (
+        a.global_sequences,
+        a.target_epoch,
+        Decimal(lr_for(a.model, a.global_sequences)),
+        Decimal(a.weight_decay),
+    )
+    if expected_tuple != requested_tuple:
+        raise SystemExit(
+            f"recovery tuple mismatch: registered={expected_tuple}, "
+            f"requested={requested_tuple}"
+        )
+    if "-tmp" in a.source_checkpoint or checkpoint_step(a.source_checkpoint) is None:
+        raise SystemExit("recovery source must be a complete exact /stepN directory")
+    allowed_checkpoints = {failed["sourceCheckpoint"]} | {
+        f"{failed['output']}/step{int(step)}"
+        for step in failed.get("retainedPreDecaySteps", [])
+    }
+    if a.source_checkpoint not in allowed_checkpoints:
+        raise SystemExit(
+            "recovery source is neither the original exact predecessor nor one "
+            "of the failed run's registered fixed pre-decay checkpoints"
+        )
+    existing_recoveries = [
+        sweep for sweep in report.get("batchSweeps", [])
+        if sweep.get("recoveryOf") == a.recover_failed_experiment
+        and sweep.get("status") not in {"failed", "canceled"}
+    ]
+    if existing_recoveries:
+        raise SystemExit("a live or completed recovery already exists for this tuple")
+
+    lr = lr_for(a.model, a.global_sequences)
+    if a.target_epoch > 1:
+        predecessor_epoch = PREDECESSOR[a.target_epoch]
+        selected_ce, selected_wd, _, _ = selected_3b(
+            report, a.global_sequences, predecessor_epoch, lr
+        )
+        requested_wd = Decimal(a.weight_decay)
+        selected_index = WD_LADDER.index(selected_wd)
+        allowed_wds = {selected_wd}
+        if selected_index + 1 < len(WD_LADDER):
+            allowed_wds.add(WD_LADDER[selected_index + 1])
+        if requested_wd not in allowed_wds:
+            raise SystemExit("recovery WD violates the original frontier WD rule")
+        cap = baseline_wd_cap(
+            report, a.global_sequences, a.target_epoch, lr
+        )
+        if requested_wd > cap:
+            raise SystemExit("recovery WD exceeds the trusted 1B-pool cap")
+        if a.target_epoch > baseline_horizon(report, a.global_sequences, lr):
+            raise SystemExit("recovery target exceeds the trusted stopping horizon")
+        earlier_epoch = PREDECESSOR.get(predecessor_epoch)
+        if earlier_epoch is not None:
+            earlier_ce, _, _, _ = selected_3b(
+                report, a.global_sequences, earlier_epoch, lr
+            )
+            if selected_ce >= earlier_ce:
+                raise SystemExit("recovery target violates the strict stop rule")
+
+    _, _, failed_args = extract_training_command(source["tasks"][0])
+    beaker_tuple = (
+        int(unique_arg(failed_args, "--data_loader.global_batch_size=")) // SEQ,
+        Decimal(unique_arg(failed_args, "--lr=")),
+        Decimal(unique_arg(failed_args, "--train_module.optim.weight_decay=")),
+        unique_arg(failed_args, "--save-folder="),
+    )
+    expected_beaker_tuple = (
+        a.global_sequences,
+        Decimal(lr),
+        Decimal(a.weight_decay),
+        failed["output"],
+    )
+    if beaker_tuple != expected_beaker_tuple:
+        raise SystemExit(
+            f"failed Beaker tuple mismatch: {beaker_tuple} != {expected_beaker_tuple}"
+        )
+    audit_model_args(a.model, failed_args)
+    return failed
+
+
 def audit(
     a: argparse.Namespace, report: dict[str, Any], source: dict[str, Any]
 ) -> dict[str, Any]:
+    if a.recover_failed_experiment:
+        return audit_recovery(a, report, source)
     if a.target_epoch != 1:
         return audit_later(a, report, source)
     plan = report["poolPlan"]
@@ -475,7 +590,22 @@ def build(
     lr = lr_for(a.model, a.global_sequences)
     warmup = int(predecessor["warmupSteps"])
     source_epoch = 0 if a.target_epoch == 1 else PREDECESSOR[a.target_epoch]
-    data_manifest = EXTENSION if a.target_epoch == 1 else FULL_POOL
+    all_retained = retained_steps(source_epoch, a.target_epoch, a.global_sequences)
+    failed_output = predecessor.get("output") if a.recover_failed_experiment else None
+    recovery_inside_target = bool(
+        failed_output and a.source_checkpoint.startswith(f"{failed_output}/step")
+    )
+    resume_step = checkpoint_step(a.source_checkpoint)
+    fixed_steps = (
+        [step for step in all_retained if step > int(resume_step)]
+        if recovery_inside_target and resume_step is not None
+        else all_retained
+    )
+    reset_loader = not recovery_inside_target
+    data_manifest = predecessor.get(
+        "dataManifest", EXTENSION if a.target_epoch == 1 else FULL_POOL
+    )
+    loader_seed = int(predecessor.get("dataLoaderSeed", 80_200 + a.target_epoch))
     name = (
         f"dense_{a.model}_step1_pool3b_nested_bs{a.global_sequences}_e{a.target_epoch}_"
         f"lr{lr}_wd{a.weight_decay}_warmup{warmup}_{a.suffix}"
@@ -488,10 +618,10 @@ def build(
         ("--trainer.max_duration=", f"--trainer.max_duration={{value: {a.target_epoch * POOL_TOKENS}, unit: tokens}}"),
         ("--trainer.callbacks.wandb.name=", f"--trainer.callbacks.wandb.name={name}"),
         ("--trainer.callbacks.wandb.tags=", "--trainer.callbacks.wandb.tags=" +
-         f"[pretraining,step1,nested-3b,loader-reset,dense-{a.model},bs{a.global_sequences},e{a.target_epoch},wsd]"),
-        ("--trainer.callbacks.checkpointer.fixed_steps=", "--trainer.callbacks.checkpointer.fixed_steps=" + json.dumps(retained_steps(source_epoch, a.target_epoch, a.global_sequences), separators=(",", ":"))),
+         f"[pretraining,step1,nested-3b,{'loader-reset' if reset_loader else 'loader-restored'},dense-{a.model},bs{a.global_sequences},e{a.target_epoch},wsd]"),
+        ("--trainer.callbacks.checkpointer.fixed_steps=", "--trainer.callbacks.checkpointer.fixed_steps=" + json.dumps(fixed_steps, separators=(",", ":"))),
         ("--data_loader.global_batch_size=", f"--data_loader.global_batch_size={a.global_sequences * SEQ}"),
-        ("--data_loader.seed=", f"--data_loader.seed={80_200 + a.target_epoch}"),
+        ("--data_loader.seed=", f"--data_loader.seed={loader_seed}"),
         ("--train_module.rank_microbatch_size=", f"--train_module.rank_microbatch_size={MODELS[a.model]['rank_mb'] * SEQ}"),
         ("--train_module.scheduler=", "--train_module.scheduler=" +
          f"{{_CLASS_: olmo_core.optim.scheduler.WSD, units: steps, warmup: {warmup}, decay_fraction: {DECAY}}}"),
@@ -500,7 +630,7 @@ def build(
         ("--trainer.load_path=", f"--trainer.load_path={a.source_checkpoint}"),
         ("--trainer.load_trainer_state=", "--trainer.load_trainer_state=true"),
         ("--trainer.load_optim_state=", "--trainer.load_optim_state=true"),
-        ("--trainer.reset_data_loader_state_on_load_path=", "--trainer.reset_data_loader_state_on_load_path=true"),
+        ("--trainer.reset_data_loader_state_on_load_path=", f"--trainer.reset_data_loader_state_on_load_path={'true' if reset_loader else 'false'}"),
     )
     for prefix, value in replacements:
         args = upsert(args, prefix, value)
@@ -517,7 +647,7 @@ def build(
         "assert p['audit']['passed'] is True\nassert p['audit']['base_document_overlap']==0\n"
         "assert p['audit']['chunk_document_overlap']==0\nprint('POOL3B_AUDIT_OK')\nPY",
         shlex.join(["test", "!", "-e", output]),
-        shlex.join(["echo", f"POOL3B_PREFLIGHT model={a.model} bs={a.global_sequences} epoch={a.target_epoch} lr={lr} wd={a.weight_decay} source={a.source_checkpoint} manifest={data_manifest} reset_loader=true seed={80_200 + a.target_epoch}"]),
+        shlex.join(["echo", f"POOL3B_PREFLIGHT model={a.model} bs={a.global_sequences} epoch={a.target_epoch} lr={lr} wd={a.weight_decay} source={a.source_checkpoint} manifest={data_manifest} reset_loader={'true' if reset_loader else 'false'} seed={loader_seed} recovery_of={a.recover_failed_experiment or 'none'}"]),
         shlex.join(["python", script, name, "--dry-run", *args]),
     ]
     gpus_per_node, nodes, _ = topology(a.model, a.global_sequences)
@@ -606,7 +736,9 @@ def register(a: argparse.Namespace, experiment: str, output: str) -> None:
     gpus_per_node, nodes, total_gpus = topology(a.model, a.global_sequences)
     rank_mb = MODELS[a.model]["rank_mb"]
     predecessor_pool = (
-        report["baseline1b"]["batchSweeps"]
+        report["batchSweeps"]
+        if a.recover_failed_experiment
+        else report["baseline1b"]["batchSweeps"]
         if a.target_epoch == 1
         else report["batchSweeps"]
     )
@@ -615,6 +747,30 @@ def register(a: argparse.Namespace, experiment: str, output: str) -> None:
     ]
     if len(predecessors) != 1:
         raise RuntimeError("registered source predecessor is no longer unique")
+    source_epoch = (
+        int(predecessors[0].get("sourceEpoch", 0 if a.target_epoch == 1 else PREDECESSOR[a.target_epoch]))
+        if a.recover_failed_experiment
+        else 0 if a.target_epoch == 1 else PREDECESSOR[a.target_epoch]
+    )
+    all_retained = retained_steps(source_epoch, a.target_epoch, a.global_sequences)
+    recovery_inside_target = bool(
+        a.recover_failed_experiment
+        and a.source_checkpoint.startswith(f"{predecessors[0]['output']}/step")
+    )
+    resume_step = checkpoint_step(a.source_checkpoint)
+    new_retained = (
+        [step for step in all_retained if step > int(resume_step)]
+        if recovery_inside_target and resume_step is not None
+        else all_retained
+    )
+    target_pre_decay = (
+        a.source_checkpoint
+        if recovery_inside_target
+        and resume_step is not None
+        and resume_step >= all_retained[-1]
+        else f"{output}/step{all_retained[-1]}"
+    )
+    data_loader_reset = not recovery_inside_target
     report["batchSweeps"].append({
         "batchSequences": a.global_sequences,
         "globalBatchTokens": a.global_sequences * SEQ,
@@ -633,15 +789,14 @@ def register(a: argparse.Namespace, experiment: str, output: str) -> None:
         "beaker": experiment,
         "output": output,
         "sourceCheckpoint": a.source_checkpoint,
-        "sourceEpoch": 0 if a.target_epoch == 1 else PREDECESSOR[a.target_epoch],
+        "sourceEpoch": source_epoch,
         "dataManifest": EXTENSION if a.target_epoch == 1 else FULL_POOL,
-        "dataLoaderReset": True,
-        "dataLoaderSeed": 80_200 + a.target_epoch,
-        "retainedPreDecaySteps": retained_steps(
-            0 if a.target_epoch == 1 else PREDECESSOR[a.target_epoch],
-            a.target_epoch,
-            a.global_sequences,
-        ),
+        "dataLoaderReset": data_loader_reset,
+        "dataLoaderSeed": int(predecessors[0].get("dataLoaderSeed", 80_200 + a.target_epoch)),
+        "retainedPreDecaySteps": all_retained,
+        "newRetainedPreDecaySteps": new_retained,
+        "targetPreDecayCheckpoint": target_pre_decay,
+        "recoverySourceStep": resume_step if a.recover_failed_experiment else None,
         "actualTargetTokens": a.target_epoch * POOL_TOKENS,
         "revision": a.revision,
         "recoveryOf": a.recover_failed_experiment,

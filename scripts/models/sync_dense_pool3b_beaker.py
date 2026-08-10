@@ -41,11 +41,57 @@ def completed_successfully(job: dict) -> bool:
     return bool(status.get("finalized")) and status.get("exitCode") == 0
 
 
+def job_state(job: dict) -> dict:
+    status = job.get("status", {})
+    if completed_successfully(job):
+        state = "succeeded"
+    elif running(job):
+        state = "running"
+    elif status.get("finalized"):
+        state = "canceled" if status.get("canceled") else "failed"
+    elif status.get("started"):
+        state = "running"
+    else:
+        state = "pending"
+    execution = job.get("execution") or {}
+    result = execution.get("result") or {}
+    return {
+        "job": job.get("id"),
+        "state": state,
+        "created": status.get("created"),
+        "started": status.get("started"),
+        "finalized": status.get("finalized"),
+        "exitCode": status.get("exitCode"),
+        "reason": status.get("canceledFor") or status.get("stoppedFor"),
+        "resultDataset": result.get("beaker"),
+    }
+
+
+def experiment_state(jobs: list[dict], expected_replicas: int) -> str | None:
+    """Classify actual jobs, including Beaker-created replacement attempts."""
+    if not jobs:
+        return None
+    active = [job for job in jobs if not job.get("status", {}).get("finalized")]
+    if active:
+        return "running" if any(running(job) for job in active) else "pending"
+    successes = [job for job in jobs if completed_successfully(job)]
+    if expected_replicas == 1 and successes:
+        return "complete"
+    # Replicas from one synchronized attempt have the same creation timestamp.
+    by_attempt: dict[str, list[dict]] = {}
+    for job in successes:
+        created = str(job.get("status", {}).get("created", ""))
+        by_attempt.setdefault(created, []).append(job)
+    if any(len(attempt) >= expected_replicas for attempt in by_attempt.values()):
+        return "complete"
+    return "failed"
+
+
 def sync(path: Path) -> int:
     report = json.loads(path.read_text())
     changed = 0
     for sweep in report.get("batchSweeps", []):
-        if not sweep.get("beaker") or sweep.get("status") in {"complete", "failed"}:
+        if not sweep.get("beaker") or sweep.get("status") == "complete":
             continue
         payload = experiment(sweep["beaker"])
         jobs = payload.get("jobs", [])
@@ -60,6 +106,7 @@ def sync(path: Path) -> int:
         updates = {
             "jobs": job_ids,
             "resultDatasets": results,
+            "jobStates": [job_state(job) for job in jobs],
         }
         if job_ids:
             updates["job"] = job_ids[0]
@@ -67,10 +114,16 @@ def sync(path: Path) -> int:
             updates["resultDataset"] = results[0]
         if match:
             updates["activeWandb"] = match.group(1)
-        if jobs and all(running(job) for job in jobs):
-            updates["status"] = "running"
-        elif jobs and all(completed_successfully(job) for job in jobs):
-            updates["status"] = "complete"
+        state = experiment_state(jobs, int(sweep.get("nodeCount", 1)))
+        if state:
+            updates["status"] = state
+        if state == "failed":
+            failures = [row for row in updates["jobStates"] if row["state"] != "succeeded"]
+            updates["failureClass"] = sweep.get("failureClass", "infrastructure")
+            updates["failureReason"] = "; ".join(
+                f"{row['job']}: {row['reason'] or 'exit ' + str(row['exitCode'])}"
+                for row in failures
+            )
         for key, value in updates.items():
             if sweep.get(key) != value:
                 sweep[key] = value

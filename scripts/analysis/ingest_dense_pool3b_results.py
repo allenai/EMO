@@ -86,13 +86,20 @@ def beaker_payload(experiment: str) -> dict:
     return payload[0] if isinstance(payload, list) else payload
 
 
-def successful(payload: dict) -> bool:
+def successful(payload: dict, expected_replicas: int) -> bool:
     jobs = payload.get("jobs", [])
-    return bool(jobs) and all(
-        job.get("status", {}).get("finalized")
+    successes = [
+        job for job in jobs
+        if job.get("status", {}).get("finalized")
         and job.get("status", {}).get("exitCode") == 0
-        for job in jobs
-    )
+    ]
+    if expected_replicas == 1:
+        return bool(successes)
+    by_attempt: dict[str, list[dict]] = {}
+    for job in successes:
+        created = str(job.get("status", {}).get("created", ""))
+        by_attempt.setdefault(created, []).append(job)
+    return any(len(attempt) >= expected_replicas for attempt in by_attempt.values())
 
 
 def logs(experiment: str) -> str:
@@ -123,7 +130,7 @@ def ingest(path: Path) -> list[dict]:
         if sweep.get("results", {}).get(epoch, {}).get("status") == "complete":
             continue
         payload = beaker_payload(sweep["beaker"])
-        if not successful(payload):
+        if not successful(payload, int(sweep.get("nodeCount", 1))):
             continue
         jobs = [job["id"] for job in payload.get("jobs", []) if job.get("id")]
         result_datasets = [
@@ -149,7 +156,9 @@ def ingest(path: Path) -> list[dict]:
             "resultDatasets": result_datasets,
             "output": sweep["output"],
             "sourceCheckpoint": sweep["sourceCheckpoint"],
-            "resumeCheckpoint": f"{sweep['output']}/step{retained[-1]}",
+            "resumeCheckpoint": sweep.get(
+                "targetPreDecayCheckpoint", f"{sweep['output']}/step{retained[-1]}"
+            ),
             "retainedPreDecaySteps": retained,
             "dataManifest": sweep.get("dataManifest"),
             "dataLoaderReset": sweep.get("dataLoaderReset"),
