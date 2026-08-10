@@ -118,7 +118,8 @@
       2,
       4,
       8,
-      12
+      12,
+      16
     ]
   },
   "optimizerStepComparisons": [],
@@ -318,7 +319,19 @@
       "resultDataset": "01KZMR55M52DDDWG07E8REBTHN",
       "activeWandb": "7p24uazm",
       "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded.",
-      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs64_e1_lr2e-3_wd0.1_warmup384_p3e1-r03/step10300"
+      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs64_e1_lr2e-3_wd0.1_warmup384_p3e1-r03/step10300",
+      "jobStates": [
+        {
+          "job": "01KZMR55QB44MRJ8YRMSBCMZJS",
+          "state": "succeeded",
+          "created": "2026-08-10T02:31:17.377392Z",
+          "started": "2026-08-10T02:31:44.154147Z",
+          "finalized": "2026-08-10T02:56:07.726487Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZMR55M52DDDWG07E8REBTHN"
+        }
+      ]
     },
     {
       "batchSequences": 64,
@@ -415,7 +428,19 @@
       "job": "01KZMYK33SWJGMZD8B6X2TWF23",
       "resultDataset": "01KZMYK30FYMFE1HN6D3EDNNS3",
       "activeWandb": "i9e3d88a",
-      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded.",
+      "jobStates": [
+        {
+          "job": "01KZMYK33SWJGMZD8B6X2TWF23",
+          "state": "succeeded",
+          "created": "2026-08-10T04:23:44.896567Z",
+          "started": "2026-08-10T04:24:18.993901Z",
+          "finalized": "2026-08-10T04:49:28.877108Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZMYK30FYMFE1HN6D3EDNNS3"
+        }
+      ]
     },
     {
       "batchSequences": 128,
@@ -512,7 +537,19 @@
       "job": "01KZMYK443QHT032WSNWQX84QE",
       "resultDataset": "01KZMYK40SEW9ZYT7XDM6VV1F5",
       "activeWandb": "n7nysk0f",
-      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded.",
+      "jobStates": [
+        {
+          "job": "01KZMYK443QHT032WSNWQX84QE",
+          "state": "succeeded",
+          "created": "2026-08-10T04:23:45.936771Z",
+          "started": "2026-08-10T04:24:25.382137Z",
+          "finalized": "2026-08-10T04:38:27.235625Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZMYK40SEW9ZYT7XDM6VV1F5"
+        }
+      ]
     },
     {
       "batchSequences": 128,
@@ -609,7 +646,19 @@
       "job": "01KZMYK53V8NZ9HFBXHXC9VXGJ",
       "resultDataset": "01KZMYK50HMH6PAMHJC7R39DW7",
       "activeWandb": "18aur4ge",
-      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded.",
+      "jobStates": [
+        {
+          "job": "01KZMYK53V8NZ9HFBXHXC9VXGJ",
+          "state": "succeeded",
+          "created": "2026-08-10T04:23:46.951216Z",
+          "started": "2026-08-10T04:24:23.765166Z",
+          "finalized": "2026-08-10T04:38:35.292213Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZMYK50HMH6PAMHJC7R39DW7"
+        }
+      ]
     },
     {
       "batchSequences": 256,
@@ -710,7 +759,29 @@
       "job": "01KZMYK64N3J34A132NTHEPFEH",
       "resultDataset": "01KZMYK61DNAPYH93AMX6WTYNY",
       "activeWandb": "8la59nne",
-      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded.",
+      "jobStates": [
+        {
+          "job": "01KZMYK64N3J34A132NTHEPFEH",
+          "state": "succeeded",
+          "created": "2026-08-10T04:23:48.000766Z",
+          "started": "2026-08-10T04:24:58.026083Z",
+          "finalized": "2026-08-10T04:33:22.874139Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZMYK61DNAPYH93AMX6WTYNY"
+        },
+        {
+          "job": "01KZMYK681T7FYRNJW7YNVMAE3",
+          "state": "succeeded",
+          "created": "2026-08-10T04:23:48.000766Z",
+          "started": "2026-08-10T04:24:57.50206Z",
+          "finalized": "2026-08-10T04:33:22.595412Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZMYK64VRF203MWQ4KXDTY8Z"
+        }
+      ]
     },
     {
       "batchSequences": 256,
@@ -811,7 +882,29 @@
       "job": "01KZMYK7D3WGQ74MDJ4Z8XXPXN",
       "resultDataset": "01KZMYK79SNY08Y9F4DMBD00TF",
       "activeWandb": "e43zw7us",
-      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded.",
+      "jobStates": [
+        {
+          "job": "01KZMYK7D3WGQ74MDJ4Z8XXPXN",
+          "state": "succeeded",
+          "created": "2026-08-10T04:23:49.296218Z",
+          "started": "2026-08-10T04:24:55.712935Z",
+          "finalized": "2026-08-10T04:33:28.115326Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZMYK79SNY08Y9F4DMBD00TF"
+        },
+        {
+          "job": "01KZMYK7GZDX5KDWVYEXFKS3PT",
+          "state": "succeeded",
+          "created": "2026-08-10T04:23:49.296218Z",
+          "started": "2026-08-10T04:24:55.938473Z",
+          "finalized": "2026-08-10T04:33:28.485731Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZMYK7DAHKXARD5ASSNM21P1"
+        }
+      ]
     },
     {
       "batchSequences": 64,
@@ -908,7 +1001,19 @@
       "job": "01KZN0Y6MBP79T98HSAQX4DBS4",
       "resultDataset": "01KZN0Y6H9JKE7ME08C587B68J",
       "activeWandb": "7j5qpv08",
-      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded.",
+      "jobStates": [
+        {
+          "job": "01KZN0Y6MBP79T98HSAQX4DBS4",
+          "state": "succeeded",
+          "created": "2026-08-10T05:04:46.117269Z",
+          "started": "2026-08-10T05:25:33.511411Z",
+          "finalized": "2026-08-10T06:02:39.020562Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZN0Y6H9JKE7ME08C587B68J"
+        }
+      ]
     },
     {
       "batchSequences": 64,
@@ -1005,7 +1110,19 @@
       "job": "01KZN0Y7KZNS5J58NA09YGZZZB",
       "resultDataset": "01KZN0Y7GRB2E4A02BF4DYGRPS",
       "activeWandb": "p7bjttwr",
-      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded.",
+      "jobStates": [
+        {
+          "job": "01KZN0Y7KZNS5J58NA09YGZZZB",
+          "state": "succeeded",
+          "created": "2026-08-10T05:04:47.1234Z",
+          "started": "2026-08-10T05:27:06.674242Z",
+          "finalized": "2026-08-10T06:04:09.229981Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZN0Y7GRB2E4A02BF4DYGRPS"
+        }
+      ]
     },
     {
       "batchSequences": 128,
@@ -1102,7 +1219,19 @@
       "job": "01KZN0Y8MAY48CKEV279DAXWYV",
       "resultDataset": "01KZN0Y8H1XJRHWWVTKDW2FKSW",
       "activeWandb": "rqxixszs",
-      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded.",
+      "jobStates": [
+        {
+          "job": "01KZN0Y8MAY48CKEV279DAXWYV",
+          "state": "succeeded",
+          "created": "2026-08-10T05:04:48.155567Z",
+          "started": "2026-08-10T05:31:42.01081Z",
+          "finalized": "2026-08-10T05:51:56.641102Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZN0Y8H1XJRHWWVTKDW2FKSW"
+        }
+      ]
     },
     {
       "batchSequences": 256,
@@ -1203,7 +1332,29 @@
       "job": "01KZN0Y9KD57NRD59Q33G8MRB8",
       "resultDataset": "01KZN0Y9G6S461KAPTZ2TMTK9X",
       "activeWandb": "b9sq07h3",
-      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded.",
+      "jobStates": [
+        {
+          "job": "01KZN0Y9KD57NRD59Q33G8MRB8",
+          "state": "succeeded",
+          "created": "2026-08-10T05:04:49.154117Z",
+          "started": "2026-08-10T05:35:04.558637Z",
+          "finalized": "2026-08-10T05:46:44.242216Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZN0Y9G6S461KAPTZ2TMTK9X"
+        },
+        {
+          "job": "01KZN0Y9PPE7091MK835F7ZCJR",
+          "state": "succeeded",
+          "created": "2026-08-10T05:04:49.154117Z",
+          "started": "2026-08-10T05:35:04.835633Z",
+          "finalized": "2026-08-10T05:46:44.160669Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZN0Y9KG2K3W6C3X4AV57WAS"
+        }
+      ]
     },
     {
       "batchSequences": 256,
@@ -1304,7 +1455,29 @@
       "job": "01KZN0YB23QX34W66RH7T91BYG",
       "resultDataset": "01KZN0YASD4AD0S1X04PSXX9HN",
       "activeWandb": "rhf29cfw",
-      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded.",
+      "jobStates": [
+        {
+          "job": "01KZN0YB23QX34W66RH7T91BYG",
+          "state": "succeeded",
+          "created": "2026-08-10T05:04:50.472993Z",
+          "started": "2026-08-10T05:43:21.152757Z",
+          "finalized": "2026-08-10T05:54:57.555487Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZN0YASD4AD0S1X04PSXX9HN"
+        },
+        {
+          "job": "01KZN0YBA5H0VYEFDWHM46A2AZ",
+          "state": "succeeded",
+          "created": "2026-08-10T05:04:50.472993Z",
+          "started": "2026-08-10T05:43:20.380873Z",
+          "finalized": "2026-08-10T05:54:58.830563Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZN0YB28A5ZST0KEPB24QB2S"
+        }
+      ]
     },
     {
       "batchSequences": 128,
@@ -1403,7 +1576,19 @@
       "job": "01KZN3VKDDQDYANV0CTH8QS2DE",
       "resultDataset": "01KZN3VK9K8GMYPXEJQCFSR4BH",
       "activeWandb": "hk9adynk",
-      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded.",
+      "jobStates": [
+        {
+          "job": "01KZN3VKDDQDYANV0CTH8QS2DE",
+          "state": "succeeded",
+          "created": "2026-08-10T05:55:46.604906Z",
+          "started": "2026-08-10T06:09:48.925675Z",
+          "finalized": "2026-08-10T06:47:48.784496Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZN3VK9K8GMYPXEJQCFSR4BH"
+        }
+      ]
     },
     {
       "batchSequences": 64,
@@ -1614,7 +1799,29 @@
       "job": "01KZN5MV29M4CREVZZE93N2C72",
       "resultDataset": "01KZN5MTYE1BX285V7E975A6YP",
       "activeWandb": "yyr9shru",
-      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded.",
+      "jobStates": [
+        {
+          "job": "01KZN5MV29M4CREVZZE93N2C72",
+          "state": "succeeded",
+          "created": "2026-08-10T06:27:02.21766Z",
+          "started": "2026-08-10T06:38:13.297349Z",
+          "finalized": "2026-08-10T06:59:04.327652Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZN5MTYE1BX285V7E975A6YP"
+        },
+        {
+          "job": "01KZN5MV608M8QSD3EA3CZRGG9",
+          "state": "succeeded",
+          "created": "2026-08-10T06:27:02.21766Z",
+          "started": "2026-08-10T06:38:13.901128Z",
+          "finalized": "2026-08-10T06:59:04.385281Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZN5MV2CP9WJT177GT5A1Q5B"
+        }
+      ]
     },
     {
       "batchSequences": 256,
@@ -1717,7 +1924,29 @@
       "job": "01KZN5MWCV9PDF6YXZ8D79GTF9",
       "resultDataset": "01KZN5MW9R1DZ58VSY7DRHY13C",
       "activeWandb": "h6sm9ehu",
-      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded.",
+      "jobStates": [
+        {
+          "job": "01KZN5MWCV9PDF6YXZ8D79GTF9",
+          "state": "succeeded",
+          "created": "2026-08-10T06:27:03.603721Z",
+          "started": "2026-08-10T06:44:51.711474Z",
+          "finalized": "2026-08-10T07:05:47.197361Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZN5MW9R1DZ58VSY7DRHY13C"
+        },
+        {
+          "job": "01KZN5MWG13RTV99E5KBT16AVA",
+          "state": "succeeded",
+          "created": "2026-08-10T06:27:03.603721Z",
+          "started": "2026-08-10T06:44:51.207726Z",
+          "finalized": "2026-08-10T07:05:45.982771Z",
+          "exitCode": 0,
+          "reason": null,
+          "resultDataset": "01KZN5MWCX60K6T3D9W2K6APT3"
+        }
+      ]
     },
     {
       "batchSequences": 128,
@@ -4816,7 +5045,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "running",
+      "status": "complete",
       "activeEpoch": 24,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPATZX2G3CVHQKKCMDWGA0X",
@@ -4843,7 +5072,69 @@
       "actualTargetTokens": 72000000000,
       "revision": "843f6578eb948d26c92add883ea0d406ef24b154",
       "recoveryOf": null,
-      "results": {},
+      "results": {
+        "24": {
+          "epoch": 24,
+          "lr": "2e-3",
+          "wd": "0.01",
+          "status": "complete",
+          "job": "01KZPAV0DG3MSRMR0CC8BMAYEY",
+          "jobs": [
+            "01KZPAV0DG3MSRMR0CC8BMAYEY",
+            "01KZPAV0X6PAE4QGE50KDAXA1S"
+          ],
+          "beaker": "01KZPATZX2G3CVHQKKCMDWGA0X",
+          "resultDataset": "01KZPATZXB1HWQHHFHXYHKZC7V",
+          "resultDatasets": [
+            "01KZPATZXB1HWQHHFHXYHKZC7V",
+            "01KZPAV0DQXF7ENFN3JTA15RWN"
+          ],
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs256_e24_lr2e-3_wd0.01_warmup95_p3e24-r25c",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs256_e20_lr2e-3_wd0.01_warmup95_p3e20-r23a/step51498",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs256_e24_lr2e-3_wd0.01_warmup95_p3e24-r25c/step61798",
+          "retainedPreDecaySteps": [
+            54073,
+            56648,
+            59223,
+            61798
+          ],
+          "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+          "dataLoaderReset": true,
+          "dataLoaderSeed": 80224,
+          "actualTargetTokens": 72000000000,
+          "actualTargetSteps": 68665,
+          "train": 3.195,
+          "validation": 3.275,
+          "c4": 3.275,
+          "wandb": "ig6xog33",
+          "acc": 33.32,
+          "bpb": 0.9603,
+          "avg8Bpb": 1.4294125,
+          "downstream": {
+            "arc_challenge": 22.41,
+            "arc_easy": 50.7,
+            "boolq": 53.269999999999996,
+            "csqa": 40.79,
+            "hellaswag": 33.32,
+            "openbookqa": 24.6,
+            "piqa": 65.13,
+            "socialiqa": 42.58,
+            "winogrande": 50.83
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.511,
+            "arc_easy": 1.553,
+            "boolq": 2.662,
+            "csqa": 1.519,
+            "hellaswag": 0.9603,
+            "openbookqa": 1.729,
+            "piqa": 1.266,
+            "socialiqa": 1.335,
+            "winogrande": 1.562
+          },
+          "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+        }
+      },
       "jobs": [
         "01KZPAV0DG3MSRMR0CC8BMAYEY",
         "01KZPAV0X6PAE4QGE50KDAXA1S"
@@ -4855,28 +5146,29 @@
       "jobStates": [
         {
           "job": "01KZPAV0DG3MSRMR0CC8BMAYEY",
-          "state": "running",
+          "state": "succeeded",
           "created": "2026-08-10T17:17:01.217892Z",
           "started": "2026-08-10T17:25:05.763611Z",
-          "finalized": null,
-          "exitCode": null,
+          "finalized": "2026-08-10T18:17:42.96663Z",
+          "exitCode": 0,
           "reason": null,
           "resultDataset": "01KZPATZXB1HWQHHFHXYHKZC7V"
         },
         {
           "job": "01KZPAV0X6PAE4QGE50KDAXA1S",
-          "state": "running",
+          "state": "succeeded",
           "created": "2026-08-10T17:17:01.217892Z",
           "started": "2026-08-10T17:25:05.617265Z",
-          "finalized": null,
-          "exitCode": null,
+          "finalized": "2026-08-10T18:17:44.11146Z",
+          "exitCode": 0,
           "reason": null,
           "resultDataset": "01KZPAV0DQXF7ENFN3JTA15RWN"
         }
       ],
       "job": "01KZPAV0DG3MSRMR0CC8BMAYEY",
       "resultDataset": "01KZPATZXB1HWQHHFHXYHKZC7V",
-      "activeWandb": "ig6xog33"
+      "activeWandb": "ig6xog33",
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
     },
     {
       "batchSequences": 256,
@@ -4890,7 +5182,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 2,
       "gpuCount": 16,
-      "status": "running",
+      "status": "complete",
       "activeEpoch": 24,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPAV7XFRY2P0Z9NT5SA0BAR",
@@ -4917,7 +5209,69 @@
       "actualTargetTokens": 72000000000,
       "revision": "843f6578eb948d26c92add883ea0d406ef24b154",
       "recoveryOf": null,
-      "results": {},
+      "results": {
+        "24": {
+          "epoch": 24,
+          "lr": "2e-3",
+          "wd": "0.033",
+          "status": "complete",
+          "job": "01KZPAV87MPSYFWCCR65AJKDMN",
+          "jobs": [
+            "01KZPAV87MPSYFWCCR65AJKDMN",
+            "01KZPAV8J4ZGMDJ9HJ652E1SPA"
+          ],
+          "beaker": "01KZPAV7XFRY2P0Z9NT5SA0BAR",
+          "resultDataset": "01KZPAV7XQK4Q4WT1ZYDJWHRYY",
+          "resultDatasets": [
+            "01KZPAV7XQK4Q4WT1ZYDJWHRYY",
+            "01KZPAV87V1H0EX44G8YJXMDBD"
+          ],
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs256_e24_lr2e-3_wd0.033_warmup95_p3e24-r25d",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs256_e20_lr2e-3_wd0.01_warmup95_p3e20-r23a/step51498",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs256_e24_lr2e-3_wd0.033_warmup95_p3e24-r25d/step61798",
+          "retainedPreDecaySteps": [
+            54073,
+            56648,
+            59223,
+            61798
+          ],
+          "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+          "dataLoaderReset": true,
+          "dataLoaderSeed": 80224,
+          "actualTargetTokens": 72000000000,
+          "actualTargetSteps": 68665,
+          "train": 3.195,
+          "validation": 3.275,
+          "c4": 3.275,
+          "wandb": "a61tmaxb",
+          "acc": 33.33,
+          "bpb": 0.9602,
+          "avg8Bpb": 1.4309,
+          "downstream": {
+            "arc_challenge": 22.74,
+            "arc_easy": 50.0,
+            "boolq": 52.910000000000004,
+            "csqa": 40.21,
+            "hellaswag": 33.33,
+            "openbookqa": 25.2,
+            "piqa": 65.94,
+            "socialiqa": 42.370000000000005,
+            "winogrande": 50.91
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.516,
+            "arc_easy": 1.557,
+            "boolq": 2.584,
+            "csqa": 1.522,
+            "hellaswag": 0.9602,
+            "openbookqa": 1.727,
+            "piqa": 1.268,
+            "socialiqa": 1.334,
+            "winogrande": 1.563
+          },
+          "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+        }
+      },
       "jobs": [
         "01KZPAV87MPSYFWCCR65AJKDMN",
         "01KZPAV8J4ZGMDJ9HJ652E1SPA"
@@ -4929,28 +5283,29 @@
       "jobStates": [
         {
           "job": "01KZPAV87MPSYFWCCR65AJKDMN",
-          "state": "running",
+          "state": "succeeded",
           "created": "2026-08-10T17:17:09.423362Z",
           "started": "2026-08-10T17:40:07.300955Z",
-          "finalized": null,
-          "exitCode": null,
+          "finalized": "2026-08-10T18:32:58.83745Z",
+          "exitCode": 0,
           "reason": null,
           "resultDataset": "01KZPAV7XQK4Q4WT1ZYDJWHRYY"
         },
         {
           "job": "01KZPAV8J4ZGMDJ9HJ652E1SPA",
-          "state": "running",
+          "state": "succeeded",
           "created": "2026-08-10T17:17:09.423362Z",
           "started": "2026-08-10T17:40:06.954649Z",
-          "finalized": null,
-          "exitCode": null,
+          "finalized": "2026-08-10T18:32:57.502059Z",
+          "exitCode": 0,
           "reason": null,
           "resultDataset": "01KZPAV87V1H0EX44G8YJXMDBD"
         }
       ],
       "job": "01KZPAV87MPSYFWCCR65AJKDMN",
       "resultDataset": "01KZPAV7XQK4Q4WT1ZYDJWHRYY",
-      "activeWandb": "a61tmaxb"
+      "activeWandb": "a61tmaxb",
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
     },
     {
       "batchSequences": 512,
@@ -5064,41 +5419,41 @@
       "jobStates": [
         {
           "job": "01KZPAVFB5KV9Y8ZXHS4FRGNFM",
-          "state": "running",
+          "state": "succeeded",
           "created": "2026-08-10T17:17:16.909447Z",
           "started": "2026-08-10T17:48:27.674917Z",
-          "finalized": null,
-          "exitCode": null,
+          "finalized": "2026-08-10T17:56:59.970791Z",
+          "exitCode": 0,
           "reason": null,
           "resultDataset": "01KZPAVF7K60QCRT9ZE9W0PYVY"
         },
         {
           "job": "01KZPAVFEM3XQH8RTER9B4EQ4W",
-          "state": "running",
+          "state": "succeeded",
           "created": "2026-08-10T17:17:16.909447Z",
           "started": "2026-08-10T17:48:28.632942Z",
-          "finalized": null,
-          "exitCode": null,
+          "finalized": "2026-08-10T17:56:59.841818Z",
+          "exitCode": 0,
           "reason": null,
           "resultDataset": "01KZPAVFB8YKTVR9NTQ99TNMZD"
         },
         {
           "job": "01KZPAVFHZ9MKVENBEZGJEB0RJ",
-          "state": "running",
+          "state": "succeeded",
           "created": "2026-08-10T17:17:16.909447Z",
           "started": "2026-08-10T17:48:28.19641Z",
-          "finalized": null,
-          "exitCode": null,
+          "finalized": "2026-08-10T17:56:59.744187Z",
+          "exitCode": 0,
           "reason": null,
           "resultDataset": "01KZPAVFEQ7WN8BP6ESVJJ73AN"
         },
         {
           "job": "01KZPAVFNTQP56Q84VJK34QW2Q",
-          "state": "running",
+          "state": "succeeded",
           "created": "2026-08-10T17:17:16.909447Z",
           "started": "2026-08-10T17:48:28.693882Z",
-          "finalized": null,
-          "exitCode": null,
+          "finalized": "2026-08-10T17:57:01.356598Z",
+          "exitCode": 0,
           "reason": null,
           "resultDataset": "01KZPAVFJ1HEGQ6WXCRHK5SW16"
         }
@@ -5120,7 +5475,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 4,
       "gpuCount": 32,
-      "status": "pending",
+      "status": "complete",
       "activeEpoch": 2,
       "search": "nested-3b-fixed-lr-adaptive-wd",
       "beaker": "01KZPAVRD8NXYGXE4MSS5JAMNC",
@@ -5141,7 +5496,70 @@
       "actualTargetTokens": 6000000000,
       "revision": "843f6578eb948d26c92add883ea0d406ef24b154",
       "recoveryOf": null,
-      "results": {},
+      "results": {
+        "2": {
+          "epoch": 2,
+          "lr": "2e-3",
+          "wd": "0.1",
+          "status": "complete",
+          "job": "01KZPAVRW2XQBSD4E2ERYSF0D2",
+          "jobs": [
+            "01KZPAVRW2XQBSD4E2ERYSF0D2",
+            "01KZPAVSBC308D8K0Z349X74RH",
+            "01KZPAVSSY0WN6RZWM5Z82ZB03",
+            "01KZPAVT79SVXY9SFQF1S4PRN7"
+          ],
+          "beaker": "01KZPAVRD8NXYGXE4MSS5JAMNC",
+          "resultDataset": "01KZPAVRDHRRM8GB806XKNCMA5",
+          "resultDatasets": [
+            "01KZPAVRDHRRM8GB806XKNCMA5",
+            "01KZPAVRW81JXEY5CDVQ1C1Z58",
+            "01KZPAVSBKPGYNJH73ZWJWREXS",
+            "01KZPAVST2HQF6529JSFH2BQX5"
+          ],
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs512_e2_lr2e-3_wd0.1_warmup48_p3e2-r25f",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs512_e1_lr2e-3_wd0.033_warmup48_p3e1-bs512-r01b/step1287",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs512_e2_lr2e-3_wd0.1_warmup48_p3e2-r25f/step2575",
+          "retainedPreDecaySteps": [
+            2575
+          ],
+          "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+          "dataLoaderReset": true,
+          "dataLoaderSeed": 80202,
+          "actualTargetTokens": 6000000000,
+          "actualTargetSteps": 2862,
+          "train": 3.581,
+          "validation": 3.581,
+          "c4": 3.581,
+          "wandb": "pcl4uffo",
+          "acc": 27.560000000000002,
+          "bpb": 1.052,
+          "avg8Bpb": 1.5962499999999997,
+          "downstream": {
+            "arc_challenge": 22.74,
+            "arc_easy": 44.21,
+            "boolq": 61.71,
+            "csqa": 31.61,
+            "hellaswag": 27.560000000000002,
+            "openbookqa": 22.0,
+            "piqa": 59.36,
+            "socialiqa": 41.15,
+            "winogrande": 50.43
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.695,
+            "arc_easy": 1.823,
+            "boolq": 2.529,
+            "csqa": 1.759,
+            "hellaswag": 1.052,
+            "openbookqa": 1.895,
+            "piqa": 1.402,
+            "socialiqa": 1.507,
+            "winogrande": 1.637
+          },
+          "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
+        }
+      },
       "jobs": [
         "01KZPAVRW2XQBSD4E2ERYSF0D2",
         "01KZPAVSBC308D8K0Z349X74RH",
@@ -5157,47 +5575,49 @@
       "jobStates": [
         {
           "job": "01KZPAVRW2XQBSD4E2ERYSF0D2",
-          "state": "pending",
+          "state": "succeeded",
           "created": "2026-08-10T17:17:26.312358Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
+          "started": "2026-08-10T18:00:00.896904Z",
+          "finalized": "2026-08-10T18:07:35.661104Z",
+          "exitCode": 0,
           "reason": null,
           "resultDataset": "01KZPAVRDHRRM8GB806XKNCMA5"
         },
         {
           "job": "01KZPAVSBC308D8K0Z349X74RH",
-          "state": "pending",
+          "state": "succeeded",
           "created": "2026-08-10T17:17:26.312358Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
+          "started": "2026-08-10T18:00:01.382811Z",
+          "finalized": "2026-08-10T18:07:34.734685Z",
+          "exitCode": 0,
           "reason": null,
           "resultDataset": "01KZPAVRW81JXEY5CDVQ1C1Z58"
         },
         {
           "job": "01KZPAVSSY0WN6RZWM5Z82ZB03",
-          "state": "pending",
+          "state": "succeeded",
           "created": "2026-08-10T17:17:26.312358Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
+          "started": "2026-08-10T18:00:01.468013Z",
+          "finalized": "2026-08-10T18:07:35.766412Z",
+          "exitCode": 0,
           "reason": null,
           "resultDataset": "01KZPAVSBKPGYNJH73ZWJWREXS"
         },
         {
           "job": "01KZPAVT79SVXY9SFQF1S4PRN7",
-          "state": "pending",
+          "state": "succeeded",
           "created": "2026-08-10T17:17:26.312358Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
+          "started": "2026-08-10T18:00:00.896493Z",
+          "finalized": "2026-08-10T18:07:34.751759Z",
+          "exitCode": 0,
           "reason": null,
           "resultDataset": "01KZPAVST2HQF6529JSFH2BQX5"
         }
       ],
       "job": "01KZPAVRW2XQBSD4E2ERYSF0D2",
-      "resultDataset": "01KZPAVRDHRRM8GB806XKNCMA5"
+      "resultDataset": "01KZPAVRDHRRM8GB806XKNCMA5",
+      "activeWandb": "pcl4uffo",
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded."
     }
   ],
   "summaryBatches": [
@@ -13730,8 +14150,8 @@
         "job": "01KZPATB1G2TATZRXC00JT1AMP",
         "resultDataset": "01KZPATAY0TMRNKTWKB7FS4A85",
         "activeWandb": "khu6s2z3",
-        "progressPercent": 80,
-        "progressStep": 110450,
+        "progressPercent": 89,
+        "progressStep": 122760,
         "progressTotalSteps": 137330
       },
       {
@@ -13744,7 +14164,7 @@
         "rankMicrobatchSequences": 16,
         "gradientAccumulation": 4,
         "gpuCount": 8,
-        "status": "running",
+        "status": "complete",
         "activeEpoch": 16,
         "search": "small-model-adaptive-coordinate",
         "beaker": "01KZPATQ1JTBV9SWTH4GF87BR8",
@@ -13756,10 +14176,94 @@
           6437,
           6866
         ],
+        "results": {
+          "16": {
+            "epoch": 16,
+            "lr": "2e-3",
+            "wd": "0.1",
+            "status": "complete",
+            "job": "01KZPATQFZP8RG8Z1DEA2CHYG4",
+            "beaker": "01KZPATQ1JTBV9SWTH4GF87BR8",
+            "resultDataset": "01KZPATQ1T3GYHN12XR0GYPZ0Z",
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs512_e16_lr2e-3_wd0.1_warmup48_sm0810bs512e16a",
+            "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs512_e12_lr2e-3_wd0.1_warmup48_sm0810bs512e12a/step5150",
+            "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs512_e16_lr2e-3_wd0.1_warmup48_sm0810bs512e16a/step6866",
+            "retainedPreDecaySteps": [
+              5578,
+              6007,
+              6437,
+              6866
+            ],
+            "train": 3.326,
+            "validation": 3.453,
+            "wandb": "ptioiue3",
+            "downstream": {
+              "arc_challenge": 23.080000000000002,
+              "arc_easy": 45.09,
+              "boolq": 50.92,
+              "csqa": 35.709999999999994,
+              "hellaswag": 29.93,
+              "openbookqa": 24.0,
+              "piqa": 60.39,
+              "socialiqa": 42.02,
+              "winogrande": 51.93
+            },
+            "downstreamBpb": {
+              "arc_challenge": 1.548,
+              "arc_easy": 1.611,
+              "boolq": 2.151,
+              "csqa": 1.613,
+              "hellaswag": 1.016,
+              "openbookqa": 1.824,
+              "piqa": 1.365,
+              "socialiqa": 1.428,
+              "winogrande": 1.602
+            },
+            "acc": 29.93,
+            "bpb": 1.016,
+            "avg8Bpb": 1.500875,
+            "c4": 3.453,
+            "reason": "Completed successfully with full held-out DCLM validation and all nine downstream evaluations; the exact pre-decay checkpoint is retained."
+          }
+        },
+        "reason": "Completed successfully with full held-out DCLM validation and all nine downstream evaluations; the exact pre-decay checkpoint is retained.",
+        "job": "01KZPATQFZP8RG8Z1DEA2CHYG4",
+        "resultDataset": "01KZPATQ1T3GYHN12XR0GYPZ0Z",
+        "activeWandb": "ptioiue3",
+        "progressPercent": 100,
+        "progressStep": 7630,
+        "progressTotalSteps": 7630
+      },
+      {
+        "batchSequences": 512,
+        "globalBatchTokens": 2097152,
+        "contextLength": 4096,
+        "lr": "2e-3",
+        "wd": "0.1",
+        "warmupSteps": 48,
+        "rankMicrobatchSequences": 16,
+        "gradientAccumulation": 4,
+        "gpuCount": 8,
+        "status": "pending",
+        "activeEpoch": 24,
+        "search": "small-model-adaptive-coordinate",
+        "beaker": "01KZPD6CWMRT8YMYG85JWDQXTQ",
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs512_e24_lr2e-3_wd0.1_warmup48_sm0810bs512e24a",
+        "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs512_e16_lr2e-3_wd0.1_warmup48_sm0810bs512e16a/step6866",
+        "retainedPreDecaySteps": [
+          7295,
+          7725,
+          8153,
+          8582,
+          9012,
+          9441,
+          9870,
+          10300
+        ],
         "results": {},
         "reason": "Adaptive small-model Step 1-1 coordinate search; exact-coordinate resumes, empirically tuned per-batch WD cap, and nondecreasing-WD frontier policy apply.",
-        "job": "01KZPATQFZP8RG8Z1DEA2CHYG4",
-        "resultDataset": "01KZPATQ1T3GYHN12XR0GYPZ0Z"
+        "job": "01KZPD6D1W8BM6WM20MMVVV7J6",
+        "resultDataset": "01KZPD6CWZ97BJDSGDG6Q8V3K1"
       }
     ],
     "healthAudit": {
@@ -13773,13 +14277,13 @@
       "64": 64,
       "128": 72,
       "256": 48,
-      "512": 12
+      "512": 16
     },
     "stopCeilingByBatch": {
       "64": 64,
       "128": 72,
       "256": 48,
-      "512": 12
+      "512": 16
     }
   },
   "poolPlan": {
@@ -13848,13 +14352,13 @@
       "64": 64,
       "128": 72,
       "256": 48,
-      "512": 12
+      "512": 16
     },
     "stopCeilingByBatch": {
       "64": 64,
       "128": 72,
       "256": 48,
-      "512": 12
+      "512": 16
     }
   }
 }

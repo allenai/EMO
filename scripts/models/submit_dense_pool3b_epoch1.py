@@ -53,6 +53,22 @@ MODELS = {
         "report": "wsd_batch_size_1b_pool3b.json",
     },
 }
+SSH_HOST: str | None = None
+
+
+def beaker_command(*args: str) -> list[str]:
+    command = ["beaker", *args]
+    if not SSH_HOST:
+        return command
+    return [
+        "ssh",
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "ConnectTimeout=15",
+        SSH_HOST,
+        shlex.join(command),
+    ]
 
 
 def parse_args() -> argparse.Namespace:
@@ -67,6 +83,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--suffix", required=True)
     p.add_argument("--workspace", default="ai2/flex2")
     p.add_argument("--priority", default="urgent")
+    p.add_argument("--ssh-host", help="Run Beaker commands through this SSH host.")
     p.add_argument("--recover-failed-experiment")
     p.add_argument("--print-only", action="store_true")
     p.add_argument("--register", action="store_true")
@@ -124,7 +141,7 @@ def upsert(args: list[str], prefix: str, value: str) -> list[str]:
 
 def base_spec(experiment: str) -> dict[str, Any]:
     result = subprocess.run(
-        ["beaker", "experiment", "spec", experiment, "--format", "json"],
+        beaker_command("experiment", "spec", experiment, "--format", "json"),
         check=True, text=True, stdout=subprocess.PIPE,
     )
     return json.loads(result.stdout)
@@ -861,7 +878,9 @@ def register(a: argparse.Namespace, experiment: str, output: str) -> None:
 
 
 def main() -> None:
+    global SSH_HOST
     a = parse_args()
+    SSH_HOST = a.ssh_host
     report = json.loads(report_path(a.model).read_text())
     source = base_spec(a.base_experiment)
     predecessor = audit(a, report, source)
@@ -871,7 +890,17 @@ def main() -> None:
         print()
         return
     result = subprocess.run(
-        ["beaker", "experiment", "create", "-", "--name", name, "--workspace", a.workspace, "--priority", a.priority],
+        beaker_command(
+            "experiment",
+            "create",
+            "-",
+            "--name",
+            name,
+            "--workspace",
+            a.workspace,
+            "--priority",
+            a.priority,
+        ),
         check=True, input=json.dumps(spec), text=True, stdout=subprocess.PIPE,
     )
     print(result.stdout, end="")

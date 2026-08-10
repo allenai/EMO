@@ -106,7 +106,21 @@ def sync(path: Path) -> int:
     report = json.loads(path.read_text())
     changed = 0
     for sweep in report.get("batchSweeps", []):
-        if not sweep.get("beaker") or sweep.get("status") in {"complete", "failed"}:
+        epoch_result = (sweep.get("results") or {}).get(str(sweep.get("activeEpoch")))
+        endpoint_ingested = bool(
+            epoch_result
+            and epoch_result.get("status") == "complete"
+            and epoch_result.get("validation") is not None
+        )
+        tracked_states = [row.get("state") for row in sweep.get("jobStates", [])]
+        provenance_terminal = bool(tracked_states) and all(
+            state in {"succeeded", "failed", "canceled"} for state in tracked_states
+        )
+        if (
+            not sweep.get("beaker")
+            or sweep.get("status") == "failed"
+            or (endpoint_ingested and provenance_terminal)
+        ):
             continue
         payload = experiment(sweep["beaker"])
         jobs = payload.get("jobs", [])
