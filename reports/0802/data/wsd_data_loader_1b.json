@@ -2217,7 +2217,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "2.5e-4",
       "wd": "0.333",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 2,
       "attemptedEpochs": [
         1,
@@ -2304,63 +2304,28 @@
           "reason": "Completed healthy on four 8-GPU nodes from scratch with ordinary epoch-1 packing, retaining exact pre-decay step214 and endpoint step239. This LR2.5e-4/WD0.333 bootstrap is the exact source for the registered E2 dynamic-repacking LR-boundary coordinate."
         }
       },
-      "health": "healthy",
-      "reason": "E1 completed healthy at validation CE5.074 with all nine downstream tasks and exact step214/239 provenance. E2 dynamic repacking is registered from the exact LR2.5e-4/WD0.333 step214 predecessor and awaits print-only guards and submission.",
-      "beaker": "01KZS248N9VDG7Y162S9Q5EV6P",
-      "experiment": "01KZS248N9VDG7Y162S9Q5EV6P",
-      "job": "01KZS248RRNM0FAQZFR1NC98QP",
-      "result": "01KZS248NEXJCDYZGTR9PVMYET",
+      "health": "planned",
+      "reason": "E2 dynamic repacking was submitted from exact LR2.5e-4/WD0.333 E1 step214 after source, LR/WD, manifest, 4-node, rank-microbatch, and duplicate-tuple print-only guards passed. It is waiting for scheduling/startup evidence.",
+      "beaker": "01KZS3A0S0AX9NZW1KPHA3HB5J",
+      "experiment": "01KZS3A0S0AX9NZW1KPHA3HB5J",
+      "job": "01KZS3A0XY0N0YG4V01EAJCMSF",
+      "result": "01KZS3A0S5SAK3H04828BYA3XN",
       "replicaJobs": [
-        "01KZS248RRNM0FAQZFR1NC98QP",
-        "01KZS248W4W1SNY4FA7J4SDCW0",
-        "01KZS248ZEPHP5S5N3AQQ6FGEZ",
-        "01KZS2492RV7HE09Y54DRK3FM6"
+        "01KZS3A0XY0N0YG4V01EAJCMSF",
+        "01KZS3A12SDE8EEKMXEPZZ9B80",
+        "01KZS3A1724N69CFVSF1WNTZKY",
+        "01KZS3A1C3Y4T0616YP7W2XABC"
       ],
       "replicaResults": [
-        "01KZS248NEXJCDYZGTR9PVMYET",
-        "01KZS248RV1TYNB3E6E7PZ7V20",
-        "01KZS248W6ZDB01CHBF0Q95P49",
-        "01KZS248ZG7N6KWGKBSH3R10VJ"
+        "01KZS3A0S5SAK3H04828BYA3XN",
+        "01KZS3A0Y2539GNHV5Q3TPE918",
+        "01KZS3A12Y4WXJNSNSRTAC4AB3",
+        "01KZS3A175QXRBFRW83227DSCD"
       ],
-      "replicaNodes": [
-        "01KQ0F2NX98MG50MEF0ZCAMZWT",
-        "01JRYAW9HKCG889S9DT7CDQPDA",
-        "01JS0FZ51W1SWWMPK073HW91YX",
-        "01K5YQYB97E9KXHSEZNDK14494"
-      ],
-      "beakerStatus": "complete",
-      "wandb": "zwauozmc",
-      "startupEvidence": {
-        "manifestVerified": true,
-        "preflightVerified": true,
-        "remoteDryRunComplete": true,
-        "dynamicRepacking": false,
-        "ordinaryE1Packing": true,
-        "freshStart": true,
-        "firstOptimizerStep": 1
-      },
-      "healthSummary": {
-        "ceSamples": 48,
-        "ceLast": 5.043,
-        "ceTailMean": 5.40385,
-        "ceBestRollingMean": 5.219799999999999,
-        "gradSamples": 48,
-        "gradLast": 0.1103,
-        "gradTailP95": 0.935505,
-        "nanOrInf": false,
-        "classification": "healthy"
-      },
-      "progress": {
-        "observedAt": "2026-08-11 11:56 PDT",
-        "step": 239,
-        "endpointStep": 239,
-        "epoch": 1,
-        "trainCe": 5.043,
-        "validationCe": 5.074,
-        "status": "complete"
-      },
-      "revision": "3b5199065766f38076a9435690ef09ba29e1a2e4",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e1_lr2.5e-4_wd0.333_warmup24_dataloader-bootstrap-lrbound-r01"
+      "replicaNodes": [],
+      "beakerStatus": "created",
+      "revision": "e9bca0bb090051e9fd9094d993376999fe3e64d1",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr2.5e-4_wd0.333_warmup24_dataloader-cd-lrbound-r01"
     },
     {
       "id": "dr1024-lr5e-4-wd1.0",
