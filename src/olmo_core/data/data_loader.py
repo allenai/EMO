@@ -347,6 +347,8 @@ class NumpyDataLoaderBase(TextDataLoaderBase):
     :param reshuffle_each_epoch: When ``shuffle`` is enabled, whether to generate a new
         deterministic permutation every epoch. If ``False``, the epoch-1 permutation is reused
         for every epoch, preserving both sequence order and batch membership.
+    :param batch_shuffling: Preserve the ordinary epoch-1 global batches and shuffle only their
+        order in later epochs. Disabled by default.
     :param num_threads: The number of threads to use when loading instances.
     :param num_workers: The number of workers to use when loading batches.
     :param prefetch_factor: The number of batches to prefetch from each worker.
@@ -368,6 +370,7 @@ class NumpyDataLoaderBase(TextDataLoaderBase):
         seed: int = 0,
         shuffle: bool = True,
         reshuffle_each_epoch: bool = True,
+        batch_shuffling: bool = False,
         restore_data_order_from_state: bool = True,
         num_threads: Optional[int] = None,
         num_workers: int = 0,
@@ -390,6 +393,8 @@ class NumpyDataLoaderBase(TextDataLoaderBase):
         self.seed = seed
         self.shuffle = shuffle
         self.reshuffle_each_epoch = reshuffle_each_epoch
+        self.batch_shuffling = batch_shuffling
+        self._validate_data_order_settings()
         self.restore_data_order_from_state = restore_data_order_from_state
         self.num_threads = num_threads
         self.num_workers = num_workers
@@ -416,6 +421,7 @@ class NumpyDataLoaderBase(TextDataLoaderBase):
         target_device_type: str = "cpu",
         shuffle: bool = True,
         reshuffle_each_epoch: bool = True,
+        batch_shuffling: bool = False,
         restore_data_order_from_state: bool = True,
         ignore_fingerprint_mismatch: bool = False,
     ) -> "NumpyDataLoaderBase":
@@ -438,6 +444,7 @@ class NumpyDataLoaderBase(TextDataLoaderBase):
             target_device_type=target_device_type,
             shuffle=shuffle,
             reshuffle_each_epoch=reshuffle_each_epoch,
+            batch_shuffling=batch_shuffling,
             restore_data_order_from_state=restore_data_order_from_state,
             ignore_fingerprint_mismatch=ignore_fingerprint_mismatch,
         )
@@ -464,8 +471,23 @@ class NumpyDataLoaderBase(TextDataLoaderBase):
             "seed": self.seed,
             "shuffle": self.shuffle,
             "reshuffle_each_epoch": self.reshuffle_each_epoch,
+            "batch_shuffling": self.batch_shuffling,
             "epoch": self._epoch,
         }
+
+    def _validate_data_order_settings(self):
+        if self.batch_shuffling and not self.shuffle:
+            raise OLMoConfigurationError("'batch_shuffling' requires 'shuffle=True'")
+        if self.batch_shuffling and not self.reshuffle_each_epoch:
+            raise OLMoConfigurationError("'batch_shuffling' requires 'reshuffle_each_epoch=True'")
+        if self.batch_shuffling and isinstance(self.dataset, NumpyFSLDynamicRepackedDataset):
+            raise OLMoConfigurationError(
+                "'batch_shuffling' cannot be combined with dynamic document repacking"
+            )
+        if self.batch_shuffling and not isinstance(self.dataset, NumpyFSLDatasetBase):
+            raise OLMoConfigurationError(
+                "'batch_shuffling' currently supports only fixed-sequence-length datasets"
+            )
 
     def load_state_dict(self, state_dict: Dict[str, Any]):
         if state_dict["dataset_fingerprint_version"] != self.dataset.fingerprint_version:
@@ -497,6 +519,7 @@ class NumpyDataLoaderBase(TextDataLoaderBase):
         # deterministic permutation every epoch.
         saved_shuffle = state_dict.get("shuffle", True)
         saved_reshuffle_each_epoch = state_dict.get("reshuffle_each_epoch", True)
+        saved_batch_shuffling = state_dict.get("batch_shuffling", False)
         if self.restore_data_order_from_state:
             if saved_shuffle != self.shuffle:
                 log.warning(
@@ -510,13 +533,22 @@ class NumpyDataLoaderBase(TextDataLoaderBase):
                     "will use the setting from the state dict for data order consistency."
                 )
                 self.reshuffle_each_epoch = saved_reshuffle_each_epoch
+            if saved_batch_shuffling != self.batch_shuffling:
+                log.warning(
+                    "Restoring data loading state with a different 'batch_shuffling' setting; "
+                    "will use the setting from the state dict for data order consistency."
+                )
+                self.batch_shuffling = saved_batch_shuffling
         elif (
-            saved_shuffle != self.shuffle or saved_reshuffle_each_epoch != self.reshuffle_each_epoch
+            saved_shuffle != self.shuffle
+            or saved_reshuffle_each_epoch != self.reshuffle_each_epoch
+            or saved_batch_shuffling != self.batch_shuffling
         ):
             log.warning(
                 "Ignoring checkpoint data-order settings because "
                 "restore_data_order_from_state=False; keeping the configured data-order mode."
             )
+        self._validate_data_order_settings()
 
         self.batches_processed = state_dict["batches_processed"]
         self.tokens_processed = state_dict["tokens_processed"]
@@ -688,6 +720,8 @@ class NumpyFSLDataLoader(NumpyDataLoaderBase):
     :class:`~olmo_core.data.numpy_dataset.NumpyFSLDataset`.
     """
 
+    _BATCH_SHUFFLING_SEED_DOMAIN = 0x42415443  # "BATC"
+
     def __init__(
         self,
         dataset: NumpyFSLDatasetBase,
@@ -726,19 +760,32 @@ class NumpyFSLDataLoader(NumpyDataLoaderBase):
             epoch=self.data_order_epoch,
             dataset_size=len(self.dataset),
             chunk=self.chunk_size if self.chunk_size > 1 else None,
-            v=1,  # tick if logic changes
+            batch_shuffling=self.batch_shuffling or None,
+            global_batch_size=self.global_batch_size if self.batch_shuffling else None,
+            v=2 if self.batch_shuffling else 1,  # tick if logic changes
         )
         return self.work_dir / f"{global_indices_fname}.npy"
 
     def _build_global_indices(self) -> np.ndarray:
         assert len(self.dataset) < np.iinfo(np.uint32).max
 
-        rng: Optional[np.random.Generator] = None
-        if self.shuffle:
-            # Deterministically shuffle based on the configured data-order epoch and seed.
-            rng = get_rng(self.data_order_seed)
+        if self.batch_shuffling:
+            # Fix the ordinary epoch-1 sequence permutation and its exact global-batch
+            # membership. Later epochs permute only those complete global-batch rows.
+            indices = self._build_instance_indices(get_rng(self.seed + 1))
+            if self.epoch > 1:
+                instances_per_batch = self.global_batch_size // self.dataset.sequence_length
+                batches = indices[: self.total_size].reshape(-1, instances_per_batch).copy()
+                rng = get_rng(self.seed + self.epoch + self._BATCH_SHUFFLING_SEED_DOMAIN)
+                rng.shuffle(batches)
+                indices[: self.total_size] = batches.reshape(-1)
+            return indices
 
-        indices: np.ndarray
+        rng = get_rng(self.data_order_seed) if self.shuffle else None
+        return self._build_instance_indices(rng)
+
+    def _build_instance_indices(self, rng: Optional[np.random.Generator]) -> np.ndarray:
+        """Build instance indices using the historical sequence/chunk-shuffle behavior."""
         if self.chunk_size == 1:
             indices = np.arange(len(self.dataset), dtype=np.uint32)
             if rng is not None:
@@ -1184,10 +1231,18 @@ class NumpyDataLoaderConfig(DataLoaderConfig[NumpyDataLoaderBase]):
     When shuffling, generate a new deterministic sequence permutation each epoch. Set to
     ``False`` to reuse the epoch-1 permutation and exact batch grouping across all epochs.
     """
+    batch_shuffling: bool = False
+    """
+    Preserve the ordinary epoch-1 fixed-length sequence permutation and exact global-batch
+    membership, while generating a new deterministic permutation of intact global batches each
+    epoch. This is opt-in and mutually exclusive with disabling shuffling, fixed data order,
+    dynamic document repacking, and variable-sequence-length datasets.
+    """
     restore_data_order_from_state: bool = True
     """
-    Restore ``shuffle`` and ``reshuffle_each_epoch`` from a trainer checkpoint. Disable only
-    when intentionally branching from a checkpoint into a different data-order experiment.
+    Restore ``shuffle``, ``reshuffle_each_epoch``, and ``batch_shuffling`` from a trainer
+    checkpoint. Disable only when intentionally branching from a checkpoint into a different
+    data-order experiment.
     """
     work_dir: Optional[str] = None
     num_threads: Optional[int] = None
@@ -1238,6 +1293,7 @@ class NumpyDataLoaderConfig(DataLoaderConfig[NumpyDataLoaderBase]):
             seed=self.seed,
             shuffle=self.shuffle,
             reshuffle_each_epoch=self.reshuffle_each_epoch,
+            batch_shuffling=self.batch_shuffling,
             restore_data_order_from_state=self.restore_data_order_from_state,
             num_threads=self.num_threads,
             num_workers=self.num_workers,

@@ -7,6 +7,7 @@ import pytest
 from olmo_core.data import (
     DataCollator,
     NumpyDataLoaderBase,
+    NumpyDataLoaderConfig,
     NumpyFSLDataLoader,
     NumpyFSLDataset,
     NumpyVSLDataLoader,
@@ -15,6 +16,7 @@ from olmo_core.data import (
     VSLGrowP2Curriculum,
     VSLNaturalCurriculum,
 )
+from olmo_core.exceptions import OLMoConfigurationError
 
 
 @pytest.mark.parametrize(
@@ -249,6 +251,120 @@ def test_fsl_data_loader_fixed_data_order(tmp_path: Path):
     fixed_loader.load_state_dict(old_checkpoint_state)
     assert fixed_loader.shuffle is True
     assert fixed_loader.reshuffle_each_epoch is False
+
+
+def test_fsl_data_loader_batch_shuffling(tmp_path: Path):
+    """Batch shuffling preserves epoch-1 batch membership and permutes only batch rows."""
+    num_tokens = 512
+    sequence_length = 4
+    instances_per_batch = 8
+    token_path = tmp_path / "batch-shuffling-tokens.npy"
+    mmap = np.memmap(token_path, dtype=np.uint16, mode="w+", shape=(num_tokens,))
+    mmap[:] = list(range(num_tokens))
+    mmap.flush()
+    del mmap
+
+    dataset = NumpyFSLDataset(
+        token_path,
+        sequence_length=sequence_length,
+        pad_token_id=-1,
+        eos_token_id=-1,
+        vocab_size=32_000,
+    )
+
+    configured_loader = NumpyDataLoaderConfig(
+        global_batch_size=sequence_length * instances_per_batch,
+        seed=17,
+        batch_shuffling=True,
+        work_dir=str(tmp_path),
+    ).build(dataset, collator=DataCollator(pad_token_id=-1))
+    assert isinstance(configured_loader, NumpyFSLDataLoader)
+    assert configured_loader.batch_shuffling is True
+
+    def make_loader(*, batch_shuffling: bool, restore: bool = True) -> NumpyFSLDataLoader:
+        return NumpyFSLDataLoader(
+            dataset,
+            global_batch_size=sequence_length * instances_per_batch,
+            collator=DataCollator(pad_token_id=-1),
+            seed=17,
+            shuffle=True,
+            reshuffle_each_epoch=True,
+            batch_shuffling=batch_shuffling,
+            restore_data_order_from_state=restore,
+            chunk_size=2,
+            num_threads=0,
+            work_dir=tmp_path,
+        )
+
+    def order(loader: NumpyFSLDataLoader, epoch: int) -> np.ndarray:
+        loader.reshuffle(epoch=epoch, in_memory=True)
+        return loader.get_global_indices().copy()
+
+    ordinary_epoch1 = order(make_loader(batch_shuffling=False), 1)
+    batch_loader = make_loader(batch_shuffling=True)
+    batch_epoch1 = order(batch_loader, 1)
+    batch_epoch2 = order(batch_loader, 2)
+    batch_epoch3 = order(batch_loader, 3)
+
+    assert np.array_equal(batch_epoch1, ordinary_epoch1)
+    assert not np.array_equal(batch_epoch2, batch_epoch1)
+    assert not np.array_equal(batch_epoch3, batch_epoch2)
+
+    def batch_rows(indices: np.ndarray) -> set[tuple[int, ...]]:
+        return set(map(tuple, indices.reshape(-1, instances_per_batch).tolist()))
+
+    expected_batches = batch_rows(batch_epoch1)
+    assert batch_rows(batch_epoch2) == expected_batches
+    assert batch_rows(batch_epoch3) == expected_batches
+
+    # New checkpoints durably restore the mode and reconstruct the same deterministic order.
+    batch_loader.reshuffle(epoch=2, in_memory=True)
+    state = batch_loader.state_dict()
+    restored_loader = make_loader(batch_shuffling=False)
+    restored_loader.load_state_dict(state)
+    assert restored_loader.batch_shuffling is True
+    assert np.array_equal(order(restored_loader, 2), batch_epoch2)
+
+    # Branching from a historical checkpoint can intentionally retain the newly configured mode.
+    old_state = state.copy()
+    old_state.pop("batch_shuffling")
+    branch_loader = make_loader(batch_shuffling=True, restore=False)
+    branch_loader.load_state_dict(old_state)
+    assert branch_loader.batch_shuffling is True
+
+
+def test_fsl_data_loader_batch_shuffling_rejects_incompatible_settings(tmp_path: Path):
+    token_path = tmp_path / "batch-shuffling-invalid.npy"
+    mmap = np.memmap(token_path, dtype=np.uint16, mode="w+", shape=(32,))
+    mmap[:] = list(range(32))
+    mmap.flush()
+    del mmap
+    dataset = NumpyFSLDataset(
+        token_path,
+        sequence_length=4,
+        pad_token_id=-1,
+        eos_token_id=-1,
+        vocab_size=32_000,
+    )
+
+    with pytest.raises(OLMoConfigurationError, match="batch_shuffling.*shuffle=True"):
+        NumpyFSLDataLoader(
+            dataset,
+            global_batch_size=8,
+            collator=DataCollator(pad_token_id=-1),
+            shuffle=False,
+            batch_shuffling=True,
+            work_dir=tmp_path,
+        )
+    with pytest.raises(OLMoConfigurationError, match="batch_shuffling.*reshuffle_each_epoch=True"):
+        NumpyFSLDataLoader(
+            dataset,
+            global_batch_size=8,
+            collator=DataCollator(pad_token_id=-1),
+            reshuffle_each_epoch=False,
+            batch_shuffling=True,
+            work_dir=tmp_path,
+        )
 
 
 @pytest.mark.parametrize(
