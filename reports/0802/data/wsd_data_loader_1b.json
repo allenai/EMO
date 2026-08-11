@@ -1,10 +1,23 @@
 {
-  "updated": "2026-08-11 00:10 PDT",
-  "title": "Step 1-1 — Dense 1B Data-Loader Study",
+  "updated": "2026-08-11 01:31 PDT",
+  "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation; LR fixed at 1e-3; BS512 and BS1024 additions use four 8-GPU nodes with rank microbatch eight sequences.",
   "selection": "The existing OLMo-core baseline is shown only for BS64 through BS1024. E1 is common to all three data-order modes, so each new column reports the ordinary baseline E1 winner; an E2 branch may resume any exact LR/WD-matched E1 pre-decay checkpoint. LR is fixed at 1e-3. WD tuning follows the ordering hypothesis Fixed > ordinary > DR: the initial E2 probes use DR at WD0.1 and Fixed at WD0.333 for both batch sizes, then Fixed may expand upward while DR remains on the lower side of the ordinary optimum. From the selected E2 result onward, a later epoch may use only an equal or higher WD through E4, E8, E12, and E16. Dynamic repacking preserves the original E1 packing and begins repacking at E2; fixed order reuses the exact default E1 sequence permutation and batch membership forever.",
-  "targetEpochs": [1, 2, 4, 8, 12, 16],
-  "baselineBatches": [64, 128, 256, 512, 1024],
+  "targetEpochs": [
+    1,
+    2,
+    4,
+    8,
+    12,
+    16
+  ],
+  "baselineBatches": [
+    64,
+    128,
+    256,
+    512,
+    1024
+  ],
   "selectionPolicy": {
     "learningRate": "1e-3",
     "nondecreasingWd": true,
@@ -14,7 +27,7 @@
   "columns": [
     {
       "key": "fixed512",
-      "label": "BS512 · Fixed",
+      "label": "BS512 \u00b7 Fixed",
       "batchSequences": 512,
       "dataOrder": "fixed_order",
       "initialWd": "0.333",
@@ -22,7 +35,7 @@
     },
     {
       "key": "dr512",
-      "label": "BS512 · DR",
+      "label": "BS512 \u00b7 DR",
       "batchSequences": 512,
       "dataOrder": "dynamic_repacking",
       "initialWd": "0.1",
@@ -30,7 +43,7 @@
     },
     {
       "key": "fixed1024",
-      "label": "BS1024 · Fixed",
+      "label": "BS1024 \u00b7 Fixed",
       "batchSequences": 1024,
       "dataOrder": "fixed_order",
       "initialWd": "0.333",
@@ -38,7 +51,7 @@
     },
     {
       "key": "dr1024",
-      "label": "BS1024 · DR",
+      "label": "BS1024 \u00b7 DR",
       "batchSequences": 1024,
       "dataOrder": "dynamic_repacking",
       "initialWd": "0.1",
@@ -57,7 +70,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.1",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 2,
       "sourceExperiment": "01KZFVTQP8YZ06B58Q16FTY09S",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e1_lr1e-3_wd0.1_warmup48_e1_grid_r19/step428",
@@ -78,7 +91,17 @@
           "bpb": 1.203,
           "avg8Bpb": 1.81025
         }
-      }
+      },
+      "beaker": "01KZQZ0G423H6DWA9MHRKH41H3",
+      "experiment": "01KZQZ0G423H6DWA9MHRKH41H3",
+      "job": "01KZQZ0G7KMZW131DQX512AWTV",
+      "result": "01KZQZ0G4BGDQ3BGQ50WF4T5J4",
+      "replicaJobs": ["01KZQZ0G7KMZW131DQX512AWTV", "01KZQZ0GB15FK44K939AYSDPNA", "01KZQZ0GEFJVNGC0NA8DZ8AC5Q", "01KZQZ0GJNFB9E160DRRM44AQR"],
+      "replicaResults": ["01KZQZ0G4BGDQ3BGQ50WF4T5J4", "01KZQZ0G7S721VVTS9F65DY4XG", "01KZQZ0GB7CBQVM2WK42SFB7QJ", "01KZQZ0GENEQRNMK4BY4FYRVXM"],
+      "beakerStatus": "scheduled",
+      "revision": "d04ec9e1da2e10f857bcb65731f876f8ee34af35",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e2_lr1e-3_wd0.1_warmup48_dataloader-r01",
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed."
     },
     {
       "id": "fixed512-wd0.333",
@@ -87,7 +110,7 @@
       "dataOrder": "fixed_order",
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 2,
       "sourceExperiment": "01KZFVTS3EHFR7HQ5ZY9DAF9NS",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e1_lr1e-3_wd0.333_warmup48_e1_grid_r19/step428",
@@ -108,7 +131,17 @@
           "bpb": 1.201,
           "avg8Bpb": 1.822375
         }
-      }
+      },
+      "beaker": "01KZQZ01WJXFHHRRGYW1H1X53Q",
+      "experiment": "01KZQZ01WJXFHHRRGYW1H1X53Q",
+      "job": "01KZQZ020B47RSQBTV7KZXB8MB",
+      "result": "01KZQZ01WTH8KE3RGMZ7SDWXCH",
+      "replicaJobs": ["01KZQZ020B47RSQBTV7KZXB8MB", "01KZQZ024NEPN0PJ4NAX4SS6ZM", "01KZQZ028XSX51SBA3A07Q4EGG", "01KZQZ02CAKNHJ8VB2X1JFHHH8"],
+      "replicaResults": ["01KZQZ01WTH8KE3RGMZ7SDWXCH", "01KZQZ020HBZCFAA047BAQDENC", "01KZQZ024REFH0R1VPYJCYSZGN", "01KZQZ0291S24PEZFJ72Y6MZAT"],
+      "beakerStatus": "scheduled",
+      "revision": "d04ec9e1da2e10f857bcb65731f876f8ee34af35",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_fixed_e2_lr1e-3_wd0.333_warmup48_dataloader-r01",
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed."
     },
     {
       "id": "dr1024-wd0.1",
@@ -117,7 +150,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.1",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 2,
       "sourceExperiment": "01KZ33MH67T5321739VWPSKN18",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd0.1_warmup24/step214",
@@ -138,7 +171,17 @@
           "acc": 24.94,
           "bpb": 1.654
         }
-      }
+      },
+      "beaker": "01KZQZ1AWZDB995A04925FR734",
+      "experiment": "01KZQZ1AWZDB995A04925FR734",
+      "job": "01KZQZ1B0FZQ0F5DC6ZFAM0QD4",
+      "result": "01KZQZ1AX7RW9Z6KHW56FB7N4S",
+      "replicaJobs": ["01KZQZ1B0FZQ0F5DC6ZFAM0QD4", "01KZQZ1B4KKF56BCPN8S085BJ7", "01KZQZ1B81FQNBRCM1JNEYS48S", "01KZQZ1BBA7TBZ0PH0K0KV38D5"],
+      "replicaResults": ["01KZQZ1AX7RW9Z6KHW56FB7N4S", "01KZQZ1B0KD8WHW4F2G9X6YK1E", "01KZQZ1B4Q2MYBTQYNVZVTAJM5", "01KZQZ1B852SPKERMZ6HMQ990G"],
+      "beakerStatus": "created",
+      "revision": "d04ec9e1da2e10f857bcb65731f876f8ee34af35",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr1e-3_wd0.1_warmup24_dataloader-r01",
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed."
     },
     {
       "id": "fixed1024-wd0.333",
@@ -147,7 +190,7 @@
       "dataOrder": "fixed_order",
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 2,
       "sourceExperiment": "01KZ9HXBC7BGA17334MEXMY8ZX",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd0.333_warmup24/step214",
@@ -169,7 +212,17 @@
           "acc": 24.54,
           "bpb": 1.641
         }
-      }
+      },
+      "beaker": "01KZQZ0XH5FMRP1GZ40RZR9MYH",
+      "experiment": "01KZQZ0XH5FMRP1GZ40RZR9MYH",
+      "job": "01KZQZ0XN0DGX6H1X98G1BCKBG",
+      "result": "01KZQZ0XHBMB04CAH1K3ZWB9GA",
+      "replicaJobs": ["01KZQZ0XN0DGX6H1X98G1BCKBG", "01KZQZ0XRJWTKDCY5B33QSSXWP", "01KZQZ0XW220XHT0QD935EQQWQ", "01KZQZ0XZGHCT043095QX47N99"],
+      "replicaResults": ["01KZQZ0XHBMB04CAH1K3ZWB9GA", "01KZQZ0XN39JVKTZVNS24GFSMV", "01KZQZ0XRNWJ11R6QK72X45H7K", "01KZQZ0XW671MPVZV19FRETVM7"],
+      "beakerStatus": "created",
+      "revision": "d04ec9e1da2e10f857bcb65731f876f8ee34af35",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e2_lr1e-3_wd0.333_warmup24_dataloader-r01",
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed."
     }
   ]
 }
