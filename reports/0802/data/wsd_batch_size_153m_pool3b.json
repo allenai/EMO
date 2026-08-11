@@ -18686,7 +18686,7 @@
         "rankMicrobatchSequences": 16,
         "gradientAccumulation": 1,
         "gpuCount": 2,
-        "status": "running",
+        "status": "complete",
         "activeEpoch": 8,
         "search": "small-model-adaptive-coordinate",
         "beaker": "01KZQQZST18K5038D3WRBEXVTG",
@@ -18698,13 +18698,62 @@
           48064,
           54931
         ],
-        "results": {},
-        "reason": "Adaptive small-model Step 1-1 coordinate search; exact-coordinate resumes, empirically tuned per-batch WD cap, and nondecreasing-WD frontier policy apply.",
+        "results": {
+          "8": {
+            "epoch": 8,
+            "lr": "1e-3",
+            "wd": "0.033",
+            "status": "complete",
+            "job": "01KZQQZSXCK510532XQM7ECJSR",
+            "beaker": "01KZQQZST18K5038D3WRBEXVTG",
+            "resultDataset": "01KZQQZST681YVPRRC41MY6HB7",
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs32_e8_lr1e-3_wd0.033_warmup768_sm0811bs32m153e8a",
+            "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs32_e4_lr1e-3_wd0.033_warmup768_sm0811bs32m153e4a/step27465",
+            "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs32_e8_lr1e-3_wd0.033_warmup768_sm0811bs32m153e8a/step54931",
+            "retainedPreDecaySteps": [
+              34331,
+              41198,
+              48064,
+              54931
+            ],
+            "train": 3.379,
+            "validation": 3.438,
+            "wandb": "yjadg2u8",
+            "downstream": {
+              "arc_challenge": 24.41,
+              "arc_easy": 45.96,
+              "boolq": 49.85,
+              "csqa": 37.019999999999996,
+              "hellaswag": 30.28,
+              "openbookqa": 23.599999999999998,
+              "piqa": 63.0,
+              "socialiqa": 42.94,
+              "winogrande": 50.74999999999999
+            },
+            "downstreamBpb": {
+              "arc_challenge": 1.534,
+              "arc_easy": 1.601,
+              "boolq": 2.126,
+              "csqa": 1.593,
+              "hellaswag": 1.005,
+              "openbookqa": 1.823,
+              "piqa": 1.329,
+              "socialiqa": 1.379,
+              "winogrande": 1.602
+            },
+            "acc": 30.28,
+            "bpb": 1.005,
+            "avg8Bpb": 1.48325,
+            "c4": 3.438,
+            "reason": "Completed successfully with full held-out DCLM validation and all nine downstream evaluations; the exact pre-decay checkpoint is retained."
+          }
+        },
+        "reason": "Completed successfully with full held-out DCLM validation and all nine downstream evaluations; the exact pre-decay checkpoint is retained.",
         "job": "01KZQQZSXCK510532XQM7ECJSR",
         "resultDataset": "01KZQQZST681YVPRRC41MY6HB7",
         "activeWandb": "yjadg2u8",
-        "progressPercent": 87,
-        "progressStep": 53180,
+        "progressPercent": 100,
+        "progressStep": 61036,
         "progressTotalSteps": 61036
       },
       {
@@ -18738,9 +18787,40 @@
         "job": "01KZQWWFZ9FN0T804P0J2975YG",
         "resultDataset": "01KZQWWFRN84KJ728G59VEDJTS",
         "activeWandb": "8j8xph11",
-        "progressPercent": 83,
-        "progressStep": 304520,
+        "progressPercent": 89,
+        "progressStep": 326525,
         "progressTotalSteps": 366211
+      },
+      {
+        "batchSequences": 32,
+        "globalBatchTokens": 131072,
+        "contextLength": 4096,
+        "lr": "1e-3",
+        "wd": "0.033",
+        "warmupSteps": 768,
+        "rankMicrobatchSequences": 16,
+        "gradientAccumulation": 1,
+        "gpuCount": 2,
+        "status": "running",
+        "activeEpoch": 12,
+        "search": "small-model-adaptive-coordinate",
+        "beaker": "01KZQZ82VXE4FM9A8TAWC7AQPM",
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs32_e12_lr1e-3_wd0.033_warmup768_sm0811bs32m153e12a",
+        "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs32_e8_lr1e-3_wd0.033_warmup768_sm0811bs32m153e8a/step54931",
+        "retainedPreDecaySteps": [
+          61798,
+          68664,
+          75531,
+          82397
+        ],
+        "results": {},
+        "reason": "Adaptive small-model Step 1-1 coordinate search; exact-coordinate resumes, empirically tuned per-batch WD cap, and nondecreasing-WD frontier policy apply.",
+        "job": "01KZQZ82ZET6HNKMG8V2R30D32",
+        "resultDataset": "01KZQZ82W7HBNEE2JN8CE1J82Y",
+        "activeWandb": "28ab4jbm",
+        "progressPercent": 60,
+        "progressStep": 55195,
+        "progressTotalSteps": 91553
       }
     ],
     "healthAudit": {

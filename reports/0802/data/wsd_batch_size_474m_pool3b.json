@@ -15220,7 +15220,7 @@
         "rankMicrobatchSequences": 16,
         "gradientAccumulation": 1,
         "gpuCount": 2,
-        "status": "pending",
+        "status": "running",
         "activeEpoch": 8,
         "search": "small-model-adaptive-coordinate",
         "beaker": "01KZQXF0SA08FFH133289JX4QJ",
@@ -15233,7 +15233,13 @@
           54931
         ],
         "results": {},
-        "reason": "Adaptive small-model Step 1-1 coordinate search; exact-coordinate resumes, empirically tuned per-batch WD cap, and nondecreasing-WD frontier policy apply."
+        "reason": "Adaptive small-model Step 1-1 coordinate search; exact-coordinate resumes, empirically tuned per-batch WD cap, and nondecreasing-WD frontier policy apply.",
+        "job": "01KZQXF0X5RT0FDSGMAB51MVRY",
+        "resultDataset": "01KZQXF0SG7J2EM7CCKDR8J4EB",
+        "activeWandb": "8wegm41j",
+        "progressPercent": 57,
+        "progressStep": 35315,
+        "progressTotalSteps": 61036
       }
     ],
     "healthAudit": {
