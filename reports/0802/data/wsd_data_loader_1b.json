@@ -1792,7 +1792,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "5e-4",
       "wd": "0.333",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 1,
       "attemptedEpochs": [],
       "sourceExperiment": "01KZ2SX1RZVJBXE3Q4CR4VQXRZ",
@@ -1802,7 +1802,26 @@
       "rankMicrobatchSequences": 8,
       "results": {},
       "health": "planned",
-      "reason": "Planned exact E1 bootstrap for the combined LR5e-4/WD0.333 coordinate. No matching E1 checkpoint exists; E1 will use ordinary packing, retain pre-decay step214, and enable a guarded DR E2 resume."
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "beaker": "01KZRY552X11N11K147NRVH8ZT",
+      "experiment": "01KZRY552X11N11K147NRVH8ZT",
+      "job": "01KZRY556C2AAWV1AJPA1740D0",
+      "result": "01KZRY5534H57RSR3H54VTV7KY",
+      "replicaJobs": [
+        "01KZRY556C2AAWV1AJPA1740D0",
+        "01KZRY55A6V33XK63YZ7KBKAWC",
+        "01KZRY55DN13M0BGPH2SM47AQ0",
+        "01KZRY55HAFS3RN10SVEC27DMS"
+      ],
+      "replicaResults": [
+        "01KZRY5534H57RSR3H54VTV7KY",
+        "01KZRY556GPS1E89A7CB4BR2MP",
+        "01KZRY55A93MVGGZS7KBTXRJ5F",
+        "01KZRY55DQDS7V54NYYQD7W4FR"
+      ],
+      "beakerStatus": "pending",
+      "revision": "3b85a487ad08d905465c771ef72a9feb53be2601",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e1_lr5e-4_wd0.333_warmup24_dataloader-bootstrap-r01"
     },
     {
       "id": "dr1024-lr1e-3-wd0.333",
