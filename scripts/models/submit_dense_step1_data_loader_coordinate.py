@@ -348,6 +348,7 @@ def build_spec(
         if value not in {"--dynamic-repacking", "--fixed-data-order", "--no-data-shuffle"}
         and not value.startswith("--trainer.callbacks.checkpointer.save_interval=")
         and not value.startswith("--trainer.callbacks.checkpointer.ephemeral_save_interval=")
+        and not value.startswith("--trainer.callbacks.downstream_evaluator.")
     ]
     if args.target_epoch > 1:
         train_args.append(
@@ -441,6 +442,11 @@ def build_spec(
     for prefix, value in replacements:
         train_args = upsert(train_args, prefix, value)
     train_args += [
+        # Frontier decisions use DCLM held-out validation only. Skipping downstream
+        # evaluation keeps completion ingestion and continuation launch lightweight.
+        "--trainer.callbacks.downstream_evaluator.tasks=[]",
+        "--trainer.callbacks.downstream_evaluator.eval_interval=null",
+        "--trainer.callbacks.downstream_evaluator.eval_on_finish=false",
         "--trainer.callbacks.checkpointer.save_interval=1000000000",
         "--trainer.callbacks.checkpointer.ephemeral_save_interval=999999999",
     ]

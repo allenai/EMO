@@ -195,9 +195,6 @@
   }
 
   renderChart("DCLM validation CE", "validation", 3);
-  renderChart("HellaSwag BPB", "bpb", 3);
-  renderChart("HellaSwag accuracy", "acc", 1);
-  renderChart("Average 8-task BPB", "avg8Bpb", 3);
 
   function renderSummary(bodyId, cellValue, options = {}) {
     const body = document.getElementById(bodyId);
