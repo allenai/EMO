@@ -19,7 +19,7 @@
 <div class="summary-panel"><h2>Best validation loss at matched optimizer steps</h2><p class="summary-note">Each cell shows source epoch · validation CE. Row minima are bold.</p><div class="table-wrap"><table><thead><tr><th>Optimizer steps</th><th>BS64</th><th>BS128</th><th>BS256</th><th>BS512 · Fixed</th><th>BS512 · Original</th><th>BS512 · DR</th><th>BS1024 · Fixed</th><th>BS1024 · Original</th><th>BS1024 · DR</th></tr></thead><tbody id="optimizer-step-summary"></tbody></table></div></div>
 <div class="summary-panel summary-panel-wide"><h2>Chosen (LR, WD) by epoch and batch size</h2><p class="summary-note">New method columns enforce the nondecreasing WD rule; LR is fixed at 1e-3.</p><div class="table-wrap"><table><thead><tr><th>Epoch</th><th>BS64</th><th>BS128</th><th>BS256</th><th>BS512 · Fixed</th><th>BS512 · Original</th><th>BS512 · DR</th><th>BS1024 · Fixed</th><th>BS1024 · Original</th><th>BS1024 · DR</th></tr></thead><tbody id="coordinate-summary"></tbody></table></div></div>
 </div></section>
-<section class="card"><h2>Batch size × LR coordinate grid</h2><p class="summary-note">Shows every distinct tried (LR, WD) coordinate for Fixed, Original, and DR; chips include the latest status and DCLM validation CE when available.</p><div class="table-wrap"><table><thead><tr><th>Epoch</th><th>Method</th><th>Evaluated / active (LR, WD) coordinates</th><th>Selected by DCLM validation CE</th></tr></thead><tbody id="coordinate-grid"></tbody></table></div></section>
+<section class="card"><h2>Batch size × LR coordinate grid</h2><p class="summary-note">Shows every distinct tried (LR, WD) coordinate for Fixed, Original, and DR. Rows are grouped by method from E1 onward; green marks the chosen coordinate within that method and epoch.</p><div class="table-wrap"><table><thead><tr><th>Epoch</th><th>Method</th><th>Evaluated / active (LR, WD) coordinates</th><th>Selected by DCLM validation CE</th></tr></thead><tbody id="coordinate-grid"></tbody></table></div></section>
 <section class="card"><h2>New data-loader runs</h2><p class="summary-note">Only new DR/Fixed attempts appear here; historical default-run provenance remains in the original report.</p><div class="table-wrap"><table><thead><tr><th>Method</th><th>Batch</th><th>Epoch</th><th>LR</th><th>WD</th><th>Status</th><th>Train CE</th><th>Val CE</th><th>W&amp;B</th><th>Beaker</th></tr></thead><tbody id="new-runs"></tbody></table></div></section>
 </main>
 <script src="data/wsd_weight_decay_1b.js?v=20260811g"></script>
@@ -27,6 +27,6 @@
 <script src="data/wsd_batch_size_1b.js?v=20260811g"></script>
 <script>window.ICSL_BATCH_BASELINE_DATA=window.ICSL_REPORT_DATA;</script>
 <script src="data/wsd_data_loader_1b.js?v=20260811h"></script>
-<script src="data_loader_charts.js?v=20260811h"></script>
+<script src="data_loader_charts.js?v=20260811i"></script>
 </body>
 </html>

@@ -107,8 +107,8 @@
   for (const column of study.columns) {
     let wdFloor = -Infinity;
     for (const epoch of epochs) {
-      // E1 predates either intervention. Show the ordinary baseline winner even when the
-      // E2 trajectory resumes a different, exact WD-matched E1 pre-decay checkpoint.
+      // E1 predates either intervention. Summary tables show the ordinary baseline
+      // winner; the coordinate grid below scopes its green source choice per method.
       if (epoch === 1) {
         selected.set(`${column.key}:${epochKey(epoch)}`, baselineCandidate(column.batchSequences, epoch));
         continue;
@@ -292,15 +292,24 @@
     );
   }
 
+  function coordinateWinner(column, epoch, candidates) {
+    if (column.baseline || Number(epoch) !== 1) return getSelected(column, epoch);
+    // Fixed and DR share ordinary packing at E1, but each method has its own set of
+    // registered source trajectories. Choose and highlight within that method only.
+    return choose(candidates.filter((candidate) =>
+      candidate.status === "complete" && finite(candidate.result.validation) &&
+      !(candidate.result.wandb && healthMap[candidate.result.wandb]),
+    ));
+  }
+
   const coordinateBody = document.getElementById("coordinate-grid");
-  for (const epoch of epochs) {
-    for (const column of coordinateColumns) {
+  for (const column of coordinateColumns) {
+    for (const epoch of epochs) {
       const candidates = coordinateCandidates(column, epoch);
-      const winner = getSelected(column, epoch);
-      const sharedPreInterventionEpoch = !column.baseline && Number(epoch) === 1;
+      const winner = coordinateWinner(column, epoch, candidates);
       const chips = candidates.map((candidate) => {
         const value = numeric(candidate.result.validation);
-        const isSelected = !sharedPreInterventionEpoch && winner &&
+        const isSelected = winner &&
           lrNumber(winner.lr) === lrNumber(candidate.lr) &&
           wdNumber(winner.wd) === wdNumber(candidate.wd);
         const classes = ["tuple"];
@@ -310,9 +319,7 @@
         const attempts = candidate.attempts > 1 ? ` · ${candidate.attempts} attempts` : "";
         return `<span class="${classes.join(" ")}">(LR ${candidate.lr}, WD ${candidate.wd}) · ${candidate.status || "planned"}${value !== null ? ` · CE ${formatMetric(value)}` : ""}${attempts}</span>`;
       }).join("");
-      const selection = sharedPreInterventionEpoch
-        ? "shared pre-intervention E1; source coordinates shown"
-        : winner
+      const selection = winner
         ? `LR ${winner.lr}, WD ${winner.wd} · CE ${formatMetric(winner.result.validation)}`
         : "pending";
       const tr = document.createElement("tr");
