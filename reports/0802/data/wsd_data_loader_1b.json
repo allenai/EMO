@@ -13,14 +13,6 @@
   },
   "columns": [
     {
-      "key": "dr512",
-      "label": "BS512 · DR",
-      "batchSequences": 512,
-      "dataOrder": "dynamic_repacking",
-      "initialWd": "0.1",
-      "color": "#ea580c"
-    },
-    {
       "key": "fixed512",
       "label": "BS512 · Fixed",
       "batchSequences": 512,
@@ -29,12 +21,12 @@
       "color": "#d97706"
     },
     {
-      "key": "dr1024",
-      "label": "BS1024 · DR",
-      "batchSequences": 1024,
+      "key": "dr512",
+      "label": "BS512 · DR",
+      "batchSequences": 512,
       "dataOrder": "dynamic_repacking",
       "initialWd": "0.1",
-      "color": "#e11d48"
+      "color": "#ea580c"
     },
     {
       "key": "fixed1024",
@@ -43,6 +35,14 @@
       "dataOrder": "fixed_order",
       "initialWd": "0.333",
       "color": "#be123c"
+    },
+    {
+      "key": "dr1024",
+      "label": "BS1024 · DR",
+      "batchSequences": 1024,
+      "dataOrder": "dynamic_repacking",
+      "initialWd": "0.1",
+      "color": "#e11d48"
     }
   ],
   "healthAudit": {
