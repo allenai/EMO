@@ -6703,7 +6703,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 1,
       "gpuCount": 8,
-      "status": "pending",
+      "status": "running",
       "activeEpoch": 2,
       "search": "nested-3b-wd-repair",
       "wdRepairRole": "larger-ceiling",
@@ -6735,9 +6735,9 @@
       "jobStates": [
         {
           "job": "01KZQQQRQFBYBJHAAMY7XXVAKE",
-          "state": "pending",
+          "state": "running",
           "created": "2026-08-11T06:21:41.364888Z",
-          "started": null,
+          "started": "2026-08-11T06:31:17.226421Z",
           "finalized": null,
           "exitCode": null,
           "reason": null,
@@ -6745,7 +6745,8 @@
         }
       ],
       "job": "01KZQQQRQFBYBJHAAMY7XXVAKE",
-      "resultDataset": "01KZQQQRM056NQ05WW4JY8VKXZ"
+      "resultDataset": "01KZQQQRM056NQ05WW4JY8VKXZ",
+      "activeWandb": "8yb8n70u"
     },
     {
       "batchSequences": 512,
@@ -14869,8 +14870,8 @@
         "job": "01KZQNZF7KYNSF95SGMQ0K82KM",
         "resultDataset": "01KZQNZF4102WYFASHMN62R10S",
         "activeWandb": "mf51qsbp",
-        "progressPercent": 50,
-        "progressStep": 15350,
+        "progressPercent": 62,
+        "progressStep": 18950,
         "progressTotalSteps": 30518
       }
     ],
