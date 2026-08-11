@@ -232,7 +232,7 @@
   renderSummary("coordinate-summary", (winner) => winner ? `(${winner.lr}, ${winner.wd})` : "—");
 
   const optimizerBody = document.getElementById("optimizer-step-summary");
-  for (const comparison of (batchData.optimizerStepComparisons || []).slice(0, 5)) {
+  for (const comparison of (batchData.optimizerStepComparisons || [])) {
     const winners = columns.map((column) => {
       const epoch = comparison.epochs[String(column.batchSequences)];
       return epoch === undefined ? null : getSelected(column, epoch);
