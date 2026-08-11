@@ -2303,9 +2303,30 @@
         }
       },
       "health": "planned",
-      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed. All four 8-GPU replicas are scheduled; startup guards and W&B remain pending.",
       "beaker": "01KZS6VD261RZ4GCYA0C1NWBZM",
       "experiment": "01KZS6VD261RZ4GCYA0C1NWBZM",
+      "job": "01KZS6VD5M0HV9Y06HVBJ5FBTT",
+      "result": "01KZS6VD2AF08H2DE1Z4K9VMM9",
+      "replicaJobs": [
+        "01KZS6VD5M0HV9Y06HVBJ5FBTT",
+        "01KZS6VD8Z801P7K3RC1DBQNWX",
+        "01KZS6VDC95NNVFRZB91SF6EV5",
+        "01KZS6VDFQQH4CVQV06FKFYMAA"
+      ],
+      "replicaResults": [
+        "01KZS6VD2AF08H2DE1Z4K9VMM9",
+        "01KZS6VD5QE33HMFGEDXKXXPG8",
+        "01KZS6VD92MSVEW2ZR3QSNET5E",
+        "01KZS6VDCDMR9HXD4XGA5DW7JC"
+      ],
+      "replicaNodes": [
+        "01K6B7VD6HJ2DN42QJJC7W22V6",
+        "01K9AYGE9Q1TEJMXP0P1SN19W7",
+        "01KQ0F2NX98MG50MEF0ZCAMZWT",
+        "01KQ8N2CNFRWB1X7JD50FGYT58"
+      ],
+      "beakerStatus": "scheduled",
       "revision": "1b2fda0c8f9a3f2211410b690559dd05910618b1",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr5e-4_wd0.333_warmup24_dataloader-cd-r01"
     },
