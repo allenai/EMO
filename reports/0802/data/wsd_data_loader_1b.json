@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-11 02:10 PDT",
+  "updated": "2026-08-11 02:12 PDT",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation; LR fixed at 1e-3; BS512 and BS1024 additions use four 8-GPU nodes with rank microbatch eight sequences.",
   "selection": "The existing OLMo-core baseline is shown only for BS64 through BS1024. E1 is common to all three data-order modes, so each new column reports the ordinary baseline E1 winner; an E2 branch may resume any exact LR/WD-matched E1 pre-decay checkpoint. LR is fixed at 1e-3. WD tuning follows the ordering hypothesis Fixed > ordinary > DR: the initial E2 probes use DR at WD0.1 and Fixed at WD0.333 for both batch sizes, then Fixed may expand upward while DR remains on the lower side of the ordinary optimum. From the selected E2 result onward, a later epoch may use only an equal or higher WD through E4, E8, E12, and E16. Dynamic repacking preserves the original E1 packing and begins repacking at E2; fixed order reuses the exact default E1 sequence permutation and batch membership forever.",
@@ -494,7 +494,7 @@
       "dataOrder": "fixed_order",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 2,
       "sourceExperiment": "01KZAKM044B7EB61TT0W4H04TF",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd1.0_warmup24/step214",
@@ -517,7 +517,34 @@
           "bpb": 1.627
         }
       },
-      "reason": "Planned higher-WD E2 probe because Fixed1024 WD0.333 improved only 0.004 CE over the ordinary WD0.333 baseline; WD1.0 tests the Fixed > Original regularization hypothesis before E4 selection."
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "beaker": "01KZR1G74WJZZB7DPK3228M644",
+      "experiment": "01KZR1G74WJZZB7DPK3228M644",
+      "job": "01KZR1G78BT1JC3395HANVZYFX",
+      "result": "01KZR1G754XDK8J2557K6QNBG3",
+      "replicaJobs": [
+        "01KZR1G78BT1JC3395HANVZYFX",
+        "01KZR1G7BPDFVS3WTEM0YQP4NJ",
+        "01KZR1G7F2DCXTAZE08MEVBBCJ",
+        "01KZR1G7JA3RVMQ0DBN8Y8331W"
+      ],
+      "replicaResults": [
+        "01KZR1G754XDK8J2557K6QNBG3",
+        "01KZR1G78G0T7ATR4TREAFE12G",
+        "01KZR1G7BSKK6TR168962K99KP",
+        "01KZR1G7F5YX3FAHTQQ4H5WFBJ"
+      ],
+      "beakerStatus": "created",
+      "health": "pending",
+      "progress": {
+        "observedAt": "2026-08-11 02:12 PDT",
+        "step": 214,
+        "endpointStep": 477,
+        "epoch": 2,
+        "eta": "queued"
+      },
+      "revision": "8697e154ca9e496a0af7e41fbbffb46c0a4f6c5c",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e2_lr1e-3_wd1.0_warmup24_dataloader-r01"
     }
   ]
 }
