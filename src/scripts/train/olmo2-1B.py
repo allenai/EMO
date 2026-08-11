@@ -132,16 +132,23 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
     tokenizer_config = TokenizerConfig.dolma2()
 
     vocab_size = tokenizer_config.padded_vocab_size()
-    if opts.model_size == "153M":
+    if opts.model_size in {"153M", "474M"}:
         # Keep the active dense-1B architecture choices and change only the
-        # size-controlling dimensions. In particular this is standard
+        # size-controlling dimensions. In particular these use standard
         # Llama-style pre-norm without QK norm, rather than the reordered-norm
-        # and QK-norm defaults of the legacy olmo2_100M preset.
+        # and QK-norm defaults of the legacy OLMo2 ladder presets.
+        if opts.model_size == "153M":
+            d_model, n_layers, n_heads = 512, 12, 8
+        else:
+            # Dimensions copied from TransformerConfig.olmo2_370M. With the
+            # Dolma2 padded vocabulary and untied LM head this resolves to
+            # 473,990,144 total parameters, hence the experiment label 474M.
+            d_model, n_layers, n_heads = 1024, 16, 16
         model_config = TransformerConfig.llama_like(
-            d_model=512,
-            hidden_size_multiplier=1.5,  # resolves to a 2,048-wide FFN
-            n_layers=12,
-            n_heads=8,
+            d_model=d_model,
+            hidden_size_multiplier=1.5,
+            n_layers=n_layers,
+            n_heads=n_heads,
             vocab_size=vocab_size,
             block_name=TransformerBlockType.default,
             qk_norm=False,
@@ -163,11 +170,14 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         work_dir=work_dir,
         generate_doc_lengths=False,
         instance_filter_config=None,
+        dynamic_repacking=opts.dynamic_repacking,
     )
 
     data_loader_config = NumpyDataLoaderConfig(
         global_batch_size=GLOBAL_BATCH_SIZE,  # NOTE: this is specified in tokens, not instances
         seed=0,
+        shuffle=not opts.no_data_shuffle,
+        reshuffle_each_epoch=not opts.fixed_data_order,
         num_workers=4,
     )
 
@@ -291,6 +301,28 @@ def parser_args():
         action="store_true",
         help="""Print the config and exit.""",
     )
+    data_order_group = parser.add_mutually_exclusive_group()
+    data_order_group.add_argument(
+        "--dynamic-repacking",
+        action="store_true",
+        help=(
+            "Repack the exact documents in a materialized subset into new sequence boundaries "
+            "every epoch. Requires dataset.subset_manifest; disabled by default."
+        ),
+    )
+    data_order_group.add_argument(
+        "--fixed-data-order",
+        action="store_true",
+        help=(
+            "Shuffle sequences once using the ordinary epoch-1 permutation, then reuse the "
+            "same sequence order and batch membership in every later epoch."
+        ),
+    )
+    data_order_group.add_argument(
+        "--no-data-shuffle",
+        action="store_true",
+        help="Never shuffle sequences; preserve raw dataset sequence order in every epoch.",
+    )
     parser.add_argument(
         "--lr",
         type=float,
@@ -299,9 +331,9 @@ def parser_args():
     )
     parser.add_argument(
         "--model-size",
-        choices=["153M", "1B"],
+        choices=["153M", "474M", "1B"],
         default="1B",
-        help="Dense model size. 153M retains the active dense-1B architecture and changes only width, depth, head count, and FFN size.",
+        help="Dense model size. The 153M and 474M options retain the active dense-1B architecture and change only width, depth, head count, and FFN size.",
     )
     parser.add_argument(
         "--data-root",

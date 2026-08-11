@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import gzip
 import hashlib
 import json
 import logging
@@ -71,6 +72,7 @@ __all__ = [
     "NumpyFSLDatasetBase",
     "NumpyFSLDataset",
     "NumpyFSLSubsetDataset",
+    "NumpyFSLDynamicRepackedDataset",
     "NumpyFSLDatasetMixture",
     "NumpyPaddedFSLDataset",
     "NumpyPackedFSLDataset",
@@ -762,6 +764,222 @@ class NumpyFSLSubsetDataset(NumpyFSLDataset):
                 f"the {available_instances:,} available instances in '{path}'"
             )
         return num_instances * self.sequence_length * dtype(0).itemsize, num_instances
+
+
+class NumpyFSLDynamicRepackedDataset(NumpyFSLSubsetDataset):
+    """An opt-in subset dataset that repacks the same documents after epoch 1.
+
+    The source token array is never rewritten. Instead, :meth:`repack_for_epoch`
+    deterministically permutes the exact document spans declared by the subset
+    manifest and :meth:`__getitem__` gathers each new fixed-length instance from
+    that logical stream. The declared alignment tail is regenerated with EOS
+    tokens and remains label-masked, just as it is in
+    :class:`NumpyFSLSubsetDataset`.
+
+    This implementation intentionally supports only a single, fully materialized
+    subset source. That is the representation produced by the exact-document-pool
+    manifests, and the restriction prevents accidentally repacking partial source
+    ranges whose document boundaries are ambiguous.
+    """
+
+    _REPACKING_SEED_DOMAIN = 0x44594E52  # "DYNR"
+
+    def __init__(
+        self,
+        *paths: PathOrStr,
+        document_metadata_path: PathOrStr,
+        num_documents: int,
+        document_metadata_digest: Optional[str] = None,
+        **kwargs: Any,
+    ):
+        if len(paths) != 1:
+            raise OLMoConfigurationError(
+                "dynamic repacking currently requires exactly one materialized source"
+            )
+        instance_ranges = kwargs.get("instance_ranges")
+        if instance_ranges is None or len(instance_ranges) != 1 or instance_ranges[0][0] != 0:
+            raise OLMoConfigurationError(
+                "dynamic repacking requires a materialized subset range starting at instance 0"
+            )
+        if num_documents <= 0:
+            raise OLMoConfigurationError("dynamic repacking requires a positive document count")
+        if kwargs.get("num_real_tokens") is None:
+            raise OLMoConfigurationError(
+                "dynamic repacking requires the manifest's real-token count"
+            )
+
+        self._document_metadata_path = str(document_metadata_path)
+        self._num_documents = num_documents
+        self._document_metadata_digest = document_metadata_digest
+        self._document_offsets: Optional[np.ndarray] = None
+        self._repacked_document_offsets: Optional[np.ndarray] = None
+        self._repacked_cumulative_ends: Optional[np.ndarray] = None
+        self._repacking_epoch: Optional[int] = None
+        self._repacking_seed: Optional[int] = None
+        super().__init__(*paths, **kwargs)
+
+    @property
+    def fingerprint_fields(self) -> Tuple[str, ...]:
+        return super().fingerprint_fields + (
+            "num_documents",
+            "document_metadata_digest",
+        )
+
+    @property
+    def num_documents(self) -> int:
+        return self._num_documents
+
+    @property
+    def document_metadata_digest(self) -> Optional[str]:
+        return self._document_metadata_digest
+
+    @property
+    def repacking_epoch(self) -> Optional[int]:
+        return self._repacking_epoch
+
+    def _load_document_offsets(self) -> np.ndarray:
+        if self._document_offsets is not None:
+            return self._document_offsets
+        if is_url(self._document_metadata_path):
+            raise OLMoConfigurationError(
+                "dynamic repacking currently requires local document metadata; "
+                f"got '{self._document_metadata_path}'"
+            )
+
+        metadata_path = Path(normalize_path(self._document_metadata_path))
+        if not metadata_path.is_file():
+            raise FileNotFoundError(
+                f"dynamic-repacking document metadata not found: '{metadata_path}'"
+            )
+        if self.document_metadata_digest is not None:
+            digest = hashlib.sha256()
+            with metadata_path.open("rb") as metadata_bytes:
+                for chunk in iter(lambda: metadata_bytes.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            if digest.hexdigest() != self.document_metadata_digest:
+                raise OLMoConfigurationError(
+                    f"dynamic-repacking document metadata checksum mismatch in '{metadata_path}'"
+                )
+
+        def values():
+            with gzip.open(metadata_path, "rt") as metadata_file:
+                for row_index, line in enumerate(metadata_file):
+                    if row_index >= self.num_documents:
+                        break
+                    fields = line.split(",", 2)
+                    if len(fields) < 2:
+                        raise OLMoConfigurationError(
+                            f"invalid document metadata row {row_index + 1} in '{metadata_path}'"
+                        )
+                    yield int(fields[0])
+                    yield int(fields[1])
+
+        offsets = np.fromiter(values(), dtype=np.uint64)
+        expected_values = self.num_documents * 2
+        if offsets.size != expected_values:
+            raise OLMoConfigurationError(
+                f"document metadata contains only {offsets.size // 2:,} real document rows; "
+                f"manifest declares {self.num_documents:,}"
+            )
+        offsets = offsets.reshape(-1, 2)
+        starts, ends = offsets[:, 0], offsets[:, 1]
+        if starts[0] != 0 or np.any(ends <= starts) or np.any(starts[1:] != ends[:-1]):
+            raise OLMoConfigurationError(
+                "dynamic repacking requires contiguous, non-empty document spans "
+                "beginning at token 0"
+            )
+        assert self.num_real_tokens is not None
+        if int(ends[-1]) != self.num_real_tokens:
+            raise OLMoConfigurationError(
+                f"real document spans end at token {int(ends[-1]):,}, but the manifest declares "
+                f"{self.num_real_tokens:,} real tokens"
+            )
+        self._document_offsets = offsets
+        return offsets
+
+    def prepare(self):
+        super().prepare()
+        self._load_document_offsets()
+
+    def repack_for_epoch(self, epoch: int, *, seed: int):
+        """Select the deterministic document packing for ``epoch``."""
+        if epoch <= 0:
+            raise ValueError(f"'epoch' must be at least 1, got {epoch}")
+        if self._repacking_epoch == epoch and self._repacking_seed == seed:
+            return
+
+        offsets = self._load_document_offsets()
+        order = np.arange(self.num_documents, dtype=np.uint32)
+        # Preserve the source's original packing for epoch 1 so this mode has an exactly matched
+        # first epoch and can branch from an ordinary epoch-1 checkpoint. From epoch 2 onward,
+        # domain-separate document permutations from the loader's instance-order shuffle.
+        if epoch > 1:
+            rng = get_rng(seed + epoch + self._REPACKING_SEED_DOMAIN)
+            rng.shuffle(order)
+        repacked_offsets = np.take(offsets, order, axis=0)
+        lengths = repacked_offsets[:, 1] - repacked_offsets[:, 0]
+        cumulative_ends = np.cumsum(lengths, dtype=np.uint64)
+        assert self.num_real_tokens is not None
+        if int(cumulative_ends[-1]) != self.num_real_tokens:
+            raise RuntimeError("dynamic repacking changed the real-token count")
+
+        self._repacked_document_offsets = repacked_offsets
+        self._repacked_cumulative_ends = cumulative_ends
+        self._repacking_epoch = epoch
+        self._repacking_seed = seed
+
+    def __getitem__(self, index: int) -> Dict[str, Any]:
+        if self._repacked_document_offsets is None or self._repacked_cumulative_ends is None:
+            raise RuntimeError(
+                "Dynamic-repacked dataset has no epoch plan; call data_loader.reshuffle() first"
+            )
+
+        index = int(index)
+        pos_index = index if index >= 0 else len(self) + index
+        if pos_index < 0 or pos_index >= len(self):
+            raise IndexError(f"{index} is out of bounds for dataset of size {len(self)}")
+
+        logical_start = pos_index * self.sequence_length
+        logical_end = logical_start + self.sequence_length
+        assert self.num_real_tokens is not None
+        real_end = min(logical_end, self.num_real_tokens)
+        input_ids = torch.full((self.sequence_length,), self.eos_token_id, dtype=torch.long)
+
+        write_offset = 0
+        logical_pos = logical_start
+        if logical_pos < real_end:
+            doc_index = int(
+                np.searchsorted(self._repacked_cumulative_ends, logical_pos, side="right")
+            )
+            previous_end = (
+                0 if doc_index == 0 else int(self._repacked_cumulative_ends[doc_index - 1])
+            )
+            offset_in_doc = logical_pos - previous_end
+            while logical_pos < real_end:
+                source_start, source_end = self._repacked_document_offsets[doc_index]
+                source_start = int(source_start) + offset_in_doc
+                take = min(int(source_end) - source_start, real_end - logical_pos)
+                input_ids[write_offset : write_offset + take] = load_array_slice_into_tensor(
+                    self.paths[0], source_start, source_start + take, self.dtype
+                )
+                write_offset += take
+                logical_pos += take
+                doc_index += 1
+                offset_in_doc = 0
+
+        out: Dict[str, Any] = {"input_ids": input_ids}
+        out["label_mask"] = (
+            torch.arange(self.sequence_length) + logical_start < self.num_real_tokens
+        )
+        if self.instance_filter_config is not None:
+            out["instance_mask"] = self._validate_instance(input_ids, self.instance_filter_config)
+        if self._include_instance_metadata:
+            out["metadata"] = deepcopy(self._metadata[0])
+        if self._generate_doc_lengths:
+            out["doc_lens"] = get_document_lengths(
+                input_ids, self.eos_token_id, bos_token_id=self.bos_token_id
+            )
+        return out
 
 
 class NumpyFSLDatasetMixture(NumpyFSLDataset):
@@ -2628,6 +2846,14 @@ class NumpyFSLDatasetConfig(NumpyDatasetConfig):
     Path to an ``olmo-token-subset-v1`` manifest containing exact source instance ranges.
     Relative source paths in the manifest are resolved against :data:`mix_base_dir`.
     """
+    dynamic_repacking: bool = False
+    """
+    If ``True``, retain the materialized epoch-1 packing, then deterministically permute the exact
+    documents and repack them into new fixed-length instances every later epoch. This is opt-in
+    and currently requires an ``olmo-token-subset-v1`` manifest with one fully materialized
+    source and its document-boundary metadata. The selected document set and within-document
+    token order do not change.
+    """
 
     @classmethod
     def from_src_mix(
@@ -2670,6 +2896,8 @@ class NumpyFSLDatasetConfig(NumpyDatasetConfig):
                 raise OLMoConfigurationError(
                     "'source_permutation_seed' is not supported alongside 'subset_manifest'"
                 )
+        if self.dynamic_repacking and self.subset_manifest is None:
+            raise OLMoConfigurationError("'dynamic_repacking' currently requires 'subset_manifest'")
 
     def build(self) -> NumpyDatasetBase:
         self.validate()
@@ -2699,9 +2927,7 @@ class NumpyFSLDatasetConfig(NumpyDatasetConfig):
             entries = manifest.get("entries")
             if not isinstance(entries, list) or not entries:
                 raise OLMoConfigurationError("subset manifest must contain non-empty 'entries'")
-            entries_payload = json.dumps(
-                entries, sort_keys=True, separators=(",", ":")
-            ).encode()
+            entries_payload = json.dumps(entries, sort_keys=True, separators=(",", ":")).encode()
             entries_digest = hashlib.sha256(entries_payload).hexdigest()
             if entries_digest != manifest.get("entries_sha256"):
                 raise OLMoConfigurationError(
@@ -2751,7 +2977,34 @@ class NumpyFSLDatasetConfig(NumpyDatasetConfig):
                     raise OLMoConfigurationError(
                         "subset manifest 'selected_tokens' does not match its instance ranges"
                     )
-            dataset = NumpyFSLSubsetDataset(
+            dataset_cls = (
+                NumpyFSLDynamicRepackedDataset if self.dynamic_repacking else NumpyFSLSubsetDataset
+            )
+            dynamic_kwargs: Dict[str, Any] = {}
+            if self.dynamic_repacking:
+                if len(entries) != 1 or instance_ranges[0][0] != 0:
+                    raise OLMoConfigurationError(
+                        "dynamic repacking requires exactly one fully materialized subset entry "
+                        "starting at instance 0"
+                    )
+                materialized = manifest.get("materialized", {})
+                metadata_relative_path = materialized.get("document_metadata_path")
+                num_documents = selection.get("selected_documents")
+                if not isinstance(metadata_relative_path, str) or not isinstance(
+                    num_documents, int
+                ):
+                    raise OLMoConfigurationError(
+                        "dynamic repacking requires manifest materialized.document_metadata_path "
+                        "and selection.selected_documents"
+                    )
+                dynamic_kwargs = {
+                    "document_metadata_path": os.path.join(
+                        self.mix_base_dir, metadata_relative_path.lstrip("/")
+                    ),
+                    "document_metadata_digest": materialized.get("document_metadata_sha256"),
+                    "num_documents": num_documents,
+                }
+            dataset = dataset_cls(
                 *paths,
                 instance_ranges=instance_ranges,
                 subset_digest=entries_digest,
@@ -2767,6 +3020,7 @@ class NumpyFSLDatasetConfig(NumpyDatasetConfig):
                 generate_doc_lengths=self.generate_doc_lengths,
                 bos_token_id=self.tokenizer.bos_token_id,
                 instance_filter_config=self.instance_filter_config,
+                **dynamic_kwargs,
             )
             return self._finalize(dataset)
 
