@@ -2055,9 +2055,11 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "submitted",
-      "activeEpoch": 2,
-      "attemptedEpochs": [],
+      "status": "complete",
+      "activeEpoch": null,
+      "attemptedEpochs": [
+        2
+      ],
       "sourceExperiment": "01KZAKM044B7EB61TT0W4H04TF",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd1.0_warmup24/step214",
       "gpuCount": 32,
@@ -2077,12 +2079,126 @@
           "validation": 5.364,
           "acc": 24.55,
           "bpb": 1.627
+        },
+        "2": {
+          "status": "complete",
+          "beaker": "01KZRXCW9YW4GEHM4MZR7Z7ACX",
+          "experiment": "01KZRXCW9YW4GEHM4MZR7Z7ACX",
+          "job": "01KZRXCWDN4325X6F5J1RC6K60",
+          "result": "01KZRXCWA7AZ61H01H5RRAXP32",
+          "replicaJobs": [
+            "01KZRXCWDN4325X6F5J1RC6K60",
+            "01KZRXCWH75ZS9HMEDA3830G3A",
+            "01KZRXCWMNVP5E8N34QKMX3N9G",
+            "01KZRXCWR6V26T4V3G7TC2NYES"
+          ],
+          "replicaResults": [
+            "01KZRXCWA7AZ61H01H5RRAXP32",
+            "01KZRXCWDVDZSJE8DH2JRGPGT5",
+            "01KZRXCWHDJBMKEP2C2CT4EWGC",
+            "01KZRXCWMVAQNX8W585EFAW4D2"
+          ],
+          "replicaNodes": [
+            "01JRK7GXR0V7VT5AXSF2TYY26W",
+            "01JRKH8WY954KY9WERG2FYGZET",
+            "01JS0FZ51W1SWWMPK073HW91YX",
+            "01K9DE3ZW66Q3XWJP19C3F34HS"
+          ],
+          "wandb": "0avdhl2i",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr1e-3_wd1.0_warmup24_dataloader-cd-r01",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd1.0_warmup24/step214",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr1e-3_wd1.0_warmup24_dataloader-cd-r01/step428",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr1e-3_wd1.0_warmup24_dataloader-cd-r01/step477",
+          "retainedCheckpoints": [
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr1e-3_wd1.0_warmup24_dataloader-cd-r01/step428",
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr1e-3_wd1.0_warmup24_dataloader-cd-r01/step477"
+          ],
+          "train": 4.157,
+          "validation": 4.172,
+          "acc": 25.86,
+          "bpb": 1.263,
+          "avg8Bpb": 1.840375,
+          "downstream": {
+            "arc_challenge": 23.08,
+            "arc_easy": 34.04,
+            "boolq": 59.36,
+            "csqa": 25.63,
+            "hellaswag": 25.86,
+            "openbookqa": 22.4,
+            "piqa": 56.53,
+            "socialiqa": 39.46,
+            "winogrande": 48.86
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.86,
+            "arc_easy": 2.019,
+            "boolq": 2.393,
+            "csqa": 2.156,
+            "hellaswag": 1.263,
+            "openbookqa": 2.152,
+            "piqa": 1.71,
+            "socialiqa": 1.737,
+            "winogrande": 1.826
+          },
+          "reason": "Completed healthy on four 8-GPU nodes from exact E1 step214, retaining pre-decay step428 and endpoint step477. Validation CE4.172 is worse than WD0.333 CE4.128; the higher-WD boundary is closed at this LR."
         }
       },
-      "health": "planned",
-      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "health": "healthy",
+      "reason": "Completed healthy at E2 validation CE4.172. WD1.0 is worse than WD0.333 CE4.128; BS1024 selection now waits for the combined LR5e-4/WD0.333 coordinate.",
       "beaker": "01KZRXCW9YW4GEHM4MZR7Z7ACX",
       "experiment": "01KZRXCW9YW4GEHM4MZR7Z7ACX",
+      "job": "01KZRXCWDN4325X6F5J1RC6K60",
+      "result": "01KZRXCWA7AZ61H01H5RRAXP32",
+      "replicaJobs": [
+        "01KZRXCWDN4325X6F5J1RC6K60",
+        "01KZRXCWH75ZS9HMEDA3830G3A",
+        "01KZRXCWMNVP5E8N34QKMX3N9G",
+        "01KZRXCWR6V26T4V3G7TC2NYES"
+      ],
+      "replicaResults": [
+        "01KZRXCWA7AZ61H01H5RRAXP32",
+        "01KZRXCWDVDZSJE8DH2JRGPGT5",
+        "01KZRXCWHDJBMKEP2C2CT4EWGC",
+        "01KZRXCWMVAQNX8W585EFAW4D2"
+      ],
+      "replicaNodes": [
+        "01JRK7GXR0V7VT5AXSF2TYY26W",
+        "01JRKH8WY954KY9WERG2FYGZET",
+        "01JS0FZ51W1SWWMPK073HW91YX",
+        "01K9DE3ZW66Q3XWJP19C3F34HS"
+      ],
+      "beakerStatus": "complete",
+      "wandb": "0avdhl2i",
+      "node": "01JRK7GXR0V7VT5AXSF2TYY26W",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "remoteDryRunComplete": true,
+        "dynamicRepacking": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 214,
+        "firstOptimizerStep": 215,
+        "trainerAndOptimizerStateRequested": true
+      },
+      "healthSummary": {
+        "ceSamples": 53,
+        "ceLast": 4.157,
+        "ceTailMean": 4.39625,
+        "gradSamples": 53,
+        "gradLast": 0.0355,
+        "gradTailP95": 0.32027,
+        "nanOrInf": false,
+        "classification": "healthy"
+      },
+      "progress": {
+        "observedAt": "2026-08-11 10:35 PDT",
+        "step": 477,
+        "endpointStep": 477,
+        "epoch": 2,
+        "trainCe": 4.157,
+        "validationCe": 4.172,
+        "eta": "complete"
+      },
       "revision": "f82b92805d47b9b4726aed7fd50a00e0075a7f5e",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr1e-3_wd1.0_warmup24_dataloader-cd-r01"
     },
