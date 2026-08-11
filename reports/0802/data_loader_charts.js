@@ -253,6 +253,7 @@
   const newRunsBody = document.getElementById("new-runs");
   for (const run of study.runs || []) {
     const resultEpochs = new Set(Object.keys(run.results || {}).map(Number));
+    for (const epoch of run.attemptedEpochs || []) resultEpochs.add(Number(epoch));
     if (run.activeEpoch !== undefined && run.activeEpoch !== null) resultEpochs.add(Number(run.activeEpoch));
     for (const epoch of Array.from(resultEpochs).sort((a, b) => a - b)) {
       const result = run.results && run.results[epochKey(epoch)];
@@ -260,7 +261,7 @@
       const tr = document.createElement("tr");
       if (["running", "scheduled", "submitted"].includes(status)) tr.className = "run-active";
       if (["failed", "canceled"].includes(status)) tr.className = "run-failed";
-      const wandb = result && result.wandb;
+      const wandb = (result && result.wandb) || (Number(run.activeEpoch) === epoch ? run.wandb : null);
       const beaker = (result && (result.beaker || result.experiment)) || run.beaker || run.experiment;
       tr.innerHTML = `<td>${methodByKey[run.method].label}</td><td>${run.batchSequences}</td><td>E${formatEpoch(epoch)}</td><td>${run.lr}</td><td>${run.wd}</td><td>${status || "planned"}</td><td>${formatMetric(result && result.train)}</td><td>${formatMetric(result && result.validation)}</td><td>${wandb ? `<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${wandb}">${wandb}</a>` : "—"}</td><td>${beaker ? `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${beaker}">${beaker}</a>` : "—"}</td>`;
       newRunsBody.appendChild(tr);
