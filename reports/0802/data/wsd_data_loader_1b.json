@@ -2217,7 +2217,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "2.5e-4",
       "wd": "0.333",
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 1,
       "attemptedEpochs": [],
       "sourceExperiment": "01KZ37GBC8WCRS7GD2S7RA4CW3",
@@ -2226,8 +2226,8 @@
       "nodeCount": 4,
       "rankMicrobatchSequences": 8,
       "results": {},
-      "health": "planned",
-      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed. All four replicas are scheduled.",
+      "health": "healthy",
+      "reason": "All four replicas started; manifest and preflight guards passed, the remote dry-run completed with ordinary E1 packing, W&B zwauozmc started, and finite decreasing CE confirmed optimizer progress.",
       "beaker": "01KZS248N9VDG7Y162S9Q5EV6P",
       "experiment": "01KZS248N9VDG7Y162S9Q5EV6P",
       "job": "01KZS248RRNM0FAQZFR1NC98QP",
@@ -2250,7 +2250,25 @@
         "01JS0FZ51W1SWWMPK073HW91YX",
         "01K5YQYB97E9KXHSEZNDK14494"
       ],
-      "beakerStatus": "scheduled",
+      "beakerStatus": "running",
+      "wandb": "zwauozmc",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "remoteDryRunComplete": true,
+        "dynamicRepacking": false,
+        "ordinaryE1Packing": true,
+        "freshStart": true,
+        "firstOptimizerStep": 1
+      },
+      "progress": {
+        "observedAt": "2026-08-11 11:47 PDT",
+        "step": 40,
+        "endpointStep": 239,
+        "epoch": 1,
+        "trainCeLast": 10.43,
+        "eta": "8m"
+      },
       "revision": "3b5199065766f38076a9435690ef09ba29e1a2e4",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e1_lr2.5e-4_wd0.333_warmup24_dataloader-bootstrap-lrbound-r01"
     },
@@ -2261,9 +2279,11 @@
       "dataOrder": "dynamic_repacking",
       "lr": "5e-4",
       "wd": "1.0",
-      "status": "submitted",
+      "status": "planned",
       "activeEpoch": 1,
-      "attemptedEpochs": [],
+      "attemptedEpochs": [
+        1
+      ],
       "sourceExperiment": "01KZ2SX1RZVJBXE3Q4CR4VQXRZ",
       "sourceCheckpoint": "fresh",
       "gpuCount": 32,
@@ -2271,7 +2291,39 @@
       "rankMicrobatchSequences": 8,
       "results": {},
       "health": "planned",
-      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "reason": "Attempt1 was canceled before task start after replica3 landed on a node cordoned for unrecoverable SXid12028. No W&B run, optimizer step, output, or checkpoint was created; a unique attempt2 is authorized under the user's five-attempt infrastructure allowance.",
+      "attempts": [
+        {
+          "experiment": "01KZS2494WADTXY3MYQTD2JNSG",
+          "job": "01KZS249901Z4TF739TCWZ0DEH",
+          "result": "01KZS24952441990XXN99C4KRC",
+          "replicaJobs": [
+            "01KZS249901Z4TF739TCWZ0DEH",
+            "01KZS249CFQCTDWSC2X2C9KXYE",
+            "01KZS249FZHYHMG5FDRWXK7ZC4",
+            "01KZS249KHEZXS1660N9GAQGPG"
+          ],
+          "replicaResults": [
+            "01KZS24952441990XXN99C4KRC",
+            "01KZS24996F7J11KN207NTWSV3",
+            "01KZS249CN1W5WEX58XV2HNBT1",
+            "01KZS249G4TMP1N93M69PSN92S"
+          ],
+          "replicaNodes": [
+            "01K9AYGENE66ZDKZ31W0AMSXM7",
+            "01K9893X6FBJ1E9G0SXFGHN9X4",
+            "01KJT4H1MZSHV0S26YATVM5PEM",
+            "01KMZXA4AF0K2XXCER4ACGF3EY"
+          ],
+          "status": "canceled_before_task_start",
+          "failedReplica": "01KZS249KHEZXS1660N9GAQGPG",
+          "node": "01KMZXA4AF0K2XXCER4ACGF3EY",
+          "wandb": null,
+          "reason": "Replica3 was canceled while starting because node 01KMZXA4AF0K2XXCER4ACGF3EY was cordoned after unrecoverable SXid error code12028. The remaining ready replicas were stopped to release resources. No task, W&B run, optimizer step, output, or checkpoint was created.",
+          "revision": "3b5199065766f38076a9435690ef09ba29e1a2e4",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e1_lr5e-4_wd1.0_warmup24_dataloader-bootstrap-wdbound-r01"
+        }
+      ],
       "beaker": "01KZS2494WADTXY3MYQTD2JNSG",
       "experiment": "01KZS2494WADTXY3MYQTD2JNSG",
       "job": "01KZS249901Z4TF739TCWZ0DEH",
@@ -2288,7 +2340,13 @@
         "01KZS249CN1W5WEX58XV2HNBT1",
         "01KZS249G4TMP1N93M69PSN92S"
       ],
-      "beakerStatus": "pending",
+      "replicaNodes": [
+        "01K9AYGENE66ZDKZ31W0AMSXM7",
+        "01K9893X6FBJ1E9G0SXFGHN9X4",
+        "01KJT4H1MZSHV0S26YATVM5PEM",
+        "01KMZXA4AF0K2XXCER4ACGF3EY"
+      ],
+      "beakerStatus": "canceled_before_task_start",
       "revision": "3b5199065766f38076a9435690ef09ba29e1a2e4",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e1_lr5e-4_wd1.0_warmup24_dataloader-bootstrap-wdbound-r01"
     },
