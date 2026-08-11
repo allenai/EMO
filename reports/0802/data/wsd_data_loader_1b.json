@@ -1596,12 +1596,12 @@
         "trainerAndOptimizerStateRequested": true
       },
       "progress": {
-        "observedAt": "2026-08-11 13:34 PDT",
-        "step": 880,
+        "observedAt": "2026-08-11 13:45 PDT",
+        "step": 1430,
         "endpointStep": 1908,
-        "epoch": 2,
-        "trainCe": 3.646,
-        "eta": "20m"
+        "epoch": 3,
+        "trainCe": 3.474,
+        "eta": "10m"
       },
       "revision": "84263323be0413d96a63bc794fc792e984bdb68a",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e4_lr1e-3_wd1.0_warmup48_dataloader-cd-r01"
@@ -2366,12 +2366,12 @@
         "trainerAndOptimizerStateRequested": true
       },
       "progress": {
-        "observedAt": "2026-08-11 13:34 PDT",
-        "step": 1335,
+        "observedAt": "2026-08-11 13:45 PDT",
+        "step": 1610,
         "endpointStep": 1908,
-        "epoch": 6,
-        "trainCe": 3.296,
-        "eta": "25m"
+        "epoch": 7,
+        "trainCe": 3.206,
+        "eta": "13m"
       },
       "revision": "1b2fda0c8f9a3f2211410b690559dd05910618b1",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr5e-4_wd0.333_warmup24_dataloader-cd-r01"
@@ -2804,33 +2804,65 @@
           "reason": "Replica3 was canceled while starting because node 01KMZXA4AF0K2XXCER4ACGF3EY was cordoned after unrecoverable SXid error code12028. The remaining ready replicas were stopped to release resources. No task, W&B run, optimizer step, output, or checkpoint was created.",
           "revision": "3b5199065766f38076a9435690ef09ba29e1a2e4",
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e1_lr5e-4_wd1.0_warmup24_dataloader-bootstrap-wdbound-r01"
+        },
+        {
+          "epoch": 4,
+          "experiment": "01KZS8PVXSQCD02B24E33BR4KC",
+          "job": "01KZS8PW1BRAD3JDX60V70B22W",
+          "result": "01KZS8PVY0Q97FHGRX4K5W51BN",
+          "replicaJobs": [
+            "01KZS8PW1BRAD3JDX60V70B22W",
+            "01KZS8PW5FBAFMP7SNBAMNKG7J",
+            "01KZS8PW92MWGN9M99RVYN7BYJ",
+            "01KZS8PWCP30HBVY9WVMDNNYET"
+          ],
+          "replicaResults": [
+            "01KZS8PVY0Q97FHGRX4K5W51BN",
+            "01KZS8PW1JD5T9JK5JKKCHG9ZN",
+            "01KZS8PW5MM80ABSBXDJM0QJ32",
+            "01KZS8PW97E67J0GMA7EN3TR86"
+          ],
+          "replicaNodes": [
+            "01K15VC4MF63NFG484TFTWHSYB",
+            "01K4AYR1K50J6B3EZCCQ40KDZY",
+            "01K5ZQSEGTMAJXRXV8HCYQFP7W",
+            "01K5ZQSEP2RRZF8TQ7M7WRKX3G"
+          ],
+          "status": "canceled_before_task_start",
+          "failedReplica": "01KZS8PW1BRAD3JDX60V70B22W",
+          "node": "01K15VC4MF63NFG484TFTWHSYB",
+          "wandb": null,
+          "reason": "Replica0 was canceled while starting because node 01K15VC4MF63NFG484TFTWHSYB was cordoned after unrecoverable SXid error code12028. No task logs, W&B run, optimizer step, output, or checkpoint were created, so automatic infrastructure retry1 is eligible.",
+          "revision": "cd56ccc7f4422dd4d8816a297c39c37cf9361f56",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e4_lr5e-4_wd1.0_warmup24_dataloader-cd-wdbound-r01"
         }
       ],
-      "beaker": "01KZS8PVXSQCD02B24E33BR4KC",
-      "experiment": "01KZS8PVXSQCD02B24E33BR4KC",
-      "job": "01KZS8PW1BRAD3JDX60V70B22W",
-      "result": "01KZS8PVY0Q97FHGRX4K5W51BN",
+      "retryCount": 1,
+      "beaker": "01KZS9A0ERDMHT28CVB549Q3NE",
+      "experiment": "01KZS9A0ERDMHT28CVB549Q3NE",
+      "job": "01KZS9A0JQ5K5VA38WK3QAGA7Y",
+      "result": "01KZS9A0EZTW8KBKPN7D00SRZW",
       "replicaJobs": [
-        "01KZS8PW1BRAD3JDX60V70B22W",
-        "01KZS8PW5FBAFMP7SNBAMNKG7J",
-        "01KZS8PW92MWGN9M99RVYN7BYJ",
-        "01KZS8PWCP30HBVY9WVMDNNYET"
+        "01KZS9A0JQ5K5VA38WK3QAGA7Y",
+        "01KZS9A0P257RPQVVHCY5HRJ1V",
+        "01KZS9A0T07JQVWY53GCZVYYY1",
+        "01KZS9A0X9ZAVKFQ0Z59NSX938"
       ],
       "replicaResults": [
-        "01KZS8PVY0Q97FHGRX4K5W51BN",
-        "01KZS8PW1JD5T9JK5JKKCHG9ZN",
-        "01KZS8PW5MM80ABSBXDJM0QJ32",
-        "01KZS8PW97E67J0GMA7EN3TR86"
+        "01KZS9A0EZTW8KBKPN7D00SRZW",
+        "01KZS9A0JVCYDDBNEHV1A77WEZ",
+        "01KZS9A0P7F3VTD1HG8Q4NDP87",
+        "01KZS9A0T3CSRHH808HQN1ZECG"
       ],
-      "beakerStatus": "submitted",
+      "beakerStatus": "submitted_retry1",
       "progress": {
-        "observedAt": "2026-08-11 13:37 PDT",
+        "observedAt": "2026-08-11 13:48 PDT",
         "step": 428,
         "endpointStep": 954,
         "epoch": 4,
         "eta": "awaiting scheduling"
       },
-      "revision": "cd56ccc7f4422dd4d8816a297c39c37cf9361f56",
+      "revision": "fdb8a5fa89c7b727b87ea2fd4e27a408acdb6304",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e4_lr5e-4_wd1.0_warmup24_dataloader-cd-wdbound-r01"
     },
     {
