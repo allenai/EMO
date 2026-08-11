@@ -338,7 +338,9 @@
       const epoch = comparison.epochs[String(column.batchSequences)];
       const winner = winners[index];
       const value = winner && numeric(winner.result.validation);
-      return `<td class="${value !== null && value === rowBest ? "summary-best" : ""}">${winner ? `E${formatEpoch(epoch)} · ${formatMetric(value)}` : "—"}</td>`;
+      const isBest = value !== null && value === rowBest;
+      const metric = winner ? formatMetric(value) : null;
+      return `<td class="${isBest ? "summary-best" : ""}">${winner ? `E${formatEpoch(epoch)} · ${isBest ? `<strong>${metric}</strong>` : metric}` : "—"}</td>`;
     }).join("");
     optimizerBody.appendChild(tr);
   }
