@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-09",
+  "updated": "2026-08-10",
   "title": "0802 Step 1-1 \u00b7 Dense 153M \u00b7 nested 3B pool",
   "setup": "Dense 153M; nested 3B pool = sealed 1B + disjoint new 2B; sequence length 4096; global batches 64, 128, 256, and 512 sequences.",
   "selection": "Historical Pool-3B WD branches are collapsed by audited effective WD: optimizer-state restore made every continuation inherit the root 1B-pool checkpoint WD. These results therefore do not constitute a Pool-3B WD comparison. Future E1 work requires an exact same-model/batch/LR/WD 1B-pool source, and checkpoint loading fails on any model or optimizer hyperparameter mismatch.",
@@ -8533,62 +8533,6 @@
       ],
       "job": "01KZQKSHBPHPVQYVE3RC09PSVH",
       "resultDataset": "01KZQKSH8D6CR3DV34MDC8HBPB"
-    },
-    {
-      "batchSequences": 256,
-      "globalBatchTokens": 1048576,
-      "contextLength": 4096,
-      "lr": "2e-3",
-      "wd": "0.01",
-      "warmupSteps": 96,
-      "rankMicrobatchSequences": 16,
-      "gradientAccumulation": 2,
-      "gpuCountPerNode": 8,
-      "nodeCount": 1,
-      "gpuCount": 8,
-      "status": "pending",
-      "activeEpoch": 1,
-      "search": "nested-3b-wd-repair",
-      "wdRepairRole": "smaller",
-      "beaker": "01KZQKYDD9K5SEZR9YAZ3V29YS",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs256_e1_lr2e-3_wd0.01_warmup96_wdrepair-e1-153m-bs256-wd001-r01",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs256_e1_lr2e-3_wd0.01_warmup96_pool3b-wdrepair-source-e1/step858",
-      "sourceEpoch": 0,
-      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_extension_1b_to_3b.json",
-      "dataLoaderReset": true,
-      "dataLoaderSeed": 80201,
-      "retainedPreDecaySteps": [
-        2575
-      ],
-      "newRetainedPreDecaySteps": [
-        2575
-      ],
-      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs256_e1_lr2e-3_wd0.01_warmup96_wdrepair-e1-153m-bs256-wd001-r01/step2575",
-      "recoverySourceStep": null,
-      "actualTargetTokens": 3000000000,
-      "revision": "a0efb891b8cbdb8c8d45bd06aa780cf3a69bfe74",
-      "recoveryOf": null,
-      "results": {},
-      "jobs": [
-        "01KZQKYDHQFA7KVDQWA1SEQT0S"
-      ],
-      "resultDatasets": [
-        "01KZQKYDDHAR4QA0QGE7EKFTGQ"
-      ],
-      "jobStates": [
-        {
-          "job": "01KZQKYDHQFA7KVDQWA1SEQT0S",
-          "state": "pending",
-          "created": "2026-08-11T05:15:24.969599Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
-          "reason": null,
-          "resultDataset": "01KZQKYDDHAR4QA0QGE7EKFTGQ"
-        }
-      ],
-      "job": "01KZQKYDHQFA7KVDQWA1SEQT0S",
-      "resultDataset": "01KZQKYDDHAR4QA0QGE7EKFTGQ"
     }
   ],
   "summaryBatches": [
@@ -18320,8 +18264,8 @@
         "job": "01KZQHM0QKDMAJ866X2GTB147T",
         "resultDataset": "01KZQHM0KEN5Q3H56ZJ25RG5HG",
         "activeWandb": "k18u2ujp",
-        "progressPercent": 84,
-        "progressStep": 283040,
+        "progressPercent": 85,
+        "progressStep": 285625,
         "progressTotalSteps": 335694
       },
       {
@@ -18348,8 +18292,8 @@
         "job": "01KZQK5SRXX9F7XD490HG4FTN6",
         "resultDataset": "01KZQK5SN251GH0QB1VG1K3AWY",
         "activeWandb": "froi6aq9",
-        "progressPercent": 67,
-        "progressStep": 10300,
+        "progressPercent": 84,
+        "progressStep": 12825,
         "progressTotalSteps": 15259
       }
     ],
@@ -18396,7 +18340,6 @@
       ],
       "256": [
         "0.033",
-        "0.01",
         "0.1"
       ],
       "512": [
@@ -18415,7 +18358,6 @@
       ],
       "256": [
         "0.033",
-        "0.01",
         "0.1"
       ],
       "512": [
@@ -22890,12 +22832,9 @@
         "existingWeightDecay": "0.033",
         "neededWeightDecays": [
           "0.033",
-          "0.01",
           "0.1"
         ],
-        "smallerWeightDecays": [
-          "0.01"
-        ],
+        "smallerWeightDecays": [],
         "largerWeightDecays": [
           "0.1"
         ],
