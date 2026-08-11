@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-11 03:04 PDT",
+  "updated": "2026-08-11 03:08 PDT",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation; LR fixed at 1e-3; BS512 and BS1024 additions use four 8-GPU nodes with rank microbatch eight sequences.",
   "selection": "The existing OLMo-core baseline is shown only for BS64 through BS1024. E1 is common to all three data-order modes, so each new column reports the ordinary baseline E1 winner; an E2 branch may resume any exact LR/WD-matched E1 pre-decay checkpoint. LR is fixed at 1e-3. WD tuning follows the ordering hypothesis Fixed > ordinary > DR: the initial E2 probes use DR at WD0.1 and Fixed at WD0.333 for both batch sizes, then Fixed may expand upward while DR remains on the lower side of the ordinary optimum. From the selected E2 result onward, a later epoch may use only an equal or higher WD through E4, E8, E12, and E16. Dynamic repacking preserves the original E1 packing and begins repacking at E2; fixed order reuses the exact default E1 sequence permutation and batch membership forever.",
@@ -253,14 +253,14 @@
         "trainerAndOptimizerStateRequested": true
       },
       "progress": {
-        "observedAt": "2026-08-11 02:59 PDT",
-        "step": 2565,
+        "observedAt": "2026-08-11 03:08 PDT",
+        "step": 2979,
         "endpointStep": 3815,
         "epoch": 8,
-        "trainCe": 3.057,
-        "gradNorm": 0.0806,
+        "trainCe": 2.936,
+        "gradNorm": 0.099,
         "skippedOptimizerStep": 0,
-        "eta": "27m"
+        "eta": "18m"
       },
       "revision": "2ed39df2651cd3017729436bdb3ab5bf90ae9690",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e8_lr1e-3_wd0.1_warmup48_dataloader-r01",
@@ -398,18 +398,35 @@
         "01KZR442BM2V5WB1DYNSS8DN2Z",
         "01KZR442F4VD3SV938YH9BP6WW"
       ],
-      "beakerStatus": "created",
-      "wandb": null,
-      "node": null,
-      "replicaNodes": [],
-      "health": "pending",
-      "startupEvidence": {},
+      "beakerStatus": "running",
+      "wandb": "i5yyzv83",
+      "node": "01KQ0MFSCB5MJE2HZ3CVBAHTQJ",
+      "replicaNodes": [
+        "01KQ0MFSCB5MJE2HZ3CVBAHTQJ",
+        "01KXKHJJV17JDGH5VXCF0MAVD7",
+        "01JS0FZ4WXJA2YDY0PDPKK10C4",
+        "01KT4H4REQ2FXMHTHYYBFDYRWQ"
+      ],
+      "health": "healthy",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "remoteDryRunComplete": true,
+        "fixedDataOrder": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 858,
+        "firstOptimizerStep": 859,
+        "trainerAndOptimizerStateRequested": true
+      },
       "progress": {
-        "observedAt": "2026-08-11 02:58 PDT",
-        "step": 858,
+        "observedAt": "2026-08-11 03:08 PDT",
+        "step": 1123,
         "endpointStep": 1908,
         "epoch": 4,
-        "eta": "queued"
+        "trainCe": 3.459,
+        "gradNorm": 0.1183,
+        "skippedOptimizerStep": 0,
+        "eta": "19m"
       },
       "revision": "caf6ceb0081f43a32d2d577694a4164b0248d3d0",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_fixed_e4_lr1e-3_wd0.333_warmup48_dataloader-r01",
@@ -727,18 +744,35 @@
         "01KZR4EBE9WTJN9CPEYJ18TWV2",
         "01KZR4EBHN96NKTNK7YGVB8M2H"
       ],
-      "beakerStatus": "created",
-      "wandb": null,
-      "node": null,
-      "replicaNodes": [],
-      "health": "pending",
-      "startupEvidence": {},
+      "beakerStatus": "running",
+      "wandb": "7n0rxuhf",
+      "node": "01JS0HMY24WSEWYF3W85928JJB",
+      "replicaNodes": [
+        "01JS0HMY24WSEWYF3W85928JJB",
+        "01KT4H4T5FQ18DM4VH5YQ47TYQ",
+        "01JS0FZ5QSF3MJMN000CSTGHEG",
+        "01K5ZQSEGTMAJXRXV8HCYQFP7W"
+      ],
+      "health": "healthy",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "remoteDryRunComplete": true,
+        "dynamicRepacking": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 858,
+        "firstOptimizerStep": 859,
+        "trainerAndOptimizerStateRequested": true
+      },
       "progress": {
-        "observedAt": "2026-08-11 03:04 PDT",
-        "step": 858,
+        "observedAt": "2026-08-11 03:08 PDT",
+        "step": 882,
         "endpointStep": 1908,
         "epoch": 8,
-        "eta": "queued"
+        "trainCe": 3.54,
+        "gradNorm": 0.1709,
+        "skippedOptimizerStep": 0,
+        "eta": "41m"
       },
       "revision": "91364d743eeb43a2f41ba6faddda856a25c16560",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd0.1_warmup24_dataloader-r01"
@@ -872,14 +906,14 @@
         "trainerAndOptimizerStateRequested": true
       },
       "progress": {
-        "observedAt": "2026-08-11 02:59 PDT",
-        "step": 650,
+        "observedAt": "2026-08-11 03:08 PDT",
+        "step": 864,
         "endpointStep": 954,
         "epoch": 4,
-        "trainCe": 3.781,
-        "gradNorm": 0.1451,
+        "trainCe": 3.558,
+        "gradNorm": 0.1642,
         "skippedOptimizerStep": 0,
-        "eta": "13m"
+        "eta": "4m"
       },
       "revision": "a1b6ce072baacf51a41aa33fe1e5ac0b9f1966a7",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e4_lr1e-3_wd0.333_warmup24_dataloader-r01",
