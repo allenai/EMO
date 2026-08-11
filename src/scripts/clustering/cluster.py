@@ -129,8 +129,14 @@ def cluster_kmeans(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
     return labels
 
 
-@register_cluster("spherical_kmeans", "Spherical KMeans (normalize centroids)")
-def cluster_spherical_kmeans(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
+def fit_spherical_kmeans(emb: np.ndarray, k: int, random_state: int = 42):
+    """Fit spherical k-means and return the fitted (L2-centroid) estimator.
+
+    Split out from :func:`cluster_spherical_kmeans` so callers that need to
+    persist the model and assign new points (val/test, a production stream) can
+    reuse the *exact same* fitting code. ``km.predict(normalize(x))`` assigns by
+    nearest centroid (cosine, since centroids are L2-normalized).
+    """
     from sklearn.cluster import MiniBatchKMeans
     from sklearn.preprocessing import normalize
 
@@ -140,7 +146,7 @@ def cluster_spherical_kmeans(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
         n_init=10,
         max_iter=500,
         batch_size=4096,
-        random_state=42,
+        random_state=random_state,
     )
     km.fit(emb_normed)
 
@@ -159,9 +165,16 @@ def cluster_spherical_kmeans(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
             logger.info(f"  Spherical KMeans: converged at iteration {iteration + 1}")
             break
 
-    labels = km.predict(emb_normed)
     logger.info(f"  Spherical KMeans: k={k}, {iteration + 1} refinement iterations")
-    return labels
+    return km
+
+
+@register_cluster("spherical_kmeans", "Spherical KMeans (normalize centroids)")
+def cluster_spherical_kmeans(emb: np.ndarray, k: int, **kwargs) -> np.ndarray:
+    from sklearn.preprocessing import normalize
+
+    km = fit_spherical_kmeans(emb, k)
+    return km.predict(normalize(emb, norm="l2"))
 
 
 @register_cluster("hierarchical", "Agglomerative (precomputed distances)")

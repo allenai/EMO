@@ -266,26 +266,30 @@ def _find_variance_cutoff_k(centered: np.ndarray, variance: float = 0.95) -> int
     """Find #components explaining `variance` fraction using a 1M-row subsample.
 
     Full-rank PCA on 20M+ rows OOMs; the top-component variance ratios are
-    stable under subsampling, so we fit on a sample and reuse the cutoff.
-    """
-    from sklearn.decomposition import PCA
+    stable under subsampling, so we compute the cutoff on a sample.
 
+    The variance ratios are the eigenvalues of the D x D feature covariance, so
+    we get them directly from ``eigvalsh`` on the (small) covariance matrix.
+    This is exact and avoids fitting a full-rank randomized SVD
+    (``n_components == n_features``), which is pathologically slow — the reduced
+    projection itself uses only ~k components and stays fast.
+    """
     N = centered.shape[0]
     if N > _VARIANCE_CUTOFF_SAMPLE_SIZE:
         rng = np.random.default_rng(42)
         idx = rng.choice(N, _VARIANCE_CUTOFF_SAMPLE_SIZE, replace=False)
         sample = centered[idx]
         logger.info(
-            f"  Variance-cutoff PCA on {_VARIANCE_CUTOFF_SAMPLE_SIZE:,}-row subsample "
+            f"  Variance-cutoff on {_VARIANCE_CUTOFF_SAMPLE_SIZE:,}-row subsample "
             f"(full data has {N:,} rows)"
         )
     else:
         sample = centered
 
-    n_components = min(sample.shape[0], sample.shape[1])
-    pca = PCA(n_components=n_components, svd_solver="randomized", random_state=42)
-    pca.fit(sample)
-    cumvar = np.cumsum(pca.explained_variance_ratio_)
+    s = (sample - sample.mean(axis=0, keepdims=True)).astype(np.float64)
+    cov = (s.T @ s) / (s.shape[0] - 1)
+    eigvals = np.clip(np.linalg.eigvalsh(cov)[::-1], 0.0, None)
+    cumvar = np.cumsum(eigvals) / eigvals.sum()
     k = int(np.searchsorted(cumvar, variance)) + 1
     logger.info(f"  PCA: {k} components explain {cumvar[k-1]:.1%} variance")
     return k
@@ -301,16 +305,38 @@ def preprocess_mean_pca(emb: np.ndarray, info: dict) -> np.ndarray:
     return pca_k.fit_transform(centered)
 
 
-@register_preprocess("mean_pca_l2", "Mean-center, PCA (95% variance), L2 normalize")
-def preprocess_mean_pca_l2(emb: np.ndarray, info: dict) -> np.ndarray:
+def fit_apply_mean_pca_l2(emb: np.ndarray, variance: float = 0.95) -> tuple:
+    """Fit the mean-center + PCA(95% var) + L2 transform and apply it.
+
+    Returns ``(transformed, state)`` where ``state = (mean, pca)`` is the fitted
+    transform, persistable so the exact same projection can be re-applied to new
+    documents (val/test, or a production stream) without refitting. The returned
+    ``transformed`` is byte-identical to ``preprocess_mean_pca_l2(emb, ...)``.
+    """
     from sklearn.decomposition import PCA
     from sklearn.preprocessing import normalize
 
-    centered = emb - emb.mean(axis=0, keepdims=True)
-    k = _find_variance_cutoff_k(centered)
-    pca_k = PCA(n_components=k, svd_solver="randomized", random_state=42)
-    reduced = pca_k.fit_transform(centered)
+    mean = emb.mean(axis=0, keepdims=True)
+    centered = emb - mean
+    k = _find_variance_cutoff_k(centered, variance)
+    pca = PCA(n_components=k, svd_solver="randomized", random_state=42)
+    reduced = pca.fit_transform(centered)
+    return normalize(reduced, norm="l2"), (mean, pca)
+
+
+def apply_mean_pca_l2(emb: np.ndarray, state: tuple) -> np.ndarray:
+    """Apply a transform fitted by :func:`fit_apply_mean_pca_l2` to new rows."""
+    from sklearn.preprocessing import normalize
+
+    mean, pca = state
+    reduced = pca.transform(emb - mean)
     return normalize(reduced, norm="l2")
+
+
+@register_preprocess("mean_pca_l2", "Mean-center, PCA (95% variance), L2 normalize")
+def preprocess_mean_pca_l2(emb: np.ndarray, info: dict) -> np.ndarray:
+    transformed, _ = fit_apply_mean_pca_l2(emb)
+    return transformed
 
 
 def apply_preprocess(emb: np.ndarray, name: str, info: dict) -> np.ndarray:
