@@ -1949,7 +1949,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "5e-4",
       "wd": "0.333",
-      "status": "scheduled",
+      "status": "running",
       "activeEpoch": 2,
       "attemptedEpochs": [
         1
@@ -2035,7 +2035,7 @@
         }
       },
       "health": "healthy",
-      "reason": "All four replicas are scheduled on four 8-GPU nodes from the registered exact LR5e-4/WD0.333 E1 step214 source. Startup guards and optimizer progress remain to be verified.",
+      "reason": "All four replicas started on four 8-GPU nodes from the registered exact LR5e-4/WD0.333 E1 step214 source. Environment setup is in progress; startup guards and optimizer progress remain to be verified.",
       "beaker": "01KZS0JBZV1SV9X5JXZV2B7CFF",
       "experiment": "01KZS0JBZV1SV9X5JXZV2B7CFF",
       "job": "01KZS0JC3QJTMAYJ24AK7HD6BG",
@@ -2058,7 +2058,7 @@
         "01K9893X6FBJ1E9G0SXFGHN9X4",
         "01K9AYGENE66ZDKZ31W0AMSXM7"
       ],
-      "beakerStatus": "scheduled",
+      "beakerStatus": "running",
       "revision": "b281ad03dffd8cf0240f290aa1f180bddb675f27",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr5e-4_wd0.333_warmup24_dataloader-cd-r01"
     },
