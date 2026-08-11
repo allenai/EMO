@@ -178,6 +178,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
         seed=0,
         shuffle=not opts.no_data_shuffle,
         reshuffle_each_epoch=not opts.fixed_data_order,
+        batch_shuffling=opts.batch_shuffling,
         num_workers=4,
     )
 
@@ -308,6 +309,14 @@ def parser_args():
         help=(
             "Repack the exact documents in a materialized subset into new sequence boundaries "
             "every epoch. Requires dataset.subset_manifest; disabled by default."
+        ),
+    )
+    data_order_group.add_argument(
+        "--batch-shuffling",
+        action="store_true",
+        help=(
+            "Freeze the ordinary epoch-1 fixed-length sequences and their global-batch "
+            "membership, then shuffle only the order of intact global batches each epoch."
         ),
     )
     data_order_group.add_argument(
