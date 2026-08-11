@@ -340,7 +340,8 @@
       const value = winner && numeric(winner.result.validation);
       const isBest = value !== null && value === rowBest;
       const metric = winner ? formatMetric(value) : null;
-      return `<td class="${isBest ? "summary-best" : ""}">${winner ? `E${formatEpoch(epoch)} · ${isBest ? `<strong>${metric}</strong>` : metric}` : "—"}</td>`;
+      const display = winner ? `E${formatEpoch(epoch)} · ${metric}` : "—";
+      return `<td class="${isBest ? "summary-best" : ""}"${isBest ? ' style="font-weight:900!important"' : ""}>${isBest ? `<strong>${display}</strong>` : display}</td>`;
     }).join("");
     optimizerBody.appendChild(tr);
   }
