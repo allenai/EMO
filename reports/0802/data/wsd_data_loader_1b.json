@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-11 01:37 PDT",
+  "updated": "2026-08-11 01:45 PDT",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation; LR fixed at 1e-3; BS512 and BS1024 additions use four 8-GPU nodes with rank microbatch eight sequences.",
   "selection": "The existing OLMo-core baseline is shown only for BS64 through BS1024. E1 is common to all three data-order modes, so each new column reports the ordinary baseline E1 winner; an E2 branch may resume any exact LR/WD-matched E1 pre-decay checkpoint. LR is fixed at 1e-3. WD tuning follows the ordering hypothesis Fixed > ordinary > DR: the initial E2 probes use DR at WD0.1 and Fixed at WD0.333 for both batch sizes, then Fixed may expand upward while DR remains on the lower side of the ordinary optimum. From the selected E2 result onward, a later epoch may use only an equal or higher WD through E4, E8, E12, and E16. Dynamic repacking preserves the original E1 packing and begins repacking at E2; fixed order reuses the exact default E1 sequence permutation and batch membership forever.",
@@ -70,7 +70,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.1",
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 2,
       "sourceExperiment": "01KZFVTQP8YZ06B58Q16FTY09S",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e1_lr1e-3_wd0.1_warmup48_e1_grid_r19/step428",
@@ -108,7 +108,33 @@
         "01KZQZ0GB7CBQVM2WK42SFB7QJ",
         "01KZQZ0GENEQRNMK4BY4FYRVXM"
       ],
-      "beakerStatus": "scheduled",
+      "beakerStatus": "running",
+      "wandb": "dxrqsyqy",
+      "node": "01KT4H4REQ2FXMHTHYYBFDYRWQ",
+      "replicaNodes": ["01KT4H4REQ2FXMHTHYYBFDYRWQ", "01KT4H4T5FQ18DM4VH5YQ47TYQ", "01KTVZG3SCQWN3FPQMZQPRY0PE", "01KXKHJJV17JDGH5VXCF0MAVD7"],
+      "health": "healthy",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "remoteDryRunComplete": true,
+        "dynamicRepacking": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 428,
+        "firstOptimizerStep": 429,
+        "trainerAndOptimizerStateRequested": true,
+        "rankRngStateRestored": false,
+        "rankRngNote": "Rank RNG state was not restored because the E1 source used a different world size; global batch/data position and model/optimizer/trainer state resumed at step428."
+      },
+      "progress": {
+        "observedAt": "2026-08-11 01:45 PDT",
+        "step": 620,
+        "endpointStep": 954,
+        "epoch": 2,
+        "trainCe": 3.827,
+        "gradNorm": 0.1814,
+        "skippedOptimizerStep": 0,
+        "eta": "8m"
+      },
       "revision": "d04ec9e1da2e10f857bcb65731f876f8ee34af35",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e2_lr1e-3_wd0.1_warmup48_dataloader-r01",
       "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed."
