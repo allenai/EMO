@@ -631,7 +631,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 8,
       "attemptedEpochs": [
         2,
@@ -795,7 +795,11 @@
         }
       },
       "health": "healthy",
-      "reason": "E4 WD0.333 completed healthy at train/validation CE3.150/3.221 versus WD0.1 CE3.153/3.239, narrowing the gap from 0.086 to 0.071. WD0.333 is selected for an exact same-coordinate E8 continuation; WD1.0 is not justified."
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "beaker": "01KZS0HXM6VG8C4FY25Z42SWWG",
+      "experiment": "01KZS0HXM6VG8C4FY25Z42SWWG",
+      "revision": "b281ad03dffd8cf0240f290aa1f180bddb675f27",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e8_lr1e-3_wd0.333_warmup48_dataloader-cd-r01"
     },
     {
       "id": "fixed512-wd0.333",
@@ -1924,7 +1928,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "5e-4",
       "wd": "0.333",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 2,
       "attemptedEpochs": [
         1
@@ -2010,7 +2014,11 @@
         }
       },
       "health": "healthy",
-      "reason": "The LR5e-4/WD0.333 E1 bootstrap completed healthy at train/validation CE4.966/4.993. Exact step214 is retained and the corresponding E2 dynamic-repacking coordinate is planned."
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "beaker": "01KZS0JBZV1SV9X5JXZV2B7CFF",
+      "experiment": "01KZS0JBZV1SV9X5JXZV2B7CFF",
+      "revision": "b281ad03dffd8cf0240f290aa1f180bddb675f27",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr5e-4_wd0.333_warmup24_dataloader-cd-r01"
     },
     {
       "id": "dr1024-lr1e-3-wd0.333",
