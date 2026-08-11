@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-11 02:05 PDT",
+  "updated": "2026-08-11 02:10 PDT",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation; LR fixed at 1e-3; BS512 and BS1024 additions use four 8-GPU nodes with rank microbatch eight sequences.",
   "selection": "The existing OLMo-core baseline is shown only for BS64 through BS1024. E1 is common to all three data-order modes, so each new column reports the ordinary baseline E1 winner; an E2 branch may resume any exact LR/WD-matched E1 pre-decay checkpoint. LR is fixed at 1e-3. WD tuning follows the ordering hypothesis Fixed > ordinary > DR: the initial E2 probes use DR at WD0.1 and Fixed at WD0.333 for both batch sizes, then Fixed may expand upward while DR remains on the lower side of the ordinary optimum. From the selected E2 result onward, a later epoch may use only an equal or higher WD through E4, E8, E12, and E16. Dynamic repacking preserves the original E1 packing and begins repacking at E2; fixed order reuses the exact default E1 sequence permutation and batch membership forever.",
@@ -350,8 +350,8 @@
       "dataOrder": "fixed_order",
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "running",
-      "activeEpoch": 2,
+      "status": "complete",
+      "activeEpoch": null,
       "sourceExperiment": "01KZ9HXBC7BGA17334MEXMY8ZX",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd0.333_warmup24/step214",
       "gpuCount": 32,
@@ -371,6 +371,68 @@
           "validation": 5.389,
           "acc": 24.54,
           "bpb": 1.641
+        },
+        "2": {
+          "status": "complete",
+          "beaker": "01KZQZ0XH5FMRP1GZ40RZR9MYH",
+          "experiment": "01KZQZ0XH5FMRP1GZ40RZR9MYH",
+          "job": "01KZQZ0XN0DGX6H1X98G1BCKBG",
+          "result": "01KZQZ0XHBMB04CAH1K3ZWB9GA",
+          "replicaJobs": [
+            "01KZQZ0XN0DGX6H1X98G1BCKBG",
+            "01KZQZ0XRJWTKDCY5B33QSSXWP",
+            "01KZQZ0XW220XHT0QD935EQQWQ",
+            "01KZQZ0XZGHCT043095QX47N99"
+          ],
+          "replicaResults": [
+            "01KZQZ0XHBMB04CAH1K3ZWB9GA",
+            "01KZQZ0XN39JVKTZVNS24GFSMV",
+            "01KZQZ0XRNWJ11R6QK72X45H7K",
+            "01KZQZ0XW671MPVZV19FRETVM7"
+          ],
+          "replicaNodes": [
+            "01KT4H4REQ2FXMHTHYYBFDYRWQ",
+            "01KT4H4T5FQ18DM4VH5YQ47TYQ",
+            "01KTVZG3SCQWN3FPQMZQPRY0PE",
+            "01KXKHJJV17JDGH5VXCF0MAVD7"
+          ],
+          "wandb": "pf5nhq88",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e2_lr1e-3_wd0.333_warmup24_dataloader-r01",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd0.333_warmup24/step214",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e2_lr1e-3_wd0.333_warmup24_dataloader-r01/step428",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e2_lr1e-3_wd0.333_warmup24_dataloader-r01/step477",
+          "retainedCheckpoints": [
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e2_lr1e-3_wd0.333_warmup24_dataloader-r01/step428",
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e2_lr1e-3_wd0.333_warmup24_dataloader-r01/step477"
+          ],
+          "train": 4.122,
+          "validation": 4.139,
+          "acc": 25.86,
+          "bpb": 1.252,
+          "avg8Bpb": 1.878,
+          "downstream": {
+            "arc_challenge": 23.75,
+            "arc_easy": 33.51,
+            "boolq": 57.68,
+            "csqa": 25.47,
+            "hellaswag": 25.86,
+            "openbookqa": 22.8,
+            "piqa": 55.82,
+            "socialiqa": 38.43,
+            "winogrande": 51.54
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.926,
+            "arc_easy": 2.172,
+            "boolq": 2.673,
+            "csqa": 2.158,
+            "hellaswag": 1.252,
+            "openbookqa": 2.19,
+            "piqa": 1.744,
+            "socialiqa": 1.737,
+            "winogrande": 1.845
+          },
+          "reason": "Completed successfully on four 8-GPU nodes after exact E1 step214 resume; fixed order reused the E1 permutation and batch membership, with pre-decay step428 and endpoint step477 retained."
         }
       },
       "beaker": "01KZQZ0XH5FMRP1GZ40RZR9MYH",
@@ -389,7 +451,7 @@
         "01KZQZ0XRNWJ11R6QK72X45H7K",
         "01KZQZ0XW671MPVZV19FRETVM7"
       ],
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "wandb": "pf5nhq88",
       "node": "01KT4H4REQ2FXMHTHYYBFDYRWQ",
       "replicaNodes": [
@@ -413,17 +475,49 @@
       },
       "progress": {
         "observedAt": "2026-08-11 02:05 PDT",
-        "step": 395,
+        "step": 477,
         "endpointStep": 477,
         "epoch": 2,
-        "trainCe": 4.515,
-        "gradNorm": 0.1679,
+        "trainCe": 4.122,
+        "gradNorm": 0.1759,
         "skippedOptimizerStep": 0,
-        "eta": "4m"
+        "eta": "complete"
       },
       "revision": "d04ec9e1da2e10f857bcb65731f876f8ee34af35",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e2_lr1e-3_wd0.333_warmup24_dataloader-r01",
-      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed."
+      "reason": "E2 completed successfully with full DCLM and nine-task evaluation; WD1.0 is the registered higher-WD probe before Fixed1024 advances."
+    },
+    {
+      "id": "fixed1024-wd1.0",
+      "method": "fixed1024",
+      "batchSequences": 1024,
+      "dataOrder": "fixed_order",
+      "lr": "1e-3",
+      "wd": "1.0",
+      "status": "planned",
+      "activeEpoch": 2,
+      "sourceExperiment": "01KZAKM044B7EB61TT0W4H04TF",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd1.0_warmup24/step214",
+      "gpuCount": 32,
+      "nodeCount": 4,
+      "rankMicrobatchSequences": 8,
+      "results": {
+        "1": {
+          "status": "complete",
+          "inherited": true,
+          "beaker": "01KZAKM044B7EB61TT0W4H04TF",
+          "job": "01KZAKM07E48SETYVHKH4KESXC",
+          "result": "01KZAKM049TY39C3V0DDFXXZHG",
+          "wandb": "a65tyxdk",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd1.0_warmup24",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd1.0_warmup24/step214",
+          "train": 5.334,
+          "validation": 5.364,
+          "acc": 24.55,
+          "bpb": 1.627
+        }
+      },
+      "reason": "Planned higher-WD E2 probe because Fixed1024 WD0.333 improved only 0.004 CE over the ordinary WD0.333 baseline; WD1.0 tests the Fixed > Original regularization hypothesis before E4 selection."
     }
   ]
 }
