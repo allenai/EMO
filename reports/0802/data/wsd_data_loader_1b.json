@@ -2,7 +2,7 @@
   "updated": "2026-08-11",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation; the first DR probe used LR1e-3/WD0.1 and neighboring LR/WD coordinates are being audited; BS512 and BS1024 additions use four 8-GPU nodes with rank microbatch eight sequences.",
-  "selection": "The existing OLMo-core baseline is shown only for BS64 through BS1024. E1 is common to all three data-order modes, and an E2 branch may resume any exact LR/WD-matched E1 pre-decay checkpoint. The completed BS1024 DR E2 coordinate audit selects LR5e-4/WD0.333 at CE3.997: WD0.1 is effectively tied at CE3.999, WD1.0 is worse at CE4.038, LR1e-3/WD0.333 reaches CE4.128, and LR2.5e-4/WD0.333 reaches CE4.242. E4 therefore resumes the exact selected LR5e-4/WD0.333 pre-decay step428. Dynamic repacking preserves the original E1 packing and begins repacking at E2; fixed order reuses the exact default E1 sequence permutation and batch membership forever.",
+  "selection": "The existing OLMo-core baseline is shown only for BS64 through BS1024. E1 is common to all three data-order modes, and an E2 branch may resume any exact LR/WD-matched E1 pre-decay checkpoint. The completed BS1024 DR E2 coordinate audit selects LR5e-4/WD0.333 at CE3.997: WD0.1 is effectively tied at CE3.999, WD1.0 is worse at CE4.038, LR1e-3/WD0.333 reaches CE4.128, and LR2.5e-4/WD0.333 reaches CE4.242. E4 therefore resumes the exact selected LR5e-4/WD0.333 pre-decay step428. An early higher-WD loss does not permanently close that exact trajectory: higher WD may win later by reducing overfitting, but it must advance sequentially through its own exact LR/WD-matched checkpoints and strict per-trajectory validation-improvement gates. Dynamic repacking preserves the original E1 packing and begins repacking at E2; fixed order reuses the exact default E1 sequence permutation and batch membership forever.",
   "targetEpochs": [
     1,
     2,
@@ -21,7 +21,7 @@
   "selectionPolicy": {
     "learningRate": "Initial probe 1e-3; DR coordinate descent compares 5e-4 and, when the lower boundary wins materially, 2.5e-4.",
     "nondecreasingWd": true,
-    "dynamicRepackingDirection": "BS1024 E2 coordinate descent is resolved at LR5e-4/WD0.333 CE3.997. LR2.5e-4 underfits at CE4.242, LR1e-3 is worse at CE4.128, and WD1.0 is worse at CE4.038; E4 resumes the exact selected predecessor.",
+    "dynamicRepackingDirection": "BS1024 E2 coordinate descent is resolved at LR5e-4/WD0.333 CE3.997. LR2.5e-4 underfits at CE4.242, LR1e-3 is worse at CE4.128, and WD1.0 is worse at CE4.038; E4 resumes the exact selected predecessor. WD1.0 remains a later-epoch anti-overfitting candidate and may advance only sequentially from its own exact checkpoints while its validation CE strictly improves.",
     "fixedOrderDirection": "At E2 begin at WD0.333 and expand upward if needed, targeting Fixed > ordinary > DR; from the selected E2 coordinate onward test only equal or higher WD."
   },
   "columns": [
@@ -793,7 +793,7 @@
             "nanOrInf": false,
             "classification": "healthy"
           },
-          "reason": "Completed healthy on four 8-GPU nodes from exact E2 step858, retaining pre-decay step1716 and endpoint step1908. WD0.333 improves E4 train/validation CE from WD0.1 3.153/3.239 to 3.150/3.221 and narrows the gap from 0.086 to 0.071, so it is selected for E8 without probing the underfitting WD1.0 boundary."
+          "reason": "Completed healthy on four 8-GPU nodes from exact E2 step858, retaining pre-decay step1716 and endpoint step1908. WD0.333 improves E4 train/validation CE from WD0.1 3.153/3.239 to 3.150/3.221 and narrows the gap from 0.086 to 0.071, so it is selected for E8. The existing WD1.0 trajectory remains eligible for sequential later-epoch testing because stronger regularization can win only after overfitting emerges."
         },
         "8": {
           "status": "complete",
@@ -907,22 +907,22 @@
         "trainerAndOptimizerStateRequested": true
       },
       "healthSummary": {
-        "ceSamples": 27,
-        "ceLast": 2.976,
-        "ceTailMean": 2.97525,
+        "ceSamples": 127,
+        "ceLast": 2.958,
+        "ceTailMean": 2.9378,
         "ceBestRollingMean": 2.9555,
-        "gradSamples": 27,
-        "gradLast": 0.0962,
-        "gradTailP95": 0.0962,
+        "gradSamples": 127,
+        "gradLast": 0.0826,
+        "gradTailP95": 0.0944,
         "nanOrInf": false,
         "classification": "orange"
       },
       "progress": {
-        "observedAt": "2026-08-11 12:34 PDT",
-        "step": 3605,
+        "observedAt": "2026-08-11 12:43 PDT",
+        "step": 4065,
         "endpointStep": 5723,
         "epoch": 12,
-        "eta": "1h16m"
+        "eta": "44m"
       },
       "revision": "b3ae092bbdbaa225bff89dd0cfefcfc81cbe1479",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e12_lr1e-3_wd0.333_warmup48_dataloader-cd-r01"
@@ -2065,7 +2065,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "5e-4",
       "wd": "0.333",
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 4,
       "attemptedEpochs": [
         1,
@@ -2226,8 +2226,8 @@
           "reason": "Completed healthy on four 8-GPU nodes from exact LR5e-4/WD0.333 E1 step214, retaining pre-decay step428 and endpoint step477. The completed E2 boundary audit selects this exact minimum CE3.997: WD0.1 is effectively tied at CE3.999, WD1.0 reaches CE4.038, LR1e-3/WD0.333 reaches CE4.128, and LR2.5e-4/WD0.333 reaches CE4.242."
         }
       },
-      "health": "planned",
-      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "health": "healthy",
+      "reason": "E4 is running healthy on four 8-GPU nodes. Manifest and exact-source preflight guards passed, the exact LR5e-4/WD0.333 E2 pre-decay step428 checkpoint loaded, and optimizer progress resumed at step429 with finite stable CE and gradients.",
       "beaker": "01KZS4NZAKSNVNAZ4NMV49GCV2",
       "experiment": "01KZS4NZAKSNVNAZ4NMV49GCV2",
       "job": "01KZS4NZE2E9KEJTEG8WHFJPB9",
@@ -2250,7 +2250,35 @@
         "01K9AYGE9Q1TEJMXP0P1SN19W7",
         "01KQ0F2NX98MG50MEF0ZCAMZWT"
       ],
-      "beakerStatus": "scheduled",
+      "beakerStatus": "running",
+      "wandb": "zi3ip0vw",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "remoteDryRunComplete": true,
+        "dynamicRepacking": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 428,
+        "firstOptimizerStep": 429,
+        "trainerAndOptimizerStateRequested": true
+      },
+      "healthSummary": {
+        "ceSamples": 32,
+        "ceLast": 3.838,
+        "ceTailMean": 3.88985,
+        "gradSamples": 32,
+        "gradLast": 0.1572,
+        "gradTailP95": 0.3222,
+        "nanOrInf": false,
+        "classification": "healthy"
+      },
+      "progress": {
+        "observedAt": "2026-08-11 12:43 PDT",
+        "step": 589,
+        "endpointStep": 954,
+        "epoch": 3,
+        "eta": "16m"
+      },
       "revision": "ba222db9641a36d39f1761ca104e25faad5878cd",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e4_lr5e-4_wd0.333_warmup24_dataloader-cd-r01"
     },
@@ -2646,11 +2674,11 @@
             "nanOrInf": false,
             "classification": "healthy"
           },
-          "reason": "Completed healthy on four 8-GPU nodes from exact E1 retry2 step214, retaining pre-decay step428 and endpoint step477. Validation CE4.038 is worse than LR5e-4/WD0.333 CE3.997, so WD1.0 is pruned for E4."
+          "reason": "Completed healthy on four 8-GPU nodes from exact E1 retry2 step214, retaining pre-decay step428 and endpoint step477. Validation CE4.038 is worse than LR5e-4/WD0.333 CE3.997, so WD1.0 is not the selected E4 predecessor. Its exact trajectory remains eligible for sequential later-epoch testing because stronger regularization may win after overfitting emerges."
         }
       },
       "health": "healthy",
-      "reason": "E2 completed healthy at validation CE4.038. WD1.0 is pruned because LR5e-4/WD0.333 reached CE3.997.",
+      "reason": "E2 completed healthy at validation CE4.038. WD1.0 is not the selected E4 predecessor because LR5e-4/WD0.333 reached CE3.997, but it remains a later-epoch anti-overfitting candidate and may advance only sequentially from its own exact checkpoints under strict validation-improvement gates.",
       "attempts": [
         {
           "experiment": "01KZS2494WADTXY3MYQTD2JNSG",
