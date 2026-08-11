@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-11 02:31 PDT",
+  "updated": "2026-08-11 02:32 PDT",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation; LR fixed at 1e-3; BS512 and BS1024 additions use four 8-GPU nodes with rank microbatch eight sequences.",
   "selection": "The existing OLMo-core baseline is shown only for BS64 through BS1024. E1 is common to all three data-order modes, so each new column reports the ordinary baseline E1 winner; an E2 branch may resume any exact LR/WD-matched E1 pre-decay checkpoint. LR is fixed at 1e-3. WD tuning follows the ordering hypothesis Fixed > ordinary > DR: the initial E2 probes use DR at WD0.1 and Fixed at WD0.333 for both batch sizes, then Fixed may expand upward while DR remains on the lower side of the ordinary optimum. From the selected E2 result onward, a later epoch may use only an equal or higher WD through E4, E8, E12, and E16. Dynamic repacking preserves the original E1 packing and begins repacking at E2; fixed order reuses the exact default E1 sequence permutation and batch membership forever.",
@@ -191,12 +191,12 @@
         "trainerAndOptimizerStateRequested": true
       },
       "progress": {
-        "observedAt": "2026-08-11 02:31 PDT",
-        "step": 1755,
+        "observedAt": "2026-08-11 02:32 PDT",
+        "step": 1835,
         "endpointStep": 1908,
         "epoch": 4,
         "trainCe": 3.241,
-        "eta": "4m"
+        "eta": "2m"
       },
       "revision": "311a27dc8eeaf4eeb31a9e682dee5279e8bd17b0",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e4_lr1e-3_wd0.1_warmup48_dataloader-r01",
@@ -766,12 +766,12 @@
         "rankRngNote": "Rank RNG state was not restored because the E1 source used a different world size; global data position and model/optimizer/trainer state resumed at step214."
       },
       "progress": {
-        "observedAt": "2026-08-11 02:31 PDT",
-        "step": 365,
+        "observedAt": "2026-08-11 02:32 PDT",
+        "step": 405,
         "endpointStep": 477,
         "epoch": 2,
         "trainCe": 4.839,
-        "eta": "5m"
+        "eta": "4m"
       },
       "revision": "8697e154ca9e496a0af7e41fbbffb46c0a4f6c5c",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e2_lr1e-3_wd1.0_warmup24_dataloader-r01"
