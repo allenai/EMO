@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-09",
+  "updated": "2026-08-10",
   "title": "0802 Step 1-1 \u00b7 Dense 153M \u00b7 nested 3B pool",
   "setup": "Dense 153M; nested 3B pool = sealed 1B + disjoint new 2B; sequence length 4096; global batches 64, 128, 256, and 512 sequences.",
   "selection": "Historical Pool-3B WD branches are collapsed by audited effective WD: optimizer-state restore made every continuation inherit the root 1B-pool checkpoint WD. These results therefore do not constitute a Pool-3B WD comparison. Future E1 work requires an exact same-model/batch/LR/WD 1B-pool source, and checkpoint loading fails on any model or optimizer hyperparameter mismatch.",
@@ -18467,8 +18467,8 @@
         "job": "01KZQHM0QKDMAJ866X2GTB147T",
         "resultDataset": "01KZQHM0KEN5Q3H56ZJ25RG5HG",
         "activeWandb": "k18u2ujp",
-        "progressPercent": 96,
-        "progressStep": 322325,
+        "progressPercent": 99,
+        "progressStep": 333400,
         "progressTotalSteps": 335694
       },
       {
@@ -18648,8 +18648,8 @@
         "job": "01KZQQZSXCK510532XQM7ECJSR",
         "resultDataset": "01KZQQZST681YVPRRC41MY6HB7",
         "activeWandb": "yjadg2u8",
-        "progressPercent": 52,
-        "progressStep": 31955,
+        "progressPercent": 70,
+        "progressStep": 43075,
         "progressTotalSteps": 61036
       }
     ],
