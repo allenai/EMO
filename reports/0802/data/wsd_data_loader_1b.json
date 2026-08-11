@@ -1459,8 +1459,8 @@
       "dataOrder": "fixed_order",
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "running",
-      "activeEpoch": 12,
+      "status": "complete",
+      "activeEpoch": null,
       "sourceExperiment": "01KZR535N52WVTRHTKAQR3K43T",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e8_lr1e-3_wd0.333_warmup24_dataloader-r01/step1716",
       "gpuCount": 32,
@@ -1666,6 +1666,68 @@
             "winogrande": 1.571
           },
           "reason": "Completed healthy on four 8-GPU nodes from exact E4 pre-decay step858; validation CE improved from 3.454 to 3.272, unlocking E12 from retained step1716."
+        },
+        "12": {
+          "status": "complete",
+          "beaker": "01KZRR3494GCQYC4GHVY85A76T",
+          "experiment": "01KZRR3494GCQYC4GHVY85A76T",
+          "job": "01KZRR34E361CNKV3ARK2YJ3E5",
+          "result": "01KZRR349GNX6FZDH8796T3AKR",
+          "replicaJobs": [
+            "01KZRR34E361CNKV3ARK2YJ3E5",
+            "01KZRR34HNPYQ8T4K4SND62G13",
+            "01KZRR34P853BMR02YCZ3MEG8C",
+            "01KZRR34SX8NSW48NVY9889TWX"
+          ],
+          "replicaResults": [
+            "01KZRR349GNX6FZDH8796T3AKR",
+            "01KZRR34EAB4H4W9V79M3SHMQ3",
+            "01KZRR34HVN5FSP9YA4AGGZE1A",
+            "01KZRR34PEZFPD47PBNK6XZ18C"
+          ],
+          "replicaNodes": [
+            "01K3PA7X3C9AR4H8V7ZK7WB67S",
+            "01KMZXA4AF0K2XXCER4ACGF3EY",
+            "01KP4B3FQAWJZ0TDZF928QJ4S3",
+            "01KT4H4REQ2FXMHTHYYBFDYRWQ"
+          ],
+          "wandb": "iux9zpv0",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e12_lr1e-3_wd0.333_warmup24_dataloader-r02",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e8_lr1e-3_wd0.333_warmup24_dataloader-r01/step1716",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e12_lr1e-3_wd0.333_warmup24_dataloader-r02/step2575",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e12_lr1e-3_wd0.333_warmup24_dataloader-r02/step2862",
+          "retainedCheckpoints": [
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e12_lr1e-3_wd0.333_warmup24_dataloader-r02/step2575",
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e12_lr1e-3_wd0.333_warmup24_dataloader-r02/step2862"
+          ],
+          "train": 2.767,
+          "validation": 3.303,
+          "acc": 37.51,
+          "bpb": 0.9658,
+          "avg8Bpb": 1.47535,
+          "downstream": {
+            "arc_challenge": 26.42,
+            "arc_easy": 47.54,
+            "boolq": 57.68,
+            "csqa": 42.18,
+            "hellaswag": 37.51,
+            "openbookqa": 24.4,
+            "piqa": 65.67,
+            "socialiqa": 42.43,
+            "winogrande": 50.12
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.573,
+            "arc_easy": 1.626,
+            "boolq": 2.793,
+            "csqa": 1.58,
+            "hellaswag": 0.9658,
+            "openbookqa": 1.757,
+            "piqa": 1.341,
+            "socialiqa": 1.364,
+            "winogrande": 1.596
+          },
+          "reason": "Completed healthy on four 8-GPU nodes from exact E8 pre-decay step1716, retaining E12 pre-decay step2575 and endpoint step2862. Validation CE3.303 did not improve on E8 CE3.272, so E16 is pruned and the fixed-order frontier saturates at E8."
         }
       },
       "attempts": [
@@ -1708,7 +1770,7 @@
         "firstOptimizerStep": 1717,
         "trainerAndOptimizerStateRequested": true
       },
-      "reason": "Authorized E12 r02 retry is running on four 8-GPU nodes after the manifest, fixed-order preflight, remote dry-run, exact E8 step1716 trainer/optimizer-state restore, and first optimizer step1717 all passed. The prior invalid ref is fixed at verified live commit d4568345caa21b62aaca510ca120c21d89ba3b1e.",
+      "reason": "E12 completed healthy at validation CE3.303 but did not improve on E8 CE3.272. E16 is pruned by the strict improvement gate; this fixed-order coordinate saturates at E8.",
       "beaker": "01KZRR3494GCQYC4GHVY85A76T",
       "experiment": "01KZRR3494GCQYC4GHVY85A76T",
       "job": "01KZRR34E361CNKV3ARK2YJ3E5",
@@ -1731,15 +1793,17 @@
         "01KP4B3FQAWJZ0TDZF928QJ4S3",
         "01KT4H4REQ2FXMHTHYYBFDYRWQ"
       ],
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "wandb": "iux9zpv0",
       "node": "01K3PA7X3C9AR4H8V7ZK7WB67S",
       "progress": {
-        "observedAt": "2026-08-11 09:00 PDT",
-        "step": 1765,
+        "observedAt": "2026-08-11 09:45 PDT",
+        "step": 2862,
         "endpointStep": 2862,
-        "epoch": 8,
-        "eta": "44m"
+        "epoch": 12,
+        "trainCe": 2.767,
+        "validationCe": 3.303,
+        "eta": "complete"
       },
       "revision": "d4568345caa21b62aaca510ca120c21d89ba3b1e",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e12_lr1e-3_wd0.333_warmup24_dataloader-r02"
