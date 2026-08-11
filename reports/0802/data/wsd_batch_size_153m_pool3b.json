@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-10",
+  "updated": "2026-08-09",
   "title": "0802 Step 1-1 \u00b7 Dense 153M \u00b7 nested 3B pool",
   "setup": "Dense 153M; nested 3B pool = sealed 1B + disjoint new 2B; sequence length 4096; global batches 64, 128, 256, and 512 sequences.",
   "selection": "Historical Pool-3B WD branches are collapsed by audited effective WD: optimizer-state restore made every continuation inherit the root 1B-pool checkpoint WD. These results therefore do not constitute a Pool-3B WD comparison. Future E1 work requires an exact same-model/batch/LR/WD 1B-pool source, and checkpoint loading fails on any model or optimizer hyperparameter mismatch.",
@@ -8562,7 +8562,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 1,
       "gpuCount": 8,
-      "status": "pending",
+      "status": "failed",
       "activeEpoch": 2,
       "search": "nested-3b-wd-repair",
       "wdRepairRole": "larger-ceiling",
@@ -8594,17 +8594,75 @@
       "jobStates": [
         {
           "job": "01KZQKSHBPHPVQYVE3RC09PSVH",
-          "state": "pending",
+          "state": "failed",
           "created": "2026-08-11T05:12:45.064107Z",
-          "started": null,
-          "finalized": null,
-          "exitCode": null,
+          "started": "2026-08-11T05:53:46.001617Z",
+          "finalized": "2026-08-11T05:54:08.388742Z",
+          "exitCode": 1,
           "reason": null,
           "resultDataset": "01KZQKSH8D6CR3DV34MDC8HBPB"
         }
       ],
       "job": "01KZQKSHBPHPVQYVE3RC09PSVH",
-      "resultDataset": "01KZQKSH8D6CR3DV34MDC8HBPB"
+      "resultDataset": "01KZQKSH8D6CR3DV34MDC8HBPB",
+      "failureClass": "infrastructure",
+      "failureReason": "Infrastructure-only failure before checkout: Gantry attempted to fetch nonexistent revision a0efb891b8cbdb8c8d45bd06aa780cf3a69bfe74 and exhausted five retries with 'upload-pack: not our ref'. No W&B run, training process, optimizer step, or target checkpoint was created."
+    },
+    {
+      "batchSequences": 256,
+      "globalBatchTokens": 1048576,
+      "contextLength": 4096,
+      "lr": "2e-3",
+      "wd": "0.1",
+      "warmupSteps": 96,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulation": 2,
+      "gpuCountPerNode": 8,
+      "nodeCount": 1,
+      "gpuCount": 8,
+      "status": "pending",
+      "activeEpoch": 2,
+      "search": "nested-3b-wd-repair",
+      "wdRepairRole": "larger-ceiling",
+      "beaker": "01KZQQQ57N3Z3AH0X82JRN9Z6K",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs256_e2_lr2e-3_wd0.1_warmup96_wdrepair-e2-153m-bs256-wd01-r02",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs256_e1_lr2e-3_wd0.1_warmup96_wdrepair-e1-153m-bs256-wd01-r02/step2575",
+      "sourceEpoch": 1,
+      "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+      "dataLoaderReset": true,
+      "dataLoaderSeed": 80202,
+      "retainedPreDecaySteps": [
+        5150
+      ],
+      "newRetainedPreDecaySteps": [
+        5150
+      ],
+      "targetPreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_pool3b_nested_bs256_e2_lr2e-3_wd0.1_warmup96_wdrepair-e2-153m-bs256-wd01-r02/step5150",
+      "recoverySourceStep": 2575,
+      "actualTargetTokens": 6000000000,
+      "revision": "eaed489fda641236ceda74c5b04266532d72eba0",
+      "recoveryOf": "01KZQKSH88A5Q7N16JZH00SPT5",
+      "results": {},
+      "jobs": [
+        "01KZQQQ5BTCWKG7H5ZV29G6MHQ"
+      ],
+      "resultDatasets": [
+        "01KZQQQ57V28XTCXCCZXC9RA11"
+      ],
+      "jobStates": [
+        {
+          "job": "01KZQQQ5BTCWKG7H5ZV29G6MHQ",
+          "state": "pending",
+          "created": "2026-08-11T06:21:21.525346Z",
+          "started": null,
+          "finalized": null,
+          "exitCode": null,
+          "reason": null,
+          "resultDataset": "01KZQQQ57V28XTCXCCZXC9RA11"
+        }
+      ],
+      "job": "01KZQQQ5BTCWKG7H5ZV29G6MHQ",
+      "resultDataset": "01KZQQQ57V28XTCXCCZXC9RA11"
     }
   ],
   "summaryBatches": [
@@ -18336,8 +18394,8 @@
         "job": "01KZQHM0QKDMAJ866X2GTB147T",
         "resultDataset": "01KZQHM0KEN5Q3H56ZJ25RG5HG",
         "activeWandb": "k18u2ujp",
-        "progressPercent": 86,
-        "progressStep": 289650,
+        "progressPercent": 89,
+        "progressStep": 301570,
         "progressTotalSteps": 335694
       },
       {
@@ -18424,7 +18482,7 @@
         "rankMicrobatchSequences": 16,
         "gradientAccumulation": 1,
         "gpuCount": 2,
-        "status": "pending",
+        "status": "running",
         "activeEpoch": 4,
         "search": "small-model-adaptive-coordinate",
         "beaker": "01KZQMWMY0KXTMZHRB71CXXMG5",
@@ -18437,7 +18495,11 @@
         "results": {},
         "reason": "Adaptive small-model Step 1-1 coordinate search; exact-coordinate resumes, empirically tuned per-batch WD cap, and nondecreasing-WD frontier policy apply.",
         "job": "01KZQMWN1HBKJAXM4NHV6YZYGE",
-        "resultDataset": "01KZQMWMY6WRCC1M6ENR1XA775"
+        "resultDataset": "01KZQMWMY6WRCC1M6ENR1XA775",
+        "activeWandb": "p9gjrxuk",
+        "progressPercent": 81,
+        "progressStep": 24950,
+        "progressTotalSteps": 30518
       }
     ],
     "healthAudit": {
