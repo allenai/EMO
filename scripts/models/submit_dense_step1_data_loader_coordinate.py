@@ -147,11 +147,12 @@ def matching_registered_run(report: dict[str, Any], args: argparse.Namespace) ->
             continue
         if int(other.get("batchSequences", 0)) != args.global_sequences:
             continue
+        if numeric(other.get("wd")) != wd:
+            continue
         result = other.get("results", {}).get(str(args.target_epoch))
         if result is not None or (
             int(other.get("activeEpoch", -1)) == args.target_epoch
             and str(other.get("status", "")).lower() in ATTEMPTED_STATUSES
-            and numeric(other.get("wd")) == wd
         ):
             raise SystemExit("refusing a duplicate attempted method/batch/WD/epoch tuple")
 
