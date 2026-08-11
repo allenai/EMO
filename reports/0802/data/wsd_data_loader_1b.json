@@ -2065,7 +2065,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "5e-4",
       "wd": "0.333",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 8,
       "attemptedEpochs": [
         1,
@@ -2303,7 +2303,11 @@
         }
       },
       "health": "planned",
-      "reason": "E4 completed healthy at validation CE3.484, strictly improving on E2 CE3.997. The exact LR5e-4/WD0.333 E8 continuation is registered from retained E4 pre-decay step858 and awaits guarded submission."
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "beaker": "01KZS6VD261RZ4GCYA0C1NWBZM",
+      "experiment": "01KZS6VD261RZ4GCYA0C1NWBZM",
+      "revision": "1b2fda0c8f9a3f2211410b690559dd05910618b1",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr5e-4_wd0.333_warmup24_dataloader-cd-r01"
     },
     {
       "id": "dr1024-lr2.5e-4-wd0.333",
