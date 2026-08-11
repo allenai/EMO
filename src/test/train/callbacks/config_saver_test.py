@@ -78,6 +78,38 @@ def test_runtime_microbatch_change_is_checkpoint_compatible():
     assert config_differences(expected, actual) == []
 
 
+def test_missing_legacy_noop_batch_simulation_is_checkpoint_compatible():
+    expected_config = compatibility_config()
+    expected_config["train_module"]["batch_simulation"] = {
+        "method": "none",
+        "local_sgd_sync_interval": 1,
+        "seed": 0,
+    }
+    checkpoint_config = compatibility_config()
+
+    expected = checkpoint_compatibility_config(expected_config)
+    actual = checkpoint_compatibility_config(checkpoint_config)
+
+    assert config_differences(expected, actual) == []
+
+
+def test_nondefault_batch_simulation_remains_checkpoint_incompatible():
+    expected_config = compatibility_config()
+    expected_config["train_module"]["batch_simulation"] = {
+        "method": "structured_noise",
+        "global_batch_size": 1024,
+        "simulated_batch_size": 512,
+    }
+    checkpoint_config = compatibility_config()
+
+    differences = config_differences(
+        checkpoint_compatibility_config(expected_config),
+        checkpoint_compatibility_config(checkpoint_config),
+    )
+
+    assert differences and differences[0].startswith("train_module.batch_simulation")
+
+
 def test_pre_checkpoint_load_validation_reads_saved_config(tmp_path):
     checkpoint_config = compatibility_config()
     checkpoint_config["train_module"].pop("validate_optimizer_hyperparameters_on_load")

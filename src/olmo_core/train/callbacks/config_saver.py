@@ -52,7 +52,25 @@ def checkpoint_compatibility_config(config: Dict[str, Any]) -> Dict[str, Any]:
         raise OLMoConfigurationError("Config field 'train_module' must be a dictionary")
     for key in _RUNTIME_ONLY_TRAIN_MODULE_KEYS:
         train_module.pop(key, None)
-    return selected
+
+    # ``batch_simulation`` was added after the source checkpoints used by this
+    # sweep. Its default ``method=none`` is semantically identical to an absent
+    # field; retain non-default configurations so they still fail compatibility.
+    batch_simulation = train_module.get("batch_simulation")
+    if isinstance(batch_simulation, dict) and str(
+        batch_simulation.get("method", "none")
+    ) == "none":
+        train_module.pop("batch_simulation")
+
+    # Checkpoint configs are loaded from JSON, while the current config may still
+    # contain StrEnum instances. Canonicalize both through JSON so equal enum
+    # values compare equal without weakening any value-level assertion.
+    try:
+        return json.loads(json.dumps(selected))
+    except (TypeError, ValueError) as error:
+        raise OLMoConfigurationError(
+            f"Checkpoint compatibility config is not JSON serializable: {error}"
+        ) from error
 
 
 def config_differences(expected: Any, actual: Any, path: str = "") -> List[str]:
