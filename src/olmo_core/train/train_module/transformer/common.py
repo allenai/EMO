@@ -35,6 +35,7 @@ def parallelize_model(
     model: M,
     *,
     world_mesh: Optional[DeviceMesh],
+    dp_model_mesh: Optional[DeviceMesh] = None,
     device: torch.device,
     max_sequence_length: Optional[int] = None,
     rank_microbatch_size: Optional[int] = None,
@@ -114,7 +115,7 @@ def parallelize_model(
     # Maybe shard/replicate according to data parallel config.
     if dp_config is not None:
         assert world_mesh is not None
-        dp_mesh = get_dp_model_mesh(world_mesh)
+        dp_mesh = dp_model_mesh if dp_model_mesh is not None else get_dp_model_mesh(world_mesh)
         param_dtype = dp_config.param_dtype.as_pt() if dp_config.param_dtype is not None else None
         if dp_config.name in (DataParallelType.fsdp, DataParallelType.hsdp):
             for m in model_parts:
