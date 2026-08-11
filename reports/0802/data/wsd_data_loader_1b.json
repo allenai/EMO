@@ -2,7 +2,7 @@
   "updated": "2026-08-11",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation; the first DR probe used LR1e-3/WD0.1 and neighboring LR/WD coordinates are being audited; BS512 and BS1024 additions use four 8-GPU nodes with rank microbatch eight sequences.",
-  "selection": "The existing OLMo-core baseline is shown only for BS64 through BS1024. E1 is common to all three data-order modes, so each new column reports the ordinary baseline E1 winner; an E2 branch may resume any exact LR/WD-matched E1 pre-decay checkpoint. The initial DR probe used LR1e-3/WD0.1. Its growing train-to-validation gap by E8/E12 rejects the earlier assumption that DR should use lower WD, so the next coordinate descent will test neighboring LR5e-4 and higher WD0.333, expanding to WD1.0 only if validation remains boundary-limited. Later endpoints must resume the exact same-coordinate predecessor. Dynamic repacking preserves the original E1 packing and begins repacking at E2; fixed order reuses the exact default E1 sequence permutation and batch membership forever.",
+  "selection": "The existing OLMo-core baseline is shown only for BS64 through BS1024. E1 is common to all three data-order modes, and an E2 branch may resume any exact LR/WD-matched E1 pre-decay checkpoint. BS1024 DR E2 shows a large LR effect: LR5e-4/WD0.333 reached CE3.997 versus LR1e-3/WD0.333 CE4.128, while WD0.1 and WD0.333 are essentially tied at LR5e-4. The remaining lower-LR and higher-WD boundaries are therefore audited before selecting E4. Later endpoints must resume the exact same-coordinate predecessor. Dynamic repacking preserves the original E1 packing and begins repacking at E2; fixed order reuses the exact default E1 sequence permutation and batch membership forever.",
   "targetEpochs": [
     1,
     2,
@@ -19,9 +19,9 @@
     1024
   ],
   "selectionPolicy": {
-    "learningRate": "Initial probe 1e-3; DR coordinate audit may compare the lower neighbor 5e-4.",
+    "learningRate": "Initial probe 1e-3; DR coordinate descent compares 5e-4 and, when the lower boundary wins materially, 2.5e-4.",
     "nondecreasingWd": true,
-    "dynamicRepackingDirection": "WD0.1 increasingly overfits by E8/E12. Test WD0.333 next, plus the lower LR5e-4 neighbor; expand to WD1.0 only when the selected frontier is boundary-limited.",
+    "dynamicRepackingDirection": "At BS1024 E2, LR5e-4 materially beats LR1e-3 while WD0.1 and WD0.333 are nearly tied. Close the LR2.5e-4 and LR5e-4/WD1.0 boundaries before selecting E4.",
     "fixedOrderDirection": "At E2 begin at WD0.333 and expand upward if needed, targeting Fixed > ordinary > DR; from the selected E2 coordinate onward test only equal or higher WD."
   },
   "columns": [
@@ -1990,10 +1990,11 @@
       "dataOrder": "dynamic_repacking",
       "lr": "5e-4",
       "wd": "0.333",
-      "status": "running",
-      "activeEpoch": 2,
+      "status": "complete",
+      "activeEpoch": null,
       "attemptedEpochs": [
-        1
+        1,
+        2
       ],
       "sourceExperiment": "01KZRY552X11N11K147NRVH8ZT",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e1_lr5e-4_wd0.333_warmup24_dataloader-bootstrap-r01/step214",
@@ -2073,10 +2074,84 @@
             "classification": "healthy"
           },
           "reason": "Completed healthy on four 8-GPU nodes from scratch with ordinary epoch-1 packing, retaining exact pre-decay step214 and endpoint step239. This LR5e-4/WD0.333 bootstrap is the exact source for the registered E2 dynamic-repacking coordinate."
+        },
+        "2": {
+          "status": "complete",
+          "beaker": "01KZS0JBZV1SV9X5JXZV2B7CFF",
+          "experiment": "01KZS0JBZV1SV9X5JXZV2B7CFF",
+          "job": "01KZS0JC3QJTMAYJ24AK7HD6BG",
+          "result": "01KZS0JC07C2J95NS3JM7CRWN1",
+          "replicaJobs": [
+            "01KZS0JC3QJTMAYJ24AK7HD6BG",
+            "01KZS0JC79S0RVS625Z3XNBMH3",
+            "01KZS0JCAW9854GR513PZ14D7C",
+            "01KZS0JCF50C070CKE727B1ZSD"
+          ],
+          "replicaResults": [
+            "01KZS0JC07C2J95NS3JM7CRWN1",
+            "01KZS0JC3Z1TW4FJN1GGQ6ZBSW",
+            "01KZS0JC7F01JNECNG2GQHHDMG",
+            "01KZS0JCB67WSVW5T786GJ3SRW"
+          ],
+          "replicaNodes": [
+            "01JRYAW9HKCG889S9DT7CDQPDA",
+            "01JS0FZ51W1SWWMPK073HW91YX",
+            "01K9893X6FBJ1E9G0SXFGHN9X4",
+            "01K9AYGENE66ZDKZ31W0AMSXM7"
+          ],
+          "wandb": "rvx895av",
+          "revision": "b281ad03dffd8cf0240f290aa1f180bddb675f27",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr5e-4_wd0.333_warmup24_dataloader-cd-r01",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e1_lr5e-4_wd0.333_warmup24_dataloader-bootstrap-r01/step214",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr5e-4_wd0.333_warmup24_dataloader-cd-r01/step428",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr5e-4_wd0.333_warmup24_dataloader-cd-r01/step477",
+          "retainedCheckpoints": [
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr5e-4_wd0.333_warmup24_dataloader-cd-r01/step428",
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr5e-4_wd0.333_warmup24_dataloader-cd-r01/step477"
+          ],
+          "train": 3.981,
+          "validation": 3.997,
+          "acc": 25.83,
+          "bpb": 1.207,
+          "avg8Bpb": 1.7765,
+          "downstream": {
+            "arc_challenge": 20.4,
+            "arc_easy": 36.32,
+            "boolq": 50.24,
+            "csqa": 26.7,
+            "hellaswag": 25.83,
+            "openbookqa": 21.8,
+            "piqa": 56.26,
+            "socialiqa": 40.28,
+            "winogrande": 50.04
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.787,
+            "arc_easy": 1.967,
+            "boolq": 2.929,
+            "csqa": 2.079,
+            "hellaswag": 1.207,
+            "openbookqa": 2.067,
+            "piqa": 1.629,
+            "socialiqa": 1.681,
+            "winogrande": 1.795
+          },
+          "healthSummary": {
+            "ceSamples": 53,
+            "ceLast": 3.981,
+            "ceTailMean": 4.14385,
+            "ceBestRollingMean": 4.051,
+            "gradSamples": 53,
+            "gradLast": 0.0535,
+            "gradTailP95": 0.37214,
+            "nanOrInf": false,
+            "classification": "healthy"
+          },
+          "reason": "Completed healthy on four 8-GPU nodes from exact LR5e-4/WD0.333 E1 step214, retaining pre-decay step428 and endpoint step477. Validation CE3.997 is effectively tied with LR5e-4/WD0.1 CE3.999 and materially better than LR1e-3/WD0.333 CE4.128; close the lower-LR and higher-WD boundaries before selecting E4."
         }
       },
       "health": "healthy",
-      "reason": "Healthy startup verified: manifest and preflight guards passed, remote dry-run completed, dynamic_repacking=True, exact LR5e-4/WD0.333 E1 step214 loaded with trainer/optimizer state, and optimizer progress began at step215. Early CE and gradient norms are finite and decreasing/stable.",
+      "reason": "Completed healthy at E2 validation CE3.997. LR5e-4 materially improves on LR1e-3, while WD0.1 and WD0.333 are effectively tied; selection remains provisional until LR2.5e-4/WD0.333 and LR5e-4/WD1.0 boundaries are evaluated.",
       "beaker": "01KZS0JBZV1SV9X5JXZV2B7CFF",
       "experiment": "01KZS0JBZV1SV9X5JXZV2B7CFF",
       "job": "01KZS0JC3QJTMAYJ24AK7HD6BG",
@@ -2099,8 +2174,9 @@
         "01K9893X6FBJ1E9G0SXFGHN9X4",
         "01K9AYGENE66ZDKZ31W0AMSXM7"
       ],
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "wandb": "rvx895av",
+      "node": "01JRYAW9HKCG889S9DT7CDQPDA",
       "startupEvidence": {
         "manifestVerified": true,
         "preflightVerified": true,
@@ -2111,16 +2187,66 @@
         "firstOptimizerStep": 215,
         "trainerAndOptimizerStateRequested": true
       },
+      "healthSummary": {
+        "ceSamples": 53,
+        "ceLast": 3.981,
+        "ceTailMean": 4.14385,
+        "ceBestRollingMean": 4.051,
+        "gradSamples": 53,
+        "gradLast": 0.0535,
+        "gradTailP95": 0.37214,
+        "nanOrInf": false,
+        "classification": "healthy"
+      },
       "progress": {
-        "observedAt": "2026-08-11 11:25 PDT",
-        "step": 239,
+        "observedAt": "2026-08-11 11:35 PDT",
+        "step": 477,
         "endpointStep": 477,
         "epoch": 2,
-        "trainCeLast": 5.014,
-        "eta": "10m"
+        "trainCe": 3.981,
+        "validationCe": 3.997,
+        "status": "complete"
       },
       "revision": "b281ad03dffd8cf0240f290aa1f180bddb675f27",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr5e-4_wd0.333_warmup24_dataloader-cd-r01"
+    },
+    {
+      "id": "dr1024-lr2.5e-4-wd0.333",
+      "method": "dr1024",
+      "batchSequences": 1024,
+      "dataOrder": "dynamic_repacking",
+      "lr": "2.5e-4",
+      "wd": "0.333",
+      "status": "planned",
+      "activeEpoch": 1,
+      "attemptedEpochs": [],
+      "sourceExperiment": "01KZ37GBC8WCRS7GD2S7RA4CW3",
+      "sourceCheckpoint": "fresh",
+      "gpuCount": 32,
+      "nodeCount": 4,
+      "rankMicrobatchSequences": 8,
+      "results": {},
+      "health": "planned",
+      "reason": "Planned exact E1 bootstrap for the lower LR2.5e-4/WD0.333 boundary. No matching E1 checkpoint exists; E1 uses ordinary packing, retains pre-decay step214, and enables a guarded DR E2 resume."
+    },
+    {
+      "id": "dr1024-lr5e-4-wd1.0",
+      "method": "dr1024",
+      "batchSequences": 1024,
+      "dataOrder": "dynamic_repacking",
+      "lr": "5e-4",
+      "wd": "1.0",
+      "status": "planned",
+      "activeEpoch": 1,
+      "attemptedEpochs": [],
+      "sourceExperiment": "01KZ2SX1RZVJBXE3Q4CR4VQXRZ",
+      "sourceCheckpoint": "fresh",
+      "gpuCount": 32,
+      "nodeCount": 4,
+      "rankMicrobatchSequences": 8,
+      "results": {},
+      "health": "planned",
+      "reason": "Planned exact E1 bootstrap for the LR5e-4/WD1.0 boundary. No matching E1 checkpoint exists; E1 uses ordinary packing, retains pre-decay step214, and enables a guarded DR E2 resume."
     },
     {
       "id": "dr1024-lr1e-3-wd0.333",
