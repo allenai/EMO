@@ -1668,8 +1668,8 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "running",
-      "activeEpoch": 2,
+      "status": "complete",
+      "activeEpoch": null,
       "attemptedEpochs": [
         2
       ],
@@ -1692,10 +1692,72 @@
           "validation": 5.389,
           "acc": 24.54,
           "bpb": 1.641
+        },
+        "2": {
+          "status": "complete",
+          "beaker": "01KZRTKNSSX9H1DPZ7NHJSM28F",
+          "experiment": "01KZRTKNSSX9H1DPZ7NHJSM28F",
+          "job": "01KZRTKNXAY515X0JDTN90P157",
+          "result": "01KZRTKNSZZ5N2HQHVT6CNQXQS",
+          "replicaJobs": [
+            "01KZRTKNXAY515X0JDTN90P157",
+            "01KZRTKP0RTJQAKFFQGQXSYSHK",
+            "01KZRTKP4A77RZYNQK0G9Q5F63",
+            "01KZRTKP7RAS1WNXYNEX7JR301"
+          ],
+          "replicaResults": [
+            "01KZRTKNSZZ5N2HQHVT6CNQXQS",
+            "01KZRTKNXCSEEXFA0T82CGD26R",
+            "01KZRTKP0VFHT9VKH73WXHECTD",
+            "01KZRTKP4D087MSWVXJVXSH43T"
+          ],
+          "replicaNodes": [
+            "01KMZXA4AF0K2XXCER4ACGF3EY",
+            "01KT4H4REQ2FXMHTHYYBFDYRWQ",
+            "01K3PA7X3C9AR4H8V7ZK7WB67S",
+            "01KP4B3FQAWJZ0TDZF928QJ4S3"
+          ],
+          "wandb": "pp97ixxl",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr1e-3_wd0.333_warmup24_dataloader-cd-r01",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd0.333_warmup24/step214",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr1e-3_wd0.333_warmup24_dataloader-cd-r01/step428",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr1e-3_wd0.333_warmup24_dataloader-cd-r01/step477",
+          "retainedCheckpoints": [
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr1e-3_wd0.333_warmup24_dataloader-cd-r01/step428",
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr1e-3_wd0.333_warmup24_dataloader-cd-r01/step477"
+          ],
+          "train": 4.112,
+          "validation": 4.128,
+          "acc": 25.94,
+          "bpb": 1.247,
+          "avg8Bpb": 1.848625,
+          "downstream": {
+            "arc_challenge": 24.41,
+            "arc_easy": 32.11,
+            "boolq": 62.02,
+            "csqa": 26.13,
+            "hellaswag": 25.94,
+            "openbookqa": 23.2,
+            "piqa": 55.71,
+            "socialiqa": 38.23,
+            "winogrande": 49.64
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.895,
+            "arc_easy": 2.113,
+            "boolq": 2.384,
+            "csqa": 2.142,
+            "hellaswag": 1.247,
+            "openbookqa": 2.144,
+            "piqa": 1.722,
+            "socialiqa": 1.68,
+            "winogrande": 1.846
+          },
+          "reason": "Completed healthy on four 8-GPU nodes from exact E1 step214, retaining pre-decay step428 and endpoint step477. Validation CE4.128 improves the initial WD0.1 DR probe CE4.158 by 0.030, so WD0.333 is the provisional WD-axis winner pending the WD1.0 boundary and lower-LR probes."
         }
       },
       "health": "healthy",
-      "reason": "Running after manifest/preflight, remote dry-run, exact E1 step214 checkpoint restore, and optimizer step215 all passed. CE and gradient tails are finite with no NaN/Inf or skipped updates.",
+      "reason": "Completed healthy at E2 validation CE4.128, improving WD0.1 by 0.030. Selection remains provisional until the lower-LR neighbor and adjacent WD1.0 boundary probe complete.",
       "beaker": "01KZRTKNSSX9H1DPZ7NHJSM28F",
       "experiment": "01KZRTKNSSX9H1DPZ7NHJSM28F",
       "job": "01KZRTKNXAY515X0JDTN90P157",
@@ -1712,7 +1774,7 @@
         "01KZRTKP0VFHT9VKH73WXHECTD",
         "01KZRTKP4D087MSWVXJVXSH43T"
       ],
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "wandb": "pp97ixxl",
       "node": "01KMZXA4AF0K2XXCER4ACGF3EY",
       "replicaNodes": [
@@ -1732,15 +1794,49 @@
         "trainerAndOptimizerStateRequested": true
       },
       "progress": {
-        "observedAt": "2026-08-11 10:14 PDT",
-        "step": 395,
+        "observedAt": "2026-08-11 10:18 PDT",
+        "step": 477,
         "endpointStep": 477,
-        "trainCe": 4.537,
-        "gradNorm": 0.2593,
-        "eta": "about 4m"
+        "trainCe": 4.112,
+        "validationCe": 4.128,
+        "status": "complete"
       },
       "revision": "751955775dfd85a26e7eef613cdcc7cfa0b8f2c6",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr1e-3_wd0.333_warmup24_dataloader-cd-r01"
+    },
+    {
+      "id": "dr1024-lr1e-3-wd1.0",
+      "method": "dr1024",
+      "batchSequences": 1024,
+      "dataOrder": "dynamic_repacking",
+      "lr": "1e-3",
+      "wd": "1.0",
+      "status": "planned",
+      "activeEpoch": 2,
+      "attemptedEpochs": [],
+      "sourceExperiment": "01KZAKM044B7EB61TT0W4H04TF",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd1.0_warmup24/step214",
+      "gpuCount": 32,
+      "nodeCount": 4,
+      "rankMicrobatchSequences": 8,
+      "results": {
+        "1": {
+          "status": "complete",
+          "inherited": true,
+          "beaker": "01KZAKM044B7EB61TT0W4H04TF",
+          "job": "01KZAKM07E48SETYVHKH4KESXC",
+          "result": "01KZAKM049TY39C3V0DDFXXZHG",
+          "wandb": "a65tyxdk",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd1.0_warmup24",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd1.0_warmup24/step214",
+          "train": 5.334,
+          "validation": 5.364,
+          "acc": 24.55,
+          "bpb": 1.627
+        }
+      },
+      "health": "planned",
+      "reason": "Planned adjacent higher-WD E2 boundary probe because DR WD0.333 improved validation CE from 4.158 to 4.128. The WD axis must be closed at WD1.0 before selecting the BS1024 DR coordinate."
     },
     {
       "id": "fixed1024-wd0.333",
