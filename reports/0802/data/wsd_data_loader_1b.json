@@ -2217,7 +2217,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "2.5e-4",
       "wd": "0.333",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 1,
       "attemptedEpochs": [],
       "sourceExperiment": "01KZ37GBC8WCRS7GD2S7RA4CW3",
@@ -2227,7 +2227,32 @@
       "rankMicrobatchSequences": 8,
       "results": {},
       "health": "planned",
-      "reason": "Planned exact E1 bootstrap for the lower LR2.5e-4/WD0.333 boundary. No matching E1 checkpoint exists; E1 uses ordinary packing, retains pre-decay step214, and enables a guarded DR E2 resume."
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed. All four replicas are scheduled.",
+      "beaker": "01KZS248N9VDG7Y162S9Q5EV6P",
+      "experiment": "01KZS248N9VDG7Y162S9Q5EV6P",
+      "job": "01KZS248RRNM0FAQZFR1NC98QP",
+      "result": "01KZS248NEXJCDYZGTR9PVMYET",
+      "replicaJobs": [
+        "01KZS248RRNM0FAQZFR1NC98QP",
+        "01KZS248W4W1SNY4FA7J4SDCW0",
+        "01KZS248ZEPHP5S5N3AQQ6FGEZ",
+        "01KZS2492RV7HE09Y54DRK3FM6"
+      ],
+      "replicaResults": [
+        "01KZS248NEXJCDYZGTR9PVMYET",
+        "01KZS248RV1TYNB3E6E7PZ7V20",
+        "01KZS248W6ZDB01CHBF0Q95P49",
+        "01KZS248ZG7N6KWGKBSH3R10VJ"
+      ],
+      "replicaNodes": [
+        "01KQ0F2NX98MG50MEF0ZCAMZWT",
+        "01JRYAW9HKCG889S9DT7CDQPDA",
+        "01JS0FZ51W1SWWMPK073HW91YX",
+        "01K5YQYB97E9KXHSEZNDK14494"
+      ],
+      "beakerStatus": "scheduled",
+      "revision": "3b5199065766f38076a9435690ef09ba29e1a2e4",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e1_lr2.5e-4_wd0.333_warmup24_dataloader-bootstrap-lrbound-r01"
     },
     {
       "id": "dr1024-lr5e-4-wd1.0",
@@ -2236,7 +2261,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "5e-4",
       "wd": "1.0",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 1,
       "attemptedEpochs": [],
       "sourceExperiment": "01KZ2SX1RZVJBXE3Q4CR4VQXRZ",
@@ -2246,7 +2271,26 @@
       "rankMicrobatchSequences": 8,
       "results": {},
       "health": "planned",
-      "reason": "Planned exact E1 bootstrap for the LR5e-4/WD1.0 boundary. No matching E1 checkpoint exists; E1 uses ordinary packing, retains pre-decay step214, and enables a guarded DR E2 resume."
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "beaker": "01KZS2494WADTXY3MYQTD2JNSG",
+      "experiment": "01KZS2494WADTXY3MYQTD2JNSG",
+      "job": "01KZS249901Z4TF739TCWZ0DEH",
+      "result": "01KZS24952441990XXN99C4KRC",
+      "replicaJobs": [
+        "01KZS249901Z4TF739TCWZ0DEH",
+        "01KZS249CFQCTDWSC2X2C9KXYE",
+        "01KZS249FZHYHMG5FDRWXK7ZC4",
+        "01KZS249KHEZXS1660N9GAQGPG"
+      ],
+      "replicaResults": [
+        "01KZS24952441990XXN99C4KRC",
+        "01KZS24996F7J11KN207NTWSV3",
+        "01KZS249CN1W5WEX58XV2HNBT1",
+        "01KZS249G4TMP1N93M69PSN92S"
+      ],
+      "beakerStatus": "pending",
+      "revision": "3b5199065766f38076a9435690ef09ba29e1a2e4",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e1_lr5e-4_wd1.0_warmup24_dataloader-bootstrap-wdbound-r01"
     },
     {
       "id": "dr1024-lr1e-3-wd0.333",
