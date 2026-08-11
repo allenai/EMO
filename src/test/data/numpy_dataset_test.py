@@ -1,3 +1,4 @@
+import gzip
 import hashlib
 import json
 import math
@@ -6,11 +7,15 @@ from typing import List
 
 import numpy as np
 import pytest
+import torch
 
 from olmo_core.data import (
+    DataCollator,
     LongDocStrategy,
+    NumpyFSLDataLoader,
     NumpyFSLDataset,
     NumpyFSLDatasetConfig,
+    NumpyFSLDynamicRepackedDataset,
     NumpyPackedFSLDataset,
     NumpyPaddedFSLDataset,
     NumpyVSLDataset,
@@ -129,6 +134,152 @@ def test_numpy_fsl_subset_manifest_masks_declared_alignment_tail(tmp_path: Path)
     assert ds[0]["label_mask"].tolist() == [True, True, True, True]
     assert ds[1]["label_mask"].tolist() == [True, True, True, True]
     assert ds[2]["label_mask"].tolist() == [True, True, False, False]
+
+
+def test_numpy_fsl_subset_manifest_dynamic_repacking(tmp_path: Path):
+    documents = [
+        [11, 12, 0],
+        [21, 0],
+        [31, 32, 33, 0],
+        [41, 42, 43, 44, 0],
+        [51, 0],
+        [61, 62, 0],
+    ]
+    real_tokens = [token for document in documents for token in document]
+    sequence_length = 4
+    padding_tokens = (-len(real_tokens)) % sequence_length
+    all_tokens = real_tokens + [0] * padding_tokens
+    mmap = np.memmap(tmp_path / "tokens.npy", mode="w+", dtype=np.uint16, shape=(len(all_tokens),))
+    mmap[:] = all_tokens
+    mmap.flush()
+
+    metadata_path = tmp_path / "tokens.csv.gz"
+    offset = 0
+    with gzip.open(metadata_path, "wt") as metadata_file:
+        for document in documents:
+            metadata_file.write(f"{offset},{offset + len(document)}\n")
+            offset += len(document)
+        if padding_tokens:
+            metadata_file.write(f"{offset},{offset + padding_tokens}\n")
+
+    entries = [
+        {
+            "path": "tokens.npy",
+            "start_instance": 0,
+            "num_instances": len(all_tokens) // sequence_length,
+        }
+    ]
+    entries_digest = hashlib.sha256(
+        json.dumps(entries, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    manifest = {
+        "format": "olmo-token-subset-v1",
+        "source": {"dtype": "uint16"},
+        "selection": {
+            "sequence_length": sequence_length,
+            "selected_instances": len(all_tokens) // sequence_length,
+            "selected_documents": len(documents),
+            "selected_real_document_tokens": len(real_tokens),
+            "padding_eos_tokens": padding_tokens,
+            "selected_tokens": len(all_tokens),
+        },
+        "materialized": {"document_metadata_path": "tokens.csv.gz"},
+        "entries_sha256": entries_digest,
+        "entries": entries,
+    }
+    manifest_path = tmp_path / "subset.json"
+    manifest_path.write_text(json.dumps(manifest))
+
+    config = NumpyFSLDatasetConfig(
+        tokenizer=TokenizerConfig(vocab_size=32_000, eos_token_id=0, pad_token_id=0),
+        mix_base_dir=str(tmp_path),
+        subset_manifest=str(manifest_path),
+        sequence_length=sequence_length,
+        dtype=NumpyDatasetDType.uint16,
+        include_instance_metadata=False,
+        dynamic_repacking=True,
+    )
+    ds = config.build()
+    assert isinstance(ds, NumpyFSLDynamicRepackedDataset)
+    ds.prepare()
+
+    def epoch_stream(epoch: int):
+        ds.repack_for_epoch(epoch, seed=17)
+        instances = [ds[i] for i in range(len(ds))]
+        stream = torch.cat([instance["input_ids"] for instance in instances])
+        label_mask = torch.cat([instance["label_mask"] for instance in instances])
+        assert label_mask.tolist() == [True] * len(real_tokens) + [False] * padding_tokens
+        return stream[: len(real_tokens)].tolist()
+
+    epoch1 = epoch_stream(1)
+    epoch1_again = epoch_stream(1)
+    epoch2 = epoch_stream(2)
+    assert epoch1 == real_tokens
+    assert epoch1 == epoch1_again
+    assert epoch1 != epoch2
+
+    def split_documents(stream):
+        result = []
+        current = []
+        for token in stream:
+            current.append(token)
+            if token == 0:
+                result.append(current)
+                current = []
+        assert current == []
+        return sorted(result)
+
+    assert split_documents(epoch1) == sorted(documents)
+    assert split_documents(epoch2) == sorted(documents)
+
+    loader = NumpyFSLDataLoader(
+        ds,
+        global_batch_size=sequence_length,
+        collator=DataCollator(pad_token_id=0),
+        shuffle=False,
+        num_threads=0,
+        num_workers=0,
+        work_dir=tmp_path,
+    )
+    loader.reshuffle(epoch=3, in_memory=True)
+    assert ds.repacking_epoch == 3
+    loader_stream = torch.cat([batch["input_ids"].reshape(-1) for batch in loader])[
+        : len(real_tokens)
+    ].tolist()
+    assert split_documents(loader_stream) == sorted(documents)
+
+
+def test_numpy_fsl_subset_manifest_default_does_not_repack(tmp_path: Path):
+    mmap = np.memmap(tmp_path / "tokens.npy", mode="w+", dtype=np.uint16, shape=(8,))
+    mmap[:] = list(range(8))
+    mmap.flush()
+    entries = [{"path": "tokens.npy", "start_instance": 0, "num_instances": 2}]
+    entries_digest = hashlib.sha256(
+        json.dumps(entries, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    manifest_path = tmp_path / "subset.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "format": "olmo-token-subset-v1",
+                "source": {"dtype": "uint16"},
+                "selection": {"sequence_length": 4, "selected_instances": 2},
+                "entries_sha256": entries_digest,
+                "entries": entries,
+            }
+        )
+    )
+    ds = NumpyFSLDatasetConfig(
+        tokenizer=TokenizerConfig(vocab_size=32_000, eos_token_id=0, pad_token_id=0),
+        mix_base_dir=str(tmp_path),
+        subset_manifest=str(manifest_path),
+        sequence_length=4,
+        dtype=NumpyDatasetDType.uint16,
+        include_instance_metadata=False,
+    ).build()
+    assert not isinstance(ds, NumpyFSLDynamicRepackedDataset)
+    assert ds[0]["input_ids"].tolist() == [0, 1, 2, 3]
+    assert ds[1]["input_ids"].tolist() == [4, 5, 6, 7]
 
 
 def test_numpy_fsl_dataset_doc_lengths(tmp_path: Path):

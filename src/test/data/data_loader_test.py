@@ -185,6 +185,72 @@ def test_fsl_data_loader_multiple_epochs(
     assert data_loader.tokens_processed == 0
 
 
+def test_fsl_data_loader_fixed_data_order(tmp_path: Path):
+    """Fixed order freezes the ordinary epoch-1 permutation and exact batch grouping."""
+    num_tokens = 256
+    sequence_length = 4
+    token_path = tmp_path / "fixed-order-tokens.npy"
+    mmap = np.memmap(token_path, dtype=np.uint16, mode="w+", shape=(num_tokens,))
+    mmap[:] = list(range(num_tokens))
+    mmap.flush()
+    del mmap
+
+    dataset = NumpyFSLDataset(
+        token_path,
+        sequence_length=sequence_length,
+        pad_token_id=-1,
+        eos_token_id=-1,
+        vocab_size=32_000,
+    )
+
+    def get_order(*, shuffle: bool, reshuffle_each_epoch: bool, epoch: int) -> np.ndarray:
+        loader = NumpyFSLDataLoader(
+            dataset,
+            global_batch_size=sequence_length * 8,
+            collator=DataCollator(pad_token_id=-1),
+            seed=17,
+            shuffle=shuffle,
+            reshuffle_each_epoch=reshuffle_each_epoch,
+            num_threads=0,
+            work_dir=tmp_path,
+        )
+        loader.reshuffle(epoch=epoch, in_memory=True)
+        return loader.get_global_indices().copy()
+
+    ordinary_epoch1 = get_order(shuffle=True, reshuffle_each_epoch=True, epoch=1)
+    ordinary_epoch2 = get_order(shuffle=True, reshuffle_each_epoch=True, epoch=2)
+    fixed_epoch1 = get_order(shuffle=True, reshuffle_each_epoch=False, epoch=1)
+    fixed_epoch2 = get_order(shuffle=True, reshuffle_each_epoch=False, epoch=2)
+    raw_epoch1 = get_order(shuffle=False, reshuffle_each_epoch=True, epoch=1)
+    raw_epoch2 = get_order(shuffle=False, reshuffle_each_epoch=True, epoch=2)
+
+    assert np.array_equal(fixed_epoch1, ordinary_epoch1)
+    assert np.array_equal(fixed_epoch2, ordinary_epoch1)
+    assert not np.array_equal(ordinary_epoch2, ordinary_epoch1)
+    assert np.array_equal(raw_epoch1, np.arange(len(dataset), dtype=np.uint32))
+    assert np.array_equal(raw_epoch2, raw_epoch1)
+
+    # A data-order intervention that branches from an old checkpoint must be able to retain
+    # the newly configured mode instead of restoring the historical per-epoch reshuffle.
+    fixed_loader = NumpyFSLDataLoader(
+        dataset,
+        global_batch_size=sequence_length * 8,
+        collator=DataCollator(pad_token_id=-1),
+        seed=17,
+        shuffle=True,
+        reshuffle_each_epoch=False,
+        restore_data_order_from_state=False,
+        num_threads=0,
+        work_dir=tmp_path,
+    )
+    old_checkpoint_state = fixed_loader.state_dict()
+    old_checkpoint_state.pop("shuffle")
+    old_checkpoint_state.pop("reshuffle_each_epoch")
+    fixed_loader.load_state_dict(old_checkpoint_state)
+    assert fixed_loader.shuffle is True
+    assert fixed_loader.reshuffle_each_epoch is False
+
+
 @pytest.mark.parametrize(
     "shuffle", [pytest.param(True, id="shuffle"), pytest.param(False, id="no-shuffle")]
 )
