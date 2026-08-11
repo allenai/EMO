@@ -17,6 +17,10 @@ REPORTS = {
     model: Path(f"reports/0802/data/wsd_batch_size_{model}_pool3b.json")
     for model in ("153m", "474m", "1b")
 }
+SOURCE_REPORTS = {
+    model: Path(f"reports/0802/data/wsd_batch_size_{model}.json")
+    for model in ("153m", "1b")
+}
 SEQ = 4096
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 TRAIN_CE = re.compile(r"train/CE loss=([0-9]+(?:\.[0-9]+)?)")
@@ -151,6 +155,61 @@ def write(path: Path, report: dict) -> None:
     )
 
 
+def record_wd_repair_decision(
+    report: dict, sweep: dict, endpoint: dict
+) -> bool:
+    role = sweep.get("wdRepairRole")
+    if role not in {"smaller", "larger-ceiling"}:
+        return False
+    batch = str(sweep["batchSequences"])
+    policy = report.get("wdRepairPolicy", {}).get("byBatch", {}).get(batch, {})
+    existing_wd = str(policy.get("existingWeightDecay", ""))
+    epoch = int(endpoint["epoch"])
+    existing_validation = None
+    for candidate in report.get("batchSweeps", []):
+        if int(candidate.get("batchSequences", -1)) != int(batch):
+            continue
+        if str(candidate.get("wd")) != existing_wd:
+            continue
+        result = candidate.get("results", {}).get(str(epoch), {})
+        if result.get("status") == "complete" and result.get("validation") is not None:
+            existing_validation = float(result["validation"])
+    if existing_validation is None:
+        raise ValueError(
+            f"missing existing-WD E{epoch} comparison for BS{batch} WD{existing_wd}"
+        )
+
+    if role == "smaller":
+        decision = (
+            "continue"
+            if float(endpoint["validation"]) < existing_validation
+            else "cut"
+        )
+        reason = (
+            f"Smaller WD{endpoint['wd']} validation CE {endpoint['validation']:.3f} "
+            f"{'strictly beat' if decision == 'continue' else 'did not strictly beat'} "
+            f"existing WD{existing_wd} CE {existing_validation:.3f} at E{epoch}."
+        )
+    else:
+        decision = "continue-through-minimum-evidence"
+        minimum = int(policy.get("largerWeightDecayMinimumEpoch", epoch))
+        reason = (
+            f"Larger ceiling WD{endpoint['wd']} remains active through at least E{minimum}; "
+            f"its same-epoch comparison to existing WD{existing_wd} does not cut it."
+        )
+    payload = {
+        "decision": decision,
+        "reason": reason,
+        "existingWd": existing_wd,
+        "existingValidation": existing_validation,
+        "epoch": epoch,
+    }
+    changed = sweep.get("wdRepairDecision") != payload
+    sweep["wdRepairDecision"] = payload
+    endpoint["wdRepairDecision"] = payload
+    return changed
+
+
 def ingest(
     path: Path,
     only_experiment: str | None = None,
@@ -195,6 +254,10 @@ def ingest(
                 endpoint["resultDataset"] = primary_result
                 changed = True
         if sweep.get("results", {}).get(epoch, {}).get("status") == "complete":
+            if record_wd_repair_decision(
+                report, sweep, sweep["results"][epoch]
+            ):
+                changed = True
             continue
         synchronized_success = (
             sweep.get("status") == "complete"
@@ -268,6 +331,7 @@ def ingest(
             "activeWandb": metrics["wandb"],
             "reason": endpoint["reason"],
         })
+        record_wd_repair_decision(report, sweep, endpoint)
         ingested.append({
             "model": path.stem,
             "batch": sweep["batchSequences"],
@@ -283,10 +347,97 @@ def ingest(
     return ingested
 
 
+def ingest_source_backfill(path: Path, experiment: str) -> list[dict]:
+    """Ingest one exact WD-matched 1B-pool source needed by Pool-3B."""
+    report = json.loads(path.read_text())
+    matches = [
+        sweep
+        for sweep in report.get("batchSweeps", [])
+        if sweep.get("beaker") == experiment
+    ]
+    if len(matches) != 1:
+        raise ValueError(f"expected one registered source backfill {experiment}, got {len(matches)}")
+    sweep = matches[0]
+    epoch = str(sweep["activeEpoch"])
+    if sweep.get("results", {}).get(epoch, {}).get("status") == "complete":
+        return []
+
+    payload = beaker_payload(experiment)
+    if not successful(payload, 1):
+        return []
+    succeeded = [
+        job
+        for job in payload.get("jobs", [])
+        if job.get("status", {}).get("finalized")
+        and job.get("status", {}).get("exitCode") == 0
+    ]
+    if not succeeded:
+        return []
+    job = succeeded[-1]
+    result_dataset = (
+        job.get("execution", {}).get("result", {}).get("beaker")
+        or job.get("result", {}).get("beaker")
+    )
+    if not result_dataset:
+        raise ValueError(f"{experiment} successful job has no result dataset")
+    retained = [int(step) for step in sweep.get("retainedPreDecaySteps", [])]
+    if not retained:
+        raise ValueError(f"{experiment} has no retained pre-decay checkpoint")
+    metrics = parse(logs(experiment))
+    global_batch_tokens = int(
+        sweep.get("globalBatchTokens", int(sweep["batchSequences"]) * SEQ)
+    )
+    target_tokens = 1_000_000_000
+    endpoint = {
+        "epoch": sweep["activeEpoch"],
+        "lr": sweep["lr"],
+        "wd": sweep["wd"],
+        "status": "complete",
+        "job": job["id"],
+        "jobs": [job["id"]],
+        "beaker": experiment,
+        "resultDataset": result_dataset,
+        "resultDatasets": [result_dataset],
+        "output": sweep["output"],
+        "sourceCheckpoint": sweep.get("sourceCheckpoint"),
+        "resumeCheckpoint": f"{sweep['output']}/step{retained[-1]}",
+        "retainedPreDecaySteps": retained,
+        "actualTargetTokens": target_tokens,
+        "actualTargetSteps": math.ceil(target_tokens / global_batch_tokens),
+        **metrics,
+        "reason": (
+            "Completed exact WD-matched 1B-pool source backfill with full held-out "
+            "DCLM validation and all nine downstream evaluations; the exact pre-decay "
+            "checkpoint is retained for the nested Pool-3B E1 continuation."
+        ),
+    }
+    sweep.setdefault("results", {})[epoch] = endpoint
+    sweep.update({
+        "status": "complete",
+        "job": job["id"],
+        "jobs": [job["id"]],
+        "resultDataset": result_dataset,
+        "resultDatasets": [result_dataset],
+        "activeWandb": metrics["wandb"],
+        "reason": endpoint["reason"],
+    })
+    report["updated"] = "2026-08-09"
+    write(path, report)
+    return [{
+        "model": path.stem,
+        "batch": sweep["batchSequences"],
+        "epoch": sweep["activeEpoch"],
+        "lr": sweep["lr"],
+        "wd": sweep["wd"],
+        "validation": metrics["validation"],
+    }]
+
+
 def main() -> None:
     global SSH_HOST
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", choices=tuple(REPORTS))
+    parser.add_argument("--source-backfill-model", choices=tuple(SOURCE_REPORTS))
     parser.add_argument(
         "--ssh-host",
         help="Query Beaker through this authenticated SSH host.",
@@ -297,16 +448,25 @@ def main() -> None:
         help="Use these already-parsed endpoint metrics for --experiment.",
     )
     args = parser.parse_args()
+    if args.model and args.source_backfill_model:
+        parser.error("--model and --source-backfill-model are mutually exclusive")
+    if args.source_backfill_model and not args.experiment:
+        parser.error("--source-backfill-model requires --experiment")
     SSH_HOST = args.ssh_host
     metrics_override = json.loads(args.metrics_json) if args.metrics_json else None
     if metrics_override and not args.experiment:
         parser.error("--metrics-json requires --experiment")
-    models = (args.model,) if args.model else tuple(REPORTS)
-    rows = [
-        row
-        for model in models
-        for row in ingest(REPORTS[model], args.experiment, metrics_override)
-    ]
+    if args.source_backfill_model:
+        rows = ingest_source_backfill(
+            SOURCE_REPORTS[args.source_backfill_model], args.experiment
+        )
+    else:
+        models = (args.model,) if args.model else tuple(REPORTS)
+        rows = [
+            row
+            for model in models
+            for row in ingest(REPORTS[model], args.experiment, metrics_override)
+        ]
     print(json.dumps(rows, sort_keys=True))
 
 
