@@ -70,8 +70,8 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.1",
-      "status": "failed",
-      "activeEpoch": null,
+      "status": "planned",
+      "activeEpoch": 12,
       "attemptedEpochs": [
         12
       ],
@@ -331,42 +331,29 @@
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e12_lr1e-3_wd0.1_warmup48_dataloader-r02"
         }
       ],
-      "health": "stopped",
+      "health": "pending",
       "startupEvidence": {
         "retryAuthorizationRequestedAt": "2026-08-11 05:06 PDT",
         "sourceCheckpointIntact": true,
         "sourceStep": 3432,
         "liveGitRefVerified": true,
+        "maxAuthorizedAttempts": 5,
+        "nextAttempt": 3,
         "failedBeforeTaskStart": true,
         "failedReplica": "01KZRR2N6DZJHFA22PERGFMEKA",
         "failedNode": "01KJT2MH75VZK6EBPG4NQ7S7CQ"
       },
-      "reason": "Authorized E12 r02 retry used the verified live origin/sewonm/icsl revision but was canceled before task startup by another cordoned-node SXid12028 failure. No W&B or optimizer step exists; exact E8 step3432 remains intact. Do not replay without fresh authorization.",
-      "beaker": "01KZRR2MVDKACNMYE1355S1WKY",
-      "experiment": "01KZRR2MVDKACNMYE1355S1WKY",
-      "job": "01KZRR2MZ87PA8NHJZT9N5TAX1",
-      "result": "01KZRR2MVP170SDZP0MV3YTRV8",
-      "replicaJobs": [
-        "01KZRR2MZ87PA8NHJZT9N5TAX1",
-        "01KZRR2N2VPR7KSHRM0Y14VTGC",
-        "01KZRR2N6DZJHFA22PERGFMEKA",
-        "01KZRR2NA02ZZS7VFVWDFP3XCT"
-      ],
-      "replicaResults": [
-        "01KZRR2MVP170SDZP0MV3YTRV8",
-        "01KZRR2MZG8FWW9FSHJG335JVN",
-        "01KZRR2N322W31ATRW70VVQS19",
-        "01KZRR2N6MEJ0JKWHYHACSMGKB"
-      ],
-      "replicaNodes": [
-        "01K15VC4MF63NFG484TFTWHSYB",
-        "01K9AYGENE66ZDKZ31W0AMSXM7",
-        "01KJT2MH75VZK6EBPG4NQ7S7CQ",
-        "01KQ0MFSCB5MJE2HZ3CVBAHTQJ"
-      ],
-      "beakerStatus": "canceled_before_task_start",
-      "revision": "d4568345caa21b62aaca510ca120c21d89ba3b1e",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e12_lr1e-3_wd0.1_warmup48_dataloader-r02"
+      "reason": "E12 attempt3 is pre-authorized under the user-approved budget of five total attempts. Attempts1-2 remain preserved as canceled-before-task-start SXid12028 infrastructure provenance; neither created W&B or optimizer work, and exact E8 step3432 remains intact.",
+      "beaker": null,
+      "experiment": null,
+      "job": null,
+      "result": null,
+      "replicaJobs": [],
+      "replicaResults": [],
+      "replicaNodes": [],
+      "beakerStatus": "planned",
+      "revision": "baec0f690891c070c2086cf2b440599bf155cbce",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e12_lr1e-3_wd0.1_warmup48_dataloader-r03"
     },
     {
       "id": "fixed512-wd0.333",
