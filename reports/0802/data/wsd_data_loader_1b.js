@@ -7,10 +7,10 @@ window.ICSL_DATA_LOADER_DATA={
   "baselineBatches":[64,128,256,512,1024],
   "selectionPolicy":{"learningRate":"1e-3","nondecreasingWd":true,"dynamicRepackingDirection":"At E2 begin below the ordinary optimum at WD0.1; from the selected E2 coordinate onward test only equal or higher WD.","fixedOrderDirection":"At E2 begin at WD0.333 and expand upward if needed, targeting Fixed > ordinary > DR; from the selected E2 coordinate onward test only equal or higher WD."},
   "columns":[
-    {"key":"dr512","label":"BS512 · DR","batchSequences":512,"dataOrder":"dynamic_repacking","initialWd":"0.1","color":"#ea580c"},
     {"key":"fixed512","label":"BS512 · Fixed","batchSequences":512,"dataOrder":"fixed_order","initialWd":"0.333","color":"#d97706"},
-    {"key":"dr1024","label":"BS1024 · DR","batchSequences":1024,"dataOrder":"dynamic_repacking","initialWd":"0.1","color":"#e11d48"},
-    {"key":"fixed1024","label":"BS1024 · Fixed","batchSequences":1024,"dataOrder":"fixed_order","initialWd":"0.333","color":"#be123c"}
+    {"key":"dr512","label":"BS512 · DR","batchSequences":512,"dataOrder":"dynamic_repacking","initialWd":"0.1","color":"#ea580c"},
+    {"key":"fixed1024","label":"BS1024 · Fixed","batchSequences":1024,"dataOrder":"fixed_order","initialWd":"0.333","color":"#be123c"},
+    {"key":"dr1024","label":"BS1024 · DR","batchSequences":1024,"dataOrder":"dynamic_repacking","initialWd":"0.1","color":"#e11d48"}
   ],
   "healthAudit":{"unhealthy":{},"suspicious":{}},
   "runs":[
