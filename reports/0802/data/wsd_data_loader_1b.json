@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-11 03:40 PDT",
+  "updated": "2026-08-11 03:53 PDT",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation; LR fixed at 1e-3; BS512 and BS1024 additions use four 8-GPU nodes with rank microbatch eight sequences.",
   "selection": "The existing OLMo-core baseline is shown only for BS64 through BS1024. E1 is common to all three data-order modes, so each new column reports the ordinary baseline E1 winner; an E2 branch may resume any exact LR/WD-matched E1 pre-decay checkpoint. LR is fixed at 1e-3. WD tuning follows the ordering hypothesis Fixed > ordinary > DR: the initial E2 probes use DR at WD0.1 and Fixed at WD0.333 for both batch sizes, then Fixed may expand upward while DR remains on the lower side of the ordinary optimum. From the selected E2 result onward, a later epoch may use only an equal or higher WD through E4, E8, E12, and E16. Dynamic repacking preserves the original E1 packing and begins repacking at E2; fixed order reuses the exact default E1 sequence permutation and batch membership forever.",
@@ -699,10 +699,10 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.1",
-      "status": "submitted",
-      "activeEpoch": 8,
-      "sourceExperiment": "01KZR1XQ3VWHZPDMY4H58YTSPD",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e4_lr1e-3_wd0.1_warmup24_dataloader-r01/step858",
+      "status": "planned",
+      "activeEpoch": 12,
+      "sourceExperiment": "01KZR4EB78EAGEZ96RJM9EY85B",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd0.1_warmup24_dataloader-r01/step1716",
       "gpuCount": 32,
       "nodeCount": 4,
       "rankMicrobatchSequences": 8,
@@ -843,9 +843,71 @@
             "winogrande": 1.615
           },
           "reason": "Completed healthy on four 8-GPU nodes from exact E2 pre-decay step428; validation CE improved from 4.158 to 3.461, unlocking E8 from retained step858."
+        },
+        "8": {
+          "status": "complete",
+          "beaker": "01KZR4EB78EAGEZ96RJM9EY85B",
+          "experiment": "01KZR4EB78EAGEZ96RJM9EY85B",
+          "job": "01KZR4EBAVXWFZJFXRZ3QY6GVY",
+          "result": "01KZR4EB7F9E7TQTT317SZHZXR",
+          "replicaJobs": [
+            "01KZR4EBAVXWFZJFXRZ3QY6GVY",
+            "01KZR4EBE6MR0E6E6SK4AQJ4QA",
+            "01KZR4EBHKE3E8SXYFCK8GW033",
+            "01KZR4EBNT8K6NKN0MD8MY8BBZ"
+          ],
+          "replicaResults": [
+            "01KZR4EB7F9E7TQTT317SZHZXR",
+            "01KZR4EBB0ZWNWFB3AB68T5KHF",
+            "01KZR4EBE9WTJN9CPEYJ18TWV2",
+            "01KZR4EBHN96NKTNK7YGVB8M2H"
+          ],
+          "replicaNodes": [
+            "01JS0HMY24WSEWYF3W85928JJB",
+            "01KT4H4T5FQ18DM4VH5YQ47TYQ",
+            "01JS0FZ5QSF3MJMN000CSTGHEG",
+            "01K5ZQSEGTMAJXRXV8HCYQFP7W"
+          ],
+          "wandb": "7n0rxuhf",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd0.1_warmup24_dataloader-r01",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e4_lr1e-3_wd0.1_warmup24_dataloader-r01/step858",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd0.1_warmup24_dataloader-r01/step1716",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd0.1_warmup24_dataloader-r01/step1908",
+          "retainedCheckpoints": [
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd0.1_warmup24_dataloader-r01/step1716",
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd0.1_warmup24_dataloader-r01/step1908"
+          ],
+          "train": 2.984,
+          "validation": 3.266,
+          "acc": 35.4,
+          "bpb": 0.9518,
+          "avg8Bpb": 1.423725,
+          "downstream": {
+            "arc_challenge": 22.74,
+            "arc_easy": 52.46,
+            "boolq": 55.5,
+            "csqa": 40.29,
+            "hellaswag": 35.4,
+            "openbookqa": 25.6,
+            "piqa": 65.67,
+            "socialiqa": 42.84,
+            "winogrande": 50.43
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.471,
+            "arc_easy": 1.492,
+            "boolq": 2.167,
+            "csqa": 1.567,
+            "hellaswag": 0.9518,
+            "openbookqa": 1.738,
+            "piqa": 1.266,
+            "socialiqa": 1.34,
+            "winogrande": 1.564
+          },
+          "reason": "Completed healthy on four 8-GPU nodes from exact E4 pre-decay step858; validation CE improved from 3.461 to 3.266, unlocking E12 from retained step1716."
         }
       },
-      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "reason": "E8 completed healthy at validation CE3.266; E12 is planned from exact same-coordinate pre-decay step1716 because validation strictly improved from E4 CE3.461.",
       "beaker": "01KZR4EB78EAGEZ96RJM9EY85B",
       "experiment": "01KZR4EB78EAGEZ96RJM9EY85B",
       "job": "01KZR4EBAVXWFZJFXRZ3QY6GVY",
@@ -862,7 +924,7 @@
         "01KZR4EBE9WTJN9CPEYJ18TWV2",
         "01KZR4EBHN96NKTNK7YGVB8M2H"
       ],
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "wandb": "7n0rxuhf",
       "node": "01JS0HMY24WSEWYF3W85928JJB",
       "replicaNodes": [
@@ -883,14 +945,13 @@
         "trainerAndOptimizerStateRequested": true
       },
       "progress": {
-        "observedAt": "2026-08-11 03:39 PDT",
-        "step": 1620,
+        "observedAt": "2026-08-11 03:52 PDT",
+        "step": 1908,
         "endpointStep": 1908,
-        "epoch": 7,
-        "trainCe": 3.178,
-        "gradNorm": 0.1442,
+        "epoch": 8,
+        "trainCe": 2.984,
         "skippedOptimizerStep": 0,
-        "eta": "12m"
+        "eta": "complete"
       },
       "revision": "91364d743eeb43a2f41ba6faddda856a25c16560",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd0.1_warmup24_dataloader-r01"
