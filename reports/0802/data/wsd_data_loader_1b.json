@@ -70,8 +70,8 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.1",
-      "status": "planned",
-      "activeEpoch": 12,
+      "status": "awaiting_user_authorization",
+      "activeEpoch": null,
       "sourceExperiment": "01KZR2Y9D19E87K0J5QC3BRD0M",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e8_lr1e-3_wd0.1_warmup48_dataloader-r01/step3432",
       "gpuCount": 32,
@@ -304,13 +304,13 @@
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e12_lr1e-3_wd0.1_warmup48_dataloader-r01"
         }
       ],
-      "health": "pending",
+      "health": "stopped",
       "startupEvidence": {
-        "retryAuthorizedAt": "2026-08-11 05:06 PDT",
+        "retryAuthorizationRequestedAt": "2026-08-11 05:06 PDT",
         "sourceCheckpointIntact": true,
         "sourceStep": 3432
       },
-      "reason": "User explicitly authorized one exact-coordinate E12 retry after the prior pre-start infrastructure failure; r02 is planned from retained E8 step3432."
+      "reason": "Awaiting fresh explicit authorization naming the BS512 DR E12 r02 retry after its prior pre-start SXid infrastructure failure. Exact E8 step3432 remains intact; the print-only guard passed, but no retry was submitted."
     },
     {
       "id": "fixed512-wd0.333",
@@ -1016,8 +1016,8 @@
       "dataOrder": "fixed_order",
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "planned",
-      "activeEpoch": 12,
+      "status": "awaiting_user_authorization",
+      "activeEpoch": null,
       "sourceExperiment": "01KZR535N52WVTRHTKAQR3K43T",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e8_lr1e-3_wd0.333_warmup24_dataloader-r01/step1716",
       "gpuCount": 32,
@@ -1249,13 +1249,13 @@
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e12_lr1e-3_wd0.333_warmup24_dataloader-r01"
         }
       ],
-      "health": "pending",
+      "health": "stopped",
       "startupEvidence": {
-        "retryAuthorizedAt": "2026-08-11 05:06 PDT",
+        "retryAuthorizationRequestedAt": "2026-08-11 05:06 PDT",
         "sourceCheckpointIntact": true,
         "sourceStep": 1716
       },
-      "reason": "User explicitly authorized one exact-coordinate E12 retry after the prior pre-training git-ref failure; r02 is planned from retained E8 step1716."
+      "reason": "Awaiting fresh explicit authorization naming the BS1024 Fixed E12 r02 retry after its prior pre-training invalid-git-ref failure. Exact E8 step1716 remains intact; the print-only guard passed, but no retry was submitted."
     },
     {
       "id": "fixed1024-wd1.0",
