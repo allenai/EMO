@@ -1786,6 +1786,25 @@
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr5e-4_wd0.1_warmup24_dataloader-cd-r01"
     },
     {
+      "id": "dr1024-lr5e-4-wd0.333",
+      "method": "dr1024",
+      "batchSequences": 1024,
+      "dataOrder": "dynamic_repacking",
+      "lr": "5e-4",
+      "wd": "0.333",
+      "status": "planned",
+      "activeEpoch": 1,
+      "attemptedEpochs": [],
+      "sourceExperiment": "01KZ2SX1RZVJBXE3Q4CR4VQXRZ",
+      "sourceCheckpoint": "fresh",
+      "gpuCount": 32,
+      "nodeCount": 4,
+      "rankMicrobatchSequences": 8,
+      "results": {},
+      "health": "planned",
+      "reason": "Planned exact E1 bootstrap for the combined LR5e-4/WD0.333 coordinate. No matching E1 checkpoint exists; E1 will use ordinary packing, retain pre-decay step214, and enable a guarded DR E2 resume."
+    },
+    {
       "id": "dr1024-lr1e-3-wd0.333",
       "method": "dr1024",
       "batchSequences": 1024,

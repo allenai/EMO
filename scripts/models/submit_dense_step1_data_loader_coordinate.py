@@ -3,9 +3,11 @@
 
 The launcher is deliberately narrow. It manages only the BS512/BS1024 repeated-pool
 dynamic-repacking and fixed-order study registered in
-``reports/0802/data/wsd_data_loader_1b.json``. Every submission must resume an exact
-LR/WD-matched pre-decay checkpoint, uses rank microbatch eight, and writes one WSD
-endpoint before the monitor decides which coordinate may continue.
+``reports/0802/data/wsd_data_loader_1b.json``. E2+ submissions must resume an exact
+LR/WD-matched pre-decay checkpoint. A separately registered E1 bootstrap may start
+fresh with ordinary packing when no exact coordinate exists. Every submission uses
+rank microbatch eight and writes one WSD endpoint before the monitor decides which
+coordinate may continue.
 """
 
 from __future__ import annotations
@@ -29,7 +31,7 @@ SEQUENCE_LENGTH = 4096
 TOKENS_PER_EPOCH = 1_000_000_000
 DECAY_FRACTION = 0.1
 DEFAULT_LEARNING_RATE = "1e-3"
-TARGETS = (2, 4, 8, 12, 16)
+TARGETS = (1, 2, 4, 8, 12, 16)
 PREDECESSOR = {2: 1, 4: 2, 8: 4, 12: 8, 16: 12}
 GLOBAL_BATCHES = (512, 1024)
 NODES = 4
@@ -56,7 +58,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--learning-rate", default=DEFAULT_LEARNING_RATE)
     parser.add_argument("--weight-decay", required=True)
     parser.add_argument("--source-experiment", required=True)
-    parser.add_argument("--source-checkpoint", required=True)
+    parser.add_argument(
+        "--source-checkpoint",
+        required=True,
+        help="Exact predecessor checkpoint, or the literal 'fresh' for an E1 bootstrap.",
+    )
     parser.add_argument("--revision", required=True)
     parser.add_argument("--name", required=True)
     parser.add_argument("--suffix", required=True)
@@ -65,6 +71,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--register", action="store_true")
     parser.add_argument("--print-only", action="store_true")
     args = parser.parse_args()
+    if args.target_epoch == 1 and args.source_checkpoint != "fresh":
+        parser.error("E1 bootstrap requires --source-checkpoint=fresh")
+    if args.target_epoch > 1 and args.source_checkpoint == "fresh":
+        parser.error("E2+ requires an exact predecessor checkpoint")
     if not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", args.weight_decay):
         parser.error("--weight-decay must be a non-negative decimal")
     try:
@@ -167,12 +177,13 @@ def matching_registered_run(report: dict[str, Any], args: argparse.Namespace) ->
         ):
             raise SystemExit("refusing a duplicate attempted method/batch/WD/epoch tuple")
 
-    predecessor = PREDECESSOR[args.target_epoch]
-    expected_step = stable_step(predecessor, args.global_sequences)
-    if not args.source_checkpoint.endswith(f"/step{expected_step}"):
-        raise SystemExit(
-            f"exact predecessor for E{args.target_epoch} must end in /step{expected_step}"
-        )
+    if args.target_epoch > 1:
+        predecessor = PREDECESSOR[args.target_epoch]
+        expected_step = stable_step(predecessor, args.global_sequences)
+        if not args.source_checkpoint.endswith(f"/step{expected_step}"):
+            raise SystemExit(
+                f"exact predecessor for E{args.target_epoch} must end in /step{expected_step}"
+            )
     if args.target_epoch > 2:
         previous = run.get("results", {}).get(str(predecessor))
         if not isinstance(previous, dict) or previous.get("status") != "complete":
@@ -294,9 +305,9 @@ def audit_source_spec(spec: dict[str, Any], args: argparse.Namespace) -> tuple[s
         raise SystemExit(f"source uses unexpected training script {script!r}")
     if numeric(unique_value(arguments, "--lr=")) != numeric(args.learning_rate):
         raise SystemExit("source LR does not exactly match the requested coordinate")
-    if numeric(unique_value(arguments, "--train_module.optim.weight_decay=")) != numeric(
-        args.weight_decay
-    ):
+    if args.target_epoch > 1 and numeric(
+        unique_value(arguments, "--train_module.optim.weight_decay=")
+    ) != numeric(args.weight_decay):
         raise SystemExit("source WD does not exactly match the requested coordinate")
     expected_batch = args.global_sequences * SEQUENCE_LENGTH
     source_batches = values_for(arguments, "--data_loader.global_batch_size=")
@@ -307,12 +318,13 @@ def audit_source_spec(spec: dict[str, Any], args: argparse.Namespace) -> tuple[s
         # The earliest BS1024 WD sweep used the training script's historical default and did
         # not spell the global batch out as an override. All later sources must be explicit.
         raise SystemExit("non-BS1024 source is missing an explicit global batch")
-    source_output = unique_value(arguments, "--save-folder=")
-    if (
-        args.source_checkpoint
-        != f"{source_output}/step{stable_step(PREDECESSOR[args.target_epoch], args.global_sequences)}"
-    ):
-        raise SystemExit("source checkpoint is not inside the source experiment's exact output")
+    if args.target_epoch > 1:
+        source_output = unique_value(arguments, "--save-folder=")
+        if (
+            args.source_checkpoint
+            != f"{source_output}/step{stable_step(PREDECESSOR[args.target_epoch], args.global_sequences)}"
+        ):
+            raise SystemExit("source checkpoint is not inside the source experiment's exact output")
     return script, arguments
 
 
@@ -337,9 +349,26 @@ def build_spec(
         and not value.startswith("--trainer.callbacks.checkpointer.save_interval=")
         and not value.startswith("--trainer.callbacks.checkpointer.ephemeral_save_interval=")
     ]
-    train_args.append(
-        "--dynamic-repacking" if args.method == "dynamic_repacking" else "--fixed-data-order"
-    )
+    if args.target_epoch > 1:
+        train_args.append(
+            "--dynamic-repacking"
+            if args.method == "dynamic_repacking"
+            else "--fixed-data-order"
+        )
+    else:
+        # E1 is intentionally common to all data-order modes. Dynamic repacking or
+        # fixed ordering begins only after this exact pre-decay checkpoint exists.
+        train_args = [
+            value
+            for value in train_args
+            if not value.startswith("--trainer.load_path=")
+            and not value.startswith("--trainer.load_trainer_state=")
+            and not value.startswith("--trainer.load_optim_state=")
+            and not value.startswith("--trainer.reset_data_loader_state_on_load_path=")
+            and not value.startswith(
+                "--train_module.validate_optimizer_hyperparameters_on_load="
+            )
+        ]
     replacements = (
         ("--save-folder=", f"--save-folder={output}"),
         ("--dataset.mix=", "--dataset.mix=null"),
@@ -394,18 +423,21 @@ def build_spec(
             f"--train_module.optim.weight_decay={args.weight_decay}",
         ),
         ("--lr=", f"--lr={args.learning_rate}"),
-        ("--trainer.load_path=", f"--trainer.load_path={args.source_checkpoint}"),
-        ("--trainer.load_trainer_state=", "--trainer.load_trainer_state=true"),
-        ("--trainer.load_optim_state=", "--trainer.load_optim_state=true"),
-        (
-            "--trainer.reset_data_loader_state_on_load_path=",
-            "--trainer.reset_data_loader_state_on_load_path=false",
-        ),
-        (
-            "--train_module.validate_optimizer_hyperparameters_on_load=",
-            "--train_module.validate_optimizer_hyperparameters_on_load=true",
-        ),
     )
+    if args.target_epoch > 1:
+        replacements += (
+            ("--trainer.load_path=", f"--trainer.load_path={args.source_checkpoint}"),
+            ("--trainer.load_trainer_state=", "--trainer.load_trainer_state=true"),
+            ("--trainer.load_optim_state=", "--trainer.load_optim_state=true"),
+            (
+                "--trainer.reset_data_loader_state_on_load_path=",
+                "--trainer.reset_data_loader_state_on_load_path=false",
+            ),
+            (
+                "--train_module.validate_optimizer_hyperparameters_on_load=",
+                "--train_module.validate_optimizer_hyperparameters_on_load=true",
+            ),
+        )
     for prefix, value in replacements:
         train_args = upsert(train_args, prefix, value)
     train_args += [
@@ -426,9 +458,11 @@ def build_spec(
         "assert len(m['entries'])==1 and m['entries'][0]['start_instance']==0\n"
         "print('DATA_LOADER_MANIFEST_OK',meta)"
     )
-    preflight = "\n".join(
+    preflight_steps = []
+    if args.target_epoch > 1:
+        preflight_steps.append(shlex.join(["test", "-d", args.source_checkpoint]))
+    preflight_steps.extend(
         [
-            shlex.join(["test", "-d", args.source_checkpoint]),
             shlex.join(["test", "-f", TRAIN_MANIFEST]),
             shlex.join(["test", "!", "-e", output]),
             shlex.join(["python", "-c", manifest_audit]),
@@ -446,6 +480,7 @@ def build_spec(
             shlex.join(["python", script, run_name, "--dry-run", *train_args]),
         ]
     )
+    preflight = "\n".join(preflight_steps)
     rendezvous = hashlib.sha256(run_name.encode()).hexdigest()
     launch = (
         'torchrun --nnodes="$BEAKER_REPLICA_COUNT:$BEAKER_REPLICA_COUNT" '
