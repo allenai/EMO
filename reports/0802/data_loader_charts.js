@@ -115,7 +115,7 @@
       }
       const candidates = [];
       for (const run of study.runs || []) {
-        if (run.method !== column.key || lrNumber(run.lr) !== 1e-3) continue;
+        if (run.method !== column.key) continue;
         if (wdNumber(run.wd) < wdFloor) continue;
         const result = run.results && run.results[epochKey(epoch)];
         if (!result || result.status !== "complete" || !finite(result.validation)) continue;
@@ -230,6 +230,96 @@
 
   renderSummary("validation-summary", (winner) => winner ? formatMetric(winner.result.validation) : "—", { columnBest: true, rowBest: true });
   renderSummary("coordinate-summary", (winner) => winner ? `(${winner.lr}, ${winner.wd})` : "—");
+
+  const coordinateColumns = [
+    columnByKey.fixed512,
+    columnByKey["baseline-512"],
+    columnByKey.dr512,
+    columnByKey.fixed1024,
+    columnByKey["baseline-1024"],
+    columnByKey.dr1024,
+  ];
+  const activeStatuses = new Set(["planned", "submitted", "scheduled", "running"]);
+  const failedStatuses = new Set(["failed", "canceled", "cancelled", "canceled_before_task_start"]);
+
+  function coordinateCandidates(column, epoch) {
+    const candidates = [];
+    if (column.baseline && column.batchSequences < 1024) {
+      for (const sweep of batchData.batchSweeps || []) {
+        if (Number(sweep.batchSequences) !== column.batchSequences) continue;
+        const result = sweep.results && sweep.results[epochKey(epoch)];
+        if (!result) continue;
+        candidates.push({ lr: sweep.lr, wd: sweep.wd, result, status: result.status });
+      }
+    } else if (column.baseline) {
+      for (const run of wdData.runs || []) {
+        if (Number(run.epoch) !== Number(epoch)) continue;
+        candidates.push({ lr: run.lr, wd: run.wd, result: run, status: run.status });
+      }
+    } else {
+      for (const run of study.runs || []) {
+        if (run.method !== column.key) continue;
+        const result = run.results && run.results[epochKey(epoch)];
+        const attempted = Number(run.activeEpoch) === Number(epoch) ||
+          (run.attemptedEpochs || []).map(Number).includes(Number(epoch));
+        if (!result && !attempted) continue;
+        const matchingAttempts = (run.attempts || []).filter((attempt) =>
+          String(attempt.output || "").includes(`_e${epochKey(epoch)}_`),
+        ).length;
+        candidates.push({
+          lr: run.lr,
+          wd: run.wd,
+          result: result || {},
+          status: result ? result.status : run.status,
+          attempts: matchingAttempts +
+            (Number(run.activeEpoch) === Number(epoch) && run.experiment ? 1 : 0),
+        });
+      }
+    }
+    const distinct = new Map();
+    for (const candidate of candidates) {
+      const key = `${candidate.lr}:${candidate.wd}`;
+      const current = distinct.get(key);
+      const value = numeric(candidate.result.validation);
+      const currentValue = current && numeric(current.result.validation);
+      if (!current || (value !== null && (currentValue === null || value < currentValue)) ||
+          (activeStatuses.has(candidate.status) && !activeStatuses.has(current.status))) {
+        distinct.set(key, candidate);
+      }
+    }
+    return [...distinct.values()].sort((a, b) =>
+      lrNumber(a.lr) - lrNumber(b.lr) || wdNumber(a.wd) - wdNumber(b.wd),
+    );
+  }
+
+  const coordinateBody = document.getElementById("coordinate-grid");
+  for (const epoch of epochs) {
+    for (const column of coordinateColumns) {
+      const candidates = coordinateCandidates(column, epoch);
+      const winner = getSelected(column, epoch);
+      const sharedPreInterventionEpoch = !column.baseline && Number(epoch) === 1;
+      const chips = candidates.map((candidate) => {
+        const value = numeric(candidate.result.validation);
+        const isSelected = !sharedPreInterventionEpoch && winner &&
+          lrNumber(winner.lr) === lrNumber(candidate.lr) &&
+          wdNumber(winner.wd) === wdNumber(candidate.wd);
+        const classes = ["tuple"];
+        if (isSelected) classes.push("selected");
+        else if (activeStatuses.has(candidate.status)) classes.push("active");
+        else if (failedStatuses.has(candidate.status)) classes.push("failed");
+        const attempts = candidate.attempts > 1 ? ` · ${candidate.attempts} attempts` : "";
+        return `<span class="${classes.join(" ")}">(LR ${candidate.lr}, WD ${candidate.wd}) · ${candidate.status || "planned"}${value !== null ? ` · CE ${formatMetric(value)}` : ""}${attempts}</span>`;
+      }).join("");
+      const selection = sharedPreInterventionEpoch
+        ? "shared pre-intervention E1; source coordinates shown"
+        : winner
+        ? `LR ${winner.lr}, WD ${winner.wd} · CE ${formatMetric(winner.result.validation)}`
+        : "pending";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>E${formatEpoch(epoch)}</td><td>${column.label}</td><td><div class="tuple-list">${chips || "—"}</div></td><td>${selection}</td>`;
+      coordinateBody.appendChild(tr);
+    }
+  }
 
   const optimizerBody = document.getElementById("optimizer-step-summary");
   for (const comparison of (batchData.optimizerStepComparisons || [])) {

@@ -4,8 +4,8 @@
 The launcher is deliberately narrow. It manages only the BS512/BS1024 repeated-pool
 dynamic-repacking and fixed-order study registered in
 ``reports/0802/data/wsd_data_loader_1b.json``. Every submission must resume an exact
-LR/WD-matched pre-decay checkpoint, keeps LR fixed at 1e-3, uses rank microbatch eight,
-and writes one WSD endpoint before the monitor decides which coordinate may continue.
+LR/WD-matched pre-decay checkpoint, uses rank microbatch eight, and writes one WSD
+endpoint before the monitor decides which coordinate may continue.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ REPORT_JS_PATH = REPORT_PATH.with_suffix(".js")
 SEQUENCE_LENGTH = 4096
 TOKENS_PER_EPOCH = 1_000_000_000
 DECAY_FRACTION = 0.1
-LEARNING_RATE = Decimal("1e-3")
+DEFAULT_LEARNING_RATE = "1e-3"
 TARGETS = (2, 4, 8, 12, 16)
 PREDECESSOR = {2: 1, 4: 2, 8: 4, 12: 8, 16: 12}
 GLOBAL_BATCHES = (512, 1024)
@@ -53,6 +53,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--method", choices=("dynamic_repacking", "fixed_order"), required=True)
     parser.add_argument("--global-sequences", type=int, choices=GLOBAL_BATCHES, required=True)
     parser.add_argument("--target-epoch", type=int, choices=TARGETS, required=True)
+    parser.add_argument("--learning-rate", default=DEFAULT_LEARNING_RATE)
     parser.add_argument("--weight-decay", required=True)
     parser.add_argument("--source-experiment", required=True)
     parser.add_argument("--source-checkpoint", required=True)
@@ -66,6 +67,12 @@ def parse_args() -> argparse.Namespace:
     args = parser.parse_args()
     if not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", args.weight_decay):
         parser.error("--weight-decay must be a non-negative decimal")
+    try:
+        learning_rate = Decimal(args.learning_rate)
+    except InvalidOperation:
+        parser.error("--learning-rate must be a positive decimal or scientific-notation value")
+    if not learning_rate.is_finite() or learning_rate <= 0:
+        parser.error("--learning-rate must be positive and finite")
     if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", args.suffix):
         parser.error("--suffix must be a lowercase run-name component")
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", args.name):
@@ -111,20 +118,22 @@ def load_report() -> dict[str, Any]:
 
 def matching_registered_run(report: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
     key = method_key(args.method, args.global_sequences)
+    lr = numeric(args.learning_rate)
     wd = numeric(args.weight_decay)
     matches = [
         run
         for run in report.get("runs", [])
         if run.get("method") == key
         and int(run.get("batchSequences", 0)) == args.global_sequences
-        and numeric(run.get("lr")) == LEARNING_RATE
+        and numeric(run.get("lr")) == lr
         and numeric(run.get("wd")) == wd
         and int(run.get("activeEpoch", -1)) == args.target_epoch
     ]
     if len(matches) != 1:
         raise SystemExit(
             "refusing unregistered or ambiguous data-loader tuple: expected exactly one "
-            f"{key}, WD={args.weight_decay}, E{args.target_epoch} record; found {len(matches)}"
+            f"{key}, LR={args.learning_rate}, WD={args.weight_decay}, "
+            f"E{args.target_epoch} record; found {len(matches)}"
         )
     run = matches[0]
     if str(run.get("status", "")).lower() != "planned":
@@ -146,6 +155,8 @@ def matching_registered_run(report: dict[str, Any], args: argparse.Namespace) ->
         if other is run or other.get("method") != key:
             continue
         if int(other.get("batchSequences", 0)) != args.global_sequences:
+            continue
+        if numeric(other.get("lr")) != lr:
             continue
         if numeric(other.get("wd")) != wd:
             continue
@@ -191,7 +202,7 @@ def selected_wd_floor(report: dict[str, Any], key: str, through_epoch: int) -> D
             break
         candidates: list[tuple[Decimal, Decimal]] = []
         for run in report.get("runs", []):
-            if run.get("method") != key or numeric(run.get("lr")) != LEARNING_RATE:
+            if run.get("method") != key:
                 continue
             wd = numeric(run.get("wd"))
             if floor is not None and wd < floor:
@@ -281,8 +292,8 @@ def audit_source_spec(spec: dict[str, Any], args: argparse.Namespace) -> tuple[s
     script, _, arguments = extracted[0]
     if not script.endswith("olmo2-1B.py"):
         raise SystemExit(f"source uses unexpected training script {script!r}")
-    if numeric(unique_value(arguments, "--lr=")) != LEARNING_RATE:
-        raise SystemExit("source LR is not the fixed 1e-3 coordinate")
+    if numeric(unique_value(arguments, "--lr=")) != numeric(args.learning_rate):
+        raise SystemExit("source LR does not exactly match the requested coordinate")
     if numeric(unique_value(arguments, "--train_module.optim.weight_decay=")) != numeric(
         args.weight_decay
     ):
@@ -311,10 +322,11 @@ def build_spec(
     spec = copy.deepcopy(base)
     task = spec["tasks"][0]
     mode_tag = "dr" if args.method == "dynamic_repacking" else "fixed"
+    lr_tag = args.learning_rate.replace(".", "p")
     wd_tag = args.weight_decay.replace(".", "p")
     run_name = (
         f"dense_1b_step1_0802_repeated_dclm1b_wsd_bs{args.global_sequences}_"
-        f"{mode_tag}_e{args.target_epoch}_lr1e-3_wd{args.weight_decay}_"
+        f"{mode_tag}_e{args.target_epoch}_lr{args.learning_rate}_wd{args.weight_decay}_"
         f"warmup{warmup_steps(args.global_sequences)}_{args.suffix}"
     )
     output = f"/weka/oe-training-default/sewonm/icsl/models/{run_name}"
@@ -342,7 +354,7 @@ def build_spec(
             (
                 "--trainer.callbacks.wandb.tags="
                 f"[pretraining,step1,data-loader-study,{mode_tag},bs{args.global_sequences},"
-                f"e{args.target_epoch},wd{wd_tag},wsd]"
+                f"e{args.target_epoch},lr{lr_tag},wd{wd_tag},wsd]"
             ),
         ),
         (
@@ -381,7 +393,7 @@ def build_spec(
             "--train_module.optim.weight_decay=",
             f"--train_module.optim.weight_decay={args.weight_decay}",
         ),
-        ("--lr=", "--lr=1e-3"),
+        ("--lr=", f"--lr={args.learning_rate}"),
         ("--trainer.load_path=", f"--trainer.load_path={args.source_checkpoint}"),
         ("--trainer.load_trainer_state=", "--trainer.load_trainer_state=true"),
         ("--trainer.load_optim_state=", "--trainer.load_optim_state=true"),
@@ -426,7 +438,7 @@ def build_spec(
                     (
                         f"DATA_LOADER_PREFLIGHT_OK method={mode_tag} "
                         f"bs={args.global_sequences} epoch={args.target_epoch} "
-                        f"lr=1e-3 wd={args.weight_decay} "
+                        f"lr={args.learning_rate} wd={args.weight_decay} "
                         f"source={args.source_checkpoint} nodes={NODES} rank_mb=8"
                     ),
                 ]

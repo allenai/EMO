@@ -1,8 +1,8 @@
 {
-  "updated": "2026-08-11 09:00 PDT",
+  "updated": "2026-08-11",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
-  "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation; LR fixed at 1e-3; BS512 and BS1024 additions use four 8-GPU nodes with rank microbatch eight sequences.",
-  "selection": "The existing OLMo-core baseline is shown only for BS64 through BS1024. E1 is common to all three data-order modes, so each new column reports the ordinary baseline E1 winner; an E2 branch may resume any exact LR/WD-matched E1 pre-decay checkpoint. LR is fixed at 1e-3. WD tuning follows the ordering hypothesis Fixed > ordinary > DR: the initial E2 probes use DR at WD0.1 and Fixed at WD0.333 for both batch sizes, then Fixed may expand upward while DR remains on the lower side of the ordinary optimum. From the selected E2 result onward, a later epoch may use only an equal or higher WD through E4, E8, E12, and E16. Dynamic repacking preserves the original E1 packing and begins repacking at E2; fixed order reuses the exact default E1 sequence permutation and batch membership forever.",
+  "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation; the first DR probe used LR1e-3/WD0.1 and neighboring LR/WD coordinates are being audited; BS512 and BS1024 additions use four 8-GPU nodes with rank microbatch eight sequences.",
+  "selection": "The existing OLMo-core baseline is shown only for BS64 through BS1024. E1 is common to all three data-order modes, so each new column reports the ordinary baseline E1 winner; an E2 branch may resume any exact LR/WD-matched E1 pre-decay checkpoint. The initial DR probe used LR1e-3/WD0.1. Its growing train-to-validation gap by E8/E12 rejects the earlier assumption that DR should use lower WD, so the next coordinate descent will test neighboring LR5e-4 and higher WD0.333, expanding to WD1.0 only if validation remains boundary-limited. Later endpoints must resume the exact same-coordinate predecessor. Dynamic repacking preserves the original E1 packing and begins repacking at E2; fixed order reuses the exact default E1 sequence permutation and batch membership forever.",
   "targetEpochs": [
     1,
     2,
@@ -19,9 +19,9 @@
     1024
   ],
   "selectionPolicy": {
-    "learningRate": "1e-3",
+    "learningRate": "Initial probe 1e-3; DR coordinate audit may compare the lower neighbor 5e-4.",
     "nondecreasingWd": true,
-    "dynamicRepackingDirection": "At E2 begin below the ordinary optimum at WD0.1; from the selected E2 coordinate onward test only equal or higher WD.",
+    "dynamicRepackingDirection": "WD0.1 increasingly overfits by E8/E12. Test WD0.333 next, plus the lower LR5e-4 neighbor; expand to WD1.0 only when the selected frontier is boundary-limited.",
     "fixedOrderDirection": "At E2 begin at WD0.333 and expand upward if needed, targeting Fixed > ordinary > DR; from the selected E2 coordinate onward test only equal or higher WD."
   },
   "columns": [
@@ -70,7 +70,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.1",
-      "status": "planned",
+      "status": "running",
       "activeEpoch": 12,
       "attemptedEpochs": [
         12
@@ -331,7 +331,7 @@
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e12_lr1e-3_wd0.1_warmup48_dataloader-r02"
         }
       ],
-      "health": "pending",
+      "health": "healthy",
       "startupEvidence": {
         "retryAuthorizationRequestedAt": "2026-08-11 05:06 PDT",
         "sourceCheckpointIntact": true,
@@ -341,19 +341,118 @@
         "nextAttempt": 3,
         "failedBeforeTaskStart": true,
         "failedReplica": "01KZRR2N6DZJHFA22PERGFMEKA",
-        "failedNode": "01KJT2MH75VZK6EBPG4NQ7S7CQ"
+        "failedNode": "01KJT2MH75VZK6EBPG4NQ7S7CQ",
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "dynamicRepacking": true,
+        "sourceCheckpointLoaded": true,
+        "firstOptimizerStep": 3433,
+        "trainerAndOptimizerStateRequested": true
       },
-      "reason": "E12 attempt3 is pre-authorized under the user-approved budget of five total attempts. Attempts1-2 remain preserved as canceled-before-task-start SXid12028 infrastructure provenance; neither created W&B or optimizer work, and exact E8 step3432 remains intact.",
-      "beaker": null,
-      "experiment": null,
-      "job": null,
-      "result": null,
-      "replicaJobs": [],
-      "replicaResults": [],
-      "replicaNodes": [],
-      "beakerStatus": "planned",
-      "revision": "baec0f690891c070c2086cf2b440599bf155cbce",
+      "reason": "Attempt3 is running on four 8-GPU nodes after the manifest, dynamic-repacking preflight, exact E8 step3432 trainer/optimizer-state restore, and first optimizer step3433 all passed. Recent CE and gradient tails are finite and stable.",
+      "beaker": "01KZRS59KQD0962W805K74Q4ZA",
+      "experiment": "01KZRS59KQD0962W805K74Q4ZA",
+      "job": "01KZRS59RYW764SHD2AADGF75Q",
+      "result": "01KZRS59M1MVZWAT5XYWYAQFB5",
+      "replicaJobs": [
+        "01KZRS59RYW764SHD2AADGF75Q",
+        "01KZRS59X1C9WZHA4AN6D56CE3",
+        "01KZRS5A0MT6VH9SYF62E15D6J",
+        "01KZRS5A4HXBTPZR8V0SCGD4QZ"
+      ],
+      "replicaResults": [
+        "01KZRS59M1MVZWAT5XYWYAQFB5",
+        "01KZRS59S4A6P6GBEBYM8GVYNQ",
+        "01KZRS59X69SKQASTDPG4Q0DST",
+        "01KZRS5A0TWZ5JZKZTM58X346G"
+      ],
+      "replicaNodes": [
+        "01JRYAWC4C4EQ2ZQBCBKE83PHZ",
+        "01JS2AN3SQ1EYWQGASMYM8YJJF",
+        "01K5YQYB97E9KXHSEZNDK14494",
+        "01K5ZQSEGTMAJXRXV8HCYQFP7W"
+      ],
+      "beakerStatus": "running",
+      "wandb": "bt0f3mfo",
+      "node": "01JRYAWC4C4EQ2ZQBCBKE83PHZ",
+      "progress": {
+        "observedAt": "2026-08-11 09:19 PDT",
+        "step": 3885,
+        "endpointStep": 5723,
+        "epoch": 9,
+        "trainCe": 2.812,
+        "eta": "42m"
+      },
+      "revision": "606657a1f848777d0ff174c84a66d30ba12a2b85",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e12_lr1e-3_wd0.1_warmup48_dataloader-r03"
+    },
+    {
+      "id": "dr512-lr5e-4-wd0.1",
+      "method": "dr512",
+      "batchSequences": 512,
+      "dataOrder": "dynamic_repacking",
+      "lr": "5e-4",
+      "wd": "0.1",
+      "status": "planned",
+      "activeEpoch": 2,
+      "attemptedEpochs": [],
+      "sourceExperiment": "01KZFVTR2W2CQV296SMHP9ERHA",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e1_lr5e-4_wd0.1_warmup48_e1_grid_r19/step428",
+      "gpuCount": 32,
+      "nodeCount": 4,
+      "rankMicrobatchSequences": 8,
+      "results": {
+        "1": {
+          "status": "complete",
+          "inherited": true,
+          "beaker": "01KZFVTR2W2CQV296SMHP9ERHA",
+          "job": "01KZFVTR6CJQM3WAD8010N9TV1",
+          "wandb": "zq217ons",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e1_lr5e-4_wd0.1_warmup48_e1_grid_r19",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e1_lr5e-4_wd0.1_warmup48_e1_grid_r19/step428",
+          "train": 4.024,
+          "validation": 4.047,
+          "acc": 26.22,
+          "bpb": 1.219,
+          "avg8Bpb": 1.84975
+        }
+      },
+      "health": "pending",
+      "reason": "Planned lower-LR axial neighbor for the DR E2 coordinate descent; exact LR/WD-matched E1 pre-decay step428 is retained."
+    },
+    {
+      "id": "dr512-lr1e-3-wd0.333",
+      "method": "dr512",
+      "batchSequences": 512,
+      "dataOrder": "dynamic_repacking",
+      "lr": "1e-3",
+      "wd": "0.333",
+      "status": "planned",
+      "activeEpoch": 2,
+      "attemptedEpochs": [],
+      "sourceExperiment": "01KZFVTS3EHFR7HQ5ZY9DAF9NS",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e1_lr1e-3_wd0.333_warmup48_e1_grid_r19/step428",
+      "gpuCount": 32,
+      "nodeCount": 4,
+      "rankMicrobatchSequences": 8,
+      "results": {
+        "1": {
+          "status": "complete",
+          "inherited": true,
+          "beaker": "01KZFVTS3EHFR7HQ5ZY9DAF9NS",
+          "job": "01KZFVTS6WVZ5BSFB43ZBDAPCH",
+          "wandb": "od5sohvk",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e1_lr1e-3_wd0.333_warmup48_e1_grid_r19",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e1_lr1e-3_wd0.333_warmup48_e1_grid_r19/step428",
+          "train": 3.98,
+          "validation": 4.0,
+          "acc": 25.44,
+          "bpb": 1.201,
+          "avg8Bpb": 1.822375
+        }
+      },
+      "health": "pending",
+      "reason": "Planned higher-WD axial neighbor for the DR E2 coordinate descent; exact LR/WD-matched E1 pre-decay step428 is retained."
     },
     {
       "id": "fixed512-wd0.333",
@@ -1177,6 +1276,73 @@
       },
       "revision": "542c331c1cfd0cc921e661601e3efce9724dcc26",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e12_lr1e-3_wd0.1_warmup24_dataloader-r01"
+    },
+    {
+      "id": "dr1024-lr5e-4-wd0.1",
+      "method": "dr1024",
+      "batchSequences": 1024,
+      "dataOrder": "dynamic_repacking",
+      "lr": "5e-4",
+      "wd": "0.1",
+      "status": "planned",
+      "activeEpoch": 2,
+      "attemptedEpochs": [],
+      "sourceExperiment": "01KZ2SX1RZVJBXE3Q4CR4VQXRZ",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr5e-4_wd0.1_warmup24/step214",
+      "gpuCount": 32,
+      "nodeCount": 4,
+      "rankMicrobatchSequences": 8,
+      "results": {
+        "1": {
+          "status": "complete",
+          "inherited": true,
+          "beaker": "01KZ2SX1RZVJBXE3Q4CR4VQXRZ",
+          "job": "01KZ2SX1XZPXP2Q60V0J25DXBP",
+          "wandb": "wbmhelmv",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr5e-4_wd0.1_warmup24",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr5e-4_wd0.1_warmup24/step214",
+          "train": 4.976,
+          "validation": 5.004,
+          "acc": 25.3,
+          "bpb": 1.537
+        }
+      },
+      "health": "pending",
+      "reason": "Planned lower-LR axial neighbor for the DR E2 coordinate descent; exact LR/WD-matched E1 pre-decay step214 is retained."
+    },
+    {
+      "id": "dr1024-lr1e-3-wd0.333",
+      "method": "dr1024",
+      "batchSequences": 1024,
+      "dataOrder": "dynamic_repacking",
+      "lr": "1e-3",
+      "wd": "0.333",
+      "status": "planned",
+      "activeEpoch": 2,
+      "attemptedEpochs": [],
+      "sourceExperiment": "01KZ9HXBC7BGA17334MEXMY8ZX",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd0.333_warmup24/step214",
+      "gpuCount": 32,
+      "nodeCount": 4,
+      "rankMicrobatchSequences": 8,
+      "results": {
+        "1": {
+          "status": "complete",
+          "inherited": true,
+          "beaker": "01KZ9HXBC7BGA17334MEXMY8ZX",
+          "job": "01KZ9HXBFKPA62AHD0XSXT29A1",
+          "result": "01KZ9HXBCCB15JTTXVEPN405RG",
+          "wandb": "wi6szstg",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd0.333_warmup24",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_e1_lr1e-3_wd0.333_warmup24/step214",
+          "train": 5.359,
+          "validation": 5.389,
+          "acc": 24.54,
+          "bpb": 1.641
+        }
+      },
+      "health": "pending",
+      "reason": "Planned higher-WD axial neighbor for the DR E2 coordinate descent; exact LR/WD-matched E1 pre-decay step214 is retained."
     },
     {
       "id": "fixed1024-wd0.333",
