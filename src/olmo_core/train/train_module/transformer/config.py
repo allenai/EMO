@@ -374,6 +374,7 @@ class TransformerTrainModuleConfig(TrainModuleConfig):
     state_dict_save_opts: Optional[Dict[str, Any]] = None
     state_dict_load_opts: Optional[Dict[str, Any]] = None
     load_key_mapping: Optional[Dict[str, str]] = None
+    validate_optimizer_hyperparameters_on_load: bool = False
 
     # Other train settings.
 

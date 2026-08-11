@@ -18,17 +18,23 @@ MODELS = {
     "153m": {
         "rank_mb": 16,
         "lr": {64: "2e-3", 128: "2e-3", 256: "2e-3", 512: "2e-3"},
-        "initial_wd": {64: ["0.1", "0.033"], 128: ["0.1", "0.033"], 256: ["0.033", "0.01"], 512: ["0.1", "0.033"]},
+        "initial_wd": {64: ["0.1", "0.033"], 128: ["0.1", "0.033"], 256: ["0.033", "0.01", "0.1"], 512: ["0.1", "0.033"]},
+        "existing_wd": {64: "0.1", 128: "0.1", 256: "0.033", 512: "0.1"},
+        "larger_minimum_epoch": {256: 12},
     },
     "474m": {
         "rank_mb": 16,
         "lr": {64: "2e-3", 128: "2e-3", 256: "2e-3", 512: "2e-3"},
-        "initial_wd": {64: ["0.1", "0.033"], 128: ["0.1", "0.033"], 256: ["0.1", "0.033"], 512: ["0.3", "0.1"]},
+        "initial_wd": {64: ["0.1", "0.033"], 128: ["0.1", "0.033", "0.3"], 256: ["0.1", "0.033", "0.333"], 512: ["0.3", "0.1"]},
+        "existing_wd": {64: "0.1", 128: "0.1", 256: "0.1", 512: "0.3"},
+        "larger_minimum_epoch": {128: 12, 256: 4},
     },
     "1b": {
         "rank_mb": 8,
         "lr": {64: "1e-3", 128: "1e-3", 256: "1e-3", 512: "5e-4"},
         "initial_wd": {64: ["0.3", "0.1"], 128: ["0.3", "0.1"], 256: ["0.333", "0.1"], 512: ["1.0", "0.333"]},
+        "existing_wd": {64: "0.3", 128: "0.3", 256: "0.333", 512: "1.0"},
+        "larger_minimum_epoch": {},
     },
 }
 BATCHES = (64, 128, 256, 512)
@@ -153,22 +159,54 @@ def main() -> None:
             str(batch): plan["initial_wd"][batch] for batch in BATCHES
         }
         report["poolPlan"]["epochOneSourceWeightDecayByBatch"] = {
-            str(batch): plan["initial_wd"][batch][0] for batch in BATCHES
+            str(batch): plan["initial_wd"][batch] for batch in BATCHES
+        }
+        report["wdRepairPolicy"] = {
+            "effectiveDate": "2026-08-10",
+            "rule": (
+                "Every missing WD starts at E1. A smaller WD is cut as soon as it "
+                "fails to beat the existing WD at the same epoch. A larger maximum "
+                "WD remains an independent exact-checkpoint trajectory through its "
+                "minimum evidence epoch even when it loses at an earlier epoch."
+            ),
+            "byBatch": {
+                str(batch): {
+                    "existingWeightDecay": plan["existing_wd"][batch],
+                    "neededWeightDecays": plan["initial_wd"][batch],
+                    "smallerWeightDecays": [
+                        wd
+                        for wd in plan["initial_wd"][batch]
+                        if Decimal(wd) < Decimal(plan["existing_wd"][batch])
+                    ],
+                    "largerWeightDecays": [
+                        wd
+                        for wd in plan["initial_wd"][batch]
+                        if Decimal(wd) > Decimal(plan["existing_wd"][batch])
+                    ],
+                    "largerWeightDecayMinimumEpoch": plan[
+                        "larger_minimum_epoch"
+                    ].get(batch, 1),
+                }
+                for batch in BATCHES
+            },
         }
         report["poolPlan"]["gpuTopologyByBatch"] = {
             str(batch): {
                 "gpuCountPerNode": min(batch // plan["rank_mb"], 8),
-                "nodeCount": max((batch // plan["rank_mb"]) // 8, 1),
-                "totalGpuCount": batch // plan["rank_mb"],
+                "nodeCount": 1,
+                "totalGpuCount": min(batch // plan["rank_mb"], 8),
+                "gradientAccumulation": batch
+                // (min(batch // plan["rank_mb"], 8) * plan["rank_mb"]),
             }
             for batch in BATCHES
         }
         report["gpuTopology"] = {
             str(batch): {
                 "gpuCountPerNode": min(batch // plan["rank_mb"], 8),
-                "nodeCount": max((batch // plan["rank_mb"]) // 8, 1),
-                "gpuCount": batch // plan["rank_mb"],
-                "gradientAccumulation": 1,
+                "nodeCount": 1,
+                "gpuCount": min(batch // plan["rank_mb"], 8),
+                "gradientAccumulation": batch
+                // (min(batch // plan["rank_mb"], 8) * plan["rank_mb"]),
             }
             for batch in BATCHES
         } | {"rankMicrobatchSequences": plan["rank_mb"]}

@@ -106,17 +106,26 @@ def lr_for(model: str, batch: int) -> str:
     return MODELS[model]["lr"][batch]
 
 
-def topology(model: str, batch: int) -> tuple[int, int, int]:
-    """Return GPUs per node, node count, and total GPUs at grad accumulation one."""
+def topology(model: str, batch: int) -> tuple[int, int, int, int]:
+    """Return GPUs/node, nodes, allocated GPUs, and gradient accumulation.
+
+    Pool-3B repair runs are deliberately restricted to a single node with at
+    most eight GPUs.  Larger global batches preserve their optimizer-step
+    semantics by increasing gradient accumulation instead of node count.
+    """
     rank_mb = MODELS[model]["rank_mb"]
     if batch % rank_mb:
         raise ValueError(f"BS{batch} is not divisible by rank microbatch {rank_mb}")
-    total_gpus = batch // rank_mb
-    if total_gpus <= 8:
-        return total_gpus, 1, total_gpus
-    if total_gpus % 8:
-        raise ValueError(f"total GPU count {total_gpus} is not divisible by 8")
-    return 8, total_gpus // 8, total_gpus
+    ranks_at_ga1 = batch // rank_mb
+    allocated_gpus = min(ranks_at_ga1, 8)
+    denominator = allocated_gpus * rank_mb
+    if batch % denominator:
+        raise ValueError(
+            f"BS{batch} is not divisible by {allocated_gpus} GPUs x "
+            f"rank microbatch {rank_mb}"
+        )
+    gradient_accumulation = batch // denominator
+    return allocated_gpus, 1, allocated_gpus, gradient_accumulation
 
 
 def total_steps(tokens: int, batch: int) -> int:
@@ -271,6 +280,33 @@ def selected_3b(report: dict[str, Any], batch: int, epoch: int, lr: str):
     return candidates[0]
 
 
+def selected_3b_for_wd(
+    report: dict[str, Any], batch: int, epoch: int, lr: str, wd: Decimal
+):
+    candidates = [
+        candidate
+        for candidate in completed_candidates(
+            report.get("batchSweeps", []),
+            batch,
+            epoch,
+            lr,
+            unhealthy_ids(report),
+        )
+        if candidate[1] == wd
+    ]
+    if not candidates:
+        raise SystemExit(
+            f"E{epoch} is not resolved for BS{batch}, LR {lr}, WD {wd}"
+        )
+    return candidates[0]
+
+
+def wd_repair_rule(report: dict[str, Any], batch: int) -> dict[str, Any] | None:
+    policy = report.get("wdRepairPolicy", {})
+    rule = policy.get("byBatch", {}).get(str(batch))
+    return rule if isinstance(rule, dict) else None
+
+
 def baseline_wd_cap(report: dict[str, Any], batch: int, epoch: int, lr: str) -> Decimal:
     candidates = completed_candidates(
         report.get("baseline1b", {}).get("batchSweeps", []),
@@ -315,9 +351,27 @@ def audit_later(
     batch = a.global_sequences
     lr = lr_for(a.model, batch)
     predecessor_epoch = PREDECESSOR[a.target_epoch]
-    selected_ce, selected_wd, selected_sweep, selected_result = selected_3b(
-        report, batch, predecessor_epoch, lr
+    requested_wd = Decimal(a.weight_decay)
+    repair_rule = wd_repair_rule(report, batch)
+    repair_trajectory = bool(
+        repair_rule
+        and requested_wd
+        in {
+            Decimal(str(value))
+            for value in (
+                repair_rule.get("smallerWeightDecays", [])
+                + repair_rule.get("largerWeightDecays", [])
+            )
+        }
     )
+    if repair_trajectory:
+        selected_ce, selected_wd, selected_sweep, selected_result = selected_3b_for_wd(
+            report, batch, predecessor_epoch, lr, requested_wd
+        )
+    else:
+        selected_ce, selected_wd, selected_sweep, selected_result = selected_3b(
+            report, batch, predecessor_epoch, lr
+        )
     if selected_sweep.get("beaker") != a.base_experiment:
         raise SystemExit(
             "base experiment must be the selected preceding 3B-pool frontier"
@@ -332,7 +386,34 @@ def audit_later(
         raise SystemExit(
             f"wrong selected predecessor checkpoint: expected {expected_checkpoint}"
         )
-    requested_wd = Decimal(a.weight_decay)
+    if repair_trajectory:
+        existing_wd = Decimal(str(repair_rule["existingWeightDecay"]))
+        smaller = {
+            Decimal(str(value)) for value in repair_rule.get("smallerWeightDecays", [])
+        }
+        if requested_wd in smaller:
+            existing_ce, _, _, _ = selected_3b_for_wd(
+                report, batch, predecessor_epoch, lr, existing_wd
+            )
+            if selected_ce >= existing_ce:
+                raise SystemExit(
+                    f"cut smaller WD {requested_wd}: E{predecessor_epoch} CE "
+                    f"{selected_ce} did not beat existing WD {existing_wd} CE {existing_ce}"
+                )
+        else:
+            minimum_epoch = int(repair_rule.get("largerWeightDecayMinimumEpoch", 1))
+            earlier_epoch = PREDECESSOR.get(predecessor_epoch)
+            if predecessor_epoch >= minimum_epoch and earlier_epoch is not None:
+                earlier_ce, _, _, _ = selected_3b_for_wd(
+                    report, batch, earlier_epoch, lr, requested_wd
+                )
+                if selected_ce >= earlier_ce:
+                    raise SystemExit(
+                        f"stop larger WD {requested_wd}: E{predecessor_epoch} CE "
+                        f"{selected_ce} did not improve on its E{earlier_epoch} CE {earlier_ce}"
+                    )
+    else:
+        requested_wd = Decimal(a.weight_decay)
     freeze_policy = report.get("wdFreezePolicy", {})
     frozen_value = freeze_policy.get("frozenContinuationWdByBatch", {}).get(
         str(batch)
@@ -343,7 +424,10 @@ def audit_later(
         and policy_frontier is not None
         and a.target_epoch > int(policy_frontier)
     )
-    if frozen_continuation:
+    if repair_trajectory:
+        if requested_wd != selected_wd:
+            raise SystemExit("WD-repair continuation must preserve its exact WD trajectory")
+    elif frozen_continuation:
         frozen_wd = Decimal(str(frozen_value))
         if requested_wd != frozen_wd or selected_wd != frozen_wd:
             raise SystemExit(
@@ -375,7 +459,7 @@ def audit_later(
             f"E{a.target_epoch} exceeds the 1B-pool stopping horizon E{horizon}"
         )
     earlier_epoch = PREDECESSOR.get(predecessor_epoch)
-    if earlier_epoch is not None:
+    if earlier_epoch is not None and not repair_trajectory:
         earlier_ce, _, _, _ = selected_3b(report, batch, earlier_epoch, lr)
         if selected_ce >= earlier_ce:
             raise SystemExit(
@@ -404,7 +488,7 @@ def audit_later(
     if (
         Decimal(unique_arg(source_args, "--lr=")) != Decimal(lr)
         or Decimal(unique_arg(source_args, "--train_module.optim.weight_decay="))
-        != selected_wd
+        != requested_wd
         or unique_arg(source_args, "--save-folder=") != source_output
     ):
         raise SystemExit("selected predecessor disagrees with its Beaker specification")
@@ -490,32 +574,12 @@ def audit_recovery(
         raise SystemExit("a live or completed recovery already exists for this tuple")
 
     lr = lr_for(a.model, a.global_sequences)
-    if a.target_epoch > 1:
-        predecessor_epoch = PREDECESSOR[a.target_epoch]
-        selected_ce, selected_wd, _, _ = selected_3b(
-            report, a.global_sequences, predecessor_epoch, lr
-        )
-        requested_wd = Decimal(a.weight_decay)
-        selected_index = WD_LADDER.index(selected_wd)
-        allowed_wds = {selected_wd}
-        if selected_index + 1 < len(WD_LADDER):
-            allowed_wds.add(WD_LADDER[selected_index + 1])
-        if requested_wd not in allowed_wds:
-            raise SystemExit("recovery WD violates the original frontier WD rule")
-        cap = baseline_wd_cap(
-            report, a.global_sequences, a.target_epoch, lr
-        )
-        if requested_wd > cap:
-            raise SystemExit("recovery WD exceeds the trusted 1B-pool cap")
-        if a.target_epoch > baseline_horizon(report, a.global_sequences, lr):
-            raise SystemExit("recovery target exceeds the trusted stopping horizon")
-        earlier_epoch = PREDECESSOR.get(predecessor_epoch)
-        if earlier_epoch is not None:
-            earlier_ce, _, _, _ = selected_3b(
-                report, a.global_sequences, earlier_epoch, lr
-            )
-            if selected_ce >= earlier_ce:
-                raise SystemExit("recovery target violates the strict stop rule")
+    # The original registration already passed the coordinate-selection guards.
+    # Infrastructure recovery is therefore an exact tuple replay, not a new
+    # selection decision. Re-applying today's frontier rule here could strand a
+    # grandfathered WD-repair trajectory after an unrelated node/checkpoint error.
+    if a.target_epoch > baseline_horizon(report, a.global_sequences, lr):
+        raise SystemExit("recovery target exceeds the trusted stopping horizon")
 
     _, _, failed_args = extract_training_command(source["tasks"][0])
     beaker_tuple = (
@@ -565,7 +629,10 @@ def audit(
         )
     predecessor = registered[0]
     result = predecessor.get("results", {}).get("1", {})
-    source_wd = Decimal(candidates[0])
+    # E1 must restore optimizer state from the exact requested WD coordinate.
+    # Loading a different-WD optimizer checkpoint silently replaces the command-line
+    # WD when torch restores optimizer parameter groups.
+    source_wd = Decimal(a.weight_decay)
     report_tuple = (
         predecessor.get("batchSequences"),
         Decimal(str(predecessor.get("lr"))),
@@ -701,6 +768,8 @@ def build(
         ("--trainer.load_trainer_state=", "--trainer.load_trainer_state=true"),
         ("--trainer.load_optim_state=", "--trainer.load_optim_state=true"),
         ("--trainer.reset_data_loader_state_on_load_path=", f"--trainer.reset_data_loader_state_on_load_path={'true' if reset_loader else 'false'}"),
+        ("--trainer.callbacks.config_saver.validate_checkpoint_config=", "--trainer.callbacks.config_saver.validate_checkpoint_config=true"),
+        ("--train_module.validate_optimizer_hyperparameters_on_load=", "--train_module.validate_optimizer_hyperparameters_on_load=true"),
     )
     for prefix, value in replacements:
         args = upsert(args, prefix, value)
@@ -720,7 +789,7 @@ def build(
         shlex.join(["echo", f"POOL3B_PREFLIGHT model={a.model} bs={a.global_sequences} epoch={a.target_epoch} lr={lr} wd={a.weight_decay} source={a.source_checkpoint} manifest={data_manifest} reset_loader={'true' if reset_loader else 'false'} seed={loader_seed} recovery_of={a.recover_failed_experiment or 'none'}"]),
         shlex.join(["python", script, name, "--dry-run", *args]),
     ]
-    gpus_per_node, nodes, _ = topology(a.model, a.global_sequences)
+    gpus_per_node, nodes, _, _ = topology(a.model, a.global_sequences)
     preflight = "\n".join(checks[1:])
     if nodes == 1:
         launch = (
@@ -803,7 +872,9 @@ def build(
 def register(a: argparse.Namespace, experiment: str, output: str) -> None:
     path = report_path(a.model)
     report = json.loads(path.read_text())
-    gpus_per_node, nodes, total_gpus = topology(a.model, a.global_sequences)
+    gpus_per_node, nodes, total_gpus, gradient_accumulation = topology(
+        a.model, a.global_sequences
+    )
     rank_mb = MODELS[a.model]["rank_mb"]
     predecessor_pool = (
         report["batchSweeps"]
@@ -856,6 +927,18 @@ def register(a: argparse.Namespace, experiment: str, output: str) -> None:
         if retrying_same_recovery_source
         else not recovery_inside_target
     )
+    repair_rule = wd_repair_rule(report, a.global_sequences)
+    requested_wd = Decimal(a.weight_decay)
+    existing_wd = (
+        Decimal(str(repair_rule["existingWeightDecay"])) if repair_rule else None
+    )
+    repair_role = (
+        "smaller"
+        if existing_wd is not None and requested_wd < existing_wd
+        else "larger-ceiling"
+        if existing_wd is not None and requested_wd > existing_wd
+        else None
+    )
     report["batchSweeps"].append({
         "batchSequences": a.global_sequences,
         "globalBatchTokens": a.global_sequences * SEQ,
@@ -864,14 +947,16 @@ def register(a: argparse.Namespace, experiment: str, output: str) -> None:
         "wd": a.weight_decay,
         "warmupSteps": int(predecessors[0]["warmupSteps"]),
         "rankMicrobatchSequences": rank_mb,
-        "gradientAccumulation": 1,
+        "gradientAccumulation": gradient_accumulation,
         "gpuCountPerNode": gpus_per_node,
         "nodeCount": nodes,
         "gpuCount": total_gpus,
         "status": "pending",
         "activeEpoch": a.target_epoch,
         "search": (
-            "nested-3b-fixed-lr-frozen-wd"
+            "nested-3b-wd-repair"
+            if repair_role
+            else "nested-3b-fixed-lr-frozen-wd"
             if a.target_epoch
             > int(
                 report.get("wdFreezePolicy", {})
@@ -884,6 +969,7 @@ def register(a: argparse.Namespace, experiment: str, output: str) -> None:
             is not None
             else "nested-3b-fixed-lr-adaptive-wd"
         ),
+        "wdRepairRole": repair_role,
         "beaker": experiment,
         "output": output,
         "sourceCheckpoint": a.source_checkpoint,

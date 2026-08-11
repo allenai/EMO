@@ -2,7 +2,7 @@ import contextlib
 import logging
 from dataclasses import replace
 from functools import cached_property, lru_cache
-from typing import Any, Dict, Generator, Literal, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Literal, Optional, Tuple, Union
 
 import torch
 import torch.distributed as dist
@@ -70,6 +70,54 @@ from .config import (
 log = logging.getLogger(__name__)
 
 
+def optimizer_hyperparameters(optim: Optimizer) -> List[Dict[str, Any]]:
+    """Snapshot every optimizer parameter-group field except parameter references."""
+
+    def normalize(value: Any) -> Any:
+        if isinstance(value, torch.Tensor):
+            value = value.detach().cpu()
+            return value.item() if value.numel() == 1 else value.tolist()
+        if isinstance(value, dict):
+            return {key: normalize(item) for key, item in value.items()}
+        if isinstance(value, tuple):
+            return tuple(normalize(item) for item in value)
+        if isinstance(value, list):
+            return [normalize(item) for item in value]
+        return value
+
+    return [
+        {key: normalize(value) for key, value in group.items() if key != "params"}
+        for group in optim.param_groups
+    ]
+
+
+def assert_optimizer_hyperparameters_match(
+    expected: List[Dict[str, Any]], actual: List[Dict[str, Any]]
+) -> None:
+    """Assert that checkpoint loading did not change any optimizer hyperparameter."""
+    if expected == actual:
+        return
+    details = []
+    missing = object()
+    for group_idx in range(max(len(expected), len(actual))):
+        expected_group = expected[group_idx] if group_idx < len(expected) else {}
+        actual_group = actual[group_idx] if group_idx < len(actual) else {}
+        for key in sorted(set(expected_group) | set(actual_group)):
+            expected_value = expected_group.get(key, missing)
+            actual_value = actual_group.get(key, missing)
+            if expected_value != actual_value:
+                details.append(
+                    f"group {group_idx} {key}: checkpoint "
+                    f"{('<missing>' if actual_value is missing else repr(actual_value))} "
+                    f"!= command "
+                    f"{('<missing>' if expected_value is missing else repr(expected_value))}"
+                )
+    raise OLMoConfigurationError(
+        "Checkpoint optimizer hyperparameters do not exactly match the command config:\n - "
+        + "\n - ".join(details)
+    )
+
+
 class TransformerTrainModule(TrainModule):
     """
     A :class:`TrainModule` for any :class:`~olmo_core.nn.transformer.Transformer` model
@@ -105,6 +153,8 @@ class TransformerTrainModule(TrainModule):
         when loading a checkpoint.
     :param load_key_mapping: Can be used to load a checkpoint where certain parameter have different names.
         This dictionary should map current keys to keys in the checkpoint to be loaded.
+    :param validate_optimizer_hyperparameters_on_load: Abort a checkpoint load if any optimizer
+        parameter-group setting differs from the optimizer built from the command config.
     :param batch_simulation: Optional structured-noise or local-SGD smaller-batch simulation.
         The default configuration is disabled and preserves normal optimization.
     """
@@ -132,6 +182,7 @@ class TransformerTrainModule(TrainModule):
         load_key_mapping: Optional[Dict[str, str]] = None,
         label_ignore_index: int = -100,
         batch_simulation: Optional[BatchSimulationConfig] = None,
+        validate_optimizer_hyperparameters_on_load: bool = False,
     ):
         super().__init__()
         batch_simulation = batch_simulation or BatchSimulationConfig()
@@ -221,6 +272,7 @@ class TransformerTrainModule(TrainModule):
             flatten_optimizer_state_dict=True, strict=True
         )
         self.load_key_mapping = load_key_mapping
+        self.validate_optimizer_hyperparameters_on_load = validate_optimizer_hyperparameters_on_load
 
         # Build optimizer(s).
         log.info("Building optimizer...")
@@ -381,6 +433,11 @@ class TransformerTrainModule(TrainModule):
 
     def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
         load_optim = "optim" in state_dict
+        expected_optim_hyperparameters = (
+            optimizer_hyperparameters(self.optim)
+            if load_optim and self.validate_optimizer_hyperparameters_on_load
+            else None
+        )
 
         if self.load_key_mapping is not None:
             swap_param_keys(state_dict, self.load_key_mapping, reverse=True, quiet=True)
@@ -410,6 +467,11 @@ class TransformerTrainModule(TrainModule):
                 state_dict["optim"],
                 options=self.state_dict_load_opts,
             )
+            if expected_optim_hyperparameters is not None:
+                assert_optimizer_hyperparameters_match(
+                    expected_optim_hyperparameters,
+                    optimizer_hyperparameters(self.optim),
+                )
             gc_cuda()
         self._local_sgd_steps_since_sync = 0
 

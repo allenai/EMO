@@ -928,6 +928,9 @@ class Trainer:
         dir = dir_to_scatter
 
         log.info(f"Loading checkpoint from '{dir}'...")
+        for callback in self._iter_callbacks():
+            callback.pre_checkpoint_loaded(dir)
+
         trainer_state = self.checkpointer.load(
             dir,
             self.train_module,

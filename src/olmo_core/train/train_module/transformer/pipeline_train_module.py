@@ -52,6 +52,10 @@ from olmo_core.utils import (
 from ...common import MetricMergeStrategy, ReduceType
 from ..train_module import EvalBatchSizeUnit, EvalBatchSpec, TrainModule
 from .common import parallelize_model
+from .train_module import (
+    assert_optimizer_hyperparameters_match,
+    optimizer_hyperparameters,
+)
 from .config import (
     TransformerActivationCheckpointingConfig,
     TransformerContextParallelConfig,
@@ -101,6 +105,8 @@ class TransformerPipelineTrainModule(TrainModule):
         when loading a checkpoint.
     :param load_key_mapping: Can be used to load a checkpoint where certain parameter have different names.
         This dictionary should map current keys to keys in the checkpoint to be loaded.
+    :param validate_optimizer_hyperparameters_on_load: Abort a checkpoint load if any optimizer
+        parameter-group setting differs from the optimizer built from the command config.
     """
 
     def __init__(
@@ -126,6 +132,7 @@ class TransformerPipelineTrainModule(TrainModule):
         state_dict_load_opts: Optional[dist_cp_sd.StateDictOptions] = None,
         load_key_mapping: Optional[Dict[str, str]] = None,
         label_ignore_index: int = -100,
+        validate_optimizer_hyperparameters_on_load: bool = False,
     ):
         super().__init__()
 
@@ -199,6 +206,7 @@ class TransformerPipelineTrainModule(TrainModule):
             flatten_optimizer_state_dict=True, strict=False
         )
         self.load_key_mapping = load_key_mapping
+        self.validate_optimizer_hyperparameters_on_load = validate_optimizer_hyperparameters_on_load
 
         # Build optimizer(s).
         log.info("Building optimizer(s)...")
@@ -341,6 +349,11 @@ class TransformerPipelineTrainModule(TrainModule):
 
     def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
         load_optim = "optim" in state_dict
+        expected_optim_hyperparameters = (
+            [optimizer_hyperparameters(optim) for optim in self.optimizers]
+            if load_optim and self.validate_optimizer_hyperparameters_on_load
+            else None
+        )
 
         if self.load_key_mapping is not None:
             swap_param_keys(state_dict, self.load_key_mapping, reverse=True, quiet=True)
@@ -357,7 +370,7 @@ class TransformerPipelineTrainModule(TrainModule):
             full_state_dict = self._get_state_dict(load_opts, optim=load_optim)
             merge_state_dicts(state_dict, full_state_dict)
 
-        for model, optim in zip(self.model_parts, self.optimizers):
+        for optim_idx, (model, optim) in enumerate(zip(self.model_parts, self.optimizers)):
             dist_cp_sd.set_model_state_dict(
                 model,
                 state_dict["model"],
@@ -371,6 +384,11 @@ class TransformerPipelineTrainModule(TrainModule):
                     state_dict["optim"],
                     options=self.state_dict_load_opts,
                 )
+                if expected_optim_hyperparameters is not None:
+                    assert_optimizer_hyperparameters_match(
+                        expected_optim_hyperparameters[optim_idx],
+                        optimizer_hyperparameters(optim),
+                    )
                 gc_cuda()
 
     def train_batch(self, batch: Dict[str, Any], dry_run: bool = False):
