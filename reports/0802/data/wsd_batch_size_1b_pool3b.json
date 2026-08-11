@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-10",
+  "updated": "2026-08-09",
   "title": "0802 Step 1-1 \u00b7 Dense 1.5B \u00b7 nested 3B pool",
   "setup": "Dense 1.5B; nested 3B pool = sealed 1B + disjoint new 2B; sequence length 4096; global batches 64, 128, 256, and 512 sequences.",
   "selection": "Historical Pool-3B WD branches are collapsed by audited effective WD: optimizer-state restore made every continuation inherit the root 1B-pool checkpoint WD. These results therefore do not constitute a Pool-3B WD comparison. Future E1 work requires an exact same-model/batch/LR/WD 1B-pool source, and checkpoint loading fails on any model or optimizer hyperparameter mismatch.",
@@ -5786,7 +5786,7 @@
       "gpuCountPerNode": 8,
       "nodeCount": 1,
       "gpuCount": 8,
-      "status": "running",
+      "status": "complete",
       "activeEpoch": 1,
       "search": "nested-3b-wd-repair",
       "wdRepairRole": "smaller",
@@ -5808,7 +5808,71 @@
       "actualTargetTokens": 3000000000,
       "revision": "eaed489fda641236ceda74c5b04266532d72eba0",
       "recoveryOf": "01KZQM2NV0V87ABV59Q9HCH5DY",
-      "results": {},
+      "results": {
+        "1": {
+          "epoch": 1,
+          "lr": "1e-3",
+          "wd": "0.1",
+          "status": "complete",
+          "job": "01KZQQQFJ2KQ6V73DV75M2NH8W",
+          "jobs": [
+            "01KZQQQFJ2KQ6V73DV75M2NH8W"
+          ],
+          "beaker": "01KZQQQFDA7280QW565PRAWADC",
+          "resultDataset": "01KZQQQFDH4BKNAF6WX1XM9JE7",
+          "resultDatasets": [
+            "01KZQQQFDH4BKNAF6WX1XM9JE7"
+          ],
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e1_lr1e-3_wd0.1_warmup192_wdrepair-e1-1b-bs128-wd01-r02",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs128_e1_lr1e-3_wd0.1_warmup192_pool3b-wdrepair-source-e1/step1716",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_pool3b_nested_bs128_e1_lr1e-3_wd0.1_warmup192_wdrepair-e1-1b-bs128-wd01-r02/step5150",
+          "retainedPreDecaySteps": [
+            5150
+          ],
+          "dataManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_extension_1b_to_3b.json",
+          "dataLoaderReset": true,
+          "dataLoaderSeed": 80201,
+          "actualTargetTokens": 3000000000,
+          "actualTargetSteps": 5723,
+          "train": 3.096,
+          "validation": 3.141,
+          "c4": 3.141,
+          "wandb": "c6bjsdjz",
+          "acc": 37.87,
+          "bpb": 0.9139,
+          "avg8Bpb": 1.3232375,
+          "downstream": {
+            "arc_challenge": 27.42,
+            "arc_easy": 53.33,
+            "boolq": 59.63,
+            "csqa": 46.6,
+            "hellaswag": 37.87,
+            "openbookqa": 28.4,
+            "piqa": 68.28,
+            "socialiqa": 43.96,
+            "winogrande": 51.78
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.343,
+            "arc_easy": 1.321,
+            "boolq": 1.761,
+            "csqa": 1.392,
+            "hellaswag": 0.9139,
+            "openbookqa": 1.627,
+            "piqa": 1.213,
+            "socialiqa": 1.253,
+            "winogrande": 1.523
+          },
+          "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded.",
+          "wdRepairDecision": {
+            "decision": "cut",
+            "reason": "Smaller WD0.1 validation CE 3.141 did not strictly beat existing WD0.3 CE 3.137 at E1.",
+            "existingWd": "0.3",
+            "existingValidation": 3.137,
+            "epoch": 1
+          }
+        }
+      },
       "jobs": [
         "01KZQQQFJ2KQ6V73DV75M2NH8W"
       ],
@@ -5818,18 +5882,26 @@
       "jobStates": [
         {
           "job": "01KZQQQFJ2KQ6V73DV75M2NH8W",
-          "state": "running",
+          "state": "succeeded",
           "created": "2026-08-11T06:21:31.946419Z",
           "started": "2026-08-11T06:24:29.526918Z",
-          "finalized": null,
-          "exitCode": null,
+          "finalized": "2026-08-11T07:49:09.072434Z",
+          "exitCode": 0,
           "reason": null,
           "resultDataset": "01KZQQQFDH4BKNAF6WX1XM9JE7"
         }
       ],
       "job": "01KZQQQFJ2KQ6V73DV75M2NH8W",
       "resultDataset": "01KZQQQFDH4BKNAF6WX1XM9JE7",
-      "activeWandb": "c6bjsdjz"
+      "activeWandb": "c6bjsdjz",
+      "reason": "Completed successfully with full DCLM validation and all nine downstream evaluations; exact nested-pool, loader-reset, multi-replica, and retained pre-decay checkpoint provenance recorded.",
+      "wdRepairDecision": {
+        "decision": "cut",
+        "reason": "Smaller WD0.1 validation CE 3.141 did not strictly beat existing WD0.3 CE 3.137 at E1.",
+        "existingWd": "0.3",
+        "existingValidation": 3.137,
+        "epoch": 1
+      }
     },
     {
       "batchSequences": 64,
