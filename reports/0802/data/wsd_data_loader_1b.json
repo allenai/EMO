@@ -631,11 +631,13 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "complete",
-      "activeEpoch": null,
-      "attemptedEpochs": [],
-      "sourceExperiment": "01KZFVTS3EHFR7HQ5ZY9DAF9NS",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e1_lr1e-3_wd0.333_warmup48_e1_grid_r19/step428",
+      "status": "planned",
+      "activeEpoch": 4,
+      "attemptedEpochs": [
+        2
+      ],
+      "sourceExperiment": "01KZRTJRV9R7TWJDJPN6TJR1A6",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e2_lr1e-3_wd0.333_warmup48_dataloader-cd-r01/step858",
       "gpuCount": 32,
       "nodeCount": 4,
       "rankMicrobatchSequences": 8,
@@ -717,8 +719,8 @@
           "reason": "Completed healthy on four 8-GPU nodes from exact E1 step428, retaining pre-decay step858 and endpoint step954. Validation CE3.468 improves the initial WD0.1 DR probe CE3.475 by 0.007; selection remains provisional until the LR5e-4 neighbor completes."
         }
       },
-      "health": "healthy",
-      "reason": "E2 completed healthy at validation CE3.468, improving the initial LR1e-3/WD0.1 DR probe CE3.475 by 0.007. This is the provisional BS512 DR E2 coordinate while the LR5e-4 neighbor remains queued.",
+      "health": "planned",
+      "reason": "BS512 DR E2 is resolved at LR1e-3/WD0.333 CE3.468 after LR5e-4/WD0.1 and LR1e-3/WD1.0 were worse. E4 is registered to resume the exact selected-coordinate pre-decay step858.",
       "beaker": "01KZRTJRV9R7TWJDJPN6TJR1A6",
       "experiment": "01KZRTJRV9R7TWJDJPN6TJR1A6",
       "job": "01KZRTJRYWBBXTA57W8F5KQRKQ",
@@ -1270,9 +1272,11 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "submitted",
-      "activeEpoch": 2,
-      "attemptedEpochs": [],
+      "status": "complete",
+      "activeEpoch": null,
+      "attemptedEpochs": [
+        2
+      ],
       "sourceExperiment": "01KZGE4HMCEWMBP86YEAGSP1B7",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e1_lr1e-3_wd1.0_warmup48_e1_e2_wdup_r25/step428",
       "gpuCount": 32,
@@ -1293,10 +1297,72 @@
           "acc": 25.93,
           "bpb": 1.212,
           "avg8Bpb": 1.806
+        },
+        "2": {
+          "status": "complete",
+          "beaker": "01KZRWW61GR8PGS2Q7NH8P1CRV",
+          "experiment": "01KZRWW61GR8PGS2Q7NH8P1CRV",
+          "job": "01KZRWW6B8K903Y5M0CN0P0E37",
+          "result": "01KZRWW61PDP1WGVSHYEZD2DEP",
+          "replicaJobs": [
+            "01KZRWW6B8K903Y5M0CN0P0E37",
+            "01KZRWW6MP45XFRVCQMM2VNGQM",
+            "01KZRWW6TXPT1N5EV2F6A7SYV1",
+            "01KZRWW7151ZHBNYS1NN4M0AT8"
+          ],
+          "replicaResults": [
+            "01KZRWW61PDP1WGVSHYEZD2DEP",
+            "01KZRWW6BECAQJ38TWJW06B8B5",
+            "01KZRWW6MXSMCBYEQ8V01YQ70F",
+            "01KZRWW6V15DZDR82AT92A3TPV"
+          ],
+          "replicaNodes": [
+            "01K3PA7X3C9AR4H8V7ZK7WB67S",
+            "01KMZXA4AF0K2XXCER4ACGF3EY",
+            "01KP4B3FQAWJZ0TDZF928QJ4S3",
+            "01KT4H4REQ2FXMHTHYYBFDYRWQ"
+          ],
+          "wandb": "svdpgqge",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e2_lr1e-3_wd1.0_warmup48_dataloader-cd-r01",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e1_lr1e-3_wd1.0_warmup48_e1_e2_wdup_r25/step428",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e2_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step858",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e2_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step954",
+          "retainedCheckpoints": [
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e2_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step858",
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e2_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step954"
+          ],
+          "train": 3.487,
+          "validation": 3.51,
+          "acc": 28.79,
+          "bpb": 1.03,
+          "avg8Bpb": 1.52775,
+          "downstream": {
+            "arc_challenge": 19.73,
+            "arc_easy": 45.09,
+            "boolq": 57.0,
+            "csqa": 34.4,
+            "hellaswag": 28.79,
+            "openbookqa": 21.0,
+            "piqa": 60.55,
+            "socialiqa": 41.71,
+            "winogrande": 48.62
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.558,
+            "arc_easy": 1.641,
+            "boolq": 2.973,
+            "csqa": 1.687,
+            "hellaswag": 1.03,
+            "openbookqa": 1.839,
+            "piqa": 1.358,
+            "socialiqa": 1.512,
+            "winogrande": 1.597
+          },
+          "reason": "Completed healthy on four 8-GPU nodes from exact E1 step428, retaining pre-decay step858 and endpoint step954. Validation CE3.510 is worse than WD0.333 CE3.468, resolving the BS512 DR E2 WD boundary at WD0.333."
         }
       },
-      "health": "planned",
-      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "health": "healthy",
+      "reason": "Completed healthy at E2 validation CE3.510. WD1.0 is worse than WD0.333 CE3.468, so the BS512 DR E2 coordinate is resolved at LR1e-3/WD0.333.",
       "beaker": "01KZRWW61GR8PGS2Q7NH8P1CRV",
       "experiment": "01KZRWW61GR8PGS2Q7NH8P1CRV",
       "job": "01KZRWW6B8K903Y5M0CN0P0E37",
@@ -1313,7 +1379,44 @@
         "01KZRWW6MXSMCBYEQ8V01YQ70F",
         "01KZRWW6V15DZDR82AT92A3TPV"
       ],
-      "beakerStatus": "pending",
+      "beakerStatus": "complete",
+      "wandb": "svdpgqge",
+      "node": "01K3PA7X3C9AR4H8V7ZK7WB67S",
+      "replicaNodes": [
+        "01K3PA7X3C9AR4H8V7ZK7WB67S",
+        "01KMZXA4AF0K2XXCER4ACGF3EY",
+        "01KP4B3FQAWJZ0TDZF928QJ4S3",
+        "01KT4H4REQ2FXMHTHYYBFDYRWQ"
+      ],
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "remoteDryRunComplete": true,
+        "dynamicRepacking": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 428,
+        "firstOptimizerStep": 429,
+        "trainerAndOptimizerStateRequested": true
+      },
+      "healthSummary": {
+        "ceSamples": 105,
+        "ceLast": 3.487,
+        "ceTailMean": 3.5791,
+        "gradSamples": 105,
+        "gradLast": 0.0445,
+        "gradTailP95": 0.135445,
+        "nanOrInf": false,
+        "classification": "healthy"
+      },
+      "progress": {
+        "observedAt": "2026-08-11 10:32 PDT",
+        "step": 954,
+        "endpointStep": 954,
+        "epoch": 2,
+        "trainCe": 3.487,
+        "validationCe": 3.51,
+        "eta": "complete"
+      },
       "revision": "c4a5e3cd274a38941642dba8d8d1dd8718d74395",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e2_lr1e-3_wd1.0_warmup48_dataloader-cd-r01"
     },
