@@ -393,7 +393,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "5e-4",
       "wd": "0.1",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 2,
       "attemptedEpochs": [],
       "sourceExperiment": "01KZFVTR2W2CQV296SMHP9ERHA",
@@ -450,7 +450,26 @@
         }
       ],
       "health": "pending",
-      "reason": "Attempt1 failed before task startup due node SXid12028; retry2 is authorized because no W&B, optimizer step, output, or checkpoint was created."
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "beaker": "01KZRTZDK516F0CSM6RA6HXWSA",
+      "experiment": "01KZRTZDK516F0CSM6RA6HXWSA",
+      "job": "01KZRTZDPVYPJX7G3521Z2B731",
+      "result": "01KZRTZDKG020SDSDGJQJ028T1",
+      "replicaJobs": [
+        "01KZRTZDPVYPJX7G3521Z2B731",
+        "01KZRTZDTXR9JHW80RH5VPMMFV",
+        "01KZRTZDY92D7D82MBYAYE095E",
+        "01KZRTZE1KMHC0MMB4W5CA45RV"
+      ],
+      "replicaResults": [
+        "01KZRTZDKG020SDSDGJQJ028T1",
+        "01KZRTZDQ38H3AXCKS36DV16D2",
+        "01KZRTZDV1VZZP2QPQ8Q368AN0",
+        "01KZRTZDYCTPKX7JFGHY6PNFH2"
+      ],
+      "beakerStatus": "scheduled",
+      "revision": "43dde1f7fd9539be3960fc2554568927c5c32454",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e2_lr5e-4_wd0.1_warmup48_dataloader-cd-r02"
     },
     {
       "id": "dr512-lr1e-3-wd0.333",
