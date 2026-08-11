@@ -223,9 +223,10 @@ def extract_training_command(task: dict[str, Any]) -> tuple[str, str, list[str]]
         return arguments[1], arguments[2], arguments[3:]
     if arguments[:2] == ["bash", "-lc"] and len(arguments) == 3:
         for line in arguments[2].splitlines():
-            parts = shlex.split(line)
-            if not parts or parts[0] != "torchrun":
+            line = line.lstrip()
+            if not line.startswith("torchrun "):
                 continue
+            parts = shlex.split(line)
             script_index = next(
                 (index for index, part in enumerate(parts[1:], 1) if part.endswith(".py")),
                 None,
@@ -257,9 +258,26 @@ def upsert(arguments: list[str], prefix: str, value: str) -> list[str]:
 
 
 def audit_source_spec(spec: dict[str, Any], args: argparse.Namespace) -> tuple[str, list[str]]:
-    if len(spec.get("tasks", [])) != 1:
-        raise SystemExit("source experiment must contain exactly one task")
-    script, _, arguments = extract_training_command(spec["tasks"][0])
+    tasks = spec.get("tasks", [])
+    if len(tasks) not in {1, NODES}:
+        raise SystemExit(
+            "source experiment must contain one replicated task or exactly four "
+            "materialized replica tasks"
+        )
+    extracted = [extract_training_command(task) for task in tasks]
+    if len(tasks) == NODES:
+        if any(
+            int(task.get("resources", {}).get("gpuCount", 0)) != GPUS_PER_NODE
+            for task in tasks
+        ):
+            raise SystemExit("materialized source replicas are not four 8-GPU tasks")
+        if any(item != extracted[0] for item in extracted[1:]):
+            raise SystemExit("materialized source replica training commands do not match")
+        # Beaker expands a completed replicated task into one task per replica when its
+        # spec is fetched. Canonicalize that representation before cloning the next job;
+        # build_spec() will restore the intended four-replica declaration.
+        spec["tasks"] = [copy.deepcopy(tasks[0])]
+    script, _, arguments = extracted[0]
     if not script.endswith("olmo2-1B.py"):
         raise SystemExit(f"source uses unexpected training script {script!r}")
     if numeric(unique_value(arguments, "--lr=")) != LEARNING_RATE:
