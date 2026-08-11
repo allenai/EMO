@@ -3131,12 +3131,12 @@
       ],
       "beakerStatus": "running",
       "progress": {
-        "observedAt": "2026-08-11 15:32 PDT",
-        "step": 870,
+        "observedAt": "2026-08-11 15:47 PDT",
+        "step": 1205,
         "endpointStep": 1908,
-        "epoch": 4,
-        "trainCe": 3.607,
-        "eta": "48m",
+        "epoch": 6,
+        "trainCe": 3.362,
+        "eta": "32m",
         "metricStatus": "preliminary"
       },
       "revision": "809bd9acacc10c4ac64963cc8cb50208a440be07",
@@ -3167,7 +3167,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 4,
       "attemptedEpochs": [
         2,
@@ -3256,8 +3256,8 @@
           "reason": "Completed healthy on four 8-GPU nodes from exact E1 step214, retaining pre-decay step428 and endpoint step477. Validation CE4.128 improves the initial WD0.1 DR probe CE4.158 by 0.030, so WD0.333 is the provisional WD-axis winner pending the WD1.0 boundary and lower-LR probes."
         }
       },
-      "health": "pending",
-      "reason": "E4 has all four 8-GPU replicas scheduled and is awaiting synchronized start from exact E2 pre-decay step428.",
+      "health": "healthy",
+      "reason": "E4 is running healthy on four 8-GPU nodes. Startup guards passed, exact LR1e-3/WD0.333 E2 pre-decay step428 loaded with trainer and optimizer state, and preliminary train CE is finite.",
       "beaker": "01KZSBTR8N37J6F9J3A5GYTNBC",
       "experiment": "01KZSBTR8N37J6F9J3A5GYTNBC",
       "job": "01KZSBTRE0CPY5KGSDTGZP8JEW",
@@ -3274,13 +3274,15 @@
         "01KZSBTRHRGEWDCCWY1Q3NZ0FJ",
         "01KZSBTRN63V2XB8BTRYRQP4TA"
       ],
-      "beakerStatus": "scheduled",
+      "beakerStatus": "running",
       "progress": {
-        "observedAt": "2026-08-11 15:32 PDT",
-        "step": 428,
+        "observedAt": "2026-08-11 15:47 PDT",
+        "step": 720,
         "endpointStep": 954,
         "epoch": 4,
-        "eta": "scheduled; awaiting synchronized start"
+        "trainCe": 3.639,
+        "eta": "11m",
+        "metricStatus": "preliminary"
       },
       "revision": "b56adeca4d9e4634e567a0d67e75a7bec1f33959",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e4_lr1e-3_wd0.333_warmup24_dataloader-cd-lr1e3-r01",
@@ -3290,7 +3292,18 @@
         "01JS0FZ51W1SWWMPK073HW91YX",
         "01JS0HMXX084EEPTYRT5KF2ZQ3",
         "01KQXB6X6F7X11CS51SWVPRAE5"
-      ]
+      ],
+      "wandb": "8pxv9lfs",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "remoteDryRunComplete": true,
+        "dynamicRepacking": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 428,
+        "firstOptimizerStep": 429,
+        "trainerAndOptimizerStateRequested": true
+      }
     },
     {
       "id": "dr1024-lr1e-3-wd1.0",
