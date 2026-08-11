@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-11 04:28 PDT",
+  "updated": "2026-08-11 05:06 PDT",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation; LR fixed at 1e-3; BS512 and BS1024 additions use four 8-GPU nodes with rank microbatch eight sequences.",
   "selection": "The existing OLMo-core baseline is shown only for BS64 through BS1024. E1 is common to all three data-order modes, so each new column reports the ordinary baseline E1 winner; an E2 branch may resume any exact LR/WD-matched E1 pre-decay checkpoint. LR is fixed at 1e-3. WD tuning follows the ordering hypothesis Fixed > ordinary > DR: the initial E2 probes use DR at WD0.1 and Fixed at WD0.333 for both batch sizes, then Fixed may expand upward while DR remains on the lower side of the ordinary optimum. From the selected E2 result onward, a later epoch may use only an equal or higher WD through E4, E8, E12, and E16. Dynamic repacking preserves the original E1 packing and begins repacking at E2; fixed order reuses the exact default E1 sequence permutation and batch membership forever.",
@@ -70,8 +70,8 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.1",
-      "status": "failed_infrastructure",
-      "activeEpoch": null,
+      "status": "planned",
+      "activeEpoch": 12,
       "sourceExperiment": "01KZR2Y9D19E87K0J5QC3BRD0M",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e8_lr1e-3_wd0.1_warmup48_dataloader-r01/step3432",
       "gpuCount": 32,
@@ -278,49 +278,39 @@
           "reason": "Completed healthy on four 8-GPU nodes from exact E4 pre-decay step1716; validation CE improved from 3.239 to 3.203, unlocking E12 from retained step3432."
         }
       },
-      "beaker": "01KZR60W0YV8P8M4TDAAYM7DQ5",
-      "experiment": "01KZR60W0YV8P8M4TDAAYM7DQ5",
-      "job": "01KZR60W4MWS9Q84MNE9VJT6GF",
-      "result": "01KZR60W1CJS9WWMTX473GKC6M",
-      "replicaJobs": [
-        "01KZR60W4MWS9Q84MNE9VJT6GF",
-        "01KZR60W7ZHDRCDCCRGK2RK9BV",
-        "01KZR60WB8TM9S5516K5ZKN1Z2",
-        "01KZR60WEKHRXMK54ARX8SV2HJ"
+      "attempts": [
+        {
+          "experiment": "01KZR60W0YV8P8M4TDAAYM7DQ5",
+          "job": "01KZR60W4MWS9Q84MNE9VJT6GF",
+          "result": "01KZR60W1CJS9WWMTX473GKC6M",
+          "replicaJobs": [
+            "01KZR60W4MWS9Q84MNE9VJT6GF",
+            "01KZR60W7ZHDRCDCCRGK2RK9BV",
+            "01KZR60WB8TM9S5516K5ZKN1Z2",
+            "01KZR60WEKHRXMK54ARX8SV2HJ"
+          ],
+          "replicaResults": [
+            "01KZR60W1CJS9WWMTX473GKC6M",
+            "01KZR60W4VCX6S4SNZ98QDB16T",
+            "01KZR60W84K2G1B56HD2DX5N3T",
+            "01KZR60WBD0JV0155FFYZD8SDM"
+          ],
+          "status": "canceled_before_task_start",
+          "failedReplica": "01KZR60W7ZHDRCDCCRGK2RK9BV",
+          "node": "01K9AYGE9Q1TEJMXP0P1SN19W7",
+          "wandb": null,
+          "reason": "Node 01K9AYGE9Q1TEJMXP0P1SN19W7 was cordoned for unrecoverable SXid error code12028 while starting. No task, W&B run, optimizer step, output, or checkpoint was created; exact E8 step3432 remained intact.",
+          "revision": "ca8acf67c004ffe345dd1ad8deceb43192364bc5",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e12_lr1e-3_wd0.1_warmup48_dataloader-r01"
+        }
       ],
-      "replicaResults": [
-        "01KZR60W1CJS9WWMTX473GKC6M",
-        "01KZR60W4VCX6S4SNZ98QDB16T",
-        "01KZR60W84K2G1B56HD2DX5N3T",
-        "01KZR60WBD0JV0155FFYZD8SDM"
-      ],
-      "beakerStatus": "canceled_before_task_start",
-      "wandb": null,
-      "node": "01K9AYGE9Q1TEJMXP0P1SN19W7",
-      "replicaNodes": [
-        "01JRYAW9HKCG889S9DT7CDQPDA",
-        "01K9AYGE9Q1TEJMXP0P1SN19W7",
-        "01K15VBGT6DBQCXH04Y81WFGJB",
-        "01KJT2MH75VZK6EBPG4NQ7S7CQ"
-      ],
-      "health": "infrastructure_failure",
+      "health": "pending",
       "startupEvidence": {
-        "taskStarted": false,
-        "wandbCreated": false,
-        "optimizerStepCreated": false,
+        "retryAuthorizedAt": "2026-08-11 05:06 PDT",
         "sourceCheckpointIntact": true,
         "sourceStep": 3432
       },
-      "progress": {
-        "observedAt": "2026-08-11 03:40 PDT",
-        "step": 3432,
-        "endpointStep": 5723,
-        "epoch": 8,
-        "eta": "stopped before task startup"
-      },
-      "revision": "ca8acf67c004ffe345dd1ad8deceb43192364bc5",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e12_lr1e-3_wd0.1_warmup48_dataloader-r01",
-      "reason": "Replica 1 was canceled while starting because node 01K9AYGE9Q1TEJMXP0P1SN19W7 was cordoned for unrecoverable SXid error code 12028. No task, W&B run, optimizer step, output, or checkpoint was created. The other three ready replicas were stopped to release their GPUs. Exact E8 source step3432 remains intact; do not retry without fresh authorization."
+      "reason": "User explicitly authorized one exact-coordinate E12 retry after the prior pre-start infrastructure failure; r02 is planned from retained E8 step3432."
     },
     {
       "id": "fixed512-wd0.333",
@@ -1026,8 +1016,8 @@
       "dataOrder": "fixed_order",
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "failed_infrastructure",
-      "activeEpoch": null,
+      "status": "planned",
+      "activeEpoch": 12,
       "sourceExperiment": "01KZR535N52WVTRHTKAQR3K43T",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e8_lr1e-3_wd0.333_warmup24_dataloader-r01/step1716",
       "gpuCount": 32,
@@ -1235,49 +1225,37 @@
           "reason": "Completed healthy on four 8-GPU nodes from exact E4 pre-decay step858; validation CE improved from 3.454 to 3.272, unlocking E12 from retained step1716."
         }
       },
-      "beaker": "01KZR8FS6FRWZFF5QV7YHN83P5",
-      "experiment": "01KZR8FS6FRWZFF5QV7YHN83P5",
-      "job": "01KZR8FSA2X4NA21X902JMCBTY",
-      "result": "01KZR8FS6QYN925JNS8W12FR8B",
-      "replicaJobs": [
-        "01KZR8FSA2X4NA21X902JMCBTY",
-        "01KZR8FSDH3B36GECY5A6P6GVA",
-        "01KZR8FSHHE09YQJ5NV9G8BQYT",
-        "01KZR8FSMX1TS6WPVG2XG630K5"
+      "attempts": [
+        {
+          "experiment": "01KZR8FS6FRWZFF5QV7YHN83P5",
+          "job": "01KZR8FSA2X4NA21X902JMCBTY",
+          "result": "01KZR8FS6QYN925JNS8W12FR8B",
+          "replicaJobs": [
+            "01KZR8FSA2X4NA21X902JMCBTY",
+            "01KZR8FSDH3B36GECY5A6P6GVA",
+            "01KZR8FSHHE09YQJ5NV9G8BQYT",
+            "01KZR8FSMX1TS6WPVG2XG630K5"
+          ],
+          "replicaResults": [
+            "01KZR8FS6QYN925JNS8W12FR8B",
+            "01KZR8FSA8H3EXF8HK15328T09",
+            "01KZR8FSDP47F956YT8BR3H29D",
+            "01KZR8FSHP8JK62EAK8QTHVGP1"
+          ],
+          "status": "failed_before_training_startup",
+          "wandb": null,
+          "reason": "Replica3 could not fetch the submitted nonexistent git ref ce55b25b6177de77a9f22493cc62065efbf3abb93; the other replicas were canceled by propagate-failure. No W&B run, optimizer step, output, or checkpoint was created; exact E8 step1716 remained intact.",
+          "revision": "ce55b25b6177de77a9f22493cc62065efbf3abb93",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e12_lr1e-3_wd0.333_warmup24_dataloader-r01"
+        }
       ],
-      "replicaResults": [
-        "01KZR8FS6QYN925JNS8W12FR8B",
-        "01KZR8FSA8H3EXF8HK15328T09",
-        "01KZR8FSDP47F956YT8BR3H29D",
-        "01KZR8FSHP8JK62EAK8QTHVGP1"
-      ],
-      "beakerStatus": "failed",
-      "wandb": null,
-      "node": "01JS0FZ64FCH579FNTD60W2N6V",
-      "replicaNodes": [
-        "01JS0FZ64FCH579FNTD60W2N6V",
-        "01JS3MZC5P4K0QPK3Z598JBCST",
-        "01KQ0F2NX98MG50MEF0ZCAMZWT",
-        "01JS0FZ53F7NJ2RM61NX1M1JXD"
-      ],
-      "health": "infrastructure_failure",
+      "health": "pending",
       "startupEvidence": {
-        "localPrintOnlyGuardPassed": true,
-        "gitCloneStarted": true,
-        "trainingEntrypointStarted": false,
-        "wandbCreated": false,
-        "optimizerStepStarted": false
+        "retryAuthorizedAt": "2026-08-11 05:06 PDT",
+        "sourceCheckpointIntact": true,
+        "sourceStep": 1716
       },
-      "progress": {
-        "observedAt": "2026-08-11 04:16 PDT",
-        "step": 1716,
-        "endpointStep": 2862,
-        "epoch": 8,
-        "eta": "stopped before training startup"
-      },
-      "revision": "ce55b25b6177de77a9f22493cc62065efbf3abb93",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e12_lr1e-3_wd0.333_warmup24_dataloader-r01",
-      "reason": "Infrastructure/configuration startup failure before training: replica 3 could not fetch submitted git ref ce55b25b6177de77a9f22493cc62065efbf3abb93 because that full hash was not a remote ref; the other replicas were canceled by propagate-failure. No W&B run, optimizer step, output, or new checkpoint was created. Exact E8 source step1716 remains intact; do not retry without fresh explicit authorization."
+      "reason": "User explicitly authorized one exact-coordinate E12 retry after the prior pre-training git-ref failure; r02 is planned from retained E8 step1716."
     },
     {
       "id": "fixed1024-wd1.0",
