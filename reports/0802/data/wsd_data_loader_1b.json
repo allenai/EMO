@@ -393,7 +393,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "5e-4",
       "wd": "0.1",
-      "status": "submitted",
+      "status": "planned",
       "activeEpoch": 2,
       "attemptedEpochs": [],
       "sourceExperiment": "01KZFVTR2W2CQV296SMHP9ERHA",
@@ -417,33 +417,40 @@
           "avg8Bpb": 1.84975
         }
       },
+      "attempts": [
+        {
+          "experiment": "01KZRTJ83C4PQFQKNTTDYQNYZA",
+          "job": "01KZRTJ870X5WQP1BXQVS3AMZG",
+          "result": "01KZRTJ83MVG34A11RM513TFEZ",
+          "replicaJobs": [
+            "01KZRTJ870X5WQP1BXQVS3AMZG",
+            "01KZRTJ8AJR1DGTTERS55C8XE1",
+            "01KZRTJ8DWBP7WEN1H8C11YA32",
+            "01KZRTJ8H520DSVWK0X6NA50XY"
+          ],
+          "replicaResults": [
+            "01KZRTJ83MVG34A11RM513TFEZ",
+            "01KZRTJ876W170NPR8WT2WN4K7",
+            "01KZRTJ8AN6ZZMXYYPK9E30NYP",
+            "01KZRTJ8DZQV65VG69684R9GYX"
+          ],
+          "replicaNodes": [
+            "01KT4H4T5FQ18DM4VH5YQ47TYQ",
+            "01JRYAW9HKCG889S9DT7CDQPDA",
+            "01JS0FZ51W1SWWMPK073HW91YX",
+            "01K9893X6FBJ1E9G0SXFGHN9X4"
+          ],
+          "status": "canceled_before_task_start",
+          "failedReplica": "01KZRTJ8DWBP7WEN1H8C11YA32",
+          "node": "01JS0FZ51W1SWWMPK073HW91YX",
+          "wandb": null,
+          "reason": "Replica2 was canceled while starting because node 01JS0FZ51W1SWWMPK073HW91YX was cordoned after unrecoverable SXid error code12028. No task, W&B run, optimizer step, output, or checkpoint was created; exact E1 step428 remains intact.",
+          "revision": "751955775dfd85a26e7eef613cdcc7cfa0b8f2c6",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e2_lr5e-4_wd0.1_warmup48_dataloader-cd-r01"
+        }
+      ],
       "health": "pending",
-      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
-      "beaker": "01KZRTJ83C4PQFQKNTTDYQNYZA",
-      "experiment": "01KZRTJ83C4PQFQKNTTDYQNYZA",
-      "job": "01KZRTJ870X5WQP1BXQVS3AMZG",
-      "result": "01KZRTJ83MVG34A11RM513TFEZ",
-      "replicaJobs": [
-        "01KZRTJ870X5WQP1BXQVS3AMZG",
-        "01KZRTJ8AJR1DGTTERS55C8XE1",
-        "01KZRTJ8DWBP7WEN1H8C11YA32",
-        "01KZRTJ8H520DSVWK0X6NA50XY"
-      ],
-      "replicaResults": [
-        "01KZRTJ83MVG34A11RM513TFEZ",
-        "01KZRTJ876W170NPR8WT2WN4K7",
-        "01KZRTJ8AN6ZZMXYYPK9E30NYP",
-        "01KZRTJ8DZQV65VG69684R9GYX"
-      ],
-      "replicaNodes": [
-        "01KT4H4T5FQ18DM4VH5YQ47TYQ",
-        "01JRYAW9HKCG889S9DT7CDQPDA",
-        "01JS0FZ51W1SWWMPK073HW91YX",
-        "01K9893X6FBJ1E9G0SXFGHN9X4"
-      ],
-      "beakerStatus": "scheduled",
-      "revision": "751955775dfd85a26e7eef613cdcc7cfa0b8f2c6",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e2_lr5e-4_wd0.1_warmup48_dataloader-cd-r01"
+      "reason": "Attempt1 failed before task startup due node SXid12028; retry2 is authorized because no W&B, optimizer step, output, or checkpoint was created."
     },
     {
       "id": "dr512-lr1e-3-wd0.333",
