@@ -1811,7 +1811,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 2,
       "attemptedEpochs": [],
       "sourceExperiment": "01KZAKM044B7EB61TT0W4H04TF",
@@ -1836,7 +1836,11 @@
         }
       },
       "health": "planned",
-      "reason": "Planned adjacent higher-WD E2 boundary probe because DR WD0.333 improved validation CE from 4.158 to 4.128. The WD axis must be closed at WD1.0 before selecting the BS1024 DR coordinate."
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "beaker": "01KZRXCW9YW4GEHM4MZR7Z7ACX",
+      "experiment": "01KZRXCW9YW4GEHM4MZR7Z7ACX",
+      "revision": "f82b92805d47b9b4726aed7fd50a00e0075a7f5e",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr1e-3_wd1.0_warmup24_dataloader-cd-r01"
     },
     {
       "id": "fixed1024-wd0.333",
