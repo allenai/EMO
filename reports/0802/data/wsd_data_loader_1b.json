@@ -1733,12 +1733,12 @@
         "trainerAndOptimizerStateRequested": true
       },
       "progress": {
-        "observedAt": "2026-08-11 14:35 PDT",
-        "step": 1910,
+        "observedAt": "2026-08-11 15:08 PDT",
+        "step": 3380,
         "endpointStep": 3815,
-        "epoch": 4,
-        "trainCe": 3.348,
-        "eta": "43m",
+        "epoch": 8,
+        "trainCe": 3.284,
+        "eta": "10m",
         "metricStatus": "preliminary"
       },
       "revision": "809bd9acacc10c4ac64963cc8cb50208a440be07",
@@ -2230,7 +2230,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "5e-4",
       "wd": "0.333",
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 12,
       "attemptedEpochs": [
         1,
@@ -2506,8 +2506,8 @@
           "reason": "Completed healthy on four 8-GPU nodes; held-out validation CE improved strictly from the same-coordinate predecessor, preserving eligibility for the next exact-checkpoint frontier."
         }
       },
-      "health": "pending",
-      "reason": "E12 has all four 8-GPU replicas scheduled and is awaiting synchronized start from exact E8 pre-decay step1716.",
+      "health": "healthy",
+      "reason": "E12 is running healthy on four 8-GPU nodes. Startup guards passed, exact E8 pre-decay step1716 loaded with trainer and optimizer state, and preliminary train CE remains finite.",
       "beaker": "01KZSBGYW4Y3GHH6809K7PWE06",
       "experiment": "01KZSBGYW4Y3GHH6809K7PWE06",
       "job": "01KZSBGZ1XRJF99WQVC2ZKXY14",
@@ -2530,24 +2530,26 @@
         "01JS0FZ51W1SWWMPK073HW91YX",
         "01KQXB6X6F7X11CS51SWVPRAE5"
       ],
-      "beakerStatus": "scheduled",
-      "wandb": "rdqxj7ui",
+      "beakerStatus": "running",
+      "wandb": "287faego",
       "startupEvidence": {
         "manifestVerified": true,
         "preflightVerified": true,
         "remoteDryRunComplete": true,
         "dynamicRepacking": true,
         "sourceCheckpointLoaded": true,
-        "sourceStep": 858,
-        "firstOptimizerStep": 859,
+        "sourceStep": 1716,
+        "firstOptimizerStep": 1717,
         "trainerAndOptimizerStateRequested": true
       },
       "progress": {
-        "observedAt": "2026-08-11 14:35 PDT",
-        "step": 1716,
+        "observedAt": "2026-08-11 15:08 PDT",
+        "step": 2330,
         "endpointStep": 2862,
-        "epoch": 12,
-        "eta": "scheduled; awaiting synchronized start"
+        "epoch": 10,
+        "trainCe": 3.024,
+        "eta": "22m",
+        "metricStatus": "preliminary"
       },
       "revision": "809bd9acacc10c4ac64963cc8cb50208a440be07",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e12_lr5e-4_wd0.333_warmup24_dataloader-cd-r01",
