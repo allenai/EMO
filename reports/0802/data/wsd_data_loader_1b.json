@@ -870,8 +870,8 @@
           "reason": "Completed healthy on four 8-GPU nodes from exact E4 step1716, retaining pre-decay step3432 and endpoint step3815. Validation CE improved from E4 CE3.221 to E8 CE3.137, so the selected LR1e-3/WD0.333 trajectory remains eligible for E12."
         }
       },
-      "health": "healthy",
-      "reason": "Healthy E12 startup verified: manifest/preflight guards passed, dynamic_repacking=True, exact selected E8 pre-decay step3432 loaded with trainer/optimizer state, the remote dry-run completed, and optimizer work began at step3433.",
+      "health": "orange",
+      "reason": "E12 remains numerically healthy and eligible. An isolated 59-second reduce_metrics bookkeeping stall occurred across ranks and recovered; optimizer progress continued, with finite stable CE/gradients and no NaN/Inf, divergence, timeout, or job failure.",
       "beaker": "01KZS4BDFH3CEDMS9G0RTVNM9M",
       "experiment": "01KZS4BDFH3CEDMS9G0RTVNM9M",
       "job": "01KZS4BDNFEGSREM3N8CJ6B356",
@@ -907,22 +907,22 @@
         "trainerAndOptimizerStateRequested": true
       },
       "healthSummary": {
-        "ceSamples": 19,
-        "ceLast": 2.936,
-        "ceTailMean": 2.962842,
+        "ceSamples": 27,
+        "ceLast": 2.976,
+        "ceTailMean": 2.97525,
         "ceBestRollingMean": 2.9555,
-        "gradSamples": 19,
+        "gradSamples": 27,
         "gradLast": 0.0962,
-        "gradTailP95": 0.09677,
+        "gradTailP95": 0.0962,
         "nanOrInf": false,
-        "classification": "healthy"
+        "classification": "orange"
       },
       "progress": {
-        "observedAt": "2026-08-11 12:29 PDT",
-        "step": 3535,
+        "observedAt": "2026-08-11 12:34 PDT",
+        "step": 3605,
         "endpointStep": 5723,
         "epoch": 12,
-        "eta": "51m"
+        "eta": "1h16m"
       },
       "revision": "b3ae092bbdbaa225bff89dd0cfefcfc81cbe1479",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e12_lr1e-3_wd0.333_warmup48_dataloader-cd-r01"
