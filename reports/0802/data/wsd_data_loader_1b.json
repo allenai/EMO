@@ -393,7 +393,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "5e-4",
       "wd": "0.1",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 2,
       "attemptedEpochs": [],
       "sourceExperiment": "01KZFVTR2W2CQV296SMHP9ERHA",
@@ -418,7 +418,32 @@
         }
       },
       "health": "pending",
-      "reason": "Planned lower-LR axial neighbor for the DR E2 coordinate descent; exact LR/WD-matched E1 pre-decay step428 is retained."
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "beaker": "01KZRTJ83C4PQFQKNTTDYQNYZA",
+      "experiment": "01KZRTJ83C4PQFQKNTTDYQNYZA",
+      "job": "01KZRTJ870X5WQP1BXQVS3AMZG",
+      "result": "01KZRTJ83MVG34A11RM513TFEZ",
+      "replicaJobs": [
+        "01KZRTJ870X5WQP1BXQVS3AMZG",
+        "01KZRTJ8AJR1DGTTERS55C8XE1",
+        "01KZRTJ8DWBP7WEN1H8C11YA32",
+        "01KZRTJ8H520DSVWK0X6NA50XY"
+      ],
+      "replicaResults": [
+        "01KZRTJ83MVG34A11RM513TFEZ",
+        "01KZRTJ876W170NPR8WT2WN4K7",
+        "01KZRTJ8AN6ZZMXYYPK9E30NYP",
+        "01KZRTJ8DZQV65VG69684R9GYX"
+      ],
+      "replicaNodes": [
+        "01KT4H4T5FQ18DM4VH5YQ47TYQ",
+        "01JRYAW9HKCG889S9DT7CDQPDA",
+        "01JS0FZ51W1SWWMPK073HW91YX",
+        "01K9893X6FBJ1E9G0SXFGHN9X4"
+      ],
+      "beakerStatus": "scheduled",
+      "revision": "751955775dfd85a26e7eef613cdcc7cfa0b8f2c6",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e2_lr5e-4_wd0.1_warmup48_dataloader-cd-r01"
     },
     {
       "id": "dr512-lr1e-3-wd0.333",
@@ -427,7 +452,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 2,
       "attemptedEpochs": [],
       "sourceExperiment": "01KZFVTS3EHFR7HQ5ZY9DAF9NS",
@@ -452,7 +477,26 @@
         }
       },
       "health": "pending",
-      "reason": "Planned higher-WD axial neighbor for the DR E2 coordinate descent; exact LR/WD-matched E1 pre-decay step428 is retained."
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "beaker": "01KZRTJRV9R7TWJDJPN6TJR1A6",
+      "experiment": "01KZRTJRV9R7TWJDJPN6TJR1A6",
+      "job": "01KZRTJRYWBBXTA57W8F5KQRKQ",
+      "result": "01KZRTJRVEANMF4WNPVCS961YV",
+      "replicaJobs": [
+        "01KZRTJRYWBBXTA57W8F5KQRKQ",
+        "01KZRTJS2BZPN215Y3F5WH77XS",
+        "01KZRTJS5JYCJV4BRJ6JXGJ5CS",
+        "01KZRTJS91ZVN4T9KM2VKHZE8W"
+      ],
+      "replicaResults": [
+        "01KZRTJRVEANMF4WNPVCS961YV",
+        "01KZRTJRZ0MZHFRF1ST3BHCN1F",
+        "01KZRTJS2EP5K4GNAEPC43X6E8",
+        "01KZRTJS5NH8E8Q7T6237EZCAX"
+      ],
+      "beakerStatus": "scheduled",
+      "revision": "751955775dfd85a26e7eef613cdcc7cfa0b8f2c6",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e2_lr1e-3_wd0.333_warmup48_dataloader-cd-r01"
     },
     {
       "id": "fixed512-wd0.333",
@@ -1284,7 +1328,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "5e-4",
       "wd": "0.1",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 2,
       "attemptedEpochs": [],
       "sourceExperiment": "01KZ2SX1RZVJBXE3Q4CR4VQXRZ",
@@ -1308,7 +1352,26 @@
         }
       },
       "health": "pending",
-      "reason": "Planned lower-LR axial neighbor for the DR E2 coordinate descent; exact LR/WD-matched E1 pre-decay step214 is retained."
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "beaker": "01KZRTK743H19RAMWFEV0JMMWN",
+      "experiment": "01KZRTK743H19RAMWFEV0JMMWN",
+      "job": "01KZRTK77RGWQNVQK6JTM2YVMA",
+      "result": "01KZRTK749MA8A43GSN92VZMGD",
+      "replicaJobs": [
+        "01KZRTK77RGWQNVQK6JTM2YVMA",
+        "01KZRTK7B74KEDNWKH3Z7G41RD",
+        "01KZRTK7EKFCAV61E5C3MHH7GG",
+        "01KZRTK7HXW2EPHSGD4M4VWVB3"
+      ],
+      "replicaResults": [
+        "01KZRTK749MA8A43GSN92VZMGD",
+        "01KZRTK77W16PPY3QA96RBTG21",
+        "01KZRTK7BAGJS0WC4FAZZAF2ER",
+        "01KZRTK7EPATGVAHDHQGA38S5W"
+      ],
+      "beakerStatus": "scheduled",
+      "revision": "751955775dfd85a26e7eef613cdcc7cfa0b8f2c6",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr5e-4_wd0.1_warmup24_dataloader-cd-r01"
     },
     {
       "id": "dr1024-lr1e-3-wd0.333",
@@ -1317,7 +1380,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 2,
       "attemptedEpochs": [],
       "sourceExperiment": "01KZ9HXBC7BGA17334MEXMY8ZX",
@@ -1342,7 +1405,26 @@
         }
       },
       "health": "pending",
-      "reason": "Planned higher-WD axial neighbor for the DR E2 coordinate descent; exact LR/WD-matched E1 pre-decay step214 is retained."
+      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "beaker": "01KZRTKNSSX9H1DPZ7NHJSM28F",
+      "experiment": "01KZRTKNSSX9H1DPZ7NHJSM28F",
+      "job": "01KZRTKNXAY515X0JDTN90P157",
+      "result": "01KZRTKNSZZ5N2HQHVT6CNQXQS",
+      "replicaJobs": [
+        "01KZRTKNXAY515X0JDTN90P157",
+        "01KZRTKP0RTJQAKFFQGQXSYSHK",
+        "01KZRTKP4A77RZYNQK0G9Q5F63",
+        "01KZRTKP7RAS1WNXYNEX7JR301"
+      ],
+      "replicaResults": [
+        "01KZRTKNSZZ5N2HQHVT6CNQXQS",
+        "01KZRTKNXCSEEXFA0T82CGD26R",
+        "01KZRTKP0VFHT9VKH73WXHECTD",
+        "01KZRTKP4D087MSWVXJVXSH43T"
+      ],
+      "beakerStatus": "scheduled",
+      "revision": "751955775dfd85a26e7eef613cdcc7cfa0b8f2c6",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_lr1e-3_wd0.333_warmup24_dataloader-cd-r01"
     },
     {
       "id": "fixed1024-wd0.333",
