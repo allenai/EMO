@@ -1896,7 +1896,7 @@
         }
       },
       "health": "healthy",
-      "reason": "E28 is training healthily on four 8-GPU nodes. Manifest/preflight/dry-run guards passed, W&B 3300a3fy initialized, exact E24 step10300 loaded, and optimizer progress began at step10301. Active train CE is preliminary.",
+      "reason": "E28 remains healthy on four 8-GPU nodes at step12920/13352. Exact E24 step10300 was restored, W&B 3300a3fy is active, and train CE remains finite; active train CE is preliminary.",
       "beakerStatus": "running",
       "attempts": [
         {
@@ -2044,12 +2044,12 @@
         "01KZVQF1CZ9WY9KF7RRNB2WYQW"
       ],
       "progress": {
-        "observedAt": "2026-08-12 14:00 PDT",
-        "step": 11470,
+        "observedAt": "2026-08-12 14:32 PDT",
+        "step": 12920,
         "endpointStep": 13352,
-        "epoch": 24,
-        "trainCe": 3.14,
-        "eta": "40m",
+        "epoch": 28,
+        "trainCe": 2.693,
+        "eta": "10m",
         "metricStatus": "preliminary"
       },
       "startupEvidence": {
