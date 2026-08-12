@@ -1567,8 +1567,8 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "canceled",
-      "activeEpoch": null,
+      "status": "submitted",
+      "activeEpoch": 24,
       "attemptedEpochs": [
         2,
         4,
@@ -1856,19 +1856,8 @@
         }
       },
       "health": "pending",
-      "reason": "The first E24 attempt was canceled pending with no task startup or training progress due to an unreachable submitted revision. Exact E20 step8582 remains intact; explicit approval is required before retrying E24.",
-      "beaker": "01KZT8MVPF5PV28CFE3P3H3S1Y",
-      "experiment": "01KZT8MVPF5PV28CFE3P3H3S1Y",
-      "job": "01KZT8MVTA2RAAB8FW471WHBRQ",
-      "replicaJobs": [
-        "01KZT8MVTA2RAAB8FW471WHBRQ",
-        "01KZT8MVXYXHVFY9WGKC83W2T5",
-        "01KZT8MW1DBC30VQ7N1W8HNYHY",
-        "01KZT8MW4XQD1172JD9QE4PX0S"
-      ],
-      "beakerStatus": "canceled",
-      "revision": "bde973a5d204ccec7ab4fc746da04b2da4ffcee6",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e24_lr1e-3_wd1.0_warmup48_dataloader-cd-r01",
+      "reason": "User-approved E24 retry1 submitted from exact E20 pre-decay step8582 after registry and print-only guards verified LR1e-3/WD1.0, restored trainer/optimizer state, dynamic repacking, rank microbatch eight, and four 8-GPU replicas.",
+      "beakerStatus": "pending",
       "attempts": [
         {
           "epoch": 12,
@@ -1936,13 +1925,31 @@
           "reason": "Beaker healthcheck canceled the original rank-1 replica before task startup; no W&B, optimizer progress, output, or checkpoint existed. Beaker created one in-experiment replacement replica."
         }
       ],
-      "result": "01KZT8MVPTYG19451BA05JKY2Z",
+      "beaker": "01KZT91CT3KTKZY72D596GFNJ8",
+      "experiment": "01KZT91CT3KTKZY72D596GFNJ8",
+      "revision": "4fe955740896994492975520336473c462bd81a5",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e24_lr1e-3_wd1.0_warmup48_dataloader-cd-r02",
+      "job": "01KZT91D1KZ77P3E25KMD5FQNS",
+      "result": "01KZT91CTNEM66PTWGXB20MSNM",
+      "replicaJobs": [
+        "01KZT91D1KZ77P3E25KMD5FQNS",
+        "01KZT91D52WXMFEGQXY6KMPCBR",
+        "01KZT91D92K1FYWQ88XGZ13VCX",
+        "01KZT91DCD8EGDXTVJTZN308TK"
+      ],
       "replicaResults": [
-        "01KZT8MVPTYG19451BA05JKY2Z",
-        "01KZT8MVTJNB231MBY81GK9N4P",
-        "01KZT8MVY42YS5D023P7FMSNVT",
-        "01KZT8MW1GCBSHF5MHPW5MQ0ZD"
-      ]
+        "01KZT91CTNEM66PTWGXB20MSNM",
+        "01KZT91D1PKSJGZ6S1W3HYMR5Y",
+        "01KZT91D55ZRJC32VVKTTP0WS1",
+        "01KZT91D95QAXGSKWVH8DQH21N"
+      ],
+      "progress": {
+        "observedAt": "2026-08-11 23:03 PDT",
+        "step": 8582,
+        "endpointStep": 11445,
+        "epoch": 20,
+        "eta": "awaiting scheduling"
+      }
     },
     {
       "id": "dr1024-wd0.1",
