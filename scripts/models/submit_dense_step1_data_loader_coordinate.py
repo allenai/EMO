@@ -31,8 +31,11 @@ SEQUENCE_LENGTH = 4096
 TOKENS_PER_EPOCH = 1_000_000_000
 DECAY_FRACTION = 0.1
 DEFAULT_LEARNING_RATE = "1e-3"
-TARGETS = (1, 2, 4, 8, 12, 16, 20)
-PREDECESSOR = {2: 1, 4: 2, 8: 4, 12: 8, 16: 12, 20: 16}
+# After E4, guarded trajectories advance in four-epoch increments. Keep the
+# launcher ahead of the currently displayed frontier so a strictly improving
+# endpoint can be continued without weakening any exact-resume checks.
+TARGETS = (1, 2, 4, *range(8, 65, 4))
+PREDECESSOR = {2: 1, 4: 2, **{epoch: epoch - 4 for epoch in range(8, 65, 4)}}
 GLOBAL_BATCHES = (512, 1024)
 NODES = 4
 GPUS_PER_NODE = 8
