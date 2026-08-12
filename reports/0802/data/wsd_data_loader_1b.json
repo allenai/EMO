@@ -1735,7 +1735,7 @@
         }
       },
       "health": "healthy",
-      "reason": "E12 infrastructure retry1 is running healthy on four 8-GPU nodes. Manifest and preflight guards passed; exact E8 pre-decay step3432 loaded with trainer and optimizer state; W&B tdk896m8 is active and preliminary train CE remains finite.",
+      "reason": "E12 infrastructure retry1 remains healthy on four 8-GPU nodes. Exact E8 step3432 trainer and optimizer state were restored; retained pre-decay step5150 is saved; W&B tdk896m8 remains active.",
       "beaker": "01KZSH5RTHAYY2EAP954VA0V97",
       "experiment": "01KZSH5RTHAYY2EAP954VA0V97",
       "job": "01KZSH5RZ4N8DYB51BGXGNMJNC",
@@ -1754,13 +1754,14 @@
       ],
       "beakerStatus": "running",
       "progress": {
-        "observedAt": "2026-08-11 17:17 PDT",
-        "step": 3824,
+        "observedAt": "2026-08-11 17:47 PDT",
+        "step": 5255,
         "endpointStep": 5723,
-        "epoch": 8,
-        "trainCe": 3.278,
-        "eta": "38m",
-        "metricStatus": "preliminary"
+        "epoch": 11,
+        "trainCe": 3.163,
+        "eta": "10m",
+        "metricStatus": "preliminary",
+        "preDecayCheckpointSaved": true
       },
       "revision": "34b7d7ca3e2fe00d3b6f1e4cff6baa91e1e6313a",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e12_lr1e-3_wd1.0_warmup48_dataloader-cd-r01",
@@ -2900,7 +2901,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "5e-4",
       "wd": "1.0",
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 12,
       "attemptedEpochs": [
         1,
@@ -3141,8 +3142,8 @@
           "reason": "Completed healthy on four 8-GPU nodes from exact E4 pre-decay step858. Validation CE3.26036 strictly improved from E4 CE3.503, so the exact WD1.0 trajectory remains eligible for E12."
         }
       },
-      "health": "pending",
-      "reason": "E12 submitted after registry, duplicate, exact-source, WD-floor, 4-node, rank-microbatch, manifest, and print-only guards passed; awaiting scheduling.",
+      "health": "healthy",
+      "reason": "E12 is running healthy on four 8-GPU nodes. Manifest and preflight guards passed; exact E8 pre-decay step1716 loaded with trainer and optimizer state; W&B ytij1s64 is active.",
       "attempts": [
         {
           "experiment": "01KZS2494WADTXY3MYQTD2JNSG",
@@ -3223,16 +3224,36 @@
         "01KZSJ1AXFQNV1N5WR7NR3S245",
         "01KZSJ1B0T80RD4RAHZHAJT9G2"
       ],
-      "beakerStatus": "submitted",
+      "beakerStatus": "running",
       "progress": {
-        "observedAt": "2026-08-11 16:20 PDT",
+        "observedAt": "2026-08-11 17:48 PDT",
         "step": 1716,
         "endpointStep": 2862,
-        "epoch": 12,
-        "eta": "awaiting scheduling"
+        "epoch": 8,
+        "eta": "training startup"
       },
       "revision": "71af7c85c0c78e1d45159c5ee4ab4ccdc3f0a158",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e12_lr5e-4_wd1.0_warmup24_dataloader-cd-wdbound-r01"
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e12_lr5e-4_wd1.0_warmup24_dataloader-cd-wdbound-r01",
+      "node": "01JS3MZC1XJ1CSD1ZXD1X8M5CV",
+      "replicaNodes": [
+        "01JS3MZC1XJ1CSD1ZXD1X8M5CV",
+        "01JS3MZDCC98E92FJDJ6ZNN7WG",
+        "01KHPZKF5DB9P1AS038RS8RPG3",
+        "01KPECAMSEPPVS4HA1RF1034ZE"
+      ],
+      "wandb": "ytij1s64",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "remoteDryRunComplete": true,
+        "dynamicRepacking": true,
+        "sourceCheckpointLoaded": true,
+        "trainerStateRestored": true,
+        "optimizerStateRestored": true,
+        "optimizerHyperparametersValidated": true,
+        "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr5e-4_wd1.0_warmup24_dataloader-cd-wdbound-r01/step1716",
+        "startedAt": "2026-08-11 17:47 PDT"
+      }
     },
     {
       "id": "dr1024-lr1e-3-wd0.333",
@@ -3241,7 +3262,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 8,
       "attemptedEpochs": [
         2,
@@ -3369,8 +3390,8 @@
           "reason": "Completed healthy on four 8-GPU nodes from exact E2 pre-decay step428. Validation CE improved strictly from E2 CE4.128 to E4 CE3.447 and also beats LR5e-4/WD0.333 E4 CE3.484, supporting an exact E8 continuation."
         }
       },
-      "health": "pending",
-      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "health": "healthy",
+      "reason": "E8 is running healthy on four 8-GPU nodes. Manifest and preflight guards passed; exact E4 pre-decay step858 loaded with trainer and optimizer state; W&B yce1xbia is active.",
       "beaker": "01KZSH6ABFPM4WQHQD40J1BJGB",
       "experiment": "01KZSH6ABFPM4WQHQD40J1BJGB",
       "job": "01KZSH6AF621GDRV4DF2KMYART",
@@ -3387,16 +3408,38 @@
         "01KZSH6AJY9G62C8KRVE14D0S4",
         "01KZSH6APMXP49GTYMK5Y28VRC"
       ],
-      "beakerStatus": "submitted",
+      "beakerStatus": "running",
       "progress": {
-        "observedAt": "2026-08-11 16:06 PDT",
-        "step": 858,
+        "observedAt": "2026-08-11 17:47 PDT",
+        "step": 890,
         "endpointStep": 1908,
-        "epoch": 8,
-        "eta": "awaiting scheduling"
+        "epoch": 4,
+        "trainCe": 3.494,
+        "eta": "40m",
+        "metricStatus": "preliminary"
       },
       "revision": "34b7d7ca3e2fe00d3b6f1e4cff6baa91e1e6313a",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd0.333_warmup24_dataloader-cd-lr1e3-r01"
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd0.333_warmup24_dataloader-cd-lr1e3-r01",
+      "node": "01JS0FZ5QSF3MJMN000CSTGHEG",
+      "replicaNodes": [
+        "01JS0FZ5QSF3MJMN000CSTGHEG",
+        "01K0X3WSFDRGKFZ9QFWWFZN1BQ",
+        "01K3PA7XK6X3NEAQ0VR1G8R01E",
+        "01KTT0D8DR4SXYPJWJYPPGYWA9"
+      ],
+      "wandb": "yce1xbia",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "remoteDryRunComplete": true,
+        "dynamicRepacking": true,
+        "sourceCheckpointLoaded": true,
+        "trainerStateRestored": true,
+        "optimizerStateRestored": true,
+        "optimizerHyperparametersValidated": true,
+        "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e4_lr1e-3_wd0.333_warmup24_dataloader-cd-lr1e3-r01/step858",
+        "startedAt": "2026-08-11 17:44 PDT"
+      }
     },
     {
       "id": "dr1024-lr1e-3-wd1.0",
