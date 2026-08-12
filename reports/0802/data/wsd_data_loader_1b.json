@@ -1567,8 +1567,8 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "failed",
-      "activeEpoch": null,
+      "status": "submitted",
+      "activeEpoch": 24,
       "attemptedEpochs": [
         2,
         4,
@@ -1856,8 +1856,8 @@
         }
       },
       "health": "pending",
-      "reason": "E24 retry1 failed during repository checkout because its submitted revision became unreachable after commit consolidation. No training started and exact E20 step8582 remains intact, but a further retry requires explicit user approval.",
-      "beakerStatus": "failed",
+      "reason": "User-authorized E24 backup retry2 submitted from exact E20 pre-decay step8582 after registry and print-only guards verified LR1e-3/WD1.0, restored trainer/optimizer state, dynamic repacking, rank microbatch eight, and four 8-GPU replicas.",
+      "beakerStatus": "pending",
       "attempts": [
         {
           "epoch": 12,
@@ -1955,24 +1955,31 @@
           "reason": "Beaker healthcheck canceled the original rank-1 replica before task startup; no W&B, optimizer progress, output, or checkpoint existed. Beaker created one in-experiment replacement replica."
         }
       ],
-      "beaker": "01KZT91CT3KTKZY72D596GFNJ8",
-      "experiment": "01KZT91CT3KTKZY72D596GFNJ8",
-      "revision": "4fe955740896994492975520336473c462bd81a5",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e24_lr1e-3_wd1.0_warmup48_dataloader-cd-r02",
-      "job": "01KZT91D1KZ77P3E25KMD5FQNS",
-      "result": "01KZT91CTNEM66PTWGXB20MSNM",
+      "beaker": "01KZVBX0TXGN8FP0TMZ0PZYAAG",
+      "experiment": "01KZVBX0TXGN8FP0TMZ0PZYAAG",
+      "revision": "0cd0d9cc38add85757c68e1c390b09df407e6d07",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e24_lr1e-3_wd1.0_warmup48_dataloader-cd-r03",
+      "job": "01KZVBX0ZDZCZKTFEGRJPJB1SZ",
+      "result": "01KZVBX0VNV7CTSKH4NKSJ5HFG",
       "replicaJobs": [
-        "01KZT91D1KZ77P3E25KMD5FQNS",
-        "01KZT91D52WXMFEGQXY6KMPCBR",
-        "01KZT91D92K1FYWQ88XGZ13VCX",
-        "01KZT91DCD8EGDXTVJTZN308TK"
+        "01KZVBX0ZDZCZKTFEGRJPJB1SZ",
+        "01KZVBX14EYBJMM0FJFXNK9FRV",
+        "01KZVBX1F5C252SAJC01HKTNJP",
+        "01KZVBX1N42MEMXSP75WJ24SGE"
       ],
       "replicaResults": [
-        "01KZT91CTNEM66PTWGXB20MSNM",
-        "01KZT91D1PKSJGZ6S1W3HYMR5Y",
-        "01KZT91D55ZRJC32VVKTTP0WS1",
-        "01KZT91D95QAXGSKWVH8DQH21N"
-      ]
+        "01KZVBX0VNV7CTSKH4NKSJ5HFG",
+        "01KZVBX0ZPEAJ8GD94VRNA3623",
+        "01KZVBX14N3AD1R7KFRRV0TXWY",
+        "01KZVBX1F9SHW85EGQHCS2TRXJ"
+      ],
+      "progress": {
+        "observedAt": "2026-08-12 09:18 PDT",
+        "step": 8582,
+        "endpointStep": 11445,
+        "epoch": 20,
+        "eta": "awaiting scheduling"
+      }
     },
     {
       "id": "dr1024-wd0.1",
@@ -3936,7 +3943,7 @@
         }
       },
       "health": "pending",
-      "reason": "E12 submitted locally after registration and print-only guards verified exact E8 pre-decay step1716, LR1e-3/WD1.0, restored trainer and optimizer state, dynamic repacking, rank microbatch eight, and four 8-GPU replicas.",
+      "reason": "Automatic E12 infrastructure backup retry1 submitted from exact E8 pre-decay step1716 after registry and print-only guards verified LR1e-3/WD1.0, restored trainer/optimizer state, dynamic repacking, rank microbatch eight, and four 8-GPU replicas.",
       "beakerStatus": "pending",
       "attempts": [
         {
@@ -3969,49 +3976,62 @@
           "reason": "Leader replica0 was canceled during startup because node 01KJT4H1MZSHV0S26YATVM5PEM was cordoned after unrecoverable SXid error code12028. The leader and a waiting replica produced no task logs; no W&B run, optimizer step, output, or checkpoint was created, so automatic infrastructure retry1 is eligible.",
           "revision": "a756816d0fae3f1e3b190455488d1cad5fff3063",
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r01"
+        },
+        {
+          "epoch": 12,
+          "experiment": "01KZVBJBPXKQNTR2C081P7R7PN",
+          "job": "01KZVBJBTJZJQ5KSKCFYEZV1HP",
+          "result": "01KZVBJBQCZPNGQQW52HQTZ54D",
+          "replicaJobs": [
+            "01KZVBJBTJZJQ5KSKCFYEZV1HP",
+            "01KZVBJBY927TGN2WKD5Y672K4",
+            "01KZVBJC1HWTPD03H5X2FNDKK2",
+            "01KZVBJC7GCE1E57JV19JJ82Z8"
+          ],
+          "replicaResults": [
+            "01KZVBJBQCZPNGQQW52HQTZ54D",
+            "01KZVBJBTR0Y5HQ3XEQAJZGG2T",
+            "01KZVBJBYD07K70Y04FTMFDD34",
+            "01KZVBJC1P4NFEK757XDVPCJ66"
+          ],
+          "replicaNodes": [
+            "01KJT2MH75VZK6EBPG4NQ7S7CQ",
+            "01KQ0F2NX98MG50MEF0ZCAMZWT",
+            "01KT4H4A04X64Q59YFY84R64C6",
+            "01KTT0D8DR4SXYPJWJYPPGYWA9"
+          ],
+          "status": "canceled_before_task_start",
+          "failedReplicas": [
+            "01KZVBJBTJZJQ5KSKCFYEZV1HP",
+            "01KZVBJC7GCE1E57JV19JJ82Z8"
+          ],
+          "wandb": null,
+          "revision": "e1ba6abe44f6807d75024e6cebac0faf350267b8",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e12_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r01",
+          "reason": "Rank0 and rank3 were canceled while starting because their nodes were cordoned after unrecoverable SXid12028 errors. No task logs, W&B, optimizer progress, output, or checkpoint existed; the remaining replicas never launched training and were stopped. Automatic infrastructure backup retry1 is eligible."
         }
       ],
-      "retryCount": 1,
-      "beaker": "01KZVBJBPXKQNTR2C081P7R7PN",
-      "experiment": "01KZVBJBPXKQNTR2C081P7R7PN",
-      "revision": "e1ba6abe44f6807d75024e6cebac0faf350267b8",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e12_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r01",
-      "job": "01KZVBJBTJZJQ5KSKCFYEZV1HP",
-      "result": "01KZVBJBQCZPNGQQW52HQTZ54D",
+      "retryCount": 2,
+      "beaker": "01KZVBXHC2NCCCMWGW8552GHYJ",
+      "experiment": "01KZVBXHC2NCCCMWGW8552GHYJ",
+      "revision": "0cd0d9cc38add85757c68e1c390b09df407e6d07",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e12_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r02",
+      "job": "01KZVBXHFK8V4Q7DKX14XVJAG3",
+      "result": "01KZVBXHCAKJ15VY0S49HNTENR",
       "replicaJobs": [
-        "01KZVBJBTJZJQ5KSKCFYEZV1HP",
-        "01KZVBJBY927TGN2WKD5Y672K4",
-        "01KZVBJC1HWTPD03H5X2FNDKK2",
-        "01KZVBJC7GCE1E57JV19JJ82Z8"
+        "01KZVBXHFK8V4Q7DKX14XVJAG3",
+        "01KZVBXHK09NC73DS9WR8CMW35",
+        "01KZVBXHP9WFAXY9MQAA7KWY42",
+        "01KZVBXHTMR70AJ6YFC7R5BRBC"
       ],
       "replicaResults": [
-        "01KZVBJBQCZPNGQQW52HQTZ54D",
-        "01KZVBJBTR0Y5HQ3XEQAJZGG2T",
-        "01KZVBJBYD07K70Y04FTMFDD34",
-        "01KZVBJC1P4NFEK757XDVPCJ66"
+        "01KZVBXHCAKJ15VY0S49HNTENR",
+        "01KZVBXHFSDP0SZEWTT4BRCYCN",
+        "01KZVBXHK355EER25TFGC4P7SH",
+        "01KZVBXHPCZFPYRHNEDGVEZAJP"
       ],
-      "node": "01JRK7H08EY7QJKCPHWGSMNYVY",
-      "replicaNodes": [
-        "01JRK7H08EY7QJKCPHWGSMNYVY",
-        "01KHPZKF5DB9P1AS038RS8RPG3",
-        "01JRK26MQ0KY78MQTD7H60W8H1",
-        "01JRYAWA3BRM6J5GBC141XPVBE"
-      ],
-      "wandb": "074437pa",
-      "startupEvidence": {
-        "manifestVerified": true,
-        "preflightVerified": true,
-        "remoteDryRunComplete": true,
-        "dynamicRepacking": true,
-        "sourceCheckpointLoaded": true,
-        "sourceStep": 858,
-        "firstOptimizerStep": 859,
-        "trainerAndOptimizerStateRequested": true,
-        "optimizerHyperparametersValidated": true,
-        "startedAt": "2026-08-11 22:39 PDT"
-      },
       "progress": {
-        "observedAt": "2026-08-12 00:16 PDT",
+        "observedAt": "2026-08-12 09:18 PDT",
         "step": 1716,
         "endpointStep": 2862,
         "epoch": 8,
