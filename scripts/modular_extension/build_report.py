@@ -28,8 +28,15 @@ ATTR = ROOT / "modular_extension/cluster/emo100b_step23842/expert_attribution"
 PART = ROOT / "modular_extension/data/emo_64exp_50b_wsd_lr2e-3_100B-110B/doc_clusters_k64_summary.json"
 JOINT = ROOT / "modular_extension/data/emo_64exp_50b_wsd_lr2e-3_100B-130B/doc_clusters_k64_summary.json"
 SUBSTAB = ROOT / "modular_extension/cluster/emo100b_step23842_100B-130B/subsample_stability"
+KSEL = ROOT / "modular_extension/cluster/emo100b_step23842_100B-130B/k_selection"
 ORACLE_SPLIT = (ROOT / "modular_extension/cluster/emo100b_step23842/doc_classifier/oracle"
                 / "cluster_agreement.json")
+
+# Spherical-k-means objective of the REFERENCE k=64 partition (seed 42), computed
+# post-hoc from its saved assignments with the same estimator k_selection.py uses
+# (assign_all_with_objective). The comparison seeds' objectives are read from the
+# k_selection run.jsons at build time.
+K64_REF_OBJECTIVE = 0.776350
 
 
 # --------------------------------------------------------------------------
@@ -613,8 +620,13 @@ sits well below 100%.</p>""")
     else:
         results, interp = _substab_results(scores)
 
+    ksel_path = KSEL / "k_selection_summary.json"
+    ksel = json.load(open(ksel_path)) if ksel_path.exists() else {}
+    k4_path = KSEL / "k4_characterization.json"
+    k4 = json.load(open(k4_path)) if k4_path.exists() else []
+
     return intro + card("method", "Experiment: subsample fit vs full fit", method) + \
-        hypothesis + results + interp
+        hypothesis + results + interp + build_ksel(ksel, k4)
 
 
 def _substab_results(scores) -> tuple:
@@ -698,6 +710,112 @@ conclusions must not hinge on exact cluster boundaries: an effect that vanishes 
 documents are relabeled was noise. Where it matters, grow experiments should be spot-checked against a
 second partition seed.</p>"""
     )
+
+
+def build_ksel(ksel, k4) -> str:
+    """The principled-k follow-up inside the Oracle partition tab."""
+    if not ksel:
+        return ""
+    stab = ksel["stability"]
+    chosen = ksel["chosen_k"]
+    ks = sorted(int(k) for k in stab["global"])
+
+    seed_objs = [ksel["arms"][f"global_k64_seed{s}"]["objective"] for s in (1, 2)]
+    objs = sorted([K64_REF_OBJECTIVE] + seed_objs)
+    spread = (objs[-1] - objs[0]) / objs[0]
+
+    method = card("method", "Follow-up &mdash; is k=64 the problem? A principled-k sweep", f"""
+<p>The ~75% ceiling above invites a suspicion: maybe k=64 (inherited from the published pretraining
+clustering) is simply a bad k, and a principled choice would cluster more reproducibly. Two checks.</p>
+<p><strong>First, is it under-optimization?</strong> No: the three full-data k=64 fits (reference plus both
+new seeds) reach spherical objectives of {objs[0]:.4f}&ndash;{objs[-1]:.4f} &mdash; a {spread:.2%} spread,
+with the <em>reference</em> the lowest &mdash; while disagreeing on ~25% of documents. These are different,
+equally good optima, not one good solution found by some seeds and missed by others. A better optimizer
+cannot close a gap that isn't there; only a different k might.</p>
+<p><strong>So, sweep k</strong> &isin; {{4, 8, 16, 32, 48, 64, 96, 128}}, entirely on the frozen transform
+(established above as stable): the full 27.5M docs &times; 2 seeds per k (seed-pair stability), plus three
+independent 1M-doc draws &times; every k (do subsamples choose the same k, and do they recover the global
+fit at that k). Selection criteria per fit: the objective curve (elbow), cosine silhouette and
+Davies-Bouldin on a fixed 50K evaluation sample &mdash; and reproducibility itself. Code:
+<code>src/scripts/clustering/k_selection.py</code>.</p>""")
+
+    chosen_rows = []
+    for key in sorted(chosen):
+        c = chosen[key]
+        chosen_rows.append((key.replace("_", " "), c["elbow_objective"],
+                            c["silhouette_argmax"], c["davies_bouldin_argmin"]))
+    chosen_table = table(["fit set", "elbow (objective)", "silhouette argmax", "DB argmin"],
+                         chosen_rows)
+
+    stab_rows = []
+    for k in ks:
+        sk = str(k)
+        stab_rows.append((
+            k,
+            f"{stab['global'][sk]['ari']:.2f} ({stab['global'][sk]['acc'] * 100:.1f}%)",
+            f"{stab['sub1M'][sk]['ari']:.2f}",
+            f"{stab['recover'][sk]['ari']:.2f}",
+        ))
+    stab_table = table(
+        ["k", "full-data seed pair &mdash; ARI (matched acc)", "1M draw pairs &mdash; ARI",
+         "1M draw vs full fit &mdash; ARI"], stab_rows)
+
+    fig_html = img_tag(KSEL / "ksel_curves.png",
+                       "Left: the objective rises smoothly with k — no sharp elbow (chord-rule knee at 32). "
+                       "Middle: silhouette peaks on a shallow 16–32 plateau. Right: reproducibility (ARI) "
+                       "vs k — near-perfect at k=4, then a flat ~0.6–0.73 band for every k ≥ 8; the three "
+                       "curve types (full-vs-full, draw-vs-draw, draw-vs-full) lie on top of each other. "
+                       "Grey lines: the three 1M-doc draws; green: full-data fits.")
+
+    k4_txt = ""
+    if k4:
+        tok = sum(c["num_tokens"] for c in k4)
+        shares = ", ".join(f"{c['num_tokens'] / tok:.0%}" for c in k4)
+        code_c = max(k4, key=lambda c: sum(v for s, v in c["top_sources"].items()
+                                           if "starcoder" in s or "proof-pile" in s))
+        code_share = sum(v for s, v in code_c["top_sources"].items()
+                         if "starcoder" in s or "proof-pile" in s)
+        k4_txt = (f"<p>The four stable clusters are broad semantic modes, not source partitions "
+                  f"(dclm dominates the whole mix): {shares} of doc-tokens respectively, with one mode "
+                  f"leaning technical/code ({pct(code_share)} starcoder+proof-pile vs ~0&ndash;2% in the "
+                  f"others).</p>")
+
+    results = card("results", "Results &mdash; the criteria agree on k&asymp;16&ndash;32, "
+                              "but no k &ge; 8 is reproducible", f"""
+<p><strong>(1) Do different subsamples choose the same k? Yes.</strong> All three 1M draws pick k=32 by
+all three criteria; the full-data fits pick 32 by the elbow rule and 16 by silhouette (the silhouette
+surface is a shallow 16&ndash;32 plateau &mdash; the 16-vs-32 difference is &lt;0.02). k selection is
+about as sample-size-insensitive as the clustering itself.</p>
+{chosen_table}
+<p><strong>(2) Does forcing a common k align the fits? No &mdash; and it never could.</strong> At every k,
+a 1M-draw fit agrees with the full-data fit about as well as two full-data fits agree with <em>each
+other</em> (right panel: the three curves track each other; at k=8 the draws actually agree with each other
+<em>more</em> than the full fits do). At no k does fit-set size explain the disagreement &mdash; the
+variance is k-means degeneracy at that k.</p>
+{stab_table}
+<div class="figrow">{fig_html}</div>
+{k4_txt}""")
+
+    reading = card("goal", "Reading &mdash; k is a design knob, and only k=4 buys reproducibility", f"""
+<ul>
+<li><strong>A principled k exists and it isn't 64:</strong> internal criteria converge on 16&ndash;32,
+and k=32 is also the local stability maximum (ARI {stab['global']['32']['ari']:.2f} vs
+{stab['global']['64']['ari']:.2f} at k=64). Switching 64&rarr;32 would buy a few points of
+reproducibility and halve the partition count.</li>
+<li><strong>But no useful k fixes the seed variance.</strong> Every k &ge; 8 sits in the same
+~0.6&ndash;0.73 ARI band &mdash; k=8 is actually the <em>least</em> stable
+(ARI {stab['global']['8']['ari']:.2f}). Only k=4 is genuinely reproducible
+(ARI {stab['global']['4']['ari']:.2f}, {stab['global']['4']['acc'] * 100:.1f}% matched accuracy). The router
+geometry has about four hard modes; every finer k also slices continuous density, and where the slices
+fall is decided by the seed.</li>
+<li><strong>Consequence:</strong> the instability is intrinsic to fine-grained k-means on this geometry,
+not a hyperparameter bug &mdash; so the frozen-artifact discipline from the previous section stays the
+answer at any fine k. For Stage&nbsp;3 this makes k a <em>design</em> choice: fewer, larger, more stable
+partitions (16&ndash;32) vs more, finer, more arbitrary ones (64+); and the four coarse modes offer
+high-confidence units for the first grow experiments, with the finer slices nested inside them.</li>
+</ul>""")
+
+    return method + results + reading
 
 
 def build_per_cluster(soft, hard, part) -> str:
