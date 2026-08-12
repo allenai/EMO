@@ -4064,7 +4064,7 @@
         }
       },
       "health": "pending",
-      "reason": "E16 submitted after E12 validation CE3.15979 strictly improved E8 CE3.24954. Print-only exact-source, LR/WD, 4x8-GPU, rank-microbatch, manifest, restore-state, and duplicate-active guards passed; four replicas are pending.",
+      "reason": "Automatic E16 infrastructure retry submitted after print-only exact-source, LR/WD, 4x8-GPU, rank-microbatch, manifest, restore-state, and duplicate-active guards passed; four replicas are pending.",
       "beakerStatus": "pending",
       "attempts": [
         {
@@ -4130,29 +4130,59 @@
           "revision": "e1ba6abe44f6807d75024e6cebac0faf350267b8",
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e12_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r01",
           "reason": "Rank0 and rank3 were canceled while starting because their nodes were cordoned after unrecoverable SXid12028 errors. No task logs, W&B, optimizer progress, output, or checkpoint existed; the remaining replicas never launched training and were stopped. Automatic infrastructure backup retry1 is eligible."
+        },
+        {
+          "epoch": 16,
+          "experiment": "01KZVJAG1BDTK5CRNVNB2PY6RM",
+          "job": "01KZVJAG5A5SN04X042D7YCFC9",
+          "result": "01KZVJAG1Y3WQ4ZZTJ5D2DJP3F",
+          "replicaJobs": [
+            "01KZVJAG5A5SN04X042D7YCFC9",
+            "01KZVJAG8SWKW39FFT9VKZ52EM",
+            "01KZVJAGCA4EP8KRKY44DPF361",
+            "01KZVJAGFRJKT4RN1EG5JDN7YM"
+          ],
+          "replicaResults": [
+            "01KZVJAG1Y3WQ4ZZTJ5D2DJP3F",
+            "01KZVJAG5H23P625PG2Z974CVQ",
+            "01KZVJAG90HJR5G0BJ3H11DRAZ",
+            "01KZVJAGCGEDDRKZ70910E0KFK"
+          ],
+          "replicaNodes": [
+            "01KXKHJJV17JDGH5VXCF0MAVD7",
+            "01JS0FZ4H0JM1S5JKEH4FB3DJP",
+            "01JS10CW502XDCGDP2QGC8K2DT",
+            "01K15VBGT6DBQCXH04Y81WFGJB"
+          ],
+          "status": "failed_before_task_start",
+          "failedReplica": "01KZVJAG8SWKW39FFT9VKZ52EM",
+          "wandb": null,
+          "revision": "2b4ce1056a82017c417a7423706814c489aecccd",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e16_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r01",
+          "reason": "Rank1 failed during Gantry environment setup because GitHub CLI downloads returned HTTP503 and invalid archives across all retries; siblings were canceled by propagate-failure. No repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed, so automatic infrastructure retry is eligible."
         }
       ],
-      "retryCount": 2,
-      "beaker": "01KZVJAG1BDTK5CRNVNB2PY6RM",
-      "experiment": "01KZVJAG1BDTK5CRNVNB2PY6RM",
-      "revision": "2b4ce1056a82017c417a7423706814c489aecccd",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e16_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r01",
-      "job": "01KZVJAG5A5SN04X042D7YCFC9",
-      "result": "01KZVJAG1Y3WQ4ZZTJ5D2DJP3F",
+      "retryCount": 3,
+      "beaker": "01KZVS4GPWP21A3JAJXQ0AAF93",
+      "experiment": "01KZVS4GPWP21A3JAJXQ0AAF93",
+      "revision": "27986e859a572abedc57e22a249ef6fb2398fdc2",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e16_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r02",
+      "job": "01KZVS4GV1497BTX0A16C0X8JJ",
+      "result": "01KZVS4GQ5RT5Y8X20CYHD5WWR",
       "replicaJobs": [
-        "01KZVJAG5A5SN04X042D7YCFC9",
-        "01KZVJAG8SWKW39FFT9VKZ52EM",
-        "01KZVJAGCA4EP8KRKY44DPF361",
-        "01KZVJAGFRJKT4RN1EG5JDN7YM"
+        "01KZVS4GV1497BTX0A16C0X8JJ",
+        "01KZVS4H047SMS4PNPNQ5SNSX7",
+        "01KZVS4H47FZQ5G2MPGZKJ3KMD",
+        "01KZVS4H7QJDKZDC3NACE95EE9"
       ],
       "replicaResults": [
-        "01KZVJAG1Y3WQ4ZZTJ5D2DJP3F",
-        "01KZVJAG5H23P625PG2Z974CVQ",
-        "01KZVJAG90HJR5G0BJ3H11DRAZ",
-        "01KZVJAGCGEDDRKZ70910E0KFK"
+        "01KZVS4GQ5RT5Y8X20CYHD5WWR",
+        "01KZVS4GV7G0E967QNZWJSXN2T",
+        "01KZVS4H0ART0RQ976F0FRRG8A",
+        "01KZVS4H4GCH0ZNV57FE041HY2"
       ],
       "progress": {
-        "observedAt": "2026-08-12 11:05 PDT",
+        "observedAt": "2026-08-12 13:08 PDT",
         "step": 2575,
         "endpointStep": 3815,
         "epoch": 12,
