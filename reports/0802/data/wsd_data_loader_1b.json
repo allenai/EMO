@@ -1567,7 +1567,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 24,
       "attemptedEpochs": [
         2,
@@ -1855,9 +1855,9 @@
           "reason": "Completed healthy on four 8-GPU nodes from exact E16 pre-decay step6866. Validation CE3.06523 strictly improved E16 CE3.06925; E20 is the report horizon, so no later epoch is submitted."
         }
       },
-      "health": "pending",
-      "reason": "Automatic E24 infrastructure retry3 submitted after print-only exact-source, LR/WD, 4x8-GPU, rank-microbatch, manifest, restore-state, and duplicate-active guards passed. All four replicas are pending scheduling.",
-      "beakerStatus": "pending",
+      "health": "healthy",
+      "reason": "E24 automatic infrastructure retry3 is training healthily on four 8-GPU nodes. Manifest/preflight/dry-run guards passed, W&B somifvt2 initialized, exact E20 step8582 loaded, and optimizer progress began at step8583. Active train CE is preliminary.",
+      "beakerStatus": "running",
       "attempts": [
         {
           "epoch": 12,
@@ -2004,23 +2004,34 @@
         "01KZVGWCDQXGZ4P7Z3002G6VJQ"
       ],
       "progress": {
-        "observedAt": "2026-08-12 10:39 PDT",
-        "step": 8582,
+        "observedAt": "2026-08-12 11:31 PDT",
+        "step": 8710,
         "endpointStep": 11445,
-        "epoch": 20,
-        "eta": "pending scheduling"
+        "epoch": 19,
+        "trainCe": 3.065,
+        "eta": "1h6m",
+        "metricStatus": "preliminary"
       },
       "startupEvidence": {
         "manifestVerified": true,
         "preflightVerified": true,
         "remoteDryRunComplete": true,
         "dynamicRepacking": true,
-        "sourceCheckpointLoaded": false,
+        "sourceCheckpointLoaded": true,
         "sourceStep": 8582,
-        "firstOptimizerStep": null,
+        "firstOptimizerStep": 8583,
         "trainerAndOptimizerStateRequested": true,
-        "optimizerHyperparametersValidated": true
-      }
+        "optimizerHyperparametersValidated": true,
+        "startedAt": "2026-08-12 11:20 PDT"
+      },
+      "node": "01JS0FZ4Z4WDQVB2SQM4KDJCET",
+      "replicaNodes": [
+        "01JS0FZ4Z4WDQVB2SQM4KDJCET",
+        "01JS0FZ51W1SWWMPK073HW91YX",
+        "01JS10CW502XDCGDP2QGC8K2DT",
+        "01K15VBGT6DBQCXH04Y81WFGJB"
+      ],
+      "wandb": "somifvt2"
     },
     {
       "id": "dr1024-wd0.1",
