@@ -1567,7 +1567,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 24,
       "attemptedEpochs": [
         2,
@@ -1856,8 +1856,8 @@
         }
       },
       "health": "pending",
-      "reason": "User-authorized E24 backup retry2 submitted from exact E20 pre-decay step8582 after registry and print-only guards verified LR1e-3/WD1.0, restored trainer/optimizer state, dynamic repacking, rank microbatch eight, and four 8-GPU replicas.",
-      "beakerStatus": "pending",
+      "reason": "All four E24 backup replicas are running and manifest/preflight/dry-run guards passed on four 8-GPU nodes. Exact checkpoint load, W&B initialization, and first optimizer step are not yet visible; health remains pending during startup.",
+      "beakerStatus": "running",
       "attempts": [
         {
           "epoch": 12,
@@ -1974,11 +1974,30 @@
         "01KZVBX1F9SHW85EGQHCS2TRXJ"
       ],
       "progress": {
-        "observedAt": "2026-08-12 09:18 PDT",
+        "observedAt": "2026-08-12 10:02 PDT",
         "step": 8582,
         "endpointStep": 11445,
         "epoch": 20,
-        "eta": "awaiting scheduling"
+        "eta": "startup in progress"
+      },
+      "node": "01K0X3WSFDRGKFZ9QFWWFZN1BQ",
+      "replicaNodes": [
+        "01K0X3WSFDRGKFZ9QFWWFZN1BQ",
+        "01KQ0F2CSPGPK0715W6M567DZ3",
+        "01JS0FZ4H0JM1S5JKEH4FB3DJP",
+        "01KT4H4A04X64Q59YFY84R64C6"
+      ],
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "remoteDryRunComplete": true,
+        "dynamicRepacking": true,
+        "sourceCheckpointLoaded": false,
+        "sourceStep": 8582,
+        "firstOptimizerStep": null,
+        "trainerAndOptimizerStateRequested": true,
+        "optimizerHyperparametersValidated": true,
+        "startedAt": "2026-08-12 09:48 PDT"
       }
     },
     {
@@ -3773,7 +3792,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 12,
       "attemptedEpochs": [
         2,
@@ -3943,8 +3962,8 @@
         }
       },
       "health": "pending",
-      "reason": "Automatic E12 infrastructure backup retry1 submitted from exact E8 pre-decay step1716 after registry and print-only guards verified LR1e-3/WD1.0, restored trainer/optimizer state, dynamic repacking, rank microbatch eight, and four 8-GPU replicas.",
-      "beakerStatus": "pending",
+      "reason": "All four E12 backup replicas are running on four 8-GPU nodes. Manifest/preflight/dry-run guards passed, W&B 1cebv71a initialized, and exact E8 step1716 checkpoint loading began; first optimizer step is not yet visible, so health remains pending during startup.",
+      "beakerStatus": "running",
       "attempts": [
         {
           "epoch": 8,
@@ -4031,11 +4050,31 @@
         "01KZVBXHPCZFPYRHNEDGVEZAJP"
       ],
       "progress": {
-        "observedAt": "2026-08-12 09:18 PDT",
+        "observedAt": "2026-08-12 10:02 PDT",
         "step": 1716,
         "endpointStep": 2862,
         "epoch": 8,
-        "eta": "awaiting scheduling"
+        "eta": "checkpoint loading"
+      },
+      "node": "01KWCYTWACRV5ZEWSDD0TEZDRJ",
+      "replicaNodes": [
+        "01KWCYTWACRV5ZEWSDD0TEZDRJ",
+        "01JRK7GXR0V7VT5AXSF2TYY26W",
+        "01KJQWN814XX8TPMFPBHPW5V0Z",
+        "01KQ0F2NX98MG50MEF0ZCAMZWT"
+      ],
+      "wandb": "1cebv71a",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "remoteDryRunComplete": true,
+        "dynamicRepacking": true,
+        "sourceCheckpointLoaded": false,
+        "sourceStep": 1716,
+        "firstOptimizerStep": null,
+        "trainerAndOptimizerStateRequested": true,
+        "optimizerHyperparametersValidated": true,
+        "startedAt": "2026-08-12 10:00 PDT"
       }
     },
     {
