@@ -29,6 +29,7 @@ PART = ROOT / "modular_extension/data/emo_64exp_50b_wsd_lr2e-3_100B-110B/doc_clu
 JOINT = ROOT / "modular_extension/data/emo_64exp_50b_wsd_lr2e-3_100B-130B/doc_clusters_k64_summary.json"
 SUBSTAB = ROOT / "modular_extension/cluster/emo100b_step23842_100B-130B/subsample_stability"
 KSEL = ROOT / "modular_extension/cluster/emo100b_step23842_100B-130B/k_selection"
+K32CPT = ROOT / "modular_extension/cluster/emo100b_step23842_100B-130B/k32_cpt"
 ORACLE_SPLIT = (ROOT / "modular_extension/cluster/emo100b_step23842/doc_classifier/oracle"
                 / "cluster_agreement.json")
 
@@ -624,11 +625,11 @@ sits well below 100%.</p>""")
     ksel = json.load(open(ksel_path)) if ksel_path.exists() else {}
     k4_path = KSEL / "k4_characterization.json"
     k4 = json.load(open(k4_path)) if k4_path.exists() else []
-    k32_path = JOINT.parent / "doc_clusters_k32_summary.json"
-    k32 = json.load(open(k32_path)) if k32_path.exists() else {}
-
+    pointer = ('<p class="note">The frozen k=32 partition, its cluster sizes, the Stage-3 baseline '
+               'run, and the first training experiment now live in the '
+               '<strong>k=32 CPT (no extension)</strong> tab.</p>')
     return intro + card("method", "Experiment: subsample fit vs full fit", method) + \
-        hypothesis + results + interp + build_ksel(ksel, k4) + build_k32_freeze(k32)
+        hypothesis + results + interp + build_ksel(ksel, k4) + pointer
 
 
 def _substab_results(scores) -> tuple:
@@ -858,6 +859,78 @@ extension run kept no checkpoint between 100B and 200B. Script:
 <code>scripts/modular_extension/emo64_100b130b_baseline.sh</code>.</p>""")
 
 
+def build_k32cpt(k32, conc, drift) -> str:
+    """The 'k=32 CPT (no extension)' tab: sequential per-cluster training of existing
+    experts under a 32-expert working-set budget, plus its two pre-flight analyses."""
+    intro = """
+<p><strong>The experiment:</strong> before growing any new experts, test whether cluster-partitioned
+training of the <em>existing</em> experts already helps. Constraint: at most <strong>32 experts</strong>
+can be trained at once. For each of the 32 clusters (in sequence): select the 32 experts most relevant to
+that cluster as the working set, continue pretraining on that cluster's partition with the usual EMO loss,
+then write the updated experts back into the 64-expert pool. No capacity is added &mdash; this isolates the
+value of <em>specialization via partitioned training</em> from the value of <em>extra experts</em>.</p>
+<p>Two questions had to be answered before launching: (1) does a cluster's traffic actually concentrate
+on 32 experts, so a 32-expert working set sees most of the routed mass; (2) what should happen to the
+non-expert parameters (attention, embeddings, norms, router) while only 32 experts train.</p>
+"""
+
+    conc_html = ""
+    if conc:
+        cl = sorted(c["top32_mass"] for c in conc["clusters"])
+        rnd = [r["top32_mass"] for r in conc["random_sets"]]
+        n_lo = sum(1 for x in cl if x < 0.75)
+        conc_html = card("results", "Pre-flight 1 &mdash; each cluster's top-32 experts capture "
+                                    f"{pct(cl[0])}&ndash;{pct(cl[-1])} of its router mass "
+                                    f"(random docs: {pct(min(rnd))})", f"""
+<p>For every cluster, we take its mean per-layer router distribution (from the saved doc_probs
+fingerprints &mdash; no new forward passes), pick the top 32 of 63 standard experts per layer, and sum
+the captured probability mass, averaged over the 16 layers. Control: a permutation of the cluster labels
+&mdash; 32 <em>random</em> document sets with exactly the same sizes.</p>
+<ul>
+<li><strong>Cluster docs:</strong> the 32-expert working set captures {pct(cl[0])}&ndash;{pct(cl[-1])}
+of router mass (median {pct(cl[len(cl) // 2])}); {n_lo} of 32 clusters sit below 75%.</li>
+<li><strong>Random docs:</strong> {pct(min(rnd))}&ndash;{pct(max(rnd))} &mdash; indistinguishable from
+the global routing profile ({pct(conc["global"]["top32_mass"])}), itself barely above the uniform
+32/63&nbsp;=&nbsp;51%. Clustering, not subsetting, is what concentrates usage: it buys
++{(cl[0] - max(rnd)) * 100:.0f} to +{(cl[-1] - max(rnd)) * 100:.0f} points.</li>
+<li>The residual {pct(1 - cl[-1])}&ndash;{pct(1 - cl[0])} of mass routed to the frozen 31 experts still
+flows normally at train time &mdash; those experts just receive no gradient.</li>
+</ul>
+<div class="figrow">{img_tag(K32CPT / "expert_concentration.png",
+    "Router mass captured by each cluster's own top-32 experts (blue, sorted) vs the same statistic "
+    "for 32 random document sets of identical sizes (orange band) and the all-docs profile (dashed).")}
+</div>"""
+                         )
+
+    drift_html = ""
+    if drift:
+        drift_html = _drift_card(drift)
+
+    return intro + conc_html + drift_html + build_k32_freeze(k32)
+
+
+def _drift_card(drift) -> str:
+    last_cum = drift["cumulative"][-1]["groups"]
+    first_int = drift["intervals"][0]["groups"]
+    tok_lo = drift["cumulative"][-1]["from_step"] * drift["tokens_per_step"] / 1e9
+    tok_hi = drift["cumulative"][-1]["to_step"] * drift["tokens_per_step"] / 1e9
+    rows = [(g, f"{first_int[g]['rel_drift']:.3f}", f"{last_cum[g]['rel_drift']:.3f}",
+             f"{last_cum[g]['cosine']:.4f}")
+            for g in ("experts", "router", "attention", "embeddings", "norms", "lm_head")]
+    return card("results", "Pre-flight 2 &mdash; how much do non-expert parameters move "
+                           "during 64-expert training?", f"""
+<p>Weight-space drift per parameter group across the extension run's permanent checkpoints
+({tok_lo:.0f}B&nbsp;&rarr;&nbsp;{tok_hi:.0f}B tokens, one every ~100B): relative L2 change
+&#8214;&Delta;&theta;&#8214;/&#8214;&theta;&#8214; per ~100B interval and cumulatively. A cheap proxy for
+functional shift &mdash; read it comparatively (group vs group), not absolutely.</p>
+{table(["group", "drift over first 100B interval", f"cumulative drift {tok_lo:.0f}B→{tok_hi:.0f}B",
+        "cosine to 100B weights"], rows)}
+<div class="figrow">{img_tag(K32CPT / "param_drift.png",
+    "Relative L2 drift by parameter group, per ~100B-token interval (left) and cumulative since the "
+    "100B checkpoint (right); log scale.")}
+</div>""")
+
+
 def build_per_cluster(soft, hard, part) -> str:
     hard_by_c = {c["cluster"]: c for c in hard["per_cluster"]}
     rows = []
@@ -1062,12 +1135,20 @@ def main():
     scores = json.load(open(scores_path)) if scores_path.exists() else {}
     oracle_split = json.load(open(ORACLE_SPLIT)) if ORACLE_SPLIT.exists() else {}
 
+    k32_path = JOINT.parent / "doc_clusters_k32_summary.json"
+    k32 = json.load(open(k32_path)) if k32_path.exists() else {}
+    conc_path = K32CPT / "expert_concentration.json"
+    conc = json.load(open(conc_path)) if conc_path.exists() else {}
+    drift_path = K32CPT / "param_drift.json"
+    drift = json.load(open(drift_path)) if drift_path.exists() else {}
+
     tabs = [
         ("overview", "Overview", build_overview(soft, hard, n_docs)),
         ("method", "Method", build_method(soft, ill)),
         ("findings", "Findings", build_findings(soft, hard, code, ill, share)),
         ("per-cluster", "Per-cluster", build_per_cluster(soft, hard, part)),
         ("oracle-partition", "Oracle partition", build_substab(joint, scores, oracle_split)),
+        ("k32-cpt", "k=32 CPT (no extension)", build_k32cpt(k32, conc, drift)),
         ("next-steps", "Next steps", build_nextsteps(soft)),
     ]
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
