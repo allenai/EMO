@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-11",
+  "updated": "2026-08-12",
   "title": "Step 1-1 — Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation; the first DR probe used LR1e-3/WD0.1 and neighboring LR/WD coordinates are being audited; BS512 and BS1024 additions use four 8-GPU nodes with rank microbatch eight sequences.",
   "selection": "The existing OLMo-core baseline is shown only for BS64 through BS1024. E1 is common to all three data-order modes, and an E2 branch may resume any exact LR/WD-matched E1 pre-decay checkpoint. BS512 DR LR1e-3/WD0.333 begins overfitting between E8 and E12, so its E16 is pruned. The stronger WD1.0 trajectory improved through E20 CE3.06523, so its exact-coordinate E24 continuation is submitted from E20 pre-decay step8582. The fresh BS512 LR5e-4/WD0.333 E1 completed at CE4.047 but is deprioritized without an E2 continuation while the higher-likelihood WD1.0 frontier runs. BS1024 LR5e-4/WD0.333 reached its minimum at E8 CE3.283; E12 worsened to CE3.328 and its E16 is pruned. Its WD1.0 alternative improved from E2 CE4.038 through E12 CE3.18997, but E16 narrowly worsened to CE3.19035 and is pruned before E20 under the strict gate. Because LR1e-3/WD0.333 was strong for the Original loader at E4/E8, its DR trajectory improved through E8 CE3.226, but E12 worsened to CE3.251 despite lower train CE and is pruned before E16. Endpoint reporting and frontier decisions are validation-first: new runs retain train CE and DCLM validation CE, while downstream evaluation and downstream report charts are disabled. Dynamic repacking preserves the original E1 packing and begins repacking at E2; fixed order reuses the exact default E1 sequence permutation and batch membership forever. BS1024 LR1e-3/WD1.0 improved from E4 CE3.51309 to E8 CE3.24954, so E12 is registered from exact pre-decay step1716.",
@@ -1567,7 +1567,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "running",
+      "status": "submitted",
       "activeEpoch": 24,
       "attemptedEpochs": [
         2,
@@ -1856,8 +1856,8 @@
         }
       },
       "health": "pending",
-      "reason": "All four E24 backup replicas are running and manifest/preflight/dry-run guards passed on four 8-GPU nodes. Exact checkpoint load, W&B initialization, and first optimizer step are not yet visible; health remains pending during startup.",
-      "beakerStatus": "running",
+      "reason": "Automatic E24 infrastructure retry3 submitted after print-only exact-source, LR/WD, 4x8-GPU, rank-microbatch, manifest, restore-state, and duplicate-active guards passed. All four replicas are pending scheduling.",
+      "beakerStatus": "pending",
       "attempts": [
         {
           "epoch": 12,
@@ -1940,9 +1940,39 @@
           "revision": "4fe955740896994492975520336473c462bd81a5",
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e24_lr1e-3_wd1.0_warmup48_dataloader-cd-r02",
           "reason": "Replica2 exhausted five git-fetch attempts because commit consolidation made revision 4fe955740896994492975520336473c462bd81a5 unreachable; siblings were canceled by propagate-failure. Failure occurred during Gantry repository checkout before task startup, with no W&B, optimizer step, output, or checkpoint. Exact E20 step8582 remains intact. This is bookkeeping rather than infrastructure, so no automatic retry is authorized."
+        },
+        {
+          "epoch": 24,
+          "experiment": "01KZVBX0TXGN8FP0TMZ0PZYAAG",
+          "job": "01KZVBX0ZDZCZKTFEGRJPJB1SZ",
+          "result": "01KZVBX0VNV7CTSKH4NKSJ5HFG",
+          "replicaJobs": [
+            "01KZVBX0ZDZCZKTFEGRJPJB1SZ",
+            "01KZVBX14EYBJMM0FJFXNK9FRV",
+            "01KZVBX1F5C252SAJC01HKTNJP",
+            "01KZVBX1N42MEMXSP75WJ24SGE"
+          ],
+          "replicaResults": [
+            "01KZVBX0VNV7CTSKH4NKSJ5HFG",
+            "01KZVBX0ZPEAJ8GD94VRNA3623",
+            "01KZVBX14N3AD1R7KFRRV0TXWY",
+            "01KZVBX1F9SHW85EGQHCS2TRXJ"
+          ],
+          "replicaNodes": [
+            "01K0X3WSFDRGKFZ9QFWWFZN1BQ",
+            "01KQ0F2CSPGPK0715W6M567DZ3",
+            "01JS0FZ4H0JM1S5JKEH4FB3DJP",
+            "01KT4H4A04X64Q59YFY84R64C6"
+          ],
+          "status": "failed_before_training_startup",
+          "failedReplica": "01KZVBX1F5C252SAJC01HKTNJP",
+          "wandb": null,
+          "revision": "0cd0d9cc38add85757c68e1c390b09df407e6d07",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e24_lr1e-3_wd1.0_warmup48_dataloader-cd-r03",
+          "reason": "Distributed startup failed before checkpoint load or training: only 2/4 replicas joined the torchrun rendezvous and rank2 timed out after 901 seconds. There was no W&B run, optimizer progress, output, or checkpoint. Exact E20 step8582 remains intact, so automatic infrastructure retry3 is eligible."
         }
       ],
-      "retryCount": 2,
+      "retryCount": 3,
       "infrastructureEvents": [
         {
           "observedAt": "2026-08-11 19:00 PDT",
@@ -1955,38 +1985,31 @@
           "reason": "Beaker healthcheck canceled the original rank-1 replica before task startup; no W&B, optimizer progress, output, or checkpoint existed. Beaker created one in-experiment replacement replica."
         }
       ],
-      "beaker": "01KZVBX0TXGN8FP0TMZ0PZYAAG",
-      "experiment": "01KZVBX0TXGN8FP0TMZ0PZYAAG",
-      "revision": "0cd0d9cc38add85757c68e1c390b09df407e6d07",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e24_lr1e-3_wd1.0_warmup48_dataloader-cd-r03",
-      "job": "01KZVBX0ZDZCZKTFEGRJPJB1SZ",
-      "result": "01KZVBX0VNV7CTSKH4NKSJ5HFG",
+      "beaker": "01KZVGWC0C81FXHE3XGY4HVV52",
+      "experiment": "01KZVGWC0C81FXHE3XGY4HVV52",
+      "revision": "1cb2c02b2f6a90e81b9026cb0eb0c2879adead66",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e24_lr1e-3_wd1.0_warmup48_dataloader-cd-r04",
+      "job": "01KZVGWC4TJ0XBGMA0CPTSDKKX",
+      "result": "01KZVGWC0X0SX31QFCQQV8TB97",
       "replicaJobs": [
-        "01KZVBX0ZDZCZKTFEGRJPJB1SZ",
-        "01KZVBX14EYBJMM0FJFXNK9FRV",
-        "01KZVBX1F5C252SAJC01HKTNJP",
-        "01KZVBX1N42MEMXSP75WJ24SGE"
+        "01KZVGWC4TJ0XBGMA0CPTSDKKX",
+        "01KZVGWC933YAP38WTRY4QH4GX",
+        "01KZVGWCDH9AN55EVJP1TVSK4D",
+        "01KZVGWCH028ADWDYDRQG9DA4A"
       ],
       "replicaResults": [
-        "01KZVBX0VNV7CTSKH4NKSJ5HFG",
-        "01KZVBX0ZPEAJ8GD94VRNA3623",
-        "01KZVBX14N3AD1R7KFRRV0TXWY",
-        "01KZVBX1F9SHW85EGQHCS2TRXJ"
+        "01KZVGWC0X0SX31QFCQQV8TB97",
+        "01KZVGWC56WX8NKP126D0CW4H0",
+        "01KZVGWC9B67ZA78PJMXH39J5M",
+        "01KZVGWCDQXGZ4P7Z3002G6VJQ"
       ],
       "progress": {
-        "observedAt": "2026-08-12 10:02 PDT",
+        "observedAt": "2026-08-12 10:39 PDT",
         "step": 8582,
         "endpointStep": 11445,
         "epoch": 20,
-        "eta": "startup in progress"
+        "eta": "pending scheduling"
       },
-      "node": "01K0X3WSFDRGKFZ9QFWWFZN1BQ",
-      "replicaNodes": [
-        "01K0X3WSFDRGKFZ9QFWWFZN1BQ",
-        "01KQ0F2CSPGPK0715W6M567DZ3",
-        "01JS0FZ4H0JM1S5JKEH4FB3DJP",
-        "01KT4H4A04X64Q59YFY84R64C6"
-      ],
       "startupEvidence": {
         "manifestVerified": true,
         "preflightVerified": true,
@@ -1996,8 +2019,7 @@
         "sourceStep": 8582,
         "firstOptimizerStep": null,
         "trainerAndOptimizerStateRequested": true,
-        "optimizerHyperparametersValidated": true,
-        "startedAt": "2026-08-12 09:48 PDT"
+        "optimizerHyperparametersValidated": true
       }
     },
     {
@@ -3961,8 +3983,8 @@
           "reason": "Completed healthy on four 8-GPU nodes from exact E4 pre-decay step858. Validation CE3.24954 strictly improved E4 CE3.51309, unlocking E12 from retained pre-decay step1716."
         }
       },
-      "health": "pending",
-      "reason": "All four E12 backup replicas are running on four 8-GPU nodes. Manifest/preflight/dry-run guards passed, W&B 1cebv71a initialized, and exact E8 step1716 checkpoint loading began; first optimizer step is not yet visible, so health remains pending during startup.",
+      "health": "healthy",
+      "reason": "E12 is training healthily on four 8-GPU nodes from the exact E8 pre-decay step1716 checkpoint. W&B 1cebv71a is active; train CE and gradients remain finite. Active train CE is preliminary until endpoint validation.",
       "beakerStatus": "running",
       "attempts": [
         {
@@ -4050,11 +4072,13 @@
         "01KZVBXHPCZFPYRHNEDGVEZAJP"
       ],
       "progress": {
-        "observedAt": "2026-08-12 10:02 PDT",
-        "step": 1716,
+        "observedAt": "2026-08-12 10:37 PDT",
+        "step": 2549,
         "endpointStep": 2862,
-        "epoch": 8,
-        "eta": "checkpoint loading"
+        "epoch": 11,
+        "trainCe": 3.198,
+        "eta": "14m",
+        "metricStatus": "preliminary"
       },
       "node": "01KWCYTWACRV5ZEWSDD0TEZDRJ",
       "replicaNodes": [
@@ -4069,9 +4093,9 @@
         "preflightVerified": true,
         "remoteDryRunComplete": true,
         "dynamicRepacking": true,
-        "sourceCheckpointLoaded": false,
+        "sourceCheckpointLoaded": true,
         "sourceStep": 1716,
-        "firstOptimizerStep": null,
+        "firstOptimizerStep": 1717,
         "trainerAndOptimizerStateRequested": true,
         "optimizerHyperparametersValidated": true,
         "startedAt": "2026-08-12 10:00 PDT"
