@@ -1775,30 +1775,30 @@
         }
       },
       "health": "pending",
-      "reason": "E16 submitted after registry, duplicate, exact-source, WD-floor, 4-node, rank-microbatch, manifest, and print-only guards passed; awaiting scheduling.",
+      "reason": "E16 remains within the original registered experiment. Beaker replaced rank 1 after a pre-task healthcheck failure with no W&B or optimizer progress; the replacement is scheduling and startup evidence remains pending.",
       "beaker": "01KZSRR4CWJW1NNP76NPRR79F7",
       "experiment": "01KZSRR4CWJW1NNP76NPRR79F7",
       "job": "01KZSRR4GPNK5XJAYZ6H53JY5Q",
       "result": "01KZSRR4D9HKFG13YEJH2KNKQ7",
       "replicaJobs": [
         "01KZSRR4GPNK5XJAYZ6H53JY5Q",
-        "01KZSRR4N82HRFE83PJXCPTGMB",
+        "01KZSV5EQ0Y9TE8ZK8BTV6K9R2",
         "01KZSRR4S6PK7TSQCN8Y7SYHX2",
         "01KZSRR4XW3YMQ6TR8Q20X8CC4"
       ],
       "replicaResults": [
         "01KZSRR4D9HKFG13YEJH2KNKQ7",
-        "01KZSRR4H069F1QGAVHYEB8N02",
+        "01KZSV5EJK72VP7C8KYSWZ8P80",
         "01KZSRR4NF5RK548M68ZMA8PAW",
         "01KZSRR4SDH6QF475X8Z8WGYZ5"
       ],
-      "beakerStatus": "submitted",
+      "beakerStatus": "scheduled",
       "progress": {
-        "observedAt": "2026-08-11 18:18 PDT",
+        "observedAt": "2026-08-11 19:00 PDT",
         "step": 5150,
         "endpointStep": 7630,
         "epoch": 16,
-        "eta": "awaiting scheduling"
+        "eta": "replacement rank 1 scheduling"
       },
       "revision": "e063ed32747cbef4a7b253c0306d96250c835655",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e16_lr1e-3_wd1.0_warmup48_dataloader-cd-r01",
@@ -1833,7 +1833,19 @@
           "reason": "Infrastructure-only pre-task failure: the submitted fabricated full revision e31d31f7afc844293017789807756159b83ee16d does not exist on origin. Gantry exhausted git-fetch retries before repository checkout; no task, W&B run, optimizer step, output, or checkpoint was created."
         }
       ],
-      "retryCount": 1
+      "retryCount": 2,
+      "infrastructureEvents": [
+        {
+          "observedAt": "2026-08-11 19:00 PDT",
+          "type": "replica_healthcheck_replacement_before_task_start",
+          "replicaRank": 1,
+          "failedJob": "01KZSRR4N82HRFE83PJXCPTGMB",
+          "failedResult": "01KZSRR4H069F1QGAVHYEB8N02",
+          "replacementJob": "01KZSV5EQ0Y9TE8ZK8BTV6K9R2",
+          "replacementResult": "01KZSV5EJK72VP7C8KYSWZ8P80",
+          "reason": "Beaker healthcheck canceled the original rank-1 replica before task startup; no W&B, optimizer progress, output, or checkpoint existed. Beaker created one in-experiment replacement replica."
+        }
+      ]
     },
     {
       "id": "dr1024-wd0.1",
