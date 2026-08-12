@@ -73,6 +73,68 @@ def average_module_and_optimizer_state(
         tensor.div_(replica_count)
 
 
+def clone_local_parameter_tensors(module: nn.Module) -> list[torch.Tensor]:
+    """Clone the local parameter shards used as the start of a DiLoCo outer round."""
+    return [
+        get_local_tensor(parameter.detach()).clone()
+        for parameter in module.parameters()
+        if parameter.requires_grad
+    ]
+
+
+@torch.no_grad()
+def diloco_outer_step(
+    module: nn.Module,
+    outer_optimizer: Optimizer,
+    outer_parameters: list[torch.Tensor],
+    process_group: dist.ProcessGroup,
+) -> None:
+    """Apply one synchronous DiLoCo outer step and reset every replica to its result.
+
+    Each replica starts an outer round from ``outer_parameters`` and independently updates
+    ``module`` with its inner optimizer. The pseudo-gradient is the start parameter minus the
+    local parameter. Pseudo-gradients are averaged across replicas, then applied to the shared
+    start parameters by ``outer_optimizer``. The inner optimizer is deliberately untouched so
+    every replica retains its own AdamW moments across outer rounds, as in DiLoCo.
+    """
+    parameters = [parameter for parameter in module.parameters() if parameter.requires_grad]
+    if len(parameters) != len(outer_parameters):
+        raise RuntimeError(
+            "DiLoCo outer parameter snapshot does not match the module parameter count"
+        )
+
+    replica_count = dist.get_world_size(process_group)
+    outer_optimizer.zero_grad(set_to_none=True)
+    for parameter, outer_parameter in zip(parameters, outer_parameters):
+        local_parameter = get_local_tensor(parameter.detach())
+        if local_parameter.shape != outer_parameter.shape:
+            raise RuntimeError("DiLoCo outer parameter snapshot has an incompatible shape")
+
+        # Preserve the parameter's distributed layout in the synthetic gradient so the regular
+        # PyTorch optimizer can update DTensor/FSDP parameters without special-casing them.
+        pseudo_gradient = parameter.detach().clone()
+        local_pseudo_gradient = get_local_tensor(pseudo_gradient)
+        local_pseudo_gradient.copy_(outer_parameter).sub_(local_parameter)
+        if replica_count > 1:
+            dist.all_reduce(
+                local_pseudo_gradient,
+                op=dist.ReduceOp.SUM,
+                group=process_group,
+            )
+            local_pseudo_gradient.div_(replica_count)
+
+        # The outer optimizer acts on the shared parameter at the beginning of the round, not
+        # on any particular worker's local endpoint.
+        local_parameter.copy_(outer_parameter)
+        parameter.grad = pseudo_gradient
+
+    outer_optimizer.step()
+    outer_optimizer.zero_grad(set_to_none=True)
+
+    for parameter, outer_parameter in zip(parameters, outer_parameters):
+        outer_parameter.copy_(get_local_tensor(parameter.detach()))
+
+
 def _local_parameter_tensors(module: nn.Module) -> Iterable[torch.Tensor]:
     for parameter in module.parameters():
         yield get_local_tensor(parameter.detach())

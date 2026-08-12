@@ -733,6 +733,7 @@ def swap_param_keys(
     metadata: Optional[Metadata] = None,
     reverse: bool = False,
     quiet: bool = False,
+    optimizer_keys: Tuple[str, ...] = ("optim",),
 ):
     for current_key, original_key in key_mapping.items():
         if metadata is not None and f"model.{original_key}" not in metadata.state_dict_metadata:
@@ -749,28 +750,28 @@ def swap_param_keys(
 
         state_dict["model"][original_key] = state_dict["model"].pop(current_key)
 
-        if "optim" not in state_dict:
-            continue
+        for optimizer_key in optimizer_keys:
+            if optimizer_key not in state_dict:
+                continue
 
-        if "state" in state_dict["optim"]:  # unflattened optim state dict
-            state_dict["optim"]["state"][original_key] = state_dict["optim"]["state"].pop(
-                current_key
-            )
-            for group in state_dict["optim"]["param_groups"]:
-                if current_key in group["params"]:
-                    idx = group["params"].index(current_key)
-                    group["params"][idx] = original_key
-                    break
-        else:  # flattened optim state dict
-            for key in list(state_dict["optim"].keys()):
-                if key.startswith(f"state.{current_key}."):
-                    new_key = key.replace(f"state.{current_key}.", f"state.{original_key}.", 1)
-                    state_dict["optim"][new_key] = state_dict["optim"].pop(key)
-                elif key.startswith(f"param_groups.{current_key}."):
-                    new_key = key.replace(
-                        f"param_groups.{current_key}.", f"param_groups.{original_key}.", 1
-                    )
-                    state_dict["optim"][new_key] = state_dict["optim"].pop(key)
+            optimizer_state = state_dict[optimizer_key]
+            if "state" in optimizer_state:  # unflattened optimizer state dict
+                optimizer_state["state"][original_key] = optimizer_state["state"].pop(current_key)
+                for group in optimizer_state["param_groups"]:
+                    if current_key in group["params"]:
+                        idx = group["params"].index(current_key)
+                        group["params"][idx] = original_key
+                        break
+            else:  # flattened optimizer state dict
+                for key in list(optimizer_state.keys()):
+                    if key.startswith(f"state.{current_key}."):
+                        new_key = key.replace(f"state.{current_key}.", f"state.{original_key}.", 1)
+                        optimizer_state[new_key] = optimizer_state.pop(key)
+                    elif key.startswith(f"param_groups.{current_key}."):
+                        new_key = key.replace(
+                            f"param_groups.{current_key}.", f"param_groups.{original_key}.", 1
+                        )
+                        optimizer_state[new_key] = optimizer_state.pop(key)
 
 
 def _load_unsharded_keys(

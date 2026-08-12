@@ -54,6 +54,8 @@ from ...common import ReduceType
 from ..train_module import EvalBatchSpec, TrainModule
 from .batch_simulation import (
     average_module_and_optimizer_state,
+    clone_local_parameter_tensors,
+    diloco_outer_step,
     structured_noise_loss_scales,
 )
 from .common import parallelize_model
@@ -68,6 +70,8 @@ from .config import (
 )
 
 log = logging.getLogger(__name__)
+
+_DILOCO_INNER_OPTIM_PREFIX = "diloco_inner_optim_replica_"
 
 
 def optimizer_hyperparameters(optim: Optimizer) -> List[Dict[str, Any]]:
@@ -155,8 +159,8 @@ class TransformerTrainModule(TrainModule):
         This dictionary should map current keys to keys in the checkpoint to be loaded.
     :param validate_optimizer_hyperparameters_on_load: Abort a checkpoint load if any optimizer
         parameter-group setting differs from the optimizer built from the command config.
-    :param batch_simulation: Optional structured-noise or local-SGD smaller-batch simulation.
-        The default configuration is disabled and preserves normal optimization.
+    :param batch_simulation: Optional structured-noise, local-SGD, or DiLoCo smaller-batch
+        simulation. The default configuration is disabled and preserves normal optimization.
     """
 
     def __init__(
@@ -221,7 +225,7 @@ class TransformerTrainModule(TrainModule):
                 "Activation checkpointing with 'budget' mode requires compilation to be enabled"
             )
 
-        # Parallelize model. Local SGD uses the full HSDP-shaped world mesh for data
+        # Parallelize model. Local-update methods use the full HSDP-shaped world mesh for data
         # assignment and replica groups, but each replica must expose its own local
         # gradients to its optimizer. Native HSDP's ``set_requires_all_reduce(False)``
         # is an accumulation mode: it retains gradients in a private partial-reduction
@@ -229,10 +233,7 @@ class TransformerTrainModule(TrainModule):
         # Wrapping on the shard sub-mesh gives every replica an independent FSDP model;
         # ``_maybe_sync_local_sgd`` remains the only cross-replica synchronization.
         dp_model_mesh: Optional[DeviceMesh] = None
-        if (
-            batch_simulation.method == BatchSimulationMethod.local_sgd
-            and self.world_mesh is not None
-        ):
+        if batch_simulation.uses_local_updates and self.world_mesh is not None:
             dp_model_mesh = get_dp_shard_mesh(self.world_mesh)
 
         self.model = parallelize_model(
@@ -277,6 +278,17 @@ class TransformerTrainModule(TrainModule):
         # Build optimizer(s).
         log.info("Building optimizer...")
         self.optim: Optimizer = optim.build(self.model, strict=True)
+        self._diloco_outer_optim: Optional[Optimizer] = None
+        self._diloco_outer_parameters: list[torch.Tensor] = []
+        if self.batch_simulation.method == BatchSimulationMethod.diloco:
+            self._diloco_outer_optim = torch.optim.SGD(
+                (parameter for parameter in self.model.parameters() if parameter.requires_grad),
+                lr=self.batch_simulation.diloco_outer_lr,
+                momentum=self.batch_simulation.diloco_outer_momentum,
+                weight_decay=0.0,
+                nesterov=True,
+            )
+            self._diloco_outer_parameters = clone_local_parameter_tensors(self.model)
 
     @property
     def dp_process_group(self) -> Optional[dist.ProcessGroup]:
@@ -353,15 +365,18 @@ class TransformerTrainModule(TrainModule):
                     "each rank's structured-noise ghost batch must contain a whole number of sequences"
                 )
 
-        if self.batch_simulation.method == BatchSimulationMethod.local_sgd:
+        if self.batch_simulation.uses_local_updates:
             if self.world_mesh is None or self.dp_config is None:
-                raise OLMoConfigurationError("local SGD batch simulation requires distributed HSDP")
+                raise OLMoConfigurationError(
+                    "local-update batch simulation requires distributed HSDP"
+                )
             if self.dp_config.name != DataParallelType.hsdp:
-                raise OLMoConfigurationError("local SGD batch simulation requires HSDP")
+                raise OLMoConfigurationError("local-update batch simulation requires HSDP")
             replica_count = get_dp_replicate_mesh(self.world_mesh).size()
             if replica_count != self.batch_simulation.num_ghost_batches:
                 raise OLMoConfigurationError(
-                    f"local SGD expected {self.batch_simulation.num_ghost_batches} replicas, "
+                    f"local-update method expected "
+                    f"{self.batch_simulation.num_ghost_batches} replicas, "
                     f"but the world mesh contains {replica_count}"
                 )
 
@@ -374,11 +389,35 @@ class TransformerTrainModule(TrainModule):
     def state_dict_to_load(
         self, metadata: Metadata, *, optim: Optional[bool] = None
     ) -> Dict[str, Any]:
-        has_optim_state: bool = False
+        local_inner_optim_key = self._inner_optimizer_state_key()
+        has_common_optim_state: bool = False
+        has_local_inner_optim_state: bool = False
+        has_replica_inner_optim_state: bool = False
+        has_diloco_outer_optim_state: bool = False
         for key in metadata.state_dict_metadata.keys():
             if key.startswith("optim."):
-                has_optim_state = True
-                break
+                has_common_optim_state = True
+            elif key.startswith(f"{local_inner_optim_key}."):
+                has_local_inner_optim_state = True
+                has_replica_inner_optim_state = True
+            elif key.startswith(_DILOCO_INNER_OPTIM_PREFIX):
+                has_replica_inner_optim_state = True
+            elif key.startswith("diloco_outer_optim."):
+                has_diloco_outer_optim_state = True
+
+        if (
+            self.batch_simulation.method == BatchSimulationMethod.diloco
+            and has_replica_inner_optim_state
+            and not has_local_inner_optim_state
+            and optim is not False
+        ):
+            raise RuntimeError(
+                f"Checkpoint does not contain inner optimizer state for this DiLoCo replica "
+                f"('{local_inner_optim_key}')"
+            )
+
+        inner_optim_key = local_inner_optim_key if has_local_inner_optim_state else "optim"
+        has_optim_state = has_local_inner_optim_state or has_common_optim_state
 
         if optim is None:
             if not has_optim_state:
@@ -394,7 +433,7 @@ class TransformerTrainModule(TrainModule):
                     "Checkpoint does not contain optimizer state, but 'optim=True' was requested"
                 )
 
-            if "optim.param_groups.0.params" in metadata.state_dict_metadata:
+            if f"{inner_optim_key}.param_groups.0.params" in metadata.state_dict_metadata:
                 # unflattened optimizer state
                 if load_opts.flatten_optimizer_state_dict:
                     log.warning(
@@ -413,9 +452,21 @@ class TransformerTrainModule(TrainModule):
                     )
                     load_opts = replace(load_opts, flatten_optimizer_state_dict=True)
 
-        state_dict = self._get_state_dict(load_opts, optim=optim)
+        state_dict = self._get_state_dict(
+            load_opts,
+            optim=optim,
+            inner_optimizer_key=inner_optim_key,
+            include_diloco_outer_optim=bool(
+                optim and has_diloco_outer_optim_state and self._diloco_outer_optim is not None
+            ),
+        )
         if self.load_key_mapping is not None:
-            swap_param_keys(state_dict, self.load_key_mapping, metadata=metadata)
+            swap_param_keys(
+                state_dict,
+                self.load_key_mapping,
+                metadata=metadata,
+                optimizer_keys=(inner_optim_key, "diloco_outer_optim"),
+            )
 
         if not load_opts.strict:
             # Remove any keys in the 'state_dict' that are not present in the checkpoint.
@@ -432,26 +483,47 @@ class TransformerTrainModule(TrainModule):
         return self._get_state_dict(self.state_dict_save_opts, optim=optim)
 
     def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
-        load_optim = "optim" in state_dict
+        local_inner_optim_key = self._inner_optimizer_state_key()
+        inner_optim_key = local_inner_optim_key if local_inner_optim_key in state_dict else "optim"
+        load_optim = inner_optim_key in state_dict
+        load_diloco_outer_optim = "diloco_outer_optim" in state_dict
         expected_optim_hyperparameters = (
             optimizer_hyperparameters(self.optim)
             if load_optim and self.validate_optimizer_hyperparameters_on_load
             else None
         )
+        expected_diloco_outer_hyperparameters = (
+            optimizer_hyperparameters(self._diloco_outer_optim)
+            if load_diloco_outer_optim
+            and self._diloco_outer_optim is not None
+            and self.validate_optimizer_hyperparameters_on_load
+            else None
+        )
 
         if self.load_key_mapping is not None:
-            swap_param_keys(state_dict, self.load_key_mapping, reverse=True, quiet=True)
+            swap_param_keys(
+                state_dict,
+                self.load_key_mapping,
+                reverse=True,
+                quiet=True,
+                optimizer_keys=(inner_optim_key, "diloco_outer_optim"),
+            )
 
         # NOTE: `dist_cp_sd.set_(model|optimizer)_state_dict()` doesn't respect `strict=False`
         # option with missing keys, so we have to handle that on our own.
         if not self.state_dict_load_opts.strict:
             flatten_optimizer_state_dict = (
-                False if not load_optim else ("state" not in state_dict["optim"])
+                False if not load_optim else ("state" not in state_dict[inner_optim_key])
             )
             load_opts = replace(
                 self.state_dict_load_opts, flatten_optimizer_state_dict=flatten_optimizer_state_dict
             )
-            full_state_dict = self._get_state_dict(load_opts, optim=load_optim)
+            full_state_dict = self._get_state_dict(
+                load_opts,
+                optim=load_optim,
+                inner_optimizer_key=inner_optim_key,
+                include_diloco_outer_optim=load_diloco_outer_optim,
+            )
             merge_state_dicts(state_dict, full_state_dict)
 
         dist_cp_sd.set_model_state_dict(
@@ -464,7 +536,7 @@ class TransformerTrainModule(TrainModule):
             dist_cp_sd.set_optimizer_state_dict(
                 self.model,
                 self.optim,
-                state_dict["optim"],
+                state_dict[inner_optim_key],
                 options=self.state_dict_load_opts,
             )
             if expected_optim_hyperparameters is not None:
@@ -473,7 +545,29 @@ class TransformerTrainModule(TrainModule):
                     optimizer_hyperparameters(self.optim),
                 )
             gc_cuda()
+        if load_diloco_outer_optim:
+            if self._diloco_outer_optim is None:
+                raise RuntimeError(
+                    "Checkpoint contains DiLoCo outer optimizer state, but DiLoCo is disabled"
+                )
+            dist_cp_sd.set_optimizer_state_dict(
+                self.model,
+                self._diloco_outer_optim,
+                state_dict["diloco_outer_optim"],
+                options=self.state_dict_load_opts,
+            )
+            if expected_diloco_outer_hyperparameters is not None:
+                assert_optimizer_hyperparameters_match(
+                    expected_diloco_outer_hyperparameters,
+                    optimizer_hyperparameters(self._diloco_outer_optim),
+                )
+            gc_cuda()
+        elif self._diloco_outer_optim is not None:
+            # Starting DiLoCo from a conventional checkpoint begins with zero outer momentum.
+            self._diloco_outer_optim.state.clear()
         self._local_sgd_steps_since_sync = 0
+        if self._diloco_outer_optim is not None:
+            self._diloco_outer_parameters = clone_local_parameter_tensors(self.model)
 
     def train_batch(self, batch: Dict[str, Any], dry_run: bool = False):
         # Set model to train mode if it isn't already.
@@ -638,7 +732,7 @@ class TransformerTrainModule(TrainModule):
     def eval_batch(
         self, batch: Dict[str, Any], labels: Optional[torch.Tensor] = None
     ) -> Union[torch.Tensor, LMOutputWithLoss]:
-        # Evaluation and checkpointing should always observe one coherent averaged model.
+        # Evaluation and checkpointing should always observe one coherent synchronized model.
         self._maybe_sync_local_sgd(force=True)
         # CP and TP are supported for PPL evals (LMEvaluator) since they only need per-token
         # CE loss. Downstream evals that require full logits will fail naturally if attempted
@@ -682,12 +776,12 @@ class TransformerTrainModule(TrainModule):
         return output
 
     def optim_step(self):
-        if self.batch_simulation.method == BatchSimulationMethod.local_sgd:
+        if self.batch_simulation.uses_local_updates:
             self._ensure_local_sgd_gradients_materialized()
 
         # Maybe clip gradients.
         if self.max_grad_norm is not None:
-            if self.batch_simulation.method == BatchSimulationMethod.local_sgd:
+            if self.batch_simulation.uses_local_updates:
                 grad_norm = self._clip_local_sgd_grad_norm(self.max_grad_norm)
                 grad_norm_reduce_type: Optional[ReduceType] = ReduceType.mean
             else:
@@ -716,13 +810,17 @@ class TransformerTrainModule(TrainModule):
 
         self.model.post_optim_step()
 
-        if self.batch_simulation.method == BatchSimulationMethod.local_sgd:
+        if self.batch_simulation.uses_local_updates:
             self._local_sgd_steps_since_sync += 1
             synced = self._maybe_sync_local_sgd()
             self.record_metric(
                 "replica synchronization",
                 float(synced),
-                namespace="local SGD",
+                namespace=(
+                    "DiLoCo"
+                    if self.batch_simulation.method == BatchSimulationMethod.diloco
+                    else "local SGD"
+                ),
             )
 
     def zero_grads(self):
@@ -743,7 +841,16 @@ class TransformerTrainModule(TrainModule):
             return self.model.num_flops_per_token(seq_len)
         except NotImplementedError as ex:
             warn_once(f"Unable to estimate num flops per token: {ex}")
-            return None
+        return None
+
+    def _inner_optimizer_state_key(self) -> str:
+        """Return the checkpoint key for this rank's inner optimizer state."""
+        if self.batch_simulation.method != BatchSimulationMethod.diloco:
+            return "optim"
+        if self.world_mesh is None:
+            raise RuntimeError("DiLoCo optimizer checkpointing requires a distributed world mesh")
+        replica_idx = get_dp_replicate_mesh(self.world_mesh).get_local_rank()
+        return f"{_DILOCO_INNER_OPTIM_PREFIX}{replica_idx}"
 
     def global_num_flops_in_batch(self, batch: Dict[str, Any]) -> Optional[int]:
         global_num_tokens = self.trainer.data_loader.global_num_tokens_in_batch(batch)
@@ -768,7 +875,7 @@ class TransformerTrainModule(TrainModule):
                 # it must leave gradient materialization enabled on every micro-batch.
                 if (
                     self.dp_config.name == DataParallelType.hsdp
-                    and self.batch_simulation.method != BatchSimulationMethod.local_sgd
+                    and not self.batch_simulation.uses_local_updates
                 ):
                     self.model.set_requires_all_reduce(is_last_mb)
             elif isinstance(self.model, DDP):
@@ -792,14 +899,32 @@ class TransformerTrainModule(TrainModule):
             yield
 
     def _get_state_dict(
-        self, sd_options: dist_cp_sd.StateDictOptions, optim: bool = True
+        self,
+        sd_options: dist_cp_sd.StateDictOptions,
+        optim: bool = True,
+        inner_optimizer_key: Optional[str] = None,
+        include_diloco_outer_optim: Optional[bool] = None,
     ) -> Dict[str, Any]:
         state_dict: Dict[str, Any] = {
             "model": dist_cp_sd.get_model_state_dict(self.model, options=sd_options),
         }
         if optim:
-            state_dict["optim"] = dist_cp_sd.get_optimizer_state_dict(
+            if inner_optimizer_key is None:
+                inner_optimizer_key = self._inner_optimizer_state_key()
+            state_dict[inner_optimizer_key] = dist_cp_sd.get_optimizer_state_dict(
                 self.model, self.optim, options=sd_options
+            )
+        if include_diloco_outer_optim is None:
+            include_diloco_outer_optim = optim and self._diloco_outer_optim is not None
+        if include_diloco_outer_optim:
+            if self._diloco_outer_optim is None:
+                raise RuntimeError(
+                    "Cannot save DiLoCo outer optimizer state when DiLoCo is disabled"
+                )
+            state_dict["diloco_outer_optim"] = dist_cp_sd.get_optimizer_state_dict(
+                self.model,
+                self._diloco_outer_optim,
+                options=sd_options,
             )
         return state_dict
 
@@ -833,7 +958,7 @@ class TransformerTrainModule(TrainModule):
         return total_norm
 
     def _clip_local_sgd_grad_norm(self, max_grad_norm: float) -> torch.Tensor:
-        """Clip independently within each local-SGD replica (across its HSDP shards)."""
+        """Clip independently within each local-update replica (across its HSDP shards)."""
         assert self.world_mesh is not None
         local_norm_squared = torch.zeros((), device=self.device, dtype=torch.float32)
         gradients = []
@@ -856,25 +981,35 @@ class TransformerTrainModule(TrainModule):
         if any(parameter.grad is not None for parameter in self.model.parameters()):
             return
         raise RuntimeError(
-            "local SGD optimizer step has no materialized gradients; the model must be "
+            "local-update optimizer step has no materialized gradients; the model must be "
             "wrapped independently within each replica rather than using HSDP's deferred "
             "all-reduce accumulation mode"
         )
 
     def _maybe_sync_local_sgd(self, *, force: bool = False) -> bool:
-        if self.batch_simulation.method != BatchSimulationMethod.local_sgd:
+        if not self.batch_simulation.uses_local_updates:
             return False
         if self._local_sgd_steps_since_sync == 0:
             return False
         if (
             not force
-            and self._local_sgd_steps_since_sync < self.batch_simulation.local_sgd_sync_interval
+            and self._local_sgd_steps_since_sync < self.batch_simulation.local_update_sync_interval
         ):
             return False
 
         assert self.world_mesh is not None
         replica_group = get_dp_replicate_mesh(self.world_mesh).get_group()
-        average_module_and_optimizer_state(self.model, self.optim, replica_group)
+        if self.batch_simulation.method == BatchSimulationMethod.local_sgd:
+            average_module_and_optimizer_state(self.model, self.optim, replica_group)
+        else:
+            assert self.batch_simulation.method == BatchSimulationMethod.diloco
+            assert self._diloco_outer_optim is not None
+            diloco_outer_step(
+                self.model,
+                self._diloco_outer_optim,
+                self._diloco_outer_parameters,
+                replica_group,
+            )
         self._local_sgd_steps_since_sync = 0
         return True
 

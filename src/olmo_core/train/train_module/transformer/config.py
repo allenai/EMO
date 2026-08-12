@@ -47,6 +47,7 @@ class BatchSimulationMethod(StrEnum):
     none = "none"
     structured_noise = "structured_noise"
     local_sgd = "local_sgd"
+    diloco = "diloco"
 
 
 @dataclass
@@ -62,6 +63,12 @@ class BatchSimulationConfig(Config):
     global_batch_size: Optional[int] = None
     simulated_batch_size: Optional[int] = None
     local_sgd_sync_interval: int = 1
+    diloco_inner_steps: int = 500
+    """Number of independent AdamW steps per DiLoCo outer round (``H`` in the paper)."""
+    diloco_outer_lr: float = 0.7
+    """Learning rate for the DiLoCo outer Nesterov optimizer."""
+    diloco_outer_momentum: float = 0.9
+    """Momentum for the DiLoCo outer Nesterov optimizer."""
     seed: int = 0
 
     def __post_init__(self):
@@ -83,6 +90,15 @@ class BatchSimulationConfig(Config):
             )
         if self.local_sgd_sync_interval < 1:
             raise OLMoConfigurationError("'local_sgd_sync_interval' must be at least 1")
+        if self.method == BatchSimulationMethod.diloco:
+            if self.diloco_inner_steps < 1:
+                raise OLMoConfigurationError("'diloco_inner_steps' must be at least 1")
+            if self.diloco_outer_lr <= 0:
+                raise OLMoConfigurationError("'diloco_outer_lr' must be greater than zero")
+            if not 0 < self.diloco_outer_momentum < 1:
+                raise OLMoConfigurationError(
+                    "'diloco_outer_momentum' must be strictly between zero and one"
+                )
 
     @property
     def num_ghost_batches(self) -> int:
@@ -95,6 +111,18 @@ class BatchSimulationConfig(Config):
     @property
     def enabled(self) -> bool:
         return self.method != BatchSimulationMethod.none
+
+    @property
+    def uses_local_updates(self) -> bool:
+        """Whether each data-parallel replica performs independent optimizer updates."""
+        return self.method in (BatchSimulationMethod.local_sgd, BatchSimulationMethod.diloco)
+
+    @property
+    def local_update_sync_interval(self) -> int:
+        """Number of independent inner steps between replica synchronizations."""
+        if self.method == BatchSimulationMethod.diloco:
+            return self.diloco_inner_steps
+        return self.local_sgd_sync_interval
 
 
 @beta_feature
@@ -416,21 +444,21 @@ class TransformerTrainModuleConfig(TrainModuleConfig):
                 **kwargs,
             )
         else:
-            if batch_simulation.method == BatchSimulationMethod.local_sgd:
+            if batch_simulation.uses_local_updates:
                 if (
                     self.tp_config is not None
                     or self.cp_config is not None
                     or self.ep_config is not None
                 ):
                     raise OLMoConfigurationError(
-                        "local SGD batch simulation currently requires pure data parallelism"
+                        "local-update batch simulation currently requires pure data parallelism"
                     )
                 if self.dp_config is None or self.dp_config.name not in (
                     DataParallelType.fsdp,
                     DataParallelType.hsdp,
                 ):
                     raise OLMoConfigurationError(
-                        "local SGD batch simulation requires FSDP or HSDP data parallelism"
+                        "local-update batch simulation requires FSDP or HSDP data parallelism"
                     )
 
                 # Each HSDP replica consumes one simulated batch while parameters remain sharded
