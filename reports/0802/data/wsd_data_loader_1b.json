@@ -4113,8 +4113,8 @@
         }
       },
       "health": "pending",
-      "reason": "Automatic E16 infrastructure retry submitted after print-only exact-source, LR/WD, 4x8-GPU, rank-microbatch, manifest, restore-state, and duplicate-active guards passed; four replicas are pending.",
-      "beakerStatus": "pending",
+      "reason": "Automatic E16 infrastructure retry scheduled on four 8-GPU nodes. Three replicas are ready and the fourth is scheduled; task logs and W&B have not appeared yet, so exact checkpoint load and first optimizer step remain pending.",
+      "beakerStatus": "starting",
       "attempts": [
         {
           "epoch": 8,
@@ -4230,12 +4230,18 @@
         "01KZVS4H0ART0RQ976F0FRRG8A",
         "01KZVS4H4GCH0ZNV57FE041HY2"
       ],
+      "replicaNodes": [
+        "01K15VBGT6DBQCXH04Y81WFGJB",
+        "01JS0FZ4H0JM1S5JKEH4FB3DJP",
+        "01KJT2MH75VZK6EBPG4NQ7S7CQ",
+        "01KT4H4Y63R72E25BFCHYY5WQ7"
+      ],
       "progress": {
-        "observedAt": "2026-08-12 13:08 PDT",
+        "observedAt": "2026-08-12 15:30 PDT",
         "step": 2575,
         "endpointStep": 3815,
         "epoch": 12,
-        "eta": "pending scheduling"
+        "eta": "starting on four nodes"
       },
       "startupEvidence": {
         "manifestVerified": true,
