@@ -4112,9 +4112,9 @@
           "reason": "Completed healthy on four 8-GPU nodes from exact E8 pre-decay step1716, retaining E12 pre-decay step2575 and endpoint step2862. Validation CE3.15979 strictly improved E8 CE3.24954, unlocking E16 from retained step2575."
         }
       },
-      "health": "pending",
-      "reason": "Automatic E16 infrastructure retry scheduled on four 8-GPU nodes. Three replicas are ready and the fourth is scheduled; task logs and W&B have not appeared yet, so exact checkpoint load and first optimizer step remain pending.",
-      "beakerStatus": "starting",
+      "health": "healthy",
+      "reason": "E16 infrastructure retry is training healthily on four 8-GPU nodes after manifest/preflight checks, exact E12 step2575 checkpoint load, trainer/optimizer restoration, and first optimizer step2576. Active train CE is preliminary; E20 remains gated on endpoint validation CE below3.15979.",
+      "beakerStatus": "running",
       "attempts": [
         {
           "epoch": 8,
@@ -4237,23 +4237,25 @@
         "01KT4H4Y63R72E25BFCHYY5WQ7"
       ],
       "progress": {
-        "observedAt": "2026-08-12 15:30 PDT",
-        "step": 2575,
+        "observedAt": "2026-08-12 16:00 PDT",
+        "step": 3140,
         "endpointStep": 3815,
-        "epoch": 12,
-        "eta": "starting on four nodes"
+        "epoch": 14,
+        "trainCe": 3.668,
+        "eta": "29m"
       },
       "startupEvidence": {
         "manifestVerified": true,
         "preflightVerified": true,
         "remoteDryRunComplete": true,
         "dynamicRepacking": true,
-        "sourceCheckpointLoaded": false,
+        "sourceCheckpointLoaded": true,
         "sourceStep": 2575,
-        "firstOptimizerStep": null,
+        "firstOptimizerStep": 2576,
         "trainerAndOptimizerStateRequested": true,
         "optimizerHyperparametersValidated": true
-      }
+      },
+      "wandb": "le8l6d3u"
     },
     {
       "id": "fixed1024-wd0.333",
