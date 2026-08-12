@@ -1856,7 +1856,7 @@
         }
       },
       "health": "healthy",
-      "reason": "E24 automatic infrastructure retry3 is training healthily on four 8-GPU nodes. Manifest/preflight/dry-run guards passed, W&B somifvt2 initialized, exact E20 step8582 loaded, and optimizer progress began at step8583. Active train CE is preliminary.",
+      "reason": "E24 automatic infrastructure retry3 remains healthy on four 8-GPU nodes at step10115/11445. Exact E20 step8582 was restored, W&B somifvt2 is active, and train CE remains finite; active train CE is preliminary.",
       "beakerStatus": "running",
       "attempts": [
         {
@@ -2004,12 +2004,12 @@
         "01KZVGWCDQXGZ4P7Z3002G6VJQ"
       ],
       "progress": {
-        "observedAt": "2026-08-12 11:31 PDT",
-        "step": 8710,
+        "observedAt": "2026-08-12 12:00 PDT",
+        "step": 10115,
         "endpointStep": 11445,
-        "epoch": 19,
-        "trainCe": 3.065,
-        "eta": "1h6m",
+        "epoch": 22,
+        "trainCe": 3.035,
+        "eta": "29m",
         "metricStatus": "preliminary"
       },
       "startupEvidence": {
