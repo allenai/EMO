@@ -1567,7 +1567,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 28,
       "attemptedEpochs": [
         2,
@@ -1895,9 +1895,9 @@
           "reason": "Completed healthy on four 8-GPU nodes from exact E20 pre-decay step8582, retaining E24 pre-decay step10300 and endpoint step11445. Validation CE3.06442 strictly improved E20 CE3.06523 by 0.00081, unlocking E28 from retained step10300."
         }
       },
-      "health": "pending",
-      "reason": "E28 submitted after E24 validation CE3.06442 strictly improved E20 CE3.06523. Print-only exact-source, LR/WD, 4x8-GPU, rank-microbatch, manifest, restore-state, and duplicate-active guards passed; four replicas are pending.",
-      "beakerStatus": "pending",
+      "health": "healthy",
+      "reason": "E28 is training healthily on four 8-GPU nodes. Manifest/preflight/dry-run guards passed, W&B 3300a3fy initialized, exact E24 step10300 loaded, and optimizer progress began at step10301. Active train CE is preliminary.",
+      "beakerStatus": "running",
       "attempts": [
         {
           "epoch": 12,
@@ -2044,23 +2044,34 @@
         "01KZVQF1CZ9WY9KF7RRNB2WYQW"
       ],
       "progress": {
-        "observedAt": "2026-08-12 12:36 PDT",
-        "step": 10300,
+        "observedAt": "2026-08-12 14:00 PDT",
+        "step": 11470,
         "endpointStep": 13352,
         "epoch": 24,
-        "eta": "pending scheduling"
+        "trainCe": 3.14,
+        "eta": "40m",
+        "metricStatus": "preliminary"
       },
       "startupEvidence": {
         "manifestVerified": true,
         "preflightVerified": true,
         "remoteDryRunComplete": true,
         "dynamicRepacking": true,
-        "sourceCheckpointLoaded": false,
+        "sourceCheckpointLoaded": true,
         "sourceStep": 10300,
-        "firstOptimizerStep": null,
+        "firstOptimizerStep": 10301,
         "trainerAndOptimizerStateRequested": true,
-        "optimizerHyperparametersValidated": true
-      }
+        "optimizerHyperparametersValidated": true,
+        "startedAt": "2026-08-12 13:33 PDT"
+      },
+      "node": "01JS10CW502XDCGDP2QGC8K2DT",
+      "replicaNodes": [
+        "01JS10CW502XDCGDP2QGC8K2DT",
+        "01JS3MZDGSJAMMESCE6G2E1WBA",
+        "01KMZXA4AF0K2XXCER4ACGF3EY",
+        "01KVB84J78AN14QN82AXR83KT1"
+      ],
+      "wandb": "3300a3fy"
     },
     {
       "id": "dr1024-wd0.1",
