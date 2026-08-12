@@ -42,6 +42,7 @@ METHODS = (
     "post_e1_local_sgd_h4_dr",
     "post_e1_diloco_h500_dr",
     "post_e1_diloco_epoch_dr",
+    "post_e1_diloco_h32_vrecal_dr",
 )
 WEIGHT_DECAYS = ("0.1", "0.333", "1.0")
 
@@ -64,6 +65,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--revision", default=REVISION_DEFAULT)
     parser.add_argument("--suffix", required=True)
     parser.add_argument("--name", required=True)
+    parser.add_argument("--chain-through", type=int, choices=TARGETS, default=12)
     parser.add_argument("--workspace", default="ai2/flex2")
     parser.add_argument("--priority", default="urgent")
     parser.add_argument("--print-only", action="store_true")
@@ -169,13 +171,14 @@ def validate_source(args: argparse.Namespace, spec: dict[str, Any]) -> tuple[str
 
 def registered_plan(args: argparse.Namespace) -> dict[str, Any]:
     report = json.loads(SIMULATION_REPORT.read_text())
+    targets = [target for target in TARGETS if target <= args.chain_through]
     matches = [
         run
         for run in report.get("runs", [])
         if run.get("method") == args.method
         and run.get("startEpoch") == 2
-        and run.get("chainThrough") == 12
-        and run.get("targetLadder") == list(TARGETS)
+        and run.get("chainThrough") == args.chain_through
+        and run.get("targetLadder") == targets
         and run.get("batchSequences") == GLOBAL_SEQUENCES
         and run.get("simulatedBatchSequences") == SIMULATED_SEQUENCES
         and numeric(run.get("lr")) == numeric(LR)
@@ -200,8 +203,8 @@ def registered_plan(args: argparse.Namespace) -> dict[str, Any]:
         and numeric(run.get("wd", "-1")) == numeric(args.weight_decay)
         and (
             run.get("startEpoch") == 2
-            or run.get("chainThrough") == 12
-            or any(str(epoch) in run.get("results", {}) for epoch in TARGETS)
+            or run.get("chainThrough") == args.chain_through
+            or any(str(epoch) in run.get("results", {}) for epoch in targets)
         )
     ]
     if attempted:
@@ -252,7 +255,46 @@ def method_arguments(
             + json.dumps(diloco_replica_checkpoint_steps, separators=(",", ":")),
             *common,
         ]
+    if method == "post_e1_diloco_h32_vrecal_dr":
+        if not diloco_outer_steps:
+            raise RuntimeError("H=32 DiLoCo requires exact outer steps")
+        if not diloco_replica_checkpoint_steps:
+            raise RuntimeError("H=32 DiLoCo requires replica checkpoint steps")
+        if not set(diloco_replica_checkpoint_steps).issubset(diloco_outer_steps):
+            raise RuntimeError("replica checkpoint steps must be a subset of outer steps")
+        return [
+            "--train_module.batch_simulation.method=diloco",
+            "--train_module.batch_simulation.diloco_inner_steps=32",
+            "--train_module.batch_simulation.diloco_outer_lr=0.7",
+            "--train_module.batch_simulation.diloco_outer_momentum=0.9",
+            "--train_module.batch_simulation.diloco_recalibrate_second_moment_on_start=true",
+            "--train_module.batch_simulation.diloco_outer_steps="
+            + json.dumps(diloco_outer_steps, separators=(",", ":")),
+            "--train_module.batch_simulation.diloco_replica_checkpoint_steps="
+            + json.dumps(diloco_replica_checkpoint_steps, separators=(",", ":")),
+            *common,
+        ]
     raise RuntimeError(f"unsupported method {method}")
+
+
+def fixed_interval_outer_steps(
+    source_step: int,
+    boundaries: tuple[int, ...],
+    *,
+    interval: int,
+) -> tuple[int, ...]:
+    """Return full H-step rounds plus an exact aggregation at each semantic boundary."""
+    steps: list[int] = []
+    cursor = source_step
+    for boundary in boundaries:
+        if boundary <= cursor:
+            raise RuntimeError("DiLoCo outer-step boundaries must be strictly increasing")
+        while cursor + interval < boundary:
+            cursor += interval
+            steps.append(cursor)
+        steps.append(boundary)
+        cursor = boundary
+    return tuple(steps)
 
 
 def stage(
@@ -268,6 +310,7 @@ def stage(
         "post_e1_local_sgd_h4_dr": "poste1_ls_h4_dr",
         "post_e1_diloco_h500_dr": "poste1_diloco_h500_dr",
         "post_e1_diloco_epoch_dr": "poste1_diloco_epoch_dr",
+        "post_e1_diloco_h32_vrecal_dr": "poste1_diloco_h32_vrecal_dr",
     }
     method_tag = method_tags[args.method]
     name = (
@@ -365,7 +408,14 @@ def stage(
     # The terminal endpoint also needs one explicit aggregation so evaluation observes a
     # coherent model. The next stage still resumes from the synchronized pre-decay frontier,
     # so this terminal decay aggregation cannot affect subsequent training.
-    diloco_outer_steps = integer_epoch_frontiers + (total_steps(epoch),)
+    if args.method == "post_e1_diloco_h32_vrecal_dr":
+        diloco_outer_steps = fixed_interval_outer_steps(
+            pre_decay_step(previous_epoch),
+            integer_epoch_frontiers + (total_steps(epoch),),
+            interval=32,
+        )
+    else:
+        diloco_outer_steps = integer_epoch_frontiers + (total_steps(epoch),)
     arguments.extend(
         [
             "--dynamic-repacking",
@@ -387,6 +437,7 @@ def build_spec(
     script: str,
     base_arguments: list[str],
     nproc: int,
+    targets: tuple[int, ...],
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     spec = copy.deepcopy(base_spec)
     task = spec["tasks"][0]
@@ -394,7 +445,7 @@ def build_spec(
     stage_records: list[dict[str, Any]] = []
     load_path = args.source_checkpoint
     previous_epoch = 1
-    for epoch in TARGETS:
+    for epoch in targets:
         name, output, arguments = stage(
             base_arguments,
             args,
@@ -409,6 +460,14 @@ def build_spec(
             pre_decay_step(frontier_epoch)
             for frontier_epoch in range(previous_epoch + 1, epoch + 1)
         )
+        if args.method == "post_e1_diloco_h32_vrecal_dr":
+            recorded_outer_steps = fixed_interval_outer_steps(
+                pre_decay_step(previous_epoch),
+                integer_epoch_frontiers + (endpoint,),
+                interval=32,
+            )
+        else:
+            recorded_outer_steps = integer_epoch_frontiers + (endpoint,)
         commands.extend(
             [
                 shlex.join(["test", "-d", load_path]),
@@ -417,9 +476,12 @@ def build_spec(
                 shlex.join(
                     [
                         "echo",
-                        f"POST_E1_LOCAL_UPDATE_PREFLIGHT method={args.method} epoch={epoch} "
-                        f"source={load_path} pre_decay_step={pre_decay} endpoint_step={endpoint} "
-                        "dynamic_repacking=true load_trainer_state=true load_optim_state=true",
+                        (
+                            f"POST_E1_LOCAL_UPDATE_PREFLIGHT method={args.method} epoch={epoch} "
+                            f"source={load_path} pre_decay_step={pre_decay} "
+                            f"endpoint_step={endpoint} dynamic_repacking=true "
+                            "load_trainer_state=true load_optim_state=true"
+                        ),
                     ]
                 ),
                 shlex.join(["python", script, name, "--dry-run", *arguments]),
@@ -437,7 +499,8 @@ def build_spec(
                         )
                         for frontier in integer_epoch_frontiers
                     ]
-                    if args.method == "post_e1_diloco_epoch_dr"
+                    if args.method
+                    in {"post_e1_diloco_epoch_dr", "post_e1_diloco_h32_vrecal_dr"}
                     else []
                 ),
                 shlex.join(
@@ -460,14 +523,15 @@ def build_spec(
                 "endpointStep": endpoint,
                 **(
                     {
-                        "dilocoOuterSteps": [*integer_epoch_frontiers, endpoint],
+                        "dilocoOuterSteps": list(recorded_outer_steps),
                         "dilocoReplicaCheckpointSteps": list(integer_epoch_frontiers),
                         "dilocoReplicaCheckpointRoots": [
                             f"{output}/step{frontier}-diloco-replicas"
                             for frontier in integer_epoch_frontiers
                         ],
                     }
-                    if args.method == "post_e1_diloco_epoch_dr"
+                    if args.method
+                    in {"post_e1_diloco_epoch_dr", "post_e1_diloco_h32_vrecal_dr"}
                     else {}
                 ),
             }
@@ -476,7 +540,13 @@ def build_spec(
         previous_epoch = epoch
     commands.append(
         shlex.join(
-            ["echo", f"POST_E1_LOCAL_UPDATE_CHAIN_COMPLETE method={args.method} targets=2,4,8,12"]
+            [
+                "echo",
+                (
+                    "POST_E1_LOCAL_UPDATE_CHAIN_COMPLETE "
+                    f"method={args.method} targets={','.join(str(target) for target in targets)}"
+                ),
+            ]
         )
     )
     task["name"] = "main"
@@ -520,7 +590,9 @@ def update_registry(plan: dict[str, Any], experiment: str, stages: list[dict[str
             "beaker": experiment,
             "revision": plan.get("revision", REVISION_DEFAULT),
             "stages": stages,
-            "reason": "Submitted one guarded eight-GPU post-E1 dynamic-repacking chain through E2/E4/E8/E12.",
+            "reason": "Submitted one guarded eight-GPU post-E1 dynamic-repacking chain through "
+            + "/".join(f"E{stage['epoch']}" for stage in stages)
+            + ".",
         }
     )
     report["updated"] = "2026-08-11"
@@ -542,7 +614,8 @@ def main() -> None:
     plan = registered_plan(args)
     source_spec = get_spec(args.base_experiment)
     script, base_arguments, nproc = validate_source(args, source_spec)
-    spec, stages = build_spec(source_spec, args, script, base_arguments, nproc)
+    targets = tuple(target for target in TARGETS if target <= args.chain_through)
+    spec, stages = build_spec(source_spec, args, script, base_arguments, nproc, targets)
     if args.print_only:
         json.dump(spec, sys.stdout, indent=2)
         print()

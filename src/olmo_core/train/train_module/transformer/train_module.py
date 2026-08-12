@@ -61,6 +61,7 @@ from .batch_simulation import (
     average_module_and_optimizer_state,
     clone_local_parameter_tensors,
     diloco_outer_step,
+    recalibrate_adam_second_moment_for_batch_size,
     structured_noise_loss_scales,
 )
 from .common import parallelize_model
@@ -548,6 +549,21 @@ class TransformerTrainModule(TrainModule):
                 assert_optimizer_hyperparameters_match(
                     expected_optim_hyperparameters,
                     optimizer_hyperparameters(self.optim),
+                )
+            if (
+                self.batch_simulation.method == BatchSimulationMethod.diloco
+                and self.batch_simulation.diloco_recalibrate_second_moment_on_start
+                and inner_optim_key == "optim"
+            ):
+                adjusted = recalibrate_adam_second_moment_for_batch_size(
+                    self.optim,
+                    batch_size_ratio=float(self.batch_simulation.num_ghost_batches),
+                )
+                log.info(
+                    "Recalibrated Adam second moments for %d parameter states at batch-size "
+                    "ratio %.3f while starting DiLoCo from a conventional checkpoint",
+                    adjusted,
+                    float(self.batch_simulation.num_ghost_batches),
                 )
             gc_cuda()
         if load_diloco_outer_optim:

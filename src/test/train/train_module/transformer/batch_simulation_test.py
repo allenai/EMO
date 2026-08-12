@@ -35,8 +35,54 @@ from olmo_core.train.train_module.transformer.batch_simulation import (
     average_module_and_optimizer_state,
     clone_local_parameter_tensors,
     diloco_outer_step,
+    recalibrate_adam_second_moment_for_batch_size,
     structured_noise_loss_scales,
 )
+
+
+def test_recalibrate_adam_second_moment_scales_only_estimated_noise():
+    module = nn.Linear(2, 1, bias=False)
+    optimizer = torch.optim.AdamW(module.parameters(), lr=0.01, betas=(0.9, 0.95))
+    parameter = next(module.parameters())
+    step = 20
+    bias1 = 1 - 0.9**step
+    bias2 = 1 - 0.95**step
+    signal = torch.tensor([[2.0, 1.0]])
+    noise = torch.tensor([[3.0, 0.5]])
+    optimizer.state[parameter] = {
+        "step": torch.tensor(float(step)),
+        "exp_avg": signal * bias1,
+        "exp_avg_sq": (signal.square() + noise) * bias2,
+    }
+
+    adjusted = recalibrate_adam_second_moment_for_batch_size(
+        optimizer,
+        batch_size_ratio=8.0,
+    )
+
+    assert adjusted == 1
+    torch.testing.assert_close(optimizer.state[parameter]["exp_avg"], signal * bias1)
+    torch.testing.assert_close(
+        optimizer.state[parameter]["exp_avg_sq"],
+        (signal.square() + 8.0 * noise) * bias2,
+    )
+
+
+def test_recalibrate_adam_second_moment_clamps_negative_noise_estimate():
+    module = nn.Linear(1, 1, bias=False)
+    optimizer = torch.optim.AdamW(module.parameters(), lr=0.01)
+    parameter = next(module.parameters())
+    optimizer.state[parameter] = {
+        "step": torch.tensor(1.0),
+        "exp_avg": torch.tensor([[0.2]]),
+        "exp_avg_sq": torch.tensor([[0.001]]),
+    }
+
+    recalibrate_adam_second_moment_for_batch_size(optimizer, batch_size_ratio=8.0)
+
+    # The implied variance is negative, so target v-hat is exactly m-hat^2.
+    expected = (0.2 / (1 - 0.9)) ** 2 * (1 - 0.999)
+    assert optimizer.state[parameter]["exp_avg_sq"].item() == pytest.approx(expected)
 
 
 def test_batch_simulation_is_opt_in():
@@ -44,6 +90,19 @@ def test_batch_simulation_is_opt_in():
     assert config.method == BatchSimulationMethod.none
     assert not config.enabled
     assert config.num_ghost_batches == 1
+
+
+def test_second_moment_recalibration_is_diloco_only():
+    with pytest.raises(OLMoConfigurationError, match="DiLoCo-specific"):
+        BatchSimulationConfig(diloco_recalibrate_second_moment_on_start=True)
+
+    with pytest.raises(OLMoConfigurationError, match="DiLoCo-specific"):
+        BatchSimulationConfig(
+            method=BatchSimulationMethod.local_sgd,
+            global_batch_size=512,
+            simulated_batch_size=64,
+            diloco_recalibrate_second_moment_on_start=True,
+        )
 
 
 @pytest.mark.parametrize(

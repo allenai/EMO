@@ -85,13 +85,25 @@ class BatchSimulationConfig(Config):
     """Learning rate for the DiLoCo outer Nesterov optimizer."""
     diloco_outer_momentum: float = 0.9
     """Momentum for the DiLoCo outer Nesterov optimizer."""
+    diloco_recalibrate_second_moment_on_start: bool = False
+    """
+    Recalibrate AdamW's loaded second moment when DiLoCo starts from a conventional checkpoint.
+
+    This keeps the bias-corrected first-moment signal estimate fixed and scales only the
+    estimated stochastic-gradient variance by ``global_batch_size / simulated_batch_size``.
+    It is deliberately opt-in and is not applied when resuming a native DiLoCo checkpoint.
+    """
     seed: int = 0
 
     def __post_init__(self):
         if self.method == BatchSimulationMethod.none:
-            if self.diloco_outer_steps is not None or self.diloco_replica_checkpoint_steps:
+            if (
+                self.diloco_outer_steps is not None
+                or self.diloco_replica_checkpoint_steps
+                or self.diloco_recalibrate_second_moment_on_start
+            ):
                 raise OLMoConfigurationError(
-                    "exact DiLoCo outer/checkpoint steps are only valid when method='diloco'"
+                    "DiLoCo-specific configuration is only valid when method='diloco'"
                 )
             return
         if self.global_batch_size is None or self.global_batch_size <= 0:
@@ -138,9 +150,13 @@ class BatchSimulationConfig(Config):
                         "'diloco_replica_checkpoint_steps' must be a subset of "
                         f"'diloco_outer_steps'; missing {missing_outer_steps}"
                     )
-        elif self.diloco_outer_steps is not None or self.diloco_replica_checkpoint_steps:
+        elif (
+            self.diloco_outer_steps is not None
+            or self.diloco_replica_checkpoint_steps
+            or self.diloco_recalibrate_second_moment_on_start
+        ):
             raise OLMoConfigurationError(
-                "exact DiLoCo outer/checkpoint steps are only valid when method='diloco'"
+                "DiLoCo-specific configuration is only valid when method='diloco'"
             )
 
     @staticmethod

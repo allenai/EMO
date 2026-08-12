@@ -83,6 +83,82 @@ def clone_local_parameter_tensors(module: nn.Module) -> list[torch.Tensor]:
 
 
 @torch.no_grad()
+def recalibrate_adam_second_moment_for_batch_size(
+    optimizer: Optimizer,
+    *,
+    batch_size_ratio: float,
+) -> int:
+    """Adjust loaded Adam second moments for a smaller effective batch.
+
+    For a stochastic gradient ``g``, ``E[g^2] = E[g]^2 + Var(g)``.  Switching from a
+    conventional global batch to a smaller local batch should leave the signal term alone while
+    increasing the variance term by the batch-size ratio.  We estimate the two terms from Adam's
+    bias-corrected first and second moments, clamp the estimated variance at zero, and write the
+    adjusted value back in Adam's original biased representation.
+
+    The function deliberately leaves the first moment and step counter unchanged.  It returns the
+    number of parameter states adjusted and raises if the optimizer is not an initialized Adam-like
+    optimizer, preventing a requested recalibration from silently doing nothing.
+    """
+    if not math.isfinite(batch_size_ratio) or batch_size_ratio < 1.0:
+        raise ValueError("'batch_size_ratio' must be finite and at least 1")
+
+    adjusted = 0
+    for group in optimizer.param_groups:
+        betas = group.get("betas")
+        if not isinstance(betas, tuple) or len(betas) != 2:
+            raise RuntimeError("second-moment recalibration requires Adam-style 'betas'")
+        beta1, beta2 = (float(value) for value in betas)
+        for parameter in group["params"]:
+            state = optimizer.state.get(parameter)
+            if not state:
+                continue
+            first_moment = state.get("exp_avg")
+            second_moment = state.get("exp_avg_sq")
+            step = state.get("step")
+            if not all(isinstance(value, torch.Tensor) for value in (first_moment, second_moment)):
+                raise RuntimeError(
+                    "second-moment recalibration requires initialized Adam exp_avg/exp_avg_sq state"
+                )
+            local_first = get_local_tensor(first_moment)
+            local_second = get_local_tensor(second_moment)
+            local_step = get_local_tensor(step) if isinstance(step, torch.Tensor) else step
+            if isinstance(local_step, torch.Tensor):
+                if local_step.numel() != 1:
+                    raise RuntimeError("Adam step state must be scalar")
+                step_value = float(local_step.item())
+            elif isinstance(local_step, (int, float)):
+                step_value = float(local_step)
+            else:
+                raise TypeError("second-moment recalibration requires initialized Adam step state")
+            if step_value <= 0:
+                raise RuntimeError("Adam step must be positive for second-moment recalibration")
+
+            bias_correction1 = 1.0 - beta1**step_value
+            bias_correction2 = 1.0 - beta2**step_value
+            # Use one temporary tensor per parameter.  Mutating v in place avoids materializing
+            # multiple full-size optimizer tensors for large embedding matrices.
+            # Keep ``exp_avg`` bit-for-bit unchanged. ``Tensor.float()`` may alias an already
+            # float32 tensor, so the square must be out-of-place.
+            signal_squared = local_first.detach().float().square().div_(bias_correction1**2)
+            original_dtype = local_second.dtype
+            if original_dtype != torch.float32:
+                corrected_second = local_second.detach().float().div_(bias_correction2)
+                corrected_second.sub_(signal_squared).clamp_min_(0.0)
+                corrected_second.mul_(batch_size_ratio).add_(signal_squared).mul_(bias_correction2)
+                local_second.copy_(corrected_second.to(dtype=original_dtype))
+            else:
+                local_second.div_(bias_correction2)
+                local_second.sub_(signal_squared).clamp_min_(0.0)
+                local_second.mul_(batch_size_ratio).add_(signal_squared).mul_(bias_correction2)
+            adjusted += 1
+
+    if adjusted == 0:
+        raise RuntimeError("second-moment recalibration found no initialized Adam parameter state")
+    return adjusted
+
+
+@torch.no_grad()
 def diloco_outer_step(
     module: nn.Module,
     outer_optimizer: Optimizer,
