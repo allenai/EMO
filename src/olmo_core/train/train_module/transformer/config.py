@@ -65,6 +65,22 @@ class BatchSimulationConfig(Config):
     local_sgd_sync_interval: int = 1
     diloco_inner_steps: int = 500
     """Number of independent AdamW steps per DiLoCo outer round (``H`` in the paper)."""
+    diloco_outer_steps: Optional[List[int]] = None
+    """
+    Optional exact global optimizer steps at which to apply DiLoCo outer updates.
+
+    When set, this schedule replaces :data:`diloco_inner_steps`. This is useful for schedules
+    whose round lengths are not constant, such as synchronizing at exact integer-epoch
+    pre-decay frontiers after token-to-step rounding.
+    """
+    diloco_replica_checkpoint_steps: List[int] = field(default_factory=list)
+    """
+    Exact outer-update steps at which to save every unaggregated replica model.
+
+    Each replica snapshot is written immediately before its DiLoCo pseudo-gradient is formed and
+    before the outer optimizer changes the model. These steps must be a subset of
+    :data:`diloco_outer_steps`.
+    """
     diloco_outer_lr: float = 0.7
     """Learning rate for the DiLoCo outer Nesterov optimizer."""
     diloco_outer_momentum: float = 0.9
@@ -73,6 +89,10 @@ class BatchSimulationConfig(Config):
 
     def __post_init__(self):
         if self.method == BatchSimulationMethod.none:
+            if self.diloco_outer_steps is not None or self.diloco_replica_checkpoint_steps:
+                raise OLMoConfigurationError(
+                    "exact DiLoCo outer/checkpoint steps are only valid when method='diloco'"
+                )
             return
         if self.global_batch_size is None or self.global_batch_size <= 0:
             raise OLMoConfigurationError(
@@ -99,6 +119,38 @@ class BatchSimulationConfig(Config):
                 raise OLMoConfigurationError(
                     "'diloco_outer_momentum' must be strictly between zero and one"
                 )
+            if self.diloco_outer_steps is not None:
+                self._validate_step_schedule("diloco_outer_steps", self.diloco_outer_steps)
+            if self.diloco_replica_checkpoint_steps:
+                self._validate_step_schedule(
+                    "diloco_replica_checkpoint_steps",
+                    self.diloco_replica_checkpoint_steps,
+                )
+                if self.diloco_outer_steps is None:
+                    raise OLMoConfigurationError(
+                        "'diloco_replica_checkpoint_steps' requires 'diloco_outer_steps'"
+                    )
+                missing_outer_steps = sorted(
+                    set(self.diloco_replica_checkpoint_steps) - set(self.diloco_outer_steps)
+                )
+                if missing_outer_steps:
+                    raise OLMoConfigurationError(
+                        "'diloco_replica_checkpoint_steps' must be a subset of "
+                        f"'diloco_outer_steps'; missing {missing_outer_steps}"
+                    )
+        elif self.diloco_outer_steps is not None or self.diloco_replica_checkpoint_steps:
+            raise OLMoConfigurationError(
+                "exact DiLoCo outer/checkpoint steps are only valid when method='diloco'"
+            )
+
+    @staticmethod
+    def _validate_step_schedule(name: str, steps: List[int]) -> None:
+        if not steps:
+            raise OLMoConfigurationError(f"'{name}' cannot be empty")
+        if any(not isinstance(step, int) or isinstance(step, bool) or step < 1 for step in steps):
+            raise OLMoConfigurationError(f"'{name}' must contain only positive integer steps")
+        if steps != sorted(set(steps)):
+            raise OLMoConfigurationError(f"'{name}' must be strictly increasing and unique")
 
     @property
     def num_ghost_batches(self) -> int:
@@ -123,6 +175,19 @@ class BatchSimulationConfig(Config):
         if self.method == BatchSimulationMethod.diloco:
             return self.diloco_inner_steps
         return self.local_sgd_sync_interval
+
+    @property
+    def uses_exact_diloco_outer_steps(self) -> bool:
+        """Whether DiLoCo outer updates follow exact global steps instead of fixed ``H``."""
+        return self.method == BatchSimulationMethod.diloco and self.diloco_outer_steps is not None
+
+    def is_diloco_outer_step(self, step: int) -> bool:
+        """Return whether ``step`` is an explicitly scheduled DiLoCo outer update."""
+        return self.diloco_outer_steps is not None and step in self.diloco_outer_steps
+
+    def should_save_diloco_replicas(self, step: int) -> bool:
+        """Return whether raw replica models should be saved before the outer update at ``step``."""
+        return step in self.diloco_replica_checkpoint_steps
 
 
 @beta_feature
