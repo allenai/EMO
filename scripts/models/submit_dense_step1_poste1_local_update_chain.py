@@ -43,6 +43,7 @@ METHODS = (
     "post_e1_diloco_h500_dr",
     "post_e1_diloco_epoch_dr",
     "post_e1_diloco_h32_vrecal_dr",
+    "post_e1_diloco_h32_bs64init_dr",
 )
 WEIGHT_DECAYS = ("0.1", "0.333", "1.0")
 
@@ -70,8 +71,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--priority", default="urgent")
     parser.add_argument("--print-only", action="store_true")
     args = parser.parse_args()
-    if not args.source_checkpoint.endswith(f"/step{pre_decay_step(1)}"):
-        parser.error(f"post-E1 transition requires exact /step{pre_decay_step(1)}")
+    source_batch_sequences = (
+        64 if args.method == "post_e1_diloco_h32_bs64init_dr" else GLOBAL_SEQUENCES
+    )
+    expected_source_step = pre_decay_step_for_batch(1, source_batch_sequences)
+    if not args.source_checkpoint.endswith(f"/step{expected_source_step}"):
+        parser.error(f"post-E1 transition requires exact /step{expected_source_step}")
     if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", args.suffix):
         parser.error("--suffix must be a lowercase run-name component")
     return args
@@ -79,6 +84,16 @@ def parse_args() -> argparse.Namespace:
 
 def numeric(value: object) -> Decimal:
     return Decimal(str(value))
+
+
+def total_steps_for_batch(epoch: int, batch_sequences: int) -> int:
+    batch_tokens = batch_sequences * SEQUENCE_LENGTH
+    return math.ceil(epoch * TOKENS_PER_EPOCH / batch_tokens)
+
+
+def pre_decay_step_for_batch(epoch: int, batch_sequences: int) -> int:
+    endpoint = total_steps_for_batch(epoch, batch_sequences)
+    return endpoint - round(DECAY_FRACTION * endpoint) - 1
 
 
 def get_spec(experiment: str) -> dict[str, Any]:
@@ -148,10 +163,15 @@ def validate_source(args: argparse.Namespace, spec: dict[str, Any]) -> tuple[str
         args.weight_decay
     ):
         raise RuntimeError("source WD does not match the requested coordinate")
-    if int(unique_value(arguments, "--data_loader.global_batch_size=")) != GLOBAL_BATCH_TOKENS:
-        raise RuntimeError("source global batch is not BS512")
+    source_batch_sequences = (
+        64 if args.method == "post_e1_diloco_h32_bs64init_dr" else GLOBAL_SEQUENCES
+    )
+    source_batch_tokens = source_batch_sequences * SEQUENCE_LENGTH
+    if int(unique_value(arguments, "--data_loader.global_batch_size=")) != source_batch_tokens:
+        raise RuntimeError("source global batch does not match the requested initialization")
     source_output = unique_value(arguments, "--save-folder=")
-    if args.source_checkpoint != f"{source_output}/step{pre_decay_step(1)}":
+    source_step = pre_decay_step_for_batch(1, source_batch_sequences)
+    if args.source_checkpoint != f"{source_output}/step{source_step}":
         raise RuntimeError("source checkpoint is not the source experiment's exact E1 checkpoint")
 
     baseline = json.loads(BASELINE_REPORT.read_text())
@@ -159,13 +179,18 @@ def validate_source(args: argparse.Namespace, spec: dict[str, Any]) -> tuple[str
         run
         for run in baseline.get("batchSweeps", [])
         if run.get("beaker") == args.base_experiment
-        and run.get("batchSequences") == GLOBAL_SEQUENCES
+        and run.get("batchSequences") == source_batch_sequences
         and numeric(run.get("lr")) == numeric(LR)
         and numeric(run.get("wd")) == numeric(args.weight_decay)
-        and run.get("results", {}).get("1", {}).get("resumeCheckpoint") == args.source_checkpoint
+        and (
+            run.get("results", {}).get("1", {}).get("resumeCheckpoint")
+            == args.source_checkpoint
+            or f"{run.get('results', {}).get('1', {}).get('output')}/step{source_step}"
+            == args.source_checkpoint
+        )
     ]
     if len(parents) != 1 or parents[0].get("status") != "complete":
-        raise RuntimeError("source is not the unique completed registered BS512 E1 parent")
+        raise RuntimeError("source is not the unique completed registered E1 parent")
     return script, arguments, nproc
 
 
@@ -274,6 +299,24 @@ def method_arguments(
             + json.dumps(diloco_replica_checkpoint_steps, separators=(",", ":")),
             *common,
         ]
+    if method == "post_e1_diloco_h32_bs64init_dr":
+        if not diloco_outer_steps:
+            raise RuntimeError("BS64-initialized H=32 DiLoCo requires exact outer steps")
+        if not diloco_replica_checkpoint_steps:
+            raise RuntimeError("BS64-initialized H=32 DiLoCo requires replica checkpoint steps")
+        if not set(diloco_replica_checkpoint_steps).issubset(diloco_outer_steps):
+            raise RuntimeError("replica checkpoint steps must be a subset of outer steps")
+        return [
+            "--train_module.batch_simulation.method=diloco",
+            "--train_module.batch_simulation.diloco_inner_steps=32",
+            "--train_module.batch_simulation.diloco_outer_lr=0.7",
+            "--train_module.batch_simulation.diloco_outer_momentum=0.9",
+            "--train_module.batch_simulation.diloco_outer_steps="
+            + json.dumps(diloco_outer_steps, separators=(",", ":")),
+            "--train_module.batch_simulation.diloco_replica_checkpoint_steps="
+            + json.dumps(diloco_replica_checkpoint_steps, separators=(",", ":")),
+            *common,
+        ]
     raise RuntimeError(f"unsupported method {method}")
 
 
@@ -297,6 +340,22 @@ def fixed_interval_outer_steps(
     return tuple(steps)
 
 
+def bs64_initialized_e2_steps() -> tuple[int, int, int]:
+    """Map the BS64 E1 token position onto a BS512 continuation without remapping Adam time."""
+    source_step = pre_decay_step_for_batch(1, 64)
+    source_tokens = source_step * 64 * SEQUENCE_LENGTH
+    decay_start_tokens = round(2 * TOKENS_PER_EPOCH * (1.0 - DECAY_FRACTION))
+    stable_continuation_steps = math.ceil(
+        (decay_start_tokens - source_tokens) / GLOBAL_BATCH_TOKENS
+    )
+    total_continuation_steps = math.ceil(
+        (2 * TOKENS_PER_EPOCH - source_tokens) / GLOBAL_BATCH_TOKENS
+    )
+    pre_decay = source_step + stable_continuation_steps - 1
+    endpoint = source_step + total_continuation_steps
+    return source_step, pre_decay, endpoint
+
+
 def stage(
     base_arguments: list[str],
     args: argparse.Namespace,
@@ -311,6 +370,7 @@ def stage(
         "post_e1_diloco_h500_dr": "poste1_diloco_h500_dr",
         "post_e1_diloco_epoch_dr": "poste1_diloco_epoch_dr",
         "post_e1_diloco_h32_vrecal_dr": "poste1_diloco_h32_vrecal_dr",
+        "post_e1_diloco_h32_bs64init_dr": "poste1_diloco_h32_bs64init_dr",
     }
     method_tag = method_tags[args.method]
     name = (
@@ -344,6 +404,21 @@ def stage(
         }
         and not value.startswith(excluded_prefixes)
     ]
+    if args.method == "post_e1_diloco_h32_bs64init_dr":
+        if previous_epoch != 1 or epoch != 2:
+            raise RuntimeError("BS64-initialized H=32 DiLoCo is currently guarded to E2 only")
+        _, target_pre_decay, target_endpoint = bs64_initialized_e2_steps()
+        scheduler = (
+            "--train_module.scheduler={_CLASS_: olmo_core.optim.scheduler.WSD, units: tokens, "
+            "warmup: 100663296, decay_fraction: 0.1}"
+        )
+    else:
+        target_pre_decay = pre_decay_step(epoch)
+        target_endpoint = total_steps(epoch)
+        scheduler = (
+            "--train_module.scheduler={_CLASS_: olmo_core.optim.scheduler.WSD, units: steps, "
+            "warmup: 48, decay_fraction: 0.1}"
+        )
     replacements = (
         ("--save-folder=", f"--save-folder={output}"),
         ("--dataset.mix=", "--dataset.mix=null"),
@@ -360,7 +435,7 @@ def stage(
         ),
         (
             "--trainer.callbacks.checkpointer.fixed_steps=",
-            f"--trainer.callbacks.checkpointer.fixed_steps=[{pre_decay_step(epoch)}]",
+            f"--trainer.callbacks.checkpointer.fixed_steps=[{target_pre_decay}]",
         ),
         (
             "--data_loader.global_batch_size=",
@@ -381,7 +456,7 @@ def stage(
         ),
         (
             "--train_module.scheduler=",
-            "--train_module.scheduler={_CLASS_: olmo_core.optim.scheduler.WSD, units: steps, warmup: 48, decay_fraction: 0.1}",
+            scheduler,
         ),
         (
             "--train_module.optim.weight_decay=",
@@ -393,7 +468,12 @@ def stage(
         ("--trainer.load_optim_state=", "--trainer.load_optim_state=true"),
         (
             "--trainer.reset_data_loader_state_on_load_path=",
-            "--trainer.reset_data_loader_state_on_load_path=false",
+            "--trainer.reset_data_loader_state_on_load_path="
+            + (
+                "true"
+                if args.method == "post_e1_diloco_h32_bs64init_dr"
+                else "false"
+            ),
         ),
         (
             "--train_module.validate_optimizer_hyperparameters_on_load=",
@@ -402,13 +482,18 @@ def stage(
     )
     for prefix, replacement in replacements:
         arguments = upsert(arguments, prefix, replacement)
-    integer_epoch_frontiers = tuple(
-        pre_decay_step(frontier_epoch) for frontier_epoch in range(previous_epoch + 1, epoch + 1)
-    )
+    integer_epoch_frontiers = (target_pre_decay,)
     # The terminal endpoint also needs one explicit aggregation so evaluation observes a
     # coherent model. The next stage still resumes from the synchronized pre-decay frontier,
     # so this terminal decay aggregation cannot affect subsequent training.
-    if args.method == "post_e1_diloco_h32_vrecal_dr":
+    if args.method == "post_e1_diloco_h32_bs64init_dr":
+        source_step, _, _ = bs64_initialized_e2_steps()
+        diloco_outer_steps = fixed_interval_outer_steps(
+            source_step,
+            integer_epoch_frontiers + (target_endpoint,),
+            interval=32,
+        )
+    elif args.method == "post_e1_diloco_h32_vrecal_dr":
         diloco_outer_steps = fixed_interval_outer_steps(
             pre_decay_step(previous_epoch),
             integer_epoch_frontiers + (total_steps(epoch),),
@@ -454,13 +539,24 @@ def build_spec(
             previous_epoch=previous_epoch,
             load_path=load_path,
         )
-        pre_decay = pre_decay_step(epoch)
-        endpoint = total_steps(epoch)
-        integer_epoch_frontiers = tuple(
-            pre_decay_step(frontier_epoch)
-            for frontier_epoch in range(previous_epoch + 1, epoch + 1)
-        )
-        if args.method == "post_e1_diloco_h32_vrecal_dr":
+        if args.method == "post_e1_diloco_h32_bs64init_dr":
+            source_step, pre_decay, endpoint = bs64_initialized_e2_steps()
+            integer_epoch_frontiers = (pre_decay,)
+            recorded_outer_steps = fixed_interval_outer_steps(
+                source_step,
+                integer_epoch_frontiers + (endpoint,),
+                interval=32,
+            )
+        else:
+            pre_decay = pre_decay_step(epoch)
+            endpoint = total_steps(epoch)
+            integer_epoch_frontiers = tuple(
+                pre_decay_step(frontier_epoch)
+                for frontier_epoch in range(previous_epoch + 1, epoch + 1)
+            )
+        if args.method == "post_e1_diloco_h32_bs64init_dr":
+            pass
+        elif args.method == "post_e1_diloco_h32_vrecal_dr":
             recorded_outer_steps = fixed_interval_outer_steps(
                 pre_decay_step(previous_epoch),
                 integer_epoch_frontiers + (endpoint,),
@@ -500,7 +596,11 @@ def build_spec(
                         for frontier in integer_epoch_frontiers
                     ]
                     if args.method
-                    in {"post_e1_diloco_epoch_dr", "post_e1_diloco_h32_vrecal_dr"}
+                    in {
+                        "post_e1_diloco_epoch_dr",
+                        "post_e1_diloco_h32_vrecal_dr",
+                        "post_e1_diloco_h32_bs64init_dr",
+                    }
                     else []
                 ),
                 shlex.join(
@@ -531,7 +631,11 @@ def build_spec(
                         ],
                     }
                     if args.method
-                    in {"post_e1_diloco_epoch_dr", "post_e1_diloco_h32_vrecal_dr"}
+                    in {
+                        "post_e1_diloco_epoch_dr",
+                        "post_e1_diloco_h32_vrecal_dr",
+                        "post_e1_diloco_h32_bs64init_dr",
+                    }
                     else {}
                 ),
             }
