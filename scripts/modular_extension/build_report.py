@@ -26,6 +26,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 ATTR = ROOT / "modular_extension/cluster/emo100b_step23842/expert_attribution"
 PART = ROOT / "modular_extension/data/emo_64exp_50b_wsd_lr2e-3_100B-110B/doc_clusters_k64_summary.json"
+JOINT = ROOT / "modular_extension/data/emo_64exp_50b_wsd_lr2e-3_100B-130B/doc_clusters_k64_summary.json"
+SUBSTAB = ROOT / "modular_extension/cluster/emo100b_step23842_100B-130B/subsample_stability"
+ORACLE_SPLIT = (ROOT / "modular_extension/cluster/emo100b_step23842/doc_classifier/oracle"
+                / "cluster_agreement.json")
 
 
 # --------------------------------------------------------------------------
@@ -463,12 +467,13 @@ def _roadmap_table() -> str:
          f"{done} &mdash; this report"),
         ("2", "Cheap cluster router",
          "Label streaming docs with their EMO cluster <em>without a full forward pass</em>, to partition data at scale.",
-         nxt),
+         '<span class="note">deprioritized</span> &mdash; superseded for the sanity check by the full '
+         'forward-pass oracle partition (see <strong>Oracle partition</strong>)'),
         ("3", "Add experts + partitioned training",
          "Per cluster partition: reuse the <em>n</em> most-relevant pool experts, initialize 64&minus;n new "
          "ones, train the 64-expert working set, then grow the pool with the new experts and write the reused "
          "ones back.",
-         fut),
+         f"{nxt} &mdash; oracle labels for the full 100B&ndash;130B window are ready"),
     ]
     return table(["stage", "what", "why", "status"], rows)
 
@@ -538,6 +543,161 @@ redundancy the whole design is built to avoid.</p>
 64 at a time; (b) <strong>sequential forgetting</strong> &mdash; training partitions in turn may erode reused
 experts' behaviour on earlier clusters, so some interleaving or replay may be needed.</p>''')}
 """
+
+
+def build_substab(joint, scores, oracle_split) -> str:
+    """The 'Oracle partition' tab: full 100B-130B partition + subsample-stability results."""
+    n_docs = joint["num_docs"]
+    n_tok = joint["total_doc_tokens"]
+    sizes = sorted(c["num_docs"] for c in joint["clusters"])
+    intro = f"""
+<p>Stage&nbsp;3 (partition + grow) needs every training document labeled with its cluster. We did the
+expensive, assumption-free version first: <strong>forward-pass the entire 100B&ndash;130B continued-pretraining
+window through the EMO 100B checkpoint</strong> (whole documents, first 2048 tokens fingerprinted), then fit
+one k=64 spherical k-means over all of it. The result is the <strong>oracle partition</strong>:
+{n_docs / 1e6:.1f}M documents / {n_tok / 1e9:.1f}B doc-tokens with cluster sizes
+{sizes[0] / 1e3:.0f}K&ndash;{sizes[-1] / 1e3:.0f}K docs (median {sizes[len(sizes) // 2] / 1e3:.0f}K), exported
+keyed by <code>(source_path, doc_start_offset)</code> so it joins directly onto the token stream.</p>
+<p>That raises the first design question for any production loop: <strong>was fitting on all 27.5M documents
+necessary?</strong> If a clustering fit on a small calibration sample recovers (nearly) the same partition,
+future windows only need cheap centroid assignment, not a full re-fit. This tab measures exactly that.</p>
+"""
+
+    arms_table = table(
+        ["arm", "what is re-fit on the subsample", "what it isolates"],
+        [
+            ("<strong>honest</strong> &mdash; n &isin; {100K, 1M, 5M}",
+             "everything: mean, PCA basis <em>and</em> its 95%-variance component count, k-means",
+             "the true small-calibration-set setting (nothing borrowed from the full fit)"),
+            ("<strong>frozen</strong> &mdash; same n, same document draws",
+             "k-means only (the full fit's mean/PCA/L2 transform is reused)",
+             "honest&minus;frozen gap = how much the <em>embedding geometry</em> destabilizes at small n"),
+            ("<strong>fullseed</strong> &mdash; all 27.5M docs, seeds 1 and 2",
+             "k-means on the full data (reference used seed 42)",
+             "the ceiling: how much k-means disagrees with <em>itself</em> at full sample size"),
+        ],
+    )
+    method = f"""
+<p>Ten arms, one Beaker job each. Every arm ends the same way: assign <em>all</em> {n_docs / 1e6:.1f}M
+documents to the arm's fitted centroids, then compare against the reference full-fit partition. The recipe
+(doc_probs fingerprint, mean-center + PCA to 95% variance + L2, spherical k-means, k=64) is never varied
+&mdash; only which rows the data-dependent pieces are fit on. At equal seed, honest and frozen arms draw the
+<em>same documents</em>, so their gap is attributable to the transform alone. 1M runs twice (seeds 0, 1) to
+gauge draw-to-draw variance.</p>
+<p><strong>Metrics.</strong> Cluster IDs are arbitrary, so we report agreement after the best one-to-one
+relabeling (Hungarian matching on the 64&times;64 contingency table): <strong>matched accuracy</strong> over
+documents and over doc-tokens (what Stage&nbsp;3 actually partitions), plus <strong>ARI</strong> (chance-corrected
+pair agreement, matching-free). Code: <code>src/scripts/clustering/subsample_stability.py</code>;
+launcher: <code>scripts/modular_extension/launch_subsample_stability.sh</code>.</p>
+{arms_table}
+"""
+
+    pilot_acc = oracle_split.get("test", {}).get("accuracy")
+    pilot_ari = oracle_split.get("test", {}).get("ari")
+    pilot_note = (
+        f"a 70%-train-split fit agreed with the full fit on only {pilot_acc:.0%} of held-out docs "
+        f"(ARI {pilot_ari:.2f})" if pilot_acc else "a train-split fit agreed with the full fit on only "
+        "~70% of held-out docs (ARI ~0.63)")
+    hypothesis = card("goal", "Hypothesis", f"""
+<p>The Stage-2 gate on the 1.15M-doc pilot already hinted the partition is not perfectly reproducible:
+{pilot_note}. But that experiment couldn't tell <em>why</em> &mdash; sample size, transform instability, or
+k-means run-to-run noise. The arms above separate the three. Our prior, from the PCA dimension staying
+~150 from 1.15M to 27.5M docs, was that the transform is stable (honest &asymp; frozen) and most disagreement
+is k-means seed noise &mdash; i.e. the subsample curves should rise toward a fullseed ceiling that itself
+sits well below 100%.</p>""")
+
+    # -- results (filled once the Beaker arms have landed) --------------------
+    if not scores:
+        results = card("results", "Results", "<p class='missing'>[arms still running]</p>")
+        interp = ""
+    else:
+        results, interp = _substab_results(scores)
+
+    return intro + card("method", "Experiment: subsample fit vs full fit", method) + \
+        hypothesis + results + interp
+
+
+def _substab_results(scores) -> tuple:
+    """Results + interpretation cards from subsample_stability/scores.json."""
+    def sort_key(item):
+        name, s = item
+        return ({"honest": 0, "frozen": 1, "fullseed": 2}[s["mode"]],
+                s.get("n_sample") or 10**9, s["seed"])
+
+    rows = []
+    for name, s in sorted(scores.items(), key=sort_key):
+        n = s.get("n_sample")
+        rows.append((
+            s["mode"],
+            f"{n / 1e6:.1f}M" if n else "27.5M (all)",
+            s["seed"],
+            s.get("n_components", "&mdash;"),
+            pct(s["acc_docs"]),
+            pct(s["acc_tokens"]),
+            f"{s['ari']:.2f}",
+            f"{s['nmi']:.2f}",
+        ))
+    res_table = table(
+        ["arm", "fit on", "seed", "PCA dims", "doc agreement", "token agreement", "ARI", "NMI"], rows)
+
+    fig_html = img_tag(SUBSTAB / "substab_agreement.png",
+                       "Agreement with the full-fit oracle partition vs number of documents the clustering "
+                       "was fit on. Orange: honest re-fit (transform + k-means). Blue: frozen transform "
+                       "(k-means only). Green band: full-data k-means re-fit with a new seed — the "
+                       "reproducibility ceiling. Open circles: individual seeds at n=1M.")
+
+    results = card("results", "Results", f"""
+{res_table}
+<div class="figrow">{fig_html}</div>
+""")
+    return results, _substab_interpretation(scores)
+
+
+def _substab_interpretation(scores) -> str:
+    def accs(mode, n=None):
+        return sorted(s["acc_docs"] for s in scores.values()
+                      if s["mode"] == mode and (n is None or s.get("n_sample") == n))
+
+    ceil = accs("fullseed")
+    h1m, f1m = accs("honest", 1_000_000), accs("frozen", 1_000_000)
+    h100k = accs("honest", 100_000)
+    dims = {s.get("n_components") for s in scores.values() if s["mode"] == "honest"}
+    nmis = sorted(s["nmi"] for s in scores.values())
+
+    return card("results", "Reading the result &mdash; the partition is ~75% reproducible, "
+                           "and a 1M-doc fit already hits that ceiling", f"""
+<ul>
+<li><strong>The ceiling is ~75%, not 100%.</strong> Two k-means re-fits on <em>all 27.5M docs</em>, changing
+only the seed, agree with the reference partition on {pct(ceil[0])}&ndash;{pct(ceil[-1])} of documents
+(ARI 0.67&ndash;0.70). About a quarter of documents flip clusters between equally good k-means optima
+&mdash; perfect recovery was never available, from any sample size.</li>
+<li><strong>1M documents (3.6% of the data) reach the ceiling.</strong> The four 1M-doc arms score
+{pct(min(h1m + f1m))}&ndash;{pct(max(h1m + f1m))} &mdash; indistinguishable from the full-data re-fits.
+Even 100K docs only cost a few points ({pct(h100k[0])} honest). The curves are flat rather than rising:
+sample size stops mattering somewhere <em>below</em> 1M. (The 5M arms landing slightly below the 1M arms
+is draw-to-draw scatter, the same magnitude as the gap between the two full-data re-fits; only n=1M was
+run with two seeds.)</li>
+<li><strong>All of the instability is k-means, none is the embedding geometry.</strong> Honest and frozen
+arms are statistically indistinguishable at every size, and every honest arm &mdash; even at 100K docs
+&mdash; independently selected {sorted(dims)[0]} PCA components under the 95%-variance rule. Re-fitting the
+transform on a small sample loses nothing; the multi-modality lives entirely in the k=64 k-means
+optimization.</li>
+<li><strong>Disagreement is fragmentation, not relabeling.</strong> NMI stays high
+({nmis[0]:.2f}&ndash;{nmis[-1]:.2f}) while one-to-one matched accuracy sits at ~75%, and inspecting a
+full-data re-fit's contingency table confirms why: the documents a reference cluster loses land in just
+one or two specific clusters (median 55% of a cluster's leaked mass goes to a single destination), i.e.
+re-fits split and merge clusters rather than scrambling documents into unrelated ones. Cluster-level
+structure survives; exact boundaries don't.</li>
+</ul>
+<p><strong>Consequences for the program.</strong> (a)&nbsp;Fitting on all 27.5M documents was unnecessary
+&mdash; a ~1M-doc calibration fit plus nearest-centroid assignment recovers as much of the partition as a
+full re-fit can. (b)&nbsp;More importantly, the oracle partition should be treated as <em>one frozen
+artifact</em>: future data windows get assigned to the existing centroids, never re-clustered, because any
+re-fit &mdash; even on all the data &mdash; silently relabels ~25% of documents. (c)&nbsp;Stage-3
+conclusions must not hinge on exact cluster boundaries: an effect that vanishes when 25% of boundary
+documents are relabeled was noise. Where it matters, grow experiments should be spot-checked against a
+second partition seed.</p>"""
+    )
 
 
 def build_per_cluster(soft, hard, part) -> str:
@@ -739,11 +899,17 @@ def main():
     n_docs = sum(c["size"] for c in soft["per_cluster"])
     code = _code_cluster(soft, part)
 
+    joint = json.load(open(JOINT)) if JOINT.exists() else {}
+    scores_path = SUBSTAB / "scores.json"
+    scores = json.load(open(scores_path)) if scores_path.exists() else {}
+    oracle_split = json.load(open(ORACLE_SPLIT)) if ORACLE_SPLIT.exists() else {}
+
     tabs = [
         ("overview", "Overview", build_overview(soft, hard, n_docs)),
         ("method", "Method", build_method(soft, ill)),
         ("findings", "Findings", build_findings(soft, hard, code, ill, share)),
         ("per-cluster", "Per-cluster", build_per_cluster(soft, hard, part)),
+        ("oracle-partition", "Oracle partition", build_substab(joint, scores, oracle_split)),
         ("next-steps", "Next steps", build_nextsteps(soft)),
     ]
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
@@ -765,6 +931,7 @@ def main():
 <h1>EMO modular_extension: adding experts during training under a fixed budget</h1>
 <p>modular_extension &mdash; grow a 64-expert EMO MoE toward more experts via cluster-partitioned continued
 training &middot; Stage 1: what defines the emergent clusters (k={soft['k']}, 100B&ndash;110B window)
+&middot; Oracle partition: the full 100B&ndash;130B window labeled, plus how stable the clustering is
 &middot; generated by scripts/modular_extension/build_report.py</p>
 </header>
 <div class="topbar"><nav>{nav}</nav><div id="subnav"></div></div>
