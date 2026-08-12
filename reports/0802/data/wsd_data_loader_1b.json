@@ -3816,33 +3816,67 @@
         }
       },
       "health": "pending",
-      "reason": "Submitted after registry, duplicate, exact-source, WD-floor, 4-node, rank-microbatch, manifest, and print-only guards passed; awaiting scheduling.",
-      "beaker": "01KZT0WWWY8B9KWFYB8VP10KMR",
-      "experiment": "01KZT0WWWY8B9KWFYB8VP10KMR",
-      "job": "01KZT0WX0SCVYATFASNVPNXF0J",
-      "result": "01KZT0WWX6Q18ZHCGQGZBJFCTJ",
-      "replicaJobs": [
-        "01KZT0WX0SCVYATFASNVPNXF0J",
-        "01KZT0WX4G377BAQYP0VSPFTGY",
-        "01KZT0WX84ZPY4RPYJYC189XE3",
-        "01KZT0WXBNKFDVVW585CS0GR45"
-      ],
-      "replicaResults": [
-        "01KZT0WWX6Q18ZHCGQGZBJFCTJ",
-        "01KZT0WX11YBVX58HMTAJ0NZSY",
-        "01KZT0WX4Q528MVRZ8ZWT282N7",
-        "01KZT0WX8AKCW4HEAW6M0ZG6R9"
-      ],
+      "reason": "Infrastructure retry1 submitted after registry, no-progress evidence, duplicate, exact-source, WD-floor, 4-node, rank-microbatch, manifest, and print-only guards passed; awaiting scheduling.",
       "beakerStatus": "submitted",
       "progress": {
-        "observedAt": "2026-08-11 20:40 PDT",
+        "observedAt": "2026-08-11 22:02 PDT",
         "step": 858,
         "endpointStep": 1908,
         "epoch": 8,
         "eta": "awaiting scheduling"
       },
-      "revision": "a756816d0fae3f1e3b190455488d1cad5fff3063",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r01"
+      "attempts": [
+        {
+          "epoch": 8,
+          "experiment": "01KZT0WWWY8B9KWFYB8VP10KMR",
+          "job": "01KZT0WX0SCVYATFASNVPNXF0J",
+          "result": "01KZT0WWX6Q18ZHCGQGZBJFCTJ",
+          "replicaJobs": [
+            "01KZT0WX0SCVYATFASNVPNXF0J",
+            "01KZT0WX4G377BAQYP0VSPFTGY",
+            "01KZT0WX84ZPY4RPYJYC189XE3",
+            "01KZT0WXBNKFDVVW585CS0GR45"
+          ],
+          "replicaResults": [
+            "01KZT0WWX6Q18ZHCGQGZBJFCTJ",
+            "01KZT0WX11YBVX58HMTAJ0NZSY",
+            "01KZT0WX4Q528MVRZ8ZWT282N7",
+            "01KZT0WX8AKCW4HEAW6M0ZG6R9"
+          ],
+          "replicaNodes": [
+            "01KJT4H1MZSHV0S26YATVM5PEM",
+            "01JRK7GWZGRT4A5F88CSJ6X5GS",
+            "01JS0HMXX084EEPTYRT5KF2ZQ3",
+            "01KQ0MDZD1B7FTYWZM8V86NP91"
+          ],
+          "status": "canceled_before_task_start",
+          "failedReplica": "01KZT0WX0SCVYATFASNVPNXF0J",
+          "node": "01KJT4H1MZSHV0S26YATVM5PEM",
+          "wandb": null,
+          "reason": "Leader replica0 was canceled during startup because node 01KJT4H1MZSHV0S26YATVM5PEM was cordoned after unrecoverable SXid error code12028. The leader and a waiting replica produced no task logs; no W&B run, optimizer step, output, or checkpoint was created, so automatic infrastructure retry1 is eligible.",
+          "revision": "a756816d0fae3f1e3b190455488d1cad5fff3063",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r01"
+        }
+      ],
+      "retryCount": 1,
+      "beaker": "01KZT5K8M28PE1K26VNJY6STQW",
+      "experiment": "01KZT5K8M28PE1K26VNJY6STQW",
+      "revision": "82f62b47dd635f9021835f51cf5fedded95bc4c9",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r02",
+      "job": "01KZT5K8QNR1M8GMDWSJRJAAM5",
+      "result": "01KZT5K8MDW6SHA0M7AYZMH8WB",
+      "replicaJobs": [
+        "01KZT5K8QNR1M8GMDWSJRJAAM5",
+        "01KZT5K8VBF5J73K224XWEVYB7",
+        "01KZT5K8YWHEXKR3QX8TPKZGT5",
+        "01KZT5K92FEKECGSAAX167A3F7"
+      ],
+      "replicaResults": [
+        "01KZT5K8MDW6SHA0M7AYZMH8WB",
+        "01KZT5K8R1ZPDDY3ZM6BY7PS6K",
+        "01KZT5K8VKD0291JYR3ZJF92MC",
+        "01KZT5K8Z34YJT3ZDP5PE84WVR"
+      ]
     },
     {
       "id": "fixed1024-wd0.333",
