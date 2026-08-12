@@ -3335,13 +3335,13 @@
       ],
       "beakerStatus": "running",
       "progress": {
-        "observedAt": "2026-08-11 21:01 PDT",
-        "step": 2695,
+        "observedAt": "2026-08-11 21:35 PDT",
+        "step": 3517,
         "endpointStep": 3815,
-        "epoch": 16,
-        "trainCe": 3.043,
+        "epoch": 15,
+        "trainCe": 2.985,
         "metricStatus": "preliminary",
-        "eta": "50m"
+        "eta": "13m"
       },
       "revision": "b531ee5ab674d7cfb66804d59b9d6ff51d874017",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e16_lr5e-4_wd1.0_warmup24_dataloader-cd-wdbound-r01",
