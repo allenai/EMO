@@ -624,9 +624,11 @@ sits well below 100%.</p>""")
     ksel = json.load(open(ksel_path)) if ksel_path.exists() else {}
     k4_path = KSEL / "k4_characterization.json"
     k4 = json.load(open(k4_path)) if k4_path.exists() else []
+    k32_path = JOINT.parent / "doc_clusters_k32_summary.json"
+    k32 = json.load(open(k32_path)) if k32_path.exists() else {}
 
     return intro + card("method", "Experiment: subsample fit vs full fit", method) + \
-        hypothesis + results + interp + build_ksel(ksel, k4)
+        hypothesis + results + interp + build_ksel(ksel, k4) + build_k32_freeze(k32)
 
 
 def _substab_results(scores) -> tuple:
@@ -816,6 +818,44 @@ high-confidence units for the first grow experiments, with the finer slices nest
 </ul>""")
 
     return method + results + reading
+
+
+def build_k32_freeze(k32) -> str:
+    """The designated frozen k=32 partition + the Stage-3 baseline run."""
+    if not k32:
+        return ""
+    clusters = sorted(k32["clusters"], key=lambda c: -c["num_tokens"])
+    tot_tok = sum(c["num_tokens"] for c in clusters)
+    rows = []
+    for c in clusters:
+        top = ", ".join(f"{s} ({v / c['num_docs']:.0%})"
+                        for s, v in list(c["top_sources"].items())[:2])
+        rows.append((c["cluster"], f"{c['num_docs'] / 1e6:.2f}M",
+                     f"{c['num_tokens'] / 1e9:.2f}B", pct(c["num_tokens"] / tot_tok), top))
+    k32_table = table(["cluster", "docs", "doc-tokens", "token share", "top sources (docs)"], rows)
+    n_docs = sum(c["num_docs"] for c in clusters)
+    docs_sorted = sorted(c["num_docs"] for c in clusters)
+    toks_sorted = sorted(c["num_tokens"] for c in clusters)
+
+    return card("goal", "Decision &mdash; the frozen k=32 partition and the Stage-3 baseline", f"""
+<p>Based on the above, Stage&nbsp;3 proceeds at <strong>k=32</strong> (the criteria's choice and the local
+stability maximum), using the <strong>full-data fit with seed 1</strong> (<code>global_k32_seed1</code>) as
+<em>the</em> frozen partition &mdash; exported to
+<code>modular_extension/data/&hellip;_100B-130B/doc_clusters_k32.jsonl.gz</code>, provenance-keyed like the
+k=64 export. Per the stability findings it will never be re-fit; future windows get nearest-centroid
+assignment.</p>
+<p><strong>Cluster sizes.</strong> {n_docs / 1e6:.1f}M documents / {tot_tok / 1e9:.1f}B doc-tokens across 32
+clusters; docs per cluster range {docs_sorted[0] / 1e3:.0f}K&ndash;{docs_sorted[-1] / 1e6:.2f}M (median
+{docs_sorted[16] / 1e3:.0f}K), doc-tokens {toks_sorted[0] / 1e9:.2f}B&ndash;{toks_sorted[-1] / 1e9:.2f}B
+&mdash; every partition is large enough to train on, none dominates.</p>
+{details("Per-cluster document and token counts (sorted by token mass)", k32_table)}
+<p><strong>Baseline (launched).</strong> The comparison point for partition+grow is the same model trained
+<em>normally</em> over the same window: <code>emo64_100b130b_baseline</code> re-trains 100B&rarr;130B from
+the trunk's step23842 checkpoint with full trainer/optimizer state (deterministic data cursor &rarr;
+exactly the tokens partitioned here), the 1T scheduler cap (LR stays flat at 2e-3, as in the original
+run), and a hard stop at 130B where the final checkpoint (~step 30996) is saved &mdash; the original
+extension run kept no checkpoint between 100B and 200B. Script:
+<code>scripts/modular_extension/emo64_100b130b_baseline.sh</code>.</p>""")
 
 
 def build_per_cluster(soft, hard, part) -> str:
