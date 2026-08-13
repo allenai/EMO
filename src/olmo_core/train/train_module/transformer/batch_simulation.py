@@ -164,7 +164,7 @@ def diloco_outer_step(
     outer_optimizer: Optimizer,
     outer_parameters: list[torch.Tensor],
     process_group: dist.ProcessGroup,
-) -> None:
+) -> dict[str, torch.Tensor]:
     """Apply one synchronous DiLoCo outer step and reset every replica to its result.
 
     Each replica starts an outer round from ``outer_parameters`` and independently updates
@@ -181,6 +181,10 @@ def diloco_outer_step(
 
     replica_count = dist.get_world_size(process_group)
     outer_optimizer.zero_grad(set_to_none=True)
+    displacement_sq = torch.zeros((), device=outer_parameters[0].device, dtype=torch.float32)
+    dispersion_sq = torch.zeros_like(displacement_sq)
+    momentum_sq = torch.zeros_like(displacement_sq)
+    momentum_dot_displacement = torch.zeros_like(displacement_sq)
     for parameter, outer_parameter in zip(parameters, outer_parameters):
         local_parameter = get_local_tensor(parameter.detach())
         if local_parameter.shape != outer_parameter.shape:
@@ -199,6 +203,18 @@ def diloco_outer_step(
             )
             local_pseudo_gradient.div_(replica_count)
 
+        local_endpoint_mean = outer_parameter - local_pseudo_gradient
+        local_deviation = local_parameter - local_endpoint_mean
+        dispersion_sq.add_(local_deviation.float().square().sum())
+        displacement_sq.add_(local_pseudo_gradient.float().square().sum())
+        momentum_buffer = outer_optimizer.state.get(parameter, {}).get("momentum_buffer")
+        if momentum_buffer is not None:
+            local_momentum = get_local_tensor(momentum_buffer.detach())
+            momentum_sq.add_(local_momentum.float().square().sum())
+            momentum_dot_displacement.add_(
+                (local_momentum.float() * local_pseudo_gradient.float()).sum()
+            )
+
         # The outer optimizer acts on the shared parameter at the beginning of the round, not
         # on any particular worker's local endpoint.
         local_parameter.copy_(outer_parameter)
@@ -207,8 +223,38 @@ def diloco_outer_step(
     outer_optimizer.step()
     outer_optimizer.zero_grad(set_to_none=True)
 
+    update_sq = torch.zeros_like(displacement_sq)
     for parameter, outer_parameter in zip(parameters, outer_parameters):
-        outer_parameter.copy_(get_local_tensor(parameter.detach()))
+        updated_parameter = get_local_tensor(parameter.detach())
+        update_sq.add_((updated_parameter.float() - outer_parameter.float()).square().sum())
+        outer_parameter.copy_(updated_parameter)
+
+    # The default group spans replica and shard dimensions. Replica-reduced displacement and
+    # update values are duplicated once per replica, so divide them after the global reduction.
+    telemetry = torch.stack(
+        [
+            displacement_sq,
+            update_sq,
+            momentum_sq,
+            momentum_dot_displacement,
+            dispersion_sq,
+        ]
+    )
+    if dist.is_initialized():
+        dist.all_reduce(telemetry, op=dist.ReduceOp.SUM)
+        telemetry.div_(replica_count)
+    displacement_norm = telemetry[0].sqrt()
+    update_norm = telemetry[1].sqrt()
+    momentum_norm = telemetry[2].sqrt()
+    cosine = telemetry[3] / (momentum_norm * displacement_norm).clamp_min(1e-30)
+    return {
+        "averaged local displacement norm": displacement_norm,
+        "outer update norm": update_norm,
+        "outer update / displacement": update_norm / displacement_norm.clamp_min(1e-30),
+        "outer momentum norm": momentum_norm,
+        "momentum / displacement cosine": cosine,
+        "replica dispersion norm": telemetry[4].sqrt(),
+    }
 
 
 def _local_parameter_tensors(module: nn.Module) -> Iterable[torch.Tensor]:

@@ -130,7 +130,7 @@ def test_batch_simulation_rejects_invalid_configuration(kwargs):
         {"diloco_inner_steps": 0},
         {"diloco_outer_lr": 0.0},
         {"diloco_outer_lr": -0.1},
-        {"diloco_outer_momentum": 0.0},
+        {"diloco_outer_momentum": -0.1},
         {"diloco_outer_momentum": 1.0},
     ],
 )
@@ -373,6 +373,7 @@ def test_diloco_sync_interval_gate_uses_outer_optimizer():
         train_module.model.parameters(), lr=0.7, momentum=0.9, nesterov=True
     )
     train_module._diloco_outer_parameters = clone_local_parameter_tensors(train_module.model)
+    train_module.record_metric = MagicMock()
     replicate_mesh = MagicMock()
     process_group = MagicMock()
     replicate_mesh.get_group.return_value = process_group
@@ -390,6 +391,7 @@ def test_diloco_sync_interval_gate_uses_outer_optimizer():
             "average_module_and_optimizer_state"
         ) as average_state,
     ):
+        outer_step.return_value = {"outer update norm": torch.tensor(1.25)}
         assert train_module._maybe_sync_local_sgd()
         outer_step.assert_called_once_with(
             train_module.model,
@@ -398,6 +400,9 @@ def test_diloco_sync_interval_gate_uses_outer_optimizer():
             process_group,
         )
         average_state.assert_not_called()
+        train_module.record_metric.assert_called_once_with(
+            "outer update norm", torch.tensor(1.25), namespace="DiLoCo outer"
+        )
         assert train_module._local_sgd_steps_since_sync == 0
 
 
@@ -578,6 +583,50 @@ def _check_diloco_outer_step_preserves_local_adam_state():
 def test_diloco_applies_nesterov_to_average_pseudo_gradient():
     run_distributed_test(
         _check_diloco_outer_step_preserves_local_adam_state,
+        backend="gloo",
+        world_size=2,
+        start_method="spawn",
+    )
+
+
+def _check_diloco_without_momentum_equals_endpoint_average():
+    rank = dist.get_rank()
+    world_mesh = init_device_mesh(
+        "cpu",
+        (2, 1),
+        mesh_dim_names=("dp_replicate", "dp_shard"),
+    )
+    module = nn.Linear(1, 1, bias=False)
+    module.weight.data.fill_(1.0)
+    fully_shard(module, mesh=world_mesh["dp_shard"])
+    parameter = next(module.parameters())
+    outer_parameters = clone_local_parameter_tensors(module)
+    with torch.no_grad():
+        get_local_tensor(parameter).fill_(0.8 if rank == 0 else 0.6)
+
+    outer_optimizer = torch.optim.SGD(
+        module.parameters(), lr=1.0, momentum=0.0, weight_decay=0.0, nesterov=False
+    )
+    metrics = diloco_outer_step(
+        module,
+        outer_optimizer,
+        outer_parameters,
+        world_mesh["dp_replicate"].get_group(),
+    )
+
+    # With outer LR1 and no momentum, applying the average displacement is exactly FedAvg.
+    assert get_local_tensor(parameter).item() == pytest.approx(0.7)
+    assert outer_parameters[0].item() == pytest.approx(0.7)
+    assert metrics["averaged local displacement norm"].item() == pytest.approx(0.3)
+    assert metrics["outer update norm"].item() == pytest.approx(0.3)
+    assert metrics["outer update / displacement"].item() == pytest.approx(1.0)
+    assert metrics["outer momentum norm"].item() == pytest.approx(0.0)
+    assert metrics["replica dispersion norm"].item() == pytest.approx(0.1)
+
+
+def test_diloco_without_momentum_equals_endpoint_average():
+    run_distributed_test(
+        _check_diloco_without_momentum_equals_endpoint_average,
         backend="gloo",
         world_size=2,
         start_method="spawn",

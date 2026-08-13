@@ -292,7 +292,7 @@ class TransformerTrainModule(TrainModule):
                 lr=self.batch_simulation.diloco_outer_lr,
                 momentum=self.batch_simulation.diloco_outer_momentum,
                 weight_decay=0.0,
-                nesterov=True,
+                nesterov=self.batch_simulation.diloco_outer_momentum > 0,
             )
             self._diloco_outer_parameters = clone_local_parameter_tensors(self.model)
 
@@ -1041,12 +1041,14 @@ class TransformerTrainModule(TrainModule):
                 current_step
             ):
                 self._save_diloco_replicas_before_outer_step(current_step)
-            diloco_outer_step(
+            outer_metrics = diloco_outer_step(
                 self.model,
                 self._diloco_outer_optim,
                 self._diloco_outer_parameters,
                 replica_group,
             )
+            for name, value in outer_metrics.items():
+                self.record_metric(name, value, namespace="DiLoCo outer")
         self._local_sgd_steps_since_sync = 0
         return True
 

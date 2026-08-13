@@ -127,9 +127,9 @@ class BatchSimulationConfig(Config):
                 raise OLMoConfigurationError("'diloco_inner_steps' must be at least 1")
             if self.diloco_outer_lr <= 0:
                 raise OLMoConfigurationError("'diloco_outer_lr' must be greater than zero")
-            if not 0 < self.diloco_outer_momentum < 1:
+            if not 0 <= self.diloco_outer_momentum < 1:
                 raise OLMoConfigurationError(
-                    "'diloco_outer_momentum' must be strictly between zero and one"
+                    "'diloco_outer_momentum' must be between zero (inclusive) and one (exclusive)"
                 )
             if self.diloco_outer_steps is not None:
                 self._validate_step_schedule("diloco_outer_steps", self.diloco_outer_steps)
