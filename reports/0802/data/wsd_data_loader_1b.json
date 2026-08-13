@@ -109,13 +109,14 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.3",
-      "status": "running",
-      "activeEpoch": 2,
+      "status": "submitted",
+      "activeEpoch": 4,
       "attemptedEpochs": [
-        2
+        2,
+        4
       ],
-      "sourceExperiment": "01KZDCD9AYJ0REGZTE2YG18NHF",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_e1_lr1e-3_wd0.3_warmup384_coord_e1_r2/step3432",
+      "sourceExperiment": "01KZWDBW5NFCBJY88KQQ0E7FR2",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e2_lr1e-3_wd0.3_warmup384_bs64-dr-e2-lr1e3-wd0p3-r01/step6866",
       "gpuCount": 8,
       "nodeCount": 1,
       "rankMicrobatchSequences": 8,
@@ -134,37 +135,39 @@
           "train": 3.352,
           "validation": 3.397,
           "reason": "Inherited exact Original E1 coordinate; DR begins at E2 from retained pre-decay step3432."
+        },
+        "2": {
+          "status": "complete",
+          "beaker": "01KZWDBW5NFCBJY88KQQ0E7FR2",
+          "experiment": "01KZWDBW5NFCBJY88KQQ0E7FR2",
+          "job": "01KZWDBW95SEQQZD20HK81Z1W9",
+          "result": "01KZWDBW5WYWKBVEA0EFS2PBDW",
+          "wandb": "idgymq7o",
+          "node": "01JS3MZCAFVY41CZY2472CD4N5",
+          "revision": "c984fa7b41767f84a069adc7b9884906bde131e7",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e2_lr1e-3_wd0.3_warmup384_bs64-dr-e2-lr1e3-wd0p3-r01",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_e1_lr1e-3_wd0.3_warmup384_coord_e1_r2/step3432",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e2_lr1e-3_wd0.3_warmup384_bs64-dr-e2-lr1e3-wd0p3-r01/step6866",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e2_lr1e-3_wd0.3_warmup384_bs64-dr-e2-lr1e3-wd0p3-r01/step7629",
+          "retainedCheckpoints": [
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e2_lr1e-3_wd0.3_warmup384_bs64-dr-e2-lr1e3-wd0p3-r01/step6866",
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e2_lr1e-3_wd0.3_warmup384_bs64-dr-e2-lr1e3-wd0p3-r01/step7629"
+          ],
+          "train": 3.259,
+          "validation": 3.229,
+          "validationExact": 3.22922,
+          "reason": "Completed healthy on one 8-GPU node from exact Original E1 pre-decay step3432. Validation CE3.22922 strictly improved inherited E1 CE3.397 by 0.16778, unlocking E4 from retained pre-decay step6866."
         }
       },
       "health": "planned",
-      "reason": "Healthy on one 8-GPU node at step5845/7629 after manifest/preflight checks, exact Original E1 pre-decay step3432 load, and first optimizer step3433. Active train metrics remain preliminary.",
-      "beaker": "01KZWDBW5NFCBJY88KQQ0E7FR2",
-      "experiment": "01KZWDBW5NFCBJY88KQQ0E7FR2",
-      "job": "01KZWDBW95SEQQZD20HK81Z1W9",
-      "result": "01KZWDBW5WYWKBVEA0EFS2PBDW",
-      "revision": "c984fa7b41767f84a069adc7b9884906bde131e7",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e2_lr1e-3_wd0.3_warmup384_bs64-dr-e2-lr1e3-wd0p3-r01",
-      "beakerStatus": "running",
-      "wandb": "idgymq7o",
-      "node": "01JS3MZCAFVY41CZY2472CD4N5",
-      "progress": {
-        "observedAt": "2026-08-12 20:31 PDT",
-        "step": 5845,
-        "endpointStep": 7629,
-        "epoch": 1.5,
-        "eta": "18m"
-      },
-      "startupEvidence": {
-        "manifestVerified": true,
-        "preflightVerified": true,
-        "remoteDryRunComplete": true,
-        "dynamicRepacking": true,
-        "sourceCheckpointLoaded": true,
-        "sourceStep": 3432,
-        "firstOptimizerStep": 3433,
-        "trainerAndOptimizerStateRequested": true,
-        "optimizerHyperparametersValidated": true
-      }
+      "reason": "E2 completed healthy at validation CE3.22922, improving E1 CE3.397 by 0.16778. E4 was submitted from exact E2 pre-decay step6866 after print-only guards passed and is pending.",
+      "beaker": "01KZWMHKSX52F92GMERG7DQY6V",
+      "experiment": "01KZWMHKSX52F92GMERG7DQY6V",
+      "job": "01KZWMHKXMEVQVZPRFFFM7DBHF",
+      "result": "01KZWMHKT79TRC70H0649CC9GM",
+      "revision": "9bedcb1d",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e4_lr1e-3_wd0.3_warmup384_bs64-dr-e4-lr1e3-wd0p3-r01",
+      "beakerStatus": "pending"
     },
     {
       "id": "dr64-lr1e-3-wd1.0",
