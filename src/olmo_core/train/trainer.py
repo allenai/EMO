@@ -202,6 +202,13 @@ class Trainer:
     configured data loader at batch zero. This must only be used with an audited disjoint
     continuation dataset. It does not apply when recovering from :data:`save_folder`."""
 
+    prefer_explicit_load_path: bool = False
+    """Try :data:`load_path` before automatic recovery from :data:`save_folder`.
+
+    This narrow opt-in is intended for a deliberate continuation from an older checkpoint in
+    the same canonical output directory. The default preserves normal latest-checkpoint recovery.
+    """
+
     metrics_collect_interval: int = 5
     """
     How often (in steps) to collect, reduce, and pass on metrics to the
@@ -686,12 +693,18 @@ class Trainer:
             and not self.checkpoint_loaded
             and self.load_strategy != LoadStrategy.never
         ):
-            # Try loading from the save folder first. The save folder is used for continuing
-            # existing runs that failed or were preempted, so we always load trainer state and
-            # optimizer state.
-            self.maybe_load_checkpoint(
-                self.save_folder, load_trainer_state=True, load_optim_state=True
-            )
+            if self.prefer_explicit_load_path and self.load_path is not None:
+                self.maybe_load_checkpoint(
+                    self.load_path,
+                    reset_data_loader_state=self.reset_data_loader_state_on_load_path,
+                )
+
+            if not self.checkpoint_loaded:
+                # The save folder is used for continuing runs that failed or were preempted, so
+                # we always load trainer state and optimizer state.
+                self.maybe_load_checkpoint(
+                    self.save_folder, load_trainer_state=True, load_optim_state=True
+                )
 
             # Then fallback to the load path, if provided.
             if self.load_path is not None:
@@ -700,7 +713,7 @@ class Trainer:
                         self.load_path,
                         reset_data_loader_state=self.reset_data_loader_state_on_load_path,
                     )
-                else:
+                elif not self.prefer_explicit_load_path:
                     log.warning(
                         f"Ignoring load path ('{self.load_path}') since checkpoint was found in save folder"
                     )

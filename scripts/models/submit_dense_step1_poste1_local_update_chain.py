@@ -467,6 +467,11 @@ def stage(
         ("--trainer.load_trainer_state=", "--trainer.load_trainer_state=true"),
         ("--trainer.load_optim_state=", "--trainer.load_optim_state=true"),
         (
+            "--trainer.prefer_explicit_load_path=",
+            "--trainer.prefer_explicit_load_path="
+            + ("true" if previous_epoch > 1 else "false"),
+        ),
+        (
             "--trainer.reset_data_loader_state_on_load_path=",
             "--trainer.reset_data_loader_state_on_load_path="
             + (
