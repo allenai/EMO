@@ -866,10 +866,12 @@ def build_k32cpt(k32, conc, drift) -> str:
     intro = """
 <p><strong>The experiment:</strong> before growing any new experts, test whether cluster-partitioned
 training of the <em>existing</em> experts already helps. Constraint: at most <strong>32 experts</strong>
-can be trained at once. For each of the 32 clusters (in sequence): select the 32 experts most relevant to
-that cluster as the working set, continue pretraining on that cluster's partition with the usual EMO loss,
-then write the updated experts back into the 64-expert pool. No capacity is added &mdash; this isolates the
-value of <em>specialization via partitioned training</em> from the value of <em>extra experts</em>.</p>
+can be trained at once &mdash; simulating GPUs that cannot hold the full 64-expert model. For each of the
+32 clusters (in sequence): select the 32 experts most relevant to that cluster, materialize <em>only
+those</em> on the GPUs (the other 31 are entirely absent from the computation graph), continue pretraining
+on that cluster's partition with the usual EMO loss, then write the updated experts back into the
+64-expert pool. No capacity is added &mdash; this isolates the value of <em>specialization via partitioned
+training</em> from the value of <em>extra experts</em>.</p>
 <p>Two questions had to be answered before launching: (1) does a cluster's traffic actually concentrate
 on 32 experts, so a 32-expert working set sees most of the routed mass; (2) what should happen to the
 non-expert parameters (attention, embeddings, norms, router) while only 32 experts train.</p>
@@ -894,8 +896,12 @@ of router mass (median {pct(cl[len(cl) // 2])}); {n_lo} of 32 clusters sit below
 the global routing profile ({pct(conc["global"]["top32_mass"])}), itself barely above the uniform
 32/63&nbsp;=&nbsp;51%. Clustering, not subsetting, is what concentrates usage: it buys
 +{(cl[0] - max(rnd)) * 100:.0f} to +{(cl[-1] - max(rnd)) * 100:.0f} points.</li>
-<li>The residual {pct(1 - cl[-1])}&ndash;{pct(1 - cl[0])} of mass routed to the frozen 31 experts still
-flows normally at train time &mdash; those experts just receive no gradient.</li>
+<li><strong>What the residual means:</strong> in this experiment the 31 unselected experts are
+<em>not loaded onto the GPUs at all</em> &mdash; the setting simulates hardware that cannot hold all 64
+experts, so they are completely out of the computation graph and routing renormalizes over the 32 present
+experts (as in the selective-expert pruning pipeline). The residual {pct(1 - cl[-1])}&ndash;{pct(1 - cl[0])}
+of router mass is therefore <em>redistributed</em>, not merely frozen: the top-32 numbers measure how much
+of each cluster's original routing survives the pruning intact.</li>
 </ul>
 <div class="figrow">{img_tag(K32CPT / "expert_concentration.png",
     "Router mass captured by each cluster's own top-32 experts (blue, sorted) vs the same statistic "
@@ -903,11 +909,51 @@ flows normally at train time &mdash; those experts just receive no gradient.</li
 </div>"""
                          )
 
-    drift_html = ""
     if drift:
         drift_html = _drift_card(drift)
+    else:
+        drift_html = card("results", "Pre-flight 2 &mdash; parameter drift", "<p class='missing'>"
+                          "[recomputing with cosine panels and norm-ratio decomposition &mdash; "
+                          "results land here shortly]</p>")
 
-    return intro + conc_html + drift_html + build_k32_freeze(k32)
+    return intro + conc_html + drift_html + build_k32_freeze(k32) + _k32cpt_design_card()
+
+
+def _k32cpt_design_card() -> str:
+    return card("method", "Design &mdash; the sequential sweep (built; pilot pending)", """
+<p>Both pre-flights supported proceeding, so the sweep is implemented as follows.</p>
+<ul>
+<li><strong>Token budget:</strong> 30B total, allocated to clusters proportionally to their token mass
+(stage budgets 0.34B&ndash;2.94B) &mdash; apples-to-apples with the 130B baseline's 30B window. Per
+cluster, a hash-based held-out set (&le;50M tokens, 1.02B total) is excluded first; training docs are a
+seeded draw from the remainder up to budget. Shards in the loader's native raw-uint32 format, one EOS
+after every doc (<code>build_cluster_token_data.py</code>).</li>
+<li><strong>Stage anatomy</strong> (fixed cluster order 0&rarr;31): <em>extract</em> a 33-expert
+checkpoint (the cluster's frozen top-32 standard experts per layer + the always-on shared expert, which
+is therefore trained in every stage) from the arm's evolving 64-expert pool, slicing expert weights,
+router rows, and Adam moments per layer (<code>expert_subset_surgery.py</code>); <em>train</em> on the
+cluster's shards with trunk-matched flags (flat LR 2e-3, lb 1e-1, same instance filter; 8 nodes) and
+every non-expert parameter frozen (attention, embeddings, norms, lm_head, router);
+<em>write back</em> the trained expert slots + moments into the pool at their original per-layer slot
+ids. Only expert tensors ever change, so the pool's trunk stays byte-identical all sweep.</li>
+<li><strong>Two optimizer arms</strong>, run as independent sweeps from the same 100B start:
+<em>carry</em> (Adam moments sliced from the pool and carried through write-backs; no warmup) and
+<em>fresh</em> (zeroed moments per stage, 500-step warmup). Each arm's driver
+(<code>run_k32cpt_arm.sh</code>) is a resumable local loop: surgery on this box, one short Beaker job
+per stage (~25&nbsp;min compute), automatic relaunch on replica failure.</li>
+<li><strong>Evaluation:</strong> per-cluster held-out CE (and a pooled global sample) for: the 100B
+start checkpoint, the 130B normally-trained baseline (<code>step30995</code>), and each arm's final
+64-expert pool &mdash; specialization should show as per-cluster CE gains over the baseline;
+sequential forgetting as losses on early clusters relative to late ones.</li>
+<li><strong>Caveats registered up front:</strong> the shared expert is trained in all 32 stages
+(fused with the standard experts, so a 33rd trainable expert rather than a frozen one); cross-stage
+working-set overlap is large (each expert serves ~16 clusters' sets), so later stages partially
+overwrite earlier specialization &mdash; that interference is precisely what the experiment measures;
+and pilot-first: one small-cluster stage per arm end-to-end before the full 2&times;32-stage launch.</li>
+</ul>""")
+
+
+GROUPS = ("experts", "router", "attention", "embeddings", "norms", "lm_head")
 
 
 def _drift_card(drift) -> str:
@@ -916,20 +962,63 @@ def _drift_card(drift) -> str:
     steady = drift["intervals"][-2]["groups"]  # last FULL ~100B interval (the final one is ~35B)
     tok_lo = drift["cumulative"][-1]["from_step"] * drift["tokens_per_step"] / 1e9
     tok_hi = drift["cumulative"][-1]["to_step"] * drift["tokens_per_step"] / 1e9
+
     rows = [(g, f"{first_int[g]['rel_drift']:.3f}", f"{steady[g]['rel_drift']:.3f}",
-             f"{last_cum[g]['rel_drift']:.3f}", f"{last_cum[g]['cosine']:.3f}")
-            for g in ("experts", "router", "attention", "embeddings", "norms", "lm_head")]
+             f"{last_cum[g]['rel_drift']:.3f}", f"{last_cum[g]['cosine']:.3f}",
+             f"{last_cum[g]['norm_ratio']:.2f}&times;")
+            for g in GROUPS]
+
+    # If successive interval deltas were COLINEAR, cumulative drift would be their sum;
+    # if mutually ORTHOGONAL (random walk), the sqrt of the sum of squares. (Approximate:
+    # each interval's denominator is its own start norm, but it separates the two regimes.)
+    preds = []
+    for g in GROUPS:
+        ds = [iv["groups"][g]["rel_drift"] for iv in drift["intervals"]]
+        preds.append((g, f"{sum(ds):.2f}", f"{sum(d * d for d in ds) ** 0.5:.2f}",
+                      f"{last_cum[g]['rel_drift']:.2f}"))
+    pred_table = table(["group", "if deltas colinear (sum)", "if deltas orthogonal (&radic;&Sigma;&sup2;)",
+                        f"observed cumulative {tok_lo:.0f}&rarr;{tok_hi:.0f}B"], preds)
+
+    howto = details("How to read these numbers (definitions, the slope question, and what rel=1 means)", f"""
+<p><strong>Definitions.</strong> <em>Per interval</em> = each checkpoint compared with the <em>previous</em>
+checkpoint (~100B tokens earlier; the final interval spans only ~35B). <em>Cumulative</em> = each checkpoint
+compared with the <em>100B checkpoint</em>. Both report
+&#8214;&theta;<sub>t</sub>&nbsp;&minus;&nbsp;&theta;<sub>s</sub>&#8214;&nbsp;/&nbsp;&#8214;&theta;<sub>s</sub>&#8214;
+aggregated over the group, plus the cosine between the two flattened weight vectors.</p>
+<p><strong>Why per-interval drift is not the slope of the cumulative curve.</strong> L2 norms of successive
+update vectors only add when the updates point in the same direction. If each interval's delta were colinear,
+cumulative = sum of intervals; if the deltas were mutually orthogonal (a random walk in weight space),
+cumulative &asymp; the square root of the sum of squares &mdash; far smaller. The data contains both regimes:</p>
+{pred_table}
+<p>Attention and experts sit near the <em>orthogonal</em> prediction: each 100B of training moves them a
+similar distance but in a fresh direction, so the cumulative curve grows much more slowly than the interval
+sum (and can even dip when an update partially retraces earlier ones). Embeddings sit near the
+<em>colinear</em> prediction: their drift is one sustained direction &mdash; which the norm-ratio column
+explains: the embedding matrix grew {last_cum["embeddings"]["norm_ratio"]:.1f}&times; in norm since 100B,
+and steady norm growth is exactly a colinear delta sequence.</p>
+<p><strong>What rel-L2 = 1 means.</strong> Not (only) &ldquo;magnitude doubled or shrank&rdquo;. Exactly:
+rel&sup2; = 1 + r&sup2; &minus; 2r&middot;cos, where r is the norm ratio. Pure scale change (cos=1): rel =
+|r&nbsp;&minus;&nbsp;1|, so doubling gives rel=1. Pure rotation at constant norm (r=1): rel =
+&radic;(2(1&nbsp;&minus;&nbsp;cos)), so rel=1 at cos=0.5 and rel&rarr;&radic;2 for orthogonal weights. The
+observed groups are <em>rotation-dominated</em>: e.g. experts per interval have r&asymp;1 and cos
+{steady["experts"]["cosine"]:.2f}, and &radic;(2(1&minus;{steady["experts"]["cosine"]:.2f})) =
+{(2 * (1 - steady["experts"]["cosine"])) ** 0.5:.2f} &mdash; matching the observed
+{steady["experts"]["rel_drift"]:.2f} almost exactly. The exception is embeddings, whose drift is mostly
+norm growth.</p>""")
+
     return card("results", "Pre-flight 2 &mdash; non-expert parameters do move, but experts move "
                            "fastest; norms are near-stationary", f"""
 <p>Weight-space drift per parameter group across the extension run's permanent checkpoints
-({tok_lo:.0f}B&nbsp;&rarr;&nbsp;{tok_hi:.0f}B tokens, one every ~100B; the final interval spans only
-~35B): relative L2 change &#8214;&Delta;&theta;&#8214;/&#8214;&theta;&#8214; per interval and cumulatively.
-A cheap proxy for functional shift &mdash; read it comparatively (group vs group), not absolutely.</p>
+({tok_lo:.0f}B&nbsp;&rarr;&nbsp;{tok_hi:.0f}B tokens, one every ~100B): relative L2 change, cosine
+similarity, and norm ratio. A cheap proxy for functional shift &mdash; read it comparatively (group vs
+group), not absolutely.</p>
+{howto}
 {table(["group", "first 100B interval", "steady-state 100B interval",
-        f"cumulative {tok_lo:.0f}B→{tok_hi:.0f}B", "cosine to 100B weights"], rows)}
+        f"cumulative {tok_lo:.0f}B→{tok_hi:.0f}B", "cosine to 100B weights", "norm vs 100B"], rows)}
 <div class="figrow">{img_tag(K32CPT / "param_drift.png",
-    "Relative L2 drift by parameter group, per checkpoint interval (left) and cumulative since the "
-    "100B checkpoint (right); log scale. The last interval is ~35B tokens, hence its dip.")}
+    "Per parameter group: relative L2 drift (top) and cosine similarity (bottom), per interval "
+    "(vs previous checkpoint, left) and cumulative (vs the 100B checkpoint, right). Log scale on drift. "
+    "The final interval spans only ~35B tokens, hence its dip.")}
 </div>
 <ul>
 <li><strong>Experts drift fastest</strong>: rel. change ~{steady['experts']['rel_drift']:.2f} per 100B
