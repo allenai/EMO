@@ -181,8 +181,8 @@
         }
       },
       "health": "healthy",
-      "reason": "Corrected E8 submitted from exact canonical pre-decay step13732 with forced exact-load semantics; one 8-GPU job is pending.",
-      "beakerStatus": "pending",
+      "reason": "Exact-load E8 infrastructure retry is scheduled on one 8-GPU node from canonical step13732.",
+      "beakerStatus": "scheduled",
       "attempts": [
         {
           "epoch": 4,
@@ -207,16 +207,26 @@
           "revision": "e61584596f96ef76004b7016cdf76ae20cb3a436",
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3",
           "reason": "The shared canonical save folder caused trainer startup to auto-select its newest endpoint checkpoint step15259 rather than the explicitly requested E4 pre-decay step13732. Optimizer hyperparameter validation rejected the zero endpoint LR before any optimizer step. This is a configuration failure, not an automatic infrastructure retry; corrected exact-load semantics are required before resubmission."
+        },
+        {
+          "epoch": 8,
+          "experiment": "01KZXYRHS7XGRY5DY1350V2JWB",
+          "job": "01KZXYRHWKM2GCV9729M1SG627",
+          "status": "failed_before_task_start",
+          "wandb": null,
+          "revision": "ebb77cc3451d009236453979091d8911585e6597",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3",
+          "reason": "Gantry could not fetch the incorrectly expanded revision; no repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed. Automatic infrastructure retry is eligible."
         }
       ],
       "retryCount": 1,
-      "beaker": "01KZXYRHS7XGRY5DY1350V2JWB",
-      "experiment": "01KZXYRHS7XGRY5DY1350V2JWB",
-      "revision": "ebb77cc3451d009236453979091d8911585e6597",
+      "beaker": "01KZXZG32RYGW2HBB31HWTGT68",
+      "experiment": "01KZXZG32RYGW2HBB31HWTGT68",
+      "revision": "ebb77cc326583f6688dd4484020bfa313a054436",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3",
-      "job": "01KZXYRHWKM2GCV9729M1SG627",
-      "result": "01KZXY74J62JZW0XQTWE94PHBX",
-      "node": "01JRK7GXR0V7VT5AXSF2TYY26W",
+      "job": "01KZXZG36FBZZHSKWZQKTHHVPR",
+      "result": "01KZXZG335P6S6CYF74PT8G9X3",
+      "node": "01K15VC4MF63NFG484TFTWHSYB",
       "heldNextEpoch": null
     },
     {
@@ -4542,7 +4552,7 @@
         }
       },
       "health": "healthy",
-      "reason": "Corrected E28 submitted from exact canonical pre-decay step5150 with forced exact-load semantics; four 8-GPU replicas are pending.",
+      "reason": "Exact-load E28 infrastructure retry has four pending 8-GPU replicas from canonical step5150.",
       "beakerStatus": "pending",
       "attempts": [
         {
@@ -4685,26 +4695,42 @@
           "revision": "e61584596f96ef76004b7016cdf76ae20cb3a436",
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0",
           "reason": "Stopped during startup before training after the BS64 canonical attempt proved that shared save-folder discovery could ignore the requested pre-decay checkpoint. Corrected exact-load semantics are required before resubmission."
+        },
+        {
+          "epoch": 28,
+          "experiment": "01KZXYRJTJTQMSYWQKP1S5HA8S",
+          "job": "01KZXYRJY6E403146EJ19XEH9F",
+          "replicaJobs": [
+            "01KZXYRJY6E403146EJ19XEH9F",
+            "01KZXYRK1PYFEJ3C5S9FVRWVQ6",
+            "01KZXYRK5CY7432AW0QS9G0SJG",
+            "01KZXYRK8TT4CQ4EXC6C27CR29"
+          ],
+          "status": "failed_before_task_start",
+          "wandb": null,
+          "revision": "ebb77cc3451d009236453979091d8911585e6597",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0",
+          "reason": "One replica failed because Gantry could not fetch the incorrectly expanded revision and siblings were canceled by propagate-failure. No repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed. Automatic infrastructure retry is eligible."
         }
       ],
       "retryCount": 4,
-      "beaker": "01KZXYRJTJTQMSYWQKP1S5HA8S",
-      "experiment": "01KZXYRJTJTQMSYWQKP1S5HA8S",
-      "revision": "ebb77cc3451d009236453979091d8911585e6597",
+      "beaker": "01KZXZG5K1KMHY72DJBMSVP2S3",
+      "experiment": "01KZXZG5K1KMHY72DJBMSVP2S3",
+      "revision": "ebb77cc326583f6688dd4484020bfa313a054436",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0",
-      "job": "01KZXYRJY6E403146EJ19XEH9F",
-      "result": "01KZXY75N93A0JK44G4X74ZFAQ",
+      "job": "01KZXZG5QWA774B4Q54G12ZYYY",
+      "result": "01KZXZG5KDNATGK4EQ9849NKAY",
       "replicaJobs": [
-        "01KZXYRJY6E403146EJ19XEH9F",
-        "01KZXYRK1PYFEJ3C5S9FVRWVQ6",
-        "01KZXYRK5CY7432AW0QS9G0SJG",
-        "01KZXYRK8TT4CQ4EXC6C27CR29"
+        "01KZXZG5QWA774B4Q54G12ZYYY",
+        "01KZXZG5VFCV7XHGTKX6AZ2V60",
+        "01KZXZG5ZHP7E21DDSNWZCGEK4",
+        "01KZXZG62ZY32FT1DCHX9TJ6M9"
       ],
       "replicaResults": [
-        "01KZXY75N93A0JK44G4X74ZFAQ",
-        "01KZXY75XK6RB027N4YSK3WZYJ",
-        "01KZXY7623EZSN8G365RS0XMXN",
-        "01KZXY765KYDXMB21T6TE0NEDW"
+        "01KZXZG5KDNATGK4EQ9849NKAY",
+        "01KZXZG5R2BVPWCJAARVVVHC9C",
+        "01KZXZG5VN6S7MTY2H629Z655K",
+        "01KZXZG5ZQGJP2CSV1W0G6KXYH"
       ],
       "heldNextEpoch": null
     },
