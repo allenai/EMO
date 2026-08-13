@@ -440,12 +440,13 @@ def test_diloco_exact_outer_steps_ignore_fixed_h_and_snapshot_before_aggregation
             "_save_diloco_replicas_before_outer_step",
             side_effect=lambda step: call_order.append(("snapshot", step)),
         ) as save_replicas,
-        patch(
-            "olmo_core.train.train_module.transformer.train_module.diloco_outer_step",
-            side_effect=lambda *args: call_order.append(
-                ("outer", train_module.trainer.global_step)
-            ),
-        ) as outer_step,
+            patch(
+                "olmo_core.train.train_module.transformer.train_module.diloco_outer_step",
+                side_effect=lambda *args: (
+                    call_order.append(("outer", train_module.trainer.global_step))
+                    or {}
+                ),
+            ) as outer_step,
     ):
         # Even though the fixed H=2 threshold is long past, exact scheduling suppresses the
         # outer update until the declared global step.
