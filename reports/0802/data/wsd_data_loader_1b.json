@@ -1,6 +1,6 @@
 {
   "updated": "2026-08-13",
-  "title": "Step 1-1 — Dense 1B Data-Loader Study",
+  "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes.",
   "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. Continue BS1024 LR1e-3/WD1.0 and BS64 LR1e-3/WD0.3 sequentially by four-epoch frontiers until the first validation non-improvement. Only after both primary trajectories saturate, start BS128 LR1e-3/WD0.3 and BS256 WD0.333 at LR1e-3 and the explicitly approved LR2e-3 coordinate; each new DR trajectory begins at E2 from its exact Original E1 pre-decay checkpoint and advances only while its own validation CE strictly improves. LR2e-3 is an exception only for BS256 DR WD0.333; LR above 2e-3 remains prohibited. After all three staged trajectories finish, assess whether WD1.0 is justified rather than launching it automatically. If DR consistently improves over the matched Original loader across the completed batch sizes, then run the final conditional BS32 LR5e-4/WD0.3 trajectory. BS512 DR LR1e-3/WD1.0 is saturated at E24 CE3.06442 because E28 worsened to CE3.06734. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
   "targetEpochs": [
@@ -40,7 +40,7 @@
   "columns": [
     {
       "key": "dr64",
-      "label": "BS64 · DR",
+      "label": "BS64 \u00b7 DR",
       "batchSequences": 64,
       "dataOrder": "dynamic_repacking",
       "initialWd": "0.3",
@@ -48,7 +48,7 @@
     },
     {
       "key": "dr128",
-      "label": "BS128 · DR",
+      "label": "BS128 \u00b7 DR",
       "batchSequences": 128,
       "dataOrder": "dynamic_repacking",
       "initialWd": "0.3",
@@ -56,7 +56,7 @@
     },
     {
       "key": "dr256",
-      "label": "BS256 · DR",
+      "label": "BS256 \u00b7 DR",
       "batchSequences": 256,
       "dataOrder": "dynamic_repacking",
       "initialWd": "0.333",
@@ -64,7 +64,7 @@
     },
     {
       "key": "fixed512",
-      "label": "BS512 · Fixed",
+      "label": "BS512 \u00b7 Fixed",
       "batchSequences": 512,
       "dataOrder": "fixed_order",
       "initialWd": "0.333",
@@ -72,7 +72,7 @@
     },
     {
       "key": "dr512",
-      "label": "BS512 · DR",
+      "label": "BS512 \u00b7 DR",
       "batchSequences": 512,
       "dataOrder": "dynamic_repacking",
       "initialWd": "0.1",
@@ -80,7 +80,7 @@
     },
     {
       "key": "fixed1024",
-      "label": "BS1024 · Fixed",
+      "label": "BS1024 \u00b7 Fixed",
       "batchSequences": 1024,
       "dataOrder": "fixed_order",
       "initialWd": "0.333",
@@ -88,7 +88,7 @@
     },
     {
       "key": "dr1024",
-      "label": "BS1024 · DR",
+      "label": "BS1024 \u00b7 DR",
       "batchSequences": 1024,
       "dataOrder": "dynamic_repacking",
       "initialWd": "0.1",
@@ -107,7 +107,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.3",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 8,
       "attemptedEpochs": [
         2,
@@ -181,8 +181,8 @@
         }
       },
       "health": "healthy",
-      "reason": "First canonical E8 attempt 01KZXY74HWPHTDP9T6SPZFQRDC failed before optimizer progress because the shared save folder auto-selected endpoint step15259 instead of the explicitly requested pre-decay step13732. The launcher now forces the exact trainer load path; corrected resubmission is planned after verification.",
-      "beakerStatus": "failed_before_optimizer_progress",
+      "reason": "Corrected E8 submitted from exact canonical pre-decay step13732 with forced exact-load semantics; one 8-GPU job is pending.",
+      "beakerStatus": "pending",
       "attempts": [
         {
           "epoch": 4,
@@ -210,11 +210,11 @@
         }
       ],
       "retryCount": 1,
-      "beaker": "01KZXY74HWPHTDP9T6SPZFQRDC",
-      "experiment": "01KZXY74HWPHTDP9T6SPZFQRDC",
-      "revision": "e61584596f96ef76004b7016cdf76ae20cb3a436",
+      "beaker": "01KZXYRHS7XGRY5DY1350V2JWB",
+      "experiment": "01KZXYRHS7XGRY5DY1350V2JWB",
+      "revision": "ebb77cc3451d009236453979091d8911585e6597",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3",
-      "job": "01KZXY74NYJ1CSFX0X80T8S4RE",
+      "job": "01KZXYRHWKM2GCV9729M1SG627",
       "result": "01KZXY74J62JZW0XQTWE94PHBX",
       "node": "01JRK7GXR0V7VT5AXSF2TYY26W",
       "heldNextEpoch": null
@@ -4212,7 +4212,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 28,
       "attemptedEpochs": [
         2,
@@ -4542,8 +4542,8 @@
         }
       },
       "health": "healthy",
-      "reason": "First canonical E28 attempt 01KZXY75MYFV2FFDAVY8ST8K6H was stopped during startup before training after the BS64 attempt exposed unsafe shared-folder auto-resume. The launcher now forces exact pre-decay step5150; corrected resubmission is planned after verification.",
-      "beakerStatus": "stopped_before_training",
+      "reason": "Corrected E28 submitted from exact canonical pre-decay step5150 with forced exact-load semantics; four 8-GPU replicas are pending.",
+      "beakerStatus": "pending",
       "attempts": [
         {
           "epoch": 8,
@@ -4688,17 +4688,17 @@
         }
       ],
       "retryCount": 4,
-      "beaker": "01KZXY75MYFV2FFDAVY8ST8K6H",
-      "experiment": "01KZXY75MYFV2FFDAVY8ST8K6H",
-      "revision": "e61584596f96ef76004b7016cdf76ae20cb3a436",
+      "beaker": "01KZXYRJTJTQMSYWQKP1S5HA8S",
+      "experiment": "01KZXYRJTJTQMSYWQKP1S5HA8S",
+      "revision": "ebb77cc3451d009236453979091d8911585e6597",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0",
-      "job": "01KZXY75XCFDQW9CTJPKZDNSW8",
+      "job": "01KZXYRJY6E403146EJ19XEH9F",
       "result": "01KZXY75N93A0JK44G4X74ZFAQ",
       "replicaJobs": [
-        "01KZXY75XCFDQW9CTJPKZDNSW8",
-        "01KZXY761W2S1NEHHTJ2Z28WV5",
-        "01KZXY765DDQQYEABTJS3CCXTS",
-        "01KZXY768W6NDW8BPE3FEAB90P"
+        "01KZXYRJY6E403146EJ19XEH9F",
+        "01KZXYRK1PYFEJ3C5S9FVRWVQ6",
+        "01KZXYRK5CY7432AW0QS9G0SJG",
+        "01KZXYRK8TT4CQ4EXC6C27CR29"
       ],
       "replicaResults": [
         "01KZXY75N93A0JK44G4X74ZFAQ",
