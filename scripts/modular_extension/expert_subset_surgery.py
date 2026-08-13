@@ -161,6 +161,22 @@ def writeback(args):
     pool_model, pool_optim = list(load_keys(pool_mao, ["model", "optim"]))
     sub_model, sub_optim = list(load_keys(trained_mao, ["model", "optim"]))
 
+    # --- sanity: ONLY experts may have changed during training -------------------
+    # Every non-expert tensor of the trained subset must be bit-identical to the pool's
+    # (proves freeze_params held); the frozen router rows must equal their pool slices.
+    n_checked = 0
+    for k, v in sub_model.items():
+        if any(k.endswith(s) for s in EXPERT_SUFFIXES):
+            continue
+        if k.endswith(ROUTER_SUFFIX):
+            slot_ids = slots_for_layer(selection, layer_of(k))
+            expect = slice_slots(pool_model[k], E_POOL, slot_ids)
+            assert torch.equal(v, expect), f"FROZEN ROUTER CHANGED: {k}"
+        else:
+            assert torch.equal(v, pool_model[k]), f"FROZEN PARAM CHANGED: {k}"
+        n_checked += 1
+    print(f"verified {n_checked} non-expert tensors unchanged (freeze held)")
+
     n_scattered = 0
     for k in list(pool_model):
         if not any(k.endswith(s) for s in EXPERT_SUFFIXES):
@@ -186,6 +202,15 @@ def writeback(args):
     Path(pool_mao).rename(old)
     tmp.rename(pool_mao)
     shutil.rmtree(old)
+
+    # weights-only bf16 snapshot of the pool after this stage (standalone; for later
+    # per-stage eval / forgetting analysis)
+    snap_dir = Path(args.pool) / "snapshots"
+    snap_dir.mkdir(exist_ok=True)
+    snap = snap_dir / f"pool_after_c{sel['cluster']:02d}.pt"
+    torch.save({k: v.to(torch.bfloat16) for k, v in pool_model.items()}, str(snap))
+    print(f"snapshot: {snap} ({snap.stat().st_size / 1e9:.1f} GB)")
+
     with open(marker, "w") as f:
         json.dump({"trained": str(args.trained)}, f)
     print(f"writeback done: {marker}")

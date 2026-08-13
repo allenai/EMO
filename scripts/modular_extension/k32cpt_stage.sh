@@ -48,12 +48,12 @@ max_document_expert_pool=33
 eval_document_expert_pool=33
 decay_steps=1
 
-if [ "$ARM" = "carry" ]; then
-    warmup_steps=0          # Adam moments carried; LR flat 2e-3 from step 0
-    load_optim=true
-else
+if [ "$ARM" = "fresh" ]; then
     warmup_steps=500        # fresh Adam: short warmup to absorb the moment transient
     load_optim=false
+else                        # carry and carry_shuf: Adam moments carried; flat 2e-3 from step 0
+    warmup_steps=0
+    load_optim=true
 fi
 
 runname="k32cpt_${ARM}_${CLUSTER_TAG}"

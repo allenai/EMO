@@ -17,8 +17,15 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
-: "${ARM:?set ARM=carry|fresh}"
-CLUSTERS="${CLUSTERS:-$(seq -s' ' 0 31)}"
+: "${ARM:?set ARM=carry|fresh|carry_shuf}"
+# carry_shuf = carried Adam moments but a FIXED shuffled cluster order (rng(0) permutation),
+# to measure how much stage ordering matters.
+SHUF_ORDER="2 11 25 21 10 4 29 16 23 6 18 26 3 30 8 0 19 12 20 13 7 5 17 14 27 22 9 28 24 1 15 31"
+if [ "$ARM" = "carry_shuf" ]; then
+    CLUSTERS="${CLUSTERS:-$SHUF_ORDER}"
+else
+    CLUSTERS="${CLUSTERS:-$(seq -s' ' 0 31)}"
+fi
 
 REPO="$(pwd)"
 BASE_CKPT="${REPO}/models_v2/emo_64exp_50b_wsd_lr2e-3/step23842"
@@ -31,6 +38,7 @@ FRESH_FLAG=""
 [ "$ARM" = "fresh" ] && FRESH_FLAG="--fresh-optim"
 
 mkdir -p "$RUNS"
+echo "$CLUSTERS" >> "${RUNS}/order.txt"   # provenance: the stage order this driver ran
 if [ ! -f "${POOL}/model_and_optim/.metadata" ]; then
     echo "=== initializing ${ARM} pool from ${BASE_CKPT}"
     mkdir -p "$POOL"
