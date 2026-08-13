@@ -49,7 +49,12 @@ eval_document_expert_pool=33
 decay_steps=1
 
 if [ "$ARM" = "fresh" ]; then
-    warmup_steps=500        # fresh Adam: short warmup to absorb the moment transient
+    # fresh Adam: short warmup to absorb the zero-moment transient. Stage-relative
+    # (min(500, 20% of stage steps)) because stage budgets span only ~80-700 steps --
+    # a fixed 500 would leave most stages training mostly inside warmup at reduced LR,
+    # confounding the fresh-vs-carry comparison.
+    stage_steps=$((TOKENS / 4194304))
+    warmup_steps=$((stage_steps / 5 < 500 ? stage_steps / 5 : 500))
     load_optim=false
 else                        # carry and carry_shuf: Adam moments carried; flat 2e-3 from step 0
     warmup_steps=0
