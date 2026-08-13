@@ -4256,8 +4256,8 @@
           "reason": "Completed healthy on four 8-GPU nodes from exact E12 pre-decay step2575. Validation CE3.12805 strictly improved E12 CE3.15979, unlocking E20 from retained pre-decay step3432."
         }
       },
-      "health": "planned",
-      "reason": "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "health": "starting",
+      "reason": "E20 is starting on four 8-GPU nodes. Manifest/preflight passed, exact E16 pre-decay step3432 loaded, and W&B is active; first optimizer step3433 remains pending.",
       "beakerStatus": "pending",
       "attempts": [
         {
@@ -4374,25 +4374,31 @@
         "01KZW56AZC31HXRZ11TZ8GBTEB",
         "01KZW56B3AXTGBMMVB6DPS6S6N"
       ],
+      "replicaNodes": [
+        "01JS0FZ57DJ0Z44W5EVN6ETEM8",
+        "01JS0HMXX084EEPTYRT5KF2ZQ3",
+        "01JS3MZC0NYRRKMR91BZMQY58B",
+        "01JS3MZCAFVY41CZY2472CD4N5"
+      ],
       "progress": {
-        "observedAt": "2026-08-12 16:31 PDT",
+        "observedAt": "2026-08-12 19:04 PDT",
         "step": 3432,
         "endpointStep": 4769,
         "epoch": 16,
-        "eta": "pending scheduling"
+        "eta": "starting"
       },
       "startupEvidence": {
         "manifestVerified": true,
         "preflightVerified": true,
         "remoteDryRunComplete": true,
         "dynamicRepacking": true,
-        "sourceCheckpointLoaded": false,
+        "sourceCheckpointLoaded": true,
         "sourceStep": 3432,
         "firstOptimizerStep": null,
         "trainerAndOptimizerStateRequested": true,
         "optimizerHyperparametersValidated": true
       },
-      "wandb": null
+      "wandb": "b4if6wbn"
     },
     {
       "id": "fixed1024-wd0.333",
