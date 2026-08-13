@@ -238,9 +238,12 @@ def matching_registered_run(report: dict[str, Any], args: argparse.Namespace) ->
             raise SystemExit(
                 "later endpoint requires a healthy completed same-coordinate predecessor"
             )
-        if previous.get("preDecayCheckpoint") != args.source_checkpoint:
+        previous_checkpoint = previous.get("preDecayCheckpoint")
+        canonical_previous = f"{trajectory_output(args)}/step{expected_step}"
+        if args.source_checkpoint not in {previous_checkpoint, canonical_previous}:
             raise SystemExit(
-                "later endpoint source is not its registered exact pre-decay checkpoint"
+                "later endpoint source is neither its historical registered pre-decay "
+                "checkpoint nor that exact step in the canonical trajectory directory"
             )
 
         floor = selected_wd_floor(report, key, predecessor)
@@ -482,6 +485,7 @@ def build_spec(
     )
     if args.target_epoch > 1:
         replacements += (
+            ("--force_exact_trainer_load_path=", "--force_exact_trainer_load_path=true"),
             ("--trainer.load_path=", f"--trainer.load_path={args.source_checkpoint}"),
             ("--trainer.load_trainer_state=", "--trainer.load_trainer_state=true"),
             ("--trainer.load_optim_state=", "--trainer.load_optim_state=true"),

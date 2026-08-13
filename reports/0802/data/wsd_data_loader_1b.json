@@ -107,11 +107,12 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.3",
-      "status": "held",
-      "activeEpoch": null,
+      "status": "planned",
+      "activeEpoch": 8,
       "attemptedEpochs": [
         2,
-        4
+        4,
+        8
       ],
       "sourceExperiment": "01KZWRC6DTEZKHFBMATZ63ZAAZ",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step13732",
@@ -180,8 +181,8 @@
         }
       },
       "health": "healthy",
-      "reason": "E4 completed healthy at validation CE3.11199, strictly improving E2 CE3.22922 by 0.11723. E8 from exact E4 pre-decay step13732 is eligible but held by the user cleanup submission freeze.",
-      "beakerStatus": "complete",
+      "reason": "First canonical E8 attempt 01KZXY74HWPHTDP9T6SPZFQRDC failed before optimizer progress because the shared save folder auto-selected endpoint step15259 instead of the explicitly requested pre-decay step13732. The launcher now forces the exact trainer load path; corrected resubmission is planned after verification.",
+      "beakerStatus": "failed_before_optimizer_progress",
       "attempts": [
         {
           "epoch": 4,
@@ -194,40 +195,29 @@
           "revision": "9bedcb1d",
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e4_lr1e-3_wd0.3_warmup384_bs64-dr-e4-lr1e3-wd0p3-r01",
           "reason": "The job failed during Gantry source setup because pinned revision 9bedcb1d was no longer fetchable. No repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed, so automatic infrastructure retry1 is eligible."
+        },
+        {
+          "epoch": 8,
+          "experiment": "01KZXY74HWPHTDP9T6SPZFQRDC",
+          "job": "01KZXY74NYJ1CSFX0X80T8S4RE",
+          "result": "01KZXY74J62JZW0XQTWE94PHBX",
+          "node": "01JRK7GXR0V7VT5AXSF2TYY26W",
+          "status": "failed_before_optimizer_progress",
+          "wandb": null,
+          "revision": "e61584596f96ef76004b7016cdf76ae20cb3a436",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3",
+          "reason": "The shared canonical save folder caused trainer startup to auto-select its newest endpoint checkpoint step15259 rather than the explicitly requested E4 pre-decay step13732. Optimizer hyperparameter validation rejected the zero endpoint LR before any optimizer step. This is a configuration failure, not an automatic infrastructure retry; corrected exact-load semantics are required before resubmission."
         }
       ],
       "retryCount": 1,
-      "beaker": "01KZWRC6DTEZKHFBMATZ63ZAAZ",
-      "experiment": "01KZWRC6DTEZKHFBMATZ63ZAAZ",
-      "revision": "7d10153e6dc6000a2c765ab101618fa3b6051cf8",
+      "beaker": "01KZXY74HWPHTDP9T6SPZFQRDC",
+      "experiment": "01KZXY74HWPHTDP9T6SPZFQRDC",
+      "revision": "e61584596f96ef76004b7016cdf76ae20cb3a436",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3",
-      "job": "01KZWRC6HH7KNS7JM22H6GN1EG",
-      "result": "01KZWRC6E7BJEMPEG9BWFH1NSD",
-      "wandb": "vqca92ie",
-      "node": "01JS0FZ4DR810D949DRZ9VAN2T",
-      "startupEvidence": {
-        "manifestVerified": true,
-        "preflightVerified": true,
-        "remoteDryRunComplete": true,
-        "dynamicRepacking": true,
-        "sourceCheckpointLoaded": true,
-        "sourceStep": 6866,
-        "firstOptimizerStep": 6867,
-        "trainerAndOptimizerStateRequested": true,
-        "optimizerHyperparametersValidated": true,
-        "startedAt": "2026-08-12 23:25 PDT"
-      },
-      "progress": {
-        "observedAt": "2026-08-13 00:53 PDT",
-        "step": 15259,
-        "endpointStep": 15259,
-        "epoch": 4,
-        "trainCe": 3.128,
-        "validationCe": 3.11199,
-        "metricStatus": "final",
-        "eta": "complete"
-      },
-      "heldNextEpoch": 8
+      "job": "01KZXY74NYJ1CSFX0X80T8S4RE",
+      "result": "01KZXY74J62JZW0XQTWE94PHBX",
+      "node": "01JRK7GXR0V7VT5AXSF2TYY26W",
+      "heldNextEpoch": null
     },
     {
       "id": "dr64-lr1e-3-wd1.0",
@@ -4222,8 +4212,8 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "held",
-      "activeEpoch": null,
+      "status": "planned",
+      "activeEpoch": 28,
       "attemptedEpochs": [
         2,
         4,
@@ -4231,7 +4221,8 @@
         12,
         16,
         20,
-        24
+        24,
+        28
       ],
       "sourceExperiment": "01KZWPC3TBHDRJCKDEG7CK57M1",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0/step5150",
@@ -4551,8 +4542,8 @@
         }
       },
       "health": "healthy",
-      "reason": "E24 completed healthy at validation CE3.12162, strictly improving E20 CE3.12311 by 0.00149. E28 from exact E24 pre-decay step5150 is eligible but held by the user cleanup submission freeze.",
-      "beakerStatus": "complete",
+      "reason": "First canonical E28 attempt 01KZXY75MYFV2FFDAVY8ST8K6H was stopped during startup before training after the BS64 attempt exposed unsafe shared-folder auto-resume. The launcher now forces exact pre-decay step5150; corrected resubmission is planned after verification.",
+      "beakerStatus": "stopped_before_training",
       "attempts": [
         {
           "epoch": 8,
@@ -4677,58 +4668,45 @@
           "revision": "310795c4",
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e24_lr1e-3_wd1.0_warmup24_bs1024-dr-e24-lr1e3-wd1p0-r01",
           "reason": "Rank1 failed during Gantry source setup because pinned revision 310795c4 was no longer fetchable; siblings were canceled by propagate-failure. No repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed, so automatic infrastructure retry4 is eligible."
+        },
+        {
+          "epoch": 28,
+          "experiment": "01KZXY75MYFV2FFDAVY8ST8K6H",
+          "job": "01KZXY75XCFDQW9CTJPKZDNSW8",
+          "result": "01KZXY75N93A0JK44G4X74ZFAQ",
+          "replicaJobs": [
+            "01KZXY75XCFDQW9CTJPKZDNSW8",
+            "01KZXY761W2S1NEHHTJ2Z28WV5",
+            "01KZXY765DDQQYEABTJS3CCXTS",
+            "01KZXY768W6NDW8BPE3FEAB90P"
+          ],
+          "status": "stopped_before_training",
+          "wandb": null,
+          "revision": "e61584596f96ef76004b7016cdf76ae20cb3a436",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0",
+          "reason": "Stopped during startup before training after the BS64 canonical attempt proved that shared save-folder discovery could ignore the requested pre-decay checkpoint. Corrected exact-load semantics are required before resubmission."
         }
       ],
       "retryCount": 4,
-      "beaker": "01KZWPC3TBHDRJCKDEG7CK57M1",
-      "experiment": "01KZWPC3TBHDRJCKDEG7CK57M1",
-      "revision": "e44a747b63c572a2e684104133f7504160f77563",
+      "beaker": "01KZXY75MYFV2FFDAVY8ST8K6H",
+      "experiment": "01KZXY75MYFV2FFDAVY8ST8K6H",
+      "revision": "e61584596f96ef76004b7016cdf76ae20cb3a436",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0",
-      "job": "01KZWPC3XT9ZSAGF47SB92QRCC",
-      "result": "01KZWPC3TN4YY2SST9A23VH81V",
+      "job": "01KZXY75XCFDQW9CTJPKZDNSW8",
+      "result": "01KZXY75N93A0JK44G4X74ZFAQ",
       "replicaJobs": [
-        "01KZWPC3XT9ZSAGF47SB92QRCC",
-        "01KZWPC415NPW2ZFYC6ATJFFWT",
-        "01KZWPC44KHSH4072CD45ABJZ6",
-        "01KZWPC4884GAWNFKF0PQWTY04"
+        "01KZXY75XCFDQW9CTJPKZDNSW8",
+        "01KZXY761W2S1NEHHTJ2Z28WV5",
+        "01KZXY765DDQQYEABTJS3CCXTS",
+        "01KZXY768W6NDW8BPE3FEAB90P"
       ],
       "replicaResults": [
-        "01KZWPC3TN4YY2SST9A23VH81V",
-        "01KZWPC3Y0ZHQJZ42148JWR19H",
-        "01KZWPC41B6YC1A32F8GA9AGXD",
-        "01KZWPC44RBKFGFWRJQ369KHJP"
+        "01KZXY75N93A0JK44G4X74ZFAQ",
+        "01KZXY75XK6RB027N4YSK3WZYJ",
+        "01KZXY7623EZSN8G365RS0XMXN",
+        "01KZXY765KYDXMB21T6TE0NEDW"
       ],
-      "wandb": "hdzkben7",
-      "node": "01KVB84J78AN14QN82AXR83KT1",
-      "replicaNodes": [
-        "01KVB84J78AN14QN82AXR83KT1",
-        "01JS0HMXX084EEPTYRT5KF2ZQ3",
-        "01K15VBGT6DBQCXH04Y81WFGJB",
-        "01KQ0MFSCB5MJE2HZ3CVBAHTQJ"
-      ],
-      "startupEvidence": {
-        "manifestVerified": true,
-        "preflightVerified": true,
-        "remoteDryRunComplete": true,
-        "dynamicRepacking": true,
-        "sourceCheckpointLoaded": true,
-        "sourceStep": 4291,
-        "firstOptimizerStep": 4292,
-        "trainerAndOptimizerStateRequested": true,
-        "optimizerHyperparametersValidated": true,
-        "startedAt": "2026-08-12 23:23 PDT"
-      },
-      "progress": {
-        "observedAt": "2026-08-13 00:27 PDT",
-        "step": 5723,
-        "endpointStep": 5723,
-        "epoch": 24,
-        "trainCe": 2.768,
-        "validationCe": 3.12162,
-        "metricStatus": "final",
-        "eta": "complete"
-      },
-      "heldNextEpoch": 28
+      "heldNextEpoch": null
     },
     {
       "id": "fixed1024-wd0.333",

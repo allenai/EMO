@@ -83,6 +83,12 @@ class ExperimentConfig(Config):
     """Whether to load the trainer state (including data loader state) when loading from `load_path`.
     This only makes sense when trainer state is available in the checkpoint and you're resuming
     on the same dataset."""
+    force_exact_trainer_load_path: bool = False
+    """Load ``trainer.load_path`` exactly, bypassing save-folder checkpoint discovery.
+
+    This is required when several epoch frontiers intentionally share one canonical
+    save folder and a continuation must resume from a specific pre-decay checkpoint.
+    """
     # docs: end-define-config
 
 
@@ -109,7 +115,16 @@ def train(config: ExperimentConfig):
     # docs: start-load-path
     # If we have a load path set and there is no checkpoint in the save folder, load the
     # checkpoint from the load path.
-    if not trainer.no_checkpoints and not trainer.maybe_load_checkpoint() and config.load_path:
+    if config.force_exact_trainer_load_path:
+        if trainer.load_path is None:
+            raise ValueError("force_exact_trainer_load_path requires trainer.load_path")
+        trainer.load_checkpoint(
+            trainer.load_path,
+            load_trainer_state=trainer.load_trainer_state,
+            load_optim_state=trainer.load_optim_state,
+            reset_data_loader_state=trainer.reset_data_loader_state_on_load_path,
+        )
+    elif not trainer.no_checkpoints and not trainer.maybe_load_checkpoint() and config.load_path:
         log.info(
             f"Loading checkpoint from {config.load_path} since no checkpoints were found in the save folder..."
         )
