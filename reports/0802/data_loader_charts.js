@@ -350,7 +350,7 @@
       const isBest = value !== null && value === rowBest;
       const metric = winner ? formatMetric(value) : null;
       const display = winner ? `E${formatEpoch(epoch)} · ${metric}` : "—";
-      return `<td class="${isBest ? "summary-best" : ""}"${isBest ? ' style="font-weight:900!important"' : ""}>${isBest ? `<strong>${display}</strong>` : display}</td>`;
+      return `<td class="${isBest ? "summary-best summary-row-best" : ""}"${isBest ? ' style="font-weight:900!important"' : ""}>${isBest ? `<strong>${display}</strong>` : display}</td>`;
     }).join("");
     optimizerBody.appendChild(tr);
   }
