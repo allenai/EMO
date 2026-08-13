@@ -160,8 +160,8 @@
         }
       },
       "health": "planned",
-      "reason": "E4 retry1 was submitted from exact E2 pre-decay step6866 after the preceding attempt failed before task startup because revision 9bedcb1d was no longer fetchable. Print-only guards passed against reachable revision 7d10153e; one 8-GPU job is pending.",
-      "beakerStatus": "pending",
+      "reason": "E4 retry1 is healthy on one 8-GPU node after manifest/preflight guards passed, exact E2 pre-decay step6866 loaded, and optimizer step6867 began. Preliminary train CE3.390 at step7335/15259; endpoint validation must beat E2 CE3.22922.",
+      "beakerStatus": "running",
       "attempts": [
         {
           "epoch": 4,
@@ -182,7 +182,30 @@
       "revision": "7d10153e6dc6000a2c765ab101618fa3b6051cf8",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e4_lr1e-3_wd0.3_warmup384_bs64-dr-e4-lr1e3-wd0p3-r02",
       "job": "01KZWRC6HH7KNS7JM22H6GN1EG",
-      "result": "01KZWRC6E7BJEMPEG9BWFH1NSD"
+      "result": "01KZWRC6E7BJEMPEG9BWFH1NSD",
+      "wandb": "vqca92ie",
+      "node": "01JS0FZ4DR810D949DRZ9VAN2T",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "remoteDryRunComplete": true,
+        "dynamicRepacking": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 6866,
+        "firstOptimizerStep": 6867,
+        "trainerAndOptimizerStateRequested": true,
+        "optimizerHyperparametersValidated": true,
+        "startedAt": "2026-08-12 23:25 PDT"
+      },
+      "progress": {
+        "observedAt": "2026-08-12 23:32 PDT",
+        "step": 7335,
+        "endpointStep": 15259,
+        "epoch": 2,
+        "trainCe": 3.39,
+        "eta": "1h18m",
+        "preliminary": true
+      }
     },
     {
       "id": "dr64-lr1e-3-wd1.0",
@@ -4473,8 +4496,8 @@
         }
       },
       "health": "healthy",
-      "reason": "E24 retry4 was submitted from exact E20 pre-decay step4291 after the preceding attempt failed before task startup because revision 310795c4 was no longer fetchable. Print-only guards passed against reachable revision e44a747b; four replicas are pending.",
-      "beakerStatus": "pending",
+      "reason": "E24 retry4 is healthy on four 8-GPU nodes after manifest/preflight guards passed, exact E20 pre-decay step4291 loaded, and optimizer step4292 began. Preliminary train CE3.185 at step4417/5723; endpoint validation must beat E20 CE3.12311.",
+      "beakerStatus": "running",
       "attempts": [
         {
           "epoch": 8,
@@ -4619,7 +4642,36 @@
         "01KZWPC3Y0ZHQJZ42148JWR19H",
         "01KZWPC41B6YC1A32F8GA9AGXD",
         "01KZWPC44RBKFGFWRJQ369KHJP"
-      ]
+      ],
+      "wandb": "hdzkben7",
+      "node": "01KVB84J78AN14QN82AXR83KT1",
+      "replicaNodes": [
+        "01KVB84J78AN14QN82AXR83KT1",
+        "01JS0HMXX084EEPTYRT5KF2ZQ3",
+        "01K15VBGT6DBQCXH04Y81WFGJB",
+        "01KQ0MFSCB5MJE2HZ3CVBAHTQJ"
+      ],
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "remoteDryRunComplete": true,
+        "dynamicRepacking": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 4291,
+        "firstOptimizerStep": 4292,
+        "trainerAndOptimizerStateRequested": true,
+        "optimizerHyperparametersValidated": true,
+        "startedAt": "2026-08-12 23:23 PDT"
+      },
+      "progress": {
+        "observedAt": "2026-08-12 23:32 PDT",
+        "step": 4417,
+        "endpointStep": 5723,
+        "epoch": 19,
+        "trainCe": 3.185,
+        "eta": "58m",
+        "preliminary": true
+      }
     },
     {
       "id": "fixed1024-wd0.333",
