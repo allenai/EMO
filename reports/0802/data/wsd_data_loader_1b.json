@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-11",
+  "updated": "2026-08-13",
   "title": "Step 1-1 — Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes.",
   "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. Continue BS1024 LR1e-3/WD1.0 and BS64 LR1e-3/WD0.3 sequentially by four-epoch frontiers until the first validation non-improvement. Only after both primary trajectories saturate, start BS128 LR1e-3/WD0.3 and BS256 WD0.333 at LR1e-3 and the explicitly approved LR2e-3 coordinate; each new DR trajectory begins at E2 from its exact Original E1 pre-decay checkpoint and advances only while its own validation CE strictly improves. LR2e-3 is an exception only for BS256 DR WD0.333; LR above 2e-3 remains prohibited. After all three staged trajectories finish, assess whether WD1.0 is justified rather than launching it automatically. If DR consistently improves over the matched Original loader across the completed batch sizes, then run the final conditional BS32 LR5e-4/WD0.3 trajectory. BS512 DR LR1e-3/WD1.0 is saturated at E24 CE3.06442 because E28 worsened to CE3.06734. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
@@ -109,14 +109,14 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.3",
-      "status": "submitted",
-      "activeEpoch": 4,
+      "status": "held",
+      "activeEpoch": null,
       "attemptedEpochs": [
         2,
         4
       ],
-      "sourceExperiment": "01KZWDBW5NFCBJY88KQQ0E7FR2",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e2_lr1e-3_wd0.3_warmup384_bs64-dr-e2-lr1e3-wd0p3-r01/step6866",
+      "sourceExperiment": "01KZWRC6DTEZKHFBMATZ63ZAAZ",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e4_lr1e-3_wd0.3_warmup384_bs64-dr-e4-lr1e3-wd0p3-r02/step13732",
       "gpuCount": 8,
       "nodeCount": 1,
       "rankMicrobatchSequences": 8,
@@ -157,11 +157,33 @@
           "validation": 3.229,
           "validationExact": 3.22922,
           "reason": "Completed healthy on one 8-GPU node from exact Original E1 pre-decay step3432. Validation CE3.22922 strictly improved inherited E1 CE3.397 by 0.16778, unlocking E4 from retained pre-decay step6866."
+        },
+        "4": {
+          "status": "complete",
+          "beaker": "01KZWRC6DTEZKHFBMATZ63ZAAZ",
+          "experiment": "01KZWRC6DTEZKHFBMATZ63ZAAZ",
+          "job": "01KZWRC6HH7KNS7JM22H6GN1EG",
+          "result": "01KZWRC6E7BJEMPEG9BWFH1NSD",
+          "wandb": "vqca92ie",
+          "node": "01JS0FZ4DR810D949DRZ9VAN2T",
+          "revision": "7d10153e6dc6000a2c765ab101618fa3b6051cf8",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e4_lr1e-3_wd0.3_warmup384_bs64-dr-e4-lr1e3-wd0p3-r02",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e2_lr1e-3_wd0.3_warmup384_bs64-dr-e2-lr1e3-wd0p3-r01/step6866",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e4_lr1e-3_wd0.3_warmup384_bs64-dr-e4-lr1e3-wd0p3-r02/step13732",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e4_lr1e-3_wd0.3_warmup384_bs64-dr-e4-lr1e3-wd0p3-r02/step15259",
+          "retainedCheckpoints": [
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e4_lr1e-3_wd0.3_warmup384_bs64-dr-e4-lr1e3-wd0p3-r02/step13732",
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e4_lr1e-3_wd0.3_warmup384_bs64-dr-e4-lr1e3-wd0p3-r02/step15259"
+          ],
+          "train": 3.128,
+          "validation": 3.112,
+          "validationExact": 3.11199,
+          "reason": "Completed healthy on one 8-GPU node from exact E2 pre-decay step6866. Validation CE3.11199 strictly improved E2 CE3.22922 by 0.11723, making E8 eligible; submission is held during user output-directory cleanup."
         }
       },
-      "health": "planned",
-      "reason": "E4 retry1 remains healthy on one 8-GPU node. Preliminary train CE3.326 at step10301/15259 with about 50 minutes remaining; endpoint validation must beat E2 CE3.22922.",
-      "beakerStatus": "running",
+      "health": "healthy",
+      "reason": "E4 completed healthy at validation CE3.11199, strictly improving E2 CE3.22922 by 0.11723. E8 from exact E4 pre-decay step13732 is eligible but held by the user cleanup submission freeze.",
+      "beakerStatus": "complete",
       "attempts": [
         {
           "epoch": 4,
@@ -198,14 +220,16 @@
         "startedAt": "2026-08-12 23:25 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-13 00:02 PDT",
-        "step": 10301,
+        "observedAt": "2026-08-13 00:53 PDT",
+        "step": 15259,
         "endpointStep": 15259,
-        "epoch": 3,
-        "trainCe": 3.326,
-        "eta": "50m",
-        "preliminary": true
-      }
+        "epoch": 4,
+        "trainCe": 3.128,
+        "validationCe": 3.11199,
+        "metricStatus": "final",
+        "eta": "complete"
+      },
+      "heldNextEpoch": 8
     },
     {
       "id": "dr64-lr1e-3-wd1.0",
@@ -4206,8 +4230,8 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "submitted",
-      "activeEpoch": 24,
+      "status": "held",
+      "activeEpoch": null,
       "attemptedEpochs": [
         2,
         4,
@@ -4217,8 +4241,8 @@
         20,
         24
       ],
-      "sourceExperiment": "01KZW56AQVFV9ECTSV5SSR24DF",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e20_lr1e-3_wd1.0_warmup24_bs1024-dr-e20-lr1e3-wd1p0-r01/step4291",
+      "sourceExperiment": "01KZWPC3TBHDRJCKDEG7CK57M1",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e24_lr1e-3_wd1.0_warmup24_bs1024-dr-e24-lr1e3-wd1p0-r04/step5150",
       "gpuCount": 32,
       "nodeCount": 4,
       "rankMicrobatchSequences": 8,
@@ -4493,11 +4517,50 @@
           "validation": 3.123,
           "validationExact": 3.12311,
           "reason": "Completed healthy on four 8-GPU nodes from exact E16 pre-decay step3432. Validation CE3.12311 strictly improved E16 CE3.12805 by 0.00494, unlocking E24 from retained pre-decay step4291."
+        },
+        "24": {
+          "status": "complete",
+          "beaker": "01KZWPC3TBHDRJCKDEG7CK57M1",
+          "experiment": "01KZWPC3TBHDRJCKDEG7CK57M1",
+          "job": "01KZWPC3XT9ZSAGF47SB92QRCC",
+          "result": "01KZWPC3TN4YY2SST9A23VH81V",
+          "replicaJobs": [
+            "01KZWPC3XT9ZSAGF47SB92QRCC",
+            "01KZWPC415NPW2ZFYC6ATJFFWT",
+            "01KZWPC44KHSH4072CD45ABJZ6",
+            "01KZWPC4884GAWNFKF0PQWTY04"
+          ],
+          "replicaResults": [
+            "01KZWPC3TN4YY2SST9A23VH81V",
+            "01KZWPC3Y0ZHQJZ42148JWR19H",
+            "01KZWPC41B6YC1A32F8GA9AGXD",
+            "01KZWPC44RBKFGFWRJQ369KHJP"
+          ],
+          "replicaNodes": [
+            "01KVB84J78AN14QN82AXR83KT1",
+            "01JS0HMXX084EEPTYRT5KF2ZQ3",
+            "01K15VBGT6DBQCXH04Y81WFGJB",
+            "01KQ0MFSCB5MJE2HZ3CVBAHTQJ"
+          ],
+          "wandb": "hdzkben7",
+          "revision": "e44a747b63c572a2e684104133f7504160f77563",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e24_lr1e-3_wd1.0_warmup24_bs1024-dr-e24-lr1e3-wd1p0-r04",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e20_lr1e-3_wd1.0_warmup24_bs1024-dr-e20-lr1e3-wd1p0-r01/step4291",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e24_lr1e-3_wd1.0_warmup24_bs1024-dr-e24-lr1e3-wd1p0-r04/step5150",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e24_lr1e-3_wd1.0_warmup24_bs1024-dr-e24-lr1e3-wd1p0-r04/step5723",
+          "retainedCheckpoints": [
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e24_lr1e-3_wd1.0_warmup24_bs1024-dr-e24-lr1e3-wd1p0-r04/step5150",
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e24_lr1e-3_wd1.0_warmup24_bs1024-dr-e24-lr1e3-wd1p0-r04/step5723"
+          ],
+          "train": 2.768,
+          "validation": 3.122,
+          "validationExact": 3.12162,
+          "reason": "Completed healthy on four 8-GPU nodes from exact E20 pre-decay step4291. Validation CE3.12162 strictly improved E20 CE3.12311 by 0.00149, making E28 eligible; submission is held during user output-directory cleanup."
         }
       },
       "health": "healthy",
-      "reason": "E24 retry4 remains healthy on four 8-GPU nodes. Preliminary train CE3.077 at step5131/5723 with about 25 minutes remaining; endpoint validation must beat E20 CE3.12311.",
-      "beakerStatus": "running",
+      "reason": "E24 completed healthy at validation CE3.12162, strictly improving E20 CE3.12311 by 0.00149. E28 from exact E24 pre-decay step5150 is eligible but held by the user cleanup submission freeze.",
+      "beakerStatus": "complete",
       "attempts": [
         {
           "epoch": 8,
@@ -4664,14 +4727,16 @@
         "startedAt": "2026-08-12 23:23 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-13 00:02 PDT",
-        "step": 5131,
+        "observedAt": "2026-08-13 00:27 PDT",
+        "step": 5723,
         "endpointStep": 5723,
-        "epoch": 22,
-        "trainCe": 3.077,
-        "eta": "25m",
-        "preliminary": true
-      }
+        "epoch": 24,
+        "trainCe": 2.768,
+        "validationCe": 3.12162,
+        "metricStatus": "final",
+        "eta": "complete"
+      },
+      "heldNextEpoch": 28
     },
     {
       "id": "fixed1024-wd0.333",
