@@ -63,27 +63,34 @@ for c in $CLUSTERS; do
     OPENBLAS_NUM_THREADS=16 PYTHONPATH=src python scripts/modular_extension/expert_subset_surgery.py extract \
         --pool "$POOL" --out "$subset" --cluster "$c" $FRESH_FLAG
 
+    submit_stage() {  # retries around the flaky GitPython/launcher path; sets exp_id
+        local attempt
+        for attempt in 1 2 3 4 5; do
+            MODE=beaker CLUSTER=$c ARM=$ARM \
+                SUBSET_DIR="${WEKA_RUNS}/subset_${tag}" \
+                SAVE_DIR="${WEKA_RUNS}/stage_${tag}" \
+                TOKENS=$tokens \
+                bash scripts/modular_extension/k32cpt_stage.sh 2>&1 | tee "${RUNS}/launch_${tag}.log" || true
+            exp_id=$(grep -oE 'beaker.org/ex/[A-Z0-9]+' "${RUNS}/launch_${tag}.log" | head -1 | sed 's|beaker.org/ex/||')
+            [ -n "$exp_id" ] && return 0
+            echo "!!! stage ${tag}: submit attempt ${attempt} produced no experiment id; retrying in 60s"
+            sleep 60
+        done
+        echo "!!! stage ${tag}: submit failed 5x, giving up"
+        return 1
+    }
+
     echo "=== stage ${tag}: train (${tokens} tokens)"
-    # blocking submit-and-wait: MODE=beaker with follow ON would stream for ~30 min; we
-    # instead submit no-follow and poll for the final checkpoint + no-running state.
-    MODE=beaker CLUSTER=$c ARM=$ARM \
-        SUBSET_DIR="${WEKA_RUNS}/subset_${tag}" \
-        SAVE_DIR="${WEKA_RUNS}/stage_${tag}" \
-        TOKENS=$tokens \
-        bash scripts/modular_extension/k32cpt_stage.sh 2>&1 | tee "${RUNS}/launch_${tag}.log"
-    exp_id=$(grep -oE 'beaker.org/ex/[A-Z0-9]+' "${RUNS}/launch_${tag}.log" | head -1 | sed 's|beaker.org/ex/||')
+    # blocking submit-and-wait: submit no-follow, then poll for the final checkpoint.
+    submit_stage
     echo "=== stage ${tag}: experiment ${exp_id}; polling"
-    expected_final_step=""
     while true; do
         js=$(timeout 30 beaker experiment get "$exp_id" --format json 2>/dev/null || true)
         n_final=$(echo "$js" | jq '[.[0].jobs[].status | select(.finalized != null)] | length' 2>/dev/null || echo 0)
         n_bad=$(echo "$js" | jq '[.[0].jobs[].status | select(.exitCode != null and .exitCode != 0)] | length' 2>/dev/null || echo 0)
         if [ "${n_bad:-0}" -gt 0 ]; then
             echo "!!! stage ${tag}: replica failed (https://beaker.org/ex/${exp_id}); relaunching stage"
-            MODE=beaker CLUSTER=$c ARM=$ARM SUBSET_DIR="${WEKA_RUNS}/subset_${tag}" \
-                SAVE_DIR="${WEKA_RUNS}/stage_${tag}" TOKENS=$tokens \
-                bash scripts/modular_extension/k32cpt_stage.sh 2>&1 | tee "${RUNS}/launch_${tag}.log"
-            exp_id=$(grep -oE 'beaker.org/ex/[A-Z0-9]+' "${RUNS}/launch_${tag}.log" | head -1 | sed 's|beaker.org/ex/||')
+            submit_stage
         fi
         final=$(ls -d "${save}"/step*/model_and_optim/.metadata 2>/dev/null | sort -V | tail -1 || true)
         if [ -n "$final" ] && [ "${n_final:-0}" -ge 8 ] && [ "${n_bad:-0}" -eq 0 ]; then
