@@ -30,6 +30,14 @@
   },
   "columns": [
     {
+      "key": "dr64",
+      "label": "BS64 \u00b7 DR",
+      "batchSequences": 64,
+      "dataOrder": "dynamic_repacking",
+      "initialWd": "0.3",
+      "color": "#f97316"
+    },
+    {
       "key": "fixed512",
       "label": "BS512 \u00b7 Fixed",
       "batchSequences": 512,
@@ -67,6 +75,92 @@
     "suspicious": {}
   },
   "runs": [
+    {
+      "id": "dr64-lr1e-3-wd0.3",
+      "method": "dr64",
+      "batchSequences": 64,
+      "dataOrder": "dynamic_repacking",
+      "lr": "1e-3",
+      "wd": "0.3",
+      "status": "submitted",
+      "activeEpoch": 2,
+      "attemptedEpochs": [
+        2
+      ],
+      "sourceExperiment": "01KZDCD9AYJ0REGZTE2YG18NHF",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_e1_lr1e-3_wd0.3_warmup384_coord_e1_r2/step3432",
+      "gpuCount": 8,
+      "nodeCount": 1,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulationSteps": 1,
+      "results": {
+        "1": {
+          "status": "complete",
+          "inherited": true,
+          "beaker": "01KZDCD9AYJ0REGZTE2YG18NHF",
+          "experiment": "01KZDCD9AYJ0REGZTE2YG18NHF",
+          "job": "01KZDCD9ETDQM19R4AE701X7G7",
+          "result": "01KZDCD9B4X495E2K74052DT9D",
+          "wandb": "08osrlhq",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_e1_lr1e-3_wd0.3_warmup384_coord_e1_r2",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_e1_lr1e-3_wd0.3_warmup384_coord_e1_r2/step3432",
+          "train": 3.352,
+          "validation": 3.397,
+          "reason": "Inherited exact Original E1 coordinate; DR begins at E2 from retained pre-decay step3432."
+        }
+      },
+      "health": "planned",
+      "reason": "Submitted locally after exact-source, LR/WD, one-node 8-GPU, rank-microbatch-eight, gradient-accumulation-one, manifest-checksum, and duplicate-tuple guards passed.",
+      "beaker": "01KZWDBW5NFCBJY88KQQ0E7FR2",
+      "experiment": "01KZWDBW5NFCBJY88KQQ0E7FR2",
+      "job": "01KZWDBW95SEQQZD20HK81Z1W9",
+      "result": "01KZWDBW5WYWKBVEA0EFS2PBDW",
+      "revision": "c984fa7b41767f84a069adc7b9884906bde131e7",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e2_lr1e-3_wd0.3_warmup384_bs64-dr-e2-lr1e3-wd0p3-r01"
+    },
+    {
+      "id": "dr64-lr1e-3-wd1.0",
+      "method": "dr64",
+      "batchSequences": 64,
+      "dataOrder": "dynamic_repacking",
+      "lr": "1e-3",
+      "wd": "1.0",
+      "status": "submitted",
+      "activeEpoch": 2,
+      "attemptedEpochs": [
+        2
+      ],
+      "sourceExperiment": "01KZDFAY7M8YYA1N2MY3MR2GZG",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_e1_lr1e-3_wd1.0_warmup384_coord_e1_r3/step3432",
+      "gpuCount": 8,
+      "nodeCount": 1,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulationSteps": 1,
+      "results": {
+        "1": {
+          "status": "complete",
+          "inherited": true,
+          "beaker": "01KZDFAY7M8YYA1N2MY3MR2GZG",
+          "experiment": "01KZDFAY7M8YYA1N2MY3MR2GZG",
+          "job": "01KZDFAYBC6PTAA3AZWE7DR0RK",
+          "result": "01KZDFAY83BQEG55K1CTPPDJQ6",
+          "wandb": "k2jdf9yd",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_e1_lr1e-3_wd1.0_warmup384_coord_e1_r3",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_e1_lr1e-3_wd1.0_warmup384_coord_e1_r3/step3432",
+          "train": 3.427,
+          "validation": 3.47,
+          "reason": "Inherited exact Original E1 coordinate; DR begins at E2 from retained pre-decay step3432."
+        }
+      },
+      "health": "planned",
+      "reason": "Submitted locally after exact-source, LR/WD, one-node 8-GPU, rank-microbatch-eight, gradient-accumulation-one, manifest-checksum, and duplicate-tuple guards passed.",
+      "beaker": "01KZWDBX6TXA8G7TKMJ10ECPY4",
+      "experiment": "01KZWDBX6TXA8G7TKMJ10ECPY4",
+      "job": "01KZWDBXAG6MF0ZPJ3S9H1G66Q",
+      "result": "01KZWDBX717XY73NMBWGHNXJ0Y",
+      "revision": "c984fa7b41767f84a069adc7b9884906bde131e7",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e2_lr1e-3_wd1.0_warmup384_bs64-dr-e2-lr1e3-wd1p0-r01"
+    },
     {
       "id": "dr512-wd0.1",
       "method": "dr512",

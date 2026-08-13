@@ -36,10 +36,9 @@ DEFAULT_LEARNING_RATE = "1e-3"
 # endpoint can be continued without weakening any exact-resume checks.
 TARGETS = (1, 2, 4, *range(8, 65, 4))
 PREDECESSOR = {2: 1, 4: 2, **{epoch: epoch - 4 for epoch in range(8, 65, 4)}}
-GLOBAL_BATCHES = (512, 1024)
-NODES = 4
+GLOBAL_BATCHES = (64, 512, 1024)
+DEFAULT_NODES = 4
 GPUS_PER_NODE = 8
-TOTAL_GPUS = NODES * GPUS_PER_NODE
 RANK_MICROBATCH_SEQUENCES = 8
 TRAIN_MANIFEST = "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b.json"
 ATTEMPTED_STATUSES = {
@@ -90,9 +89,10 @@ def parse_args() -> argparse.Namespace:
         parser.error("--suffix must be a lowercase run-name component")
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", args.name):
         parser.error("--name must be a lowercase Beaker name component")
-    if args.global_sequences % (TOTAL_GPUS * RANK_MICROBATCH_SEQUENCES):
+    total_gpus = nodes_for(args.global_sequences) * GPUS_PER_NODE
+    if args.global_sequences % (total_gpus * RANK_MICROBATCH_SEQUENCES):
         parser.error(
-            "global batch must be divisible by 32 ranks x rank microbatch eight; "
+            f"global batch must be divisible by {total_gpus} ranks x rank microbatch eight; "
             f"got BS{args.global_sequences}"
         )
     return args
@@ -121,6 +121,12 @@ def warmup_steps(global_sequences: int) -> int:
 def method_key(method: str, global_sequences: int) -> str:
     prefix = "dr" if method == "dynamic_repacking" else "fixed"
     return f"{prefix}{global_sequences}"
+
+
+def nodes_for(global_sequences: int) -> int:
+    # BS64 runs directly on one 8-GPU node (rank microbatch eight, grad accumulation one).
+    # Preserve the established four-node topology for BS512 and BS1024.
+    return 1 if global_sequences == 64 else DEFAULT_NODES
 
 
 def load_report() -> dict[str, Any]:
@@ -159,8 +165,9 @@ def matching_registered_run(report: dict[str, Any], args: argparse.Namespace) ->
         raise SystemExit("source experiment does not match the registered exact predecessor")
     if run.get("sourceCheckpoint") != args.source_checkpoint:
         raise SystemExit("source checkpoint does not match the registered exact predecessor")
-    if int(run.get("gpuCount", 0)) != TOTAL_GPUS or int(run.get("nodeCount", 0)) != NODES:
-        raise SystemExit("registered topology is not exactly four 8-GPU nodes")
+    nodes = nodes_for(args.global_sequences)
+    if int(run.get("gpuCount", 0)) != nodes * GPUS_PER_NODE or int(run.get("nodeCount", 0)) != nodes:
+        raise SystemExit(f"registered topology is not exactly {nodes} 8-GPU node(s)")
     if int(run.get("rankMicrobatchSequences", 0)) != RANK_MICROBATCH_SEQUENCES:
         raise SystemExit("registered rank microbatch is not eight sequences")
 
@@ -285,18 +292,19 @@ def upsert(arguments: list[str], prefix: str, value: str) -> list[str]:
 
 def audit_source_spec(spec: dict[str, Any], args: argparse.Namespace) -> tuple[str, list[str]]:
     tasks = spec.get("tasks", [])
-    if len(tasks) not in {1, NODES}:
+    nodes = nodes_for(args.global_sequences)
+    if len(tasks) not in {1, nodes}:
         raise SystemExit(
-            "source experiment must contain one replicated task or exactly four "
-            "materialized replica tasks"
+            f"source experiment must contain one replicated task or exactly {nodes} "
+            "materialized replica task(s)"
         )
     extracted = [extract_training_command(task) for task in tasks]
-    if len(tasks) == NODES:
+    if len(tasks) == nodes:
         if any(
             int(task.get("resources", {}).get("gpuCount", 0)) != GPUS_PER_NODE
             for task in tasks
         ):
-            raise SystemExit("materialized source replicas are not four 8-GPU tasks")
+            raise SystemExit(f"materialized source replicas are not {nodes} 8-GPU task(s)")
         if any(item != extracted[0] for item in extracted[1:]):
             raise SystemExit("materialized source replica training commands do not match")
         # Beaker expands a completed replicated task into one task per replica when its
@@ -334,6 +342,7 @@ def audit_source_spec(spec: dict[str, Any], args: argparse.Namespace) -> tuple[s
 def build_spec(
     base: dict[str, Any], args: argparse.Namespace, script: str, base_args: list[str]
 ) -> tuple[dict[str, Any], str]:
+    nodes = nodes_for(args.global_sequences)
     spec = copy.deepcopy(base)
     task = spec["tasks"][0]
     mode_tag = "dr" if args.method == "dynamic_repacking" else "fixed"
@@ -482,7 +491,7 @@ def build_spec(
                         f"DATA_LOADER_PREFLIGHT_OK method={mode_tag} "
                         f"bs={args.global_sequences} epoch={args.target_epoch} "
                         f"lr={args.learning_rate} wd={args.weight_decay} "
-                        f"source={args.source_checkpoint} nodes={NODES} rank_mb=8"
+                        f"source={args.source_checkpoint} nodes={nodes} rank_mb=8"
                     ),
                 ]
             ),
@@ -531,7 +540,7 @@ def build_spec(
     else:
         task["envVars"].append({"name": "GIT_REF", "value": args.revision})
     task["envVars"] += [
-        {"name": "NUM_NODES", "value": str(NODES)},
+        {"name": "NUM_NODES", "value": str(nodes)},
         {"name": "GANTRY_RDZV_ID", "value": rendezvous[:12]},
         {
             "name": "GANTRY_RDZV_PORT",
@@ -544,12 +553,15 @@ def build_spec(
         "minRuntime": "0s",
         "autoResume": False,
     }
-    task["replicas"] = NODES
+    task["replicas"] = nodes
     task["leaderSelection"] = True
     task["hostNetworking"] = True
     task["propagateFailure"] = True
     task["propagatePreemption"] = True
-    task["synchronizedStartTimeout"] = "90m"
+    if nodes > 1:
+        task["synchronizedStartTimeout"] = "90m"
+    else:
+        task.pop("synchronizedStartTimeout", None)
     spec.pop("description", None)
     return spec, output
 
