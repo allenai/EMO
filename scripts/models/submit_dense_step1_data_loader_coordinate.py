@@ -27,6 +27,7 @@ from typing import Any
 
 REPORT_PATH = Path("reports/0802/data/wsd_data_loader_1b.json")
 REPORT_JS_PATH = REPORT_PATH.with_suffix(".js")
+MODEL_ROOT = "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b"
 SEQUENCE_LENGTH = 4096
 TOKENS_PER_EPOCH = 1_000_000_000
 DECAY_FRACTION = 0.1
@@ -135,6 +136,24 @@ def warmup_steps(global_sequences: int) -> int:
 def method_key(method: str, global_sequences: int) -> str:
     prefix = "dr" if method == "dynamic_repacking" else "fixed"
     return f"{prefix}{global_sequences}"
+
+
+def canonical_number(value: str) -> str:
+    number = numeric(value)
+    if number == number.to_integral():
+        return f"{number:.1f}"
+    if abs(number) < Decimal("0.01"):
+        exponent = number.adjusted()
+        return f"{number.scaleb(-exponent).normalize()}e{exponent}"
+    return str(number.normalize())
+
+
+def trajectory_output(args: argparse.Namespace) -> str:
+    mode = "_dr" if args.method == "dynamic_repacking" else ""
+    return (
+        f"{MODEL_ROOT}/bs{args.global_sequences}{mode}_"
+        f"lr{canonical_number(args.learning_rate)}_wd{canonical_number(args.weight_decay)}"
+    )
 
 
 def nodes_for(global_sequences: int) -> int:
@@ -349,12 +368,17 @@ def audit_source_spec(spec: dict[str, Any], args: argparse.Namespace) -> tuple[s
         # not spell the global batch out as an override. All later sources must be explicit.
         raise SystemExit("non-BS1024 source is missing an explicit global batch")
     if args.target_epoch > 1:
+        expected_step = stable_step(PREDECESSOR[args.target_epoch], args.global_sequences)
+        if not args.source_checkpoint.endswith(f"/step{expected_step}"):
+            raise SystemExit("source checkpoint is not the exact predecessor step")
         source_output = unique_value(arguments, "--save-folder=")
-        if (
-            args.source_checkpoint
-            != f"{source_output}/step{stable_step(PREDECESSOR[args.target_epoch], args.global_sequences)}"
-        ):
-            raise SystemExit("source checkpoint is not inside the source experiment's exact output")
+        historical_source = f"{source_output}/step{expected_step}"
+        canonical_source = f"{trajectory_output(args)}/step{expected_step}"
+        if args.source_checkpoint not in {historical_source, canonical_source}:
+            raise SystemExit(
+                "source checkpoint matches neither the source experiment output nor the "
+                "canonical trajectory directory"
+            )
     return script, arguments
 
 
@@ -372,7 +396,7 @@ def build_spec(
         f"{mode_tag}_e{args.target_epoch}_lr{args.learning_rate}_wd{args.weight_decay}_"
         f"warmup{warmup_steps(args.global_sequences)}_{args.suffix}"
     )
-    output = f"/weka/oe-training-default/sewonm/icsl/models/{run_name}"
+    output = trajectory_output(args)
     train_args = [
         value
         for value in base_args
@@ -496,12 +520,19 @@ def build_spec(
         "print('DATA_LOADER_MANIFEST_OK',meta)"
     )
     preflight_steps = []
+    target_pre_decay = f"{output}/step{stable_step(args.target_epoch, args.global_sequences)}"
+    target_endpoint = f"{output}/step{total_step(args.target_epoch, args.global_sequences)}"
     if args.target_epoch > 1:
-        preflight_steps.append(shlex.join(["test", "-d", args.source_checkpoint]))
+        preflight_steps.extend(
+            [shlex.join(["test", "-d", output]), shlex.join(["test", "-d", args.source_checkpoint])]
+        )
+    else:
+        preflight_steps.append(shlex.join(["test", "!", "-e", output]))
     preflight_steps.extend(
         [
             shlex.join(["test", "-f", TRAIN_MANIFEST]),
-            shlex.join(["test", "!", "-e", output]),
+            shlex.join(["test", "!", "-e", target_pre_decay]),
+            shlex.join(["test", "!", "-e", target_endpoint]),
             shlex.join(["python", "-c", manifest_audit]),
             shlex.join(
                 [
@@ -603,10 +634,10 @@ def register_submission(
     run["revision"] = revision
     run["output"] = output
     run["reason"] = (
-        "Submitted locally after exact-source, LR/WD, 4-node, rank-microbatch, "
-        "manifest-checksum, and duplicate-tuple guards passed."
+        "Submitted locally after exact-source, canonical trajectory-output, LR/WD, "
+        "topology, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed."
     )
-    report["updated"] = "2026-08-11"
+    report["updated"] = "2026-08-13"
     write_report(report)
 
 

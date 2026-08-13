@@ -96,10 +96,8 @@
     }
   ],
   "healthAudit": {
-    "unhealthy": {
-    },
-    "suspicious": {
-    }
+    "unhealthy": {},
+    "suspicious": {}
   },
   "runs": [
     {
@@ -116,7 +114,7 @@
         4
       ],
       "sourceExperiment": "01KZWRC6DTEZKHFBMATZ63ZAAZ",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e4_lr1e-3_wd0.3_warmup384_bs64-dr-e4-lr1e3-wd0p3-r02/step13732",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step13732",
       "gpuCount": 8,
       "nodeCount": 1,
       "rankMicrobatchSequences": 8,
@@ -202,7 +200,7 @@
       "beaker": "01KZWRC6DTEZKHFBMATZ63ZAAZ",
       "experiment": "01KZWRC6DTEZKHFBMATZ63ZAAZ",
       "revision": "7d10153e6dc6000a2c765ab101618fa3b6051cf8",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e4_lr1e-3_wd0.3_warmup384_bs64-dr-e4-lr1e3-wd0p3-r02",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3",
       "job": "01KZWRC6HH7KNS7JM22H6GN1EG",
       "result": "01KZWRC6E7BJEMPEG9BWFH1NSD",
       "wandb": "vqca92ie",
@@ -295,9 +293,7 @@
       "wd": "0.3",
       "status": "staged_after_primary",
       "activeEpoch": null,
-      "attemptedEpochs": [
-
-      ],
+      "attemptedEpochs": [],
       "sourceExperiment": "01KZFVTRWK90S3KTA4SZFEMM7W",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs128_e1_lr1e-3_wd0.3_warmup192_e1_grid_r19/step1716",
       "gpuCount": 8,
@@ -332,9 +328,7 @@
       "wd": "0.333",
       "status": "staged_after_primary",
       "activeEpoch": null,
-      "attemptedEpochs": [
-
-      ],
+      "attemptedEpochs": [],
       "sourceExperiment": "01KZCZRRBBSJ14FP7ADNAXWH56",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs256_e1_lr1e-3_wd0.333_warmup96/step858",
       "gpuCount": 8,
@@ -368,9 +362,7 @@
       "wd": "0.333",
       "status": "staged_after_primary",
       "activeEpoch": null,
-      "attemptedEpochs": [
-
-      ],
+      "attemptedEpochs": [],
       "sourceExperiment": "01KZD997FY92SE7CQM504CVDJW",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs256_e1_lr2e-3_wd0.333_warmup96_coord_e1/step858",
       "gpuCount": 8,
@@ -4242,7 +4234,7 @@
         24
       ],
       "sourceExperiment": "01KZWPC3TBHDRJCKDEG7CK57M1",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e24_lr1e-3_wd1.0_warmup24_bs1024-dr-e24-lr1e3-wd1p0-r04/step5150",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0/step5150",
       "gpuCount": 32,
       "nodeCount": 4,
       "rankMicrobatchSequences": 8,
@@ -4691,7 +4683,7 @@
       "beaker": "01KZWPC3TBHDRJCKDEG7CK57M1",
       "experiment": "01KZWPC3TBHDRJCKDEG7CK57M1",
       "revision": "e44a747b63c572a2e684104133f7504160f77563",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e24_lr1e-3_wd1.0_warmup24_bs1024-dr-e24-lr1e3-wd1p0-r04",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0",
       "job": "01KZWPC3XT9ZSAGF47SB92QRCC",
       "result": "01KZWPC3TN4YY2SST9A23VH81V",
       "replicaJobs": [
@@ -5236,5 +5228,6 @@
       "revision": "8697e154ca9e496a0af7e41fbbffb46c0a4f6c5c",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e2_lr1e-3_wd1.0_warmup24_dataloader-r01"
     }
-  ]
+  ],
+  "outputDirectoryPolicy": "Checkpoint outputs now use one canonical directory per method/batch/LR/WD trajectory under /weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b: bs{batch}_dr_lr{lr}_wd{wd} for DR and bs{batch}_lr{lr}_wd{wd} for Original. Epochs and retries reuse that directory and are distinguished by step checkpoints and experiment provenance; a continuation must load the exact predecessor pre-decay step and may not overwrite its target pre-decay or endpoint step."
 }
