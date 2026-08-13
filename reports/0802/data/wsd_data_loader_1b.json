@@ -160,14 +160,29 @@
         }
       },
       "health": "planned",
-      "reason": "E2 completed healthy at validation CE3.22922, improving E1 CE3.397 by 0.16778. E4 was submitted from exact E2 pre-decay step6866 after print-only guards passed and is pending.",
-      "beaker": "01KZWMHKSX52F92GMERG7DQY6V",
-      "experiment": "01KZWMHKSX52F92GMERG7DQY6V",
-      "job": "01KZWMHKXMEVQVZPRFFFM7DBHF",
-      "result": "01KZWMHKT79TRC70H0649CC9GM",
-      "revision": "9bedcb1d",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e4_lr1e-3_wd0.3_warmup384_bs64-dr-e4-lr1e3-wd0p3-r01",
-      "beakerStatus": "pending"
+      "reason": "E4 retry1 was submitted from exact E2 pre-decay step6866 after the preceding attempt failed before task startup because revision 9bedcb1d was no longer fetchable. Print-only guards passed against reachable revision 7d10153e; one 8-GPU job is pending.",
+      "beakerStatus": "pending",
+      "attempts": [
+        {
+          "epoch": 4,
+          "experiment": "01KZWMHKSX52F92GMERG7DQY6V",
+          "job": "01KZWMHKXMEVQVZPRFFFM7DBHF",
+          "result": "01KZWMHKT79TRC70H0649CC9GM",
+          "node": "01K15VC4MF63NFG484TFTWHSYB",
+          "status": "failed_before_task_start",
+          "wandb": null,
+          "revision": "9bedcb1d",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e4_lr1e-3_wd0.3_warmup384_bs64-dr-e4-lr1e3-wd0p3-r01",
+          "reason": "The job failed during Gantry source setup because pinned revision 9bedcb1d was no longer fetchable. No repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed, so automatic infrastructure retry1 is eligible."
+        }
+      ],
+      "retryCount": 1,
+      "beaker": "01KZWRC6DTEZKHFBMATZ63ZAAZ",
+      "experiment": "01KZWRC6DTEZKHFBMATZ63ZAAZ",
+      "revision": "7d10153e6dc6000a2c765ab101618fa3b6051cf8",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e4_lr1e-3_wd0.3_warmup384_bs64-dr-e4-lr1e3-wd0p3-r02",
+      "job": "01KZWRC6HH7KNS7JM22H6GN1EG",
+      "result": "01KZWRC6E7BJEMPEG9BWFH1NSD"
     },
     {
       "id": "dr64-lr1e-3-wd1.0",
