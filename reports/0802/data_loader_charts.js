@@ -22,8 +22,11 @@
   );
   const columns = [
     columnByKey["baseline-64"],
+    columnByKey.dr64,
     columnByKey["baseline-128"],
+    columnByKey.dr128,
     columnByKey["baseline-256"],
+    columnByKey.dr256,
     columnByKey.fixed512,
     columnByKey["baseline-512"],
     columnByKey.dr512,
@@ -229,6 +232,12 @@
   renderSummary("coordinate-summary", (winner) => winner ? `(${winner.lr}, ${winner.wd})` : "—");
 
   const coordinateColumns = [
+    columnByKey["baseline-64"],
+    columnByKey.dr64,
+    columnByKey["baseline-128"],
+    columnByKey.dr128,
+    columnByKey["baseline-256"],
+    columnByKey.dr256,
     columnByKey.fixed512,
     columnByKey["baseline-512"],
     columnByKey.dr512,

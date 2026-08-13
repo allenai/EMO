@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Submit one guarded Dense-1B data-loader endpoint on four 8-GPU nodes.
+"""Submit one guarded Dense-1B data-loader endpoint.
 
-The launcher is deliberately narrow. It manages only the BS512/BS1024 repeated-pool
+The launcher is deliberately narrow. It manages only the registered repeated-pool
 dynamic-repacking and fixed-order study registered in
 ``reports/0802/data/wsd_data_loader_1b.json``. E2+ submissions must resume an exact
 LR/WD-matched pre-decay checkpoint. A separately registered E1 bootstrap may start
@@ -36,7 +36,7 @@ DEFAULT_LEARNING_RATE = "1e-3"
 # endpoint can be continued without weakening any exact-resume checks.
 TARGETS = (1, 2, 4, *range(8, 65, 4))
 PREDECESSOR = {2: 1, 4: 2, **{epoch: epoch - 4 for epoch in range(8, 65, 4)}}
-GLOBAL_BATCHES = (64, 512, 1024)
+GLOBAL_BATCHES = (64, 128, 256, 512, 1024)
 DEFAULT_NODES = 4
 GPUS_PER_NODE = 8
 RANK_MICROBATCH_SEQUENCES = 8
@@ -85,6 +85,20 @@ def parse_args() -> argparse.Namespace:
         parser.error("--learning-rate must be a positive decimal or scientific-notation value")
     if not learning_rate.is_finite() or learning_rate <= 0:
         parser.error("--learning-rate must be positive and finite")
+    wd = Decimal(args.weight_decay)
+    lr2e3_exception = (
+        args.method == "dynamic_repacking"
+        and args.global_sequences == 256
+        and learning_rate == Decimal("2e-3")
+        and wd == Decimal("0.333")
+    )
+    if learning_rate > Decimal("2e-3") or (
+        learning_rate == Decimal("2e-3") and not lr2e3_exception
+    ):
+        parser.error(
+            "LR2e-3 is allowed only for the explicitly approved "
+            "BS256 DR LR2e-3/WD0.333 trajectory; larger LR is prohibited"
+        )
     if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", args.suffix):
         parser.error("--suffix must be a lowercase run-name component")
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", args.name):
@@ -124,15 +138,20 @@ def method_key(method: str, global_sequences: int) -> str:
 
 
 def nodes_for(global_sequences: int) -> int:
-    # BS64 runs directly on one 8-GPU node (rank microbatch eight, grad accumulation one).
-    # Preserve the established four-node topology for BS512 and BS1024.
-    return 1 if global_sequences == 64 else DEFAULT_NODES
+    # New BS64/128/256 work uses one 8-GPU node and scales gradient accumulation
+    # to 1/2/4. Preserve the established four-node topology for BS512/1024.
+    return 1 if global_sequences <= 256 else DEFAULT_NODES
 
 
 def load_report() -> dict[str, Any]:
     if not REPORT_PATH.is_file():
         raise FileNotFoundError(f"run from the repository root; missing {REPORT_PATH}")
     return json.loads(REPORT_PATH.read_text())
+
+
+def active_epoch(run: dict[str, Any]) -> int:
+    value = run.get("activeEpoch")
+    return -1 if value is None else int(value)
 
 
 def matching_registered_run(report: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
@@ -146,7 +165,7 @@ def matching_registered_run(report: dict[str, Any], args: argparse.Namespace) ->
         and int(run.get("batchSequences", 0)) == args.global_sequences
         and numeric(run.get("lr")) == lr
         and numeric(run.get("wd")) == wd
-        and int(run.get("activeEpoch", -1)) == args.target_epoch
+        and active_epoch(run) == args.target_epoch
     ]
     if len(matches) != 1:
         raise SystemExit(
@@ -182,7 +201,7 @@ def matching_registered_run(report: dict[str, Any], args: argparse.Namespace) ->
             continue
         result = other.get("results", {}).get(str(args.target_epoch))
         if result is not None or (
-            int(other.get("activeEpoch", -1)) == args.target_epoch
+            active_epoch(other) == args.target_epoch
             and str(other.get("status", "")).lower() in ATTEMPTED_STATUSES
         ):
             raise SystemExit("refusing a duplicate attempted method/batch/WD/epoch tuple")

@@ -1,8 +1,8 @@
 {
-  "updated": "2026-08-11",
-  "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
-  "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation; the first DR probe used LR1e-3/WD0.1 and neighboring LR/WD coordinates are being audited; BS512 and BS1024 additions use four 8-GPU nodes with rank microbatch eight sequences.",
-  "selection": "The existing OLMo-core baseline is shown only for BS64 through BS1024. E1 is common to all three data-order modes, and an E2 branch may resume any exact LR/WD-matched E1 pre-decay checkpoint. BS512 DR LR1e-3/WD0.333 begins overfitting between E8 and E12, so its E16 is pruned. The stronger WD1.0 trajectory reached its minimum at E24 CE3.06442; E28 worsened to CE3.06734 despite lower train CE, so E32 is pruned. The fresh BS512 LR5e-4/WD0.333 E1 completed at CE4.047 but is deprioritized without an E2 continuation while the higher-likelihood WD1.0 frontier runs. BS1024 LR5e-4/WD0.333 reached its minimum at E8 CE3.283; E12 worsened to CE3.328 and its E16 is pruned. Its WD1.0 alternative improved from E2 CE4.038 through E12 CE3.18997, but E16 narrowly worsened to CE3.19035 and is pruned before E20 under the strict gate. Because LR1e-3/WD0.333 was strong for the Original loader at E4/E8, its DR trajectory improved through E8 CE3.226, but E12 worsened to CE3.251 despite lower train CE and is pruned before E16. Endpoint reporting and frontier decisions are validation-first: new runs retain train CE and DCLM validation CE, while downstream evaluation and downstream report charts are disabled. Dynamic repacking preserves the original E1 packing and begins repacking at E2; fixed order reuses the exact default E1 sequence permutation and batch membership forever. BS1024 LR1e-3/WD1.0 improved from E12 CE3.15979 to E16 CE3.12805, so E20 is submitted from exact pre-decay step3432.",
+  "updated": "2026-08-12",
+  "title": "Step 1-1 — Dense 1B Data-Loader Study",
+  "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes.",
+  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. Continue BS1024 LR1e-3/WD1.0 and BS64 LR1e-3/WD0.3 sequentially by four-epoch frontiers until the first validation non-improvement. Only after both primary trajectories saturate, start BS128 LR1e-3/WD0.3 and BS256 WD0.333 at LR1e-3 and the explicitly approved LR2e-3 coordinate; each new DR trajectory begins at E2 from its exact Original E1 pre-decay checkpoint and advances only while its own validation CE strictly improves. LR2e-3 is an exception only for BS256 DR WD0.333; LR above 2e-3 remains prohibited. After all three staged trajectories finish, assess whether WD1.0 is justified rather than launching it automatically. If DR consistently improves over the matched Original loader across the completed batch sizes, then run the final conditional BS32 LR5e-4/WD0.3 trajectory. BS512 DR LR1e-3/WD1.0 is saturated at E24 CE3.06442 because E28 worsened to CE3.06734. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
   "targetEpochs": [
     1,
     2,
@@ -22,24 +22,49 @@
     1024
   ],
   "selectionPolicy": {
-    "learningRate": "Initial probe 1e-3; DR coordinate descent compares 5e-4 and, when the lower boundary wins materially, 2.5e-4.",
+    "learningRate": "Staged coordinates are BS64/128 LR1e-3, BS256 LR1e-3 and the explicitly approved LR2e-3 exception, and conditional BS32 LR5e-4. LR above 2e-3 is prohibited.",
     "nondecreasingWd": true,
-    "dynamicRepackingDirection": "BS512 LR1e-3/WD0.333 overfits by E12 and is pruned; LR1e-3/WD1.0 reached its minimum at E24 CE3.06442; E28 worsened to CE3.06734, so E32 is pruned. The fresh BS512 LR5e-4/WD0.333 E1 reached CE4.047 but is deprioritized. BS1024 LR5e-4/WD0.333 reached its minimum at E8 CE3.283 and is pruned after E12 worsened. BS1024 LR5e-4/WD1.0 is pruned after E16 CE3.19035 narrowly worsened from E12 CE3.18997; LR1e-3/WD0.333 is pruned after E12 validation worsened; and LR1e-3/WD1.0 improved at E12 CE3.15979 and is submitted for E16 from exact step2575.",
+    "dynamicRepackingDirection": "Primary gate: finish BS1024 LR1e-3/WD1.0 and BS64 LR1e-3/WD0.3. Secondary gate after both saturate: run BS128 LR1e-3/WD0.3 plus BS256 WD0.333 at LR1e-3 and LR2e-3. Tertiary gate: assess WD1.0 only after those complete; run BS32 LR5e-4/WD0.3 only if DR consistently improves matched Original results. Every trajectory stops at its first validation non-improvement.",
+    "stagedQueue": [
+      "BS128 DR LR1e-3/WD0.3",
+      "BS256 DR LR1e-3/WD0.333",
+      "BS256 DR LR2e-3/WD0.333"
+    ],
+    "conditionalQueue": [
+      "WD1.0 evidence review after all staged trajectories finish",
+      "BS32 DR LR5e-4/WD0.3 only after consistent DR improvements"
+    ],
     "fixedOrderDirection": "At E2 begin at WD0.333 and expand upward if needed, targeting Fixed > ordinary > DR; from the selected E2 coordinate onward test only equal or higher WD.",
     "endpointReporting": "Extract train CE and DCLM validation CE first. Do not wait for, ingest, validate, or display downstream task accuracy, BPB, or avg8 metrics; future submissions disable downstream evaluation on finish."
   },
   "columns": [
     {
       "key": "dr64",
-      "label": "BS64 \u00b7 DR",
+      "label": "BS64 · DR",
       "batchSequences": 64,
       "dataOrder": "dynamic_repacking",
       "initialWd": "0.3",
       "color": "#f97316"
     },
     {
+      "key": "dr128",
+      "label": "BS128 · DR",
+      "batchSequences": 128,
+      "dataOrder": "dynamic_repacking",
+      "initialWd": "0.3",
+      "color": "#0d9488"
+    },
+    {
+      "key": "dr256",
+      "label": "BS256 · DR",
+      "batchSequences": 256,
+      "dataOrder": "dynamic_repacking",
+      "initialWd": "0.333",
+      "color": "#2563eb"
+    },
+    {
       "key": "fixed512",
-      "label": "BS512 \u00b7 Fixed",
+      "label": "BS512 · Fixed",
       "batchSequences": 512,
       "dataOrder": "fixed_order",
       "initialWd": "0.333",
@@ -47,7 +72,7 @@
     },
     {
       "key": "dr512",
-      "label": "BS512 \u00b7 DR",
+      "label": "BS512 · DR",
       "batchSequences": 512,
       "dataOrder": "dynamic_repacking",
       "initialWd": "0.1",
@@ -55,7 +80,7 @@
     },
     {
       "key": "fixed1024",
-      "label": "BS1024 \u00b7 Fixed",
+      "label": "BS1024 · Fixed",
       "batchSequences": 1024,
       "dataOrder": "fixed_order",
       "initialWd": "0.333",
@@ -63,7 +88,7 @@
     },
     {
       "key": "dr1024",
-      "label": "BS1024 \u00b7 DR",
+      "label": "BS1024 · DR",
       "batchSequences": 1024,
       "dataOrder": "dynamic_repacking",
       "initialWd": "0.1",
@@ -71,8 +96,10 @@
     }
   ],
   "healthAudit": {
-    "unhealthy": {},
-    "suspicious": {}
+    "unhealthy": {
+    },
+    "suspicious": {
+    }
   },
   "runs": [
     {
@@ -172,6 +199,116 @@
           "reason": "User requested testing WD0.3 first. The job was canceled before node assignment or task startup and produced no W&B, optimizer progress, output, or checkpoint."
         }
       ]
+    },
+    {
+      "id": "dr128-lr1e-3-wd0.3",
+      "method": "dr128",
+      "batchSequences": 128,
+      "dataOrder": "dynamic_repacking",
+      "lr": "1e-3",
+      "wd": "0.3",
+      "status": "staged_after_primary",
+      "activeEpoch": null,
+      "attemptedEpochs": [
+
+      ],
+      "sourceExperiment": "01KZFVTRWK90S3KTA4SZFEMM7W",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs128_e1_lr1e-3_wd0.3_warmup192_e1_grid_r19/step1716",
+      "gpuCount": 8,
+      "nodeCount": 1,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulationSteps": 2,
+      "results": {
+        "1": {
+          "status": "complete",
+          "inherited": true,
+          "beaker": "01KZFVTRWK90S3KTA4SZFEMM7W",
+          "experiment": "01KZFVTRWK90S3KTA4SZFEMM7W",
+          "job": "01KZFVTS04EX7M168AD9GWTYNP",
+          "result": "01KZFVTRWV04ZRVFWHPJDFEBF0",
+          "wandb": "ct7wxbn1",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs128_e1_lr1e-3_wd0.3_warmup192_e1_grid_r19",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs128_e1_lr1e-3_wd0.3_warmup192_e1_grid_r19/step1716",
+          "train": 3.35,
+          "validation": 3.432,
+          "reason": "Inherited exact Original E1 coordinate; DR begins at E2 from retained pre-decay step1716."
+        }
+      },
+      "health": "not_started",
+      "reason": "Staged for E2 only after both active BS1024 and BS64 trajectories reach their first validation non-improvement. Use one 8-GPU node, rank microbatch eight, and gradient accumulation two."
+    },
+    {
+      "id": "dr256-lr1e-3-wd0.333",
+      "method": "dr256",
+      "batchSequences": 256,
+      "dataOrder": "dynamic_repacking",
+      "lr": "1e-3",
+      "wd": "0.333",
+      "status": "staged_after_primary",
+      "activeEpoch": null,
+      "attemptedEpochs": [
+
+      ],
+      "sourceExperiment": "01KZCZRRBBSJ14FP7ADNAXWH56",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs256_e1_lr1e-3_wd0.333_warmup96/step858",
+      "gpuCount": 8,
+      "nodeCount": 1,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulationSteps": 4,
+      "results": {
+        "1": {
+          "status": "complete",
+          "inherited": true,
+          "beaker": "01KZCZRRBBSJ14FP7ADNAXWH56",
+          "experiment": "01KZCZRRBBSJ14FP7ADNAXWH56",
+          "job": "01KZCZRRFFFP0KPCBTQJ5KKBTG",
+          "wandb": "63w16979",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs256_e1_lr1e-3_wd0.333_warmup96",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs256_e1_lr1e-3_wd0.333_warmup96/step858",
+          "train": 3.58,
+          "validation": 3.574,
+          "reason": "Inherited exact Original E1 coordinate; DR begins at E2 from retained pre-decay step858."
+        }
+      },
+      "health": "not_started",
+      "reason": "Staged for E2 only after both active BS1024 and BS64 trajectories saturate. Use one 8-GPU node, rank microbatch eight, and gradient accumulation four."
+    },
+    {
+      "id": "dr256-lr2e-3-wd0.333",
+      "method": "dr256",
+      "batchSequences": 256,
+      "dataOrder": "dynamic_repacking",
+      "lr": "2e-3",
+      "wd": "0.333",
+      "status": "staged_after_primary",
+      "activeEpoch": null,
+      "attemptedEpochs": [
+
+      ],
+      "sourceExperiment": "01KZD997FY92SE7CQM504CVDJW",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs256_e1_lr2e-3_wd0.333_warmup96_coord_e1/step858",
+      "gpuCount": 8,
+      "nodeCount": 1,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulationSteps": 4,
+      "policyException": "User explicitly approved LR2e-3 only for BS256 DR WD0.333; LR above 2e-3 and LR2e-3 at every other tuple remain prohibited.",
+      "results": {
+        "1": {
+          "status": "complete",
+          "inherited": true,
+          "beaker": "01KZD997FY92SE7CQM504CVDJW",
+          "experiment": "01KZD997FY92SE7CQM504CVDJW",
+          "job": "01KZD997M2113HVMAZB8PYGK3K",
+          "wandb": "2eohwc5e",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs256_e1_lr2e-3_wd0.333_warmup96_coord_e1",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs256_e1_lr2e-3_wd0.333_warmup96_coord_e1/step858",
+          "train": 3.707,
+          "validation": 3.702,
+          "reason": "Inherited exact Original E1 coordinate; DR begins at E2 from retained pre-decay step858."
+        }
+      },
+      "health": "not_started",
+      "reason": "Staged alongside the BS256 LR1e-3 trajectory only after both active primary trajectories saturate. This is the sole LR2e-3 policy exception."
     },
     {
       "id": "dr512-wd0.1",
@@ -4381,12 +4518,11 @@
         "01JS3MZCAFVY41CZY2472CD4N5"
       ],
       "progress": {
-        "observedAt": "2026-08-12 19:30 PDT",
-        "step": 3970,
+        "observedAt": "2026-08-12 19:57 PDT",
+        "step": 4605,
         "endpointStep": 4769,
-        "epoch": 17,
-        "trainCe": 3.172,
-        "eta": "38m"
+        "epoch": 20,
+        "eta": "8m"
       },
       "startupEvidence": {
         "manifestVerified": true,
