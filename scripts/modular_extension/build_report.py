@@ -850,13 +850,14 @@ clusters; docs per cluster range {docs_sorted[0] / 1e3:.0f}K&ndash;{docs_sorted[
 {docs_sorted[16] / 1e3:.0f}K), doc-tokens {toks_sorted[0] / 1e9:.2f}B&ndash;{toks_sorted[-1] / 1e9:.2f}B
 &mdash; every partition is large enough to train on, none dominates.</p>
 {details("Per-cluster document and token counts (sorted by token mass)", k32_table)}
-<p><strong>Baseline (launched).</strong> The comparison point for partition+grow is the same model trained
-<em>normally</em> over the same window: <code>emo64_100b130b_baseline</code> re-trains 100B&rarr;130B from
+<p><strong>Baseline (done).</strong> The comparison point for partition+grow is the same model trained
+<em>normally</em> over the same window: <code>emo64_100b130b_baseline</code> re-trained 100B&rarr;130B from
 the trunk's step23842 checkpoint with full trainer/optimizer state (deterministic data cursor &rarr;
-exactly the tokens partitioned here), the 1T scheduler cap (LR stays flat at 2e-3, as in the original
-run), and a hard stop at 130B where the final checkpoint (~step 30996) is saved &mdash; the original
-extension run kept no checkpoint between 100B and 200B. Script:
-<code>scripts/modular_extension/emo64_100b130b_baseline.sh</code>.</p>""")
+exactly the tokens partitioned here), the 1T scheduler cap (LR flat at 2e-3, as in the original run), and
+a hard stop at 130B. The original extension run kept no checkpoint between 100B and 200B; the recreated
+<strong>130B checkpoint is saved at
+<code>modular_extension/emo64_100b130b_baseline/step30995</code></strong> (130.00B tokens, full
+model+optimizer+trainer state). Script: <code>scripts/modular_extension/emo64_100b130b_baseline.sh</code>.</p>""")
 
 
 def build_k32cpt(k32, conc, drift) -> str:
