@@ -55,11 +55,23 @@ def group_of(key: str) -> str:
     raise ValueError(key)
 
 
+def _flatten(d: dict, prefix="") -> dict:
+    out = {}
+    for k, v in d.items():
+        name = f"{prefix}.{k}" if prefix else k
+        if isinstance(v, dict):
+            out.update(_flatten(v, name))
+        else:
+            out[name] = v
+    return out
+
+
 def load_model(step: int) -> dict:
     d = str(RUN_DIR / f"step{step}" / "model_and_optim")
     keys = [k for k in RemoteFileSystemReader(d).read_metadata().state_dict_metadata
             if k.startswith("model.")]
-    sd = _load_unsharded_keys(d, keys)
+    sd = _flatten(_load_unsharded_keys(d, keys))
+    assert len(sd) == len(keys), f"flattened {len(sd)} != requested {len(keys)}"
     return {k: v.float() for k, v in sd.items()}
 
 

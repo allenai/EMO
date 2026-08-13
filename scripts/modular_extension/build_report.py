@@ -912,23 +912,45 @@ flows normally at train time &mdash; those experts just receive no gradient.</li
 def _drift_card(drift) -> str:
     last_cum = drift["cumulative"][-1]["groups"]
     first_int = drift["intervals"][0]["groups"]
+    steady = drift["intervals"][-2]["groups"]  # last FULL ~100B interval (the final one is ~35B)
     tok_lo = drift["cumulative"][-1]["from_step"] * drift["tokens_per_step"] / 1e9
     tok_hi = drift["cumulative"][-1]["to_step"] * drift["tokens_per_step"] / 1e9
-    rows = [(g, f"{first_int[g]['rel_drift']:.3f}", f"{last_cum[g]['rel_drift']:.3f}",
-             f"{last_cum[g]['cosine']:.4f}")
+    rows = [(g, f"{first_int[g]['rel_drift']:.3f}", f"{steady[g]['rel_drift']:.3f}",
+             f"{last_cum[g]['rel_drift']:.3f}", f"{last_cum[g]['cosine']:.3f}")
             for g in ("experts", "router", "attention", "embeddings", "norms", "lm_head")]
-    return card("results", "Pre-flight 2 &mdash; how much do non-expert parameters move "
-                           "during 64-expert training?", f"""
+    return card("results", "Pre-flight 2 &mdash; non-expert parameters do move, but experts move "
+                           "fastest; norms are near-stationary", f"""
 <p>Weight-space drift per parameter group across the extension run's permanent checkpoints
-({tok_lo:.0f}B&nbsp;&rarr;&nbsp;{tok_hi:.0f}B tokens, one every ~100B): relative L2 change
-&#8214;&Delta;&theta;&#8214;/&#8214;&theta;&#8214; per ~100B interval and cumulatively. A cheap proxy for
-functional shift &mdash; read it comparatively (group vs group), not absolutely.</p>
-{table(["group", "drift over first 100B interval", f"cumulative drift {tok_lo:.0f}B→{tok_hi:.0f}B",
-        "cosine to 100B weights"], rows)}
+({tok_lo:.0f}B&nbsp;&rarr;&nbsp;{tok_hi:.0f}B tokens, one every ~100B; the final interval spans only
+~35B): relative L2 change &#8214;&Delta;&theta;&#8214;/&#8214;&theta;&#8214; per interval and cumulatively.
+A cheap proxy for functional shift &mdash; read it comparatively (group vs group), not absolutely.</p>
+{table(["group", "first 100B interval", "steady-state 100B interval",
+        f"cumulative {tok_lo:.0f}B→{tok_hi:.0f}B", "cosine to 100B weights"], rows)}
 <div class="figrow">{img_tag(K32CPT / "param_drift.png",
-    "Relative L2 drift by parameter group, per ~100B-token interval (left) and cumulative since the "
-    "100B checkpoint (right); log scale.")}
-</div>""")
+    "Relative L2 drift by parameter group, per checkpoint interval (left) and cumulative since the "
+    "100B checkpoint (right); log scale. The last interval is ~35B tokens, hence its dip.")}
+</div>
+<ul>
+<li><strong>Experts drift fastest</strong>: rel. change ~{steady['experts']['rel_drift']:.2f} per 100B
+(cosine {steady['experts']['cosine']:.2f}) &mdash; ~1.5&times; attention
+({steady['attention']['rel_drift']:.2f}, cosine {steady['attention']['cosine']:.2f}) and
+~3&ndash;4&times; embeddings/router per interval. Long training keeps reshaping experts more than
+anything else.</li>
+<li><strong>But non-expert parameters are not naturally static</strong>: over the full
+{tok_lo:.0f}B&rarr;{tok_hi:.0f}B span attention retains only cosine
+{last_cum['attention']['cosine']:.2f} to its 100B weights. Freezing them is an intervention, not a
+no-op &mdash; its cost over a short window is bounded by the per-interval numbers above (a 30B CPT window
+is ~&#8531; of one interval).</li>
+<li><strong>Norms are effectively stationary</strong> ({steady['norms']['rel_drift']:.3f} per 100B,
+cosine {steady['norms']['cosine']:.4f}) &mdash; freezing them is free. The router moves modestly
+({steady['router']['rel_drift']:.2f} per 100B); freezing it additionally keeps the frozen partition's
+expert-selection semantics valid throughout the sequential sweep.</li>
+<li><strong>Design read for k=32 CPT:</strong> freezing non-expert parameters for the 30B sanity check is
+defensible &mdash; it isolates expert specialization, prevents the shared trunk from skewing toward
+whichever cluster trained last (the sequential-forgetting risk lives mostly in shared parameters), and
+forgoes only a bounded amount of normal drift. The stronger argument is comparative: experts are where
+normal training concentrates change anyway.</li>
+</ul>""")
 
 
 def build_per_cluster(soft, hard, part) -> str:
