@@ -4256,8 +4256,8 @@
           "reason": "Completed healthy on four 8-GPU nodes from exact E12 pre-decay step2575. Validation CE3.12805 strictly improved E12 CE3.15979, unlocking E20 from retained pre-decay step3432."
         }
       },
-      "health": "starting",
-      "reason": "E20 is starting on four 8-GPU nodes. Manifest/preflight passed, exact E16 pre-decay step3432 loaded, and W&B is active; first optimizer step3433 remains pending.",
+      "health": "healthy",
+      "reason": "E20 is training healthily on four 8-GPU nodes after manifest/preflight checks, exact E16 pre-decay step3432 load, and first optimizer step3433. Active train CE is preliminary.",
       "beakerStatus": "pending",
       "attempts": [
         {
@@ -4381,11 +4381,12 @@
         "01JS3MZCAFVY41CZY2472CD4N5"
       ],
       "progress": {
-        "observedAt": "2026-08-12 19:04 PDT",
-        "step": 3432,
+        "observedAt": "2026-08-12 19:30 PDT",
+        "step": 3970,
         "endpointStep": 4769,
-        "epoch": 16,
-        "eta": "starting"
+        "epoch": 17,
+        "trainCe": 3.172,
+        "eta": "38m"
       },
       "startupEvidence": {
         "manifestVerified": true,
@@ -4394,7 +4395,7 @@
         "dynamicRepacking": true,
         "sourceCheckpointLoaded": true,
         "sourceStep": 3432,
-        "firstOptimizerStep": null,
+        "firstOptimizerStep": 3433,
         "trainerAndOptimizerStateRequested": true,
         "optimizerHyperparametersValidated": true
       },
