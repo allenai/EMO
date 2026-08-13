@@ -4458,7 +4458,7 @@
         }
       },
       "health": "healthy",
-      "reason": "E20 completed healthy at validation CE3.12311, strictly improving E16 CE3.12805 by 0.00494. E24 was submitted from exact E20 pre-decay step4291 after print-only guards passed; four replicas are pending.",
+      "reason": "E24 retry4 was submitted from exact E20 pre-decay step4291 after the preceding attempt failed before task startup because revision 310795c4 was no longer fetchable. Print-only guards passed against reachable revision e44a747b; four replicas are pending.",
       "beakerStatus": "pending",
       "attempts": [
         {
@@ -4554,26 +4554,56 @@
           "revision": "2b4ce1056a82017c417a7423706814c489aecccd",
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e16_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r01",
           "reason": "Rank1 failed during Gantry environment setup because GitHub CLI downloads returned HTTP503 and invalid archives across all retries; siblings were canceled by propagate-failure. No repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed, so automatic infrastructure retry is eligible."
+        },
+        {
+          "epoch": 24,
+          "experiment": "01KZWJHSHKD1A5BTWZ9JRGW8ZT",
+          "job": "01KZWJHSMZGNQZ24CM5S4JP2K8",
+          "result": "01KZWJHSHV9TP490WX0YG4K9N4",
+          "replicaJobs": [
+            "01KZWJHSMZGNQZ24CM5S4JP2K8",
+            "01KZWJHSR9Q7QWS8R6QQ2BQAZD",
+            "01KZWJHSVQE6QE3K3CYT3KXAT7",
+            "01KZWJHSYZ3GZGC8KDA7H8EME4"
+          ],
+          "replicaResults": [
+            "01KZWJHSHV9TP490WX0YG4K9N4",
+            "01KZWJHSN5TBRKVQ39X4KAFR7M",
+            "01KZWJHSRJ7N1BQH3JNMEYCVVJ",
+            "01KZWJHSVWSCQEW43X57TFT4FH"
+          ],
+          "replicaNodes": [
+            "01K15VC4MF63NFG484TFTWHSYB",
+            "01K9DE3ZW66Q3XWJP19C3F34HS",
+            "01JS3MZCR99B130HM7RMCBYYYR",
+            "01K15VBGT6DBQCXH04Y81WFGJB"
+          ],
+          "status": "failed_before_task_start",
+          "failedReplica": "01KZWJHSR9Q7QWS8R6QQ2BQAZD",
+          "wandb": null,
+          "revision": "310795c4",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e24_lr1e-3_wd1.0_warmup24_bs1024-dr-e24-lr1e3-wd1p0-r01",
+          "reason": "Rank1 failed during Gantry source setup because pinned revision 310795c4 was no longer fetchable; siblings were canceled by propagate-failure. No repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed, so automatic infrastructure retry4 is eligible."
         }
       ],
-      "retryCount": 3,
-      "beaker": "01KZWJHSHKD1A5BTWZ9JRGW8ZT",
-      "experiment": "01KZWJHSHKD1A5BTWZ9JRGW8ZT",
-      "revision": "310795c4",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e24_lr1e-3_wd1.0_warmup24_bs1024-dr-e24-lr1e3-wd1p0-r01",
-      "job": "01KZWJHSMZGNQZ24CM5S4JP2K8",
-      "result": "01KZWJHSHV9TP490WX0YG4K9N4",
+      "retryCount": 4,
+      "beaker": "01KZWPC3TBHDRJCKDEG7CK57M1",
+      "experiment": "01KZWPC3TBHDRJCKDEG7CK57M1",
+      "revision": "e44a747b63c572a2e684104133f7504160f77563",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e24_lr1e-3_wd1.0_warmup24_bs1024-dr-e24-lr1e3-wd1p0-r04",
+      "job": "01KZWPC3XT9ZSAGF47SB92QRCC",
+      "result": "01KZWPC3TN4YY2SST9A23VH81V",
       "replicaJobs": [
-        "01KZWJHSMZGNQZ24CM5S4JP2K8",
-        "01KZWJHSR9Q7QWS8R6QQ2BQAZD",
-        "01KZWJHSVQE6QE3K3CYT3KXAT7",
-        "01KZWJHSYZ3GZGC8KDA7H8EME4"
+        "01KZWPC3XT9ZSAGF47SB92QRCC",
+        "01KZWPC415NPW2ZFYC6ATJFFWT",
+        "01KZWPC44KHSH4072CD45ABJZ6",
+        "01KZWPC4884GAWNFKF0PQWTY04"
       ],
       "replicaResults": [
-        "01KZWJHSHV9TP490WX0YG4K9N4",
-        "01KZWJHSN5TBRKVQ39X4KAFR7M",
-        "01KZWJHSRJ7N1BQH3JNMEYCVVJ",
-        "01KZWJHSVWSCQEW43X57TFT4FH"
+        "01KZWPC3TN4YY2SST9A23VH81V",
+        "01KZWPC3Y0ZHQJZ42148JWR19H",
+        "01KZWPC41B6YC1A32F8GA9AGXD",
+        "01KZWPC44RBKFGFWRJQ369KHJP"
       ]
     },
     {
