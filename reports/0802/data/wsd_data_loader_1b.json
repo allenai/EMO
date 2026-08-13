@@ -137,7 +137,7 @@
         }
       },
       "health": "planned",
-      "reason": "Healthy on one 8-GPU node at step4965/7629 after manifest/preflight checks, exact Original E1 pre-decay step3432 load, and first optimizer step3433.",
+      "reason": "Healthy on one 8-GPU node at step5845/7629 after manifest/preflight checks, exact Original E1 pre-decay step3432 load, and first optimizer step3433. Active train metrics remain preliminary.",
       "beaker": "01KZWDBW5NFCBJY88KQQ0E7FR2",
       "experiment": "01KZWDBW5NFCBJY88KQQ0E7FR2",
       "job": "01KZWDBW95SEQQZD20HK81Z1W9",
@@ -148,11 +148,11 @@
       "wandb": "idgymq7o",
       "node": "01JS3MZCAFVY41CZY2472CD4N5",
       "progress": {
-        "observedAt": "2026-08-12 20:10 PDT",
-        "step": 4965,
+        "observedAt": "2026-08-12 20:31 PDT",
+        "step": 5845,
         "endpointStep": 7629,
-        "epoch": 1.3,
-        "eta": "28m"
+        "epoch": 1.5,
+        "eta": "18m"
       },
       "startupEvidence": {
         "manifestVerified": true,
