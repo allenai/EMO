@@ -42,6 +42,7 @@ echo "$CLUSTERS" >> "${RUNS}/order.txt"   # provenance: the stage order this dri
 if [ ! -f "${POOL}/model_and_optim/.metadata" ]; then
     echo "=== initializing ${ARM} pool from ${BASE_CKPT}"
     mkdir -p "$POOL"
+    rm -rf "${POOL}/model_and_optim.copying" "${POOL}/model_and_optim"  # stale partial init
     cp -r "${BASE_CKPT}/model_and_optim" "${POOL}/model_and_optim.copying"
     mv "${POOL}/model_and_optim.copying" "${POOL}/model_and_optim"
     cp "${BASE_CKPT}/config.json" "$POOL/" 2>/dev/null || true
