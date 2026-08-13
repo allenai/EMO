@@ -49,11 +49,13 @@ def parse_clusters(spec: str):
 
 
 def build_model(args, device):
-    from olmo_core.nn.hf.convert_checkpoint import load_config
+    # NOTE: deliberately NOT olmo_core.nn.hf.load_config -- that module's import chain
+    # needs the custom transformers fork, absent from the Beaker image. config.json at
+    # the step-dir level IS the experiment config.
     from olmo_core.nn.transformer import TransformerConfig
 
     cfg_src = args.config_from or args.checkpoint
-    experiment_config = load_config(cfg_src)
+    experiment_config = json.load(open(Path(cfg_src) / "config.json"))
     tcfg = experiment_config["model"]
     moe = tcfg["block"]["feed_forward_moe"]
     router = moe.get("router") or {}
