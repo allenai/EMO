@@ -181,7 +181,7 @@
         }
       },
       "health": "healthy",
-      "reason": "Healthy after forced exact load of canonical step13732; preliminary train CE3.288 at step15930/30518.",
+      "reason": "Healthy after forced exact load of canonical step13732; 55% complete at step16870/30518.",
       "beakerStatus": "running",
       "attempts": [
         {
@@ -241,13 +241,12 @@
         "startedAt": "2026-08-13 09:34 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-13 10:39 PDT",
-        "step": 15930,
+        "observedAt": "2026-08-13 11:01 PDT",
+        "step": 16870,
         "endpointStep": 30518,
         "epoch": 5,
-        "trainCe": 3.288,
         "metricStatus": "preliminary",
-        "eta": "7h2m"
+        "eta": "6h34m"
       }
     },
     {
@@ -4243,8 +4242,8 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "submitted",
-      "activeEpoch": 28,
+      "status": "complete",
+      "activeEpoch": null,
       "attemptedEpochs": [
         2,
         4,
@@ -4570,11 +4569,50 @@
           "validation": 3.122,
           "validationExact": 3.12162,
           "reason": "Completed healthy on four 8-GPU nodes from exact E20 pre-decay step4291. Validation CE3.12162 strictly improved E20 CE3.12311 by 0.00149, making E28 eligible; submission is held during user output-directory cleanup."
+        },
+        "28": {
+          "status": "complete",
+          "beaker": "01KZXZG5K1KMHY72DJBMSVP2S3",
+          "experiment": "01KZXZG5K1KMHY72DJBMSVP2S3",
+          "job": "01KZXZG5QWA774B4Q54G12ZYYY",
+          "result": "01KZXZG5KDNATGK4EQ9849NKAY",
+          "replicaJobs": [
+            "01KZXZG5QWA774B4Q54G12ZYYY",
+            "01KZXZG5VFCV7XHGTKX6AZ2V60",
+            "01KZXZG5ZHP7E21DDSNWZCGEK4",
+            "01KZXZG62ZY32FT1DCHX9TJ6M9"
+          ],
+          "replicaResults": [
+            "01KZXZG5KDNATGK4EQ9849NKAY",
+            "01KZXZG5R2BVPWCJAARVVVHC9C",
+            "01KZXZG5VN6S7MTY2H629Z655K",
+            "01KZXZG5ZQGJP2CSV1W0G6KXYH"
+          ],
+          "replicaNodes": [
+            "01JRYCX2PCP1M837BB64CK6PFP",
+            "01JS0FZ4DR810D949DRZ9VAN2T",
+            "01JS3MZCAFVY41CZY2472CD4N5",
+            "01JS3MZDGSJAMMESCE6G2E1WBA"
+          ],
+          "wandb": "lu92j3sn",
+          "revision": "ebb77cc326583f6688dd4484020bfa313a054436",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0/step5150",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0/step6007",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0/step6676",
+          "retainedCheckpoints": [
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0/step6007",
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0/step6676"
+          ],
+          "train": 2.705,
+          "validation": 3.133,
+          "validationExact": 3.13269,
+          "reason": "Completed healthy after forced exact load of canonical E24 pre-decay step5150. Validation CE3.13269 worsened versus E24 CE3.12162 by 0.01107, so this trajectory saturates at E24 and E32 is pruned."
         }
       },
       "health": "healthy",
-      "reason": "Healthy on four 8-GPU nodes after forced exact load of canonical step5150; preliminary train CE2.704 at step6580/6676.",
-      "beakerStatus": "running",
+      "reason": "Saturated: E24 validation CE3.12162 remains the minimum; E28 worsened to CE3.13269, so E32 is pruned.",
+      "beakerStatus": "complete",
       "attempts": [
         {
           "epoch": 8,
@@ -4773,13 +4811,14 @@
         "startedAt": "2026-08-13 09:38 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-13 10:39 PDT",
-        "step": 6580,
+        "observedAt": "2026-08-13 10:43 PDT",
+        "step": 6676,
         "endpointStep": 6676,
         "epoch": 28,
-        "trainCe": 2.704,
-        "metricStatus": "preliminary",
-        "eta": "4m"
+        "trainCe": 2.705,
+        "validationCe": 3.13269,
+        "metricStatus": "final",
+        "eta": "complete"
       }
     },
     {
