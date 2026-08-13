@@ -98,7 +98,14 @@ def extract(args):
 
     pool_mao = str(Path(args.pool) / "model_and_optim")
     print(f"extract: cluster {args.cluster} from {pool_mao} (fresh_optim={args.fresh_optim})")
-    model_sd, optim_sd = list(load_keys(pool_mao, ["model", "optim"]))
+    if args.fresh_optim:
+        # the fresh arm trains with --load_optim_state=false, so the subset checkpoint's
+        # optimizer half is never read: skip loading the pool's ~52GB of moments entirely
+        # and write a model-only checkpoint (~14GB instead of ~45GB).
+        (model_sd,) = list(load_keys(pool_mao, ["model"]))
+        optim_sd = None
+    else:
+        model_sd, optim_sd = list(load_keys(pool_mao, ["model", "optim"]))
 
     n_sliced = 0
     for k in list(model_sd):
@@ -108,27 +115,16 @@ def extract(args):
             continue
         slot_ids = slots_for_layer(selection, layer_of(k))
         model_sd[k] = slice_slots(model_sd[k], E_POOL, slot_ids)
-        for mkey in ("exp_avg", "exp_avg_sq"):
-            sk = f"state.{k}.{mkey}"
-            assert sk in optim_sd, f"missing {sk}"
-            if args.fresh_optim:
-                optim_sd[sk] = torch.zeros_like(slice_slots(optim_sd[sk], E_POOL, slot_ids))
-            else:
+        if optim_sd is not None:
+            for mkey in ("exp_avg", "exp_avg_sq"):
+                sk = f"state.{k}.{mkey}"
+                assert sk in optim_sd, f"missing {sk}"
                 optim_sd[sk] = slice_slots(optim_sd[sk], E_POOL, slot_ids)
-        stk = f"state.{k}.step"
-        if args.fresh_optim and stk in optim_sd:
-            s = optim_sd[stk]
-            optim_sd[stk] = torch.zeros_like(s) if torch.is_tensor(s) else 0.0
         n_sliced += 1
     assert n_sliced == 4 * N_LAYERS, f"sliced {n_sliced} tensors, expected {4 * N_LAYERS}"
 
-    if args.fresh_optim:
-        # fresh Adam for the trainable (expert) params is handled above; frozen params'
-        # state is never loaded by the new run's optimizer, so leave it as-is.
-        pass
-
-    save_state_dict(str(out / "model_and_optim"), {"model": model_sd, "optim": optim_sd},
-                    save_overwrite=True)
+    to_save = {"model": model_sd} if optim_sd is None else {"model": model_sd, "optim": optim_sd}
+    save_state_dict(str(out / "model_and_optim"), to_save, save_overwrite=True)
     with open(out / "selection.json", "w") as f:
         json.dump({"cluster": args.cluster, "num_experts": E_SUB, "num_shared": 1,
                    "pool": str(args.pool), "fresh_optim": bool(args.fresh_optim),
