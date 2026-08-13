@@ -71,7 +71,7 @@ for c in $CLUSTERS; do
                 SAVE_DIR="${WEKA_RUNS}/stage_${tag}" \
                 TOKENS=$tokens \
                 bash scripts/modular_extension/k32cpt_stage.sh 2>&1 | tee "${RUNS}/launch_${tag}.log" || true
-            exp_id=$(grep -oE 'beaker.org/ex/[A-Z0-9]+' "${RUNS}/launch_${tag}.log" | head -1 | sed 's|beaker.org/ex/||')
+            exp_id=$(grep -oE 'beaker.org/ex/[A-Z0-9]+' "${RUNS}/launch_${tag}.log" 2>/dev/null | head -1 | sed 's|beaker.org/ex/||' || true)
             [ -n "$exp_id" ] && return 0
             echo "!!! stage ${tag}: submit attempt ${attempt} produced no experiment id; retrying in 60s"
             sleep 60
