@@ -181,7 +181,7 @@
         }
       },
       "health": "healthy",
-      "reason": "Healthy after forced exact load of canonical step13732; preliminary train CE3.240 at step14645/30518.",
+      "reason": "Healthy after forced exact load of canonical step13732; preliminary train CE3.288 at step15930/30518.",
       "beakerStatus": "running",
       "attempts": [
         {
@@ -241,13 +241,13 @@
         "startedAt": "2026-08-13 09:34 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-13 10:01 PDT",
-        "step": 14645,
+        "observedAt": "2026-08-13 10:39 PDT",
+        "step": 15930,
         "endpointStep": 30518,
-        "epoch": 4,
-        "trainCe": 3.24,
+        "epoch": 5,
+        "trainCe": 3.288,
         "metricStatus": "preliminary",
-        "eta": "7h37m"
+        "eta": "7h2m"
       }
     },
     {
@@ -4573,7 +4573,7 @@
         }
       },
       "health": "healthy",
-      "reason": "Healthy on four 8-GPU nodes after forced exact load of canonical step5150; preliminary train CE3.056 at step5685/6676.",
+      "reason": "Healthy on four 8-GPU nodes after forced exact load of canonical step5150; preliminary train CE2.704 at step6580/6676.",
       "beakerStatus": "running",
       "attempts": [
         {
@@ -4773,13 +4773,13 @@
         "startedAt": "2026-08-13 09:38 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-13 10:01 PDT",
-        "step": 5685,
+        "observedAt": "2026-08-13 10:39 PDT",
+        "step": 6580,
         "endpointStep": 6676,
-        "epoch": 24,
-        "trainCe": 3.056,
+        "epoch": 28,
+        "trainCe": 2.704,
         "metricStatus": "preliminary",
-        "eta": "41m"
+        "eta": "4m"
       }
     },
     {
