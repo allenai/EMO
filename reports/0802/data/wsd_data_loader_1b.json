@@ -4518,11 +4518,11 @@
         "01JS3MZCAFVY41CZY2472CD4N5"
       ],
       "progress": {
-        "observedAt": "2026-08-12 19:57 PDT",
-        "step": 4605,
+        "observedAt": "2026-08-12 20:01 PDT",
+        "step": 4710,
         "endpointStep": 4769,
         "epoch": 20,
-        "eta": "8m"
+        "eta": "3m"
       },
       "startupEvidence": {
         "manifestVerified": true,
