@@ -181,8 +181,8 @@
         }
       },
       "health": "healthy",
-      "reason": "Exact-load E8 infrastructure retry is scheduled on one 8-GPU node from canonical step13732.",
-      "beakerStatus": "scheduled",
+      "reason": "Healthy after forced exact load of canonical step13732; preliminary train CE3.240 at step14645/30518.",
+      "beakerStatus": "running",
       "attempts": [
         {
           "epoch": 4,
@@ -227,7 +227,28 @@
       "job": "01KZXZG36FBZZHSKWZQKTHHVPR",
       "result": "01KZXZG335P6S6CYF74PT8G9X3",
       "node": "01K15VC4MF63NFG484TFTWHSYB",
-      "heldNextEpoch": null
+      "heldNextEpoch": null,
+      "wandb": "21m68ioe",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "dynamicRepacking": true,
+        "forcedExactLoad": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 13732,
+        "firstOptimizerStep": 13733,
+        "trainerAndOptimizerStateRequested": true,
+        "startedAt": "2026-08-13 09:34 PDT"
+      },
+      "progress": {
+        "observedAt": "2026-08-13 10:01 PDT",
+        "step": 14645,
+        "endpointStep": 30518,
+        "epoch": 4,
+        "trainCe": 3.24,
+        "metricStatus": "preliminary",
+        "eta": "7h37m"
+      }
     },
     {
       "id": "dr64-lr1e-3-wd1.0",
@@ -4552,8 +4573,8 @@
         }
       },
       "health": "healthy",
-      "reason": "Exact-load E28 infrastructure retry has four pending 8-GPU replicas from canonical step5150.",
-      "beakerStatus": "pending",
+      "reason": "Healthy on four 8-GPU nodes after forced exact load of canonical step5150; preliminary train CE3.056 at step5685/6676.",
+      "beakerStatus": "running",
       "attempts": [
         {
           "epoch": 8,
@@ -4732,7 +4753,34 @@
         "01KZXZG5VN6S7MTY2H629Z655K",
         "01KZXZG5ZQGJP2CSV1W0G6KXYH"
       ],
-      "heldNextEpoch": null
+      "heldNextEpoch": null,
+      "wandb": "lu92j3sn",
+      "replicaNodes": [
+        "01JRYCX2PCP1M837BB64CK6PFP",
+        "01JS0FZ4DR810D949DRZ9VAN2T",
+        "01JS3MZCAFVY41CZY2472CD4N5",
+        "01JS3MZDGSJAMMESCE6G2E1WBA"
+      ],
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "dynamicRepacking": true,
+        "forcedExactLoad": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 5150,
+        "firstOptimizerStep": 5151,
+        "trainerAndOptimizerStateRequested": true,
+        "startedAt": "2026-08-13 09:38 PDT"
+      },
+      "progress": {
+        "observedAt": "2026-08-13 10:01 PDT",
+        "step": 5685,
+        "endpointStep": 6676,
+        "epoch": 24,
+        "trainCe": 3.056,
+        "metricStatus": "preliminary",
+        "eta": "41m"
+      }
     },
     {
       "id": "fixed1024-wd0.333",
