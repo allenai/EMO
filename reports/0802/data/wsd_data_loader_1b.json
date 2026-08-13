@@ -125,8 +125,8 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "submitted",
-      "activeEpoch": 2,
+      "status": "conditional",
+      "activeEpoch": null,
       "attemptedEpochs": [
         2
       ],
@@ -152,14 +152,26 @@
           "reason": "Inherited exact Original E1 coordinate; DR begins at E2 from retained pre-decay step3432."
         }
       },
-      "health": "planned",
-      "reason": "Submitted locally after exact-source, LR/WD, one-node 8-GPU, rank-microbatch-eight, gradient-accumulation-one, manifest-checksum, and duplicate-tuple guards passed.",
+      "health": "not_started",
+      "reason": "E2 attempt was manually canceled while pending, before node assignment, task startup, W&B, optimizer progress, output, or checkpoint. Preserve WD1.0 as a conditional candidate; launch it only if the WD0.3 DR trajectory demonstrates a plausible higher-regularization benefit.",
       "beaker": "01KZWDBX6TXA8G7TKMJ10ECPY4",
       "experiment": "01KZWDBX6TXA8G7TKMJ10ECPY4",
       "job": "01KZWDBXAG6MF0ZPJ3S9H1G66Q",
       "result": "01KZWDBX717XY73NMBWGHNXJ0Y",
       "revision": "c984fa7b41767f84a069adc7b9884906bde131e7",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e2_lr1e-3_wd1.0_warmup384_bs64-dr-e2-lr1e3-wd1p0-r01"
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e2_lr1e-3_wd1.0_warmup384_bs64-dr-e2-lr1e3-wd1p0-r01",
+      "attempts": [
+        {
+          "epoch": 2,
+          "experiment": "01KZWDBX6TXA8G7TKMJ10ECPY4",
+          "job": "01KZWDBXAG6MF0ZPJ3S9H1G66Q",
+          "result": "01KZWDBX717XY73NMBWGHNXJ0Y",
+          "status": "manually_canceled_pending",
+          "node": null,
+          "wandb": null,
+          "reason": "User requested testing WD0.3 first. The job was canceled before node assignment or task startup and produced no W&B, optimizer progress, output, or checkpoint."
+        }
+      ]
     },
     {
       "id": "dr512-wd0.1",
