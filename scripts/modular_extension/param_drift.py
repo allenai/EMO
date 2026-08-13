@@ -76,7 +76,7 @@ def load_model(step: int) -> dict:
 
 
 def pair_stats(a: dict, b: dict) -> dict:
-    """Per-group rel_drift and cosine between two model state dicts."""
+    """Per-group rel_drift, cosine, and norm ratio between two model state dicts."""
     acc: dict = {}
     for k in a:
         g = group_of(k)
@@ -87,7 +87,8 @@ def pair_stats(a: dict, b: dict) -> dict:
         s["nd"] += float((y - x).pow(2).sum())
         s["dot"] += float((x * y).sum())
     return {g: {"rel_drift": (s["nd"] / s["na"]) ** 0.5,
-                "cosine": s["dot"] / ((s["na"] ** 0.5) * (s["nb"] ** 0.5))}
+                "cosine": s["dot"] / ((s["na"] ** 0.5) * (s["nb"] ** 0.5)),
+                "norm_ratio": (s["nb"] / s["na"]) ** 0.5}
             for g, s in acc.items()}
 
 
@@ -114,22 +115,31 @@ def main():
     groups = ["experts", "router", "attention", "embeddings", "norms", "lm_head"]
     colors = {"experts": "#dc2626", "router": "#f59e0b", "attention": "#2563eb",
               "embeddings": "#16a34a", "norms": "#9333ea", "lm_head": "#64748b"}
-    fig, axes = plt.subplots(1, 2, figsize=(12, 4.4))
-    for ax, series, title in [
-        (axes[0], intervals, "per ~100B-token interval"),
-        (axes[1], cumulative, "cumulative since 100B"),
-    ]:
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8), sharex=True)
+    panels = [
+        (axes[0][0], intervals, "rel_drift", "relative L2 drift, per interval (vs previous ckpt)"),
+        (axes[0][1], cumulative, "rel_drift", "relative L2 drift, cumulative (vs 100B ckpt)"),
+        (axes[1][0], intervals, "cosine", "cosine similarity, per interval (vs previous ckpt)"),
+        (axes[1][1], cumulative, "cosine", "cosine similarity, cumulative (vs 100B ckpt)"),
+    ]
+    for ax, series, metric, title in panels:
         x = [s["to_step"] * TOK_PER_STEP / 1e9 for s in series]
         for g in groups:
-            ax.plot(x, [s["groups"][g]["rel_drift"] for s in series], "o-",
+            ax.plot(x, [s["groups"][g][metric] for s in series], "o-",
                     color=colors[g], label=g)
-        ax.set_xlabel("tokens (B)")
-        ax.set_title(f"relative L2 drift, {title}", fontsize=10)
+        ax.set_title(title, fontsize=10)
         ax.grid(alpha=0.3)
-        ax.set_yscale("log")
-    axes[0].set_ylabel(r"$\|\Delta\theta\|/\|\theta\|$")
-    axes[1].legend(fontsize=9)
-    fig.suptitle("Weight drift by parameter group during 64-expert EMO training", fontsize=12)
+        if metric == "rel_drift":
+            ax.set_yscale("log")
+        else:
+            ax.set_ylim(0, 1.02)
+    for ax in axes[1]:
+        ax.set_xlabel("tokens (B)")
+    axes[0][0].set_ylabel(r"$\|\Delta\theta\|/\|\theta\|$")
+    axes[1][0].set_ylabel("cosine")
+    axes[0][1].legend(fontsize=9)
+    fig.suptitle("Weight drift by parameter group during 64-expert EMO training "
+                 "(final interval spans only ~35B tokens)", fontsize=12)
     fig.tight_layout()
     fig.savefig(OUT / "param_drift.png", dpi=150)
     print(f"Wrote {OUT / 'param_drift.json'} and .png")

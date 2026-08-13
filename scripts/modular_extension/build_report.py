@@ -990,12 +990,16 @@ update vectors only add when the updates point in the same direction. If each in
 cumulative = sum of intervals; if the deltas were mutually orthogonal (a random walk in weight space),
 cumulative &asymp; the square root of the sum of squares &mdash; far smaller. The data contains both regimes:</p>
 {pred_table}
-<p>Attention and experts sit near the <em>orthogonal</em> prediction: each 100B of training moves them a
-similar distance but in a fresh direction, so the cumulative curve grows much more slowly than the interval
-sum (and can even dip when an update partially retraces earlier ones). Embeddings sit near the
-<em>colinear</em> prediction: their drift is one sustained direction &mdash; which the norm-ratio column
-explains: the embedding matrix grew {last_cum["embeddings"]["norm_ratio"]:.1f}&times; in norm since 100B,
-and steady norm growth is exactly a colinear delta sequence.</p>
+<p>Three regimes appear. <em>Embeddings</em> sit near the colinear prediction: their drift is one sustained
+direction &mdash; the norm-ratio column explains it: the embedding matrix grew
+{last_cum["embeddings"]["norm_ratio"]:.1f}&times; in norm since 100B, and steady norm growth is exactly a
+colinear delta sequence. <em>Attention</em> sits between the predictions, nearer orthogonal: each 100B moves
+it a similar distance in a mostly fresh direction. <em>Experts</em> fall <em>below even the orthogonal
+prediction</em>: their norm is preserved ({last_cum["experts"]["norm_ratio"]:.2f}&times;) and their cosine
+to the start has fallen to {last_cum["experts"]["cosine"]:.2f}, so the cumulative distance is pressing
+against the &radic;2&middot;&#8214;&theta;&#8214; ceiling that norm-preserved vectors cannot exceed &mdash;
+experts churn within a bounded region around the origin point rather than migrating away, and later updates
+necessarily partially retrace earlier ones.</p>
 <p><strong>What rel-L2 = 1 means.</strong> Not (only) &ldquo;magnitude doubled or shrank&rdquo;. Exactly:
 rel&sup2; = 1 + r&sup2; &minus; 2r&middot;cos, where r is the norm ratio. Pure scale change (cos=1): rel =
 |r&nbsp;&minus;&nbsp;1|, so doubling gives rel=1. Pure rotation at constant norm (r=1): rel =
