@@ -33,8 +33,10 @@ sys.path.insert(0, str(REPO / "src"))
 
 EOS = 100257
 SEQ_LEN = 4096
-TOKENS_ROOT = (REPO / "modular_extension/data/emo_64exp_50b_wsd_lr2e-3_100B-130B"
-               / "k32_cpt_tokens")
+# NOTE: on Beaker workers the repo is the gantry clone, NOT the weka tree that holds the
+# data -- callers must pass --tokens-root with the absolute weka path (the launcher does).
+DEFAULT_TOKENS_ROOT = (REPO / "modular_extension/data/emo_64exp_50b_wsd_lr2e-3_100B-130B"
+                       / "k32_cpt_tokens")
 
 
 def parse_clusters(spec: str):
@@ -117,6 +119,7 @@ def main():
     p.add_argument("--clusters", default="0-31")
     p.add_argument("--out", required=True)
     p.add_argument("--batch-size", type=int, default=8)
+    p.add_argument("--tokens-root", default=str(DEFAULT_TOKENS_ROOT))
     p.add_argument("--max-tokens-per-cluster", type=int, default=None)
     args = p.parse_args()
     assert args.checkpoint or (args.snapshot and args.config_from)
@@ -126,7 +129,7 @@ def main():
 
     results = {}
     for c in parse_clusters(args.clusters):
-        hp = TOKENS_ROOT / f"cluster{c:02d}" / "heldout.npy"
+        hp = Path(args.tokens_root) / f"cluster{c:02d}" / "heldout.npy"
         ce, n, dt = eval_cluster(model, hp, device, args.batch_size,
                                  args.max_tokens_per_cluster)
         results[str(c)] = {"ce": round(ce, 5), "positions": n, "seconds": round(dt, 1)}
