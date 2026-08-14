@@ -204,7 +204,7 @@
         }
       },
       "health": "healthy",
-      "reason": "E8 completed with train CE2.943 and validation CE3.02697, strictly improving E4 CE3.11199 by 0.08502. E12 passed registration and print-only exact-resume guards, was assigned one 8-GPU node, and entered Gantry environment setup from canonical pre-decay step27465; task-level guards, W&B, exact checkpoint load, and optimizer progress are not visible yet.",
+      "reason": "E8 completed with train CE2.943 and validation CE3.02697, strictly improving E4 CE3.11199 by 0.08502. E12 is healthy on one 8-GPU node after manifest/preflight checks and exact trainer/optimizer resume from canonical pre-decay step27465; measured throughput is 54.7k tokens/s/GPU at 51.3% MFU, confirming normal performance after the anomalously slow E8 node.",
       "beakerStatus": "running",
       "attempts": [
         {
@@ -250,16 +250,26 @@
       "job": "01KZZ0VJJVMF23XFNSF7MES492",
       "result": "01KZZ0VJEWG1CY7X36WMWQ7R1G",
       "node": "01JS3MZC0NYRRKMR91BZMQY58B",
+      "wandb": "b35ykovv",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 27465,
+        "firstOptimizerStep": 27466,
+        "trainerAndOptimizerStateRequested": true,
+        "throughputTokensPerSecondPerGpu": 54670,
+        "mfuPercent": 51.31
+      },
       "heldNextEpoch": null,
       "progress": {
-        "observedAt": "2026-08-13 17:40 PDT",
-        "step": 30518,
-        "endpointStep": 30518,
-        "epoch": 8,
-        "trainCe": 2.943,
-        "validationCe": 3.02697,
-        "metricStatus": "final",
-        "eta": "complete"
+        "observedAt": "2026-08-13 20:01 PDT",
+        "step": 31038,
+        "endpointStep": 45777,
+        "epoch": 9,
+        "trainCe": 3.126,
+        "metricStatus": "preliminary",
+        "eta": "2h28m"
       }
     },
     {
