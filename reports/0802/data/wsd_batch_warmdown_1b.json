@@ -163,7 +163,7 @@
       "status": "running",
       "validation": null,
       "train": null,
-      "wandb": null,
+      "wandb": "jomirj7y",
       "beaker": "01M00TGBT6273XD7T6QBNRRET2",
       "job": "01M00TGBY010A7H0P3EWFHA0Z3",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step858",
