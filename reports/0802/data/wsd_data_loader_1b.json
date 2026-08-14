@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-13",
+  "updated": "2026-08-14",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes.",
   "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 DR LR1e-3/WD0.3 E12 completed at validation CE2.99359, strictly improving E8 CE3.02697, so E16 is submitted from exact canonical pre-decay step41198 and will advance by four-epoch frontiers until its first non-improvement. BS1024 DR LR1e-3/WD1.0 is saturated at E24 CE3.12162 because E28 worsened to CE3.13269. After BS64 saturates, start BS128 LR1e-3/WD0.3 and BS256 WD0.333 at LR1e-3 and the explicitly approved LR2e-3 coordinate; each new DR trajectory begins at E2 from its exact Original E1 pre-decay checkpoint and advances only while its own validation CE strictly improves. LR2e-3 is an exception only for BS256 DR WD0.333; LR above 2e-3 remains prohibited. After all three staged trajectories finish, assess whether WD1.0 is justified rather than launching it automatically. If DR consistently improves over the matched Original loader across completed batch sizes, run the final conditional BS32 LR5e-4/WD0.3 trajectory. BS512 DR LR1e-3/WD1.0 is saturated at E24 CE3.06442 because E28 worsened to CE3.06734. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
@@ -287,13 +287,13 @@
       },
       "heldNextEpoch": null,
       "progress": {
-        "observedAt": "2026-08-13 23:31 PDT",
-        "step": 42900,
+        "observedAt": "2026-08-14 00:10 PDT",
+        "step": 46810,
         "endpointStep": 61036,
-        "epoch": 12,
-        "trainCe": 3.052,
+        "epoch": 13,
+        "trainCe": 3.179,
         "metricStatus": "preliminary",
-        "eta": "3h4m"
+        "eta": "2h23m"
       }
     },
     {
