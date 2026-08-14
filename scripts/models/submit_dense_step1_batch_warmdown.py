@@ -17,7 +17,7 @@ from typing import Any
 SOURCE_EXPERIMENT = "01KZRTKNSSX9H1DPZ7NHJSM28F"
 SOURCE_CHECKPOINT = (
     "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/"
-    "bs1024_dr_lr1e-3_wd0.333/step477"
+    "bs1024_dr_lr1e-3_wd0.333/step428"
 )
 OUTPUT_ROOT = "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b"
 BS256_NAME = "bs256_dr_init=bs1024e2_lr1e-03_wd0.333"
@@ -32,6 +32,7 @@ WD = "0.333"
 SEQUENCE_LENGTH = 4096
 RANK_MICROBATCH_SEQUENCES = 8
 BS256_END_STEP = 2384
+BS256_PRE_DECAY_STEP = 2145
 BS64_END_STEP = 17643
 
 
@@ -150,7 +151,12 @@ def stage_arguments(
             f"[pretraining,step1,batch-warmdown,dr,bs{batch_sequences},lr1e-3,wd0p333]",
         ),
         ("--trainer.callbacks.downstream_evaluator.eval_on_finish=", "--trainer.callbacks.downstream_evaluator.eval_on_finish=false"),
-        ("--trainer.callbacks.checkpointer.fixed_steps=", f"--trainer.callbacks.checkpointer.fixed_steps=[{end_step}]"),
+        (
+            "--trainer.callbacks.checkpointer.fixed_steps=",
+            f"--trainer.callbacks.checkpointer.fixed_steps=[{BS256_PRE_DECAY_STEP}, {end_step}]"
+            if batch_sequences == 256
+            else f"--trainer.callbacks.checkpointer.fixed_steps=[{end_step}]",
+        ),
         ("--trainer.callbacks.checkpointer.save_interval=", "--trainer.callbacks.checkpointer.save_interval=1000000000"),
         ("--trainer.callbacks.checkpointer.ephemeral_save_interval=", "--trainer.callbacks.checkpointer.ephemeral_save_interval=999999999"),
         ("--data_loader.global_batch_size=", f"--data_loader.global_batch_size={batch_sequences * SEQUENCE_LENGTH}"),
@@ -173,11 +179,11 @@ def stage_arguments(
             "--trainer.load_optim_state=true",
             "--trainer.prefer_explicit_load_path=true",
             "--trainer.reset_data_loader_state_on_load_path=false",
-            "--train_module.validate_optimizer_hyperparameters_on_load=false",
+            "--train_module.validate_optimizer_hyperparameters_on_load=true",
             f"--trainer.callbacks.{callback_name}="
             "{_CLASS_: olmo_core.train.callbacks.optimizer_recalibration."
             "AdamSecondMomentBatchRecalibrationCallback, batch_size_ratio: 4.0, "
-            f"expected_step: {expected_step}, restart_lr: 0.001}}",
+            f"expected_step: {expected_step}}}",
         ]
     )
     return arguments
@@ -204,16 +210,16 @@ def build_spec(spec: dict[str, Any], args: argparse.Namespace, source_args: list
         source_checkpoint=SOURCE_CHECKPOINT,
         output=BS256_OUTPUT,
         callback_name="batch_warmdown_recalibration_bs256",
-        expected_step=477,
+        expected_step=428,
     )
     second = stage_arguments(
         source_args,
         batch_sequences=64,
         end_step=BS64_END_STEP,
-        source_checkpoint=f"{BS256_OUTPUT}/step{BS256_END_STEP}",
+        source_checkpoint=f"{BS256_OUTPUT}/step{BS256_PRE_DECAY_STEP}",
         output=BS64_OUTPUT,
         callback_name="batch_warmdown_recalibration_bs64",
-        expected_step=BS256_END_STEP,
+        expected_step=BS256_PRE_DECAY_STEP,
     )
     commands = [
         "set -euo pipefail",
@@ -229,9 +235,10 @@ def build_spec(spec: dict[str, Any], args: argparse.Namespace, source_args: list
         f"{{ echo {shlex.quote('BATCH_WARMDOWN_PREFLIGHT_ERROR output already exists: ' + BS64_OUTPUT)} >&2; exit 14; }}",
         f'test "$(git rev-parse HEAD)" = "{args.revision}" || '
         f'{{ echo "BATCH_WARMDOWN_PREFLIGHT_ERROR revision mismatch: expected {args.revision}, got $(git rev-parse HEAD)" >&2; exit 15; }}',
-        shlex.join(["echo", "BATCH_WARMDOWN_PREFLIGHT source_step=477 bs256_end=2384 bs64_end=17643 lr=1e-3 wd=0.333 dr=true v_recal_ratios=4,4"]),
+        shlex.join(["echo", "BATCH_WARMDOWN_PREFLIGHT source_step=428 bs256_end=2384 bs64_end=17643 lr=1e-3 wd=0.333 dr=true v_recal_ratios=4,4"]),
         shlex.join(["python", TRAIN_SCRIPT, BS256_NAME, "--dry-run", *first]),
         shlex.join(["torchrun", "--nproc-per-node=8", TRAIN_SCRIPT, BS256_NAME, *first]),
+        shlex.join(["test", "-d", f"{BS256_OUTPUT}/step{BS256_PRE_DECAY_STEP}"]),
         shlex.join(["test", "-d", f"{BS256_OUTPUT}/step{BS256_END_STEP}"]),
         shlex.join(["python", TRAIN_SCRIPT, BS64_NAME, "--dry-run", *second]),
         shlex.join(["torchrun", "--nproc-per-node=8", TRAIN_SCRIPT, BS64_NAME, *second]),
@@ -270,8 +277,8 @@ def validate_spec(spec: dict[str, Any]) -> None:
         "batch_warmdown_recalibration_bs256",
         "batch_warmdown_recalibration_bs64",
         "batch_size_ratio: 4.0",
-        "expected_step: 477",
-        "expected_step: 2384",
+        "expected_step: 428",
+        "expected_step: 2145",
         "--trainer.max_duration={value: 2384, unit: steps}",
         "--trainer.max_duration={value: 17643, unit: steps}",
         "--data_loader.global_batch_size=1048576",
@@ -281,9 +288,9 @@ def validate_spec(spec: dict[str, Any]) -> None:
         "--trainer.load_optim_state=true",
         "--trainer.load_trainer_state=true",
         "--trainer.prefer_explicit_load_path=true",
-        "--train_module.validate_optimizer_hyperparameters_on_load=false",
-        "restart_lr: 0.001",
+        "--train_module.validate_optimizer_hyperparameters_on_load=true",
         "--dynamic-repacking",
+        "step2145",
         "step2384",
         "step17643",
     ]

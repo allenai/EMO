@@ -56,7 +56,7 @@ from olmo_core.utils import (
 )
 
 from ...common import ReduceType
-from ..train_module import EvalBatchSpec, TrainModule
+from ..train_module import EvalBatchSpec, TrainModule, assert_optimizer_lrs_nonzero
 from .batch_simulation import (
     average_module_and_optimizer_state,
     clone_local_parameter_tensors,
@@ -589,6 +589,11 @@ class TransformerTrainModule(TrainModule):
         self._local_sgd_steps_since_sync = 0
         if self._diloco_outer_optim is not None:
             self._diloco_outer_parameters = clone_local_parameter_tensors(self.model)
+
+    def validate_load_path_checkpoint(self) -> None:
+        assert_optimizer_lrs_nonzero(self.optim)
+        if self._diloco_outer_optim is not None and self._diloco_outer_optim.state:
+            assert_optimizer_lrs_nonzero(self._diloco_outer_optim)
 
     def train_batch(self, batch: Dict[str, Any], dry_run: bool = False):
         # Set model to train mode if it isn't already.

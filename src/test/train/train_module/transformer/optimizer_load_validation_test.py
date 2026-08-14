@@ -2,6 +2,7 @@ import pytest
 import torch
 
 from olmo_core.exceptions import OLMoConfigurationError
+from olmo_core.train.train_module.train_module import assert_optimizer_lrs_nonzero
 from olmo_core.train.train_module.transformer.train_module import (
     assert_optimizer_hyperparameters_match,
     optimizer_hyperparameters,
@@ -38,3 +39,19 @@ def test_optimizer_hyperparameter_assertion_rejects_checkpoint_override():
 def test_optimizer_hyperparameter_assertion_rejects_missing_fields():
     with pytest.raises(OLMoConfigurationError, match="checkpoint <missing> != command 0.1"):
         assert_optimizer_hyperparameters_match([{"weight_decay": 0.1}], [{}])
+
+
+def test_optimizer_lr_assertion_accepts_pre_decay_checkpoint():
+    model = torch.nn.Linear(4, 2)
+    optim = torch.optim.AdamW(model.parameters(), lr=1e-3)
+
+    assert_optimizer_lrs_nonzero(optim)
+
+
+def test_optimizer_lr_assertion_rejects_post_decay_checkpoint():
+    model = torch.nn.Linear(4, 2)
+    optim = torch.optim.AdamW(model.parameters(), lr=1e-3)
+    optim.param_groups[0]["lr"] = 0.0
+
+    with pytest.raises(OLMoConfigurationError, match="pre-decay checkpoint with non-zero LR"):
+        assert_optimizer_lrs_nonzero(optim)

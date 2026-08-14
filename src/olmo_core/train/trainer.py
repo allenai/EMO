@@ -695,6 +695,7 @@ class Trainer:
                 self.load_path,
                 reset_data_loader_state=self.reset_data_loader_state_on_load_path,
             )
+            self.train_module.validate_load_path_checkpoint()
 
         if not self.checkpoint_loaded:
             # The save folder is used for continuing runs that failed or were preempted, so
@@ -706,10 +707,12 @@ class Trainer:
         # Then fallback to the load path, if provided.
         if self.load_path is not None:
             if not self.checkpoint_loaded:
-                self.maybe_load_checkpoint(
+                loaded_from_load_path = self.maybe_load_checkpoint(
                     self.load_path,
                     reset_data_loader_state=self.reset_data_loader_state_on_load_path,
                 )
+                if loaded_from_load_path:
+                    self.train_module.validate_load_path_checkpoint()
             elif not self.prefer_explicit_load_path:
                 log.warning(
                     f"Ignoring load path ('{self.load_path}') since checkpoint was found in save folder"
