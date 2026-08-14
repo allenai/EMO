@@ -218,12 +218,18 @@ def build_spec(spec: dict[str, Any], args: argparse.Namespace, source_args: list
     )
     commands = [
         "set -euo pipefail",
-        shlex.join(["test", "-d", SOURCE_CHECKPOINT]),
-        shlex.join(["test", "-f", TRAIN_MANIFEST]),
-        shlex.join(["test", "-f", VALIDATION_MANIFEST]),
-        shlex.join(["test", "!", "-e", BS256_OUTPUT]),
-        shlex.join(["test", "!", "-e", BS64_OUTPUT]),
-        f'test "$(git rev-parse HEAD)" = "{args.revision}"',
+        f"test -d {shlex.quote(SOURCE_CHECKPOINT)} || "
+        f"{{ echo {shlex.quote('BATCH_WARMDOWN_PREFLIGHT_ERROR missing source checkpoint: ' + SOURCE_CHECKPOINT)} >&2; exit 10; }}",
+        f"test -f {shlex.quote(TRAIN_MANIFEST)} || "
+        f"{{ echo {shlex.quote('BATCH_WARMDOWN_PREFLIGHT_ERROR missing train manifest: ' + TRAIN_MANIFEST)} >&2; exit 11; }}",
+        f"test -f {shlex.quote(VALIDATION_MANIFEST)} || "
+        f"{{ echo {shlex.quote('BATCH_WARMDOWN_PREFLIGHT_ERROR missing validation manifest: ' + VALIDATION_MANIFEST)} >&2; exit 12; }}",
+        f"test ! -e {shlex.quote(BS256_OUTPUT)} || "
+        f"{{ echo {shlex.quote('BATCH_WARMDOWN_PREFLIGHT_ERROR output already exists: ' + BS256_OUTPUT)} >&2; exit 13; }}",
+        f"test ! -e {shlex.quote(BS64_OUTPUT)} || "
+        f"{{ echo {shlex.quote('BATCH_WARMDOWN_PREFLIGHT_ERROR output already exists: ' + BS64_OUTPUT)} >&2; exit 14; }}",
+        f'test "$(git rev-parse HEAD)" = "{args.revision}" || '
+        f'{{ echo "BATCH_WARMDOWN_PREFLIGHT_ERROR revision mismatch: expected {args.revision}, got $(git rev-parse HEAD)" >&2; exit 15; }}',
         shlex.join(["echo", "BATCH_WARMDOWN_PREFLIGHT source_step=477 bs256_end=2384 bs64_end=17643 lr=1e-3 wd=0.333 dr=true v_recal_ratios=4,4"]),
         shlex.join(["python", TRAIN_SCRIPT, BS256_NAME, "--dry-run", *first]),
         shlex.join(["torchrun", "--nproc-per-node=8", TRAIN_SCRIPT, BS256_NAME, *first]),
