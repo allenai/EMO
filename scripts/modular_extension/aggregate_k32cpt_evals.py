@@ -75,29 +75,36 @@ def main():
     with open(EV / "k32cpt_results.json", "w") as f:
         json.dump(res, f, indent=2)
 
-    # ---- heatmaps: delta vs 100B, columns in the arm's TRAINING order (diagonal = trained)
+    # ---- heatmaps: delta vs 100B, columns in the arm's TRAINING order (diagonal =
+    # trained); final separated row = the 130B baseline's per-cluster delta (the
+    # normal-training reference each stage row can be compared against).
     for arm in ARMS:
         st = res["arms"][arm]["stages"]
         if not st:
             continue
         order = res["arms"][arm]["order"]
-        M = np.full((len(st), K), np.nan)
+        n_rows = len(st) + 1
+        M = np.full((n_rows, K), np.nan)
         for i, s in enumerate(st):
             for j, c in enumerate(order):
                 M[i, j] = s["ce"][c] - a100[c]
-        fig, ax = plt.subplots(figsize=(10.5, max(3.2, 0.3 * len(st) + 1.6)))
+        for j, c in enumerate(order):
+            M[-1, j] = abase[c] - a100[c]
+        fig, ax = plt.subplots(figsize=(10.5, max(3.4, 0.3 * n_rows + 1.6)))
         v = np.nanmax(np.abs(M))
         im = ax.imshow(M, cmap="RdBu_r", vmin=-v, vmax=v, aspect="auto")
         for i, s in enumerate(st):
             j = order.index(s["trained_cluster"])
             ax.add_patch(plt.Rectangle((j - .5, i - .5), 1, 1, fill=False, lw=1.4, ec="black"))
+        ax.axhline(len(st) - 0.5, color="black", lw=1.6)
         ax.set_xticks(range(K), [str(c) for c in order], fontsize=7)
-        ax.set_yticks(range(len(st)),
-                      [f"{s['stage']}: c{s['trained_cluster']}" for s in st], fontsize=7)
+        ax.set_yticks(range(n_rows),
+                      [f"{s['stage']}: c{s['trained_cluster']}" for s in st]
+                      + ["130B baseline"], fontsize=7)
         ax.set_xlabel("evaluated cluster (in training order)")
         ax.set_ylabel("after stage (trained cluster)")
-        ax.set_title(f"{arm}: held-out CE delta vs 100B start (black box = just-trained)",
-                     fontsize=11)
+        ax.set_title(f"{arm}: held-out CE delta vs 100B start (black box = just-trained; "
+                     "bottom row = 130B baseline)", fontsize=11)
         fig.colorbar(im, ax=ax, label="CE delta (nats; negative = better)")
         fig.tight_layout()
         fig.savefig(EV / f"k32cpt_heatmap_{arm}.png", dpi=150)
