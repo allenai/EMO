@@ -135,7 +135,12 @@
     "addedSteps": 239,
     "lr": "1e-3",
     "wd": "0.333",
-    "status": "planned",
+    "status": "queued",
+    "beaker": "01M00R0652YYA88EB1965J2PFP",
+    "job": "01M00R06B7GDZC6XEJ28D2KDXR",
+    "revision": "2a516fcd137895a4595f9d1598c01f7d8bb1919c",
+    "stoppedAttempt": "01M00QZB1VQVFH3X05HBCQBTBX",
+    "stoppedAttemptReason": "Stopped before training after detecting a mistyped full revision; never restart.",
     "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333_init=bs1024e2_lr5e-04_wd0.333/step2145",
     "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333_init=bs1024e2_lr5e-04_wd0.333_decay_eval"
   }
