@@ -273,8 +273,8 @@
         }
       },
       "health": "healthy",
-      "reason": "E20 completed at train CE2.776 and validation CE2.97184, strictly improving E16 CE2.97802 by 0.00618. E24 was submitted after print-only guards from exact canonical pre-decay step68664; target pre-decay step82397 and endpoint step91553 were verified absent.",
-      "beakerStatus": "pending",
+      "reason": "E20 completed at train CE2.776 and validation CE2.97184, strictly improving E16 CE2.97802 by 0.00618. E24 is healthy on one 8-GPU node after manifest/preflight checks and exact trainer/optimizer resume from canonical pre-decay step68664; first optimizer step68665 was observed.",
+      "beakerStatus": "running",
       "attempts": [
         {
           "epoch": 4,
@@ -318,21 +318,28 @@
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3",
       "job": "01M00G85C6722XKSYZYAH3110T",
       "result": "01M00G858S9Z9V6X01EJ7TRK15",
-      "node": null,
-      "wandb": null,
+      "node": "01KJBSQN8GKRT5EN0QRP19H85F",
+      "wandb": "se17nq9c",
       "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "sourceCheckpointLoaded": true,
         "sourceStep": 68664,
         "trainerAndOptimizerStateRequested": true,
-        "status": "pending"
+        "firstOptimizerStep": 68665,
+        "throughputTokensPerSecondPerGpu": 48706,
+        "mfuPercent": 45.71,
+        "startedAt": "2026-08-14 10:56 PDT"
       },
       "heldNextEpoch": null,
       "progress": {
-        "observedAt": "2026-08-14 09:01 PDT",
-        "step": 68664,
+        "observedAt": "2026-08-14 11:01 PDT",
+        "step": 69055,
         "endpointStep": 91553,
-        "epoch": 20,
-        "metricStatus": "pending",
-        "eta": "pending"
+        "epoch": 19,
+        "trainCe": 3.133,
+        "metricStatus": "preliminary",
+        "eta": "4h13m"
       }
     },
     {
