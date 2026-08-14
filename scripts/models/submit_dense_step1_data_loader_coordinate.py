@@ -499,9 +499,14 @@ def build_spec(
     target_pre_decay = f"{output}/step{stable_step(args.target_epoch, args.global_sequences)}"
     target_endpoint = f"{output}/step{total_step(args.target_epoch, args.global_sequences)}"
     if args.target_epoch > 1:
-        preflight_steps.extend(
-            [shlex.join(["test", "-d", output]), shlex.join(["test", "-d", args.source_checkpoint])]
-        )
+        # E2 starts a new canonical DR trajectory, so its output directory is
+        # intentionally absent until the trainer creates it. Later frontiers
+        # must reuse the already-established canonical trajectory directory.
+        if args.target_epoch > 2:
+            preflight_steps.append(shlex.join(["test", "-d", output]))
+        else:
+            preflight_steps.append(shlex.join(["test", "-d", str(MODEL_ROOT)]))
+        preflight_steps.append(shlex.join(["test", "-d", args.source_checkpoint]))
     else:
         preflight_steps.append(shlex.join(["test", "!", "-e", output]))
     preflight_steps.extend(
