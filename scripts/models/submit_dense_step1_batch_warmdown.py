@@ -16,9 +16,8 @@ from typing import Any
 
 SOURCE_EXPERIMENT = "01KZRTKNSSX9H1DPZ7NHJSM28F"
 SOURCE_CHECKPOINT = (
-    "/weka/oe-training-default/sewonm/icsl/models/"
-    "dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e2_"
-    "lr1e-3_wd0.333_warmup24_dataloader-cd-r01/step477"
+    "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/"
+    "bs1024_dr_lr1e-3_wd0.333/step477"
 )
 OUTPUT_ROOT = "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b"
 BS256_NAME = "bs256_dr_init=bs1024e2_lr1e-03_wd0.333"
