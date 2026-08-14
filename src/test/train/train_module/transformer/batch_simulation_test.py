@@ -92,17 +92,26 @@ def test_batch_simulation_is_opt_in():
     assert config.num_ghost_batches == 1
 
 
-def test_second_moment_recalibration_is_diloco_only():
-    with pytest.raises(OLMoConfigurationError, match="DiLoCo-specific"):
-        BatchSimulationConfig(diloco_recalibrate_second_moment_on_start=True)
-
-    with pytest.raises(OLMoConfigurationError, match="DiLoCo-specific"):
-        BatchSimulationConfig(
-            method=BatchSimulationMethod.local_sgd,
+def test_second_moment_recalibration_supports_both_local_update_methods():
+    for method in (BatchSimulationMethod.local_sgd, BatchSimulationMethod.diloco):
+        config = BatchSimulationConfig(
+            method=method,
             global_batch_size=512,
             simulated_batch_size=64,
-            diloco_recalibrate_second_moment_on_start=True,
+            recalibrate_second_moment_on_start=True,
         )
+        assert config.recalibrate_second_moment_on_start_enabled
+
+    legacy = BatchSimulationConfig(
+        method=BatchSimulationMethod.diloco,
+        global_batch_size=512,
+        simulated_batch_size=64,
+        diloco_recalibrate_second_moment_on_start=True,
+    )
+    assert legacy.recalibrate_second_moment_on_start_enabled
+
+    with pytest.raises(OLMoConfigurationError, match="Local-update"):
+        BatchSimulationConfig(recalibrate_second_moment_on_start=True)
 
 
 @pytest.mark.parametrize(

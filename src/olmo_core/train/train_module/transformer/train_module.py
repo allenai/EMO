@@ -551,8 +551,8 @@ class TransformerTrainModule(TrainModule):
                     optimizer_hyperparameters(self.optim),
                 )
             if (
-                self.batch_simulation.method == BatchSimulationMethod.diloco
-                and self.batch_simulation.diloco_recalibrate_second_moment_on_start
+                self.batch_simulation.uses_local_updates
+                and self.batch_simulation.recalibrate_second_moment_on_start_enabled
                 and inner_optim_key == "optim"
             ):
                 adjusted = recalibrate_adam_second_moment_for_batch_size(
@@ -561,9 +561,10 @@ class TransformerTrainModule(TrainModule):
                 )
                 log.info(
                     "Recalibrated Adam second moments for %d parameter states at batch-size "
-                    "ratio %.3f while starting DiLoCo from a conventional checkpoint",
+                    "ratio %.3f while starting %s from a conventional checkpoint",
                     adjusted,
                     float(self.batch_simulation.num_ghost_batches),
+                    self.batch_simulation.method.value,
                 )
             gc_cuda()
         if load_diloco_outer_optim:
