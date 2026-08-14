@@ -204,8 +204,8 @@
         }
       },
       "health": "healthy",
-      "reason": "E8 completed with train CE2.943 and validation CE3.02697, strictly improving E4 CE3.11199 by 0.08502. E12 passed registration and print-only exact-resume guards and is pending on one 8-GPU node from canonical pre-decay step27465.",
-      "beakerStatus": "pending",
+      "reason": "E8 completed with train CE2.943 and validation CE3.02697, strictly improving E4 CE3.11199 by 0.08502. E12 passed registration and print-only exact-resume guards, was assigned one 8-GPU node, and entered Gantry environment setup from canonical pre-decay step27465; task-level guards, W&B, exact checkpoint load, and optimizer progress are not visible yet.",
+      "beakerStatus": "running",
       "attempts": [
         {
           "epoch": 4,
@@ -249,6 +249,7 @@
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3",
       "job": "01KZZ0VJJVMF23XFNSF7MES492",
       "result": "01KZZ0VJEWG1CY7X36WMWQ7R1G",
+      "node": "01JS3MZC0NYRRKMR91BZMQY58B",
       "heldNextEpoch": null,
       "progress": {
         "observedAt": "2026-08-13 17:40 PDT",
