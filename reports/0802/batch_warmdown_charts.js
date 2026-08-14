@@ -13,7 +13,10 @@
     {key:`baseline-${batch}`,label:`BS${batch} · Original`,batchSequences:batch,color:colors[batch],baseline:true},
     {key:`dr${batch}`,label:`BS${batch} · DR`,batchSequences:batch,color:colors[batch],baseline:false},
   ]);
-  const warmdownColumn={key:"warmdown",label:"Batch warmdown",color:"#7c3aed"};
+  const warmdownChains=[
+    {key:"warmdown",label:"Warmdown · fixed coordinate",color:"#7c3aed",runs:warmdown.runs||[]},
+    {key:"best-warmdown",label:"Warmdown · best coordinate",color:"#16a34a",runs:warmdown.bestCoordinateRuns||[]},
+  ];
   const finite=value=>value!==null&&value!==undefined&&value!==""&&Number.isFinite(Number(value));
   const numeric=value=>finite(value)?Number(value):null;
   const epochKey=value=>String(Number(value));
@@ -83,7 +86,7 @@
     }
   }
   const getSelected=(column,epoch)=>selected.get(`${column.key}:${epochKey(epoch)}`);
-  const warmdownAtEpoch=epoch=>warmdown.runs.find(run=>Number(run.accumulatedEpoch)===Number(epoch))||null;
+  const warmdownAtEpoch=(chain,epoch)=>chain.runs.find(run=>Number(run.accumulatedEpoch)===Number(epoch))||null;
   const optimizerStepsForEpoch=(epoch,batch)=>Math.ceil(Number(epoch)*1_000_000_000/(Number(batch)*4096));
 
   document.getElementById("title").textContent=warmdown.title;
@@ -94,7 +97,7 @@
   document.getElementById("timing-note").textContent=`Source-report curves preserve every selected Original and DR datapoint and use the report's idealized 0.6 seconds per optimizer step. The purple warmdown chain uses its cumulative one-node timing: ${warmdown.timing.description}`;
 
   const legend=document.getElementById("legend");
-  for(const column of columns.concat(warmdownColumn)){
+  for(const column of columns.concat(warmdownChains)){
     const label=document.createElement("label");
     label.innerHTML=`<span class="legend-line ${column.baseline?'legend-line-dashed':''}" style="border-color:${column.color};opacity:${column.baseline?.65:1}"></span>${column.label}`;
     legend.appendChild(label);
@@ -109,8 +112,10 @@
     }).filter(point=>point&&point.value!==null);
     if(points.length)graphSeries.push({column,points});
   }
-  const warmdownPoints=warmdown.runs.filter(run=>finite(run.validation)).map(run=>({seconds:Number(run.idealizedTrainingSeconds),value:Number(run.validation),epoch:Number(run.accumulatedEpoch),run}));
-  if(warmdownPoints.length)graphSeries.push({column:warmdownColumn,points:warmdownPoints});
+  for(const chain of warmdownChains){
+    const points=chain.runs.filter(run=>finite(run.validation)).map(run=>({seconds:Number(run.idealizedTrainingSeconds),value:Number(run.validation),epoch:Number(run.accumulatedEpoch),run}));
+    if(points.length)graphSeries.push({column:chain,points});
+  }
 
   const width=1180,height=430,margin={left:66,right:28,top:28,bottom:62};
   const allPoints=graphSeries.flatMap(series=>series.points);
@@ -126,13 +131,14 @@
   const yGrid=[0,.25,.5,.75,1].map(f=>yMin+f*(yMax-yMin)).map(value=>`<line x1="${margin.left}" x2="${width-margin.right}" y1="${y(value)}" y2="${y(value)}" stroke="#e2e8f0"/><text x="${margin.left-8}" y="${y(value)+4}" text-anchor="end">${value.toFixed(3)}</text>`).join("");
   const paths=graphSeries.map(series=>{
     const ordered=series.points.slice().sort((a,b)=>a.seconds-b.seconds);
-    const path=ordered.length>1?`<path d="${ordered.map((point,index)=>`${index?'L':'M'} ${x(point.seconds)} ${y(point.value)}`).join(' ')}" fill="none" stroke="${series.column.color}" stroke-width="${series.column.key==='warmdown'?4:series.column.baseline?1.8:2.4}" stroke-opacity="${series.column.baseline?.65:1}"${series.column.baseline?' stroke-dasharray="7 5"':''}/>`:"";
-    const dots=ordered.map(point=>`<circle cx="${x(point.seconds)}" cy="${y(point.value)}" r="${series.column.key==='warmdown'?6:series.column.baseline?2.5:4}" fill="${series.column.color}" fill-opacity="${series.column.baseline?.5:1}"><title>${series.column.label} · E${formatEpoch(point.epoch)} · ${formatDuration(point.seconds)} · validation CE ${point.value.toFixed(3)}</title></circle>`).join("");
+    const isWarmdown=warmdownChains.some(chain=>chain.key===series.column.key);
+    const path=ordered.length>1?`<path d="${ordered.map((point,index)=>`${index?'L':'M'} ${x(point.seconds)} ${y(point.value)}`).join(' ')}" fill="none" stroke="${series.column.color}" stroke-width="${isWarmdown?4:series.column.baseline?1.8:2.4}" stroke-opacity="${series.column.baseline?.65:1}"${series.column.baseline?' stroke-dasharray="7 5"':''}/>`:"";
+    const dots=ordered.map(point=>`<circle cx="${x(point.seconds)}" cy="${y(point.value)}" r="${isWarmdown?6:series.column.baseline?2.5:4}" fill="${series.column.color}" fill-opacity="${series.column.baseline?.5:1}"><title>${series.column.label} · E${formatEpoch(point.epoch)} · ${formatDuration(point.seconds)} · validation CE ${point.value.toFixed(3)}</title></circle>`).join("");
     return path+dots;
   }).join("");
   document.getElementById("chart").innerHTML=`<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Validation loss versus idealized training time">${yGrid}${xGrid}<line x1="${margin.left}" x2="${width-margin.right}" y1="${height-margin.bottom}" y2="${height-margin.bottom}" stroke="#98a2b3"/>${paths}<text x="${width/2}" y="${height-8}" text-anchor="middle" class="axis-label">Idealized cumulative training time · logarithmic scale</text><text transform="translate(18 ${height/2}) rotate(-90)" text-anchor="middle" class="axis-label">DCLM validation CE · lower is better</text></svg>`;
 
-  const allTableColumns=columns.concat(warmdownColumn);
+  const allTableColumns=columns.concat(warmdownChains);
   function installHeader(id,firstColumns){
     document.getElementById(id).innerHTML=`<tr>${firstColumns.map(label=>`<th>${label}</th>`).join("")}${allTableColumns.map(column=>`<th>${column.label}</th>`).join("")}</tr>`;
   }
@@ -147,12 +153,16 @@
     const values=epochs.map(epoch=>numeric(getSelected(column,epoch)?.result.validation)).filter(value=>value!==null);
     if(values.length)columnBest.set(column.key,Math.min(...values));
   }
-  const warmdownValues=warmdown.runs.map(run=>numeric(run.validation)).filter(value=>value!==null);
-  if(warmdownValues.length)columnBest.set("warmdown",Math.min(...warmdownValues));
+  for(const chain of warmdownChains){
+    const values=chain.runs.map(run=>numeric(run.validation)).filter(value=>value!==null);
+    if(values.length)columnBest.set(chain.key,Math.min(...values));
+  }
   for(const epoch of epochs){
     const entries=columns.map(column=>({column,winner:getSelected(column,epoch)}));
-    const wr=warmdownAtEpoch(epoch);
-    entries.push({column:warmdownColumn,winner:wr?{lr:"1e-3",wd:"0.333",result:wr}:null});
+    for(const chain of warmdownChains){
+      const wr=warmdownAtEpoch(chain,epoch);
+      entries.push({column:chain,winner:wr?{lr:wr.lr||"1e-3",wd:wr.wd||"0.333",result:wr}:null});
+    }
     const rowValues=entries.map(entry=>numeric(entry.winner?.result.validation)).filter(value=>value!==null);
     const rowBest=rowValues.length?Math.min(...rowValues):null;
     const validationCells=entries.map(entry=>{
@@ -169,7 +179,7 @@
   }
 
   const comparisonByStep=new Map((batchData.optimizerStepComparisons||[]).map(comparison=>[Number(comparison.optimizerSteps),comparison]));
-  for(const run of warmdown.runs)if(!comparisonByStep.has(Number(run.optimizerStep)))comparisonByStep.set(Number(run.optimizerStep),{optimizerSteps:Number(run.optimizerStep),epochs:{}});
+  for(const chain of warmdownChains)for(const run of chain.runs)if(!comparisonByStep.has(Number(run.optimizerStep)))comparisonByStep.set(Number(run.optimizerStep),{optimizerSteps:Number(run.optimizerStep),epochs:{}});
   const optimizerBody=document.getElementById("optimizer-step-summary");
   for(const comparison of [...comparisonByStep.values()].sort((a,b)=>Number(a.optimizerSteps)-Number(b.optimizerSteps))){
     const step=Number(comparison.optimizerSteps);
@@ -177,11 +187,16 @@
       const epoch=comparison.epochs?.[String(column.batchSequences)];
       return {column,epoch,winner:epoch===undefined?null:getSelected(column,epoch)};
     });
-    const wr=warmdown.runs.find(run=>Number(run.optimizerStep)===step)||null;
-    entries.push({column:warmdownColumn,epoch:wr?.accumulatedEpoch,winner:wr?{result:wr}:null});
+    const stepRuns=[];
+    for(const chain of warmdownChains){
+      const wr=chain.runs.find(run=>Number(run.optimizerStep)===step)||null;
+      stepRuns.push(wr);
+      entries.push({column:chain,epoch:wr?.accumulatedEpoch,winner:wr?{result:wr}:null});
+    }
     const values=entries.map(entry=>numeric(entry.winner?.result.validation)).filter(value=>value!==null);
     const rowBest=values.length?Math.min(...values):null;
-    const time=wr?Number(wr.idealizedTrainingSeconds):step*.6;
+    const timedRun=stepRuns.find(run=>run&&finite(run.idealizedTrainingSeconds));
+    const time=timedRun?Number(timedRun.idealizedTrainingSeconds):step*.6;
     const cells=entries.map(entry=>{
       if(!entry.winner)return "<td>—</td>";
       const value=numeric(entry.winner.result.validation);
@@ -193,20 +208,20 @@
   }
 
   const stages=document.getElementById("stage-summary");
-  for(const run of warmdown.runs){
+  for(const chain of warmdownChains)for(const run of chain.runs){
     const wandb=run.wandb?`<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${run.wandb}">${run.wandb}</a>`:"—";
     const beaker=run.beaker?`<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${run.beaker}">${run.beaker}</a>`:"—";
-    stages.insertAdjacentHTML("beforeend",`<tr><td>${run.stage}</td><td>BS${run.batchSequences}</td><td>E${run.accumulatedEpoch}</td><td>${run.addedSteps.toLocaleString()}</td><td>${run.optimizerStep.toLocaleString()}</td><td>${finite(run.wallClockSeconds)?formatDuration(run.wallClockSeconds):"—"}</td><td>${run.status}</td><td>${formatMetric(run.validation)}</td><td>${wandb}</td><td>${beaker}</td></tr>`);
+    stages.insertAdjacentHTML("beforeend",`<tr><td>${chain.label}</td><td>${run.stage}</td><td>BS${run.batchSequences}</td><td>E${run.accumulatedEpoch}</td><td>${run.addedSteps.toLocaleString()}</td><td>${run.optimizerStep.toLocaleString()}</td><td>${finite(run.wallClockSeconds)?formatDuration(run.wallClockSeconds):"—"}</td><td>${run.status}</td><td>${formatMetric(run.validation)}</td><td>${wandb}</td><td>${beaker}</td></tr>`);
   }
 
-  const newRuns=warmdown.runs.filter(run=>run.stage!=="source");
+  const newRuns=warmdownChains.flatMap(chain=>chain.runs.filter(run=>run.stage!=="source").map(run=>({chain,run})));
   const gridBody=document.getElementById("warmdown-coordinate-grid");
   const newRunsBody=document.getElementById("new-runs");
-  for(const run of newRuns){
+  for(const {chain,run} of newRuns){
     const history=run.stage==="bs256"?"BS1024 E2 → BS256 E4":"BS1024 E2 → BS256 E4 → BS64 E8";
-    gridBody.insertAdjacentHTML("beforeend",`<tr><td>E${run.accumulatedEpoch}</td><td>BS${run.batchSequences}</td><td>${history}</td><td><span class="tuple">(LR 1e-3, WD 0.333)</span></td><td>${run.status}</td></tr>`);
+    gridBody.insertAdjacentHTML("beforeend",`<tr><td>E${run.accumulatedEpoch}</td><td>BS${run.batchSequences}</td><td>${chain.label}: ${history}</td><td><span class="tuple">(LR ${run.lr||"1e-3"}, WD ${run.wd||"0.333"})</span></td><td>${run.status}</td></tr>`);
     const wandb=run.wandb?`<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${run.wandb}">${run.wandb}</a>`:"—";
     const beaker=run.beaker?`<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${run.beaker}">${run.beaker}</a>`:"—";
-    newRunsBody.insertAdjacentHTML("beforeend",`<tr><td>BS${run.batchSequences}</td><td>E${run.accumulatedEpoch}</td><td>1e-3</td><td>0.333</td><td>${run.status}</td><td>${formatMetric(run.train)}</td><td>${formatMetric(run.validation)}</td><td>${wandb}</td><td>${beaker}</td></tr>`);
+    newRunsBody.insertAdjacentHTML("beforeend",`<tr><td>${chain.label}</td><td>BS${run.batchSequences}</td><td>E${run.accumulatedEpoch}</td><td>${run.lr||"1e-3"}</td><td>${run.wd||"0.333"}</td><td>${run.status}</td><td>${formatMetric(run.train)}</td><td>${formatMetric(run.validation)}</td><td>${wandb}</td><td>${beaker}</td></tr>`);
   }
 })();
