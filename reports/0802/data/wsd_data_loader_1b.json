@@ -287,13 +287,13 @@
       },
       "heldNextEpoch": null,
       "progress": {
-        "observedAt": "2026-08-14 01:31 PDT",
-        "step": 54940,
+        "observedAt": "2026-08-14 02:01 PDT",
+        "step": 57940,
         "endpointStep": 61036,
-        "epoch": 15,
-        "trainCe": 3.062,
+        "epoch": 16,
+        "trainCe": 2.9,
         "metricStatus": "preliminary",
-        "eta": "1h1m"
+        "eta": "31m"
       }
     },
     {
