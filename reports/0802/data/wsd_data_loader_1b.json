@@ -5614,5 +5614,5 @@
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e2_lr1e-3_wd1.0_warmup24_dataloader-r01"
     }
   ],
-  "outputDirectoryPolicy": "Checkpoint outputs now use one canonical directory per method/batch/LR/WD trajectory under /weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b: bs{batch}_dr_lr{lr}_wd{wd} for DR and bs{batch}_lr{lr}_wd{wd} for Original. Epochs and retries reuse that directory and are distinguished by step checkpoints and experiment provenance; a continuation must load the exact predecessor pre-decay step and may not overwrite its target pre-decay or endpoint step."
+  "outputDirectoryPolicy": "Checkpoint outputs now use one canonical directory per method/batch/LR/WD trajectory under /weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b: bs{batch}_dr_lr{lr}_wd{wd} for DR and bs{batch}_lr{lr}_wd{wd} for Original. An E2 DR launch verifies its exact Original E1 checkpoint and automatically creates the new canonical DR trajectory directory. Later epochs and infrastructure retries reuse that directory and are distinguished by step checkpoints and experiment provenance; a continuation must load the exact predecessor pre-decay step and may not overwrite its target pre-decay or endpoint step."
 }
