@@ -156,6 +156,13 @@ def trajectory_output(args: argparse.Namespace) -> str:
     )
 
 
+def original_trajectory_output(args: argparse.Namespace) -> str:
+    return (
+        f"{MODEL_ROOT}/bs{args.global_sequences}_"
+        f"lr{canonical_number(args.learning_rate)}_wd{canonical_number(args.weight_decay)}"
+    )
+
+
 def nodes_for(global_sequences: int) -> int:
     # New BS64/128/256 work uses one 8-GPU node and scales gradient accumulation
     # to 1/2/4. Preserve the established four-node topology for BS512/1024.
@@ -349,7 +356,12 @@ def audit_source_spec(spec: dict[str, Any], args: argparse.Namespace) -> tuple[s
         source_output = unique_value(arguments, "--save-folder=")
         historical_source = f"{source_output}/step{expected_step}"
         canonical_source = f"{trajectory_output(args)}/step{expected_step}"
-        if args.source_checkpoint not in {historical_source, canonical_source}:
+        allowed_sources = {historical_source, canonical_source}
+        if args.target_epoch == 2 and args.method == "dynamic_repacking":
+            allowed_sources.add(
+                f"{original_trajectory_output(args)}/step{expected_step}"
+            )
+        if args.source_checkpoint not in allowed_sources:
             raise SystemExit(
                 "source checkpoint matches neither the source experiment output nor the "
                 "canonical trajectory directory"

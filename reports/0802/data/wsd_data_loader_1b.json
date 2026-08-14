@@ -2,7 +2,7 @@
   "updated": "2026-08-13",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes.",
-  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. Run six independent DR trajectories to their first strict validation non-improvement: BS64 LR1e-3 at WD0.3 and WD1.0, BS128 LR1e-3 at WD0.3 and WD1.0, and BS256 LR1e-3 at WD0.333 and WD1.0. BS64 WD0.3 E24 completed at exact validation CE2.97093, strictly improving E20 CE2.97184 by 0.00091; E28 is submitted from exact canonical E24 pre-decay step82397. The other five new E2 attempts exited before manifest validation because their launch guard incorrectly required a new canonical output directory to preexist; they produced no W&B or optimizer progress and are held as configuration failures without automatic retry. Every new trajectory begins at E2 from its exact LR/WD-matched Original E1 pre-decay checkpoint, uses one 8-GPU node, and advances E4/E8/E12/etc only while its own held-out DCLM validation CE strictly improves. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR LR1e-3/WD1.0 remains saturated at E24 CE3.12162 because E28 worsened to CE3.13269, and BS512 DR LR1e-3/WD1.0 remains saturated at E24 CE3.06442 because E28 worsened to CE3.06734. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
+  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. Run six independent DR trajectories to their first strict validation non-improvement: BS64 LR1e-3 at WD0.3 and WD1.0, BS128 LR1e-3 at WD0.3 and WD1.0, and BS256 LR1e-3 at WD0.333 and WD1.0. BS64 WD0.3 E24 completed at exact validation CE2.97093, strictly improving E20 CE2.97184 by 0.00091; E28 is submitted from exact canonical E24 pre-decay step82397. Corrected E2 launches automatically create their canonical DR directories and resume exact trainer/optimizer state from the canonical Original E1 directory. Every trajectory uses one 8-GPU node and advances E4/E8/E12/etc only while its own held-out DCLM validation CE strictly improves. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR LR1e-3/WD1.0 remains saturated at E24 CE3.12162 because E28 worsened to CE3.13269, and BS512 DR LR1e-3/WD1.0 remains saturated at E24 CE3.06442 because E28 worsened to CE3.06734. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
   "targetEpochs": [
     1,
     2,
@@ -374,13 +374,13 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "failed",
+      "status": "planned",
       "activeEpoch": 2,
       "attemptedEpochs": [
         2
       ],
       "sourceExperiment": "01KZDFAY7M8YYA1N2MY3MR2GZG",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_e1_lr1e-3_wd1.0_warmup384_coord_e1_r3/step3432",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_lr1e-3_wd1.0/step3432",
       "gpuCount": 8,
       "nodeCount": 1,
       "rankMicrobatchSequences": 8,
@@ -401,17 +401,23 @@
           "reason": "Inherited exact Original E1 coordinate; DR begins at E2 from retained pre-decay step3432."
         }
       },
-      "health": "configuration_failed",
-      "reason": "E2 exited during the silent canonical-output guard before manifest validation, W&B, checkpoint load, or optimizer progress. The launcher incorrectly required a new canonical trajectory directory to preexist; this is a configuration failure and is held without automatic retry.",
-      "beaker": "01M00SBSD1VG95T4124XK7XK1T",
-      "experiment": "01M00SBSD1VG95T4124XK7XK1T",
-      "job": "01M00SBSGFBWERJ362Z9N0936C",
-      "result": "01M00SBSDAD60DTNQ2FKRD3ZY9",
-      "beakerStatus": "failed",
-      "node": "01JS3MZ9RGTWAVGEPZ4FN86B0H",
-      "revision": "e9010dbd0db656c94c87f9e15c0d35fdba32c034",
+      "health": "planned",
+      "reason": "The first user-authorized retry created the DR directory but still referenced the retired legacy Original E1 path and exited before manifest validation. The exact source has been corrected to the canonical Original directory; a verified retry is planned.",
+      "revision": "6cb4fadcbeeff07610c04b98593f72cc143f0e05",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0",
       "attempts": [
+        {
+          "epoch": 2,
+          "experiment": "01M017WM2DZFQH9PTQA5524PS3",
+          "job": "01M017WM74BH7FPA14RVNPB0KB",
+          "result": "01M017WM2PA6Y4F5GZ8VSSE86R",
+          "node": "01JS3MZAAX1WFGGCYXJR23TPG7",
+          "status": "configuration_failed_before_preflight",
+          "wandb": null,
+          "revision": "6cb4fadcbeeff07610c04b98593f72cc143f0e05",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0",
+          "reason": "Exited immediately after Gantry setup because the registry still referenced the retired legacy Original E1 checkpoint path. No manifest validation, W&B, checkpoint load, optimizer progress, or output checkpoint occurred."
+        },
         {
           "epoch": 2,
           "experiment": "01KZWDBX6TXA8G7TKMJ10ECPY4",
@@ -443,13 +449,13 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.3",
-      "status": "failed",
+      "status": "planned",
       "activeEpoch": 2,
       "attemptedEpochs": [
         2
       ],
       "sourceExperiment": "01KZFVTRWK90S3KTA4SZFEMM7W",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs128_e1_lr1e-3_wd0.3_warmup192_e1_grid_r19/step1716",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_lr1e-3_wd0.3/step1716",
       "gpuCount": 8,
       "nodeCount": 1,
       "rankMicrobatchSequences": 8,
@@ -470,17 +476,24 @@
           "reason": "Inherited exact Original E1 coordinate; DR begins at E2 from retained pre-decay step1716."
         }
       },
-      "health": "configuration_failed",
-      "reason": "E2 exited during the silent canonical-output guard before manifest validation, W&B, checkpoint load, or optimizer progress. The launcher incorrectly required a new canonical trajectory directory to preexist; this is a configuration failure and is held without automatic retry.",
-      "beaker": "01M00SBT6T01S3QZWQX5TYT5FS",
-      "experiment": "01M00SBT6T01S3QZWQX5TYT5FS",
-      "job": "01M00SBTASX9X5ZPR36HTYSKQS",
-      "result": "01M00SBT739SWTR25EEMG1PQQG",
-      "beakerStatus": "failed",
-      "revision": "e9010dbd0db656c94c87f9e15c0d35fdba32c034",
+      "health": "planned",
+      "reason": "The first user-authorized retry created the DR directory but still referenced the retired legacy Original E1 path and exited before manifest validation. The exact source has been corrected to the canonical Original directory; a verified retry is planned.",
+      "revision": "6cb4fadcbeeff07610c04b98593f72cc143f0e05",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3",
-      "node": "01JRYAWA6W213H8GGDC973ESGT",
+      "node": null,
       "attempts": [
+        {
+          "epoch": 2,
+          "experiment": "01M017WMXVMT7P86BGFYA3T2D5",
+          "job": "01M017WN232F9GWYES8KKNRMCJ",
+          "result": "01M017WMY56MGYY94ZA9SG1W9S",
+          "node": "01KQ0ESGVRJPWYP5H6BYB56BK2",
+          "status": "configuration_failed_before_preflight",
+          "wandb": null,
+          "revision": "6cb4fadcbeeff07610c04b98593f72cc143f0e05",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3",
+          "reason": "Exited immediately after Gantry setup because the registry still referenced the retired legacy Original E1 checkpoint path. No manifest validation, W&B, checkpoint load, optimizer progress, or output checkpoint occurred."
+        },
         {
           "epoch": 2,
           "experiment": "01M00SBT6T01S3QZWQX5TYT5FS",
@@ -502,13 +515,13 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "failed",
+      "status": "planned",
       "activeEpoch": 2,
       "attemptedEpochs": [
         2
       ],
       "sourceExperiment": "01KZH75Y2CDG0E6CR7Z81A4YCE",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs128_e1_lr1e-3_wd1.0_warmup192_grid-r34-infra-retry2/step1716",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_lr1e-3_wd1.0/step1716",
       "gpuCount": 8,
       "nodeCount": 1,
       "rankMicrobatchSequences": 8,
@@ -527,17 +540,24 @@
           "reason": "Inherited exact Original E1 coordinate; DR begins at E2 from retained pre-decay step1716."
         }
       },
-      "health": "configuration_failed",
-      "reason": "E2 exited during the silent canonical-output guard before manifest validation, W&B, checkpoint load, or optimizer progress. The launcher incorrectly required a new canonical trajectory directory to preexist; this is a configuration failure and is held without automatic retry.",
-      "beaker": "01M00SBV1ZMYEMXWX8J655VS2G",
-      "experiment": "01M00SBV1ZMYEMXWX8J655VS2G",
-      "job": "01M00SBV5DMQB1Q9HC73AZ5HQM",
-      "result": "01M00SBV26XXQ240FJDBDQ02EN",
-      "beakerStatus": "failed",
-      "revision": "e9010dbd0db656c94c87f9e15c0d35fdba32c034",
+      "health": "planned",
+      "reason": "The first user-authorized retry created the DR directory but still referenced the retired legacy Original E1 path and exited before manifest validation. The exact source has been corrected to the canonical Original directory; a verified retry is planned.",
+      "revision": "6cb4fadcbeeff07610c04b98593f72cc143f0e05",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0",
-      "node": "01JS3MZ9RGTWAVGEPZ4FN86B0H",
+      "node": null,
       "attempts": [
+        {
+          "epoch": 2,
+          "experiment": "01M017WNQZF23HRPRKKXSDHHW5",
+          "job": "01M017WNVHM6PJWK7FMP4A0JF5",
+          "result": "01M017WNR60XJ7Z7T5BHN5DHTV",
+          "node": "01KQ0F1X8ZJDNV57GJAW83XXVX",
+          "status": "configuration_failed_before_preflight",
+          "wandb": null,
+          "revision": "6cb4fadcbeeff07610c04b98593f72cc143f0e05",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0",
+          "reason": "Exited immediately after Gantry setup because the registry still referenced the retired legacy Original E1 checkpoint path. No manifest validation, W&B, checkpoint load, optimizer progress, or output checkpoint occurred."
+        },
         {
           "epoch": 2,
           "experiment": "01M00SBV1ZMYEMXWX8J655VS2G",
@@ -559,7 +579,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "failed",
+      "status": "submitted",
       "activeEpoch": 2,
       "attemptedEpochs": [
         2
@@ -585,16 +605,16 @@
           "reason": "Inherited exact Original E1 coordinate; DR begins at E2 from retained pre-decay step858."
         }
       },
-      "health": "configuration_failed",
-      "reason": "E2 exited during the silent canonical-output guard before manifest validation, W&B, checkpoint load, or optimizer progress. The launcher incorrectly required a new canonical trajectory directory to preexist; this is a configuration failure and is held without automatic retry.",
-      "beaker": "01M00SBWXS49HSZ371G723ZHR5",
-      "experiment": "01M00SBWXS49HSZ371G723ZHR5",
-      "job": "01M00SBX1AWMWC0D5H90F01Y2J",
-      "result": "01M00SBWY1VQV9898YJPKCDPME",
-      "beakerStatus": "failed",
-      "revision": "e9010dbd0db656c94c87f9e15c0d35fdba32c034",
+      "health": "pending",
+      "reason": "User-authorized corrected E2 retry passed print-only guards, including automatic canonical DR directory creation and exact Original E1 trainer/optimizer resume. One 8-GPU replica is pending scheduling.",
+      "beaker": "01M017WPK59483MRRC53VWENRH",
+      "experiment": "01M017WPK59483MRRC53VWENRH",
+      "job": "01M017WPQ91P46AVSPQMJT0JKH",
+      "result": "01M017WPKANWT98A7BYWVHFSX4",
+      "beakerStatus": "pending",
+      "revision": "6cb4fadcbeeff07610c04b98593f72cc143f0e05",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333",
-      "node": "01JRYAWA6W213H8GGDC973ESGT",
+      "node": null,
       "attempts": [
         {
           "epoch": 2,
@@ -617,7 +637,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "failed",
+      "status": "submitted",
       "activeEpoch": 2,
       "attemptedEpochs": [
         2
@@ -642,16 +662,16 @@
           "reason": "Inherited exact Original E1 coordinate; DR begins at E2 from retained pre-decay step858."
         }
       },
-      "health": "configuration_failed",
-      "reason": "E2 exited during the silent canonical-output guard before manifest validation, W&B, checkpoint load, or optimizer progress. The launcher incorrectly required a new canonical trajectory directory to preexist; this is a configuration failure and is held without automatic retry.",
-      "beaker": "01M00SBXS0EJGQMVJJ1NAZB6CH",
-      "experiment": "01M00SBXS0EJGQMVJJ1NAZB6CH",
-      "job": "01M00SBXWFFNXF22B29WYMV7Z4",
-      "result": "01M00SBXS6E8B8YR5GC5SGBM9W",
-      "beakerStatus": "failed",
-      "revision": "e9010dbd0db656c94c87f9e15c0d35fdba32c034",
+      "health": "pending",
+      "reason": "User-authorized corrected E2 retry passed print-only guards, including automatic canonical DR directory creation and exact Original E1 trainer/optimizer resume. One 8-GPU replica is pending scheduling.",
+      "beaker": "01M017WQD32KEXFQQ65JCVJYRD",
+      "experiment": "01M017WQD32KEXFQQ65JCVJYRD",
+      "job": "01M017WQGQHNWS1J1PJZ32X7X8",
+      "result": "01M017WQDA1AZWSQD45CSCSZDB",
+      "beakerStatus": "pending",
+      "revision": "6cb4fadcbeeff07610c04b98593f72cc143f0e05",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0",
-      "node": "01JS3MZ9RGTWAVGEPZ4FN86B0H",
+      "node": null,
       "attempts": [
         {
           "epoch": 2,
