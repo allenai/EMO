@@ -16,6 +16,7 @@
   const warmdownChains=[
     {key:"warmdown",label:"Warmdown · fixed coordinate",color:"#7c3aed",runs:warmdown.runs||[]},
     {key:"best-warmdown",label:"Warmdown · best coordinate",color:"#16a34a",runs:warmdown.bestCoordinateRuns||[]},
+    {key:"version2-warmdown",label:"Warmdown · Version 2",color:"#0891b2",runs:warmdown.version2Runs||[]},
   ];
   const finite=value=>value!==null&&value!==undefined&&value!==""&&Number.isFinite(Number(value));
   const numeric=value=>finite(value)?Number(value):null;
@@ -94,7 +95,7 @@
   document.getElementById("updated").textContent=`Updated ${warmdown.updated}`;
   document.getElementById("selection").textContent=warmdown.selection;
   document.getElementById("recalibration").textContent=warmdown.recalibration.description;
-  document.getElementById("timing-note").textContent=`Source-report curves preserve every selected Original and DR datapoint and use the report's idealized 0.6 seconds per optimizer step. The purple warmdown chain uses its cumulative one-node timing: ${warmdown.timing.description}`;
+  document.getElementById("timing-note").textContent=`Source-report curves preserve every selected Original and DR datapoint and use the report's idealized 0.6 seconds per optimizer step. Warmdown curves use cumulative one-node-equivalent timing: ${warmdown.timing.description}`;
 
   const legend=document.getElementById("legend");
   for(const column of columns.concat(warmdownChains)){
@@ -221,10 +222,22 @@
   const gridBody=document.getElementById("warmdown-coordinate-grid");
   const newRunsBody=document.getElementById("new-runs");
   for(const {chain,run} of newRuns){
-    const history=run.stage==="bs256"?"BS1024 E2 → BS256 E4":"BS1024 E2 → BS256 E4 → BS64 E8";
+    const isVersion2=chain.key==="version2-warmdown";
+    const history=isVersion2
+      ?(run.stage==="bs256"?"BS1024 E4 → BS256 E8":"BS1024 E4 → BS256 E8 → BS64 E12")
+      :(run.stage==="bs256"?"BS1024 E2 → BS256 E4":"BS1024 E2 → BS256 E4 → BS64 E8");
     gridBody.insertAdjacentHTML("beforeend",`<tr><td>E${run.accumulatedEpoch}</td><td>BS${run.batchSequences}</td><td>${chain.label}: ${history}</td><td><span class="tuple">(LR ${run.lr||"1e-3"}, WD ${run.wd||"0.333"})</span></td><td>${run.status}</td></tr>`);
     const wandb=run.wandb?`<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${run.wandb}">${run.wandb}</a>`:"—";
     const beaker=run.beaker?`<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${run.beaker}">${run.beaker}</a>`:"—";
     newRunsBody.insertAdjacentHTML("beforeend",`<tr><td>${chain.label}</td><td>BS${run.batchSequences}</td><td>E${run.accumulatedEpoch}</td><td>${run.lr||"1e-3"}</td><td>${run.wd||"0.333"}</td><td>${run.status}</td><td>${formatMetric(run.train)}</td><td>${formatMetric(run.validation)}</td><td>${wandb}</td><td>${beaker}</td></tr>`);
+  }
+
+  const decay=warmdown.bestCoordinateBs256DecayEval;
+  if(decay){
+    const wandb=decay.wandb?`<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${decay.wandb}">${decay.wandb}</a>`:"—";
+    const beaker=decay.beaker?`<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${decay.beaker}">${decay.beaker}</a>`:"—";
+    document.getElementById("decay-eval-summary").innerHTML=`<tr><td>${decay.sourceStep.toLocaleString()}</td><td>${decay.endpointStep.toLocaleString()}</td><td>${decay.addedSteps.toLocaleString()}</td><td>${decay.status}</td><td>${formatMetric(decay.train)}</td><td>${formatMetric(decay.validation)}</td><td>${wandb}</td><td>${beaker}</td></tr>`;
+    const downstream=finite(decay.downstreamNineAverageAccuracy)?` Downstream-nine mean accuracy: ${(100*Number(decay.downstreamNineAverageAccuracy)).toFixed(2)}%.`:"";
+    document.getElementById("decay-eval-note").textContent=(decay.evaluation||"")+downstream;
   }
 })();
