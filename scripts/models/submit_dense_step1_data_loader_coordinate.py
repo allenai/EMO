@@ -246,39 +246,11 @@ def matching_registered_run(report: dict[str, Any], args: argparse.Namespace) ->
                 "checkpoint nor that exact step in the canonical trajectory directory"
             )
 
-        floor = selected_wd_floor(report, key, predecessor)
-        if floor is None:
-            raise SystemExit("could not resolve the selected preceding WD floor")
-        if wd < floor:
-            raise SystemExit(
-                f"WD {wd} is below the selected preceding WD floor {floor}; later WD may not decrease"
-            )
+        # Each approved LR/WD trajectory now advances independently until its own
+        # first validation non-improvement. Exact-source matching above guarantees
+        # that a continuation keeps the same WD; a winner selected at another WD
+        # must not prune this trajectory prematurely.
     return run
-
-
-def selected_wd_floor(report: dict[str, Any], key: str, through_epoch: int) -> Decimal | None:
-    floor: Decimal | None = None
-    unhealthy = report.get("healthAudit", {}).get("unhealthy", {})
-    for epoch in TARGETS:
-        if epoch > through_epoch:
-            break
-        candidates: list[tuple[Decimal, Decimal]] = []
-        for run in report.get("runs", []):
-            if run.get("method") != key:
-                continue
-            wd = numeric(run.get("wd"))
-            if floor is not None and wd < floor:
-                continue
-            result = run.get("results", {}).get(str(epoch))
-            if not isinstance(result, dict) or result.get("status") != "complete":
-                continue
-            if result.get("wandb") in unhealthy or result.get("validation") is None:
-                continue
-            candidates.append((numeric(result["validation"]), wd))
-        if not candidates:
-            return None
-        _, floor = min(candidates)
-    return floor
 
 
 def beaker_spec(experiment: str) -> dict[str, Any]:
