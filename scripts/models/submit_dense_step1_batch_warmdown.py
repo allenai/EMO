@@ -173,11 +173,11 @@ def stage_arguments(
             "--trainer.load_optim_state=true",
             "--trainer.prefer_explicit_load_path=true",
             "--trainer.reset_data_loader_state_on_load_path=false",
-            "--train_module.validate_optimizer_hyperparameters_on_load=true",
+            "--train_module.validate_optimizer_hyperparameters_on_load=false",
             f"--trainer.callbacks.{callback_name}="
             "{_CLASS_: olmo_core.train.callbacks.optimizer_recalibration."
             "AdamSecondMomentBatchRecalibrationCallback, batch_size_ratio: 4.0, "
-            f"expected_step: {expected_step}}}",
+            f"expected_step: {expected_step}, restart_lr: 0.001}}",
         ]
     )
     return arguments
@@ -281,7 +281,8 @@ def validate_spec(spec: dict[str, Any]) -> None:
         "--trainer.load_optim_state=true",
         "--trainer.load_trainer_state=true",
         "--trainer.prefer_explicit_load_path=true",
-        "--train_module.validate_optimizer_hyperparameters_on_load=true",
+        "--train_module.validate_optimizer_hyperparameters_on_load=false",
+        "restart_lr: 0.001",
         "--dynamic-repacking",
         "step2384",
         "step17643",
