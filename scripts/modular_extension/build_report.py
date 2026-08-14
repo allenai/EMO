@@ -30,6 +30,7 @@ JOINT = ROOT / "modular_extension/data/emo_64exp_50b_wsd_lr2e-3_100B-130B/doc_cl
 SUBSTAB = ROOT / "modular_extension/cluster/emo100b_step23842_100B-130B/subsample_stability"
 KSEL = ROOT / "modular_extension/cluster/emo100b_step23842_100B-130B/k_selection"
 K32CPT = ROOT / "modular_extension/cluster/emo100b_step23842_100B-130B/k32_cpt"
+K32EV = ROOT / "modular_extension/k32_cpt_runs/evals"
 ORACLE_SPLIT = (ROOT / "modular_extension/cluster/emo100b_step23842/doc_classifier/oracle"
                 / "cluster_agreement.json")
 
@@ -916,7 +917,79 @@ of each cluster's original routing survives the pruning intact.</li>
                           "[recomputing with cosine panels and norm-ratio decomposition &mdash; "
                           "results land here shortly]</p>")
 
-    return intro + conc_html + drift_html + build_k32_freeze(k32) + _k32cpt_design_card()
+    results_path = K32EV / "k32cpt_results.json"
+    cpt_res = json.load(open(results_path)) if results_path.exists() else {}
+    return intro + conc_html + drift_html + build_k32_freeze(k32) + _k32cpt_design_card() + \
+        _k32cpt_interim_results(cpt_res)
+
+
+def _k32cpt_interim_results(res) -> str:
+    if not res or not any(a["stages"] for a in res.get("arms", {}).values()):
+        return ""
+    import statistics as _st
+
+    a100 = res["anchors"].get("step23842_100B_25M") or res["anchors"]["step23842_100B"]
+    abase = res["anchors"].get("baseline_130B_25M") or res["anchors"]["baseline_130B"]
+    a100 = {int(k): v for k, v in a100.items()}
+    abase = {int(k): v for k, v in abase.items()}
+    base_mean = _st.mean(abase[c] - a100[c] for c in a100)
+
+    n_by_arm = {arm: len(d["stages"]) for arm, d in res["arms"].items()}
+    status = ", ".join(f"{arm}: {n}/32" for arm, n in n_by_arm.items())
+
+    carry = res["arms"]["carry"]["stages"]
+    just = [s["ce"][str(s["trained_cluster"])] - a100[s["trained_cluster"]] for s in carry]
+    last = carry[-1]
+    mean_last = _st.mean(last["ce"][str(c)] - a100[c] for c in a100)
+
+    anchor_note = ("Snapshot deltas use the same 25M-token eval prefix as the anchors."
+                   if res["delta_reference"] == "25M anchors" else
+                   "Interim caveat: anchors were evaluated on 50M held-out tokens per cluster, "
+                   "snapshots on the first 25M — a small prefix mismatch, being re-run matched; "
+                   "it does not move deltas of this size.")
+
+    return card("results", f"Interim results &mdash; stage evals so far ({status})", f"""
+<p class="note">Live view, updated as the sequential arms and their per-stage evals progress; the
+verdict below can still move. {anchor_note}</p>
+<p><strong>So far, no-extension sequential CPT is net negative.</strong> Reference: 30B of
+<em>normal</em> continued training (the 130B baseline) improves every cluster's held-out CE, mean
+<strong>{base_mean:+.3f}</strong> nats vs the 100B start. The sequential arms instead show:</p>
+<ul>
+<li><strong>Specialization on the just-trained cluster is small and inconsistent</strong>: across the
+carry arm's {len(carry)} evaluated stages, the just-trained cluster's CE delta spans
+{min(just):+.3f}&hellip;{max(just):+.3f} (median {_st.median(just):+.3f}) &mdash; only some stages even
+beat the baseline's ordinary {base_mean:+.3f}, despite training exclusively on that cluster.</li>
+<li><strong>The pool degrades broadly while it specializes narrowly</strong>: after the carry arm's
+stage {last['stage']}, mean CE over all 32 clusters is <strong>{mean_last:+.3f}</strong> vs the 100B
+start &mdash; roughly {abs(mean_last - base_mean) / abs(base_mean):.0f}&times; the baseline's
+improvement, in the wrong direction. Previously-trained clusters drift back up as later stages
+overwrite shared experts (right panel below), so specialization is not retained.</li>
+<li><strong>A few not-yet-trained clusters are hit catastrophically</strong>: in the heatmap, clusters
+21 and 28 degrade by +0.3&ndash;0.4 nats and worsen monotonically as other clusters train &mdash; their
+routed experts are being repurposed out from under them. (In the sequential design they get their own
+training turn later, which will show whether the damage is recoverable.) Conversely cluster 14
+<em>improves</em> from nearly everyone's training &mdash; a broad beneficiary.</li>
+<li><strong>Order barely matters so far</strong>: the shuffled-order arm tracks the same trajectories
+(green), suggesting these are properties of the setting, not of a particular cluster sequence. Fresh-
+optimizer stage evals are still queued.</li>
+</ul>
+<div class="figrow">{img_tag(K32EV / "k32cpt_curves.png",
+    "Per-stage held-out CE deltas vs the 100B start. Left: the just-trained cluster (specialization). "
+    "Middle: mean over all 32 clusters. Right: mean over previously-trained clusters (forgetting). "
+    "Red dashed: the 130B baseline's mean improvement from ordinary training on the same tokens.")}
+</div>
+<div class="figrow">{img_tag(K32EV / "k32cpt_heatmap_carry.png",
+    "Carry arm: CE delta vs 100B for every (after-stage, evaluated-cluster) pair; black boxes mark the "
+    "just-trained cluster. Pale-red wash = broad slow degradation; blue column (cluster 14) = a broad "
+    "beneficiary; dark-red columns (21, 28) = not-yet-trained clusters degrading catastrophically.")}
+</div>
+{details("Shuffled-order arm heatmap", img_tag(K32EV / "k32cpt_heatmap_carry_shuf.png",
+    "Same view for the shuffled-order arm (fewer stages evaluated so far)."))}
+<p><strong>Reading so far:</strong> with the trunk and router frozen and no added capacity, per-cluster
+expert training buys little on its own cluster and costs broadly elsewhere &mdash; the interference the
+design set out to measure is the dominant effect, and plain continued pretraining currently dominates
+this CPT scheme on every metric. Final judgment waits for the completed arms (full 32 stages), the
+full-token final-pool evals, and the fresh-optimizer comparison.</p>""")
 
 
 def _k32cpt_design_card() -> str:
