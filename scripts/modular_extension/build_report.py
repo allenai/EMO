@@ -969,9 +969,10 @@ overwrite shared experts (right panel below), so specialization is not retained.
 routed experts are being repurposed out from under them. (In the sequential design they get their own
 training turn later, which will show whether the damage is recoverable.) Conversely cluster 14
 <em>improves</em> from nearly everyone's training &mdash; a broad beneficiary.</li>
-<li><strong>Order barely matters so far</strong>: the shuffled-order arm tracks the same trajectories
-(green), suggesting these are properties of the setting, not of a particular cluster sequence. Fresh-
-optimizer stage evals are still queued.</li>
+<li><strong>Neither optimizer handling nor cluster order changes the picture</strong>: all three arms
+track each other closely (just-trained median &minus;0.007 / +0.007 / &minus;0.007 nats and pool-wide mean
++0.083 / +0.079 / +0.076 for carry / shuffled-order / fresh at their latest evaluated stages) &mdash;
+the effect is a property of the setting, not of the seed details.</li>
 </ul>
 <div class="figrow">{img_tag(K32EV / "k32cpt_curves.png",
     "Per-stage held-out CE deltas vs the 100B start. Left: the just-trained cluster (specialization). "
