@@ -340,17 +340,21 @@
       const epoch = comparison.epochs[String(column.batchSequences)];
       return epoch === undefined ? null : getSelected(column, epoch);
     });
-    const values = winners.map((winner) => winner && numeric(winner.result.validation)).filter((value) => value !== null);
+    const values = winners
+      .map((winner) => numeric(winner?.result?.validation))
+      .filter((value) => value !== null);
     const rowBest = values.length ? Math.min(...values) : null;
     const tr = document.createElement("tr");
     tr.innerHTML = `<td>${Number(comparison.optimizerSteps).toLocaleString()}</td>` + columns.map((column, index) => {
       const epoch = comparison.epochs[String(column.batchSequences)];
       const winner = winners[index];
-      const value = winner && numeric(winner.result.validation);
+      const value = numeric(winner?.result?.validation);
       const isBest = value !== null && value === rowBest;
       const metric = winner ? formatMetric(value) : null;
-      const display = winner ? `E${formatEpoch(epoch)} · ${metric}` : "—";
-      return `<td class="${isBest ? "summary-best summary-row-best" : ""}"${isBest ? ' style="font-weight:900!important"' : ""}>${isBest ? `<strong>${display}</strong>` : display}</td>`;
+      const display = winner
+        ? `E${formatEpoch(epoch)} · ${isBest ? `<strong><u>${metric}</u></strong>` : metric}`
+        : "—";
+      return `<td class="${isBest ? "summary-best summary-row-best" : ""}"${isBest ? ' style="font-weight:900!important"' : ""}>${display}</td>`;
     }).join("");
     optimizerBody.appendChild(tr);
   }
