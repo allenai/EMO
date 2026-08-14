@@ -1140,34 +1140,53 @@ def _k32cpt_curves_card() -> tuple:
         r, g, b = colorsys.hls_to_rgb((i * 0.618034) % 1.0, 0.45, 0.75)
         palette.append(f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}")
 
+    # Stage order per arm (results json carries it; fallback natural order).
+    res_path = K32EV / "k32cpt_results.json"
+    orders = {}
+    if res_path.is_file():
+        res = json.load(open(res_path))
+        orders = {arm: d["order"] for arm, d in res.get("arms", {}).items()}
+
     data = {}
     counts = {}
     for arm in ("carry", "carry_shuf", "fresh"):
-        curves = [("baseline (64e, mixed data)", "#111827", True, base)]
-        for c in range(32):
+        order = orders.get(arm, list(range(32)))
+        # Stack stages horizontally IN TRAINING ORDER: stage i's curve is offset by the
+        # cumulative tokens of stages 0..i-1, so the arm reads as one continuous
+        # sequential trajectory on the same 0..30B axis as the baseline.
+        curves = [("baseline (64e, mixed data)", "#111827", True,
+                   base["tokens_b"], base["ce"])]
+        offset = 0.0
+        n = 0
+        for c in order:
             r = runs.get(f"k32cpt_{arm}_c{c:02d}")
-            if r and r["state"] == "finished":
-                curves.append((f"c{c:02d}", palette[c], False, r))
-        counts[arm] = len(curves) - 1
-        xs = sorted({x for _, _, _, r in curves for x in r["tokens_b"]})
+            if not (r and r["state"] == "finished"):
+                break  # stages are sequential; stop stacking at the first unfinished one
+            curves.append((f"c{c:02d}", palette[c], False,
+                           [round(offset + x, 4) for x in r["tokens_b"]], r["ce"]))
+            offset += max(r["tokens_b"])
+            n += 1
+        counts[arm] = n
+        xs = sorted({x for _, _, _, tx, _ in curves for x in tx})
         xi = {x: i for i, x in enumerate(xs)}
         series = []
-        for label, color, dash, r in curves:
+        for label, color, dash, tx, ce in curves:
             y = [None] * len(xs)
-            for x, v in zip(r["tokens_b"], r["ce"]):
+            for x, v in zip(tx, ce):
                 y[xi[x]] = v
             series.append({"label": label, "color": color, "dash": dash, "y": y})
-        xmax = max((max(r["tokens_b"]) for _, _, _, r in curves[1:]), default=3.0)
-        data[arm] = {"x": xs, "series": series, "xmax": round(xmax * 1.02, 3)}
+        data[arm] = {"x": xs, "series": series, "xmax": round(offset * 1.02, 3) or 3.0}
 
     status = ", ".join(f"{a}: {n}/32" for a, n in counts.items())
     card_html = card("results", f"Stage training curves &mdash; 33-expert subset CE ({status} stages)", f"""
 <p>Training CE of every per-cluster stage run (the 33-expert subset training on ONE cluster's data;
-EMA-smoothed), x = tokens trained within the stage. Black dashed reference: the 130B baseline's train CE
-&mdash; the full 64-expert model continuing on the <em>mixed</em> stream from the same 100B state (its
-curve extends to 30B; drag to zoom, double-click to reset). Levels are not directly comparable across
-clusters (each cluster has its own difficulty); the informative part is each curve's <em>shape</em> vs
-the flat baseline: an immediate drop below ~2.6 then plateau = fast, shallow specialization.</p>
+EMA-smoothed), with consecutive stages <strong>stacked horizontally in training order</strong>: x =
+cumulative tokens across the arm's sequence, so the arm reads as one continuous trajectory and each
+colored segment is one cluster's stage. Black dashed reference on the same axis: the 130B baseline's
+train CE &mdash; the full 64-expert model continuing on the <em>mixed</em> stream from the same 100B
+state. Drag to zoom, double-click to reset. Levels differ across segments partly because each cluster
+has its own difficulty; the informative comparisons are each segment's <em>shape</em> (drop-then-plateau
+= fast, shallow specialization) and the arm's overall level vs the flat baseline.</p>
 <div id="k32-curves">
   <p style="margin:4px 0 8px">
     arm: <label><input type="radio" name="k32arm" value="carry" checked> carry</label>
