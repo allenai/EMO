@@ -358,13 +358,13 @@
       },
       "heldNextEpoch": null,
       "progress": {
-        "observedAt": "2026-08-14 15:32 PDT",
-        "step": 83275,
+        "observedAt": "2026-08-14 16:12 PDT",
+        "step": 87295,
         "endpointStep": 106812,
-        "epoch": 22,
-        "trainCe": 3.118,
+        "epoch": 23,
+        "trainCe": 3.173,
         "metricStatus": "preliminary",
-        "eta": "3h51m"
+        "eta": "3h14m"
       }
     },
     {
@@ -401,8 +401,8 @@
           "reason": "Inherited exact Original E1 coordinate; DR begins at E2 from retained pre-decay step3432."
         }
       },
-      "health": "starting",
-      "reason": "Corrected canonical Original E1 resume and automatic DR-directory creation passed print-only guards; one 8-GPU replica is starting on its assigned node.",
+      "health": "healthy",
+      "reason": "Healthy on one 8-GPU node after automatic canonical DR-directory creation, manifest/preflight checks, and forced exact trainer/optimizer resume from canonical Original E1 step3432; first optimizer step3433 was observed.",
       "revision": "5e472abe7732830ad0568321a719fcc4ec14f49f",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0",
       "attempts": [
@@ -445,8 +445,29 @@
       "experiment": "01M018DAMED87RHQZ882NEN9QX",
       "job": "01M018DARV958G6V1XNVMGESBF",
       "result": "01M018DAMV5PTRKWFK7AH2HBTZ",
-      "beakerStatus": "starting",
-      "node": "01KT4H45Y6G7TWJ6ZW9TCZS8BK"
+      "beakerStatus": "running",
+      "node": "01KT4H45Y6G7TWJ6ZW9TCZS8BK",
+      "wandb": "160ql2nv",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 3432,
+        "trainerAndOptimizerStateRequested": true,
+        "firstOptimizerStep": 3433,
+        "throughputTokensPerSecondPerGpu": 55870,
+        "mfuPercent": 52.43,
+        "startedAt": "2026-08-14 16:09 PDT"
+      },
+      "progress": {
+        "observedAt": "2026-08-14 16:13 PDT",
+        "step": 3560,
+        "endpointStep": 7630,
+        "epoch": 1,
+        "trainCe": 3.67,
+        "metricStatus": "preliminary",
+        "eta": "40m"
+      }
     },
     {
       "id": "dr128-lr1e-3-wd0.3",
