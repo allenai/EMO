@@ -37,7 +37,7 @@ window.ICSL_BATCH_WARMDOWN_DATA = {
       "accumulatedEpoch": 4,
       "optimizerStep": 2384,
       "addedSteps": 1956,
-      "status": "queued",
+      "status": "running",
       "validation": null,
       "train": null,
       "wandb": null,
