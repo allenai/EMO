@@ -308,8 +308,6 @@ def main() -> None:
             args.name,
             "--workspace",
             args.workspace,
-            "--priority",
-            args.priority,
         ],
         check=True,
         input=json.dumps(built),
