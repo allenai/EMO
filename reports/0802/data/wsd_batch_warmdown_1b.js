@@ -3,8 +3,8 @@ window.ICSL_BATCH_WARMDOWN_DATA = {
   "title": "Step 1-1 — Dense 1B Batch Warmdown",
   "setup": "Dense 1B; dynamic document repacking; LR 1e-3; WD 0.333. The chain starts from the BS1024 E2 checkpoint at optimizer step 477, runs BS256 for 1,907 more steps to step 2,384, then BS64 for 15,259 more steps to step 17,643.",
   "selection": "The two stages form one initialization chain. BS256 initializes from BS1024 E2; BS64 initializes from the BS256 E4 checkpoint, so its accumulated training history is E8: two epochs at BS1024, two at BS256, and four at BS64.",
-  "revision": "1cc6a25f2e5e58441a89ced3dfe645739270bfb6",
-  "beaker": "01KZZ501M3ZCH55C8W6VNFZET4",
+  "revision": "7e03491d37b801d7769da07749c2630260be0118",
+  "beaker": "01KZZ58WR7VH3DC4QEFWVE5VY5",
   "timing": {
     "microbatchSequences": 8,
     "secondsPerMicrobatch": 0.6,
@@ -36,11 +36,11 @@ window.ICSL_BATCH_WARMDOWN_DATA = {
       "accumulatedEpoch": 4,
       "optimizerStep": 2384,
       "addedSteps": 1907,
-      "status": "submitted",
+      "status": "queued",
       "validation": null,
       "train": null,
       "wandb": null,
-      "beaker": "01KZZ501M3ZCH55C8W6VNFZET4",
+      "beaker": "01KZZ58WR7VH3DC4QEFWVE5VY5",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_init=bs1024e2_lr1e-03_wd0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_init=bs1024e2_lr1e-03_wd0.333/step2384",
       "idealizedTrainingSeconds": 5721.6
@@ -55,7 +55,7 @@ window.ICSL_BATCH_WARMDOWN_DATA = {
       "validation": null,
       "train": null,
       "wandb": null,
-      "beaker": "01KZZ501M3ZCH55C8W6VNFZET4",
+      "beaker": "01KZZ58WR7VH3DC4QEFWVE5VY5",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_init=bs256e4_init=bs1024e2_lr1e-03_wd0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_init=bs256e4_init=bs1024e2_lr1e-03_wd0.333/step17643",
       "idealizedTrainingSeconds": 14877.0
