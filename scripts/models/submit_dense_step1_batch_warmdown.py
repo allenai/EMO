@@ -229,10 +229,10 @@ def build_spec(spec: dict[str, Any], args: argparse.Namespace, source_args: list
         f"{{ echo {shlex.quote('BATCH_WARMDOWN_PREFLIGHT_ERROR missing train manifest: ' + TRAIN_MANIFEST)} >&2; exit 11; }}",
         f"test -f {shlex.quote(VALIDATION_MANIFEST)} || "
         f"{{ echo {shlex.quote('BATCH_WARMDOWN_PREFLIGHT_ERROR missing validation manifest: ' + VALIDATION_MANIFEST)} >&2; exit 12; }}",
-        f"test ! -e {shlex.quote(BS256_OUTPUT)} || "
-        f"{{ echo {shlex.quote('BATCH_WARMDOWN_PREFLIGHT_ERROR output already exists: ' + BS256_OUTPUT)} >&2; exit 13; }}",
-        f"test ! -e {shlex.quote(BS64_OUTPUT)} || "
-        f"{{ echo {shlex.quote('BATCH_WARMDOWN_PREFLIGHT_ERROR output already exists: ' + BS64_OUTPUT)} >&2; exit 14; }}",
+        f"if compgen -G {shlex.quote(BS256_OUTPUT + '/step*')} > /dev/null; then "
+        f"echo {shlex.quote('BATCH_WARMDOWN_PREFLIGHT_ERROR checkpoint already exists under: ' + BS256_OUTPUT)} >&2; exit 13; fi",
+        f"if compgen -G {shlex.quote(BS64_OUTPUT + '/step*')} > /dev/null; then "
+        f"echo {shlex.quote('BATCH_WARMDOWN_PREFLIGHT_ERROR checkpoint already exists under: ' + BS64_OUTPUT)} >&2; exit 14; fi",
         f'test "$(git rev-parse HEAD)" = "{args.revision}" || '
         f'{{ echo "BATCH_WARMDOWN_PREFLIGHT_ERROR revision mismatch: expected {args.revision}, got $(git rev-parse HEAD)" >&2; exit 15; }}',
         shlex.join(["echo", "BATCH_WARMDOWN_PREFLIGHT source_step=428 bs256_end=2384 bs64_end=17643 lr=1e-3 wd=0.333 dr=true v_recal_ratios=4,4"]),
