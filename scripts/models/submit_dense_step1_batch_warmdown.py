@@ -240,7 +240,7 @@ def build_spec(spec: dict[str, Any], args: argparse.Namespace, source_args: list
         if env.get("name") not in blocked and not str(env.get("name", "")).startswith("BEAKER_REPLICA_")
     ]
     set_env(task, "GIT_REF", args.revision)
-    set_env(task, "GIT_BRANCH", "codex/batch-warmdown")
+    set_env(task, "GIT_BRANCH", "sewonm/icsl")
     set_env(task, "NUM_NODES", "1")
     task["resources"] = {"gpuCount": 8, "sharedMemory": "10 GiB"}
     task["context"] = {"priority": args.priority, "minRuntime": "0s", "autoResume": False}
