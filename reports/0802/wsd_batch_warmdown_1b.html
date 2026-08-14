@@ -18,13 +18,13 @@
 <section class="card"><h2>Chosen (LR, WD) by epoch and batch size</h2><p class="note">Original and DR selections follow the source report's validation-first and nondecreasing-WD rules. The warmdown coordinate remains LR 1e-3 / WD 0.333.</p><div class="table-wrap"><table><thead id="coordinate-head"></thead><tbody id="coordinate-summary"></tbody></table></div></section>
 <section class="card"><h2>Batch size × LR coordinate grid</h2><p class="note">This clean grid contains only the new warmdown stages; existing source-report coordinates are intentionally excluded.</p><div class="table-wrap"><table><thead><tr><th>Accumulated epoch</th><th>Batch</th><th>Initialization history</th><th>Evaluated / active (LR, WD)</th><th>Status</th></tr></thead><tbody id="warmdown-coordinate-grid"></tbody></table></div></section>
 <section class="card"><h2>New data-loader runs</h2><p class="note">Only the newly launched BS256 and BS64 warmdown runs appear here. The inherited BS1024 source and all historical provenance remain excluded.</p><div class="table-wrap"><table><thead><tr><th>Batch</th><th>Accumulated epoch</th><th>LR</th><th>WD</th><th>Status</th><th>Train CE</th><th>Val CE</th><th>W&amp;B</th><th>Beaker</th></tr></thead><tbody id="new-runs"></tbody></table></div></section>
-<section class="card"><h2>Warmdown stages</h2><div class="table-wrap"><table><thead><tr><th>Stage</th><th>Batch</th><th>Accumulated epoch</th><th>Added steps</th><th>Total steps</th><th>Status</th><th>Val CE</th><th>W&amp;B</th><th>Beaker</th></tr></thead><tbody id="stage-summary"></tbody></table></div></section>
+<section class="card"><h2>Warmdown stages</h2><div class="table-wrap"><table><thead><tr><th>Stage</th><th>Batch</th><th>Accumulated epoch</th><th>Added steps</th><th>Total steps</th><th>Wall clock</th><th>Status</th><th>Val CE</th><th>W&amp;B</th><th>Beaker</th></tr></thead><tbody id="stage-summary"></tbody></table></div></section>
 </main>
 <script src="data/wsd_weight_decay_1b.js?v=20260813warmdown"></script>
 <script>window.ICSL_WD_BASELINE_DATA=window.ICSL_REPORT_DATA;</script>
 <script src="data/wsd_batch_size_1b.js?v=20260813warmdown"></script>
 <script>window.ICSL_BATCH_BASELINE_DATA=window.ICSL_REPORT_DATA;</script>
 <script src="data/wsd_data_loader_1b.js?v=20260813warmdown"></script>
-<script src="data/wsd_batch_warmdown_1b.js?v=20260813b"></script>
-<script src="batch_warmdown_charts.js?v=20260813b"></script>
+<script src="data/wsd_batch_warmdown_1b.js?v=20260814"></script>
+<script src="batch_warmdown_charts.js?v=20260814"></script>
 </body></html>

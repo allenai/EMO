@@ -1,5 +1,5 @@
 window.ICSL_BATCH_WARMDOWN_DATA = {
-  "updated": "2026-08-13",
+  "updated": "2026-08-14",
   "title": "Step 1-1 — Dense 1B Batch Warmdown",
   "setup": "Dense 1B; dynamic document repacking; LR 1e-3; WD 0.333. Every continuation loads the previous target's pre-decay checkpoint: BS256 loads BS1024 E2 pre-decay step 428 and runs through target endpoint step 2,384; BS64 loads BS256 E4 pre-decay step 2,145 and runs through endpoint step 17,643.",
   "selection": "The two stages form one initialization chain that always branches before the preceding WSD decay. The E2/E4/E8 labels denote target accumulated training history; the exact loaded optimizer steps are 428 for BS256 and 2,145 for BS64.",
@@ -46,6 +46,7 @@ window.ICSL_BATCH_WARMDOWN_DATA = {
       "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_init=bs1024e2_lr1e-03_wd0.333/step2145",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_init=bs1024e2_lr1e-03_wd0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_init=bs1024e2_lr1e-03_wd0.333/step2384",
+      "wallClockSeconds": 4748.3,
       "idealizedTrainingSeconds": 5721.6
     },
     {
@@ -54,14 +55,15 @@ window.ICSL_BATCH_WARMDOWN_DATA = {
       "accumulatedEpoch": 8,
       "optimizerStep": 17643,
       "addedSteps": 15498,
-      "status": "running",
-      "validation": null,
-      "train": null,
+      "status": "complete",
+      "validation": 3.10087,
+      "train": 3.032,
       "wandb": "f0ma0hji",
       "beaker": "01KZZCCBA9Z8EKD33R33ZS3927",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_init=bs1024e2_lr1e-03_wd0.333/step2145",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_init=bs256e4_init=bs1024e2_lr1e-03_wd0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_init=bs256e4_init=bs1024e2_lr1e-03_wd0.333/step17643",
+      "wallClockSeconds": 9365.3,
       "idealizedTrainingSeconds": 14446.8
     }
   ]

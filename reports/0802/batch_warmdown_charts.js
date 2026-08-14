@@ -196,7 +196,7 @@
   for(const run of warmdown.runs){
     const wandb=run.wandb?`<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${run.wandb}">${run.wandb}</a>`:"—";
     const beaker=run.beaker?`<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${run.beaker}">${run.beaker}</a>`:"—";
-    stages.insertAdjacentHTML("beforeend",`<tr><td>${run.stage}</td><td>BS${run.batchSequences}</td><td>E${run.accumulatedEpoch}</td><td>${run.addedSteps.toLocaleString()}</td><td>${run.optimizerStep.toLocaleString()}</td><td>${run.status}</td><td>${formatMetric(run.validation)}</td><td>${wandb}</td><td>${beaker}</td></tr>`);
+    stages.insertAdjacentHTML("beforeend",`<tr><td>${run.stage}</td><td>BS${run.batchSequences}</td><td>E${run.accumulatedEpoch}</td><td>${run.addedSteps.toLocaleString()}</td><td>${run.optimizerStep.toLocaleString()}</td><td>${finite(run.wallClockSeconds)?formatDuration(run.wallClockSeconds):"—"}</td><td>${run.status}</td><td>${formatMetric(run.validation)}</td><td>${wandb}</td><td>${beaker}</td></tr>`);
   }
 
   const newRuns=warmdown.runs.filter(run=>run.stage!=="source");
