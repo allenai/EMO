@@ -25,9 +25,9 @@ from olmo_core.utils import prepare_cli_environment, seed_all
 log = logging.getLogger(__name__)
 
 
-def _defer_checkpoint_selection_to_trainer(trainer, load_path: Optional[str]) -> bool:
+def _defer_checkpoint_selection_to_trainer(trainer) -> bool:
     """Whether ``Trainer.fit()`` must perform initial checkpoint selection itself."""
-    return bool(trainer.prefer_explicit_load_path and load_path is not None)
+    return bool(trainer.prefer_explicit_load_path and trainer.load_path is not None)
 
 
 @dataclass
@@ -162,9 +162,7 @@ def main(
     # In explicit-preference mode checkpoint selection belongs to ``Trainer.fit()``. Calling
     # ``maybe_load_checkpoint()`` here first would recover the newest save-folder endpoint and
     # mark a checkpoint as loaded before the trainer can honor the exact explicit path.
-    defer_checkpoint_selection = _defer_checkpoint_selection_to_trainer(
-        trainer, config.load_path
-    )
+    defer_checkpoint_selection = _defer_checkpoint_selection_to_trainer(trainer)
 
     # Otherwise preserve the legacy behavior: recover the save folder first, then use the
     # configured load path only when no save-folder checkpoint exists.
