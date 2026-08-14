@@ -181,6 +181,7 @@
   const comparisonByStep=new Map((batchData.optimizerStepComparisons||[]).map(comparison=>[Number(comparison.optimizerSteps),comparison]));
   for(const chain of warmdownChains)for(const run of chain.runs)if(!comparisonByStep.has(Number(run.optimizerStep)))comparisonByStep.set(Number(run.optimizerStep),{optimizerSteps:Number(run.optimizerStep),epochs:{}});
   const optimizerBody=document.getElementById("optimizer-step-summary");
+  let bestSeenAtEarlierStep=Infinity;
   for(const comparison of [...comparisonByStep.values()].sort((a,b)=>Number(a.optimizerSteps)-Number(b.optimizerSteps))){
     const step=Number(comparison.optimizerSteps);
     const entries=columns.map(column=>{
@@ -195,16 +196,18 @@
     }
     const values=entries.map(entry=>numeric(entry.winner?.result.validation)).filter(value=>value!==null);
     const rowBest=values.length?Math.min(...values):null;
+    const isNewRecord=rowBest!==null&&rowBest<bestSeenAtEarlierStep;
     const timedRun=stepRuns.find(run=>run&&finite(run.idealizedTrainingSeconds));
     const time=timedRun?Number(timedRun.idealizedTrainingSeconds):step*.6;
     const cells=entries.map(entry=>{
       if(!entry.winner)return "<td>—</td>";
       const value=numeric(entry.winner.result.validation);
       const display=value===null?(entry.winner.result.status||"pending"):`E${formatEpoch(entry.epoch)} · ${value.toFixed(3)}`;
-      const best=value!==null&&value===rowBest;
+      const best=isNewRecord&&value!==null&&value===rowBest;
       return `<td class="${best?'summary-best summary-row-best':''}">${best?`<strong>${display}</strong>`:display}</td>`;
     }).join("");
     optimizerBody.insertAdjacentHTML("beforeend",`<tr><td>${step.toLocaleString()}</td><td>≈${formatDuration(time)}</td>${cells}</tr>`);
+    if(rowBest!==null)bestSeenAtEarlierStep=Math.min(bestSeenAtEarlierStep,rowBest);
   }
 
   const stages=document.getElementById("stage-summary");
