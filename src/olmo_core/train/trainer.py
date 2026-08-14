@@ -678,6 +678,55 @@ class Trainer:
         # on another rank, leading to a deadlock.
         self.run_bookkeeping_op(self._check_if_canceled)
 
+    def _load_initial_checkpoint(self) -> None:
+        """Load the checkpoint selected by the configured resume policy."""
+        if (
+            self.no_checkpoints
+            or self.checkpoint_loaded
+            or self.load_strategy == LoadStrategy.never
+        ):
+            return
+
+        # In explicit-preference mode ``load_path`` is authoritative. Load it directly so an
+        # explicit checkpoint directory cannot be treated as an optional container lookup and
+        # silently replaced by a newer endpoint in ``save_folder``.
+        if self.prefer_explicit_load_path and self.load_path is not None:
+            self.load_checkpoint(
+                self.load_path,
+                reset_data_loader_state=self.reset_data_loader_state_on_load_path,
+            )
+
+        if not self.checkpoint_loaded:
+            # The save folder is used for continuing runs that failed or were preempted, so
+            # we always load trainer state and optimizer state.
+            self.maybe_load_checkpoint(
+                self.save_folder, load_trainer_state=True, load_optim_state=True
+            )
+
+        # Then fallback to the load path, if provided.
+        if self.load_path is not None:
+            if not self.checkpoint_loaded:
+                self.maybe_load_checkpoint(
+                    self.load_path,
+                    reset_data_loader_state=self.reset_data_loader_state_on_load_path,
+                )
+            elif not self.prefer_explicit_load_path:
+                log.warning(
+                    f"Ignoring load path ('{self.load_path}') since checkpoint was found in save folder"
+                )
+
+        if not self.checkpoint_loaded:
+            if self.load_strategy == LoadStrategy.always:
+                raise FileNotFoundError(
+                    f"No checkpoint found in save folder ('{self.save_folder}') or "
+                    f"load path ('{self.load_path}')"
+                )
+            else:
+                log.warning(
+                    f"No checkpoint found in save folder ('{self.save_folder}') or "
+                    f"load path ('{self.load_path}'), will train from scratch..."
+                )
+
     def fit(self):
         """
         Fit the model, potentially loading a checkpoint first depending on the
@@ -687,48 +736,7 @@ class Trainer:
         self._cancel_reason = None
         self._canceling_rank = None
 
-        # Maybe load a checkpoint.
-        if (
-            not self.no_checkpoints
-            and not self.checkpoint_loaded
-            and self.load_strategy != LoadStrategy.never
-        ):
-            if self.prefer_explicit_load_path and self.load_path is not None:
-                self.maybe_load_checkpoint(
-                    self.load_path,
-                    reset_data_loader_state=self.reset_data_loader_state_on_load_path,
-                )
-
-            if not self.checkpoint_loaded:
-                # The save folder is used for continuing runs that failed or were preempted, so
-                # we always load trainer state and optimizer state.
-                self.maybe_load_checkpoint(
-                    self.save_folder, load_trainer_state=True, load_optim_state=True
-                )
-
-            # Then fallback to the load path, if provided.
-            if self.load_path is not None:
-                if not self.checkpoint_loaded:
-                    self.maybe_load_checkpoint(
-                        self.load_path,
-                        reset_data_loader_state=self.reset_data_loader_state_on_load_path,
-                    )
-                elif not self.prefer_explicit_load_path:
-                    log.warning(
-                        f"Ignoring load path ('{self.load_path}') since checkpoint was found in save folder"
-                    )
-
-            if not self.checkpoint_loaded:
-                if self.load_strategy == LoadStrategy.always:
-                    raise FileNotFoundError(
-                        f"No checkpoint found in save folder ('{self.save_folder}') or "
-                        f"load path ('{self.load_path}')"
-                    )
-                else:
-                    log.warning(
-                        f"No checkpoint found in save folder ('{self.save_folder}') or "
-                        f"load path ('{self.load_path}'), will train from scratch..."
-                    )
+        self._load_initial_checkpoint()
 
         barrier()
 
