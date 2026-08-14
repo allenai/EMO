@@ -1,8 +1,8 @@
 {
-  "updated": "2026-08-14",
+  "updated": "2026-08-13",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes.",
-  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 DR LR1e-3/WD0.3 E8 completed at validation CE3.02697, strictly improving E4 CE3.11199, so E12 is submitted from exact canonical pre-decay step27465 and will advance by four-epoch frontiers until its first non-improvement. BS1024 DR LR1e-3/WD1.0 is saturated at E24 CE3.12162 because E28 worsened to CE3.13269. After BS64 saturates, start BS128 LR1e-3/WD0.3 and BS256 WD0.333 at LR1e-3 and the explicitly approved LR2e-3 coordinate; each new DR trajectory begins at E2 from its exact Original E1 pre-decay checkpoint and advances only while its own validation CE strictly improves. LR2e-3 is an exception only for BS256 DR WD0.333; LR above 2e-3 remains prohibited. After all three staged trajectories finish, assess whether WD1.0 is justified rather than launching it automatically. If DR consistently improves over the matched Original loader across completed batch sizes, run the final conditional BS32 LR5e-4/WD0.3 trajectory. BS512 DR LR1e-3/WD1.0 is saturated at E24 CE3.06442 because E28 worsened to CE3.06734. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
+  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 DR LR1e-3/WD0.3 E12 completed at validation CE2.99359, strictly improving E8 CE3.02697, so E16 is submitted from exact canonical pre-decay step41198 and will advance by four-epoch frontiers until its first non-improvement. BS1024 DR LR1e-3/WD1.0 is saturated at E24 CE3.12162 because E28 worsened to CE3.13269. After BS64 saturates, start BS128 LR1e-3/WD0.3 and BS256 WD0.333 at LR1e-3 and the explicitly approved LR2e-3 coordinate; each new DR trajectory begins at E2 from its exact Original E1 pre-decay checkpoint and advances only while its own validation CE strictly improves. LR2e-3 is an exception only for BS256 DR WD0.333; LR above 2e-3 remains prohibited. After all three staged trajectories finish, assess whether WD1.0 is justified rather than launching it automatically. If DR consistently improves over the matched Original loader across completed batch sizes, run the final conditional BS32 LR5e-4/WD0.3 trajectory. BS512 DR LR1e-3/WD1.0 is saturated at E24 CE3.06442 because E28 worsened to CE3.06734. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
   "targetEpochs": [
     1,
     2,
@@ -108,15 +108,16 @@
       "lr": "1e-3",
       "wd": "0.3",
       "status": "submitted",
-      "activeEpoch": 12,
+      "activeEpoch": 16,
       "attemptedEpochs": [
         2,
         4,
         8,
-        12
+        12,
+        16
       ],
-      "sourceExperiment": "01KZXZG32RYGW2HBB31HWTGT68",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step27465",
+      "sourceExperiment": "01KZZ0VJE9FJX8VQ9Z17GJXXCH",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step41198",
       "gpuCount": 8,
       "nodeCount": 1,
       "rankMicrobatchSequences": 8,
@@ -201,11 +202,33 @@
           "validation": 3.027,
           "validationExact": 3.02697,
           "reason": "Completed healthy on one 8-GPU node after forced exact load of canonical E4 pre-decay step13732. Validation CE3.02697 strictly improved E4 CE3.11199 by 0.08502, unlocking E12 from canonical pre-decay step27465."
+        },
+        "12": {
+          "status": "complete",
+          "beaker": "01KZZ0VJE9FJX8VQ9Z17GJXXCH",
+          "experiment": "01KZZ0VJE9FJX8VQ9Z17GJXXCH",
+          "job": "01KZZ0VJJVMF23XFNSF7MES492",
+          "result": "01KZZ0VJEWG1CY7X36WMWQ7R1G",
+          "wandb": "b35ykovv",
+          "node": "01JS3MZC0NYRRKMR91BZMQY58B",
+          "revision": "ebb77cc326583f6688dd4484020bfa313a054436",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step27465",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step41198",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step45777",
+          "retainedCheckpoints": [
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step41198",
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step45777"
+          ],
+          "train": 2.907,
+          "validation": 2.994,
+          "validationExact": 2.99359,
+          "reason": "Completed healthy on one 8-GPU node from exact canonical E8 pre-decay step27465. Validation CE2.99359 strictly improved E8 CE3.02697 by 0.03338, unlocking E16 from canonical pre-decay step41198."
         }
       },
       "health": "healthy",
-      "reason": "E8 completed with train CE2.943 and validation CE3.02697, strictly improving E4 CE3.11199 by 0.08502. E12 is healthy on one 8-GPU node after manifest/preflight checks and exact trainer/optimizer resume from canonical pre-decay step27465; measured throughput is 54.7k tokens/s/GPU at 51.3% MFU, confirming normal performance after the anomalously slow E8 node.",
-      "beakerStatus": "running",
+      "reason": "E12 completed at train CE2.907 and validation CE2.99359, strictly improving E8 CE3.02697 by 0.03338. E16 was submitted after print-only guards from exact canonical pre-decay step41198; target pre-decay step54931 and endpoint step61036 were verified absent.",
+      "beakerStatus": "pending",
       "attempts": [
         {
           "epoch": 4,
@@ -243,33 +266,27 @@
         }
       ],
       "retryCount": 1,
-      "beaker": "01KZZ0VJE9FJX8VQ9Z17GJXXCH",
-      "experiment": "01KZZ0VJE9FJX8VQ9Z17GJXXCH",
-      "revision": "ebb77cc326583f6688dd4484020bfa313a054436",
+      "beaker": "01KZZC6H5197N68EG9FY4M06F4",
+      "experiment": "01KZZC6H5197N68EG9FY4M06F4",
+      "revision": "b3801d2a1d6da43155a1cf092e05c231728cccff",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3",
-      "job": "01KZZ0VJJVMF23XFNSF7MES492",
-      "result": "01KZZ0VJEWG1CY7X36WMWQ7R1G",
-      "node": "01JS3MZC0NYRRKMR91BZMQY58B",
-      "wandb": "b35ykovv",
+      "job": "01KZZC6H999P7DNJJ35VT2CSG9",
+      "result": "01KZZC6H597Z1A9YHDTJY12V33",
+      "node": null,
+      "wandb": null,
       "startupEvidence": {
-        "manifestVerified": true,
-        "preflightVerified": true,
-        "sourceCheckpointLoaded": true,
-        "sourceStep": 27465,
-        "firstOptimizerStep": 27466,
+        "sourceStep": 41198,
         "trainerAndOptimizerStateRequested": true,
-        "throughputTokensPerSecondPerGpu": 54670,
-        "mfuPercent": 51.31
+        "status": "pending"
       },
       "heldNextEpoch": null,
       "progress": {
-        "observedAt": "2026-08-13 22:01 PDT",
-        "step": 43050,
-        "endpointStep": 45777,
-        "epoch": 11,
-        "trainCe": 3.121,
-        "metricStatus": "preliminary",
-        "eta": "28m"
+        "observedAt": "2026-08-13 22:34 PDT",
+        "step": 41198,
+        "endpointStep": 61036,
+        "epoch": 12,
+        "metricStatus": "pending",
+        "eta": "pending"
       }
     },
     {
