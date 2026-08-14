@@ -92,6 +92,12 @@ class ExperimentConfig(Config):
     # docs: end-define-config
 
 
+def _apply_explicit_load_path_policy(config: ExperimentConfig, trainer) -> None:
+    """Make trainer-level explicit checkpoint preference authoritative here too."""
+    if trainer.prefer_explicit_load_path:
+        config.force_exact_trainer_load_path = True
+
+
 def train(config: ExperimentConfig):
     if get_rank() == 0:
         rich.print(config)
@@ -107,6 +113,12 @@ def train(config: ExperimentConfig):
     data_loader = config.data_loader.build(dataset, dp_process_group=train_module.dp_process_group)
     trainer = config.trainer.build(train_module, data_loader)
     # docs: end-build-components
+
+    # This entrypoint performs checkpoint selection before ``Trainer.fit()``. Mirror the
+    # trainer-level explicit preference into its top-level force switch so the default stays
+    # unchanged while an opted-in ``trainer.load_path`` cannot be shadowed by a newer endpoint
+    # in the shared save folder.
+    _apply_explicit_load_path_policy(config, trainer)
 
     # Save config to W&B and each checkpoint dir.
     config_dict = config.as_config_dict()
