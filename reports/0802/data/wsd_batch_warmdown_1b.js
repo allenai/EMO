@@ -5,6 +5,12 @@ window.ICSL_BATCH_WARMDOWN_DATA = {
   "selection": "The two stages form one initialization chain. BS256 initializes from BS1024 E2; BS64 initializes from the BS256 E4 checkpoint, so its accumulated training history is E8: two epochs at BS1024, two at BS256, and four at BS64.",
   "revision": "7e03491d37b801d7769da07749c2630260be0118",
   "beaker": "01KZZ58WR7VH3DC4QEFWVE5VY5",
+  "sourceReconstruction": {
+    "reason": "The historically retained BS1024 DR E2 step428 and step477 checkpoints, and their Original E1 step214 source, were absent from Weka when the guarded warmdown preflight ran. No substitute checkpoint is used: reconstruct Original E1 step214 first, then reconstruct DR E2 step477 with the original configurations before restarting warmdown.",
+    "status": "reconstructing_original_e1",
+    "failedWarmdownExperiment": "01KZZ58WR7VH3DC4QEFWVE5VY5",
+    "originalE1ReconstructionExperiment": "01KZZ714RQECAYM6HJSDF47CJH"
+  },
   "timing": {
     "microbatchSequences": 8,
     "secondsPerMicrobatch": 0.6,
@@ -36,7 +42,7 @@ window.ICSL_BATCH_WARMDOWN_DATA = {
       "accumulatedEpoch": 4,
       "optimizerStep": 2384,
       "addedSteps": 1907,
-      "status": "queued",
+      "status": "waiting_for_source_reconstruction",
       "validation": null,
       "train": null,
       "wandb": null,
@@ -51,7 +57,7 @@ window.ICSL_BATCH_WARMDOWN_DATA = {
       "accumulatedEpoch": 8,
       "optimizerStep": 17643,
       "addedSteps": 15259,
-      "status": "queued_after_bs256",
+      "status": "waiting_for_bs256",
       "validation": null,
       "train": null,
       "wandb": null,
