@@ -31,6 +31,7 @@ SUBSTAB = ROOT / "modular_extension/cluster/emo100b_step23842_100B-130B/subsampl
 KSEL = ROOT / "modular_extension/cluster/emo100b_step23842_100B-130B/k_selection"
 K32CPT = ROOT / "modular_extension/cluster/emo100b_step23842_100B-130B/k32_cpt"
 K32EV = ROOT / "modular_extension/k32_cpt_runs/evals"
+VENDOR = ROOT / "scripts/models_v2/vendor"  # uPlot assets shared with the models_v2 report
 ORACLE_SPLIT = (ROOT / "modular_extension/cluster/emo100b_step23842/doc_classifier/oracle"
                 / "cluster_agreement.json")
 
@@ -861,7 +862,7 @@ a hard stop at 130B. The original extension run kept no checkpoint between 100B 
 model+optimizer+trainer state). Script: <code>scripts/modular_extension/emo64_100b130b_baseline.sh</code>.</p>""")
 
 
-def build_k32cpt(k32, conc, drift) -> str:
+def build_k32cpt(k32, conc, drift, curves_html="") -> str:
     """The 'k=32 CPT (no extension)' tab: sequential per-cluster training of existing
     experts under a 32-expert working-set budget, plus its two pre-flight analyses."""
     intro = """
@@ -920,7 +921,7 @@ of each cluster's original routing survives the pruning intact.</li>
     results_path = K32EV / "k32cpt_results.json"
     cpt_res = json.load(open(results_path)) if results_path.exists() else {}
     return intro + conc_html + drift_html + build_k32_freeze(k32) + _k32cpt_design_card() + \
-        _k32cpt_interim_results(cpt_res)
+        _k32cpt_interim_results(cpt_res) + curves_html
 
 
 def _k32cpt_interim_results(res) -> str:
@@ -1119,6 +1120,64 @@ whichever cluster trained last (the sequential-forgetting risk lives mostly in s
 forgoes only a bounded amount of normal drift. The stronger argument is comparative: experts are where
 normal training concentrates change anyway.</li>
 </ul>""")
+
+
+def _k32cpt_curves_card() -> tuple:
+    """Stage-training CE explorer (uPlot, display pattern per scripts/models_v2/build_report.py).
+    Returns (card_html, payload_json) -- payload empty string if no curves are cached."""
+    import colorsys
+
+    path = K32EV / "train_curves.json"
+    if not path.is_file():
+        return "", ""
+    runs = json.load(open(path))["runs"]
+    base = runs.get("emo64_100b130b_baseline")
+    if not base:
+        return "", ""
+
+    palette = []
+    for i in range(32):
+        r, g, b = colorsys.hls_to_rgb((i * 0.618034) % 1.0, 0.45, 0.75)
+        palette.append(f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}")
+
+    data = {}
+    counts = {}
+    for arm in ("carry", "carry_shuf", "fresh"):
+        curves = [("baseline (64e, mixed data)", "#111827", True, base)]
+        for c in range(32):
+            r = runs.get(f"k32cpt_{arm}_c{c:02d}")
+            if r and r["state"] == "finished":
+                curves.append((f"c{c:02d}", palette[c], False, r))
+        counts[arm] = len(curves) - 1
+        xs = sorted({x for _, _, _, r in curves for x in r["tokens_b"]})
+        xi = {x: i for i, x in enumerate(xs)}
+        series = []
+        for label, color, dash, r in curves:
+            y = [None] * len(xs)
+            for x, v in zip(r["tokens_b"], r["ce"]):
+                y[xi[x]] = v
+            series.append({"label": label, "color": color, "dash": dash, "y": y})
+        xmax = max((max(r["tokens_b"]) for _, _, _, r in curves[1:]), default=3.0)
+        data[arm] = {"x": xs, "series": series, "xmax": round(xmax * 1.02, 3)}
+
+    status = ", ".join(f"{a}: {n}/32" for a, n in counts.items())
+    card_html = card("results", f"Stage training curves &mdash; 33-expert subset CE ({status} stages)", f"""
+<p>Training CE of every per-cluster stage run (the 33-expert subset training on ONE cluster's data;
+EMA-smoothed), x = tokens trained within the stage. Black dashed reference: the 130B baseline's train CE
+&mdash; the full 64-expert model continuing on the <em>mixed</em> stream from the same 100B state (its
+curve extends to 30B; drag to zoom, double-click to reset). Levels are not directly comparable across
+clusters (each cluster has its own difficulty); the informative part is each curve's <em>shape</em> vs
+the flat baseline: an immediate drop below ~2.6 then plateau = fast, shallow specialization.</p>
+<div id="k32-curves">
+  <p style="margin:4px 0 8px">
+    arm: <label><input type="radio" name="k32arm" value="carry" checked> carry</label>
+    <label><input type="radio" name="k32arm" value="carry_shuf"> carry_shuf</label>
+    <label><input type="radio" name="k32arm" value="fresh"> fresh</label>
+    &nbsp; <button class="k32log" type="button">toggle log-y</button>
+  </p>
+  <div class="chart"></div>
+</div>""")
+    return card_html, json.dumps(data)
 
 
 def build_per_cluster(soft, hard, part) -> str:
@@ -1332,19 +1391,56 @@ def main():
     drift_path = K32CPT / "param_drift.json"
     drift = json.load(open(drift_path)) if drift_path.exists() else {}
 
+    curves_html, curves_payload = _k32cpt_curves_card()
+
     tabs = [
         ("overview", "Overview", build_overview(soft, hard, n_docs)),
         ("method", "Method", build_method(soft, ill)),
         ("findings", "Findings", build_findings(soft, hard, code, ill, share)),
         ("per-cluster", "Per-cluster", build_per_cluster(soft, hard, part)),
         ("oracle-partition", "Oracle partition", build_substab(joint, scores, oracle_split)),
-        ("k32-cpt", "k=32 CPT (no extension)", build_k32cpt(k32, conc, drift)),
+        ("k32-cpt", "k=32 CPT (no extension)", build_k32cpt(k32, conc, drift, curves_html)),
         ("next-steps", "Next steps", build_nextsteps(soft)),
     ]
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
     sections = "".join(
         f'<section class="tab" id="{tid}">{body}</section>' for tid, _, body in tabs
     )
+
+    uplot_css = (VENDOR / "uPlot.min.css").read_text() if curves_payload else ""
+    uplot_js = (VENDOR / "uPlot.iife.min.js").read_text() if curves_payload else ""
+    curves_js = ""
+    if curves_payload:
+        curves_js = """
+(function(){
+  const DATA = __K32CURVES__;
+  const root = document.getElementById('k32-curves');
+  if (!root) return;
+  const el = root.querySelector('.chart');
+  let plot = null, arm = 'carry', logy = false;
+  function draw(){
+    const d = DATA[arm];
+    if (plot) { plot.destroy(); plot = null; }
+    if (!d) { el.innerHTML = '<p class="missing">[no finished stage runs fetched for ' + arm + ']</p>'; return; }
+    el.innerHTML = '';
+    const w = Math.min(el.clientWidth || 960, 1100);
+    const opts = { width: w, height: 420, legend: { show: false },
+      scales: { x: { time: false }, y: { distr: logy ? 3 : 1 } },
+      cursor: { drag: { x: true, y: true, uni: 10 }, focus: { prox: 30 } },
+      axes: [ { label: 'tokens trained in run (B)' }, { label: 'train CE (EMA-smoothed)' } ],
+      series: [ { value: (u,v)=>v==null?'--':(+v).toFixed(3) } ].concat(d.series.map(s => ({
+        label: s.label, stroke: s.color, width: s.dash ? 2.0 : 1.3, spanGaps: true,
+        dash: s.dash ? [7,4] : undefined, value: (u,v)=>v==null?'--':(+v).toFixed(4) }))) };
+    plot = new uPlot(opts, [d.x].concat(d.series.map(s => s.y)), el);
+    plot.setScale('x', { min: 0, max: d.xmax });
+    el.addEventListener('dblclick', () => plot && plot.setScale('x', { min: 0, max: d.xmax }));
+  }
+  root.querySelectorAll('input[name=k32arm]').forEach(r =>
+    r.addEventListener('change', e => { arm = e.target.value; draw(); }));
+  root.querySelector('.k32log').addEventListener('click', () => { logy = !logy; draw(); });
+  draw();
+})();
+""".replace("__K32CURVES__", curves_payload)
 
     page = f"""<!DOCTYPE html>
 <html lang="en">
@@ -1353,6 +1449,7 @@ def main():
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EMO modular_extension: adding experts during training under a fixed budget</title>
 <style>{CSS}</style>
+<style>{uplot_css}</style>
 </head>
 <body>
 <header>
@@ -1365,7 +1462,9 @@ training &middot; Stage 1: what defines the emergent clusters (k={soft['k']}, 10
 </header>
 <div class="topbar"><nav>{nav}</nav><div id="subnav"></div></div>
 <main>{sections}</main>
+<script>{uplot_js}</script>
 <script>{JS}</script>
+<script>{curves_js}</script>
 </body>
 </html>
 """
