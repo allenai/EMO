@@ -225,7 +225,11 @@
     const isVersion2=chain.key==="version2-warmdown";
     const history=isVersion2
       ?(run.stage==="bs256"?"BS1024 E4 → BS256 E8":"BS1024 E4 → BS256 E8 → BS64 E12")
-      :(run.stage==="bs256"?"BS1024 E2 → BS256 E4":"BS1024 E2 → BS256 E4 → BS64 E8");
+      :(run.stage==="bs256"
+        ?"BS1024 E2 → BS256 E4"
+        :run.stage==="bs64-e12"
+          ?"BS1024 E2 → BS256 E4 → BS64 E8 → BS64 E12"
+          :"BS1024 E2 → BS256 E4 → BS64 E8");
     gridBody.insertAdjacentHTML("beforeend",`<tr><td>E${run.accumulatedEpoch}</td><td>BS${run.batchSequences}</td><td>${chain.label}: ${history}</td><td><span class="tuple">(LR ${run.lr||"1e-3"}, WD ${run.wd||"0.333"})</span></td><td>${run.status}</td></tr>`);
     const wandb=run.wandb?`<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${run.wandb}">${run.wandb}</a>`:"—";
     const beaker=run.beaker?`<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${run.beaker}">${run.beaker}</a>`:"—";
