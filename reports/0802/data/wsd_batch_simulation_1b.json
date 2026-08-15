@@ -8268,6 +8268,15 @@
       "wd": "0.333",
       "status": "pending",
       "healthStatus": "pending",
+      "beaker": "01M03CAJP8FH4SBW8NX14YEXF5",
+      "jobs": [
+        "01M03CAJSXWBA1G0KAM9KCTME4",
+        "01M03CAJY688HJS4NX3XTMSSYE"
+      ],
+      "resultDatasets": [
+        "01M03CAJPH2DPTHNXHT17SEAWT",
+        "01M03CAJT4RZ6YS088VCK5N1HX"
+      ],
       "revision": "74b1bf73903ecf5db09c83ed42e36ed449269f90",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step428",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs64_init=bs1024e2_lr1e-3_wd0.333",
@@ -8277,7 +8286,7 @@
       "secondMomentRecalibrationRatio": 16,
       "sequentialReplayMicrobatchGradients": false,
       "matchedLocalSGDPlanId": "bs1024-e2init-local-sgd-h4-sim64-wd0.333-e4",
-      "reason": "Registered before submission. Sequentially replay one accumulated simBS64 gradient per replica through a shared logical AdamW state; evaluate at E4 and stop for comparison with matched LocalSGD H4. H is not a sequential-replay parameter."
+      "reason": "Submitted after guarded print audit. Sequentially replay one accumulated simBS64 gradient per replica through a shared logical AdamW state; evaluate at E4 and stop for comparison with matched LocalSGD H4. H is not a sequential-replay parameter."
     }
   ]
 }
