@@ -183,9 +183,9 @@
       "optimizerStep": 4673,
       "preDecayStep": 4205,
       "addedSteps": 3815,
-      "status": "running",
-      "validation": null,
-      "train": null,
+      "status": "complete",
+      "validation": 3.13305,
+      "train": 2.985,
       "wandb": "jomirj7y",
       "beaker": "01M00TGBT6273XD7T6QBNRRET2",
       "job": "01M00TGBY010A7H0P3EWFHA0Z3",
@@ -193,7 +193,8 @@
       "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333_init=bs1024e4_lr1e-03_wd0.333/step4205",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333_init=bs1024e4_lr1e-03_wd0.333/step4673",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333_init=bs1024e4_lr1e-03_wd0.333",
-      "idealizedTrainingSeconds": 11445.6
+      "idealizedTrainingSeconds": 11445.6,
+      "evaluation": "WSD decay completed through endpoint step 4673, then the full 381-batch heldout evaluation completed successfully."
     },
     {
       "chain": "version2",
