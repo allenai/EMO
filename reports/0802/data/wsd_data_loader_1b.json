@@ -2,7 +2,7 @@
   "updated": "2026-08-14",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes.",
-  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. Run six independent DR trajectories to their first strict validation non-improvement: BS64 LR1e-3 at WD0.3 and WD1.0, BS128 LR1e-3 at WD0.3 and WD1.0, and BS256 LR1e-3 at WD0.333 and WD1.0. BS64 WD0.3 E24 completed at exact validation CE2.97093, strictly improving E20 CE2.97184 by 0.00091; E28 remains active from exact canonical E24 pre-decay step82397. All five E4 trajectories strictly improved over E2: BS64 WD1.0 reached 3.25886, BS128 WD0.3 reached 3.10623, BS128 WD1.0 reached 3.20788, BS256 WD0.333 reached 3.14241, and BS256 WD1.0 reached 3.20310. Their E8 continuations are submitted from exact canonical E4 pre-decay checkpoints. Corrected E2 launches automatically create canonical DR directories and resume exact trainer/optimizer state from the canonical Original E1 directory. Every trajectory uses one 8-GPU node and advances E4/E8/E12/etc only while its own held-out DCLM validation CE strictly improves. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR LR1e-3/WD1.0 remains saturated at E24 CE3.12162 because E28 worsened to CE3.13269, and BS512 DR LR1e-3/WD1.0 remains saturated at E24 CE3.06442 because E28 worsened to CE3.06734. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
+  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. Run six independent DR trajectories to their first strict validation non-improvement: BS64 LR1e-3 at WD0.3 and WD1.0, BS128 LR1e-3 at WD0.3 and WD1.0, and BS256 LR1e-3 at WD0.333 and WD1.0. BS64 WD0.3 E24 completed at exact validation CE2.97093, strictly improving E20 CE2.97184 by 0.00091. Its E28 training reached endpoint step106812 but failed during endpoint checkpoint saving after a distributed barrier timeout, so no endpoint checkpoint or held-out validation CE exists; the trajectory is held for manual disposition and is not automatically retried. All five E4 trajectories strictly improved over E2: BS64 WD1.0 reached 3.25886, BS128 WD0.3 reached 3.10623, BS128 WD1.0 reached 3.20788, BS256 WD0.333 reached 3.14241, and BS256 WD1.0 reached 3.20310. Their E8 continuations are running from exact canonical E4 pre-decay checkpoints with manifest/preflight and first-step evidence captured. Corrected E2 launches automatically create canonical DR directories and resume exact trainer/optimizer state from the canonical Original E1 directory. Every trajectory uses one 8-GPU node and advances E4/E8/E12/etc only while its own held-out DCLM validation CE strictly improves. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR LR1e-3/WD1.0 remains saturated at E24 CE3.12162 because E28 worsened to CE3.13269, and BS512 DR LR1e-3/WD1.0 remains saturated at E24 CE3.06442 because E28 worsened to CE3.06734. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
   "targetEpochs": [
     1,
     2,
@@ -109,8 +109,8 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.3",
-      "status": "submitted",
-      "activeEpoch": 28,
+      "status": "failed",
+      "activeEpoch": null,
       "attemptedEpochs": [
         2,
         4,
@@ -297,9 +297,9 @@
           "reason": "Completed healthy on one 8-GPU node from exact canonical E20 pre-decay step68664. Validation CE2.97093 strictly improved E20 CE2.97184 by 0.00091, unlocking E28 from canonical pre-decay step82397."
         }
       },
-      "health": "healthy",
-      "reason": "E24 completed at train CE2.761 and exact validation CE2.97093, strictly improving E20 CE2.97184 by 0.00091. E28 is healthy on one 8-GPU node after manifest/preflight checks and forced exact trainer/optimizer resume from canonical step82397; first optimizer step82398 was observed.",
-      "beakerStatus": "running",
+      "health": "failed",
+      "reason": "E24 remains the last validated frontier at exact validation CE2.97093. E28 training reached endpoint step106812, then a distributed barrier timed out while saving the endpoint checkpoint. No endpoint checkpoint or held-out validation CE was produced; automatic retry is prohibited for this training-started failure.",
+      "beakerStatus": "failed",
       "attempts": [
         {
           "epoch": 4,
@@ -334,6 +334,18 @@
           "revision": "ebb77cc3451d009236453979091d8911585e6597",
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3",
           "reason": "Gantry could not fetch the incorrectly expanded revision; no repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed. Automatic infrastructure retry is eligible."
+        },
+        {
+          "epoch": 28,
+          "experiment": "01M014YFAZ7CK2D0H9F1R84G1A",
+          "job": "01M014YFEK6WC8JMA9HF9734ZW",
+          "result": "01M014YFB79B9S9X2S3E5847AJ",
+          "node": "01JRYAWA3BRM6J5GBC141XPVBE",
+          "status": "training_started_failed_during_endpoint_checkpoint",
+          "wandb": "biebaju8",
+          "revision": "e18bdb69360714538eb62258b873360ad775db27",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3",
+          "reason": "Training reached endpoint step106812, then a distributed barrier timed out while saving the endpoint checkpoint. No endpoint checkpoint or held-out validation CE was produced; automatic retry is prohibited for training-started failures."
         }
       ],
       "retryCount": 1,
@@ -358,13 +370,13 @@
       },
       "heldNextEpoch": null,
       "progress": {
-        "observedAt": "2026-08-14 19:01 PDT",
-        "step": 104245,
+        "observedAt": "2026-08-14 19:41 PDT",
+        "step": 106812,
         "endpointStep": 106812,
         "epoch": 28,
-        "trainCe": 2.799,
+        "trainCe": 2.682,
         "metricStatus": "preliminary",
-        "eta": "26m"
+        "eta": null
       }
     },
     {
@@ -476,7 +488,25 @@
       "job": "01M01MBW2QV4NS1R0RC9M0MY2K",
       "result": "01M01MBVZCAXK1D75EH54T0VSY",
       "beakerStatus": "running",
-      "node": "01JS0FZ4Z4WDQVB2SQM4KDJCET"
+      "node": "01JS0FZ4Z4WDQVB2SQM4KDJCET",
+      "wandb": "ch512jea",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 13732,
+        "trainerAndOptimizerStateRequested": true,
+        "firstOptimizerStep": 13733
+      },
+      "progress": {
+        "observedAt": "2026-08-14 20:42 PDT",
+        "step": 19925,
+        "endpointStep": 30518,
+        "epoch": 8,
+        "trainCe": 3.476,
+        "metricStatus": "preliminary",
+        "eta": "1h46m"
+      }
     },
     {
       "id": "dr128-lr1e-3-wd0.3",
@@ -578,7 +608,25 @@
       "job": "01M01MBX220SJ7DX3SH68Y9X33",
       "result": "01M01MBWXZS7PTWPCEFGMX5XW2",
       "beakerStatus": "running",
-      "node": "01JS3MZC0NYRRKMR91BZMQY58B"
+      "node": "01JS3MZC0NYRRKMR91BZMQY58B",
+      "wandb": "wvrxj5j2",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 6866,
+        "trainerAndOptimizerStateRequested": true,
+        "firstOptimizerStep": 6867
+      },
+      "progress": {
+        "observedAt": "2026-08-14 20:42 PDT",
+        "step": 9975,
+        "endpointStep": 15259,
+        "epoch": 8,
+        "trainCe": 3.105,
+        "metricStatus": "preliminary",
+        "eta": "1h46m"
+      }
     },
     {
       "id": "dr128-lr1e-3-wd1.0",
@@ -678,7 +726,25 @@
       "job": "01M01MBY2QBHWD9BKC11CP7JT2",
       "result": "01M01MBXZGAA7GBDE4MYQA6GD1",
       "beakerStatus": "running",
-      "node": "01K5ZQSEP2RRZF8TQ7M7WRKX3G"
+      "node": "01K5ZQSEP2RRZF8TQ7M7WRKX3G",
+      "wandb": "d93ocjo6",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 6866,
+        "trainerAndOptimizerStateRequested": true,
+        "firstOptimizerStep": 6867
+      },
+      "progress": {
+        "observedAt": "2026-08-14 20:42 PDT",
+        "step": 9970,
+        "endpointStep": 15259,
+        "epoch": 8,
+        "trainCe": 3.412,
+        "metricStatus": "preliminary",
+        "eta": "1h45m"
+      }
     },
     {
       "id": "dr256-lr1e-3-wd0.333",
@@ -753,6 +819,24 @@
       "revision": "31a5c5e66e2d25ded9661060c1f8f4ee45ff5db4",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333",
       "node": "01K9AYGEGC2X16G674D16AN55R",
+      "wandb": "pjqgrgrd",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 3432,
+        "trainerAndOptimizerStateRequested": true,
+        "firstOptimizerStep": 3433
+      },
+      "progress": {
+        "observedAt": "2026-08-14 20:42 PDT",
+        "step": 5000,
+        "endpointStep": 7630,
+        "epoch": 8,
+        "trainCe": 3.016,
+        "metricStatus": "preliminary",
+        "eta": "1h45m"
+      },
       "attempts": [
         {
           "epoch": 2,
@@ -852,6 +936,24 @@
       "revision": "31a5c5e66e2d25ded9661060c1f8f4ee45ff5db4",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0",
       "node": "01KJT4HF4CR8K4CKXFRCYX87AQ",
+      "wandb": "mowop12o",
+      "startupEvidence": {
+        "manifestVerified": true,
+        "preflightVerified": true,
+        "sourceCheckpointLoaded": true,
+        "sourceStep": 3432,
+        "trainerAndOptimizerStateRequested": true,
+        "firstOptimizerStep": 3433
+      },
+      "progress": {
+        "observedAt": "2026-08-14 20:42 PDT",
+        "step": 4995,
+        "endpointStep": 7630,
+        "epoch": 8,
+        "trainCe": 3.265,
+        "metricStatus": "preliminary",
+        "eta": "1h45m"
+      },
       "attempts": [
         {
           "epoch": 2,
