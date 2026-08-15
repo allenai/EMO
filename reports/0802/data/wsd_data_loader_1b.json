@@ -2,7 +2,7 @@
   "updated": "2026-08-15",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes.",
-  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 LR1e-3 runs WD0.3 and WD1.0 independently to first strict validation non-improvement. BS128 compares WD0.3 with WD1.0 and BS256 compares WD0.333 with WD1.0 at every completed frontier before any next-frontier submission: when WD1.0 wins, only WD1.0 continues; when WD1.0 loses, both trajectories may continue if each passes its own strict-improvement gate; a tie is held for review. BS64 WD1.0 E12 completed healthy at validation CE3.17255, strictly improving E8 CE3.19708 by 0.02453; E16 is eligible from exact pre-decay step41198 but remains queue-held. BS128 WD0.3 E12 completed healthy at validation CE2.99792, strictly improving E8 CE3.02546 by 0.02754; E16 remains held while the corrected BS128 WD1.0 E12 retry 01M02AH0APWS8GS78EWM0YG8J1 runs and the WD competition remains unresolved. BS256 WD1.0 E12 completed healthy at validation CE3.0723, strictly improving E8 CE3.11347 by 0.04117; E16 remains held until BS256 WD0.333 E12 completes and the WD competition resolves. Three unrelated pending flex2 jobs keep the global queue gate closed, so the authorized BS256 WD0.333 E12 corrected retry remains planned. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
+  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 LR1e-3 runs WD0.3 and WD1.0 independently to first strict validation non-improvement. BS128 compares WD0.3 with WD1.0 and BS256 compares WD0.333 with WD1.0 at every completed frontier before any next-frontier submission: when WD1.0 wins, only WD1.0 continues; when WD1.0 loses, both trajectories may continue if each passes its own strict-improvement gate; a tie is held for review. BS64 WD1.0 E12 completed healthy at validation CE3.17255, strictly improving E8 CE3.19708 by 0.02453; E16 is eligible from exact pre-decay step41198 but remains queue-held. BS128 WD0.3 E12 completed healthy at validation CE2.99792, strictly improving E8 CE3.02546 by 0.02754; E16 remains held while the corrected BS128 WD1.0 E12 retry 01M02AH0APWS8GS78EWM0YG8J1 runs and the WD competition remains unresolved. BS256 WD1.0 E12 completed healthy at validation CE3.0723, strictly improving E8 CE3.11347 by 0.04117; E16 remains held until BS256 WD0.333 E12 completes and the WD competition resolves. The global flex2 queue was empty, the remote revision and print-only guards passed, and the authorized BS256 WD0.333 E12 corrected retry 01M02HGXY5JX1FZ2XYJ3Z8P5K6 was submitted from exact pre-decay step6866; it is pending scheduling and now closes the queue gate for later submissions. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
   "targetEpochs": [
     1,
     2,
@@ -861,13 +861,13 @@
         "startedAt": "2026-08-15 03:07 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-15 03:31 PDT",
-        "step": 14845,
+        "observedAt": "2026-08-15 04:05 PDT",
+        "step": 16565,
         "endpointStep": 22889,
         "epoch": 12,
-        "trainCe": 3.396,
+        "trainCe": 3.325,
         "metricStatus": "preliminary",
-        "eta": "2h37m"
+        "eta": "2h5m"
       }
     },
     {
@@ -877,7 +877,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 12,
       "attemptedEpochs": [
         2,
@@ -952,7 +952,7 @@
         }
       },
       "health": "planned",
-      "reason": "User-authorized corrected E12 retry from exact canonical E8 pre-decay step6866 with verified remote revision 968d1737d8307bab32e097bc779e7e7ceefb9746. Hold until ai2/flex2 has zero pending jobs.",
+      "reason": "Corrected E12 retry submitted after the account-wide flex2 queue was observed empty and exact-source, canonical trajectory-output, LR/WD, topology, rank-microbatch, remote-revision, manifest-checksum, and duplicate-tuple guards passed. Pending scheduling.",
       "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333",
       "attempts": [
@@ -992,7 +992,12 @@
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333",
           "reason": "Gantry exhausted five source-fetch attempts because the recorded revision did not exist remotely. No repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed; configuration failures are not automatically retried."
         }
-      ]
+      ],
+      "beaker": "01M02HGXY5JX1FZ2XYJ3Z8P5K6",
+      "experiment": "01M02HGXY5JX1FZ2XYJ3Z8P5K6",
+      "beakerStatus": "pending",
+      "job": "01M02HGY3K0B9NXYQM80V988PB",
+      "result": "01M02HGXYDTAV5R3H2QHJDGP7F"
     },
     {
       "id": "dr256-lr1e-3-wd1.0",
