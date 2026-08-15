@@ -2,7 +2,7 @@
   "updated": "2026-08-15",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes.",
-  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 LR1e-3 runs WD0.3 and WD1.0 independently to first strict validation non-improvement. BS128 compares WD0.3 with WD1.0 and BS256 compares WD0.333 with WD1.0 at every completed frontier before any next-frontier submission: when WD1.0 wins, only WD1.0 continues; when WD1.0 loses, both trajectories may continue if each passes its own strict-improvement gate; a tie is held for review. At E8, WD1.0 lost both resolved competitions, so both WDs are eligible at E12. BS64 WD1.0, BS128 WD0.3, and BS256 WD1.0 E12 are running after manifest, preflight, exact checkpoint-load, trainer/optimizer-state, and first-step guards passed. The corrected BS128 WD1.0 E12 retry 01M02AH0APWS8GS78EWM0YG8J1 was submitted from exact canonical E8 step13732 and remains pending. Together with six unrelated pending flex2 jobs, it keeps the global queue gate closed, so the authorized BS256 WD0.333 E12 corrected retry remains planned. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
+  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 LR1e-3 runs WD0.3 and WD1.0 independently to first strict validation non-improvement. BS128 compares WD0.3 with WD1.0 and BS256 compares WD0.333 with WD1.0 at every completed frontier before any next-frontier submission: when WD1.0 wins, only WD1.0 continues; when WD1.0 loses, both trajectories may continue if each passes its own strict-improvement gate; a tie is held for review. At E8, WD1.0 lost both resolved competitions, so both WDs are eligible at E12. BS128 WD0.3 E12 completed healthy at validation CE2.99792, strictly improving E8 CE3.02546 by 0.02754; E16 is validation-eligible from exact pre-decay step20599 but remains held until BS128 WD1.0 E12 completes and the WD competition resolves. BS64 WD1.0 and BS256 WD1.0 E12 remain healthy and near completion. The corrected BS128 WD1.0 E12 retry 01M02AH0APWS8GS78EWM0YG8J1 remains pending; together with six unrelated pending flex2 jobs, it keeps the global queue gate closed, so the authorized BS256 WD0.333 E12 corrected retry remains planned. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
   "targetEpochs": [
     1,
     2,
@@ -533,13 +533,13 @@
         "startedAt": "2026-08-15 00:10 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-15 02:30 PDT",
-        "step": 41330,
+        "observedAt": "2026-08-15 03:03 PDT",
+        "step": 44545,
         "endpointStep": 45777,
         "epoch": 12,
-        "trainCe": 3.373,
+        "trainCe": 3.215,
         "metricStatus": "preliminary",
-        "eta": "45m"
+        "eta": "13m"
       }
     },
     {
@@ -549,16 +549,16 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.3",
-      "status": "running",
-      "activeEpoch": 12,
+      "status": "complete",
+      "activeEpoch": null,
       "attemptedEpochs": [
         2,
         4,
         8,
         12
       ],
-      "sourceExperiment": "01M01MBWXNHKGA5JPW5DXZRQKW",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step13732",
+      "sourceExperiment": "01M020CXWMJNY4N2F2Q3TY7JXJ",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step20599",
       "gpuCount": 8,
       "nodeCount": 1,
       "rankMicrobatchSequences": 8,
@@ -622,10 +622,28 @@
           "train": 2.9,
           "validation": 3.02546,
           "reason": "Completed healthy from exact canonical E4 pre-decay step6866. Held-out DCLM validation CE3.02546 strictly improved E4 CE3.10623, unlocking E12 from canonical pre-decay step13732."
+        },
+        "12": {
+          "status": "complete",
+          "beaker": "01M020CXWMJNY4N2F2Q3TY7JXJ",
+          "experiment": "01M020CXWMJNY4N2F2Q3TY7JXJ",
+          "job": "01M020CY04ZCZP0Z11520FXZ9V",
+          "result": "01M020CXWW1A5GZ0M39TRMF7Z8",
+          "wandb": "ch3wlhks",
+          "node": "01JRYAW8BRSJXTSPCTG7TYMFDX",
+          "revision": "6ab506cea312ec810f94cd4177c7904f8ca25917",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step13732",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step20599",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step22889",
+          "train": 2.816,
+          "validation": 2.99792,
+          "reason": "Completed healthy from exact canonical E8 pre-decay step13732. Held-out DCLM validation CE2.99792 strictly improved E8 CE3.02546 by 0.02754; E16 is eligible from canonical pre-decay step20599 but held until the E12 WD competition resolves."
         }
       },
       "health": "healthy",
-      "reason": "Running healthy after manifest, preflight, exact canonical E8 checkpoint load, forced trainer/optimizer-state restore, and first optimizer-step guards passed. Active train CE is preliminary; E12 validation is not yet available.",
+      "reason": "Completed healthy at E12 with validation CE2.99792, strictly improving E8 CE3.02546. E16 is eligible from exact canonical step20599 but held pending the BS128 E12 WD competition.",
+      "heldNextEpoch": 16,
       "revision": "6ab506cea312ec810f94cd4177c7904f8ca25917",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3",
       "attempts": [
@@ -656,7 +674,7 @@
       ],
       "beaker": "01M020CXWMJNY4N2F2Q3TY7JXJ",
       "experiment": "01M020CXWMJNY4N2F2Q3TY7JXJ",
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "job": "01M020CY04ZCZP0Z11520FXZ9V",
       "result": "01M020CXWW1A5GZ0M39TRMF7Z8",
       "node": "01JRYAW8BRSJXTSPCTG7TYMFDX",
@@ -673,13 +691,14 @@
         "startedAt": "2026-08-14 23:53 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-15 02:30 PDT",
-        "step": 21565,
+        "observedAt": "2026-08-15 02:58 PDT",
+        "step": 22889,
         "endpointStep": 22889,
         "epoch": 12,
-        "trainCe": 2.959,
-        "metricStatus": "preliminary",
-        "eta": "27m"
+        "trainCe": 2.816,
+        "validationCe": 2.99792,
+        "metricStatus": "final",
+        "eta": "complete"
       }
     },
     {
@@ -1062,13 +1081,13 @@
         "startedAt": "2026-08-15 00:07 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-15 02:30 PDT",
-        "step": 10440,
+        "observedAt": "2026-08-15 03:03 PDT",
+        "step": 11255,
         "endpointStep": 11445,
         "epoch": 12,
-        "trainCe": 3.152,
+        "trainCe": 2.973,
         "metricStatus": "preliminary",
-        "eta": "40m"
+        "eta": "8m"
       }
     },
     {
