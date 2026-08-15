@@ -358,13 +358,13 @@
       },
       "heldNextEpoch": null,
       "progress": {
-        "observedAt": "2026-08-14 17:45 PDT",
-        "step": 96605,
+        "observedAt": "2026-08-14 19:01 PDT",
+        "step": 104245,
         "endpointStep": 106812,
-        "epoch": 26,
-        "trainCe": 3.139,
+        "epoch": 28,
+        "trainCe": 2.799,
         "metricStatus": "preliminary",
-        "eta": "1h42m"
+        "eta": "26m"
       }
     },
     {
@@ -473,13 +473,13 @@
         "startedAt": "2026-08-14 17:43 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-14 17:45 PDT",
-        "step": 7025,
+        "observedAt": "2026-08-14 19:01 PDT",
+        "step": 14615,
         "endpointStep": 15259,
-        "epoch": 2,
-        "trainCe": 3.557,
+        "epoch": 4,
+        "trainCe": 3.385,
         "metricStatus": "preliminary",
-        "eta": "1h21m"
+        "eta": "7m"
       }
     },
     {
@@ -579,13 +579,13 @@
         "startedAt": "2026-08-14 17:43 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-14 17:45 PDT",
-        "step": 3510,
+        "observedAt": "2026-08-14 19:01 PDT",
+        "step": 7375,
         "endpointStep": 7630,
-        "epoch": 2,
-        "trainCe": 3.307,
+        "epoch": 4,
+        "trainCe": 3.046,
         "metricStatus": "preliminary",
-        "eta": "1h20m"
+        "eta": "6m"
       }
     },
     {
@@ -683,13 +683,13 @@
         "startedAt": "2026-08-14 17:43 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-14 17:45 PDT",
-        "step": 3480,
+        "observedAt": "2026-08-14 19:01 PDT",
+        "step": 7305,
         "endpointStep": 7630,
-        "epoch": 2,
-        "trainCe": 3.498,
+        "epoch": 4,
+        "trainCe": 3.319,
         "metricStatus": "preliminary",
-        "eta": "1h21m"
+        "eta": "7m"
       }
     },
     {
@@ -761,13 +761,13 @@
         "startedAt": "2026-08-14 17:46 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-14 17:47 PDT",
-        "step": 1725,
+        "observedAt": "2026-08-14 19:01 PDT",
+        "step": 3600,
         "endpointStep": 3815,
-        "epoch": 2,
-        "trainCe": 3.432,
+        "epoch": 4,
+        "trainCe": 3.104,
         "metricStatus": "preliminary",
-        "eta": "1h20m"
+        "eta": "9m"
       },
       "attempts": [
         {
@@ -864,13 +864,13 @@
         "startedAt": "2026-08-14 17:46 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-14 17:47 PDT",
-        "step": 1730,
+        "observedAt": "2026-08-14 19:01 PDT",
+        "step": 3595,
         "endpointStep": 3815,
-        "epoch": 2,
-        "trainCe": 3.531,
+        "epoch": 4,
+        "trainCe": 3.308,
         "metricStatus": "preliminary",
-        "eta": "1h20m"
+        "eta": "9m"
       },
       "attempts": [
         {
