@@ -552,13 +552,13 @@
         "trainerAndOptimizerStateRequested": true
       },
       "progress": {
-        "observedAt": "2026-08-15 09:02 PDT",
-        "step": 46795,
+        "observedAt": "2026-08-15 09:32 PDT",
+        "step": 49835,
         "endpointStep": 61036,
         "epoch": 16,
-        "trainCe": 3.426,
+        "trainCe": 3.375,
         "metricStatus": "preliminary",
-        "eta": "2h23m"
+        "eta": "1h52m"
       }
     },
     {
@@ -711,13 +711,13 @@
         "trainerAndOptimizerStateRequested": true
       },
       "progress": {
-        "observedAt": "2026-08-15 09:02 PDT",
-        "step": 23750,
+        "observedAt": "2026-08-15 09:32 PDT",
+        "step": 25270,
         "endpointStep": 30518,
         "epoch": 16,
-        "trainCe": 3.025,
+        "trainCe": 2.978,
         "metricStatus": "preliminary",
-        "eta": "2h15m"
+        "eta": "1h45m"
       }
     },
     {
@@ -881,13 +881,13 @@
         "trainerAndOptimizerStateRequested": true
       },
       "progress": {
-        "observedAt": "2026-08-15 09:02 PDT",
-        "step": 23700,
+        "observedAt": "2026-08-15 09:32 PDT",
+        "step": 25230,
         "endpointStep": 30518,
         "epoch": 16,
-        "trainCe": 3.296,
+        "trainCe": 3.322,
         "metricStatus": "preliminary",
-        "eta": "2h16m"
+        "eta": "1h45m"
       }
     },
     {
@@ -1063,13 +1063,13 @@
         "trainerAndOptimizerStateRequested": true
       },
       "progress": {
-        "observedAt": "2026-08-15 09:02 PDT",
-        "step": 10890,
+        "observedAt": "2026-08-15 09:32 PDT",
+        "step": 11660,
         "endpointStep": 15259,
         "epoch": 16,
-        "trainCe": 2.946,
+        "trainCe": 2.842,
         "metricStatus": "preliminary",
-        "eta": "2h53m"
+        "eta": "2h22m"
       }
     },
     {
@@ -1170,7 +1170,7 @@
           "reason": "Completed healthy from exact canonical E8 pre-decay step6866. Held-out DCLM validation CE3.0723 strictly improved E8 CE3.11347, making E16 validation-eligible from canonical pre-decay step10300; submission remains held until the E12 WD competition resolves."
         }
       },
-      "health": "planned",
+      "health": "healthy",
       "reason": "Submitted locally after exact-source, canonical trajectory-output, LR/WD, topology, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
       "beaker": "01M032GHXK15ZF1Z0AAHR05SB0",
       "experiment": "01M032GHXK15ZF1Z0AAHR05SB0",
@@ -1206,7 +1206,7 @@
       "job": "01M032GJ1NHR2D4DAXAXX7FN7C",
       "result": "01M032GHXT0ZPG2V6N2S4QTQXJ",
       "node": "01K9893X6FBJ1E9G0SXFGHN9X4",
-      "wandb": null,
+      "wandb": "s9lnunst",
       "startupEvidence": {
         "createdAt": "2026-08-15 09:01 PDT",
         "scheduledAt": "2026-08-15 09:01 PDT",
@@ -1216,11 +1216,20 @@
         "preflightVerified": true,
         "dynamicRepacking": true,
         "forcedExactLoad": true,
-        "sourceCheckpointLoaded": false,
+        "sourceCheckpointLoaded": true,
         "sourceStep": 10300,
+        "firstOptimizerStep": 10301,
         "trainerAndOptimizerStateRequested": true
       },
-      "progress": null
+      "progress": {
+        "observedAt": "2026-08-15 09:32 PDT",
+        "step": 10995,
+        "endpointStep": 15259,
+        "epoch": 16,
+        "trainCe": 3.19,
+        "metricStatus": "preliminary",
+        "eta": "2h49m"
+      }
     },
     {
       "id": "dr256-lr2e-3-wd0.333",
