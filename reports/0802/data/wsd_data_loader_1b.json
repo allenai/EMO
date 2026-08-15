@@ -893,8 +893,8 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "running",
-      "activeEpoch": 16,
+      "status": "complete",
+      "activeEpoch": null,
       "attemptedEpochs": [
         2,
         4,
@@ -983,10 +983,27 @@
           "train": 2.707,
           "validation": 3.05978,
           "reason": "Completed healthy from exact canonical E8 pre-decay step6866. Held-out DCLM validation CE3.05978 strictly improved E8 CE3.06827 by 0.00849 and beat WD1.0 E12 CE3.07230 by 0.01252; both WDs remain E16-eligible because WD1.0 lost but each passed its own strict-improvement gate."
+        },
+        "16": {
+          "status": "complete",
+          "beaker": "01M030WZV2D24Y2E8G10K8AX82",
+          "experiment": "01M030WZV2D24Y2E8G10K8AX82",
+          "job": "01M030WZZ9B4Q6R48HVEM01D35",
+          "result": "01M030WZV8EQD4S2H2MP1BB430",
+          "wandb": "g0krbxk6",
+          "node": "01JS3MZAX6BN9P7N544CSXBJPW",
+          "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333/step10300",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333/step13732",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333/step15259",
+          "train": 2.623,
+          "validation": 3.06791,
+          "reason": "Completed healthy from exact canonical E12 pre-decay step10300. Held-out DCLM validation CE3.06791 did not improve E12 CE3.05978, so this trajectory saturates at E12; the BS256 E16 WD competition remains unresolved until WD1.0 completes."
         }
       },
-      "health": "planned",
-      "reason": "E16 was submitted from exact pre-decay step10300 after validation, WD-competition, remote-revision, exact-resume, topology, target-checkpoint, duplicate-tuple, and global pending-queue guards passed. It is pending scheduling.",
+      "health": "healthy",
+      "reason": "E16 completed healthy, but validation CE3.06791 did not improve E12 CE3.05978. WD0.333 saturates at E12; no BS256 next frontier can be selected until WD1.0 E16 completes.",
       "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333",
       "attempts": [
@@ -1041,7 +1058,7 @@
       ],
       "beaker": "01M030WZV2D24Y2E8G10K8AX82",
       "experiment": "01M030WZV2D24Y2E8G10K8AX82",
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "job": "01M030WZZ9B4Q6R48HVEM01D35",
       "result": "01M030WZV8EQD4S2H2MP1BB430",
       "node": "01JS3MZAX6BN9P7N544CSXBJPW",
@@ -1059,13 +1076,14 @@
         "trainerAndOptimizerStateRequested": true
       },
       "progress": {
-        "observedAt": "2026-08-15 09:32 PDT",
-        "step": 11660,
+        "observedAt": "2026-08-15 11:54 PDT",
+        "step": 15259,
         "endpointStep": 15259,
         "epoch": 16,
-        "trainCe": 2.842,
-        "metricStatus": "preliminary",
-        "eta": "2h22m"
+        "trainCe": 2.623,
+        "validationCe": 3.06791,
+        "metricStatus": "final",
+        "eta": "complete"
       }
     },
     {
@@ -1075,7 +1093,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 16,
       "attemptedEpochs": [
         2,
@@ -1167,7 +1185,7 @@
         }
       },
       "health": "healthy",
-      "reason": "Submitted locally after exact-source, canonical trajectory-output, LR/WD, topology, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "reason": "E16 is running healthy from exact pre-decay step10300. WD0.333 E16 did not improve and has saturated; the BS256 WD competition and any next-frontier decision wait for this WD1.0 validation.",
       "beaker": "01M032GHXK15ZF1Z0AAHR05SB0",
       "experiment": "01M032GHXK15ZF1Z0AAHR05SB0",
       "beakerStatus": "running",
@@ -1218,13 +1236,13 @@
         "trainerAndOptimizerStateRequested": true
       },
       "progress": {
-        "observedAt": "2026-08-15 09:32 PDT",
-        "step": 10995,
+        "observedAt": "2026-08-15 12:03 PDT",
+        "step": 14825,
         "endpointStep": 15259,
         "epoch": 16,
-        "trainCe": 3.19,
+        "trainCe": 2.962,
         "metricStatus": "preliminary",
-        "eta": "2h49m"
+        "eta": "18m"
       }
     },
     {
