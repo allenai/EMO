@@ -332,8 +332,18 @@ class TransformerConfig(ModelConfig):
     block_pattern: Optional[List[str]] = None
     block_overrides: Optional[Dict[int, TransformerBlockConfig]] = None
     embed_scale: Optional[float] = None
+    tie_embeddings: bool = False
+    """Tie the input embedding matrix to the LM-head output projection."""
 
     def __post_init__(self):
+        if self.tie_embeddings and self.name != TransformerType.default:
+            raise OLMoConfigurationError(
+                "tied embeddings are currently supported only for the default transformer"
+            )
+        if self.tie_embeddings and self.lm_head.name != LMHeadType.default:
+            raise OLMoConfigurationError(
+                "tied embeddings require the default LM-head implementation"
+            )
         validate_block_resolution_config(
             n_layers=self.n_layers,
             block=self.block,
@@ -384,6 +394,7 @@ class TransformerConfig(ModelConfig):
                 block_overrides=self.block_overrides,
                 block_pattern=self.block_pattern,
                 embed_scale=self.embed_scale,
+                tie_embeddings=self.tie_embeddings,
             )
         elif self.name == TransformerType.normalized:
             assert self.embedding_norm is None
@@ -497,6 +508,8 @@ class TransformerConfig(ModelConfig):
 
         # LM head.
         num_params += self.lm_head.num_params(self.d_model, self.vocab_size)
+        if self.tie_embeddings:
+            num_params -= self.d_model * self.vocab_size
 
         return num_params
 
@@ -518,6 +531,8 @@ class TransformerConfig(ModelConfig):
 
         # LM head.
         num_active_params += self.lm_head.num_params(self.d_model, self.vocab_size)
+        if self.tie_embeddings:
+            num_active_params -= self.d_model * self.vocab_size
 
         return num_active_params
 

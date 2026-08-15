@@ -123,6 +123,7 @@ class Transformer(nn.Module):
         block_overrides: Optional[Dict[int, TransformerBlockConfig]] = None,
         block_pattern: Optional[List[str]] = None,
         embed_scale: Optional[float] = None,
+        tie_embeddings: bool = False,
     ):
         super().__init__()
 
@@ -133,6 +134,7 @@ class Transformer(nn.Module):
         self.n_layers = n_layers
         self.dtype = dtype
         self.embed_scale = embed_scale
+        self.tie_embeddings = tie_embeddings
 
         self.embeddings = nn.Embedding(vocab_size, d_model, dtype=dtype, device=init_device)
         self.embedding_norm = (
@@ -165,6 +167,8 @@ class Transformer(nn.Module):
         self.lm_head = lm_head.build(
             d_model=d_model, vocab_size=vocab_size, init_device=init_device
         )
+        if self.tie_embeddings:
+            self._tie_embedding_weights()
 
         self.init_device = init_device
         self.init_method = InitMethod(init_method)
@@ -188,6 +192,15 @@ class Transformer(nn.Module):
         # later, like for pipeline parallelism.
         self.num_params
         self.num_non_embedding_params
+
+    def _tie_embedding_weights(self) -> None:
+        if self.embeddings is None or self.lm_head is None:
+            raise OLMoConfigurationError(
+                "tied embeddings require both an input embedding and an LM head"
+            )
+        if self.lm_head.w_out.bias is not None:
+            log.warning("Tying only the LM-head weight; the output bias remains independent")
+        self.lm_head.w_out.weight = self.embeddings.weight
 
     def _validate_block(self, block: TransformerBlockBase) -> TransformerBlockBase:
         return block
@@ -273,6 +286,10 @@ class Transformer(nn.Module):
         """
         device = device or self.device
         self.to_empty(device=device)
+        if self.tie_embeddings:
+            # Keep the alias explicit in case a parameter materialization backend
+            # replaces module parameters independently.
+            self._tie_embedding_weights()
 
         for module in self.modules():
             if hasattr(module, "reset_parameters"):
@@ -673,6 +690,9 @@ class Transformer(nn.Module):
         :param loss_parallel: Set to ``True`` if parallelizing the loss function as well.
         :param float8_enabled: Set this to ``True`` if training with float8 linear layers.
         """
+        if self.tie_embeddings:
+            raise NotImplementedError("tensor parallelism is not supported with tied embeddings")
+
         if float8_enabled is None:
             float8_enabled = self.fp8_enabled
         elif not float8_enabled and self.fp8_enabled:
@@ -888,7 +908,12 @@ class Transformer(nn.Module):
                 mp_policy=mp_policy,
             )
 
-        if self.embeddings is not None:
+        if self.tie_embeddings and pp_enabled:
+            raise NotImplementedError(
+                "pipeline-parallel FSDP is not supported with tied embeddings"
+            )
+
+        if self.embeddings is not None and not self.tie_embeddings:
             fully_shard(
                 self.embeddings,
                 reshard_after_forward=reshard_after_forward,
@@ -900,7 +925,7 @@ class Transformer(nn.Module):
         if wrapping_strategy != TransformerDataParallelWrappingStrategy.blocks:
             if self.embedding_norm is not None:
                 fully_shard(self.embedding_norm, **fsdp_config)
-            if self.lm_head is not None:
+            if self.lm_head is not None and not self.tie_embeddings:
                 fully_shard(self.lm_head, reshard_after_forward=False, **fsdp_config)
 
         fully_shard(self, reshard_after_forward=reshard_after_forward, **fsdp_config)

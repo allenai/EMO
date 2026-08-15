@@ -94,6 +94,33 @@ def test_small_llama2_builder_config(init_device, device):
     assert model.blocks[str(len(model.blocks) - 1)].block_idx == len(model.blocks) - 1
 
 
+def test_tied_embeddings_share_one_parameter_and_gradient():
+    config = TransformerConfig.olmo2_1M(vocab_size=128, tie_embeddings=True)
+    model = config.build(init_device="cpu")
+    model.init_weights(device=torch.device("cpu"))
+
+    assert model.embeddings.weight is model.lm_head.w_out.weight
+    assert config.num_params == model.num_params
+    assert config.num_params == sum(parameter.numel() for parameter in model.parameters())
+    parameter_names = dict(model.named_parameters())
+    assert "embeddings.weight" in parameter_names
+    assert "lm_head.w_out.weight" not in parameter_names
+
+    input_ids = torch.randint(0, config.vocab_size, (2, 8))
+    output = model(input_ids=input_ids, labels=input_ids)
+    output.loss.backward()
+    assert model.embeddings.weight.grad is model.lm_head.w_out.weight.grad
+    assert model.embeddings.weight.grad is not None
+
+
+def test_tied_embeddings_reduce_parameter_count_by_one_vocab_matrix():
+    untied = TransformerConfig.olmo2_1M(vocab_size=128)
+    tied = TransformerConfig.olmo2_1M(vocab_size=128, tie_embeddings=True)
+
+    assert untied.num_params - tied.num_params == untied.d_model * untied.vocab_size
+    assert untied.num_active_params - tied.num_active_params == (untied.d_model * untied.vocab_size)
+
+
 def check_ngpt_matrices(model: nn.Module, d_model: int):
     for name, module in model.named_modules():
         if isinstance(module, nn.Linear):
