@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-REVISION = "15d494fee454eda89884f6f0dc4535a0c0ad556d"
+REVISION = "74b1bf73903ecf5db09c83ed42e36ed449269f90"
 BRANCH = "sewonm/icsl"
 GLOBAL_SEQUENCES = 1024
 SEQUENCE_LENGTH = 4096
@@ -36,12 +36,16 @@ TEMPLATES = {
     ("local_sgd", 256): "01KZZ4B4NAFV9YAKF1MJEKMWY4",
     ("diloco", 64): "01KZZ4BG861VPER8SFZXZK29AT",
     ("diloco", 256): "01KZZ4BTYFP6T7XHVJZK754DVG",
+    ("sequential_replay", 64): "01KZZ4AQYSS6WDPCRV23853FW4",
+    ("sequential_replay", 256): "01KZZ4B4NAFV9YAKF1MJEKMWY4",
 }
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--method", choices=("local_sgd", "diloco"), required=True)
+    parser.add_argument(
+        "--method", choices=("local_sgd", "diloco", "sequential_replay"), required=True
+    )
     parser.add_argument("--simulated-sequences", type=int, choices=(64, 256), required=True)
     parser.add_argument("--sync-interval", type=int, choices=(4, 32), default=32)
     parser.add_argument("--diloco-outer-lr", type=float, default=0.7)
@@ -199,7 +203,7 @@ def training_arguments(
                 f"--train_module.batch_simulation.local_sgd_sync_interval={args.sync_interval}",
             ]
         )
-    else:
+    elif args.method == "diloco":
         values.extend(
             [
                 "--train_module.batch_simulation.method=diloco",
@@ -216,6 +220,13 @@ def training_arguments(
                     ),
                     separators=(",", ":"),
                 ),
+            ]
+        )
+    else:
+        values.extend(
+            [
+                "--train_module.batch_simulation.method=sequential_replay",
+                "--train_module.batch_simulation.sequential_replay_microbatch_gradients=false",
             ]
         )
     return values
@@ -247,6 +258,11 @@ def build_spec(spec: dict[str, Any], script: str, train_args: list[str], args: a
             "python -m pytest -q src/test/train/train_module/transformer/batch_simulation_test.py "
             "-k 'diloco_checkpoint_preserves_replica_optimizer_state or "
             "diloco_does_not_expose_raw_replica_checkpointing'"
+        )
+    elif args.method == "sequential_replay":
+        preflight.append(
+            "python -m pytest -q src/test/train/train_module/transformer/batch_simulation_test.py "
+            "-k 'sequential_replay'"
         )
     if args.start_epoch == 2 or args.conventional_transition:
         preflight.insert(3, shlex.join(["test", "!", "-e", args.output]))

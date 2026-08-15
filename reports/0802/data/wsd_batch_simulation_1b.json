@@ -1,6 +1,6 @@
 {
   "updated": "2026-08-15",
-  "setup": "Dense 1B; sealed 1B-token training pool; sequence length4096; dynamic repacking; WSD with10% terminal decay. Four already-running H32 jobs finish without continuation. Going forward, the active search uses LocalSGD H4, WD0.333 across simBS64/256 and BS1024 E2/E4 initialization, with all four trajectories continued frontier-by-frontier through E16.",
+  "setup": "Dense 1B; sealed 1B-token training pool; sequence length4096; dynamic repacking; WSD with10% terminal decay. The current ablation evaluates sequential replica-gradient replay at global BS1024, simBS64, BS1024 E2 initialization, LR1e-3, and WD0.333 through E4 against matched LocalSGD H4.",
   "selection": {
     "targetEpoch": 16,
     "learningRate": "1e-3",
@@ -10,7 +10,7 @@
       "0.333",
       "1.0"
     ],
-    "criterion": "Finish and ingest the four already-running H32 jobs without continuing them. No earlier than 2026-08-15T18:36:27Z, and only after those jobs exit, continue exactly four LocalSGD H4 WD0.333 trajectories in parallel: simBS64/256 crossed with BS1024 E2/E4 initialization. Advance each one exact native frontier at a time through E16 and stop. The target is validation CE in the 3.0xx range at E16.",
+    "criterion": "Run one sequential replica-gradient replay ablation from the exact conventional BS1024 DR E2 pre-decay checkpoint through E4, then compare its train CE, validation CE, gap, downstream metrics, and avg8 BPB against matched LocalSGD H4 simBS64 WD0.333 E4. Do not continue it beyond E4 without fresh authorization.",
     "higherWeightDecayExcluded": false
   },
   "columns": [
@@ -252,6 +252,17 @@
       "simulatedBatchSequences": 64,
       "initialization": "BS1024 DR E2 exact pre-decay checkpoint",
       "syncInterval": 4,
+      "dynamicRepacking": true
+    },
+    {
+      "key": "post_e2_sequential_replay_bs1024_dr_simbs64",
+      "label": "Sequential replay (BS1024, simBS64, BS1024 E2 init, DR)",
+      "tableLabel": "Sequential replay\nBS1024\nsimBS64\nBS1024 E2 init\nDR",
+      "globalBatchSequences": 1024,
+      "simulatedBatchSequences": 64,
+      "initialization": "BS1024 DR E2 exact pre-decay checkpoint",
+      "secondMomentRecalibration": true,
+      "secondMomentRecalibrationRatio": 16,
       "dynamicRepacking": true
     },
     {
@@ -8245,6 +8256,28 @@
       },
       "wdGateDecision": "WD1.0 loses matched E16 validation 3.216 to WD0.333 3.165; H32 is terminal under the current policy, so neither trajectory continues.",
       "reason": "Healthy E16 completed and fully ingested. H32 is terminal and no continuation was submitted."
+    },
+    {
+      "planId": "bs1024-e2init-sequential-replay-sim64-wd0.333-e4",
+      "method": "post_e2_sequential_replay_bs1024_dr_simbs64",
+      "startEpoch": 2,
+      "targetEpoch": 4,
+      "batchSequences": 1024,
+      "simulatedBatchSequences": 64,
+      "lr": "1e-3",
+      "wd": "0.333",
+      "status": "pending",
+      "healthStatus": "pending",
+      "revision": "74b1bf73903ecf5db09c83ed42e36ed449269f90",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step428",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs64_init=bs1024e2_lr1e-3_wd0.333",
+      "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs64_init=bs1024e2_lr1e-3_wd0.333/step858",
+      "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs64_init=bs1024e2_lr1e-3_wd0.333/step954",
+      "recalibrateSecondMomentOnStart": true,
+      "secondMomentRecalibrationRatio": 16,
+      "sequentialReplayMicrobatchGradients": false,
+      "matchedLocalSGDPlanId": "bs1024-e2init-local-sgd-h4-sim64-wd0.333-e4",
+      "reason": "Registered before submission. Sequentially replay one accumulated simBS64 gradient per replica through a shared logical AdamW state; evaluate at E4 and stop for comparison with matched LocalSGD H4. H is not a sequential-replay parameter."
     }
   ]
 }
