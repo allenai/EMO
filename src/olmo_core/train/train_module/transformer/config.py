@@ -73,14 +73,6 @@ class BatchSimulationConfig(Config):
     whose round lengths are not constant, such as synchronizing at exact integer-epoch
     pre-decay frontiers after token-to-step rounding.
     """
-    diloco_replica_checkpoint_steps: List[int] = field(default_factory=list)
-    """
-    Exact outer-update steps at which to save every unaggregated replica model.
-
-    Each replica snapshot is written immediately before its DiLoCo pseudo-gradient is formed and
-    before the outer optimizer changes the model. These steps must be a subset of
-    :data:`diloco_outer_steps`.
-    """
     diloco_outer_lr: float = 0.7
     """Learning rate for the DiLoCo outer Nesterov optimizer."""
     diloco_outer_momentum: float = 0.9
@@ -103,7 +95,6 @@ class BatchSimulationConfig(Config):
         if self.method == BatchSimulationMethod.none:
             if (
                 self.diloco_outer_steps is not None
-                or self.diloco_replica_checkpoint_steps
                 or self.recalibrate_second_moment_on_start_enabled
             ):
                 raise OLMoConfigurationError(
@@ -137,24 +128,7 @@ class BatchSimulationConfig(Config):
                 )
             if self.diloco_outer_steps is not None:
                 self._validate_step_schedule("diloco_outer_steps", self.diloco_outer_steps)
-            if self.diloco_replica_checkpoint_steps:
-                self._validate_step_schedule(
-                    "diloco_replica_checkpoint_steps",
-                    self.diloco_replica_checkpoint_steps,
-                )
-                if self.diloco_outer_steps is None:
-                    raise OLMoConfigurationError(
-                        "'diloco_replica_checkpoint_steps' requires 'diloco_outer_steps'"
-                    )
-                missing_outer_steps = sorted(
-                    set(self.diloco_replica_checkpoint_steps) - set(self.diloco_outer_steps)
-                )
-                if missing_outer_steps:
-                    raise OLMoConfigurationError(
-                        "'diloco_replica_checkpoint_steps' must be a subset of "
-                        f"'diloco_outer_steps'; missing {missing_outer_steps}"
-                    )
-        elif self.diloco_outer_steps is not None or self.diloco_replica_checkpoint_steps:
+        elif self.diloco_outer_steps is not None:
             raise OLMoConfigurationError(
                 "DiLoCo-specific configuration is only valid when method='diloco'"
             )
@@ -212,11 +186,6 @@ class BatchSimulationConfig(Config):
     def is_diloco_outer_step(self, step: int) -> bool:
         """Return whether ``step`` is an explicitly scheduled DiLoCo outer update."""
         return self.diloco_outer_steps is not None and step in self.diloco_outer_steps
-
-    def should_save_diloco_replicas(self, step: int) -> bool:
-        """Return whether raw replica models should be saved before the outer update at ``step``."""
-        return step in self.diloco_replica_checkpoint_steps
-
 
 @beta_feature
 @dataclass

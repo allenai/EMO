@@ -1,5 +1,4 @@
 import contextlib
-import json
 import logging
 from dataclasses import replace
 from functools import cached_property, lru_cache
@@ -21,7 +20,6 @@ from olmo_core.data.utils import get_labels, split_batch
 from olmo_core.distributed.checkpoint import (
     merge_state_dicts,
     prune_state_dict,
-    save_state_dict,
     swap_param_keys,
 )
 from olmo_core.distributed.parallel import (
@@ -32,16 +30,13 @@ from olmo_core.distributed.parallel import (
     get_dp_shard_mesh,
 )
 from olmo_core.distributed.utils import (
-    barrier,
     get_local_tensor,
-    get_rank,
     get_reduce_divide_factor,
     get_world_size,
     is_distributed,
 )
 from olmo_core.exceptions import OLMoConfigurationError
 from olmo_core.float8 import Float8Config
-from olmo_core.io import join_path
 from olmo_core.nn.lm_head import LMOutputWithLoss
 from olmo_core.nn.transformer import Transformer
 from olmo_core.nn.transformer.config import TransformerActivationCheckpointingMode
@@ -1043,10 +1038,6 @@ class TransformerTrainModule(TrainModule):
         else:
             assert self.batch_simulation.method == BatchSimulationMethod.diloco
             assert self._diloco_outer_optim is not None
-            if current_step is not None and self.batch_simulation.should_save_diloco_replicas(
-                current_step
-            ):
-                self._save_diloco_replicas_before_outer_step(current_step)
             outer_metrics = diloco_outer_step(
                 self.model,
                 self._diloco_outer_optim,
@@ -1057,75 +1048,6 @@ class TransformerTrainModule(TrainModule):
                 self.record_metric(name, value, namespace="DiLoCo outer")
         self._local_sgd_steps_since_sync = 0
         return True
-
-    def _save_diloco_replicas_before_outer_step(self, step: int) -> None:
-        """Save each raw local replica model immediately before its DiLoCo outer update."""
-        if self.batch_simulation.method != BatchSimulationMethod.diloco:
-            raise RuntimeError("Raw DiLoCo replica checkpoints require method='diloco'")
-        if not self.batch_simulation.is_diloco_outer_step(step):
-            raise RuntimeError(f"Step {step} is not a configured DiLoCo outer step")
-        assert self.world_mesh is not None
-
-        replica_mesh = get_dp_replicate_mesh(self.world_mesh)
-        shard_mesh = get_dp_shard_mesh(self.world_mesh)
-        replica_idx = replica_mesh.get_local_rank()
-        shard_group = shard_mesh.get_group()
-        root = join_path(self.trainer.save_folder, f"step{step}-diloco-replicas")
-        replica_dir = join_path(root, f"replica{replica_idx}")
-        model_dir = join_path(replica_dir, "model")
-
-        # Deliberately omit both optimizers. The raw snapshots are a compact, immutable record of
-        # the eight local model endpoints for offline mean merging and evaluation. Saving through
-        # state_dict_to_save() here would force an aggregation before the snapshot.
-        replica_state = self._get_state_dict(
-            self.state_dict_save_opts,
-            optim=False,
-            include_diloco_outer_optim=False,
-        )
-        save_state_dict(
-            model_dir,
-            replica_state,
-            process_group=shard_group,
-            thread_count=self.trainer.checkpointer.save_thread_count,
-            throttle_uploads=self.trainer.checkpointer.throttle_uploads,
-        )
-
-        if get_rank(shard_group) == 0:
-            self.trainer.checkpointer.write_file(
-                replica_dir,
-                "metadata.json",
-                json.dumps(
-                    {
-                        "format": "olmo-core-diloco-replica-model-v1",
-                        "globalStep": step,
-                        "replica": replica_idx,
-                        "replicaCount": replica_mesh.size(),
-                        "innerStepsSinceOuterUpdate": self._local_sgd_steps_since_sync,
-                        "aggregated": False,
-                        "modelCheckpoint": "model",
-                    },
-                    indent=2,
-                )
-                + "\n",
-            )
-        barrier()
-        if get_rank() == 0:
-            self.trainer.checkpointer.write_file(
-                root,
-                "manifest.json",
-                json.dumps(
-                    {
-                        "format": "olmo-core-diloco-replica-set-v1",
-                        "globalStep": step,
-                        "replicaCount": replica_mesh.size(),
-                        "replicas": [f"replica{idx}/model" for idx in range(replica_mesh.size())],
-                        "savedBeforeOuterUpdate": True,
-                    },
-                    indent=2,
-                )
-                + "\n",
-            )
-        barrier()
 
     def _prepare_batch(
         self, batch: Dict[str, Any], labels: Optional[torch.Tensor] = None

@@ -241,7 +241,6 @@ def method_arguments(
     method: str,
     *,
     diloco_outer_steps: tuple[int, ...] = (),
-    diloco_replica_checkpoint_steps: tuple[int, ...] = (),
 ) -> list[str]:
     common = [
         f"--train_module.batch_simulation.global_batch_size={GLOBAL_BATCH_TOKENS}",
@@ -265,10 +264,6 @@ def method_arguments(
     if method == "post_e1_diloco_epoch_dr":
         if not diloco_outer_steps:
             raise RuntimeError("epoch-synchronized DiLoCo requires exact outer steps")
-        if not diloco_replica_checkpoint_steps:
-            raise RuntimeError("epoch-synchronized DiLoCo requires replica checkpoint steps")
-        if not set(diloco_replica_checkpoint_steps).issubset(diloco_outer_steps):
-            raise RuntimeError("replica checkpoint steps must be a subset of outer steps")
         return [
             "--train_module.batch_simulation.method=diloco",
             "--train_module.batch_simulation.diloco_inner_steps=500",
@@ -276,17 +271,11 @@ def method_arguments(
             "--train_module.batch_simulation.diloco_outer_momentum=0.9",
             "--train_module.batch_simulation.diloco_outer_steps="
             + json.dumps(diloco_outer_steps, separators=(",", ":")),
-            "--train_module.batch_simulation.diloco_replica_checkpoint_steps="
-            + json.dumps(diloco_replica_checkpoint_steps, separators=(",", ":")),
             *common,
         ]
     if method == "post_e1_diloco_h32_vrecal_dr":
         if not diloco_outer_steps:
             raise RuntimeError("H=32 DiLoCo requires exact outer steps")
-        if not diloco_replica_checkpoint_steps:
-            raise RuntimeError("H=32 DiLoCo requires replica checkpoint steps")
-        if not set(diloco_replica_checkpoint_steps).issubset(diloco_outer_steps):
-            raise RuntimeError("replica checkpoint steps must be a subset of outer steps")
         return [
             "--train_module.batch_simulation.method=diloco",
             "--train_module.batch_simulation.diloco_inner_steps=32",
@@ -295,17 +284,11 @@ def method_arguments(
             "--train_module.batch_simulation.diloco_recalibrate_second_moment_on_start=true",
             "--train_module.batch_simulation.diloco_outer_steps="
             + json.dumps(diloco_outer_steps, separators=(",", ":")),
-            "--train_module.batch_simulation.diloco_replica_checkpoint_steps="
-            + json.dumps(diloco_replica_checkpoint_steps, separators=(",", ":")),
             *common,
         ]
     if method == "post_e1_diloco_h32_bs64init_dr":
         if not diloco_outer_steps:
             raise RuntimeError("BS64-initialized H=32 DiLoCo requires exact outer steps")
-        if not diloco_replica_checkpoint_steps:
-            raise RuntimeError("BS64-initialized H=32 DiLoCo requires replica checkpoint steps")
-        if not set(diloco_replica_checkpoint_steps).issubset(diloco_outer_steps):
-            raise RuntimeError("replica checkpoint steps must be a subset of outer steps")
         return [
             "--train_module.batch_simulation.method=diloco",
             "--train_module.batch_simulation.diloco_inner_steps=32",
@@ -313,8 +296,6 @@ def method_arguments(
             "--train_module.batch_simulation.diloco_outer_momentum=0.9",
             "--train_module.batch_simulation.diloco_outer_steps="
             + json.dumps(diloco_outer_steps, separators=(",", ":")),
-            "--train_module.batch_simulation.diloco_replica_checkpoint_steps="
-            + json.dumps(diloco_replica_checkpoint_steps, separators=(",", ":")),
             *common,
         ]
     raise RuntimeError(f"unsupported method {method}")
@@ -514,7 +495,6 @@ def stage(
             *method_arguments(
                 args.method,
                 diloco_outer_steps=diloco_outer_steps,
-                diloco_replica_checkpoint_steps=integer_epoch_frontiers,
             ),
         ]
     )
@@ -589,25 +569,6 @@ def build_spec(
                 shlex.join(["torchrun", f"--nproc-per-node={nproc}", script, name, *arguments]),
                 shlex.join(["test", "-d", f"{output}/step{pre_decay}"]),
                 shlex.join(["test", "-d", f"{output}/step{endpoint}"]),
-                *(
-                    [
-                        shlex.join(
-                            [
-                                "test",
-                                "-f",
-                                f"{output}/step{frontier}-diloco-replicas/manifest.json",
-                            ]
-                        )
-                        for frontier in integer_epoch_frontiers
-                    ]
-                    if args.method
-                    in {
-                        "post_e1_diloco_epoch_dr",
-                        "post_e1_diloco_h32_vrecal_dr",
-                        "post_e1_diloco_h32_bs64init_dr",
-                    }
-                    else []
-                ),
                 shlex.join(
                     [
                         "echo",
@@ -629,11 +590,6 @@ def build_spec(
                 **(
                     {
                         "dilocoOuterSteps": list(recorded_outer_steps),
-                        "dilocoReplicaCheckpointSteps": list(integer_epoch_frontiers),
-                        "dilocoReplicaCheckpointRoots": [
-                            f"{output}/step{frontier}-diloco-replicas"
-                            for frontier in integer_epoch_frontiers
-                        ],
                     }
                     if args.method
                     in {

@@ -1,7 +1,4 @@
-import json
 import math
-from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -23,7 +20,6 @@ from olmo_core.distributed.utils import get_local_tensor
 from olmo_core.exceptions import OLMoConfigurationError
 from olmo_core.optim import NoOpConfig
 from olmo_core.testing.distributed import run_distributed_test
-from olmo_core.train.checkpoint import Checkpointer
 from olmo_core.train.train_module.transformer import (
     BatchSimulationConfig,
     BatchSimulationMethod,
@@ -160,17 +156,6 @@ def test_diloco_rejects_invalid_outer_optimizer_configuration(kwargs):
         ({"diloco_outer_steps": [2, 1]}, "strictly increasing"),
         ({"diloco_outer_steps": [1, 1]}, "strictly increasing"),
         ({"diloco_outer_steps": [0, 1]}, "positive integer"),
-        (
-            {"diloco_replica_checkpoint_steps": [1]},
-            "requires 'diloco_outer_steps'",
-        ),
-        (
-            {
-                "diloco_outer_steps": [1, 3],
-                "diloco_replica_checkpoint_steps": [2],
-            },
-            "must be a subset",
-        ),
     ],
 )
 def test_diloco_rejects_invalid_exact_outer_step_configuration(kwargs, match):
@@ -195,13 +180,22 @@ def test_exact_diloco_steps_are_opt_in_and_parse_from_config_overrides():
             "batch_simulation.global_batch_size=512",
             "batch_simulation.simulated_batch_size=64",
             "batch_simulation.diloco_outer_steps=[430,859,1288]",
-            "batch_simulation.diloco_replica_checkpoint_steps=[430,859]",
         ]
     )
 
     assert config.batch_simulation.uses_exact_diloco_outer_steps
     assert config.batch_simulation.diloco_outer_steps == [430, 859, 1288]
-    assert config.batch_simulation.diloco_replica_checkpoint_steps == [430, 859]
+
+
+def test_diloco_does_not_expose_raw_replica_checkpointing():
+    config = BatchSimulationConfig(
+        method=BatchSimulationMethod.diloco,
+        global_batch_size=512,
+        simulated_batch_size=64,
+    )
+
+    assert not hasattr(config, "diloco_replica_checkpoint_steps")
+    assert not hasattr(TransformerTrainModule, "_save_diloco_replicas_before_outer_step")
 
 
 def test_structured_noise_scales_have_target_moments_and_are_reproducible():
@@ -415,7 +409,7 @@ def test_diloco_sync_interval_gate_uses_outer_optimizer():
         assert train_module._local_sgd_steps_since_sync == 0
 
 
-def test_diloco_exact_outer_steps_ignore_fixed_h_and_snapshot_before_aggregation():
+def test_diloco_exact_outer_steps_ignore_fixed_h():
     train_module = object.__new__(TransformerTrainModule)
     train_module.batch_simulation = BatchSimulationConfig(
         method=BatchSimulationMethod.diloco,
@@ -423,7 +417,6 @@ def test_diloco_exact_outer_steps_ignore_fixed_h_and_snapshot_before_aggregation
         simulated_batch_size=64,
         diloco_inner_steps=2,
         diloco_outer_steps=[7, 11],
-        diloco_replica_checkpoint_steps=[7],
     )
     train_module._local_sgd_steps_since_sync = 20
     train_module.world_mesh = MagicMock()
@@ -437,25 +430,15 @@ def test_diloco_exact_outer_steps_ignore_fixed_h_and_snapshot_before_aggregation
     replicate_mesh = MagicMock()
     process_group = MagicMock()
     replicate_mesh.get_group.return_value = process_group
-    call_order = []
-
     with (
         patch(
             "olmo_core.train.train_module.transformer.train_module.get_dp_replicate_mesh",
             return_value=replicate_mesh,
         ),
-        patch.object(
-            train_module,
-            "_save_diloco_replicas_before_outer_step",
-            side_effect=lambda step: call_order.append(("snapshot", step)),
-        ) as save_replicas,
-            patch(
-                "olmo_core.train.train_module.transformer.train_module.diloco_outer_step",
-                side_effect=lambda *args: (
-                    call_order.append(("outer", train_module.trainer.global_step))
-                    or {}
-                ),
-            ) as outer_step,
+        patch(
+            "olmo_core.train.train_module.transformer.train_module.diloco_outer_step",
+            return_value={},
+        ) as outer_step,
     ):
         # Even though the fixed H=2 threshold is long past, exact scheduling suppresses the
         # outer update until the declared global step.
@@ -466,9 +449,7 @@ def test_diloco_exact_outer_steps_ignore_fixed_h_and_snapshot_before_aggregation
         train_module.trainer.global_step = 7
         assert train_module._maybe_sync_local_sgd()
 
-    save_replicas.assert_called_once_with(7)
     outer_step.assert_called_once()
-    assert call_order == [("snapshot", 7), ("outer", 7)]
     assert train_module._local_sgd_steps_since_sync == 0
 
 
@@ -758,63 +739,6 @@ def test_diloco_checkpoint_preserves_replica_optimizer_state(tmp_path, flatten_o
         world_size=2,
         start_method="spawn",
         func_args=(str(tmp_path / "diloco-checkpoint"), flatten_optimizer_state),
-    )
-
-
-def _check_diloco_raw_replica_model_checkpoints(checkpoint_root: str):
-    rank = dist.get_rank()
-    world_mesh = init_device_mesh(
-        "cpu",
-        (2, 1),
-        mesh_dim_names=("dp_replicate", "dp_shard"),
-    )
-    train_module = _build_diloco_checkpoint_test_module(
-        world_mesh,
-        rank_value=float(rank + 1),
-        flatten_optimizer_state=True,
-    )
-    train_module.batch_simulation = BatchSimulationConfig(
-        method=BatchSimulationMethod.diloco,
-        global_batch_size=2,
-        simulated_batch_size=1,
-        diloco_outer_steps=[5],
-        diloco_replica_checkpoint_steps=[5],
-    )
-    train_module._local_sgd_steps_since_sync = 4
-    train_module._trainer = SimpleNamespace(
-        global_step=5,
-        save_folder=checkpoint_root,
-        checkpointer=Checkpointer(work_dir=Path(checkpoint_root) / "work"),
-    )
-
-    train_module._save_diloco_replicas_before_outer_step(5)
-
-    replica_root = Path(checkpoint_root) / "step5-diloco-replicas" / f"replica{rank}"
-    metadata = get_checkpoint_metadata(replica_root / "model")
-    assert metadata.state_dict_metadata
-    assert all(key.startswith("model.") for key in metadata.state_dict_metadata)
-    replica_metadata = json.loads((replica_root / "metadata.json").read_text())
-    assert replica_metadata["replica"] == rank
-    assert replica_metadata["innerStepsSinceOuterUpdate"] == 4
-    assert not replica_metadata["aggregated"]
-
-    dist.barrier()
-    if rank == 0:
-        manifest = json.loads(
-            (Path(checkpoint_root) / "step5-diloco-replicas" / "manifest.json").read_text()
-        )
-        assert manifest["replicaCount"] == 2
-        assert manifest["replicas"] == ["replica0/model", "replica1/model"]
-        assert manifest["savedBeforeOuterUpdate"]
-
-
-def test_diloco_saves_each_raw_replica_model_before_outer_update(tmp_path):
-    run_distributed_test(
-        _check_diloco_raw_replica_model_checkpoints,
-        backend="gloo",
-        world_size=2,
-        start_method="spawn",
-        func_args=(str(tmp_path / "raw-replicas"),),
     )
 
 
