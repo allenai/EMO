@@ -32,6 +32,7 @@ from olmo_core.train.train_module.transformer.batch_simulation import (
     clone_local_parameter_tensors,
     diloco_outer_step,
     recalibrate_adam_second_moment_for_batch_size,
+    sequential_replica_optimizer_steps,
     structured_noise_loss_scales,
 )
 
@@ -282,6 +283,124 @@ def test_diloco_config_builds_one_hsdp_replica_per_simulated_batch():
     assert kwargs["dp_config"].name == DataParallelType.hsdp
     assert kwargs["dp_config"].num_replicas == 8
     assert kwargs["dp_config"].shard_degree is None
+
+
+def test_sequential_replay_config_builds_one_hsdp_replica_per_simulated_batch():
+    config = TransformerTrainModuleConfig(
+        rank_microbatch_size=16,
+        max_sequence_length=8,
+        optim=NoOpConfig(),
+        dp_config=TransformerDataParallelConfig(name=DataParallelType.fsdp),
+        batch_simulation=BatchSimulationConfig(
+            method=BatchSimulationMethod.sequential_replay,
+            global_batch_size=512,
+            simulated_batch_size=64,
+        ),
+    )
+
+    with patch(
+        "olmo_core.train.train_module.transformer.train_module.TransformerTrainModule"
+    ) as train_module_cls:
+        config.build(MagicMock())
+
+    kwargs = train_module_cls.call_args.kwargs
+    assert kwargs["batch_simulation"].uses_sequential_replay
+    assert kwargs["dp_config"].name == DataParallelType.hsdp
+    assert kwargs["dp_config"].num_replicas == 8
+    assert kwargs["dp_config"].shard_degree is None
+
+
+def test_microbatch_gradient_replay_is_sequential_replay_only():
+    with pytest.raises(OLMoConfigurationError, match="only valid"):
+        BatchSimulationConfig(
+            method=BatchSimulationMethod.local_sgd,
+            global_batch_size=512,
+            simulated_batch_size=64,
+            sequential_replay_microbatch_gradients=True,
+        )
+
+
+def _run_sequential_replay_update(
+    accumulation_steps: int, replay_microbatch_gradients: bool = False
+):
+    rank = dist.get_rank()
+    module = nn.Linear(1, 1, bias=False)
+    parameter = next(module.parameters())
+    parameter.data.zero_()
+    optimizer = torch.optim.AdamW(
+        module.parameters(), lr=0.1, betas=(0.5, 0.75), weight_decay=0.0
+    )
+
+    microbatch_gradients = [float((rank + 1) * (idx + 1)) for idx in range(accumulation_steps)]
+    parameter.grad = torch.tensor([[sum(microbatch_gradients) / accumulation_steps]])
+    local_packets = None
+    if replay_microbatch_gradients:
+        local_packets = [[torch.tensor([[gradient]])] for gradient in microbatch_gradients]
+    post_steps = 0
+
+    def post_step():
+        nonlocal post_steps
+        post_steps += 1
+
+    replay_count = sequential_replica_optimizer_steps(
+        module,
+        optimizer,
+        dist.group.WORLD,
+        post_step=post_step,
+        local_gradient_packets=local_packets,
+    )
+
+    reference = nn.Linear(1, 1, bias=False)
+    reference_parameter = next(reference.parameters())
+    reference_parameter.data.zero_()
+    reference_optimizer = torch.optim.AdamW(
+        reference.parameters(), lr=0.1, betas=(0.5, 0.75), weight_decay=0.0
+    )
+    packet_indices = range(accumulation_steps) if replay_microbatch_gradients else [None]
+    for packet_idx in packet_indices:
+        for source_rank in range(dist.get_world_size()):
+            source_gradients = [
+                float((source_rank + 1) * (idx + 1)) for idx in range(accumulation_steps)
+            ]
+            reference_gradient = (
+                sum(source_gradients) / accumulation_steps
+                if packet_idx is None
+                else source_gradients[packet_idx]
+            )
+            reference_parameter.grad = torch.tensor([[reference_gradient]])
+            reference_optimizer.step()
+
+    expected_replay_count = dist.get_world_size() * (
+        accumulation_steps if replay_microbatch_gradients else 1
+    )
+    assert replay_count == expected_replay_count
+    assert post_steps == replay_count
+    torch.testing.assert_close(parameter, reference_parameter)
+    torch.testing.assert_close(
+        optimizer.state[parameter]["exp_avg"],
+        reference_optimizer.state[reference_parameter]["exp_avg"],
+    )
+    torch.testing.assert_close(
+        optimizer.state[parameter]["exp_avg_sq"],
+        reference_optimizer.state[reference_parameter]["exp_avg_sq"],
+    )
+    assert optimizer.state[parameter]["step"].item() == replay_count
+
+
+@pytest.mark.parametrize(
+    "accumulation_steps,replay_microbatch_gradients",
+    [(1, False), (4, False), (4, True)],
+)
+def test_sequential_replay_applies_replica_gradients_with_and_without_accumulation(
+    accumulation_steps, replay_microbatch_gradients
+):
+    run_distributed_test(
+        _run_sequential_replay_update,
+        world_size=2,
+        backend="gloo",
+        start_method="spawn",
+        func_args=(accumulation_steps, replay_microbatch_gradients),
+    )
 
 
 def test_default_train_module_config_preserves_normal_data_parallelism():

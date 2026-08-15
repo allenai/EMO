@@ -48,6 +48,7 @@ class BatchSimulationMethod(StrEnum):
     structured_noise = "structured_noise"
     local_sgd = "local_sgd"
     diloco = "diloco"
+    sequential_replay = "sequential_replay"
 
 
 @dataclass
@@ -63,6 +64,15 @@ class BatchSimulationConfig(Config):
     global_batch_size: Optional[int] = None
     simulated_batch_size: Optional[int] = None
     local_sgd_sync_interval: int = 1
+    sequential_replay_microbatch_gradients: bool = False
+    """
+    Preserve and replay every gradient-accumulation microbatch separately.
+
+    This is only valid for ``method='sequential_replay'``. When false, accumulation behaves
+    normally within each replica and produces one simulated-batch gradient packet. When true,
+    every microbatch packet is normalized as its own update and replayed separately. The latter
+    requires one local gradient-sized buffer per accumulation microbatch.
+    """
     diloco_inner_steps: int = 500
     """Number of independent AdamW steps per DiLoCo outer round (``H`` in the paper)."""
     diloco_outer_steps: Optional[List[int]] = None
@@ -96,9 +106,11 @@ class BatchSimulationConfig(Config):
             if (
                 self.diloco_outer_steps is not None
                 or self.recalibrate_second_moment_on_start_enabled
+                or self.sequential_replay_microbatch_gradients
             ):
                 raise OLMoConfigurationError(
-                    "Local-update configuration is only valid for LocalSGD or DiLoCo"
+                    "Local-update configuration is only valid for LocalSGD, DiLoCo, or "
+                    "sequential replay"
                 )
             return
         if self.global_batch_size is None or self.global_batch_size <= 0:
@@ -133,9 +145,19 @@ class BatchSimulationConfig(Config):
                 "DiLoCo-specific configuration is only valid when method='diloco'"
             )
 
+        if (
+            self.sequential_replay_microbatch_gradients
+            and self.method != BatchSimulationMethod.sequential_replay
+        ):
+            raise OLMoConfigurationError(
+                "'sequential_replay_microbatch_gradients' is only valid when "
+                "method='sequential_replay'"
+            )
+
         if self.recalibrate_second_moment_on_start_enabled and not self.uses_local_updates:
             raise OLMoConfigurationError(
-                "Second-moment recalibration is only valid for LocalSGD or DiLoCo"
+                "Second-moment recalibration is only valid for LocalSGD, DiLoCo, or "
+                "sequential replay"
             )
 
     @property
@@ -168,8 +190,17 @@ class BatchSimulationConfig(Config):
 
     @property
     def uses_local_updates(self) -> bool:
-        """Whether each data-parallel replica performs independent optimizer updates."""
-        return self.method in (BatchSimulationMethod.local_sgd, BatchSimulationMethod.diloco)
+        """Whether gradients must remain independent across data-parallel replicas."""
+        return self.method in (
+            BatchSimulationMethod.local_sgd,
+            BatchSimulationMethod.diloco,
+            BatchSimulationMethod.sequential_replay,
+        )
+
+    @property
+    def uses_sequential_replay(self) -> bool:
+        """Whether replica gradients are applied serially through one logical optimizer."""
+        return self.method == BatchSimulationMethod.sequential_replay
 
     @property
     def local_update_sync_interval(self) -> int:

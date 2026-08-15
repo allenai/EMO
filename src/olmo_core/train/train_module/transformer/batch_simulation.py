@@ -2,7 +2,7 @@
 
 import math
 import random
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 
 import torch
 import torch.distributed as dist
@@ -71,6 +71,63 @@ def average_module_and_optimizer_state(
     for tensor in tensors:
         dist.all_reduce(tensor, op=dist.ReduceOp.SUM, group=process_group)
         tensor.div_(replica_count)
+
+
+@torch.no_grad()
+def sequential_replica_optimizer_steps(
+    module: nn.Module,
+    optimizer: Optimizer,
+    process_group: dist.ProcessGroup,
+    *,
+    post_step: Callable[[], None] | None = None,
+    local_gradient_packets: list[list[torch.Tensor]] | None = None,
+) -> int:
+    """Replay stale replica gradients serially through synchronized optimizer state.
+
+    Every replica computes from the same parameter snapshot. Gradients are broadcast in
+    deterministic packet-major, replica-rank order and every replica applies identical optimizer
+    steps. Accumulation normally yields one packet; callers may provide one packet per microbatch.
+    """
+    replica_count = dist.get_world_size(process_group)
+    if replica_count < 1:
+        raise RuntimeError("sequential replay requires at least one replica")
+
+    parameters = [parameter for parameter in module.parameters() if parameter.requires_grad]
+    missing = [idx for idx, parameter in enumerate(parameters) if parameter.grad is None]
+    if missing:
+        raise RuntimeError(
+            "sequential replay requires a materialized gradient for every trainable parameter; "
+            f"missing gradients for parameter indices {missing[:8]}"
+        )
+
+    if local_gradient_packets is None:
+        local_gradient_packets = [
+            [
+                get_local_tensor(parameter.grad).detach().clone()  # type: ignore[arg-type]
+                for parameter in parameters
+            ]
+        ]
+    if not local_gradient_packets:
+        raise RuntimeError("sequential replay requires at least one local gradient packet")
+    if any(len(packet) != len(parameters) for packet in local_gradient_packets):
+        raise RuntimeError("sequential replay gradient packet does not match parameter count")
+
+    replica_rank = dist.get_rank(process_group)
+    update_count = 0
+    for local_gradients in local_gradient_packets:
+        for source_replica in range(replica_count):
+            source_global_rank = dist.get_global_rank(process_group, source_replica)
+            for parameter, local_gradient in zip(parameters, local_gradients):
+                gradient = get_local_tensor(parameter.grad)  # type: ignore[arg-type]
+                if replica_rank == source_replica:
+                    gradient.copy_(local_gradient)
+                dist.broadcast(gradient, src=source_global_rank, group=process_group)
+            optimizer.step()
+            update_count += 1
+            if post_step is not None:
+                post_step()
+
+    return update_count
 
 
 def clone_local_parameter_tensors(module: nn.Module) -> list[torch.Tensor]:

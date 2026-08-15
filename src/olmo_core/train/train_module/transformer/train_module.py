@@ -57,6 +57,7 @@ from .batch_simulation import (
     clone_local_parameter_tensors,
     diloco_outer_step,
     recalibrate_adam_second_moment_for_batch_size,
+    sequential_replica_optimizer_steps,
     structured_noise_loss_scales,
 )
 from .common import parallelize_model
@@ -267,6 +268,8 @@ class TransformerTrainModule(TrainModule):
         self.scheduler = scheduler
         self.batch_simulation = batch_simulation
         self._local_sgd_steps_since_sync = 0
+        self._sequential_replay_gradient_packets: list[list[torch.Tensor]] = []
+        self._sequential_replay_packet_grad_norms: list[torch.Tensor] = []
         self.state_dict_save_opts = state_dict_save_opts or dist_cp_sd.StateDictOptions(
             flatten_optimizer_state_dict=True, cpu_offload=True
         )
@@ -662,8 +665,16 @@ class TransformerTrainModule(TrainModule):
                 step=self.trainer.global_step,
             )
 
+        replay_microbatches = (
+            self.batch_simulation.uses_sequential_replay
+            and self.batch_simulation.sequential_replay_microbatch_gradients
+            and not dry_run
+        )
+
         # Train one micro-batch at a time.
         for micro_batch_idx, micro_batch in enumerate(micro_batches):
+            if replay_microbatches and micro_batch_idx > 0:
+                self.optim.zero_grad(set_to_none=True)
             with self._train_microbatch_context(micro_batch_idx, num_micro_batches):
                 input_ids, labels, model_kwargs = self._prepare_batch(micro_batch)
 
@@ -691,7 +702,41 @@ class TransformerTrainModule(TrainModule):
                 if structured_noise_scales is not None:
                     ghost_batch_idx = micro_batch_idx // micro_batches_per_ghost
                     loss = loss * structured_noise_scales[ghost_batch_idx]
+                elif replay_microbatches:
+                    # The ordinary loss is normalized by the full accumulated batch. Rescale so
+                    # each retained packet is an independently normalized microbatch update.
+                    loss = loss * num_micro_batches
                 loss.backward()
+
+                if replay_microbatches:
+                    self._ensure_local_sgd_gradients_materialized()
+                    if self.max_grad_norm is not None:
+                        self._sequential_replay_packet_grad_norms.append(
+                            self._clip_local_sgd_grad_norm(self.max_grad_norm)
+                        )
+                    self._sequential_replay_gradient_packets.append(
+                        [
+                            get_local_tensor(parameter.grad).detach().clone()
+                            for parameter in self.model.parameters()
+                            if parameter.requires_grad and parameter.grad is not None
+                        ]
+                    )
+
+        if replay_microbatches:
+            # Leave the conventional accumulated gradient visible to pre-optimizer callbacks.
+            parameters = [
+                parameter
+                for parameter in self.model.parameters()
+                if parameter.requires_grad and parameter.grad is not None
+            ]
+            for parameter_idx, parameter in enumerate(parameters):
+                aggregate = get_local_tensor(parameter.grad)
+                aggregate.zero_()
+                for packet in self._sequential_replay_gradient_packets:
+                    aggregate.add_(
+                        packet[parameter_idx],
+                        alpha=1.0 / len(self._sequential_replay_gradient_packets),
+                    )
 
         del batch  # In case this helps with memory utilization.
 
@@ -801,8 +846,12 @@ class TransformerTrainModule(TrainModule):
         if self.batch_simulation.uses_local_updates:
             self._ensure_local_sgd_gradients_materialized()
 
-        # Maybe clip gradients.
-        if self.max_grad_norm is not None:
+        # Maybe clip gradients. Individually retained packets were clipped when captured.
+        replayed_microbatches = (
+            self.batch_simulation.uses_sequential_replay
+            and self.batch_simulation.sequential_replay_microbatch_gradients
+        )
+        if self.max_grad_norm is not None and not replayed_microbatches:
             if self.batch_simulation.uses_local_updates:
                 grad_norm = self._clip_local_sgd_grad_norm(self.max_grad_norm)
                 grad_norm_reduce_type: Optional[ReduceType] = ReduceType.mean
@@ -824,6 +873,36 @@ class TransformerTrainModule(TrainModule):
             for group_idx, group in enumerate(self.optim.param_groups):
                 new_lr = self.scheduler.set_lr(group, self.trainer)
                 self.trainer.record_metric(f"LR (group {group_idx})", new_lr, namespace="optim")
+
+        if self.batch_simulation.uses_sequential_replay:
+            if isinstance(self.optim, SkipStepOptimizer):
+                raise RuntimeError("sequential replay does not support SkipStepOptimizer")
+            assert self.world_mesh is not None
+            replay_count = sequential_replica_optimizer_steps(
+                self.model,
+                self.optim,
+                get_dp_replicate_mesh(self.world_mesh).get_group(),
+                post_step=self.model.post_optim_step,
+                local_gradient_packets=(self._sequential_replay_gradient_packets or None),
+            )
+            self.record_metric(
+                "optimizer updates", float(replay_count), namespace="sequential replay"
+            )
+            self.record_metric(
+                "maximum gradient staleness",
+                float(replay_count - 1),
+                namespace="sequential replay",
+            )
+            if self._sequential_replay_packet_grad_norms:
+                self.trainer.record_metric(
+                    "total grad norm",
+                    torch.stack(self._sequential_replay_packet_grad_norms).amax(),
+                    reduce_type=ReduceType.mean,
+                    namespace="optim",
+                )
+            self._sequential_replay_gradient_packets.clear()
+            self._sequential_replay_packet_grad_norms.clear()
+            return
 
         # Step optimizer.
         self.optim.step()
@@ -847,6 +926,8 @@ class TransformerTrainModule(TrainModule):
 
     def zero_grads(self):
         self.optim.zero_grad(set_to_none=True)
+        self._sequential_replay_gradient_packets.clear()
+        self._sequential_replay_packet_grad_norms.clear()
 
     def model_forward(
         self, input_ids: torch.Tensor, labels: Optional[torch.Tensor] = None, **kwargs
@@ -891,7 +972,13 @@ class TransformerTrainModule(TrainModule):
                 assert self.dp_config is not None
                 # On the last backward FSDP waits on pending gradient reduction and clears internal data
                 # data structures for backward prefetching.
-                self.model.set_is_last_backward(is_last_mb)
+                self.model.set_is_last_backward(
+                    is_last_mb
+                    or (
+                        self.batch_simulation.uses_sequential_replay
+                        and self.batch_simulation.sequential_replay_microbatch_gradients
+                    )
+                )
                 # For native HSDP we can delay the gradients all-reduce until the final
                 # micro-batch. Local SGD is wrapped on each replica's shard sub-mesh, so
                 # it must leave gradient materialization enabled on every micro-batch.
@@ -1010,6 +1097,8 @@ class TransformerTrainModule(TrainModule):
 
     def _maybe_sync_local_sgd(self, *, force: bool = False) -> bool:
         if not self.batch_simulation.uses_local_updates:
+            return False
+        if self.batch_simulation.uses_sequential_replay:
             return False
         if self._local_sgd_steps_since_sync == 0:
             return False
