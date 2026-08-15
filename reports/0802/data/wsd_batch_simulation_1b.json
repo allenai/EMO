@@ -8266,23 +8266,14 @@
       "simulatedBatchSequences": 64,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "failed",
-      "healthStatus": "neutral_configuration_failure",
-      "beaker": "01M03CAJP8FH4SBW8NX14YEXF5",
-      "jobs": [
-        "01M03CAJSXWBA1G0KAM9KCTME4",
-        "01M03CAJY688HJS4NX3XTMSSYE"
-      ],
-      "resultDatasets": [
-        "01M03CAJPH2DPTHNXHT17SEAWT",
-        "01M03CAJT4RZ6YS088VCK5N1HX"
-      ],
-      "nodes": [
-        "jupiter-cs-aus-181.reviz.ai2.in",
-        "jupiter-cs-aus-139.reviz.ai2.in"
-      ],
+      "status": "planned",
+      "healthStatus": "pending",
+      "beaker": null,
+      "jobs": [],
+      "resultDatasets": [],
+      "nodes": [],
       "currentStep": 428,
-      "revision": "74b1bf73903ecf5db09c83ed42e36ed449269f90",
+      "revision": "66f4f031871e46f25b6f7bc1ad1ee4125baf833e",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step428",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs64_init=bs1024e2_lr1e-3_wd0.333",
       "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs64_init=bs1024e2_lr1e-3_wd0.333/step858",
@@ -8291,7 +8282,28 @@
       "secondMomentRecalibrationRatio": 16,
       "sequentialReplayMicrobatchGradients": false,
       "matchedLocalSGDPlanId": "bs1024-e2init-local-sgd-h4-sim64-wd0.333-e4",
-      "reason": "Neutral zero-step configuration failure after allocation and dry-run: training reached the exact E2 source state, but the first optimizer update raised 'sequential replay does not support SkipStepOptimizer'. The coordinated peer was canceled by propagate-failure. No E4 metrics or checkpoints exist, and this semantic failure is not automatically retried."
+      "previousAttempts": [
+        {
+          "beaker": "01M03CAJP8FH4SBW8NX14YEXF5",
+          "jobs": [
+            "01M03CAJSXWBA1G0KAM9KCTME4",
+            "01M03CAJY688HJS4NX3XTMSSYE"
+          ],
+          "resultDatasets": [
+            "01M03CAJPH2DPTHNXHT17SEAWT",
+            "01M03CAJT4RZ6YS088VCK5N1HX"
+          ],
+          "nodes": [
+            "jupiter-cs-aus-181.reviz.ai2.in",
+            "jupiter-cs-aus-139.reviz.ai2.in"
+          ],
+          "revision": "74b1bf73903ecf5db09c83ed42e36ed449269f90",
+          "status": "neutral_configuration_failure",
+          "currentStep": 428,
+          "reason": "Zero-step configuration failure: the first optimizer update rejected SkipStepOptimizer. The coordinated peer was canceled by propagate-failure; no E4 metrics or checkpoints were produced."
+        }
+      ],
+      "reason": "Registered retry after packet-level SkipStepOptimizer support passed focused two-rank applied/skipped replay tests. Reuse the canonical output only if target checkpoints step858 and step954 remain absent; load exact conventional E2 step428 and stop at E4."
     }
   ]
 }
