@@ -2,7 +2,7 @@
   "updated": "2026-08-14",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes.",
-  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. Run six independent DR trajectories to their first strict validation non-improvement: BS64 LR1e-3 at WD0.3 and WD1.0, BS128 LR1e-3 at WD0.3 and WD1.0, and BS256 LR1e-3 at WD0.333 and WD1.0. BS64 WD0.3 E24 completed at exact validation CE2.97093, strictly improving E20 CE2.97184 by 0.00091. Its E28 training reached endpoint step106812 but failed during endpoint checkpoint saving after a distributed barrier timeout, so no endpoint checkpoint or held-out validation CE exists; the trajectory is held for manual disposition and is not automatically retried. BS64 WD1.0 E8 completed at validation CE3.19708, BS128 WD1.0 E8 completed at validation CE3.12785, and BS256 WD0.333 E8 completed at validation CE3.06827; each strictly improved its own E4 frontier and its E12 continuation was submitted from the exact canonical E8 pre-decay checkpoint. BS128 WD0.3 and BS256 WD1.0 E8 remain active from exact canonical E4 pre-decay checkpoints. Corrected E2 launches automatically create canonical DR directories and resume exact trainer/optimizer state from the canonical Original E1 directory. Every trajectory uses one 8-GPU node and advances E4/E8/E12/etc only while its own held-out DCLM validation CE strictly improves. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR LR1e-3/WD1.0 remains saturated at E24 CE3.12162 because E28 worsened to CE3.13269, and BS512 DR LR1e-3/WD1.0 remains saturated at E24 CE3.06442 because E28 worsened to CE3.06734. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
+  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. Run six independent DR trajectories to their first strict validation non-improvement: BS64 LR1e-3 at WD0.3 and WD1.0, BS128 LR1e-3 at WD0.3 and WD1.0, and BS256 LR1e-3 at WD0.333 and WD1.0. All five WD0.3/0.333/1.0 E8 trajectories strictly improved their own E4 validation frontiers: BS64 WD1.0 reached CE3.19708, BS128 WD0.3 reached CE3.02546, BS128 WD1.0 reached CE3.12785, BS256 WD0.333 reached CE3.06827, and BS256 WD1.0 reached CE3.11347. BS128 WD0.3 and BS256 WD1.0 E12 were submitted from exact canonical E8 pre-decay checkpoints using verified live revision 6ab506cea312ec810f94cd4177c7904f8ca25917. BS64 WD1.0 E12 failed before task startup because its registered revision was invalid and is held without automatic retry; the already-pending BS128 WD1.0 and BS256 WD0.333 E12 experiments reference the same invalid revision and remain under observation. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation. Every trajectory uses one 8-GPU node and advances only while its own held-out DCLM validation CE strictly improves. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
   "targetEpochs": [
     1,
     2,
@@ -386,8 +386,8 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "submitted",
-      "activeEpoch": 12,
+      "status": "failed",
+      "activeEpoch": null,
       "attemptedEpochs": [
         2,
         4,
@@ -461,8 +461,8 @@
           "reason": "Completed healthy from exact canonical E4 pre-decay step13732. Held-out DCLM validation CE3.19708 strictly improved E4 CE3.25886, unlocking E12 from canonical pre-decay step27465."
         }
       },
-      "health": "healthy",
-      "reason": "Submitted locally after exact-source, canonical trajectory-output, LR/WD, topology, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "health": "failed",
+      "reason": "E8 remains the last validated frontier at validation CE3.19708. The E12 launch failed during Gantry source fetch because its registered revision was invalid; no repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed. This configuration failure is held and is not automatically retried.",
       "revision": "cc2fa58cd53f4e67f72eed88cb20be45b68e9bb8",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0",
       "attempts": [
@@ -499,11 +499,26 @@
           "revision": "e9010dbd0db656c94c87f9e15c0d35fdba32c034",
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0",
           "reason": "Exited before manifest validation because the E2 guard required the new canonical output directory to preexist. No W&B, checkpoint load, optimizer progress, output checkpoint, or training startup was observed; configuration failures are not automatically retried."
+        },
+        {
+          "epoch": 12,
+          "experiment": "01M01YMQF9AR078YX7RPD5F7WR",
+          "job": "01M01YMQJHQZ7P9BEAKAQS9TJB",
+          "result": "01M01YMQFFZW67KF9D4HQEKC2N",
+          "node": "01KG68Q6NFM68S1ENTNRYHBGD4",
+          "status": "configuration_failed_before_task_start",
+          "wandb": null,
+          "revision": "cc2fa58cd53f4e67f72eed88cb20be45b68e9bb8",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0",
+          "reason": "Gantry could not fetch the incorrectly recorded revision before repository task startup. No W&B, checkpoint load, optimizer progress, output, or checkpoint existed; configuration failures are not automatically retried."
         }
       ],
       "beaker": "01M01YMQF9AR078YX7RPD5F7WR",
       "experiment": "01M01YMQF9AR078YX7RPD5F7WR",
-      "beakerStatus": "pending"
+      "job": "01M01YMQJHQZ7P9BEAKAQS9TJB",
+      "result": "01M01YMQFFZW67KF9D4HQEKC2N",
+      "node": "01KG68Q6NFM68S1ENTNRYHBGD4",
+      "beakerStatus": "failed"
     },
     {
       "id": "dr128-lr1e-3-wd0.3",
@@ -513,14 +528,15 @@
       "lr": "1e-3",
       "wd": "0.3",
       "status": "submitted",
-      "activeEpoch": 8,
+      "activeEpoch": 12,
       "attemptedEpochs": [
         2,
         4,
-        8
+        8,
+        12
       ],
-      "sourceExperiment": "01M01DV4NPEYC6P05NCE6GC2TX",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step6866",
+      "sourceExperiment": "01M01MBWXNHKGA5JPW5DXZRQKW",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step13732",
       "gpuCount": 8,
       "nodeCount": 1,
       "rankMicrobatchSequences": 8,
@@ -567,13 +583,29 @@
           "train": 3.027,
           "validation": 3.10623,
           "reason": "Healthy completion; held-out DCLM validation strictly improved E2 CE3.23549, so E8 is eligible."
+        },
+        "8": {
+          "status": "complete",
+          "beaker": "01M01MBWXNHKGA5JPW5DXZRQKW",
+          "experiment": "01M01MBWXNHKGA5JPW5DXZRQKW",
+          "job": "01M01MBX220SJ7DX3SH68Y9X33",
+          "result": "01M01MBWXZS7PTWPCEFGMX5XW2",
+          "wandb": "wvrxj5j2",
+          "node": "01JS3MZC0NYRRKMR91BZMQY58B",
+          "revision": "31a5c5e66e2d25ded9661060c1f8f4ee45ff5db4",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step6866",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step13732",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step15259",
+          "train": 2.9,
+          "validation": 3.02546,
+          "reason": "Completed healthy from exact canonical E4 pre-decay step6866. Held-out DCLM validation CE3.02546 strictly improved E4 CE3.10623, unlocking E12 from canonical pre-decay step13732."
         }
       },
-      "health": "planned",
+      "health": "healthy",
       "reason": "Submitted locally after exact-source, canonical trajectory-output, LR/WD, topology, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
-      "revision": "31a5c5e66e2d25ded9661060c1f8f4ee45ff5db4",
+      "revision": "6ab506cea312ec810f94cd4177c7904f8ca25917",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3",
-      "node": "01JS3MZC0NYRRKMR91BZMQY58B",
       "attempts": [
         {
           "epoch": 2,
@@ -600,29 +632,9 @@
           "reason": "Exited before manifest validation because the E2 guard required the new canonical output directory to preexist. No W&B, checkpoint load, optimizer progress, output checkpoint, or training startup was observed; configuration failures are not automatically retried."
         }
       ],
-      "beaker": "01M01MBWXNHKGA5JPW5DXZRQKW",
-      "experiment": "01M01MBWXNHKGA5JPW5DXZRQKW",
-      "job": "01M01MBX220SJ7DX3SH68Y9X33",
-      "result": "01M01MBWXZS7PTWPCEFGMX5XW2",
-      "beakerStatus": "running",
-      "wandb": "wvrxj5j2",
-      "startupEvidence": {
-        "manifestVerified": true,
-        "preflightVerified": true,
-        "sourceCheckpointLoaded": true,
-        "sourceStep": 6866,
-        "trainerAndOptimizerStateRequested": true,
-        "firstOptimizerStep": 6867
-      },
-      "progress": {
-        "observedAt": "2026-08-14 20:42 PDT",
-        "step": 9975,
-        "endpointStep": 15259,
-        "epoch": 8,
-        "trainCe": 3.105,
-        "metricStatus": "preliminary",
-        "eta": "1h46m"
-      }
+      "beaker": "01M020CXWMJNY4N2F2Q3TY7JXJ",
+      "experiment": "01M020CXWMJNY4N2F2Q3TY7JXJ",
+      "beakerStatus": "pending"
     },
     {
       "id": "dr128-lr1e-3-wd1.0",
@@ -861,14 +873,15 @@
       "lr": "1e-3",
       "wd": "1.0",
       "status": "submitted",
-      "activeEpoch": 8,
+      "activeEpoch": 12,
       "attemptedEpochs": [
         2,
         4,
-        8
+        8,
+        12
       ],
-      "sourceExperiment": "01M01DVR5E145CZB0P0P0Z9AG9",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step3432",
+      "sourceExperiment": "01M01MBZZEYEBMC7H1759YDCXY",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step6866",
       "gpuCount": 8,
       "nodeCount": 1,
       "rankMicrobatchSequences": 8,
@@ -913,36 +926,32 @@
           "train": 3.163,
           "validation": 3.2031,
           "reason": "Healthy completion; held-out DCLM validation strictly improved E2 CE3.36073, so E8 is eligible."
+        },
+        "8": {
+          "status": "complete",
+          "beaker": "01M01MBZZEYEBMC7H1759YDCXY",
+          "experiment": "01M01MBZZEYEBMC7H1759YDCXY",
+          "job": "01M01MC036H2VJZQGC1RAT2DTF",
+          "result": "01M01MBZZWYT1BZF77EPYK04P9",
+          "wandb": "mowop12o",
+          "node": "01KJT4HF4CR8K4CKXFRCYX87AQ",
+          "revision": "31a5c5e66e2d25ded9661060c1f8f4ee45ff5db4",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step3432",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step6866",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step7630",
+          "train": 3.054,
+          "validation": 3.11347,
+          "reason": "Completed healthy from exact canonical E4 pre-decay step3432. Held-out DCLM validation CE3.11347 strictly improved E4 CE3.20310, unlocking E12 from canonical pre-decay step6866."
         }
       },
-      "health": "planned",
+      "health": "healthy",
       "reason": "Submitted locally after exact-source, canonical trajectory-output, LR/WD, topology, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
-      "beaker": "01M01MBZZEYEBMC7H1759YDCXY",
-      "experiment": "01M01MBZZEYEBMC7H1759YDCXY",
-      "job": "01M01MC036H2VJZQGC1RAT2DTF",
-      "result": "01M01MBZZWYT1BZF77EPYK04P9",
-      "beakerStatus": "running",
-      "revision": "31a5c5e66e2d25ded9661060c1f8f4ee45ff5db4",
+      "beaker": "01M020CYYFYS847JE3RKBS2R9Q",
+      "experiment": "01M020CYYFYS847JE3RKBS2R9Q",
+      "beakerStatus": "pending",
+      "revision": "6ab506cea312ec810f94cd4177c7904f8ca25917",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0",
-      "node": "01KJT4HF4CR8K4CKXFRCYX87AQ",
-      "wandb": "mowop12o",
-      "startupEvidence": {
-        "manifestVerified": true,
-        "preflightVerified": true,
-        "sourceCheckpointLoaded": true,
-        "sourceStep": 3432,
-        "trainerAndOptimizerStateRequested": true,
-        "firstOptimizerStep": 3433
-      },
-      "progress": {
-        "observedAt": "2026-08-14 20:42 PDT",
-        "step": 4995,
-        "endpointStep": 7630,
-        "epoch": 8,
-        "trainCe": 3.265,
-        "metricStatus": "preliminary",
-        "eta": "1h45m"
-      },
       "attempts": [
         {
           "epoch": 2,
