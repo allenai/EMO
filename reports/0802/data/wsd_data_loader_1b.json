@@ -1,8 +1,8 @@
 {
   "updated": "2026-08-15",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
-  "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes.",
-  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 WD1.0 must reach and validate E24 before either WD is selected for E28; compare WD0.3 E24 with WD1.0 E24 using the same rule as BS128/256: if WD1.0 wins, only WD1.0 continues; if it loses, both trajectories may continue subject to their own strict-improvement gates; hold ties for review. The BS64 WD1.0, BS128 WD0.3/WD1.0, and BS256 WD1.0 E20 jobs were all manually canceled before scheduling because cluster wait times were too long. No job started or produced training artifacts, and no retry is authorized until the user asks after cluster load improves. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation; do not decide or retry E28 until WD1.0 E24 is validated. BS256 LR2e-3/WD0.333 remains held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
+  "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes. Weight-tying runs share the input embedding and LM-head projection as one parameter; DR+WT is displayed immediately after its matched DR column.",
+  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 WD1.0 must reach and validate E24 before either WD is selected for E28; compare WD0.3 E24 with WD1.0 E24 using the same rule as BS128/256: if WD1.0 wins, only WD1.0 continues; if it loses, both trajectories may continue subject to their own strict-improvement gates; hold ties for review. The BS64 WD1.0, BS128 WD0.3/WD1.0, and BS256 WD1.0 E20 jobs were all manually canceled before scheduling because cluster wait times were too long. No job started or produced training artifacts, and no retry is authorized until the user asks after cluster load improves. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation; do not decide or retry E28 until WD1.0 E24 is validated. BS256 LR2e-3/WD0.333 remains held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled. WT coordinates advance independently while validation CE strictly improves and stop after the first non-improving endpoint; train\u2013validation gaps are compared against the same-batch, same-LR, same-WD DR trajectory.",
   "targetEpochs": [
     1,
     2,
@@ -50,6 +50,15 @@
       "color": "#f97316"
     },
     {
+      "key": "drwt64",
+      "label": "BS64 \u00b7 DR+WT",
+      "batchSequences": 64,
+      "dataOrder": "dynamic_repacking",
+      "weightTying": true,
+      "initialWd": "0.3",
+      "color": "#a855f7"
+    },
+    {
       "key": "dr128",
       "label": "BS128 \u00b7 DR",
       "batchSequences": 128,
@@ -80,6 +89,15 @@
       "dataOrder": "dynamic_repacking",
       "initialWd": "0.1",
       "color": "#ea580c"
+    },
+    {
+      "key": "drwt512",
+      "label": "BS512 \u00b7 DR+WT",
+      "batchSequences": 512,
+      "dataOrder": "dynamic_repacking",
+      "weightTying": true,
+      "initialWd": "0.333",
+      "color": "#7c3aed"
     },
     {
       "key": "fixed1024",
@@ -6187,7 +6205,132 @@
       },
       "revision": "8697e154ca9e496a0af7e41fbbffb46c0a4f6c5c",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_fixed_e2_lr1e-3_wd1.0_warmup24_dataloader-r01"
+    },
+    {
+      "id": "drwt64-lr1e-3-wd0.3",
+      "method": "drwt64",
+      "batchSequences": 64,
+      "dataOrder": "dynamic_repacking",
+      "weightTying": true,
+      "lr": "1e-3",
+      "wd": "0.3",
+      "status": "planned",
+      "activeEpoch": 1,
+      "attemptedEpochs": [],
+      "sourceExperiment": "01KZDCD9AYJ0REGZTE2YG18NHF",
+      "sourceCheckpoint": "fresh",
+      "gpuCount": 8,
+      "nodeCount": 1,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulationSteps": 1,
+      "plannedTargets": [
+        1,
+        2,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24,
+        28
+      ],
+      "results": {},
+      "reason": "Fresh tied-weight E1 bootstrap; DR begins at E2 from its exact tied E1 pre-decay checkpoint."
+    },
+    {
+      "id": "drwt512-lr1e-3-wd0.333",
+      "method": "drwt512",
+      "batchSequences": 512,
+      "dataOrder": "dynamic_repacking",
+      "weightTying": true,
+      "lr": "1e-3",
+      "wd": "0.333",
+      "status": "planned",
+      "activeEpoch": 1,
+      "attemptedEpochs": [],
+      "sourceExperiment": "01KZFVTS3EHFR7HQ5ZY9DAF9NS",
+      "sourceCheckpoint": "fresh",
+      "gpuCount": 32,
+      "nodeCount": 4,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulationSteps": 2,
+      "plannedTargets": [
+        1,
+        2,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24,
+        28
+      ],
+      "results": {},
+      "reason": "Fresh tied-weight E1 bootstrap; DR begins at E2 from its exact tied E1 pre-decay checkpoint."
+    },
+    {
+      "id": "drwt512-lr1e-3-wd1.0",
+      "method": "drwt512",
+      "batchSequences": 512,
+      "dataOrder": "dynamic_repacking",
+      "weightTying": true,
+      "lr": "1e-3",
+      "wd": "1.0",
+      "status": "planned",
+      "activeEpoch": 1,
+      "attemptedEpochs": [],
+      "sourceExperiment": "01KZGE4HMCEWMBP86YEAGSP1B7",
+      "sourceCheckpoint": "fresh",
+      "gpuCount": 32,
+      "nodeCount": 4,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulationSteps": 2,
+      "plannedTargets": [
+        1,
+        2,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24,
+        28
+      ],
+      "results": {},
+      "reason": "Fresh tied-weight E1 bootstrap; DR begins at E2 from its exact tied E1 pre-decay checkpoint."
     }
   ],
-  "outputDirectoryPolicy": "Checkpoint outputs now use one canonical directory per method/batch/LR/WD trajectory under /weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b: bs{batch}_dr_lr{lr}_wd{wd} for DR and bs{batch}_lr{lr}_wd{wd} for Original. An E2 DR launch verifies its exact Original E1 checkpoint and automatically creates the new canonical DR trajectory directory. Later epochs and infrastructure retries reuse that directory and are distinguished by step checkpoints and experiment provenance; a continuation must load the exact predecessor pre-decay step and may not overwrite its target pre-decay or endpoint step."
+  "outputDirectoryPolicy": "Checkpoint outputs now use one canonical directory per method/batch/LR/WD trajectory under /weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b: bs{batch}_dr_lr{lr}_wd{wd} for DR and bs{batch}_lr{lr}_wd{wd} for Original. An E2 DR launch verifies its exact Original E1 checkpoint and automatically creates the new canonical DR trajectory directory. Later epochs and infrastructure retries reuse that directory and are distinguished by step checkpoints and experiment provenance; a continuation must load the exact predecessor pre-decay step and may not overwrite its target pre-decay or endpoint step.",
+  "weightTyingStudy": {
+    "model": "Dense 1B",
+    "dataOrder": "dynamic_repacking_from_e2",
+    "learningRate": "1e-3",
+    "targets": [
+      1,
+      2,
+      4,
+      8,
+      12,
+      16,
+      20,
+      24,
+      28
+    ],
+    "coordinates": [
+      {
+        "batchSequences": 64,
+        "weightDecay": "0.3"
+      },
+      {
+        "batchSequences": 512,
+        "weightDecay": "0.333"
+      },
+      {
+        "batchSequences": 512,
+        "weightDecay": "1.0"
+      }
+    ],
+    "advanceRule": "Advance each coordinate from its exact pre-decay checkpoint while held-out DCLM validation CE strictly improves; retain the first non-improving endpoint as overfitting evidence and then stop that coordinate.",
+    "optimizerPolicy": "The tied matrix remains the embeddings.weight optimizer group and therefore uses zero weight decay; the reported WD applies to all ordinary decayed groups."
+  }
 }

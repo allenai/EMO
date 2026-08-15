@@ -21,6 +21,7 @@ import re
 import shlex
 import subprocess
 import sys
+from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
@@ -72,10 +73,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--revision", required=True)
     parser.add_argument("--name", required=True)
     parser.add_argument("--suffix", required=True)
+    parser.add_argument(
+        "--weight-tying",
+        action="store_true",
+        help="Tie the input embeddings and LM-head projection for this trajectory.",
+    )
     parser.add_argument("--workspace", default="ai2/flex2")
     parser.add_argument("--priority", default="urgent")
     parser.add_argument("--register", action="store_true")
     parser.add_argument("--print-only", action="store_true")
+    parser.add_argument(
+        "--allow-pending-flex2-jobs",
+        action="store_true",
+        help="Explicitly override only the shared pending-job gate.",
+    )
     args = parser.parse_args()
     if args.target_epoch == 1 and args.source_checkpoint != "fresh":
         parser.error("E1 bootstrap requires --source-checkpoint=fresh")
@@ -138,8 +149,10 @@ def warmup_steps(global_sequences: int) -> int:
     return 24_576 // global_sequences
 
 
-def method_key(method: str, global_sequences: int) -> str:
+def method_key(method: str, global_sequences: int, weight_tying: bool = False) -> str:
     prefix = "dr" if method == "dynamic_repacking" else "fixed"
+    if weight_tying:
+        prefix += "wt"
     return f"{prefix}{global_sequences}"
 
 
@@ -155,6 +168,8 @@ def canonical_number(value: str) -> str:
 
 def trajectory_output(args: argparse.Namespace) -> str:
     mode = "_dr" if args.method == "dynamic_repacking" else ""
+    if args.weight_tying:
+        mode += "_wt"
     return (
         f"{MODEL_ROOT}/bs{args.global_sequences}{mode}_"
         f"lr{canonical_number(args.learning_rate)}_wd{canonical_number(args.weight_decay)}"
@@ -162,8 +177,9 @@ def trajectory_output(args: argparse.Namespace) -> str:
 
 
 def original_trajectory_output(args: argparse.Namespace) -> str:
+    tied = "_wt" if args.weight_tying else ""
     return (
-        f"{MODEL_ROOT}/bs{args.global_sequences}_"
+        f"{MODEL_ROOT}/bs{args.global_sequences}{tied}_"
         f"lr{canonical_number(args.learning_rate)}_wd{canonical_number(args.weight_decay)}"
     )
 
@@ -221,13 +237,11 @@ def enforce_weight_decay_competition(
             f"WD competition at E{predecessor} is tied; hold the next frontier for review"
         )
     if validation[wd1] < validation[lower_wd] and numeric(args.weight_decay) != wd1:
-        raise SystemExit(
-            f"WD1.0 won the E{predecessor} competition; only WD1.0 may continue"
-        )
+        raise SystemExit(f"WD1.0 won the E{predecessor} competition; only WD1.0 may continue")
 
 
 def matching_registered_run(report: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
-    key = method_key(args.method, args.global_sequences)
+    key = method_key(args.method, args.global_sequences, args.weight_tying)
     lr = numeric(args.learning_rate)
     wd = numeric(args.weight_decay)
     matches = [
@@ -238,6 +252,7 @@ def matching_registered_run(report: dict[str, Any], args: argparse.Namespace) ->
         and numeric(run.get("lr")) == lr
         and numeric(run.get("wd")) == wd
         and active_epoch(run) == args.target_epoch
+        and bool(run.get("weightTying", False)) == args.weight_tying
     ]
     if len(matches) != 1:
         raise SystemExit(
@@ -257,7 +272,10 @@ def matching_registered_run(report: dict[str, Any], args: argparse.Namespace) ->
     if run.get("sourceCheckpoint") != args.source_checkpoint:
         raise SystemExit("source checkpoint does not match the registered exact predecessor")
     nodes = nodes_for(args.global_sequences)
-    if int(run.get("gpuCount", 0)) != nodes * GPUS_PER_NODE or int(run.get("nodeCount", 0)) != nodes:
+    if (
+        int(run.get("gpuCount", 0)) != nodes * GPUS_PER_NODE
+        or int(run.get("nodeCount", 0)) != nodes
+    ):
         raise SystemExit(f"registered topology is not exactly {nodes} 8-GPU node(s)")
     if int(run.get("rankMicrobatchSequences", 0)) != RANK_MICROBATCH_SEQUENCES:
         raise SystemExit("registered rank microbatch is not eight sequences")
@@ -314,9 +332,7 @@ def beaker_spec(experiment: str) -> dict[str, Any]:
 
 def assert_no_pending_flex2_jobs() -> None:
     """Refuse submission while this Beaker account has any pending flex2 job."""
-    endpoint = (
-        f"jobs?author={BEAKER_AUTHOR_ID}&scheduled=false&finalized=false"
-    )
+    endpoint = f"jobs?author={BEAKER_AUTHOR_ID}&scheduled=false&finalized=false"
     result = subprocess.run(
         ["beaker", "api", endpoint, "--format", "json"],
         check=True,
@@ -394,8 +410,7 @@ def audit_source_spec(spec: dict[str, Any], args: argparse.Namespace) -> tuple[s
     extracted = [extract_training_command(task) for task in tasks]
     if len(tasks) == nodes:
         if any(
-            int(task.get("resources", {}).get("gpuCount", 0)) != GPUS_PER_NODE
-            for task in tasks
+            int(task.get("resources", {}).get("gpuCount", 0)) != GPUS_PER_NODE for task in tasks
         ):
             raise SystemExit(f"materialized source replicas are not {nodes} 8-GPU task(s)")
         if any(item != extracted[0] for item in extracted[1:]):
@@ -409,6 +424,10 @@ def audit_source_spec(spec: dict[str, Any], args: argparse.Namespace) -> tuple[s
         raise SystemExit(f"source uses unexpected training script {script!r}")
     if numeric(unique_value(arguments, "--lr=")) != numeric(args.learning_rate):
         raise SystemExit("source LR does not exactly match the requested coordinate")
+    if args.target_epoch > 1 and args.weight_tying:
+        tied_values = values_for(arguments, "--model.tie_embeddings=")
+        if tied_values != ["true"]:
+            raise SystemExit("weight-tied continuation source is not explicitly tied")
     if args.target_epoch > 1 and numeric(
         unique_value(arguments, "--train_module.optim.weight_decay=")
     ) != numeric(args.weight_decay):
@@ -431,9 +450,7 @@ def audit_source_spec(spec: dict[str, Any], args: argparse.Namespace) -> tuple[s
         canonical_source = f"{trajectory_output(args)}/step{expected_step}"
         allowed_sources = {historical_source, canonical_source}
         if args.target_epoch == 2 and args.method == "dynamic_repacking":
-            allowed_sources.add(
-                f"{original_trajectory_output(args)}/step{expected_step}"
-            )
+            allowed_sources.add(f"{original_trajectory_output(args)}/step{expected_step}")
         if args.source_checkpoint not in allowed_sources:
             raise SystemExit(
                 "source checkpoint matches neither the source experiment output nor the "
@@ -449,6 +466,8 @@ def build_spec(
     spec = copy.deepcopy(base)
     task = spec["tasks"][0]
     mode_tag = "dr" if args.method == "dynamic_repacking" else "fixed"
+    if args.weight_tying:
+        mode_tag += "_wt"
     lr_tag = args.learning_rate.replace(".", "p")
     wd_tag = args.weight_decay.replace(".", "p")
     run_name = (
@@ -467,9 +486,7 @@ def build_spec(
     ]
     if args.target_epoch > 1:
         train_args.append(
-            "--dynamic-repacking"
-            if args.method == "dynamic_repacking"
-            else "--fixed-data-order"
+            "--dynamic-repacking" if args.method == "dynamic_repacking" else "--fixed-data-order"
         )
     else:
         # E1 is intentionally common to all data-order modes. Dynamic repacking or
@@ -481,9 +498,7 @@ def build_spec(
             and not value.startswith("--trainer.load_trainer_state=")
             and not value.startswith("--trainer.load_optim_state=")
             and not value.startswith("--trainer.reset_data_loader_state_on_load_path=")
-            and not value.startswith(
-                "--train_module.validate_optimizer_hyperparameters_on_load="
-            )
+            and not value.startswith("--train_module.validate_optimizer_hyperparameters_on_load=")
         ]
     replacements = (
         ("--save-folder=", f"--save-folder={output}"),
@@ -540,6 +555,8 @@ def build_spec(
         ),
         ("--lr=", f"--lr={args.learning_rate}"),
     )
+    if args.weight_tying:
+        replacements += (("--model.tie_embeddings=", "--model.tie_embeddings=true"),)
     if args.target_epoch > 1:
         replacements += (
             ("--force_exact_trainer_load_path=", "--force_exact_trainer_load_path=true"),
@@ -609,7 +626,8 @@ def build_spec(
                         f"DATA_LOADER_PREFLIGHT_OK method={mode_tag} "
                         f"bs={args.global_sequences} epoch={args.target_epoch} "
                         f"lr={args.learning_rate} wd={args.weight_decay} "
-                        f"source={args.source_checkpoint} nodes={nodes} rank_mb=8"
+                        f"source={args.source_checkpoint} nodes={nodes} rank_mb=8 "
+                        f"weight_tying={str(args.weight_tying).lower()}"
                     ),
                 ]
             ),
@@ -703,9 +721,10 @@ def register_submission(
     run["output"] = output
     run["reason"] = (
         "Submitted locally after exact-source, canonical trajectory-output, LR/WD, "
-        "topology, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed."
+        "topology, rank-microbatch, weight-tying, manifest-checksum, and duplicate-tuple "
+        "guards passed."
     )
-    report["updated"] = "2026-08-13"
+    report["updated"] = datetime.now(tz=UTC).date().isoformat()
     write_report(report)
 
 
@@ -720,7 +739,8 @@ def main() -> None:
         json.dump(spec, sys.stdout, indent=2)
         print()
         return
-    assert_no_pending_flex2_jobs()
+    if not args.allow_pending_flex2_jobs:
+        assert_no_pending_flex2_jobs()
     result = subprocess.run(
         [
             "beaker",

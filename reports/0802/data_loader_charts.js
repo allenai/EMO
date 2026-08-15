@@ -23,6 +23,7 @@
   const columns = [
     columnByKey["baseline-64"],
     columnByKey.dr64,
+    columnByKey.drwt64,
     columnByKey["baseline-128"],
     columnByKey.dr128,
     columnByKey["baseline-256"],
@@ -30,12 +31,14 @@
     columnByKey.fixed512,
     columnByKey["baseline-512"],
     columnByKey.dr512,
+    columnByKey.drwt512,
     columnByKey.fixed1024,
     columnByKey["baseline-1024"],
     columnByKey.dr1024,
   ];
 
-  const finite = (value) => Number.isFinite(Number(value));
+  const finite = (value) =>
+    value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
   const numeric = (value) => (finite(value) ? Number(value) : null);
   const epochKey = (value) => String(Number(value));
   const wdNumber = (value) => Number(String(value));
@@ -112,7 +115,7 @@
     for (const epoch of epochs) {
       // E1 predates either intervention. Summary tables show the ordinary baseline
       // winner; the coordinate grid below scopes its green source choice per method.
-      if (epoch === 1) {
+      if (epoch === 1 && !column.weightTying) {
         selected.set(`${column.key}:${epochKey(epoch)}`, baselineCandidate(column.batchSequences, epoch));
         continue;
       }
@@ -234,6 +237,7 @@
   const coordinateColumns = [
     columnByKey["baseline-64"],
     columnByKey.dr64,
+    columnByKey.drwt64,
     columnByKey["baseline-128"],
     columnByKey.dr128,
     columnByKey["baseline-256"],
@@ -241,6 +245,7 @@
     columnByKey.fixed512,
     columnByKey["baseline-512"],
     columnByKey.dr512,
+    columnByKey.drwt512,
     columnByKey.fixed1024,
     columnByKey["baseline-1024"],
     columnByKey.dr1024,
@@ -299,7 +304,9 @@
   }
 
   function coordinateWinner(column, epoch, candidates) {
-    if (column.baseline || Number(epoch) !== 1) return getSelected(column, epoch);
+    if (column.baseline || column.weightTying || Number(epoch) !== 1) {
+      return getSelected(column, epoch);
+    }
     // Fixed and DR share ordinary packing at E1, but each method has its own set of
     // registered source trajectories. Choose and highlight within that method only.
     return choose(candidates.filter((candidate) =>
@@ -360,6 +367,37 @@
   }
 
   const methodByKey = Object.fromEntries(study.columns.map((column) => [column.key, column]));
+
+  const gapBody = document.getElementById("wt-gap-summary");
+  const weightTiedRuns = (study.runs || []).filter((run) => run.weightTying);
+  for (const run of weightTiedRuns) {
+    const baselineMethod = `dr${run.batchSequences}`;
+    const baselineRun = (study.runs || []).find((candidate) =>
+      candidate.method === baselineMethod &&
+      lrNumber(candidate.lr) === lrNumber(run.lr) &&
+      wdNumber(candidate.wd) === wdNumber(run.wd)
+    );
+    for (const epoch of Object.keys(run.results || {}).map(Number).sort((a, b) => a - b)) {
+      const tied = run.results[epochKey(epoch)];
+      if (!tied || tied.status !== "complete") continue;
+      const baseline = baselineRun && baselineRun.results && baselineRun.results[epochKey(epoch)];
+      const tiedGap = finite(tied.gap)
+        ? Number(tied.gap)
+        : (finite(tied.train) && finite(tied.validation) ? Number(tied.validation) - Number(tied.train) : null);
+      const baselineGap = baseline && finite(baseline.gap)
+        ? Number(baseline.gap)
+        : (baseline && finite(baseline.train) && finite(baseline.validation)
+          ? Number(baseline.validation) - Number(baseline.train)
+          : null);
+      const delta = tiedGap !== null && baselineGap !== null ? tiedGap - baselineGap : null;
+      const verdict = delta === null ? "—" : delta < 0 ? "Yes" : delta > 0 ? "No" : "Tie";
+      const tr = document.createElement("tr");
+      if (delta !== null) tr.className = delta < 0 ? "gap-smaller" : delta > 0 ? "gap-larger" : "";
+      tr.innerHTML = `<td>BS${run.batchSequences}</td><td>E${formatEpoch(epoch)}</td><td>${run.wd}</td><td>${formatMetric(baseline && baseline.train)}</td><td>${formatMetric(baseline && baseline.validation)}</td><td>${formatMetric(baselineGap, 4)}</td><td>${formatMetric(tied.train)}</td><td>${formatMetric(tied.validation)}</td><td>${formatMetric(tiedGap, 4)}</td><td>${delta === null ? "—" : `${delta >= 0 ? "+" : ""}${formatMetric(delta, 4)}`}</td><td>${verdict}</td>`;
+      gapBody.appendChild(tr);
+    }
+  }
+
   const newRunsBody = document.getElementById("new-runs");
   for (const run of study.runs || []) {
     const resultEpochs = new Set(Object.keys(run.results || {}).map(Number));
@@ -373,7 +411,12 @@
       if (["failed", "canceled"].includes(status)) tr.className = "run-failed";
       const wandb = (result && result.wandb) || (Number(run.activeEpoch) === epoch ? run.wandb : null);
       const beaker = (result && (result.beaker || result.experiment)) || run.beaker || run.experiment;
-      tr.innerHTML = `<td>${methodByKey[run.method].label}</td><td>${run.batchSequences}</td><td>E${formatEpoch(epoch)}</td><td>${run.lr}</td><td>${run.wd}</td><td>${status || "planned"}</td><td>${formatMetric(result && result.train)}</td><td>${formatMetric(result && result.validation)}</td><td>${wandb ? `<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${wandb}">${wandb}</a>` : "—"}</td><td>${beaker ? `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${beaker}">${beaker}</a>` : "—"}</td>`;
+      const gap = result && (finite(result.gap)
+        ? Number(result.gap)
+        : (finite(result.train) && finite(result.validation)
+          ? Number(result.validation) - Number(result.train)
+          : null));
+      tr.innerHTML = `<td>${methodByKey[run.method].label}</td><td>${run.batchSequences}</td><td>E${formatEpoch(epoch)}</td><td>${run.lr}</td><td>${run.wd}</td><td>${status || "planned"}</td><td>${formatMetric(result && result.train)}</td><td>${formatMetric(result && result.validation)}</td><td>${formatMetric(gap, 4)}</td><td>${wandb ? `<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${wandb}">${wandb}</a>` : "—"}</td><td>${beaker ? `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${beaker}">${beaker}</a>` : "—"}</td>`;
       newRunsBody.appendChild(tr);
     }
   }
