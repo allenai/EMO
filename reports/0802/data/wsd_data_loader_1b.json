@@ -25,6 +25,7 @@
     "learningRate": "Active coordinates use LR1e-3 for BS64/128/256. The earlier BS256 LR2e-3/WD0.333 plan is held unless explicitly reactivated; LR above 2e-3 remains prohibited.",
     "nondecreasingWd": true,
     "dynamicRepackingDirection": "Run BS64 at WD0.3 and WD1.0 independently. For BS128 (WD0.3 versus WD1.0) and BS256 (WD0.333 versus WD1.0), resolve both WDs at the current frontier before submitting either next frontier. If WD1.0 strictly wins, continue only WD1.0; if WD1.0 loses, both may continue subject to their own strict-improvement gates; hold ties for review.",
+    "workspaceQueue": "Submit a new experiment only when the ai2/flex2 workspace has zero other pending jobs. Eligible study frontiers remain planned/held while any pending flex2 job exists; running jobs do not trigger this queue gate.",
     "stagedQueue": [
       "BS64 DR LR1e-3/WD1.0",
       "BS128 DR LR1e-3/WD0.3",

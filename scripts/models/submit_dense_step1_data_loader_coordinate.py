@@ -32,6 +32,9 @@ SEQUENCE_LENGTH = 4096
 TOKENS_PER_EPOCH = 1_000_000_000
 DECAY_FRACTION = 0.1
 DEFAULT_LEARNING_RATE = "1e-3"
+FLEX2_WORKSPACE = "ai2/flex2"
+FLEX2_WORKSPACE_ID = "01K1DJ083DM56DQTHPR4JWS7DD"
+BEAKER_AUTHOR_ID = "01J4HQ6ZE87JNS4EAHE4SNHSD1"
 # After E4, guarded trajectories advance in four-epoch increments. Keep the
 # launcher ahead of the currently displayed frontier so a strictly improving
 # endpoint can be continued without weakening any exact-resume checks.
@@ -104,6 +107,8 @@ def parse_args() -> argparse.Namespace:
         parser.error("--suffix must be a lowercase run-name component")
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", args.name):
         parser.error("--name must be a lowercase Beaker name component")
+    if args.workspace != FLEX2_WORKSPACE:
+        parser.error(f"this study submits only to {FLEX2_WORKSPACE}")
     total_gpus = nodes_for(args.global_sequences) * GPUS_PER_NODE
     if args.global_sequences % (total_gpus * RANK_MICROBATCH_SEQUENCES):
         parser.error(
@@ -305,6 +310,37 @@ def beaker_spec(experiment: str) -> dict[str, Any]:
         text=True,
     )
     return json.loads(result.stdout)
+
+
+def assert_no_pending_flex2_jobs() -> None:
+    """Refuse submission while this Beaker account has any pending flex2 job."""
+    endpoint = (
+        f"jobs?author={BEAKER_AUTHOR_ID}&scheduled=false&finalized=false"
+    )
+    result = subprocess.run(
+        ["beaker", "api", endpoint, "--format", "json"],
+        check=True,
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    payload = json.loads(result.stdout)
+    jobs = payload.get("data", []) if isinstance(payload, dict) else payload
+    pending = [
+        job
+        for job in jobs
+        if job.get("workspace") == FLEX2_WORKSPACE_ID
+        and "scheduled" not in job.get("status", {})
+        and "finalized" not in job.get("status", {})
+    ]
+    if pending:
+        details = ", ".join(
+            f"{job.get('id')} ({job.get('execution', {}).get('experiment', 'unknown experiment')})"
+            for job in pending
+        )
+        raise SystemExit(
+            f"refusing submission: {FLEX2_WORKSPACE} has {len(pending)} pending job(s): "
+            f"{details}"
+        )
 
 
 def extract_training_command(task: dict[str, Any]) -> tuple[str, str, list[str]]:
@@ -684,6 +720,7 @@ def main() -> None:
         json.dump(spec, sys.stdout, indent=2)
         print()
         return
+    assert_no_pending_flex2_jobs()
     result = subprocess.run(
         [
             "beaker",
