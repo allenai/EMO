@@ -1093,17 +1093,18 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "running",
-      "activeEpoch": 16,
+      "status": "planned",
+      "activeEpoch": 20,
       "attemptedEpochs": [
         2,
         4,
         8,
         12,
-        16
+        16,
+        20
       ],
-      "sourceExperiment": "01M020CYYFYS847JE3RKBS2R9Q",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step10300",
+      "sourceExperiment": "01M032GHXK15ZF1Z0AAHR05SB0",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step13732",
       "gpuCount": 8,
       "nodeCount": 1,
       "rankMicrobatchSequences": 8,
@@ -1182,13 +1183,30 @@
           "train": 2.942,
           "validation": 3.0723,
           "reason": "Completed healthy from exact canonical E8 pre-decay step6866. Held-out DCLM validation CE3.0723 strictly improved E8 CE3.11347, making E16 validation-eligible from canonical pre-decay step10300; submission remains held until the E12 WD competition resolves."
+        },
+        "16": {
+          "status": "complete",
+          "beaker": "01M032GHXK15ZF1Z0AAHR05SB0",
+          "experiment": "01M032GHXK15ZF1Z0AAHR05SB0",
+          "job": "01M032GJ1NHR2D4DAXAXX7FN7C",
+          "result": "01M032GHXT0ZPG2V6N2S4QTQXJ",
+          "wandb": "s9lnunst",
+          "node": "01K9893X6FBJ1E9G0SXFGHN9X4",
+          "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0",
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step10300",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step13732",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step15259",
+          "train": 2.902,
+          "validation": 3.05549,
+          "reason": "Completed healthy from exact canonical E12 pre-decay step10300. Held-out DCLM validation CE3.05549 strictly improved E12 CE3.07230 by 0.01681 and beat WD0.333 E16 CE3.06791 by 0.01242. WD1.0 wins the E16 competition and is the only BS256 trajectory eligible for E20."
         }
       },
       "health": "healthy",
-      "reason": "E16 is running healthy from exact pre-decay step10300. WD0.333 E16 did not improve and has saturated; the BS256 WD competition and any next-frontier decision wait for this WD1.0 validation.",
-      "beaker": "01M032GHXK15ZF1Z0AAHR05SB0",
-      "experiment": "01M032GHXK15ZF1Z0AAHR05SB0",
-      "beakerStatus": "running",
+      "reason": "E16 completed healthy and validation CE3.05549 strictly improved E12 CE3.07230. WD1.0 won the resolved E16 competition and is the only BS256 E20 trajectory; E20 is registered from exact pre-decay step13732 but queue-held behind other pending flex2 jobs.",
+      "beaker": null,
+      "experiment": null,
+      "beakerStatus": "planned",
       "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0",
       "attempts": [
@@ -1217,33 +1235,12 @@
           "reason": "Exited before manifest validation because the E2 guard required the new canonical output directory to preexist. No W&B, checkpoint load, optimizer progress, output checkpoint, or training startup was observed; configuration failures are not automatically retried."
         }
       ],
-      "job": "01M032GJ1NHR2D4DAXAXX7FN7C",
-      "result": "01M032GHXT0ZPG2V6N2S4QTQXJ",
-      "node": "01K9893X6FBJ1E9G0SXFGHN9X4",
-      "wandb": "s9lnunst",
-      "startupEvidence": {
-        "createdAt": "2026-08-15 09:01 PDT",
-        "scheduledAt": "2026-08-15 09:01 PDT",
-        "startedAt": "2026-08-15 09:02 PDT",
-        "revisionCloned": true,
-        "manifestVerified": true,
-        "preflightVerified": true,
-        "dynamicRepacking": true,
-        "forcedExactLoad": true,
-        "sourceCheckpointLoaded": true,
-        "sourceStep": 10300,
-        "firstOptimizerStep": 10301,
-        "trainerAndOptimizerStateRequested": true
-      },
-      "progress": {
-        "observedAt": "2026-08-15 12:03 PDT",
-        "step": 14825,
-        "endpointStep": 15259,
-        "epoch": 16,
-        "trainCe": 2.962,
-        "metricStatus": "preliminary",
-        "eta": "18m"
-      }
+      "job": null,
+      "result": null,
+      "node": null,
+      "wandb": null,
+      "startupEvidence": null,
+      "progress": null
     },
     {
       "id": "dr256-lr2e-3-wd0.333",
