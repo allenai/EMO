@@ -851,6 +851,7 @@ class TransformerTrainModule(TrainModule):
             self.batch_simulation.uses_sequential_replay
             and self.batch_simulation.sequential_replay_microbatch_gradients
         )
+        grad_norm: torch.Tensor | None = None
         if self.max_grad_norm is not None and not replayed_microbatches:
             if self.batch_simulation.uses_local_updates:
                 grad_norm = self._clip_local_sgd_grad_norm(self.max_grad_norm)
@@ -865,7 +866,10 @@ class TransformerTrainModule(TrainModule):
                 reduce_type=grad_norm_reduce_type,
                 namespace="optim",
             )
-            if isinstance(self.optim, SkipStepOptimizer):
+            if (
+                isinstance(self.optim, SkipStepOptimizer)
+                and not self.batch_simulation.uses_sequential_replay
+            ):
                 self.optim.latest_grad_norm = grad_norm
 
         # Maybe adjust learning rate.
@@ -875,24 +879,55 @@ class TransformerTrainModule(TrainModule):
                 self.trainer.record_metric(f"LR (group {group_idx})", new_lr, namespace="optim")
 
         if self.batch_simulation.uses_sequential_replay:
-            if isinstance(self.optim, SkipStepOptimizer):
-                raise RuntimeError("sequential replay does not support SkipStepOptimizer")
             assert self.world_mesh is not None
-            replay_count = sequential_replica_optimizer_steps(
+            replay_packet_norms: list[torch.Tensor] | None = None
+            if isinstance(self.optim, SkipStepOptimizer):
+                if self.max_grad_norm is None:
+                    raise RuntimeError(
+                        "sequential replay with SkipStepOptimizer requires max_grad_norm so "
+                        "each replayed packet has an exact gradient norm"
+                    )
+                if not replayed_microbatches:
+                    assert grad_norm is not None
+                replay_packet_norms = (
+                    self._sequential_replay_packet_grad_norms
+                    if replayed_microbatches
+                    else [grad_norm]
+                )
+            replay_result = sequential_replica_optimizer_steps(
                 self.model,
                 self.optim,
                 get_dp_replicate_mesh(self.world_mesh).get_group(),
                 post_step=self.model.post_optim_step,
                 local_gradient_packets=(self._sequential_replay_gradient_packets or None),
+                local_gradient_packet_norms=replay_packet_norms,
             )
             self.record_metric(
-                "optimizer updates", float(replay_count), namespace="sequential replay"
+                "optimizer updates",
+                float(replay_result.attempted_updates),
+                namespace="sequential replay",
+            )
+            self.record_metric(
+                "optimizer updates skipped",
+                replay_result.skipped_updates,
+                namespace="sequential replay",
+            )
+            self.record_metric(
+                "optimizer updates applied",
+                replay_result.attempted_updates - replay_result.skipped_updates,
+                namespace="sequential replay",
             )
             self.record_metric(
                 "maximum gradient staleness",
-                float(replay_count - 1),
+                float(replay_result.attempted_updates - 1),
                 namespace="sequential replay",
             )
+            if isinstance(self.optim, SkipStepOptimizer):
+                self.record_metric(
+                    "step skipped",
+                    replay_result.skipped_updates / replay_result.attempted_updates,
+                    namespace="optim",
+                )
             if self._sequential_replay_packet_grad_norms:
                 self.trainer.record_metric(
                     "total grad norm",

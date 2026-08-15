@@ -18,7 +18,7 @@ from olmo_core.distributed.checkpoint import (
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.distributed.utils import get_local_tensor
 from olmo_core.exceptions import OLMoConfigurationError
-from olmo_core.optim import NoOpConfig
+from olmo_core.optim import NoOpConfig, SkipStepAdamW
 from olmo_core.testing.distributed import run_distributed_test
 from olmo_core.train.train_module.transformer import (
     BatchSimulationConfig,
@@ -327,9 +327,7 @@ def _run_sequential_replay_update(
     module = nn.Linear(1, 1, bias=False)
     parameter = next(module.parameters())
     parameter.data.zero_()
-    optimizer = torch.optim.AdamW(
-        module.parameters(), lr=0.1, betas=(0.5, 0.75), weight_decay=0.0
-    )
+    optimizer = torch.optim.AdamW(module.parameters(), lr=0.1, betas=(0.5, 0.75), weight_decay=0.0)
 
     microbatch_gradients = [float((rank + 1) * (idx + 1)) for idx in range(accumulation_steps)]
     parameter.grad = torch.tensor([[sum(microbatch_gradients) / accumulation_steps]])
@@ -342,7 +340,7 @@ def _run_sequential_replay_update(
         nonlocal post_steps
         post_steps += 1
 
-    replay_count = sequential_replica_optimizer_steps(
+    replay_result = sequential_replica_optimizer_steps(
         module,
         optimizer,
         dist.group.WORLD,
@@ -373,8 +371,9 @@ def _run_sequential_replay_update(
     expected_replay_count = dist.get_world_size() * (
         accumulation_steps if replay_microbatch_gradients else 1
     )
-    assert replay_count == expected_replay_count
-    assert post_steps == replay_count
+    assert replay_result.attempted_updates == expected_replay_count
+    assert replay_result.skipped_updates.item() == 0
+    assert post_steps == replay_result.attempted_updates
     torch.testing.assert_close(parameter, reference_parameter)
     torch.testing.assert_close(
         optimizer.state[parameter]["exp_avg"],
@@ -384,7 +383,7 @@ def _run_sequential_replay_update(
         optimizer.state[parameter]["exp_avg_sq"],
         reference_optimizer.state[reference_parameter]["exp_avg_sq"],
     )
-    assert optimizer.state[parameter]["step"].item() == replay_count
+    assert optimizer.state[parameter]["step"].item() == replay_result.attempted_updates
 
 
 @pytest.mark.parametrize(
@@ -400,6 +399,88 @@ def test_sequential_replay_applies_replica_gradients_with_and_without_accumulati
         backend="gloo",
         start_method="spawn",
         func_args=(accumulation_steps, replay_microbatch_gradients),
+    )
+
+
+class _NormThresholdSkipStepAdamW(SkipStepAdamW):
+    """Deterministic skip optimizer for distributed replay coverage."""
+
+    def get_step_factor(self) -> torch.Tensor:
+        assert self.latest_grad_norm is not None
+        return (self.latest_grad_norm <= 5.0).float()
+
+
+def _run_sequential_replay_skip_step_optimizer(packet_norms: tuple[float, float]):
+    rank = dist.get_rank()
+    module = nn.Linear(1, 1, bias=False)
+    parameter = next(module.parameters())
+    parameter.data.zero_()
+    optimizer = _NormThresholdSkipStepAdamW(
+        module.parameters(),
+        lr=0.1,
+        betas=(0.5, 0.75),
+        weight_decay=0.0,
+        foreach=False,
+        step_increment_bugfix=True,
+    )
+    parameter.grad = torch.tensor([[float(rank + 1)]])
+    post_steps = 0
+
+    def post_step():
+        nonlocal post_steps
+        post_steps += 1
+
+    replay_result = sequential_replica_optimizer_steps(
+        module,
+        optimizer,
+        dist.group.WORLD,
+        post_step=post_step,
+        local_gradient_packet_norms=[torch.tensor(packet_norms[rank])],
+    )
+
+    reference = nn.Linear(1, 1, bias=False)
+    reference_parameter = next(reference.parameters())
+    reference_parameter.data.zero_()
+    reference_optimizer = torch.optim.AdamW(
+        reference.parameters(), lr=0.1, betas=(0.5, 0.75), weight_decay=0.0
+    )
+    for source_rank, packet_norm in enumerate(packet_norms):
+        if packet_norm <= 5.0:
+            reference_parameter.grad = torch.tensor([[float(source_rank + 1)]])
+            reference_optimizer.step()
+
+    expected_skips = sum(packet_norm > 5.0 for packet_norm in packet_norms)
+    assert replay_result.attempted_updates == dist.get_world_size()
+    assert replay_result.skipped_updates.item() == expected_skips
+    assert post_steps == replay_result.attempted_updates
+    torch.testing.assert_close(parameter, reference_parameter)
+    if expected_skips < dist.get_world_size():
+        torch.testing.assert_close(
+            optimizer.state[parameter]["exp_avg"],
+            reference_optimizer.state[reference_parameter]["exp_avg"],
+        )
+        torch.testing.assert_close(
+            optimizer.state[parameter]["exp_avg_sq"],
+            reference_optimizer.state[reference_parameter]["exp_avg_sq"],
+        )
+        assert optimizer.state[parameter]["step"].item() == dist.get_world_size() - expected_skips
+    else:
+        assert optimizer.state[parameter]["step"].item() == 0
+
+    gathered_parameters = [torch.empty_like(parameter) for _ in range(dist.get_world_size())]
+    dist.all_gather(gathered_parameters, parameter)
+    for gathered_parameter in gathered_parameters:
+        torch.testing.assert_close(gathered_parameter, parameter)
+
+
+@pytest.mark.parametrize("packet_norms", [(1.0, 2.0), (1.0, 10.0), (10.0, 20.0)])
+def test_sequential_replay_supports_applied_and_skipped_optimizer_packets(packet_norms):
+    run_distributed_test(
+        _run_sequential_replay_skip_step_optimizer,
+        world_size=2,
+        backend="gloo",
+        start_method="spawn",
+        func_args=(packet_norms,),
     )
 
 

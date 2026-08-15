@@ -3,6 +3,7 @@
 import math
 import random
 from collections.abc import Callable, Iterable
+from typing import NamedTuple
 
 import torch
 import torch.distributed as dist
@@ -10,6 +11,14 @@ from torch import nn
 from torch.optim import Optimizer
 
 from olmo_core.distributed.utils import get_local_tensor
+from olmo_core.optim import SkipStepOptimizer
+
+
+class SequentialReplayStepResult(NamedTuple):
+    """Summary of optimizer attempts made by sequential replica replay."""
+
+    attempted_updates: int
+    skipped_updates: torch.Tensor
 
 
 def structured_noise_loss_scales(
@@ -81,12 +90,15 @@ def sequential_replica_optimizer_steps(
     *,
     post_step: Callable[[], None] | None = None,
     local_gradient_packets: list[list[torch.Tensor]] | None = None,
-) -> int:
+    local_gradient_packet_norms: list[torch.Tensor] | None = None,
+) -> SequentialReplayStepResult:
     """Replay stale replica gradients serially through synchronized optimizer state.
 
     Every replica computes from the same parameter snapshot. Gradients are broadcast in
     deterministic packet-major, replica-rank order and every replica applies identical optimizer
     steps. Accumulation normally yields one packet; callers may provide one packet per microbatch.
+    For a skip-step optimizer, each packet's source-replica norm is broadcast as well, so the
+    rolling skip policy stays synchronized without duplicating the trainer batch's loss history.
     """
     replica_count = dist.get_world_size(process_group)
     if replica_count < 1:
@@ -111,10 +123,22 @@ def sequential_replica_optimizer_steps(
         raise RuntimeError("sequential replay requires at least one local gradient packet")
     if any(len(packet) != len(parameters) for packet in local_gradient_packets):
         raise RuntimeError("sequential replay gradient packet does not match parameter count")
+    if local_gradient_packet_norms is not None:
+        if len(local_gradient_packet_norms) != len(local_gradient_packets):
+            raise RuntimeError(
+                "sequential replay gradient packet norms do not match gradient packet count"
+            )
+        if any(norm.numel() != 1 for norm in local_gradient_packet_norms):
+            raise RuntimeError("sequential replay gradient packet norms must be scalar tensors")
+    if isinstance(optimizer, SkipStepOptimizer) and local_gradient_packet_norms is None:
+        raise RuntimeError(
+            "sequential replay with SkipStepOptimizer requires one gradient norm per packet"
+        )
 
     replica_rank = dist.get_rank(process_group)
     update_count = 0
-    for local_gradients in local_gradient_packets:
+    skipped_updates = get_local_tensor(parameters[0]).new_zeros((), dtype=torch.float32)
+    for packet_idx, local_gradients in enumerate(local_gradient_packets):
         for source_replica in range(replica_count):
             source_global_rank = dist.get_global_rank(process_group, source_replica)
             for parameter, local_gradient in zip(parameters, local_gradients):
@@ -122,12 +146,19 @@ def sequential_replica_optimizer_steps(
                 if replica_rank == source_replica:
                     gradient.copy_(local_gradient)
                 dist.broadcast(gradient, src=source_global_rank, group=process_group)
+            if isinstance(optimizer, SkipStepOptimizer):
+                assert local_gradient_packet_norms is not None
+                replayed_grad_norm = local_gradient_packet_norms[packet_idx].detach().clone()
+                dist.broadcast(replayed_grad_norm, src=source_global_rank, group=process_group)
+                optimizer.latest_grad_norm = replayed_grad_norm
             optimizer.step()
             update_count += 1
+            if isinstance(optimizer, SkipStepOptimizer):
+                skipped_updates.add_(optimizer.step_skipped)
             if post_step is not None:
                 post_step()
 
-    return update_count
+    return SequentialReplayStepResult(update_count, skipped_updates)
 
 
 def clone_local_parameter_tensors(module: nn.Module) -> list[torch.Tensor]:
