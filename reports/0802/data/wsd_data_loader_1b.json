@@ -2,7 +2,7 @@
   "updated": "2026-08-15",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes.",
-  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 WD1.0 must reach and validate E24 before either WD is selected for E28; compare WD0.3 E24 with WD1.0 E24 using the same WD rule as BS128/256: when WD1.0 wins, only WD1.0 continues; when WD1.0 loses, both trajectories may continue if each passes its own strict-improvement gate; hold a tie for review. BS128 compares WD0.3 with WD1.0 and BS256 compares WD0.333 with WD1.0 at every completed frontier before any next-frontier submission under that same rule. BS64 WD1.0 E20 experiment 01M03NSQJD7VASVMAYQZC4F82N is pending from exact pre-decay step54931; if E20 strictly improves, advance only WD1.0 to E24 and then resolve the E24 competition before E28. BS128 WD1.0 E12 completed healthy at validation CE3.09732, strictly improving E8 CE3.12785 by 0.03053, but lost the E12 WD competition to WD0.3 CE2.99792 by 0.09940. Both BS128 trajectories pass their own strict-improvement gates and their E20 jobs remain launch-eligible under the sequential flex2 queue gate. BS256 WD1.0 won the E16 competition at validation CE3.05549 and is the only BS256 E20 trajectory eligible to continue. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation; do not decide or retry an E28 WD until WD1.0 E24 is validated. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
+  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 WD1.0 must reach and validate E24 before either WD is selected for E28; compare WD0.3 E24 with WD1.0 E24 using the same rule as BS128/256: if WD1.0 wins, only WD1.0 continues; if it loses, both trajectories may continue subject to their own strict-improvement gates; hold ties for review. BS64 WD1.0 E20 experiment 01M03NSQJD7VASVMAYQZC4F82N is pending from exact pre-decay step54931; if E20 improves, advance only WD1.0 to E24. BS128 WD0.3 E20 experiment 01M03QPETHZPZ0F8TGCCTWWC9V and WD1.0 E20 experiment 01M03QPES7VYNJKZE0V8WRH62A were submitted from exact step27465. BS256 WD1.0 won E16 and its sole E20 experiment 01M03QPDWYYEQZZQ76W0X5EH0Z was submitted from exact step13732. The user explicitly overrode the pending-job gate for those three registered held E20 jobs; the general one-pending-job gate remains in force afterward. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation; do not decide or retry E28 until WD1.0 E24 is validated. BS256 LR2e-3/WD0.333 remains held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
   "targetEpochs": [
     1,
     2,
@@ -567,7 +567,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.3",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 20,
       "attemptedEpochs": [
         2,
@@ -679,7 +679,7 @@
         }
       },
       "health": "healthy",
-      "reason": "E16 completed healthy and validation CE2.98840 strictly improved E12 CE2.99792. WD0.3 won the E16 competition; E20 is registered from exact pre-decay step27465 but held because another ai2/flex2 job is pending.",
+      "reason": "E20 submitted from exact E16 pre-decay step27465 after the user explicitly overrode the pending-job gate for the three registered held E20 frontiers. Remote-revision, print-only, exact-source, canonical-output, LR/WD, topology, target-step, manifest, and duplicate guards passed; pending scheduling.",
       "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3",
       "attempts": [
@@ -708,11 +708,11 @@
           "reason": "Exited before manifest validation because the E2 guard required the new canonical output directory to preexist. No W&B, checkpoint load, optimizer progress, output checkpoint, or training startup was observed; configuration failures are not automatically retried."
         }
       ],
-      "beaker": null,
-      "experiment": null,
-      "beakerStatus": "planned",
-      "job": null,
-      "result": null,
+      "beaker": "01M03QPETHZPZ0F8TGCCTWWC9V",
+      "experiment": "01M03QPETHZPZ0F8TGCCTWWC9V",
+      "beakerStatus": "submitted",
+      "job": "01M03QPEYFHNMVV4BWKQ1SCVPS",
+      "result": "01M03QPETRMHCXSKBXEAQZ7ENE",
       "node": null,
       "wandb": null,
       "startupEvidence": null,
@@ -725,7 +725,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 20,
       "attemptedEpochs": [
         2,
@@ -835,7 +835,7 @@
         }
       },
       "health": "healthy",
-      "reason": "E16 completed healthy and validation CE3.08122 strictly improved E12 CE3.09732. WD1.0 lost the E16 competition, so both WDs may continue; E20 is registered from exact pre-decay step27465 but held because another ai2/flex2 job is pending.",
+      "reason": "E20 submitted from exact E16 pre-decay step27465 after the user explicitly overrode the pending-job gate for the three registered held E20 frontiers. Remote-revision, print-only, exact-source, canonical-output, LR/WD, topology, target-step, manifest, and duplicate guards passed; pending scheduling.",
       "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0",
       "attempts": [
@@ -876,11 +876,11 @@
           "reason": "Gantry exhausted five source-fetch attempts because the recorded revision did not exist remotely. No repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed; configuration failures are not automatically retried."
         }
       ],
-      "beaker": null,
-      "experiment": null,
-      "beakerStatus": "planned",
-      "job": null,
-      "result": null,
+      "beaker": "01M03QPES7VYNJKZE0V8WRH62A",
+      "experiment": "01M03QPES7VYNJKZE0V8WRH62A",
+      "beakerStatus": "submitted",
+      "job": "01M03QPEWXG0ENPN51AS2AGPDA",
+      "result": "01M03QPESEW4AN9QTJKCHS2808",
       "node": null,
       "wandb": null,
       "startupEvidence": null,
@@ -1093,7 +1093,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 20,
       "attemptedEpochs": [
         2,
@@ -1203,10 +1203,10 @@
         }
       },
       "health": "healthy",
-      "reason": "E16 completed healthy and validation CE3.05549 strictly improved E12 CE3.07230. WD1.0 won the resolved E16 competition and is the only BS256 E20 trajectory; E20 is registered from exact pre-decay step13732 but queue-held behind other pending flex2 jobs.",
-      "beaker": null,
-      "experiment": null,
-      "beakerStatus": "planned",
+      "reason": "E20 submitted from exact E16 pre-decay step13732 after the user explicitly overrode the pending-job gate for the three registered held E20 frontiers. Remote-revision, print-only, exact-source, canonical-output, LR/WD, topology, target-step, manifest, and duplicate guards passed; pending scheduling.",
+      "beaker": "01M03QPDWYYEQZZQ76W0X5EH0Z",
+      "experiment": "01M03QPDWYYEQZZQ76W0X5EH0Z",
+      "beakerStatus": "submitted",
       "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0",
       "attempts": [
@@ -1235,8 +1235,8 @@
           "reason": "Exited before manifest validation because the E2 guard required the new canonical output directory to preexist. No W&B, checkpoint load, optimizer progress, output checkpoint, or training startup was observed; configuration failures are not automatically retried."
         }
       ],
-      "job": null,
-      "result": null,
+      "job": "01M03QPE0B6FJQA5T1CDNTPW5T",
+      "result": "01M03QPDX4GAMXGR4Y8CYEFDEJ",
       "node": null,
       "wandb": null,
       "startupEvidence": null,
