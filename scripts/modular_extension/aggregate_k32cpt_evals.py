@@ -145,8 +145,65 @@ def main():
     fig.tight_layout()
     fig.savefig(EV / "k32cpt_curves.png", dpi=150)
 
+    # ---- 32-expert subset view: does the cluster's own working set forget as much? ----
+    sub100 = load_tag("subset_100B")
+    subbase = load_tag("subset_baseline130B")
+    res["subset"] = {"anchor_100B": sub100, "anchor_baseline130B": subbase, "arms": {}}
+    for arm in ARMS:
+        order = res["arms"][arm]["order"]
+        stages = []
+        for pos, c in enumerate(order):
+            ce = load_tag(f"subset_{arm}_after_c{c:02d}")
+            if ce:
+                stages.append({"stage": pos, "trained_cluster": c, "ce": ce})
+        res["subset"]["arms"][arm] = stages
+
+    with open(EV / "k32cpt_results.json", "w") as f:
+        json.dump(res, f, indent=2)
+
+    n_sub = {a: len(res["subset"]["arms"][a]) for a in ARMS}
+    if sub100:
+        # Aligned forgetting curves: x = stages since the cluster's own training,
+        # y = mean CE delta vs the matching 100B anchor (full-64 vs 32-subset views).
+        fig, axes = plt.subplots(1, 3, figsize=(15, 4.4), sharey=True)
+        for ax, arm in zip(axes, ARMS):
+            for view, anchor, stages, color in [
+                ("full 64-expert pool", a100, res["arms"][arm]["stages"], "#dc2626"),
+                ("cluster's 32-expert subset", sub100, res["subset"]["arms"][arm], "#2563eb"),
+            ]:
+                pos_of = {s["trained_cluster"]: s["stage"] for s in res["arms"][arm]["stages"]}
+                by_lag: dict = {}
+                for s in stages:
+                    for c_str, ce in s["ce"].items():
+                        c = int(c_str)
+                        t = pos_of.get(c)
+                        if t is None or s["stage"] < t:
+                            continue  # cluster not yet trained at this snapshot
+                        by_lag.setdefault(s["stage"] - t, []).append(ce - anchor[c])
+                lags = sorted(by_lag)
+                ax.plot(lags, [np.mean(by_lag[x]) for x in lags], "o-", color=color,
+                        label=view, ms=3.5)
+            if subbase:
+                ax.axhline(np.mean([subbase[c] - sub100[c] for c in sub100]), color="#2563eb",
+                           ls="--", lw=1.1, label="subset after 30B normal training")
+            ax.axhline(np.mean([abase[c] - a100[c] for c in a100]), color="#dc2626",
+                       ls="--", lw=1.1, label="full pool after 30B normal training")
+            ax.axhline(0, color="#94a3b8", lw=1)
+            ax.set_title(arm, fontsize=11)
+            ax.set_xlabel("stages since this cluster was trained")
+            ax.grid(alpha=0.3)
+        axes[0].set_ylabel("mean held-out CE delta vs matching 100B anchor (nats)")
+        axes[0].legend(fontsize=8, loc="upper left")
+        fig.suptitle("Forgetting, full-pool view vs the cluster's own 32-expert working set "
+                     "(lag 0 = right after the cluster's own stage)", fontsize=12)
+        fig.tight_layout()
+        fig.savefig(EV / "k32cpt_subset_forgetting.png", dpi=150)
+        plt.close(fig)
+
     n_st = {a: len(res["arms"][a]["stages"]) for a in ARMS}
-    print(json.dumps({"stages_evaluated": n_st, "delta_reference": res["delta_reference"],
+    print(json.dumps({"stages_evaluated": n_st, "subset_evals": n_sub,
+                      "subset_anchors": bool(sub100) and bool(subbase),
+                      "delta_reference": res["delta_reference"],
                       "baseline_mean_delta": round(float(base_mean), 4)}))
 
 

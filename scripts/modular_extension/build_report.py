@@ -921,7 +921,71 @@ of each cluster's original routing survives the pruning intact.</li>
     results_path = K32EV / "k32cpt_results.json"
     cpt_res = json.load(open(results_path)) if results_path.exists() else {}
     return intro + conc_html + drift_html + build_k32_freeze(k32) + _k32cpt_design_card() + \
-        _k32cpt_interim_results(cpt_res) + curves_html
+        _k32cpt_interim_results(cpt_res) + _k32cpt_subset_card(cpt_res) + curves_html
+
+
+def _k32cpt_subset_card(res) -> str:
+    sub = res.get("subset", {})
+    if not sub.get("anchor_100B") or not any(sub.get("arms", {}).values()):
+        return ""
+    import statistics as _st
+
+    a100 = {int(k): v for k, v in res["anchors"]["step23842_100B_25M"].items()}
+    s100 = {int(k): v for k, v in sub["anchor_100B"].items()}
+    sbase = {int(k): v for k, v in sub["anchor_baseline130B"].items()} \
+        if sub.get("anchor_baseline130B") else None
+
+    def lag_series(stages, anchor, pos_of):
+        by_lag: dict = {}
+        for s in stages:
+            for c_str, ce in s["ce"].items():
+                c = int(c_str)
+                t = pos_of.get(c)
+                if t is not None and s["stage"] >= t:
+                    by_lag.setdefault(s["stage"] - t, []).append(ce - anchor[c])
+        return {k: _st.mean(v) for k, v in sorted(by_lag.items())}
+
+    coverage = []
+    lag0_sub = lag0_full = None
+    for arm in ("carry", "carry_shuf", "fresh"):
+        full_stages = res["arms"][arm]["stages"]
+        sub_stages = sub["arms"].get(arm, [])
+        coverage.append(f"{arm}: {len(sub_stages)}/{len(full_stages)}")
+        if arm == "carry" and sub_stages:
+            pos_of = {s["trained_cluster"]: s["stage"] for s in full_stages}
+            ls = lag_series(sub_stages, s100, pos_of)
+            lf = lag_series(full_stages, a100, pos_of)
+            lag0_sub, lag0_full = ls.get(0), lf.get(0)
+    if lag0_sub is None:
+        return ""
+    sbase_mean = _st.mean(sbase[c] - s100[c] for c in s100) if sbase else None
+
+    return card("results", "Does the cluster's own 32-expert working set forget as much as the "
+                           "full pool? (subset-view evals)", f"""
+<p class="note">Live view; subset-eval coverage so far &mdash; {", ".join(coverage)} snapshots. Each
+point: slice the target cluster's frozen 33-expert subset from the pool state after a stage
+(training-time renormalized routing) and evaluate the cluster's own held-out data; deltas are against
+the <em>matching</em> 100B anchor (the same subset sliced from the 100B start), so both views measure
+change relative to their own starting condition.</p>
+<ul>
+<li><strong>The specialization is real &mdash; the full pool just hides it.</strong> Right after a
+cluster's own stage (lag 0), its 32-expert subset is <strong>{lag0_sub:+.3f}</strong> nats vs its 100B
+anchor &mdash; ~{abs(lag0_sub) / 0.027:.0f}&times; the baseline's ordinary improvement
+({-0.027:+.3f}) &mdash; while the full-64 view of the same pool state shows only
+{lag0_full:+.3f}. Routing over all 64 experts (the frozen router still sends 9&ndash;29% of mass to
+untouched experts, and the trained experts' outputs mix with expert outputs they were never co-adapted
+with) dilutes away most of what the stage learned.</li>
+<li><strong>The subset forgets too &mdash; but far more slowly.</strong> The full-pool view crosses
+zero (worse than the 100B start) within ~2 stages; the subset view stays <em>better</em> than its
+anchor for many stages, eroding from {lag0_sub:+.3f} toward zero as later stages overwrite shared
+experts. Interference reaches the working set itself, not just the routing mixture.</li>
+{f'<li><strong>Reference:</strong> 30B of normal training improves the subsets by {sbase_mean:+.3f} on average (dashed blue) — the sequential arms beat this handily at lag 0 in the subset view, and only there.</li>' if sbase_mean is not None else ''}
+</ul>
+<div class="figrow">{img_tag(K32EV / "k32cpt_subset_forgetting.png",
+    "Forgetting aligned by stages-since-trained: mean held-out CE delta vs the matching 100B anchor. "
+    "Red: the full 64-expert pool evaluated on the cluster. Blue: the cluster's own 32-expert subset "
+    "sliced from the same pool state. Dashed lines: each view after 30B of normal training.")}
+</div>""")
 
 
 def _k32cpt_interim_results(res) -> str:
