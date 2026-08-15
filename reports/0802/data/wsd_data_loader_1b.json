@@ -2,7 +2,7 @@
   "updated": "2026-08-14",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes.",
-  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. Run six independent DR trajectories to their first strict validation non-improvement: BS64 LR1e-3 at WD0.3 and WD1.0, BS128 LR1e-3 at WD0.3 and WD1.0, and BS256 LR1e-3 at WD0.333 and WD1.0. All five WD0.3/0.333/1.0 E8 trajectories strictly improved their own E4 validation frontiers: BS64 WD1.0 reached CE3.19708, BS128 WD0.3 reached CE3.02546, BS128 WD1.0 reached CE3.12785, BS256 WD0.333 reached CE3.06827, and BS256 WD1.0 reached CE3.11347. BS128 WD0.3 and BS256 WD1.0 E12 were submitted from exact canonical E8 pre-decay checkpoints using verified live revision 6ab506cea312ec810f94cd4177c7904f8ca25917. BS64 WD1.0 E12 failed before task startup because its registered revision was invalid and is held without automatic retry; the already-pending BS128 WD1.0 and BS256 WD0.333 E12 experiments reference the same invalid revision and remain under observation. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation. Every trajectory uses one 8-GPU node and advances only while its own held-out DCLM validation CE strictly improves. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
+  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 LR1e-3 runs WD0.3 and WD1.0 independently to first strict validation non-improvement. BS128 compares WD0.3 with WD1.0 and BS256 compares WD0.333 with WD1.0 at every completed frontier before any next-frontier submission: when WD1.0 wins, only WD1.0 continues; when WD1.0 loses, both trajectories may continue if each passes its own strict-improvement gate; a tie is held for review. At E8, WD1.0 lost both resolved competitions, so both WDs are eligible at E12 for BS128 and BS256. BS64 WD1.0 E12 was relaunched as experiment 01M021730WYSJCQ2XGAW07PTMD from exact E8 pre-decay step27465 using verified remote revision 115161885a0581505b20c16aed8bedf8816aeeb6 after its first launch failed before task startup on an invalid Git revision. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
   "targetEpochs": [
     1,
     2,
@@ -24,7 +24,7 @@
   "selectionPolicy": {
     "learningRate": "Active coordinates use LR1e-3 for BS64/128/256. The earlier BS256 LR2e-3/WD0.333 plan is held unless explicitly reactivated; LR above 2e-3 remains prohibited.",
     "nondecreasingWd": true,
-    "dynamicRepackingDirection": "Run BS64 at WD0.3 and WD1.0, BS128 at WD0.3 and WD1.0, and BS256 at WD0.333 and WD1.0. Each exact LR1e-3 trajectory advances independently and stops at its first validation non-improvement.",
+    "dynamicRepackingDirection": "Run BS64 at WD0.3 and WD1.0 independently. For BS128 (WD0.3 versus WD1.0) and BS256 (WD0.333 versus WD1.0), resolve both WDs at the current frontier before submitting either next frontier. If WD1.0 strictly wins, continue only WD1.0; if WD1.0 loses, both may continue subject to their own strict-improvement gates; hold ties for review.",
     "stagedQueue": [
       "BS64 DR LR1e-3/WD1.0",
       "BS128 DR LR1e-3/WD0.3",
@@ -386,8 +386,8 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "failed",
-      "activeEpoch": null,
+      "status": "submitted",
+      "activeEpoch": 12,
       "attemptedEpochs": [
         2,
         4,
@@ -461,9 +461,9 @@
           "reason": "Completed healthy from exact canonical E4 pre-decay step13732. Held-out DCLM validation CE3.19708 strictly improved E4 CE3.25886, unlocking E12 from canonical pre-decay step27465."
         }
       },
-      "health": "failed",
-      "reason": "E8 remains the last validated frontier at validation CE3.19708. The E12 launch failed during Gantry source fetch because its registered revision was invalid; no repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed. This configuration failure is held and is not automatically retried.",
-      "revision": "cc2fa58cd53f4e67f72eed88cb20be45b68e9bb8",
+      "health": "planned",
+      "reason": "Corrected E12 retry submitted after exact-source, canonical trajectory-output, LR/WD, topology, rank-microbatch, manifest-checksum, duplicate-tuple, and verified-remote-revision guards passed.",
+      "revision": "115161885a0581505b20c16aed8bedf8816aeeb6",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0",
       "attempts": [
         {
@@ -513,12 +513,9 @@
           "reason": "Gantry could not fetch the incorrectly recorded revision before repository task startup. No W&B, checkpoint load, optimizer progress, output, or checkpoint existed; configuration failures are not automatically retried."
         }
       ],
-      "beaker": "01M01YMQF9AR078YX7RPD5F7WR",
-      "experiment": "01M01YMQF9AR078YX7RPD5F7WR",
-      "job": "01M01YMQJHQZ7P9BEAKAQS9TJB",
-      "result": "01M01YMQFFZW67KF9D4HQEKC2N",
-      "node": "01KG68Q6NFM68S1ENTNRYHBGD4",
-      "beakerStatus": "failed"
+      "beaker": "01M021730WYSJCQ2XGAW07PTMD",
+      "experiment": "01M021730WYSJCQ2XGAW07PTMD",
+      "beakerStatus": "pending"
     },
     {
       "id": "dr128-lr1e-3-wd0.3",

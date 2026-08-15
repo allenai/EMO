@@ -180,6 +180,47 @@ def active_epoch(run: dict[str, Any]) -> int:
     return -1 if value is None else int(value)
 
 
+def enforce_weight_decay_competition(
+    report: dict[str, Any], args: argparse.Namespace, predecessor: int
+) -> None:
+    """Gate BS128/256 frontiers on the completed lower-WD versus WD1.0 result."""
+    if args.method != "dynamic_repacking" or args.global_sequences not in {128, 256}:
+        return
+    lower_wd = Decimal("0.3") if args.global_sequences == 128 else Decimal("0.333")
+    competitors = {}
+    for candidate in report.get("runs", []):
+        if candidate.get("method") != method_key(args.method, args.global_sequences):
+            continue
+        if int(candidate.get("batchSequences", 0)) != args.global_sequences:
+            continue
+        if numeric(candidate.get("lr")) != numeric(args.learning_rate):
+            continue
+        candidate_wd = numeric(candidate.get("wd"))
+        if candidate_wd in {lower_wd, Decimal("1.0")}:
+            competitors[candidate_wd] = candidate
+    if set(competitors) != {lower_wd, Decimal("1.0")}:
+        raise SystemExit("weight-decay competition is missing a registered competitor")
+
+    validation = {}
+    for competitor_wd, competitor in competitors.items():
+        result = competitor.get("results", {}).get(str(predecessor))
+        if not isinstance(result, dict) or result.get("status") != "complete":
+            raise SystemExit(
+                f"WD competition at E{predecessor} is unresolved; hold the next frontier"
+            )
+        validation[competitor_wd] = numeric(result.get("validation"))
+
+    wd1 = Decimal("1.0")
+    if validation[wd1] == validation[lower_wd]:
+        raise SystemExit(
+            f"WD competition at E{predecessor} is tied; hold the next frontier for review"
+        )
+    if validation[wd1] < validation[lower_wd] and numeric(args.weight_decay) != wd1:
+        raise SystemExit(
+            f"WD1.0 won the E{predecessor} competition; only WD1.0 may continue"
+        )
+
+
 def matching_registered_run(report: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
     key = method_key(args.method, args.global_sequences)
     lr = numeric(args.learning_rate)
@@ -252,11 +293,7 @@ def matching_registered_run(report: dict[str, Any], args: argparse.Namespace) ->
                 "later endpoint source is neither its historical registered pre-decay "
                 "checkpoint nor that exact step in the canonical trajectory directory"
             )
-
-        # Each approved LR/WD trajectory now advances independently until its own
-        # first validation non-improvement. Exact-source matching above guarantees
-        # that a continuation keeps the same WD; a winner selected at another WD
-        # must not prune this trajectory prematurely.
+        enforce_weight_decay_competition(report, args, predecessor)
     return run
 
 
