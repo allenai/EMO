@@ -2,7 +2,7 @@
   "updated": "2026-08-15",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes.",
-  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 LR1e-3 runs WD0.3 and WD1.0 independently to first strict validation non-improvement. BS128 compares WD0.3 with WD1.0 and BS256 compares WD0.333 with WD1.0 at every completed frontier before any next-frontier submission: when WD1.0 wins, only WD1.0 continues; when WD1.0 loses, both trajectories may continue if each passes its own strict-improvement gate; a tie is held for review. At E8, WD1.0 lost both resolved competitions, so both WDs are eligible at E12. BS64 WD1.0, BS128 WD0.3, and BS256 WD1.0 E12 are running after manifest, preflight, exact checkpoint-load, trainer/optimizer-state, and first-step guards passed. The BS128 WD1.0 and BS256 WD0.333 E12 source-revision failures are registered as user-authorized corrected retries using verified remote revision 968d1737d8307bab32e097bc779e7e7ceefb9746 and their exact canonical E8 pre-decay checkpoints; both remain planned because seven unrelated pending flex2 jobs keep the global queue gate closed. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
+  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 LR1e-3 runs WD0.3 and WD1.0 independently to first strict validation non-improvement. BS128 compares WD0.3 with WD1.0 and BS256 compares WD0.333 with WD1.0 at every completed frontier before any next-frontier submission: when WD1.0 wins, only WD1.0 continues; when WD1.0 loses, both trajectories may continue if each passes its own strict-improvement gate; a tie is held for review. At E8, WD1.0 lost both resolved competitions, so both WDs are eligible at E12. BS64 WD1.0, BS128 WD0.3, and BS256 WD1.0 E12 are running after manifest, preflight, exact checkpoint-load, trainer/optimizer-state, and first-step guards passed. The BS128 WD1.0 and BS256 WD0.333 E12 source-revision failures are registered as user-authorized corrected retries using verified remote revision 968d1737d8307bab32e097bc779e7e7ceefb9746 and their exact canonical E8 pre-decay checkpoints; both remain planned because four unrelated pending flex2 jobs keep the global queue gate closed. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
   "targetEpochs": [
     1,
     2,
@@ -533,13 +533,13 @@
         "startedAt": "2026-08-15 00:10 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-15 00:31 PDT",
-        "step": 29415,
+        "observedAt": "2026-08-15 01:00 PDT",
+        "step": 32340,
         "endpointStep": 45777,
         "epoch": 12,
-        "trainCe": 3.505,
+        "trainCe": 3.472,
         "metricStatus": "preliminary",
-        "eta": "2h42m"
+        "eta": "2h15m"
       }
     },
     {
@@ -673,13 +673,13 @@
         "startedAt": "2026-08-14 23:53 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-15 00:31 PDT",
-        "step": 15575,
+        "observedAt": "2026-08-15 01:00 PDT",
+        "step": 17055,
         "endpointStep": 22889,
         "epoch": 12,
-        "trainCe": 3.094,
+        "trainCe": 3.082,
         "metricStatus": "preliminary",
-        "eta": "2h26m"
+        "eta": "1h56m"
       }
     },
     {
@@ -1058,13 +1058,13 @@
         "startedAt": "2026-08-15 00:07 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-15 00:31 PDT",
-        "step": 7425,
+        "observedAt": "2026-08-15 01:00 PDT",
+        "step": 8160,
         "endpointStep": 11445,
         "epoch": 12,
-        "trainCe": 3.292,
+        "trainCe": 3.265,
         "metricStatus": "preliminary",
-        "eta": "2h37m"
+        "eta": "2h10m"
       }
     },
     {
