@@ -8268,12 +8268,18 @@
       "wd": "0.333",
       "status": "planned",
       "healthStatus": "pending",
-      "beaker": null,
-      "jobs": [],
-      "resultDatasets": [],
+      "beaker": "01M03QJ0QR36Y0D4WX82MMK4A2",
+      "jobs": [
+        "01M03QJ0WAA02M5730QKPY9T7D",
+        "01M03QJ11DZFS4WSMDMND9K4CX"
+      ],
+      "resultDatasets": [
+        "01M03QJ0R4C4APBCVYE6AX0CCJ",
+        "01M03QJ0WJ0HR4NA23W1W35ARM"
+      ],
       "nodes": [],
       "currentStep": 428,
-      "revision": "66f4f031871e46f25b6f7bc1ad1ee4125baf833e",
+      "revision": "f27844d9ff1cc21587d130c25d5bcccd1659ecfc",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step428",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs64_init=bs1024e2_lr1e-3_wd0.333",
       "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs64_init=bs1024e2_lr1e-3_wd0.333/step858",
@@ -8303,7 +8309,7 @@
           "reason": "Zero-step configuration failure: the first optimizer update rejected SkipStepOptimizer. The coordinated peer was canceled by propagate-failure; no E4 metrics or checkpoints were produced."
         }
       ],
-      "reason": "Registered retry after packet-level SkipStepOptimizer support passed focused two-rank applied/skipped replay tests. Reuse the canonical output only if target checkpoints step858 and step954 remain absent; load exact conventional E2 step428 and stop at E4."
+      "reason": "Submitted corrected retry 01M03QJ0QR36Y0D4WX82MMK4A2 after packet-level SkipStepOptimizer support passed focused two-rank applied/skipped replay tests. The two-node Python 3.12/Gantry 3.7 runtime loads exact conventional E2 step428, reuses the canonical output root only while target checkpoints step858 and step954 remain absent, and stops at E4."
     }
   ]
 }
