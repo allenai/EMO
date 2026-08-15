@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" type="image/svg+xml" sizes="any" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23172033'/%3E%3Cpath d='M32 8l7.1 14.4 15.9 2.3-11.5 11.2 2.7 15.8L32 44.2 17.8 51.7l2.7-15.8L9 24.7l15.9-2.3z' fill='%23fbbf24'/%3E%3C/svg%3E">
+<title>0802 Step 1-1 — Local-update appendix</title>
+<style>
+:root{--ink:#162033;--muted:#667085;--paper:#f4f6fa;--card:#fff;--line:#dfe4ed}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.5 Inter,system-ui,sans-serif}main{width:min(1500px,calc(100% - 32px));margin:28px auto 60px}header,.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 8px 24px #17203312}header{background:linear-gradient(120deg,#172033,#31548c);color:#fff}h1{margin:0 0 8px;font-size:34px}header p{color:#dce7ff}.variant-note{margin:18px 0 0;padding:12px 14px;border:1px solid #c7d2fe;border-radius:10px;background:#eef2ff;color:#3730a3}.display-controls{display:flex;align-items:center;gap:12px;margin:16px 0 0;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:#fff}.display-controls label{display:flex;align-items:center;gap:8px;font-weight:650;cursor:pointer}.display-controls input{width:16px;height:16px}.display-controls span{color:var(--muted);font-size:12px}.stamp{color:var(--muted)}section{margin-top:24px}.legend{display:flex;flex-wrap:wrap;gap:14px;margin:12px 0}.legend label{display:flex;align-items:center;gap:6px}.dot{width:10px;height:10px;border-radius:50%;display:inline-block}.health-key{width:14px;height:10px;border:0;border-radius:3px;background:#fff1f2;display:inline-block}.charts{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 36px)/4);gap:12px;overflow-x:auto;padding-bottom:10px}.chart{min-width:0}.chart svg{width:100%;height:240px;overflow:visible}.chart text{font-size:10px;fill:#59647a}.chart .value{font-size:9px;font-weight:750;paint-order:stroke;stroke:#fff;stroke-width:3px}.validation-summary{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}.summary-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:24px}.summary-panel{min-width:0}.summary-panel-wide{grid-column:1/-1}.validation-summary h2{margin:0 0 10px;font-size:18px}.validation-summary .table-wrap{max-width:none}.summary-note{margin:-4px 0 8px;color:var(--muted);font-size:11px}.summary-best{background:#eaf8ee;color:#14532d}.summary-best strong{font-weight:800}.summary-row-best{text-decoration-line:underline;text-decoration-thickness:2px;text-underline-offset:2px}.matched-value{font-variant-numeric:tabular-nums}.table-wrap{overflow:auto}.table-wrap table{font-size:11px}table{width:100%;border-collapse:collapse}th,td{padding:6px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:right}th:first-child,td:first-child{text-align:left}th{font-size:9px;color:var(--muted);text-transform:uppercase}.method-label{display:inline-block;line-height:1.25;white-space:normal;font-weight:650}.run-active{color:#d99a00;font-weight:400}.tuple-list{display:flex;flex-wrap:wrap;gap:4px;min-width:380px}.tuple{border:1px solid #cfd6e3;border-radius:999px;padding:2px 6px;background:#fff;font-size:10px}.tuple.active{color:#a16207;border-color:#d99a00;background:#fff7db;font-weight:400}.tuple.selected{border-color:#15803d;background:#eaf8ee;font-weight:700}.tuple.stopped{color:var(--muted);border-color:#d0d5dd;background:#f8fafc;font-weight:400}.tuple.unhealthy{background:#fff1f2;color:#991b1b;border-color:#fecaca;font-weight:400}.run-unhealthy td{background:#fff1f2;font-weight:400}.canceled,.cancelled,.failed{font-weight:400}.coordinate-row td{padding-top:3px;padding-bottom:3px;line-height:1.15}.coordinate-row.method-start td{border-top:2px solid #cfd6e3}.coordinate-method{vertical-align:top;min-width:130px;padding-top:6px!important}.coordinate-dimension{vertical-align:top;width:70px;padding-top:6px!important;text-align:left}.coordinate-init{min-width:88px}.coordinate-epoch{width:54px;text-align:left}.coordinate-row .tuple-list{min-width:380px;align-items:center}.coordinate-row .tuple{padding-top:1px;padding-bottom:1px}a{color:#275fc2}
+</style>
+</head>
+<body>
+<main>
+<header><h1 id="title"></h1><p id="setup"></p></header>
+<p class="variant-note"><strong>Local-update experiment copy.</strong> Four already-running H=32 jobs finish without continuation. Going forward, the selected search uses LocalSGD H=4 and WD0.333 across simBS64/256 and BS1024 E2/E4 initialization. Those four trajectories resume exact native checkpoints, advance one frontier at a time through E16, and stop. Their E16 target is validation CE in the 3.0xx range.</p>
+<div class="display-controls"><label><input type="checkbox" id="show-local-sgd"> Show LocalSGD</label><label><input type="checkbox" id="show-older-results"> Show older results</label><span>LocalSGD is shown by default. Older LocalSGD and Post-E1 DiLoCo results are hidden by default; DiLoCo-from-scratch records remain stored but are excluded from this report.</span></div>
+<section class="card"><p class="stamp" id="updated"></p><p id="selection"></p><div class="legend" id="legend"></div><div class="charts" id="charts"></div><div class="validation-summary"><div class="summary-grid"><div class="summary-panel"><h2>Best validation loss by epoch and batch size</h2><p class="summary-note">Bold marks the best epoch within each batch size or displayed local-update method; underline marks the best result within each epoch. All local-update methods use global BS512 and simulated BS64.</p><div class="table-wrap"><table><thead><tr><th>Epoch</th><th>BS 64</th><th>BS 128</th><th>BS 256</th><th>BS 512</th><th>BS 1024</th><th>LS (H=1)</th><th>LS (H=2)</th><th>LS (H=4)</th><th>Post-E1 DiLoCo (epoch sync, DR)</th><th>Post-E1 DiLoCo (H=32, v-recal, DR)</th><th>Post-E1 DiLoCo (H=32, BS64 init, DR)</th></tr></thead><tbody id="validation-summary"></tbody></table></div></div><div class="summary-panel"><h2>Best validation loss at matched optimizer steps</h2><p class="summary-note">Approximate optimizer-step counts; each cell shows epoch · validation CE. The lowest available CE in each row is bold and underlined.</p><div class="table-wrap"><table><thead><tr><th>Optimizer steps</th><th>BS 64</th><th>BS 128</th><th>BS 256</th><th>BS 512</th><th>BS 1024</th><th>LS (H=1)</th><th>LS (H=2)</th><th>LS (H=4)</th><th>Post-E1 DiLoCo (epoch sync, DR)</th><th>Post-E1 DiLoCo (H=32, v-recal, DR)</th><th>Post-E1 DiLoCo (H=32, BS64 init, DR)</th></tr></thead><tbody id="optimizer-step-summary"></tbody></table></div></div><div class="summary-panel summary-panel-wide"><h2>Chosen (LR, WD) by epoch and local-update method</h2><p class="summary-note">Completed endpoints retain their evaluated coordinate; pending H=32 ablations appear when their E2 evaluations complete.</p><div class="table-wrap"><table><thead><tr><th>Epoch</th><th>LS (H=1)</th><th>LS (H=2)</th><th>LS (H=4)</th><th>Post-E1 DiLoCo (epoch sync, DR)</th><th>Post-E1 DiLoCo (H=32, v-recal, DR)</th><th>Post-E1 DiLoCo (H=32, BS64 init, DR)</th></tr></thead><tbody id="ls-coordinate-summary"></tbody></table></div></div></div></div></section>
+<section class="card"><h2>Batch size × LR coordinate grid</h2><p class="summary-note">Epoch rows are compact and grouped under shared Method, H, simBS, and Init cells. Empty canceled coordinates are omitted; yellow marks ongoing work and green marks the selected completed endpoint.</p><div class="table-wrap"><table><thead><tr><th>Method</th><th>H</th><th>simBS</th><th>Init</th><th>Epoch</th><th>Active / evaluated (LR, WD) coordinates</th><th>Selected by DCLM validation CE</th></tr></thead><tbody id="ls-coordinate-grid"></tbody></table></div></section>
+<section class="card"><h2>Local-update runs and provenance</h2><div class="table-wrap"><table><thead><tr><th>Method</th><th>Epoch</th><th>Global BS</th><th>Simulated BS</th><th>LR</th><th>WD</th><th>Status</th><th>Train CE</th><th>DCLM val CE</th><th>HS acc</th><th>BPB</th><th>W&amp;B</th><th>Beaker</th></tr></thead><tbody id="ls-rows"></tbody></table></div></section>
+</main>
+<script src="data/wsd_weight_decay_1b.js"></script>
+<script>window.ICSL_WD_BASELINE_DATA=window.ICSL_REPORT_DATA;</script>
+<script src="data/wsd_batch_size_1b.js"></script>
+<script src="data/wsd_batch_simulation_1b.js?v=20260815-h32-e4-ls-columns"></script>
+<script>
+(()=>{
+  const allData=window.ICSL_BATCH_SIMULATION_DATA||{columns:[],runs:[]};
+  window.ICSL_BATCH_SIMULATION_ALL_DATA=allData;
+  const params=new URLSearchParams(window.location.search);
+  const showLocalSGD=params.get('showLocalSGD')!=='0';
+  const showOlderResults=params.get('showOlderResults')==='1';
+  const isLocalSGD=method=>String(method||'').includes('local_sgd');
+  const olderMethods=new Set([
+    'local_sgd_h1',
+    'local_sgd_h2',
+    'local_sgd_h4',
+    'post_e1_local_sgd_h4_dr',
+    'local_sgd_h32_scratch_dr',
+    'post_e1_local_sgd_h32_dr',
+    'post_e1_diloco_epoch_dr',
+    'post_e1_diloco_h32_vrecal_dr',
+  ]);
+  const isOlderResult=column=>olderMethods.has(column?.key);
+  const isScratchDiLoCo=column=>String(column?.key||'').includes('diloco')&&column?.initialization==='scratch';
+  const isExcludedDiLoCo=column=>column?.key==='post_e1_diloco_h32_bs64init_dr';
+  const visibleColumns=(allData.columns||[]).filter(column=>!isScratchDiLoCo(column)&&!isExcludedDiLoCo(column)&&(showLocalSGD||!isLocalSGD(column.key))&&(showOlderResults||!isOlderResult(column)));
+  const visibleMethods=new Set(visibleColumns.map(column=>column.key));
+  window.ICSL_BATCH_SIMULATION_DATA={...allData,columns:visibleColumns,runs:(allData.runs||[]).filter(run=>visibleMethods.has(run.method))};
+  const checkbox=document.querySelector('#show-local-sgd');
+  if(checkbox){
+    checkbox.checked=showLocalSGD;
+    checkbox.addEventListener('change',()=>{
+      const next=new URL(window.location.href);
+      if(checkbox.checked)next.searchParams.delete('showLocalSGD');
+      else next.searchParams.set('showLocalSGD','0');
+      window.location.assign(next.href);
+    });
+  }
+  const olderCheckbox=document.querySelector('#show-older-results');
+  if(olderCheckbox){
+    olderCheckbox.checked=showOlderResults;
+    olderCheckbox.addEventListener('change',()=>{
+      const next=new URL(window.location.href);
+      if(olderCheckbox.checked)next.searchParams.set('showOlderResults','1');
+      else next.searchParams.delete('showOlderResults');
+      window.location.assign(next.href);
+    });
+  }
+})();
+</script>
+<script src="data/wsd_data_loader_1b.js?v=20260815-matched-dr"></script>
+<script>
+window.ICSL_REPORT_DATA={
+  ...window.ICSL_REPORT_DATA,
+  updated:'2026-08-15',
+  title:'Step 1-1 — WSD Batch Size and Local-Update Comparison',
+  setup:'Dense 1B; 1B unique repeated tokens; sequence length4096; displayed baseline global sequence batches64,128,256,512,1024. The active local-update program uses global BS1024, H32, simulated BS64 or BS256, LR1e-3, WD0.333 or WD1.0, dynamic repacking, rank microbatch4 sequences, token-matched WSD, and 100M-token DCLM validation.',
+  selection:'Original and DR columns select the admissible healthy completed coordinate with the lowest DCLM validation CE at each represented epoch. Existing H=32 work finishes without continuation. The forward search is LocalSGD H=4, WD0.333, simBS64/256, and BS1024 E2/E4 initialization through E16. Local-update BS1024 endpoints share the matched-step row of conventional BS1024 at the same epoch.',
+  summaryBatches:[64,128,256,512,1024],
+};
+</script>
+<script>window.ICSL_OPTIMIZER_STEP_TIMING={uniquePoolTokens:1000000000,sequenceLength:4096,microbatchSequences:8,secondsPerStep:0.6,gradientAccumulation:1,unlimitedGpus:true};</script>
+<script src="batch_size_charts.js?v=20260815-matched-dr"></script>
+<script src="batch_size_local_sgd_tables.js?v=20260815-separated-method-columns"></script>
+</body>
+</html>

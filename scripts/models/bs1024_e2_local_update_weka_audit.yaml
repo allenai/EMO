@@ -1,0 +1,35 @@
+version: v2
+tasks:
+  - name: audit
+    image:
+      beaker: 01KAXVQ0YN242MQ9YEQDQQK512
+    command: [bash, -lc]
+    arguments:
+      - |
+        set -euo pipefail
+        source=/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step428
+        test -d "$source"
+        find "$source" -maxdepth 2 -type f | sort | head -80
+        test "$(find "$source" -maxdepth 2 -type f | wc -l)" -gt 0
+        for output in \
+          /weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h32_simbs64_init=bs1024e2_lr1e-3_wd0.333 \
+          /weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h32_simbs256_init=bs1024e2_lr1e-3_wd0.333 \
+          /weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_vrecal_simbs64_init=bs1024e2_lr1e-3_wd0.333 \
+          /weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_vrecal_simbs256_init=bs1024e2_lr1e-3_wd0.333
+        do
+          test ! -e "$output"
+        done
+        echo BS1024_E2_LOCAL_UPDATE_WEKA_AUDIT_OK
+    datasets:
+      - mountPath: /weka/oe-training-default
+        source:
+          weka: oe-training-default
+    resources:
+      cpuCount: 1
+      memory: 2 GiB
+    constraints:
+      cluster: [ai2/jupiter]
+    context:
+      priority: high
+    result:
+      path: /results

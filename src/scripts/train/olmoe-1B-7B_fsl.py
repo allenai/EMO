@@ -218,8 +218,18 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
 
     tokenizer_config = TokenizerConfig.dolma2()
 
+    if opts.model_size == "153M":
+        d_model, n_layers, n_heads = 512, 12, 8
+    elif opts.model_size == "474M":
+        d_model, n_layers, n_heads = 1024, 16, 16
+    else:
+        d_model, n_layers, n_heads = 2048, 16, 16
+
     model_config = TransformerConfig.olmoe_1B_7B(
         vocab_size=tokenizer_config.padded_vocab_size(),  # a little bigger than actual vocab size to make it a multiple of 128
+        d_model=d_model,
+        n_layers=n_layers,
+        n_heads=n_heads,
     )
 
     # Apply special routers or other modifications to the model here if needed.
@@ -739,6 +749,12 @@ def parser_args():
         "--model-type",
         type=str,
         help="Type of MoE model to use.",
+    )
+    parser.add_argument(
+        "--model-size",
+        choices=["153M", "474M", "1B"],
+        default="1B",
+        help="Active-size backbone. The 153M and 474M options use the matched dense ladder dimensions; expert width remains d_model / 2.",
     )
     parser.add_argument(
         "--document-expert-pool",

@@ -1,5 +1,7 @@
 (() => {
   const d=window.ICSL_REPORT_DATA||{batchSweeps:[],targetEpochs:[]};
+  const simulation=window.ICSL_BATCH_SIMULATION_DATA||{columns:[],runs:[]};
+  const dataLoader=window.ICSL_DATA_LOADER_DATA||{runs:[]};
   const healthStyles=document.createElement('style');
   healthStyles.textContent=`
     .health-key{display:inline-block;width:14px;height:14px;border:0;border-radius:4px;background:#fecaca;vertical-align:-2px}
@@ -8,18 +10,22 @@
     .tuple.suspicious{background:#fed7aa!important;color:#9a3412!important;font-weight:400!important}
     .run-unhealthy td{background:#fff1f2;font-weight:400}
     .run-suspicious td{background:#ffedd5;font-weight:400}
+    .matched-stopped{color:#7e22ce}
+    .matched-stopped-key{color:#7e22ce;font-weight:700}
   `;
   document.head.append(healthStyles);
   const baseline=window.ICSL_WD_BASELINE_DATA||{runs:[],fixedLrByEpoch:{}};
+  const optimizerTiming=window.ICSL_OPTIMIZER_STEP_TIMING||{};
   document.querySelector('#title').textContent=d.title;
   document.querySelector('#setup').textContent=d.setup;
   document.querySelector('#updated').textContent=`Updated ${d.updated}`;
   document.querySelector('#selection').textContent=d.selection;
 
-  const colors={'BS 64':'#2563eb','BS 256':'#7c3aed','BS 1024':'#dc5a39'};
-  const series=['BS 64','BS 256','BS 1024'];
-  const health={...(baseline.healthAudit?.unhealthy||{}),...(d.healthAudit?.unhealthy||{})};
-  const suspiciousHealth={...(baseline.healthAudit?.suspicious||{}),...(d.healthAudit?.suspicious||{})};
+  const colors={'BS 16':'#059669','BS 32':'#0d9488','BS 64':'#2563eb','BS 128':'#0284c7','BS 256':'#7c3aed','BS 512':'#c026d3','BS 1024':'#dc5a39'};
+  const summaryBatches=d.summaryBatches||[16,32,64,128,256,512,1024];
+  const series=summaryBatches.map(batch=>`BS ${batch}`);
+  const health={...(baseline.healthAudit?.unhealthy||{}),...(d.healthAudit?.unhealthy||{}),...(simulation.healthAudit?.unhealthy||{}),...(dataLoader.healthAudit?.unhealthy||{})};
+  const suspiciousHealth={...(baseline.healthAudit?.suspicious||{}),...(d.healthAudit?.suspicious||{}),...(simulation.healthAudit?.suspicious||{}),...(dataLoader.healthAudit?.suspicious||{})};
   const wandbId=r=>r.wandb||r.activeWandb;
   const healthRecord=r=>health[wandbId(r)];
   const suspiciousRecord=r=>suspiciousHealth[wandbId(r)];
@@ -28,30 +34,185 @@
   const statusRecord=r=>healthRecord(r)||suspiciousRecord(r);
   const escapeAttribute=value=>String(value||'').replaceAll('&','&amp;').replaceAll('"','&quot;');
   const visible=r=>(!['failed','canceled'].includes(r.status)||unhealthy(r)||suspicious(r))&&r.kind!=='evaluation';
-  const active=r=>['active','running','submitted','pending','queued','planned'].includes(r.status);
+  const active=r=>['active','running','scheduled','submitted','pending','queued','planned'].includes(r.status);
   const metric=r=>r.validation??r.c4;
   const complete=r=>r.status==='complete'&&Number.isFinite(metric(r));
-  const admissibleCoordinate=r=>['5e-4','1e-3','2e-3'].includes(r.lr);
+  const admissibleCoordinate=r=>{
+    const lr=Number(r.lr),wd=Number(r.wd);
+    if(!Number.isFinite(lr))return false;
+    const maxLearningRate=Number(d.selectionPolicy?.maxLearningRate);
+    if(Number.isFinite(maxLearningRate)&&lr>maxLearningRate)return false;
+    if(d.selectionPolicy?.allowAllCompletedCoordinates)return true;
+    if(lr<2e-3)return true;
+    return r.batchSequences===256&&lr===2e-3&&wd===0.333;
+  };
   const key=r=>`${r.batchSequences}|${r.epoch}`;
 
-  const newRuns=(d.batchSweeps||[]).flatMap(sweep=>(d.targetEpochs||[]).map(epoch=>{
-    if(epoch>12)return null;
+  const targetsForBatch=batch=>{
+    const configured=d.batchTargetEpochs?.[String(batch)]||[];
+    const represented=(d.batchSweeps||[]).filter(sweep=>sweep.batchSequences===batch).flatMap(sweep=>[
+      ...Object.keys(sweep.results||{}).map(Number),
+      Number(sweep.activeEpoch),
+    ]);
+    const baselineRepresented=batch===1024?(baseline.runs||[]).map(run=>Number(run.epoch)):[];
+    return [...new Set([...configured,...represented,...baselineRepresented].filter(Number.isFinite))].sort((a,b)=>a-b);
+  };
+  const matchedEpochsForBatch=batch=>(d.optimizerStepComparisons||[]).map(comparison=>comparison.epochs?.[String(batch)]).filter(Number.isFinite);
+  const optimizerStepsForEpochBatch=(epoch,batch)=>{
+    const uniquePoolTokens=Number(optimizerTiming.uniquePoolTokens);
+    const sequenceLength=Number(optimizerTiming.sequenceLength)||4096;
+    if(!Number.isFinite(uniquePoolTokens)||uniquePoolTokens<=0||!Number.isFinite(epoch)||!Number.isFinite(batch)||batch<=0)return null;
+    return Math.round(epoch*uniquePoolTokens/(batch*sequenceLength));
+  };
+  const optimizerStepsForComparison=comparison=>{
+    const recalculated=summaryBatches.map(batch=>optimizerStepsForEpochBatch(comparison.epochs?.[String(batch)],batch)).filter(Number.isFinite);
+    if(recalculated.length)return Math.round(recalculated.reduce((sum,steps)=>sum+steps,0)/recalculated.length);
+    return Number(comparison.optimizerSteps);
+  };
+  const customSimulationOptimizerSteps=(simulation.columns||[]).flatMap(column=>
+    Object.values(column.matchedOptimizerStepsByEpoch||{}).map(Number).filter(Number.isFinite)
+  );
+  const optimizerStepComparisons=[...(d.optimizerStepComparisons||[])];
+  customSimulationOptimizerSteps.forEach(optimizerSteps=>{
+    if(!optimizerStepComparisons.some(comparison=>optimizerStepsForComparison(comparison)===optimizerSteps)){
+      optimizerStepComparisons.push({optimizerSteps,epochs:{},simulationOnly:true});
+    }
+  });
+  optimizerStepComparisons.sort((a,b)=>optimizerStepsForComparison(a)-optimizerStepsForComparison(b));
+  const optimizerStepRows=optimizerStepComparisons.map(optimizerStepsForComparison).filter(Number.isFinite);
+  const endpointOptimizerStep=run=>{
+    const explicit=Number(run.cumulativeOptimizerSteps??run.endpointOptimizerStep);
+    if(Number.isFinite(explicit))return explicit;
+    const match=String(run.endpointCheckpoint||'').match(/\/step(\d+)\/?$/);
+    return match?Number(match[1]):null;
+  };
+  const closestOptimizerStepRow=steps=>optimizerStepRows.reduce((closest,row)=>
+    closest===null||Math.abs(Math.log(steps/row))<Math.abs(Math.log(steps/closest))?row:closest
+  ,null);
+  const formatDuration=seconds=>{
+    if(!Number.isFinite(seconds))return '—';
+    const totalSeconds=Math.max(0,Math.round(seconds));
+    const hours=Math.floor(totalSeconds/3600);
+    const minutes=Math.floor((totalSeconds%3600)/60);
+    const remainingSeconds=totalSeconds%60;
+    if(hours)return `${hours}h ${minutes}m ${remainingSeconds}s`;
+    if(minutes)return `${minutes}m ${remainingSeconds}s`;
+    return `${remainingSeconds}s`;
+  };
+  const newRuns=(d.batchSweeps||[]).flatMap(sweep=>targetsForBatch(sweep.batchSequences).map(epoch=>{
     const result=sweep.results?.[epoch];
     if(result)return {...sweep,...result,epoch,series:`BS ${sweep.batchSequences}`,status:result.status};
     const candidate={...sweep,wandb:sweep.activeWandb,epoch,series:`BS ${sweep.batchSequences}`};
     if(epoch===sweep.activeEpoch&&(active(sweep)||unhealthy(candidate)))return candidate;
     return null;
   })).filter(Boolean).filter(visible);
-  const baselineRuns=(baseline.runs||[]).filter(r=>
+  const attemptHistoryRuns=(d.batchSweeps||[]).flatMap(sweep=>(sweep.attemptHistory||[]).map(attempt=>({
+    ...sweep,...attempt,epoch:sweep.activeEpoch,series:`BS ${sweep.batchSequences}`,historicalAttempt:true,
+  })));
+  const baselineRuns=summaryBatches.includes(1024)?(baseline.runs||[]).filter(r=>
     visible(r)&&r.status!=='queued'&&d.targetEpochs.includes(r.epoch)
-  ).map(r=>({...r,batchSequences:1024,contextLength:4096,series:'BS 1024'}));
+  ).map(r=>({...r,batchSequences:1024,contextLength:4096,series:'BS 1024'})):[];
+  const matchedBaselineRuns=summaryBatches.includes(1024)?(baseline.runs||[]).filter(r=>
+    visible(r)&&r.status!=='queued'&&matchedEpochsForBatch(1024).includes(r.epoch)
+  ).map(r=>({...r,batchSequences:1024,contextLength:4096,series:'BS 1024'})):[];
   const coordinateRuns=[...newRuns,...baselineRuns];
+  const selectionRuns=[...coordinateRuns,...matchedBaselineRuns];
   const selected=new Map();
-  coordinateRuns.filter(complete).filter(admissibleCoordinate).filter(r=>!unhealthy(r)).forEach(r=>{
-    const current=selected.get(key(r));
-    if(!current||metric(r)<metric(current))selected.set(key(r),r);
+  const selectable=selectionRuns.filter(complete).filter(admissibleCoordinate).filter(r=>!unhealthy(r));
+  if(d.selectionPolicy?.nondecreasingWd){
+    summaryBatches.forEach(batch=>{
+      let wdFloor=-Infinity;
+      targetsForBatch(batch).forEach(epoch=>{
+        const candidates=selectable.filter(r=>r.batchSequences===batch&&Number(r.epoch)===epoch&&Number(r.wd)>=wdFloor);
+        if(!candidates.length)return;
+        const override=d.selectionPolicy?.selectedCoordinateOverrides?.[String(batch)]?.[String(epoch)];
+        const overrideCandidate=override?candidates.find(r=>Number(r.lr)===Number(override.lr)&&Number(r.wd)===Number(override.wd)):null;
+        const best=overrideCandidate||candidates.reduce((current,r)=>metric(r)<metric(current)||(metric(r)===metric(current)&&Number(r.wd)<Number(current.wd))?r:current);
+        selected.set(`${batch}|${epoch}`,best);
+        wdFloor=Number(best.wd);
+      });
+    });
+  }else{
+    selectable.forEach(r=>{
+      const current=selected.get(key(r));
+      if(!current||metric(r)<metric(current))selected.set(key(r),r);
+    });
+  }
+  const simulationRuns=(simulation.runs||[]).flatMap(sweep=>Object.entries(sweep.results||{}).map(([epoch,result])=>({
+    ...sweep,...result,
+    train:result.train??result.trainCe,
+    validation:result.validation??result.validationCe,
+    acc:result.acc??result.hellaswagAccuracy,
+    bpb:result.bpb??result.hellaswagBpb,
+    epoch:Number(epoch),status:result.status||sweep.status,series:simulation.columns?.find(column=>column.key===sweep.method)?.label||sweep.method,
+  })));
+  const simulationSelected=new Map();
+  simulationRuns.filter(complete).filter(run=>!unhealthy(run)).forEach(run=>{
+    const simulationKey=`${run.method}|${run.epoch}`;
+    const current=simulationSelected.get(simulationKey);
+    if(!current||metric(run)<metric(current))simulationSelected.set(simulationKey,run);
   });
-  const chartRuns=[...selected.values()];
+  const drSelected=new Map();
+  summaryBatches.forEach(batch=>{
+    let wdFloor=-Infinity;
+    (dataLoader.targetEpochs||d.targetEpochs||[]).map(Number).sort((a,b)=>a-b).forEach(epoch=>{
+      if(epoch===1){
+        const baselineRun=selected.get(`${batch}|${epoch}`);
+        if(baselineRun)drSelected.set(`${batch}|${epoch}`,baselineRun);
+        return;
+      }
+      const candidates=(dataLoader.runs||[]).filter(sweep=>
+        sweep.method===`dr${batch}`&&Number(sweep.wd)>=wdFloor
+      ).map(sweep=>{
+        const result=sweep.results?.[String(epoch)];
+        return result?{...sweep,...result,epoch,status:result.status||sweep.status}:null;
+      }).filter(run=>run&&complete(run)&&!unhealthy(run));
+      if(!candidates.length)return;
+      const winner=candidates.reduce((best,run)=>
+        metric(run)<metric(best)||metric(run)===metric(best)&&Number(run.wd)<Number(best.wd)||
+        metric(run)===metric(best)&&Number(run.wd)===Number(best.wd)&&Number(run.lr)<Number(best.lr)?run:best
+      );
+      drSelected.set(`${batch}|${epoch}`,winner);
+      wdFloor=Number(winner.wd);
+    });
+  });
+  const simulationRunAtMatchedSteps=(column,optimizerSteps,comparison)=>{
+    const explicitMappings=Object.entries(column.matchedOptimizerStepsByEpoch||{});
+    const explicitEpoch=explicitMappings.find(([,steps])=>Number(steps)===optimizerSteps)?.[0];
+    if(explicitMappings.length)return explicitEpoch!==undefined?simulationSelected.get(`${column.key}|${Number(explicitEpoch)}`)||null:null;
+    if(!Number.isFinite(Number(column.sourceBatchSequences))){
+      const globalBatch=Number(column.globalBatchSequences)||512;
+      const matchedEpoch=comparison.epochs?.[String(globalBatch)];
+      return Number.isFinite(matchedEpoch)?simulationSelected.get(`${column.key}|${matchedEpoch}`)||null:null;
+    }
+    const candidates=[...simulationSelected.values()].filter(run=>{
+      if(run.method!==column.key)return false;
+      const endpointStep=endpointOptimizerStep(run);
+      return Number.isFinite(endpointStep)&&closestOptimizerStepRow(endpointStep)===optimizerSteps;
+    });
+    return candidates.length?candidates.reduce((best,run)=>metric(run)<metric(best)?run:best):null;
+  };
+  const stoppedImprovingByBatch=new Map();
+  summaryBatches.forEach(batch=>{
+    const completed=[...selected.values()].filter(run=>run.batchSequences===batch).sort((a,b)=>Number(a.epoch)-Number(b.epoch));
+    if(completed.length<2)return;
+    const terminal=completed.at(-1);
+    const priorBest=completed.slice(0,-1).reduce((best,run)=>metric(run)<metric(best)?run:best);
+    const activeAtOrBeyond=(d.batchSweeps||[]).some(sweep=>sweep.batchSequences===batch&&active(sweep)&&Number(sweep.activeEpoch)>=Number(terminal.epoch));
+    if(!activeAtOrBeyond&&metric(terminal)>=metric(priorBest))stoppedImprovingByBatch.set(batch,{terminal,priorBest});
+  });
+  const matchedEntryFor=(batch,epoch)=>{
+    const run=selected.get(`${batch}|${epoch}`);
+    const stopped=stoppedImprovingByBatch.get(batch);
+    if(stopped&&Number(epoch)>Number(stopped.priorBest.epoch))return {run:stopped.priorBest,replacedRun:run,value:metric(stopped.priorBest),carried:true,sourceEpoch:Number(stopped.priorBest.epoch),stopEpoch:Number(stopped.terminal.epoch)};
+    if(run)return {run,value:metric(run),carried:false,sourceEpoch:Number(run.epoch)};
+    return null;
+  };
+  const coordinateKeys=new Set(coordinateRuns.map(key));
+  const chartRuns=[...selected.values()].filter(run=>coordinateKeys.has(key(run)));
+  const chartEpochs=chartRuns.map(run=>Number(run.epoch)).filter(Number.isFinite);
+  const minChartEpoch=chartEpochs.length?Math.min(...chartEpochs):1;
+  const maxChartEpoch=chartEpochs.length?Math.max(...chartEpochs):24;
 
   const legend=document.querySelector('#legend');
   series.forEach(s=>legend.insertAdjacentHTML('beforeend',`<label><span class="dot" style="background:${colors[s]}"></span>${s}</label>`));
@@ -83,7 +244,8 @@
     const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 310 240');card.append(svg);charts.append(card);
     if(!points.length){svg.innerHTML='<text x="18" y="36">Pending results</text>';return;}
     const lo=Math.min(...points.map(x=>x.v)),hi=Math.max(...points.map(x=>x.v)),pad=Math.max((hi-lo)*.18,.01);
-    const y=v=>200-(v-(lo-pad))/(hi-lo+2*pad)*160,x=e=>42+(e-1)/23*244;
+    const epochSpan=Math.max(maxChartEpoch-minChartEpoch,1);
+    const y=v=>200-(v-(lo-pad))/(hi-lo+2*pad)*160,x=e=>42+(e-minChartEpoch)/epochSpan*244;
     svg.innerHTML=`<line x1="36" y1="200" x2="286" y2="200" stroke="#aeb7c7"/><text x="2" y="203">${(lo-pad).toFixed(3)}</text><text x="2" y="42">${(hi+pad).toFixed(3)}</text>`;
     series.forEach((s,si)=>{
       const p=points.filter(z=>z.r.series===s).sort((a,b)=>a.r.epoch-b.r.epoch),color=colors[s];
@@ -94,27 +256,146 @@
     layoutBestLabels(svg,{minX:20,maxX:290,minY:12,maxY:190});
   });
 
-  const summaryBatches=[64,256,1024];
+  const epochSummaryBatches=summaryBatches;
+  const optimizerSummaryBatches=summaryBatches;
   const bestByBatch=new Map();
-  summaryBatches.forEach(batch=>{
-    const completed=(d.targetEpochs||[]).map(epoch=>selected.get(`${batch}|${epoch}`)).filter(Boolean);
+  epochSummaryBatches.forEach(batch=>{
+    const completed=targetsForBatch(batch).map(epoch=>selected.get(`${batch}|${epoch}`)).filter(Boolean);
     if(completed.length)bestByBatch.set(batch,completed.reduce((best,run)=>metric(run)<metric(best)?run:best));
+  });
+  const bestByDRBatch=new Map();
+  epochSummaryBatches.forEach(batch=>{
+    const completed=[...drSelected.entries()].filter(([key])=>key.startsWith(`${batch}|`)).map(([,run])=>run);
+    if(completed.length)bestByDRBatch.set(batch,completed.reduce((best,run)=>metric(run)<metric(best)?run:best));
+  });
+  const bestBySimulation=new Map();
+  (simulation.columns||[]).forEach(column=>{
+    const completed=[...simulationSelected.values()].filter(run=>run.method===column.key);
+    if(completed.length)bestBySimulation.set(column.key,completed.reduce((best,run)=>metric(run)<metric(best)?run:best));
   });
   const validationSummary=document.querySelector('#validation-summary');
   validationSummary.innerHTML=(d.targetEpochs||[]).map(epoch=>{
-    const cells=summaryBatches.map(batch=>{
+    const rowRuns=[
+      ...epochSummaryBatches.flatMap(batch=>[selected.get(`${batch}|${epoch}`),drSelected.get(`${batch}|${epoch}`)]),
+      ...(simulation.columns||[]).map(column=>simulationSelected.get(`${column.key}|${epoch}`)),
+    ].filter(Boolean);
+    const rowBestMetric=rowRuns.length?Math.min(...rowRuns.map(metric)):null;
+    const cells=epochSummaryBatches.flatMap(batch=>{
+      const run=selected.get(`${batch}|${epoch}`);
+      const drRun=drSelected.get(`${batch}|${epoch}`);
+      return [[run,bestByBatch.get(batch),'Original'],[drRun,bestByDRBatch.get(batch),'DR']].map(([candidate,columnBestRun,method])=>{
+        if(!candidate)return '<td>—</td>';
+        const columnBest=columnBestRun===candidate;
+        const rowBest=metric(candidate)===rowBestMetric;
+        const formatted=metric(candidate).toFixed(3);
+        const rowMarked=rowBest?`<span class="summary-row-best">${formatted}</span>`:formatted;
+        return `<td class="${columnBest?'summary-best':''}" title="BS ${batch} ${method}; LR ${candidate.lr}; WD ${candidate.wd}">${columnBest?`<strong>${rowMarked}</strong>`:rowMarked}</td>`;
+      });
+    }).join('');
+    const simulationCells=(simulation.columns||[]).map(column=>{
+      const run=simulationSelected.get(`${column.key}|${epoch}`);
+      if(!run)return '<td>—</td>';
+      const columnBest=bestBySimulation.get(column.key)===run;
+      const rowBest=metric(run)===rowBestMetric;
+      const formatted=metric(run).toFixed(3);
+      const rowMarked=rowBest?`<span class="summary-row-best">${formatted}</span>`:formatted;
+      return `<td class="${columnBest?'summary-best':''}" title="global BS ${run.batchSequences}; simulated BS ${run.simulatedBatchSequences}; LR ${run.lr}; WD ${run.wd}">${columnBest?`<strong>${rowMarked}</strong>`:rowMarked}</td>`;
+    }).join('');
+    return `<tr><td><strong>E${epoch}</strong></td>${cells}${simulationCells}</tr>`;
+  }).join('');
+
+  const coordinateSummary=document.querySelector('#coordinate-summary');
+  if(coordinateSummary)coordinateSummary.innerHTML=(d.targetEpochs||[]).map(epoch=>{
+    const rowRuns=epochSummaryBatches.map(batch=>selected.get(`${batch}|${epoch}`)).filter(Boolean);
+    const rowBestMetric=rowRuns.length?Math.min(...rowRuns.map(metric)):null;
+    const cells=epochSummaryBatches.map(batch=>{
       const run=selected.get(`${batch}|${epoch}`);
       if(!run)return '<td>—</td>';
-      const best=bestByBatch.get(batch)===run;
-      return `<td class="${best?'summary-best':''}">${best?`<strong>${metric(run).toFixed(3)}</strong>`:metric(run).toFixed(3)}</td>`;
+      const columnBest=bestByBatch.get(batch)===run;
+      const rowBest=metric(run)===rowBestMetric;
+      const formatted=`(${run.lr}, ${run.wd})`;
+      const rowMarked=rowBest?`<span class="summary-row-best">${formatted}</span>`:formatted;
+      return `<td class="${columnBest?'summary-best':''}">${columnBest?`<strong>${rowMarked}</strong>`:rowMarked}</td>`;
     }).join('');
     return `<tr><td><strong>E${epoch}</strong></td>${cells}</tr>`;
+  }).join('');
+
+  const optimizerStepSummary=document.querySelector('#optimizer-step-summary');
+  const optimizerStepTable=optimizerStepSummary?.closest('table');
+  const optimizerStepHeaderRow=optimizerStepTable?.querySelector('thead tr');
+  if(optimizerStepHeaderRow&&!optimizerStepHeaderRow.querySelector('.training-time-header')){
+    optimizerStepHeaderRow.querySelector('th')?.insertAdjacentHTML('afterend','<th class="training-time-header">Training time</th>');
+  }
+  const optimizerStepNote=optimizerStepSummary?.closest('.summary-panel')?.querySelector('.summary-note');
+  if(optimizerStepNote){
+    const microbatch=Number(optimizerTiming.microbatchSequences);
+    const secondsPerStep=Number(optimizerTiming.secondsPerStep);
+    const hasSourceStepMappedSimulation=(simulation.columns||[]).some(column=>Number.isFinite(Number(column.sourceBatchSequences)));
+    const simulationNote=(simulation.columns||[]).length?` Local-update columns use each method's declared global batch to select the matched epoch row; simulated batch size does not change that optimizer-step placement.${hasSourceStepMappedSimulation?' Methods initialized from a smaller-batch checkpoint are instead placed by their cumulative endpoint optimizer step, including the parent checkpoint history.':''}`:'';
+    const endpointNote=(simulation.columns||[]).length?' Every DR column uses the data-loader report’s healthy nondecreasing-WD selection at the source epoch. E12 BS1024 values are post-decay endpoint evaluations at checkpoint step 2,862; step 2,575 is the pre-decay resume checkpoint and is not the displayed result. The matched row is labeled ≈2,861 because token-based optimizer-step arithmetic rounds to the nearest step.':'';
+    optimizerStepNote.innerHTML=`Optimizer steps are recalculated per batch as epoch × 1B pool tokens ÷ (global batch × 4,096) and matched by row.${simulationNote}${endpointNote} For the BS64-E1-initialized DiLoCo arm, E2 is shown on its own ≈4,292-step row: ≈3,815 BS64-parent steps + ≈477 BS512 E1→E2 steps. Idealized training time assumes microbatch ${microbatch}, ${secondsPerStep}s/step, accumulation 1, unlimited GPUs, and GPU count = global batch ÷ ${microbatch}. Each result cell shows epoch · validation CE; row minima are bold and underlined. <span class="matched-stopped-key">Purple text</span> carries forward the best CE reached before a confirmed terminal non-improvement and shows the real source epoch; it is not a new higher-epoch measurement.`;
+  }
+  optimizerStepSummary.innerHTML=optimizerStepComparisons.map(comparison=>{
+    const optimizerSteps=optimizerStepsForComparison(comparison);
+    const secondsPerStep=Number(optimizerTiming.secondsPerStep);
+    const trainingSeconds=optimizerSteps*secondsPerStep;
+    const timeCell=Number.isFinite(trainingSeconds)?`<td class="matched-value" title="${optimizerSteps.toLocaleString()} steps × ${secondsPerStep}s per step">≈${formatDuration(trainingSeconds)}</td>`:'<td>—</td>';
+    const rowEntries=[...optimizerSummaryBatches.flatMap(batch=>{
+      const epoch=comparison.epochs?.[String(batch)];
+      if(!Number.isFinite(epoch))return [null,null];
+      const original=matchedEntryFor(batch,epoch);
+      const drRun=drSelected.get(`${batch}|${Number(epoch)}`);
+      return [original,drRun?{run:drRun,value:metric(drRun),carried:false,sourceEpoch:Number(drRun.epoch)}:null];
+    }),...(simulation.columns||[]).map(column=>{
+      const run=simulationRunAtMatchedSteps(column,optimizerSteps,comparison);
+      return run?{run,value:metric(run),carried:false,sourceEpoch:Number(run.epoch)}:null;
+    })].filter(Boolean);
+    const rowBestMetric=rowEntries.length?Math.min(...rowEntries.map(entry=>entry.value)):null;
+    const cells=optimizerSummaryBatches.flatMap(batch=>{
+      const epoch=comparison.epochs?.[String(batch)];
+      if(!Number.isFinite(epoch))return ['<td>—</td>','<td>—</td>'];
+      const entry=matchedEntryFor(batch,epoch);
+      const recalculatedSteps=optimizerStepsForEpochBatch(epoch,batch);
+      const arithmetic=Number.isFinite(recalculatedSteps)?`E${epoch} × ${Number(optimizerTiming.uniquePoolTokens).toLocaleString()} tokens ÷ (BS ${batch} × ${Number(optimizerTiming.sequenceLength)||4096}) = ${recalculatedSteps.toLocaleString()} optimizer steps`:'';
+      const originalCell=(()=>{
+        if(!entry)return `<td class="matched-value"${arithmetic?` title="${escapeAttribute(arithmetic)}"`:''}>E${epoch} · —</td>`;
+        const carryExplanation=entry.carried?(entry.replacedRun?` The E${epoch} endpoint measured CE ${metric(entry.replacedRun).toFixed(3)}, but the displayed E${entry.sourceEpoch} CE ${entry.value.toFixed(3)} remains the best result before the terminal E${entry.stopEpoch} non-improvement.`:` No E${epoch} endpoint was run: the displayed E${entry.sourceEpoch} CE ${entry.value.toFixed(3)} is carried into this matched-step slot as the best result before the terminal E${entry.stopEpoch} non-improvement.`):'';
+        const title=` title="${escapeAttribute(arithmetic+carryExplanation)}"`;
+        const formatted=entry.value.toFixed(3);
+        const marked=entry.value===rowBestMetric?`<strong><span class="summary-row-best">${formatted}</span></strong>`:formatted;
+        return `<td class="matched-value${entry.carried?' matched-stopped':''}"${title}>E${entry.carried?entry.sourceEpoch:epoch} · ${marked}</td>`;
+      })();
+      const drRun=drSelected.get(`${batch}|${Number(epoch)}`);
+      const drCell=drRun?(()=>{
+        const formatted=metric(drRun).toFixed(3);
+        const marked=metric(drRun)===rowBestMetric?`<strong><span class="summary-row-best">${formatted}</span></strong>`:formatted;
+        const endpointStep=endpointOptimizerStep(drRun);
+        const endpointNote=Number.isFinite(endpointStep)?`post-decay endpoint step ${endpointStep.toLocaleString()}`:'post-decay endpoint';
+        return `<td class="matched-value" title="BS${batch} dynamic repacking; LR ${drRun.lr}; WD ${drRun.wd}; ${endpointNote}">E${drRun.epoch} · ${marked}</td>`;
+      })():'<td>—</td>';
+      return [originalCell,drCell];
+    }).join('');
+    const simulationCells=(simulation.columns||[]).map(column=>{
+      const run=simulationRunAtMatchedSteps(column,optimizerSteps,comparison);
+      if(!run)return '<td>—</td>';
+      const formatted=metric(run).toFixed(3);
+      const marked=metric(run)===rowBestMetric?`<strong><span class="summary-row-best">${formatted}</span></strong>`:formatted;
+      const endpointStep=endpointOptimizerStep(run);
+      const explicitMatchedSteps=Number(column.matchedOptimizerStepsByEpoch?.[String(run.epoch)]);
+      const sourceMapping=Number.isFinite(explicitMatchedSteps)
+        ?`; matched compute ${explicitMatchedSteps.toLocaleString()} steps, including the BS ${column.sourceBatchSequences} parent history`
+        :Number.isFinite(Number(column.sourceBatchSequences))&&Number.isFinite(endpointStep)
+        ?`; cumulative checkpoint step ${endpointStep.toLocaleString()} (initialized from BS ${column.sourceBatchSequences})`
+        :'';
+      return `<td class="matched-value" title="global BS ${column.globalBatchSequences}; simulated BS ${column.simulatedBatchSequences}; LR ${run.lr}; WD ${run.wd}${sourceMapping}">E${run.epoch} · ${marked}</td>`;
+    }).join('');
+    return `<tr><td>≈${optimizerSteps.toLocaleString()}</td>${timeCell}${cells}${simulationCells}</tr>`;
   }).join('');
 
   const grid=document.querySelector('#coordinate-grid');
   const groups=new Map();
   coordinateRuns.forEach(r=>{const g=key(r);if(!groups.has(g))groups.set(g,[]);groups.get(g).push(r);});
-  grid.innerHTML=[...groups.entries()].sort((a,b)=>{const [ab,ae]=a[0].split('|'),[bb,be]=b[0].split('|');return Number(ab)-Number(bb)||Number(ae)-Number(be)}).map(([g,runs])=>{
+  if(grid)grid.innerHTML=[...groups.entries()].sort((a,b)=>{const [ab,ae]=a[0].split('|'),[bb,be]=b[0].split('|');return Number(ab)-Number(bb)||Number(ae)-Number(be)}).map(([g,runs])=>{
     const [batch,epoch]=g.split('|'),best=selected.get(g);
     const ordered=runs.sort((a,b)=>Number(a.wd)-Number(b.wd)||Number(a.lr)-Number(b.lr));
     const chips=ordered.map(r=>`<span class="tuple ${best===r?'selected':active(r)?'active':''} ${unhealthy(r)?'unhealthy':suspicious(r)?'suspicious':''}"${unhealthy(r)||suspicious(r)?` title="${escapeAttribute(statusRecord(r).reason)}"`:''}>(LR ${r.lr}, WD ${r.wd}) · ${r.status}${Number.isFinite(metric(r))?` · CE ${metric(r).toFixed(3)}`:''}</span>`).join('');
@@ -123,9 +404,9 @@
   }).join('');
 
   const tableMetric=v=>Number.isFinite(v)?v.toFixed(3):'—';
-  const selectedBaseline=[...selected.values()].filter(r=>r.batchSequences===1024);
-  const provenanceMap=new Map([...newRuns,...selectedBaseline,...baselineRuns.filter(r=>unhealthy(r)||suspicious(r))].map(r=>[`${r.batchSequences}|${r.epoch}|${r.lr}|${r.wd}|${wandbId(r)||r.beaker}`,r]));
+  const selectedBaseline=[...selected.values()].filter(r=>r.batchSequences===1024&&coordinateKeys.has(key(r)));
+  const provenanceMap=new Map([...newRuns,...attemptHistoryRuns,...selectedBaseline,...baselineRuns.filter(r=>unhealthy(r)||suspicious(r))].map(r=>[`${r.batchSequences}|${r.epoch}|${r.lr}|${r.wd}|${wandbId(r)||r.beaker}`,r]));
   const provenance=[...provenanceMap.values()].sort((a,b)=>a.batchSequences-b.batchSequences||a.epoch-b.epoch||Number(a.lr)-Number(b.lr));
   const rows=document.querySelector('#rows');
-  provenance.forEach(r=>rows.insertAdjacentHTML('beforeend',`<tr class="${unhealthy(r)?'run-unhealthy':suspicious(r)?'run-suspicious':''}"${unhealthy(r)||suspicious(r)?` title="${escapeAttribute(statusRecord(r).reason)}"`:''}><td>${r.batchSequences}</td><td>${r.epoch}</td><td>${r.lr}</td><td>${r.wd}</td><td class="${active(r)?'run-active':''}">${r.status}</td><td>${tableMetric(r.train)}</td><td>${tableMetric(metric(r))}</td><td>${tableMetric(r.acc)}</td><td>${tableMetric(r.bpb)}</td><td>${wandbId(r)?`<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${wandbId(r)}">${wandbId(r)}</a>`:'—'}</td><td>${r.beaker?`<a href="https://beaker.org/ex/${r.beaker}">experiment</a>`:'—'}</td></tr>`));
+  if(rows)provenance.forEach(r=>rows.insertAdjacentHTML('beforeend',`<tr class="${unhealthy(r)?'run-unhealthy':suspicious(r)?'run-suspicious':''}"${r.reason?` title="${escapeAttribute(r.reason)}"`:''}><td>${r.batchSequences}</td><td>${r.epoch}</td><td>${r.lr}</td><td>${r.wd}</td><td class="${active(r)?'run-active':''}">${r.status}${r.historicalAttempt?' · recovery provenance':''}</td><td>${tableMetric(r.train)}</td><td>${tableMetric(metric(r))}</td><td>${tableMetric(r.acc)}</td><td>${tableMetric(r.bpb)}</td><td>${wandbId(r)?`<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${wandbId(r)}">${wandbId(r)}</a>`:'—'}</td><td>${r.beaker?`<a href="https://beaker.org/ex/${r.beaker}">experiment</a>`:'—'}</td></tr>`));
 })();

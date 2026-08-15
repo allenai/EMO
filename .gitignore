@@ -86,6 +86,8 @@ claude_outputs
 eval_plots/.mplconfig
 *.csv
 *.html
+!reports/0802/wsd_unique_vs_repeated_batch_tuned_1b.html
+!reports/0802/wsd_batch_size_1b_local_sgd.html
 prune_evals_final
 extension_evals_0414
 extension_evals_hf

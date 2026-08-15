@@ -10,6 +10,7 @@
 #   MODE=beaker                 # default: local (uses torchrun)
 #   NPROC=8                     # GPUs per node when MODE=local
 #   BEAKER_GPUS / BEAKER_NODES  # cluster sizing when MODE=beaker
+#   BEAKER_FOLLOW=0             # submit without waiting for the Beaker job
 
 # Output root for trained checkpoints.
 PREFIX="${PREFIX:-/weka/oe-training-default/sewonm/icsl}"
@@ -39,6 +40,7 @@ BEAKER_PREEMPTIBLE="${BEAKER_PREEMPTIBLE:-1}"
 BEAKER_AUTO_RESUME="${BEAKER_AUTO_RESUME:-1}"
 BEAKER_MIN_RUNTIME="${BEAKER_MIN_RUNTIME:-0}"
 BEAKER_TORCHRUN="${BEAKER_TORCHRUN:-auto}"
+BEAKER_FOLLOW="${BEAKER_FOLLOW:-1}"
 BEAKER_ENV_SECRETS=(
     "GITHUB_TOKEN=GITHUB_TOKEN"
     "WANDB_API_KEY=SEWONM_WANDB_API_KEY"
@@ -60,6 +62,7 @@ launch() {
         local preemptible_args=()
         local auto_resume_args=()
         local torchrun_args=()
+        local follow_args=()
         if [[ "${BEAKER_PREEMPTIBLE}" == "1" ]]; then
             preemptible_args+=(--preemptible)
         fi
@@ -71,6 +74,11 @@ launch() {
             1) torchrun_args+=(--torchrun) ;;
             0) torchrun_args+=(--no-torchrun) ;;
             *) echo "BEAKER_TORCHRUN must be one of: auto, 0, 1" >&2; return 2 ;;
+        esac
+        case "${BEAKER_FOLLOW}" in
+            0) follow_args+=(--no-follow) ;;
+            1) ;;
+            *) echo "BEAKER_FOLLOW must be 0 or 1" >&2; return 2 ;;
         esac
         python -m olmo_core.launch.beaker \
             --name "${run_name}" \
@@ -84,6 +92,7 @@ launch() {
             "${preemptible_args[@]}" \
             "${auto_resume_args[@]}" \
             "${torchrun_args[@]}" \
+            "${follow_args[@]}" \
             --allow-dirty \
             --priority "${BEAKER_PRIORITY}" \
             --min-runtime "${BEAKER_MIN_RUNTIME}" \

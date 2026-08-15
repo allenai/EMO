@@ -1,0 +1,68 @@
+version: v2
+description: Focused Linux validation for Dense 1B LocalSGD/DiLoCo batch-simulation and continuation semantics.
+tasks:
+  - name: main
+    image:
+      beaker: 01KAXVQ0YN242MQ9YEQDQQK512
+    command: [bash, /gantry/entrypoint.sh]
+    arguments:
+      - bash
+      - -c
+      - |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "a1e6b71a5bbec5294ecf5498905f2ec850371ea7"
+        python -m pytest -q src/test/train/train_module/transformer/batch_simulation_test.py
+    envVars:
+      - name: GANTRY_VERSION
+        value: 3.7.0
+      - name: GITHUB_REPO
+        value: allenai/EMO
+      - name: GIT_REF
+        value: a1e6b71a5bbec5294ecf5498905f2ec850371ea7
+      - name: GANTRY_TASK_NAME
+        value: main
+      - name: RESULTS_DIR
+        value: /results
+      - name: GANTRY_RUNTIME_DIR
+        value: /gantry-runtime
+      - name: GANTRY_EXEC_METHOD
+        value: exec
+      - name: GANTRY_DEFAULT_PYTHON_VERSION
+        value: "3.12"
+      - name: GANTRY_USE_SYSTEM_PYTHON
+        value: "1"
+      - name: GANTRY_PYTHON_MANAGER
+        value: uv
+      - name: GANTRY_UV_ALL_EXTRAS
+        value: "1"
+      - name: OMP_NUM_THREADS
+        value: "8"
+      - name: OLMO_CORE_VERSION
+        value: 2.5.0
+      - name: FORCE_COLOR
+        value: "1"
+      - name: GITHUB_TOKEN
+        secret: GITHUB_TOKEN
+      - name: BEAKER_TOKEN
+        secret: sewonm_BEAKER_TOKEN
+      - name: HF_TOKEN
+        secret: HF_TOKEN
+    datasets:
+      - mountPath: /gantry
+        source:
+          beaker: 01KNQSJ27JZEM2Z9KQ191P0JJY
+    result:
+      path: /results
+    resources:
+      gpuCount: 1
+      sharedMemory: 10 GiB
+    context:
+      priority: high
+      minRuntime: 0s
+      autoResume: false
+    constraints:
+      cluster:
+        - ai2/jupiter
+    hostNetworking: false
+    propagateFailure: true
+    propagatePreemption: false

@@ -21,9 +21,12 @@ ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 RUN_PATH = re.compile(r"/models/(?P<name>dense_1b_step2_1_0802_unique_[^/\s]+)/wandb/wandb/run-[^-\s]+-(?P<wandb>[a-z0-9]+)")
 RUN_LINK = re.compile(r"View run (?P<name>\S+) at: https://wandb\.ai/[^\s]+/runs/(?P<wandb>[a-z0-9]+)")
 LEGACY_RUN_NAME = re.compile(r"^dense_1b_step2_1_0802_unique_dclm5b_wsd_bs(?P<batch>64|256)_e(?P<epoch>[1-5])_lr(?P<lr>5e-4|1e-3|2e-3)_wd0\.033_warmup(?P<warmup>384|96)$")
+FRACTIONAL_RUN_NAME = re.compile(r"^dense_1b_step2_1_0802_unique_dclm5b_wsd_bs(?P<batch>64|256)_e(?P<epoch>0p125|0p25|0p5)_lr(?P<lr>1e-3)_wd0\.033_warmup(?P<warmup>384|96)$")
 EXTENSION_RUN_NAME = re.compile(r"^dense_1b_step2_1_0802_unique_ext1019b_wsd_bs(?P<batch>64|256|1024)_t(?P<epoch>6|8|10|12|16)b_lr(?P<lr>1e-3)_wd0\.033_warmup(?P<warmup>384|96|24)$")
 CHAIN_START = re.compile(r"CHAIN_START bs=(?P<batch>64|256) lr=(?P<lr>\S+) target=(?P<epoch>[1-5])")
 CHAIN_FINISH = re.compile(r"CHAIN_FINISH bs=(?P<batch>64|256) lr=(?P<lr>\S+) target=(?P<epoch>[1-5])")
+FRACTIONAL_CHAIN_START = re.compile(r"FRACTIONAL_CHAIN_START bs=(?P<batch>64|256) lr=(?P<lr>1e-3) target=(?P<epoch>0\.125|0\.25|0\.5)")
+FRACTIONAL_CHAIN_FINISH = re.compile(r"FRACTIONAL_CHAIN_FINISH bs=(?P<batch>64|256) lr=(?P<lr>1e-3) target=(?P<epoch>0\.125|0\.25|0\.5)")
 EXTENSION_CHAIN_START = re.compile(r"EXTENSION_CHAIN_START bs=(?P<batch>64|256|1024) target=(?P<epoch>6|8|10|12|16)b")
 EXTENSION_CHAIN_FINISH = re.compile(r"EXTENSION_CHAIN_FINISH bs=(?P<batch>64|256|1024) target=(?P<epoch>6|8|10|12|16)b")
 TRAIN = re.compile(r"train/CE loss=([0-9.Ee+\-]+)")
@@ -35,6 +38,7 @@ TOKENS_PER_TARGET = 1_000_000_000
 SEQUENCE_LENGTH = 4096
 DECAY_FRACTION = 0.1
 EXTENSION_TARGETS = (6, 8, 10, 12, 16)
+FRACTIONAL_TARGETS = (0.125, 0.25, 0.5)
 E5_PREDECAY = {
     64: "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_1_0802_unique_dclm5b_wsd_bs64_e5_lr1e-3_wd0.033_warmup384/step17166",
     256: "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step2_1_0802_unique_dclm5b_wsd_bs256_e5_lr1e-3_wd0.033_warmup96/step4291",
@@ -45,12 +49,24 @@ E5_PREDECAY = {
 def match_run_name(name: str) -> tuple[re.Match[str], bool] | None:
     if match := LEGACY_RUN_NAME.match(name):
         return match, False
+    if match := FRACTIONAL_RUN_NAME.match(name):
+        return match, False
     if match := EXTENSION_RUN_NAME.match(name):
         return match, True
     return None
 
 
-def stable_step(target: int, batch_sequences: int) -> int:
+def target_value(raw: str) -> int | float:
+    normalized = raw.replace("p", ".")
+    value = float(normalized)
+    return int(value) if value.is_integer() else value
+
+
+def target_label(raw: str) -> str:
+    return str(target_value(raw))
+
+
+def stable_step(target: int | float, batch_sequences: int) -> int:
     end_step = math.ceil(target * TOKENS_PER_TARGET / (batch_sequences * SEQUENCE_LENGTH))
     return end_step - round(DECAY_FRACTION * end_step) - 1
 
@@ -93,18 +109,22 @@ def experiment_state(experiment: str) -> tuple[str, str, dict[str, Any]]:
     return job["id"], status, job
 
 
-def parse_log(text: str) -> tuple[dict[str, dict[str, Any]], int | None, int]:
+def parse_log(text: str) -> tuple[dict[str, dict[str, Any]], int | float | None, int | float]:
     runs: dict[str, dict[str, Any]] = {}
     current: str | None = None
-    active_epoch: int | None = None
-    finished_epoch = 0
+    active_epoch: int | float | None = None
+    finished_epoch: int | float = 0
     for raw in ANSI.sub("", text).splitlines():
         if match := EXTENSION_CHAIN_START.search(raw):
             active_epoch = int(match.group("epoch"))
+        elif match := FRACTIONAL_CHAIN_START.search(raw):
+            active_epoch = target_value(match.group("epoch"))
         elif match := CHAIN_START.search(raw):
             active_epoch = int(match.group("epoch"))
         if match := EXTENSION_CHAIN_FINISH.search(raw):
             finished_epoch = max(finished_epoch, int(match.group("epoch")))
+        elif match := FRACTIONAL_CHAIN_FINISH.search(raw):
+            finished_epoch = max(finished_epoch, target_value(match.group("epoch")))
         elif match := CHAIN_FINISH.search(raw):
             finished_epoch = max(finished_epoch, int(match.group("epoch")))
         if match := RUN_PATH.search(raw):
@@ -144,7 +164,7 @@ def completed_rows(chain: dict[str, Any], parsed: dict[str, dict[str, Any]]) -> 
         if any(task not in downstream or task not in downstream_bpb for task in AVERAGE_TASKS):
             continue
         batch_sequences = int(match.group("batch"))
-        target = int(match.group("epoch"))
+        target = target_value(match.group("epoch"))
         warmup = int(match.group("warmup"))
         output = (
             extension_output(batch_sequences, target, warmup)
@@ -153,7 +173,7 @@ def completed_rows(chain: dict[str, Any], parsed: dict[str, dict[str, Any]]) -> 
         )
         row = {
             "batchSequences": int(match.group("batch")),
-            "epoch": int(match.group("epoch")),
+            "epoch": target,
             "lr": match.group("lr"),
             "wd": "0.033",
             "warmupSteps": int(match.group("warmup")),
@@ -174,7 +194,11 @@ def completed_rows(chain: dict[str, Any], parsed: dict[str, dict[str, Any]]) -> 
             "reason": (
                 "Completed inside the document-disjoint unique-extension chain with held-out DCLM validation and downstream evaluations."
                 if is_extension
-                else "Completed inside the persistent 1B-through-5B Step 2-1 chain with held-out DCLM validation and downstream evaluations."
+                else (
+                    "Completed inside the persistent fractional unique-data Step 2-1 chain with held-out DCLM validation and downstream evaluations."
+                    if target < 1
+                    else "Completed inside the persistent 1B-through-5B Step 2-1 chain with held-out DCLM validation and downstream evaluations."
+                )
             ),
         }
         if is_extension:
@@ -189,6 +213,19 @@ def completed_rows(chain: dict[str, Any], parsed: dict[str, dict[str, Any]]) -> 
                 stable_step(target, batch_sequences)
                 - int(E5_PREDECAY[batch_sequences].rsplit("step", 1)[1])
             ) * batch_sequences * SEQUENCE_LENGTH
+        elif target < 1:
+            row["resumeCheckpoint"] = (
+                None
+                if target == FRACTIONAL_TARGETS[0]
+                else (
+                    "/weka/oe-training-default/sewonm/icsl/models/"
+                    f"dense_1b_step2_1_0802_unique_dclm5b_wsd_bs{batch_sequences}_"
+                    f"e{str(FRACTIONAL_TARGETS[FRACTIONAL_TARGETS.index(target) - 1]).replace('.', 'p')}_"
+                    f"lr{match.group('lr')}_wd0.033_warmup{warmup}/"
+                    f"step{stable_step(FRACTIONAL_TARGETS[FRACTIONAL_TARGETS.index(target) - 1], batch_sequences)}"
+                )
+            )
+            row["stableCheckpoint"] = f"{output}/step{stable_step(target, batch_sequences)}"
         rows.append(row)
     return rows
 
@@ -216,7 +253,7 @@ def main() -> None:
         for name, run in parsed.items():
             parsed_name = match_run_name(name)
             if parsed_name and run.get("wandb"):
-                phase_wandb[parsed_name[0].group("epoch")] = run["wandb"]
+                phase_wandb[target_label(parsed_name[0].group("epoch"))] = run["wandb"]
         chain["phaseWandb"] = phase_wandb
         for row in completed_rows(chain, parsed):
             existing[(row["batchSequences"], row["epoch"], row["lr"])] = row

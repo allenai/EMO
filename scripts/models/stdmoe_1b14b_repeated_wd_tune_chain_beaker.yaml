@@ -1,0 +1,154 @@
+version: v2
+description: Standard MoE 1B14B repeated-DCLM WD sweep chain at LR 1e-3 (WD __WD__); evaluates 1-6B, 8B, and 10B in one allocation.
+tasks:
+  - name: main
+    image:
+      beaker: 01KAXVQ0YN242MQ9YEQDQQK512
+    command: [bash, /gantry/entrypoint.sh]
+    arguments:
+      - bash
+      - -c
+      - |
+        set -euo pipefail
+
+        wd="__WD__"
+        lr="1e-3"
+        output_root="/weka/oe-training-default/sewonm/icsl/models"
+
+        run_phase() {
+          local epoch="$1"
+          local max_tokens="$2"
+          local fixed_steps="$3"
+          local load_epoch="${4:-}"
+          local load_step="${5:-}"
+          local runname="stdmoe_1b14b_step2_0802_repeated_dclm1b_wsd_e${epoch}_lr${lr}_wd${wd}_warmup24"
+          local args=(
+            "src/scripts/train/olmoe-1B-7B_fsl.py"
+            "${runname}"
+            "--data-root=/weka/oe-training-default/ai2-llm"
+            "--save-folder=${output_root}/${runname}"
+            "--dataset.mix=null"
+            "--dataset.subset_manifest=src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b.json"
+            "--dataset.mix_base_dir=/weka/oe-training-default/ai2-llm"
+            "--work-dir=/weka/oe-training-default/sewonm/dataset-cache"
+            "--trainer.max_duration={value: ${max_tokens}, unit: tokens}"
+            "--trainer.callbacks.wandb.enabled=true"
+            "--trainer.callbacks.wandb.entity=ai2-llm"
+            "--trainer.callbacks.wandb.project=sewonm-icsl"
+            "--trainer.callbacks.wandb.name=${runname}"
+            "--trainer.callbacks.wandb.tags=[pretraining, step2, 0802, standard-moe, repeated-data, dclm-train-only, document-disjoint, uniform-document-sample, wsd, warmup24, weight-decay-tune, wd${wd}]"
+            "--trainer.callbacks.downstream_evaluator.tasks=[arc_easy, arc_challenge, boolq, csqa_val_rc_5shot, hellaswag, openbookqa_test_rc_5shot, piqa, socialiqa_val_rc_5shot, winogrande]"
+            "--trainer.callbacks.downstream_evaluator.eval_interval=null"
+            "--trainer.callbacks.downstream_evaluator.eval_on_finish=true"
+            "--trainer.callbacks.heldout_evaluator={_CLASS_: olmo_core.train.callbacks.evaluator_callback.LMEvaluatorCallbackConfig, eval_dataset: {_CLASS_: olmo_core.data.numpy_dataset.NumpyFSLDatasetConfig, tokenizer: {_CLASS_: olmo_core.data.tokenizer.TokenizerConfig, vocab_size: 100278, eos_token_id: 100257, pad_token_id: 100277, identifier: allenai/dolma2-tokenizer}, mix: null, mix_base_dir: /weka/oe-training-default/ai2-llm, subset_manifest: src/olmo_core/data/subsets/0802/dclm_0802_validation.json, metadata: [{label: dclm-validation-0802}], sequence_length: 4096, work_dir: /weka/oe-training-default/sewonm/dataset-cache}, eval_interval: null, eval_on_finish: true, name: heldout}"
+            "--dataset.instance_filter_config={repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}"
+            "--model-type=moe_lbreducedp_sharedexp"
+            "--num_shared_experts=1"
+            "--model.block.feed_forward_moe.num_experts=128"
+            "--model.block.feed_forward_moe.lb_loss_weight=0.1"
+            "--model.block.name=moe"
+            "--model.block.sequence_mixer.qk_norm=null"
+            "--global_batch_size=1024"
+            "--train_module.scheduler={_CLASS_: olmo_core.optim.scheduler.WSD, units: steps, warmup: 24, decay_fraction: 0.1}"
+            "--trainer.callbacks.checkpointer.fixed_steps=${fixed_steps}"
+            "--init_seed=12536"
+            "--data_loader.seed=0"
+            "--train_module.optim.weight_decay=${wd}"
+            "--lr=${lr}"
+          )
+
+          if [[ -n "${load_epoch}" ]]; then
+            local previous="stdmoe_1b14b_step2_0802_repeated_dclm1b_wsd_e${load_epoch}_lr${lr}_wd${wd}_warmup24"
+            args+=("--load_path=${output_root}/${previous}/step${load_step}" "--load_trainer_state=true")
+          fi
+
+          echo "Starting repeated-DCLM WD ${wd} epoch-${epoch} phase"
+          torchrun --nproc-per-node="${BEAKER_ASSIGNED_GPU_COUNT}" "${args[@]}"
+          echo "Finished repeated-DCLM WD ${wd} epoch-${epoch} phase"
+        }
+
+        run_phase 1 1000000000 '[214]'
+        run_phase 2 2000000000 '[428]' 1 214
+        run_phase 3 3000000000 '[643]' 2 428
+        run_phase 4 4000000000 '[858]' 3 643
+        run_phase 5 5000000000 '[1073]' 4 858
+        run_phase 6 6000000000 '[1287]' 5 1073
+        run_phase 8 8000000000 '[1502,1716]' 6 1287
+        run_phase 10 10000000000 '[1931,2145]' 8 1716
+    envVars:
+      - name: GANTRY_VERSION
+        value: 3.7.0
+      - name: GITHUB_REPO
+        value: allenai/EMO
+      - name: GIT_REF
+        value: 2599b6bd6acf547cafc2583cad8feaa615b1f032
+      - name: GANTRY_TASK_NAME
+        value: main
+      - name: RESULTS_DIR
+        value: /results
+      - name: GANTRY_RUNTIME_DIR
+        value: /gantry-runtime
+      - name: GANTRY_EXEC_METHOD
+        value: exec
+      - name: GANTRY_DEFAULT_PYTHON_VERSION
+        value: "3.12"
+      - name: GANTRY_USE_SYSTEM_PYTHON
+        value: "1"
+      - name: GANTRY_PYTHON_MANAGER
+        value: uv
+      - name: GANTRY_UV_ALL_EXTRAS
+        value: "1"
+      - name: NCCL_DEBUG
+        value: INFO
+      - name: LOG_FILTER_TYPE
+        value: local_rank0_only
+      - name: OMP_NUM_THREADS
+        value: "8"
+      - name: R2_PROFILE
+        value: R2
+      - name: S3_PROFILE
+        value: S3
+      - name: WEKA_PROFILE
+        value: WEKA
+      - name: NUM_NODES
+        value: "1"
+      - name: OLMO_CORE_VERSION
+        value: 2.5.0
+      - name: FORCE_COLOR
+        value: "1"
+      - name: TORCH_LOGS
+        value: recompiles,graph_breaks
+      - name: PYTORCH_KERNEL_CACHE_PATH
+        value: /root/.cache/torch/kernels
+      - name: OLMO_SHARED_FS
+        value: "1"
+      - name: GITHUB_TOKEN
+        secret: GITHUB_TOKEN
+      - name: WANDB_API_KEY
+        secret: SEWONM_WANDB_API_KEY
+      - name: BEAKER_TOKEN
+        secret: sewonm_BEAKER_TOKEN
+      - name: HF_TOKEN
+        secret: HF_TOKEN
+    datasets:
+      - mountPath: /gantry
+        source:
+          beaker: 01KNQSJ27JZEM2Z9KQ191P0JJY
+      - mountPath: /weka/oe-training-default
+        source:
+          weka: oe-training-default
+    result:
+      path: /results
+    resources:
+      gpuCount: 8
+      sharedMemory: 10 GiB
+    context:
+      priority: urgent
+      minRuntime: 0s
+      autoResume: false
+    constraints:
+      cluster:
+        - ai2/jupiter
+    hostNetworking: false
+    propagateFailure: false
+    propagatePreemption: false

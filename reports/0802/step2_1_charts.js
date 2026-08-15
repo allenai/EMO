@@ -4,6 +4,8 @@
   const batch=window.STEP2_1_BATCH_DATA||{batchSweeps:[]};
   const baseline=window.STEP2_1_WD_DATA||{runs:[]};
   const targets=d.targetEpochs||[1,2,3,4,5];
+  const fractionalTargets=d.matchedStepTargetEpochs||[0.125,0.25,0.5];
+  const summaryBatches=[64,256,1024];
   document.querySelector('#title').textContent=d.title;
   document.querySelector('#setup').textContent=d.setup;
   document.querySelector('#updated').textContent=`Updated ${d.updated} · report 1-1 source: ${d.repeatedSourceUpdated||batch.updated||'pending'}`;
@@ -19,17 +21,25 @@
   const completeUnique=(r,health)=>r.status==='complete'&&uniqueEligible(r)&&Number.isFinite(metric(r))&&!health[r.wandb];
   const completeRepeated=(r,health)=>r.status==='complete'&&Number.isFinite(metric(r))&&!health[r.wandb];
 
+  const repeatedCompletedTargets=[
+    ...(batch.batchSweeps||[]).filter(sweep=>summaryBatches.includes(sweep.batchSequences)).flatMap(sweep=>Object.entries(sweep.results||{}).filter(([,result])=>completeRepeated({...sweep,...result},repeatedHealth)).map(([epoch])=>Number(epoch))),
+    ...(baseline.runs||[]).filter(r=>completeRepeated(r,repeatedHealth)).map(r=>Number(r.epoch)),
+  ].filter(Number.isFinite);
+  const comparisonTargets=[...new Set([...targets,...repeatedCompletedTargets.filter(epoch=>epoch>12)])].sort((a,b)=>a-b);
+
   const unique1024=(step2.uniqueRuns||[]).filter(r=>targets.includes(r.epoch)&&uniqueEligible(r)&&r.status==='complete').map(r=>({...r,batchSequences:1024,warmupSteps:24,series:'Unique',condition:'Unique'}));
-  const uniqueNew=(d.uniqueRuns||[]).filter(r=>targets.includes(r.epoch)&&uniqueEligible(r)).map(r=>({...r,series:'Unique',condition:'Unique'}));
+  const uniqueNewAll=(d.uniqueRuns||[]).filter(r=>uniqueEligible(r)).map(r=>({...r,series:'Unique',condition:'Unique'}));
+  const uniqueNew=uniqueNewAll.filter(r=>targets.includes(r.epoch));
   const uniquePlaceholders=(d.chainExperiments||[]).filter(active).map(r=>({...r,epoch:r.activeEpoch||1,series:'Unique',condition:'Unique'}));
   const uniqueRuns=[...unique1024,...uniqueNew];
-  const repeatedSmall=(batch.batchSweeps||[]).flatMap(sweep=>targets.flatMap(epoch=>{const result=sweep.results?.[epoch];return result?[{...sweep,...result,epoch,status:result.status,series:`Repeated BS${sweep.batchSequences}`,condition:'Repeated'}]:[];}));
-  const repeated1024=(baseline.runs||[]).filter(r=>targets.includes(r.epoch)&&r.status==='complete').map(r=>({...r,batchSequences:1024,warmupSteps:24,series:'Repeated BS1024',condition:'Repeated'}));
+  const uniqueMatchedRuns=[...unique1024,...uniqueNewAll];
+  const repeatedSmall=(batch.batchSweeps||[]).flatMap(sweep=>comparisonTargets.flatMap(epoch=>{const result=sweep.results?.[epoch];return result?[{...sweep,...result,epoch,status:result.status,series:`Repeated BS${sweep.batchSequences}`,condition:'Repeated'}]:[];}));
+  const repeated1024=(baseline.runs||[]).filter(r=>comparisonTargets.includes(r.epoch)&&r.status==='complete').map(r=>({...r,batchSequences:1024,warmupSteps:24,series:'Repeated BS1024',condition:'Repeated'}));
   const repeatedRuns=[...repeatedSmall,...repeated1024];
-  const bestByTarget=(runs,health,isComplete)=>targets.map(epoch=>runs.filter(r=>r.epoch===epoch&&isComplete(r,health)).sort((a,b)=>metric(a)-metric(b))[0]).filter(Boolean);
+  const bestByTarget=(runs,health,isComplete,targetList=targets)=>targetList.map(epoch=>runs.filter(r=>r.epoch===epoch&&isComplete(r,health)).sort((a,b)=>metric(a)-metric(b))[0]).filter(Boolean);
   const uniqueBest=bestByTarget(uniqueRuns,uniqueHealth,completeUnique);
-  const repeatedBestByBatch=Object.fromEntries([64,256,1024].map(bs=>[bs,bestByTarget(repeatedRuns.filter(r=>r.batchSequences===bs),repeatedHealth,completeRepeated)]));
-  const repeatedBest=Object.values(repeatedBestByBatch).flat();
+  const repeatedBestByBatch=Object.fromEntries([64,256,1024].map(bs=>[bs,bestByTarget(repeatedRuns.filter(r=>r.batchSequences===bs),repeatedHealth,completeRepeated,comparisonTargets)]));
+  const repeatedBest=Object.values(repeatedBestByBatch).flat().filter(r=>targets.includes(r.epoch));
   const chartRuns=[...uniqueBest,...repeatedBest];
 
   const legend=document.querySelector('#legend');
@@ -81,11 +91,19 @@
   const fmt=v=>Number.isFinite(v)?v.toFixed(3):'—';
   const signed=v=>Number.isFinite(v)?`${v>0?'+':''}${v.toFixed(3)}`:'—';
   const link=(kind,id)=>id?`<a href="${kind==='wandb'?`https://wandb.ai/ai2-llm/sewonm-icsl/runs/${id}`:`https://beaker.org/ex/${id}`}">${kind==='wandb'?id:'experiment'}</a>`:'—';
-  const summaryBatches=[64,256,1024];
   const uniqueBestByBatch=Object.fromEntries(summaryBatches.map(bs=>[bs,bestByTarget(uniqueRuns.filter(r=>r.batchSequences===bs),uniqueHealth,completeUnique)]));
   const uniqueColumnBest=Object.fromEntries(summaryBatches.map(bs=>{
     const runs=uniqueBestByBatch[bs];
     return [bs,runs.length?runs.reduce((best,run)=>metric(run)<metric(best)?run:best):null];
+  }));
+  const repeatedColumnBest=Object.fromEntries(summaryBatches.map(bs=>{
+    const runs=repeatedBestByBatch[bs];
+    return [bs,runs.length?runs.reduce((best,run)=>metric(run)<metric(best)?run:best):null];
+  }));
+  const uniqueClosestToRepeatedBest=Object.fromEntries(summaryBatches.map(bs=>{
+    const repeated=repeatedColumnBest[bs],runs=uniqueBestByBatch[bs];
+    if(!repeated||!runs.length)return [bs,null];
+    return [bs,[...runs].sort((a,b)=>Math.abs(metric(a)-metric(repeated))-Math.abs(metric(b)-metric(repeated))||a.epoch-b.epoch)[0]];
   }));
   document.querySelector('#unique-5b-summary').innerHTML=targets.map(target=>`<tr><td><strong>${target}B</strong></td>${summaryBatches.map(bs=>{
     const run=uniqueBestByBatch[bs].find(r=>r.epoch===target);
@@ -94,28 +112,36 @@
     return `<td class="${best?'summary-best':''}" title="LR ${run.lr} · WD ${run.wd}">${best?`<strong>${fmt(metric(run))}</strong>`:fmt(metric(run))}</td>`;
   }).join('')}</tr>`).join('');
 
-  document.querySelector('#selected-endpoint-comparison').innerHTML=targets.map(target=>`<tr><td><strong>${target}B</strong></td>${summaryBatches.map(bs=>{
+  document.querySelector('#selected-endpoint-comparison').innerHTML=comparisonTargets.map(target=>`<tr><td>${target}B</td>${summaryBatches.map(bs=>{
     const unique=uniqueBestByBatch[bs].find(r=>r.epoch===target);
     const repeated=repeatedBestByBatch[bs].find(r=>r.epoch===target);
     if(!unique&&!repeated)return '<td class="endpoint-cell">—</td>';
     const delta=unique&&repeated?metric(unique)-metric(repeated):null;
     const deltaClass=Number.isFinite(delta)?(delta<0?'delta-better':delta>0?'delta-worse':''):'';
     const title=`Unique: ${unique?`LR ${unique.lr}, WD ${unique.wd}`:'pending'} · Repeated: ${repeated?`LR ${repeated.lr}, WD ${repeated.wd}`:'pending'}`;
-    return `<td class="endpoint-cell" title="${title}"><strong>${fmt(unique&&metric(unique))} / ${fmt(repeated&&metric(repeated))} / <span class="${deltaClass}">${signed(delta)}</span></strong></td>`;
+    const uniqueValue=fmt(unique&&metric(unique)),repeatedValue=fmt(repeated&&metric(repeated));
+    const uniqueDisplay=unique&&unique===uniqueClosestToRepeatedBest[bs]?`<strong>${uniqueValue}</strong>`:uniqueValue;
+    const repeatedDisplay=repeated&&repeated===repeatedColumnBest[bs]?`<strong>${repeatedValue}</strong>`:repeatedValue;
+    return `<td class="endpoint-cell" title="${title}">${uniqueDisplay} / ${repeatedDisplay} / <span class="${deltaClass}">${signed(delta)}</span></td>`;
   }).join('')}</tr>`).join('');
 
-  const matchedComparisons=(batch.optimizerStepComparisons||[]).map(comparison=>{
+  const matchedSpecs=[
+    {optimizerSteps:119,epochs:{'256':0.125},showPending:true},
+    ...(batch.optimizerStepComparisons||[]).map(comparison=>({...comparison,showPending:[238,477,954,1907].includes(Number(comparison.optimizerSteps))})),
+  ];
+  const matchedComparisons=matchedSpecs.map(comparison=>{
     const runs=summaryBatches.map(bs=>{
       const epoch=comparison.epochs?.[String(bs)];
-      return Number.isInteger(epoch)&&targets.includes(epoch)?uniqueBestByBatch[bs].find(r=>r.epoch===epoch):null;
+      if(!Number.isFinite(epoch)||(!targets.includes(epoch)&&!fractionalTargets.includes(epoch)))return null;
+      return uniqueMatchedRuns.filter(r=>r.batchSequences===bs&&r.epoch===epoch&&completeUnique(r,uniqueHealth)).sort((a,b)=>metric(a)-metric(b))[0]||null;
     });
     return {...comparison,runs};
-  }).filter(comparison=>comparison.runs.filter(Boolean).length>=2);
+  }).filter(comparison=>comparison.showPending||comparison.runs.filter(Boolean).length>=2);
   document.querySelector('#unique-optimizer-step-summary').innerHTML=matchedComparisons.map(comparison=>{
     const available=comparison.runs.filter(Boolean);
-    const best=available.reduce((winner,run)=>metric(run)<metric(winner)?run:winner);
-    const cells=comparison.runs.map(run=>{
-      if(!run)return '<td>—</td>';
+    const best=available.length?available.reduce((winner,run)=>metric(run)<metric(winner)?run:winner):null;
+    const cells=comparison.runs.map((run,index)=>{
+      if(!run){const epoch=comparison.epochs?.[String(summaryBatches[index])];return Number.isFinite(epoch)&&fractionalTargets.includes(epoch)?`<td class="matched-pending">${epoch}B · pending</td>`:'<td>—</td>';}
       const formatted=fmt(metric(run));
       return `<td class="matched-value ${run===best?'summary-best':''}" title="BS ${run.batchSequences} · LR ${run.lr} · WD ${run.wd}">${run.epoch}B · ${run===best?`<strong>${formatted}</strong>`:formatted}</td>`;
     }).join('');
@@ -124,6 +150,6 @@
 
   const groups=new Map();[...uniqueRuns,...uniquePlaceholders].forEach(r=>{const key=`${r.batchSequences}|${r.epoch}`;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r);});
   document.querySelector('#coordinate-grid').innerHTML=targets.flatMap(epoch=>[64,256,1024].map(bs=>{const runs=(groups.get(`${bs}|${epoch}`)||[]).sort((a,b)=>Number(a.lr)-Number(b.lr)),best=runs.filter(r=>completeUnique(r,uniqueHealth)).sort((a,b)=>metric(a)-metric(b))[0],chips=runs.map(r=>`<span class="tuple ${best===r?'selected':active(r)?'active':''}">(LR ${r.lr}, WD 0.033) · ${r.status}${Number.isFinite(metric(r))?` · CE ${fmt(metric(r))}`:''}</span>`).join('');return `<tr><td><strong>${epoch}B</strong></td><td>${bs}</td><td><div class="tuple-list">${chips||'—'}</div></td><td>${best?`LR ${best.lr} · CE ${fmt(metric(best))}`:'pending'}</td></tr>`;})).join('');
-  const provenance=[...unique1024,...uniqueNew,...uniquePlaceholders].sort((a,b)=>a.batchSequences-b.batchSequences||a.epoch-b.epoch||Number(a.lr)-Number(b.lr));
+  const provenance=[...unique1024,...uniqueNewAll,...uniquePlaceholders].sort((a,b)=>a.batchSequences-b.batchSequences||a.epoch-b.epoch||Number(a.lr)-Number(b.lr));
   document.querySelector('#rows').innerHTML=provenance.map(r=>`<tr class="${(r.condition==='Unique'?uniqueHealth:repeatedHealth)[r.wandb]?'run-unhealthy':''}"><td>${r.condition}</td><td>${r.batchSequences}</td><td>${r.epoch}</td><td>${r.lr}</td><td>${r.wd||'0.033'}</td><td class="${active(r)?'run-active':''}">${r.status}</td><td>${fmt(r.train)}</td><td>${fmt(metric(r))}</td><td>${fmt(r.acc)}</td><td>${fmt(r.bpb)}</td><td>${link('wandb',r.wandb||r.activeWandb)}</td><td>${link('beaker',r.beaker)}</td></tr>`).join('');
 })();

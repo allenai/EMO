@@ -79,7 +79,7 @@
   <p class="note">Each line uses the lowest healthy completed DCLM validation CE available at that token target. The unique line selects globally across eligible batch sizes; repeated lines expose every Step-1-1 batch size while keeping those runs out of the coordinate and provenance tables below.</p>
 
   <h2>Selected-endpoint comparison</h2>
-  <p class="note">DCLM validation CE only. Within each batch size and target, unique selects the best healthy eligible LR at WD 0.033; repeated selects the best healthy Step-1-1 LR/WD coordinate. Every cell is <strong>U / R / Δ</strong>, with Δ = U − R, so a negative delta favors unique data.</p>
+  <p class="note">DCLM validation CE only. Within each batch size and target, unique selects the best healthy eligible LR at WD 0.033; repeated selects the best healthy Step-1-1 LR/WD coordinate. Every cell is <strong>U / R / Δ</strong>, with Δ = U − R, so a negative delta favors unique data. Completed repeated-data targets above 12B are included even when the unique continuation has no matching endpoint. Within each batch-size column, bold marks only the lowest completed R across every displayed row and the completed U closest to that R value.</p>
   <div class="card table-wrap">
     <table class="comparison">
       <thead><tr><th>Target</th><th>BS 64 · U / R / Δ</th><th>BS 256 · U / R / Δ</th><th>BS 1024 · U / R / Δ</th></tr></thead>
@@ -101,7 +101,7 @@
       </div>
       <div class="summary-panel">
         <h2>Best unique-data validation loss at matched optimizer steps</h2>
-        <p class="summary-note">Each cell shows training data size · validation CE. Only rows with at least two available batch sizes are shown; the lowest CE in each row is bold.</p>
+        <p class="summary-note">Each cell shows training data size · validation CE. Rows affected by the requested fractional endpoints remain visible while results are pending; the ≈119-step row has only BS256 by design. The lowest completed CE in each row is bold.</p>
         <div class="table-wrap">
           <table>
             <thead><tr><th>Optimizer steps</th><th>BS 64</th><th>BS 256</th><th>BS 1024</th></tr></thead>

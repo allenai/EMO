@@ -1,0 +1,38 @@
+version: v2
+tasks:
+  - name: locate
+    image:
+      beaker: 01KAXVQ0YN242MQ9YEQDQQK512
+    command: [bash, -lc]
+    arguments:
+      - |
+        set -u
+        root=/weka/oe-training-default/sewonm/icsl/models
+        {
+          echo BS1024_E2_PATH_LOCATOR_BEGIN
+          test -d "$root" || echo MODELS_ROOT_MISSING
+          find "$root" -maxdepth 5 -type d -name step428 -print 2>&1 | grep -E 'bs1024|BS1024' || true
+          echo OUTPUT_EXISTENCE
+          for output in \
+            /weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h32_simbs64_init=bs1024e2_lr1e-3_wd0.333 \
+            /weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h32_simbs256_init=bs1024e2_lr1e-3_wd0.333 \
+            /weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_vrecal_simbs64_init=bs1024e2_lr1e-3_wd0.333 \
+            /weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_vrecal_simbs256_init=bs1024e2_lr1e-3_wd0.333
+          do
+            if test -e "$output"; then echo "EXISTS $output"; else echo "ABSENT $output"; fi
+          done
+          echo BS1024_E2_PATH_LOCATOR_END
+        } | tee /results/audit.txt
+    datasets:
+      - mountPath: /weka/oe-training-default
+        source:
+          weka: oe-training-default
+    resources:
+      cpuCount: 1
+      memory: 2 GiB
+    constraints:
+      cluster: [ai2/jupiter]
+    context:
+      priority: high
+    result:
+      path: /results

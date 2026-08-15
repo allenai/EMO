@@ -1,0 +1,158 @@
+version: v2
+description: Dense 1B Step-2 unique-DCLM LR 5e-4 continuation from epoch 4 through epochs 5, 6, 8, and 10 in one allocation.
+tasks:
+  - name: main
+    image:
+      beaker: 01KAXVQ0YN242MQ9YEQDQQK512
+    command: [bash, /gantry/entrypoint.sh]
+    arguments:
+      - bash
+      - -c
+      - |
+        set -euo pipefail
+
+        lr="5e-4"
+        wd="0.033"
+        output_root="/weka/oe-training-default/sewonm/icsl/models"
+        base_prefix="dense_1b_step2_0802_unique_dclm5b_wsd"
+        chain_suffix="_chain1"
+        source_epoch4="${output_root}/${base_prefix}_e4_lr${lr}_wd${wd}_warmup24/step858"
+
+        test -d "${source_epoch4}"
+
+        run_phase() {
+          local epoch="$1"
+          local max_tokens="$2"
+          local fixed_steps="$3"
+          local load_path="$4"
+          local runname="${base_prefix}_e${epoch}_lr${lr}_wd${wd}_warmup24${chain_suffix}"
+          local save_path="${output_root}/${runname}"
+
+          test '!' -e "${save_path}"
+          echo "CHAIN_START epoch=${epoch} load_path=${load_path} save_path=${save_path}"
+
+          torchrun --nproc-per-node="${BEAKER_ASSIGNED_GPU_COUNT}" \
+            src/scripts/train/olmo2-1B.py "${runname}" \
+            --data-root=/weka/oe-training-default/ai2-llm \
+            --save-folder="${save_path}" \
+            --dataset.mix=null \
+            --dataset.subset_manifest=src/olmo_core/data/subsets/0802/dclm_0802_unique_train_5b.json \
+            --dataset.mix_base_dir=/weka/oe-training-default/ai2-llm \
+            --work-dir=/weka/oe-training-default/sewonm/dataset-cache \
+            --trainer.max_duration="{value: ${max_tokens}, unit: tokens}" \
+            --trainer.callbacks.wandb.enabled=true \
+            --trainer.callbacks.wandb.entity=ai2-llm \
+            --trainer.callbacks.wandb.project=sewonm-icsl \
+            --trainer.callbacks.wandb.name="${runname}" \
+            --trainer.callbacks.wandb.tags="[pretraining, step2, 0802, unique-data, dclm-train-only, document-disjoint, uniform-document-sample, wsd, warmup24, lr5e-4-continuation, single-job-chain]" \
+            --trainer.callbacks.downstream_evaluator.tasks='[arc_easy, arc_challenge, boolq, csqa_val_rc_5shot, hellaswag, openbookqa_test_rc_5shot, piqa, socialiqa_val_rc_5shot, winogrande]' \
+            --trainer.callbacks.downstream_evaluator.eval_interval=null \
+            --trainer.callbacks.downstream_evaluator.eval_on_finish=true \
+            --trainer.callbacks.heldout_evaluator='{_CLASS_: olmo_core.train.callbacks.evaluator_callback.LMEvaluatorCallbackConfig, eval_dataset: {_CLASS_: olmo_core.data.numpy_dataset.NumpyFSLDatasetConfig, tokenizer: {_CLASS_: olmo_core.data.tokenizer.TokenizerConfig, vocab_size: 100278, eos_token_id: 100257, pad_token_id: 100277, identifier: allenai/dolma2-tokenizer}, mix: null, mix_base_dir: /weka/oe-training-default/ai2-llm, subset_manifest: src/olmo_core/data/subsets/0802/dclm_0802_validation.json, metadata: [{label: dclm-validation-0802}], sequence_length: 4096, work_dir: /weka/oe-training-default/sewonm/dataset-cache}, eval_interval: null, eval_on_finish: true, name: heldout}' \
+            --dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
+            --model.block.name=default \
+            --model.block.sequence_mixer.qk_norm=null \
+            --train_module.scheduler='{_CLASS_: olmo_core.optim.scheduler.WSD, units: steps, warmup: 24, decay_fraction: 0.1}' \
+            --trainer.callbacks.checkpointer.fixed_steps="${fixed_steps}" \
+            --load_path="${load_path}" \
+            --load_trainer_state=true \
+            --init_seed=12536 \
+            --data_loader.seed=0 \
+            --train_module.optim.weight_decay="${wd}" \
+            --lr="${lr}"
+
+          echo "CHAIN_FINISH epoch=${epoch} save_path=${save_path}"
+        }
+
+        epoch5_root="${output_root}/${base_prefix}_e5_lr${lr}_wd${wd}_warmup24${chain_suffix}"
+        epoch6_root="${output_root}/${base_prefix}_e6_lr${lr}_wd${wd}_warmup24${chain_suffix}"
+        epoch8_root="${output_root}/${base_prefix}_e8_lr${lr}_wd${wd}_warmup24${chain_suffix}"
+
+        run_phase 5 5000000000 '[1073]' "${source_epoch4}"
+        test -d "${epoch5_root}/step1073"
+        run_phase 6 6000000000 '[1287]' "${epoch5_root}/step1073"
+        test -d "${epoch6_root}/step1287"
+        run_phase 8 8000000000 '[1502,1716]' "${epoch6_root}/step1287"
+        test -d "${epoch8_root}/step1502"
+        test -d "${epoch8_root}/step1716"
+        run_phase 10 10000000000 '[1931,2145]' "${epoch8_root}/step1716"
+
+        epoch10_root="${output_root}/${base_prefix}_e10_lr${lr}_wd${wd}_warmup24${chain_suffix}"
+        test -d "${epoch10_root}/step1931"
+        test -d "${epoch10_root}/step2145"
+        echo "CHAIN_COMPLETE epochs=5,6,8,10 lr=${lr}"
+    envVars:
+      - name: GANTRY_VERSION
+        value: 3.7.0
+      - name: GITHUB_REPO
+        value: allenai/EMO
+      - name: GIT_REF
+        value: 117ac4cf035d2ddfb5ca6a613dafdd0630d8bca7
+      - name: GANTRY_TASK_NAME
+        value: main
+      - name: RESULTS_DIR
+        value: /results
+      - name: GANTRY_RUNTIME_DIR
+        value: /gantry-runtime
+      - name: GANTRY_EXEC_METHOD
+        value: exec
+      - name: GANTRY_DEFAULT_PYTHON_VERSION
+        value: "3.12"
+      - name: GANTRY_USE_SYSTEM_PYTHON
+        value: "1"
+      - name: GANTRY_UV_ALL_EXTRAS
+        value: "1"
+      - name: NCCL_DEBUG
+        value: INFO
+      - name: LOG_FILTER_TYPE
+        value: local_rank0_only
+      - name: OMP_NUM_THREADS
+        value: "8"
+      - name: R2_PROFILE
+        value: R2
+      - name: S3_PROFILE
+        value: S3
+      - name: WEKA_PROFILE
+        value: WEKA
+      - name: NUM_NODES
+        value: "1"
+      - name: OLMO_CORE_VERSION
+        value: 2.5.0
+      - name: FORCE_COLOR
+        value: "1"
+      - name: TORCH_LOGS
+        value: recompiles,graph_breaks
+      - name: PYTORCH_KERNEL_CACHE_PATH
+        value: /root/.cache/torch/kernels
+      - name: OLMO_SHARED_FS
+        value: "1"
+      - name: GITHUB_TOKEN
+        secret: GITHUB_TOKEN
+      - name: WANDB_API_KEY
+        secret: SEWONM_WANDB_API_KEY
+      - name: BEAKER_TOKEN
+        secret: sewonm_BEAKER_TOKEN
+      - name: HF_TOKEN
+        secret: HF_TOKEN
+    datasets:
+      - mountPath: /gantry
+        source:
+          beaker: 01KNQSJ27JZEM2Z9KQ191P0JJY
+      - mountPath: /weka/oe-training-default
+        source:
+          weka: oe-training-default
+    result:
+      path: /results
+    resources:
+      gpuCount: 8
+      sharedMemory: 10 GiB
+    context:
+      priority: urgent
+      minRuntime: 0s
+      autoResume: false
+    constraints:
+      cluster:
+        - ai2/jupiter
+    hostNetworking: false
+    propagateFailure: false
+    propagatePreemption: false
