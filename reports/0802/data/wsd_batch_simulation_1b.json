@@ -8006,11 +8006,13 @@
       "simulatedBatchSequences": 256,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "running",
-      "healthStatus": "healthy_running_exact_source",
+      "status": "complete",
+      "healthStatus": "healthy",
       "beaker": "01M02Z806A73YRE01WDVP8QCF7",
       "job": "01M02Z809VSV26WM4DN37VMT7Z",
-      "currentStep": 1635,
+      "resultDataset": "01M02Z806G02RKKJ7YTHKM574G",
+      "node": "01K15VBGT6DBQCXH04Y81WFGJB",
+      "currentStep": 1908,
       "wandb": "fijrjp38",
       "revision": "15d494fee454eda89884f6f0dc4535a0c0ad556d",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step858",
@@ -8019,7 +8021,42 @@
       "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h32_simbs256_init=bs1024e4_lr1e-3_wd0.333/step1908",
       "recalibrateSecondMomentOnStart": true,
       "secondMomentRecalibrationRatio": 4,
-      "reason": "Registered before the authorized H32 E4-init sim256 WD0.333 E8 frontier."
+      "results": {
+        "8": {
+          "status": "complete",
+          "train": 3.048,
+          "validation": 3.246,
+          "gap": 0.198,
+          "avg8Bpb": 1.42035,
+          "downstream": {
+            "arc_challenge": 26.76,
+            "arc_easy": 49.82,
+            "boolq": 56.42,
+            "csqa": 41.36,
+            "hellaswag": 34.69,
+            "openbookqa": 24.2,
+            "piqa": 65.94,
+            "socialiqa": 43.35,
+            "winogrande": 49.33
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.508,
+            "arc_easy": 1.573,
+            "boolq": 2.305,
+            "csqa": 1.513,
+            "hellaswag": 0.9448,
+            "openbookqa": 1.715,
+            "piqa": 1.277,
+            "socialiqa": 1.287,
+            "winogrande": 1.545
+          },
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h32_simbs256_init=bs1024e4_lr1e-3_wd0.333/step1716",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h32_simbs256_init=bs1024e4_lr1e-3_wd0.333/step1908",
+          "reason": "Healthy exit0 E8 endpoint with DCLM validation and all nine downstream evaluations recovered from durable Beaker logs."
+        }
+      },
+      "wdGateDecision": "WD0.333 wins matched E8 validation 3.246 versus WD1.0 3.253; H32 is terminal under the current policy, so neither trajectory continues.",
+      "reason": "Healthy E8 completed and fully ingested. H32 is terminal and no continuation was submitted."
     },
     {
       "planId": "bs1024-e4init-local-sgd-h32-sim256-wd1.0-e8",
@@ -8031,11 +8068,13 @@
       "simulatedBatchSequences": 256,
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "running",
-      "healthStatus": "healthy_startup_exact_source",
+      "status": "complete",
+      "healthStatus": "healthy",
       "beaker": "01M02Z7Z60FM7YA7WECKSPBRCP",
       "job": "01M02Z7Z9KBWT7Y5WHA1JN1W2T",
-      "currentStep": 1765,
+      "resultDataset": "01M02Z7Z6BNSHZFYX36STFVKWY",
+      "node": "01KMZXA4AF0K2XXCER4ACGF3EY",
+      "currentStep": 1908,
       "wandb": "ezt3s72l",
       "revision": "15d494fee454eda89884f6f0dc4535a0c0ad556d",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0/step858",
@@ -8044,7 +8083,42 @@
       "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h32_simbs256_init=bs1024e4_lr1e-3_wd1.0/step1908",
       "recalibrateSecondMomentOnStart": true,
       "secondMomentRecalibrationRatio": 4,
-      "reason": "Registered before the authorized H32 E4-init sim256 WD1.0 E8 frontier."
+      "results": {
+        "8": {
+          "status": "complete",
+          "train": 3.157,
+          "validation": 3.253,
+          "gap": 0.096,
+          "avg8Bpb": 1.4121375,
+          "downstream": {
+            "arc_challenge": 22.41,
+            "arc_easy": 51.05,
+            "boolq": 55.02,
+            "csqa": 41.77,
+            "hellaswag": 33.63,
+            "openbookqa": 24.0,
+            "piqa": 64.8,
+            "socialiqa": 43.19,
+            "winogrande": 49.17
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.494,
+            "arc_easy": 1.546,
+            "boolq": 1.923,
+            "csqa": 1.463,
+            "hellaswag": 0.9471,
+            "openbookqa": 1.706,
+            "piqa": 1.268,
+            "socialiqa": 1.313,
+            "winogrande": 1.56
+          },
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h32_simbs256_init=bs1024e4_lr1e-3_wd1.0/step1716",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h32_simbs256_init=bs1024e4_lr1e-3_wd1.0/step1908",
+          "reason": "Healthy exit0 E8 endpoint with DCLM validation and all nine downstream evaluations recovered from durable Beaker logs."
+        }
+      },
+      "wdGateDecision": "WD1.0 loses matched E8 validation 3.253 to WD0.333 3.246; H32 is terminal under the current policy, so neither trajectory continues.",
+      "reason": "Healthy E8 completed and fully ingested. H32 is terminal and no continuation was submitted."
     },
     {
       "planId": "bs1024-e4init-diloco-h32-sim256-wd0.333-e16",
@@ -8056,11 +8130,13 @@
       "simulatedBatchSequences": 256,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "running",
-      "healthStatus": "healthy_running_exact_source",
+      "status": "complete",
+      "healthStatus": "healthy",
       "beaker": "01M02Z7YJHGNMBTNQ97G6NJXQC",
       "job": "01M02Z7YQN64Q7JNJZBVBDS837",
-      "currentStep": 3485,
+      "resultDataset": "01M02Z7YJY47C6VHC2672TEJWT",
+      "node": "01JS2AN3SQ1EYWQGASMYM8YJJF",
+      "currentStep": 3815,
       "wandb": "gt6qquzx",
       "revision": "15d494fee454eda89884f6f0dc4535a0c0ad556d",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_vrecal_simbs256_init=bs1024e4_lr1e-3_wd0.333/step2575",
@@ -8070,7 +8146,42 @@
       "recalibrateSecondMomentOnStart": false,
       "dilocoOuterLr": 0.7,
       "dilocoOuterMomentum": 0.9,
-      "reason": "Registered before the authorized exact native E16 continuation."
+      "results": {
+        "16": {
+          "status": "complete",
+          "train": 2.842,
+          "validation": 3.165,
+          "gap": 0.323,
+          "avg8Bpb": 1.3973375,
+          "downstream": {
+            "arc_challenge": 28.09,
+            "arc_easy": 54.21,
+            "boolq": 59.76,
+            "csqa": 47.26,
+            "hellaswag": 42.71,
+            "openbookqa": 29.0,
+            "piqa": 68.34,
+            "socialiqa": 43.86,
+            "winogrande": 53.43
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.515,
+            "arc_easy": 1.523,
+            "boolq": 2.004,
+            "csqa": 1.44,
+            "hellaswag": 0.9137,
+            "openbookqa": 1.704,
+            "piqa": 1.247,
+            "socialiqa": 1.303,
+            "winogrande": 1.533
+          },
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_vrecal_simbs256_init=bs1024e4_lr1e-3_wd0.333/step3432",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_vrecal_simbs256_init=bs1024e4_lr1e-3_wd0.333/step3815",
+          "reason": "Healthy exit0 E16 endpoint with DCLM validation and all nine downstream evaluations recovered from durable Beaker logs."
+        }
+      },
+      "wdGateDecision": "WD0.333 wins matched E16 validation 3.165 versus WD1.0 3.216; H32 is terminal under the current policy, so neither trajectory continues.",
+      "reason": "Healthy E16 completed and fully ingested. H32 is terminal and no continuation was submitted."
     },
     {
       "planId": "bs1024-e4init-diloco-h32-sim256-wd1.0-e16",
@@ -8082,11 +8193,13 @@
       "simulatedBatchSequences": 256,
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "running",
-      "healthStatus": "healthy_startup_exact_source",
+      "status": "complete",
+      "healthStatus": "healthy",
       "beaker": "01M02Z7ZQZ99WV65T1HE7W1QR9",
       "job": "01M02Z7ZWMPA4NSYDC3B9MF2JS",
-      "currentStep": 3485,
+      "resultDataset": "01M02Z7ZR86229RSEP3D6ZXE9Y",
+      "node": "01KXKHJJV17JDGH5VXCF0MAVD7",
+      "currentStep": 3815,
       "wandb": "rwwhnid3",
       "revision": "15d494fee454eda89884f6f0dc4535a0c0ad556d",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_vrecal_simbs256_init=bs1024e4_lr1e-3_wd1.0/step2575",
@@ -8096,7 +8209,42 @@
       "recalibrateSecondMomentOnStart": false,
       "dilocoOuterLr": 0.7,
       "dilocoOuterMomentum": 0.9,
-      "reason": "Registered before the authorized exact native E16 continuation."
+      "results": {
+        "16": {
+          "status": "complete",
+          "train": 3.09,
+          "validation": 3.216,
+          "gap": 0.126,
+          "avg8Bpb": 1.3922875,
+          "downstream": {
+            "arc_challenge": 25.08,
+            "arc_easy": 50.35,
+            "boolq": 58.59,
+            "csqa": 42.18,
+            "hellaswag": 36.97,
+            "openbookqa": 26.0,
+            "piqa": 65.18,
+            "socialiqa": 43.4,
+            "winogrande": 49.64
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.446,
+            "arc_easy": 1.486,
+            "boolq": 2.056,
+            "csqa": 1.481,
+            "hellaswag": 0.9313,
+            "openbookqa": 1.699,
+            "piqa": 1.265,
+            "socialiqa": 1.297,
+            "winogrande": 1.533
+          },
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_vrecal_simbs256_init=bs1024e4_lr1e-3_wd1.0/step3432",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_vrecal_simbs256_init=bs1024e4_lr1e-3_wd1.0/step3815",
+          "reason": "Healthy exit0 E16 endpoint with DCLM validation and all nine downstream evaluations recovered from durable Beaker logs."
+        }
+      },
+      "wdGateDecision": "WD1.0 loses matched E16 validation 3.216 to WD0.333 3.165; H32 is terminal under the current policy, so neither trajectory continues.",
+      "reason": "Healthy E16 completed and fully ingested. H32 is terminal and no continuation was submitted."
     }
   ]
 }
