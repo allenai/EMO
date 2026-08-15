@@ -2,7 +2,7 @@
   "updated": "2026-08-14",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes.",
-  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 LR1e-3 runs WD0.3 and WD1.0 independently to first strict validation non-improvement. BS128 compares WD0.3 with WD1.0 and BS256 compares WD0.333 with WD1.0 at every completed frontier before any next-frontier submission: when WD1.0 wins, only WD1.0 continues; when WD1.0 loses, both trajectories may continue if each passes its own strict-improvement gate; a tie is held for review. At E8, WD1.0 lost both resolved competitions, so both WDs are eligible at E12 for BS128 and BS256. BS64 WD1.0 E12 was relaunched as experiment 01M021730WYSJCQ2XGAW07PTMD from exact E8 pre-decay step27465 using verified remote revision 115161885a0581505b20c16aed8bedf8816aeeb6 after its first launch failed before task startup on an invalid Git revision. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
+  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 LR1e-3 runs WD0.3 and WD1.0 independently to first strict validation non-improvement. BS128 compares WD0.3 with WD1.0 and BS256 compares WD0.333 with WD1.0 at every completed frontier before any next-frontier submission: when WD1.0 wins, only WD1.0 continues; when WD1.0 loses, both trajectories may continue if each passes its own strict-improvement gate; a tie is held for review. At E8, WD1.0 lost both resolved competitions, so both WDs were eligible at E12. The BS128 WD1.0 and BS256 WD0.333 E12 launches failed before repository task startup because their recorded Git revision did not exist remotely; neither produced W&B, optimizer progress, output, or checkpoints, and configuration failures are held without automatic retry. Their E12 WD competitions therefore remain unresolved. BS64 WD1.0 E12 corrected retry 01M021730WYSJCQ2XGAW07PTMD and the valid-revision BS128 WD0.3 and BS256 WD1.0 E12 jobs remain pending. The flex2 queue gate currently blocks every new submission while those pending jobs exist. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
   "targetEpochs": [
     1,
     2,
@@ -641,8 +641,8 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "submitted",
-      "activeEpoch": 12,
+      "status": "failed",
+      "activeEpoch": null,
       "attemptedEpochs": [
         2,
         4,
@@ -714,8 +714,8 @@
           "reason": "Completed healthy from exact canonical E4 pre-decay step6866. Held-out DCLM validation CE3.12785 strictly improved E4 CE3.20788, unlocking E12 from canonical pre-decay step13732."
         }
       },
-      "health": "healthy",
-      "reason": "Submitted locally after exact-source, canonical trajectory-output, LR/WD, topology, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "health": "failed",
+      "reason": "E8 remains the last validated frontier at CE3.12785. E12 failed during Gantry source fetch because its registered Git revision did not exist remotely; no repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed. This configuration failure is held without automatic retry.",
       "revision": "cc2fa58cd53f4e67f72eed88cb20be45b68e9bb8",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0",
       "attempts": [
@@ -742,11 +742,26 @@
           "revision": "e9010dbd0db656c94c87f9e15c0d35fdba32c034",
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0",
           "reason": "Exited before manifest validation because the E2 guard required the new canonical output directory to preexist. No W&B, checkpoint load, optimizer progress, output checkpoint, or training startup was observed; configuration failures are not automatically retried."
+        },
+        {
+          "epoch": 12,
+          "experiment": "01M01YMRF9DE55A7KMFF2N6R1B",
+          "job": "01M01YMRKRQRSTJXKRH6G7GRC3",
+          "result": "01M01YMRFNETEDG5F7VCKMSAQ8",
+          "node": "01K9AYGENE66ZDKZ31W0AMSXM7",
+          "status": "configuration_failed_before_task_start",
+          "wandb": null,
+          "revision": "cc2fa58cd53f4e67f72eed88cb20be45b68e9bb8",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0",
+          "reason": "Gantry exhausted five source-fetch attempts because the recorded revision did not exist remotely. No repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed; configuration failures are not automatically retried."
         }
       ],
       "beaker": "01M01YMRF9DE55A7KMFF2N6R1B",
       "experiment": "01M01YMRF9DE55A7KMFF2N6R1B",
-      "beakerStatus": "pending"
+      "job": "01M01YMRKRQRSTJXKRH6G7GRC3",
+      "result": "01M01YMRFNETEDG5F7VCKMSAQ8",
+      "node": "01K9AYGENE66ZDKZ31W0AMSXM7",
+      "beakerStatus": "failed"
     },
     {
       "id": "dr256-lr1e-3-wd0.333",
@@ -755,8 +770,8 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "submitted",
-      "activeEpoch": 12,
+      "status": "failed",
+      "activeEpoch": null,
       "attemptedEpochs": [
         2,
         4,
@@ -829,11 +844,10 @@
           "reason": "Completed healthy from exact canonical E4 pre-decay step3432. Held-out DCLM validation CE3.06827 strictly improved E4 CE3.14241, unlocking E12 from canonical pre-decay step6866."
         }
       },
-      "health": "healthy",
-      "reason": "Submitted locally after exact-source, canonical trajectory-output, LR/WD, topology, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
+      "health": "failed",
+      "reason": "E8 remains the last validated frontier at CE3.06827. E12 failed during Gantry source fetch because its registered Git revision did not exist remotely; no repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed. This configuration failure is held without automatic retry.",
       "beaker": "01M01YVHD5GMDB326G9GDBM95J",
       "experiment": "01M01YVHD5GMDB326G9GDBM95J",
-      "beakerStatus": "pending",
       "revision": "cc2fa58cd53f4e67f72eed88cb20be45b68e9bb8",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333",
       "attempts": [
@@ -860,8 +874,24 @@
           "revision": "e9010dbd0db656c94c87f9e15c0d35fdba32c034",
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333",
           "reason": "Exited before manifest validation because the E2 guard required the new canonical output directory to preexist. No W&B, checkpoint load, optimizer progress, output checkpoint, or training startup was observed; configuration failures are not automatically retried."
+        },
+        {
+          "epoch": 12,
+          "experiment": "01M01YVHD5GMDB326G9GDBM95J",
+          "job": "01M01YVHGM50SFPB2SAZ21S5X0",
+          "result": "01M01YVHDBF78ET6HG4CMQQ3FA",
+          "node": "01KQ8N2CNFRWB1X7JD50FGYT58",
+          "status": "configuration_failed_before_task_start",
+          "wandb": null,
+          "revision": "cc2fa58cd53f4e67f72eed88cb20be45b68e9bb8",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333",
+          "reason": "Gantry exhausted five source-fetch attempts because the recorded revision did not exist remotely. No repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed; configuration failures are not automatically retried."
         }
-      ]
+      ],
+      "job": "01M01YVHGM50SFPB2SAZ21S5X0",
+      "result": "01M01YVHDBF78ET6HG4CMQQ3FA",
+      "node": "01KQ8N2CNFRWB1X7JD50FGYT58",
+      "beakerStatus": "failed"
     },
     {
       "id": "dr256-lr1e-3-wd1.0",
