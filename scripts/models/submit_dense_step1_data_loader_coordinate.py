@@ -324,7 +324,7 @@ def assert_no_pending_flex2_jobs() -> None:
         text=True,
     )
     payload = json.loads(result.stdout)
-    jobs = payload.get("data", []) if isinstance(payload, dict) else payload
+    jobs = (payload.get("data") or []) if isinstance(payload, dict) else (payload or [])
     pending = [
         job
         for job in jobs

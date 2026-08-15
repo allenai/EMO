@@ -2,7 +2,7 @@
   "updated": "2026-08-15",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes.",
-  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 LR1e-3 runs WD0.3 and WD1.0 independently to first strict validation non-improvement. BS128 compares WD0.3 with WD1.0 and BS256 compares WD0.333 with WD1.0 at every completed frontier before any next-frontier submission: when WD1.0 wins, only WD1.0 continues; when WD1.0 loses, both trajectories may continue if each passes its own strict-improvement gate; a tie is held for review. At E8, WD1.0 lost both resolved competitions, so both WDs are eligible at E12. BS64 WD1.0, BS128 WD0.3, and BS256 WD1.0 E12 are running after manifest, preflight, exact checkpoint-load, trainer/optimizer-state, and first-step guards passed. The BS128 WD1.0 and BS256 WD0.333 E12 source-revision failures are registered as user-authorized corrected retries using verified remote revision 968d1737d8307bab32e097bc779e7e7ceefb9746 and their exact canonical E8 pre-decay checkpoints; both remain planned because two unrelated pending flex2 jobs keep the global queue gate closed. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
+  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 LR1e-3 runs WD0.3 and WD1.0 independently to first strict validation non-improvement. BS128 compares WD0.3 with WD1.0 and BS256 compares WD0.333 with WD1.0 at every completed frontier before any next-frontier submission: when WD1.0 wins, only WD1.0 continues; when WD1.0 loses, both trajectories may continue if each passes its own strict-improvement gate; a tie is held for review. At E8, WD1.0 lost both resolved competitions, so both WDs are eligible at E12. BS64 WD1.0, BS128 WD0.3, and BS256 WD1.0 E12 are running after manifest, preflight, exact checkpoint-load, trainer/optimizer-state, and first-step guards passed. The corrected BS128 WD1.0 E12 retry 01M02AH0APWS8GS78EWM0YG8J1 was submitted from exact canonical E8 step13732 after the global flex2 queue reached zero pending jobs. Its pending job now closes the queue gate, so the authorized BS256 WD0.333 E12 corrected retry remains planned. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation. The formerly staged BS256 LR2e-3/WD0.333 coordinate is held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled.",
   "targetEpochs": [
     1,
     2,
@@ -533,13 +533,13 @@
         "startedAt": "2026-08-15 00:10 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-15 01:30 PDT",
-        "step": 35320,
+        "observedAt": "2026-08-15 02:02 PDT",
+        "step": 38515,
         "endpointStep": 45777,
         "epoch": 12,
-        "trainCe": 3.507,
+        "trainCe": 3.466,
         "metricStatus": "preliminary",
-        "eta": "1h45m"
+        "eta": "1h13m"
       }
     },
     {
@@ -673,13 +673,13 @@
         "startedAt": "2026-08-14 23:53 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-15 01:30 PDT",
-        "step": 18560,
+        "observedAt": "2026-08-15 02:02 PDT",
+        "step": 20165,
         "endpointStep": 22889,
         "epoch": 12,
-        "trainCe": 3.031,
+        "trainCe": 3.103,
         "metricStatus": "preliminary",
-        "eta": "1h26m"
+        "eta": "55m"
       }
     },
     {
@@ -689,7 +689,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 12,
       "attemptedEpochs": [
         2,
@@ -763,7 +763,7 @@
         }
       },
       "health": "planned",
-      "reason": "User-authorized corrected E12 retry from exact canonical E8 pre-decay step13732 with verified remote revision 968d1737d8307bab32e097bc779e7e7ceefb9746. Hold until ai2/flex2 has zero pending jobs.",
+      "reason": "Submitted locally after exact-source, canonical trajectory-output, LR/WD, topology, rank-microbatch, manifest-checksum, and duplicate-tuple guards passed.",
       "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0",
       "attempts": [
@@ -803,7 +803,11 @@
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0",
           "reason": "Gantry exhausted five source-fetch attempts because the recorded revision did not exist remotely. No repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed; configuration failures are not automatically retried."
         }
-      ]
+      ],
+      "beaker": "01M02AH0APWS8GS78EWM0YG8J1",
+      "experiment": "01M02AH0APWS8GS78EWM0YG8J1",
+      "beakerStatus": "pending",
+      "job": "01M02AH0EDRK954J2HDX6MHRWY"
     },
     {
       "id": "dr256-lr1e-3-wd0.333",
@@ -1058,13 +1062,13 @@
         "startedAt": "2026-08-15 00:07 PDT"
       },
       "progress": {
-        "observedAt": "2026-08-15 01:30 PDT",
-        "step": 8920,
+        "observedAt": "2026-08-15 02:02 PDT",
+        "step": 9725,
         "endpointStep": 11445,
         "epoch": 12,
-        "trainCe": 3.209,
+        "trainCe": 3.179,
         "metricStatus": "preliminary",
-        "eta": "1h40m"
+        "eta": "1h8m"
       }
     },
     {
