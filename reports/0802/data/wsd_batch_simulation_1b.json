@@ -9797,6 +9797,9 @@
         "01M059ZWEC1C51CCS2705V7A1C"
       ],
       "submittedAt": "2026-08-16T12:50:48.849547Z",
+      "schedulerStatus": "pending_capacity",
+      "schedulerAuditAt": "2026-08-16T14:08:16.026027Z",
+      "schedulerReason": "The four-node replica group is waiting for simultaneous Jupiter capacity; this is scheduling pressure, not a job or configuration failure.",
       "previousAttempts": [
         {
           "attempt": "r02",
@@ -9868,6 +9871,9 @@
         "01M059ZWEC1C51CCS2705V7A1C"
       ],
       "submittedAt": "2026-08-16T12:50:48.849547Z",
+      "schedulerStatus": "pending_capacity",
+      "schedulerAuditAt": "2026-08-16T14:08:16.026027Z",
+      "schedulerReason": "The shared four-node replica group is waiting for simultaneous Jupiter capacity; this branch remains queued behind E2-init.",
       "previousAttempts": [
         {
           "attempt": "r02",
@@ -9950,7 +9956,10 @@
         "01M056SXG2SF3XP5QFWJTKN4QM",
         "01M056SXM1EHHVNRMYD7Y98D68"
       ],
-      "submittedAt": "2026-08-16T11:52:00Z"
+      "submittedAt": "2026-08-16T11:52:00Z",
+      "schedulerStatus": "pending_capacity",
+      "schedulerAuditAt": "2026-08-16T14:08:16.026027Z",
+      "schedulerReason": "The four-node replica group is waiting for simultaneous Jupiter capacity; this is scheduling pressure, not a job or configuration failure."
     },
     {
       "planId": "bs1024-ls-h4-sim256-e2init-chain-e16-r03-wd1.0",
@@ -10003,7 +10012,10 @@
         "01M056SVBJ4V0MB69APH68RWB0",
         "01M056SVF63A3ZR0HR9ZD41XKE"
       ],
-      "submittedAt": "2026-08-16T11:52:00Z"
+      "submittedAt": "2026-08-16T11:52:00Z",
+      "schedulerStatus": "pending_capacity",
+      "schedulerAuditAt": "2026-08-16T14:08:16.026027Z",
+      "schedulerReason": "The four-node replica group is waiting for simultaneous Jupiter capacity; this is scheduling pressure, not a job or configuration failure."
     }
   ]
 }
