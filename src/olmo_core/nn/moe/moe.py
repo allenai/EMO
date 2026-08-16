@@ -242,6 +242,12 @@ class MoEBase(nn.Module):
         # extension_finetune_detach_router: read attribute (default False) to decide whether
         # Hook 2 (router-weight detach via expert_weights) fires alongside Hook 1.
         detach_router = bool(getattr(self.router, "extension_finetune_detach_router", False))
+        # meta_learning working-set outer update: when the router stashes this alongside
+        # _detach_mask, masked slots cut ONLY the expert-weight gradient (the activation-gradient
+        # path through the expert stays intact). Read+clear like _detach_mask.
+        detach_weight_only = bool(getattr(self.router, "_detach_mask_weight_only", False))
+        if detach_weight_only:
+            self.router._detach_mask_weight_only = False
         if detach_mask is not None:
             self.router._detach_mask = None
             if not isinstance(self.experts, ParallelDroplessMLP):
@@ -264,6 +270,7 @@ class MoEBase(nn.Module):
             batch_size_per_expert,
             detach_mask=detach_mask,
             detach_router=detach_router,
+            detach_weight_only=detach_weight_only,
         )
 
         if shared_out is not None:

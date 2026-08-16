@@ -132,6 +132,7 @@ class ParallelMLPBase(nn.Module):
         batch_size_per_expert: torch.Tensor,
         detach_mask: Optional[torch.Tensor] = None,
         detach_router: bool = False,
+        detach_weight_only: bool = False,
     ) -> torch.Tensor:
         """
         :param x: The input of shape ``(N, d_model)``.
@@ -144,6 +145,11 @@ class ParallelMLPBase(nn.Module):
         :param detach_router: When ``True`` and ``detach_mask`` is non-None, also detaches
             the router weight (``expert_weights``) for those same slots (Hook 2). When
             ``False`` (default), router gradients flow normally through ``expert_weights``.
+        :param detach_weight_only: When ``True`` and ``detach_mask`` is non-None, masked slots
+            cut ONLY the expert-weight gradient (computed under detached weights): the forward
+            value is identical and the activation-gradient path back through the expert to ``x``
+            stays intact (meta_learning working-set outer update). Mutually exclusive in spirit
+            with ``detach_router``.
 
         :returns: The output with the same shape as ``x``.
         """
@@ -180,6 +186,7 @@ class ParallelMLPBase(nn.Module):
                 batch_size_per_expert=batch_size_per_expert,
                 detach_mask=detach_mask,
                 detach_router=detach_router,
+                detach_weight_only=detach_weight_only,
             )
         else:
             if detach_mask is not None:
@@ -211,6 +218,7 @@ class ParallelMLPBase(nn.Module):
         batch_size_per_expert: torch.Tensor,
         detach_mask: Optional[torch.Tensor] = None,
         detach_router: bool = False,
+        detach_weight_only: bool = False,
     ) -> torch.Tensor:
         """
         :param x: The input of shape ``(*, d_model)``, typically ``(num_docs, seq_len, d_model)``
@@ -222,6 +230,8 @@ class ParallelMLPBase(nn.Module):
             the expert MLP output detached. ``None`` = no detach.
         :param detach_router: When ``True`` and ``detach_mask`` is non-None, also detaches
             the router weight (``expert_weights``) for those slots.
+        :param detach_weight_only: When ``True``, masked slots cut only the expert-weight
+            gradient (input-gradient path preserved). See ``ParallelMLPBase.forward``.
         """
         raise NotImplementedError
 
@@ -492,8 +502,9 @@ class ParallelMLP(ParallelMLPBase):
         batch_size_per_expert: torch.Tensor,
         detach_mask: Optional[torch.Tensor] = None,
         detach_router: bool = False,
+        detach_weight_only: bool = False,
     ) -> torch.Tensor:
-        del bin_ids, batch_size_per_expert, expert_indices
+        del bin_ids, batch_size_per_expert, expert_indices, detach_weight_only
 
         if detach_mask is not None:
             raise NotImplementedError(
@@ -702,6 +713,7 @@ class ParallelDroplessMLP(ParallelMLPBase):
         batch_size_per_expert: torch.Tensor,
         detach_mask: Optional[torch.Tensor] = None,
         detach_router: bool = False,
+        detach_weight_only: bool = False,
     ) -> torch.Tensor:
         del expert_indices
         return self.permute_and_compute(
@@ -714,6 +726,7 @@ class ParallelDroplessMLP(ParallelMLPBase):
             top_k=self.top_k,
             detach_mask=detach_mask,
             detach_router=detach_router,
+            detach_weight_only=detach_weight_only,
         )
 
     @torch._dynamo.disable()  # TODO: might be able to relax this, or be more fine-grained
@@ -912,11 +925,21 @@ class ParallelDroplessMLP(ParallelMLPBase):
         top_k: int,
         detach_mask: Optional[torch.Tensor] = None,
         detach_router: bool = False,
+        detach_weight_only: bool = False,
     ) -> torch.Tensor:
         x = x.view(-1, x.shape[-1])
 
         # Route the tokens for MoE computation.
         x = ops.gather(x, indices, bin_ids, bins, top_k)  # (N*top_k, d_model), sorted by expert
+
+        if detach_mask is not None and detach_weight_only:
+            # meta_learning working-set outer update: masked slots are computed under DETACHED
+            # weights — identical forward value, gradient still flows to the row's input (so
+            # attention/earlier layers get the full backward signal), but the expert weights
+            # receive gradient only from unmasked (working-set) slots. Router untouched.
+            sorted_mask = detach_mask[indices.long()]
+            x = self.mlp(x, batch_size_per_expert, detach_w_rows=sorted_mask)
+            return ops.scatter(x, indices, bin_ids, expert_weights, bins, top_k)
 
         # Perform the expert computation.
         x = self.mlp(x, batch_size_per_expert)

@@ -101,9 +101,15 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
         # each inner/outer forward and reset afterwards. `meta_force_pool` pins the per-document
         # pool size on TRAINING forwards only (the eval branch is untouched); `meta_skip_aux`
         # suppresses aux losses and metric accumulators so a second forward per train step doesn't
-        # double-count them.
+        # double-count them. `meta_outer_detach_top_e` (outer pass only): build a per-slot
+        # weight-only detach mask so that expert WEIGHTS receive gradient only from slots whose
+        # expert is in the document's top-e working set (shared experts always trainable); the
+        # activation-gradient path through every expert stays intact, and the router trains
+        # normally. Consumed via the `_detach_mask` + `_detach_mask_weight_only` stash channel.
         self.meta_force_pool: Optional[int] = None
         self.meta_skip_aux: bool = False
+        self.meta_outer_detach_top_e: Optional[int] = None
+        self._detach_mask_weight_only: bool = False
 
     def get_top_k(self, scores: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """We override the get_top_k to use self.num_choose_experts instead of self.top_k, since we will always activate self.num_shared_experts"""
@@ -154,7 +160,14 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
 
         # Clear any stale detach_mask from a previous forward (read+consumed by MoE.forward).
         self._detach_mask = None
+        self._detach_mask_weight_only = False
         _ef_active = bool(self.extension_finetune_mode) and int(self.extension_finetune_top_e) > 0
+        _meta_ws_active = self.meta_outer_detach_top_e is not None and self.training
+        if _meta_ws_active and _ef_active:
+            raise RuntimeError(
+                "meta_outer_detach_top_e and extension_finetune_mode both stash _detach_mask "
+                "and cannot be active together."
+            )
 
         # shape: (batch_size, seq_len, d_model)
         x = self.jitter(x)
@@ -207,6 +220,12 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
             rank_full = ops.doc_rank(doc_prob_per_token)  # (B, S, E), 0 = largest
             in_top_e = rank_full < top_e  # (B, S, E) bool
 
+        # meta_learning working-set outer update: per-doc top-e membership from the same
+        # doc-probability ranking the inner pass's pool restriction uses.
+        if _meta_ws_active:
+            meta_top_e = min(int(self.meta_outer_detach_top_e), num_non_shared_experts)  # type: ignore[arg-type]
+            meta_in_top_e = ops.doc_rank(doc_prob_per_token) < meta_top_e  # (B, S, E) bool
+
         # Sample the per-document pool size (constant within a document) and build the keep mask.
         if self.training:
             if self.meta_force_pool is not None:
@@ -249,6 +268,13 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
             # expert_indices: (B, S, num_choose), values in [0, num_non_shared_experts)
             in_top_e_selected = torch.gather(in_top_e, dim=-1, index=expert_indices.long())
             _ef_detach_mask_nonshared = ~in_top_e_selected  # (B, S, num_choose)
+
+        # meta_learning working-set outer update: True = this slot's expert is OUTSIDE the doc's
+        # top-e working set -> its expert WEIGHTS get no gradient from this slot.
+        _meta_ws_mask_nonshared: Optional[torch.Tensor] = None
+        if _meta_ws_active:
+            meta_in_sel = torch.gather(meta_in_top_e, dim=-1, index=expert_indices.long())
+            _meta_ws_mask_nonshared = ~meta_in_sel  # (B, S, num_choose)
 
         if self.normalize_expert_weights is not None:
             expert_weights = expert_weights.div(
@@ -402,6 +428,23 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
             tot_batch_size_per_expert = F.pad(
                 tot_batch_size_per_expert, (0, self.num_shared_experts), value=x.size(0) * x.size(1)
             )
+
+        # meta_learning working-set outer update: pad with False for the shared-expert slots
+        # (shared experts are in every document's working set, so they stay trainable) and stash
+        # with the weight-only flag so the detach cuts ONLY expert-weight gradients.
+        if _meta_ws_active and _meta_ws_mask_nonshared is not None:
+            if self.num_shared_experts > 0:
+                pad = torch.zeros(
+                    _meta_ws_mask_nonshared.size(0),
+                    _meta_ws_mask_nonshared.size(1),
+                    self.num_shared_experts,
+                    dtype=torch.bool,
+                    device=_meta_ws_mask_nonshared.device,
+                )
+                self._detach_mask = torch.cat([_meta_ws_mask_nonshared, pad], dim=-1)
+            else:
+                self._detach_mask = _meta_ws_mask_nonshared
+            self._detach_mask_weight_only = True
 
         # extension_finetune_mode: pad the detach mask with True for the shared-expert slots
         # (shared expert is always detached in this mode; see plan "What exactly gets detached").

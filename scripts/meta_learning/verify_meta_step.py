@@ -112,6 +112,9 @@ def build_module() -> MetaLearningTransformerTrainModule:
         lb_on_inner=False,
         inner_grad_clip=None,  # keep the manual reference math exact
         log_grad_cosine=True,
+        # Checks 0-3 validate the unmasked two-pass machinery; the M checks flip this to
+        # "working_set" per run.
+        outer_expert_update="all",
     )
 
 
@@ -160,11 +163,12 @@ def assert_weights_unchanged(module, snapshot, label):
         assert torch.equal(get_local_tensor(p.data), w), f"[{label}] expert weights changed!"
 
 
-def run_step(module, base_batch, device, *, meta_mode, inner_lr, lambda_inner):
+def run_step(module, base_batch, device, *, meta_mode, inner_lr, lambda_inner, outer="all"):
     """One train_batch under the given knobs. Returns (captured_metrics, final_grads_by_name)."""
     module.meta_mode = meta_mode
     module.inner_lr = inner_lr
     module.lambda_inner = lambda_inner
+    module.outer_expert_update = outer
     captured = patch_metric_capture(module)
     module.optim.zero_grad(set_to_none=True)
     snapshot = expert_weight_snapshot(module)
@@ -364,6 +368,77 @@ def main():
                 f"outer CE={cap_h['ce_global']:.4f}, inner CE={cap_h['train/meta inner CE loss']:.4f}",
             )
         )
+
+        # --- Checks M: working-set outer update (weight-only detach) ---
+        # Same batch, outer_only at alpha=0, masked vs unmasked. The weight-only detach must:
+        # (M1) leave every NON-expert gradient identical (activation-gradient paths intact — the
+        #      "early layers still get backprop through other experts" property),
+        # (M2) leave the forward loss identical,
+        # (M3) actually change the expert gradients (masking active).
+        cap_u, grads_u = run_step(
+            module, base_batch, device, meta_mode="outer_only", inner_lr=0.0, lambda_inner=0.0
+        )
+        cap_m2, grads_m = run_step(
+            module,
+            base_batch,
+            device,
+            meta_mode="outer_only",
+            inner_lr=0.0,
+            lambda_inner=0.0,
+            outer="working_set",
+        )
+        is_exp = lambda n: "experts.mlp.w" in n  # noqa: E731
+        nonexp_diff = max_grad_rel_diff(
+            {n: g for n, g in grads_m.items() if not is_exp(n)},
+            {n: g for n, g in grads_u.items() if not is_exp(n)},
+        )
+        d_loss_m = abs(cap_m2["ce_global"] - cap_u["ce_global"])
+        exp_diff = max_grad_rel_diff(
+            {n: g for n, g in grads_m.items() if is_exp(n)},
+            {n: g for n, g in grads_u.items() if is_exp(n)},
+        )
+        # Informational: per-expert row-blocks with exactly-zero masked grad, and grad-norm ratio.
+        zero_blocks, total_blocks = 0, 0
+        m_sq = u_sq = 0.0
+        for n, g in grads_m.items():
+            if not is_exp(n):
+                continue
+            gm = g.view(NUM_EXPERTS, -1)
+            zero_blocks += int((gm.norm(dim=1) == 0).sum())
+            total_blocks += gm.shape[0]
+            m_sq += float(g.pow(2).sum())
+            u_sq += float(grads_u[n].pow(2).sum())
+        results.append(
+            ("M1 non-expert grads preserved", nonexp_diff < 1e-4, f"rel diff={nonexp_diff:.3e}")
+        )
+        results.append(
+            (
+                "M2 forward loss unchanged",
+                d_loss_m <= max(10 * det_noise, 1e-6),
+                f"|dL|={d_loss_m:.3e}",
+            )
+        )
+        results.append(
+            (
+                "M3 expert grads masked",
+                exp_diff > 1e-3,
+                f"rel diff={exp_diff:.3e}; zero row-blocks {zero_blocks}/{total_blocks}; "
+                f"norm ratio={(m_sq / max(u_sq, 1e-20)) ** 0.5:.3f}",
+            )
+        )
+
+        # --- Check M4: full masked step end-to-end (the relaunch configuration) ---
+        cap_ws, _ = run_step(
+            module,
+            base_batch,
+            device,
+            meta_mode="same_tokens",
+            inner_lr=alpha,
+            lambda_inner=0.0,
+            outer="working_set",
+        )
+        ok = torch.isfinite(torch.tensor(cap_ws["ce_global"])).item()
+        results.append(("M4 masked same_tokens smoke", ok, f"outer CE={cap_ws['ce_global']:.4f}"))
 
     finally:
         rank0 = (not is_distributed()) or dist.get_rank() == 0

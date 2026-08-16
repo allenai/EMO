@@ -269,13 +269,24 @@ class DroplessMoEMLP(MoEMLPBase):
                 start += size
             return torch.cat(out)
 
-    def forward(self, x: torch.Tensor, batch_size_per_expert: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        batch_size_per_expert: torch.Tensor,
+        detach_w_rows: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
         """
         Compute the expert outputs.
 
         :param x: The input of shape ``(*, d_model)``.
         :param batch_size_per_expert: Specifies how many items/tokens go to each expert. Should be a
             1-D ``LongTensor``.
+        :param detach_w_rows: Optional bool tensor of shape ``(num_rows,)`` in the same
+            (expert-sorted) row order as ``x``. ``True`` rows get their output computed with the
+            expert *weights* detached: the forward value is identical and the gradient still flows
+            back through the row's input ``x`` (so attention/earlier layers see the full backward
+            signal), but ``w1/w2/w3`` receive no gradient from those rows (meta_learning
+            working-set outer update). Costs a second set of grouped GEMMs when set.
         """
         # Scale gradients and get local tensors (in case of expert parallelism).
         # shape (all): (num_local_experts, hidden_size, d_model)
@@ -289,7 +300,19 @@ class DroplessMoEMLP(MoEMLPBase):
         x1 = self.gmm(x, w1, batch_size_per_expert, trans_b=True)
         x2 = self.gmm(x, w3, batch_size_per_expert, trans_b=True)
         x1 = F.silu(x1) * x2
-        return self.gmm(x1, w2, batch_size_per_expert)
+        out = self.gmm(x1, w2, batch_size_per_expert)
+
+        if detach_w_rows is not None:
+            # Weight-only detach: recompute under detached weights (same values, autograd-wise a
+            # graph whose only leaves are the row inputs) and select per row.
+            w1d, w2d, w3d = w1.detach(), w2.detach(), w3.detach()
+            y1 = self.gmm(x, w1d, batch_size_per_expert, trans_b=True)
+            y2 = self.gmm(x, w3d, batch_size_per_expert, trans_b=True)
+            y1 = F.silu(y1) * y2
+            out_frozen = self.gmm(y1, w2d, batch_size_per_expert)
+            out = torch.where(detach_w_rows[:, None], out_frozen, out)
+
+        return out
 
     def ghost_forward(
         self,

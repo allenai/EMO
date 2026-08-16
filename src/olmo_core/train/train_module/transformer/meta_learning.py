@@ -87,6 +87,12 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
         disables.
     :param log_grad_cosine: Record the inner/outer expert-gradient dot product and cosine each
         step (one extra all-reduce of 3 scalars).
+    :param outer_expert_update: ``"working_set"`` (default): in the outer backward, each expert's
+        WEIGHTS receive gradient only from slots whose expert is in the document's
+        top-``inner_pool_size`` working set (weight-only detach: forward values and all
+        activation-gradient paths — attention, earlier layers, router — are untouched).
+        ``"all"``: every expert receives the full outer gradient (the original, degenerate
+        behavior; kept for ablation).
     """
 
     def __init__(
@@ -99,6 +105,7 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
         lb_on_inner: bool = False,
         inner_grad_clip: Optional[float] = 1.0,
         log_grad_cosine: bool = True,
+        outer_expert_update: str = "working_set",
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -111,6 +118,15 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
             raise OLMoConfigurationError("'inner_lr' must be >= 0")
         if lambda_inner < 0:
             raise OLMoConfigurationError("'lambda_inner' must be >= 0")
+        if outer_expert_update not in ("working_set", "all"):
+            raise OLMoConfigurationError(
+                f"invalid outer_expert_update '{outer_expert_update}', expected 'working_set' or 'all'"
+            )
+        if outer_expert_update == "working_set" and inner_pool_size is None:
+            raise OLMoConfigurationError(
+                "outer_expert_update='working_set' requires a fixed 'inner_pool_size' "
+                "(the working-set size)"
+            )
 
         self.meta_mode = meta_mode
         self.inner_lr = inner_lr
@@ -119,6 +135,8 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
         self.lb_on_inner = lb_on_inner
         self.inner_grad_clip = inner_grad_clip
         self.log_grad_cosine = log_grad_cosine
+        self.outer_expert_update = outer_expert_update
+        self._meta_step_count = 0
 
         # Cache the randpool routers and the fused expert-weight parameters. Both survive FSDP2
         # wrapping and per-block torch.compile (module structure and parameter names are kept).
@@ -167,10 +185,16 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
     # Helpers
     ##########
 
-    def _set_router_meta_state(self, force_pool: Optional[int], skip_aux: bool):
+    def _set_router_meta_state(
+        self,
+        force_pool: Optional[int],
+        skip_aux: bool,
+        outer_detach_top_e: Optional[int] = None,
+    ):
         for r in self._meta_routers:
             r.meta_force_pool = force_pool
             r.meta_skip_aux = skip_aux
+            r.meta_outer_detach_top_e = outer_detach_top_e
 
     def _phase_loss_div(
         self, micro_batches: List[Dict[str, Any]]
@@ -342,7 +366,16 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
             self._apply_pseudo_step(grad_stash)
 
         # ---- Phase 2: outer forward/backward (full routing at theta') ----
-        self._set_router_meta_state(force_pool=self._num_nonshared_experts, skip_aux=False)
+        # With outer_expert_update="working_set", each expert's weights receive gradient only
+        # from slots inside the document's top-`inner_pool_size` working set (weight-only detach;
+        # activation gradients and the router are untouched).
+        self._set_router_meta_state(
+            force_pool=self._num_nonshared_experts,
+            skip_aux=False,
+            outer_detach_top_e=(
+                self.inner_pool_size if self.outer_expert_update == "working_set" else None
+            ),
+        )
         ce_batch_loss = move_to_device(torch.tensor(0.0), self.device)
         z_batch_loss: Optional[torch.Tensor] = None
         if self.z_loss_multiplier is not None:
@@ -372,7 +405,10 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
 
         # ---- Meta metrics (before the restore frees the stashes) + restore ----
         if run_inner:
-            self._record_meta_metrics(inner_ce_loss, pre_clip_grad_norm, grad_stash, dry_run)
+            self._meta_step_count += 1
+            self._record_meta_metrics(
+                inner_ce_loss, pre_clip_grad_norm, grad_stash, weight_stash, dry_run
+            )
             for p in self._expert_params:
                 get_local_tensor(p.data).copy_(weight_stash[p])
             if check_restore:
@@ -427,6 +463,7 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
         inner_ce_loss: torch.Tensor,
         pre_clip_grad_norm: Optional[torch.Tensor],
         grad_stash: Dict[nn.Parameter, torch.Tensor],
+        weight_stash: Dict[nn.Parameter, torch.Tensor],
         dry_run: bool,
     ):
         if dry_run:
@@ -454,6 +491,38 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
             reduce_type=None,
             namespace="train",
         )
+        if self._meta_step_count % 10 == 1:
+            # Measured bf16 survival of the pseudo-step: what the outer pass's bf16 all-gather
+            # actually sees of the perturbation, computed exactly on the fp32 local shards
+            # (dim-0 sharding = whole rows, so the local simulation matches the real cast).
+            surv_dot = torch.zeros((), device=self.device, dtype=torch.float32)
+            surv_sq = torch.zeros((), device=self.device, dtype=torch.float32)
+            delta_sq = torch.zeros((), device=self.device, dtype=torch.float32)
+            for p in self._expert_params:
+                w = weight_stash[p]
+                delta = grad_stash[p] * (-self.inner_lr)
+                survived = (w + delta).bfloat16().float() - w.bfloat16().float()
+                d32 = delta.float()
+                s32 = survived.float()
+                surv_dot += (s32 * d32).sum()
+                surv_sq += s32.pow(2).sum()
+                delta_sq += d32.pow(2).sum()
+            self._reduce_scalar(surv_dot)
+            self._reduce_scalar(surv_sq)
+            self._reduce_scalar(delta_sq)
+            self.record_metric(
+                "meta bf16 survival cosine",
+                surv_dot / (surv_sq.sqrt() * delta_sq.sqrt() + 1e-20),
+                reduce_type=None,
+                namespace="train",
+            )
+            self.record_metric(
+                "meta bf16 survival norm ratio",
+                surv_sq.sqrt() / (delta_sq.sqrt() + 1e-20),
+                reduce_type=None,
+                namespace="train",
+            )
+
         if self.log_grad_cosine:
             # g_outer over expert shards = `.grad` minus the lambda_inner * g_inner contribution.
             dot = torch.zeros((), device=self.device, dtype=torch.float32)
@@ -488,6 +557,7 @@ _META_CONFIG_FIELDS = (
     "lb_on_inner",
     "inner_grad_clip",
     "log_grad_cosine",
+    "outer_expert_update",
 )
 
 
@@ -505,6 +575,7 @@ class MetaLearningTransformerTrainModuleConfig(TransformerTrainModuleConfig):
     lb_on_inner: bool = False
     inner_grad_clip: Optional[float] = 1.0
     log_grad_cosine: bool = True
+    outer_expert_update: str = "working_set"
 
     def build(
         self,
@@ -539,5 +610,6 @@ class MetaLearningTransformerTrainModuleConfig(TransformerTrainModuleConfig):
             lb_on_inner=self.lb_on_inner,
             inner_grad_clip=self.inner_grad_clip,
             log_grad_cosine=self.log_grad_cosine,
+            outer_expert_update=self.outer_expert_update,
             **kwargs,
         )
