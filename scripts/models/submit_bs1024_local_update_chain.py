@@ -67,8 +67,12 @@ def parse_args() -> argparse.Namespace:
         if args.simulated_sequences is not None or args.init_epoch is not None:
             parser.error("the DiLoCo job contains both init paths; omit simBS/init")
         expected_name = DILOCO_NAME
-    if args.name != expected_name:
-        parser.error(f"authorized name is {expected_name}")
+    # Retry attempt markers belong only to experiment/W&B/control metadata.
+    # Scientific output paths are derived exclusively from method/sim/init/WD
+    # below and therefore remain canonical across attempts.
+    expected_stem = expected_name.rsplit("-r", 1)[0]
+    if not re.fullmatch(re.escape(expected_stem) + r"-r[0-9]{2}", args.name):
+        parser.error(f"authorized name pattern is {expected_stem}-rNN")
     return args
 
 

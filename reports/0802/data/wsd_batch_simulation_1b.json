@@ -8916,7 +8916,7 @@
       "failureCategory": "canceled_before_allocation"
     },
     {
-      "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r01-wd0.333",
+      "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r01-init2-wd0.333",
       "chainName": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r01",
       "method": "post_e2_diloco_h32_olr0.5_om0.7_vrecal_bs1024_dr_simbs64",
       "syncInterval": 32,
@@ -8958,7 +8958,7 @@
       "failureCategory": "launcher_configuration"
     },
     {
-      "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r01-wd0.333",
+      "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r01-init4-wd0.333",
       "chainName": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r01",
       "method": "post_e4_diloco_h32_olr0.5_om0.7_vrecal_bs1024_dr_simbs64",
       "syncInterval": 32,
@@ -9013,9 +9013,9 @@
       "simulatedBatchSequences": 64,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "queued",
+      "status": "running",
       "healthStatus": "active",
-      "currentStep": 1716,
+      "currentStep": 2150,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e2_lr1e-3_wd0.333/step1716",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e2_lr1e-3_wd0.333",
@@ -9024,7 +9024,7 @@
       "recalibrateSecondMomentOnStart": false,
       "secondMomentRecalibrationRatio": 16,
       "results": {},
-      "reason": "Pending cleanly before allocation; registered as one exact four-node training chain through E16 with canonical checkpoint paths.",
+      "reason": "Healthy four-node E12 stage running from exact native step1716; all four replicas and32 ranks are active, with finite train CE3.176 and grad norm0.2408 at step2150 and no skipped step.",
       "beaker": "01M04P42ZGGD1W876FS1N6XEY9",
       "experiment": "01M04P42ZGGD1W876FS1N6XEY9",
       "jobs": [
@@ -9036,8 +9036,8 @@
       "submittedAt": "2026-08-16T07:05:18.549237Z"
     },
     {
-      "planId": "bs1024-ls-h4-sim64-e4init-chain-e16-r02-wd0.333",
-      "chainName": "bs1024-ls-h4-sim64-e4init-chain-e16-r02",
+      "planId": "bs1024-ls-h4-sim64-e4init-chain-e16-r03-wd0.333",
+      "chainName": "bs1024-ls-h4-sim64-e4init-chain-e16-r03",
       "method": "post_e4_local_sgd_h4_bs1024_dr_simbs64",
       "syncInterval": 4,
       "startEpoch": 8,
@@ -9050,9 +9050,9 @@
       "simulatedBatchSequences": 64,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "running",
+      "status": "queued",
       "healthStatus": "active",
-      "currentStep": 2315,
+      "currentStep": 1716,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e4_lr1e-3_wd0.333/step1716",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e4_lr1e-3_wd0.333",
@@ -9061,16 +9061,32 @@
       "recalibrateSecondMomentOnStart": false,
       "secondMomentRecalibrationRatio": 16,
       "results": {},
-      "reason": "Healthy four-node E12 stage running from exact native step1716; 32-rank mesh=(dp_replicate16,dp_shard2), latest train CE3.080 and grad norm0.2598 at step2315 with no skipped step.",
-      "beaker": "01M04P41KAJET141K8WB48691G",
-      "experiment": "01M04P41KAJET141K8WB48691G",
-      "jobs": [
-        "01M04P41KN07DZQQEQ0S7ZBKYM",
-        "01M04P41Q6AQBKVSN1HPZYYS1K",
-        "01M04P41TVQNM0WMMZ611G95EG",
-        "01M04P41ZGGB52V0AKHT7W40R3"
+      "reason": "Exact four-node r03 retry is queued from healthy native step1716 after the prior E12 attempt hit a distributed collective timeout. No E12 target checkpoint was produced; canonical output paths are unchanged.",
+      "previousAttempts": [
+        {
+          "attempt": "r02",
+          "experiment": "01M04P41KAJET141K8WB48691G",
+          "jobs": [
+            "01M04P41Q0JBEMN6GEY8BBPK85",
+            "01M04P41TNTQTF7WF5RB6XPXMB",
+            "01M04P41ZBYNV277KYS7RJH8E7",
+            "01M04P42314WKZEX02TAAPK2XD"
+          ],
+          "status": "neutral_failure",
+          "failureCategory": "distributed_collective_timeout",
+          "optimizerStepsCompleted": 674,
+          "reason": "Healthy finite training progressed from step1716 to about step2390, then rank15 failed to enter ALLREDUCE sequence676 and all ranks timed out after 900 seconds. No NaN/Inf or model-health failure was observed. The exact E12 stage is safe to retry from step1716."
+        }
       ],
-      "submittedAt": "2026-08-16T07:05:18.549237Z"
+      "beaker": "01M04T8R33GWTWD7H9R21XZCGR",
+      "experiment": "01M04T8R33GWTWD7H9R21XZCGR",
+      "jobs": [
+        "01M04T8R383S43ZN9REFWCAMXT",
+        "01M04T8R6MPGAD3ZEXH4YR89NF",
+        "01M04T8R9YMYHC44QVPBEKH674",
+        "01M04T8RDDNNT337AC2M2S0CB0"
+      ],
+      "submittedAt": "2026-08-16T08:17:08Z"
     },
     {
       "planId": "bs1024-ls-h4-sim256-e2init-chain-e16-r02-wd0.333",
@@ -9130,7 +9146,7 @@
       "wd": "1.0",
       "status": "running",
       "healthStatus": "active",
-      "currentStep": 719,
+      "currentStep": 1200,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0/step428",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e2_lr1e-3_wd1.0",
@@ -9140,7 +9156,7 @@
       "secondMomentRecalibrationRatio": 4,
       "wdGatePolicy": "At each matched healthy frontier, prune WD0.333 for later epochs only if WD1.0 has lower validation CE.",
       "results": {},
-      "reason": "Healthy four-node WD1.0 E4 stage running from exact conventional step428 with one-time ratio4 recalibration; 32-rank mesh=(dp_replicate4,dp_shard8), finite CE/gradients, no skipped steps.",
+      "reason": "Healthy four-node WD1.0 E4 stage running from exact conventional step428 with one-time ratio4 recalibration; 32-rank mesh=(dp_replicate4,dp_shard8), train CE3.290 and grad norm0.1562 at step1200 with no skipped step.",
       "beaker": "01M04P429GASFTSDDHHJZREYYP",
       "experiment": "01M04P429GASFTSDDHHJZREYYP",
       "jobs": [
@@ -9178,7 +9194,7 @@
       "secondMomentRecalibrationRatio": 4,
       "wdGatePolicy": "At each matched healthy frontier, prune WD0.333 for later epochs only if WD1.0 has lower validation CE.",
       "results": {},
-      "reason": "Pending cleanly before allocation; paired four-node chain will evaluate matched WD frontiers using canonical checkpoint paths.",
+      "reason": "Replica group is allocated and synchronizing start: three replicas are ready and one replacement is pending after a neutral scheduler reschedule. No training error has occurred; canonical checkpoint paths are unchanged.",
       "beaker": "01M04P55JH7SKRX7WSN4V8YZPS",
       "experiment": "01M04P55JH7SKRX7WSN4V8YZPS",
       "jobs": [
@@ -9217,7 +9233,7 @@
       "secondMomentRecalibrationRatio": 4,
       "wdGatePolicy": "At each matched healthy frontier, prune WD0.333 for later epochs only if WD1.0 has lower validation CE.",
       "results": {},
-      "reason": "Pending cleanly before allocation; paired four-node chain will evaluate matched WD frontiers using canonical checkpoint paths.",
+      "reason": "Replica group is allocated and synchronizing start: three replicas are ready and one replacement is pending after a neutral scheduler reschedule. No training error has occurred; canonical checkpoint paths are unchanged.",
       "beaker": "01M04P55JH7SKRX7WSN4V8YZPS",
       "experiment": "01M04P55JH7SKRX7WSN4V8YZPS",
       "jobs": [
@@ -9229,8 +9245,8 @@
       "submittedAt": "2026-08-16T07:05:18.549237Z"
     },
     {
-      "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r02-init2-wd0.333",
-      "chainName": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r02",
+      "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r03-init2-wd0.333",
+      "chainName": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r03",
       "method": "post_e2_diloco_h32_olr0.5_om0.7_vrecal_bs1024_dr_simbs64",
       "syncInterval": 32,
       "startEpoch": 2,
@@ -9258,20 +9274,36 @@
       "dilocoOuterLr": 0.5,
       "dilocoOuterMomentum": 0.7,
       "results": {},
-      "reason": "Pending cleanly before allocation; the four-node chain will run the E2-init trajectory first with canonical checkpoint paths.",
-      "beaker": "01M04P478P7FD8QMVPDD3P10FY",
-      "experiment": "01M04P478P7FD8QMVPDD3P10FY",
-      "jobs": [
-        "01M04P478WRHQQGCGYVD4P4ZPK",
-        "01M04P47CK935MDH6DS3WS18HK",
-        "01M04P47GV1J8QPTYZ9PRR90AR",
-        "01M04P47MEETMP653T0DHTJYA0"
+      "reason": "Exact four-node r03 retry is queued after a zero-step cgroup allocation failure; it will load conventional step428 with one-time ratio16 recalibration and keep the canonical model output path.",
+      "previousAttempts": [
+        {
+          "attempt": "r02",
+          "experiment": "01M04P478P7FD8QMVPDD3P10FY",
+          "jobs": [
+            "01M04P47CF591Y81KW9RWH7A3J",
+            "01M04P47GNMCWCZND79QVHVQWJ",
+            "01M04SR9V0JPPCA3JFK2Y2V51S",
+            "01M04P47QVBE6XCF4VVWBWQG8P"
+          ],
+          "status": "neutral_failure",
+          "failureCategory": "container_cgroup_allocation",
+          "optimizerStepsCompleted": 0,
+          "reason": "Replica1 failed before the container started because the node could not allocate memory for its cgroup; propagated cancellation stopped the other replicas. This is infrastructure-only provenance."
+        }
       ],
-      "submittedAt": "2026-08-16T07:05:18.549237Z"
+      "beaker": "01M04T8SYNH9N9XEJ4EHEMA6Y2",
+      "experiment": "01M04T8SYNH9N9XEJ4EHEMA6Y2",
+      "jobs": [
+        "01M04T8SYV4ESM22KR0HYPSBBC",
+        "01M04T8T2EWBFFGNWNZG2QNH0W",
+        "01M04T8T66MJ9W8WF4839AYT7T",
+        "01M04T8T9MHZCCPQ5JM6SMG2CE"
+      ],
+      "submittedAt": "2026-08-16T08:17:08Z"
     },
     {
-      "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r02-init4-wd0.333",
-      "chainName": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r02",
+      "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r03-init4-wd0.333",
+      "chainName": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r03",
       "method": "post_e4_diloco_h32_olr0.5_om0.7_vrecal_bs1024_dr_simbs64",
       "syncInterval": 32,
       "startEpoch": 4,
@@ -9298,16 +9330,32 @@
       "dilocoOuterLr": 0.5,
       "dilocoOuterMomentum": 0.7,
       "results": {},
-      "reason": "Pending cleanly before allocation behind the E2-init trajectory in the same four-node chain; canonical checkpoint paths are preserved.",
-      "beaker": "01M04P478P7FD8QMVPDD3P10FY",
-      "experiment": "01M04P478P7FD8QMVPDD3P10FY",
-      "jobs": [
-        "01M04P478WRHQQGCGYVD4P4ZPK",
-        "01M04P47CK935MDH6DS3WS18HK",
-        "01M04P47GV1J8QPTYZ9PRR90AR",
-        "01M04P47MEETMP653T0DHTJYA0"
+      "reason": "Queued behind the E2-init branch in the exact same r03 four-node chain. The prior failure was zero-step infrastructure, so conventional step858 and the canonical E4-init output path remain clean.",
+      "previousAttempts": [
+        {
+          "attempt": "r02",
+          "experiment": "01M04P478P7FD8QMVPDD3P10FY",
+          "jobs": [
+            "01M04P47CF591Y81KW9RWH7A3J",
+            "01M04P47GNMCWCZND79QVHVQWJ",
+            "01M04SR9V0JPPCA3JFK2Y2V51S",
+            "01M04P47QVBE6XCF4VVWBWQG8P"
+          ],
+          "status": "neutral_canceled",
+          "failureCategory": "propagated_infrastructure_failure",
+          "optimizerStepsCompleted": 0,
+          "reason": "This branch was never reached because the preceding E2-init replica group failed during container startup."
+        }
       ],
-      "submittedAt": "2026-08-16T07:05:18.549237Z"
+      "beaker": "01M04T8SYNH9N9XEJ4EHEMA6Y2",
+      "experiment": "01M04T8SYNH9N9XEJ4EHEMA6Y2",
+      "jobs": [
+        "01M04T8SYV4ESM22KR0HYPSBBC",
+        "01M04T8T2EWBFFGNWNZG2QNH0W",
+        "01M04T8T66MJ9W8WF4839AYT7T",
+        "01M04T8T9MHZCCPQ5JM6SMG2CE"
+      ],
+      "submittedAt": "2026-08-16T08:17:08Z"
     }
   ]
 }
