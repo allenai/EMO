@@ -8266,8 +8266,8 @@
       "simulatedBatchSequences": 64,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "planned",
-      "healthStatus": "pending",
+      "status": "complete",
+      "healthStatus": "orange",
       "beaker": "01M03QJ0QR36Y0D4WX82MMK4A2",
       "jobs": [
         "01M03QJ0WAA02M5730QKPY9T7D",
@@ -8277,8 +8277,16 @@
         "01M03QJ0R4C4APBCVYE6AX0CCJ",
         "01M03QJ0WJ0HR4NA23W1W35ARM"
       ],
-      "nodes": [],
-      "currentStep": 428,
+      "nodes": [
+        "jupiter-cs-aus-167.reviz.ai2.in",
+        "jupiter-cs-aus-124.reviz.ai2.in"
+      ],
+      "currentStep": 954,
+      "wandb": "j6pjixkn",
+      "exitCodes": [
+        0,
+        0
+      ],
       "revision": "f27844d9ff1cc21587d130c25d5bcccd1659ecfc",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step428",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs64_init=bs1024e2_lr1e-3_wd0.333",
@@ -8288,6 +8296,43 @@
       "secondMomentRecalibrationRatio": 16,
       "sequentialReplayMicrobatchGradients": false,
       "matchedLocalSGDPlanId": "bs1024-e2init-local-sgd-h4-sim64-wd0.333-e4",
+      "selectionEligible": false,
+      "stoppedForInstability": true,
+      "healthReason": "Both replicas exited0 and produced complete E4 checkpoints/evaluations, but sequential replay caused severe early CE spikes up to30.70 and finished at validation5.677, far worse than matched LocalSGD H4 validation3.579. Treat as a model-health/optimization failure and do not continue or retry unchanged.",
+      "results": {
+        "4": {
+          "status": "complete",
+          "train": 5.682,
+          "validation": 5.677,
+          "gap": -0.005,
+          "avg8Bpb": 2.359875,
+          "downstream": {
+            "arc_challenge": 22.07,
+            "arc_easy": 29.82,
+            "boolq": 43.46,
+            "csqa": 23.59,
+            "hellaswag": 25.21,
+            "openbookqa": 26.0,
+            "piqa": 52.67,
+            "socialiqa": 39.2,
+            "winogrande": 49.57
+          },
+          "downstreamBpb": {
+            "arc_challenge": 2.265,
+            "arc_easy": 2.455,
+            "boolq": 5.219,
+            "csqa": 2.955,
+            "hellaswag": 1.739,
+            "openbookqa": 2.715,
+            "piqa": 2.135,
+            "socialiqa": 2.408,
+            "winogrande": 2.207
+          },
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs64_init=bs1024e2_lr1e-3_wd0.333/step858",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs64_init=bs1024e2_lr1e-3_wd0.333/step954",
+          "reason": "Both jobs exited0 with step858/954 checkpoint evidence, DCLM validation, and all nine downstream evaluations. Train CE5.682 is the final durable logged value before endpoint checkpointing; validation5.677 and severe early CE spikes establish a non-retryable optimization/model-health failure."
+        }
+      },
       "previousAttempts": [
         {
           "beaker": "01M03CAJP8FH4SBW8NX14YEXF5",
@@ -8309,7 +8354,7 @@
           "reason": "Zero-step configuration failure: the first optimizer update rejected SkipStepOptimizer. The coordinated peer was canceled by propagate-failure; no E4 metrics or checkpoints were produced."
         }
       ],
-      "reason": "Submitted corrected retry 01M03QJ0QR36Y0D4WX82MMK4A2 after packet-level SkipStepOptimizer support passed focused two-rank applied/skipped replay tests. The two-node Python 3.12/Gantry 3.7 runtime loads exact conventional E2 step428, reuses the canonical output root only while target checkpoints step858 and step954 remain absent, and stops at E4."
+      "reason": "Completed E4 on both nodes at exit0 and retained step858/954 checkpoints, but the sequential replay trajectory is orange/nonviable: validation5.677 versus matched LocalSGD H4 validation3.579 (worse by2.098), train5.682 versus3.550 (worse by2.132), gap-0.005 versus+0.029, and avg8 BPB2.359875 versus1.6225 (worse by0.737375). Do not continue or retry unchanged."
     }
   ]
 }
