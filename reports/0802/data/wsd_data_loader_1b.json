@@ -2,7 +2,7 @@
   "updated": "2026-08-15",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes. Weight-tying runs share the input embedding and LM-head projection as one parameter; DR+WT is displayed immediately after its matched DR column.",
-  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 WD1.0 must reach and validate E24 before either WD is selected for E28; compare WD0.3 E24 with WD1.0 E24 using the same rule as BS128/256: if WD1.0 wins, only WD1.0 continues; if it loses, both trajectories may continue subject to their own strict-improvement gates; hold ties for review. The BS64 WD1.0, BS128 WD0.3/WD1.0, and BS256 WD1.0 E20 jobs were all manually canceled before scheduling because cluster wait times were too long. No job started or produced training artifacts, and no retry is authorized until the user asks after cluster load improves. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation; do not decide or retry E28 until WD1.0 E24 is validated. BS256 LR2e-3/WD0.333 remains held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled. WT coordinates advance independently while validation CE strictly improves and stop after the first non-improving endpoint; train\u2013validation gaps are compared against the same-batch, same-LR, same-WD DR trajectory.",
+  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 WD1.0 must reach and validate E24 before either WD is selected for E28; compare WD0.3 E24 with WD1.0 E24 using the same rule as BS128/256: if WD1.0 wins, only WD1.0 continues; if it loses, both trajectories may continue subject to their own strict-improvement gates; hold ties for review. The user authorized retries of the four manually canceled E20 jobs, then immediately requested another hold and said they would manually cancel the newly submitted retries. The BS64 WD1.0, BS128 WD0.3/WD1.0, and BS256 WD1.0 retry jobs are registered and pending cancellation; do not continue, replace, or retry them automatically. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation; do not decide or retry E28 until WD1.0 E24 is validated. BS256 LR2e-3/WD0.333 remains held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled. WT coordinates advance independently while validation CE strictly improves and stop after the first non-improving endpoint; train\u2013validation gaps are compared against the same-batch, same-LR, same-WD DR trajectory.",
   "targetEpochs": [
     1,
     2,
@@ -405,7 +405,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "canceled",
+      "status": "submitted",
       "activeEpoch": 20,
       "attemptedEpochs": [
         2,
@@ -517,7 +517,7 @@
         }
       },
       "health": "healthy",
-      "reason": "E20 was manually canceled by sewonm before scheduling. No node, repository task startup, W&B, checkpoint load, optimizer progress, output, or checkpoint existed; do not retry automatically.",
+      "reason": "E20 retry submitted after fresh exact-source and print-only guards passed; user then requested a hold and will manually cancel it. Do not continue or retry automatically.",
       "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0",
       "attempts": [
@@ -566,13 +566,25 @@
           "revision": "cc2fa58cd53f4e67f72eed88cb20be45b68e9bb8",
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0",
           "reason": "Gantry could not fetch the incorrectly recorded revision before repository task startup. No W&B, checkpoint load, optimizer progress, output, or checkpoint existed; configuration failures are not automatically retried."
+        },
+        {
+          "epoch": 20,
+          "experiment": "01M03NSQJD7VASVMAYQZC4F82N",
+          "job": "01M03NSQNRW9CT8YHFMHPHT8ZD",
+          "result": "01M03NSQJM0HXPMA40XJ0GPBFK",
+          "node": null,
+          "status": "manually_canceled_before_scheduling",
+          "wandb": null,
+          "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0",
+          "reason": "Manually canceled because cluster wait time was too long. No node, repository task startup, W&B, checkpoint load, optimizer progress, output, or checkpoint existed."
         }
       ],
-      "beaker": "01M03NSQJD7VASVMAYQZC4F82N",
-      "experiment": "01M03NSQJD7VASVMAYQZC4F82N",
-      "beakerStatus": "canceled",
-      "job": "01M03NSQNRW9CT8YHFMHPHT8ZD",
-      "result": "01M03NSQJM0HXPMA40XJ0GPBFK",
+      "beaker": "01M047FZKZT4PW6E0QGNYRWRY4",
+      "experiment": "01M047FZKZT4PW6E0QGNYRWRY4",
+      "beakerStatus": "submitted",
+      "job": "01M047FZQWTW0BKY3R2CCXJ31T",
+      "result": "01M047FZMC9XH182PRYNDJ6JST",
       "node": null,
       "wandb": null,
       "startupEvidence": null,
@@ -585,7 +597,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.3",
-      "status": "canceled",
+      "status": "submitted",
       "activeEpoch": 20,
       "attemptedEpochs": [
         2,
@@ -697,7 +709,7 @@
         }
       },
       "health": "healthy",
-      "reason": "E20 was manually canceled by sewonm before scheduling. No node, repository task startup, W&B, checkpoint load, optimizer progress, output, or checkpoint existed; do not retry automatically.",
+      "reason": "E20 retry submitted after fresh exact-source and print-only guards passed; user then requested a hold and will manually cancel it. Do not continue or retry automatically.",
       "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3",
       "attempts": [
@@ -724,13 +736,25 @@
           "revision": "e9010dbd0db656c94c87f9e15c0d35fdba32c034",
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3",
           "reason": "Exited before manifest validation because the E2 guard required the new canonical output directory to preexist. No W&B, checkpoint load, optimizer progress, output checkpoint, or training startup was observed; configuration failures are not automatically retried."
+        },
+        {
+          "epoch": 20,
+          "experiment": "01M03QPETHZPZ0F8TGCCTWWC9V",
+          "job": "01M03QPEYFHNMVV4BWKQ1SCVPS",
+          "result": "01M03QPETRMHCXSKBXEAQZ7ENE",
+          "node": null,
+          "status": "manually_canceled_before_scheduling",
+          "wandb": null,
+          "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3",
+          "reason": "Manually canceled because cluster wait time was too long. No node, repository task startup, W&B, checkpoint load, optimizer progress, output, or checkpoint existed."
         }
       ],
-      "beaker": "01M03QPETHZPZ0F8TGCCTWWC9V",
-      "experiment": "01M03QPETHZPZ0F8TGCCTWWC9V",
-      "beakerStatus": "canceled",
-      "job": "01M03QPEYFHNMVV4BWKQ1SCVPS",
-      "result": "01M03QPETRMHCXSKBXEAQZ7ENE",
+      "beaker": "01M047G0QT8Z45ZNFPS81B9M9N",
+      "experiment": "01M047G0QT8Z45ZNFPS81B9M9N",
+      "beakerStatus": "submitted",
+      "job": "01M047G0X4AD8WQDQ5BMZB4YQ9",
+      "result": "01M047G0R4HFN76SGK6FM3DEBT",
       "node": null,
       "wandb": null,
       "startupEvidence": null,
@@ -743,7 +767,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "canceled",
+      "status": "submitted",
       "activeEpoch": 20,
       "attemptedEpochs": [
         2,
@@ -853,7 +877,7 @@
         }
       },
       "health": "healthy",
-      "reason": "E20 was manually canceled by sewonm before scheduling. No node, repository task startup, W&B, checkpoint load, optimizer progress, output, or checkpoint existed; do not retry automatically.",
+      "reason": "E20 retry submitted after fresh exact-source and print-only guards passed; user then requested a hold and will manually cancel it. Do not continue or retry automatically.",
       "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0",
       "attempts": [
@@ -892,13 +916,25 @@
           "revision": "cc2fa58cd53f4e67f72eed88cb20be45b68e9bb8",
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0",
           "reason": "Gantry exhausted five source-fetch attempts because the recorded revision did not exist remotely. No repository task, W&B, checkpoint load, optimizer progress, output, or checkpoint existed; configuration failures are not automatically retried."
+        },
+        {
+          "epoch": 20,
+          "experiment": "01M03QPES7VYNJKZE0V8WRH62A",
+          "job": "01M03QPEWXG0ENPN51AS2AGPDA",
+          "result": "01M03QPESEW4AN9QTJKCHS2808",
+          "node": null,
+          "status": "manually_canceled_before_scheduling",
+          "wandb": null,
+          "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0",
+          "reason": "Manually canceled because cluster wait time was too long. No node, repository task startup, W&B, checkpoint load, optimizer progress, output, or checkpoint existed."
         }
       ],
-      "beaker": "01M03QPES7VYNJKZE0V8WRH62A",
-      "experiment": "01M03QPES7VYNJKZE0V8WRH62A",
-      "beakerStatus": "canceled",
-      "job": "01M03QPEWXG0ENPN51AS2AGPDA",
-      "result": "01M03QPESEW4AN9QTJKCHS2808",
+      "beaker": "01M047G0SFFR3QH2K41FJW366H",
+      "experiment": "01M047G0SFFR3QH2K41FJW366H",
+      "beakerStatus": "submitted",
+      "job": "01M047G13AGZR34A2BTMFFT140",
+      "result": "01M047G0T11CHGWKABH3XSQHDH",
       "node": null,
       "wandb": null,
       "startupEvidence": null,
@@ -1111,7 +1147,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "canceled",
+      "status": "submitted",
       "activeEpoch": 20,
       "attemptedEpochs": [
         2,
@@ -1221,10 +1257,10 @@
         }
       },
       "health": "healthy",
-      "reason": "E20 was manually canceled by sewonm before scheduling. No node, repository task startup, W&B, checkpoint load, optimizer progress, output, or checkpoint existed; do not retry automatically.",
-      "beaker": "01M03QPDWYYEQZZQ76W0X5EH0Z",
-      "experiment": "01M03QPDWYYEQZZQ76W0X5EH0Z",
-      "beakerStatus": "canceled",
+      "reason": "E20 retry submitted after fresh exact-source and print-only guards passed; user then requested a hold and will manually cancel it. Do not continue or retry automatically.",
+      "beaker": "01M047G1V1H8AKH7R8Q50MEA5R",
+      "experiment": "01M047G1V1H8AKH7R8Q50MEA5R",
+      "beakerStatus": "submitted",
       "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0",
       "attempts": [
@@ -1251,10 +1287,22 @@
           "revision": "e9010dbd0db656c94c87f9e15c0d35fdba32c034",
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0",
           "reason": "Exited before manifest validation because the E2 guard required the new canonical output directory to preexist. No W&B, checkpoint load, optimizer progress, output checkpoint, or training startup was observed; configuration failures are not automatically retried."
+        },
+        {
+          "epoch": 20,
+          "experiment": "01M03QPDWYYEQZZQ76W0X5EH0Z",
+          "job": "01M03QPE0B6FJQA5T1CDNTPW5T",
+          "result": "01M03QPDX4GAMXGR4Y8CYEFDEJ",
+          "node": null,
+          "status": "manually_canceled_before_scheduling",
+          "wandb": null,
+          "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0",
+          "reason": "Manually canceled because cluster wait time was too long. No node, repository task startup, W&B, checkpoint load, optimizer progress, output, or checkpoint existed."
         }
       ],
-      "job": "01M03QPE0B6FJQA5T1CDNTPW5T",
-      "result": "01M03QPDX4GAMXGR4Y8CYEFDEJ",
+      "job": "01M047G1YQ34RD7Q8VPD1AKVAA",
+      "result": "01M047G1V95ZNDXQ9V1EGS8G54",
       "node": null,
       "wandb": null,
       "startupEvidence": null,
