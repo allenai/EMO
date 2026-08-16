@@ -2,7 +2,7 @@
   "updated": "2026-08-15",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes. Weight-tying runs share the input embedding and LM-head projection as one parameter; DR+WT is displayed immediately after its matched DR column.",
-  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 WD1.0 must reach and validate E24 before either WD is selected for E28; compare WD0.3 E24 with WD1.0 E24 using the same rule as BS128/256: if WD1.0 wins, only WD1.0 continues; if it loses, both trajectories may continue subject to their own strict-improvement gates; hold ties for review. The user authorized retries of the four manually canceled E20 jobs, then immediately requested another hold and said they would manually cancel the newly submitted retries. The BS64 WD1.0, BS128 WD0.3/WD1.0, and BS256 WD1.0 retry jobs are registered and pending cancellation; do not continue, replace, or retry them automatically. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation; do not decide or retry E28 until WD1.0 E24 is validated. BS256 LR2e-3/WD0.333 remains held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled. WT coordinates advance independently while validation CE strictly improves and stop after the first non-improving endpoint; train\u2013validation gaps are compared against the same-batch, same-LR, same-WD DR trajectory.",
+  "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 WD1.0 must reach and validate E24 before either WD is selected for E28; compare WD0.3 E24 with WD1.0 E24 using the same rule as BS128/256: if WD1.0 wins, only WD1.0 continues; if it loses, both trajectories may continue subject to their own strict-improvement gates; hold ties for review. The user authorized retries of the four manually canceled E20 jobs, then immediately requested another hold and manually removed all four new retry experiments before scheduling. The BS64 WD1.0, BS128 WD0.3/WD1.0, and BS256 WD1.0 E20 retries produced no startup or training artifacts; do not continue, replace, or retry them automatically. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation; do not decide or retry E28 until WD1.0 E24 is validated. BS256 LR2e-3/WD0.333 remains held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled. WT coordinates advance independently while validation CE strictly improves and stop after the first non-improving endpoint; train\u2013validation gaps are compared against the same-batch, same-LR, same-WD DR trajectory.",
   "targetEpochs": [
     1,
     2,
@@ -405,7 +405,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "submitted",
+      "status": "canceled",
       "activeEpoch": 20,
       "attemptedEpochs": [
         2,
@@ -517,7 +517,7 @@
         }
       },
       "health": "healthy",
-      "reason": "E20 retry submitted after fresh exact-source and print-only guards passed; user then requested a hold and will manually cancel it. Do not continue or retry automatically.",
+      "reason": "E20 retry was manually canceled and removed before scheduling after the user requested another hold. The registered experiment is no longer found in Beaker; no startup or training artifacts existed. Do not retry automatically.",
       "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0",
       "attempts": [
@@ -582,7 +582,7 @@
       ],
       "beaker": "01M047FZKZT4PW6E0QGNYRWRY4",
       "experiment": "01M047FZKZT4PW6E0QGNYRWRY4",
-      "beakerStatus": "submitted",
+      "beakerStatus": "deleted",
       "job": "01M047FZQWTW0BKY3R2CCXJ31T",
       "result": "01M047FZMC9XH182PRYNDJ6JST",
       "node": null,
@@ -597,7 +597,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "0.3",
-      "status": "submitted",
+      "status": "canceled",
       "activeEpoch": 20,
       "attemptedEpochs": [
         2,
@@ -709,7 +709,7 @@
         }
       },
       "health": "healthy",
-      "reason": "E20 retry submitted after fresh exact-source and print-only guards passed; user then requested a hold and will manually cancel it. Do not continue or retry automatically.",
+      "reason": "E20 retry was manually canceled and removed before scheduling after the user requested another hold. The registered experiment is no longer found in Beaker; no startup or training artifacts existed. Do not retry automatically.",
       "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3",
       "attempts": [
@@ -752,7 +752,7 @@
       ],
       "beaker": "01M047G0QT8Z45ZNFPS81B9M9N",
       "experiment": "01M047G0QT8Z45ZNFPS81B9M9N",
-      "beakerStatus": "submitted",
+      "beakerStatus": "deleted",
       "job": "01M047G0X4AD8WQDQ5BMZB4YQ9",
       "result": "01M047G0R4HFN76SGK6FM3DEBT",
       "node": null,
@@ -767,7 +767,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "submitted",
+      "status": "canceled",
       "activeEpoch": 20,
       "attemptedEpochs": [
         2,
@@ -877,7 +877,7 @@
         }
       },
       "health": "healthy",
-      "reason": "E20 retry submitted after fresh exact-source and print-only guards passed; user then requested a hold and will manually cancel it. Do not continue or retry automatically.",
+      "reason": "E20 retry was manually canceled and removed before scheduling after the user requested another hold. The registered experiment is no longer found in Beaker; no startup or training artifacts existed. Do not retry automatically.",
       "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0",
       "attempts": [
@@ -932,7 +932,7 @@
       ],
       "beaker": "01M047G0SFFR3QH2K41FJW366H",
       "experiment": "01M047G0SFFR3QH2K41FJW366H",
-      "beakerStatus": "submitted",
+      "beakerStatus": "deleted",
       "job": "01M047G13AGZR34A2BTMFFT140",
       "result": "01M047G0T11CHGWKABH3XSQHDH",
       "node": null,
@@ -1147,7 +1147,7 @@
       "dataOrder": "dynamic_repacking",
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "submitted",
+      "status": "canceled",
       "activeEpoch": 20,
       "attemptedEpochs": [
         2,
@@ -1257,10 +1257,10 @@
         }
       },
       "health": "healthy",
-      "reason": "E20 retry submitted after fresh exact-source and print-only guards passed; user then requested a hold and will manually cancel it. Do not continue or retry automatically.",
+      "reason": "E20 retry was manually canceled and removed before scheduling after the user requested another hold. The registered experiment is no longer found in Beaker; no startup or training artifacts existed. Do not retry automatically.",
       "beaker": "01M047G1V1H8AKH7R8Q50MEA5R",
       "experiment": "01M047G1V1H8AKH7R8Q50MEA5R",
-      "beakerStatus": "submitted",
+      "beakerStatus": "deleted",
       "revision": "968d1737d8307bab32e097bc779e7e7ceefb9746",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0",
       "attempts": [
