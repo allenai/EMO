@@ -9013,8 +9013,8 @@
       "simulatedBatchSequences": 64,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "planned",
-      "healthStatus": "planned",
+      "status": "submitted",
+      "healthStatus": "active",
       "currentStep": 1716,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e2_lr1e-3_wd0.333/step1716",
@@ -9024,7 +9024,16 @@
       "recalibrateSecondMomentOnStart": false,
       "secondMomentRecalibrationRatio": 16,
       "results": {},
-      "reason": "Registered as one persistent four-node training chain through E16. Every evaluated stage performs terminal decay, while each continuation loads the preceding exact pre-decay checkpoint. All32 GPU ranks participate in every training stage."
+      "reason": "Submitted as one exact four-node training chain through E16; all32 GPU ranks participate, and every continuation restores the preceding canonical pre-decay checkpoint.",
+      "beaker": "01M04P42ZGGD1W876FS1N6XEY9",
+      "experiment": "01M04P42ZGGD1W876FS1N6XEY9",
+      "jobs": [
+        "01M04P42ZT8X8D8M8CMA6RG6F8",
+        "01M04P434CS99HKD9SQKMKSANK",
+        "01M04P437VX67XQEDWDMWHQQPK",
+        "01M04P43BBSNN1W4C0BM0W0EQB"
+      ],
+      "submittedAt": "2026-08-16T07:05:18.549237Z"
     },
     {
       "planId": "bs1024-ls-h4-sim64-e4init-chain-e16-r02-wd0.333",
@@ -9041,8 +9050,8 @@
       "simulatedBatchSequences": 64,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "planned",
-      "healthStatus": "planned",
+      "status": "submitted",
+      "healthStatus": "active",
       "currentStep": 1716,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e4_lr1e-3_wd0.333/step1716",
@@ -9052,7 +9061,16 @@
       "recalibrateSecondMomentOnStart": false,
       "secondMomentRecalibrationRatio": 16,
       "results": {},
-      "reason": "Registered as one persistent four-node training chain through E16. Every evaluated stage performs terminal decay, while each continuation loads the preceding exact pre-decay checkpoint. All32 GPU ranks participate in every training stage."
+      "reason": "Submitted as one exact four-node training chain through E16; all32 GPU ranks participate, and every continuation restores the preceding canonical pre-decay checkpoint.",
+      "beaker": "01M04P41KAJET141K8WB48691G",
+      "experiment": "01M04P41KAJET141K8WB48691G",
+      "jobs": [
+        "01M04P41KN07DZQQEQ0S7ZBKYM",
+        "01M04P41Q6AQBKVSN1HPZYYS1K",
+        "01M04P41TVQNM0WMMZ611G95EG",
+        "01M04P41ZGGB52V0AKHT7W40R3"
+      ],
+      "submittedAt": "2026-08-16T07:05:18.549237Z"
     },
     {
       "planId": "bs1024-ls-h4-sim256-e2init-chain-e16-r02-wd0.333",
@@ -9070,8 +9088,8 @@
       "simulatedBatchSequences": 256,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "planned",
-      "healthStatus": "planned",
+      "status": "submitted",
+      "healthStatus": "active",
       "currentStep": 858,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e2_lr1e-3_wd0.333/step858",
@@ -9082,7 +9100,16 @@
       "secondMomentRecalibrationRatio": 4,
       "wdGatePolicy": "At each matched healthy frontier, prune WD0.333 for later epochs only if WD1.0 has lower validation CE.",
       "results": {},
-      "reason": "Registered as one persistent four-node training chain through E16. Every evaluated stage performs terminal decay, while each continuation loads the preceding exact pre-decay checkpoint. All32 GPU ranks participate in every training stage."
+      "reason": "Submitted as one exact four-node training chain through E16; all32 GPU ranks participate, and every continuation restores the preceding canonical pre-decay checkpoint.",
+      "beaker": "01M04P429GASFTSDDHHJZREYYP",
+      "experiment": "01M04P429GASFTSDDHHJZREYYP",
+      "jobs": [
+        "01M04P429PRQH9DJH3DVMZSCK7",
+        "01M04P42D5RAY1QT4ZHEAX6TM2",
+        "01M04P42GY4TK7S7GK2JFNQ178",
+        "01M04P42MY2TG55G2X48X8YKB1"
+      ],
+      "submittedAt": "2026-08-16T07:05:18.549237Z"
     },
     {
       "planId": "bs1024-ls-h4-sim256-e2init-chain-e16-r02-wd1.0",
@@ -9101,8 +9128,8 @@
       "simulatedBatchSequences": 256,
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "planned",
-      "healthStatus": "planned",
+      "status": "submitted",
+      "healthStatus": "active",
       "currentStep": 428,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0/step428",
@@ -9113,7 +9140,16 @@
       "secondMomentRecalibrationRatio": 4,
       "wdGatePolicy": "At each matched healthy frontier, prune WD0.333 for later epochs only if WD1.0 has lower validation CE.",
       "results": {},
-      "reason": "Registered as one persistent four-node training chain through E16. Every evaluated stage performs terminal decay, while each continuation loads the preceding exact pre-decay checkpoint. All32 GPU ranks participate in every training stage."
+      "reason": "Submitted as one exact four-node training chain through E16; all32 GPU ranks participate, and every continuation restores the preceding canonical pre-decay checkpoint.",
+      "beaker": "01M04P429GASFTSDDHHJZREYYP",
+      "experiment": "01M04P429GASFTSDDHHJZREYYP",
+      "jobs": [
+        "01M04P429PRQH9DJH3DVMZSCK7",
+        "01M04P42D5RAY1QT4ZHEAX6TM2",
+        "01M04P42GY4TK7S7GK2JFNQ178",
+        "01M04P42MY2TG55G2X48X8YKB1"
+      ],
+      "submittedAt": "2026-08-16T07:05:18.549237Z"
     },
     {
       "planId": "bs1024-ls-h4-sim256-e4init-chain-e16-r02-wd0.333",
@@ -9130,8 +9166,8 @@
       "simulatedBatchSequences": 256,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "planned",
-      "healthStatus": "planned",
+      "status": "submitted",
+      "healthStatus": "active",
       "currentStep": 1716,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e4_lr1e-3_wd0.333/step1716",
@@ -9142,7 +9178,16 @@
       "secondMomentRecalibrationRatio": 4,
       "wdGatePolicy": "At each matched healthy frontier, prune WD0.333 for later epochs only if WD1.0 has lower validation CE.",
       "results": {},
-      "reason": "Registered as one persistent four-node training chain through E16. Every evaluated stage performs terminal decay, while each continuation loads the preceding exact pre-decay checkpoint. All32 GPU ranks participate in every training stage."
+      "reason": "Submitted as one exact four-node training chain through E16; all32 GPU ranks participate, and every continuation restores the preceding canonical pre-decay checkpoint.",
+      "beaker": "01M04P55JH7SKRX7WSN4V8YZPS",
+      "experiment": "01M04P55JH7SKRX7WSN4V8YZPS",
+      "jobs": [
+        "01M04P55JR8N7ZETP7Z3FMZZ6S",
+        "01M04P55PFJ6AV519J468R9AJF",
+        "01M04P55T7TYXFDDGHD91AKDV4",
+        "01M04P55XWZBA8YV6XATKZ1WKG"
+      ],
+      "submittedAt": "2026-08-16T07:05:18.549237Z"
     },
     {
       "planId": "bs1024-ls-h4-sim256-e4init-chain-e16-r02-wd1.0",
@@ -9160,8 +9205,8 @@
       "simulatedBatchSequences": 256,
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "planned",
-      "healthStatus": "planned",
+      "status": "submitted",
+      "healthStatus": "active",
       "currentStep": 858,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0/step858",
@@ -9172,7 +9217,16 @@
       "secondMomentRecalibrationRatio": 4,
       "wdGatePolicy": "At each matched healthy frontier, prune WD0.333 for later epochs only if WD1.0 has lower validation CE.",
       "results": {},
-      "reason": "Registered as one persistent four-node training chain through E16. Every evaluated stage performs terminal decay, while each continuation loads the preceding exact pre-decay checkpoint. All32 GPU ranks participate in every training stage."
+      "reason": "Submitted as one exact four-node training chain through E16; all32 GPU ranks participate, and every continuation restores the preceding canonical pre-decay checkpoint.",
+      "beaker": "01M04P55JH7SKRX7WSN4V8YZPS",
+      "experiment": "01M04P55JH7SKRX7WSN4V8YZPS",
+      "jobs": [
+        "01M04P55JR8N7ZETP7Z3FMZZ6S",
+        "01M04P55PFJ6AV519J468R9AJF",
+        "01M04P55T7TYXFDDGHD91AKDV4",
+        "01M04P55XWZBA8YV6XATKZ1WKG"
+      ],
+      "submittedAt": "2026-08-16T07:05:18.549237Z"
     },
     {
       "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r02-wd0.333",
@@ -9191,8 +9245,8 @@
       "simulatedBatchSequences": 64,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "planned",
-      "healthStatus": "planned",
+      "status": "submitted",
+      "healthStatus": "active",
       "currentStep": 428,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step428",
@@ -9204,7 +9258,16 @@
       "dilocoOuterLr": 0.5,
       "dilocoOuterMomentum": 0.7,
       "results": {},
-      "reason": "Registered as one persistent four-node training chain through E16. Every evaluated stage performs terminal decay, while each continuation loads the preceding exact pre-decay checkpoint. All32 GPU ranks participate in every training stage."
+      "reason": "Submitted as one exact four-node training chain through E16; all32 GPU ranks participate, and every continuation restores the preceding canonical pre-decay checkpoint.",
+      "beaker": "01M04P478P7FD8QMVPDD3P10FY",
+      "experiment": "01M04P478P7FD8QMVPDD3P10FY",
+      "jobs": [
+        "01M04P478WRHQQGCGYVD4P4ZPK",
+        "01M04P47CK935MDH6DS3WS18HK",
+        "01M04P47GV1J8QPTYZ9PRR90AR",
+        "01M04P47MEETMP653T0DHTJYA0"
+      ],
+      "submittedAt": "2026-08-16T07:05:18.549237Z"
     },
     {
       "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r02-wd0.333",
@@ -9222,8 +9285,8 @@
       "simulatedBatchSequences": 64,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "planned",
-      "healthStatus": "planned",
+      "status": "submitted",
+      "healthStatus": "active",
       "currentStep": 858,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step858",
@@ -9235,7 +9298,16 @@
       "dilocoOuterLr": 0.5,
       "dilocoOuterMomentum": 0.7,
       "results": {},
-      "reason": "Registered as one persistent four-node training chain through E16. Every evaluated stage performs terminal decay, while each continuation loads the preceding exact pre-decay checkpoint. All32 GPU ranks participate in every training stage."
+      "reason": "Submitted as one exact four-node training chain through E16; all32 GPU ranks participate, and every continuation restores the preceding canonical pre-decay checkpoint.",
+      "beaker": "01M04P478P7FD8QMVPDD3P10FY",
+      "experiment": "01M04P478P7FD8QMVPDD3P10FY",
+      "jobs": [
+        "01M04P478WRHQQGCGYVD4P4ZPK",
+        "01M04P47CK935MDH6DS3WS18HK",
+        "01M04P47GV1J8QPTYZ9PRR90AR",
+        "01M04P47MEETMP653T0DHTJYA0"
+      ],
+      "submittedAt": "2026-08-16T07:05:18.549237Z"
     }
   ]
 }
