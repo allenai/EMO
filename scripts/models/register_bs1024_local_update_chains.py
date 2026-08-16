@@ -20,6 +20,34 @@ from submit_bs1024_local_update_frontier import FRONTIERS
 REPORT = Path("reports/0802/data/wsd_batch_simulation_1b.json")
 MIRROR = Path("reports/0802/data/wsd_batch_simulation_1b.js")
 
+OLD_EXPERIMENTS = {
+    "bs1024-ls-h4-sim64-e2init-chain-e16-r01": (
+        "01M04FR3V6Z0HGQD41QD18ZTRY",
+        "neutral_failure",
+        "Zero-step launcher failure: BEAKER_LEADER_REPLICA_HOSTNAME was not injected.",
+    ),
+    "bs1024-ls-h4-sim64-e4init-chain-e16-r01": (
+        "01M04FR6702HS2GEN70JHM8J4P",
+        "neutral_canceled",
+        "Canceled while pending before allocation because it shared the rendezvous defect.",
+    ),
+    "bs1024-ls-h4-sim256-e2init-chain-e16-r01": (
+        "01M04FRAY90BA7PHHCC37WS2BE",
+        "neutral_canceled",
+        "Canceled while pending before allocation to correct the four-node topology.",
+    ),
+    "bs1024-ls-h4-sim256-e4init-chain-e16-r01": (
+        "01M04FR76C8NHNNBD1GXBM6F56",
+        "neutral_canceled",
+        "Canceled while pending before allocation to correct the four-node topology.",
+    ),
+    "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r01": (
+        "01M04FR5HDFC787CP4HAGFVXQ0",
+        "neutral_failure",
+        "Zero-step launcher failure: BEAKER_LEADER_REPLICA_HOSTNAME was not injected.",
+    ),
+}
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -107,7 +135,9 @@ def plan(
         ),
         "results": {},
         "reason": (
-            "Registered as one persistent four-node chain through E16. Every evaluated stage performs terminal decay, while each continuation loads the preceding exact pre-decay checkpoint."
+            "Registered as one persistent four-node training chain through E16. Every evaluated "
+            "stage performs terminal decay, while each continuation loads the preceding exact "
+            "pre-decay checkpoint. All32 GPU ranks participate in every training stage."
         ),
     }
 
@@ -162,6 +192,19 @@ def main() -> None:
     existing = [run for run in report["runs"] if run.get("chainName") in chain_names]
     if existing:
         raise RuntimeError("one or more requested chains are already registered")
+    for run in report["runs"]:
+        old = OLD_EXPERIMENTS.get(str(run.get("chainName", "")))
+        if old is None:
+            continue
+        experiment, status, reason = old
+        run["status"] = status
+        run["healthStatus"] = "neutral"
+        run["beaker"] = experiment
+        run["experiment"] = experiment
+        run["failureCategory"] = (
+            "launcher_configuration" if status == "neutral_failure" else "canceled_before_allocation"
+        )
+        run["reason"] = reason
     report["runs"].extend(compact_none(requested))
     REPORT.write_text(json.dumps(report, indent=2) + "\n")
     MIRROR.write_text(

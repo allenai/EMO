@@ -38,12 +38,12 @@ from submit_bs1024_local_update_frontier import (
 REPORT = Path("reports/0802/data/wsd_batch_simulation_1b.json")
 TARGETS = (4, 8, 12, 16)
 LOCAL_NAMES = {
-    (64, 2): "bs1024-ls-h4-sim64-e2init-chain-e16-r01",
-    (64, 4): "bs1024-ls-h4-sim64-e4init-chain-e16-r01",
-    (256, 2): "bs1024-ls-h4-sim256-e2init-chain-e16-r01",
-    (256, 4): "bs1024-ls-h4-sim256-e4init-chain-e16-r01",
+    (64, 2): "bs1024-ls-h4-sim64-e2init-chain-e16-r02",
+    (64, 4): "bs1024-ls-h4-sim64-e4init-chain-e16-r02",
+    (256, 2): "bs1024-ls-h4-sim256-e2init-chain-e16-r02",
+    (256, 4): "bs1024-ls-h4-sim256-e4init-chain-e16-r02",
 }
-DILOCO_NAME = "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r01"
+DILOCO_NAME = "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r02"
 
 
 def parse_args() -> argparse.Namespace:
@@ -143,14 +143,37 @@ def stage_command(
     pre_decay, endpoint = mapped_frontier_steps(ns)
     train_args = training_arguments(source_arguments, ns, pre_decay, endpoint)
     recipe = "ls-h4" if method == "local_sgd" else "diloco-h32-olr0p5-om0p7"
+    attempt = chain_name.rsplit("-", 1)[-1]
     train_args = upsert(
         train_args,
         "--trainer.callbacks.wandb.name=",
-        f"--trainer.callbacks.wandb.name={Path(output).name}_e{target}_{recipe}_chain-r01",
+        f"--trainer.callbacks.wandb.name={Path(output).name}_e{target}_{recipe}_chain-{attempt}",
     )
     run_name = Path(output).name
-    leader = '${BEAKER_REPLICA_RANK:-0}' if nodes == 2 else "0"
+    leader = '${BEAKER_REPLICA_RANK:-0}' if nodes > 1 else "0"
     commands: list[str] = [f'echo "LOCAL_UPDATE_CHAIN_STAGE_START target=E{target} source={source}"']
+    if nodes > 1:
+        # Beaker normally exposes BEAKER_LEADER_REPLICA_HOSTNAME for replicated
+        # tasks, but that variable is not guaranteed after a multi-task spec is
+        # expanded into concrete replica tasks.  Publish rank 0's hostname on
+        # the shared filesystem instead so rendezvous does not depend on an
+        # optional injected variable.
+        host_file = f"{metric_dir}/rdzv-{rdzv_id}.host"
+        commands.extend(
+            [
+                f'if [ "{leader}" = 0 ]; then',
+                f"mkdir -p {shlex.quote(metric_dir)}",
+                'rdzv_host="$(hostname -f)"',
+                'test -n "${rdzv_host}"',
+                f"printf '%s\\n' \"${{rdzv_host}}\" > {shlex.quote(host_file + '.tmp')}",
+                f"mv {shlex.quote(host_file + '.tmp')} {shlex.quote(host_file)}",
+                "fi",
+                f"for rdzv_wait in $(seq 1 180); do test -s {shlex.quote(host_file)} && break; sleep 1; done",
+                shlex.join(["test", "-s", host_file]),
+                f"rdzv_host=$(sed -n 1p {shlex.quote(host_file)})",
+                'test -n "${rdzv_host}"',
+            ]
+        )
     commands.append(f'if [ "{leader}" = 0 ]; then')
     commands.extend(
         [
@@ -165,11 +188,11 @@ def stage_command(
         commands.append(shlex.join(["test", "!", "-e", output]))
     commands.append(shlex.join(["python", script, run_name, "--dry-run", *train_args]))
     commands.append("fi")
-    if nodes == 2:
+    if nodes > 1:
         launch = (
-            'torchrun --nnodes="2:2" --nproc-per-node="$BEAKER_ASSIGNED_GPU_COUNT" '
+            f'torchrun --nnodes="{nodes}:{nodes}" --nproc-per-node="$BEAKER_ASSIGNED_GPU_COUNT" '
             f"--rdzv-id={shlex.quote(rdzv_id)} --rdzv-backend=static "
-            f"--rdzv-endpoint=\"$BEAKER_LEADER_REPLICA_HOSTNAME:{rdzv_port}\" "
+            f"--rdzv-endpoint=\"${{rdzv_host}}:{rdzv_port}\" "
             '--node-rank="$BEAKER_REPLICA_RANK" --rdzv-conf="read_timeout=420" '
             + shlex.join([script, run_name, *train_args])
         )
@@ -224,7 +247,7 @@ def branch_commands(
         start, source = local_native_start(sim, init)
         conventional = False
     commands = ["set -euo pipefail"]
-    leader = '${BEAKER_REPLICA_RANK:-0}' if nodes == 2 else "0"
+    leader = '${BEAKER_REPLICA_RANK:-0}' if nodes > 1 else "0"
     commands.extend(
         [
             f'if [ "{leader}" = 0 ]; then',
@@ -302,6 +325,146 @@ def branch_commands(
     return commands
 
 
+def completed_validation(*, method: str, wd: str, epoch: int) -> float:
+    """Return one durable completed validation value for a WD gate seed."""
+    report = json.loads(REPORT.read_text())
+    values: list[float] = []
+    for run in report.get("runs", []):
+        if run.get("method") != method or str(run.get("wd")) != wd:
+            continue
+        result = (run.get("results") or {}).get(str(epoch)) or {}
+        if result.get("status") == "complete" and result.get("validation") is not None:
+            values.append(float(result["validation"]))
+    if not values:
+        raise RuntimeError(
+            f"missing completed validation seed for method={method} wd={wd} epoch=E{epoch}"
+        )
+    if max(values) - min(values) > 1e-9:
+        raise RuntimeError(
+            f"conflicting validation seeds for method={method} wd={wd} epoch=E{epoch}: {values}"
+        )
+    return values[0]
+
+
+def paired_local_wd_commands(
+    script: str,
+    source_arguments: list[str],
+    *,
+    sim: int,
+    init: int,
+    revision: str,
+    chain_name: str,
+    metric_dir: str,
+    nodes: int,
+) -> list[str]:
+    """Run both simBS256 WDs stage-by-stage on the same four nodes.
+
+    WD0.333 starts from its healthy native H4 checkpoint. Its validation at that
+    source frontier seeds the first matched gate. WD1.0 starts conventionally,
+    and every later WD pair is evaluated before either branch advances.
+    """
+    if sim != 256:
+        raise ValueError("paired WD chains are only authorized for simBS256")
+    leader = '${BEAKER_REPLICA_RANK:-0}' if nodes > 1 else "0"
+    method_key = f"post_e{init}_local_sgd_h4_bs1024_dr_simbs{sim}"
+    wd0333_start, wd0333_source = local_native_start(sim, init)
+    baseline = completed_validation(
+        method=method_key, wd="0.333", epoch=wd0333_start
+    )
+    prune_file = f"{metric_dir}/prune-wd0.333"
+    commands = [
+        "set -euo pipefail",
+        f'if [ "{leader}" = 0 ]; then',
+        f"mkdir -p {shlex.quote(metric_dir)}",
+        (
+            "python -m pytest -q src/test/train/train_module/transformer/"
+            "batch_simulation_test.py -k 'local_sgd'"
+        ),
+        f"printf '%s\\n' {shlex.quote(str(baseline))} > "
+        + shlex.quote(f"{metric_dir}/e{wd0333_start}-wd0.333.val"),
+        "fi",
+    ]
+    states: dict[str, dict[str, Any]] = {
+        "0.333": {
+            "start": wd0333_start,
+            "source": wd0333_source,
+            "conventional": False,
+        },
+        "1.0": {
+            "start": init,
+            "source": conventional_source(init, "1.0"),
+            "conventional": True,
+        },
+    }
+    for target in TARGETS:
+        for wd in ("0.333", "1.0"):
+            state = states[wd]
+            start = int(state["start"])
+            if target <= start:
+                continue
+            digest = hashlib.sha256(
+                f"{chain_name}:{init}:{wd}:{target}".encode()
+            ).hexdigest()
+            stage, next_source = stage_command(
+                script,
+                source_arguments,
+                method="local_sgd",
+                sim=sim,
+                init=init,
+                wd=wd,
+                start=start,
+                target=target,
+                source=str(state["source"]),
+                output=output_path("local_sgd", sim, init, wd),
+                conventional=bool(state["conventional"]),
+                revision=revision,
+                chain_name=chain_name,
+                nodes=nodes,
+                rdzv_id=digest[:12],
+                rdzv_port=29000 + int(digest[:8], 16) % 1000,
+                metric_dir=metric_dir,
+            )
+            if wd == "0.333":
+                commands.append(f"if [ ! -f {shlex.quote(prune_file)} ]; then")
+            commands.extend(stage)
+            if wd == "0.333":
+                commands.append("fi")
+            state.update(start=target, source=next_source, conventional=False)
+
+        wd1_state = states["1.0"]
+        if target < wd0333_start or int(wd1_state["start"]) < target:
+            continue
+        own_file = f"{metric_dir}/e{target}-wd0.333.val"
+        peer_file = f"{metric_dir}/e{target}-wd1.0.val"
+        commands.extend(
+            [
+                f'if [ "{leader}" = 0 ] && [ ! -f {shlex.quote(prune_file)} ]; then',
+                shlex.join(["test", "-s", own_file]),
+                shlex.join(["test", "-s", peer_file]),
+                f"wd0333_ce=$(sed -n 1p {shlex.quote(own_file)})",
+                f"wd1_ce=$(sed -n 1p {shlex.quote(peer_file)})",
+                f'echo "WD_GATE target=E{target} wd0.333=${{wd0333_ce}} wd1.0=${{wd1_ce}}"',
+                'if awk -v wd1="${wd1_ce}" -v wd0333="${wd0333_ce}" '
+                + shlex.quote("BEGIN { exit !(wd1 < wd0333) }")
+                + "; then",
+                f'echo "WD_GATE_PRUNE wd=0.333 after=E{target}"',
+                f"touch {shlex.quote(prune_file)}",
+                "fi",
+                "fi",
+            ]
+        )
+    commands.extend(
+        [
+            f'if [ "{leader}" = 0 ]; then',
+            f"touch {shlex.quote(metric_dir + f'/done-init{init}-wd0.333')}",
+            f"touch {shlex.quote(metric_dir + f'/done-init{init}-wd1.0')}",
+            "fi",
+            f'echo "LOCAL_UPDATE_CHAIN_COMPLETE init=E{init} paired_wd=true"',
+        ]
+    )
+    return commands
+
+
 def clean_task(task: dict[str, Any], *, revision: str, priority: str) -> dict[str, Any]:
     task = copy.deepcopy(task)
     blocked = {"GANTRY_RDZV_ID", "GANTRY_RDZV_PORT", "NUM_NODES"}
@@ -327,8 +490,8 @@ def training_task(
     task = clean_task(base, revision=revision, priority=priority)
     task["name"] = name
     task["arguments"] = ["bash", "-lc", "\n".join(commands)]
-    if nodes == 2:
-        task.update(replicas=2, leaderSelection=True, synchronizedStartTimeout="90m")
+    if nodes > 1:
+        task.update(replicas=nodes, leaderSelection=True, synchronizedStartTimeout="90m")
     else:
         for key in ("replicas", "leaderSelection", "synchronizedStartTimeout"):
             task.pop(key, None)
@@ -375,44 +538,39 @@ def build_spec(args: argparse.Namespace) -> dict[str, Any]:
             commands = branch_commands(
                 script, source_arguments, method=method, sim=sim, init=init, wd="0.333",
                 revision=args.revision, chain_name=args.name, metric_dir=metric_dir,
-                nodes=2, gated=False,
+                nodes=4, gated=False,
             )
             tasks.append(training_task(
-                base_task, name="local-sgd-wd0p333", commands=commands, nodes=2,
-                revision=args.revision, priority=args.priority,
-            ))
-            done_files = [f"{metric_dir}/done-init{init}-wd0.333"]
-            tasks.append(idle_task(
-                base_task, name="reserved-nodes", done_files=done_files, replicas=2,
+                base_task, name="local-sgd-wd0p333", commands=commands, nodes=4,
                 revision=args.revision, priority=args.priority,
             ))
         else:
-            for wd in ("0.333", "1.0"):
-                commands = branch_commands(
-                    script, source_arguments, method=method, sim=sim, init=init, wd=wd,
-                    revision=args.revision, chain_name=args.name, metric_dir=metric_dir,
-                    nodes=1, gated=True,
-                )
-                tasks.append(training_task(
-                    base_task, name=f"local-sgd-wd{wd.replace('.', 'p')}",
-                    commands=commands, nodes=1, revision=args.revision, priority=args.priority,
-                ))
-                done_files.append(f"{metric_dir}/done-init{init}-wd{wd}")
-            tasks.append(idle_task(
-                base_task, name="reserved-nodes", done_files=done_files, replicas=2,
+            commands = paired_local_wd_commands(
+                script,
+                source_arguments,
+                sim=sim,
+                init=init,
+                revision=args.revision,
+                chain_name=args.name,
+                metric_dir=metric_dir,
+                nodes=4,
+            )
+            tasks.append(training_task(
+                base_task, name="local-sgd-paired-wd", commands=commands, nodes=4,
                 revision=args.revision, priority=args.priority,
             ))
     else:
+        commands: list[str] = []
         for init in (2, 4):
-            commands = branch_commands(
+            commands.extend(branch_commands(
                 script, source_arguments, method=method, sim=64, init=init, wd="0.333",
                 revision=args.revision, chain_name=args.name, metric_dir=metric_dir,
-                nodes=2, gated=False,
-            )
-            tasks.append(training_task(
-                base_task, name=f"diloco-e{init}-init", commands=commands, nodes=2,
-                revision=args.revision, priority=args.priority,
+                nodes=4, gated=False,
             ))
+        tasks.append(training_task(
+            base_task, name="diloco-e2e4-init", commands=commands, nodes=4,
+            revision=args.revision, priority=args.priority,
+        ))
     spec = copy.deepcopy(source)
     spec["tasks"] = tasks
     spec.pop("description", None)
