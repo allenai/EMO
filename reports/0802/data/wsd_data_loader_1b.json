@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-15",
+  "updated": "2026-08-16",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes. Weight-tying runs share the input embedding and LM-head projection as one parameter; DR+WT is displayed immediately after its matched DR column.",
   "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 WD1.0 must reach and validate E24 before either WD is selected for E28; compare WD0.3 E24 with WD1.0 E24 using the same rule as BS128/256: if WD1.0 wins, only WD1.0 continues; if it loses, both trajectories may continue subject to their own strict-improvement gates; hold ties for review. The user authorized retries of the four manually canceled E20 jobs, then immediately requested another hold and manually removed all four new retry experiments before scheduling. The BS64 WD1.0, BS128 WD0.3/WD1.0, and BS256 WD1.0 E20 retries produced no startup or training artifacts; do not continue, replace, or retry them automatically. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation; do not decide or retry E28 until WD1.0 E24 is validated. BS256 LR2e-3/WD0.333 remains held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled. WT coordinates advance independently while validation CE strictly improves and stop after the first non-improving endpoint; train\u2013validation gaps are compared against the same-batch, same-LR, same-WD DR trajectory.",
@@ -114,6 +114,26 @@
       "dataOrder": "dynamic_repacking",
       "initialWd": "0.1",
       "color": "#e11d48"
+    },
+    {
+      "key": "drwtembwd64",
+      "label": "BS64 \u00b7 DR+WT+EmbedWD",
+      "batchSequences": 64,
+      "dataOrder": "dynamic_repacking",
+      "weightTying": true,
+      "decayEmbeddings": true,
+      "initialWd": "0.3",
+      "color": "#7c3aed"
+    },
+    {
+      "key": "drwtembwd512",
+      "label": "BS512 \u00b7 DR+WT+EmbedWD",
+      "batchSequences": 512,
+      "dataOrder": "dynamic_repacking",
+      "weightTying": true,
+      "decayEmbeddings": true,
+      "initialWd": "0.333",
+      "color": "#4f46e5"
     }
   ],
   "healthAudit": {
@@ -6262,11 +6282,14 @@
       "weightTying": true,
       "lr": "1e-3",
       "wd": "0.3",
-      "status": "planned",
-      "activeEpoch": 1,
-      "attemptedEpochs": [],
-      "sourceExperiment": "01KZDCD9AYJ0REGZTE2YG18NHF",
-      "sourceCheckpoint": "fresh",
+      "status": "running",
+      "activeEpoch": 8,
+      "attemptedEpochs": [
+        1,
+        2
+      ],
+      "sourceExperiment": "01M047FXDFMD0NBGTGBM69VS5N",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_lr1e-3_wd0.3/step3432",
       "gpuCount": 8,
       "nodeCount": 1,
       "rankMicrobatchSequences": 8,
@@ -6282,8 +6305,84 @@
         24,
         28
       ],
-      "results": {},
-      "reason": "Fresh tied-weight E1 bootstrap; DR begins at E2 from its exact tied E1 pre-decay checkpoint."
+      "results": {
+        "1": {
+          "status": "complete",
+          "train": 3.332,
+          "validation": 3.376,
+          "validationExact": 3.3756,
+          "gap": 0.0436,
+          "wandb": "vzfljsq9",
+          "experiment": "01M04BBVM45PNZD37551QJBHTY",
+          "beaker": "01M04BBVM45PNZD37551QJBHTY",
+          "job": "01M04BBVR7WGYXAY5JVXRPF5BH",
+          "revision": "sewonm/icsl",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step3432",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step3815",
+          "sequential": true,
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+        },
+        "2": {
+          "status": "complete",
+          "train": 3.236,
+          "validation": 3.211,
+          "validationExact": 3.21068,
+          "gap": -0.02532,
+          "wandb": "evn8lf0w",
+          "experiment": "01M04BBVM45PNZD37551QJBHTY",
+          "beaker": "01M04BBVM45PNZD37551QJBHTY",
+          "job": "01M04BBVR7WGYXAY5JVXRPF5BH",
+          "revision": "sewonm/icsl",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step6866",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step7630",
+          "sequential": true,
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+        },
+        "4": {
+          "status": "complete",
+          "train": 3.098,
+          "validation": 3.097,
+          "validationExact": 3.09731,
+          "gap": -0.00069,
+          "wandb": "wk6k4phr",
+          "experiment": "01M04BBVM45PNZD37551QJBHTY",
+          "beaker": "01M04BBVM45PNZD37551QJBHTY",
+          "job": "01M04BBVR7WGYXAY5JVXRPF5BH",
+          "revision": "sewonm/icsl",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step13732",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step15259",
+          "sequential": true,
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+        }
+      },
+      "reason": "Submitted locally after exact-source, canonical trajectory-output, LR/WD, topology, rank-microbatch, weight-tying, manifest-checksum, and duplicate-tuple guards passed.",
+      "attempts": [
+        {
+          "epoch": 1,
+          "status": "failed",
+          "failureClass": "git_checkout_unfetchable_short_revision",
+          "experiment": "01M03TV1M4XVN90G9KGJVSG0QF",
+          "beaker": "01M03TV1M4XVN90G9KGJVSG0QF",
+          "job": "01M03TV1QNPJQS9T0GM6WZFWA2",
+          "jobs": [
+            "01M03TV1QNPJQS9T0GM6WZFWA2"
+          ],
+          "revision": "2c6b1fb98",
+          "reason": "Gantry failed before repository startup because the short commit SHA was not a fetchable remote ref; no training artifact was created."
+        }
+      ],
+      "beakerStatus": "submitted",
+      "beaker": "01M04BBVM45PNZD37551QJBHTY",
+      "experiment": "01M04BBVM45PNZD37551QJBHTY",
+      "job": "01M04BBVR7WGYXAY5JVXRPF5BH",
+      "jobs": [
+        "01M04BBVR7WGYXAY5JVXRPF5BH"
+      ],
+      "revision": "sewonm/icsl",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3"
     },
     {
       "id": "drwt512-lr1e-3-wd0.333",
@@ -6293,11 +6392,13 @@
       "weightTying": true,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "planned",
-      "activeEpoch": 1,
-      "attemptedEpochs": [],
-      "sourceExperiment": "01KZFVTS3EHFR7HQ5ZY9DAF9NS",
-      "sourceCheckpoint": "fresh",
+      "status": "running",
+      "activeEpoch": 12,
+      "attemptedEpochs": [
+        1
+      ],
+      "sourceExperiment": "01M047GPGYKEXDRZ8F789SH9SJ",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd0.333/step428",
       "gpuCount": 32,
       "nodeCount": 4,
       "rankMicrobatchSequences": 8,
@@ -6313,8 +6414,103 @@
         24,
         28
       ],
-      "results": {},
-      "reason": "Fresh tied-weight E1 bootstrap; DR begins at E2 from its exact tied E1 pre-decay checkpoint."
+      "results": {
+        "1": {
+          "status": "complete",
+          "train": 3.964,
+          "validation": 3.982,
+          "validationExact": 3.982,
+          "gap": 0.018,
+          "experiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+          "beaker": "01M04BC9G7CBACT7WBM5DZ0G7A",
+          "job": "01M04BC9MEDHYJC4QPW1J36628",
+          "revision": "sewonm/icsl",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step428",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step477",
+          "sequential": true,
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+        },
+        "2": {
+          "status": "complete",
+          "train": 3.434,
+          "validation": 3.459,
+          "validationExact": 3.459,
+          "gap": 0.025,
+          "experiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+          "beaker": "01M04BC9G7CBACT7WBM5DZ0G7A",
+          "job": "01M04BC9MEDHYJC4QPW1J36628",
+          "revision": "sewonm/icsl",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step858",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step954",
+          "sequential": true,
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+        },
+        "4": {
+          "status": "complete",
+          "train": 3.137,
+          "validation": 3.209,
+          "validationExact": 3.209,
+          "gap": 0.072,
+          "experiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+          "beaker": "01M04BC9G7CBACT7WBM5DZ0G7A",
+          "job": "01M04BC9MEDHYJC4QPW1J36628",
+          "revision": "sewonm/icsl",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step1716",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step1908",
+          "sequential": true,
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+        },
+        "8": {
+          "status": "complete",
+          "train": 2.83,
+          "validation": 3.134,
+          "validationExact": 3.134,
+          "gap": 0.304,
+          "experiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+          "beaker": "01M04BC9G7CBACT7WBM5DZ0G7A",
+          "job": "01M04BC9MEDHYJC4QPW1J36628",
+          "revision": "sewonm/icsl",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step3432",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step3815",
+          "sequential": true,
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+        }
+      },
+      "reason": "User-authorized E1 retry submitted with the fetchable sewonm/icsl branch after the original attempt failed before repository startup.",
+      "attempts": [
+        {
+          "epoch": 1,
+          "status": "failed",
+          "failureClass": "git_checkout_unfetchable_short_revision",
+          "experiment": "01M03TVAJJDK7VYF1NYCJJMK5Q",
+          "beaker": "01M03TVAJJDK7VYF1NYCJJMK5Q",
+          "job": "01M03TVAP7WJNG0FFX5F559RSA",
+          "jobs": [
+            "01M03TVAP7WJNG0FFX5F559RSA",
+            "01M03TVAT0RYZPNNZ1T533Y1NX",
+            "01M03TVAY4QST7QEWYT33RMWNA",
+            "01M03TVB25FYMK8A3062REJSRZ"
+          ],
+          "revision": "2c6b1fb98",
+          "reason": "Gantry failed before repository startup because the short commit SHA was not a fetchable remote ref; no training artifact was created."
+        }
+      ],
+      "beakerStatus": "complete",
+      "beaker": "01M04BC9G7CBACT7WBM5DZ0G7A",
+      "experiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+      "job": "01M04BC9MEDHYJC4QPW1J36628",
+      "jobs": [
+        "01M04BC9MEDHYJC4QPW1J36628",
+        "01M04BC9SAHEYVJGZZXEDRY967",
+        "01M04BC9X6VXWCW2V85NWANPF3",
+        "01M04BCA1P0WVWHPH5DKCEJWYZ"
+      ],
+      "revision": "sewonm/icsl",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333"
     },
     {
       "id": "drwt512-lr1e-3-wd1.0",
@@ -6324,9 +6520,11 @@
       "weightTying": true,
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "planned",
-      "activeEpoch": 1,
-      "attemptedEpochs": [],
+      "status": "running",
+      "activeEpoch": 8,
+      "attemptedEpochs": [
+        1
+      ],
       "sourceExperiment": "01KZGE4HMCEWMBP86YEAGSP1B7",
       "sourceCheckpoint": "fresh",
       "gpuCount": 32,
@@ -6344,8 +6542,234 @@
         24,
         28
       ],
+      "results": {
+        "1": {
+          "status": "complete",
+          "train": 4.003,
+          "validation": 4.021,
+          "validationExact": 4.021,
+          "gap": 0.018,
+          "experiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+          "beaker": "01M04NY6CC8AFTBPQV8PB03BEA",
+          "job": "01M04NY6GCVH892DS1CYA7EGJK",
+          "revision": "sewonm/icsl",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step428",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step477",
+          "sequential": true,
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+        },
+        "2": {
+          "status": "complete",
+          "train": 3.48,
+          "validation": 3.504,
+          "validationExact": 3.504,
+          "gap": 0.024,
+          "experiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+          "beaker": "01M04NY6CC8AFTBPQV8PB03BEA",
+          "job": "01M04NY6GCVH892DS1CYA7EGJK",
+          "revision": "sewonm/icsl",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step858",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step954",
+          "sequential": true,
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+        },
+        "4": {
+          "status": "complete",
+          "train": 3.212,
+          "validation": 3.252,
+          "validationExact": 3.252,
+          "gap": 0.04,
+          "experiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+          "beaker": "01M04NY6CC8AFTBPQV8PB03BEA",
+          "job": "01M04NY6GCVH892DS1CYA7EGJK",
+          "revision": "sewonm/icsl",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step1716",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step1908",
+          "sequential": true,
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+        }
+      },
+      "reason": "User-authorized E1 retry submitted with the fetchable sewonm/icsl branch after the original attempt failed before repository startup.",
+      "attempts": [
+        {
+          "epoch": 1,
+          "status": "failed",
+          "failureClass": "git_checkout_unfetchable_short_revision",
+          "experiment": "01M03TVNTGVKH5C7X09X3BP9KY",
+          "beaker": "01M03TVNTGVKH5C7X09X3BP9KY",
+          "job": "01M03TVNYT7HPH5KEHGXS2CXFS",
+          "jobs": [
+            "01M03TVNYT7HPH5KEHGXS2CXFS",
+            "01M03TVP29SY89M95TMJKGS4T3",
+            "01M03TVP6770T6GF8EQHB9NV3T",
+            "01M03TVPA6A30MZKZ7EW048M90"
+          ],
+          "revision": "2c6b1fb98",
+          "reason": "Gantry failed before repository startup because the short commit SHA was not a fetchable remote ref; no training artifact was created."
+        }
+      ],
+      "beakerStatus": "submitted",
+      "beaker": "01M04NY6CC8AFTBPQV8PB03BEA",
+      "experiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+      "job": "01M04NY6GCVH892DS1CYA7EGJK",
+      "jobs": [
+        "01M04NY6GCVH892DS1CYA7EGJK",
+        "01M04NY6MM94VDKA5SNJ2ENYZJ",
+        "01M04NY6R7HE7CR838V6T9NW08",
+        "01M04NY6W78C5FMN8T2TWG6ZE0"
+      ],
+      "revision": "sewonm/icsl",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0"
+    },
+    {
+      "id": "drwtembwd64-lr1e-3-wd0.3",
+      "method": "drwtembwd64",
+      "batchSequences": 64,
+      "dataOrder": "dynamic_repacking",
+      "weightTying": true,
+      "decayEmbeddings": true,
+      "lr": "1e-3",
+      "wd": "0.3",
+      "attemptedEpochs": [
+        1,
+        2,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24
+      ],
+      "sourceExperiment": "01KZDCD9AYJ0REGZTE2YG18NHF",
+      "sourceCheckpoint": "fresh",
+      "gpuCount": 8,
+      "nodeCount": 1,
+      "rankMicrobatchSequences": 8,
+      "plannedTargets": [
+        1,
+        2,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24
+      ],
       "results": {},
-      "reason": "Fresh tied-weight E1 bootstrap; DR begins at E2 from its exact tied E1 pre-decay checkpoint."
+      "status": "submitted",
+      "activeEpoch": 1,
+      "experiment": "01M04SRK41V26GFGMS5P0VV4GX",
+      "beaker": "01M04SRK41V26GFGMS5P0VV4GX",
+      "revision": "sewonm/icsl",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3",
+      "reason": "Persistent DR+WT chain with global WD on the tied embeddings/LM-head matrix.",
+      "job": "01M04SRK7QTSBCT68TPY11FSBK",
+      "jobs": [
+        "01M04SRK7QTSBCT68TPY11FSBK"
+      ]
+    },
+    {
+      "id": "drwtembwd512-lr1e-3-wd0.333",
+      "method": "drwtembwd512",
+      "batchSequences": 512,
+      "dataOrder": "dynamic_repacking",
+      "weightTying": true,
+      "decayEmbeddings": true,
+      "lr": "1e-3",
+      "wd": "0.333",
+      "attemptedEpochs": [
+        1,
+        2,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24
+      ],
+      "sourceExperiment": "01KZFVTS3EHFR7HQ5ZY9DAF9NS",
+      "sourceCheckpoint": "fresh",
+      "gpuCount": 32,
+      "nodeCount": 4,
+      "rankMicrobatchSequences": 8,
+      "plannedTargets": [
+        1,
+        2,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24
+      ],
+      "results": {},
+      "status": "submitted",
+      "activeEpoch": 1,
+      "experiment": "01M04SRW33CE5Z9M8DM5350X02",
+      "beaker": "01M04SRW33CE5Z9M8DM5350X02",
+      "revision": "sewonm/icsl",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333",
+      "reason": "Persistent DR+WT chain with global WD on the tied embeddings/LM-head matrix.",
+      "job": "01M04SRW71AFPPXGS7RSHHS90J",
+      "jobs": [
+        "01M04SRW71AFPPXGS7RSHHS90J",
+        "01M04SRWAPV66FDWKNS9JT1WNS",
+        "01M04SRWEAZZ50ZV8CVS27R55C",
+        "01M04SRWJHD8KASTHQNB1YVR79"
+      ]
+    },
+    {
+      "id": "drwtembwd512-lr1e-3-wd1.0",
+      "method": "drwtembwd512",
+      "batchSequences": 512,
+      "dataOrder": "dynamic_repacking",
+      "weightTying": true,
+      "decayEmbeddings": true,
+      "lr": "1e-3",
+      "wd": "1.0",
+      "attemptedEpochs": [
+        1,
+        2,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24
+      ],
+      "sourceExperiment": "01KZGE4HMCEWMBP86YEAGSP1B7",
+      "sourceCheckpoint": "fresh",
+      "gpuCount": 32,
+      "nodeCount": 4,
+      "rankMicrobatchSequences": 8,
+      "plannedTargets": [
+        1,
+        2,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24
+      ],
+      "results": {},
+      "status": "submitted",
+      "activeEpoch": 1,
+      "experiment": "01M04SS5Z3SBDN69A67CHVHN61",
+      "beaker": "01M04SS5Z3SBDN69A67CHVHN61",
+      "revision": "sewonm/icsl",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0",
+      "reason": "Persistent DR+WT chain with global WD on the tied embeddings/LM-head matrix.",
+      "job": "01M04SS6466TZ7NBVZKWQ8ZX1R",
+      "jobs": [
+        "01M04SS6466TZ7NBVZKWQ8ZX1R",
+        "01M04SS67ZJMY4HV5D2043YBDV",
+        "01M04SS6C39WCMS7QEGRP733A3",
+        "01M04SS6GSV7T78FPCRKKFRNBZ"
+      ]
     }
   ],
   "outputDirectoryPolicy": "Checkpoint outputs now use one canonical directory per method/batch/LR/WD trajectory under /weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b: bs{batch}_dr_lr{lr}_wd{wd} for DR and bs{batch}_lr{lr}_wd{wd} for Original. An E2 DR launch verifies its exact Original E1 checkpoint and automatically creates the new canonical DR trajectory directory. Later epochs and infrastructure retries reuse that directory and are distinguished by step checkpoints and experiment provenance; a continuation must load the exact predecessor pre-decay step and may not overwrite its target pre-decay or endpoint step.",
@@ -6380,5 +6804,999 @@
     ],
     "advanceRule": "Advance each coordinate from its exact pre-decay checkpoint while held-out DCLM validation CE strictly improves; retain the first non-improving endpoint as overfitting evidence and then stop that coordinate.",
     "optimizerPolicy": "The tied matrix remains the embeddings.weight optimizer group and therefore uses zero weight decay; the reported WD applies to all ordinary decayed groups."
-  }
+  },
+  "weightTyingSequentialRuns": [
+    {
+      "id": "wtseq-bs64-wd0.3",
+      "coordinateRunId": "drwt64-lr1e-3-wd0.3",
+      "batchSequences": 64,
+      "lr": "1e-3",
+      "wd": "0.3",
+      "weightTying": true,
+      "dataOrder": "dynamic_repacking_from_e2",
+      "status": "running",
+      "currentEpoch": 8,
+      "targets": [
+        1,
+        2,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24
+      ],
+      "experiment": "01M04BBVM45PNZD37551QJBHTY",
+      "beaker": "01M04BBVM45PNZD37551QJBHTY",
+      "revision": "sewonm/icsl",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3",
+      "nodeCount": 1,
+      "gpuCount": 8,
+      "stages": [
+        {
+          "epoch": 1,
+          "status": "complete",
+          "sourceCheckpoint": "fresh",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step3432",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step3815",
+          "progress": {
+            "step": 3815,
+            "totalSteps": 3815,
+            "percent": 100.0,
+            "latestTrain": 3.332
+          },
+          "train": 3.332,
+          "validation": 3.376,
+          "validationExact": 3.3756,
+          "gap": 0.0436,
+          "wandb": "vzfljsq9"
+        },
+        {
+          "epoch": 2,
+          "status": "complete",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step3432",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step6866",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step7630",
+          "progress": {
+            "step": 7630,
+            "totalSteps": 7630,
+            "percent": 100.0,
+            "latestTrain": 3.236
+          },
+          "train": 3.236,
+          "validation": 3.211,
+          "validationExact": 3.21068,
+          "gap": -0.02532,
+          "wandb": "evn8lf0w"
+        },
+        {
+          "epoch": 4,
+          "status": "complete",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step6866",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step13732",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step15259",
+          "progress": {
+            "step": 15259,
+            "totalSteps": 15259,
+            "percent": 100.0,
+            "latestTrain": 3.098
+          },
+          "train": 3.098,
+          "validation": 3.097,
+          "validationExact": 3.09731,
+          "gap": -0.00069,
+          "wandb": "wk6k4phr"
+        },
+        {
+          "epoch": 8,
+          "status": "running",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step13732",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step27465",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step30518",
+          "progress": {
+            "step": 15086,
+            "totalSteps": 30518,
+            "percent": 49.4,
+            "latestTrain": 3.251
+          }
+        },
+        {
+          "epoch": 12,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step27465",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step41198",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step45777"
+        },
+        {
+          "epoch": 16,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step41198",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step54931",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step61036"
+        },
+        {
+          "epoch": 20,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step54931",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step68664",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step76294"
+        },
+        {
+          "epoch": 24,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step68664",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step82397",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step91553"
+        }
+      ],
+      "reason": "Submitted as one persistent E1->E24 job. Every stage evaluates its WSD decayed endpoint and the next stage resumes the preceding exact pre-decay checkpoint; dynamic repacking begins at E2.",
+      "beakerStatus": "running",
+      "job": "01M04BBVR7WGYXAY5JVXRPF5BH",
+      "jobs": [
+        "01M04BBVR7WGYXAY5JVXRPF5BH"
+      ],
+      "canonicalOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_lr1e-3_wd0.3",
+      "mergeAfterCompletion": true
+    },
+    {
+      "id": "wtseq-bs512-wd0.333",
+      "coordinateRunId": "drwt512-lr1e-3-wd0.333",
+      "batchSequences": 512,
+      "lr": "1e-3",
+      "wd": "0.333",
+      "weightTying": true,
+      "dataOrder": "dynamic_repacking_from_e2",
+      "status": "running",
+      "currentEpoch": 12,
+      "targets": [
+        1,
+        2,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24
+      ],
+      "experiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+      "beaker": "01M04BC9G7CBACT7WBM5DZ0G7A",
+      "revision": "sewonm/icsl",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333",
+      "nodeCount": 4,
+      "gpuCount": 32,
+      "stages": [
+        {
+          "epoch": 1,
+          "status": "complete",
+          "sourceCheckpoint": "fresh",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step428",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step477",
+          "progress": {
+            "step": 477,
+            "totalSteps": 477,
+            "percent": 100.0,
+            "latestTrain": 3.964
+          },
+          "train": 3.964,
+          "validation": 3.982,
+          "validationExact": 3.982,
+          "gap": 0.018,
+          "wandb": "h4sgmj3r"
+        },
+        {
+          "epoch": 2,
+          "status": "complete",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step428",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step858",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step954",
+          "progress": {
+            "step": 954,
+            "totalSteps": 954,
+            "percent": 100.0,
+            "latestTrain": 3.434
+          },
+          "train": 3.434,
+          "validation": 3.459,
+          "validationExact": 3.459,
+          "gap": 0.025,
+          "wandb": "cifsqtf9"
+        },
+        {
+          "epoch": 4,
+          "status": "complete",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step858",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step1716",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step1908",
+          "progress": {
+            "step": 1908,
+            "totalSteps": 1908,
+            "percent": 100.0,
+            "latestTrain": 3.137
+          },
+          "train": 3.137,
+          "validation": 3.209,
+          "validationExact": 3.209,
+          "gap": 0.072,
+          "wandb": "ne6rqcmz"
+        },
+        {
+          "epoch": 8,
+          "status": "complete",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step1716",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step3432",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step3815",
+          "progress": {
+            "step": 3815,
+            "totalSteps": 3815,
+            "percent": 100.0,
+            "latestTrain": 2.83
+          },
+          "train": 2.83,
+          "validation": 3.134,
+          "validationExact": 3.134,
+          "gap": 0.304,
+          "wandb": "kxpfbee0"
+        },
+        {
+          "epoch": 12,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step3432",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step5150",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step5723"
+        },
+        {
+          "epoch": 16,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step5150",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step6866",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step7630"
+        },
+        {
+          "epoch": 20,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step6866",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step8582",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step9537"
+        },
+        {
+          "epoch": 24,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step8582",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step10300",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step11445"
+        }
+      ],
+      "reason": "Submitted as one persistent E1->E24 job. Every stage evaluates its WSD decayed endpoint and the next stage resumes the preceding exact pre-decay checkpoint; dynamic repacking begins at E2.",
+      "beakerStatus": "running",
+      "job": "01M04BC9MEDHYJC4QPW1J36628",
+      "jobs": [
+        "01M04BC9MEDHYJC4QPW1J36628",
+        "01M04BC9SAHEYVJGZZXEDRY967",
+        "01M04BC9X6VXWCW2V85NWANPF3",
+        "01M04BCA1P0WVWHPH5DKCEJWYZ"
+      ],
+      "canonicalOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd0.333",
+      "mergeAfterCompletion": true
+    },
+    {
+      "attempts": [
+        {
+          "id": "wtseq-bs512-wd1.0",
+          "coordinateRunId": "drwt512-lr1e-3-wd1.0",
+          "batchSequences": 512,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "weightTying": true,
+          "dataOrder": "dynamic_repacking_from_e2",
+          "status": "failed",
+          "currentEpoch": 1,
+          "targets": [
+            1,
+            2,
+            4,
+            8,
+            12,
+            16,
+            20,
+            24
+          ],
+          "experiment": "01M04BCTMAT0HN8GEHHBG8GYMM",
+          "beaker": "01M04BCTMAT0HN8GEHHBG8GYMM",
+          "revision": "sewonm/icsl",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0",
+          "nodeCount": 4,
+          "gpuCount": 32,
+          "stages": [
+            {
+              "epoch": 1,
+              "status": "running",
+              "sourceCheckpoint": "fresh",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step428",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step477",
+              "progress": {
+                "step": 285,
+                "totalSteps": 477,
+                "percent": 59.7,
+                "latestTrain": 4.965
+              }
+            },
+            {
+              "epoch": 2,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step428",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step858",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step954"
+            },
+            {
+              "epoch": 4,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step858",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step1716",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step1908"
+            },
+            {
+              "epoch": 8,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step1716",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step3432",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step3815"
+            },
+            {
+              "epoch": 12,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step3432",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step5150",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step5723"
+            },
+            {
+              "epoch": 16,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step5150",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step6866",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step7630"
+            },
+            {
+              "epoch": 20,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step6866",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step8582",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step9537"
+            },
+            {
+              "epoch": 24,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step8582",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step10300",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step11445"
+            }
+          ],
+          "reason": "Persistent chain failed during E1; completed earlier stages remain valid.",
+          "beakerStatus": "failed",
+          "job": "01M04BCTQS0ME8YDWFTFW9SV6H",
+          "jobs": [
+            "01M04BCTQS0ME8YDWFTFW9SV6H",
+            "01M04BCTV52CY4DY00G4Q09Y09",
+            "01M04BCTZE77V3X7M4R0T99X50",
+            "01M04BCV2T63MFX34F4AK5ZYPS"
+          ]
+        },
+        {
+          "id": "wtseq-bs512-wd1.0",
+          "coordinateRunId": "drwt512-lr1e-3-wd1.0",
+          "batchSequences": 512,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "weightTying": true,
+          "dataOrder": "dynamic_repacking_from_e2",
+          "status": "failed",
+          "currentEpoch": 1,
+          "targets": [
+            1,
+            2,
+            4,
+            8,
+            12,
+            16,
+            20,
+            24
+          ],
+          "experiment": "01M04NFD0BJN7ZDF667Z3FRJ1X",
+          "beaker": "01M04NFD0BJN7ZDF667Z3FRJ1X",
+          "revision": "sewonm/icsl",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0",
+          "nodeCount": 4,
+          "gpuCount": 32,
+          "stages": [
+            {
+              "epoch": 1,
+              "status": "planned",
+              "sourceCheckpoint": "fresh",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step428",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step477"
+            },
+            {
+              "epoch": 2,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step428",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step858",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step954"
+            },
+            {
+              "epoch": 4,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step858",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step1716",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step1908"
+            },
+            {
+              "epoch": 8,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step1716",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step3432",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step3815"
+            },
+            {
+              "epoch": 12,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step3432",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step5150",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step5723"
+            },
+            {
+              "epoch": 16,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step5150",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step6866",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step7630"
+            },
+            {
+              "epoch": 20,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step6866",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step8582",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step9537"
+            },
+            {
+              "epoch": 24,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step8582",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step10300",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r02/bs512_dr_wt_lr1e-3_wd1.0/step11445"
+            }
+          ],
+          "reason": "Persistent chain failed during E1; completed earlier stages remain valid.",
+          "beakerStatus": "failed",
+          "job": "01M04NFD4PS1PZQ5H7ZG5GBHPS",
+          "jobs": [
+            "01M04NFD4PS1PZQ5H7ZG5GBHPS",
+            "01M04NFD8W7CTZZMS3XJX1K3W5",
+            "01M04NFDCTRZD7XR5N859GSTNR",
+            "01M04NFDGNRB2XZZKATXPFG6HR"
+          ]
+        },
+        {
+          "id": "wtseq-bs512-wd1.0",
+          "coordinateRunId": "drwt512-lr1e-3-wd1.0",
+          "batchSequences": 512,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "weightTying": true,
+          "dataOrder": "dynamic_repacking_from_e2",
+          "status": "failed",
+          "currentEpoch": 1,
+          "targets": [
+            1,
+            2,
+            4,
+            8,
+            12,
+            16,
+            20,
+            24
+          ],
+          "experiment": "01M04NJCM3K4K9SW55MGD0ZHW5",
+          "beaker": "01M04NJCM3K4K9SW55MGD0ZHW5",
+          "revision": "sewonm/icsl",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0",
+          "nodeCount": 4,
+          "gpuCount": 32,
+          "stages": [
+            {
+              "epoch": 1,
+              "status": "planned",
+              "sourceCheckpoint": "fresh",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step428",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step477"
+            },
+            {
+              "epoch": 2,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step428",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step858",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step954"
+            },
+            {
+              "epoch": 4,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step858",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step1716",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step1908"
+            },
+            {
+              "epoch": 8,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step1716",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step3432",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step3815"
+            },
+            {
+              "epoch": 12,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step3432",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step5150",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step5723"
+            },
+            {
+              "epoch": 16,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step5150",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step6866",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step7630"
+            },
+            {
+              "epoch": 20,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step6866",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step8582",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step9537"
+            },
+            {
+              "epoch": 24,
+              "status": "planned",
+              "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step8582",
+              "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step10300",
+              "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd1.0/step11445"
+            }
+          ],
+          "reason": "Persistent chain failed during E1; completed earlier stages remain valid.",
+          "beakerStatus": "failed",
+          "job": "01M04NJCQHJ6MGSH50BFR21HET",
+          "jobs": [
+            "01M04NJCQHJ6MGSH50BFR21HET",
+            "01M04NJCVWABZVKHQB4C8A36T2",
+            "01M04NJD024PCVFA7PKBHJ7G1C",
+            "01M04NJD3HSZ40F7KZFGZYB066"
+          ],
+          "canonicalOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0",
+          "mergeAfterCompletion": true
+        }
+      ],
+      "id": "wtseq-bs512-wd1.0",
+      "coordinateRunId": "drwt512-lr1e-3-wd1.0",
+      "batchSequences": 512,
+      "lr": "1e-3",
+      "wd": "1.0",
+      "weightTying": true,
+      "dataOrder": "dynamic_repacking_from_e2",
+      "status": "running",
+      "currentEpoch": 8,
+      "targets": [
+        1,
+        2,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24
+      ],
+      "experiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+      "beaker": "01M04NY6CC8AFTBPQV8PB03BEA",
+      "revision": "sewonm/icsl",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0",
+      "nodeCount": 4,
+      "gpuCount": 32,
+      "stages": [
+        {
+          "epoch": 1,
+          "status": "complete",
+          "sourceCheckpoint": "fresh",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step428",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step477",
+          "progress": {
+            "step": 477,
+            "totalSteps": 477,
+            "percent": 100.0,
+            "latestTrain": 4.003
+          },
+          "train": 4.003,
+          "validation": 4.021,
+          "validationExact": 4.021,
+          "gap": 0.018,
+          "wandb": "hri35sca"
+        },
+        {
+          "epoch": 2,
+          "status": "complete",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step428",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step858",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step954",
+          "progress": {
+            "step": 954,
+            "totalSteps": 954,
+            "percent": 100.0,
+            "latestTrain": 3.48
+          },
+          "train": 3.48,
+          "validation": 3.504,
+          "validationExact": 3.504,
+          "gap": 0.024,
+          "wandb": "hvqjr5sq"
+        },
+        {
+          "epoch": 4,
+          "status": "complete",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step858",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step1716",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step1908",
+          "progress": {
+            "step": 1908,
+            "totalSteps": 1908,
+            "percent": 100.0,
+            "latestTrain": 3.212
+          },
+          "train": 3.212,
+          "validation": 3.252,
+          "validationExact": 3.252,
+          "gap": 0.04,
+          "wandb": "p4adx1l5"
+        },
+        {
+          "epoch": 8,
+          "status": "running",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step1716",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step3432",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step3815",
+          "progress": {
+            "step": 2058,
+            "totalSteps": 3815,
+            "percent": 53.9,
+            "latestTrain": 3.316
+          }
+        },
+        {
+          "epoch": 12,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step3432",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step5150",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step5723"
+        },
+        {
+          "epoch": 16,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step5150",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step6866",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step7630"
+        },
+        {
+          "epoch": 20,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step6866",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step8582",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step9537"
+        },
+        {
+          "epoch": 24,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step8582",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step10300",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step11445"
+        }
+      ],
+      "reason": "Retried after a failed persistent attempt. Submitted as one persistent E1->E24 job. Every stage evaluates its WSD decayed endpoint and the next stage resumes the preceding exact pre-decay checkpoint; dynamic repacking begins at E2. Outputs use the canonical coordinate trajectory directory.",
+      "canonicalOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0",
+      "mergeAfterCompletion": false,
+      "beakerStatus": "running",
+      "job": "01M04NY6GCVH892DS1CYA7EGJK",
+      "jobs": [
+        "01M04NY6GCVH892DS1CYA7EGJK",
+        "01M04NY6MM94VDKA5SNJ2ENYZJ",
+        "01M04NY6R7HE7CR838V6T9NW08",
+        "01M04NY6W78C5FMN8T2TWG6ZE0"
+      ]
+    }
+  ],
+  "weightTyingEmbeddingDecaySequentialRuns": [
+    {
+      "id": "wtseq-embwd-bs64-wd0.3",
+      "coordinateRunId": "drwtembwd64-lr1e-3-wd0.3",
+      "batchSequences": 64,
+      "lr": "1e-3",
+      "wd": "0.3",
+      "weightTying": true,
+      "decayEmbeddings": true,
+      "dataOrder": "dynamic_repacking_from_e2",
+      "status": "submitted",
+      "currentEpoch": 1,
+      "targets": [
+        1,
+        2,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24
+      ],
+      "experiment": "01M04SRK41V26GFGMS5P0VV4GX",
+      "beaker": "01M04SRK41V26GFGMS5P0VV4GX",
+      "revision": "sewonm/icsl",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3",
+      "nodeCount": 1,
+      "gpuCount": 8,
+      "stages": [
+        {
+          "epoch": 1,
+          "status": "planned",
+          "sourceCheckpoint": "fresh",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step3432",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step3815"
+        },
+        {
+          "epoch": 2,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step3432",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step6866",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step7630"
+        },
+        {
+          "epoch": 4,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step6866",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step13732",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step15259"
+        },
+        {
+          "epoch": 8,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step13732",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step27465",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step30518"
+        },
+        {
+          "epoch": 12,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step27465",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step41198",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step45777"
+        },
+        {
+          "epoch": 16,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step41198",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step54931",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step61036"
+        },
+        {
+          "epoch": 20,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step54931",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step68664",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step76294"
+        },
+        {
+          "epoch": 24,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step68664",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step82397",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step91553"
+        }
+      ],
+      "reason": "Submitted as one persistent E1->E24 job. Every stage evaluates its WSD decayed endpoint and the next stage resumes the preceding exact pre-decay checkpoint; dynamic repacking begins at E2. Outputs use the canonical coordinate trajectory directory.",
+      "canonicalOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3",
+      "mergeAfterCompletion": false,
+      "stopOnSaturation": true,
+      "beakerStatus": "submitted",
+      "job": "01M04SRK7QTSBCT68TPY11FSBK",
+      "jobs": [
+        "01M04SRK7QTSBCT68TPY11FSBK"
+      ]
+    },
+    {
+      "id": "wtseq-embwd-bs512-wd0.333",
+      "coordinateRunId": "drwtembwd512-lr1e-3-wd0.333",
+      "batchSequences": 512,
+      "lr": "1e-3",
+      "wd": "0.333",
+      "weightTying": true,
+      "decayEmbeddings": true,
+      "dataOrder": "dynamic_repacking_from_e2",
+      "status": "submitted",
+      "currentEpoch": 1,
+      "targets": [
+        1,
+        2,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24
+      ],
+      "experiment": "01M04SRW33CE5Z9M8DM5350X02",
+      "beaker": "01M04SRW33CE5Z9M8DM5350X02",
+      "revision": "sewonm/icsl",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333",
+      "nodeCount": 4,
+      "gpuCount": 32,
+      "stages": [
+        {
+          "epoch": 1,
+          "status": "planned",
+          "sourceCheckpoint": "fresh",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step428",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step477"
+        },
+        {
+          "epoch": 2,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step428",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step858",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step954"
+        },
+        {
+          "epoch": 4,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step858",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step1716",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step1908"
+        },
+        {
+          "epoch": 8,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step1716",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step3432",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step3815"
+        },
+        {
+          "epoch": 12,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step3432",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step5150",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step5723"
+        },
+        {
+          "epoch": 16,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step5150",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step6866",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step7630"
+        },
+        {
+          "epoch": 20,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step6866",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step8582",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step9537"
+        },
+        {
+          "epoch": 24,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step8582",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step10300",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step11445"
+        }
+      ],
+      "reason": "Submitted as one persistent E1->E24 job. Every stage evaluates its WSD decayed endpoint and the next stage resumes the preceding exact pre-decay checkpoint; dynamic repacking begins at E2. Outputs use the canonical coordinate trajectory directory.",
+      "canonicalOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333",
+      "mergeAfterCompletion": false,
+      "stopOnSaturation": true,
+      "beakerStatus": "submitted",
+      "job": "01M04SRW71AFPPXGS7RSHHS90J",
+      "jobs": [
+        "01M04SRW71AFPPXGS7RSHHS90J",
+        "01M04SRWAPV66FDWKNS9JT1WNS",
+        "01M04SRWEAZZ50ZV8CVS27R55C",
+        "01M04SRWJHD8KASTHQNB1YVR79"
+      ]
+    },
+    {
+      "id": "wtseq-embwd-bs512-wd1.0",
+      "coordinateRunId": "drwtembwd512-lr1e-3-wd1.0",
+      "batchSequences": 512,
+      "lr": "1e-3",
+      "wd": "1.0",
+      "weightTying": true,
+      "decayEmbeddings": true,
+      "dataOrder": "dynamic_repacking_from_e2",
+      "status": "submitted",
+      "currentEpoch": 1,
+      "targets": [
+        1,
+        2,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24
+      ],
+      "experiment": "01M04SS5Z3SBDN69A67CHVHN61",
+      "beaker": "01M04SS5Z3SBDN69A67CHVHN61",
+      "revision": "sewonm/icsl",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0",
+      "nodeCount": 4,
+      "gpuCount": 32,
+      "stages": [
+        {
+          "epoch": 1,
+          "status": "planned",
+          "sourceCheckpoint": "fresh",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step428",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step477"
+        },
+        {
+          "epoch": 2,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step428",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step858",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step954"
+        },
+        {
+          "epoch": 4,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step858",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step1716",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step1908"
+        },
+        {
+          "epoch": 8,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step1716",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step3432",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step3815"
+        },
+        {
+          "epoch": 12,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step3432",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step5150",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step5723"
+        },
+        {
+          "epoch": 16,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step5150",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step6866",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step7630"
+        },
+        {
+          "epoch": 20,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step6866",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step8582",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step9537"
+        },
+        {
+          "epoch": 24,
+          "status": "planned",
+          "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step8582",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step10300",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step11445"
+        }
+      ],
+      "reason": "Submitted as one persistent E1->E24 job. Every stage evaluates its WSD decayed endpoint and the next stage resumes the preceding exact pre-decay checkpoint; dynamic repacking begins at E2. Outputs use the canonical coordinate trajectory directory.",
+      "canonicalOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0",
+      "mergeAfterCompletion": false,
+      "stopOnSaturation": true,
+      "beakerStatus": "submitted",
+      "job": "01M04SS6466TZ7NBVZKWQ8ZX1R",
+      "jobs": [
+        "01M04SS6466TZ7NBVZKWQ8ZX1R",
+        "01M04SS67ZJMY4HV5D2043YBDV",
+        "01M04SS6C39WCMS7QEGRP733A3",
+        "01M04SS6GSV7T78FPCRKKFRNBZ"
+      ]
+    }
+  ]
 }

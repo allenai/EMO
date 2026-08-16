@@ -368,6 +368,23 @@
 
   const methodByKey = Object.fromEntries(study.columns.map((column) => [column.key, column]));
 
+  const sequentialBody = document.getElementById("wt-sequential-runs");
+  const sequentialRuns = [
+    ...(study.weightTyingSequentialRuns || []),
+    ...(study.weightTyingEmbeddingDecaySequentialRuns || []),
+  ];
+  for (const run of sequentialRuns) {
+    const stageStates = (run.stages || []).map((stage) =>
+      `E${stage.epoch}: ${stage.status || "planned"}`
+    ).join(" · ");
+    const experiment = run.experiment || run.beaker;
+    const tr = document.createElement("tr");
+    if (["submitted", "scheduled", "running"].includes(run.status)) tr.className = "run-active";
+    if (["failed", "canceled"].includes(run.status)) tr.className = "run-failed";
+    tr.innerHTML = `<td>BS${run.batchSequences}</td><td>${run.decayEmbeddings ? "DR+WT+EmbedWD" : "DR+WT"}</td><td>${run.lr}</td><td>${run.wd}</td><td>${run.status}</td><td>${run.currentEpoch ? `E${run.currentEpoch}` : "done"}</td><td>${stageStates}</td><td>${experiment ? `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${experiment}">${experiment}</a>` : "—"}</td>`;
+    sequentialBody.appendChild(tr);
+  }
+
   const gapBody = document.getElementById("wt-gap-summary");
   const weightTiedRuns = (study.runs || []).filter((run) => run.weightTying);
   for (const run of weightTiedRuns) {

@@ -33,12 +33,21 @@ def write_report(report: dict[str, Any]) -> None:
 def stage_sections(logs: str) -> dict[int, str]:
     cleaned = common.ANSI.sub("", logs)
     matches = list(STAGE_START.finditer(cleaned))
-    return {
-        int(match.group(1)): cleaned[
-            match.start() : matches[index + 1].start() if index + 1 < len(matches) else None
-        ]
-        for index, match in enumerate(matches)
-    }
+    sections: dict[int, list[str]] = {}
+    for index, match in enumerate(matches):
+        epoch = int(match.group(1))
+        sections.setdefault(epoch, []).append(
+            cleaned[match.start() : matches[index + 1].start() if index + 1 < len(matches) else None]
+        )
+    # Multi-node experiment logs repeat the stage markers once per replica. A
+    # lagging replica's open-ended fragment can contain later stages from another
+    # replica, so prefer one self-contained completed fragment; otherwise retain
+    # only the latest fragment for current progress.
+    selected: dict[int, str] = {}
+    for epoch, fragments in sections.items():
+        completed = [fragment for fragment in fragments if STAGE_COMPLETE.search(fragment)]
+        selected[epoch] = completed[-1] if completed else fragments[-1]
+    return selected
 
 
 def parse_stage(epoch: int, section: str) -> dict[str, Any]:
