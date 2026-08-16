@@ -9119,9 +9119,9 @@
       "simulatedBatchSequences": 64,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "running",
-      "healthStatus": "active",
-      "currentStep": 3494,
+      "status": "complete",
+      "healthStatus": "healthy",
+      "currentStep": 3815,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e4_lr1e-3_wd0.333/step1716",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e4_lr1e-3_wd0.333",
@@ -9165,9 +9165,41 @@
           "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e4_lr1e-3_wd0.333/step2575",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e4_lr1e-3_wd0.333/step2862",
           "reason": "Healthy E12 endpoint with full DCLM and nine-task downstream evaluation recovered from durable Beaker logs. The r03 chain then resumed E16 from exact pre-decay step2575."
+        },
+        "16": {
+          "status": "complete",
+          "train": 2.734,
+          "validation": 3.29,
+          "gap": 0.556,
+          "avg8Bpb": 1.4506625,
+          "downstream": {
+            "arc_challenge": 27.76,
+            "arc_easy": 50.35,
+            "boolq": 56.51,
+            "csqa": 41.61,
+            "hellaswag": 38.45,
+            "openbookqa": 25.6,
+            "piqa": 65.94,
+            "socialiqa": 44.11,
+            "winogrande": 51.07
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.528,
+            "arc_easy": 1.601,
+            "boolq": 2.061,
+            "csqa": 1.581,
+            "hellaswag": 0.9523,
+            "openbookqa": 1.775,
+            "piqa": 1.283,
+            "socialiqa": 1.325,
+            "winogrande": 1.56
+          },
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e4_lr1e-3_wd0.333/step3432",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e4_lr1e-3_wd0.333/step3815",
+          "reason": "Healthy terminal E16 endpoint with full DCLM and nine-task downstream evaluation recovered from durable Beaker logs; the chain completion marker confirms no further frontier will run."
         }
       },
-      "reason": "Healthy E12 completed with train2.881, validation3.262 and gap+0.381 plus full downstream metrics. E16 is running from exact native pre-decay step2575; step3432 saved successfully and training reached step3494 with finite CE/gradients and no skipped step.",
+      "reason": "Healthy four-node chain completed E16 from exact pre-decay step3432 and produced endpoint step3815. Validation CE3.290 and all downstream metrics were ingested; no further frontier is authorized.",
       "previousAttempts": [
         {
           "attempt": "r02",
@@ -9726,8 +9758,8 @@
       ]
     },
     {
-      "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r03-init2-wd0.333",
-      "chainName": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r03",
+      "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r04-init2-wd0.333",
+      "chainName": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r04",
       "method": "post_e2_diloco_h32_olr0.5_om0.7_vrecal_bs1024_dr_simbs64",
       "syncInterval": 32,
       "startEpoch": 2,
@@ -9742,9 +9774,9 @@
       "simulatedBatchSequences": 64,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "running",
+      "status": "queued",
       "healthStatus": "active",
-      "currentStep": 858,
+      "currentStep": 428,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step428",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_olr0.5_om0.7_vrecal_simbs64_init=bs1024e2_lr1e-3_wd0.333",
@@ -9755,7 +9787,16 @@
       "dilocoOuterLr": 0.5,
       "dilocoOuterMomentum": 0.7,
       "results": {},
-      "reason": "All four nodes allocated with 32 ranks at exact revision903ca084. E2-init loaded exact conventional step428 with one-time ratio16 v-recalibration; training reached step858 with finite CE/gradients and began saving the exact pre-decay checkpoint. One optimizer step was skipped at step810, followed by continued finite training with no logged NaN/Inf or error.",
+      "reason": "Exact-semantics four-node recovery submitted from conventional step428. The prior partial step858 checkpoint was audited absent, so the canonical output path is safe; no post-decay or partial state will be reused.",
+      "beaker": "01M059ZVWHFG8MX2BNJ7QBA48Y",
+      "experiment": "01M059ZVWHFG8MX2BNJ7QBA48Y",
+      "jobs": [
+        "01M059ZW0ZSWYD7Q5EKAEP3YNC",
+        "01M059ZW5DY9MC9VPKRFDRPQCA",
+        "01M059ZW9H12W5YMENPDRC2MGC",
+        "01M059ZWEC1C51CCS2705V7A1C"
+      ],
+      "submittedAt": "2026-08-16T12:50:48.849547Z",
       "previousAttempts": [
         {
           "attempt": "r02",
@@ -9770,24 +9811,27 @@
           "failureCategory": "container_cgroup_allocation",
           "optimizerStepsCompleted": 0,
           "reason": "Replica1 failed before the container started because the node could not allocate memory for its cgroup; propagated cancellation stopped the other replicas. This is infrastructure-only provenance."
+        },
+        {
+          "attempt": "r03",
+          "experiment": "01M04T8SYNH9N9XEJ4EHEMA6Y2",
+          "jobs": [
+            "01M04T8T28EQJC503234EZ1ARX",
+            "01M04T8T5YQSWAAWBK2QAWG2D0",
+            "01M04T8T9JQ36980Y9SRWMP2ZM",
+            "01M04T8TD3697CPK7KRG84QDC1"
+          ],
+          "status": "neutral_failure",
+          "failureCategory": "distributed_collective_timeout_during_async_checkpoint",
+          "optimizerStepsCompleted": 430,
+          "wandb": "bm7vdlno",
+          "reason": "Finite four-node training reached step858, but the second node stalled after starting the asynchronous pre-decay save and never entered default-process-group ALLREDUCE sequence446. The other 24 ranks timed out after 900 seconds. No NaN/Inf, OOM, ENOSPC, or completed checkpoint was present; exact conventional step428 remains the only safe retry source."
         }
-      ],
-      "beaker": "01M04T8SYNH9N9XEJ4EHEMA6Y2",
-      "experiment": "01M04T8SYNH9N9XEJ4EHEMA6Y2",
-      "jobs": [
-        "01M04T8T28EQJC503234EZ1ARX",
-        "01M04T8T5YQSWAAWBK2QAWG2D0",
-        "01M04T8T9JQ36980Y9SRWMP2ZM",
-        "01M04T8TD3697CPK7KRG84QDC1"
-      ],
-      "submittedAt": "2026-08-16T08:17:08Z",
-      "wandbRuns": {
-        "4": "bm7vdlno"
-      }
+      ]
     },
     {
-      "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r03-init4-wd0.333",
-      "chainName": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r03",
+      "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r04-init4-wd0.333",
+      "chainName": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r04",
       "method": "post_e4_diloco_h32_olr0.5_om0.7_vrecal_bs1024_dr_simbs64",
       "syncInterval": 32,
       "startEpoch": 4,
@@ -9814,7 +9858,16 @@
       "dilocoOuterLr": 0.5,
       "dilocoOuterMomentum": 0.7,
       "results": {},
-      "reason": "Queued inside the same running four-node chain behind the E2-init branch; it will begin only after the E2-init path reaches healthy E16.",
+      "reason": "Queued in the same corrected four-node recovery behind E2-init. It will begin only after that branch reaches healthy E16 and will still use the exact conventional E4 pre-decay step858 source.",
+      "beaker": "01M059ZVWHFG8MX2BNJ7QBA48Y",
+      "experiment": "01M059ZVWHFG8MX2BNJ7QBA48Y",
+      "jobs": [
+        "01M059ZW0ZSWYD7Q5EKAEP3YNC",
+        "01M059ZW5DY9MC9VPKRFDRPQCA",
+        "01M059ZW9H12W5YMENPDRC2MGC",
+        "01M059ZWEC1C51CCS2705V7A1C"
+      ],
+      "submittedAt": "2026-08-16T12:50:48.849547Z",
       "previousAttempts": [
         {
           "attempt": "r02",
@@ -9829,17 +9882,22 @@
           "failureCategory": "propagated_infrastructure_failure",
           "optimizerStepsCompleted": 0,
           "reason": "This branch was never reached because the preceding E2-init replica group failed during container startup."
+        },
+        {
+          "attempt": "r03",
+          "experiment": "01M04T8SYNH9N9XEJ4EHEMA6Y2",
+          "jobs": [
+            "01M04T8T28EQJC503234EZ1ARX",
+            "01M04T8T5YQSWAAWBK2QAWG2D0",
+            "01M04T8T9JQ36980Y9SRWMP2ZM",
+            "01M04T8TD3697CPK7KRG84QDC1"
+          ],
+          "status": "neutral_canceled",
+          "failureCategory": "propagated_distributed_collective_timeout",
+          "optimizerStepsCompleted": 0,
+          "reason": "This branch was never reached because the preceding E2-init branch stalled during its asynchronous step858 save."
         }
-      ],
-      "beaker": "01M04T8SYNH9N9XEJ4EHEMA6Y2",
-      "experiment": "01M04T8SYNH9N9XEJ4EHEMA6Y2",
-      "jobs": [
-        "01M04T8T28EQJC503234EZ1ARX",
-        "01M04T8T5YQSWAAWBK2QAWG2D0",
-        "01M04T8T9JQ36980Y9SRWMP2ZM",
-        "01M04T8TD3697CPK7KRG84QDC1"
-      ],
-      "submittedAt": "2026-08-16T08:17:08Z"
+      ]
     },
     {
       "planId": "bs1024-ls-h4-sim256-e4init-chain-e16-r03-wd1.0",
