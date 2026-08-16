@@ -15,6 +15,28 @@ SOURCE = (
     "bs1024_dr_lr1e-3_wd0.333/step858"
 )
 ROOT = "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b"
+SUBMISSIONS = {
+    (1024, 256, "1e-3"): (
+        "01M048TM3KZNM3M7MVFK48PK0C",
+        "01M048TM7RWFXQAYSZRGF1T8EW",
+        "01M048TM3QXMA7CSSST2B7N35A",
+    ),
+    (1024, 256, "5e-4"): (
+        "01M048TJVD030KWXB4EP1QRTPR",
+        "01M048TK4Z5M3KWMJHSC3HBMBY",
+        "01M048TJVNWJA2GWEFFVCAXCRW",
+    ),
+    (512, 128, "1e-3"): (
+        "01M048TN1AN53GJ22C9ENNRPXM",
+        "01M048TN55TZ3RQXKT98ZJZBFD",
+        "01M048TN1J42CDHHQDBPXQWJ71",
+    ),
+    (512, 128, "5e-4"): (
+        "01M048TMNFKWZ233R14215WKZK",
+        "01M048TMS1QXKRKZDP5GCTDWY3",
+        "01M048TMNN20FF8777EF2A9S3C",
+    ),
+}
 
 
 METHODS = (
@@ -59,6 +81,7 @@ def run(global_bs: int, sim_bs: int, lr: str) -> dict:
     lr_id = "1e-3" if lr == "1e-3" else "5e-4"
     pre_decay, endpoint = (1716, 1908) if global_bs == 1024 else (2574, 2957)
     output = output_path(global_bs, sim_bs, lr)
+    experiment, job, result = SUBMISSIONS[(global_bs, sim_bs, lr)]
     return {
         "planId": (
             f"bs{global_bs}-e4init-sequential-replay-sim{sim_bs}-"
@@ -71,8 +94,14 @@ def run(global_bs: int, sim_bs: int, lr: str) -> dict:
         "simulatedBatchSequences": sim_bs,
         "lr": lr,
         "wd": "0.333",
-        "status": "planned",
-        "healthStatus": "planned",
+        "status": "submitted",
+        "healthStatus": "active",
+        "beaker": experiment,
+        "experiment": experiment,
+        "job": job,
+        "jobs": [job],
+        "resultDataset": result,
+        "resultDatasets": [result],
         "revision": REVISION,
         "sourceCheckpoint": SOURCE,
         "output": output,
@@ -86,8 +115,8 @@ def run(global_bs: int, sim_bs: int, lr: str) -> dict:
         "schedulerUnits": "tokens",
         "results": {},
         "reason": (
-            "Authorized E4-init to E8 sequential-replay window-4 ablation. "
-            "Registered before submission; exact conventional step858 source, "
+            "Submitted E4-init to E8 sequential-replay window-4 ablation. "
+            "Exact conventional step858 source, "
             "token-matched WSD frontier, and one-time Adam-v recalibration ratio4."
         ),
     }

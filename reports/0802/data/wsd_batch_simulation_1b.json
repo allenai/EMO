@@ -8520,8 +8520,18 @@
       "simulatedBatchSequences": 256,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "planned",
-      "healthStatus": "planned",
+      "status": "submitted",
+      "healthStatus": "active",
+      "beaker": "01M048TM3KZNM3M7MVFK48PK0C",
+      "experiment": "01M048TM3KZNM3M7MVFK48PK0C",
+      "job": "01M048TM7RWFXQAYSZRGF1T8EW",
+      "jobs": [
+        "01M048TM7RWFXQAYSZRGF1T8EW"
+      ],
+      "resultDataset": "01M048TM3QXMA7CSSST2B7N35A",
+      "resultDatasets": [
+        "01M048TM3QXMA7CSSST2B7N35A"
+      ],
       "revision": "0d0679918f5589f5b76f0b4a90f25db4f6db1a3d",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step858",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs256_init=bs1024e4_lr1e-3_runlr1e-3_wd0.333",
@@ -8534,7 +8544,7 @@
       "sequentialReplayMicrobatchGradients": false,
       "schedulerUnits": "tokens",
       "results": {},
-      "reason": "Authorized E4-init to E8 sequential-replay window-4 ablation. Registered before submission; exact conventional step858 source, token-matched WSD frontier, and one-time Adam-v recalibration ratio4."
+      "reason": "Submitted E4-init to E8 sequential-replay window-4 ablation. Exact conventional step858 source, token-matched WSD frontier, and one-time Adam-v recalibration ratio4."
     },
     {
       "planId": "bs1024-e4init-sequential-replay-sim256-lr5e-4-wd0.333-e8",
@@ -8545,8 +8555,18 @@
       "simulatedBatchSequences": 256,
       "lr": "5e-4",
       "wd": "0.333",
-      "status": "planned",
-      "healthStatus": "planned",
+      "status": "submitted",
+      "healthStatus": "active",
+      "beaker": "01M048TJVD030KWXB4EP1QRTPR",
+      "experiment": "01M048TJVD030KWXB4EP1QRTPR",
+      "job": "01M048TK4Z5M3KWMJHSC3HBMBY",
+      "jobs": [
+        "01M048TK4Z5M3KWMJHSC3HBMBY"
+      ],
+      "resultDataset": "01M048TJVNWJA2GWEFFVCAXCRW",
+      "resultDatasets": [
+        "01M048TJVNWJA2GWEFFVCAXCRW"
+      ],
       "revision": "0d0679918f5589f5b76f0b4a90f25db4f6db1a3d",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step858",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs256_init=bs1024e4_lr1e-3_runlr5e-4_wd0.333",
@@ -8559,7 +8579,7 @@
       "sequentialReplayMicrobatchGradients": false,
       "schedulerUnits": "tokens",
       "results": {},
-      "reason": "Authorized E4-init to E8 sequential-replay window-4 ablation. Registered before submission; exact conventional step858 source, token-matched WSD frontier, and one-time Adam-v recalibration ratio4."
+      "reason": "Submitted E4-init to E8 sequential-replay window-4 ablation. Exact conventional step858 source, token-matched WSD frontier, and one-time Adam-v recalibration ratio4."
     },
     {
       "planId": "bs512-e4init-sequential-replay-sim128-lr1e-3-wd0.333-e8",
@@ -8570,8 +8590,18 @@
       "simulatedBatchSequences": 128,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "planned",
-      "healthStatus": "planned",
+      "status": "submitted",
+      "healthStatus": "active",
+      "beaker": "01M048TN1AN53GJ22C9ENNRPXM",
+      "experiment": "01M048TN1AN53GJ22C9ENNRPXM",
+      "job": "01M048TN55TZ3RQXKT98ZJZBFD",
+      "jobs": [
+        "01M048TN55TZ3RQXKT98ZJZBFD"
+      ],
+      "resultDataset": "01M048TN1J42CDHHQDBPXQWJ71",
+      "resultDatasets": [
+        "01M048TN1J42CDHHQDBPXQWJ71"
+      ],
       "revision": "0d0679918f5589f5b76f0b4a90f25db4f6db1a3d",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step858",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_sequential_replay_simbs128_init=bs1024e4_lr1e-3_runlr1e-3_wd0.333",
@@ -8584,7 +8614,7 @@
       "sequentialReplayMicrobatchGradients": false,
       "schedulerUnits": "tokens",
       "results": {},
-      "reason": "Authorized E4-init to E8 sequential-replay window-4 ablation. Registered before submission; exact conventional step858 source, token-matched WSD frontier, and one-time Adam-v recalibration ratio4."
+      "reason": "Submitted E4-init to E8 sequential-replay window-4 ablation. Exact conventional step858 source, token-matched WSD frontier, and one-time Adam-v recalibration ratio4."
     },
     {
       "planId": "bs512-e4init-sequential-replay-sim128-lr5e-4-wd0.333-e8",
@@ -8595,8 +8625,18 @@
       "simulatedBatchSequences": 128,
       "lr": "5e-4",
       "wd": "0.333",
-      "status": "planned",
-      "healthStatus": "planned",
+      "status": "submitted",
+      "healthStatus": "active",
+      "beaker": "01M048TMNFKWZ233R14215WKZK",
+      "experiment": "01M048TMNFKWZ233R14215WKZK",
+      "job": "01M048TMS1QXKRKZDP5GCTDWY3",
+      "jobs": [
+        "01M048TMS1QXKRKZDP5GCTDWY3"
+      ],
+      "resultDataset": "01M048TMNN20FF8777EF2A9S3C",
+      "resultDatasets": [
+        "01M048TMNN20FF8777EF2A9S3C"
+      ],
       "revision": "0d0679918f5589f5b76f0b4a90f25db4f6db1a3d",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step858",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_sequential_replay_simbs128_init=bs1024e4_lr1e-3_runlr5e-4_wd0.333",
@@ -8609,7 +8649,7 @@
       "sequentialReplayMicrobatchGradients": false,
       "schedulerUnits": "tokens",
       "results": {},
-      "reason": "Authorized E4-init to E8 sequential-replay window-4 ablation. Registered before submission; exact conventional step858 source, token-matched WSD frontier, and one-time Adam-v recalibration ratio4."
+      "reason": "Submitted E4-init to E8 sequential-replay window-4 ablation. Exact conventional step858 source, token-matched WSD frontier, and one-time Adam-v recalibration ratio4."
     }
   ]
 }
