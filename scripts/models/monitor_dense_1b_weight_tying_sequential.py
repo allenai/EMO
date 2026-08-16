@@ -13,9 +13,10 @@ import monitor_dense_1b_weight_tying as common
 
 REPORT_PATH = Path("reports/0802/data/wsd_data_loader_1b.json")
 REPORT_JS_PATH = REPORT_PATH.with_suffix(".js")
-STAGE_START = re.compile(r"SEQUENTIAL_WT_STAGE_START epoch=(1|2|4|8|12|16|20|24)")
-STAGE_COMPLETE = re.compile(r"SEQUENTIAL_WT_STAGE_COMPLETE epoch=(1|2|4|8|12|16|20|24)")
-SATURATED = re.compile(r"SEQUENTIAL_EMBWD_SATURATED epoch=(1|2|4|8|12|16|20|24)")
+EPOCH_PATTERN = r"(12|16|20|24|1|2|4|8)\b"
+STAGE_START = re.compile(r"SEQUENTIAL_WT_STAGE_START epoch=" + EPOCH_PATTERN)
+STAGE_COMPLETE = re.compile(r"SEQUENTIAL_WT_STAGE_COMPLETE epoch=" + EPOCH_PATTERN)
+SATURATED = re.compile(r"SEQUENTIAL_EMBWD_SATURATED epoch=" + EPOCH_PATTERN)
 
 
 def load_report() -> dict[str, Any]:
@@ -45,7 +46,8 @@ def stage_sections(logs: str) -> dict[int, str]:
     # only the latest fragment for current progress.
     selected: dict[int, str] = {}
     for epoch, fragments in sections.items():
-        completed = [fragment for fragment in fragments if STAGE_COMPLETE.search(fragment)]
+        marker = f"SEQUENTIAL_WT_STAGE_COMPLETE epoch={epoch}"
+        completed = [fragment for fragment in fragments if marker in fragment]
         selected[epoch] = completed[-1] if completed else fragments[-1]
     return selected
 
@@ -63,7 +65,7 @@ def parse_stage(epoch: int, section: str) -> dict[str, Any]:
     train_values = common.TRAIN_LOSS.findall(section)
     if train_values:
         result.setdefault("progress", {})["latestTrain"] = float(train_values[-1])
-    if STAGE_COMPLETE.search(section):
+    if f"SEQUENTIAL_WT_STAGE_COMPLETE epoch={epoch}" in section:
         validation_values = common.WANDB_VALIDATION_LOSS.findall(
             section
         ) or common.VALIDATION_LOSS.findall(section)
@@ -116,8 +118,14 @@ def refresh(report: dict[str, Any], sequential: dict[str, Any]) -> str:
     completed_epochs = []
     coordinate = next(run for run in report["runs"] if run["id"] == sequential["coordinateRunId"])
     for epoch, section in sections.items():
-        parsed = parse_stage(epoch, section)
         stage = stages_by_epoch[epoch]
+        # A completed endpoint is immutable. Aggregated multi-replica logs can
+        # later contain an open fragment from a lagging replica followed by a
+        # newer stage, so re-parsing finalized stages risks mixing their metrics.
+        if stage.get("status") == "complete":
+            completed_epochs.append(epoch)
+            continue
+        parsed = parse_stage(epoch, section)
         stage.update(parsed)
         if parsed["status"] != "complete":
             continue
@@ -163,11 +171,31 @@ def refresh(report: dict[str, Any], sequential: dict[str, Any]) -> str:
             "CE did not strictly improve."
         )
     elif state == "failed":
-        sequential[
-            "reason"
-        ] = f"Persistent chain failed during E{current}; completed earlier stages remain valid."
+        if sequential.get("decayEmbeddings") and re.search(
+            r"tee: .*?/\.embwd_e1\.log: No such file or directory", logs
+        ):
+            sequential["failureDiagnosis"] = "missing_parent_directory_for_rank0_stage_log"
+            sequential["reason"] = (
+                "Persistent chain failed because rank0 opened the E1 tee log before the "
+                "canonical output directory existed. With pipefail, BS64 exited after E1; "
+                "multi-node runs could not produce the shared saturation decision. This is "
+                "a submitter configuration failure, not a node failure; no retry was issued."
+            )
+        elif "torch.distributed.DistNetworkError: Failed to recv" in logs:
+            sequential["failureDiagnosis"] = "distributed_peer_shutdown_during_stage_start"
+            sequential["reason"] = (
+                f"Persistent chain failed during E{current} distributed startup because a "
+                "rendezvous peer closed the TCPStore connection. Completed earlier stages "
+                "remain valid; no retry was issued."
+            )
+        else:
+            sequential[
+                "reason"
+            ] = f"Persistent chain failed during E{current}; completed earlier stages remain valid."
     elif state == "complete":
         sequential["reason"] = "Persistent E1->E24 chain completed all eight evaluated stages."
+        if sequential.get("mergeAfterCompletion"):
+            sequential.setdefault("mergeStatus", "pending_canonical_merge")
 
     detail = ""
     if current is not None and stages_by_epoch[current].get("progress"):

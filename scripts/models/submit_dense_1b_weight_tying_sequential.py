@@ -149,6 +149,7 @@ def with_stage_log_capture(shell: str, output: str, epoch: int) -> tuple[str, st
     torchrun = lines[index]
     lines[index : index + 1] = [
         'if [ "${BEAKER_REPLICA_RANK:-0}" = 0 ]; then',
+        f"mkdir -p {shlex.quote(output)}",
         f"{torchrun} 2>&1 | tee {shlex.quote(log_path)}",
         "else",
         torchrun,
@@ -209,8 +210,10 @@ def build_chain(args: argparse.Namespace) -> tuple[dict[str, Any], str, list[dic
     try:
         stage_specs = []
         stage_records = []
+        active_targets = []
         output = ""
         previous_epoch = None
+        resume_after_epoch = int(getattr(args, "resume_after_epoch", 0))
         for target in TARGETS:
             source = (
                 "fresh"
@@ -229,7 +232,9 @@ def build_chain(args: argparse.Namespace) -> tuple[dict[str, Any], str, list[dic
                 stage_spec["tasks"][0]["arguments"][2] = shell.replace(
                     output_guard, "", 1
                 )
-            stage_specs.append(stage_spec)
+            if target > resume_after_epoch:
+                stage_specs.append(stage_spec)
+                active_targets.append(target)
             stage_records.append(
                 {
                     "epoch": target,
@@ -247,11 +252,32 @@ def build_chain(args: argparse.Namespace) -> tuple[dict[str, Any], str, list[dic
     finally:
         endpoint.MODEL_ROOT = old_root
 
+    if not active_targets:
+        raise RuntimeError("failed retry has no remaining sequential stage")
     spec = stage_specs[0]
     task = spec["tasks"][0]
     commands = ["set -euo pipefail"]
-    previous_target = None
-    for target, stage_spec in zip(TARGETS, stage_specs):
+    previous_target = resume_after_epoch or None
+    if args.stop_on_saturation and previous_target is not None:
+        previous_validation = getattr(args, "resume_validation", None)
+        if previous_validation is None:
+            raise RuntimeError("EmbedWD retry is missing the completed frontier validation CE")
+        validation_path = f"{output}/.embwd_e{previous_target}.validation"
+        seed_code = (
+            "import os,pathlib\n"
+            f"p=pathlib.Path({validation_path!r})\n"
+            "p.parent.mkdir(parents=True,exist_ok=True)\n"
+            f"t=p.with_suffix(p.suffix+'.tmp'); t.write_text({str(previous_validation)!r}); "
+            "os.replace(t,p)"
+        )
+        commands.extend(
+            [
+                'if [ "${BEAKER_REPLICA_RANK:-0}" = 0 ]; then',
+                f"python -c {shlex.quote(seed_code)}",
+                "fi",
+            ]
+        )
+    for target, stage_spec in zip(active_targets, stage_specs):
         stage_shell = stage_spec["tasks"][0]["arguments"][2]
         stage_shell = stage_shell.removeprefix("set -euo pipefail\n")
         log_path = ""
@@ -300,6 +326,11 @@ def register_submission(
                 f"--retry-failed requires exactly one failed or canceled entry for {run_id}"
             )
         previous = copy.deepcopy(matching[0])
+        previous_stages = {
+            int(stage["epoch"]): stage
+            for stage in previous.get("stages", [])
+            if stage.get("status") == "complete"
+        }
         attempts = list(previous.pop("attempts", []))
         attempts.append(previous)
         record = matching[0]
@@ -310,6 +341,11 @@ def register_submission(
             raise RuntimeError(f"duplicate sequential registry entry for {run_id}")
         record = {}
         records.append(record)
+        previous_stages = {}
+    stages = [previous_stages.get(int(stage["epoch"]), stage) for stage in stages]
+    current_epoch = next(
+        (int(stage["epoch"]) for stage in stages if stage.get("status") != "complete"), None
+    )
     record.update(
         {
             "id": run_id,
@@ -321,7 +357,7 @@ def register_submission(
             "decayEmbeddings": args.decay_embeddings,
             "dataOrder": "dynamic_repacking_from_e2",
             "status": "submitted",
-            "currentEpoch": 1,
+            "currentEpoch": current_epoch,
             "targets": list(TARGETS),
             "experiment": experiment,
             "beaker": experiment,
@@ -331,7 +367,11 @@ def register_submission(
             "gpuCount": coordinate["nodes"] * endpoint.GPUS_PER_NODE,
             "stages": stages,
             "reason": (
-                ("Retried after a failed persistent attempt. " if args.retry_failed else "")
+                (
+                    f"Retried after a failed persistent attempt from E{current_epoch}. "
+                    if args.retry_failed
+                    else ""
+                )
                 + "Submitted as one persistent E1->E24 job. Every stage evaluates its WSD "
                 "decayed endpoint and the next stage resumes the preceding exact pre-decay "
                 "checkpoint; dynamic repacking begins at E2. "
@@ -378,7 +418,7 @@ def register_submission(
         coordinate_run.update(
             {
                 "status": "submitted",
-                "activeEpoch": 1,
+                "activeEpoch": current_epoch,
                 "experiment": experiment,
                 "beaker": experiment,
                 "revision": args.revision,
@@ -427,9 +467,38 @@ def validate_registration(args: argparse.Namespace) -> None:
         raise RuntimeError(f"duplicate sequential registry entry for {run_id}")
 
 
+def configure_failed_retry(args: argparse.Namespace) -> None:
+    args.resume_after_epoch = 0
+    args.resume_validation = None
+    if not args.retry_failed:
+        return
+    report = json.loads(REPORT_PATH.read_text())
+    run_id = sequential_run_id(args)
+    record = next(
+        record
+        for record in report.get(registry_key(args), [])
+        if record.get("id") == run_id
+    )
+    stages = {int(stage["epoch"]): stage for stage in record.get("stages", [])}
+    completed_frontier = 0
+    for target in TARGETS:
+        if stages.get(target, {}).get("status") != "complete":
+            break
+        completed_frontier = target
+    if completed_frontier == 0:
+        raise RuntimeError("failed retry has no validated completed frontier to resume")
+    args.resume_after_epoch = completed_frontier
+    args.resume_validation = stages[completed_frontier].get("validationExact") or stages[
+        completed_frontier
+    ].get("validation")
+    if args.decay_embeddings and args.resume_validation is None:
+        raise RuntimeError("EmbedWD retry frontier is missing held-out validation CE")
+
+
 def main() -> None:
     args = parse_args()
     validate_registration(args)
+    configure_failed_retry(args)
     spec, output, stages = build_chain(args)
     if args.print_only:
         json.dump(spec, sys.stdout, indent=2)
