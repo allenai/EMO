@@ -9774,8 +9774,8 @@
       "simulatedBatchSequences": 64,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "queued",
-      "healthStatus": "active",
+      "status": "neutral_failure",
+      "healthStatus": "neutral",
       "currentStep": 428,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step428",
@@ -9787,7 +9787,7 @@
       "dilocoOuterLr": 0.5,
       "dilocoOuterMomentum": 0.7,
       "results": {},
-      "reason": "Exact-semantics four-node recovery submitted from conventional step428. The prior partial step858 checkpoint was audited absent, so the canonical output path is safe; no post-decay or partial state will be reused.",
+      "reason": "The four-node recovery allocated, passed its focused tests, and then exited before any optimizer step. The exact conventional step428 source exists. Replica0 instead failed the conventional-transition guard because the canonical output directory still contained r03's incomplete asynchronous step858 save. That partial checkpoint has only33 files and about0.5MB versus about17.8GB for a healthy checkpoint, so it is not resumable.",
       "beaker": "01M059ZVWHFG8MX2BNJ7QBA48Y",
       "experiment": "01M059ZVWHFG8MX2BNJ7QBA48Y",
       "jobs": [
@@ -9797,9 +9797,18 @@
         "01M059ZWEC1C51CCS2705V7A1C"
       ],
       "submittedAt": "2026-08-16T12:50:48.849547Z",
-      "schedulerStatus": "pending_capacity",
-      "schedulerAuditAt": "2026-08-16T14:08:16.026027Z",
-      "schedulerReason": "The four-node replica group is waiting for simultaneous Jupiter capacity; this is scheduling pressure, not a job or configuration failure.",
+      "schedulerStatus": "finalized_failed",
+      "schedulerAuditAt": "2026-08-16T17:00:38.845431Z",
+      "schedulerReason": "Replica0 exited1 at the pre-existing-canonical-output startup guard; the other three replicas were terminated with exit143. Active-job audit confirms no queued or running jobs remain.",
+      "failureClass": "preexisting-partial-canonical-output-guard",
+      "wekaAudit": "The persistent Triton session mounts oe-training-default at /weka_data. Under that mount, conventional step428 and step858 both exist. The earlier missing-source conclusion inspected the wrong mount point and was retracted.",
+      "optimizerStepsCompleted": 0,
+      "jobExitCodes": [
+        1,
+        143,
+        143,
+        143
+      ],
       "previousAttempts": [
         {
           "attempt": "r02",
@@ -9828,7 +9837,7 @@
           "failureCategory": "distributed_collective_timeout_during_async_checkpoint",
           "optimizerStepsCompleted": 430,
           "wandb": "bm7vdlno",
-          "reason": "Finite four-node training reached step858, but the second node stalled after starting the asynchronous pre-decay save and never entered default-process-group ALLREDUCE sequence446. The other 24 ranks timed out after 900 seconds. No NaN/Inf, OOM, ENOSPC, or completed checkpoint was present; exact conventional step428 remains the only safe retry source."
+          "reason": "Finite four-node training reached step858, but the second node stalled after starting the asynchronous pre-decay save and never entered default-process-group ALLREDUCE sequence446. The other 24 ranks timed out after 900 seconds. No NaN/Inf, OOM, or ENOSPC occurred. The resulting step858 directory is incomplete (33 files, about0.5MB) and is not resumable; exact conventional step428 remains the only safe retry source."
         }
       ]
     },
@@ -9848,8 +9857,8 @@
       "simulatedBatchSequences": 64,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "queued",
-      "healthStatus": "active",
+      "status": "neutral_canceled",
+      "healthStatus": "neutral",
       "currentStep": 858,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step858",
@@ -9861,7 +9870,7 @@
       "dilocoOuterLr": 0.5,
       "dilocoOuterMomentum": 0.7,
       "results": {},
-      "reason": "Queued in the same corrected four-node recovery behind E2-init. It will begin only after that branch reaches healthy E16 and will still use the exact conventional E4 pre-decay step858 source.",
+      "reason": "This branch never started because the preceding E2-init branch failed its pre-existing-output startup guard. The exact conventional E4 step858 source exists. Its canonical output contains only prior W&B provenance and no checkpoint, so the residue must be preserved outside the canonical path before an exact retry.",
       "beaker": "01M059ZVWHFG8MX2BNJ7QBA48Y",
       "experiment": "01M059ZVWHFG8MX2BNJ7QBA48Y",
       "jobs": [
@@ -9871,9 +9880,12 @@
         "01M059ZWEC1C51CCS2705V7A1C"
       ],
       "submittedAt": "2026-08-16T12:50:48.849547Z",
-      "schedulerStatus": "pending_capacity",
-      "schedulerAuditAt": "2026-08-16T14:08:16.026027Z",
-      "schedulerReason": "The shared four-node replica group is waiting for simultaneous Jupiter capacity; this branch remains queued behind E2-init.",
+      "schedulerStatus": "finalized_canceled",
+      "schedulerAuditAt": "2026-08-16T17:00:38.845431Z",
+      "schedulerReason": "The shared replica group finalized after the preceding E2-init startup failure; active-job audit confirms no queued or running jobs remain.",
+      "failureClass": "propagated-preexisting-canonical-output-guard",
+      "wekaAudit": "The persistent Triton session mounts oe-training-default at /weka_data; the exact conventional step858 source is present there.",
+      "optimizerStepsCompleted": 0,
       "previousAttempts": [
         {
           "attempt": "r02",
@@ -9919,9 +9931,9 @@
       "simulatedBatchSequences": 256,
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "queued",
-      "healthStatus": "active",
-      "currentStep": 2575,
+      "status": "complete",
+      "healthStatus": "healthy",
+      "currentStep": 3815,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e4_lr1e-3_wd1.0/step2575",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e4_lr1e-3_wd1.0",
@@ -9930,8 +9942,45 @@
       "recalibrateSecondMomentOnStart": false,
       "secondMomentRecalibrationRatio": 4,
       "wdGateDecision": "WD1.0 selected at E12: validation3.211 versus WD0.333 validation3.265.",
-      "results": {},
-      "reason": "Corrected four-node WD1.0-only E16 recovery is queued from exact healthy native pre-decay step2575. Print-audit verified replicas4/nnodes4, revision903ca084, and the unchanged canonical output path.",
+      "results": {
+        "16": {
+          "status": "complete",
+          "train": 3.038,
+          "validation": 3.174,
+          "gap": 0.136,
+          "avg8Bpb": 1.3851625,
+          "downstream": {
+            "arc_challenge": 23.41,
+            "arc_easy": 53.33,
+            "boolq": 56.97,
+            "csqa": 45.05,
+            "hellaswag": 36.86,
+            "openbookqa": 26.0,
+            "piqa": 67.08,
+            "socialiqa": 43.4,
+            "winogrande": 49.57
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.504,
+            "arc_easy": 1.531,
+            "boolq": 2.003,
+            "csqa": 1.43,
+            "hellaswag": 0.9203,
+            "openbookqa": 1.641,
+            "piqa": 1.228,
+            "socialiqa": 1.29,
+            "winogrande": 1.537
+          },
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e4_lr1e-3_wd1.0/step3432",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e4_lr1e-3_wd1.0/step3815",
+          "checkpointAvailability": "present",
+          "reason": "Healthy four-node E16 completion with exit0 on all replicas, full DCLM validation, and all nine downstream tasks. Both exact pre-decay step3432 and endpoint step3815 remain present on Weka."
+        }
+      },
+      "wandbRuns": {
+        "16": "4k2kjdu2"
+      },
+      "reason": "Corrected four-node WD1.0-only recovery completed healthy at E16 with train3.038, validation3.174, gap+0.136, and full downstream metrics.",
       "previousAttempts": [
         {
           "attempt": "r02",
@@ -9957,9 +10006,9 @@
         "01M056SXM1EHHVNRMYD7Y98D68"
       ],
       "submittedAt": "2026-08-16T11:52:00Z",
-      "schedulerStatus": "pending_capacity",
-      "schedulerAuditAt": "2026-08-16T14:08:16.026027Z",
-      "schedulerReason": "The four-node replica group is waiting for simultaneous Jupiter capacity; this is scheduling pressure, not a job or configuration failure."
+      "schedulerStatus": "completed_after_capacity_wait",
+      "schedulerAuditAt": "2026-08-16T16:57:40.657026Z",
+      "schedulerReason": "All four replicas started, completed E16, and finalized with exit0. Active-job audit confirms no queued or running jobs remain."
     },
     {
       "planId": "bs1024-ls-h4-sim256-e2init-chain-e16-r03-wd1.0",
@@ -9975,9 +10024,9 @@
       "simulatedBatchSequences": 256,
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "queued",
-      "healthStatus": "active",
-      "currentStep": 2575,
+      "status": "complete",
+      "healthStatus": "healthy",
+      "currentStep": 3815,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e2_lr1e-3_wd1.0/step2575",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e2_lr1e-3_wd1.0",
@@ -9986,8 +10035,45 @@
       "recalibrateSecondMomentOnStart": false,
       "secondMomentRecalibrationRatio": 4,
       "wdGateDecision": "WD1.0 selected at E12: validation3.213 versus WD0.333 validation3.251.",
-      "results": {},
-      "reason": "Corrected four-node WD1.0-only E16 recovery is queued from exact healthy native pre-decay step2575. Print-audit verified replicas4/nnodes4, revision903ca084, and the unchanged canonical output path.",
+      "results": {
+        "16": {
+          "status": "complete",
+          "train": 3.049,
+          "validation": 3.182,
+          "gap": 0.133,
+          "avg8Bpb": 1.3824875,
+          "downstream": {
+            "arc_challenge": 23.75,
+            "arc_easy": 50.35,
+            "boolq": 60.64,
+            "csqa": 45.54,
+            "hellaswag": 36.59,
+            "openbookqa": 26.4,
+            "piqa": 65.67,
+            "socialiqa": 42.73,
+            "winogrande": 49.72
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.49,
+            "arc_easy": 1.534,
+            "boolq": 1.883,
+            "csqa": 1.426,
+            "hellaswag": 0.9269,
+            "openbookqa": 1.631,
+            "piqa": 1.222,
+            "socialiqa": 1.296,
+            "winogrande": 1.534
+          },
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e2_lr1e-3_wd1.0/step3432",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e2_lr1e-3_wd1.0/step3815",
+          "checkpointAvailability": "present",
+          "reason": "Healthy four-node E16 completion with exit0 on all replicas, full DCLM validation, and all nine downstream tasks. Both exact pre-decay step3432 and endpoint step3815 remain present on Weka."
+        }
+      },
+      "wandbRuns": {
+        "16": "8x9sduce"
+      },
+      "reason": "Corrected four-node WD1.0-only recovery completed healthy at E16 with train3.049, validation3.182, gap+0.133, and full downstream metrics.",
       "previousAttempts": [
         {
           "attempt": "r02",
@@ -10013,9 +10099,76 @@
         "01M056SVF63A3ZR0HR9ZD41XKE"
       ],
       "submittedAt": "2026-08-16T11:52:00Z",
-      "schedulerStatus": "pending_capacity",
-      "schedulerAuditAt": "2026-08-16T14:08:16.026027Z",
-      "schedulerReason": "The four-node replica group is waiting for simultaneous Jupiter capacity; this is scheduling pressure, not a job or configuration failure."
+      "schedulerStatus": "completed_after_capacity_wait",
+      "schedulerAuditAt": "2026-08-16T15:26:33.609839Z",
+      "schedulerReason": "All four replicas started, completed E16, and finalized with exit0. Active-job audit confirms no queued or running jobs remain."
+    },
+    {
+      "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r05-init2-wd0.333",
+      "chainName": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r05",
+      "method": "post_e2_diloco_h32_olr0.5_om0.7_vrecal_bs1024_dr_simbs64",
+      "syncInterval": 32,
+      "startEpoch": 2,
+      "targetEpoch": 16,
+      "targetLadder": [
+        4,
+        8,
+        12,
+        16
+      ],
+      "batchSequences": 1024,
+      "simulatedBatchSequences": 64,
+      "lr": "1e-3",
+      "wd": "0.333",
+      "status": "planned",
+      "healthStatus": "planned",
+      "currentStep": 428,
+      "revision": "4e42e7738394bde58b4409c53841d06f98f36c1a",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step428",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_olr0.5_om0.7_vrecal_simbs64_init=bs1024e2_lr1e-3_wd0.333",
+      "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_olr0.5_om0.7_vrecal_simbs64_init=bs1024e2_lr1e-3_wd0.333/step3432",
+      "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_olr0.5_om0.7_vrecal_simbs64_init=bs1024e2_lr1e-3_wd0.333/step3815",
+      "recalibrateSecondMomentOnStart": true,
+      "secondMomentRecalibrationRatio": 16,
+      "dilocoOuterLr": 0.5,
+      "dilocoOuterMomentum": 0.7,
+      "results": {},
+      "reason": "Registered exact four-node recovery after correcting the Weka mount audit. Conventional step428 is present, the incomplete r03/r04 canonical residue is preserved under chain-control quarantine, and the canonical output path is clear. The chain will continue only through E16 from exact pre-decay checkpoints.",
+      "recoveryProvenance": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/.chain-control/bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r05/quarantine/r03-r04-init2-canonical-output",
+      "plannedAt": "2026-08-16T19:00:59Z"
+    },
+    {
+      "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r05-init4-wd0.333",
+      "chainName": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r05",
+      "method": "post_e4_diloco_h32_olr0.5_om0.7_vrecal_bs1024_dr_simbs64",
+      "syncInterval": 32,
+      "startEpoch": 4,
+      "targetEpoch": 16,
+      "targetLadder": [
+        8,
+        12,
+        16
+      ],
+      "batchSequences": 1024,
+      "simulatedBatchSequences": 64,
+      "lr": "1e-3",
+      "wd": "0.333",
+      "status": "planned",
+      "healthStatus": "planned",
+      "currentStep": 858,
+      "revision": "4e42e7738394bde58b4409c53841d06f98f36c1a",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step858",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_olr0.5_om0.7_vrecal_simbs64_init=bs1024e4_lr1e-3_wd0.333",
+      "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_olr0.5_om0.7_vrecal_simbs64_init=bs1024e4_lr1e-3_wd0.333/step3432",
+      "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_olr0.5_om0.7_vrecal_simbs64_init=bs1024e4_lr1e-3_wd0.333/step3815",
+      "recalibrateSecondMomentOnStart": true,
+      "secondMomentRecalibrationRatio": 16,
+      "dilocoOuterLr": 0.5,
+      "dilocoOuterMomentum": 0.7,
+      "results": {},
+      "reason": "Registered in the same exact four-node recovery chain. Conventional step858 is present, the W&B-only canonical residue is preserved under chain-control quarantine, and the canonical output path is clear. This branch starts only after the E2-init branch completes and stops at E16.",
+      "recoveryProvenance": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/.chain-control/bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r05/quarantine/r03-r04-init4-canonical-output",
+      "plannedAt": "2026-08-16T19:00:59Z"
     }
   ]
 }
