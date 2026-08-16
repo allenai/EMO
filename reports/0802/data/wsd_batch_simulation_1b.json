@@ -9175,7 +9175,7 @@
       "wd": "0.333",
       "status": "running",
       "healthStatus": "active",
-      "currentStep": 1785,
+      "currentStep": 2204,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e2_lr1e-3_wd0.333/step858",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e2_lr1e-3_wd0.333",
@@ -9222,7 +9222,7 @@
           "reason": "Healthy WD0.333 E8 endpoint with full DCLM and nine-task downstream evaluation recovered from durable Beaker logs."
         }
       },
-      "reason": "WD0.333 also won the matched E8 gate with validation3.248 versus WD1.0 validation3.331, so both WDs remain eligible. Healthy four-node WD0.333 E12 is running from exact pre-decay step1716; train CE3.138 and grad norm0.1343 were finite at step1785 with no skipped optimizer step. WD1.0 waits at its exact step1716.",
+      "reason": "WD0.333 also won the matched E8 gate with validation3.248 versus WD1.0 validation3.331, so both WDs remain eligible. Healthy four-node WD0.333 E12 is running from exact pre-decay step1716 and reached step2204; train CE3.008 and grad norm0.1628 were finite at the latest metric step2200 with no skipped optimizer step. WD1.0 waits at its exact step1716.",
       "beaker": "01M04P429GASFTSDDHHJZREYYP",
       "experiment": "01M04P429GASFTSDDHHJZREYYP",
       "jobs": [
@@ -9359,7 +9359,7 @@
       "wd": "0.333",
       "status": "running",
       "healthStatus": "active",
-      "currentStep": 2115,
+      "currentStep": 2520,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e4_lr1e-3_wd0.333/step1716",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e4_lr1e-3_wd0.333",
@@ -9406,7 +9406,7 @@
           "reason": "Healthy WD0.333 E8 endpoint reused from the canonical native branch with full DCLM and nine-task downstream evaluation."
         }
       },
-      "reason": "WD0.333 won the matched E8 gate with validation3.251 versus WD1.0 validation3.286, so both WDs remain eligible. Healthy four-node WD0.333 E12 is running from exact pre-decay step1716; train CE3.064 and grad norm0.1414 were finite at step2115 with no skipped optimizer step.",
+      "reason": "WD0.333 won the matched E8 gate with validation3.251 versus WD1.0 validation3.286, so both WDs remain eligible. Healthy four-node WD0.333 E12 is running from exact pre-decay step1716 and reached step2520; train CE2.969 and grad norm0.1579 were finite with no skipped optimizer step. WD1.0 waits at its exact step1716.",
       "beaker": "01M04P55JH7SKRX7WSN4V8YZPS",
       "experiment": "01M04P55JH7SKRX7WSN4V8YZPS",
       "jobs": [
