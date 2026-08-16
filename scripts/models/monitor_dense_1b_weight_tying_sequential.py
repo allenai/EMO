@@ -115,7 +115,9 @@ def refresh(report: dict[str, Any], sequential: dict[str, Any]) -> str:
         logs = common.experiment_logs(experiment_id)
         sections = stage_sections(logs)
     stages_by_epoch = {int(stage["epoch"]): stage for stage in sequential["stages"]}
-    completed_epochs = []
+    completed_epochs = sorted(
+        epoch for epoch, stage in stages_by_epoch.items() if stage.get("status") == "complete"
+    )
     coordinate = next(run for run in report["runs"] if run["id"] == sequential["coordinateRunId"])
     for epoch, section in sections.items():
         stage = stages_by_epoch[epoch]
@@ -123,13 +125,15 @@ def refresh(report: dict[str, Any], sequential: dict[str, Any]) -> str:
         # later contain an open fragment from a lagging replica followed by a
         # newer stage, so re-parsing finalized stages risks mixing their metrics.
         if stage.get("status") == "complete":
-            completed_epochs.append(epoch)
+            if epoch not in completed_epochs:
+                completed_epochs.append(epoch)
             continue
         parsed = parse_stage(epoch, section)
         stage.update(parsed)
         if parsed["status"] != "complete":
             continue
-        completed_epochs.append(epoch)
+        if epoch not in completed_epochs:
+            completed_epochs.append(epoch)
         coordinate.setdefault("results", {})[str(epoch)] = {
             key: value for key, value in parsed.items() if key != "progress"
         } | {
