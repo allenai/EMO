@@ -56,14 +56,28 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workspace", default="ai2/flex2")
     parser.add_argument("--priority", default="urgent")
     parser.add_argument("--print-only", action="store_true")
+    parser.add_argument(
+        "--resume-wd1-e16-only",
+        action="store_true",
+        help=(
+            "resume an authorized simBS256 WD1.0 branch from its "
+            "healthy E12 pre-decay checkpoint after a chain-control failure"
+        ),
+    )
     args = parser.parse_args()
     if not re.fullmatch(r"[0-9a-f]{40}", args.revision):
         parser.error("--revision must be a full 40-character SHA")
     if args.kind == "local-sgd":
         if (args.simulated_sequences, args.init_epoch) not in LOCAL_NAMES:
             parser.error("LocalSGD requires one authorized simBS/init pair")
+        if args.resume_wd1_e16_only and (
+            args.simulated_sequences != 256 or args.init_epoch not in (2, 4)
+        ):
+            parser.error("--resume-wd1-e16-only is authorized only for simBS256")
         expected_name = LOCAL_NAMES[(args.simulated_sequences, args.init_epoch)]
     else:
+        if args.resume_wd1_e16_only:
+            parser.error("--resume-wd1-e16-only is a LocalSGD-only recovery")
         if args.simulated_sequences is not None or args.init_epoch is not None:
             parser.error("the DiLoCo job contains both init paths; omit simBS/init")
         expected_name = DILOCO_NAME
@@ -440,9 +454,14 @@ def paired_local_wd_commands(
             continue
         own_file = f"{metric_dir}/e{target}-wd0.333.val"
         peer_file = f"{metric_dir}/e{target}-wd1.0.val"
+        decision_file = f"{metric_dir}/e{target}-wd-gate.decision"
+        decision_tmp = f"{metric_dir}/.e{target}-wd-gate.decision.tmp"
         commands.extend(
             [
-                f'if [ "{leader}" = 0 ] && [ ! -f {shlex.quote(prune_file)} ]; then',
+                f'if [ "{leader}" = 0 ]; then',
+                f"if [ -f {shlex.quote(prune_file)} ]; then",
+                f"printf '%s\\n' prune > {shlex.quote(decision_tmp)}",
+                "else",
                 shlex.join(["test", "-s", own_file]),
                 shlex.join(["test", "-s", peer_file]),
                 f"wd0333_ce=$(sed -n 1p {shlex.quote(own_file)})",
@@ -453,8 +472,18 @@ def paired_local_wd_commands(
                 + "; then",
                 f'echo "WD_GATE_PRUNE wd=0.333 after=E{target}"',
                 f"touch {shlex.quote(prune_file)}",
+                f"printf '%s\\n' prune > {shlex.quote(decision_tmp)}",
+                "else",
+                f"printf '%s\\n' keep > {shlex.quote(decision_tmp)}",
                 "fi",
                 "fi",
+                f"mv {shlex.quote(decision_tmp)} {shlex.quote(decision_file)}",
+                "fi",
+                f"for gate_wait in $(seq 1 720); do test -s {shlex.quote(decision_file)} && break; sleep 1; done",
+                shlex.join(["test", "-s", decision_file]),
+                f"gate_decision=$(sed -n 1p {shlex.quote(decision_file)})",
+                "test \"${gate_decision}\" = keep || test \"${gate_decision}\" = prune",
+                f'echo "WD_GATE_SHARED_DECISION target=E{target} decision=${{gate_decision}}"',
             ]
         )
     commands.extend(
@@ -538,7 +567,49 @@ def build_spec(args: argparse.Namespace) -> dict[str, Any]:
     if args.kind == "local-sgd":
         init = args.init_epoch
         assert init is not None and args.simulated_sequences is not None
-        if sim == 64:
+        if args.resume_wd1_e16_only:
+            commands = ["set -euo pipefail"]
+            commands.extend(
+                stage_command(
+                    script,
+                    source_arguments,
+                    method=method,
+                    sim=sim,
+                    init=init,
+                    wd="1.0",
+                    start=12,
+                    target=16,
+                    source=f"{output_path('local_sgd', sim, init, '1.0')}/step2575",
+                    output=output_path("local_sgd", sim, init, "1.0"),
+                    conventional=False,
+                    revision=args.revision,
+                    chain_name=args.name,
+                    nodes=4,
+                    rdzv_id=hashlib.sha256(
+                        f"{args.name}:{init}:1.0:16".encode()
+                    ).hexdigest()[:12],
+                    rdzv_port=29641,
+                    metric_dir=metric_dir,
+                )[0]
+            )
+            commands.extend(
+                [
+                    f'if [ "${{BEAKER_REPLICA_RANK:-0}}" = 0 ]; then '
+                    f"touch {shlex.quote(metric_dir + f'/done-init{init}-wd1.0')}; fi",
+                    f'echo "LOCAL_UPDATE_CHAIN_COMPLETE init=E{init} wd=1.0 recovery=true"',
+                ]
+            )
+            tasks.append(
+                training_task(
+                    base_task,
+                    name="local-sgd-wd1p0-e16-recovery",
+                    commands=commands,
+                    nodes=4,
+                    revision=args.revision,
+                    priority=args.priority,
+                )
+            )
+        elif sim == 64:
             commands = branch_commands(
                 script, source_arguments, method=method, sim=sim, init=init, wd="0.333",
                 revision=args.revision, chain_name=args.name, metric_dir=metric_dir,
