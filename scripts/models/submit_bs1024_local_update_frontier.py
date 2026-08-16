@@ -7,6 +7,7 @@ import argparse
 import copy
 import hashlib
 import json
+import math
 import re
 import shlex
 import subprocess
@@ -14,12 +15,12 @@ import sys
 from pathlib import Path
 from typing import Any
 
-REVISION = "74b1bf73903ecf5db09c83ed42e36ed449269f90"
 BRANCH = "sewonm/icsl"
-GLOBAL_SEQUENCES = 1024
 SEQUENCE_LENGTH = 4096
-GLOBAL_BATCH_TOKENS = GLOBAL_SEQUENCES * SEQUENCE_LENGTH
 RANK_MICROBATCH_TOKENS = 4 * SEQUENCE_LENGTH
+REFERENCE_GLOBAL_SEQUENCES = 1024
+REFERENCE_GLOBAL_BATCH_TOKENS = REFERENCE_GLOBAL_SEQUENCES * SEQUENCE_LENGTH
+WSD_WARMUP_TOKENS = 24 * REFERENCE_GLOBAL_BATCH_TOKENS
 TRAIN_MANIFEST = "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b.json"
 ROOT = "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b"
 FRONTIERS = {
@@ -47,6 +48,9 @@ def parse_args() -> argparse.Namespace:
         "--method", choices=("local_sgd", "diloco", "sequential_replay"), required=True
     )
     parser.add_argument("--simulated-sequences", type=int, choices=(64, 256), required=True)
+    parser.add_argument("--global-sequences", type=int, choices=(256, 1024), default=1024)
+    parser.add_argument("--lr", choices=("1e-3", "5e-4"), default="1e-3")
+    parser.add_argument("--revision", required=True)
     parser.add_argument("--sync-interval", type=int, choices=(4, 32), default=32)
     parser.add_argument("--diloco-outer-lr", type=float, default=0.7)
     parser.add_argument("--diloco-outer-momentum", type=float, default=0.9)
@@ -68,6 +72,12 @@ def parse_args() -> argparse.Namespace:
     sequence = (2, 4, 8, 12, 16, 20, 24)
     if sequence.index(args.target_epoch) != sequence.index(args.start_epoch) + 1:
         parser.error("target epoch must be the next authorized frontier")
+    if args.global_sequences % args.simulated_sequences != 0:
+        parser.error("global sequences must be divisible by simulated sequences")
+    if args.global_sequences // args.simulated_sequences > 16:
+        parser.error("this launcher supports at most 16 sequential/local replicas")
+    if not re.fullmatch(r"[0-9a-f]{40}", args.revision):
+        parser.error("--revision must be a full 40-character commit SHA")
     expected_source_step = FRONTIERS[args.start_epoch][0]
     if not args.source_checkpoint.endswith(f"/step{expected_source_step}"):
         parser.error(f"source must be exact pre-decay step{expected_source_step}")
@@ -82,8 +92,8 @@ def parse_args() -> argparse.Namespace:
         expected = conventional_source
         if not args.source_checkpoint.endswith(expected):
             parser.error(f"conventional transition source must end with {expected}")
-        if f"init=bs1024e{args.start_epoch}_lr1e-3_wd{args.wd}" not in args.output:
-            parser.error("conventional transition output must encode its exact initialization epoch")
+        if f"init=bs1024e{args.start_epoch}_lr1e-3" not in args.output or f"_wd{args.wd}" not in args.output:
+            parser.error("conventional transition output must encode its exact initialization epoch and WD")
     return args
 
 
@@ -137,9 +147,28 @@ def outer_steps(source_step: int, pre_decay: int, endpoint: int, inner_steps: in
     return steps
 
 
+def mapped_frontier_steps(args: argparse.Namespace) -> tuple[int, int]:
+    """Map reference BS1024 frontier token coordinates onto the configured batch."""
+    source_step = FRONTIERS[args.start_epoch][0]
+    source_tokens = source_step * REFERENCE_GLOBAL_BATCH_TOKENS
+    global_batch_tokens = args.global_sequences * SEQUENCE_LENGTH
+    pre_decay_delta = (
+        FRONTIERS[args.target_epoch][0] * REFERENCE_GLOBAL_BATCH_TOKENS
+        - source_tokens
+    )
+    if pre_decay_delta % global_batch_tokens:
+        raise ValueError("pre-decay token coordinate is not exactly representable")
+    pre_decay = source_step + pre_decay_delta // global_batch_tokens
+    endpoint = source_step + math.ceil(
+        (args.target_epoch * 1_000_000_000 - source_tokens) / global_batch_tokens
+    )
+    return pre_decay, endpoint
+
+
 def training_arguments(
     source: list[str], args: argparse.Namespace, pre_decay: int, endpoint: int
 ) -> list[str]:
+    global_batch_tokens = args.global_sequences * SEQUENCE_LENGTH
     excluded = (
         "--trainer.load_path=",
         "--trainer.load_trainer_state=",
@@ -162,20 +191,22 @@ def training_arguments(
         (
             "--trainer.callbacks.wandb.tags=",
             "--trainer.callbacks.wandb.tags="
-            f"[pretraining,step1,local-update,bs1024,simbs{args.simulated_sequences},"
-            f"{args.method},h{args.sync_interval},dynamic-repacking,e{args.target_epoch},lr1e-3,wd{args.wd}]",
+            f"[pretraining,step1,local-update,bs{args.global_sequences},simbs{args.simulated_sequences},"
+            f"{args.method},h{args.sync_interval},dynamic-repacking,e{args.target_epoch},lr{args.lr},wd{args.wd}]",
         ),
         ("--trainer.callbacks.checkpointer.fixed_steps=", f"--trainer.callbacks.checkpointer.fixed_steps=[{pre_decay}]"),
-        ("--data_loader.global_batch_size=", f"--data_loader.global_batch_size={GLOBAL_BATCH_TOKENS}"),
+        ("--data_loader.global_batch_size=", f"--data_loader.global_batch_size={global_batch_tokens}"),
         ("--data_loader.restore_data_order_from_state=", "--data_loader.restore_data_order_from_state=true"),
         ("--data_loader.ignore_fingerprint_mismatch=", "--data_loader.ignore_fingerprint_mismatch=false"),
         ("--train_module.rank_microbatch_size=", f"--train_module.rank_microbatch_size={RANK_MICROBATCH_TOKENS}"),
         (
             "--train_module.scheduler=",
-            "--train_module.scheduler={_CLASS_: olmo_core.optim.scheduler.WSD, units: steps, warmup: 24, decay_fraction: 0.1}",
+            "--train_module.scheduler={_CLASS_: olmo_core.optim.scheduler.WSD, units: tokens, "
+            f"warmup: {WSD_WARMUP_TOKENS}, decay_fraction: 0.1}}",
         ),
         ("--train_module.optim.weight_decay=", f"--train_module.optim.weight_decay={args.wd}"),
-        ("--lr=", "--lr=1e-3"),
+        ("--train_module.optim.fixed_fields=", "--train_module.optim.fixed_fields=[initial_lr,lr]"),
+        ("--lr=", f"--lr={args.lr}"),
     )
     for prefix, replacement in replacements:
         values = upsert(values, prefix, replacement)
@@ -186,10 +217,11 @@ def training_arguments(
             "--trainer.load_optim_state=true",
             "--trainer.prefer_explicit_load_path=true",
             "--trainer.reset_data_loader_state_on_load_path=false",
-            "--train_module.validate_optimizer_hyperparameters_on_load=true",
+            "--train_module.validate_optimizer_hyperparameters_on_load="
+            + ("true" if args.lr == "1e-3" else "false"),
             "--trainer.callbacks.checkpointer.save_interval=1000000000",
             "--trainer.callbacks.checkpointer.ephemeral_save_interval=999999999",
-            f"--train_module.batch_simulation.global_batch_size={GLOBAL_BATCH_TOKENS}",
+            f"--train_module.batch_simulation.global_batch_size={global_batch_tokens}",
             f"--train_module.batch_simulation.simulated_batch_size={args.simulated_sequences * SEQUENCE_LENGTH}",
             "--train_module.batch_simulation.seed=12536",
             "--train_module.batch_simulation.recalibrate_second_moment_on_start="
@@ -241,8 +273,9 @@ def build_spec(spec: dict[str, Any], script: str, train_args: list[str], args: a
     spec = copy.deepcopy(spec)
     task = copy.deepcopy(spec["tasks"][0])
     spec["tasks"] = [task]
-    pre_decay, endpoint = FRONTIERS[args.target_epoch]
-    nodes = 2 if args.simulated_sequences == 64 else 1
+    pre_decay, endpoint = mapped_frontier_steps(args)
+    replica_packets = args.global_sequences // args.simulated_sequences
+    nodes = 2 if replica_packets > 8 else 1
     source_step = FRONTIERS[args.start_epoch][0]
     preflight = [
         "set -euo pipefail",
@@ -250,7 +283,7 @@ def build_spec(spec: dict[str, Any], script: str, train_args: list[str], args: a
         shlex.join(["test", "-f", TRAIN_MANIFEST]),
         shlex.join(["test", "!", "-e", f"{args.output}/step{pre_decay}"]),
         shlex.join(["test", "!", "-e", f"{args.output}/step{endpoint}"]),
-        f'test "$(git rev-parse HEAD)" = "{REVISION}"',
+        f'test "$(git rev-parse HEAD)" = "{args.revision}"',
         shlex.join(["python", script, Path(args.output).name, "--dry-run", *train_args]),
     ]
     if args.method == "diloco":
@@ -299,7 +332,7 @@ def build_spec(spec: dict[str, Any], script: str, train_args: list[str], args: a
         if env.get("name") not in blocked
         and not (str(env.get("name", "")).startswith("BEAKER_") and env.get("name") != "BEAKER_TOKEN")
     ]
-    set_env(task, "GIT_REF", REVISION)
+    set_env(task, "GIT_REF", args.revision)
     set_env(task, "GIT_BRANCH", BRANCH)
     set_env(task, "NUM_NODES", str(nodes))
     if nodes == 2:
@@ -328,13 +361,13 @@ def build_spec(spec: dict[str, Any], script: str, train_args: list[str], args: a
 
 def main() -> None:
     args = parse_args()
-    pre_decay, endpoint = FRONTIERS[args.target_epoch]
+    pre_decay, endpoint = mapped_frontier_steps(args)
     spec = source_spec(args.method, args.simulated_sequences)
     script, source = extract_training(spec)
     train_args = training_arguments(source, args, pre_decay, endpoint)
     spec = build_spec(spec, script, train_args, args)
     shell = spec["tasks"][0]["arguments"][2]
-    required = [args.source_checkpoint, f"step{pre_decay}", f"step{endpoint}", REVISION]
+    required = [args.source_checkpoint, f"step{pre_decay}", f"step{endpoint}", args.revision]
     missing = [value for value in required if value not in shell]
     if missing:
         raise RuntimeError(f"built spec missing guards: {missing}")
