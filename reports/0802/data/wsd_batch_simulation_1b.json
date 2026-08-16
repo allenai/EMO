@@ -9121,7 +9121,7 @@
       "wd": "0.333",
       "status": "running",
       "healthStatus": "active",
-      "currentStep": 2960,
+      "currentStep": 3105,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e4_lr1e-3_wd0.333/step1716",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e4_lr1e-3_wd0.333",
@@ -9167,7 +9167,7 @@
           "reason": "Healthy E12 endpoint with full DCLM and nine-task downstream evaluation recovered from durable Beaker logs. The r03 chain then resumed E16 from exact pre-decay step2575."
         }
       },
-      "reason": "Healthy E12 completed with train2.881, validation3.262 and gap+0.381 plus full downstream metrics. E16 is running from exact native pre-decay step2575 and reached step2960 with finite CE/gradients and no skipped step.",
+      "reason": "Healthy E12 completed with train2.881, validation3.262 and gap+0.381 plus full downstream metrics. E16 is running from exact native pre-decay step2575 and reached step3105 with finite CE/gradients and no skipped step.",
       "previousAttempts": [
         {
           "attempt": "r02",
@@ -9744,7 +9744,7 @@
       "wd": "0.333",
       "status": "running",
       "healthStatus": "active",
-      "currentStep": 465,
+      "currentStep": 600,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step428",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_olr0.5_om0.7_vrecal_simbs64_init=bs1024e2_lr1e-3_wd0.333",
@@ -9755,7 +9755,7 @@
       "dilocoOuterLr": 0.5,
       "dilocoOuterMomentum": 0.7,
       "results": {},
-      "reason": "All four nodes allocated with 32 ranks at exact revision903ca084. E2-init loaded exact conventional step428 with one-time ratio16 v-recalibration; step465 train CE4.303 and grad norm0.1996 are finite with no skipped step.",
+      "reason": "All four nodes allocated with 32 ranks at exact revision903ca084. E2-init loaded exact conventional step428 with one-time ratio16 v-recalibration; progress reached step600, with audited step465 train CE4.303 and grad norm0.1996 finite and no skipped step.",
       "previousAttempts": [
         {
           "attempt": "r02",
@@ -9855,7 +9855,7 @@
       "simulatedBatchSequences": 256,
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "planned",
+      "status": "queued",
       "healthStatus": "active",
       "currentStep": 2575,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
@@ -9867,7 +9867,7 @@
       "secondMomentRecalibrationRatio": 4,
       "wdGateDecision": "WD1.0 selected at E12: validation3.211 versus WD0.333 validation3.265.",
       "results": {},
-      "reason": "Registered four-node WD1.0-only E16 recovery from exact healthy native pre-decay step2575. The canonical output directory is unchanged; synchronization is repaired before submission.",
+      "reason": "Corrected four-node WD1.0-only E16 recovery is queued from exact healthy native pre-decay step2575. Print-audit verified replicas4/nnodes4, revision903ca084, and the unchanged canonical output path.",
       "previousAttempts": [
         {
           "attempt": "r02",
@@ -9883,7 +9883,16 @@
           "optimizerStepsCompleted": 0,
           "reason": "After both healthy E12 endpoints, WD1.0 won validation 3.211 versus 3.265. Rank0 selected WD1.0 E16 while another replica raced ahead on WD0.333, so the four-node rendezvous failed before any E16 optimizer step. E12 checkpoints remain healthy and canonical."
         }
-      ]
+      ],
+      "beaker": "01M056SX3R2BQDH8P3BSMNVWRH",
+      "experiment": "01M056SX3R2BQDH8P3BSMNVWRH",
+      "jobs": [
+        "01M056SX8831V3R4GDH3229V1W",
+        "01M056SXC2QWQCDRXG71DSZ1K2",
+        "01M056SXG2SF3XP5QFWJTKN4QM",
+        "01M056SXM1EHHVNRMYD7Y98D68"
+      ],
+      "submittedAt": "2026-08-16T11:52:00Z"
     },
     {
       "planId": "bs1024-ls-h4-sim256-e2init-chain-e16-r03-wd1.0",
@@ -9899,7 +9908,7 @@
       "simulatedBatchSequences": 256,
       "lr": "1e-3",
       "wd": "1.0",
-      "status": "planned",
+      "status": "queued",
       "healthStatus": "active",
       "currentStep": 2575,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
@@ -9911,7 +9920,7 @@
       "secondMomentRecalibrationRatio": 4,
       "wdGateDecision": "WD1.0 selected at E12: validation3.213 versus WD0.333 validation3.251.",
       "results": {},
-      "reason": "Registered four-node WD1.0-only E16 recovery from exact healthy native pre-decay step2575. The canonical output directory is unchanged; synchronization is repaired before submission.",
+      "reason": "Corrected four-node WD1.0-only E16 recovery is queued from exact healthy native pre-decay step2575. Print-audit verified replicas4/nnodes4, revision903ca084, and the unchanged canonical output path.",
       "previousAttempts": [
         {
           "attempt": "r02",
@@ -9927,7 +9936,16 @@
           "optimizerStepsCompleted": 0,
           "reason": "After both healthy E12 endpoints, WD1.0 won validation3.213 versus3.251. Two replicas selected WD1.0 E16 while two raced ahead on WD0.333, making a four-node rendezvous impossible before any E16 optimizer step."
         }
-      ]
+      ],
+      "beaker": "01M056SV0EMEXTSCWSF8RHP4F5",
+      "experiment": "01M056SV0EMEXTSCWSF8RHP4F5",
+      "jobs": [
+        "01M056SV49CRVQDD14JY2MY1DD",
+        "01M056SV7RG7EANJSDJCQA0E9X",
+        "01M056SVBJ4V0MB69APH68RWB0",
+        "01M056SVF63A3ZR0HR9ZD41XKE"
+      ],
+      "submittedAt": "2026-08-16T11:52:00Z"
     }
   ]
 }
