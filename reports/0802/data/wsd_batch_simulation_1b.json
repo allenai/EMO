@@ -9121,7 +9121,7 @@
       "wd": "0.333",
       "status": "running",
       "healthStatus": "active",
-      "currentStep": 3105,
+      "currentStep": 3494,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e4_lr1e-3_wd0.333/step1716",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e4_lr1e-3_wd0.333",
@@ -9167,7 +9167,7 @@
           "reason": "Healthy E12 endpoint with full DCLM and nine-task downstream evaluation recovered from durable Beaker logs. The r03 chain then resumed E16 from exact pre-decay step2575."
         }
       },
-      "reason": "Healthy E12 completed with train2.881, validation3.262 and gap+0.381 plus full downstream metrics. E16 is running from exact native pre-decay step2575 and reached step3105 with finite CE/gradients and no skipped step.",
+      "reason": "Healthy E12 completed with train2.881, validation3.262 and gap+0.381 plus full downstream metrics. E16 is running from exact native pre-decay step2575; step3432 saved successfully and training reached step3494 with finite CE/gradients and no skipped step.",
       "previousAttempts": [
         {
           "attempt": "r02",
@@ -9744,7 +9744,7 @@
       "wd": "0.333",
       "status": "running",
       "healthStatus": "active",
-      "currentStep": 600,
+      "currentStep": 858,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step428",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_olr0.5_om0.7_vrecal_simbs64_init=bs1024e2_lr1e-3_wd0.333",
@@ -9755,7 +9755,7 @@
       "dilocoOuterLr": 0.5,
       "dilocoOuterMomentum": 0.7,
       "results": {},
-      "reason": "All four nodes allocated with 32 ranks at exact revision903ca084. E2-init loaded exact conventional step428 with one-time ratio16 v-recalibration; progress reached step600, with audited step465 train CE4.303 and grad norm0.1996 finite and no skipped step.",
+      "reason": "All four nodes allocated with 32 ranks at exact revision903ca084. E2-init loaded exact conventional step428 with one-time ratio16 v-recalibration; training reached step858 with finite CE/gradients and began saving the exact pre-decay checkpoint. One optimizer step was skipped at step810, followed by continued finite training with no logged NaN/Inf or error.",
       "previousAttempts": [
         {
           "attempt": "r02",
