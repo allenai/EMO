@@ -1,17 +1,14 @@
 {
   "updated": "2026-08-15",
-  "setup": "Dense 1B; sealed 1B-token training pool; sequence length4096; dynamic repacking; WSD with10% terminal decay. The current ablation evaluates sequential replica-gradient replay at global BS1024, simBS64, BS1024 E2 initialization, LR1e-3, and WD0.333 through E4 against matched LocalSGD H4.",
+  "setup": "Dense 1B; sealed 1B-token training pool; sequence length4096; dynamic repacking; token-based WSD with10% terminal decay. The active ablation compares sequential replica-gradient replay with four packets and maximum staleness3 at BS1024/simBS256 and BS256/simBS64, each at LR1e-3 and5e-4, from the exact conventional BS1024 DR E4 pre-decay checkpoint through E8.",
   "selection": {
-    "targetEpoch": 16,
-    "learningRate": "1e-3",
-    "weightDecays": [
-      "0.1",
-      "0.3",
-      "0.333",
-      "1.0"
+    "targetEpoch": 8,
+    "learningRates": [
+      "1e-3",
+      "5e-4"
     ],
-    "criterion": "Run one sequential replica-gradient replay ablation from the exact conventional BS1024 DR E2 pre-decay checkpoint through E4, then compare its train CE, validation CE, gap, downstream metrics, and avg8 BPB against matched LocalSGD H4 simBS64 WD0.333 E4. Do not continue it beyond E4 without fresh authorization.",
-    "higherWeightDecayExcluded": false
+    "weightDecay": "0.333",
+    "criterion": "Compare train CE, held-out DCLM validation CE, gap, downstream metrics, and avg8 BPB at matched E8 tokens across the four replay-window4 runs."
   },
   "columns": [
     {
@@ -321,6 +318,32 @@
       "outerMomentum": 0.7,
       "secondMomentRecalibration": true,
       "secondMomentRecalibrationRatio": 16,
+      "dynamicRepacking": true
+    },
+    {
+      "key": "post_e4_sequential_replay_bs1024_dr_simbs256",
+      "label": "Sequential replay (BS1024, simBS256, BS1024 E4 init, DR)",
+      "tableLabel": "Sequential replay\nBS1024\nsimBS256\nBS1024 E4 init\nDR",
+      "globalBatchSequences": 1024,
+      "simulatedBatchSequences": 256,
+      "initialization": "BS1024 DR E4 exact pre-decay checkpoint",
+      "replayPackets": 4,
+      "maximumGradientStaleness": 3,
+      "secondMomentRecalibration": true,
+      "secondMomentRecalibrationRatio": 4,
+      "dynamicRepacking": true
+    },
+    {
+      "key": "post_e4_sequential_replay_bs256_dr_simbs64",
+      "label": "Sequential replay (BS256, simBS64, BS1024 E4 init, DR)",
+      "tableLabel": "Sequential replay\nBS256\nsimBS64\nBS1024 E4 init\nDR",
+      "globalBatchSequences": 256,
+      "simulatedBatchSequences": 64,
+      "initialization": "BS1024 DR E4 exact pre-decay checkpoint",
+      "replayPackets": 4,
+      "maximumGradientStaleness": 3,
+      "secondMomentRecalibration": true,
+      "secondMomentRecalibrationRatio": 4,
       "dynamicRepacking": true
     }
   ],
@@ -7630,8 +7653,28 @@
           "validation": 3.296,
           "gap": 0.18,
           "avg8Bpb": 1.4510375,
-          "downstream": {"arc_challenge": 24.41, "arc_easy": 47.89, "boolq": 57.95, "csqa": 39.39, "hellaswag": 33.14, "openbookqa": 23.0, "piqa": 64.53, "socialiqa": 43.35, "winogrande": 49.64},
-          "downstreamBpb": {"arc_challenge": 1.552, "arc_easy": 1.618, "boolq": 2.084, "csqa": 1.525, "hellaswag": 0.9633, "openbookqa": 1.755, "piqa": 1.311, "socialiqa": 1.324, "winogrande": 1.56},
+          "downstream": {
+            "arc_challenge": 24.41,
+            "arc_easy": 47.89,
+            "boolq": 57.95,
+            "csqa": 39.39,
+            "hellaswag": 33.14,
+            "openbookqa": 23.0,
+            "piqa": 64.53,
+            "socialiqa": 43.35,
+            "winogrande": 49.64
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.552,
+            "arc_easy": 1.618,
+            "boolq": 2.084,
+            "csqa": 1.525,
+            "hellaswag": 0.9633,
+            "openbookqa": 1.755,
+            "piqa": 1.311,
+            "socialiqa": 1.324,
+            "winogrande": 1.56
+          },
           "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e2_lr1e-3_wd0.333/step1716",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e2_lr1e-3_wd0.333/step1908",
           "reason": "Healthy exit0 E8 endpoint with DCLM validation and all nine downstream evaluations recovered from durable Beaker logs."
@@ -7676,8 +7719,28 @@
           "validation": 3.285,
           "gap": 0.227,
           "avg8Bpb": 1.453175,
-          "downstream": {"arc_challenge": 26.76, "arc_easy": 46.67, "boolq": 59.76, "csqa": 39.89, "hellaswag": 33.91, "openbookqa": 24.4, "piqa": 64.58, "socialiqa": 43.14, "winogrande": 51.78},
-          "downstreamBpb": {"arc_challenge": 1.56, "arc_easy": 1.643, "boolq": 2.017, "csqa": 1.546, "hellaswag": 0.9584, "openbookqa": 1.753, "piqa": 1.301, "socialiqa": 1.307, "winogrande": 1.557},
+          "downstream": {
+            "arc_challenge": 26.76,
+            "arc_easy": 46.67,
+            "boolq": 59.76,
+            "csqa": 39.89,
+            "hellaswag": 33.91,
+            "openbookqa": 24.4,
+            "piqa": 64.58,
+            "socialiqa": 43.14,
+            "winogrande": 51.78
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.56,
+            "arc_easy": 1.643,
+            "boolq": 2.017,
+            "csqa": 1.546,
+            "hellaswag": 0.9584,
+            "openbookqa": 1.753,
+            "piqa": 1.301,
+            "socialiqa": 1.307,
+            "winogrande": 1.557
+          },
           "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e4_lr1e-3_wd0.333/step1716",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e4_lr1e-3_wd0.333/step1908",
           "reason": "Healthy exit0 E8 endpoint with DCLM validation and all nine downstream evaluations recovered from durable Beaker logs."
@@ -7716,8 +7779,28 @@
           "validation": 3.495,
           "gap": 0.03,
           "avg8Bpb": 1.5735,
-          "downstream": {"arc_challenge": 25.42, "arc_easy": 43.68, "boolq": 61.93, "csqa": 34.15, "hellaswag": 28.34, "openbookqa": 24.6, "piqa": 61.37, "socialiqa": 41.76, "winogrande": 50.67},
-          "downstreamBpb": {"arc_challenge": 1.675, "arc_easy": 1.824, "boolq": 2.521, "csqa": 1.707, "hellaswag": 1.03, "openbookqa": 1.869, "piqa": 1.419, "socialiqa": 1.447, "winogrande": 1.617},
+          "downstream": {
+            "arc_challenge": 25.42,
+            "arc_easy": 43.68,
+            "boolq": 61.93,
+            "csqa": 34.15,
+            "hellaswag": 28.34,
+            "openbookqa": 24.6,
+            "piqa": 61.37,
+            "socialiqa": 41.76,
+            "winogrande": 50.67
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.675,
+            "arc_easy": 1.824,
+            "boolq": 2.521,
+            "csqa": 1.707,
+            "hellaswag": 1.03,
+            "openbookqa": 1.869,
+            "piqa": 1.419,
+            "socialiqa": 1.447,
+            "winogrande": 1.617
+          },
           "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e2_lr1e-3_wd0.333/step858",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e2_lr1e-3_wd0.333/step954",
           "reason": "Healthy exit0 E4 endpoint with DCLM validation and all nine downstream evaluations recovered from durable Beaker logs."
@@ -7756,8 +7839,28 @@
           "validation": 3.251,
           "gap": 0.252,
           "avg8Bpb": 1.4342375,
-          "downstream": {"arc_challenge": 27.09, "arc_easy": 49.65, "boolq": 58.84, "csqa": 41.2, "hellaswag": 35.34, "openbookqa": 24.4, "piqa": 65.34, "socialiqa": 43.04, "winogrande": 51.3},
-          "downstreamBpb": {"arc_challenge": 1.524, "arc_easy": 1.593, "boolq": 1.94, "csqa": 1.549, "hellaswag": 0.9479, "openbookqa": 1.735, "piqa": 1.279, "socialiqa": 1.291, "winogrande": 1.555},
+          "downstream": {
+            "arc_challenge": 27.09,
+            "arc_easy": 49.65,
+            "boolq": 58.84,
+            "csqa": 41.2,
+            "hellaswag": 35.34,
+            "openbookqa": 24.4,
+            "piqa": 65.34,
+            "socialiqa": 43.04,
+            "winogrande": 51.3
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.524,
+            "arc_easy": 1.593,
+            "boolq": 1.94,
+            "csqa": 1.549,
+            "hellaswag": 0.9479,
+            "openbookqa": 1.735,
+            "piqa": 1.279,
+            "socialiqa": 1.291,
+            "winogrande": 1.555
+          },
           "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e4_lr1e-3_wd0.333/step1716",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e4_lr1e-3_wd0.333/step1908",
           "reason": "Healthy exit0 E8 endpoint with DCLM validation and all nine downstream evaluations recovered from durable Beaker logs."
@@ -7933,8 +8036,28 @@
           "validation": 3.265,
           "gap": 0.093,
           "avg8Bpb": 1.43425,
-          "downstream": {"arc_challenge": 25.08, "arc_easy": 48.25, "boolq": 58.84, "csqa": 40.54, "hellaswag": 35.3, "openbookqa": 26.8, "piqa": 66.1, "socialiqa": 42.43, "winogrande": 49.72},
-          "downstreamBpb": {"arc_challenge": 1.485, "arc_easy": 1.567, "boolq": 2.205, "csqa": 1.559, "hellaswag": 0.947, "openbookqa": 1.745, "piqa": 1.258, "socialiqa": 1.362, "winogrande": 1.551},
+          "downstream": {
+            "arc_challenge": 25.08,
+            "arc_easy": 48.25,
+            "boolq": 58.84,
+            "csqa": 40.54,
+            "hellaswag": 35.3,
+            "openbookqa": 26.8,
+            "piqa": 66.1,
+            "socialiqa": 42.43,
+            "winogrande": 49.72
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.485,
+            "arc_easy": 1.567,
+            "boolq": 2.205,
+            "csqa": 1.559,
+            "hellaswag": 0.947,
+            "openbookqa": 1.745,
+            "piqa": 1.258,
+            "socialiqa": 1.362,
+            "winogrande": 1.551
+          },
           "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_vrecal_simbs256_init=bs1024e4_lr1e-3_wd1.0/step2575",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_vrecal_simbs256_init=bs1024e4_lr1e-3_wd1.0/step2862",
           "reason": "Healthy exit0 E12 endpoint with DCLM validation and all nine downstream evaluations recovered from durable Beaker logs."
@@ -7956,7 +8079,10 @@
       "status": "complete",
       "healthStatus": "healthy",
       "beaker": "01M02Z7Z7860YEMS8R54V93PYR",
-      "jobs": ["01M02Z7ZB6JCVVJYWSK8JAB6FF", "01M02Z7ZENYFM4NAVAXWY2HF90"],
+      "jobs": [
+        "01M02Z7ZB6JCVVJYWSK8JAB6FF",
+        "01M02Z7ZENYFM4NAVAXWY2HF90"
+      ],
       "currentStep": 3815,
       "wandb": "lkupmn3s",
       "revision": "15d494fee454eda89884f6f0dc4535a0c0ad556d",
@@ -7972,15 +8098,41 @@
           "validation": 3.196,
           "gap": 0.248,
           "avg8Bpb": 1.3741375,
-          "downstream": {"arc_challenge": 25.75, "arc_easy": 52.46, "boolq": 58.62, "csqa": 44.72, "hellaswag": 36.83, "openbookqa": 26.4, "piqa": 66.16, "socialiqa": 42.53, "winogrande": 49.41},
-          "downstreamBpb": {"arc_challenge": 1.4, "arc_easy": 1.42, "boolq": 2.033, "csqa": 1.472, "hellaswag": 0.9291, "openbookqa": 1.705, "piqa": 1.246, "socialiqa": 1.289, "winogrande": 1.532},
+          "downstream": {
+            "arc_challenge": 25.75,
+            "arc_easy": 52.46,
+            "boolq": 58.62,
+            "csqa": 44.72,
+            "hellaswag": 36.83,
+            "openbookqa": 26.4,
+            "piqa": 66.16,
+            "socialiqa": 42.53,
+            "winogrande": 49.41
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.4,
+            "arc_easy": 1.42,
+            "boolq": 2.033,
+            "csqa": 1.472,
+            "hellaswag": 0.9291,
+            "openbookqa": 1.705,
+            "piqa": 1.246,
+            "socialiqa": 1.289,
+            "winogrande": 1.532
+          },
           "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h32_simbs64_init=bs1024e2_lr1e-3_wd0.333/step3432",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h32_simbs64_init=bs1024e2_lr1e-3_wd0.333/step3815",
           "reason": "Healthy exit0 E16 endpoint with DCLM validation and all nine downstream evaluations recovered from durable Beaker logs."
         }
       },
       "wdGateDecision": "WD0.333 wins matched E16 validation 3.196 versus WD1.0 3.212; both remain eligible for E20 after the full E16 matrix completes.",
-      "previousAttempts": [{"beaker": "01M01E2YQ3T8RY3N92G36W9B2N", "status": "neutral_infrastructure_failure", "reason": "Weka ENOSPC before the E16 pre-decay checkpoint completed."}],
+      "previousAttempts": [
+        {
+          "beaker": "01M01E2YQ3T8RY3N92G36W9B2N",
+          "status": "neutral_infrastructure_failure",
+          "reason": "Weka ENOSPC before the E16 pre-decay checkpoint completed."
+        }
+      ],
       "reason": "Healthy E16 retry completed and fully ingested; E20 is held until the full H32 E16 matrix completes."
     },
     {
@@ -7996,7 +8148,10 @@
       "status": "canceled",
       "healthStatus": "neutral_infrastructure_failure",
       "beaker": "01M02Z7ZKJE95RK2VBQCB3KEDW",
-      "jobs": ["01M02Z7ZQ7NNDECVNXHSWNZD1Y", "01M02Z7ZVS82CBZD2QJAJNCMAA"],
+      "jobs": [
+        "01M02Z7ZQ7NNDECVNXHSWNZD1Y",
+        "01M02Z7ZVS82CBZD2QJAJNCMAA"
+      ],
       "revision": "15d494fee454eda89884f6f0dc4535a0c0ad556d",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step858",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h32_simbs64_init=bs1024e4_lr1e-3_wd0.333",
@@ -8355,6 +8510,106 @@
         }
       ],
       "reason": "Completed E4 on both nodes at exit0 and retained step858/954 checkpoints, but the sequential replay trajectory is orange/nonviable: validation5.677 versus matched LocalSGD H4 validation3.579 (worse by2.098), train5.682 versus3.550 (worse by2.132), gap-0.005 versus+0.029, and avg8 BPB2.359875 versus1.6225 (worse by0.737375). Do not continue or retry unchanged."
+    },
+    {
+      "planId": "bs1024-e4init-sequential-replay-sim256-lr1e-3-wd0.333-e8",
+      "method": "post_e4_sequential_replay_bs1024_dr_simbs256",
+      "startEpoch": 4,
+      "targetEpoch": 8,
+      "batchSequences": 1024,
+      "simulatedBatchSequences": 256,
+      "lr": "1e-3",
+      "wd": "0.333",
+      "status": "planned",
+      "healthStatus": "planned",
+      "revision": "2d1eb3e9f779fab1ccdb662bfd56a235a72c5b8e",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step858",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs256_init=bs1024e4_lr1e-3_runlr1e-3_wd0.333",
+      "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs256_init=bs1024e4_lr1e-3_runlr1e-3_wd0.333/step1716",
+      "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs256_init=bs1024e4_lr1e-3_runlr1e-3_wd0.333/step1908",
+      "replayPackets": 4,
+      "maximumGradientStaleness": 3,
+      "recalibrateSecondMomentOnStart": true,
+      "secondMomentRecalibrationRatio": 4,
+      "sequentialReplayMicrobatchGradients": false,
+      "schedulerUnits": "tokens",
+      "results": {},
+      "reason": "Authorized E4-init to E8 sequential-replay window-4 ablation. Registered before submission; exact conventional step858 source, token-matched WSD frontier, and one-time Adam-v recalibration ratio4."
+    },
+    {
+      "planId": "bs1024-e4init-sequential-replay-sim256-lr5e-4-wd0.333-e8",
+      "method": "post_e4_sequential_replay_bs1024_dr_simbs256",
+      "startEpoch": 4,
+      "targetEpoch": 8,
+      "batchSequences": 1024,
+      "simulatedBatchSequences": 256,
+      "lr": "5e-4",
+      "wd": "0.333",
+      "status": "planned",
+      "healthStatus": "planned",
+      "revision": "2d1eb3e9f779fab1ccdb662bfd56a235a72c5b8e",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step858",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs256_init=bs1024e4_lr1e-3_runlr5e-4_wd0.333",
+      "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs256_init=bs1024e4_lr1e-3_runlr5e-4_wd0.333/step1716",
+      "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_sequential_replay_simbs256_init=bs1024e4_lr1e-3_runlr5e-4_wd0.333/step1908",
+      "replayPackets": 4,
+      "maximumGradientStaleness": 3,
+      "recalibrateSecondMomentOnStart": true,
+      "secondMomentRecalibrationRatio": 4,
+      "sequentialReplayMicrobatchGradients": false,
+      "schedulerUnits": "tokens",
+      "results": {},
+      "reason": "Authorized E4-init to E8 sequential-replay window-4 ablation. Registered before submission; exact conventional step858 source, token-matched WSD frontier, and one-time Adam-v recalibration ratio4."
+    },
+    {
+      "planId": "bs256-e4init-sequential-replay-sim64-lr1e-3-wd0.333-e8",
+      "method": "post_e4_sequential_replay_bs256_dr_simbs64",
+      "startEpoch": 4,
+      "targetEpoch": 8,
+      "batchSequences": 256,
+      "simulatedBatchSequences": 64,
+      "lr": "1e-3",
+      "wd": "0.333",
+      "status": "planned",
+      "healthStatus": "planned",
+      "revision": "2d1eb3e9f779fab1ccdb662bfd56a235a72c5b8e",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step858",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_sequential_replay_simbs64_init=bs1024e4_lr1e-3_runlr1e-3_wd0.333",
+      "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_sequential_replay_simbs64_init=bs1024e4_lr1e-3_runlr1e-3_wd0.333/step4290",
+      "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_sequential_replay_simbs64_init=bs1024e4_lr1e-3_runlr1e-3_wd0.333/step5056",
+      "replayPackets": 4,
+      "maximumGradientStaleness": 3,
+      "recalibrateSecondMomentOnStart": true,
+      "secondMomentRecalibrationRatio": 4,
+      "sequentialReplayMicrobatchGradients": false,
+      "schedulerUnits": "tokens",
+      "results": {},
+      "reason": "Authorized E4-init to E8 sequential-replay window-4 ablation. Registered before submission; exact conventional step858 source, token-matched WSD frontier, and one-time Adam-v recalibration ratio4."
+    },
+    {
+      "planId": "bs256-e4init-sequential-replay-sim64-lr5e-4-wd0.333-e8",
+      "method": "post_e4_sequential_replay_bs256_dr_simbs64",
+      "startEpoch": 4,
+      "targetEpoch": 8,
+      "batchSequences": 256,
+      "simulatedBatchSequences": 64,
+      "lr": "5e-4",
+      "wd": "0.333",
+      "status": "planned",
+      "healthStatus": "planned",
+      "revision": "2d1eb3e9f779fab1ccdb662bfd56a235a72c5b8e",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step858",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_sequential_replay_simbs64_init=bs1024e4_lr1e-3_runlr5e-4_wd0.333",
+      "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_sequential_replay_simbs64_init=bs1024e4_lr1e-3_runlr5e-4_wd0.333/step4290",
+      "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_sequential_replay_simbs64_init=bs1024e4_lr1e-3_runlr5e-4_wd0.333/step5056",
+      "replayPackets": 4,
+      "maximumGradientStaleness": 3,
+      "recalibrateSecondMomentOnStart": true,
+      "secondMomentRecalibrationRatio": 4,
+      "sequentialReplayMicrobatchGradients": false,
+      "schedulerUnits": "tokens",
+      "results": {},
+      "reason": "Authorized E4-init to E8 sequential-replay window-4 ablation. Registered before submission; exact conventional step858 source, token-matched WSD frontier, and one-time Adam-v recalibration ratio4."
     }
   ]
 }
