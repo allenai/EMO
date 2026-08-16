@@ -38,6 +38,7 @@ TEMPLATES = {
     ("diloco", 64): "01KZZ4BG861VPER8SFZXZK29AT",
     ("diloco", 256): "01KZZ4BTYFP6T7XHVJZK754DVG",
     ("sequential_replay", 64): "01KZZ4AQYSS6WDPCRV23853FW4",
+    ("sequential_replay", 128): "01KZZ4B4NAFV9YAKF1MJEKMWY4",
     ("sequential_replay", 256): "01KZZ4B4NAFV9YAKF1MJEKMWY4",
 }
 
@@ -47,8 +48,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--method", choices=("local_sgd", "diloco", "sequential_replay"), required=True
     )
-    parser.add_argument("--simulated-sequences", type=int, choices=(64, 256), required=True)
-    parser.add_argument("--global-sequences", type=int, choices=(256, 1024), default=1024)
+    parser.add_argument("--simulated-sequences", type=int, choices=(64, 128, 256), required=True)
+    parser.add_argument("--global-sequences", type=int, choices=(256, 512, 1024), default=1024)
     parser.add_argument("--lr", choices=("1e-3", "5e-4"), default="1e-3")
     parser.add_argument("--revision", required=True)
     parser.add_argument("--sync-interval", type=int, choices=(4, 32), default=32)
