@@ -1,6 +1,6 @@
 {
   "updated": "2026-08-16",
-  "setup": "Dense 1B; sealed repeated 1B-token DCLM pool; sequence length4096; global BS1024; dynamic repacking; LR1e-3; rank microbatch4; token-based WSD with10% terminal decay. The active persistent-chain program runs LocalSGD H4 over simBS64/256 and E2/E4 initialization through E16, plus DiLoCo H32 simBS64 outerLR0.5/momentum0.7 over both initializations through E16.",
+  "setup": "Dense 1B; sealed repeated 1B-token DCLM pool; sequence length4096; global BS1024; dynamic repacking; LR1e-3; rank microbatch4; token-based WSD with10% terminal decay. The four LocalSGD H4 simBS64/256 E2/E4-init chains are complete through E16. The active four-node DiLoCo H32 simBS64 outerLR0.5/momentum0.7 chain is running E2-init and then E4-init through E16.",
   "selection": {
     "targetEpoch": 16,
     "learningRate": "1e-3",
@@ -10120,9 +10120,9 @@
       "simulatedBatchSequences": 64,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "queued",
+      "status": "running",
       "healthStatus": "active",
-      "currentStep": 428,
+      "currentStep": 967,
       "revision": "4e42e7738394bde58b4409c53841d06f98f36c1a",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step428",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_olr0.5_om0.7_vrecal_simbs64_init=bs1024e2_lr1e-3_wd0.333",
@@ -10132,8 +10132,49 @@
       "secondMomentRecalibrationRatio": 16,
       "dilocoOuterLr": 0.5,
       "dilocoOuterMomentum": 0.7,
-      "results": {},
-      "reason": "Registered exact four-node recovery after correcting the Weka mount audit. Conventional step428 is present, the incomplete r03/r04 canonical residue is preserved under chain-control quarantine, and the canonical output path is clear. The chain will continue only through E16 from exact pre-decay checkpoints.",
+      "results": {
+        "4": {
+          "status": "complete",
+          "job": "01M05ZFP3XNW1RRDM3JCHBWV3G",
+          "wandb": "p7oe3tcy",
+          "train": 3.646,
+          "validation": 3.634,
+          "gap": -0.012,
+          "acc": 27.1,
+          "bpb": 1.071,
+          "avg8Bpb": 1.626875,
+          "downstream": {
+            "arc_challenge": 23.75,
+            "arc_easy": 42.11,
+            "boolq": 62.11,
+            "csqa": 31.53,
+            "hellaswag": 27.1,
+            "openbookqa": 22.0,
+            "piqa": 60.12,
+            "socialiqa": 41.4,
+            "winogrande": 50.99
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.708,
+            "arc_easy": 1.843,
+            "boolq": 2.429,
+            "csqa": 1.788,
+            "hellaswag": 1.071,
+            "openbookqa": 1.92,
+            "piqa": 1.462,
+            "socialiqa": 1.574,
+            "winogrande": 1.649
+          },
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_olr0.5_om0.7_vrecal_simbs64_init=bs1024e2_lr1e-3_wd0.333/step858",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_olr0.5_om0.7_vrecal_simbs64_init=bs1024e2_lr1e-3_wd0.333/step954",
+          "checkpointAvailability": "present",
+          "reason": "Healthy four-node E4 completion from exact conventional step428 with one-time ratio16 Adam second-moment recalibration. Exact pre-decay step858 was saved and endpoint step954 was evaluated; the native E8 resume from step858 is active."
+        }
+      },
+      "wandbRuns": {
+        "4": "p7oe3tcy"
+      },
+      "reason": "The corrected four-node recovery is healthy. E4 completed with train3.646, validation3.634, gap-0.012 and full downstream evaluation; E8 is running from the exact native pre-decay step858 checkpoint without repeated recalibration.",
       "recoveryProvenance": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/.chain-control/bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r05/quarantine/r03-r04-init2-canonical-output",
       "plannedAt": "2026-08-16T19:00:59Z",
       "submissionAttempts": [
@@ -10152,9 +10193,9 @@
         "01M05ZFPFQP5NX9VS3PDY4MFMV"
       ],
       "submittedAt": "2026-08-16T19:06:27.211765Z",
-      "schedulerStatus": "pending_capacity",
-      "schedulerAuditAt": "2026-08-16T19:06:27.211765Z",
-      "schedulerReason": "All four replica jobs exist and currently have only the created lifecycle timestamp; none has started or finalized yet."
+      "schedulerStatus": "running",
+      "schedulerAuditAt": "2026-08-16T23:48:15Z",
+      "schedulerReason": "All four replica jobs are running. E4 completed healthy and the exact native E8 resume is progressing around step967/1908 on all replicas."
     },
     {
       "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r05-init4-wd0.333",
@@ -10197,9 +10238,9 @@
         "01M05ZFPFQP5NX9VS3PDY4MFMV"
       ],
       "submittedAt": "2026-08-16T19:06:27.211765Z",
-      "schedulerStatus": "pending_capacity",
-      "schedulerAuditAt": "2026-08-16T19:06:27.211765Z",
-      "schedulerReason": "This branch shares the same four-node replica group and is sequenced behind the E2-init branch; no job has started or finalized yet."
+      "schedulerStatus": "sequenced_after_active_init2",
+      "schedulerAuditAt": "2026-08-16T23:48:15Z",
+      "schedulerReason": "The shared four-node jobs are running the E2-init branch. The E4-init branch has not begun and remains sequenced behind it."
     }
   ]
 }
