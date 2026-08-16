@@ -25,6 +25,10 @@ from .list_checkpointer import ListCheckpointerCallback
 from .metric_saver import MetricSaverCallback
 from .model_merger import ModelMergeCallback
 from .monkey_patcher import MonkeyPatcherCallback
+from .pool_pinned_lm_evaluator import (
+    PoolPinnedEvaluatorCallback,
+    PoolPinnedLMEvaluatorCallbackConfig,
+)
 from .post_train_eval import PostTrainEvalCallback
 from .profiler import ProfilerCallback
 from .sequence_length_scheduler import SequenceLengthSchedulerCallback
@@ -44,6 +48,8 @@ __all__ = [
     "ConsoleLoggerCallback",
     "EvaluatorCallback",
     "LMEvaluatorCallbackConfig",
+    "PoolPinnedEvaluatorCallback",
+    "PoolPinnedLMEvaluatorCallbackConfig",
     "DownstreamEvaluatorCallbackConfig",
     "FrozenExpertGradientMaskCallback",
     "FrozenWeightRestorerCallback",

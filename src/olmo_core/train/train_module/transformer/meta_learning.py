@@ -1,0 +1,543 @@
+"""
+Meta-learning (first-order MAML / FOMAML) train module for EMO pretraining.
+
+Per train step (``meta_mode`` = ``same_tokens`` or ``heldout``):
+
+1. **Inner phase** (selective): forward+backward every inner micro-batch with each document's
+   routing restricted to its router top-``inner_pool_size`` experts (the randpool router's
+   per-document pool pinned via ``meta_force_pool``). After the backward cycle ``.grad`` holds
+   the DP-reduced inner gradient aggregated over all documents in the global batch.
+2. **Pseudo-step**: an in-place SGD probe on the expert weights only,
+   ``theta'_exp = theta_exp - inner_lr * g_inner`` (router/attention/embeddings untouched).
+   The probe is temporary — it determines where the outer gradient is evaluated and is undone
+   before the real optimizer step.
+3. **Outer phase** (full model): forward+backward the same micro-batches (``same_tokens``) or the
+   other half of the rank's micro-batches (``heldout``) with all experts available
+   (``meta_force_pool`` = number of non-shared experts => the pool keep-mask keeps everything).
+   FSDP2's reduce-scatter *accumulates* into ``.grad``, so after this phase
+   ``.grad = lambda_inner * g_inner + g_outer(theta')``.
+4. **Restore**: expert weights are restored bitwise; the trainer's normal ``optim_step()`` then
+   consumes the accumulated gradients (first-order: the gradient evaluated at ``theta'`` is
+   applied to ``theta``).
+
+``meta_mode="vanilla"`` delegates to the parent ``train_batch`` untouched (bit-identical vanilla
+EMO — the baseline arm and a correctness oracle). ``meta_mode="outer_only"`` runs a single
+full-routing pass (the matching reference for ``inner_lr=0``).
+
+The pseudo-step is isolated in ``_apply_pseudo_step`` so a future second-order implementation can
+replace it with a differentiable update without touching the phase structure.
+
+Set ``EMO_META_CHECK_RESTORE=1`` to assert (bitwise) after every step that the expert weights were
+restored exactly to their pre-step values.
+"""
+
+import logging
+import os
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple, cast
+
+import torch
+import torch.distributed as dist
+import torch.distributed.checkpoint.state_dict as dist_cp_sd
+import torch.nn as nn
+
+from olmo_core.config import DType
+from olmo_core.data.utils import get_labels, split_batch
+from olmo_core.distributed.utils import get_local_tensor, is_distributed
+from olmo_core.exceptions import OLMoConfigurationError
+from olmo_core.nn.moe.twolevel_batchlb_reducedp_sharedexp_randpool_router import (
+    MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter,
+)
+from olmo_core.nn.transformer import Transformer
+from olmo_core.optim import SkipStepOptimizer
+from olmo_core.utils import move_to_device
+
+from ...common import ReduceType
+from .config import TransformerTrainModuleConfig
+from .train_module import TransformerTrainModule
+
+log = logging.getLogger(__name__)
+
+META_MODES = ("vanilla", "same_tokens", "heldout", "outer_only")
+
+_EXPERT_PARAM_SUFFIXES = (
+    "feed_forward_moe.experts.mlp.w1",
+    "feed_forward_moe.experts.mlp.w2",
+    "feed_forward_moe.experts.mlp.w3",
+)
+
+
+class MetaLearningTransformerTrainModule(TransformerTrainModule):
+    """
+    :class:`TransformerTrainModule` with a two-phase FOMAML train step. See the module docstring.
+
+    :param meta_mode: One of ``vanilla | same_tokens | heldout | outer_only``.
+    :param inner_lr: SGD step size of the pseudo-step (raw SGD on expert weights; NOT on the
+        AdamW-normalized scale of the outer lr).
+    :param inner_pool_size: Per-document expert pool pinned during the inner pass. ``None`` keeps
+        the router's vanilla random pool sampling on the inner pass.
+    :param lambda_inner: Weight of the direct inner-gradient contribution to the real update
+        (``0`` = pure FOMAML: the inner pass influences the update only through where the outer
+        gradient is evaluated).
+    :param lb_on_inner: Whether the inner pass computes/attaches the router aux losses (LB +
+        router z-loss) and accumulates router metrics. Default off: the outer pass alone carries
+        them, so per-step metrics aren't double-counted.
+    :param inner_grad_clip: Global-norm clip applied to the inner expert gradients before the
+        pseudo-step (and before the ``lambda_inner`` scaling of the expert grads). ``None``
+        disables.
+    :param log_grad_cosine: Record the inner/outer expert-gradient dot product and cosine each
+        step (one extra all-reduce of 3 scalars).
+    """
+
+    def __init__(
+        self,
+        *,
+        meta_mode: str = "same_tokens",
+        inner_lr: float = 0.0,
+        inner_pool_size: Optional[int] = 32,
+        lambda_inner: float = 0.0,
+        lb_on_inner: bool = False,
+        inner_grad_clip: Optional[float] = 1.0,
+        log_grad_cosine: bool = True,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+
+        if meta_mode not in META_MODES:
+            raise OLMoConfigurationError(
+                f"invalid meta_mode '{meta_mode}', expected one of {META_MODES}"
+            )
+        if meta_mode in ("same_tokens", "heldout") and inner_lr < 0:
+            raise OLMoConfigurationError("'inner_lr' must be >= 0")
+        if lambda_inner < 0:
+            raise OLMoConfigurationError("'lambda_inner' must be >= 0")
+
+        self.meta_mode = meta_mode
+        self.inner_lr = inner_lr
+        self.inner_pool_size = inner_pool_size
+        self.lambda_inner = lambda_inner
+        self.lb_on_inner = lb_on_inner
+        self.inner_grad_clip = inner_grad_clip
+        self.log_grad_cosine = log_grad_cosine
+
+        # Cache the randpool routers and the fused expert-weight parameters. Both survive FSDP2
+        # wrapping and per-block torch.compile (module structure and parameter names are kept).
+        self._meta_routers: List[MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter] = [
+            m
+            for m in self.model.modules()
+            if isinstance(m, MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter)
+        ]
+        self._expert_params: List[nn.Parameter] = [
+            p
+            for name, p in self.model.named_parameters()
+            if name.endswith(_EXPERT_PARAM_SUFFIXES) and p.requires_grad
+        ]
+
+        if self.meta_mode != "vanilla":
+            if not self._meta_routers:
+                raise OLMoConfigurationError(
+                    "MetaLearningTransformerTrainModule requires the randpool router "
+                    "(MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter) on every MoE block; "
+                    "none were found in the model."
+                )
+            if not self._expert_params:
+                raise OLMoConfigurationError(
+                    "no trainable expert parameters (*.feed_forward_moe.experts.mlp.w{1,2,3}) "
+                    "found in the model"
+                )
+            router = self._meta_routers[0]
+            self._num_nonshared_experts = router.num_experts - router.num_shared_experts
+            if (
+                self.inner_pool_size is not None
+                and not 0 < self.inner_pool_size <= self._num_nonshared_experts
+            ):
+                raise OLMoConfigurationError(
+                    f"'inner_pool_size' ({self.inner_pool_size}) must be in "
+                    f"[1, {self._num_nonshared_experts}] (number of non-shared experts)"
+                )
+            log.info(
+                f"Meta-learning train module: mode={self.meta_mode}, inner_lr={self.inner_lr}, "
+                f"inner_pool_size={self.inner_pool_size}, lambda_inner={self.lambda_inner}, "
+                f"lb_on_inner={self.lb_on_inner}, inner_grad_clip={self.inner_grad_clip}, "
+                f"{len(self._meta_routers)} routers, {len(self._expert_params)} expert params, "
+                f"{self._num_nonshared_experts} non-shared experts"
+            )
+
+    ##########
+    # Helpers
+    ##########
+
+    def _set_router_meta_state(self, force_pool: Optional[int], skip_aux: bool):
+        for r in self._meta_routers:
+            r.meta_force_pool = force_pool
+            r.meta_skip_aux = skip_aux
+
+    def _phase_loss_div(
+        self, micro_batches: List[Dict[str, Any]]
+    ) -> Tuple[torch.Tensor, torch.Tensor, int]:
+        """
+        Loss divisor for one phase's micro-batches, replicating the parent's semantics: number of
+        non-ignored label tokens, plus the full token count of filtered-out instances added back
+        (see the WARN comment in ``TransformerTrainModule.train_batch``).
+
+        Returns ``(div_factor, raw_tokens_for_loss, total_tokens)``.
+        """
+        raw = move_to_device(torch.tensor(0), self.device)
+        div = move_to_device(torch.tensor(0), self.device)
+        total = 0
+        for mb in micro_batches:
+            labels = mb["labels"]
+            total += labels.numel()
+            n = move_to_device((labels != self.label_ignore_index).sum(), self.device)
+            raw += n
+            div += n
+            if (instance_mask := mb.get("instance_mask")) is not None:
+                div += (~instance_mask).sum() * labels.shape[1]
+        return div, raw, total
+
+    def _reduce_scalar(self, value: torch.Tensor) -> torch.Tensor:
+        if is_distributed():
+            dist.all_reduce(value, group=self.dp_process_group)
+        return value
+
+    def _expert_global_sq_norm(self, locals_: List[torch.Tensor]) -> torch.Tensor:
+        """Global squared L2 norm over dim-0-sharded (disjoint-row) local shards."""
+        sq = torch.zeros((), device=self.device, dtype=torch.float32)
+        for t in locals_:
+            sq += t.float().pow(2).sum()
+        return self._reduce_scalar(sq)
+
+    def _apply_pseudo_step(self, grad_stash: Dict[nn.Parameter, torch.Tensor]):
+        """
+        Apply the (first-order) pseudo-step in place on the expert weights' local shards. A future
+        second-order variant replaces this (and the surrounding stash/restore) with a
+        differentiable update.
+        """
+        for p, g in grad_stash.items():
+            get_local_tensor(p.data).add_(g, alpha=-self.inner_lr)
+
+    #############
+    # Train step
+    #############
+
+    def train_batch(self, batch: Dict[str, Any], dry_run: bool = False):
+        if self.meta_mode == "vanilla":
+            return super().train_batch(batch, dry_run=dry_run)
+
+        check_restore = os.environ.get("EMO_META_CHECK_RESTORE") == "1"
+
+        self._set_model_mode("train")
+        if "labels" not in batch:
+            batch["labels"] = get_labels(batch, label_ignore_index=self.label_ignore_index)
+
+        seq_len = batch["input_ids"].shape[1]
+        if self.rank_microbatch_size < seq_len:
+            raise RuntimeError(
+                f"Microbatch size ({self.rank_microbatch_size}) is too small relative to sequence length ({seq_len})"
+            )
+        micro_batches = split_batch(batch, self.rank_microbatch_size // seq_len)
+
+        if self.meta_mode == "heldout":
+            if len(micro_batches) % 2 != 0:
+                raise RuntimeError(
+                    f"meta_mode='heldout' needs an even number of micro-batches per rank to split "
+                    f"into an inner and an outer half, got {len(micro_batches)}. Adjust "
+                    f"global_batch_size / rank_microbatch_size."
+                )
+            half = len(micro_batches) // 2
+            inner_mbs, outer_mbs = micro_batches[:half], micro_batches[half:]
+        else:
+            inner_mbs = outer_mbs = micro_batches
+
+        run_inner = self.meta_mode != "outer_only"
+
+        # Outer-phase (canonical) loss bookkeeping, mirroring the parent.
+        outer_div, outer_raw, outer_total = self._phase_loss_div(outer_mbs)
+        self.record_metric(
+            "train/masked labels (%)", (outer_total - outer_raw) / outer_total, ReduceType.mean
+        )
+        instance_masks = [
+            mb["instance_mask"] for mb in outer_mbs if mb.get("instance_mask") is not None
+        ]
+        if instance_masks:
+            masked_frac = torch.cat([(~m).float().flatten() for m in instance_masks]).mean()
+            self.record_metric("train/masked instances (%)", masked_frac, ReduceType.mean)
+
+        # _prepare_batch pops input_ids/labels out of each micro-batch dict, so prepare each
+        # micro-batch exactly once and reuse the prepared tuples across both phases.
+        prepared_inner: List[Tuple[torch.Tensor, Optional[torch.Tensor], Dict[str, Any]]] = []
+        inner_div: Optional[torch.Tensor] = None
+        if run_inner:
+            inner_div, _, _ = self._phase_loss_div(inner_mbs)
+            prepared_inner = [self._prepare_batch(mb) for mb in inner_mbs]
+        prepared_outer = (
+            prepared_inner
+            if (run_inner and outer_mbs is inner_mbs)
+            else [self._prepare_batch(mb) for mb in outer_mbs]
+        )
+
+        check_stash: Dict[nn.Parameter, torch.Tensor] = {}
+        if check_restore and run_inner:
+            check_stash = {p: get_local_tensor(p.data).clone() for p in self._expert_params}
+
+        inner_ce_loss = move_to_device(torch.tensor(0.0), self.device)
+        grad_stash: Dict[nn.Parameter, torch.Tensor] = {}
+        weight_stash: Dict[nn.Parameter, torch.Tensor] = {}
+        pre_clip_grad_norm: Optional[torch.Tensor] = None
+
+        if run_inner:
+            # ---- Phase 1: inner forward/backward (selective routing) ----
+            self._set_router_meta_state(
+                force_pool=self.inner_pool_size, skip_aux=not self.lb_on_inner
+            )
+            num_inner = len(prepared_inner)
+            for i, (input_ids, labels, model_kwargs) in enumerate(prepared_inner):
+                with self._train_microbatch_context(i, num_inner):
+                    _, loss, ce_loss, z_loss = self.model_forward(
+                        input_ids,
+                        labels=labels,
+                        ignore_index=self.label_ignore_index,
+                        loss_reduction="sum",
+                        # The inner objective is pure CE unless L_inner contributes directly to
+                        # the real update; the z-loss would otherwise leak into the pseudo-step
+                        # gradient.
+                        z_loss_multiplier=self.z_loss_multiplier if self.lambda_inner > 0 else None,
+                        loss_div_factor=inner_div,
+                        return_logits=False,
+                        **model_kwargs,
+                    )
+                    inner_ce_loss += get_local_tensor(ce_loss.detach())
+                    del ce_loss, z_loss
+                    loss.backward()
+            # `.grad` now holds the DP-reduced sharded inner gradients for all params.
+
+            # ---- Pseudo-step (expert params only) ----
+            expert_grad_locals = []
+            for p in self._expert_params:
+                if p.grad is None:
+                    raise RuntimeError(
+                        "an expert parameter received no gradient in the meta inner pass"
+                    )
+                expert_grad_locals.append(get_local_tensor(p.grad))
+            pre_clip_grad_norm = self._expert_global_sq_norm(expert_grad_locals).sqrt()
+            if self.inner_grad_clip is not None:
+                # Sync-free clip: scale by min(1, clip / norm) in place on `.grad` so the
+                # pseudo-step and the lambda_inner path share the same clipped expert grads.
+                clip_coef = (self.inner_grad_clip / (pre_clip_grad_norm + 1e-6)).clamp(max=1.0)
+                for g in expert_grad_locals:
+                    g.mul_(clip_coef)
+            for p in self._expert_params:
+                assert p.grad is not None
+                grad_stash[p] = get_local_tensor(p.grad).clone()
+                weight_stash[p] = get_local_tensor(p.data).clone()
+
+            if self.lambda_inner == 0.0:
+                # Pure FOMAML: the inner grads must not leak into the real update.
+                self.optim.zero_grad(set_to_none=True)
+            else:
+                for q in self.model.parameters():
+                    if q.grad is not None:
+                        get_local_tensor(q.grad).mul_(self.lambda_inner)
+
+            self._apply_pseudo_step(grad_stash)
+
+        # ---- Phase 2: outer forward/backward (full routing at theta') ----
+        self._set_router_meta_state(force_pool=self._num_nonshared_experts, skip_aux=False)
+        ce_batch_loss = move_to_device(torch.tensor(0.0), self.device)
+        z_batch_loss: Optional[torch.Tensor] = None
+        if self.z_loss_multiplier is not None:
+            z_batch_loss = move_to_device(torch.tensor(0.0), self.device)
+        num_outer = len(prepared_outer)
+        for i, (input_ids, labels, model_kwargs) in enumerate(prepared_outer):
+            with self._train_microbatch_context(i, num_outer):
+                _, loss, ce_loss, z_loss = self.model_forward(
+                    input_ids,
+                    labels=labels,
+                    ignore_index=self.label_ignore_index,
+                    loss_reduction="sum",
+                    z_loss_multiplier=self.z_loss_multiplier,
+                    loss_div_factor=outer_div,
+                    return_logits=False,
+                    **model_kwargs,
+                )
+                ce_batch_loss += get_local_tensor(ce_loss.detach())
+                del ce_loss
+                if z_batch_loss is not None:
+                    assert z_loss is not None
+                    z_batch_loss += get_local_tensor(z_loss.detach())
+                    del z_loss
+                # FSDP2's reduce-scatter ACCUMULATES into `.grad`:
+                # `.grad = lambda_inner * g_inner + g_outer(theta')`.
+                loss.backward()
+
+        # ---- Meta metrics (before the restore frees the stashes) + restore ----
+        if run_inner:
+            self._record_meta_metrics(inner_ce_loss, pre_clip_grad_norm, grad_stash, dry_run)
+            for p in self._expert_params:
+                get_local_tensor(p.data).copy_(weight_stash[p])
+            if check_restore:
+                for p in self._expert_params:
+                    assert torch.equal(
+                        get_local_tensor(p.data), check_stash[p]
+                    ), "expert weights were NOT restored bitwise after the pseudo-step"
+                log.info("EMO_META_CHECK_RESTORE: expert weights restored bitwise")
+            grad_stash.clear()
+            weight_stash.clear()
+            check_stash.clear()
+
+        # Leave the routers clean for eval / the next step.
+        self._set_router_meta_state(force_pool=None, skip_aux=False)
+
+        del batch, prepared_inner, prepared_outer
+
+        self.model.post_batch(dry_run=dry_run)
+
+        if dry_run:
+            self.model.reset_auxiliary_metrics()
+            return
+
+        # Record the canonical (outer) loss metrics, mirroring the parent.
+        if isinstance(self.optim, SkipStepOptimizer):
+            if is_distributed():
+                ce_batch_loss.div_(self._reduce_divide_factor)
+                dist.all_reduce(ce_batch_loss)
+                ce_batch_loss.div_(self.world_size)
+                ce_batch_loss.mul_(self._reduce_divide_factor)
+            self.record_ce_loss(ce_batch_loss)
+            self.optim.latest_loss = ce_batch_loss
+        else:
+            self.record_ce_loss(ce_batch_loss, ReduceType.mean)
+        if z_batch_loss is not None:
+            assert self.z_loss_multiplier is not None
+            self.record_metric("Z loss", z_batch_loss, ReduceType.mean, namespace="train")
+            self.record_metric(
+                "Z loss unscaled",
+                z_batch_loss / self.z_loss_multiplier,
+                ReduceType.mean,
+                namespace="train",
+            )
+
+        for metric_name, (metric_val, reduction) in self.model.compute_auxiliary_metrics(
+            reset=True
+        ).items():
+            self.record_metric(metric_name, metric_val, reduction, namespace="train")
+
+    def _record_meta_metrics(
+        self,
+        inner_ce_loss: torch.Tensor,
+        pre_clip_grad_norm: Optional[torch.Tensor],
+        grad_stash: Dict[nn.Parameter, torch.Tensor],
+        dry_run: bool,
+    ):
+        if dry_run:
+            return
+        self.record_metric("meta inner CE loss", inner_ce_loss, ReduceType.mean, namespace="train")
+        assert pre_clip_grad_norm is not None
+        # These norms/dots are already globally reduced, hence reduce_type=None.
+        self.record_metric(
+            "meta inner grad norm (experts)",
+            pre_clip_grad_norm,
+            reduce_type=None,
+            namespace="train",
+        )
+        stash_sq = self._expert_global_sq_norm(list(grad_stash.values()))
+        delta_norm = self.inner_lr * stash_sq.sqrt()
+        self.record_metric(
+            "meta pseudo step delta norm", delta_norm, reduce_type=None, namespace="train"
+        )
+        weight_sq = self._expert_global_sq_norm(
+            [get_local_tensor(p.data) for p in self._expert_params]
+        )
+        self.record_metric(
+            "meta delta/weight norm",
+            delta_norm / (weight_sq.sqrt() + 1e-12),
+            reduce_type=None,
+            namespace="train",
+        )
+        if self.log_grad_cosine:
+            # g_outer over expert shards = `.grad` minus the lambda_inner * g_inner contribution.
+            dot = torch.zeros((), device=self.device, dtype=torch.float32)
+            outer_sq = torch.zeros((), device=self.device, dtype=torch.float32)
+            for p in self._expert_params:
+                assert p.grad is not None
+                g_inner = grad_stash[p].float()
+                g_outer = get_local_tensor(p.grad).float()
+                if self.lambda_inner != 0.0:
+                    g_outer = g_outer - self.lambda_inner * g_inner
+                dot += (g_inner * g_outer).sum()
+                outer_sq += g_outer.pow(2).sum()
+            self._reduce_scalar(dot)
+            self._reduce_scalar(outer_sq)
+            self.record_metric(
+                "meta inner-outer grad dot (experts)", dot, reduce_type=None, namespace="train"
+            )
+            cosine = dot / (stash_sq.sqrt() * outer_sq.sqrt() + 1e-12)
+            self.record_metric(
+                "meta inner-outer grad cosine (experts)",
+                cosine,
+                reduce_type=None,
+                namespace="train",
+            )
+
+
+_META_CONFIG_FIELDS = (
+    "meta_mode",
+    "inner_lr",
+    "inner_pool_size",
+    "lambda_inner",
+    "lb_on_inner",
+    "inner_grad_clip",
+    "log_grad_cosine",
+)
+
+
+@dataclass
+class MetaLearningTransformerTrainModuleConfig(TransformerTrainModuleConfig):
+    """
+    Configuration for :class:`MetaLearningTransformerTrainModule`. All meta knobs are
+    CLI-overridable via ``--train_module.<knob>=...``.
+    """
+
+    meta_mode: str = "same_tokens"
+    inner_lr: float = 0.0
+    inner_pool_size: Optional[int] = 32
+    lambda_inner: float = 0.0
+    lb_on_inner: bool = False
+    inner_grad_clip: Optional[float] = 1.0
+    log_grad_cosine: bool = True
+
+    def build(
+        self,
+        model: Transformer,
+        device: Optional[torch.device] = None,
+    ) -> MetaLearningTransformerTrainModule:
+        if self.pp_config is not None:
+            raise OLMoConfigurationError(
+                "pipeline parallelism is not supported by the meta-learning train module"
+            )
+
+        kwargs = self.as_dict(exclude_none=True, recurse=False)
+        # `exclude_none=True` would silently drop meaningful None values (e.g.
+        # `inner_pool_size=null` meaning "keep random pool sampling on the inner pass"), so pop
+        # every meta field and pass them explicitly from self.
+        for f in _META_CONFIG_FIELDS:
+            kwargs.pop(f, None)
+        if (autocast_precision := kwargs.pop("autocast_precision", None)) is not None:
+            kwargs["autocast_precision"] = cast(DType, autocast_precision).as_pt()
+        if (state_dict_save_opts := kwargs.pop("state_dict_save_opts", None)) is not None:
+            kwargs["state_dict_save_opts"] = dist_cp_sd.StateDictOptions(**state_dict_save_opts)
+        if (state_dict_load_opts := kwargs.pop("state_dict_load_opts", None)) is not None:
+            kwargs["state_dict_load_opts"] = dist_cp_sd.StateDictOptions(**state_dict_load_opts)
+
+        return MetaLearningTransformerTrainModule(
+            model=model,
+            device=device,
+            meta_mode=self.meta_mode,
+            inner_lr=self.inner_lr,
+            inner_pool_size=self.inner_pool_size,
+            lambda_inner=self.lambda_inner,
+            lb_on_inner=self.lb_on_inner,
+            inner_grad_clip=self.inner_grad_clip,
+            log_grad_cosine=self.log_grad_cosine,
+            **kwargs,
+        )

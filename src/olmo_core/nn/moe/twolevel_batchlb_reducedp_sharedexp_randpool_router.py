@@ -97,6 +97,14 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
         # Per-forward stash; read+cleared by MoE.forward.
         self._detach_mask: Optional[torch.Tensor] = None
 
+        # meta_learning (FOMAML) per-pass flags, set by MetaLearningTransformerTrainModule around
+        # each inner/outer forward and reset afterwards. `meta_force_pool` pins the per-document
+        # pool size on TRAINING forwards only (the eval branch is untouched); `meta_skip_aux`
+        # suppresses aux losses and metric accumulators so a second forward per train step doesn't
+        # double-count them.
+        self.meta_force_pool: Optional[int] = None
+        self.meta_skip_aux: bool = False
+
     def get_top_k(self, scores: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """We override the get_top_k to use self.num_choose_experts instead of self.top_k, since we will always activate self.num_shared_experts"""
         expert_weights: torch.Tensor
@@ -175,7 +183,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
 
         # Document-level expert entropy metric: mean over documents of (mean over tokens-in-doc
         # of per-token entropy). Vectorized via scatter_add by document id.
-        if self.training:
+        if self.training and not self.meta_skip_aux:
             token_entropies = -torch.sum(
                 expert_probs * torch.log(expert_probs + 1e-10), dim=-1
             )  # (B, S)
@@ -201,12 +209,17 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
 
         # Sample the per-document pool size (constant within a document) and build the keep mask.
         if self.training:
-            pool_docid = torch.randint(
-                self.min_document_expert_pool,
-                self.max_document_expert_pool + 1,
-                (B, S),
-                device=logits.device,
-            )
+            if self.meta_force_pool is not None:
+                pool_docid = torch.full(
+                    (B, S), int(self.meta_force_pool), device=logits.device, dtype=torch.long
+                )
+            else:
+                pool_docid = torch.randint(
+                    self.min_document_expert_pool,
+                    self.max_document_expert_pool + 1,
+                    (B, S),
+                    device=logits.device,
+                )
         else:
             pool_docid = torch.full(
                 (B, S), self.eval_document_expert_pool, device=logits.device, dtype=torch.long
@@ -258,7 +271,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
             # shape: (num_experts - num_shared_experts,)
             tot_batch_size_per_expert = tot_batched_batch_size_per_expert.sum(dim=0)
 
-            if self.training:
+            if self.training and not self.meta_skip_aux:
                 valid_expert_indices = expert_indices.view(-1)
 
                 # Update unique experts metric.
@@ -280,7 +293,7 @@ class MoETwoLevelBatchLBReduceDPSharedExpRandPoolRouter(MoETwoLevelRouter):
 
         # Maybe compute auxiliary losses and accumulate metrics.
         aux_loss: Optional[torch.Tensor] = None
-        if self.training and torch.is_grad_enabled():
+        if self.training and torch.is_grad_enabled() and not self.meta_skip_aux:
             with torch.autocast(enabled=False, device_type=x.device.type):
                 # use the batch-level load balancing loss
                 if self.lb_loss_weight is not None:
