@@ -9013,9 +9013,9 @@
       "simulatedBatchSequences": 64,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "running",
-      "healthStatus": "active",
-      "currentStep": 3070,
+      "status": "complete",
+      "healthStatus": "healthy",
+      "currentStep": 3815,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e2_lr1e-3_wd0.333/step1716",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e2_lr1e-3_wd0.333",
@@ -9059,9 +9059,41 @@
           "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e2_lr1e-3_wd0.333/step2575",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e2_lr1e-3_wd0.333/step2862",
           "reason": "Healthy E12 endpoint with full DCLM and nine-task downstream evaluation recovered from durable Beaker logs; the chain resumed E16 from exact pre-decay step2575."
+        },
+        "16": {
+          "status": "complete",
+          "train": 2.755,
+          "validation": 3.262,
+          "gap": 0.507,
+          "avg8Bpb": 1.4282125,
+          "downstream": {
+            "arc_challenge": 27.76,
+            "arc_easy": 51.93,
+            "boolq": 54.25,
+            "csqa": 42.42,
+            "hellaswag": 38.56,
+            "openbookqa": 24.8,
+            "piqa": 66.76,
+            "socialiqa": 42.78,
+            "winogrande": 52.49
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.509,
+            "arc_easy": 1.545,
+            "boolq": 1.884,
+            "csqa": 1.52,
+            "hellaswag": 0.9437,
+            "openbookqa": 1.768,
+            "piqa": 1.256,
+            "socialiqa": 1.326,
+            "winogrande": 1.558
+          },
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e2_lr1e-3_wd0.333/step3432",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs64_init=bs1024e2_lr1e-3_wd0.333/step3815",
+          "reason": "Healthy terminal E16 endpoint with full DCLM and nine-task downstream evaluation recovered from durable Beaker logs; the chain completion marker confirms no further frontier will run."
         }
       },
-      "reason": "Healthy four-node E16 stage is running from exact native step2575. All 32 ranks remain active; train CE3.050 and grad norm0.3228 were finite at step3070 with no skipped step.",
+      "reason": "Healthy four-node chain completed E16 from exact pre-decay step3432 and produced endpoint step3815. Validation CE3.262 and all downstream metrics were ingested; no further frontier is authorized.",
       "beaker": "01M04P42ZGGD1W876FS1N6XEY9",
       "experiment": "01M04P42ZGGD1W876FS1N6XEY9",
       "jobs": [
@@ -9143,7 +9175,7 @@
       "wd": "0.333",
       "status": "running",
       "healthStatus": "active",
-      "currentStep": 1908,
+      "currentStep": 1716,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e2_lr1e-3_wd0.333/step858",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e2_lr1e-3_wd0.333",
@@ -9189,7 +9221,7 @@
           "reason": "Healthy WD0.333 E8 endpoint with full DCLM and nine-task downstream evaluation recovered from durable Beaker logs."
         }
       },
-      "reason": "WD0.333 won the matched E4 gate with validation3.495 versus WD1.0 validation3.605, so both WDs remain eligible. This branch completed E8 validation3.248 and waits at exact pre-decay step1716 while WD1.0 runs the matched E8 stage.",
+      "reason": "WD0.333 also won the matched E8 gate with validation3.248 versus WD1.0 validation3.331, so both WDs remain eligible. The chain is starting WD0.333 E12 from exact pre-decay step1716; WD1.0 waits at its exact step1716.",
       "beaker": "01M04P429GASFTSDDHHJZREYYP",
       "experiment": "01M04P429GASFTSDDHHJZREYYP",
       "jobs": [
@@ -9219,7 +9251,7 @@
       "wd": "1.0",
       "status": "running",
       "healthStatus": "active",
-      "currentStep": 1250,
+      "currentStep": 1908,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0/step428",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e2_lr1e-3_wd1.0",
@@ -9264,9 +9296,41 @@
           "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e2_lr1e-3_wd1.0/step858",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e2_lr1e-3_wd1.0/step954",
           "reason": "Healthy WD1.0 E4 endpoint with full DCLM and nine-task downstream evaluation recovered from durable Beaker logs."
+        },
+        "8": {
+          "status": "complete",
+          "train": 3.238,
+          "validation": 3.331,
+          "gap": 0.093,
+          "avg8Bpb": 1.444,
+          "downstream": {
+            "arc_challenge": 21.4,
+            "arc_easy": 47.54,
+            "boolq": 58.99,
+            "csqa": 38.9,
+            "hellaswag": 31.66,
+            "openbookqa": 23.8,
+            "piqa": 64.69,
+            "socialiqa": 41.76,
+            "winogrande": 50.75
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.518,
+            "arc_easy": 1.581,
+            "boolq": 2.254,
+            "csqa": 1.515,
+            "hellaswag": 0.972,
+            "openbookqa": 1.747,
+            "piqa": 1.291,
+            "socialiqa": 1.357,
+            "winogrande": 1.571
+          },
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e2_lr1e-3_wd1.0/step1716",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e2_lr1e-3_wd1.0/step1908",
+          "reason": "Healthy WD1.0 E8 endpoint with full DCLM and nine-task downstream evaluation recovered from durable Beaker logs. WD0.333 retained the matched gate with lower validation CE."
         }
       },
-      "reason": "WD0.333 won the matched E4 gate, so WD1.0 remains eligible rather than pruning its peer. Healthy four-node WD1.0 E8 is running from exact native step858; train CE3.499 and grad norm0.1331 were finite at step1250 with no skipped step.",
+      "reason": "Healthy WD1.0 E8 completed with validation3.331. WD0.333 remained better at validation3.248, so both WDs continue; this branch waits at exact pre-decay step1716 while WD0.333 runs E12.",
       "beaker": "01M04P429GASFTSDDHHJZREYYP",
       "experiment": "01M04P429GASFTSDDHHJZREYYP",
       "jobs": [
@@ -9294,7 +9358,7 @@
       "wd": "0.333",
       "status": "running",
       "healthStatus": "active",
-      "currentStep": 1716,
+      "currentStep": 2005,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e4_lr1e-3_wd0.333/step1716",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e4_lr1e-3_wd0.333",
@@ -9303,8 +9367,45 @@
       "recalibrateSecondMomentOnStart": false,
       "secondMomentRecalibrationRatio": 4,
       "wdGatePolicy": "At each matched healthy frontier, prune WD0.333 for later epochs only if WD1.0 has lower validation CE.",
-      "results": {},
-      "reason": "Paired four-node chain is healthy; WD1.0 E8 runs first while this completed native WD0.333 branch waits at exact pre-decay step1716 for the matched WD gate.",
+      "wandbRuns": {
+        "8": "jd75prvy",
+        "12": "zh2fv6wk"
+      },
+      "results": {
+        "8": {
+          "status": "complete",
+          "train": 2.999,
+          "validation": 3.251,
+          "gap": 0.252,
+          "avg8Bpb": 1.4342375,
+          "downstream": {
+            "arc_challenge": 27.09,
+            "arc_easy": 49.65,
+            "boolq": 58.84,
+            "csqa": 41.2,
+            "hellaswag": 35.34,
+            "openbookqa": 24.4,
+            "piqa": 65.34,
+            "socialiqa": 43.04,
+            "winogrande": 51.3
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.524,
+            "arc_easy": 1.593,
+            "boolq": 1.94,
+            "csqa": 1.549,
+            "hellaswag": 0.9479,
+            "openbookqa": 1.735,
+            "piqa": 1.279,
+            "socialiqa": 1.291,
+            "winogrande": 1.555
+          },
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e4_lr1e-3_wd0.333/step1716",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e4_lr1e-3_wd0.333/step1908",
+          "reason": "Healthy WD0.333 E8 endpoint reused from the canonical native branch with full DCLM and nine-task downstream evaluation."
+        }
+      },
+      "reason": "WD0.333 won the matched E8 gate with validation3.251 versus WD1.0 validation3.286, so both WDs remain eligible. Healthy four-node WD0.333 E12 is running from exact pre-decay step1716; train CE3.123 and grad norm0.1295 were finite at step2005 with no skipped optimizer step.",
       "beaker": "01M04P55JH7SKRX7WSN4V8YZPS",
       "experiment": "01M04P55JH7SKRX7WSN4V8YZPS",
       "jobs": [
@@ -9333,7 +9434,7 @@
       "wd": "1.0",
       "status": "running",
       "healthStatus": "active",
-      "currentStep": 1630,
+      "currentStep": 1908,
       "revision": "903ca084a7565dbee49541cf111db81d417b6b49",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0/step858",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e4_lr1e-3_wd1.0",
@@ -9342,11 +9443,44 @@
       "recalibrateSecondMomentOnStart": true,
       "secondMomentRecalibrationRatio": 4,
       "wdGatePolicy": "At each matched healthy frontier, prune WD0.333 for later epochs only if WD1.0 has lower validation CE.",
-      "results": {},
+      "results": {
+        "8": {
+          "status": "complete",
+          "train": 3.19,
+          "validation": 3.286,
+          "gap": 0.096,
+          "avg8Bpb": 1.4365625,
+          "downstream": {
+            "arc_challenge": 21.74,
+            "arc_easy": 49.82,
+            "boolq": 59.05,
+            "csqa": 41.03,
+            "hellaswag": 32.8,
+            "openbookqa": 23.6,
+            "piqa": 64.91,
+            "socialiqa": 43.04,
+            "winogrande": 51.93
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.52,
+            "arc_easy": 1.59,
+            "boolq": 2.119,
+            "csqa": 1.483,
+            "hellaswag": 0.9575,
+            "openbookqa": 1.759,
+            "piqa": 1.287,
+            "socialiqa": 1.334,
+            "winogrande": 1.562
+          },
+          "resumeCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e4_lr1e-3_wd1.0/step1716",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_local_sgd_h4_simbs256_init=bs1024e4_lr1e-3_wd1.0/step1908",
+          "reason": "Healthy WD1.0 E8 endpoint with full DCLM and nine-task downstream evaluation recovered from durable Beaker logs. WD0.333 retained the matched gate with lower validation CE."
+        }
+      },
       "wandbRuns": {
         "8": "1rbtmjoy"
       },
-      "reason": "Healthy four-node WD1.0 E8 stage is running from exact conventional step858 with one-time ratio4 recalibration. All four replicas and 32 ranks are active; train CE3.441 and grad norm0.2025 were finite at step1630 with no skipped optimizer step. WD0.333 waits for the matched validation gate.",
+      "reason": "Healthy WD1.0 E8 completed with validation3.286. WD0.333 remained better at validation3.251, so both WDs continue; this branch waits at exact pre-decay step1716 while WD0.333 runs E12.",
       "beaker": "01M04P55JH7SKRX7WSN4V8YZPS",
       "experiment": "01M04P55JH7SKRX7WSN4V8YZPS",
       "jobs": [
