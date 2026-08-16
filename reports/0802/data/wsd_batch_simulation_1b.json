@@ -10135,7 +10135,14 @@
       "results": {},
       "reason": "Registered exact four-node recovery after correcting the Weka mount audit. Conventional step428 is present, the incomplete r03/r04 canonical residue is preserved under chain-control quarantine, and the canonical output path is clear. The chain will continue only through E16 from exact pre-decay checkpoints.",
       "recoveryProvenance": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/.chain-control/bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r05/quarantine/r03-r04-init2-canonical-output",
-      "plannedAt": "2026-08-16T19:00:59Z"
+      "plannedAt": "2026-08-16T19:00:59Z",
+      "submissionAttempts": [
+        {
+          "at": "2026-08-16T19:05:20Z",
+          "status": "client_rejected_before_creation",
+          "reason": "The installed Beaker CLI rejected the redundant experiment-create --priority flag before creating an experiment. Priority remains encoded in task context; the launcher was corrected and validated before retry."
+        }
+      ]
     },
     {
       "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r05-init4-wd0.333",

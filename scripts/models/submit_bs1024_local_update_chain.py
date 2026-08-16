@@ -672,7 +672,7 @@ def main() -> None:
     result = subprocess.run(
         [
             "beaker", "experiment", "create", "-", "--name", args.name,
-            "--workspace", args.workspace, "--priority", args.priority,
+            "--workspace", args.workspace,
         ],
         input=json.dumps(spec), check=True, stdout=subprocess.PIPE, text=True,
     )
