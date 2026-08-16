@@ -1,115 +1,752 @@
-# PARENT: "scripts/models_routerfixed/build_report.py" (structure only; content skeleton for now)
+# PARENT: "scripts/modular_extension/build_report.py" (visual framework: CSS/JS/tab structure,
+#          card/table/figure helpers kept in sync)
 # DESCRIPTION:
-#     Builds the meta_learning experiment report at claude_outputs/meta_learning/report.html.
-#     Currently a skeleton: motivation, mechanism, arm design, and a status section. Result
-#     cards (selective-vs-full gap curves, W&B train curves, meta diagnostics) get folded in as
-#     the smoke/pilot stages produce data.
+#     Builds the meta_learning experiment report at claude_outputs/meta_learning/report.html:
+#     goals, the (corrected) two-pass FOMAML algorithm with working-set outer updates, the
+#     implementation map, the bf16 pseudo-step quantization finding, the documented negative
+#     result of the first launch, the verification gate, and live run status. Figures and run
+#     data come from claude_outputs/meta_learning/{figs,report_data.json}, produced by
+#     scripts/meta_learning/fetch_report_data.py — rerun that first to refresh.
 #
-#   python scripts/meta_learning/build_report.py
+#   python scripts/meta_learning/fetch_report_data.py && python scripts/meta_learning/build_report.py
 ##############################################################
 
-import datetime
+import base64
 import html
-import pathlib
+import json
+import statistics
+from pathlib import Path
 
-OUT_DIR = pathlib.Path("claude_outputs/meta_learning")
-OUT_PATH = OUT_DIR / "report.html"
+ROOT = Path(__file__).resolve().parents[2]
+OUT = ROOT / "claude_outputs/meta_learning"
+FIGS = OUT / "figs"
 
-CSS = """
-:root { --fg: #1a1a1a; --bg: #ffffff; --muted: #666; --card: #f6f7f9; --accent: #2563eb; }
-body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; color: var(--fg);
-       background: var(--bg); max-width: 980px; margin: 2rem auto; padding: 0 1rem; line-height: 1.55; }
-h1 { font-size: 1.6rem; } h2 { font-size: 1.25rem; margin-top: 2rem; }
-.card { background: var(--card); border-radius: 10px; padding: 1rem 1.25rem; margin: 1rem 0; }
-.status { color: var(--muted); font-size: 0.9rem; }
-code { background: #eef; padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.9em; }
-table { border-collapse: collapse; } td, th { padding: 0.3em 0.8em; border: 1px solid #ddd; }
+TOKENS_PER_STEP = 1024 * 4096
+
+# --------------------------------------------------------------------------
+# HTML helpers (kept in sync with scripts/modular_extension/build_report.py)
+# --------------------------------------------------------------------------
+
+
+def card(kind: str, title: str, body: str) -> str:
+    return f'<div class="card {kind}"><h3>{title}</h3>{body}</div>'
+
+
+def table(headers: list, rows: list) -> str:
+    head = "".join(f"<th>{h}</th>" for h in headers)
+    body = "".join("<tr>" + "".join(f"<td>{c}</td>" for c in row) + "</tr>" for row in rows)
+    return (
+        f'<div class="scroll"><table><thead><tr>{head}</tr></thead>'
+        f"<tbody>{body}</tbody></table></div>"
+    )
+
+
+def img_tag(path: Path, caption: str) -> str:
+    if not path.is_file():
+        return f'<p class="missing">[missing figure: {path.name}]</p>'
+    data = base64.b64encode(path.read_bytes()).decode("ascii")
+    return (
+        "<figure>"
+        f'<img loading="lazy" src="data:image/png;base64,{data}" alt="{html.escape(caption)}" '
+        'onclick="this.classList.toggle(\'zoom\')" title="click to zoom">'
+        f"<figcaption>{caption}</figcaption></figure>"
+    )
+
+
+def fig_row(*figs: str) -> str:
+    return '<div class="figrow">' + "".join(figs) + "</div>"
+
+
+# --------------------------------------------------------------------------
+# The train-step diagram (inline SVG; accents match the card palette)
+# --------------------------------------------------------------------------
+
+STEP_SVG = """
+<svg viewBox="0 0 960 300" style="max-width:960px;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:8px" role="img" aria-label="meta_learning train step diagram">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+  <style> text { font-family:-apple-system,'Segoe UI',Roboto,sans-serif; fill:#1e293b; } .t{font-size:13px;font-weight:600} .s{font-size:11.5px;fill:#475569} .m{font-size:11px;fill:#64748b;font-style:italic}</style>
+
+  <rect x="18" y="112" width="120" height="64" rx="8" fill="#f1f5f9" stroke="#94a3b8"/>
+  <text x="78" y="138" text-anchor="middle" class="t">batch</text>
+  <text x="78" y="156" text-anchor="middle" class="s">1024 seqs &middot; 4.2M tok</text>
+
+  <rect x="176" y="96" width="180" height="96" rx="8" fill="#eff6ff" stroke="#2563eb"/>
+  <text x="266" y="122" text-anchor="middle" class="t">1&#8226; inner pass (selective)</text>
+  <text x="266" y="141" text-anchor="middle" class="s">fwd+bwd, each doc routed</text>
+  <text x="266" y="157" text-anchor="middle" class="s">only within its top-32 experts</text>
+  <text x="266" y="177" text-anchor="middle" class="s">&rarr; g_inner (DP-averaged)</text>
+
+  <rect x="394" y="96" width="180" height="96" rx="8" fill="#f5f3ff" stroke="#7c3aed"/>
+  <text x="484" y="122" text-anchor="middle" class="t">2&#8226; pseudo-step</text>
+  <text x="484" y="142" text-anchor="middle" class="s">&theta;&prime;_exp = &theta;_exp &minus; &alpha;&middot;g_inner</text>
+  <text x="484" y="158" text-anchor="middle" class="s">experts only &middot; SGD &middot; clipped</text>
+  <text x="484" y="176" text-anchor="middle" class="s">temporary (undone in 4)</text>
+
+  <rect x="612" y="96" width="196" height="96" rx="8" fill="#ecfdf5" stroke="#059669"/>
+  <text x="710" y="122" text-anchor="middle" class="t">3&#8226; outer pass (full)</text>
+  <text x="710" y="141" text-anchor="middle" class="s">same tokens, all 128 experts,</text>
+  <text x="710" y="157" text-anchor="middle" class="s">at &theta;&prime; &middot; backward MASKED:</text>
+  <text x="710" y="176" text-anchor="middle" class="s">expert grads &rarr; working set only</text>
+
+  <rect x="846" y="112" width="100" height="64" rx="8" fill="#f1f5f9" stroke="#94a3b8"/>
+  <text x="896" y="138" text-anchor="middle" class="t">4&#8226; AdamW</text>
+  <text x="896" y="156" text-anchor="middle" class="s">applied at &theta;</text>
+
+  <line x1="138" y1="144" x2="172" y2="144" stroke="#64748b" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="356" y1="144" x2="390" y2="144" stroke="#64748b" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="574" y1="144" x2="608" y2="144" stroke="#64748b" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="808" y1="144" x2="842" y2="144" stroke="#64748b" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <path d="M 896 176 C 896 240 484 250 484 196" fill="none" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arr)"/>
+  <text x="690" y="238" text-anchor="middle" class="m">expert weights restored bitwise before the AdamW step</text>
+
+  <text x="266" y="80" text-anchor="middle" class="m">only source of the meta signal</text>
+  <text x="710" y="80" text-anchor="middle" class="m">the only REAL update of the step</text>
+
+  <text x="480" y="282" text-anchor="middle" class="s">gradient kept by the AdamW step:&#160;&#160;expert weights &larr; working-set slots of g_outer(&theta;&prime;)&#160;&#160;&middot;&#160;&#160;attention / embeddings / router / norms &larr; full g_outer(&theta;&prime;)</text>
+</svg>
 """
 
-ARMS = [
-    (
-        "meta128_vanilla_20b",
-        "vanilla",
-        "baseline 128e EMO; 20B (10B = matched tokens, 20B = matched compute vs same_tokens)",
-    ),
-    (
-        "meta128_sametok_10b",
-        "same_tokens",
-        "FOMAML, outer pass on the same tokens (~2.1x step cost)",
-    ),
-    (
-        "meta128_heldout_10b",
-        "heldout",
-        "FOMAML, outer pass on a held-out half of the rank batch (~1x step cost)",
-    ),
-]
+
+# --------------------------------------------------------------------------
+# Tab bodies
+# --------------------------------------------------------------------------
 
 
-def build() -> str:
-    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-    arm_rows = "\n".join(
-        f"<tr><td><code>{html.escape(r)}</code></td><td>{html.escape(m)}</td><td>{html.escape(d)}</td></tr>"
-        for r, m, d in ARMS
+def _gap(evals: dict) -> float:
+    full = [v for k, v in evals.items() if "/lm-full/" in k and not k.endswith("all/CE loss")]
+    p32 = [v for k, v in evals.items() if "/lm-pool32/" in k and not k.endswith("all/CE loss")]
+    if not full or not p32:
+        return float("nan")
+    return statistics.mean(p32) - statistics.mean(full)
+
+
+def build_overview(data: dict) -> str:
+    goal = card(
+        "goal",
+        "Goal",
+        "<p>Pretrain a 128-expert EMO model (the first 100B-token phase, from scratch) so that "
+        "<b>training on only 32 experts effectively improves the full model</b>. Each document "
+        "trains only its own 32-expert working set — but toward performing well <i>inside the "
+        "full 128-expert model, one selective step ahead of where it currently is</i> "
+        "(first-order MAML).</p>"
+        "<p>Motivation: the modular_extension <i>k=32 CPT (no extension)</i> result. On a "
+        "vanilla-EMO model, post-hoc per-cluster 32-expert CPT bought almost nothing on its own "
+        "cluster (median &minus;0.007 nats) and degraded the pool broadly (+0.08 nats mean vs the "
+        "plain-CPT baseline's &minus;0.027), with later stages overwriting earlier ones. Vanilla "
+        "EMO is excellent at selective <i>inference</i>; what fails is selective <i>update "
+        "transfer</i>. This experiment builds that property into pretraining itself.</p>",
     )
-    return f"""<!doctype html>
-<html><head><meta charset="utf-8">
-<title>meta_learning — FOMAML EMO pretraining</title>
-<style>{CSS}</style></head><body>
-<h1>meta_learning — FOMAML-style EMO pretraining</h1>
-<p class="status">Skeleton report — generated {now}. Result cards land here as the pilot produces data.</p>
+    rows = []
+    for name, desc, note in [
+        (
+            "meta128_vanilla_100b",
+            "vanilla EMO-128e baseline",
+            "paused at 31.5B to free nodes; resumable from ephemeral ckpt",
+        ),
+        (
+            "meta128_sametok_100b",
+            "same-tokens, &lambda;=0, ALL-expert outer update",
+            "STOPPED — degenerate (see 'First launch')",
+        ),
+        (
+            "meta128_heldout_100b",
+            "heldout, &lambda;=0, ALL-expert outer update",
+            "STOPPED before start (same flaw)",
+        ),
+        (
+            "meta128_sametok_ws_100b",
+            "same-tokens, working-set outer update, &alpha;=3e-1",
+            "corrected arm — live",
+        ),
+        (
+            "meta128_heldout_ws_100b",
+            "heldout, working-set outer update, &alpha;=3e-1",
+            "corrected arm — live",
+        ),
+    ]:
+        d = data.get(name.replace("_ws_", "_ws_"), data.get(name, {}))
+        d = data.get(name, {})
+        step = d.get("step", "—")
+        state = d.get("state", "queued/pending")
+        rows.append([f"<code>{name}</code>", desc, state, step, note])
+    status = card(
+        "results",
+        "Arms",
+        table(["run", "objective", "state", "last step", "notes"], rows)
+        + "<p class='note'>All arms: 8 nodes &times; 8 H100, 100B tokens (23,842 steps), OLMoE-mix-0824, "
+        "lr 2e-3 flat WSD, lb 1e-1, pool min=8/max=128/eval=128, W&amp;B project "
+        "<code>emo-extension</code> tag <code>meta_learning</code>.</p>",
+    )
+    metric = card(
+        "method",
+        "Headline metrics",
+        "<ul>"
+        "<li><b>Selective-vs-full CE gap</b>: the same held-out ppl mix evaluated twice every 500 "
+        "steps — <code>eval/lm-full</code> (eval pool 128) vs <code>eval/lm-pool32</code> (pool "
+        "pinned to 32). Measures selective <i>inference</i> competence.</li>"
+        "<li><b>Downstream (the real test)</b>: rerun the modular_extension k=32 CPT protocol on "
+        "the finished checkpoints — does selective-expert CPT transfer now? Measures selective "
+        "<i>update</i> transfer, which the gap alone does not.</li>"
+        "<li>Per-step diagnostics: inner CE, pseudo-step delta/weight norm, inner/outer grad "
+        "cosine, and the <i>measured</i> bf16 survival of the pseudo-step (see the bf16 tab).</li>"
+        "</ul>",
+    )
+    return goal + status + metric
 
-<h2>Motivation</h2>
-<div class="card">
-<p>The modular_extension <i>k=32 CPT (no extension)</i> arm showed that post-hoc selective-expert
-CPT on a vanilla-EMO model buys almost nothing on its own cluster and degrades the pool broadly.
-This experiment changes EMO's own pretraining objective (from scratch, 128 experts) so that
-<b>updates made in 32-expert selective mode also improve the full model</b>.</p>
-</div>
 
-<h2>Mechanism (first-order MAML)</h2>
-<div class="card">
-<p>Per step: (1) inner forward+backward with each document restricted to its router top-32
-experts; (2) temporary SGD pseudo-step on expert weights &theta;' = &theta; &minus;
-&alpha;&middot;g<sub>inner</sub>; (3) outer forward+backward with all 128 experts at &theta;';
-(4) restore &theta;, AdamW consumes <code>&lambda;&middot;g_inner + g_outer(&theta;')</code>
-(default &lambda;=0, pure FOMAML). Implementation:
-<code>src/olmo_core/train/train_module/transformer/meta_learning.py</code>.</p>
-</div>
+def build_algorithm() -> str:
+    step = card(
+        "method",
+        "One optimizer step",
+        "<p>Every batch is consumed exactly once, by a single optimizer step containing two "
+        "forward/backward passes:</p>" + STEP_SVG + "<ol>"
+        "<li><b>Inner pass (selective)</b>: all 1024 sequences are forwarded with EMO-style "
+        "selective routing — each document restricted to its router top-32 experts (the randpool "
+        "router's per-document pool pinned to 32). Backward accumulates across micro-batches and "
+        "averages across the 64 GPUs: one gradient for the whole global batch, in which each "
+        "expert's slice came only from documents whose working set contains it.</li>"
+        "<li><b>Pseudo-step</b>: a single SGD probe on the expert weights only, "
+        "<code>&theta;&prime;_exp = &theta;_exp &minus; &alpha;&middot;g_inner</code> "
+        "(&alpha;=3e-1, global-norm clip 10). Router, attention, embeddings, norms untouched. "
+        "The probe is temporary.</li>"
+        "<li><b>Outer pass (full)</b>: the same 1024 sequences again, all 128 experts available, "
+        "evaluated at &theta;&prime;. Its gradient is the step's only real update — but in the "
+        "backward, <b>each expert's weights receive gradient only from slots whose expert is in "
+        "that document's top-32 working set</b>. Non-expert parameters (attention, embeddings, "
+        "router, norms) receive the ordinary full gradient.</li>"
+        "<li><b>Restore + update</b>: expert weights are restored bitwise to &theta;, then AdamW "
+        "consumes the accumulated gradient (first-order MAML: the gradient evaluated at "
+        "&theta;&prime; is applied to &theta;).</li>"
+        "</ol>"
+        "<p>Net effect: <b>no full-routing update exists anywhere</b>. Every expert only ever "
+        "trains from documents that select it, toward the full-model loss, one selective step "
+        'ahead — "train the original 32 experts so they perform well among all 128, given they '
+        'already took a step in the right direction."</p>',
+    )
+    detach = card(
+        "method",
+        "Weight-only detach (why early layers lose nothing)",
+        "<p>Masking non-working-set experts must not sever backprop to earlier layers. When "
+        "backward reaches an expert output <code>y = f(x; W)</code> it computes two independent "
+        "chain-rule products: <code>&part;L/&part;W</code> (the expert's weight gradient) and "
+        "<code>&part;L/&part;x</code> (the gradient passed through to attention and all earlier "
+        "layers). For masked slots we skip only the first: the slot is recomputed under "
+        "<code>W.detach()</code> — identical forward value, weights acting as constants (exactly "
+        "like a frozen layer), full <code>&part;L/&part;x</code>. This matters most at "
+        "initialization, where routing is near-uniform and only ~32/127 &asymp; 25% of a token's "
+        "chosen experts fall inside its document's working set — a naive output-detach would have "
+        "cut ~75% of the expert backward paths to early layers.</p>"
+        "<p>Verified: with the mask on vs off, every non-expert parameter's gradient is "
+        "<b>bitwise identical</b> and the forward loss is bitwise unchanged (gate checks M1/M2); "
+        "expert gradients change by 15% with 12/96 expert row-blocks exactly zero on the tiny "
+        "test config (M3). Implementation: the grouped-GEMM expert computation runs twice on the "
+        "outer pass (once live, once under detached weights) with a per-slot select — ~2&times; "
+        "expert compute on the outer pass; a zero-extra-FLOPs row-sorting variant is a known "
+        "follow-up if throughput matters.</p>",
+    )
+    heldout = card(
+        "method",
+        "The two meta arms",
+        table(
+            ["arm", "inner tokens", "outer tokens", "meta signal", "step cost"],
+            [
+                [
+                    "<code>same_tokens</code>",
+                    "all 1024 seqs",
+                    "the same 1024 seqs",
+                    "a selective step on these docs should make their working sets perform well in the full model on the same data",
+                    "~2&times; baseline",
+                ],
+                [
+                    "<code>heldout</code>",
+                    "first 512 seqs",
+                    "other 512 seqs",
+                    "a selective step on some docs should leave OTHER docs' working sets performing well in the full model (cross-data; standard MAML support/query — resists one-step memorization)",
+                    "~1.5&times; baseline",
+                ],
+            ],
+        )
+        + "<p class='note'>Both arms use working-set outer updates and &lambda;=0 (the inner loss "
+        "contributes only through the pseudo-step; a &lambda;&gt;0 blend is implemented as a "
+        "contingency knob). The heldout arm's effective outer batch is 512 instances.</p>",
+    )
+    return step + detach + heldout
 
-<h2>Pilot arms (10B tokens, 8 nodes each)</h2>
-<div class="card"><table>
-<tr><th>run</th><th>meta_mode</th><th>description</th></tr>
-{arm_rows}
-</table>
-<p>Headline metric: the <b>selective-vs-full CE gap</b> — <code>eval/lm-pool32/*</code> minus
-<code>eval/lm-full/*</code> on the v3-small ppl validation mix, per arm vs the vanilla baseline.
-Go/no-go: the meta arms shrink the gap without materially regressing full-routing CE.</p></div>
 
-<h2>Status</h2>
-<div class="card"><ul>
-<li>Mechanism gate (<code>verify_meta_step.py</code>): <b>7/7 PASS</b> (2026-08-16, 1&times;A100):
-&alpha;=0 oracle matches <code>outer_only</code> bitwise; finite-difference
-(L(0)&minus;L(&epsilon;))/&epsilon; vs &lang;g<sub>inner</sub>, g<sub>outer</sub>&rang; agrees to
-0.75%; module gradients match a hand-rolled reference to ~5e-8 at &lambda;&isin;{{0, 0.5}};
-expert weights restored bitwise every step.</li>
-<li>Local smoke (tiny model, real data, all 4 modes &times; 30 steps): <b>PASS</b>, zero errors,
-115/115 restore asserts.</li>
-<li>Inner-lr sweep (same_tokens): <b>&alpha; = 3e-2 picked</b> — best CE (7.59 vs 7.78 @3e-3 /
-7.98 @3e-1), inner/outer grad cosine 0.96, delta/weight ~7e-5; &alpha;=3e-1 was clip-saturated
-with unstable cosine. To re-check at pilot scale (bf16 quantization if delta/weight stays
-&lt;~1e-4).</li>
-<li>Compile-on trial: <b>PASS</b> — 15/15 steps, steady ~2.55 s/step after warmup (faster than compile-off ~3.3 s); one warmup-time dynamo recompile-limit fallback to eager on the router pool-flip frame, no ongoing churn. Compile stays ON for the pilots.</li>
-<li>Pilot launches (3 arms, 8 nodes each): pending approval.</li>
-</ul></div>
+def build_implementation() -> str:
+    code_map = card(
+        "method",
+        "Code map",
+        table(
+            ["file", "role"],
+            [
+                [
+                    "<code>src/olmo_core/train/train_module/transformer/meta_learning.py</code>",
+                    "<code>MetaLearningTransformerTrainModule</code> — owns the two-phase train step "
+                    "(the trainer only ever calls <code>train_batch/optim_step/zero_grads</code>, so "
+                    "the subclass is self-contained). <code>meta_mode=vanilla</code> delegates to the "
+                    "stock train module, giving a bit-identical baseline through the same entry script.",
+                ],
+                [
+                    "<code>src/olmo_core/nn/moe/twolevel_batchlb_reducedp_sharedexp_randpool_router.py</code>",
+                    "3 per-pass flags on the published EMO router: <code>meta_force_pool</code> (pin "
+                    "per-doc pool: 32 inner / keep-all outer; training branch only, eval untouched), "
+                    "<code>meta_skip_aux</code> (inner pass skips LB/z losses + metric accumulators "
+                    "so nothing double-counts), <code>meta_outer_detach_top_e</code> (builds the "
+                    "per-slot working-set mask from the same per-document router-probability ranking "
+                    "the inner pool restriction uses; shared experts always trainable).",
+                ],
+                [
+                    "<code>src/olmo_core/nn/moe/{moe,parallel_mlp,mlp}.py</code>",
+                    "weight-only detach plumbing via the router's existing <code>_detach_mask</code> "
+                    "stash channel (the <code>extension_finetune</code> precedent), ending in "
+                    "<code>DroplessMoEMLP.forward(detach_w_rows=…)</code> — the dual grouped-GEMM.",
+                ],
+                [
+                    "<code>src/olmo_core/train/callbacks/pool_pinned_lm_evaluator.py</code>",
+                    "pool-pinned ppl evaluator: same validation mix run at eval pool 128 "
+                    "(<code>lm-full</code>) and pinned 32 (<code>lm-pool32</code>) &rarr; the gap.",
+                ],
+                [
+                    "<code>src/scripts/train/olmoe-1B-7B_fsl_meta.py</code>",
+                    "entry script (randpool-only clone of the parent); meta knobs are dotted "
+                    "overrides, e.g. <code>--train_module.meta_mode=heldout</code>.",
+                ],
+                [
+                    "<code>scripts/meta_learning/verify_meta_step.py</code>",
+                    "the mechanism-correctness gate (11 checks; see Verification tab).",
+                ],
+                [
+                    "<code>scripts/meta_learning/*.sh</code>",
+                    "smoke + launch scripts (one checked-in script per run, per repo convention).",
+                ],
+            ],
+        ),
+    )
+    fsdp = card(
+        "method",
+        "FSDP2 mechanics",
+        "<ul>"
+        "<li><b>Setup</b>: plain FSDP2 (<code>fully_shard</code> per block), bf16 param / fp32 "
+        "reduce, torch.compile on, no EP/TP/PP. Expert weights are three fused row-block tensors "
+        "per layer (<code>w1/w2/w3</code>, experts = contiguous rows), sharded on dim 0.</li>"
+        "<li><b>Pseudo-step</b>: applied in place on the fp32 <i>local shards</i> "
+        "(<code>get_local_tensor(p.data).add_(g, alpha=-&alpha;)</code>) — the same mechanism as "
+        "an optimizer step; the outer forward's fresh all-gather picks it up. Restore copies the "
+        "stashed pre-step shards back (bitwise, assertable via "
+        "<code>EMO_META_CHECK_RESTORE=1</code>).</li>"
+        "<li><b>Gradient bookkeeping</b>: inner backward completes a normal reduce-scatter cycle; "
+        "the expert grads are stashed and all grads zeroed (&lambda;=0), so FSDP2's accumulating "
+        "reduce-scatter leaves exactly <code>g_outer(&theta;&prime;)</code> for AdamW. Two full "
+        "backward cycles inside one <code>train_batch</code> are just two grad-accumulation "
+        "rounds without an optimizer step between them.</li>"
+        "<li><b>Memory</b>: the extra state is two fp32 clones of the expert-grad/weight shards "
+        "(~1.6 GB/rank); activation memory is unchanged (inner graphs are freed micro-batch by "
+        "micro-batch before the outer phase).</li>"
+        "</ul>",
+    )
+    knobs = card(
+        "method",
+        "Knobs (all --train_module.<knob>=…)",
+        table(
+            ["knob", "value in the live arms", "meaning"],
+            [
+                [
+                    "<code>meta_mode</code>",
+                    "<code>same_tokens</code> / <code>heldout</code>",
+                    "vanilla | same_tokens | heldout | outer_only (debug reference)",
+                ],
+                [
+                    "<code>inner_lr</code> (&alpha;)",
+                    "3e-1",
+                    "pseudo-step SGD size (raw SGD scale, not AdamW-normalized)",
+                ],
+                [
+                    "<code>inner_grad_clip</code>",
+                    "10",
+                    "global-norm clip of the inner expert grads",
+                ],
+                [
+                    "<code>inner_pool_size</code>",
+                    "32",
+                    "per-doc pool pinned in the inner pass; also the working-set size for outer masking",
+                ],
+                [
+                    "<code>outer_expert_update</code>",
+                    "<code>working_set</code>",
+                    "working_set (per-doc top-32 masked, weight-only detach) | all (the degenerate ablation)",
+                ],
+                [
+                    "<code>lambda_inner</code>",
+                    "0",
+                    "direct weight of L_inner in the real update (0 = pure FOMAML)",
+                ],
+                [
+                    "<code>lb_on_inner</code>",
+                    "false",
+                    "whether the inner pass carries LB/z aux losses",
+                ],
+            ],
+        ),
+    )
+    metrics = card(
+        "method",
+        "Metric dictionary (train/ namespace)",
+        table(
+            ["metric", "meaning"],
+            [
+                [
+                    "<code>CE loss</code>",
+                    "the OUTER pass CE (full routing at &theta;&prime;) — the canonical loss",
+                ],
+                [
+                    "<code>meta inner CE loss</code>",
+                    "the selective (top-32) inner-pass CE at &theta;",
+                ],
+                [
+                    "<code>meta pseudo step delta norm</code> / <code>meta delta/weight norm</code>",
+                    "&alpha;&middot;&#8214;g_inner&#8214; after clip, absolute and relative to the expert-weight norm",
+                ],
+                [
+                    "<code>meta inner-outer grad cosine (experts)</code>",
+                    "cos(g_inner, g_outer) over expert shards — how much the meta term has to teach",
+                ],
+                [
+                    "<code>meta bf16 survival cosine / norm ratio</code>",
+                    "MEASURED on the fp32 local shards every 10 steps: cos and norm of "
+                    "(bf16(&theta;+&delta;) &minus; bf16(&theta;)) vs the intended &delta; — exactly what "
+                    "the outer pass's bf16 all-gather sees of the pseudo-step",
+                ],
+            ],
+        ),
+    )
+    return code_map + fsdp + knobs + metrics
 
-</body></html>
+
+def build_bf16(data: dict) -> str:
+    finding = card(
+        "results",
+        "Finding: bf16 eats small pseudo-steps",
+        "<p>FSDP2 all-gathers parameters in bf16 (~8 mantissa bits &rarr; per-element quantum "
+        "&asymp; 0.4% of each weight's own magnitude). An in-place pseudo-step much smaller than "
+        "that quantum mostly disappears at the cast — and what survives is dominated by rounding "
+        "flips: at the first launch's operating point (&alpha;=3e-2 with clip 1, delta/weight "
+        "&asymp; 1.3e-5) the perturbation the outer pass actually saw had ~16&times; the intended "
+        "norm but cosine only 0.06 with the intended direction — ~6% signal, 94% noise. The toy "
+        "&alpha;-sweep that originally picked 3e-2 was itself partly a quantization artifact.</p>"
+        + fig_row(
+            img_tag(
+                FIGS / "bf16_survival.png",
+                "Simulated survival of the pseudo-step direction through the bf16 cast, at the real "
+                "run's weight scale (expert-weight norm 2242 over 1.3e10 elements, heavy-tailed "
+                "gradient). Dashed lines: the failed first launch's operating point and the "
+                "relaunch target.",
+            )
+        )
+        + "<p>Mitigation in the live arms: &alpha;=3e-1 with clip 10 puts delta/weight in the "
+        "~1e-4..1e-3 band, and the train module now logs the <b>measured</b> survival "
+        "(<code>meta bf16 survival cosine</code>, computed exactly on the fp32 local shards) so "
+        "fidelity is observed, not assumed. The exact fix — injecting the delta after the cast "
+        "inside the expert forward (the <code>ghost_forward</code> pattern) — is the known "
+        "follow-up if measured fidelity proves inadequate.</p>",
+    )
+    return finding
+
+
+def build_first_launch(data: dict) -> str:
+    v = data.get("meta128_vanilla_100b", {})
+    s = data.get("meta128_sametok_100b", {})
+    gv = _gap(v.get("evals", {}))
+    gs = _gap(s.get("evals", {}))
+    body = (
+        "<p>The first 100B launch used &lambda;=0 with the outer gradient applied to <b>all</b> "
+        "parameters. That degenerates: the inner pass's gradient is used only for the (bf16-"
+        "quantized) pseudo-step, so the effective update is <i>always-full-routing</i> training — "
+        "the working-set structure vanishes from the update entirely. Train CE looked healthy "
+        "(full routing gives lower per-token CE than vanilla's random pools), which is exactly why "
+        "train CE is not the metric:</p>"
+        + fig_row(
+            img_tag(
+                FIGS / "ce_curves.png",
+                "Train CE. The curves are NOT directly comparable: vanilla's CE is computed under "
+                "its random per-doc pools (8–128), the meta arm's under full routing. The spike at "
+                "~10.5B is a transient.",
+            )
+        )
+        + "<p>The paired pool-pinned evals told the real story:</p>"
+        + fig_row(
+            img_tag(
+                FIGS / "gap_dumbbells.png",
+                "Held-out CE per validation source, evaluated with the full pool (blue) vs pinned "
+                "to 32 (orange). Vanilla EMO is BETTER with 32 experts than 128 (its random-pool "
+                "training does this); the degenerate meta arm collapsed selective operation on "
+                "every source.",
+            )
+        )
+        + f"<p>Mean gap (pool32 &minus; full): <b>vanilla {gv:+.3f}</b> nats at step "
+        f"{v.get('step', '?')} vs <b>{gs:+.3f}</b> for the degenerate arm at step "
+        f"{s.get('step', '?')} — a ~0.75-nat selective-mode collapse in under 4k steps. Both "
+        "meta arms were stopped and rebuilt with working-set outer updates (Algorithm tab); "
+        "vanilla was later paused (resumable) to free nodes for the corrected arms.</p>"
+        "<p class='note'>Lessons encoded in the redesign: (1) the update, not just the forward, "
+        "must carry the working-set structure; (2) pseudo-step fidelity through bf16 must be "
+        "measured in-run; (3) selective-inference competence (the gap) and selective-update "
+        "transfer (the k=32 CPT protocol) are different quantities — the pilot's go/no-go uses "
+        "the gap, the real verdict needs the CPT protocol on finished checkpoints.</p>"
+    )
+    return card("results", "First launch: a documented negative result", body)
+
+
+def build_verification() -> str:
+    gate = card(
+        "results",
+        "Mechanism gate (verify_meta_step.py) — 11/11 PASS",
+        "<p>Tiny randpool model (2 layers, 16 experts), fp32, compile off, pure-CE loss, synthetic "
+        "multi-document batch; run under torchrun with FSDP2 active. All checks re-run after every "
+        "mechanism change.</p>"
+        + table(
+            ["check", "what it proves", "result"],
+            [
+                [
+                    "0 determinism floor",
+                    "two identical runs — calibrates all tolerances",
+                    "|&Delta;L| = 0 (bitwise)",
+                ],
+                [
+                    "B &alpha;=0 oracle",
+                    "same_tokens at &alpha;=0 &equiv; a single full pass (stash/zero/restore is a true no-op)",
+                    "loss + grads bitwise equal",
+                ],
+                [
+                    "1 perturbation visibility",
+                    "the in-place pseudo-step actually reaches the outer forward through FSDP",
+                    "PASS",
+                ],
+                [
+                    "2 directional derivative",
+                    "(L(0)&minus;L(&epsilon;))/&epsilon; &asymp; &lang;g_inner, g_outer&rang; — right sign, scale, and row-targeting",
+                    "0.76% rel err",
+                ],
+                [
+                    "3 manual reference (&lambda;&isin;{0, 0.5})",
+                    "module's final grads &equiv; hand-rolled autograd reference (g_outer(&theta;&prime;) + &lambda;g_inner)",
+                    "&le; 5e-8 rel diff",
+                ],
+                ["H heldout smoke", "split mode runs end-to-end, finite losses", "PASS"],
+                [
+                    "M1 non-expert grads preserved",
+                    "weight-only detach leaves attention/embeddings/router/norm grads untouched (the early-layer backprop property)",
+                    "bitwise identical",
+                ],
+                [
+                    "M2 forward unchanged",
+                    "the dual-GEMM masked path reproduces identical forward values",
+                    "bitwise identical",
+                ],
+                [
+                    "M3 expert grads masked",
+                    "confinement is active",
+                    "15% grad shift; 12/96 row-blocks exactly zero",
+                ],
+                ["M4 masked step smoke", "the full relaunch configuration end-to-end", "PASS"],
+                [
+                    "restore (every run)",
+                    "expert weights restored after every step",
+                    "bitwise, via EMO_META_CHECK_RESTORE=1",
+                ],
+            ],
+        ),
+    )
+    smoke = card(
+        "method",
+        "Smoke + calibration (local A100, real data)",
+        "<ul>"
+        "<li>All four meta modes &times; 30 steps on OLMoE-mix-0824 with a tiny model: zero errors, "
+        "115/115 restore asserts.</li>"
+        "<li>&alpha;-sweep (toy scale): 3e-2 best CE with grad cosine ~0.96; 3e-1 clip-saturated — "
+        "later reinterpreted through the bf16 lens (see bf16 tab) and superseded by &alpha;=3e-1 + "
+        "clip 10 + the measured survival metric.</li>"
+        "<li>Compile-on trial: steady 2.55 s/step after warmup (faster than compile-off 3.3), one "
+        "warmup-time dynamo eager fallback on the pool-flip frame, no recompile churn &rarr; "
+        "compile stays on.</li>"
+        "<li>Measured two-pass throughput at 128e scale (first launch): 5.76 vs 4.08 s/step = "
+        "1.41&times; baseline before the dual-GEMM; ~2&times; expected with it.</li>"
+        "</ul>",
+    )
+    return gate + smoke
+
+
+def build_status(data: dict) -> str:
+    rows = []
+    for name in (
+        "meta128_sametok_ws_100b",
+        "meta128_heldout_ws_100b",
+        "meta128_vanilla_100b",
+        "meta128_sametok_100b",
+    ):
+        d = data.get(name, {})
+        rows.append(
+            [
+                f"<code>{name}</code>",
+                d.get("state", "queued / no W&B run yet"),
+                d.get("step", "—"),
+                (
+                    f"{d['step'] * TOKENS_PER_STEP / 1e9:.1f}B"
+                    if isinstance(d.get("step"), int)
+                    else "—"
+                ),
+            ]
+        )
+    body = (
+        table(["run", "state", "step", "tokens"], rows)
+        + "<p>First things checked once the corrected arms produce steps: measured "
+        "<code>meta bf16 survival cosine</code> (want &gtrsim;0.5), CE convergence, grad cosine, "
+        "throughput vs the ~2&times; expectation, then the first lm-full/lm-pool32 eval pair at "
+        "step 500 — where the working-set arms must not reproduce the degenerate collapse.</p>"
+        "<p>Then: 100B completions, vanilla resume (auto-resumes from its ephemeral checkpoint), "
+        "and the k=32 CPT protocol on finished checkpoints as the decisive update-transfer test. "
+        "Known engineering follow-ups: delta-injection after the bf16 cast (exact pseudo-step at "
+        "any &alpha;), and the zero-extra-FLOPs row-sorted variant of the weight-only detach.</p>"
+    )
+    return card("results", "Live status &amp; next steps", body)
+
+
+# --------------------------------------------------------------------------
+
+CSS = """
+:root { --fg:#1e293b; --muted:#64748b; --bg:#f8fafc; --card:#ffffff; --line:#e2e8f0; }
+* { box-sizing:border-box; }
+body { margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+       color:var(--fg); background:var(--bg); line-height:1.55; }
+header { background:#0f172a; color:#f1f5f9; padding:18px 28px; }
+header h1 { margin:0 0 2px; font-size:20px; }
+header p { margin:0; color:#94a3b8; font-size:13px; }
+.home-link { display:inline-block; margin-bottom:8px; color:#94a3b8; font-size:13px; text-decoration:none; }
+.home-link:hover { color:#f1f5f9; }
+.topbar { position:sticky; top:0; z-index:10; }
+nav { display:flex; gap:6px; flex-wrap:wrap; padding:10px 28px; background:#1e293b; }
+nav button { border:0; border-radius:6px; padding:7px 14px; font-size:14px; cursor:pointer;
+             background:transparent; color:#cbd5e1; }
+nav button:hover { background:#334155; }
+nav button.active { background:#3b82f6; color:#fff; }
+#subnav { display:flex; gap:6px 16px; flex-wrap:wrap; padding:8px 28px; background:#eef2f7;
+          border-bottom:1px solid var(--line); font-size:13px; }
+#subnav a { color:#475569; text-decoration:none; white-space:nowrap; }
+#subnav a:hover { color:#2563eb; text-decoration:underline; }
+#subnav:empty { display:none; }
+main { max-width:1180px; margin:0 auto; padding:24px 28px 80px; }
+section.tab { display:none; }
+section.tab.active { display:block; }
+p { max-width:78ch; }
+.card { background:var(--card); border:1px solid var(--line); border-left:4px solid var(--line);
+        border-radius:8px; padding:16px 20px; margin:16px 0; }
+.card h3 { margin:0 0 8px; font-size:15px; text-transform:uppercase; letter-spacing:0.05em;
+           scroll-margin-top:96px; }
+.card.goal { border-left-color:#2563eb; } .card.goal h3 { color:#2563eb; }
+.card.method { border-left-color:#7c3aed; } .card.method h3 { color:#7c3aed; }
+.card.results { border-left-color:#059669; } .card.results h3 { color:#059669; }
+table { border-collapse:collapse; margin:12px 0; font-size:14px; width:auto; max-width:100%; }
+th, td { border:1px solid var(--line); padding:6px 12px; text-align:left; vertical-align:top; }
+th { background:#f1f5f9; }
+tbody tr:nth-child(even) { background:#f8fafc; }
+.scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:12px 0; }
+.scroll table { margin:0; }
+.note { font-size:13px; color:var(--muted); }
+code { background:#eef2f7; padding:1px 5px; border-radius:4px; font-size:0.9em; }
+ul { max-width:78ch; } li { margin:4px 0; }
+ol { max-width:78ch; }
+.figrow { display:flex; gap:16px; flex-wrap:wrap; margin:14px 0; }
+figure { flex:1 1 380px; min-width:0; max-width:720px; margin:0; }
+figure img { width:100%; border:1px solid var(--line); border-radius:6px; cursor:zoom-in; background:#fff; }
+figure img.zoom { max-width:none; width:auto; max-height:90vh; position:fixed; inset:0; margin:auto;
+                  z-index:100; box-shadow:0 0 0 100vmax rgba(15,23,42,.75); cursor:zoom-out; }
+figcaption { font-size:12.5px; color:var(--muted); margin-top:4px; }
+.missing { color:#b91c1c; font-size:13px; }
+@media (max-width:640px) {
+  header, nav, #subnav { padding-left:14px; padding-right:14px; }
+  main { padding:16px 14px 60px; }
+  nav button { padding:6px 10px; font-size:13px; }
+  table { font-size:12.5px; }
+  th, td { padding:5px 8px; }
+  figure { flex-basis:100%; max-width:100%; }
+}
+"""
+
+JS = """
+function slug(t){ return t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
+function buildSubnav(id) {
+  const sec = document.getElementById(id);
+  const sub = document.getElementById('subnav');
+  sub.innerHTML = '';
+  if (!sec) return;
+  sec.querySelectorAll('.card > h3').forEach(h => {
+    if (!h.id) h.id = id + '--' + slug(h.textContent);
+    const a = document.createElement('a');
+    a.href = '#' + h.id;
+    a.textContent = h.textContent;
+    a.addEventListener('click', e => { e.preventDefault(); h.scrollIntoView({behavior:'smooth', block:'start'}); });
+    sub.appendChild(a);
+  });
+}
+function show(id) {
+  document.querySelectorAll('section.tab').forEach(s => s.classList.toggle('active', s.id === id));
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.target === id));
+  history.replaceState(null, '', '#' + id);
+  buildSubnav(id);
+}
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => show(b.dataset.target)));
+show(location.hash && document.getElementById(location.hash.slice(1)) ? location.hash.slice(1) : 'overview');
 """
 
 
 def main():
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    OUT_PATH.write_text(build())
-    print(f"wrote {OUT_PATH}")
+    data_path = OUT / "report_data.json"
+    data = json.load(open(data_path)) if data_path.exists() else {}
+
+    tabs = [
+        ("overview", "Overview", build_overview(data)),
+        ("algorithm", "Algorithm", build_algorithm()),
+        ("implementation", "Implementation", build_implementation()),
+        ("bf16", "bf16 quantization", build_bf16(data)),
+        ("first-launch", "First launch (negative result)", build_first_launch(data)),
+        ("verification", "Verification", build_verification()),
+        ("status", "Status", build_status(data)),
+    ]
+    nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
+    sections = "".join(f'<section class="tab" id="{tid}">{body}</section>' for tid, _, body in tabs)
+
+    page = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EMO meta_learning: FOMAML pretraining for selective-expert update transfer</title>
+<style>{CSS}</style>
+</head>
+<body>
+<header>
+<a class="home-link" href="/">&larr; all reports</a>
+<h1>EMO meta_learning: FOMAML pretraining for selective-expert update transfer</h1>
+<p>meta_learning &mdash; pretrain a 128-expert EMO from scratch so that training on a document's
+32-expert working set improves the full model &middot; two-pass first-order MAML with working-set
+outer updates &middot; motivated by the modular_extension k=32 CPT negative result &middot;
+generated by scripts/meta_learning/build_report.py</p>
+</header>
+<div class="topbar"><nav>{nav}</nav><div id="subnav"></div></div>
+<main>{sections}</main>
+<script>{JS}</script>
+</body>
+</html>
+"""
+    OUT.mkdir(parents=True, exist_ok=True)
+    out = OUT / "report.html"
+    out.write_text(page)
+    print(f"Wrote {out} ({out.stat().st_size / 1e3:.1f} KB)")
 
 
 if __name__ == "__main__":
