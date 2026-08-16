@@ -105,7 +105,11 @@ def plan(
         recalibrate = False
     ladder = [target for target in (4, 8, 12, 16) if target > start]
     return {
-        "planId": f"{chain_name}-wd{wd}",
+        "planId": (
+            f"{chain_name}-init{init}-wd{wd}"
+            if method == "diloco"
+            else f"{chain_name}-wd{wd}"
+        ),
         "chainName": chain_name,
         "method": method_key(method, init, sim),
         "syncInterval": 4 if method == "local_sgd" else 32,
