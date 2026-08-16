@@ -78,6 +78,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Tie the input embeddings and LM-head projection for this trajectory.",
     )
+    parser.add_argument(
+        "--decay-embeddings",
+        action="store_true",
+        help="Apply the requested WD to the tied embeddings/LM-head matrix.",
+    )
     parser.add_argument("--workspace", default="ai2/flex2")
     parser.add_argument("--priority", default="urgent")
     parser.add_argument("--register", action="store_true")
@@ -88,6 +93,8 @@ def parse_args() -> argparse.Namespace:
         help="Explicitly override only the shared pending-job gate.",
     )
     args = parser.parse_args()
+    if args.decay_embeddings and not args.weight_tying:
+        parser.error("--decay-embeddings is authorized here only with --weight-tying")
     if args.target_epoch == 1 and args.source_checkpoint != "fresh":
         parser.error("E1 bootstrap requires --source-checkpoint=fresh")
     if args.target_epoch > 1 and args.source_checkpoint == "fresh":
@@ -149,10 +156,19 @@ def warmup_steps(global_sequences: int) -> int:
     return 24_576 // global_sequences
 
 
-def method_key(method: str, global_sequences: int, weight_tying: bool = False) -> str:
+def method_key(
+    method: str,
+    global_sequences: int,
+    weight_tying: bool = False,
+    decay_embeddings: bool = False,
+) -> str:
     prefix = "dr" if method == "dynamic_repacking" else "fixed"
     if weight_tying:
         prefix += "wt"
+    if decay_embeddings:
+        if not weight_tying:
+            raise ValueError("embedding-WD study key requires weight tying")
+        prefix += "embwd"
     return f"{prefix}{global_sequences}"
 
 
@@ -170,6 +186,8 @@ def trajectory_output(args: argparse.Namespace) -> str:
     mode = "_dr" if args.method == "dynamic_repacking" else ""
     if args.weight_tying:
         mode += "_wt"
+    if getattr(args, "decay_embeddings", False):
+        mode += "_embwd"
     return (
         f"{MODEL_ROOT}/bs{args.global_sequences}{mode}_"
         f"lr{canonical_number(args.learning_rate)}_wd{canonical_number(args.weight_decay)}"
@@ -178,6 +196,8 @@ def trajectory_output(args: argparse.Namespace) -> str:
 
 def original_trajectory_output(args: argparse.Namespace) -> str:
     tied = "_wt" if args.weight_tying else ""
+    if getattr(args, "decay_embeddings", False):
+        tied += "_embwd"
     return (
         f"{MODEL_ROOT}/bs{args.global_sequences}{tied}_"
         f"lr{canonical_number(args.learning_rate)}_wd{canonical_number(args.weight_decay)}"
@@ -210,7 +230,12 @@ def enforce_weight_decay_competition(
     lower_wd = Decimal("0.3") if args.global_sequences == 128 else Decimal("0.333")
     competitors = {}
     for candidate in report.get("runs", []):
-        if candidate.get("method") != method_key(args.method, args.global_sequences):
+        if candidate.get("method") != method_key(
+            args.method,
+            args.global_sequences,
+            args.weight_tying,
+            getattr(args, "decay_embeddings", False),
+        ):
             continue
         if int(candidate.get("batchSequences", 0)) != args.global_sequences:
             continue
@@ -241,7 +266,10 @@ def enforce_weight_decay_competition(
 
 
 def matching_registered_run(report: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
-    key = method_key(args.method, args.global_sequences, args.weight_tying)
+    decay_embeddings = getattr(args, "decay_embeddings", False)
+    key = method_key(
+        args.method, args.global_sequences, args.weight_tying, decay_embeddings
+    )
     lr = numeric(args.learning_rate)
     wd = numeric(args.weight_decay)
     matches = [
@@ -253,6 +281,7 @@ def matching_registered_run(report: dict[str, Any], args: argparse.Namespace) ->
         and numeric(run.get("wd")) == wd
         and active_epoch(run) == args.target_epoch
         and bool(run.get("weightTying", False)) == args.weight_tying
+        and bool(run.get("decayEmbeddings", False)) == decay_embeddings
     ]
     if len(matches) != 1:
         raise SystemExit(
@@ -428,6 +457,11 @@ def audit_source_spec(spec: dict[str, Any], args: argparse.Namespace) -> tuple[s
         tied_values = values_for(arguments, "--model.tie_embeddings=")
         if tied_values != ["true"]:
             raise SystemExit("weight-tied continuation source is not explicitly tied")
+    source_decay_embeddings = "--decay-embeddings" in arguments
+    if args.target_epoch > 1 and source_decay_embeddings != getattr(
+        args, "decay_embeddings", False
+    ):
+        raise SystemExit("continuation source embedding-WD policy does not exactly match")
     if args.target_epoch > 1 and numeric(
         unique_value(arguments, "--train_module.optim.weight_decay=")
     ) != numeric(args.weight_decay):
@@ -468,6 +502,8 @@ def build_spec(
     mode_tag = "dr" if args.method == "dynamic_repacking" else "fixed"
     if args.weight_tying:
         mode_tag += "_wt"
+    if getattr(args, "decay_embeddings", False):
+        mode_tag += "_embwd"
     lr_tag = args.learning_rate.replace(".", "p")
     wd_tag = args.weight_decay.replace(".", "p")
     run_name = (
@@ -479,7 +515,13 @@ def build_spec(
     train_args = [
         value
         for value in base_args
-        if value not in {"--dynamic-repacking", "--fixed-data-order", "--no-data-shuffle"}
+        if value
+        not in {
+            "--dynamic-repacking",
+            "--fixed-data-order",
+            "--no-data-shuffle",
+            "--decay-embeddings",
+        }
         and not value.startswith("--trainer.callbacks.checkpointer.save_interval=")
         and not value.startswith("--trainer.callbacks.checkpointer.ephemeral_save_interval=")
         and not value.startswith("--trainer.callbacks.downstream_evaluator.")
@@ -557,6 +599,8 @@ def build_spec(
     )
     if args.weight_tying:
         replacements += (("--model.tie_embeddings=", "--model.tie_embeddings=true"),)
+    if getattr(args, "decay_embeddings", False):
+        train_args.append("--decay-embeddings")
     if args.target_epoch > 1:
         replacements += (
             ("--force_exact_trainer_load_path=", "--force_exact_trainer_load_path=true"),
@@ -719,6 +763,8 @@ def register_submission(
     run["experiment"] = experiment
     run["revision"] = revision
     run["output"] = output
+    for key in ("beakerStatus", "job", "jobs", "progress"):
+        run.pop(key, None)
     run["reason"] = (
         "Submitted locally after exact-source, canonical trajectory-output, LR/WD, "
         "topology, rank-microbatch, weight-tying, manifest-checksum, and duplicate-tuple "

@@ -32,3 +32,19 @@ def test_entrypoint_force_exact_policy_defaults_to_false():
     module._apply_explicit_load_path_policy(config, trainer)
 
     assert config.force_exact_trainer_load_path is False
+
+
+def test_embedding_weight_decay_defaults_to_zero_override():
+    module = _load_entrypoint_module()
+
+    overrides = module._embedding_group_overrides(decay_embeddings=False)
+
+    assert len(overrides) == 1
+    assert overrides[0].params == ["embeddings.weight"]
+    assert overrides[0].opts == {"weight_decay": 0.0}
+
+
+def test_embedding_weight_decay_opt_in_uses_global_optimizer_wd():
+    module = _load_entrypoint_module()
+
+    assert module._embedding_group_overrides(decay_embeddings=True) == []

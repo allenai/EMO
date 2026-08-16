@@ -61,6 +61,18 @@ SEQUENCE_LENGTH = 4096
 GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
 
 
+def _embedding_group_overrides(decay_embeddings: bool) -> List[OptimGroupOverride]:
+    """Return the embedding-specific optimizer policy.
+
+    With tied weights, ``embeddings.weight`` is also the LM-head matrix. Omitting
+    the historical zero-decay override therefore applies the optimizer's global
+    weight decay to both roles.
+    """
+    if decay_embeddings:
+        return []
+    return [OptimGroupOverride(params=["embeddings.weight"], opts=dict(weight_decay=0.0))]
+
+
 # docs: start-define-config
 @dataclass
 class ExperimentConfig(Config):
@@ -217,9 +229,7 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             lr=opts.lr,
             weight_decay=0.033,
             betas=(0.9, 0.95),
-            group_overrides=[
-                OptimGroupOverride(params=["embeddings.weight"], opts=dict(weight_decay=0.0))
-            ],
+            group_overrides=_embedding_group_overrides(opts.decay_embeddings),
         ),
         compile_model=True,
         dp_config=TransformerDataParallelConfig(
@@ -364,6 +374,15 @@ def parser_args():
         type=float,
         default=4e-4,
         help="Learning rate for the optimizer.",
+    )
+    parser.add_argument(
+        "--decay-embeddings",
+        action="store_true",
+        help=(
+            "Apply the optimizer's global weight decay to embeddings.weight instead of "
+            "placing it in a zero-WD group. With model.tie_embeddings=true, this also "
+            "decays the shared LM-head matrix."
+        ),
     )
     parser.add_argument(
         "--model-size",

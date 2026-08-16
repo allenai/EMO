@@ -28,11 +28,21 @@ TOKENS_PER_EPOCH = 1_000_000_000
 DECAY_FRACTION = 0.1
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 TRAIN_LOSS = re.compile(r"\btrain/CE loss=([0-9]+(?:\.[0-9]+)?)")
-VALIDATION_LOSS = re.compile(r"\bdclm-validation-0802/CE loss=([0-9]+(?:\.[0-9]+)?)\s*$")
+VALIDATION_LOSS = re.compile(
+    r"\bdclm-validation-0802/CE loss=([0-9]+(?:\.[0-9]+)?)\s*$",
+    re.MULTILINE,
+)
+WANDB_VALIDATION_LOSS = re.compile(
+    r"wandb:\s+eval/heldout/dclm-validation-0802/CE loss\s+([0-9]+(?:\.[0-9]+)?)"
+)
 WANDB_RUN = re.compile(r"https://wandb\.ai/[^\s]+/runs/([a-zA-Z0-9_-]+)")
 TRAIN_STEP = re.compile(r"\[step=([0-9,]+)/([0-9,]+),epoch=")
 DESCRIPTION_PROGRESS = re.compile(r"([0-9]+(?:\.[0-9]+)?)% complete, step ([0-9,]+)/([0-9,]+)")
 ACTIVE_STATUSES = {"submitted", "scheduled", "running"}
+REVISION_ALIASES = {
+    "2c6b1fb98": "sewonm/icsl",
+    "2c6b1fb982091a3202348b39883255a05075f946": "sewonm/icsl",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -50,6 +60,11 @@ def parse_args() -> argparse.Namespace:
         "--allow-pending-flex2-jobs",
         action="store_true",
         help="Use the user's explicit override of the shared pending-job gate.",
+    )
+    parser.add_argument(
+        "--retry-git-checkout-failures",
+        action="store_true",
+        help="Reactivate registered E1 attempts that failed before startup on Git checkout.",
     )
     args = parser.parse_args()
     if args.submit_next and not args.revision:
@@ -163,7 +178,7 @@ def completed_result(
 ) -> dict[str, Any]:
     cleaned = ANSI.sub("", logs)
     train_values = TRAIN_LOSS.findall(cleaned)
-    validation_values = VALIDATION_LOSS.findall(cleaned)
+    validation_values = WANDB_VALIDATION_LOSS.findall(cleaned) or VALIDATION_LOSS.findall(cleaned)
     wandb_values = WANDB_RUN.findall(cleaned)
     if not train_values or not validation_values:
         raise RuntimeError(
@@ -259,6 +274,11 @@ def refresh_run(run: dict[str, Any]) -> str | None:
     experiment = inspect_experiment(experiment_id)
     state = experiment_state(experiment)
     run["status"] = state
+    run["beakerStatus"] = state
+    job_ids = [job["id"] for job in experiment.get("jobs") or [] if job.get("id")]
+    if job_ids:
+        run["job"] = job_ids[0]
+        run["jobs"] = job_ids
     attempted = run.setdefault("attemptedEpochs", [])
     if epoch not in attempted:
         attempted.append(epoch)
@@ -310,6 +330,62 @@ def slug_number(value: object) -> str:
     return str(value).replace(".", "p").replace("-", "m")
 
 
+def fetchable_revision(revision: str) -> str:
+    return REVISION_ALIASES.get(revision, revision)
+
+
+def reactivate_git_checkout_failures(report: dict[str, Any]) -> list[str]:
+    reactivated = []
+    for run in tied_runs(report):
+        if run.get("status") != "failed" or run.get("activeEpoch") is not None:
+            continue
+        failed_result = run.get("results", {}).get("1")
+        if not isinstance(failed_result, dict) or failed_result.get("status") != "failed":
+            continue
+        experiment = run.get("experiment") or run.get("beaker")
+        if not experiment:
+            continue
+        attempts = run.setdefault("attempts", [])
+        if not any(attempt.get("experiment") == experiment for attempt in attempts):
+            attempts.append(
+                {
+                    "epoch": 1,
+                    "status": "failed",
+                    "failureClass": "git_checkout_unfetchable_short_revision",
+                    "experiment": experiment,
+                    "beaker": experiment,
+                    "job": run.get("job"),
+                    "jobs": run.get("jobs", []),
+                    "revision": run.get("revision"),
+                    "reason": (
+                        "Gantry failed before repository startup because the short commit "
+                        "SHA was not a fetchable remote ref; no training artifact was created."
+                    ),
+                }
+            )
+        del run["results"]["1"]
+        run["status"] = "planned"
+        run["activeEpoch"] = 1
+        run["reason"] = (
+            "User-authorized E1 retry after a pre-start Git-ref failure; use a fetchable "
+            "remote branch while preserving all model and duplicate guards."
+        )
+        run.pop("stopReason", None)
+        for key in (
+            "beaker",
+            "beakerStatus",
+            "experiment",
+            "job",
+            "jobs",
+            "output",
+            "progress",
+            "revision",
+        ):
+            run.pop(key, None)
+        reactivated.append(run["id"])
+    return reactivated
+
+
 def submit_next(report: dict[str, Any], revision: str, allow_pending_flex2_jobs: bool) -> str:
     if not allow_pending_flex2_jobs:
         pending = pending_flex2_jobs()
@@ -325,12 +401,24 @@ def submit_next(report: dict[str, Any], revision: str, allow_pending_flex2_jobs:
         if str(run.get("status", "")).lower() == "planned" and run.get("activeEpoch") is not None
     ]
     if not planned:
+        active = [
+            run
+            for run in tied_runs(report)
+            if str(run.get("status", "")).lower() in ACTIVE_STATUSES
+        ]
+        if active:
+            labels = ", ".join(
+                f"{run['id']} E{run['activeEpoch']} ({run['status']})" for run in active
+            )
+            return f"No submission: current weight-tying endpoints remain active: {labels}."
         return "No submission: all registered weight-tying coordinates are finished."
     run = planned[0]
     epoch = int(run["activeEpoch"])
     batch = int(run["batchSequences"])
-    suffix = f"wt-bs{batch}-e{epoch}-wd{slug_number(run['wd'])}-r01"
-    name = f"dense-1b-dr-wt-bs{batch}-e{epoch}-wd{slug_number(run['wd'])}"
+    attempt = len(run.get("attempts", [])) + 1
+    attempt_tag = f"r{attempt:02d}"
+    suffix = f"wt-bs{batch}-e{epoch}-wd{slug_number(run['wd'])}-{attempt_tag}"
+    name = f"dense-1b-dr-wt-bs{batch}-e{epoch}-wd{slug_number(run['wd'])}-{attempt_tag}"
     command = [
         str(Path(".venv/bin/python")),
         str(LAUNCHER),
@@ -376,6 +464,11 @@ def main() -> None:
     report = load_report()
     messages = []
     changed = False
+    if args.retry_git_checkout_failures:
+        reactivated = reactivate_git_checkout_failures(report)
+        if reactivated:
+            messages.append("Reactivated Git-checkout retries: " + ", ".join(reactivated))
+            changed = True
     for run in tied_runs(report):
         message = refresh_run(run)
         if message:
@@ -384,7 +477,13 @@ def main() -> None:
     if changed:
         write_report(report)
     if args.submit_next:
-        messages.append(submit_next(report, args.revision, args.allow_pending_flex2_jobs))
+        messages.append(
+            submit_next(
+                report,
+                fetchable_revision(args.revision),
+                args.allow_pending_flex2_jobs,
+            )
+        )
     if not messages:
         messages.append("No active weight-tying endpoints; registry unchanged.")
     print("\n".join(messages))
