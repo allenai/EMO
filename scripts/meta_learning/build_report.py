@@ -135,9 +135,13 @@ def build_overview(data: dict) -> str:
         "full 128-expert model, one selective step ahead of where it currently is</i> "
         "(first-order MAML).</p>"
         "<p>Motivation: the modular_extension <i>k=32 CPT (no extension)</i> result. On a "
-        "vanilla-EMO model, post-hoc per-cluster 32-expert CPT bought almost nothing on its own "
-        "cluster (median &minus;0.007 nats) and degraded the pool broadly (+0.08 nats mean vs the "
-        "plain-CPT baseline's &minus;0.027), with later stages overwriting earlier ones. Vanilla "
+        "vanilla-EMO model, post-hoc per-cluster 32-expert CPT <b>worked in the selective view</b> "
+        "— right after its own stage, the trained cluster's 32-expert working set improved by "
+        "&minus;0.164 nats (~6&times; the 30B plain-CPT baseline's ordinary &minus;0.027) — but "
+        "<b>almost none of it transferred to the full model</b>: the full-pool view of the very "
+        "same weights showed only &minus;0.022 on the trained cluster (full routing dilutes what "
+        "the stage learned across experts it was never co-adapted with), and the pool degraded "
+        "broadly elsewhere (+0.08 nats mean), with later stages overwriting earlier ones. Vanilla "
         "EMO is excellent at selective <i>inference</i>; what fails is selective <i>update "
         "transfer</i>. This experiment builds that property into pretraining itself.</p>",
     )
