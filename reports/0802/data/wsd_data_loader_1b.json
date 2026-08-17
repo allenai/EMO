@@ -7032,10 +7032,27 @@
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step76294",
           "sequential": true,
           "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+        },
+        "24": {
+          "status": "complete",
+          "train": 2.785,
+          "validation": 2.95,
+          "validationExact": 2.95014,
+          "gap": 0.16514,
+          "wandb": "jtrse8q3",
+          "experiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
+          "beaker": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
+          "job": "01M05YRGNHV9VY9Z07MKQKAX0V",
+          "revision": "sewonm/icsl",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step82397",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step91553",
+          "sequential": true,
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
         }
       },
-      "status": "running",
-      "activeEpoch": 24,
+      "status": "complete",
+      "activeEpoch": null,
       "experiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
       "beaker": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
       "revision": "sewonm/icsl",
@@ -8827,8 +8844,8 @@
       "weightTying": true,
       "decayEmbeddings": true,
       "dataOrder": "dynamic_repacking_from_e2",
-      "status": "running",
-      "currentEpoch": 24,
+      "status": "complete",
+      "currentEpoch": null,
       "targets": [
         1,
         2,
@@ -8974,23 +8991,28 @@
         },
         {
           "epoch": 24,
-          "status": "running",
+          "status": "complete",
           "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step68664",
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step82397",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step91553",
           "progress": {
-            "step": 90246,
+            "step": 91553,
             "totalSteps": 91553,
-            "percent": 98.6,
-            "latestTrain": 2.85
-          }
+            "percent": 100.0,
+            "latestTrain": 2.785
+          },
+          "train": 2.785,
+          "validation": 2.95,
+          "validationExact": 2.95014,
+          "gap": 0.16514,
+          "wandb": "jtrse8q3"
         }
       ],
-      "reason": "Retried after a failed persistent attempt from E2. Submitted as one persistent E1->E24 job. Every stage evaluates its WSD decayed endpoint and the next stage resumes the preceding exact pre-decay checkpoint; dynamic repacking begins at E2. Outputs use the canonical coordinate trajectory directory.",
+      "reason": "Persistent chain completed all registered evaluated stages.",
       "canonicalOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3",
       "mergeAfterCompletion": false,
       "stopOnSaturation": true,
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "job": "01M05YRGNHV9VY9Z07MKQKAX0V",
       "jobs": [
         "01M05YRGNHV9VY9Z07MKQKAX0V"
@@ -9901,10 +9923,10 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step13732",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step15259",
           "progress": {
-            "step": 12452,
+            "step": 15166,
             "totalSteps": 15259,
-            "percent": 81.6,
-            "latestTrain": 3.183
+            "percent": 99.4,
+            "latestTrain": 2.872
           }
         },
         {
@@ -10259,10 +10281,10 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_mlp_upper_half_wd1.0_lr1e-3_wd0.3/step27465",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_mlp_upper_half_wd1.0_lr1e-3_wd0.3/step30518",
           "progress": {
-            "step": 14221,
+            "step": 18478,
             "totalSteps": 30518,
-            "percent": 46.6,
-            "latestTrain": 3.394
+            "percent": 60.5,
+            "latestTrain": 3.337
           }
         },
         {
