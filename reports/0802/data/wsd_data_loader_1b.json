@@ -492,7 +492,40 @@
           "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0/step7630",
           "train": 3.383,
           "validation": 3.34581,
-          "reason": "Healthy completion; held-out DCLM validation strictly improved E1 CE3.47, so E4 is eligible."
+          "reason": "Healthy completion; held-out DCLM validation strictly improved E1 CE3.47, so E4 is eligible.",
+          "acc": 32.54,
+          "bpb": 0.9684,
+          "avg8Bpb": 1.420675,
+          "avg8Accuracy": 40.76875,
+          "downstream": {
+            "arc_challenge": 22.74,
+            "arc_easy": 49.82,
+            "boolq": 56.730000000000004,
+            "csqa": 39.89,
+            "hellaswag": 32.54,
+            "openbookqa": 25.2,
+            "piqa": 64.53,
+            "socialiqa": 41.86,
+            "winogrande": 49.57
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.475,
+            "arc_easy": 1.526,
+            "boolq": 1.751,
+            "csqa": 1.524,
+            "hellaswag": 0.9684,
+            "openbookqa": 1.718,
+            "piqa": 1.279,
+            "socialiqa": 1.32,
+            "winogrande": 1.555
+          },
+          "downstreamWandb": "ap1wv7jb",
+          "downstreamEvaluation": {
+            "campaign": "01M0836NY0S450EXMFAABVDA63",
+            "job": "01M0836P5TZJABWZMK8JSRGK3W",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0/step7630",
+            "gpuCount": 1
+          }
         },
         "4": {
           "status": "complete",
@@ -7071,16 +7104,16 @@
           "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
         }
       },
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 28,
       "experiment": "01M084ZA64MVJX1JB5A9XB7KDZ",
       "beaker": "01M084ZA64MVJX1JB5A9XB7KDZ",
       "revision": "sewonm/icsl",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3",
       "reason": "Persistent DR+WT chain with global WD on the tied embeddings/LM-head matrix.",
-      "job": "01M05YRGNHV9VY9Z07MKQKAX0V",
+      "job": "01M084ZA9PC8K2M73GHASVBV8N",
       "jobs": [
-        "01M05YRGNHV9VY9Z07MKQKAX0V"
+        "01M084ZA9PC8K2M73GHASVBV8N"
       ]
     },
     {
@@ -9065,7 +9098,7 @@
       "mlpWeightDecay": null,
       "mlpWeightDecayScope": null,
       "dataOrder": "dynamic_repacking_from_e2",
-      "status": "submitted",
+      "status": "running",
       "currentEpoch": 28,
       "targets": [
         1,
@@ -9240,7 +9273,7 @@
         },
         {
           "epoch": 28,
-          "status": "planned",
+          "status": "running",
           "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step82397",
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step96130",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step106812"
@@ -9313,7 +9346,12 @@
       "canonicalOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3",
       "mergeAfterCompletion": false,
       "stopOnSaturation": true,
-      "downstreamEvaluationOnFinish": true
+      "downstreamEvaluationOnFinish": true,
+      "beakerStatus": "running",
+      "job": "01M084ZA9PC8K2M73GHASVBV8N",
+      "jobs": [
+        "01M084ZA9PC8K2M73GHASVBV8N"
+      ]
     },
     {
       "attempts": [
@@ -10584,10 +10622,10 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_mlp_upper_half_wd1.0_lr1e-3_wd0.3/step27465",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_mlp_upper_half_wd1.0_lr1e-3_wd0.3/step30518",
           "progress": {
-            "step": 18762,
+            "step": 19801,
             "totalSteps": 30518,
-            "percent": 61.5,
-            "latestTrain": 3.382
+            "percent": 64.9,
+            "latestTrain": 3.362
           }
         },
         {
@@ -11154,7 +11192,7 @@
           "sourceExperiment": "01M018DAMED87RHQZ882NEN9QX",
           "taskName": "downstream-eval-runtime-discovery",
           "groupId": "bs64-dr",
-          "status": "running",
+          "status": "complete",
           "job": "01M0836P5TZJABWZMK8JSRGK3W"
         },
         {
@@ -11169,7 +11207,7 @@
           "sourceExperiment": "01KZWRC6DTEZKHFBMATZ63ZAAZ",
           "taskName": "downstream-eval-runtime-discovery",
           "groupId": "bs64-dr",
-          "status": "submitted",
+          "status": "running",
           "job": "01M0836P5TZJABWZMK8JSRGK3W"
         },
         {
