@@ -447,7 +447,7 @@
     const tr = document.createElement("tr");
     if (["submitted", "scheduled", "running"].includes(campaign.status)) tr.className = "run-active";
     if (campaign.status === "failed") tr.className = "run-failed";
-    tr.innerHTML = `<td>${campaign.status}</td><td>${tasks.length}</td><td>${count("complete")}</td><td>${count("running")}</td><td>${count("scheduled") + count("submitted")}</td><td>${count("failed")}</td><td>${campaign.gpuPerTask ?? 1}</td><td>${campaign.revision || "—"}</td><td>${experiment ? `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${experiment}">${experiment}</a>` : "—"}</td>`;
+    tr.innerHTML = `<td>${campaign.status}</td><td>${campaign.taskCount ?? tasks.length}</td><td>${campaign.checkpointCount ?? tasks.length}</td><td>${count("complete")}</td><td>${count("running")}</td><td>${count("scheduled") + count("submitted")}</td><td>${count("failed")}</td><td>${campaign.gpuPerTask ?? 1}</td><td>${campaign.revision || "—"}</td><td>${experiment ? `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${experiment}">${experiment}</a>` : "—"}</td>`;
     downstreamCampaignBody.appendChild(tr);
   }
 

@@ -3,9 +3,9 @@
 
 The report's DR, DR+WT, and DR+WT+EmbedWD training jobs deliberately skipped
 downstream evaluation.  This launcher discovers their completed post-decay
-checkpoints and creates one independent Beaker task per checkpoint.  Every task
-uses exactly one GPU (one replica, one local process), loads model weights only,
-runs the established nine-task suite at startup, and exits without training.
+checkpoints and creates one Beaker task that evaluates them sequentially.  The
+task uses exactly one GPU (one replica, one local process), loads model weights
+only, runs the established nine-task suite at startup, and exits without training.
 
 The same script refreshes a registered campaign and writes completed metrics back
 to ``wsd_data_loader_1b.json`` plus its JavaScript mirror.
@@ -19,7 +19,7 @@ Examples:
     .venv/bin/python scripts/models/evaluate_dense_1b_missing_downstream.py \
         --print-spec --revision <pushed-revision>
 
-    # Submit one experiment containing one 1-GPU task per checkpoint and register it.
+    # Submit one experiment containing one sequential 1-GPU task and register it.
     .venv/bin/python scripts/models/evaluate_dense_1b_missing_downstream.py \
         --submit --revision <pushed-revision>
 
@@ -30,6 +30,7 @@ Examples:
 from __future__ import annotations
 
 import argparse
+import base64
 import copy
 import json
 import re
@@ -46,7 +47,8 @@ from typing import Any
 REPORT_PATH = Path("reports/0802/data/wsd_data_loader_1b.json")
 WORKSPACE = "ai2/flex2"
 DEFAULT_NAME = "dense-1b-missing-downstream-evals"
-TASK_CAP = 100
+CHECKPOINT_CAP = 100
+SEQUENTIAL_TASK_NAME = "downstream-eval-sequential"
 DOWNSTREAM_TASK_ARGUMENT = (
     "[arc_easy, arc_challenge, boolq, csqa_val_rc_5shot, hellaswag, "
     "openbookqa_test_rc_5shot, piqa, socialiqa_val_rc_5shot, winogrande]"
@@ -96,6 +98,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workspace", default=WORKSPACE)
     parser.add_argument("--priority", default="normal")
     parser.add_argument("--report", type=Path, default=REPORT_PATH)
+    parser.add_argument(
+        "--replace-deleted-experiment",
+        help="Replace this exact deleted campaign registration after a successful submission.",
+    )
     args = parser.parse_args()
     if (args.submit or args.print_spec) and not args.revision:
         parser.error("--revision is required with --submit or --print-spec")
@@ -421,19 +427,51 @@ def build_spec(
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     if not items:
         raise RuntimeError("no unevaluated retained checkpoints remain")
-    if len(items) > TASK_CAP:
+    if len(items) > CHECKPOINT_CAP:
         raise RuntimeError(
-            f"campaign has {len(items)} tasks, above the audited Beaker cap of {TASK_CAP}"
+            f"campaign has {len(items)} checkpoints, above the audited cap of {CHECKPOINT_CAP}"
         )
     cache = prefetch_source_specs(items)
-    tasks = [build_task(item, revision, priority, cache) for item in items]
     base = copy.deepcopy(source_spec(items[0]["sourceExperiment"], cache))
-    base["tasks"] = tasks
+    source_task = base["tasks"][0]
+    training_script, _, base_arguments = extract_source_training_command(source_task)
+    manifest = {
+        "trainingScript": training_script,
+        "baseArguments": base_arguments,
+        "items": items,
+    }
+    encoded = base64.b64encode(json.dumps(manifest, separators=(",", ":")).encode()).decode()
+    task = copy.deepcopy(source_task)
+    task["name"] = SEQUENTIAL_TASK_NAME
+    task["arguments"] = [
+        "bash",
+        "-lc",
+        "\n".join(
+            [
+                "set -euo pipefail",
+                f"echo {shlex.quote(encoded)} | base64 --decode > /tmp/downstream-manifest.json",
+                "python scripts/models/run_dense_1b_downstream_sequence.py --manifest /tmp/downstream-manifest.json",
+            ]
+        ),
+    ]
+    task["resources"] = {"gpuCount": 1, "sharedMemory": "10 GiB"}
+    task["context"] = {"priority": priority, "minRuntime": "0s", "autoResume": False}
+    for key in (
+        "replicas",
+        "leaderSelection",
+        "propagateFailure",
+        "propagatePreemption",
+        "synchronizedStartTimeout",
+    ):
+        task.pop(key, None)
+    set_env(task, "GIT_REF", revision)
+    set_env(task, "NUM_NODES", "1")
+    base["tasks"] = [task]
     base.pop("description", None)
     records = [
         item
         | {
-            "taskName": task_name(item),
+            "taskName": SEQUENTIAL_TASK_NAME,
             "status": "submitted",
         }
         for item in items
@@ -443,7 +481,8 @@ def build_spec(
 
 def print_plan(items: list[dict[str, Any]], no_checkpoint: list[dict[str, Any]]) -> None:
     counts = Counter((item["variant"], item["batchSequences"]) for item in items)
-    print(f"one-GPU evaluation tasks: {len(items)}")
+    print(f"one-GPU sequential Beaker tasks: {1 if items else 0}")
+    print(f"checkpoints evaluated serially: {len(items)}")
     for (name, batch), count in sorted(
         counts.items(), key=lambda entry: (entry[0][1], entry[0][0])
     ):
@@ -469,7 +508,9 @@ def register_campaign(
             "revision": revision,
             "status": "submitted",
             "gpuPerTask": 1,
-            "taskCount": len(tasks),
+            "taskCount": 1,
+            "checkpointCount": len(tasks),
+            "singleGpuSequential": True,
             "tasks": tasks,
         }
     )
@@ -553,20 +594,49 @@ def refresh(report: dict[str, Any]) -> bool:
             continue
         inspected = inspect_experiment(campaign["experiment"])
         jobs = inspected.get("jobs") or []
+        sequential = bool(campaign.get("singleGpuSequential"))
+        sequential_job = matching_job(jobs, SEQUENTIAL_TASK_NAME) if sequential else None
+        sequential_logs = ""
+        if sequential_job and job_state(sequential_job) in {"running", "complete", "failed"}:
+            sequential_logs = run(
+                ["beaker", "job", "logs", sequential_job["id"], "--no-timestamps"]
+            )
         for task in campaign.get("tasks", []):
             if task.get("status") == "complete":
                 continue
-            job = matching_job(jobs, task["taskName"])
+            job = sequential_job if sequential else matching_job(jobs, task["taskName"])
             if job is None:
                 continue
             state = job_state(job)
-            if task.get("status") != state:
+            if not sequential and task.get("status") != state:
                 task["status"] = state
                 changed = True
             task["job"] = job["id"]
-            if state != "complete":
-                continue
-            metrics = parse_metrics(run(["beaker", "job", "logs", job["id"], "--no-timestamps"]))
+            marker = f"run_id={task['runId']} epoch={task['epoch']}"
+            complete_marker = f"DOWNSTREAM_EVAL_COMPLETE {marker}"
+            if sequential:
+                if complete_marker not in sequential_logs:
+                    checkpoint_state = "submitted"
+                    if f"DOWNSTREAM_EVAL_START {marker}" in sequential_logs:
+                        checkpoint_state = "running" if state != "failed" else "failed"
+                    if task.get("status") != checkpoint_state:
+                        task["status"] = checkpoint_state
+                        changed = True
+                    continue
+                start = sequential_logs.rfind(
+                    f"DOWNSTREAM_EVAL_START {marker}", 0, sequential_logs.find(complete_marker)
+                )
+                logs = sequential_logs[
+                    start : sequential_logs.find(complete_marker) + len(complete_marker)
+                ]
+                if task.get("status") != "complete":
+                    task["status"] = "complete"
+                    changed = True
+            else:
+                if state != "complete":
+                    continue
+                logs = run(["beaker", "job", "logs", job["id"], "--no-timestamps"])
+            metrics = parse_metrics(logs)
             result = find_result(report, task["runId"], int(task["epoch"]))
             result.update(metrics)
             result["downstreamEvaluation"] = {
@@ -613,6 +683,14 @@ def main() -> None:
         )
         return
 
+    if args.replace_deleted_experiment:
+        campaigns = report.get("downstreamEvaluationCampaigns", [])
+        matches = [c for c in campaigns if c.get("experiment") == args.replace_deleted_experiment]
+        if len(matches) != 1:
+            raise RuntimeError("deleted experiment registration was not found exactly once")
+        report["downstreamEvaluationCampaigns"] = [
+            c for c in campaigns if c.get("experiment") != args.replace_deleted_experiment
+        ]
     items, no_checkpoint = candidates(report)
     if args.plan:
         print_plan(items, no_checkpoint)
