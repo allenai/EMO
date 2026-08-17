@@ -30,7 +30,6 @@ Examples:
 from __future__ import annotations
 
 import argparse
-import base64
 import copy
 import json
 import re
@@ -49,6 +48,7 @@ WORKSPACE = "ai2/flex2"
 DEFAULT_NAME = "dense-1b-missing-downstream-evals"
 CHECKPOINT_CAP = 100
 SEQUENTIAL_TASK_NAME = "downstream-eval-sequential"
+SEQUENTIAL_MANIFEST = Path("scripts/models/manifests/dense_1b_downstream.json")
 DOWNSTREAM_TASK_ARGUMENT = (
     "[arc_easy, arc_challenge, boolq, csqa_val_rc_5shot, hellaswag, "
     "openbookqa_test_rc_5shot, piqa, socialiqa_val_rc_5shot, winogrande]"
@@ -440,19 +440,15 @@ def build_spec(
         "baseArguments": base_arguments,
         "items": items,
     }
-    encoded = base64.b64encode(json.dumps(manifest, separators=(",", ":")).encode()).decode()
+    SEQUENTIAL_MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+    SEQUENTIAL_MANIFEST.write_text(json.dumps(manifest, indent=2) + "\n")
     task = copy.deepcopy(source_task)
     task["name"] = SEQUENTIAL_TASK_NAME
     task["arguments"] = [
-        "bash",
-        "-lc",
-        "\n".join(
-            [
-                "set -euo pipefail",
-                f"echo {shlex.quote(encoded)} | base64 --decode > /tmp/downstream-manifest.json",
-                "python scripts/models/run_dense_1b_downstream_sequence.py --manifest /tmp/downstream-manifest.json",
-            ]
-        ),
+        "python",
+        "scripts/models/run_dense_1b_downstream_sequence.py",
+        "--manifest",
+        str(SEQUENTIAL_MANIFEST),
     ]
     task["resources"] = {"gpuCount": 1, "sharedMemory": "10 GiB"}
     task["context"] = {"priority": priority, "minRuntime": "0s", "autoResume": False}
