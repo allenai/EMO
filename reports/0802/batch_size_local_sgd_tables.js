@@ -29,8 +29,8 @@
   const validationHeader=document.querySelector('#validation-summary')?.closest('table')?.querySelector('thead tr');
   const baselineHeaders=[64,128,256,512,1024].flatMap(batch=>[`BS ${batch}\nOriginal`,`BS ${batch}\nDR`]);
   if(validationHeader)validationHeader.innerHTML=['Epoch',...baselineHeaders].map(headerCell).join('')+simulationHeaders;
-  const optimizerHeader=document.querySelector('#optimizer-step-summary')?.closest('table')?.querySelector('thead tr');
-  if(optimizerHeader)optimizerHeader.innerHTML=['Optimizer steps','Training time',...baselineHeaders].map(headerCell).join('')+simulationHeaders;
+  const optimizerHeaders=document.querySelectorAll('table[data-matched-step-summary] thead tr');
+  optimizerHeaders.forEach(header=>header.innerHTML=['Optimizer steps','Training time',...baselineHeaders].map(headerCell).join('')+simulationHeaders);
   const coordinateHeader=document.querySelector('#ls-coordinate-summary')?.closest('table')?.querySelector('thead tr');
   if(coordinateHeader)coordinateHeader.innerHTML=headerCell('Epoch')+simulationHeaders;
   const escapeAttribute=value=>String(value??'').replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;');

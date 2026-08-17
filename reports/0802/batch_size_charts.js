@@ -392,6 +392,81 @@
     return `<tr><td>≈${optimizerSteps.toLocaleString()}</td>${timeCell}${cells}${simulationCells}</tr>`;
   }).join('');
 
+  const matchedDownstreamTables=[
+    {bodyId:'optimizer-step-hs-accuracy-summary',metricName:'acc',higherIsBetter:true,decimals:2,label:'HellaSwag accuracy'},
+    {bodyId:'optimizer-step-hs-bpb-summary',metricName:'bpb',higherIsBetter:false,decimals:3,label:'HellaSwag BPB'},
+    {bodyId:'optimizer-step-avg8-accuracy-summary',metricName:'avg8_acc',higherIsBetter:true,decimals:2,label:'8-task average accuracy'},
+    {bodyId:'optimizer-step-avg8-bpb-summary',metricName:'avg8_bpb',higherIsBetter:false,decimals:3,label:'8-task average BPB'},
+  ];
+  const downstreamValue=(run,metricName)=>{
+    const result=run?value(run,metricName):null;
+    return Number.isFinite(result)?Number(result):null;
+  };
+  const markedDownstreamValue=(metricValue,rowBest,decimals)=>{
+    if(!Number.isFinite(metricValue))return '—';
+    const formatted=metricValue.toFixed(decimals);
+    return metricValue===rowBest?`<strong><span class="summary-row-best">${formatted}</span></strong>`:formatted;
+  };
+  const renderMatchedDownstreamTable=config=>{
+    const body=document.querySelector(`#${config.bodyId}`);
+    if(!body)return;
+    body.innerHTML=optimizerStepComparisons.map(comparison=>{
+      const optimizerSteps=optimizerStepsForComparison(comparison);
+      const secondsPerStep=Number(optimizerTiming.secondsPerStep);
+      const trainingSeconds=optimizerSteps*secondsPerStep;
+      const timeCell=Number.isFinite(trainingSeconds)?`<td class="matched-value" title="${optimizerSteps.toLocaleString()} steps × ${secondsPerStep}s per step">≈${formatDuration(trainingSeconds)}</td>`:'<td>—</td>';
+      const rowRuns=[...optimizerSummaryBatches.flatMap(batch=>{
+        const epoch=comparison.epochs?.[String(batch)];
+        if(!Number.isFinite(epoch))return [];
+        const entry=matchedEntryFor(batch,epoch);
+        const runs=entry?[entry.run]:[];
+        const drRun=drSelected.get(`${batch}|${Number(epoch)}`);
+        if(drRun)runs.push(drRun);
+        return runs;
+      }),...(simulation.columns||[]).map(column=>simulationRunAtMatchedSteps(column,optimizerSteps,comparison)).filter(Boolean)];
+      const rowValues=rowRuns.map(run=>downstreamValue(run,config.metricName)).filter(Number.isFinite);
+      const rowBest=rowValues.length?(config.higherIsBetter?Math.max(...rowValues):Math.min(...rowValues)):null;
+      const cells=optimizerSummaryBatches.flatMap(batch=>{
+        const epoch=comparison.epochs?.[String(batch)];
+        if(!Number.isFinite(epoch))return ['<td>—</td>','<td>—</td>'];
+        const entry=matchedEntryFor(batch,epoch);
+        const recalculatedSteps=optimizerStepsForEpochBatch(epoch,batch);
+        const arithmetic=Number.isFinite(recalculatedSteps)?`E${epoch} × ${Number(optimizerTiming.uniquePoolTokens).toLocaleString()} tokens ÷ (BS ${batch} × ${Number(optimizerTiming.sequenceLength)||4096}) = ${recalculatedSteps.toLocaleString()} optimizer steps. `:'';
+        const originalCell=(()=>{
+          if(!entry)return `<td class="matched-value"${arithmetic?` title="${escapeAttribute(arithmetic)}"`:''}>E${epoch} · —</td>`;
+          const metricValue=downstreamValue(entry.run,config.metricName);
+          const displayedEpoch=entry.carried?entry.sourceEpoch:epoch;
+          const carryExplanation=entry.carried?`The E${entry.sourceEpoch} validation-selected endpoint is carried into this matched-step slot after terminal E${entry.stopEpoch} non-improvement. `:'';
+          const title=` title="${escapeAttribute(`${arithmetic}${carryExplanation}${config.label}; LR ${entry.run.lr}; WD ${entry.run.wd}`)}"`;
+          return `<td class="matched-value${entry.carried?' matched-stopped':''}"${title}>E${displayedEpoch} · ${markedDownstreamValue(metricValue,rowBest,config.decimals)}</td>`;
+        })();
+        const drRun=drSelected.get(`${batch}|${Number(epoch)}`);
+        const drCell=drRun?(()=>{
+          const metricValue=downstreamValue(drRun,config.metricName);
+          const endpointStep=endpointOptimizerStep(drRun);
+          const endpointNote=Number.isFinite(endpointStep)?`post-decay endpoint step ${endpointStep.toLocaleString()}`:'post-decay endpoint';
+          return `<td class="matched-value" title="BS${batch} dynamic repacking; validation-selected LR ${drRun.lr}; WD ${drRun.wd}; ${endpointNote}">E${drRun.epoch} · ${markedDownstreamValue(metricValue,rowBest,config.decimals)}</td>`;
+        })():'<td>—</td>';
+        return [originalCell,drCell];
+      }).join('');
+      const simulationCells=(simulation.columns||[]).map(column=>{
+        const run=simulationRunAtMatchedSteps(column,optimizerSteps,comparison);
+        if(!run)return '<td>—</td>';
+        const metricValue=downstreamValue(run,config.metricName);
+        const endpointStep=endpointOptimizerStep(run);
+        const explicitMatchedSteps=Number(column.matchedOptimizerStepsByEpoch?.[String(run.epoch)]);
+        const sourceMapping=Number.isFinite(explicitMatchedSteps)
+          ?`; matched compute ${explicitMatchedSteps.toLocaleString()} steps, including the BS ${column.sourceBatchSequences} parent history`
+          :Number.isFinite(Number(column.sourceBatchSequences))&&Number.isFinite(endpointStep)
+          ?`; cumulative checkpoint step ${endpointStep.toLocaleString()} (initialized from BS ${column.sourceBatchSequences})`
+          :'';
+        return `<td class="matched-value" title="global BS ${column.globalBatchSequences}; simulated BS ${column.simulatedBatchSequences}; validation-selected LR ${run.lr}; WD ${run.wd}${sourceMapping}">E${run.epoch} · ${markedDownstreamValue(metricValue,rowBest,config.decimals)}</td>`;
+      }).join('');
+      return `<tr><td>≈${optimizerSteps.toLocaleString()}</td>${timeCell}${cells}${simulationCells}</tr>`;
+    }).join('');
+  };
+  matchedDownstreamTables.forEach(renderMatchedDownstreamTable);
+
   const grid=document.querySelector('#coordinate-grid');
   const groups=new Map();
   coordinateRuns.forEach(r=>{const g=key(r);if(!groups.has(g))groups.set(g,[]);groups.get(g).push(r);});
