@@ -27,6 +27,21 @@
   const formatMetric=value=>finite(value)?Number(value).toFixed(3):"—";
   const formatAccuracy=value=>finite(value)?`${Number(value).toFixed(2)}%`:"—";
   const formatBpb=value=>finite(value)?Number(value).toFixed(4):"—";
+  const average8Accuracy=result=>{
+    if(finite(result?.avg8Accuracy))return Number(result.avg8Accuracy);
+    const downstream=result?.downstream;
+    const tasks=["arc_challenge","arc_easy","csqa","hellaswag","openbookqa","piqa","socialiqa","winogrande"];
+    if(!downstream||!tasks.every(task=>finite(downstream[task])))return null;
+    return tasks.reduce((sum,task)=>sum+Number(downstream[task]),0)/tasks.length;
+  };
+  const downstreamValue=(result,metric)=>{
+    if(!result)return null;
+    if(metric==="hsAccuracy")return numeric(result.hellaswagAccuracy??result.acc??result.downstream?.hellaswag);
+    if(metric==="hsBpb")return numeric(result.hellaswagBpb??result.bpb??result.downstreamBpb?.hellaswag);
+    if(metric==="avg8Accuracy")return numeric(average8Accuracy(result));
+    if(metric==="avg8Bpb")return numeric(result.avg8Bpb??wdData.avg8BpbByWandb?.[result.wandb]);
+    return null;
+  };
   const formatDuration=seconds=>{
     const total=Math.max(0,Math.round(Number(seconds)));
     const hours=Math.floor(total/3600),minutes=Math.floor((total%3600)/60),secs=total%60;
@@ -148,6 +163,10 @@
   installHeader("validation-head",["Epoch"]);
   installHeader("coordinate-head",["Epoch"]);
   installHeader("optimizer-head",["Optimizer steps","Training time"]);
+  installHeader("hs-accuracy-optimizer-head",["Optimizer steps","Training time"]);
+  installHeader("hs-bpb-optimizer-head",["Optimizer steps","Training time"]);
+  installHeader("avg8-accuracy-optimizer-head",["Optimizer steps","Training time"]);
+  installHeader("avg8-bpb-optimizer-head",["Optimizer steps","Training time"]);
 
   const validationBody=document.getElementById("validation-summary");
   const coordinateBody=document.getElementById("coordinate-summary");
@@ -183,9 +202,8 @@
 
   const comparisonByStep=new Map((batchData.optimizerStepComparisons||[]).map(comparison=>[Number(comparison.optimizerSteps),comparison]));
   for(const chain of warmdownChains)for(const run of chain.runs)if(!comparisonByStep.has(Number(run.optimizerStep)))comparisonByStep.set(Number(run.optimizerStep),{optimizerSteps:Number(run.optimizerStep),epochs:{}});
-  const optimizerBody=document.getElementById("optimizer-step-summary");
-  let bestSeenAtEarlierStep=Infinity;
-  for(const comparison of [...comparisonByStep.values()].sort((a,b)=>Number(a.optimizerSteps)-Number(b.optimizerSteps))){
+  const matchedStepComparisons=[...comparisonByStep.values()].sort((a,b)=>Number(a.optimizerSteps)-Number(b.optimizerSteps));
+  const matchedStepEntries=comparison=>{
     const step=Number(comparison.optimizerSteps);
     const entries=columns.map(column=>{
       const epoch=comparison.epochs?.[String(column.batchSequences)];
@@ -197,21 +215,39 @@
       stepRuns.push(wr);
       entries.push({column:chain,epoch:wr?.accumulatedEpoch,winner:wr?{result:wr}:null});
     }
-    const values=entries.map(entry=>numeric(entry.winner?.result.validation)).filter(value=>value!==null);
-    const rowBest=values.length?Math.min(...values):null;
-    const isNewRecord=rowBest!==null&&rowBest<bestSeenAtEarlierStep;
     const timedRun=stepRuns.find(run=>run&&finite(run.idealizedTrainingSeconds));
     const time=timedRun?Number(timedRun.idealizedTrainingSeconds):step*.6;
-    const cells=entries.map(entry=>{
+    return {step,entries,time};
+  };
+  const renderMatchedStepTable=({bodyId,valueFor,higherIsBetter=false,formatValue,missingDisplay=()=>"—"})=>{
+    const body=document.getElementById(bodyId);
+    let bestSeenAtEarlierStep=higherIsBetter?-Infinity:Infinity;
+    for(const comparison of matchedStepComparisons){
+      const {step,entries,time}=matchedStepEntries(comparison);
+      const values=entries.map(entry=>valueFor(entry.winner?.result)).filter(value=>value!==null);
+      const rowBest=values.length?(higherIsBetter?Math.max(...values):Math.min(...values)):null;
+      const isNewRecord=rowBest!==null&&(higherIsBetter?rowBest>bestSeenAtEarlierStep:rowBest<bestSeenAtEarlierStep);
+      const cells=entries.map(entry=>{
       if(!entry.winner)return "<td>—</td>";
-      const value=numeric(entry.winner.result.validation);
-      const display=value===null?(entry.winner.result.status||"pending"):`E${formatEpoch(entry.epoch)} · ${value.toFixed(3)}`;
+      const value=valueFor(entry.winner.result);
+      const display=value===null?missingDisplay(entry.winner.result):`E${formatEpoch(entry.epoch)} · ${formatValue(value)}`;
       const best=isNewRecord&&value!==null&&value===rowBest;
       return `<td class="${best?'summary-best summary-row-best':''}">${best?`<strong>${display}</strong>`:display}</td>`;
-    }).join("");
-    optimizerBody.insertAdjacentHTML("beforeend",`<tr><td>${step.toLocaleString()}</td><td>≈${formatDuration(time)}</td>${cells}</tr>`);
-    if(rowBest!==null)bestSeenAtEarlierStep=Math.min(bestSeenAtEarlierStep,rowBest);
-  }
+      }).join("");
+      body.insertAdjacentHTML("beforeend",`<tr><td>${step.toLocaleString()}</td><td>≈${formatDuration(time)}</td>${cells}</tr>`);
+      if(rowBest!==null)bestSeenAtEarlierStep=higherIsBetter?Math.max(bestSeenAtEarlierStep,rowBest):Math.min(bestSeenAtEarlierStep,rowBest);
+    }
+  };
+  renderMatchedStepTable({
+    bodyId:"optimizer-step-summary",
+    valueFor:result=>numeric(result?.validation),
+    formatValue:value=>value.toFixed(3),
+    missingDisplay:result=>result.status||"pending",
+  });
+  renderMatchedStepTable({bodyId:"hs-accuracy-optimizer-step-summary",valueFor:result=>downstreamValue(result,"hsAccuracy"),higherIsBetter:true,formatValue:value=>`${value.toFixed(2)}%`});
+  renderMatchedStepTable({bodyId:"hs-bpb-optimizer-step-summary",valueFor:result=>downstreamValue(result,"hsBpb"),formatValue:value=>value.toFixed(4)});
+  renderMatchedStepTable({bodyId:"avg8-accuracy-optimizer-step-summary",valueFor:result=>downstreamValue(result,"avg8Accuracy"),higherIsBetter:true,formatValue:value=>`${value.toFixed(2)}%`});
+  renderMatchedStepTable({bodyId:"avg8-bpb-optimizer-step-summary",valueFor:result=>downstreamValue(result,"avg8Bpb"),formatValue:value=>value.toFixed(4)});
 
   const stages=document.getElementById("stage-summary");
   for(const chain of warmdownChains)for(const run of chain.runs){
