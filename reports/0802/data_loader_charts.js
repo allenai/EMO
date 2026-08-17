@@ -439,10 +439,23 @@
 
   const methodByKey = Object.fromEntries(study.columns.map((column) => [column.key, column]));
 
+  const downstreamCampaignBody = document.getElementById("downstream-eval-campaigns");
+  for (const campaign of study.downstreamEvaluationCampaigns || []) {
+    const tasks = campaign.tasks || [];
+    const count = (status) => tasks.filter((task) => task.status === status).length;
+    const experiment = campaign.experiment;
+    const tr = document.createElement("tr");
+    if (["submitted", "scheduled", "running"].includes(campaign.status)) tr.className = "run-active";
+    if (campaign.status === "failed") tr.className = "run-failed";
+    tr.innerHTML = `<td>${campaign.status}</td><td>${tasks.length}</td><td>${count("complete")}</td><td>${count("running")}</td><td>${count("scheduled") + count("submitted")}</td><td>${count("failed")}</td><td>${campaign.gpuPerTask ?? 1}</td><td>${campaign.revision || "—"}</td><td>${experiment ? `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${experiment}">${experiment}</a>` : "—"}</td>`;
+    downstreamCampaignBody.appendChild(tr);
+  }
+
   const sequentialBody = document.getElementById("wt-sequential-runs");
   const sequentialRuns = [
     ...(study.weightTyingSequentialRuns || []),
     ...(study.weightTyingEmbeddingDecaySequentialRuns || []),
+    ...(study.weightTyingMlpDecaySequentialRuns || []),
   ];
   for (const run of sequentialRuns) {
     const stageStates = (run.stages || []).map((stage) => {
@@ -459,7 +472,10 @@
     const tr = document.createElement("tr");
     if (["submitted", "scheduled", "running"].includes(run.status)) tr.className = "run-active";
     if (["failed", "canceled"].includes(run.status)) tr.className = "run-failed";
-    tr.innerHTML = `<td>BS${run.batchSequences}</td><td>${run.decayEmbeddings ? "DR+WT+EmbedWD" : "DR+WT"}</td><td>${run.lr}</td><td>${run.wd}</td><td>${run.status}</td><td>${run.currentEpoch ? `E${run.currentEpoch}` : "done"}</td><td>${stageStates}</td><td>${experiment ? `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${experiment}">${experiment}</a>` : "—"}</td>`;
+    const variant = run.mlpWeightDecay
+      ? "DR+WT+EmbedWD+UpperMLPWD"
+      : (run.decayEmbeddings ? "DR+WT+EmbedWD" : "DR+WT");
+    tr.innerHTML = `<td>BS${run.batchSequences}</td><td>${variant}</td><td>${run.lr}</td><td>${run.wd}</td><td>${run.status}</td><td>${run.currentEpoch ? `E${run.currentEpoch}` : "done"}</td><td>${stageStates}</td><td>${experiment ? `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${experiment}">${experiment}</a>` : "—"}</td>`;
     sequentialBody.appendChild(tr);
   }
 
