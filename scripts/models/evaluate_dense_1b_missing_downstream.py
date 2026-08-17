@@ -2,9 +2,9 @@
 """Evaluate every retained Dense-1B data-loader endpoint missing downstream metrics.
 
 The report's DR, DR+WT, and DR+WT+EmbedWD training jobs deliberately skipped
-downstream evaluation.  This launcher discovers their completed post-decay
-checkpoints and creates one Beaker task per (batch size, method) group. Each task
-uses exactly one GPU and evaluates every epoch in its group sequentially.
+downstream evaluation. This launcher creates one one-GPU Beaker task. At runtime
+the task scans real ``*_dr_*`` Weka output directories, resolves the registered
+endpoint steps to those directories, and evaluates every missing epoch serially.
 
 The same script refreshes a registered campaign and writes completed metrics back
 to ``wsd_data_loader_1b.json`` plus its JavaScript mirror.
@@ -453,38 +453,34 @@ def build_spec(
     }
     SEQUENTIAL_MANIFEST.parent.mkdir(parents=True, exist_ok=True)
     SEQUENTIAL_MANIFEST.write_text(json.dumps(manifest, indent=2) + "\n")
-    groups = sorted({group_id(item) for item in items})
-    tasks = []
-    for current_group in groups:
-        task = copy.deepcopy(source_task)
-        task["name"] = f"downstream-eval-{current_group}"
-        task["arguments"] = [
-            "python",
-            "scripts/models/run_dense_1b_downstream_sequence.py",
-            "--manifest",
-            str(SEQUENTIAL_MANIFEST),
-            "--group-id",
-            current_group,
-        ]
-        task["resources"] = {"gpuCount": 1, "sharedMemory": "10 GiB"}
-        task["context"] = {"priority": priority, "minRuntime": "0s", "autoResume": False}
-        for key in (
-            "replicas",
-            "leaderSelection",
-            "propagateFailure",
-            "propagatePreemption",
-            "synchronizedStartTimeout",
-        ):
-            task.pop(key, None)
-        set_env(task, "GIT_REF", revision)
-        set_env(task, "NUM_NODES", "1")
-        tasks.append(task)
+    task_name_value = "downstream-eval-runtime-discovery"
+    task = copy.deepcopy(source_task)
+    task["name"] = task_name_value
+    task["arguments"] = [
+        "python",
+        "scripts/models/run_dense_1b_downstream_sequence.py",
+        "--manifest",
+        str(SEQUENTIAL_MANIFEST),
+    ]
+    task["resources"] = {"gpuCount": 1, "sharedMemory": "10 GiB"}
+    task["context"] = {"priority": priority, "minRuntime": "0s", "autoResume": False}
+    for key in (
+        "replicas",
+        "leaderSelection",
+        "propagateFailure",
+        "propagatePreemption",
+        "synchronizedStartTimeout",
+    ):
+        task.pop(key, None)
+    set_env(task, "GIT_REF", revision)
+    set_env(task, "NUM_NODES", "1")
+    tasks = [task]
     base["tasks"] = tasks
     base.pop("description", None)
     records = [
         item
         | {
-            "taskName": group_task_name(item),
+            "taskName": task_name_value,
             "groupId": group_id(item),
             "status": "submitted",
         }
@@ -495,7 +491,7 @@ def build_spec(
 
 def print_plan(items: list[dict[str, Any]], no_checkpoint: list[dict[str, Any]]) -> None:
     counts = Counter((item["variant"], item["batchSequences"]) for item in items)
-    print(f"one-GPU sequential Beaker tasks: {len({group_id(item) for item in items})}")
+    print("one-GPU runtime-discovery Beaker tasks: 1")
     print(f"checkpoints evaluated serially: {len(items)}")
     for (name, batch), count in sorted(
         counts.items(), key=lambda entry: (entry[0][1], entry[0][0])
@@ -524,7 +520,8 @@ def register_campaign(
             "gpuPerTask": 1,
             "taskCount": len({task["taskName"] for task in tasks}),
             "checkpointCount": len(tasks),
-            "groupedSingleGpuSequential": True,
+            "singleGpuSequential": True,
+            "runtimeDirectoryDiscovery": True,
             "tasks": tasks,
         }
     )
@@ -654,6 +651,11 @@ def refresh(report: dict[str, Any]) -> bool:
                 logs = sequential_logs[
                     start : sequential_logs.find(complete_marker) + len(complete_marker)
                 ]
+                resolved = re.search(rf"DOWNSTREAM_EVAL_START {re.escape(marker)} checkpoint=(\S+)", logs)
+                if resolved and task.get("checkpoint") != resolved.group(1):
+                    task["registeredCheckpoint"] = task.get("checkpoint")
+                    task["checkpoint"] = resolved.group(1)
+                    changed = True
                 if task.get("status") != "complete":
                     task["status"] = "complete"
                     changed = True
