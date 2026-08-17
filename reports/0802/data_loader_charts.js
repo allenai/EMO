@@ -236,6 +236,71 @@
   renderSummary("validation-summary", (winner) => winner ? formatMetric(winner.result.validation) : "—", { columnBest: true, rowBest: true });
   renderSummary("coordinate-summary", (winner) => winner ? `(${winner.lr}, ${winner.wd})` : "—");
 
+  const downstreamTasks = [
+    "arc_challenge", "arc_easy", "csqa", "hellaswag",
+    "openbookqa", "piqa", "socialiqa", "winogrande",
+  ];
+  const completeAverage = (values) => {
+    const available = values.map(numeric).filter((value) => value !== null);
+    return available.length === downstreamTasks.length
+      ? available.reduce((sum, value) => sum + value, 0) / available.length
+      : null;
+  };
+  const downstreamMetric = (winner, metric) => {
+    if (!winner) return null;
+    const result = winner.result;
+    if (metric === "hs_accuracy") return numeric(result.acc ?? result.downstream?.hellaswag);
+    if (metric === "hs_bpb") return numeric(result.bpb ?? result.downstreamBpb?.hellaswag);
+    if (metric === "avg8_accuracy") {
+      return completeAverage(downstreamTasks.map((task) =>
+        task === "hellaswag" ? (result.acc ?? result.downstream?.hellaswag) : result.downstream?.[task],
+      ));
+    }
+    if (metric === "avg8_bpb") {
+      return numeric(result.avg8Bpb) ??
+        completeAverage(downstreamTasks.map((task) =>
+          task === "hellaswag" ? (result.bpb ?? result.downstreamBpb?.hellaswag) : result.downstreamBpb?.[task],
+        )) ?? numeric(wdData.avg8BpbByWandb?.[result.wandb]);
+    }
+    return null;
+  };
+  function renderDownstreamSummary({ bodyId, metric, higherIsBetter, digits, label }) {
+    const body = document.getElementById(bodyId);
+    if (!body) return;
+    const columnBest = new Map();
+    for (const column of columns) {
+      const values = epochs.map((epoch) => downstreamMetric(getSelected(column, epoch), metric))
+        .filter((value) => value !== null);
+      if (values.length) columnBest.set(column.key, higherIsBetter ? Math.max(...values) : Math.min(...values));
+    }
+    for (const epoch of epochs) {
+      const winners = columns.map((column) => getSelected(column, epoch));
+      const values = winners.map((winner) => downstreamMetric(winner, metric));
+      const available = values.filter((value) => value !== null);
+      const rowBest = available.length
+        ? (higherIsBetter ? Math.max(...available) : Math.min(...available))
+        : null;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>E${formatEpoch(epoch)}</td>` + columns.map((column, index) => {
+        const winner = winners[index];
+        const value = values[index];
+        if (value === null) return "<td>—</td>";
+        const classes = [];
+        if (value === columnBest.get(column.key)) classes.push("summary-best");
+        if (value === rowBest) classes.push("summary-row-best");
+        const coordinate = winner ? `LR ${winner.lr}; WD ${winner.wd}` : "coordinate unavailable";
+        return `<td class="${classes.join(" ")}" title="${column.label}; ${coordinate}; ${label}">${value.toFixed(digits)}</td>`;
+      }).join("");
+      body.appendChild(tr);
+    }
+  }
+  [
+    { bodyId: "epoch-hs-accuracy-summary", metric: "hs_accuracy", higherIsBetter: true, digits: 2, label: "HellaSwag accuracy" },
+    { bodyId: "epoch-hs-bpb-summary", metric: "hs_bpb", higherIsBetter: false, digits: 3, label: "HellaSwag BPB" },
+    { bodyId: "epoch-avg8-accuracy-summary", metric: "avg8_accuracy", higherIsBetter: true, digits: 2, label: "8-task average accuracy" },
+    { bodyId: "epoch-avg8-bpb-summary", metric: "avg8_bpb", higherIsBetter: false, digits: 3, label: "8-task average BPB" },
+  ].forEach(renderDownstreamSummary);
+
   const coordinateColumns = [
     columnByKey["baseline-64"],
     columnByKey.dr64,
