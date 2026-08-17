@@ -665,7 +665,7 @@ def refresh(report: dict[str, Any]) -> bool:
             "complete"
             if states and all(state == "complete" for state in states)
             else "failed"
-            if states and all(state in {"complete", "failed"} for state in states)
+            if any(state == "failed" for state in states)
             else "running"
             if any(state == "running" for state in states)
             else "scheduled"
