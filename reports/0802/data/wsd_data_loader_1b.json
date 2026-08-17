@@ -8708,10 +8708,10 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step54931",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step61036",
           "progress": {
-            "step": 48131,
+            "step": 48729,
             "totalSteps": 61036,
-            "percent": 78.9,
-            "latestTrain": 3.226
+            "percent": 79.8,
+            "latestTrain": 3.174
           }
         },
         {
@@ -9403,10 +9403,10 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step8582",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step9537",
           "progress": {
-            "step": 7474,
+            "step": 7735,
             "totalSteps": 9537,
-            "percent": 78.4,
-            "latestTrain": 3.15
+            "percent": 81.1,
+            "latestTrain": 3.132
           }
         },
         {

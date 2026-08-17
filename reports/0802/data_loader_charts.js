@@ -460,9 +460,6 @@
   for (const run of sequentialRuns) {
     const stageStates = (run.stages || []).map((stage) => {
       const metrics = [];
-      if (finite(stage.train)) metrics.push(`train ${formatMetric(stage.train)}`);
-      if (finite(stage.validation)) metrics.push(`val ${formatMetric(stage.validation, 5)}`);
-      if (finite(stage.gap)) metrics.push(`gap ${formatMetric(stage.gap, 5)}`);
       if (stage.status === "running" && finite(stage.progress?.percent)) {
         metrics.push(`${formatMetric(stage.progress.percent, 1)}%`);
       }
