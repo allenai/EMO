@@ -25,6 +25,7 @@
     columnByKey.dr64,
     columnByKey.drwt64,
     columnByKey.drwtembwd64,
+    columnByKey.drwtembwd64mlpupperwd1,
     columnByKey["baseline-128"],
     columnByKey.dr128,
     columnByKey["baseline-256"],
@@ -34,6 +35,7 @@
     columnByKey.dr512,
     columnByKey.drwt512,
     columnByKey.drwtembwd512,
+    columnByKey.drwtembwd512mlpupperwd1,
     columnByKey.fixed1024,
     columnByKey["baseline-1024"],
     columnByKey.dr1024,
@@ -306,6 +308,7 @@
     columnByKey.dr64,
     columnByKey.drwt64,
     columnByKey.drwtembwd64,
+    columnByKey.drwtembwd64mlpupperwd1,
     columnByKey["baseline-128"],
     columnByKey.dr128,
     columnByKey["baseline-256"],
@@ -315,6 +318,7 @@
     columnByKey.dr512,
     columnByKey.drwt512,
     columnByKey.drwtembwd512,
+    columnByKey.drwtembwd512mlpupperwd1,
     columnByKey.fixed1024,
     columnByKey["baseline-1024"],
     columnByKey.dr1024,
@@ -447,7 +451,7 @@
     const tr = document.createElement("tr");
     if (["submitted", "scheduled", "running"].includes(campaign.status)) tr.className = "run-active";
     if (campaign.status === "failed") tr.className = "run-failed";
-    tr.innerHTML = `<td>${campaign.status}</td><td>${campaign.taskCount ?? tasks.length}</td><td>${campaign.checkpointCount ?? tasks.length}</td><td>${count("complete")}</td><td>${count("running")}</td><td>${count("scheduled") + count("submitted")}</td><td>${count("failed")}</td><td>${campaign.gpuPerTask ?? 1}</td><td>${campaign.revision || "—"}</td><td>${experiment ? `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${experiment}">${experiment}</a>` : "—"}</td>`;
+    tr.innerHTML = `<td>${campaign.status}</td><td>${campaign.taskCount ?? tasks.length}</td><td>${campaign.checkpointCount ?? tasks.length}</td><td>${count("complete")}</td><td>${count("running")}</td><td>${count("scheduled") + count("submitted")}</td><td>${count("unavailable")}</td><td>${count("failed")}</td><td>${campaign.gpuPerTask ?? 1}</td><td>${campaign.revision || "—"}</td><td>${experiment ? `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${experiment}">${experiment}</a>` : "—"}</td>`;
     downstreamCampaignBody.appendChild(tr);
   }
 

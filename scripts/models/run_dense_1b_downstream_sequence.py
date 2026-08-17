@@ -40,7 +40,12 @@ def main() -> None:
         marker = f"run_id={item['runId']} epoch={item['epoch']}"
         print(f"DOWNSTREAM_EVAL_START {marker} checkpoint={item['checkpoint']}", flush=True)
         if not Path(item["checkpoint"]).is_dir():
-            raise FileNotFoundError(item["checkpoint"])
+            print(
+                f"DOWNSTREAM_EVAL_SKIPPED {marker} reason=missing_checkpoint ",
+                f"checkpoint={item['checkpoint']}",
+                flush=True,
+            )
+            continue
         subprocess.run(
             ["python", manifest["trainingScript"], name, "--dry-run", *arguments], check=True
         )

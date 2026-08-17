@@ -45,7 +45,7 @@ from typing import Any
 REPORT_PATH = Path("reports/0802/data/wsd_data_loader_1b.json")
 WORKSPACE = "ai2/flex2"
 DEFAULT_NAME = "dense-1b-missing-downstream-evals"
-CHECKPOINT_CAP = 100
+CHECKPOINT_CAP = 128
 SEQUENTIAL_MANIFEST = Path("scripts/models/manifests/dense_1b_downstream.json")
 DOWNSTREAM_TASK_ARGUMENT = (
     "[arc_easy, arc_challenge, boolq, csqa_val_rc_5shot, hellaswag, "
@@ -342,6 +342,10 @@ def evaluation_arguments(
             "--trainer.callbacks.checkpointer.enabled=",
             "--trainer.callbacks.checkpointer.enabled=false",
         ),
+        (
+            "--train_module.validate_optimizer_hyperparameters_on_load=",
+            "--train_module.validate_optimizer_hyperparameters_on_load=false",
+        ),
     )
     for prefix, value in replacements:
         arguments = replace_argument(arguments, prefix, value)
@@ -628,7 +632,14 @@ def refresh(report: dict[str, Any]) -> bool:
             task["job"] = job["id"]
             marker = f"run_id={task['runId']} epoch={task['epoch']}"
             complete_marker = f"DOWNSTREAM_EVAL_COMPLETE {marker}"
+            skipped_marker = f"DOWNSTREAM_EVAL_SKIPPED {marker}"
             if sequential:
+                if skipped_marker in sequential_logs:
+                    if task.get("status") != "unavailable":
+                        task["status"] = "unavailable"
+                        task["reason"] = "Registered checkpoint directory is missing."
+                        changed = True
+                    continue
                 if complete_marker not in sequential_logs:
                     checkpoint_state = "submitted"
                     if f"DOWNSTREAM_EVAL_START {marker}" in sequential_logs:
@@ -664,6 +675,10 @@ def refresh(report: dict[str, Any]) -> bool:
         new_status = (
             "complete"
             if states and all(state == "complete" for state in states)
+            else "complete_with_missing"
+            if states
+            and any(state == "unavailable" for state in states)
+            and all(state in {"complete", "unavailable"} for state in states)
             else "failed"
             if any(state == "failed" for state in states)
             else "running"

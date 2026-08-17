@@ -353,6 +353,18 @@
       "groupId": "bs64-dr-wt-embwd"
     },
     {
+      "runId": "drwtembwd64-lr1e-3-wd0.3",
+      "method": "drwtembwd64",
+      "variant": "dr-wt-embwd",
+      "batchSequences": 64,
+      "epoch": 20,
+      "lr": "1e-3",
+      "wd": "0.3",
+      "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step76294",
+      "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
+      "groupId": "bs64-dr-wt-embwd"
+    },
+    {
       "runId": "dr128-lr1e-3-wd0.3",
       "method": "dr128",
       "variant": "dr",
@@ -1046,6 +1058,18 @@
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step11445",
       "sourceExperiment": "01M06M4SD7TP1T1YJWN2W3FCK0",
+      "groupId": "bs512-dr-wt-embwd"
+    },
+    {
+      "runId": "drwtembwd512-lr1e-3-wd1.0",
+      "method": "drwtembwd512",
+      "variant": "dr-wt-embwd",
+      "batchSequences": 512,
+      "epoch": 28,
+      "lr": "1e-3",
+      "wd": "1.0",
+      "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step13352",
+      "sourceExperiment": "01M07DXQ25NB8AZK56MCVTDESB",
       "groupId": "bs512-dr-wt-embwd"
     },
     {
