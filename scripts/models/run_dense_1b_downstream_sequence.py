@@ -23,6 +23,18 @@ def variant_matches(name: str, variant: str) -> bool:
     return "_dr_" in name and "_wt_" not in name
 
 
+def expected_output_name(item: dict) -> str:
+    variant = {
+        "dr": "dr",
+        "dr-wt": "dr_wt",
+        "dr-wt-embwd": "dr_wt_embwd",
+    }[item["variant"]]
+    return (
+        f"bs{item['batchSequences']}_{variant}_"
+        f"lr{item['lr']}_wd{item['wd']}"
+    )
+
+
 def discover_output_directories() -> list[Path]:
     directories: list[Path] = []
     for path in MODELS_ROOT.rglob("*_dr_*"):
@@ -50,6 +62,9 @@ def resolve_checkpoint(item: dict, outputs: list[Path]) -> Path | None:
         and variant_matches(output.name, item["variant"])
         and (output / step).is_dir()
     ]
+    exact_name = [path for path in matches if path.parent.name == expected_output_name(item)]
+    if exact_name:
+        matches = exact_name
     if len(matches) > 1:
         canonical = [path for path in matches if path.parent.parent.name == "dense_1b_dclm1b"]
         if len(canonical) == 1:

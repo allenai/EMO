@@ -358,7 +358,40 @@
           "train": 2.907,
           "validation": 2.994,
           "validationExact": 2.99359,
-          "reason": "Completed healthy on one 8-GPU node from exact canonical E8 pre-decay step27465. Validation CE2.99359 strictly improved E8 CE3.02697 by 0.03338, unlocking E16 from canonical pre-decay step41198."
+          "reason": "Completed healthy on one 8-GPU node from exact canonical E8 pre-decay step27465. Validation CE2.99359 strictly improved E8 CE3.02697 by 0.03338, unlocking E16 from canonical pre-decay step41198.",
+          "acc": 45.64,
+          "bpb": 0.8669,
+          "avg8Bpb": 1.2544875,
+          "avg8Accuracy": 47.96375,
+          "downstream": {
+            "arc_challenge": 27.42,
+            "arc_easy": 57.19,
+            "boolq": 59.36,
+            "csqa": 52.66,
+            "hellaswag": 45.64,
+            "openbookqa": 29.599999999999998,
+            "piqa": 68.72,
+            "socialiqa": 47.699999999999996,
+            "winogrande": 54.779999999999994
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.248,
+            "arc_easy": 1.224,
+            "boolq": 1.49,
+            "csqa": 1.281,
+            "hellaswag": 0.8669,
+            "openbookqa": 1.566,
+            "piqa": 1.162,
+            "socialiqa": 1.206,
+            "winogrande": 1.482
+          },
+          "downstreamWandb": "38xu1z6v",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ3EXS318P8DGA6FWGDHN",
+            "job": "01M08BJ47GP8Y3WQNN3P6KYF13",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step45777",
+            "gpuCount": 1
+          }
         },
         "16": {
           "status": "complete",
@@ -380,7 +413,40 @@
           "train": 2.777,
           "validation": 2.978,
           "validationExact": 2.97802,
-          "reason": "Completed healthy on one 8-GPU node from exact canonical E12 pre-decay step41198. Validation CE2.97802 strictly improved E12 CE2.99359 by 0.01557, unlocking E20 from canonical pre-decay step54931."
+          "reason": "Completed healthy on one 8-GPU node from exact canonical E12 pre-decay step41198. Validation CE2.97802 strictly improved E12 CE2.99359 by 0.01557, unlocking E20 from canonical pre-decay step54931.",
+          "acc": 47.18,
+          "bpb": 0.8636,
+          "avg8Bpb": 1.2477,
+          "avg8Accuracy": 48.265,
+          "downstream": {
+            "arc_challenge": 26.419999999999998,
+            "arc_easy": 58.42,
+            "boolq": 58.379999999999995,
+            "csqa": 54.71,
+            "hellaswag": 47.18,
+            "openbookqa": 30.0,
+            "piqa": 70.02000000000001,
+            "socialiqa": 46.57,
+            "winogrande": 52.800000000000004
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.265,
+            "arc_easy": 1.23,
+            "boolq": 1.661,
+            "csqa": 1.257,
+            "hellaswag": 0.8636,
+            "openbookqa": 1.531,
+            "piqa": 1.149,
+            "socialiqa": 1.206,
+            "winogrande": 1.48
+          },
+          "downstreamWandb": "7ri5t18f",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ3EXS318P8DGA6FWGDHN",
+            "job": "01M08BJ47GP8Y3WQNN3P6KYF13",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step61036",
+            "gpuCount": 1
+          }
         },
         "20": {
           "status": "complete",
@@ -656,7 +722,40 @@
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0/step30518",
           "train": 3.156,
           "validation": 3.19708,
-          "reason": "Completed healthy from exact canonical E4 pre-decay step13732. Held-out DCLM validation CE3.19708 strictly improved E4 CE3.25886, unlocking E12 from canonical pre-decay step27465."
+          "reason": "Completed healthy from exact canonical E4 pre-decay step13732. Held-out DCLM validation CE3.19708 strictly improved E4 CE3.25886, unlocking E12 from canonical pre-decay step27465.",
+          "acc": 36.11,
+          "bpb": 0.9258,
+          "avg8Bpb": 1.367475,
+          "avg8Accuracy": 42.7725,
+          "downstream": {
+            "arc_challenge": 24.75,
+            "arc_easy": 51.05,
+            "boolq": 53.21,
+            "csqa": 44.39,
+            "hellaswag": 36.11,
+            "openbookqa": 25.0,
+            "piqa": 65.94,
+            "socialiqa": 43.24,
+            "winogrande": 51.7
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.421,
+            "arc_easy": 1.465,
+            "boolq": 1.795,
+            "csqa": 1.432,
+            "hellaswag": 0.9258,
+            "openbookqa": 1.665,
+            "piqa": 1.239,
+            "socialiqa": 1.27,
+            "winogrande": 1.522
+          },
+          "downstreamWandb": "3s0sl998",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ3EXS318P8DGA6FWGDHN",
+            "job": "01M08BJ47GP8Y3WQNN3P6KYF13",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0/step30518",
+            "gpuCount": 1
+          }
         },
         "12": {
           "status": "complete",
@@ -673,7 +772,40 @@
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0/step45777",
           "train": 3.139,
           "validation": 3.17255,
-          "reason": "Completed healthy from exact canonical E8 pre-decay step27465. Held-out DCLM validation CE3.17255 strictly improved E8 CE3.19708, making E16 eligible from canonical pre-decay step41198; submission is held by the global flex2 queue gate."
+          "reason": "Completed healthy from exact canonical E8 pre-decay step27465. Held-out DCLM validation CE3.17255 strictly improved E8 CE3.19708, making E16 eligible from canonical pre-decay step41198; submission is held by the global flex2 queue gate.",
+          "acc": 37.09,
+          "bpb": 0.9171,
+          "avg8Bpb": 1.3346375,
+          "avg8Accuracy": 43.63375,
+          "downstream": {
+            "arc_challenge": 23.75,
+            "arc_easy": 51.23,
+            "boolq": 57.95,
+            "csqa": 47.58,
+            "hellaswag": 37.09,
+            "openbookqa": 27.6,
+            "piqa": 66.05,
+            "socialiqa": 43.6,
+            "winogrande": 52.17
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.377,
+            "arc_easy": 1.382,
+            "boolq": 1.89,
+            "csqa": 1.386,
+            "hellaswag": 0.9171,
+            "openbookqa": 1.61,
+            "piqa": 1.217,
+            "socialiqa": 1.268,
+            "winogrande": 1.52
+          },
+          "downstreamWandb": "vwxtkzhj",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ3EXS318P8DGA6FWGDHN",
+            "job": "01M08BJ47GP8Y3WQNN3P6KYF13",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0/step45777",
+            "gpuCount": 1
+          }
         },
         "16": {
           "status": "complete",
@@ -817,7 +949,40 @@
           "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step3815",
           "train": 3.254,
           "validation": 3.23549,
-          "reason": "Healthy completion; held-out DCLM validation strictly improved E1 CE3.432, so E4 is eligible."
+          "reason": "Healthy completion; held-out DCLM validation strictly improved E1 CE3.432, so E4 is eligible.",
+          "acc": 34.37,
+          "bpb": 0.9393,
+          "avg8Bpb": 1.3955375,
+          "avg8Accuracy": 42.5225,
+          "downstream": {
+            "arc_challenge": 26.76,
+            "arc_easy": 51.93,
+            "boolq": 55.14,
+            "csqa": 41.03,
+            "hellaswag": 34.37,
+            "openbookqa": 25.8,
+            "piqa": 66.38,
+            "socialiqa": 42.84,
+            "winogrande": 51.07000000000001
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.411,
+            "arc_easy": 1.465,
+            "boolq": 1.947,
+            "csqa": 1.522,
+            "hellaswag": 0.9393,
+            "openbookqa": 1.729,
+            "piqa": 1.252,
+            "socialiqa": 1.3,
+            "winogrande": 1.546
+          },
+          "downstreamWandb": "93hw2aok",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ195PWVATJC13QE177VT",
+            "job": "01M08BJ1CTGAW3KKPYA5R4QVG2",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step3815",
+            "gpuCount": 1
+          }
         },
         "4": {
           "status": "complete",
@@ -831,7 +996,40 @@
           "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step7630",
           "train": 3.027,
           "validation": 3.10623,
-          "reason": "Healthy completion; held-out DCLM validation strictly improved E2 CE3.23549, so E8 is eligible."
+          "reason": "Healthy completion; held-out DCLM validation strictly improved E2 CE3.23549, so E8 is eligible.",
+          "acc": 39.54,
+          "bpb": 0.9003,
+          "avg8Bpb": 1.3275375,
+          "avg8Accuracy": 44.69,
+          "downstream": {
+            "arc_challenge": 28.09,
+            "arc_easy": 52.459999999999994,
+            "boolq": 59.24,
+            "csqa": 46.760000000000005,
+            "hellaswag": 39.54,
+            "openbookqa": 27.0,
+            "piqa": 67.67999999999999,
+            "socialiqa": 45.24,
+            "winogrande": 50.74999999999999
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.339,
+            "arc_easy": 1.354,
+            "boolq": 1.587,
+            "csqa": 1.454,
+            "hellaswag": 0.9003,
+            "openbookqa": 1.636,
+            "piqa": 1.187,
+            "socialiqa": 1.239,
+            "winogrande": 1.511
+          },
+          "downstreamWandb": "bd2j7dij",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ195PWVATJC13QE177VT",
+            "job": "01M08BJ1CTGAW3KKPYA5R4QVG2",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step7630",
+            "gpuCount": 1
+          }
         },
         "8": {
           "status": "complete",
@@ -986,7 +1184,40 @@
           "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0/step3815",
           "train": 3.329,
           "validation": 3.30091,
-          "reason": "Healthy completion; held-out DCLM validation strictly improved E1 CE3.468, so E4 is eligible."
+          "reason": "Healthy completion; held-out DCLM validation strictly improved E1 CE3.468, so E4 is eligible.",
+          "acc": 33.17,
+          "bpb": 0.957,
+          "avg8Bpb": 1.396125,
+          "avg8Accuracy": 41.14625,
+          "downstream": {
+            "arc_challenge": 23.080000000000002,
+            "arc_easy": 50.349999999999994,
+            "boolq": 49.97,
+            "csqa": 42.01,
+            "hellaswag": 33.17,
+            "openbookqa": 25.0,
+            "piqa": 64.2,
+            "socialiqa": 42.58,
+            "winogrande": 48.78
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.447,
+            "arc_easy": 1.489,
+            "boolq": 2.089,
+            "csqa": 1.501,
+            "hellaswag": 0.957,
+            "openbookqa": 1.701,
+            "piqa": 1.245,
+            "socialiqa": 1.294,
+            "winogrande": 1.535
+          },
+          "downstreamWandb": "ydovrpou",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ195PWVATJC13QE177VT",
+            "job": "01M08BJ1CTGAW3KKPYA5R4QVG2",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0/step3815",
+            "gpuCount": 1
+          }
         },
         "4": {
           "status": "complete",
@@ -1166,7 +1397,40 @@
           "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333/step1908",
           "train": 3.286,
           "validation": 3.30188,
-          "reason": "Healthy completion; held-out DCLM validation strictly improved E1 CE3.574, so E4 is eligible."
+          "reason": "Healthy completion; held-out DCLM validation strictly improved E1 CE3.574, so E4 is eligible.",
+          "acc": 32.72,
+          "bpb": 0.958,
+          "avg8Bpb": 1.43275,
+          "avg8Accuracy": 40.95125,
+          "downstream": {
+            "arc_challenge": 22.74,
+            "arc_easy": 47.89,
+            "boolq": 59.57,
+            "csqa": 41.77,
+            "hellaswag": 32.72,
+            "openbookqa": 25.4,
+            "piqa": 63.6,
+            "socialiqa": 41.56,
+            "winogrande": 51.93
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.52,
+            "arc_easy": 1.586,
+            "boolq": 2.013,
+            "csqa": 1.536,
+            "hellaswag": 0.958,
+            "openbookqa": 1.715,
+            "piqa": 1.289,
+            "socialiqa": 1.311,
+            "winogrande": 1.547
+          },
+          "downstreamWandb": "8qju2y3n",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ20DHD1PPS2Q10BXYBG6",
+            "job": "01M08BJ24EAXE8VS5HMYQFW2KA",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333/step1908",
+            "gpuCount": 1
+          }
         },
         "4": {
           "status": "complete",
@@ -1180,7 +1444,40 @@
           "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333/step3815",
           "train": 3.05,
           "validation": 3.14241,
-          "reason": "Healthy completion; held-out DCLM validation strictly improved E2 CE3.30188, so E8 is eligible."
+          "reason": "Healthy completion; held-out DCLM validation strictly improved E2 CE3.30188, so E8 is eligible.",
+          "acc": 37.63,
+          "bpb": 0.9104,
+          "avg8Bpb": 1.3528,
+          "avg8Accuracy": 43.94,
+          "downstream": {
+            "arc_challenge": 25.080000000000002,
+            "arc_easy": 53.33,
+            "boolq": 59.27,
+            "csqa": 46.85,
+            "hellaswag": 37.63,
+            "openbookqa": 26.200000000000003,
+            "piqa": 66.86999999999999,
+            "socialiqa": 44.42,
+            "winogrande": 51.13999999999999
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.418,
+            "arc_easy": 1.467,
+            "boolq": 1.644,
+            "csqa": 1.404,
+            "hellaswag": 0.9104,
+            "openbookqa": 1.628,
+            "piqa": 1.224,
+            "socialiqa": 1.257,
+            "winogrande": 1.514
+          },
+          "downstreamWandb": "cedg3md1",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ20DHD1PPS2Q10BXYBG6",
+            "job": "01M08BJ24EAXE8VS5HMYQFW2KA",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333/step3815",
+            "gpuCount": 1
+          }
         },
         "8": {
           "status": "complete",
@@ -1367,7 +1664,40 @@
           "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step1908",
           "train": 3.351,
           "validation": 3.36073,
-          "reason": "Healthy completion; held-out DCLM validation strictly improved E1 CE3.599, so E4 is eligible."
+          "reason": "Healthy completion; held-out DCLM validation strictly improved E1 CE3.599, so E4 is eligible.",
+          "acc": 31.259999999999998,
+          "bpb": 0.979,
+          "avg8Bpb": 1.454375,
+          "avg8Accuracy": 40.0325,
+          "downstream": {
+            "arc_challenge": 22.74,
+            "arc_easy": 47.02,
+            "boolq": 58.199999999999996,
+            "csqa": 37.76,
+            "hellaswag": 31.259999999999998,
+            "openbookqa": 24.8,
+            "piqa": 63.11,
+            "socialiqa": 42.27,
+            "winogrande": 51.300000000000004
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.508,
+            "arc_easy": 1.579,
+            "boolq": 2.316,
+            "csqa": 1.559,
+            "hellaswag": 0.979,
+            "openbookqa": 1.794,
+            "piqa": 1.294,
+            "socialiqa": 1.352,
+            "winogrande": 1.57
+          },
+          "downstreamWandb": "hipdnb1d",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ20DHD1PPS2Q10BXYBG6",
+            "job": "01M08BJ24EAXE8VS5HMYQFW2KA",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step1908",
+            "gpuCount": 1
+          }
         },
         "4": {
           "status": "complete",
@@ -1381,7 +1711,40 @@
           "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step3815",
           "train": 3.163,
           "validation": 3.2031,
-          "reason": "Healthy completion; held-out DCLM validation strictly improved E2 CE3.36073, so E8 is eligible."
+          "reason": "Healthy completion; held-out DCLM validation strictly improved E2 CE3.36073, so E8 is eligible.",
+          "acc": 35.46,
+          "bpb": 0.9294,
+          "avg8Bpb": 1.3693,
+          "avg8Accuracy": 42.615,
+          "downstream": {
+            "arc_challenge": 23.75,
+            "arc_easy": 53.16,
+            "boolq": 60.06,
+            "csqa": 43.16,
+            "hellaswag": 35.46,
+            "openbookqa": 25.0,
+            "piqa": 65.4,
+            "socialiqa": 44.32,
+            "winogrande": 50.67
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.4,
+            "arc_easy": 1.427,
+            "boolq": 1.683,
+            "csqa": 1.458,
+            "hellaswag": 0.9294,
+            "openbookqa": 1.684,
+            "piqa": 1.231,
+            "socialiqa": 1.297,
+            "winogrande": 1.528
+          },
+          "downstreamWandb": "hky09sn1",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ20DHD1PPS2Q10BXYBG6",
+            "job": "01M08BJ24EAXE8VS5HMYQFW2KA",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step3815",
+            "gpuCount": 1
+          }
         },
         "8": {
           "status": "complete",
@@ -2137,7 +2500,40 @@
           ],
           "train": 4.024,
           "validation": 4.047,
-          "reason": "Completed healthy from scratch with ordinary E1 packing. This lower-LR trajectory is deprioritized; no continuation is registered while higher-likelihood WD1.0 frontiers run."
+          "reason": "Completed healthy from scratch with ordinary E1 packing. This lower-LR trajectory is deprioritized; no continuation is registered while higher-likelihood WD1.0 frontiers run.",
+          "acc": 25.82,
+          "bpb": 1.221,
+          "avg8Bpb": 1.8311250000000001,
+          "avg8Accuracy": 34.55625,
+          "downstream": {
+            "arc_challenge": 20.07,
+            "arc_easy": 34.910000000000004,
+            "boolq": 52.11,
+            "csqa": 25.39,
+            "hellaswag": 25.82,
+            "openbookqa": 23.0,
+            "piqa": 56.69,
+            "socialiqa": 39.660000000000004,
+            "winogrande": 50.91
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.86,
+            "arc_easy": 2.056,
+            "boolq": 3.018,
+            "csqa": 2.087,
+            "hellaswag": 1.221,
+            "openbookqa": 2.107,
+            "piqa": 1.688,
+            "socialiqa": 1.843,
+            "winogrande": 1.787
+          },
+          "downstreamWandb": "og44d6sf",
+          "downstreamEvaluation": {
+            "campaign": "01M08B8T8MTJ4HVWXHFGS1RAQT",
+            "job": "01M08B8TZ7WFQ70EAGV3G75RPB",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_lr5e-4_wd0.333/step477",
+            "gpuCount": 1
+          }
         }
       },
       "health": "healthy",
@@ -2460,7 +2856,40 @@
           ],
           "train": 2.682,
           "validation": 3.17,
-          "reason": "Completed on four 8-GPU nodes from exact E8 pre-decay step3432, retaining E12 pre-decay step5150 and endpoint step5723. Train CE improved from 2.854 to 2.682 while validation CE worsened from 3.137 to 3.170 and the train-validation gap widened from 0.283 to 0.488. This is clear overfitting, so WD0.333 E16 is pruned and the existing exact WD1.0 trajectory advances sequentially."
+          "reason": "Completed on four 8-GPU nodes from exact E8 pre-decay step3432, retaining E12 pre-decay step5150 and endpoint step5723. Train CE improved from 2.854 to 2.682 while validation CE worsened from 3.137 to 3.170 and the train-validation gap widened from 0.283 to 0.488. This is clear overfitting, so WD0.333 E16 is pruned and the existing exact WD1.0 trajectory advances sequentially.",
+          "acc": 42.89,
+          "bpb": 0.9122,
+          "avg8Bpb": 1.352025,
+          "avg8Accuracy": 45.75,
+          "downstream": {
+            "arc_challenge": 28.09,
+            "arc_easy": 54.74,
+            "boolq": 58.87,
+            "csqa": 47.99,
+            "hellaswag": 42.89,
+            "openbookqa": 28.599999999999998,
+            "piqa": 69.15,
+            "socialiqa": 45.45,
+            "winogrande": 49.09
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.373,
+            "arc_easy": 1.351,
+            "boolq": 1.671,
+            "csqa": 1.415,
+            "hellaswag": 0.9122,
+            "openbookqa": 1.706,
+            "piqa": 1.232,
+            "socialiqa": 1.298,
+            "winogrande": 1.529
+          },
+          "downstreamWandb": "shc3vfqt",
+          "downstreamEvaluation": {
+            "campaign": "01M08B8T8MTJ4HVWXHFGS1RAQT",
+            "job": "01M08B8TZ7WFQ70EAGV3G75RPB",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_lr1e-3_wd0.333/step5723",
+            "gpuCount": 1
+          }
         }
       },
       "health": "orange",
@@ -3151,7 +3580,40 @@
           ],
           "train": 3.234,
           "validation": 3.265,
-          "reason": "Completed healthy on four 8-GPU nodes; held-out validation CE improved strictly from the same-coordinate predecessor, preserving eligibility for the next exact-checkpoint frontier."
+          "reason": "Completed healthy on four 8-GPU nodes; held-out validation CE improved strictly from the same-coordinate predecessor, preserving eligibility for the next exact-checkpoint frontier.",
+          "acc": 33.47,
+          "bpb": 0.9512,
+          "avg8Bpb": 1.411025,
+          "avg8Accuracy": 41.207499999999996,
+          "downstream": {
+            "arc_challenge": 24.08,
+            "arc_easy": 50.18,
+            "boolq": 55.2,
+            "csqa": 42.1,
+            "hellaswag": 33.47,
+            "openbookqa": 23.599999999999998,
+            "piqa": 64.85,
+            "socialiqa": 42.68,
+            "winogrande": 48.699999999999996
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.488,
+            "arc_easy": 1.548,
+            "boolq": 2.396,
+            "csqa": 1.462,
+            "hellaswag": 0.9512,
+            "openbookqa": 1.707,
+            "piqa": 1.269,
+            "socialiqa": 1.315,
+            "winogrande": 1.548
+          },
+          "downstreamWandb": "047bvrhe",
+          "downstreamEvaluation": {
+            "campaign": "01M08B8T8MTJ4HVWXHFGS1RAQT",
+            "job": "01M08B8TZ7WFQ70EAGV3G75RPB",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_lr1e-3_wd1.0/step1908",
+            "gpuCount": 1
+          }
         },
         "8": {
           "status": "complete",
@@ -3189,7 +3651,40 @@
           ],
           "train": 3.047,
           "validation": 3.139,
-          "reason": "Completed healthy on four 8-GPU nodes from exact E4 pre-decay step1716. Validation CE improved strictly from E4 CE3.265 to E8 CE3.139, so the same-coordinate E12 continuation is eligible from retained step3432."
+          "reason": "Completed healthy on four 8-GPU nodes from exact E4 pre-decay step1716. Validation CE improved strictly from E4 CE3.265 to E8 CE3.139, so the same-coordinate E12 continuation is eligible from retained step3432.",
+          "acc": 37.86,
+          "bpb": 0.9127,
+          "avg8Bpb": 1.3348375,
+          "avg8Accuracy": 44.01375,
+          "downstream": {
+            "arc_challenge": 24.41,
+            "arc_easy": 53.33,
+            "boolq": 56.879999999999995,
+            "csqa": 46.44,
+            "hellaswag": 37.86,
+            "openbookqa": 27.200000000000003,
+            "piqa": 67.19000000000001,
+            "socialiqa": 45.09,
+            "winogrande": 50.59
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.39,
+            "arc_easy": 1.377,
+            "boolq": 1.648,
+            "csqa": 1.372,
+            "hellaswag": 0.9127,
+            "openbookqa": 1.656,
+            "piqa": 1.206,
+            "socialiqa": 1.25,
+            "winogrande": 1.515
+          },
+          "downstreamWandb": "ohpdj0bx",
+          "downstreamEvaluation": {
+            "campaign": "01M08B8T8MTJ4HVWXHFGS1RAQT",
+            "job": "01M08B8TZ7WFQ70EAGV3G75RPB",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_lr1e-3_wd1.0/step3815",
+            "gpuCount": 1
+          }
         },
         "12": {
           "status": "complete",
@@ -4847,7 +5342,40 @@
           ],
           "train": 3.475,
           "validation": 3.503,
-          "reason": "Completed healthy on four 8-GPU nodes; held-out validation CE improved strictly from the same-coordinate predecessor, preserving eligibility for the next exact-checkpoint frontier."
+          "reason": "Completed healthy on four 8-GPU nodes; held-out validation CE improved strictly from the same-coordinate predecessor, preserving eligibility for the next exact-checkpoint frontier.",
+          "acc": 28.83,
+          "bpb": 1.031,
+          "avg8Bpb": 1.574125,
+          "avg8Accuracy": 38.50625,
+          "downstream": {
+            "arc_challenge": 22.41,
+            "arc_easy": 42.980000000000004,
+            "boolq": 61.19,
+            "csqa": 33.739999999999995,
+            "hellaswag": 28.83,
+            "openbookqa": 24.6,
+            "piqa": 61.150000000000006,
+            "socialiqa": 42.17,
+            "winogrande": 52.17
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.632,
+            "arc_easy": 1.775,
+            "boolq": 2.529,
+            "csqa": 1.774,
+            "hellaswag": 1.031,
+            "openbookqa": 1.868,
+            "piqa": 1.393,
+            "socialiqa": 1.506,
+            "winogrande": 1.614
+          },
+          "downstreamWandb": "ocm5mguf",
+          "downstreamEvaluation": {
+            "campaign": "01M08B8QA1589FXPAT56PQ0B7J",
+            "job": "01M08B8QV9J9D8JXT4JYBJCR1H",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr5e-4_wd1.0/step954",
+            "gpuCount": 1
+          }
         },
         "8": {
           "status": "complete",
@@ -6480,7 +7008,40 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step3432",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step3815",
           "sequential": true,
-          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint.",
+          "acc": 31.65,
+          "bpb": 0.9823,
+          "avg8Bpb": 1.4666625,
+          "avg8Accuracy": 39.94625,
+          "downstream": {
+            "arc_challenge": 22.41,
+            "arc_easy": 48.77,
+            "boolq": 56.38999999999999,
+            "csqa": 39.56,
+            "hellaswag": 31.65,
+            "openbookqa": 23.799999999999997,
+            "piqa": 62.73,
+            "socialiqa": 42.43,
+            "winogrande": 48.22
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.54,
+            "arc_easy": 1.595,
+            "boolq": 2.785,
+            "csqa": 1.614,
+            "hellaswag": 0.9823,
+            "openbookqa": 1.755,
+            "piqa": 1.289,
+            "socialiqa": 1.392,
+            "winogrande": 1.566
+          },
+          "downstreamWandb": "2r9qw9zl",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ4VA8FZSNH5K7ZMDJD7Z",
+            "job": "01M08BJ4ZCV5NMP1TFR9DV46EE",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step3815",
+            "gpuCount": 1
+          }
         },
         "2": {
           "status": "complete",
@@ -6497,7 +7058,40 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step6866",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step7630",
           "sequential": true,
-          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint.",
+          "acc": 35.85,
+          "bpb": 0.9291,
+          "avg8Bpb": 1.3737625,
+          "avg8Accuracy": 42.59375,
+          "downstream": {
+            "arc_challenge": 24.75,
+            "arc_easy": 50.18,
+            "boolq": 47.22,
+            "csqa": 43.65,
+            "hellaswag": 35.85,
+            "openbookqa": 26.400000000000002,
+            "piqa": 65.94,
+            "socialiqa": 42.84,
+            "winogrande": 51.13999999999999
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.414,
+            "arc_easy": 1.453,
+            "boolq": 1.436,
+            "csqa": 1.476,
+            "hellaswag": 0.9291,
+            "openbookqa": 1.668,
+            "piqa": 1.224,
+            "socialiqa": 1.282,
+            "winogrande": 1.544
+          },
+          "downstreamWandb": "85ske8k4",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ4VA8FZSNH5K7ZMDJD7Z",
+            "job": "01M08BJ4ZCV5NMP1TFR9DV46EE",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step7630",
+            "gpuCount": 1
+          }
         },
         "4": {
           "status": "complete",
@@ -6514,7 +7108,40 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step13732",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step15259",
           "sequential": true,
-          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint.",
+          "acc": 40.400000000000006,
+          "bpb": 0.8995,
+          "avg8Bpb": 1.3031875,
+          "avg8Accuracy": 44.67,
+          "downstream": {
+            "arc_challenge": 24.75,
+            "arc_easy": 52.459999999999994,
+            "boolq": 54.459999999999994,
+            "csqa": 47.58,
+            "hellaswag": 40.400000000000006,
+            "openbookqa": 28.799999999999997,
+            "piqa": 68.28,
+            "socialiqa": 43.71,
+            "winogrande": 51.38
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.347,
+            "arc_easy": 1.347,
+            "boolq": 1.731,
+            "csqa": 1.353,
+            "hellaswag": 0.8995,
+            "openbookqa": 1.577,
+            "piqa": 1.185,
+            "socialiqa": 1.225,
+            "winogrande": 1.492
+          },
+          "downstreamWandb": "s23l7s35",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ4VA8FZSNH5K7ZMDJD7Z",
+            "job": "01M08BJ4ZCV5NMP1TFR9DV46EE",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step15259",
+            "gpuCount": 1
+          }
         },
         "8": {
           "status": "complete",
@@ -6531,7 +7158,40 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step27465",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step30518",
           "sequential": true,
-          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint.",
+          "acc": 43.97,
+          "bpb": 0.8755,
+          "avg8Bpb": 1.2924375,
+          "avg8Accuracy": 46.26,
+          "downstream": {
+            "arc_challenge": 26.76,
+            "arc_easy": 55.26,
+            "boolq": 51.31,
+            "csqa": 50.2,
+            "hellaswag": 43.97,
+            "openbookqa": 27.200000000000003,
+            "piqa": 68.44,
+            "socialiqa": 46.47,
+            "winogrande": 51.78
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.353,
+            "arc_easy": 1.361,
+            "boolq": 1.312,
+            "csqa": 1.324,
+            "hellaswag": 0.8755,
+            "openbookqa": 1.569,
+            "piqa": 1.177,
+            "socialiqa": 1.19,
+            "winogrande": 1.49
+          },
+          "downstreamWandb": "rzt3wagf",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ4VA8FZSNH5K7ZMDJD7Z",
+            "job": "01M08BJ4ZCV5NMP1TFR9DV46EE",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step30518",
+            "gpuCount": 1
+          }
         },
         "12": {
           "status": "complete",
@@ -6673,7 +7333,40 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step428",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step477",
           "sequential": true,
-          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint.",
+          "acc": 25.95,
+          "bpb": 1.195,
+          "avg8Bpb": 1.820125,
+          "avg8Accuracy": 34.7175,
+          "downstream": {
+            "arc_challenge": 22.74,
+            "arc_easy": 33.160000000000004,
+            "boolq": 60.58,
+            "csqa": 26.450000000000003,
+            "hellaswag": 25.95,
+            "openbookqa": 22.8,
+            "piqa": 56.64,
+            "socialiqa": 41.3,
+            "winogrande": 48.699999999999996
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.819,
+            "arc_easy": 2.004,
+            "boolq": 3.189,
+            "csqa": 2.245,
+            "hellaswag": 1.195,
+            "openbookqa": 2.112,
+            "piqa": 1.621,
+            "socialiqa": 1.793,
+            "winogrande": 1.772
+          },
+          "downstreamWandb": "xzcxnnbi",
+          "downstreamEvaluation": {
+            "campaign": "01M08B8VK8AH1JW8RY78MDWEDF",
+            "job": "01M08B8VPRJH2E10KX62XZA177",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step477",
+            "gpuCount": 1
+          }
         },
         "2": {
           "status": "complete",
@@ -6689,7 +7382,40 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step858",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step954",
           "sequential": true,
-          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint.",
+          "acc": 29.68,
+          "bpb": 1.015,
+          "avg8Bpb": 1.516375,
+          "avg8Accuracy": 39.792500000000004,
+          "downstream": {
+            "arc_challenge": 24.08,
+            "arc_easy": 45.79,
+            "boolq": 59.08,
+            "csqa": 37.18,
+            "hellaswag": 29.68,
+            "openbookqa": 24.4,
+            "piqa": 63.06,
+            "socialiqa": 41.660000000000004,
+            "winogrande": 52.49
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.554,
+            "arc_easy": 1.62,
+            "boolq": 2.487,
+            "csqa": 1.709,
+            "hellaswag": 1.015,
+            "openbookqa": 1.853,
+            "piqa": 1.345,
+            "socialiqa": 1.427,
+            "winogrande": 1.608
+          },
+          "downstreamWandb": "p9cfi0ta",
+          "downstreamEvaluation": {
+            "campaign": "01M08B8VK8AH1JW8RY78MDWEDF",
+            "job": "01M08B8VPRJH2E10KX62XZA177",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step954",
+            "gpuCount": 1
+          }
         },
         "4": {
           "status": "complete",
@@ -6705,7 +7431,40 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step1716",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step1908",
           "sequential": true,
-          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint.",
+          "acc": 35.339999999999996,
+          "bpb": 0.9345,
+          "avg8Bpb": 1.3943125,
+          "avg8Accuracy": 41.95,
+          "downstream": {
+            "arc_challenge": 24.08,
+            "arc_easy": 51.93,
+            "boolq": 45.379999999999995,
+            "csqa": 42.34,
+            "hellaswag": 35.339999999999996,
+            "openbookqa": 25.2,
+            "piqa": 65.4,
+            "socialiqa": 43.09,
+            "winogrande": 48.22
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.439,
+            "arc_easy": 1.472,
+            "boolq": 1.985,
+            "csqa": 1.496,
+            "hellaswag": 0.9345,
+            "openbookqa": 1.693,
+            "piqa": 1.252,
+            "socialiqa": 1.331,
+            "winogrande": 1.537
+          },
+          "downstreamWandb": "rn6er5bk",
+          "downstreamEvaluation": {
+            "campaign": "01M08B8VK8AH1JW8RY78MDWEDF",
+            "job": "01M08B8VPRJH2E10KX62XZA177",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step1908",
+            "gpuCount": 1
+          }
         },
         "8": {
           "status": "complete",
@@ -6865,7 +7624,40 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step428",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step477",
           "sequential": true,
-          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint.",
+          "acc": 26.07,
+          "bpb": 1.206,
+          "avg8Bpb": 1.815,
+          "avg8Accuracy": 34.775,
+          "downstream": {
+            "arc_challenge": 22.41,
+            "arc_easy": 34.39,
+            "boolq": 53.300000000000004,
+            "csqa": 27.76,
+            "hellaswag": 26.07,
+            "openbookqa": 22.6,
+            "piqa": 55.879999999999995,
+            "socialiqa": 40.79,
+            "winogrande": 48.3
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.798,
+            "arc_easy": 1.963,
+            "boolq": 3.234,
+            "csqa": 2.25,
+            "hellaswag": 1.206,
+            "openbookqa": 2.125,
+            "piqa": 1.661,
+            "socialiqa": 1.754,
+            "winogrande": 1.763
+          },
+          "downstreamWandb": "fjb4tb2b",
+          "downstreamEvaluation": {
+            "campaign": "01M08B8VK8AH1JW8RY78MDWEDF",
+            "job": "01M08B8VPRJH2E10KX62XZA177",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step477",
+            "gpuCount": 1
+          }
         },
         "2": {
           "status": "complete",
@@ -6881,7 +7673,40 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step858",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step954",
           "sequential": true,
-          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint.",
+          "acc": 28.999999999999996,
+          "bpb": 1.028,
+          "avg8Bpb": 1.53575,
+          "avg8Accuracy": 37.91875,
+          "downstream": {
+            "arc_challenge": 20.74,
+            "arc_easy": 42.63,
+            "boolq": 53.7,
+            "csqa": 34.07,
+            "hellaswag": 28.999999999999996,
+            "openbookqa": 22.2,
+            "piqa": 62.62,
+            "socialiqa": 41.660000000000004,
+            "winogrande": 50.43
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.569,
+            "arc_easy": 1.656,
+            "boolq": 2.859,
+            "csqa": 1.708,
+            "hellaswag": 1.028,
+            "openbookqa": 1.889,
+            "piqa": 1.355,
+            "socialiqa": 1.482,
+            "winogrande": 1.599
+          },
+          "downstreamWandb": "m7b5yuab",
+          "downstreamEvaluation": {
+            "campaign": "01M08B8VK8AH1JW8RY78MDWEDF",
+            "job": "01M08B8VPRJH2E10KX62XZA177",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step954",
+            "gpuCount": 1
+          }
         },
         "4": {
           "status": "complete",
@@ -7082,7 +7907,40 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step3432",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step3815",
           "sequential": true,
-          "reason": "Recovered valid E1 endpoint from the failed wrapper: both checkpoints and exact held-out CE were produced before tee/pipefail terminated the job."
+          "reason": "Recovered valid E1 endpoint from the failed wrapper: both checkpoints and exact held-out CE were produced before tee/pipefail terminated the job.",
+          "acc": 31.580000000000002,
+          "bpb": 0.9806,
+          "avg8Bpb": 1.473825,
+          "avg8Accuracy": 40.214999999999996,
+          "downstream": {
+            "arc_challenge": 22.74,
+            "arc_easy": 47.89,
+            "boolq": 57.37,
+            "csqa": 38.9,
+            "hellaswag": 31.580000000000002,
+            "openbookqa": 24.8,
+            "piqa": 62.949999999999996,
+            "socialiqa": 42.43,
+            "winogrande": 50.43
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.54,
+            "arc_easy": 1.602,
+            "boolq": 2.342,
+            "csqa": 1.601,
+            "hellaswag": 0.9806,
+            "openbookqa": 1.817,
+            "piqa": 1.301,
+            "socialiqa": 1.377,
+            "winogrande": 1.572
+          },
+          "downstreamWandb": "d6jpsvrp",
+          "downstreamEvaluation": {
+            "campaign": "01M08B8YEPVKH9N071PZAM02FY",
+            "job": "01M08B8YJ5MFK8JYEPAKMDYY6H",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step3815",
+            "gpuCount": 1
+          }
         },
         "2": {
           "status": "complete",
@@ -7099,7 +7957,40 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step6866",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step7630",
           "sequential": true,
-          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint.",
+          "acc": 35.6,
+          "bpb": 0.9305,
+          "avg8Bpb": 1.3725625,
+          "avg8Accuracy": 42.75375,
+          "downstream": {
+            "arc_challenge": 25.75,
+            "arc_easy": 50.7,
+            "boolq": 58.379999999999995,
+            "csqa": 43.65,
+            "hellaswag": 35.6,
+            "openbookqa": 27.200000000000003,
+            "piqa": 65.02,
+            "socialiqa": 43.91,
+            "winogrande": 50.2
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.429,
+            "arc_easy": 1.468,
+            "boolq": 1.534,
+            "csqa": 1.45,
+            "hellaswag": 0.9305,
+            "openbookqa": 1.674,
+            "piqa": 1.24,
+            "socialiqa": 1.263,
+            "winogrande": 1.526
+          },
+          "downstreamWandb": "4x1gk1nr",
+          "downstreamEvaluation": {
+            "campaign": "01M08B8YEPVKH9N071PZAM02FY",
+            "job": "01M08B8YJ5MFK8JYEPAKMDYY6H",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step7630",
+            "gpuCount": 1
+          }
         },
         "4": {
           "status": "complete",
@@ -7116,7 +8007,40 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step13732",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step15259",
           "sequential": true,
-          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint.",
+          "acc": 39.989999999999995,
+          "bpb": 0.9001,
+          "avg8Bpb": 1.3085125,
+          "avg8Accuracy": 44.95125,
+          "downstream": {
+            "arc_challenge": 23.75,
+            "arc_easy": 54.04,
+            "boolq": 56.15,
+            "csqa": 48.4,
+            "hellaswag": 39.989999999999995,
+            "openbookqa": 27.6,
+            "piqa": 67.95,
+            "socialiqa": 45.550000000000004,
+            "winogrande": 52.33
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.346,
+            "arc_easy": 1.353,
+            "boolq": 1.473,
+            "csqa": 1.372,
+            "hellaswag": 0.9001,
+            "openbookqa": 1.602,
+            "piqa": 1.188,
+            "socialiqa": 1.219,
+            "winogrande": 1.488
+          },
+          "downstreamWandb": "bolkpnri",
+          "downstreamEvaluation": {
+            "campaign": "01M08B8YEPVKH9N071PZAM02FY",
+            "job": "01M08B8YJ5MFK8JYEPAKMDYY6H",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step15259",
+            "gpuCount": 1
+          }
         },
         "8": {
           "status": "complete",
@@ -7133,7 +8057,40 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step27465",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step30518",
           "sequential": true,
-          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint.",
+          "acc": 43.91,
+          "bpb": 0.8731,
+          "avg8Bpb": 1.2788875,
+          "avg8Accuracy": 46.96,
+          "downstream": {
+            "arc_challenge": 25.75,
+            "arc_easy": 56.489999999999995,
+            "boolq": 53.849999999999994,
+            "csqa": 52.25,
+            "hellaswag": 43.91,
+            "openbookqa": 27.800000000000004,
+            "piqa": 69.15,
+            "socialiqa": 45.550000000000004,
+            "winogrande": 54.779999999999994
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.33,
+            "arc_easy": 1.32,
+            "boolq": 1.246,
+            "csqa": 1.29,
+            "hellaswag": 0.8731,
+            "openbookqa": 1.565,
+            "piqa": 1.158,
+            "socialiqa": 1.212,
+            "winogrande": 1.483
+          },
+          "downstreamWandb": "rpp6rhvu",
+          "downstreamEvaluation": {
+            "campaign": "01M08B8YEPVKH9N071PZAM02FY",
+            "job": "01M08B8YJ5MFK8JYEPAKMDYY6H",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step30518",
+            "gpuCount": 1
+          }
         },
         "12": {
           "status": "complete",
@@ -7150,7 +8107,40 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step41198",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step45777",
           "sequential": true,
-          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint.",
+          "acc": 46.300000000000004,
+          "bpb": 0.8639,
+          "avg8Bpb": 1.2524875,
+          "avg8Accuracy": 48.43625,
+          "downstream": {
+            "arc_challenge": 26.090000000000003,
+            "arc_easy": 59.3,
+            "boolq": 57.489999999999995,
+            "csqa": 54.63,
+            "hellaswag": 46.300000000000004,
+            "openbookqa": 30.2,
+            "piqa": 70.13000000000001,
+            "socialiqa": 46.06,
+            "winogrande": 54.779999999999994
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.29,
+            "arc_easy": 1.272,
+            "boolq": 1.603,
+            "csqa": 1.245,
+            "hellaswag": 0.8639,
+            "openbookqa": 1.529,
+            "piqa": 1.15,
+            "socialiqa": 1.21,
+            "winogrande": 1.46
+          },
+          "downstreamWandb": "6q5rn5w8",
+          "downstreamEvaluation": {
+            "campaign": "01M08B8YEPVKH9N071PZAM02FY",
+            "job": "01M08B8YJ5MFK8JYEPAKMDYY6H",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step45777",
+            "gpuCount": 1
+          }
         },
         "16": {
           "status": "complete",
@@ -7265,7 +8255,40 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step428",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step477",
           "sequential": true,
-          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint.",
+          "acc": 26.169999999999998,
+          "bpb": 1.189,
+          "avg8Bpb": 1.814,
+          "avg8Accuracy": 35.82625,
+          "downstream": {
+            "arc_challenge": 23.41,
+            "arc_easy": 35.79,
+            "boolq": 61.99,
+            "csqa": 28.09,
+            "hellaswag": 26.169999999999998,
+            "openbookqa": 25.0,
+            "piqa": 57.50999999999999,
+            "socialiqa": 39.97,
+            "winogrande": 50.67
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.832,
+            "arc_easy": 2.012,
+            "boolq": 3.538,
+            "csqa": 2.156,
+            "hellaswag": 1.189,
+            "openbookqa": 2.169,
+            "piqa": 1.625,
+            "socialiqa": 1.792,
+            "winogrande": 1.737
+          },
+          "downstreamWandb": "k8daiwzf",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ2RBXJGVSA58SQ38WSWS",
+            "job": "01M08BJ2WJF1BRZPSVHYWJ240K",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step477",
+            "gpuCount": 1
+          }
         },
         "2": {
           "status": "complete",
@@ -7281,7 +8304,40 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step858",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step954",
           "sequential": true,
-          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint.",
+          "acc": 29.609999999999996,
+          "bpb": 1.012,
+          "avg8Bpb": 1.508,
+          "avg8Accuracy": 39.5075,
+          "downstream": {
+            "arc_challenge": 25.419999999999998,
+            "arc_easy": 45.79,
+            "boolq": 58.989999999999995,
+            "csqa": 35.3,
+            "hellaswag": 29.609999999999996,
+            "openbookqa": 24.6,
+            "piqa": 61.75000000000001,
+            "socialiqa": 41.5,
+            "winogrande": 52.09
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.521,
+            "arc_easy": 1.616,
+            "boolq": 2.807,
+            "csqa": 1.655,
+            "hellaswag": 1.012,
+            "openbookqa": 1.872,
+            "piqa": 1.338,
+            "socialiqa": 1.448,
+            "winogrande": 1.602
+          },
+          "downstreamWandb": "00euroyx",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ2RBXJGVSA58SQ38WSWS",
+            "job": "01M08BJ2WJF1BRZPSVHYWJ240K",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step954",
+            "gpuCount": 1
+          }
         },
         "4": {
           "status": "complete",
@@ -7416,7 +8472,40 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step428",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step477",
           "sequential": true,
-          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint."
+          "reason": "Completed inside the persistent E1->E24 DR+WT chain; the next stage resumes this stage's exact pre-decay checkpoint.",
+          "acc": 26.06,
+          "bpb": 1.202,
+          "avg8Bpb": 1.7922500000000001,
+          "avg8Accuracy": 34.67625,
+          "downstream": {
+            "arc_challenge": 21.4,
+            "arc_easy": 36.67,
+            "boolq": 57.31,
+            "csqa": 25.88,
+            "hellaswag": 26.06,
+            "openbookqa": 21.0,
+            "piqa": 57.730000000000004,
+            "socialiqa": 39.660000000000004,
+            "winogrande": 49.01
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.828,
+            "arc_easy": 2.004,
+            "boolq": 3.366,
+            "csqa": 2.036,
+            "hellaswag": 1.202,
+            "openbookqa": 2.123,
+            "piqa": 1.626,
+            "socialiqa": 1.78,
+            "winogrande": 1.739
+          },
+          "downstreamWandb": "8um605gm",
+          "downstreamEvaluation": {
+            "campaign": "01M08BJ2RBXJGVSA58SQ38WSWS",
+            "job": "01M08BJ2WJF1BRZPSVHYWJ240K",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step477",
+            "gpuCount": 1
+          }
         },
         "2": {
           "status": "complete",
@@ -9378,10 +10467,10 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step96130",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step106812",
           "progress": {
-            "step": 90207,
+            "step": 93202,
             "totalSteps": 106812,
-            "percent": 84.5,
-            "latestTrain": 3.168
+            "percent": 87.3,
+            "latestTrain": 3.128
           }
         },
         {
@@ -10728,10 +11817,10 @@
           "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_mlp_upper_half_wd1.0_lr1e-3_wd0.3/step27465",
           "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_mlp_upper_half_wd1.0_lr1e-3_wd0.3/step30518",
           "progress": {
-            "step": 25404,
+            "step": 25955,
             "totalSteps": 30518,
-            "percent": 83.2,
-            "latestTrain": 3.326
+            "percent": 85.0,
+            "latestTrain": 3.319
           }
         },
         {
@@ -16151,7 +17240,7 @@
       "id": "dense-1b-downstream-urgent-saturn-retry-bs1024-dr",
       "experiment": "01M08B8QA1589FXPAT56PQ0B7J",
       "revision": "2bd1adcddfe857238b566debfe5049b802028098",
-      "status": "submitted",
+      "status": "failed",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 16,
@@ -16171,11 +17260,13 @@
           "epoch": 4,
           "lr": "5e-4",
           "wd": "1.0",
-          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e4_lr5e-4_wd1.0_warmup24_dataloader-cd-wdbound-r01/step954",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr5e-4_wd1.0/step954",
           "sourceExperiment": "01KZS9A0ERDMHT28CVB549Q3NE",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08B8QV9J9D8JXT4JYBJCR1H",
+          "registeredCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e4_lr5e-4_wd1.0_warmup24_dataloader-cd-wdbound-r01/step954"
         },
         {
           "runId": "dr1024-lr1e-3-wd0.333",
@@ -16189,7 +17280,8 @@
           "sourceExperiment": "01KZSBTR8N37J6F9J3A5GYTNBC",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted"
+          "status": "failed",
+          "job": "01M08B8QV9J9D8JXT4JYBJCR1H"
         },
         {
           "runId": "dr1024-lr1e-3-wd1.0",
@@ -16203,7 +17295,8 @@
           "sourceExperiment": "01KZST7VGG2XNARMXN31VDRAVJ",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted"
+          "status": "failed",
+          "job": "01M08B8QV9J9D8JXT4JYBJCR1H"
         },
         {
           "runId": "dr1024-lr5e-4-wd0.333",
@@ -16217,7 +17310,8 @@
           "sourceExperiment": "01KZS6VD261RZ4GCYA0C1NWBZM",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted"
+          "status": "failed",
+          "job": "01M08B8QV9J9D8JXT4JYBJCR1H"
         },
         {
           "runId": "dr1024-lr5e-4-wd1.0",
@@ -16231,7 +17325,8 @@
           "sourceExperiment": "01KZSBH3QTHAA1XT0FJSYS4A06",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted"
+          "status": "failed",
+          "job": "01M08B8QV9J9D8JXT4JYBJCR1H"
         },
         {
           "runId": "dr1024-lr1e-3-wd0.333",
@@ -16245,7 +17340,8 @@
           "sourceExperiment": "01KZSH6ABFPM4WQHQD40J1BJGB",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted"
+          "status": "failed",
+          "job": "01M08B8QV9J9D8JXT4JYBJCR1H"
         },
         {
           "runId": "dr1024-lr1e-3-wd1.0",
@@ -16259,7 +17355,8 @@
           "sourceExperiment": "01KZT5K8M28PE1K26VNJY6STQW",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted"
+          "status": "failed",
+          "job": "01M08B8QV9J9D8JXT4JYBJCR1H"
         },
         {
           "runId": "dr1024-lr5e-4-wd0.333",
@@ -16273,7 +17370,8 @@
           "sourceExperiment": "01KZSBGYW4Y3GHH6809K7PWE06",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted"
+          "status": "failed",
+          "job": "01M08B8QV9J9D8JXT4JYBJCR1H"
         },
         {
           "runId": "dr1024-lr5e-4-wd1.0",
@@ -16287,7 +17385,8 @@
           "sourceExperiment": "01KZSJ1APHNB6Z2ZKS4VMHSBDA",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted"
+          "status": "failed",
+          "job": "01M08B8QV9J9D8JXT4JYBJCR1H"
         },
         {
           "runId": "dr1024-lr1e-3-wd0.333",
@@ -16301,7 +17400,8 @@
           "sourceExperiment": "01KZSSNTAGXD8Z14T456PY3PKR",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted"
+          "status": "failed",
+          "job": "01M08B8QV9J9D8JXT4JYBJCR1H"
         },
         {
           "runId": "dr1024-lr1e-3-wd1.0",
@@ -16315,7 +17415,8 @@
           "sourceExperiment": "01KZVBXHC2NCCCMWGW8552GHYJ",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted"
+          "status": "failed",
+          "job": "01M08B8QV9J9D8JXT4JYBJCR1H"
         },
         {
           "runId": "dr1024-lr5e-4-wd1.0",
@@ -16329,7 +17430,8 @@
           "sourceExperiment": "01KZSTARA8XNJAYRXWRS35GVP4",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted"
+          "status": "failed",
+          "job": "01M08B8QV9J9D8JXT4JYBJCR1H"
         },
         {
           "runId": "dr1024-lr1e-3-wd1.0",
@@ -16343,7 +17445,8 @@
           "sourceExperiment": "01KZVS4GPWP21A3JAJXQ0AAF93",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted"
+          "status": "failed",
+          "job": "01M08B8QV9J9D8JXT4JYBJCR1H"
         },
         {
           "runId": "dr1024-lr1e-3-wd1.0",
@@ -16357,7 +17460,8 @@
           "sourceExperiment": "01KZW56AQVFV9ECTSV5SSR24DF",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted"
+          "status": "failed",
+          "job": "01M08B8QV9J9D8JXT4JYBJCR1H"
         },
         {
           "runId": "dr1024-lr1e-3-wd1.0",
@@ -16371,7 +17475,8 @@
           "sourceExperiment": "01KZWPC3TBHDRJCKDEG7CK57M1",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted"
+          "status": "failed",
+          "job": "01M08B8QV9J9D8JXT4JYBJCR1H"
         },
         {
           "runId": "dr1024-lr1e-3-wd1.0",
@@ -16385,10 +17490,12 @@
           "sourceExperiment": "01KZXZG5K1KMHY72DJBMSVP2S3",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted"
+          "status": "failed",
+          "job": "01M08B8QV9J9D8JXT4JYBJCR1H"
         }
       ],
-      "raceLoser": "01M089PY07CST27YKZF5N14QYY"
+      "raceLoser": "01M089PY07CST27YKZF5N14QYY",
+      "failureDiagnosis": "Runtime checkpoint discovery matched unrelated DiLoCo/local-SGD directories for BS1024 DR E4 and became ambiguous after one completed endpoint."
     },
     {
       "id": "dense-1b-downstream-urgent-saturn-retry-bs128-dr",
@@ -16716,7 +17823,7 @@
       "id": "dense-1b-downstream-urgent-saturn-retry-bs512-dr",
       "experiment": "01M08B8T8MTJ4HVWXHFGS1RAQT",
       "revision": "2bd1adcddfe857238b566debfe5049b802028098",
-      "status": "submitted",
+      "status": "running",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 9,
@@ -16736,11 +17843,13 @@
           "epoch": 1,
           "lr": "5e-4",
           "wd": "0.333",
-          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e1_lr5e-4_wd0.333_warmup48_dataloader-cd-lrwd-r01/step477",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_lr5e-4_wd0.333/step477",
           "sourceExperiment": "01KZS9VCQDJPFQ0PJ06KQY3XEF",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08B8TZ7WFQ70EAGV3G75RPB",
+          "registeredCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e1_lr5e-4_wd0.333_warmup48_dataloader-cd-lrwd-r01/step477"
         },
         {
           "runId": "dr512-lr1e-3-wd1.0",
@@ -16750,11 +17859,13 @@
           "epoch": 4,
           "lr": "1e-3",
           "wd": "1.0",
-          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e4_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step1908",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_lr1e-3_wd1.0/step1908",
           "sourceExperiment": "01KZS8961G2VGPG1KDJCTK5T8Q",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08B8TZ7WFQ70EAGV3G75RPB",
+          "registeredCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e4_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step1908"
         },
         {
           "runId": "dr512-lr1e-3-wd1.0",
@@ -16764,11 +17875,13 @@
           "epoch": 8,
           "lr": "1e-3",
           "wd": "1.0",
-          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e8_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step3815",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_lr1e-3_wd1.0/step3815",
           "sourceExperiment": "01KZSBGT5NPDQRKJH3HH1Q05SK",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08B8TZ7WFQ70EAGV3G75RPB",
+          "registeredCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e8_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step3815"
         },
         {
           "runId": "dr512-lr1e-3-wd0.333",
@@ -16778,11 +17891,13 @@
           "epoch": 12,
           "lr": "1e-3",
           "wd": "0.333",
-          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e12_lr1e-3_wd0.333_warmup48_dataloader-cd-r01/step5723",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_lr1e-3_wd0.333/step5723",
           "sourceExperiment": "01KZS4BDFH3CEDMS9G0RTVNM9M",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08B8TZ7WFQ70EAGV3G75RPB",
+          "registeredCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e12_lr1e-3_wd0.333_warmup48_dataloader-cd-r01/step5723"
         },
         {
           "runId": "dr512-lr1e-3-wd1.0",
@@ -16796,7 +17911,8 @@
           "sourceExperiment": "01KZSH5RTHAYY2EAP954VA0V97",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted"
+          "status": "running",
+          "job": "01M08B8TZ7WFQ70EAGV3G75RPB"
         },
         {
           "runId": "dr512-lr1e-3-wd1.0",
@@ -16810,7 +17926,8 @@
           "sourceExperiment": "01KZSRR4CWJW1NNP76NPRR79F7",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08B8TZ7WFQ70EAGV3G75RPB"
         },
         {
           "runId": "dr512-lr1e-3-wd1.0",
@@ -16824,7 +17941,8 @@
           "sourceExperiment": "01KZT0WFZG5N51A1TF9QE4EHQ7",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08B8TZ7WFQ70EAGV3G75RPB"
         },
         {
           "runId": "dr512-lr1e-3-wd1.0",
@@ -16838,7 +17956,8 @@
           "sourceExperiment": "01KZVGWC0C81FXHE3XGY4HVV52",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08B8TZ7WFQ70EAGV3G75RPB"
         },
         {
           "runId": "dr512-lr1e-3-wd1.0",
@@ -16852,7 +17971,8 @@
           "sourceExperiment": "01KZVQF11VK3YK7THWHJ59MEAW",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08B8TZ7WFQ70EAGV3G75RPB"
         }
       ],
       "raceLoser": "01M089R768T5VR1D5YH45VQE0W"
@@ -16861,7 +17981,7 @@
       "id": "dense-1b-downstream-urgent-saturn-retry-bs512-dr-wt",
       "experiment": "01M08B8VK8AH1JW8RY78MDWEDF",
       "revision": "2bd1adcddfe857238b566debfe5049b802028098",
-      "status": "submitted",
+      "status": "running",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 16,
@@ -16885,7 +18005,8 @@
           "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08B8VPRJH2E10KX62XZA177"
         },
         {
           "runId": "drwt512-lr1e-3-wd1.0",
@@ -16899,7 +18020,8 @@
           "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08B8VPRJH2E10KX62XZA177"
         },
         {
           "runId": "drwt512-lr1e-3-wd0.333",
@@ -16913,7 +18035,8 @@
           "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08B8VPRJH2E10KX62XZA177"
         },
         {
           "runId": "drwt512-lr1e-3-wd1.0",
@@ -16927,7 +18050,8 @@
           "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08B8VPRJH2E10KX62XZA177"
         },
         {
           "runId": "drwt512-lr1e-3-wd0.333",
@@ -16941,7 +18065,8 @@
           "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08B8VPRJH2E10KX62XZA177"
         },
         {
           "runId": "drwt512-lr1e-3-wd1.0",
@@ -16955,7 +18080,8 @@
           "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted"
+          "status": "running",
+          "job": "01M08B8VPRJH2E10KX62XZA177"
         },
         {
           "runId": "drwt512-lr1e-3-wd0.333",
@@ -16969,7 +18095,8 @@
           "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08B8VPRJH2E10KX62XZA177"
         },
         {
           "runId": "drwt512-lr1e-3-wd1.0",
@@ -16983,7 +18110,8 @@
           "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08B8VPRJH2E10KX62XZA177"
         },
         {
           "runId": "drwt512-lr1e-3-wd0.333",
@@ -16997,7 +18125,8 @@
           "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08B8VPRJH2E10KX62XZA177"
         },
         {
           "runId": "drwt512-lr1e-3-wd1.0",
@@ -17011,7 +18140,8 @@
           "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08B8VPRJH2E10KX62XZA177"
         },
         {
           "runId": "drwt512-lr1e-3-wd0.333",
@@ -17025,7 +18155,8 @@
           "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08B8VPRJH2E10KX62XZA177"
         },
         {
           "runId": "drwt512-lr1e-3-wd1.0",
@@ -17039,7 +18170,8 @@
           "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08B8VPRJH2E10KX62XZA177"
         },
         {
           "runId": "drwt512-lr1e-3-wd0.333",
@@ -17053,7 +18185,8 @@
           "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08B8VPRJH2E10KX62XZA177"
         },
         {
           "runId": "drwt512-lr1e-3-wd1.0",
@@ -17067,7 +18200,8 @@
           "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08B8VPRJH2E10KX62XZA177"
         },
         {
           "runId": "drwt512-lr1e-3-wd0.333",
@@ -17081,7 +18215,8 @@
           "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08B8VPRJH2E10KX62XZA177"
         },
         {
           "runId": "drwt512-lr1e-3-wd1.0",
@@ -17095,7 +18230,8 @@
           "sourceExperiment": "01M05YSDSTBRXWM8P94YQ98R1Z",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08B8VPRJH2E10KX62XZA177"
         }
       ],
       "raceLoser": "01M089R866B4MYJ458K6RNEZ4Y"
@@ -17601,7 +18737,7 @@
       "id": "dense-1b-downstream-urgent-saturn-retry-bs64-dr-wt-embwd",
       "experiment": "01M08B8YEPVKH9N071PZAM02FY",
       "revision": "2bd1adcddfe857238b566debfe5049b802028098",
-      "status": "submitted",
+      "status": "running",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 8,
@@ -17625,7 +18761,8 @@
           "sourceExperiment": "01M04SRK41V26GFGMS5P0VV4GX",
           "taskName": "downstream-eval-bs64-dr-wt-embwd",
           "groupId": "bs64-dr-wt-embwd",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08B8YJ5MFK8JYEPAKMDYY6H"
         },
         {
           "runId": "drwtembwd64-lr1e-3-wd0.3",
@@ -17639,7 +18776,8 @@
           "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
           "taskName": "downstream-eval-bs64-dr-wt-embwd",
           "groupId": "bs64-dr-wt-embwd",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08B8YJ5MFK8JYEPAKMDYY6H"
         },
         {
           "runId": "drwtembwd64-lr1e-3-wd0.3",
@@ -17653,7 +18791,8 @@
           "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
           "taskName": "downstream-eval-bs64-dr-wt-embwd",
           "groupId": "bs64-dr-wt-embwd",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08B8YJ5MFK8JYEPAKMDYY6H"
         },
         {
           "runId": "drwtembwd64-lr1e-3-wd0.3",
@@ -17667,7 +18806,8 @@
           "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
           "taskName": "downstream-eval-bs64-dr-wt-embwd",
           "groupId": "bs64-dr-wt-embwd",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08B8YJ5MFK8JYEPAKMDYY6H"
         },
         {
           "runId": "drwtembwd64-lr1e-3-wd0.3",
@@ -17681,7 +18821,8 @@
           "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
           "taskName": "downstream-eval-bs64-dr-wt-embwd",
           "groupId": "bs64-dr-wt-embwd",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08B8YJ5MFK8JYEPAKMDYY6H"
         },
         {
           "runId": "drwtembwd64-lr1e-3-wd0.3",
@@ -17695,7 +18836,8 @@
           "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
           "taskName": "downstream-eval-bs64-dr-wt-embwd",
           "groupId": "bs64-dr-wt-embwd",
-          "status": "submitted"
+          "status": "running",
+          "job": "01M08B8YJ5MFK8JYEPAKMDYY6H"
         },
         {
           "runId": "drwtembwd64-lr1e-3-wd0.3",
@@ -17709,7 +18851,8 @@
           "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
           "taskName": "downstream-eval-bs64-dr-wt-embwd",
           "groupId": "bs64-dr-wt-embwd",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08B8YJ5MFK8JYEPAKMDYY6H"
         },
         {
           "runId": "drwtembwd64-lr1e-3-wd0.3",
@@ -17723,7 +18866,8 @@
           "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
           "taskName": "downstream-eval-bs64-dr-wt-embwd",
           "groupId": "bs64-dr-wt-embwd",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08B8YJ5MFK8JYEPAKMDYY6H"
         }
       ],
       "raceLoser": "01M089RBPPY4M15P9QFX6DZGNC"
@@ -17732,7 +18876,7 @@
       "id": "dense-1b-downstream-urgent-saturn-isolated-bs128-dr",
       "experiment": "01M08BJ195PWVATJC13QE177VT",
       "revision": "2bd1adcddfe857238b566debfe5049b802028098",
-      "status": "submitted",
+      "status": "running",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 10,
@@ -17757,7 +18901,8 @@
           "sourceExperiment": "01M018DE6NTCZV6SRA0QNSJ9NR",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ1CTGAW3KKPYA5R4QVG2"
         },
         {
           "runId": "dr128-lr1e-3-wd1.0",
@@ -17771,7 +18916,8 @@
           "sourceExperiment": "01M018DHE5SYNGFPMFNWXFAQGH",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ1CTGAW3KKPYA5R4QVG2"
         },
         {
           "runId": "dr128-lr1e-3-wd0.3",
@@ -17785,7 +18931,8 @@
           "sourceExperiment": "01M01DV4NPEYC6P05NCE6GC2TX",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ1CTGAW3KKPYA5R4QVG2"
         },
         {
           "runId": "dr128-lr1e-3-wd1.0",
@@ -17799,7 +18946,8 @@
           "sourceExperiment": "01M01DV5R4BJ0T3F27ZATBJHR0",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted"
+          "status": "running",
+          "job": "01M08BJ1CTGAW3KKPYA5R4QVG2"
         },
         {
           "runId": "dr128-lr1e-3-wd0.3",
@@ -17813,7 +18961,8 @@
           "sourceExperiment": "01M01MBWXNHKGA5JPW5DXZRQKW",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ1CTGAW3KKPYA5R4QVG2"
         },
         {
           "runId": "dr128-lr1e-3-wd1.0",
@@ -17827,7 +18976,8 @@
           "sourceExperiment": "01M01MBXZ6YJRH81CZ6WCFAQN7",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ1CTGAW3KKPYA5R4QVG2"
         },
         {
           "runId": "dr128-lr1e-3-wd0.3",
@@ -17841,7 +18991,8 @@
           "sourceExperiment": "01M020CXWMJNY4N2F2Q3TY7JXJ",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ1CTGAW3KKPYA5R4QVG2"
         },
         {
           "runId": "dr128-lr1e-3-wd1.0",
@@ -17855,7 +19006,8 @@
           "sourceExperiment": "01M02AH0APWS8GS78EWM0YG8J1",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ1CTGAW3KKPYA5R4QVG2"
         },
         {
           "runId": "dr128-lr1e-3-wd0.3",
@@ -17869,7 +19021,8 @@
           "sourceExperiment": "01M02YR7SFKQ2C9ABV15QK7VF5",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ1CTGAW3KKPYA5R4QVG2"
         },
         {
           "runId": "dr128-lr1e-3-wd1.0",
@@ -17883,7 +19036,8 @@
           "sourceExperiment": "01M02YTXR4NBQ38EMERZDC039J",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ1CTGAW3KKPYA5R4QVG2"
         }
       ]
     },
@@ -17891,7 +19045,7 @@
       "id": "dense-1b-downstream-urgent-saturn-isolated-bs256-dr",
       "experiment": "01M08BJ20DHD1PPS2Q10BXYBG6",
       "revision": "2bd1adcddfe857238b566debfe5049b802028098",
-      "status": "submitted",
+      "status": "running",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 10,
@@ -17916,7 +19070,8 @@
           "sourceExperiment": "01M018GP6P0CZ7KYZPWJXVRWAK",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ24EAXE8VS5HMYQFW2KA"
         },
         {
           "runId": "dr256-lr1e-3-wd1.0",
@@ -17930,7 +19085,8 @@
           "sourceExperiment": "01M018GTRB45ZD63YTQJX60CF4",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ24EAXE8VS5HMYQFW2KA"
         },
         {
           "runId": "dr256-lr1e-3-wd0.333",
@@ -17944,7 +19100,8 @@
           "sourceExperiment": "01M01DV6QK26AY8V3MJESGCGQR",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ24EAXE8VS5HMYQFW2KA"
         },
         {
           "runId": "dr256-lr1e-3-wd1.0",
@@ -17958,7 +19115,8 @@
           "sourceExperiment": "01M01DVR5E145CZB0P0P0Z9AG9",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ24EAXE8VS5HMYQFW2KA"
         },
         {
           "runId": "dr256-lr1e-3-wd0.333",
@@ -17972,7 +19130,8 @@
           "sourceExperiment": "01M01MBZ0HXSGFNT43BV6JEYN0",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted"
+          "status": "running",
+          "job": "01M08BJ24EAXE8VS5HMYQFW2KA"
         },
         {
           "runId": "dr256-lr1e-3-wd1.0",
@@ -17986,7 +19145,8 @@
           "sourceExperiment": "01M01MBZZEYEBMC7H1759YDCXY",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ24EAXE8VS5HMYQFW2KA"
         },
         {
           "runId": "dr256-lr1e-3-wd0.333",
@@ -18000,7 +19160,8 @@
           "sourceExperiment": "01M02MTEYWJW68YR2P2GS1JVAK",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ24EAXE8VS5HMYQFW2KA"
         },
         {
           "runId": "dr256-lr1e-3-wd1.0",
@@ -18014,7 +19175,8 @@
           "sourceExperiment": "01M020CYYFYS847JE3RKBS2R9Q",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ24EAXE8VS5HMYQFW2KA"
         },
         {
           "runId": "dr256-lr1e-3-wd0.333",
@@ -18028,7 +19190,8 @@
           "sourceExperiment": "01M030WZV2D24Y2E8G10K8AX82",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ24EAXE8VS5HMYQFW2KA"
         },
         {
           "runId": "dr256-lr1e-3-wd1.0",
@@ -18042,7 +19205,8 @@
           "sourceExperiment": "01M032GHXK15ZF1Z0AAHR05SB0",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ24EAXE8VS5HMYQFW2KA"
         }
       ]
     },
@@ -18050,7 +19214,7 @@
       "id": "dense-1b-downstream-urgent-saturn-isolated-bs512-dr-wt-embwd",
       "experiment": "01M08BJ2RBXJGVSA58SQ38WSWS",
       "revision": "2bd1adcddfe857238b566debfe5049b802028098",
-      "status": "submitted",
+      "status": "running",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 15,
@@ -18075,7 +19239,8 @@
           "sourceExperiment": "01M04SRW33CE5Z9M8DM5350X02",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ2WJF1BRZPSVHYWJ240K"
         },
         {
           "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -18089,7 +19254,8 @@
           "sourceExperiment": "01M04SS5Z3SBDN69A67CHVHN61",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ2WJF1BRZPSVHYWJ240K"
         },
         {
           "runId": "drwtembwd512-lr1e-3-wd0.333",
@@ -18103,7 +19269,8 @@
           "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ2WJF1BRZPSVHYWJ240K"
         },
         {
           "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -18117,7 +19284,8 @@
           "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted"
+          "status": "running",
+          "job": "01M08BJ2WJF1BRZPSVHYWJ240K"
         },
         {
           "runId": "drwtembwd512-lr1e-3-wd0.333",
@@ -18131,7 +19299,8 @@
           "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ2WJF1BRZPSVHYWJ240K"
         },
         {
           "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -18145,7 +19314,8 @@
           "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ2WJF1BRZPSVHYWJ240K"
         },
         {
           "runId": "drwtembwd512-lr1e-3-wd0.333",
@@ -18159,7 +19329,8 @@
           "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ2WJF1BRZPSVHYWJ240K"
         },
         {
           "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -18173,7 +19344,8 @@
           "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ2WJF1BRZPSVHYWJ240K"
         },
         {
           "runId": "drwtembwd512-lr1e-3-wd0.333",
@@ -18187,7 +19359,8 @@
           "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ2WJF1BRZPSVHYWJ240K"
         },
         {
           "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -18201,7 +19374,8 @@
           "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ2WJF1BRZPSVHYWJ240K"
         },
         {
           "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -18215,7 +19389,8 @@
           "sourceExperiment": "01M06M4SD7TP1T1YJWN2W3FCK0",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ2WJF1BRZPSVHYWJ240K"
         },
         {
           "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -18229,7 +19404,8 @@
           "sourceExperiment": "01M06M4SD7TP1T1YJWN2W3FCK0",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ2WJF1BRZPSVHYWJ240K"
         },
         {
           "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -18243,7 +19419,8 @@
           "sourceExperiment": "01M06M4SD7TP1T1YJWN2W3FCK0",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ2WJF1BRZPSVHYWJ240K"
         },
         {
           "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -18257,7 +19434,8 @@
           "sourceExperiment": "01M07DXQ25NB8AZK56MCVTDESB",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ2WJF1BRZPSVHYWJ240K"
         },
         {
           "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -18271,7 +19449,8 @@
           "sourceExperiment": "01M07DXQ25NB8AZK56MCVTDESB",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ2WJF1BRZPSVHYWJ240K"
         }
       ]
     },
@@ -18279,7 +19458,7 @@
       "id": "dense-1b-downstream-urgent-saturn-isolated-bs64-dr",
       "experiment": "01M08BJ3EXS318P8DGA6FWGDHN",
       "revision": "2bd1adcddfe857238b566debfe5049b802028098",
-      "status": "submitted",
+      "status": "running",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 8,
@@ -18304,7 +19483,9 @@
           "sourceExperiment": "01KZWDBW5NFCBJY88KQQ0E7FR2",
           "taskName": "downstream-eval-bs64-dr",
           "groupId": "bs64-dr",
-          "status": "submitted"
+          "status": "unavailable",
+          "job": "01M08BJ47GP8Y3WQNN3P6KYF13",
+          "reason": "Registered checkpoint directory is missing."
         },
         {
           "runId": "dr64-lr1e-3-wd1.0",
@@ -18318,7 +19499,8 @@
           "sourceExperiment": "01M01MBVZ5AT2CFBK5PFZDPRPV",
           "taskName": "downstream-eval-bs64-dr",
           "groupId": "bs64-dr",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ47GP8Y3WQNN3P6KYF13"
         },
         {
           "runId": "dr64-lr1e-3-wd0.3",
@@ -18332,7 +19514,8 @@
           "sourceExperiment": "01KZZ0VJE9FJX8VQ9Z17GJXXCH",
           "taskName": "downstream-eval-bs64-dr",
           "groupId": "bs64-dr",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ47GP8Y3WQNN3P6KYF13"
         },
         {
           "runId": "dr64-lr1e-3-wd1.0",
@@ -18346,7 +19529,8 @@
           "sourceExperiment": "01M021730WYSJCQ2XGAW07PTMD",
           "taskName": "downstream-eval-bs64-dr",
           "groupId": "bs64-dr",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ47GP8Y3WQNN3P6KYF13"
         },
         {
           "runId": "dr64-lr1e-3-wd0.3",
@@ -18360,7 +19544,8 @@
           "sourceExperiment": "01KZZC6H5197N68EG9FY4M06F4",
           "taskName": "downstream-eval-bs64-dr",
           "groupId": "bs64-dr",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ47GP8Y3WQNN3P6KYF13"
         },
         {
           "runId": "dr64-lr1e-3-wd1.0",
@@ -18374,7 +19559,8 @@
           "sourceExperiment": "01M02Z52131XHPG1JFZEZ947EE",
           "taskName": "downstream-eval-bs64-dr",
           "groupId": "bs64-dr",
-          "status": "submitted"
+          "status": "running",
+          "job": "01M08BJ47GP8Y3WQNN3P6KYF13"
         },
         {
           "runId": "dr64-lr1e-3-wd0.3",
@@ -18388,7 +19574,8 @@
           "sourceExperiment": "01KZZT2G15F6Z94GWWCY0VFPBZ",
           "taskName": "downstream-eval-bs64-dr",
           "groupId": "bs64-dr",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ47GP8Y3WQNN3P6KYF13"
         },
         {
           "runId": "dr64-lr1e-3-wd0.3",
@@ -18402,7 +19589,8 @@
           "sourceExperiment": "01M00G858E5CG616QTJFY5QEE4",
           "taskName": "downstream-eval-bs64-dr",
           "groupId": "bs64-dr",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ47GP8Y3WQNN3P6KYF13"
         }
       ]
     },
@@ -18410,7 +19598,7 @@
       "id": "dense-1b-downstream-urgent-saturn-isolated-bs64-dr-wt",
       "experiment": "01M08BJ4VA8FZSNH5K7ZMDJD7Z",
       "revision": "2bd1adcddfe857238b566debfe5049b802028098",
-      "status": "submitted",
+      "status": "running",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 8,
@@ -18435,7 +19623,8 @@
           "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
           "taskName": "downstream-eval-bs64-dr-wt",
           "groupId": "bs64-dr-wt",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ4ZCV5NMP1TFR9DV46EE"
         },
         {
           "runId": "drwt64-lr1e-3-wd0.3",
@@ -18449,7 +19638,8 @@
           "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
           "taskName": "downstream-eval-bs64-dr-wt",
           "groupId": "bs64-dr-wt",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ4ZCV5NMP1TFR9DV46EE"
         },
         {
           "runId": "drwt64-lr1e-3-wd0.3",
@@ -18463,7 +19653,8 @@
           "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
           "taskName": "downstream-eval-bs64-dr-wt",
           "groupId": "bs64-dr-wt",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ4ZCV5NMP1TFR9DV46EE"
         },
         {
           "runId": "drwt64-lr1e-3-wd0.3",
@@ -18477,7 +19668,8 @@
           "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
           "taskName": "downstream-eval-bs64-dr-wt",
           "groupId": "bs64-dr-wt",
-          "status": "submitted"
+          "status": "complete",
+          "job": "01M08BJ4ZCV5NMP1TFR9DV46EE"
         },
         {
           "runId": "drwt64-lr1e-3-wd0.3",
@@ -18491,7 +19683,8 @@
           "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
           "taskName": "downstream-eval-bs64-dr-wt",
           "groupId": "bs64-dr-wt",
-          "status": "submitted"
+          "status": "running",
+          "job": "01M08BJ4ZCV5NMP1TFR9DV46EE"
         },
         {
           "runId": "drwt64-lr1e-3-wd0.3",
@@ -18505,7 +19698,8 @@
           "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
           "taskName": "downstream-eval-bs64-dr-wt",
           "groupId": "bs64-dr-wt",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ4ZCV5NMP1TFR9DV46EE"
         },
         {
           "runId": "drwt64-lr1e-3-wd0.3",
@@ -18519,7 +19713,8 @@
           "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
           "taskName": "downstream-eval-bs64-dr-wt",
           "groupId": "bs64-dr-wt",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ4ZCV5NMP1TFR9DV46EE"
         },
         {
           "runId": "drwt64-lr1e-3-wd0.3",
@@ -18533,7 +19728,8 @@
           "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
           "taskName": "downstream-eval-bs64-dr-wt",
           "groupId": "bs64-dr-wt",
-          "status": "submitted"
+          "status": "submitted",
+          "job": "01M08BJ4ZCV5NMP1TFR9DV46EE"
         }
       ]
     }
