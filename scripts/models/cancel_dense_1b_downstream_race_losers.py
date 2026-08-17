@@ -46,6 +46,21 @@ def started_at(job: dict[str, Any]) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
+def evaluation_started(job: dict[str, Any]) -> bool:
+    job_state = state(job)
+    if job_state == "complete":
+        return True
+    if job_state != "running":
+        return False
+    logs = subprocess.run(
+        ["beaker", "job", "logs", job["id"], "--no-timestamps"],
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+    ).stdout
+    return "DOWNSTREAM_DISCOVERY_COMPLETE" in logs
+
+
 def choose_winner(
     first: tuple[dict[str, Any], dict[str, Any]],
     second: tuple[dict[str, Any], dict[str, Any]],
@@ -53,17 +68,18 @@ def choose_winner(
     first_campaign, first_job = first
     second_campaign, second_job = second
     first_state, second_state = state(first_job), state(second_job)
-    active = {"running", "complete"}
-    waiting = {"submitted", "scheduled"}
-    if first_state == "complete" and second_state != "complete":
+    first_started = evaluation_started(first_job)
+    second_started = evaluation_started(second_job)
+    stoppable = {"submitted", "scheduled", "running"}
+    if first_state == "complete" and second_state in stoppable:
         return first_campaign, second_campaign
-    if second_state == "complete" and first_state != "complete":
+    if second_state == "complete" and first_state in stoppable:
         return second_campaign, first_campaign
-    if first_state in active and second_state in waiting:
+    if first_started and not second_started and second_state in stoppable:
         return first_campaign, second_campaign
-    if second_state in active and first_state in waiting:
+    if second_started and not first_started and first_state in stoppable:
         return second_campaign, first_campaign
-    if first_state == second_state == "running":
+    if first_started and second_started and first_state == second_state == "running":
         if started_at(first_job) <= started_at(second_job):
             return first_campaign, second_campaign
         return second_campaign, first_campaign

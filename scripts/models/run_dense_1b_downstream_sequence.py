@@ -116,6 +116,7 @@ def main() -> None:
         subprocess.run(
             [
                 "torchrun",
+                "--standalone",
                 "--nproc-per-node=1",
                 manifest["trainingScript"],
                 name,

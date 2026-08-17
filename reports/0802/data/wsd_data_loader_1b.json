@@ -12818,7 +12818,7 @@
       "id": "dense-1b-downstream-urgent-bs1024-dr",
       "experiment": "01M089PY07CST27YKZF5N14QYY",
       "revision": "2bd1adcdd",
-      "status": "submitted",
+      "status": "race_cancelled",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 16,
@@ -12838,7 +12838,7 @@
           "sourceExperiment": "01KZS9A0ERDMHT28CVB549Q3NE",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089PY3PKCEWQBZCGPE98WZC"
         },
         {
@@ -12853,7 +12853,7 @@
           "sourceExperiment": "01KZSBTR8N37J6F9J3A5GYTNBC",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089PY3PKCEWQBZCGPE98WZC"
         },
         {
@@ -12868,7 +12868,7 @@
           "sourceExperiment": "01KZST7VGG2XNARMXN31VDRAVJ",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089PY3PKCEWQBZCGPE98WZC"
         },
         {
@@ -12883,7 +12883,7 @@
           "sourceExperiment": "01KZS6VD261RZ4GCYA0C1NWBZM",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089PY3PKCEWQBZCGPE98WZC"
         },
         {
@@ -12898,7 +12898,7 @@
           "sourceExperiment": "01KZSBH3QTHAA1XT0FJSYS4A06",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089PY3PKCEWQBZCGPE98WZC"
         },
         {
@@ -12913,7 +12913,7 @@
           "sourceExperiment": "01KZSH6ABFPM4WQHQD40J1BJGB",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089PY3PKCEWQBZCGPE98WZC"
         },
         {
@@ -12928,7 +12928,7 @@
           "sourceExperiment": "01KZT5K8M28PE1K26VNJY6STQW",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089PY3PKCEWQBZCGPE98WZC"
         },
         {
@@ -12943,7 +12943,7 @@
           "sourceExperiment": "01KZSBGYW4Y3GHH6809K7PWE06",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089PY3PKCEWQBZCGPE98WZC"
         },
         {
@@ -12958,7 +12958,7 @@
           "sourceExperiment": "01KZSJ1APHNB6Z2ZKS4VMHSBDA",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089PY3PKCEWQBZCGPE98WZC"
         },
         {
@@ -12973,7 +12973,7 @@
           "sourceExperiment": "01KZSSNTAGXD8Z14T456PY3PKR",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089PY3PKCEWQBZCGPE98WZC"
         },
         {
@@ -12988,7 +12988,7 @@
           "sourceExperiment": "01KZVBXHC2NCCCMWGW8552GHYJ",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089PY3PKCEWQBZCGPE98WZC"
         },
         {
@@ -13003,7 +13003,7 @@
           "sourceExperiment": "01KZSTARA8XNJAYRXWRS35GVP4",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089PY3PKCEWQBZCGPE98WZC"
         },
         {
@@ -13018,7 +13018,7 @@
           "sourceExperiment": "01KZVS4GPWP21A3JAJXQ0AAF93",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089PY3PKCEWQBZCGPE98WZC"
         },
         {
@@ -13033,7 +13033,7 @@
           "sourceExperiment": "01KZW56AQVFV9ECTSV5SSR24DF",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089PY3PKCEWQBZCGPE98WZC"
         },
         {
@@ -13048,7 +13048,7 @@
           "sourceExperiment": "01KZWPC3TBHDRJCKDEG7CK57M1",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089PY3PKCEWQBZCGPE98WZC"
         },
         {
@@ -13063,19 +13063,20 @@
           "sourceExperiment": "01KZXZG5K1KMHY72DJBMSVP2S3",
           "groupId": "bs1024-dr",
           "taskName": "downstream-eval-bs1024-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089PY3PKCEWQBZCGPE98WZC"
         }
       ],
       "cluster": "ai2/jupiter",
-      "mirroredBy": "01M08AEW6R3HJAK943ZRPZS7NJ",
-      "raceGroup": "bs1024-dr"
+      "mirroredBy": "01M08B8QA1589FXPAT56PQ0B7J",
+      "raceGroup": "bs1024-dr",
+      "raceWinner": "01M08B8QA1589FXPAT56PQ0B7J"
     },
     {
       "id": "dense-1b-downstream-urgent-bs128-dr",
       "experiment": "01M089R5EVBPVSZE9Y0CYBMKQC",
       "revision": "2bd1adcdd",
-      "status": "submitted",
+      "status": "race_cancelled",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 10,
@@ -13095,7 +13096,7 @@
           "sourceExperiment": "01M018DE6NTCZV6SRA0QNSJ9NR",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R5K60D3TV1XPYAPB79N3"
         },
         {
@@ -13110,7 +13111,7 @@
           "sourceExperiment": "01M018DHE5SYNGFPMFNWXFAQGH",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R5K60D3TV1XPYAPB79N3"
         },
         {
@@ -13125,7 +13126,7 @@
           "sourceExperiment": "01M01DV4NPEYC6P05NCE6GC2TX",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R5K60D3TV1XPYAPB79N3"
         },
         {
@@ -13140,7 +13141,7 @@
           "sourceExperiment": "01M01DV5R4BJ0T3F27ZATBJHR0",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R5K60D3TV1XPYAPB79N3"
         },
         {
@@ -13155,7 +13156,7 @@
           "sourceExperiment": "01M01MBWXNHKGA5JPW5DXZRQKW",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R5K60D3TV1XPYAPB79N3"
         },
         {
@@ -13170,7 +13171,7 @@
           "sourceExperiment": "01M01MBXZ6YJRH81CZ6WCFAQN7",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R5K60D3TV1XPYAPB79N3"
         },
         {
@@ -13185,7 +13186,7 @@
           "sourceExperiment": "01M020CXWMJNY4N2F2Q3TY7JXJ",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R5K60D3TV1XPYAPB79N3"
         },
         {
@@ -13200,7 +13201,7 @@
           "sourceExperiment": "01M02AH0APWS8GS78EWM0YG8J1",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R5K60D3TV1XPYAPB79N3"
         },
         {
@@ -13215,7 +13216,7 @@
           "sourceExperiment": "01M02YR7SFKQ2C9ABV15QK7VF5",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R5K60D3TV1XPYAPB79N3"
         },
         {
@@ -13230,19 +13231,20 @@
           "sourceExperiment": "01M02YTXR4NBQ38EMERZDC039J",
           "taskName": "downstream-eval-bs128-dr",
           "groupId": "bs128-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R5K60D3TV1XPYAPB79N3"
         }
       ],
       "cluster": "ai2/jupiter",
-      "mirroredBy": "01M08AEWYWFQ53980KKFJBN7C2",
-      "raceGroup": "bs128-dr"
+      "mirroredBy": "01M08B8RE00NNA2GRY2NVFW0V8",
+      "raceGroup": "bs128-dr",
+      "raceWinner": "01M08B8RE00NNA2GRY2NVFW0V8"
     },
     {
       "id": "dense-1b-downstream-urgent-bs256-dr",
       "experiment": "01M089R69MDFC8JT0N1YV26ZMA",
       "revision": "2bd1adcdd",
-      "status": "submitted",
+      "status": "race_cancelled",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 10,
@@ -13262,7 +13264,7 @@
           "sourceExperiment": "01M018GP6P0CZ7KYZPWJXVRWAK",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R6M1VF0CZSJAR3MVVQ35"
         },
         {
@@ -13277,7 +13279,7 @@
           "sourceExperiment": "01M018GTRB45ZD63YTQJX60CF4",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R6M1VF0CZSJAR3MVVQ35"
         },
         {
@@ -13292,7 +13294,7 @@
           "sourceExperiment": "01M01DV6QK26AY8V3MJESGCGQR",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R6M1VF0CZSJAR3MVVQ35"
         },
         {
@@ -13307,7 +13309,7 @@
           "sourceExperiment": "01M01DVR5E145CZB0P0P0Z9AG9",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R6M1VF0CZSJAR3MVVQ35"
         },
         {
@@ -13322,7 +13324,7 @@
           "sourceExperiment": "01M01MBZ0HXSGFNT43BV6JEYN0",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R6M1VF0CZSJAR3MVVQ35"
         },
         {
@@ -13337,7 +13339,7 @@
           "sourceExperiment": "01M01MBZZEYEBMC7H1759YDCXY",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R6M1VF0CZSJAR3MVVQ35"
         },
         {
@@ -13352,7 +13354,7 @@
           "sourceExperiment": "01M02MTEYWJW68YR2P2GS1JVAK",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R6M1VF0CZSJAR3MVVQ35"
         },
         {
@@ -13367,7 +13369,7 @@
           "sourceExperiment": "01M020CYYFYS847JE3RKBS2R9Q",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R6M1VF0CZSJAR3MVVQ35"
         },
         {
@@ -13382,7 +13384,7 @@
           "sourceExperiment": "01M030WZV2D24Y2E8G10K8AX82",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R6M1VF0CZSJAR3MVVQ35"
         },
         {
@@ -13397,19 +13399,20 @@
           "sourceExperiment": "01M032GHXK15ZF1Z0AAHR05SB0",
           "taskName": "downstream-eval-bs256-dr",
           "groupId": "bs256-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R6M1VF0CZSJAR3MVVQ35"
         }
       ],
       "cluster": "ai2/jupiter",
-      "mirroredBy": "01M08AEXZTZS9VJK2KKBFD5YWV",
-      "raceGroup": "bs256-dr"
+      "mirroredBy": "01M08B8SGWZXF2PVNPKH2009S2",
+      "raceGroup": "bs256-dr",
+      "raceWinner": "01M08B8SGWZXF2PVNPKH2009S2"
     },
     {
       "id": "dense-1b-downstream-urgent-bs512-dr",
       "experiment": "01M089R768T5VR1D5YH45VQE0W",
       "revision": "2bd1adcdd",
-      "status": "submitted",
+      "status": "race_cancelled",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 9,
@@ -13429,7 +13432,7 @@
           "sourceExperiment": "01KZS9VCQDJPFQ0PJ06KQY3XEF",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R7G499M1EWVJQ7DMYB87"
         },
         {
@@ -13444,7 +13447,7 @@
           "sourceExperiment": "01KZS8961G2VGPG1KDJCTK5T8Q",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R7G499M1EWVJQ7DMYB87"
         },
         {
@@ -13459,7 +13462,7 @@
           "sourceExperiment": "01KZSBGT5NPDQRKJH3HH1Q05SK",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R7G499M1EWVJQ7DMYB87"
         },
         {
@@ -13474,7 +13477,7 @@
           "sourceExperiment": "01KZS4BDFH3CEDMS9G0RTVNM9M",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R7G499M1EWVJQ7DMYB87"
         },
         {
@@ -13489,7 +13492,7 @@
           "sourceExperiment": "01KZSH5RTHAYY2EAP954VA0V97",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R7G499M1EWVJQ7DMYB87"
         },
         {
@@ -13504,7 +13507,7 @@
           "sourceExperiment": "01KZSRR4CWJW1NNP76NPRR79F7",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R7G499M1EWVJQ7DMYB87"
         },
         {
@@ -13519,7 +13522,7 @@
           "sourceExperiment": "01KZT0WFZG5N51A1TF9QE4EHQ7",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R7G499M1EWVJQ7DMYB87"
         },
         {
@@ -13534,7 +13537,7 @@
           "sourceExperiment": "01KZVGWC0C81FXHE3XGY4HVV52",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R7G499M1EWVJQ7DMYB87"
         },
         {
@@ -13549,19 +13552,20 @@
           "sourceExperiment": "01KZVQF11VK3YK7THWHJ59MEAW",
           "taskName": "downstream-eval-bs512-dr",
           "groupId": "bs512-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R7G499M1EWVJQ7DMYB87"
         }
       ],
       "cluster": "ai2/jupiter",
-      "mirroredBy": "01M08AEZ5NNYTQ4W8E9JNH7C6E",
-      "raceGroup": "bs512-dr"
+      "mirroredBy": "01M08B8T8MTJ4HVWXHFGS1RAQT",
+      "raceGroup": "bs512-dr",
+      "raceWinner": "01M08B8T8MTJ4HVWXHFGS1RAQT"
     },
     {
       "id": "dense-1b-downstream-urgent-bs512-dr-wt",
       "experiment": "01M089R866B4MYJ458K6RNEZ4Y",
       "revision": "2bd1adcdd",
-      "status": "submitted",
+      "status": "race_cancelled",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 16,
@@ -13581,7 +13585,7 @@
           "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R8RK2RQ713E7DB1GFAS8"
         },
         {
@@ -13596,7 +13600,7 @@
           "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R8RK2RQ713E7DB1GFAS8"
         },
         {
@@ -13611,7 +13615,7 @@
           "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R8RK2RQ713E7DB1GFAS8"
         },
         {
@@ -13626,7 +13630,7 @@
           "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R8RK2RQ713E7DB1GFAS8"
         },
         {
@@ -13641,7 +13645,7 @@
           "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R8RK2RQ713E7DB1GFAS8"
         },
         {
@@ -13656,7 +13660,7 @@
           "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R8RK2RQ713E7DB1GFAS8"
         },
         {
@@ -13671,7 +13675,7 @@
           "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R8RK2RQ713E7DB1GFAS8"
         },
         {
@@ -13686,7 +13690,7 @@
           "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R8RK2RQ713E7DB1GFAS8"
         },
         {
@@ -13701,7 +13705,7 @@
           "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R8RK2RQ713E7DB1GFAS8"
         },
         {
@@ -13716,7 +13720,7 @@
           "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R8RK2RQ713E7DB1GFAS8"
         },
         {
@@ -13731,7 +13735,7 @@
           "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R8RK2RQ713E7DB1GFAS8"
         },
         {
@@ -13746,7 +13750,7 @@
           "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R8RK2RQ713E7DB1GFAS8"
         },
         {
@@ -13761,7 +13765,7 @@
           "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R8RK2RQ713E7DB1GFAS8"
         },
         {
@@ -13776,7 +13780,7 @@
           "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R8RK2RQ713E7DB1GFAS8"
         },
         {
@@ -13791,7 +13795,7 @@
           "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R8RK2RQ713E7DB1GFAS8"
         },
         {
@@ -13806,19 +13810,20 @@
           "sourceExperiment": "01M05YSDSTBRXWM8P94YQ98R1Z",
           "taskName": "downstream-eval-bs512-dr-wt",
           "groupId": "bs512-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R8RK2RQ713E7DB1GFAS8"
         }
       ],
       "cluster": "ai2/jupiter",
-      "mirroredBy": "01M08AF07XHE6TGEPPPGA15VE7",
-      "raceGroup": "bs512-dr-wt"
+      "mirroredBy": "01M08B8VK8AH1JW8RY78MDWEDF",
+      "raceGroup": "bs512-dr-wt",
+      "raceWinner": "01M08B8VK8AH1JW8RY78MDWEDF"
     },
     {
       "id": "dense-1b-downstream-urgent-bs512-dr-wt-embwd",
       "experiment": "01M089R9C3V93SJC4F9F59F5FX",
       "revision": "2bd1adcdd",
-      "status": "submitted",
+      "status": "race_cancelled",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 15,
@@ -13838,7 +13843,7 @@
           "sourceExperiment": "01M04SRW33CE5Z9M8DM5350X02",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R9FNKY6N9W43CX62BTJD"
         },
         {
@@ -13853,7 +13858,7 @@
           "sourceExperiment": "01M04SS5Z3SBDN69A67CHVHN61",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R9FNKY6N9W43CX62BTJD"
         },
         {
@@ -13868,7 +13873,7 @@
           "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R9FNKY6N9W43CX62BTJD"
         },
         {
@@ -13883,7 +13888,7 @@
           "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R9FNKY6N9W43CX62BTJD"
         },
         {
@@ -13898,7 +13903,7 @@
           "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R9FNKY6N9W43CX62BTJD"
         },
         {
@@ -13913,7 +13918,7 @@
           "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R9FNKY6N9W43CX62BTJD"
         },
         {
@@ -13928,7 +13933,7 @@
           "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R9FNKY6N9W43CX62BTJD"
         },
         {
@@ -13943,7 +13948,7 @@
           "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R9FNKY6N9W43CX62BTJD"
         },
         {
@@ -13958,7 +13963,7 @@
           "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R9FNKY6N9W43CX62BTJD"
         },
         {
@@ -13973,7 +13978,7 @@
           "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R9FNKY6N9W43CX62BTJD"
         },
         {
@@ -13988,7 +13993,7 @@
           "sourceExperiment": "01M06M4SD7TP1T1YJWN2W3FCK0",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R9FNKY6N9W43CX62BTJD"
         },
         {
@@ -14003,7 +14008,7 @@
           "sourceExperiment": "01M06M4SD7TP1T1YJWN2W3FCK0",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R9FNKY6N9W43CX62BTJD"
         },
         {
@@ -14018,7 +14023,7 @@
           "sourceExperiment": "01M06M4SD7TP1T1YJWN2W3FCK0",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R9FNKY6N9W43CX62BTJD"
         },
         {
@@ -14033,7 +14038,7 @@
           "sourceExperiment": "01M07DXQ25NB8AZK56MCVTDESB",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R9FNKY6N9W43CX62BTJD"
         },
         {
@@ -14048,19 +14053,20 @@
           "sourceExperiment": "01M07DXQ25NB8AZK56MCVTDESB",
           "taskName": "downstream-eval-bs512-dr-wt-embwd",
           "groupId": "bs512-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089R9FNKY6N9W43CX62BTJD"
         }
       ],
       "cluster": "ai2/jupiter",
-      "mirroredBy": "01M08AF101Y3D6J9T83KDFFZ12",
-      "raceGroup": "bs512-dr-wt-embwd"
+      "mirroredBy": "01M08B8WA4MEF23AJBY6AFSBX7",
+      "raceGroup": "bs512-dr-wt-embwd",
+      "raceWinner": "01M08B8WA4MEF23AJBY6AFSBX7"
     },
     {
       "id": "dense-1b-downstream-urgent-bs64-dr",
       "experiment": "01M089RA62AXJ5ZPPH6X9GFA80",
       "revision": "2bd1adcdd",
-      "status": "submitted",
+      "status": "race_cancelled",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 8,
@@ -14080,7 +14086,7 @@
           "sourceExperiment": "01KZWDBW5NFCBJY88KQQ0E7FR2",
           "taskName": "downstream-eval-bs64-dr",
           "groupId": "bs64-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RAAD809Y3Y9ZWT3T8SPC"
         },
         {
@@ -14095,7 +14101,7 @@
           "sourceExperiment": "01M01MBVZ5AT2CFBK5PFZDPRPV",
           "taskName": "downstream-eval-bs64-dr",
           "groupId": "bs64-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RAAD809Y3Y9ZWT3T8SPC"
         },
         {
@@ -14110,7 +14116,7 @@
           "sourceExperiment": "01KZZ0VJE9FJX8VQ9Z17GJXXCH",
           "taskName": "downstream-eval-bs64-dr",
           "groupId": "bs64-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RAAD809Y3Y9ZWT3T8SPC"
         },
         {
@@ -14125,7 +14131,7 @@
           "sourceExperiment": "01M021730WYSJCQ2XGAW07PTMD",
           "taskName": "downstream-eval-bs64-dr",
           "groupId": "bs64-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RAAD809Y3Y9ZWT3T8SPC"
         },
         {
@@ -14140,7 +14146,7 @@
           "sourceExperiment": "01KZZC6H5197N68EG9FY4M06F4",
           "taskName": "downstream-eval-bs64-dr",
           "groupId": "bs64-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RAAD809Y3Y9ZWT3T8SPC"
         },
         {
@@ -14155,7 +14161,7 @@
           "sourceExperiment": "01M02Z52131XHPG1JFZEZ947EE",
           "taskName": "downstream-eval-bs64-dr",
           "groupId": "bs64-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RAAD809Y3Y9ZWT3T8SPC"
         },
         {
@@ -14170,7 +14176,7 @@
           "sourceExperiment": "01KZZT2G15F6Z94GWWCY0VFPBZ",
           "taskName": "downstream-eval-bs64-dr",
           "groupId": "bs64-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RAAD809Y3Y9ZWT3T8SPC"
         },
         {
@@ -14185,19 +14191,20 @@
           "sourceExperiment": "01M00G858E5CG616QTJFY5QEE4",
           "taskName": "downstream-eval-bs64-dr",
           "groupId": "bs64-dr",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RAAD809Y3Y9ZWT3T8SPC"
         }
       ],
       "cluster": "ai2/jupiter",
-      "mirroredBy": "01M08AF1PJKYZG80CZ91VSGEVS",
-      "raceGroup": "bs64-dr"
+      "mirroredBy": "01M08B8X02C67QJ72JYHY4N3Q8",
+      "raceGroup": "bs64-dr",
+      "raceWinner": "01M08B8X02C67QJ72JYHY4N3Q8"
     },
     {
       "id": "dense-1b-downstream-urgent-bs64-dr-wt",
       "experiment": "01M089RAXRGZA5BH415F8GZA2T",
       "revision": "2bd1adcdd",
-      "status": "submitted",
+      "status": "race_cancelled",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 8,
@@ -14217,7 +14224,7 @@
           "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
           "taskName": "downstream-eval-bs64-dr-wt",
           "groupId": "bs64-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RB37HK4RYBHC2Y9EXKCR"
         },
         {
@@ -14232,7 +14239,7 @@
           "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
           "taskName": "downstream-eval-bs64-dr-wt",
           "groupId": "bs64-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RB37HK4RYBHC2Y9EXKCR"
         },
         {
@@ -14247,7 +14254,7 @@
           "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
           "taskName": "downstream-eval-bs64-dr-wt",
           "groupId": "bs64-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RB37HK4RYBHC2Y9EXKCR"
         },
         {
@@ -14262,7 +14269,7 @@
           "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
           "taskName": "downstream-eval-bs64-dr-wt",
           "groupId": "bs64-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RB37HK4RYBHC2Y9EXKCR"
         },
         {
@@ -14277,7 +14284,7 @@
           "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
           "taskName": "downstream-eval-bs64-dr-wt",
           "groupId": "bs64-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RB37HK4RYBHC2Y9EXKCR"
         },
         {
@@ -14292,7 +14299,7 @@
           "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
           "taskName": "downstream-eval-bs64-dr-wt",
           "groupId": "bs64-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RB37HK4RYBHC2Y9EXKCR"
         },
         {
@@ -14307,7 +14314,7 @@
           "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
           "taskName": "downstream-eval-bs64-dr-wt",
           "groupId": "bs64-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RB37HK4RYBHC2Y9EXKCR"
         },
         {
@@ -14322,19 +14329,20 @@
           "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
           "taskName": "downstream-eval-bs64-dr-wt",
           "groupId": "bs64-dr-wt",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RB37HK4RYBHC2Y9EXKCR"
         }
       ],
       "cluster": "ai2/jupiter",
-      "mirroredBy": "01M08AF2TGGRN6E3Q9NY1FFSCS",
-      "raceGroup": "bs64-dr-wt"
+      "mirroredBy": "01M08B8XRG94QVH7P7RNQFWTR9",
+      "raceGroup": "bs64-dr-wt",
+      "raceWinner": "01M08B8XRG94QVH7P7RNQFWTR9"
     },
     {
       "id": "dense-1b-downstream-urgent-bs64-dr-wt-embwd",
       "experiment": "01M089RBPPY4M15P9QFX6DZGNC",
       "revision": "2bd1adcdd",
-      "status": "submitted",
+      "status": "race_cancelled",
       "gpuPerTask": 1,
       "taskCount": 1,
       "checkpointCount": 8,
@@ -14354,7 +14362,7 @@
           "sourceExperiment": "01M04SRK41V26GFGMS5P0VV4GX",
           "taskName": "downstream-eval-bs64-dr-wt-embwd",
           "groupId": "bs64-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RBT81HY17SQGWBEAF9K0"
         },
         {
@@ -14369,7 +14377,7 @@
           "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
           "taskName": "downstream-eval-bs64-dr-wt-embwd",
           "groupId": "bs64-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RBT81HY17SQGWBEAF9K0"
         },
         {
@@ -14384,7 +14392,7 @@
           "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
           "taskName": "downstream-eval-bs64-dr-wt-embwd",
           "groupId": "bs64-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RBT81HY17SQGWBEAF9K0"
         },
         {
@@ -14399,7 +14407,7 @@
           "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
           "taskName": "downstream-eval-bs64-dr-wt-embwd",
           "groupId": "bs64-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RBT81HY17SQGWBEAF9K0"
         },
         {
@@ -14414,7 +14422,7 @@
           "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
           "taskName": "downstream-eval-bs64-dr-wt-embwd",
           "groupId": "bs64-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RBT81HY17SQGWBEAF9K0"
         },
         {
@@ -14429,7 +14437,7 @@
           "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
           "taskName": "downstream-eval-bs64-dr-wt-embwd",
           "groupId": "bs64-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RBT81HY17SQGWBEAF9K0"
         },
         {
@@ -14444,7 +14452,7 @@
           "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
           "taskName": "downstream-eval-bs64-dr-wt-embwd",
           "groupId": "bs64-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RBT81HY17SQGWBEAF9K0"
         },
         {
@@ -14459,18 +14467,1690 @@
           "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
           "taskName": "downstream-eval-bs64-dr-wt-embwd",
           "groupId": "bs64-dr-wt-embwd",
-          "status": "submitted",
+          "status": "race_cancelled",
           "job": "01M089RBT81HY17SQGWBEAF9K0"
         }
       ],
       "cluster": "ai2/jupiter",
-      "mirroredBy": "01M08AF3JSFGDNJ12DYTYBY9R9",
-      "raceGroup": "bs64-dr-wt-embwd"
+      "mirroredBy": "01M08B8YEPVKH9N071PZAM02FY",
+      "raceGroup": "bs64-dr-wt-embwd",
+      "raceWinner": "01M08B8YEPVKH9N071PZAM02FY"
     },
     {
       "id": "dense-1b-downstream-urgent-saturn-bs1024-dr",
       "experiment": "01M08AEW6R3HJAK943ZRPZS7NJ",
       "revision": "2bd1adcdd",
+      "status": "failed",
+      "gpuPerTask": 1,
+      "taskCount": 1,
+      "checkpointCount": 16,
+      "singleGpuSequential": true,
+      "independentExperiment": true,
+      "runtimeDirectoryDiscovery": true,
+      "cluster": "ai2/saturn",
+      "mirrorOf": "01M089PY07CST27YKZF5N14QYY",
+      "raceGroup": "bs1024-dr",
+      "tasks": [
+        {
+          "runId": "dr1024-lr5e-4-wd1.0",
+          "method": "dr1024",
+          "variant": "dr",
+          "batchSequences": 1024,
+          "epoch": 4,
+          "lr": "5e-4",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e4_lr5e-4_wd1.0_warmup24_dataloader-cd-wdbound-r01/step954",
+          "sourceExperiment": "01KZS9A0ERDMHT28CVB549Q3NE",
+          "groupId": "bs1024-dr",
+          "taskName": "downstream-eval-bs1024-dr",
+          "status": "failed",
+          "job": "01M08AEWASMFFAJP1N9404QY31"
+        },
+        {
+          "runId": "dr1024-lr1e-3-wd0.333",
+          "method": "dr1024",
+          "variant": "dr",
+          "batchSequences": 1024,
+          "epoch": 4,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e4_lr1e-3_wd0.333_warmup24_dataloader-cd-lr1e3-r01/step954",
+          "sourceExperiment": "01KZSBTR8N37J6F9J3A5GYTNBC",
+          "groupId": "bs1024-dr",
+          "taskName": "downstream-eval-bs1024-dr",
+          "status": "failed",
+          "job": "01M08AEWASMFFAJP1N9404QY31"
+        },
+        {
+          "runId": "dr1024-lr1e-3-wd1.0",
+          "method": "dr1024",
+          "variant": "dr",
+          "batchSequences": 1024,
+          "epoch": 4,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e4_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r01/step954",
+          "sourceExperiment": "01KZST7VGG2XNARMXN31VDRAVJ",
+          "groupId": "bs1024-dr",
+          "taskName": "downstream-eval-bs1024-dr",
+          "status": "failed",
+          "job": "01M08AEWASMFFAJP1N9404QY31"
+        },
+        {
+          "runId": "dr1024-lr5e-4-wd0.333",
+          "method": "dr1024",
+          "variant": "dr",
+          "batchSequences": 1024,
+          "epoch": 8,
+          "lr": "5e-4",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr5e-4_wd0.333_warmup24_dataloader-cd-r01/step1908",
+          "sourceExperiment": "01KZS6VD261RZ4GCYA0C1NWBZM",
+          "groupId": "bs1024-dr",
+          "taskName": "downstream-eval-bs1024-dr",
+          "status": "failed",
+          "job": "01M08AEWASMFFAJP1N9404QY31"
+        },
+        {
+          "runId": "dr1024-lr5e-4-wd1.0",
+          "method": "dr1024",
+          "variant": "dr",
+          "batchSequences": 1024,
+          "epoch": 8,
+          "lr": "5e-4",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr5e-4_wd1.0_warmup24_dataloader-cd-wdbound-r01/step1908",
+          "sourceExperiment": "01KZSBH3QTHAA1XT0FJSYS4A06",
+          "groupId": "bs1024-dr",
+          "taskName": "downstream-eval-bs1024-dr",
+          "status": "failed",
+          "job": "01M08AEWASMFFAJP1N9404QY31"
+        },
+        {
+          "runId": "dr1024-lr1e-3-wd0.333",
+          "method": "dr1024",
+          "variant": "dr",
+          "batchSequences": 1024,
+          "epoch": 8,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd0.333_warmup24_dataloader-cd-lr1e3-r01/step1908",
+          "sourceExperiment": "01KZSH6ABFPM4WQHQD40J1BJGB",
+          "groupId": "bs1024-dr",
+          "taskName": "downstream-eval-bs1024-dr",
+          "status": "failed",
+          "job": "01M08AEWASMFFAJP1N9404QY31"
+        },
+        {
+          "runId": "dr1024-lr1e-3-wd1.0",
+          "method": "dr1024",
+          "variant": "dr",
+          "batchSequences": 1024,
+          "epoch": 8,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r02/step1908",
+          "sourceExperiment": "01KZT5K8M28PE1K26VNJY6STQW",
+          "groupId": "bs1024-dr",
+          "taskName": "downstream-eval-bs1024-dr",
+          "status": "failed",
+          "job": "01M08AEWASMFFAJP1N9404QY31"
+        },
+        {
+          "runId": "dr1024-lr5e-4-wd0.333",
+          "method": "dr1024",
+          "variant": "dr",
+          "batchSequences": 1024,
+          "epoch": 12,
+          "lr": "5e-4",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e12_lr5e-4_wd0.333_warmup24_dataloader-cd-r01/step2862",
+          "sourceExperiment": "01KZSBGYW4Y3GHH6809K7PWE06",
+          "groupId": "bs1024-dr",
+          "taskName": "downstream-eval-bs1024-dr",
+          "status": "failed",
+          "job": "01M08AEWASMFFAJP1N9404QY31"
+        },
+        {
+          "runId": "dr1024-lr5e-4-wd1.0",
+          "method": "dr1024",
+          "variant": "dr",
+          "batchSequences": 1024,
+          "epoch": 12,
+          "lr": "5e-4",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e12_lr5e-4_wd1.0_warmup24_dataloader-cd-wdbound-r01/step2862",
+          "sourceExperiment": "01KZSJ1APHNB6Z2ZKS4VMHSBDA",
+          "groupId": "bs1024-dr",
+          "taskName": "downstream-eval-bs1024-dr",
+          "status": "failed",
+          "job": "01M08AEWASMFFAJP1N9404QY31"
+        },
+        {
+          "runId": "dr1024-lr1e-3-wd0.333",
+          "method": "dr1024",
+          "variant": "dr",
+          "batchSequences": 1024,
+          "epoch": 12,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e12_lr1e-3_wd0.333_warmup24_dataloader-cd-lr1e3-r01/step2862",
+          "sourceExperiment": "01KZSSNTAGXD8Z14T456PY3PKR",
+          "groupId": "bs1024-dr",
+          "taskName": "downstream-eval-bs1024-dr",
+          "status": "failed",
+          "job": "01M08AEWASMFFAJP1N9404QY31"
+        },
+        {
+          "runId": "dr1024-lr1e-3-wd1.0",
+          "method": "dr1024",
+          "variant": "dr",
+          "batchSequences": 1024,
+          "epoch": 12,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e12_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r02/step2862",
+          "sourceExperiment": "01KZVBXHC2NCCCMWGW8552GHYJ",
+          "groupId": "bs1024-dr",
+          "taskName": "downstream-eval-bs1024-dr",
+          "status": "failed",
+          "job": "01M08AEWASMFFAJP1N9404QY31"
+        },
+        {
+          "runId": "dr1024-lr5e-4-wd1.0",
+          "method": "dr1024",
+          "variant": "dr",
+          "batchSequences": 1024,
+          "epoch": 16,
+          "lr": "5e-4",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e16_lr5e-4_wd1.0_warmup24_dataloader-cd-wdbound-r01/step3815",
+          "sourceExperiment": "01KZSTARA8XNJAYRXWRS35GVP4",
+          "groupId": "bs1024-dr",
+          "taskName": "downstream-eval-bs1024-dr",
+          "status": "failed",
+          "job": "01M08AEWASMFFAJP1N9404QY31"
+        },
+        {
+          "runId": "dr1024-lr1e-3-wd1.0",
+          "method": "dr1024",
+          "variant": "dr",
+          "batchSequences": 1024,
+          "epoch": 16,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e16_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r02/step3815",
+          "sourceExperiment": "01KZVS4GPWP21A3JAJXQ0AAF93",
+          "groupId": "bs1024-dr",
+          "taskName": "downstream-eval-bs1024-dr",
+          "status": "failed",
+          "job": "01M08AEWASMFFAJP1N9404QY31"
+        },
+        {
+          "runId": "dr1024-lr1e-3-wd1.0",
+          "method": "dr1024",
+          "variant": "dr",
+          "batchSequences": 1024,
+          "epoch": 20,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e20_lr1e-3_wd1.0_warmup24_bs1024-dr-e20-lr1e3-wd1p0-r01/step4769",
+          "sourceExperiment": "01KZW56AQVFV9ECTSV5SSR24DF",
+          "groupId": "bs1024-dr",
+          "taskName": "downstream-eval-bs1024-dr",
+          "status": "failed",
+          "job": "01M08AEWASMFFAJP1N9404QY31"
+        },
+        {
+          "runId": "dr1024-lr1e-3-wd1.0",
+          "method": "dr1024",
+          "variant": "dr",
+          "batchSequences": 1024,
+          "epoch": 24,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e24_lr1e-3_wd1.0_warmup24_bs1024-dr-e24-lr1e3-wd1p0-r04/step5723",
+          "sourceExperiment": "01KZWPC3TBHDRJCKDEG7CK57M1",
+          "groupId": "bs1024-dr",
+          "taskName": "downstream-eval-bs1024-dr",
+          "status": "failed",
+          "job": "01M08AEWASMFFAJP1N9404QY31"
+        },
+        {
+          "runId": "dr1024-lr1e-3-wd1.0",
+          "method": "dr1024",
+          "variant": "dr",
+          "batchSequences": 1024,
+          "epoch": 28,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0/step6676",
+          "sourceExperiment": "01KZXZG5K1KMHY72DJBMSVP2S3",
+          "groupId": "bs1024-dr",
+          "taskName": "downstream-eval-bs1024-dr",
+          "status": "failed",
+          "job": "01M08AEWASMFFAJP1N9404QY31"
+        }
+      ],
+      "failureDiagnosis": "Gantry git fetch failed because GIT_REF used an abbreviated SHA.",
+      "retriedBy": "01M08B8QA1589FXPAT56PQ0B7J"
+    },
+    {
+      "id": "dense-1b-downstream-urgent-saturn-bs128-dr",
+      "experiment": "01M08AEWYWFQ53980KKFJBN7C2",
+      "revision": "2bd1adcdd",
+      "status": "failed",
+      "gpuPerTask": 1,
+      "taskCount": 1,
+      "checkpointCount": 10,
+      "singleGpuSequential": true,
+      "independentExperiment": true,
+      "runtimeDirectoryDiscovery": true,
+      "cluster": "ai2/saturn",
+      "mirrorOf": "01M089R5EVBPVSZE9Y0CYBMKQC",
+      "raceGroup": "bs128-dr",
+      "tasks": [
+        {
+          "runId": "dr128-lr1e-3-wd0.3",
+          "method": "dr128",
+          "variant": "dr",
+          "batchSequences": 128,
+          "epoch": 2,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step3815",
+          "sourceExperiment": "01M018DE6NTCZV6SRA0QNSJ9NR",
+          "taskName": "downstream-eval-bs128-dr",
+          "groupId": "bs128-dr",
+          "status": "failed",
+          "job": "01M08AEXCB2VBTDMHFQ55864DQ"
+        },
+        {
+          "runId": "dr128-lr1e-3-wd1.0",
+          "method": "dr128",
+          "variant": "dr",
+          "batchSequences": 128,
+          "epoch": 2,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0/step3815",
+          "sourceExperiment": "01M018DHE5SYNGFPMFNWXFAQGH",
+          "taskName": "downstream-eval-bs128-dr",
+          "groupId": "bs128-dr",
+          "status": "failed",
+          "job": "01M08AEXCB2VBTDMHFQ55864DQ"
+        },
+        {
+          "runId": "dr128-lr1e-3-wd0.3",
+          "method": "dr128",
+          "variant": "dr",
+          "batchSequences": 128,
+          "epoch": 4,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step7630",
+          "sourceExperiment": "01M01DV4NPEYC6P05NCE6GC2TX",
+          "taskName": "downstream-eval-bs128-dr",
+          "groupId": "bs128-dr",
+          "status": "failed",
+          "job": "01M08AEXCB2VBTDMHFQ55864DQ"
+        },
+        {
+          "runId": "dr128-lr1e-3-wd1.0",
+          "method": "dr128",
+          "variant": "dr",
+          "batchSequences": 128,
+          "epoch": 4,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0/step7630",
+          "sourceExperiment": "01M01DV5R4BJ0T3F27ZATBJHR0",
+          "taskName": "downstream-eval-bs128-dr",
+          "groupId": "bs128-dr",
+          "status": "failed",
+          "job": "01M08AEXCB2VBTDMHFQ55864DQ"
+        },
+        {
+          "runId": "dr128-lr1e-3-wd0.3",
+          "method": "dr128",
+          "variant": "dr",
+          "batchSequences": 128,
+          "epoch": 8,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step15259",
+          "sourceExperiment": "01M01MBWXNHKGA5JPW5DXZRQKW",
+          "taskName": "downstream-eval-bs128-dr",
+          "groupId": "bs128-dr",
+          "status": "failed",
+          "job": "01M08AEXCB2VBTDMHFQ55864DQ"
+        },
+        {
+          "runId": "dr128-lr1e-3-wd1.0",
+          "method": "dr128",
+          "variant": "dr",
+          "batchSequences": 128,
+          "epoch": 8,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0/step15259",
+          "sourceExperiment": "01M01MBXZ6YJRH81CZ6WCFAQN7",
+          "taskName": "downstream-eval-bs128-dr",
+          "groupId": "bs128-dr",
+          "status": "failed",
+          "job": "01M08AEXCB2VBTDMHFQ55864DQ"
+        },
+        {
+          "runId": "dr128-lr1e-3-wd0.3",
+          "method": "dr128",
+          "variant": "dr",
+          "batchSequences": 128,
+          "epoch": 12,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step22889",
+          "sourceExperiment": "01M020CXWMJNY4N2F2Q3TY7JXJ",
+          "taskName": "downstream-eval-bs128-dr",
+          "groupId": "bs128-dr",
+          "status": "failed",
+          "job": "01M08AEXCB2VBTDMHFQ55864DQ"
+        },
+        {
+          "runId": "dr128-lr1e-3-wd1.0",
+          "method": "dr128",
+          "variant": "dr",
+          "batchSequences": 128,
+          "epoch": 12,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0/step22889",
+          "sourceExperiment": "01M02AH0APWS8GS78EWM0YG8J1",
+          "taskName": "downstream-eval-bs128-dr",
+          "groupId": "bs128-dr",
+          "status": "failed",
+          "job": "01M08AEXCB2VBTDMHFQ55864DQ"
+        },
+        {
+          "runId": "dr128-lr1e-3-wd0.3",
+          "method": "dr128",
+          "variant": "dr",
+          "batchSequences": 128,
+          "epoch": 16,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step30518",
+          "sourceExperiment": "01M02YR7SFKQ2C9ABV15QK7VF5",
+          "taskName": "downstream-eval-bs128-dr",
+          "groupId": "bs128-dr",
+          "status": "failed",
+          "job": "01M08AEXCB2VBTDMHFQ55864DQ"
+        },
+        {
+          "runId": "dr128-lr1e-3-wd1.0",
+          "method": "dr128",
+          "variant": "dr",
+          "batchSequences": 128,
+          "epoch": 16,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0/step30518",
+          "sourceExperiment": "01M02YTXR4NBQ38EMERZDC039J",
+          "taskName": "downstream-eval-bs128-dr",
+          "groupId": "bs128-dr",
+          "status": "failed",
+          "job": "01M08AEXCB2VBTDMHFQ55864DQ"
+        }
+      ],
+      "failureDiagnosis": "Gantry git fetch failed because GIT_REF used an abbreviated SHA.",
+      "retriedBy": "01M08B8RE00NNA2GRY2NVFW0V8"
+    },
+    {
+      "id": "dense-1b-downstream-urgent-saturn-bs256-dr",
+      "experiment": "01M08AEXZTZS9VJK2KKBFD5YWV",
+      "revision": "2bd1adcdd",
+      "status": "failed",
+      "gpuPerTask": 1,
+      "taskCount": 1,
+      "checkpointCount": 10,
+      "singleGpuSequential": true,
+      "independentExperiment": true,
+      "runtimeDirectoryDiscovery": true,
+      "cluster": "ai2/saturn",
+      "mirrorOf": "01M089R69MDFC8JT0N1YV26ZMA",
+      "raceGroup": "bs256-dr",
+      "tasks": [
+        {
+          "runId": "dr256-lr1e-3-wd0.333",
+          "method": "dr256",
+          "variant": "dr",
+          "batchSequences": 256,
+          "epoch": 2,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333/step1908",
+          "sourceExperiment": "01M018GP6P0CZ7KYZPWJXVRWAK",
+          "taskName": "downstream-eval-bs256-dr",
+          "groupId": "bs256-dr",
+          "status": "failed",
+          "job": "01M08AEYDXMX28WT2BEJ2M592A"
+        },
+        {
+          "runId": "dr256-lr1e-3-wd1.0",
+          "method": "dr256",
+          "variant": "dr",
+          "batchSequences": 256,
+          "epoch": 2,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step1908",
+          "sourceExperiment": "01M018GTRB45ZD63YTQJX60CF4",
+          "taskName": "downstream-eval-bs256-dr",
+          "groupId": "bs256-dr",
+          "status": "failed",
+          "job": "01M08AEYDXMX28WT2BEJ2M592A"
+        },
+        {
+          "runId": "dr256-lr1e-3-wd0.333",
+          "method": "dr256",
+          "variant": "dr",
+          "batchSequences": 256,
+          "epoch": 4,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333/step3815",
+          "sourceExperiment": "01M01DV6QK26AY8V3MJESGCGQR",
+          "taskName": "downstream-eval-bs256-dr",
+          "groupId": "bs256-dr",
+          "status": "failed",
+          "job": "01M08AEYDXMX28WT2BEJ2M592A"
+        },
+        {
+          "runId": "dr256-lr1e-3-wd1.0",
+          "method": "dr256",
+          "variant": "dr",
+          "batchSequences": 256,
+          "epoch": 4,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step3815",
+          "sourceExperiment": "01M01DVR5E145CZB0P0P0Z9AG9",
+          "taskName": "downstream-eval-bs256-dr",
+          "groupId": "bs256-dr",
+          "status": "failed",
+          "job": "01M08AEYDXMX28WT2BEJ2M592A"
+        },
+        {
+          "runId": "dr256-lr1e-3-wd0.333",
+          "method": "dr256",
+          "variant": "dr",
+          "batchSequences": 256,
+          "epoch": 8,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333/step7630",
+          "sourceExperiment": "01M01MBZ0HXSGFNT43BV6JEYN0",
+          "taskName": "downstream-eval-bs256-dr",
+          "groupId": "bs256-dr",
+          "status": "failed",
+          "job": "01M08AEYDXMX28WT2BEJ2M592A"
+        },
+        {
+          "runId": "dr256-lr1e-3-wd1.0",
+          "method": "dr256",
+          "variant": "dr",
+          "batchSequences": 256,
+          "epoch": 8,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step7630",
+          "sourceExperiment": "01M01MBZZEYEBMC7H1759YDCXY",
+          "taskName": "downstream-eval-bs256-dr",
+          "groupId": "bs256-dr",
+          "status": "failed",
+          "job": "01M08AEYDXMX28WT2BEJ2M592A"
+        },
+        {
+          "runId": "dr256-lr1e-3-wd0.333",
+          "method": "dr256",
+          "variant": "dr",
+          "batchSequences": 256,
+          "epoch": 12,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333/step11445",
+          "sourceExperiment": "01M02MTEYWJW68YR2P2GS1JVAK",
+          "taskName": "downstream-eval-bs256-dr",
+          "groupId": "bs256-dr",
+          "status": "failed",
+          "job": "01M08AEYDXMX28WT2BEJ2M592A"
+        },
+        {
+          "runId": "dr256-lr1e-3-wd1.0",
+          "method": "dr256",
+          "variant": "dr",
+          "batchSequences": 256,
+          "epoch": 12,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step11445",
+          "sourceExperiment": "01M020CYYFYS847JE3RKBS2R9Q",
+          "taskName": "downstream-eval-bs256-dr",
+          "groupId": "bs256-dr",
+          "status": "failed",
+          "job": "01M08AEYDXMX28WT2BEJ2M592A"
+        },
+        {
+          "runId": "dr256-lr1e-3-wd0.333",
+          "method": "dr256",
+          "variant": "dr",
+          "batchSequences": 256,
+          "epoch": 16,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333/step15259",
+          "sourceExperiment": "01M030WZV2D24Y2E8G10K8AX82",
+          "taskName": "downstream-eval-bs256-dr",
+          "groupId": "bs256-dr",
+          "status": "failed",
+          "job": "01M08AEYDXMX28WT2BEJ2M592A"
+        },
+        {
+          "runId": "dr256-lr1e-3-wd1.0",
+          "method": "dr256",
+          "variant": "dr",
+          "batchSequences": 256,
+          "epoch": 16,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step15259",
+          "sourceExperiment": "01M032GHXK15ZF1Z0AAHR05SB0",
+          "taskName": "downstream-eval-bs256-dr",
+          "groupId": "bs256-dr",
+          "status": "failed",
+          "job": "01M08AEYDXMX28WT2BEJ2M592A"
+        }
+      ],
+      "failureDiagnosis": "Gantry git fetch failed because GIT_REF used an abbreviated SHA.",
+      "retriedBy": "01M08B8SGWZXF2PVNPKH2009S2"
+    },
+    {
+      "id": "dense-1b-downstream-urgent-saturn-bs512-dr",
+      "experiment": "01M08AEZ5NNYTQ4W8E9JNH7C6E",
+      "revision": "2bd1adcdd",
+      "status": "failed",
+      "gpuPerTask": 1,
+      "taskCount": 1,
+      "checkpointCount": 9,
+      "singleGpuSequential": true,
+      "independentExperiment": true,
+      "runtimeDirectoryDiscovery": true,
+      "cluster": "ai2/saturn",
+      "mirrorOf": "01M089R768T5VR1D5YH45VQE0W",
+      "raceGroup": "bs512-dr",
+      "tasks": [
+        {
+          "runId": "dr512-lr5e-4-wd0.333",
+          "method": "dr512",
+          "variant": "dr",
+          "batchSequences": 512,
+          "epoch": 1,
+          "lr": "5e-4",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e1_lr5e-4_wd0.333_warmup48_dataloader-cd-lrwd-r01/step477",
+          "sourceExperiment": "01KZS9VCQDJPFQ0PJ06KQY3XEF",
+          "taskName": "downstream-eval-bs512-dr",
+          "groupId": "bs512-dr",
+          "status": "failed",
+          "job": "01M08AEZM913FTG29Q9Z2RXGF5"
+        },
+        {
+          "runId": "dr512-lr1e-3-wd1.0",
+          "method": "dr512",
+          "variant": "dr",
+          "batchSequences": 512,
+          "epoch": 4,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e4_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step1908",
+          "sourceExperiment": "01KZS8961G2VGPG1KDJCTK5T8Q",
+          "taskName": "downstream-eval-bs512-dr",
+          "groupId": "bs512-dr",
+          "status": "failed",
+          "job": "01M08AEZM913FTG29Q9Z2RXGF5"
+        },
+        {
+          "runId": "dr512-lr1e-3-wd1.0",
+          "method": "dr512",
+          "variant": "dr",
+          "batchSequences": 512,
+          "epoch": 8,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e8_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step3815",
+          "sourceExperiment": "01KZSBGT5NPDQRKJH3HH1Q05SK",
+          "taskName": "downstream-eval-bs512-dr",
+          "groupId": "bs512-dr",
+          "status": "failed",
+          "job": "01M08AEZM913FTG29Q9Z2RXGF5"
+        },
+        {
+          "runId": "dr512-lr1e-3-wd0.333",
+          "method": "dr512",
+          "variant": "dr",
+          "batchSequences": 512,
+          "epoch": 12,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e12_lr1e-3_wd0.333_warmup48_dataloader-cd-r01/step5723",
+          "sourceExperiment": "01KZS4BDFH3CEDMS9G0RTVNM9M",
+          "taskName": "downstream-eval-bs512-dr",
+          "groupId": "bs512-dr",
+          "status": "failed",
+          "job": "01M08AEZM913FTG29Q9Z2RXGF5"
+        },
+        {
+          "runId": "dr512-lr1e-3-wd1.0",
+          "method": "dr512",
+          "variant": "dr",
+          "batchSequences": 512,
+          "epoch": 12,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e12_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step5723",
+          "sourceExperiment": "01KZSH5RTHAYY2EAP954VA0V97",
+          "taskName": "downstream-eval-bs512-dr",
+          "groupId": "bs512-dr",
+          "status": "failed",
+          "job": "01M08AEZM913FTG29Q9Z2RXGF5"
+        },
+        {
+          "runId": "dr512-lr1e-3-wd1.0",
+          "method": "dr512",
+          "variant": "dr",
+          "batchSequences": 512,
+          "epoch": 16,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e16_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step7630",
+          "sourceExperiment": "01KZSRR4CWJW1NNP76NPRR79F7",
+          "taskName": "downstream-eval-bs512-dr",
+          "groupId": "bs512-dr",
+          "status": "failed",
+          "job": "01M08AEZM913FTG29Q9Z2RXGF5"
+        },
+        {
+          "runId": "dr512-lr1e-3-wd1.0",
+          "method": "dr512",
+          "variant": "dr",
+          "batchSequences": 512,
+          "epoch": 20,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e20_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step9537",
+          "sourceExperiment": "01KZT0WFZG5N51A1TF9QE4EHQ7",
+          "taskName": "downstream-eval-bs512-dr",
+          "groupId": "bs512-dr",
+          "status": "failed",
+          "job": "01M08AEZM913FTG29Q9Z2RXGF5"
+        },
+        {
+          "runId": "dr512-lr1e-3-wd1.0",
+          "method": "dr512",
+          "variant": "dr",
+          "batchSequences": 512,
+          "epoch": 24,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e24_lr1e-3_wd1.0_warmup48_dataloader-cd-r04/step11445",
+          "sourceExperiment": "01KZVGWC0C81FXHE3XGY4HVV52",
+          "taskName": "downstream-eval-bs512-dr",
+          "groupId": "bs512-dr",
+          "status": "failed",
+          "job": "01M08AEZM913FTG29Q9Z2RXGF5"
+        },
+        {
+          "runId": "dr512-lr1e-3-wd1.0",
+          "method": "dr512",
+          "variant": "dr",
+          "batchSequences": 512,
+          "epoch": 28,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e28_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step13352",
+          "sourceExperiment": "01KZVQF11VK3YK7THWHJ59MEAW",
+          "taskName": "downstream-eval-bs512-dr",
+          "groupId": "bs512-dr",
+          "status": "failed",
+          "job": "01M08AEZM913FTG29Q9Z2RXGF5"
+        }
+      ],
+      "failureDiagnosis": "Gantry git fetch failed because GIT_REF used an abbreviated SHA.",
+      "retriedBy": "01M08B8T8MTJ4HVWXHFGS1RAQT"
+    },
+    {
+      "id": "dense-1b-downstream-urgent-saturn-bs512-dr-wt",
+      "experiment": "01M08AF07XHE6TGEPPPGA15VE7",
+      "revision": "2bd1adcdd",
+      "status": "failed",
+      "gpuPerTask": 1,
+      "taskCount": 1,
+      "checkpointCount": 16,
+      "singleGpuSequential": true,
+      "independentExperiment": true,
+      "runtimeDirectoryDiscovery": true,
+      "cluster": "ai2/saturn",
+      "mirrorOf": "01M089R866B4MYJ458K6RNEZ4Y",
+      "raceGroup": "bs512-dr-wt",
+      "tasks": [
+        {
+          "runId": "drwt512-lr1e-3-wd0.333",
+          "method": "drwt512",
+          "variant": "dr-wt",
+          "batchSequences": 512,
+          "epoch": 1,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step477",
+          "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+          "taskName": "downstream-eval-bs512-dr-wt",
+          "groupId": "bs512-dr-wt",
+          "status": "failed",
+          "job": "01M08AF0CFT4ST953E8HKN8DDV"
+        },
+        {
+          "runId": "drwt512-lr1e-3-wd1.0",
+          "method": "drwt512",
+          "variant": "dr-wt",
+          "batchSequences": 512,
+          "epoch": 1,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step477",
+          "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+          "taskName": "downstream-eval-bs512-dr-wt",
+          "groupId": "bs512-dr-wt",
+          "status": "failed",
+          "job": "01M08AF0CFT4ST953E8HKN8DDV"
+        },
+        {
+          "runId": "drwt512-lr1e-3-wd0.333",
+          "method": "drwt512",
+          "variant": "dr-wt",
+          "batchSequences": 512,
+          "epoch": 2,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step954",
+          "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+          "taskName": "downstream-eval-bs512-dr-wt",
+          "groupId": "bs512-dr-wt",
+          "status": "failed",
+          "job": "01M08AF0CFT4ST953E8HKN8DDV"
+        },
+        {
+          "runId": "drwt512-lr1e-3-wd1.0",
+          "method": "drwt512",
+          "variant": "dr-wt",
+          "batchSequences": 512,
+          "epoch": 2,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step954",
+          "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+          "taskName": "downstream-eval-bs512-dr-wt",
+          "groupId": "bs512-dr-wt",
+          "status": "failed",
+          "job": "01M08AF0CFT4ST953E8HKN8DDV"
+        },
+        {
+          "runId": "drwt512-lr1e-3-wd0.333",
+          "method": "drwt512",
+          "variant": "dr-wt",
+          "batchSequences": 512,
+          "epoch": 4,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step1908",
+          "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+          "taskName": "downstream-eval-bs512-dr-wt",
+          "groupId": "bs512-dr-wt",
+          "status": "failed",
+          "job": "01M08AF0CFT4ST953E8HKN8DDV"
+        },
+        {
+          "runId": "drwt512-lr1e-3-wd1.0",
+          "method": "drwt512",
+          "variant": "dr-wt",
+          "batchSequences": 512,
+          "epoch": 4,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step1908",
+          "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+          "taskName": "downstream-eval-bs512-dr-wt",
+          "groupId": "bs512-dr-wt",
+          "status": "failed",
+          "job": "01M08AF0CFT4ST953E8HKN8DDV"
+        },
+        {
+          "runId": "drwt512-lr1e-3-wd0.333",
+          "method": "drwt512",
+          "variant": "dr-wt",
+          "batchSequences": 512,
+          "epoch": 8,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step3815",
+          "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+          "taskName": "downstream-eval-bs512-dr-wt",
+          "groupId": "bs512-dr-wt",
+          "status": "failed",
+          "job": "01M08AF0CFT4ST953E8HKN8DDV"
+        },
+        {
+          "runId": "drwt512-lr1e-3-wd1.0",
+          "method": "drwt512",
+          "variant": "dr-wt",
+          "batchSequences": 512,
+          "epoch": 8,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step3815",
+          "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+          "taskName": "downstream-eval-bs512-dr-wt",
+          "groupId": "bs512-dr-wt",
+          "status": "failed",
+          "job": "01M08AF0CFT4ST953E8HKN8DDV"
+        },
+        {
+          "runId": "drwt512-lr1e-3-wd0.333",
+          "method": "drwt512",
+          "variant": "dr-wt",
+          "batchSequences": 512,
+          "epoch": 12,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step5723",
+          "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+          "taskName": "downstream-eval-bs512-dr-wt",
+          "groupId": "bs512-dr-wt",
+          "status": "failed",
+          "job": "01M08AF0CFT4ST953E8HKN8DDV"
+        },
+        {
+          "runId": "drwt512-lr1e-3-wd1.0",
+          "method": "drwt512",
+          "variant": "dr-wt",
+          "batchSequences": 512,
+          "epoch": 12,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step5723",
+          "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+          "taskName": "downstream-eval-bs512-dr-wt",
+          "groupId": "bs512-dr-wt",
+          "status": "failed",
+          "job": "01M08AF0CFT4ST953E8HKN8DDV"
+        },
+        {
+          "runId": "drwt512-lr1e-3-wd0.333",
+          "method": "drwt512",
+          "variant": "dr-wt",
+          "batchSequences": 512,
+          "epoch": 16,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step7630",
+          "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+          "taskName": "downstream-eval-bs512-dr-wt",
+          "groupId": "bs512-dr-wt",
+          "status": "failed",
+          "job": "01M08AF0CFT4ST953E8HKN8DDV"
+        },
+        {
+          "runId": "drwt512-lr1e-3-wd1.0",
+          "method": "drwt512",
+          "variant": "dr-wt",
+          "batchSequences": 512,
+          "epoch": 16,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step7630",
+          "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+          "taskName": "downstream-eval-bs512-dr-wt",
+          "groupId": "bs512-dr-wt",
+          "status": "failed",
+          "job": "01M08AF0CFT4ST953E8HKN8DDV"
+        },
+        {
+          "runId": "drwt512-lr1e-3-wd0.333",
+          "method": "drwt512",
+          "variant": "dr-wt",
+          "batchSequences": 512,
+          "epoch": 20,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step9537",
+          "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+          "taskName": "downstream-eval-bs512-dr-wt",
+          "groupId": "bs512-dr-wt",
+          "status": "failed",
+          "job": "01M08AF0CFT4ST953E8HKN8DDV"
+        },
+        {
+          "runId": "drwt512-lr1e-3-wd1.0",
+          "method": "drwt512",
+          "variant": "dr-wt",
+          "batchSequences": 512,
+          "epoch": 20,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step9537",
+          "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+          "taskName": "downstream-eval-bs512-dr-wt",
+          "groupId": "bs512-dr-wt",
+          "status": "failed",
+          "job": "01M08AF0CFT4ST953E8HKN8DDV"
+        },
+        {
+          "runId": "drwt512-lr1e-3-wd0.333",
+          "method": "drwt512",
+          "variant": "dr-wt",
+          "batchSequences": 512,
+          "epoch": 24,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step11445",
+          "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+          "taskName": "downstream-eval-bs512-dr-wt",
+          "groupId": "bs512-dr-wt",
+          "status": "failed",
+          "job": "01M08AF0CFT4ST953E8HKN8DDV"
+        },
+        {
+          "runId": "drwt512-lr1e-3-wd1.0",
+          "method": "drwt512",
+          "variant": "dr-wt",
+          "batchSequences": 512,
+          "epoch": 24,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step11445",
+          "sourceExperiment": "01M05YSDSTBRXWM8P94YQ98R1Z",
+          "taskName": "downstream-eval-bs512-dr-wt",
+          "groupId": "bs512-dr-wt",
+          "status": "failed",
+          "job": "01M08AF0CFT4ST953E8HKN8DDV"
+        }
+      ],
+      "failureDiagnosis": "Gantry git fetch failed because GIT_REF used an abbreviated SHA.",
+      "retriedBy": "01M08B8VK8AH1JW8RY78MDWEDF"
+    },
+    {
+      "id": "dense-1b-downstream-urgent-saturn-bs512-dr-wt-embwd",
+      "experiment": "01M08AF101Y3D6J9T83KDFFZ12",
+      "revision": "2bd1adcdd",
+      "status": "failed",
+      "gpuPerTask": 1,
+      "taskCount": 1,
+      "checkpointCount": 15,
+      "singleGpuSequential": true,
+      "independentExperiment": true,
+      "runtimeDirectoryDiscovery": true,
+      "cluster": "ai2/saturn",
+      "mirrorOf": "01M089R9C3V93SJC4F9F59F5FX",
+      "raceGroup": "bs512-dr-wt-embwd",
+      "tasks": [
+        {
+          "runId": "drwtembwd512-lr1e-3-wd0.333",
+          "method": "drwtembwd512",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 512,
+          "epoch": 1,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step477",
+          "sourceExperiment": "01M04SRW33CE5Z9M8DM5350X02",
+          "taskName": "downstream-eval-bs512-dr-wt-embwd",
+          "groupId": "bs512-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF13RQFPMHCJDA7JDGJWN"
+        },
+        {
+          "runId": "drwtembwd512-lr1e-3-wd1.0",
+          "method": "drwtembwd512",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 512,
+          "epoch": 1,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step477",
+          "sourceExperiment": "01M04SS5Z3SBDN69A67CHVHN61",
+          "taskName": "downstream-eval-bs512-dr-wt-embwd",
+          "groupId": "bs512-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF13RQFPMHCJDA7JDGJWN"
+        },
+        {
+          "runId": "drwtembwd512-lr1e-3-wd0.333",
+          "method": "drwtembwd512",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 512,
+          "epoch": 2,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step954",
+          "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP",
+          "taskName": "downstream-eval-bs512-dr-wt-embwd",
+          "groupId": "bs512-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF13RQFPMHCJDA7JDGJWN"
+        },
+        {
+          "runId": "drwtembwd512-lr1e-3-wd1.0",
+          "method": "drwtembwd512",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 512,
+          "epoch": 2,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step954",
+          "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K",
+          "taskName": "downstream-eval-bs512-dr-wt-embwd",
+          "groupId": "bs512-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF13RQFPMHCJDA7JDGJWN"
+        },
+        {
+          "runId": "drwtembwd512-lr1e-3-wd0.333",
+          "method": "drwtembwd512",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 512,
+          "epoch": 4,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step1908",
+          "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP",
+          "taskName": "downstream-eval-bs512-dr-wt-embwd",
+          "groupId": "bs512-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF13RQFPMHCJDA7JDGJWN"
+        },
+        {
+          "runId": "drwtembwd512-lr1e-3-wd1.0",
+          "method": "drwtembwd512",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 512,
+          "epoch": 4,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step1908",
+          "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K",
+          "taskName": "downstream-eval-bs512-dr-wt-embwd",
+          "groupId": "bs512-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF13RQFPMHCJDA7JDGJWN"
+        },
+        {
+          "runId": "drwtembwd512-lr1e-3-wd0.333",
+          "method": "drwtembwd512",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 512,
+          "epoch": 8,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step3815",
+          "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP",
+          "taskName": "downstream-eval-bs512-dr-wt-embwd",
+          "groupId": "bs512-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF13RQFPMHCJDA7JDGJWN"
+        },
+        {
+          "runId": "drwtembwd512-lr1e-3-wd1.0",
+          "method": "drwtembwd512",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 512,
+          "epoch": 8,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step3815",
+          "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K",
+          "taskName": "downstream-eval-bs512-dr-wt-embwd",
+          "groupId": "bs512-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF13RQFPMHCJDA7JDGJWN"
+        },
+        {
+          "runId": "drwtembwd512-lr1e-3-wd0.333",
+          "method": "drwtembwd512",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 512,
+          "epoch": 12,
+          "lr": "1e-3",
+          "wd": "0.333",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step5723",
+          "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP",
+          "taskName": "downstream-eval-bs512-dr-wt-embwd",
+          "groupId": "bs512-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF13RQFPMHCJDA7JDGJWN"
+        },
+        {
+          "runId": "drwtembwd512-lr1e-3-wd1.0",
+          "method": "drwtembwd512",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 512,
+          "epoch": 12,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step5723",
+          "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K",
+          "taskName": "downstream-eval-bs512-dr-wt-embwd",
+          "groupId": "bs512-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF13RQFPMHCJDA7JDGJWN"
+        },
+        {
+          "runId": "drwtembwd512-lr1e-3-wd1.0",
+          "method": "drwtembwd512",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 512,
+          "epoch": 16,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step7630",
+          "sourceExperiment": "01M06M4SD7TP1T1YJWN2W3FCK0",
+          "taskName": "downstream-eval-bs512-dr-wt-embwd",
+          "groupId": "bs512-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF13RQFPMHCJDA7JDGJWN"
+        },
+        {
+          "runId": "drwtembwd512-lr1e-3-wd1.0",
+          "method": "drwtembwd512",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 512,
+          "epoch": 20,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step9537",
+          "sourceExperiment": "01M06M4SD7TP1T1YJWN2W3FCK0",
+          "taskName": "downstream-eval-bs512-dr-wt-embwd",
+          "groupId": "bs512-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF13RQFPMHCJDA7JDGJWN"
+        },
+        {
+          "runId": "drwtembwd512-lr1e-3-wd1.0",
+          "method": "drwtembwd512",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 512,
+          "epoch": 24,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step11445",
+          "sourceExperiment": "01M06M4SD7TP1T1YJWN2W3FCK0",
+          "taskName": "downstream-eval-bs512-dr-wt-embwd",
+          "groupId": "bs512-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF13RQFPMHCJDA7JDGJWN"
+        },
+        {
+          "runId": "drwtembwd512-lr1e-3-wd1.0",
+          "method": "drwtembwd512",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 512,
+          "epoch": 28,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step13352",
+          "sourceExperiment": "01M07DXQ25NB8AZK56MCVTDESB",
+          "taskName": "downstream-eval-bs512-dr-wt-embwd",
+          "groupId": "bs512-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF13RQFPMHCJDA7JDGJWN"
+        },
+        {
+          "runId": "drwtembwd512-lr1e-3-wd1.0",
+          "method": "drwtembwd512",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 512,
+          "epoch": 32,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step15259",
+          "sourceExperiment": "01M07DXQ25NB8AZK56MCVTDESB",
+          "taskName": "downstream-eval-bs512-dr-wt-embwd",
+          "groupId": "bs512-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF13RQFPMHCJDA7JDGJWN"
+        }
+      ],
+      "failureDiagnosis": "Gantry git fetch failed because GIT_REF used an abbreviated SHA.",
+      "retriedBy": "01M08B8WA4MEF23AJBY6AFSBX7"
+    },
+    {
+      "id": "dense-1b-downstream-urgent-saturn-bs64-dr",
+      "experiment": "01M08AF1PJKYZG80CZ91VSGEVS",
+      "revision": "2bd1adcdd",
+      "status": "failed",
+      "gpuPerTask": 1,
+      "taskCount": 1,
+      "checkpointCount": 8,
+      "singleGpuSequential": true,
+      "independentExperiment": true,
+      "runtimeDirectoryDiscovery": true,
+      "cluster": "ai2/saturn",
+      "mirrorOf": "01M089RA62AXJ5ZPPH6X9GFA80",
+      "raceGroup": "bs64-dr",
+      "tasks": [
+        {
+          "runId": "dr64-lr1e-3-wd0.3",
+          "method": "dr64",
+          "variant": "dr",
+          "batchSequences": 64,
+          "epoch": 2,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e2_lr1e-3_wd0.3_warmup384_bs64-dr-e2-lr1e3-wd0p3-r01/step7629",
+          "sourceExperiment": "01KZWDBW5NFCBJY88KQQ0E7FR2",
+          "taskName": "downstream-eval-bs64-dr",
+          "groupId": "bs64-dr",
+          "status": "failed",
+          "job": "01M08AF27W11W6E21HTE7PZP7J"
+        },
+        {
+          "runId": "dr64-lr1e-3-wd1.0",
+          "method": "dr64",
+          "variant": "dr",
+          "batchSequences": 64,
+          "epoch": 8,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0/step30518",
+          "sourceExperiment": "01M01MBVZ5AT2CFBK5PFZDPRPV",
+          "taskName": "downstream-eval-bs64-dr",
+          "groupId": "bs64-dr",
+          "status": "failed",
+          "job": "01M08AF27W11W6E21HTE7PZP7J"
+        },
+        {
+          "runId": "dr64-lr1e-3-wd0.3",
+          "method": "dr64",
+          "variant": "dr",
+          "batchSequences": 64,
+          "epoch": 12,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step45777",
+          "sourceExperiment": "01KZZ0VJE9FJX8VQ9Z17GJXXCH",
+          "taskName": "downstream-eval-bs64-dr",
+          "groupId": "bs64-dr",
+          "status": "failed",
+          "job": "01M08AF27W11W6E21HTE7PZP7J"
+        },
+        {
+          "runId": "dr64-lr1e-3-wd1.0",
+          "method": "dr64",
+          "variant": "dr",
+          "batchSequences": 64,
+          "epoch": 12,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0/step45777",
+          "sourceExperiment": "01M021730WYSJCQ2XGAW07PTMD",
+          "taskName": "downstream-eval-bs64-dr",
+          "groupId": "bs64-dr",
+          "status": "failed",
+          "job": "01M08AF27W11W6E21HTE7PZP7J"
+        },
+        {
+          "runId": "dr64-lr1e-3-wd0.3",
+          "method": "dr64",
+          "variant": "dr",
+          "batchSequences": 64,
+          "epoch": 16,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step61036",
+          "sourceExperiment": "01KZZC6H5197N68EG9FY4M06F4",
+          "taskName": "downstream-eval-bs64-dr",
+          "groupId": "bs64-dr",
+          "status": "failed",
+          "job": "01M08AF27W11W6E21HTE7PZP7J"
+        },
+        {
+          "runId": "dr64-lr1e-3-wd1.0",
+          "method": "dr64",
+          "variant": "dr",
+          "batchSequences": 64,
+          "epoch": 16,
+          "lr": "1e-3",
+          "wd": "1.0",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0/step61036",
+          "sourceExperiment": "01M02Z52131XHPG1JFZEZ947EE",
+          "taskName": "downstream-eval-bs64-dr",
+          "groupId": "bs64-dr",
+          "status": "failed",
+          "job": "01M08AF27W11W6E21HTE7PZP7J"
+        },
+        {
+          "runId": "dr64-lr1e-3-wd0.3",
+          "method": "dr64",
+          "variant": "dr",
+          "batchSequences": 64,
+          "epoch": 20,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step76294",
+          "sourceExperiment": "01KZZT2G15F6Z94GWWCY0VFPBZ",
+          "taskName": "downstream-eval-bs64-dr",
+          "groupId": "bs64-dr",
+          "status": "failed",
+          "job": "01M08AF27W11W6E21HTE7PZP7J"
+        },
+        {
+          "runId": "dr64-lr1e-3-wd0.3",
+          "method": "dr64",
+          "variant": "dr",
+          "batchSequences": 64,
+          "epoch": 24,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step91553",
+          "sourceExperiment": "01M00G858E5CG616QTJFY5QEE4",
+          "taskName": "downstream-eval-bs64-dr",
+          "groupId": "bs64-dr",
+          "status": "failed",
+          "job": "01M08AF27W11W6E21HTE7PZP7J"
+        }
+      ],
+      "failureDiagnosis": "Gantry git fetch failed because GIT_REF used an abbreviated SHA.",
+      "retriedBy": "01M08B8X02C67QJ72JYHY4N3Q8"
+    },
+    {
+      "id": "dense-1b-downstream-urgent-saturn-bs64-dr-wt",
+      "experiment": "01M08AF2TGGRN6E3Q9NY1FFSCS",
+      "revision": "2bd1adcdd",
+      "status": "failed",
+      "gpuPerTask": 1,
+      "taskCount": 1,
+      "checkpointCount": 8,
+      "singleGpuSequential": true,
+      "independentExperiment": true,
+      "runtimeDirectoryDiscovery": true,
+      "cluster": "ai2/saturn",
+      "mirrorOf": "01M089RAXRGZA5BH415F8GZA2T",
+      "raceGroup": "bs64-dr-wt",
+      "tasks": [
+        {
+          "runId": "drwt64-lr1e-3-wd0.3",
+          "method": "drwt64",
+          "variant": "dr-wt",
+          "batchSequences": 64,
+          "epoch": 1,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step3815",
+          "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
+          "taskName": "downstream-eval-bs64-dr-wt",
+          "groupId": "bs64-dr-wt",
+          "status": "failed",
+          "job": "01M08AF2YJR6NYCNG1M5F5GZH7"
+        },
+        {
+          "runId": "drwt64-lr1e-3-wd0.3",
+          "method": "drwt64",
+          "variant": "dr-wt",
+          "batchSequences": 64,
+          "epoch": 2,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step7630",
+          "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
+          "taskName": "downstream-eval-bs64-dr-wt",
+          "groupId": "bs64-dr-wt",
+          "status": "failed",
+          "job": "01M08AF2YJR6NYCNG1M5F5GZH7"
+        },
+        {
+          "runId": "drwt64-lr1e-3-wd0.3",
+          "method": "drwt64",
+          "variant": "dr-wt",
+          "batchSequences": 64,
+          "epoch": 4,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step15259",
+          "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
+          "taskName": "downstream-eval-bs64-dr-wt",
+          "groupId": "bs64-dr-wt",
+          "status": "failed",
+          "job": "01M08AF2YJR6NYCNG1M5F5GZH7"
+        },
+        {
+          "runId": "drwt64-lr1e-3-wd0.3",
+          "method": "drwt64",
+          "variant": "dr-wt",
+          "batchSequences": 64,
+          "epoch": 8,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step30518",
+          "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
+          "taskName": "downstream-eval-bs64-dr-wt",
+          "groupId": "bs64-dr-wt",
+          "status": "failed",
+          "job": "01M08AF2YJR6NYCNG1M5F5GZH7"
+        },
+        {
+          "runId": "drwt64-lr1e-3-wd0.3",
+          "method": "drwt64",
+          "variant": "dr-wt",
+          "batchSequences": 64,
+          "epoch": 12,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step45777",
+          "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
+          "taskName": "downstream-eval-bs64-dr-wt",
+          "groupId": "bs64-dr-wt",
+          "status": "failed",
+          "job": "01M08AF2YJR6NYCNG1M5F5GZH7"
+        },
+        {
+          "runId": "drwt64-lr1e-3-wd0.3",
+          "method": "drwt64",
+          "variant": "dr-wt",
+          "batchSequences": 64,
+          "epoch": 16,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step61036",
+          "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
+          "taskName": "downstream-eval-bs64-dr-wt",
+          "groupId": "bs64-dr-wt",
+          "status": "failed",
+          "job": "01M08AF2YJR6NYCNG1M5F5GZH7"
+        },
+        {
+          "runId": "drwt64-lr1e-3-wd0.3",
+          "method": "drwt64",
+          "variant": "dr-wt",
+          "batchSequences": 64,
+          "epoch": 20,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step76294",
+          "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
+          "taskName": "downstream-eval-bs64-dr-wt",
+          "groupId": "bs64-dr-wt",
+          "status": "failed",
+          "job": "01M08AF2YJR6NYCNG1M5F5GZH7"
+        },
+        {
+          "runId": "drwt64-lr1e-3-wd0.3",
+          "method": "drwt64",
+          "variant": "dr-wt",
+          "batchSequences": 64,
+          "epoch": 24,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step91553",
+          "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
+          "taskName": "downstream-eval-bs64-dr-wt",
+          "groupId": "bs64-dr-wt",
+          "status": "failed",
+          "job": "01M08AF2YJR6NYCNG1M5F5GZH7"
+        }
+      ],
+      "failureDiagnosis": "Gantry git fetch failed because GIT_REF used an abbreviated SHA.",
+      "retriedBy": "01M08B8XRG94QVH7P7RNQFWTR9"
+    },
+    {
+      "id": "dense-1b-downstream-urgent-saturn-bs64-dr-wt-embwd",
+      "experiment": "01M08AF3JSFGDNJ12DYTYBY9R9",
+      "revision": "2bd1adcdd",
+      "status": "failed",
+      "gpuPerTask": 1,
+      "taskCount": 1,
+      "checkpointCount": 8,
+      "singleGpuSequential": true,
+      "independentExperiment": true,
+      "runtimeDirectoryDiscovery": true,
+      "cluster": "ai2/saturn",
+      "mirrorOf": "01M089RBPPY4M15P9QFX6DZGNC",
+      "raceGroup": "bs64-dr-wt-embwd",
+      "tasks": [
+        {
+          "runId": "drwtembwd64-lr1e-3-wd0.3",
+          "method": "drwtembwd64",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 64,
+          "epoch": 1,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step3815",
+          "sourceExperiment": "01M04SRK41V26GFGMS5P0VV4GX",
+          "taskName": "downstream-eval-bs64-dr-wt-embwd",
+          "groupId": "bs64-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF3PXW17MCV84CT0BEXEC"
+        },
+        {
+          "runId": "drwtembwd64-lr1e-3-wd0.3",
+          "method": "drwtembwd64",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 64,
+          "epoch": 2,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step7630",
+          "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
+          "taskName": "downstream-eval-bs64-dr-wt-embwd",
+          "groupId": "bs64-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF3PXW17MCV84CT0BEXEC"
+        },
+        {
+          "runId": "drwtembwd64-lr1e-3-wd0.3",
+          "method": "drwtembwd64",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 64,
+          "epoch": 4,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step15259",
+          "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
+          "taskName": "downstream-eval-bs64-dr-wt-embwd",
+          "groupId": "bs64-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF3PXW17MCV84CT0BEXEC"
+        },
+        {
+          "runId": "drwtembwd64-lr1e-3-wd0.3",
+          "method": "drwtembwd64",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 64,
+          "epoch": 8,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step30518",
+          "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
+          "taskName": "downstream-eval-bs64-dr-wt-embwd",
+          "groupId": "bs64-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF3PXW17MCV84CT0BEXEC"
+        },
+        {
+          "runId": "drwtembwd64-lr1e-3-wd0.3",
+          "method": "drwtembwd64",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 64,
+          "epoch": 12,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step45777",
+          "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
+          "taskName": "downstream-eval-bs64-dr-wt-embwd",
+          "groupId": "bs64-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF3PXW17MCV84CT0BEXEC"
+        },
+        {
+          "runId": "drwtembwd64-lr1e-3-wd0.3",
+          "method": "drwtembwd64",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 64,
+          "epoch": 16,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step61036",
+          "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
+          "taskName": "downstream-eval-bs64-dr-wt-embwd",
+          "groupId": "bs64-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF3PXW17MCV84CT0BEXEC"
+        },
+        {
+          "runId": "drwtembwd64-lr1e-3-wd0.3",
+          "method": "drwtembwd64",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 64,
+          "epoch": 20,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step76294",
+          "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
+          "taskName": "downstream-eval-bs64-dr-wt-embwd",
+          "groupId": "bs64-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF3PXW17MCV84CT0BEXEC"
+        },
+        {
+          "runId": "drwtembwd64-lr1e-3-wd0.3",
+          "method": "drwtembwd64",
+          "variant": "dr-wt-embwd",
+          "batchSequences": 64,
+          "epoch": 24,
+          "lr": "1e-3",
+          "wd": "0.3",
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step91553",
+          "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
+          "taskName": "downstream-eval-bs64-dr-wt-embwd",
+          "groupId": "bs64-dr-wt-embwd",
+          "status": "failed",
+          "job": "01M08AF3PXW17MCV84CT0BEXEC"
+        }
+      ],
+      "failureDiagnosis": "Gantry git fetch failed because GIT_REF used an abbreviated SHA.",
+      "retriedBy": "01M08B8YEPVKH9N071PZAM02FY"
+    },
+    {
+      "id": "dense-1b-downstream-urgent-saturn-retry-bs1024-dr",
+      "experiment": "01M08B8QA1589FXPAT56PQ0B7J",
+      "revision": "2bd1adcddfe857238b566debfe5049b802028098",
       "status": "submitted",
       "gpuPerTask": 1,
       "taskCount": 1,
@@ -14480,6 +16160,7 @@
       "runtimeDirectoryDiscovery": true,
       "cluster": "ai2/saturn",
       "mirrorOf": "01M089PY07CST27YKZF5N14QYY",
+      "retryOf": "01M08AEW6R3HJAK943ZRPZS7NJ",
       "raceGroup": "bs1024-dr",
       "tasks": [
         {
@@ -14706,12 +16387,13 @@
           "taskName": "downstream-eval-bs1024-dr",
           "status": "submitted"
         }
-      ]
+      ],
+      "raceLoser": "01M089PY07CST27YKZF5N14QYY"
     },
     {
-      "id": "dense-1b-downstream-urgent-saturn-bs128-dr",
-      "experiment": "01M08AEWYWFQ53980KKFJBN7C2",
-      "revision": "2bd1adcdd",
+      "id": "dense-1b-downstream-urgent-saturn-retry-bs128-dr",
+      "experiment": "01M08B8RE00NNA2GRY2NVFW0V8",
+      "revision": "2bd1adcddfe857238b566debfe5049b802028098",
       "status": "submitted",
       "gpuPerTask": 1,
       "taskCount": 1,
@@ -14721,6 +16403,7 @@
       "runtimeDirectoryDiscovery": true,
       "cluster": "ai2/saturn",
       "mirrorOf": "01M089R5EVBPVSZE9Y0CYBMKQC",
+      "retryOf": "01M08AEWYWFQ53980KKFJBN7C2",
       "raceGroup": "bs128-dr",
       "tasks": [
         {
@@ -14863,12 +16546,13 @@
           "groupId": "bs128-dr",
           "status": "submitted"
         }
-      ]
+      ],
+      "raceLoser": "01M089R5EVBPVSZE9Y0CYBMKQC"
     },
     {
-      "id": "dense-1b-downstream-urgent-saturn-bs256-dr",
-      "experiment": "01M08AEXZTZS9VJK2KKBFD5YWV",
-      "revision": "2bd1adcdd",
+      "id": "dense-1b-downstream-urgent-saturn-retry-bs256-dr",
+      "experiment": "01M08B8SGWZXF2PVNPKH2009S2",
+      "revision": "2bd1adcddfe857238b566debfe5049b802028098",
       "status": "submitted",
       "gpuPerTask": 1,
       "taskCount": 1,
@@ -14878,6 +16562,7 @@
       "runtimeDirectoryDiscovery": true,
       "cluster": "ai2/saturn",
       "mirrorOf": "01M089R69MDFC8JT0N1YV26ZMA",
+      "retryOf": "01M08AEXZTZS9VJK2KKBFD5YWV",
       "raceGroup": "bs256-dr",
       "tasks": [
         {
@@ -15020,12 +16705,13 @@
           "groupId": "bs256-dr",
           "status": "submitted"
         }
-      ]
+      ],
+      "raceLoser": "01M089R69MDFC8JT0N1YV26ZMA"
     },
     {
-      "id": "dense-1b-downstream-urgent-saturn-bs512-dr",
-      "experiment": "01M08AEZ5NNYTQ4W8E9JNH7C6E",
-      "revision": "2bd1adcdd",
+      "id": "dense-1b-downstream-urgent-saturn-retry-bs512-dr",
+      "experiment": "01M08B8T8MTJ4HVWXHFGS1RAQT",
+      "revision": "2bd1adcddfe857238b566debfe5049b802028098",
       "status": "submitted",
       "gpuPerTask": 1,
       "taskCount": 1,
@@ -15035,6 +16721,7 @@
       "runtimeDirectoryDiscovery": true,
       "cluster": "ai2/saturn",
       "mirrorOf": "01M089R768T5VR1D5YH45VQE0W",
+      "retryOf": "01M08AEZ5NNYTQ4W8E9JNH7C6E",
       "raceGroup": "bs512-dr",
       "tasks": [
         {
@@ -15163,12 +16850,13 @@
           "groupId": "bs512-dr",
           "status": "submitted"
         }
-      ]
+      ],
+      "raceLoser": "01M089R768T5VR1D5YH45VQE0W"
     },
     {
-      "id": "dense-1b-downstream-urgent-saturn-bs512-dr-wt",
-      "experiment": "01M08AF07XHE6TGEPPPGA15VE7",
-      "revision": "2bd1adcdd",
+      "id": "dense-1b-downstream-urgent-saturn-retry-bs512-dr-wt",
+      "experiment": "01M08B8VK8AH1JW8RY78MDWEDF",
+      "revision": "2bd1adcddfe857238b566debfe5049b802028098",
       "status": "submitted",
       "gpuPerTask": 1,
       "taskCount": 1,
@@ -15178,6 +16866,7 @@
       "runtimeDirectoryDiscovery": true,
       "cluster": "ai2/saturn",
       "mirrorOf": "01M089R866B4MYJ458K6RNEZ4Y",
+      "retryOf": "01M08AF07XHE6TGEPPPGA15VE7",
       "raceGroup": "bs512-dr-wt",
       "tasks": [
         {
@@ -15404,12 +17093,13 @@
           "groupId": "bs512-dr-wt",
           "status": "submitted"
         }
-      ]
+      ],
+      "raceLoser": "01M089R866B4MYJ458K6RNEZ4Y"
     },
     {
-      "id": "dense-1b-downstream-urgent-saturn-bs512-dr-wt-embwd",
-      "experiment": "01M08AF101Y3D6J9T83KDFFZ12",
-      "revision": "2bd1adcdd",
+      "id": "dense-1b-downstream-urgent-saturn-retry-bs512-dr-wt-embwd",
+      "experiment": "01M08B8WA4MEF23AJBY6AFSBX7",
+      "revision": "2bd1adcddfe857238b566debfe5049b802028098",
       "status": "submitted",
       "gpuPerTask": 1,
       "taskCount": 1,
@@ -15419,6 +17109,7 @@
       "runtimeDirectoryDiscovery": true,
       "cluster": "ai2/saturn",
       "mirrorOf": "01M089R9C3V93SJC4F9F59F5FX",
+      "retryOf": "01M08AF101Y3D6J9T83KDFFZ12",
       "raceGroup": "bs512-dr-wt-embwd",
       "tasks": [
         {
@@ -15631,12 +17322,13 @@
           "groupId": "bs512-dr-wt-embwd",
           "status": "submitted"
         }
-      ]
+      ],
+      "raceLoser": "01M089R9C3V93SJC4F9F59F5FX"
     },
     {
-      "id": "dense-1b-downstream-urgent-saturn-bs64-dr",
-      "experiment": "01M08AF1PJKYZG80CZ91VSGEVS",
-      "revision": "2bd1adcdd",
+      "id": "dense-1b-downstream-urgent-saturn-retry-bs64-dr",
+      "experiment": "01M08B8X02C67QJ72JYHY4N3Q8",
+      "revision": "2bd1adcddfe857238b566debfe5049b802028098",
       "status": "submitted",
       "gpuPerTask": 1,
       "taskCount": 1,
@@ -15646,6 +17338,7 @@
       "runtimeDirectoryDiscovery": true,
       "cluster": "ai2/saturn",
       "mirrorOf": "01M089RA62AXJ5ZPPH6X9GFA80",
+      "retryOf": "01M08AF1PJKYZG80CZ91VSGEVS",
       "raceGroup": "bs64-dr",
       "tasks": [
         {
@@ -15760,12 +17453,13 @@
           "groupId": "bs64-dr",
           "status": "submitted"
         }
-      ]
+      ],
+      "raceLoser": "01M089RA62AXJ5ZPPH6X9GFA80"
     },
     {
-      "id": "dense-1b-downstream-urgent-saturn-bs64-dr-wt",
-      "experiment": "01M08AF2TGGRN6E3Q9NY1FFSCS",
-      "revision": "2bd1adcdd",
+      "id": "dense-1b-downstream-urgent-saturn-retry-bs64-dr-wt",
+      "experiment": "01M08B8XRG94QVH7P7RNQFWTR9",
+      "revision": "2bd1adcddfe857238b566debfe5049b802028098",
       "status": "submitted",
       "gpuPerTask": 1,
       "taskCount": 1,
@@ -15775,6 +17469,7 @@
       "runtimeDirectoryDiscovery": true,
       "cluster": "ai2/saturn",
       "mirrorOf": "01M089RAXRGZA5BH415F8GZA2T",
+      "retryOf": "01M08AF2TGGRN6E3Q9NY1FFSCS",
       "raceGroup": "bs64-dr-wt",
       "tasks": [
         {
@@ -15889,12 +17584,13 @@
           "groupId": "bs64-dr-wt",
           "status": "submitted"
         }
-      ]
+      ],
+      "raceLoser": "01M089RAXRGZA5BH415F8GZA2T"
     },
     {
-      "id": "dense-1b-downstream-urgent-saturn-bs64-dr-wt-embwd",
-      "experiment": "01M08AF3JSFGDNJ12DYTYBY9R9",
-      "revision": "2bd1adcdd",
+      "id": "dense-1b-downstream-urgent-saturn-retry-bs64-dr-wt-embwd",
+      "experiment": "01M08B8YEPVKH9N071PZAM02FY",
+      "revision": "2bd1adcddfe857238b566debfe5049b802028098",
       "status": "submitted",
       "gpuPerTask": 1,
       "taskCount": 1,
@@ -15904,6 +17600,7 @@
       "runtimeDirectoryDiscovery": true,
       "cluster": "ai2/saturn",
       "mirrorOf": "01M089RBPPY4M15P9QFX6DZGNC",
+      "retryOf": "01M08AF3JSFGDNJ12DYTYBY9R9",
       "raceGroup": "bs64-dr-wt-embwd",
       "tasks": [
         {
@@ -16018,7 +17715,8 @@
           "groupId": "bs64-dr-wt-embwd",
           "status": "submitted"
         }
-      ]
+      ],
+      "raceLoser": "01M089RBPPY4M15P9QFX6DZGNC"
     }
   ]
 }

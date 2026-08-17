@@ -111,6 +111,8 @@ def parse_args() -> argparse.Namespace:
     args = parser.parse_args()
     if (args.submit or args.print_spec) and not args.revision:
         parser.error("--revision is required with --submit or --print-spec")
+    if (args.submit or args.print_spec) and not re.fullmatch(r"[0-9a-f]{40}", args.revision or ""):
+        parser.error("--revision must be the full 40-character pushed commit SHA")
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", args.name):
         parser.error("--name must contain only lowercase letters, digits, and hyphens")
     return args
