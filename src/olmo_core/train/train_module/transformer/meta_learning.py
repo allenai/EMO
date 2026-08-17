@@ -58,7 +58,7 @@ from .train_module import TransformerTrainModule
 
 log = logging.getLogger(__name__)
 
-META_MODES = ("vanilla", "same_tokens", "heldout", "outer_only")
+META_MODES = ("vanilla", "same_tokens", "heldout", "outer_only", "sequential")
 
 _EXPERT_PARAM_SUFFIXES = (
     "feed_forward_moe.experts.mlp.w1",
@@ -132,6 +132,8 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
                 "outer_expert_update='working_set' requires a fixed 'inner_pool_size' "
                 "(the working-set size)"
             )
+        if meta_mode == "sequential" and inner_pool_size is None:
+            raise OLMoConfigurationError("meta_mode='sequential' requires 'inner_pool_size'")
         if outer_pool not in ("full", "random"):
             raise OLMoConfigurationError(
                 f"invalid outer_pool '{outer_pool}', expected 'full' or 'random'"
@@ -257,6 +259,8 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
     def train_batch(self, batch: Dict[str, Any], dry_run: bool = False):
         if self.meta_mode == "vanilla":
             return super().train_batch(batch, dry_run=dry_run)
+        if self.meta_mode == "sequential":
+            return self._sequential_train_batch(batch, dry_run=dry_run)
 
         check_restore = os.environ.get("EMO_META_CHECK_RESTORE") == "1"
 
@@ -466,6 +470,127 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
                 namespace="train",
             )
 
+        for metric_name, (metric_val, reduction) in self.model.compute_auxiliary_metrics(
+            reset=True
+        ).items():
+            self.record_metric(metric_name, metric_val, reduction, namespace="train")
+
+    def _sequential_train_batch(self, batch: Dict[str, Any], dry_run: bool = False):
+        """
+        The SEQUENTIAL ablation of the same-tokens FOMAML arm: two REAL optimizer steps per
+        token batch instead of a temporary probe.
+
+        1. Selective pass: forward+backward all micro-batches under per-doc top-``inner_pool_size``
+           routing (an ordinary selective training step — router/attention/experts all update),
+           then an internal clip + LR-set + AdamW step.
+        2. Full pass on the SAME tokens at the post-step weights: full routing, expert-weight
+           gradients masked to each document's working set (same machinery as the ws arms);
+           the trainer's normal ``optim_step()`` commits this second update.
+
+        Differences vs ``same_tokens`` FOMAML: the selective step is COMMITTED (not undone), it is
+        AdamW-sized/-shaped (not a large raw-SGD probe), and there is no evaluation-at-theta'
+        meta term. The trainer still counts ONE step per token batch, so token axes stay
+        comparable across arms. During dry runs the internal optimizer step is skipped.
+        """
+        self._set_model_mode("train")
+        if "labels" not in batch:
+            batch["labels"] = get_labels(batch, label_ignore_index=self.label_ignore_index)
+
+        seq_len = batch["input_ids"].shape[1]
+        if self.rank_microbatch_size < seq_len:
+            raise RuntimeError(
+                f"Microbatch size ({self.rank_microbatch_size}) is too small relative to sequence length ({seq_len})"
+            )
+        micro_batches = split_batch(batch, self.rank_microbatch_size // seq_len)
+
+        div, raw, total = self._phase_loss_div(micro_batches)
+        self.record_metric("train/masked labels (%)", (total - raw) / total, ReduceType.mean)
+        prepared = [self._prepare_batch(mb) for mb in micro_batches]
+        num_mbs = len(prepared)
+
+        # ---- Step 1: selective pass (real update; aux losses on) ----
+        self._set_router_meta_state(force_pool=self.inner_pool_size, skip_aux=False)
+        sel_ce_loss = move_to_device(torch.tensor(0.0), self.device)
+        for i, (input_ids, labels, model_kwargs) in enumerate(prepared):
+            with self._train_microbatch_context(i, num_mbs):
+                _, loss, ce_loss, z_loss = self.model_forward(
+                    input_ids,
+                    labels=labels,
+                    ignore_index=self.label_ignore_index,
+                    loss_reduction="sum",
+                    z_loss_multiplier=self.z_loss_multiplier,
+                    loss_div_factor=div,
+                    return_logits=False,
+                    **model_kwargs,
+                )
+                sel_ce_loss += get_local_tensor(ce_loss.detach())
+                del ce_loss, z_loss
+                loss.backward()
+
+        if not dry_run:
+            if self.max_grad_norm is not None:
+                self._clip_grad_norm(self.max_grad_norm)
+            if self.scheduler is not None:
+                for group in self.optim.param_groups:
+                    self.scheduler.set_lr(group, self.trainer)
+            self.optim.step()
+            self.model.post_optim_step()
+        self.optim.zero_grad(set_to_none=True)
+
+        # ---- Step 2: full pass on the same tokens at the post-step weights (ws-masked) ----
+        self._set_router_meta_state(
+            force_pool=self._num_nonshared_experts,
+            skip_aux=False,
+            outer_detach_top_e=(
+                self.inner_pool_size if self.outer_expert_update == "working_set" else None
+            ),
+        )
+        ce_batch_loss = move_to_device(torch.tensor(0.0), self.device)
+        z_batch_loss: Optional[torch.Tensor] = None
+        if self.z_loss_multiplier is not None:
+            z_batch_loss = move_to_device(torch.tensor(0.0), self.device)
+        for i, (input_ids, labels, model_kwargs) in enumerate(prepared):
+            with self._train_microbatch_context(i, num_mbs):
+                _, loss, ce_loss, z_loss = self.model_forward(
+                    input_ids,
+                    labels=labels,
+                    ignore_index=self.label_ignore_index,
+                    loss_reduction="sum",
+                    z_loss_multiplier=self.z_loss_multiplier,
+                    loss_div_factor=div,
+                    return_logits=False,
+                    **model_kwargs,
+                )
+                ce_batch_loss += get_local_tensor(ce_loss.detach())
+                del ce_loss
+                if z_batch_loss is not None:
+                    assert z_loss is not None
+                    z_batch_loss += get_local_tensor(z_loss.detach())
+                    del z_loss
+                loss.backward()
+
+        self._set_router_meta_state(force_pool=None, skip_aux=False)
+        del batch, prepared
+        self.model.post_batch(dry_run=dry_run)
+        if dry_run:
+            self.model.reset_auxiliary_metrics()
+            return
+
+        if isinstance(self.optim, SkipStepOptimizer):
+            if is_distributed():
+                ce_batch_loss.div_(self._reduce_divide_factor)
+                dist.all_reduce(ce_batch_loss)
+                ce_batch_loss.div_(self.world_size)
+                ce_batch_loss.mul_(self._reduce_divide_factor)
+            self.record_ce_loss(ce_batch_loss)
+            self.optim.latest_loss = ce_batch_loss
+        else:
+            self.record_ce_loss(ce_batch_loss, ReduceType.mean)
+        # Reuse the meta metric name so cross-arm plots align: the selective step's CE.
+        self.record_metric("meta inner CE loss", sel_ce_loss, ReduceType.mean, namespace="train")
+        if z_batch_loss is not None:
+            assert self.z_loss_multiplier is not None
+            self.record_metric("Z loss", z_batch_loss, ReduceType.mean, namespace="train")
         for metric_name, (metric_val, reduction) in self.model.compute_auxiliary_metrics(
             reset=True
         ).items():
