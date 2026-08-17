@@ -83,6 +83,15 @@ def parse_args() -> argparse.Namespace:
         help="replace this coordinate's failed registry entry and reuse its guarded output path",
     )
     parser.add_argument(
+        "--resume-from-predecay-epoch",
+        type=int,
+        choices=TARGETS,
+        help=(
+            "for a failed retry, resume the first incomplete stage from its retained exact "
+            "pre-decay checkpoint instead of replaying that stage's stable training segment"
+        ),
+    )
+    parser.add_argument(
         "--canonical-output",
         action="store_true",
         help="write directly to the canonical bs{batch}_dr_wt_lr{lr}_wd{wd} trajectory",
@@ -100,6 +109,8 @@ def parse_args() -> argparse.Namespace:
     args = parser.parse_args()
     if args.stop_on_saturation and not args.decay_embeddings:
         parser.error("--stop-on-saturation is currently scoped to --decay-embeddings")
+    if args.resume_from_predecay_epoch is not None and not args.retry_failed:
+        parser.error("--resume-from-predecay-epoch requires --retry-failed")
     if args.decay_embeddings:
         args.canonical_output = True
     if (args.global_sequences, args.weight_decay) not in COORDINATES:
@@ -214,16 +225,29 @@ def build_chain(args: argparse.Namespace) -> tuple[dict[str, Any], str, list[dic
         output = ""
         previous_epoch = None
         resume_after_epoch = int(getattr(args, "resume_after_epoch", 0))
+        resume_from_predecay_epoch = getattr(args, "resume_from_predecay_epoch", None)
         for target in TARGETS:
             source = (
                 "fresh"
                 if previous_epoch is None
                 else f"{output}/step{endpoint.stable_step(previous_epoch, args.global_sequences)}"
             )
+            if target == resume_from_predecay_epoch:
+                source = f"{output}/step{endpoint.stable_step(target, args.global_sequences)}"
             current_args = stage_namespace(args, target, source)
             stage_spec, output = endpoint.build_spec(
                 copy.deepcopy(base), current_args, training_script, base_arguments
             )
+            if target == resume_from_predecay_epoch:
+                shell = stage_spec["tasks"][0]["arguments"][2]
+                checkpoint_guard = f"test '!' -e {source}\n"
+                if checkpoint_guard not in shell:
+                    raise RuntimeError(
+                        f"E{target} pre-decay recovery is missing the expected checkpoint guard"
+                    )
+                stage_spec["tasks"][0]["arguments"][2] = shell.replace(
+                    checkpoint_guard, "", 1
+                )
             if target == 1 and args.retry_failed:
                 shell = stage_spec["tasks"][0]["arguments"][2]
                 output_guard = f"test '!' -e {output}\n"
@@ -493,6 +517,19 @@ def configure_failed_retry(args: argparse.Namespace) -> None:
     ].get("validation")
     if args.decay_embeddings and args.resume_validation is None:
         raise RuntimeError("EmbedWD retry frontier is missing held-out validation CE")
+    if args.resume_from_predecay_epoch is not None:
+        first_incomplete = next(target for target in TARGETS if target > completed_frontier)
+        if args.resume_from_predecay_epoch != first_incomplete:
+            raise RuntimeError(
+                "--resume-from-predecay-epoch must equal the first incomplete stage "
+                f"E{first_incomplete}"
+            )
+        expected = endpoint.stable_step(first_incomplete, args.global_sequences)
+        checkpoint = stages[first_incomplete].get("preDecayCheckpoint", "")
+        if not checkpoint.endswith(f"/step{expected}"):
+            raise RuntimeError(
+                f"registered E{first_incomplete} pre-decay checkpoint does not end in step{expected}"
+            )
 
 
 def main() -> None:

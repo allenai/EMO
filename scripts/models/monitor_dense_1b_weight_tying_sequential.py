@@ -192,7 +192,18 @@ def refresh(report: dict[str, Any], sequential: dict[str, Any]) -> str:
                 "rendezvous peer closed the TCPStore connection. Completed earlier stages "
                 "remain valid; no retry was issued."
             )
+        elif "Watchdog caught collective operation timeout" in logs:
+            sequential["failureDiagnosis"] = "nccl_collective_timeout"
+            if current is not None and stages_by_epoch[current].get("status") == "running":
+                stages_by_epoch[current]["status"] = "failed"
+            sequential["reason"] = (
+                f"Persistent chain failed during E{current} after an NCCL all-gather "
+                "collective timed out. Completed earlier stages remain valid; no retry "
+                "was issued."
+            )
         else:
+            if current is not None and stages_by_epoch[current].get("status") == "running":
+                stages_by_epoch[current]["status"] = "failed"
             sequential[
                 "reason"
             ] = f"Persistent chain failed during E{current}; completed earlier stages remain valid."

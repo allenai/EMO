@@ -24,6 +24,7 @@
     columnByKey["baseline-64"],
     columnByKey.dr64,
     columnByKey.drwt64,
+    columnByKey.drwtembwd64,
     columnByKey["baseline-128"],
     columnByKey.dr128,
     columnByKey["baseline-256"],
@@ -32,6 +33,7 @@
     columnByKey["baseline-512"],
     columnByKey.dr512,
     columnByKey.drwt512,
+    columnByKey.drwtembwd512,
     columnByKey.fixed1024,
     columnByKey["baseline-1024"],
     columnByKey.dr1024,
@@ -238,6 +240,7 @@
     columnByKey["baseline-64"],
     columnByKey.dr64,
     columnByKey.drwt64,
+    columnByKey.drwtembwd64,
     columnByKey["baseline-128"],
     columnByKey.dr128,
     columnByKey["baseline-256"],
@@ -246,6 +249,7 @@
     columnByKey["baseline-512"],
     columnByKey.dr512,
     columnByKey.drwt512,
+    columnByKey.drwtembwd512,
     columnByKey.fixed1024,
     columnByKey["baseline-1024"],
     columnByKey.dr1024,
@@ -281,7 +285,9 @@
           lr: run.lr,
           wd: run.wd,
           result: result || {},
-          status: result ? result.status : run.status,
+          status: result
+            ? result.status
+            : (Number(run.activeEpoch) === Number(epoch) ? run.status : "planned"),
           attempts: matchingAttempts +
             (Number(run.activeEpoch) === Number(epoch) && run.experiment ? 1 : 0),
         });
@@ -374,9 +380,16 @@
     ...(study.weightTyingEmbeddingDecaySequentialRuns || []),
   ];
   for (const run of sequentialRuns) {
-    const stageStates = (run.stages || []).map((stage) =>
-      `E${stage.epoch}: ${stage.status || "planned"}`
-    ).join(" · ");
+    const stageStates = (run.stages || []).map((stage) => {
+      const metrics = [];
+      if (finite(stage.train)) metrics.push(`train ${formatMetric(stage.train)}`);
+      if (finite(stage.validation)) metrics.push(`val ${formatMetric(stage.validation, 5)}`);
+      if (finite(stage.gap)) metrics.push(`gap ${formatMetric(stage.gap, 5)}`);
+      if (stage.status === "running" && finite(stage.progress?.percent)) {
+        metrics.push(`${formatMetric(stage.progress.percent, 1)}%`);
+      }
+      return `E${stage.epoch}: ${stage.status || "planned"}${metrics.length ? ` (${metrics.join(", ")})` : ""}`;
+    }).join(" · ");
     const experiment = run.experiment || run.beaker;
     const tr = document.createElement("tr");
     if (["submitted", "scheduled", "running"].includes(run.status)) tr.className = "run-active";
@@ -422,7 +435,9 @@
     if (run.activeEpoch !== undefined && run.activeEpoch !== null) resultEpochs.add(Number(run.activeEpoch));
     for (const epoch of Array.from(resultEpochs).sort((a, b) => a - b)) {
       const result = run.results && run.results[epochKey(epoch)];
-      const status = result ? result.status : run.status;
+      const status = result
+        ? result.status
+        : (Number(run.activeEpoch) === Number(epoch) ? run.status : "planned");
       const tr = document.createElement("tr");
       if (["running", "scheduled", "submitted"].includes(status)) tr.className = "run-active";
       if (["failed", "canceled"].includes(status)) tr.className = "run-failed";
