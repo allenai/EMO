@@ -82,7 +82,12 @@ def registry_key(args: argparse.Namespace) -> str:
 
 
 def targets_for(args: argparse.Namespace) -> tuple[int, ...]:
-    return SATURATION_TARGETS if getattr(args, "mlp_weight_decay", None) is not None else TARGETS
+    return (
+        SATURATION_TARGETS
+        if getattr(args, "mlp_weight_decay", None) is not None
+        or getattr(args, "extend_to_saturation", False)
+        else TARGETS
+    )
 
 
 def parse_args() -> argparse.Namespace:
@@ -127,6 +132,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--mlp-weight-decay", choices=("1.0",))
     parser.add_argument(
+        "--extend-to-saturation",
+        action="store_true",
+        help="Continue the completed BS512/WD1.0 EmbedWD chain from E24 through E64.",
+    )
+    parser.add_argument(
         "--mlp-weight-decay-scope",
         choices=("all", "upper-half", "upper-half-w2"),
         default="all",
@@ -148,6 +158,13 @@ def parse_args() -> argparse.Namespace:
             (512, "0.333"),
         }:
             parser.error("the MLP WD study has only BS64/WD0.3 and BS512/WD0.333")
+    if args.extend_to_saturation:
+        if not args.decay_embeddings or not args.stop_on_saturation:
+            parser.error("--extend-to-saturation requires EmbedWD and saturation gating")
+        if (args.global_sequences, args.weight_decay) != (512, "1.0"):
+            parser.error("only BS512/WD1.0 EmbedWD is authorized for the E24 extension")
+        if args.retry_failed or args.mlp_weight_decay is not None:
+            parser.error("the E24 extension is distinct from failed retries and MLP WD")
     if args.decay_embeddings:
         args.canonical_output = True
     if (args.global_sequences, args.weight_decay) not in COORDINATES:
@@ -374,8 +391,9 @@ def build_chain(args: argparse.Namespace) -> tuple[dict[str, Any], str, list[dic
         )
         commands.extend(stage_commands[1:])
         previous_target = target
-    if getattr(args, "mlp_weight_decay", None) is not None:
-        manifest_path = RUNTIME_MANIFEST_DIR / f"{sequential_run_id(args)}.json"
+    if getattr(args, "mlp_weight_decay", None) is not None or args.extend_to_saturation:
+        suffix = "-extension" if args.extend_to_saturation else ""
+        manifest_path = RUNTIME_MANIFEST_DIR / f"{sequential_run_id(args)}{suffix}.json"
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
         manifest_path.write_text(json.dumps({"stages": runtime_stages}, indent=2) + "\n")
         task["arguments"] = [
@@ -412,10 +430,11 @@ def register_submission(
     records = report.setdefault(registry_key(args), [])
     run_id = sequential_run_id(args)
     matching = [record for record in records if record.get("id") == run_id]
-    if args.retry_failed:
-        if len(matching) != 1 or matching[0].get("status") not in {"failed", "canceled"}:
+    if args.retry_failed or args.extend_to_saturation:
+        required_statuses = {"complete"} if args.extend_to_saturation else {"failed", "canceled"}
+        if len(matching) != 1 or matching[0].get("status") not in required_statuses:
             raise RuntimeError(
-                f"--retry-failed requires exactly one failed or canceled entry for {run_id}"
+                f"continuation requires exactly one entry in {required_statuses} for {run_id}"
             )
         previous = copy.deepcopy(matching[0])
         previous_stages = {
@@ -466,7 +485,9 @@ def register_submission(
             "stages": stages,
             "reason": (
                 (
-                    f"Retried after a failed persistent attempt from E{current_epoch}. "
+                    f"Continued the validated E24 frontier toward saturation from E{current_epoch}. "
+                    if args.extend_to_saturation
+                    else f"Retried after a failed persistent attempt from E{current_epoch}. "
                     if args.retry_failed
                     else ""
                 )
@@ -527,6 +548,8 @@ def register_submission(
                 "beaker": experiment,
                 "revision": args.revision,
                 "output": output,
+                "attemptedEpochs": list(targets_for(args)),
+                "plannedTargets": list(targets_for(args)),
                 "reason": (
                     "Persistent DR+WT chain with global WD on the tied "
                     "embeddings/LM-head matrix"
@@ -576,10 +599,11 @@ def validate_registration(args: argparse.Namespace) -> None:
     matching = [
         record for record in report.get(registry_key(args), []) if record.get("id") == run_id
     ]
-    if args.retry_failed:
-        if len(matching) != 1 or matching[0].get("status") not in {"failed", "canceled"}:
+    if args.retry_failed or args.extend_to_saturation:
+        required_statuses = {"complete"} if args.extend_to_saturation else {"failed", "canceled"}
+        if len(matching) != 1 or matching[0].get("status") not in required_statuses:
             raise RuntimeError(
-                f"--retry-failed requires exactly one failed or canceled entry for {run_id}"
+                f"continuation requires exactly one entry in {required_statuses} for {run_id}"
             )
     elif matching:
         raise RuntimeError(f"duplicate sequential registry entry for {run_id}")
@@ -588,7 +612,7 @@ def validate_registration(args: argparse.Namespace) -> None:
 def configure_failed_retry(args: argparse.Namespace) -> None:
     args.resume_after_epoch = 0
     args.resume_validation = None
-    if not args.retry_failed:
+    if not (args.retry_failed or args.extend_to_saturation):
         return
     report = json.loads(REPORT_PATH.read_text())
     run_id = sequential_run_id(args)
