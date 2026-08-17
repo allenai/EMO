@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import evaluate_dense_1b_missing_downstream as downstream
 import monitor_dense_1b_weight_tying as common
 
 REPORT_PATH = Path("reports/0802/data/wsd_data_loader_1b.json")
@@ -52,7 +53,7 @@ def stage_sections(logs: str) -> dict[int, str]:
     return selected
 
 
-def parse_stage(epoch: int, section: str) -> dict[str, Any]:
+def parse_stage(epoch: int, section: str, *, expect_downstream: bool = False) -> dict[str, Any]:
     result: dict[str, Any] = {}
     step_values = common.TRAIN_STEP.findall(section)
     if step_values:
@@ -85,6 +86,8 @@ def parse_stage(epoch: int, section: str) -> dict[str, Any]:
         )
         if wandb_values:
             result["wandb"] = wandb_values[-1]
+        if expect_downstream:
+            result.update(downstream.parse_metrics(section))
     else:
         result["status"] = "running"
     return result
@@ -130,7 +133,11 @@ def refresh(report: dict[str, Any], sequential: dict[str, Any]) -> str:
             if epoch not in completed_epochs:
                 completed_epochs.append(epoch)
             continue
-        parsed = parse_stage(epoch, section)
+        parsed = parse_stage(
+            epoch,
+            section,
+            expect_downstream=bool(sequential.get("downstreamEvaluationOnFinish")),
+        )
         stage.update(parsed)
         if parsed["status"] != "complete":
             continue

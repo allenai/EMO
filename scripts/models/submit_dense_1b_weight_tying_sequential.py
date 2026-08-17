@@ -27,6 +27,10 @@ REPORT_JS_PATH = REPORT_PATH.with_suffix(".js")
 RUNTIME_MANIFEST_DIR = Path("scripts/models/manifests")
 TARGETS = (1, 2, 4, 8, 12, 16, 20, 24)
 SATURATION_TARGETS = (1, 2, 4, *range(8, 65, 4))
+DOWNSTREAM_TASKS = (
+    "[arc_easy, arc_challenge, boolq, csqa_val_rc_5shot, hellaswag, "
+    "openbookqa_test_rc_5shot, piqa, socialiqa_val_rc_5shot, winogrande]"
+)
 REVISION = "sewonm/icsl"
 OUTPUT_ROOT = "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01"
 COORDINATES = {
@@ -134,7 +138,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--extend-to-saturation",
         action="store_true",
-        help="Continue the completed BS512/WD1.0 EmbedWD chain from E24 through E64.",
+        help="Continue a completed EmbedWD chain from E24 through E64.",
+    )
+    parser.add_argument(
+        "--include-downstream-eval",
+        action="store_true",
+        help="Run the full nine-task downstream suite at every decayed endpoint.",
     )
     parser.add_argument(
         "--mlp-weight-decay-scope",
@@ -161,10 +170,15 @@ def parse_args() -> argparse.Namespace:
     if args.extend_to_saturation:
         if not args.decay_embeddings or not args.stop_on_saturation:
             parser.error("--extend-to-saturation requires EmbedWD and saturation gating")
-        if (args.global_sequences, args.weight_decay) != (512, "1.0"):
-            parser.error("only BS512/WD1.0 EmbedWD is authorized for the E24 extension")
+        if (args.global_sequences, args.weight_decay) not in {
+            (64, "0.3"),
+            (512, "1.0"),
+        }:
+            parser.error("only BS64/WD0.3 and BS512/WD1.0 EmbedWD support E24 extensions")
         if args.retry_failed or args.mlp_weight_decay is not None:
             parser.error("the E24 extension is distinct from failed retries and MLP WD")
+    if args.include_downstream_eval and not args.extend_to_saturation:
+        parser.error("--include-downstream-eval is scoped to saturation extensions")
     if args.decay_embeddings:
         args.canonical_output = True
     if (args.global_sequences, args.weight_decay) not in COORDINATES:
@@ -223,6 +237,19 @@ def with_stage_log_capture(shell: str, output: str, epoch: int) -> tuple[str, st
         "fi",
     ]
     return "\n".join(lines), log_path
+
+
+def with_downstream_eval(shell: str) -> str:
+    tasks = "--trainer.callbacks.downstream_evaluator.tasks=[]"
+    if tasks not in shell:
+        raise RuntimeError("stage command is missing the disabled downstream task list")
+    finish = "--trainer.callbacks.downstream_evaluator.eval_on_finish=false"
+    if finish not in shell:
+        raise RuntimeError("stage command is missing downstream eval_on_finish=false")
+    return shell.replace(
+        tasks,
+        f"--trainer.callbacks.downstream_evaluator.tasks={DOWNSTREAM_TASKS}",
+    ).replace(finish, "--trainer.callbacks.downstream_evaluator.eval_on_finish=true")
 
 
 def saturation_gate(
@@ -365,6 +392,8 @@ def build_chain(args: argparse.Namespace) -> tuple[dict[str, Any], str, list[dic
     for target, stage_spec in zip(active_targets, stage_specs):
         stage_shell = stage_spec["tasks"][0]["arguments"][2]
         stage_shell = stage_shell.removeprefix("set -euo pipefail\n")
+        if args.include_downstream_eval:
+            stage_shell = with_downstream_eval(stage_shell)
         log_path = ""
         if args.stop_on_saturation:
             stage_shell, log_path = with_stage_log_capture(stage_shell, output, target)
@@ -505,6 +534,7 @@ def register_submission(
             ),
             "mergeAfterCompletion": not (args.canonical_output or args.decay_embeddings),
             "stopOnSaturation": args.stop_on_saturation,
+            "downstreamEvaluationOnFinish": args.include_downstream_eval,
         }
     )
     if args.decay_embeddings:
