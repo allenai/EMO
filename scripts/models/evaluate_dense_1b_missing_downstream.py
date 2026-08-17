@@ -403,7 +403,13 @@ def build_task(
     ]
     task["resources"] = {"gpuCount": 1, "sharedMemory": "10 GiB"}
     task["context"] = {"priority": priority, "minRuntime": "0s", "autoResume": False}
-    for key in ("replicas", "leaderSelection", "propagateFailure", "propagatePreemption"):
+    for key in (
+        "replicas",
+        "leaderSelection",
+        "propagateFailure",
+        "propagatePreemption",
+        "synchronizedStartTimeout",
+    ):
         task.pop(key, None)
     set_env(task, "GIT_REF", revision)
     set_env(task, "NUM_NODES", "1")
