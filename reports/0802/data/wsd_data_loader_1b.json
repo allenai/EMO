@@ -10486,8 +10486,8 @@
   ],
   "downstreamEvaluationCampaigns": [
     {
-      "id": "dense-1b-downstream-grouped-sequential",
-      "experiment": "01M07DQEXSSXGX9F52XJKZFE3H",
+      "id": "dense-1b-downstream-grouped-sequential-r2",
+      "experiment": "01M07E0B3C9GH62FSQ9G6K4X8Z",
       "revision": "59dad425731ccd39bb637c765800ec87aef57983",
       "status": "submitted",
       "gpuPerTask": 1,
