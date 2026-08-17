@@ -652,7 +652,9 @@ def refresh(report: dict[str, Any]) -> bool:
             if not sequential and task.get("status") != state:
                 task["status"] = state
                 changed = True
-            task["job"] = job["id"]
+            if task.get("job") != job["id"]:
+                task["job"] = job["id"]
+                changed = True
             marker = f"run_id={task['runId']} epoch={task['epoch']}"
             complete_marker = f"DOWNSTREAM_EVAL_COMPLETE {marker}"
             skipped_marker = f"DOWNSTREAM_EVAL_SKIPPED {marker}"
@@ -789,7 +791,7 @@ def main() -> None:
             input_text=json.dumps(spec),
         )
         print(output, end="")
-        ids = ULID.findall(output)
+        ids = sorted(set(ULID.findall(output)))
         if len(ids) != 1:
             raise RuntimeError("submission succeeded but did not return exactly one experiment ID")
         register_campaign(
