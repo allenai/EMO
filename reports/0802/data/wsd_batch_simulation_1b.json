@@ -1,6 +1,6 @@
 {
   "updated": "2026-08-16",
-  "setup": "Dense 1B; sealed repeated 1B-token DCLM pool; sequence length4096; global BS1024; dynamic repacking; LR1e-3; rank microbatch4; token-based WSD with10% terminal decay. The four LocalSGD H4 simBS64/256 E2/E4-init chains are complete through E16. The active four-node DiLoCo H32 simBS64 outerLR0.5/momentum0.7 chain is running E2-init and then E4-init through E16.",
+  "setup": "Dense 1B; sealed repeated 1B-token DCLM pool; sequence length4096; global BS1024; dynamic repacking; LR1e-3; rank microbatch4; token-based WSD with10% terminal decay. The four LocalSGD H4 simBS64/256 E2/E4-init chains are complete through E16. The DiLoCo H32 simBS64 outerLR0.5/momentum0.7 comparison was stopped by the user after its healthy E8 result underperformed the matched default-outer trajectory.",
   "selection": {
     "targetEpoch": 16,
     "learningRate": "1e-3",
@@ -10120,9 +10120,9 @@
       "simulatedBatchSequences": 64,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "running",
-      "healthStatus": "active",
-      "currentStep": 1874,
+      "status": "canceled",
+      "healthStatus": "neutral",
+      "currentStep": 2150,
       "wandb": "ymjy9pyg",
       "revision": "4e42e7738394bde58b4409c53841d06f98f36c1a",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step428",
@@ -10214,7 +10214,9 @@
         "8": "iboagz19",
         "12": "ymjy9pyg"
       },
-      "reason": "The corrected four-node recovery is healthy. E4 completed at validation3.634 and E8 improved to train3.204, validation3.307, gap+0.103 with full downstream evaluation. E12 is running from the exact native pre-decay step1716 checkpoint without repeated recalibration.",
+      "reason": "Healthy E4 and E8 results are retained. The user stopped the E12 continuation at step2150/2862 because outerLR0.5/momentum0.7 underperformed the matched default outer0.7/momentum0.9 recipe at both completed frontiers. No E12 result is counted and no continuation or retry is authorized.",
+      "canceledAt": "2026-08-17T00:56:53Z",
+      "cancellationReason": "User-directed scientific-pruning decision after matched E4/E8 train and validation losses showed the new outer recipe was not promising.",
       "recoveryProvenance": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/.chain-control/bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r05/quarantine/r03-r04-init2-canonical-output",
       "plannedAt": "2026-08-16T19:00:59Z",
       "submissionAttempts": [
@@ -10233,9 +10235,9 @@
         "01M05ZFPFQP5NX9VS3PDY4MFMV"
       ],
       "submittedAt": "2026-08-16T19:06:27.211765Z",
-      "schedulerStatus": "running",
-      "schedulerAuditAt": "2026-08-17T00:43:09Z",
-      "schedulerReason": "All four replica jobs are running. E8 completed healthy and the exact native E12 resume is progressing at step1874/2862 with finite metrics and no explicit health errors in the recent leader log."
+      "schedulerStatus": "canceled_by_user",
+      "schedulerAuditAt": "2026-08-17T00:57:00Z",
+      "schedulerReason": "All four replica jobs finalized after the user stop request with expected cancellation exit143. E12 was incomplete at step2150/2862."
     },
     {
       "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r05-init4-wd0.333",
@@ -10253,8 +10255,8 @@
       "simulatedBatchSequences": 64,
       "lr": "1e-3",
       "wd": "0.333",
-      "status": "queued",
-      "healthStatus": "active",
+      "status": "canceled",
+      "healthStatus": "neutral",
       "currentStep": 858,
       "revision": "4e42e7738394bde58b4409c53841d06f98f36c1a",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step858",
@@ -10266,7 +10268,9 @@
       "dilocoOuterLr": 0.5,
       "dilocoOuterMomentum": 0.7,
       "results": {},
-      "reason": "Registered in the same exact four-node recovery chain. Conventional step858 is present, the W&B-only canonical residue is preserved under chain-control quarantine, and the canonical output path is clear. This branch starts only after the E2-init branch completes and stops at E16.",
+      "reason": "Neutral user cancellation before this E4-init branch began. The shared four-node experiment was stopped during the preceding E2-init E12 stage after the new outer recipe underperformed the matched default recipe. No optimizer step, W&B run, checkpoint, or evaluation was produced for this branch.",
+      "canceledAt": "2026-08-17T00:56:53Z",
+      "cancellationReason": "User-directed scientific-pruning decision; the sequenced E4-init branch never started.",
       "recoveryProvenance": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/.chain-control/bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r05/quarantine/r03-r04-init4-canonical-output",
       "plannedAt": "2026-08-16T19:00:59Z",
       "beaker": "01M05ZFP0BJY2KFXAN1K57FASY",
@@ -10278,9 +10282,9 @@
         "01M05ZFPFQP5NX9VS3PDY4MFMV"
       ],
       "submittedAt": "2026-08-16T19:06:27.211765Z",
-      "schedulerStatus": "sequenced_after_active_init2",
-      "schedulerAuditAt": "2026-08-16T23:48:15Z",
-      "schedulerReason": "The shared four-node jobs are running the E2-init branch. The E4-init branch has not begun and remains sequenced behind it."
+      "schedulerStatus": "canceled_before_start",
+      "schedulerAuditAt": "2026-08-17T00:57:00Z",
+      "schedulerReason": "The shared four-node jobs finalized with cancellation exit143 during the E2-init E12 stage; this sequenced E4-init branch never began."
     }
   ]
 }
