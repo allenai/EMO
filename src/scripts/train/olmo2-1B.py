@@ -10,7 +10,7 @@ import argparse
 import logging
 import sys
 from dataclasses import dataclass
-from typing import List, Optional, cast
+from typing import cast
 
 import rich
 
@@ -60,8 +60,10 @@ C4_VALIDATION_PATH = [
 SEQUENCE_LENGTH = 4096
 GLOBAL_BATCH_SIZE = 1024 * SEQUENCE_LENGTH
 
+MLP_WEIGHT_DECAY_SCOPES = ("all", "upper-half", "upper-half-w2")
 
-def _embedding_group_overrides(decay_embeddings: bool) -> List[OptimGroupOverride]:
+
+def _embedding_group_overrides(decay_embeddings: bool) -> list[OptimGroupOverride]:
     """Return the embedding-specific optimizer policy.
 
     With tied weights, ``embeddings.weight`` is also the LM-head matrix. Omitting
@@ -70,7 +72,57 @@ def _embedding_group_overrides(decay_embeddings: bool) -> List[OptimGroupOverrid
     """
     if decay_embeddings:
         return []
-    return [OptimGroupOverride(params=["embeddings.weight"], opts=dict(weight_decay=0.0))]
+    return [OptimGroupOverride(params=["embeddings.weight"], opts={"weight_decay": 0.0})]
+
+
+def _mlp_weight_decay_group_override(
+    weight_decay: float | None, scope: str, n_layers: int
+) -> OptimGroupOverride | None:
+    """Build an optimizer override for an MLP weight-decay ablation.
+
+    ``upper-half`` means blocks ``n_layers // 2`` through ``n_layers - 1``.
+    The override always targets weight matrices only; biases and all non-MLP
+    parameters continue to use their existing optimizer policy.
+    """
+    if weight_decay is None:
+        return None
+    if weight_decay < 0:
+        raise ValueError("MLP weight decay must be non-negative")
+    if scope not in MLP_WEIGHT_DECAY_SCOPES:
+        raise ValueError(
+            f"Unknown MLP weight-decay scope {scope!r}; expected one of "
+            f"{MLP_WEIGHT_DECAY_SCOPES}"
+        )
+    if n_layers < 1:
+        raise ValueError("n_layers must be positive")
+
+    if scope == "all":
+        params = [f"blocks.*.feed_forward.w{projection}.weight" for projection in (1, 2, 3)]
+    else:
+        projections = (2,) if scope == "upper-half-w2" else (1, 2, 3)
+        params = [
+            f"blocks.{layer}.feed_forward.w{projection}.weight"
+            for layer in range(n_layers // 2, n_layers)
+            for projection in projections
+        ]
+
+    return OptimGroupOverride(params=params, opts={"weight_decay": weight_decay})
+
+
+def _optimizer_group_overrides(
+    *,
+    decay_embeddings: bool,
+    mlp_weight_decay: float | None,
+    mlp_weight_decay_scope: str,
+    n_layers: int,
+) -> list[OptimGroupOverride]:
+    overrides = _embedding_group_overrides(decay_embeddings)
+    mlp_override = _mlp_weight_decay_group_override(
+        mlp_weight_decay, mlp_weight_decay_scope, n_layers
+    )
+    if mlp_override is not None:
+        overrides.append(mlp_override)
+    return overrides
 
 
 # docs: start-define-config
@@ -88,7 +140,7 @@ class ExperimentConfig(Config):
     """Train module config. Contains settings for optimizer."""
     init_seed: int = 12536
     """Random seed to initialize model weights."""
-    load_path: Optional[str] = None
+    load_path: str | None = None
     """Path to load checkpoint from if no checkpoint is found in the save folder.
     Mainly used when you want to fine-tune from a pretrained model."""
     load_trainer_state: bool = False
@@ -159,7 +211,7 @@ def train(config: ExperimentConfig):
     trainer.fit()
 
 
-def build_config(opts, overrides: List[str]) -> ExperimentConfig:
+def build_config(opts, overrides: list[str]) -> ExperimentConfig:
     save_folder = opts.save_folder
     if not save_folder:
         save_folder = f"/tmp/{opts.run_name}"
@@ -229,7 +281,12 @@ def build_config(opts, overrides: List[str]) -> ExperimentConfig:
             lr=opts.lr,
             weight_decay=0.033,
             betas=(0.9, 0.95),
-            group_overrides=_embedding_group_overrides(opts.decay_embeddings),
+            group_overrides=_optimizer_group_overrides(
+                decay_embeddings=opts.decay_embeddings,
+                mlp_weight_decay=opts.mlp_weight_decay,
+                mlp_weight_decay_scope=opts.mlp_weight_decay_scope,
+                n_layers=model_config.n_layers,
+            ),
         ),
         compile_model=True,
         dp_config=TransformerDataParallelConfig(
@@ -382,6 +439,24 @@ def parser_args():
             "Apply the optimizer's global weight decay to embeddings.weight instead of "
             "placing it in a zero-WD group. With model.tie_embeddings=true, this also "
             "decays the shared LM-head matrix."
+        ),
+    )
+    parser.add_argument(
+        "--mlp-weight-decay",
+        type=float,
+        default=None,
+        help=(
+            "Override weight decay for the MLP matrices selected by "
+            "--mlp-weight-decay-scope. Disabled when omitted."
+        ),
+    )
+    parser.add_argument(
+        "--mlp-weight-decay-scope",
+        choices=MLP_WEIGHT_DECAY_SCOPES,
+        default="all",
+        help=(
+            "MLP matrices receiving --mlp-weight-decay: all w1/w2/w3 matrices, "
+            "upper-half w1/w2/w3 matrices, or upper-half w2 matrices only."
         ),
     )
     parser.add_argument(

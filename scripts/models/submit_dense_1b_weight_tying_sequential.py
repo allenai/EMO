@@ -25,6 +25,7 @@ import submit_dense_step1_data_loader_coordinate as endpoint
 REPORT_PATH = Path("reports/0802/data/wsd_data_loader_1b.json")
 REPORT_JS_PATH = REPORT_PATH.with_suffix(".js")
 TARGETS = (1, 2, 4, 8, 12, 16, 20, 24)
+SATURATION_TARGETS = (1, 2, 4, *range(8, 65, 4))
 REVISION = "sewonm/icsl"
 OUTPUT_ROOT = (
     "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/" "wt_sequential_e24_r01"
@@ -50,20 +51,39 @@ COORDINATES = {
 
 def coordinate_run_id(args: argparse.Namespace) -> str:
     prefix = "drwtembwd" if args.decay_embeddings else "drwt"
-    return f"{prefix}{args.global_sequences}-lr1e-3-wd{args.weight_decay}"
+    mlp = ""
+    if getattr(args, "mlp_weight_decay", None) is not None:
+        mlp = f"-mlp-{args.mlp_weight_decay_scope}-wd{args.mlp_weight_decay}"
+    return f"{prefix}{args.global_sequences}-lr1e-3-wd{args.weight_decay}{mlp}"
+
+
+def coordinate_method(args: argparse.Namespace) -> str:
+    method = f"drwtembwd{args.global_sequences}"
+    if getattr(args, "mlp_weight_decay", None) is not None:
+        method += "mlpupperwd1"
+    return method
 
 
 def sequential_run_id(args: argparse.Namespace) -> str:
     mode = "wtseq-embwd" if args.decay_embeddings else "wtseq"
-    return f"{mode}-bs{args.global_sequences}-wd{args.weight_decay}"
+    mlp = ""
+    if getattr(args, "mlp_weight_decay", None) is not None:
+        mlp = f"-mlp-{args.mlp_weight_decay_scope}-wd{args.mlp_weight_decay}"
+    return f"{mode}-bs{args.global_sequences}-wd{args.weight_decay}{mlp}"
 
 
 def registry_key(args: argparse.Namespace) -> str:
+    if getattr(args, "mlp_weight_decay", None) is not None:
+        return "weightTyingMlpDecaySequentialRuns"
     return (
         "weightTyingEmbeddingDecaySequentialRuns"
         if args.decay_embeddings
         else "weightTyingSequentialRuns"
     )
+
+
+def targets_for(args: argparse.Namespace) -> tuple[int, ...]:
+    return SATURATION_TARGETS if getattr(args, "mlp_weight_decay", None) is not None else TARGETS
 
 
 def parse_args() -> argparse.Namespace:
@@ -106,11 +126,29 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Stop the persistent chain when held-out CE fails to strictly improve.",
     )
+    parser.add_argument("--mlp-weight-decay", choices=("1.0",))
+    parser.add_argument(
+        "--mlp-weight-decay-scope",
+        choices=("all", "upper-half", "upper-half-w2"),
+        default="all",
+    )
     args = parser.parse_args()
     if args.stop_on_saturation and not args.decay_embeddings:
         parser.error("--stop-on-saturation is currently scoped to --decay-embeddings")
     if args.resume_from_predecay_epoch is not None and not args.retry_failed:
         parser.error("--resume-from-predecay-epoch requires --retry-failed")
+    if args.mlp_weight_decay is not None:
+        if not args.decay_embeddings:
+            parser.error("--mlp-weight-decay requires --decay-embeddings")
+        if args.mlp_weight_decay_scope != "upper-half":
+            parser.error("this study requires --mlp-weight-decay-scope=upper-half")
+        if not args.stop_on_saturation:
+            parser.error("the MLP WD study requires --stop-on-saturation")
+        if (args.global_sequences, args.weight_decay) not in {
+            (64, "0.3"),
+            (512, "0.333"),
+        }:
+            parser.error("the MLP WD study has only BS64/WD0.3 and BS512/WD0.333")
     if args.decay_embeddings:
         args.canonical_output = True
     if (args.global_sequences, args.weight_decay) not in COORDINATES:
@@ -141,6 +179,8 @@ def stage_namespace(args: argparse.Namespace, epoch: int, source_checkpoint: str
         suffix=args.suffix,
         weight_tying=True,
         decay_embeddings=args.decay_embeddings,
+        mlp_weight_decay=getattr(args, "mlp_weight_decay", None),
+        mlp_weight_decay_scope=getattr(args, "mlp_weight_decay_scope", "all"),
         workspace=args.workspace,
         priority=args.priority,
         register=False,
@@ -177,13 +217,13 @@ def saturation_gate(output: str, epoch: int, previous_epoch: int | None, log_pat
     )
     code = "".join(
         [
-        "import os,pathlib,re\n"
-        f"log=pathlib.Path({log_path!r})\n"
-        "text=re.sub(r'\\x1b\\[[0-?]*[ -/]*[@-~]','',log.read_text())\n"
-        "vals=re.findall(r'wandb:\\s+eval/heldout/dclm-validation-0802/CE loss\\s+([0-9]+(?:\\.[0-9]+)?)',text)\n"
-        "if not vals: vals=re.findall(r'dclm-validation-0802/CE loss=([0-9]+(?:\\.[0-9]+)?)\\s*$',text,re.M)\n"
-        "assert vals, 'missing held-out validation CE'\n"
-        "value=float(vals[-1])\n"
+        "import os,pathlib,re\n",
+        f"log=pathlib.Path({log_path!r})\n",
+        "text=re.sub(r'\\x1b\\[[0-?]*[ -/]*[@-~]','',log.read_text())\n",
+        "vals=re.findall(r'wandb:\\s+eval/heldout/dclm-validation-0802/CE loss\\s+([0-9]+(?:\\.[0-9]+)?)',text)\n",
+        "if not vals: vals=re.findall(r'dclm-validation-0802/CE loss=([0-9]+(?:\\.[0-9]+)?)\\s*$',text,re.M)\n",
+        "assert vals, 'missing held-out validation CE'\n",
+        "value=float(vals[-1])\n",
         ]
         + [
             "previous=None\n"
@@ -191,9 +231,9 @@ def saturation_gate(output: str, epoch: int, previous_epoch: int | None, log_pat
             else f"previous=float(pathlib.Path({previous_validation!r}).read_text())\n"
         ]
         + [
-        f"v=pathlib.Path({validation!r}); vt=v.with_suffix(v.suffix+'.tmp'); vt.write_text(str(value)); os.replace(vt,v)\n"
-        "action='continue' if previous is None or value < previous else 'stop'\n"
-        f"d=pathlib.Path({decision!r}); dt=d.with_suffix(d.suffix+'.tmp'); dt.write_text(action); os.replace(dt,d)\n"
+        f"v=pathlib.Path({validation!r}); vt=v.with_suffix(v.suffix+'.tmp'); vt.write_text(str(value)); os.replace(vt,v)\n",
+        "action='continue' if previous is None or value < previous else 'stop'\n",
+        f"d=pathlib.Path({decision!r}); dt=d.with_suffix(d.suffix+'.tmp'); dt.write_text(action); os.replace(dt,d)\n",
         f"print(f'SEQUENTIAL_EMBWD_DECISION epoch={epoch} validation={{value}} previous={{previous}} action={{action}}')"
         ]
     )
@@ -218,6 +258,7 @@ def build_chain(args: argparse.Namespace) -> tuple[dict[str, Any], str, list[dic
 
     old_root = endpoint.MODEL_ROOT
     endpoint.MODEL_ROOT = old_root if (args.canonical_output or args.decay_embeddings) else OUTPUT_ROOT
+    targets = targets_for(args)
     try:
         stage_specs = []
         stage_records = []
@@ -226,7 +267,7 @@ def build_chain(args: argparse.Namespace) -> tuple[dict[str, Any], str, list[dic
         previous_epoch = None
         resume_after_epoch = int(getattr(args, "resume_after_epoch", 0))
         resume_from_predecay_epoch = getattr(args, "resume_from_predecay_epoch", None)
-        for target in TARGETS:
+        for target in targets:
             source = (
                 "fresh"
                 if previous_epoch is None
@@ -314,7 +355,7 @@ def build_chain(args: argparse.Namespace) -> tuple[dict[str, Any], str, list[dic
                 f'echo "SEQUENTIAL_WT_STAGE_COMPLETE epoch={target}"',
             ]
         )
-        if args.stop_on_saturation and target != TARGETS[-1]:
+        if args.stop_on_saturation and target != targets[-1]:
             commands.extend(saturation_gate(output, target, previous_target, log_path))
         previous_target = target
     task["arguments"] = ["bash", "-lc", "\n".join(commands)]
@@ -379,10 +420,16 @@ def register_submission(
             "wd": args.weight_decay,
             "weightTying": True,
             "decayEmbeddings": args.decay_embeddings,
+            "mlpWeightDecay": getattr(args, "mlp_weight_decay", None),
+            "mlpWeightDecayScope": (
+                getattr(args, "mlp_weight_decay_scope", None)
+                if getattr(args, "mlp_weight_decay", None) is not None
+                else None
+            ),
             "dataOrder": "dynamic_repacking_from_e2",
             "status": "submitted",
             "currentEpoch": current_epoch,
-            "targets": list(TARGETS),
+            "targets": list(targets_for(args)),
             "experiment": experiment,
             "beaker": experiment,
             "revision": args.revision,
@@ -396,7 +443,7 @@ def register_submission(
                     if args.retry_failed
                     else ""
                 )
-                + "Submitted as one persistent E1->E24 job. Every stage evaluates its WSD "
+                + "Submitted as one persistent saturation-gated job. Every stage evaluates its WSD "
                 "decayed endpoint and the next stage resumes the preceding exact pre-decay "
                 "checkpoint; dynamic repacking begins at E2. "
                 + (
@@ -406,7 +453,7 @@ def register_submission(
                 )
             ),
             "canonicalOutput": endpoint.trajectory_output(
-                stage_namespace(args, TARGETS[-1], "unused")
+                stage_namespace(args, targets_for(args)[-1], "unused")
             ),
             "mergeAfterCompletion": not (args.canonical_output or args.decay_embeddings),
             "stopOnSaturation": args.stop_on_saturation,
@@ -422,20 +469,26 @@ def register_submission(
         else:
             coordinate_run = {
                 "id": coordinate_id,
-                "method": f"drwtembwd{args.global_sequences}",
+                "method": coordinate_method(args),
                 "batchSequences": args.global_sequences,
                 "dataOrder": "dynamic_repacking",
                 "weightTying": True,
                 "decayEmbeddings": True,
+                "mlpWeightDecay": getattr(args, "mlp_weight_decay", None),
+                "mlpWeightDecayScope": (
+                    getattr(args, "mlp_weight_decay_scope", None)
+                    if getattr(args, "mlp_weight_decay", None) is not None
+                    else None
+                ),
                 "lr": "1e-3",
                 "wd": args.weight_decay,
-                "attemptedEpochs": list(TARGETS),
+                "attemptedEpochs": list(targets_for(args)),
                 "sourceExperiment": coordinate["sourceExperiment"],
                 "sourceCheckpoint": "fresh",
                 "gpuCount": coordinate["nodes"] * endpoint.GPUS_PER_NODE,
                 "nodeCount": coordinate["nodes"],
                 "rankMicrobatchSequences": endpoint.RANK_MICROBATCH_SEQUENCES,
-                "plannedTargets": list(TARGETS),
+                "plannedTargets": list(targets_for(args)),
                 "results": {},
             }
             report.setdefault("runs", []).append(coordinate_run)
@@ -449,22 +502,40 @@ def register_submission(
                 "output": output,
                 "reason": (
                     "Persistent DR+WT chain with global WD on the tied "
-                    "embeddings/LM-head matrix."
+                    "embeddings/LM-head matrix"
+                    + (
+                        f" and WD {args.mlp_weight_decay} on upper-half MLP w1/w2/w3 matrices."
+                        if getattr(args, "mlp_weight_decay", None) is not None
+                        else "."
+                    )
                 ),
             }
         )
-        column_key = f"drwtembwd{args.global_sequences}"
+        column_key = coordinate_method(args)
         if not any(
             column.get("key") == column_key for column in report.get("columns", [])
         ):
             report.setdefault("columns", []).append(
                 {
                     "key": column_key,
-                    "label": f"BS{args.global_sequences} · DR+WT+EmbedWD",
+                    "label": (
+                        f"BS{args.global_sequences} · DR+WT+EmbedWD"
+                        + (
+                            "+UpperMLPWD"
+                            if getattr(args, "mlp_weight_decay", None) is not None
+                            else ""
+                        )
+                    ),
                     "batchSequences": args.global_sequences,
                     "dataOrder": "dynamic_repacking",
                     "weightTying": True,
                     "decayEmbeddings": True,
+                    "mlpWeightDecay": getattr(args, "mlp_weight_decay", None),
+                    "mlpWeightDecayScope": (
+                        getattr(args, "mlp_weight_decay_scope", None)
+                        if getattr(args, "mlp_weight_decay", None) is not None
+                        else None
+                    ),
                     "initialWd": args.weight_decay,
                     "color": "#7c3aed" if args.global_sequences == 64 else "#4f46e5",
                 }
@@ -505,7 +576,8 @@ def configure_failed_retry(args: argparse.Namespace) -> None:
     )
     stages = {int(stage["epoch"]): stage for stage in record.get("stages", [])}
     completed_frontier = 0
-    for target in TARGETS:
+    targets = targets_for(args)
+    for target in targets:
         if stages.get(target, {}).get("status") != "complete":
             break
         completed_frontier = target
@@ -517,9 +589,10 @@ def configure_failed_retry(args: argparse.Namespace) -> None:
     ].get("validation")
     if args.decay_embeddings and args.resume_validation is None:
         raise RuntimeError("EmbedWD retry frontier is missing held-out validation CE")
-    if args.resume_from_predecay_epoch is not None:
-        first_incomplete = next(target for target in TARGETS if target > completed_frontier)
-        if args.resume_from_predecay_epoch != first_incomplete:
+    resume_from_predecay_epoch = getattr(args, "resume_from_predecay_epoch", None)
+    if resume_from_predecay_epoch is not None:
+        first_incomplete = next(target for target in targets if target > completed_frontier)
+        if resume_from_predecay_epoch != first_incomplete:
             raise RuntimeError(
                 "--resume-from-predecay-epoch must equal the first incomplete stage "
                 f"E{first_incomplete}"

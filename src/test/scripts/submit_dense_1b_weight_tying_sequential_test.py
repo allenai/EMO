@@ -55,3 +55,29 @@ def test_failed_retry_resumes_contiguous_completed_frontier(tmp_path):
 
     assert args.resume_after_epoch == 1
     assert args.resume_validation == 3.971
+
+
+def test_upper_half_mlp_decay_chain_runs_through_e64_if_not_saturated():
+    module = _load_submitter_module()
+    args = SimpleNamespace(mlp_weight_decay="1.0")
+
+    assert module.targets_for(args) == (1, 2, 4, *range(8, 65, 4))
+
+
+def test_upper_half_mlp_decay_has_distinct_registry_identity():
+    module = _load_submitter_module()
+    args = SimpleNamespace(
+        decay_embeddings=True,
+        global_sequences=512,
+        weight_decay="0.333",
+        mlp_weight_decay="1.0",
+        mlp_weight_decay_scope="upper-half",
+    )
+
+    assert module.registry_key(args) == "weightTyingMlpDecaySequentialRuns"
+    assert module.sequential_run_id(args) == (
+        "wtseq-embwd-bs512-wd0.333-mlp-upper-half-wd1.0"
+    )
+    assert module.coordinate_run_id(args) == (
+        "drwtembwd512-lr1e-3-wd0.333-mlp-upper-half-wd1.0"
+    )

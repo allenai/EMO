@@ -21,13 +21,13 @@ def _load_submitter_module():
 
 def test_embedding_decay_has_a_distinct_canonical_trajectory():
     module = _load_submitter_module()
-    base = dict(
-        method="dynamic_repacking",
-        global_sequences=512,
-        learning_rate="1e-3",
-        weight_decay="1.0",
-        weight_tying=True,
-    )
+    base = {
+        "method": "dynamic_repacking",
+        "global_sequences": 512,
+        "learning_rate": "1e-3",
+        "weight_decay": "1.0",
+        "weight_tying": True,
+    }
 
     zero_embedding_wd = module.trajectory_output(
         SimpleNamespace(**base, decay_embeddings=False)
@@ -40,3 +40,23 @@ def test_embedding_decay_has_a_distinct_canonical_trajectory():
     assert global_embedding_wd.endswith("/bs512_dr_wt_embwd_lr1e-3_wd1.0")
     assert module.method_key("dynamic_repacking", 512, True, False) == "drwt512"
     assert module.method_key("dynamic_repacking", 512, True, True) == "drwtembwd512"
+
+
+def test_upper_half_mlp_decay_has_a_distinct_canonical_trajectory():
+    module = _load_submitter_module()
+    args = SimpleNamespace(
+        method="dynamic_repacking",
+        global_sequences=64,
+        learning_rate="1e-3",
+        weight_decay="0.3",
+        weight_tying=True,
+        decay_embeddings=True,
+        mlp_weight_decay="1.0",
+        mlp_weight_decay_scope="upper-half",
+    )
+
+    output = module.trajectory_output(args)
+
+    assert output.endswith(
+        "/bs64_dr_wt_embwd_mlp_upper_half_wd1.0_lr1e-3_wd0.3"
+    )

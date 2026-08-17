@@ -13,7 +13,7 @@ import monitor_dense_1b_weight_tying as common
 
 REPORT_PATH = Path("reports/0802/data/wsd_data_loader_1b.json")
 REPORT_JS_PATH = REPORT_PATH.with_suffix(".js")
-EPOCH_PATTERN = r"(12|16|20|24|1|2|4|8)\b"
+EPOCH_PATTERN = r"([0-9]+)\b"
 STAGE_START = re.compile(r"SEQUENTIAL_WT_STAGE_START epoch=" + EPOCH_PATTERN)
 STAGE_COMPLETE = re.compile(r"SEQUENTIAL_WT_STAGE_COMPLETE epoch=" + EPOCH_PATTERN)
 SATURATED = re.compile(r"SEQUENTIAL_EMBWD_SATURATED epoch=" + EPOCH_PATTERN)
@@ -91,11 +91,13 @@ def parse_stage(epoch: int, section: str) -> dict[str, Any]:
 
 
 def refresh(report: dict[str, Any], sequential: dict[str, Any]) -> str:
-    mode = "_dr_wt_embwd" if sequential.get("decayEmbeddings") else "_dr_wt"
-    canonical_output = (
-        "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/"
-        f"bs{sequential['batchSequences']}{mode}_lr1e-3_wd{sequential['wd']}"
-    )
+    canonical_output = sequential.get("canonicalOutput")
+    if not canonical_output:
+        mode = "_dr_wt_embwd" if sequential.get("decayEmbeddings") else "_dr_wt"
+        canonical_output = (
+            "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/"
+            f"bs{sequential['batchSequences']}{mode}_lr1e-3_wd{sequential['wd']}"
+        )
     sequential["canonicalOutput"] = canonical_output
     sequential["mergeAfterCompletion"] = sequential["output"] != canonical_output
     experiment_id = sequential["experiment"]
@@ -208,7 +210,7 @@ def refresh(report: dict[str, Any], sequential: dict[str, Any]) -> str:
                 "reason"
             ] = f"Persistent chain failed during E{current}; completed earlier stages remain valid."
     elif state == "complete":
-        sequential["reason"] = "Persistent E1->E24 chain completed all eight evaluated stages."
+        sequential["reason"] = "Persistent chain completed all registered evaluated stages."
         if sequential.get("mergeAfterCompletion"):
             sequential.setdefault("mergeStatus", "pending_canonical_merge")
 
@@ -240,7 +242,16 @@ def main() -> None:
             "expected either zero or three registered embedding-decay chains, found "
             f"{len(embedding_decay_records)}"
         )
-    messages = [refresh(report, record) for record in records + embedding_decay_records]
+    mlp_decay_records = report.get("weightTyingMlpDecaySequentialRuns") or []
+    if mlp_decay_records and len(mlp_decay_records) != 2:
+        raise RuntimeError(
+            "expected either zero or two registered MLP-decay chains, found "
+            f"{len(mlp_decay_records)}"
+        )
+    messages = [
+        refresh(report, record)
+        for record in records + embedding_decay_records + mlp_decay_records
+    ]
     write_report(report)
     print("\n".join(messages))
 

@@ -182,12 +182,22 @@ def canonical_number(value: str) -> str:
     return str(number.normalize())
 
 
+def mlp_weight_decay_tag(args: argparse.Namespace) -> str:
+    weight_decay = getattr(args, "mlp_weight_decay", None)
+    if weight_decay is None:
+        return ""
+    scope = getattr(args, "mlp_weight_decay_scope", "all")
+    scope_tag = scope.replace("-", "_")
+    return f"_mlp_{scope_tag}_wd{canonical_number(str(weight_decay))}"
+
+
 def trajectory_output(args: argparse.Namespace) -> str:
     mode = "_dr" if args.method == "dynamic_repacking" else ""
     if args.weight_tying:
         mode += "_wt"
     if getattr(args, "decay_embeddings", False):
         mode += "_embwd"
+    mode += mlp_weight_decay_tag(args)
     return (
         f"{MODEL_ROOT}/bs{args.global_sequences}{mode}_"
         f"lr{canonical_number(args.learning_rate)}_wd{canonical_number(args.weight_decay)}"
@@ -198,6 +208,7 @@ def original_trajectory_output(args: argparse.Namespace) -> str:
     tied = "_wt" if args.weight_tying else ""
     if getattr(args, "decay_embeddings", False):
         tied += "_embwd"
+    tied += mlp_weight_decay_tag(args)
     return (
         f"{MODEL_ROOT}/bs{args.global_sequences}{tied}_"
         f"lr{canonical_number(args.learning_rate)}_wd{canonical_number(args.weight_decay)}"
@@ -462,6 +473,20 @@ def audit_source_spec(spec: dict[str, Any], args: argparse.Namespace) -> tuple[s
         args, "decay_embeddings", False
     ):
         raise SystemExit("continuation source embedding-WD policy does not exactly match")
+    source_mlp_wd = values_for(arguments, "--mlp-weight-decay=")
+    source_mlp_scope = values_for(arguments, "--mlp-weight-decay-scope=")
+    requested_mlp_wd = getattr(args, "mlp_weight_decay", None)
+    requested_mlp_scope = getattr(args, "mlp_weight_decay_scope", "all")
+    if args.target_epoch > 1:
+        if requested_mlp_wd is None:
+            if source_mlp_wd or source_mlp_scope:
+                raise SystemExit("continuation source unexpectedly has an MLP WD override")
+        elif (
+            len(source_mlp_wd) != 1
+            or numeric(source_mlp_wd[0]) != numeric(requested_mlp_wd)
+            or source_mlp_scope != [requested_mlp_scope]
+        ):
+            raise SystemExit("continuation source MLP WD policy does not exactly match")
     if args.target_epoch > 1 and numeric(
         unique_value(arguments, "--train_module.optim.weight_decay=")
     ) != numeric(args.weight_decay):
@@ -504,6 +529,7 @@ def build_spec(
         mode_tag += "_wt"
     if getattr(args, "decay_embeddings", False):
         mode_tag += "_embwd"
+    mode_tag += mlp_weight_decay_tag(args)
     lr_tag = args.learning_rate.replace(".", "p")
     wd_tag = args.weight_decay.replace(".", "p")
     run_name = (
@@ -522,6 +548,8 @@ def build_spec(
             "--no-data-shuffle",
             "--decay-embeddings",
         }
+        and not value.startswith("--mlp-weight-decay=")
+        and not value.startswith("--mlp-weight-decay-scope=")
         and not value.startswith("--trainer.callbacks.checkpointer.save_interval=")
         and not value.startswith("--trainer.callbacks.checkpointer.ephemeral_save_interval=")
         and not value.startswith("--trainer.callbacks.downstream_evaluator.")
@@ -601,6 +629,13 @@ def build_spec(
         replacements += (("--model.tie_embeddings=", "--model.tie_embeddings=true"),)
     if getattr(args, "decay_embeddings", False):
         train_args.append("--decay-embeddings")
+    if getattr(args, "mlp_weight_decay", None) is not None:
+        train_args.extend(
+            [
+                f"--mlp-weight-decay={args.mlp_weight_decay}",
+                f"--mlp-weight-decay-scope={args.mlp_weight_decay_scope}",
+            ]
+        )
     if args.target_epoch > 1:
         replacements += (
             ("--force_exact_trainer_load_path=", "--force_exact_trainer_load_path=true"),
