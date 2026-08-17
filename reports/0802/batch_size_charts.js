@@ -218,11 +218,21 @@
   series.forEach(s=>legend.insertAdjacentHTML('beforeend',`<label><span class="dot" style="background:${colors[s]}"></span>${s}</label>`));
   if(Object.keys(suspiciousHealth).length)legend.insertAdjacentHTML('beforeend','<label><span class="health-key suspicious"></span>Suspicious / monitor</label>');
   legend.insertAdjacentHTML('beforeend','<label><span class="health-key unhealthy"></span>Unhealthy / policy-inadmissible</label>');
-  const avg8Acc=r=>{const q=['arc_challenge','arc_easy','csqa','acc','openbookqa','piqa','socialiqa','winogrande'].map(x=>x==='acc'?r.acc:r.downstream?.[x]).filter(Number.isFinite);return q.length===8?q.reduce((a,b)=>a+b,0)/8:null;};
+  const hellaswagAcc=r=>r.acc??r.hellaswagAccuracy??r.downstream?.hellaswag??null;
+  const hellaswagBpb=r=>r.bpb??r.hellaswagBpb??r.downstreamBpb?.hellaswag??null;
+  const downstreamTasks=['arc_challenge','arc_easy','csqa','hellaswag','openbookqa','piqa','socialiqa','winogrande'];
+  const averageCompleteMetrics=metrics=>{
+    const completeMetrics=metrics.filter(Number.isFinite);
+    return completeMetrics.length===8?completeMetrics.reduce((sum,metric)=>sum+metric,0)/8:null;
+  };
+  const avg8Acc=r=>averageCompleteMetrics(downstreamTasks.map(task=>task==='hellaswag'?hellaswagAcc(r):r.downstream?.[task]));
+  const avg8Bpb=r=>r.avg8Bpb??averageCompleteMetrics(downstreamTasks.map(task=>task==='hellaswag'?hellaswagBpb(r):r.downstreamBpb?.[task]))??baseline.avg8BpbByWandb?.[r.wandb]??null;
   const value=(r,k)=>{
     if(k==='validation')return metric(r);
+    if(k==='acc')return hellaswagAcc(r);
+    if(k==='bpb')return hellaswagBpb(r);
     if(k==='avg8_acc')return avg8Acc(r);
-    if(k==='avg8_bpb')return r.avg8Bpb??baseline.avg8BpbByWandb?.[r.wandb]??null;
+    if(k==='avg8_bpb')return avg8Bpb(r);
     return r[k];
   };
   const metrics=[['validation','DCLM validation CE'],['bpb','HellaSwag non-v2 BPB'],['acc','HellaSwag length-normalized accuracy'],['avg8_bpb','8-task average BPB · no BoolQ'],['avg8_acc','8-task average accuracy · no BoolQ']];
