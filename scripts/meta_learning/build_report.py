@@ -125,6 +125,106 @@ def _gap(evals: dict) -> float:
     return statistics.mean(p32) - statistics.mean(full)
 
 
+# Fixed arm order + colors (dataviz reference categorical palette, light mode).
+ARM_COLORS = [
+    ("vanilla", "#2a78d6"),
+    ("sametok λ=0 (degenerate)", "#eb6834"),
+    ("sametok_ws", "#1baf7a"),
+    ("heldout_ws", "#eda100"),
+    ("sametok_ws_lam05", "#e87ba4"),
+    ("rpool (canceled)", "#008300"),
+    ("heldout_ws_lam05", "#4a3aa7"),
+    ("seq_ws", "#e34948"),
+]
+
+
+def build_curves_tab(curves: dict) -> tuple:
+    """Interactive W&B curve explorer (uPlot; display pattern per scripts/models_v2). Returns
+    (tab_html, payload_json) — payload '' if no curves cached."""
+    if not curves:
+        return card("results", "Live curves", '<p class="missing">[no curves.json cached]</p>'), ""
+    arms = [(a, c) for a, c in ARM_COLORS if a in curves]
+    legend = " &middot; ".join(
+        f'<span style="color:{c};font-weight:600">{html.escape(a)}</span>'
+        f' <span class="note">({curves[a]["state"]}, step {curves[a]["last_step"]})</span>'
+        for a, c in arms
+    )
+    body = f"""
+<p>Every arm's W&B history on a shared tokens axis (renamed/crashed runs stitched per arm;
+train-side series EMA-smoothed, &alpha;=0.85). Click legend entries to toggle arms; drag to
+zoom, double-click to reset. Metrics: <b>train CE</b> (each arm's own training loss — NOT
+directly comparable across arms: vanilla's is random-pool, ws arms' is their outer pass,
+sequential's is its second step); <b>inner CE</b> (the selective-pass loss at &theta; — leaning
+transients show as inner&#8811;outer); <b>eval CE (full)</b> and <b>gap</b> (pool32&minus;full,
+the selective-inference metric; sparse points every 500 steps).</p>
+<div id="mlcurves">
+  <div style="margin:8px 0">
+    <label><input type="radio" name="mlmetric" value="ce" checked> train CE</label>&nbsp;&nbsp;
+    <label><input type="radio" name="mlmetric" value="ice"> inner CE</label>&nbsp;&nbsp;
+    <label><input type="radio" name="mlmetric" value="evalfull"> eval CE (full)</label>&nbsp;&nbsp;
+    <label><input type="radio" name="mlmetric" value="gap"> gap (pool32&minus;full)</label>&nbsp;&nbsp;
+    <button class="mllog" type="button">toggle log y</button>
+  </div>
+  <div class="chart" style="min-height:440px"></div>
+  <p class="note">{legend}</p>
+</div>"""
+    payload = json.dumps(
+        {
+            "arms": [
+                {
+                    "name": a,
+                    "color": c,
+                    "ce": [curves[a]["ce_x"], curves[a]["ce_y"]],
+                    "ice": [curves[a]["ice_x"], curves[a]["ice_y"]],
+                    "evalfull": [curves[a]["eval_x"], curves[a]["eval_full"]],
+                    "gap": [curves[a]["eval_x"], curves[a]["eval_gap"]],
+                }
+                for a, c in arms
+            ]
+        }
+    )
+    return card("results", "Live curves (all arms, pulled from W&B)", body), payload
+
+
+CURVES_JS = """
+(function(){
+  const DATA = __MLCURVES__;
+  const root = document.getElementById('mlcurves');
+  if (!root || !DATA.arms) return;
+  const el = root.querySelector('.chart');
+  let plot = null, metric = 'ce', logy = false;
+  function draw(){
+    if (plot) { plot.destroy(); plot = null; }
+    el.innerHTML = '';
+    const armSeries = DATA.arms.filter(a => a[metric] && a[metric][0].length > 0);
+    if (!armSeries.length) { el.innerHTML = '<p class="missing">[no data for this metric yet]</p>'; return; }
+    const xs = [...new Set([].concat(...armSeries.map(a => a[metric][0])))].sort((p,q)=>p-q);
+    const idx = new Map(xs.map((x,i)=>[x,i]));
+    const cols = armSeries.map(a => {
+      const y = new Array(xs.length).fill(null);
+      a[metric][0].forEach((x,i)=>{ y[idx.get(x)] = a[metric][1][i]; });
+      return y;
+    });
+    const w = Math.min(el.clientWidth || 960, 1100);
+    const opts = { width: w, height: 430,
+      scales: { x: { time: false }, y: { distr: (logy && metric !== 'gap') ? 3 : 1 } },
+      cursor: { drag: { x: true, y: true, uni: 10 }, focus: { prox: 30 } },
+      axes: [ { label: 'tokens (B)' }, { label: {ce:'train CE',ice:'inner (selective) CE',evalfull:'held-out CE, full pool',gap:'pool32 - full CE (nats)'}[metric] } ],
+      series: [ { value: (u,v)=>v==null?'--':(+v).toFixed(2) } ].concat(armSeries.map(a => ({
+        label: a.name, stroke: a.color, width: 1.6, spanGaps: true,
+        points: { show: metric === 'gap' || metric === 'evalfull', size: 6 },
+        value: (u,v)=>v==null?'--':(+v).toFixed(4) }))) };
+    plot = new uPlot(opts, [xs].concat(cols), el);
+    el.addEventListener('dblclick', () => plot && plot.setScale('x', {min: xs[0], max: xs[xs.length-1]}));
+  }
+  root.querySelectorAll('input[name=mlmetric]').forEach(r =>
+    r.addEventListener('change', e => { metric = e.target.value; draw(); }));
+  root.querySelector('.mllog').addEventListener('click', () => { logy = !logy; draw(); });
+  draw();
+})();
+"""
+
+
 def build_overview(data: dict) -> str:
     goal = card(
         "goal",
@@ -149,42 +249,61 @@ def build_overview(data: dict) -> str:
     for name, desc, note in [
         (
             "meta128_vanilla_100b",
-            "vanilla EMO-128e baseline",
-            "paused at 31.5B to free nodes; resumable from ephemeral ckpt",
+            "vanilla EMO-128e baseline (random pools 8\u2013128)",
+            "DONE past 20B (paused at 31.5B); 10B/20B fixed ckpts; gap \u22120.04",
         ),
         (
             "meta128_sametok_100b",
-            "same-tokens, &lambda;=0, ALL-expert outer update",
-            "STOPPED — degenerate (see 'First launch')",
+            "same-tokens FOMAML, \u03bb=0, ALL-expert outer update",
+            "STOPPED \u2014 degenerate: gap +0.71 (see Negative results)",
         ),
         (
-            "meta128_heldout_100b",
-            "heldout, &lambda;=0, ALL-expert outer update",
-            "STOPPED before start (same flaw)",
+            "meta128_sametok_ws",
+            "same-tokens FOMAML, working-set outer, \u03bb=0",
+            "FINISHED 20B; gap stuck ~+0.31; meta term extinguished by bf16 late in the run",
         ),
         (
-            "meta128_sametok_ws_100b",
-            "same-tokens, working-set outer update, &alpha;=3e-1",
-            "corrected arm — live",
+            "meta128_heldout_ws",
+            "cross-data (heldout) FOMAML, working-set, \u03bb=0",
+            "FINISHED 20B; gap ~+0.33; leaning-immune but half the update signal",
         ),
         (
-            "meta128_heldout_ws_100b",
-            "heldout, working-set outer update, &alpha;=3e-1",
-            "corrected arm — live",
+            "meta128_sametok_ws_lam05",
+            "same-tokens ws + \u03bb=0.5 anchor (+LB on inner)",
+            "TRAINING; gap \u2248+0.01 and full CE ahead of vanilla at matched steps",
+        ),
+        (
+            "meta128_sametok_ws_rpool",
+            "ws + randomized outer pool [8,128]",
+            "CANCELED per user at ~step 1.1k (deep leaning transient; unproven)",
+        ),
+        (
+            "meta128_heldout_ws_lam05",
+            "heldout ws + \u03bb=0.5 anchor",
+            "QUEUED \u2014 anchored cross-data meta; both halves carry update signal",
+        ),
+        (
+            "meta128_seq_ws",
+            "SEQUENTIAL ablation: committed selective step \u2192 ws-masked full step, same tokens",
+            "QUEUED \u2014 isolates what the FOMAML probe adds; NOTE 2\u00d7 optimizer updates per token",
         ),
     ]:
-        d = data.get(name.replace("_ws_", "_ws_"), data.get(name, {}))
         d = data.get(name, {})
-        step = d.get("step", "—")
-        state = d.get("state", "queued/pending")
-        rows.append([f"<code>{name}</code>", desc, state, step, note])
+        rows.append(
+            [f"<code>{name}</code>", desc, d.get("state", "\u2014"), d.get("step", "\u2014"), note]
+        )
     status = card(
         "results",
         "Arms",
         table(["run", "objective", "state", "last step", "notes"], rows)
-        + "<p class='note'>All arms: 8 nodes &times; 8 H100, 100B tokens (23,842 steps), OLMoE-mix-0824, "
-        "lr 2e-3 flat WSD, lb 1e-1, pool min=8/max=128/eval=128, W&amp;B project "
-        "<code>emo-extension</code> tag <code>meta_learning</code>.</p>",
+        + "<p class='note'>All arms: 8 nodes \u00d7 8 H100, <b>20B tokens</b> (4,768 steps; budget cut "
+        "2026-08-17 from the original 100B), fixed checkpoints at 10B/20B (steps 2384/4768), "
+        "OLMoE-mix-0824, lr 2e-3 flat WSD (warmup 2000), lb 1e-1, pool min=8/max=128/eval=128, "
+        "W&amp;B project <code>emo-extension</code> tag <code>meta_learning</code>. Phase 2 = "
+        "k=32-CPT-style cluster-wise selective CPT on tokens 20B\u201340B; the document window is "
+        "already extracted (18.3M docs / 36.9B doc-tokens in "
+        "<code>meta_learning/data/meta128_20B-40B/</code>). The sequential arm counts one trainer "
+        "step per token batch but takes two real optimizer updates inside it.</p>",
     )
     metric = card(
         "method",
@@ -503,7 +622,59 @@ def build_first_launch(data: dict) -> str:
         "transfer (the k=32 CPT protocol) are different quantities — the pilot's go/no-go uses "
         "the gap, the real verdict needs the CPT protocol on finished checkpoints.</p>"
     )
-    return card("results", "First launch: a documented negative result", body)
+    later = card(
+        "results",
+        "Later negative results (\u03bb=0 working-set arms, rpool, bf16 extinction)",
+        "<ul>"
+        "<li><b>\u03bb=0 working-set arms never closed the selective gap.</b> sametok_ws and "
+        "heldout_ws trained stably to 20B, but their pool32\u2212full gap sat at <b>+0.31</b> and "
+        "<b>+0.33</b> from the first eval to the last, vs vanilla's \u22120.04. Diagnosis: the "
+        "working-set masking constrains WHERE gradients land, but at \u03bb=0 the effective "
+        "objective never computes a restricted forward \u2014 update sparsity is not "
+        "selective-function training. Vanilla's random pools are structured dropout over experts; "
+        "removing them from the objective forfeits deletion-robustness. (Full-model CE: sametok_ws "
+        "trailed vanilla by ~0.09 at matched steps despite ~2.4\u00d7 compute; heldout_ws by ~0.36 "
+        "with half the update signal.)</li>"
+        "<li><b>The pseudo-step self-extinguishes under bf16.</b> With \u03b1=3e-1/clip=10 the "
+        "measured bf16 survival cosine started at ~0.96 (delta/weight ~1e-3), but as the models "
+        "improved their inner gradients shrank: by 20B delta/weight had decayed to ~6e-6 and "
+        "survival to ~0.14\u20130.20 \u2014 the meta term effectively vanished for the second half "
+        "of both \u03bb=0 ws runs. Any fixed \u03b1 eventually sinks below the bf16 floor; the "
+        "principled fix (delta-injection after the cast) remains unimplemented.</li>"
+        "<li><b>rpool (randomized outer pool) was canceled unproven.</b> From scratch it entered a "
+        "deep pseudo-step-leaning transient (inner CE 27 vs outer 3.5 at step ~900; evals at "
+        "\u03b8 ~20 nats). The train-side spread collapsed sharply at ~step 1050 (27\u21923.4), "
+        "but the run was canceled before an eval could confirm recovery, to free nodes.</li>"
+        "<li><b>Leaning transients are an early-training phenomenon of large probes.</b> Both "
+        "same-tokens \u03b1=3e-1 from-scratch starts (sametok_ws first launch, rpool) leaned on "
+        "the pseudo-step early (train CE at \u03b8\u2032 fine, everything at \u03b8 bad), and "
+        "sametok_ws self-corrected by ~step 1000. Anchored (\u03bb&gt;0) and cross-data (heldout) "
+        "objectives are immune by construction.</li>"
+        "</ul>",
+    )
+    levers = card(
+        "results",
+        "The levers: \u03bb anchor works (early); sequential ablation launched",
+        "<ul>"
+        "<li><b>sametok_ws_lam05</b> (\u03bb=0.5 + LB on inner): the standout so far \u2014 gap "
+        "<b>+0.023 \u2192 +0.010</b> at steps 500/1000 (vs +0.31 for \u03bb=0) AND full-model CE "
+        "<i>ahead</i> of vanilla at matched steps (3.99 vs 4.19 @500; 3.36 vs 3.41 @1000). Inner "
+        "CE glued to outer CE (no leaning). Caveats: matched steps \u2260 matched compute "
+        "(~2.4\u00d7), and its delta/weight is also decaying toward the bf16 floor (~2e-5, "
+        "survival 0.46 at step ~1650) \u2014 the \u03bb term, not the probe, may be doing the "
+        "work; the sequential ablation tests exactly this.</li>"
+        "<li><b>heldout_ws_lam05</b>: anchored cross-data variant \u2014 \u03bb term restores "
+        "restricted-forward training and gives the inner half real update signal (fixing "
+        "heldout's half-batch weakness); queued.</li>"
+        "<li><b>seq_ws (sequential ablation)</b>: per token batch, a COMMITTED ordinary selective "
+        "step, then a ws-masked full-routing step on the same tokens \u2014 same masking, same "
+        "aux losses, no probe, no evaluation-at-\u03b8\u2032. If it matches sametok_ws_lam05, "
+        "the FOMAML probe adds nothing beyond sequential training at this scale. Read with care: "
+        "it takes 2\u00d7 real optimizer updates per token (9,536 over 20B) though the step "
+        "counter stays token-aligned (4,768).</li>"
+        "</ul>",
+    )
+    return card("results", "First launch: a documented negative result", body) + later + levers
 
 
 def build_verification() -> str:
@@ -588,10 +759,12 @@ def build_verification() -> str:
 def build_status(data: dict) -> str:
     rows = []
     for name in (
-        "meta128_sametok_ws_100b",
-        "meta128_heldout_ws_100b",
+        "meta128_sametok_ws_lam05",
+        "meta128_heldout_ws_lam05",
+        "meta128_seq_ws",
+        "meta128_sametok_ws",
+        "meta128_heldout_ws",
         "meta128_vanilla_100b",
-        "meta128_sametok_100b",
     ):
         d = data.get(name, {})
         rows.append(
@@ -711,16 +884,24 @@ show(location.hash && document.getElementById(location.hash.slice(1)) ? location
 def main():
     data_path = OUT / "report_data.json"
     data = json.load(open(data_path)) if data_path.exists() else {}
+    curves_path = OUT / "curves.json"
+    curves = json.load(open(curves_path)) if curves_path.exists() else {}
+    curves_html, curves_payload = build_curves_tab(curves)
 
     tabs = [
         ("overview", "Overview", build_overview(data)),
+        ("curves", "Live curves", curves_html),
         ("algorithm", "Algorithm", build_algorithm()),
         ("implementation", "Implementation", build_implementation()),
         ("bf16", "bf16 quantization", build_bf16(data)),
-        ("first-launch", "First launch (negative result)", build_first_launch(data)),
+        ("negative-results", "Negative results", build_first_launch(data)),
         ("verification", "Verification", build_verification()),
         ("status", "Status", build_status(data)),
     ]
+    vendor = ROOT / "scripts/models_v2/vendor"
+    uplot_css = (vendor / "uPlot.min.css").read_text() if curves_payload else ""
+    uplot_js = (vendor / "uPlot.iife.min.js").read_text() if curves_payload else ""
+    curves_js = CURVES_JS.replace("__MLCURVES__", curves_payload) if curves_payload else ""
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
     sections = "".join(f'<section class="tab" id="{tid}">{body}</section>' for tid, _, body in tabs)
 
@@ -731,6 +912,7 @@ def main():
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EMO meta_learning: FOMAML pretraining for selective-expert update transfer</title>
 <style>{CSS}</style>
+<style>{uplot_css}</style>
 </head>
 <body>
 <header>
@@ -743,7 +925,9 @@ generated by scripts/meta_learning/build_report.py</p>
 </header>
 <div class="topbar"><nav>{nav}</nav><div id="subnav"></div></div>
 <main>{sections}</main>
+<script>{uplot_js}</script>
 <script>{JS}</script>
+<script>{curves_js}</script>
 </body>
 </html>
 """

@@ -31,8 +31,11 @@ TOKENS_PER_STEP = 1024 * 4096
 RUNS = {
     "meta128_vanilla_100b": "vanilla EMO-128e (baseline)",
     "meta128_sametok_100b": "same-tokens, λ=0 all-experts (stopped)",
-    "meta128_sametok_ws_100b": "same-tokens, working-set (corrected)",
-    "meta128_heldout_ws_100b": "heldout, working-set (corrected)",
+    "meta128_sametok_ws": "same-tokens, working-set λ=0",
+    "meta128_heldout_ws": "heldout, working-set λ=0",
+    "meta128_sametok_ws_lam05": "same-tokens ws + λ=0.5",
+    "meta128_heldout_ws_lam05": "heldout ws + λ=0.5",
+    "meta128_seq_ws": "sequential ablation",
 }
 
 
@@ -95,7 +98,7 @@ def fig_ce(data):
     colors = {
         "meta128_vanilla_100b": BLUE,
         "meta128_sametok_100b": ORANGE,
-        "meta128_sametok_ws_100b": AQUA,
+        "meta128_sametok_ws": AQUA,
     }
     for name, c in colors.items():
         if name not in data:
@@ -134,7 +137,12 @@ def fig_gap(data):
     """Per-label dumbbells: full-pool CE vs pool-32 CE, one panel per run with eval data."""
     panels = [
         (n, RUNS[n])
-        for n in ("meta128_vanilla_100b", "meta128_sametok_100b", "meta128_sametok_ws_100b")
+        for n in (
+            "meta128_vanilla_100b",
+            "meta128_sametok_100b",
+            "meta128_sametok_ws",
+            "meta128_sametok_ws_lam05",
+        )
         if n in data and any("/lm-full/" in k for k in data[n]["evals"])
     ]
     if not panels:
@@ -222,12 +230,99 @@ def fig_bf16():
     plt.close(fig)
 
 
+# ---------------------------------------------------------------------------
+# Interactive curves payload (uPlot explorer; display pattern per models_v2)
+# ---------------------------------------------------------------------------
+
+# Arm -> W&B run names in chronological order (renames/crashes split some arms
+# across runs; histories are stitched, newer run wins on overlapping steps).
+CURVE_ARMS = {
+    "vanilla": ["meta128_vanilla_100b"],
+    "sametok λ=0 (degenerate)": ["meta128_sametok_100b"],
+    "sametok_ws": ["meta128_sametok_ws_100b", "meta128_sametok_ws"],
+    "heldout_ws": ["meta128_heldout_ws_100b", "meta128_heldout_ws"],
+    "sametok_ws_lam05": ["meta128_sametok_ws_lam05"],
+    "rpool (canceled)": ["meta128_sametok_ws_rpool"],
+    "heldout_ws_lam05": ["meta128_heldout_ws_lam05"],
+    "seq_ws": ["meta128_seq_ws"],
+}
+EMA = 0.85
+
+
+def _smooth(pairs):
+    out, m = [], None
+    for st, v in pairs:
+        m = v if m is None else EMA * m + (1 - EMA) * v
+        out.append((st, round(m, 4)))
+    return out
+
+
+def fetch_curves():
+    api = wandb.Api(timeout=60)
+    arms = {}
+    for arm, names in CURVE_ARMS.items():
+        ce, ice, evals = {}, {}, {}
+        state, last = None, 0
+        for name in names:
+            runs = sorted(
+                api.runs("ryanyxw/emo-extension", {"display_name": name}),
+                key=lambda x: x.created_at,
+            )
+            if not runs:
+                continue
+            r = runs[-1]
+            state, last = r.state, max(last, r.summary.get("_step", 0) or 0)
+            # NOTE: history(keys=[...]) only returns rows where ALL keys are non-null, so
+            # fetch each metric separately (vanilla has no inner-CE metric at all).
+            for key, dest in (("train/CE loss", ce), ("train/meta inner CE loss", ice)):
+                for row in r.history(keys=[key], samples=800, pandas=False):
+                    st, v = row.get("_step"), row.get(key)
+                    if st is not None and v is not None:
+                        dest[int(st)] = float(v)
+            kf = [
+                k
+                for k in r.summary.keys()
+                if k.startswith("eval/lm-full/") and k.endswith("CE loss")
+            ]
+            kp = [
+                k
+                for k in r.summary.keys()
+                if k.startswith("eval/lm-pool32/") and k.endswith("CE loss")
+            ]
+            for row in r.scan_history(keys=["_step"] + kf + kp, page_size=1000):
+                f = [v for k, v in row.items() if k in kf and isinstance(v, (int, float))]
+                pp = [v for k, v in row.items() if k in kp and isinstance(v, (int, float))]
+                if f and pp:
+                    import statistics as _st
+
+                    evals[int(row["_step"])] = (round(_st.mean(f), 4), round(_st.mean(pp), 4))
+        if not ce:
+            continue
+        sce = _smooth(sorted(ce.items()))
+        sice = _smooth(sorted(ice.items())) if ice else []
+        arms[arm] = {
+            "state": state,
+            "last_step": last,
+            "ce_x": [round(st * TOKENS_PER_STEP / 1e9, 4) for st, _ in sce],
+            "ce_y": [v for _, v in sce],
+            "ice_x": [round(st * TOKENS_PER_STEP / 1e9, 4) for st, _ in sice],
+            "ice_y": [v for _, v in sice],
+            "eval_x": [round(st * TOKENS_PER_STEP / 1e9, 4) for st in sorted(evals)],
+            "eval_full": [evals[st][0] for st in sorted(evals)],
+            "eval_p32": [evals[st][1] for st in sorted(evals)],
+            "eval_gap": [round(evals[st][1] - evals[st][0], 4) for st in sorted(evals)],
+        }
+        print(f"curves: {arm} ({state}, last step {last}, {len(sce)} ce pts, {len(evals)} evals)")
+    (OUT / "curves.json").write_text(json.dumps(arms))
+
+
 def main():
     data = fetch()
     (OUT / "report_data.json").write_text(json.dumps(data, indent=1, default=str))
     fig_ce(data)
     fig_gap(data)
     fig_bf16()
+    fetch_curves()
     print("figs:", sorted(p.name for p in FIGS.glob("*.png")))
     for n, d in data.items():
         print(n, d["state"], "step", d["step"], "evals:", len(d["evals"]), d["extras"])
