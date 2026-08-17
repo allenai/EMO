@@ -96,6 +96,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--name", default=DEFAULT_NAME)
     parser.add_argument("--workspace", default=WORKSPACE)
     parser.add_argument("--priority", default="urgent")
+    parser.add_argument(
+        "--only-group",
+        help="Restrict planning/submission to one exact group ID such as bs1024-dr.",
+    )
     parser.add_argument("--report", type=Path, default=REPORT_PATH)
     parser.add_argument(
         "--replace-deleted-experiment",
@@ -166,6 +170,8 @@ def existing_campaign_checkpoints(
     checkpoints: set[str] = set()
     for campaign in report.get("downstreamEvaluationCampaigns", []):
         if campaign.get("experiment") in ignored_experiments:
+            continue
+        if campaign.get("status") not in ACTIVE:
             continue
         for task in campaign.get("tasks", []):
             if task.get("status") in ACTIVE | {"complete"} and task.get("checkpoint"):
@@ -762,6 +768,8 @@ def main() -> None:
         if len(matches) != 1 or matches[0].get("status") != "failed":
             raise RuntimeError("--supersede-experiment must identify exactly one failed campaign")
     items, no_checkpoint = candidates(report, ignored_experiments=ignored)
+    if args.only_group:
+        items = [item for item in items if group_id(item) == args.only_group]
     if args.plan:
         print_plan(items, no_checkpoint)
         return
