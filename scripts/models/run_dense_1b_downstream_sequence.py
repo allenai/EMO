@@ -14,6 +14,7 @@ from evaluate_dense_1b_missing_downstream import evaluation_arguments, replace_a
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--group-id")
     args = parser.parse_args()
     manifest = json.loads(args.manifest.read_text())
     base_arguments = [
@@ -23,7 +24,12 @@ def main() -> None:
         and not argument.startswith("--mlp-weight-decay=")
         and not argument.startswith("--mlp-weight-decay-scope=")
     ]
-    for item in manifest["items"]:
+    items = manifest["items"]
+    if args.group_id:
+        items = [item for item in items if item["groupId"] == args.group_id]
+        if not items:
+            raise RuntimeError(f"manifest contains no downstream group {args.group_id}")
+    for item in items:
         name = task_name(item)
         arguments = replace_argument(
             base_arguments,

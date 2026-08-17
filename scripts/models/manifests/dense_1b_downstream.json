@@ -49,7 +49,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e2_lr1e-3_wd0.3_warmup384_bs64-dr-e2-lr1e3-wd0p3-r01/step7629",
-      "sourceExperiment": "01KZWDBW5NFCBJY88KQQ0E7FR2"
+      "sourceExperiment": "01KZWDBW5NFCBJY88KQQ0E7FR2",
+      "groupId": "bs64-dr"
     },
     {
       "runId": "dr64-lr1e-3-wd1.0",
@@ -60,7 +61,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0/step7630",
-      "sourceExperiment": "01M018DAMED87RHQZ882NEN9QX"
+      "sourceExperiment": "01M018DAMED87RHQZ882NEN9QX",
+      "groupId": "bs64-dr"
     },
     {
       "runId": "dr64-lr1e-3-wd0.3",
@@ -71,7 +73,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_dr_e4_lr1e-3_wd0.3_warmup384_bs64-dr-e4-lr1e3-wd0p3-r02/step15259",
-      "sourceExperiment": "01KZWRC6DTEZKHFBMATZ63ZAAZ"
+      "sourceExperiment": "01KZWRC6DTEZKHFBMATZ63ZAAZ",
+      "groupId": "bs64-dr"
     },
     {
       "runId": "dr64-lr1e-3-wd1.0",
@@ -82,7 +85,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0/step15259",
-      "sourceExperiment": "01M01DV3H3Z4S0EPPNPM5DDN28"
+      "sourceExperiment": "01M01DV3H3Z4S0EPPNPM5DDN28",
+      "groupId": "bs64-dr"
     },
     {
       "runId": "dr64-lr1e-3-wd0.3",
@@ -93,7 +97,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step30518",
-      "sourceExperiment": "01KZXZG32RYGW2HBB31HWTGT68"
+      "sourceExperiment": "01KZXZG32RYGW2HBB31HWTGT68",
+      "groupId": "bs64-dr"
     },
     {
       "runId": "dr64-lr1e-3-wd1.0",
@@ -104,7 +109,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0/step30518",
-      "sourceExperiment": "01M01MBVZ5AT2CFBK5PFZDPRPV"
+      "sourceExperiment": "01M01MBVZ5AT2CFBK5PFZDPRPV",
+      "groupId": "bs64-dr"
     },
     {
       "runId": "dr64-lr1e-3-wd0.3",
@@ -115,7 +121,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step45777",
-      "sourceExperiment": "01KZZ0VJE9FJX8VQ9Z17GJXXCH"
+      "sourceExperiment": "01KZZ0VJE9FJX8VQ9Z17GJXXCH",
+      "groupId": "bs64-dr"
     },
     {
       "runId": "dr64-lr1e-3-wd1.0",
@@ -126,7 +133,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0/step45777",
-      "sourceExperiment": "01M021730WYSJCQ2XGAW07PTMD"
+      "sourceExperiment": "01M021730WYSJCQ2XGAW07PTMD",
+      "groupId": "bs64-dr"
     },
     {
       "runId": "dr64-lr1e-3-wd0.3",
@@ -137,7 +145,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step61036",
-      "sourceExperiment": "01KZZC6H5197N68EG9FY4M06F4"
+      "sourceExperiment": "01KZZC6H5197N68EG9FY4M06F4",
+      "groupId": "bs64-dr"
     },
     {
       "runId": "dr64-lr1e-3-wd1.0",
@@ -148,7 +157,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd1.0/step61036",
-      "sourceExperiment": "01M02Z52131XHPG1JFZEZ947EE"
+      "sourceExperiment": "01M02Z52131XHPG1JFZEZ947EE",
+      "groupId": "bs64-dr"
     },
     {
       "runId": "dr64-lr1e-3-wd0.3",
@@ -159,7 +169,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step76294",
-      "sourceExperiment": "01KZZT2G15F6Z94GWWCY0VFPBZ"
+      "sourceExperiment": "01KZZT2G15F6Z94GWWCY0VFPBZ",
+      "groupId": "bs64-dr"
     },
     {
       "runId": "dr64-lr1e-3-wd0.3",
@@ -170,7 +181,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_lr1e-3_wd0.3/step91553",
-      "sourceExperiment": "01M00G858E5CG616QTJFY5QEE4"
+      "sourceExperiment": "01M00G858E5CG616QTJFY5QEE4",
+      "groupId": "bs64-dr"
     },
     {
       "runId": "drwt64-lr1e-3-wd0.3",
@@ -181,7 +193,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step3815",
-      "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY"
+      "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
+      "groupId": "bs64-dr-wt"
     },
     {
       "runId": "drwt64-lr1e-3-wd0.3",
@@ -192,7 +205,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step7630",
-      "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY"
+      "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
+      "groupId": "bs64-dr-wt"
     },
     {
       "runId": "drwt64-lr1e-3-wd0.3",
@@ -203,7 +217,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step15259",
-      "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY"
+      "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
+      "groupId": "bs64-dr-wt"
     },
     {
       "runId": "drwt64-lr1e-3-wd0.3",
@@ -214,7 +229,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step30518",
-      "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY"
+      "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
+      "groupId": "bs64-dr-wt"
     },
     {
       "runId": "drwt64-lr1e-3-wd0.3",
@@ -225,7 +241,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step45777",
-      "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY"
+      "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
+      "groupId": "bs64-dr-wt"
     },
     {
       "runId": "drwt64-lr1e-3-wd0.3",
@@ -236,7 +253,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step61036",
-      "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY"
+      "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
+      "groupId": "bs64-dr-wt"
     },
     {
       "runId": "drwt64-lr1e-3-wd0.3",
@@ -247,7 +265,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step76294",
-      "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY"
+      "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
+      "groupId": "bs64-dr-wt"
     },
     {
       "runId": "drwt64-lr1e-3-wd0.3",
@@ -258,7 +277,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs64_dr_wt_lr1e-3_wd0.3/step91553",
-      "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY"
+      "sourceExperiment": "01M04BBVM45PNZD37551QJBHTY",
+      "groupId": "bs64-dr-wt"
     },
     {
       "runId": "drwtembwd64-lr1e-3-wd0.3",
@@ -269,7 +289,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step3815",
-      "sourceExperiment": "01M04SRK41V26GFGMS5P0VV4GX"
+      "sourceExperiment": "01M04SRK41V26GFGMS5P0VV4GX",
+      "groupId": "bs64-dr-wt-embwd"
     },
     {
       "runId": "drwtembwd64-lr1e-3-wd0.3",
@@ -280,7 +301,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step7630",
-      "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ"
+      "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
+      "groupId": "bs64-dr-wt-embwd"
     },
     {
       "runId": "drwtembwd64-lr1e-3-wd0.3",
@@ -291,7 +313,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step15259",
-      "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ"
+      "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
+      "groupId": "bs64-dr-wt-embwd"
     },
     {
       "runId": "drwtembwd64-lr1e-3-wd0.3",
@@ -302,7 +325,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step30518",
-      "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ"
+      "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
+      "groupId": "bs64-dr-wt-embwd"
     },
     {
       "runId": "drwtembwd64-lr1e-3-wd0.3",
@@ -313,7 +337,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step45777",
-      "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ"
+      "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
+      "groupId": "bs64-dr-wt-embwd"
     },
     {
       "runId": "drwtembwd64-lr1e-3-wd0.3",
@@ -324,7 +349,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step61036",
-      "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ"
+      "sourceExperiment": "01M05YRGHMH2E0GRZNH5Y6T6CJ",
+      "groupId": "bs64-dr-wt-embwd"
     },
     {
       "runId": "dr128-lr1e-3-wd0.3",
@@ -335,7 +361,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step3815",
-      "sourceExperiment": "01M018DE6NTCZV6SRA0QNSJ9NR"
+      "sourceExperiment": "01M018DE6NTCZV6SRA0QNSJ9NR",
+      "groupId": "bs128-dr"
     },
     {
       "runId": "dr128-lr1e-3-wd1.0",
@@ -346,7 +373,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0/step3815",
-      "sourceExperiment": "01M018DHE5SYNGFPMFNWXFAQGH"
+      "sourceExperiment": "01M018DHE5SYNGFPMFNWXFAQGH",
+      "groupId": "bs128-dr"
     },
     {
       "runId": "dr128-lr1e-3-wd0.3",
@@ -357,7 +385,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step7630",
-      "sourceExperiment": "01M01DV4NPEYC6P05NCE6GC2TX"
+      "sourceExperiment": "01M01DV4NPEYC6P05NCE6GC2TX",
+      "groupId": "bs128-dr"
     },
     {
       "runId": "dr128-lr1e-3-wd1.0",
@@ -368,7 +397,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0/step7630",
-      "sourceExperiment": "01M01DV5R4BJ0T3F27ZATBJHR0"
+      "sourceExperiment": "01M01DV5R4BJ0T3F27ZATBJHR0",
+      "groupId": "bs128-dr"
     },
     {
       "runId": "dr128-lr1e-3-wd0.3",
@@ -379,7 +409,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step15259",
-      "sourceExperiment": "01M01MBWXNHKGA5JPW5DXZRQKW"
+      "sourceExperiment": "01M01MBWXNHKGA5JPW5DXZRQKW",
+      "groupId": "bs128-dr"
     },
     {
       "runId": "dr128-lr1e-3-wd1.0",
@@ -390,7 +421,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0/step15259",
-      "sourceExperiment": "01M01MBXZ6YJRH81CZ6WCFAQN7"
+      "sourceExperiment": "01M01MBXZ6YJRH81CZ6WCFAQN7",
+      "groupId": "bs128-dr"
     },
     {
       "runId": "dr128-lr1e-3-wd0.3",
@@ -401,7 +433,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step22889",
-      "sourceExperiment": "01M020CXWMJNY4N2F2Q3TY7JXJ"
+      "sourceExperiment": "01M020CXWMJNY4N2F2Q3TY7JXJ",
+      "groupId": "bs128-dr"
     },
     {
       "runId": "dr128-lr1e-3-wd1.0",
@@ -412,7 +445,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0/step22889",
-      "sourceExperiment": "01M02AH0APWS8GS78EWM0YG8J1"
+      "sourceExperiment": "01M02AH0APWS8GS78EWM0YG8J1",
+      "groupId": "bs128-dr"
     },
     {
       "runId": "dr128-lr1e-3-wd0.3",
@@ -423,7 +457,8 @@
       "lr": "1e-3",
       "wd": "0.3",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd0.3/step30518",
-      "sourceExperiment": "01M02YR7SFKQ2C9ABV15QK7VF5"
+      "sourceExperiment": "01M02YR7SFKQ2C9ABV15QK7VF5",
+      "groupId": "bs128-dr"
     },
     {
       "runId": "dr128-lr1e-3-wd1.0",
@@ -434,7 +469,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_lr1e-3_wd1.0/step30518",
-      "sourceExperiment": "01M02YTXR4NBQ38EMERZDC039J"
+      "sourceExperiment": "01M02YTXR4NBQ38EMERZDC039J",
+      "groupId": "bs128-dr"
     },
     {
       "runId": "dr256-lr1e-3-wd0.333",
@@ -445,7 +481,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333/step1908",
-      "sourceExperiment": "01M018GP6P0CZ7KYZPWJXVRWAK"
+      "sourceExperiment": "01M018GP6P0CZ7KYZPWJXVRWAK",
+      "groupId": "bs256-dr"
     },
     {
       "runId": "dr256-lr1e-3-wd1.0",
@@ -456,7 +493,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step1908",
-      "sourceExperiment": "01M018GTRB45ZD63YTQJX60CF4"
+      "sourceExperiment": "01M018GTRB45ZD63YTQJX60CF4",
+      "groupId": "bs256-dr"
     },
     {
       "runId": "dr256-lr1e-3-wd0.333",
@@ -467,7 +505,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333/step3815",
-      "sourceExperiment": "01M01DV6QK26AY8V3MJESGCGQR"
+      "sourceExperiment": "01M01DV6QK26AY8V3MJESGCGQR",
+      "groupId": "bs256-dr"
     },
     {
       "runId": "dr256-lr1e-3-wd1.0",
@@ -478,7 +517,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step3815",
-      "sourceExperiment": "01M01DVR5E145CZB0P0P0Z9AG9"
+      "sourceExperiment": "01M01DVR5E145CZB0P0P0Z9AG9",
+      "groupId": "bs256-dr"
     },
     {
       "runId": "dr256-lr1e-3-wd0.333",
@@ -489,7 +529,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333/step7630",
-      "sourceExperiment": "01M01MBZ0HXSGFNT43BV6JEYN0"
+      "sourceExperiment": "01M01MBZ0HXSGFNT43BV6JEYN0",
+      "groupId": "bs256-dr"
     },
     {
       "runId": "dr256-lr1e-3-wd1.0",
@@ -500,7 +541,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step7630",
-      "sourceExperiment": "01M01MBZZEYEBMC7H1759YDCXY"
+      "sourceExperiment": "01M01MBZZEYEBMC7H1759YDCXY",
+      "groupId": "bs256-dr"
     },
     {
       "runId": "dr256-lr1e-3-wd0.333",
@@ -511,7 +553,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333/step11445",
-      "sourceExperiment": "01M02MTEYWJW68YR2P2GS1JVAK"
+      "sourceExperiment": "01M02MTEYWJW68YR2P2GS1JVAK",
+      "groupId": "bs256-dr"
     },
     {
       "runId": "dr256-lr1e-3-wd1.0",
@@ -522,7 +565,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step11445",
-      "sourceExperiment": "01M020CYYFYS847JE3RKBS2R9Q"
+      "sourceExperiment": "01M020CYYFYS847JE3RKBS2R9Q",
+      "groupId": "bs256-dr"
     },
     {
       "runId": "dr256-lr1e-3-wd0.333",
@@ -533,7 +577,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd0.333/step15259",
-      "sourceExperiment": "01M030WZV2D24Y2E8G10K8AX82"
+      "sourceExperiment": "01M030WZV2D24Y2E8G10K8AX82",
+      "groupId": "bs256-dr"
     },
     {
       "runId": "dr256-lr1e-3-wd1.0",
@@ -544,7 +589,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_lr1e-3_wd1.0/step15259",
-      "sourceExperiment": "01M032GHXK15ZF1Z0AAHR05SB0"
+      "sourceExperiment": "01M032GHXK15ZF1Z0AAHR05SB0",
+      "groupId": "bs256-dr"
     },
     {
       "runId": "dr512-lr5e-4-wd0.333",
@@ -555,7 +601,8 @@
       "lr": "5e-4",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e1_lr5e-4_wd0.333_warmup48_dataloader-cd-lrwd-r01/step477",
-      "sourceExperiment": "01KZS9VCQDJPFQ0PJ06KQY3XEF"
+      "sourceExperiment": "01KZS9VCQDJPFQ0PJ06KQY3XEF",
+      "groupId": "bs512-dr"
     },
     {
       "runId": "dr512-lr1e-3-wd1.0",
@@ -566,7 +613,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e4_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step1908",
-      "sourceExperiment": "01KZS8961G2VGPG1KDJCTK5T8Q"
+      "sourceExperiment": "01KZS8961G2VGPG1KDJCTK5T8Q",
+      "groupId": "bs512-dr"
     },
     {
       "runId": "dr512-lr1e-3-wd1.0",
@@ -577,7 +625,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e8_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step3815",
-      "sourceExperiment": "01KZSBGT5NPDQRKJH3HH1Q05SK"
+      "sourceExperiment": "01KZSBGT5NPDQRKJH3HH1Q05SK",
+      "groupId": "bs512-dr"
     },
     {
       "runId": "dr512-lr1e-3-wd0.333",
@@ -588,7 +637,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e12_lr1e-3_wd0.333_warmup48_dataloader-cd-r01/step5723",
-      "sourceExperiment": "01KZS4BDFH3CEDMS9G0RTVNM9M"
+      "sourceExperiment": "01KZS4BDFH3CEDMS9G0RTVNM9M",
+      "groupId": "bs512-dr"
     },
     {
       "runId": "dr512-lr1e-3-wd1.0",
@@ -599,7 +649,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e12_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step5723",
-      "sourceExperiment": "01KZSH5RTHAYY2EAP954VA0V97"
+      "sourceExperiment": "01KZSH5RTHAYY2EAP954VA0V97",
+      "groupId": "bs512-dr"
     },
     {
       "runId": "dr512-lr1e-3-wd1.0",
@@ -610,7 +661,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e16_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step7630",
-      "sourceExperiment": "01KZSRR4CWJW1NNP76NPRR79F7"
+      "sourceExperiment": "01KZSRR4CWJW1NNP76NPRR79F7",
+      "groupId": "bs512-dr"
     },
     {
       "runId": "dr512-lr1e-3-wd1.0",
@@ -621,7 +673,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e20_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step9537",
-      "sourceExperiment": "01KZT0WFZG5N51A1TF9QE4EHQ7"
+      "sourceExperiment": "01KZT0WFZG5N51A1TF9QE4EHQ7",
+      "groupId": "bs512-dr"
     },
     {
       "runId": "dr512-lr1e-3-wd1.0",
@@ -632,7 +685,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e24_lr1e-3_wd1.0_warmup48_dataloader-cd-r04/step11445",
-      "sourceExperiment": "01KZVGWC0C81FXHE3XGY4HVV52"
+      "sourceExperiment": "01KZVGWC0C81FXHE3XGY4HVV52",
+      "groupId": "bs512-dr"
     },
     {
       "runId": "dr512-lr1e-3-wd1.0",
@@ -643,7 +697,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_dr_e28_lr1e-3_wd1.0_warmup48_dataloader-cd-r01/step13352",
-      "sourceExperiment": "01KZVQF11VK3YK7THWHJ59MEAW"
+      "sourceExperiment": "01KZVQF11VK3YK7THWHJ59MEAW",
+      "groupId": "bs512-dr"
     },
     {
       "runId": "drwt512-lr1e-3-wd0.333",
@@ -654,7 +709,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step477",
-      "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A"
+      "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+      "groupId": "bs512-dr-wt"
     },
     {
       "runId": "drwt512-lr1e-3-wd1.0",
@@ -665,7 +721,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step477",
-      "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA"
+      "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+      "groupId": "bs512-dr-wt"
     },
     {
       "runId": "drwt512-lr1e-3-wd0.333",
@@ -676,7 +733,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step954",
-      "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A"
+      "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+      "groupId": "bs512-dr-wt"
     },
     {
       "runId": "drwt512-lr1e-3-wd1.0",
@@ -687,7 +745,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step954",
-      "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA"
+      "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+      "groupId": "bs512-dr-wt"
     },
     {
       "runId": "drwt512-lr1e-3-wd0.333",
@@ -698,7 +757,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step1908",
-      "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A"
+      "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+      "groupId": "bs512-dr-wt"
     },
     {
       "runId": "drwt512-lr1e-3-wd1.0",
@@ -709,7 +769,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step1908",
-      "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA"
+      "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+      "groupId": "bs512-dr-wt"
     },
     {
       "runId": "drwt512-lr1e-3-wd0.333",
@@ -720,7 +781,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step3815",
-      "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A"
+      "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+      "groupId": "bs512-dr-wt"
     },
     {
       "runId": "drwt512-lr1e-3-wd1.0",
@@ -731,7 +793,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step3815",
-      "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA"
+      "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+      "groupId": "bs512-dr-wt"
     },
     {
       "runId": "drwt512-lr1e-3-wd0.333",
@@ -742,7 +805,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step5723",
-      "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A"
+      "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+      "groupId": "bs512-dr-wt"
     },
     {
       "runId": "drwt512-lr1e-3-wd1.0",
@@ -753,7 +817,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step5723",
-      "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA"
+      "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+      "groupId": "bs512-dr-wt"
     },
     {
       "runId": "drwt512-lr1e-3-wd0.333",
@@ -764,7 +829,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step7630",
-      "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A"
+      "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+      "groupId": "bs512-dr-wt"
     },
     {
       "runId": "drwt512-lr1e-3-wd1.0",
@@ -775,7 +841,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step7630",
-      "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA"
+      "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+      "groupId": "bs512-dr-wt"
     },
     {
       "runId": "drwt512-lr1e-3-wd0.333",
@@ -786,7 +853,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step9537",
-      "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A"
+      "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+      "groupId": "bs512-dr-wt"
     },
     {
       "runId": "drwt512-lr1e-3-wd1.0",
@@ -797,7 +865,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step9537",
-      "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA"
+      "sourceExperiment": "01M04NY6CC8AFTBPQV8PB03BEA",
+      "groupId": "bs512-dr-wt"
     },
     {
       "runId": "drwt512-lr1e-3-wd0.333",
@@ -808,7 +877,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/wt_sequential_e24_r01/bs512_dr_wt_lr1e-3_wd0.333/step11445",
-      "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A"
+      "sourceExperiment": "01M04BC9G7CBACT7WBM5DZ0G7A",
+      "groupId": "bs512-dr-wt"
     },
     {
       "runId": "drwt512-lr1e-3-wd1.0",
@@ -819,7 +889,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_lr1e-3_wd1.0/step11445",
-      "sourceExperiment": "01M05YSDSTBRXWM8P94YQ98R1Z"
+      "sourceExperiment": "01M05YSDSTBRXWM8P94YQ98R1Z",
+      "groupId": "bs512-dr-wt"
     },
     {
       "runId": "drwtembwd512-lr1e-3-wd0.333",
@@ -830,7 +901,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step477",
-      "sourceExperiment": "01M04SRW33CE5Z9M8DM5350X02"
+      "sourceExperiment": "01M04SRW33CE5Z9M8DM5350X02",
+      "groupId": "bs512-dr-wt-embwd"
     },
     {
       "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -841,7 +913,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step477",
-      "sourceExperiment": "01M04SS5Z3SBDN69A67CHVHN61"
+      "sourceExperiment": "01M04SS5Z3SBDN69A67CHVHN61",
+      "groupId": "bs512-dr-wt-embwd"
     },
     {
       "runId": "drwtembwd512-lr1e-3-wd0.333",
@@ -852,7 +925,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step954",
-      "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP"
+      "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP",
+      "groupId": "bs512-dr-wt-embwd"
     },
     {
       "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -863,7 +937,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step954",
-      "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K"
+      "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K",
+      "groupId": "bs512-dr-wt-embwd"
     },
     {
       "runId": "drwtembwd512-lr1e-3-wd0.333",
@@ -874,7 +949,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step1908",
-      "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP"
+      "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP",
+      "groupId": "bs512-dr-wt-embwd"
     },
     {
       "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -885,7 +961,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step1908",
-      "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K"
+      "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K",
+      "groupId": "bs512-dr-wt-embwd"
     },
     {
       "runId": "drwtembwd512-lr1e-3-wd0.333",
@@ -896,7 +973,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step3815",
-      "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP"
+      "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP",
+      "groupId": "bs512-dr-wt-embwd"
     },
     {
       "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -907,7 +985,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step3815",
-      "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K"
+      "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K",
+      "groupId": "bs512-dr-wt-embwd"
     },
     {
       "runId": "drwtembwd512-lr1e-3-wd0.333",
@@ -918,7 +997,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd0.333/step5723",
-      "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP"
+      "sourceExperiment": "01M05YRSHXZTCJ8WFT1891K0VP",
+      "groupId": "bs512-dr-wt-embwd"
     },
     {
       "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -929,7 +1009,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step5723",
-      "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K"
+      "sourceExperiment": "01M05YS3Z7N3MKRS303KGEYQ6K",
+      "groupId": "bs512-dr-wt-embwd"
     },
     {
       "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -940,7 +1021,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step7630",
-      "sourceExperiment": "01M06M4SD7TP1T1YJWN2W3FCK0"
+      "sourceExperiment": "01M06M4SD7TP1T1YJWN2W3FCK0",
+      "groupId": "bs512-dr-wt-embwd"
     },
     {
       "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -951,7 +1033,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step9537",
-      "sourceExperiment": "01M06M4SD7TP1T1YJWN2W3FCK0"
+      "sourceExperiment": "01M06M4SD7TP1T1YJWN2W3FCK0",
+      "groupId": "bs512-dr-wt-embwd"
     },
     {
       "runId": "drwtembwd512-lr1e-3-wd1.0",
@@ -962,7 +1045,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_dr_wt_embwd_lr1e-3_wd1.0/step11445",
-      "sourceExperiment": "01M06M4SD7TP1T1YJWN2W3FCK0"
+      "sourceExperiment": "01M06M4SD7TP1T1YJWN2W3FCK0",
+      "groupId": "bs512-dr-wt-embwd"
     },
     {
       "runId": "dr1024-lr5e-4-wd1.0",
@@ -973,7 +1057,8 @@
       "lr": "5e-4",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e4_lr5e-4_wd1.0_warmup24_dataloader-cd-wdbound-r01/step954",
-      "sourceExperiment": "01KZS9A0ERDMHT28CVB549Q3NE"
+      "sourceExperiment": "01KZS9A0ERDMHT28CVB549Q3NE",
+      "groupId": "bs1024-dr"
     },
     {
       "runId": "dr1024-lr1e-3-wd0.333",
@@ -984,7 +1069,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e4_lr1e-3_wd0.333_warmup24_dataloader-cd-lr1e3-r01/step954",
-      "sourceExperiment": "01KZSBTR8N37J6F9J3A5GYTNBC"
+      "sourceExperiment": "01KZSBTR8N37J6F9J3A5GYTNBC",
+      "groupId": "bs1024-dr"
     },
     {
       "runId": "dr1024-lr1e-3-wd1.0",
@@ -995,7 +1081,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e4_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r01/step954",
-      "sourceExperiment": "01KZST7VGG2XNARMXN31VDRAVJ"
+      "sourceExperiment": "01KZST7VGG2XNARMXN31VDRAVJ",
+      "groupId": "bs1024-dr"
     },
     {
       "runId": "dr1024-lr5e-4-wd0.333",
@@ -1006,7 +1093,8 @@
       "lr": "5e-4",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr5e-4_wd0.333_warmup24_dataloader-cd-r01/step1908",
-      "sourceExperiment": "01KZS6VD261RZ4GCYA0C1NWBZM"
+      "sourceExperiment": "01KZS6VD261RZ4GCYA0C1NWBZM",
+      "groupId": "bs1024-dr"
     },
     {
       "runId": "dr1024-lr5e-4-wd1.0",
@@ -1017,7 +1105,8 @@
       "lr": "5e-4",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr5e-4_wd1.0_warmup24_dataloader-cd-wdbound-r01/step1908",
-      "sourceExperiment": "01KZSBH3QTHAA1XT0FJSYS4A06"
+      "sourceExperiment": "01KZSBH3QTHAA1XT0FJSYS4A06",
+      "groupId": "bs1024-dr"
     },
     {
       "runId": "dr1024-lr1e-3-wd0.333",
@@ -1028,7 +1117,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd0.333_warmup24_dataloader-cd-lr1e3-r01/step1908",
-      "sourceExperiment": "01KZSH6ABFPM4WQHQD40J1BJGB"
+      "sourceExperiment": "01KZSH6ABFPM4WQHQD40J1BJGB",
+      "groupId": "bs1024-dr"
     },
     {
       "runId": "dr1024-lr1e-3-wd1.0",
@@ -1039,7 +1129,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e8_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r02/step1908",
-      "sourceExperiment": "01KZT5K8M28PE1K26VNJY6STQW"
+      "sourceExperiment": "01KZT5K8M28PE1K26VNJY6STQW",
+      "groupId": "bs1024-dr"
     },
     {
       "runId": "dr1024-lr5e-4-wd0.333",
@@ -1050,7 +1141,8 @@
       "lr": "5e-4",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e12_lr5e-4_wd0.333_warmup24_dataloader-cd-r01/step2862",
-      "sourceExperiment": "01KZSBGYW4Y3GHH6809K7PWE06"
+      "sourceExperiment": "01KZSBGYW4Y3GHH6809K7PWE06",
+      "groupId": "bs1024-dr"
     },
     {
       "runId": "dr1024-lr5e-4-wd1.0",
@@ -1061,7 +1153,8 @@
       "lr": "5e-4",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e12_lr5e-4_wd1.0_warmup24_dataloader-cd-wdbound-r01/step2862",
-      "sourceExperiment": "01KZSJ1APHNB6Z2ZKS4VMHSBDA"
+      "sourceExperiment": "01KZSJ1APHNB6Z2ZKS4VMHSBDA",
+      "groupId": "bs1024-dr"
     },
     {
       "runId": "dr1024-lr1e-3-wd0.333",
@@ -1072,7 +1165,8 @@
       "lr": "1e-3",
       "wd": "0.333",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e12_lr1e-3_wd0.333_warmup24_dataloader-cd-lr1e3-r01/step2862",
-      "sourceExperiment": "01KZSSNTAGXD8Z14T456PY3PKR"
+      "sourceExperiment": "01KZSSNTAGXD8Z14T456PY3PKR",
+      "groupId": "bs1024-dr"
     },
     {
       "runId": "dr1024-lr1e-3-wd1.0",
@@ -1083,7 +1177,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e12_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r02/step2862",
-      "sourceExperiment": "01KZVBXHC2NCCCMWGW8552GHYJ"
+      "sourceExperiment": "01KZVBXHC2NCCCMWGW8552GHYJ",
+      "groupId": "bs1024-dr"
     },
     {
       "runId": "dr1024-lr5e-4-wd1.0",
@@ -1094,7 +1189,8 @@
       "lr": "5e-4",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e16_lr5e-4_wd1.0_warmup24_dataloader-cd-wdbound-r01/step3815",
-      "sourceExperiment": "01KZSTARA8XNJAYRXWRS35GVP4"
+      "sourceExperiment": "01KZSTARA8XNJAYRXWRS35GVP4",
+      "groupId": "bs1024-dr"
     },
     {
       "runId": "dr1024-lr1e-3-wd1.0",
@@ -1105,7 +1201,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e16_lr1e-3_wd1.0_warmup24_dataloader-cd-lr1e3-wd1-r02/step3815",
-      "sourceExperiment": "01KZVS4GPWP21A3JAJXQ0AAF93"
+      "sourceExperiment": "01KZVS4GPWP21A3JAJXQ0AAF93",
+      "groupId": "bs1024-dr"
     },
     {
       "runId": "dr1024-lr1e-3-wd1.0",
@@ -1116,7 +1213,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e20_lr1e-3_wd1.0_warmup24_bs1024-dr-e20-lr1e3-wd1p0-r01/step4769",
-      "sourceExperiment": "01KZW56AQVFV9ECTSV5SSR24DF"
+      "sourceExperiment": "01KZW56AQVFV9ECTSV5SSR24DF",
+      "groupId": "bs1024-dr"
     },
     {
       "runId": "dr1024-lr1e-3-wd1.0",
@@ -1127,7 +1225,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs1024_dr_e24_lr1e-3_wd1.0_warmup24_bs1024-dr-e24-lr1e3-wd1p0-r04/step5723",
-      "sourceExperiment": "01KZWPC3TBHDRJCKDEG7CK57M1"
+      "sourceExperiment": "01KZWPC3TBHDRJCKDEG7CK57M1",
+      "groupId": "bs1024-dr"
     },
     {
       "runId": "dr1024-lr1e-3-wd1.0",
@@ -1138,7 +1237,8 @@
       "lr": "1e-3",
       "wd": "1.0",
       "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd1.0/step6676",
-      "sourceExperiment": "01KZXZG5K1KMHY72DJBMSVP2S3"
+      "sourceExperiment": "01KZXZG5K1KMHY72DJBMSVP2S3",
+      "groupId": "bs1024-dr"
     }
   ]
 }

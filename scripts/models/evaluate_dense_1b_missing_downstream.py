@@ -3,9 +3,8 @@
 
 The report's DR, DR+WT, and DR+WT+EmbedWD training jobs deliberately skipped
 downstream evaluation.  This launcher discovers their completed post-decay
-checkpoints and creates one Beaker task that evaluates them sequentially.  The
-task uses exactly one GPU (one replica, one local process), loads model weights
-only, runs the established nine-task suite at startup, and exits without training.
+checkpoints and creates one Beaker task per (batch size, method) group. Each task
+uses exactly one GPU and evaluates every epoch in its group sequentially.
 
 The same script refreshes a registered campaign and writes completed metrics back
 to ``wsd_data_loader_1b.json`` plus its JavaScript mirror.
@@ -47,7 +46,6 @@ REPORT_PATH = Path("reports/0802/data/wsd_data_loader_1b.json")
 WORKSPACE = "ai2/flex2"
 DEFAULT_NAME = "dense-1b-missing-downstream-evals"
 CHECKPOINT_CAP = 100
-SEQUENTIAL_TASK_NAME = "downstream-eval-sequential"
 SEQUENTIAL_MANIFEST = Path("scripts/models/manifests/dense_1b_downstream.json")
 DOWNSTREAM_TASK_ARGUMENT = (
     "[arc_easy, arc_challenge, boolq, csqa_val_rc_5shot, hellaswag, "
@@ -218,6 +216,14 @@ def task_name(item: dict[str, Any]) -> str:
     lr = item["lr"].replace(".", "p").replace("-", "m")
     wd = item["wd"].replace(".", "p")
     return f"eval-{item['variant']}-bs{item['batchSequences']}-e{item['epoch']}-lr{lr}-wd{wd}"
+
+
+def group_id(item: dict[str, Any]) -> str:
+    return f"bs{item['batchSequences']}-{item['variant']}"
+
+
+def group_task_name(item: dict[str, Any]) -> str:
+    return f"downstream-eval-{group_id(item)}"
 
 
 def replace_argument(arguments: list[str], prefix: str, value: str) -> list[str]:
@@ -435,39 +441,47 @@ def build_spec(
     base = copy.deepcopy(source_spec(items[0]["sourceExperiment"], cache))
     source_task = base["tasks"][0]
     training_script, _, base_arguments = extract_source_training_command(source_task)
+    manifest_items = [item | {"groupId": group_id(item)} for item in items]
     manifest = {
         "trainingScript": training_script,
         "baseArguments": base_arguments,
-        "items": items,
+        "items": manifest_items,
     }
     SEQUENTIAL_MANIFEST.parent.mkdir(parents=True, exist_ok=True)
     SEQUENTIAL_MANIFEST.write_text(json.dumps(manifest, indent=2) + "\n")
-    task = copy.deepcopy(source_task)
-    task["name"] = SEQUENTIAL_TASK_NAME
-    task["arguments"] = [
-        "python",
-        "scripts/models/run_dense_1b_downstream_sequence.py",
-        "--manifest",
-        str(SEQUENTIAL_MANIFEST),
-    ]
-    task["resources"] = {"gpuCount": 1, "sharedMemory": "10 GiB"}
-    task["context"] = {"priority": priority, "minRuntime": "0s", "autoResume": False}
-    for key in (
-        "replicas",
-        "leaderSelection",
-        "propagateFailure",
-        "propagatePreemption",
-        "synchronizedStartTimeout",
-    ):
-        task.pop(key, None)
-    set_env(task, "GIT_REF", revision)
-    set_env(task, "NUM_NODES", "1")
-    base["tasks"] = [task]
+    groups = sorted({group_id(item) for item in items})
+    tasks = []
+    for current_group in groups:
+        task = copy.deepcopy(source_task)
+        task["name"] = f"downstream-eval-{current_group}"
+        task["arguments"] = [
+            "python",
+            "scripts/models/run_dense_1b_downstream_sequence.py",
+            "--manifest",
+            str(SEQUENTIAL_MANIFEST),
+            "--group-id",
+            current_group,
+        ]
+        task["resources"] = {"gpuCount": 1, "sharedMemory": "10 GiB"}
+        task["context"] = {"priority": priority, "minRuntime": "0s", "autoResume": False}
+        for key in (
+            "replicas",
+            "leaderSelection",
+            "propagateFailure",
+            "propagatePreemption",
+            "synchronizedStartTimeout",
+        ):
+            task.pop(key, None)
+        set_env(task, "GIT_REF", revision)
+        set_env(task, "NUM_NODES", "1")
+        tasks.append(task)
+    base["tasks"] = tasks
     base.pop("description", None)
     records = [
         item
         | {
-            "taskName": SEQUENTIAL_TASK_NAME,
+            "taskName": group_task_name(item),
+            "groupId": group_id(item),
             "status": "submitted",
         }
         for item in items
@@ -477,7 +491,7 @@ def build_spec(
 
 def print_plan(items: list[dict[str, Any]], no_checkpoint: list[dict[str, Any]]) -> None:
     counts = Counter((item["variant"], item["batchSequences"]) for item in items)
-    print(f"one-GPU sequential Beaker tasks: {1 if items else 0}")
+    print(f"one-GPU sequential Beaker tasks: {len({group_id(item) for item in items})}")
     print(f"checkpoints evaluated serially: {len(items)}")
     for (name, batch), count in sorted(
         counts.items(), key=lambda entry: (entry[0][1], entry[0][0])
@@ -504,9 +518,9 @@ def register_campaign(
             "revision": revision,
             "status": "submitted",
             "gpuPerTask": 1,
-            "taskCount": 1,
+            "taskCount": len({task["taskName"] for task in tasks}),
             "checkpointCount": len(tasks),
-            "singleGpuSequential": True,
+            "groupedSingleGpuSequential": True,
             "tasks": tasks,
         }
     )
@@ -590,20 +604,24 @@ def refresh(report: dict[str, Any]) -> bool:
             continue
         inspected = inspect_experiment(campaign["experiment"])
         jobs = inspected.get("jobs") or []
-        sequential = bool(campaign.get("singleGpuSequential"))
-        sequential_job = matching_job(jobs, SEQUENTIAL_TASK_NAME) if sequential else None
-        sequential_logs = ""
-        if sequential_job and job_state(sequential_job) in {"running", "complete", "failed"}:
-            sequential_logs = run(
-                ["beaker", "job", "logs", sequential_job["id"], "--no-timestamps"]
-            )
+        sequential = bool(
+            campaign.get("singleGpuSequential") or campaign.get("groupedSingleGpuSequential")
+        )
+        log_cache: dict[str, str] = {}
         for task in campaign.get("tasks", []):
             if task.get("status") == "complete":
                 continue
-            job = sequential_job if sequential else matching_job(jobs, task["taskName"])
+            job = matching_job(jobs, task["taskName"])
             if job is None:
                 continue
             state = job_state(job)
+            sequential_logs = ""
+            if sequential and state in {"running", "complete", "failed"}:
+                if job["id"] not in log_cache:
+                    log_cache[job["id"]] = run(
+                        ["beaker", "job", "logs", job["id"], "--no-timestamps"]
+                    )
+                sequential_logs = log_cache[job["id"]]
             if not sequential and task.get("status") != state:
                 task["status"] = state
                 changed = True
