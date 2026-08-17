@@ -2,9 +2,10 @@
 """Evaluate every retained Dense-1B data-loader endpoint missing downstream metrics.
 
 The report's DR, DR+WT, and DR+WT+EmbedWD training jobs deliberately skipped
-downstream evaluation. This launcher creates one one-GPU Beaker task. At runtime
-the task scans real ``*_dr_*`` Weka output directories, resolves the registered
-endpoint steps to those directories, and evaluates every missing epoch serially.
+downstream evaluation. This launcher creates one independent Beaker experiment
+per batch-size/method pair. Each experiment contains exactly one one-GPU task
+which scans real ``*_dr_*`` Weka output directories and evaluates that pair's
+missing epochs serially.
 
 The same script refreshes a registered campaign and writes completed metrics back
 to ``wsd_data_loader_1b.json`` plus its JavaScript mirror.
@@ -18,7 +19,7 @@ Examples:
     .venv/bin/python scripts/models/evaluate_dense_1b_missing_downstream.py \
         --print-spec --revision <pushed-revision>
 
-    # Submit one experiment containing one sequential 1-GPU task and register it.
+    # Submit independent experiments containing one sequential 1-GPU task each.
     .venv/bin/python scripts/models/evaluate_dense_1b_missing_downstream.py \
         --submit --revision <pushed-revision>
 
@@ -94,11 +95,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--revision", help="Pushed revision used by evaluation tasks.")
     parser.add_argument("--name", default=DEFAULT_NAME)
     parser.add_argument("--workspace", default=WORKSPACE)
-    parser.add_argument("--priority", default="normal")
+    parser.add_argument("--priority", default="urgent")
     parser.add_argument("--report", type=Path, default=REPORT_PATH)
     parser.add_argument(
         "--replace-deleted-experiment",
         help="Replace this exact deleted campaign registration after a successful submission.",
+    )
+    parser.add_argument(
+        "--supersede-experiment",
+        help=(
+            "Ignore this failed campaign while rebuilding the missing inventory, then mark it "
+            "superseded after all independent experiments submit successfully."
+        ),
     )
     args = parser.parse_args()
     if (args.submit or args.print_spec) and not args.revision:
@@ -149,17 +157,26 @@ def variant(run_record: dict[str, Any]) -> str:
     return "dr"
 
 
-def existing_campaign_checkpoints(report: dict[str, Any]) -> set[str]:
+def existing_campaign_checkpoints(
+    report: dict[str, Any], *, ignored_experiments: set[str] | None = None
+) -> set[str]:
+    ignored_experiments = ignored_experiments or set()
     checkpoints: set[str] = set()
     for campaign in report.get("downstreamEvaluationCampaigns", []):
+        if campaign.get("experiment") in ignored_experiments:
+            continue
         for task in campaign.get("tasks", []):
             if task.get("status") in ACTIVE | {"complete"} and task.get("checkpoint"):
                 checkpoints.add(task["checkpoint"])
     return checkpoints
 
 
-def candidates(report: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    already_registered = existing_campaign_checkpoints(report)
+def candidates(
+    report: dict[str, Any], *, ignored_experiments: set[str] | None = None
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    already_registered = existing_campaign_checkpoints(
+        report, ignored_experiments=ignored_experiments
+    )
     found: list[dict[str, Any]] = []
     no_checkpoint: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -273,19 +290,19 @@ def set_env(task: dict[str, Any], name: str, value: str) -> None:
         env.append({"name": name, "value": value})
 
 
-def heldout_on_startup(arguments: list[str]) -> list[str]:
+def disable_heldout(arguments: list[str]) -> list[str]:
     prefix = "--trainer.callbacks.heldout_evaluator="
     values = [argument for argument in arguments if argument.startswith(prefix)]
     if len(values) != 1 or "dclm_0802_validation.json" not in values[0]:
         raise RuntimeError("source command lacks the required DCLM-0802 held-out evaluator")
     heldout = values[0][len(prefix) :]
     heldout = heldout.replace("eval_on_finish: true", "eval_on_finish: false")
-    heldout = heldout.replace("eval_on_startup: false", "eval_on_startup: true")
+    heldout = heldout.replace("eval_on_startup: true", "eval_on_startup: false")
     if "eval_on_startup:" not in heldout:
         closing = heldout.rfind("}")
         if closing < 0:
             raise RuntimeError("could not edit held-out evaluator configuration")
-        heldout = heldout[:closing] + ", eval_on_startup: true" + heldout[closing:]
+        heldout = heldout[:closing] + ", eval_on_startup: false" + heldout[closing:]
     return replace_argument(arguments, prefix, prefix + heldout)
 
 
@@ -349,7 +366,7 @@ def evaluation_arguments(
     )
     for prefix, value in replacements:
         arguments = replace_argument(arguments, prefix, value)
-    return heldout_on_startup(arguments)
+    return disable_heldout(arguments)
 
 
 def source_spec(experiment: str, cache: dict[str, dict[str, Any]]) -> dict[str, Any]:
@@ -432,9 +449,9 @@ def build_task(
     return task
 
 
-def build_spec(
+def build_specs(
     items: list[dict[str, Any]], revision: str, priority: str
-) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+) -> tuple[list[tuple[str, dict[str, Any], list[dict[str, Any]]]], dict[str, Any]]:
     if not items:
         raise RuntimeError("no unevaluated retained checkpoints remain")
     if len(items) > CHECKPOINT_CAP:
@@ -442,8 +459,8 @@ def build_spec(
             f"campaign has {len(items)} checkpoints, above the audited cap of {CHECKPOINT_CAP}"
         )
     cache = prefetch_source_specs(items)
-    base = copy.deepcopy(source_spec(items[0]["sourceExperiment"], cache))
-    source_task = base["tasks"][0]
+    first_base = copy.deepcopy(source_spec(items[0]["sourceExperiment"], cache))
+    source_task = first_base["tasks"][0]
     training_script, _, base_arguments = extract_source_training_command(source_task)
     manifest_items = [item | {"groupId": group_id(item)} for item in items]
     manifest = {
@@ -453,45 +470,53 @@ def build_spec(
     }
     SEQUENTIAL_MANIFEST.parent.mkdir(parents=True, exist_ok=True)
     SEQUENTIAL_MANIFEST.write_text(json.dumps(manifest, indent=2) + "\n")
-    task_name_value = "downstream-eval-runtime-discovery"
-    task = copy.deepcopy(source_task)
-    task["name"] = task_name_value
-    task["arguments"] = [
-        "python",
-        "scripts/models/run_dense_1b_downstream_sequence.py",
-        "--manifest",
-        str(SEQUENTIAL_MANIFEST),
-    ]
-    task["resources"] = {"gpuCount": 1, "sharedMemory": "10 GiB"}
-    task["context"] = {"priority": priority, "minRuntime": "0s", "autoResume": False}
-    for key in (
-        "replicas",
-        "leaderSelection",
-        "propagateFailure",
-        "propagatePreemption",
-        "synchronizedStartTimeout",
-    ):
-        task.pop(key, None)
-    set_env(task, "GIT_REF", revision)
-    set_env(task, "NUM_NODES", "1")
-    tasks = [task]
-    base["tasks"] = tasks
-    base.pop("description", None)
-    records = [
-        item
-        | {
-            "taskName": task_name_value,
-            "groupId": group_id(item),
-            "status": "submitted",
-        }
-        for item in items
-    ]
-    return base, records
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for item in items:
+        grouped.setdefault(group_id(item), []).append(item)
+    specs: list[tuple[str, dict[str, Any], list[dict[str, Any]]]] = []
+    for group, group_items in sorted(grouped.items()):
+        base = copy.deepcopy(source_spec(group_items[0]["sourceExperiment"], cache))
+        task_name_value = f"downstream-eval-{group}"
+        task = copy.deepcopy(base["tasks"][0])
+        task["name"] = task_name_value
+        task["arguments"] = [
+            "python",
+            "scripts/models/run_dense_1b_downstream_sequence.py",
+            "--manifest",
+            str(SEQUENTIAL_MANIFEST),
+            "--group-id",
+            group,
+        ]
+        task["resources"] = {"gpuCount": 1, "sharedMemory": "10 GiB"}
+        task["context"] = {"priority": priority, "minRuntime": "0s", "autoResume": False}
+        for key in (
+            "replicas",
+            "leaderSelection",
+            "propagateFailure",
+            "propagatePreemption",
+            "synchronizedStartTimeout",
+        ):
+            task.pop(key, None)
+        set_env(task, "GIT_REF", revision)
+        set_env(task, "NUM_NODES", "1")
+        base["tasks"] = [task]
+        base.pop("description", None)
+        records = [
+            item
+            | {
+                "taskName": task_name_value,
+                "groupId": group,
+                "status": "submitted",
+            }
+            for item in group_items
+        ]
+        specs.append((group, base, records))
+    return specs, manifest
 
 
 def print_plan(items: list[dict[str, Any]], no_checkpoint: list[dict[str, Any]]) -> None:
     counts = Counter((item["variant"], item["batchSequences"]) for item in items)
-    print("one-GPU runtime-discovery Beaker tasks: 1")
+    print(f"independent one-GPU Beaker experiments: {len(counts)}")
     print(f"checkpoints evaluated serially: {len(items)}")
     for (name, batch), count in sorted(
         counts.items(), key=lambda entry: (entry[0][1], entry[0][0])
@@ -521,6 +546,7 @@ def register_campaign(
             "taskCount": len({task["taskName"] for task in tasks}),
             "checkpointCount": len(tasks),
             "singleGpuSequential": True,
+            "independentExperiment": True,
             "runtimeDirectoryDiscovery": True,
             "tasks": tasks,
         }
@@ -722,36 +748,64 @@ def main() -> None:
         report["downstreamEvaluationCampaigns"] = [
             c for c in campaigns if c.get("experiment") != args.replace_deleted_experiment
         ]
-    items, no_checkpoint = candidates(report)
+    ignored = {args.supersede_experiment} if args.supersede_experiment else set()
+    if args.supersede_experiment:
+        matches = [
+            campaign
+            for campaign in report.get("downstreamEvaluationCampaigns", [])
+            if campaign.get("experiment") == args.supersede_experiment
+        ]
+        if len(matches) != 1 or matches[0].get("status") != "failed":
+            raise RuntimeError("--supersede-experiment must identify exactly one failed campaign")
+    items, no_checkpoint = candidates(report, ignored_experiments=ignored)
     if args.plan:
         print_plan(items, no_checkpoint)
         return
-    spec, task_records = build_spec(items, args.revision, args.priority)
+    specs, manifest = build_specs(items, args.revision, args.priority)
     if args.print_spec:
-        json.dump(spec, sys.stdout, indent=2)
+        json.dump(
+            [{"groupId": group, "spec": spec} for group, spec, _ in specs],
+            sys.stdout,
+            indent=2,
+        )
         print()
         return
-    output = run(
-        [
-            "beaker",
-            "experiment",
-            "create",
-            "-",
-            "--name",
-            args.name,
-            "--workspace",
-            args.workspace,
-            "--priority",
-            args.priority,
-        ],
-        input_text=json.dumps(spec),
-    )
-    print(output, end="")
-    ids = ULID.findall(output)
-    if not ids:
-        raise RuntimeError("submission succeeded but returned no experiment ID")
-    register_campaign(report, args.name, ids[0], args.revision, task_records)
-    write_report(report, args.report)
+    submitted: list[str] = []
+    for group, spec, task_records in specs:
+        experiment_name = f"{args.name}-{group}"
+        output = run(
+            [
+                "beaker",
+                "experiment",
+                "create",
+                "-",
+                "--name",
+                experiment_name,
+                "--workspace",
+                args.workspace,
+                "--priority",
+                args.priority,
+            ],
+            input_text=json.dumps(spec),
+        )
+        print(output, end="")
+        ids = ULID.findall(output)
+        if len(ids) != 1:
+            raise RuntimeError("submission succeeded but did not return exactly one experiment ID")
+        register_campaign(
+            report, experiment_name, ids[0], args.revision, task_records
+        )
+        submitted.append(ids[0])
+        write_report(report, args.report)
+    if args.supersede_experiment:
+        old = next(
+            campaign
+            for campaign in report["downstreamEvaluationCampaigns"]
+            if campaign.get("experiment") == args.supersede_experiment
+        )
+        old["status"] = "superseded"
+        old["supersededBy"] = submitted
+        write_report(report, args.report)
 
 
 if __name__ == "__main__":
