@@ -398,36 +398,6 @@
     sequentialBody.appendChild(tr);
   }
 
-  const gapBody = document.getElementById("wt-gap-summary");
-  const weightTiedRuns = (study.runs || []).filter((run) => run.weightTying);
-  for (const run of weightTiedRuns) {
-    const baselineMethod = `dr${run.batchSequences}`;
-    const baselineRun = (study.runs || []).find((candidate) =>
-      candidate.method === baselineMethod &&
-      lrNumber(candidate.lr) === lrNumber(run.lr) &&
-      wdNumber(candidate.wd) === wdNumber(run.wd)
-    );
-    for (const epoch of Object.keys(run.results || {}).map(Number).sort((a, b) => a - b)) {
-      const tied = run.results[epochKey(epoch)];
-      if (!tied || tied.status !== "complete") continue;
-      const baseline = baselineRun && baselineRun.results && baselineRun.results[epochKey(epoch)];
-      const tiedGap = finite(tied.gap)
-        ? Number(tied.gap)
-        : (finite(tied.train) && finite(tied.validation) ? Number(tied.validation) - Number(tied.train) : null);
-      const baselineGap = baseline && finite(baseline.gap)
-        ? Number(baseline.gap)
-        : (baseline && finite(baseline.train) && finite(baseline.validation)
-          ? Number(baseline.validation) - Number(baseline.train)
-          : null);
-      const delta = tiedGap !== null && baselineGap !== null ? tiedGap - baselineGap : null;
-      const verdict = delta === null ? "—" : delta < 0 ? "Yes" : delta > 0 ? "No" : "Tie";
-      const tr = document.createElement("tr");
-      if (delta !== null) tr.className = delta < 0 ? "gap-smaller" : delta > 0 ? "gap-larger" : "";
-      tr.innerHTML = `<td>BS${run.batchSequences}</td><td>E${formatEpoch(epoch)}</td><td>${run.wd}</td><td>${formatMetric(baseline && baseline.train)}</td><td>${formatMetric(baseline && baseline.validation)}</td><td>${formatMetric(baselineGap, 4)}</td><td>${formatMetric(tied.train)}</td><td>${formatMetric(tied.validation)}</td><td>${formatMetric(tiedGap, 4)}</td><td>${delta === null ? "—" : `${delta >= 0 ? "+" : ""}${formatMetric(delta, 4)}`}</td><td>${verdict}</td>`;
-      gapBody.appendChild(tr);
-    }
-  }
-
   const newRunsBody = document.getElementById("new-runs");
   for (const run of study.runs || []) {
     const resultEpochs = new Set(Object.keys(run.results || {}).map(Number));
