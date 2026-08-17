@@ -10122,7 +10122,8 @@
       "wd": "0.333",
       "status": "running",
       "healthStatus": "active",
-      "currentStep": 967,
+      "currentStep": 1520,
+      "wandb": "iboagz19",
       "revision": "4e42e7738394bde58b4409c53841d06f98f36c1a",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_lr1e-3_wd0.333/step428",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs1024_dr_diloco_h32_olr0.5_om0.7_vrecal_simbs64_init=bs1024e2_lr1e-3_wd0.333",
@@ -10172,7 +10173,8 @@
         }
       },
       "wandbRuns": {
-        "4": "p7oe3tcy"
+        "4": "p7oe3tcy",
+        "8": "iboagz19"
       },
       "reason": "The corrected four-node recovery is healthy. E4 completed with train3.646, validation3.634, gap-0.012 and full downstream evaluation; E8 is running from the exact native pre-decay step858 checkpoint without repeated recalibration.",
       "recoveryProvenance": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/.chain-control/bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r05/quarantine/r03-r04-init2-canonical-output",
@@ -10194,8 +10196,8 @@
       ],
       "submittedAt": "2026-08-16T19:06:27.211765Z",
       "schedulerStatus": "running",
-      "schedulerAuditAt": "2026-08-16T23:48:15Z",
-      "schedulerReason": "All four replica jobs are running. E4 completed healthy and the exact native E8 resume is progressing around step967/1908 on all replicas."
+      "schedulerAuditAt": "2026-08-17T00:13:01Z",
+      "schedulerReason": "All four replica jobs are running. The exact native E8 resume is healthy at step1520/1908 with finite CE and gradient norms, no skipped optimizer steps, and about18 minutes remaining."
     },
     {
       "planId": "bs1024-diloco-h32-olr0p5-om0p7-sim64-e2e4-chain-e16-r05-init4-wd0.333",
