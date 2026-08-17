@@ -19,13 +19,13 @@
 <section class="card"><h2>Batch size × LR coordinate grid</h2><p class="note">This clean grid contains only the three warmdown chains; inherited source-report coordinates are intentionally excluded.</p><div class="table-wrap"><table><thead><tr><th>Accumulated epoch</th><th>Batch</th><th>Initialization history</th><th>Evaluated / active (LR, WD)</th><th>Status</th></tr></thead><tbody id="warmdown-coordinate-grid"></tbody></table></div></section>
 <section class="card"><h2>New data-loader runs</h2><p class="note">Only newly launched BS256 and BS64 warmdown stages appear here. The inherited BS1024 sources and historical provenance remain excluded.</p><div class="table-wrap"><table><thead><tr><th>Chain</th><th>Batch</th><th>Accumulated epoch</th><th>LR</th><th>WD</th><th>Status</th><th>Train CE</th><th>Val CE</th><th>W&amp;B</th><th>Beaker</th></tr></thead><tbody id="new-runs"></tbody></table></div></section>
 <section class="card"><h2>BS256 pre-decay checkpoint decay evaluation</h2><p class="note" id="decay-eval-note"></p><div class="table-wrap"><table><thead><tr><th>Source step</th><th>Endpoint step</th><th>Decay steps</th><th>Status</th><th>Train CE</th><th>Val CE</th><th>W&amp;B</th><th>Beaker</th></tr></thead><tbody id="decay-eval-summary"></tbody></table></div></section>
-<section class="card"><h2>Warmdown stages</h2><div class="table-wrap"><table><thead><tr><th>Chain</th><th>Stage</th><th>Batch</th><th>Accumulated epoch</th><th>Added steps</th><th>Total steps</th><th>Wall clock</th><th>Status</th><th>Val CE</th><th>W&amp;B</th><th>Beaker</th></tr></thead><tbody id="stage-summary"></tbody></table></div></section>
+<section class="card"><h2>Warmdown stages</h2><p class="note">Downstream columns report endpoint evaluations when available. Accuracy is shown as a percentage; the 8-task averages exclude BoolQ. An em dash means that downstream evaluation was not run for that endpoint. Best-coordinate BS256 E4 uses its separate step-2,384 decay-evaluation run.</p><div class="table-wrap"><table><thead><tr><th>Chain</th><th>Stage</th><th>Batch</th><th>Accumulated epoch</th><th>Added steps</th><th>Total steps</th><th>Wall clock</th><th>Status</th><th>Val CE</th><th>HS accuracy</th><th>HS BPB</th><th>8-task accuracy</th><th>8-task BPB</th><th>W&amp;B</th><th>Beaker</th></tr></thead><tbody id="stage-summary"></tbody></table></div></section>
 </main>
 <script src="data/wsd_weight_decay_1b.js?v=20260813warmdown"></script>
 <script>window.ICSL_WD_BASELINE_DATA=window.ICSL_REPORT_DATA;</script>
 <script src="data/wsd_batch_size_1b.js?v=20260813warmdown"></script>
 <script>window.ICSL_BATCH_BASELINE_DATA=window.ICSL_REPORT_DATA;</script>
 <script src="data/wsd_data_loader_1b.js?v=20260813warmdown"></script>
-<script src="data/wsd_batch_warmdown_1b.js?v=20260814d"></script>
-<script src="batch_warmdown_charts.js?v=20260814d"></script>
+<script src="data/wsd_batch_warmdown_1b.js?v=20260816a"></script>
+<script src="batch_warmdown_charts.js?v=20260816a"></script>
 </body></html>

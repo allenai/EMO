@@ -25,6 +25,8 @@
   const lrNumber=value=>Number(String(value));
   const formatEpoch=value=>Number(value).toLocaleString(undefined,{maximumFractionDigits:3});
   const formatMetric=value=>finite(value)?Number(value).toFixed(3):"—";
+  const formatAccuracy=value=>finite(value)?`${Number(value).toFixed(2)}%`:"—";
+  const formatBpb=value=>finite(value)?Number(value).toFixed(4):"—";
   const formatDuration=seconds=>{
     const total=Math.max(0,Math.round(Number(seconds)));
     const hours=Math.floor(total/3600),minutes=Math.floor((total%3600)/60),secs=total%60;
@@ -215,7 +217,7 @@
   for(const chain of warmdownChains)for(const run of chain.runs){
     const wandb=run.wandb?`<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${run.wandb}">${run.wandb}</a>`:"—";
     const beaker=run.beaker?`<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${run.beaker}">${run.beaker}</a>`:"—";
-    stages.insertAdjacentHTML("beforeend",`<tr><td>${chain.label}</td><td>${run.stage}</td><td>BS${run.batchSequences}</td><td>E${run.accumulatedEpoch}</td><td>${run.addedSteps.toLocaleString()}</td><td>${run.optimizerStep.toLocaleString()}</td><td>${finite(run.wallClockSeconds)?formatDuration(run.wallClockSeconds):"—"}</td><td>${run.status}</td><td>${formatMetric(run.validation)}</td><td>${wandb}</td><td>${beaker}</td></tr>`);
+    stages.insertAdjacentHTML("beforeend",`<tr><td>${chain.label}</td><td>${run.stage}</td><td>BS${run.batchSequences}</td><td>E${run.accumulatedEpoch}</td><td>${run.addedSteps.toLocaleString()}</td><td>${run.optimizerStep.toLocaleString()}</td><td>${finite(run.wallClockSeconds)?formatDuration(run.wallClockSeconds):"—"}</td><td>${run.status}</td><td>${formatMetric(run.validation)}</td><td>${formatAccuracy(run.hellaswagAccuracy)}</td><td>${formatBpb(run.hellaswagBpb)}</td><td>${formatAccuracy(run.avg8Accuracy)}</td><td>${formatBpb(run.avg8Bpb)}</td><td>${wandb}</td><td>${beaker}</td></tr>`);
   }
 
   const newRuns=warmdownChains.flatMap(chain=>chain.runs.filter(run=>run.stage!=="source").map(run=>({chain,run})));
