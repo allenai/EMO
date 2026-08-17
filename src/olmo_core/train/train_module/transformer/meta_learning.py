@@ -93,6 +93,10 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
         activation-gradient paths — attention, earlier layers, router — are untouched).
         ``"all"``: every expert receives the full outer gradient (the original, degenerate
         behavior; kept for ablation).
+    :param outer_pool: ``"full"`` (default): the outer pass routes over all experts (keep-all).
+        ``"random"``: the outer pass samples per-document pool sizes in [min, max] like vanilla
+        EMO, so the outer objective also trains restricted-forward (selective-inference)
+        operation. Evals are unaffected either way.
     """
 
     def __init__(
@@ -106,6 +110,7 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
         inner_grad_clip: Optional[float] = 1.0,
         log_grad_cosine: bool = True,
         outer_expert_update: str = "working_set",
+        outer_pool: str = "full",
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -127,6 +132,10 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
                 "outer_expert_update='working_set' requires a fixed 'inner_pool_size' "
                 "(the working-set size)"
             )
+        if outer_pool not in ("full", "random"):
+            raise OLMoConfigurationError(
+                f"invalid outer_pool '{outer_pool}', expected 'full' or 'random'"
+            )
 
         self.meta_mode = meta_mode
         self.inner_lr = inner_lr
@@ -136,6 +145,7 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
         self.inner_grad_clip = inner_grad_clip
         self.log_grad_cosine = log_grad_cosine
         self.outer_expert_update = outer_expert_update
+        self.outer_pool = outer_pool
         self._meta_step_count = 0
 
         # Cache the randpool routers and the fused expert-weight parameters. Both survive FSDP2
@@ -365,12 +375,15 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
 
             self._apply_pseudo_step(grad_stash)
 
-        # ---- Phase 2: outer forward/backward (full routing at theta') ----
+        # ---- Phase 2: outer forward/backward at theta' ----
+        # outer_pool="full": routing over all experts (keep-all). outer_pool="random": the router
+        # samples per-document pool sizes in [min, max] exactly like vanilla EMO, so the outer
+        # objective also trains restricted-forward operation (selective-inference robustness).
         # With outer_expert_update="working_set", each expert's weights receive gradient only
         # from slots inside the document's top-`inner_pool_size` working set (weight-only detach;
         # activation gradients and the router are untouched).
         self._set_router_meta_state(
-            force_pool=self._num_nonshared_experts,
+            force_pool=self._num_nonshared_experts if self.outer_pool == "full" else None,
             skip_aux=False,
             outer_detach_top_e=(
                 self.inner_pool_size if self.outer_expert_update == "working_set" else None
@@ -558,6 +571,7 @@ _META_CONFIG_FIELDS = (
     "inner_grad_clip",
     "log_grad_cosine",
     "outer_expert_update",
+    "outer_pool",
 )
 
 
@@ -576,6 +590,7 @@ class MetaLearningTransformerTrainModuleConfig(TransformerTrainModuleConfig):
     inner_grad_clip: Optional[float] = 1.0
     log_grad_cosine: bool = True
     outer_expert_update: str = "working_set"
+    outer_pool: str = "full"
 
     def build(
         self,
@@ -611,5 +626,6 @@ class MetaLearningTransformerTrainModuleConfig(TransformerTrainModuleConfig):
             inner_grad_clip=self.inner_grad_clip,
             log_grad_cosine=self.log_grad_cosine,
             outer_expert_update=self.outer_expert_update,
+            outer_pool=self.outer_pool,
             **kwargs,
         )
