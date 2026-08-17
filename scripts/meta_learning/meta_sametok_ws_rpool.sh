@@ -1,25 +1,18 @@
-# PARENT: "scripts/meta_learning/meta_sametok_100b.sh"
+# PARENT: "scripts/meta_learning/meta_sametok_ws.sh"
 # DESCRIPTION:
-#     meta_learning corrected arm (ii-ws): FOMAML same-tokens with WORKING-SET outer updates,
-#     100B tokens. Differences vs the stopped meta128_sametok_100b run (which degenerated into
-#     always-full-routing training and lost selective competence, pool32-full gap +0.71 nats by
-#     step 4154):
-#       1. outer_expert_update=working_set — in the outer (full-routing) backward, each expert's
-#          WEIGHTS receive gradient only from slots whose expert is in the document's top-32
-#          working set (weight-only detach: forward values, activation gradients to earlier
-#          layers, and the router are untouched — verified bitwise in verify_meta_step.py M1/M2).
-#          Every expert therefore only ever trains toward "perform well inside the full model,
-#          one pseudo-step ahead", from the documents that select it.
-#       2. inner_lr=3e-1, inner_grad_clip=10 — the pseudo-step must survive the bf16 all-gather
-#          (at 3e-2/clip=1 it was ~6% signal / 94% rounding noise). WATCH the new
-#          train/meta bf16 survival cosine metric in the first steps.
-#     Step cost ~2x baseline (dual-GEMM weight-only detach doubles outer expert compute).
+#     meta_learning lever arm (v): same-tokens working-set + RANDOMIZED OUTER POOL, 100B tokens.
+#     Identical to meta128_sametok_ws_100b EXCEPT outer_pool=random: the outer pass samples
+#     per-document pool sizes uniformly in [8, 128] exactly like vanilla EMO (instead of pinning
+#     keep-all), so the single outer objective trains restricted-forward operation directly —
+#     "a selective pseudo-step should improve the model under whatever pool it runs with."
+#     Working-set masking and the meta structure are unchanged; evals unaffected.
+#     Rationale: same selective-inference gap motivation as the lambda arm, but keeping a single
+#     loss (pure FOMAML) instead of a blended objective.
 #
 #   git add . && git commit && git push origin <branch>   # gantry clones from origin!
-#   MODE=beaker bash scripts/meta_learning/meta_sametok_ws_100b.sh
+#   MODE=beaker bash scripts/meta_learning/meta_sametok_ws_rpool.sh
 # BUDGET CUT 2026-08-17: phase-1 shortened from 100B to 20B tokens (step 4768; fixed ckpts at
-# 10B/20B). Runname keeps its historical _100b suffix so existing checkpoints/W&B resume in
-# place. Phase 2 = k=32-CPT-style cluster-wise selective CPT on tokens 20B-40B (window
+# 10B/20B). Names carry no token budget (WSD flat trunk; budgets change). Phase 2 = k=32-CPT-style cluster-wise selective CPT on tokens 20B-40B (window
 # extraction: scripts/meta_learning/run_extract_20b_40b.sh).
 ##############################################################
 source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
@@ -49,7 +42,7 @@ inner_lr=3e-1
 inner_grad_clip=10
 inner_pool_size=32
 
-runname="meta128_sametok_ws_100b"
+runname="meta128_sametok_ws_rpool"
 
 launch src/scripts/train/olmoe-1B-7B_fsl_meta.py $runname \
 		--save-folder="${MODELS_DIR}/$runname" \
@@ -68,7 +61,7 @@ launch src/scripts/train/olmoe-1B-7B_fsl_meta.py $runname \
 		--trainer.callbacks.wandb.entity=ryanyxw \
 		--trainer.callbacks.wandb.project=emo-extension \
 		--trainer.callbacks.wandb.name="${runname}" \
-		--trainer.callbacks.wandb.tags="[pretraining, ${EXPERIMENT_NAME}, same_tokens_ws, 100b]" \
+		--trainer.callbacks.wandb.tags="[pretraining, ${EXPERIMENT_NAME}, same_tokens_ws_rpool]" \
 		--model.block.feed_forward_moe.num_experts=${num_experts} \
 		--dataset.generate_doc_lengths=true \
 		--model.block.sequence_mixer.backend=flash_2 \
@@ -85,4 +78,5 @@ launch src/scripts/train/olmoe-1B-7B_fsl_meta.py $runname \
 		--train_module.inner_lr=${inner_lr} \
 		--train_module.inner_grad_clip=${inner_grad_clip} \
 		--train_module.inner_pool_size=${inner_pool_size} \
-		--train_module.outer_expert_update=working_set
+		--train_module.outer_expert_update=working_set \
+		--train_module.outer_pool=random

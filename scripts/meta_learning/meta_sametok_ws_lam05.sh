@@ -1,4 +1,4 @@
-# PARENT: "scripts/meta_learning/meta_sametok_ws_100b.sh"
+# PARENT: "scripts/meta_learning/meta_sametok_ws.sh"
 # DESCRIPTION:
 #     meta_learning lever arm (iv): same-tokens working-set + LAMBDA ANCHOR, 100B tokens.
 #     Identical to meta128_sametok_ws_100b EXCEPT lambda_inner=0.5 and lb_on_inner=true: the
@@ -10,10 +10,9 @@
 #     mechanism (a real restricted-forward loss) on top of the working-set meta structure.
 #
 #   git add . && git commit && git push origin <branch>   # gantry clones from origin!
-#   MODE=beaker bash scripts/meta_learning/meta_sametok_ws_lam05_100b.sh
+#   MODE=beaker bash scripts/meta_learning/meta_sametok_ws_lam05.sh
 # BUDGET CUT 2026-08-17: phase-1 shortened from 100B to 20B tokens (step 4768; fixed ckpts at
-# 10B/20B). Runname keeps its historical _100b suffix so existing checkpoints/W&B resume in
-# place. Phase 2 = k=32-CPT-style cluster-wise selective CPT on tokens 20B-40B (window
+# 10B/20B). Names carry no token budget (WSD flat trunk; budgets change). Phase 2 = k=32-CPT-style cluster-wise selective CPT on tokens 20B-40B (window
 # extraction: scripts/meta_learning/run_extract_20b_40b.sh).
 ##############################################################
 source "$(dirname "${BASH_SOURCE[0]}")/../launch_common.sh"
@@ -44,7 +43,7 @@ inner_grad_clip=10
 inner_pool_size=32
 lambda_inner=0.5
 
-runname="meta128_sametok_ws_lam05_100b"
+runname="meta128_sametok_ws_lam05"
 
 launch src/scripts/train/olmoe-1B-7B_fsl_meta.py $runname \
 		--save-folder="${MODELS_DIR}/$runname" \
@@ -63,7 +62,7 @@ launch src/scripts/train/olmoe-1B-7B_fsl_meta.py $runname \
 		--trainer.callbacks.wandb.entity=ryanyxw \
 		--trainer.callbacks.wandb.project=emo-extension \
 		--trainer.callbacks.wandb.name="${runname}" \
-		--trainer.callbacks.wandb.tags="[pretraining, ${EXPERIMENT_NAME}, same_tokens_ws_lam05, 100b]" \
+		--trainer.callbacks.wandb.tags="[pretraining, ${EXPERIMENT_NAME}, same_tokens_ws_lam05]" \
 		--model.block.feed_forward_moe.num_experts=${num_experts} \
 		--dataset.generate_doc_lengths=true \
 		--model.block.sequence_mixer.backend=flash_2 \

@@ -16,7 +16,7 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
-CHECKPOINT=meta_learning/meta128_vanilla_100b/step4768
+CHECKPOINT=meta_learning/meta128_vanilla/step4768
 OUT=meta_learning/data/meta128_20B-40B
 NUM_SHARDS=16
 LOGS="$OUT/logs"
