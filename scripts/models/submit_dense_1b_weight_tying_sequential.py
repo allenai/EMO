@@ -113,7 +113,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--resume-from-predecay-epoch",
         type=int,
-        choices=TARGETS,
+        choices=SATURATION_TARGETS,
         help=(
             "for a failed retry, resume the first incomplete stage from its retained exact "
             "pre-decay checkpoint instead of replaying that stage's stable training segment"
@@ -175,8 +175,8 @@ def parse_args() -> argparse.Namespace:
             (512, "1.0"),
         }:
             parser.error("only BS64/WD0.3 and BS512/WD1.0 EmbedWD support E24 extensions")
-        if args.retry_failed or args.mlp_weight_decay is not None:
-            parser.error("the E24 extension is distinct from failed retries and MLP WD")
+        if args.mlp_weight_decay is not None:
+            parser.error("the E24 extension is distinct from MLP WD")
     if args.include_downstream_eval and not args.extend_to_saturation:
         parser.error("--include-downstream-eval is scoped to saturation extensions")
     if args.decay_embeddings:
@@ -460,7 +460,9 @@ def register_submission(
     run_id = sequential_run_id(args)
     matching = [record for record in records if record.get("id") == run_id]
     if args.retry_failed or args.extend_to_saturation:
-        required_statuses = {"complete"} if args.extend_to_saturation else {"failed", "canceled"}
+        required_statuses = (
+            {"failed", "canceled"} if args.retry_failed else {"complete"}
+        )
         if len(matching) != 1 or matching[0].get("status") not in required_statuses:
             raise RuntimeError(
                 f"continuation requires exactly one entry in {required_statuses} for {run_id}"
@@ -514,10 +516,12 @@ def register_submission(
             "stages": stages,
             "reason": (
                 (
-                    f"Continued the validated E24 frontier toward saturation from E{current_epoch}. "
-                    if args.extend_to_saturation
+                    f"Retried the saturation extension from E{current_epoch}. "
+                    if args.retry_failed and args.extend_to_saturation
                     else f"Retried after a failed persistent attempt from E{current_epoch}. "
                     if args.retry_failed
+                    else f"Continued the validated E24 frontier toward saturation from E{current_epoch}. "
+                    if args.extend_to_saturation
                     else ""
                 )
                 + "Submitted as one persistent saturation-gated job. Every stage evaluates its WSD "
@@ -630,7 +634,9 @@ def validate_registration(args: argparse.Namespace) -> None:
         record for record in report.get(registry_key(args), []) if record.get("id") == run_id
     ]
     if args.retry_failed or args.extend_to_saturation:
-        required_statuses = {"complete"} if args.extend_to_saturation else {"failed", "canceled"}
+        required_statuses = (
+            {"failed", "canceled"} if args.retry_failed else {"complete"}
+        )
         if len(matching) != 1 or matching[0].get("status") not in required_statuses:
             raise RuntimeError(
                 f"continuation requires exactly one entry in {required_statuses} for {run_id}"
