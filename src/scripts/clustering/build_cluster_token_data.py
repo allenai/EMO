@@ -161,12 +161,29 @@ def _flush(out_dir, c, role, window, tag, tokens):
 
 
 def main():
+    global PART, WINDOW_DIRS, TOTAL_BUDGET, HELDOUT_CAP, K
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--out", required=True)
     p.add_argument("--workers", type=int, default=16)
     p.add_argument("--finalize-only", action="store_true",
                    help="skip phases 1-2 (shards already written); just merge and verify")
+    p.add_argument("--part", default=None,
+                   help="partition jsonl.gz (default: the frozen modular_extension k=32 partition)")
+    p.add_argument("--window-dirs", default=None,
+                   help="comma-separated extraction window dirs (default: the two modular_extension windows)")
+    p.add_argument("--budget", type=float, default=None,
+                   help="total train-token budget across clusters (default: 30e9)")
+    p.add_argument("--k", type=int, default=None, help="number of clusters (default: 32)")
     args = p.parse_args()
+
+    if args.part is not None:
+        PART = args.part
+    if args.window_dirs is not None:
+        WINDOW_DIRS = args.window_dirs.split(",")
+    if args.budget is not None:
+        TOTAL_BUDGET = int(args.budget)
+    if args.k is not None:
+        K = args.k
 
     if args.finalize_only:
         finalize(args.out)

@@ -88,3 +88,33 @@ meta-pretrained model vs the baseline — does selective-expert CPT transfer now
 
 Outputs land in `/weka/oe-training-default/ryanwang/EMO/meta_learning/` (= `./meta_learning/` in
 a GPU-attached session; gitignored — never `git add -A`).
+
+## Phase 2: per-arm k=32 cluster-wise CPT on tokens 20B–40B
+
+The modular_extension k=32-CPT (no extension) protocol, applied per arm to the 20B
+checkpoints (`step4768`), on the shared extracted 20B–40B doc window
+(`meta_learning/data/meta128_20B-40B/`, one extraction serves all arms). Everything is
+**per-arm**: each model clusters the docs with its OWN router and selects experts from its
+own concentration. CPT stages are **standard 32-expert training** (pool pinned
+min=max=eval=33 — no random-pool EMO objective, since the meta arms never trained across
+pool sizes), **carry** optimizer (Adam moments sliced from the 20B checkpoint), 4-node
+Beaker jobs, sequential clusters 0..31. Budget: 20B train tokens per arm (final model =
+40B). Arms: `sametok_ws_lam05` first, then `vanilla`.
+
+Stage order (per arm, `MODEL=vanilla|sametok_ws_lam05`):
+
+```bash
+MODEL=... bash scripts/meta_learning/convert_20b_to_hf.sh          # 1. step4768 -> HF (local GPU)
+MODEL=... bash scripts/meta_learning/launch_embed_docs.sh          # 2. pilot shards 0-15 (Beaker)
+MODEL=... SHARDS="$(seq -s, 0 127)" JOBS=4 bash scripts/meta_learning/launch_embed_docs.sh  # full
+MODEL=... bash scripts/meta_learning/cluster_docs.sh               # 3. k=32 spherical k-means (local CPU)
+PYTHONPATH=.:src python scripts/meta_learning/cluster_expert_concentration.py --model ...  # 4. top-32/layer selection
+MODEL=... bash scripts/meta_learning/build_cluster_token_data.sh   # 5. per-cluster token shards (20B budget)
+CLUSTERS=0 MODEL=... bash scripts/meta_learning/run_k32cpt_arm.sh  # 6. pilot stage, then full 0..31
+```
+
+Phase-2 files: `convert_20b_to_hf.sh`, `launch_embed_docs.sh`, `cluster_docs.sh`,
+`cluster_expert_concentration.py` (127 standard experts), `build_cluster_token_data.sh`
+(parameterized `src.scripts.clustering.build_cluster_token_data`),
+`expert_subset_surgery.py` (128-expert pool, `--conc` per arm, bf16 snapshots opt-in),
+`k32cpt_stage.sh` (4 nodes), `run_k32cpt_arm.sh` (sequential driver, resumable).
