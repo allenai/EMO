@@ -8901,7 +8901,7 @@
       "embeddingWeightDecay": "global",
       "status": "running",
       "beakerStatus": "running",
-      "activeEpoch": 2,
+      "activeEpoch": 4,
       "activeWds": [
         "0.033",
         "0.1"
@@ -8971,7 +8971,7 @@
             "weightTying": true,
             "experiment": "01M0C47JX1B19GHTJQEANJ9M8H",
             "beaker": "01M0C47JX1B19GHTJQEANJ9M8H",
-            "job": "01M0C47K0D2TJ7RT8ZS2P0R5VV",
+            "job": "01M0CKQ6D1MBJX8ZCETE1S1BJ4",
             "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5"
           },
           "0.1": {
@@ -9132,7 +9132,7 @@
             "weightTying": true,
             "experiment": "01M0C47JX1B19GHTJQEANJ9M8H",
             "beaker": "01M0C47JX1B19GHTJQEANJ9M8H",
-            "job": "01M0C47K0D2TJ7RT8ZS2P0R5VV",
+            "job": "01M0CKQ6D1MBJX8ZCETE1S1BJ4",
             "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5"
           }
         }
@@ -9160,7 +9160,29 @@
           "variant": "DR+WT+EmbedWD",
           "experiment": "01M0C47JX1B19GHTJQEANJ9M8H",
           "beaker": "01M0C47JX1B19GHTJQEANJ9M8H",
-          "job": "01M0C47K0D2TJ7RT8ZS2P0R5VV"
+          "job": "01M0CKQ6D1MBJX8ZCETE1S1BJ4"
+        },
+        "2": {
+          "candidateValidationExact": {
+            "0.033": 3.35,
+            "0.1": 3.355
+          },
+          "candidates": [
+            "0.033",
+            "0.1"
+          ],
+          "decision": "continue",
+          "epoch": 2,
+          "previousEpoch": 1,
+          "previousSelectedValidationExact": 3.501,
+          "selectedValidation": 3.35,
+          "selectedValidationExact": 3.35,
+          "selectedWd": "0.033",
+          "status": "complete",
+          "variant": "DR+WT+EmbedWD",
+          "experiment": "01M0C47JX1B19GHTJQEANJ9M8H",
+          "beaker": "01M0C47JX1B19GHTJQEANJ9M8H",
+          "job": "01M0CKQ6D1MBJX8ZCETE1S1BJ4"
         }
       },
       "reason": "Submitted as one persistent adaptive WD job. Initial E1 candidates are the trusted ordinary-run optimum plus its lower and higher neighbors. Every later frontier evaluates the preceding winner and one WD level higher; fixed-WD trajectories keep one canonical directory and the chain stops at the first selected held-out validation non-improvement.",
@@ -9169,12 +9191,12 @@
         "01M0C47K0D2TJ7RT8ZS2P0R5VV",
         "01M0CKQ6D1MBJX8ZCETE1S1BJ4"
       ],
-      "activeWd": "0.1",
+      "activeWd": "0.033",
       "progress": {
-        "step": 7630,
-        "totalSteps": 7630,
-        "percent": 100.0,
-        "latestTrain": 3.389
+        "step": 10022,
+        "totalSteps": 15259,
+        "percent": 65.7,
+        "latestTrain": 3.385
       }
     },
     {
@@ -9694,10 +9716,10 @@
       ],
       "activeWd": "0.3",
       "progress": {
-        "step": 9486,
+        "step": 13249,
         "totalSteps": 15259,
-        "percent": 62.2,
-        "latestTrain": 3.391
+        "percent": 86.8,
+        "latestTrain": 3.425
       }
     },
     {
@@ -10217,10 +10239,10 @@
       ],
       "activeWd": "0.333",
       "progress": {
-        "step": 4076,
+        "step": 5983,
         "totalSteps": 7630,
-        "percent": 53.4,
-        "latestTrain": 3.39
+        "percent": 78.4,
+        "latestTrain": 3.354
       }
     },
     {
@@ -10665,10 +10687,10 @@
       ],
       "activeWd": "1.0",
       "progress": {
-        "step": 863,
+        "step": 1673,
         "totalSteps": 1908,
-        "percent": 45.2,
-        "latestTrain": 4.225
+        "percent": 87.7,
+        "latestTrain": 3.837
       }
     }
   ]

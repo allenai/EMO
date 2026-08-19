@@ -11295,7 +11295,7 @@
       "embeddingWeightDecay": "global",
       "status": "running",
       "beakerStatus": "running",
-      "activeEpoch": 4,
+      "activeEpoch": 8,
       "activeWds": [
         "0.033",
         "0.1"
@@ -11636,6 +11636,59 @@
             "beaker": "01M0C47R1AMRVXZVSKNMNN1GZM",
             "job": "01M0C47R4NASRWDVEE3C1A6DD7",
             "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5"
+          },
+          "0.1": {
+            "acc": 29.110000000000003,
+            "avg8Accuracy": 38.1125,
+            "avg8Bpb": 1.51475,
+            "bpb": 1.021,
+            "c4": 3.504,
+            "dataOrder": "dynamic_repacking",
+            "decayEmbeddings": true,
+            "downstream": {
+              "arc_challenge": 22.41,
+              "arc_easy": 45.09,
+              "boolq": 57.86,
+              "csqa": 34.07,
+              "hellaswag": 29.110000000000003,
+              "openbookqa": 22.0,
+              "piqa": 60.45,
+              "socialiqa": 39.92,
+              "winogrande": 51.849999999999994
+            },
+            "downstreamBpb": {
+              "arc_challenge": 1.553,
+              "arc_easy": 1.617,
+              "boolq": 2.81,
+              "csqa": 1.653,
+              "hellaswag": 1.021,
+              "openbookqa": 1.856,
+              "piqa": 1.359,
+              "socialiqa": 1.463,
+              "winogrande": 1.596
+            },
+            "dynamicRepacking": true,
+            "embeddingWeightDecay": "0.1",
+            "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.1/step15259",
+            "epoch": 4,
+            "gap": -0.043,
+            "lr": "2e-3",
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.1",
+            "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.1/step13732",
+            "sequential": true,
+            "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.1/step6866",
+            "status": "complete",
+            "train": 3.547,
+            "validation": 3.504,
+            "validationExact": 3.504,
+            "variant": "DR+WT+EmbedWD",
+            "wandb": "qok1cwc1",
+            "wd": "0.1",
+            "weightTying": true,
+            "experiment": "01M0C47R1AMRVXZVSKNMNN1GZM",
+            "beaker": "01M0C47R1AMRVXZVSKNMNN1GZM",
+            "job": "01M0C47R4NASRWDVEE3C1A6DD7",
+            "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5"
           }
         }
       },
@@ -11685,6 +11738,28 @@
           "experiment": "01M0C47R1AMRVXZVSKNMNN1GZM",
           "beaker": "01M0C47R1AMRVXZVSKNMNN1GZM",
           "job": "01M0C47R4NASRWDVEE3C1A6DD7"
+        },
+        "4": {
+          "candidateValidationExact": {
+            "0.033": 3.498,
+            "0.1": 3.504
+          },
+          "candidates": [
+            "0.033",
+            "0.1"
+          ],
+          "decision": "continue",
+          "epoch": 4,
+          "previousEpoch": 2,
+          "previousSelectedValidationExact": 3.591,
+          "selectedValidation": 3.498,
+          "selectedValidationExact": 3.498,
+          "selectedWd": "0.033",
+          "status": "complete",
+          "variant": "DR+WT+EmbedWD",
+          "experiment": "01M0C47R1AMRVXZVSKNMNN1GZM",
+          "beaker": "01M0C47R1AMRVXZVSKNMNN1GZM",
+          "job": "01M0C47R4NASRWDVEE3C1A6DD7"
         }
       },
       "reason": "Submitted as one persistent adaptive WD job. Initial E1 candidates are the trusted ordinary-run optimum plus its lower and higher neighbors. Every later frontier evaluates the preceding winner and one WD level higher; fixed-WD trajectories keep one canonical directory and the chain stops at the first selected held-out validation non-improvement.",
@@ -11692,12 +11767,12 @@
       "jobs": [
         "01M0C47R4NASRWDVEE3C1A6DD7"
       ],
-      "activeWd": "0.1",
+      "activeWd": "0.033",
       "progress": {
-        "step": 15259,
-        "totalSteps": 15259,
-        "percent": 100.0,
-        "latestTrain": 3.547
+        "step": 20304,
+        "totalSteps": 30518,
+        "percent": 66.5,
+        "latestTrain": 3.593
       }
     },
     {
@@ -12218,10 +12293,10 @@
       ],
       "activeWd": "0.1",
       "progress": {
-        "step": 9882,
+        "step": 12878,
         "totalSteps": 15259,
-        "percent": 64.8,
-        "latestTrain": 3.582
+        "percent": 84.4,
+        "latestTrain": 3.581
       }
     },
     {
@@ -12742,10 +12817,10 @@
       ],
       "activeWd": "0.1",
       "progress": {
-        "step": 4560,
+        "step": 5876,
         "totalSteps": 7630,
-        "percent": 59.8,
-        "latestTrain": 3.6
+        "percent": 77.0,
+        "latestTrain": 3.542
       }
     },
     {
@@ -12792,7 +12867,7 @@
       "embeddingWeightDecay": "global",
       "status": "running",
       "beakerStatus": "running",
-      "activeEpoch": 8,
+      "activeEpoch": 16,
       "activeWds": [
         "0.3",
         "1.0"
@@ -13294,6 +13369,59 @@
             "beaker": "01M0C47VZJ5THX7M0TG0PXJYMX",
             "job": "01M0C47W37FE349Q1FH5SHWYAC",
             "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5"
+          },
+          "1.0": {
+            "acc": 26.52,
+            "avg8Accuracy": 36.765,
+            "avg8Bpb": 1.648,
+            "bpb": 1.105,
+            "c4": 3.744,
+            "dataOrder": "dynamic_repacking",
+            "decayEmbeddings": true,
+            "downstream": {
+              "arc_challenge": 20.07,
+              "arc_easy": 41.23,
+              "boolq": 56.24,
+              "csqa": 32.35,
+              "hellaswag": 26.52,
+              "openbookqa": 22.0,
+              "piqa": 59.519999999999996,
+              "socialiqa": 39.71,
+              "winogrande": 52.72
+            },
+            "downstreamBpb": {
+              "arc_challenge": 1.711,
+              "arc_easy": 1.849,
+              "boolq": 2.561,
+              "csqa": 1.789,
+              "hellaswag": 1.105,
+              "openbookqa": 2.016,
+              "piqa": 1.446,
+              "socialiqa": 1.609,
+              "winogrande": 1.659
+            },
+            "dynamicRepacking": true,
+            "embeddingWeightDecay": "1.0",
+            "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd1.0/step3815",
+            "epoch": 8,
+            "gap": 0.021,
+            "lr": "2e-3",
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd1.0",
+            "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd1.0/step3432",
+            "sequential": true,
+            "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd1.0/step1716",
+            "status": "complete",
+            "train": 3.723,
+            "validation": 3.744,
+            "validationExact": 3.744,
+            "variant": "DR+WT+EmbedWD",
+            "wandb": "h9v0563q",
+            "wd": "1.0",
+            "weightTying": true,
+            "experiment": "01M0C47VZJ5THX7M0TG0PXJYMX",
+            "beaker": "01M0C47VZJ5THX7M0TG0PXJYMX",
+            "job": "01M0C47W37FE349Q1FH5SHWYAC",
+            "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5"
           }
         }
       },
@@ -13365,6 +13493,28 @@
           "experiment": "01M0C47VZJ5THX7M0TG0PXJYMX",
           "beaker": "01M0C47VZJ5THX7M0TG0PXJYMX",
           "job": "01M0C47W37FE349Q1FH5SHWYAC"
+        },
+        "8": {
+          "candidateValidationExact": {
+            "0.3": 3.542,
+            "1.0": 3.744
+          },
+          "candidates": [
+            "0.3",
+            "1.0"
+          ],
+          "decision": "continue",
+          "epoch": 8,
+          "previousEpoch": 4,
+          "previousSelectedValidationExact": 3.741,
+          "selectedValidation": 3.542,
+          "selectedValidationExact": 3.542,
+          "selectedWd": "0.3",
+          "status": "complete",
+          "variant": "DR+WT+EmbedWD",
+          "experiment": "01M0C47VZJ5THX7M0TG0PXJYMX",
+          "beaker": "01M0C47VZJ5THX7M0TG0PXJYMX",
+          "job": "01M0C47W37FE349Q1FH5SHWYAC"
         }
       },
       "reason": "Submitted as one persistent adaptive WD job. Initial E1 candidates are the trusted ordinary-run optimum plus its lower and higher neighbors. Every later frontier evaluates the preceding winner and one WD level higher; fixed-WD trajectories keep one canonical directory and the chain stops at the first selected held-out validation non-improvement.",
@@ -13372,12 +13522,12 @@
       "jobs": [
         "01M0C47W37FE349Q1FH5SHWYAC"
       ],
-      "activeWd": "1.0",
+      "activeWd": "0.3",
       "progress": {
-        "step": 3815,
-        "totalSteps": 3815,
-        "percent": 100.0,
-        "latestTrain": 3.505
+        "step": 3443,
+        "totalSteps": 7630,
+        "percent": 45.1,
+        "latestTrain": 3.617
       }
     }
   ]
