@@ -2,6 +2,10 @@
   const d=window.ICSL_REPORT_DATA||{batchSweeps:[],targetEpochs:[]};
   const simulation=window.ICSL_BATCH_SIMULATION_DATA||{columns:[],runs:[]};
   const dataLoader=window.ICSL_DATA_LOADER_DATA||{runs:[]};
+  const showDataLoaderColumns=(dataLoader.runs||[]).length>0;
+  const adaptiveChains=d.adaptiveDrWtEmbedWdChains||[];
+  const adaptiveBatches=new Set(adaptiveChains.map(chain=>Number(chain.batchSequences)));
+  const showAdaptiveColumns=adaptiveChains.length>0;
   const healthStyles=document.createElement('style');
   healthStyles.textContent=`
     .health-key{display:inline-block;width:14px;height:14px;border:0;border-radius:4px;background:#fecaca;vertical-align:-2px}
@@ -44,7 +48,7 @@
     if(Number.isFinite(maxLearningRate)&&lr>maxLearningRate)return false;
     if(d.selectionPolicy?.allowAllCompletedCoordinates)return true;
     if(lr<2e-3)return true;
-    return r.batchSequences===256&&lr===2e-3&&wd===0.333;
+    return [256,512].includes(r.batchSequences)&&lr===2e-3&&wd===0.333;
   };
   const key=r=>`${r.batchSequences}|${r.epoch}`;
 
@@ -153,7 +157,7 @@
     if(!current||metric(run)<metric(current))simulationSelected.set(simulationKey,run);
   });
   const drSelected=new Map();
-  summaryBatches.forEach(batch=>{
+  if(showDataLoaderColumns)summaryBatches.forEach(batch=>{
     let wdFloor=-Infinity;
     (dataLoader.targetEpochs||d.targetEpochs||[]).map(Number).sort((a,b)=>a-b).forEach(epoch=>{
       if(epoch===1){
@@ -176,6 +180,51 @@
       wdFloor=Number(winner.wd);
     });
   });
+  const adaptiveSelected=new Map();
+  adaptiveChains.forEach(chain=>{
+    Object.entries(chain.frontiers||{}).forEach(([epoch,frontier])=>{
+      const wd=String(frontier.selectedWd);
+      const result=chain.results?.[String(epoch)]?.[wd];
+      if(!result||!Number.isFinite(metric(result)))return;
+      adaptiveSelected.set(`${chain.batchSequences}|${Number(epoch)}`,{
+        ...chain,...result,
+        epoch:Number(epoch),wd,lr:chain.lr,
+        status:result.status||'complete',
+        series:`BS ${chain.batchSequences} · DR+WT+EmbedWD`,
+      });
+    });
+  });
+  const methodColumnsForBatch=batch=>{
+    const columns=[{batch,kind:'original',label:`BS ${batch} · Original`}];
+    if(adaptiveBatches.has(batch))columns.push({batch,kind:'adaptive',label:`BS ${batch} · DR+WT+EmbedWD`});
+    if(showDataLoaderColumns)columns.push({batch,kind:'dr',label:`BS ${batch} · DR`});
+    return columns;
+  };
+  const summaryMethodColumns=summaryBatches.flatMap(methodColumnsForBatch);
+  const runForSummaryColumn=(column,epoch)=>{
+    if(column.kind==='adaptive')return adaptiveSelected.get(`${column.batch}|${Number(epoch)}`);
+    if(column.kind==='dr')return drSelected.get(`${column.batch}|${Number(epoch)}`);
+    return selected.get(`${column.batch}|${Number(epoch)}`);
+  };
+  const setAdaptiveSummaryHeader=(bodyId,leadingLabel,{trainingTime=false}={})=>{
+    if(!showAdaptiveColumns)return;
+    const row=document.querySelector(`#${bodyId}`)?.closest('table')?.querySelector('thead tr');
+    if(!row)return;
+    const methodHeaders=summaryMethodColumns.map(column=>`<th>${column.label}</th>`).join('');
+    const simulationHeaders=(simulation.columns||[]).map(column=>`<th>${column.label}</th>`).join('');
+    row.innerHTML=`<th>${leadingLabel}</th>${trainingTime?'<th class="training-time-header">Training time</th>':''}${methodHeaders}${simulationHeaders}`;
+  };
+  setAdaptiveSummaryHeader('validation-summary','Epoch');
+  setAdaptiveSummaryHeader('optimizer-step-summary','Optimizer steps',{trainingTime:true});
+  setAdaptiveSummaryHeader('epoch-hs-accuracy-summary','Epoch');
+  setAdaptiveSummaryHeader('epoch-hs-bpb-summary','Epoch');
+  setAdaptiveSummaryHeader('epoch-avg8-accuracy-summary','Epoch');
+  setAdaptiveSummaryHeader('epoch-avg8-bpb-summary','Epoch');
+  setAdaptiveSummaryHeader('coordinate-summary','Epoch');
+  setAdaptiveSummaryHeader('optimizer-step-hs-accuracy-summary','Optimizer steps',{trainingTime:true});
+  setAdaptiveSummaryHeader('optimizer-step-hs-bpb-summary','Optimizer steps',{trainingTime:true});
+  setAdaptiveSummaryHeader('optimizer-step-avg8-accuracy-summary','Optimizer steps',{trainingTime:true});
+  setAdaptiveSummaryHeader('optimizer-step-avg8-bpb-summary','Optimizer steps',{trainingTime:true});
   const simulationRunAtMatchedSteps=(column,optimizerSteps,comparison)=>{
     const explicitMappings=Object.entries(column.matchedOptimizerStepsByEpoch||{});
     const explicitEpoch=explicitMappings.find(([,steps])=>Number(steps)===optimizerSteps)?.[0];
@@ -207,6 +256,11 @@
     if(stopped&&Number(epoch)>Number(stopped.priorBest.epoch))return {run:stopped.priorBest,replacedRun:run,value:metric(stopped.priorBest),carried:true,sourceEpoch:Number(stopped.priorBest.epoch),stopEpoch:Number(stopped.terminal.epoch)};
     if(run)return {run,value:metric(run),carried:false,sourceEpoch:Number(run.epoch)};
     return null;
+  };
+  const matchedSummaryEntryFor=(column,epoch)=>{
+    if(column.kind==='original')return matchedEntryFor(column.batch,epoch);
+    const run=runForSummaryColumn(column,epoch);
+    return run?{run,value:metric(run),carried:false,sourceEpoch:Number(run.epoch)}:null;
   };
   const coordinateKeys=new Set(coordinateRuns.map(key));
   const chartRuns=[...selected.values()].filter(run=>coordinateKeys.has(key(run)));
@@ -278,6 +332,16 @@
     const completed=[...drSelected.entries()].filter(([key])=>key.startsWith(`${batch}|`)).map(([,run])=>run);
     if(completed.length)bestByDRBatch.set(batch,completed.reduce((best,run)=>metric(run)<metric(best)?run:best));
   });
+  const bestByAdaptiveBatch=new Map();
+  epochSummaryBatches.forEach(batch=>{
+    const completed=[...adaptiveSelected.entries()].filter(([key])=>key.startsWith(`${batch}|`)).map(([,run])=>run);
+    if(completed.length)bestByAdaptiveBatch.set(batch,completed.reduce((best,run)=>metric(run)<metric(best)?run:best));
+  });
+  const bestForSummaryColumn=column=>{
+    if(column.kind==='adaptive')return bestByAdaptiveBatch.get(column.batch);
+    if(column.kind==='dr')return bestByDRBatch.get(column.batch);
+    return bestByBatch.get(column.batch);
+  };
   const bestBySimulation=new Map();
   (simulation.columns||[]).forEach(column=>{
     const completed=[...simulationSelected.values()].filter(run=>run.method===column.key);
@@ -286,21 +350,18 @@
   const validationSummary=document.querySelector('#validation-summary');
   validationSummary.innerHTML=(d.targetEpochs||[]).map(epoch=>{
     const rowRuns=[
-      ...epochSummaryBatches.flatMap(batch=>[selected.get(`${batch}|${epoch}`),drSelected.get(`${batch}|${epoch}`)]),
+      ...summaryMethodColumns.map(column=>runForSummaryColumn(column,epoch)),
       ...(simulation.columns||[]).map(column=>simulationSelected.get(`${column.key}|${epoch}`)),
     ].filter(Boolean);
     const rowBestMetric=rowRuns.length?Math.min(...rowRuns.map(metric)):null;
-    const cells=epochSummaryBatches.flatMap(batch=>{
-      const run=selected.get(`${batch}|${epoch}`);
-      const drRun=drSelected.get(`${batch}|${epoch}`);
-      return [[run,bestByBatch.get(batch),'Original'],[drRun,bestByDRBatch.get(batch),'DR']].map(([candidate,columnBestRun,method])=>{
-        if(!candidate)return '<td>—</td>';
-        const columnBest=columnBestRun===candidate;
-        const rowBest=metric(candidate)===rowBestMetric;
-        const formatted=metric(candidate).toFixed(3);
-        const rowMarked=rowBest?`<span class="summary-row-best">${formatted}</span>`:formatted;
-        return `<td class="${columnBest?'summary-best':''}" title="BS ${batch} ${method}; LR ${candidate.lr}; WD ${candidate.wd}">${columnBest?`<strong>${rowMarked}</strong>`:rowMarked}</td>`;
-      });
+    const cells=summaryMethodColumns.map(column=>{
+      const candidate=runForSummaryColumn(column,epoch);
+      if(!candidate)return '<td>—</td>';
+      const columnBest=bestForSummaryColumn(column)===candidate;
+      const rowBest=metric(candidate)===rowBestMetric;
+      const formatted=metric(candidate).toFixed(3);
+      const rowMarked=rowBest?`<span class="summary-row-best">${formatted}</span>`:formatted;
+      return `<td class="${columnBest?'summary-best':''}" title="${column.label}; LR ${candidate.lr}; WD ${candidate.wd}">${columnBest?`<strong>${rowMarked}</strong>`:rowMarked}</td>`;
     }).join('');
     const simulationCells=(simulation.columns||[]).map(column=>{
       const run=simulationSelected.get(`${column.key}|${epoch}`);
@@ -314,14 +375,51 @@
     return `<tr><td><strong>E${epoch}</strong></td>${cells}${simulationCells}</tr>`;
   }).join('');
 
+  const epochDownstreamTables=[
+    {bodyId:'epoch-hs-accuracy-summary',metricName:'acc',higherIsBetter:true,decimals:2,label:'HellaSwag accuracy'},
+    {bodyId:'epoch-hs-bpb-summary',metricName:'bpb',higherIsBetter:false,decimals:3,label:'HellaSwag BPB'},
+    {bodyId:'epoch-avg8-accuracy-summary',metricName:'avg8_acc',higherIsBetter:true,decimals:2,label:'8-task average accuracy'},
+    {bodyId:'epoch-avg8-bpb-summary',metricName:'avg8_bpb',higherIsBetter:false,decimals:3,label:'8-task average BPB'},
+  ];
+  const renderEpochDownstreamTable=config=>{
+    const body=document.querySelector(`#${config.bodyId}`);
+    if(!body)return;
+    const bestRunByColumn=new Map();
+    summaryMethodColumns.forEach(column=>{
+      const candidates=(d.targetEpochs||[]).map(epoch=>runForSummaryColumn(column,epoch)).filter(Boolean).filter(run=>Number.isFinite(value(run,config.metricName)));
+      if(!candidates.length)return;
+      bestRunByColumn.set(`${column.kind}|${column.batch}`,candidates.reduce((best,run)=>{
+        const candidateValue=value(run,config.metricName),bestValue=value(best,config.metricName);
+        return config.higherIsBetter?candidateValue>bestValue?run:best:candidateValue<bestValue?run:best;
+      }));
+    });
+    body.innerHTML=(d.targetEpochs||[]).map(epoch=>{
+      const rowRuns=summaryMethodColumns.map(column=>runForSummaryColumn(column,epoch)).filter(Boolean);
+      const rowValues=rowRuns.map(run=>value(run,config.metricName)).filter(Number.isFinite);
+      const rowBest=rowValues.length?(config.higherIsBetter?Math.max(...rowValues):Math.min(...rowValues)):null;
+      const cells=summaryMethodColumns.map(column=>{
+        const run=runForSummaryColumn(column,epoch);
+        const metricValue=run?value(run,config.metricName):null;
+        if(!run||!Number.isFinite(metricValue))return '<td>—</td>';
+        const columnBest=bestRunByColumn.get(`${column.kind}|${column.batch}`)===run;
+        const formatted=metricValue.toFixed(config.decimals);
+        const rowMarked=metricValue===rowBest?`<span class="summary-row-best">${formatted}</span>`:formatted;
+        const displayed=columnBest?`<strong>${rowMarked}</strong>`:rowMarked;
+        return `<td class="${columnBest?'summary-best':''}" title="${column.label}; validation-selected LR ${run.lr}; WD ${run.wd}; ${config.label}">${displayed}</td>`;
+      }).join('');
+      return `<tr><td><strong>E${epoch}</strong></td>${cells}</tr>`;
+    }).join('');
+  };
+  epochDownstreamTables.forEach(renderEpochDownstreamTable);
+
   const coordinateSummary=document.querySelector('#coordinate-summary');
   if(coordinateSummary)coordinateSummary.innerHTML=(d.targetEpochs||[]).map(epoch=>{
-    const rowRuns=epochSummaryBatches.map(batch=>selected.get(`${batch}|${epoch}`)).filter(Boolean);
+    const rowRuns=summaryMethodColumns.map(column=>runForSummaryColumn(column,epoch)).filter(Boolean);
     const rowBestMetric=rowRuns.length?Math.min(...rowRuns.map(metric)):null;
-    const cells=epochSummaryBatches.map(batch=>{
-      const run=selected.get(`${batch}|${epoch}`);
+    const cells=summaryMethodColumns.map(column=>{
+      const run=runForSummaryColumn(column,epoch);
       if(!run)return '<td>—</td>';
-      const columnBest=bestByBatch.get(batch)===run;
+      const columnBest=bestForSummaryColumn(column)===run;
       const rowBest=metric(run)===rowBestMetric;
       const formatted=`(${run.lr}, ${run.wd})`;
       const rowMarked=rowBest?`<span class="summary-row-best">${formatted}</span>`:formatted;
@@ -350,40 +448,30 @@
     const secondsPerStep=Number(optimizerTiming.secondsPerStep);
     const trainingSeconds=optimizerSteps*secondsPerStep;
     const timeCell=Number.isFinite(trainingSeconds)?`<td class="matched-value" title="${optimizerSteps.toLocaleString()} steps × ${secondsPerStep}s per step">≈${formatDuration(trainingSeconds)}</td>`:'<td>—</td>';
-    const rowEntries=[...optimizerSummaryBatches.flatMap(batch=>{
-      const epoch=comparison.epochs?.[String(batch)];
-      if(!Number.isFinite(epoch))return [null,null];
-      const original=matchedEntryFor(batch,epoch);
-      const drRun=drSelected.get(`${batch}|${Number(epoch)}`);
-      return [original,drRun?{run:drRun,value:metric(drRun),carried:false,sourceEpoch:Number(drRun.epoch)}:null];
+    const rowEntries=[...summaryMethodColumns.map(column=>{
+      const epoch=comparison.epochs?.[String(column.batch)];
+      return Number.isFinite(epoch)?matchedSummaryEntryFor(column,epoch):null;
     }),...(simulation.columns||[]).map(column=>{
       const run=simulationRunAtMatchedSteps(column,optimizerSteps,comparison);
       return run?{run,value:metric(run),carried:false,sourceEpoch:Number(run.epoch)}:null;
     })].filter(Boolean);
     const rowBestMetric=rowEntries.length?Math.min(...rowEntries.map(entry=>entry.value)):null;
-    const cells=optimizerSummaryBatches.flatMap(batch=>{
-      const epoch=comparison.epochs?.[String(batch)];
-      if(!Number.isFinite(epoch))return ['<td>—</td>','<td>—</td>'];
-      const entry=matchedEntryFor(batch,epoch);
-      const recalculatedSteps=optimizerStepsForEpochBatch(epoch,batch);
-      const arithmetic=Number.isFinite(recalculatedSteps)?`E${epoch} × ${Number(optimizerTiming.uniquePoolTokens).toLocaleString()} tokens ÷ (BS ${batch} × ${Number(optimizerTiming.sequenceLength)||4096}) = ${recalculatedSteps.toLocaleString()} optimizer steps`:'';
-      const originalCell=(()=>{
-        if(!entry)return `<td class="matched-value"${arithmetic?` title="${escapeAttribute(arithmetic)}"`:''}>E${epoch} · —</td>`;
+    const cells=summaryMethodColumns.map(column=>{
+      const epoch=comparison.epochs?.[String(column.batch)];
+      if(!Number.isFinite(epoch))return '<td>—</td>';
+      const entry=matchedSummaryEntryFor(column,epoch);
+      const recalculatedSteps=optimizerStepsForEpochBatch(epoch,column.batch);
+      const arithmetic=Number.isFinite(recalculatedSteps)?`E${epoch} × ${Number(optimizerTiming.uniquePoolTokens).toLocaleString()} tokens ÷ (BS ${column.batch} × ${Number(optimizerTiming.sequenceLength)||4096}) = ${recalculatedSteps.toLocaleString()} optimizer steps`:'';
+      if(!entry)return `<td class="matched-value"${arithmetic?` title="${escapeAttribute(arithmetic)}"`:''}>E${epoch} · —</td>`;
+      const formatted=entry.value.toFixed(3);
+      const marked=entry.value===rowBestMetric?`<strong><span class="summary-row-best">${formatted}</span></strong>`:formatted;
+      if(column.kind==='original'){
         const carryExplanation=entry.carried?(entry.replacedRun?` The E${epoch} endpoint measured CE ${metric(entry.replacedRun).toFixed(3)}, but the displayed E${entry.sourceEpoch} CE ${entry.value.toFixed(3)} remains the best result before the terminal E${entry.stopEpoch} non-improvement.`:` No E${epoch} endpoint was run: the displayed E${entry.sourceEpoch} CE ${entry.value.toFixed(3)} is carried into this matched-step slot as the best result before the terminal E${entry.stopEpoch} non-improvement.`):'';
-        const title=` title="${escapeAttribute(arithmetic+carryExplanation)}"`;
-        const formatted=entry.value.toFixed(3);
-        const marked=entry.value===rowBestMetric?`<strong><span class="summary-row-best">${formatted}</span></strong>`:formatted;
-        return `<td class="matched-value${entry.carried?' matched-stopped':''}"${title}>E${entry.carried?entry.sourceEpoch:epoch} · ${marked}</td>`;
-      })();
-      const drRun=drSelected.get(`${batch}|${Number(epoch)}`);
-      const drCell=drRun?(()=>{
-        const formatted=metric(drRun).toFixed(3);
-        const marked=metric(drRun)===rowBestMetric?`<strong><span class="summary-row-best">${formatted}</span></strong>`:formatted;
-        const endpointStep=endpointOptimizerStep(drRun);
-        const endpointNote=Number.isFinite(endpointStep)?`post-decay endpoint step ${endpointStep.toLocaleString()}`:'post-decay endpoint';
-        return `<td class="matched-value" title="BS${batch} dynamic repacking; LR ${drRun.lr}; WD ${drRun.wd}; ${endpointNote}">E${drRun.epoch} · ${marked}</td>`;
-      })():'<td>—</td>';
-      return [originalCell,drCell];
+        return `<td class="matched-value${entry.carried?' matched-stopped':''}" title="${escapeAttribute(arithmetic+carryExplanation)}">E${entry.carried?entry.sourceEpoch:epoch} · ${marked}</td>`;
+      }
+      const endpointStep=endpointOptimizerStep(entry.run);
+      const endpointNote=column.kind==='dr'&&Number.isFinite(endpointStep)?`; post-decay endpoint step ${endpointStep.toLocaleString()}`:'';
+      return `<td class="matched-value" title="${column.label}; LR ${entry.run.lr}; WD ${entry.run.wd}${endpointNote}">E${entry.run.epoch} · ${marked}</td>`;
     }).join('');
     const simulationCells=(simulation.columns||[]).map(column=>{
       const run=simulationRunAtMatchedSteps(column,optimizerSteps,comparison);
@@ -425,39 +513,26 @@
       const secondsPerStep=Number(optimizerTiming.secondsPerStep);
       const trainingSeconds=optimizerSteps*secondsPerStep;
       const timeCell=Number.isFinite(trainingSeconds)?`<td class="matched-value" title="${optimizerSteps.toLocaleString()} steps × ${secondsPerStep}s per step">≈${formatDuration(trainingSeconds)}</td>`:'<td>—</td>';
-      const rowRuns=[...optimizerSummaryBatches.flatMap(batch=>{
-        const epoch=comparison.epochs?.[String(batch)];
-        if(!Number.isFinite(epoch))return [];
-        const entry=matchedEntryFor(batch,epoch);
-        const runs=entry?[entry.run]:[];
-        const drRun=drSelected.get(`${batch}|${Number(epoch)}`);
-        if(drRun)runs.push(drRun);
-        return runs;
-      }),...(simulation.columns||[]).map(column=>simulationRunAtMatchedSteps(column,optimizerSteps,comparison)).filter(Boolean)];
+      const rowRuns=[...summaryMethodColumns.map(column=>{
+        const epoch=comparison.epochs?.[String(column.batch)];
+        return Number.isFinite(epoch)?matchedSummaryEntryFor(column,epoch)?.run:null;
+      }).filter(Boolean),...(simulation.columns||[]).map(column=>simulationRunAtMatchedSteps(column,optimizerSteps,comparison)).filter(Boolean)];
       const rowValues=rowRuns.map(run=>downstreamValue(run,config.metricName)).filter(Number.isFinite);
       const rowBest=rowValues.length?(config.higherIsBetter?Math.max(...rowValues):Math.min(...rowValues)):null;
-      const cells=optimizerSummaryBatches.flatMap(batch=>{
-        const epoch=comparison.epochs?.[String(batch)];
-        if(!Number.isFinite(epoch))return ['<td>—</td>','<td>—</td>'];
-        const entry=matchedEntryFor(batch,epoch);
-        const recalculatedSteps=optimizerStepsForEpochBatch(epoch,batch);
-        const arithmetic=Number.isFinite(recalculatedSteps)?`E${epoch} × ${Number(optimizerTiming.uniquePoolTokens).toLocaleString()} tokens ÷ (BS ${batch} × ${Number(optimizerTiming.sequenceLength)||4096}) = ${recalculatedSteps.toLocaleString()} optimizer steps. `:'';
-        const originalCell=(()=>{
-          if(!entry)return `<td class="matched-value"${arithmetic?` title="${escapeAttribute(arithmetic)}"`:''}>E${epoch} · —</td>`;
-          const metricValue=downstreamValue(entry.run,config.metricName);
-          const displayedEpoch=entry.carried?entry.sourceEpoch:epoch;
-          const carryExplanation=entry.carried?`The E${entry.sourceEpoch} validation-selected endpoint is carried into this matched-step slot after terminal E${entry.stopEpoch} non-improvement. `:'';
-          const title=` title="${escapeAttribute(`${arithmetic}${carryExplanation}${config.label}; LR ${entry.run.lr}; WD ${entry.run.wd}`)}"`;
-          return `<td class="matched-value${entry.carried?' matched-stopped':''}"${title}>E${displayedEpoch} · ${markedDownstreamValue(metricValue,rowBest,config.decimals)}</td>`;
-        })();
-        const drRun=drSelected.get(`${batch}|${Number(epoch)}`);
-        const drCell=drRun?(()=>{
-          const metricValue=downstreamValue(drRun,config.metricName);
-          const endpointStep=endpointOptimizerStep(drRun);
-          const endpointNote=Number.isFinite(endpointStep)?`post-decay endpoint step ${endpointStep.toLocaleString()}`:'post-decay endpoint';
-          return `<td class="matched-value" title="BS${batch} dynamic repacking; validation-selected LR ${drRun.lr}; WD ${drRun.wd}; ${endpointNote}">E${drRun.epoch} · ${markedDownstreamValue(metricValue,rowBest,config.decimals)}</td>`;
-        })():'<td>—</td>';
-        return [originalCell,drCell];
+      const cells=summaryMethodColumns.map(column=>{
+        const epoch=comparison.epochs?.[String(column.batch)];
+        if(!Number.isFinite(epoch))return '<td>—</td>';
+        const entry=matchedSummaryEntryFor(column,epoch);
+        const recalculatedSteps=optimizerStepsForEpochBatch(epoch,column.batch);
+        const arithmetic=Number.isFinite(recalculatedSteps)?`E${epoch} × ${Number(optimizerTiming.uniquePoolTokens).toLocaleString()} tokens ÷ (BS ${column.batch} × ${Number(optimizerTiming.sequenceLength)||4096}) = ${recalculatedSteps.toLocaleString()} optimizer steps. `:'';
+        if(!entry)return `<td class="matched-value"${arithmetic?` title="${escapeAttribute(arithmetic)}"`:''}>E${epoch} · —</td>`;
+        const metricValue=downstreamValue(entry.run,config.metricName);
+        const displayedEpoch=entry.carried?entry.sourceEpoch:entry.run.epoch;
+        const carryExplanation=entry.carried?`The E${entry.sourceEpoch} validation-selected endpoint is carried into this matched-step slot after terminal E${entry.stopEpoch} non-improvement. `:'';
+        const endpointStep=endpointOptimizerStep(entry.run);
+        const endpointNote=column.kind==='dr'&&Number.isFinite(endpointStep)?` Post-decay endpoint step ${endpointStep.toLocaleString()}.`:'';
+        const title=` title="${escapeAttribute(`${arithmetic}${carryExplanation}${column.label}; ${config.label}; LR ${entry.run.lr}; WD ${entry.run.wd}.${endpointNote}`)}"`;
+        return `<td class="matched-value${entry.carried?' matched-stopped':''}"${title}>E${displayedEpoch} · ${markedDownstreamValue(metricValue,rowBest,config.decimals)}</td>`;
       }).join('');
       const simulationCells=(simulation.columns||[]).map(column=>{
         const run=simulationRunAtMatchedSteps(column,optimizerSteps,comparison);

@@ -256,10 +256,26 @@ for path in REPORTS:
     html = path.parent.parent / path.name.replace(".json", ".html")
     html_text = html.read_text()
     assert f'data/{path.with_suffix(".js").name}' in html_text, html
-    assert 'src="batch_size_charts.js"' in html_text, html
+    assert 'src="batch_size_charts.js' in html_text, html
+    assert "Downstream metrics by epoch and batch size" in html_text, html
+    for downstream_id in (
+        "epoch-hs-accuracy-summary",
+        "epoch-hs-bpb-summary",
+        "epoch-avg8-accuracy-summary",
+        "epoch-avg8-bpb-summary",
+    ):
+        assert f'id="{downstream_id}"' in html_text, (html, downstream_id)
     assert "Chosen (LR, WD) by epoch and batch size" in html_text, html
     assert 'id="coordinate-summary"' in html_text, html
+    adaptive_batches = {
+        int(chain["batchSequences"])
+        for chain in report.get("adaptiveDrWtEmbedWdChains", [])
+    }
     for batch in SUMMARY_BATCHES:
-        assert html_text.count(f"<th>BS {batch}</th>") >= 3, (html, batch)
+        assert html_text.count(f"<th>BS {batch} · Original</th>") >= 7, (html, batch)
+        if batch in adaptive_batches:
+            assert (
+                html_text.count(f"<th>BS {batch} · DR+WT+EmbedWD</th>") >= 7
+            ), (html, batch)
 
 print("small-dense Step 1-1 reports validated")
