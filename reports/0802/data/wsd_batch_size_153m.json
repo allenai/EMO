@@ -11205,12 +11205,17 @@
       "results": {},
       "reason": "Submitted one persistent job from the healthy E48 pre-decay checkpoint. Successive eight-epoch WSD endpoints share the same canonical output directory and stop at the first held-out validation non-improvement. Beaker task retries and atomic stage markers recover infrastructure failures automatically.",
       "beakerStatus": "running",
-      "job": "01M0C68TXHA2DCZ54Q2JGYPPNJ",
+      "job": "01M0C712WK5FKNS9B4E8W49489",
       "jobs": [
         "01M0C2SC0TJ0RY34Q9W0GPNHFE",
         "01M0C62DNQDDCN1SZ71T4Z8D47",
         "01M0C65B86AD4ZQVBX86RW0MXA",
-        "01M0C68TXHA2DCZ54Q2JGYPPNJ"
+        "01M0C68TXHA2DCZ54Q2JGYPPNJ",
+        "01M0C6E3JKPEASEGA70BMH9C0F",
+        "01M0C6H01Y7G08GQHG0F11EW5D",
+        "01M0C6MJXMPPVYPDQ1J1BY83FS",
+        "01M0C6Y20V26HY26JBD7FQ0HJ8",
+        "01M0C712WK5FKNS9B4E8W49489"
       ]
     }
   ],
