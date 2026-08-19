@@ -1,8 +1,8 @@
 {
-  "updated": "2026-08-09",
+  "updated": "2026-08-19",
   "title": "0802 Step 1-1 \u00b7 Dense 474M",
   "setup": "Dense 474M; 1B-unique-pool repeated-token regime; sequence length 4096. Report tables include BS32/64/128/256/512; completed higher-batch results and provenance remain fully visible. Rank microbatch is 16 sequences; BS32/64 use 2/4 GPUs with gradient accumulation 1/1. Warmup is token-matched across batches.",
-  "selection": "For BS32, the user declared LR1e-3/WD0.1 the E1 winner after it tied the minimum validation CE, preferring the higher WD for later epochs. Both LR and WD are now permanently locked: continue only this exact coordinate through E2/E4/E8/E12/E16 and then E24/E32/E40/E48/E56/E64, stopping at the first post-E16 non-improvement. The selected E1 trajectory also supplies exact-coordinate E0.125/E0.25/E0.5 decay endpoints. All nonwinning E1 results and recovery provenance remain visible. Existing higher-batch chains retain their recorded terminal policies. Completed E20/E28 work remains visible only in provenance and is omitted from summary rows; neither is a future launch target.",
+  "selection": "For BS32, the user declared LR1e-3/WD0.1 the E1 winner after it tied the minimum validation CE, preferring the higher WD for later epochs. Both LR and WD are now permanently locked: continue only this exact coordinate through E2/E4/E8/E12/E16 and then E24/E32/E40/E48/E56/E64, stopping at the first post-E16 non-improvement. The selected E1 trajectory also supplies exact-coordinate E0.125/E0.25/E0.5 decay endpoints. All nonwinning E1 results and recovery provenance remain visible. Existing higher-batch chains retain their recorded terminal policies. Completed E20/E28 work remains visible only in provenance and is omitted from summary rows; neither is a future launch target. BS32 now has one persistent saturation-gated continuation from E24; it uses the locked LR1e-3/WD0.1 coordinate and one canonical output directory.",
   "selectionPolicy": {
     "allowAllCompletedCoordinates": true,
     "nondecreasingWd": true,
@@ -8780,6 +8780,43 @@
       "job": "01KZVCSKV73WXTP9VKEY0M4C0T",
       "resultDataset": "01KZVCSKR1AD5SC23AQH4Y5RSZ",
       "progressPercent": 100
+    },
+    {
+      "id": "dense-474m-bs32-persistent-saturation",
+      "batchSequences": 32,
+      "globalBatchTokens": 131072,
+      "contextLength": 4096,
+      "lr": "1e-3",
+      "wd": "0.1",
+      "warmupSteps": 768,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulation": 1,
+      "gpuCount": 2,
+      "status": "submitted",
+      "activeEpoch": 32,
+      "search": "small-model-persistent-saturation",
+      "saturationChain": true,
+      "stopOnNonImprovement": true,
+      "epochIncrement": 8,
+      "beaker": "01M0C2S3Y58967CGEVV9RRC0CP",
+      "experiment": "01M0C2S3Y58967CGEVV9RRC0CP",
+      "revision": "609a6967b3b03e9ec76c7d44fa4c0cedd93751d1",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_0802_repeated_dclm1b_bs32_e24_lr1e-3_wd0.1_warmup768_sm0811bs32e24a",
+      "canonicalOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_0802_repeated_dclm1b_bs32_e24_lr1e-3_wd0.1_warmup768_sm0811bs32e24a",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_0802_repeated_dclm1b_bs32_e24_lr1e-3_wd0.1_warmup768_sm0811bs32e24a/step164794",
+      "frontierEpoch": 24,
+      "frontierValidation": 3.119,
+      "dynamicRepacking": false,
+      "weightTying": false,
+      "embeddingWeightDecay": "zero",
+      "automaticTaskRetries": 8,
+      "results": {},
+      "reason": "Submitted one persistent job from the healthy E24 pre-decay checkpoint. Successive eight-epoch WSD endpoints share the same canonical output directory and stop at the first held-out validation non-improvement. Beaker task retries and atomic stage markers recover infrastructure failures automatically.",
+      "beakerStatus": "submitted",
+      "job": "01M0C2S43MHQWH817KSMWN8EZ7",
+      "jobs": [
+        "01M0C2S43MHQWH817KSMWN8EZ7"
+      ]
     }
   ],
   "summaryBatches": [

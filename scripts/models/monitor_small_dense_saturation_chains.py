@@ -197,7 +197,10 @@ def refresh_model(model: str, path: Path) -> str:
     elif sweep.get("activeEpoch") is None:
         sweep.pop("progress", None)
 
-    targets = {float(epoch) for epoch in report.get("targetEpochs", [])}
+    targets = {
+        int(float(epoch)) if float(epoch).is_integer() else float(epoch)
+        for epoch in report.get("targetEpochs", [])
+    }
     targets.update(completed_epochs)
     report["targetEpochs"] = sorted(targets)
     report["updated"] = datetime.now(tz=UTC).date().isoformat()

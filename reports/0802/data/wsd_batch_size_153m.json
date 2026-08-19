@@ -1,8 +1,8 @@
 {
-  "updated": "2026-08-09",
+  "updated": "2026-08-19",
   "title": "0802 Step 1-1 \u00b7 Dense 153M",
   "setup": "Dense 153M; 1B-unique-pool repeated-token regime; sequence length 4096. Report tables include BS32/64/128/256/512; completed higher-batch results and provenance remain fully visible. Rank microbatch is 16 sequences; BS32/64 use 2/4 GPUs with gradient accumulation 1/1. Warmup is token-matched across batches.",
-  "selection": "For BS32, run the fresh E1 Cartesian grid LR{1e-3,2e-3} x WD{0.033,0.1}, select the healthy coordinate with the lowest validation CE, and then permanently lock both LR and WD to that exact E1 winner. Continue only the locked coordinate at E2/E4/E8/E12/E16 and then E24/E32/E40/E48/E56/E64, stopping at the first post-E16 non-improvement and performing no further tuning. Existing higher-batch chains retain their recorded terminal policies and every completed result and provenance item remains visible. BS64 continues its exact selected LR2e-3/WD0.1 trajectory in eight-epoch increments beyond E80, stopping at the first validation-CE non-improvement; E128 is the current launcher safety ceiling and must be extended if validation is still improving there. BS128 is terminal at E80, BS256 is terminal at E56, and BS512 is terminal at E48 by user policy. Completed E20/E28 work remains visible only in provenance and is omitted from summary rows; neither is a future launch target.",
+  "selection": "For BS32, run the fresh E1 Cartesian grid LR{1e-3,2e-3} x WD{0.033,0.1}, select the healthy coordinate with the lowest validation CE, and then permanently lock both LR and WD to that exact E1 winner. Continue only the locked coordinate at E2/E4/E8/E12/E16 and then E24/E32/E40/E48/E56/E64, stopping at the first post-E16 non-improvement and performing no further tuning. Existing higher-batch chains retain their recorded terminal policies and every completed result and provenance item remains visible. BS64 continues its exact selected LR2e-3/WD0.1 trajectory in eight-epoch increments beyond E80, stopping at the first validation-CE non-improvement; E128 is the current launcher safety ceiling and must be extended if validation is still improving there. BS128 is terminal at E80, BS256 is terminal at E56, and BS512 is terminal at E48 by user policy. Completed E20/E28 work remains visible only in provenance and is omitted from summary rows; neither is a future launch target. BS32 now has one persistent saturation-gated continuation from E48; it uses the locked LR1e-3/WD0.033 coordinate and one canonical output directory.",
   "selectionPolicy": {
     "allowAllCompletedCoordinates": true,
     "nondecreasingWd": true,
@@ -11172,6 +11172,43 @@
       "progressPercent": 100,
       "progressStep": 366211,
       "progressTotalSteps": 366211
+    },
+    {
+      "id": "dense-153m-bs32-persistent-saturation",
+      "batchSequences": 32,
+      "globalBatchTokens": 131072,
+      "contextLength": 4096,
+      "lr": "1e-3",
+      "wd": "0.033",
+      "warmupSteps": 768,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulation": 1,
+      "gpuCount": 2,
+      "status": "submitted",
+      "activeEpoch": 56,
+      "search": "small-model-persistent-saturation",
+      "saturationChain": true,
+      "stopOnNonImprovement": true,
+      "epochIncrement": 8,
+      "beaker": "01M0C2SBWNYM0C6570QK1GJMCP",
+      "experiment": "01M0C2SBWNYM0C6570QK1GJMCP",
+      "revision": "609a6967b3b03e9ec76c7d44fa4c0cedd93751d1",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs32_e48_lr1e-3_wd0.033_warmup768_sm0812bs32m153e48a",
+      "canonicalOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs32_e48_lr1e-3_wd0.033_warmup768_sm0812bs32m153e48a",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs32_e48_lr1e-3_wd0.033_warmup768_sm0812bs32m153e48a/step329589",
+      "frontierEpoch": 48,
+      "frontierValidation": 3.371,
+      "dynamicRepacking": false,
+      "weightTying": false,
+      "embeddingWeightDecay": "zero",
+      "automaticTaskRetries": 8,
+      "results": {},
+      "reason": "Submitted one persistent job from the healthy E48 pre-decay checkpoint. Successive eight-epoch WSD endpoints share the same canonical output directory and stop at the first held-out validation non-improvement. Beaker task retries and atomic stage markers recover infrastructure failures automatically.",
+      "beakerStatus": "submitted",
+      "job": "01M0C2SC0TJ0RY34Q9W0GPNHFE",
+      "jobs": [
+        "01M0C2SC0TJ0RY34Q9W0GPNHFE"
+      ]
     }
   ],
   "summaryBatches": [
