@@ -8899,8 +8899,8 @@
       "weightTying": true,
       "decayEmbeddings": true,
       "embeddingWeightDecay": "global",
-      "status": "submitted",
-      "beakerStatus": "submitted",
+      "status": "running",
+      "beakerStatus": "running",
       "activeEpoch": 1,
       "activeWds": [
         "0.033",
@@ -8926,7 +8926,14 @@
       "job": "01M0C47K0D2TJ7RT8ZS2P0R5VV",
       "jobs": [
         "01M0C47K0D2TJ7RT8ZS2P0R5VV"
-      ]
+      ],
+      "activeWd": "0.033",
+      "progress": {
+        "step": 1007,
+        "totalSteps": 3815,
+        "percent": 26.4,
+        "latestTrain": 4.129
+      }
     },
     {
       "id": "dense-474m-bs128-dr-wt-embwd-adaptive",
@@ -8969,8 +8976,8 @@
       "weightTying": true,
       "decayEmbeddings": true,
       "embeddingWeightDecay": "global",
-      "status": "submitted",
-      "beakerStatus": "submitted",
+      "status": "scheduled",
+      "beakerStatus": "scheduled",
       "activeEpoch": 1,
       "activeWds": [
         "0.1",
