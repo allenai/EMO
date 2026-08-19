@@ -11184,7 +11184,7 @@
       "rankMicrobatchSequences": 16,
       "gradientAccumulation": 1,
       "gpuCount": 2,
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 56,
       "search": "small-model-persistent-saturation",
       "saturationChain": true,
@@ -11204,10 +11204,13 @@
       "automaticTaskRetries": 8,
       "results": {},
       "reason": "Submitted one persistent job from the healthy E48 pre-decay checkpoint. Successive eight-epoch WSD endpoints share the same canonical output directory and stop at the first held-out validation non-improvement. Beaker task retries and atomic stage markers recover infrastructure failures automatically.",
-      "beakerStatus": "submitted",
-      "job": "01M0C2SC0TJ0RY34Q9W0GPNHFE",
+      "beakerStatus": "running",
+      "job": "01M0C68TXHA2DCZ54Q2JGYPPNJ",
       "jobs": [
-        "01M0C2SC0TJ0RY34Q9W0GPNHFE"
+        "01M0C2SC0TJ0RY34Q9W0GPNHFE",
+        "01M0C62DNQDDCN1SZ71T4Z8D47",
+        "01M0C65B86AD4ZQVBX86RW0MXA",
+        "01M0C68TXHA2DCZ54Q2JGYPPNJ"
       ]
     }
   ],
