@@ -6,8 +6,10 @@ from __future__ import annotations
 import json
 import math
 import re
+import statistics
 import subprocess
 from datetime import UTC, datetime
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +29,18 @@ START = re.compile(r"SMALL_SATURATION_STAGE_START model=(153m|474m) epoch=([0-9]
 SATURATED = re.compile(r"SMALL_SATURATION_SATURATED model=(153m|474m) epoch=([0-9]+)")
 TRAIN_STEP = re.compile(r"\[step=([0-9,]+)/([0-9,]+),epoch=")
 TRAIN_LOSS = re.compile(r"\btrain/CE loss=([0-9]+(?:\.[0-9]+)?)")
+START_CONTEXT = re.compile(
+    r"SMALL_SATURATION_STAGE_START model=(153m|474m) epoch=([0-9]+) "
+    r"previous_epoch=([0-9]+) previous_validation=([^ ]+) output=([^\s]+)"
+)
+WANDB_RUN = re.compile(r"wandb:\s+(?:setting up run |.*?/runs/)([a-z0-9]{8})")
+SAVE_FOLDER = re.compile(r"save_folder='([^']+)'")
+LOAD_CHECKPOINT = re.compile(r"Loading checkpoint from '([^']+)'", re.IGNORECASE)
+METRIC_HEADER = re.compile(
+    r"^(?P<timestamp>[0-9T:.+-]+Z)\s+.*console_logger:67.*"
+    r"\[step=(?P<step>[0-9,]+)/(?P<total>[0-9,]+),epoch=",
+)
+LOSS_VALUE = re.compile(r"\btrain/CE loss=([^\s]+)")
 
 
 def run(arguments: list[str]) -> str:
@@ -87,6 +101,153 @@ def completed_results(logs: str, model: str) -> dict[int, dict[str, Any]]:
         if parsed_model == model:
             parsed[int(epoch)] = json.loads(payload)
     return parsed
+
+
+def parse_metric_samples(segment: str) -> tuple[list[int], list[float], list[str], str | None, int | None]:
+    steps: list[int] = []
+    losses: list[float] = []
+    nonfinite: list[str] = []
+    current_step: int | None = None
+    last_timestamp: str | None = None
+    total_steps: int | None = None
+    for line in segment.splitlines():
+        if "console_logger:" in line and "[step=" in line:
+            header = METRIC_HEADER.search(line)
+            if header is None:
+                current_step = None
+                continue
+            current_step = int(header.group("step").replace(",", ""))
+            total_steps = int(header.group("total").replace(",", ""))
+            last_timestamp = header.group("timestamp")
+            steps.append(current_step)
+            continue
+        if current_step is None:
+            continue
+        match = LOSS_VALUE.search(line)
+        if match is None:
+            continue
+        raw = match.group(1)
+        try:
+            value = float(raw)
+        except ValueError:
+            nonfinite.append(raw)
+            current_step = None
+            continue
+        if math.isfinite(value):
+            losses.append(value)
+        else:
+            nonfinite.append(raw)
+        current_step = None
+    return steps, losses, nonfinite, last_timestamp, total_steps
+
+
+def wandb_health(logs: str, sweep: dict[str, Any], state: str) -> dict[str, Any] | None:
+    starts = list(START_CONTEXT.finditer(logs))
+    if not starts:
+        return None
+    start = starts[-1]
+    model, epoch, previous_epoch, _, output = start.groups()
+    segment = logs[start.start() :]
+    run_ids = WANDB_RUN.findall(segment)
+    run_id = run_ids[-1] if run_ids else None
+    expected_output = str(sweep.get("canonicalOutput") or sweep.get("output") or "")
+    save_folders = SAVE_FOLDER.findall(segment)
+    save_folder = save_folders[-1] if save_folders else None
+    load_paths = LOAD_CHECKPOINT.findall(segment)
+    load_path = load_paths[-1] if load_paths else None
+    steps, losses, nonfinite, last_timestamp, total_steps = parse_metric_samples(segment)
+
+    critical: list[str] = []
+    warnings: list[str] = []
+    if expected_output and output != expected_output:
+        critical.append("stage-output-path-mismatch")
+    if save_folder and save_folder != output:
+        critical.append("trainer-save-path-mismatch")
+    if load_path and not load_path.startswith(output.rstrip("/") + "/"):
+        critical.append("checkpoint-load-path-mismatch")
+    if int(previous_epoch) > 0 and steps and load_path is None:
+        critical.append("missing-resume-checkpoint-load")
+    if "dynamic_repacking=True" in segment:
+        critical.append("unexpected-dynamic-repacking")
+    if "tie_embeddings=True" in segment:
+        critical.append("unexpected-weight-tying")
+
+    regressions = [(left, right) for left, right in pairwise(steps) if right < left]
+    if regressions:
+        critical.append("wandb-step-regression")
+    if nonfinite:
+        critical.append("nonfinite-training-loss")
+
+    recent_median: float | None = None
+    baseline_median: float | None = None
+    maximum: float | None = None
+    spike_count = 0
+    if losses:
+        maximum = max(losses)
+        recent = losses[-50:]
+        baseline_pool = losses[-250:-50] or losses[:-50] or losses
+        recent_median = statistics.median(recent)
+        baseline_median = statistics.median(baseline_pool)
+        spike_count = sum(value > baseline_median + 0.75 for value in losses)
+        if len(recent) >= 25 and recent_median > baseline_median + 0.5:
+            critical.append("sustained-training-loss-shift")
+        elif spike_count:
+            warnings.append("isolated-finite-loss-spikes")
+
+    stalled_minutes: float | None = None
+    if last_timestamp and state == "running" and steps and total_steps and steps[-1] < total_steps:
+        last_metric = datetime.fromisoformat(last_timestamp.replace("Z", "+00:00"))
+        stalled_minutes = (datetime.now(tz=UTC) - last_metric).total_seconds() / 60
+        if stalled_minutes > 45:
+            critical.append("training-metrics-stalled")
+    if steps and run_id is None:
+        warnings.append("wandb-run-id-not-found-in-job-log")
+
+    status = "critical" if critical else "warning" if warnings else "healthy"
+    if not steps and not critical:
+        status = "pending"
+    path_recovery_ready = bool(
+        expected_output
+        and expected_output != output
+        and {
+            "stage-output-path-mismatch",
+            "trainer-save-path-mismatch",
+            "checkpoint-load-path-mismatch",
+        }.intersection(critical)
+    )
+    return {
+        "status": status,
+        "checkedAt": datetime.now(tz=UTC).isoformat(),
+        "run": run_id,
+        "url": (
+            f"https://wandb.ai/ai2-llm/sewonm-icsl/runs/{run_id}"
+            if run_id
+            else None
+        ),
+        "model": model,
+        "batchSequences": 32,
+        "epoch": int(epoch),
+        "expectedOutput": expected_output or None,
+        "stageOutput": output,
+        "saveFolder": save_folder,
+        "loadPath": load_path,
+        "samples": len(losses),
+        "firstStep": steps[0] if steps else None,
+        "latestStep": steps[-1] if steps else None,
+        "totalSteps": total_steps,
+        "recentLossMedian": round(recent_median, 6) if recent_median is not None else None,
+        "baselineLossMedian": round(baseline_median, 6) if baseline_median is not None else None,
+        "maxLoss": maximum,
+        "isolatedSpikeCount": spike_count,
+        "stepRegressions": regressions[:5],
+        "nonfiniteLosses": nonfinite[:5],
+        "stalledMinutes": round(stalled_minutes, 1) if stalled_minutes is not None else None,
+        "warnings": warnings,
+        "criticalSignals": critical,
+        "shouldRecover": bool(critical),
+        "automaticPathRecoveryReady": path_recovery_ready,
+        "recoveryOutput": expected_output if path_recovery_ready else None,
+    }
 
 
 def update_result(
@@ -158,6 +319,11 @@ def refresh_model(model: str, path: Path) -> str:
         update_result(sweep, epoch, result, job)
 
     clean = ANSI.sub("", logs)
+    health = wandb_health(clean, sweep, state)
+    if health is not None:
+        sweep["wandbHealth"] = health
+        if health["shouldRecover"]:
+            sweep["needsAttention"] = True
     saturated_epochs = [
         int(epoch) for parsed_model, epoch in SATURATED.findall(clean) if parsed_model == model
     ]
@@ -222,9 +388,14 @@ def refresh_model(model: str, path: Path) -> str:
         detail = f" {progress['percent']:g}% ({progress['step']}/{progress['totalSteps']})"
         if "latestTrain" in progress:
             detail += f" train={progress['latestTrain']:.3f}"
+    health_detail = ""
+    if sweep.get("wandbHealth"):
+        health = sweep["wandbHealth"]
+        health_detail = f"; wandb={health.get('run') or 'pending'} {health['status']}"
     return (
         f"{model} {sweep['status']}; completed={completed_epochs or 'none'}; "
-        f"current=E{sweep.get('activeEpoch') or 'done'}{detail}; {sweep['experiment']}"
+        f"current=E{sweep.get('activeEpoch') or 'done'}{detail}{health_detail}; "
+        f"{sweep['experiment']}"
     )
 
 
