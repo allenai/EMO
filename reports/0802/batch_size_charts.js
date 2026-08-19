@@ -208,8 +208,11 @@
   };
   const setAdaptiveSummaryHeader=(bodyId,leadingLabel,{trainingTime=false}={})=>{
     if(!showAdaptiveColumns)return;
-    const row=document.querySelector(`#${bodyId}`)?.closest('table')?.querySelector('thead tr');
+    const table=document.querySelector(`#${bodyId}`)?.closest('table');
+    const row=table?.querySelector('thead tr');
     if(!row)return;
+    table.classList.add('batch-grouped-table');
+    if(trainingTime)table.classList.add('matched-step-table');
     const methodHeaders=summaryMethodColumns.map(column=>`<th>${column.label}</th>`).join('');
     const simulationHeaders=(simulation.columns||[]).map(column=>`<th>${column.label}</th>`).join('');
     row.innerHTML=`<th>${leadingLabel}</th>${trainingTime?'<th class="training-time-header">Training time</th>':''}${methodHeaders}${simulationHeaders}`;
