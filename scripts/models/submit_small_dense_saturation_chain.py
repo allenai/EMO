@@ -103,6 +103,15 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Replace the registered failed logical chain while retaining attempt provenance",
     )
+    parser.add_argument(
+        "--previous-failure-class",
+        default="preflight-output-directory-semantic",
+        help="Provenance label for the failed experiment being replaced",
+    )
+    parser.add_argument(
+        "--previous-failure-reason",
+        help="Explicit provenance text for the failed experiment being replaced",
+    )
     return parser.parse_args()
 
 
@@ -284,6 +293,8 @@ def write_report(
     manifest: dict[str, Any],
     *,
     resume_failed: bool = False,
+    previous_failure_class: str = "preflight-output-directory-semantic",
+    previous_failure_reason: str | None = None,
 ) -> None:
     settings = MODELS[model]
     report_path = settings["report"]
@@ -351,8 +362,9 @@ def write_report(
             {
                 "beaker": previous_experiment,
                 "status": "failed",
-                "failureClass": "preflight-output-directory-semantic",
-                "reason": (
+                "failureClass": previous_failure_class,
+                "reason": previous_failure_reason
+                or (
                     "The launcher used the legacy run-name output directory instead of the "
                     "canonical model/coordinate directory and exhausted automatic retries "
                     "before training started."
@@ -429,6 +441,8 @@ def main() -> None:
             args.revision,
             manifest,
             resume_failed=args.resume_failed,
+            previous_failure_class=args.previous_failure_class,
+            previous_failure_reason=args.previous_failure_reason,
         )
 
 
