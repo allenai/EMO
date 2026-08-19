@@ -9376,10 +9376,10 @@
       ],
       "activeWd": "0.033",
       "progress": {
-        "step": 22466,
+        "step": 26396,
         "totalSteps": 30518,
-        "percent": 73.6,
-        "latestTrain": 3.22
+        "percent": 86.5,
+        "latestTrain": 3.137
       }
     },
     {
@@ -10029,10 +10029,10 @@
       ],
       "activeWd": "0.3",
       "progress": {
-        "step": 25045,
+        "step": 28839,
         "totalSteps": 30518,
-        "percent": 82.1,
-        "latestTrain": 3.253
+        "percent": 94.5,
+        "latestTrain": 3.151
       }
     },
     {
@@ -10788,10 +10788,10 @@
       ],
       "activeWd": "0.333",
       "progress": {
-        "step": 8477,
+        "step": 10388,
         "totalSteps": 15259,
-        "percent": 55.6,
-        "latestTrain": 3.287
+        "percent": 68.1,
+        "latestTrain": 3.311
       }
     },
     {
@@ -11441,10 +11441,10 @@
       ],
       "activeWd": "0.3",
       "progress": {
-        "step": 3556,
+        "step": 4471,
         "totalSteps": 7630,
-        "percent": 46.6,
-        "latestTrain": 3.273
+        "percent": 58.6,
+        "latestTrain": 3.204
       }
     }
   ]
