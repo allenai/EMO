@@ -77,6 +77,11 @@ def parse_args() -> argparse.Namespace:
         metavar="WD=/ABSOLUTE/PATH",
         help="Reroute a fixed-WD trajectory in the replacement task",
     )
+    parser.add_argument(
+        "--policy-replacement",
+        action="store_true",
+        help="Replace a registered chain in place after a policy-only manifest update",
+    )
     return parser.parse_args()
 
 
@@ -308,6 +313,8 @@ def validate_recovery_target(args: argparse.Namespace) -> None:
             f"registered experiment {record.get('experiment')} does not match "
             f"recovery target {args.resume_experiment}"
         )
+    if args.policy_replacement:
+        return
     overrides = parse_output_overrides(
         args.output_override,
         list(record["wdLadder"]),
@@ -330,6 +337,7 @@ def write_report(
     *,
     resume_experiment: str | None = None,
     output_overrides: dict[str, str] | None = None,
+    policy_replacement: bool = False,
 ) -> None:
     path = report_path(model)
     report = json.loads(path.read_text())
@@ -398,7 +406,11 @@ def write_report(
         history.append(
             {
                 "beaker": resume_experiment,
-                "status": "stopped-for-path-recovery",
+                "status": (
+                    "stopped-for-policy-replacement"
+                    if policy_replacement
+                    else "stopped-for-path-recovery"
+                ),
                 "activeEpoch": existing.get("activeEpoch"),
                 "activeWd": existing.get("activeWd"),
                 "wandbHealth": existing.get("wandbHealth"),
@@ -418,12 +430,20 @@ def write_report(
         existing["attemptHistory"] = history
         existing["recoveryOf"] = resume_experiment
         existing["outputByWd"].update(overrides)
-        existing["pathOverrides"] = overrides
-        existing["reason"] = (
-            "Guarded recovery replaced a W&B-suspicious task after stopping its prior "
-            "Beaker experiment. Completed frontier evidence was retained and the affected "
-            "fixed-WD trajectory was rerouted to the explicitly supplied directory."
-        )
+        if overrides:
+            existing["pathOverrides"] = overrides
+        if policy_replacement:
+            existing["reason"] = (
+                "Policy replacement stopped the prior Beaker experiment and resumed the "
+                "same canonical trajectories with a hard WD<=1.0 cap. Completed stages "
+                "and frontier evidence were retained."
+            )
+        else:
+            existing["reason"] = (
+                "Guarded recovery replaced a W&B-suspicious task after stopping its prior "
+                "Beaker experiment. Completed frontier evidence was retained and the affected "
+                "fixed-WD trajectory was rerouted to the explicitly supplied directory."
+            )
     note = (
         f" BS{batch} also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain "
         f"at LR{LEARNING_RATE}, starting from baseline WD{manifest['baselineOptimalWd']} "
@@ -444,8 +464,14 @@ def main() -> None:
         raise SystemExit("--resume-experiment requires --register")
     if args.resume_experiment and not args.stop_existing:
         raise SystemExit("--resume-experiment requires --stop-existing")
-    if args.resume_experiment and not args.output_override:
-        raise SystemExit("--resume-experiment requires at least one --output-override")
+    if args.resume_experiment and not args.output_override and not args.policy_replacement:
+        raise SystemExit(
+            "--resume-experiment requires --policy-replacement or at least one --output-override"
+        )
+    if args.policy_replacement and not args.resume_experiment:
+        raise SystemExit("--policy-replacement requires --resume-experiment")
+    if args.policy_replacement and args.output_override:
+        raise SystemExit("--policy-replacement must preserve canonical output paths")
     if args.stop_existing and not args.resume_experiment:
         raise SystemExit("--stop-existing requires --resume-experiment")
     validate_recovery_target(args)
@@ -498,6 +524,7 @@ def main() -> None:
                 manifest,
                 resume_experiment=args.resume_experiment,
                 output_overrides=overrides,
+                policy_replacement=args.policy_replacement,
             )
         else:
             write_report(args.model, args.global_sequences, ids[0], args.revision, manifest)
