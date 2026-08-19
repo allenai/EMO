@@ -98,8 +98,10 @@ for c in $CLUSTERS; do
     done
 
     echo "=== stage ${tag}: writeback"
+    # --snapshot: bf16 weights-only pool snapshot per stage (modular_extension parity);
+    # feeds the per-stage x per-cluster heldout-CE heatmap evals.
     OPENBLAS_NUM_THREADS=16 PYTHONPATH=src python scripts/meta_learning/expert_subset_surgery.py writeback \
-        --pool "$POOL" --trained "$trained" --selection "${subset}/selection.json"
+        --pool "$POOL" --trained "$trained" --selection "${subset}/selection.json" --snapshot
 
     # disk hygiene: stage + subset checkpoints are reproducible from pool history; drop them
     rm -rf "$subset" "${save}"
