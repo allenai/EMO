@@ -2,7 +2,7 @@
   "updated": "2026-08-19",
   "title": "0802 Step 1-1 \u00b7 Dense 474M",
   "setup": "Dense 474M; 1B-unique-pool repeated-token regime; sequence length 4096. Report tables include BS32/64/128/256/512; completed higher-batch results and provenance remain fully visible. Rank microbatch is 16 sequences; BS32/64 use 2/4 GPUs with gradient accumulation 1/1. Warmup is token-matched across batches.",
-  "selection": "For BS32, the user declared LR1e-3/WD0.1 the E1 winner after it tied the minimum validation CE, preferring the higher WD for later epochs. Both LR and WD are now permanently locked: continue only this exact coordinate through E2/E4/E8/E12/E16 and then E24/E32/E40/E48/E56/E64, stopping at the first post-E16 non-improvement. The selected E1 trajectory also supplies exact-coordinate E0.125/E0.25/E0.5 decay endpoints. All nonwinning E1 results and recovery provenance remain visible. Existing higher-batch chains retain their recorded terminal policies. Completed E20/E28 work remains visible only in provenance and is omitted from summary rows; neither is a future launch target. BS32 now has one persistent saturation-gated continuation from E24; it uses the locked LR1e-3/WD0.1 coordinate and one canonical output directory.",
+  "selection": "For BS32, the user declared LR1e-3/WD0.1 the E1 winner after it tied the minimum validation CE, preferring the higher WD for later epochs. Both LR and WD are now permanently locked: continue only this exact coordinate through E2/E4/E8/E12/E16 and then E24/E32/E40/E48/E56/E64, stopping at the first post-E16 non-improvement. The selected E1 trajectory also supplies exact-coordinate E0.125/E0.25/E0.5 decay endpoints. All nonwinning E1 results and recovery provenance remain visible. Existing higher-batch chains retain their recorded terminal policies. Completed E20/E28 work remains visible only in provenance and is omitted from summary rows; neither is a future launch target. BS32 now has one persistent saturation-gated continuation from E24; it uses the locked LR1e-3/WD0.1 coordinate and one canonical output directory. BS64 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS128 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.3 and its immediate neighbors. BS256 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.333 and its immediate neighbors. BS512 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.3 and its immediate neighbors.",
   "selectionPolicy": {
     "allowAllCompletedCoordinates": true,
     "nondecreasingWd": true,
@@ -8848,5 +8848,287 @@
       "gpuCount": 8,
       "gradientAccumulation": 4
     }
-  }
+  },
+  "adaptiveDrWtEmbedWdChains": [
+    {
+      "id": "dense-474m-bs64-dr-wt-embwd-adaptive",
+      "label": "BS64 \u00b7 DR+WT+EmbedWD",
+      "variant": "DR+WT+EmbedWD",
+      "batchSequences": 64,
+      "globalBatchTokens": 262144,
+      "contextLength": 4096,
+      "lr": "2e-3",
+      "baselineOptimalWd": "0.1",
+      "baselineEvidenceEpoch": 32,
+      "baselineValidation": 3.093,
+      "initialWds": [
+        "0.033",
+        "0.1",
+        "0.3"
+      ],
+      "wdLadder": [
+        "0.01",
+        "0.033",
+        "0.1",
+        "0.3",
+        "1.0",
+        "3.0"
+      ],
+      "initialTargets": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        24
+      ],
+      "epochIncrement": 8,
+      "rankMicrobatchSequences": 16,
+      "gpuCount": 4,
+      "gradientAccumulation": 1,
+      "dataOrder": "dynamic_repacking_from_e2",
+      "dynamicRepacking": true,
+      "weightTying": true,
+      "decayEmbeddings": true,
+      "embeddingWeightDecay": "global",
+      "status": "submitted",
+      "beakerStatus": "submitted",
+      "activeEpoch": 1,
+      "activeWds": [
+        "0.033",
+        "0.1",
+        "0.3"
+      ],
+      "experiment": "01M0C47JX1B19GHTJQEANJ9M8H",
+      "beaker": "01M0C47JX1B19GHTJQEANJ9M8H",
+      "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5",
+      "automaticTaskRetries": 8,
+      "stopOnNonImprovement": true,
+      "outputByWd": {
+        "0.01": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.01",
+        "0.033": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.033",
+        "0.1": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.1",
+        "0.3": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3",
+        "1.0": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd1.0",
+        "3.0": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd3.0"
+      },
+      "results": {},
+      "frontiers": {},
+      "reason": "Submitted as one persistent adaptive WD job. Initial E1 candidates are the trusted ordinary-run optimum plus its lower and higher neighbors. Every later frontier evaluates the preceding winner and one WD level higher; fixed-WD trajectories keep one canonical directory and the chain stops at the first selected held-out validation non-improvement.",
+      "job": "01M0C47K0D2TJ7RT8ZS2P0R5VV",
+      "jobs": [
+        "01M0C47K0D2TJ7RT8ZS2P0R5VV"
+      ]
+    },
+    {
+      "id": "dense-474m-bs128-dr-wt-embwd-adaptive",
+      "label": "BS128 \u00b7 DR+WT+EmbedWD",
+      "variant": "DR+WT+EmbedWD",
+      "batchSequences": 128,
+      "globalBatchTokens": 524288,
+      "contextLength": 4096,
+      "lr": "2e-3",
+      "baselineOptimalWd": "0.3",
+      "baselineEvidenceEpoch": 40,
+      "baselineValidation": 3.101,
+      "initialWds": [
+        "0.1",
+        "0.3",
+        "1.0"
+      ],
+      "wdLadder": [
+        "0.01",
+        "0.033",
+        "0.1",
+        "0.3",
+        "1.0",
+        "3.0"
+      ],
+      "initialTargets": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        24
+      ],
+      "epochIncrement": 8,
+      "rankMicrobatchSequences": 16,
+      "gpuCount": 8,
+      "gradientAccumulation": 1,
+      "dataOrder": "dynamic_repacking_from_e2",
+      "dynamicRepacking": true,
+      "weightTying": true,
+      "decayEmbeddings": true,
+      "embeddingWeightDecay": "global",
+      "status": "submitted",
+      "beakerStatus": "submitted",
+      "activeEpoch": 1,
+      "activeWds": [
+        "0.1",
+        "0.3",
+        "1.0"
+      ],
+      "experiment": "01M0C47M5TP1YAPKCTAJTKNCXV",
+      "beaker": "01M0C47M5TP1YAPKCTAJTKNCXV",
+      "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5",
+      "automaticTaskRetries": 8,
+      "stopOnNonImprovement": true,
+      "outputByWd": {
+        "0.01": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.01",
+        "0.033": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.033",
+        "0.1": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.1",
+        "0.3": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3",
+        "1.0": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd1.0",
+        "3.0": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd3.0"
+      },
+      "results": {},
+      "frontiers": {},
+      "reason": "Submitted as one persistent adaptive WD job. Initial E1 candidates are the trusted ordinary-run optimum plus its lower and higher neighbors. Every later frontier evaluates the preceding winner and one WD level higher; fixed-WD trajectories keep one canonical directory and the chain stops at the first selected held-out validation non-improvement.",
+      "job": "01M0C47M9BD4W1KBY6TVAVR4GD",
+      "jobs": [
+        "01M0C47M9BD4W1KBY6TVAVR4GD"
+      ]
+    },
+    {
+      "id": "dense-474m-bs256-dr-wt-embwd-adaptive",
+      "label": "BS256 \u00b7 DR+WT+EmbedWD",
+      "variant": "DR+WT+EmbedWD",
+      "batchSequences": 256,
+      "globalBatchTokens": 1048576,
+      "contextLength": 4096,
+      "lr": "2e-3",
+      "baselineOptimalWd": "0.333",
+      "baselineEvidenceEpoch": 32,
+      "baselineValidation": 3.102,
+      "initialWds": [
+        "0.1",
+        "0.333",
+        "1.0"
+      ],
+      "wdLadder": [
+        "0.01",
+        "0.033",
+        "0.1",
+        "0.333",
+        "1.0",
+        "3.0"
+      ],
+      "initialTargets": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        24
+      ],
+      "epochIncrement": 8,
+      "rankMicrobatchSequences": 16,
+      "gpuCount": 8,
+      "gradientAccumulation": 2,
+      "dataOrder": "dynamic_repacking_from_e2",
+      "dynamicRepacking": true,
+      "weightTying": true,
+      "decayEmbeddings": true,
+      "embeddingWeightDecay": "global",
+      "status": "submitted",
+      "beakerStatus": "submitted",
+      "activeEpoch": 1,
+      "activeWds": [
+        "0.1",
+        "0.333",
+        "1.0"
+      ],
+      "experiment": "01M0C47NEJ77PEB9005AFP4ET0",
+      "beaker": "01M0C47NEJ77PEB9005AFP4ET0",
+      "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5",
+      "automaticTaskRetries": 8,
+      "stopOnNonImprovement": true,
+      "outputByWd": {
+        "0.01": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.01",
+        "0.033": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.033",
+        "0.1": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.1",
+        "0.333": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.333",
+        "1.0": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd1.0",
+        "3.0": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd3.0"
+      },
+      "results": {},
+      "frontiers": {},
+      "reason": "Submitted as one persistent adaptive WD job. Initial E1 candidates are the trusted ordinary-run optimum plus its lower and higher neighbors. Every later frontier evaluates the preceding winner and one WD level higher; fixed-WD trajectories keep one canonical directory and the chain stops at the first selected held-out validation non-improvement.",
+      "job": "01M0C47NJ03SRKBTQHYQV6YPNX",
+      "jobs": [
+        "01M0C47NJ03SRKBTQHYQV6YPNX"
+      ]
+    },
+    {
+      "id": "dense-474m-bs512-dr-wt-embwd-adaptive",
+      "label": "BS512 \u00b7 DR+WT+EmbedWD",
+      "variant": "DR+WT+EmbedWD",
+      "batchSequences": 512,
+      "globalBatchTokens": 2097152,
+      "contextLength": 4096,
+      "lr": "2e-3",
+      "baselineOptimalWd": "0.3",
+      "baselineEvidenceEpoch": 24,
+      "baselineValidation": 3.136,
+      "initialWds": [
+        "0.1",
+        "0.3",
+        "1.0"
+      ],
+      "wdLadder": [
+        "0.01",
+        "0.033",
+        "0.1",
+        "0.3",
+        "1.0",
+        "3.0"
+      ],
+      "initialTargets": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        24
+      ],
+      "epochIncrement": 8,
+      "rankMicrobatchSequences": 16,
+      "gpuCount": 8,
+      "gradientAccumulation": 4,
+      "dataOrder": "dynamic_repacking_from_e2",
+      "dynamicRepacking": true,
+      "weightTying": true,
+      "decayEmbeddings": true,
+      "embeddingWeightDecay": "global",
+      "status": "submitted",
+      "beakerStatus": "submitted",
+      "activeEpoch": 1,
+      "activeWds": [
+        "0.1",
+        "0.3",
+        "1.0"
+      ],
+      "experiment": "01M0C47PQTJDJMRSHWJJEGWWDG",
+      "beaker": "01M0C47PQTJDJMRSHWJJEGWWDG",
+      "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5",
+      "automaticTaskRetries": 8,
+      "stopOnNonImprovement": true,
+      "outputByWd": {
+        "0.01": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd0.01",
+        "0.033": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd0.033",
+        "0.1": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd0.1",
+        "0.3": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd0.3",
+        "1.0": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd1.0",
+        "3.0": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd3.0"
+      },
+      "results": {},
+      "frontiers": {},
+      "reason": "Submitted as one persistent adaptive WD job. Initial E1 candidates are the trusted ordinary-run optimum plus its lower and higher neighbors. Every later frontier evaluates the preceding winner and one WD level higher; fixed-WD trajectories keep one canonical directory and the chain stops at the first selected held-out validation non-improvement.",
+      "job": "01M0C47PVB36GCRBNHJZKT68JB",
+      "jobs": [
+        "01M0C47PVB36GCRBNHJZKT68JB"
+      ]
+    }
+  ]
 }
