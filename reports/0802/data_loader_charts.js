@@ -25,17 +25,17 @@
     columnByKey.dr64,
     columnByKey.drwt64,
     columnByKey.drwtembwd64,
-    columnByKey.drwtembwd64mlpupperwd1,
     columnByKey["baseline-128"],
     columnByKey.dr128,
+    columnByKey.drwtembwd128,
     columnByKey["baseline-256"],
     columnByKey.dr256,
+    columnByKey.drwtembwd256,
     columnByKey.fixed512,
     columnByKey["baseline-512"],
     columnByKey.dr512,
     columnByKey.drwt512,
     columnByKey.drwtembwd512,
-    columnByKey.drwtembwd512mlpupperwd1,
     columnByKey.fixed1024,
     columnByKey["baseline-1024"],
     columnByKey.dr1024,
@@ -63,7 +63,7 @@
     if (!result || result.status !== "complete" || !finite(result.validation)) return false;
     if (result.wandb && healthMap[result.wandb]) return false;
     const lr = lrNumber(sweep.lr);
-    return lr < 2e-3 || (batch === 256 && lr === 2e-3 && wdNumber(sweep.wd) === 0.333);
+    return lr < 2e-3 || ([256, 512].includes(batch) && lr === 2e-3 && wdNumber(sweep.wd) === 0.333);
   }
 
   function choose(candidates) {
@@ -308,17 +308,17 @@
     columnByKey.dr64,
     columnByKey.drwt64,
     columnByKey.drwtembwd64,
-    columnByKey.drwtembwd64mlpupperwd1,
     columnByKey["baseline-128"],
     columnByKey.dr128,
+    columnByKey.drwtembwd128,
     columnByKey["baseline-256"],
     columnByKey.dr256,
+    columnByKey.drwtembwd256,
     columnByKey.fixed512,
     columnByKey["baseline-512"],
     columnByKey.dr512,
     columnByKey.drwt512,
     columnByKey.drwtembwd512,
-    columnByKey.drwtembwd512mlpupperwd1,
     columnByKey.fixed1024,
     columnByKey["baseline-1024"],
     columnByKey.dr1024,
@@ -459,7 +459,7 @@
   const sequentialRuns = [
     ...(study.weightTyingSequentialRuns || []),
     ...(study.weightTyingEmbeddingDecaySequentialRuns || []),
-    ...(study.weightTyingMlpDecaySequentialRuns || []),
+    ...(study.drWtEmbedWdGridChains || []),
   ];
   for (const run of sequentialRuns) {
     const stageStates = (run.stages || []).map((stage) => {
@@ -473,15 +473,21 @@
     const tr = document.createElement("tr");
     if (["submitted", "scheduled", "running"].includes(run.status)) tr.className = "run-active";
     if (["failed", "canceled"].includes(run.status)) tr.className = "run-failed";
-    const variant = run.mlpWeightDecay
-      ? "DR+WT+EmbedWD+UpperMLPWD"
-      : (run.decayEmbeddings ? "DR+WT+EmbedWD" : "DR+WT");
-    tr.innerHTML = `<td>BS${run.batchSequences}</td><td>${variant}</td><td>${run.lr}</td><td>${run.wd}</td><td>${run.status}</td><td>${run.currentEpoch ? `E${run.currentEpoch}` : "done"}</td><td>${stageStates}</td><td>${experiment ? `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${experiment}">${experiment}</a>` : "—"}</td>`;
+    const variant = run.decayEmbeddings ? "DR+WT+EmbedWD" : "DR+WT";
+    const gridLrs = [...new Set((run.coordinates || []).map((coordinate) => coordinate.lr))].join(", ");
+    const gridWds = [...new Set((run.coordinates || []).map((coordinate) => coordinate.wd))].join(", ");
+    const lr = run.lr || gridLrs || "—";
+    const wd = run.wd || gridWds || "—";
+    const trigger = run.status === "planned" && finite(run.triggerThreshold)
+      ? `waiting for ${run.completedSmallChainsAtLastCheck || 0}/${run.triggerThreshold} small chains`
+      : "";
+    tr.innerHTML = `<td>BS${run.batchSequences}</td><td>${variant}</td><td>${lr}</td><td>${wd}</td><td>${run.status}</td><td>${run.currentEpoch ? `E${run.currentEpoch}` : (run.status === "planned" ? "waiting" : "done")}</td><td>${stageStates || trigger || "—"}</td><td>${experiment ? `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${experiment}">${experiment}</a>` : "—"}</td>`;
     sequentialBody.appendChild(tr);
   }
 
   const newRunsBody = document.getElementById("new-runs");
   for (const run of study.runs || []) {
+    if (String(run.method || "").includes("mlpupperwd1")) continue;
     const resultEpochs = new Set(Object.keys(run.results || {}).map(Number));
     for (const epoch of run.attemptedEpochs || []) resultEpochs.add(Number(epoch));
     if (run.activeEpoch !== undefined && run.activeEpoch !== null) resultEpochs.add(Number(run.activeEpoch));

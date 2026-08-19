@@ -1,0 +1,30 @@
+{
+  "globalSequences": 128,
+  "nprocPerNode": 8,
+  "rankMicrobatchSequences": 8,
+  "gradientAccumulation": 2,
+  "warmupSteps": 192,
+  "coordinates": [
+    {
+      "lr": "1e-3",
+      "wd": "0.3"
+    },
+    {
+      "lr": "1e-3",
+      "wd": "1.0"
+    }
+  ],
+  "initialTargets": [
+    1,
+    2,
+    4
+  ],
+  "epochIncrement": 4,
+  "maxEpoch": 64,
+  "outputRoot": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b",
+  "runSuffix": "dl0819-1b-drwtembwd-grid",
+  "variant": "DR+WT+EmbedWD",
+  "dataOrder": "dynamic_repacking_from_e2",
+  "weightTying": true,
+  "decayEmbeddings": true
+}
