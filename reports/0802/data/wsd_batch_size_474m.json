@@ -9296,6 +9296,61 @@
             "job": "01M0CKQ6D1MBJX8ZCETE1S1BJ4",
             "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5"
           }
+        },
+        "8": {
+          "0.033": {
+            "acc": 36.96,
+            "avg8Accuracy": 42.5275,
+            "avg8Bpb": 1.356825,
+            "bpb": 0.9236,
+            "c4": 3.178,
+            "dataOrder": "dynamic_repacking",
+            "decayEmbeddings": true,
+            "downstream": {
+              "arc_challenge": 22.41,
+              "arc_easy": 51.23,
+              "boolq": 49.45,
+              "csqa": 45.21,
+              "hellaswag": 36.96,
+              "openbookqa": 25.8,
+              "piqa": 66.43,
+              "socialiqa": 43.4,
+              "winogrande": 48.78
+            },
+            "downstreamBpb": {
+              "arc_challenge": 1.4,
+              "arc_easy": 1.413,
+              "boolq": 1.47,
+              "csqa": 1.457,
+              "hellaswag": 0.9236,
+              "openbookqa": 1.645,
+              "piqa": 1.218,
+              "socialiqa": 1.278,
+              "winogrande": 1.52
+            },
+            "dynamicRepacking": true,
+            "embeddingWeightDecay": "0.033",
+            "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.033/step30518",
+            "epoch": 8,
+            "gap": 0.116,
+            "lr": "2e-3",
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.033",
+            "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.033/step27465",
+            "sequential": true,
+            "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.033/step13732",
+            "status": "complete",
+            "train": 3.062,
+            "validation": 3.178,
+            "validationExact": 3.178,
+            "variant": "DR+WT+EmbedWD",
+            "wandb": "gqket6g8",
+            "wd": "0.033",
+            "weightTying": true,
+            "experiment": "01M0C47JX1B19GHTJQEANJ9M8H",
+            "beaker": "01M0C47JX1B19GHTJQEANJ9M8H",
+            "job": "01M0CKQ6D1MBJX8ZCETE1S1BJ4",
+            "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5"
+          }
         }
       },
       "frontiers": {
@@ -9374,12 +9429,12 @@
         "01M0C47K0D2TJ7RT8ZS2P0R5VV",
         "01M0CKQ6D1MBJX8ZCETE1S1BJ4"
       ],
-      "activeWd": "0.033",
+      "activeWd": "0.1",
       "progress": {
-        "step": 30335,
+        "step": 17038,
         "totalSteps": 30518,
-        "percent": 99.4,
-        "latestTrain": 3.127
+        "percent": 55.8,
+        "latestTrain": 3.366
       }
     },
     {
@@ -10084,10 +10139,10 @@
       ],
       "activeWd": "1.0",
       "progress": {
-        "step": 15696,
+        "step": 19464,
         "totalSteps": 30518,
-        "percent": 51.4,
-        "latestTrain": 3.9
+        "percent": 63.8,
+        "latestTrain": 3.856
       }
     },
     {
@@ -10843,10 +10898,10 @@
       ],
       "activeWd": "0.333",
       "progress": {
-        "step": 12327,
+        "step": 14243,
         "totalSteps": 15259,
-        "percent": 80.8,
-        "latestTrain": 3.307
+        "percent": 93.3,
+        "latestTrain": 3.22
       }
     },
     {
@@ -11496,10 +11551,10 @@
       ],
       "activeWd": "0.3",
       "progress": {
-        "step": 5429,
+        "step": 6234,
         "totalSteps": 7630,
-        "percent": 71.2,
-        "latestTrain": 3.22
+        "percent": 81.7,
+        "latestTrain": 3.145
       }
     }
   ]

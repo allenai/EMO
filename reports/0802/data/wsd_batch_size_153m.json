@@ -11798,6 +11798,61 @@
             "job": "01M0C47R4NASRWDVEE3C1A6DD7",
             "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5"
           }
+        },
+        "16": {
+          "0.033": {
+            "acc": 31.319999999999997,
+            "avg8Accuracy": 39.83375,
+            "avg8Bpb": 1.4813625,
+            "bpb": 0.9899,
+            "c4": 3.384,
+            "dataOrder": "dynamic_repacking",
+            "decayEmbeddings": true,
+            "downstream": {
+              "arc_challenge": 21.740000000000002,
+              "arc_easy": 46.489999999999995,
+              "boolq": 56.38999999999999,
+              "csqa": 39.39,
+              "hellaswag": 31.319999999999997,
+              "openbookqa": 24.8,
+              "piqa": 63.6,
+              "socialiqa": 41.449999999999996,
+              "winogrande": 49.88
+            },
+            "downstreamBpb": {
+              "arc_challenge": 1.582,
+              "arc_easy": 1.687,
+              "boolq": 1.914,
+              "csqa": 1.573,
+              "hellaswag": 0.9899,
+              "openbookqa": 1.778,
+              "piqa": 1.314,
+              "socialiqa": 1.362,
+              "winogrande": 1.565
+            },
+            "dynamicRepacking": true,
+            "embeddingWeightDecay": "0.033",
+            "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.033/step61036",
+            "epoch": 16,
+            "gap": 0.121,
+            "lr": "2e-3",
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.033",
+            "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.033/step54931",
+            "sequential": true,
+            "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.033/step27465",
+            "status": "complete",
+            "train": 3.263,
+            "validation": 3.384,
+            "validationExact": 3.384,
+            "variant": "DR+WT+EmbedWD",
+            "wandb": "qbe4mhhx",
+            "wd": "0.033",
+            "weightTying": true,
+            "experiment": "01M0C47R1AMRVXZVSKNMNN1GZM",
+            "beaker": "01M0C47R1AMRVXZVSKNMNN1GZM",
+            "job": "01M0C47R4NASRWDVEE3C1A6DD7",
+            "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5"
+          }
         }
       },
       "frontiers": {
@@ -11897,12 +11952,12 @@
       "jobs": [
         "01M0C47R4NASRWDVEE3C1A6DD7"
       ],
-      "activeWd": "0.033",
+      "activeWd": "0.1",
       "progress": {
-        "step": 58153,
+        "step": 32429,
         "totalSteps": 61036,
-        "percent": 95.3,
-        "latestTrain": 3.273
+        "percent": 53.1,
+        "latestTrain": 3.576
       }
     },
     {
@@ -12558,6 +12613,61 @@
             "job": "01M0C47SDXDGE4BCKCV8F15HZE",
             "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5"
           }
+        },
+        "16": {
+          "0.1": {
+            "acc": 31.259999999999998,
+            "avg8Accuracy": 39.49875,
+            "avg8Bpb": 1.4686375,
+            "bpb": 0.9821,
+            "c4": 3.374,
+            "dataOrder": "dynamic_repacking",
+            "decayEmbeddings": true,
+            "downstream": {
+              "arc_challenge": 22.74,
+              "arc_easy": 44.74,
+              "boolq": 58.47,
+              "csqa": 37.92,
+              "hellaswag": 31.259999999999998,
+              "openbookqa": 23.0,
+              "piqa": 63.17,
+              "socialiqa": 42.17,
+              "winogrande": 50.99
+            },
+            "downstreamBpb": {
+              "arc_challenge": 1.571,
+              "arc_easy": 1.641,
+              "boolq": 1.614,
+              "csqa": 1.552,
+              "hellaswag": 0.9821,
+              "openbookqa": 1.772,
+              "piqa": 1.313,
+              "socialiqa": 1.345,
+              "winogrande": 1.573
+            },
+            "dynamicRepacking": true,
+            "embeddingWeightDecay": "0.1",
+            "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.1/step30518",
+            "epoch": 16,
+            "gap": 0.024,
+            "lr": "2e-3",
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.1",
+            "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.1/step27465",
+            "sequential": true,
+            "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.1/step13732",
+            "status": "complete",
+            "train": 3.35,
+            "validation": 3.374,
+            "validationExact": 3.374,
+            "variant": "DR+WT+EmbedWD",
+            "wandb": "51424d4g",
+            "wd": "0.1",
+            "weightTying": true,
+            "experiment": "01M0C47SA82XTC43N1AJC1XKV9",
+            "beaker": "01M0C47SA82XTC43N1AJC1XKV9",
+            "job": "01M0C47SDXDGE4BCKCV8F15HZE",
+            "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5"
+          }
         }
       },
       "frontiers": {
@@ -12657,12 +12767,12 @@
       "jobs": [
         "01M0C47SDXDGE4BCKCV8F15HZE"
       ],
-      "activeWd": "0.1",
+      "activeWd": "0.3",
       "progress": {
-        "step": 29399,
+        "step": 21032,
         "totalSteps": 30518,
-        "percent": 96.3,
-        "latestTrain": 3.333
+        "percent": 68.9,
+        "latestTrain": 3.618
       }
     },
     {
@@ -13419,10 +13529,10 @@
       ],
       "activeWd": "0.1",
       "progress": {
-        "step": 10463,
+        "step": 12448,
         "totalSteps": 15259,
-        "percent": 68.6,
-        "latestTrain": 3.497
+        "percent": 81.6,
+        "latestTrain": 3.424
       }
     },
     {
@@ -14311,10 +14421,10 @@
       ],
       "activeWd": "1.0",
       "progress": {
-        "step": 8472,
+        "step": 10826,
         "totalSteps": 15259,
-        "percent": 55.5,
-        "latestTrain": 4.286
+        "percent": 70.9,
+        "latestTrain": 3.898
       }
     }
   ]
