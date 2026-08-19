@@ -46,9 +46,16 @@ def experiment_state(experiment: dict[str, Any]) -> str:
     if not jobs:
         return "submitted"
     statuses = [job.get("status") or {} for job in jobs]
-    if any("started" in status for status in statuses):
+    terminal = {"exited", "finalized", "canceled", "cancelled"}
+    if any(
+        "started" in status and not terminal.intersection(status)
+        for status in statuses
+    ):
         return "running"
-    if any("scheduled" in status for status in statuses):
+    if any(
+        "scheduled" in status and "started" not in status and not terminal.intersection(status)
+        for status in statuses
+    ):
         return "scheduled"
     if any("finalized" in status and status.get("exitCode") == 0 for status in statuses):
         return "complete"

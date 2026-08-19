@@ -1,7 +1,7 @@
 {
   "model": "153m",
   "script": "src/scripts/train/olmo2-1B.py",
-  "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs32_e48_lr1e-3_wd0.033_warmup768_sm0812bs32m153e48a",
+  "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.033",
   "baseArguments": [
     "--data-root=/weka/oe-training-default/ai2-llm",
     "--dataset.mix=null",
@@ -21,7 +21,7 @@
     "--model.block.sequence_mixer.qk_norm=null",
     "--init_seed=12536",
     "--data_loader.seed=0",
-    "--save-folder=/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs32_e48_lr1e-3_wd0.033_warmup768_sm0812bs32m153e48a",
+    "--save-folder=/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.033",
     "--data_loader.global_batch_size=131072",
     "--train_module.rank_microbatch_size=65536",
     "--train_module.optim.weight_decay=0.033",
@@ -40,7 +40,7 @@
   "firstEpoch": 56,
   "epochIncrement": 8,
   "previousValidation": 3.371,
-  "initialSourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_step1_0802_repeated_dclm1b_bs32_e48_lr1e-3_wd0.033_warmup768_sm0812bs32m153e48a/step329589",
+  "initialSourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.033/step329589",
   "runSuffix": "sm0818bs32saturation",
   "dynamicRepacking": false,
   "weightTying": false,

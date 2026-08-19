@@ -34,8 +34,7 @@ MODELS: dict[str, dict[str, Any]] = {
         "weightDecay": "0.1",
         "output": (
             "/weka/oe-training-default/sewonm/icsl/models/"
-            "dense_474m_step1_0802_repeated_dclm1b_bs32_e24_lr1e-3_"
-            "wd0.1_warmup768_sm0811bs32e24a"
+            "dense_474m_dclm1b/bs32_lr1e-3_wd0.1"
         ),
         "sourceStep": 164794,
         "runSuffix": "sm0818bs32saturation",
@@ -51,8 +50,7 @@ MODELS: dict[str, dict[str, Any]] = {
         "weightDecay": "0.033",
         "output": (
             "/weka/oe-training-default/sewonm/icsl/models/"
-            "dense_153m_step1_0802_repeated_dclm1b_bs32_e48_lr1e-3_"
-            "wd0.033_warmup768_sm0812bs32m153e48a"
+            "dense_153m_dclm1b/bs32_lr1e-3_wd0.033"
         ),
         "sourceStep": 329589,
         "runSuffix": "sm0818bs32saturation",
@@ -100,6 +98,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--name")
     parser.add_argument("--print-only", action="store_true")
     parser.add_argument("--register", action="store_true")
+    parser.add_argument(
+        "--resume-failed",
+        action="store_true",
+        help="Replace the registered failed logical chain while retaining attempt provenance",
+    )
     return parser.parse_args()
 
 
@@ -274,15 +277,26 @@ def audit_name(workspace: str, name: str) -> None:
         raise SystemExit(f"refusing duplicate Beaker experiment name {name}")
 
 
-def write_report(model: str, experiment: str, revision: str, manifest: dict[str, Any]) -> None:
+def write_report(
+    model: str,
+    experiment: str,
+    revision: str,
+    manifest: dict[str, Any],
+    *,
+    resume_failed: bool = False,
+) -> None:
     settings = MODELS[model]
     report_path = settings["report"]
     report = json.loads(report_path.read_text())
-    active = [
+    chains = [
         sweep
         for sweep in report.get("batchSweeps", [])
         if sweep.get("saturationChain") is True
-        and str(sweep.get("status", "")).lower() in {"submitted", "scheduled", "running"}
+    ]
+    active = [
+        sweep
+        for sweep in chains
+        if str(sweep.get("status", "")).lower() in {"submitted", "scheduled", "running"}
     ]
     if active:
         raise RuntimeError(f"an active saturation chain is already registered: {active}")
@@ -325,7 +339,37 @@ def write_report(model: str, experiment: str, revision: str, manifest: dict[str,
             "infrastructure failures automatically."
         ),
     }
-    report.setdefault("batchSweeps", []).append(sweep)
+    if resume_failed:
+        if not chains:
+            raise RuntimeError("no failed saturation chain is registered for recovery")
+        previous = chains[-1]
+        if str(previous.get("status", "")).lower() != "failed":
+            raise RuntimeError(f"registered saturation chain is not failed: {previous}")
+        previous_experiment = str(previous["experiment"])
+        history = list(previous.get("attemptHistory", []))
+        history.append(
+            {
+                "beaker": previous_experiment,
+                "status": "failed",
+                "failureClass": "preflight-output-directory-semantic",
+                "reason": (
+                    "The launcher used the legacy run-name output directory instead of the "
+                    "canonical model/coordinate directory and exhausted automatic retries "
+                    "before training started."
+                ),
+            }
+        )
+        previous.clear()
+        previous.update(sweep)
+        previous["attemptHistory"] = history
+        previous["recoveryOf"] = previous_experiment
+        previous["reason"] = (
+            f"Recovered the failed launcher from the verified E{settings['previousEpoch']} "
+            "pre-decay checkpoint under the current canonical output-directory semantic. "
+            "Successive eight-epoch endpoints remain in this one directory."
+        )
+    else:
+        report.setdefault("batchSweeps", []).append(sweep)
     note = (
         f" BS32 now has one persistent saturation-gated continuation from "
         f"E{settings['previousEpoch']}; it uses the locked LR{settings['learningRate']}/"
@@ -343,9 +387,11 @@ def write_report(model: str, experiment: str, revision: str, manifest: dict[str,
 
 def main() -> None:
     args = parse_args()
+    if args.resume_failed and not args.register:
+        raise SystemExit("--resume-failed requires --register")
     settings = MODELS[args.model]
     name = args.name or settings["name"]
-    if args.register:
+    if args.register and not args.resume_failed:
         report = json.loads(settings["report"].read_text())
         if any(
             sweep.get("saturationChain") is True
@@ -377,7 +423,13 @@ def main() -> None:
     if args.register:
         if not ids:
             raise RuntimeError("submission succeeded without a parsed experiment ID")
-        write_report(args.model, ids[0], args.revision, manifest)
+        write_report(
+            args.model,
+            ids[0],
+            args.revision,
+            manifest,
+            resume_failed=args.resume_failed,
+        )
 
 
 if __name__ == "__main__":
