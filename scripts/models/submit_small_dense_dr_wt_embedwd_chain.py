@@ -82,6 +82,13 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Replace a registered chain in place after a policy-only manifest update",
     )
+    parser.add_argument(
+        "--checkpoint-override",
+        action="append",
+        default=[],
+        metavar="WD:EPOCH=/ABSOLUTE/PATH",
+        help="Restart a failed frontier from its preceding clean checkpoint",
+    )
     return parser.parse_args()
 
 
@@ -154,6 +161,35 @@ def parse_output_overrides(
         resolved = [overrides.get(wd, output_for(model, batch, wd)) for wd in ladder]
         if len(set(resolved)) != len(resolved):
             raise ValueError("an output override collides with another fixed-WD trajectory")
+    return overrides
+
+
+def parse_checkpoint_overrides(
+    values: list[str], ladder: list[str], *, model: str, batch: int
+) -> dict[str, dict[str, str]]:
+    overrides: dict[str, dict[str, str]] = {}
+    for value in values:
+        coordinate, separator, raw_path = value.partition("=")
+        wd, epoch_separator, raw_epoch = coordinate.partition(":")
+        if not separator or not epoch_separator or not wd or not raw_epoch or not raw_path:
+            raise ValueError(
+                f"checkpoint override must have the form WD:EPOCH=/absolute/path: {value}"
+            )
+        if wd not in ladder:
+            raise ValueError(f"checkpoint override WD{wd} is outside the configured ladder")
+        epoch = str(int(raw_epoch))
+        path = Path(raw_path)
+        if not path.is_absolute() or ".." in path.parts:
+            raise ValueError(f"checkpoint override must be a normalized absolute path: {raw_path}")
+        normalized = str(path)
+        expected_parent = Path(output_for(model, batch, wd))
+        if path.parent != expected_parent:
+            raise ValueError(
+                f"checkpoint override must remain in the canonical WD{wd} directory {expected_parent}"
+            )
+        if epoch in overrides.setdefault(wd, {}):
+            raise ValueError(f"duplicate checkpoint override for WD{wd} E{epoch}")
+        overrides[wd][epoch] = normalized
     return overrides
 
 
@@ -246,6 +282,8 @@ def build_submission(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str
     ]
     for wd, output in overrides.items():
         task["arguments"].extend(("--output-override", f"{wd}={output}"))
+    for value in args.checkpoint_override:
+        task["arguments"].extend(("--checkpoint-override", value))
     task["envVars"] = [
         variable
         for variable in task.get("envVars", [])
@@ -315,6 +353,20 @@ def validate_recovery_target(args: argparse.Namespace) -> None:
         )
     if args.policy_replacement:
         return
+    if args.checkpoint_override:
+        overrides = parse_checkpoint_overrides(
+            args.checkpoint_override,
+            list(record["wdLadder"]),
+            model=args.model,
+            batch=args.global_sequences,
+        )
+        active_wd = str(record.get("activeWd"))
+        active_epoch = str(record.get("activeEpoch"))
+        if active_epoch not in overrides.get(active_wd, {}):
+            raise RuntimeError(
+                f"checkpoint recovery must override active WD{active_wd} E{active_epoch}"
+            )
+        return
     overrides = parse_output_overrides(
         args.output_override,
         list(record["wdLadder"]),
@@ -337,6 +389,7 @@ def write_report(
     *,
     resume_experiment: str | None = None,
     output_overrides: dict[str, str] | None = None,
+    checkpoint_overrides: dict[str, dict[str, str]] | None = None,
     policy_replacement: bool = False,
 ) -> None:
     path = report_path(model)
@@ -409,6 +462,8 @@ def write_report(
                 "status": (
                     "stopped-for-policy-replacement"
                     if policy_replacement
+                    else "stopped-for-checkpoint-recovery"
+                    if checkpoint_overrides
                     else "stopped-for-path-recovery"
                 ),
                 "activeEpoch": existing.get("activeEpoch"),
@@ -432,11 +487,22 @@ def write_report(
         existing["outputByWd"].update(overrides)
         if overrides:
             existing["pathOverrides"] = overrides
+        if checkpoint_overrides:
+            existing["checkpointOverrides"] = checkpoint_overrides
         if policy_replacement:
             existing["reason"] = (
                 "Policy replacement stopped the prior Beaker experiment and resumed the "
                 "same canonical trajectories with a hard WD<=1.0 cap. Completed stages "
                 "and frontier evidence were retained."
+            )
+        elif checkpoint_overrides:
+            selected = next(iter(checkpoint_overrides.values()))
+            checkpoint = next(iter(selected.values()))
+            existing["reason"] = (
+                "Numerical recovery replaced the retry-exhausted Beaker experiment and "
+                f"forced the failed frontier to restart from clean checkpoint {checkpoint}. "
+                "Canonical fixed-WD output paths, completed stages, and frontier evidence "
+                "were retained."
             )
         else:
             existing["reason"] = (
@@ -464,14 +530,24 @@ def main() -> None:
         raise SystemExit("--resume-experiment requires --register")
     if args.resume_experiment and not args.stop_existing:
         raise SystemExit("--resume-experiment requires --stop-existing")
-    if args.resume_experiment and not args.output_override and not args.policy_replacement:
+    if (
+        args.resume_experiment
+        and not args.output_override
+        and not args.policy_replacement
+        and not args.checkpoint_override
+    ):
         raise SystemExit(
-            "--resume-experiment requires --policy-replacement or at least one --output-override"
+            "--resume-experiment requires --policy-replacement, --checkpoint-override, "
+            "or at least one --output-override"
         )
     if args.policy_replacement and not args.resume_experiment:
         raise SystemExit("--policy-replacement requires --resume-experiment")
     if args.policy_replacement and args.output_override:
         raise SystemExit("--policy-replacement must preserve canonical output paths")
+    if args.policy_replacement and args.checkpoint_override:
+        raise SystemExit("--policy-replacement cannot also be a checkpoint recovery")
+    if args.output_override and args.checkpoint_override:
+        raise SystemExit("path recovery and checkpoint recovery must be separate submissions")
     if args.stop_existing and not args.resume_experiment:
         raise SystemExit("--stop-existing requires --resume-experiment")
     validate_recovery_target(args)
@@ -516,6 +592,12 @@ def main() -> None:
                 model=args.model,
                 batch=args.global_sequences,
             )
+            checkpoint_overrides = parse_checkpoint_overrides(
+                args.checkpoint_override,
+                manifest["wdLadder"],
+                model=args.model,
+                batch=args.global_sequences,
+            )
             write_report(
                 args.model,
                 args.global_sequences,
@@ -524,6 +606,7 @@ def main() -> None:
                 manifest,
                 resume_experiment=args.resume_experiment,
                 output_overrides=overrides,
+                checkpoint_overrides=checkpoint_overrides,
                 policy_replacement=args.policy_replacement,
             )
         else:

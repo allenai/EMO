@@ -161,6 +161,26 @@ def validate_config(config: dict[str, Any]) -> None:
         if not output.startswith(model_output_root):
             raise ValueError(f"output directory is outside this model's output root: {output}")
 
+    checkpoint_overrides = config.get("checkpointOverrides", {})
+    if not isinstance(checkpoint_overrides, dict):
+        raise TypeError("checkpointOverrides must be a WD-to-epoch mapping")
+    for wd, by_epoch in checkpoint_overrides.items():
+        if wd not in ladder:
+            raise ValueError(f"checkpoint override WD{wd} is outside the configured ladder")
+        if not isinstance(by_epoch, dict):
+            raise TypeError(f"checkpoint override WD{wd} must map epochs to paths")
+        for raw_epoch, raw_path in by_epoch.items():
+            epoch = int(raw_epoch)
+            if epoch not in targets or targets.index(epoch) == 0:
+                raise ValueError(f"checkpoint override E{epoch} is not a resumable target")
+            previous_epoch = targets[targets.index(epoch) - 1]
+            expected = output_for(config, wd) / f"step{stable_step(previous_epoch, batch)}"
+            if Path(str(raw_path)) != expected:
+                raise ValueError(
+                    f"checkpoint override WD{wd} E{epoch} must be the preceding clean "
+                    f"frontier checkpoint {expected}, got {raw_path}"
+                )
+
 
 def total_step(epoch: int, batch: int) -> int:
     return common.total_step(epoch, batch)
@@ -215,6 +235,28 @@ def parse_output_overrides(values: list[str]) -> dict[str, str]:
     return overrides
 
 
+def parse_checkpoint_overrides(values: list[str]) -> dict[str, dict[str, str]]:
+    overrides: dict[str, dict[str, str]] = {}
+    for value in values:
+        coordinate, separator, raw_path = value.partition("=")
+        wd, epoch_separator, raw_epoch = coordinate.partition(":")
+        if not separator or not epoch_separator or not wd or not raw_epoch or not raw_path:
+            raise ValueError(
+                f"checkpoint override must have the form WD:EPOCH=/absolute/path: {value}"
+            )
+        epoch = str(int(raw_epoch))
+        path = Path(raw_path)
+        if not path.is_absolute() or ".." in path.parts:
+            raise ValueError(f"checkpoint override must be a normalized absolute path: {raw_path}")
+        normalized = str(path)
+        if not normalized.startswith(ALLOWED_OUTPUT_PREFIX):
+            raise ValueError(f"checkpoint override is outside the approved model root: {normalized}")
+        if epoch in overrides.setdefault(wd, {}):
+            raise ValueError(f"duplicate checkpoint override for WD{wd} E{epoch}")
+        overrides[wd][epoch] = normalized
+    return overrides
+
+
 def state_dir(config: dict[str, Any]) -> Path:
     return Path(str(config["outputRoot"])) / (
         f".bs{config['globalSequences']}_dr_wt_embwd_lr{config['learningRate']}_adaptive"
@@ -242,6 +284,19 @@ def recovery_checkpoint(
     config: dict[str, Any], wd: str, previous_epoch: int, epoch: int
 ) -> Path | None:
     output = output_for(config, wd)
+    override = config.get("checkpointOverrides", {}).get(wd, {}).get(str(epoch))
+    if override is not None:
+        selected = Path(str(override))
+        if not selected.is_dir():
+            raise FileNotFoundError(
+                f"configured checkpoint override does not exist for WD{wd} E{epoch}: {selected}"
+            )
+        print(
+            f"SMALL_DRWTEMBWD_CHECKPOINT_OVERRIDE model={config['model']} "
+            f"bs={config['globalSequences']} epoch={epoch} wd={wd} checkpoint={selected}",
+            flush=True,
+        )
+        return selected
     endpoint = output / f"step{total_step(epoch, int(config['globalSequences']))}"
     if endpoint.is_dir():
         print(
@@ -283,6 +338,7 @@ def stage_arguments(
     output = output_for(config, wd)
     name = run_name(config, wd, epoch)
     retained = [stable_step(value, batch) for value in range(previous_epoch + 1, epoch + 1)]
+    pending_retained = [step for step in retained if not (output / f"step{step}").is_dir()]
     arguments = [
         *COMMON_ARGUMENTS,
         *MODEL_ARGUMENTS[str(config["model"])],
@@ -295,7 +351,7 @@ def stage_arguments(
             f"dr_wt_embwd,bs{batch},e{epoch},lr2e-3,wd{wd},adaptive-wd-chain,wsd]"
         ),
         "--trainer.callbacks.checkpointer.fixed_steps="
-        + json.dumps(retained, separators=(",", ":")),
+        + json.dumps(pending_retained, separators=(",", ":")),
         f"--data_loader.global_batch_size={batch * SEQUENCE_LENGTH}",
         "--data_loader.restore_data_order_from_state=false",
         f"--data_loader.ignore_fingerprint_mismatch={'true' if epoch > 1 else 'false'}",
@@ -540,12 +596,23 @@ def main() -> None:
         metavar="WD=/ABSOLUTE/PATH",
         help="Reroute one fixed-WD trajectory during a guarded recovery submission",
     )
+    parser.add_argument(
+        "--checkpoint-override",
+        action="append",
+        default=[],
+        metavar="WD:EPOCH=/ABSOLUTE/PATH",
+        help="Force one failed frontier to restart from its preceding clean checkpoint",
+    )
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args()
     config = json.loads(args.manifest.read_text())
     overrides = dict(config.get("outputOverrides", {}))
     overrides.update(parse_output_overrides(args.output_override))
     config["outputOverrides"] = overrides
+    checkpoint_overrides = dict(config.get("checkpointOverrides", {}))
+    for wd, by_epoch in parse_checkpoint_overrides(args.checkpoint_override).items():
+        checkpoint_overrides.setdefault(wd, {}).update(by_epoch)
+    config["checkpointOverrides"] = checkpoint_overrides
     validate_config(config)
     if args.validate_only:
         print(f"validated {args.manifest}")
