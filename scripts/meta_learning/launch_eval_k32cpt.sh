@@ -41,7 +41,7 @@ inner=""
 for g in $(seq 0 7); do
     lo=$((g * 4)); hi=$((g * 4 + 3))
     out="${OUT_DIR}/ce_${TAG}_shard${g}.json"
-    inner+="[ -f ${out} ] || CUDA_VISIBLE_DEVICES=${g} PYTHONPATH=.:src python -u scripts/modular_extension/eval_k32cpt_ce.py ${SRC_ARGS} --tokens-root ${TOKENS_ROOT} ${MAX_TOK_ARG} --clusters ${lo}-${hi} --out ${out} > /results/eval_gpu${g}.log 2>&1 & "
+    inner+="[ -f ${out} ] || CUDA_VISIBLE_DEVICES=${g} PYTHONPATH=.:src python -u scripts/modular_extension/eval_k32cpt_ce.py ${SRC_ARGS} --model-dtype bfloat16 --batch-size 4 --tokens-root ${TOKENS_ROOT} ${MAX_TOK_ARG} --clusters ${lo}-${hi} --out ${out} > /results/eval_gpu${g}.log 2>&1 & "
 done
 inner+="wait; ok=1; for g in 0 1 2 3 4 5 6 7; do [ -f ${OUT_DIR}/ce_${TAG}_shard\${g}.json ] || { echo MISSING shard \$g; tail -n5 /results/eval_gpu\${g}.log; ok=0; }; done; [ \"\$ok\" -eq 1 ]"
 

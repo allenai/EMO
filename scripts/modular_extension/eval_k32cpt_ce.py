@@ -65,11 +65,12 @@ def build_model(args, device):
         router["eval_document_expert_pool"] = moe["num_experts"]
     model = TransformerConfig.from_dict(tcfg).build(init_device="meta")
     model.to_empty(device=device)
+    model_dtype = getattr(torch, args.model_dtype)
 
     if args.snapshot:
         sd = torch.load(args.snapshot, map_location="cpu")
         missing, unexpected = model.load_state_dict(
-            {k: v.to(torch.float32) for k, v in sd.items()}, strict=True)
+            {k: v.to(model_dtype) for k, v in sd.items()}, strict=True)
         assert not missing and not unexpected, (missing, unexpected)
     else:
         from olmo_core.distributed.checkpoint import load_model_and_optim_state
@@ -77,6 +78,8 @@ def build_model(args, device):
         with TemporaryDirectory() as wd:
             load_model_and_optim_state(str(Path(args.checkpoint) / "model_and_optim"),
                                        model, work_dir=wd)
+        if model_dtype != torch.float32:
+            model.to(model_dtype)
     model.eval()
     return model
 
@@ -119,6 +122,11 @@ def main():
     p.add_argument("--clusters", default="0-31")
     p.add_argument("--out", required=True)
     p.add_argument("--batch-size", type=int, default=8)
+    p.add_argument("--model-dtype", default="float32", choices=["float32", "bfloat16"],
+                   help="parameter dtype on GPU; bfloat16 halves model memory (needed for "
+                        "the 128-expert meta_learning models). Compute is bf16 autocast "
+                        "either way; snapshots are bf16 at rest, so bfloat16 is lossless "
+                        "for the snapshot path.")
     p.add_argument("--tokens-root", default=str(DEFAULT_TOKENS_ROOT))
     p.add_argument("--max-tokens-per-cluster", type=int, default=None)
     args = p.parse_args()
