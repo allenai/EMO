@@ -29,6 +29,7 @@ import run_small_dense_saturation_chain as common
 TOKENS_PER_EPOCH = 1_000_000_000
 SEQUENCE_LENGTH = 4096
 DECAY_FRACTION = 0.1
+MAX_WEIGHT_DECAY = Decimal("1.0")
 ALLOWED_OUTPUT_PREFIX = "/weka/oe-training-default/sewonm/icsl/models/"
 TRAINING_SCRIPT = "src/scripts/train/olmo2-1B.py"
 DOWNSTREAM_TASKS = (
@@ -119,6 +120,13 @@ def validate_config(config: dict[str, Any]) -> None:
         raise ValueError("the adaptive study is locked to LR2e-3")
 
     ladder = [str(value) for value in config["wdLadder"]]
+    if not ladder or len(ladder) != len(set(ladder)):
+        raise ValueError("WD ladder must be nonempty and contain unique values")
+    decimal_ladder = [Decimal(value) for value in ladder]
+    if decimal_ladder != sorted(decimal_ladder):
+        raise ValueError("WD ladder must be strictly increasing")
+    if max(decimal_ladder) > MAX_WEIGHT_DECAY:
+        raise ValueError("WD ladder must not exceed 1.0")
     center = str(config["baselineOptimalWd"])
     if center not in ladder:
         raise ValueError("baselineOptimalWd is not on the WD ladder")
@@ -410,7 +418,10 @@ def ensure_trajectory(config: dict[str, Any], wd: str, target: int) -> dict[str,
 def next_higher(config: dict[str, Any], wd: str) -> str | None:
     ladder = [str(value) for value in config["wdLadder"]]
     index = ladder.index(wd)
-    return ladder[index + 1] if index + 1 < len(ladder) else None
+    if index + 1 >= len(ladder):
+        return None
+    candidate = ladder[index + 1]
+    return candidate if Decimal(candidate) <= MAX_WEIGHT_DECAY else None
 
 
 def candidate_wds(config: dict[str, Any], index: int) -> list[str]:

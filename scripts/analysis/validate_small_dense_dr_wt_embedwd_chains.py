@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+from decimal import Decimal
 from pathlib import Path
 
 MODELS = ("474m", "153m")
@@ -48,6 +49,14 @@ def validate_model(model: str) -> None:
         if failed:
             raise ValueError(f"{model} BS{batch}: invalid {', '.join(failed)}")
         ladder = [str(value) for value in record["wdLadder"]]
+        if not ladder or max(Decimal(value) for value in ladder) > Decimal("1.0"):
+            raise ValueError(f"{model} BS{batch}: WD ladder exceeds the 1.0 cap")
+        active_wds = [Decimal(str(value)) for value in record.get("activeWds", [])]
+        if active_wds and max(active_wds) > Decimal("1.0"):
+            raise ValueError(f"{model} BS{batch}: active WD exceeds the 1.0 cap")
+        for epoch, results in record.get("results", {}).items():
+            if any(Decimal(str(wd)) > Decimal("1.0") for wd in results):
+                raise ValueError(f"{model} BS{batch} E{epoch}: result WD exceeds 1.0")
         center = str(record["baselineOptimalWd"])
         center_index = ladder.index(center)
         if record.get("initialWds") != ladder[center_index - 1 : center_index + 2]:

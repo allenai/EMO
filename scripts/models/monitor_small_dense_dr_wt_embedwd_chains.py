@@ -9,6 +9,7 @@ import re
 import statistics
 import subprocess
 from datetime import UTC, datetime
+from decimal import Decimal
 from itertools import pairwise
 from pathlib import Path
 from typing import Any
@@ -54,6 +55,7 @@ METRIC_HEADER = re.compile(
     r"\[step=(?P<step>[0-9,]+)/(?P<total>[0-9,]+),epoch=",
 )
 LOSS_VALUE = re.compile(r"\btrain/CE loss=([^\s]+)")
+MAX_WEIGHT_DECAY = Decimal("1.0")
 
 
 def run(arguments: list[str]) -> str:
@@ -266,6 +268,16 @@ def wandb_health(logs: str, record: dict[str, Any], state: str) -> dict[str, Any
 
 def update_chain(model: str, record: dict[str, Any]) -> str:
     batch = int(record["batchSequences"])
+    record["wdLadder"] = [
+        str(value)
+        for value in record["wdLadder"]
+        if Decimal(str(value)) <= MAX_WEIGHT_DECAY
+    ]
+    record["outputByWd"] = {
+        str(wd): output
+        for wd, output in record.get("outputByWd", {}).items()
+        if Decimal(str(wd)) <= MAX_WEIGHT_DECAY
+    }
     experiment_id = str(record["experiment"])
     inspected = inspect_experiment(experiment_id)
     state = experiment_state(inspected)
@@ -349,7 +361,11 @@ def update_chain(model: str, record: dict[str, Any]) -> str:
             if completed and completed.get("decision") == "continue":
                 current_epoch = target_after(record, current_epoch)
                 selected = str(completed["selectedWd"])
-                ladder = [str(value) for value in record["wdLadder"]]
+                ladder = [
+                    str(value)
+                    for value in record["wdLadder"]
+                    if Decimal(str(value)) <= MAX_WEIGHT_DECAY
+                ]
                 selected_index = ladder.index(selected)
                 candidates = [selected]
                 if selected_index + 1 < len(ladder):

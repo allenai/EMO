@@ -18,6 +18,7 @@ SEQUENCE_LENGTH = 4096
 RANK_MICROBATCH_SEQUENCES = 16
 REFERENCE_WARMUP_SEQUENCE_STEPS = 24 * 1024
 LEARNING_RATE = "2e-3"
+MAX_WEIGHT_DECAY = "1.0"
 ALLOWED_OUTPUT_PREFIX = "/weka/oe-training-default/sewonm/icsl/models/"
 MANIFEST_DIR = Path("scripts/models/manifests")
 REPORT_DIR = Path("reports/0802/data")
@@ -102,7 +103,7 @@ def warmup_steps(batch: int) -> int:
 
 def wd_ladder(batch: int) -> list[str]:
     middle = "0.333" if batch == 256 else "0.3"
-    return ["0.01", "0.033", "0.1", middle, "1.0", "3.0"]
+    return ["0.01", "0.033", "0.1", middle, MAX_WEIGHT_DECAY]
 
 
 def manifest_path(model: str, batch: int) -> Path:

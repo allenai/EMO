@@ -12,8 +12,7 @@
     "0.033",
     "0.1",
     "0.3",
-    "1.0",
-    "3.0"
+    "1.0"
   ],
   "baselineOptimalWd": "0.3",
   "baselineEvidenceEpoch": 24,
