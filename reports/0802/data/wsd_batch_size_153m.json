@@ -11235,7 +11235,7 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-19T20:26:29.907657+00:00",
+        "checkedAt": "2026-08-19T20:48:43.337205+00:00",
         "run": "0oucdv6i",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/0oucdv6i",
         "model": "153m",
@@ -11245,12 +11245,12 @@
         "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.033",
         "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.033",
         "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.033/step384521",
-        "samples": 1251,
+        "samples": 2687,
         "firstStep": 384525,
-        "latestStep": 390775,
+        "latestStep": 397955,
         "totalSteps": 427247,
-        "recentLossMedian": 3.389,
-        "baselineLossMedian": 3.396,
+        "recentLossMedian": 3.374,
+        "baselineLossMedian": 3.399,
         "maxLoss": 3.703,
         "isolatedSpikeCount": 0,
         "stepRegressions": [],
@@ -11263,10 +11263,10 @@
         "recoveryOutput": null
       },
       "progress": {
-        "step": 390779,
+        "step": 397955,
         "totalSteps": 427247,
-        "percent": 91.5,
-        "latestTrain": 3.284
+        "percent": 93.1,
+        "latestTrain": 3.434
       }
     }
   ],
@@ -11625,6 +11625,59 @@
             "variant": "DR+WT+EmbedWD",
             "wandb": "4kvpxi5r",
             "wd": "0.1",
+            "weightTying": true,
+            "experiment": "01M0DT972KT6WECBZ9ZWZVAG13",
+            "beaker": "01M0DT972KT6WECBZ9ZWZVAG13",
+            "job": "01M0DT975ZCC2EMB756KX092ST",
+            "revision": "35d3ade76e63fc16dc6ec9d6b2a39de0f68e535f"
+          },
+          "0.3": {
+            "acc": 27.51,
+            "avg8Accuracy": 37.7075,
+            "avg8Bpb": 1.5735000000000001,
+            "bpb": 1.058,
+            "c4": 3.625,
+            "dataOrder": "dynamic_repacking",
+            "decayEmbeddings": true,
+            "downstream": {
+              "arc_challenge": 23.41,
+              "arc_easy": 45.26,
+              "boolq": 47.22,
+              "csqa": 32.92,
+              "hellaswag": 27.51,
+              "openbookqa": 20.4,
+              "piqa": 60.660000000000004,
+              "socialiqa": 40.43,
+              "winogrande": 51.07000000000001
+            },
+            "downstreamBpb": {
+              "arc_challenge": 1.62,
+              "arc_easy": 1.708,
+              "boolq": 3.223,
+              "csqa": 1.743,
+              "hellaswag": 1.058,
+              "openbookqa": 1.914,
+              "piqa": 1.395,
+              "socialiqa": 1.514,
+              "winogrande": 1.636
+            },
+            "dynamicRepacking": true,
+            "embeddingWeightDecay": "0.3",
+            "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3/step7630",
+            "epoch": 2,
+            "gap": -0.047,
+            "lr": "2e-3",
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3",
+            "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3/step6866",
+            "sequential": true,
+            "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3/step3432",
+            "status": "complete",
+            "train": 3.672,
+            "validation": 3.625,
+            "validationExact": 3.625,
+            "variant": "DR+WT+EmbedWD",
+            "wandb": "l77wvxwx",
+            "wd": "0.3",
             "weightTying": true,
             "experiment": "01M0DT972KT6WECBZ9ZWZVAG13",
             "beaker": "01M0DT972KT6WECBZ9ZWZVAG13",
@@ -12223,24 +12276,24 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-19T20:26:32.332993+00:00",
-        "run": "l77wvxwx",
-        "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/l77wvxwx",
+        "checkedAt": "2026-08-19T20:48:53.373045+00:00",
+        "run": "wbvogu5z",
+        "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/wbvogu5z",
         "model": "153m",
         "batchSequences": 64,
-        "epoch": 2,
+        "epoch": 4,
         "wd": "0.3",
         "expectedOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3",
         "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3",
         "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3",
-        "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3/step3432",
-        "samples": 165,
-        "firstStep": 3435,
-        "latestStep": 4255,
-        "totalSteps": 7630,
-        "recentLossMedian": 3.88,
-        "baselineLossMedian": 3.893,
-        "maxLoss": 4.091,
+        "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3/step6866",
+        "samples": 150,
+        "firstStep": 6870,
+        "latestStep": 7615,
+        "totalSteps": 15259,
+        "recentLossMedian": 3.808,
+        "baselineLossMedian": 3.8145,
+        "maxLoss": 3.96,
         "isolatedSpikeCount": 0,
         "stepRegressions": [],
         "nonfiniteLosses": [],
@@ -12252,10 +12305,10 @@
         "recoveryOutput": null
       },
       "progress": {
-        "step": 4259,
-        "totalSteps": 7630,
-        "percent": 55.8,
-        "latestTrain": 3.888
+        "step": 7618,
+        "totalSteps": 15259,
+        "percent": 49.9,
+        "latestTrain": 3.814
       }
     },
     {
@@ -12299,8 +12352,8 @@
       "weightTying": true,
       "decayEmbeddings": true,
       "embeddingWeightDecay": "global",
-      "status": "submitted",
-      "beakerStatus": "submitted",
+      "status": "running",
+      "beakerStatus": "running",
       "activeEpoch": 32,
       "activeWds": [
         "0.1",
@@ -12421,10 +12474,10 @@
             "wandb": "2dp4l5zu",
             "wd": "0.1",
             "weightTying": true,
-            "experiment": "01M0DCAF36MQTZJXMYY11WM704",
-            "beaker": "01M0DCAF36MQTZJXMYY11WM704",
-            "job": "01M0DSSTZS3ER9AEHCKYJF8BHK",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "beaker": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "job": "01M0DTAE9S5R0W3FP13X645RHG",
+            "revision": "35d3ade76e63fc16dc6ec9d6b2a39de0f68e535f"
           },
           "0.3": {
             "acc": 26.21,
@@ -12474,10 +12527,10 @@
             "wandb": "3budwqz5",
             "wd": "0.3",
             "weightTying": true,
-            "experiment": "01M0DCAF36MQTZJXMYY11WM704",
-            "beaker": "01M0DCAF36MQTZJXMYY11WM704",
-            "job": "01M0DSSTZS3ER9AEHCKYJF8BHK",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "beaker": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "job": "01M0DTAE9S5R0W3FP13X645RHG",
+            "revision": "35d3ade76e63fc16dc6ec9d6b2a39de0f68e535f"
           }
         },
         "2": {
@@ -12582,10 +12635,10 @@
             "wandb": "f05aojty",
             "wd": "0.1",
             "weightTying": true,
-            "experiment": "01M0DCAF36MQTZJXMYY11WM704",
-            "beaker": "01M0DCAF36MQTZJXMYY11WM704",
-            "job": "01M0DSSTZS3ER9AEHCKYJF8BHK",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "beaker": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "job": "01M0DTAE9S5R0W3FP13X645RHG",
+            "revision": "35d3ade76e63fc16dc6ec9d6b2a39de0f68e535f"
           },
           "0.3": {
             "acc": 27.3,
@@ -12635,10 +12688,10 @@
             "wandb": "qthpdvo6",
             "wd": "0.3",
             "weightTying": true,
-            "experiment": "01M0DCAF36MQTZJXMYY11WM704",
-            "beaker": "01M0DCAF36MQTZJXMYY11WM704",
-            "job": "01M0DSSTZS3ER9AEHCKYJF8BHK",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "beaker": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "job": "01M0DTAE9S5R0W3FP13X645RHG",
+            "revision": "35d3ade76e63fc16dc6ec9d6b2a39de0f68e535f"
           }
         },
         "4": {
@@ -12743,10 +12796,10 @@
             "wandb": "2pky3ttx",
             "wd": "0.1",
             "weightTying": true,
-            "experiment": "01M0DCAF36MQTZJXMYY11WM704",
-            "beaker": "01M0DCAF36MQTZJXMYY11WM704",
-            "job": "01M0DSSTZS3ER9AEHCKYJF8BHK",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "beaker": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "job": "01M0DTAE9S5R0W3FP13X645RHG",
+            "revision": "35d3ade76e63fc16dc6ec9d6b2a39de0f68e535f"
           },
           "0.3": {
             "acc": 28.64,
@@ -12796,10 +12849,10 @@
             "wandb": "x82gjyhd",
             "wd": "0.3",
             "weightTying": true,
-            "experiment": "01M0DCAF36MQTZJXMYY11WM704",
-            "beaker": "01M0DCAF36MQTZJXMYY11WM704",
-            "job": "01M0DSSTZS3ER9AEHCKYJF8BHK",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "beaker": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "job": "01M0DTAE9S5R0W3FP13X645RHG",
+            "revision": "35d3ade76e63fc16dc6ec9d6b2a39de0f68e535f"
           }
         },
         "8": {
@@ -12851,10 +12904,10 @@
             "wandb": "lhkj4zuy",
             "wd": "0.1",
             "weightTying": true,
-            "experiment": "01M0DCAF36MQTZJXMYY11WM704",
-            "beaker": "01M0DCAF36MQTZJXMYY11WM704",
-            "job": "01M0DSSTZS3ER9AEHCKYJF8BHK",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "beaker": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "job": "01M0DTAE9S5R0W3FP13X645RHG",
+            "revision": "35d3ade76e63fc16dc6ec9d6b2a39de0f68e535f"
           },
           "0.3": {
             "acc": 29.43,
@@ -12904,10 +12957,10 @@
             "wandb": "ddsaj82m",
             "wd": "0.3",
             "weightTying": true,
-            "experiment": "01M0DCAF36MQTZJXMYY11WM704",
-            "beaker": "01M0DCAF36MQTZJXMYY11WM704",
-            "job": "01M0DSSTZS3ER9AEHCKYJF8BHK",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "beaker": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "job": "01M0DTAE9S5R0W3FP13X645RHG",
+            "revision": "35d3ade76e63fc16dc6ec9d6b2a39de0f68e535f"
           }
         },
         "16": {
@@ -12959,10 +13012,10 @@
             "wandb": "51424d4g",
             "wd": "0.1",
             "weightTying": true,
-            "experiment": "01M0DCAF36MQTZJXMYY11WM704",
-            "beaker": "01M0DCAF36MQTZJXMYY11WM704",
-            "job": "01M0DSSTZS3ER9AEHCKYJF8BHK",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "beaker": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "job": "01M0DTAE9S5R0W3FP13X645RHG",
+            "revision": "35d3ade76e63fc16dc6ec9d6b2a39de0f68e535f"
           },
           "0.3": {
             "acc": 30.380000000000003,
@@ -13012,10 +13065,10 @@
             "wandb": "w9l0lccw",
             "wd": "0.3",
             "weightTying": true,
-            "experiment": "01M0DCAF36MQTZJXMYY11WM704",
-            "beaker": "01M0DCAF36MQTZJXMYY11WM704",
-            "job": "01M0DSSTZS3ER9AEHCKYJF8BHK",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "beaker": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "job": "01M0DTAE9S5R0W3FP13X645RHG",
+            "revision": "35d3ade76e63fc16dc6ec9d6b2a39de0f68e535f"
           }
         },
         "32": {
@@ -13067,10 +13120,10 @@
             "wandb": "05ppkrkh",
             "wd": "0.1",
             "weightTying": true,
-            "experiment": "01M0DCAF36MQTZJXMYY11WM704",
-            "beaker": "01M0DCAF36MQTZJXMYY11WM704",
-            "job": "01M0DSSTZS3ER9AEHCKYJF8BHK",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "beaker": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+            "job": "01M0DTAE9S5R0W3FP13X645RHG",
+            "revision": "35d3ade76e63fc16dc6ec9d6b2a39de0f68e535f"
           }
         }
       },
@@ -13095,9 +13148,9 @@
           "selectedWd": "0.033",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAF36MQTZJXMYY11WM704",
-          "beaker": "01M0DCAF36MQTZJXMYY11WM704",
-          "job": "01M0DSSTZS3ER9AEHCKYJF8BHK"
+          "experiment": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+          "beaker": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+          "job": "01M0DTAE9S5R0W3FP13X645RHG"
         },
         "2": {
           "candidateValidationExact": {
@@ -13117,9 +13170,9 @@
           "selectedWd": "0.033",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAF36MQTZJXMYY11WM704",
-          "beaker": "01M0DCAF36MQTZJXMYY11WM704",
-          "job": "01M0DSSTZS3ER9AEHCKYJF8BHK"
+          "experiment": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+          "beaker": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+          "job": "01M0DTAE9S5R0W3FP13X645RHG"
         },
         "4": {
           "candidateValidationExact": {
@@ -13139,9 +13192,9 @@
           "selectedWd": "0.1",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAF36MQTZJXMYY11WM704",
-          "beaker": "01M0DCAF36MQTZJXMYY11WM704",
-          "job": "01M0DSSTZS3ER9AEHCKYJF8BHK"
+          "experiment": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+          "beaker": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+          "job": "01M0DTAE9S5R0W3FP13X645RHG"
         },
         "8": {
           "candidateValidationExact": {
@@ -13161,9 +13214,9 @@
           "selectedWd": "0.1",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAF36MQTZJXMYY11WM704",
-          "beaker": "01M0DCAF36MQTZJXMYY11WM704",
-          "job": "01M0DSSTZS3ER9AEHCKYJF8BHK"
+          "experiment": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+          "beaker": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+          "job": "01M0DTAE9S5R0W3FP13X645RHG"
         },
         "16": {
           "candidateValidationExact": {
@@ -13183,9 +13236,9 @@
           "selectedWd": "0.1",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAF36MQTZJXMYY11WM704",
-          "beaker": "01M0DCAF36MQTZJXMYY11WM704",
-          "job": "01M0DSSTZS3ER9AEHCKYJF8BHK"
+          "experiment": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+          "beaker": "01M0DTAE5KRGS8B9C6KBTEY0ZJ",
+          "job": "01M0DTAE9S5R0W3FP13X645RHG"
         }
       },
       "reason": "Infrastructure recovery replaced an exhausted Beaker result dataset after all task retries failed with Errno 28. The same canonical WD trajectories, completed frontier evidence, and exact checkpoints were retained.",
@@ -13282,7 +13335,43 @@
       "job": "01M0DTAE9S5R0W3FP13X645RHG",
       "jobs": [
         "01M0DTAE9S5R0W3FP13X645RHG"
-      ]
+      ],
+      "wandbHealth": {
+        "status": "healthy",
+        "checkedAt": "2026-08-19T20:48:54.097026+00:00",
+        "run": "534fs333",
+        "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/534fs333",
+        "model": "153m",
+        "batchSequences": 128,
+        "epoch": 32,
+        "wd": "0.3",
+        "expectedOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3",
+        "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3",
+        "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3",
+        "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3/step54931",
+        "samples": 506,
+        "firstStep": 54935,
+        "latestStep": 57465,
+        "totalSteps": 61036,
+        "recentLossMedian": 3.4845,
+        "baselineLossMedian": 3.5205,
+        "maxLoss": 3.681,
+        "isolatedSpikeCount": 0,
+        "stepRegressions": [],
+        "nonfiniteLosses": [],
+        "stalledMinutes": 0.0,
+        "warnings": [],
+        "criticalSignals": [],
+        "shouldRecover": false,
+        "automaticPathRecoveryReady": false,
+        "recoveryOutput": null
+      },
+      "progress": {
+        "step": 57465,
+        "totalSteps": 61036,
+        "percent": 94.1,
+        "latestTrain": 3.426
+      }
     },
     {
       "id": "dense-153m-bs256-dr-wt-embwd-adaptive",
@@ -14276,7 +14365,7 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-19T20:26:33.253357+00:00",
+        "checkedAt": "2026-08-19T20:48:55.154527+00:00",
         "run": "b8yvhbjh",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/b8yvhbjh",
         "model": "153m",
@@ -14287,12 +14376,12 @@
         "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.333",
         "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.333",
         "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.333/step19740",
-        "samples": 569,
+        "samples": 816,
         "firstStep": 19740,
-        "latestStep": 22585,
+        "latestStep": 23820,
         "totalSteps": 30518,
-        "recentLossMedian": 3.5325,
-        "baselineLossMedian": 3.528,
+        "recentLossMedian": 3.534,
+        "baselineLossMedian": 3.525,
         "maxLoss": 4.079,
         "isolatedSpikeCount": 0,
         "stepRegressions": [],
@@ -14306,10 +14395,10 @@
       },
       "needsAttention": true,
       "progress": {
-        "step": 22589,
+        "step": 23822,
         "totalSteps": 30518,
-        "percent": 74.0,
-        "latestTrain": 3.559
+        "percent": 78.1,
+        "latestTrain": 3.572
       }
     },
     {
@@ -15383,7 +15472,7 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-19T20:26:33.984699+00:00",
+        "checkedAt": "2026-08-19T20:48:55.888263+00:00",
         "run": "q9gqu4vm",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/q9gqu4vm",
         "model": "153m",
@@ -15394,17 +15483,17 @@
         "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd1.0",
         "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd1.0",
         "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd1.0/step19740",
-        "samples": 192,
+        "samples": 233,
         "firstStep": 19740,
-        "latestStep": 20700,
+        "latestStep": 20905,
         "totalSteps": 22889,
-        "recentLossMedian": 3.884,
-        "baselineLossMedian": 3.8815,
+        "recentLossMedian": 3.8395,
+        "baselineLossMedian": 3.883,
         "maxLoss": 4.44,
         "isolatedSpikeCount": 0,
         "stepRegressions": [],
         "nonfiniteLosses": [],
-        "stalledMinutes": 0.5,
+        "stalledMinutes": 0.3,
         "warnings": [],
         "criticalSignals": [],
         "shouldRecover": false,
@@ -15413,10 +15502,10 @@
       },
       "needsAttention": true,
       "progress": {
-        "step": 20704,
+        "step": 20905,
         "totalSteps": 22889,
-        "percent": 90.5,
-        "latestTrain": 3.905
+        "percent": 91.3,
+        "latestTrain": 3.8
       }
     }
   ]
