@@ -9376,10 +9376,10 @@
       ],
       "activeWd": "0.033",
       "progress": {
-        "step": 26396,
+        "step": 30335,
         "totalSteps": 30518,
-        "percent": 86.5,
-        "latestTrain": 3.137
+        "percent": 99.4,
+        "latestTrain": 3.127
       }
     },
     {
@@ -9928,6 +9928,61 @@
             "job": "01M0C47M9BD4W1KBY6TVAVR4GD",
             "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5"
           }
+        },
+        "16": {
+          "0.3": {
+            "acc": 38.93,
+            "avg8Accuracy": 44.7125,
+            "avg8Bpb": 1.3382625000000001,
+            "bpb": 0.9021,
+            "c4": 3.117,
+            "dataOrder": "dynamic_repacking",
+            "decayEmbeddings": true,
+            "downstream": {
+              "arc_challenge": 25.419999999999998,
+              "arc_easy": 54.559999999999995,
+              "boolq": 47.52,
+              "csqa": 48.480000000000004,
+              "hellaswag": 38.93,
+              "openbookqa": 27.400000000000002,
+              "piqa": 67.30000000000001,
+              "socialiqa": 44.47,
+              "winogrande": 51.13999999999999
+            },
+            "downstreamBpb": {
+              "arc_challenge": 1.417,
+              "arc_easy": 1.444,
+              "boolq": 1.66,
+              "csqa": 1.369,
+              "hellaswag": 0.9021,
+              "openbookqa": 1.608,
+              "piqa": 1.205,
+              "socialiqa": 1.249,
+              "winogrande": 1.512
+            },
+            "dynamicRepacking": true,
+            "embeddingWeightDecay": "0.3",
+            "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3/step30518",
+            "epoch": 16,
+            "gap": 0.032,
+            "lr": "2e-3",
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3",
+            "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3/step27465",
+            "sequential": true,
+            "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3/step13732",
+            "status": "complete",
+            "train": 3.085,
+            "validation": 3.117,
+            "validationExact": 3.117,
+            "variant": "DR+WT+EmbedWD",
+            "wandb": "kdtkyoga",
+            "wd": "0.3",
+            "weightTying": true,
+            "experiment": "01M0C47M5TP1YAPKCTAJTKNCXV",
+            "beaker": "01M0C47M5TP1YAPKCTAJTKNCXV",
+            "job": "01M0C47M9BD4W1KBY6TVAVR4GD",
+            "revision": "6a3ab0d6984f9505f1f29bd1ac78d061c98d95b5"
+          }
         }
       },
       "frontiers": {
@@ -10027,12 +10082,12 @@
       "jobs": [
         "01M0C47M9BD4W1KBY6TVAVR4GD"
       ],
-      "activeWd": "0.3",
+      "activeWd": "1.0",
       "progress": {
-        "step": 28839,
+        "step": 15696,
         "totalSteps": 30518,
-        "percent": 94.5,
-        "latestTrain": 3.151
+        "percent": 51.4,
+        "latestTrain": 3.9
       }
     },
     {
@@ -10788,10 +10843,10 @@
       ],
       "activeWd": "0.333",
       "progress": {
-        "step": 10388,
+        "step": 12327,
         "totalSteps": 15259,
-        "percent": 68.1,
-        "latestTrain": 3.311
+        "percent": 80.8,
+        "latestTrain": 3.307
       }
     },
     {
@@ -11441,10 +11496,10 @@
       ],
       "activeWd": "0.3",
       "progress": {
-        "step": 4471,
+        "step": 5429,
         "totalSteps": 7630,
-        "percent": 58.6,
-        "latestTrain": 3.204
+        "percent": 71.2,
+        "latestTrain": 3.22
       }
     }
   ]
