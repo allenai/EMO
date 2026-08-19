@@ -50,12 +50,21 @@ STAGE_CONTEXT = re.compile(
 WANDB_RUN = re.compile(r"wandb:\s+(?:setting up run |.*?/runs/)([a-z0-9]{8})")
 SAVE_FOLDER = re.compile(r"save_folder='([^']+)'")
 LOAD_CHECKPOINT = re.compile(r"Loading checkpoint from '([^']+)'", re.IGNORECASE)
+INTERLEAVED_LOG_PREFIX = re.compile(
+    r"\n[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.+-]+Z\s+"
+)
 METRIC_HEADER = re.compile(
     r"^(?P<timestamp>[0-9T:.+-]+Z)\s+.*console_logger:67.*"
     r"\[step=(?P<step>[0-9,]+)/(?P<total>[0-9,]+),epoch=",
 )
 LOSS_VALUE = re.compile(r"\btrain/CE loss=([^\s]+)")
 MAX_WEIGHT_DECAY = Decimal("1.0")
+
+
+def normalize_log_value(value: str | None) -> str | None:
+    if value is None:
+        return None
+    return INTERLEAVED_LOG_PREFIX.sub("", value)
 
 
 def run(arguments: list[str]) -> str:
@@ -171,9 +180,9 @@ def wandb_health(logs: str, record: dict[str, Any], state: str) -> dict[str, Any
     run_id = run_ids[-1] if run_ids else None
     expected_output = str(record.get("outputByWd", {}).get(wd, ""))
     save_folders = SAVE_FOLDER.findall(segment)
-    save_folder = save_folders[-1] if save_folders else None
+    save_folder = normalize_log_value(save_folders[-1] if save_folders else None)
     load_paths = LOAD_CHECKPOINT.findall(segment)
-    load_path = load_paths[-1] if load_paths else None
+    load_path = normalize_log_value(load_paths[-1] if load_paths else None)
     steps, losses, nonfinite, last_timestamp, total_steps = parse_metric_samples(segment)
 
     critical: list[str] = []
