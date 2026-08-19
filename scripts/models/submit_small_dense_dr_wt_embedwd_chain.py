@@ -18,6 +18,7 @@ SEQUENCE_LENGTH = 4096
 RANK_MICROBATCH_SEQUENCES = 16
 REFERENCE_WARMUP_SEQUENCE_STEPS = 24 * 1024
 LEARNING_RATE = "2e-3"
+ALLOWED_OUTPUT_PREFIX = "/weka/oe-training-default/sewonm/icsl/models/"
 MANIFEST_DIR = Path("scripts/models/manifests")
 REPORT_DIR = Path("reports/0802/data")
 OUTPUT_ROOT = "/weka/oe-training-default/sewonm/icsl/models"
@@ -59,6 +60,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--manifest-only", action="store_true")
     parser.add_argument("--print-only", action="store_true")
     parser.add_argument("--register", action="store_true")
+    parser.add_argument(
+        "--resume-experiment",
+        help="Replace this registered experiment after a guarded path recovery",
+    )
+    parser.add_argument(
+        "--stop-existing",
+        action="store_true",
+        help="Stop --resume-experiment immediately before creating its replacement",
+    )
+    parser.add_argument(
+        "--output-override",
+        action="append",
+        default=[],
+        metavar="WD=/ABSOLUTE/PATH",
+        help="Reroute a fixed-WD trajectory in the replacement task",
+    )
     return parser.parse_args()
 
 
@@ -98,6 +115,40 @@ def output_root(model: str) -> str:
 
 def output_for(model: str, batch: int, wd: str) -> str:
     return f"{output_root(model)}/bs{batch}_dr_wt_embwd_lr{LEARNING_RATE}_wd{wd}"
+
+
+def parse_output_overrides(
+    values: list[str],
+    ladder: list[str],
+    *,
+    model: str | None = None,
+    batch: int | None = None,
+) -> dict[str, str]:
+    overrides: dict[str, str] = {}
+    for value in values:
+        wd, separator, raw_path = value.partition("=")
+        if not separator or not wd or not raw_path:
+            raise ValueError(f"output override must have the form WD=/absolute/path: {value}")
+        path = Path(raw_path)
+        if wd not in ladder:
+            raise ValueError(f"output override WD{wd} is outside the configured ladder")
+        if not path.is_absolute() or ".." in path.parts:
+            raise ValueError(f"output override must be a normalized absolute path: {raw_path}")
+        normalized = str(path)
+        if not normalized.startswith(ALLOWED_OUTPUT_PREFIX):
+            raise ValueError(f"output override is outside the approved model root: {normalized}")
+        if model is not None and not normalized.startswith(output_root(model).rstrip("/") + "/"):
+            raise ValueError(f"output override is outside the {model} output root: {normalized}")
+        if wd in overrides:
+            raise ValueError(f"duplicate output override for WD{wd}")
+        overrides[wd] = normalized
+    if len(set(overrides.values())) != len(overrides):
+        raise ValueError("output overrides must use distinct directories")
+    if model is not None and batch is not None:
+        resolved = [overrides.get(wd, output_for(model, batch, wd)) for wd in ladder]
+        if len(set(resolved)) != len(resolved):
+            raise ValueError("an output override collides with another fixed-WD trajectory")
+    return overrides
 
 
 def build_manifest(model: str, batch: int) -> tuple[dict[str, Any], Path]:
@@ -172,6 +223,12 @@ def set_revision(task: dict[str, Any], revision: str) -> None:
 
 def build_submission(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str, Any], Path]:
     manifest, path = build_manifest(args.model, args.global_sequences)
+    overrides = parse_output_overrides(
+        args.output_override,
+        manifest["wdLadder"],
+        model=args.model,
+        batch=args.global_sequences,
+    )
     spec = copy.deepcopy(base_spec(str(manifest["baseExperiment"])))
     audit_base_spec(args.model, spec)
     task = spec["tasks"][0]
@@ -181,6 +238,8 @@ def build_submission(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str
         "--manifest",
         str(path),
     ]
+    for wd, output in overrides.items():
+        task["arguments"].extend(("--output-override", f"{wd}={output}"))
     task["envVars"] = [
         variable
         for variable in task.get("envVars", [])
@@ -228,18 +287,55 @@ def report_path(model: str) -> Path:
     return REPORT_DIR / f"wsd_batch_size_{model}.json"
 
 
+def validate_recovery_target(args: argparse.Namespace) -> None:
+    if not args.resume_experiment:
+        return
+    report = json.loads(report_path(args.model).read_text())
+    record_id = f"dense-{args.model}-bs{args.global_sequences}-dr-wt-embwd-adaptive"
+    record = next(
+        (
+            candidate
+            for candidate in report.get("adaptiveDrWtEmbedWdChains", [])
+            if candidate.get("id") == record_id
+        ),
+        None,
+    )
+    if record is None:
+        raise RuntimeError(f"adaptive chain {record_id} is not registered")
+    if str(record.get("experiment")) != args.resume_experiment:
+        raise RuntimeError(
+            f"registered experiment {record.get('experiment')} does not match "
+            f"recovery target {args.resume_experiment}"
+        )
+    overrides = parse_output_overrides(
+        args.output_override,
+        list(record["wdLadder"]),
+        model=args.model,
+        batch=args.global_sequences,
+    )
+    active_wd = record.get("activeWd")
+    if active_wd and str(active_wd) not in overrides:
+        raise RuntimeError(
+            f"recovery must override the active WD{active_wd} trajectory; got {sorted(overrides)}"
+        )
+
+
 def write_report(
     model: str,
     batch: int,
     experiment: str,
     revision: str,
     manifest: dict[str, Any],
+    *,
+    resume_experiment: str | None = None,
+    output_overrides: dict[str, str] | None = None,
 ) -> None:
     path = report_path(model)
     report = json.loads(path.read_text())
     records = report.setdefault("adaptiveDrWtEmbedWdChains", [])
     record_id = f"dense-{model}-bs{batch}-dr-wt-embwd-adaptive"
-    if any(record.get("id") == record_id for record in records):
+    existing = next((record for record in records if record.get("id") == record_id), None)
+    if existing is not None and resume_experiment is None:
         raise RuntimeError(f"adaptive chain {record_id} is already registered")
     record = {
         "id": record_id,
@@ -286,7 +382,47 @@ def write_report(
             "selected held-out validation non-improvement."
         ),
     }
-    records.append(record)
+    if resume_experiment is None:
+        records.append(record)
+    else:
+        if existing is None:
+            raise RuntimeError(f"adaptive chain {record_id} is not registered")
+        if str(existing.get("experiment")) != resume_experiment:
+            raise RuntimeError(
+                f"registered experiment {existing.get('experiment')} does not match "
+                f"recovery target {resume_experiment}"
+            )
+        overrides = output_overrides or {}
+        history = list(existing.get("attemptHistory", []))
+        history.append(
+            {
+                "beaker": resume_experiment,
+                "status": "stopped-for-path-recovery",
+                "activeEpoch": existing.get("activeEpoch"),
+                "activeWd": existing.get("activeWd"),
+                "wandbHealth": existing.get("wandbHealth"),
+                "outputByWd": dict(existing.get("outputByWd", {})),
+            }
+        )
+        preserved = {
+            "results": existing.get("results", {}),
+            "frontiers": existing.get("frontiers", {}),
+            "activeEpoch": existing.get("activeEpoch", 1),
+            "activeWds": existing.get("activeWds", manifest["initialWds"]),
+            "activeWd": existing.get("activeWd"),
+        }
+        existing.clear()
+        existing.update(record)
+        existing.update(preserved)
+        existing["attemptHistory"] = history
+        existing["recoveryOf"] = resume_experiment
+        existing["outputByWd"].update(overrides)
+        existing["pathOverrides"] = overrides
+        existing["reason"] = (
+            "Guarded recovery replaced a W&B-suspicious task after stopping its prior "
+            "Beaker experiment. Completed frontier evidence was retained and the affected "
+            "fixed-WD trajectory was rerouted to the explicitly supplied directory."
+        )
     note = (
         f" BS{batch} also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain "
         f"at LR{LEARNING_RATE}, starting from baseline WD{manifest['baselineOptimalWd']} "
@@ -303,7 +439,19 @@ def write_report(
 
 def main() -> None:
     args = parse_args()
-    name = args.name or experiment_name(args.model, args.global_sequences)
+    if args.resume_experiment and not args.register:
+        raise SystemExit("--resume-experiment requires --register")
+    if args.resume_experiment and not args.stop_existing:
+        raise SystemExit("--resume-experiment requires --stop-existing")
+    if args.resume_experiment and not args.output_override:
+        raise SystemExit("--resume-experiment requires at least one --output-override")
+    if args.stop_existing and not args.resume_experiment:
+        raise SystemExit("--stop-existing requires --resume-experiment")
+    validate_recovery_target(args)
+    default_name = experiment_name(args.model, args.global_sequences)
+    if args.resume_experiment:
+        default_name += "-recovery-" + datetime.now(tz=UTC).strftime("%Y%m%d-%H%M")
+    name = args.name or default_name
     if args.manifest_only:
         _, path = build_manifest(args.model, args.global_sequences)
         print(path)
@@ -314,6 +462,8 @@ def main() -> None:
         json.dump(spec, sys.stdout, indent=2)
         print()
         return
+    if args.resume_experiment:
+        run(["beaker", "experiment", "stop", args.resume_experiment])
     output = run(
         [
             "beaker",
@@ -332,7 +482,24 @@ def main() -> None:
     if args.register:
         if not ids:
             raise RuntimeError("submission succeeded without a parsed experiment ID")
-        write_report(args.model, args.global_sequences, ids[0], args.revision, manifest)
+        if args.resume_experiment:
+            overrides = parse_output_overrides(
+                args.output_override,
+                manifest["wdLadder"],
+                model=args.model,
+                batch=args.global_sequences,
+            )
+            write_report(
+                args.model,
+                args.global_sequences,
+                ids[0],
+                args.revision,
+                manifest,
+                resume_experiment=args.resume_experiment,
+                output_overrides=overrides,
+            )
+        else:
+            write_report(args.model, args.global_sequences, ids[0], args.revision, manifest)
 
 
 if __name__ == "__main__":

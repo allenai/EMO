@@ -4,9 +4,12 @@
 from __future__ import annotations
 
 import json
+import math
 import re
+import statistics
 import subprocess
 from datetime import UTC, datetime
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -39,6 +42,18 @@ SATURATED = re.compile(
 )
 TRAIN_STEP = re.compile(r"\[step=([0-9,]+)/([0-9,]+),epoch=")
 TRAIN_LOSS = re.compile(r"\btrain/CE loss=([0-9]+(?:\.[0-9]+)?)")
+STAGE_CONTEXT = re.compile(
+    r"SMALL_DRWTEMBWD_STAGE_START model=(153m|474m) bs=([0-9]+) "
+    r"epoch=([0-9]+) wd=([^ ]+) previous_epoch=([0-9]+) output=([^\s]+)"
+)
+WANDB_RUN = re.compile(r"wandb:\s+(?:setting up run |.*?/runs/)([a-z0-9]{8})")
+SAVE_FOLDER = re.compile(r"save_folder='([^']+)'")
+LOAD_CHECKPOINT = re.compile(r"Loading checkpoint from '([^']+)'", re.IGNORECASE)
+METRIC_HEADER = re.compile(
+    r"^(?P<timestamp>[0-9T:.+-]+Z)\s+.*console_logger:67.*"
+    r"\[step=(?P<step>[0-9,]+)/(?P<total>[0-9,]+),epoch=",
+)
+LOSS_VALUE = re.compile(r"\btrain/CE loss=([^\s]+)")
 
 
 def run(arguments: list[str]) -> str:
@@ -105,6 +120,150 @@ def parsed_frontiers(logs: str, model: str, batch: int) -> dict[int, dict[str, A
     return parsed
 
 
+def parse_metric_samples(segment: str) -> tuple[list[int], list[float], list[str], str | None, int | None]:
+    steps: list[int] = []
+    losses: list[float] = []
+    nonfinite: list[str] = []
+    current_step: int | None = None
+    last_timestamp: str | None = None
+    total_steps: int | None = None
+    for line in segment.splitlines():
+        if "console_logger:" in line and "[step=" in line:
+            header = METRIC_HEADER.search(line)
+            if header is None:
+                current_step = None
+                continue
+            current_step = int(header.group("step").replace(",", ""))
+            total_steps = int(header.group("total").replace(",", ""))
+            last_timestamp = header.group("timestamp")
+            steps.append(current_step)
+            continue
+        if current_step is None:
+            continue
+        match = LOSS_VALUE.search(line)
+        if match is None:
+            continue
+        raw = match.group(1)
+        try:
+            value = float(raw)
+        except ValueError:
+            nonfinite.append(raw)
+            current_step = None
+            continue
+        if math.isfinite(value):
+            losses.append(value)
+        else:
+            nonfinite.append(raw)
+        current_step = None
+    return steps, losses, nonfinite, last_timestamp, total_steps
+
+
+def wandb_health(logs: str, record: dict[str, Any], state: str) -> dict[str, Any] | None:
+    starts = list(STAGE_CONTEXT.finditer(logs))
+    if not starts:
+        return None
+    start = starts[-1]
+    model, batch, epoch, wd, previous_epoch, output = start.groups()
+    segment = logs[start.start() :]
+    run_ids = WANDB_RUN.findall(segment)
+    run_id = run_ids[-1] if run_ids else None
+    expected_output = str(record.get("outputByWd", {}).get(wd, ""))
+    save_folders = SAVE_FOLDER.findall(segment)
+    save_folder = save_folders[-1] if save_folders else None
+    load_paths = LOAD_CHECKPOINT.findall(segment)
+    load_path = load_paths[-1] if load_paths else None
+    steps, losses, nonfinite, last_timestamp, total_steps = parse_metric_samples(segment)
+
+    critical: list[str] = []
+    warnings: list[str] = []
+    if expected_output and output != expected_output:
+        critical.append("stage-output-path-mismatch")
+    if save_folder and save_folder != output:
+        critical.append("trainer-save-path-mismatch")
+    if load_path and not load_path.startswith(output.rstrip("/") + "/"):
+        critical.append("checkpoint-load-path-mismatch")
+    if int(previous_epoch) > 0 and steps and load_path is None:
+        critical.append("missing-resume-checkpoint-load")
+
+    regressions = [(left, right) for left, right in pairwise(steps) if right < left]
+    if regressions:
+        critical.append("wandb-step-regression")
+    if nonfinite:
+        critical.append("nonfinite-training-loss")
+
+    recent_median: float | None = None
+    baseline_median: float | None = None
+    maximum: float | None = None
+    spike_count = 0
+    if losses:
+        maximum = max(losses)
+        recent = losses[-50:]
+        baseline_pool = losses[-250:-50] or losses[:-50] or losses
+        recent_median = statistics.median(recent)
+        baseline_median = statistics.median(baseline_pool)
+        spike_count = sum(value > baseline_median + 0.75 for value in losses)
+        if len(recent) >= 25 and recent_median > baseline_median + 0.5:
+            critical.append("sustained-training-loss-shift")
+        elif spike_count:
+            warnings.append("isolated-finite-loss-spikes")
+
+    stalled_minutes: float | None = None
+    if last_timestamp and state == "running" and steps and total_steps and steps[-1] < total_steps:
+        last_metric = datetime.fromisoformat(last_timestamp.replace("Z", "+00:00"))
+        stalled_minutes = (datetime.now(tz=UTC) - last_metric).total_seconds() / 60
+        if stalled_minutes > 45:
+            critical.append("training-metrics-stalled")
+
+    if steps and run_id is None:
+        warnings.append("wandb-run-id-not-found-in-job-log")
+    status = "critical" if critical else "warning" if warnings else "healthy"
+    if not steps and not critical:
+        status = "pending"
+    path_recovery_ready = bool(
+        expected_output
+        and expected_output != output
+        and {
+            "stage-output-path-mismatch",
+            "trainer-save-path-mismatch",
+            "checkpoint-load-path-mismatch",
+        }.intersection(critical)
+    )
+    return {
+        "status": status,
+        "checkedAt": datetime.now(tz=UTC).isoformat(),
+        "run": run_id,
+        "url": (
+            f"https://wandb.ai/ai2-llm/sewonm-icsl/runs/{run_id}"
+            if run_id
+            else None
+        ),
+        "model": model,
+        "batchSequences": int(batch),
+        "epoch": int(epoch),
+        "wd": wd,
+        "expectedOutput": expected_output or None,
+        "stageOutput": output,
+        "saveFolder": save_folder,
+        "loadPath": load_path,
+        "samples": len(losses),
+        "firstStep": steps[0] if steps else None,
+        "latestStep": steps[-1] if steps else None,
+        "totalSteps": total_steps,
+        "recentLossMedian": round(recent_median, 6) if recent_median is not None else None,
+        "baselineLossMedian": round(baseline_median, 6) if baseline_median is not None else None,
+        "maxLoss": maximum,
+        "isolatedSpikeCount": spike_count,
+        "stepRegressions": regressions[:5],
+        "nonfiniteLosses": nonfinite[:5],
+        "stalledMinutes": round(stalled_minutes, 1) if stalled_minutes is not None else None,
+        "warnings": warnings,
+        "criticalSignals": critical,
+        "shouldRecover": bool(critical),
+        "automaticPathRecoveryReady": path_recovery_ready,
+        "recoveryOutput": expected_output if path_recovery_ready else None,
+    }
+
+
 def update_chain(model: str, record: dict[str, Any]) -> str:
     batch = int(record["batchSequences"])
     experiment_id = str(record["experiment"])
@@ -120,6 +279,12 @@ def update_chain(model: str, record: dict[str, Any]) -> str:
     logs = ""
     if state in {"running", "complete", "failed"}:
         logs = ANSI.sub("", run(["beaker", "experiment", "logs", experiment_id]))
+
+    health = wandb_health(logs, record, state)
+    if health is not None:
+        record["wandbHealth"] = health
+        if health["shouldRecover"]:
+            record["needsAttention"] = True
 
     for (epoch, wd), result in parsed_stage_results(logs, model, batch).items():
         result.update(
@@ -226,10 +391,14 @@ def update_chain(model: str, record: dict[str, Any]) -> str:
     if record.get("progress"):
         progress = record["progress"]
         detail = f" {progress['percent']:g}% ({progress['step']}/{progress['totalSteps']})"
+    health_detail = ""
+    if record.get("wandbHealth"):
+        health = record["wandbHealth"]
+        health_detail = f"; wandb={health.get('run') or 'pending'} {health['status']}"
     return (
         f"{model} BS{batch} {record['status']}; frontiers={completed_frontiers or 'none'}; "
         f"current=E{record.get('activeEpoch') or 'done'} WD{record.get('activeWd', '—')}"
-        f"{detail}; {experiment_id}"
+        f"{detail}{health_detail}; {experiment_id}"
     )
 
 

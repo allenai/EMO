@@ -29,6 +29,7 @@ import run_small_dense_saturation_chain as common
 TOKENS_PER_EPOCH = 1_000_000_000
 SEQUENCE_LENGTH = 4096
 DECAY_FRACTION = 0.1
+ALLOWED_OUTPUT_PREFIX = "/weka/oe-training-default/sewonm/icsl/models/"
 TRAINING_SCRIPT = "src/scripts/train/olmo2-1B.py"
 DOWNSTREAM_TASKS = (
     "[arc_easy, arc_challenge, boolq, csqa_val_rc_5shot, hellaswag, "
@@ -136,6 +137,22 @@ def validate_config(config: dict[str, Any]) -> None:
     if int(config["epochIncrement"]) != expected_increment:
         raise ValueError(f"{model} must use increment {expected_increment}")
 
+    overrides = config.get("outputOverrides", {})
+    if not isinstance(overrides, dict):
+        raise TypeError("outputOverrides must be a WD-to-path mapping")
+    unknown_wds = sorted(set(overrides) - set(ladder))
+    if unknown_wds:
+        raise ValueError(f"outputOverrides contains WDs outside the ladder: {unknown_wds}")
+    outputs = [str(output_for(config, wd)) for wd in ladder]
+    if len(outputs) != len(set(outputs)):
+        raise ValueError("every fixed-WD trajectory must have a distinct output directory")
+    model_output_root = str(config["outputRoot"]).rstrip("/") + "/"
+    for output in outputs:
+        if not output.startswith(ALLOWED_OUTPUT_PREFIX):
+            raise ValueError(f"output directory is outside the approved model root: {output}")
+        if not output.startswith(model_output_root):
+            raise ValueError(f"output directory is outside this model's output root: {output}")
+
 
 def total_step(epoch: int, batch: int) -> int:
     return common.total_step(epoch, batch)
@@ -164,9 +181,30 @@ def targets_through(config: dict[str, Any], target: int) -> list[int]:
 
 
 def output_for(config: dict[str, Any], wd: str) -> Path:
+    override = config.get("outputOverrides", {}).get(wd)
+    if override is not None:
+        return Path(str(override))
     return Path(str(config["outputRoot"])) / (
         f"bs{config['globalSequences']}_dr_wt_embwd_lr{config['learningRate']}_wd{wd}"
     )
+
+
+def parse_output_overrides(values: list[str]) -> dict[str, str]:
+    overrides: dict[str, str] = {}
+    for value in values:
+        wd, separator, raw_path = value.partition("=")
+        if not separator or not wd or not raw_path:
+            raise ValueError(f"output override must have the form WD=/absolute/path: {value}")
+        path = Path(raw_path)
+        if not path.is_absolute() or ".." in path.parts:
+            raise ValueError(f"output override must be a normalized absolute path: {raw_path}")
+        normalized = str(path)
+        if not normalized.startswith(ALLOWED_OUTPUT_PREFIX):
+            raise ValueError(f"output override is outside the approved model root: {normalized}")
+        if wd in overrides:
+            raise ValueError(f"duplicate output override for WD{wd}")
+        overrides[wd] = normalized
+    return overrides
 
 
 def state_dir(config: dict[str, Any]) -> Path:
@@ -484,9 +522,19 @@ def run(config: dict[str, Any]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument(
+        "--output-override",
+        action="append",
+        default=[],
+        metavar="WD=/ABSOLUTE/PATH",
+        help="Reroute one fixed-WD trajectory during a guarded recovery submission",
+    )
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args()
     config = json.loads(args.manifest.read_text())
+    overrides = dict(config.get("outputOverrides", {}))
+    overrides.update(parse_output_overrides(args.output_override))
+    config["outputOverrides"] = overrides
     validate_config(config)
     if args.validate_only:
         print(f"validated {args.manifest}")
