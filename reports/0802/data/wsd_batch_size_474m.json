@@ -10222,7 +10222,7 @@
       "embeddingWeightDecay": "global",
       "status": "running",
       "beakerStatus": "running",
-      "activeEpoch": 32,
+      "activeEpoch": 40,
       "activeWds": [
         "0.3",
         "1.0"
@@ -11131,10 +11131,32 @@
           "experiment": "01M0DWV4E2317KTYN3MNJZRW38",
           "beaker": "01M0DWV4E2317KTYN3MNJZRW38",
           "job": "01M0DWV4HGB346AJHGWXNMT57Z"
+        },
+        "32": {
+          "candidateValidationExact": {
+            "0.3": 3.081,
+            "1.0": 3.334
+          },
+          "candidates": [
+            "0.3",
+            "1.0"
+          ],
+          "decision": "continue",
+          "epoch": 32,
+          "previousEpoch": 24,
+          "previousSelectedValidationExact": 3.093,
+          "selectedValidation": 3.081,
+          "selectedValidationExact": 3.081,
+          "selectedWd": "0.3",
+          "status": "complete",
+          "variant": "DR+WT+EmbedWD",
+          "experiment": "01M0DWV4E2317KTYN3MNJZRW38",
+          "beaker": "01M0DWV4E2317KTYN3MNJZRW38",
+          "job": "01M0DWV4HGB346AJHGWXNMT57Z"
         }
       },
       "reason": "Numerical recovery replaced the retry-exhausted Beaker experiment and forced the failed frontier to restart from clean checkpoint /weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3/step27465. Canonical fixed-WD output paths, completed stages, and frontier evidence were retained.",
-      "activeWd": "1.0",
+      "activeWd": "0.3",
       "attemptHistory": [
         {
           "beaker": "01M0C47M5TP1YAPKCTAJTKNCXV",
@@ -11266,10 +11288,9 @@
         "recoveryOutput": null
       },
       "progress": {
-        "step": 57888,
-        "totalSteps": 61036,
-        "percent": 94.8,
-        "latestTrain": 3.605
+        "step": 55840,
+        "totalSteps": 76294,
+        "percent": 73.2
       }
     },
     {
