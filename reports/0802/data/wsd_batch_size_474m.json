@@ -9068,7 +9068,7 @@
       "embeddingWeightDecay": "global",
       "status": "running",
       "beakerStatus": "running",
-      "activeEpoch": 24,
+      "activeEpoch": 32,
       "activeWds": [
         "0.1",
         "0.3"
@@ -9891,6 +9891,59 @@
             "beaker": "01M0DC9SKWB5M488J1110CD92M",
             "job": "01M0DT1BMZQ0KVWT5WV6M8ZPXH",
             "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+          },
+          "0.3": {
+            "acc": 38.2,
+            "avg8Accuracy": 44.11625,
+            "avg8Bpb": 1.343075,
+            "bpb": 0.9096,
+            "c4": 3.14,
+            "dataOrder": "dynamic_repacking",
+            "decayEmbeddings": true,
+            "downstream": {
+              "arc_challenge": 22.41,
+              "arc_easy": 54.04,
+              "boolq": 53.36,
+              "csqa": 48.480000000000004,
+              "hellaswag": 38.2,
+              "openbookqa": 28.599999999999998,
+              "piqa": 65.89,
+              "socialiqa": 44.32,
+              "winogrande": 50.99
+            },
+            "downstreamBpb": {
+              "arc_challenge": 1.398,
+              "arc_easy": 1.438,
+              "boolq": 1.506,
+              "csqa": 1.392,
+              "hellaswag": 0.9096,
+              "openbookqa": 1.649,
+              "piqa": 1.212,
+              "socialiqa": 1.241,
+              "winogrande": 1.505
+            },
+            "dynamicRepacking": true,
+            "embeddingWeightDecay": "0.3",
+            "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3/step91553",
+            "epoch": 24,
+            "gap": 0.031,
+            "lr": "2e-3",
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3",
+            "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3/step82397",
+            "sequential": true,
+            "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3/step54931",
+            "status": "complete",
+            "train": 3.109,
+            "validation": 3.14,
+            "validationExact": 3.14,
+            "variant": "DR+WT+EmbedWD",
+            "wandb": "7dvqalae",
+            "wd": "0.3",
+            "weightTying": true,
+            "experiment": "01M0DC9SKWB5M488J1110CD92M",
+            "beaker": "01M0DC9SKWB5M488J1110CD92M",
+            "job": "01M0DT1BMZQ0KVWT5WV6M8ZPXH",
+            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
           }
         }
       },
@@ -10006,10 +10059,32 @@
           "experiment": "01M0DC9SKWB5M488J1110CD92M",
           "beaker": "01M0DC9SKWB5M488J1110CD92M",
           "job": "01M0DT1BMZQ0KVWT5WV6M8ZPXH"
+        },
+        "24": {
+          "candidateValidationExact": {
+            "0.1": 3.088,
+            "0.3": 3.14
+          },
+          "candidates": [
+            "0.1",
+            "0.3"
+          ],
+          "decision": "continue",
+          "epoch": 24,
+          "previousEpoch": 16,
+          "previousSelectedValidationExact": 3.111,
+          "selectedValidation": 3.088,
+          "selectedValidationExact": 3.088,
+          "selectedWd": "0.1",
+          "status": "complete",
+          "variant": "DR+WT+EmbedWD",
+          "experiment": "01M0DC9SKWB5M488J1110CD92M",
+          "beaker": "01M0DC9SKWB5M488J1110CD92M",
+          "job": "01M0DT1BMZQ0KVWT5WV6M8ZPXH"
         }
       },
       "reason": "Policy replacement stopped the prior Beaker experiment and resumed the same canonical trajectories with a hard WD<=1.0 cap. Completed stages and frontier evidence were retained.",
-      "activeWd": "0.3",
+      "activeWd": "0.1",
       "attemptHistory": [
         {
           "beaker": "01M0C47JX1B19GHTJQEANJ9M8H",
@@ -10069,42 +10144,40 @@
         "01M0DT1BMZQ0KVWT5WV6M8ZPXH"
       ],
       "wandbHealth": {
-        "status": "warning",
-        "checkedAt": "2026-08-20T14:28:57.818673+00:00",
-        "run": "7dvqalae",
-        "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/7dvqalae",
+        "status": "healthy",
+        "checkedAt": "2026-08-20T15:33:43.139013+00:00",
+        "run": "tu74clv0",
+        "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/tu74clv0",
         "model": "474m",
         "batchSequences": 64,
-        "epoch": 24,
-        "wd": "0.3",
-        "expectedOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3",
-        "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3",
-        "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3",
-        "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3/step54931",
-        "samples": 6471,
-        "firstStep": 54935,
-        "latestStep": 87285,
-        "totalSteps": 91553,
-        "recentLossMedian": 3.319,
-        "baselineLossMedian": 3.352,
-        "maxLoss": 6.913,
-        "isolatedSpikeCount": 1,
+        "epoch": 32,
+        "wd": "0.1",
+        "expectedOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.1",
+        "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.1",
+        "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.1",
+        "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.1/step82397",
+        "samples": 711,
+        "firstStep": 82400,
+        "latestStep": 85950,
+        "totalSteps": 122071,
+        "recentLossMedian": 3.269,
+        "baselineLossMedian": 3.264,
+        "maxLoss": 3.439,
+        "isolatedSpikeCount": 0,
         "stepRegressions": [],
         "nonfiniteLosses": [],
-        "stalledMinutes": 0.2,
-        "warnings": [
-          "isolated-finite-loss-spikes"
-        ],
+        "stalledMinutes": 0.1,
+        "warnings": [],
         "criticalSignals": [],
         "shouldRecover": false,
         "automaticPathRecoveryReady": false,
         "recoveryOutput": null
       },
       "progress": {
-        "step": 87289,
-        "totalSteps": 91553,
-        "percent": 95.3,
-        "latestTrain": 3.295
+        "step": 85953,
+        "totalSteps": 122071,
+        "percent": 70.4,
+        "latestTrain": 3.236
       }
     },
     {
