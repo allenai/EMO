@@ -12723,10 +12723,9 @@
         "recoveryOutput": null
       },
       "progress": {
-        "step": 157259,
+        "step": 173285,
         "totalSteps": 183106,
-        "percent": 85.9,
-        "latestTrain": 3.506
+        "percent": 94.6
       }
     },
     {
@@ -14045,10 +14044,9 @@
         "recoveryOutput": null
       },
       "progress": {
-        "step": 86450,
+        "step": 93380,
         "totalSteps": 122071,
-        "percent": 70.8,
-        "latestTrain": 3.525
+        "percent": 76.5
       }
     },
     {
@@ -15278,10 +15276,9 @@
       },
       "needsAttention": true,
       "progress": {
-        "step": 56594,
+        "step": 59335,
         "totalSteps": 61036,
-        "percent": 92.7,
-        "latestTrain": 3.3
+        "percent": 97.2
       }
     },
     {
@@ -16590,10 +16587,9 @@
       },
       "needsAttention": true,
       "progress": {
-        "step": 35110,
+        "step": 36545,
         "totalSteps": 38147,
-        "percent": 92.0,
-        "latestTrain": 3.411
+        "percent": 95.8
       }
     }
   ]

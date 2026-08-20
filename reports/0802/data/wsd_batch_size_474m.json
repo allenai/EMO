@@ -8964,7 +8964,7 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-20T15:02:18.059021+00:00",
+        "checkedAt": "2026-08-20T16:28:41.807861+00:00",
         "run": "q1uv9oym",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/q1uv9oym",
         "model": "474m",
@@ -10174,10 +10174,9 @@
         "recoveryOutput": null
       },
       "progress": {
-        "step": 85953,
+        "step": 93350,
         "totalSteps": 122071,
-        "percent": 70.4,
-        "latestTrain": 3.236
+        "percent": 76.5
       }
     },
     {
@@ -11288,9 +11287,9 @@
         "recoveryOutput": null
       },
       "progress": {
-        "step": 55840,
+        "step": 57285,
         "totalSteps": 76294,
-        "percent": 73.2
+        "percent": 75.1
       }
     },
     {
@@ -12522,10 +12521,9 @@
         "recoveryOutput": null
       },
       "progress": {
-        "step": 34424,
+        "step": 37980,
         "totalSteps": 38147,
-        "percent": 90.2,
-        "latestTrain": 3.169
+        "percent": 99.6
       }
     },
     {
@@ -13649,10 +13647,9 @@
         "recoveryOutput": null
       },
       "progress": {
-        "step": 16589,
+        "step": 17805,
         "totalSteps": 19074,
-        "percent": 87.0,
-        "latestTrain": 3.156
+        "percent": 93.3
       }
     }
   ]
