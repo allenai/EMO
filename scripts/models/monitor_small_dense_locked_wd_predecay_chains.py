@@ -52,6 +52,32 @@ def parsed_results(
     return pre, post
 
 
+def is_scheduled_frontier(record: dict[str, Any], epoch: int) -> bool:
+    initial = [int(value) for value in record["initialTargets"]]
+    if epoch in initial:
+        return True
+    return epoch > initial[-1] and (epoch - initial[-1]) % int(record["epochIncrement"]) == 0
+
+
+def retain_scheduled_predecay_results(record: dict[str, Any]) -> None:
+    results = record.get("preDecayResults", {})
+    excluded = {
+        epoch: result
+        for epoch, result in results.items()
+        if not is_scheduled_frontier(record, int(epoch))
+    }
+    if excluded:
+        record.setdefault("excludedPreDecayResults", {}).update(excluded)
+        record["excludedPreDecayReason"] = (
+            "Not a configured legacy WSD frontier; excluded from pre-decay saturation."
+        )
+    record["preDecayResults"] = {
+        epoch: result
+        for epoch, result in results.items()
+        if is_scheduled_frontier(record, int(epoch))
+    }
+
+
 def policy_health(logs: str, record: dict[str, Any], state: str) -> dict[str, Any] | None:
     starts = list(STAGE_START.finditer(logs))
     if not starts:
@@ -168,10 +194,16 @@ def update_policy_record(model: str, record: dict[str, Any]) -> str:
     if state in {"running", "complete", "failed"}:
         logs = legacy.ANSI.sub("", legacy.run(["beaker", "experiment", "logs", experiment_id]))
     pre, post = parsed_results(logs, model, batch)
+    pre = {
+        epoch: result
+        for epoch, result in pre.items()
+        if is_scheduled_frontier(record, int(epoch))
+    }
     if pre:
         record.setdefault("preDecayResults", {}).update(pre)
     if post:
         record.setdefault("postDecayResults", {}).update(post)
+    retain_scheduled_predecay_results(record)
 
     starts = [
         match.groups()

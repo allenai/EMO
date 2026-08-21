@@ -3,9 +3,10 @@
 
 This is the successor to the adaptive WD controller.  It never changes WD and
 never uses a post-decay score to decide whether constant-LR training should
-continue.  Existing exact pre-decay checkpoints are evaluated first.  New
-checkpoints are then produced one epoch frontier at a time with a constant
-learning rate.  At the first pre-decay non-improvement, the last three
+continue.  Existing exact pre-decay checkpoints are evaluated only at the
+configured WSD frontier epochs that the legacy chain decayed.  New checkpoints
+are then produced one configured frontier at a time with a constant learning
+rate.  At the first pre-decay non-improvement, the last three
 pre-decay checkpoints are independently decayed and the best post-decay result
 is selected only among those three post-decay results.
 """
@@ -49,6 +50,7 @@ def validate_config(config: dict[str, Any]) -> None:
         raise ValueError("pre-decay and post-decay results must remain separate")
     if int(config.get("historicalPreDecayThroughEpoch", 0)) < 3:
         raise ValueError("historical pre-decay boundary must contain at least three epochs")
+    adaptive.targets_through(config, int(config["historicalPreDecayThroughEpoch"]))
 
 
 def locked_output(config: dict[str, Any]) -> Path:
@@ -108,16 +110,25 @@ def discover_predecay_epochs(config: dict[str, Any]) -> list[int]:
     if not steps:
         raise FileNotFoundError(f"locked WD output contains no checkpoints: {output}")
     boundary = int(config["historicalPreDecayThroughEpoch"])
+    expected = adaptive.targets_through(config, boundary)
     epochs = [
         epoch
-        for epoch in range(1, boundary + 1)
+        for epoch in expected
         if adaptive.stable_step(epoch, int(config["globalSequences"])) in steps
     ]
-    expected = list(range(1, boundary + 1))
     if epochs != expected:
         missing = sorted(set(expected) - set(epochs))
-        raise RuntimeError(f"locked WD pre-decay lineage has missing epochs: {missing}")
+        raise RuntimeError(
+            f"locked WD pre-decay lineage has missing scheduled frontiers: {missing}"
+        )
     return epochs
+
+
+def next_predecay_frontier(config: dict[str, Any], previous_epoch: int) -> int:
+    index = 0
+    while adaptive.target_at(config, index) <= previous_epoch:
+        index += 1
+    return adaptive.target_at(config, index)
 
 
 def replace_argument(arguments: list[str], prefix: str, replacement: str) -> list[str]:
@@ -527,7 +538,7 @@ def run(config: dict[str, Any]) -> None:
     saturation_epoch = first_saturation(results)
     while saturation_epoch is None:
         previous_epoch = max(results)
-        epoch = previous_epoch + 1
+        epoch = next_predecay_frontier(config, previous_epoch)
         results[epoch] = train_next_predecay(config, previous_epoch, epoch)
         existing_epochs.append(epoch)
         saturation_epoch = first_saturation(results)

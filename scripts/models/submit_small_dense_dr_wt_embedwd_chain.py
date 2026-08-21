@@ -597,9 +597,10 @@ def write_report(
             existing["policyTransition"] = transition
             existing["reason"] = (
                 f"WD tuning stopped at the last resolved selection WD{locked_wd}. "
-                "The replacement evaluates every exact pre-decay checkpoint, continues "
-                "with constant LR until pre-decay non-improvement, then decays the last "
-                "three checkpoints and selects only among post-decay results."
+                "The replacement evaluates exact pre-decay checkpoints only at the "
+                "configured legacy WSD frontiers, continues with constant LR one frontier "
+                "at a time until pre-decay non-improvement, then decays the last three "
+                "frontier checkpoints and selects only among post-decay results."
             )
         elif policy_replacement:
             existing["reason"] = (
