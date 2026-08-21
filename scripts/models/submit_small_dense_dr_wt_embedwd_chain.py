@@ -19,6 +19,7 @@ RANK_MICROBATCH_SEQUENCES = 16
 REFERENCE_WARMUP_SEQUENCE_STEPS = 24 * 1024
 LEARNING_RATE = "2e-3"
 MAX_WEIGHT_DECAY = "1.0"
+HISTORICAL_PREDECAY_START_EPOCH = 8
 ALLOWED_OUTPUT_PREFIX = "/weka/oe-training-default/sewonm/icsl/models/"
 MANIFEST_DIR = Path("scripts/models/manifests")
 REPORT_DIR = Path("reports/0802/data")
@@ -262,6 +263,7 @@ def build_manifest(
                 "postDecaySourceCount": 3,
                 "comparisonPolicy": "within_phase_only",
                 "preDecaySaturationCriterion": "strict_non_improvement",
+                "historicalPreDecayStartEpoch": HISTORICAL_PREDECAY_START_EPOCH,
                 "historicalPreDecayThroughEpoch": historical_predecay_through_epoch,
                 "runSuffix": "sm0821-lockedwd-predecay",
             }
@@ -578,6 +580,9 @@ def write_report(
                     "comparisonPolicy": "within_phase_only",
                     "preDecaySaturationCriterion": "strict_non_improvement",
                     "postDecaySourceCount": 3,
+                    "historicalPreDecayStartEpoch": manifest[
+                        "historicalPreDecayStartEpoch"
+                    ],
                     "historicalPreDecayThroughEpoch": manifest["historicalPreDecayThroughEpoch"],
                     "activePhase": "backfill_pre_decay_evaluations",
                     "activeWds": [str(locked_wd)],
@@ -597,10 +602,10 @@ def write_report(
             existing["policyTransition"] = transition
             existing["reason"] = (
                 f"WD tuning stopped at the last resolved selection WD{locked_wd}. "
-                "The replacement evaluates exact pre-decay checkpoints only at the "
-                "configured legacy WSD frontiers, continues with constant LR one frontier "
-                "at a time until pre-decay non-improvement, then decays the last three "
-                "frontier checkpoints and selects only among post-decay results."
+                "Starting at E8, the replacement evaluates exact pre-decay checkpoints "
+                "only at configured legacy WSD frontiers, continues with constant LR one "
+                "frontier at a time until pre-decay non-improvement, then decays the last "
+                "three frontier checkpoints and selects only among post-decay results."
             )
         elif policy_replacement:
             existing["reason"] = (

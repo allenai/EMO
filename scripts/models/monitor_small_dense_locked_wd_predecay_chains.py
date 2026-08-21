@@ -59,22 +59,29 @@ def is_scheduled_frontier(record: dict[str, Any], epoch: int) -> bool:
     return epoch > initial[-1] and (epoch - initial[-1]) % int(record["epochIncrement"]) == 0
 
 
+def is_policy_predecay_frontier(record: dict[str, Any], epoch: int) -> bool:
+    return epoch >= int(
+        record.get("historicalPreDecayStartEpoch", 1)
+    ) and is_scheduled_frontier(record, epoch)
+
+
 def retain_scheduled_predecay_results(record: dict[str, Any]) -> None:
     results = record.get("preDecayResults", {})
     excluded = {
         epoch: result
         for epoch, result in results.items()
-        if not is_scheduled_frontier(record, int(epoch))
+        if not is_policy_predecay_frontier(record, int(epoch))
     }
     if excluded:
         record.setdefault("excludedPreDecayResults", {}).update(excluded)
         record["excludedPreDecayReason"] = (
-            "Not a configured legacy WSD frontier; excluded from pre-decay saturation."
+            "Before the E8 historical PD start or not a configured legacy WSD frontier; "
+            "excluded from pre-decay saturation."
         )
     record["preDecayResults"] = {
         epoch: result
         for epoch, result in results.items()
-        if is_scheduled_frontier(record, int(epoch))
+        if is_policy_predecay_frontier(record, int(epoch))
     }
 
 
@@ -197,7 +204,7 @@ def update_policy_record(model: str, record: dict[str, Any]) -> str:
     pre = {
         epoch: result
         for epoch, result in pre.items()
-        if is_scheduled_frontier(record, int(epoch))
+        if is_policy_predecay_frontier(record, int(epoch))
     }
     if pre:
         record.setdefault("preDecayResults", {}).update(pre)

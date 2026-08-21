@@ -3,10 +3,11 @@
 
 This is the successor to the adaptive WD controller.  It never changes WD and
 never uses a post-decay score to decide whether constant-LR training should
-continue.  Existing exact pre-decay checkpoints are evaluated only at the
-configured WSD frontier epochs that the legacy chain decayed.  New checkpoints
-are then produced one configured frontier at a time with a constant learning
-rate.  At the first pre-decay non-improvement, the last three
+continue.  Existing exact pre-decay checkpoints are evaluated only from the
+configured historical start epoch and only at WSD frontier epochs that the
+legacy chain decayed.  New checkpoints are then produced one configured
+frontier at a time with a constant learning rate.  At the first pre-decay
+non-improvement, the last three
 pre-decay checkpoints are independently decayed and the best post-decay result
 is selected only among those three post-decay results.
 """
@@ -50,7 +51,12 @@ def validate_config(config: dict[str, Any]) -> None:
         raise ValueError("pre-decay and post-decay results must remain separate")
     if int(config.get("historicalPreDecayThroughEpoch", 0)) < 3:
         raise ValueError("historical pre-decay boundary must contain at least three epochs")
-    adaptive.targets_through(config, int(config["historicalPreDecayThroughEpoch"]))
+    start = int(config.get("historicalPreDecayStartEpoch", 0))
+    boundary = int(config["historicalPreDecayThroughEpoch"])
+    if start > boundary:
+        raise ValueError("historical pre-decay start must not exceed its boundary")
+    adaptive.targets_through(config, start)
+    adaptive.targets_through(config, boundary)
 
 
 def locked_output(config: dict[str, Any]) -> Path:
@@ -109,8 +115,9 @@ def discover_predecay_epochs(config: dict[str, Any]) -> list[int]:
     }
     if not steps:
         raise FileNotFoundError(f"locked WD output contains no checkpoints: {output}")
+    start = int(config["historicalPreDecayStartEpoch"])
     boundary = int(config["historicalPreDecayThroughEpoch"])
-    expected = adaptive.targets_through(config, boundary)
+    expected = [epoch for epoch in adaptive.targets_through(config, boundary) if epoch >= start]
     epochs = [
         epoch
         for epoch in expected
