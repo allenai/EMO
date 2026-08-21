@@ -171,9 +171,10 @@ def validate_config(config: dict[str, Any]) -> None:
             raise TypeError(f"checkpoint override WD{wd} must map epochs to paths")
         for raw_epoch, raw_path in by_epoch.items():
             epoch = int(raw_epoch)
-            if epoch not in targets or targets.index(epoch) == 0:
+            resumable_targets = targets_through(config, epoch)
+            if len(resumable_targets) == 1:
                 raise ValueError(f"checkpoint override E{epoch} is not a resumable target")
-            previous_epoch = targets[targets.index(epoch) - 1]
+            previous_epoch = resumable_targets[-2]
             expected = output_for(config, wd) / f"step{stable_step(previous_epoch, batch)}"
             if Path(str(raw_path)) != expected:
                 raise ValueError(
