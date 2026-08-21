@@ -9068,7 +9068,7 @@
       "embeddingWeightDecay": "global",
       "status": "submitted",
       "beakerStatus": "submitted",
-      "activeEpoch": 4,
+      "activeEpoch": 8,
       "activeWds": [
         "0.1"
       ],
@@ -10634,7 +10634,7 @@
       "embeddingWeightDecay": "global",
       "status": "submitted",
       "beakerStatus": "submitted",
-      "activeEpoch": 48,
+      "activeEpoch": 8,
       "activeWds": [
         "0.3"
       ],
@@ -12045,7 +12045,7 @@
       "embeddingWeightDecay": "global",
       "status": "submitted",
       "beakerStatus": "submitted",
-      "activeEpoch": 48,
+      "activeEpoch": 8,
       "activeWds": [
         "0.333"
       ],
@@ -13525,7 +13525,7 @@
       "embeddingWeightDecay": "global",
       "status": "submitted",
       "beakerStatus": "submitted",
-      "activeEpoch": 48,
+      "activeEpoch": 8,
       "activeWds": [
         "0.3"
       ],
