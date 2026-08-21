@@ -244,10 +244,22 @@ def update_policy_record(model: str, record: dict[str, Any]) -> str:
             record["progress"]["latestTrain"] = float(train_values[-1])
     elif record.get("activePhase") not in {"constant_train", "post_decay_train"}:
         record.pop("progress", None)
+    pre_metrics = ", ".join(
+        f"[PD] E{epoch} CE{result.get('validationExact', result.get('validation'))}"
+        for epoch, result in sorted(
+            record.get("preDecayResults", {}).items(), key=lambda item: int(item[0])
+        )
+    )
+    post_metrics = ", ".join(
+        f"[POST] E{epoch} CE{result.get('validationExact', result.get('validation'))}"
+        for epoch, result in sorted(
+            record.get("postDecayResults", {}).items(), key=lambda item: int(item[0])
+        )
+    )
     return (
         f"{model} BS{batch} {record['status']}; locked WD{record['lockedWd']}; "
-        f"pre={len(record.get('preDecayResults', {}))}; "
-        f"post={len(record.get('postDecayResults', {}))}; "
+        f"{pre_metrics or '[PD] awaiting evaluation'}; "
+        f"{post_metrics or '[POST] not started'}; "
         f"phase={record.get('activePhase', 'pending')} E{record.get('activeEpoch') or 'done'}; "
         f"{experiment_id}"
     )

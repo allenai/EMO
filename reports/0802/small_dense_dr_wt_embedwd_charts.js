@@ -68,11 +68,28 @@
       .sort((a,b)=>Number(a.dataset.coordinateBatch)-Number(b.dataset.coordinateBatch)||Number(a.dataset.coordinateMethod)-Number(b.dataset.coordinateMethod)||Number(a.dataset.coordinateEpoch)-Number(b.dataset.coordinateEpoch))
       .forEach(row=>grid.appendChild(row));
   };
-  const frontierText=chain=>Object.entries(chain.frontiers||{})
+  const phaseText=(chain,key,label)=>Object.entries(chain[key]||{})
     .sort((a,b)=>Number(a[0])-Number(b[0]))
-    .map(([epoch,frontier])=>`E${epoch}: WD${frontier.selectedWd} · ${Number(frontier.selectedValidationExact).toFixed(4)}`)
-    .join(' → ')||'—';
+    .map(([epoch,result])=>`${label} E${epoch}: CE ${metric(result.validationExact??result.validation)??'—'}`)
+    .join(' → ');
+  const frontierText=chain=>{
+    if(chain.policy==='locked_wd_predecay_saturation_v1'){
+      const pre=phaseText(chain,'preDecayResults','[PD]');
+      const post=phaseText(chain,'postDecayResults','[POST]');
+      return `${pre||'[PD] awaiting evaluation'}${post?` | ${post}`:''}`;
+    }
+    return Object.entries(chain.frontiers||{})
+      .sort((a,b)=>Number(a[0])-Number(b[0]))
+      .map(([epoch,frontier])=>`E${epoch}: WD${frontier.selectedWd} · ${Number(frontier.selectedValidationExact).toFixed(4)}`)
+      .join(' → ')||'—';
+  };
   const currentText=chain=>{
+    if(chain.policy==='locked_wd_predecay_saturation_v1'){
+      if(chain.postDecaySelection)return `[PD] saturated E${chain.saturatedEpoch}; [POST] selected E${chain.selectedPostDecayEpoch} · CE ${metric(chain.selectedPostDecayValidationExact)}`;
+      const label=String(chain.activePhase||'').startsWith('post')?'[POST]':'[PD]';
+      const progress=chain.progress?` · ${chain.progress.percent}%`:'';
+      return `${label} ${chain.activePhase||'pending'}${chain.activeEpoch?` · E${chain.activeEpoch}`:''} · locked WD${chain.lockedWd}${progress}`;
+    }
     if(chain.saturatedEpoch)return `saturated at E${chain.saturatedEpoch}`;
     if(!chain.activeEpoch)return '—';
     const wds=(chain.activeWds||[]).map(wd=>`WD${wd}`).join(', ');
