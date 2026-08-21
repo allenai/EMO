@@ -11542,7 +11542,7 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-21T22:41:17.044269+00:00",
+        "checkedAt": "2026-08-21T23:15:29.679171+00:00",
         "run": "b5hrfk09",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/b5hrfk09",
         "model": "153m",
@@ -11652,9 +11652,9 @@
       "activeWds": [
         "0.1"
       ],
-      "experiment": "01M0K9CAMWZCDBMTCG5XGAT4VN",
-      "beaker": "01M0K9CAMWZCDBMTCG5XGAT4VN",
-      "revision": "c330bb3439e4d86684a57c5220591eb15e40ab54",
+      "experiment": "01M0K9VB73SRFAWN5WZ1DR204S",
+      "beaker": "01M0K9VB73SRFAWN5WZ1DR204S",
+      "revision": "a1def66adbfe8a39ca9c9570c205728d7735bd3b",
       "automaticTaskRetries": 8,
       "stopOnNonImprovement": true,
       "outputByWd": {
@@ -12900,7 +12900,7 @@
           "job": "01M0HAPTM9G62WC3T32H28V57X"
         }
       },
-      "reason": "WD tuning stopped at the last resolved selection WD0.1. The replacement evaluates exact pre-decay checkpoints only at the configured legacy WSD frontiers, continues with constant LR one frontier at a time until pre-decay non-improvement, then decays the last three frontier checkpoints and selects only among post-decay results.",
+      "reason": "WD tuning stopped at the last resolved selection WD0.1. Starting at E8, the replacement evaluates exact pre-decay checkpoints only at configured legacy WSD frontiers, continues with constant LR one frontier at a time until pre-decay non-improvement, then decays the last three frontier checkpoints and selects only among post-decay results.",
       "activeWd": "0.1",
       "policyTransition": {
         "requestedAt": "2026-08-21T21:22:37.233686+00:00",
@@ -12919,7 +12919,7 @@
           }
         },
         "handoffRule": "Allow the active candidate to finish, then stop the old adaptive job. Any automatically started successor is considered newly started and may be canceled during the handoff.",
-        "replacementExperiment": "01M0K9CAMWZCDBMTCG5XGAT4VN"
+        "replacementExperiment": "01M0K9VB73SRFAWN5WZ1DR204S"
       },
       "preDecayResults": {},
       "postDecayResults": {},
@@ -13066,20 +13066,35 @@
             "0.3": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3",
             "1.0": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd1.0"
           }
+        },
+        {
+          "beaker": "01M0K9CAMWZCDBMTCG5XGAT4VN",
+          "status": "stopped-for-predecay-policy-replacement",
+          "activeEpoch": 64,
+          "activeWd": "0.1",
+          "wandbHealth": null,
+          "outputByWd": {
+            "0.01": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.01",
+            "0.033": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.033",
+            "0.1": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.1",
+            "0.3": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3",
+            "1.0": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd1.0"
+          }
         }
       ],
-      "recoveryOf": "01M0K5JG4C3NMAF235ER00NR45",
+      "recoveryOf": "01M0K9CAMWZCDBMTCG5XGAT4VN",
       "policy": "locked_wd_predecay_saturation_v1",
       "lockedWd": "0.1",
       "wdTuningStopped": true,
       "comparisonPolicy": "within_phase_only",
       "preDecaySaturationCriterion": "strict_non_improvement",
       "postDecaySourceCount": 3,
+      "historicalPreDecayStartEpoch": 8,
       "historicalPreDecayThroughEpoch": 64,
       "activePhase": "backfill_pre_decay_evaluations",
-      "job": "01M0K9CARE8PJ66D41TS73DPWX",
+      "job": "01M0K9VBASP6PAP3NT520KWJS2",
       "jobs": [
-        "01M0K9CARE8PJ66D41TS73DPWX"
+        "01M0K9VBASP6PAP3NT520KWJS2"
       ]
     },
     {
@@ -13129,9 +13144,9 @@
       "activeWds": [
         "0.1"
       ],
-      "experiment": "01M0K9CG8HCCB76YXM3PXVXJX5",
-      "beaker": "01M0K9CG8HCCB76YXM3PXVXJX5",
-      "revision": "c330bb3439e4d86684a57c5220591eb15e40ab54",
+      "experiment": "01M0K9VEV7YA8B03T6NEXF97GS",
+      "beaker": "01M0K9VEV7YA8B03T6NEXF97GS",
+      "revision": "a1def66adbfe8a39ca9c9570c205728d7735bd3b",
       "automaticTaskRetries": 8,
       "stopOnNonImprovement": true,
       "outputByWd": {
@@ -14401,7 +14416,7 @@
           "job": "01M0GK5BDWV8GHE4XQCHARKMNC"
         }
       },
-      "reason": "WD tuning stopped at the last resolved selection WD0.1. The replacement evaluates exact pre-decay checkpoints only at the configured legacy WSD frontiers, continues with constant LR one frontier at a time until pre-decay non-improvement, then decays the last three frontier checkpoints and selects only among post-decay results.",
+      "reason": "WD tuning stopped at the last resolved selection WD0.1. Starting at E8, the replacement evaluates exact pre-decay checkpoints only at configured legacy WSD frontiers, continues with constant LR one frontier at a time until pre-decay non-improvement, then decays the last three frontier checkpoints and selects only among post-decay results.",
       "activeWd": "0.1",
       "policyTransition": {
         "requestedAt": "2026-08-21T21:22:37.233686+00:00",
@@ -14420,7 +14435,7 @@
           }
         },
         "handoffRule": "Allow the active candidate to finish, then stop the old adaptive job. Any automatically started successor is considered newly started and may be canceled during the handoff.",
-        "replacementExperiment": "01M0K9CG8HCCB76YXM3PXVXJX5"
+        "replacementExperiment": "01M0K9VEV7YA8B03T6NEXF97GS"
       },
       "preDecayResults": {},
       "postDecayResults": {},
@@ -14567,20 +14582,35 @@
             "0.3": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3",
             "1.0": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd1.0"
           }
+        },
+        {
+          "beaker": "01M0K9CG8HCCB76YXM3PXVXJX5",
+          "status": "stopped-for-predecay-policy-replacement",
+          "activeEpoch": 80,
+          "activeWd": "0.1",
+          "wandbHealth": null,
+          "outputByWd": {
+            "0.01": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.01",
+            "0.033": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.033",
+            "0.1": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.1",
+            "0.3": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3",
+            "1.0": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd1.0"
+          }
         }
       ],
-      "recoveryOf": "01M0K5JSYS6S2ZJMK0EAJBSKM4",
+      "recoveryOf": "01M0K9CG8HCCB76YXM3PXVXJX5",
       "policy": "locked_wd_predecay_saturation_v1",
       "lockedWd": "0.1",
       "wdTuningStopped": true,
       "comparisonPolicy": "within_phase_only",
       "preDecaySaturationCriterion": "strict_non_improvement",
       "postDecaySourceCount": 3,
+      "historicalPreDecayStartEpoch": 8,
       "historicalPreDecayThroughEpoch": 80,
       "activePhase": "backfill_pre_decay_evaluations",
-      "job": "01M0K9CGC0J21RZTBZ0WA0ZK70",
+      "job": "01M0K9VF1DKZH0PVDV20YYVJTD",
       "jobs": [
-        "01M0K9CGC0J21RZTBZ0WA0ZK70"
+        "01M0K9VF1DKZH0PVDV20YYVJTD"
       ]
     },
     {
@@ -14630,9 +14660,9 @@
       "activeWds": [
         "0.1"
       ],
-      "experiment": "01M0K9CNEGBXZ7CR5QF7R5M9WP",
-      "beaker": "01M0K9CNEGBXZ7CR5QF7R5M9WP",
-      "revision": "c330bb3439e4d86684a57c5220591eb15e40ab54",
+      "experiment": "01M0K9VJTCYAW81WC1CGYYFXP2",
+      "beaker": "01M0K9VJTCYAW81WC1CGYYFXP2",
+      "revision": "a1def66adbfe8a39ca9c9570c205728d7735bd3b",
       "automaticTaskRetries": 8,
       "stopOnNonImprovement": true,
       "outputByWd": {
@@ -15772,7 +15802,7 @@
           "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q"
         }
       },
-      "reason": "WD tuning stopped at the last resolved selection WD0.1. The replacement evaluates exact pre-decay checkpoints only at the configured legacy WSD frontiers, continues with constant LR one frontier at a time until pre-decay non-improvement, then decays the last three frontier checkpoints and selects only among post-decay results.",
+      "reason": "WD tuning stopped at the last resolved selection WD0.1. Starting at E8, the replacement evaluates exact pre-decay checkpoints only at configured legacy WSD frontiers, continues with constant LR one frontier at a time until pre-decay non-improvement, then decays the last three frontier checkpoints and selects only among post-decay results.",
       "activeWd": "0.1",
       "policyTransition": {
         "requestedAt": "2026-08-21T21:22:37.233686+00:00",
@@ -15791,7 +15821,7 @@
           }
         },
         "handoffRule": "Allow the active candidate to finish, then stop the old adaptive job. Any automatically started successor is considered newly started and may be canceled during the handoff.",
-        "replacementExperiment": "01M0K9CNEGBXZ7CR5QF7R5M9WP"
+        "replacementExperiment": "01M0K9VJTCYAW81WC1CGYYFXP2"
       },
       "preDecayResults": {},
       "postDecayResults": {},
@@ -15952,20 +15982,35 @@
             "0.333": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.333",
             "1.0": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd1.0"
           }
+        },
+        {
+          "beaker": "01M0K9CNEGBXZ7CR5QF7R5M9WP",
+          "status": "stopped-for-predecay-policy-replacement",
+          "activeEpoch": 64,
+          "activeWd": "0.1",
+          "wandbHealth": null,
+          "outputByWd": {
+            "0.01": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.01",
+            "0.033": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.033",
+            "0.1": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.1",
+            "0.333": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.333",
+            "1.0": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd1.0"
+          }
         }
       ],
-      "recoveryOf": "01M0K5K42JCTXZC1GY3GCEXQ3R",
+      "recoveryOf": "01M0K9CNEGBXZ7CR5QF7R5M9WP",
       "policy": "locked_wd_predecay_saturation_v1",
       "lockedWd": "0.1",
       "wdTuningStopped": true,
       "comparisonPolicy": "within_phase_only",
       "preDecaySaturationCriterion": "strict_non_improvement",
       "postDecaySourceCount": 3,
+      "historicalPreDecayStartEpoch": 8,
       "historicalPreDecayThroughEpoch": 64,
       "activePhase": "backfill_pre_decay_evaluations",
-      "job": "01M0K9CNHYKH3S42FXZ1108QFB",
+      "job": "01M0K9VJXVSZRTYD9TN6R3W8TE",
       "jobs": [
-        "01M0K9CNHYKH3S42FXZ1108QFB"
+        "01M0K9VJXVSZRTYD9TN6R3W8TE"
       ]
     },
     {
@@ -16015,9 +16060,9 @@
       "activeWds": [
         "0.3"
       ],
-      "experiment": "01M0K9CSE96RWT329J4W5CV300",
-      "beaker": "01M0K9CSE96RWT329J4W5CV300",
-      "revision": "c330bb3439e4d86684a57c5220591eb15e40ab54",
+      "experiment": "01M0K9VRM713XAG1DAPTKWK9V1",
+      "beaker": "01M0K9VRM713XAG1DAPTKWK9V1",
+      "revision": "a1def66adbfe8a39ca9c9570c205728d7735bd3b",
       "automaticTaskRetries": 8,
       "stopOnNonImprovement": true,
       "outputByWd": {
@@ -17234,7 +17279,7 @@
           "job": "01M0H9CT5268VX470XTM6CVJX0"
         }
       },
-      "reason": "WD tuning stopped at the last resolved selection WD0.3. The replacement evaluates exact pre-decay checkpoints only at the configured legacy WSD frontiers, continues with constant LR one frontier at a time until pre-decay non-improvement, then decays the last three frontier checkpoints and selects only among post-decay results.",
+      "reason": "WD tuning stopped at the last resolved selection WD0.3. Starting at E8, the replacement evaluates exact pre-decay checkpoints only at configured legacy WSD frontiers, continues with constant LR one frontier at a time until pre-decay non-improvement, then decays the last three frontier checkpoints and selects only among post-decay results.",
       "activeWd": "0.3",
       "policyTransition": {
         "requestedAt": "2026-08-21T21:22:37.233686+00:00",
@@ -17253,7 +17298,7 @@
           }
         },
         "handoffRule": "Allow the active candidate to finish, then stop the old adaptive job. Any automatically started successor is considered newly started and may be canceled during the handoff.",
-        "replacementExperiment": "01M0K9CSE96RWT329J4W5CV300"
+        "replacementExperiment": "01M0K9VRM713XAG1DAPTKWK9V1"
       },
       "preDecayResults": {},
       "postDecayResults": {},
@@ -17420,20 +17465,35 @@
             "0.3": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd0.3",
             "1.0": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd1.0"
           }
+        },
+        {
+          "beaker": "01M0K9CSE96RWT329J4W5CV300",
+          "status": "stopped-for-predecay-policy-replacement",
+          "activeEpoch": 80,
+          "activeWd": "0.3",
+          "wandbHealth": null,
+          "outputByWd": {
+            "0.01": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd0.01",
+            "0.033": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd0.033",
+            "0.1": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd0.1",
+            "0.3": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd0.3",
+            "1.0": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd1.0"
+          }
         }
       ],
-      "recoveryOf": "01M0K5KEHC3MVCC0G44JT5YA73",
+      "recoveryOf": "01M0K9CSE96RWT329J4W5CV300",
       "policy": "locked_wd_predecay_saturation_v1",
       "lockedWd": "0.3",
       "wdTuningStopped": true,
       "comparisonPolicy": "within_phase_only",
       "preDecaySaturationCriterion": "strict_non_improvement",
       "postDecaySourceCount": 3,
+      "historicalPreDecayStartEpoch": 8,
       "historicalPreDecayThroughEpoch": 80,
       "activePhase": "backfill_pre_decay_evaluations",
-      "job": "01M0K9CSHQRC6NFE2JFNXRCXFT",
+      "job": "01M0K9VRQXAE93X7Y8Y2DJ7JDS",
       "jobs": [
-        "01M0K9CSHQRC6NFE2JFNXRCXFT"
+        "01M0K9VRQXAE93X7Y8Y2DJ7JDS"
       ]
     }
   ]
