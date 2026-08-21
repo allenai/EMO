@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-20",
+  "updated": "2026-08-21",
   "title": "0802 Step 1-1 \u00b7 Dense 153M",
   "setup": "Dense 153M; 1B-unique-pool repeated-token regime; sequence length 4096. Report tables include BS32/64/128/256/512; completed higher-batch results and provenance remain fully visible. Rank microbatch is 16 sequences; BS32/64 use 2/4 GPUs with gradient accumulation 1/1. Warmup is token-matched across batches.",
   "selection": "For BS32, run the fresh E1 Cartesian grid LR{1e-3,2e-3} x WD{0.033,0.1}, select the healthy coordinate with the lowest validation CE, and then permanently lock both LR and WD to that exact E1 winner. Continue only the locked coordinate at E2/E4/E8/E12/E16 and then E24/E32/E40/E48/E56/E64, stopping at the first post-E16 non-improvement and performing no further tuning. Existing higher-batch chains retain their recorded terminal policies and every completed result and provenance item remains visible. BS64 continues its exact selected LR2e-3/WD0.1 trajectory in eight-epoch increments beyond E80, stopping at the first validation-CE non-improvement; E128 is the current launcher safety ceiling and must be extended if validation is still improving there. BS128 is terminal at E80, BS256 is terminal at E56, and BS512 is terminal at E48 by user policy. Completed E20/E28 work remains visible only in provenance and is omitted from summary rows; neither is a future launch target. BS32 now has one persistent saturation-gated continuation from E48; it uses the locked LR1e-3/WD0.033 coordinate and one canonical output directory. BS64 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS128 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS256 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS512 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors.",
@@ -11481,7 +11481,7 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-20T22:39:41.007089+00:00",
+        "checkedAt": "2026-08-21T01:10:56.464437+00:00",
         "run": "b5hrfk09",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/b5hrfk09",
         "model": "153m",
@@ -11491,13 +11491,13 @@
         "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.033",
         "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.033",
         "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.033/step576782",
-        "samples": 1467,
+        "samples": 10445,
         "firstStep": 576785,
-        "latestStep": 584115,
+        "latestStep": 629005,
         "totalSteps": 671387,
-        "recentLossMedian": 3.4135,
-        "baselineLossMedian": 3.4145,
-        "maxLoss": 3.688,
+        "recentLossMedian": 3.3525,
+        "baselineLossMedian": 3.341,
+        "maxLoss": 3.703,
         "isolatedSpikeCount": 0,
         "stepRegressions": [],
         "nonfiniteLosses": [],
@@ -11509,10 +11509,10 @@
         "recoveryOutput": null
       },
       "progress": {
-        "step": 584119,
+        "step": 629008,
         "totalSteps": 671387,
-        "percent": 87.0,
-        "latestTrain": 3.429
+        "percent": 93.7,
+        "latestTrain": 3.351
       }
     }
   ],
@@ -12812,7 +12812,7 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-20T22:39:43.754378+00:00",
+        "checkedAt": "2026-08-20T23:37:57.662026+00:00",
         "run": "s2oq7xl5",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/s2oq7xl5",
         "model": "153m",
@@ -12823,13 +12823,13 @@
         "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3",
         "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3",
         "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3/step137328",
-        "samples": 852,
+        "samples": 2075,
         "firstStep": 137330,
-        "latestStep": 141585,
+        "latestStep": 147700,
         "totalSteps": 183106,
-        "recentLossMedian": 3.67,
-        "baselineLossMedian": 3.6915,
-        "maxLoss": 3.835,
+        "recentLossMedian": 3.685,
+        "baselineLossMedian": 3.6735,
+        "maxLoss": 3.852,
         "isolatedSpikeCount": 0,
         "stepRegressions": [],
         "nonfiniteLosses": [],
@@ -12841,10 +12841,10 @@
         "recoveryOutput": null
       },
       "progress": {
-        "step": 141588,
+        "step": 147704,
         "totalSteps": 183106,
-        "percent": 77.3,
-        "latestTrain": 3.663
+        "percent": 80.7,
+        "latestTrain": 3.685
       }
     },
     {
@@ -14135,7 +14135,7 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-20T22:39:44.711887+00:00",
+        "checkedAt": "2026-08-20T23:46:54.537804+00:00",
         "run": "3w9b8fk7",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/3w9b8fk7",
         "model": "153m",
@@ -14146,17 +14146,17 @@
         "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3",
         "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3",
         "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3/step109863",
-        "samples": 319,
+        "samples": 976,
         "firstStep": 109865,
-        "latestStep": 111455,
+        "latestStep": 114740,
         "totalSteps": 122071,
-        "recentLossMedian": 3.5285,
-        "baselineLossMedian": 3.549,
-        "maxLoss": 3.637,
+        "recentLossMedian": 3.4705,
+        "baselineLossMedian": 3.5025,
+        "maxLoss": 3.647,
         "isolatedSpikeCount": 0,
         "stepRegressions": [],
         "nonfiniteLosses": [],
-        "stalledMinutes": 0.2,
+        "stalledMinutes": 9.0,
         "warnings": [],
         "criticalSignals": [],
         "shouldRecover": false,
@@ -14164,10 +14164,10 @@
         "recoveryOutput": null
       },
       "progress": {
-        "step": 111459,
+        "step": 114740,
         "totalSteps": 122071,
-        "percent": 91.3,
-        "latestTrain": 3.539
+        "percent": 94.0,
+        "latestTrain": 3.375
       }
     },
     {
