@@ -585,6 +585,7 @@ def write_report(
                     ],
                     "historicalPreDecayThroughEpoch": manifest["historicalPreDecayThroughEpoch"],
                     "activePhase": "backfill_pre_decay_evaluations",
+                    "activeEpoch": manifest["historicalPreDecayStartEpoch"],
                     "activeWds": [str(locked_wd)],
                     "activeWd": str(locked_wd),
                     "preDecayResults": existing.get("preDecayResults", {}),

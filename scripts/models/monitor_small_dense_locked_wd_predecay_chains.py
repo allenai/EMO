@@ -225,6 +225,9 @@ def update_policy_record(model: str, record: dict[str, Any]) -> str:
         record["activeWds"] = [wd]
         record["activeSourceCheckpoint"] = source
         record["activeOutput"] = output
+    elif state in {"submitted", "scheduled"}:
+        record["activePhase"] = "backfill_pre_decay_evaluations"
+        record["activeEpoch"] = int(record.get("historicalPreDecayStartEpoch", 8))
 
     saturations = [
         (int(epoch), wd)
