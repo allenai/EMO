@@ -11542,7 +11542,7 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-21T10:56:07.772499+00:00",
+        "checkedAt": "2026-08-21T11:26:09.913227+00:00",
         "run": "b5hrfk09",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/b5hrfk09",
         "model": "153m",
@@ -13000,7 +13000,7 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-21T10:56:22.714089+00:00",
+        "checkedAt": "2026-08-21T11:26:25.109748+00:00",
         "run": "t3jicky6",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/t3jicky6",
         "model": "153m",
@@ -13011,17 +13011,17 @@
         "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3",
         "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3",
         "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs64_dr_wt_embwd_lr2e-3_wd0.3/step164794",
-        "samples": 233,
+        "samples": 815,
         "firstStep": 164795,
-        "latestStep": 165955,
+        "latestStep": 168865,
         "totalSteps": 244141,
-        "recentLossMedian": 3.683,
-        "baselineLossMedian": 3.682,
-        "maxLoss": 3.843,
+        "recentLossMedian": 3.6745,
+        "baselineLossMedian": 3.6815,
+        "maxLoss": 3.888,
         "isolatedSpikeCount": 0,
         "stepRegressions": [],
         "nonfiniteLosses": [],
-        "stalledMinutes": 0.1,
+        "stalledMinutes": 0.2,
         "warnings": [],
         "criticalSignals": [],
         "shouldRecover": false,
@@ -13029,10 +13029,10 @@
         "recoveryOutput": null
       },
       "progress": {
-        "step": 165955,
+        "step": 168869,
         "totalSteps": 244141,
-        "percent": 68.0,
-        "latestTrain": 3.565
+        "percent": 69.2,
+        "latestTrain": 3.667
       }
     },
     {
@@ -14453,7 +14453,7 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-21T10:56:27.205586+00:00",
+        "checkedAt": "2026-08-21T11:26:30.528699+00:00",
         "run": "9xz5ybin",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/9xz5ybin",
         "model": "153m",
@@ -14464,17 +14464,17 @@
         "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3",
         "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3",
         "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3/step109863",
-        "samples": 2327,
+        "samples": 2569,
         "firstStep": 109865,
-        "latestStep": 121495,
+        "latestStep": 122705,
         "totalSteps": 152588,
-        "recentLossMedian": 3.5595,
-        "baselineLossMedian": 3.5545,
+        "recentLossMedian": 3.544,
+        "baselineLossMedian": 3.5585,
         "maxLoss": 3.707,
         "isolatedSpikeCount": 0,
         "stepRegressions": [],
         "nonfiniteLosses": [],
-        "stalledMinutes": 0.3,
+        "stalledMinutes": 0.2,
         "warnings": [],
         "criticalSignals": [],
         "shouldRecover": false,
@@ -14482,10 +14482,10 @@
         "recoveryOutput": null
       },
       "progress": {
-        "step": 121499,
+        "step": 122707,
         "totalSteps": 152588,
-        "percent": 79.6,
-        "latestTrain": 3.578
+        "percent": 80.4,
+        "latestTrain": 3.584
       }
     },
     {
@@ -14529,8 +14529,8 @@
       "weightTying": true,
       "decayEmbeddings": true,
       "embeddingWeightDecay": "global",
-      "status": "submitted",
-      "beakerStatus": "submitted",
+      "status": "running",
+      "beakerStatus": "running",
       "activeEpoch": 64,
       "activeWds": [
         "0.1",
@@ -14651,10 +14651,10 @@
             "wandb": "xpwy90oo",
             "wd": "0.1",
             "weightTying": true,
-            "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "job": "01M0DT1CKBWEVSC2PPSWPHK67S",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           },
           "0.333": {
             "acc": 25.71,
@@ -14704,10 +14704,10 @@
             "wandb": "5ab704r6",
             "wd": "0.333",
             "weightTying": true,
-            "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "job": "01M0DT1CKBWEVSC2PPSWPHK67S",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           }
         },
         "2": {
@@ -14812,10 +14812,10 @@
             "wandb": "6klfdvv7",
             "wd": "0.1",
             "weightTying": true,
-            "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "job": "01M0DT1CKBWEVSC2PPSWPHK67S",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           },
           "0.333": {
             "acc": 26.529999999999998,
@@ -14865,10 +14865,10 @@
             "wandb": "0scrp86z",
             "wd": "0.333",
             "weightTying": true,
-            "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "job": "01M0DT1CKBWEVSC2PPSWPHK67S",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           }
         },
         "4": {
@@ -14973,10 +14973,10 @@
             "wandb": "wq57nate",
             "wd": "0.1",
             "weightTying": true,
-            "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "job": "01M0DT1CKBWEVSC2PPSWPHK67S",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           },
           "0.333": {
             "acc": 27.87,
@@ -15026,10 +15026,10 @@
             "wandb": "0206kuy6",
             "wd": "0.333",
             "weightTying": true,
-            "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "job": "01M0DT1CKBWEVSC2PPSWPHK67S",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           }
         },
         "8": {
@@ -15081,10 +15081,10 @@
             "wandb": "7kfwqqjv",
             "wd": "0.1",
             "weightTying": true,
-            "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "job": "01M0DT1CKBWEVSC2PPSWPHK67S",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           },
           "0.333": {
             "acc": 29.32,
@@ -15134,10 +15134,10 @@
             "wandb": "4lpmgen1",
             "wd": "0.333",
             "weightTying": true,
-            "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "job": "01M0DT1CKBWEVSC2PPSWPHK67S",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           }
         },
         "16": {
@@ -15189,10 +15189,10 @@
             "wandb": "vpkd7uzo",
             "wd": "0.1",
             "weightTying": true,
-            "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "job": "01M0DT1CKBWEVSC2PPSWPHK67S",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           },
           "0.333": {
             "acc": 30.36,
@@ -15242,10 +15242,10 @@
             "wandb": "kyvgqb3c",
             "wd": "0.333",
             "weightTying": true,
-            "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "job": "01M0DT1CKBWEVSC2PPSWPHK67S",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           }
         },
         "32": {
@@ -15297,10 +15297,10 @@
             "wandb": "snaonyqe",
             "wd": "0.1",
             "weightTying": true,
-            "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "job": "01M0DT1CKBWEVSC2PPSWPHK67S",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           },
           "0.333": {
             "acc": 31.06,
@@ -15350,10 +15350,10 @@
             "wandb": "b8yvhbjh",
             "wd": "0.333",
             "weightTying": true,
-            "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "job": "01M0DT1CKBWEVSC2PPSWPHK67S",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           }
         },
         "48": {
@@ -15405,10 +15405,10 @@
             "wandb": "pq1uz030",
             "wd": "0.1",
             "weightTying": true,
-            "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "job": "01M0DT1CKBWEVSC2PPSWPHK67S",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           },
           "0.333": {
             "acc": 31.65,
@@ -15458,10 +15458,10 @@
             "wandb": "u9885z8b",
             "wd": "0.333",
             "weightTying": true,
-            "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "job": "01M0DT1CKBWEVSC2PPSWPHK67S",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           }
         },
         "64": {
@@ -15513,10 +15513,10 @@
             "wandb": "iv1bob3m",
             "wd": "0.1",
             "weightTying": true,
-            "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-            "job": "01M0DT1CKBWEVSC2PPSWPHK67S",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+            "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           }
         }
       },
@@ -15541,9 +15541,9 @@
           "selectedWd": "0.033",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-          "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-          "job": "01M0DT1CKBWEVSC2PPSWPHK67S"
+          "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+          "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+          "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q"
         },
         "2": {
           "candidateValidationExact": {
@@ -15563,9 +15563,9 @@
           "selectedWd": "0.033",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-          "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-          "job": "01M0DT1CKBWEVSC2PPSWPHK67S"
+          "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+          "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+          "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q"
         },
         "4": {
           "candidateValidationExact": {
@@ -15585,9 +15585,9 @@
           "selectedWd": "0.1",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-          "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-          "job": "01M0DT1CKBWEVSC2PPSWPHK67S"
+          "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+          "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+          "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q"
         },
         "8": {
           "candidateValidationExact": {
@@ -15607,9 +15607,9 @@
           "selectedWd": "0.1",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-          "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-          "job": "01M0DT1CKBWEVSC2PPSWPHK67S"
+          "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+          "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+          "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q"
         },
         "16": {
           "candidateValidationExact": {
@@ -15629,9 +15629,9 @@
           "selectedWd": "0.1",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-          "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-          "job": "01M0DT1CKBWEVSC2PPSWPHK67S"
+          "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+          "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+          "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q"
         },
         "32": {
           "candidateValidationExact": {
@@ -15651,9 +15651,9 @@
           "selectedWd": "0.1",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-          "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-          "job": "01M0DT1CKBWEVSC2PPSWPHK67S"
+          "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+          "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+          "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q"
         },
         "48": {
           "candidateValidationExact": {
@@ -15673,9 +15673,9 @@
           "selectedWd": "0.1",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAKJHPS4F0T1M3TTN02GD",
-          "beaker": "01M0DCAKJHPS4F0T1M3TTN02GD",
-          "job": "01M0DT1CKBWEVSC2PPSWPHK67S"
+          "experiment": "01M0H9CGYF9YTFFCAZARXF2GX1",
+          "beaker": "01M0H9CGYF9YTFFCAZARXF2GX1",
+          "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q"
         }
       },
       "reason": "Numerical recovery replaced the retry-exhausted Beaker experiment and forced the failed frontier to restart from clean checkpoint /weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.333/step41198. Canonical fixed-WD output paths, completed stages, and frontier evidence were retained.",
@@ -15791,7 +15791,43 @@
       "job": "01M0H9CHCG5FW2AM5VJN0AAR9Q",
       "jobs": [
         "01M0H9CHCG5FW2AM5VJN0AAR9Q"
-      ]
+      ],
+      "wandbHealth": {
+        "status": "healthy",
+        "checkedAt": "2026-08-21T11:26:31.629038+00:00",
+        "run": "x5hjddsx",
+        "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/x5hjddsx",
+        "model": "153m",
+        "batchSequences": 256,
+        "epoch": 64,
+        "wd": "0.333",
+        "expectedOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.333",
+        "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.333",
+        "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.333",
+        "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.333/step41198",
+        "samples": 35,
+        "firstStep": 41200,
+        "latestStep": 41370,
+        "totalSteps": 61036,
+        "recentLossMedian": 3.501,
+        "baselineLossMedian": 3.501,
+        "maxLoss": 3.549,
+        "isolatedSpikeCount": 0,
+        "stepRegressions": [],
+        "nonfiniteLosses": [],
+        "stalledMinutes": 0.2,
+        "warnings": [],
+        "criticalSignals": [],
+        "shouldRecover": false,
+        "automaticPathRecoveryReady": false,
+        "recoveryOutput": null
+      },
+      "progress": {
+        "step": 41373,
+        "totalSteps": 61036,
+        "percent": 67.8,
+        "latestTrain": 3.508
+      }
     },
     {
       "id": "dense-153m-bs512-dr-wt-embwd-adaptive",
@@ -15834,8 +15870,8 @@
       "weightTying": true,
       "decayEmbeddings": true,
       "embeddingWeightDecay": "global",
-      "status": "submitted",
-      "beakerStatus": "submitted",
+      "status": "running",
+      "beakerStatus": "running",
       "activeEpoch": 80,
       "activeWds": [
         "0.3",
@@ -16009,10 +16045,10 @@
             "wandb": "qksbgs97",
             "wd": "0.3",
             "weightTying": true,
-            "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "job": "01M0DT1DY9EGKP4D5NX0RTNHZB",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+            "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+            "job": "01M0H9CT5268VX470XTM6CVJX0",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           },
           "1.0": {
             "acc": 25.15,
@@ -16062,10 +16098,10 @@
             "wandb": "b6jjwk8q",
             "wd": "1.0",
             "weightTying": true,
-            "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "job": "01M0DT1DY9EGKP4D5NX0RTNHZB",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+            "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+            "job": "01M0H9CT5268VX470XTM6CVJX0",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           }
         },
         "2": {
@@ -16117,10 +16153,10 @@
             "wandb": "3645blzc",
             "wd": "0.3",
             "weightTying": true,
-            "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "job": "01M0DT1DY9EGKP4D5NX0RTNHZB",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+            "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+            "job": "01M0H9CT5268VX470XTM6CVJX0",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           },
           "1.0": {
             "acc": 25.650000000000002,
@@ -16170,10 +16206,10 @@
             "wandb": "jzyhq1ab",
             "wd": "1.0",
             "weightTying": true,
-            "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "job": "01M0DT1DY9EGKP4D5NX0RTNHZB",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+            "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+            "job": "01M0H9CT5268VX470XTM6CVJX0",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           }
         },
         "4": {
@@ -16225,10 +16261,10 @@
             "wandb": "3a6cw5di",
             "wd": "0.3",
             "weightTying": true,
-            "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "job": "01M0DT1DY9EGKP4D5NX0RTNHZB",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+            "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+            "job": "01M0H9CT5268VX470XTM6CVJX0",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           },
           "1.0": {
             "acc": 26.450000000000003,
@@ -16278,10 +16314,10 @@
             "wandb": "foc4o7hx",
             "wd": "1.0",
             "weightTying": true,
-            "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "job": "01M0DT1DY9EGKP4D5NX0RTNHZB",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+            "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+            "job": "01M0H9CT5268VX470XTM6CVJX0",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           }
         },
         "8": {
@@ -16333,10 +16369,10 @@
             "wandb": "4vwo99zg",
             "wd": "0.3",
             "weightTying": true,
-            "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "job": "01M0DT1DY9EGKP4D5NX0RTNHZB",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+            "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+            "job": "01M0H9CT5268VX470XTM6CVJX0",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           },
           "1.0": {
             "acc": 26.52,
@@ -16386,10 +16422,10 @@
             "wandb": "h9v0563q",
             "wd": "1.0",
             "weightTying": true,
-            "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "job": "01M0DT1DY9EGKP4D5NX0RTNHZB",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+            "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+            "job": "01M0H9CT5268VX470XTM6CVJX0",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           }
         },
         "16": {
@@ -16441,10 +16477,10 @@
             "wandb": "pib3nk0c",
             "wd": "0.3",
             "weightTying": true,
-            "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "job": "01M0DT1DY9EGKP4D5NX0RTNHZB",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+            "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+            "job": "01M0H9CT5268VX470XTM6CVJX0",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           },
           "1.0": {
             "acc": 26.97,
@@ -16494,10 +16530,10 @@
             "wandb": "reeyymwr",
             "wd": "1.0",
             "weightTying": true,
-            "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "job": "01M0DT1DY9EGKP4D5NX0RTNHZB",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+            "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+            "job": "01M0H9CT5268VX470XTM6CVJX0",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           }
         },
         "32": {
@@ -16549,10 +16585,10 @@
             "wandb": "hryzxq33",
             "wd": "0.3",
             "weightTying": true,
-            "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "job": "01M0DT1DY9EGKP4D5NX0RTNHZB",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+            "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+            "job": "01M0H9CT5268VX470XTM6CVJX0",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           },
           "1.0": {
             "acc": 27.650000000000002,
@@ -16602,10 +16638,10 @@
             "wandb": "engpixyf",
             "wd": "1.0",
             "weightTying": true,
-            "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "job": "01M0DT1DY9EGKP4D5NX0RTNHZB",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+            "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+            "job": "01M0H9CT5268VX470XTM6CVJX0",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           }
         },
         "48": {
@@ -16657,10 +16693,10 @@
             "wandb": "94eb1nts",
             "wd": "0.3",
             "weightTying": true,
-            "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "job": "01M0DT1DY9EGKP4D5NX0RTNHZB",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+            "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+            "job": "01M0H9CT5268VX470XTM6CVJX0",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           },
           "1.0": {
             "acc": 27.82,
@@ -16710,10 +16746,10 @@
             "wandb": "q9gqu4vm",
             "wd": "1.0",
             "weightTying": true,
-            "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "job": "01M0DT1DY9EGKP4D5NX0RTNHZB",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+            "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+            "job": "01M0H9CT5268VX470XTM6CVJX0",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           }
         },
         "64": {
@@ -16765,10 +16801,10 @@
             "wandb": "cilpl5dh",
             "wd": "0.3",
             "weightTying": true,
-            "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "job": "01M0DT1DY9EGKP4D5NX0RTNHZB",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+            "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+            "job": "01M0H9CT5268VX470XTM6CVJX0",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           },
           "1.0": {
             "acc": 27.79,
@@ -16818,10 +16854,10 @@
             "wandb": "hsx5i9l4",
             "wd": "1.0",
             "weightTying": true,
-            "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "job": "01M0DT1DY9EGKP4D5NX0RTNHZB",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+            "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+            "job": "01M0H9CT5268VX470XTM6CVJX0",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           }
         },
         "80": {
@@ -16873,10 +16909,10 @@
             "wandb": "g6sofee4",
             "wd": "0.3",
             "weightTying": true,
-            "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-            "job": "01M0DT1DY9EGKP4D5NX0RTNHZB",
-            "revision": "bbd5af37770a9cd07f15c5a2b423481ce6551ce7"
+            "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+            "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+            "job": "01M0H9CT5268VX470XTM6CVJX0",
+            "revision": "574dab79f6d7a07f09243c7dfc30e68ef59eec01"
           }
         }
       },
@@ -16901,9 +16937,9 @@
           "selectedWd": "0.3",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-          "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-          "job": "01M0DT1DY9EGKP4D5NX0RTNHZB"
+          "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+          "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+          "job": "01M0H9CT5268VX470XTM6CVJX0"
         },
         "2": {
           "candidateValidationExact": {
@@ -16923,9 +16959,9 @@
           "selectedWd": "0.3",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-          "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-          "job": "01M0DT1DY9EGKP4D5NX0RTNHZB"
+          "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+          "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+          "job": "01M0H9CT5268VX470XTM6CVJX0"
         },
         "4": {
           "candidateValidationExact": {
@@ -16945,9 +16981,9 @@
           "selectedWd": "0.3",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-          "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-          "job": "01M0DT1DY9EGKP4D5NX0RTNHZB"
+          "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+          "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+          "job": "01M0H9CT5268VX470XTM6CVJX0"
         },
         "8": {
           "candidateValidationExact": {
@@ -16967,9 +17003,9 @@
           "selectedWd": "0.3",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-          "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-          "job": "01M0DT1DY9EGKP4D5NX0RTNHZB"
+          "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+          "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+          "job": "01M0H9CT5268VX470XTM6CVJX0"
         },
         "16": {
           "candidateValidationExact": {
@@ -16989,9 +17025,9 @@
           "selectedWd": "0.3",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-          "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-          "job": "01M0DT1DY9EGKP4D5NX0RTNHZB"
+          "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+          "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+          "job": "01M0H9CT5268VX470XTM6CVJX0"
         },
         "32": {
           "candidateValidationExact": {
@@ -17011,9 +17047,9 @@
           "selectedWd": "0.3",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-          "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-          "job": "01M0DT1DY9EGKP4D5NX0RTNHZB"
+          "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+          "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+          "job": "01M0H9CT5268VX470XTM6CVJX0"
         },
         "48": {
           "candidateValidationExact": {
@@ -17033,9 +17069,9 @@
           "selectedWd": "0.3",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-          "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-          "job": "01M0DT1DY9EGKP4D5NX0RTNHZB"
+          "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+          "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+          "job": "01M0H9CT5268VX470XTM6CVJX0"
         },
         "64": {
           "candidateValidationExact": {
@@ -17055,9 +17091,9 @@
           "selectedWd": "0.3",
           "status": "complete",
           "variant": "DR+WT+EmbedWD",
-          "experiment": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-          "beaker": "01M0DCAQVKWV9BQ2A4KM3QV66Y",
-          "job": "01M0DT1DY9EGKP4D5NX0RTNHZB"
+          "experiment": "01M0H9CSP0JAYM36B6YW213XDP",
+          "beaker": "01M0H9CSP0JAYM36B6YW213XDP",
+          "job": "01M0H9CT5268VX470XTM6CVJX0"
         }
       },
       "reason": "Numerical recovery replaced the retry-exhausted Beaker experiment and forced the failed frontier to restart from clean checkpoint /weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd1.0/step27465. Canonical fixed-WD output paths, completed stages, and frontier evidence were retained.",
@@ -17177,7 +17213,43 @@
       "job": "01M0H9CT5268VX470XTM6CVJX0",
       "jobs": [
         "01M0H9CT5268VX470XTM6CVJX0"
-      ]
+      ],
+      "wandbHealth": {
+        "status": "healthy",
+        "checkedAt": "2026-08-21T11:26:32.375996+00:00",
+        "run": "j987cahf",
+        "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/j987cahf",
+        "model": "153m",
+        "batchSequences": 512,
+        "epoch": 80,
+        "wd": "1.0",
+        "expectedOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd1.0",
+        "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd1.0",
+        "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd1.0",
+        "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs512_dr_wt_embwd_lr2e-3_wd1.0/step27465",
+        "samples": 1,
+        "firstStep": 27465,
+        "latestStep": 27470,
+        "totalSteps": 38147,
+        "recentLossMedian": 3.843,
+        "baselineLossMedian": 3.843,
+        "maxLoss": 3.843,
+        "isolatedSpikeCount": 0,
+        "stepRegressions": [],
+        "nonfiniteLosses": [],
+        "stalledMinutes": 0.1,
+        "warnings": [],
+        "criticalSignals": [],
+        "shouldRecover": false,
+        "automaticPathRecoveryReady": false,
+        "recoveryOutput": null
+      },
+      "progress": {
+        "step": 27471,
+        "totalSteps": 38147,
+        "percent": 72.0,
+        "latestTrain": 3.843
+      }
     }
   ]
 }
