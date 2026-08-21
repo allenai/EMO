@@ -881,6 +881,86 @@ show(location.hash && document.getElementById(location.hash.slice(1)) ? location
 """
 
 
+def build_phase2() -> str:
+    res_path = OUT / "k32cpt_results.json"
+    if not res_path.exists():
+        return "<p>Phase-2 eval results not yet aggregated (run scripts/meta_learning/aggregate_k32cpt_evals.py).</p>"
+    res = json.load(open(res_path))
+    n_done = {arm: len(res["arms"][arm]["stages"]) for arm in res["arms"]}
+
+    def _mean(d):
+        return sum(d[str(c)] if isinstance(d, dict) and str(c) in d else d[c] for c in range(32)) / 32.0
+
+    rows = []
+    for arm in res["arms"]:
+        base = {int(k): v for k, v in res["anchors"][arm]["base_20B"].items()}
+        upper = res["anchors"][arm].get("upper_40B")
+        upper = {int(k): v for k, v in upper.items()} if upper else None
+        rows.append([arm,
+                     f"{sum(base.values())/32:.4f}",
+                     f"{sum(upper.values())/32:.4f}" if upper else "&mdash;",
+                     f"{(sum(upper.values())-sum(base.values()))/32:+.4f}" if upper else "&mdash;",
+                     f"{n_done[arm]}/32"])
+
+    intro = """
+<p>Phase 2 applies the <strong>modular_extension k=32 CPT (no extension) protocol</strong> to each
+arm's 20B checkpoint: the arm's own router clusters the (shared) 20B&ndash;40B doc window into k=32
+groups; per cluster, its per-layer top-32-of-127 experts are extracted into a 33-expert subset
+(surgery), trained on the cluster's proportional share of a 20B token budget with all non-expert
+parameters frozen (standard 32-expert training &mdash; pool pinned, no random-pool objective), and
+written back. After every stage the full 128-expert pool is evaluated on <em>all 32</em> cluster
+held-out sets (25M tokens each) &mdash; the heatmaps below. Reference rows: each arm's 20B base
+(the delta reference) and <code>meta128_vanilla/step9537</code>, the same 20B&ndash;40B tokens
+consumed as plain EMO pretraining (the upper bound).</p>"""
+
+    anchor_tbl = table(
+        ["arm", "20B base mean CE", "40B plain-CPT mean CE", "upper-bound &Delta;", "stages evaluated"],
+        rows)
+
+    hm = fig_row(
+        img_tag(OUT / "k32cpt_heatmap_vanilla.png",
+                "vanilla: full-model CE delta vs its 20B base. Blue diagonal = selective CPT "
+                "improves the just-trained cluster in the full-routing view, and columns stay "
+                "blue after training (specialization sticks). Bottom row = 40B plain-CPT upper bound."),
+        img_tag(OUT / "k32cpt_heatmap_sametok_ws_lam05.png",
+                "sametok_ws_lam05: the same protocol hurts the full model nearly everywhere, "
+                "including the just-trained cluster (red diagonal), with partial recovery in "
+                "later stages."))
+
+    curves_fig = img_tag(OUT / "k32cpt_curves.png",
+                         "Summary curves: just-trained delta (specialization), mean over all "
+                         "clusters, and mean over previously-trained clusters (forgetting). "
+                         "Dashed lines = the 40B plain-CPT reference on each arm's clusters.")
+
+    early = card("bad", "Early readout (in progress &mdash; updates as stages land)", f"""
+<p>Through the first {min(n_done.values())} of 32 stages, the comparison runs <strong>against</strong>
+the meta hypothesis in the full-model view:</p>
+<ul>
+<li><strong>vanilla</strong>: the just-trained cluster improves (lag-0 &Delta;CE &minus;0.04&hellip;&minus;0.15
+vs the previous pool state) and trained columns stay improved &mdash; selective CPT transfers to full
+routing, recovering part of the 40B upper bound's &minus;0.128 mean improvement.</li>
+<li><strong>sametok_ws_lam05</strong>: selective CPT initially <em>degrades</em> the full model even on
+the cluster it just trained (lag-0 up to +0.28 early), with broad collateral damage that partially heals
+by stages 3&ndash;5. This mirrors the arm's phase-1 &ldquo;leaning&rdquo; transient &mdash; selective-mode
+updates initially failing to cohere with full routing &mdash; but here on a much larger scale.</li>
+</ul>
+<p>Caveats: 6/32 stages; the sametok damage trend is shrinking stage-over-stage (own-cluster +0.28 &rarr;
++0.06), so the full sweep decides whether this is a transient or the verdict. The carried Adam moments
+also come from each arm's own phase-1 objective, which may mismatch plain selective training more for the
+meta arm.</p>""")
+
+    ops = card("info", "Pipeline (all per-arm, resumable)", """
+<p><code>convert_20b_to_hf.sh</code> &rarr; <code>launch_embed_docs.sh</code> (router doc-probs, 128
+Beaker shards) &rarr; <code>cluster_docs.sh</code> (spherical k-means k=32 on 18.3M docs) &rarr;
+<code>cluster_expert_concentration.py</code> (per-layer top-32 selection; cluster mass 0.42&ndash;0.77
+vs 0.31 random) &rarr; <code>build_cluster_token_data.sh</code> (20B train + ~0.7B held-out tokens)
+&rarr; <code>run_k32cpt_arm.sh</code> (sequential extract/train/writeback, 4-node stages, carry
+optimizer, bf16 pool snapshot per stage) &rarr; <code>run_snapshot_evals.sh</code> (8-GPU eval job per
+snapshot) &rarr; <code>aggregate_k32cpt_evals.py</code> (this page's figures).</p>""")
+
+    return intro + anchor_tbl + hm + curves_fig + early + ops
+
+
 def main():
     data_path = OUT / "report_data.json"
     data = json.load(open(data_path)) if data_path.exists() else {}
@@ -891,6 +971,7 @@ def main():
     tabs = [
         ("overview", "Overview", build_overview(data)),
         ("curves", "Live curves", curves_html),
+        ("phase2", "Phase-2 CPT heatmaps", build_phase2()),
         ("algorithm", "Algorithm", build_algorithm()),
         ("implementation", "Implementation", build_implementation()),
         ("bf16", "bf16 quantization", build_bf16(data)),
