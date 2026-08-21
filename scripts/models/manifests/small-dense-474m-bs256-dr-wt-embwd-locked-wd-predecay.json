@@ -1,0 +1,46 @@
+{
+  "model": "474m",
+  "baseExperiment": "01KZ7307CK7ZZQ1XCJ2QQ08KD4",
+  "globalSequences": 256,
+  "nprocPerNode": 8,
+  "rankMicrobatchSequences": 16,
+  "gradientAccumulation": 2,
+  "warmupSteps": 96,
+  "learningRate": "2e-3",
+  "wdLadder": [
+    "0.01",
+    "0.033",
+    "0.1",
+    "0.333",
+    "1.0"
+  ],
+  "baselineOptimalWd": "0.333",
+  "baselineEvidenceEpoch": 32,
+  "baselineValidation": 3.102,
+  "initialWds": [
+    "0.1",
+    "0.333",
+    "1.0"
+  ],
+  "initialTargets": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    24
+  ],
+  "epochIncrement": 8,
+  "outputRoot": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b",
+  "runSuffix": "sm0821-lockedwd-predecay",
+  "variant": "DR+WT+EmbedWD",
+  "dataOrder": "dynamic_repacking_from_e2",
+  "weightTying": true,
+  "decayEmbeddings": true,
+  "policy": "locked_wd_predecay_saturation_v1",
+  "lockedWd": "0.333",
+  "postDecaySourceCount": 3,
+  "comparisonPolicy": "within_phase_only",
+  "preDecaySaturationCriterion": "strict_non_improvement",
+  "historicalPreDecayThroughEpoch": 48
+}

@@ -23,6 +23,7 @@ EXPECTED = {
         ("2e-3", "1.0"),
     },
 }
+POLICY_HOLD = "held_by_locked_wd_predecay_policy_2026_08_21"
 
 
 def main() -> None:
@@ -41,6 +42,9 @@ def main() -> None:
         assert chain["weightTying"] is True
         assert chain["decayEmbeddings"] is True
         assert {(item["lr"], item["wd"]) for item in chain["coordinates"]} == EXPECTED[batch]
+        if not chain.get("experiment"):
+            assert chain.get("status") == "held"
+            assert chain.get("policyHold") == POLICY_HOLD
     registered = {
         (int(run["batchSequences"]), str(run["lr"]), str(run["wd"]))
         for run in report["runs"]

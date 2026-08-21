@@ -21,6 +21,7 @@ SMALL_REPORTS = (
 )
 MODEL_ROOT = "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b"
 THRESHOLD = 5
+WD_TUNING_POLICY_HOLD = "held_by_locked_wd_predecay_policy_2026_08_21"
 CONFIGS: dict[int, dict[str, Any]] = {
     128: {
         "baseExperiment": "01M02YR7SFKQ2C9ABV15QK7VF5",
@@ -363,34 +364,39 @@ def main() -> None:
         parser.error("choose exactly one of --register-only or --submit-if-ready")
     report = json.loads(REPORT_PATH.read_text())
     register_plan(report)
-    completed_count, completed_ids = successful_small_chains()
+    completed_count, _ = successful_small_chains()
     for chain in report["drWtEmbedWdGridChains"]:
         chain["completedSmallChainsAtLastCheck"] = completed_count
     write_report(report)
     if args.register_only:
         print(f"registered deferred 1B grids; completed_small_chains={completed_count}/10")
         return
-    if completed_count < THRESHOLD:
-        print(
-            f"1B grid trigger held: completed_small_chains={completed_count}/10; "
-            f"requires={THRESHOLD}; completed={completed_ids or 'none'}"
-        )
-        return
-    if not args.revision:
-        parser.error("--submit-if-ready requires --revision once the trigger is satisfied")
-    validate_revision(args.revision)
-    for batch in CONFIGS:
-        report = json.loads(REPORT_PATH.read_text())
-        chain = next(
-            record for record in report["drWtEmbedWdGridChains"] if record["id"] == chain_id(batch)
-        )
-        if chain.get("experiment"):
-            print(f"BS{batch} grid already registered: {chain['experiment']}")
-            continue
-        experiment = create_experiment(batch, args.revision, args.priority)
-        register_submission(report, batch, experiment, args.revision, completed_count)
-        write_report(report)
-        print(f"submitted BS{batch} grid: {experiment}")
+    # The 2026-08-21 policy stops launching new WD sweeps. These grids have no
+    # previously selected WD to lock, so they stay registered for provenance
+    # but may not be submitted by the old completion-count trigger.
+    for chain in report["drWtEmbedWdGridChains"]:
+        if not chain.get("experiment"):
+            chain.update(
+                {
+                    "status": "held",
+                    "policyHold": WD_TUNING_POLICY_HOLD,
+                    "reason": (
+                        "Submission is held because the active policy forbids new WD "
+                        "tuning and Dense-1B has no previously selected WD to lock."
+                    ),
+                }
+            )
+    for coordinate in report.get("runs", []):
+        if coordinate.get("method") in {"drwtembwd128", "drwtembwd256"} and not coordinate.get(
+            "experiment"
+        ):
+            coordinate["status"] = "held"
+            coordinate["policyHold"] = WD_TUNING_POLICY_HOLD
+    write_report(report)
+    print(
+        "1B grid trigger held by locked-WD pre-decay policy: no Dense-1B WD was "
+        "previously selected, so no LR/WD grid will be submitted"
+    )
 
 
 if __name__ == "__main__":

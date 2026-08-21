@@ -145,7 +145,7 @@ def refresh_chain(report: dict[str, Any], chain: dict[str, Any]) -> str:
     experiment_id = chain.get("experiment")
     if not experiment_id:
         return (
-            f"1b BS{chain['batchSequences']} planned; trigger="
+            f"1b BS{chain['batchSequences']} {chain.get('status', 'planned')}; trigger="
             f"{chain.get('completedSmallChainsAtLastCheck', 0)}/{chain.get('triggerThreshold', 5)}"
         )
     batch = int(chain["batchSequences"])

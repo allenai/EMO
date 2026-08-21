@@ -10,6 +10,7 @@ from pathlib import Path
 MODELS = ("474m", "153m")
 BATCHES = (64, 128, 256, 512)
 ROOT = Path(__file__).resolve().parents[2]
+POLICY = "locked_wd_predecay_saturation_v1"
 
 
 def validate_model(model: str) -> None:
@@ -25,11 +26,7 @@ def validate_model(model: str) -> None:
     for batch, record in by_batch.items():
         expected_gpus = 4 if batch == 64 else 8
         expected_accumulation = batch // (expected_gpus * 16)
-        expected_targets = (
-            [1, 2, 4, 8, 16, 24]
-            if model == "474m"
-            else [1, 2, 4, 8, 16, 32, 48]
-        )
+        expected_targets = [1, 2, 4, 8, 16, 24] if model == "474m" else [1, 2, 4, 8, 16, 32, 48]
         expected_increment = 8 if model == "474m" else 16
         checks = {
             "variant": record.get("variant") == "DR+WT+EmbedWD",
@@ -57,6 +54,48 @@ def validate_model(model: str) -> None:
         for epoch, results in record.get("results", {}).items():
             if any(Decimal(str(wd)) > Decimal("1.0") for wd in results):
                 raise ValueError(f"{model} BS{batch} E{epoch}: result WD exceeds 1.0")
+        transition = record.get("policyTransition") or {}
+        if transition:
+            locked_wd = Decimal(str(transition.get("lockedWd")))
+            if locked_wd > Decimal("1.0"):
+                raise ValueError(f"{model} BS{batch}: transition WD exceeds 1.0")
+            if transition.get("status") == "awaiting-current-stage":
+                awaited = transition.get("awaitStage") or {}
+                if awaited.get("epoch") is None or awaited.get("wd") is None:
+                    raise ValueError(f"{model} BS{batch}: incomplete transition boundary")
+        if record.get("policy") == POLICY:
+            locked_wd = str(record.get("lockedWd"))
+            policy_checks = {
+                "WD tuning stopped": record.get("wdTuningStopped") is True,
+                "locked WD": locked_wd in ladder,
+                "phase comparison": record.get("comparisonPolicy") == "within_phase_only",
+                "three decay sources": record.get("postDecaySourceCount") == 3,
+                "historical boundary": int(record.get("historicalPreDecayThroughEpoch", 0)) >= 3,
+                "pre-decay criterion": record.get("preDecaySaturationCriterion")
+                == "strict_non_improvement",
+                "active WD lock": all(
+                    str(value) == locked_wd for value in record.get("activeWds", [])
+                ),
+            }
+            failed_policy = [name for name, valid in policy_checks.items() if not valid]
+            if failed_policy:
+                raise ValueError(
+                    f"{model} BS{batch}: invalid locked-WD policy {', '.join(failed_policy)}"
+                )
+            for result in record.get("preDecayResults", {}).values():
+                if result.get("comparisonGroup") != "pre_decay":
+                    raise ValueError(f"{model} BS{batch}: mixed pre-decay comparison group")
+            for result in record.get("postDecayResults", {}).values():
+                if result.get("comparisonGroup") != "post_decay":
+                    raise ValueError(f"{model} BS{batch}: mixed post-decay comparison group")
+            selection = record.get("postDecaySelection")
+            if selection:
+                if selection.get("preDecayDecisionGroup") != "pre_decay":
+                    raise ValueError(f"{model} BS{batch}: invalid saturation comparison group")
+                if selection.get("postDecaySelectionGroup") != "post_decay":
+                    raise ValueError(f"{model} BS{batch}: invalid decay selection group")
+                if len(selection.get("postDecaySourceEpochs", [])) != 3:
+                    raise ValueError(f"{model} BS{batch}: decay selection is not three-way")
         center = str(record["baselineOptimalWd"])
         center_index = ladder.index(center)
         if record.get("initialWds") != ladder[center_index - 1 : center_index + 2]:

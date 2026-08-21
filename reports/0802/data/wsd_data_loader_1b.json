@@ -11320,13 +11320,14 @@
       "gpuCount": 8,
       "nodeCount": 1,
       "gradientAccumulation": 2,
-      "status": "planned",
+      "status": "held",
       "activeEpoch": 1,
       "sourceExperiment": "01M02YR7SFKQ2C9ABV15QK7VF5",
       "sourceCheckpoint": "fresh",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd0.3",
       "results": {},
-      "reason": "Planned coordinate in the deferred BS128 persistent grid."
+      "reason": "Planned coordinate in the deferred BS128 persistent grid.",
+      "policyHold": "held_by_locked_wd_predecay_policy_2026_08_21"
     },
     {
       "id": "drwtembwd128-lr1e-3-wd1.0",
@@ -11344,13 +11345,14 @@
       "gpuCount": 8,
       "nodeCount": 1,
       "gradientAccumulation": 2,
-      "status": "planned",
+      "status": "held",
       "activeEpoch": 1,
       "sourceExperiment": "01M02YR7SFKQ2C9ABV15QK7VF5",
       "sourceCheckpoint": "fresh",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd1.0",
       "results": {},
-      "reason": "Planned coordinate in the deferred BS128 persistent grid."
+      "reason": "Planned coordinate in the deferred BS128 persistent grid.",
+      "policyHold": "held_by_locked_wd_predecay_policy_2026_08_21"
     },
     {
       "id": "drwtembwd256-lr1e-3-wd0.333",
@@ -11368,13 +11370,14 @@
       "gpuCount": 8,
       "nodeCount": 1,
       "gradientAccumulation": 4,
-      "status": "planned",
+      "status": "held",
       "activeEpoch": 1,
       "sourceExperiment": "01KZD997FY92SE7CQM504CVDJW",
       "sourceCheckpoint": "fresh",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd0.333",
       "results": {},
-      "reason": "Planned coordinate in the deferred BS256 persistent grid."
+      "reason": "Planned coordinate in the deferred BS256 persistent grid.",
+      "policyHold": "held_by_locked_wd_predecay_policy_2026_08_21"
     },
     {
       "id": "drwtembwd256-lr1e-3-wd1.0",
@@ -11392,13 +11395,14 @@
       "gpuCount": 8,
       "nodeCount": 1,
       "gradientAccumulation": 4,
-      "status": "planned",
+      "status": "held",
       "activeEpoch": 1,
       "sourceExperiment": "01KZD997FY92SE7CQM504CVDJW",
       "sourceCheckpoint": "fresh",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0",
       "results": {},
-      "reason": "Planned coordinate in the deferred BS256 persistent grid."
+      "reason": "Planned coordinate in the deferred BS256 persistent grid.",
+      "policyHold": "held_by_locked_wd_predecay_policy_2026_08_21"
     },
     {
       "id": "drwtembwd256-lr2e-3-wd0.333",
@@ -11416,13 +11420,14 @@
       "gpuCount": 8,
       "nodeCount": 1,
       "gradientAccumulation": 4,
-      "status": "planned",
+      "status": "held",
       "activeEpoch": 1,
       "sourceExperiment": "01KZD997FY92SE7CQM504CVDJW",
       "sourceCheckpoint": "fresh",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.333",
       "results": {},
-      "reason": "Planned coordinate in the deferred BS256 persistent grid."
+      "reason": "Planned coordinate in the deferred BS256 persistent grid.",
+      "policyHold": "held_by_locked_wd_predecay_policy_2026_08_21"
     },
     {
       "id": "drwtembwd256-lr2e-3-wd1.0",
@@ -11440,13 +11445,14 @@
       "gpuCount": 8,
       "nodeCount": 1,
       "gradientAccumulation": 4,
-      "status": "planned",
+      "status": "held",
       "activeEpoch": 1,
       "sourceExperiment": "01KZD997FY92SE7CQM504CVDJW",
       "sourceCheckpoint": "fresh",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd1.0",
       "results": {},
-      "reason": "Planned coordinate in the deferred BS256 persistent grid."
+      "reason": "Planned coordinate in the deferred BS256 persistent grid.",
+      "policyHold": "held_by_locked_wd_predecay_policy_2026_08_21"
     }
   ],
   "outputDirectoryPolicy": "Checkpoint outputs now use one canonical directory per method/batch/LR/WD trajectory under /weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b: bs{batch}_dr_lr{lr}_wd{wd} for DR and bs{batch}_lr{lr}_wd{wd} for Original. An E2 DR launch verifies its exact Original E1 checkpoint and automatically creates the new canonical DR trajectory directory. Later epochs and infrastructure retries reuse that directory and are distinguished by step checkpoints and experiment provenance; a continuation must load the exact predecessor pre-decay step and may not overwrite its target pre-decay or endpoint step.",
@@ -23015,7 +23021,7 @@
       "weightTying": true,
       "decayEmbeddings": true,
       "embeddingWeightDecay": "global",
-      "status": "planned",
+      "status": "held",
       "triggerThreshold": 5,
       "completedSmallChainsAtLastCheck": 2,
       "manifest": "scripts/models/manifests/dense-1b-bs128-dr-wt-embwd-grid.json",
@@ -23024,7 +23030,8 @@
       "stopOnNonImprovement": true,
       "results": {},
       "frontiers": {},
-      "reason": "Deferred until at least five of the ten small-model logical chains finish successfully. One persistent Beaker job evaluates every requested LR/WD coordinate while preserving separate canonical optimizer trajectories."
+      "reason": "Submission is held because the active policy forbids new WD tuning and Dense-1B has no previously selected WD to lock.",
+      "policyHold": "held_by_locked_wd_predecay_policy_2026_08_21"
     },
     {
       "id": "dense-1b-bs256-dr-wt-embwd-grid",
@@ -23065,7 +23072,7 @@
       "weightTying": true,
       "decayEmbeddings": true,
       "embeddingWeightDecay": "global",
-      "status": "planned",
+      "status": "held",
       "triggerThreshold": 5,
       "completedSmallChainsAtLastCheck": 2,
       "manifest": "scripts/models/manifests/dense-1b-bs256-dr-wt-embwd-grid.json",
@@ -23074,7 +23081,8 @@
       "stopOnNonImprovement": true,
       "results": {},
       "frontiers": {},
-      "reason": "Deferred until at least five of the ten small-model logical chains finish successfully. One persistent Beaker job evaluates every requested LR/WD coordinate while preserving separate canonical optimizer trajectories."
+      "reason": "Submission is held because the active policy forbids new WD tuning and Dense-1B has no previously selected WD to lock.",
+      "policyHold": "held_by_locked_wd_predecay_policy_2026_08_21"
     }
   ]
 }
