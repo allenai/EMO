@@ -16,6 +16,8 @@
     .run-suspicious td{background:#ffedd5;font-weight:400}
     .matched-stopped{color:#7e22ce}
     .matched-stopped-key{color:#7e22ce;font-weight:700}
+    .pd-value{color:#64748b;font-weight:400}
+    .phase-separator{color:#94a3b8;font-weight:400}
   `;
   document.head.append(healthStyles);
   const baseline=window.ICSL_WD_BASELINE_DATA||{runs:[],fixedLrByEpoch:{}};
@@ -181,6 +183,7 @@
     });
   });
   const adaptiveSelected=new Map();
+  const adaptivePreDecaySelected=new Map();
   adaptiveChains.forEach(chain=>{
     Object.entries(chain.frontiers||{}).forEach(([epoch,frontier])=>{
       const wd=String(frontier.selectedWd);
@@ -194,6 +197,15 @@
       });
     });
     if(chain.policy==='locked_wd_predecay_saturation_v1'){
+      Object.entries(chain.preDecayResults||{}).forEach(([epoch,result])=>{
+        if(result.status!=='complete'||result.comparisonGroup!=='pre_decay'||!Number.isFinite(metric(result)))return;
+        adaptivePreDecaySelected.set(`${chain.batchSequences}|${Number(epoch)}`,{
+          ...chain,...result,
+          epoch:Number(epoch),wd:String(chain.lockedWd),lr:chain.lr,
+          status:'complete',
+          series:`BS ${chain.batchSequences} · DR+WT+EmbedWD`,
+        });
+      });
       Object.entries(chain.postDecayResults||{}).forEach(([epoch,result])=>{
         if(result.status!=='complete'||result.comparisonGroup!=='post_decay'||!Number.isFinite(metric(result)))return;
         adaptiveSelected.set(`${chain.batchSequences}|${Number(epoch)}`,{
@@ -217,6 +229,9 @@
     if(column.kind==='dr')return drSelected.get(`${column.batch}|${Number(epoch)}`);
     return selected.get(`${column.batch}|${Number(epoch)}`);
   };
+  const preDecayForSummaryColumn=(column,epoch)=>column.kind==='adaptive'
+    ?adaptivePreDecaySelected.get(`${column.batch}|${Number(epoch)}`)
+    :null;
   const setAdaptiveSummaryHeader=(bodyId,leadingLabel,{trainingTime=false}={})=>{
     if(!showAdaptiveColumns)return;
     const table=document.querySelector(`#${bodyId}`)?.closest('table');
@@ -362,6 +377,8 @@
     if(completed.length)bestBySimulation.set(column.key,completed.reduce((best,run)=>metric(run)<metric(best)?run:best));
   });
   const validationSummary=document.querySelector('#validation-summary');
+  const validationSummaryNote=validationSummary?.closest('.summary-panel')?.querySelector('.summary-note');
+  if(validationSummaryNote)validationSummaryNote.textContent='Each DR+WT+EmbedWD column sits immediately beside its Original batch-size column. Locked-WD cells show [POST] | [PD]; when [POST] is unavailable, the left side reads Unknown. Historical [PD] begins at E8. Bold and underline apply only to [POST]: bold marks the best [POST] epoch within each column, and underline marks the best [POST] result within each epoch. [PD] values are displayed for monitoring and are never compared with [POST].';
   validationSummary.innerHTML=(d.targetEpochs||[]).map(epoch=>{
     const rowRuns=[
       ...summaryMethodColumns.map(column=>runForSummaryColumn(column,epoch)),
@@ -370,6 +387,20 @@
     const rowBestMetric=rowRuns.length?Math.min(...rowRuns.map(metric)):null;
     const cells=summaryMethodColumns.map(column=>{
       const candidate=runForSummaryColumn(column,epoch);
+      const preDecay=preDecayForSummaryColumn(column,epoch);
+      if(!candidate&&!preDecay)return '<td>—</td>';
+      const lockedAdaptive=column.kind==='adaptive'&&(candidate?.policy==='locked_wd_predecay_saturation_v1'||preDecay?.policy==='locked_wd_predecay_saturation_v1');
+      if(lockedAdaptive){
+        const columnBest=Boolean(candidate)&&bestForSummaryColumn(column)===candidate;
+        const rowBest=Boolean(candidate)&&metric(candidate)===rowBestMetric;
+        const postFormatted=candidate?metric(candidate).toFixed(3):null;
+        const postRowMarked=rowBest?`<span class="summary-row-best">${postFormatted}</span>`:postFormatted;
+        const postDisplayed=candidate?(columnBest?`<strong>[POST] ${postRowMarked}</strong>`:`[POST] ${postRowMarked}`):'Unknown';
+        const pdDisplayed=preDecay?metric(preDecay).toFixed(3):'—';
+        const reference=candidate||preDecay;
+        const title=`${column.label}; locked LR ${reference.lr}; WD ${reference.wd}; [POST] ${candidate?metric(candidate).toFixed(3):'not available'}; [PD] ${preDecay?metric(preDecay).toFixed(3):'not available'}; phases are not compared`;
+        return `<td class="${columnBest?'summary-best':''}" title="${escapeAttribute(title)}"><span>${postDisplayed}</span> <span class="phase-separator">|</span> <span class="pd-value">[PD] ${pdDisplayed}</span></td>`;
+      }
       if(!candidate)return '<td>—</td>';
       const columnBest=bestForSummaryColumn(column)===candidate;
       const rowBest=metric(candidate)===rowBestMetric;
