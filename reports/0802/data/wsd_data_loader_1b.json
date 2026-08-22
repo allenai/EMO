@@ -23168,7 +23168,11 @@
       "completedSmallChainIds": [
         "474m-bs32",
         "153m-bs32"
-      ]
+      ],
+      "coordinateStates": {
+        "drwtembwd128-lr1e-3-wd0.3": "held",
+        "drwtembwd128-lr1e-3-wd1.0": "held"
+      }
     },
     {
       "id": "dense-1b-bs256-dr-wt-embwd-grid",
@@ -23230,7 +23234,13 @@
       "completedSmallChainIds": [
         "474m-bs32",
         "153m-bs32"
-      ]
+      ],
+      "coordinateStates": {
+        "drwtembwd256-lr1e-3-wd1.0": "held",
+        "drwtembwd256-lr2e-3-wd1.0": "held",
+        "drwtembwd256-lr1e-3-wd0.3": "held",
+        "drwtembwd256-lr2e-3-wd0.3": "held"
+      }
     },
     {
       "id": "dense-1b-bs512-lr2e-3-conditional-followup",
@@ -23263,7 +23273,12 @@
       "experimentsByCoordinate": {},
       "comparisonPolicy": "within_phase_only",
       "postDecaySourceCount": 3,
-      "reason": "Held unless the terminal BS256 winner uses LR2e-3."
+      "reason": "Held unless the terminal BS256 winner uses LR2e-3.",
+      "coordinateStates": {
+        "conditional-original512-lr2e-3-wd0.333": "conditional_held",
+        "conditional-drwtembwd512-lr2e-3-wd0.333": "conditional_held",
+        "conditional-drwtembwd512-lr2e-3-wd1.0": "conditional_held"
+      }
     }
   ],
   "dense1bPdPostPolicy": {
