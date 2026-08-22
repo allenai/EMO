@@ -23149,7 +23149,7 @@
       "embeddingWeightDecay": "global",
       "status": "held",
       "triggerThreshold": 10,
-      "completedSmallChainsAtLastCheck": 2,
+      "completedSmallChainsAtLastCheck": 3,
       "manifest": "scripts/models/manifests/dense-1b-bs128-dr-wt-embwd-grid.json",
       "baseExperiment": "01M02YR7SFKQ2C9ABV15QK7VF5",
       "automaticTaskRetries": 8,
@@ -23167,6 +23167,7 @@
       "experimentsByCoordinate": {},
       "completedSmallChainIds": [
         "474m-bs32",
+        "474m-bs256-locked-wd",
         "153m-bs32"
       ],
       "coordinateStates": {
@@ -23215,7 +23216,7 @@
       "embeddingWeightDecay": "global",
       "status": "held",
       "triggerThreshold": 10,
-      "completedSmallChainsAtLastCheck": 2,
+      "completedSmallChainsAtLastCheck": 3,
       "manifest": "scripts/models/manifests/dense-1b-bs256-dr-wt-embwd-grid.json",
       "baseExperiment": "01KZD997FY92SE7CQM504CVDJW",
       "automaticTaskRetries": 8,
@@ -23233,6 +23234,7 @@
       "experimentsByCoordinate": {},
       "completedSmallChainIds": [
         "474m-bs32",
+        "474m-bs256-locked-wd",
         "153m-bs32"
       ],
       "coordinateStates": {
