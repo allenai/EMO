@@ -73,6 +73,8 @@ def validate_model(model: str) -> None:
                 "historical boundary": int(record.get("historicalPreDecayThroughEpoch", 0)) >= 3,
                 "pre-decay criterion": record.get("preDecaySaturationCriterion")
                 == "strict_non_improvement",
+                "post-decay criterion": record.get("postDecaySaturationCriterion")
+                == "strict_non_improvement",
                 "active WD lock": all(
                     str(value) == locked_wd for value in record.get("activeWds", [])
                 ),
@@ -96,6 +98,21 @@ def validate_model(model: str) -> None:
                     raise ValueError(f"{model} BS{batch}: invalid decay selection group")
                 if len(selection.get("postDecaySourceEpochs", [])) != 3:
                     raise ValueError(f"{model} BS{batch}: decay selection is not three-way")
+                if selection.get("postDecayDecisionGroup") != "post_decay":
+                    raise ValueError(f"{model} BS{batch}: invalid post-decay decision group")
+                if selection.get("postDecaySaturationCriterion") != "strict_non_improvement":
+                    raise ValueError(f"{model} BS{batch}: invalid post-decay criterion")
+                if selection.get("postDecaySaturated") is not True:
+                    raise ValueError(f"{model} BS{batch}: final selection is not saturated")
+            for epoch, decision in record.get("postDecayContinuations", {}).items():
+                if decision.get("status") != "continue":
+                    raise ValueError(f"{model} BS{batch} E{epoch}: invalid continuation status")
+                if decision.get("postDecayDecisionGroup") != "post_decay":
+                    raise ValueError(f"{model} BS{batch} E{epoch}: mixed continuation group")
+                if decision.get("postDecaySaturated") is not False:
+                    raise ValueError(f"{model} BS{batch} E{epoch}: saturated continuation")
+                if len(decision.get("postDecaySourceEpochs", [])) != 3:
+                    raise ValueError(f"{model} BS{batch} E{epoch}: continuation is not three-way")
         center = str(record["baselineOptimalWd"])
         center_index = ladder.index(center)
         if record.get("initialWds") != ladder[center_index - 1 : center_index + 2]:

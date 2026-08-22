@@ -43,6 +43,7 @@
   "postDecaySourceCount": 3,
   "comparisonPolicy": "within_phase_only",
   "preDecaySaturationCriterion": "strict_non_improvement",
+  "postDecaySaturationCriterion": "strict_non_improvement",
   "historicalPreDecayStartEpoch": 8,
   "historicalPreDecayThroughEpoch": 80
 }

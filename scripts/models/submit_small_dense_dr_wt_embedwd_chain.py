@@ -92,6 +92,14 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--postdecay-policy-resume",
+        action="store_true",
+        help=(
+            "Resume a completed locked-WD chain when its newest post-decay "
+            "result was still improving"
+        ),
+    )
+    parser.add_argument(
         "--locked-wd",
         help="Previously selected WD to retain for --predecay-policy-replacement",
     )
@@ -263,6 +271,7 @@ def build_manifest(
                 "postDecaySourceCount": 3,
                 "comparisonPolicy": "within_phase_only",
                 "preDecaySaturationCriterion": "strict_non_improvement",
+                "postDecaySaturationCriterion": "strict_non_improvement",
                 "historicalPreDecayStartEpoch": HISTORICAL_PREDECAY_START_EPOCH,
                 "historicalPreDecayThroughEpoch": historical_predecay_through_epoch,
                 "runSuffix": "sm0821-lockedwd-predecay",
@@ -306,7 +315,8 @@ def set_revision(task: dict[str, Any], revision: str) -> None:
 
 
 def build_submission(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str, Any], Path]:
-    locked_wd = args.locked_wd if args.predecay_policy_replacement else None
+    locked_policy_mode = args.predecay_policy_replacement or args.postdecay_policy_resume
+    locked_wd = args.locked_wd if locked_policy_mode else None
     manifest, path = build_manifest(
         args.model,
         args.global_sequences,
@@ -324,7 +334,7 @@ def build_submission(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str
     task = spec["tasks"][0]
     runner = (
         "scripts/models/run_small_dense_locked_wd_predecay_chain.py"
-        if args.predecay_policy_replacement
+        if locked_policy_mode
         else "scripts/models/run_small_dense_dr_wt_embedwd_chain.py"
     )
     task["arguments"] = ["python", runner, "--manifest", str(path)]
@@ -354,7 +364,7 @@ def build_submission(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str
     task["propagateFailure"] = False
     task["propagatePreemption"] = False
     spec["retry"] = {"allowedTaskRetries": 8}
-    if args.predecay_policy_replacement:
+    if locked_policy_mode:
         spec["description"] = (
             f"Dense {args.model.upper()} BS{args.global_sequences} DR+WT+EmbedWD "
             f"locked-WD{args.locked_wd} pre-decay saturation chain. Pre-decay and "
@@ -406,6 +416,20 @@ def validate_recovery_target(args: argparse.Namespace) -> None:
             f"registered experiment {record.get('experiment')} does not match "
             f"recovery target {args.resume_experiment}"
         )
+    if args.postdecay_policy_resume:
+        if record.get("policy") != "locked_wd_predecay_saturation_v1":
+            raise RuntimeError("post-decay continuation requires a locked-WD policy chain")
+        if not record.get("needsPolicyResume"):
+            raise RuntimeError("registered chain is not marked for post-decay continuation")
+        if str(args.locked_wd) != str(record.get("lockedWd")):
+            raise RuntimeError(
+                f"resume WD must remain locked at WD{record.get('lockedWd')}"
+            )
+        if int(args.historical_predecay_through_epoch) != int(
+            record.get("historicalPreDecayThroughEpoch")
+        ):
+            raise RuntimeError("resume must preserve the historical pre-decay boundary")
+        return
     if args.predecay_policy_replacement:
         frontiers = record.get("frontiers", {})
         if not frontiers:
@@ -469,6 +493,7 @@ def write_report(
     checkpoint_overrides: dict[str, dict[str, str]] | None = None,
     policy_replacement: bool = False,
     predecay_policy_replacement: bool = False,
+    postdecay_policy_resume: bool = False,
     locked_wd: str | None = None,
 ) -> None:
     path = report_path(model)
@@ -537,7 +562,9 @@ def write_report(
             {
                 "beaker": resume_experiment,
                 "status": (
-                    "stopped-for-predecay-policy-replacement"
+                    "replaced-for-postdecay-continuation"
+                    if postdecay_policy_resume
+                    else "stopped-for-predecay-policy-replacement"
                     if predecay_policy_replacement
                     else "stopped-for-policy-replacement"
                     if policy_replacement
@@ -560,6 +587,11 @@ def write_report(
             "policyTransition": existing.get("policyTransition", {}),
             "preDecayResults": existing.get("preDecayResults", {}),
             "postDecayResults": existing.get("postDecayResults", {}),
+            "postDecayContinuations": existing.get("postDecayContinuations", {}),
+            "supersededPostDecaySelection": existing.get(
+                "supersededPostDecaySelection"
+            ),
+            "excludedPreDecayResults": existing.get("excludedPreDecayResults", {}),
         }
         existing.clear()
         existing.update(record)
@@ -571,7 +603,7 @@ def write_report(
             existing["pathOverrides"] = overrides
         if checkpoint_overrides:
             existing["checkpointOverrides"] = checkpoint_overrides
-        if predecay_policy_replacement:
+        if predecay_policy_replacement or postdecay_policy_resume:
             existing.update(
                 {
                     "policy": "locked_wd_predecay_saturation_v1",
@@ -579,6 +611,7 @@ def write_report(
                     "wdTuningStopped": True,
                     "comparisonPolicy": "within_phase_only",
                     "preDecaySaturationCriterion": "strict_non_improvement",
+                    "postDecaySaturationCriterion": "strict_non_improvement",
                     "postDecaySourceCount": 3,
                     "historicalPreDecayStartEpoch": manifest[
                         "historicalPreDecayStartEpoch"
@@ -595,18 +628,38 @@ def write_report(
             transition = dict(existing.get("policyTransition", {}))
             transition.update(
                 {
-                    "status": "replacement-submitted",
+                    "status": (
+                        "postdecay-continuation-submitted"
+                        if postdecay_policy_resume
+                        else "replacement-submitted"
+                    ),
                     "replacementExperiment": experiment,
                     "lockedWd": str(locked_wd),
                 }
             )
             existing["policyTransition"] = transition
+            existing.pop("needsPolicyResume", None)
+            existing.pop("postDecaySelection", None)
+            existing.pop("selectedPostDecayEpoch", None)
+            existing.pop("selectedPostDecayValidationExact", None)
+            existing.pop("selectedCheckpoint", None)
+            existing.pop("saturatedEpoch", None)
+            existing.pop("stopReason", None)
             existing["reason"] = (
-                f"WD tuning stopped at the last resolved selection WD{locked_wd}. "
-                "Starting at E8, the replacement evaluates exact pre-decay checkpoints "
-                "only at configured legacy WSD frontiers, continues with constant LR one "
-                "frontier at a time until pre-decay non-improvement, then decays the last "
-                "three frontier checkpoints and selects only among post-decay results."
+                (
+                    "The prior pre-decay stop was provisional: its newest post-decay "
+                    "result was still improving. The replacement preserves the locked WD, "
+                    "all exact checkpoints, and both comparison groups, then resumes "
+                    "constant-LR training from the newest pre-decay checkpoint."
+                )
+                if postdecay_policy_resume
+                else (
+                    f"WD tuning stopped at the last resolved selection WD{locked_wd}. "
+                    "Starting at E8, the replacement evaluates exact pre-decay checkpoints "
+                    "only at configured legacy WSD frontiers. A pre-decay non-improvement "
+                    "triggers three post-decay evaluations; the chain stops only if the "
+                    "newest post-decay result also fails to improve."
+                )
             )
         elif policy_replacement:
             existing["reason"] = (
@@ -654,13 +707,22 @@ def main() -> None:
         and not args.output_override
         and not args.policy_replacement
         and not args.predecay_policy_replacement
+        and not args.postdecay_policy_resume
         and not args.checkpoint_override
     ):
         raise SystemExit(
             "--resume-experiment requires a policy replacement, --checkpoint-override, "
             "or at least one --output-override"
         )
-    if args.policy_replacement and args.predecay_policy_replacement:
+    replacement_modes = sum(
+        bool(value)
+        for value in (
+            args.policy_replacement,
+            args.predecay_policy_replacement,
+            args.postdecay_policy_resume,
+        )
+    )
+    if replacement_modes > 1:
         raise SystemExit("choose exactly one policy replacement mode")
     if args.policy_replacement and not args.resume_experiment:
         raise SystemExit("--policy-replacement requires --resume-experiment")
@@ -670,19 +732,22 @@ def main() -> None:
         raise SystemExit("--policy-replacement cannot also be a checkpoint recovery")
     if args.predecay_policy_replacement and not args.resume_experiment:
         raise SystemExit("--predecay-policy-replacement requires --resume-experiment")
-    if args.predecay_policy_replacement and not args.locked_wd:
-        raise SystemExit("--predecay-policy-replacement requires --locked-wd")
-    if args.predecay_policy_replacement and args.historical_predecay_through_epoch is None:
+    if args.postdecay_policy_resume and not args.resume_experiment:
+        raise SystemExit("--postdecay-policy-resume requires --resume-experiment")
+    locked_policy_mode = args.predecay_policy_replacement or args.postdecay_policy_resume
+    if locked_policy_mode and not args.locked_wd:
+        raise SystemExit("locked-WD policy replacement requires --locked-wd")
+    if locked_policy_mode and args.historical_predecay_through_epoch is None:
         raise SystemExit(
-            "--predecay-policy-replacement requires --historical-predecay-through-epoch"
+            "locked-WD policy replacement requires --historical-predecay-through-epoch"
         )
-    if args.locked_wd and not args.predecay_policy_replacement:
-        raise SystemExit("--locked-wd is scoped to --predecay-policy-replacement")
-    if args.historical_predecay_through_epoch is not None and not args.predecay_policy_replacement:
+    if args.locked_wd and not locked_policy_mode:
+        raise SystemExit("--locked-wd is scoped to locked-WD policy replacement")
+    if args.historical_predecay_through_epoch is not None and not locked_policy_mode:
         raise SystemExit(
-            "--historical-predecay-through-epoch is scoped to the pre-decay replacement"
+            "--historical-predecay-through-epoch is scoped to locked-WD policy replacement"
         )
-    if args.predecay_policy_replacement and (args.output_override or args.checkpoint_override):
+    if locked_policy_mode and (args.output_override or args.checkpoint_override):
         raise SystemExit(
             "pre-decay policy replacement must preserve canonical paths and exact lineage"
         )
@@ -693,14 +758,20 @@ def main() -> None:
     validate_recovery_target(args)
     default_name = experiment_name(args.model, args.global_sequences)
     if args.resume_experiment:
-        mode = "predecay" if args.predecay_policy_replacement else "recovery"
+        mode = (
+            "postdecay-resume"
+            if args.postdecay_policy_resume
+            else "predecay"
+            if args.predecay_policy_replacement
+            else "recovery"
+        )
         default_name += f"-{mode}-" + datetime.now(tz=UTC).strftime("%Y%m%d-%H%M")
     name = args.name or default_name
     if args.manifest_only:
         _, path = build_manifest(
             args.model,
             args.global_sequences,
-            locked_wd=args.locked_wd if args.predecay_policy_replacement else None,
+            locked_wd=args.locked_wd if locked_policy_mode else None,
             historical_predecay_through_epoch=args.historical_predecay_through_epoch,
         )
         print(path)
@@ -755,6 +826,7 @@ def main() -> None:
                 checkpoint_overrides=checkpoint_overrides,
                 policy_replacement=args.policy_replacement,
                 predecay_policy_replacement=args.predecay_policy_replacement,
+                postdecay_policy_resume=args.postdecay_policy_resume,
                 locked_wd=args.locked_wd,
             )
         else:

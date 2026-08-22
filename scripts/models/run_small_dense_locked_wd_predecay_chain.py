@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Run one retry-safe locked-WD pre-decay saturation chain.
 
-This is the successor to the adaptive WD controller.  It never changes WD and
-never uses a post-decay score to decide whether constant-LR training should
-continue.  Existing exact pre-decay checkpoints are evaluated only from the
-configured historical start epoch and only at WSD frontier epochs that the
-legacy chain decayed.  New checkpoints are then produced one configured
-frontier at a time with a constant learning rate.  At the first pre-decay
-non-improvement, the last three
-pre-decay checkpoints are independently decayed and the best post-decay result
-is selected only among those three post-decay results.
+This is the successor to the adaptive WD controller.  It never changes WD.
+Existing exact pre-decay checkpoints are evaluated only from the configured
+historical start epoch and only at WSD frontier epochs that the legacy chain
+decayed.  New checkpoints are then produced one configured frontier at a time
+with a constant learning rate.  A pre-decay non-improvement provisionally
+triggers independent decay of the last three pre-decay checkpoints.  The chain
+stops only when the newest post-decay result also fails to improve over the
+previous post-decay result.  If post-decay is still improving, constant-LR
+training resumes from the newest pre-decay checkpoint.
 """
 
 from __future__ import annotations
@@ -27,6 +27,7 @@ import run_small_dense_saturation_chain as common
 
 POLICY = "locked_wd_predecay_saturation_v1"
 POST_DECAY_SOURCE_COUNT = 3
+POST_DECAY_SATURATION_CRITERION = "strict_non_improvement"
 
 
 def atomic_json(path: Path, value: dict[str, Any]) -> None:
@@ -49,6 +50,10 @@ def validate_config(config: dict[str, Any]) -> None:
         raise ValueError("postDecaySourceCount must remain exactly three")
     if config.get("comparisonPolicy") != "within_phase_only":
         raise ValueError("pre-decay and post-decay results must remain separate")
+    if config.get("postDecaySaturationCriterion") != POST_DECAY_SATURATION_CRITERION:
+        raise ValueError(
+            "postDecaySaturationCriterion must be strict_non_improvement"
+        )
     if int(config.get("historicalPreDecayThroughEpoch", 0)) < 3:
         raise ValueError("historical pre-decay boundary must contain at least three epochs")
     start = int(config.get("historicalPreDecayStartEpoch", 0))
@@ -84,6 +89,16 @@ def postdecay_result_path(config: dict[str, Any], epoch: int) -> Path:
 
 def selection_path(config: dict[str, Any]) -> Path:
     return policy_state_dir(config) / "post_decay_selection.json"
+
+
+def postdecay_decision_path(config: dict[str, Any], epoch: int) -> Path:
+    return policy_state_dir(config) / "post_decay_decisions" / f"e{epoch}.json"
+
+
+def superseded_selection_path(config: dict[str, Any], epoch: int) -> Path:
+    return policy_state_dir(config) / "post_decay_decisions" / (
+        f"e{epoch}.superseded-selection.json"
+    )
 
 
 def run_name(config: dict[str, Any], phase: str, epoch: int) -> str:
@@ -481,48 +496,89 @@ def run_postdecay(config: dict[str, Any], epoch: int) -> dict[str, Any]:
     return result
 
 
-def first_saturation(results: dict[int, dict[str, Any]]) -> int | None:
+def latest_predecay_saturation(results: dict[int, dict[str, Any]]) -> int | None:
     epochs = sorted(results)
-    for index in range(2, len(epochs)):
-        previous = results[epochs[index - 1]]
-        current = results[epochs[index]]
-        if Decimal(str(current["validationExact"])) >= Decimal(str(previous["validationExact"])):
-            return epochs[index]
+    if len(epochs) < POST_DECAY_SOURCE_COUNT:
+        return None
+    previous = results[epochs[-2]]
+    current = results[epochs[-1]]
+    if Decimal(str(current["validationExact"])) >= Decimal(
+        str(previous["validationExact"])
+    ):
+        return epochs[-1]
     return None
+
+
+def postdecay_saturated(results: dict[int, dict[str, Any]]) -> bool:
+    epochs = sorted(results)
+    if len(epochs) != POST_DECAY_SOURCE_COUNT:
+        raise ValueError("post-decay saturation requires exactly three results")
+    previous = results[epochs[-2]]
+    current = results[epochs[-1]]
+    return Decimal(str(current["validationExact"])) >= Decimal(
+        str(previous["validationExact"])
+    )
 
 
 def finish_postdecay(
     config: dict[str, Any], saturation_epoch: int, available_epochs: list[int]
-) -> None:
+) -> bool:
     path = selection_path(config)
-    if path.is_file():
-        selection = json.loads(path.read_text())
-    else:
-        eligible = [epoch for epoch in available_epochs if epoch <= saturation_epoch]
-        sources = eligible[-POST_DECAY_SOURCE_COUNT:]
-        if len(sources) != POST_DECAY_SOURCE_COUNT:
-            raise RuntimeError("saturation requires exactly three post-decay sources")
-        results = {epoch: run_postdecay(config, epoch) for epoch in sources}
-        selected_epoch, selected = min(
-            results.items(),
-            key=lambda item: (Decimal(str(item[1]["validationExact"])), item[0]),
+    eligible = [epoch for epoch in available_epochs if epoch <= saturation_epoch]
+    sources = eligible[-POST_DECAY_SOURCE_COUNT:]
+    if len(sources) != POST_DECAY_SOURCE_COUNT:
+        raise RuntimeError("saturation requires exactly three post-decay sources")
+    results = {epoch: run_postdecay(config, epoch) for epoch in sources}
+    saturated = postdecay_saturated(results)
+    decision: dict[str, Any] = {
+        "status": "complete" if saturated else "continue",
+        "policy": POLICY,
+        "lockedWd": str(config["lockedWd"]),
+        "provisionalPreDecaySaturationEpoch": saturation_epoch,
+        "preDecayDecisionGroup": "pre_decay",
+        "postDecayDecisionGroup": "post_decay",
+        "postDecaySaturationCriterion": POST_DECAY_SATURATION_CRITERION,
+        "postDecaySaturated": saturated,
+        "postDecaySourceEpochs": sources,
+        "postDecayValidationExact": {
+            str(epoch): float(result["validationExact"]) for epoch, result in results.items()
+        },
+    }
+    if not saturated:
+        decision["nextPreDecayEpoch"] = next_predecay_frontier(config, saturation_epoch)
+        if path.is_file():
+            previous_selection = json.loads(path.read_text())
+            if previous_selection.get("status") == "complete" and not previous_selection.get(
+                "postDecaySaturated", False
+            ):
+                superseded = superseded_selection_path(config, saturation_epoch)
+                if not superseded.is_file():
+                    atomic_json(superseded, previous_selection)
+        atomic_json(postdecay_decision_path(config, saturation_epoch), decision)
+        atomic_json(path, decision)
+        print(
+            f"SMALL_PREDECAY_POLICY_CONTINUE model={config['model']} "
+            f"bs={config['globalSequences']} provisional_epoch={saturation_epoch} "
+            f"wd={config['lockedWd']} comparison_group=post_decay "
+            f"next_epoch={decision['nextPreDecayEpoch']} "
+            f"json={json.dumps(decision, separators=(',', ':'), sort_keys=True)}",
+            flush=True,
         )
-        selection = {
-            "status": "complete",
-            "policy": POLICY,
-            "lockedWd": str(config["lockedWd"]),
-            "saturationEpoch": saturation_epoch,
-            "preDecayDecisionGroup": "pre_decay",
-            "postDecaySelectionGroup": "post_decay",
-            "postDecaySourceEpochs": sources,
-            "postDecayValidationExact": {
-                str(epoch): float(result["validationExact"]) for epoch, result in results.items()
-            },
-            "selectedPostDecayEpoch": selected_epoch,
-            "selectedPostDecayValidationExact": float(selected["validationExact"]),
-            "selectedCheckpoint": selected["checkpoint"],
-        }
-        atomic_json(path, selection)
+        return False
+    selected_epoch, selected = min(
+        results.items(),
+        key=lambda item: (Decimal(str(item[1]["validationExact"])), item[0]),
+    )
+    selection = {
+        **decision,
+        "saturationEpoch": saturation_epoch,
+        "postDecaySelectionGroup": "post_decay",
+        "selectedPostDecayEpoch": selected_epoch,
+        "selectedPostDecayValidationExact": float(selected["validationExact"]),
+        "selectedCheckpoint": selected["checkpoint"],
+    }
+    atomic_json(postdecay_decision_path(config, saturation_epoch), selection)
+    atomic_json(path, selection)
     print(
         f"SMALL_PREDECAY_POLICY_SELECTED model={config['model']} "
         f"bs={config['globalSequences']} saturation_epoch={selection['saturationEpoch']} "
@@ -531,6 +587,7 @@ def finish_postdecay(
         f"json={json.dumps(selection, separators=(',', ':'), sort_keys=True)}",
         flush=True,
     )
+    return True
 
 
 def run(config: dict[str, Any]) -> None:
@@ -542,20 +599,21 @@ def run(config: dict[str, Any]) -> None:
         results[epoch] = evaluate_checkpoint(
             config, epoch, checkpoint_for_epoch(config, epoch), phase="pre_decay"
         )
-    saturation_epoch = first_saturation(results)
-    while saturation_epoch is None:
+    while True:
+        saturation_epoch = latest_predecay_saturation(results)
+        if saturation_epoch is not None:
+            print(
+                f"SMALL_PREDECAY_POLICY_SATURATED model={config['model']} "
+                f"bs={config['globalSequences']} epoch={saturation_epoch} "
+                f"wd={config['lockedWd']} comparison_group=pre_decay",
+                flush=True,
+            )
+            if finish_postdecay(config, saturation_epoch, existing_epochs):
+                return
         previous_epoch = max(results)
         epoch = next_predecay_frontier(config, previous_epoch)
         results[epoch] = train_next_predecay(config, previous_epoch, epoch)
         existing_epochs.append(epoch)
-        saturation_epoch = first_saturation(results)
-    print(
-        f"SMALL_PREDECAY_POLICY_SATURATED model={config['model']} "
-        f"bs={config['globalSequences']} epoch={saturation_epoch} "
-        f"wd={config['lockedWd']} comparison_group=pre_decay",
-        flush=True,
-    )
-    finish_postdecay(config, saturation_epoch, existing_epochs)
 
 
 def main() -> None:

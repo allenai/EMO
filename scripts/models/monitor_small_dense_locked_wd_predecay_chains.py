@@ -34,6 +34,13 @@ SELECTED = re.compile(
     r"validation=([^ ]+) json=(\{.*\})$",
     re.MULTILINE,
 )
+CONTINUED = re.compile(
+    r"SMALL_PREDECAY_POLICY_CONTINUE model=(153m|474m) bs=([0-9]+) "
+    r"provisional_epoch=([0-9]+) wd=([^ ]+) comparison_group=post_decay "
+    r"next_epoch=([0-9]+) json=(\{.*\})$",
+    re.MULTILINE,
+)
+POST_DECAY_SATURATION_CRITERION = "strict_non_improvement"
 
 
 def parsed_results(
@@ -83,6 +90,16 @@ def retain_scheduled_predecay_results(record: dict[str, Any]) -> None:
         for epoch, result in results.items()
         if is_policy_predecay_frontier(record, int(epoch))
     }
+
+
+def selection_postdecay_saturated(selection: dict[str, Any]) -> bool:
+    sources = [int(epoch) for epoch in selection.get("postDecaySourceEpochs", [])]
+    values = selection.get("postDecayValidationExact") or {}
+    if len(sources) != 3 or any(str(epoch) not in values for epoch in sources):
+        raise RuntimeError("post-decay decision requires exactly three ordered results")
+    previous = float(values[str(sources[-2])])
+    current = float(values[str(sources[-1])])
+    return current >= previous
 
 
 def policy_health(logs: str, record: dict[str, Any], state: str) -> dict[str, Any] | None:
@@ -211,14 +228,16 @@ def update_policy_record(model: str, record: dict[str, Any]) -> str:
     if post:
         record.setdefault("postDecayResults", {}).update(post)
     retain_scheduled_predecay_results(record)
+    record["postDecaySaturationCriterion"] = POST_DECAY_SATURATION_CRITERION
 
-    starts = [
-        match.groups()
+    start_matches = [
+        match
         for match in STAGE_START.finditer(logs)
         if match.group(1) == model and int(match.group(2)) == batch
     ]
-    if starts:
-        _, _, phase, epoch, wd, source, output = starts[-1]
+    last_start_position = start_matches[-1].start() if start_matches else -1
+    if start_matches:
+        _, _, phase, epoch, wd, source, output = start_matches[-1].groups()
         record["activePhase"] = phase
         record["activeEpoch"] = int(epoch)
         record["activeWd"] = wd
@@ -229,46 +248,99 @@ def update_policy_record(model: str, record: dict[str, Any]) -> str:
         record["activePhase"] = "backfill_pre_decay_evaluations"
         record["activeEpoch"] = int(record.get("historicalPreDecayStartEpoch", 8))
 
-    saturations = [
-        (int(epoch), wd)
-        for parsed_model, parsed_batch, epoch, wd in SATURATED.findall(logs)
-        if parsed_model == model and int(parsed_batch) == batch
+    saturation_matches = [
+        match
+        for match in SATURATED.finditer(logs)
+        if match.group(1) == model and int(match.group(2)) == batch
     ]
-    if saturations:
-        record["saturatedEpoch"] = saturations[-1][0]
-        record["activePhase"] = "post_decay_selection"
+    if saturation_matches:
+        provisional_epoch = int(saturation_matches[-1].group(3))
+        record["provisionalPreDecaySaturationEpoch"] = provisional_epoch
+        if last_start_position < saturation_matches[-1].start():
+            record["activePhase"] = "post_decay_selection"
 
-    selections = [
-        json.loads(payload)
-        for parsed_model, parsed_batch, _, _, _, _, payload in SELECTED.findall(logs)
-        if parsed_model == model and int(parsed_batch) == batch
+    continuation_matches = [
+        match
+        for match in CONTINUED.finditer(logs)
+        if match.group(1) == model and int(match.group(2)) == batch
     ]
-    if selections:
-        selection = selections[-1]
-        record.update(
-            {
-                "status": "complete",
-                "postDecaySelection": selection,
-                "selectedPostDecayEpoch": selection["selectedPostDecayEpoch"],
-                "selectedPostDecayValidationExact": selection["selectedPostDecayValidationExact"],
-                "selectedCheckpoint": selection["selectedCheckpoint"],
-                "saturatedEpoch": selection["saturationEpoch"],
-                "activePhase": "done",
-                "activeEpoch": None,
-                "activeWds": [],
-                "stopReason": (
-                    f"Pre-decay validation saturated at E{selection['saturationEpoch']}; "
-                    "the selected checkpoint is the best of the three post-decay results."
-                ),
-            }
-        )
+    if continuation_matches:
+        latest_continuation = continuation_matches[-1]
+        decision = json.loads(latest_continuation.group(6))
+        provisional_epoch = str(int(latest_continuation.group(3)))
+        record.setdefault("postDecayContinuations", {})[provisional_epoch] = decision
+        record["lastPostDecayContinuation"] = decision
+        record.pop("postDecaySelection", None)
+        record.pop("selectedPostDecayEpoch", None)
+        record.pop("selectedPostDecayValidationExact", None)
+        record.pop("selectedCheckpoint", None)
+        record.pop("saturatedEpoch", None)
+        record.pop("stopReason", None)
+        record.pop("needsPolicyResume", None)
+        if last_start_position < latest_continuation.start():
+            record["activePhase"] = "continuing_constant_lr"
+            record["activeEpoch"] = int(latest_continuation.group(5))
+
+    selection_matches = [
+        match
+        for match in SELECTED.finditer(logs)
+        if match.group(1) == model and int(match.group(2)) == batch
+    ]
+    if selection_matches:
+        selection_match = selection_matches[-1]
+        selection = json.loads(selection_match.group(7))
+        postdecay_is_saturated = selection_postdecay_saturated(selection)
+        declared = selection.get("postDecaySaturated")
+        if declared is not None and bool(declared) != postdecay_is_saturated:
+            raise RuntimeError(f"{model} BS{batch}: inconsistent post-decay decision")
+        if not postdecay_is_saturated:
+            record["supersededPostDecaySelection"] = selection
+            record["needsPolicyResume"] = True
+            record["status"] = "resume_required" if state == "complete" else state
+            record["activePhase"] = "policy_resume_required"
+            record["activeEpoch"] = int(selection["saturationEpoch"])
+            record["activeWds"] = []
+            record.pop("postDecaySelection", None)
+            record.pop("selectedPostDecayEpoch", None)
+            record.pop("selectedPostDecayValidationExact", None)
+            record.pop("selectedCheckpoint", None)
+            record.pop("saturatedEpoch", None)
+            record.pop("stopReason", None)
+        else:
+            selection["postDecaySaturated"] = True
+            selection["postDecaySaturationCriterion"] = (
+                POST_DECAY_SATURATION_CRITERION
+            )
+            record.pop("needsPolicyResume", None)
+            record.pop("supersededPostDecaySelection", None)
+            record.update(
+                {
+                    "status": "complete",
+                    "postDecaySelection": selection,
+                    "selectedPostDecayEpoch": selection["selectedPostDecayEpoch"],
+                    "selectedPostDecayValidationExact": selection[
+                        "selectedPostDecayValidationExact"
+                    ],
+                    "selectedCheckpoint": selection["selectedCheckpoint"],
+                    "saturatedEpoch": selection["saturationEpoch"],
+                    "activePhase": "done",
+                    "activeEpoch": None,
+                    "activeWds": [],
+                    "stopReason": (
+                        f"Pre-decay validation provisionally saturated at "
+                        f"E{selection['saturationEpoch']}; the newest of the three "
+                        "post-decay results also failed to improve, and the selected "
+                        "checkpoint is the best within that post-decay group."
+                    ),
+                }
+            )
 
     health = policy_health(logs, record, state)
     if health is not None:
         record["wandbHealth"] = health
         if health["shouldRecover"]:
             record["needsAttention"] = True
-    if state == "failed" and not selections:
+    if state == "failed" and not selection_matches:
         record["needsAttention"] = True
 
     step_values = legacy.TRAIN_STEP.findall(logs)

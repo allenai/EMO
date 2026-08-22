@@ -31,8 +31,10 @@ def config() -> dict:
         "policy": policy.POLICY,
         "lockedWd": "0.1",
         "postDecaySourceCount": 3,
+        "postDecaySaturationCriterion": "strict_non_improvement",
         "comparisonPolicy": "within_phase_only",
-        "historicalPreDecayThroughEpoch": 3,
+        "historicalPreDecayStartEpoch": 1,
+        "historicalPreDecayThroughEpoch": 4,
     }
 
 
@@ -41,13 +43,20 @@ def result(value: float) -> dict:
 
 
 class LockedWdPreDecayPolicyTest(unittest.TestCase):
-    def test_saturation_uses_predecay_sequence_and_requires_three_points(self) -> None:
-        self.assertIsNone(policy.first_saturation({1: result(4.0), 2: result(4.1)}))
-        self.assertEqual(
-            policy.first_saturation(
+    def test_saturation_uses_latest_predecay_frontier_and_requires_three_points(self) -> None:
+        self.assertIsNone(
+            policy.latest_predecay_saturation({1: result(4.0), 2: result(4.1)})
+        )
+        self.assertIsNone(
+            policy.latest_predecay_saturation(
                 {1: result(4.0), 2: result(3.9), 3: result(3.9), 4: result(3.8)}
+            )
+        )
+        self.assertEqual(
+            policy.latest_predecay_saturation(
+                {1: result(4.0), 2: result(3.9), 3: result(3.8), 4: result(3.8)}
             ),
-            3,
+            4,
         )
 
     def test_scheduler_and_evaluation_phases_are_isolated(self) -> None:
@@ -79,17 +88,17 @@ class LockedWdPreDecayPolicyTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             with mock.patch.object(policy, "locked_output", return_value=root):
-                for epoch in (1, 2, 3):
+                for epoch in (1, 2, 4):
                     (root / f"step{policy.adaptive.stable_step(epoch, 64)}").mkdir()
-                self.assertEqual(policy.discover_predecay_epochs(cfg), [1, 2, 3])
+                self.assertEqual(policy.discover_predecay_epochs(cfg), [1, 2, 4])
                 (root / f"step{policy.adaptive.stable_step(2, 64)}").rmdir()
-                with self.assertRaisesRegex(RuntimeError, "missing epochs"):
+                with self.assertRaisesRegex(RuntimeError, "missing scheduled frontiers"):
                     policy.discover_predecay_epochs(cfg)
 
     def test_future_predecay_checkpoints_use_separate_constant_output(self) -> None:
         cfg = config()
-        self.assertEqual(policy.checkpoint_for_epoch(cfg, 3).parent, policy.locked_output(cfg))
-        self.assertEqual(policy.checkpoint_for_epoch(cfg, 4).parent, policy.constant_output(cfg))
+        self.assertEqual(policy.checkpoint_for_epoch(cfg, 4).parent, policy.locked_output(cfg))
+        self.assertEqual(policy.checkpoint_for_epoch(cfg, 8).parent, policy.constant_output(cfg))
 
     def test_postdecay_selects_last_three_using_postdecay_scores(self) -> None:
         cfg = config()
@@ -110,12 +119,41 @@ class LockedWdPreDecayPolicyTest(unittest.TestCase):
                 mock.patch.object(policy, "policy_state_dir", return_value=root),
                 mock.patch.object(policy, "run_postdecay", side_effect=fake_postdecay),
             ):
-                policy.finish_postdecay(cfg, 6, [1, 2, 3, 4, 5, 6])
+                stopped = policy.finish_postdecay(cfg, 6, [1, 2, 3, 4, 5, 6])
                 selection = json.loads(policy.selection_path(cfg).read_text())
+        self.assertTrue(stopped)
         self.assertEqual(selection["postDecaySourceEpochs"], [4, 5, 6])
         self.assertEqual(selection["selectedPostDecayEpoch"], 5)
         self.assertEqual(selection["preDecayDecisionGroup"], "pre_decay")
         self.assertEqual(selection["postDecaySelectionGroup"], "post_decay")
+        self.assertTrue(selection["postDecaySaturated"])
+
+    def test_postdecay_improvement_resumes_constant_lr(self) -> None:
+        cfg = config()
+        values = {4: 3.4, 5: 3.3, 6: 3.2}
+
+        def fake_postdecay(_: dict, epoch: int) -> dict:
+            return {
+                "epoch": epoch,
+                "phase": "post_decay",
+                "comparisonGroup": "post_decay",
+                "validationExact": values[epoch],
+                "checkpoint": f"/post/e{epoch}",
+            }
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with (
+                mock.patch.object(policy, "policy_state_dir", return_value=root),
+                mock.patch.object(policy, "run_postdecay", side_effect=fake_postdecay),
+            ):
+                stopped = policy.finish_postdecay(cfg, 6, [1, 2, 3, 4, 5, 6])
+                decision = json.loads(policy.selection_path(cfg).read_text())
+        self.assertFalse(stopped)
+        self.assertEqual(decision["status"], "continue")
+        self.assertFalse(decision["postDecaySaturated"])
+        self.assertEqual(decision["postDecaySourceEpochs"], [4, 5, 6])
+        self.assertEqual(decision["nextPreDecayEpoch"], 8)
 
 
 if __name__ == "__main__":
