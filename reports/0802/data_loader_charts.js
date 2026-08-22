@@ -52,6 +52,18 @@
   });
   const formatMetric = (value, digits = 3) =>
     finite(value) ? Number(value).toFixed(digits) : "—";
+  const validationPair = (result) => {
+    if (!result || (!result.preDecay && !result.postDecay)) {
+      return finite(result && result.validation) ? formatMetric(result.validation) : "—";
+    }
+    const post = finite(result.postDecay && result.postDecay.validation)
+      ? formatMetric(result.postDecay.validation)
+      : "Unknown";
+    const pre = finite(result.preDecay && result.preDecay.validation)
+      ? formatMetric(result.preDecay.validation)
+      : "Unknown";
+    return `${post} [POST] | ${pre} [PD]`;
+  };
   const healthMap = Object.assign(
     {},
     batchData.healthAudit && batchData.healthAudit.unhealthy,
@@ -405,7 +417,11 @@
         else if (activeStatuses.has(candidate.status)) classes.push("active");
         else if (failedStatuses.has(candidate.status)) classes.push("failed");
         const attempts = candidate.attempts > 1 ? ` · ${candidate.attempts} attempts` : "";
-        return `<span class="${classes.join(" ")}">(LR ${candidate.lr}, WD ${candidate.wd}) · ${candidate.status || "planned"}${value !== null ? ` · CE ${formatMetric(value)}` : ""}${attempts}</span>`;
+        const paired = candidate.result.preDecay || candidate.result.postDecay;
+        const metricText = paired
+          ? ` · CE ${validationPair(candidate.result)}`
+          : (value !== null ? ` · CE ${formatMetric(value)}` : "");
+        return `<span class="${classes.join(" ")}">(LR ${candidate.lr}, WD ${candidate.wd}) · ${candidate.status || "planned"}${metricText}${attempts}</span>`;
       }).join("");
       const selection = winner
         ? `LR ${winner.lr}, WD ${winner.wd} · CE ${formatMetric(winner.result.validation)}`
@@ -470,18 +486,22 @@
       return `E${stage.epoch}: ${stage.status || "planned"}${metrics.length ? ` (${metrics.join(", ")})` : ""}`;
     }).join(" · ");
     const experiment = run.experiment || run.beaker;
+    const coordinateExperiments = Object.values(run.experimentsByCoordinate || {});
     const tr = document.createElement("tr");
     if (["submitted", "scheduled", "running"].includes(run.status)) tr.className = "run-active";
     if (["failed", "canceled"].includes(run.status)) tr.className = "run-failed";
-    const variant = run.decayEmbeddings ? "DR+WT+EmbedWD" : "DR+WT";
+    const variant = run.variant || (run.decayEmbeddings ? "DR+WT+EmbedWD" : "DR+WT");
     const gridLrs = [...new Set((run.coordinates || []).map((coordinate) => coordinate.lr))].join(", ");
     const gridWds = [...new Set((run.coordinates || []).map((coordinate) => coordinate.wd))].join(", ");
     const lr = run.lr || gridLrs || "—";
     const wd = run.wd || gridWds || "—";
-    const trigger = run.status === "planned" && finite(run.triggerThreshold)
+    const trigger = !coordinateExperiments.length && finite(run.triggerThreshold)
       ? `waiting for ${run.completedSmallChainsAtLastCheck || 0}/${run.triggerThreshold} small chains`
-      : "";
-    tr.innerHTML = `<td>BS${run.batchSequences}</td><td>${variant}</td><td>${lr}</td><td>${wd}</td><td>${run.status}</td><td>${run.currentEpoch ? `E${run.currentEpoch}` : (run.status === "planned" ? "waiting" : "done")}</td><td>${stageStates || trigger || "—"}</td><td>${experiment ? `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${experiment}">${experiment}</a>` : "—"}</td>`;
+      : (run.trigger ? run.reason : "");
+    const experimentLinks = coordinateExperiments.length
+      ? coordinateExperiments.map((id) => `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${id}">${id}</a>`).join("<br>")
+      : (experiment ? `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${experiment}">${experiment}</a>` : "—");
+    tr.innerHTML = `<td>BS${run.batchSequences}</td><td>${variant}</td><td>${lr}</td><td>${wd}</td><td>${run.status}</td><td>${run.currentEpoch ? `E${run.currentEpoch}` : (["planned", "held", "conditional_held"].includes(run.status) ? "waiting" : "done")}</td><td>${stageStates || trigger || "—"}</td><td>${experimentLinks}</td>`;
     sequentialBody.appendChild(tr);
   }
 
@@ -499,14 +519,15 @@
       const tr = document.createElement("tr");
       if (["running", "scheduled", "submitted"].includes(status)) tr.className = "run-active";
       if (["failed", "canceled"].includes(status)) tr.className = "run-failed";
-      const wandb = (result && result.wandb) || (Number(run.activeEpoch) === epoch ? run.wandb : null);
+      const wandb = (result && (result.wandb || result.postDecay?.wandb || result.preDecay?.wandb)) || (Number(run.activeEpoch) === epoch ? run.wandb : null);
       const beaker = (result && (result.beaker || result.experiment)) || run.beaker || run.experiment;
       const gap = result && (finite(result.gap)
         ? Number(result.gap)
         : (finite(result.train) && finite(result.validation)
           ? Number(result.validation) - Number(result.train)
           : null));
-      tr.innerHTML = `<td>${methodByKey[run.method].label}</td><td>${run.batchSequences}</td><td>E${formatEpoch(epoch)}</td><td>${run.lr}</td><td>${run.wd}</td><td>${status || "planned"}</td><td>${formatMetric(result && result.train)}</td><td>${formatMetric(result && result.validation)}</td><td>${formatMetric(gap, 4)}</td><td>${wandb ? `<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${wandb}">${wandb}</a>` : "—"}</td><td>${beaker ? `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${beaker}">${beaker}</a>` : "—"}</td>`;
+      const label = (methodByKey[run.method] && methodByKey[run.method].label) || run.label || run.method;
+      tr.innerHTML = `<td>${label}</td><td>${run.batchSequences}</td><td>E${formatEpoch(epoch)}</td><td>${run.lr}</td><td>${run.wd}</td><td>${status || "planned"}</td><td>${formatMetric(result && result.train)}</td><td>${validationPair(result)}</td><td>${formatMetric(gap, 4)}</td><td>${wandb ? `<a href="https://wandb.ai/ai2-llm/sewonm-icsl/runs/${wandb}">${wandb}</a>` : "—"}</td><td>${beaker ? `<a href="https://beaker.org/orgs/ai2/workspaces/flex2/work/${beaker}">${beaker}</a>` : "—"}</td>`;
       newRunsBody.appendChild(tr);
     }
   }

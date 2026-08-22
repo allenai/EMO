@@ -1,0 +1,34 @@
+{
+  "globalSequences": 512,
+  "nprocPerNode": 8,
+  "rankMicrobatchSequences": 8,
+  "gradientAccumulation": 8,
+  "warmupSteps": 48,
+  "coordinates": [
+    {
+      "lr": "2e-3",
+      "wd": "0.333",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_original_lr2e-3_wd0.333_constant_lr_from_e8",
+      "historicalPreDecay": [
+        {
+          "epoch": 8,
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e8_lr2e-3_wd0.333_warmup48_e8_lr2_wd0333_r30/step3432",
+          "experiment": "01KZGV0B3Q7ESNHR83KVQJRRE8"
+        }
+      ]
+    }
+  ],
+  "initialTargets": [1, 2, 4],
+  "epochIncrement": 4,
+  "maxEpoch": 256,
+  "outputRoot": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b",
+  "runSuffix": "conditional-bs512-original-pdpost",
+  "variant": "Original",
+  "policy": "dense_1b_predecay_postdecay_saturation_v1",
+  "comparisonPolicy": "within_phase_only",
+  "postDecaySourceCount": 3,
+  "postDecaySaturationCriterion": "strict_non_improvement",
+  "dataOrder": "ordinary_shuffled",
+  "weightTying": false,
+  "decayEmbeddings": false
+}

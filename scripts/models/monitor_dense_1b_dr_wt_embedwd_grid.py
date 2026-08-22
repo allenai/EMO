@@ -1,48 +1,59 @@
 #!/usr/bin/env python3
-"""Refresh the deferred Dense-1B BS128/256 DR+WT+EmbedWD grid chains."""
+"""Refresh Dense-1B PD/POST coordinates and enforce cross-WD pruning."""
 
 from __future__ import annotations
 
+import argparse
 import json
 import math
 import re
 import subprocess
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 REPORT_PATH = Path("reports/0802/data/wsd_data_loader_1b.json")
 REPORT_JS_PATH = REPORT_PATH.with_suffix(".js")
+POLICY = "dense_1b_predecay_postdecay_saturation_v1"
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
-STAGE_RESULT = re.compile(
-    r"DENSE1B_DRWTEMBWD_GRID_STAGE_RESULT bs=([0-9]+) epoch=([0-9]+) "
-    r"lr=([^ ]+) wd=([^ ]+) json=(\{.*\})$",
+RESULT = re.compile(
+    r"DENSE1B_PDPOST_RESULT bs=([0-9]+) lr=([^ ]+) wd=([^ ]+) "
+    r"phase=(pre_decay|post_decay) epoch=([0-9]+) json=(\{.*\})$",
     re.MULTILINE,
-)
-FRONTIER_RESULT = re.compile(
-    r"DENSE1B_DRWTEMBWD_GRID_FRONTIER_RESULT bs=([0-9]+) epoch=([0-9]+) "
-    r"json=(\{.*\})$",
-    re.MULTILINE,
-)
-FRONTIER_START = re.compile(
-    r"DENSE1B_DRWTEMBWD_GRID_FRONTIER_START bs=([0-9]+) epoch=([0-9]+) candidates=([^\s]+)"
 )
 STAGE_START = re.compile(
-    r"DENSE1B_DRWTEMBWD_GRID_STAGE_START bs=([0-9]+) epoch=([0-9]+) "
-    r"lr=([^ ]+) wd=([^ ]+) previous_epoch=([0-9]+) output=([^\s]+)"
+    r"DENSE1B_PDPOST_STAGE_START bs=([0-9]+) lr=([^ ]+) wd=([^ ]+) "
+    r"phase=([^ ]+) epoch=([0-9]+)(?: previous_epoch=([0-9]+))? "
+    r"source=([^ ]+) output=([^\s]+)"
 )
-SATURATED = re.compile(
-    r"DENSE1B_DRWTEMBWD_GRID_SATURATED bs=([0-9]+) epoch=([0-9]+) "
-    r"lr=([^ ]+) wd=([^ ]+) reason=([^\s]+)"
+TERMINAL = re.compile(
+    r"DENSE1B_PDPOST_(SELECTED|PRUNED) bs=([0-9]+) lr=([^ ]+) wd=([^ ]+) "
+    r"trigger_epoch=([0-9]+) selected_epoch=([0-9]+) validation=([^ ]+) json=(\{.*\})$",
+    re.MULTILINE,
+)
+CONTINUE = re.compile(
+    r"DENSE1B_PDPOST_CONTINUE bs=([0-9]+) lr=([^ ]+) wd=([^ ]+) "
+    r"trigger_epoch=([0-9]+).*?json=(\{.*\})$",
+    re.MULTILINE,
 )
 TRAIN_STEP = re.compile(r"\[step=([0-9,]+)/([0-9,]+),epoch=")
 TRAIN_LOSS = re.compile(r"\btrain/CE loss=([^\s]+)")
-WANDB_RUN = re.compile(r"wandb:\s+(?:setting up run |.*?/runs/)([a-z0-9]{8})")
+WANDB_RUN = re.compile(r"https://wandb\.ai/[^\s]+/runs/([a-zA-Z0-9_-]+)")
+TERMINAL_STATES = {"complete", "pruned", "not_required"}
 
 
 def run(arguments: list[str]) -> str:
     completed = subprocess.run(arguments, check=True, capture_output=True, text=True)
     return completed.stdout
+
+
+def write_report(report: dict[str, Any]) -> None:
+    report["updated"] = datetime.now(tz=UTC).date().isoformat()
+    REPORT_PATH.write_text(json.dumps(report, indent=2) + "\n")
+    REPORT_JS_PATH.write_text(
+        "window.ICSL_DATA_LOADER_DATA=" + json.dumps(report, separators=(",", ":")) + ";\n"
+    )
 
 
 def inspect_experiment(experiment: str) -> dict[str, Any]:
@@ -67,73 +78,60 @@ def experiment_state(experiment: dict[str, Any]) -> str:
         return "scheduled"
     if any("finalized" in status and status.get("exitCode") == 0 for status in statuses):
         return "complete"
-    if all(
-        "finalized" in status or "canceled" in status or "cancelled" in status
-        for status in statuses
-    ):
+    if all(terminal.intersection(status) for status in statuses):
         return "failed"
     return "submitted"
 
 
-def write_report(report: dict[str, Any]) -> None:
-    report["updated"] = datetime.now(tz=UTC).date().isoformat()
-    REPORT_PATH.write_text(json.dumps(report, indent=2) + "\n")
-    REPORT_JS_PATH.write_text(
-        "window.ICSL_DATA_LOADER_DATA=" + json.dumps(report, separators=(",", ":")) + ";\n"
-    )
+def coordinate_records(report: dict[str, Any]) -> list[dict[str, Any]]:
+    return [record for record in report.get("runs", []) if record.get("policy") == POLICY]
 
 
-def coordinate_run(report: dict[str, Any], batch: int, lr: str, wd: str) -> dict[str, Any]:
-    identifier = f"drwtembwd{batch}-lr{lr}-wd{wd}"
-    matches = [record for record in report.get("runs", []) if record.get("id") == identifier]
-    if len(matches) != 1:
-        raise RuntimeError(f"expected one registered coordinate {identifier}, found {len(matches)}")
-    return matches[0]
-
-
-def active_health(logs: str, chain: dict[str, Any], state: str) -> dict[str, Any] | None:
+def parse_health(record: dict[str, Any], logs: str, state: str) -> dict[str, Any] | None:
     starts = list(STAGE_START.finditer(logs))
     if not starts:
         return None
-    batch, epoch, lr, wd, previous_epoch, output = starts[-1].groups()
+    _batch, lr, wd, phase, epoch, previous, source, output = starts[-1].groups()
     segment = logs[starts[-1].start() :]
     steps = [
         (int(step.replace(",", "")), int(total.replace(",", "")))
         for step, total in TRAIN_STEP.findall(segment)
     ]
-    raw_losses = TRAIN_LOSS.findall(segment)
-    finite_losses: list[float] = []
     nonfinite: list[str] = []
-    for raw in raw_losses:
+    finite: list[float] = []
+    for raw in TRAIN_LOSS.findall(segment):
         try:
             value = float(raw)
         except ValueError:
             nonfinite.append(raw)
             continue
         if math.isfinite(value):
-            finite_losses.append(value)
+            finite.append(value)
         else:
             nonfinite.append(raw)
-    run_ids = WANDB_RUN.findall(segment)
-    critical = ["nonfinite-training-loss"] if nonfinite else []
-    expected = f"/bs{batch}_dr_wt_embwd_lr{lr}_wd{wd}"
-    if not output.endswith(expected):
+    critical: list[str] = []
+    if nonfinite:
+        critical.append("nonfinite-training-loss")
+    expected = str(record["output"])
+    if "eval" not in phase and output != expected and not output.startswith(expected + "/.pdpost_policy"):
         critical.append("stage-output-path-mismatch")
-    if int(previous_epoch) > 0 and "Loading checkpoint from '" not in segment:
+    if previous and int(previous) > 0 and "Loading checkpoint from '" not in segment:
         critical.append("missing-resume-checkpoint-load")
+    run_ids = WANDB_RUN.findall(segment)
     return {
         "status": "critical" if critical else "healthy" if steps else "pending",
         "checkedAt": datetime.now(tz=UTC).isoformat(),
         "run": run_ids[-1] if run_ids else None,
-        "url": (f"https://wandb.ai/ai2-llm/sewonm-icsl/runs/{run_ids[-1]}" if run_ids else None),
-        "batchSequences": int(batch),
+        "url": f"https://wandb.ai/ai2-llm/sewonm-icsl/runs/{run_ids[-1]}" if run_ids else None,
+        "phase": phase,
         "epoch": int(epoch),
         "lr": lr,
         "wd": wd,
+        "source": source,
         "output": output,
         "latestStep": steps[-1][0] if steps else None,
         "totalSteps": steps[-1][1] if steps else None,
-        "latestTrain": finite_losses[-1] if finite_losses else None,
+        "latestTrain": finite[-1] if finite else None,
         "nonfiniteLosses": nonfinite[:5],
         "criticalSignals": critical,
         "shouldRecover": bool(critical),
@@ -141,27 +139,26 @@ def active_health(logs: str, chain: dict[str, Any], state: str) -> dict[str, Any
     }
 
 
-def refresh_chain(report: dict[str, Any], chain: dict[str, Any]) -> str:
-    experiment_id = chain.get("experiment")
-    if not experiment_id:
-        return (
-            f"1b BS{chain['batchSequences']} {chain.get('status', 'planned')}; trigger="
-            f"{chain.get('completedSmallChainsAtLastCheck', 0)}/{chain.get('triggerThreshold', 5)}"
-        )
-    batch = int(chain["batchSequences"])
-    inspected = inspect_experiment(str(experiment_id))
+def refresh_coordinate(record: dict[str, Any]) -> str:
+    experiment = record.get("experiment")
+    if not experiment:
+        return f"{record['id']}: {record.get('status', 'planned')}"
+    inspected = inspect_experiment(str(experiment))
     state = experiment_state(inspected)
     jobs = [job for job in inspected.get("jobs") or [] if job.get("id")]
-    chain["status"] = state
-    chain["beakerStatus"] = state
+    record["beakerStatus"] = state
     if jobs:
-        chain["job"] = jobs[-1]["id"]
-        chain["jobs"] = [job["id"] for job in jobs]
+        record["job"] = jobs[-1]["id"]
+        record["jobs"] = [job["id"] for job in jobs]
     logs = ""
     if state in {"running", "complete", "failed"}:
-        logs = ANSI.sub("", run(["beaker", "experiment", "logs", str(experiment_id)]))
-    for parsed_batch, epoch, lr, wd, payload in STAGE_RESULT.findall(logs):
-        if int(parsed_batch) != batch:
+        logs = ANSI.sub("", run(["beaker", "experiment", "logs", str(experiment)]))
+    for batch, lr, wd, phase, epoch, payload in RESULT.findall(logs):
+        if (
+            int(batch) != int(record["batchSequences"])
+            or lr != str(record["lr"])
+            or wd != str(record["wd"])
+        ):
             continue
         result = json.loads(payload)
         result.update(
@@ -170,127 +167,263 @@ def refresh_chain(report: dict[str, Any], chain: dict[str, Any]) -> str:
                 "epoch": int(epoch),
                 "lr": lr,
                 "wd": wd,
-                "experiment": experiment_id,
-                "beaker": experiment_id,
-                "job": chain.get("job"),
-                "revision": chain.get("revision"),
+                "experiment": experiment,
+                "job": record.get("job"),
+                "revision": record.get("revision"),
             }
         )
-        coordinate = coordinate_run(report, batch, lr, wd)
-        coordinate.setdefault("results", {})[str(int(epoch))] = result
-        coordinate.setdefault("attemptedEpochs", [])
-        if int(epoch) not in coordinate["attemptedEpochs"]:
-            coordinate["attemptedEpochs"].append(int(epoch))
-    for parsed_batch, epoch, payload in FRONTIER_RESULT.findall(logs):
-        if int(parsed_batch) != batch:
-            continue
-        frontier = json.loads(payload)
-        frontier.update(
-            {
-                "status": "complete",
-                "experiment": experiment_id,
-                "beaker": experiment_id,
-                "job": chain.get("job"),
-            }
+        target = record.setdefault(
+            "preDecayResults" if phase == "pre_decay" else "postDecayResults", {}
         )
-        chain.setdefault("frontiers", {})[str(int(epoch))] = frontier
-        targets = {int(value) for value in report.get("targetEpochs", [])}
-        targets.add(int(epoch))
-        report["targetEpochs"] = sorted(targets)
+        target[str(int(epoch))] = result
+        predecay = record.get("preDecayResults", {}).get(str(int(epoch)))
+        postdecay = record.get("postDecayResults", {}).get(str(int(epoch)))
+        combined: dict[str, Any] = {
+            "status": (postdecay or predecay or {}).get("status", "complete"),
+            "preDecay": predecay,
+            "postDecay": postdecay,
+        }
+        # Backward-compatible summary fields intentionally expose POST only.
+        # This prevents legacy report selectors from comparing PD with POST.
+        if postdecay:
+            for key in ("validation", "validationExact", "train", "gap", "wandb"):
+                if key in postdecay:
+                    combined[key] = postdecay[key]
+        record.setdefault("results", {})[str(int(epoch))] = combined
     starts = [
-        (int(epoch), candidates)
-        for parsed_batch, epoch, candidates in FRONTIER_START.findall(logs)
-        if int(parsed_batch) == batch
-    ]
-    stages = [
-        (int(epoch), lr, wd)
-        for parsed_batch, epoch, lr, wd, _, _ in STAGE_START.findall(logs)
-        if int(parsed_batch) == batch
+        match.groups()
+        for match in STAGE_START.finditer(logs)
+        if int(match.group(1)) == int(record["batchSequences"])
+        and match.group(2) == str(record["lr"])
+        and match.group(3) == str(record["wd"])
     ]
     if starts:
-        chain["activeEpoch"] = starts[-1][0]
-    if stages:
-        chain["activeCoordinate"] = {"lr": stages[-1][1], "wd": stages[-1][2]}
-        coordinate = coordinate_run(report, batch, stages[-1][1], stages[-1][2])
-        coordinate["activeEpoch"] = stages[-1][0]
-        coordinate["status"] = state
-        run_ids = WANDB_RUN.findall(logs[logs.rfind("DENSE1B_DRWTEMBWD_GRID_STAGE_START") :])
-        if run_ids:
-            coordinate["wandb"] = run_ids[-1]
-    health = active_health(logs, chain, state)
-    if health:
-        chain["wandbHealth"] = health
-        if health["shouldRecover"]:
-            chain["needsAttention"] = True
-    saturated = [
-        (int(epoch), lr, wd, reason)
-        for parsed_batch, epoch, lr, wd, reason in SATURATED.findall(logs)
-        if int(parsed_batch) == batch
-    ]
-    if saturated:
-        epoch, lr, wd, reason = saturated[-1]
-        chain.update(
+        _, _, _, phase, epoch, _, source, output = starts[-1]
+        record.update(
             {
-                "status": "complete",
-                "beakerStatus": state,
-                "activeEpoch": None,
-                "activeCoordinate": None,
-                "saturatedEpoch": epoch,
-                "selectedLr": lr,
-                "selectedWd": wd,
-                "stopReason": reason,
-                "reason": (
-                    f"The persistent BS{batch} grid stopped at E{epoch}; every requested "
-                    "coordinate retained its own canonical output directory."
-                ),
+                "activePhase": phase,
+                "activeEpoch": int(epoch),
+                "activeSource": source,
+                "activeOutput": output,
             }
         )
-        for item in chain["coordinates"]:
-            coordinate = coordinate_run(report, batch, str(item["lr"]), str(item["wd"]))
-            coordinate["status"] = "complete"
-            coordinate["activeEpoch"] = None
-    elif state == "failed":
-        chain["needsAttention"] = True
-        chain["reason"] = (
-            "Beaker exhausted eight automatic task retries. Atomic stage/frontier files "
-            "preserve completed work for exact recovery."
+    for kind, batch, lr, wd, trigger, selected, validation, payload in TERMINAL.findall(logs):
+        if (
+            int(batch) != int(record["batchSequences"])
+            or lr != str(record["lr"])
+            or wd != str(record["wd"])
+        ):
+            continue
+        selection = json.loads(payload)
+        record.update(
+            {
+                "status": "pruned" if kind == "PRUNED" else "complete",
+                "activePhase": None,
+                "activeEpoch": None,
+                "postDecaySelection": selection,
+                "selectedPostDecayEpoch": int(selected),
+                "selectedPostDecayValidationExact": float(validation),
+            }
         )
+    continuations = [
+        json.loads(payload)
+        for batch, lr, wd, _, payload in CONTINUE.findall(logs)
+        if int(batch) == int(record["batchSequences"])
+        and lr == str(record["lr"])
+        and wd == str(record["wd"])
+    ]
+    if continuations:
+        record["latestPostDecayContinuation"] = continuations[-1]
+    if record.get("status") not in {"complete", "pruned"}:
+        record["status"] = state
+    health = parse_health(record, logs, state)
+    if health:
+        record["wandbHealth"] = health
+        if health["shouldRecover"]:
+            record["needsAttention"] = True
     step_values = TRAIN_STEP.findall(logs)
-    if step_values and chain.get("activeEpoch") is not None:
+    if step_values and record.get("activeEpoch") is not None:
         step, total = step_values[-1]
         step_value = int(step.replace(",", ""))
         total_value = int(total.replace(",", ""))
-        chain["progress"] = {
+        record["progress"] = {
             "step": step_value,
             "totalSteps": total_value,
             "percent": round(100 * step_value / total_value, 1),
         }
-    elif chain.get("activeEpoch") is None:
-        chain.pop("progress", None)
-    progress = chain.get("progress") or {}
-    detail = (
-        f" {progress['percent']:g}% ({progress['step']}/{progress['totalSteps']})"
-        if progress
-        else ""
-    )
-    active = chain.get("activeCoordinate") or {}
-    health_detail = chain.get("wandbHealth", {}).get("status", "pending")
+    else:
+        record.pop("progress", None)
+    if state == "failed" and record.get("status") not in {"complete", "pruned"}:
+        record["needsAttention"] = True
+        record["reason"] = "Beaker exhausted retries before a terminal PD/POST decision."
     return (
-        f"1b BS{batch} {chain['status']}; frontiers="
-        f"{sorted(int(value) for value in chain.get('frontiers', {})) or 'none'}; "
-        f"current=E{chain.get('activeEpoch') or 'done'} LR{active.get('lr', '—')} "
-        f"WD{active.get('wd', '—')}{detail}; wandb={health_detail}; {experiment_id}"
+        f"{record['id']}: {record['status']} phase={record.get('activePhase') or 'done'} "
+        f"E{record.get('activeEpoch') or '—'} PD={sorted(map(int, record.get('preDecayResults', {})))} "
+        f"POST={sorted(map(int, record.get('postDecayResults', {})))} {experiment}"
     )
+
+
+def wd_prune_requests(report: dict[str, Any]) -> list[dict[str, Any]]:
+    requests: list[dict[str, Any]] = []
+    active_statuses = {"submitted", "scheduled", "running"}
+    records = coordinate_records(report)
+    groups: dict[tuple[int, str, str], list[dict[str, Any]]] = {}
+    for record in records:
+        if record.get("variant") != "DR+WT+EmbedWD":
+            continue
+        groups.setdefault(
+            (int(record["batchSequences"]), str(record["lr"]), str(record["variant"])), []
+        ).append(record)
+    for (batch, lr, _), group in groups.items():
+        if len(group) != 2:
+            continue
+        lower, higher = sorted(group, key=lambda item: Decimal(str(item["wd"])))
+        if Decimal(str(higher["wd"])) != Decimal("1.0"):
+            continue
+        low_results = lower.get("preDecayResults", {})
+        high_results = higher.get("preDecayResults", {})
+        common_epochs = sorted(set(low_results) & set(high_results), key=int)
+        winning = [
+            epoch
+            for epoch in common_epochs
+            if Decimal(str(high_results[epoch]["validationExact"]))
+            < Decimal(str(low_results[epoch]["validationExact"]))
+        ]
+        if not winning:
+            continue
+        epoch = int(winning[0])
+        evidence = {
+            "batchSequences": batch,
+            "lr": lr,
+            "epoch": epoch,
+            "lowerWd": str(lower["wd"]),
+            "higherWd": str(higher["wd"]),
+            "lowerValidationExact": float(low_results[str(epoch)]["validationExact"]),
+            "higherValidationExact": float(high_results[str(epoch)]["validationExact"]),
+            "criterion": "strict_higher_wd_win_same_bs_lr_epoch",
+        }
+        lower["higherWdWinEvidence"] = evidence
+        if len(low_results) < 3:
+            lower["pruneDeferredReason"] = "fewer_than_three_completed_pd_sources"
+            continue
+        if lower.get("status") not in active_statuses:
+            continue
+        if str(lower.get("activePhase", "")).startswith("post_decay"):
+            lower["pruneDeferredReason"] = "already_finalizing_post_decay"
+            continue
+        lower["pruneRequested"] = evidence
+        lower.pop("pruneDeferredReason", None)
+        requests.append(lower)
+    return requests
+
+
+def aggregate_chain(report: dict[str, Any], chain: dict[str, Any]) -> None:
+    if chain["id"] == "dense-1b-bs512-lr2e-3-conditional-followup":
+        identifiers = {
+            record["id"]
+            for record in coordinate_records(report)
+            if int(record["batchSequences"]) == 512
+        }
+    else:
+        identifiers = {
+            record["id"]
+            for record in coordinate_records(report)
+            if int(record["batchSequences"]) == int(chain["batchSequences"])
+            and record.get("method") != "conditional512"
+        }
+    records = [record for record in coordinate_records(report) if record["id"] in identifiers]
+    if not records:
+        return
+    chain["coordinateStates"] = {record["id"]: record.get("status") for record in records}
+    if all(record.get("status") in TERMINAL_STATES for record in records):
+        invalid_complete = [
+            record["id"]
+            for record in records
+            if record.get("status") == "complete"
+            and (record.get("postDecaySelection") or {}).get("postDecaySaturated") is not True
+        ]
+        if invalid_complete:
+            chain["status"] = "failed"
+            chain["reason"] = (
+                "Coordinates marked complete without confirmed POST saturation: "
+                + ", ".join(invalid_complete)
+            )
+            return
+        selections = [
+            record
+            for record in records
+            if record.get("postDecaySelection")
+            and record.get("selectedPostDecayValidationExact") is not None
+        ]
+        if not selections and all(record.get("status") == "not_required" for record in records):
+            chain["status"] = "not_required"
+            return
+        if len(selections) != len([r for r in records if r.get("status") != "not_required"]):
+            chain["status"] = "failed"
+            chain["reason"] = "A terminal coordinate lacks its required POST selection."
+            return
+        selected = min(
+            selections,
+            key=lambda record: (
+                Decimal(str(record["selectedPostDecayValidationExact"])),
+                Decimal(str(record["lr"])),
+                -Decimal(str(record["wd"])),
+            ),
+        )
+        chain.update(
+            {
+                "status": "complete",
+                "selectedRun": selected["id"],
+                "selectedLr": str(selected["lr"]),
+                "selectedWd": str(selected["wd"]),
+                "selectedVariant": str(selected["variant"]),
+                "selectedPostDecayEpoch": selected["selectedPostDecayEpoch"],
+                "selectedPostDecayValidationExact": selected[
+                    "selectedPostDecayValidationExact"
+                ],
+                "reason": "All coordinate jobs are terminal; winner selected only from POST results.",
+            }
+        )
+    elif any(record.get("status") == "failed" for record in records):
+        chain["status"] = "failed"
+    elif any(record.get("status") == "running" for record in records):
+        chain["status"] = "running"
+    elif any(record.get("status") == "scheduled" for record in records):
+        chain["status"] = "scheduled"
+    elif any(record.get("experiment") for record in records):
+        chain["status"] = "submitted"
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--prune-if-ready", action="store_true")
+    parser.add_argument("--revision")
+    args = parser.parse_args()
+    if args.prune_if_ready and not args.revision:
+        parser.error("--revision is required with --prune-if-ready")
     report = json.loads(REPORT_PATH.read_text())
-    chains = report.get("drWtEmbedWdGridChains", [])
-    if len(chains) != 2:
-        raise RuntimeError(f"expected two registered 1B LR/WD grid chains, found {len(chains)}")
-    summaries = [refresh_chain(report, chain) for chain in chains]
+    records = coordinate_records(report)
+    summaries = [refresh_coordinate(record) for record in records]
+    prune = wd_prune_requests(report)
+    for chain in report.get("drWtEmbedWdGridChains", []):
+        aggregate_chain(report, chain)
     write_report(report)
-    print("\n".join(summaries))
+    if args.prune_if_ready:
+        for record in prune:
+            output = run(
+                [
+                    ".venv/bin/python",
+                    "scripts/models/submit_dense_1b_dr_wt_embedwd_grid.py",
+                    "--finalize-run",
+                    record["id"],
+                    "--revision",
+                    args.revision,
+                ]
+            )
+            summaries.append(output.strip())
+    elif prune:
+        summaries.extend(f"PRUNE READY {record['id']}" for record in prune)
+    print("\n".join(summaries) if summaries else "no Dense-1B PD/POST coordinates registered")
 
 
 if __name__ == "__main__":

@@ -7,19 +7,23 @@
   "coordinates": [
     {
       "lr": "1e-3",
-      "wd": "0.333"
+      "wd": "0.3",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd0.3"
     },
     {
       "lr": "1e-3",
-      "wd": "1.0"
+      "wd": "1.0",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0"
     },
     {
       "lr": "2e-3",
-      "wd": "0.333"
+      "wd": "0.3",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.3"
     },
     {
       "lr": "2e-3",
-      "wd": "1.0"
+      "wd": "1.0",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd1.0"
     }
   ],
   "initialTargets": [
@@ -28,10 +32,14 @@
     4
   ],
   "epochIncrement": 4,
-  "maxEpoch": 64,
+  "maxEpoch": 256,
   "outputRoot": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b",
   "runSuffix": "dl0819-1b-drwtembwd-grid",
   "variant": "DR+WT+EmbedWD",
+  "policy": "dense_1b_predecay_postdecay_saturation_v1",
+  "comparisonPolicy": "within_phase_only",
+  "postDecaySourceCount": 3,
+  "postDecaySaturationCriterion": "strict_non_improvement",
   "dataOrder": "dynamic_repacking_from_e2",
   "weightTying": true,
   "decayEmbeddings": true

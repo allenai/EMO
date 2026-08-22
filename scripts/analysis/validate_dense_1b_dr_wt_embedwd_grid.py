@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the deferred Dense-1B BS128/256 DR+WT+EmbedWD grid and report."""
+"""Validate the guarded Dense-1B PD/POST plan and report provenance."""
 
 from __future__ import annotations
 
@@ -10,57 +10,135 @@ from pathlib import Path
 
 REPORT = Path("reports/0802/data/wsd_data_loader_1b.json")
 HTML = Path("reports/0802/wsd_data_loader_1b.html")
+CHARTS = Path("reports/0802/data_loader_charts.js")
+POLICY = "dense_1b_predecay_postdecay_saturation_v1"
 MANIFESTS = {
     128: Path("scripts/models/manifests/dense-1b-bs128-dr-wt-embwd-grid.json"),
     256: Path("scripts/models/manifests/dense-1b-bs256-dr-wt-embwd-grid.json"),
 }
+CONDITIONAL_MANIFESTS = (
+    Path("scripts/models/manifests/dense-1b-bs512-original-lr2e-3-wd0.333-pdpost.json"),
+    Path("scripts/models/manifests/dense-1b-bs512-dr-wt-embwd-lr2e-3-grid.json"),
+)
 EXPECTED = {
     128: {("1e-3", "0.3"), ("1e-3", "1.0")},
     256: {
-        ("1e-3", "0.333"),
+        ("1e-3", "0.3"),
         ("1e-3", "1.0"),
-        ("2e-3", "0.333"),
+        ("2e-3", "0.3"),
         ("2e-3", "1.0"),
     },
 }
-POLICY_HOLD = "held_by_locked_wd_predecay_policy_2026_08_21"
+EXPECTED_CONDITIONAL = {
+    ("Original", "2e-3", "0.333"),
+    ("DR+WT+EmbedWD", "2e-3", "0.333"),
+    ("DR+WT+EmbedWD", "2e-3", "1.0"),
+}
+EXACT_ORIGINAL_E8 = (
+    "/weka/oe-training-default/sewonm/icsl/models/"
+    "dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e8_lr2e-3_wd0.333_"
+    "warmup48_e8_lr2_wd0333_r30/step3432"
+)
+
+
+def validate_manifest(path: Path, expected: set[tuple[str, str]]) -> dict:
+    manifest = json.loads(path.read_text())
+    assert manifest["policy"] == POLICY
+    assert manifest["comparisonPolicy"] == "within_phase_only"
+    assert manifest["postDecaySourceCount"] == 3
+    assert manifest["postDecaySaturationCriterion"] == "strict_non_improvement"
+    assert manifest["nprocPerNode"] == 8
+    assert manifest["rankMicrobatchSequences"] == 8
+    assert manifest["gradientAccumulation"] == int(manifest["globalSequences"]) // 64
+    assert manifest["maxEpoch"] == 256
+    assert {(str(item["lr"]), str(item["wd"])) for item in manifest["coordinates"]} == expected
+    assert all(item.get("output") for item in manifest["coordinates"])
+    assert all(Decimal(str(item["wd"])) <= Decimal("1.0") for item in manifest["coordinates"])
+    return manifest
 
 
 def main() -> None:
     report = json.loads(REPORT.read_text())
+    assert report["dense1bPdPostPolicy"]["policy"] == POLICY
+    assert report["dense1bPdPostPolicy"]["parallelPrimaryCoordinates"] == 6
     columns = [column["key"] for column in report["columns"]]
     for batch in EXPECTED:
         assert columns.index(f"drwtembwd{batch}") == columns.index(f"dr{batch}") + 1
-    chains = report.get("drWtEmbedWdGridChains", [])
-    assert len(chains) == 2
-    for chain in chains:
-        batch = int(chain["batchSequences"])
-        assert chain["triggerThreshold"] == 5
-        assert chain["gpuCount"] == 8
+    chains = {record["id"]: record for record in report.get("drWtEmbedWdGridChains", [])}
+    assert {
+        "dense-1b-bs128-dr-wt-embwd-grid",
+        "dense-1b-bs256-dr-wt-embwd-grid",
+        "dense-1b-bs512-lr2e-3-conditional-followup",
+    }.issubset(chains)
+    for batch, expected in EXPECTED.items():
+        chain = chains[f"dense-1b-bs{batch}-dr-wt-embwd-grid"]
+        assert chain["policy"] == POLICY
+        assert chain["triggerThreshold"] == 10
+        assert chain["gpuCountPerCoordinate"] == 8
+        assert chain["nodeCountPerCoordinate"] == 1
         assert chain["rankMicrobatchSequences"] == 8
         assert chain["gradientAccumulation"] == batch // 64
-        assert chain["weightTying"] is True
-        assert chain["decayEmbeddings"] is True
-        assert {(item["lr"], item["wd"]) for item in chain["coordinates"]} == EXPECTED[batch]
-        if not chain.get("experiment"):
-            assert chain.get("status") == "held"
-            assert chain.get("policyHold") == POLICY_HOLD
-    registered = {
-        (int(run["batchSequences"]), str(run["lr"]), str(run["wd"]))
+        assert chain["parallelCoordinates"] == len(expected)
+        assert chain["comparisonPolicy"] == "within_phase_only"
+        assert chain["postDecaySourceCount"] == 3
+        assert chain["maxEpoch"] == 256
+        assert {(item["lr"], item["wd"]) for item in chain["coordinates"]} == expected
+    conditional = chains["dense-1b-bs512-lr2e-3-conditional-followup"]
+    assert conditional["trigger"] == "terminal_bs256_selected_lr_2e-3"
+    assert {
+        (item["variant"], item["lr"], item["wd"])
+        for item in conditional["coordinates"]
+    } == EXPECTED_CONDITIONAL
+    primary_runs = [
+        run
         for run in report["runs"]
-        if run.get("method") in {"drwtembwd128", "drwtembwd256"}
-    }
-    expected_registered = {
+        if run.get("policy") == POLICY and int(run["batchSequences"]) in {128, 256}
+    ]
+    assert len(primary_runs) == 6
+    assert {
+        (int(run["batchSequences"]), str(run["lr"]), str(run["wd"]))
+        for run in primary_runs
+    } == {
         (batch, lr, wd) for batch, values in EXPECTED.items() for lr, wd in values
     }
-    assert registered == expected_registered
-    assert all(Decimal(wd) <= Decimal("1.0") for _, _, wd in registered)
+    for run in primary_runs:
+        assert run["gpuCount"] == 8 and run["nodeCount"] == 1
+        assert run["comparisonPolicy"] == "within_phase_only"
+        assert run["postDecaySourceCount"] == 3
+        assert Decimal(str(run["wd"])) <= Decimal("1.0")
+    conditional_runs = [
+        run
+        for run in report["runs"]
+        if run.get("policy") == POLICY and int(run["batchSequences"]) == 512
+    ]
+    assert len(conditional_runs) == 3
+    assert {
+        (run["variant"], str(run["lr"]), str(run["wd"]))
+        for run in conditional_runs
+    } == EXPECTED_CONDITIONAL
+    original = next(run for run in conditional_runs if run["variant"] == "Original")
+    assert original["sourceCheckpoint"] == EXACT_ORIGINAL_E8
+    assert original["dynamicRepacking"] is False
+    assert original["weightTying"] is False
+    assert original["decayEmbeddings"] is False
     for batch, path in MANIFESTS.items():
-        manifest = json.loads(path.read_text())
+        manifest = validate_manifest(path, EXPECTED[batch])
         assert int(manifest["globalSequences"]) == batch
-        assert {(item["lr"], item["wd"]) for item in manifest["coordinates"]} == EXPECTED[batch]
-        assert manifest["nprocPerNode"] == 8
-        assert manifest["rankMicrobatchSequences"] == 8
+        assert manifest["variant"] == "DR+WT+EmbedWD"
+    original_manifest = validate_manifest(CONDITIONAL_MANIFESTS[0], {("2e-3", "0.333")})
+    assert original_manifest["variant"] == "Original"
+    historical = original_manifest["coordinates"][0]["historicalPreDecay"]
+    assert historical == [
+        {
+            "epoch": 8,
+            "checkpoint": EXACT_ORIGINAL_E8,
+            "experiment": "01KZGV0B3Q7ESNHR83KVQJRRE8",
+        }
+    ]
+    drwt_manifest = validate_manifest(
+        CONDITIONAL_MANIFESTS[1], {("2e-3", "0.333"), ("2e-3", "1.0")}
+    )
+    assert drwt_manifest["variant"] == "DR+WT+EmbedWD"
     html = HTML.read_text()
     grouped_headers = [
         row
@@ -71,8 +149,14 @@ def main() -> None:
     assert all(row.count("<th>") == 19 for row in grouped_headers)
     assert all("BS128 · DR+WT+EmbedWD" in row for row in grouped_headers)
     assert all("BS256 · DR+WT+EmbedWD" in row for row in grouped_headers)
-    assert ":nth-child(6),:nth-child(9),:nth-child(12),:nth-child(17)" in html
-    print("Dense-1B deferred DR+WT+EmbedWD grids validated")
+    assert "wsd_data_loader_1b.js?v=20260821-pdpost" in html
+    assert "data_loader_charts.js?v=20260821-pdpost" in html
+    assert "Val CE (POST | PD)" in html
+    charts = CHARTS.read_text()
+    assert "Unknown" in charts
+    assert "[POST] |" in charts and "[PD]" in charts
+    assert "result.postDecay" in charts and "result.preDecay" in charts
+    print("Dense-1B guarded PD/POST plan validated")
 
 
 if __name__ == "__main__":
