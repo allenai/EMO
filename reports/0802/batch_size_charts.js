@@ -193,6 +193,17 @@
         series:`BS ${chain.batchSequences} · DR+WT+EmbedWD`,
       });
     });
+    if(chain.policy==='locked_wd_predecay_saturation_v1'){
+      Object.entries(chain.postDecayResults||{}).forEach(([epoch,result])=>{
+        if(result.status!=='complete'||result.comparisonGroup!=='post_decay'||!Number.isFinite(metric(result)))return;
+        adaptiveSelected.set(`${chain.batchSequences}|${Number(epoch)}`,{
+          ...chain,...result,
+          epoch:Number(epoch),wd:String(chain.lockedWd),lr:chain.lr,
+          status:'complete',
+          series:`BS ${chain.batchSequences} · DR+WT+EmbedWD`,
+        });
+      });
+    }
   });
   const methodColumnsForBatch=batch=>{
     const columns=[{batch,kind:'original',label:`BS ${batch} · Original`}];
