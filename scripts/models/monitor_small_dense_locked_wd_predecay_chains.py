@@ -92,6 +92,28 @@ def retain_scheduled_predecay_results(record: dict[str, Any]) -> None:
     }
 
 
+def extend_report_display_epochs(report: dict[str, Any]) -> None:
+    """Keep report tables aligned with every completed locked-policy frontier."""
+    observed_by_batch: dict[str, set[int]] = {}
+    for record in report.get("adaptiveDrWtEmbedWdChains", []):
+        if record.get("policy") != POLICY:
+            continue
+        batch = str(int(record["batchSequences"]))
+        observed = observed_by_batch.setdefault(batch, set())
+        for key in ("preDecayResults", "postDecayResults"):
+            observed.update(int(epoch) for epoch in record.get(key, {}))
+
+    all_observed = set().union(*observed_by_batch.values()) if observed_by_batch else set()
+    report["targetEpochs"] = sorted(
+        {*report.get("targetEpochs", []), *all_observed}, key=float
+    )
+    batch_targets = report.setdefault("batchTargetEpochs", {})
+    for batch, observed in observed_by_batch.items():
+        batch_targets[batch] = sorted(
+            {*batch_targets.get(batch, []), *observed}, key=float
+        )
+
+
 def selection_postdecay_saturated(selection: dict[str, Any]) -> bool:
     sources = [int(epoch) for epoch in selection.get("postDecaySourceEpochs", [])]
     values = selection.get("postDecayValidationExact") or {}
@@ -386,6 +408,7 @@ def main() -> None:
         for record in report.get("adaptiveDrWtEmbedWdChains", []):
             if record.get("policy") == POLICY:
                 summaries.append(update_policy_record(model, record))
+        extend_report_display_epochs(report)
         report["updated"] = datetime.now(tz=UTC).date().isoformat()
         path.write_text(json.dumps(report, indent=2) + "\n")
         path.with_suffix(".js").write_text(

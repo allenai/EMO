@@ -53,8 +53,23 @@ def numeric(value: object) -> Decimal:
 
 for path in REPORTS:
     report = json.loads(path.read_text())
-    display_epochs = BASE_DISPLAY_EPOCHS + (
+    base_display_epochs = BASE_DISPLAY_EPOCHS + (
         [72, 80, 88, 96, 104, 112, 120, 128] if "153m" in path.stem else []
+    )
+    observed_policy_epochs: dict[int, set[int]] = {}
+    for chain in report.get("adaptiveDrWtEmbedWdChains", []):
+        if chain.get("policy") != "locked_wd_predecay_saturation_v1":
+            continue
+        batch = int(chain["batchSequences"])
+        observed = observed_policy_epochs.setdefault(batch, set())
+        for key in ("preDecayResults", "postDecayResults"):
+            observed.update(int(epoch) for epoch in chain.get(key, {}))
+    display_epochs = sorted(
+        {
+            *base_display_epochs,
+            *(epoch for values in observed_policy_epochs.values() for epoch in values),
+        },
+        key=float,
     )
     mirror_text = path.with_suffix(".js").read_text()
     prefix = "window.ICSL_REPORT_DATA="
@@ -179,24 +194,26 @@ for path in REPORTS:
     assert report.get("targetEpochs") == display_epochs, path
     assert report.get("summaryBatches") == SUMMARY_BATCHES, path
     assert set(map(int, report.get("batchTargetEpochs", {}))) == set(EXPECTED_BATCHES)
-    expected_batch_epochs = {
-        str(batch): (
-            display_epochs
+    expected_batch_epochs = {}
+    for batch in EXPECTED_BATCHES:
+        baseline_epochs = (
+            base_display_epochs
             if batch == 32 and "474m" in path.stem
             else BS32_DISPLAY_EPOCHS
             if batch == 32
-            else display_epochs
+            else base_display_epochs
             if "474m" in path.stem
             else BASE_DISPLAY_EPOCHS + [72, 80]
             if "153m" in path.stem and batch == 128
-            else display_epochs
+            else base_display_epochs
             if "153m" in path.stem and batch == 64
             else [epoch for epoch in BASE_DISPLAY_EPOCHS if epoch <= 48]
             if "153m" in path.stem and batch == 512
             else BASE_DISPLAY_EPOCHS
         )
-        for batch in EXPECTED_BATCHES
-    }
+        expected_batch_epochs[str(batch)] = sorted(
+            {*baseline_epochs, *observed_policy_epochs.get(batch, set())}, key=float
+        )
     assert report.get("batchTargetEpochs") == expected_batch_epochs, path
 
     active_keys: set[tuple[int, Decimal, Decimal, Decimal]] = set()
