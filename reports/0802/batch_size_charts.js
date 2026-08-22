@@ -232,6 +232,30 @@
   const preDecayForSummaryColumn=(column,epoch)=>column.kind==='adaptive'
     ?adaptivePreDecaySelected.get(`${column.batch}|${Number(epoch)}`)
     :null;
+  const validationOptimizerStepComparisons=(()=>{
+    const comparisonsByStep=new Map();
+    const addComparisonEpoch=(batch,epoch)=>{
+      const optimizerSteps=optimizerStepsForEpochBatch(Number(epoch),Number(batch));
+      if(!Number.isFinite(optimizerSteps))return;
+      const comparison=comparisonsByStep.get(optimizerSteps)||{optimizerSteps,epochs:{}};
+      comparison.epochs[String(batch)]=Number(epoch);
+      comparisonsByStep.set(optimizerSteps,comparison);
+    };
+    optimizerStepComparisons.forEach(comparison=>{
+      const optimizerSteps=optimizerStepsForComparison(comparison);
+      if(!Number.isFinite(optimizerSteps))return;
+      const merged=comparisonsByStep.get(optimizerSteps)||{...comparison,optimizerSteps,epochs:{}};
+      merged.epochs={...merged.epochs,...comparison.epochs};
+      comparisonsByStep.set(optimizerSteps,merged);
+    });
+    [selected,drSelected,adaptiveSelected,adaptivePreDecaySelected].forEach(results=>{
+      results.forEach(run=>{
+        if(!summaryBatches.includes(Number(run.batchSequences))||!Number.isFinite(metric(run)))return;
+        addComparisonEpoch(run.batchSequences,run.epoch);
+      });
+    });
+    return [...comparisonsByStep.values()].sort((a,b)=>optimizerStepsForComparison(a)-optimizerStepsForComparison(b));
+  })();
   const setAdaptiveSummaryHeader=(bodyId,leadingLabel,{trainingTime=false}={})=>{
     if(!showAdaptiveColumns)return;
     const table=document.querySelector(`#${bodyId}`)?.closest('table');
@@ -486,9 +510,9 @@
     const hasSourceStepMappedSimulation=(simulation.columns||[]).some(column=>Number.isFinite(Number(column.sourceBatchSequences)));
     const simulationNote=(simulation.columns||[]).length?` Local-update columns use each method's declared global batch to select the matched epoch row; simulated batch size does not change that optimizer-step placement.${hasSourceStepMappedSimulation?' Methods initialized from a smaller-batch checkpoint are instead placed by their cumulative endpoint optimizer step, including the parent checkpoint history.':''}`:'';
     const endpointNote=(simulation.columns||[]).length?' Every DR column uses the data-loader report’s healthy nondecreasing-WD selection at the source epoch. E12 BS1024 values are post-decay endpoint evaluations at checkpoint step 2,862; step 2,575 is the pre-decay resume checkpoint and is not the displayed result. The matched row is labeled ≈2,861 because token-based optimizer-step arithmetic rounds to the nearest step.':'';
-    optimizerStepNote.innerHTML=`Optimizer steps are recalculated per batch as epoch × 1B pool tokens ÷ (global batch × 4,096) and matched by row.${simulationNote}${endpointNote} For the BS64-E1-initialized DiLoCo arm, E2 is shown on its own ≈4,292-step row: ≈3,815 BS64-parent steps + ≈477 BS512 E1→E2 steps. Idealized training time assumes microbatch ${microbatch}, ${secondsPerStep}s/step, accumulation 1, unlimited GPUs, and GPU count = global batch ÷ ${microbatch}. Each result cell shows epoch · validation CE; row minima are bold and underlined. <span class="matched-stopped-key">Purple text</span> carries forward the best CE reached before a confirmed terminal non-improvement and shows the real source epoch; it is not a new higher-epoch measurement.`;
+    optimizerStepNote.innerHTML=`Optimizer steps are recalculated per batch as epoch × 1B pool tokens ÷ (global batch × 4,096) and matched by row. Every completed validation endpoint contributes a row, including intermediate and latest [PD]/[POST] frontiers.${simulationNote}${endpointNote} For the BS64-E1-initialized DiLoCo arm, E2 is shown on its own ≈4,292-step row: ≈3,815 BS64-parent steps + ≈477 BS512 E1→E2 steps. Idealized training time assumes microbatch ${microbatch}, ${secondsPerStep}s/step, accumulation 1, unlimited GPUs, and GPU count = global batch ÷ ${microbatch}. Locked-WD cells show [POST] | [PD]; row minima use [POST] only, and [PD] is never compared with [POST]. Other result cells show epoch · validation CE. <span class="matched-stopped-key">Purple text</span> carries forward the best CE reached before a confirmed terminal non-improvement and shows the real source epoch; it is not a new higher-epoch measurement.`;
   }
-  optimizerStepSummary.innerHTML=optimizerStepComparisons.map(comparison=>{
+  optimizerStepSummary.innerHTML=validationOptimizerStepComparisons.map(comparison=>{
     const optimizerSteps=optimizerStepsForComparison(comparison);
     const secondsPerStep=Number(optimizerTiming.secondsPerStep);
     const trainingSeconds=optimizerSteps*secondsPerStep;
@@ -505,8 +529,19 @@
       const epoch=comparison.epochs?.[String(column.batch)];
       if(!Number.isFinite(epoch))return '<td>—</td>';
       const entry=matchedSummaryEntryFor(column,epoch);
+      const preDecay=preDecayForSummaryColumn(column,epoch);
       const recalculatedSteps=optimizerStepsForEpochBatch(epoch,column.batch);
       const arithmetic=Number.isFinite(recalculatedSteps)?`E${epoch} × ${Number(optimizerTiming.uniquePoolTokens).toLocaleString()} tokens ÷ (BS ${column.batch} × ${Number(optimizerTiming.sequenceLength)||4096}) = ${recalculatedSteps.toLocaleString()} optimizer steps`:'';
+      const lockedAdaptive=column.kind==='adaptive'&&(entry?.run?.policy==='locked_wd_predecay_saturation_v1'||preDecay?.policy==='locked_wd_predecay_saturation_v1');
+      if(lockedAdaptive){
+        const postFormatted=entry?entry.value.toFixed(3):null;
+        const postMarked=entry&&entry.value===rowBestMetric?`<strong><span class="summary-row-best">${postFormatted}</span></strong>`:postFormatted;
+        const postDisplayed=entry?`[POST] ${postMarked}`:'Unknown [POST]';
+        const pdDisplayed=preDecay?`[PD] ${metric(preDecay).toFixed(3)}`:'[PD] —';
+        const reference=entry?.run||preDecay;
+        const title=`${arithmetic}; ${column.label}; locked LR ${reference.lr}; WD ${reference.wd}; [POST] ${entry?entry.value.toFixed(3):'not available'}; [PD] ${preDecay?metric(preDecay).toFixed(3):'not available'}; phases are not compared`;
+        return `<td class="matched-value" title="${escapeAttribute(title)}">E${epoch} · <span>${postDisplayed}</span> <span class="phase-separator">|</span> <span class="pd-value">${pdDisplayed}</span></td>`;
+      }
       if(!entry)return `<td class="matched-value"${arithmetic?` title="${escapeAttribute(arithmetic)}"`:''}>E${epoch} · —</td>`;
       const formatted=entry.value.toFixed(3);
       const marked=entry.value===rowBestMetric?`<strong><span class="summary-row-best">${formatted}</span></strong>`:formatted;
