@@ -235,6 +235,26 @@ def policy_health(logs: str, record: dict[str, Any], state: str) -> dict[str, An
 def update_policy_record(model: str, record: dict[str, Any]) -> str:
     batch = int(record["batchSequences"])
     experiment_id = str(record["experiment"])
+    if record.get("manualNoWorkFinalization"):
+        pre_metrics = ", ".join(
+            f"[PD] E{epoch} CE{result.get('validationExact', result.get('validation'))}"
+            for epoch, result in sorted(
+                record.get("preDecayResults", {}).items(),
+                key=lambda item: int(item[0]),
+            )
+        )
+        post_metrics = ", ".join(
+            f"[POST] E{epoch} CE{result.get('validationExact', result.get('validation'))}"
+            for epoch, result in sorted(
+                record.get("postDecayResults", {}).items(),
+                key=lambda item: int(item[0]),
+            )
+        )
+        return (
+            f"{model} BS{batch} complete; locked WD{record['lockedWd']}; "
+            f"{pre_metrics or '[PD] provenance only'}; "
+            f"{post_metrics or '[POST] not available'}; phase=done; {experiment_id}"
+        )
     inspected = legacy.inspect_experiment(experiment_id)
     state = legacy.experiment_state(inspected)
     jobs = [job for job in inspected.get("jobs") or [] if job.get("id")]

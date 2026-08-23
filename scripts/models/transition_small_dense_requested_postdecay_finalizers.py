@@ -8,6 +8,7 @@ import json
 import re
 import subprocess
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -117,6 +118,115 @@ def write_report(path: Path, report: dict[str, Any]) -> None:
     )
 
 
+def complete_without_gpu(record: dict[str, Any], plan: dict[str, Any]) -> None:
+    """Close a no-work request from an already completed POST endpoint."""
+    if plan["epochs"]:
+        raise ValueError("no-GPU completion is only valid for an empty POST request")
+    decision_epoch = int(plan["awaitEpoch"])
+    completed = {
+        int(epoch): result
+        for epoch, result in record.get("postDecayResults", {}).items()
+        if int(epoch) <= decision_epoch and result.get("status") == "complete"
+    }
+    if decision_epoch not in completed:
+        raise RuntimeError(
+            f"BS{record['batchSequences']}: E{decision_epoch} POST is not complete"
+        )
+    sources = sorted(completed)[-3:]
+    if len(sources) != 3:
+        raise RuntimeError("no-GPU completion requires three completed POST sources")
+    saturated = Decimal(str(completed[sources[-1]]["validationExact"])) >= Decimal(
+        str(completed[sources[-2]]["validationExact"])
+    )
+    selected_epoch = min(
+        sources,
+        key=lambda epoch: (
+            Decimal(str(completed[epoch]["validationExact"])),
+            epoch,
+        ),
+    )
+    selected = completed[selected_epoch]
+    finalization = {
+        "status": "complete" if saturated else "stopped_by_user",
+        "policy": FINALIZER_POLICY,
+        "lockedWd": str(record["lockedWd"]),
+        "terminationReason": (
+            "post_decay_non_improvement"
+            if saturated
+            else "user_requested_frontier_stop"
+        ),
+        "requestedPostDecayEpochs": [],
+        "evaluatedThroughEpoch": decision_epoch,
+        "postDecayDecisionGroup": "post_decay",
+        "postDecaySelectionGroup": "post_decay",
+        "postDecaySaturationCriterion": "strict_non_improvement",
+        "postDecaySaturated": saturated,
+        "postDecaySourceEpochs": sources,
+        "postDecayValidationExact": {
+            str(epoch): float(completed[epoch]["validationExact"])
+            for epoch in sources
+        },
+        "selectedPostDecayEpoch": selected_epoch,
+        "selectedPostDecayValidationExact": float(selected["validationExact"]),
+        "selectedCheckpoint": selected["checkpoint"],
+        "preserveExistingSelection": False,
+        "manualNoWorkFinalization": True,
+    }
+    transition = dict(record.get("requestedPostDecayFinalization", {}))
+    source_experiment = str(
+        transition.get("oldExperiment") or record.get("recoveryOf") or record["experiment"]
+    )
+    canceled_placeholder = str(record["experiment"])
+    transition.update(
+        {
+            "status": "complete",
+            "completedPostDecayEpochs": [],
+            "noGpuWorkRequired": True,
+            "canceledPlaceholderExperiment": canceled_placeholder,
+        }
+    )
+    record.update(
+        {
+            "policy": FINALIZER_POLICY,
+            "status": "complete",
+            "beakerStatus": "stopped",
+            "experiment": source_experiment,
+            "beaker": source_experiment,
+            "activePhase": "done",
+            "activeEpoch": None,
+            "activeWds": [],
+            "requestedPostDecayEpochs": [],
+            "requestedPostDecayFinalization": transition,
+            "requestedPostDecayFinalizationResult": finalization,
+            "manualNoWorkFinalization": {
+                "sourceExperiment": source_experiment,
+                "canceledPlaceholderExperiment": canceled_placeholder,
+                "reason": (
+                    f"The requested stop was already satisfied by the completed E"
+                    f"{decision_epoch} POST result; no additional GPU work was required."
+                ),
+            },
+            "postDecaySaturated": saturated,
+            "postDecaySelection": finalization,
+            "selectedPostDecayEpoch": selected_epoch,
+            "selectedPostDecayValidationExact": float(selected["validationExact"]),
+            "selectedCheckpoint": selected["checkpoint"],
+            "stopReason": (
+                "The existing requested POST endpoint reached strict non-improvement."
+                if saturated
+                else (
+                    f"Stopped at the user-requested E{decision_epoch} POST endpoint; "
+                    "the POST series was still improving."
+                )
+            ),
+        }
+    )
+    if saturated:
+        record["saturatedEpoch"] = decision_epoch
+    else:
+        record.pop("saturatedEpoch", None)
+
+
 def main() -> None:
     args = parse_args()
     if re.fullmatch(r"[0-9a-f]{40}", args.revision) is None:
@@ -134,6 +244,25 @@ def main() -> None:
                 continue
             record = records[batch]
             if record.get("policy") == FINALIZER_POLICY:
+                if not plan["epochs"] and not record.get("manualNoWorkFinalization"):
+                    if not result_complete(record, plan):
+                        summaries.append(
+                            f"{model} BS{batch}: waiting for {plan['awaitPhase']} "
+                            f"E{plan['awaitEpoch']} in {record['experiment']}"
+                        )
+                        continue
+                    if args.submit_if_ready:
+                        complete_without_gpu(record, plan)
+                        changed = True
+                        summaries.append(
+                            f"{model} BS{batch}: completed directly from existing "
+                            f"POST E{plan['awaitEpoch']} (no GPU work)"
+                        )
+                    else:
+                        summaries.append(
+                            f"{model} BS{batch}: READY for direct no-GPU completion"
+                        )
+                    continue
                 summaries.append(
                     f"{model} BS{batch}: finalizer {record['experiment']} "
                     f"({record.get('status')})"

@@ -80,6 +80,34 @@ class FinalizerTest(unittest.TestCase):
         self.assertTrue(transition.result_complete(record, plan))
         self.assertFalse(transition.result_complete({"postDecayResults": {}}, plan))
 
+    def test_no_work_request_closes_from_existing_post_result(self) -> None:
+        record = {
+            "batchSequences": 512,
+            "lockedWd": "0.3",
+            "experiment": "01M0P7ZEJW37HSE45GCVKHBFEA",
+            "recoveryOf": "01M0M1A7YTSE5KBQ73PSV4BEGQ",
+            "requestedPostDecayFinalization": {
+                "oldExperiment": "01M0M1A7YTSE5KBQ73PSV4BEGQ",
+            },
+            "postDecayResults": {
+                "96": {**result(96, 3.341), "status": "complete"},
+                "112": {**result(112, 3.337), "status": "complete"},
+                "128": {**result(128, 3.334), "status": "complete"},
+            },
+        }
+        transition.complete_without_gpu(record, transition.PLAN[("153m", 512)])
+        self.assertEqual(record["status"], "complete")
+        self.assertEqual(record["experiment"], "01M0M1A7YTSE5KBQ73PSV4BEGQ")
+        self.assertEqual(record["postDecaySelection"]["status"], "stopped_by_user")
+        self.assertFalse(record["postDecaySelection"]["postDecaySaturated"])
+        self.assertEqual(
+            record["postDecaySelection"]["postDecaySourceEpochs"], [96, 112, 128]
+        )
+        self.assertEqual(
+            record["manualNoWorkFinalization"]["canceledPlaceholderExperiment"],
+            "01M0P7ZEJW37HSE45GCVKHBFEA",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
