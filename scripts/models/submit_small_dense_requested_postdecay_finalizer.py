@@ -214,7 +214,8 @@ def main() -> None:
     if args.print_only:
         print(json.dumps(spec, indent=2))
         return
-    if str(record.get("status", "")).lower() not in {"complete", "stopped_by_user"}:
+    beaker_status = str(record.get("beakerStatus", record.get("status", ""))).lower()
+    if beaker_status not in {"complete", "failed", "canceled", "stopped"}:
         submit.run(["beaker", "experiment", "stop", args.resume_experiment])
     output = submit.run(
         [
