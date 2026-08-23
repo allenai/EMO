@@ -73,7 +73,7 @@
     .map(([epoch,result])=>`${label} E${epoch}: CE ${metric(result.validationExact??result.validation)??'—'}`)
     .join(' → ');
   const frontierText=chain=>{
-    if(chain.policy==='locked_wd_predecay_saturation_v1'){
+    if(['locked_wd_predecay_saturation_v1','locked_wd_requested_postdecay_finalizer_v1'].includes(chain.policy)){
       const pre=phaseText(chain,'preDecayResults','[PD]');
       const post=phaseText(chain,'postDecayResults','[POST]');
       return `${pre||'[PD] awaiting evaluation'}${post?` | ${post}`:''}`;
@@ -84,8 +84,14 @@
       .join(' → ')||'—';
   };
   const currentText=chain=>{
-    if(chain.policy==='locked_wd_predecay_saturation_v1'){
-      if(chain.postDecaySelection)return `[PD] saturated E${chain.saturatedEpoch}; [POST] selected E${chain.selectedPostDecayEpoch} · CE ${metric(chain.selectedPostDecayValidationExact)}`;
+    if(['locked_wd_predecay_saturation_v1','locked_wd_requested_postdecay_finalizer_v1'].includes(chain.policy)){
+      if(chain.postDecaySelection){
+        if(chain.policy==='locked_wd_requested_postdecay_finalizer_v1'){
+          const outcome=chain.postDecaySelection.postDecaySaturated?'saturated':'user-stopped';
+          return `[POST] ${outcome} at E${chain.postDecaySelection.evaluatedThroughEpoch||chain.saturatedEpoch||'—'}; selected E${chain.selectedPostDecayEpoch} · CE ${metric(chain.selectedPostDecayValidationExact)}`;
+        }
+        return `[PD] saturated E${chain.saturatedEpoch}; [POST] selected E${chain.selectedPostDecayEpoch} · CE ${metric(chain.selectedPostDecayValidationExact)}`;
+      }
       const label=String(chain.activePhase||'').startsWith('post')?'[POST]':'[PD]';
       const progress=chain.progress?` · ${chain.progress.percent}%`:'';
       return `${label} ${chain.activePhase||'pending'}${chain.activeEpoch?` · E${chain.activeEpoch}`:''} · locked WD${chain.lockedWd}${progress}`;

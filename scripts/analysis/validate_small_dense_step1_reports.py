@@ -7,7 +7,6 @@ import json
 from decimal import Decimal
 from pathlib import Path
 
-
 REPORTS = (
     Path("reports/0802/data/wsd_batch_size_153m.json"),
     Path("reports/0802/data/wsd_batch_size_474m.json"),
@@ -45,6 +44,10 @@ AVG8_TASKS = (
 )
 ADAPTIVE_SEARCH = "small-model-adaptive-coordinate"
 FRACTIONAL_SEARCH = "small-model-selected-e1-fractional-chain"
+LOCKED_POLICIES = {
+    "locked_wd_predecay_saturation_v1",
+    "locked_wd_requested_postdecay_finalizer_v1",
+}
 
 
 def numeric(value: object) -> Decimal:
@@ -58,7 +61,7 @@ for path in REPORTS:
     )
     observed_policy_epochs: dict[int, set[int]] = {}
     for chain in report.get("adaptiveDrWtEmbedWdChains", []):
-        if chain.get("policy") != "locked_wd_predecay_saturation_v1":
+        if chain.get("policy") not in LOCKED_POLICIES:
             continue
         batch = int(chain["batchSequences"])
         observed = observed_policy_epochs.setdefault(batch, set())

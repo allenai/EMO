@@ -15,6 +15,8 @@ import monitor_small_dense_dr_wt_embedwd_chains as legacy
 
 REPORTS = legacy.REPORTS
 POLICY = "locked_wd_predecay_saturation_v1"
+FINALIZER_POLICY = "locked_wd_requested_postdecay_finalizer_v1"
+POLICIES = {POLICY, FINALIZER_POLICY}
 RESULT = re.compile(
     r"SMALL_PREDECAY_POLICY_RESULT model=(153m|474m) bs=([0-9]+) "
     r"phase=(pre_decay|post_decay) epoch=([0-9]+) wd=([^ ]+) json=(\{.*\})$",
@@ -38,6 +40,11 @@ CONTINUED = re.compile(
     r"SMALL_PREDECAY_POLICY_CONTINUE model=(153m|474m) bs=([0-9]+) "
     r"provisional_epoch=([0-9]+) wd=([^ ]+) comparison_group=post_decay "
     r"next_epoch=([0-9]+) json=(\{.*\})$",
+    re.MULTILINE,
+)
+FINALIZED = re.compile(
+    r"SMALL_POSTDECAY_FINALIZER_COMPLETE model=(153m|474m) bs=([0-9]+) "
+    r"status=([^ ]+) json=(\{.*\})$",
     re.MULTILINE,
 )
 POST_DECAY_SATURATION_CRITERION = "strict_non_improvement"
@@ -96,7 +103,7 @@ def extend_report_display_epochs(report: dict[str, Any]) -> None:
     """Keep report tables aligned with every completed locked-policy frontier."""
     observed_by_batch: dict[str, set[int]] = {}
     for record in report.get("adaptiveDrWtEmbedWdChains", []):
-        if record.get("policy") != POLICY:
+        if record.get("policy") not in POLICIES:
             continue
         batch = str(int(record["batchSequences"]))
         observed = observed_by_batch.setdefault(batch, set())
@@ -251,6 +258,10 @@ def update_policy_record(model: str, record: dict[str, Any]) -> str:
         record.setdefault("postDecayResults", {}).update(post)
     retain_scheduled_predecay_results(record)
     record["postDecaySaturationCriterion"] = POST_DECAY_SATURATION_CRITERION
+    existing_selection = record.get("postDecaySelection")
+    if existing_selection:
+        existing_selection.setdefault("postDecayDecisionGroup", "post_decay")
+        existing_selection.setdefault("postDecaySelectionGroup", "post_decay")
 
     start_matches = [
         match
@@ -357,6 +368,58 @@ def update_policy_record(model: str, record: dict[str, Any]) -> str:
                 }
             )
 
+    finalized_matches = [
+        match
+        for match in FINALIZED.finditer(logs)
+        if match.group(1) == model and int(match.group(2)) == batch
+    ]
+    if finalized_matches:
+        finalization = json.loads(finalized_matches[-1].group(4))
+        preserve = finalization.get("preserveExistingSelection") is True
+        record.update(
+            {
+                "status": "complete",
+                "beakerStatus": state,
+                "activePhase": "done",
+                "activeEpoch": None,
+                "activeWds": [],
+                "requestedPostDecayFinalizationResult": finalization,
+                "postDecaySaturated": finalization.get("postDecaySaturated"),
+                "stopReason": (
+                    "The requested POST sequence reached strict non-improvement."
+                    if finalization.get("postDecaySaturated") is True
+                    else "Stopped at the exact user-requested frontier after completing the requested POST evaluations."
+                ),
+            }
+        )
+        transition = dict(record.get("requestedPostDecayFinalization", {}))
+        transition.update(
+            {
+                "status": "complete",
+                "completedPostDecayEpochs": finalization.get(
+                    "requestedPostDecayEpochs", []
+                ),
+            }
+        )
+        record["requestedPostDecayFinalization"] = transition
+        if not preserve:
+            record.update(
+                {
+                    "postDecaySelection": finalization,
+                    "selectedPostDecayEpoch": finalization[
+                        "selectedPostDecayEpoch"
+                    ],
+                    "selectedPostDecayValidationExact": finalization[
+                        "selectedPostDecayValidationExact"
+                    ],
+                    "selectedCheckpoint": finalization["selectedCheckpoint"],
+                }
+            )
+            if finalization.get("postDecaySaturated") is True:
+                record["saturatedEpoch"] = finalization["evaluatedThroughEpoch"]
+            else:
+                record.pop("saturatedEpoch", None)
+
     health = policy_health(logs, record, state)
     if health is not None:
         record["wandbHealth"] = health
@@ -406,7 +469,7 @@ def main() -> None:
     for model, path in REPORTS.items():
         report = json.loads(path.read_text())
         for record in report.get("adaptiveDrWtEmbedWdChains", []):
-            if record.get("policy") == POLICY:
+            if record.get("policy") in POLICIES:
                 summaries.append(update_policy_record(model, record))
         extend_report_display_epochs(report)
         report["updated"] = datetime.now(tz=UTC).date().isoformat()

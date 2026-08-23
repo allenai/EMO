@@ -11,6 +11,8 @@ MODELS = ("474m", "153m")
 BATCHES = (64, 128, 256, 512)
 ROOT = Path(__file__).resolve().parents[2]
 POLICY = "locked_wd_predecay_saturation_v1"
+FINALIZER_POLICY = "locked_wd_requested_postdecay_finalizer_v1"
+POLICIES = {POLICY, FINALIZER_POLICY}
 
 
 def validate_model(model: str) -> None:
@@ -63,18 +65,22 @@ def validate_model(model: str) -> None:
                 awaited = transition.get("awaitStage") or {}
                 if awaited.get("epoch") is None or awaited.get("wd") is None:
                     raise ValueError(f"{model} BS{batch}: incomplete transition boundary")
-        if record.get("policy") == POLICY:
+        if record.get("policy") in POLICIES:
             locked_wd = str(record.get("lockedWd"))
+            finalizer = record.get("policy") == FINALIZER_POLICY
             policy_checks = {
                 "WD tuning stopped": record.get("wdTuningStopped") is True,
                 "locked WD": locked_wd in ladder,
-                "phase comparison": record.get("comparisonPolicy") == "within_phase_only",
+                "phase comparison": record.get("comparisonPolicy")
+                == ("post_decay_only" if finalizer else "within_phase_only"),
                 "three decay sources": record.get("postDecaySourceCount") == 3,
                 "historical boundary": int(record.get("historicalPreDecayThroughEpoch", 0)) >= 3,
-                "pre-decay criterion": record.get("preDecaySaturationCriterion")
-                == "strict_non_improvement",
+                "pre-decay criterion": finalizer
+                or record.get("preDecaySaturationCriterion") == "strict_non_improvement",
                 "post-decay criterion": record.get("postDecaySaturationCriterion")
                 == "strict_non_improvement",
+                "pre-decay disabled": not finalizer
+                or record.get("preDecayEvaluation") is False,
                 "active WD lock": all(
                     str(value) == locked_wd for value in record.get("activeWds", [])
                 ),
@@ -92,17 +98,18 @@ def validate_model(model: str) -> None:
                     raise ValueError(f"{model} BS{batch}: mixed post-decay comparison group")
             selection = record.get("postDecaySelection")
             if selection:
-                if selection.get("preDecayDecisionGroup") != "pre_decay":
+                if not finalizer and selection.get("preDecayDecisionGroup") != "pre_decay":
                     raise ValueError(f"{model} BS{batch}: invalid saturation comparison group")
                 if selection.get("postDecaySelectionGroup") != "post_decay":
                     raise ValueError(f"{model} BS{batch}: invalid decay selection group")
-                if len(selection.get("postDecaySourceEpochs", [])) != 3:
+                source_count = len(selection.get("postDecaySourceEpochs", []))
+                if source_count != 3 and not (finalizer and 1 <= source_count <= 3):
                     raise ValueError(f"{model} BS{batch}: decay selection is not three-way")
-                if selection.get("postDecayDecisionGroup") != "post_decay":
+                if selection.get("postDecayDecisionGroup", "post_decay") != "post_decay":
                     raise ValueError(f"{model} BS{batch}: invalid post-decay decision group")
                 if selection.get("postDecaySaturationCriterion") != "strict_non_improvement":
                     raise ValueError(f"{model} BS{batch}: invalid post-decay criterion")
-                if selection.get("postDecaySaturated") is not True:
+                if not finalizer and selection.get("postDecaySaturated") is not True:
                     raise ValueError(f"{model} BS{batch}: final selection is not saturated")
             for epoch, decision in record.get("postDecayContinuations", {}).items():
                 if decision.get("status") != "continue":
