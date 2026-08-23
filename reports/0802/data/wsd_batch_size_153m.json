@@ -11564,7 +11564,7 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-23T07:01:00.582022+00:00",
+        "checkedAt": "2026-08-23T08:00:54.735118+00:00",
         "run": "b5hrfk09",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/b5hrfk09",
         "model": "153m",
@@ -13630,7 +13630,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs64_dr_wt_embwd_lr2e-3_wd0.1_predecay_policy/constant_lr",
       "wandbHealth": {
         "status": "pending",
-        "checkedAt": "2026-08-23T07:01:34.473350+00:00",
+        "checkedAt": "2026-08-23T08:01:34.136931+00:00",
         "run": null,
         "url": null,
         "warnings": [],
@@ -15838,7 +15838,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs128_dr_wt_embwd_lr2e-3_wd0.1_predecay_policy/post_decay_runs/e176",
       "wandbHealth": {
         "status": "pending",
-        "checkedAt": "2026-08-23T07:01:34.688399+00:00",
+        "checkedAt": "2026-08-23T08:01:34.366676+00:00",
         "run": null,
         "url": null,
         "warnings": [],
@@ -17874,7 +17874,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs256_dr_wt_embwd_lr2e-3_wd0.1_predecay_policy/post_decay_runs/e144",
       "wandbHealth": {
         "status": "pending",
-        "checkedAt": "2026-08-23T07:01:34.911217+00:00",
+        "checkedAt": "2026-08-23T08:01:34.591852+00:00",
         "run": null,
         "url": null,
         "warnings": [],
