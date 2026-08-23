@@ -171,6 +171,17 @@ def register(
             ),
         }
     )
+    record["wandbHealth"] = {
+        "status": "pending",
+        "checkedAt": datetime.now(tz=UTC).isoformat(),
+        "run": None,
+        "url": None,
+        "warnings": [],
+        "criticalSignals": [],
+        "shouldRecover": False,
+        "reason": "The requested POST finalizer has not emitted a stage start yet.",
+    }
+    record.pop("needsAttention", None)
     transition = dict(record.get("requestedPostDecayFinalization", {}))
     transition.update(
         {

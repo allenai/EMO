@@ -450,6 +450,22 @@ def update_policy_record(model: str, record: dict[str, Any]) -> str:
         record["wandbHealth"] = health
         if health["shouldRecover"]:
             record["needsAttention"] = True
+    elif record.get("policy") == FINALIZER_POLICY and state in {
+        "submitted",
+        "scheduled",
+        "running",
+    }:
+        record["wandbHealth"] = {
+            "status": "pending",
+            "checkedAt": datetime.now(tz=UTC).isoformat(),
+            "run": None,
+            "url": None,
+            "warnings": [],
+            "criticalSignals": [],
+            "shouldRecover": False,
+            "reason": "The requested POST finalizer has not emitted a stage start yet.",
+        }
+        record.pop("needsAttention", None)
     if state == "failed" and not selection_matches:
         record["needsAttention"] = True
 
