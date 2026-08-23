@@ -11,6 +11,24 @@
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs512_original_lr2e-3_wd0.333_constant_lr_from_e8",
       "historicalPreDecay": [
         {
+          "epoch": 1,
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e1_lr2e-3_wd0.333_warmup48_e1_e2_lrup_wd0333_r25/step428",
+          "experiment": "01KZGE4PS4WSJG3HHHEDXGTXY7",
+          "checkpointOnly": true
+        },
+        {
+          "epoch": 2,
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e2_lr2e-3_wd0.333_warmup48_e1_e2_lrup_wd0333_r25/step858",
+          "experiment": "01KZGE4PS4WSJG3HHHEDXGTXY7",
+          "checkpointOnly": true
+        },
+        {
+          "epoch": 4,
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e4_lr2e-3_wd0.333_warmup48_e4_lrup_infra_r27/step1716",
+          "experiment": "01KZGN0KAZKN71JJ5X32K5EQGG",
+          "checkpointOnly": true
+        },
+        {
           "epoch": 8,
           "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_step1_0802_repeated_dclm1b_wsd_bs512_e8_lr2e-3_wd0.333_warmup48_e8_lr2_wd0333_r30/step3432",
           "experiment": "01KZGV0B3Q7ESNHR83KVQJRRE8"
@@ -22,10 +40,13 @@
   "epochIncrement": 4,
   "maxEpoch": 256,
   "outputRoot": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b",
-  "runSuffix": "conditional-bs512-original-pdpost",
+  "runSuffix": "conditional-bs512-original-all-post-e8",
   "variant": "Original",
-  "policy": "dense_1b_predecay_postdecay_saturation_v1",
-  "comparisonPolicy": "within_phase_only",
+  "policy": "dense_1b_all_postdecay_saturation_v1",
+  "comparisonPolicy": "post_decay_only",
+  "checkpointOnlyEpochs": [1, 2, 4],
+  "postDecayStartEpoch": 8,
+  "postDecayEvaluation": "every_scheduled_frontier_from_e8",
   "postDecaySourceCount": 3,
   "postDecaySaturationCriterion": "strict_non_improvement",
   "dataOrder": "ordinary_shuffled",

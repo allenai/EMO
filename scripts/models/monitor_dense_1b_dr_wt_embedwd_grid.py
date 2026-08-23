@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Refresh Dense-1B PD/POST coordinates and enforce cross-WD pruning."""
+"""Refresh Dense-1B all-POST coordinates and enforce cross-WD pruning."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from typing import Any
 
 REPORT_PATH = Path("reports/0802/data/wsd_data_loader_1b.json")
 REPORT_JS_PATH = REPORT_PATH.with_suffix(".js")
-POLICY = "dense_1b_predecay_postdecay_saturation_v1"
+POLICY = "dense_1b_all_postdecay_saturation_v1"
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 RESULT = re.compile(
     r"DENSE1B_PDPOST_RESULT bs=([0-9]+) lr=([^ ]+) wd=([^ ]+) "
@@ -113,7 +113,11 @@ def parse_health(record: dict[str, Any], logs: str, state: str) -> dict[str, Any
     if nonfinite:
         critical.append("nonfinite-training-loss")
     expected = str(record["output"])
-    if "eval" not in phase and output != expected and not output.startswith(expected + "/.pdpost_policy"):
+    if (
+        "eval" not in phase
+        and output != expected
+        and not output.startswith(expected + "/.all_postdecay_policy")
+    ):
         critical.append("stage-output-path-mismatch")
     if previous and int(previous) > 0 and "Loading checkpoint from '" not in segment:
         critical.append("missing-resume-checkpoint-load")
@@ -161,9 +165,9 @@ def refresh_coordinate(record: dict[str, Any]) -> str:
         ):
             continue
         result = json.loads(payload)
+        result.setdefault("status", "complete")
         result.update(
             {
-                "status": "complete",
                 "epoch": int(epoch),
                 "lr": lr,
                 "wd": wd,
@@ -255,7 +259,7 @@ def refresh_coordinate(record: dict[str, Any]) -> str:
         record.pop("progress", None)
     if state == "failed" and record.get("status") not in {"complete", "pruned"}:
         record["needsAttention"] = True
-        record["reason"] = "Beaker exhausted retries before a terminal PD/POST decision."
+        record["reason"] = "Beaker exhausted retries before a terminal POST decision."
     return (
         f"{record['id']}: {record['status']} phase={record.get('activePhase') or 'done'} "
         f"E{record.get('activeEpoch') or '—'} PD={sorted(map(int, record.get('preDecayResults', {})))} "
@@ -280,8 +284,8 @@ def wd_prune_requests(report: dict[str, Any]) -> list[dict[str, Any]]:
         lower, higher = sorted(group, key=lambda item: Decimal(str(item["wd"])))
         if Decimal(str(higher["wd"])) != Decimal("1.0"):
             continue
-        low_results = lower.get("preDecayResults", {})
-        high_results = higher.get("preDecayResults", {})
+        low_results = lower.get("postDecayResults", {})
+        high_results = higher.get("postDecayResults", {})
         common_epochs = sorted(set(low_results) & set(high_results), key=int)
         winning = [
             epoch
@@ -300,11 +304,12 @@ def wd_prune_requests(report: dict[str, Any]) -> list[dict[str, Any]]:
             "higherWd": str(higher["wd"]),
             "lowerValidationExact": float(low_results[str(epoch)]["validationExact"]),
             "higherValidationExact": float(high_results[str(epoch)]["validationExact"]),
-            "criterion": "strict_higher_wd_win_same_bs_lr_epoch",
+            "comparisonGroup": "post_decay",
+            "criterion": "strict_higher_wd_post_win_same_bs_lr_epoch",
         }
         lower["higherWdWinEvidence"] = evidence
         if len(low_results) < 3:
-            lower["pruneDeferredReason"] = "fewer_than_three_completed_pd_sources"
+            lower["pruneDeferredReason"] = "fewer_than_three_completed_post_sources"
             continue
         if lower.get("status") not in active_statuses:
             continue
@@ -378,9 +383,7 @@ def aggregate_chain(report: dict[str, Any], chain: dict[str, Any]) -> None:
                 "selectedWd": str(selected["wd"]),
                 "selectedVariant": str(selected["variant"]),
                 "selectedPostDecayEpoch": selected["selectedPostDecayEpoch"],
-                "selectedPostDecayValidationExact": selected[
-                    "selectedPostDecayValidationExact"
-                ],
+                "selectedPostDecayValidationExact": selected["selectedPostDecayValidationExact"],
                 "reason": "All coordinate jobs are terminal; winner selected only from POST results.",
             }
         )
@@ -423,7 +426,7 @@ def main() -> None:
             summaries.append(output.strip())
     elif prune:
         summaries.extend(f"PRUNE READY {record['id']}" for record in prune)
-    print("\n".join(summaries) if summaries else "no Dense-1B PD/POST coordinates registered")
+    print("\n".join(summaries) if summaries else "no Dense-1B all-POST coordinates registered")
 
 
 if __name__ == "__main__":

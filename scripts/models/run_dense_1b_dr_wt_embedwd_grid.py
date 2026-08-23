@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""Run one retry-safe Dense-1B PD/POST saturation coordinate.
+"""Run one retry-safe Dense-1B all-POST saturation coordinate.
 
-Each Beaker experiment owns exactly one LR/WD coordinate.  Scheduled
-pre-decay (PD) frontiers are trained with constant LR and compared only with
-other PD results.  A PD non-improvement provisionally triggers independent WSD
-decays from the latest three PD checkpoints.  The coordinate is terminal only
-when the newest post-decay (POST) result also fails to improve; otherwise it
-continues constant-LR training to the next frontier.
+Each Beaker experiment owns exactly one LR/WD coordinate. Scheduled constant-LR
+frontier checkpoints are retained at E1, E2, E4, E8, E12, ... . E1/E2/E4 are
+checkpoint-only sources. Every scheduled checkpoint from E8 onward is
+independently WSD-decayed and evaluated, and saturation is determined only from
+the ordered post-decay (POST) results.
 
-The ``--finalize-only`` mode is used after cross-WD pruning.  It never trains a
-new PD frontier, but still produces the requested POST evidence from the latest
-three completed PD checkpoints before marking the coordinate pruned.
+The ``--finalize-only`` mode is used after cross-WD pruning. It never trains a
+new constant-LR frontier, but still ensures the latest three eligible frontier
+checkpoints have POST results before marking the coordinate pruned.
 """
 
 from __future__ import annotations
@@ -25,9 +24,11 @@ from typing import Any
 
 import run_small_dense_saturation_chain as common
 
-POLICY = "dense_1b_predecay_postdecay_saturation_v1"
+POLICY = "dense_1b_all_postdecay_saturation_v1"
 POST_DECAY_SOURCE_COUNT = 3
 POST_DECAY_SATURATION_CRITERION = "strict_non_improvement"
+POST_DECAY_START_EPOCH = 8
+CHECKPOINT_ONLY_EPOCHS = [1, 2, 4]
 TOKENS_PER_EPOCH = 1_000_000_000
 SEQUENCE_LENGTH = 4096
 DECAY_FRACTION = 0.1
@@ -92,9 +93,7 @@ def coordinates(config: dict[str, Any]) -> list[tuple[str, str]]:
 
 def coordinate_config(config: dict[str, Any], lr: str, wd: str) -> dict[str, Any]:
     matches = [
-        item
-        for item in config["coordinates"]
-        if str(item["lr"]) == lr and str(item["wd"]) == wd
+        item for item in config["coordinates"] if str(item["lr"]) == lr and str(item["wd"]) == wd
     ]
     if len(matches) != 1:
         raise ValueError(f"manifest must contain exactly one coordinate LR{lr}/WD{wd}")
@@ -119,6 +118,9 @@ def validate_config(config: dict[str, Any]) -> None:
         "comparisonPolicy",
         "postDecaySourceCount",
         "postDecaySaturationCriterion",
+        "postDecayStartEpoch",
+        "checkpointOnlyEpochs",
+        "postDecayEvaluation",
     }
     missing = sorted(required - config.keys())
     if missing:
@@ -128,12 +130,18 @@ def validate_config(config: dict[str, Any]) -> None:
         raise ValueError("only BS128, BS256, and conditional BS512 are authorized")
     if config["policy"] != POLICY:
         raise ValueError(f"manifest policy must be {POLICY}")
-    if config["comparisonPolicy"] != "within_phase_only":
-        raise ValueError("PD and POST comparisons must stay separate")
+    if config["comparisonPolicy"] != "post_decay_only":
+        raise ValueError("all saturation and pruning decisions must use POST only")
     if int(config["postDecaySourceCount"]) != POST_DECAY_SOURCE_COUNT:
         raise ValueError("postDecaySourceCount must remain exactly three")
     if config["postDecaySaturationCriterion"] != POST_DECAY_SATURATION_CRITERION:
         raise ValueError("POST saturation criterion must remain strict_non_improvement")
+    if int(config["postDecayStartEpoch"]) != POST_DECAY_START_EPOCH:
+        raise ValueError("POST evaluation must begin at E8")
+    if [int(value) for value in config["checkpointOnlyEpochs"]] != CHECKPOINT_ONLY_EPOCHS:
+        raise ValueError("E1/E2/E4 must remain checkpoint-only constant-LR frontiers")
+    if config["postDecayEvaluation"] != "every_scheduled_frontier_from_e8":
+        raise ValueError("every scheduled frontier from E8 must receive POST evaluation")
     if int(config["nprocPerNode"]) != 8:
         raise ValueError("each coordinate must use exactly eight GPUs")
     if int(config["rankMicrobatchSequences"]) != 8:
@@ -163,7 +171,9 @@ def validate_config(config: dict[str, Any]) -> None:
         if not item.get("output"):
             raise ValueError(f"LR{lr}/WD{wd} is missing an explicit canonical output")
         if variant == "Original" and not item.get("historicalPreDecay"):
-            raise ValueError("original BS512 continuation must declare exact historical PD provenance")
+            raise ValueError(
+                "original BS512 continuation must declare exact historical PD provenance"
+            )
     if [int(value) for value in config["initialTargets"]] != [1, 2, 4]:
         raise ValueError("Dense-1B frontier ladder must begin E1 -> E2 -> E4")
     if int(config["epochIncrement"]) != 4 or int(config["maxEpoch"]) < 16:
@@ -210,7 +220,7 @@ def output_for(config: dict[str, Any], lr: str, wd: str) -> Path:
 
 
 def state_dir(config: dict[str, Any], lr: str, wd: str) -> Path:
-    return output_for(config, lr, wd) / ".pdpost_policy"
+    return output_for(config, lr, wd) / ".all_postdecay_policy"
 
 
 def predecay_result_path(config: dict[str, Any], lr: str, wd: str, epoch: int) -> Path:
@@ -274,7 +284,9 @@ def phase_metadata(config: dict[str, Any], epoch: int) -> dict[str, Any]:
 
 def parse_validation(log_path: Path, epoch: int, phase: str, checkpoint: Path) -> dict[str, Any]:
     clean = common.ANSI.sub("", log_path.read_text())
-    validation_values = common.WANDB_VALIDATION_LOSS.findall(clean) or common.VALIDATION_LOSS.findall(clean)
+    validation_values = common.WANDB_VALIDATION_LOSS.findall(
+        clean
+    ) or common.VALIDATION_LOSS.findall(clean)
     if not validation_values:
         raise RuntimeError(f"{phase} E{epoch} completed without held-out validation CE")
     train_values = common.TRAIN_LOSS.findall(clean)
@@ -394,6 +406,12 @@ def predecay_training_arguments(
     target = stable_step(epoch, batch)
     output = output_for(config, lr, wd)
     arguments = base_arguments(config, lr, wd)
+    heldout = HELDOUT_EVALUATOR.replace("eval_on_finish: true", "eval_on_finish: false")
+    arguments = common.upsert(
+        arguments,
+        "--trainer.callbacks.heldout_evaluator=",
+        f"--trainer.callbacks.heldout_evaluator={heldout}",
+    )
     arguments.extend(
         (
             f"--save-folder={output}",
@@ -432,16 +450,68 @@ def predecay_training_arguments(
     return arguments
 
 
+def record_frontier_checkpoint(
+    config: dict[str, Any],
+    lr: str,
+    wd: str,
+    epoch: int,
+    checkpoint: Path,
+    *,
+    source_checkpoint: Path | None,
+    source: str,
+    log_path: Path | None = None,
+) -> dict[str, Any]:
+    path = predecay_result_path(config, lr, wd, epoch)
+    if path.is_file():
+        result = json.loads(path.read_text())
+        emit_result(config, lr, wd, result)
+        return result
+    if not checkpoint.is_dir():
+        raise FileNotFoundError(f"missing exact constant-LR frontier checkpoint {checkpoint}")
+    result: dict[str, Any] = {
+        "epoch": epoch,
+        "status": "checkpoint_only" if epoch in CHECKPOINT_ONLY_EPOCHS else "frontier_checkpoint",
+        "phase": "pre_decay",
+        "comparisonGroup": "checkpoint_provenance_only",
+        "checkpoint": str(checkpoint),
+        "postDecayEligible": epoch >= POST_DECAY_START_EPOCH,
+        "policy": POLICY,
+        "lr": lr,
+        "wd": wd,
+        "scheduler": "constant_with_warmup",
+        "sourceCheckpoint": str(source_checkpoint) if source_checkpoint else None,
+        "source": source,
+        **phase_metadata(config, epoch),
+    }
+    if log_path is not None and log_path.is_file():
+        clean = common.ANSI.sub("", log_path.read_text())
+        train_values = common.TRAIN_LOSS.findall(clean)
+        if train_values:
+            result["train"] = float(train_values[-1])
+        wandb_values = common.WANDB_RUN.findall(clean)
+        if wandb_values:
+            result["wandb"] = wandb_values[-1]
+    atomic_json(path, result)
+    emit_result(config, lr, wd, result)
+    return result
+
+
 def train_predecay(
     config: dict[str, Any], lr: str, wd: str, previous_epoch: int | None, epoch: int
 ) -> dict[str, Any]:
     target = checkpoint_for_epoch(config, lr, wd, epoch)
     if target.is_dir():
-        return evaluate_checkpoint(config, lr, wd, epoch, target, phase="pre_decay")
+        return record_frontier_checkpoint(
+            config,
+            lr,
+            wd,
+            epoch,
+            target,
+            source_checkpoint=None,
+            source="existing_constant_lr_checkpoint",
+        )
     source = (
-        checkpoint_for_epoch(config, lr, wd, previous_epoch)
-        if previous_epoch is not None
-        else None
+        checkpoint_for_epoch(config, lr, wd, previous_epoch) if previous_epoch is not None else None
     )
     if source is not None and not source.is_dir():
         raise FileNotFoundError(f"missing exact PD source checkpoint {source}")
@@ -455,21 +525,16 @@ def train_predecay(
     )
     log_path = state_dir(config, lr, wd) / "logs" / f"pre_decay_train_e{epoch}.log"
     run_torch(config, name, arguments, log_path)
-    result = parse_validation(log_path, epoch, "pre_decay", target)
-    result.update(
-        {
-            "policy": POLICY,
-            "lr": lr,
-            "wd": wd,
-            "scheduler": "constant_with_warmup",
-            "sourceCheckpoint": str(source) if source else None,
-            "source": "constant_lr_training",
-            **phase_metadata(config, epoch),
-        }
+    return record_frontier_checkpoint(
+        config,
+        lr,
+        wd,
+        epoch,
+        target,
+        source_checkpoint=source,
+        source="constant_lr_training",
+        log_path=log_path,
     )
-    atomic_json(predecay_result_path(config, lr, wd, epoch), result)
-    emit_result(config, lr, wd, result)
-    return result
 
 
 def postdecay_training_arguments(
@@ -510,6 +575,8 @@ def postdecay_training_arguments(
 
 
 def run_postdecay(config: dict[str, Any], lr: str, wd: str, epoch: int) -> dict[str, Any]:
+    if epoch < POST_DECAY_START_EPOCH:
+        raise ValueError("POST decay/evaluation is disabled for E1/E2/E4")
     path = postdecay_result_path(config, lr, wd, epoch)
     if path.is_file():
         result = json.loads(path.read_text())
@@ -547,33 +614,35 @@ def run_postdecay(config: dict[str, Any], lr: str, wd: str, epoch: int) -> dict[
     return result
 
 
-def latest_predecay_saturation(results: dict[int, dict[str, Any]]) -> int | None:
-    epochs = sorted(results)
-    if len(epochs) < POST_DECAY_SOURCE_COUNT:
-        return None
-    previous, current = results[epochs[-2]], results[epochs[-1]]
-    if Decimal(str(current["validationExact"])) >= Decimal(str(previous["validationExact"])):
-        return epochs[-1]
-    return None
-
-
 def postdecay_saturated(results: dict[int, dict[str, Any]]) -> bool:
     epochs = sorted(results)
-    if len(epochs) != POST_DECAY_SOURCE_COUNT:
-        raise ValueError("POST saturation requires exactly three results")
+    if len(epochs) < POST_DECAY_SOURCE_COUNT:
+        return False
     previous, current = results[epochs[-2]], results[epochs[-1]]
-    return Decimal(str(current["validationExact"])) >= Decimal(
-        str(previous["validationExact"])
-    )
+    return Decimal(str(current["validationExact"])) >= Decimal(str(previous["validationExact"]))
 
 
 def finish_postdecay(
-    config: dict[str, Any], lr: str, wd: str, trigger_epoch: int, epochs: list[int], *, pruned: bool
+    config: dict[str, Any],
+    lr: str,
+    wd: str,
+    trigger_epoch: int,
+    predecay_epochs: list[int],
+    *,
+    pruned: bool,
 ) -> bool:
-    sources = [epoch for epoch in sorted(epochs) if epoch <= trigger_epoch][-POST_DECAY_SOURCE_COUNT:]
+    sources = [
+        epoch
+        for epoch in sorted(predecay_epochs)
+        if POST_DECAY_START_EPOCH <= epoch <= trigger_epoch
+    ][-POST_DECAY_SOURCE_COUNT:]
     if len(sources) != POST_DECAY_SOURCE_COUNT:
-        raise RuntimeError("POST finalization requires exactly three completed PD sources")
-    results = {epoch: run_postdecay(config, lr, wd, epoch) for epoch in sources}
+        raise RuntimeError(
+            "POST finalization requires three completed frontier sources at or after E8"
+        )
+    for epoch in sources:
+        run_postdecay(config, lr, wd, epoch)
+    results = recover_postdecay_results(config, lr, wd)
     saturated = postdecay_saturated(results)
     selected_epoch, selected = min(
         results.items(), key=lambda item: (Decimal(str(item[1]["validationExact"])), item[0])
@@ -584,13 +653,14 @@ def finish_postdecay(
         "lr": lr,
         "wd": wd,
         "variant": str(config["variant"]),
-        "trigger": "cross_wd_prune" if pruned else "pre_decay_non_improvement",
+        "trigger": "cross_wd_prune" if pruned else "post_decay_non_improvement",
         "triggerEpoch": trigger_epoch,
-        "preDecayDecisionGroup": "pre_decay",
         "postDecayDecisionGroup": "post_decay",
+        "postDecayEvaluationStartEpoch": POST_DECAY_START_EPOCH,
         "postDecaySaturationCriterion": POST_DECAY_SATURATION_CRITERION,
         "postDecaySaturated": saturated,
-        "postDecaySourceEpochs": sources,
+        "postDecayFinalizerSourceEpochs": sources,
+        "postDecayEvaluatedEpochs": sorted(results),
         "postDecayValidationExact": {
             str(epoch): float(result["validationExact"]) for epoch, result in results.items()
         },
@@ -600,11 +670,13 @@ def finish_postdecay(
         "selectedCheckpoint": selected["checkpoint"],
     }
     if not pruned and not saturated:
-        decision["nextPreDecayEpoch"] = next_frontier(config, trigger_epoch)
+        decision["nextFrontierEpoch"] = next_frontier(config, trigger_epoch)
     atomic_json(decision_path(config, lr, wd, trigger_epoch), decision)
     atomic_json(selection_path(config, lr, wd), decision)
-    marker = "DENSE1B_PDPOST_PRUNED" if pruned else (
-        "DENSE1B_PDPOST_SELECTED" if saturated else "DENSE1B_PDPOST_CONTINUE"
+    marker = (
+        "DENSE1B_PDPOST_PRUNED"
+        if pruned
+        else ("DENSE1B_PDPOST_SELECTED" if saturated else "DENSE1B_PDPOST_CONTINUE")
     )
     print(
         f"{marker} bs={config['globalSequences']} lr={lr} wd={wd} "
@@ -619,10 +691,21 @@ def finish_postdecay(
 def recover_predecay_results(config: dict[str, Any], lr: str, wd: str) -> dict[int, dict[str, Any]]:
     results: dict[int, dict[str, Any]] = {}
     item = coordinate_config(config, lr, wd)
-    for historical in sorted(item.get("historicalPreDecay", []), key=lambda value: int(value["epoch"])):
+    for historical in sorted(
+        item.get("historicalPreDecay", []), key=lambda value: int(value["epoch"])
+    ):
         epoch = int(historical["epoch"])
-        results[epoch] = evaluate_checkpoint(
-            config, lr, wd, epoch, Path(str(historical["checkpoint"])), phase="pre_decay"
+        checkpoint = Path(str(historical["checkpoint"]))
+        if historical.get("checkpointOnly") and epoch not in CHECKPOINT_ONLY_EPOCHS:
+            raise RuntimeError(f"checkpoint-only historical source is not E1/E2/E4: E{epoch}")
+        results[epoch] = record_frontier_checkpoint(
+            config,
+            lr,
+            wd,
+            epoch,
+            checkpoint,
+            source_checkpoint=None,
+            source="historical_checkpoint_only",
         )
     for path in sorted(
         (state_dir(config, lr, wd) / "pre_decay").glob("e*.result.json")
@@ -634,47 +717,99 @@ def recover_predecay_results(config: dict[str, Any], lr: str, wd: str) -> dict[i
     return results
 
 
+def recover_postdecay_results(
+    config: dict[str, Any], lr: str, wd: str
+) -> dict[int, dict[str, Any]]:
+    results: dict[int, dict[str, Any]] = {}
+    directory = state_dir(config, lr, wd) / "post_decay"
+    for path in sorted(directory.glob("e*.result.json") if directory.is_dir() else []):
+        result = json.loads(path.read_text())
+        epoch = int(result["epoch"])
+        if epoch < POST_DECAY_START_EPOCH:
+            raise RuntimeError(f"unexpected POST result before E8: {path}")
+        if result.get("comparisonGroup") != "post_decay":
+            raise RuntimeError(f"mixed POST comparison group in {path}")
+        results[epoch] = result
+    return results
+
+
 def run(config: dict[str, Any], lr: str, wd: str, *, finalize_only: bool) -> None:
     validate_config(config)
     coordinate_config(config, lr, wd)
     state_dir(config, lr, wd).mkdir(parents=True, exist_ok=True)
     existing_selection = selection_path(config, lr, wd)
+    selection_state: dict[str, Any] | None = None
     if existing_selection.is_file():
-        selection = json.loads(existing_selection.read_text())
-        if selection.get("status") in {"complete", "pruned"}:
+        selection_state = json.loads(existing_selection.read_text())
+        if selection_state.get("status") in {"complete", "pruned"}:
             print(
                 f"DENSE1B_PDPOST_ALREADY_TERMINAL bs={config['globalSequences']} "
-                f"lr={lr} wd={wd} status={selection['status']}",
+                f"lr={lr} wd={wd} status={selection_state['status']}",
                 flush=True,
             )
             return
-    results = recover_predecay_results(config, lr, wd)
+    predecay_results = recover_predecay_results(config, lr, wd)
+    postdecay_results = recover_postdecay_results(config, lr, wd)
     if finalize_only:
-        if len(results) < POST_DECAY_SOURCE_COUNT:
-            raise RuntimeError("cannot prune before three scheduled PD checkpoints are complete")
-        finish_postdecay(config, lr, wd, max(results), sorted(results), pruned=True)
+        eligible = [epoch for epoch in sorted(predecay_results) if epoch >= POST_DECAY_START_EPOCH]
+        if len(eligible) < POST_DECAY_SOURCE_COUNT:
+            raise RuntimeError(
+                "cannot prune before three E8-or-later frontier checkpoints are complete"
+            )
+        finish_postdecay(
+            config,
+            lr,
+            wd,
+            max(eligible),
+            sorted(predecay_results),
+            pruned=True,
+        )
         return
     item = coordinate_config(config, lr, wd)
-    if not results:
+    if not predecay_results:
         first = int(item.get("firstEpoch", target_at(config, 0)))
-        results[first] = train_predecay(config, lr, wd, None, first)
+        predecay_results[first] = train_predecay(config, lr, wd, None, first)
     while True:
-        trigger = latest_predecay_saturation(results)
-        if trigger is not None:
-            print(
-                f"DENSE1B_PDPOST_PROVISIONAL bs={config['globalSequences']} lr={lr} "
-                f"wd={wd} epoch={trigger} comparison_group=pre_decay",
-                flush=True,
-            )
-            if finish_postdecay(config, lr, wd, trigger, sorted(results), pruned=False):
-                return
-        previous = max(results)
+        missing_post = [
+            epoch
+            for epoch in sorted(predecay_results)
+            if epoch >= POST_DECAY_START_EPOCH and epoch not in postdecay_results
+        ]
+        if missing_post:
+            epoch = missing_post[0]
+            postdecay_results[epoch] = run_postdecay(config, lr, wd, epoch)
+            if len(postdecay_results) >= POST_DECAY_SOURCE_COUNT:
+                if finish_postdecay(
+                    config,
+                    lr,
+                    wd,
+                    epoch,
+                    sorted(predecay_results),
+                    pruned=False,
+                ):
+                    return
+                selection_state = json.loads(existing_selection.read_text())
+            continue
+        if len(postdecay_results) >= POST_DECAY_SOURCE_COUNT:
+            trigger = max(postdecay_results)
+            if not selection_state or int(selection_state.get("triggerEpoch", -1)) != trigger:
+                if finish_postdecay(
+                    config,
+                    lr,
+                    wd,
+                    trigger,
+                    sorted(predecay_results),
+                    pruned=False,
+                ):
+                    return
+                selection_state = json.loads(existing_selection.read_text())
+        previous = max(predecay_results)
         epoch = next_frontier(config, previous)
         if epoch > int(config["maxEpoch"]):
             raise RuntimeError(
                 f"LR{lr}/WD{wd} reached E{previous} without confirmed POST saturation"
             )
-        results[epoch] = train_predecay(config, lr, wd, previous, epoch)
+        predecay_results[epoch] = train_predecay(config, lr, wd, previous, epoch)
 
 
 def main() -> None:
