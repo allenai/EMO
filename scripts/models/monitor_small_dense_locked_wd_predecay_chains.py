@@ -278,8 +278,13 @@ def update_policy_record(model: str, record: dict[str, Any]) -> str:
         record["activeSourceCheckpoint"] = source
         record["activeOutput"] = output
     elif state in {"submitted", "scheduled"}:
-        record["activePhase"] = "backfill_pre_decay_evaluations"
-        record["activeEpoch"] = int(record.get("historicalPreDecayStartEpoch", 8))
+        if record.get("policy") == FINALIZER_POLICY:
+            requested = [int(epoch) for epoch in record.get("requestedPostDecayEpochs", [])]
+            record["activePhase"] = "requested_post_decay_finalization"
+            record["activeEpoch"] = requested[0] if requested else None
+        else:
+            record["activePhase"] = "backfill_pre_decay_evaluations"
+            record["activeEpoch"] = int(record.get("historicalPreDecayStartEpoch", 8))
 
     saturation_matches = [
         match

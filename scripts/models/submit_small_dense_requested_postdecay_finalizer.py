@@ -119,9 +119,10 @@ def build_spec(args: argparse.Namespace, manifest: Path) -> dict[str, Any]:
     task["propagateFailure"] = False
     task["propagatePreemption"] = False
     spec["retry"] = {"allowedTaskRetries": 8}
+    epoch_description = f"E{args.epochs}" if args.epochs else "no additional endpoints"
     spec["description"] = (
         f"Dense {args.model.upper()} BS{args.global_sequences} locked-WD requested POST "
-        f"finalizer. It trains no new constant-LR frontier and evaluates only E{args.epochs}."
+        f"finalizer. It trains no new constant-LR frontier and evaluates {epoch_description}."
     )
     return spec
 
