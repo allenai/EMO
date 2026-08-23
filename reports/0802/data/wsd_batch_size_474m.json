@@ -8975,7 +8975,7 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-23T03:48:47.940535+00:00",
+        "checkedAt": "2026-08-23T03:58:47.107127+00:00",
         "run": "q1uv9oym",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/q1uv9oym",
         "model": "474m",
@@ -11025,10 +11025,9 @@
       "historicalPreDecayStartEpoch": 8,
       "historicalPreDecayThroughEpoch": 40,
       "activePhase": "requested_post_decay_finalization",
-      "job": "01M0KK56WVCJW1SA6E18WZ98FR",
+      "job": "01M0PBW3H422FR4T31KKDQ0WNP",
       "jobs": [
-        "01M0K9VCVHX8KR6CN9EXESRDCK",
-        "01M0KK56WVCJW1SA6E18WZ98FR"
+        "01M0PBW3H422FR4T31KKDQ0WNP"
       ],
       "excludedPreDecayResults": {
         "1": {
@@ -11117,19 +11116,13 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/.bs64_dr_wt_embwd_lr2e-3_wd0.1_predecay_policy/constant_lr",
       "wandbHealth": {
         "status": "pending",
-        "checkedAt": "2026-08-23T03:50:48.364206+00:00",
+        "checkedAt": "2026-08-23T04:01:57.210545+00:00",
         "run": null,
         "url": null,
         "warnings": [],
         "criticalSignals": [],
         "shouldRecover": false,
         "reason": "The requested POST finalizer has not emitted a stage start yet."
-      },
-      "progress": {
-        "step": 302124,
-        "totalSteps": 302124,
-        "percent": 100.0,
-        "latestTrain": 3.212
       },
       "postDecaySaturationCriterion": "strict_non_improvement",
       "requestedPostDecayFinalization": {
@@ -13320,7 +13313,7 @@
       },
       "wandbHealth": {
         "status": "pending",
-        "checkedAt": "2026-08-23T03:50:12.482242+00:00",
+        "checkedAt": "2026-08-23T04:01:57.431319+00:00",
         "run": null,
         "url": null,
         "warnings": [],
@@ -15384,7 +15377,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/.bs256_dr_wt_embwd_lr2e-3_wd0.333_predecay_policy/post_decay_runs/e72",
       "wandbHealth": {
         "status": "pending",
-        "checkedAt": "2026-08-23T03:50:12.743263+00:00",
+        "checkedAt": "2026-08-23T04:01:57.665974+00:00",
         "run": null,
         "url": null,
         "warnings": [],
@@ -17351,7 +17344,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/.bs512_dr_wt_embwd_lr2e-3_wd0.3_predecay_policy/post_decay_runs/e72",
       "wandbHealth": {
         "status": "warning",
-        "checkedAt": "2026-08-23T03:50:14.855628+00:00",
+        "checkedAt": "2026-08-23T04:01:59.806233+00:00",
         "run": "htb9gg75",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/htb9gg75",
         "model": "474m",
