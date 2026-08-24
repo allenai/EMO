@@ -16,7 +16,8 @@ import monitor_small_dense_dr_wt_embedwd_chains as legacy
 REPORTS = legacy.REPORTS
 POLICY = "locked_wd_predecay_saturation_v1"
 FINALIZER_POLICY = "locked_wd_requested_postdecay_finalizer_v1"
-POLICIES = {POLICY, FINALIZER_POLICY}
+POST_ONLY_POLICY = "locked_wd_all_postdecay_saturation_v1"
+POLICIES = {POLICY, FINALIZER_POLICY, POST_ONLY_POLICY}
 RESULT = re.compile(
     r"SMALL_PREDECAY_POLICY_RESULT model=(153m|474m) bs=([0-9]+) "
     r"phase=(pre_decay|post_decay) epoch=([0-9]+) wd=([^ ]+) json=(\{.*\})$",
@@ -302,6 +303,11 @@ def update_policy_record(model: str, record: dict[str, Any]) -> str:
             requested = [int(epoch) for epoch in record.get("requestedPostDecayEpochs", [])]
             record["activePhase"] = "requested_post_decay_finalization"
             record["activeEpoch"] = requested[0] if requested else None
+        elif record.get("policy") == POST_ONLY_POLICY:
+            record["activePhase"] = "postdecay_only_continuation_pending"
+            record["activeEpoch"] = int(record["continuationBoundaryEpoch"]) + int(
+                record["epochIncrement"]
+            )
         else:
             record["activePhase"] = "backfill_pre_decay_evaluations"
             record["activeEpoch"] = int(record.get("historicalPreDecayStartEpoch", 8))
@@ -400,36 +406,20 @@ def update_policy_record(model: str, record: dict[str, Any]) -> str:
     ]
     if finalized_matches:
         finalization = json.loads(finalized_matches[-1].group(4))
-        preserve = finalization.get("preserveExistingSelection") is True
-        record.update(
-            {
-                "status": "complete",
-                "beakerStatus": state,
-                "activePhase": "done",
-                "activeEpoch": None,
-                "activeWds": [],
-                "requestedPostDecayFinalizationResult": finalization,
-                "postDecaySaturated": finalization.get("postDecaySaturated"),
-                "stopReason": (
-                    "The requested POST sequence reached strict non-improvement."
-                    if finalization.get("postDecaySaturated") is True
-                    else "Stopped at the exact user-requested frontier after completing the requested POST evaluations."
-                ),
-            }
-        )
-        transition = dict(record.get("requestedPostDecayFinalization", {}))
-        transition.update(
-            {
-                "status": "complete",
-                "completedPostDecayEpochs": finalization.get(
-                    "requestedPostDecayEpochs", []
-                ),
-            }
-        )
-        record["requestedPostDecayFinalization"] = transition
-        if not preserve:
+        if record.get("policy") == POST_ONLY_POLICY:
+            if finalization.get("postDecaySaturated") is not True:
+                raise RuntimeError(
+                    f"{model} BS{batch}: POST-only continuation ended unsaturated"
+                )
             record.update(
                 {
+                    "status": "complete",
+                    "beakerStatus": state,
+                    "activePhase": "done",
+                    "activeEpoch": None,
+                    "activeWds": [],
+                    "postDecayContinuationResult": finalization,
+                    "postDecaySaturated": True,
                     "postDecaySelection": finalization,
                     "selectedPostDecayEpoch": finalization[
                         "selectedPostDecayEpoch"
@@ -438,19 +428,66 @@ def update_policy_record(model: str, record: dict[str, Any]) -> str:
                         "selectedPostDecayValidationExact"
                     ],
                     "selectedCheckpoint": finalization["selectedCheckpoint"],
+                    "saturatedEpoch": finalization["saturationEpoch"],
+                    "stopReason": (
+                        "The sequential POST series reached strict non-improvement; "
+                        "constant-LR frontier checkpoints were never evaluated."
+                    ),
                 }
             )
-            if finalization.get("postDecaySaturated") is True:
-                record["saturatedEpoch"] = finalization["evaluatedThroughEpoch"]
-            else:
-                record.pop("saturatedEpoch", None)
+            record.pop("needsAttention", None)
+        else:
+            preserve = finalization.get("preserveExistingSelection") is True
+            record.update(
+                {
+                    "status": "complete",
+                    "beakerStatus": state,
+                    "activePhase": "done",
+                    "activeEpoch": None,
+                    "activeWds": [],
+                    "requestedPostDecayFinalizationResult": finalization,
+                    "postDecaySaturated": finalization.get("postDecaySaturated"),
+                    "stopReason": (
+                        "The requested POST sequence reached strict non-improvement."
+                        if finalization.get("postDecaySaturated") is True
+                        else "Stopped at the exact user-requested frontier after completing the requested POST evaluations."
+                    ),
+                }
+            )
+            transition = dict(record.get("requestedPostDecayFinalization", {}))
+            transition.update(
+                {
+                    "status": "complete",
+                    "completedPostDecayEpochs": finalization.get(
+                        "requestedPostDecayEpochs", []
+                    ),
+                }
+            )
+            record["requestedPostDecayFinalization"] = transition
+            if not preserve:
+                record.update(
+                    {
+                        "postDecaySelection": finalization,
+                        "selectedPostDecayEpoch": finalization[
+                            "selectedPostDecayEpoch"
+                        ],
+                        "selectedPostDecayValidationExact": finalization[
+                            "selectedPostDecayValidationExact"
+                        ],
+                        "selectedCheckpoint": finalization["selectedCheckpoint"],
+                    }
+                )
+                if finalization.get("postDecaySaturated") is True:
+                    record["saturatedEpoch"] = finalization["evaluatedThroughEpoch"]
+                else:
+                    record.pop("saturatedEpoch", None)
 
     health = policy_health(logs, record, state)
     if health is not None:
         record["wandbHealth"] = health
         if health["shouldRecover"]:
             record["needsAttention"] = True
-    elif record.get("policy") == FINALIZER_POLICY and state in {
+    elif record.get("policy") in {FINALIZER_POLICY, POST_ONLY_POLICY} and state in {
         "submitted",
         "scheduled",
         "running",
@@ -463,7 +500,7 @@ def update_policy_record(model: str, record: dict[str, Any]) -> str:
             "warnings": [],
             "criticalSignals": [],
             "shouldRecover": False,
-            "reason": "The requested POST finalizer has not emitted a stage start yet.",
+            "reason": "The POST-only job has not emitted a stage start yet.",
         }
         record.pop("needsAttention", None)
     if state == "failed" and not selection_matches:

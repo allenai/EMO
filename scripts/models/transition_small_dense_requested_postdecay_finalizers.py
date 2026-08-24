@@ -17,6 +17,7 @@ REPORTS = {
     "153m": Path("reports/0802/data/wsd_batch_size_153m.json"),
 }
 FINALIZER_POLICY = "locked_wd_requested_postdecay_finalizer_v1"
+POST_ONLY_POLICY = "locked_wd_all_postdecay_saturation_v1"
 PLAN: dict[tuple[str, int], dict[str, Any]] = {
     ("153m", 512): {
         "awaitPhase": "post_decay",
@@ -243,6 +244,12 @@ def main() -> None:
             if planned_model != model:
                 continue
             record = records[batch]
+            if record.get("policy") == POST_ONLY_POLICY:
+                summaries.append(
+                    f"{model} BS{batch}: POST-only continuation "
+                    f"{record['experiment']} ({record.get('status')})"
+                )
+                continue
             if record.get("policy") == FINALIZER_POLICY:
                 if not plan["epochs"] and not record.get("manualNoWorkFinalization"):
                     if not result_complete(record, plan):

@@ -12,7 +12,8 @@ BATCHES = (64, 128, 256, 512)
 ROOT = Path(__file__).resolve().parents[2]
 POLICY = "locked_wd_predecay_saturation_v1"
 FINALIZER_POLICY = "locked_wd_requested_postdecay_finalizer_v1"
-POLICIES = {POLICY, FINALIZER_POLICY}
+POST_ONLY_POLICY = "locked_wd_all_postdecay_saturation_v1"
+POLICIES = {POLICY, FINALIZER_POLICY, POST_ONLY_POLICY}
 
 
 def validate_model(model: str) -> None:
@@ -68,18 +69,22 @@ def validate_model(model: str) -> None:
         if record.get("policy") in POLICIES:
             locked_wd = str(record.get("lockedWd"))
             finalizer = record.get("policy") == FINALIZER_POLICY
+            post_only = record.get("policy") in {
+                FINALIZER_POLICY,
+                POST_ONLY_POLICY,
+            }
             policy_checks = {
                 "WD tuning stopped": record.get("wdTuningStopped") is True,
                 "locked WD": locked_wd in ladder,
                 "phase comparison": record.get("comparisonPolicy")
-                == ("post_decay_only" if finalizer else "within_phase_only"),
+                == ("post_decay_only" if post_only else "within_phase_only"),
                 "three decay sources": record.get("postDecaySourceCount") == 3,
                 "historical boundary": int(record.get("historicalPreDecayThroughEpoch", 0)) >= 3,
-                "pre-decay criterion": finalizer
+                "pre-decay criterion": post_only
                 or record.get("preDecaySaturationCriterion") == "strict_non_improvement",
                 "post-decay criterion": record.get("postDecaySaturationCriterion")
                 == "strict_non_improvement",
-                "pre-decay disabled": not finalizer
+                "pre-decay disabled": not post_only
                 or record.get("preDecayEvaluation") is False,
                 "active WD lock": all(
                     str(value) == locked_wd for value in record.get("activeWds", [])
@@ -98,7 +103,7 @@ def validate_model(model: str) -> None:
                     raise ValueError(f"{model} BS{batch}: mixed post-decay comparison group")
             selection = record.get("postDecaySelection")
             if selection:
-                if not finalizer and selection.get("preDecayDecisionGroup") != "pre_decay":
+                if not post_only and selection.get("preDecayDecisionGroup") != "pre_decay":
                     raise ValueError(f"{model} BS{batch}: invalid saturation comparison group")
                 if selection.get("postDecaySelectionGroup") != "post_decay":
                     raise ValueError(f"{model} BS{batch}: invalid decay selection group")

@@ -47,6 +47,7 @@ FRACTIONAL_SEARCH = "small-model-selected-e1-fractional-chain"
 LOCKED_POLICIES = {
     "locked_wd_predecay_saturation_v1",
     "locked_wd_requested_postdecay_finalizer_v1",
+    "locked_wd_all_postdecay_saturation_v1",
 }
 
 
