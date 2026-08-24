@@ -11567,7 +11567,7 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-24T12:16:36.605392+00:00",
+        "checkedAt": "2026-08-24T13:16:34.328595+00:00",
         "run": "b5hrfk09",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/b5hrfk09",
         "model": "153m",
@@ -16716,7 +16716,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs128_dr_wt_embwd_lr2e-3_wd0.1_postdecay_only_continuation_v1/constant_lr",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-24T12:18:28.979425+00:00",
+        "checkedAt": "2026-08-24T13:18:37.562295+00:00",
         "run": "f7nhdzpk",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/f7nhdzpk",
         "model": "153m",
@@ -16728,13 +16728,13 @@
         "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs128_dr_wt_embwd_lr2e-3_wd0.1_postdecay_only_continuation_v1/constant_lr",
         "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs128_dr_wt_embwd_lr2e-3_wd0.1_postdecay_only_continuation_v1/constant_lr",
         "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs128_dr_wt_embwd_lr2e-3_wd0.1_postdecay_only_continuation_v1/constant_lr/step329589",
-        "samples": 96,
+        "samples": 4114,
         "firstStep": 329590,
-        "latestStep": 330065,
+        "latestStep": 350155,
         "totalSteps": 357055,
-        "recentLossMedian": 3.4065,
-        "baselineLossMedian": 3.403,
-        "maxLoss": 3.469,
+        "recentLossMedian": 3.3835,
+        "baselineLossMedian": 3.4135,
+        "maxLoss": 3.542,
         "isolatedSpikeCount": 0,
         "stepRegressions": [],
         "nonfiniteLosses": [],
@@ -16846,10 +16846,10 @@
       "continuationOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs128_dr_wt_embwd_lr2e-3_wd0.1_postdecay_only_continuation_v1",
       "continuationManifest": "scripts/models/manifests/small-dense-153m-bs128-dr-wt-embwd-postdecay-only-continuation.json",
       "progress": {
-        "step": 330069,
+        "step": 350158,
         "totalSteps": 357055,
-        "percent": 92.4,
-        "latestTrain": 3.395
+        "percent": 98.1,
+        "latestTrain": 3.443
       }
     },
     {
@@ -19060,7 +19060,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs256_dr_wt_embwd_lr2e-3_wd0.1_postdecay_only_continuation_v1/constant_lr",
       "wandbHealth": {
         "status": "critical",
-        "checkedAt": "2026-08-24T12:18:36.763275+00:00",
+        "checkedAt": "2026-08-24T13:18:45.547592+00:00",
         "run": "h4865xgz",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/h4865xgz",
         "model": "153m",
@@ -19082,7 +19082,7 @@
         "isolatedSpikeCount": 0,
         "stepRegressions": [],
         "nonfiniteLosses": [],
-        "stalledMinutes": 128.3,
+        "stalledMinutes": 188.5,
         "warnings": [],
         "criticalSignals": [
           "training-metrics-stalled"
@@ -21587,7 +21587,7 @@
       },
       "wandbHealth": {
         "status": "critical",
-        "checkedAt": "2026-08-24T12:18:40.925418+00:00",
+        "checkedAt": "2026-08-24T13:18:49.708589+00:00",
         "run": "ix2d9ysc",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/ix2d9ysc",
         "model": "153m",
@@ -21609,7 +21609,7 @@
         "isolatedSpikeCount": 2,
         "stepRegressions": [],
         "nonfiniteLosses": [],
-        "stalledMinutes": 133.1,
+        "stalledMinutes": 193.2,
         "warnings": [
           "isolated-finite-loss-spikes"
         ],

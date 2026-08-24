@@ -8975,7 +8975,7 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-24T12:16:21.687531+00:00",
+        "checkedAt": "2026-08-24T13:16:19.427747+00:00",
         "run": "q1uv9oym",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/q1uv9oym",
         "model": "474m",
@@ -11287,7 +11287,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/.bs64_dr_wt_embwd_lr2e-3_wd0.1_predecay_policy/post_decay_runs/e64",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-24T12:17:58.922756+00:00",
+        "checkedAt": "2026-08-24T13:18:07.143579+00:00",
         "run": "u2i4g221",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/u2i4g221",
         "model": "474m",
@@ -13754,7 +13754,7 @@
       },
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-24T12:18:06.749566+00:00",
+        "checkedAt": "2026-08-24T13:18:14.954832+00:00",
         "run": "3pxcyu3z",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/3pxcyu3z",
         "model": "474m",
@@ -15956,7 +15956,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/.bs256_dr_wt_embwd_lr2e-3_wd0.333_predecay_policy/post_decay_runs/e48",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-24T12:18:08.680161+00:00",
+        "checkedAt": "2026-08-24T13:18:16.654167+00:00",
         "run": "b491bczq",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/b491bczq",
         "model": "474m",
@@ -17971,7 +17971,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/.bs512_dr_wt_embwd_lr2e-3_wd0.3_predecay_policy/post_decay_runs/e72",
       "wandbHealth": {
         "status": "warning",
-        "checkedAt": "2026-08-24T12:18:13.264399+00:00",
+        "checkedAt": "2026-08-24T13:18:21.200224+00:00",
         "run": "htb9gg75",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/htb9gg75",
         "model": "474m",
