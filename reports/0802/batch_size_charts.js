@@ -4,6 +4,11 @@
   const dataLoader=window.ICSL_DATA_LOADER_DATA||{runs:[]};
   const showDataLoaderColumns=(dataLoader.runs||[]).length>0;
   const adaptiveChains=d.adaptiveDrWtEmbedWdChains||[];
+  const lockedWdPhasePolicies=new Set([
+    'locked_wd_predecay_saturation_v1',
+    'locked_wd_requested_postdecay_finalizer_v1',
+    'locked_wd_all_postdecay_saturation_v1',
+  ]);
   const adaptiveBatches=new Set(adaptiveChains.map(chain=>Number(chain.batchSequences)));
   const showAdaptiveColumns=adaptiveChains.length>0;
   const healthStyles=document.createElement('style');
@@ -196,7 +201,7 @@
         series:`BS ${chain.batchSequences} · DR+WT+EmbedWD`,
       });
     });
-    if(['locked_wd_predecay_saturation_v1','locked_wd_requested_postdecay_finalizer_v1'].includes(chain.policy)){
+    if(lockedWdPhasePolicies.has(chain.policy)){
       Object.entries(chain.preDecayResults||{}).forEach(([epoch,result])=>{
         if(result.status!=='complete'||result.comparisonGroup!=='pre_decay'||!Number.isFinite(metric(result)))return;
         adaptivePreDecaySelected.set(`${chain.batchSequences}|${Number(epoch)}`,{
@@ -413,7 +418,7 @@
       const candidate=runForSummaryColumn(column,epoch);
       const preDecay=preDecayForSummaryColumn(column,epoch);
       if(!candidate&&!preDecay)return '<td>—</td>';
-      const lockedAdaptive=column.kind==='adaptive'&&(['locked_wd_predecay_saturation_v1','locked_wd_requested_postdecay_finalizer_v1'].includes(candidate?.policy)||['locked_wd_predecay_saturation_v1','locked_wd_requested_postdecay_finalizer_v1'].includes(preDecay?.policy));
+      const lockedAdaptive=column.kind==='adaptive'&&(lockedWdPhasePolicies.has(candidate?.policy)||lockedWdPhasePolicies.has(preDecay?.policy));
       if(lockedAdaptive){
         const columnBest=Boolean(candidate)&&bestForSummaryColumn(column)===candidate;
         const rowBest=Boolean(candidate)&&metric(candidate)===rowBestMetric;
@@ -532,7 +537,7 @@
       const preDecay=preDecayForSummaryColumn(column,epoch);
       const recalculatedSteps=optimizerStepsForEpochBatch(epoch,column.batch);
       const arithmetic=Number.isFinite(recalculatedSteps)?`E${epoch} × ${Number(optimizerTiming.uniquePoolTokens).toLocaleString()} tokens ÷ (BS ${column.batch} × ${Number(optimizerTiming.sequenceLength)||4096}) = ${recalculatedSteps.toLocaleString()} optimizer steps`:'';
-      const lockedAdaptive=column.kind==='adaptive'&&(['locked_wd_predecay_saturation_v1','locked_wd_requested_postdecay_finalizer_v1'].includes(entry?.run?.policy)||['locked_wd_predecay_saturation_v1','locked_wd_requested_postdecay_finalizer_v1'].includes(preDecay?.policy));
+      const lockedAdaptive=column.kind==='adaptive'&&(lockedWdPhasePolicies.has(entry?.run?.policy)||lockedWdPhasePolicies.has(preDecay?.policy));
       if(lockedAdaptive){
         const postFormatted=entry?entry.value.toFixed(3):null;
         const postMarked=entry&&entry.value===rowBestMetric?`<strong><span class="summary-row-best">${postFormatted}</span></strong>`:postFormatted;

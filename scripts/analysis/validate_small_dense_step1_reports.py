@@ -49,10 +49,23 @@ LOCKED_POLICIES = {
     "locked_wd_requested_postdecay_finalizer_v1",
     "locked_wd_all_postdecay_saturation_v1",
 }
+REPORT_RENDERERS = (
+    Path("reports/0802/batch_size_charts.js"),
+    Path("reports/0802/small_dense_dr_wt_embedwd_charts.js"),
+)
 
 
 def numeric(value: object) -> Decimal:
     return Decimal(str(value))
+
+
+for renderer_path in REPORT_RENDERERS:
+    renderer = renderer_path.read_text()
+    for policy in LOCKED_POLICIES:
+        assert policy in renderer, (
+            f"{renderer_path} does not render locked-WD policy {policy}; "
+            "this would hide retained [PD]/[POST] report results"
+        )
 
 
 for path in REPORTS:
