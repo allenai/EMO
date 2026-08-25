@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Resume the three user-stopped 153M chains under the POST-only policy."""
+"""Resume user-stopped 153M chains under the POST-only policy."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ import submit_small_dense_dr_wt_embedwd_chain as submit
 
 POLICY = runner.POLICY
 REPORT_PATH = Path("reports/0802/data/wsd_batch_size_153m.json")
-TARGETS = {128: 160, 256: 144, 512: 128}
+TARGETS = {64: 160, 128: 160, 256: 144, 512: 128}
 MANIFEST_TEMPLATE = (
     "scripts/models/manifests/"
     "small-dense-153m-bs{batch}-dr-wt-embwd-postdecay-only-continuation.json"

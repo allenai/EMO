@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Register and guard Dense-1B all-POST coordinate experiments.
 
-The six primary BS128/256 coordinates are released only after all ten small
-logical chains are terminal with confirmed POST saturation.  Each coordinate
-is a separate one-node/eight-GPU Beaker experiment.  A conditional three-job
-BS512 follow-up is released only when the terminal BS256 winner uses LR 2e-3.
+The six primary BS128/256 coordinates are normally released only after all ten
+small logical chains are terminal with confirmed POST saturation.  An explicit
+user-authorized mode records and permits an early release without weakening the
+normal automation guard.  Each coordinate is a separate one-node/eight-GPU
+Beaker experiment.  A conditional three-job BS512 follow-up is released only
+when the terminal BS256 winner uses LR 2e-3.
 """
 
 from __future__ import annotations
@@ -649,9 +651,14 @@ def conditional_records(report: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def release_primary(
-    report: dict[str, Any], revision: str, priority: str, completed_count: int
+    report: dict[str, Any],
+    revision: str,
+    priority: str,
+    completed_count: int,
+    *,
+    user_authorized: bool = False,
 ) -> list[str]:
-    if completed_count != TRIGGER_THRESHOLD:
+    if completed_count != TRIGGER_THRESHOLD and not user_authorized:
         return [f"primary Dense-1B held: small={completed_count}/{TRIGGER_THRESHOLD}"]
     messages: list[str] = []
     for record in primary_records(report):
@@ -673,9 +680,20 @@ def release_primary(
             {
                 "completedSmallChainsAtSubmission": completed_count,
                 "revision": revision,
-                "reason": "All small chains confirmed POST saturation; independent coordinates released.",
+                "reason": (
+                    "Explicitly released by the user before the normal small-chain gate; "
+                    "all six independent coordinates were requested in parallel."
+                    if user_authorized and completed_count != TRIGGER_THRESHOLD
+                    else "All small chains confirmed POST saturation; independent coordinates released."
+                ),
             }
         )
+        if user_authorized and completed_count != TRIGGER_THRESHOLD:
+            chain["userAuthorizedLaunchOverride"] = {
+                "completedSmallChains": completed_count,
+                "normalTriggerThreshold": TRIGGER_THRESHOLD,
+                "requestedAt": datetime.now(tz=UTC).isoformat(),
+            }
     return messages
 
 
@@ -752,6 +770,7 @@ def main() -> None:
     modes = parser.add_mutually_exclusive_group(required=True)
     modes.add_argument("--register-only", action="store_true")
     modes.add_argument("--submit-if-ready", action="store_true")
+    modes.add_argument("--submit-primary-user-authorized", action="store_true")
     modes.add_argument("--finalize-run")
     parser.add_argument("--revision")
     parser.add_argument("--priority", default="urgent")
@@ -783,7 +802,13 @@ def main() -> None:
         write_report(report)
         print(message)
         return
-    messages = release_primary(report, args.revision, args.priority, completed_count)
+    messages = release_primary(
+        report,
+        args.revision,
+        args.priority,
+        completed_count,
+        user_authorized=args.submit_primary_user_authorized,
+    )
     messages.extend(release_conditional(report, args.revision, args.priority))
     write_report(report)
     print("\n".join(messages))
