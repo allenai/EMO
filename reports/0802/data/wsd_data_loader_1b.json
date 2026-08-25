@@ -11320,7 +11320,7 @@
       "gpuCount": 8,
       "nodeCount": 1,
       "gradientAccumulation": 2,
-      "status": "held",
+      "status": "running",
       "activeEpoch": 1,
       "sourceExperiment": "01M02YR7SFKQ2C9ABV15QK7VF5",
       "sourceCheckpoint": "fresh",
@@ -11341,7 +11341,15 @@
         4
       ],
       "postDecayEvaluation": "every_scheduled_frontier_from_e8",
-      "postDecaySaturationCriterion": "strict_non_improvement"
+      "postDecaySaturationCriterion": "strict_non_improvement",
+      "beakerStatus": "running",
+      "experiment": "01M0WWNWS66NRG21QSKB87BKE7",
+      "beaker": "01M0WWNWS66NRG21QSKB87BKE7",
+      "revision": "25b3e071152e12ace57c12727d1246cc48862fd0",
+      "job": "01M0WWNWWJMRXABAGTJHDJQ8X2",
+      "jobs": [
+        "01M0WWNWWJMRXABAGTJHDJQ8X2"
+      ]
     },
     {
       "id": "drwtembwd128-lr1e-3-wd1.0",
@@ -11359,7 +11367,7 @@
       "gpuCount": 8,
       "nodeCount": 1,
       "gradientAccumulation": 2,
-      "status": "held",
+      "status": "running",
       "activeEpoch": 1,
       "sourceExperiment": "01M02YR7SFKQ2C9ABV15QK7VF5",
       "sourceCheckpoint": "fresh",
@@ -11380,7 +11388,15 @@
         4
       ],
       "postDecayEvaluation": "every_scheduled_frontier_from_e8",
-      "postDecaySaturationCriterion": "strict_non_improvement"
+      "postDecaySaturationCriterion": "strict_non_improvement",
+      "beakerStatus": "running",
+      "experiment": "01M0WWNY68WSQ0R7DK5Y6GFAPE",
+      "beaker": "01M0WWNY68WSQ0R7DK5Y6GFAPE",
+      "revision": "25b3e071152e12ace57c12727d1246cc48862fd0",
+      "job": "01M0WWNY9P7WTW27TGFPYH2F8W",
+      "jobs": [
+        "01M0WWNY9P7WTW27TGFPYH2F8W"
+      ]
     },
     {
       "id": "drwtembwd256-lr1e-3-wd1.0",
@@ -11398,7 +11414,7 @@
       "gpuCount": 8,
       "nodeCount": 1,
       "gradientAccumulation": 4,
-      "status": "held",
+      "status": "running",
       "activeEpoch": 1,
       "sourceExperiment": "01KZD997FY92SE7CQM504CVDJW",
       "sourceCheckpoint": "fresh",
@@ -11419,7 +11435,15 @@
         4
       ],
       "postDecayEvaluation": "every_scheduled_frontier_from_e8",
-      "postDecaySaturationCriterion": "strict_non_improvement"
+      "postDecaySaturationCriterion": "strict_non_improvement",
+      "beakerStatus": "running",
+      "experiment": "01M0WWNZMA0JC1P332QGNXWDKS",
+      "beaker": "01M0WWNZMA0JC1P332QGNXWDKS",
+      "revision": "25b3e071152e12ace57c12727d1246cc48862fd0",
+      "job": "01M0WWNZQQ1NYT752HA64BWH7T",
+      "jobs": [
+        "01M0WWNZQQ1NYT752HA64BWH7T"
+      ]
     },
     {
       "id": "drwtembwd256-lr2e-3-wd1.0",
@@ -11437,7 +11461,7 @@
       "gpuCount": 8,
       "nodeCount": 1,
       "gradientAccumulation": 4,
-      "status": "held",
+      "status": "running",
       "activeEpoch": 1,
       "sourceExperiment": "01KZD997FY92SE7CQM504CVDJW",
       "sourceCheckpoint": "fresh",
@@ -11458,7 +11482,15 @@
         4
       ],
       "postDecayEvaluation": "every_scheduled_frontier_from_e8",
-      "postDecaySaturationCriterion": "strict_non_improvement"
+      "postDecaySaturationCriterion": "strict_non_improvement",
+      "beakerStatus": "running",
+      "experiment": "01M0WWP10P081R6B25AN2J66VN",
+      "beaker": "01M0WWP10P081R6B25AN2J66VN",
+      "revision": "25b3e071152e12ace57c12727d1246cc48862fd0",
+      "job": "01M0WWP1451A23PDT9BQ4GKPTZ",
+      "jobs": [
+        "01M0WWP1451A23PDT9BQ4GKPTZ"
+      ]
     },
     {
       "id": "drwtembwd256-lr1e-3-wd0.3",
@@ -11478,7 +11510,7 @@
       "gpuCount": 8,
       "nodeCount": 1,
       "gradientAccumulation": 4,
-      "status": "held",
+      "status": "running",
       "activeEpoch": 1,
       "sourceExperiment": "01KZD997FY92SE7CQM504CVDJW",
       "sourceCheckpoint": "fresh",
@@ -11497,7 +11529,15 @@
         4
       ],
       "postDecayEvaluation": "every_scheduled_frontier_from_e8",
-      "postDecaySaturationCriterion": "strict_non_improvement"
+      "postDecaySaturationCriterion": "strict_non_improvement",
+      "beakerStatus": "running",
+      "experiment": "01M0WWP30JPMSGFE91EGMT1WQP",
+      "beaker": "01M0WWP30JPMSGFE91EGMT1WQP",
+      "revision": "25b3e071152e12ace57c12727d1246cc48862fd0",
+      "job": "01M0WWP34QCEGXS081B454RHBX",
+      "jobs": [
+        "01M0WWP34QCEGXS081B454RHBX"
+      ]
     },
     {
       "id": "drwtembwd256-lr2e-3-wd0.3",
@@ -11517,7 +11557,7 @@
       "gpuCount": 8,
       "nodeCount": 1,
       "gradientAccumulation": 4,
-      "status": "held",
+      "status": "running",
       "activeEpoch": 1,
       "sourceExperiment": "01KZD997FY92SE7CQM504CVDJW",
       "sourceCheckpoint": "fresh",
@@ -11536,7 +11576,15 @@
         4
       ],
       "postDecayEvaluation": "every_scheduled_frontier_from_e8",
-      "postDecaySaturationCriterion": "strict_non_improvement"
+      "postDecaySaturationCriterion": "strict_non_improvement",
+      "beakerStatus": "running",
+      "experiment": "01M0WWP54ZB4G476MZYZ4SCX1W",
+      "beaker": "01M0WWP54ZB4G476MZYZ4SCX1W",
+      "revision": "25b3e071152e12ace57c12727d1246cc48862fd0",
+      "job": "01M0WWP59ASDPKPM3RN3PNSS75",
+      "jobs": [
+        "01M0WWP59ASDPKPM3RN3PNSS75"
+      ]
     },
     {
       "id": "conditional-original512-lr2e-3-wd0.333",
@@ -23219,7 +23267,7 @@
       "weightTying": true,
       "decayEmbeddings": true,
       "embeddingWeightDecay": "global",
-      "status": "held",
+      "status": "running",
       "triggerThreshold": 10,
       "completedSmallChainsAtLastCheck": 7,
       "manifest": "scripts/models/manifests/dense-1b-bs128-dr-wt-embwd-grid.json",
@@ -23227,7 +23275,7 @@
       "automaticTaskRetries": 8,
       "results": {},
       "frontiers": {},
-      "reason": "Held until all ten small-model chains have confirmed POST saturation; then every coordinate launches as its own one-node/eight-GPU job.",
+      "reason": "Explicitly released by the user before the normal small-chain gate; all six independent coordinates were requested in parallel.",
       "policy": "dense_1b_all_postdecay_saturation_v1",
       "gpuCountPerCoordinate": 8,
       "nodeCountPerCoordinate": 1,
@@ -23236,7 +23284,10 @@
       "postDecaySourceCount": 3,
       "postDecaySaturationCriterion": "strict_non_improvement",
       "crossWdPruning": "stop_lower_wd_after_higher_wd_strictly_wins_same_lr_post_epoch",
-      "experimentsByCoordinate": {},
+      "experimentsByCoordinate": {
+        "drwtembwd128-lr1e-3-wd0.3": "01M0WWNWS66NRG21QSKB87BKE7",
+        "drwtembwd128-lr1e-3-wd1.0": "01M0WWNY68WSQ0R7DK5Y6GFAPE"
+      },
       "completedSmallChainIds": [
         "474m-bs32",
         "474m-bs64-locked-wd",
@@ -23247,8 +23298,8 @@
         "153m-bs256-locked-wd"
       ],
       "coordinateStates": {
-        "drwtembwd128-lr1e-3-wd0.3": "held",
-        "drwtembwd128-lr1e-3-wd1.0": "held"
+        "drwtembwd128-lr1e-3-wd0.3": "running",
+        "drwtembwd128-lr1e-3-wd1.0": "running"
       },
       "postDecayStartEpoch": 8,
       "checkpointOnlyEpochs": [
@@ -23256,7 +23307,14 @@
         2,
         4
       ],
-      "postDecayEvaluation": "every_scheduled_frontier_from_e8"
+      "postDecayEvaluation": "every_scheduled_frontier_from_e8",
+      "completedSmallChainsAtSubmission": 7,
+      "revision": "25b3e071152e12ace57c12727d1246cc48862fd0",
+      "userAuthorizedLaunchOverride": {
+        "completedSmallChains": 7,
+        "normalTriggerThreshold": 10,
+        "requestedAt": "2026-08-25T16:40:05.919711+00:00"
+      }
     },
     {
       "id": "dense-1b-bs256-dr-wt-embwd-grid",
@@ -23297,7 +23355,7 @@
       "weightTying": true,
       "decayEmbeddings": true,
       "embeddingWeightDecay": "global",
-      "status": "held",
+      "status": "running",
       "triggerThreshold": 10,
       "completedSmallChainsAtLastCheck": 7,
       "manifest": "scripts/models/manifests/dense-1b-bs256-dr-wt-embwd-grid.json",
@@ -23305,7 +23363,7 @@
       "automaticTaskRetries": 8,
       "results": {},
       "frontiers": {},
-      "reason": "Held until all ten small-model chains have confirmed POST saturation; then every coordinate launches as its own one-node/eight-GPU job.",
+      "reason": "Explicitly released by the user before the normal small-chain gate; all six independent coordinates were requested in parallel.",
       "policy": "dense_1b_all_postdecay_saturation_v1",
       "gpuCountPerCoordinate": 8,
       "nodeCountPerCoordinate": 1,
@@ -23314,7 +23372,12 @@
       "postDecaySourceCount": 3,
       "postDecaySaturationCriterion": "strict_non_improvement",
       "crossWdPruning": "stop_lower_wd_after_higher_wd_strictly_wins_same_lr_post_epoch",
-      "experimentsByCoordinate": {},
+      "experimentsByCoordinate": {
+        "drwtembwd256-lr1e-3-wd1.0": "01M0WWNZMA0JC1P332QGNXWDKS",
+        "drwtembwd256-lr2e-3-wd1.0": "01M0WWP10P081R6B25AN2J66VN",
+        "drwtembwd256-lr1e-3-wd0.3": "01M0WWP30JPMSGFE91EGMT1WQP",
+        "drwtembwd256-lr2e-3-wd0.3": "01M0WWP54ZB4G476MZYZ4SCX1W"
+      },
       "completedSmallChainIds": [
         "474m-bs32",
         "474m-bs64-locked-wd",
@@ -23325,10 +23388,10 @@
         "153m-bs256-locked-wd"
       ],
       "coordinateStates": {
-        "drwtembwd256-lr1e-3-wd1.0": "held",
-        "drwtembwd256-lr2e-3-wd1.0": "held",
-        "drwtembwd256-lr1e-3-wd0.3": "held",
-        "drwtembwd256-lr2e-3-wd0.3": "held"
+        "drwtembwd256-lr1e-3-wd1.0": "running",
+        "drwtembwd256-lr2e-3-wd1.0": "running",
+        "drwtembwd256-lr1e-3-wd0.3": "running",
+        "drwtembwd256-lr2e-3-wd0.3": "running"
       },
       "postDecayStartEpoch": 8,
       "checkpointOnlyEpochs": [
@@ -23336,7 +23399,14 @@
         2,
         4
       ],
-      "postDecayEvaluation": "every_scheduled_frontier_from_e8"
+      "postDecayEvaluation": "every_scheduled_frontier_from_e8",
+      "completedSmallChainsAtSubmission": 7,
+      "revision": "25b3e071152e12ace57c12727d1246cc48862fd0",
+      "userAuthorizedLaunchOverride": {
+        "completedSmallChains": 7,
+        "normalTriggerThreshold": 10,
+        "requestedAt": "2026-08-25T16:40:05.920229+00:00"
+      }
     },
     {
       "id": "dense-1b-bs512-lr2e-3-conditional-followup",
