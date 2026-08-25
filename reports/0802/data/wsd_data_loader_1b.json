@@ -11349,7 +11349,34 @@
       "job": "01M0WWNWWJMRXABAGTJHDJQ8X2",
       "jobs": [
         "01M0WWNWWJMRXABAGTJHDJQ8X2"
-      ]
+      ],
+      "activePhase": "pre_decay_train",
+      "activeSource": "fresh",
+      "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd0.3",
+      "wandbHealth": {
+        "status": "healthy",
+        "checkedAt": "2026-08-25T17:04:39.305042+00:00",
+        "run": "3u1r5c9h",
+        "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/3u1r5c9h",
+        "phase": "pre_decay_train",
+        "epoch": 1,
+        "lr": "1e-3",
+        "wd": "0.3",
+        "source": "fresh",
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd0.3",
+        "latestStep": 804,
+        "totalSteps": 1716,
+        "latestTrain": 3.972,
+        "nonfiniteLosses": [],
+        "criticalSignals": [],
+        "shouldRecover": false,
+        "beakerState": "running"
+      },
+      "progress": {
+        "step": 804,
+        "totalSteps": 1716,
+        "percent": 46.9
+      }
     },
     {
       "id": "drwtembwd128-lr1e-3-wd1.0",
@@ -11396,7 +11423,34 @@
       "job": "01M0WWNY9P7WTW27TGFPYH2F8W",
       "jobs": [
         "01M0WWNY9P7WTW27TGFPYH2F8W"
-      ]
+      ],
+      "activePhase": "pre_decay_train",
+      "activeSource": "fresh",
+      "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd1.0",
+      "wandbHealth": {
+        "status": "healthy",
+        "checkedAt": "2026-08-25T17:04:40.314201+00:00",
+        "run": "goq28tf5",
+        "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/goq28tf5",
+        "phase": "pre_decay_train",
+        "epoch": 1,
+        "lr": "1e-3",
+        "wd": "1.0",
+        "source": "fresh",
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd1.0",
+        "latestStep": 774,
+        "totalSteps": 1716,
+        "latestTrain": 3.957,
+        "nonfiniteLosses": [],
+        "criticalSignals": [],
+        "shouldRecover": false,
+        "beakerState": "running"
+      },
+      "progress": {
+        "step": 774,
+        "totalSteps": 1716,
+        "percent": 45.1
+      }
     },
     {
       "id": "drwtembwd256-lr1e-3-wd1.0",
@@ -11443,7 +11497,34 @@
       "job": "01M0WWNZQQ1NYT752HA64BWH7T",
       "jobs": [
         "01M0WWNZQQ1NYT752HA64BWH7T"
-      ]
+      ],
+      "activePhase": "pre_decay_train",
+      "activeSource": "fresh",
+      "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0",
+      "wandbHealth": {
+        "status": "healthy",
+        "checkedAt": "2026-08-25T17:04:41.268343+00:00",
+        "run": "lct067xj",
+        "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/lct067xj",
+        "phase": "pre_decay_train",
+        "epoch": 1,
+        "lr": "1e-3",
+        "wd": "1.0",
+        "source": "fresh",
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0",
+        "latestStep": 389,
+        "totalSteps": 858,
+        "latestTrain": 4.44,
+        "nonfiniteLosses": [],
+        "criticalSignals": [],
+        "shouldRecover": false,
+        "beakerState": "running"
+      },
+      "progress": {
+        "step": 389,
+        "totalSteps": 858,
+        "percent": 45.3
+      }
     },
     {
       "id": "drwtembwd256-lr2e-3-wd1.0",
@@ -11490,7 +11571,34 @@
       "job": "01M0WWP1451A23PDT9BQ4GKPTZ",
       "jobs": [
         "01M0WWP1451A23PDT9BQ4GKPTZ"
-      ]
+      ],
+      "activePhase": "pre_decay_train",
+      "activeSource": "fresh",
+      "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd1.0",
+      "wandbHealth": {
+        "status": "healthy",
+        "checkedAt": "2026-08-25T17:04:42.238210+00:00",
+        "run": "q8jgld9c",
+        "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/q8jgld9c",
+        "phase": "pre_decay_train",
+        "epoch": 1,
+        "lr": "2e-3",
+        "wd": "1.0",
+        "source": "fresh",
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd1.0",
+        "latestStep": 396,
+        "totalSteps": 858,
+        "latestTrain": 4.523,
+        "nonfiniteLosses": [],
+        "criticalSignals": [],
+        "shouldRecover": false,
+        "beakerState": "running"
+      },
+      "progress": {
+        "step": 396,
+        "totalSteps": 858,
+        "percent": 46.2
+      }
     },
     {
       "id": "drwtembwd256-lr1e-3-wd0.3",
@@ -11537,7 +11645,34 @@
       "job": "01M0WWP34QCEGXS081B454RHBX",
       "jobs": [
         "01M0WWP34QCEGXS081B454RHBX"
-      ]
+      ],
+      "activePhase": "pre_decay_train",
+      "activeSource": "fresh",
+      "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd0.3",
+      "wandbHealth": {
+        "status": "healthy",
+        "checkedAt": "2026-08-25T17:04:43.289508+00:00",
+        "run": "bmihznhc",
+        "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/bmihznhc",
+        "phase": "pre_decay_train",
+        "epoch": 1,
+        "lr": "1e-3",
+        "wd": "0.3",
+        "source": "fresh",
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd0.3",
+        "latestStep": 429,
+        "totalSteps": 858,
+        "latestTrain": 4.245,
+        "nonfiniteLosses": [],
+        "criticalSignals": [],
+        "shouldRecover": false,
+        "beakerState": "running"
+      },
+      "progress": {
+        "step": 429,
+        "totalSteps": 858,
+        "percent": 50.0
+      }
     },
     {
       "id": "drwtembwd256-lr2e-3-wd0.3",
@@ -11581,10 +11716,39 @@
       "experiment": "01M0WWP54ZB4G476MZYZ4SCX1W",
       "beaker": "01M0WWP54ZB4G476MZYZ4SCX1W",
       "revision": "25b3e071152e12ace57c12727d1246cc48862fd0",
-      "job": "01M0WWP59ASDPKPM3RN3PNSS75",
+      "job": "01M0WXS4HYFB8V1PG0V96ZCEPB",
       "jobs": [
-        "01M0WWP59ASDPKPM3RN3PNSS75"
-      ]
+        "01M0WWP59ASDPKPM3RN3PNSS75",
+        "01M0WX9ZJS05913MQWPHJY2RNV",
+        "01M0WXS4HYFB8V1PG0V96ZCEPB"
+      ],
+      "activePhase": "pre_decay_train",
+      "activeSource": "fresh",
+      "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.3",
+      "wandbHealth": {
+        "status": "healthy",
+        "checkedAt": "2026-08-25T17:04:44.222288+00:00",
+        "run": "x4ng42fs",
+        "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/x4ng42fs",
+        "phase": "pre_decay_train",
+        "epoch": 1,
+        "lr": "2e-3",
+        "wd": "0.3",
+        "source": "fresh",
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.3",
+        "latestStep": 19,
+        "totalSteps": 858,
+        "latestTrain": 8.044,
+        "nonfiniteLosses": [],
+        "criticalSignals": [],
+        "shouldRecover": false,
+        "beakerState": "running"
+      },
+      "progress": {
+        "step": 19,
+        "totalSteps": 858,
+        "percent": 2.2
+      }
     },
     {
       "id": "conditional-original512-lr2e-3-wd0.333",
@@ -23275,7 +23439,7 @@
       "automaticTaskRetries": 8,
       "results": {},
       "frontiers": {},
-      "reason": "Explicitly released by the user before the normal small-chain gate; all six independent coordinates were requested in parallel.",
+      "reason": "Held until all ten small-model chains have confirmed POST saturation; then every coordinate launches as its own one-node/eight-GPU job.",
       "policy": "dense_1b_all_postdecay_saturation_v1",
       "gpuCountPerCoordinate": 8,
       "nodeCountPerCoordinate": 1,
@@ -23363,7 +23527,7 @@
       "automaticTaskRetries": 8,
       "results": {},
       "frontiers": {},
-      "reason": "Explicitly released by the user before the normal small-chain gate; all six independent coordinates were requested in parallel.",
+      "reason": "Held until all ten small-model chains have confirmed POST saturation; then every coordinate launches as its own one-node/eight-GPU job.",
       "policy": "dense_1b_all_postdecay_saturation_v1",
       "gpuCountPerCoordinate": 8,
       "nodeCountPerCoordinate": 1,
