@@ -16898,10 +16898,10 @@
       "continuationOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs128_dr_wt_embwd_lr2e-3_wd0.1_postdecay_only_continuation_v1",
       "continuationManifest": "scripts/models/manifests/small-dense-153m-bs128-dr-wt-embwd-postdecay-only-continuation.json",
       "progress": {
-        "step": 455099,
+        "step": 456369,
         "totalSteps": 488282,
-        "percent": 93.2,
-        "latestTrain": 3.309
+        "percent": 93.5,
+        "latestTrain": 3.38
       }
     },
     {
@@ -22061,10 +22061,10 @@
       "continuationOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs512_dr_wt_embwd_lr2e-3_wd0.3_postdecay_only_continuation_v1",
       "continuationManifest": "scripts/models/manifests/small-dense-153m-bs512-dr-wt-embwd-postdecay-only-continuation.json",
       "progress": {
-        "step": 85395,
+        "step": 85659,
         "totalSteps": 89264,
-        "percent": 95.7,
-        "latestTrain": 3.416
+        "percent": 96.0,
+        "latestTrain": 3.418
       },
       "needsAttention": true
     }
