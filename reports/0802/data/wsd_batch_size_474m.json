@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-26",
+  "updated": "2026-08-27",
   "title": "0802 Step 1-1 \u00b7 Dense 474M",
   "setup": "Dense 474M; 1B-unique-pool repeated-token regime; sequence length 4096. Report tables include BS32/64/128/256/512; completed higher-batch results and provenance remain fully visible. Rank microbatch is 16 sequences; BS32/64 use 2/4 GPUs with gradient accumulation 1/1. Warmup is token-matched across batches.",
   "selection": "For BS32, the user declared LR1e-3/WD0.1 the E1 winner after it tied the minimum validation CE, preferring the higher WD for later epochs. Both LR and WD are now permanently locked: continue only this exact coordinate through E2/E4/E8/E12/E16 and then E24/E32/E40/E48/E56/E64, stopping at the first post-E16 non-improvement. The selected E1 trajectory also supplies exact-coordinate E0.125/E0.25/E0.5 decay endpoints. All nonwinning E1 results and recovery provenance remain visible. Existing higher-batch chains retain their recorded terminal policies. Completed E20/E28 work remains visible only in provenance and is omitted from summary rows; neither is a future launch target. BS32 now has one persistent saturation-gated continuation from E24; it uses the locked LR1e-3/WD0.1 coordinate and one canonical output directory. BS64 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS128 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.3 and its immediate neighbors. BS256 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.333 and its immediate neighbors. BS512 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.3 and its immediate neighbors.",
@@ -11287,7 +11287,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/.bs64_dr_wt_embwd_lr2e-3_wd0.1_predecay_policy/post_decay_runs/e64",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-26T23:21:15.960306+00:00",
+        "checkedAt": "2026-08-27T04:05:59.528704+00:00",
         "run": "u2i4g221",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/u2i4g221",
         "model": "474m",
@@ -13754,7 +13754,7 @@
       },
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-26T23:21:21.465080+00:00",
+        "checkedAt": "2026-08-27T04:06:11.539297+00:00",
         "run": "3pxcyu3z",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/3pxcyu3z",
         "model": "474m",
@@ -15956,7 +15956,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/.bs256_dr_wt_embwd_lr2e-3_wd0.333_predecay_policy/post_decay_runs/e48",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-26T23:21:23.032384+00:00",
+        "checkedAt": "2026-08-27T04:06:14.064211+00:00",
         "run": "b491bczq",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/b491bczq",
         "model": "474m",
@@ -17971,7 +17971,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/.bs512_dr_wt_embwd_lr2e-3_wd0.3_predecay_policy/post_decay_runs/e72",
       "wandbHealth": {
         "status": "warning",
-        "checkedAt": "2026-08-26T23:21:26.778962+00:00",
+        "checkedAt": "2026-08-27T04:06:23.353664+00:00",
         "run": "htb9gg75",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/htb9gg75",
         "model": "474m",
