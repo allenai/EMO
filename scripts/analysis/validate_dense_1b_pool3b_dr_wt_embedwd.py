@@ -30,6 +30,9 @@ def main() -> None:
     assert report["policy"] == runner.POLICY
     assert report["poolPlan"]["uniqueTokens"] == runner.POOL_TOKENS
     assert report["poolPlan"]["decayCap"] is None
+    assert report["poolPlan"]["manifest"] == runner.FULL_POOL
+    assert report["poolPlan"]["compositeManifest"] == runner.COMPOSITE_POOL
+    assert report["poolPlan"]["checkpointEpochs"] == runner.INITIAL_TARGETS
     assert report["poolPlan"]["requestedCheckpointEpochs"] == [4, 8, 12, 16, 20, 24, 28, 32]
     assert report["poolPlan"]["postDecayEpochs"][:3] == [32, 48, 64]
     runs = report["runs"]
@@ -39,6 +42,8 @@ def main() -> None:
         assert Decimal(str(run["lr"])) == Decimal("1e-3")
         assert Decimal(str(run["wd"])) == Decimal("0.3")
         assert run["weightTying"] and run["decayEmbeddings"] and run["dynamicRepacking"]
+        assert run["dataOrder"] == "ordinary_e1_dynamic_repacking_from_e2"
+        assert run["checkpointOnlyEpochs"] == runner.CHECKPOINT_ONLY_EPOCHS
         assert run["comparisonPolicy"] == "post_decay_only"
         assert int(run["postDecayStartEpoch"]) == 32
         for epoch, result in run.get("postDecayResults", {}).items():

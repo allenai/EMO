@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Run one Dense-1B DR+WT+EmbedWD coordinate on the sealed 3B pool.
 
-The constant-LR branch retains an internal E1 checkpoint and the requested
+The constant-LR branch resumes the exact retained E1 checkpoint, transitions
+to dynamic repacking at an internal E2 checkpoint, and retains the requested
 E4/E8/.../E32 pre-decay checkpoints.  No checkpoint before E32 is evaluated.
 POST evaluations begin at E32 and then advance by sixteen epochs until the
 first strict non-improvement relative to the immediately preceding POST result.
@@ -20,13 +21,16 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import run_dense_1b_dr_wt_embedwd_grid as chain
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "data"))
+import materialize_dclm_composite_for_dynamic_repacking as flat_pool
+
 POLICY = "dense_1b_pool3b_dr_wt_embedwd_postdecay_saturation_v1"
 POOL_TOKENS = 3_000_000_000
 SEQUENCE_LENGTH = 4096
 DECAY_FRACTION = 0.1
 POST_DECAY_START_EPOCH = 32
-CHECKPOINT_ONLY_EPOCHS = [1, 4, 8, 12, 16, 20, 24, 28]
-INITIAL_TARGETS = [1, 4, 8, 12, 16, 20, 24, 28, 32]
+CHECKPOINT_ONLY_EPOCHS = [1, 2, 4, 8, 12, 16, 20, 24, 28]
+INITIAL_TARGETS = [1, 2, 4, 8, 12, 16, 20, 24, 28, 32]
 POST_EPOCH_INCREMENT = 16
 POST_DECAY_SOURCE_COUNT = 2
 OUTPUT_ROOT = (
@@ -37,8 +41,27 @@ POOL_ROOT = (
     "/weka/oe-training-default/sewonm/icsl/data/"
     "dclm_0802_nested_1b_3b_9b"
 )
-FULL_POOL = f"{POOL_ROOT}/manifests/dclm_0802_nested_train_3b.json"
+COMPOSITE_POOL = f"{POOL_ROOT}/manifests/dclm_0802_nested_train_3b.json"
+FULL_POOL = (
+    f"{POOL_ROOT}/manifests/"
+    "dclm_0802_nested_train_3b_flat_dynamic_repacking.json"
+)
+FULL_POOL_TOKENS = (
+    f"{POOL_ROOT}/materialized/"
+    "dclm_0802_nested_train_3b_flat_dynamic_repacking.uint32"
+)
 POOL_AUDIT = f"{POOL_ROOT}/manifests/dclm_0802_nested_1b_3b_9b.pool.json"
+MIX_BASE_DIR = Path("/weka/oe-training-default/ai2-llm")
+E1_SOURCES = {
+    64: {
+        "checkpoint": f"{OUTPUT_ROOT}/bs64_lr1e-3_wd0.3/step10300",
+        "experiment": "01M13DYAE99E9W5JF917873SAJ",
+    },
+    128: {
+        "checkpoint": f"{OUTPUT_ROOT}/bs128_lr1e-3_wd0.3/step5150",
+        "experiment": "01M13DYBS97YNSDYF8NZRZJXXE",
+    },
+}
 
 
 def total_step(epoch: int, batch: int) -> int:
@@ -73,6 +96,7 @@ def validate_config(config: dict[str, Any]) -> None:
         "postDecayEvaluation",
         "poolTokens",
         "poolManifest",
+        "poolCompositeManifest",
         "poolAudit",
     }
     missing = sorted(required - config.keys())
@@ -94,16 +118,20 @@ def validate_config(config: dict[str, Any]) -> None:
     if int(config["postDecayStartEpoch"]) != POST_DECAY_START_EPOCH:
         raise ValueError("POST evaluation must begin at E32")
     if [int(x) for x in config["checkpointOnlyEpochs"]] != CHECKPOINT_ONLY_EPOCHS:
-        raise ValueError("checkpoint-only epochs must be E1 and every E4 through E28")
+        raise ValueError("checkpoint-only epochs must be E1,E2 and every E4 through E28")
     if [int(x) for x in config["initialTargets"]] != INITIAL_TARGETS:
-        raise ValueError("constant-LR checkpoint ladder must be E1,E4,...,E32")
+        raise ValueError("constant-LR checkpoint ladder must be E1,E2,E4,...,E32")
     if int(config["epochIncrement"]) != POST_EPOCH_INCREMENT:
         raise ValueError("frontiers after E32 must advance by sixteen epochs")
     if config["postDecayEvaluation"] != "e32_then_every_16_epochs":
         raise ValueError("POST evaluation schedule must be E32,E48,E64,...")
     if int(config["poolTokens"]) != POOL_TOKENS:
         raise ValueError("one Pool-3B epoch must mean exactly 3B tokens")
-    if config["poolManifest"] != FULL_POOL or config["poolAudit"] != POOL_AUDIT:
+    if (
+        config["poolManifest"] != FULL_POOL
+        or config["poolCompositeManifest"] != COMPOSITE_POOL
+        or config["poolAudit"] != POOL_AUDIT
+    ):
         raise ValueError("manifest must use the sealed nested Pool-3B lineage")
     if int(config["nprocPerNode"]) != 8 or int(config["rankMicrobatchSequences"]) != 8:
         raise ValueError("each coordinate must use eight GPUs and rank microbatch 8")
@@ -124,15 +152,30 @@ def validate_config(config: dict[str, Any]) -> None:
     expected_output = f"{OUTPUT_ROOT}/bs{batch}_lr1e-3_wd0.3"
     if coordinate.get("output") != expected_output:
         raise ValueError(f"coordinate output must remain {expected_output}")
+    historical = coordinate.get("historicalPreDecay") or []
+    if len(historical) != 1:
+        raise ValueError("coordinate must declare exactly one retained E1 checkpoint")
+    source = historical[0]
+    expected_source = E1_SOURCES[batch]
+    if (
+        int(source.get("epoch", -1)) != 1
+        or source.get("checkpoint") != expected_source["checkpoint"]
+        or source.get("sourceExperiment") != expected_source["experiment"]
+        or source.get("checkpointOnly") is not True
+    ):
+        raise ValueError("coordinate E1 recovery provenance does not match the failed Pool-3B run")
+    if config.get("dataOrder") != "ordinary_e1_dynamic_repacking_from_e2":
+        raise ValueError("dynamic repacking must begin from the E1 -> E2 transition")
     if int(config["maxEpoch"]) < 64:
         raise ValueError("maxEpoch must leave room for adjacent POST comparisons")
 
 
 def validate_pool_lineage(config: dict[str, Any]) -> None:
     manifest = Path(str(config["poolManifest"]))
+    composite = Path(str(config["poolCompositeManifest"]))
     audit_path = Path(str(config["poolAudit"]))
-    if not manifest.is_file() or not audit_path.is_file():
-        raise FileNotFoundError("sealed Pool-3B manifest or audit is unavailable")
+    if not composite.is_file() or not audit_path.is_file():
+        raise FileNotFoundError("sealed Pool-3B composite manifest or audit is unavailable")
     audit = json.loads(audit_path.read_text()).get("audit", {})
     if not (
         audit.get("passed") is True
@@ -140,9 +183,23 @@ def validate_pool_lineage(config: dict[str, Any]) -> None:
         and audit.get("chunk_document_overlap") == 0
     ):
         raise RuntimeError(f"Pool-3B disjointness audit failed: {audit}")
+    flattened = flat_pool.ensure_flattened_pool(
+        composite_manifest=composite,
+        output_manifest=manifest,
+        output_tokens=Path(FULL_POOL_TOKENS),
+        manifest_base_dir=MIX_BASE_DIR,
+    )
+    if (
+        len(flattened.get("entries") or []) != 1
+        or int(flattened["entries"][0].get("start_instance", -1)) != 0
+        or flattened.get("flattened_from", {}).get("document_order_preserved") is not True
+        or int(flattened["selection"]["requested_tokens"]) != POOL_TOKENS
+    ):
+        raise RuntimeError("flattened Pool-3B manifest failed dynamic-repacking lineage checks")
     print(
         "DENSE1B_POOL3B_AUDIT_OK "
-        f"manifest={manifest} audit={audit_path} unique_tokens={POOL_TOKENS}",
+        f"manifest={manifest} composite={composite} audit={audit_path} "
+        f"unique_tokens={POOL_TOKENS}",
         flush=True,
     )
 

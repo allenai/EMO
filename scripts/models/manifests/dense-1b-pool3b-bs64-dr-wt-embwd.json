@@ -8,10 +8,18 @@
     {
       "lr": "1e-3",
       "wd": "0.3",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_pool3b_dr_wt_embwd/bs64_lr1e-3_wd0.3"
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_pool3b_dr_wt_embwd/bs64_lr1e-3_wd0.3",
+      "historicalPreDecay": [
+        {
+          "epoch": 1,
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_pool3b_dr_wt_embwd/bs64_lr1e-3_wd0.3/step10300",
+          "checkpointOnly": true,
+          "sourceExperiment": "01M13DYAE99E9W5JF917873SAJ"
+        }
+      ]
     }
   ],
-  "initialTargets": [1, 4, 8, 12, 16, 20, 24, 28, 32],
+  "initialTargets": [1, 2, 4, 8, 12, 16, 20, 24, 28, 32],
   "epochIncrement": 16,
   "maxEpoch": 256,
   "outputRoot": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_pool3b_dr_wt_embwd",
@@ -19,15 +27,16 @@
   "variant": "DR+WT+EmbedWD",
   "policy": "dense_1b_pool3b_dr_wt_embedwd_postdecay_saturation_v1",
   "comparisonPolicy": "post_decay_only",
-  "checkpointOnlyEpochs": [1, 4, 8, 12, 16, 20, 24, 28],
+  "checkpointOnlyEpochs": [1, 2, 4, 8, 12, 16, 20, 24, 28],
   "postDecayStartEpoch": 32,
   "postDecayEvaluation": "e32_then_every_16_epochs",
   "postDecaySourceCount": 2,
   "postDecaySaturationCriterion": "strict_non_improvement",
   "poolTokens": 3000000000,
-  "poolManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+  "poolManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b_flat_dynamic_repacking.json",
+  "poolCompositeManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
   "poolAudit": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_1b_3b_9b.pool.json",
-  "dataOrder": "ordinary_e1_dynamic_repacking_from_e4",
+  "dataOrder": "ordinary_e1_dynamic_repacking_from_e2",
   "weightTying": true,
   "decayEmbeddings": true
 }

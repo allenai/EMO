@@ -18,6 +18,22 @@ POLICY = "dense_1b_pool3b_dr_wt_embedwd_postdecay_saturation_v1"
 REPORT = Path("reports/0802/data/wsd_data_loader_1b_pool3b_drwtembwd.json")
 REPORT_JS = REPORT.with_suffix(".js")
 RUNNER = "scripts/models/run_dense_1b_pool3b_dr_wt_embedwd.py"
+RECOVERY_SOURCES = {
+    64: {
+        "experiment": "01M13DYAE99E9W5JF917873SAJ",
+        "checkpoint": (
+            "/weka/oe-training-default/sewonm/icsl/models/"
+            "dense_1b_pool3b_dr_wt_embwd/bs64_lr1e-3_wd0.3/step10300"
+        ),
+    },
+    128: {
+        "experiment": "01M13DYBS97YNSDYF8NZRZJXXE",
+        "checkpoint": (
+            "/weka/oe-training-default/sewonm/icsl/models/"
+            "dense_1b_pool3b_dr_wt_embwd/bs128_lr1e-3_wd0.3/step5150"
+        ),
+    },
+}
 
 
 def command(arguments: list[str], *, input_text: str | None = None) -> str:
@@ -58,7 +74,10 @@ def validate_revision(revision: str) -> None:
 
 
 def experiment_name(batch: int) -> str:
-    return f"dense-1b-pool3b-bs{batch}-dr-wt-embwd-lr1e-3-wd0.3-post32-e16-v1"
+    return (
+        f"dense-1b-pool3b-bs{batch}-dr-wt-embwd-lr1e-3-wd0.3-"
+        "retained-e1-flat-dr-recovery-v2"
+    )
 
 
 def existing_named_experiment(name: str) -> str | None:
@@ -118,7 +137,8 @@ def spec_for(record: dict[str, Any], revision: str, priority: str) -> dict[str, 
     spec["retry"] = {"allowedTaskRetries": 8}
     spec["description"] = (
         f"Dense-1B sealed Pool-3B BS{record['batchSequences']} DR+WT+EmbedWD; "
-        "LR1e-3 WD0.3; PD checkpoints every E4 through E32; POST E32,E48,E64,..."
+        "LR1e-3 WD0.3; exact retained Pool-3B E1 recovery; dynamic repacking from E2; "
+        "PD checkpoints E2 and every E4 through E32; POST E32,E48,E64,..."
     )
     return spec
 
@@ -145,6 +165,7 @@ def main() -> None:
     parser.add_argument("--priority", default="urgent")
     parser.add_argument("--submit-if-ready", action="store_true")
     parser.add_argument("--print-only", action="store_true")
+    parser.add_argument("--recover-from-retained-e1", action="store_true")
     args = parser.parse_args()
     validate_revision(args.revision)
     report = json.loads(REPORT.read_text())
@@ -152,8 +173,20 @@ def main() -> None:
     if len(runs) != 2 or {int(run["batchSequences"]) for run in runs} != {64, 128}:
         raise RuntimeError("report must contain exactly the authorized BS64/BS128 coordinates")
     for run in runs:
-        if run.get("experiment"):
+        batch = int(run["batchSequences"])
+        recovery = RECOVERY_SOURCES[batch]
+        current_experiment = run.get("experiment")
+        if not args.recover_from_retained_e1 and current_experiment:
             continue
+        if args.recover_from_retained_e1 and current_experiment not in {
+            None,
+            recovery["experiment"],
+        }:
+            print(f"BS{batch}: already registered as replacement {current_experiment}")
+            continue
+        if args.recover_from_retained_e1 and current_experiment == recovery["experiment"]:
+            if run.get("status") != "failed":
+                raise RuntimeError(f"BS{batch} recovery source is not terminal-failed")
         if args.print_only:
             print(json.dumps(spec_for(run, args.revision, args.priority), indent=2))
             continue
@@ -161,6 +194,44 @@ def main() -> None:
             print(f"BS{run['batchSequences']}: ready; pass --submit-if-ready to launch")
             continue
         experiment = create(run, args.revision, args.priority)
+        if current_experiment:
+            history = run.setdefault("experimentHistory", [])
+            if not any(item.get("experiment") == current_experiment for item in history):
+                history.append(
+                    {
+                        "experiment": current_experiment,
+                        "status": "failed",
+                        "role": "retained_e1_source",
+                        "checkpoint": recovery["checkpoint"],
+                    }
+                )
+        predecay = run.setdefault("preDecayResults", {})
+        predecay["1"] = {
+            "epoch": 1,
+            "status": "checkpoint_only",
+            "phase": "pre_decay",
+            "comparisonGroup": "checkpoint_provenance_only",
+            "checkpoint": recovery["checkpoint"],
+            "postDecayEligible": False,
+            "policy": POLICY,
+            "lr": "1e-3",
+            "wd": "0.3",
+            "source": "historical_checkpoint_only",
+            "sourceExperiment": recovery["experiment"],
+            "dynamicRepacking": False,
+            "weightTying": True,
+            "decayEmbeddings": True,
+            "dataOrder": "ordinary_shuffled",
+        }
+        run.setdefault("results", {})["1"] = {"preDecay": predecay["1"], "postDecay": None}
+        for stale in (
+            "job",
+            "jobs",
+            "activeSource",
+            "activeOutput",
+            "needsAttention",
+        ):
+            run.pop(stale, None)
         run.update(
             {
                 "status": "submitted",
@@ -168,8 +239,25 @@ def main() -> None:
                 "experiment": experiment,
                 "beaker": experiment,
                 "revision": args.revision,
-                "activeEpoch": 1,
+                "activeEpoch": 2,
                 "activePhase": "pending",
+                "dataOrder": "ordinary_e1_dynamic_repacking_from_e2",
+                "checkpointOnlyEpochs": [1, 2, 4, 8, 12, 16, 20, 24, 28],
+                "recovery": {
+                    "sourceExperiment": recovery["experiment"],
+                    "sourceCheckpoint": recovery["checkpoint"],
+                    "resumeFrontier": 2,
+                    "flatDynamicRepackingManifest": (
+                        "/weka/oe-training-default/sewonm/icsl/data/"
+                        "dclm_0802_nested_1b_3b_9b/manifests/"
+                        "dclm_0802_nested_train_3b_flat_dynamic_repacking.json"
+                    ),
+                },
+                "wandbHealth": {
+                    "status": "pending",
+                    "beakerState": "submitted",
+                    "criticalSignals": [],
+                },
             }
         )
         print(f"BS{run['batchSequences']}: {experiment}")
