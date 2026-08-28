@@ -1,7 +1,7 @@
 {
-  "title": "1B repeated-data study — 3B unique-token pool",
-  "setup": "Dense 1B · sealed 3B unique-token pool · DR+WT+EmbedWD · LR 1e-3 · WD 0.3 · BS64/128. E is one 3B-token pass. Constant-LR checkpoints are retained every four epochs through E32; POST evaluation begins at E32 and repeats every sixteen epochs.",
-  "updated": "2026-08-27",
+  "title": "1B repeated-data study \u2014 3B unique-token pool",
+  "setup": "Dense 1B \u00b7 sealed 3B unique-token pool \u00b7 DR+WT+EmbedWD \u00b7 LR 1e-3 \u00b7 WD 0.3 \u00b7 BS64/128. E is one 3B-token pass. Constant-LR checkpoints are retained every four epochs through E32; POST evaluation begins at E32 and repeats every sixteen epochs.",
+  "updated": "2026-08-28",
   "policy": "dense_1b_pool3b_dr_wt_embedwd_postdecay_saturation_v1",
   "selection": "POST only. Compare each new POST result with the immediately preceding POST result and stop at the first strict non-improvement. Pre-decay checkpoints are provenance only.",
   "poolPlan": {
@@ -12,22 +12,94 @@
     "auditPolicy": "sealed nested pool; base_document_overlap=0; chunk_document_overlap=0",
     "model": "1B",
     "variant": "DR+WT+EmbedWD",
-    "batchSequences": [64, 128],
+    "batchSequences": [
+      64,
+      128
+    ],
     "learningRate": "1e-3",
     "weightDecay": "0.3",
-    "checkpointEpochs": [1, 4, 8, 12, 16, 20, 24, 28, 32],
-    "requestedCheckpointEpochs": [4, 8, 12, 16, 20, 24, 28, 32],
-    "postDecayEpochs": [32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256],
+    "checkpointEpochs": [
+      1,
+      4,
+      8,
+      12,
+      16,
+      20,
+      24,
+      28,
+      32
+    ],
+    "requestedCheckpointEpochs": [
+      4,
+      8,
+      12,
+      16,
+      20,
+      24,
+      28,
+      32
+    ],
+    "postDecayEpochs": [
+      32,
+      48,
+      64,
+      80,
+      96,
+      112,
+      128,
+      144,
+      160,
+      176,
+      192,
+      208,
+      224,
+      240,
+      256
+    ],
     "decayFraction": 0.1,
     "decayCap": null,
     "comparisonPolicy": "post_decay_only",
     "saturationCriterion": "strict_non_improvement_vs_immediately_preceding_post"
   },
   "columns": [
-    {"key": "pool3b64", "label": "BS64 · DR+WT+EmbedWD", "batchSequences": 64, "color": "#2563eb"},
-    {"key": "pool3b128", "label": "BS128 · DR+WT+EmbedWD", "batchSequences": 128, "color": "#ea580c"}
+    {
+      "key": "pool3b64",
+      "label": "BS64 \u00b7 DR+WT+EmbedWD",
+      "batchSequences": 64,
+      "color": "#2563eb"
+    },
+    {
+      "key": "pool3b128",
+      "label": "BS128 \u00b7 DR+WT+EmbedWD",
+      "batchSequences": 128,
+      "color": "#ea580c"
+    }
   ],
-  "targetEpochs": [1, 4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256],
+  "targetEpochs": [
+    1,
+    4,
+    8,
+    12,
+    16,
+    20,
+    24,
+    28,
+    32,
+    48,
+    64,
+    80,
+    96,
+    112,
+    128,
+    144,
+    160,
+    176,
+    192,
+    208,
+    224,
+    240,
+    256
+  ],
   "runs": [
     {
       "id": "pool3b-drywtembwd-bs64-lr1e-3-wd0.3",
@@ -48,19 +120,42 @@
       "nodeCount": 1,
       "gradientAccumulation": 1,
       "warmupSteps": 384,
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 1,
-      "activePhase": "awaiting_submission",
+      "activePhase": "pending",
       "manifest": "scripts/models/manifests/dense-1b-pool3b-bs64-dr-wt-embwd.json",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_pool3b_dr_wt_embwd/bs64_lr1e-3_wd0.3",
       "preDecayResults": {},
       "postDecayResults": {},
       "results": {},
       "comparisonPolicy": "post_decay_only",
-      "checkpointOnlyEpochs": [1, 4, 8, 12, 16, 20, 24, 28],
+      "checkpointOnlyEpochs": [
+        1,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24,
+        28
+      ],
       "postDecayStartEpoch": 32,
       "postDecayEvaluation": "e32_then_every_16_epochs",
-      "postDecaySaturationCriterion": "strict_non_improvement"
+      "postDecaySaturationCriterion": "strict_non_improvement",
+      "beakerStatus": "submitted",
+      "experiment": "01M13DYAE99E9W5JF917873SAJ",
+      "beaker": "01M13DYAE99E9W5JF917873SAJ",
+      "revision": "d6ce5e8f42d3621503f3c00c31c4cbdc85fee444",
+      "job": "01M13DYAHT0CM2M3MF0MHVEEB9",
+      "jobs": [
+        "01M13DYAHT0CM2M3MF0MHVEEB9"
+      ],
+      "wandbHealth": {
+        "status": "pending",
+        "checkedAt": "2026-08-28T05:38:17.380005+00:00",
+        "beakerState": "submitted",
+        "criticalSignals": []
+      }
     },
     {
       "id": "pool3b-drywtembwd-bs128-lr1e-3-wd0.3",
@@ -81,19 +176,42 @@
       "nodeCount": 1,
       "gradientAccumulation": 2,
       "warmupSteps": 192,
-      "status": "planned",
+      "status": "submitted",
       "activeEpoch": 1,
-      "activePhase": "awaiting_submission",
+      "activePhase": "pending",
       "manifest": "scripts/models/manifests/dense-1b-pool3b-bs128-dr-wt-embwd.json",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_pool3b_dr_wt_embwd/bs128_lr1e-3_wd0.3",
       "preDecayResults": {},
       "postDecayResults": {},
       "results": {},
       "comparisonPolicy": "post_decay_only",
-      "checkpointOnlyEpochs": [1, 4, 8, 12, 16, 20, 24, 28],
+      "checkpointOnlyEpochs": [
+        1,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24,
+        28
+      ],
       "postDecayStartEpoch": 32,
       "postDecayEvaluation": "e32_then_every_16_epochs",
-      "postDecaySaturationCriterion": "strict_non_improvement"
+      "postDecaySaturationCriterion": "strict_non_improvement",
+      "beakerStatus": "submitted",
+      "experiment": "01M13DYBS97YNSDYF8NZRZJXXE",
+      "beaker": "01M13DYBS97YNSDYF8NZRZJXXE",
+      "revision": "d6ce5e8f42d3621503f3c00c31c4cbdc85fee444",
+      "job": "01M13DYBWZ3GTJ6PJZR5Y8GGGA",
+      "jobs": [
+        "01M13DYBWZ3GTJ6PJZR5Y8GGGA"
+      ],
+      "wandbHealth": {
+        "status": "pending",
+        "checkedAt": "2026-08-28T05:38:17.608081+00:00",
+        "beakerState": "submitted",
+        "criticalSignals": []
+      }
     }
   ]
 }
