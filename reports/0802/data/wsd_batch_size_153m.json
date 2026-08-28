@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-27",
+  "updated": "2026-08-28",
   "title": "0802 Step 1-1 \u00b7 Dense 153M",
   "setup": "Dense 153M; 1B-unique-pool repeated-token regime; sequence length 4096. Report tables include BS32/64/128/256/512; completed higher-batch results and provenance remain fully visible. Rank microbatch is 16 sequences; BS32/64 use 2/4 GPUs with gradient accumulation 1/1. Warmup is token-matched across batches.",
   "selection": "For BS32, run the fresh E1 Cartesian grid LR{1e-3,2e-3} x WD{0.033,0.1}, select the healthy coordinate with the lowest validation CE, and then permanently lock both LR and WD to that exact E1 winner. Continue only the locked coordinate at E2/E4/E8/E12/E16 and then E24/E32/E40/E48/E56/E64, stopping at the first post-E16 non-improvement and performing no further tuning. Existing higher-batch chains retain their recorded terminal policies and every completed result and provenance item remains visible. BS64 continues its exact selected LR2e-3/WD0.1 trajectory in eight-epoch increments beyond E80, stopping at the first validation-CE non-improvement; E128 is the current launcher safety ceiling and must be extended if validation is still improving there. BS128 is terminal at E80, BS256 is terminal at E56, and BS512 is terminal at E48 by user policy. Completed E20/E28 work remains visible only in provenance and is omitted from summary rows; neither is a future launch target. BS32 now has one persistent saturation-gated continuation from E48; it uses the locked LR1e-3/WD0.033 coordinate and one canonical output directory. BS64 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS128 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS256 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS512 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors.",
@@ -14454,10 +14454,10 @@
       "continuationOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs64_dr_wt_embwd_lr2e-3_wd0.1_postdecay_only_continuation_v1",
       "continuationManifest": "scripts/models/manifests/small-dense-153m-bs64-dr-wt-embwd-postdecay-only-continuation.json",
       "progress": {
-        "step": 817299,
+        "step": 852440,
         "totalSteps": 854493,
-        "percent": 95.6,
-        "latestTrain": 3.466
+        "percent": 99.8,
+        "latestTrain": 3.157
       }
     },
     {
@@ -19615,7 +19615,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs256_dr_wt_embwd_lr2e-3_wd0.1_postdecay_only_continuation_v1/post_decay_runs/e208",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-27T20:07:49.731169+00:00",
+        "checkedAt": "2026-08-28T01:38:20.058729+00:00",
         "run": "391eh7ji",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/391eh7ji",
         "model": "153m",
@@ -22499,7 +22499,7 @@
       },
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-27T20:07:53.288654+00:00",
+        "checkedAt": "2026-08-28T01:38:24.602515+00:00",
         "run": "m3russ36",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/m3russ36",
         "model": "153m",
@@ -22511,17 +22511,17 @@
         "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs512_dr_wt_embwd_lr2e-3_wd0.3_postdecay_only_continuation_v1/constant_lr",
         "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs512_dr_wt_embwd_lr2e-3_wd0.3_postdecay_only_continuation_v1/constant_lr",
         "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs512_dr_wt_embwd_lr2e-3_wd0.3_postdecay_only_continuation_v1/constant_lr/step109863",
-        "samples": 280,
+        "samples": 1050,
         "firstStep": 109865,
-        "latestStep": 111260,
+        "latestStep": 115110,
         "totalSteps": 116729,
-        "recentLossMedian": 3.4175,
-        "baselineLossMedian": 3.41,
-        "maxLoss": 3.849,
+        "recentLossMedian": 3.415,
+        "baselineLossMedian": 3.4135,
+        "maxLoss": 3.856,
         "isolatedSpikeCount": 0,
         "stepRegressions": [],
         "nonfiniteLosses": [],
-        "stalledMinutes": 0.4,
+        "stalledMinutes": 0.7,
         "warnings": [],
         "criticalSignals": [],
         "shouldRecover": false,
@@ -22611,10 +22611,10 @@
       "continuationOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs512_dr_wt_embwd_lr2e-3_wd0.3_postdecay_only_continuation_v1",
       "continuationManifest": "scripts/models/manifests/small-dense-153m-bs512-dr-wt-embwd-postdecay-only-continuation.json",
       "progress": {
-        "step": 111262,
+        "step": 115114,
         "totalSteps": 116729,
-        "percent": 95.3,
-        "latestTrain": 3.37
+        "percent": 98.6,
+        "latestTrain": 3.43
       }
     }
   ]
