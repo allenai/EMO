@@ -1,6 +1,6 @@
 {
   "title": "Dense DR+WT+EmbedWD constant-LR checkpoint producers",
-  "policy": "dense_constant_checkpoint_producers_v1",
+  "policy": "dense_constant_checkpoint_producers_v1_pool3b_small_v2",
   "maxEpoch": 256,
   "producerCount": 10,
   "evaluatorCount": 2,
@@ -63,9 +63,9 @@
       "submittedAt": "2026-08-30T18:44:39.921085+00:00",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-30T20:49:09.811577+00:00",
+        "checkedAt": "2026-08-30T23:32:30.682045+00:00",
         "beakerState": "running",
-        "latestStep": 176802,
+        "latestStep": 193426,
         "totalSteps": 2636718,
         "run": "qd1zc17v",
         "criticalSignals": []
@@ -132,9 +132,9 @@
       "submittedAt": "2026-08-30T18:44:41.518569+00:00",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-30T20:49:12.930241+00:00",
+        "checkedAt": "2026-08-30T23:32:35.891732+00:00",
         "beakerState": "running",
-        "latestStep": 88489,
+        "latestStep": 96866,
         "totalSteps": 1318359,
         "run": "x61tfbwy",
         "criticalSignals": []
@@ -145,10 +145,12 @@
       "job": "01M19ZSWM85DDY9GMPQ993KQ4Y"
     },
     {
-      "id": "dense-474m-dclm1b-bs128-lr2e-3-wd0.1",
+      "id": "dense-474m-dclm3b-bs128-lr2e-3-wd0.1",
       "role": "constant_lr_checkpoint_producer",
+      "policy": "dense_small_pool3b_checkpoint_producers_v2",
       "model": "474m",
-      "pool": "dclm1b",
+      "pool": "dclm3b",
+      "sourcePool": "dclm1b",
       "batchSequences": 128,
       "learningRate": "2e-3",
       "weightDecay": "0.1",
@@ -156,8 +158,10 @@
       "sourceEpoch": 1,
       "sourceExperiment": "01M0PB8AFDYMEKRVNAQKHKJ1D3",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.1/step1716",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.1",
-      "resolvedCheckpointEpochs": [],
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs128_dr_wt_embwd_lr2e-3_wd0.1",
+      "resolvedCheckpointEpochs": [
+        1
+      ],
       "targetEpochs": [
         16,
         32,
@@ -177,95 +181,43 @@
         256
       ],
       "currentEpoch": 16,
+      "currentPhase": "repacked_shuffled_pool3b_constant_lr",
       "evaluationEnabled": false,
-      "experiment": "01M19ZSY2NMCAT78RZWRQ2N722",
-      "revision": "031353dba8815e58f8a4c7a4b222cd4988176570",
+      "experiment": "01M1AAHTXQ3Z3GMXQ8NXMEYXMG",
+      "revision": "407c10dc6c029479ffa1300dfa83b37295892b5c",
+      "jobs": [
+        "01M1AAHV1DSVG4TTGJ3F1A506A"
+      ],
+      "job": "01M1AAHV1DSVG4TTGJ3F1A506A",
       "beakerStatus": "running",
-      "submittedAt": "2026-08-30T18:44:43.093938+00:00",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-30T20:49:15.663848+00:00",
+        "checkedAt": "2026-08-30T23:32:39.012196+00:00",
         "beakerState": "running",
-        "latestStep": 10415,
-        "totalSteps": 439453,
-        "run": "z2mybsco",
+        "latestStep": 13594,
+        "totalSteps": 1318359,
+        "run": "6e9eqr7q",
         "criticalSignals": []
-      },
-      "jobs": [
-        "01M19ZSY6KV9STGENX17N2J3FD"
-      ],
-      "job": "01M19ZSY6KV9STGENX17N2J3FD"
+      }
     },
     {
-      "id": "dense-474m-dclm1b-bs128-lr2e-3-wd0.3",
+      "id": "dense-474m-dclm3b-bs128-lr2e-3-wd0.3",
       "role": "constant_lr_checkpoint_producer",
+      "policy": "dense_small_pool3b_checkpoint_producers_v2",
       "model": "474m",
-      "pool": "dclm1b",
+      "pool": "dclm3b",
+      "sourcePool": "dclm1b",
       "batchSequences": 128,
       "learningRate": "2e-3",
       "weightDecay": "0.3",
       "status": "running",
-      "sourceEpoch": 48,
+      "sourceEpoch": 1,
       "sourceExperiment": "01M0PB8AFDYMEKRVNAQKHKJ1D3",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3/step82397",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.3/step1716",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs128_dr_wt_embwd_lr2e-3_wd0.3",
       "resolvedCheckpointEpochs": [
-        16,
-        32,
-        48
+        1
       ],
-      "targetEpochs": [
-        16,
-        32,
-        48,
-        64,
-        80,
-        96,
-        112,
-        128,
-        144,
-        160,
-        176,
-        192,
-        208,
-        224,
-        240,
-        256
-      ],
-      "currentEpoch": 64,
-      "evaluationEnabled": false,
-      "experiment": "01M19ZSZNBGYGQ60GBZ2XR2QGE",
-      "revision": "031353dba8815e58f8a4c7a4b222cd4988176570",
-      "beakerStatus": "running",
-      "submittedAt": "2026-08-30T18:44:44.677489+00:00",
-      "wandbHealth": {
-        "status": "healthy",
-        "checkedAt": "2026-08-30T20:49:19.620648+00:00",
-        "beakerState": "running",
-        "latestStep": 97121,
-        "totalSteps": 439453,
-        "run": "qfbw5gfn",
-        "criticalSignals": []
-      },
-      "jobs": [
-        "01M19ZSZRYGPDH13ZRVR3D2RT9"
-      ],
-      "job": "01M19ZSZRYGPDH13ZRVR3D2RT9"
-    },
-    {
-      "id": "dense-474m-dclm1b-bs256-lr2e-3-wd0.1",
-      "role": "constant_lr_checkpoint_producer",
-      "model": "474m",
-      "pool": "dclm1b",
-      "batchSequences": 256,
-      "learningRate": "2e-3",
-      "weightDecay": "0.1",
-      "status": "running",
-      "sourceEpoch": 4,
-      "sourceExperiment": "01M0P7ZCW7TACD57ATXTWYDP7N",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.1/step3432",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.1",
-      "resolvedCheckpointEpochs": [],
       "targetEpochs": [
         16,
         32,
@@ -285,42 +237,42 @@
         256
       ],
       "currentEpoch": 16,
+      "currentPhase": "repacked_shuffled_pool3b_constant_lr",
       "evaluationEnabled": false,
-      "experiment": "01M19ZT143SQ5K3Y7MKBWSPXE6",
-      "revision": "031353dba8815e58f8a4c7a4b222cd4988176570",
+      "experiment": "01M1AAHW9065GZ19AX76S56W43",
+      "revision": "407c10dc6c029479ffa1300dfa83b37295892b5c",
+      "jobs": [
+        "01M1AAHWCJGGFT8ND6QVNVWQBS"
+      ],
+      "job": "01M1AAHWCJGGFT8ND6QVNVWQBS",
       "beakerStatus": "running",
-      "submittedAt": "2026-08-30T18:44:46.177258+00:00",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-30T20:49:22.266149+00:00",
+        "checkedAt": "2026-08-30T23:32:42.261296+00:00",
         "beakerState": "running",
-        "latestStep": 11410,
-        "totalSteps": 219726,
-        "run": "mt07593e",
+        "latestStep": 14529,
+        "totalSteps": 1318359,
+        "run": "846uzi7m",
         "criticalSignals": []
-      },
-      "jobs": [
-        "01M19ZT17XWYA2QH2GP6PV7BJB"
-      ],
-      "job": "01M19ZT17XWYA2QH2GP6PV7BJB"
+      }
     },
     {
-      "id": "dense-474m-dclm1b-bs256-lr2e-3-wd0.333",
+      "id": "dense-474m-dclm3b-bs256-lr2e-3-wd0.1",
       "role": "constant_lr_checkpoint_producer",
+      "policy": "dense_small_pool3b_checkpoint_producers_v2",
       "model": "474m",
-      "pool": "dclm1b",
+      "pool": "dclm3b",
+      "sourcePool": "dclm1b",
       "batchSequences": 256,
       "learningRate": "2e-3",
-      "weightDecay": "0.333",
+      "weightDecay": "0.1",
       "status": "running",
-      "sourceEpoch": 48,
+      "sourceEpoch": 1,
       "sourceExperiment": "01M0P7ZCW7TACD57ATXTWYDP7N",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.333/step41198",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.333",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.1/step858",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1",
       "resolvedCheckpointEpochs": [
-        16,
-        32,
-        48
+        1
       ],
       "targetEpochs": [
         16,
@@ -340,40 +292,100 @@
         240,
         256
       ],
-      "currentEpoch": 64,
+      "currentEpoch": 16,
+      "currentPhase": "repacked_shuffled_pool3b_constant_lr",
       "evaluationEnabled": false,
-      "experiment": "01M19ZT2M5PYZJY1CKTCFMM2TS",
-      "revision": "031353dba8815e58f8a4c7a4b222cd4988176570",
+      "experiment": "01M1AAHXQ1XNX4RZ2R44RGAV4R",
+      "revision": "407c10dc6c029479ffa1300dfa83b37295892b5c",
+      "jobs": [
+        "01M1AAHXTH2JNWXS27B0VR7ZQZ"
+      ],
+      "job": "01M1AAHXTH2JNWXS27B0VR7ZQZ",
       "beakerStatus": "running",
-      "submittedAt": "2026-08-30T18:44:47.730163+00:00",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-30T20:49:24.826366+00:00",
+        "checkedAt": "2026-08-30T23:32:44.309673+00:00",
         "beakerState": "running",
-        "latestStep": 49174,
-        "totalSteps": 219726,
-        "run": "lhs6bhc3",
+        "latestStep": 7319,
+        "totalSteps": 659179,
+        "run": "mlgoggcp",
         "criticalSignals": []
-      },
-      "jobs": [
-        "01M19ZT2R1AVN9AB7H4DTP33C8"
-      ],
-      "job": "01M19ZT2R1AVN9AB7H4DTP33C8"
+      }
     },
     {
-      "id": "dense-153m-dclm1b-bs128-lr2e-3-wd0.033",
+      "id": "dense-474m-dclm3b-bs256-lr2e-3-wd0.333",
       "role": "constant_lr_checkpoint_producer",
+      "policy": "dense_small_pool3b_checkpoint_producers_v2",
+      "model": "474m",
+      "pool": "dclm3b",
+      "sourcePool": "dclm1b",
+      "batchSequences": 256,
+      "learningRate": "2e-3",
+      "weightDecay": "0.333",
+      "status": "running",
+      "sourceEpoch": 1,
+      "sourceExperiment": "01M0P7ZCW7TACD57ATXTWYDP7N",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.333/step858",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.333",
+      "resolvedCheckpointEpochs": [
+        1
+      ],
+      "targetEpochs": [
+        16,
+        32,
+        48,
+        64,
+        80,
+        96,
+        112,
+        128,
+        144,
+        160,
+        176,
+        192,
+        208,
+        224,
+        240,
+        256
+      ],
+      "currentEpoch": 16,
+      "currentPhase": "repacked_shuffled_pool3b_constant_lr",
+      "evaluationEnabled": false,
+      "experiment": "01M1AAHZ4AXXFFEG9VN74WNAXK",
+      "revision": "407c10dc6c029479ffa1300dfa83b37295892b5c",
+      "jobs": [
+        "01M1AAHZ85M17Q332WMYPZH2ME"
+      ],
+      "job": "01M1AAHZ85M17Q332WMYPZH2ME",
+      "beakerStatus": "running",
+      "wandbHealth": {
+        "status": "healthy",
+        "checkedAt": "2026-08-30T23:32:45.903580+00:00",
+        "beakerState": "running",
+        "latestStep": 4185,
+        "totalSteps": 659179,
+        "run": "37j0nemi",
+        "criticalSignals": []
+      }
+    },
+    {
+      "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033",
+      "role": "constant_lr_checkpoint_producer",
+      "policy": "dense_small_pool3b_checkpoint_producers_v2",
       "model": "153m",
-      "pool": "dclm1b",
+      "pool": "dclm3b",
+      "sourcePool": "dclm1b",
       "batchSequences": 128,
       "learningRate": "2e-3",
       "weightDecay": "0.033",
       "status": "running",
-      "sourceEpoch": 4,
+      "sourceEpoch": 1,
       "sourceExperiment": "01M0S51FKEXXK8P2MP08NDHGVJ",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.033/step6866",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.033",
-      "resolvedCheckpointEpochs": [],
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.033/step1716",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs128_dr_wt_embwd_lr2e-3_wd0.033",
+      "resolvedCheckpointEpochs": [
+        1
+      ],
       "targetEpochs": [
         32,
         64,
@@ -385,86 +397,43 @@
         256
       ],
       "currentEpoch": 32,
+      "currentPhase": "repacked_shuffled_pool3b_constant_lr",
       "evaluationEnabled": false,
-      "experiment": "01M19ZT44K37Y4VZTXXN6AFA6G",
-      "revision": "031353dba8815e58f8a4c7a4b222cd4988176570",
+      "experiment": "01M1AAJ0JR7AMGSHMHS18BBMPZ",
+      "revision": "407c10dc6c029479ffa1300dfa83b37295892b5c",
+      "jobs": [
+        "01M1AAJ0PMFB227N75PEYAZ1HP"
+      ],
+      "job": "01M1AAJ0PMFB227N75PEYAZ1HP",
       "beakerStatus": "running",
-      "submittedAt": "2026-08-30T18:44:49.256625+00:00",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-30T20:49:31.539816+00:00",
+        "checkedAt": "2026-08-30T23:32:50.793125+00:00",
         "beakerState": "running",
-        "latestStep": 46894,
-        "totalSteps": 439453,
-        "run": "0468lc7k",
+        "latestStep": 35889,
+        "totalSteps": 1318359,
+        "run": "cy917j4h",
         "criticalSignals": []
-      },
-      "jobs": [
-        "01M19ZT48B6SW1HRB8JCYGPS2X"
-      ],
-      "job": "01M19ZT48B6SW1HRB8JCYGPS2X"
+      }
     },
     {
-      "id": "dense-153m-dclm1b-bs128-lr2e-3-wd0.1",
+      "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.1",
       "role": "constant_lr_checkpoint_producer",
+      "policy": "dense_small_pool3b_checkpoint_producers_v2",
       "model": "153m",
-      "pool": "dclm1b",
+      "pool": "dclm3b",
+      "sourcePool": "dclm1b",
       "batchSequences": 128,
       "learningRate": "2e-3",
       "weightDecay": "0.1",
       "status": "running",
-      "sourceEpoch": 64,
+      "sourceEpoch": 1,
       "sourceExperiment": "01M0S51FKEXXK8P2MP08NDHGVJ",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.1/step109863",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.1",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs128_dr_wt_embwd_lr2e-3_wd0.1/step1716",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs128_dr_wt_embwd_lr2e-3_wd0.1",
       "resolvedCheckpointEpochs": [
-        32,
-        64
+        1
       ],
-      "targetEpochs": [
-        32,
-        64,
-        96,
-        128,
-        160,
-        192,
-        224,
-        256
-      ],
-      "currentEpoch": 96,
-      "evaluationEnabled": false,
-      "experiment": "01M19ZT5FDE85FM47R5ECC0CNF",
-      "revision": "031353dba8815e58f8a4c7a4b222cd4988176570",
-      "beakerStatus": "running",
-      "submittedAt": "2026-08-30T18:44:50.689854+00:00",
-      "wandbHealth": {
-        "status": "healthy",
-        "checkedAt": "2026-08-30T20:49:37.810181+00:00",
-        "beakerState": "running",
-        "latestStep": 149788,
-        "totalSteps": 439453,
-        "run": "uytm150x",
-        "criticalSignals": []
-      },
-      "jobs": [
-        "01M19ZT5N7MHEJH0B88WK6XYC6"
-      ],
-      "job": "01M19ZT5N7MHEJH0B88WK6XYC6"
-    },
-    {
-      "id": "dense-153m-dclm1b-bs256-lr2e-3-wd0.033",
-      "role": "constant_lr_checkpoint_producer",
-      "model": "153m",
-      "pool": "dclm1b",
-      "batchSequences": 256,
-      "learningRate": "2e-3",
-      "weightDecay": "0.033",
-      "status": "running",
-      "sourceEpoch": 4,
-      "sourceExperiment": "01M0S51GDXPV65X2D0J40PQQGT",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.033/step3432",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.033",
-      "resolvedCheckpointEpochs": [],
       "targetEpochs": [
         32,
         64,
@@ -476,41 +445,44 @@
         256
       ],
       "currentEpoch": 32,
+      "currentPhase": "repacked_shuffled_pool3b_constant_lr",
       "evaluationEnabled": false,
-      "experiment": "01M19ZT6VTHPX4WEDK629A81Y4",
-      "revision": "031353dba8815e58f8a4c7a4b222cd4988176570",
+      "experiment": "01M1AAJ20CVNNEEHSP5NB9QVES",
+      "revision": "407c10dc6c029479ffa1300dfa83b37295892b5c",
+      "jobs": [
+        "01M1AAJ24CGKYPQX21ZXDVJG2Q"
+      ],
+      "job": "01M1AAJ24CGKYPQX21ZXDVJG2Q",
       "beakerStatus": "running",
-      "submittedAt": "2026-08-30T18:44:52.031428+00:00",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-30T20:49:41.243550+00:00",
+        "checkedAt": "2026-08-30T23:32:55.616865+00:00",
         "beakerState": "running",
-        "latestStep": 21502,
-        "totalSteps": 219726,
-        "run": "xmg0fk69",
+        "latestStep": 35402,
+        "totalSteps": 1318359,
+        "run": "2eax46rl",
         "criticalSignals": []
-      },
-      "jobs": [
-        "01M19ZT6ZDVZZM8CN6HPM6GKS6"
-      ],
-      "job": "01M19ZT6ZDVZZM8CN6HPM6GKS6"
+      }
     },
     {
-      "id": "dense-153m-dclm1b-bs256-lr2e-3-wd0.1",
+      "id": "dense-153m-dclm3b-bs256-lr2e-3-wd0.033",
       "role": "constant_lr_checkpoint_producer",
+      "policy": "dense_small_pool3b_checkpoint_producers_v2",
       "model": "153m",
-      "pool": "dclm1b",
+      "pool": "dclm3b",
+      "sourcePool": "dclm1b",
       "batchSequences": 256,
       "learningRate": "2e-3",
-      "weightDecay": "0.1",
+      "weightDecay": "0.033",
       "status": "running",
-      "sourceEpoch": 64,
-      "sourceExperiment": "01M0S51GDXPV65X2D0J40PQQGT",
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.1/step54931",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.1",
+      "sourceEpoch": 1,
+      "sourceExperiment": "01M1AAJ3ES71TPNKZK5JKZ68Q2",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.033/step2575",
+      "pool1bSourceExperiment": "01M0S51GDXPV65X2D0J40PQQGT",
+      "pool1bSourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.033/step858",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.033_throughput_recovery_r1",
       "resolvedCheckpointEpochs": [
-        32,
-        64
+        1
       ],
       "targetEpochs": [
         32,
@@ -522,25 +494,87 @@
         224,
         256
       ],
-      "currentEpoch": 96,
+      "currentEpoch": 32,
+      "currentPhase": "repacked_shuffled_pool3b_constant_lr",
       "evaluationEnabled": false,
-      "experiment": "01M19ZT87BZXP94GMG1HJHEAJ0",
-      "revision": "031353dba8815e58f8a4c7a4b222cd4988176570",
+      "experiment": "01M1AD5A8EQTH49JJE3ED0GT0N",
+      "revision": "e50d72a8bb7c3849056a7bab5899de05d2e48689",
+      "previousExperiment": "01M1AAJ3ES71TPNKZK5JKZ68Q2",
+      "previousOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.033",
+      "previousExperimentStatus": "stopped_after_recovery_selection",
+      "previousExperimentStoppedAt": "2026-08-30T23:03:05Z",
+      "recoveryAttempt": 1,
+      "recoverySelectedAt": "2026-08-30T23:00:24Z",
+      "jobs": [
+        "01M1AD5AD6K32PQG01QVW2PA95"
+      ],
+      "job": "01M1AD5AD6K32PQG01QVW2PA95",
       "beakerStatus": "running",
-      "submittedAt": "2026-08-30T18:44:53.436158+00:00",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-30T20:49:44.687732+00:00",
+        "checkedAt": "2026-08-30T23:32:57.509747+00:00",
         "beakerState": "running",
-        "latestStep": 74873,
-        "totalSteps": 219726,
-        "run": "nres1q6x",
+        "latestStep": 11729,
+        "totalSteps": 659179,
+        "run": "llni9cpx",
         "criticalSignals": []
-      },
-      "jobs": [
-        "01M19ZT8B8SXANPD0Z6Y1SBVRC"
+      }
+    },
+    {
+      "id": "dense-153m-dclm3b-bs256-lr2e-3-wd0.1",
+      "role": "constant_lr_checkpoint_producer",
+      "policy": "dense_small_pool3b_checkpoint_producers_v2",
+      "model": "153m",
+      "pool": "dclm3b",
+      "sourcePool": "dclm1b",
+      "batchSequences": 256,
+      "learningRate": "2e-3",
+      "weightDecay": "0.1",
+      "status": "running",
+      "sourceEpoch": 1,
+      "sourceExperiment": "01M1AAJ4WYM9TCNEY7AC7P67MG",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1/step2575",
+      "pool1bSourceExperiment": "01M0S51GDXPV65X2D0J40PQQGT",
+      "pool1bSourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.1/step858",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1_throughput_recovery_r2",
+      "resolvedCheckpointEpochs": [
+        1
       ],
-      "job": "01M19ZT8B8SXANPD0Z6Y1SBVRC"
+      "targetEpochs": [
+        32,
+        64,
+        96,
+        128,
+        160,
+        192,
+        224,
+        256
+      ],
+      "currentEpoch": 32,
+      "currentPhase": "repacked_shuffled_pool3b_constant_lr",
+      "evaluationEnabled": false,
+      "experiment": "01M1ADAHGHRCVEHMJ8K4H8BNWB",
+      "revision": "e50d72a8bb7c3849056a7bab5899de05d2e48689",
+      "previousExperiment": "01M1AAJ4WYM9TCNEY7AC7P67MG",
+      "previousOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1",
+      "previousExperimentStatus": "stopped_after_recovery_selection",
+      "previousExperimentStoppedAt": "2026-08-30T23:03:05Z",
+      "recoveryAttempt": 2,
+      "recoverySelectedAt": "2026-08-30T23:00:24Z",
+      "jobs": [
+        "01M1ADAHM3YP12FFVY3Z68CCAN"
+      ],
+      "job": "01M1ADAHM3YP12FFVY3Z68CCAN",
+      "beakerStatus": "running",
+      "wandbHealth": {
+        "status": "healthy",
+        "checkedAt": "2026-08-30T23:32:59.374402+00:00",
+        "beakerState": "running",
+        "latestStep": 11319,
+        "totalSteps": 659179,
+        "run": "gkmqhkes",
+        "criticalSignals": []
+      }
     }
   ],
   "evaluators": [
@@ -558,18 +592,19 @@
         16
       ],
       "resolvedPostEpochs": [
-        8
+        8,
+        16
       ],
-      "status": "running",
+      "status": "improving",
       "experiment": "01M19ZT9HN83G0QSY5YCEAXXWP",
       "revision": "031353dba8815e58f8a4c7a4b222cd4988176570",
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "submittedAt": "2026-08-30T18:44:54.792850+00:00",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-30T20:49:46.136586+00:00",
-        "beakerState": "running",
-        "latestStep": 167704,
+        "checkedAt": "2026-08-30T23:33:01.693751+00:00",
+        "beakerState": "complete",
+        "latestStep": 183106,
         "totalSteps": 183106,
         "run": "w71ez5tk",
         "criticalSignals": []
@@ -600,6 +635,43 @@
           "wandb": "6l4ler4s",
           "wd": "0.3",
           "weightTying": true
+        },
+        "16": {
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm3b/bs64_dr_wt_embwd_lr1e-3_wd0.3/.constant_checkpoint_producer_v1/evaluator/post_decay_runs/e16/step183106",
+          "comparisonGroup": "post_decay",
+          "decayEmbeddings": true,
+          "dynamicRepacking": true,
+          "epoch": 16,
+          "gap": 0.00726,
+          "lr": "1e-3",
+          "phase": "post_decay",
+          "policy": "dense_1b_checkpoint_evaluator_v1",
+          "producerPolicy": "dense_constant_checkpoint_producers_v1",
+          "source": "independent_wsd_decay_and_heldout_eval",
+          "sourcePreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm3b/bs64_dr_wt_embwd_lr1e-3_wd0.3/step164794",
+          "status": "complete",
+          "train": 2.851,
+          "validation": 2.858,
+          "validationExact": 2.85826,
+          "variant": "DR+WT+EmbedWD",
+          "wandb": "w71ez5tk",
+          "wd": "0.3",
+          "weightTying": true
+        }
+      },
+      "decision": {
+        "comparisonGroup": "post_decay_only",
+        "criterion": "strict_non_improvement",
+        "epochs": [
+          8,
+          16
+        ],
+        "policy": "dense_1b_checkpoint_evaluator_v1",
+        "producerCancellationRequested": false,
+        "status": "improving",
+        "validationExact": {
+          "16": 2.85826,
+          "8": 2.90226
         }
       }
     },
@@ -617,18 +689,19 @@
         16
       ],
       "resolvedPostEpochs": [
-        8
+        8,
+        16
       ],
-      "status": "running",
+      "status": "improving",
       "experiment": "01M19ZTAVWM3E9362QX1CNWG5K",
       "revision": "031353dba8815e58f8a4c7a4b222cd4988176570",
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "submittedAt": "2026-08-30T18:44:56.155745+00:00",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-30T20:49:47.244907+00:00",
-        "beakerState": "running",
-        "latestStep": 83737,
+        "checkedAt": "2026-08-30T23:33:03.226284+00:00",
+        "beakerState": "complete",
+        "latestStep": 91553,
         "totalSteps": 91553,
         "run": "wzu406rx",
         "criticalSignals": []
@@ -659,9 +732,46 @@
           "wandb": "5zbb82rc",
           "wd": "0.3",
           "weightTying": true
+        },
+        "16": {
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm3b/bs128_dr_wt_embwd_lr1e-3_wd0.3/.constant_checkpoint_producer_v1/evaluator/post_decay_runs/e16/step91553",
+          "comparisonGroup": "post_decay",
+          "decayEmbeddings": true,
+          "dynamicRepacking": true,
+          "epoch": 16,
+          "gap": 0.07433,
+          "lr": "1e-3",
+          "phase": "post_decay",
+          "policy": "dense_1b_checkpoint_evaluator_v1",
+          "producerPolicy": "dense_constant_checkpoint_producers_v1",
+          "source": "independent_wsd_decay_and_heldout_eval",
+          "sourcePreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm3b/bs128_dr_wt_embwd_lr1e-3_wd0.3/step82397",
+          "status": "complete",
+          "train": 2.742,
+          "validation": 2.816,
+          "validationExact": 2.81633,
+          "variant": "DR+WT+EmbedWD",
+          "wandb": "wzu406rx",
+          "wd": "0.3",
+          "weightTying": true
+        }
+      },
+      "decision": {
+        "comparisonGroup": "post_decay_only",
+        "criterion": "strict_non_improvement",
+        "epochs": [
+          8,
+          16
+        ],
+        "policy": "dense_1b_checkpoint_evaluator_v1",
+        "producerCancellationRequested": false,
+        "status": "improving",
+        "validationExact": {
+          "16": 2.81633,
+          "8": 2.86418
         }
       }
     }
   ],
-  "updatedAt": "2026-08-30T20:49:47.245331+00:00"
+  "updatedAt": "2026-08-30T23:33:03.227137+00:00"
 }
