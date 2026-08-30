@@ -19,6 +19,7 @@ import run_dense_small_pool3b_checkpoint_producer as producer
 
 
 ALLOWED_COORDINATES = {
+    "dense-474m-dclm3b-bs256-lr2e-3-wd0.333",
     "dense-153m-dclm3b-bs256-lr2e-3-wd0.033",
     "dense-153m-dclm3b-bs256-lr2e-3-wd0.1",
 }
@@ -90,7 +91,7 @@ def recovery_arguments(
         f"--trainer.callbacks.wandb.name={run_name}",
         (
             "--trainer.callbacks.wandb.tags=[pretraining,step1,0802,pool3b-repeat,"
-            "dense-153m,dr_wt_embwd,bs256,constant-lr,pre-decay,"
+            f"dense-{item['model']},dr_wt_embwd,bs256,constant-lr,pre-decay,"
             f"throughput-recovery,r{attempt}]"
         ),
         "--trainer.callbacks.checkpointer.fixed_steps="

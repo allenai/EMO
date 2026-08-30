@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Submit isolated recovery attempts for the two slow 153M BS256 producers."""
+"""Submit isolated recovery attempts for authorized slow small-model producers."""
 
 from __future__ import annotations
 
