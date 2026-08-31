@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""Refresh the isolated ten-producer/two-evaluator report from Beaker logs.
+"""Refresh the shared checkpoint-producer report from Beaker logs.
 
 The two Dense-1B producers retain the original v1 policy.  The eight small-model
 records are the corrected Pool-3B v2 bridge/producers.  Older canceled
 small-model Pool-1B producers are intentionally absent from the report.
+The eight Pool-333M jobs are integrated producer/evaluators and are maintained
+in a separate top-level collection so the historical Pool-3B manifest remains
+unchanged.
 """
 
 from __future__ import annotations
@@ -29,6 +32,18 @@ EVAL_RESULT = re.compile(
 EVAL_DECISION = re.compile(
     r"DENSE1B_CHECKPOINT_EVALUATOR_COMPLETE id=([^ ]+) status=([^ ]+) json=(\{.*\})$",
     re.MULTILINE,
+)
+INTEGRATED_PD_RETAINED = re.compile(
+    r"DENSE_DCLM333M_PD_RETAINED id=([^ ]+) epoch=([0-9]+) checkpoint=([^\s]+)$",
+    re.MULTILINE,
+)
+INTEGRATED_POST_RESULT = re.compile(
+    r"DENSE_DCLM333M_POST_RESULT id=([^ ]+) epoch=([0-9]+) json=(\{.*\})$",
+    re.MULTILINE,
+)
+INTEGRATED_STAGE_EVENT = re.compile(
+    r"DENSE_DCLM333M_(PD_START|PD_RETAINED|POST_START|POST_COMPLETE) "
+    r"id=([^ ]+) epoch=([0-9]+)",
 )
 
 
@@ -69,9 +84,7 @@ def write_report(report: dict[str, Any]) -> None:
     report["updatedAt"] = datetime.now(tz=UTC).isoformat()
     REPORT.write_text(json.dumps(report, indent=2) + "\n")
     REPORT_JS.write_text(
-        "window.ICSL_CHECKPOINT_PRODUCER_GRID="
-        + json.dumps(report, separators=(",", ":"))
-        + ";\n"
+        "window.ICSL_CHECKPOINT_PRODUCER_GRID=" + json.dumps(report, separators=(",", ":")) + ";\n"
     )
 
 
@@ -109,10 +122,32 @@ def health(logs: str, state: str) -> dict[str, Any]:
     }
 
 
-def experiment_logs(experiment: str, state: str) -> str:
+def experiment_logs(experiment: str, state: str, job: str | None = None) -> str:
     if state not in {"running", "complete", "failed"}:
         return ""
-    return ANSI.sub("", command(["beaker", "experiment", "logs", experiment]))
+    arguments = (
+        ["beaker", "job", "logs", job, "--tail", "50000"]
+        if job
+        else ["beaker", "experiment", "logs", experiment]
+    )
+    try:
+        return ANSI.sub("", command(arguments))
+    except subprocess.CalledProcessError:
+        # A stale or oversized terminal log must not block refreshes for the
+        # active grid.  Previously resolved report state remains authoritative.
+        return ""
+
+
+def refreshed_health(record: dict[str, Any], logs: str, state: str) -> dict[str, Any]:
+    if logs:
+        return health(logs, state)
+    existing = record.get("wandbHealth")
+    if isinstance(existing, dict):
+        preserved = dict(existing)
+        preserved["checkedAt"] = datetime.now(tz=UTC).isoformat()
+        preserved["beakerState"] = state
+        return preserved
+    return health(logs, state)
 
 
 def refresh_producer(record: dict[str, Any]) -> str:
@@ -125,7 +160,8 @@ def refresh_producer(record: dict[str, Any]) -> str:
     if jobs:
         record["jobs"] = [job["id"] for job in jobs]
         record["job"] = jobs[-1]["id"]
-    logs = experiment_logs(str(experiment), state)
+    job = jobs[-1]["id"] if jobs else None
+    logs = experiment_logs(str(experiment), state, job)
     resolved = {int(epoch) for epoch in record.get("resolvedCheckpointEpochs", [])}
     pool3b_v2 = record.get("policy") == "dense_small_pool3b_checkpoint_producers_v2"
     if pool3b_v2 and f"DENSE_SMALL_POOL3B_BRIDGE_COMPLETE id={record['id']}" in logs:
@@ -176,7 +212,7 @@ def refresh_producer(record: dict[str, Any]) -> str:
             if record["currentEpoch"] is not None
             else "complete"
         )
-    record["wandbHealth"] = health(logs, state)
+    record["wandbHealth"] = refreshed_health(record, logs, state)
     return record["status"]
 
 
@@ -184,13 +220,16 @@ def refresh_evaluator(record: dict[str, Any]) -> str:
     experiment = record.get("experiment")
     if not experiment:
         return "planned"
+    previous_status = record.get("status")
+    previous_decision = record.get("decision")
     payload = inspect(str(experiment))
     state = beaker_state(payload)
     jobs = [job for job in payload.get("jobs") or [] if job.get("id")]
     if jobs:
         record["jobs"] = [job["id"] for job in jobs]
         record["job"] = jobs[-1]["id"]
-    logs = experiment_logs(str(experiment), state)
+    job = jobs[-1]["id"] if jobs else None
+    logs = experiment_logs(str(experiment), state, job)
     results = record.setdefault("postDecayResults", {})
     for evaluator_id, epoch, raw in EVAL_RESULT.findall(logs):
         if evaluator_id == record["producerId"]:
@@ -204,17 +243,18 @@ def refresh_evaluator(record: dict[str, Any]) -> str:
     additional_states: list[str] = []
     additional_decisions: list[tuple[str, dict[str, Any]]] = []
     for additional in record.get("additionalExperiments", []):
+        previous_additional_status = additional.get("status")
+        previous_additional_decision = additional.get("decision")
         additional_experiment = str(additional["experiment"])
         additional_payload = inspect(additional_experiment)
         additional_state = beaker_state(additional_payload)
         additional_states.append(additional_state)
-        additional_jobs = [
-            job for job in additional_payload.get("jobs") or [] if job.get("id")
-        ]
+        additional_jobs = [job for job in additional_payload.get("jobs") or [] if job.get("id")]
         if additional_jobs:
             additional["jobs"] = [job["id"] for job in additional_jobs]
             additional["job"] = additional_jobs[-1]["id"]
-        additional_logs = experiment_logs(additional_experiment, additional_state)
+        additional_job = additional_jobs[-1]["id"] if additional_jobs else None
+        additional_logs = experiment_logs(additional_experiment, additional_state, additional_job)
         epoch = int(additional["epoch"])
         additional_results = [
             json.loads(raw)
@@ -234,6 +274,22 @@ def refresh_evaluator(record: dict[str, Any]) -> str:
             additional["decision"] = matched_decisions[-1][1]
             additional["status"] = matched_decisions[-1][0]
             additional.pop("needsAttention", None)
+        elif previous_additional_decision and additional_state == "complete":
+            additional_decisions.append(
+                (
+                    str(
+                        previous_additional_decision.get(
+                            "status", previous_additional_status or "complete"
+                        )
+                    ),
+                    previous_additional_decision,
+                )
+            )
+            additional["decision"] = previous_additional_decision
+            additional["status"] = previous_additional_decision.get(
+                "status", previous_additional_status or "complete"
+            )
+            additional.pop("needsAttention", None)
         elif additional_state == "failed":
             additional["status"] = "failed"
             additional["needsAttention"] = True
@@ -243,7 +299,7 @@ def refresh_evaluator(record: dict[str, Any]) -> str:
         else:
             additional["status"] = additional_state
         additional["beakerStatus"] = additional_state
-        additional["wandbHealth"] = health(additional_logs, additional_state)
+        additional["wandbHealth"] = refreshed_health(additional, additional_logs, additional_state)
 
     record["resolvedPostEpochs"] = sorted(int(epoch) for epoch in results)
     active_additional = next(
@@ -265,12 +321,91 @@ def refresh_evaluator(record: dict[str, Any]) -> str:
         record["status"] = "failed"
         record["needsAttention"] = True
     elif state == "complete":
-        record["status"] = "complete_without_decision"
-        record["needsAttention"] = True
+        if previous_decision:
+            record["decision"] = previous_decision
+            record["status"] = previous_decision.get("status", previous_status or "complete")
+            record.pop("needsAttention", None)
+        else:
+            record["status"] = "complete_without_decision"
+            record["needsAttention"] = True
     else:
         record["status"] = state
     record["beakerStatus"] = state
-    record["wandbHealth"] = health(logs, state)
+    record["wandbHealth"] = refreshed_health(record, logs, state)
+    return record["status"]
+
+
+def refresh_integrated_run(record: dict[str, Any]) -> str:
+    experiment = str(record["experiment"])
+    payload = inspect(experiment)
+    state = beaker_state(payload)
+    jobs = [job for job in payload.get("jobs") or [] if job.get("id")]
+    if jobs:
+        record["jobs"] = [job["id"] for job in jobs]
+        record["job"] = jobs[-1]["id"]
+    job = jobs[-1]["id"] if jobs else None
+    logs = experiment_logs(experiment, state, job)
+    resolved = {int(epoch) for epoch in record.get("resolvedCheckpointEpochs", [])}
+    for producer_id, epoch, _checkpoint in INTEGRATED_PD_RETAINED.findall(logs):
+        if producer_id == record["id"]:
+            resolved.add(int(epoch))
+    results = record.setdefault("postDecayResults", {})
+    for producer_id, epoch, raw in INTEGRATED_POST_RESULT.findall(logs):
+        if producer_id == record["id"]:
+            results[str(int(epoch))] = json.loads(raw)
+    record["resolvedCheckpointEpochs"] = sorted(resolved)
+    record["resolvedPostEpochs"] = sorted(int(epoch) for epoch in results)
+
+    retained = [int(epoch) for epoch in record["retainedCheckpointEpochs"]]
+    evaluation_epochs = {int(epoch) for epoch in record["evaluationEpochs"]}
+    events = [
+        (match.start(), match.group(1), int(match.group(3)))
+        for match in INTEGRATED_STAGE_EVENT.finditer(logs)
+        if match.group(2) == record["id"]
+    ]
+    complete_marker = f"DENSE_DCLM333M_JOB_COMPLETE id={record['id']}" in logs
+    record.pop("currentPostEpoch", None)
+    if complete_marker:
+        record["status"] = "complete"
+        record["currentPhase"] = "complete"
+        record["currentEpoch"] = retained[-1]
+    else:
+        last = events[-1] if events else None
+        if last and last[1] == "POST_START" and last[2] not in record["resolvedPostEpochs"]:
+            record["currentPhase"] = "post"
+            record["currentPostEpoch"] = last[2]
+            record["currentEpoch"] = last[2]
+        elif last and last[1] == "PD_START" and last[2] not in resolved:
+            record["currentPhase"] = "producer"
+            record["currentEpoch"] = last[2]
+        elif (
+            last
+            and last[1] == "PD_RETAINED"
+            and last[2] in evaluation_epochs
+            and last[2] not in record["resolvedPostEpochs"]
+        ):
+            record["currentPhase"] = "post_pending"
+            record["currentEpoch"] = last[2]
+        else:
+            next_epoch = next((epoch for epoch in retained if epoch not in resolved), None)
+            record["currentPhase"] = "producer" if next_epoch is not None else "finishing"
+            record["currentEpoch"] = next_epoch if next_epoch is not None else retained[-1]
+        if state == "failed":
+            record["status"] = "failed"
+            record["needsAttention"] = True
+        elif state == "complete":
+            record["status"] = "complete_without_marker"
+            record["needsAttention"] = True
+        else:
+            record["status"] = state
+            record.pop("needsAttention", None)
+    record["beakerStatus"] = state
+    record["wandbHealth"] = refreshed_health(record, logs, state)
+    if "DENSE_DCLM333M_POST_START" in logs and "Loading checkpoint from '" not in logs:
+        signals = record["wandbHealth"]["criticalSignals"]
+        if "missing-exact-post-checkpoint-load" not in signals:
+            signals.append("missing-exact-post-checkpoint-load")
+        record["wandbHealth"]["status"] = "critical"
     return record["status"]
 
 
@@ -278,10 +413,14 @@ def main() -> None:
     report = json.loads(REPORT.read_text())
     if len(report.get("producers", [])) != 10 or len(report.get("evaluators", [])) != 2:
         raise RuntimeError("report must contain ten producers and two evaluators")
+    if len(report.get("dclm333mIntegratedRuns", [])) != 8:
+        raise RuntimeError("report must contain eight Pool-333M integrated runs")
     for record in report["producers"]:
         print(f"{record['id']}: {refresh_producer(record)}")
     for record in report["evaluators"]:
         print(f"{record['id']}: {refresh_evaluator(record)}")
+    for record in report["dclm333mIntegratedRuns"]:
+        print(f"{record['id']}: {refresh_integrated_run(record)}")
     write_report(report)
 
 

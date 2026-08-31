@@ -44,15 +44,28 @@ for (const evaluator of current.smallEvaluators || []) {
   if (evaluator.status !== "complete" || result?.status !== "complete") continue;
   const value = Number(result.validationExact ?? result.validation);
   if (!Number.isFinite(value)) continue;
-  const key = `${evaluator.model}:${evaluator.batchSequences}:${evaluator.epoch}`;
+  const key = `${evaluator.model}:dclm3b:${evaluator.batchSequences}:${evaluator.epoch}`;
   expected.set(key, Math.min(expected.get(key) ?? Infinity, value));
+}
+for (const run of current.dclm333mIntegratedRuns || []) {
+  for (const [epochText, result] of Object.entries(run.postDecayResults || {})) {
+    if (result?.status !== "complete") continue;
+    const value = Number(result.validationExact ?? result.validation);
+    if (!Number.isFinite(value)) continue;
+    const key = `${run.model}:dclm333m:${run.batchSequences}:${epochText}`;
+    expected.set(key, Math.min(expected.get(key) ?? Infinity, value));
+  }
 }
 
 const columnIndex = new Map([
-  ["474m:128", 6],
-  ["474m:256", 7],
-  ["153m:128", 10],
-  ["153m:256", 11],
+  ["474m:dclm333m:64", 4],
+  ["474m:dclm333m:128", 5],
+  ["474m:dclm3b:128", 8],
+  ["474m:dclm3b:256", 9],
+  ["153m:dclm333m:64", 10],
+  ["153m:dclm333m:128", 11],
+  ["153m:dclm3b:128", 14],
+  ["153m:dclm3b:256", 15],
 ]);
 const rows = new Map();
 for (const match of rendered.get("validation-summary").matchAll(/<tr><td>E([0-9,]+)<\/td>(.*?)<\/tr>/g)) {
@@ -63,8 +76,8 @@ for (const match of rendered.get("validation-summary").matchAll(/<tr><td>E([0-9,
 }
 
 for (const [key, value] of expected) {
-  const [model, batchText, epochText] = key.split(":");
-  const index = columnIndex.get(`${model}:${batchText}`);
+  const [model, pool, batchText, epochText] = key.split(":");
+  const index = columnIndex.get(`${model}:${pool}:${batchText}`);
   if (index === undefined) throw new Error(`no summary column for ${key}`);
   const actual = rows.get(Number(epochText))?.[index];
   const wanted = value.toFixed(3);
@@ -74,18 +87,58 @@ for (const [key, value] of expected) {
 }
 
 const grid = rendered.get("coordinate-grid");
+if (grid.includes("planned")) {
+  throw new Error("coordinate grid must not render planned placeholders");
+}
+for (const evaluator of current.evaluators || []) {
+  const producer = current.producers.find((item) => item.id === evaluator.producerId);
+  if (!producer) throw new Error(`missing producer for ${evaluator.id}`);
+  for (const additional of evaluator.additionalExperiments || []) {
+    if (!["submitted", "scheduled", "running"].includes(additional.status)) continue;
+    const label = `1B · Pool-3B · BS${producer.batchSequences}`;
+    const rowPattern = new RegExp(
+      `<tr><td>E${additional.epoch}<\\/td><td>${label.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}<\\/td>(.*?)<\\/tr>`,
+    );
+    const row = grid.match(rowPattern)?.[1];
+    if (!row || !row.includes(`WD ${producer.weightDecay}) · PD retained · POST running`)) {
+      throw new Error(`coordinate grid does not show active standalone POST for ${evaluator.id} E${additional.epoch}`);
+    }
+  }
+}
 for (const evaluator of current.smallEvaluators || []) {
   if (evaluator.status !== "complete") continue;
   const producer = current.producers.find((item) => item.id === evaluator.producerId);
   if (!producer) throw new Error(`missing producer for ${evaluator.id}`);
+  const result = evaluator.postDecayResult;
+  const postValue = Number(result?.validationExact ?? result?.validation);
+  if (!Number.isFinite(postValue)) throw new Error(`missing completed POST value for ${evaluator.id}`);
   const label = `${producer.model === "474m" ? "474M" : "153M"} · Pool-3B · BS${producer.batchSequences}`;
   const rowPattern = new RegExp(
     `<tr><td>E${evaluator.epoch}<\\/td><td>${label.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}<\\/td>(.*?)<\\/tr>`,
   );
   const row = grid.match(rowPattern)?.[1];
-  if (!row || !row.includes(`WD ${producer.weightDecay}) · PD retained · POST complete`)) {
-    throw new Error(`coordinate grid does not show completed POST for ${evaluator.id}`);
+  if (!row || !row.includes(`WD ${producer.weightDecay}) · PD retained · POST ${postValue.toFixed(3)}`)) {
+    throw new Error(`coordinate grid does not show completed POST value for ${evaluator.id}`);
+  }
+}
+for (const run of current.dclm333mIntegratedRuns || []) {
+  if (!["submitted", "scheduled", "running"].includes(run.status)) continue;
+  const label = `${run.model === "474m" ? "474M" : "153M"} · Pool-333M · BS${run.batchSequences}`;
+  const rowPattern = new RegExp(
+    `<tr><td>E${run.currentEpoch}<\\/td><td>${label.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}<\\/td>(.*?)<\\/tr>`,
+  );
+  const row = grid.match(rowPattern)?.[1];
+  const expectedState = run.currentPhase === "post" ? "POST running" : "producer running";
+  if (!row || !row.includes(`WD ${run.weightDecay})`) || !row.includes(expectedState)) {
+    throw new Error(`coordinate grid omits active Pool-333M state for ${run.id}`);
   }
 }
 
-console.log(`validated rendered checkpoint report with ${expected.size} small-model summary cells`);
+const html = fs.readFileSync(path.join(reportRoot, "wsd_checkpoint_producer_grid.html"), "utf8");
+if (!html.includes('<th colspan="6" class="model-start">474M</th>') ||
+    !html.includes('<th colspan="6" class="model-start">153M</th>') ||
+    (html.match(/Pool-333M/g) || []).length !== 2) {
+  throw new Error("Pool-333M summary header topology is stale");
+}
+
+console.log(`validated rendered checkpoint report with ${expected.size} current summary cells`);

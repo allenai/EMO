@@ -16,14 +16,33 @@
   const numeric = (value) => finite(value) ? Number(value) : null;
   const formatMetric = (value) => finite(value) ? Number(value).toFixed(3) : "—";
   const formatEpoch = (value) => `E${Number(value).toLocaleString()}`;
-  const formatPool = (pool) => pool === "dclm3b" ? "Pool-3B" : "Pool-1B";
+  const formatPool = (pool) => ({
+    dclm333m: "Pool-333M",
+    dclm1b: "Pool-1B",
+    dclm3b: "Pool-3B",
+  }[pool] || pool);
   const formatModel = (model) => ({"1b": "1B", "474m": "474M", "153m": "153M"}[model] || model);
   const isActive = (status) => ["submitted", "scheduled", "running"].includes(status);
   const isFailed = (status) => ["failed", "canceled", "cancelled", "error"].includes(status);
 
-  const producers = current.producers || [];
+  const integratedRuns = current.dclm333mIntegratedRuns || [];
+  const producers = [...(current.producers || []), ...integratedRuns];
+  const dense1bEvaluators = current.evaluators || [];
   const evaluators = [
-    ...(current.evaluators || []),
+    ...dense1bEvaluators,
+    ...dense1bEvaluators.flatMap((evaluator) =>
+      (evaluator.additionalExperiments || []).map((additional) => ({
+        ...evaluator,
+        ...additional,
+        id: `${evaluator.id}-post-e${additional.epoch}`,
+        epochs: [additional.epoch],
+        resolvedPostEpochs: additional.postDecayResult ? [additional.epoch] : [],
+        postDecayResults: additional.postDecayResult
+          ? {[String(additional.epoch)]: additional.postDecayResult}
+          : {},
+        additionalExperiments: [],
+      })),
+    ),
     ...(current.smallEvaluators || []).map((evaluator) => ({
       ...evaluator,
       epochs: evaluator.epochs || [evaluator.epoch],
@@ -31,6 +50,16 @@
         (evaluator.resolvedPostEpoch ? [evaluator.resolvedPostEpoch] : []),
       postDecayResults: evaluator.postDecayResults ||
         (evaluator.postDecayResult ? {[String(evaluator.epoch)]: evaluator.postDecayResult} : {}),
+    })),
+    ...integratedRuns.map((run) => ({
+      id: `${run.id}-integrated-post`,
+      producerId: run.id,
+      status: run.currentPhase === "post" ? run.status :
+        run.status === "complete" ? "complete" : "idle",
+      epochs: run.evaluationEpochs || [],
+      resolvedPostEpochs: run.resolvedPostEpochs || [],
+      postDecayResults: run.postDecayResults || {},
+      currentEvaluationEpoch: run.currentPostEpoch ?? null,
     })),
   ];
   const evaluatorsByProducer = new Map();
@@ -41,17 +70,21 @@
   }
 
   const columns = [
-    {key: "1b-pool1b-bs64", model: "1b", pool: "dclm1b", batch: 64, historicalIds: ["drwtembwd64-lr1e-3-wd0.3"]},
+    {key: "1b-pool1b-bs64", model: "1b", pool: "dclm1b", batch: 64, historicalIds: ["drwtembwd64-lr1e-3-wd0.3"], modelStart: true},
     {key: "1b-pool1b-bs128", model: "1b", pool: "dclm1b", batch: 128, historicalIds: ["drwtembwd128-lr1e-3-wd0.3", "drwtembwd128-lr1e-3-wd1.0"]},
-    {key: "1b-pool3b-bs64", model: "1b", pool: "dclm3b", batch: 64},
+    {key: "1b-pool3b-bs64", model: "1b", pool: "dclm3b", batch: 64, poolStart: true},
     {key: "1b-pool3b-bs128", model: "1b", pool: "dclm3b", batch: 128},
-    {key: "474m-pool1b-bs128", model: "474m", pool: "dclm1b", batch: 128, historicalSmall: true},
+    {key: "474m-pool333m-bs64", model: "474m", pool: "dclm333m", batch: 64, modelStart: true},
+    {key: "474m-pool333m-bs128", model: "474m", pool: "dclm333m", batch: 128},
+    {key: "474m-pool1b-bs128", model: "474m", pool: "dclm1b", batch: 128, historicalSmall: true, poolStart: true},
     {key: "474m-pool1b-bs256", model: "474m", pool: "dclm1b", batch: 256, historicalSmall: true},
-    {key: "474m-pool3b-bs128", model: "474m", pool: "dclm3b", batch: 128},
+    {key: "474m-pool3b-bs128", model: "474m", pool: "dclm3b", batch: 128, poolStart: true},
     {key: "474m-pool3b-bs256", model: "474m", pool: "dclm3b", batch: 256},
-    {key: "153m-pool1b-bs128", model: "153m", pool: "dclm1b", batch: 128, historicalSmall: true},
+    {key: "153m-pool333m-bs64", model: "153m", pool: "dclm333m", batch: 64, modelStart: true},
+    {key: "153m-pool333m-bs128", model: "153m", pool: "dclm333m", batch: 128},
+    {key: "153m-pool1b-bs128", model: "153m", pool: "dclm1b", batch: 128, historicalSmall: true, poolStart: true},
     {key: "153m-pool1b-bs256", model: "153m", pool: "dclm1b", batch: 256, historicalSmall: true},
-    {key: "153m-pool3b-bs128", model: "153m", pool: "dclm3b", batch: 128},
+    {key: "153m-pool3b-bs128", model: "153m", pool: "dclm3b", batch: 128, poolStart: true},
     {key: "153m-pool3b-bs256", model: "153m", pool: "dclm3b", batch: 256},
   ];
 
@@ -178,7 +211,8 @@
       return [model, values.length ? Math.min(...values) : null];
     }));
     const cells = selected.map((point, index) => {
-      const divider = index % 4 === 0 ? "model-start" : index % 4 === 2 ? "pool-start" : "";
+      const divider = columns[index].modelStart ? "model-start" :
+        columns[index].poolStart ? "pool-start" : "";
       if (!point) return `<td class="${divider}">—</td>`;
       const classes = [];
       if (divider) classes.push(divider);
@@ -191,13 +225,19 @@
 
   const groupOrder = [
     ["1b", "dclm3b", 64], ["1b", "dclm3b", 128],
+    ["474m", "dclm333m", 64], ["474m", "dclm333m", 128],
     ["474m", "dclm3b", 128], ["474m", "dclm3b", 256],
+    ["153m", "dclm333m", 64], ["153m", "dclm333m", 128],
     ["153m", "dclm3b", 128], ["153m", "dclm3b", 256],
   ];
   const coordinateBody = document.getElementById("coordinate-grid");
 
   function evaluatorActiveEpoch(evaluator) {
     if (!isActive(evaluator.status)) return null;
+    if (evaluator.currentEvaluationEpoch !== null &&
+        evaluator.currentEvaluationEpoch !== undefined) {
+      return Number(evaluator.currentEvaluationEpoch);
+    }
     const resolved = new Set((evaluator.resolvedPostEpochs || []).map(Number));
     return (evaluator.epochs || []).map(Number).find((epoch) => !resolved.has(epoch)) ?? null;
   }
@@ -222,7 +262,9 @@
       const postCandidates = [];
       const chips = groupProducers.map((producer) => {
         const resolvedPd = (producer.resolvedCheckpointEpochs || []).map(Number).includes(epoch);
-        const producerActive = Number(producer.currentEpoch) === epoch && isActive(producer.status);
+        const producerActive = Number(producer.currentEpoch) === epoch &&
+          isActive(producer.status) &&
+          (!producer.currentPhase || producer.currentPhase === "producer");
         const producerFailed = Number(producer.currentEpoch) === epoch && isFailed(producer.status);
         const producerEvaluators = evaluatorsByProducer.get(producer.id) || [];
         let postResult = null;
@@ -241,19 +283,21 @@
         }
         const states = [];
         if (resolvedPd) states.push("PD retained");
-        if (postResult) states.push("POST complete");
+        if (postResult) states.push(`POST ${formatMetric(postResult.value)}`);
         else if (postActive) states.push("POST running");
         if (producerActive) states.push("producer running");
         if (producerFailed) states.push("producer failed");
         if (postFailed) states.push("POST failed");
-        if (!states.length) states.push("planned");
+        if (!states.length) return null;
         const classes = ["tuple"];
         if (producerActive || postActive) classes.push("active");
         if (producerFailed || postFailed) classes.push("failed");
         return {producer, postResult, classes, text: `(LR ${producer.learningRate}, WD ${producer.weightDecay}) · ${states.join(" · ")}`};
       });
       const winner = choose(postCandidates);
-      const chipHtml = chips.map((chip) => {
+      const visibleChips = chips.filter(Boolean);
+      if (!visibleChips.length) continue;
+      const chipHtml = visibleChips.map((chip) => {
         if (winner && chip.producer.id === winner.producerId) chip.classes.push("selected");
         return `<span class="${chip.classes.join(" ")}">${chip.text}</span>`;
       }).join("");
