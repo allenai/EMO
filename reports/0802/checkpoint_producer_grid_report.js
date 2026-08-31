@@ -22,7 +22,17 @@
   const isFailed = (status) => ["failed", "canceled", "cancelled", "error"].includes(status);
 
   const producers = current.producers || [];
-  const evaluators = current.evaluators || [];
+  const evaluators = [
+    ...(current.evaluators || []),
+    ...(current.smallEvaluators || []).map((evaluator) => ({
+      ...evaluator,
+      epochs: evaluator.epochs || [evaluator.epoch],
+      resolvedPostEpochs: evaluator.resolvedPostEpochs ||
+        (evaluator.resolvedPostEpoch ? [evaluator.resolvedPostEpoch] : []),
+      postDecayResults: evaluator.postDecayResults ||
+        (evaluator.postDecayResult ? {[String(evaluator.epoch)]: evaluator.postDecayResult} : {}),
+    })),
+  ];
   const evaluatorsByProducer = new Map();
   for (const evaluator of evaluators) {
     const list = evaluatorsByProducer.get(evaluator.producerId) || [];
