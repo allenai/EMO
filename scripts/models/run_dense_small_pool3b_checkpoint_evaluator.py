@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from decimal import Decimal
@@ -40,13 +41,26 @@ def load(
     return config, item
 
 
-def source_checkpoint(item: dict[str, Any], epoch: int) -> Path:
+def producer_output(item: dict[str, Any], override: str | None = None) -> Path:
+    canonical = producer.expected_output(item)
+    output = canonical if override is None else Path(override)
+    if output == canonical:
+        return output
+    if output.parent != canonical.parent or not re.fullmatch(
+        re.escape(canonical.name) + r"_throughput_recovery_r[1-9][0-9]*",
+        output.name,
+    ):
+        raise ValueError(f"unauthorized evaluator producer output {output}")
+    return output
+
+
+def source_checkpoint(item: dict[str, Any], epoch: int, output_override: str | None = None) -> Path:
     step = producer.stable_step(epoch, producer.TARGET_POOL_TOKENS, int(item["batchSequences"]))
-    return Path(str(item["output"])) / f"step{step}"
+    return producer_output(item, output_override) / f"step{step}"
 
 
-def validate_source(item: dict[str, Any], epoch: int) -> Path:
-    source = source_checkpoint(item, epoch)
+def validate_source(item: dict[str, Any], epoch: int, output_override: str | None = None) -> Path:
+    source = source_checkpoint(item, epoch, output_override)
     config_path = source / "config.json"
     if (
         not source.is_dir()
@@ -81,8 +95,8 @@ def validate_source(item: dict[str, Any], epoch: int) -> Path:
     return source
 
 
-def state_dir(item: dict[str, Any]) -> Path:
-    return Path(str(item["output"])) / ".constant_checkpoint_evaluator_pool3b_v1"
+def state_dir(item: dict[str, Any], output_override: str | None = None) -> Path:
+    return producer_output(item, output_override) / ".constant_checkpoint_evaluator_pool3b_v1"
 
 
 def base_arguments(config: dict[str, Any], item: dict[str, Any], *, heldout: str) -> list[str]:
@@ -171,8 +185,13 @@ def evaluation_arguments(
     ]
 
 
-def run(config: dict[str, Any], item: dict[str, Any], epoch: int) -> dict[str, Any]:
-    result_path = state_dir(item) / "results" / f"e{epoch}.json"
+def run(
+    config: dict[str, Any],
+    item: dict[str, Any],
+    epoch: int,
+    output_override: str | None = None,
+) -> dict[str, Any]:
+    result_path = state_dir(item, output_override) / "results" / f"e{epoch}.json"
     if result_path.is_file():
         result = json.loads(result_path.read_text())
         print(
@@ -186,8 +205,8 @@ def run(config: dict[str, Any], item: dict[str, Any], epoch: int) -> dict[str, A
         )
         return result
 
-    source = validate_source(item, epoch)
-    output = state_dir(item) / "post_decay_runs" / f"e{epoch}"
+    source = validate_source(item, epoch, output_override)
+    output = state_dir(item, output_override) / "post_decay_runs" / f"e{epoch}"
     endpoint_step = producer.total_step(
         epoch, producer.TARGET_POOL_TOKENS, int(item["batchSequences"])
     )
@@ -195,14 +214,14 @@ def run(config: dict[str, Any], item: dict[str, Any], epoch: int) -> dict[str, A
     name = f"{item['id']}-post-e{epoch}-v1"
     if endpoint.is_dir():
         eval_name = f"{name}-recovered-eval"
-        log_path = state_dir(item) / "logs" / f"e{epoch}_recovered_eval.log"
+        log_path = state_dir(item, output_override) / "logs" / f"e{epoch}_recovered_eval.log"
         run_torch(
             eval_name,
             evaluation_arguments(config, item, endpoint, output / "eval", eval_name),
             log_path,
         )
     else:
-        log_path = state_dir(item) / "logs" / f"e{epoch}.log"
+        log_path = state_dir(item, output_override) / "logs" / f"e{epoch}.log"
         print(
             f"DENSE_SMALL_CHECKPOINT_EVALUATOR_START id={item['id']} epoch={epoch} "
             f"source={source} output={output}",
@@ -250,13 +269,15 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--coordinate", required=True)
     parser.add_argument("--epoch", type=int, required=True)
+    parser.add_argument("--producer-output")
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args()
     config, item = load(args.manifest, args.coordinate, args.epoch)
+    producer_output(item, args.producer_output)
     if args.validate_only:
         print(f"validated small evaluator {args.coordinate} E{args.epoch}")
         return
-    run(config, item, args.epoch)
+    run(config, item, args.epoch, args.producer_output)
 
 
 if __name__ == "__main__":

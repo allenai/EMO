@@ -39,7 +39,9 @@ def main() -> None:
             raise RuntimeError(f"small evaluator ID mismatch: {record['id']}")
         if record.get("policy") != evaluator.POLICY:
             raise RuntimeError(f"small evaluator policy mismatch: {record['id']}")
-        if record.get("sourceCheckpoint") != str(evaluator.source_checkpoint(item, epoch)):
+        output = str(record.get("producerOutput", item["output"]))
+        evaluator.producer_output(item, output)
+        if record.get("sourceCheckpoint") != str(evaluator.source_checkpoint(item, epoch, output)):
             raise RuntimeError(f"small evaluator source mismatch: {record['id']}")
         expected_runtime = evaluator_min_runtime.estimate_min_runtime(
             model=str(item["model"]),
@@ -66,6 +68,8 @@ def main() -> None:
                 producer_id,
                 "--epoch",
                 str(epoch),
+                "--producer-output",
+                output,
                 "--validate-only",
             ],
             check=True,

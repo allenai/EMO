@@ -81,7 +81,7 @@ def runtime(item: dict[str, Any], epoch: int) -> dict[str, Any]:
     )
 
 
-def report_ready(item: dict[str, Any], epoch: int) -> None:
+def report_producer(item: dict[str, Any], epoch: int) -> dict[str, Any]:
     report = json.loads(REPORT.read_text())
     matches = [record for record in report.get("producers", []) if record.get("id") == item["id"]]
     if len(matches) != 1:
@@ -89,9 +89,16 @@ def report_ready(item: dict[str, Any], epoch: int) -> None:
     resolved = {int(value) for value in matches[0].get("resolvedCheckpointEpochs", [])}
     if epoch not in resolved:
         raise RuntimeError(f"E{epoch} pre-decay checkpoint is not resolved for {item['id']}")
+    return matches[0]
 
 
-def spec_for(item: dict[str, Any], epoch: int, revision: str, priority: str) -> dict[str, Any]:
+def spec_for(
+    item: dict[str, Any],
+    epoch: int,
+    revision: str,
+    priority: str,
+    output: str,
+) -> dict[str, Any]:
     spec = copy.deepcopy(
         json.loads(
             command(
@@ -123,6 +130,8 @@ def spec_for(item: dict[str, Any], epoch: int, revision: str, priority: str) -> 
         str(item["id"]),
         "--epoch",
         str(epoch),
+        "--producer-output",
+        output,
     ]
     blocked = {
         "GANTRY_USE_TORCHRUN",
@@ -164,14 +173,20 @@ def spec_for(item: dict[str, Any], epoch: int, revision: str, priority: str) -> 
     return spec
 
 
-def create(item: dict[str, Any], epoch: int, revision: str, priority: str) -> str:
+def create(
+    item: dict[str, Any],
+    epoch: int,
+    revision: str,
+    priority: str,
+    output: str,
+) -> str:
     name = guarded_name(item, epoch)
     existing = existing_named_experiment(name)
     if existing:
         return existing
     output = command(
         ["beaker", "experiment", "create", "-", "--name", name, "--workspace", WORKSPACE],
-        input_text=json.dumps(spec_for(item, epoch, revision, priority)),
+        input_text=json.dumps(spec_for(item, epoch, revision, priority, output)),
     )
     identifiers = re.findall(r"\b[0-9A-HJKMNP-TV-Z]{26}\b", output)
     if not identifiers:
@@ -179,7 +194,13 @@ def create(item: dict[str, Any], epoch: int, revision: str, priority: str) -> st
     return identifiers[0]
 
 
-def register(item: dict[str, Any], epoch: int, experiment: str, revision: str) -> None:
+def register(
+    item: dict[str, Any],
+    epoch: int,
+    experiment: str,
+    revision: str,
+    output: str,
+) -> None:
     report = json.loads(REPORT.read_text())
     records = report.setdefault("smallEvaluators", [])
     evaluator_id = guarded_name(item, epoch)
@@ -188,7 +209,7 @@ def register(item: dict[str, Any], epoch: int, experiment: str, revision: str) -
         if matches[0].get("experiment") != experiment:
             raise RuntimeError(f"registered evaluator mismatch for {evaluator_id}")
         return
-    source = evaluator.source_checkpoint(item, epoch)
+    source = evaluator.source_checkpoint(item, epoch, output)
     endpoint_step = producer.total_step(
         epoch, producer.TARGET_POOL_TOKENS, int(item["batchSequences"])
     )
@@ -205,6 +226,7 @@ def register(item: dict[str, Any], epoch: int, experiment: str, revision: str) -
             "weightDecay": item["weightDecay"],
             "epoch": epoch,
             "sourceCheckpoint": str(source),
+            "producerOutput": output,
             "endpointStep": endpoint_step,
             "status": "submitted",
             "experiment": experiment,
@@ -239,9 +261,16 @@ def main() -> None:
     args = parser.parse_args()
     validate_revision(args.revision)
     _, item = evaluator.load(MANIFEST, args.coordinate, args.epoch)
-    report_ready(item, args.epoch)
+    producer_record = report_producer(item, args.epoch)
+    output = str(producer_record["output"])
+    evaluator.producer_output(item, output)
     if args.print_spec:
-        print(json.dumps(spec_for(item, args.epoch, args.revision, args.priority), indent=2))
+        print(
+            json.dumps(
+                spec_for(item, args.epoch, args.revision, args.priority, output),
+                indent=2,
+            )
+        )
         return
     reserved = runtime(item, args.epoch)
     if not args.submit_if_ready:
@@ -250,8 +279,8 @@ def main() -> None:
             "pass --submit-if-ready"
         )
         return
-    experiment = create(item, args.epoch, args.revision, args.priority)
-    register(item, args.epoch, experiment, args.revision)
+    experiment = create(item, args.epoch, args.revision, args.priority, output)
+    register(item, args.epoch, experiment, args.revision, output)
     print(f"{guarded_name(item, args.epoch)}: {experiment} minRuntime={reserved['minRuntime']}")
 
 
