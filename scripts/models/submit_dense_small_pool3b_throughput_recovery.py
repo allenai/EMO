@@ -125,6 +125,8 @@ def spec_for(
         )
     ]
     set_env(task, "GIT_REF", revision)
+    if str(item["model"]) == "474m":
+        set_env(task, "PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
     task["resources"] = {"gpuCount": 8, "sharedMemory": "10 GiB"}
     task["context"] = {
         "priority": priority,
