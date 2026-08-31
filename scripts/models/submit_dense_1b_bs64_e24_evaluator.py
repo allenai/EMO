@@ -70,9 +70,15 @@ def load_item() -> dict[str, Any]:
     if source_step != 247192:
         raise RuntimeError(f"unexpected E24 source step {source_step}")
     source = Path(str(item["output"])) / f"step{source_step}"
-    producer.validate_source_checkpoint(
-        {**item, "sourceEpoch": EPOCH, "sourceCheckpoint": str(source)}
-    )
+    # Submission commonly runs from a laptop without the Weka mount.  When the
+    # coordinate directory is locally visible, retain the full checkpoint
+    # validation here; otherwise the report gate below proves that the exact
+    # checkpoint was externally validated, and the evaluator validates the
+    # source again inside its Weka-mounted Beaker job before loading it.
+    if source.parent.is_dir():
+        producer.validate_source_checkpoint(
+            {**item, "sourceEpoch": EPOCH, "sourceCheckpoint": str(source)}
+        )
     return item
 
 
@@ -189,6 +195,8 @@ def main() -> None:
     producer_record = next(value for value in report["producers"] if value["id"] == PRODUCER_ID)
     if producer_record.get("stopAfterEpoch") != EPOCH or not producer_record.get("stopAuthorized"):
         raise RuntimeError("report does not authorize the BS64 E24 stop/evaluator gate")
+    if EPOCH not in {int(value) for value in producer_record.get("resolvedCheckpointEpochs", [])}:
+        raise RuntimeError("report has not resolved the exact BS64 E24 checkpoint")
     report_evaluator = next(
         value for value in report["evaluators"] if value["id"] == REPORT_EVALUATOR_ID
     )
