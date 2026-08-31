@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Refresh the isolated ten-producer/two-evaluator report from Beaker logs."""
+"""Refresh the isolated ten-producer/two-evaluator report from Beaker logs.
+
+The two Dense-1B producers retain the original v1 policy.  The eight small-model
+records are the corrected Pool-3B v2 bridge/producers.  Older canceled
+small-model Pool-1B producers are intentionally absent from the report.
+"""
 
 from __future__ import annotations
 
@@ -84,10 +89,13 @@ def health(logs: str, state: str) -> dict[str, Any]:
         except ValueError:
             critical.append("nonfinite-training-loss")
             break
-    if (
-        ("DENSE_CHECKPOINT_PRODUCER_START" in logs or "DENSE1B_CHECKPOINT_EVALUATOR_START" in logs)
-        and "Loading checkpoint from '" not in logs
-    ):
+    stage_markers = (
+        "DENSE_CHECKPOINT_PRODUCER_START",
+        "DENSE_SMALL_POOL3B_BRIDGE_START",
+        "DENSE_SMALL_POOL3B_PRODUCER_START",
+        "DENSE1B_CHECKPOINT_EVALUATOR_START",
+    )
+    if any(marker in logs for marker in stage_markers) and "Loading checkpoint from '" not in logs:
         critical.append("missing-exact-checkpoint-load")
     wandb = WANDB.findall(logs)
     return {
@@ -119,15 +127,32 @@ def refresh_producer(record: dict[str, Any]) -> str:
         record["job"] = jobs[-1]["id"]
     logs = experiment_logs(str(experiment), state)
     resolved = {int(epoch) for epoch in record.get("resolvedCheckpointEpochs", [])}
+    pool3b_v2 = record.get("policy") == "dense_small_pool3b_checkpoint_producers_v2"
+    if pool3b_v2 and f"DENSE_SMALL_POOL3B_BRIDGE_COMPLETE id={record['id']}" in logs:
+        resolved.add(1)
     for epoch in record["targetEpochs"]:
-        pool_tokens = 3_000_000_000 if record["model"] == "1b" else 1_000_000_000
+        pool_tokens = 3_000_000_000 if record["pool"] == "dclm3b" else 1_000_000_000
         endpoint = -(-int(epoch) * pool_tokens // (int(record["batchSequences"]) * 4096))
         step = endpoint - round(0.1 * endpoint) - 1
         if re.search(rf"(?:/|\b)step{step}(?:\b|/)", logs):
             resolved.add(int(epoch))
-    if f"DENSE_CHECKPOINT_PRODUCER_COMPLETE id={record['id']}" in logs:
+    completion_markers = (
+        f"DENSE_CHECKPOINT_PRODUCER_COMPLETE id={record['id']}",
+        f"DENSE_SMALL_POOL3B_PRODUCER_COMPLETE id={record['id']}",
+    )
+    authorized_stop = (
+        bool(record.get("stopAuthorized"))
+        and int(record.get("stopAfterEpoch", -1)) in resolved
+        and state == "failed"
+    )
+    if any(marker in logs for marker in completion_markers):
+        if pool3b_v2:
+            resolved.add(1)
         resolved.update(record["targetEpochs"])
         record["status"] = "complete"
+    elif authorized_stop:
+        record["status"] = "stopped_at_authorized_epoch"
+        record.pop("needsAttention", None)
     elif state == "failed":
         record["status"] = "failed"
         record["needsAttention"] = True
@@ -138,9 +163,19 @@ def refresh_producer(record: dict[str, Any]) -> str:
         record["status"] = state
     record["beakerStatus"] = state
     record["resolvedCheckpointEpochs"] = sorted(resolved)
-    record["currentEpoch"] = next(
-        (epoch for epoch in record["targetEpochs"] if epoch not in resolved), None
+    record["currentEpoch"] = (
+        1
+        if pool3b_v2 and 1 not in resolved
+        else next((epoch for epoch in record["targetEpochs"] if epoch not in resolved), None)
     )
+    if pool3b_v2:
+        record["currentPhase"] = (
+            "fresh_2b_bridge_to_predecay_e1"
+            if 1 not in resolved
+            else "repacked_shuffled_pool3b_constant_lr"
+            if record["currentEpoch"] is not None
+            else "complete"
+        )
     record["wandbHealth"] = health(logs, state)
     return record["status"]
 
@@ -166,7 +201,64 @@ def refresh_evaluator(record: dict[str, Any]) -> str:
         if evaluator_id == record["producerId"]
     ]
     record["resolvedPostEpochs"] = sorted(int(epoch) for epoch in results)
-    if decisions:
+    additional_states: list[str] = []
+    additional_decisions: list[tuple[str, dict[str, Any]]] = []
+    for additional in record.get("additionalExperiments", []):
+        additional_experiment = str(additional["experiment"])
+        additional_payload = inspect(additional_experiment)
+        additional_state = beaker_state(additional_payload)
+        additional_states.append(additional_state)
+        additional_jobs = [
+            job for job in additional_payload.get("jobs") or [] if job.get("id")
+        ]
+        if additional_jobs:
+            additional["jobs"] = [job["id"] for job in additional_jobs]
+            additional["job"] = additional_jobs[-1]["id"]
+        additional_logs = experiment_logs(additional_experiment, additional_state)
+        epoch = int(additional["epoch"])
+        additional_results = [
+            json.loads(raw)
+            for evaluator_id, result_epoch, raw in EVAL_RESULT.findall(additional_logs)
+            if evaluator_id == record["producerId"] and int(result_epoch) == epoch
+        ]
+        if additional_results:
+            results[str(epoch)] = additional_results[-1]
+            additional["postDecayResult"] = additional_results[-1]
+        matched_decisions = [
+            (status, json.loads(raw))
+            for evaluator_id, status, raw in EVAL_DECISION.findall(additional_logs)
+            if evaluator_id == record["producerId"]
+        ]
+        if matched_decisions:
+            additional_decisions.append(matched_decisions[-1])
+            additional["decision"] = matched_decisions[-1][1]
+            additional["status"] = matched_decisions[-1][0]
+            additional.pop("needsAttention", None)
+        elif additional_state == "failed":
+            additional["status"] = "failed"
+            additional["needsAttention"] = True
+        elif additional_state == "complete":
+            additional["status"] = "complete_without_decision"
+            additional["needsAttention"] = True
+        else:
+            additional["status"] = additional_state
+        additional["beakerStatus"] = additional_state
+        additional["wandbHealth"] = health(additional_logs, additional_state)
+
+    record["resolvedPostEpochs"] = sorted(int(epoch) for epoch in results)
+    active_additional = next(
+        (value for value in additional_states if value in {"submitted", "scheduled", "running"}),
+        None,
+    )
+    if additional_decisions:
+        record["decision"] = additional_decisions[-1][1]
+        record["status"] = additional_decisions[-1][0]
+    elif active_additional:
+        record["status"] = active_additional
+    elif any(value == "failed" for value in additional_states):
+        record["status"] = "failed"
+        record["needsAttention"] = True
+    elif decisions:
         record["decision"] = decisions[-1][1]
         record["status"] = decisions[-1][0]
     elif state == "failed":
