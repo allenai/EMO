@@ -219,7 +219,7 @@ def spec_for(
         f"{item['model']} DCLM-333M BS{item['batchSequences']} DR+WT+EmbedWD "
         f"LR{item['learningRate']} WD{item['weightDecay']}; "
         + (
-            f"continue the exact clean E{target_epoch - 16} producer frontier; "
+            f"continue the exact clean E{runner.continuation_source_epoch(item, target_epoch)} producer frontier; "
             if target_epoch is not None
             else "start from scratch; "
         )

@@ -58,6 +58,30 @@ MODEL_POLICIES: dict[str, dict[str, Any]] = {
 }
 
 BS64_474M_CONTINUATION_TARGETS = (48, 64)
+BS64_153M_WD03_CONTINUATION_TARGETS = (160,)
+ALL_CONTINUATION_TARGETS = tuple(
+    sorted(set(BS64_474M_CONTINUATION_TARGETS + BS64_153M_WD03_CONTINUATION_TARGETS))
+)
+
+
+def authorized_continuation_targets(item: dict[str, Any]) -> tuple[int, ...]:
+    model = str(item["model"])
+    batch = int(item["batchSequences"])
+    wd = str(item["weightDecay"])
+    if model == "474m" and batch == 64:
+        return BS64_474M_CONTINUATION_TARGETS
+    if model == "153m" and batch == 64 and wd == "0.3":
+        return BS64_153M_WD03_CONTINUATION_TARGETS
+    return ()
+
+
+def continuation_source_epoch(item: dict[str, Any], target_epoch: int) -> int:
+    candidates = [
+        int(epoch) for epoch in item["evaluationEpochs"] if int(epoch) < target_epoch
+    ]
+    if not candidates:
+        raise ValueError(f"E{target_epoch} continuation has no preceding POST frontier")
+    return max(candidates)
 
 
 def total_step(epoch: int, batch_sequences: int) -> int:
@@ -165,9 +189,15 @@ def validate_coordinate(item: dict[str, Any]) -> None:
     retained = [int(epoch) for epoch in item["retainedCheckpointEpochs"]]
     evaluations = [int(epoch) for epoch in item["evaluationEpochs"]]
     max_epoch = int(item["maxEpoch"])
-    if model == "474m" and batch == 64 and max_epoch in BS64_474M_CONTINUATION_TARGETS:
+    continuation_targets = authorized_continuation_targets(item)
+    if model == "474m" and max_epoch in continuation_targets:
         expected_retained = list(range(8, max_epoch + 1, 8))
         expected_evaluations = [epoch for epoch in (16, 32, 48, 64) if epoch <= max_epoch]
+    elif model == "153m" and max_epoch in continuation_targets:
+        expected_retained = list(range(16, max_epoch + 1, 16))
+        expected_evaluations = [
+            epoch for epoch in (32, 64, 96, 128, 160) if epoch <= max_epoch
+        ]
     else:
         expected_retained = list(policy["retained_checkpoint_epochs"])
         expected_evaluations = list(policy["evaluation_epochs"])
@@ -179,11 +209,7 @@ def validate_coordinate(item: dict[str, Any]) -> None:
         raise ValueError("every evaluation epoch must have an exact retained PD source")
     if max_epoch != retained[-1]:
         raise ValueError(f"{model} max epoch must match the retained-checkpoint frontier")
-    if max_epoch != int(policy["max_epoch"]) and not (
-        model == "474m"
-        and batch == 64
-        and max_epoch in BS64_474M_CONTINUATION_TARGETS
-    ):
+    if max_epoch != int(policy["max_epoch"]) and max_epoch not in continuation_targets:
         raise ValueError(f"{model} has the wrong producer ceiling")
     if int(item["rankMicrobatchSequences"]) * NPROC_PER_NODE != batch:
         raise ValueError("rank microbatch must produce the global batch without accumulation")
@@ -237,16 +263,21 @@ def coordinate_for_target(
     item = copy.deepcopy(coordinate(manifest, coordinate_id))
     if target_epoch is None:
         return item
-    if item["model"] != "474m" or int(item["batchSequences"]) != 64:
-        raise ValueError("only 474M BS64 Pool-333M coordinates may use a continuation target")
-    if target_epoch not in BS64_474M_CONTINUATION_TARGETS:
+    allowed_targets = authorized_continuation_targets(item)
+    if target_epoch not in allowed_targets:
         raise ValueError(
-            f"continuation target must be one of {BS64_474M_CONTINUATION_TARGETS}"
+            f"{item['id']} does not authorize continuation target E{target_epoch}"
         )
-    item["retainedCheckpointEpochs"] = list(range(8, target_epoch + 1, 8))
-    item["evaluationEpochs"] = [
-        epoch for epoch in (16, 32, 48, 64) if epoch <= target_epoch
-    ]
+    if item["model"] == "474m":
+        item["retainedCheckpointEpochs"] = list(range(8, target_epoch + 1, 8))
+        item["evaluationEpochs"] = [
+            epoch for epoch in (16, 32, 48, 64) if epoch <= target_epoch
+        ]
+    else:
+        item["retainedCheckpointEpochs"] = list(range(16, target_epoch + 1, 16))
+        item["evaluationEpochs"] = [
+            epoch for epoch in (32, 64, 96, 128, 160) if epoch <= target_epoch
+        ]
     item["maxEpoch"] = target_epoch
     item["continuationTargetEpoch"] = target_epoch
     validate_coordinate(item)
@@ -684,7 +715,7 @@ def main() -> None:
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--check-data-artifacts", action="store_true")
     parser.add_argument("--dry-run-stages", action="store_true")
-    parser.add_argument("--target-epoch", type=int, choices=BS64_474M_CONTINUATION_TARGETS)
+    parser.add_argument("--target-epoch", type=int, choices=ALL_CONTINUATION_TARGETS)
     args = parser.parse_args()
     manifest = load_manifest(args.manifest)
     item = coordinate_for_target(manifest, args.coordinate, args.target_epoch)

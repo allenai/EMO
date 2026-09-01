@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guardedly continue the two 474M BS64 Pool-333M coordinates to E48 or E64."""
+"""Guardedly continue an authorized BS64 Pool-333M coordinate."""
 
 from __future__ import annotations
 
@@ -18,17 +18,21 @@ REPORT_JS = REPORT.with_suffix(".js")
 REPORT_JS_PREFIX = "window.ICSL_CHECKPOINT_PRODUCER_GRID="
 
 
-def selected_coordinates(config: dict[str, Any], coordinate_ids: list[str]) -> list[dict[str, Any]]:
+def selected_coordinates(
+    config: dict[str, Any], coordinate_ids: list[str], target_epoch: int
+) -> list[dict[str, Any]]:
     allowed = [
         item
         for item in config["producerCoordinates"]
-        if item["model"] == "474m" and int(item["batchSequences"]) == 64
+        if target_epoch in runner.authorized_continuation_targets(item)
     ]
     if not coordinate_ids:
         return allowed
     selected = [item for item in allowed if item["id"] in coordinate_ids]
     if len(selected) != len(set(coordinate_ids)):
-        raise RuntimeError("every requested coordinate must be a unique registered 474M BS64 run")
+        raise RuntimeError(
+            "every requested coordinate must be uniquely authorized for this continuation target"
+        )
     return selected
 
 
@@ -50,20 +54,27 @@ def validation_exact(record: dict[str, Any], epoch: int) -> float:
     return float(result["validationExact"])
 
 
-def ensure_ready(record: dict[str, Any], target_epoch: int) -> None:
-    source_epoch = target_epoch - 16
+def ensure_ready(
+    record: dict[str, Any], item: dict[str, Any], target_epoch: int
+) -> None:
+    source_epoch = runner.continuation_source_epoch(item, target_epoch)
     if source_epoch not in {
         int(epoch) for epoch in record.get("resolvedCheckpointEpochs", [])
     }:
         raise RuntimeError(f"{record['id']} is missing clean PD E{source_epoch}")
-    if target_epoch == 48:
-        validation_exact(record, 32)
+    previous_epochs = [
+        int(epoch) for epoch in item["evaluationEpochs"] if int(epoch) < source_epoch
+    ]
+    if not previous_epochs:
+        validation_exact(record, source_epoch)
         return
-    previous = validation_exact(record, 32)
-    current = validation_exact(record, 48)
+    previous_epoch = max(previous_epochs)
+    previous = validation_exact(record, previous_epoch)
+    current = validation_exact(record, source_epoch)
     if not current < previous:
         raise RuntimeError(
-            f"{record['id']} saturated at E48: POST did not strictly improve over E32"
+            f"{record['id']} saturated at E{source_epoch}: POST did not strictly "
+            f"improve over E{previous_epoch}"
         )
 
 
@@ -94,7 +105,12 @@ def register(
                     "minRuntime": record.get("minRuntime"),
                 }
             )
-    source_epoch = target_epoch - 16
+    source_epoch = runner.continuation_source_epoch(item, target_epoch)
+    next_epochs = [
+        int(epoch) for epoch in item["retainedCheckpointEpochs"] if int(epoch) > source_epoch
+    ]
+    if not next_epochs:
+        raise RuntimeError(f"{item['id']} has no retained checkpoint after E{source_epoch}")
     record.update(
         {
             "experiment": experiment,
@@ -107,7 +123,7 @@ def register(
             "status": "submitted",
             "beakerStatus": "submitted",
             "currentPhase": "producer",
-            "currentEpoch": source_epoch + 8,
+            "currentEpoch": min(next_epochs),
         }
     )
     record.pop("job", None)
@@ -124,7 +140,9 @@ def write_report(report: dict[str, Any]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--target-epoch", type=int, choices=runner.BS64_474M_CONTINUATION_TARGETS, required=True)
+    parser.add_argument(
+        "--target-epoch", type=int, choices=runner.ALL_CONTINUATION_TARGETS, required=True
+    )
     parser.add_argument("--coordinate", action="append", default=[])
     parser.add_argument("--revision", required=True)
     parser.add_argument("--priority", default="urgent")
@@ -137,12 +155,12 @@ def main() -> None:
     submitter.validate_revision(args.revision)
     config = submitter.load_manifest()
     report = json.loads(REPORT.read_text())
-    selected = selected_coordinates(config, args.coordinate)
+    selected = selected_coordinates(config, args.coordinate, args.target_epoch)
     created: list[tuple[dict[str, Any], str]] = []
     for base_item in selected:
         item = runner.coordinate_for_target(config, str(base_item["id"]), args.target_epoch)
         record = report_record(report, str(item["id"]))
-        ensure_ready(record, args.target_epoch)
+        ensure_ready(record, item, args.target_epoch)
         if args.print_specs:
             print(
                 json.dumps(
