@@ -91,13 +91,14 @@ if (grid.includes("planned")) {
   throw new Error("coordinate grid must not render planned placeholders");
 }
 for (const producer of current.producers || []) {
-  if (producer.status !== "running") continue;
+  if (!["submitted", "scheduled", "running"].includes(producer.status)) continue;
   const label = `${producer.model === "1b" ? "1B" : producer.model === "474m" ? "474M" : "153M"} · ${producer.pool === "dclm3b" ? "Pool-3B" : producer.pool} · BS${producer.batchSequences}`;
   const rowPattern = new RegExp(
     `<tr><td>E${producer.currentEpoch}<\\/td><td>${label.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}<\\/td>(.*?)<\\/tr>`,
   );
   const row = grid.match(rowPattern)?.[1];
-  if (!row || !row.includes(`WD ${producer.weightDecay}) · producer running`)) {
+  const expectedState = producer.status === "running" ? "producer running" : "producer queued";
+  if (!row || !row.includes(`WD ${producer.weightDecay}) · ${expectedState}`)) {
     throw new Error(`coordinate grid does not show active producer ${producer.id}`);
   }
 }
@@ -111,9 +112,24 @@ for (const evaluator of current.evaluators || []) {
       `<tr><td>E${additional.epoch}<\\/td><td>${label.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}<\\/td>(.*?)<\\/tr>`,
     );
     const row = grid.match(rowPattern)?.[1];
-    if (!row || !row.includes(`WD ${producer.weightDecay}) · PD retained · POST running`)) {
+    const expectedState = additional.status === "running" ? "POST running" : "POST queued";
+    if (!row || !row.includes(`WD ${producer.weightDecay}) · PD retained · ${expectedState}`)) {
       throw new Error(`coordinate grid does not show active standalone POST for ${evaluator.id} E${additional.epoch}`);
     }
+  }
+}
+for (const evaluator of current.smallEvaluators || []) {
+  if (!["submitted", "scheduled", "running"].includes(evaluator.status)) continue;
+  const producer = current.producers.find((item) => item.id === evaluator.producerId);
+  if (!producer) throw new Error(`missing producer for ${evaluator.id}`);
+  const label = `${producer.model === "474m" ? "474M" : "153M"} · Pool-3B · BS${producer.batchSequences}`;
+  const rowPattern = new RegExp(
+    `<tr><td>E${evaluator.epoch}<\\/td><td>${label.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}<\\/td>(.*?)<\\/tr>`,
+  );
+  const row = grid.match(rowPattern)?.[1];
+  const expectedState = evaluator.status === "running" ? "POST running" : "POST queued";
+  if (!row || !row.includes(`WD ${producer.weightDecay}) · PD retained · ${expectedState}`)) {
+    throw new Error(`coordinate grid does not show active small-model POST for ${evaluator.id}`);
   }
 }
 for (const evaluator of current.smallEvaluators || []) {
@@ -139,7 +155,10 @@ for (const run of current.dclm333mIntegratedRuns || []) {
     `<tr><td>E${run.currentEpoch}<\\/td><td>${label.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}<\\/td>(.*?)<\\/tr>`,
   );
   const row = grid.match(rowPattern)?.[1];
-  const expectedState = run.currentPhase === "post" ? "POST running" : "producer running";
+  const queued = ["submitted", "scheduled"].includes(run.status);
+  const expectedState = run.currentPhase === "post"
+    ? (queued ? "POST queued" : "POST running")
+    : (queued ? "producer queued" : "producer running");
   if (!row || !row.includes(`WD ${run.weightDecay})`) || !row.includes(expectedState)) {
     throw new Error(`coordinate grid omits active Pool-333M state for ${run.id}`);
   }

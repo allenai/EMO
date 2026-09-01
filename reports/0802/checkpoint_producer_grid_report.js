@@ -262,15 +262,17 @@
       const postCandidates = [];
       const chips = groupProducers.map((producer) => {
         const resolvedPd = (producer.resolvedCheckpointEpochs || []).map(Number).includes(epoch);
+        const producerPhase = producer.role === "constant_lr_checkpoint_producer" ||
+          !producer.currentPhase || producer.currentPhase === "producer";
         const producerActive = Number(producer.currentEpoch) === epoch &&
-          isActive(producer.status) &&
-          (producer.role === "constant_lr_checkpoint_producer"
-            ? producer.status === "running"
-            : (!producer.currentPhase || producer.currentPhase === "producer"));
+          producer.status === "running" && producerPhase;
+        const producerQueued = Number(producer.currentEpoch) === epoch &&
+          ["submitted", "scheduled"].includes(producer.status) && producerPhase;
         const producerFailed = Number(producer.currentEpoch) === epoch && isFailed(producer.status);
         const producerEvaluators = evaluatorsByProducer.get(producer.id) || [];
         let postResult = null;
-        let postActive = false;
+        let postRunning = false;
+        let postQueued = false;
         let postFailed = false;
         for (const evaluator of producerEvaluators) {
           const candidate = evaluator.postDecayResults?.[String(epoch)];
@@ -280,19 +282,24 @@
             postCandidates.push(point);
             if (!postResult || value < postResult.value) postResult = point;
           }
-          if (evaluatorActiveEpoch(evaluator) === epoch) postActive = true;
+          if (evaluatorActiveEpoch(evaluator) === epoch) {
+            if (evaluator.status === "running") postRunning = true;
+            else if (["submitted", "scheduled"].includes(evaluator.status)) postQueued = true;
+          }
           if (isFailed(evaluator.status) && !(evaluator.resolvedPostEpochs || []).map(Number).includes(epoch)) postFailed = true;
         }
         const states = [];
         if (resolvedPd) states.push("PD retained");
         if (postResult) states.push(`POST ${formatMetric(postResult.value)}`);
-        else if (postActive) states.push("POST running");
+        else if (postRunning) states.push("POST running");
+        else if (postQueued) states.push("POST queued");
         if (producerActive) states.push("producer running");
+        if (producerQueued) states.push("producer queued");
         if (producerFailed) states.push("producer failed");
         if (postFailed) states.push("POST failed");
         if (!states.length) return null;
         const classes = ["tuple"];
-        if (producerActive || postActive) classes.push("active");
+        if (producerActive || producerQueued || postRunning || postQueued) classes.push("active");
         if (producerFailed || postFailed) classes.push("failed");
         return {producer, postResult, classes, text: `(LR ${producer.learningRate}, WD ${producer.weightDecay}) · ${states.join(" · ")}`};
       });
