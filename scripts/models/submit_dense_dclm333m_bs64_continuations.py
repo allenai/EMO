@@ -90,6 +90,7 @@ def register(
     experiment: str,
     revision: str,
     target_epoch: int,
+    previous_status_override: str | None = None,
 ) -> None:
     record = report_record(report, str(item["id"]))
     previous_experiment = str(record["experiment"])
@@ -100,7 +101,7 @@ def register(
                 {
                     "experiment": previous_experiment,
                     "revision": record.get("revision"),
-                    "status": record.get("status"),
+                    "status": previous_status_override or record.get("status"),
                     "maxEpoch": max(record.get("retainedCheckpointEpochs", [32])),
                     "minRuntime": record.get("minRuntime"),
                 }
@@ -120,6 +121,8 @@ def register(
             "continuationSourceEpoch": source_epoch,
             "continuationTargetEpoch": target_epoch,
             "minRuntime": "omitted",
+            "gpuCount": runner.gpu_count(item),
+            "gradientAccumulationSteps": 1,
             "status": "submitted",
             "beakerStatus": "submitted",
             "currentPhase": "producer",
@@ -146,6 +149,7 @@ def main() -> None:
     parser.add_argument("--coordinate", action="append", default=[])
     parser.add_argument("--revision", required=True)
     parser.add_argument("--priority", default="urgent")
+    parser.add_argument("--previous-status-override", choices=("canceled",))
     parser.add_argument("--print-specs", action="store_true")
     parser.add_argument("--submit-if-ready", action="store_true")
     args = parser.parse_args()
@@ -187,7 +191,14 @@ def main() -> None:
 
     if created:
         for item, experiment in created:
-            register(report, item, experiment, args.revision, args.target_epoch)
+            register(
+                report,
+                item,
+                experiment,
+                args.revision,
+                args.target_epoch,
+                previous_status_override=args.previous_status_override,
+            )
         write_report(report)
 
 

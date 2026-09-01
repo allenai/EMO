@@ -57,6 +57,11 @@ MODEL_POLICIES: dict[str, dict[str, Any]] = {
     },
 }
 
+BS32_POLICIES: dict[str, dict[str, Any]] = {
+    "474m": {"lr": "1e-3", "wds": ("0.1", "0.3")},
+    "153m": {"lr": "1e-3", "wds": ("0.1", "0.3")},
+}
+
 BS64_474M_CONTINUATION_TARGETS = (48, 64)
 BS64_153M_WD03_CONTINUATION_TARGETS = (160,)
 ALL_CONTINUATION_TARGETS = tuple(
@@ -97,6 +102,10 @@ def warmup_steps(batch_sequences: int) -> int:
     if REFERENCE_WARMUP_SEQUENCE_STEPS % batch_sequences:
         raise ValueError(f"BS{batch_sequences} does not preserve token-matched warmup")
     return REFERENCE_WARMUP_SEQUENCE_STEPS // batch_sequences
+
+
+def gpu_count(item: dict[str, Any]) -> int:
+    return int(item.get("gpuCount", NPROC_PER_NODE))
 
 
 def expected_output(item: dict[str, Any]) -> Path:
@@ -180,12 +189,19 @@ def validate_coordinate(item: dict[str, Any]) -> None:
     batch = int(item["batchSequences"])
     lr = str(item["learningRate"])
     wd = str(item["weightDecay"])
-    if batch not in policy["batches"]:
-        raise ValueError(f"{model} does not authorize BS{batch}")
-    if Decimal(lr) != Decimal(str(policy["lr"])):
-        raise ValueError(f"{model} has the wrong LR")
-    if wd not in policy["wds"]:
-        raise ValueError(f"{model}/BS{batch} has unauthorized WD{wd}")
+    if batch == 32:
+        batch_policy = BS32_POLICIES[model]
+        if Decimal(lr) != Decimal(str(batch_policy["lr"])):
+            raise ValueError(f"{model}/BS32 has the wrong LR")
+        if wd not in batch_policy["wds"]:
+            raise ValueError(f"{model}/BS32 has unauthorized WD{wd}")
+    else:
+        if batch not in policy["batches"]:
+            raise ValueError(f"{model} does not authorize BS{batch}")
+        if Decimal(lr) != Decimal(str(policy["lr"])):
+            raise ValueError(f"{model} has the wrong LR")
+        if wd not in policy["wds"]:
+            raise ValueError(f"{model}/BS{batch} has unauthorized WD{wd}")
     retained = [int(epoch) for epoch in item["retainedCheckpointEpochs"]]
     evaluations = [int(epoch) for epoch in item["evaluationEpochs"]]
     max_epoch = int(item["maxEpoch"])
@@ -211,7 +227,9 @@ def validate_coordinate(item: dict[str, Any]) -> None:
         raise ValueError(f"{model} max epoch must match the retained-checkpoint frontier")
     if max_epoch != int(policy["max_epoch"]) and max_epoch not in continuation_targets:
         raise ValueError(f"{model} has the wrong producer ceiling")
-    if int(item["rankMicrobatchSequences"]) * NPROC_PER_NODE != batch:
+    if gpu_count(item) <= 0:
+        raise ValueError("GPU count must be positive")
+    if int(item["rankMicrobatchSequences"]) * gpu_count(item) != batch:
         raise ValueError("rank microbatch must produce the global batch without accumulation")
     if str(item["baseExperiment"]) != policy["base_experiment"]:
         raise ValueError(f"{model} has the wrong trusted base experiment")
@@ -234,8 +252,8 @@ def load_manifest(path: Path) -> dict[str, Any]:
     if Decimal(str(value.get("decayFraction"))) != Decimal(str(DECAY_FRACTION)):
         raise ValueError("pre-decay step convention must remain the uncapped 10% WSD boundary")
     coordinates = value.get("producerCoordinates", [])
-    if len(coordinates) != 8:
-        raise ValueError("producer manifest must contain exactly eight small-model coordinates")
+    if len(coordinates) != 12:
+        raise ValueError("producer manifest must contain exactly twelve small-model coordinates")
     ids = [str(item["id"]) for item in coordinates]
     outputs = [str(item["output"]) for item in coordinates]
     if len(ids) != len(set(ids)) or len(outputs) != len(set(outputs)):
@@ -243,7 +261,9 @@ def load_manifest(path: Path) -> dict[str, Any]:
     for item in coordinates:
         validate_coordinate(item)
     for model, policy in MODEL_POLICIES.items():
-        expected = len(policy["batches"]) * len(policy["wds"])
+        expected = len(policy["batches"]) * len(policy["wds"]) + len(
+            BS32_POLICIES[model]["wds"]
+        )
         if sum(item["model"] == model for item in coordinates) != expected:
             raise ValueError(f"manifest does not contain exactly {expected} {model} coordinates")
     validate_dataset_manifest(EXPECTED_DATASET_MANIFEST)
@@ -280,6 +300,9 @@ def coordinate_for_target(
         ]
     item["maxEpoch"] = target_epoch
     item["continuationTargetEpoch"] = target_epoch
+    if int(item["batchSequences"]) == 64:
+        item["gpuCount"] = 4
+        item["rankMicrobatchSequences"] = 16
     validate_coordinate(item)
     return item
 
@@ -324,7 +347,7 @@ def base_arguments(item: dict[str, Any], *, heldout_enabled: bool = False) -> li
     ]
 
 
-def checkpoint_complete(path: Path) -> bool:
+def checkpoint_complete(path: Path, expected_world_size: int) -> bool:
     model_and_optim = path / "model_and_optim"
     train_state = path / "train"
     return (
@@ -334,7 +357,10 @@ def checkpoint_complete(path: Path) -> bool:
         and (model_and_optim / ".metadata").is_file()
         and any(model_and_optim.glob("*.distcp"))
         and train_state.is_dir()
-        and all((train_state / f"rank{rank}.pt").is_file() for rank in range(NPROC_PER_NODE))
+        and all(
+            (train_state / f"rank{rank}.pt").is_file()
+            for rank in range(expected_world_size)
+        )
     )
 
 
@@ -375,19 +401,21 @@ def initialize_state(item: dict[str, Any], steps: list[int]) -> dict[str, Any]:
         "evaluationEnabled": True,
         "decayEnabled": True,
         "postBranchesIsolatedFromConstantFrontier": True,
+        "gpuCount": gpu_count(item),
+        "gradientAccumulationSteps": 1,
     }
     atomic_json(marker, state)
     return state
 
 
-def run_torch(name: str, arguments: list[str], log_path: Path) -> None:
+def run_torch(item: dict[str, Any], name: str, arguments: list[str], log_path: Path) -> None:
     subprocess.run(["python", TRAINING_SCRIPT, name, "--dry-run", *arguments], check=True)
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with log_path.open("a") as log_file:
         common.stream_command(
             [
                 "torchrun",
-                f"--nproc-per-node={NPROC_PER_NODE}",
+                f"--nproc-per-node={gpu_count(item)}",
                 TRAINING_SCRIPT,
                 name,
                 *arguments,
@@ -445,7 +473,7 @@ def constant_arguments(
 def validate_predecay_source(item: dict[str, Any], epoch: int) -> Path:
     batch = int(item["batchSequences"])
     source = Path(str(item["output"])) / f"step{stable_step(epoch, batch)}"
-    if not checkpoint_complete(source):
+    if not checkpoint_complete(source, gpu_count(item)):
         raise FileNotFoundError(f"incomplete exact pre-decay checkpoint {source}")
     value = json.loads((source / "config.json").read_text())
     checks = {
@@ -544,10 +572,11 @@ def evaluate(item: dict[str, Any], epoch: int) -> dict[str, Any]:
     output = state_dir(item) / "post_decay_runs" / f"e{epoch}"
     endpoint = output / f"step{total_step(epoch, int(item['batchSequences']))}"
     name = f"{item['id']}-post-e{epoch}-v1"
-    if checkpoint_complete(endpoint):
+    if checkpoint_complete(endpoint, gpu_count(item)):
         log_path = state_dir(item) / "logs" / f"e{epoch}_recovered_eval.log"
         recovered_name = f"{name}-recovered-eval"
         run_torch(
+            item,
             recovered_name,
             recovered_evaluation_arguments(
                 item, endpoint, output / "recovered_eval", recovered_name
@@ -561,8 +590,8 @@ def evaluate(item: dict[str, Any], epoch: int) -> dict[str, Any]:
             f"source={source} output={output}",
             flush=True,
         )
-        run_torch(name, postdecay_arguments(item, epoch, source, output, name), log_path)
-    if not checkpoint_complete(endpoint):
+        run_torch(item, name, postdecay_arguments(item, epoch, source, output, name), log_path)
+    if not checkpoint_complete(endpoint, gpu_count(item)):
         raise RuntimeError(f"E{epoch} decay exited without complete endpoint {endpoint}")
     result = dense1b.parse_validation(log_path, epoch, "post_decay", endpoint)
     result.update(
@@ -607,11 +636,11 @@ def run(item: dict[str, Any]) -> None:
 
     for index, (epoch, checkpoint_step) in enumerate(zip(epochs, steps)):
         checkpoint = output / f"step{checkpoint_step}"
-        if not checkpoint_complete(checkpoint):
+        if not checkpoint_complete(checkpoint, gpu_count(item)):
             prior_sources = [
                 (prior_epoch, output / f"step{prior_step}")
                 for prior_epoch, prior_step in zip(epochs[:index], steps[:index])
-                if checkpoint_complete(output / f"step{prior_step}")
+                if checkpoint_complete(output / f"step{prior_step}", gpu_count(item))
             ]
             source_epoch: int | None = None
             source: Path | None = None
@@ -628,11 +657,12 @@ def run(item: dict[str, Any]) -> None:
                 flush=True,
             )
             run_torch(
+                item,
                 name,
                 constant_arguments(item, epoch, checkpoint_step, name, source),
                 state_dir(item) / "logs" / f"pd_e{epoch}.log",
             )
-        if not checkpoint_complete(checkpoint):
+        if not checkpoint_complete(checkpoint, gpu_count(item)):
             raise RuntimeError(f"producer exited without complete E{epoch} checkpoint")
         print(
             f"DENSE_DCLM333M_PD_RETAINED id={item['id']} epoch={epoch} checkpoint={checkpoint}",
@@ -650,7 +680,7 @@ def run(item: dict[str, Any]) -> None:
     missing = [
         epoch
         for epoch, step in zip(epochs, steps)
-        if not checkpoint_complete(output / f"step{step}")
+        if not checkpoint_complete(output / f"step{step}", gpu_count(item))
     ]
     missing_results = [
         epoch
@@ -674,7 +704,7 @@ def runtime_estimate(item: dict[str, Any], runtime_policy: dict[str, Any]) -> di
     batch = int(item["batchSequences"])
     final_step = stable_step(int(item["maxEpoch"]), batch)
     training_tokens = final_step * batch * SEQUENCE_LENGTH
-    aggregate_tokens_per_second = int(item["estimatedDeviceTokensPerSecond"]) * NPROC_PER_NODE
+    aggregate_tokens_per_second = int(item["estimatedDeviceTokensPerSecond"]) * gpu_count(item)
     training_seconds = training_tokens / aggregate_tokens_per_second
     evaluation_epochs = [int(epoch) for epoch in item["evaluationEpochs"]]
     decay_tokens = sum(
@@ -682,8 +712,10 @@ def runtime_estimate(item: dict[str, Any], runtime_policy: dict[str, Any]) -> di
         for epoch in evaluation_epochs
     )
     heldout_tokens = int(runtime_policy["heldoutTokensPerEvaluation"]) * len(evaluation_epochs)
-    evaluation_throughput = int(
-        runtime_policy["evaluationAggregateTokensPerSecond"][str(item["model"])]
+    evaluation_throughput = (
+        int(runtime_policy["evaluationAggregateTokensPerSecond"][str(item["model"])])
+        * gpu_count(item)
+        / NPROC_PER_NODE
     )
     evaluation_seconds = (decay_tokens + heldout_tokens) / evaluation_throughput
     overhead_seconds = int(runtime_policy["checkpointOverheadSeconds"]) * (

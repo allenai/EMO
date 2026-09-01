@@ -58,14 +58,16 @@ for (const run of current.dclm333mIntegratedRuns || []) {
 }
 
 const columnIndex = new Map([
-  ["474m:dclm333m:64", 4],
-  ["474m:dclm333m:128", 5],
-  ["474m:dclm3b:128", 8],
-  ["474m:dclm3b:256", 9],
-  ["153m:dclm333m:64", 10],
-  ["153m:dclm333m:128", 11],
-  ["153m:dclm3b:128", 14],
-  ["153m:dclm3b:256", 15],
+  ["474m:dclm333m:32", 4],
+  ["474m:dclm333m:64", 5],
+  ["474m:dclm333m:128", 6],
+  ["474m:dclm3b:128", 9],
+  ["474m:dclm3b:256", 10],
+  ["153m:dclm333m:32", 11],
+  ["153m:dclm333m:64", 12],
+  ["153m:dclm333m:128", 13],
+  ["153m:dclm3b:128", 16],
+  ["153m:dclm3b:256", 17],
 ]);
 const rows = new Map();
 for (const match of rendered.get("validation-summary").matchAll(/<tr><td>E([0-9,]+)<\/td>(.*?)<\/tr>/g)) {
@@ -165,8 +167,8 @@ for (const run of current.dclm333mIntegratedRuns || []) {
 }
 
 const html = fs.readFileSync(path.join(reportRoot, "wsd_checkpoint_producer_grid.html"), "utf8");
-if (!html.includes('<th colspan="6" class="model-start">474M</th>') ||
-    !html.includes('<th colspan="6" class="model-start">153M</th>') ||
+if (!html.includes('<th colspan="7" class="model-start">474M</th>') ||
+    !html.includes('<th colspan="7" class="model-start">153M</th>') ||
     (html.match(/Pool-333M/g) || []).length !== 2) {
   throw new Error("Pool-333M summary header topology is stale");
 }

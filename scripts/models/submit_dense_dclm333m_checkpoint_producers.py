@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Print or guardedly submit eight integrated DCLM-333M producer/evaluators."""
+"""Print or guardedly submit integrated DCLM-333M producer/evaluators."""
 
 from __future__ import annotations
 
@@ -7,9 +7,11 @@ import argparse
 import copy
 import json
 import math
+import os
 import re
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +21,9 @@ import run_dense_dclm333m_checkpoint_producer as runner
 WORKSPACE = "ai2/flex2"
 MANIFEST = Path("scripts/models/manifests/dense-dclm333m-checkpoint-producers-v1.json")
 RUNNER = "scripts/models/run_dense_dclm333m_checkpoint_producer.py"
+REPORT = Path("reports/0802/data/wsd_checkpoint_producer_grid.json")
+REPORT_JS = REPORT.with_suffix(".js")
+REPORT_JS_PREFIX = "window.ICSL_CHECKPOINT_PRODUCER_GRID="
 
 
 def command(arguments: list[str], *, input_text: str | None = None) -> str:
@@ -58,6 +63,7 @@ def plan_rows(config: dict[str, Any]) -> list[dict[str, Any]]:
             {
                 "model": item["model"],
                 "batch": int(item["batchSequences"]),
+                "gpus": runner.gpu_count(item),
                 "lr": item["learningRate"],
                 "wd": item["weightDecay"],
                 "checkpoints": ",".join(f"E{epoch}" for epoch in item["retainedCheckpointEpochs"]),
@@ -77,18 +83,19 @@ def print_plan(config: dict[str, Any]) -> None:
     print("Pool: DCLM-333M, exact whole-document subset of sealed Pool-1B")
     print(f"Dataset manifest: {config['datasetManifest']}")
     print(
-        "All coordinates: one node / eight GPUs, DR+WT+EmbedWD; isolated WSD+heldout "
+        "All coordinates: one node, per-coordinate GPU count, gradient accumulation 1, "
+        "DR+WT+EmbedWD; isolated WSD+heldout "
         "branches never advance the constant frontier"
     )
     print()
     print(
-        "| Model | BS | LR | WD | Retained PD | Decay+eval | Output directory | "
+        "| Model | BS | GPUs | LR | WD | Retained PD | Decay+eval | Output directory | "
         "Constant train | POST work | Full raw | Scheduling | minRuntime |"
     )
-    print("|---|---:|---:|---:|---|---|---|---:|---:|---:|---|---:|")
+    print("|---|---:|---:|---:|---:|---|---|---|---:|---:|---:|---|---:|")
     for row in plan_rows(config):
         print(
-            f"| {row['model']} | {row['batch']} | {row['lr']} | {row['wd']} | "
+            f"| {row['model']} | {row['batch']} | {row['gpus']} | {row['lr']} | {row['wd']} | "
             f"{row['checkpoints']} | {row['evaluations']} | `{row['output']}` | "
             f"{row['training']} | {row['evaluation']} | {row['raw']} | {row['slot']} | "
             f"{row['buffered'] if row['slot'] == 'allocated' else 'omitted'} |"
@@ -114,6 +121,11 @@ def set_env(task: dict[str, Any], name: str, value: str) -> None:
 
 def guarded_name(item: dict[str, Any], target_epoch: int | None = None) -> str:
     if target_epoch is not None:
+        if runner.gpu_count(item) != runner.NPROC_PER_NODE:
+            return (
+                f"{item['id']}-continuation-e{target_epoch}-"
+                f"gpus{runner.gpu_count(item)}-v2"
+            )
         return f"{item['id']}-continuation-e{target_epoch}-v1"
     return f"{item['id']}-integrated-producer-eval-v1"
 
@@ -205,7 +217,7 @@ def spec_for(
     ]
     set_env(task, "GIT_REF", revision)
     set_env(task, "PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
-    task["resources"] = {"gpuCount": 8, "sharedMemory": "10 GiB"}
+    task["resources"] = {"gpuCount": runner.gpu_count(item), "sharedMemory": "10 GiB"}
     task["context"] = {"priority": priority, "autoResume": True}
     if min_runtime:
         task["context"]["minRuntime"] = f"{min_runtime}s"
@@ -217,7 +229,8 @@ def spec_for(
     spec["retry"] = {"allowedTaskRetries": 8}
     spec["description"] = (
         f"{item['model']} DCLM-333M BS{item['batchSequences']} DR+WT+EmbedWD "
-        f"LR{item['learningRate']} WD{item['weightDecay']}; "
+        f"LR{item['learningRate']} WD{item['weightDecay']}; {runner.gpu_count(item)} GPUs; "
+        "gradient accumulation 1; "
         + (
             f"continue the exact clean E{runner.continuation_source_epoch(item, target_epoch)} producer frontier; "
             if target_epoch is not None
@@ -262,10 +275,83 @@ def create(
     return identifiers[0]
 
 
+def atomic_text(path: Path, value: str) -> None:
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(value)
+    os.replace(temporary, path)
+
+
+def register_new_runs(
+    config: dict[str, Any], created: list[tuple[dict[str, Any], str]], revision: str
+) -> None:
+    if not created:
+        return
+    report = json.loads(REPORT.read_text())
+    records = {
+        str(record["id"]): record
+        for record in report.get("dclm333mIntegratedRuns", [])
+    }
+    outputs = {str(record.get("output")) for record in records.values()}
+    for item, experiment in created:
+        coordinate_id = str(item["id"])
+        output = str(item["output"])
+        existing = records.get(coordinate_id)
+        if existing is not None:
+            if existing.get("experiment") != experiment or existing.get("output") != output:
+                raise RuntimeError(f"report already contains conflicting coordinate {coordinate_id}")
+            continue
+        if output in outputs:
+            raise RuntimeError(f"report already contains output writer {output}")
+        records[coordinate_id] = {
+            "id": coordinate_id,
+            "role": "integrated_checkpoint_producer_and_evaluator",
+            "policy": runner.POLICY,
+            "model": str(item["model"]),
+            "pool": "dclm333m",
+            "batchSequences": int(item["batchSequences"]),
+            "learningRate": str(item["learningRate"]),
+            "weightDecay": str(item["weightDecay"]),
+            "gpuCount": runner.gpu_count(item),
+            "gradientAccumulationSteps": 1,
+            "retainedCheckpointEpochs": list(item["retainedCheckpointEpochs"]),
+            "evaluationEpochs": list(item["evaluationEpochs"]),
+            "resolvedCheckpointEpochs": [],
+            "resolvedPostEpochs": [],
+            "postDecayResults": {},
+            "currentEpoch": int(item["retainedCheckpointEpochs"][0]),
+            "currentPhase": "producer",
+            "status": "submitted",
+            "experiment": experiment,
+            "revision": revision,
+            "minRuntime": "omitted",
+            "output": output,
+            "beakerStatus": "submitted",
+            "wdPruningGate": {
+                "decisionEpoch": 16 if item["model"] == "474m" else 32,
+                "candidateToStop": "0.1",
+                "comparator": "0.3",
+                "criterion": "wd0.3_strictly_lower_healthy_matched_post_validationExact",
+                "status": "pending",
+            },
+        }
+        outputs.add(output)
+    ordered_ids = [str(item["id"]) for item in config["producerCoordinates"]]
+    if set(records) != set(ordered_ids):
+        raise RuntimeError("report and manifest Pool-333M coordinates differ after registration")
+    report["dclm333mIntegratedRuns"] = [records[item_id] for item_id in ordered_ids]
+    report["dclm333mIntegratedCount"] = len(ordered_ids)
+    report["updatedAt"] = datetime.now(timezone.utc).isoformat()
+    rendered = json.dumps(report, indent=2) + "\n"
+    atomic_text(REPORT, rendered)
+    atomic_text(REPORT_JS, REPORT_JS_PREFIX + rendered.rstrip() + ";\n")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--revision")
     parser.add_argument("--priority", default="urgent")
+    parser.add_argument("--coordinate", action="append", default=[])
+    parser.add_argument("--omit-min-runtime", action="store_true")
     parser.add_argument("--print-plan", action="store_true")
     parser.add_argument("--print-specs", action="store_true")
     parser.add_argument("--submit-if-ready", action="store_true")
@@ -277,11 +363,37 @@ def main() -> None:
     if not args.revision:
         raise SystemExit("--revision is required for spec generation or submission")
     validate_revision(args.revision)
-    for item in config["producerCoordinates"]:
+    selected = [
+        item
+        for item in config["producerCoordinates"]
+        if not args.coordinate or item["id"] in args.coordinate
+    ]
+    if len(selected) != len(set(args.coordinate)) and args.coordinate:
+        raise SystemExit("every requested coordinate must be present exactly once")
+    created: list[tuple[dict[str, Any], str]] = []
+    for item in selected:
         if args.print_specs:
-            print(json.dumps(spec_for(item, args.revision, args.priority), indent=2))
+            print(
+                json.dumps(
+                    spec_for(
+                        item,
+                        args.revision,
+                        args.priority,
+                        omit_min_runtime=args.omit_min_runtime,
+                    ),
+                    indent=2,
+                )
+            )
         else:
-            print(f"{item['id']}: {create(item, args.revision, args.priority)}")
+            experiment = create(
+                item,
+                args.revision,
+                args.priority,
+                omit_min_runtime=args.omit_min_runtime,
+            )
+            created.append((item, experiment))
+            print(f"{item['id']}: {experiment}")
+    register_new_runs(config, created, args.revision)
 
 
 if __name__ == "__main__":

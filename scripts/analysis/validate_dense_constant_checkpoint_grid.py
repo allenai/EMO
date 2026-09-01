@@ -76,8 +76,8 @@ def main() -> None:
             check=True,
         )
     dclm333m_runs = dclm333m_config.get("producerCoordinates", [])
-    if len(dclm333m_runs) != 8:
-        raise RuntimeError("expected exactly eight Pool-333M integrated runs")
+    if len(dclm333m_runs) != 12:
+        raise RuntimeError("expected exactly twelve Pool-333M integrated runs")
     for item in dclm333m_runs:
         subprocess.run(
             [
@@ -115,7 +115,7 @@ def main() -> None:
             raise RuntimeError("report JSON/JS mirrors differ")
     print(
         "validated 2 Dense-1B v1 producers, 8 Pool-3B v2 producers, "
-        "8 Pool-333M integrated runs, and 2 evaluators"
+        "12 Pool-333M integrated runs, and 2 evaluators"
     )
 
 
