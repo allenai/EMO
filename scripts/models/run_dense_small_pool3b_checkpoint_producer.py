@@ -26,6 +26,7 @@ import run_small_dense_dr_wt_embedwd_chain as small
 import run_small_dense_saturation_chain as common
 
 POLICY = "dense_small_pool3b_checkpoint_producers_v2"
+BS512_POLICY = "dense_small_pool3b_bs512_checkpoint_producers_v1"
 TRAINING_SCRIPT = "src/scripts/train/olmo2-1B.py"
 SEQUENCE_LENGTH = 4096
 DECAY_FRACTION = 0.1
@@ -43,6 +44,12 @@ EXPECTED_COORDINATES = {
     ("153m", 128, "0.1"),
     ("153m", 256, "0.033"),
     ("153m", 256, "0.1"),
+}
+EXPECTED_BS512_COORDINATES = {
+    ("474m", 512, "0.1"),
+    ("474m", 512, "0.3"),
+    ("153m", 512, "0.1"),
+    ("153m", 512, "0.3"),
 }
 
 
@@ -99,8 +106,13 @@ def target_epochs(item: dict[str, Any], max_epoch: int) -> list[int]:
 
 def load_manifest(path: Path) -> dict[str, Any]:
     config = json.loads(path.read_text())
-    if config.get("policy") != POLICY:
-        raise ValueError(f"manifest policy must be {POLICY}")
+    policy = str(config.get("policy"))
+    expected_coordinates = {
+        POLICY: EXPECTED_COORDINATES,
+        BS512_POLICY: EXPECTED_BS512_COORDINATES,
+    }.get(policy)
+    if expected_coordinates is None:
+        raise ValueError(f"unsupported small-model Pool-3B policy {policy}")
     if int(config.get("sourcePoolTokens", 0)) != SOURCE_POOL_TOKENS:
         raise ValueError("source pool must remain the nominal 1B pool")
     if int(config.get("targetPoolTokens", 0)) != TARGET_POOL_TOKENS:
@@ -110,14 +122,16 @@ def load_manifest(path: Path) -> dict[str, Any]:
     if int(config.get("maxEpoch", 0)) != 256:
         raise ValueError("producer ceiling must remain E256")
     coordinates = config.get("producerCoordinates") or []
-    if len(coordinates) != 8:
-        raise ValueError("manifest must contain exactly eight replacement producers")
+    if len(coordinates) != len(expected_coordinates):
+        raise ValueError(
+            f"manifest must contain exactly {len(expected_coordinates)} coordinates"
+        )
     actual = {
         (str(item["model"]), int(item["batchSequences"]), str(item["weightDecay"]))
         for item in coordinates
     }
-    if actual != EXPECTED_COORDINATES:
-        raise ValueError(f"replacement coordinate set mismatch: {sorted(actual)}")
+    if actual != expected_coordinates:
+        raise ValueError(f"coordinate set mismatch for {policy}: {sorted(actual)}")
     ids = [str(item["id"]) for item in coordinates]
     if len(ids) != len(set(ids)):
         raise ValueError("producer IDs must be unique")
@@ -138,10 +152,23 @@ def validate_coordinate(
 ) -> None:
     model = str(item["model"])
     batch = int(item["batchSequences"])
-    if model not in MODEL_SHAPES or batch not in {128, 256}:
-        raise ValueError("replacement producers are restricted to 474M/153M and BS128/BS256")
+    policy = str(config["policy"])
+    allowed_batches = {512} if policy == BS512_POLICY else {128, 256}
+    if model not in MODEL_SHAPES or batch not in allowed_batches:
+        raise ValueError(
+            f"{policy} producers are restricted to 474M/153M and BS{sorted(allowed_batches)}"
+        )
     if Decimal(str(item["learningRate"])) != Decimal("2e-3"):
         raise ValueError("small-model learning rate must remain 2e-3")
+    gpu_count = int(item.get("gpuCount", 8))
+    rank_microbatch = int(item.get("rankMicrobatchSequences", 16))
+    if gpu_count != 8:
+        raise ValueError("Pool-3B BS512 must remain a single eight-GPU node")
+    if rank_microbatch != 16 or batch % (gpu_count * rank_microbatch):
+        raise ValueError("global batch must divide exactly into rank microbatches")
+    accumulation = batch // (gpu_count * rank_microbatch)
+    if accumulation != int(item.get("gradientAccumulationSteps", accumulation)):
+        raise ValueError("gradient-accumulation metadata does not match batch topology")
     if Path(str(item["sourceCheckpoint"])) != expected_source(item):
         raise ValueError(f"source must be exact Pool-1B E1 checkpoint {expected_source(item)}")
     if Path(str(item["output"])) != expected_output(item):
@@ -225,6 +252,7 @@ def validate_pool_lineage(config: dict[str, Any]) -> None:
 def base_arguments(item: dict[str, Any], manifest: str) -> list[str]:
     model = str(item["model"])
     batch = int(item["batchSequences"])
+    rank_microbatch = int(item.get("rankMicrobatchSequences", 16))
     arguments = list(small.COMMON_ARGUMENTS)
     arguments = common.upsert(
         arguments, "--dataset.subset_manifest=", f"--dataset.subset_manifest={manifest}"
@@ -251,7 +279,7 @@ def base_arguments(item: dict[str, Any], manifest: str) -> list[str]:
         *arguments,
         *small.MODEL_ARGUMENTS[model],
         f"--data_loader.global_batch_size={batch * SEQUENCE_LENGTH}",
-        f"--train_module.rank_microbatch_size={16 * SEQUENCE_LENGTH}",
+        f"--train_module.rank_microbatch_size={rank_microbatch * SEQUENCE_LENGTH}",
         f"--train_module.optim.weight_decay={item['weightDecay']}",
         f"--lr={item['learningRate']}",
         "--model.tie_embeddings=true",
@@ -334,7 +362,7 @@ def run(config: dict[str, Any], item: dict[str, Any]) -> None:
     epochs = target_epochs(item, int(config["maxEpoch"]))
     fixed_steps = [stable_step(epoch, TARGET_POOL_TOKENS, batch) for epoch in epochs]
     state = {
-        "policy": POLICY,
+        "policy": str(config["policy"]),
         "id": item["id"],
         "status": "running",
         "sourceCheckpoint": item["sourceCheckpoint"],
@@ -345,6 +373,18 @@ def run(config: dict[str, Any], item: dict[str, Any]) -> None:
         "targetSteps": fixed_steps,
         "scheduler": "constant",
         "evaluationEnabled": False,
+        "gpuCount": int(item.get("gpuCount", 8)),
+        "rankMicrobatchSequences": int(item.get("rankMicrobatchSequences", 16)),
+        "gradientAccumulationSteps": int(
+            item.get(
+                "gradientAccumulationSteps",
+                batch
+                // (
+                    int(item.get("gpuCount", 8))
+                    * int(item.get("rankMicrobatchSequences", 16))
+                ),
+            )
+        ),
     }
     atomic_json(state_dir(item) / "producer.json", state)
 

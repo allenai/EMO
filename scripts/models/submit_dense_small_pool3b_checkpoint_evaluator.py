@@ -17,7 +17,7 @@ import run_dense_small_pool3b_checkpoint_evaluator as evaluator
 import run_dense_small_pool3b_checkpoint_producer as producer
 
 WORKSPACE = "ai2/flex2"
-MANIFEST = Path("scripts/models/manifests/dense-small-pool3b-checkpoint-producers-v2.json")
+DEFAULT_MANIFEST = Path("scripts/models/manifests/dense-small-pool3b-checkpoint-producers-v2.json")
 REPORT = Path("reports/0802/data/wsd_checkpoint_producer_grid.json")
 REPORT_JS = REPORT.with_suffix(".js")
 RUNNER = "scripts/models/run_dense_small_pool3b_checkpoint_evaluator.py"
@@ -98,6 +98,7 @@ def spec_for(
     revision: str,
     priority: str,
     output: str,
+    manifest: Path = DEFAULT_MANIFEST,
 ) -> dict[str, Any]:
     spec = copy.deepcopy(
         json.loads(
@@ -125,7 +126,7 @@ def spec_for(
         "python",
         RUNNER,
         "--manifest",
-        str(MANIFEST),
+        str(manifest),
         "--coordinate",
         str(item["id"]),
         "--epoch",
@@ -179,6 +180,7 @@ def create(
     revision: str,
     priority: str,
     output: str,
+    manifest: Path = DEFAULT_MANIFEST,
 ) -> str:
     name = guarded_name(item, epoch)
     existing = existing_named_experiment(name)
@@ -186,7 +188,7 @@ def create(
         return existing
     output = command(
         ["beaker", "experiment", "create", "-", "--name", name, "--workspace", WORKSPACE],
-        input_text=json.dumps(spec_for(item, epoch, revision, priority, output)),
+        input_text=json.dumps(spec_for(item, epoch, revision, priority, output, manifest)),
     )
     identifiers = re.findall(r"\b[0-9A-HJKMNP-TV-Z]{26}\b", output)
     if not identifiers:
@@ -200,6 +202,7 @@ def register(
     experiment: str,
     revision: str,
     output: str,
+    manifest: Path = DEFAULT_MANIFEST,
 ) -> None:
     report = json.loads(REPORT.read_text())
     records = report.setdefault("smallEvaluators", [])
@@ -231,6 +234,7 @@ def register(
             "status": "submitted",
             "experiment": experiment,
             "revision": revision,
+            "manifest": str(manifest),
             "minRuntime": runtime(item, epoch)["minRuntime"],
             "submittedAt": datetime.now(tz=UTC).isoformat(),
             "beakerStatus": "submitted",
@@ -255,19 +259,27 @@ def main() -> None:
     parser.add_argument("--revision", required=True)
     parser.add_argument("--coordinate", required=True)
     parser.add_argument("--epoch", type=int, required=True)
+    parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--priority", default="urgent")
     parser.add_argument("--submit-if-ready", action="store_true")
     parser.add_argument("--print-spec", action="store_true")
     args = parser.parse_args()
     validate_revision(args.revision)
-    _, item = evaluator.load(MANIFEST, args.coordinate, args.epoch)
+    _, item = evaluator.load(args.manifest, args.coordinate, args.epoch)
     producer_record = report_producer(item, args.epoch)
     output = str(producer_record["output"])
     evaluator.producer_output(item, output)
     if args.print_spec:
         print(
             json.dumps(
-                spec_for(item, args.epoch, args.revision, args.priority, output),
+                spec_for(
+                    item,
+                    args.epoch,
+                    args.revision,
+                    args.priority,
+                    output,
+                    args.manifest,
+                ),
                 indent=2,
             )
         )
@@ -279,8 +291,8 @@ def main() -> None:
             "pass --submit-if-ready"
         )
         return
-    experiment = create(item, args.epoch, args.revision, args.priority, output)
-    register(item, args.epoch, experiment, args.revision, output)
+    experiment = create(item, args.epoch, args.revision, args.priority, output, args.manifest)
+    register(item, args.epoch, experiment, args.revision, output, args.manifest)
     print(f"{guarded_name(item, args.epoch)}: {experiment} minRuntime={reserved['minRuntime']}")
 
 

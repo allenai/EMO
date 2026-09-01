@@ -163,7 +163,10 @@ def refresh_producer(record: dict[str, Any]) -> str:
     job = jobs[-1]["id"] if jobs else None
     logs = experiment_logs(str(experiment), state, job)
     resolved = {int(epoch) for epoch in record.get("resolvedCheckpointEpochs", [])}
-    pool3b_v2 = record.get("policy") == "dense_small_pool3b_checkpoint_producers_v2"
+    pool3b_v2 = record.get("policy") in {
+        "dense_small_pool3b_checkpoint_producers_v2",
+        "dense_small_pool3b_bs512_checkpoint_producers_v1",
+    }
     if pool3b_v2 and f"DENSE_SMALL_POOL3B_BRIDGE_COMPLETE id={record['id']}" in logs:
         resolved.add(1)
     for epoch in record["targetEpochs"]:
@@ -411,8 +414,8 @@ def refresh_integrated_run(record: dict[str, Any]) -> str:
 
 def main() -> None:
     report = json.loads(REPORT.read_text())
-    if len(report.get("producers", [])) != 10 or len(report.get("evaluators", [])) != 2:
-        raise RuntimeError("report must contain ten producers and two evaluators")
+    if len(report.get("producers", [])) != 14 or len(report.get("evaluators", [])) != 2:
+        raise RuntimeError("report must contain fourteen producers and two evaluators")
     if len(report.get("dclm333mIntegratedRuns", [])) != 12:
         raise RuntimeError("report must contain twelve Pool-333M integrated runs")
     for record in report["producers"]:

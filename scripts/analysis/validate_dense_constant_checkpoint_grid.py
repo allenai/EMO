@@ -11,6 +11,9 @@ MANIFEST = Path("scripts/models/manifests/dense-constant-checkpoint-producers-v1
 SMALL_POOL3B_MANIFEST = Path(
     "scripts/models/manifests/dense-small-pool3b-checkpoint-producers-v2.json"
 )
+SMALL_POOL3B_BS512_MANIFEST = Path(
+    "scripts/models/manifests/dense-small-pool3b-bs512-checkpoint-producers-v1.json"
+)
 DCLM333M_MANIFEST = Path("scripts/models/manifests/dense-dclm333m-checkpoint-producers-v1.json")
 REPORT = Path("reports/0802/data/wsd_checkpoint_producer_grid.json")
 REPORT_JS = REPORT.with_suffix(".js")
@@ -20,17 +23,20 @@ REPORT_POLICY = "dense_constant_checkpoint_producers_v1_pool3b_small_v2"
 def main() -> None:
     config = json.loads(MANIFEST.read_text())
     small_config = json.loads(SMALL_POOL3B_MANIFEST.read_text())
+    bs512_config = json.loads(SMALL_POOL3B_BS512_MANIFEST.read_text())
     dclm333m_config = json.loads(DCLM333M_MANIFEST.read_text())
-    producers = [
-        item for item in config.get("producerCoordinates", []) if item["model"] == "1b"
-    ] + small_config.get("producerCoordinates", [])
+    producers = (
+        [item for item in config.get("producerCoordinates", []) if item["model"] == "1b"]
+        + small_config.get("producerCoordinates", [])
+        + bs512_config.get("producerCoordinates", [])
+    )
     evaluators = config.get("evaluatorCoordinates", [])
-    if len(producers) != 10 or len(evaluators) != 2:
-        raise RuntimeError("expected exactly ten producers and two 1B evaluators")
+    if len(producers) != 14 or len(evaluators) != 2:
+        raise RuntimeError("expected exactly fourteen producers and two 1B evaluators")
     ids = [item["id"] for item in producers]
     if len(ids) != len(set(ids)):
         raise RuntimeError("producer IDs are not unique")
-    expected_models = {"1b": 2, "474m": 4, "153m": 4}
+    expected_models = {"1b": 2, "474m": 6, "153m": 6}
     actual_models = {
         model: sum(item["model"] == model for item in producers) for model in expected_models
     }
@@ -49,13 +55,26 @@ def main() -> None:
             ],
             check=True,
         )
-    for item in producers[2:]:
+    for item in small_config.get("producerCoordinates", []):
         subprocess.run(
             [
                 ".venv/bin/python",
                 "scripts/models/run_dense_small_pool3b_checkpoint_producer.py",
                 "--manifest",
                 str(SMALL_POOL3B_MANIFEST),
+                "--coordinate",
+                item["id"],
+                "--validate-only",
+            ],
+            check=True,
+        )
+    for item in bs512_config.get("producerCoordinates", []):
+        subprocess.run(
+            [
+                ".venv/bin/python",
+                "scripts/models/run_dense_small_pool3b_checkpoint_producer.py",
+                "--manifest",
+                str(SMALL_POOL3B_BS512_MANIFEST),
                 "--coordinate",
                 item["id"],
                 "--validate-only",
@@ -115,6 +134,7 @@ def main() -> None:
             raise RuntimeError("report JSON/JS mirrors differ")
     print(
         "validated 2 Dense-1B v1 producers, 8 Pool-3B v2 producers, "
+        "4 Pool-3B BS512 producers, "
         "12 Pool-333M integrated runs, and 2 evaluators"
     )
 

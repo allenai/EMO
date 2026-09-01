@@ -238,7 +238,7 @@ def run(
     result.update(
         {
             "policy": POLICY,
-            "producerPolicy": producer.POLICY,
+            "producerPolicy": str(config["policy"]),
             "model": str(item["model"]),
             "batchSequences": int(item["batchSequences"]),
             "lr": str(item["learningRate"]),

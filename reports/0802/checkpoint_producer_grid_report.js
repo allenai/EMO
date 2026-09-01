@@ -81,6 +81,7 @@
     {key: "474m-pool1b-bs256", model: "474m", pool: "dclm1b", batch: 256, historicalSmall: true},
     {key: "474m-pool3b-bs128", model: "474m", pool: "dclm3b", batch: 128, poolStart: true},
     {key: "474m-pool3b-bs256", model: "474m", pool: "dclm3b", batch: 256},
+    {key: "474m-pool3b-bs512", model: "474m", pool: "dclm3b", batch: 512},
     {key: "153m-pool333m-bs32", model: "153m", pool: "dclm333m", batch: 32, modelStart: true},
     {key: "153m-pool333m-bs64", model: "153m", pool: "dclm333m", batch: 64},
     {key: "153m-pool333m-bs128", model: "153m", pool: "dclm333m", batch: 128},
@@ -88,6 +89,7 @@
     {key: "153m-pool1b-bs256", model: "153m", pool: "dclm1b", batch: 256, historicalSmall: true},
     {key: "153m-pool3b-bs128", model: "153m", pool: "dclm3b", batch: 128, poolStart: true},
     {key: "153m-pool3b-bs256", model: "153m", pool: "dclm3b", batch: 256},
+    {key: "153m-pool3b-bs512", model: "153m", pool: "dclm3b", batch: 512},
   ];
 
   const runById = Object.fromEntries((historical.runs || []).map((run) => [run.id, run]));
@@ -228,9 +230,9 @@
   const groupOrder = [
     ["1b", "dclm3b", 64], ["1b", "dclm3b", 128],
     ["474m", "dclm333m", 32], ["474m", "dclm333m", 64], ["474m", "dclm333m", 128],
-    ["474m", "dclm3b", 128], ["474m", "dclm3b", 256],
+    ["474m", "dclm3b", 128], ["474m", "dclm3b", 256], ["474m", "dclm3b", 512],
     ["153m", "dclm333m", 32], ["153m", "dclm333m", 64], ["153m", "dclm333m", 128],
-    ["153m", "dclm3b", 128], ["153m", "dclm3b", 256],
+    ["153m", "dclm3b", 128], ["153m", "dclm3b", 256], ["153m", "dclm3b", 512],
   ];
   const coordinateBody = document.getElementById("coordinate-grid");
 
@@ -257,7 +259,9 @@
         .filter((epoch) => epoch !== null && epoch !== undefined)
         .map(Number);
     }))]
-      .filter((epoch) => epoch !== 1)
+      .filter((epoch) => epoch !== 1 || groupProducers.some((producer) =>
+        Number(producer.currentEpoch) === 1 && isActive(producer.status),
+      ))
       .sort((left, right) => left - right);
 
     for (const epoch of epochs) {

@@ -15,14 +15,23 @@ import evaluator_min_runtime
 import run_dense_small_pool3b_checkpoint_evaluator as evaluator
 import run_dense_small_pool3b_checkpoint_producer as producer
 
-MANIFEST = Path("scripts/models/manifests/dense-small-pool3b-checkpoint-producers-v2.json")
+DEFAULT_MANIFEST = Path("scripts/models/manifests/dense-small-pool3b-checkpoint-producers-v2.json")
+BS512_MANIFEST = Path(
+    "scripts/models/manifests/dense-small-pool3b-bs512-checkpoint-producers-v1.json"
+)
 REPORT = Path("reports/0802/data/wsd_checkpoint_producer_grid.json")
 REPORT_JS = REPORT.with_suffix(".js")
 
 
 def main() -> None:
-    config = producer.load_manifest(MANIFEST)
-    coordinates = {item["id"]: item for item in config["producerCoordinates"]}
+    configs = {
+        str(path): producer.load_manifest(path) for path in (DEFAULT_MANIFEST, BS512_MANIFEST)
+    }
+    coordinates = {
+        item["id"]: (path, item)
+        for path, config in configs.items()
+        for item in config["producerCoordinates"]
+    }
     report = json.loads(REPORT.read_text())
     records = report.get("smallEvaluators", [])
     ids = [str(record["id"]) for record in records]
@@ -32,7 +41,10 @@ def main() -> None:
         producer_id = str(record["producerId"])
         if producer_id not in coordinates:
             raise RuntimeError(f"unknown small evaluator producer {producer_id}")
-        item = coordinates[producer_id]
+        manifest, item = coordinates[producer_id]
+        recorded_manifest = str(record.get("manifest", DEFAULT_MANIFEST))
+        if recorded_manifest != manifest:
+            raise RuntimeError(f"small evaluator manifest mismatch: {record['id']}")
         epoch = int(record["epoch"])
         expected_id = f"{producer_id}-post-e{epoch}-v1"
         if record["id"] != expected_id:
@@ -63,7 +75,7 @@ def main() -> None:
                 ".venv/bin/python",
                 "scripts/models/run_dense_small_pool3b_checkpoint_evaluator.py",
                 "--manifest",
-                str(MANIFEST),
+                manifest,
                 "--coordinate",
                 producer_id,
                 "--epoch",
