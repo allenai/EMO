@@ -264,7 +264,9 @@
         const resolvedPd = (producer.resolvedCheckpointEpochs || []).map(Number).includes(epoch);
         const producerActive = Number(producer.currentEpoch) === epoch &&
           isActive(producer.status) &&
-          (!producer.currentPhase || producer.currentPhase === "producer");
+          (producer.role === "constant_lr_checkpoint_producer"
+            ? producer.status === "running"
+            : (!producer.currentPhase || producer.currentPhase === "producer"));
         const producerFailed = Number(producer.currentEpoch) === epoch && isFailed(producer.status);
         const producerEvaluators = evaluatorsByProducer.get(producer.id) || [];
         let postResult = null;

@@ -90,6 +90,17 @@ const grid = rendered.get("coordinate-grid");
 if (grid.includes("planned")) {
   throw new Error("coordinate grid must not render planned placeholders");
 }
+for (const producer of current.producers || []) {
+  if (producer.status !== "running") continue;
+  const label = `${producer.model === "1b" ? "1B" : producer.model === "474m" ? "474M" : "153M"} · ${producer.pool === "dclm3b" ? "Pool-3B" : producer.pool} · BS${producer.batchSequences}`;
+  const rowPattern = new RegExp(
+    `<tr><td>E${producer.currentEpoch}<\\/td><td>${label.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}<\\/td>(.*?)<\\/tr>`,
+  );
+  const row = grid.match(rowPattern)?.[1];
+  if (!row || !row.includes(`WD ${producer.weightDecay}) · producer running`)) {
+    throw new Error(`coordinate grid does not show active producer ${producer.id}`);
+  }
+}
 for (const evaluator of current.evaluators || []) {
   const producer = current.producers.find((item) => item.id === evaluator.producerId);
   if (!producer) throw new Error(`missing producer for ${evaluator.id}`);
