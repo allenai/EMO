@@ -44,17 +44,17 @@ Knobs (all `--train_module.<knob>=...`): `meta_mode`, `inner_lr`, `inner_pool_si
 
 ```bash
 # 0. Mechanism-correctness gate (tiny model, fp32, must pass before any Beaker launch):
-PYTHONPATH=src torchrun --nproc-per-node=1 scripts/meta_learning/verify_meta_step.py
-PYTHONPATH=src torchrun --nproc-per-node=2 scripts/meta_learning/verify_meta_step.py
+PYTHONPATH=src torchrun --nproc-per-node=1 scripts/meta_learning/model_scripts/verify_meta_step.py
+PYTHONPATH=src torchrun --nproc-per-node=2 scripts/meta_learning/model_scripts/verify_meta_step.py
 
 # 1. Local smoke (tiny model on real data, all modes + inner-lr sweep, restore assert on):
-bash scripts/meta_learning/smoke_local.sh
+bash scripts/meta_learning/model_scripts/smoke_local.sh
 #    -> pick inner_lr with train/meta delta/weight norm ~1e-3..1e-2; update the pilot scripts.
 
 # 2. Pilot (Beaker, 8 nodes/arm; commit AND push first — gantry clones from origin):
-MODE=beaker bash scripts/meta_learning/emo128_baseline_20b.sh   # vanilla 128e, 20B
-MODE=beaker bash scripts/meta_learning/meta_sametok_10b.sh      # FOMAML same-tokens, 10B (~2.1x/step)
-MODE=beaker bash scripts/meta_learning/meta_heldout_10b.sh      # FOMAML held-out split, 10B (~1x/step)
+MODE=beaker bash scripts/meta_learning/model_scripts/emo128_baseline_20b.sh   # vanilla 128e, 20B
+MODE=beaker bash scripts/meta_learning/model_scripts/meta_sametok_10b.sh      # FOMAML same-tokens, 10B (~2.1x/step)
+MODE=beaker bash scripts/meta_learning/model_scripts/meta_heldout_10b.sh      # FOMAML held-out split, 10B (~1x/step)
 ```
 
 ## Headline metric
@@ -75,15 +75,20 @@ meta-pretrained model vs the baseline — does selective-expert CPT transfer now
 
 ## Files
 
+Layout: `model_scripts/` holds phase-1 pretraining (the per-arm launch scripts, the local
+smoke, the correctness gate); `eval_scripts/` holds the phase-2 cluster-wise CPT + eval
+pipeline; report infra (`build_report.py`, `fetch_report_data.py`) stays at the top level
+(`scripts/publish_reports.sh` expects it there).
+
 | file | role |
 |---|---|
 | `src/olmo_core/train/train_module/transformer/meta_learning.py` | the two-phase train module + config |
 | `src/olmo_core/nn/moe/twolevel_batchlb_reducedp_sharedexp_randpool_router.py` | `meta_force_pool` / `meta_skip_aux` flags |
 | `src/olmo_core/train/callbacks/pool_pinned_lm_evaluator.py` | pool-pinned ppl evaluator |
 | `src/scripts/train/olmoe-1B-7B_fsl_meta.py` | entry script (randpool-only clone of the parent) |
-| `verify_meta_step.py` | correctness gate (oracles, finite-difference, manual-reference grads) |
-| `smoke_local.sh` | tiny-model smoke on real data + inner-lr sweep |
-| `emo128_baseline_20b.sh`, `meta_sametok_10b.sh`, `meta_heldout_10b.sh` | pilot arms |
+| `model_scripts/verify_meta_step.py` | correctness gate (oracles, finite-difference, manual-reference grads) |
+| `model_scripts/smoke_local.sh` | tiny-model smoke on real data + inner-lr sweep |
+| `model_scripts/emo128_baseline_20b.sh`, `model_scripts/meta_sametok_10b.sh`, `model_scripts/meta_heldout_10b.sh` | pilot arms |
 | `build_report.py` | report → `claude_outputs/meta_learning/report.html` |
 
 Outputs land in `/weka/oe-training-default/ryanwang/EMO/meta_learning/` (= `./meta_learning/` in
@@ -104,17 +109,17 @@ Beaker jobs, sequential clusters 0..31. Budget: 20B train tokens per arm (final 
 Stage order (per arm, `MODEL=vanilla|sametok_ws_lam05`):
 
 ```bash
-MODEL=... bash scripts/meta_learning/convert_20b_to_hf.sh          # 1. step4768 -> HF (local GPU)
-MODEL=... bash scripts/meta_learning/launch_embed_docs.sh          # 2. pilot shards 0-15 (Beaker)
-MODEL=... SHARDS="$(seq -s, 0 127)" JOBS=4 bash scripts/meta_learning/launch_embed_docs.sh  # full
-MODEL=... bash scripts/meta_learning/cluster_docs.sh               # 3. k=32 spherical k-means (local CPU)
-PYTHONPATH=.:src python scripts/meta_learning/cluster_expert_concentration.py --model ...  # 4. top-32/layer selection
-MODEL=... bash scripts/meta_learning/build_cluster_token_data.sh   # 5. per-cluster token shards (20B budget)
-CLUSTERS=0 MODEL=... bash scripts/meta_learning/run_k32cpt_arm.sh  # 6. pilot stage, then full 0..31
+MODEL=... bash scripts/meta_learning/eval_scripts/convert_20b_to_hf.sh          # 1. step4768 -> HF (local GPU)
+MODEL=... bash scripts/meta_learning/eval_scripts/launch_embed_docs.sh          # 2. pilot shards 0-15 (Beaker)
+MODEL=... SHARDS="$(seq -s, 0 127)" JOBS=4 bash scripts/meta_learning/eval_scripts/launch_embed_docs.sh  # full
+MODEL=... bash scripts/meta_learning/eval_scripts/cluster_docs.sh               # 3. k=32 spherical k-means (local CPU)
+PYTHONPATH=.:src python scripts/meta_learning/eval_scripts/cluster_expert_concentration.py --model ...  # 4. top-32/layer selection
+MODEL=... bash scripts/meta_learning/eval_scripts/build_cluster_token_data.sh   # 5. per-cluster token shards (20B budget)
+CLUSTERS=0 MODEL=... bash scripts/meta_learning/eval_scripts/run_k32cpt_arm.sh  # 6. pilot stage, then full 0..31
 ```
 
-Phase-2 files: `convert_20b_to_hf.sh`, `launch_embed_docs.sh`, `cluster_docs.sh`,
-`cluster_expert_concentration.py` (127 standard experts), `build_cluster_token_data.sh`
-(parameterized `src.scripts.clustering.build_cluster_token_data`),
+Phase-2 files (all under `eval_scripts/`): `convert_20b_to_hf.sh`, `launch_embed_docs.sh`,
+`cluster_docs.sh`, `cluster_expert_concentration.py` (127 standard experts),
+`build_cluster_token_data.sh` (parameterized `src.scripts.clustering.build_cluster_token_data`),
 `expert_subset_surgery.py` (128-expert pool, `--conc` per arm, bf16 snapshots opt-in),
 `k32cpt_stage.sh` (4 nodes), `run_k32cpt_arm.sh` (sequential driver, resumable).

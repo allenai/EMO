@@ -441,11 +441,11 @@ def build_implementation() -> str:
                     "overrides, e.g. <code>--train_module.meta_mode=heldout</code>.",
                 ],
                 [
-                    "<code>scripts/meta_learning/verify_meta_step.py</code>",
+                    "<code>scripts/meta_learning/model_scripts/verify_meta_step.py</code>",
                     "the mechanism-correctness gate (11 checks; see Verification tab).",
                 ],
                 [
-                    "<code>scripts/meta_learning/*.sh</code>",
+                    "<code>scripts/meta_learning/model_scripts/*.sh</code>",
                     "smoke + launch scripts (one checked-in script per run, per repo convention).",
                 ],
             ],
@@ -884,7 +884,7 @@ show(location.hash && document.getElementById(location.hash.slice(1)) ? location
 def build_phase2() -> str:
     res_path = OUT / "k32cpt_results.json"
     if not res_path.exists():
-        return "<p>Phase-2 eval results not yet aggregated (run scripts/meta_learning/aggregate_k32cpt_evals.py).</p>"
+        return "<p>Phase-2 eval results not yet aggregated (run scripts/meta_learning/eval_scripts/aggregate_k32cpt_evals.py).</p>"
     res = json.load(open(res_path))
     n_done = {arm: len(res["arms"][arm]["stages"]) for arm in res["arms"]}
 

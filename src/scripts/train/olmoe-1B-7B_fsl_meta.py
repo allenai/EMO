@@ -16,7 +16,7 @@ Differences vs the parent:
   ``lm-full`` (model-default eval pool) and ``lm-pool32`` (pool pinned to 32). Their difference is
   the selective-vs-full CE gap, the experiment's headline metric.
 
-Launch through scripts/meta_learning/*.sh (never ad-hoc).
+Launch through scripts/meta_learning/model_scripts/*.sh (never ad-hoc).
 """
 
 import argparse
