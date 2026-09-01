@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import math
@@ -55,6 +56,8 @@ MODEL_POLICIES: dict[str, dict[str, Any]] = {
         "base_experiment": "01KZ6Q4DJ8J994A6SQ39MEGTZ2",
     },
 }
+
+BS64_474M_CONTINUATION_TARGETS = (48, 64)
 
 
 def total_step(epoch: int, batch_sequences: int) -> int:
@@ -161,13 +164,26 @@ def validate_coordinate(item: dict[str, Any]) -> None:
         raise ValueError(f"{model}/BS{batch} has unauthorized WD{wd}")
     retained = [int(epoch) for epoch in item["retainedCheckpointEpochs"]]
     evaluations = [int(epoch) for epoch in item["evaluationEpochs"]]
-    if retained != list(policy["retained_checkpoint_epochs"]):
+    max_epoch = int(item["maxEpoch"])
+    if model == "474m" and batch == 64 and max_epoch in BS64_474M_CONTINUATION_TARGETS:
+        expected_retained = list(range(8, max_epoch + 1, 8))
+        expected_evaluations = [epoch for epoch in (16, 32, 48, 64) if epoch <= max_epoch]
+    else:
+        expected_retained = list(policy["retained_checkpoint_epochs"])
+        expected_evaluations = list(policy["evaluation_epochs"])
+    if retained != expected_retained:
         raise ValueError(f"{model} has the wrong retained-checkpoint ladder")
-    if evaluations != list(policy["evaluation_epochs"]):
+    if evaluations != expected_evaluations:
         raise ValueError(f"{model} has the wrong evaluation ladder")
     if not set(evaluations).issubset(retained):
         raise ValueError("every evaluation epoch must have an exact retained PD source")
-    if int(item["maxEpoch"]) != int(policy["max_epoch"]):
+    if max_epoch != retained[-1]:
+        raise ValueError(f"{model} max epoch must match the retained-checkpoint frontier")
+    if max_epoch != int(policy["max_epoch"]) and not (
+        model == "474m"
+        and batch == 64
+        and max_epoch in BS64_474M_CONTINUATION_TARGETS
+    ):
         raise ValueError(f"{model} has the wrong producer ceiling")
     if int(item["rankMicrobatchSequences"]) * NPROC_PER_NODE != batch:
         raise ValueError("rank microbatch must produce the global batch without accumulation")
@@ -213,6 +229,28 @@ def coordinate(manifest: dict[str, Any], coordinate_id: str) -> dict[str, Any]:
     if len(matches) != 1:
         raise ValueError(f"expected exactly one coordinate {coordinate_id}")
     return matches[0]
+
+
+def coordinate_for_target(
+    manifest: dict[str, Any], coordinate_id: str, target_epoch: int | None
+) -> dict[str, Any]:
+    item = copy.deepcopy(coordinate(manifest, coordinate_id))
+    if target_epoch is None:
+        return item
+    if item["model"] != "474m" or int(item["batchSequences"]) != 64:
+        raise ValueError("only 474M BS64 Pool-333M coordinates may use a continuation target")
+    if target_epoch not in BS64_474M_CONTINUATION_TARGETS:
+        raise ValueError(
+            f"continuation target must be one of {BS64_474M_CONTINUATION_TARGETS}"
+        )
+    item["retainedCheckpointEpochs"] = list(range(8, target_epoch + 1, 8))
+    item["evaluationEpochs"] = [
+        epoch for epoch in (16, 32, 48, 64) if epoch <= target_epoch
+    ]
+    item["maxEpoch"] = target_epoch
+    item["continuationTargetEpoch"] = target_epoch
+    validate_coordinate(item)
+    return item
 
 
 def base_arguments(item: dict[str, Any], *, heldout_enabled: bool = False) -> list[str]:
@@ -328,11 +366,15 @@ def run_torch(name: str, arguments: list[str], log_path: Path) -> None:
 
 
 def constant_arguments(
-    item: dict[str, Any], epoch: int, checkpoint_step: int, name: str
+    item: dict[str, Any],
+    epoch: int,
+    checkpoint_step: int,
+    name: str,
+    source: Path | None = None,
 ) -> list[str]:
     batch = int(item["batchSequences"])
     output = Path(str(item["output"]))
-    return [
+    arguments = [
         *base_arguments(item),
         f"--save-folder={output}",
         f"--trainer.max_duration={{value: {checkpoint_step}, unit: steps}}",
@@ -355,6 +397,18 @@ def constant_arguments(
         ),
         "--dynamic-repacking",
     ]
+    if source is not None:
+        arguments.extend(
+            [
+                "--force_exact_trainer_load_path=true",
+                f"--trainer.load_path={source}",
+                "--trainer.load_trainer_state=true",
+                "--trainer.load_optim_state=true",
+                "--trainer.reset_data_loader_state_on_load_path=false",
+                "--train_module.validate_optimizer_hyperparameters_on_load=true",
+            ]
+        )
+    return arguments
 
 
 def validate_predecay_source(item: dict[str, Any], epoch: int) -> Path:
@@ -510,21 +564,41 @@ def run(item: dict[str, Any]) -> None:
     steps = [stable_step(epoch, batch) for epoch in epochs]
     output = Path(str(item["output"]))
     state = initialize_state(item, steps)
+    state.update(
+        {
+            "retainedCheckpointEpochs": epochs,
+            "evaluationEpochs": sorted(evaluation_epochs),
+            "targetSteps": steps,
+            "continuationTargetEpoch": item.get("continuationTargetEpoch"),
+        }
+    )
+    atomic_json(state_dir(item) / "producer.json", state)
 
-    for epoch, checkpoint_step in zip(epochs, steps):
+    for index, (epoch, checkpoint_step) in enumerate(zip(epochs, steps)):
         checkpoint = output / f"step{checkpoint_step}"
         if not checkpoint_complete(checkpoint):
+            prior_sources = [
+                (prior_epoch, output / f"step{prior_step}")
+                for prior_epoch, prior_step in zip(epochs[:index], steps[:index])
+                if checkpoint_complete(output / f"step{prior_step}")
+            ]
+            source_epoch: int | None = None
+            source: Path | None = None
+            if prior_sources:
+                source_epoch, source = prior_sources[-1]
+                source = validate_predecay_source(item, source_epoch)
             name = f"{item['id']}-pd-e{epoch}-v1"
             state.update({"status": "producer_running", "currentEpoch": epoch})
             atomic_json(state_dir(item) / "producer.json", state)
             print(
                 f"DENSE_DCLM333M_PD_START id={item['id']} epoch={epoch} "
-                f"step={checkpoint_step} output={output}",
+                f"step={checkpoint_step} sourceEpoch={source_epoch} source={source} "
+                f"output={output}",
                 flush=True,
             )
             run_torch(
                 name,
-                constant_arguments(item, epoch, checkpoint_step, name),
+                constant_arguments(item, epoch, checkpoint_step, name, source),
                 state_dir(item) / "logs" / f"pd_e{epoch}.log",
             )
         if not checkpoint_complete(checkpoint):
@@ -610,9 +684,10 @@ def main() -> None:
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--check-data-artifacts", action="store_true")
     parser.add_argument("--dry-run-stages", action="store_true")
+    parser.add_argument("--target-epoch", type=int, choices=BS64_474M_CONTINUATION_TARGETS)
     args = parser.parse_args()
     manifest = load_manifest(args.manifest)
-    item = coordinate(manifest, args.coordinate)
+    item = coordinate_for_target(manifest, args.coordinate, args.target_epoch)
     validate_coordinate(item)
     if args.validate_only:
         if args.check_data_artifacts:

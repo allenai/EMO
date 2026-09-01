@@ -112,7 +112,9 @@ def set_env(task: dict[str, Any], name: str, value: str) -> None:
     task.setdefault("envVars", []).append({"name": name, "value": value})
 
 
-def guarded_name(item: dict[str, Any]) -> str:
+def guarded_name(item: dict[str, Any], target_epoch: int | None = None) -> str:
+    if target_epoch is not None:
+        return f"{item['id']}-continuation-e{target_epoch}-v1"
     return f"{item['id']}-integrated-producer-eval-v1"
 
 
@@ -138,10 +140,21 @@ def existing_named_experiment(name: str) -> str | None:
     return str(matches[0]["id"]) if matches else None
 
 
-def spec_for(item: dict[str, Any], revision: str, priority: str) -> dict[str, Any]:
+def spec_for(
+    item: dict[str, Any],
+    revision: str,
+    priority: str,
+    *,
+    target_epoch: int | None = None,
+    omit_min_runtime: bool = False,
+) -> dict[str, Any]:
     config = load_manifest()
     estimate = runner.runtime_estimate(item, config["runtimeEstimate"])
-    min_runtime = int(estimate["minRuntimeSeconds"]) if item["model"] == "474m" else 0
+    min_runtime = (
+        int(estimate["minRuntimeSeconds"])
+        if item["model"] == "474m" and not omit_min_runtime
+        else 0
+    )
     spec = copy.deepcopy(
         json.loads(
             command(
@@ -172,6 +185,8 @@ def spec_for(item: dict[str, Any], revision: str, priority: str) -> dict[str, An
         "--coordinate",
         str(item["id"]),
     ]
+    if target_epoch is not None:
+        task["arguments"].extend(["--target-epoch", str(target_epoch)])
     blocked = {
         "GANTRY_USE_TORCHRUN",
         "GANTRY_RDZV_ID",
@@ -202,8 +217,13 @@ def spec_for(item: dict[str, Any], revision: str, priority: str) -> dict[str, An
     spec["retry"] = {"allowedTaskRetries": 8}
     spec["description"] = (
         f"{item['model']} DCLM-333M BS{item['batchSequences']} DR+WT+EmbedWD "
-        f"LR{item['learningRate']} WD{item['weightDecay']}; start from scratch; "
-        f"constant-LR frontier through E{item['maxEpoch']}; retain exact pre-decay "
+        f"LR{item['learningRate']} WD{item['weightDecay']}; "
+        + (
+            f"continue the exact clean E{target_epoch - 16} producer frontier; "
+            if target_epoch is not None
+            else "start from scratch; "
+        )
+        + f"constant-LR frontier through E{item['maxEpoch']}; retain exact pre-decay "
         f"checkpoints at {item['retainedCheckpointEpochs']}; independently WSD-decay and "
         f"heldout-evaluate {item['evaluationEpochs']} before continuing from each exact PD "
         f"source; output {item['output']}; "
@@ -212,14 +232,29 @@ def spec_for(item: dict[str, Any], revision: str, priority: str) -> dict[str, An
     return spec
 
 
-def create(item: dict[str, Any], revision: str, priority: str) -> str:
-    name = guarded_name(item)
+def create(
+    item: dict[str, Any],
+    revision: str,
+    priority: str,
+    *,
+    target_epoch: int | None = None,
+    omit_min_runtime: bool = False,
+) -> str:
+    name = guarded_name(item, target_epoch)
     existing = existing_named_experiment(name)
     if existing:
         return existing
     output = command(
         ["beaker", "experiment", "create", "-", "--name", name, "--workspace", WORKSPACE],
-        input_text=json.dumps(spec_for(item, revision, priority)),
+        input_text=json.dumps(
+            spec_for(
+                item,
+                revision,
+                priority,
+                target_epoch=target_epoch,
+                omit_min_runtime=omit_min_runtime,
+            )
+        ),
     )
     identifiers = re.findall(r"\b[0-9A-HJKMNP-TV-Z]{26}\b", output)
     if not identifiers:
