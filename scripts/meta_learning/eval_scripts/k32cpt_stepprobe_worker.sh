@@ -94,67 +94,78 @@ for c in $PROBE_CLUSTERS; do
         wait_for "${subset}/.ready"
     fi
 
-    for k in $(seq 1 "$STEPS"); do
-        stepdir="${save}/step${k}"
-        if [ ! -f "${stepdir}/model_and_optim/.metadata" ]; then
-            echo "=== probe ${ctag}: train to step ${k} (rank ${RANK})"
-            torchrun \
-                --nnodes="${NREP}:${NREP}" \
-                --nproc-per-node="${NPROC}" \
-                --rdzv-id="probe_${MODEL}_${ctag}_s${k}" \
-                --rdzv-backend=static \
-                --rdzv-endpoint="${LEADER}:${RDZV_PORT}" \
-                --node-rank="${RANK}" \
-                --rdzv-conf="read_timeout=900" \
-                src/scripts/train/olmoe-1B-7B_fsl.py "$runname" \
-                --data-root="s3://ai2-llm" \
-                --save-folder="${save}" \
-                --load_path="${subset}/model_and_optim" \
-                --load_trainer_state=false \
-                --load_optim_state=true \
-                --model.freeze_params='[embeddings.*, lm_head.*, blocks.*.attention.*, blocks.*.attention_norm.*, blocks.*.feed_forward_norm.*, blocks.*.feed_forward_moe.router.*]' \
-                --dataset.mix=null \
-                --dataset.paths="[${TOKENS_DIR}/cluster$(printf '%02d' "$c")/train/part-*.npy]" \
-                --dataset.expand_glob=true \
-                --dataset.dtype=uint32 \
-                --work-dir="${DATASET_CACHE}" \
-                --trainer.max_duration="{value: ${k}, unit: steps}" \
-                --scheduler=wsd \
-                --warmup_steps=0 \
-                --decay_steps=1 \
-                --trainer.callbacks.checkpointer.save_interval=1000000 \
-                --trainer.callbacks.checkpointer.ephemeral_save_interval=null \
-                --trainer.callbacks.checkpointer.pre_train_checkpoint=false \
-                --trainer.callbacks.downstream_evaluator.enabled=false \
-                --trainer.callbacks.wandb.enabled=false \
-                --model.block.feed_forward_moe.num_experts=33 \
-                --dataset.generate_doc_lengths=true \
-                --model.block.sequence_mixer.backend=flash_2 \
-                --model-type="two-level_lb-batch_reduce-dp_sharedexp_randpool" \
-                --min_document_expert_pool=33 \
-                --max_document_expert_pool=33 \
-                --eval_document_expert_pool=33 \
-                --num_shared_experts=1 \
-                --dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
-                --model.block.name="moe" \
-                --model.block.sequence_mixer.qk_norm=null \
-                --lr=2e-3 \
-                --model.block.feed_forward_moe.lb_loss_weight=1e-1
-        fi
-        wait_for "${stepdir}/model_and_optim/.metadata"
+    # ONE training run to STEPS with per-step checkpoints (fixed_steps 1..STEPS-1 +
+    # the final save at STEPS). NOTE: with WSD decay_steps=1, the LAST step (STEPS)
+    # is the decay step (lr -> min), so the stepSTEPS row ~= step(STEPS-1); steps
+    # 1..STEPS-1 train at the flat 2e-3. (An earlier incremental design set
+    # max_duration=k per round, making EVERY trained step the decay step -> lr 0 ->
+    # bitwise no-op training. Hence the single-run + fixed_steps shape.)
+    if [ ! -f "${save}/step${STEPS}/model_and_optim/.metadata" ]; then
+        fixed=$(seq -s', ' 1 $((STEPS - 1)))
+        echo "=== probe ${ctag}: train ${STEPS} steps, per-step checkpoints (rank ${RANK})"
+        torchrun \
+            --nnodes="${NREP}:${NREP}" \
+            --nproc-per-node="${NPROC}" \
+            --rdzv-id="probe_${MODEL}_${ctag}" \
+            --rdzv-backend=static \
+            --rdzv-endpoint="${LEADER}:${RDZV_PORT}" \
+            --node-rank="${RANK}" \
+            --rdzv-conf="read_timeout=900" \
+            src/scripts/train/olmoe-1B-7B_fsl.py "$runname" \
+            --data-root="s3://ai2-llm" \
+            --save-folder="${save}" \
+            --load_path="${subset}/model_and_optim" \
+            --load_trainer_state=false \
+            --load_optim_state=true \
+            --model.freeze_params='[embeddings.*, lm_head.*, blocks.*.attention.*, blocks.*.attention_norm.*, blocks.*.feed_forward_norm.*, blocks.*.feed_forward_moe.router.*]' \
+            --dataset.mix=null \
+            --dataset.paths="[${TOKENS_DIR}/cluster$(printf '%02d' "$c")/train/part-*.npy]" \
+            --dataset.expand_glob=true \
+            --dataset.dtype=uint32 \
+            --work-dir="${DATASET_CACHE}" \
+            --trainer.max_duration="{value: ${STEPS}, unit: steps}" \
+            --scheduler=wsd \
+            --warmup_steps=0 \
+            --decay_steps=1 \
+            --trainer.callbacks.checkpointer.save_interval=1000000 \
+            --trainer.callbacks.checkpointer.fixed_steps="[${fixed}]" \
+            --trainer.callbacks.checkpointer.ephemeral_save_interval=null \
+            --trainer.callbacks.checkpointer.pre_train_checkpoint=false \
+            --trainer.callbacks.downstream_evaluator.enabled=false \
+            --trainer.callbacks.wandb.enabled=false \
+            --model.block.feed_forward_moe.num_experts=33 \
+            --dataset.generate_doc_lengths=true \
+            --model.block.sequence_mixer.backend=flash_2 \
+            --model-type="two-level_lb-batch_reduce-dp_sharedexp_randpool" \
+            --min_document_expert_pool=33 \
+            --max_document_expert_pool=33 \
+            --eval_document_expert_pool=33 \
+            --num_shared_experts=1 \
+            --dataset.instance_filter_config='{repetition_max_period: 13, repetition_min_period: 1, repetition_max_count: 32}' \
+            --model.block.name="moe" \
+            --model.block.sequence_mixer.qk_norm=null \
+            --lr=2e-3 \
+            --model.block.feed_forward_moe.lb_loss_weight=1e-1
+    fi
+    wait_for "${save}/step${STEPS}/model_and_optim/.metadata"
 
+    for k in $(seq 1 "$STEPS"); do
         echo "=== probe ${ctag}: eval after step ${k}"
         eval_round "probe_${MODEL}_${ctag}_step$(printf '%02d' "$k")" \
-            "$stepdir" "${subset}/selection.json"
-
-        # keep only the latest step checkpoint (needed for auto-resume to step k+1)
-        if [ "$RANK" = 0 ] && [ "$k" -gt 1 ]; then
-            rm -rf "${save}/step$((k - 1))"
-        fi
+            "${save}/step${k}" "${subset}/selection.json"
     done
+
     if [ "$RANK" = 0 ]; then
-        rm -rf "$subset" "$save"
-        echo "=== probe ${ctag}: DONE (artifacts deleted)"
+        # delete artifacts only when every replica's eval shards for this cluster exist
+        need=$((32 * STEPS)); t0=$(date +%s)
+        while true; do
+            have=$(ls "${EV}/ce_probe_${MODEL}_${ctag}_step"*_shard*.json 2>/dev/null | wc -l)
+            [ "$have" -ge "$need" ] && break
+            [ $(( $(date +%s) - t0 )) -gt 7200 ] && { echo "!!! ${ctag}: eval shards stuck at ${have}/${need}; keeping artifacts"; break; }
+            sleep 30
+        done
+        [ "${have:-0}" -ge "$need" ] && rm -rf "$subset" "$save"
+        echo "=== probe ${ctag}: DONE"
     fi
 done
 
