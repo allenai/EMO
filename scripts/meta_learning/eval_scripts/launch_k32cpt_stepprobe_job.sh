@@ -19,9 +19,15 @@ export GRPC_POLL_STRATEGY=poll
 NODES="${NODES:-4}"
 BEAKER_IMAGE="${BEAKER_IMAGE:-tylerr/olmo-core-tch280cu128-2025-11-25}"
 CLUSTER="${CLUSTER:-ai2/jupiter}"
+# PREEMPTIBLE=0 -> allocated (non-preemptible) job; default 1 (preemptible).
+PREEMPTIBLE="${PREEMPTIBLE:-1}"
+PREEMPT_FLAG=""
+[ "$PREEMPTIBLE" = 1 ] && PREEMPT_FLAG="--preemptible"
+NAME_SUFFIX=""
+[ "$PREEMPTIBLE" = 1 ] || NAME_SUFFIX="-alloc"
 
 python -m olmo_core.launch.beaker \
-    --name "k32cpt-stepprobe-${MODEL//_/-}" \
+    --name "k32cpt-stepprobe-${MODEL//_/-}${NAME_SUFFIX}" \
     --gpus 8 \
     --nodes "$NODES" \
     --weka=oe-training-default \
@@ -29,7 +35,7 @@ python -m olmo_core.launch.beaker \
     --workspace ai2/flex2 \
     --cluster "$CLUSTER" \
     --beaker-image "$BEAKER_IMAGE" \
-    --preemptible \
+    ${PREEMPT_FLAG} \
     --allow-dirty \
     --no-follow \
     --no-torchrun \
