@@ -5,21 +5,144 @@ graft the fully-trained step-11921 routers from emo_1b14b_50bof130b onto a fresh
 byte-exact init, freeze them, and retrain everything else from scratch on the
 identical recipe. The experiment is results-complete (noaux converged; the aux-on
 variants NaN'd on first launch but reran clean — a metastable instability). Static
-tables + prose. CSS/JS/tab structure kept in sync with scripts/models_fullextend/build_report.py.
+tables + prose, plus a Training-dynamics tab with live W&B curves (uPlot explorer,
+same machinery as scripts/models_v2/build_report.py). CSS/JS/tab structure kept in
+sync with scripts/models_fullextend/build_report.py.
 
 Usage:
 
-    python scripts/models_routerfixed/build_report.py \\
-        [--output claude_outputs/models_routerfixed/report.html]
+    python scripts/models_routerfixed/build_report.py            # pull curves from W&B + render
+    python scripts/models_routerfixed/build_report.py --no-wandb # render from cached curves.json
 """
 
 import argparse
 import base64
 import json
+import math
+import re
 import statistics
 from pathlib import Path
 
 import numpy as np
+
+# uPlot vendored once for the repo, under the models_v2 report (checked in).
+VENDOR = Path(__file__).resolve().parent.parent / "models_v2" / "vendor"
+
+ENTITY_PROJECT = "ryanyxw/emo-extension"
+TOK_PER_STEP = 1024 * 4096  # global_batch_size(1024) * seq_len(4096) = 4,194,304 tokens/step
+
+# ---------------------------------------------------------------------------
+# W&B run inventory for the Training-dynamics explorer. Every run is a series on
+# every chart, in THIS order — series index == palette index. The four full 50B
+# runs; then the first-launch aux-on batch (all NaN'd <= step 289); then the
+# identical-config reruns (all clean) that demoted the NaN to a metastable fluke.
+RUNS = [
+    {"key": "baseline",     "label": "baseline (learnable router)",       "cat": "Full 50B runs", "id": "vhk11voo"},
+    {"key": "noaux",        "label": "noaux (frozen trained, aux off)",   "cat": "Full 50B runs", "id": "2cagjczf"},
+    {"key": "keepaux",      "label": "keepaux (frozen trained, aux on)",  "cat": "Full 50B runs", "id": "otu3nkou"},
+    {"key": "routerrandom", "label": "routerrandom (frozen random, aux off)", "cat": "Full 50B runs", "id": "ed6vibvr"},
+    {"key": "keepaux_nan",  "label": "keepaux 1st launch (NaN @~120)",    "cat": "First-launch aux-on batch (NaN'd)", "id": "0jeop97k"},
+    {"key": "probe_lbonly", "label": "probe lbonly (NaN @105)",           "cat": "First-launch aux-on batch (NaN'd)", "id": "3wrlty3n"},
+    {"key": "probe_zonly",  "label": "probe zonly (NaN @289)",            "cat": "First-launch aux-on batch (NaN'd)", "id": "mg6btt88"},
+    {"key": "rerun_lbonly", "label": "rerun lbonly +graddiag (clean)",    "cat": "Identical-config reruns (clean)", "id": "1xg5r2x6"},
+    {"key": "rerun_keepaux","label": "rerun keepaux +graddiag (clean)",   "cat": "Identical-config reruns (clean)", "id": "s1au1ptz"},
+    {"key": "ctrl_keepaux", "label": "rerun keepaux no-diag ctrl (clean)","cat": "Identical-config reruns (clean)", "id": "f5kzgtb8"},
+]
+
+# (chart title, W&B key) — or (title, [keys]) for a derived per-step average (MMLU
+# BPB v2 has no pre-aggregated key). LB / router-Z use the *unscaled* keys so the
+# aux-off runs (loss weight 0) stay comparable to the aux-on ones. Probe runs log
+# no evals (eval callbacks off) — their eval series are simply empty.
+METRICS = [
+    ("CE loss",                      "train/CE loss"),
+    ("Grad norm",                    "optim/total grad norm"),
+    ("Learning rate",                "optim/LR (group 0)"),
+    ("Load balancing loss (unscaled)", "train/load balancing loss unscaled"),
+    ("Router Z loss (unscaled)",     "train/router Z loss unscaled"),
+    ("Unique experts used / batch",  "train/unique experts used per batch"),
+    ("HellaSwag (soft loss v2)",     "eval/downstream/hellaswag (soft loss v2)"),
+    ("ARC-Challenge (soft loss v2)", "eval/downstream/arc_challenge (soft loss v2)"),
+    ("MMLU (BPB v2)",                ["eval/downstream/mmlu_humanities (BPB v2)",
+                                      "eval/downstream/mmlu_other (BPB v2)",
+                                      "eval/downstream/mmlu_social_sciences (BPB v2)",
+                                      "eval/downstream/mmlu_stem (BPB v2)"]),
+]
+
+# Explorer groups (left column). Toggling a group toggles its runs on every chart.
+GROUPS = [
+    {"name": "Baseline (learnable router)",            "runs": ["baseline"], "ref": True},
+    {"name": "noaux (frozen trained)",                 "runs": ["noaux"]},
+    {"name": "keepaux (frozen trained, aux on)",       "runs": ["keepaux"]},
+    {"name": "routerrandom (frozen random)",           "runs": ["routerrandom"]},
+    {"name": "First-launch aux-on batch (all NaN'd)",  "runs": ["keepaux_nan", "probe_lbonly", "probe_zonly"]},
+    {"name": "Identical-config reruns (all clean)",    "runs": ["rerun_lbonly", "rerun_keepaux", "ctrl_keepaux"]},
+]
+DEFAULT_GROUPS = [0, 1, 2, 3]  # the four full 50B runs on first load
+
+PALETTE = [
+    "#2563eb", "#dc2626", "#059669", "#7c3aed", "#d97706", "#0891b2", "#db2777", "#65a30d",
+    "#475569", "#9333ea", "#0d9488", "#e11d48",
+]
+
+
+def _metric_keys(m) -> list:
+    k = m[1]
+    return list(k) if isinstance(k, list) else [k]
+
+
+ALL_METRIC_KEYS = list(dict.fromkeys(k for m in METRICS for k in _metric_keys(m)))
+
+
+def slugify(t: str) -> str:
+    return re.sub(r"(^-|-$)", "", re.sub(r"[^a-z0-9]+", "-", t.lower()))
+
+
+def fetch_from_wandb() -> dict:
+    import wandb
+    api = wandb.Api()
+    per_run: dict = {}   # run key -> {metric_key: {step: val}}
+    runs_meta = []
+    for r in RUNS:
+        run = api.run(f"{ENTITY_PROJECT}/{r['id']}")
+        hist: dict = {}
+        for key in ALL_METRIC_KEYS:
+            d: dict = {}
+            for row in run.history(keys=[key], samples=600, pandas=False):
+                v, s = row.get(key), row.get("_step")
+                if v is None or s is None:
+                    continue
+                try:
+                    fv = float(v)
+                except (TypeError, ValueError):
+                    continue
+                if math.isnan(fv) or math.isinf(fv):
+                    continue
+                d[int(s)] = fv
+            hist[key] = d
+        per_run[r["key"]] = hist
+        ce = hist.get("train/CE loss", {})
+        last_step = max(ce) if ce else None
+        runs_meta.append({
+            "key": r["key"], "label": r["label"], "cat": r["cat"], "id": r["id"],
+            "url": run.url, "state": run.state,
+            "last_ce": round(ce[last_step], 3) if ce else None,
+            "last_tok": round(last_step * TOK_PER_STEP / 1e9, 1) if last_step else None,
+        })
+    charts = []
+    for m in METRICS:
+        title, comp = m[0], _metric_keys(m)
+        steps = sorted(set().union(
+            *[set(per_run[r["key"]].get(k, {})) for r in RUNS for k in comp]) or {0})
+        series = []
+        for r in RUNS:
+            y = []
+            for s in steps:
+                vals = [per_run[r["key"]].get(k, {}).get(s) for k in comp]
+                vals = [v for v in vals if v is not None]
+                y.append(sum(vals) / len(vals) if vals else None)
+            series.append({"label": r["label"], "y": y})
+        charts.append({"key": slugify(title), "title": title, "x": steps, "series": series})
+    return {"runs": runs_meta, "charts": charts}
 
 
 # --------------------------------------------------------------------------
@@ -421,6 +544,115 @@ routing function does not determine the experts, only constrains them.</p>''')}
 """
 
 
+def _chart_blocks(charts: list) -> str:
+    cells = []
+    for c in charts:
+        cells.append(
+            f'<div class="chart-cell" data-metric="{c["key"]}">'
+            f'<h4>{c["title"]}</h4>'
+            '<div class="chart-controls">'
+            f'<button class="logtoggle" data-metric="{c["key"]}">log-y</button>'
+            f'<button class="expand" data-metric="{c["key"]}">expand &#10530;</button>'
+            '</div>'
+            f'<div class="ce-chart" id="chart-dyn-{c["key"]}"></div>'
+            '</div>'
+        )
+    return f'<div class="chart-grid">{"".join(cells)}</div>'
+
+
+def _explorer_html(charts: list) -> str:
+    default = set(DEFAULT_GROUPS)
+    btns = []
+    for i, g in enumerate(GROUPS):
+        pressed = "true" if i in default else "false"
+        ref = ' data-ref="1"' if g.get("ref") else ""
+        cls = "exp-group ref" if g.get("ref") else "exp-group"
+        btns.append(
+            f'<button class="{cls}" aria-pressed="{pressed}" data-runs="{",".join(g["runs"])}"{ref}>'
+            f'<span class="exp-dot"></span><span>{g["name"]}</span></button>')
+    panel = (
+        '<div class="exp-panel">'
+        '<div class="exp-h">Runs</div>'
+        f'{"".join(btns)}'
+        '<label class="exp-fitx-l"><input type="checkbox" class="exp-fitx" checked>'
+        ' auto-fit x to selection</label>'
+        '</div>')
+    return (f'<div class="explorer" data-tab="dyn">'
+            f'{panel}<div class="exp-charts">{_chart_blocks(charts)}</div></div>')
+
+
+# Guided findings rendered above the explorer; each button selects exactly the
+# named groups and scrolls to the charts.
+DYN_SECTIONS = [
+    {"heading": "Headline: every frozen-router run converges near the baseline",
+     "text": "Final <em>raw</em> <code>train/CE</code> at the 50B hard stop (step 11,921): baseline "
+             "(learnable) <strong>2.692</strong> &lt; keepaux (frozen trained, aux on) "
+             "<strong>2.723</strong> &lt; noaux (frozen trained, aux off) <strong>2.736</strong> &lt; "
+             "routerrandom (frozen <em>random</em>, aux off) <strong>2.744</strong>. All three frozen "
+             "variants land within &asymp;0.05 nat of the learnable baseline, and the random frozen "
+             "router is only +0.0075 behind the trained frozen one.",
+     "button": "Plot the four full runs",
+     "groups": ["Baseline (learnable router)", "noaux (frozen trained)",
+                "keepaux (frozen trained, aux on)", "routerrandom (frozen random)"]},
+    {"heading": "The metastable NaN window",
+     "text": "Every aux-on config NaN'd on its first launch (keepaux @~120, lbonly @105, zonly @289) "
+             "&mdash; and every identical-config rerun trained clean past those steps, as did the full "
+             "keepaux relaunch. Toggle the two probe batches and zoom into steps 0&ndash;500 (grad "
+             "norm on log-y): the NaN'd curves cut off where the loss went NaN; the reruns sail "
+             "through the same window.",
+     "button": "Plot the NaN'd batch vs the clean reruns",
+     "groups": ["keepaux (frozen trained, aux on)", "First-launch aux-on batch (all NaN'd)",
+                "Identical-config reruns (all clean)"]},
+]
+
+
+def build_dynamics(payload: dict | None) -> str:
+    if not payload:
+        return card("results", "Not yet fetched",
+                    "<p>Run without <code>--no-wandb</code> once to pull curves from W&amp;B "
+                    "(cached to <code>curves.json</code>).</p>")
+    runs = payload["runs"]
+    cats: list = []
+    by_cat: dict = {}
+    for r in runs:
+        if r["cat"] not in by_cat:
+            cats.append(r["cat"])
+            by_cat[r["cat"]] = []
+        by_cat[r["cat"]].append(r)
+    inv_cards = []
+    for cat in cats:
+        rows = []
+        for r in by_cat[cat]:
+            tok = "&mdash;" if r["last_tok"] is None else f"{r['last_tok']}B"
+            ce = "&mdash;" if r["last_ce"] is None else r["last_ce"]
+            rows.append(
+                f"<tr><td>{r['label']}</td><td>{r['state']}</td><td>{tok}</td><td>{ce}</td>"
+                f'<td><a href="{r["url"]}" target="_blank" rel="noopener">W&amp;B</a></td></tr>')
+        body = "".join(rows)
+        inv_cards.append(
+            f'<div class="card results"><h3>{cat}</h3>'
+            '<table><thead><tr><th>run</th><th>state</th><th>tokens</th><th>latest CE</th>'
+            '<th>link</th></tr></thead>'
+            f'<tbody>{body}</tbody></table></div>')
+    name_to_idx = {g["name"]: i for i, g in enumerate(GROUPS)}
+    finding_cards = []
+    for s in DYN_SECTIONS:
+        idxs = ",".join(str(name_to_idx[n]) for n in s["groups"] if n in name_to_idx)
+        finding_cards.append(
+            f'<div class="card finding"><h3>{s["heading"]}</h3>'
+            f'<p>{s["text"]}</p>'
+            f'<button class="exp-jump" data-explorer="dyn" data-select="{idxs}">'
+            f'{s["button"]} &rarr;</button></div>')
+    intro = card("goal", "Live training curves from W&B", (
+        '<p>Every run of the experiment, pulled from the <code>emo-extension</code> W&amp;B project. '
+        'Toggle run groups on the left; each chart supports log-y, drag-zoom, and click-to-expand. '
+        'The dashed series is the learnable-router baseline (reference). Probe runs (&le;500 steps, '
+        'evals off) only appear on the train-metric charts; <em>NaN samples are dropped</em>, so a '
+        "NaN'd run's curve simply stops at its last finite step.</p>"))
+    return (intro + "".join(finding_cards) + _explorer_html(payload["charts"])
+            + "".join(inv_cards))
+
+
 # --------------------------------------------------------------------------
 # Page assembly (CSS/JS kept in sync with models_fullextend)
 # --------------------------------------------------------------------------
@@ -474,6 +706,176 @@ figcaption { font-size:12.5px; color:var(--muted); margin-top:4px; }
 details { margin:12px 0; }
 summary { cursor:pointer; color:#2563eb; font-size:14px; }
 .missing { color:#b91c1c; font-size:13px; }
+/* ---- Training-dynamics explorer (kept in sync with models_v2) ---- */
+.card.finding { border-left-color:#0891b2; } .card.finding h3 { color:#0891b2; }
+.card.finding p { margin:0 0 10px; }
+.exp-jump { border:1px solid #0891b2; background:#ecfeff; color:#0e7490; border-radius:6px;
+            padding:6px 12px; font-size:13px; font-weight:600; cursor:pointer; }
+.exp-jump:hover { background:#cffafe; }
+.ce-chart { width:100%; }
+.chart-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px 20px; margin-top:6px; }
+@media (max-width:760px){ .chart-grid { grid-template-columns:1fr; } }
+.chart-cell { min-width:0; border:1px solid var(--line); border-radius:8px; padding:8px 10px 4px;
+              background:var(--card); }
+.chart-cell h4 { margin:0 0 2px; font-size:13px; }
+.chart-controls { display:flex; align-items:center; gap:8px; margin:2px 0 4px; }
+.chart-controls button { border:1px solid var(--line); background:#fff; border-radius:6px;
+                         padding:3px 9px; font-size:12px; cursor:pointer; }
+.chart-controls button:hover { background:#f1f5f9; }
+.u-legend { font-size:12px; }
+.ce-modal { position:fixed; inset:0; background:rgba(15,23,42,.55); display:none; z-index:50;
+            align-items:center; justify-content:center; padding:24px; }
+.ce-modal.open { display:flex; }
+.ce-modal-inner { background:#fff; border-radius:10px; padding:14px 16px; box-shadow:0 10px 40px rgba(0,0,0,.3); }
+.ce-modal-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:16px; }
+.ce-modal-bar strong { font-size:15px; }
+.ce-modal-bar button { border:1px solid var(--line); background:#fff; border-radius:6px; padding:5px 10px;
+                       font-size:13px; cursor:pointer; }
+.ce-modal-bar button:hover { background:#f1f5f9; }
+.explorer { display:flex; gap:18px; align-items:flex-start; }
+.exp-panel { flex:0 0 232px; position:sticky; top:104px; max-height:calc(100vh - 124px);
+             overflow:auto; background:var(--card); border:1px solid var(--line);
+             border-radius:8px; padding:12px 12px 14px; }
+.exp-charts { flex:1 1 auto; min-width:0; }
+.exp-h { font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.05em;
+         color:var(--muted); margin:0 0 8px; }
+.exp-group { display:flex; align-items:center; gap:8px; width:100%; text-align:left; cursor:pointer;
+             border:1px solid var(--line); background:#fff; border-radius:7px; padding:8px 10px;
+             margin:5px 0; font-size:13px; color:var(--fg); line-height:1.25; }
+.exp-group:hover { background:#f8fafc; }
+.exp-group[aria-pressed="true"] { border-color:#2563eb; background:#eff6ff; font-weight:600; }
+.exp-dot { width:11px; height:11px; border-radius:3px; flex:0 0 auto; border:1px solid rgba(0,0,0,.15);
+           background:#fff; }
+.exp-group[aria-pressed="true"] .exp-dot { background:#2563eb; border-color:#2563eb; }
+.exp-group.ref { border-style:dashed; }
+.exp-fitx-l { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted);
+              margin:10px 2px 0; cursor:pointer; }
+@media (max-width:900px){ .explorer { flex-direction:column; }
+  .exp-panel { position:static; flex-basis:auto; width:100%; max-height:none; } }
+"""
+
+# uPlot init for the Training-dynamics explorer — copied verbatim from
+# scripts/models_v2/build_report.py (keep in sync). Data injected via the
+# __CHARTS__ / __RUNKEYS__ / __PALETTE__ placeholders.
+_CHARTS_JS = r"""
+<script>
+(function(){
+  const CHARTS = __CHARTS__, RUNKEYS = __RUNKEYS__, palette = __PALETTE__;
+  const idxOf = {}; RUNKEYS.forEach((k,i)=>idxOf[k]=i);
+  const chartByKey = {}; CHARTS.forEach(c=>chartByKey[c.key]=c);
+  const SMALL_H = 240;
+  const allReg = [];   // every {plot,el} across tabs, for resize
+
+  function makeOpts(chart, logY, w, h, vis, legend, refSet){
+    return {
+      width:w, height:h, focus:{ alpha:0.3 }, legend:{ show:!!legend },
+      scales:{ x:{ time:false }, y:{ distr: logY ? 3 : 1 } },
+      cursor:{ focus:{ prox:30 }, drag:{ x:true, y:true, uni:10 } },
+      axes:[ { label:"step", values:(u,vals)=>vals.map(v=>v>=1000?(v/1000)+"k":v) }, { label:chart.title } ],
+      series:[ { value:(u,v)=>v==null?"--":v } ].concat(chart.series.map((s,i)=>({
+        label:s.label, stroke:palette[i % palette.length], width:1.8, spanGaps:true, show:!!vis[i],
+        dash:(refSet && refSet.has(i)) ? [7,4] : undefined,
+        value:(u,v)=>v==null?"--":(+v).toFixed(4) }))),
+    };
+  }
+  const dataOf = chart => [chart.x].concat(chart.series.map(s=>s.y));
+  // x-range over visible series' non-null samples (null if nothing visible has data).
+  function visRange(chart, vis){
+    let lo=Infinity, hi=-Infinity;
+    for(let i=0;i<chart.series.length;i++){ if(!vis[i]) continue; const y=chart.series[i].y;
+      for(let j=0;j<y.length;j++){ if(y[j]!=null){ const x=chart.x[j]; if(x<lo)lo=x; if(x>hi)hi=x; } } }
+    return lo<=hi ? [lo,hi] : null;
+  }
+
+  // ---- shared expand modal ----
+  const modal=document.createElement("div"); modal.className="ce-modal";
+  modal.innerHTML='<div class="ce-modal-inner"><div class="ce-modal-bar"><strong></strong>'
+    +'<span><button class="ce-mlog">toggle log-y</button> <button class="ce-mclose">close &#10005;</button></span>'
+    +'</div><div class="ce-modal-chart"></div></div>';
+  document.body.appendChild(modal);
+  const mEl=modal.querySelector(".ce-modal-chart"), mTitle=modal.querySelector("strong");
+  let M=null;  // { chart, vis, fitVis, refSet, logY, plot }
+  const mSize=()=>({ w:Math.min(window.innerWidth*0.94,1180)|0, h:Math.min(window.innerHeight*0.72,700)|0 });
+  function drawModal(){ const s=mSize(); if(M.plot) M.plot.destroy();
+    M.plot=new uPlot(makeOpts(M.chart, M.logY, s.w, s.h, M.vis, true, M.refSet), dataOf(M.chart), mEl);
+    const r=visRange(M.chart, M.fitVis); if(r) M.plot.setScale("x", { min:r[0], max:r[1] }); }
+  function openModal(chart, vis, fitVis, refSet, logY){ M={ chart, vis, fitVis, refSet, logY, plot:null };
+    mTitle.textContent=chart.title; modal.classList.add("open"); drawModal(); }
+  function closeModal(){ if(M&&M.plot) M.plot.destroy(); M=null; modal.classList.remove("open"); }
+  modal.querySelector(".ce-mclose").addEventListener("click", closeModal);
+  modal.querySelector(".ce-mlog").addEventListener("click", ()=>{ if(M){ M.logY=!M.logY; drawModal(); } });
+  modal.addEventListener("click", e=>{ if(e.target===modal) closeModal(); });
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeModal(); });
+
+  // ---- per-explorer wiring ----
+  function setupExplorer(root){
+    const groupBtns = Array.from(root.querySelectorAll(".exp-group"));
+    const fitxEl = root.querySelector(".exp-fitx");
+    const fitx = () => !fitxEl || fitxEl.checked;
+    const reg = {};   // metric slug -> { plot, logY, chart, el }
+    // Reference groups (e.g. the learnable baseline): drawn dashed and excluded from the
+    // x-auto-fit so the focus runs define the window. Built once from the static group markup.
+    const refSet = new Set();
+    groupBtns.forEach(b => { if(b.dataset.ref==="1")
+      b.dataset.runs.split(",").filter(Boolean).forEach(k => { if(k in idxOf) refSet.add(idxOf[k]); }); });
+    function selected(includeRef){
+      const s = new Set();
+      groupBtns.forEach(b => { if(b.getAttribute("aria-pressed")==="true" && (includeRef || b.dataset.ref!=="1"))
+        b.dataset.runs.split(",").filter(Boolean).forEach(k => { if(k in idxOf) s.add(idxOf[k]); }); });
+      return s;
+    }
+    const vis = () => { const s=selected(true);  return RUNKEYS.map((k,i)=>s.has(i)); };
+    // x-fit driven by non-ref (focus) runs; if only refs are selected, fall back to all selected.
+    function fitVis(){ const f=selected(false); const s=f.size?f:selected(true); return RUNKEYS.map((k,i)=>s.has(i)); }
+    function build(slug){
+      const st=reg[slug], el=st.el; if(!el) return;
+      const v=vis();
+      if(st.plot) st.plot.destroy();
+      st.plot=new uPlot(makeOpts(st.chart, st.logY, el.clientWidth||440, SMALL_H, v, false, refSet), dataOf(st.chart), el);
+      if(fitx()){ const r=visRange(st.chart, fitVis()); if(r) st.plot.setScale("x", { min:r[0], max:r[1] }); }
+    }
+    function rebuildAll(){ Object.keys(reg).forEach(build); }
+    root.querySelectorAll(".chart-cell").forEach(cell => {
+      const slug=cell.dataset.metric, el=cell.querySelector(".ce-chart");
+      reg[slug]={ plot:null, logY:false, chart:chartByKey[slug], el:el };
+      allReg.push(reg[slug]);
+    });
+    groupBtns.forEach(b => b.addEventListener("click", () => {
+      b.setAttribute("aria-pressed", b.getAttribute("aria-pressed")==="true" ? "false" : "true");
+      rebuildAll();
+    }));
+    if(fitxEl) fitxEl.addEventListener("change", rebuildAll);
+    root.querySelectorAll("button.logtoggle").forEach(b => b.addEventListener("click", () => {
+      reg[b.dataset.metric].logY=!reg[b.dataset.metric].logY; build(b.dataset.metric); }));
+    root.querySelectorAll("button.expand").forEach(b => b.addEventListener("click", () => {
+      const st=reg[b.dataset.metric]; openModal(st.chart, vis(), fitVis(), refSet, st.logY); }));
+    // Programmatic selection for the guided-finding buttons: press exactly `idxs`, clear the rest.
+    root.selectGroups = function(idxs){
+      groupBtns.forEach((b,i)=> b.setAttribute("aria-pressed", idxs.indexOf(i)>=0 ? "true" : "false"));
+      rebuildAll();
+    };
+    rebuildAll();
+  }
+  document.querySelectorAll(".explorer").forEach(setupExplorer);
+
+  // Guided-finding buttons (prose cards above an explorer): select their groups + scroll to charts.
+  document.querySelectorAll(".exp-jump").forEach(btn => btn.addEventListener("click", () => {
+    const exp = document.querySelector('.explorer[data-tab="'+btn.dataset.explorer+'"]');
+    if(!exp || !exp.selectGroups) return;
+    const idx = (btn.dataset.select||"").split(",").filter(s=>s!=="").map(Number);
+    exp.selectGroups(idx);
+    exp.scrollIntoView({behavior:"smooth", block:"start"});
+  }));
+
+  // resize (also re-fit after a tab becomes visible: width was 0 while display:none)
+  window.ceResize = function(){
+    allReg.forEach(st => { if(st.plot && st.el && st.el.clientWidth)
+      st.plot.setSize({ width:st.el.clientWidth, height:SMALL_H }); });
+    if(M && M.plot){ const s=mSize(); M.plot.setSize({ width:s.w, height:s.h }); }
+  };
+  window.addEventListener("resize", window.ceResize);
+})();
+</script>
 """
 
 JS = """
@@ -497,6 +899,7 @@ function show(id) {
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.target === id));
   history.replaceState(null, '', '#' + id);
   buildSubnav(id);
+  if (window.ceResize) window.ceResize();
 }
 document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => show(b.dataset.target)));
 show(location.hash && document.getElementById(location.hash.slice(1)) ? location.hash.slice(1) : 'overview');
@@ -507,15 +910,25 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-dir", type=Path, default=Path("claude_outputs/models_routerfixed"),
                         help="dir holding weight_similarity/ and matching{,_tokens}/ artifacts")
+    parser.add_argument("--no-wandb", action="store_true", help="render curves from cached curves.json")
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args()
     base = args.base_dir
     out = args.output or base / "report.html"
+    cache = base / "curves.json"
+
+    if args.no_wandb:
+        payload = json.loads(cache.read_text()) if cache.is_file() else None
+    else:
+        payload = fetch_from_wandb()
+        base.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps(payload))
 
     tabs = [
         ("overview", "Overview", build_overview()),
         ("method", "Method", build_method()),
         ("results", "Results", build_results()),
+        ("dynamics", "Training dynamics", build_dynamics(payload)),
         ("expert-weights", "Expert weights", build_expert_weights(base)),
         ("expert-matching", "Expert matching", build_expert_matching(base)),
     ]
@@ -524,6 +937,15 @@ def main():
         f'<section class="tab" id="{tid}">{body}</section>' for tid, _, body in tabs
     )
 
+    uplot_css = (VENDOR / "uPlot.min.css").read_text() if (VENDOR / "uPlot.min.css").is_file() else ""
+    uplot_js = (VENDOR / "uPlot.iife.min.js").read_text() if (VENDOR / "uPlot.iife.min.js").is_file() else ""
+    charts_js = ""
+    if payload:
+        charts_js = (_CHARTS_JS
+                     .replace("__CHARTS__", json.dumps(payload["charts"]))
+                     .replace("__RUNKEYS__", json.dumps([r["key"] for r in RUNS]))
+                     .replace("__PALETTE__", json.dumps(PALETTE)))
+
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -531,16 +953,19 @@ def main():
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EMO models_routerfixed: can the router be frozen?</title>
 <style>{CSS}</style>
+<style>{uplot_css}</style>
+<script>{uplot_js}</script>
 </head>
 <body>
 <header>
 <a class="home-link" href="/">&larr; all reports</a>
 <h1>EMO models_routerfixed: does the router need to be learnable during pretraining?</h1>
 <p>models_routerfixed &mdash; frozen trained-router pretraining &middot; results complete
-&middot; generated by scripts/models_routerfixed/build_report.py</p>
+&middot; live curves from W&amp;B &middot; generated by scripts/models_routerfixed/build_report.py</p>
 </header>
 <div class="topbar"><nav>{nav}</nav><div id="subnav"></div></div>
 <main>{sections}</main>
+{charts_js}
 <script>{JS}</script>
 </body>
 </html>
