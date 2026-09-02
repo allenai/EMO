@@ -9,6 +9,7 @@
     "bufferFraction": 0.2,
     "heldoutTokensPerEvaluation": 100003840,
     "evaluationAggregateTokensPerSecond": {
+      "1b": 320000,
       "474m": 1000000,
       "153m": 2600000
     },
@@ -18,6 +19,51 @@
     "basis": "recent observed producer throughput plus exact 10% decay tokens, heldout tokens, checkpoint/startup overhead, and a 20% whole-job buffer"
   },
   "producerCoordinates": [
+    {
+      "id": "dense-1b-dclm333m-bs32-lr5e-4-wd0.3",
+      "model": "1b",
+      "batchSequences": 32,
+      "gpuCount": 8,
+      "rankMicrobatchSequences": 4,
+      "learningRate": "5e-4",
+      "weightDecay": "0.3",
+      "retainedCheckpointEpochs": [4, 8, 12, 16, 20, 24, 28, 32],
+      "evaluationEpochs": [8, 16, 24, 32],
+      "maxEpoch": 32,
+      "estimatedDeviceTokensPerSecond": 35000,
+      "baseExperiment": "01M0WWNWS66NRG21QSKB87BKE7",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm333m/bs32_dr_wt_embwd_lr5e-4_wd0.3"
+    },
+    {
+      "id": "dense-1b-dclm333m-bs64-lr1e-3-wd0.3",
+      "model": "1b",
+      "batchSequences": 64,
+      "gpuCount": 8,
+      "rankMicrobatchSequences": 8,
+      "learningRate": "1e-3",
+      "weightDecay": "0.3",
+      "retainedCheckpointEpochs": [4, 8, 12, 16, 20, 24, 28, 32],
+      "evaluationEpochs": [8, 16, 24, 32],
+      "maxEpoch": 32,
+      "estimatedDeviceTokensPerSecond": 40000,
+      "baseExperiment": "01M0WWNWS66NRG21QSKB87BKE7",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm333m/bs64_dr_wt_embwd_lr1e-3_wd0.3"
+    },
+    {
+      "id": "dense-1b-dclm333m-bs64-lr1e-3-wd1.0",
+      "model": "1b",
+      "batchSequences": 64,
+      "gpuCount": 8,
+      "rankMicrobatchSequences": 8,
+      "learningRate": "1e-3",
+      "weightDecay": "1.0",
+      "retainedCheckpointEpochs": [4, 8, 12, 16, 20, 24, 28, 32],
+      "evaluationEpochs": [8, 16, 24, 32],
+      "maxEpoch": 32,
+      "estimatedDeviceTokensPerSecond": 40000,
+      "baseExperiment": "01M0WWNWS66NRG21QSKB87BKE7",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm333m/bs64_dr_wt_embwd_lr1e-3_wd1.0"
+    },
     {
       "id": "dense-474m-dclm333m-bs32-lr1e-3-wd0.1",
       "model": "474m",

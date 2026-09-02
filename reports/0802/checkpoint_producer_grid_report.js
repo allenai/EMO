@@ -70,7 +70,9 @@
   }
 
   const columns = [
-    {key: "1b-pool1b-bs64", model: "1b", pool: "dclm1b", batch: 64, historicalIds: ["drwtembwd64-lr1e-3-wd0.3"], modelStart: true},
+    {key: "1b-pool333m-bs32", model: "1b", pool: "dclm333m", batch: 32, modelStart: true},
+    {key: "1b-pool333m-bs64", model: "1b", pool: "dclm333m", batch: 64},
+    {key: "1b-pool1b-bs64", model: "1b", pool: "dclm1b", batch: 64, historicalIds: ["drwtembwd64-lr1e-3-wd0.3"], poolStart: true},
     {key: "1b-pool1b-bs128", model: "1b", pool: "dclm1b", batch: 128, historicalIds: ["drwtembwd128-lr1e-3-wd0.3", "drwtembwd128-lr1e-3-wd1.0"]},
     {key: "1b-pool3b-bs64", model: "1b", pool: "dclm3b", batch: 64, poolStart: true},
     {key: "1b-pool3b-bs128", model: "1b", pool: "dclm3b", batch: 128},
@@ -228,6 +230,7 @@
   }
 
   const groupOrder = [
+    ["1b", "dclm333m", 32], ["1b", "dclm333m", 64],
     ["1b", "dclm3b", 64], ["1b", "dclm3b", 128],
     ["474m", "dclm333m", 32], ["474m", "dclm333m", 64], ["474m", "dclm333m", 128],
     ["474m", "dclm3b", 128], ["474m", "dclm3b", 256], ["474m", "dclm3b", 512],

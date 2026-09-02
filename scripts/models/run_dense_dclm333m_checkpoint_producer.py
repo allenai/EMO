@@ -37,6 +37,15 @@ EXPECTED_MATERIALIZED_PATH = (
 )
 
 MODEL_POLICIES: dict[str, dict[str, Any]] = {
+    "1b": {
+        "batches": (64,),
+        "lr": "1e-3",
+        "wds": ("0.3", "1.0"),
+        "retained_checkpoint_epochs": (4, 8, 12, 16, 20, 24, 28, 32),
+        "evaluation_epochs": (8, 16, 24, 32),
+        "max_epoch": 32,
+        "base_experiment": "01M0WWNWS66NRG21QSKB87BKE7",
+    },
     "474m": {
         "batches": (64, 128),
         "lr": "2e-3",
@@ -58,6 +67,7 @@ MODEL_POLICIES: dict[str, dict[str, Any]] = {
 }
 
 BS32_POLICIES: dict[str, dict[str, Any]] = {
+    "1b": {"lr": "5e-4", "wds": ("0.3",)},
     "474m": {"lr": "1e-3", "wds": ("0.1", "0.3")},
     "153m": {"lr": "1e-3", "wds": ("0.1", "0.3")},
 }
@@ -252,8 +262,8 @@ def load_manifest(path: Path) -> dict[str, Any]:
     if Decimal(str(value.get("decayFraction"))) != Decimal(str(DECAY_FRACTION)):
         raise ValueError("pre-decay step convention must remain the uncapped 10% WSD boundary")
     coordinates = value.get("producerCoordinates", [])
-    if len(coordinates) != 12:
-        raise ValueError("producer manifest must contain exactly twelve small-model coordinates")
+    if len(coordinates) != 15:
+        raise ValueError("producer manifest must contain exactly fifteen registered coordinates")
     ids = [str(item["id"]) for item in coordinates]
     outputs = [str(item["output"]) for item in coordinates]
     if len(ids) != len(set(ids)) or len(outputs) != len(set(outputs)):
@@ -293,11 +303,13 @@ def coordinate_for_target(
         item["evaluationEpochs"] = [
             epoch for epoch in (16, 32, 48, 64) if epoch <= target_epoch
         ]
-    else:
+    elif item["model"] == "153m":
         item["retainedCheckpointEpochs"] = list(range(16, target_epoch + 1, 16))
         item["evaluationEpochs"] = [
             epoch for epoch in (32, 64, 96, 128, 160, 192) if epoch <= target_epoch
         ]
+    else:
+        raise ValueError(f"{item['model']} has no authorized continuation targets")
     item["maxEpoch"] = target_epoch
     item["continuationTargetEpoch"] = target_epoch
     if int(item["batchSequences"]) == 64:
@@ -310,7 +322,9 @@ def coordinate_for_target(
 def base_arguments(item: dict[str, Any], *, heldout_enabled: bool = False) -> list[str]:
     model = str(item["model"])
     batch = int(item["batchSequences"])
-    common_arguments = list(small.COMMON_ARGUMENTS)
+    common_arguments = list(
+        dense1b.COMMON_ARGUMENTS if model == "1b" else small.COMMON_ARGUMENTS
+    )
     common_arguments = common.upsert(
         common_arguments,
         "--dataset.subset_manifest=",
@@ -326,7 +340,7 @@ def base_arguments(item: dict[str, Any], *, heldout_enabled: bool = False) -> li
         "--trainer.callbacks.downstream_evaluator.eval_on_finish=",
         "--trainer.callbacks.downstream_evaluator.eval_on_finish=false",
     )
-    heldout = small.HELDOUT_EVALUATOR
+    heldout = dense1b.HELDOUT_EVALUATOR if model == "1b" else small.HELDOUT_EVALUATOR
     if not heldout_enabled:
         heldout = heldout.replace("eval_on_finish: true", "eval_on_finish: false")
     common_arguments = common.upsert(
@@ -334,7 +348,7 @@ def base_arguments(item: dict[str, Any], *, heldout_enabled: bool = False) -> li
         "--trainer.callbacks.heldout_evaluator=",
         f"--trainer.callbacks.heldout_evaluator={heldout}",
     )
-    model_arguments = list(small.MODEL_ARGUMENTS[model])
+    model_arguments = [] if model == "1b" else list(small.MODEL_ARGUMENTS[model])
     return [
         *common_arguments,
         *model_arguments,
@@ -543,7 +557,12 @@ def postdecay_arguments(
 def recovered_evaluation_arguments(
     item: dict[str, Any], checkpoint: Path, output: Path, name: str
 ) -> list[str]:
-    heldout = small.HELDOUT_EVALUATOR.replace(
+    heldout_template = (
+        dense1b.HELDOUT_EVALUATOR
+        if str(item["model"]) == "1b"
+        else small.HELDOUT_EVALUATOR
+    )
+    heldout = heldout_template.replace(
         "eval_on_finish: true", "eval_on_finish: false, eval_on_startup: true"
     )
     arguments = common.upsert(

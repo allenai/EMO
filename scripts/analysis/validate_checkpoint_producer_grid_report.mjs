@@ -58,18 +58,20 @@ for (const run of current.dclm333mIntegratedRuns || []) {
 }
 
 const columnIndex = new Map([
-  ["474m:dclm333m:32", 4],
-  ["474m:dclm333m:64", 5],
-  ["474m:dclm333m:128", 6],
-  ["474m:dclm3b:128", 9],
-  ["474m:dclm3b:256", 10],
-  ["474m:dclm3b:512", 11],
-  ["153m:dclm333m:32", 12],
-  ["153m:dclm333m:64", 13],
-  ["153m:dclm333m:128", 14],
-  ["153m:dclm3b:128", 17],
-  ["153m:dclm3b:256", 18],
-  ["153m:dclm3b:512", 19],
+  ["1b:dclm333m:32", 0],
+  ["1b:dclm333m:64", 1],
+  ["474m:dclm333m:32", 6],
+  ["474m:dclm333m:64", 7],
+  ["474m:dclm333m:128", 8],
+  ["474m:dclm3b:128", 11],
+  ["474m:dclm3b:256", 12],
+  ["474m:dclm3b:512", 13],
+  ["153m:dclm333m:32", 14],
+  ["153m:dclm333m:64", 15],
+  ["153m:dclm333m:128", 16],
+  ["153m:dclm3b:128", 19],
+  ["153m:dclm3b:256", 20],
+  ["153m:dclm3b:512", 21],
 ]);
 const rows = new Map();
 for (const match of rendered.get("validation-summary").matchAll(/<tr><td>E([0-9,]+)<\/td>(.*?)<\/tr>/g)) {
@@ -154,7 +156,7 @@ for (const evaluator of current.smallEvaluators || []) {
 }
 for (const run of current.dclm333mIntegratedRuns || []) {
   if (!["submitted", "scheduled", "running"].includes(run.status)) continue;
-  const label = `${run.model === "474m" ? "474M" : "153M"} · Pool-333M · BS${run.batchSequences}`;
+  const label = `${run.model === "1b" ? "1B" : run.model === "474m" ? "474M" : "153M"} · Pool-333M · BS${run.batchSequences}`;
   const rowPattern = new RegExp(
     `<tr><td>E${run.currentEpoch}<\\/td><td>${label.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}<\\/td>(.*?)<\\/tr>`,
   );
@@ -169,9 +171,10 @@ for (const run of current.dclm333mIntegratedRuns || []) {
 }
 
 const html = fs.readFileSync(path.join(reportRoot, "wsd_checkpoint_producer_grid.html"), "utf8");
-if (!html.includes('<th colspan="8" class="model-start">474M</th>') ||
+if (!html.includes('<th colspan="6" class="model-start">1B</th>') ||
+    !html.includes('<th colspan="8" class="model-start">474M</th>') ||
     !html.includes('<th colspan="8" class="model-start">153M</th>') ||
-    (html.match(/Pool-333M/g) || []).length !== 2) {
+    (html.match(/Pool-333M/g) || []).length !== 3) {
   throw new Error("Pool-333M summary header topology is stale");
 }
 

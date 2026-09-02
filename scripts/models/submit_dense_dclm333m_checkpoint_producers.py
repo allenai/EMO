@@ -58,7 +58,7 @@ def plan_rows(config: dict[str, Any]) -> list[dict[str, Any]]:
     rows = []
     for item in config["producerCoordinates"]:
         estimate = runner.runtime_estimate(item, config["runtimeEstimate"])
-        use_allocated_slot = item["model"] == "474m"
+        use_allocated_slot = item["model"] in {"1b", "474m"}
         rows.append(
             {
                 "model": item["model"],
@@ -164,7 +164,7 @@ def spec_for(
     estimate = runner.runtime_estimate(item, config["runtimeEstimate"])
     min_runtime = (
         int(estimate["minRuntimeSeconds"])
-        if item["model"] == "474m" and not omit_min_runtime
+        if item["model"] in {"1b", "474m"} and not omit_min_runtime
         else 0
     )
     spec = copy.deepcopy(
@@ -302,7 +302,7 @@ def register_new_runs(
             continue
         if output in outputs:
             raise RuntimeError(f"report already contains output writer {output}")
-        records[coordinate_id] = {
+        record = {
             "id": coordinate_id,
             "role": "integrated_checkpoint_producer_and_evaluator",
             "policy": runner.POLICY,
@@ -323,17 +323,34 @@ def register_new_runs(
             "status": "submitted",
             "experiment": experiment,
             "revision": revision,
-            "minRuntime": "omitted",
+            "minRuntime": (
+                f"{runner.runtime_estimate(item, config['runtimeEstimate'])['minRuntimeSeconds']}s"
+                if item["model"] in {"1b", "474m"}
+                else "omitted"
+            ),
             "output": output,
             "beakerStatus": "submitted",
-            "wdPruningGate": {
+        }
+        if item["model"] == "1b":
+            record["comparisonGate"] = {
+                "matchedPostEpochs": [8, 16],
+                "criterion": "same_coordinate_strictly_lower_healthy_matched_post_at_e8_and_e16",
+                "action": "notify_only_user_decides_pruning",
+                "status": "pending",
+            }
+            record["hardStopEpoch"] = 32
+            record["futureConditionalCoordinate"] = (
+                "dense-1b-dclm333m-bs32-lr5e-4-wd1.0"
+            )
+        else:
+            record["wdPruningGate"] = {
                 "decisionEpoch": 16 if item["model"] == "474m" else 32,
                 "candidateToStop": "0.1",
                 "comparator": "0.3",
                 "criterion": "wd0.3_strictly_lower_healthy_matched_post_validationExact",
                 "status": "pending",
-            },
-        }
+            }
+        records[coordinate_id] = record
         outputs.add(output)
     ordered_ids = [str(item["id"]) for item in config["producerCoordinates"]]
     if set(records) != set(ordered_ids):
