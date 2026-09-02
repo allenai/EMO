@@ -68,7 +68,7 @@
       "submittedAt": "2026-08-30T18:44:39.921085+00:00",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:40:50.033601+00:00",
+        "checkedAt": "2026-09-02T19:20:26.517983+00:00",
         "beakerState": "failed",
         "latestStep": 247415,
         "totalSteps": 2636718,
@@ -149,7 +149,7 @@
       "submittedAt": "2026-08-30T18:44:41.518569+00:00",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:40:50.187264+00:00",
+        "checkedAt": "2026-09-02T19:20:26.664378+00:00",
         "beakerState": "failed",
         "latestStep": 167885,
         "totalSteps": 1318359,
@@ -222,7 +222,7 @@
       "beakerStatus": "failed",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:41:00.714755+00:00",
+        "checkedAt": "2026-09-02T19:20:37.408795+00:00",
         "beakerState": "failed",
         "latestStep": 193350,
         "totalSteps": 1318359,
@@ -290,7 +290,7 @@
       "beakerStatus": "failed",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:41:11.902910+00:00",
+        "checkedAt": "2026-09-02T19:20:48.280252+00:00",
         "beakerState": "failed",
         "latestStep": 202830,
         "totalSteps": 1318359,
@@ -352,11 +352,11 @@
       "beakerStatus": "running",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:41:26.813124+00:00",
+        "checkedAt": "2026-09-02T19:21:01.709174+00:00",
         "beakerState": "running",
-        "latestStep": 278261,
+        "latestStep": 285069,
         "totalSteps": 659179,
-        "run": "mlgoggcp2026-09-02T16",
+        "run": "mlgoggcp2026-09-02T18",
         "criticalSignals": []
       }
     },
@@ -436,7 +436,7 @@
       "beakerStatus": "failed",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:41:27.318834+00:00",
+        "checkedAt": "2026-09-02T19:21:02.058290+00:00",
         "beakerState": "failed",
         "latestStep": 125420,
         "totalSteps": 659179,
@@ -496,7 +496,7 @@
       "beakerStatus": "failed",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:41:44.714156+00:00",
+        "checkedAt": "2026-09-02T19:21:19.483125+00:00",
         "beakerState": "failed",
         "latestStep": 342425,
         "totalSteps": 1318359,
@@ -556,7 +556,7 @@
       "beakerStatus": "failed",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:42:03.158177+00:00",
+        "checkedAt": "2026-09-02T19:21:35.783828+00:00",
         "beakerState": "failed",
         "latestStep": 341520,
         "totalSteps": 1318359,
@@ -625,7 +625,7 @@
       "beakerStatus": "failed",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:42:09.654315+00:00",
+        "checkedAt": "2026-09-02T19:21:42.211001+00:00",
         "beakerState": "failed",
         "latestStep": 125905,
         "totalSteps": 659179,
@@ -689,7 +689,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:09.535596+00:00",
+        "checkedAt": "2026-09-02T19:22:41.569411+00:00",
         "beakerState": "complete",
         "latestStep": 659179,
         "totalSteps": 659179,
@@ -753,7 +753,7 @@
       "beakerStatus": "failed",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:12.136278+00:00",
+        "checkedAt": "2026-09-02T19:22:44.249415+00:00",
         "beakerState": "failed",
         "latestStep": 42810,
         "totalSteps": 329589,
@@ -827,7 +827,7 @@
       "beakerStatus": "failed",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:14.786222+00:00",
+        "checkedAt": "2026-09-02T19:22:47.199794+00:00",
         "beakerState": "failed",
         "latestStep": 41995,
         "totalSteps": 329589,
@@ -893,7 +893,7 @@
       "beakerStatus": "failed",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:19.898137+00:00",
+        "checkedAt": "2026-09-02T19:22:52.571127+00:00",
         "beakerState": "failed",
         "latestStep": 85960,
         "totalSteps": 329589,
@@ -960,7 +960,7 @@
       "beakerStatus": "failed",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:24.865980+00:00",
+        "checkedAt": "2026-09-02T19:22:57.293800+00:00",
         "beakerState": "failed",
         "latestStep": 84730,
         "totalSteps": 329589,
@@ -1008,7 +1008,7 @@
       "submittedAt": "2026-08-30T18:44:54.792850+00:00",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:25.172892+00:00",
+        "checkedAt": "2026-09-02T19:22:57.551470+00:00",
         "beakerState": "complete",
         "latestStep": 183106,
         "totalSteps": 183106,
@@ -1117,7 +1117,7 @@
           "beakerStatus": "complete",
           "wandbHealth": {
             "status": "healthy",
-            "checkedAt": "2026-09-02T17:43:25.172733+00:00",
+            "checkedAt": "2026-09-02T19:22:57.551383+00:00",
             "beakerState": "complete",
             "latestStep": 274659,
             "totalSteps": 274659,
@@ -1192,7 +1192,7 @@
       "submittedAt": "2026-08-30T18:44:56.155745+00:00",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:25.644548+00:00",
+        "checkedAt": "2026-09-02T19:22:58.007371+00:00",
         "beakerState": "complete",
         "latestStep": 91553,
         "totalSteps": 91553,
@@ -1323,7 +1323,7 @@
           "beakerStatus": "complete",
           "wandbHealth": {
             "status": "healthy",
-            "checkedAt": "2026-09-02T17:43:25.483074+00:00",
+            "checkedAt": "2026-09-02T19:22:57.870906+00:00",
             "beakerState": "complete",
             "latestStep": 137330,
             "totalSteps": 137330,
@@ -1382,7 +1382,7 @@
           "beakerStatus": "complete",
           "wandbHealth": {
             "status": "healthy",
-            "checkedAt": "2026-09-02T17:43:25.644426+00:00",
+            "checkedAt": "2026-09-02T19:22:58.007290+00:00",
             "beakerState": "complete",
             "latestStep": 183106,
             "totalSteps": 183106,
@@ -1432,7 +1432,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-02T17:44:36.726268+00:00",
+  "updatedAt": "2026-09-02T19:24:12.561222+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",
@@ -1455,7 +1455,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:53.068056+00:00",
+        "checkedAt": "2026-09-02T19:23:25.453351+00:00",
         "beakerState": "complete",
         "latestStep": 183106,
         "totalSteps": 183106,
@@ -1513,7 +1513,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:54.278420+00:00",
+        "checkedAt": "2026-09-02T19:23:28.814477+00:00",
         "beakerState": "complete",
         "latestStep": 183106,
         "totalSteps": 183106,
@@ -1572,7 +1572,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:55.087044+00:00",
+        "checkedAt": "2026-09-02T19:23:29.560255+00:00",
         "beakerState": "complete",
         "latestStep": 91553,
         "totalSteps": 91553,
@@ -1632,7 +1632,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:55.879695+00:00",
+        "checkedAt": "2026-09-02T19:23:30.385096+00:00",
         "beakerState": "complete",
         "latestStep": 91553,
         "totalSteps": 91553,
@@ -1692,7 +1692,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:56.634238+00:00",
+        "checkedAt": "2026-09-02T19:23:31.265529+00:00",
         "beakerState": "complete",
         "latestStep": 91553,
         "totalSteps": 91553,
@@ -1751,7 +1751,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:57.255405+00:00",
+        "checkedAt": "2026-09-02T19:23:31.966043+00:00",
         "beakerState": "complete",
         "latestStep": 45777,
         "totalSteps": 45777,
@@ -1810,7 +1810,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:58.065944+00:00",
+        "checkedAt": "2026-09-02T19:23:32.838065+00:00",
         "beakerState": "complete",
         "latestStep": 91553,
         "totalSteps": 91553,
@@ -1869,7 +1869,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:59.784701+00:00",
+        "checkedAt": "2026-09-02T19:23:33.630812+00:00",
         "beakerState": "complete",
         "latestStep": 45777,
         "totalSteps": 45777,
@@ -1928,7 +1928,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:02.031207+00:00",
+        "checkedAt": "2026-09-02T19:23:35.822547+00:00",
         "beakerState": "complete",
         "latestStep": 366211,
         "totalSteps": 366211,
@@ -1987,7 +1987,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:04.214538+00:00",
+        "checkedAt": "2026-09-02T19:23:38.060935+00:00",
         "beakerState": "complete",
         "latestStep": 366211,
         "totalSteps": 366211,
@@ -2046,7 +2046,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:05.409950+00:00",
+        "checkedAt": "2026-09-02T19:23:39.518063+00:00",
         "beakerState": "complete",
         "latestStep": 183106,
         "totalSteps": 183106,
@@ -2106,7 +2106,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:06.808088+00:00",
+        "checkedAt": "2026-09-02T19:23:40.825798+00:00",
         "beakerState": "complete",
         "latestStep": 183106,
         "totalSteps": 183106,
@@ -2165,7 +2165,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:08.239118+00:00",
+        "checkedAt": "2026-09-02T19:23:42.241388+00:00",
         "beakerState": "complete",
         "latestStep": 183106,
         "totalSteps": 183106,
@@ -2224,7 +2224,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:09.131737+00:00",
+        "checkedAt": "2026-09-02T19:23:43.260344+00:00",
         "beakerState": "complete",
         "latestStep": 91553,
         "totalSteps": 91553,
@@ -2283,7 +2283,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:10.079544+00:00",
+        "checkedAt": "2026-09-02T19:23:44.310444+00:00",
         "beakerState": "complete",
         "latestStep": 91553,
         "totalSteps": 91553,
@@ -2342,7 +2342,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:11.832561+00:00",
+        "checkedAt": "2026-09-02T19:23:46.249297+00:00",
         "beakerState": "complete",
         "latestStep": 274659,
         "totalSteps": 274659,
@@ -2401,7 +2401,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:12.939409+00:00",
+        "checkedAt": "2026-09-02T19:23:47.357233+00:00",
         "beakerState": "complete",
         "latestStep": 137330,
         "totalSteps": 137330,
@@ -2460,7 +2460,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:14.343738+00:00",
+        "checkedAt": "2026-09-02T19:23:49.068470+00:00",
         "beakerState": "complete",
         "latestStep": 183106,
         "totalSteps": 183106,
@@ -2519,7 +2519,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:17.914369+00:00",
+        "checkedAt": "2026-09-02T19:23:51.903358+00:00",
         "beakerState": "complete",
         "latestStep": 457764,
         "totalSteps": 457764,
@@ -2580,7 +2580,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:19.867836+00:00",
+        "checkedAt": "2026-09-02T19:23:54.039628+00:00",
         "beakerState": "complete",
         "latestStep": 366211,
         "totalSteps": 366211,
@@ -2640,7 +2640,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:22.890835+00:00",
+        "checkedAt": "2026-09-02T19:23:57.181404+00:00",
         "beakerState": "complete",
         "latestStep": 549317,
         "totalSteps": 549317,
@@ -2700,7 +2700,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:24.405094+00:00",
+        "checkedAt": "2026-09-02T19:23:58.810359+00:00",
         "beakerState": "complete",
         "latestStep": 228882,
         "totalSteps": 228882,
@@ -2760,7 +2760,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:25.084535+00:00",
+        "checkedAt": "2026-09-02T19:23:59.421501+00:00",
         "beakerState": "complete",
         "latestStep": 45777,
         "totalSteps": 45777,
@@ -2820,7 +2820,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:28.653005+00:00",
+        "checkedAt": "2026-09-02T19:24:03.099581+00:00",
         "beakerState": "complete",
         "latestStep": 640870,
         "totalSteps": 640870,
@@ -2880,7 +2880,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:29.443332+00:00",
+        "checkedAt": "2026-09-02T19:24:03.712505+00:00",
         "beakerState": "complete",
         "latestStep": 45777,
         "totalSteps": 45777,
@@ -2940,7 +2940,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:30.043204+00:00",
+        "checkedAt": "2026-09-02T19:24:04.249094+00:00",
         "beakerState": "complete",
         "latestStep": 22889,
         "totalSteps": 22889,
@@ -3000,7 +3000,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:30.650589+00:00",
+        "checkedAt": "2026-09-02T19:24:04.797214+00:00",
         "beakerState": "complete",
         "latestStep": 22889,
         "totalSteps": 22889,
@@ -3060,7 +3060,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:32.241793+00:00",
+        "checkedAt": "2026-09-02T19:24:06.969660+00:00",
         "beakerState": "complete",
         "latestStep": 274659,
         "totalSteps": 274659,
@@ -3120,7 +3120,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:33.126440+00:00",
+        "checkedAt": "2026-09-02T19:24:07.837547+00:00",
         "beakerState": "complete",
         "latestStep": 91553,
         "totalSteps": 91553,
@@ -3171,18 +3171,18 @@
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1_throughput_recovery_r2/step659179",
       "producerOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1_throughput_recovery_r2",
       "endpointStep": 732422,
-      "status": "running",
+      "status": "complete",
       "experiment": "01M1H0DPEEMSHJJ4H6S5ZB007M",
       "revision": "a08cf755a31d92016e4238e13cfafbd217f2bce9",
       "manifest": "scripts/models/manifests/dense-small-pool3b-checkpoint-producers-v2.json",
       "minRuntime": "8h",
       "submittedAt": "2026-09-02T12:10:11.647515+00:00",
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:35.977746+00:00",
-        "beakerState": "running",
-        "latestStep": 715711,
+        "checkedAt": "2026-09-02T19:24:11.648681+00:00",
+        "beakerState": "complete",
+        "latestStep": 732422,
         "totalSteps": 732422,
         "run": "k5r39653",
         "criticalSignals": []
@@ -3190,7 +3190,32 @@
       "jobs": [
         "01M1H0DPJC4SCH4ZFA8PJWACP8"
       ],
-      "job": "01M1H0DPJC4SCH4ZFA8PJWACP8"
+      "job": "01M1H0DPJC4SCH4ZFA8PJWACP8",
+      "postDecayResult": {
+        "batchSequences": 256,
+        "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1_throughput_recovery_r2/.constant_checkpoint_evaluator_pool3b_v1/post_decay_runs/e256/step732422",
+        "comparisonGroup": "post_decay",
+        "decayEmbeddings": true,
+        "dynamicRepacking": true,
+        "epoch": 256,
+        "gap": 0.02112,
+        "lr": "2e-3",
+        "model": "153m",
+        "phase": "post_decay",
+        "policy": "dense_small_pool3b_checkpoint_evaluator_v1",
+        "producerPolicy": "dense_small_pool3b_checkpoint_producers_v2",
+        "source": "independent_wsd_decay_and_heldout_eval",
+        "sourcePreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1_throughput_recovery_r2/step659179",
+        "status": "complete",
+        "train": 3.184,
+        "validation": 3.205,
+        "validationExact": 3.20512,
+        "variant": "DR+WT+EmbedWD",
+        "wandb": "k5r39653",
+        "wd": "0.1",
+        "weightTying": true
+      },
+      "resolvedPostEpoch": 256
     },
     {
       "id": "dense-153m-dclm3b-bs512-lr2e-3-wd0.3-post-e64-v1",
@@ -3206,18 +3231,18 @@
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs512_dr_wt_embwd_lr2e-3_wd0.3/step82397",
       "producerOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs512_dr_wt_embwd_lr2e-3_wd0.3",
       "endpointStep": 91553,
-      "status": "running",
+      "status": "complete",
       "experiment": "01M1H0E3HKD10DBPHBQ66CQ634",
       "revision": "2ae7c7f6f5202aeaefbcd21c8bd34916dd1f327b",
       "manifest": "scripts/models/manifests/dense-small-pool3b-bs512-checkpoint-producers-v1.json",
       "minRuntime": "3h",
       "submittedAt": "2026-09-02T12:10:25.101127+00:00",
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:44:36.726087+00:00",
-        "beakerState": "running",
-        "latestStep": 89517,
+        "checkedAt": "2026-09-02T19:24:12.560710+00:00",
+        "beakerState": "complete",
+        "latestStep": 91553,
         "totalSteps": 91553,
         "run": "lav5qlg3",
         "criticalSignals": []
@@ -3225,7 +3250,32 @@
       "jobs": [
         "01M1H0E3PEZE6RVFWT2VBX8QPV"
       ],
-      "job": "01M1H0E3PEZE6RVFWT2VBX8QPV"
+      "job": "01M1H0E3PEZE6RVFWT2VBX8QPV",
+      "postDecayResult": {
+        "batchSequences": 512,
+        "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs512_dr_wt_embwd_lr2e-3_wd0.3/.constant_checkpoint_evaluator_pool3b_v1/post_decay_runs/e64/step91553",
+        "comparisonGroup": "post_decay",
+        "decayEmbeddings": true,
+        "dynamicRepacking": true,
+        "epoch": 64,
+        "gap": 0.04356,
+        "lr": "2e-3",
+        "model": "153m",
+        "phase": "post_decay",
+        "policy": "dense_small_pool3b_checkpoint_evaluator_v1",
+        "producerPolicy": "dense_small_pool3b_bs512_checkpoint_producers_v1",
+        "source": "independent_wsd_decay_and_heldout_eval",
+        "sourcePreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs512_dr_wt_embwd_lr2e-3_wd0.3/step82397",
+        "status": "complete",
+        "train": 3.231,
+        "validation": 3.275,
+        "validationExact": 3.27456,
+        "variant": "DR+WT+EmbedWD",
+        "wandb": "lav5qlg3",
+        "wd": "0.3",
+        "weightTying": true
+      },
+      "resolvedPostEpoch": 64
     }
   ],
   "smallEvaluatorCount": 31,
@@ -3313,7 +3363,7 @@
       "job": "01M1EVAHBHS4V94HJ9CYXNY5QA",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:32.006290+00:00",
+        "checkedAt": "2026-09-02T19:23:04.342860+00:00",
         "beakerState": "failed",
         "latestStep": 59765,
         "totalSteps": 73168,
@@ -3430,7 +3480,7 @@
       "job": "01M1G6MAK8P5Z7HBF6HRAN52ER",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:25.834079+00:00",
+        "checkedAt": "2026-09-02T19:22:58.193334+00:00",
         "beakerState": "complete",
         "latestStep": 81299,
         "totalSteps": 81299,
@@ -3570,7 +3620,7 @@
       "job": "01M1D6QTK0RJBKFGG3KSNEZ676",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:25.783123+00:00",
+        "checkedAt": "2026-09-02T19:22:58.152108+00:00",
         "beakerState": "complete",
         "latestStep": 60975,
         "totalSteps": 60975,
@@ -3742,7 +3792,7 @@
       "job": "01M1EV9SA37198P0YDBTW2XGWX",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:25.790249+00:00",
+        "checkedAt": "2026-09-02T19:22:58.163573+00:00",
         "beakerState": "complete",
         "latestStep": 81299,
         "totalSteps": 81299,
@@ -3835,7 +3885,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:25.801094+00:00",
+        "checkedAt": "2026-09-02T19:22:58.189007+00:00",
         "beakerState": "complete",
         "latestStep": 20325,
         "totalSteps": 20325,
@@ -3928,7 +3978,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:25.812946+00:00",
+        "checkedAt": "2026-09-02T19:22:58.182693+00:00",
         "beakerState": "complete",
         "latestStep": 20325,
         "totalSteps": 20325,
@@ -4067,7 +4117,7 @@
       "job": "01M1GV14BPVHX5HG4CHWNCYHGT",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:43.445041+00:00",
+        "checkedAt": "2026-09-02T19:23:16.680022+00:00",
         "beakerState": "failed",
         "latestStep": 256090,
         "totalSteps": 256090,
@@ -4137,7 +4187,7 @@
       "job": "01M1FB81WB0Z5FDPT6XFBWEHNN",
       "wandbHealth": {
         "status": "critical",
-        "checkedAt": "2026-09-02T17:43:33.779258+00:00",
+        "checkedAt": "2026-09-02T19:23:08.182826+00:00",
         "beakerState": "failed",
         "latestStep": 26936,
         "totalSteps": 36584,
@@ -4285,7 +4335,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:25.788820+00:00",
+        "checkedAt": "2026-09-02T19:22:58.211599+00:00",
         "beakerState": "complete",
         "latestStep": 162598,
         "totalSteps": 162598,
@@ -4343,7 +4393,8 @@
         64,
         96,
         128,
-        160
+        160,
+        192
       ],
       "postDecayResults": {
         "32": {
@@ -4445,16 +4496,36 @@
           "variant": "DR+WT+EmbedWD",
           "wandb": "4e8w7ibu",
           "wd": "0.3"
+        },
+        "192": {
+          "batchSequences": 64,
+          "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm333m/bs64_dr_wt_embwd_lr2e-3_wd0.3/.dclm333m_integrated_producer_eval_v1/post_decay_runs/e192/step243897",
+          "comparisonGroup": "post_decay",
+          "epoch": 192,
+          "gap": 0.38659,
+          "lr": "2e-3",
+          "model": "153m",
+          "phase": "post_decay",
+          "policy": "dense_dclm333m_integrated_producer_eval_v1",
+          "source": "integrated_isolated_wsd_decay_and_heldout_eval",
+          "sourcePreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm333m/bs64_dr_wt_embwd_lr2e-3_wd0.3/step219506",
+          "status": "complete",
+          "train": 3.069,
+          "validation": 3.456,
+          "validationExact": 3.45559,
+          "variant": "DR+WT+EmbedWD",
+          "wandb": "mvwbrxor",
+          "wd": "0.3"
         }
       },
       "currentEpoch": 192,
-      "currentPhase": "post",
-      "status": "running",
+      "currentPhase": "complete",
+      "status": "complete",
       "experiment": "01M1HAKX2W9A09GYHWBJGVBN2Q",
       "revision": "5c8829577bd115f87c2173ca15fce244f9015762",
       "minRuntimeOmitted": false,
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm333m/bs64_dr_wt_embwd_lr2e-3_wd0.3",
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "experimentHistory": [
         {
           "experiment": "01M1C805GE5WSP3FTM0105VNZX",
@@ -4506,14 +4577,13 @@
       "job": "01M1HAKX6ECAWX9J83GG2XEQZP",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:28.165287+00:00",
-        "beakerState": "running",
-        "latestStep": 223987,
+        "checkedAt": "2026-09-02T19:23:02.075806+00:00",
+        "beakerState": "complete",
+        "latestStep": 243897,
         "totalSteps": 243897,
         "run": "mvwbrxor",
         "criticalSignals": []
-      },
-      "currentPostEpoch": 192
+      }
     },
     {
       "id": "dense-153m-dclm333m-bs128-lr2e-3-wd0.1",
@@ -4653,7 +4723,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:25.813197+00:00",
+        "checkedAt": "2026-09-02T19:22:58.220021+00:00",
         "beakerState": "complete",
         "latestStep": 81299,
         "totalSteps": 81299,
@@ -4798,7 +4868,7 @@
       "beakerStatus": "complete",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-02T17:43:25.788724+00:00",
+        "checkedAt": "2026-09-02T19:22:58.204657+00:00",
         "beakerState": "complete",
         "latestStep": 81299,
         "totalSteps": 81299,
