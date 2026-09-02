@@ -43,3 +43,9 @@ MODE=beaker bash scripts/sparse_experts/model_scripts/sparse_8of128_10b.sh
 
 Checkpoints land under `/weka/oe-training-default/ryanwang/EMO/sparse_experts/<runname>/`;
 W&B project `emo-extension`, tags `[pretraining, sparse_experts, sparse_h256]`.
+
+## Launched runs
+
+| run | Beaker experiment | commit | submitted |
+|---|---|---|---|
+| `sparse_8of1024_10b` | https://beaker.org/ex/01M1HYDT9HCAHFR6FW75ATNAJM (allocated, urgent, 8 nodes) | f7813f54 | 2026-09-02 |
