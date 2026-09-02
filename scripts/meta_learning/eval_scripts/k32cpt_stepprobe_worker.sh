@@ -72,8 +72,11 @@ eval_round() {
     done
     local pid
     for pid in "${pids[@]:-}"; do
-        [ -n "$pid" ] && wait "$pid"
+        if [ -n "$pid" ]; then wait "$pid"; fi
     done
+    # explicit success: with every output already present the pids array is empty and
+    # the loop's last test is falsy -- without this, set -e kills the worker.
+    return 0
 }
 
 echo "=== eval round: base (step 0)"
