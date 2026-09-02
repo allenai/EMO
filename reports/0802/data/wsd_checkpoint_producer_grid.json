@@ -744,6 +744,8 @@
       "stopAuthorized": true,
       "stopAfterEpoch": 32,
       "terminalReason": "user_authorized_474m_bs512_e32_ceiling",
+      "futureEvaluatorSubmissionsAuthorized": false,
+      "evaluatorSubmissionPolicy": "no_new_submissions_user_authorized_2026-09-02",
       "experiment": "01M1EWJMB4M2RYM9BMF9HV3W0Q",
       "revision": "2ae7c7f6f5202aeaefbcd21c8bd34916dd1f327b",
       "submittedAt": "2026-09-01T16:24:34.304896+00:00",
@@ -815,6 +817,8 @@
       "stopAuthorized": true,
       "stopAfterEpoch": 32,
       "terminalReason": "user_authorized_474m_bs512_e32_ceiling",
+      "futureEvaluatorSubmissionsAuthorized": false,
+      "evaluatorSubmissionPolicy": "no_new_submissions_user_authorized_2026-09-02",
       "experiment": "01M1EWJNNV91B8B4EKXV9NR2ZR",
       "revision": "2ae7c7f6f5202aeaefbcd21c8bd34916dd1f327b",
       "submittedAt": "2026-09-01T16:24:34.305310+00:00",
@@ -879,6 +883,8 @@
       "stopAuthorized": true,
       "stopAfterEpoch": 64,
       "terminalReason": "user_authorized_bs512_e64_ceiling",
+      "futureEvaluatorSubmissionsAuthorized": false,
+      "evaluatorSubmissionPolicy": "no_new_submissions_user_authorized_2026-09-02",
       "experiment": "01M1EWJQ1QNM07QHM01B68P81B",
       "revision": "2ae7c7f6f5202aeaefbcd21c8bd34916dd1f327b",
       "submittedAt": "2026-09-01T16:24:34.305332+00:00",
@@ -944,6 +950,8 @@
       "stopAuthorized": true,
       "stopAfterEpoch": 64,
       "terminalReason": "user_authorized_bs512_e64_ceiling",
+      "futureEvaluatorSubmissionsAuthorized": false,
+      "evaluatorSubmissionPolicy": "no_new_submissions_user_authorized_2026-09-02",
       "experiment": "01M1EWJRD1GPCADHC3FQQHTTTQ",
       "revision": "2ae7c7f6f5202aeaefbcd21c8bd34916dd1f327b",
       "submittedAt": "2026-09-01T16:24:34.305345+00:00",
@@ -1422,7 +1430,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-02T14:58:30.317530+00:00",
+  "updatedAt": "2026-09-02T15:01:41.161616+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",
