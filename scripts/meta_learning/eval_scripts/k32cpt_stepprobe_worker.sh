@@ -67,15 +67,28 @@ eval_round() {
             ${subset:+--subset-ckpt "$subset" --selection "$sel"} \
             --tokens-root "$TOKENS_DIR" --clusters "$idx" \
             --max-tokens-per-cluster "$EVAL_TOKENS" --batch-size 4 \
-            --out "$out" > "${RUNS}/evallog_${tag}_g${g}.log" 2>&1 &
+            --out "$out" > "${RUNS}/evallog_${tag}_r${RANK}g${g}.log" 2>&1 &
         pids+=($!)
     done
     local pid
     for pid in "${pids[@]:-}"; do
-        if [ -n "$pid" ]; then wait "$pid"; fi
+        if [ -n "$pid" ]; then wait "$pid" || true; fi   # tolerate; retry below
     done
-    # explicit success: with every output already present the pids array is empty and
-    # the loop's last test is falsy -- without this, set -e kills the worker.
+    # retry missing shards once, serially (a transient failure of one eval process must
+    # not kill the whole 4-node gang); only die if a shard is still missing after that.
+    for g in $(seq 0 $((NPROC - 1))); do
+        idx=$((RANK * NPROC + g))
+        [ "$idx" -lt 32 ] || continue
+        out="${EV}/ce_${tag}_shard$(printf '%02d' "$idx").json"
+        [ -f "$out" ] && continue
+        echo "!!! eval ${tag} shard ${idx} missing; retrying once"
+        CUDA_VISIBLE_DEVICES=$g PYTHONPATH=.:src python -u scripts/meta_learning/eval_scripts/probe_eval_ce.py eval \
+            --base-snapshot "$BASE_SNAP" --config-from "$BASE_CKPT" \
+            ${subset:+--subset-ckpt "$subset" --selection "$sel"} \
+            --tokens-root "$TOKENS_DIR" --clusters "$idx" \
+            --max-tokens-per-cluster "$EVAL_TOKENS" --batch-size 4 \
+            --out "$out" >> "${RUNS}/evallog_${tag}_r${RANK}g${g}.log" 2>&1
+    done
     return 0
 }
 
