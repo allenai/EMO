@@ -1,0 +1,27 @@
+{
+  "policy": "dense_small_pool3b_bs256_e384_continuation_v1",
+  "sourcePool": "dclm3b",
+  "sourcePoolTokens": 3000000000,
+  "targetPool": "dclm3b",
+  "targetPoolTokens": 3000000000,
+  "repeatedManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b_flat_dynamic_repacking.json",
+  "compositeManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+  "poolAudit": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_1b_3b_9b.pool.json",
+  "sourceEpoch": 256,
+  "targetEpochs": [320, 384],
+  "evaluationEpochs": [320, 384],
+  "producerCoordinate": {
+    "id": "dense-153m-dclm3b-bs256-lr2e-3-wd0.1",
+    "model": "153m",
+    "batchSequences": 256,
+    "gpuCount": 8,
+    "rankMicrobatchSequences": 16,
+    "gradientAccumulationSteps": 2,
+    "learningRate": "2e-3",
+    "weightDecay": "0.1",
+    "canonicalOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1",
+    "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1_throughput_recovery_r2",
+    "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1_throughput_recovery_r2/step659179",
+    "baseExperiment": "01KZ6Q4DJ8J994A6SQ39MEGTZ2"
+  }
+}
