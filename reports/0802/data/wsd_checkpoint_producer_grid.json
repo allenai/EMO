@@ -1422,7 +1422,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-02T14:10:26.578592+00:00",
+  "updatedAt": "2026-09-02T14:58:30.317530+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",
@@ -3919,14 +3919,12 @@
         64,
         80,
         96,
-        112,
-        128
+        112
       ],
       "evaluationEpochs": [
         32,
         64,
-        96,
-        128
+        96
       ],
       "resolvedCheckpointEpochs": [
         16,
@@ -4006,6 +4004,10 @@
       "currentEpoch": 112,
       "currentPhase": "producer",
       "status": "running",
+      "stopAuthorized": true,
+      "stopAfterEpoch": 112,
+      "stopAfterCheckpointStep": 256090,
+      "terminalReason": "user_authorized_bs32_current_predecay_checkpoint_ceiling",
       "experiment": "01M1EVAKXR6PKAXB2Y5XX4W4AX",
       "revision": "ff69bd76d7d3e1334dd0a9edcccc6795cd9738ed",
       "minRuntime": "omitted",
