@@ -24,6 +24,7 @@ RUNNER = "scripts/models/run_dense_dclm333m_checkpoint_producer.py"
 REPORT = Path("reports/0802/data/wsd_checkpoint_producer_grid.json")
 REPORT_JS = REPORT.with_suffix(".js")
 REPORT_JS_PREFIX = "window.ICSL_CHECKPOINT_PRODUCER_GRID="
+MAX_MIN_RUNTIME_SECONDS = 8 * 60 * 60
 
 
 def command(arguments: list[str], *, input_text: str | None = None) -> str:
@@ -54,11 +55,21 @@ def format_duration(seconds: float) -> str:
     return " ".join(pieces)
 
 
+def reserved_min_runtime(
+    item: dict[str, Any], runtime_policy: dict[str, Any], *, omitted: bool = False
+) -> int:
+    if omitted or item["model"] not in {"1b", "474m"}:
+        return 0
+    estimate = runner.runtime_estimate(item, runtime_policy)
+    return min(int(estimate["minRuntimeSeconds"]), MAX_MIN_RUNTIME_SECONDS)
+
+
 def plan_rows(config: dict[str, Any]) -> list[dict[str, Any]]:
     rows = []
     for item in config["producerCoordinates"]:
         estimate = runner.runtime_estimate(item, config["runtimeEstimate"])
         use_allocated_slot = item["model"] in {"1b", "474m"}
+        reservation = reserved_min_runtime(item, config["runtimeEstimate"])
         rows.append(
             {
                 "model": item["model"],
@@ -73,6 +84,7 @@ def plan_rows(config: dict[str, Any]) -> list[dict[str, Any]]:
                 "evaluation": format_duration(estimate["evaluationSeconds"]),
                 "raw": format_duration(estimate["rawSeconds"]),
                 "buffered": format_duration(estimate["minRuntimeSeconds"]),
+                "reserved": format_duration(reservation),
                 "slot": "allocated" if use_allocated_slot else "unallocated",
             }
         )
@@ -98,7 +110,7 @@ def print_plan(config: dict[str, Any]) -> None:
             f"| {row['model']} | {row['batch']} | {row['gpus']} | {row['lr']} | {row['wd']} | "
             f"{row['checkpoints']} | {row['evaluations']} | `{row['output']}` | "
             f"{row['training']} | {row['evaluation']} | {row['raw']} | {row['slot']} | "
-            f"{row['buffered'] if row['slot'] == 'allocated' else 'omitted'} |"
+            f"{row['reserved'] if row['slot'] == 'allocated' else 'omitted'} |"
         )
 
 
@@ -162,10 +174,10 @@ def spec_for(
 ) -> dict[str, Any]:
     config = load_manifest()
     estimate = runner.runtime_estimate(item, config["runtimeEstimate"])
-    min_runtime = (
-        int(estimate["minRuntimeSeconds"])
-        if item["model"] in {"1b", "474m"} and not omit_min_runtime
-        else 0
+    min_runtime = reserved_min_runtime(
+        item,
+        config["runtimeEstimate"],
+        omitted=omit_min_runtime,
     )
     spec = copy.deepcopy(
         json.loads(
@@ -324,8 +336,8 @@ def register_new_runs(
             "experiment": experiment,
             "revision": revision,
             "minRuntime": (
-                f"{runner.runtime_estimate(item, config['runtimeEstimate'])['minRuntimeSeconds']}s"
-                if item["model"] in {"1b", "474m"}
+                f"{reserved_min_runtime(item, config['runtimeEstimate'])}s"
+                if reserved_min_runtime(item, config["runtimeEstimate"])
                 else "omitted"
             ),
             "output": output,
