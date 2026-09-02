@@ -63,7 +63,7 @@ BS32_POLICIES: dict[str, dict[str, Any]] = {
 }
 
 BS64_474M_CONTINUATION_TARGETS = (48, 64)
-BS64_153M_WD03_CONTINUATION_TARGETS = (160,)
+BS64_153M_WD03_CONTINUATION_TARGETS = (160, 192)
 ALL_CONTINUATION_TARGETS = tuple(
     sorted(set(BS64_474M_CONTINUATION_TARGETS + BS64_153M_WD03_CONTINUATION_TARGETS))
 )
@@ -212,7 +212,7 @@ def validate_coordinate(item: dict[str, Any]) -> None:
     elif model == "153m" and max_epoch in continuation_targets:
         expected_retained = list(range(16, max_epoch + 1, 16))
         expected_evaluations = [
-            epoch for epoch in (32, 64, 96, 128, 160) if epoch <= max_epoch
+            epoch for epoch in (32, 64, 96, 128, 160, 192) if epoch <= max_epoch
         ]
     else:
         expected_retained = list(policy["retained_checkpoint_epochs"])
@@ -296,7 +296,7 @@ def coordinate_for_target(
     else:
         item["retainedCheckpointEpochs"] = list(range(16, target_epoch + 1, 16))
         item["evaluationEpochs"] = [
-            epoch for epoch in (32, 64, 96, 128, 160) if epoch <= target_epoch
+            epoch for epoch in (32, 64, 96, 128, 160, 192) if epoch <= target_epoch
         ]
     item["maxEpoch"] = target_epoch
     item["continuationTargetEpoch"] = target_epoch
