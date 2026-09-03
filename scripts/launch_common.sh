@@ -12,6 +12,9 @@
 #   BEAKER_GPUS / BEAKER_NODES  # cluster sizing when MODE=beaker
 #   PREEMPTIBLE=0               # submit as an allocated (non-preemptible) job; default 1.
 #                               # Read at `launch` call time, so set it after sourcing too.
+#   BEAKER_TORCHRUN=1           # force torchrun on the worker. The launcher only defaults to
+#                               # torchrun for multi-GPU jobs; a 1-GPU training job without it
+#                               # dies in prepare_training_environment (KeyError: 'LOCAL_RANK').
 
 # Output root for trained checkpoints.
 PREFIX="${PREFIX:-/weka/oe-training-default/ryanwang/phdbrainstorm/Emo}"
@@ -72,6 +75,8 @@ launch() {
         # for hours/days on jupiter and get killed mid-run; default 1 keeps old scripts unchanged.
         local preempt_flag=""
         [[ "${PREEMPTIBLE:-1}" == 1 ]] && preempt_flag="--preemptible"
+        local torchrun_flag=""
+        [[ "${BEAKER_TORCHRUN:-0}" == 1 ]] && torchrun_flag="--torchrun"
         python -m olmo_core.launch.beaker \
             --name "${run_name}" \
             --gpus "${BEAKER_GPUS}" \
@@ -82,6 +87,7 @@ launch() {
             --cluster "${BEAKER_CLUSTER}" \
             --beaker-image "${BEAKER_IMAGE}" \
             ${preempt_flag} \
+            ${torchrun_flag} \
             --allow-dirty \
             ${BEAKER_NO_FOLLOW:+--no-follow} \
             --priority "${BEAKER_PRIORITY}" \
