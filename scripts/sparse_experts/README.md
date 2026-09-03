@@ -46,6 +46,7 @@ W&B project `emo-extension`, tags `[pretraining, sparse_experts, sparse_h256]`.
 
 ## Launched runs
 
-| run | Beaker experiment | commit | submitted |
-|---|---|---|---|
-| `sparse_8of1024_10b` | https://beaker.org/ex/01M1HYDT9HCAHFR6FW75ATNAJM (allocated, urgent, 8 nodes) | f7813f54 | 2026-09-02 |
+| run | Beaker experiment | commit | submitted | status |
+|---|---|---|---|---|
+| `sparse_8of1024_10b` | https://beaker.org/ex/01M1HYDT9HCAHFR6FW75ATNAJM (allocated, urgent, 8 nodes) | f7813f54 | 2026-09-02 | FAILED at first step: grouped_gemm 0.3.0 `At most 512 experts are supported when batch_sizes is a CUDA tensor` (Beaker image kernel limit). Needs a fix in `MoEMLP.gmm` before relaunch. |
+| `sparse_8of512_10b` | https://beaker.org/ex/01M1M32WG6VSPKDXWVPDNZ5661 (allocated, urgent, 8 nodes) | 0235822 | 2026-09-03 | |
