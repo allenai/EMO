@@ -308,7 +308,7 @@
       "batchSequences": 256,
       "learningRate": "2e-3",
       "weightDecay": "0.1",
-      "status": "failed",
+      "status": "submitted",
       "sourceEpoch": 1,
       "sourceExperiment": "01M0P7ZCW7TACD57ATXTWYDP7N",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.1/step858",
@@ -343,24 +343,47 @@
       "currentEpoch": 112,
       "currentPhase": "repacked_shuffled_pool3b_constant_lr",
       "evaluationEnabled": false,
-      "experiment": "01M1AAHXQ1XNX4RZ2R44RGAV4R",
-      "revision": "407c10dc6c029479ffa1300dfa83b37295892b5c",
-      "jobs": [
-        "01M1AAHXTH2JNWXS27B0VR7ZQZ",
-        "01M1J79A9GAJKFNBMY4CWFRZF3"
+      "experiment": "01M1JCJ23NDBW5HPVHEBBE0CTX",
+      "revision": "d393255a69bd7ec1d040878a67b870159559831a",
+      "beakerStatus": "submitted",
+      "experimentHistory": [
+        {
+          "experiment": "01M1AAHXQ1XNX4RZ2R44RGAV4R",
+          "revision": "407c10dc6c029479ffa1300dfa83b37295892b5c",
+          "status": "stopped_invalid_retry_source_e1",
+          "maxValidatedEpoch": 96,
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1",
+          "stoppedAt": "2026-09-03T01:01:32.096090+00:00"
+        }
       ],
-      "job": "01M1J79A9GAJKFNBMY4CWFRZF3",
-      "beakerStatus": "failed",
-      "wandbHealth": {
-        "status": "healthy",
-        "checkedAt": "2026-09-03T00:45:38.984866+00:00",
-        "beakerState": "failed",
-        "latestStep": 7343,
-        "totalSteps": 659179,
-        "run": "d968ecyz2026-09-02T23",
-        "criticalSignals": []
-      },
-      "needsAttention": true
+      "continuationSourceEpoch": 96,
+      "continuationSourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1/step247192",
+      "continuationTargetEpoch": 256,
+      "continuationCheckpointEpochs": [
+        112,
+        128,
+        144,
+        160,
+        176,
+        192,
+        208,
+        224,
+        240,
+        256
+      ],
+      "evaluationEpochs": [
+        112,
+        128,
+        144,
+        160,
+        176,
+        192,
+        208,
+        224,
+        240,
+        256
+      ],
+      "submittedAt": "2026-09-03T01:01:32.097025+00:00"
     },
     {
       "id": "dense-474m-dclm3b-bs256-lr2e-3-wd0.333",
@@ -1458,7 +1481,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-03T00:47:51.691834+00:00",
+  "updatedAt": "2026-09-03T01:01:32.097060+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",
