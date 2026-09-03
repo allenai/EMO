@@ -440,6 +440,136 @@ def main():
         ok = torch.isfinite(torch.tensor(cap_ws["ce_global"])).item()
         results.append(("M4 masked same_tokens smoke", ok, f"outer CE={cap_ws['ce_global']:.4f}"))
 
+        # --- Checks A: Adam-preconditioned pseudo-step (inner_optim="adam") ---
+        # The pseudo-step must equal, per coordinate, the AdamW step the real optimizer would take
+        # on g_inner at the CURRENT moments (olmo_core.optim.adamw.adamw_step, step_factor=1),
+        # WITHOUT mutating those moments (they must be consumed unchanged by the real outer step).
+        def hand_adam_delta(weight_pre, g_local, eff_lr, group, state):
+            beta1, beta2 = group["betas"]
+            eps, wd = group["eps"], group["weight_decay"]
+            g = g_local.float()
+            if "exp_avg" in state:
+                m = get_local_tensor(state["exp_avg"]).float()
+                v = get_local_tensor(state["exp_avg_sq"]).float()
+                t = float(state["step"])
+            else:
+                m, v, t = torch.zeros_like(g), torch.zeros_like(g), 0.0
+            m2 = beta1 * m + (1 - beta1) * g
+            v2 = beta2 * v + (1 - beta2) * g * g
+            bc1, bc2 = 1 - beta1 ** (t + 1), 1 - beta2 ** (t + 1)
+            denom = v2.sqrt() / (bc2**0.5) + eps
+            upd = -(eff_lr / bc1) * (m2 / denom)
+            if wd != 0.0:
+                # decoupled weight decay uses the PRE-step weight theta (like adamw_step)
+                upd = upd - eff_lr * wd * weight_pre.float()
+            return upd
+
+        def adam_delta_matches(seed_state: bool):
+            module.inner_optim = "adam"
+            module.inner_lr = alpha
+            module.inner_lr_scale_min = module.inner_lr_scale_max = 1.0
+            for p in module._expert_params:
+                module.optim.state.pop(p, None)
+            if seed_state:
+                torch.manual_seed(7)
+                for p in module._expert_params:
+                    ref = get_local_tensor(p.data)
+                    st = module.optim.state[p]
+                    st["exp_avg"] = torch.randn_like(ref) * 0.01
+                    st["exp_avg_sq"] = torch.rand_like(ref) * 1e-4  # nonneg
+                    st["step"] = torch.tensor(7.0)
+            torch.manual_seed(123)
+            grad_stash = {
+                p: torch.randn_like(get_local_tensor(p.data)) for p in module._expert_params
+            }
+            w_snap = {p: get_local_tensor(p.data).clone() for p in module._expert_params}
+            delta_stash = module._apply_pseudo_step(grad_stash)
+            worst = 0.0
+            for p in module._expert_params:
+                exp = hand_adam_delta(
+                    w_snap[p],
+                    grad_stash[p],
+                    alpha,
+                    module._expert_group_of[p],
+                    module.optim.state.get(p, {}),
+                )
+                got = delta_stash[p].float()
+                worst = max(worst, (got - exp).norm().item() / (exp.norm().item() + 1e-12))
+                # the applied weight change must equal the returned delta
+                worst = max(
+                    worst,
+                    (get_local_tensor(p.data) - w_snap[p] - delta_stash[p]).abs().max().item(),
+                )
+            for p in module._expert_params:
+                get_local_tensor(p.data).copy_(w_snap[p])
+            return worst
+
+        cold = adam_delta_matches(seed_state=False)
+        results.append(
+            ("A1 adam delta matches (cold moments)", cold < 1e-5, f"rel diff={cold:.2e}")
+        )
+        warm = adam_delta_matches(seed_state=True)  # leaves state seeded for M6
+        results.append(
+            ("A2 adam delta matches (warm moments)", warm < 1e-5, f"rel diff={warm:.2e}")
+        )
+
+        # --- Check M6: the real optimizer moments are unchanged across an adam-mode train_batch ---
+        snap = {
+            p: (
+                get_local_tensor(module.optim.state[p]["exp_avg"]).clone(),
+                get_local_tensor(module.optim.state[p]["exp_avg_sq"]).clone(),
+                float(module.optim.state[p]["step"]),
+            )
+            for p in module._expert_params
+        }
+        module.inner_optim = "adam"
+        cap_ad, _ = run_step(
+            module,
+            base_batch,
+            device,
+            meta_mode="same_tokens",
+            inner_lr=alpha,
+            lambda_inner=0.0,
+            outer="working_set",
+        )
+        worst_m, step_ok = 0.0, True
+        for p in module._expert_params:
+            ea, eas, stp = snap[p]
+            worst_m = max(
+                worst_m,
+                (get_local_tensor(module.optim.state[p]["exp_avg"]) - ea).abs().max().item(),
+                (get_local_tensor(module.optim.state[p]["exp_avg_sq"]) - eas).abs().max().item(),
+            )
+            step_ok = step_ok and float(module.optim.state[p]["step"]) == stp
+        ok = worst_m == 0.0 and step_ok and torch.isfinite(torch.tensor(cap_ad["ce_global"])).item()
+        results.append(
+            ("M6 adam moments unchanged", ok, f"max |dmoment|={worst_m:.2e}, step_ok={step_ok}")
+        )
+        for p in module._expert_params:  # clean up seeded state
+            module.optim.state.pop(p, None)
+        module.inner_optim = "sgd"
+
+        # --- Check A3: per-step scale sampler is deterministic (rank-identical) & in range ---
+        module.inner_lr_scale_min, module.inner_lr_scale_max, module.inner_lr_scale_seed = (
+            1.0,
+            32.0,
+            0,
+        )
+        s1, s2 = module._sample_inner_scale(), module._sample_inner_scale()
+        in_range = 1.0 <= s1 <= 32.0
+        det = s1 == s2  # unattached trainer => global_step 0 for both draws
+        module._trainer = type("T", (), {"global_step": 5})()
+        s3 = module._sample_inner_scale()
+        module._trainer = None
+        results.append(
+            (
+                "A3 scale sampler deterministic & in-range",
+                in_range and det and (1.0 <= s3 <= 32.0),
+                f"s(step0)={s1:.3f} (det={det}), s(step5)={s3:.3f}",
+            )
+        )
+        module.inner_lr_scale_min = module.inner_lr_scale_max = 1.0
+
     finally:
         rank0 = (not is_distributed()) or dist.get_rank() == 0
         n_fail = sum(1 for _, ok, _ in results if not ok)

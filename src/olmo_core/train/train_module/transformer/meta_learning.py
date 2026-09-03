@@ -32,7 +32,9 @@ restored exactly to their pre-step values.
 """
 
 import logging
+import math
 import os
+import random
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple, cast
 
@@ -97,6 +99,25 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
         ``"random"``: the outer pass samples per-document pool sizes in [min, max] like vanilla
         EMO, so the outer objective also trains restricted-forward (selective-inference)
         operation. Evals are unaffected either way.
+    :param inner_optim: How the pseudo-step is computed from the inner gradient. ``"sgd"``
+        (default): the raw SGD probe ``theta' = theta - alpha*g_inner``. ``"adam"``: an
+        AdamW-preconditioned probe simulated read-only from the LIVE optimizer moments
+        (``exp_avg`` / ``exp_avg_sq`` / ``step`` of the expert params) — i.e. the pseudo-step is
+        exactly the AdamW step the real optimizer WOULD take on ``g_inner`` at the current
+        moments, WITHOUT mutating them (they are consumed unchanged by the real outer step). This
+        makes theta' the true "next selective AdamW step" and keeps the perturbation magnitude at
+        Adam scale (~alpha per coordinate), immune to the bf16 self-extinction that killed the SGD
+        probe.
+    :param inner_lr_mode: ``"fixed"`` (default): the pseudo-step base lr is ``inner_lr``.
+        ``"match_lr"``: the base lr is the LIVE scheduler lr of the expert param group (so theta'
+        tracks the real training step size as the schedule evolves). Requires a scheduler.
+    :param inner_lr_scale_min / inner_lr_scale_max: per-step displacement-magnitude range. Each
+        train step samples ``s`` log-uniformly in ``[min, max]`` (identical across ranks, seeded by
+        the global step) and uses effective lr ``s * base_lr`` for the pseudo-step. ``[1, 1]``
+        (default) = a single magnitude; a range (e.g. ``[1, 32]``) trains the transfer property
+        across a band of committed-step displacements — the update-magnitude analog of vanilla's
+        random pools.
+    :param inner_lr_scale_seed: base seed for the per-step scale RNG (only used when min != max).
     """
 
     def __init__(
@@ -111,6 +132,11 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
         log_grad_cosine: bool = True,
         outer_expert_update: str = "working_set",
         outer_pool: str = "full",
+        inner_optim: str = "sgd",
+        inner_lr_mode: str = "fixed",
+        inner_lr_scale_min: float = 1.0,
+        inner_lr_scale_max: float = 1.0,
+        inner_lr_scale_seed: int = 0,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -123,6 +149,21 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
             raise OLMoConfigurationError("'inner_lr' must be >= 0")
         if lambda_inner < 0:
             raise OLMoConfigurationError("'lambda_inner' must be >= 0")
+        if inner_optim not in ("sgd", "adam"):
+            raise OLMoConfigurationError(
+                f"invalid inner_optim '{inner_optim}', expected 'sgd' or 'adam'"
+            )
+        if inner_lr_mode not in ("fixed", "match_lr"):
+            raise OLMoConfigurationError(
+                f"invalid inner_lr_mode '{inner_lr_mode}', expected 'fixed' or 'match_lr'"
+            )
+        if not (0 < inner_lr_scale_min <= inner_lr_scale_max):
+            raise OLMoConfigurationError(
+                f"require 0 < inner_lr_scale_min ({inner_lr_scale_min}) <= inner_lr_scale_max "
+                f"({inner_lr_scale_max})"
+            )
+        if inner_lr_mode == "match_lr" and self.scheduler is None:
+            raise OLMoConfigurationError("inner_lr_mode='match_lr' requires a scheduler")
         if outer_expert_update not in ("working_set", "all"):
             raise OLMoConfigurationError(
                 f"invalid outer_expert_update '{outer_expert_update}', expected 'working_set' or 'all'"
@@ -148,7 +189,14 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
         self.log_grad_cosine = log_grad_cosine
         self.outer_expert_update = outer_expert_update
         self.outer_pool = outer_pool
+        self.inner_optim = inner_optim
+        self.inner_lr_mode = inner_lr_mode
+        self.inner_lr_scale_min = inner_lr_scale_min
+        self.inner_lr_scale_max = inner_lr_scale_max
+        self.inner_lr_scale_seed = inner_lr_scale_seed
         self._meta_step_count = 0
+        self._last_inner_scale = 1.0
+        self._last_inner_eff_lr = 0.0
 
         # Cache the randpool routers and the fused expert-weight parameters. Both survive FSDP2
         # wrapping and per-block torch.compile (module structure and parameter names are kept).
@@ -175,6 +223,34 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
                     "no trainable expert parameters (*.feed_forward_moe.experts.mlp.w{1,2,3}) "
                     "found in the model"
                 )
+            # Map each expert param to its optimizer param group (for the Adam-preconditioned
+            # pseudo-step and match_lr: lr/betas/eps/weight_decay come from the real group). The
+            # parent __init__ has already built self.optim, and param_groups hold the same
+            # Parameter identities as model.named_parameters().
+            expert_ids = {id(p) for p in self._expert_params}
+            self._expert_group_of: Dict[nn.Parameter, Dict[str, Any]] = {}
+            expert_groups: List[Dict[str, Any]] = []
+            for group in self.optim.param_groups:
+                for p in group["params"]:
+                    if id(p) in expert_ids:
+                        self._expert_group_of[p] = group
+                        if group not in expert_groups:
+                            expert_groups.append(group)
+            self._expert_param_group = expert_groups[0] if expert_groups else None
+            if self.inner_optim == "adam" or self.inner_lr_mode == "match_lr":
+                missing = [p for p in self._expert_params if p not in self._expert_group_of]
+                if missing:
+                    raise OLMoConfigurationError(
+                        f"{len(missing)} expert param(s) not found in any optimizer param group; "
+                        "inner_optim='adam'/inner_lr_mode='match_lr' need the group's "
+                        "lr/betas/eps/weight_decay"
+                    )
+                if self.inner_optim == "adam" and "betas" not in self._expert_param_group:
+                    raise OLMoConfigurationError(
+                        "inner_optim='adam' requires an AdamW-style optimizer (param group with "
+                        "'betas'/'eps'/'weight_decay')"
+                    )
+
             router = self._meta_routers[0]
             self._num_nonshared_experts = router.num_experts - router.num_shared_experts
             if (
@@ -186,7 +262,9 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
                     f"[1, {self._num_nonshared_experts}] (number of non-shared experts)"
                 )
             log.info(
-                f"Meta-learning train module: mode={self.meta_mode}, inner_lr={self.inner_lr}, "
+                f"Meta-learning train module: mode={self.meta_mode}, inner_optim={self.inner_optim}, "
+                f"inner_lr_mode={self.inner_lr_mode}, inner_lr={self.inner_lr}, "
+                f"inner_lr_scale=[{self.inner_lr_scale_min}, {self.inner_lr_scale_max}], "
                 f"inner_pool_size={self.inner_pool_size}, lambda_inner={self.lambda_inner}, "
                 f"lb_on_inner={self.lb_on_inner}, inner_grad_clip={self.inner_grad_clip}, "
                 f"{len(self._meta_routers)} routers, {len(self._expert_params)} expert params, "
@@ -243,14 +321,92 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
             sq += t.float().pow(2).sum()
         return self._reduce_scalar(sq)
 
-    def _apply_pseudo_step(self, grad_stash: Dict[nn.Parameter, torch.Tensor]):
+    def _sample_inner_scale(self) -> float:
+        """Per-step displacement scale, log-uniform in [scale_min, scale_max]. Seeded by the
+        global step so every rank draws the SAME scale without communication (the expert weights
+        are row-sharded across DP; an inconsistent scale would corrupt the global pseudo-step)."""
+        if self.inner_lr_scale_min == self.inner_lr_scale_max:
+            return self.inner_lr_scale_min
+        # `self._trainer` (not the `self.trainer` property, which raises when unattached) so the
+        # sampler is usable in unit tests / before the trainer is attached.
+        trainer = getattr(self, "_trainer", None)
+        step = int(getattr(trainer, "global_step", 0)) if trainer is not None else 0
+        rng = random.Random(self.inner_lr_scale_seed * 1_000_003 + step)
+        return math.exp(
+            rng.uniform(math.log(self.inner_lr_scale_min), math.log(self.inner_lr_scale_max))
+        )
+
+    def _expert_base_lr(self) -> float:
+        """Base lr for the pseudo-step. ``match_lr``: the live scheduler lr of the expert group —
+        set_lr is idempotent within a global step (the trainer re-sets the identical value in
+        optim_step), so reading it here does not perturb the real update."""
+        if self.inner_lr_mode == "match_lr":
+            assert self.scheduler is not None and self._expert_param_group is not None
+            return float(self.scheduler.set_lr(self._expert_param_group, self.trainer))
+        return self.inner_lr
+
+    def _apply_pseudo_step(
+        self, grad_stash: Dict[nn.Parameter, torch.Tensor]
+    ) -> Dict[nn.Parameter, torch.Tensor]:
         """
-        Apply the (first-order) pseudo-step in place on the expert weights' local shards. A future
-        second-order variant replaces this (and the surrounding stash/restore) with a
-        differentiable update.
+        Apply the (first-order) pseudo-step in place on the expert weights' local shards and return
+        the per-parameter applied delta (fp32 local shards) for the metrics. A future second-order
+        variant replaces this (and the surrounding stash/restore) with a differentiable update.
+
+        ``inner_optim="sgd"``: ``delta = -eff_lr * g_inner``.
+        ``inner_optim="adam"``: ``delta`` is the AdamW step the real optimizer would take on
+        ``g_inner`` at the CURRENT expert moments — simulated read-only (``exp_avg`` /
+        ``exp_avg_sq`` / ``step`` are never mutated), so the real outer step consumes them
+        unchanged. Matches ``olmo_core.optim.adamw.adamw_step`` with ``step_factor=1``.
         """
+        scale = self._sample_inner_scale()
+        base_lr = self._expert_base_lr()
+        eff_lr = scale * base_lr
+        self._last_inner_scale = scale
+        self._last_inner_eff_lr = eff_lr
+
+        delta_stash: Dict[nn.Parameter, torch.Tensor] = {}
+        if self.inner_optim == "sgd":
+            for p, g in grad_stash.items():
+                delta = g.mul(-eff_lr)
+                get_local_tensor(p.data).add_(delta)
+                delta_stash[p] = delta
+            return delta_stash
+
+        # inner_optim == "adam": read-only AdamW simulation from the live moments.
         for p, g in grad_stash.items():
-            get_local_tensor(p.data).add_(g, alpha=-self.inner_lr)
+            group = self._expert_group_of[p]
+            beta1, beta2 = group["betas"]
+            eps = group["eps"]
+            wd = group["weight_decay"]
+            state = self.optim.state.get(p, {})
+            w_local = get_local_tensor(p.data)
+            g32 = g.float()
+            if "exp_avg" in state:
+                m = get_local_tensor(state["exp_avg"]).float()
+                v = get_local_tensor(state["exp_avg_sq"]).float()
+                t = (
+                    float(get_local_tensor(state["step"]))
+                    if torch.is_tensor(state["step"])
+                    else float(state["step"])
+                )
+            else:  # optimizer hasn't stepped this param yet (very first step)
+                m = torch.zeros_like(g32)
+                v = torch.zeros_like(g32)
+                t = 0.0
+            m2 = beta1 * m + (1.0 - beta1) * g32
+            v2 = beta2 * v + (1.0 - beta2) * g32 * g32
+            bias_correction1 = 1.0 - beta1 ** (t + 1.0)
+            bias_correction2 = 1.0 - beta2 ** (t + 1.0)
+            denom = (v2.sqrt() / math.sqrt(bias_correction2)).add_(eps)
+            update = (m2 / denom).mul_(-(eff_lr / bias_correction1))
+            if wd != 0.0:
+                # decoupled weight decay: p *= (1 - eff_lr*wd)  ==>  delta_wd = -eff_lr*wd*p
+                update.add_(w_local.float(), alpha=-eff_lr * wd)
+            delta = update.to(w_local.dtype)
+            w_local.add_(delta)
+            delta_stash[p] = delta
+        return delta_stash
 
     #############
     # Train step
@@ -321,6 +477,7 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
         inner_ce_loss = move_to_device(torch.tensor(0.0), self.device)
         grad_stash: Dict[nn.Parameter, torch.Tensor] = {}
         weight_stash: Dict[nn.Parameter, torch.Tensor] = {}
+        delta_stash: Dict[nn.Parameter, torch.Tensor] = {}
         pre_clip_grad_norm: Optional[torch.Tensor] = None
 
         if run_inner:
@@ -377,7 +534,7 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
                     if q.grad is not None:
                         get_local_tensor(q.grad).mul_(self.lambda_inner)
 
-            self._apply_pseudo_step(grad_stash)
+            delta_stash = self._apply_pseudo_step(grad_stash)
 
         # ---- Phase 2: outer forward/backward at theta' ----
         # outer_pool="full": routing over all experts (keep-all). outer_pool="random": the router
@@ -424,7 +581,7 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
         if run_inner:
             self._meta_step_count += 1
             self._record_meta_metrics(
-                inner_ce_loss, pre_clip_grad_norm, grad_stash, weight_stash, dry_run
+                inner_ce_loss, pre_clip_grad_norm, grad_stash, weight_stash, delta_stash, dry_run
             )
             for p in self._expert_params:
                 get_local_tensor(p.data).copy_(weight_stash[p])
@@ -436,6 +593,7 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
                 log.info("EMO_META_CHECK_RESTORE: expert weights restored bitwise")
             grad_stash.clear()
             weight_stash.clear()
+            delta_stash.clear()
             check_stash.clear()
 
         # Leave the routers clean for eval / the next step.
@@ -602,6 +760,7 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
         pre_clip_grad_norm: Optional[torch.Tensor],
         grad_stash: Dict[nn.Parameter, torch.Tensor],
         weight_stash: Dict[nn.Parameter, torch.Tensor],
+        delta_stash: Dict[nn.Parameter, torch.Tensor],
         dry_run: bool,
     ):
         if dry_run:
@@ -615,8 +774,16 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
             reduce_type=None,
             namespace="train",
         )
+        self.record_metric(
+            "meta inner scale", self._last_inner_scale, reduce_type=None, namespace="train"
+        )
+        self.record_metric(
+            "meta inner eff lr", self._last_inner_eff_lr, reduce_type=None, namespace="train"
+        )
         stash_sq = self._expert_global_sq_norm(list(grad_stash.values()))
-        delta_norm = self.inner_lr * stash_sq.sqrt()
+        # Actual applied pseudo-step magnitude (optimizer-agnostic: for adam it is NOT
+        # inner_lr*|g|, so read it from the delta the pseudo-step actually applied).
+        delta_norm = self._expert_global_sq_norm(list(delta_stash.values())).sqrt()
         self.record_metric(
             "meta pseudo step delta norm", delta_norm, reduce_type=None, namespace="train"
         )
@@ -638,7 +805,7 @@ class MetaLearningTransformerTrainModule(TransformerTrainModule):
             delta_sq = torch.zeros((), device=self.device, dtype=torch.float32)
             for p in self._expert_params:
                 w = weight_stash[p]
-                delta = grad_stash[p] * (-self.inner_lr)
+                delta = delta_stash[p]
                 survived = (w + delta).bfloat16().float() - w.bfloat16().float()
                 d32 = delta.float()
                 s32 = survived.float()
@@ -697,6 +864,11 @@ _META_CONFIG_FIELDS = (
     "log_grad_cosine",
     "outer_expert_update",
     "outer_pool",
+    "inner_optim",
+    "inner_lr_mode",
+    "inner_lr_scale_min",
+    "inner_lr_scale_max",
+    "inner_lr_scale_seed",
 )
 
 
@@ -716,6 +888,11 @@ class MetaLearningTransformerTrainModuleConfig(TransformerTrainModuleConfig):
     log_grad_cosine: bool = True
     outer_expert_update: str = "working_set"
     outer_pool: str = "full"
+    inner_optim: str = "sgd"
+    inner_lr_mode: str = "fixed"
+    inner_lr_scale_min: float = 1.0
+    inner_lr_scale_max: float = 1.0
+    inner_lr_scale_seed: int = 0
 
     def build(
         self,
@@ -752,5 +929,10 @@ class MetaLearningTransformerTrainModuleConfig(TransformerTrainModuleConfig):
             log_grad_cosine=self.log_grad_cosine,
             outer_expert_update=self.outer_expert_update,
             outer_pool=self.outer_pool,
+            inner_optim=self.inner_optim,
+            inner_lr_mode=self.inner_lr_mode,
+            inner_lr_scale_min=self.inner_lr_scale_min,
+            inner_lr_scale_max=self.inner_lr_scale_max,
+            inner_lr_scale_seed=self.inner_lr_scale_seed,
             **kwargs,
         )
