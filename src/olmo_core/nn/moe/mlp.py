@@ -253,11 +253,32 @@ class DroplessMoEMLP(MoEMLPBase):
         for w in (self.w1, self.w2, self.w3):
             nn.init.kaiming_uniform_(w, a=math.sqrt(5))
 
+    # grouped_gemm's CUTLASS backend builds the per-group problem descriptors on device only for
+    # up to this many groups (``kMaxExperts`` in csrc/grouped_gemm.cu: "At most 512 experts are
+    # supported when batch_sizes is a CUDA tensor"). Host-resident ``batch_sizes`` go through the
+    # same CUTLASS grouped GEMM with no group limit, at the cost of one device->host sync.
+    GROUPED_GEMM_MAX_DEVICE_GROUPS = 512
+
+    def _gmm_batch_sizes(self, batch_sizes: torch.Tensor) -> torch.Tensor:
+        """
+        Return ``batch_sizes`` in the placement the grouped GEMM backend accepts for this many
+        groups: unchanged (device) up to 512 groups, moved to host beyond that. Call once per
+        forward so the three SwiGLU GEMMs (and their backward) share a single sync.
+        """
+        if (
+            self._gmm is not None
+            and batch_sizes.is_cuda
+            and batch_sizes.numel() > self.GROUPED_GEMM_MAX_DEVICE_GROUPS
+        ):
+            return batch_sizes.cpu()
+        return batch_sizes
+
     @torch._dynamo.disable()
     def gmm(
         self, x: torch.Tensor, w: torch.Tensor, batch_sizes: torch.Tensor, trans_b: bool = False
     ) -> torch.Tensor:
         if self._gmm is not None:
+            batch_sizes = self._gmm_batch_sizes(batch_sizes)
             # grouped-gemm only accepts BF16
             return self._gmm(x.to(torch.bfloat16), w.to(torch.bfloat16), batch_sizes, trans_b=trans_b)  # type: ignore
         else:
@@ -296,7 +317,8 @@ class DroplessMoEMLP(MoEMLPBase):
             get_local_tensor(self.w3.view(self.num_experts, self.hidden_size, self.d_model)),
         )
 
-        # Compute the MLP.
+        # Compute the MLP. (>512 experts: one host sync here instead of one per GEMM.)
+        batch_size_per_expert = self._gmm_batch_sizes(batch_size_per_expert)
         x1 = self.gmm(x, w1, batch_size_per_expert, trans_b=True)
         x2 = self.gmm(x, w3, batch_size_per_expert, trans_b=True)
         x1 = F.silu(x1) * x2
@@ -360,6 +382,7 @@ class DroplessMoEMLP(MoEMLPBase):
         w3g = torch.einsum("ge,ehd->ghd", coeffs, w3)
 
         # Same SwiGLU as the expert path, grouped by document instead of by expert.
+        doc_sizes = self._gmm_batch_sizes(doc_sizes)
         x1 = self.gmm(x, w1g, doc_sizes, trans_b=True)
         x2 = self.gmm(x, w3g, doc_sizes, trans_b=True)
         x1 = F.silu(x1) * x2
