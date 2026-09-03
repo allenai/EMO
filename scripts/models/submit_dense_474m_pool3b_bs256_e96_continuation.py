@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guardedly submit the selected 153M BS256 E256-E384 continuation or evaluator."""
+"""Guardedly submit the 474M Pool-3B BS256 exact-E96 continuation."""
 
 from __future__ import annotations
 
@@ -12,15 +12,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-import run_dense_small_pool3b_bs256_e384_continuation as runner
-import submit_dense_small_pool3b_checkpoint_evaluator as evaluator_submitter
+import run_dense_474m_pool3b_bs256_e96_continuation as runner
 
 
 WORKSPACE = "ai2/flex2"
 REPORT = Path("reports/0802/data/wsd_checkpoint_producer_grid.json")
 REPORT_JS = REPORT.with_suffix(".js")
 MANIFEST = runner.DEFAULT_MANIFEST
-RUNNER = "scripts/models/run_dense_small_pool3b_bs256_e384_continuation.py"
+RUNNER = "scripts/models/run_dense_474m_pool3b_bs256_e96_continuation.py"
 
 
 def command(arguments: list[str], *, input_text: str | None = None) -> str:
@@ -75,10 +74,7 @@ def clean_task(spec: dict[str, Any], revision: str, priority: str) -> dict[str, 
     set_env(task, "GIT_REF", revision)
     task["name"] = "main"
     task["resources"] = {"gpuCount": 8, "sharedMemory": "10 GiB"}
-    task["context"] = {
-        "priority": priority,
-        "autoResume": True,
-    }
+    task["context"] = {"priority": priority, "autoResume": True}
     task["hostNetworking"] = False
     task["propagateFailure"] = False
     task["propagatePreemption"] = False
@@ -90,43 +86,43 @@ def clean_task(spec: dict[str, Any], revision: str, priority: str) -> dict[str, 
 
 def producer_record(report: dict[str, Any]) -> dict[str, Any]:
     matches = [
-        record
-        for record in report.get("producers", [])
-        if record.get("id") == runner.EXPECTED_ID
+        record for record in report.get("producers", []) if record.get("id") == runner.EXPECTED_ID
     ]
     if len(matches) != 1:
         raise RuntimeError(f"report must contain exactly one {runner.EXPECTED_ID}")
     return matches[0]
 
 
-def beaker_state(experiment: str) -> str:
+def beaker_active(experiment: str) -> bool:
     payload = json.loads(
         command(["beaker", "experiment", "inspect", experiment, "--format", "json"])
     )
     if not isinstance(payload, list) or len(payload) != 1:
         raise RuntimeError(f"expected exactly one experiment for {experiment}")
-    statuses = [job.get("status") or {} for job in payload[0].get("jobs") or []]
     terminal = {"exited", "finalized", "canceled", "cancelled"}
-    if any(not terminal.intersection(status) for status in statuses):
-        return "active"
-    if any(status.get("exitCode") == 0 for status in statuses):
-        return "complete"
-    return "failed"
+    return any(
+        not terminal.intersection(job.get("status") or {})
+        for job in payload[0].get("jobs") or []
+    )
 
 
-def ensure_producer_ready(report: dict[str, Any], item: dict[str, Any]) -> None:
+def ensure_ready(report: dict[str, Any], item: dict[str, Any]) -> None:
     record = producer_record(report)
     if Path(str(record.get("output"))) != runner.EXPECTED_OUTPUT:
-        raise RuntimeError("registered producer output does not match selected recovery output")
+        raise RuntimeError("registered output does not match exact continuation output")
     if runner.SOURCE_EPOCH not in {
         int(epoch) for epoch in record.get("resolvedCheckpointEpochs", [])
     }:
-        raise RuntimeError("exact E256 pre-decay checkpoint is not resolved")
+        raise RuntimeError("exact E96 pre-decay checkpoint is not resolved")
+    if Path(str(item["sourceCheckpoint"])) != (
+        Path(str(record["output"])) / f"step{runner.checkpoint_step(runner.SOURCE_EPOCH)}"
+    ):
+        raise RuntimeError("continuation source is not the registered exact E96 checkpoint")
     current_experiment = str(record.get("experiment"))
-    if beaker_state(current_experiment) != "complete":
-        raise RuntimeError("current producer is not terminal-complete; refusing a second writer")
-    if Path(str(item["sourceCheckpoint"])) != Path(str(record["output"])) / "step659179":
-        raise RuntimeError("continuation source is not the registered exact E256 checkpoint")
+    if current_experiment != str(item["baseExperiment"]):
+        raise RuntimeError("registry no longer points to the stopped original experiment")
+    if beaker_active(current_experiment):
+        raise RuntimeError("current producer is still active; refusing a second writer")
 
 
 def existing_named_experiment(name: str) -> str | None:
@@ -152,16 +148,10 @@ def existing_named_experiment(name: str) -> str | None:
 
 
 def producer_name() -> str:
-    return f"{runner.EXPECTED_ID}-continuation-e256-e384-v1"
+    return f"{runner.EXPECTED_ID}-continuation-e96-e256-v1"
 
 
-def evaluator_name(epoch: int) -> str:
-    return f"{runner.EXPECTED_ID}-post-e{epoch}-v1"
-
-
-def producer_spec(
-    item: dict[str, Any], revision: str, priority: str
-) -> dict[str, Any]:
+def producer_spec(item: dict[str, Any], revision: str, priority: str) -> dict[str, Any]:
     spec = copy.deepcopy(
         json.loads(
             command(
@@ -177,54 +167,12 @@ def producer_spec(
         )
     )
     task = clean_task(spec, revision, priority)
-    task["arguments"] = [
-        "python",
-        RUNNER,
-        "--manifest",
-        str(MANIFEST),
-    ]
+    task["arguments"] = ["python", RUNNER, "--manifest", str(MANIFEST)]
     spec["description"] = (
-        "153M DCLM-3B BS256 LR2e-3 WD0.1 constant-LR continuation from exact "
-        "selected-recovery pre-decay E256 step659179; retain E320 step823974 and "
-        "E384 step988769; no inline evaluation; 8 GPUs, rank microbatch 16, "
-        "gradient accumulation 2, auto-resume, eight retries; minRuntime omitted; "
-        f"write only to {item['output']}."
-    )
-    return spec
-
-
-def evaluator_spec(
-    item: dict[str, Any], epoch: int, revision: str, priority: str
-) -> dict[str, Any]:
-    if epoch not in runner.EVALUATION_EPOCHS:
-        raise ValueError(f"E{epoch} is not an authorized continuation evaluator")
-    spec = copy.deepcopy(
-        json.loads(
-            command(
-                [
-                    "beaker",
-                    "experiment",
-                    "spec",
-                    str(item["baseExperiment"]),
-                    "--format",
-                    "json",
-                ]
-            )
-        )
-    )
-    task = clean_task(spec, revision, priority)
-    task["arguments"] = [
-        "python",
-        RUNNER,
-        "--manifest",
-        str(MANIFEST),
-        "--evaluate-epoch",
-        str(epoch),
-    ]
-    spec["description"] = (
-        f"153M DCLM-3B BS256 LR2e-3 WD0.1 independent E{epoch} uncapped 10% "
-        "WSD decay and heldout evaluation from the exact selected-recovery "
-        "pre-decay checkpoint; minRuntime omitted."
+        "474M DCLM-3B BS256 LR2e-3 WD0.1 constant-LR continuation from exact "
+        "validated pre-decay E96 step247192 through E256; isolated output writer; "
+        "8 GPUs, rank microbatch 16, gradient accumulation 2, auto-resume, eight "
+        "retries; minRuntime intentionally omitted."
     )
     return spec
 
@@ -243,9 +191,7 @@ def create(name: str, spec: dict[str, Any]) -> str:
     return identifiers[0]
 
 
-def register_producer(
-    report: dict[str, Any], experiment: str, revision: str
-) -> None:
+def register(report: dict[str, Any], experiment: str, revision: str) -> None:
     record = producer_record(report)
     previous_experiment = str(record["experiment"])
     history = record.setdefault("experimentHistory", [])
@@ -254,10 +200,10 @@ def register_producer(
             {
                 "experiment": previous_experiment,
                 "revision": record.get("revision"),
-                "status": "complete",
-                "maxEpoch": 256,
+                "status": "stopped_invalid_retry_source_e1",
+                "maxValidatedEpoch": 96,
                 "output": record.get("output"),
-                "recoveryAttempt": record.get("recoveryAttempt"),
+                "stoppedAt": datetime.now(tz=UTC).isoformat(),
             }
         )
     record.update(
@@ -266,31 +212,20 @@ def register_producer(
             "revision": revision,
             "status": "submitted",
             "beakerStatus": "submitted",
-            "currentEpoch": 320,
+            "currentEpoch": 112,
             "currentPhase": "repacked_shuffled_pool3b_constant_lr",
-            "targetEpochs": [32, 64, 96, 128, 160, 192, 224, 256, 320, 384],
-            "continuationSourceEpoch": 256,
-            "continuationTargetEpoch": 384,
-            "continuationCheckpointEpochs": [320, 384],
-            "evaluationEpochs": [320, 384],
+            "continuationSourceEpoch": 96,
+            "continuationSourceCheckpoint": str(
+                runner.EXPECTED_OUTPUT / f"step{runner.checkpoint_step(96)}"
+            ),
+            "continuationTargetEpoch": 256,
+            "continuationCheckpointEpochs": list(runner.TARGET_EPOCHS),
+            "evaluationEpochs": list(runner.EVALUATION_EPOCHS),
             "submittedAt": datetime.now(tz=UTC).isoformat(),
         }
     )
-    for key in ("job", "jobs", "wandbHealth", "needsAttention"):
+    for key in ("job", "jobs", "wandbHealth", "needsAttention", "minRuntime"):
         record.pop(key, None)
-
-
-def register_evaluator(
-    item: dict[str, Any], epoch: int, experiment: str, revision: str
-) -> None:
-    evaluator_submitter.register(
-        item,
-        epoch,
-        experiment,
-        revision,
-        str(runner.EXPECTED_OUTPUT),
-        MANIFEST,
-    )
 
 
 def write_report(report: dict[str, Any]) -> None:
@@ -305,46 +240,25 @@ def write_report(report: dict[str, Any]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("producer", "evaluator"), required=True)
-    parser.add_argument("--epoch", type=int, choices=runner.EVALUATION_EPOCHS)
     parser.add_argument("--revision", required=True)
     parser.add_argument("--priority", default="urgent")
     parser.add_argument("--print-spec", action="store_true")
     parser.add_argument("--submit-if-ready", action="store_true")
     args = parser.parse_args()
-    if args.mode == "producer" and args.epoch is not None:
-        raise SystemExit("--epoch is only valid for evaluator mode")
-    if args.mode == "evaluator" and args.epoch is None:
-        raise SystemExit("evaluator mode requires --epoch")
     if args.print_spec == args.submit_if_ready:
         raise SystemExit("select exactly one of --print-spec or --submit-if-ready")
-
     validate_revision(args.revision)
-    config, item = runner.load(MANIFEST)
+    _, item = runner.load(MANIFEST)
     report = json.loads(REPORT.read_text())
-    if args.mode == "producer":
-        ensure_producer_ready(report, item)
-        spec = producer_spec(item, args.revision, args.priority)
-        name = producer_name()
-    else:
-        record = producer_record(report)
-        if int(args.epoch) not in {
-            int(value) for value in record.get("resolvedCheckpointEpochs", [])
-        }:
-            raise RuntimeError(f"E{args.epoch} pre-decay checkpoint is not resolved")
-        spec = evaluator_spec(item, int(args.epoch), args.revision, args.priority)
-        name = evaluator_name(int(args.epoch))
+    ensure_ready(report, item)
+    spec = producer_spec(item, args.revision, args.priority)
     if args.print_spec:
         print(json.dumps(spec, indent=2))
         return
-
-    experiment = create(name, spec)
-    if args.mode == "producer":
-        register_producer(report, experiment, args.revision)
-        write_report(report)
-    else:
-        register_evaluator(item, int(args.epoch), experiment, args.revision)
-    print(f"{name}: {experiment}")
+    experiment = create(producer_name(), spec)
+    register(report, experiment, args.revision)
+    write_report(report)
+    print(f"{producer_name()}: {experiment}")
 
 
 if __name__ == "__main__":

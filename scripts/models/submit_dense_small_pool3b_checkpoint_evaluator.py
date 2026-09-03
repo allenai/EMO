@@ -24,9 +24,11 @@ RUNNER = "scripts/models/run_dense_small_pool3b_checkpoint_evaluator.py"
 
 
 def command(arguments: list[str], *, input_text: str | None = None) -> str:
-    return subprocess.run(
-        arguments, check=True, input=input_text, text=True, capture_output=True
-    ).stdout
+    result = subprocess.run(arguments, input=input_text, text=True, capture_output=True)
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout).strip()
+        raise RuntimeError(f"command failed ({' '.join(arguments)}): {detail}")
+    return result.stdout
 
 
 def validate_revision(revision: str) -> None:
@@ -73,12 +75,18 @@ def existing_named_experiment(name: str) -> str | None:
 
 
 def runtime(item: dict[str, Any], epoch: int) -> dict[str, Any]:
-    return evaluator_min_runtime.estimate_min_runtime(
+    reserved = evaluator_min_runtime.estimate_min_runtime(
         model=str(item["model"]),
         pool_tokens=producer.TARGET_POOL_TOKENS,
         batch_sequences=int(item["batchSequences"]),
         epochs=[epoch],
     )
+    if int(reserved["reservedSeconds"]) > 8 * 60 * 60:
+        reserved["uncappedMinRuntime"] = reserved["minRuntime"]
+        reserved["reservedSeconds"] = 8 * 60 * 60
+        reserved["minRuntime"] = "8h"
+        reserved["reservationCappedAtBeakerMaximum"] = True
+    return reserved
 
 
 def report_producer(item: dict[str, Any], epoch: int) -> dict[str, Any]:
@@ -86,6 +94,8 @@ def report_producer(item: dict[str, Any], epoch: int) -> dict[str, Any]:
     matches = [record for record in report.get("producers", []) if record.get("id") == item["id"]]
     if len(matches) != 1:
         raise RuntimeError(f"report is missing producer {item['id']}")
+    if matches[0].get("futureEvaluatorSubmissionsAuthorized") is False:
+        raise RuntimeError(f"new evaluator submissions are disabled for {item['id']}")
     resolved = {int(value) for value in matches[0].get("resolvedCheckpointEpochs", [])}
     if epoch not in resolved:
         raise RuntimeError(f"E{epoch} pre-decay checkpoint is not resolved for {item['id']}")
@@ -153,11 +163,9 @@ def spec_for(
     set_env(task, "GIT_REF", revision)
     if item["model"] == "474m":
         set_env(task, "PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
-    reserved = runtime(item, epoch)
     task["resources"] = {"gpuCount": 8, "sharedMemory": "10 GiB"}
     task["context"] = {
         "priority": priority,
-        "minRuntime": str(reserved["minRuntime"]),
         "autoResume": True,
     }
     task["hostNetworking"] = False
@@ -169,7 +177,7 @@ def spec_for(
     spec["description"] = (
         f"Dense-{item['model']} DCLM-3B BS{item['batchSequences']} LR{item['learningRate']} "
         f"WD{item['weightDecay']} independent E{epoch} WSD decay and heldout evaluation; "
-        f"allocated-slot scheduling with buffered minRuntime={reserved['minRuntime']}."
+        "minRuntime intentionally omitted."
     )
     return spec
 
@@ -235,7 +243,6 @@ def register(
             "experiment": experiment,
             "revision": revision,
             "manifest": str(manifest),
-            "minRuntime": runtime(item, epoch)["minRuntime"],
             "submittedAt": datetime.now(tz=UTC).isoformat(),
             "beakerStatus": "submitted",
             "wandbHealth": {
@@ -284,16 +291,12 @@ def main() -> None:
             )
         )
         return
-    reserved = runtime(item, args.epoch)
     if not args.submit_if_ready:
-        print(
-            f"{guarded_name(item, args.epoch)}: ready with minRuntime={reserved['minRuntime']}; "
-            "pass --submit-if-ready"
-        )
+        print(f"{guarded_name(item, args.epoch)}: ready; pass --submit-if-ready")
         return
     experiment = create(item, args.epoch, args.revision, args.priority, output, args.manifest)
     register(item, args.epoch, experiment, args.revision, output, args.manifest)
-    print(f"{guarded_name(item, args.epoch)}: {experiment} minRuntime={reserved['minRuntime']}")
+    print(f"{guarded_name(item, args.epoch)}: {experiment} minRuntime=omitted")
 
 
 if __name__ == "__main__":

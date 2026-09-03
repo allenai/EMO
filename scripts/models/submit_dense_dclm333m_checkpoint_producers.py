@@ -68,8 +68,8 @@ def plan_rows(config: dict[str, Any]) -> list[dict[str, Any]]:
     rows = []
     for item in config["producerCoordinates"]:
         estimate = runner.runtime_estimate(item, config["runtimeEstimate"])
-        use_allocated_slot = item["model"] in {"1b", "474m"}
-        reservation = reserved_min_runtime(item, config["runtimeEstimate"])
+        use_allocated_slot = False
+        reservation = 0
         rows.append(
             {
                 "model": item["model"],
@@ -170,7 +170,7 @@ def spec_for(
     priority: str,
     *,
     target_epoch: int | None = None,
-    omit_min_runtime: bool = False,
+    omit_min_runtime: bool = True,
 ) -> dict[str, Any]:
     config = load_manifest()
     estimate = runner.runtime_estimate(item, config["runtimeEstimate"])
@@ -263,7 +263,7 @@ def create(
     priority: str,
     *,
     target_epoch: int | None = None,
-    omit_min_runtime: bool = False,
+    omit_min_runtime: bool = True,
 ) -> str:
     name = guarded_name(item, target_epoch)
     existing = existing_named_experiment(name)
@@ -335,11 +335,6 @@ def register_new_runs(
             "status": "submitted",
             "experiment": experiment,
             "revision": revision,
-            "minRuntime": (
-                f"{reserved_min_runtime(item, config['runtimeEstimate'])}s"
-                if reserved_min_runtime(item, config["runtimeEstimate"])
-                else "omitted"
-            ),
             "output": output,
             "beakerStatus": "submitted",
         }
@@ -380,7 +375,7 @@ def main() -> None:
     parser.add_argument("--revision")
     parser.add_argument("--priority", default="urgent")
     parser.add_argument("--coordinate", action="append", default=[])
-    parser.add_argument("--omit-min-runtime", action="store_true")
+    parser.add_argument("--omit-min-runtime", action="store_true", default=True)
     parser.add_argument("--print-plan", action="store_true")
     parser.add_argument("--print-specs", action="store_true")
     parser.add_argument("--submit-if-ready", action="store_true")
