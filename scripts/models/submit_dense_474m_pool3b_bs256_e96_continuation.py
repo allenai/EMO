@@ -14,7 +14,6 @@ from typing import Any
 
 import run_dense_474m_pool3b_bs256_e96_continuation as runner
 
-
 WORKSPACE = "ai2/flex2"
 REPORT = Path("reports/0802/data/wsd_checkpoint_producer_grid.json")
 REPORT_JS = REPORT.with_suffix(".js")
@@ -101,8 +100,7 @@ def beaker_active(experiment: str) -> bool:
         raise RuntimeError(f"expected exactly one experiment for {experiment}")
     terminal = {"exited", "finalized", "canceled", "cancelled"}
     return any(
-        not terminal.intersection(job.get("status") or {})
-        for job in payload[0].get("jobs") or []
+        not terminal.intersection(job.get("status") or {}) for job in payload[0].get("jobs") or []
     )
 
 
@@ -119,8 +117,6 @@ def ensure_ready(report: dict[str, Any], item: dict[str, Any]) -> None:
     ):
         raise RuntimeError("continuation source is not the registered exact E96 checkpoint")
     current_experiment = str(record.get("experiment"))
-    if current_experiment != str(item["baseExperiment"]):
-        raise RuntimeError("registry no longer points to the stopped original experiment")
     if beaker_active(current_experiment):
         raise RuntimeError("current producer is still active; refusing a second writer")
 
@@ -148,7 +144,7 @@ def existing_named_experiment(name: str) -> str | None:
 
 
 def producer_name() -> str:
-    return f"{runner.EXPECTED_ID}-continuation-e96-e256-v1"
+    return f"{runner.EXPECTED_ID}-continuation-e96-e256-v2"
 
 
 def producer_spec(item: dict[str, Any], revision: str, priority: str) -> dict[str, Any]:
@@ -170,7 +166,9 @@ def producer_spec(item: dict[str, Any], revision: str, priority: str) -> dict[st
     task["arguments"] = ["python", RUNNER, "--manifest", str(MANIFEST)]
     spec["description"] = (
         "474M DCLM-3B BS256 LR2e-3 WD0.1 constant-LR continuation from exact "
-        "validated pre-decay E96 step247192 through E256; isolated output writer; "
+        "validated pre-decay E96 step247192 through E256; checkpoint every 2 "
+        "epochs, preserve the existing evaluation checkpoints, and delete "
+        "recovery-only checkpoints after E256; isolated output writer; "
         "8 GPUs, rank microbatch 16, gradient accumulation 2, auto-resume, eight "
         "retries; minRuntime intentionally omitted."
     )
@@ -200,7 +198,7 @@ def register(report: dict[str, Any], experiment: str, revision: str) -> None:
             {
                 "experiment": previous_experiment,
                 "revision": record.get("revision"),
-                "status": "stopped_invalid_retry_source_e1",
+                "status": "canceled_for_dense_checkpoint_restart",
                 "maxValidatedEpoch": 96,
                 "output": record.get("output"),
                 "stoppedAt": datetime.now(tz=UTC).isoformat(),
@@ -212,15 +210,18 @@ def register(report: dict[str, Any], experiment: str, revision: str) -> None:
             "revision": revision,
             "status": "submitted",
             "beakerStatus": "submitted",
-            "currentEpoch": 112,
+            "currentEpoch": runner.CHECKPOINT_EPOCHS[0],
             "currentPhase": "repacked_shuffled_pool3b_constant_lr",
             "continuationSourceEpoch": 96,
             "continuationSourceCheckpoint": str(
                 runner.EXPECTED_OUTPUT / f"step{runner.checkpoint_step(96)}"
             ),
             "continuationTargetEpoch": 256,
-            "continuationCheckpointEpochs": list(runner.TARGET_EPOCHS),
+            "targetEpochs": [16, 32, 48, 64, 80, 96, *runner.CHECKPOINT_EPOCHS],
+            "continuationCheckpointEpochs": list(runner.CHECKPOINT_EPOCHS),
             "evaluationEpochs": list(runner.EVALUATION_EPOCHS),
+            "checkpointIntervalEpochs": runner.CHECKPOINT_INTERVAL_EPOCHS,
+            "checkpointCleanupKeepEpochs": list(runner.EVALUATION_EPOCHS),
             "submittedAt": datetime.now(tz=UTC).isoformat(),
         }
     )
@@ -232,9 +233,7 @@ def write_report(report: dict[str, Any]) -> None:
     report["updatedAt"] = datetime.now(tz=UTC).isoformat()
     REPORT.write_text(json.dumps(report, indent=2) + "\n")
     REPORT_JS.write_text(
-        "window.ICSL_CHECKPOINT_PRODUCER_GRID="
-        + json.dumps(report, separators=(",", ":"))
-        + ";\n"
+        "window.ICSL_CHECKPOINT_PRODUCER_GRID=" + json.dumps(report, separators=(",", ":")) + ";\n"
     )
 
 

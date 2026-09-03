@@ -1,5 +1,5 @@
 {
-  "policy": "dense_474m_pool3b_bs256_e96_continuation_v1",
+  "policy": "dense_474m_pool3b_bs256_e96_continuation_v2",
   "sourcePool": "dclm3b",
   "sourcePoolTokens": 3000000000,
   "targetPool": "dclm3b",
@@ -10,6 +10,7 @@
   "sourceEpoch": 96,
   "targetEpochs": [112, 128, 144, 160, 176, 192, 208, 224, 240, 256],
   "evaluationEpochs": [112, 128, 144, 160, 176, 192, 208, 224, 240, 256],
+  "checkpointIntervalEpochs": 2,
   "producerCoordinate": {
     "id": "dense-474m-dclm3b-bs256-lr2e-3-wd0.1",
     "model": "474m",

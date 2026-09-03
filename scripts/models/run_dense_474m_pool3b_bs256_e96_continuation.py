@@ -1,28 +1,36 @@
 #!/usr/bin/env python3
-"""Continue 474M Pool-3B BS256 from the exact E96 pre-decay checkpoint."""
+"""Continue 474M Pool-3B BS256 from the exact E96 pre-decay checkpoint.
+
+Checkpoint every two epochs for preemption recovery, evaluate only at the
+existing 16-epoch targets, and remove recovery-only checkpoints after E256.
+"""
 
 from __future__ import annotations
 
 import argparse
 import json
+import shutil
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 import run_dense_small_pool3b_checkpoint_producer as producer
 
-
-POLICY = "dense_474m_pool3b_bs256_e96_continuation_v1"
-DEFAULT_MANIFEST = Path(
-    "scripts/models/manifests/dense-474m-pool3b-bs256-e96-continuation-v1.json"
-)
+POLICY = "dense_474m_pool3b_bs256_e96_continuation_v2"
+DEFAULT_MANIFEST = Path("scripts/models/manifests/dense-474m-pool3b-bs256-e96-continuation-v1.json")
 SOURCE_EPOCH = 96
 TARGET_EPOCHS = (112, 128, 144, 160, 176, 192, 208, 224, 240, 256)
 EVALUATION_EPOCHS = TARGET_EPOCHS
+CHECKPOINT_INTERVAL_EPOCHS = 2
+CHECKPOINT_EPOCHS = tuple(
+    range(
+        SOURCE_EPOCH + CHECKPOINT_INTERVAL_EPOCHS, TARGET_EPOCHS[-1] + 1, CHECKPOINT_INTERVAL_EPOCHS
+    )
+)
+CLEANUP_EPOCHS = tuple(epoch for epoch in CHECKPOINT_EPOCHS if epoch not in EVALUATION_EPOCHS)
 EXPECTED_ID = "dense-474m-dclm3b-bs256-lr2e-3-wd0.1"
 EXPECTED_OUTPUT = Path(
-    "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/"
-    "bs256_dr_wt_embwd_lr2e-3_wd0.1"
+    "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1"
 )
 EXPECTED_REPEATED_MANIFEST = Path(
     "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/"
@@ -73,13 +81,11 @@ def validate_pool_artifacts(config: dict[str, Any]) -> None:
         or len(repeated_value.get("entries") or []) != 1
         or int(repeated_value["entries"][0].get("start_instance", -1)) != 0
         or flattened.get("document_order_preserved") is not True
-        or int(repeated_value["selection"]["requested_tokens"])
-        != producer.TARGET_POOL_TOKENS
+        or int(repeated_value["selection"]["requested_tokens"]) != producer.TARGET_POOL_TOKENS
     ):
         raise RuntimeError("continuation repeated manifest is not sealed Pool-3B")
     if (
-        int(composite_value["selection"]["requested_tokens"])
-        != producer.TARGET_POOL_TOKENS
+        int(composite_value["selection"]["requested_tokens"]) != producer.TARGET_POOL_TOKENS
         or composite_value.get("nestedness_audit", {}).get("passed") is not True
         or audit_value.get("audit", {}).get("passed") is not True
     ):
@@ -119,9 +125,7 @@ def validate_source(item: dict[str, Any]) -> Path:
     return source
 
 
-def validate(
-    config: dict[str, Any], item: dict[str, Any], *, check_filesystem: bool
-) -> None:
+def validate(config: dict[str, Any], item: dict[str, Any], *, check_filesystem: bool) -> None:
     expected = {
         "policy": POLICY,
         "sourcePool": "dclm3b",
@@ -131,6 +135,7 @@ def validate(
         "sourceEpoch": SOURCE_EPOCH,
         "targetEpochs": list(TARGET_EPOCHS),
         "evaluationEpochs": list(EVALUATION_EPOCHS),
+        "checkpointIntervalEpochs": CHECKPOINT_INTERVAL_EPOCHS,
     }
     for key, expected_value in expected.items():
         if config.get(key) != expected_value:
@@ -145,9 +150,7 @@ def validate(
         "learningRate": "2e-3",
         "weightDecay": "0.1",
         "output": str(EXPECTED_OUTPUT),
-        "sourceCheckpoint": str(
-            EXPECTED_OUTPUT / f"step{checkpoint_step(SOURCE_EPOCH)}"
-        ),
+        "sourceCheckpoint": str(EXPECTED_OUTPUT / f"step{checkpoint_step(SOURCE_EPOCH)}"),
         "baseExperiment": "01M1AAHXQ1XNX4RZ2R44RGAV4R",
     }
     for key, expected_value in item_expected.items():
@@ -164,10 +167,10 @@ def pending_state(item: dict[str, Any]) -> tuple[int, Path, list[int]]:
     source = Path(str(item["sourceCheckpoint"]))
     complete_epochs = [
         epoch
-        for epoch in TARGET_EPOCHS
+        for epoch in CHECKPOINT_EPOCHS
         if checkpoint_complete(EXPECTED_OUTPUT / f"step{checkpoint_step(epoch)}")
     ]
-    for epoch in TARGET_EPOCHS:
+    for epoch in CHECKPOINT_EPOCHS:
         path = EXPECTED_OUTPUT / f"step{checkpoint_step(epoch)}"
         if path.exists() and epoch not in complete_epochs:
             raise RuntimeError(f"refusing to overwrite incomplete checkpoint {path}")
@@ -177,8 +180,39 @@ def pending_state(item: dict[str, Any]) -> tuple[int, Path, list[int]]:
         if resume_epoch == SOURCE_EPOCH
         else EXPECTED_OUTPUT / f"step{checkpoint_step(resume_epoch)}"
     )
-    pending = [epoch for epoch in TARGET_EPOCHS if epoch > resume_epoch]
+    pending = [epoch for epoch in CHECKPOINT_EPOCHS if epoch > resume_epoch]
     return resume_epoch, resume, pending
+
+
+def cleanup_nonessential_checkpoints(state_dir: Path) -> list[int]:
+    missing_essential = [
+        epoch
+        for epoch in EVALUATION_EPOCHS
+        if not checkpoint_complete(EXPECTED_OUTPUT / f"step{checkpoint_step(epoch)}")
+    ]
+    if missing_essential:
+        raise RuntimeError(
+            f"refusing checkpoint cleanup before essential checkpoints are complete: {missing_essential}"
+        )
+    removed: list[int] = []
+    for epoch in CLEANUP_EPOCHS:
+        path = EXPECTED_OUTPUT / f"step{checkpoint_step(epoch)}"
+        if not path.exists():
+            continue
+        if not checkpoint_complete(path):
+            raise RuntimeError(f"refusing to delete incomplete checkpoint {path}")
+        shutil.rmtree(path)
+        removed.append(epoch)
+    producer.atomic_json(
+        state_dir / "checkpoint_cleanup.json",
+        {
+            "policy": POLICY,
+            "status": "complete",
+            "removedEpochs": removed,
+            "preservedEvaluationEpochs": list(EVALUATION_EPOCHS),
+        },
+    )
+    return removed
 
 
 def producer_arguments(
@@ -190,11 +224,11 @@ def producer_arguments(
         "--dynamic-repacking",
         f"--save-folder={EXPECTED_OUTPUT}",
         f"--trainer.max_duration={{value: {target_steps[-1]}, unit: steps}}",
-        f"--trainer.callbacks.wandb.name={EXPECTED_ID}-constant-pd-e96-e256-v1",
+        f"--trainer.callbacks.wandb.name={EXPECTED_ID}-constant-pd-e96-e256-v2",
         (
             "--trainer.callbacks.wandb.tags=[pretraining,step1,0802,pool3b-repeat,"
             "dense-474m,dr_wt_embwd,bs256,lr2e-3,wd0.1,constant-lr,pre-decay,"
-            "e96-e256-continuation]"
+            "e96-e256-continuation,dense-checkpoint-recovery]"
         ),
         "--trainer.callbacks.checkpointer.fixed_steps="
         + json.dumps(target_steps, separators=(",", ":")),
@@ -205,10 +239,11 @@ def producer_arguments(
 def run(config: dict[str, Any], item: dict[str, Any]) -> None:
     validate(config, item, check_filesystem=True)
     resume_epoch, resume, pending = pending_state(item)
+    state_dir = EXPECTED_OUTPUT / ".constant_checkpoint_producer_pool3b_e96_e256_v2"
     if not pending:
+        cleanup_nonessential_checkpoints(state_dir)
         print(f"DENSE_SMALL_POOL3B_PRODUCER_COMPLETE id={EXPECTED_ID}", flush=True)
         return
-    state_dir = EXPECTED_OUTPUT / ".constant_checkpoint_producer_pool3b_e96_e256_v1"
     state = {
         "policy": POLICY,
         "id": EXPECTED_ID,
@@ -220,6 +255,8 @@ def run(config: dict[str, Any], item: dict[str, Any]) -> None:
         "resumeCheckpoint": str(resume),
         "output": str(EXPECTED_OUTPUT),
         "targetEpochs": list(TARGET_EPOCHS),
+        "checkpointIntervalEpochs": CHECKPOINT_INTERVAL_EPOCHS,
+        "checkpointEpochs": list(CHECKPOINT_EPOCHS),
         "pendingEpochs": pending,
         "evaluationEpochs": list(EVALUATION_EPOCHS),
         "evaluationEnabled": False,
@@ -236,14 +273,22 @@ def run(config: dict[str, Any], item: dict[str, Any]) -> None:
         flush=True,
     )
     producer.run_torch(
-        f"{EXPECTED_ID}-constant-pd-e96-e256-v1",
+        f"{EXPECTED_ID}-constant-pd-e96-e256-v2",
         producer_arguments(config, item, resume, pending),
         state_dir / "producer.log",
     )
     _, _, remaining = pending_state(item)
     if remaining:
         raise RuntimeError(f"continuation exited without complete checkpoints {remaining}")
-    state.update({"status": "complete", "phase": "complete", "pendingEpochs": []})
+    removed = cleanup_nonessential_checkpoints(state_dir)
+    state.update(
+        {
+            "status": "complete",
+            "phase": "complete",
+            "pendingEpochs": [],
+            "removedRecoveryEpochs": removed,
+        }
+    )
     producer.atomic_json(state_dir / "producer.json", state)
     print(f"DENSE_SMALL_POOL3B_PRODUCER_COMPLETE id={EXPECTED_ID}", flush=True)
 

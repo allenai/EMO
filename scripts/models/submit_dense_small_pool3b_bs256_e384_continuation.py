@@ -15,7 +15,6 @@ from typing import Any
 import run_dense_small_pool3b_bs256_e384_continuation as runner
 import submit_dense_small_pool3b_checkpoint_evaluator as evaluator_submitter
 
-
 WORKSPACE = "ai2/flex2"
 REPORT = Path("reports/0802/data/wsd_checkpoint_producer_grid.json")
 REPORT_JS = REPORT.with_suffix(".js")
@@ -90,9 +89,7 @@ def clean_task(spec: dict[str, Any], revision: str, priority: str) -> dict[str, 
 
 def producer_record(report: dict[str, Any]) -> dict[str, Any]:
     matches = [
-        record
-        for record in report.get("producers", [])
-        if record.get("id") == runner.EXPECTED_ID
+        record for record in report.get("producers", []) if record.get("id") == runner.EXPECTED_ID
     ]
     if len(matches) != 1:
         raise RuntimeError(f"report must contain exactly one {runner.EXPECTED_ID}")
@@ -123,8 +120,8 @@ def ensure_producer_ready(report: dict[str, Any], item: dict[str, Any]) -> None:
     }:
         raise RuntimeError("exact E256 pre-decay checkpoint is not resolved")
     current_experiment = str(record.get("experiment"))
-    if beaker_state(current_experiment) != "complete":
-        raise RuntimeError("current producer is not terminal-complete; refusing a second writer")
+    if beaker_state(current_experiment) == "active":
+        raise RuntimeError("current producer is active; refusing a second writer")
     if Path(str(item["sourceCheckpoint"])) != Path(str(record["output"])) / "step659179":
         raise RuntimeError("continuation source is not the registered exact E256 checkpoint")
 
@@ -152,16 +149,14 @@ def existing_named_experiment(name: str) -> str | None:
 
 
 def producer_name() -> str:
-    return f"{runner.EXPECTED_ID}-continuation-e256-e384-v1"
+    return f"{runner.EXPECTED_ID}-continuation-e256-e384-v2"
 
 
 def evaluator_name(epoch: int) -> str:
     return f"{runner.EXPECTED_ID}-post-e{epoch}-v1"
 
 
-def producer_spec(
-    item: dict[str, Any], revision: str, priority: str
-) -> dict[str, Any]:
+def producer_spec(item: dict[str, Any], revision: str, priority: str) -> dict[str, Any]:
     spec = copy.deepcopy(
         json.loads(
             command(
@@ -185,8 +180,9 @@ def producer_spec(
     ]
     spec["description"] = (
         "153M DCLM-3B BS256 LR2e-3 WD0.1 constant-LR continuation from exact "
-        "selected-recovery pre-decay E256 step659179; retain E320 step823974 and "
-        "E384 step988769; no inline evaluation; 8 GPUs, rank microbatch 16, "
+        "selected-recovery pre-decay E256 step659179; checkpoint every 4 epochs, "
+        "retain E320 step823974 and E384 step988769 for evaluation, then delete "
+        "recovery-only checkpoints; no inline evaluation; 8 GPUs, rank microbatch 16, "
         "gradient accumulation 2, auto-resume, eight retries; minRuntime omitted; "
         f"write only to {item['output']}."
     )
@@ -243,9 +239,7 @@ def create(name: str, spec: dict[str, Any]) -> str:
     return identifiers[0]
 
 
-def register_producer(
-    report: dict[str, Any], experiment: str, revision: str
-) -> None:
+def register_producer(report: dict[str, Any], experiment: str, revision: str) -> None:
     record = producer_record(report)
     previous_experiment = str(record["experiment"])
     history = record.setdefault("experimentHistory", [])
@@ -254,10 +248,11 @@ def register_producer(
             {
                 "experiment": previous_experiment,
                 "revision": record.get("revision"),
-                "status": "complete",
-                "maxEpoch": 256,
+                "status": "stopped_for_dense_checkpoint_restart",
+                "maxValidatedEpoch": 256,
                 "output": record.get("output"),
                 "recoveryAttempt": record.get("recoveryAttempt"),
+                "stoppedAt": datetime.now(tz=UTC).isoformat(),
             }
         )
     record.update(
@@ -266,23 +261,23 @@ def register_producer(
             "revision": revision,
             "status": "submitted",
             "beakerStatus": "submitted",
-            "currentEpoch": 320,
+            "currentEpoch": runner.CHECKPOINT_EPOCHS[0],
             "currentPhase": "repacked_shuffled_pool3b_constant_lr",
-            "targetEpochs": [32, 64, 96, 128, 160, 192, 224, 256, 320, 384],
+            "targetEpochs": [32, 64, 96, 128, 160, 192, 224, 256, *runner.CHECKPOINT_EPOCHS],
             "continuationSourceEpoch": 256,
             "continuationTargetEpoch": 384,
-            "continuationCheckpointEpochs": [320, 384],
+            "continuationCheckpointEpochs": list(runner.CHECKPOINT_EPOCHS),
             "evaluationEpochs": [320, 384],
+            "checkpointIntervalEpochs": runner.CHECKPOINT_INTERVAL_EPOCHS,
+            "checkpointCleanupKeepEpochs": list(runner.EVALUATION_EPOCHS),
             "submittedAt": datetime.now(tz=UTC).isoformat(),
         }
     )
-    for key in ("job", "jobs", "wandbHealth", "needsAttention"):
+    for key in ("job", "jobs", "wandbHealth", "needsAttention", "minRuntime"):
         record.pop(key, None)
 
 
-def register_evaluator(
-    item: dict[str, Any], epoch: int, experiment: str, revision: str
-) -> None:
+def register_evaluator(item: dict[str, Any], epoch: int, experiment: str, revision: str) -> None:
     evaluator_submitter.register(
         item,
         epoch,
@@ -297,9 +292,7 @@ def write_report(report: dict[str, Any]) -> None:
     report["updatedAt"] = datetime.now(tz=UTC).isoformat()
     REPORT.write_text(json.dumps(report, indent=2) + "\n")
     REPORT_JS.write_text(
-        "window.ICSL_CHECKPOINT_PRODUCER_GRID="
-        + json.dumps(report, separators=(",", ":"))
-        + ";\n"
+        "window.ICSL_CHECKPOINT_PRODUCER_GRID=" + json.dumps(report, separators=(",", ":")) + ";\n"
     )
 
 

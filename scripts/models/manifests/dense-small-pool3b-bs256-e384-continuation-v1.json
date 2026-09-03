@@ -1,5 +1,5 @@
 {
-  "policy": "dense_small_pool3b_bs256_e384_continuation_v1",
+  "policy": "dense_small_pool3b_bs256_e384_continuation_v2",
   "sourcePool": "dclm3b",
   "sourcePoolTokens": 3000000000,
   "targetPool": "dclm3b",
@@ -10,6 +10,7 @@
   "sourceEpoch": 256,
   "targetEpochs": [320, 384],
   "evaluationEpochs": [320, 384],
+  "checkpointIntervalEpochs": 4,
   "producerCoordinate": {
     "id": "dense-153m-dclm3b-bs256-lr2e-3-wd0.1",
     "model": "153m",
