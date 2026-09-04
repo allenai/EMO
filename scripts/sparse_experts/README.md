@@ -50,7 +50,7 @@ W&B project `emo-extension`, tags `[pretraining, sparse_experts, sparse_h256]`.
 |---|---|---|---|---|
 | `sparse_8of1024_10b` | https://beaker.org/ex/01M1HYDT9HCAHFR6FW75ATNAJM (allocated, urgent, 8 nodes) | f7813f54 | 2026-09-02 | FAILED at first step: grouped_gemm 0.3.0 `At most 512 experts are supported when batch_sizes is a CUDA tensor` (Beaker image kernel limit). Needs a fix in `MoEMLP.gmm` before relaunch. |
 | `sparse_8of512_10b` | https://beaker.org/ex/01M1M32WG6VSPKDXWVPDNZ5661 (allocated, urgent, 8 nodes) | 0235822 | 2026-09-03 | DONE 2026-09-04: 2385 steps, final train CE 2.98, ckpts step{596,1192,1788,2384,2385} |
-| `sparse_8of1024_10b` (relaunch) | https://beaker.org/ex/01M1NG1HKZCH03MHEN8CDXND6A (allocated, urgent, 8 nodes) | af71ff93 | 2026-09-04 | grouped_gemm >512 fix verified first: check 01M1M3TVYYANS2K4DE4YR0R4M6 (all OK), smoke 01M1NFBSA4SHX8CMJERFAC3S9K (20 steps, exit 0) |
+| `sparse_8of1024_10b` (relaunch) | https://beaker.org/ex/01M1NG1HKZCH03MHEN8CDXND6A (allocated, urgent, 8 nodes) | af71ff93 | 2026-09-04 | DONE 2026-09-04: 2385 steps, final train CE 2.97 (512: 2.98), 10.9k tok/s/GPU, ckpts step{596,1192,1500,1788,2000,2384,2385} (~297 GB each). grouped_gemm >512 fix verified first: check 01M1M3TVYYANS2K4DE4YR0R4M6 (all OK), smoke 01M1NFBSA4SHX8CMJERFAC3S9K (20 steps, exit 0) |
 
 ## Co-activation analysis of sparse_8of512_10b (2026-09-04)
 
