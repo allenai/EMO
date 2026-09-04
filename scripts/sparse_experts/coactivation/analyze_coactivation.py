@@ -353,14 +353,18 @@ def analyze_pool(pool_dir: Path, sources: list, k_clusters: int, figs: Path, tag
 # --------------------------------------------------------------------------------------------
 # figures
 # --------------------------------------------------------------------------------------------
-def save_png(fig, path, dpi):
-    """Save then quantise to an 8-bit palette (near-lossless for heatmaps, ~3x smaller; the report
-    page embeds every figure and must stay under Cloudflare Pages' 25 MiB file limit)."""
+def save_png(fig, path, dpi, colors=256):
+    """Save then quantise to a palette (near-lossless for heatmaps, ~3x smaller; the report page
+    embeds every figure for two models and must stay under Cloudflare Pages' 25 MiB file limit).
+    The 4x4 heatmap grids use dpi 68 / 128 colours (their panels are ~290 px, far below the
+    511- or 1023-expert matrix resolution anyway)."""
     fig.savefig(path, dpi=dpi)
     try:
         from PIL import Image
 
-        im = Image.open(path).convert("RGB").quantize(colors=256, method=Image.Quantize.MEDIANCUT)
+        im = (
+            Image.open(path).convert("RGB").quantize(colors=colors, method=Image.Quantize.MEDIANCUT)
+        )
         im.save(path, optimize=True)
     except ImportError:
         pass
@@ -404,7 +408,7 @@ def make_pool_figures(res, agg, order_by_layer, Es, L, figs: Path, tag: str):
             fontsize=12,
         )
         fig.colorbar(im, ax=axes.ravel().tolist(), shrink=0.3, label="log2 lift", location="right")
-        save_png(fig, figs / f"{tag}_lift_{name}_grid.png", 80)
+        save_png(fig, figs / f"{tag}_lift_{name}_grid.png", 68, colors=128)
         plt.close(fig)
     # conditional co-activation grids: P(j | i) = C_ij / C_i, rows = conditioning expert
     for name, C, NN in [("tok", Ct, N), ("doc", Cd, Nd)]:
@@ -443,7 +447,7 @@ def make_pool_figures(res, agg, order_by_layer, Es, L, figs: Path, tag: str):
             fontsize=12,
         )
         fig.colorbar(im, ax=axes.ravel().tolist(), shrink=0.3, label="P(j | i)", location="right")
-        save_png(fig, figs / f"{tag}_cond_{name}_grid.png", 80)
+        save_png(fig, figs / f"{tag}_cond_{name}_grid.png", 68, colors=128)
         plt.close(fig)
     # usage per layer (sorted, log)
     fig, ax = plt.subplots(figsize=(9, 4))

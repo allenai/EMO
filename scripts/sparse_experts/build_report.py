@@ -289,6 +289,40 @@ def compare_fig(name, caption):
 # --------------------------------------------------------------------------
 # tabs
 # --------------------------------------------------------------------------
+def h5_verdict(sa, sb):
+    """One-sentence reading of the 512 -> 1024 comparison, computed from the numbers."""
+    dq = sb["q_1plus"] - sa["q_1plus"]
+    ratio_a = sa["psq"]["dclm"] / sa["q_mid"]
+    ratio_b = sb["psq"]["dclm"] / sb["q_mid"]
+    parts = []
+    if dq > 0.01:
+        parts.append(
+            f"<b>Reading:</b> the 1024 model is modestly but consistently <i>more</i> modular (+{dq:.3f} in Q, "
+            "confirmed by Louvain in every layer beyond 0; conservative, since sparser counts can only lower "
+            "a spectral Q), with a heavier lift tail and each document touching a smaller fraction of the "
+            "experts"
+        )
+    elif dq < -0.01:
+        parts.append(f"<b>Reading:</b> the 1024 model is <i>less</i> modular ({dq:+.3f} in Q)")
+    else:
+        parts.append("<b>Reading:</b> modularity is unchanged within noise")
+    if abs(ratio_b - ratio_a) < 0.05 and abs(sb["jmean"] - sa["jmean"]) < 0.03:
+        parts.append(
+            f"; but the within-source / pooled Q ratio ({ratio_a:.2f} vs {ratio_b:.2f}) and the cross-source "
+            "overlap of the strongest pairs are unchanged, so the extra experts did <i>not</i> sharpen "
+            "domain specialisation &mdash; the same organisation is expressed over more, finer blocks"
+        )
+    else:
+        parts.append(
+            f"; the within-source / pooled Q ratio moves {ratio_a:.2f} &rarr; {ratio_b:.2f} and cross-source "
+            f"overlap {sa['jmean']:.2f} &rarr; {sb['jmean']:.2f}"
+        )
+    return (
+        "".join(parts)
+        + ". H5 is half right: sparser and more modular, yes; sharper domain split, no."
+    )
+
+
 def build_overview(models) -> str:
     st = {m.label: stats(m) for m in models}
     st64 = {m.label: stats(m, "pool_64") for m in models if m.p64}
@@ -370,7 +404,7 @@ def build_overview(models) -> str:
             f"per layer with 512 and {100 * mean(sb['upd_frac']):.0f}% with 1024. Within-source modularity "
             f"(dclm, layers 2+) {sa['psq']['dclm']:.2f} &rarr; {sb['psq']['dclm']:.2f} against pooled "
             f"{sa['q_mid']:.2f} &rarr; {sb['q_mid']:.2f}; cross-source top-pair overlap (mean Jaccard) "
-            f"{sa['jmean']:.2f} &rarr; {sb['jmean']:.2f}. See the per-tab conclusions for the reading.</li>"
+            f"{sa['jmean']:.2f} &rarr; {sb['jmean']:.2f}. " + h5_verdict(sa, sb) + "</li>"
         )
     items.append(
         "<li><b>H2 partly.</b> Layer 0 is far more modular ("
@@ -719,6 +753,16 @@ def build_pool64(models) -> str:
             "the 512 model's experts but 6.3% of the 1024 model's, so the 1024 model is the more selective "
             "setting here.</p>"
         )
+    concl += (
+        "<p><b>Caveat on layer 0 under the pool.</b> Under the 64-expert pool a few experts receive no "
+        "tokens at all in layer 0 ("
+        + "; ".join(
+            f"{m.label}: {m.p64['layers']['0']['sample']['usage']['unused']} unused" for m in ms
+        )
+        + "). Isolated nodes make the k=8 spectral partition degenerate (near-zero Q for the 1024 model), "
+        "while Louvain, which handles them, still finds Q &asymp; 0.4 there. Read the Louvain column for "
+        "that cell.</p>"
+    )
     return (
         card(
             "goal",
