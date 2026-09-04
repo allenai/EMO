@@ -190,20 +190,26 @@ class _NoHead(nn.Module):
         return h
 
 
-def build_model(checkpoint: Path, device, model_dtype):
+def build_model(checkpoint: Path, device, model_dtype, attn_backend=None):
     # config.json at the step-dir level is the experiment config (same recipe as
     # scripts/modular_extension/eval_k32cpt_ce.py; olmo_core.nn.hf.load_config is avoided on purpose).
     from olmo_core.nn.transformer import TransformerConfig
 
     tcfg = json.load(open(checkpoint / "config.json"))["model"]
+    if attn_backend is not None:  # local testing without flash-attn
+        tcfg["block"]["sequence_mixer"]["backend"] = attn_backend
     model = TransformerConfig.from_dict(tcfg).build(init_device="meta")
+    # Cast on the meta device BEFORE materialising: the fp32 model is 4 bytes/param (106 GB for the
+    # 26.5B-param 1024-expert arm -> OOM on an 80 GB GPU); bf16 halves it. The DCP loader casts the
+    # fp32 checkpoint shards into the bf16 parameters on load (verified bit-identical to
+    # load-in-fp32-then-cast on the 512 arm).
+    if model_dtype != torch.float32:
+        model.to(model_dtype)
     model.to_empty(device=device)
     from olmo_core.distributed.checkpoint import load_model_and_optim_state
 
     with TemporaryDirectory() as wd:
         load_model_and_optim_state(str(checkpoint / "model_and_optim"), model, work_dir=wd)
-    if model_dtype != torch.float32:
-        model.to(model_dtype)
     model.lm_head = _NoHead()
     model.eval()
     routers = [blk.feed_forward_moe.router for blk in model.blocks.values()]
