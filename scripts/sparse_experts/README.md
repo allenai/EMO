@@ -51,3 +51,20 @@ W&B project `emo-extension`, tags `[pretraining, sparse_experts, sparse_h256]`.
 | `sparse_8of1024_10b` | https://beaker.org/ex/01M1HYDT9HCAHFR6FW75ATNAJM (allocated, urgent, 8 nodes) | f7813f54 | 2026-09-02 | FAILED at first step: grouped_gemm 0.3.0 `At most 512 experts are supported when batch_sizes is a CUDA tensor` (Beaker image kernel limit). Needs a fix in `MoEMLP.gmm` before relaunch. |
 | `sparse_8of512_10b` | https://beaker.org/ex/01M1M32WG6VSPKDXWVPDNZ5661 (allocated, urgent, 8 nodes) | 0235822 | 2026-09-03 | DONE 2026-09-04: 2385 steps, final train CE 2.98, ckpts step{596,1192,1788,2384,2385} |
 | `sparse_8of1024_10b` (relaunch) | https://beaker.org/ex/01M1NG1HKZCH03MHEN8CDXND6A (allocated, urgent, 8 nodes) | af71ff93 | 2026-09-04 | grouped_gemm >512 fix verified first: check 01M1M3TVYYANS2K4DE4YR0R4M6 (all OK), smoke 01M1NFBSA4SHX8CMJERFAC3S9K (20 steps, exit 0) |
+
+## Co-activation analysis of sparse_8of512_10b (2026-09-04)
+
+Design: `coactivation/PROPOSAL.md`. Pipeline: `coactivation/sample_docs.py` (40k held-out docs from the
+20B-40B window, stratified 24k dclm / 4k each starcoder, pes2o, proof-pile-2, olmo-mix; truncated to
+4,095 tokens + EOS; 50.9M tokens) -> `coactivation/launch_beaker.sh` (1 allocated node x 8 GPUs, native
+forward, router hooks; pilot 01M1NKCXQ4ETAB0TX1HDV71XHF, full 01M1NS78PJJXY5KJW8GE8ABE88, ~80k tok/s/GPU)
+-> `coactivation/analyze_coactivation.py` -> `build_report.py` (claude_outputs/sparse_experts/report.html).
+Data on weka: `sparse_experts/coactivation/sparse_8of512_10b_step2384/pool_{config,64}/` (counts.npz,
+topk.npy int16 (N,16,7), tok_doc/tok_pos, info.json; 50 GB total).
+
+Headline (full routing, eval pool 512): modularity of the token co-activation graph Q = 0.25-0.36 in
+layers 1-15 and 0.48 in layer 0 (shuffled null 0); Louvain 4-10 communities/layer; effective #experts
+411-435 of 511, none unused; only 0-2% of pairs never co-activate beyond layer 2 (45% in layer 0);
+median lift 0.15-0.40 with p99 9-31 (heavy tail = the structure); token-vs-doc lift Spearman rises 0.09
+(layer 0) -> 0.5 (late); docs touch ~400 experts/layer early -> ~230 late. Pool 64: Q 0.30-0.35,
+token-vs-doc agreement 0.7-0.9, effective experts 331-413.
