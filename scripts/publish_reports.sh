@@ -29,6 +29,7 @@ EXPERIMENTS=(
     "models_v2|stdMoE token-budget / expert-count sweep (64exp@25B, 64exp@50B, 128exp@50B) with the LR cosine decayed over the true token budget; live training + eval curves from W&B"
     "modular_extension|document-level router clustering of the EMO 100B–110B training window (k=64), and what distinguishes each cluster: a few consistently-used experts vs subtle distributed usage (soft affinity vs hard selection)"
     "meta_learning|FOMAML pretraining for selective-expert update transfer: two-pass train step (selective 32-expert inner pass + pseudo-step, full-model outer pass with working-set updates); incl. the bf16 pseudo-step quantization finding and the documented first-launch negative result"
+    "sparse_experts|quarter-size experts, 8 active of 128/256/512/1024: pairwise expert co-activation per layer of the 8-of-512 model on 40k unseen documents (51M tokens), full routing vs pool-64 routing, token- and document-level, per source"
 )
 
 PROJECT="emo-reports"
