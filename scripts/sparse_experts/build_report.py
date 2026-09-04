@@ -165,6 +165,23 @@ def build_overview(an: dict) -> str:
     never = [pc["layers"][str(li)]["sample"]["pairs"]["never_coactive_frac"] for li in range(L)]
     rho = [pc["layers"][str(li)]["sample"]["token_vs_doc_spearman"] for li in range(L)]
     upd = pc["unique_experts_per_doc"]["mean_by_layer"]
+    mid = range(2, L)
+    qmean_mid = sum(pc["layers"][str(li)]["sample"]["structure"]["Q_spectral"] for li in mid) / len(
+        mid
+    )
+    psq = {
+        s: sum(v["layers"][str(li)]["Q_spectral"] for li in mid) / len(mid)
+        for s, v in pc["per_source"].items()
+    }
+    xs = pc["cross_source"]
+    S = len(xs["sources"])
+    jvals = [
+        sum(xs["layers"][str(li)]["top1pct_pair_jaccard"][a][b] for li in range(L)) / L
+        for a in range(S)
+        for b in range(S)
+        if a < b
+    ]
+    jmin, jmax = min(jvals), max(jvals)
     goal = (
         "<p><b>sparse_experts</b> asks how EMO's routing structure changes when each expert is a quarter "
         "of the size (expert hidden 256 instead of 1024) and the total expert count grows 128 &rarr; 1024 "
@@ -227,7 +244,12 @@ def build_overview(an: dict) -> str:
             if qmean64
             else "."
         )
-        + "</li></ul>"
+        + "</li>"
+        f"<li><b>Much of the pooled structure is domain-driven.</b> Within a single source the modularity "
+        f"is lower (layers 2&ndash;15 mean Q: {', '.join(f'{s} {q:.2f}' for s, q in psq.items())}) than in the "
+        f"pooled matrix ({qmean_mid:.2f}), and the top-1% pairs overlap only {jmin:.2f}&ndash;{jmax:.2f} "
+        "(Jaccard) between sources: the strongest co-activation blocks are largely sets of experts that "
+        "specialise on the same domain. Layer 0 is the exception, modular within every source.</li></ul>"
     )
     figs = COACT / RUN / "figs"
     return (
