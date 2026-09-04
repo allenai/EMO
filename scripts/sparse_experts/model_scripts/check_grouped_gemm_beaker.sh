@@ -12,6 +12,6 @@ source "$(dirname "${BASH_SOURCE[0]}")/../../launch_common.sh"
 BEAKER_NODES=1
 BEAKER_GPUS=1
 NPROC=1
-# small job: leave preemptible (default)
+PREEMPTIBLE=0   # allocated: even 1-GPU smoke/check jobs schedule much faster than preemptible
 
 launch scripts/sparse_experts/check_grouped_gemm.py check_grouped_gemm_1024 "$@"
