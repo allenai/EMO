@@ -26,6 +26,10 @@ DATA_ROOT="s3://ai2-llm"
 BEAKER_NODES=4
 BEAKER_GPUS=8
 BEAKER_NO_FOLLOW=1
+# 4-node OOM fix: the 8-node adam arm peaked at 68.2/76.4 GiB (96% reserved, ~8 GiB
+# fragmentation). At 4 nodes the FSDP shard grows per GPU; recover the fragmentation
+# and halve rank_microbatch (16384->8192 tokens; same global batch, +grad accum).
+BEAKER_ENV_VARS=(PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True)
 
 lr=2e-3
 lb=1e-1
@@ -80,6 +84,7 @@ launch src/scripts/train/olmoe-1B-7B_fsl_meta.py $runname \
 		--lr=${lr} \
 		--model.block.feed_forward_moe.lb_loss_weight=${lb} \
 		--train_module.meta_mode=same_tokens \
+		--train_module.rank_microbatch_size=8192 \
 		--train_module.inner_optim=adam \
 		--train_module.inner_lr_mode=match_lr \
 		--train_module.inner_lr=${inner_lr} \
