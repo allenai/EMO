@@ -261,24 +261,18 @@ def register_producer(report: dict[str, Any], experiment: str, revision: str) ->
         {
             "experiment": experiment,
             "revision": revision,
+            "policy": runner.POLICY,
             "status": "submitted",
             "beakerStatus": "submitted",
-            "currentEpoch": next(
-                (
-                    epoch
-                    for epoch in runner.CHECKPOINT_EPOCHS
-                    if epoch not in {int(value) for value in record.get("resolvedCheckpointEpochs", [])}
-                ),
-                None,
-            ),
-            "currentPhase": "integrated_post_gate_or_constant_lr",
+            "currentEpoch": runner.EVALUATION_EPOCHS[0],
+            "currentPhase": "post_pending",
             "targetEpochs": [32, 64, 96, 128, 160, 192, 224, 256, *runner.CHECKPOINT_EPOCHS],
             "continuationSourceEpoch": 256,
             "continuationTargetEpoch": 384,
             "continuationCheckpointEpochs": list(runner.CHECKPOINT_EPOCHS),
             "evaluationEpochs": [320, 384],
             "checkpointIntervalEpochs": runner.CHECKPOINT_INTERVAL_EPOCHS,
-            "checkpointCleanupKeepEpochs": list(runner.EVALUATION_EPOCHS),
+            "checkpointCleanupKeepEpochs": [runner.SOURCE_EPOCH, *runner.EVALUATION_EPOCHS],
             "role": "integrated_checkpoint_producer_and_evaluator",
             "evaluationEnabled": True,
             "decayEnabled": True,
