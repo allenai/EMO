@@ -68,3 +68,15 @@ layers 1-15 and 0.48 in layer 0 (shuffled null 0); Louvain 4-10 communities/laye
 median lift 0.15-0.40 with p99 9-31 (heavy tail = the structure); token-vs-doc lift Spearman rises 0.09
 (layer 0) -> 0.5 (late); docs touch ~400 experts/layer early -> ~230 late. Pool 64: Q 0.30-0.35,
 token-vs-doc agreement 0.7-0.9, effective experts 331-413.
+
+### 1024-expert co-activation + side-by-side comparison (2026-09-04)
+
+Same 40k docs / both pools on `sparse_8of1024_10b/step2384` (`MODEL=sparse_8of1024_10b` for the launcher;
+Beaker 01M1Q3GZK2TP99MDKW03RJW8FK; first attempt OOMed materialising the 26.5B model in fp32 -> extractor now
+casts to bf16 on the meta device before `to_empty`, verified bit-identical on the 512 arm). Cross-model
+figures: `coactivation/compare_runs.py` -> `claude_outputs/sparse_experts/coactivation/compare/`; the report
+renders every results section 512 | 1024. Full routing, 512 -> 1024: mean Q (layers 1+) 0.284 -> 0.313 (Louvain
+higher in every layer beyond 0), lift p99 11.3 -> 14.8, experts touched per doc 60% -> 49% of the standard
+experts, effective experts 83% -> 81%, token-doc rho 0.42 -> 0.44; within-source/pooled Q ratio (dclm) and
+cross-source top-pair Jaccard unchanged (~0.86, ~0.19). Pool 64: Q 0.335 -> 0.361, eff. experts 77% -> 69%.
+Caveat: pool-64 layer 0 of the 1024 model has 41 unused experts -> spectral k=8 degenerate (Q~0); Louvain 0.40.
