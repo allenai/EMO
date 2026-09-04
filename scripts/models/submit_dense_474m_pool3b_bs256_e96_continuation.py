@@ -145,7 +145,7 @@ def existing_named_experiment(name: str) -> str | None:
 
 
 def producer_name() -> str:
-    return f"{runner.EXPECTED_ID}-continuation-e96-e256-v3"
+    return f"{runner.EXPECTED_ID}-integrated-e96-e256-v4"
 
 
 def producer_spec(item: dict[str, Any], revision: str, priority: str) -> dict[str, Any]:
@@ -167,9 +167,11 @@ def producer_spec(item: dict[str, Any], revision: str, priority: str) -> dict[st
     task["arguments"] = ["python", RUNNER, "--manifest", str(MANIFEST)]
     spec["description"] = (
         "474M DCLM-3B BS256 LR2e-3 WD0.1 constant-LR continuation from exact "
-        "validated pre-decay E96 step247192 through E256; checkpoint every 2 "
-        "epochs, preserve the existing evaluation checkpoints, and delete "
-        "recovery-only checkpoints after E256; isolated output writer; "
+        "validated pre-decay E96 step247192; checkpoint every 2 epochs and "
+        "immediately run isolated 10% WSD decay plus heldout evaluation at every "
+        "16-epoch target before further training; stop on strict non-improvement "
+        "or at the E256 hard ceiling, then delete recovery-only checkpoints; "
+        "isolated output writer; "
         "8 GPUs, rank microbatch 16, gradient accumulation 2, expandable CUDA "
         "segments, auto-resume, eight retries; minRuntime intentionally omitted."
     )
@@ -195,17 +197,13 @@ def register(report: dict[str, Any], experiment: str, revision: str) -> None:
     previous_experiment = str(record["experiment"])
     history = record.setdefault("experimentHistory", [])
     if not any(entry.get("experiment") == previous_experiment for entry in history):
-        previous_status = (
-            "failed_missing_expandable_segments_wrong_restart_source"
-            if record.get("status") == "failed"
-            else "replaced_for_exact_e96_restart"
-        )
+        previous_status = "canceled_after_next_checkpoint_for_integrated_workflow"
         history.append(
             {
                 "experiment": previous_experiment,
                 "revision": record.get("revision"),
                 "status": previous_status,
-                "maxValidatedEpoch": 96,
+                "maxValidatedEpoch": max(record.get("resolvedCheckpointEpochs") or [96]),
                 "output": record.get("output"),
                 "stoppedAt": datetime.now(tz=UTC).isoformat(),
             }
@@ -214,10 +212,18 @@ def register(report: dict[str, Any], experiment: str, revision: str) -> None:
         {
             "experiment": experiment,
             "revision": revision,
+            "policy": runner.POLICY,
             "status": "submitted",
             "beakerStatus": "submitted",
-            "currentEpoch": runner.CHECKPOINT_EPOCHS[0],
-            "currentPhase": "repacked_shuffled_pool3b_constant_lr",
+            "currentEpoch": next(
+                (
+                    epoch
+                    for epoch in runner.CHECKPOINT_EPOCHS
+                    if epoch not in {int(value) for value in record.get("resolvedCheckpointEpochs", [])}
+                ),
+                None,
+            ),
+            "currentPhase": "integrated_post_gate_or_constant_lr",
             "continuationSourceEpoch": 96,
             "continuationSourceCheckpoint": str(
                 runner.EXPECTED_OUTPUT / f"step{runner.checkpoint_step(96)}"
@@ -228,6 +234,12 @@ def register(report: dict[str, Any], experiment: str, revision: str) -> None:
             "evaluationEpochs": list(runner.EVALUATION_EPOCHS),
             "checkpointIntervalEpochs": runner.CHECKPOINT_INTERVAL_EPOCHS,
             "checkpointCleanupKeepEpochs": list(runner.EVALUATION_EPOCHS),
+            "role": "integrated_checkpoint_producer_and_evaluator",
+            "evaluationEnabled": True,
+            "decayEnabled": True,
+            "postBranchesIsolatedFromConstantFrontier": True,
+            "standaloneEvaluatorSubmissionsAuthorized": False,
+            "futureEvaluatorSubmissionsAuthorized": False,
             "submittedAt": datetime.now(tz=UTC).isoformat(),
         }
     )

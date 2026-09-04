@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guardedly submit one 1B Pool-3B BS128 continuation or POST stage."""
+"""Guardedly submit the integrated 1B Pool-3B BS128 continuation."""
 
 from __future__ import annotations
 
@@ -200,13 +200,16 @@ def existing_named_experiment(name: str) -> str | None:
     return str(matches[0]["id"]) if matches else None
 
 
-def experiment_name(mode: str, epoch: int) -> str:
+def experiment_name(mode: str, epoch: int | None) -> str:
+    if mode == "integrated":
+        return f"{runner.EXPECTED_ID}-integrated-e32-e80-v2"
+    assert epoch is not None
     phase = "continuation" if mode == "producer" else "post"
     return f"{runner.EXPECTED_ID}-{phase}-e{epoch}-dense-v1"
 
 
 def job_spec(
-    item: dict[str, Any], mode: str, epoch: int, revision: str, priority: str
+    item: dict[str, Any], mode: str, epoch: int | None, revision: str, priority: str
 ) -> dict[str, Any]:
     spec = copy.deepcopy(
         json.loads(
@@ -230,10 +233,16 @@ def job_spec(
         str(MANIFEST),
         "--mode",
         mode,
-        "--epoch",
-        str(epoch),
     ]
-    if mode == "producer":
+    if epoch is not None:
+        task["arguments"].extend(["--epoch", str(epoch)])
+    if mode == "integrated":
+        detail = (
+            "integrated constant-LR continuation with immediate isolated 10% WSD "
+            "decay and heldout evaluation at E48/E64/E80; each POST gate runs "
+            "before any following training stage"
+        )
+    elif mode == "producer":
         detail = f"constant-LR continuation to E{epoch}, checkpointing every epoch"
     else:
         detail = f"uncapped 10% WSD decay plus heldout evaluation from exact PD E{epoch}"
@@ -270,7 +279,7 @@ def register_producer(
             {
                 "experiment": previous_experiment,
                 "revision": record.get("revision"),
-                "status": record.get("status"),
+                "status": "canceled_after_next_checkpoint_for_integrated_workflow",
                 "maxValidatedEpoch": max(record.get("resolvedCheckpointEpochs") or [32]),
                 "output": record.get("output"),
                 "stoppedAt": datetime.now(tz=UTC).isoformat(),
@@ -303,6 +312,12 @@ def register_producer(
             ),
             "continuationTargetEpoch": target_epoch,
             "hardTerminalEpoch": runner.HARD_TERMINAL_EPOCH,
+            "role": "integrated_checkpoint_producer_and_evaluator",
+            "evaluationEnabled": True,
+            "decayEnabled": True,
+            "postBranchesIsolatedFromConstantFrontier": True,
+            "standaloneEvaluatorSubmissionsAuthorized": False,
+            "futureEvaluatorSubmissionsAuthorized": False,
             "stopAuthorized": False,
             "submittedAt": datetime.now(tz=UTC).isoformat(),
         }
@@ -360,8 +375,8 @@ def write_report(report: dict[str, Any]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("producer", "evaluator"), required=True)
-    parser.add_argument("--epoch", type=int, choices=runner.EVALUATION_EPOCHS, required=True)
+    parser.add_argument("--mode", choices=("integrated", "producer", "evaluator"), required=True)
+    parser.add_argument("--epoch", type=int, choices=runner.EVALUATION_EPOCHS)
     parser.add_argument("--revision", required=True)
     parser.add_argument("--priority", default="urgent")
     parser.add_argument("--print-spec", action="store_true")
@@ -372,19 +387,33 @@ def main() -> None:
     validate_revision(args.revision)
     config, item = runner.load(MANIFEST)
     report = json.loads(REPORT.read_text())
-    epoch = int(args.epoch)
-    if args.mode == "producer":
+    if args.mode == "integrated" and args.epoch is not None:
+        raise SystemExit("integrated mode does not accept --epoch")
+    if args.mode != "integrated" and args.epoch is None:
+        raise SystemExit("producer and evaluator modes require --epoch")
+    epoch = int(args.epoch) if args.epoch is not None else None
+    if args.mode == "integrated":
+        producer_gate(report, config, 48)
+    elif args.mode == "producer":
+        assert epoch is not None
         producer_gate(report, config, epoch)
     else:
-        evaluator_gate(report, epoch)
+        raise RuntimeError(
+            "standalone evaluator submissions are disabled for the integrated workflow"
+        )
     spec = job_spec(item, args.mode, epoch, args.revision, args.priority)
     if args.print_spec:
         print(json.dumps(spec, indent=2))
         return
     name = experiment_name(args.mode, epoch)
     experiment = create(name, spec)
-    if args.mode == "producer":
-        register_producer(report, experiment, args.revision, epoch)
+    if args.mode in {"integrated", "producer"}:
+        register_producer(
+            report,
+            experiment,
+            args.revision,
+            runner.HARD_TERMINAL_EPOCH if args.mode == "integrated" else int(epoch),
+        )
     else:
         register_evaluator(report, experiment, args.revision, epoch)
     write_report(report)

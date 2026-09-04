@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Run a gated Dense-1B Pool-3B BS128 continuation from exact PD E32.
 
-Producer stages checkpoint every epoch. POST evaluation remains every sixteen
-epochs at E48, E64, and E80. E48 stops on a strict regression from E32; E64
-stops on non-improvement from E48; E80 is the hard terminal ceiling. Once a
-terminal decision is validated, recovery-only checkpoints are deleted.
+The integrated job checkpoints every epoch and immediately performs the
+isolated WSD decay plus heldout evaluation at E48, E64, and E80 before it may
+continue training. E48 stops on a strict regression from E32; E64 stops on
+non-improvement from E48; E80 is the hard terminal ceiling. Once a terminal
+decision is validated, recovery-only checkpoints are deleted.
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ from typing import Any
 import run_dense_1b_checkpoint_evaluator as evaluator
 import run_dense_constant_checkpoint_producer as producer
 
-POLICY = "dense_1b_pool3b_bs128_e32_e80_continuation_v1"
+POLICY = "dense_1b_pool3b_bs128_e32_e80_integrated_v2"
 DEFAULT_MANIFEST = Path("scripts/models/manifests/dense-1b-pool3b-bs128-e32-continuation-v1.json")
 SOURCE_EPOCH = 32
 EVALUATION_EPOCHS = (48, 64, 80)
@@ -30,7 +31,7 @@ EXPECTED_OUTPUT = Path(
     "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm3b/bs128_dr_wt_embwd_lr1e-3_wd0.3"
 )
 EXPECTED_POOL_MANIFEST = Path(producer.POOL3B_MANIFEST)
-STATE_NAME = ".dense_1b_pool3b_bs128_e32_e80_v1"
+STATE_NAME = ".dense_1b_pool3b_bs128_e32_e80_integrated_v2"
 TRAINING_SCRIPT = "src/scripts/train/olmo2-1B.py"
 
 
@@ -345,7 +346,9 @@ def evaluator_decision(
     }
 
 
-def run_evaluator(config: dict[str, Any], item: dict[str, Any], epoch: int) -> None:
+def run_evaluator(
+    config: dict[str, Any], item: dict[str, Any], epoch: int
+) -> dict[str, Any]:
     validate(config, item, check_filesystem=True)
     if epoch not in EVALUATION_EPOCHS:
         raise ValueError(f"E{epoch} is not an authorized evaluator")
@@ -364,20 +367,74 @@ def run_evaluator(config: dict[str, Any], item: dict[str, Any], epoch: int) -> N
         f"json={json.dumps(decision, separators=(',', ':'), sort_keys=True)}",
         flush=True,
     )
+    return decision
+
+
+def run_integrated(config: dict[str, Any], item: dict[str, Any]) -> None:
+    """Run each constant-LR stage and its gate in one Beaker task."""
+    validate(config, item, check_filesystem=True)
+    for epoch in EVALUATION_EPOCHS:
+        decision_path = state_dir() / "decisions" / f"e{epoch}.json"
+        if decision_path.is_file():
+            decision = json.loads(decision_path.read_text())
+            if decision.get("nextProducerEpoch") is None:
+                print(
+                    f"DENSE_POOL3B_INTEGRATED_JOB_COMPLETE id={EXPECTED_ID} "
+                    f"terminal_epoch={epoch} status={decision['status']}",
+                    flush=True,
+                )
+                return
+            continue
+        run_producer(config, item, epoch)
+        checkpoint = EXPECTED_OUTPUT / f"step{checkpoint_step(epoch)}"
+        if not checkpoint_complete(checkpoint):
+            raise RuntimeError(f"integrated job is missing exact PD E{epoch}")
+        print(
+            f"DENSE_POOL3B_INTEGRATED_PD_RETAINED id={EXPECTED_ID} "
+            f"epoch={epoch} checkpoint={checkpoint}",
+            flush=True,
+        )
+        decision = run_evaluator(config, item, epoch)
+        result = load_post_result(item, epoch)
+        print(
+            f"DENSE_POOL3B_INTEGRATED_POST_RESULT id={EXPECTED_ID} epoch={epoch} "
+            f"json={json.dumps(result, separators=(',', ':'), sort_keys=True)}",
+            flush=True,
+        )
+        print(
+            f"DENSE_POOL3B_INTEGRATED_DECISION id={EXPECTED_ID} epoch={epoch} "
+            f"json={json.dumps(decision, separators=(',', ':'), sort_keys=True)}",
+            flush=True,
+        )
+        if decision.get("nextProducerEpoch") is None:
+            print(
+                f"DENSE_POOL3B_INTEGRATED_JOB_COMPLETE id={EXPECTED_ID} "
+                f"terminal_epoch={epoch} status={decision['status']}",
+                flush=True,
+            )
+            return
+    raise RuntimeError("integrated continuation reached no terminal decision")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
-    parser.add_argument("--mode", choices=("producer", "evaluator"), required=True)
-    parser.add_argument("--epoch", type=int, choices=EVALUATION_EPOCHS, required=True)
+    parser.add_argument("--mode", choices=("integrated", "producer", "evaluator"), required=True)
+    parser.add_argument("--epoch", type=int, choices=EVALUATION_EPOCHS)
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args()
     config, item = load(args.manifest)
     if args.validate_only:
-        print(f"validated {EXPECTED_ID} {args.mode} E{args.epoch}")
+        suffix = "" if args.epoch is None else f" E{args.epoch}"
+        print(f"validated {EXPECTED_ID} {args.mode}{suffix}")
         return
-    if args.mode == "producer":
+    if args.mode == "integrated":
+        if args.epoch is not None:
+            raise SystemExit("integrated mode does not accept --epoch")
+        run_integrated(config, item)
+    elif args.epoch is None:
+        raise SystemExit("producer and evaluator modes require --epoch")
+    elif args.mode == "producer":
         run_producer(config, item, args.epoch)
     else:
         run_evaluator(config, item, args.epoch)

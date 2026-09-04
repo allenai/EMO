@@ -1,5 +1,5 @@
 {
-  "policy": "dense_1b_pool3b_bs128_e32_e80_continuation_v1",
+  "policy": "dense_1b_pool3b_bs128_e32_e80_integrated_v2",
   "sourcePool": "dclm3b",
   "sourcePoolTokens": 3000000000,
   "sourceEpoch": 32,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guardedly submit the selected 153M BS256 E256-E384 continuation or evaluator."""
+"""Guardedly submit the integrated 153M BS256 E256-E384 continuation."""
 
 from __future__ import annotations
 
@@ -149,7 +149,7 @@ def existing_named_experiment(name: str) -> str | None:
 
 
 def producer_name() -> str:
-    return f"{runner.EXPECTED_ID}-continuation-e256-e384-v2"
+    return f"{runner.EXPECTED_ID}-integrated-e256-e384-v3"
 
 
 def evaluator_name(epoch: int) -> str:
@@ -181,8 +181,10 @@ def producer_spec(item: dict[str, Any], revision: str, priority: str) -> dict[st
     spec["description"] = (
         "153M DCLM-3B BS256 LR2e-3 WD0.1 constant-LR continuation from exact "
         "selected-recovery pre-decay E256 step659179; checkpoint every 4 epochs, "
-        "retain E320 step823974 and E384 step988769 for evaluation, then delete "
-        "recovery-only checkpoints; no inline evaluation; 8 GPUs, rank microbatch 16, "
+        "immediately run isolated 10% WSD decay plus heldout evaluation at E320 "
+        "before any E320-E384 training, stop on strict non-improvement, and treat "
+        "E384 as the hard ceiling; delete recovery-only checkpoints at the terminal "
+        "gate; 8 GPUs, rank microbatch 16, "
         "gradient accumulation 2, auto-resume, eight retries; minRuntime omitted; "
         f"write only to {item['output']}."
     )
@@ -248,8 +250,8 @@ def register_producer(report: dict[str, Any], experiment: str, revision: str) ->
             {
                 "experiment": previous_experiment,
                 "revision": record.get("revision"),
-                "status": "stopped_for_dense_checkpoint_restart",
-                "maxValidatedEpoch": 256,
+                "status": "canceled_after_next_checkpoint_for_integrated_workflow",
+                "maxValidatedEpoch": max(record.get("resolvedCheckpointEpochs") or [256]),
                 "output": record.get("output"),
                 "recoveryAttempt": record.get("recoveryAttempt"),
                 "stoppedAt": datetime.now(tz=UTC).isoformat(),
@@ -261,8 +263,15 @@ def register_producer(report: dict[str, Any], experiment: str, revision: str) ->
             "revision": revision,
             "status": "submitted",
             "beakerStatus": "submitted",
-            "currentEpoch": runner.CHECKPOINT_EPOCHS[0],
-            "currentPhase": "repacked_shuffled_pool3b_constant_lr",
+            "currentEpoch": next(
+                (
+                    epoch
+                    for epoch in runner.CHECKPOINT_EPOCHS
+                    if epoch not in {int(value) for value in record.get("resolvedCheckpointEpochs", [])}
+                ),
+                None,
+            ),
+            "currentPhase": "integrated_post_gate_or_constant_lr",
             "targetEpochs": [32, 64, 96, 128, 160, 192, 224, 256, *runner.CHECKPOINT_EPOCHS],
             "continuationSourceEpoch": 256,
             "continuationTargetEpoch": 384,
@@ -270,6 +279,12 @@ def register_producer(report: dict[str, Any], experiment: str, revision: str) ->
             "evaluationEpochs": [320, 384],
             "checkpointIntervalEpochs": runner.CHECKPOINT_INTERVAL_EPOCHS,
             "checkpointCleanupKeepEpochs": list(runner.EVALUATION_EPOCHS),
+            "role": "integrated_checkpoint_producer_and_evaluator",
+            "evaluationEnabled": True,
+            "decayEnabled": True,
+            "postBranchesIsolatedFromConstantFrontier": True,
+            "standaloneEvaluatorSubmissionsAuthorized": False,
+            "futureEvaluatorSubmissionsAuthorized": False,
             "submittedAt": datetime.now(tz=UTC).isoformat(),
         }
     )
@@ -321,6 +336,8 @@ def main() -> None:
         name = producer_name()
     else:
         record = producer_record(report)
+        if record.get("standaloneEvaluatorSubmissionsAuthorized") is False:
+            raise RuntimeError("standalone evaluator submissions are disabled for integrated workflow")
         if int(args.epoch) not in {
             int(value) for value in record.get("resolvedCheckpointEpochs", [])
         }:
