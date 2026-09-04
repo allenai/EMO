@@ -105,6 +105,42 @@ def top_pairs_table(pool: dict, layers=(0, 4, 8, 12, 15)) -> str:
     return table(["layer", "top-5 pairs by lift (support &ge; 50 tokens; expert ids)"], rows)
 
 
+def conditional_table(pool: dict) -> str:
+    rows = []
+    for li in range(len(pool["layers"])):
+        c = pool["layers"][str(li)]["sample"].get("conditional")
+        if not c:
+            continue
+        top = ", ".join(
+            f"P({t['j']}|{t['i']})={t['p_j_given_i']:.2f} (n_i={t['n_i']:,})" for t in c["top"][:3]
+        )
+        rows.append(
+            [
+                li,
+                f(c["independence_baseline"], 3),
+                f(c["median"], 3),
+                f(c["p999"]),
+                f(c["max"]),
+                f(100 * c["frac_pairs_gt_0p1"]),
+                f(100 * c["frac_pairs_gt_0p25"], 3),
+                top,
+            ]
+        )
+    return table(
+        [
+            "layer",
+            "independent baseline 7/511",
+            "median P(j|i)",
+            "p99.9",
+            "max",
+            "% ordered pairs P&gt;0.1",
+            "% ordered pairs P&gt;0.25",
+            "strongest (n_i &ge; 1000)",
+        ],
+        rows,
+    )
+
+
 def source_table(pool: dict) -> str:
     ps = pool["per_source"]
     L = len(pool["layers"])
@@ -356,6 +392,9 @@ def build_method(an: dict) -> str:
         "<li><b>Lift</b>: C<sub>ij</sub>&middot;N / (C<sub>i</sub>C<sub>j</sub>) = observed / expected under "
         "independent routing with the same marginals. Lift 1 = independent; the 0/1 diagonal of the "
         "heatmaps is log<sub>2</sub> lift clipped to &plusmn;3.</li>"
+        "<li><b>Conditional co-activation</b>: P(E<sub>j</sub> | E<sub>i</sub>) = C<sub>ij</sub> / C<sub>ii</sub>, "
+        "the share of expert i's tokens (or documents) on which j was also active; asymmetric, rows = i. "
+        "Independent routing gives 7/511 &asymp; 0.014 at token level.</li>"
         "<li><b>Block structure</b>: normalised spectral clustering (k = 8) of the token-level lift graph; "
         "Newman modularity Q of that partition on the co-activation count graph; Q of a shuffled partition "
         "as the null (&asymp; 0); Louvain communities and their Q as a resolution-free check; within-cluster "
@@ -424,7 +463,8 @@ def build_full(an: dict) -> str:
             "<p>Per layer: effective #experts, unused experts, usage Gini; Q of the "
             "k=8 spectral partition and of Louvain communities (null: shuffled partition); within-cluster "
             "mass; share of pairs never co-active; lift median / p99 / share of pairs with lift &gt; 2; "
-            "Spearman between token- and document-level lift; distinct experts per document.</p>",
+            "Spearman between token- and document-level lift; distinct experts per document; the "
+            "conditional rate P(E<sub>j</sub> | E<sub>i</sub>) and its tail.</p>",
         )
         + card("results", "Results &mdash; per-layer table", layer_table(pc))
         + card(
@@ -444,6 +484,27 @@ def build_full(an: dict) -> str:
                 img_tag(
                     figs / "pool_config_lift_doc_grid.png",
                     "log2 lift of document-level co-occurrence (both experts used somewhere in the document), same expert ordering as the token-level grid.",
+                )
+            ),
+        )
+        + card(
+            "results",
+            "Results &mdash; conditional co-activation P(E<sub>j</sub> | E<sub>i</sub>)",
+            "<p>Directed view of the same counts: cell (i, j) = N(E<sub>i</sub>, E<sub>j</sub>) / N(E<sub>i</sub>), "
+            "the fraction of the tokens routed to expert i that were also routed to expert j (rows = "
+            "conditioning expert; asymmetric). Independent routing gives 7/511 &asymp; 0.014 everywhere. "
+            "Experts keep the cluster ordering of the lift grids so the blocks line up.</p>"
+            + conditional_table(pc)
+            + fig_row(
+                img_tag(
+                    figs / "pool_config_cond_tok_grid.png",
+                    "Token-level P(E_j | E_i) per layer, colour scale 0..0.2 (values above 0.2 saturate); rows = conditioning expert i.",
+                )
+            )
+            + fig_row(
+                img_tag(
+                    figs / "pool_config_cond_doc_grid.png",
+                    "Document-level analogue: of the documents that use expert i anywhere, the fraction that also use expert j; scale 0..1.",
                 )
             ),
         )
@@ -526,6 +587,24 @@ def build_pool64(an: dict) -> str:
                 img_tag(
                     figs / "pool_64_lift_doc_grid.png",
                     "log2 lift of document-level co-occurrence under the 64-expert pool.",
+                )
+            ),
+        )
+        + card(
+            "results",
+            "Results &mdash; conditional co-activation P(E<sub>j</sub> | E<sub>i</sub>)",
+            "<p>Same directed view under the 64-expert document pool (rows = conditioning expert).</p>"
+            + conditional_table(p64)
+            + fig_row(
+                img_tag(
+                    figs / "pool_64_cond_tok_grid.png",
+                    "Token-level P(E_j | E_i) per layer under the pool, scale 0..0.2.",
+                )
+            )
+            + fig_row(
+                img_tag(
+                    figs / "pool_64_cond_doc_grid.png",
+                    "Document-level P(doc uses j | doc uses i) under the pool, scale 0..1.",
                 )
             ),
         )

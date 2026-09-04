@@ -79,6 +79,15 @@ def lift_matrix(C: np.ndarray, N: float):
     return lift, expected
 
 
+def conditional_matrix(C: np.ndarray) -> np.ndarray:
+    """P(j active | i active) = C_ij / C_ii, rows = conditioning expert i; zero diagonal."""
+    c = np.diag(C).astype(np.float64)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        P = np.where(c[:, None] > 0, C / c[:, None], 0.0)
+    np.fill_diagonal(P, 0.0)
+    return P
+
+
 def modularity(W: np.ndarray, labels: np.ndarray) -> float:
     """Newman modularity of partition `labels` on weighted undirected graph W (zero diagonal)."""
     W = W.copy()
@@ -249,6 +258,30 @@ def analyze_pool(pool_dir: Path, sources: list, k_clusters: int, figs: Path, tag
                 r["token_vs_doc_spearman"] = (
                     spearman(lift_t[iu][mask], lift_d[iu][mask]) if mask.sum() > 10 else 0.0
                 )
+                # conditional co-activation P(j | i) = C_ij / C_i (asymmetric)
+                cond = conditional_matrix(Ct[li])
+                offd = cond[~np.eye(Es, dtype=bool)]
+                ii, jj = np.unravel_index(np.argsort(-cond, axis=None)[:200], cond.shape)
+                topc = [
+                    dict(
+                        i=int(a),
+                        j=int(b),
+                        p_j_given_i=float(cond[a, b]),
+                        count=int(Ct[li][a, b]),
+                        n_i=int(diag[a]),
+                    )
+                    for a, b in zip(ii, jj)
+                    if a != b and diag[a] >= 1000
+                ][:10]
+                r["conditional"] = dict(
+                    max=float(offd.max()),
+                    p999=float(np.percentile(offd, 99.9)),
+                    median=float(np.median(offd)),
+                    independence_baseline=float(7.0 / Es),
+                    frac_pairs_gt_0p1=float((offd > 0.1).mean()),
+                    frac_pairs_gt_0p25=float((offd > 0.25).mean()),
+                    top=topc,
+                )
                 # top pairs
                 top = top_pairs_set(lift_t, Ct[li], 0.0002, 50)
                 r["top_pairs"] = sorted(
@@ -320,6 +353,19 @@ def analyze_pool(pool_dir: Path, sources: list, k_clusters: int, figs: Path, tag
 # --------------------------------------------------------------------------------------------
 # figures
 # --------------------------------------------------------------------------------------------
+def save_png(fig, path, dpi):
+    """Save then quantise to an 8-bit palette (near-lossless for heatmaps, ~3x smaller; the report
+    page embeds every figure and must stay under Cloudflare Pages' 25 MiB file limit)."""
+    fig.savefig(path, dpi=dpi)
+    try:
+        from PIL import Image
+
+        im = Image.open(path).convert("RGB").quantize(colors=256, method=Image.Quantize.MEDIANCUT)
+        im.save(path, optimize=True)
+    except ImportError:
+        pass
+
+
 def make_pool_figures(res, agg, order_by_layer, Es, L, figs: Path, tag: str):
     import matplotlib
 
@@ -358,7 +404,46 @@ def make_pool_figures(res, agg, order_by_layer, Es, L, figs: Path, tag: str):
             fontsize=12,
         )
         fig.colorbar(im, ax=axes.ravel().tolist(), shrink=0.3, label="log2 lift", location="right")
-        fig.savefig(figs / f"{tag}_lift_{name}_grid.png", dpi=80)
+        save_png(fig, figs / f"{tag}_lift_{name}_grid.png", 80)
+        plt.close(fig)
+    # conditional co-activation grids: P(j | i) = C_ij / C_i, rows = conditioning expert
+    for name, C, NN in [("tok", Ct, N), ("doc", Cd, Nd)]:
+        ncol = 4
+        nrow = int(np.ceil(L / ncol))
+        fig, axes = plt.subplots(
+            nrow, ncol, figsize=(4.2 * ncol + 1, 4.4 * nrow), constrained_layout=True
+        )
+        vmax = 0.2 if name == "tok" else 1.0
+        for li in range(L):
+            ax = axes.flat[li]
+            P = conditional_matrix(C[li])
+            order, lab = order_by_layer[li]
+            im = ax.imshow(
+                P[np.ix_(order, order)], cmap="magma", vmin=0, vmax=vmax, interpolation="nearest"
+            )
+            b = np.cumsum(np.bincount(lab[order], minlength=lab.max() + 1))[:-1]
+            for x in b:
+                ax.axhline(x - 0.5, color="w", lw=0.3, alpha=0.6)
+                ax.axvline(x - 0.5, color="w", lw=0.3, alpha=0.6)
+            offd = P[~np.eye(len(P), dtype=bool)]
+            ax.set_title(
+                f"layer {li}  max={offd.max():.2f}  p99.9={np.percentile(offd, 99.9):.2f}",
+                fontsize=10,
+            )
+            ax.set_xticks([])
+            ax.set_yticks([])
+        for ax in axes.flat[L:]:
+            ax.axis("off")
+        base = 7.0 / Es if name == "tok" else None
+        fig.suptitle(
+            f"{tag}: conditional co-activation P(E_j | E_i) = N(E_i,E_j) / N(E_i) at "
+            f"{'token' if name == 'tok' else 'document'} level (row = conditioning expert i, col = j; "
+            f"same cluster ordering as the lift grids; scale 0..{vmax:g}"
+            + (f"; independent routing gives ~{base:.3f})" if base else ")"),
+            fontsize=12,
+        )
+        fig.colorbar(im, ax=axes.ravel().tolist(), shrink=0.3, label="P(j | i)", location="right")
+        save_png(fig, figs / f"{tag}_cond_{name}_grid.png", 80)
         plt.close(fig)
     # usage per layer (sorted, log)
     fig, ax = plt.subplots(figsize=(9, 4))
@@ -377,7 +462,7 @@ def make_pool_figures(res, agg, order_by_layer, Es, L, figs: Path, tag: str):
     ax.set_title(f"{tag}: per-expert token usage by layer (dark=early, light=late)")
     ax.legend()
     fig.tight_layout()
-    fig.savefig(figs / f"{tag}_usage.png", dpi=100)
+    save_png(fig, figs / f"{tag}_usage.png", 100)
     plt.close(fig)
     # lift distribution
     fig, ax = plt.subplots(figsize=(9, 4))
@@ -399,7 +484,7 @@ def make_pool_figures(res, agg, order_by_layer, Es, L, figs: Path, tag: str):
     ax.set_title(f"{tag}: distribution of pairwise lift")
     ax.legend()
     fig.tight_layout()
-    fig.savefig(figs / f"{tag}_lift_hist.png", dpi=100)
+    save_png(fig, figs / f"{tag}_lift_hist.png", 100)
     plt.close(fig)
 
 
@@ -434,7 +519,7 @@ def make_summary_figures(results: dict, figs: Path):
         ax.set_xlabel("layer")
         ax.legend(fontsize=8)
     fig.tight_layout()
-    fig.savefig(figs / "summary_by_layer.png", dpi=100)
+    save_png(fig, figs / "summary_by_layer.png", 100)
     plt.close(fig)
     # per-source Q and cross-source overlap (first pool)
     tag = tags[0]
@@ -461,7 +546,7 @@ def make_summary_figures(results: dict, figs: Path):
     axes[1].set_title("Jaccard of top-1% lift pairs between sources (mean over layers)")
     fig.colorbar(im, ax=axes[1])
     fig.tight_layout()
-    fig.savefig(figs / "per_source.png", dpi=100)
+    save_png(fig, figs / "per_source.png", 100)
     plt.close(fig)
     # unique experts per doc
     fig, ax = plt.subplots(figsize=(8, 4))
@@ -474,7 +559,7 @@ def make_summary_figures(results: dict, figs: Path):
     ax.set_title("experts touched per document (docs truncated to 4095 tokens)")
     ax.legend(fontsize=8)
     fig.tight_layout()
-    fig.savefig(figs / "unique_experts_per_doc.png", dpi=100)
+    save_png(fig, figs / "unique_experts_per_doc.png", 100)
     plt.close(fig)
 
 
