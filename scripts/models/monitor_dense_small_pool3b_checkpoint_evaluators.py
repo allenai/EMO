@@ -44,8 +44,12 @@ def refresh(record: dict[str, Any]) -> str:
     if results:
         record["postDecayResult"] = results[-1]
         record["resolvedPostEpoch"] = int(record["epoch"])
+    retired_for_integrated = bool(record.get("retiredForIntegratedWorkflow"))
     if complete and results:
         record["status"] = "complete"
+    elif retired_for_integrated and state == "failed":
+        record["status"] = "canceled_for_integrated_workflow"
+        record.pop("needsAttention", None)
     elif state == "failed":
         record["status"] = "failed"
         record["needsAttention"] = True

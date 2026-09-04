@@ -26,6 +26,9 @@
   const isFailed = (status) => ["failed", "canceled", "cancelled", "error"].includes(status);
 
   const integratedRuns = current.dclm333mIntegratedRuns || [];
+  const integratedPool3bRuns = (current.producers || []).filter((producer) =>
+    producer.role === "integrated_checkpoint_producer_and_evaluator",
+  );
   const producers = [...(current.producers || []), ...integratedRuns];
   const dense1bEvaluators = current.evaluators || [];
   const evaluators = [
@@ -60,6 +63,18 @@
       resolvedPostEpochs: run.resolvedPostEpochs || [],
       postDecayResults: run.postDecayResults || {},
       currentEvaluationEpoch: run.currentPostEpoch ?? null,
+    })),
+    ...integratedPool3bRuns.map((run) => ({
+      id: `${run.id}-integrated-post`,
+      producerId: run.id,
+      status: ["post", "post_pending"].includes(run.currentPhase) ? run.status :
+        ["complete", "saturated", "terminal_e80", "terminal_e256", "terminal_e384"].includes(run.status)
+          ? "complete" : "idle",
+      epochs: run.evaluationEpochs || [],
+      resolvedPostEpochs: run.resolvedPostEpochs || [],
+      postDecayResults: run.postDecayResults || {},
+      currentEvaluationEpoch: ["post", "post_pending"].includes(run.currentPhase)
+        ? run.currentEpoch : null,
     })),
   ];
   const evaluatorsByProducer = new Map();
@@ -271,8 +286,11 @@
       const postCandidates = [];
       const chips = groupProducers.map((producer) => {
         const resolvedPd = (producer.resolvedCheckpointEpochs || []).map(Number).includes(epoch);
-        const producerPhase = producer.role === "constant_lr_checkpoint_producer" ||
-          !producer.currentPhase || producer.currentPhase === "producer";
+        const producerPhase = !["post", "post_pending"].includes(producer.currentPhase) && (
+          producer.role === "constant_lr_checkpoint_producer" ||
+          producer.role === "integrated_checkpoint_producer_and_evaluator" ||
+          !producer.currentPhase || producer.currentPhase === "producer"
+        );
         const producerActive = Number(producer.currentEpoch) === epoch &&
           producer.status === "running" && producerPhase;
         const producerQueued = Number(producer.currentEpoch) === epoch &&

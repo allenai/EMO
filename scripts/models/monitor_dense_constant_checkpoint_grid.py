@@ -15,6 +15,8 @@ import json
 import math
 import re
 import subprocess
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -23,8 +25,9 @@ REPORT = Path("reports/0802/data/wsd_checkpoint_producer_grid.json")
 REPORT_JS = REPORT.with_suffix(".js")
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 TRAIN_STEP = re.compile(r"\[step=([0-9,]+)/([0-9,]+),epoch=")
+DESCRIPTION_STEP = re.compile(r"\bstep ([0-9,]+)/([0-9,]+)")
 TRAIN_LOSS = re.compile(r"\btrain/CE loss=([^\s]+)")
-WANDB = re.compile(r"https://wandb\.ai/[^\s]+/runs/([a-zA-Z0-9_-]+)")
+WANDB = re.compile(r"https://wandb\.ai/[^\s]+/runs/([a-zA-Z0-9]{8})\b")
 EVAL_RESULT = re.compile(
     r"DENSE1B_CHECKPOINT_EVALUATOR_RESULT id=([^ ]+) epoch=([0-9]+) json=(\{.*\})$",
     re.MULTILINE,
@@ -44,6 +47,18 @@ INTEGRATED_POST_RESULT = re.compile(
 INTEGRATED_STAGE_EVENT = re.compile(
     r"DENSE_DCLM333M_(PD_START|PD_RETAINED|POST_START|POST_COMPLETE) "
     r"id=([^ ]+) epoch=([0-9]+)",
+)
+POOL3B_INTEGRATED_PD_RETAINED = re.compile(
+    r"DENSE_POOL3B_INTEGRATED_PD_RETAINED id=([^ ]+) epoch=([0-9]+) checkpoint=([^\s]+)$",
+    re.MULTILINE,
+)
+POOL3B_INTEGRATED_POST_RESULT = re.compile(
+    r"DENSE_POOL3B_INTEGRATED_POST_RESULT id=([^ ]+) epoch=([0-9]+) json=(\{.*\})$",
+    re.MULTILINE,
+)
+POOL3B_INTEGRATED_DECISION = re.compile(
+    r"DENSE_POOL3B_INTEGRATED_DECISION id=([^ ]+) epoch=([0-9]+) json=(\{.*\})$",
+    re.MULTILINE,
 )
 
 
@@ -93,6 +108,11 @@ def health(logs: str, state: str) -> dict[str, Any]:
         (int(current.replace(",", "")), int(total.replace(",", "")))
         for current, total in TRAIN_STEP.findall(logs)
     ]
+    if not steps:
+        steps = [
+            (int(current.replace(",", "")), int(total.replace(",", "")))
+            for current, total in DESCRIPTION_STEP.findall(logs)
+        ]
     critical: list[str] = []
     for raw in TRAIN_LOSS.findall(logs):
         try:
@@ -122,17 +142,45 @@ def health(logs: str, state: str) -> dict[str, Any]:
     }
 
 
-def experiment_logs(experiment: str, state: str, job: str | None = None) -> str:
+def experiment_logs(
+    experiment: str,
+    state: str,
+    job: str | None = None,
+    since: str | None = "70m",
+) -> str:
     if state not in {"running", "complete", "failed"}:
         return ""
-    arguments = (
-        ["beaker", "job", "logs", job, "--tail", "50000"]
-        if job
-        else ["beaker", "experiment", "logs", experiment]
-    )
+    if job:
+        arguments = ["beaker", "job", "logs", job]
+        if since:
+            arguments.extend(["--since", since])
+    else:
+        arguments = ["beaker", "experiment", "logs", experiment]
+    markers: list[str] = []
+    telemetry: deque[str] = deque(maxlen=4000)
     try:
-        return ANSI.sub("", command(arguments))
-    except subprocess.CalledProcessError:
+        process = subprocess.Popen(
+            arguments,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        assert process.stdout is not None
+        for line in process.stdout:
+            clean = ANSI.sub("", line)
+            if (
+                "DENSE" in clean
+                or "Loading checkpoint from '" in clean
+                or "Saving checkpoint for step" in clean
+                or "wandb.ai/" in clean
+            ):
+                markers.append(clean)
+            elif "[step=" in clean or "train/CE loss=" in clean:
+                telemetry.append(clean)
+        if process.wait() != 0:
+            return ""
+        return "".join(markers + list(telemetry))
+    except OSError:
         # A stale or oversized terminal log must not block refreshes for the
         # active grid.  Previously resolved report state remains authoritative.
         return ""
@@ -140,7 +188,13 @@ def experiment_logs(experiment: str, state: str, job: str | None = None) -> str:
 
 def refreshed_health(record: dict[str, Any], logs: str, state: str) -> dict[str, Any]:
     if logs:
-        return health(logs, state)
+        refreshed = health(logs, state)
+        existing = record.get("wandbHealth")
+        if isinstance(existing, dict):
+            for key in ("latestStep", "totalSteps", "run"):
+                if refreshed.get(key) is None and existing.get(key) is not None:
+                    refreshed[key] = existing[key]
+        return refreshed
     existing = record.get("wandbHealth")
     if isinstance(existing, dict):
         preserved = dict(existing)
@@ -160,31 +214,77 @@ def refresh_producer(record: dict[str, Any]) -> str:
     if jobs:
         record["jobs"] = [job["id"] for job in jobs]
         record["job"] = jobs[-1]["id"]
-    job = jobs[-1]["id"] if jobs else None
-    logs = experiment_logs(str(experiment), state, job)
-    resolved = {int(epoch) for epoch in record.get("resolvedCheckpointEpochs", [])}
     pool3b_v2 = record.get("policy") in {
         "dense_small_pool3b_checkpoint_producers_v2",
         "dense_small_pool3b_bs512_checkpoint_producers_v1",
     }
+    integrated_pool3b = record.get("role") == "integrated_checkpoint_producer_and_evaluator"
+    checkpoint_continuation = record.get("continuationSourceEpoch") is not None
+    logs = ANSI.sub("", str(payload.get("description") or ""))
+    if (pool3b_v2 or integrated_pool3b or checkpoint_continuation) and jobs:
+        # The inspect description only contains a short tail.  A retained
+        # checkpoint marker can fall out of that tail while the producer keeps
+        # running, so include the active retry's recent log before deciding the
+        # resolved frontier. Older bridge completion is inferred below once a
+        # later retained checkpoint is present.
+        logs += experiment_logs(
+            str(experiment), state, str(jobs[-1]["id"]), since="70m"
+        )
+    resolved = {int(epoch) for epoch in record.get("resolvedCheckpointEpochs", [])}
     if pool3b_v2 and f"DENSE_SMALL_POOL3B_BRIDGE_COMPLETE id={record['id']}" in logs:
         resolved.add(1)
     for epoch in record["targetEpochs"]:
         pool_tokens = 3_000_000_000 if record["pool"] == "dclm3b" else 1_000_000_000
         endpoint = -(-int(epoch) * pool_tokens // (int(record["batchSequences"]) * 4096))
         step = endpoint - round(0.1 * endpoint) - 1
-        if re.search(rf"(?:/|\b)step{step}(?:\b|/)", logs):
+        if re.search(rf"(?:/|\b)step[ ]?{step}(?:\b|/)", logs):
             resolved.add(int(epoch))
+    if integrated_pool3b:
+        for producer_id, epoch, _checkpoint in POOL3B_INTEGRATED_PD_RETAINED.findall(logs):
+            if producer_id == record["id"]:
+                resolved.add(int(epoch))
+        results = record.setdefault("postDecayResults", {})
+        for producer_id, epoch, raw in POOL3B_INTEGRATED_POST_RESULT.findall(logs):
+            if producer_id == record["id"]:
+                results[str(int(epoch))] = json.loads(raw)
+        decisions = [
+            (int(epoch), json.loads(raw))
+            for producer_id, epoch, raw in POOL3B_INTEGRATED_DECISION.findall(logs)
+            if producer_id == record["id"]
+        ]
+        record["resolvedPostEpochs"] = sorted(int(epoch) for epoch in results)
+        if decisions:
+            decision_epoch, decision = decisions[-1]
+            record["decision"] = decision
+            record["lastDecisionEpoch"] = decision_epoch
+    # A retained post-bridge checkpoint proves that the exact E1 bridge
+    # completed, even when its older completion marker is no longer in the
+    # active log tail.
+    if pool3b_v2 and any(epoch > 1 for epoch in resolved):
+        resolved.add(1)
     completion_markers = (
         f"DENSE_CHECKPOINT_PRODUCER_COMPLETE id={record['id']}",
         f"DENSE_SMALL_POOL3B_PRODUCER_COMPLETE id={record['id']}",
+        f"DENSE_POOL3B_INTEGRATED_JOB_COMPLETE id={record['id']}",
     )
     authorized_stop = (
         bool(record.get("stopAuthorized"))
         and int(record.get("stopAfterEpoch", -1)) in resolved
         and state == "failed"
     )
-    if any(marker in logs for marker in completion_markers):
+    integrated_decision = record.get("decision")
+    if (
+        integrated_pool3b
+        and isinstance(integrated_decision, dict)
+        and integrated_decision
+        and integrated_decision.get("nextProducerEpoch") is None
+    ):
+        record["status"] = str(integrated_decision["status"])
+        record["stopAuthorized"] = True
+        record["stopAfterEpoch"] = int(integrated_decision["producerStoppedAfterEpoch"])
+        record["currentPhase"] = "terminal"
+        record.pop("needsAttention", None)
+    elif any(marker in logs for marker in completion_markers):
         if pool3b_v2:
             resolved.add(1)
         resolved.update(record["targetEpochs"])
@@ -202,12 +302,37 @@ def refresh_producer(record: dict[str, Any]) -> str:
         record["status"] = state
     record["beakerStatus"] = state
     record["resolvedCheckpointEpochs"] = sorted(resolved)
+    due_post_epoch = next(
+        (
+            int(epoch)
+            for epoch in record.get("evaluationEpochs", [])
+            if int(epoch) in resolved and str(int(epoch)) not in record.get("postDecayResults", {})
+        ),
+        None,
+    )
     record["currentEpoch"] = (
-        1
+        int(record["stopAfterEpoch"])
+        if integrated_pool3b and record.get("currentPhase") == "terminal"
+        else due_post_epoch
+        if integrated_pool3b and due_post_epoch is not None
+        else 1
         if pool3b_v2 and 1 not in resolved
         else next((epoch for epoch in record["targetEpochs"] if epoch not in resolved), None)
     )
-    if pool3b_v2:
+    if integrated_pool3b:
+        if record.get("currentPhase") != "terminal":
+            record["currentPhase"] = (
+                "post"
+                if due_post_epoch is not None
+                and (
+                    "DENSE_SMALL_CHECKPOINT_EVALUATOR_START" in logs
+                    or "DENSE1B_CHECKPOINT_EVALUATOR_START" in logs
+                )
+                else "post_pending"
+                if due_post_epoch is not None
+                else "repacked_shuffled_pool3b_constant_lr"
+            )
+    elif pool3b_v2:
         record["currentPhase"] = (
             "fresh_2b_bridge_to_predecay_e1"
             if 1 not in resolved
@@ -231,8 +356,10 @@ def refresh_evaluator(record: dict[str, Any]) -> str:
     if jobs:
         record["jobs"] = [job["id"] for job in jobs]
         record["job"] = jobs[-1]["id"]
-    job = jobs[-1]["id"] if jobs else None
-    logs = experiment_logs(str(experiment), state, job)
+    logs = ANSI.sub("", str(payload.get("description") or ""))
+    if state in {"complete", "failed"} and not record.get("postDecayResults"):
+        job = jobs[-1]["id"] if jobs else None
+        logs = experiment_logs(str(experiment), state, job)
     results = record.setdefault("postDecayResults", {})
     for evaluator_id, epoch, raw in EVAL_RESULT.findall(logs):
         if evaluator_id == record["producerId"]:
@@ -256,8 +383,17 @@ def refresh_evaluator(record: dict[str, Any]) -> str:
         if additional_jobs:
             additional["jobs"] = [job["id"] for job in additional_jobs]
             additional["job"] = additional_jobs[-1]["id"]
-        additional_job = additional_jobs[-1]["id"] if additional_jobs else None
-        additional_logs = experiment_logs(additional_experiment, additional_state, additional_job)
+        additional_logs = ANSI.sub("", str(additional_payload.get("description") or ""))
+        if additional_state in {"complete", "failed"} and (
+            not additional.get("postDecayResult") or not additional.get("decision")
+        ):
+            additional_job = additional_jobs[-1]["id"] if additional_jobs else None
+            additional_logs = experiment_logs(
+                additional_experiment,
+                additional_state,
+                additional_job,
+                since="24h",
+            )
         epoch = int(additional["epoch"])
         additional_results = [
             json.loads(raw)
@@ -346,32 +482,77 @@ def refresh_integrated_run(record: dict[str, Any]) -> str:
     if jobs:
         record["jobs"] = [job["id"] for job in jobs]
         record["job"] = jobs[-1]["id"]
-    job = jobs[-1]["id"] if jobs else None
-    logs = experiment_logs(experiment, state, job)
+    retained = [int(epoch) for epoch in record["retainedCheckpointEpochs"]]
+    evaluation_epochs = {int(epoch) for epoch in record["evaluationEpochs"]}
     resolved = {int(epoch) for epoch in record.get("resolvedCheckpointEpochs", [])}
+    results = record.setdefault("postDecayResults", {})
+    already_fully_resolved = set(retained).issubset(resolved) and evaluation_epochs.issubset(
+        {int(epoch) for epoch in results}
+    )
+    if state == "complete" and already_fully_resolved:
+        logs = ""
+    elif jobs:
+        logs = "".join(
+            experiment_logs(experiment, state, str(current_job["id"]), since="8h")
+            for current_job in jobs
+        )
+    else:
+        logs = experiment_logs(experiment, state)
+    if (
+        state in {"complete", "failed"}
+        and (f"DENSE_DCLM333M_JOB_COMPLETE id={record['id']}" not in logs)
+        and not already_fully_resolved
+    ):
+        logs = "".join(
+            experiment_logs(experiment, state, str(current_job["id"]), since="24h")
+            for current_job in jobs
+        )
     for producer_id, epoch, _checkpoint in INTEGRATED_PD_RETAINED.findall(logs):
         if producer_id == record["id"]:
             resolved.add(int(epoch))
-    results = record.setdefault("postDecayResults", {})
+    # Retained producer checkpoints form a strict prefix. Log tails can omit an
+    # older marker, so a later retained epoch proves that every scheduled
+    # earlier checkpoint was also completed.
+    if resolved:
+        latest_resolved = max(resolved)
+        resolved.update(epoch for epoch in retained if epoch <= latest_resolved)
     for producer_id, epoch, raw in INTEGRATED_POST_RESULT.findall(logs):
         if producer_id == record["id"]:
             results[str(int(epoch))] = json.loads(raw)
     record["resolvedCheckpointEpochs"] = sorted(resolved)
     record["resolvedPostEpochs"] = sorted(int(epoch) for epoch in results)
 
-    retained = [int(epoch) for epoch in record["retainedCheckpointEpochs"]]
-    evaluation_epochs = {int(epoch) for epoch in record["evaluationEpochs"]}
+    previous_phase = record.get("currentPhase")
+    previous_epoch = record.get("currentEpoch")
+    previous_post_epoch = record.get("currentPostEpoch")
     events = [
         (match.start(), match.group(1), int(match.group(3)))
         for match in INTEGRATED_STAGE_EVENT.finditer(logs)
         if match.group(2) == record["id"]
     ]
     complete_marker = f"DENSE_DCLM333M_JOB_COMPLETE id={record['id']}" in logs
+    pruning_gate = record.get("wdPruningGate") or {}
+    authorized_matched_post_prune = (
+        state == "failed"
+        and pruning_gate.get("decision") == f"stop_wd{record.get('weightDecay')}"
+        and pruning_gate.get("status") in {"prune_candidate", "pruned"}
+    )
+    authorized_epoch_stop = (
+        state == "failed"
+        and bool(record.get("stopAuthorized"))
+        and int(record.get("stopAfterEpoch", -1)) in resolved
+    )
+    terminal_state_is_fully_resolved = (
+        state == "complete"
+        and set(retained).issubset(resolved)
+        and evaluation_epochs.issubset({int(epoch) for epoch in results})
+    )
     record.pop("currentPostEpoch", None)
-    if complete_marker:
+    if complete_marker or terminal_state_is_fully_resolved:
         record["status"] = "complete"
         record["currentPhase"] = "complete"
         record["currentEpoch"] = retained[-1]
+        record.pop("needsAttention", None)
     else:
         last = events[-1] if events else None
         if last and last[1] == "POST_START" and last[2] not in record["resolvedPostEpochs"]:
@@ -389,11 +570,31 @@ def refresh_integrated_run(record: dict[str, Any]) -> str:
         ):
             record["currentPhase"] = "post_pending"
             record["currentEpoch"] = last[2]
+        elif (
+            not events
+            and previous_phase in {"post", "post_pending"}
+            and previous_epoch is not None
+            and int(previous_epoch) not in record["resolvedPostEpochs"]
+        ):
+            record["currentPhase"] = previous_phase
+            record["currentEpoch"] = int(previous_epoch)
+            if previous_post_epoch is not None:
+                record["currentPostEpoch"] = int(previous_post_epoch)
         else:
             next_epoch = next((epoch for epoch in retained if epoch not in resolved), None)
             record["currentPhase"] = "producer" if next_epoch is not None else "finishing"
             record["currentEpoch"] = next_epoch if next_epoch is not None else retained[-1]
-        if state == "failed":
+        if authorized_matched_post_prune:
+            record["status"] = "stopped_at_matched_post_pruning"
+            record["currentPhase"] = "terminal_pruned"
+            record["currentEpoch"] = max(resolved) if resolved else retained[0]
+            record.pop("needsAttention", None)
+        elif authorized_epoch_stop:
+            record["status"] = "stopped_at_authorized_epoch"
+            record["currentPhase"] = "terminal_authorized"
+            record["currentEpoch"] = int(record["stopAfterEpoch"])
+            record.pop("needsAttention", None)
+        elif state == "failed":
             record["status"] = "failed"
             record["needsAttention"] = True
         elif state == "complete":
@@ -416,14 +617,17 @@ def main() -> None:
     report = json.loads(REPORT.read_text())
     if len(report.get("producers", [])) != 14 or len(report.get("evaluators", [])) != 2:
         raise RuntimeError("report must contain fourteen producers and two evaluators")
-    if len(report.get("dclm333mIntegratedRuns", [])) != 12:
-        raise RuntimeError("report must contain twelve Pool-333M integrated runs")
+    if len(report.get("dclm333mIntegratedRuns", [])) != 15:
+        raise RuntimeError("report must contain fifteen Pool-333M integrated runs")
     for record in report["producers"]:
         print(f"{record['id']}: {refresh_producer(record)}")
     for record in report["evaluators"]:
         print(f"{record['id']}: {refresh_evaluator(record)}")
-    for record in report["dclm333mIntegratedRuns"]:
-        print(f"{record['id']}: {refresh_integrated_run(record)}")
+    integrated = report["dclm333mIntegratedRuns"]
+    with ThreadPoolExecutor(max_workers=len(integrated)) as pool:
+        statuses = list(pool.map(refresh_integrated_run, integrated))
+    for record, status in zip(integrated, statuses, strict=True):
+        print(f"{record['id']}: {status}")
     write_report(report)
 
 

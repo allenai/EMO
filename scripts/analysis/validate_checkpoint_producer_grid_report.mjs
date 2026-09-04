@@ -103,8 +103,12 @@ for (const producer of current.producers || []) {
     `<tr><td>E${producer.currentEpoch}<\\/td><td>${label.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}<\\/td>(.*?)<\\/tr>`,
   );
   const row = grid.match(rowPattern)?.[1];
-  const expectedState = producer.status === "running" ? "producer running" : "producer queued";
-  if (!row || !row.includes(`WD ${producer.weightDecay}) · ${expectedState}`)) {
+  const integratedPost = producer.role === "integrated_checkpoint_producer_and_evaluator" &&
+    ["post", "post_pending"].includes(producer.currentPhase);
+  const expectedState = integratedPost
+    ? (producer.status === "running" ? "POST running" : "POST queued")
+    : (producer.status === "running" ? "producer running" : "producer queued");
+  if (!row || !row.includes(`WD ${producer.weightDecay})`) || !row.includes(expectedState)) {
     throw new Error(`coordinate grid does not show active producer ${producer.id}`);
   }
 }
