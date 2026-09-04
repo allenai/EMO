@@ -22,7 +22,7 @@ DATA_ROOT="s3://ai2-llm"
 
 BEAKER_NODES=1
 BEAKER_GPUS=1
-# small job: leave preemptible (default) so it schedules from the unallocated pool
+PREEMPTIBLE=0   # allocated: even 1-GPU smoke/check jobs schedule much faster than preemptible
 BEAKER_TORCHRUN=1   # 1-GPU training still needs torchrun (LOCAL_RANK etc.)
 
 STEPS="${STEPS:-20}"
