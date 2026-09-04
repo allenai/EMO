@@ -71,6 +71,7 @@ def clean_task(spec: dict[str, Any], revision: str, priority: str) -> dict[str, 
         )
     ]
     set_env(task, "GIT_REF", revision)
+    set_env(task, "PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
     task["name"] = "main"
     task["resources"] = {"gpuCount": 8, "sharedMemory": "10 GiB"}
     task["context"] = {"priority": priority, "autoResume": True}
@@ -144,7 +145,7 @@ def existing_named_experiment(name: str) -> str | None:
 
 
 def producer_name() -> str:
-    return f"{runner.EXPECTED_ID}-continuation-e96-e256-v2"
+    return f"{runner.EXPECTED_ID}-continuation-e96-e256-v3"
 
 
 def producer_spec(item: dict[str, Any], revision: str, priority: str) -> dict[str, Any]:
@@ -169,8 +170,8 @@ def producer_spec(item: dict[str, Any], revision: str, priority: str) -> dict[st
         "validated pre-decay E96 step247192 through E256; checkpoint every 2 "
         "epochs, preserve the existing evaluation checkpoints, and delete "
         "recovery-only checkpoints after E256; isolated output writer; "
-        "8 GPUs, rank microbatch 16, gradient accumulation 2, auto-resume, eight "
-        "retries; minRuntime intentionally omitted."
+        "8 GPUs, rank microbatch 16, gradient accumulation 2, expandable CUDA "
+        "segments, auto-resume, eight retries; minRuntime intentionally omitted."
     )
     return spec
 
@@ -194,11 +195,16 @@ def register(report: dict[str, Any], experiment: str, revision: str) -> None:
     previous_experiment = str(record["experiment"])
     history = record.setdefault("experimentHistory", [])
     if not any(entry.get("experiment") == previous_experiment for entry in history):
+        previous_status = (
+            "failed_missing_expandable_segments_wrong_restart_source"
+            if record.get("status") == "failed"
+            else "replaced_for_exact_e96_restart"
+        )
         history.append(
             {
                 "experiment": previous_experiment,
                 "revision": record.get("revision"),
-                "status": "canceled_for_dense_checkpoint_restart",
+                "status": previous_status,
                 "maxValidatedEpoch": 96,
                 "output": record.get("output"),
                 "stoppedAt": datetime.now(tz=UTC).isoformat(),

@@ -9,6 +9,7 @@ SCRIPTS = Path(__file__).resolve().parents[3] / "scripts" / "models"
 sys.path.insert(0, str(SCRIPTS))
 
 import run_dense_474m_pool3b_bs256_e96_continuation as continuation  # noqa: I001
+import submit_dense_474m_pool3b_bs256_e96_continuation as submitter  # noqa: I001
 
 
 MANIFEST = (
@@ -74,6 +75,46 @@ def test_future_evaluations_keep_the_original_sixteen_epoch_cadence() -> None:
         for epoch in continuation.CHECKPOINT_EPOCHS
         if epoch not in continuation.EVALUATION_EPOCHS
     )
+
+
+def test_exact_e96_restart_quarantines_later_checkpoints_once() -> None:
+    with tempfile.TemporaryDirectory() as raw:
+        output = Path(raw)
+        later = output / f"step{continuation.checkpoint_step(112)}"
+        make_complete_checkpoint(later)
+        original_output = continuation.EXPECTED_OUTPUT
+        try:
+            continuation.EXPECTED_OUTPUT = output
+            state_dir = output / continuation.STATE_NAME
+            assert continuation.initialize_exact_e96_restart(state_dir) == [112]
+            assert not later.exists()
+            assert (output / continuation.QUARANTINE_NAME / later.name).is_dir()
+            assert continuation.initialize_exact_e96_restart(state_dir) == [112]
+        finally:
+            continuation.EXPECTED_OUTPUT = original_output
+
+
+def test_submitter_restores_expandable_cuda_segments_without_min_runtime() -> None:
+    spec = {
+        "tasks": [
+            {
+                "datasets": [{"mountPath": "/weka/oe-training-default"}],
+                "envVars": [
+                    {"name": "PYTORCH_CUDA_ALLOC_CONF", "value": "stale"},
+                ],
+            }
+        ]
+    }
+    task = submitter.clean_task(spec, "a" * 40, "urgent")
+    matching = [
+        variable
+        for variable in task["envVars"]
+        if variable["name"] == "PYTORCH_CUDA_ALLOC_CONF"
+    ]
+    assert matching == [
+        {"name": "PYTORCH_CUDA_ALLOC_CONF", "value": "expandable_segments:True"}
+    ]
+    assert "minRuntime" not in task["context"]
 
 
 def test_cleanup_deletes_only_recovery_checkpoint() -> None:

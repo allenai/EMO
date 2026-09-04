@@ -16,7 +16,7 @@ from typing import Any
 
 import run_dense_small_pool3b_checkpoint_producer as producer
 
-POLICY = "dense_474m_pool3b_bs256_e96_continuation_v2"
+POLICY = "dense_474m_pool3b_bs256_e96_continuation_v3"
 DEFAULT_MANIFEST = Path("scripts/models/manifests/dense-474m-pool3b-bs256-e96-continuation-v1.json")
 SOURCE_EPOCH = 96
 TARGET_EPOCHS = (112, 128, 144, 160, 176, 192, 208, 224, 240, 256)
@@ -32,6 +32,8 @@ EXPECTED_ID = "dense-474m-dclm3b-bs256-lr2e-3-wd0.1"
 EXPECTED_OUTPUT = Path(
     "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1"
 )
+STATE_NAME = ".constant_checkpoint_producer_pool3b_e96_e256_v3"
+QUARANTINE_NAME = ".pre_exact_e96_restart_v3_quarantine"
 EXPECTED_REPEATED_MANIFEST = Path(
     "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/"
     "manifests/dclm_0802_nested_train_3b_flat_dynamic_repacking.json"
@@ -184,6 +186,53 @@ def pending_state(item: dict[str, Any]) -> tuple[int, Path, list[int]]:
     return resume_epoch, resume, pending
 
 
+def initialize_exact_e96_restart(state_dir: Path) -> list[int]:
+    """Quarantine later checkpoints once so this lineage starts at exact E96.
+
+    Earlier attempts could leave a complete later checkpoint in the canonical
+    output.  It must not silently become the source of this explicitly-E96
+    restart.  The quarantine move is reversible and the marker makes retries
+    resume only checkpoints produced by this v3 lineage.
+    """
+    marker = state_dir / "exact_e96_restart.json"
+    quarantine = EXPECTED_OUTPUT / QUARANTINE_NAME
+    if marker.is_file():
+        value = json.loads(marker.read_text())
+        if (
+            value.get("policy") != POLICY
+            or value.get("status") != "complete"
+            or int(value.get("sourceEpoch", -1)) != SOURCE_EPOCH
+        ):
+            raise RuntimeError(f"invalid exact-E96 restart marker {marker}")
+        return [int(epoch) for epoch in value.get("quarantinedEpochs", [])]
+
+    quarantine.mkdir(parents=True, exist_ok=True)
+    quarantined: list[int] = []
+    for epoch in CHECKPOINT_EPOCHS:
+        path = EXPECTED_OUTPUT / f"step{checkpoint_step(epoch)}"
+        destination = quarantine / path.name
+        if path.exists() and destination.exists():
+            raise RuntimeError(f"checkpoint exists both live and quarantined: {path}")
+        if path.exists():
+            path.rename(destination)
+        if destination.exists():
+            quarantined.append(epoch)
+    producer.atomic_json(
+        marker,
+        {
+            "policy": POLICY,
+            "status": "complete",
+            "sourceEpoch": SOURCE_EPOCH,
+            "sourceCheckpoint": str(
+                EXPECTED_OUTPUT / f"step{checkpoint_step(SOURCE_EPOCH)}"
+            ),
+            "quarantinedEpochs": quarantined,
+            "quarantine": str(quarantine),
+        },
+    )
+    return quarantined
+
+
 def cleanup_nonessential_checkpoints(state_dir: Path) -> list[int]:
     missing_essential = [
         epoch
@@ -224,7 +273,7 @@ def producer_arguments(
         "--dynamic-repacking",
         f"--save-folder={EXPECTED_OUTPUT}",
         f"--trainer.max_duration={{value: {target_steps[-1]}, unit: steps}}",
-        f"--trainer.callbacks.wandb.name={EXPECTED_ID}-constant-pd-e96-e256-v2",
+        f"--trainer.callbacks.wandb.name={EXPECTED_ID}-constant-pd-e96-e256-v3",
         (
             "--trainer.callbacks.wandb.tags=[pretraining,step1,0802,pool3b-repeat,"
             "dense-474m,dr_wt_embwd,bs256,lr2e-3,wd0.1,constant-lr,pre-decay,"
@@ -238,8 +287,9 @@ def producer_arguments(
 
 def run(config: dict[str, Any], item: dict[str, Any]) -> None:
     validate(config, item, check_filesystem=True)
+    state_dir = EXPECTED_OUTPUT / STATE_NAME
+    quarantined = initialize_exact_e96_restart(state_dir)
     resume_epoch, resume, pending = pending_state(item)
-    state_dir = EXPECTED_OUTPUT / ".constant_checkpoint_producer_pool3b_e96_e256_v2"
     if not pending:
         cleanup_nonessential_checkpoints(state_dir)
         print(f"DENSE_SMALL_POOL3B_PRODUCER_COMPLETE id={EXPECTED_ID}", flush=True)
@@ -260,6 +310,7 @@ def run(config: dict[str, Any], item: dict[str, Any]) -> None:
         "pendingEpochs": pending,
         "evaluationEpochs": list(EVALUATION_EPOCHS),
         "evaluationEnabled": False,
+        "quarantinedPreRestartEpochs": quarantined,
         "gpuCount": 8,
         "rankMicrobatchSequences": 16,
         "gradientAccumulationSteps": 2,
@@ -273,7 +324,7 @@ def run(config: dict[str, Any], item: dict[str, Any]) -> None:
         flush=True,
     )
     producer.run_torch(
-        f"{EXPECTED_ID}-constant-pd-e96-e256-v2",
+        f"{EXPECTED_ID}-constant-pd-e96-e256-v3",
         producer_arguments(config, item, resume, pending),
         state_dir / "producer.log",
     )
