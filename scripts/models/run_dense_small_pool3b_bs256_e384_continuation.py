@@ -48,6 +48,8 @@ EXPECTED_REPEATED_MANIFEST = Path(
     "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/"
     "manifests/dclm_0802_nested_train_3b_flat_dynamic_repacking.json"
 )
+ALLOCATED_RETRY_POLICY = "dense_small_pool3b_bs256_e320_allocated_retry_v1"
+PARTIAL_POST_QUARANTINE_NAME = ".pre_allocated_e320_retry_quarantine"
 
 
 def load(path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -371,6 +373,71 @@ def run_evaluator(config: dict[str, Any], item: dict[str, Any], epoch: int) -> d
     return evaluator.run(config, item, epoch, str(EXPECTED_OUTPUT))
 
 
+def initialize_allocated_e320_retry(item: dict[str, Any]) -> None:
+    """Quarantine the incomplete unallocated E320 POST attempt exactly once."""
+    producer_state = (
+        EXPECTED_OUTPUT / ".constant_checkpoint_producer_pool3b_e256_e384_integrated_v3"
+    )
+    marker = producer_state / "allocated_e320_retry.json"
+    if marker.is_file():
+        value = json.loads(marker.read_text())
+        if (
+            value.get("policy") != ALLOCATED_RETRY_POLICY
+            or value.get("status") != "complete"
+            or int(value.get("epoch", -1)) != EVALUATION_EPOCHS[0]
+        ):
+            raise RuntimeError(f"invalid allocated-E320 retry marker {marker}")
+        return
+
+    epoch = EVALUATION_EPOCHS[0]
+    eval_state = evaluator.state_dir(item, str(EXPECTED_OUTPUT))
+    post_output = eval_state / "post_decay_runs" / f"e{epoch}"
+    endpoint = post_output / f"step{producer.total_step(epoch, producer.TARGET_POOL_TOKENS, 256)}"
+    result = eval_state / "results" / f"e{epoch}.json"
+    log = eval_state / "logs" / f"e{epoch}.log"
+    quarantine = EXPECTED_OUTPUT / PARTIAL_POST_QUARANTINE_NAME
+    moved_output = False
+    moved_log = False
+
+    # A completed endpoint or result is recoverable and must not be moved. Only
+    # isolate the known incomplete unallocated attempt before the replacement.
+    if not result.is_file() and not endpoint.is_dir() and (post_output.exists() or log.exists()):
+        quarantine.mkdir(parents=True, exist_ok=True)
+        if post_output.exists():
+            destination = quarantine / "post_decay_e320_unallocated"
+            if destination.exists():
+                raise RuntimeError(
+                    f"partial E320 POST exists both live and quarantined: {post_output}"
+                )
+            post_output.rename(destination)
+            moved_output = True
+        if log.exists():
+            destination = quarantine / "e320_unallocated.log"
+            if destination.exists():
+                raise RuntimeError(f"E320 log exists both live and quarantined: {log}")
+            log.rename(destination)
+            moved_log = True
+
+    producer.atomic_json(
+        marker,
+        {
+            "policy": ALLOCATED_RETRY_POLICY,
+            "status": "complete",
+            "epoch": epoch,
+            "sourceCheckpoint": str(EXPECTED_OUTPUT / f"step{checkpoint_step(epoch)}"),
+            "quarantine": str(quarantine),
+            "quarantinedPostOutput": moved_output,
+            "quarantinedLog": moved_log,
+        },
+    )
+    print(
+        f"DENSE_POOL3B_ALLOCATED_RETRY_READY id={EXPECTED_ID} epoch={epoch} "
+        f"quarantined_post_output={str(moved_output).lower()} "
+        f"quarantined_log={str(moved_log).lower()}",
+        flush=True,
+    )
+
+
 def decision_for(
     item: dict[str, Any], epoch: int, result: dict[str, Any]
 ) -> dict[str, Any]:
@@ -398,6 +465,7 @@ def decision_for(
 
 def run_integrated(config: dict[str, Any], item: dict[str, Any]) -> None:
     validate(config, item, check_filesystem=True)
+    initialize_allocated_e320_retry(item)
     output = Path(str(item["output"]))
     state_dir = output / ".constant_checkpoint_producer_pool3b_e256_e384_integrated_v3"
     for epoch in EVALUATION_EPOCHS:

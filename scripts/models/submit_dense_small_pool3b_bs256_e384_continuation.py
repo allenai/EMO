@@ -20,6 +20,19 @@ REPORT = Path("reports/0802/data/wsd_checkpoint_producer_grid.json")
 REPORT_JS = REPORT.with_suffix(".js")
 MANIFEST = runner.DEFAULT_MANIFEST
 RUNNER = "scripts/models/run_dense_small_pool3b_bs256_e384_continuation.py"
+ALLOCATED_MIN_RUNTIME = "8h"
+RUNTIME_ESTIMATE = {
+    "basisExperiment": "01M1H0DPEEMSHJJ4H6S5ZB007M",
+    "basisJob": "01M1H0DPJC4SCH4ZFA8PJWACP8",
+    "basisEpoch": 256,
+    "basisElapsedSeconds": 24690.783041,
+    "basisDecaySteps": 73243,
+    "targetEpoch": 320,
+    "targetDecaySteps": 91554,
+    "scaledEstimatedSeconds": 30863.563078,
+    "roundedMinRuntime": ALLOCATED_MIN_RUNTIME,
+    "beakerMaximumSeconds": 28800,
+}
 
 
 def command(arguments: list[str], *, input_text: str | None = None) -> str:
@@ -76,6 +89,7 @@ def clean_task(spec: dict[str, Any], revision: str, priority: str) -> dict[str, 
     task["resources"] = {"gpuCount": 8, "sharedMemory": "10 GiB"}
     task["context"] = {
         "priority": priority,
+        "minRuntime": ALLOCATED_MIN_RUNTIME,
         "autoResume": True,
     }
     task["hostNetworking"] = False
@@ -149,7 +163,7 @@ def existing_named_experiment(name: str) -> str | None:
 
 
 def producer_name() -> str:
-    return f"{runner.EXPECTED_ID}-integrated-e256-e384-v3"
+    return f"{runner.EXPECTED_ID}-integrated-e256-e384-v4-allocated-e320"
 
 
 def evaluator_name(epoch: int) -> str:
@@ -185,7 +199,8 @@ def producer_spec(item: dict[str, Any], revision: str, priority: str) -> dict[st
         "before any E320-E384 training, stop on strict non-improvement, and treat "
         "E384 as the hard ceiling; delete recovery-only checkpoints at the terminal "
         "gate; 8 GPUs, rank microbatch 16, "
-        "gradient accumulation 2, auto-resume, eight retries; minRuntime omitted; "
+        "gradient accumulation 2, auto-resume, eight retries; allocated-slot "
+        f"scheduling with minRuntime={ALLOCATED_MIN_RUNTIME}, the Beaker maximum; "
         f"write only to {item['output']}."
     )
     return spec
@@ -222,7 +237,7 @@ def evaluator_spec(
     spec["description"] = (
         f"153M DCLM-3B BS256 LR2e-3 WD0.1 independent E{epoch} uncapped 10% "
         "WSD decay and heldout evaluation from the exact selected-recovery "
-        "pre-decay checkpoint; minRuntime omitted."
+        f"pre-decay checkpoint; minRuntime={ALLOCATED_MIN_RUNTIME}."
     )
     return spec
 
@@ -250,7 +265,7 @@ def register_producer(report: dict[str, Any], experiment: str, revision: str) ->
             {
                 "experiment": previous_experiment,
                 "revision": record.get("revision"),
-                "status": "canceled_after_next_checkpoint_for_integrated_workflow",
+                "status": "canceled_for_allocated_e320_retry",
                 "maxValidatedEpoch": max(record.get("resolvedCheckpointEpochs") or [256]),
                 "output": record.get("output"),
                 "recoveryAttempt": record.get("recoveryAttempt"),
@@ -279,10 +294,13 @@ def register_producer(report: dict[str, Any], experiment: str, revision: str) ->
             "postBranchesIsolatedFromConstantFrontier": True,
             "standaloneEvaluatorSubmissionsAuthorized": False,
             "futureEvaluatorSubmissionsAuthorized": False,
+            "minRuntime": ALLOCATED_MIN_RUNTIME,
+            "minRuntimeOmitted": False,
+            "runtimeEstimate": dict(RUNTIME_ESTIMATE),
             "submittedAt": datetime.now(tz=UTC).isoformat(),
         }
     )
-    for key in ("job", "jobs", "wandbHealth", "needsAttention", "minRuntime"):
+    for key in ("job", "jobs", "wandbHealth", "needsAttention"):
         record.pop(key, None)
 
 
@@ -325,7 +343,8 @@ def main() -> None:
     config, item = runner.load(MANIFEST)
     report = json.loads(REPORT.read_text())
     if args.mode == "producer":
-        ensure_producer_ready(report, item)
+        if args.submit_if_ready:
+            ensure_producer_ready(report, item)
         spec = producer_spec(item, args.revision, args.priority)
         name = producer_name()
     else:
@@ -348,7 +367,7 @@ def main() -> None:
         write_report(report)
     else:
         register_evaluator(item, int(args.epoch), experiment, args.revision)
-    print(f"{name}: {experiment}")
+    print(f"{name}: {experiment} minRuntime={ALLOCATED_MIN_RUNTIME}")
 
 
 if __name__ == "__main__":
