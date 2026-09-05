@@ -1,8 +1,8 @@
 {
-  "updated": "2026-08-28",
+  "updated": "2026-09-05",
   "title": "0802 Step 1-1 \u00b7 Dense 153M",
   "setup": "Dense 153M; 1B-unique-pool repeated-token regime; sequence length 4096. Report tables include BS32/64/128/256/512; completed higher-batch results and provenance remain fully visible. Rank microbatch is 16 sequences; BS32/64 use 2/4 GPUs with gradient accumulation 1/1. Warmup is token-matched across batches.",
-  "selection": "For BS32, run the fresh E1 Cartesian grid LR{1e-3,2e-3} x WD{0.033,0.1}, select the healthy coordinate with the lowest validation CE, and then permanently lock both LR and WD to that exact E1 winner. Continue only the locked coordinate at E2/E4/E8/E12/E16 and then E24/E32/E40/E48/E56/E64, stopping at the first post-E16 non-improvement and performing no further tuning. Existing higher-batch chains retain their recorded terminal policies and every completed result and provenance item remains visible. BS64 continues its exact selected LR2e-3/WD0.1 trajectory in eight-epoch increments beyond E80, stopping at the first validation-CE non-improvement; E128 is the current launcher safety ceiling and must be extended if validation is still improving there. BS128 is terminal at E80, BS256 is terminal at E56, and BS512 is terminal at E48 by user policy. Completed E20/E28 work remains visible only in provenance and is omitted from summary rows; neither is a future launch target. BS32 now has one persistent saturation-gated continuation from E48; it uses the locked LR1e-3/WD0.033 coordinate and one canonical output directory. BS64 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS128 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS256 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS512 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors.",
+  "selection": "For BS32, run the fresh E1 Cartesian grid LR{1e-3,2e-3} x WD{0.033,0.1}, select the healthy coordinate with the lowest validation CE, and then permanently lock both LR and WD to that exact E1 winner. Continue only the locked coordinate at E2/E4/E8/E12/E16 and then E24/E32/E40/E48/E56/E64, stopping at the first post-E16 non-improvement and performing no further tuning. Existing higher-batch chains retain their recorded terminal policies and every completed result and provenance item remains visible. BS64 continues its exact selected LR2e-3/WD0.1 trajectory in eight-epoch increments beyond E80, stopping at the first validation-CE non-improvement; E128 is the current launcher safety ceiling and must be extended if validation is still improving there. BS128 is terminal at E80, BS256 is terminal at E56, and BS512 is terminal at E48 by user policy. Completed E20/E28 work remains visible only in provenance and is omitted from summary rows; neither is a future launch target. BS32 now has one persistent saturation-gated continuation from E48; it uses the locked LR1e-3/WD0.033 coordinate and one canonical output directory. BS64 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS128 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS256 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS512 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS32 now includes a guarded LR5e-4/WD0.033 hybrid probe: POST E40 is the first gate, E32 is evaluated only to confirm a negative E40 result, and a promising or inconclusive probe continues through E80 before the selected LR is tested from scratch with WD0.1.",
   "selectionPolicy": {
     "allowAllCompletedCoordinates": true,
     "nondecreasingWd": true,
@@ -11618,6 +11618,56 @@
       },
       "saturatedEpoch": 88,
       "stopReason": "Held-out validation stopped strictly improving at E88."
+    },
+    {
+      "id": "dense-153m-bs32-lr-wd-hybrid-v1",
+      "policy": "dense_153m_bs32_lr_wd_hybrid_v1",
+      "batchSequences": 32,
+      "globalBatchTokens": 131072,
+      "contextLength": 4096,
+      "lr": "5e-4",
+      "wd": "0.033",
+      "warmupSteps": 768,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulation": 1,
+      "gpuCount": 2,
+      "status": "submitted",
+      "activeEpoch": 40,
+      "activePhase": "probe_producer",
+      "search": "small-model-bs32-lr-wd-hybrid",
+      "hybridWorkflow": true,
+      "beaker": "01M1SXP400YKVFFZTCMCPPEMR7",
+      "experiment": "01M1SXP400YKVFFZTCMCPPEMR7",
+      "revision": "4e83e1e786862968b8af053417aa9d428a72c538",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr5e-4_wd0.033_hybrid_v1",
+      "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr5e-4_wd0.033_hybrid_v1/constant_lr",
+      "saveEveryEpochs": 4,
+      "firstEvaluationEpoch": 40,
+      "negativeSanityEpoch": 32,
+      "lateEvaluationEpochs": [
+        48,
+        56,
+        64,
+        72,
+        80
+      ],
+      "followupWeightDecay": "0.1",
+      "followupEvaluationEpochs": [
+        40,
+        48,
+        56,
+        64,
+        72,
+        80
+      ],
+      "comparisonMetric": "healthy_matched_post_validationExact",
+      "dynamicRepacking": false,
+      "weightTying": false,
+      "embeddingWeightDecay": "zero",
+      "automaticTaskRetries": 8,
+      "minRuntimeOmitted": true,
+      "results": {},
+      "reason": "Submitted the fresh LR5e-4/WD0.033 hybrid probe. It saves exact pre-decay checkpoints every four epochs, evaluates E40 first, uses E32 only to confirm a negative E40 comparison, and otherwise compares best matched POST results through E80 before starting the selected-LR/WD0.1 follow-up in the same task."
     }
   ],
   "summaryBatches": [
@@ -14335,7 +14385,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs64_dr_wt_embwd_lr2e-3_wd0.1_postdecay_only_continuation_v1/constant_lr",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-28T02:39:06.789937+00:00",
+        "checkedAt": "2026-08-28T03:38:47.194078+00:00",
         "run": "2p6t5o5c",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/2p6t5o5c",
         "model": "153m",
@@ -14347,13 +14397,13 @@
         "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs64_dr_wt_embwd_lr2e-3_wd0.1_postdecay_only_continuation_v1/constant_lr",
         "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs64_dr_wt_embwd_lr2e-3_wd0.1_postdecay_only_continuation_v1/constant_lr",
         "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs64_dr_wt_embwd_lr2e-3_wd0.1_postdecay_only_continuation_v1/constant_lr/step769043",
-        "samples": 629,
+        "samples": 1736,
         "firstStep": 769045,
-        "latestStep": 772185,
+        "latestStep": 777720,
         "totalSteps": 823974,
-        "recentLossMedian": 3.487,
-        "baselineLossMedian": 3.488,
-        "maxLoss": 3.648,
+        "recentLossMedian": 3.4875,
+        "baselineLossMedian": 3.482,
+        "maxLoss": 3.673,
         "isolatedSpikeCount": 0,
         "stepRegressions": [],
         "nonfiniteLosses": [],
@@ -14499,10 +14549,10 @@
       "continuationOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs64_dr_wt_embwd_lr2e-3_wd0.1_postdecay_only_continuation_v1",
       "continuationManifest": "scripts/models/manifests/small-dense-153m-bs64-dr-wt-embwd-postdecay-only-continuation.json",
       "progress": {
-        "step": 772185,
+        "step": 777723,
         "totalSteps": 823974,
-        "percent": 93.7,
-        "latestTrain": 3.516
+        "percent": 94.4,
+        "latestTrain": 3.512
       }
     },
     {
@@ -19660,7 +19710,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs256_dr_wt_embwd_lr2e-3_wd0.1_postdecay_only_continuation_v1/post_decay_runs/e208",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-28T02:39:15.592703+00:00",
+        "checkedAt": "2026-08-28T03:38:55.635377+00:00",
         "run": "391eh7ji",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/391eh7ji",
         "model": "153m",
@@ -22544,7 +22594,7 @@
       },
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-28T02:39:19.952902+00:00",
+        "checkedAt": "2026-08-28T03:38:59.974853+00:00",
         "run": "m3russ36",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/m3russ36",
         "model": "153m",
@@ -22556,17 +22606,17 @@
         "stageOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs512_dr_wt_embwd_lr2e-3_wd0.3_postdecay_only_continuation_v1/constant_lr",
         "saveFolder": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs512_dr_wt_embwd_lr2e-3_wd0.3_postdecay_only_continuation_v1/constant_lr",
         "loadPath": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs512_dr_wt_embwd_lr2e-3_wd0.3_postdecay_only_continuation_v1/constant_lr/step109863",
-        "samples": 1184,
+        "samples": 1318,
         "firstStep": 109865,
-        "latestStep": 115780,
+        "latestStep": 116450,
         "totalSteps": 116729,
-        "recentLossMedian": 3.4155,
-        "baselineLossMedian": 3.413,
+        "recentLossMedian": 3.412,
+        "baselineLossMedian": 3.411,
         "maxLoss": 3.856,
         "isolatedSpikeCount": 0,
         "stepRegressions": [],
         "nonfiniteLosses": [],
-        "stalledMinutes": 0.7,
+        "stalledMinutes": 0.3,
         "warnings": [],
         "criticalSignals": [],
         "shouldRecover": false,
@@ -22656,11 +22706,34 @@
       "continuationOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/.bs512_dr_wt_embwd_lr2e-3_wd0.3_postdecay_only_continuation_v1",
       "continuationManifest": "scripts/models/manifests/small-dense-153m-bs512-dr-wt-embwd-postdecay-only-continuation.json",
       "progress": {
-        "step": 115784,
+        "step": 116450,
         "totalSteps": 116729,
-        "percent": 99.2,
-        "latestTrain": 3.419
+        "percent": 99.8,
+        "latestTrain": 3.395
       }
     }
-  ]
+  ],
+  "bs32LrWdHybridWorkflow": {
+    "policy": "dense_153m_bs32_lr_wd_hybrid_v1",
+    "status": "submitted",
+    "experiment": "01M1SXP400YKVFFZTCMCPPEMR7",
+    "revision": "4e83e1e786862968b8af053417aa9d428a72c538",
+    "probeLearningRate": "5e-4",
+    "baselineLearningRate": "1e-3",
+    "probeWeightDecay": "0.033",
+    "followupWeightDecay": "0.1",
+    "saveEveryEpochs": 4,
+    "firstEvaluationEpoch": 40,
+    "negativeSanityEpoch": 32,
+    "lateEvaluationEpochs": [
+      48,
+      56,
+      64,
+      72,
+      80
+    ],
+    "minRuntimeOmitted": true,
+    "beakerStatus": "submitted",
+    "job": "01M1SXP43J107H79TZ71ER029E"
+  }
 }
