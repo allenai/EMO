@@ -98,6 +98,7 @@ def build_spec(mode: str, revision: str, priority: str) -> dict[str, Any]:
         if variable.get("name")
         not in {"GANTRY_USE_TORCHRUN", "NUM_NODES", "PYTORCH_CUDA_ALLOC_CONF"}
     ]
+    task["envVars"].append({"name": "PYTORCH_CUDA_ALLOC_CONF", "value": "expandable_segments:True"})
     set_revision(task, revision)
     gpu_count = 2 if mode == "bs32-probes" else 8
     task["resources"] = {"gpuCount": gpu_count, "sharedMemory": "10 GiB"}
@@ -117,7 +118,7 @@ def build_spec(mode: str, revision: str, priority: str) -> dict[str, Any]:
         )
     spec["description"] = (
         f"Dense 474M Pool-1B original-model tuning: {detail}. One node, {gpu_count} GPUs, "
-        "auto-resume, eight retries, and minRuntime omitted."
+        "auto-resume, eight retries, expandable CUDA segments, and minRuntime omitted."
     )
     if "minRuntime" in task["context"]:
         raise AssertionError("original tuning task context must omit minRuntime")
