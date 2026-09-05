@@ -1,0 +1,58 @@
+{
+  "policy": "dense_474m_original_tuning_v1",
+  "id": "dense-474m-original-tuning-v1",
+  "model": "474m",
+  "pool": "dclm1b",
+  "poolTokens": 1000000000,
+  "sequenceLength": 4096,
+  "comparisonMetric": "healthy_matched_post_validationExact",
+  "dynamicRepacking": false,
+  "weightTying": false,
+  "embeddingWeightDecay": "zero",
+  "bs32Probes": {
+    "globalSequences": 32,
+    "nprocPerNode": 2,
+    "rankMicrobatchSequences": 16,
+    "gradientAccumulationSteps": 1,
+    "warmupSteps": 768,
+    "sourceEpoch": 1,
+    "targetEpoch": 4,
+    "baseline": {
+      "learningRate": "1e-3",
+      "weightDecay": "0.1",
+      "epoch": 4,
+      "validationExact": 3.269
+    },
+    "coordinates": [
+      {
+        "id": "lr5e-4-wd0.1",
+        "learningRate": "5e-4",
+        "weightDecay": "0.1",
+        "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_0802_repeated_dclm1b_bs32_e1_lr5e-4_wd0.1_warmup768_sm0811bs32grid02/step6866",
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1_e4_probe_v1"
+      },
+      {
+        "id": "lr2e-3-wd0.1",
+        "learningRate": "2e-3",
+        "weightDecay": "0.1",
+        "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_0802_repeated_dclm1b_bs32_e1_lr2e-3_wd0.1_warmup768_sm0811bs32grid08/step6866",
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1_e4_probe_v1"
+      }
+    ]
+  },
+  "bs128Extension": {
+    "globalSequences": 128,
+    "nprocPerNode": 8,
+    "rankMicrobatchSequences": 16,
+    "gradientAccumulationSteps": 1,
+    "warmupSteps": 192,
+    "learningRate": "2e-3",
+    "weightDecay": "0.3",
+    "sourceEpoch": 48,
+    "targetEpoch": 52,
+    "previousValidationExact": 3.101,
+    "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_0802_repeated_dclm1b_bs128_e48_lr2e-3_wd0.3_warmup192_sm0810e48a/step82397",
+    "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3_e52_extension_v1"
+  },
+  "runSuffix": "sm0905originaltuningv1"
+}
