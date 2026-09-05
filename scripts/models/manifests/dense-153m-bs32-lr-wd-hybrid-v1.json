@@ -1,0 +1,49 @@
+{
+  "policy": "dense_153m_bs32_lr_wd_hybrid_v1",
+  "id": "dense-153m-bs32-lr-wd-hybrid-v1",
+  "model": "153m",
+  "pool": "dclm1b",
+  "poolTokens": 1000000000,
+  "sequenceLength": 4096,
+  "globalSequences": 32,
+  "nprocPerNode": 2,
+  "rankMicrobatchSequences": 16,
+  "gradientAccumulationSteps": 1,
+  "warmupSteps": 768,
+  "saveEveryEpochs": 4,
+  "probe": {
+    "learningRate": "5e-4",
+    "weightDecay": "0.033",
+    "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr5e-4_wd0.033_hybrid_v1",
+    "firstEvaluationEpoch": 40,
+    "sanityEpoch": 32,
+    "lateEvaluationEpochs": [48, 56, 64, 72, 80]
+  },
+  "baseline": {
+    "learningRate": "1e-3",
+    "weightDecay": "0.033",
+    "validationExactByEpoch": {
+      "32": 3.378,
+      "40": 3.374,
+      "48": 3.371,
+      "56": 3.369,
+      "64": 3.367,
+      "72": 3.366,
+      "80": 3.365
+    }
+  },
+  "followup": {
+    "weightDecay": "0.1",
+    "evaluationEpochs": [40, 48, 56, 64, 72, 80],
+    "outputsByLearningRate": {
+      "5e-4": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr5e-4_wd0.1_hybrid_v1",
+      "1e-3": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1"
+    }
+  },
+  "comparisonMetric": "healthy_matched_post_validationExact",
+  "tiePolicy": "retain_1e-3_or_continue_when_more_evidence_is_available",
+  "dynamicRepacking": false,
+  "weightTying": false,
+  "embeddingWeightDecay": "zero",
+  "runSuffix": "sm0905bs32lrwdhybridv1"
+}
