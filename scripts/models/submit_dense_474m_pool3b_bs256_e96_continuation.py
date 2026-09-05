@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guardedly submit the 474M Pool-3B BS256 exact-E96 continuation."""
+"""Guardedly submit the allocated 474M Pool-3B BS256 integrated continuation."""
 
 from __future__ import annotations
 
@@ -19,6 +19,19 @@ REPORT = Path("reports/0802/data/wsd_checkpoint_producer_grid.json")
 REPORT_JS = REPORT.with_suffix(".js")
 MANIFEST = runner.DEFAULT_MANIFEST
 RUNNER = "scripts/models/run_dense_474m_pool3b_bs256_e96_continuation.py"
+ALLOCATED_MIN_RUNTIME = "8h"
+RUNTIME_ESTIMATE = {
+    "basisExperiment": "01M1GSHYNFBMK3N9QQFF9RVZGZ",
+    "basisJob": "01M1GSHYSCPA2XH44CX2FRFQQY",
+    "basisEpoch": 96,
+    "basisElapsedSeconds": 24519.536489,
+    "basisDecaySteps": 27467,
+    "targetEpoch": 112,
+    "targetDecaySteps": 32045,
+    "scaledEstimatedSeconds": 28606.275,
+    "roundedMinRuntime": ALLOCATED_MIN_RUNTIME,
+    "beakerMaximumSeconds": 8 * 60 * 60,
+}
 
 
 def command(arguments: list[str], *, input_text: str | None = None) -> str:
@@ -74,7 +87,11 @@ def clean_task(spec: dict[str, Any], revision: str, priority: str) -> dict[str, 
     set_env(task, "PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
     task["name"] = "main"
     task["resources"] = {"gpuCount": 8, "sharedMemory": "10 GiB"}
-    task["context"] = {"priority": priority, "autoResume": True}
+    task["context"] = {
+        "priority": priority,
+        "minRuntime": ALLOCATED_MIN_RUNTIME,
+        "autoResume": True,
+    }
     task["hostNetworking"] = False
     task["propagateFailure"] = False
     task["propagatePreemption"] = False
@@ -145,7 +162,7 @@ def existing_named_experiment(name: str) -> str | None:
 
 
 def producer_name() -> str:
-    return f"{runner.EXPECTED_ID}-integrated-e96-e256-v4"
+    return f"{runner.EXPECTED_ID}-integrated-e96-e256-v5-allocated-e112"
 
 
 def producer_spec(item: dict[str, Any], revision: str, priority: str) -> dict[str, Any]:
@@ -173,7 +190,9 @@ def producer_spec(item: dict[str, Any], revision: str, priority: str) -> dict[st
         "or at the E256 hard ceiling, then delete recovery-only checkpoints; "
         "isolated output writer; "
         "8 GPUs, rank microbatch 16, gradient accumulation 2, expandable CUDA "
-        "segments, auto-resume, eight retries; minRuntime intentionally omitted."
+        "segments, auto-resume, eight retries; allocated-slot scheduling with "
+        f"minRuntime={ALLOCATED_MIN_RUNTIME}, sized from the completed E96 evaluator "
+        "and rounded to the Beaker maximum."
     )
     return spec
 
@@ -197,7 +216,7 @@ def register(report: dict[str, Any], experiment: str, revision: str) -> None:
     previous_experiment = str(record["experiment"])
     history = record.setdefault("experimentHistory", [])
     if not any(entry.get("experiment") == previous_experiment for entry in history):
-        previous_status = "canceled_after_next_checkpoint_for_integrated_workflow"
+        previous_status = "canceled_for_allocated_e112_retry"
         history.append(
             {
                 "experiment": previous_experiment,
@@ -233,10 +252,13 @@ def register(report: dict[str, Any], experiment: str, revision: str) -> None:
             "postBranchesIsolatedFromConstantFrontier": True,
             "standaloneEvaluatorSubmissionsAuthorized": False,
             "futureEvaluatorSubmissionsAuthorized": False,
+            "minRuntime": ALLOCATED_MIN_RUNTIME,
+            "minRuntimeOmitted": False,
+            "runtimeEstimate": dict(RUNTIME_ESTIMATE),
             "submittedAt": datetime.now(tz=UTC).isoformat(),
         }
     )
-    for key in ("job", "jobs", "wandbHealth", "needsAttention", "minRuntime"):
+    for key in ("job", "jobs", "wandbHealth", "needsAttention"):
         record.pop(key, None)
 
 
@@ -268,7 +290,9 @@ def main() -> None:
     experiment = create(producer_name(), spec)
     register(report, experiment, args.revision)
     write_report(report)
-    print(f"{producer_name()}: {experiment}")
+    print(
+        f"{producer_name()}: {experiment} minRuntime={ALLOCATED_MIN_RUNTIME}"
+    )
 
 
 if __name__ == "__main__":
