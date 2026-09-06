@@ -29,14 +29,14 @@
         "learningRate": "5e-4",
         "weightDecay": "0.1",
         "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/step6866",
-        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1_e4_probe_v2"
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1"
       },
       {
         "id": "lr2e-3-wd0.1",
         "learningRate": "2e-3",
         "weightDecay": "0.1",
         "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1/step6866",
-        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1_e4_probe_v2"
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1"
       }
     ]
   },
@@ -52,7 +52,7 @@
     "targetEpoch": 52,
     "previousValidationExact": 3.101,
     "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3/step82397",
-    "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3_e52_extension_v2"
+    "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3"
   },
-  "runSuffix": "sm0905originaltuningv2"
+  "runSuffix": "sm0905originaltuningv3"
 }

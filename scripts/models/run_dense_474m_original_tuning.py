@@ -234,14 +234,16 @@ def claim_output(value: dict[str, Any], mode: str, coordinate: dict[str, Any]) -
         "workflowId": value["id"],
         "mode": mode,
         "coordinate": coordinate["id"],
-        "constantOutput": str(root / "constant_lr"),
+        "constantOutput": str(root),
     }
     if marker.is_file():
         if json.loads(marker.read_text()) != expected:
             raise RuntimeError(f"output ownership mismatch at {marker}")
         return root
-    if root.exists() and any(root.iterdir()):
-        raise RuntimeError(f"refusing nonempty unowned output {root}")
+    source = Path(str(coordinate["sourceCheckpoint"]))
+    if source.parent != root:
+        raise RuntimeError(f"canonical source/output mismatch: {source} vs {root}")
+    validate_predecay(source, coordinate)
     root.mkdir(parents=True, exist_ok=True)
     atomic_json(marker, expected)
     return root
@@ -328,7 +330,7 @@ def constant_arguments(
     )
     return name, [
         *base_arguments(coordinate, evaluation=False),
-        f"--save-folder={root / 'constant_lr'}",
+        f"--save-folder={root}",
         f"--trainer.max_duration={{value: {stable_step(target_epoch, batch)}, unit: steps}}",
         f"--trainer.callbacks.wandb.name={name}",
         (
@@ -360,7 +362,7 @@ def ensure_predecay(
     root = claim_output(value, mode, coordinate)
     batch = int(coordinate["globalSequences"])
     target_epoch = int(coordinate["targetEpoch"])
-    target = root / "constant_lr" / f"step{stable_step(target_epoch, batch)}"
+    target = root / f"step{stable_step(target_epoch, batch)}"
     if not checkpoint_complete(target, int(coordinate["nprocPerNode"])):
         source = validate_predecay(Path(str(coordinate["sourceCheckpoint"])), coordinate)
         name, arguments = constant_arguments(value, coordinate, source, root)
@@ -368,7 +370,7 @@ def ensure_predecay(
         atomic_json(state_root(coordinate) / "workflow.json", state)
         print(
             f"DENSE474M_ORIGINAL_PD_START mode={mode} coordinate={coordinate['id']} "
-            f"epoch={target_epoch} source={source} output={root / 'constant_lr'}",
+            f"epoch={target_epoch} source={source} output={root}",
             flush=True,
         )
         run_torch(
@@ -382,7 +384,7 @@ def ensure_predecay(
         epoch
         for epoch in range(int(coordinate["sourceEpoch"]) + 1, target_epoch + 1)
         if checkpoint_complete(
-            root / "constant_lr" / f"step{stable_step(epoch, batch)}",
+            root / f"step{stable_step(epoch, batch)}",
             int(coordinate["nprocPerNode"]),
         )
     ]
@@ -532,9 +534,9 @@ def evaluate(
     root = claim_output(value, mode, coordinate)
     batch = int(coordinate["globalSequences"])
     source = validate_predecay(
-        root / "constant_lr" / f"step{stable_step(epoch, batch)}", coordinate
+        root / f"step{stable_step(epoch, batch)}", coordinate
     )
-    output = root / "post_decay_runs" / f"e{epoch}"
+    output = state_root(coordinate) / "post_decay_runs" / f"e{epoch}-retry01"
     endpoint = output / f"step{total_step(epoch, batch)}"
     log_path = state_root(coordinate) / "post.log"
     recovery_log = state_root(coordinate) / "post_recovered_eval.log"
@@ -577,7 +579,7 @@ def evaluate(
             "wd": str(coordinate["weightDecay"]),
             "batchSequences": batch,
             "output": str(root),
-            "constantOutput": str(root / "constant_lr"),
+            "constantOutput": str(root),
             "preDecayCheckpoint": str(source),
             "sourcePreDecayCheckpoint": str(source),
             "endpointCheckpoint": str(endpoint),
