@@ -22900,7 +22900,7 @@
     "minRuntimeOmitted": true,
     "beakerStatus": "running",
     "job": "01M1TRGS5R34VZC1WJMR1A6SA4",
-    "activePhase": "followup_producer",
+    "activePhase": "followup_post",
     "activeEpoch": 40,
     "activeLearningRate": "1e-3",
     "activeWeightDecay": "0.1",
