@@ -12,6 +12,7 @@ from typing import Any
 
 REPORT = Path("reports/0802/data/wsd_batch_size_153m.json")
 POLICY = "dense_153m_bs32_lr_wd_hybrid_v1"
+EXPECTED_BEAKER_AUTHOR = "sewonm"
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 RESULT = re.compile(
     r"DENSE153M_BS32_HYBRID_POST_RESULT phase=(probe|followup) lr=([^ ]+) wd=([^ ]+) "
@@ -41,7 +42,14 @@ def inspect_experiment(experiment: str) -> dict[str, Any]:
     payload = json.loads(run(["beaker", "experiment", "inspect", experiment, "--format", "json"]))
     if not isinstance(payload, list) or len(payload) != 1:
         raise RuntimeError(f"expected one experiment for {experiment}")
-    return payload[0]
+    record = payload[0]
+    author = (record.get("author") or {}).get("name")
+    if author != EXPECTED_BEAKER_AUTHOR:
+        raise RuntimeError(
+            f"refusing experiment {experiment} owned by {author!r}; "
+            f"expected {EXPECTED_BEAKER_AUTHOR!r}"
+        )
+    return record
 
 
 def experiment_state(experiment: dict[str, Any]) -> str:

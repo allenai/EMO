@@ -23,6 +23,8 @@ from typing import Any
 
 REPORT = Path("reports/0802/data/wsd_checkpoint_producer_grid.json")
 REPORT_JS = REPORT.with_suffix(".js")
+EXPECTED_BEAKER_AUTHOR = "sewonm"
+ACTIVE_BEAKER_STATES = {"submitted", "queued", "scheduled", "running"}
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 TRAIN_STEP = re.compile(r"\[step=([0-9,]+)/([0-9,]+),epoch=")
 DESCRIPTION_STEP = re.compile(r"\bstep ([0-9,]+)/([0-9,]+)")
@@ -72,7 +74,14 @@ def inspect(experiment: str) -> dict[str, Any]:
     )
     if not isinstance(payload, list) or len(payload) != 1:
         raise RuntimeError(f"expected exactly one experiment for {experiment}")
-    return payload[0]
+    record = payload[0]
+    author = (record.get("author") or {}).get("name")
+    if author != EXPECTED_BEAKER_AUTHOR:
+        raise RuntimeError(
+            f"refusing experiment {experiment} owned by {author!r}; "
+            f"expected {EXPECTED_BEAKER_AUTHOR!r}"
+        )
+    return record
 
 
 def beaker_state(payload: dict[str, Any]) -> str:
@@ -93,6 +102,13 @@ def beaker_state(payload: dict[str, Any]) -> str:
     if all(terminal.intersection(status) for status in statuses):
         return "failed"
     return "submitted"
+
+
+def should_poll(record: dict[str, Any]) -> bool:
+    beaker_status = record.get("beakerStatus")
+    if beaker_status is not None:
+        return str(beaker_status) in ACTIVE_BEAKER_STATES
+    return str(record.get("status")) in ACTIVE_BEAKER_STATES
 
 
 def write_report(report: dict[str, Any]) -> None:
@@ -623,13 +639,23 @@ def main() -> None:
     if len(report.get("dclm333mIntegratedRuns", [])) != 15:
         raise RuntimeError("report must contain fifteen Pool-333M integrated runs")
     for record in report["producers"]:
-        print(f"{record['id']}: {refresh_producer(record)}")
+        status = refresh_producer(record) if should_poll(record) else str(record.get("status"))
+        print(f"{record['id']}: {status}")
     for record in report["evaluators"]:
-        print(f"{record['id']}: {refresh_evaluator(record)}")
+        status = refresh_evaluator(record) if should_poll(record) else str(record.get("status"))
+        print(f"{record['id']}: {status}")
     integrated = report["dclm333mIntegratedRuns"]
-    with ThreadPoolExecutor(max_workers=len(integrated)) as pool:
-        statuses = list(pool.map(refresh_integrated_run, integrated))
-    for record, status in zip(integrated, statuses, strict=True):
+    active_integrated = [record for record in integrated if should_poll(record)]
+    refreshed_by_id: dict[str, str] = {}
+    if active_integrated:
+        with ThreadPoolExecutor(max_workers=len(active_integrated)) as pool:
+            statuses = list(pool.map(refresh_integrated_run, active_integrated))
+        refreshed_by_id = {
+            str(record["id"]): status
+            for record, status in zip(active_integrated, statuses, strict=True)
+        }
+    for record in integrated:
+        status = refreshed_by_id.get(str(record["id"]), str(record.get("status")))
         print(f"{record['id']}: {status}")
     write_report(report)
 

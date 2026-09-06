@@ -71,7 +71,8 @@ def main() -> None:
     report = json.loads(REPORT.read_text())
     records = report.get("smallEvaluators", [])
     for record in records:
-        print(f"{record['id']}: {refresh(record)}")
+        status = refresh(record) if grid.should_poll(record) else str(record.get("status"))
+        print(f"{record['id']}: {status}")
     report["smallEvaluatorCount"] = len(records)
     report["updatedAt"] = datetime.now(tz=UTC).isoformat()
     REPORT.write_text(json.dumps(report, indent=2) + "\n")

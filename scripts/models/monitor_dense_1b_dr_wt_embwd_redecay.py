@@ -13,6 +13,7 @@ from typing import Any
 REPORT = Path("reports/0802/data/wsd_data_loader_1b.json")
 MANIFEST = Path("scripts/models/manifests/dense-1b-dr-wt-embwd-redecay-retry01.json")
 POLICY = "dense_1b_dr_wt_embwd_redecay_retry01_v1"
+EXPECTED_BEAKER_AUTHOR = "sewonm"
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 START = re.compile(
     r"^(\S+) DENSE1B_REDECAY_START id=([^ ]+).*$", re.MULTILINE
@@ -67,11 +68,26 @@ def main() -> None:
     for record in retries:
         if record.get("policy") != POLICY:
             continue
+        if record.get("beakerStatus") not in {"submitted", "queued", "scheduled", "running"}:
+            summary.append(
+                {
+                    "id": record["id"],
+                    "status": record["status"],
+                    "experiment": record["experiment"],
+                }
+            )
+            continue
         experiment_id = str(record["experiment"])
         payload = json.loads(command(["beaker", "experiment", "inspect", experiment_id, "--format", "json"]))
         if not isinstance(payload, list) or len(payload) != 1:
             raise RuntimeError(f"expected one experiment for {experiment_id}")
         experiment = payload[0]
+        author = (experiment.get("author") or {}).get("name")
+        if author != EXPECTED_BEAKER_AUTHOR:
+            raise RuntimeError(
+                f"refusing experiment {experiment_id} owned by {author!r}; "
+                f"expected {EXPECTED_BEAKER_AUTHOR!r}"
+            )
         live = state(experiment)
         job = (experiment.get("jobs") or [{}])[-1]
         record.update({"beakerStatus": live, "job": job.get("id")})
