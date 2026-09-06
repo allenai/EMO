@@ -14,7 +14,9 @@ REPORT = Path("reports/0802/data/wsd_data_loader_1b.json")
 MANIFEST = Path("scripts/models/manifests/dense-1b-dr-wt-embwd-redecay-retry01.json")
 POLICY = "dense_1b_dr_wt_embwd_redecay_retry01_v1"
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
-START = re.compile(r"DENSE1B_REDECAY_START id=([^ ]+).*$", re.MULTILINE)
+START = re.compile(
+    r"^(\S+) DENSE1B_REDECAY_START id=([^ ]+).*$", re.MULTILINE
+)
 RESULT = re.compile(r"DENSE1B_REDECAY_RESULT id=([^ ]+) json=(\{.*\})$", re.MULTILINE)
 
 
@@ -69,6 +71,14 @@ def main() -> None:
             logs = ANSI.sub("", command(["beaker", "experiment", "logs", experiment_id]))
         except subprocess.CalledProcessError:
             logs = ""
+        stage_starts = [
+            timestamp for timestamp, identifier in START.findall(logs)
+            if identifier == record["id"]
+        ]
+        if stage_starts:
+            started_at = datetime.fromisoformat(stage_starts[-1].replace("Z", "+00:00"))
+            record["startedAt"] = started_at.isoformat()
+            record["expectedEta"] = (started_at + timedelta(seconds=observed_seconds)).isoformat()
         matches = [json.loads(raw) for identifier, raw in RESULT.findall(logs) if identifier == record["id"]]
         if matches:
             result = matches[-1]
@@ -77,8 +87,7 @@ def main() -> None:
         elif live == "failed":
             record.update({"status": "failed", "reason": "Terminal without a healthy matched retry result marker."})
         else:
-            started = any(identifier == record["id"] for identifier in START.findall(logs))
-            record["status"] = "running" if started else live
+            record["status"] = "running" if stage_starts else live
         summary.append({"id": record["id"], "status": record["status"], "experiment": experiment_id})
     report["updated"] = datetime.now(tz=UTC).date().isoformat()
     REPORT.write_text(json.dumps(report, indent=2) + "\n")
