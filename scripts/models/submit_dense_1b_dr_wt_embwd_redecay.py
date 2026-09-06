@@ -125,6 +125,7 @@ def write_report(item: dict[str, Any], experiment: str, revision: str) -> None:
             "sourceCheckpoint": item["sourceCheckpoint"],
             "output": item["retryOutput"],
             "endpointCheckpoint": item["retryOutput"] + f"/step{item['endpointStep']}-retry01",
+            "expectedRuntimeSeconds": item["expectedRuntimeSeconds"],
             "decayFraction": 0.1,
             "retry": "retry01",
             "originalValidationExact": item["originalValidationExact"],

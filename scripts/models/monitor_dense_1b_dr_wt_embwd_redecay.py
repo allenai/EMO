@@ -6,11 +6,12 @@ from __future__ import annotations
 import json
 import re
 import subprocess
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 REPORT = Path("reports/0802/data/wsd_data_loader_1b.json")
+MANIFEST = Path("scripts/models/manifests/dense-1b-dr-wt-embwd-redecay-retry01.json")
 POLICY = "dense_1b_dr_wt_embwd_redecay_retry01_v1"
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 START = re.compile(r"DENSE1B_REDECAY_START id=([^ ]+).*$", re.MULTILINE)
@@ -40,6 +41,8 @@ def state(experiment: dict[str, Any]) -> str:
 
 def main() -> None:
     report = json.loads(REPORT.read_text())
+    manifest = json.loads(MANIFEST.read_text())
+    manifest_runs = {item["id"]: item for item in manifest["runs"]}
     retries = report.get("redecayRetries", [])
     if not retries:
         raise RuntimeError("no Dense-1B re-decay retries are registered")
@@ -55,6 +58,13 @@ def main() -> None:
         live = state(experiment)
         job = (experiment.get("jobs") or [{}])[-1]
         record.update({"beakerStatus": live, "job": job.get("id")})
+        observed_seconds = int(manifest_runs[record["id"]]["expectedRuntimeSeconds"])
+        record["expectedRuntimeSeconds"] = observed_seconds
+        started = (job.get("status") or {}).get("started")
+        if started:
+            started_at = datetime.fromisoformat(str(started).replace("Z", "+00:00"))
+            record["startedAt"] = started_at.isoformat()
+            record["expectedEta"] = (started_at + timedelta(seconds=observed_seconds)).isoformat()
         try:
             logs = ANSI.sub("", command(["beaker", "experiment", "logs", experiment_id]))
         except subprocess.CalledProcessError:

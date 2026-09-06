@@ -27,6 +27,7 @@ def test_manifest_uses_exact_sources_and_isolated_retry_outputs() -> None:
         assert item["retryOutput"].endswith(f"e{item['epoch']}-retry01")
         assert item["sourceCheckpoint"].endswith(f"step{item['sourceStep']}")
         assert item["endpointStep"] > item["sourceStep"]
+        assert item["expectedRuntimeSeconds"] > 0
 
 
 def test_submit_spec_omits_min_runtime(monkeypatch) -> None:

@@ -28441,7 +28441,7 @@
     {
       "id": "bs128-lr1e-3-wd0.3-e24-retry01",
       "policy": "dense_1b_dr_wt_embwd_redecay_retry01_v1",
-      "status": "scheduled",
+      "status": "running",
       "batchSequences": 128,
       "lr": "1e-3",
       "wd": "0.3",
@@ -28460,13 +28460,16 @@
       "automaticTaskRetries": 8,
       "minRuntimeOmitted": true,
       "reason": "Submitted isolated retry01 re-decay from the exact retained PD checkpoint; original POST output is immutable.",
-      "beakerStatus": "scheduled",
-      "job": "01M1T14C27B7FXA94CEKQW4ZWX"
+      "beakerStatus": "running",
+      "job": "01M1T14C27B7FXA94CEKQW4ZWX",
+      "expectedRuntimeSeconds": 7694,
+      "startedAt": "2026-09-06T00:18:10.748166+00:00",
+      "expectedEta": "2026-09-06T02:26:24.748166+00:00"
     },
     {
       "id": "bs256-lr1e-3-wd1.0-e36-retry01",
       "policy": "dense_1b_dr_wt_embwd_redecay_retry01_v1",
-      "status": "scheduled",
+      "status": "running",
       "batchSequences": 256,
       "lr": "1e-3",
       "wd": "1.0",
@@ -28485,13 +28488,16 @@
       "automaticTaskRetries": 8,
       "minRuntimeOmitted": true,
       "reason": "Submitted isolated retry01 re-decay from the exact retained PD checkpoint; original POST output is immutable.",
-      "beakerStatus": "scheduled",
-      "job": "01M1T14HS8Q69HW6AA0CT4HSH3"
+      "beakerStatus": "running",
+      "job": "01M1T14HS8Q69HW6AA0CT4HSH3",
+      "expectedRuntimeSeconds": 9406,
+      "startedAt": "2026-09-06T00:18:04.859682+00:00",
+      "expectedEta": "2026-09-06T02:54:50.859682+00:00"
     },
     {
       "id": "bs256-lr1e-3-wd1.0-e40-retry01",
       "policy": "dense_1b_dr_wt_embwd_redecay_retry01_v1",
-      "status": "scheduled",
+      "status": "running",
       "batchSequences": 256,
       "lr": "1e-3",
       "wd": "1.0",
@@ -28510,8 +28516,11 @@
       "automaticTaskRetries": 8,
       "minRuntimeOmitted": true,
       "reason": "Submitted isolated retry01 re-decay from the exact retained PD checkpoint; original POST output is immutable.",
-      "beakerStatus": "scheduled",
-      "job": "01M1T14PKRHK8PH3RAWG3DD4ZZ"
+      "beakerStatus": "running",
+      "job": "01M1T14PKRHK8PH3RAWG3DD4ZZ",
+      "expectedRuntimeSeconds": 10231,
+      "startedAt": "2026-09-06T00:18:02.425473+00:00",
+      "expectedEta": "2026-09-06T03:08:33.425473+00:00"
     }
   ]
 }

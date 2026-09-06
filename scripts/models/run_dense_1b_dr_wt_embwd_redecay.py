@@ -55,6 +55,8 @@ def validate_item(item: dict[str, Any]) -> None:
         raise ValueError(f"E{epoch} source must be exact step{expected_source}")
     if int(item["endpointStep"]) != expected_endpoint:
         raise ValueError(f"E{epoch} 10% decay endpoint must be step{expected_endpoint}")
+    if int(item["expectedRuntimeSeconds"]) <= 0:
+        raise ValueError("expected runtime must come from a positive observed duration")
     root = Path(str(item["coordinateOutput"]))
     if Path(str(item["sourceCheckpoint"])) != root / f"step{expected_source}":
         raise ValueError("source checkpoint is outside the exact coordinate root")
