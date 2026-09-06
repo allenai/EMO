@@ -18,6 +18,9 @@ START = re.compile(
     r"^(\S+) DENSE1B_REDECAY_START id=([^ ]+).*$", re.MULTILINE
 )
 RESULT = re.compile(r"DENSE1B_REDECAY_RESULT id=([^ ]+) json=(\{.*\})$", re.MULTILINE)
+STEP = re.compile(
+    r"^(\S+).*\[step=([0-9]+)/([0-9]+).*?,eta=([^,\]]+)\]", re.MULTILINE
+)
 
 
 def command(arguments: list[str]) -> str:
@@ -39,6 +42,18 @@ def state(experiment: dict[str, Any]) -> str:
     if all(terminal.intersection(status) for status in statuses):
         return "failed"
     return "submitted"
+
+
+def duration_seconds(value: str) -> int:
+    match = re.fullmatch(
+        r"(?:(?P<days>[0-9]+)d)?(?:(?P<hours>[0-9]+)h)?"
+        r"(?:(?P<minutes>[0-9]+)m)?(?:(?P<seconds>[0-9]+)s)?",
+        value,
+    )
+    if match is None:
+        raise ValueError(f"unrecognized trainer ETA {value}")
+    parts = {key: int(raw or 0) for key, raw in match.groupdict().items()}
+    return parts["days"] * 86400 + parts["hours"] * 3600 + parts["minutes"] * 60 + parts["seconds"]
 
 
 def main() -> None:
@@ -78,7 +93,26 @@ def main() -> None:
         if stage_starts:
             started_at = datetime.fromisoformat(stage_starts[-1].replace("Z", "+00:00"))
             record["startedAt"] = started_at.isoformat()
-            record["expectedEta"] = (started_at + timedelta(seconds=observed_seconds)).isoformat()
+            historical_eta = started_at + timedelta(seconds=observed_seconds)
+            record["historicalExpectedEta"] = historical_eta.isoformat()
+            record["expectedEta"] = historical_eta.isoformat()
+            record["etaBasis"] = "matched historical retry runtime"
+        steps = STEP.findall(logs)
+        if steps:
+            timestamp, current_step, endpoint_step, trainer_eta = steps[-1]
+            telemetry_at = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+            # The matched runs spent roughly two minutes between their last train step
+            # and the complete heldout/result marker.
+            record["expectedEta"] = (
+                telemetry_at + timedelta(seconds=duration_seconds(trainer_eta) + 120)
+            ).isoformat()
+            record["etaBasis"] = "live trainer ETA plus two-minute heldout/result tail"
+            record["progress"] = {
+                "currentStep": int(current_step),
+                "endpointStep": int(endpoint_step),
+                "trainerEta": trainer_eta,
+                "observedAt": telemetry_at.isoformat(),
+            }
         matches = [json.loads(raw) for identifier, raw in RESULT.findall(logs) if identifier == record["id"]]
         if matches:
             result = matches[-1]

@@ -43,3 +43,12 @@ def test_submit_spec_omits_min_runtime(monkeypatch) -> None:
     assert context == {"priority": "urgent", "autoResume": True}
     assert "minRuntime" not in context
     assert spec["retry"] == {"allowedTaskRetries": 8}
+
+
+def test_monitor_parses_compact_trainer_eta() -> None:
+    monitor = load(
+        ROOT / "scripts/models/monitor_dense_1b_dr_wt_embwd_redecay.py",
+        "dense1b_redecay_monitor",
+    )
+    assert monitor.duration_seconds("2h24m") == 8640
+    assert monitor.duration_seconds("1d6h9m") == 108540

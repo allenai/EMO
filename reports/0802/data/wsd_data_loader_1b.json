@@ -28464,7 +28464,15 @@
       "job": "01M1T14C27B7FXA94CEKQW4ZWX",
       "expectedRuntimeSeconds": 7694,
       "startedAt": "2026-09-06T00:23:27.562086+00:00",
-      "expectedEta": "2026-09-06T02:31:41.562086+00:00"
+      "expectedEta": "2026-09-06T01:56:31.527458+00:00",
+      "historicalExpectedEta": "2026-09-06T02:31:41.562086+00:00",
+      "etaBasis": "live trainer ETA plus two-minute heldout/result tail",
+      "progress": {
+        "currentStep": 41265,
+        "endpointStep": 45777,
+        "trainerEta": "1h28m",
+        "observedAt": "2026-09-06T00:26:31.527458+00:00"
+      }
     },
     {
       "id": "bs256-lr1e-3-wd1.0-e36-retry01",
@@ -28492,7 +28500,15 @@
       "job": "01M1T14HS8Q69HW6AA0CT4HSH3",
       "expectedRuntimeSeconds": 9406,
       "startedAt": "2026-09-06T00:23:24.500887+00:00",
-      "expectedEta": "2026-09-06T03:00:10.500887+00:00"
+      "expectedEta": "2026-09-06T02:39:26.244121+00:00",
+      "historicalExpectedEta": "2026-09-06T03:00:10.500887+00:00",
+      "etaBasis": "live trainer ETA plus two-minute heldout/result tail",
+      "progress": {
+        "currentStep": 30930,
+        "endpointStep": 34333,
+        "trainerEta": "2h11m",
+        "observedAt": "2026-09-06T00:26:26.244121+00:00"
+      }
     },
     {
       "id": "bs256-lr1e-3-wd1.0-e40-retry01",
@@ -28520,7 +28536,15 @@
       "job": "01M1T14PKRHK8PH3RAWG3DD4ZZ",
       "expectedRuntimeSeconds": 10231,
       "startedAt": "2026-09-06T00:23:20.025305+00:00",
-      "expectedEta": "2026-09-06T03:13:51.025305+00:00"
+      "expectedEta": "2026-09-06T02:54:28.898651+00:00",
+      "historicalExpectedEta": "2026-09-06T03:13:51.025305+00:00",
+      "etaBasis": "live trainer ETA plus two-minute heldout/result tail",
+      "progress": {
+        "currentStep": 34365,
+        "endpointStep": 38147,
+        "trainerEta": "2h26m",
+        "observedAt": "2026-09-06T00:26:28.898651+00:00"
+      }
     }
   ]
 }
