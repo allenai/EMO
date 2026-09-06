@@ -28441,7 +28441,7 @@
     {
       "id": "bs128-lr1e-3-wd0.3-e24-retry01",
       "policy": "dense_1b_dr_wt_embwd_redecay_retry01_v1",
-      "status": "running",
+      "status": "complete",
       "batchSequences": 128,
       "lr": "1e-3",
       "wd": "0.3",
@@ -28460,19 +28460,51 @@
       "automaticTaskRetries": 8,
       "minRuntimeOmitted": true,
       "reason": "Submitted isolated retry01 re-decay from the exact retained PD checkpoint; original POST output is immutable.",
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "job": "01M1T14C27B7FXA94CEKQW4ZWX",
       "expectedRuntimeSeconds": 7694,
       "startedAt": "2026-09-06T00:23:27.562086+00:00",
-      "expectedEta": "2026-09-06T01:56:31.527458+00:00",
+      "expectedEta": "2026-09-06T01:58:31.518152+00:00",
       "historicalExpectedEta": "2026-09-06T02:31:41.562086+00:00",
       "etaBasis": "live trainer ETA plus two-minute heldout/result tail",
       "progress": {
-        "currentStep": 41265,
+        "currentStep": 45775,
         "endpointStep": 45777,
-        "trainerEta": "1h28m",
-        "observedAt": "2026-09-06T00:26:31.527458+00:00"
-      }
+        "trainerEta": "1m",
+        "observedAt": "2026-09-06T01:55:31.518152+00:00"
+      },
+      "result": {
+        "batchSequences": 128,
+        "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd0.3/.all_postdecay_policy/post_decay_runs/e24-retry01/step45777-retry01",
+        "comparisonGroup": "post_decay",
+        "decayEmbeddings": true,
+        "decayFraction": 0.1,
+        "dynamicRepacking": true,
+        "epoch": 24,
+        "gap": 0.32243,
+        "lr": "1e-3",
+        "originalValidationExact": 2.98151,
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd0.3/.all_postdecay_policy/post_decay_runs/e24-retry01",
+        "phase": "post_decay",
+        "policy": "dense_1b_dr_wt_embwd_redecay_retry01_v1",
+        "retry": "retry01",
+        "source": "isolated_wsd_redecay_and_matched_heldout_eval",
+        "sourcePreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd0.3/step41198",
+        "status": "complete",
+        "train": 2.659,
+        "validation": 2.981,
+        "validationExact": 2.98143,
+        "variant": "DR+WT+EmbedWD",
+        "wandb": "4jgf1vd8",
+        "wd": "0.3",
+        "weightTying": true,
+        "experiment": "01M1T14BY0G72AP5CN8S2CZEF3",
+        "beaker": "01M1T14BY0G72AP5CN8S2CZEF3",
+        "job": "01M1T14C27B7FXA94CEKQW4ZWX",
+        "revision": "9d62473a0b7c49f121c8a929c172f953727fbb3e"
+      },
+      "validationExact": 2.98143,
+      "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd0.3/.all_postdecay_policy/post_decay_runs/e24-retry01/step45777-retry01"
     },
     {
       "id": "bs256-lr1e-3-wd1.0-e36-retry01",
@@ -28500,14 +28532,14 @@
       "job": "01M1T14HS8Q69HW6AA0CT4HSH3",
       "expectedRuntimeSeconds": 9406,
       "startedAt": "2026-09-06T00:23:24.500887+00:00",
-      "expectedEta": "2026-09-06T02:39:26.244121+00:00",
+      "expectedEta": "2026-09-06T02:42:45.258530+00:00",
       "historicalExpectedEta": "2026-09-06T03:00:10.500887+00:00",
       "etaBasis": "live trainer ETA plus two-minute heldout/result tail",
       "progress": {
-        "currentStep": 30930,
+        "currentStep": 33735,
         "endpointStep": 34333,
-        "trainerEta": "2h11m",
-        "observedAt": "2026-09-06T00:26:26.244121+00:00"
+        "trainerEta": "24m",
+        "observedAt": "2026-09-06T02:16:45.258530+00:00"
       }
     },
     {
@@ -28536,14 +28568,14 @@
       "job": "01M1T14PKRHK8PH3RAWG3DD4ZZ",
       "expectedRuntimeSeconds": 10231,
       "startedAt": "2026-09-06T00:23:20.025305+00:00",
-      "expectedEta": "2026-09-06T02:54:28.898651+00:00",
+      "expectedEta": "2026-09-06T02:57:53.764512+00:00",
       "historicalExpectedEta": "2026-09-06T03:13:51.025305+00:00",
       "etaBasis": "live trainer ETA plus two-minute heldout/result tail",
       "progress": {
-        "currentStep": 34365,
+        "currentStep": 37175,
         "endpointStep": 38147,
-        "trainerEta": "2h26m",
-        "observedAt": "2026-09-06T00:26:28.898651+00:00"
+        "trainerEta": "39m",
+        "observedAt": "2026-09-06T02:16:53.764512+00:00"
       }
     }
   ]
