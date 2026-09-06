@@ -28,6 +28,25 @@ def command(arguments: list[str]) -> str:
     return subprocess.run(arguments, check=True, capture_output=True, text=True).stdout
 
 
+def recent_log_arguments(job: dict[str, Any], live: str) -> list[str]:
+    """Build a bounded log request that still includes terminal result markers.
+
+    The Beaker HTTP API rejects ``job logs --tail`` even though the CLI exposes
+    that flag.  For live jobs, a short relative window is enough for current
+    telemetry.  For terminal jobs, anchor the window to the exit time so a
+    later monitor pass can still recover the final result marker.
+    """
+    job_id = str(job["id"])
+    status = job.get("status") or {}
+    exited = status.get("exited") or status.get("finalized")
+    if live in {"complete", "failed"} and exited:
+        exited_at = datetime.fromisoformat(str(exited).replace("Z", "+00:00"))
+        since = (exited_at - timedelta(minutes=15)).isoformat().replace("+00:00", "Z")
+    else:
+        since = "15m"
+    return ["beaker", "job", "logs", job_id, "--since", since]
+
+
 def state(experiment: dict[str, Any]) -> str:
     jobs = experiment.get("jobs") or []
     if not jobs:
@@ -68,7 +87,13 @@ def main() -> None:
     for record in retries:
         if record.get("policy") != POLICY:
             continue
-        if record.get("beakerStatus") not in {"submitted", "queued", "scheduled", "running"}:
+        needs_terminal_result_recovery = (
+            record.get("beakerStatus") == "complete" and not record.get("result")
+        )
+        if (
+            record.get("beakerStatus") not in {"submitted", "queued", "scheduled", "running"}
+            and not needs_terminal_result_recovery
+        ):
             summary.append(
                 {
                     "id": record["id"],
@@ -102,7 +127,7 @@ def main() -> None:
         try:
             logs = ANSI.sub(
                 "",
-                command(["beaker", "job", "logs", str(job_id), "--tail", "1000"]),
+                command(recent_log_arguments(job, live)),
             ) if job_id else ""
         except subprocess.CalledProcessError:
             logs = ""
