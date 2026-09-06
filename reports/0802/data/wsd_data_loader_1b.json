@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-28",
+  "updated": "2026-09-06",
   "title": "Step 1-1 \u2014 Dense 1B Data-Loader Study",
   "setup": "Dense 1B; exact repeated 1B-token document pool; sequence length 4096; default OLMo sequence reshuffling compared with dynamic document repacking and a fixed epoch-1 sequence/batch permutation. DR preserves the exact document multiset and begins at E2 from an exact LR/WD-matched Original E1 checkpoint. New BS64/128/256 trajectories use one 8-GPU node with rank microbatch eight and gradient accumulation 1/2/4; established BS512/1024 work uses four 8-GPU nodes. Weight-tying runs share the input embedding and LM-head projection as one parameter; DR+WT is displayed immediately after its matched DR column. BS128 and BS256 DR+WT+EmbedWD grids use rank microbatch 8 on one 8-GPU node; gradient accumulation is 2 and 4 respectively. Every LR/WD trajectory stays in its own canonical output directory across epochs. Each guarded Dense-1B LR/WD coordinate is a separate one-node, eight-GPU persistent experiment so cross-WD pruning can stop only the losing coordinate.",
   "selection": "Frontier decisions use held-out DCLM validation CE, not noisy train CE. BS64 WD1.0 must reach and validate E24 before either WD is selected for E28; compare WD0.3 E24 with WD1.0 E24 using the same rule as BS128/256: if WD1.0 wins, only WD1.0 continues; if it loses, both trajectories may continue subject to their own strict-improvement gates; hold ties for review. The user authorized retries of the four manually canceled E20 jobs, then immediately requested another hold and manually removed all four new retry experiments before scheduling. The BS64 WD1.0, BS128 WD0.3/WD1.0, and BS256 WD1.0 E20 retries produced no startup or training artifacts; do not continue, replace, or retry them automatically. BS64 WD0.3 E24 remains its last validated frontier at CE2.97093 because E28 failed during endpoint checkpoint saving without validation; do not decide or retry E28 until WD1.0 E24 is validated. BS256 LR2e-3/WD0.333 remains held unless explicitly reactivated. BS1024 DR and BS512 DR remain saturated in report history. Endpoint reporting remains validation-first and downstream evaluation is disabled. WT coordinates advance independently while validation CE strictly improves and stop after the first non-improving endpoint; train\u2013validation gaps are compared against the same-batch, same-LR, same-WD DR trajectory. The guarded BS128/256 DR+WT+EmbedWD phase runs six independent one-node coordinates. Pre-decay and post-decay CE are never compared across phases: a pre-decay non-improvement launches three decays, and only a non-improving newest post-decay result confirms saturation. The guarded BS128/256 DR+WT+EmbedWD phase runs six independent one-node coordinates. E1/E2/E4 constant-LR checkpoints are retained without POST decay; every scheduled frontier from E8 is independently decayed and evaluated. Saturation and matched-WD pruning use only POST CE.",
@@ -14,7 +14,10 @@
     24,
     28,
     32,
-    36
+    36,
+    40,
+    44,
+    48
   ],
   "baselineBatches": [
     64,
@@ -11636,7 +11639,21 @@
           "validationExact": 2.97912,
           "train": 2.674,
           "gap": 0.30512,
-          "wandb": "iqfccu18"
+          "wandb": "iqfccu18",
+          "bpb": 0.865,
+          "downstreamBpb": {
+            "hellaswag": 0.865
+          },
+          "downstreamWandb": "wk75wo8l",
+          "downstreamEvaluation": {
+            "campaign": "01M1STDF5MNHZXZ935BBXKAVBR",
+            "job": "01M1STDF93VGW3CJMRC06G2QND",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd0.3/.all_postdecay_policy/post_decay_runs/e20/step38147",
+            "gpuCount": 1,
+            "tasks": [
+              "hellaswag"
+            ]
+          }
         },
         "24": {
           "status": "complete",
@@ -12044,7 +12061,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd0.3/.all_postdecay_policy/post_decay_runs/e24",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-28T02:40:22.013884+00:00",
+        "checkedAt": "2026-08-28T03:39:53.030051+00:00",
         "run": "grbu5kg7",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/grbu5kg7",
         "phase": "post_decay_train",
@@ -12875,7 +12892,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd1.0/.all_postdecay_policy/post_decay_runs/e24",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-28T02:40:26.021506+00:00",
+        "checkedAt": "2026-08-28T03:39:57.023197+00:00",
         "run": "gjv7tacn",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/gjv7tacn",
         "phase": "post_decay_train",
@@ -13583,7 +13600,21 @@
           "validationExact": 3.01899,
           "train": 2.786,
           "gap": 0.23299,
-          "wandb": "ga1uujo5"
+          "wandb": "ga1uujo5",
+          "bpb": 0.8768,
+          "downstreamBpb": {
+            "hellaswag": 0.8768
+          },
+          "downstreamWandb": "whk7k0m0",
+          "downstreamEvaluation": {
+            "campaign": "01M1STDG2HK5YMMD6Z330KPF80",
+            "job": "01M1STDG6DE8B6998V3KW30ZRT",
+            "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0/.all_postdecay_policy/post_decay_runs/e40/step38147",
+            "gpuCount": 1,
+            "tasks": [
+              "hellaswag"
+            ]
+          }
         },
         "44": {
           "status": "complete",
@@ -14236,7 +14267,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0/.all_postdecay_policy/post_decay_runs/e44",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-28T02:40:30.770594+00:00",
+        "checkedAt": "2026-08-28T03:40:01.679479+00:00",
         "run": "z49fqsi3",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/z49fqsi3",
         "phase": "post_decay_train",
@@ -15723,7 +15754,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd1.0/.all_postdecay_policy/post_decay_runs/e48",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-28T02:40:36.092126+00:00",
+        "checkedAt": "2026-08-28T03:40:07.024798+00:00",
         "run": "gss4wqcn",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/gss4wqcn",
         "phase": "post_decay_train",
@@ -16366,7 +16397,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd0.3/.all_postdecay_policy/post_decay_runs/e16",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-28T02:40:39.430726+00:00",
+        "checkedAt": "2026-08-28T03:40:08.937735+00:00",
         "run": "hw3p46u6",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/hw3p46u6",
         "phase": "post_decay_train",
@@ -16488,7 +16519,7 @@
       "activeOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.3",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-08-28T02:40:40.315917+00:00",
+        "checkedAt": "2026-08-28T03:40:09.817983+00:00",
         "run": "gzudvkul",
         "url": "https://wandb.ai/ai2-llm/sewonm-icsl/runs/gzudvkul",
         "phase": "pre_decay_train",
@@ -28405,5 +28436,82 @@
     "saturationDecisionGroup": "post_decay_only",
     "crossWdPruning": "Within a fixed BS/LR and the same completed POST epoch, WD1.0 strictly beating the lower WD stops lower-WD constant-LR training after at least three POST results; its latest three eligible checkpoints remain POST-decayed and evaluated before the coordinate is marked pruned.",
     "conditionalBs512": "launch_only_if_terminal_bs256_selected_lr_is_2e-3"
-  }
+  },
+  "redecayRetries": [
+    {
+      "id": "bs128-lr1e-3-wd0.3-e24-retry01",
+      "policy": "dense_1b_dr_wt_embwd_redecay_retry01_v1",
+      "status": "scheduled",
+      "batchSequences": 128,
+      "lr": "1e-3",
+      "wd": "0.3",
+      "epoch": 24,
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd0.3/step41198",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd0.3/.all_postdecay_policy/post_decay_runs/e24-retry01",
+      "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd0.3/.all_postdecay_policy/post_decay_runs/e24-retry01/step45777-retry01",
+      "decayFraction": 0.1,
+      "retry": "retry01",
+      "originalValidationExact": 2.98151,
+      "experiment": "01M1T14BY0G72AP5CN8S2CZEF3",
+      "beaker": "01M1T14BY0G72AP5CN8S2CZEF3",
+      "revision": "9d62473a0b7c49f121c8a929c172f953727fbb3e",
+      "gpuCount": 8,
+      "nodeCount": 1,
+      "automaticTaskRetries": 8,
+      "minRuntimeOmitted": true,
+      "reason": "Submitted isolated retry01 re-decay from the exact retained PD checkpoint; original POST output is immutable.",
+      "beakerStatus": "scheduled",
+      "job": "01M1T14C27B7FXA94CEKQW4ZWX"
+    },
+    {
+      "id": "bs256-lr1e-3-wd1.0-e36-retry01",
+      "policy": "dense_1b_dr_wt_embwd_redecay_retry01_v1",
+      "status": "scheduled",
+      "batchSequences": 256,
+      "lr": "1e-3",
+      "wd": "1.0",
+      "epoch": 36,
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0/step30899",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0/.all_postdecay_policy/post_decay_runs/e36-retry01",
+      "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0/.all_postdecay_policy/post_decay_runs/e36-retry01/step34333-retry01",
+      "decayFraction": 0.1,
+      "retry": "retry01",
+      "originalValidationExact": 3.01948,
+      "experiment": "01M1T14H3WKVM52BN94TB4A5QV",
+      "beaker": "01M1T14H3WKVM52BN94TB4A5QV",
+      "revision": "9d62473a0b7c49f121c8a929c172f953727fbb3e",
+      "gpuCount": 8,
+      "nodeCount": 1,
+      "automaticTaskRetries": 8,
+      "minRuntimeOmitted": true,
+      "reason": "Submitted isolated retry01 re-decay from the exact retained PD checkpoint; original POST output is immutable.",
+      "beakerStatus": "scheduled",
+      "job": "01M1T14HS8Q69HW6AA0CT4HSH3"
+    },
+    {
+      "id": "bs256-lr1e-3-wd1.0-e40-retry01",
+      "policy": "dense_1b_dr_wt_embwd_redecay_retry01_v1",
+      "status": "scheduled",
+      "batchSequences": 256,
+      "lr": "1e-3",
+      "wd": "1.0",
+      "epoch": 40,
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0/step34331",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0/.all_postdecay_policy/post_decay_runs/e40-retry01",
+      "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0/.all_postdecay_policy/post_decay_runs/e40-retry01/step38147-retry01",
+      "decayFraction": 0.1,
+      "retry": "retry01",
+      "originalValidationExact": 3.01899,
+      "experiment": "01M1T14PG8F71XTWW0R8XFW6VT",
+      "beaker": "01M1T14PG8F71XTWW0R8XFW6VT",
+      "revision": "9d62473a0b7c49f121c8a929c172f953727fbb3e",
+      "gpuCount": 8,
+      "nodeCount": 1,
+      "automaticTaskRetries": 8,
+      "minRuntimeOmitted": true,
+      "reason": "Submitted isolated retry01 re-decay from the exact retained PD checkpoint; original POST output is immutable.",
+      "beakerStatus": "scheduled",
+      "job": "01M1T14PKRHK8PH3RAWG3DD4ZZ"
+    }
+  ]
 }
