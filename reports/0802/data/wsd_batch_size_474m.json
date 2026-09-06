@@ -9020,7 +9020,7 @@
       "gpuCount": 2,
       "status": "running",
       "activeEpoch": 4,
-      "activePhase": "producer",
+      "activePhase": "post",
       "search": "small-model-original-lr-e4-probe",
       "beaker": "01M1T7J31A5SDZHBW113BF3NAD",
       "experiment": "01M1T7J31A5SDZHBW113BF3NAD",
@@ -9030,7 +9030,11 @@
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1",
       "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1",
       "postDecayOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/.dense_474m_original_tuning_v1/post_decay_runs/e4-retry01",
-      "retainedPreDecayEpochs": [],
+      "retainedPreDecayEpochs": [
+        2,
+        3,
+        4
+      ],
       "comparisonEpoch": 4,
       "baselineLearningRate": "1e-3",
       "baselineValidationExact": 3.269,
@@ -9092,9 +9096,9 @@
       "rankMicrobatchSequences": 16,
       "gradientAccumulation": 1,
       "gpuCount": 8,
-      "status": "running",
+      "status": "complete",
       "activeEpoch": 52,
-      "activePhase": "producer",
+      "activePhase": "post_complete",
       "search": "small-model-original-e52-extension",
       "beaker": "01M1T7J3XM38XR2BP4GA7W5F26",
       "experiment": "01M1T7J3XM38XR2BP4GA7W5F26",
@@ -9104,15 +9108,79 @@
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3",
       "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3",
       "postDecayOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3/.dense_474m_original_tuning_v1/post_decay_runs/e52-retry01",
-      "retainedPreDecayEpochs": [],
+      "retainedPreDecayEpochs": [
+        49,
+        50,
+        51,
+        52
+      ],
       "previousValidationExact": 3.101,
       "dynamicRepacking": false,
       "weightTying": false,
       "embeddingWeightDecay": "zero",
       "automaticTaskRetries": 8,
       "minRuntimeOmitted": true,
-      "results": {},
-      "reason": "Running the corrected exact E48-to-E52 continuation in the canonical coordinate root; the 10% WSD and evaluation branch is isolated as e52-retry01.",
+      "results": {
+        "52": {
+          "acc": 42.4,
+          "avg8Accuracy": 45.78125,
+          "avg8Bpb": 1.3107625,
+          "batchSequences": 128,
+          "bpb": 0.8991,
+          "c4": 3.102,
+          "comparisonGroup": "post_decay",
+          "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3",
+          "coordinate": "bs128-lr2e-3-wd0.3-e52",
+          "downstream": {
+            "arc_challenge": 25.080000000000002,
+            "arc_easy": 54.21,
+            "boolq": 54.53,
+            "csqa": 48.57,
+            "hellaswag": 42.4,
+            "openbookqa": 28.799999999999997,
+            "piqa": 67.57,
+            "socialiqa": 46.42,
+            "winogrande": 53.2
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.324,
+            "arc_easy": 1.329,
+            "boolq": 1.845,
+            "csqa": 1.393,
+            "hellaswag": 0.8991,
+            "openbookqa": 1.604,
+            "piqa": 1.189,
+            "socialiqa": 1.239,
+            "winogrande": 1.509
+          },
+          "dynamicRepacking": false,
+          "embeddingWeightDecay": "zero",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3/.dense_474m_original_tuning_v1/post_decay_runs/e52-retry01/step99183",
+          "epoch": 52,
+          "gap": 0.277,
+          "lr": "2e-3",
+          "mode": "bs128-e52",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3",
+          "policy": "dense_474m_original_tuning_v1",
+          "postOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3/.dense_474m_original_tuning_v1/post_decay_runs/e52-retry01",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3/step89264",
+          "source": "integrated_isolated_wsd_decay_heldout_and_downstream_eval",
+          "sourcePreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3/step89264",
+          "status": "complete",
+          "train": 2.825,
+          "validation": 3.102,
+          "validationExact": 3.102,
+          "wandb": "0ia85gv2",
+          "wd": "0.3",
+          "weightTying": false,
+          "beaker": "01M1T7J3XM38XR2BP4GA7W5F26",
+          "experiment": "01M1T7J3XM38XR2BP4GA7W5F26",
+          "job": "01M1T7J41WMS9D8WKECXXRKFD7",
+          "revision": "061adb8db6d9675489977deec8e8e8018fd7ff0c",
+          "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations."
+        }
+      },
+      "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations.",
       "job": "01M1T7J41WMS9D8WKECXXRKFD7"
     }
   ],
@@ -18173,11 +18241,20 @@
       "bs128-e52": {
         "experiment": "01M1T7J3XM38XR2BP4GA7W5F26",
         "job": "01M1T7J41WMS9D8WKECXXRKFD7",
-        "beakerStatus": "running",
-        "status": "running",
-        "decision": null,
+        "beakerStatus": "complete",
+        "status": "complete",
+        "decision": {
+          "epoch": 52,
+          "policy": "dense_474m_original_tuning_v1",
+          "previousEpoch": 48,
+          "previousValidationExact": 3.101,
+          "strictlyImprovesE48": false,
+          "validationExact": 3.102
+        },
         "results": {
-          "bs128-lr2e-3-wd0.3-e52": []
+          "bs128-lr2e-3-wd0.3-e52": [
+            "52"
+          ]
         }
       }
     },
@@ -18198,6 +18275,16 @@
         "status": "canceled",
         "reason": "Used separate v2 output roots instead of the canonical Original coordinate roots; canceled before replacement and never resumable."
       }
-    ]
+    ],
+    "decisions": {
+      "bs128-e52": {
+        "epoch": 52,
+        "policy": "dense_474m_original_tuning_v1",
+        "previousEpoch": 48,
+        "previousValidationExact": 3.101,
+        "strictlyImprovesE48": false,
+        "validationExact": 3.102
+      }
+    }
   }
 }
