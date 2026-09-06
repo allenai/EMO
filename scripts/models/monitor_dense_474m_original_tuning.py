@@ -12,26 +12,28 @@ from typing import Any
 
 REPORT = Path("reports/0802/data/wsd_batch_size_474m.json")
 POLICY = "dense_474m_original_tuning_v1"
+MODES = ("bs32-probes", "bs128-e52", "bs32-lr5e4-e32")
+MODE_PATTERN = "(?:" + "|".join(MODES) + ")"
 EXPECTED_BEAKER_AUTHOR = "sewonm"
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 PD_START = re.compile(
-    r"DENSE474M_ORIGINAL_PD_START mode=(bs32-probes|bs128-e52) coordinate=([^ ]+) epoch=([0-9]+)"
+    rf"DENSE474M_ORIGINAL_PD_START mode=({MODE_PATTERN}) coordinate=([^ ]+) epoch=([0-9]+)"
 )
 PD_RETAINED = re.compile(
-    r"DENSE474M_ORIGINAL_PD_RETAINED mode=(bs32-probes|bs128-e52) coordinate=([^ ]+) "
+    rf"DENSE474M_ORIGINAL_PD_RETAINED mode=({MODE_PATTERN}) coordinate=([^ ]+) "
     r"epoch=([0-9]+) checkpoint=([^ ]+) retained=(\[[^\]]*\])"
 )
 POST_START = re.compile(
-    r"DENSE474M_ORIGINAL_POST_START mode=(bs32-probes|bs128-e52) coordinate=([^ ]+) epoch=([0-9]+)"
+    rf"DENSE474M_ORIGINAL_POST_START mode=({MODE_PATTERN}) coordinate=([^ ]+) epoch=([0-9]+)"
 )
 RESULT = re.compile(
-    r"DENSE474M_ORIGINAL_POST_RESULT mode=(bs32-probes|bs128-e52) coordinate=([^ ]+) "
+    rf"DENSE474M_ORIGINAL_POST_RESULT mode=({MODE_PATTERN}) coordinate=([^ ]+) "
     r"epoch=([0-9]+) json=(\{.*\})$",
     re.MULTILINE,
 )
 BS32_DECISION = re.compile(r"DENSE474M_ORIGINAL_BS32_DECISION json=(\{.*\})$", re.MULTILINE)
 BS128_DECISION = re.compile(r"DENSE474M_ORIGINAL_BS128_DECISION json=(\{.*\})$", re.MULTILINE)
-COMPLETE = re.compile(r"DENSE474M_ORIGINAL_WORKFLOW_COMPLETE mode=(bs32-probes|bs128-e52)")
+COMPLETE = re.compile(rf"DENSE474M_ORIGINAL_WORKFLOW_COMPLETE mode=({MODE_PATTERN})")
 SWEEP_BY_COORDINATE = {
     "lr5e-4-wd0.1": "dense-474m-bs32-lr5e-4-wd0.1-e4-probe-v1",
     "lr2e-3-wd0.1": "dense-474m-bs32-lr2e-3-wd0.1-e4-probe-v1",
@@ -108,7 +110,6 @@ def update_result(
     sweep.setdefault("results", {})[str(result["epoch"])] = result
     sweep.update(
         {
-            "status": "complete",
             "activeEpoch": result["epoch"],
             "activePhase": "post_complete",
             "reason": result["reason"],
@@ -129,9 +130,11 @@ def refresh_mode(report: dict[str, Any], mode: str, experiment_id: str) -> dict[
     except subprocess.CalledProcessError:
         logs = ""
 
-    coordinates = (
-        ["lr5e-4-wd0.1", "lr2e-3-wd0.1"] if mode == "bs32-probes" else ["bs128-lr2e-3-wd0.3-e52"]
-    )
+    coordinates = {
+        "bs32-probes": ["lr5e-4-wd0.1", "lr2e-3-wd0.1"],
+        "bs128-e52": ["bs128-lr2e-3-wd0.3-e52"],
+        "bs32-lr5e4-e32": ["lr5e-4-wd0.1"],
+    }[mode]
     sweeps = {
         coordinate: find_sweep(report, SWEEP_BY_COORDINATE[coordinate])
         for coordinate in coordinates
@@ -174,6 +177,25 @@ def refresh_mode(report: dict[str, Any], mode: str, experiment_id: str) -> dict[
     if workflow_complete:
         for sweep in sweeps.values():
             sweep["status"] = "complete"
+    elif live_state == "complete":
+        expected_epochs = {
+            "bs32-probes": {
+                "lr5e-4-wd0.1": {"4"},
+                "lr2e-3-wd0.1": {"4"},
+            },
+            "bs128-e52": {"bs128-lr2e-3-wd0.3-e52": {"52"}},
+            "bs32-lr5e4-e32": {"lr5e-4-wd0.1": {"16", "24", "32"}},
+        }[mode]
+        for coordinate, sweep in sweeps.items():
+            if expected_epochs[coordinate].issubset(set(sweep.get("results", {}))):
+                sweep["status"] = "complete"
+            else:
+                sweep.update(
+                    {
+                        "status": "failed",
+                        "reason": "The integrated workflow exited before all expected POST results resolved.",
+                    }
+                )
     elif live_state == "failed":
         unfinished = [sweep for sweep in sweeps.values() if not sweep.get("results")]
         for sweep in unfinished:
@@ -185,7 +207,9 @@ def refresh_mode(report: dict[str, Any], mode: str, experiment_id: str) -> dict[
             )
 
     decision_match = (
-        BS32_DECISION.findall(logs) if mode == "bs32-probes" else BS128_DECISION.findall(logs)
+        BS32_DECISION.findall(logs)
+        if mode == "bs32-probes"
+        else BS128_DECISION.findall(logs) if mode == "bs128-e52" else []
     )
     decision = json.loads(decision_match[-1]) if decision_match else None
     return {
@@ -210,7 +234,7 @@ def refresh() -> dict[str, Any]:
     if not experiments:
         raise RuntimeError("Dense-474M original tuning workflow has no experiments")
     mode_summaries: dict[str, Any] = {}
-    for mode in ("bs32-probes", "bs128-e52"):
+    for mode in MODES:
         experiment_id = experiments.get(mode)
         if experiment_id:
             mode_summaries[mode] = refresh_mode(report, mode, str(experiment_id))

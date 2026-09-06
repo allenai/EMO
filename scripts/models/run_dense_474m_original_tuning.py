@@ -223,7 +223,9 @@ def checkpoint_complete(path: Path, world_size: int) -> bool:
 
 
 def state_root(coordinate: dict[str, Any]) -> Path:
-    return Path(str(coordinate["output"])) / STATE_DIRECTORY
+    return Path(str(coordinate["output"])) / str(
+        coordinate.get("stateDirectory", STATE_DIRECTORY)
+    )
 
 
 def claim_output(value: dict[str, Any], mode: str, coordinate: dict[str, Any]) -> Path:
@@ -323,7 +325,10 @@ def constant_arguments(
     target_epoch = int(coordinate["targetEpoch"])
     lr = str(coordinate["learningRate"])
     wd = str(coordinate["weightDecay"])
-    fixed_steps = [stable_step(epoch, batch) for epoch in range(source_epoch + 1, target_epoch + 1)]
+    fixed_epochs = coordinate.get(
+        "fixedEpochs", list(range(source_epoch + 1, target_epoch + 1))
+    )
+    fixed_steps = [stable_step(int(epoch), batch) for epoch in fixed_epochs]
     name = (
         f"dense_474m_step1_0802_repeated_dclm1b_bs{batch}_{coordinate['id']}_"
         f"pd_e{target_epoch}_{value['runSuffix']}"
@@ -526,7 +531,12 @@ def evaluate(
     value: dict[str, Any], mode: str, coordinate: dict[str, Any], state: dict[str, Any]
 ) -> dict[str, Any]:
     epoch = int(coordinate["targetEpoch"])
-    result_path = state_root(coordinate) / "result.json"
+    result_path = state_root(coordinate) / f"result-e{epoch}.json"
+    legacy_result_path = state_root(coordinate) / "result.json"
+    if not result_path.is_file() and legacy_result_path.is_file():
+        legacy_result = json.loads(legacy_result_path.read_text())
+        if int(legacy_result.get("epoch", -1)) == epoch:
+            atomic_json(result_path, legacy_result)
     if result_path.is_file():
         result = json.loads(result_path.read_text())
         emit_result(mode, coordinate, result)
@@ -538,8 +548,8 @@ def evaluate(
     )
     output = state_root(coordinate) / "post_decay_runs" / f"e{epoch}-retry01"
     endpoint = output / f"step{total_step(epoch, batch)}"
-    log_path = state_root(coordinate) / "post.log"
-    recovery_log = state_root(coordinate) / "post_recovered_eval.log"
+    log_path = state_root(coordinate) / f"post-e{epoch}.log"
+    recovery_log = state_root(coordinate) / f"post-e{epoch}-recovered-eval.log"
     state.update({"status": "post_running", "activeEpoch": epoch})
     atomic_json(state_root(coordinate) / "workflow.json", state)
     if not checkpoint_complete(endpoint, int(coordinate["nprocPerNode"])):

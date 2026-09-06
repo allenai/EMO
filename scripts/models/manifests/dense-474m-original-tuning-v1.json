@@ -54,5 +54,19 @@
     "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3/step82397",
     "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3"
   },
+  "bs32Lr5e4Extension": {
+    "globalSequences": 32,
+    "nprocPerNode": 2,
+    "rankMicrobatchSequences": 16,
+    "gradientAccumulationSteps": 1,
+    "warmupSteps": 768,
+    "learningRate": "5e-4",
+    "weightDecay": "0.1",
+    "sourceEpoch": 4,
+    "targetEpoch": 32,
+    "evaluationEpochs": [16, 24, 32],
+    "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/step27465",
+    "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1"
+  },
   "runSuffix": "sm0905originaltuningv3"
 }
