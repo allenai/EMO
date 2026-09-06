@@ -80,3 +80,26 @@ higher in every layer beyond 0), lift p99 11.3 -> 14.8, experts touched per doc 
 experts, effective experts 83% -> 81%, token-doc rho 0.42 -> 0.44; within-source/pooled Q ratio (dclm) and
 cross-source top-pair Jaccard unchanged (~0.86, ~0.19). Pool 64: Q 0.335 -> 0.361, eff. experts 77% -> 69%.
 Caveat: pool-64 layer 0 of the 1024 model has 41 unused experts -> spectral k=8 degenerate (Q~0); Louvain 0.40.
+
+### Token-level vs document-level locality of the clusters (`coactivation/cluster_locality.py`)
+
+Reuses the cached per-token indices (no forward pass; ~2 min per model on one GPU). For each layer it
+takes the k=8 spectral clusters of the lift matrix and asks who decides the cluster of a routed expert:
+mutual information with the token type vs the document / its k32 topic / its source, concentration of a
+document's routing in its best cluster against a cross-fitted token-composition null, top-1 cluster switch
+rate along the document, experts needed for 90/95/99% of a document / topic / source, and the growth of the
+95% set with the number of documents pooled (`growth`).
+
+```bash
+python scripts/sparse_experts/coactivation/cluster_locality.py analyze --run-dir sparse_experts/coactivation/<run>/pool_config \
+    --out claude_outputs/sparse_experts/coactivation/<run>/locality --big-out sparse_experts/coactivation/<run>/locality
+python scripts/sparse_experts/coactivation/cluster_locality.py growth  --run-dir ... --big-out ... --out ...
+python scripts/sparse_experts/coactivation/cluster_locality.py plot        --run 512=.../locality.json --run 1024=.../locality.json --out claude_outputs/sparse_experts/coactivation/compare/locality
+python scripts/sparse_experts/coactivation/cluster_locality.py plot-growth --run 512=.../growth.json   --run 1024=.../growth.json   --out claude_outputs/sparse_experts/coactivation/compare/locality
+```
+
+Result (both models): the clusters are token-level in the lower layers (layer 0: token type explains
+~75% of the cluster entropy, the document ~5%) and document-level in the upper layers (layer 15: document
+~30%, token type ~15%), but a document keeps only ~45% of its routing in its best cluster. 95% of one
+document's routing goes to ~35% of the experts; a k32 topic group needs ~65%; a source-coherent corpus
+saturates at 23% (starcoder) to 44% (pes2o) at layer 15, dclm at 90%. Report tab "4 · Token vs document".

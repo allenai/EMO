@@ -1,0 +1,4 @@
+[submodule "external/OLMo-core"]
+	path = external/OLMo-core
+	url = https://github.com/allenai/OLMo-core.git
+	branch = codex/small-16mi-profile-v2

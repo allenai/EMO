@@ -436,6 +436,24 @@ def build_overview(models) -> str:
             )
             + ".</li>"
         )
+    loc = load_locality(models)
+    if loc:
+        ls = {lab: loc_stats(r) for lab, r in loc.items()}
+        items.append(
+            "<li><b>H6 (tab 4) half right.</b> The blocks are token-level in the lower layers (layer 0: token "
+            "type explains "
+            + "; ".join(f"{lab}: {100 * v['tok0']:.0f}%" for lab, v in ls.items())
+            + " of the cluster entropy, the document "
+            + "; ".join(f"{100 * v['doc0']:.0f}%" for v in ls.values())
+            + ") and document-level in the upper layers (layer 15: document "
+            + "; ".join(f"{100 * v['doc15']:.0f}%" for v in ls.values())
+            + ", token type "
+            + "; ".join(f"{100 * v['tok15']:.0f}%" for v in ls.values())
+            + "), but a document keeps only ~"
+            + "; ".join(f"{100 * v['top_up']:.0f}%" for v in ls.values())
+            + " of its routing in its best cluster. A source-coherent corpus (code, math) has a stable expert "
+            "subset of a quarter to a half of the experts per layer; topic-grouped web text needs two thirds.</li>"
+        )
     headline = "<ul>" + "".join(items) + "</ul>"
     if (COMPARE / "compare_summary.png").exists():
         headline += fig_row(
@@ -867,12 +885,515 @@ def build_sources(models) -> str:
     )
 
 
+# --------------------------------------------------------------------------
+# 4 · token-level vs document-level locality of the clusters
+# --------------------------------------------------------------------------
+LOCALITY = COMPARE / "locality"
+
+
+def load_locality(models):
+    out = {}
+    for m in models:
+        pth = COACT / m.run / "locality/locality.json"
+        if pth.exists():
+            out[m.label] = json.load(open(pth))
+    return out
+
+
+def loc_series(res, fn):
+    return [fn(res["layers"][str(li)]) for li in range(res["num_layers"])]
+
+
+LOC_METRICS = [
+    ("H(c) bits", lambda r: f(r["clusters"]["H_cluster_bits"], 2)),
+    ("I/H token type", lambda r: f(100 * r["mutual_information_frac"]["token"], 0) + "%"),
+    ("I/H document", lambda r: f(100 * r["mutual_information_frac"]["doc"], 0) + "%"),
+    ("I/H k32 topic", lambda r: f(100 * r["mutual_information_frac"]["topic"], 0) + "%"),
+    (
+        "I/H topic | token",
+        lambda r: f(100 * r["mutual_information_frac"]["topic_given_token"], 0) + "%",
+    ),
+    (
+        "I/H token | topic",
+        lambda r: f(100 * r["mutual_information_frac"]["token_given_topic"], 0) + "%",
+    ),
+    ("top-cluster share | doc", lambda r: f(r["concentration"]["doc_top_share_mean"], 2)),
+    (
+        "&nbsp;&nbsp;token-composition null",
+        lambda r: f(r["concentration"]["token_null_top_share_mean"], 2),
+    ),
+    ("&nbsp;&nbsp;marginal", lambda r: f(r["concentration"]["marginal_top_share"], 2)),
+    (
+        "top-cluster share | token type",
+        lambda r: f(r["concentration"]["token_type_top_share_mean"], 2),
+    ),
+    (
+        "switch rate / shuffle null",
+        lambda r: f(r["sequential"]["top1_switch_rate"], 2)
+        + " / "
+        + f(r["sequential"]["top1_switch_rate_within_doc_shuffle"], 2),
+    ),
+    (
+        "clusters per token / null",
+        lambda r: f(r["per_token"]["distinct_clusters_mean"], 2)
+        + " / "
+        + f(r["per_token"]["null_distinct_clusters_mean"], 2),
+    ),
+]
+
+COV_METRICS = [
+    (
+        "experts for 95% of a doc",
+        lambda r: f(
+            100 * r["coverage"]["per_doc_experts_needed"]["0.95"]["frac_of_experts_mean"], 0
+        )
+        + "%",
+    ),
+    (
+        "experts for 99% of a doc",
+        lambda r: f(
+            100 * r["coverage"]["per_doc_experts_needed"]["0.99"]["frac_of_experts_mean"], 0
+        )
+        + "%",
+    ),
+    (
+        "experts for 95% of a k32 topic",
+        lambda r: f(
+            100 * r["coverage"]["per_topic_experts_needed"]["0.95"]["frac_of_experts_mean"], 0
+        )
+        + "%",
+    ),
+    (
+        "experts for 99% of a k32 topic",
+        lambda r: f(
+            100 * r["coverage"]["per_topic_experts_needed"]["0.99"]["frac_of_experts_mean"], 0
+        )
+        + "%",
+    ),
+    (
+        "experts for 95% of a source",
+        lambda r: f(
+            100 * r["coverage"]["per_source_experts_needed"]["0.95"]["frac_of_experts_mean"], 0
+        )
+        + "%",
+    ),
+    ("Jaccard of topic 95%-sets (mean)", lambda r: f(r["coverage"]["topic_jaccard_95_mean"], 2)),
+    ("Jaccard of topic 95%-sets (min)", lambda r: f(r["coverage"]["topic_jaccard_95_min"], 2)),
+    (
+        "coverage: 1 cluster fixed per topic",
+        lambda r: f(100 * r["cluster_restricted"]["topic_fixed_coverage"]["1"], 0) + "%",
+    ),
+    (
+        "coverage: 2 clusters fixed per topic",
+        lambda r: f(100 * r["cluster_restricted"]["topic_fixed_coverage"]["2"], 0) + "%",
+    ),
+    (
+        "&nbsp;&nbsp;(memory of 2 clusters)",
+        lambda r: f(100 * r["cluster_restricted"]["topic_fixed_memory_frac"]["2"], 0) + "%",
+    ),
+    (
+        "coverage: best 1 cluster per doc",
+        lambda r: f(100 * r["cluster_restricted"]["doc_specific_coverage"]["1"], 0) + "%",
+    ),
+    (
+        "coverage: best 2 clusters per doc",
+        lambda r: f(100 * r["cluster_restricted"]["doc_specific_coverage"]["2"], 0) + "%",
+    ),
+]
+
+
+def paired_loc_table(loc, metrics) -> str:
+    labels = list(loc)
+    heads = ["layer"] + [
+        f"{name} <span class=muted>{lab}</span>" for name, _ in metrics for lab in labels
+    ]
+    L = max(r["num_layers"] for r in loc.values())
+    rows = []
+    for li in range(L):
+        row = [li]
+        for _, fn in metrics:
+            for lab in labels:
+                lr = loc[lab]["layers"].get(str(li))
+                row.append(fn(lr) if lr else "&ndash;")
+        rows.append(row)
+    return table(heads, rows)
+
+
+def top_tokens_table(loc, layer) -> str:
+    out = ""
+    for lab, res in loc.items():
+        r = res["layers"][str(layer)]
+        tt = r["top_tokens_per_cluster"]
+        sizes = r["clusters"]["sizes"]
+        mass = r["clusters"]["mass_share"]
+        rows = []
+        for ci in sorted(tt, key=int):
+            toks = ", ".join(f"<code>{html.escape(t['token'])}</code>" for t in tt[ci][:14])
+            rows.append([ci, sizes[int(ci)], f(100 * mass[int(ci)], 0) + "%", toks])
+        out += (
+            f"<p><b>{lab} experts, layer {layer}</b> &mdash; token types with the highest "
+            "P(cluster | token) / P(cluster), token types with &ge; 100 occurrences.</p>"
+            + table(["cluster", "#experts", "routing share", "top token types"], rows)
+        )
+    return out
+
+
+def loc_fig(name, caption):
+    return fig_row(img_tag(LOCALITY / name, caption)) if (LOCALITY / name).exists() else ""
+
+
+def loc_stats(res):
+    """Layer-averaged numbers used in the prose (layers 8-15 = upper half unless noted)."""
+    lay = [res["layers"][str(li)] for li in range(res["num_layers"])]
+    up = lay[8:]
+
+    def m(v):
+        return sum(v) / len(v)
+
+    return dict(
+        Es=res["num_std_experts"],
+        tok0=lay[0]["mutual_information_frac"]["token"],
+        doc0=lay[0]["mutual_information_frac"]["doc"],
+        tok15=lay[-1]["mutual_information_frac"]["token"],
+        doc15=lay[-1]["mutual_information_frac"]["doc"],
+        topic15=lay[-1]["mutual_information_frac"]["topic"],
+        src15=lay[-1]["mutual_information_frac"]["source"],
+        tgt15=lay[-1]["mutual_information_frac"]["topic_given_token"],
+        crossover=next(
+            (
+                li
+                for li, r in enumerate(lay)
+                if r["mutual_information_frac"]["doc"] > r["mutual_information_frac"]["token"]
+            ),
+            None,
+        ),
+        top_up=m([r["concentration"]["doc_top_share_mean"] for r in up]),
+        null_up=m([r["concentration"]["token_null_top_share_mean"] for r in up]),
+        marg_up=m([r["concentration"]["marginal_top_share"] for r in up]),
+        eff_up=m([r["concentration"]["doc_eff_clusters_mean"] for r in up]),
+        p10_15=lay[-1]["concentration"]["doc_top_share_p10"],
+        p90_15=lay[-1]["concentration"]["doc_top_share_p90"],
+        top_src15=lay[-1]["concentration"]["doc_top_share_by_source"],
+        null_src15=lay[-1]["concentration"]["token_null_top_share_by_source"],
+        sw_up=m([r["sequential"]["top1_switch_rate"] for r in up]),
+        swn_up=m([r["sequential"]["top1_switch_rate_within_doc_shuffle"] for r in up]),
+        dist=m([r["per_token"]["distinct_clusters_mean"] for r in lay[1:]]),
+        distn=m([r["per_token"]["null_distinct_clusters_mean"] for r in lay[1:]]),
+        doc95=m(
+            [r["coverage"]["per_doc_experts_needed"]["0.95"]["frac_of_experts_mean"] for r in lay]
+        ),
+        doc95_15=lay[-1]["coverage"]["per_doc_experts_needed"]["0.95"]["frac_of_experts_mean"],
+        topic95=m(
+            [r["coverage"]["per_topic_experts_needed"]["0.95"]["frac_of_experts_mean"] for r in lay]
+        ),
+        topic99=m(
+            [r["coverage"]["per_topic_experts_needed"]["0.99"]["frac_of_experts_mean"] for r in lay]
+        ),
+        src95_15={
+            k: v / res["num_std_experts"]
+            for k, v in lay[-1]["coverage"]["per_source_experts_needed"]["0.95"][
+                "by_source"
+            ].items()
+        },
+        jac=m([r["coverage"]["topic_jaccard_95_mean"] for r in lay]),
+        fix1=m([r["cluster_restricted"]["topic_fixed_coverage"]["1"] for r in up]),
+        fix2=m([r["cluster_restricted"]["topic_fixed_coverage"]["2"] for r in up]),
+        mem2=m([r["cluster_restricted"]["topic_fixed_memory_frac"]["2"] for r in up]),
+    )
+
+
+def growth_table(models) -> str:
+    rows = []
+    gs = {}
+    for m in models:
+        pth = COACT / m.run / "locality/growth.json"
+        if pth.exists():
+            gs[m.label] = json.load(open(pth))
+    if not gs:
+        return ""
+    any_g = next(iter(gs.values()))
+    sizes = any_g["sizes"]
+    i1, i64, iN = sizes.index(1), sizes.index(64), len(sizes) - 1
+    names = ["random", "same k32 topic", "same source"] + [f"source:{s}" for s in any_g["sources"]]
+    heads = ["documents pooled"] + [
+        f"{n} <span class=muted>{lab}</span>" for n in names for lab in gs
+    ]
+    for li in (0, 7, 15):
+        for idx, n in ((i1, 1), (i64, 64), (iN, sizes[-1])):
+            row = [f"layer {li}, {n} doc{'s' if n > 1 else ''}"]
+            for name in names:
+                for lab, g in gs.items():
+                    v = g["layers"][str(li)][name][idx]
+                    row.append(f(100 * v, 0) + "%" if v is not None else "&ndash;")
+            rows.append(row)
+    return (
+        "<p>Experts (as % of all standard experts) that receive 95% of the pooled routing of <i>n</i> documents "
+        "drawn from one k32 topic, from one source, or at random; mean of 40 draws (20 for the per-source "
+        "columns).</p>" + table(heads, rows)
+    )
+
+
+def LOCALITY_TEXT(loc) -> str:
+    st = {lab: loc_stats(res) for lab, res in loc.items()}
+    labs = list(loc)
+
+    def both_s(fn):
+        return "; ".join(f"{lab}: {fn(st[lab])}" for lab in labs)
+
+    question = (
+        "<p>The lift heatmaps in tab 1 show blocks of experts that fire together. Two very different "
+        "mechanisms produce the same block picture: (a) <b>token-level</b> &mdash; the block is a set of "
+        "experts that handle particular token types, and every document uses every block in proportion to "
+        "its token mix; (b) <b>document-level</b> &mdash; a document (or a topic) lives inside one block for "
+        "most of its tokens. Only (b) lets a block be finetuned on a group of documents while the other "
+        "blocks stay on disk. This tab separates the two using the cached per-token routing indices of "
+        "the same 40k documents (no new forward pass).</p>"
+    )
+    hyp = (
+        "<p><b>H6.</b> If the blocks are document-level, the cluster of a routed expert should be predictable "
+        "from the document identity much better than from the token type, a document should concentrate "
+        "its routing in one or two clusters well beyond what its token composition predicts, and a "
+        "group of same-topic documents should need a much smaller expert set than a random group.</p>"
+    )
+    method = (
+        "<p>Clusters: the k=8 spectral partition of the token-level lift matrix of each layer, recomputed "
+        "with the same code and seed as the heatmaps (so cluster ids match tab 1's ordering blocks). "
+        "Every routed (token, slot) pair &mdash; 7 standard experts per token, the shared expert "
+        "excluded &mdash; gets the cluster id of its expert; call it <i>c</i>. Then, per layer:</p><ul>"
+        "<li><b>Who decides c</b>: mutual information I(c; X)/H(c) for X = token type (vocabulary id), "
+        "document, k32 topic of the document, source of the document; and the conditional versions "
+        "I(c; topic | token) and I(c; token | topic). All bias-corrected by subtracting the same "
+        "estimate on permuted labels. <i>Example</i>: I(c; token)/H(c) = 0.75 means knowing the token "
+        "type removes three quarters of the uncertainty about which cluster it is routed to.</li>"
+        "<li><b>Concentration</b>: share of a document's routing slots that land in its single best "
+        "cluster (mean over documents), against (i) the global share of the largest cluster (what you get "
+        "with no information) and (ii) a cross-fitted <i>token-composition</i> prediction: P(c | token) is "
+        "fitted on the even-numbered documents and applied to the odd ones' tokens (and vice versa), "
+        "giving the concentration a document would have if its cluster choice depended on its tokens "
+        "only. The gap between actual and (ii) is the document effect beyond token identity. The same "
+        "quantity per token type (share of a token type's occurrences that go to its best cluster) shows "
+        "how peaked the routing is given the token.</li>"
+        "<li><b>Sequential structure</b>: how often the top-1 expert's cluster changes between "
+        "consecutive tokens of a document, versus the rate expected if the document's tokens were "
+        "shuffled (1 &minus; &Sigma;<sub>c</sub> p<sub>c</sub><sup>2</sup> per document).</li>"
+        "<li><b>Feasibility</b>: experts (sorted by count) needed to receive 90 / 95 / 99% of the routing "
+        "of one document, of a k32 topic group (~1250 docs), of a source; Jaccard overlap between the "
+        "topics' 95% sets; routing covered when only 1&ndash;4 whole clusters are loaded, chosen per "
+        "document (best case) or once per topic (the finetuning scenario); and how the 95% set grows "
+        "when 1 &rarr; 1024 documents are pooled from one topic, one source, or at random.</li>"
+        "<li><b>Top token types per cluster</b> by P(c | token)/P(c), for a qualitative reading of what "
+        "the clusters are.</li></ul>"
+        "<p>Script: <code>scripts/sparse_experts/coactivation/cluster_locality.py</code> "
+        "(<code>analyze</code>, <code>growth</code>, <code>plot</code>, <code>plot-growth</code>); outputs in "
+        "<code>claude_outputs/sparse_experts/coactivation/&lt;run&gt;/locality/</code> and "
+        "<code>.../compare/locality/</code>. Runs in ~2 minutes per model on one GPU from the cached "
+        "indices.</p>"
+    )
+    who = (
+        "<p><b>Depth flips the answer.</b> In layer 0 the cluster is a property of the token: token type "
+        "explains "
+        + both_s(lambda s: f"{100 * s['tok0']:.0f}%")
+        + " of H(c) and the document "
+        + both_s(lambda s: f"{100 * s['doc0']:.0f}%")
+        + ". The two curves cross at layer "
+        + both_s(lambda s: str(s["crossover"]))
+        + "; by layer 15 the document explains "
+        + both_s(lambda s: f"{100 * s['doc15']:.0f}%")
+        + " and the token type only "
+        + both_s(lambda s: f"{100 * s['tok15']:.0f}%")
+        + ". Most of the document effect is topical: the k32 topic alone gives "
+        + both_s(lambda s: f"{100 * s['topic15']:.0f}%")
+        + " and still "
+        + both_s(lambda s: f"{100 * s['tgt15']:.0f}%")
+        + " after the token type is known, while the coarse source label gives "
+        + both_s(lambda s: f"{100 * s['src15']:.0f}%")
+        + ". Note that even in the top layer some 70% of the cluster entropy is explained by neither the "
+        "document nor the token type &mdash; it is context-dependent routing.</p>"
+    )
+    conc = (
+        "<p><b>A document does lean on one cluster, but only for about half of its tokens.</b> In the upper "
+        "half of the network a document sends "
+        + both_s(lambda s: f"{100 * s['top_up']:.0f}%")
+        + " of its routing slots to its single best cluster, against "
+        + both_s(lambda s: f"{100 * s['null_up']:.0f}%")
+        + " predicted from its token types alone and "
+        + both_s(lambda s: f"{100 * s['marg_up']:.0f}%")
+        + " for the largest cluster globally; equivalently it spreads over "
+        + both_s(lambda s: f"{s['eff_up']:.1f}")
+        + " effective clusters out of 8. The spread across documents is wide (layer 15 p10&ndash;p90: "
+        + both_s(lambda s: f"{100 * s['p10_15']:.0f}&ndash;{100 * s['p90_15']:.0f}%")
+        + ") and it is the source that decides: at layer 15 a starcoder document puts "
+        + both_s(lambda s: f"{100 * s['top_src15']['starcoder']:.0f}%")
+        + " of its routing in one cluster and a proof-pile-2 document "
+        + both_s(lambda s: f"{100 * s['top_src15']['proof-pile-2']:.0f}%")
+        + ", against "
+        + both_s(lambda s: f"{100 * s['top_src15']['dclm']:.0f}%")
+        + " for a dclm web page (token-composition predictions "
+        + both_s(
+            lambda s: f"{100 * s['null_src15']['starcoder']:.0f} / {100 * s['null_src15']['proof-pile-2']:.0f} / {100 * s['null_src15']['dclm']:.0f}%"
+        )
+        + "). Given the token type instead, the best cluster takes "
+        + both_s(
+            lambda s: f"{100 * loc[labs[0]]['layers']['0']['concentration']['token_type_top_share_mean']:.0f}%"
+        )
+        + " at layer 0 but only ~40% in the upper layers &mdash; the same token is routed differently in "
+        "different contexts.</p>"
+    )
+    seq = (
+        "<p><b>Within a document the cluster is sticky at the phrase level.</b> In the upper layers the top-1 "
+        "expert's cluster changes between consecutive tokens "
+        + both_s(lambda s: f"{100 * s['sw_up']:.0f}%")
+        + " of the time versus "
+        + both_s(lambda s: f"{100 * s['swn_up']:.0f}%")
+        + " if the same document's tokens were shuffled, i.e. runs of ~2.3 tokens instead of ~1.5. And the "
+        "7 experts of one token come from "
+        + both_s(lambda s: f"{s['dist']:.1f}")
+        + " clusters on average (usage-matched null: "
+        + both_s(lambda s: f"{s['distn']:.1f}")
+        + "), so a token typically draws its experts from two or three blocks rather than one.</p>"
+    )
+    feas = (
+        "<p><b>What this means for loading a subset of experts.</b> One document's routing is quite sparse: "
+        "95% of it goes to "
+        + both_s(lambda s: f"{100 * s['doc95']:.0f}%")
+        + " of the experts averaged over layers ("
+        + both_s(lambda s: f"{100 * s['doc95_15']:.0f}%")
+        + " at layer 15). But the sets of different documents only partly overlap, so a k32 topic group needs "
+        + both_s(lambda s: f"{100 * s['topic95']:.0f}%")
+        + " of the experts for 95% and "
+        + both_s(lambda s: f"{100 * s['topic99']:.0f}%")
+        + " for 99%, and the topics' 95% sets overlap with Jaccard "
+        + both_s(lambda s: f"{s['jac']:.2f}")
+        + " &mdash; they are far from disjoint modules. Fixing whole clusters per topic is worse: the topic's "
+        "best cluster covers "
+        + both_s(lambda s: f"{100 * s['fix1']:.0f}%")
+        + " of its routing and its best two "
+        + both_s(lambda s: f"{100 * s['fix2']:.0f}%")
+        + " (holding "
+        + both_s(lambda s: f"{100 * s['mem2']:.0f}%")
+        + " of the experts) in the upper layers, which leaves 40% of the routed tokens without their experts. "
+        "Grouping by <i>source</i> works much better than grouping by topic: the growth curves saturate "
+        "after ~64 documents at (layer 15, 95%) "
+        + both_s(
+            lambda s: f"starcoder {100 * s['src95_15']['starcoder']:.0f}%, proof-pile-2 {100 * s['src95_15']['proof-pile-2']:.0f}%, pes2o {100 * s['src95_15']['pes2o']:.0f}%, dclm {100 * s['src95_15']['dclm']:.0f}%"
+        )
+        + " of the experts, while random groups of documents climb to ~87%. Code and math corpora therefore "
+        "have a stable, document-independent expert subset a quarter to a third the size of the model in the "
+        "upper layers (more in the lower layers, where routing is token-driven and every document touches "
+        "most experts); general web text does not.</p>"
+    )
+    concl = (
+        "<p><b>Answer.</b> The blocks are not one thing. In the lower half of the network they are "
+        "token-level: layer 0 clusters are function words, pronouns, punctuation, numbers and code "
+        "delimiters, every document uses all of them, and the document identity explains almost nothing. "
+        "From the middle of the network on they become increasingly document-level and semantic (layer 12 "
+        "clusters read as fiction narration, biomedical, legal/political, religious, casual chat, code, "
+        "devops), a document keeps about half of its routing in one block and the top-1 cluster is sticky "
+        "across neighbouring tokens &mdash; but no document lives in one block: the other half of its "
+        "tokens are spread over the remaining clusters, and a single block loaded per topic misses ~60% "
+        "of the routed slots.</p>"
+        "<p><b>Implication for finetuning a subset of experts on a group of documents.</b> The natural unit "
+        "is not one of the k=8 blocks but the <i>routing-derived expert set of the target corpus</i>: for a "
+        "domain-coherent corpus (code, math, papers) the experts that receive 95&ndash;99% of its routing "
+        "form a stable set of roughly a quarter to a half of the experts per layer, shared across its "
+        "documents, so a 2&ndash;4&times; reduction in resident experts is available without changing the "
+        "router. For web text grouped by topic the saving is only ~1.5&times; at 95% coverage. The 1024 "
+        "model behaves the same as the 512 model in every measure, with slightly sparser per-document "
+        "sets and a slightly stronger token-type effect in the lower layers.</p>"
+        "<p><b>What is still untested</b> is how much loss the model incurs when routing is actually "
+        "restricted to such a subset (the 5% tail of routing may matter more than 5%). The pool machinery "
+        "already in the router makes this a cheap follow-up: mask the scores to the corpus' 95% set and "
+        "measure CE on the same documents, per source.</p>"
+    )
+    tables = paired_loc_table(loc, LOC_METRICS)
+    cov_tab = paired_loc_table(loc, COV_METRICS)
+    return (
+        card("goal", "Question", question)
+        + card("hypothesis", "Hypothesis", hyp)
+        + card("method", "Method", method)
+        + card(
+            "results",
+            "Results &mdash; who decides the cluster: token type or document?",
+            who
+            + loc_fig(
+                "locality_mi.png",
+                "Fraction of the cluster entropy explained by the token type, the document, its k32 topic and its source; dashed: topic given the token type, and token type given the topic.",
+            ),
+        )
+        + card(
+            "results",
+            "Results &mdash; how concentrated is a document's routing?",
+            conc
+            + loc_fig(
+                "locality_concentration.png",
+                "Top: share of routing in the single best cluster, given the document (black, with p10-p90 band), predicted from the document's token types alone (orange), given the token type (green), and the largest cluster's global share (dotted). Bottom: the same as effective number of clusters.",
+            )
+            + loc_fig(
+                "locality_topic_cluster.png",
+                "Share of each k32 topic's routing (rows) that goes to each expert cluster (columns), five layers, both models. Row 4 is the code-dominated topic.",
+            ),
+        )
+        + card(
+            "results",
+            "Results &mdash; sequential structure",
+            seq
+            + loc_fig(
+                "locality_sequential.png",
+                "Left: how often the top-1 expert's cluster changes between consecutive tokens (solid) versus the within-document shuffle null (dashed). Right: distinct clusters among a token's 7 routed experts versus a usage-matched null.",
+            ),
+        )
+        + card(
+            "results",
+            "Results &mdash; feasibility of loading a subset of experts",
+            feas
+            + loc_fig(
+                "locality_coverage.png",
+                "Experts needed for 90/95/99% of the routing of one document and of one k32 topic group; Jaccard overlap of the topics' 95% sets (band = min-max over pairs); routing covered when 1 or 2 whole clusters are loaded, fixed per topic (solid) or chosen per document (crosses).",
+            )
+            + loc_fig(
+                "locality_growth.png",
+                "Growth of the 95% expert set with the number of documents pooled: random documents (grey), same k32 topic (purple), same source (brown), and each source separately (dotted).",
+            )
+            + growth_table(models_from_loc(loc)),
+        )
+        + card("results", "Results &mdash; per-layer table", tables)
+        + card("results", "Results &mdash; coverage table", cov_tab)
+        + card(
+            "results",
+            "Results &mdash; what the clusters are (top token types)",
+            top_tokens_table(loc, 0) + top_tokens_table(loc, 12),
+        )
+        + card("results", "Conclusion", concl)
+    )
+
+
+def models_from_loc(loc):
+    class _M:
+        def __init__(self, label):
+            self.label = label
+            self.run = dict(RUNS)[label]
+
+    return [_M(lab) for lab in loc]
+
+
+def build_locality(models) -> str:
+    loc = load_locality(models)
+    if not loc:
+        return card(
+            "method", "Not run", "<p>cluster_locality.py has not been run for these models.</p>"
+        )
+    return LOCALITY_TEXT(loc)
+
+
 def build_next() -> str:
     return card(
         "method",
         "Next steps",
         """
 <ul>
+<li><b>Restricted-routing loss (follow-up to tab 4)</b>: mask the router scores to a corpus' 95% / 99% expert set
+(derived from its own routing on held-out documents) and measure CE per source on the same 40k documents, to
+turn the coverage numbers into an actual memory-vs-loss trade-off for finetuning a subset of experts.</li>
 <li><b>Complete the sweep</b>: launch sparse_8of128_10b and sparse_8of256_10b and run the identical pass, so
 modularity and domain specialisation can be read as a function of expert count at fixed expert size;
 add the 128-expert full-size baseline (meta128_vanilla/step2384) for the size axis.</li>
@@ -896,6 +1417,7 @@ def main():
         ("full", "1 · Full routing", build_full(models)),
         ("pool64", "2 · Pool pinned to 64", build_pool64(models)),
         ("sources", "3 · Per source", build_sources(models)),
+        ("locality", "4 · Token vs document", build_locality(models)),
         ("next", "Next steps", build_next()),
     ]
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
@@ -917,7 +1439,7 @@ def main():
 <h1>{html.escape(title)}</h1>
 <p>sparse_experts &mdash; quarter-size experts, 8 active of 128/256/512/1024 &middot; pairwise expert
 co-activation per layer on 40k unseen documents (51M tokens), full routing and pool-64 routing, token-
-and document-level, per source &middot; {labels} experts side by side &middot; generated by
+and document-level, per source, and the token-vs-document locality of the expert clusters &middot; {labels} experts side by side &middot; generated by
 scripts/sparse_experts/build_report.py</p>
 </header>
 <div class="topbar"><nav>{nav}</nav><div id="subnav"></div></div>
