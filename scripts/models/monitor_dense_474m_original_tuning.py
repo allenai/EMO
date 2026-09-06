@@ -124,7 +124,7 @@ def refresh_mode(report: dict[str, Any], mode: str, experiment_id: str) -> dict[
     try:
         logs = ANSI.sub(
             "",
-            run(["beaker", "job", "logs", str(job_id), "--tail", "1000"]),
+            run(["beaker", "job", "logs", str(job_id), "--since", "70m"]),
         ) if job_id else ""
     except subprocess.CalledProcessError:
         logs = ""

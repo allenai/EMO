@@ -159,7 +159,7 @@ def refresh() -> dict[str, Any]:
     try:
         logs = ANSI.sub(
             "",
-            run(["beaker", "job", "logs", str(job_id), "--tail", "1000"]),
+            run(["beaker", "job", "logs", str(job_id), "--since", "70m"]),
         ) if job_id else ""
     except subprocess.CalledProcessError:
         logs = ""
