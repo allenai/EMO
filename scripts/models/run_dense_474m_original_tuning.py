@@ -287,7 +287,9 @@ def validate_predecay(path: Path, coordinate: dict[str, Any]) -> Path:
     mismatches: list[str] = []
     if int(config["data_loader"]["global_batch_size"]) != batch * SEQUENCE_LENGTH:
         mismatches.append("global_batch_size")
-    if bool(config["model"]["tie_embeddings"]):
+    # Refactored canonical OLMo2 checkpoints omit this legacy key; omission is
+    # the untied default, while an explicit true value remains a mismatch.
+    if bool(config["model"].get("tie_embeddings", False)):
         mismatches.append("weight_tying")
     if bool(config.get("dataset", {}).get("dynamic_repacking", False)):
         mismatches.append("dynamic_repacking")

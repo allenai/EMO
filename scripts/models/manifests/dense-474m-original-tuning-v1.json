@@ -28,15 +28,15 @@
         "id": "lr5e-4-wd0.1",
         "learningRate": "5e-4",
         "weightDecay": "0.1",
-        "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_0802_repeated_dclm1b_bs32_e1_lr5e-4_wd0.1_warmup768_sm0811bs32grid02/step6866",
-        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1_e4_probe_v1"
+        "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/step6866",
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1_e4_probe_v2"
       },
       {
         "id": "lr2e-3-wd0.1",
         "learningRate": "2e-3",
         "weightDecay": "0.1",
-        "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_0802_repeated_dclm1b_bs32_e1_lr2e-3_wd0.1_warmup768_sm0811bs32grid08/step6866",
-        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1_e4_probe_v1"
+        "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1/step6866",
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1_e4_probe_v2"
       }
     ]
   },
@@ -51,8 +51,8 @@
     "sourceEpoch": 48,
     "targetEpoch": 52,
     "previousValidationExact": 3.101,
-    "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_0802_repeated_dclm1b_bs128_e48_lr2e-3_wd0.3_warmup192_sm0810e48a/step82397",
-    "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3_e52_extension_v1"
+    "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3/step82397",
+    "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3_e52_extension_v2"
   },
-  "runSuffix": "sm0905originaltuningv1"
+  "runSuffix": "sm0905originaltuningv2"
 }
