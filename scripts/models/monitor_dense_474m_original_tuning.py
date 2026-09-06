@@ -143,6 +143,19 @@ def refresh_mode(report: dict[str, Any], mode: str, experiment_id: str) -> dict[
         sweep["job"] = job.get("id")
         if live_state not in {"complete", "failed"}:
             sweep["status"] = live_state
+    if mode == "bs32-lr5e4-e32" and live_state not in {"complete", "failed"}:
+        extension_sweep = sweeps["lr5e-4-wd0.1"]
+        if int(extension_sweep.get("activeEpoch", 0)) < 16:
+            extension_sweep.update(
+                {
+                    "activeEpoch": 16,
+                    "activePhase": "producer_pending",
+                    "reason": (
+                        "Continuing the selected exact E4 PD frontier through E32, with "
+                        "isolated POST evaluations at E16, E24, and E32."
+                    ),
+                }
+            )
 
     for parsed_mode, coordinate, raw_epoch, _checkpoint, raw_retained in PD_RETAINED.findall(logs):
         if parsed_mode != mode or coordinate not in sweeps:
