@@ -9018,9 +9018,9 @@
       "rankMicrobatchSequences": 16,
       "gradientAccumulation": 1,
       "gpuCount": 2,
-      "status": "running",
+      "status": "complete",
       "activeEpoch": 4,
-      "activePhase": "post",
+      "activePhase": "post_complete",
       "search": "small-model-original-lr-e4-probe",
       "beaker": "01M1T7J31A5SDZHBW113BF3NAD",
       "experiment": "01M1T7J31A5SDZHBW113BF3NAD",
@@ -9043,8 +9043,67 @@
       "embeddingWeightDecay": "zero",
       "automaticTaskRetries": 8,
       "minRuntimeOmitted": true,
-      "results": {},
-      "reason": "Submitted the corrected exact E1-to-E4 continuation in the canonical coordinate root; the 10% WSD and evaluation branch is isolated as e4-retry01.",
+      "results": {
+        "4": {
+          "acc": 34.52,
+          "avg8Accuracy": 41.8325,
+          "avg8Bpb": 1.3848875,
+          "batchSequences": 32,
+          "bpb": 0.9471,
+          "c4": 3.264,
+          "comparisonGroup": "post_decay",
+          "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1",
+          "coordinate": "lr5e-4-wd0.1",
+          "downstream": {
+            "arc_challenge": 24.41,
+            "arc_easy": 50.349999999999994,
+            "boolq": 59.72,
+            "csqa": 43.41,
+            "hellaswag": 34.52,
+            "openbookqa": 23.200000000000003,
+            "piqa": 65.89,
+            "socialiqa": 43.24,
+            "winogrande": 49.64
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.432,
+            "arc_easy": 1.465,
+            "boolq": 1.834,
+            "csqa": 1.474,
+            "hellaswag": 0.9471,
+            "openbookqa": 1.697,
+            "piqa": 1.231,
+            "socialiqa": 1.302,
+            "winogrande": 1.531
+          },
+          "dynamicRepacking": false,
+          "embeddingWeightDecay": "zero",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/.dense_474m_original_tuning_v1/post_decay_runs/e4-retry01/step30518",
+          "epoch": 4,
+          "gap": 0.022,
+          "lr": "5e-4",
+          "mode": "bs32-probes",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1",
+          "policy": "dense_474m_original_tuning_v1",
+          "postOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/.dense_474m_original_tuning_v1/post_decay_runs/e4-retry01",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/step27465",
+          "source": "integrated_isolated_wsd_decay_heldout_and_downstream_eval",
+          "sourcePreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/step27465",
+          "status": "complete",
+          "train": 3.242,
+          "validation": 3.264,
+          "validationExact": 3.264,
+          "wandb": "83llda45",
+          "wd": "0.1",
+          "weightTying": false,
+          "beaker": "01M1T7J31A5SDZHBW113BF3NAD",
+          "experiment": "01M1T7J31A5SDZHBW113BF3NAD",
+          "job": "01M1T7J35E9QHNN41CWDRTGPY1",
+          "revision": "061adb8db6d9675489977deec8e8e8018fd7ff0c",
+          "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations."
+        }
+      },
+      "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations.",
       "job": "01M1T7J35E9QHNN41CWDRTGPY1"
     },
     {
@@ -18234,7 +18293,9 @@
         "status": "running",
         "decision": null,
         "results": {
-          "lr5e-4-wd0.1": [],
+          "lr5e-4-wd0.1": [
+            "4"
+          ],
           "lr2e-3-wd0.1": []
         }
       },
