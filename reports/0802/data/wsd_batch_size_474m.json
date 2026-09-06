@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-05",
+  "updated": "2026-09-06",
   "title": "0802 Step 1-1 \u00b7 Dense 474M",
   "setup": "Dense 474M; 1B-unique-pool repeated-token regime; sequence length 4096. Report tables include BS32/64/128/256/512; completed higher-batch results and provenance remain fully visible. Rank microbatch is 16 sequences; BS32/64 use 2/4 GPUs with gradient accumulation 1/1. Warmup is token-matched across batches.",
   "selection": "For BS32, the user declared LR1e-3/WD0.1 the E1 winner after it tied the minimum validation CE, preferring the higher WD for later epochs. Both LR and WD are now permanently locked: continue only this exact coordinate through E2/E4/E8/E12/E16 and then E24/E32/E40/E48/E56/E64, stopping at the first post-E16 non-improvement. The selected E1 trajectory also supplies exact-coordinate E0.125/E0.25/E0.5 decay endpoints. All nonwinning E1 results and recovery provenance remain visible. Existing higher-batch chains retain their recorded terminal policies. Completed E20/E28 work remains visible only in provenance and is omitted from summary rows; neither is a future launch target. BS32 now has one persistent saturation-gated continuation from E24; it uses the locked LR1e-3/WD0.1 coordinate and one canonical output directory. BS64 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS128 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.3 and its immediate neighbors. BS256 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.333 and its immediate neighbors. BS512 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.3 and its immediate neighbors. Original-model tuning now includes BS32 LR5e-4 and LR2e-3 WD0.1 POST E4 probes against LR1e-3/WD0.1, plus a user-authorized BS128 LR2e-3/WD0.3 E52 extension after the rounded E40/E48 tie.",
@@ -9018,17 +9018,18 @@
       "rankMicrobatchSequences": 16,
       "gradientAccumulation": 1,
       "gpuCount": 2,
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 4,
       "activePhase": "producer",
       "search": "small-model-original-lr-e4-probe",
-      "beaker": "01M1SXPHN27TNKGJGBHQXZ4HJZ",
-      "experiment": "01M1SXPHN27TNKGJGBHQXZ4HJZ",
-      "revision": "4e83e1e786862968b8af053417aa9d428a72c538",
+      "beaker": "01M1T7J31A5SDZHBW113BF3NAD",
+      "experiment": "01M1T7J31A5SDZHBW113BF3NAD",
+      "revision": "061adb8db6d9675489977deec8e8e8018fd7ff0c",
       "sourceEpoch": 1,
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_0802_repeated_dclm1b_bs32_e1_lr5e-4_wd0.1_warmup768_sm0811bs32grid02/step6866",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1_e4_probe_v1",
-      "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1_e4_probe_v1/constant_lr",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/step6866",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1",
+      "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1",
+      "postDecayOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/.dense_474m_original_tuning_v1/post_decay_runs/e4-retry01",
       "retainedPreDecayEpochs": [],
       "comparisonEpoch": 4,
       "baselineLearningRate": "1e-3",
@@ -9039,8 +9040,8 @@
       "automaticTaskRetries": 8,
       "minRuntimeOmitted": true,
       "results": {},
-      "reason": "Submitted an exact E1-to-E4 constant-LR continuation followed by isolated 10% WSD decay and matched evaluation in the same task.",
-      "job": "01M1SXPHRPVVFCHX3TJPS7Y96J"
+      "reason": "Submitted the corrected exact E1-to-E4 continuation in the canonical coordinate root; the 10% WSD and evaluation branch is isolated as e4-retry01.",
+      "job": "01M1T7J35E9QHNN41CWDRTGPY1"
     },
     {
       "id": "dense-474m-bs32-lr2e-3-wd0.1-e4-probe-v1",
@@ -9054,17 +9055,18 @@
       "rankMicrobatchSequences": 16,
       "gradientAccumulation": 1,
       "gpuCount": 2,
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 4,
       "activePhase": "producer",
       "search": "small-model-original-lr-e4-probe",
-      "beaker": "01M1SXPHN27TNKGJGBHQXZ4HJZ",
-      "experiment": "01M1SXPHN27TNKGJGBHQXZ4HJZ",
-      "revision": "4e83e1e786862968b8af053417aa9d428a72c538",
+      "beaker": "01M1T7J31A5SDZHBW113BF3NAD",
+      "experiment": "01M1T7J31A5SDZHBW113BF3NAD",
+      "revision": "061adb8db6d9675489977deec8e8e8018fd7ff0c",
       "sourceEpoch": 1,
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_0802_repeated_dclm1b_bs32_e1_lr2e-3_wd0.1_warmup768_sm0811bs32grid08/step6866",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1_e4_probe_v1",
-      "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1_e4_probe_v1/constant_lr",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1/step6866",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1",
+      "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1",
+      "postDecayOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1/.dense_474m_original_tuning_v1/post_decay_runs/e4-retry01",
       "retainedPreDecayEpochs": [],
       "comparisonEpoch": 4,
       "baselineLearningRate": "1e-3",
@@ -9075,8 +9077,8 @@
       "automaticTaskRetries": 8,
       "minRuntimeOmitted": true,
       "results": {},
-      "reason": "Submitted an exact E1-to-E4 constant-LR continuation followed by isolated 10% WSD decay and matched evaluation in the same task.",
-      "job": "01M1SXPHRPVVFCHX3TJPS7Y96J"
+      "reason": "Submitted the corrected exact E1-to-E4 continuation in the canonical coordinate root; the 10% WSD and evaluation branch is isolated as e4-retry01.",
+      "job": "01M1T7J35E9QHNN41CWDRTGPY1"
     },
     {
       "id": "dense-474m-bs128-lr2e-3-wd0.3-e52-extension-v1",
@@ -9090,17 +9092,18 @@
       "rankMicrobatchSequences": 16,
       "gradientAccumulation": 1,
       "gpuCount": 8,
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 52,
       "activePhase": "producer",
       "search": "small-model-original-e52-extension",
-      "beaker": "01M1SXPYFES7MQAVV4SDM7Z4G4",
-      "experiment": "01M1SXPYFES7MQAVV4SDM7Z4G4",
-      "revision": "4e83e1e786862968b8af053417aa9d428a72c538",
+      "beaker": "01M1T7J3XM38XR2BP4GA7W5F26",
+      "experiment": "01M1T7J3XM38XR2BP4GA7W5F26",
+      "revision": "061adb8db6d9675489977deec8e8e8018fd7ff0c",
       "sourceEpoch": 48,
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_step1_0802_repeated_dclm1b_bs128_e48_lr2e-3_wd0.3_warmup192_sm0810e48a/step82397",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3_e52_extension_v1",
-      "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3_e52_extension_v1/constant_lr",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3/step82397",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3",
+      "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3",
+      "postDecayOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs128_lr2e-3_wd0.3/.dense_474m_original_tuning_v1/post_decay_runs/e52-retry01",
       "retainedPreDecayEpochs": [],
       "previousValidationExact": 3.101,
       "dynamicRepacking": false,
@@ -9109,8 +9112,8 @@
       "automaticTaskRetries": 8,
       "minRuntimeOmitted": true,
       "results": {},
-      "reason": "Submitted the user-authorized E48-to-E52 constant-LR extension followed by isolated 10% WSD decay and matched evaluation in the same task.",
-      "job": "01M1SXPYKEVWAV5ZQC270H1NMT"
+      "reason": "Running the corrected exact E48-to-E52 continuation in the canonical coordinate root; the 10% WSD and evaluation branch is isolated as e52-retry01.",
+      "job": "01M1T7J41WMS9D8WKECXXRKFD7"
     }
   ],
   "summaryBatches": [
@@ -18142,12 +18145,12 @@
   ],
   "originalTuningWorkflow": {
     "policy": "dense_474m_original_tuning_v1",
-    "status": "submitted",
-    "revision": "4e83e1e786862968b8af053417aa9d428a72c538",
+    "status": "running",
+    "revision": "061adb8db6d9675489977deec8e8e8018fd7ff0c",
     "minRuntimeOmitted": true,
     "experiments": {
-      "bs32-probes": "01M1SXPHN27TNKGJGBHQXZ4HJZ",
-      "bs128-e52": "01M1SXPYFES7MQAVV4SDM7Z4G4"
+      "bs32-probes": "01M1T7J31A5SDZHBW113BF3NAD",
+      "bs128-e52": "01M1T7J3XM38XR2BP4GA7W5F26"
     },
     "bs32Baseline": {
       "learningRate": "1e-3",
@@ -18157,10 +18160,10 @@
     },
     "modes": {
       "bs32-probes": {
-        "experiment": "01M1SXPHN27TNKGJGBHQXZ4HJZ",
-        "job": "01M1SXPHRPVVFCHX3TJPS7Y96J",
-        "beakerStatus": "submitted",
-        "status": "submitted",
+        "experiment": "01M1T7J31A5SDZHBW113BF3NAD",
+        "job": "01M1T7J35E9QHNN41CWDRTGPY1",
+        "beakerStatus": "running",
+        "status": "running",
         "decision": null,
         "results": {
           "lr5e-4-wd0.1": [],
@@ -18168,15 +18171,33 @@
         }
       },
       "bs128-e52": {
-        "experiment": "01M1SXPYFES7MQAVV4SDM7Z4G4",
-        "job": "01M1SXPYKEVWAV5ZQC270H1NMT",
-        "beakerStatus": "submitted",
-        "status": "submitted",
+        "experiment": "01M1T7J3XM38XR2BP4GA7W5F26",
+        "job": "01M1T7J41WMS9D8WKECXXRKFD7",
+        "beakerStatus": "running",
+        "status": "running",
         "decision": null,
         "results": {
           "bs128-lr2e-3-wd0.3-e52": []
         }
       }
-    }
+    },
+    "replacementHistory": [
+      {
+        "experiments": [
+          "01M1SXPHN27TNKGJGBHQXZ4HJZ",
+          "01M1SXPYFES7MQAVV4SDM7Z4G4"
+        ],
+        "status": "failed",
+        "reason": "Used pre-refactor checkpoint source paths; terminal and never resumable."
+      },
+      {
+        "experiments": [
+          "01M1T3D42MAF7DJ0ECD2KDQYH9",
+          "01M1T3D33P3NQVG11AAQ3GWWJV"
+        ],
+        "status": "canceled",
+        "reason": "Used separate v2 output roots instead of the canonical Original coordinate roots; canceled before replacement and never resumable."
+      }
+    ]
   }
 }
