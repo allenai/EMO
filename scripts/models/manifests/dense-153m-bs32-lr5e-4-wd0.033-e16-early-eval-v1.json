@@ -1,0 +1,12 @@
+{
+  "policy": "dense_153m_bs32_e16_early_eval_v1",
+  "id": "dense-153m-bs32-lr5e-4-wd0.033-e16-early-eval-v1",
+  "epoch": 16,
+  "learningRate": "5e-4",
+  "weightDecay": "0.033",
+  "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr5e-4_wd0.033_hybrid_v1/constant_lr/step109863",
+  "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr5e-4_wd0.033_hybrid_v1/post_decay_runs/e16-early-v1",
+  "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr5e-4_wd0.033_hybrid_v1/post_decay_runs/e16-early-v1/step122071",
+  "waitTimeoutSeconds": 86400,
+  "pollSeconds": 20
+}
