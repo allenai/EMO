@@ -257,6 +257,7 @@ def refresh() -> dict[str, Any]:
         )
     elif live_state not in {"failed", "complete"}:
         primary["status"] = live_state
+        workflow["status"] = live_state
 
     complete_matches = COMPLETE.findall(logs)
     if complete_matches:
