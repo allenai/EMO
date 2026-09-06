@@ -88,7 +88,7 @@
       "batchSequences": 128,
       "learningRate": "1e-3",
       "weightDecay": "0.3",
-      "status": "running",
+      "status": "complete",
       "sourceEpoch": 16,
       "sourceExperiment": "01M14BSBDFA9Y9P546Y8AZ4A9Q",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm3b/bs128_dr_wt_embwd_lr1e-3_wd0.3/step82397",
@@ -123,7 +123,29 @@
         55,
         56,
         57,
-        58
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80
       ],
       "stopPolicy": "retain_exact_predecay_checkpoint_evaluate_then_stop",
       "stopAuthorized": false,
@@ -181,7 +203,7 @@
         79,
         80
       ],
-      "currentEpoch": 59,
+      "currentEpoch": 64,
       "evaluationEnabled": true,
       "experiment": "01M1Q15CYKAJ5Y2REBMBBTPNC7",
       "revision": "e1711c3cd2171f957853ef3b70a1bb12203b3a4a",
@@ -206,7 +228,7 @@
         }
       ],
       "policy": "dense_1b_pool3b_bs128_e32_e80_integrated_v2",
-      "currentPhase": "repacked_shuffled_pool3b_constant_lr",
+      "currentPhase": "post",
       "evaluationEpochs": [
         48,
         64,
@@ -260,11 +282,11 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-06T10:08:47.225029+00:00",
+        "checkedAt": "2026-09-06T19:10:23.828974+00:00",
         "beakerState": "running",
-        "latestStep": 301863,
-        "totalSteps": 329589,
-        "run": "9rfvdvau",
+        "latestStep": 329602,
+        "totalSteps": 366211,
+        "run": "lq5gqrhb",
         "criticalSignals": []
       },
       "decision": {
@@ -2137,7 +2159,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-06T10:09:02.487297+00:00",
+  "updatedAt": "2026-09-06T19:10:23.829322+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",

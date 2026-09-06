@@ -11631,7 +11631,7 @@
       "rankMicrobatchSequences": 16,
       "gradientAccumulation": 1,
       "gpuCount": 2,
-      "status": "complete",
+      "status": "running",
       "activeEpoch": 20,
       "activePhase": "lr_decided",
       "search": "small-model-bs32-lr-wd-hybrid",
