@@ -29,7 +29,7 @@ def load_manifest(path: Path) -> dict[str, Any]:
     bad = [key for key, expected_value in expected.items() if value.get(key) != expected_value]
     if bad:
         raise ValueError(f"fixed-policy manifest mismatch: {bad}")
-    for label, lr in (("probe", "5e-4"), ("baseline", "1e-3")):
+    for label, lr in (("probe", "5e-4"),):
         item = value[label]
         if item.get("learningRate") != lr or item.get("weightDecay") != "0.033":
             raise ValueError(f"invalid {label} coordinate")
@@ -39,6 +39,14 @@ def load_manifest(path: Path) -> dict[str, Any]:
         allowed_root = "/weka/oe-training-default/sewonm/icsl/models/"
         if not output.is_absolute() or ".." in output.parts or not str(output).startswith(allowed_root):
             raise ValueError(f"invalid {label} output")
+    baseline = value.get("baselineReference", {})
+    if baseline != {
+        "epoch": 16,
+        "learningRate": "1e-3",
+        "weightDecay": "0.033",
+        "validationExact": 3.4,
+    }:
+        raise ValueError("baseline must be the completed LR1e-3/WD0.033 E16 POST reference")
     if hybrid.stable_step(EPOCH) != 137328 or hybrid.total_step(EPOCH) != ENDPOINT_STEP:
         raise RuntimeError("E20 step calculation changed")
     return value
@@ -110,16 +118,17 @@ def evaluate(value: dict[str, Any], label: str) -> dict[str, Any]:
 
 def run(value: dict[str, Any]) -> None:
     probe = evaluate(value, "probe")
-    baseline = evaluate(value, "baseline")
     probe_value = float(probe["validationExact"])
+    baseline = value["baselineReference"]
     baseline_value = float(baseline["validationExact"])
     selected = "1e-3" if probe_value > baseline_value else "5e-4"
     decision = {
         "policy": POLICY,
         "selectedLearningRate": selected,
         "selectedWeightDecay": "0.033",
-        "reason": "probe_strictly_worse_at_matched_e20" if selected == "1e-3" else "probe_not_strictly_worse_at_matched_e20",
-        "matchedEpochs": [20],
+        "reason": "probe_e20_strictly_worse_than_lr1e3_e16_reference" if selected == "1e-3" else "probe_e20_not_strictly_worse_than_lr1e3_e16_reference",
+        "probeEpoch": 20,
+        "baselineEpoch": int(baseline["epoch"]),
         "probeValidationExact": probe_value,
         "baselineValidationExact": baseline_value,
     }

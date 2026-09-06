@@ -15,7 +15,7 @@ from typing import Any
 
 WORKSPACE = "ai2/flex2"
 BASE_EXPERIMENT = "01KZ6Q4DJ8J994A6SQ39MEGTZ2"
-NAME = "dense-153m-bs32-e20-lr-gate-v1"
+NAME = "dense-153m-bs32-e20-lr-gate-v2"
 RUNNER = Path("scripts/models/run_dense_153m_bs32_e20_lr_gate.py")
 MANIFEST = Path("scripts/models/manifests/dense-153m-bs32-e20-lr-gate-v1.json")
 REPORT = Path("reports/0802/data/wsd_batch_size_153m.json")
@@ -45,8 +45,8 @@ def build_spec(revision: str, priority: str) -> dict[str, Any]:
         task.pop(key, None)
     spec["retry"] = {"allowedTaskRetries": 8}
     spec["description"] = (
-        "Dense-153M Original BS32 matched E20 LR gate. Evaluate isolated 10% WSD POSTs "
-        "from exact LR5e-4 and LR1e-3 E20 PD checkpoints. If LR5e-4 is strictly worse, "
+        "Dense-153M Original BS32 E20 LR gate. Reuse the completed isolated LR5e-4 E20 "
+        "POST and compare it with the completed LR1e-3 E16 reference. If LR5e-4 is strictly worse, "
         "immediately start fresh LR1e-3/WD0.1 through E80 with inline POST gates. "
         "One node/two GPUs; minRuntime omitted."
     )
@@ -63,8 +63,8 @@ def register(experiment: str, revision: str) -> None:
     primary.update({
         "status": "submitted", "activeEpoch": 20, "activePhase": "matched_e20_post",
         "experiment": experiment, "beaker": experiment, "revision": revision,
-        "firstEvaluationEpoch": 20, "matchedBaselineEpoch": 20,
-        "reason": "Exact E20 PD retained; submitted a matched E20 LR gate and conditional fresh LR1e-3/WD0.1 follow-up.",
+        "firstEvaluationEpoch": 20, "baselineReferenceEpoch": 16,
+        "reason": "E20 POST retained; submitted its LR decision against the completed LR1e-3 E16 reference and conditional fresh LR1e-3/WD0.1 follow-up.",
     })
     workflow = report.setdefault("bs32LrWdHybridWorkflow", {})
     workflow.update({
