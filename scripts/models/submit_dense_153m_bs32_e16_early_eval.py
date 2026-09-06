@@ -127,6 +127,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--revision", required=True)
     parser.add_argument("--priority", default="urgent")
+    parser.add_argument("--name", default=NAME)
     parser.add_argument("--print-only", action="store_true")
     parser.add_argument("--register", action="store_true")
     args = parser.parse_args()
@@ -138,7 +139,7 @@ def main() -> None:
         print(json.dumps(spec, indent=2))
         return
     output = command(
-        ["beaker", "experiment", "create", "-", "--name", NAME, "--workspace", WORKSPACE],
+        ["beaker", "experiment", "create", "-", "--name", args.name, "--workspace", WORKSPACE],
         input_text=json.dumps(spec),
     )
     print(output, end="")

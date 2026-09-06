@@ -22744,7 +22744,7 @@
     {
       "id": "dense-153m-bs32-lr5e-4-wd0.033-e16-early-eval-v1",
       "policy": "dense_153m_bs32_e16_early_eval_v1",
-      "status": "canceled_before_source_ready",
+      "status": "running",
       "batchSequences": 32,
       "lr": "5e-4",
       "wd": "0.033",
@@ -22752,18 +22752,26 @@
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr5e-4_wd0.033_hybrid_v1/constant_lr/step109863",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr5e-4_wd0.033_hybrid_v1/post_decay_runs/e16-early-v1",
       "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr5e-4_wd0.033_hybrid_v1/post_decay_runs/e16-early-v1/step122071",
-      "experiment": "01M1TF47W90PV3S02J2Y755Y45",
-      "beaker": "01M1TF47W90PV3S02J2Y755Y45",
-      "job": "01M1TF481ASW4X0TASP1P0Q5XZ",
-      "beakerStatus": "canceled",
-      "revision": "86a2a71beee8036c63573f7c1c14d17db4b8102b",
+      "experiment": "01M1TG9TCKGX8D1NAJHS4ZHJFJ",
+      "beaker": "01M1TG9TCKGX8D1NAJHS4ZHJFJ",
+      "job": "01M1TG9TRGBBHPP1T7CS0N0SCY",
+      "beakerStatus": "running",
+      "revision": "4ab1fe5fe295bc5a77f44b3ee44b6fb711a5b72e",
       "gpuCount": 2,
       "nodeCount": 1,
       "automaticTaskRetries": 8,
       "minRuntimeOmitted": true,
       "decayFraction": 0.1,
       "diagnosticOnly": true,
-      "reason": "Premature waiting job was canceled before E16 became available. The prepared script remains unsubmitted until exact E16 readiness is confirmed."
+      "reason": "Exact E16 PD step109863 was saved successfully before the authorized ready01 decay/evaluation submission.",
+      "priorAttempts": [
+        {
+          "experiment": "01M1TF47W90PV3S02J2Y755Y45",
+          "job": "01M1TF481ASW4X0TASP1P0Q5XZ",
+          "status": "canceled_before_source_ready",
+          "reason": "Premature waiting attempt canceled before E16 became available; no decay started."
+        }
+      ]
     }
   ]
 }
