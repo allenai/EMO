@@ -28832,7 +28832,7 @@
     {
       "id": "bs128-lr1e-3-wd0.3-e2-frontier-v1",
       "policy": "dense_1b_dr_wt_embwd_early_frontier_v1",
-      "status": "queued",
+      "status": "complete",
       "batchSequences": 128,
       "lr": "1e-3",
       "wd": "0.3",
@@ -28849,15 +28849,15 @@
       "nodeCount": 1,
       "automaticTaskRetries": 8,
       "minRuntimeOmitted": true,
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "job": "01M1TVWH9W8Y0CNF63D2QR9751",
-      "expectedEta": "2026-09-06T08:24:55.879304+00:00",
+      "expectedEta": "2026-09-06T08:16:55.879304+00:00",
       "etaBasis": "matched historical stage durations"
     },
     {
       "id": "bs128-lr1e-3-wd0.3-e4-frontier-v1",
       "policy": "dense_1b_dr_wt_embwd_early_frontier_v1",
-      "status": "queued",
+      "status": "complete",
       "batchSequences": 128,
       "lr": "1e-3",
       "wd": "0.3",
@@ -28874,9 +28874,9 @@
       "nodeCount": 1,
       "automaticTaskRetries": 8,
       "minRuntimeOmitted": true,
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "job": "01M1TVWH9W8Y0CNF63D2QR9751",
-      "expectedEta": "2026-09-06T08:49:55.879304+00:00",
+      "expectedEta": "2026-09-06T08:41:55.879304+00:00",
       "etaBasis": "matched historical stage durations"
     },
     {
@@ -28943,7 +28943,7 @@
     {
       "id": "bs256-lr1e-3-wd0.3-e2-frontier-v1",
       "policy": "dense_1b_dr_wt_embwd_early_frontier_v1",
-      "status": "queued",
+      "status": "complete",
       "batchSequences": 256,
       "lr": "1e-3",
       "wd": "0.3",
@@ -28960,15 +28960,15 @@
       "nodeCount": 1,
       "automaticTaskRetries": 8,
       "minRuntimeOmitted": true,
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "job": "01M1TVWV6QZXSFC9GAR9HRBZ0S",
-      "expectedEta": "2026-09-06T08:23:09.055013+00:00",
+      "expectedEta": "2026-09-06T08:16:09.055013+00:00",
       "etaBasis": "matched historical stage durations"
     },
     {
       "id": "bs256-lr1e-3-wd0.3-e4-frontier-v1",
       "policy": "dense_1b_dr_wt_embwd_early_frontier_v1",
-      "status": "queued",
+      "status": "complete",
       "batchSequences": 256,
       "lr": "1e-3",
       "wd": "0.3",
@@ -28985,9 +28985,9 @@
       "nodeCount": 1,
       "automaticTaskRetries": 8,
       "minRuntimeOmitted": true,
-      "beakerStatus": "running",
+      "beakerStatus": "complete",
       "job": "01M1TVWV6QZXSFC9GAR9HRBZ0S",
-      "expectedEta": "2026-09-06T08:44:09.055013+00:00",
+      "expectedEta": "2026-09-06T08:37:09.055013+00:00",
       "etaBasis": "matched historical stage durations"
     }
   ]

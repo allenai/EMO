@@ -108,7 +108,7 @@ def main() -> None:
         raise RuntimeError("no early-frontier evaluations are registered")
     by_job: dict[str, list[dict[str, Any]]] = {}
     for record in records:
-        if record.get("status") in {"submitted", "scheduled", "running"}:
+        if record.get("status") in {"submitted", "scheduled", "queued", "running"}:
             if not record.get("job"):
                 raise RuntimeError(f"active record {record['id']} has no exact allowlisted job ID")
             by_job.setdefault(str(record["job"]), []).append(record)
