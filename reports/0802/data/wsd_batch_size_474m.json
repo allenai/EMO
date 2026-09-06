@@ -9020,7 +9020,7 @@
       "gpuCount": 2,
       "status": "running",
       "activeEpoch": 16,
-      "activePhase": "producer_pending",
+      "activePhase": "producer",
       "search": "small-model-original-lr-selected-extension",
       "beaker": "01M1TM1X22ARAY4WBX70QWT8Q3",
       "experiment": "01M1TM1X22ARAY4WBX70QWT8Q3",
@@ -9140,9 +9140,9 @@
       "rankMicrobatchSequences": 16,
       "gradientAccumulation": 1,
       "gpuCount": 2,
-      "status": "running",
+      "status": "complete",
       "activeEpoch": 4,
-      "activePhase": "producer",
+      "activePhase": "post_complete",
       "search": "small-model-original-lr-e4-probe",
       "beaker": "01M1T7J31A5SDZHBW113BF3NAD",
       "experiment": "01M1T7J31A5SDZHBW113BF3NAD",
@@ -9152,7 +9152,11 @@
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1",
       "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1",
       "postDecayOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1/.dense_474m_original_tuning_v1/post_decay_runs/e4-retry01",
-      "retainedPreDecayEpochs": [],
+      "retainedPreDecayEpochs": [
+        2,
+        3,
+        4
+      ],
       "comparisonEpoch": 4,
       "baselineLearningRate": "1e-3",
       "baselineValidationExact": 3.269,
@@ -9161,8 +9165,67 @@
       "embeddingWeightDecay": "zero",
       "automaticTaskRetries": 8,
       "minRuntimeOmitted": true,
-      "results": {},
-      "reason": "Submitted the corrected exact E1-to-E4 continuation in the canonical coordinate root; the 10% WSD and evaluation branch is isolated as e4-retry01.",
+      "results": {
+        "4": {
+          "acc": 33.660000000000004,
+          "avg8Accuracy": 41.47125,
+          "avg8Bpb": 1.4177625,
+          "batchSequences": 32,
+          "bpb": 0.9501,
+          "c4": 3.283,
+          "comparisonGroup": "post_decay",
+          "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1",
+          "coordinate": "lr2e-3-wd0.1",
+          "downstream": {
+            "arc_challenge": 26.090000000000003,
+            "arc_easy": 48.77,
+            "boolq": 53.0,
+            "csqa": 41.28,
+            "hellaswag": 33.660000000000004,
+            "openbookqa": 23.0,
+            "piqa": 64.69,
+            "socialiqa": 43.45,
+            "winogrande": 50.83
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.483,
+            "arc_easy": 1.539,
+            "boolq": 1.875,
+            "csqa": 1.545,
+            "hellaswag": 0.9501,
+            "openbookqa": 1.734,
+            "piqa": 1.26,
+            "socialiqa": 1.298,
+            "winogrande": 1.533
+          },
+          "dynamicRepacking": false,
+          "embeddingWeightDecay": "zero",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1/.dense_474m_original_tuning_v1/post_decay_runs/e4-retry01/step30518",
+          "epoch": 4,
+          "gap": -0.003,
+          "lr": "2e-3",
+          "mode": "bs32-probes",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1",
+          "policy": "dense_474m_original_tuning_v1",
+          "postOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1/.dense_474m_original_tuning_v1/post_decay_runs/e4-retry01",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1/step27465",
+          "source": "integrated_isolated_wsd_decay_heldout_and_downstream_eval",
+          "sourcePreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr2e-3_wd0.1/step27465",
+          "status": "complete",
+          "train": 3.286,
+          "validation": 3.283,
+          "validationExact": 3.283,
+          "wandb": "v0axwwu3",
+          "wd": "0.1",
+          "weightTying": false,
+          "beaker": "01M1T7J31A5SDZHBW113BF3NAD",
+          "experiment": "01M1T7J31A5SDZHBW113BF3NAD",
+          "job": "01M1T7J35E9QHNN41CWDRTGPY1",
+          "revision": "061adb8db6d9675489977deec8e8e8018fd7ff0c",
+          "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations."
+        }
+      },
+      "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations.",
       "job": "01M1T7J35E9QHNN41CWDRTGPY1"
     },
     {
@@ -18312,14 +18375,40 @@
       "bs32-probes": {
         "experiment": "01M1T7J31A5SDZHBW113BF3NAD",
         "job": "01M1T7J35E9QHNN41CWDRTGPY1",
-        "beakerStatus": "running",
-        "status": "running",
-        "decision": null,
+        "beakerStatus": "complete",
+        "status": "complete",
+        "decision": {
+          "baselineLearningRate": "1e-3",
+          "baselineValidationExact": 3.269,
+          "candidates": [
+            {
+              "learningRate": "5e-4",
+              "validationExact": 3.264
+            },
+            {
+              "learningRate": "2e-3",
+              "validationExact": 3.283
+            },
+            {
+              "learningRate": "1e-3",
+              "validationExact": 3.269
+            }
+          ],
+          "epoch": 4,
+          "policy": "dense_474m_original_tuning_v1",
+          "selectedLearningRate": "5e-4",
+          "selectedValidationExact": 3.264,
+          "strictlyImprovesBaseline": true,
+          "tiePolicy": "retain_1e-3",
+          "weightDecay": "0.1"
+        },
         "results": {
           "lr5e-4-wd0.1": [
             "4"
           ],
-          "lr2e-3-wd0.1": []
+          "lr2e-3-wd0.1": [
+            "4"
+          ]
         }
       },
       "bs128-e52": {
@@ -18373,6 +18462,31 @@
         "previousValidationExact": 3.101,
         "strictlyImprovesE48": false,
         "validationExact": 3.102
+      },
+      "bs32-probes": {
+        "baselineLearningRate": "1e-3",
+        "baselineValidationExact": 3.269,
+        "candidates": [
+          {
+            "learningRate": "5e-4",
+            "validationExact": 3.264
+          },
+          {
+            "learningRate": "2e-3",
+            "validationExact": 3.283
+          },
+          {
+            "learningRate": "1e-3",
+            "validationExact": 3.269
+          }
+        ],
+        "epoch": 4,
+        "policy": "dense_474m_original_tuning_v1",
+        "selectedLearningRate": "5e-4",
+        "selectedValidationExact": 3.264,
+        "strictlyImprovesBaseline": true,
+        "tiePolicy": "retain_1e-3",
+        "weightDecay": "0.1"
       }
     },
     "experimentHistory": [
