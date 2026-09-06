@@ -230,7 +230,7 @@ def state_root(coordinate: dict[str, Any]) -> Path:
 
 def claim_output(value: dict[str, Any], mode: str, coordinate: dict[str, Any]) -> Path:
     root = Path(str(coordinate["output"]))
-    marker = root / STATE_DIRECTORY / "owner.json"
+    marker = state_root(coordinate) / "owner.json"
     expected = {
         "policy": POLICY,
         "workflowId": value["id"],

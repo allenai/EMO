@@ -31,6 +31,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workspace", default=WORKSPACE)
     parser.add_argument("--priority", default="urgent")
     parser.add_argument("--name", default=NAME)
+    parser.add_argument("--replace-experiment")
     parser.add_argument("--print-only", action="store_true")
     parser.add_argument("--register", action="store_true")
     return parser.parse_args()
@@ -85,14 +86,25 @@ def build_spec(revision: str, priority: str) -> dict[str, Any]:
     return spec
 
 
-def write_report(experiment: str, revision: str) -> None:
+def write_report(
+    experiment: str, revision: str, *, replace_experiment: str | None = None
+) -> None:
     report = json.loads(REPORT.read_text())
     workflow = report.get("originalTuningWorkflow")
     if not isinstance(workflow, dict):
         raise RuntimeError("474M original tuning workflow is not registered")
     experiments = workflow.setdefault("experiments", {})
-    if MODE in experiments:
+    if MODE in experiments and experiments[MODE] != replace_experiment:
         raise RuntimeError(f"474M original tuning mode {MODE} is already registered")
+    if replace_experiment:
+        workflow.setdefault("experimentHistory", []).append(
+            {
+                "mode": MODE,
+                "experiment": replace_experiment,
+                "status": "canceled",
+                "reason": "Canceled after the isolated state-directory ownership guard failed before training.",
+            }
+        )
     experiments[MODE] = experiment
     sweeps = [sweep for sweep in report.get("batchSweeps", []) if sweep.get("id") == SWEEP_ID]
     if len(sweeps) != 1:
@@ -175,7 +187,9 @@ def main() -> None:
     if not identifiers:
         raise RuntimeError("submission succeeded without a parsed experiment ID")
     if args.register:
-        write_report(identifiers[0], args.revision)
+        write_report(
+            identifiers[0], args.revision, replace_experiment=args.replace_experiment
+        )
 
 
 if __name__ == "__main__":
