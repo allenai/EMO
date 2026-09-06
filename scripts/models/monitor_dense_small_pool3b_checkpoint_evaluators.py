@@ -31,7 +31,7 @@ def refresh(record: dict[str, Any]) -> str:
     if jobs:
         record["jobs"] = [job["id"] for job in jobs]
         record["job"] = jobs[-1]["id"]
-    logs = grid.experiment_logs(experiment, state)
+    logs = grid.experiment_logs(experiment, state, record.get("job"), tail=1000)
     results = [
         json.loads(raw)
         for coordinate, epoch, raw in RESULT.findall(logs)

@@ -82,8 +82,12 @@ def main() -> None:
             started_at = datetime.fromisoformat(str(started).replace("Z", "+00:00"))
             record["startedAt"] = started_at.isoformat()
             record["expectedEta"] = (started_at + timedelta(seconds=observed_seconds)).isoformat()
+        job_id = job.get("id")
         try:
-            logs = ANSI.sub("", command(["beaker", "experiment", "logs", experiment_id]))
+            logs = ANSI.sub(
+                "",
+                command(["beaker", "job", "logs", str(job_id), "--tail", "1000"]),
+            ) if job_id else ""
         except subprocess.CalledProcessError:
             logs = ""
         stage_starts = [

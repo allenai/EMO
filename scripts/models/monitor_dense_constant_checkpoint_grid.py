@@ -147,12 +147,15 @@ def experiment_logs(
     state: str,
     job: str | None = None,
     since: str | None = "70m",
+    tail: int | None = None,
 ) -> str:
     if state not in {"running", "complete", "failed"}:
         return ""
     if job:
         arguments = ["beaker", "job", "logs", job]
-        if since:
+        if tail is not None:
+            arguments.extend(["--tail", str(tail)])
+        elif since:
             arguments.extend(["--since", since])
     else:
         arguments = ["beaker", "experiment", "logs", experiment]
