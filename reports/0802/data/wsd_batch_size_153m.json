@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-05",
+  "updated": "2026-09-06",
   "title": "0802 Step 1-1 \u00b7 Dense 153M",
   "setup": "Dense 153M; 1B-unique-pool repeated-token regime; sequence length 4096. Report tables include BS32/64/128/256/512; completed higher-batch results and provenance remain fully visible. Rank microbatch is 16 sequences; BS32/64 use 2/4 GPUs with gradient accumulation 1/1. Warmup is token-matched across batches.",
   "selection": "For BS32, run the fresh E1 Cartesian grid LR{1e-3,2e-3} x WD{0.033,0.1}, select the healthy coordinate with the lowest validation CE, and then permanently lock both LR and WD to that exact E1 winner. Continue only the locked coordinate at E2/E4/E8/E12/E16 and then E24/E32/E40/E48/E56/E64, stopping at the first post-E16 non-improvement and performing no further tuning. Existing higher-batch chains retain their recorded terminal policies and every completed result and provenance item remains visible. BS64 continues its exact selected LR2e-3/WD0.1 trajectory in eight-epoch increments beyond E80, stopping at the first validation-CE non-improvement; E128 is the current launcher safety ceiling and must be extended if validation is still improving there. BS128 is terminal at E80, BS256 is terminal at E56, and BS512 is terminal at E48 by user policy. Completed E20/E28 work remains visible only in provenance and is omitted from summary rows; neither is a future launch target. BS32 now has one persistent saturation-gated continuation from E48; it uses the locked LR1e-3/WD0.033 coordinate and one canonical output directory. BS64 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS128 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS256 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS512 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS32 now includes a guarded LR5e-4/WD0.033 hybrid probe: POST E40 is the first gate, E32 is evaluated only to confirm a negative E40 result, and a promising or inconclusive probe continues through E80 before the selected LR is tested from scratch with WD0.1.",
@@ -11631,7 +11631,7 @@
       "rankMicrobatchSequences": 16,
       "gradientAccumulation": 1,
       "gpuCount": 2,
-      "status": "submitted",
+      "status": "running",
       "activeEpoch": 40,
       "activePhase": "probe_producer",
       "search": "small-model-bs32-lr-wd-hybrid",
@@ -22715,7 +22715,7 @@
   ],
   "bs32LrWdHybridWorkflow": {
     "policy": "dense_153m_bs32_lr_wd_hybrid_v1",
-    "status": "submitted",
+    "status": "running",
     "experiment": "01M1SXP400YKVFFZTCMCPPEMR7",
     "revision": "4e83e1e786862968b8af053417aa9d428a72c538",
     "probeLearningRate": "5e-4",
@@ -22733,7 +22733,37 @@
       80
     ],
     "minRuntimeOmitted": true,
-    "beakerStatus": "submitted",
-    "job": "01M1SXP43J107H79TZ71ER029E"
-  }
+    "beakerStatus": "running",
+    "job": "01M1SXP43J107H79TZ71ER029E",
+    "activePhase": "probe_producer",
+    "activeEpoch": 40,
+    "activeLearningRate": "5e-4",
+    "activeWeightDecay": "0.033"
+  },
+  "earlyDiagnosticEvaluations": [
+    {
+      "id": "dense-153m-bs32-lr5e-4-wd0.033-e16-early-eval-v1",
+      "policy": "dense_153m_bs32_e16_early_eval_v1",
+      "status": "running_waiting_for_source",
+      "batchSequences": 32,
+      "lr": "5e-4",
+      "wd": "0.033",
+      "epoch": 16,
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr5e-4_wd0.033_hybrid_v1/constant_lr/step109863",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr5e-4_wd0.033_hybrid_v1/post_decay_runs/e16-early-v1",
+      "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr5e-4_wd0.033_hybrid_v1/post_decay_runs/e16-early-v1/step122071",
+      "experiment": "01M1TF47W90PV3S02J2Y755Y45",
+      "beaker": "01M1TF47W90PV3S02J2Y755Y45",
+      "job": "01M1TF481ASW4X0TASP1P0Q5XZ",
+      "beakerStatus": "running",
+      "revision": "86a2a71beee8036c63573f7c1c14d17db4b8102b",
+      "gpuCount": 2,
+      "nodeCount": 1,
+      "automaticTaskRetries": 8,
+      "minRuntimeOmitted": true,
+      "decayFraction": 0.1,
+      "diagnosticOnly": true,
+      "reason": "Waits for exact retained E16 PD and then runs one isolated early POST diagnostic without changing the E40 gate."
+    }
+  ]
 }
