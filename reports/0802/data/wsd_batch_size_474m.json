@@ -2,7 +2,7 @@
   "updated": "2026-09-06",
   "title": "0802 Step 1-1 \u00b7 Dense 474M",
   "setup": "Dense 474M; 1B-unique-pool repeated-token regime; sequence length 4096. Report tables include BS32/64/128/256/512; completed higher-batch results and provenance remain fully visible. Rank microbatch is 16 sequences; BS32/64 use 2/4 GPUs with gradient accumulation 1/1. Warmup is token-matched across batches.",
-  "selection": "For BS32, the user declared LR1e-3/WD0.1 the E1 winner after it tied the minimum validation CE, preferring the higher WD for later epochs. Both LR and WD are now permanently locked: continue only this exact coordinate through E2/E4/E8/E12/E16 and then E24/E32/E40/E48/E56/E64, stopping at the first post-E16 non-improvement. The selected E1 trajectory also supplies exact-coordinate E0.125/E0.25/E0.5 decay endpoints. All nonwinning E1 results and recovery provenance remain visible. Existing higher-batch chains retain their recorded terminal policies. Completed E20/E28 work remains visible only in provenance and is omitted from summary rows; neither is a future launch target. BS32 now has one persistent saturation-gated continuation from E24; it uses the locked LR1e-3/WD0.1 coordinate and one canonical output directory. BS64 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS128 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.3 and its immediate neighbors. BS256 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.333 and its immediate neighbors. BS512 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.3 and its immediate neighbors. Original-model tuning now includes BS32 LR5e-4 and LR2e-3 WD0.1 POST E4 probes against LR1e-3/WD0.1, plus a user-authorized BS128 LR2e-3/WD0.3 E52 extension after the rounded E40/E48 tie.",
+  "selection": "For BS32, the user declared LR1e-3/WD0.1 the E1 winner after it tied the minimum validation CE, preferring the higher WD for later epochs. Both LR and WD are now permanently locked: continue only this exact coordinate through E2/E4/E8/E12/E16 and then E24/E32/E40/E48/E56/E64, stopping at the first post-E16 non-improvement. The selected E1 trajectory also supplies exact-coordinate E0.125/E0.25/E0.5 decay endpoints. All nonwinning E1 results and recovery provenance remain visible. Existing higher-batch chains retain their recorded terminal policies. Completed E20/E28 work remains visible only in provenance and is omitted from summary rows; neither is a future launch target. BS32 now has one persistent saturation-gated continuation from E24; it uses the locked LR1e-3/WD0.1 coordinate and one canonical output directory. BS64 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS128 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.3 and its immediate neighbors. BS256 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.333 and its immediate neighbors. BS512 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.3 and its immediate neighbors. Original-model tuning now includes BS32 LR5e-4 and LR2e-3 WD0.1 POST E4 probes against LR1e-3/WD0.1, plus a user-authorized BS128 LR2e-3/WD0.3 E52 extension after the rounded E40/E48 tie. Because LR5e-4/WD0.1 strictly beat LR1e-3/WD0.1 at E4, its exact E4 PD frontier continues through E32 with POST evaluations at E16, E24, and E32.",
   "selectionPolicy": {
     "allowAllCompletedCoordinates": true,
     "nondecreasingWd": true,
@@ -9008,7 +9008,7 @@
     },
     {
       "id": "dense-474m-bs32-lr5e-4-wd0.1-e4-probe-v1",
-      "policy": "dense_474m_original_tuning_v1",
+      "policy": "dense_474m_original_lr5e4_e32_v1",
       "batchSequences": 32,
       "globalBatchTokens": 131072,
       "contextLength": 4096,
@@ -9018,15 +9018,15 @@
       "rankMicrobatchSequences": 16,
       "gradientAccumulation": 1,
       "gpuCount": 2,
-      "status": "complete",
-      "activeEpoch": 4,
-      "activePhase": "post_complete",
-      "search": "small-model-original-lr-e4-probe",
-      "beaker": "01M1T7J31A5SDZHBW113BF3NAD",
-      "experiment": "01M1T7J31A5SDZHBW113BF3NAD",
-      "revision": "061adb8db6d9675489977deec8e8e8018fd7ff0c",
-      "sourceEpoch": 1,
-      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/step6866",
+      "status": "running",
+      "activeEpoch": 16,
+      "activePhase": "producer_pending",
+      "search": "small-model-original-lr-selected-extension",
+      "beaker": "01M1TM1X22ARAY4WBX70QWT8Q3",
+      "experiment": "01M1TM1X22ARAY4WBX70QWT8Q3",
+      "revision": "8da2785254e0a5e8b97dd1cc7c2b634976a8c15f",
+      "sourceEpoch": 4,
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/step27465",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1",
       "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1",
       "postDecayOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/.dense_474m_original_tuning_v1/post_decay_runs/e4-retry01",
@@ -9099,12 +9099,34 @@
           "beaker": "01M1T7J31A5SDZHBW113BF3NAD",
           "experiment": "01M1T7J31A5SDZHBW113BF3NAD",
           "job": "01M1T7J35E9QHNN41CWDRTGPY1",
-          "revision": "061adb8db6d9675489977deec8e8e8018fd7ff0c",
+          "revision": "8da2785254e0a5e8b97dd1cc7c2b634976a8c15f",
           "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations."
         }
       },
-      "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations.",
-      "job": "01M1T7J35E9QHNN41CWDRTGPY1"
+      "reason": "Continuing the selected exact E4 PD frontier through E32, with isolated POST evaluations at E16, E24, and E32.",
+      "job": "01M1TM1X5JR6XV55Q1QWZHGMX6",
+      "continuations": [
+        {
+          "experiment": "01M1T7J31A5SDZHBW113BF3NAD",
+          "status": "complete",
+          "sourceEpoch": 1,
+          "targetEpoch": 4,
+          "reason": "Completed the LR5e-4 E4 probe and established the winning E4 source."
+        },
+        {
+          "experiment": "01M1TKPKKAWQ7GKYYHTK9CEXFW",
+          "status": "complete",
+          "sourceEpoch": 1,
+          "targetEpoch": 4,
+          "reason": "Completed the LR5e-4 E4 probe and established the winning E4 source."
+        }
+      ],
+      "targetEpoch": 32,
+      "evaluationEpochs": [
+        16,
+        24,
+        32
+      ]
     },
     {
       "id": "dense-474m-bs32-lr2e-3-wd0.1-e4-probe-v1",
@@ -18273,11 +18295,12 @@
   "originalTuningWorkflow": {
     "policy": "dense_474m_original_tuning_v1",
     "status": "running",
-    "revision": "061adb8db6d9675489977deec8e8e8018fd7ff0c",
+    "revision": "8da2785254e0a5e8b97dd1cc7c2b634976a8c15f",
     "minRuntimeOmitted": true,
     "experiments": {
       "bs32-probes": "01M1T7J31A5SDZHBW113BF3NAD",
-      "bs128-e52": "01M1T7J3XM38XR2BP4GA7W5F26"
+      "bs128-e52": "01M1T7J3XM38XR2BP4GA7W5F26",
+      "bs32-lr5e4-e32": "01M1TM1X22ARAY4WBX70QWT8Q3"
     },
     "bs32Baseline": {
       "learningRate": "1e-3",
@@ -18304,17 +18327,22 @@
         "job": "01M1T7J41WMS9D8WKECXXRKFD7",
         "beakerStatus": "complete",
         "status": "complete",
-        "decision": {
-          "epoch": 52,
-          "policy": "dense_474m_original_tuning_v1",
-          "previousEpoch": 48,
-          "previousValidationExact": 3.101,
-          "strictlyImprovesE48": false,
-          "validationExact": 3.102
-        },
+        "decision": null,
         "results": {
           "bs128-lr2e-3-wd0.3-e52": [
             "52"
+          ]
+        }
+      },
+      "bs32-lr5e4-e32": {
+        "experiment": "01M1TM1X22ARAY4WBX70QWT8Q3",
+        "job": "01M1TM1X5JR6XV55Q1QWZHGMX6",
+        "beakerStatus": "running",
+        "status": "running",
+        "decision": null,
+        "results": {
+          "lr5e-4-wd0.1": [
+            "4"
           ]
         }
       }
@@ -18346,6 +18374,14 @@
         "strictlyImprovesE48": false,
         "validationExact": 3.102
       }
-    }
+    },
+    "experimentHistory": [
+      {
+        "mode": "bs32-lr5e4-e32",
+        "experiment": "01M1TKPKKAWQ7GKYYHTK9CEXFW",
+        "status": "canceled",
+        "reason": "Canceled after the isolated state-directory ownership guard failed before training."
+      }
+    ]
   }
 }
