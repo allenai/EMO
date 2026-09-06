@@ -22744,7 +22744,7 @@
     {
       "id": "dense-153m-bs32-lr5e-4-wd0.033-e16-early-eval-v1",
       "policy": "dense_153m_bs32_e16_early_eval_v1",
-      "status": "running_waiting_for_source",
+      "status": "canceled_before_source_ready",
       "batchSequences": 32,
       "lr": "5e-4",
       "wd": "0.033",
@@ -22755,7 +22755,7 @@
       "experiment": "01M1TF47W90PV3S02J2Y755Y45",
       "beaker": "01M1TF47W90PV3S02J2Y755Y45",
       "job": "01M1TF481ASW4X0TASP1P0Q5XZ",
-      "beakerStatus": "running",
+      "beakerStatus": "canceled",
       "revision": "86a2a71beee8036c63573f7c1c14d17db4b8102b",
       "gpuCount": 2,
       "nodeCount": 1,
@@ -22763,7 +22763,7 @@
       "minRuntimeOmitted": true,
       "decayFraction": 0.1,
       "diagnosticOnly": true,
-      "reason": "Waits for exact retained E16 PD and then runs one isolated early POST diagnostic without changing the E40 gate."
+      "reason": "Premature waiting job was canceled before E16 became available. The prepared script remains unsubmitted until exact E16 readiness is confirmed."
     }
   ]
 }

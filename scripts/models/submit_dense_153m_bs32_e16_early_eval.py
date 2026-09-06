@@ -74,11 +74,11 @@ def build_spec(revision: str, priority: str) -> dict[str, Any]:
 def write_report(experiment: str, revision: str) -> None:
     report = json.loads(REPORT.read_text())
     evaluations = report.setdefault("earlyDiagnosticEvaluations", [])
-    if any(item.get("id") == NAME for item in evaluations):
-        raise RuntimeError(f"{NAME} is already registered")
     manifest = json.loads(MANIFEST.read_text())
-    evaluations.append(
-        {
+    matches = [item for item in evaluations if item.get("id") == NAME]
+    if len(matches) > 1:
+        raise RuntimeError(f"duplicate registry entries for {NAME}")
+    record = {
             "id": NAME,
             "policy": POLICY,
             "status": "submitted_waiting_for_source",
@@ -100,7 +100,24 @@ def write_report(experiment: str, revision: str) -> None:
             "diagnosticOnly": True,
             "reason": "Waits for exact retained E16 PD and then runs one isolated early POST diagnostic without changing the E40 gate.",
         }
-    )
+    if matches:
+        existing = matches[0]
+        if existing.get("status") != "canceled_before_source_ready":
+            raise RuntimeError(f"{NAME} is already active or resolved")
+        prior_attempts = list(existing.get("priorAttempts", []))
+        prior_attempts.append(
+            {
+                "experiment": existing.get("experiment"),
+                "job": existing.get("job"),
+                "status": existing.get("status"),
+                "reason": existing.get("reason"),
+            }
+        )
+        existing.clear()
+        existing.update(record)
+        existing["priorAttempts"] = prior_attempts
+    else:
+        evaluations.append(record)
     report["updated"] = datetime.now(tz=UTC).date().isoformat()
     REPORT.write_text(json.dumps(report, indent=2) + "\n")
     REPORT.with_suffix(".js").write_text("window.ICSL_REPORT_DATA=" + json.dumps(report, separators=(",", ":")) + ";\n")
