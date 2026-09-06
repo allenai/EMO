@@ -246,11 +246,18 @@ def refresh() -> dict[str, Any]:
     experiments = workflow.get("experiments", {})
     if not experiments:
         raise RuntimeError("Dense-474M original tuning workflow has no experiments")
+    prior_mode_summaries = workflow.get("modes", {})
     mode_summaries: dict[str, Any] = {}
     for mode in MODES:
         experiment_id = experiments.get(mode)
         if experiment_id:
             mode_summaries[mode] = refresh_mode(report, mode, str(experiment_id))
+            if mode_summaries[mode].get("decision") is None:
+                prior_decision = (prior_mode_summaries.get(mode) or {}).get("decision")
+                if prior_decision is None:
+                    prior_decision = (workflow.get("decisions", {}) or {}).get(mode)
+                if prior_decision is not None:
+                    mode_summaries[mode]["decision"] = prior_decision
             decision = mode_summaries[mode].get("decision")
             if decision is not None:
                 workflow.setdefault("decisions", {})[mode] = decision

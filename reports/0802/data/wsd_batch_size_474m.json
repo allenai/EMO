@@ -9020,7 +9020,7 @@
       "gpuCount": 2,
       "status": "running",
       "activeEpoch": 16,
-      "activePhase": "producer",
+      "activePhase": "post",
       "search": "small-model-original-lr-selected-extension",
       "beaker": "01M1TM1X22ARAY4WBX70QWT8Q3",
       "experiment": "01M1TM1X22ARAY4WBX70QWT8Q3",
@@ -9031,9 +9031,7 @@
       "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1",
       "postDecayOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/.dense_474m_original_tuning_v1/post_decay_runs/e4-retry01",
       "retainedPreDecayEpochs": [
-        2,
-        3,
-        4
+        16
       ],
       "comparisonEpoch": 4,
       "baselineLearningRate": "1e-3",
@@ -18416,7 +18414,14 @@
         "job": "01M1T7J41WMS9D8WKECXXRKFD7",
         "beakerStatus": "complete",
         "status": "complete",
-        "decision": null,
+        "decision": {
+          "epoch": 52,
+          "policy": "dense_474m_original_tuning_v1",
+          "previousEpoch": 48,
+          "previousValidationExact": 3.101,
+          "strictlyImprovesE48": false,
+          "validationExact": 3.102
+        },
         "results": {
           "bs128-lr2e-3-wd0.3-e52": [
             "52"
