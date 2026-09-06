@@ -113,6 +113,14 @@ def register(batch: int, runs: list[dict[str, Any]], experiment: str, revision: 
     REPORT.with_suffix(".js").write_text("window.ICSL_DATA_LOADER_DATA=" + json.dumps(report, separators=(",", ":")) + ";\n")
 
 
+def ensure_not_registered(runs: list[dict[str, Any]]) -> None:
+    report = json.loads(REPORT.read_text())
+    existing = {record.get("id") for record in report.get("earlyFrontierEvaluations", [])}
+    duplicates = sorted(existing.intersection(item["id"] for item in runs))
+    if duplicates:
+        raise RuntimeError(f"refusing already-registered early-frontier runs: {duplicates}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch", type=int, choices=(128, 256), required=True)
@@ -123,6 +131,7 @@ def main() -> None:
     args = parser.parse_args()
     runs = load_runs(args.batch)
     validate_revision(args.revision)
+    ensure_not_registered(runs)
     spec = build_spec(args.batch, args.revision, args.priority)
     if args.print_only:
         print(json.dumps(spec, indent=2))

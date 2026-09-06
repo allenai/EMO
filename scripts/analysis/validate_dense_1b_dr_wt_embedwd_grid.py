@@ -198,8 +198,9 @@ def main() -> None:
     assert all(row.count("<th>") == 19 for row in grouped_headers)
     assert all("BS128 · DR+WT+EmbedWD" in row for row in grouped_headers)
     assert all("BS256 · DR+WT+EmbedWD" in row for row in grouped_headers)
-    assert "wsd_data_loader_1b.js?v=20260821-pdpost" in html
-    assert "data_loader_charts.js?v=20260821-pdpost" in html
+    assert "wsd_data_loader_1b.js?v=20260906-redecay-results" in html
+    assert "data_loader_charts.js?v=20260826-coordinate-grid-status" in html
+    assert "data_loader_early_frontier.js?v=20260906-v1" in html
     assert "Val CE (POST | PD)" in html
     charts = CHARTS.read_text()
     assert "Unknown" in charts

@@ -131,6 +131,10 @@ def main() -> None:
         results = {identifier: json.loads(raw) for identifier, raw in RESULT.findall(logs)}
         active_id = starts[-1][1] if starts else None
         steps = STEP.findall(logs)
+        unresolved = [record for record in job_records if str(record["id"]) not in results]
+        inferred_active_id = active_id
+        if inferred_active_id is None and state == "running" and unresolved:
+            inferred_active_id = str(min(unresolved, key=lambda item: int(item["epoch"]))["id"])
         for record in job_records:
             identifier = str(record["id"])
             record["beakerStatus"] = state
@@ -152,7 +156,12 @@ def main() -> None:
                     began + timedelta(seconds=completed_before + int(record["expectedRuntimeSeconds"]))
                 ).isoformat()
                 record["etaBasis"] = "matched historical stage durations"
-            record["status"] = "running" if identifier == active_id else state
+            if identifier == inferred_active_id:
+                record["status"] = "running"
+            elif state in {"running", "scheduled", "submitted"}:
+                record["status"] = "queued"
+            else:
+                record["status"] = state
             if identifier == active_id and steps:
                 timestamp, current, endpoint, trainer_eta = steps[-1]
                 observed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
