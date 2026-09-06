@@ -1,0 +1,54 @@
+{
+  "policy": "dense_1b_dr_wt_embwd_redecay_retry01_v1",
+  "decayFraction": 0.1,
+  "runs": [
+    {
+      "id": "bs128-lr1e-3-wd0.3-e24-retry01",
+      "batchSequences": 128,
+      "learningRate": "1e-3",
+      "weightDecay": "0.3",
+      "epoch": 24,
+      "sourceStep": 41198,
+      "endpointStep": 45777,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulation": 2,
+      "warmupSteps": 192,
+      "coordinateOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd0.3",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd0.3/step41198",
+      "retryOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs128_dr_wt_embwd_lr1e-3_wd0.3/.all_postdecay_policy/post_decay_runs/e24-retry01",
+      "originalValidationExact": 2.98151
+    },
+    {
+      "id": "bs256-lr1e-3-wd1.0-e36-retry01",
+      "batchSequences": 256,
+      "learningRate": "1e-3",
+      "weightDecay": "1.0",
+      "epoch": 36,
+      "sourceStep": 30899,
+      "endpointStep": 34333,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulation": 4,
+      "warmupSteps": 96,
+      "coordinateOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0/step30899",
+      "retryOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0/.all_postdecay_policy/post_decay_runs/e36-retry01",
+      "originalValidationExact": 3.01948
+    },
+    {
+      "id": "bs256-lr1e-3-wd1.0-e40-retry01",
+      "batchSequences": 256,
+      "learningRate": "1e-3",
+      "weightDecay": "1.0",
+      "epoch": 40,
+      "sourceStep": 34331,
+      "endpointStep": 38147,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulation": 4,
+      "warmupSteps": 96,
+      "coordinateOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0",
+      "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0/step34331",
+      "retryOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/bs256_dr_wt_embwd_lr1e-3_wd1.0/.all_postdecay_policy/post_decay_runs/e40-retry01",
+      "originalValidationExact": 3.01899
+    }
+  ]
+}
