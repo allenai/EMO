@@ -9019,8 +9019,8 @@
       "gradientAccumulation": 1,
       "gpuCount": 2,
       "status": "running",
-      "activeEpoch": 16,
-      "activePhase": "post",
+      "activeEpoch": 24,
+      "activePhase": "producer",
       "search": "small-model-original-lr-selected-extension",
       "beaker": "01M1TM1X22ARAY4WBX70QWT8Q3",
       "experiment": "01M1TM1X22ARAY4WBX70QWT8Q3",
@@ -9099,9 +9099,67 @@
           "job": "01M1T7J35E9QHNN41CWDRTGPY1",
           "revision": "8da2785254e0a5e8b97dd1cc7c2b634976a8c15f",
           "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations."
+        },
+        "16": {
+          "acc": 39.800000000000004,
+          "avg8Accuracy": 44.7025,
+          "avg8Bpb": 1.3319375,
+          "batchSequences": 32,
+          "bpb": 0.9135,
+          "c4": 3.147,
+          "comparisonGroup": "post_decay",
+          "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1",
+          "coordinate": "lr5e-4-wd0.1",
+          "downstream": {
+            "arc_challenge": 25.419999999999998,
+            "arc_easy": 51.74999999999999,
+            "boolq": 57.95,
+            "csqa": 48.65,
+            "hellaswag": 39.800000000000004,
+            "openbookqa": 29.4,
+            "piqa": 67.52,
+            "socialiqa": 44.17,
+            "winogrande": 50.91
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.379,
+            "arc_easy": 1.364,
+            "boolq": 1.67,
+            "csqa": 1.381,
+            "hellaswag": 0.9135,
+            "openbookqa": 1.614,
+            "piqa": 1.221,
+            "socialiqa": 1.255,
+            "winogrande": 1.528
+          },
+          "dynamicRepacking": false,
+          "embeddingWeightDecay": "zero",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/.dense_474m_original_lr5e4_e32_v1/post_decay_runs/e16-retry01/step122071",
+          "epoch": 16,
+          "gap": 0.274,
+          "lr": "5e-4",
+          "mode": "bs32-lr5e4-e32",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1",
+          "policy": "dense_474m_original_lr5e4_e32_v1",
+          "postOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/.dense_474m_original_lr5e4_e32_v1/post_decay_runs/e16-retry01",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/step109863",
+          "source": "integrated_isolated_wsd_decay_heldout_and_downstream_eval",
+          "sourcePreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/step109863",
+          "status": "complete",
+          "train": 2.873,
+          "validation": 3.147,
+          "validationExact": 3.147,
+          "wandb": "y5slf92i",
+          "wd": "0.1",
+          "weightTying": false,
+          "beaker": "01M1TM1X22ARAY4WBX70QWT8Q3",
+          "experiment": "01M1TM1X22ARAY4WBX70QWT8Q3",
+          "job": "01M1TM1X5JR6XV55Q1QWZHGMX6",
+          "revision": "8da2785254e0a5e8b97dd1cc7c2b634976a8c15f",
+          "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations."
         }
       },
-      "reason": "Continuing the selected exact E4 PD frontier through E32, with isolated POST evaluations at E16, E24, and E32.",
+      "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations.",
       "job": "01M1TM1X5JR6XV55Q1QWZHGMX6",
       "continuations": [
         {
@@ -18436,7 +18494,8 @@
         "decision": null,
         "results": {
           "lr5e-4-wd0.1": [
-            "4"
+            "4",
+            "16"
           ]
         }
       }
