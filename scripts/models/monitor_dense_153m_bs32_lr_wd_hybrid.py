@@ -32,6 +32,13 @@ DECISION = re.compile(r"DENSE153M_BS32_HYBRID_LR_DECISION json=(\{.*\})$", re.MU
 COMPLETE = re.compile(
     r"DENSE153M_BS32_HYBRID_WORKFLOW_COMPLETE selectedLearningRate=([^ ]+) followupWeightDecay=([^ ]+)"
 )
+E20_GATE_RESULT = re.compile(
+    r"DENSE153M_BS32_E20_GATE_RESULT label=(probe|baseline) json=(\{.*\})$", re.MULTILINE
+)
+E20_GATE_START = re.compile(
+    r"DENSE153M_BS32_E20_GATE_POST_START label=(probe|baseline) source=([^ ]+) output=([^ ]+)"
+)
+E20_GATE_HOLD = re.compile(r"DENSE153M_BS32_E20_GATE_COMPLETE action=hold_no_followup")
 
 
 def run(arguments: list[str]) -> str:
@@ -181,6 +188,22 @@ def refresh() -> dict[str, Any]:
         workflow["selectedLearningRate"] = decision["selectedLearningRate"]
         primary["lrDecision"] = decision
 
+    for label, raw_result in E20_GATE_RESULT.findall(logs):
+        result = json.loads(raw_result)
+        result.update(
+            {
+                "status": "complete",
+                "beaker": experiment_id,
+                "experiment": experiment_id,
+                "job": job.get("id"),
+                "revision": primary.get("revision"),
+            }
+        )
+        if label == "probe":
+            primary.setdefault("results", {})["20"] = result
+        else:
+            workflow.setdefault("matchedBaselineResults", {})["20"] = result
+
     followup_matches = FOLLOWUP_START.findall(logs)
     followup: dict[str, Any] | None = None
     if followup_matches:
@@ -207,6 +230,10 @@ def refresh() -> dict[str, Any]:
     starts.extend(
         (match.start(), "producer", *match.groups()[:3], int(match.group(4)))
         for match in PD_START.finditer(logs)
+    )
+    starts.extend(
+        (match.start(), "post", match.group(1), "5e-4" if match.group(1) == "probe" else "1e-3", "0.033", 20)
+        for match in E20_GATE_START.finditer(logs)
     )
     starts.extend(
         (match.start(), "post", *match.groups()[:3], int(match.group(4)))
@@ -255,6 +282,12 @@ def refresh() -> dict[str, Any]:
             "The integrated hybrid task is terminal without a complete workflow marker."
         )
         workflow["status"] = "failed"
+
+    if E20_GATE_HOLD.search(logs):
+        primary["status"] = "complete"
+        primary["activeEpoch"] = 20
+        primary["activePhase"] = "lr_decided_no_followup"
+        workflow.update({"status": "complete", "activePhase": "lr_decided_no_followup", "activeEpoch": 20})
 
     report["updated"] = datetime.now(tz=UTC).date().isoformat()
     REPORT.write_text(json.dumps(report, indent=2) + "\n")
