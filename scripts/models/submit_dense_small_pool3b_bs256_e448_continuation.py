@@ -82,7 +82,7 @@ def build_spec(item: dict[str, Any], revision: str, priority: str) -> dict[str, 
     task["name"] = "main"
     task["arguments"] = ["python", "scripts/models/run_dense_small_pool3b_bs256_e448_continuation.py"]
     task["resources"] = {"gpuCount": 8, "sharedMemory": "10 GiB"}
-    task["context"] = {"priority": priority, "minRuntime": "8h", "autoResume": True}
+    task["context"] = {"priority": priority, "autoResume": True}
     task.update(
         replicas=2,
         leaderSelection=True,
@@ -97,7 +97,8 @@ def build_spec(item: dict[str, Any], revision: str, priority: str) -> dict[str, 
         "from exact retained E384 PD step988769 to exact E448 PD step1153564, then "
         "immediate isolated uncapped 10% WSD decay and heldout/downstream evaluation. "
         "Two synchronized 8-GPU nodes, rank microbatch 16, gradient accumulation 1, "
-        "global batch 256, one logical writer, auto-resume, eight retries; stop at E448."
+        "global batch 256, one logical writer, no minRuntime, auto-resume, eight retries; "
+        "save every four epochs and stop at E448."
     )
     return spec
 
@@ -107,7 +108,8 @@ def validate_spec(spec: dict[str, Any], revision: str) -> None:
     env = {x["name"]: x.get("value") for x in task.get("envVars", [])}
     assert task["replicas"] == 2 and task["resources"]["gpuCount"] == 8
     assert task["leaderSelection"] and task["hostNetworking"]
-    assert task["context"] == {"priority": task["context"]["priority"], "minRuntime": "8h", "autoResume": True}
+    assert task["context"] == {"priority": task["context"]["priority"], "autoResume": True}
+    assert "minRuntime" not in task["context"]
     assert spec["retry"]["allowedTaskRetries"] == 8
     assert env["GIT_REF"] == revision and env["NUM_NODES"] == "2"
     assert "GANTRY_RDZV_ID" in env and "GANTRY_RDZV_PORT" in env
@@ -137,7 +139,7 @@ def register(report: dict[str, Any], experiment: str, revision: str) -> None:
         "futureEvaluatorSubmissionsAuthorized": False,
         "nodeCount": 2, "gpusPerNode": 8, "gpuCount": 16,
         "rankMicrobatchSequences": 16, "gradientAccumulationSteps": 1,
-        "minRuntime": "8h", "minRuntimeOmitted": False,
+        "minRuntimeOmitted": True,
         "runtimeEstimate": {"producerHours": [8, 10], "postHours": [6.5, 7.5], "evaluationAndOverheadHours": [1, 2], "totalHours": [16, 20]},
         "submittedAt": datetime.now(tz=UTC).isoformat(),
     })
