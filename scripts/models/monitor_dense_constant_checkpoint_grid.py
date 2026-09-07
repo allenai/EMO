@@ -397,6 +397,11 @@ def refresh_producer(record: dict[str, Any]) -> str:
         ),
         None,
     )
+    active_target_epochs = (
+        [int(epoch) for epoch in record.get("continuationCheckpointEpochs", [])]
+        if checkpoint_continuation and state in ACTIVE_BEAKER_STATES
+        else [int(epoch) for epoch in record["targetEpochs"]]
+    )
     record["currentEpoch"] = (
         int(record["stopAfterEpoch"])
         if integrated_pool3b and record.get("currentPhase") == "terminal"
@@ -404,7 +409,7 @@ def refresh_producer(record: dict[str, Any]) -> str:
         if integrated_pool3b and due_post_epoch is not None
         else 1
         if pool3b_v2 and 1 not in resolved
-        else next((epoch for epoch in record["targetEpochs"] if epoch not in resolved), None)
+        else next((epoch for epoch in active_target_epochs if epoch not in resolved), None)
     )
     if integrated_pool3b:
         if record.get("currentPhase") != "terminal":
