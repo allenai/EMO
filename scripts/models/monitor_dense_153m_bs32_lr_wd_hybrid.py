@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -26,7 +26,10 @@ POST_START = re.compile(
     r"DENSE153M_BS32_HYBRID_POST_START phase=(probe|followup) lr=([^ ]+) wd=([^ ]+) epoch=([0-9]+)"
 )
 FOLLOWUP_START = re.compile(
-    r"DENSE153M_BS32_HYBRID_FOLLOWUP_START lr=([^ ]+) wd=([^ ]+) output=([^ ]+)"
+    r"DENSE153M_BS32_HYBRID_FOLLOWUP_START lr=(\S+) wd=(\S+) output=(\S+)"
+)
+STEP = re.compile(
+    r"^(\S+).*\[step=([0-9]+)/([0-9]+).*?,eta=([^,\]]+)\]", re.MULTILINE
 )
 DECISION = re.compile(r"DENSE153M_BS32_HYBRID_LR_DECISION json=(\{.*\})$", re.MULTILINE)
 COMPLETE = re.compile(
@@ -87,6 +90,18 @@ def find_sweep(report: dict[str, Any], identifier: str) -> dict[str, Any] | None
 
 def latest_job(experiment: dict[str, Any]) -> dict[str, Any]:
     return (experiment.get("jobs") or [{}])[-1]
+
+
+def duration_seconds(value: str) -> int:
+    match = re.fullmatch(
+        r"(?:(?P<days>[0-9]+)d)?(?:(?P<hours>[0-9]+)h)?"
+        r"(?:(?P<minutes>[0-9]+)m)?(?:(?P<seconds>[0-9]+)s)?",
+        value,
+    )
+    if match is None:
+        raise ValueError(f"unrecognized trainer ETA {value}")
+    parts = {key: int(raw or 0) for key, raw in match.groupdict().items()}
+    return parts["days"] * 86400 + parts["hours"] * 3600 + parts["minutes"] * 60 + parts["seconds"]
 
 
 def update_result(
@@ -209,10 +224,27 @@ def refresh() -> dict[str, Any]:
     if followup_matches:
         lr, wd, output = followup_matches[-1]
         followup = followup_sweep(report, primary, lr, wd, output)
+        followup["output"] = output
+        followup["constantOutput"] = output + "/constant_lr"
+        followup["beakerStatus"] = live_state
+        followup["job"] = job.get("id")
+        followup["jobs"] = [job.get("id")] if job.get("id") else []
         primary["status"] = "complete"
         primary["activeEpoch"] = max([int(epoch) for epoch in primary.get("results", {})] or [40])
         primary["activePhase"] = "lr_decided"
         workflow["status"] = "followup_running"
+    elif str(workflow.get("activePhase", "")).startswith("followup_"):
+        selected_lr = str(workflow.get("activeLearningRate") or "1e-3")
+        followup = find_sweep(
+            report, f"dense-153m-bs32-lr{selected_lr}-wd0.1-hybrid-v1"
+        )
+        if followup is not None:
+            clean_output = str(followup.get("output", "")).split()[0]
+            followup["output"] = clean_output
+            followup["constantOutput"] = clean_output + "/constant_lr"
+            followup["beakerStatus"] = live_state
+            followup["job"] = job.get("id")
+            followup["jobs"] = [job.get("id")] if job.get("id") else []
 
     for phase, lr, wd, raw_epoch, raw_result in RESULT.findall(logs):
         epoch = int(raw_epoch)
@@ -258,6 +290,33 @@ def refresh() -> dict[str, Any]:
     elif live_state not in {"failed", "complete"}:
         primary["status"] = live_state
         workflow["status"] = live_state
+
+    steps = STEP.findall(logs)
+    if steps:
+        timestamp, current_step, endpoint_step, trainer_eta = steps[-1]
+        telemetry_at = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        expected_eta = telemetry_at + timedelta(seconds=duration_seconds(trainer_eta))
+        progress = {
+            "currentStep": int(current_step),
+            "endpointStep": int(endpoint_step),
+            "trainerEta": trainer_eta,
+            "observedAt": telemetry_at.isoformat(),
+        }
+        workflow.update(
+            {
+                "expectedEta": expected_eta.isoformat(),
+                "etaBasis": "live trainer ETA for the active producer or decay stage",
+                "progress": progress,
+            }
+        )
+        active = followup if followup is not None else primary
+        active.update(
+            {
+                "expectedEta": expected_eta.isoformat(),
+                "etaBasis": "live trainer ETA for the active producer or decay stage",
+                "progress": progress,
+            }
+        )
 
     complete_matches = COMPLETE.findall(logs)
     if complete_matches:
