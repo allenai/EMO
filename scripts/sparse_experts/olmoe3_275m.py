@@ -382,6 +382,9 @@ def build_common_components(cli_context, **kwargs) -> CommonComponents:
         launch.torchrun = True  # 1-GPU jobs still need torchrun (LOCAL_RANK etc.)
         launch.launch_timeout = 6 * 3600  # allocated multi-node jobs can queue for hours; default 5 min
         launch.follow = _env_bool("OLMOE3_FOLLOW", True)  # 0 -> fire-and-forget; watch with beaker/gantry CLIs
+        if not launch.follow:
+            launch.step_soft_timeout = None  # the launcher only enforces step timeouts while following
+            launch.step_timeout = None
         launch.allow_dirty = True  # untracked checkpoint dirs live in the tree; push discipline is manual
         launch.beaker_image = BEAKER_IMAGE
         launch.gh_token_secret = "RYAN_GITHUB_TOKEN"
