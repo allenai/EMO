@@ -34,7 +34,8 @@ Env knobs (all forwarded to the Beaker worker, which rebuilds the config):
     OLMOE3_USE_CUTE_KDA   0 (default, FLA Triton KDA kernel, any GPU) | 1 (Blackwell CuTe kernel)
     OLMOE3_IMAGE          Beaker image (default: the team's torch 2.10 / cu128 H100 image; the
                           ladder's own cu130 B300 image needs a CUDA-13 driver, which jupiter lacks)
-    OLMOE3_PREEMPTIBLE    0 (default, allocated) | 1
+    OLMOE3_PREEMPTIBLE    0 (default, allocated) | 1 (preemptible) | filler (unallocated backfill,
+                          min_runtime 0s, as the ladder submits)
     OLMOE3_FOLLOW         1 (default) streams logs and blocks; 0 submits and returns
     OLMOE3_NUM_EXPERTS    routed experts (default 512 = the ladder rung; 1024 doubles stored params to
                           5.02B with active params ~unchanged at 279.6M)
@@ -345,7 +346,7 @@ NUM_NODES = int(os.environ.get("OLMOE3_NUM_NODES", "4"))
 NUM_GPUS = int(os.environ.get("OLMOE3_NUM_GPUS", "8"))
 RANK_MICROBATCH_SEQUENCES = int(os.environ.get("OLMOE3_RANK_MB", "2"))
 EP_SIZE = int(os.environ.get("OLMOE3_EP_SIZE", "1"))
-PREEMPTIBLE = _env_bool("OLMOE3_PREEMPTIBLE", False)
+PREEMPTIBLE_MODE = os.environ.get("OLMOE3_PREEMPTIBLE", "0").strip().lower()  # 0 allocated | 1 preemptible | filler
 DATA_ROOT = os.environ.get("OLMOE3_DATA_ROOT", "s3://ai2-llm")
 SAVE_ROOT = os.environ.get("OLMOE3_SAVE_ROOT", "/weka/oe-training-default/ryanwang/EMO/sparse_experts")
 WORK_DIR = os.environ.get("OLMOE3_WORK_DIR", "/weka/oe-training-default/ryanwang/dataset-cache")
@@ -397,8 +398,13 @@ def build_common_components(cli_context, **kwargs) -> CommonComponents:
     if (launch := common.launch) is not None:
         launch.workspace = BEAKER_WORKSPACE
         launch.priority = BEAKER_PRIORITY
-        launch.preemptible = PREEMPTIBLE
-        launch.min_runtime = None
+        if PREEMPTIBLE_MODE == "filler":
+            # Unallocated backfill under allocation-based scheduling (what the ladder uses).
+            launch.preemptible = None
+            launch.min_runtime = "0s"
+        else:
+            launch.preemptible = _env_bool("OLMOE3_PREEMPTIBLE", False)
+            launch.min_runtime = None
         launch.num_gpus = NUM_GPUS
         launch.torchrun = True  # 1-GPU jobs still need torchrun (LOCAL_RANK etc.)
         launch.launch_timeout = 6 * 3600  # allocated multi-node jobs can queue for hours; default 5 min
