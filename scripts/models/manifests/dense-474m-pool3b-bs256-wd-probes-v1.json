@@ -1,0 +1,40 @@
+{
+  "policy": "dense_474m_pool3b_bs256_wd_probes_v1",
+  "sourcePool": "dclm1b",
+  "sourcePoolTokens": 1000000000,
+  "targetPool": "dclm3b",
+  "targetPoolTokens": 3000000000,
+  "bridgeManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_extension_1b_to_3b.json",
+  "repeatedManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b_flat_dynamic_repacking.json",
+  "compositeManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+  "poolAudit": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_1b_3b_9b.pool.json",
+  "evaluationEpochs": [16, 32],
+  "coordinates": [
+    {
+      "id": "dense-474m-dclm3b-bs256-lr2e-3-wd0.033-probe-v1",
+      "model": "474m",
+      "batchSequences": 256,
+      "gpuCount": 8,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulationSteps": 2,
+      "learningRate": "2e-3",
+      "weightDecay": "0.033",
+      "sourceOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.033",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.033",
+      "baseExperiment": "01M1AAHXQ1XNX4RZ2R44RGAV4R"
+    },
+    {
+      "id": "dense-474m-dclm3b-bs256-lr2e-3-wd0.3-probe-v1",
+      "model": "474m",
+      "batchSequences": 256,
+      "gpuCount": 8,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulationSteps": 2,
+      "learningRate": "2e-3",
+      "weightDecay": "0.3",
+      "sourceOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.3",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.3",
+      "baseExperiment": "01M1AAHXQ1XNX4RZ2R44RGAV4R"
+    }
+  ]
+}
