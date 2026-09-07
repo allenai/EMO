@@ -10,11 +10,11 @@
 #     attention at layers 4 and 9. Active 276.7M / active non-embed 212.4M / total 2.608B.
 #
 #     Recipe (the ladder's WSD sweep recipe): Dolma 3.5 14T from s3://ai2-llm, seq 8192, global
-#     batch 64 seq = 524,288 tokens (-> 19,074 steps), AdamW (0.9, 0.95) wd 0.1, clip 1.0, WSD with
-#     a 2,000-step linear warmup, constant peak, linear decay over the last 10% of steps (from step
-#     17,167). Peak LR 8e-4 = the sweep's observed winner at Cx4 and Cx8 (17B / 34B tokens), chosen
-#     so the stable trunk can be extended past 10B; a fixed checkpoint is kept at step 17,167
-#     (the trunk fork step) for that. Topology follows the other scripts here: ai2/jupiter,
+#     batch 64 seq = 524,288 tokens (-> 19,074 steps), AdamW (0.9, 0.95) wd 0.1, clip 1.0, and the
+#     ladder's WSD *trunk* only: 2,000-step linear warmup then constant peak LR to the last token,
+#     no decay (OLMOE3_SCHEDULER=wsd_decay adds the ladder's 10% linear decay). Peak LR 8e-4 = the
+#     sweep's observed winner at Cx4 and Cx8 (17B / 34B tokens), chosen so the trunk can be
+#     extended past 10B and decayed later from any checkpoint. Topology follows the other scripts here: ai2/jupiter,
 #     4 nodes x 8 H100 (allocated), EP1, rank micro-batch 2 seq (32 ranks x 2 = 64, no grad
 #     accumulation). The ladder itself ran this rung on 4 B300s with FA4 + the CuTe KDA kernel;
 #     on H100 the script selects flash-attn 3 and the FLA Triton KDA kernel instead (same math) and
