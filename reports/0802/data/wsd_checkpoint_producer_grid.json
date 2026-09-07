@@ -2198,7 +2198,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-07T19:43:44.821543+00:00",
+  "updatedAt": "2026-09-07T19:50:50.085823+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",
@@ -6532,13 +6532,13 @@
         "weightDecay": "0.033",
         "sourceOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.033",
         "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.033",
-        "status": "running",
+        "status": "canceled",
         "experiment": "01M1WMWMDKTPTBNZV1Q3M5N5TA",
         "jobs": [
           "01M1WTWB4BRKG0PG5DTYTBA2TZ"
         ],
         "job": "01M1WTWB4BRKG0PG5DTYTBA2TZ",
-        "beakerStatus": "running",
+        "beakerStatus": "canceled",
         "revision": "7d6ab8da889107adcc5daf4f7cc939f4d9c54e85",
         "gpuCount": 8,
         "rankMicrobatchSequences": 16,
@@ -6551,7 +6551,7 @@
           16
         ],
         "currentEpoch": 32,
-        "currentPhase": "producer",
+        "currentPhase": "terminal",
         "postDecayResults": {
           "16": {
             "batchSequences": 256,
@@ -6593,11 +6593,12 @@
         ],
         "submittedAt": "2026-09-07T02:22:56.114930+00:00",
         "wandbHealth": {
-          "status": "healthy",
-          "checkedAt": "2026-09-07T19:43:41.469429+00:00",
-          "beakerState": "running",
+          "status": "canceled",
+          "checkedAt": "2026-09-07T19:50:46.814392+00:00",
+          "beakerState": "canceled",
           "criticalSignals": []
-        }
+        },
+        "needsAttention": true
       },
       {
         "id": "dense-474m-dclm3b-bs256-lr2e-3-wd0.3-probe-v1",
@@ -6670,7 +6671,7 @@
         "submittedAt": "2026-09-07T02:22:56.114930+00:00",
         "wandbHealth": {
           "status": "healthy",
-          "checkedAt": "2026-09-07T19:43:44.821496+00:00",
+          "checkedAt": "2026-09-07T19:50:50.085784+00:00",
           "beakerState": "running",
           "criticalSignals": []
         }
