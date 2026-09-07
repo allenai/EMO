@@ -221,8 +221,6 @@ def register(report: dict[str, Any], experiment: str, revision: str) -> None:
         "jobs",
         "wandbHealth",
         "needsAttention",
-        "decision",
-        "lastDecisionEpoch",
         "stopAuthorized",
         "stopAfterEpoch",
         "stopAfterCheckpointStep",

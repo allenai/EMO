@@ -88,7 +88,7 @@
       "batchSequences": 128,
       "learningRate": "1e-3",
       "weightDecay": "0.3",
-      "status": "running",
+      "status": "submitted",
       "sourceEpoch": 16,
       "sourceExperiment": "01M14BSBDFA9Y9P546Y8AZ4A9Q",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm3b/bs128_dr_wt_embwd_lr1e-3_wd0.3/step82397",
@@ -129,10 +129,10 @@
         61,
         62,
         63,
-        64
+        64,
+        65
       ],
       "stopPolicy": "retain_exact_predecay_checkpoint_evaluate_then_stop",
-      "stopAuthorized": false,
       "targetEpochs": [
         8,
         16,
@@ -187,12 +187,12 @@
         79,
         80
       ],
-      "currentEpoch": 65,
+      "currentEpoch": 66,
       "evaluationEnabled": true,
-      "experiment": "01M1WTNNHSF2ZS12XEBYFNSRP8",
-      "revision": "e1711c3cd2171f957853ef3b70a1bb12203b3a4a",
-      "beakerStatus": "running",
-      "submittedAt": "2026-09-07T02:22:56.114930+00:00",
+      "experiment": "01M1YAWGKHT9EX1PBN33Z5X446",
+      "revision": "0be19bcf51d7ec4fcecb3c605548eee49a225d58",
+      "beakerStatus": "submitted",
+      "submittedAt": "2026-09-07T16:23:10.781293+00:00",
       "experimentHistory": [
         {
           "experiment": "01M19ZSWGEB7R6K3Y0CDXZ6G5A",
@@ -215,13 +215,20 @@
           "job": "01M1WRNZ99JXPPRRZ1A53W0MQD",
           "status": "failed_disk_exhaustion",
           "failedAt": "2026-09-07T01:30:00+00:00"
+        },
+        {
+          "experiment": "01M1WTNNHSF2ZS12XEBYFNSRP8",
+          "job": "01M1WTNNNR91QRWQ1Y7G01CWYY",
+          "revision": "e1711c3cd2171f957853ef3b70a1bb12203b3a4a",
+          "status": "canceled_after_exact_e65_for_two_node_replacement",
+          "maxValidatedEpoch": 65,
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm3b/bs128_dr_wt_embwd_lr1e-3_wd0.3",
+          "stoppedAt": "2026-09-07T16:23:10.780670+00:00"
         }
       ],
-      "policy": "dense_1b_pool3b_bs128_e32_e80_integrated_v2",
+      "policy": "dense_1b_pool3b_bs128_e65_e80_two_node_integrated_v1",
       "currentPhase": "repacked_shuffled_pool3b_constant_lr",
       "evaluationEpochs": [
-        48,
-        64,
         80
       ],
       "checkpointIntervalEpochs": 1,
@@ -231,18 +238,14 @@
         64,
         80
       ],
-      "continuationSourceEpoch": 32,
-      "continuationSourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm3b/bs128_dr_wt_embwd_lr1e-3_wd0.3/step164794",
+      "continuationSourceEpoch": 65,
+      "continuationSourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm3b/bs128_dr_wt_embwd_lr1e-3_wd0.3/step334739",
       "continuationTargetEpoch": 80,
       "hardTerminalEpoch": 80,
       "decayEnabled": true,
       "postBranchesIsolatedFromConstantFrontier": true,
       "standaloneEvaluatorSubmissionsAuthorized": false,
       "futureEvaluatorSubmissionsAuthorized": false,
-      "jobs": [
-        "01M1WTNNNR91QRWQ1Y7G01CWYY"
-      ],
-      "job": "01M1WTNNNR91QRWQ1Y7G01CWYY",
       "postDecayResults": {
         "48": {
           "checkpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm3b/bs128_dr_wt_embwd_lr1e-3_wd0.3/.constant_checkpoint_producer_v1/evaluator/post_decay_runs/e48/step274659",
@@ -312,15 +315,57 @@
         }
       },
       "lastDecisionEpoch": 64,
+      "continuationCheckpointEpochs": [
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80
+      ],
+      "nodeCount": 2,
+      "gpusPerNode": 8,
+      "gpuCount": 16,
+      "rankMicrobatchSequences": 8,
+      "gradientAccumulationSteps": 1,
+      "minRuntimeOmitted": true,
+      "runtimeEstimate": {
+        "producerHours": [
+          14,
+          17
+        ],
+        "postHours": [
+          2,
+          4
+        ],
+        "totalHours": [
+          16,
+          21
+        ]
+      },
+      "jobs": [
+        "01M1YAWGQ0MJF9S5HGX3VRZEVJ",
+        "01M1YAWGTEEMHH8KRSYA00SD81"
+      ],
+      "job": "01M1YAWGQ0MJF9S5HGX3VRZEVJ",
       "wandbHealth": {
-        "status": "healthy",
-        "checkedAt": "2026-09-07T15:51:42.616446+00:00",
-        "beakerState": "running",
-        "latestStep": 334083,
-        "totalSteps": 411987,
-        "run": "3im579o3",
-        "epoch": 59,
-        "eta": "1d1h27m",
+        "status": "pending",
+        "checkedAt": "2026-09-07T16:24:37.495025+00:00",
+        "beakerState": "submitted",
+        "latestStep": null,
+        "totalSteps": null,
+        "run": null,
+        "epoch": null,
+        "eta": null,
         "criticalSignals": []
       }
     },
@@ -1223,14 +1268,14 @@
         448
       ],
       "currentEpoch": 448,
-      "currentPhase": "post",
+      "currentPhase": "post_pending",
       "evaluationEnabled": true,
       "experiment": "01M1X7YD066MXTWYCTS3VKMF5H",
       "jobs": [
         "01M1X7YD4EVMXJC51R5M06Y4KX",
         "01M1X7YD8171GYX3E5S7N52SFQ"
       ],
-      "job": "01M1X7YD8171GYX3E5S7N52SFQ",
+      "job": "01M1X7YD4EVMXJC51R5M06Y4KX",
       "revision": "6bdc0e456e0575c7b8a99875516d32397101958b",
       "previousExperiment": "01M1AAJ4WYM9TCNEY7AC7P67MG",
       "previousOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1",
@@ -1409,13 +1454,13 @@
       "gradientAccumulationSteps": 1,
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-07T15:51:51.354946+00:00",
+        "checkedAt": "2026-09-07T16:24:55.602311+00:00",
         "beakerState": "running",
-        "latestStep": 1182559,
+        "latestStep": 1193859,
         "totalSteps": 1281739,
         "run": null,
-        "epoch": 411,
-        "eta": "4h50m",
+        "epoch": 415,
+        "eta": "4h17m",
         "criticalSignals": []
       }
     },
@@ -2153,7 +2198,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-07T15:51:51.355158+00:00",
+  "updatedAt": "2026-09-07T16:24:55.602526+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",

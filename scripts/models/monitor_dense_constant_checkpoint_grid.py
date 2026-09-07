@@ -249,7 +249,9 @@ def refresh_producer(record: dict[str, Any]) -> str:
     jobs = [job for job in payload.get("jobs") or [] if job.get("id")]
     if jobs:
         record["jobs"] = [job["id"] for job in jobs]
-        record["job"] = jobs[-1]["id"]
+        record["job"] = (
+            jobs[0]["id"] if int(record.get("nodeCount", 1)) > 1 else jobs[-1]["id"]
+        )
     pool3b_v2 = record.get("policy") in {
         "dense_small_pool3b_checkpoint_producers_v2",
         "dense_small_pool3b_bs512_checkpoint_producers_v1",
@@ -263,8 +265,10 @@ def refresh_producer(record: dict[str, Any]) -> str:
         # running, so include the active retry's recent log before deciding the
         # resolved frontier. Older bridge completion is inferred below once a
         # later retained checkpoint is present.
-        logs += experiment_logs(
-            str(experiment), state, str(jobs[-1]["id"]), since="70m"
+        monitored_jobs = jobs if int(record.get("nodeCount", 1)) > 1 else [jobs[-1]]
+        logs += "".join(
+            experiment_logs(str(experiment), state, str(job["id"]), since="70m")
+            for job in monitored_jobs
         )
     resolved = {int(epoch) for epoch in record.get("resolvedCheckpointEpochs", [])}
     if (
@@ -319,7 +323,11 @@ def refresh_producer(record: dict[str, Any]) -> str:
         # completed POST proves its own PD source; newer epochs require a
         # retained marker from the active job.
         if (
-            record.get("policy") == "dense_1b_pool3b_bs128_e32_e80_integrated_v2"
+            record.get("policy")
+            in {
+                "dense_1b_pool3b_bs128_e32_e80_integrated_v2",
+                "dense_1b_pool3b_bs128_e65_e80_two_node_integrated_v1",
+            }
             and state in ACTIVE_BEAKER_STATES
         ):
             proven_epochs = {
