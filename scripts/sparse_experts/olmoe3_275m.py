@@ -36,6 +36,8 @@ Env knobs (all forwarded to the Beaker worker, which rebuilds the config):
                           ladder's own cu130 B300 image needs a CUDA-13 driver, which jupiter lacks)
     OLMOE3_PREEMPTIBLE    0 (default, allocated) | 1
     OLMOE3_FOLLOW         1 (default) streams logs and blocks; 0 submits and returns
+    OLMOE3_NUM_EXPERTS    routed experts (default 512 = the ladder rung; 1024 doubles stored params to
+                          5.02B with active params ~unchanged at 279.6M)
     OLMOE3_EMO            1 -> EMO document-pool routing on the same model (the ladder's own EMO
                           setting: per-document pool drawn uniformly from [top_k=16, 512] experts,
                           eval pool 512, local-batch LB loss with global load balancing). Default 0.
@@ -147,13 +149,18 @@ N_LAYERS = 10
 N_HEADS = 8
 N_KV_HEADS = 8
 EXPERT_HIDDEN_SIZE = 544  # multiple of 32 that active-matches the dense 275M rung
-NUM_ROUTED_EXPERTS = 512
+# OLMOE3_NUM_EXPERTS: the ladder rung is 512. Every other dimension (expert width, latent,
+# top-k, shared expert, router, LB/z losses) stays fixed when this changes, which is exactly the
+# ladder's own variable-sparsity -> uniform-512 move (275M went 64 -> 512 the same way).
+NUM_ROUTED_EXPERTS = int(os.environ.get("OLMOE3_NUM_EXPERTS", "512"))
 LATENT_DIM = D_MODEL // LATENT_COMPRESSION
 FULL_ATTENTION_LAYERS = tuple(range(4, N_LAYERS, 5))  # (4, 9); layer 0 is dense KDA
 KDA_LAYERS = tuple(i for i in range(N_LAYERS) if i not in FULL_ATTENTION_LAYERS)
-EXPECTED_ACTIVE_PARAMS = 276_669_264
-EXPECTED_ACTIVE_NON_EMBEDDING_PARAMS = 212_443_984
-EXPECTED_TOTAL_PARAMS = 2_607_948_624
+# (active, active non-embedding, total) with the dolma2 vocab; guarded on build.
+EXPECTED_PARAMS = {
+    512: (276_669_264, 212_443_984, 2_607_948_624),  # the ladder's 275M rung
+    1024: (279_618_384, 215_393_104, 5_017_379_664),  # +512 experts x 522,240 x 9 layers, +router
+}
 
 KDA_USE_CUTE_KERNEL = _env_bool("OLMOE3_USE_CUTE_KDA", False)
 EMO_ENABLED = _env_bool("OLMOE3_EMO", False)
@@ -313,9 +320,9 @@ def build_model_config(common: CommonComponents) -> OLMoDDPModelConfig:
         raise ValueError(f"mixer layout drifted: kda={kda} attn={attn}")
     if resolved[0].routed_experts is not None or resolved[0].latent_moe is not None:
         raise ValueError("layer 0 must remain dense")
-    if vocab_size == VOCAB_SIZE:
+    if vocab_size == VOCAB_SIZE and NUM_ROUTED_EXPERTS in EXPECTED_PARAMS:
         actual = (model.num_active_params, model.num_active_non_embedding_params, model.num_params)
-        expected = (EXPECTED_ACTIVE_PARAMS, EXPECTED_ACTIVE_NON_EMBEDDING_PARAMS, EXPECTED_TOTAL_PARAMS)
+        expected = EXPECTED_PARAMS[NUM_ROUTED_EXPERTS]
         if actual != expected:
             raise ValueError(f"parameter-count drift: expected {expected}, found {actual}")
     return model
@@ -359,7 +366,7 @@ FORWARDED_ENV = (
     "OLMOE3_TOKENS", "OLMOE3_LR", "OLMOE3_NUM_NODES", "OLMOE3_NUM_GPUS", "OLMOE3_RANK_MB", "OLMOE3_EP_SIZE",
     "OLMOE3_ATTN_BACKEND", "OLMOE3_USE_CUTE_KDA", "OLMOE3_PREEMPTIBLE", "OLMOE3_DATA_ROOT",
     "OLMOE3_SAVE_ROOT", "OLMOE3_WORK_DIR", "OLMOE3_WANDB_TAGS", "OLMOE3_IMAGE", "OLMOE3_SAVE_INTERVAL",
-    "OLMOE3_EMO", "OLMOE3_EMO_MIN_POOL", "OLMOE3_EMO_MAX_POOL", "OLMOE3_EMO_EVAL_POOL",
+    "OLMOE3_EMO", "OLMOE3_EMO_MIN_POOL", "OLMOE3_EMO_MAX_POOL", "OLMOE3_EMO_EVAL_POOL", "OLMOE3_NUM_EXPERTS",
 )
 
 
@@ -498,7 +505,7 @@ def _cosine_scheduler(tokens: int) -> ComposableScheduler:
 def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleConfig:
     assert TOKENS is not None, "set OLMOE3_TOKENS"
     print(
-        f"[olmoe3_275m] tokens={TOKENS:,} steps={_max_steps(TOKENS):,} lr={LR:g} sched={SCHEDULER}"
+        f"[olmoe3_275m] experts={NUM_ROUTED_EXPERTS} tokens={TOKENS:,} steps={_max_steps(TOKENS):,} lr={LR:g} sched={SCHEDULER}"
         + (f" (warmup {WSD_WARMUP_STEPS}, constant, no decay)" if SCHEDULER == "wsd" else "")
         + (f" (warmup {WSD_WARMUP_STEPS}, decay from step {_wsd_decay_start_step(TOKENS):,})" if SCHEDULER == "wsd_decay" else "")
         + " "
@@ -581,7 +588,8 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
                 entity=WANDB_ENTITY,
                 cancel_check_interval=cancel_check_interval,
                 enabled=True,
-                tags=["pretraining", "sparse_experts", "olmoe3_275m", "emo" if EMO_ENABLED else "noemo",
+                tags=["pretraining", "sparse_experts", "olmoe3_275m", f"{NUM_ROUTED_EXPERTS}e",
+                      "emo" if EMO_ENABLED else "noemo",
                       cluster.rsplit("/", 1)[-1], *EXTRA_WANDB_TAGS],
             ),
         )
