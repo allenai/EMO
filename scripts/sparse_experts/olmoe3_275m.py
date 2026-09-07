@@ -29,6 +29,9 @@ Env knobs (all forwarded to the Beaker worker, which rebuilds the config):
     OLMOE3_IMAGE          Beaker image (default: the team's torch 2.10 / cu128 H100 image; the
                           ladder's own cu130 B300 image needs a CUDA-13 driver, which jupiter lacks)
     OLMOE3_PREEMPTIBLE    0 (default, allocated) | 1
+    OLMOE3_EMO            1 -> EMO document-pool routing on the same model (the ladder's own EMO
+                          setting: per-document pool drawn uniformly from [top_k=16, 512] experts,
+                          eval pool 512, local-batch LB loss with global load balancing). Default 0.
     OLMOE3_SAVE_ROOT / OLMOE3_WORK_DIR / OLMOE3_DATA_ROOT / OLMOE3_WANDB_TAGS
 """
 
@@ -70,6 +73,7 @@ from olmo_core.nn.ddp import OLMoDDPTransformerBlockConfig
 from olmo_core.nn.layer_norm import LayerNormConfig, LayerNormType
 from olmo_core.nn.lm_head import LMHeadConfig
 from olmo_core.nn.moe import (
+    EmoRouterConfig,
     LatentMoEConfig,
     MoELoadBalancingLossGranularity,
     MoERouterGatingFunction,
@@ -141,6 +145,11 @@ EXPECTED_ACTIVE_NON_EMBEDDING_PARAMS = 212_443_984
 EXPECTED_TOTAL_PARAMS = 2_607_948_624
 
 KDA_USE_CUTE_KERNEL = _env_bool("OLMOE3_USE_CUTE_KDA", False)
+EMO_ENABLED = _env_bool("OLMOE3_EMO", False)
+EOS_TOKEN_ID = 100_257  # dolma2 tokenizer; EMO derives document segments from EOS positions
+EMO_MIN_POOL = int(os.environ.get("OLMOE3_EMO_MIN_POOL", str(TOP_K)))
+EMO_MAX_POOL = int(os.environ.get("OLMOE3_EMO_MAX_POOL", str(NUM_ROUTED_EXPERTS)))
+EMO_EVAL_POOL = int(os.environ.get("OLMOE3_EMO_EVAL_POOL", str(NUM_ROUTED_EXPERTS)))
 ATTN_BACKEND = AttentionBackendName(os.environ.get("OLMOE3_ATTN_BACKEND", "flash_3"))
 
 
@@ -210,10 +219,27 @@ def _moe_block(layer_norm: LayerNormConfig, sequence_mixer) -> OLMoDDPTransforme
             gating_function=MoERouterGatingFunction.softmax,
             dtype=DType.float32,
             lb_loss_weight=0.01,
-            lb_loss_granularity=MoELoadBalancingLossGranularity.instance,
+            # As in the ladder's EMO branch: EMO needs global (DP-wide) load balancing, which
+            # requires local-batch granularity; the plain model keeps the ladder's instance LB.
+            lb_loss_granularity=(
+                MoELoadBalancingLossGranularity.local_batch
+                if EMO_ENABLED
+                else MoELoadBalancingLossGranularity.instance
+            ),
+            global_load_balancing=EMO_ENABLED,
             z_loss_weight=1e-5,
             restore_weight_scale=True,
             use_recompute_fp32_cast=False,
+            emo=(
+                EmoRouterConfig(
+                    eos_token_id=EOS_TOKEN_ID,
+                    min_document_expert_pool=EMO_MIN_POOL,
+                    max_document_expert_pool=EMO_MAX_POOL,
+                    eval_document_expert_pool=EMO_EVAL_POOL,
+                )
+                if EMO_ENABLED
+                else None
+            ),
         ),
         latent_moe=LatentMoEConfig(latent_dim=LATENT_DIM, up_proj_input_norm_enabled=False),
         use_peri_norm=True,
@@ -318,6 +344,7 @@ FORWARDED_ENV = (
     "OLMOE3_TOKENS", "OLMOE3_LR", "OLMOE3_NUM_NODES", "OLMOE3_NUM_GPUS", "OLMOE3_RANK_MB", "OLMOE3_EP_SIZE",
     "OLMOE3_ATTN_BACKEND", "OLMOE3_USE_CUTE_KDA", "OLMOE3_PREEMPTIBLE", "OLMOE3_DATA_ROOT",
     "OLMOE3_SAVE_ROOT", "OLMOE3_WORK_DIR", "OLMOE3_WANDB_TAGS", "OLMOE3_IMAGE",
+    "OLMOE3_EMO", "OLMOE3_EMO_MIN_POOL", "OLMOE3_EMO_MAX_POOL", "OLMOE3_EMO_EVAL_POOL",
 )
 
 
@@ -427,7 +454,8 @@ def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleCon
     print(
         f"[olmoe3_275m] tokens={TOKENS:,} steps={TOKENS // GLOBAL_BATCH_SIZE:,} lr={LR:g} "
         f"nodes={NUM_NODES} gpus/node={NUM_GPUS} rank_mb={RANK_MICROBATCH_SEQUENCES} ep={EP_SIZE} attn={ATTN_BACKEND} "
-        f"cute_kda={KDA_USE_CUTE_KERNEL}"
+        f"cute_kda={KDA_USE_CUTE_KERNEL} emo={EMO_ENABLED}"
+        + (f" pool=[{EMO_MIN_POOL},{EMO_MAX_POOL}] eval_pool={EMO_EVAL_POOL}" if EMO_ENABLED else "")
     )
     return OLMoDDPTrainModuleConfig(
         rank_microbatch_size=RANK_MICROBATCH_SEQUENCES * common.max_sequence_length,
@@ -501,7 +529,8 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
                 entity=WANDB_ENTITY,
                 cancel_check_interval=cancel_check_interval,
                 enabled=True,
-                tags=["pretraining", "sparse_experts", "olmoe3_275m", cluster.rsplit("/", 1)[-1], *EXTRA_WANDB_TAGS],
+                tags=["pretraining", "sparse_experts", "olmoe3_275m", "emo" if EMO_ENABLED else "noemo",
+                      cluster.rsplit("/", 1)[-1], *EXTRA_WANDB_TAGS],
             ),
         )
     )
