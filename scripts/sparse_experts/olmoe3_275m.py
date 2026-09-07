@@ -354,9 +354,8 @@ def _beaker_env_vars() -> list[BeakerEnvVar]:
         {
             "OLMO_SYMM_VDEV2D_AUTO_BUILD": "1" if EP_SIZE > 1 else "0",
             "TORCH_CUDA_ARCH_LIST": os.environ.get("TORCH_CUDA_ARCH_LIST", "9.0"),  # H100; any JIT build targets only this
-            # Plain AWS keys come from env secrets; an empty S3_PROFILE keeps boto on the default
-            # credential chain (same trick as scripts/launch_common.sh).
-            "S3_PROFILE": "",
+            # Plain AWS keys come from env secrets. Leave S3_PROFILE UNSET: the pinned olmo_core
+            # passes its value straight to boto3 as a profile name (an empty string -> ProfileNotFound).
             "PYTHONPATH": f"{OLMO_CORE_SUBMODULE}/src",
             # gantry would otherwise `uv pip install` THIS repo (pyproject pins torch==2.8.0) into
             # the image. Install the pinned submodule instead, exactly like scaling-ladders does.
