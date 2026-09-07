@@ -25,7 +25,6 @@
     "canonicalOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1",
     "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1_throughput_recovery_r2",
     "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1_throughput_recovery_r2/step1153564",
-    "baseExperiment": "01M1X7YD066MXTWYCTS3VKMF5H"
+    "baseExperiment": "01M1QF60NA40B0DH337RPT0XGQ"
   }
 }
-
