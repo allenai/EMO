@@ -74,6 +74,7 @@ BS32_POLICIES: dict[str, dict[str, Any]] = {
 
 BS64_474M_CONTINUATION_TARGETS = (48, 64)
 BS64_153M_WD03_CONTINUATION_TARGETS = (160, 192)
+BS64_474M_LR1E3_WD03_PROBE = "dense-474m-dclm333m-bs64-lr1e-3-wd0.3"
 ALL_CONTINUATION_TARGETS = tuple(
     sorted(set(BS64_474M_CONTINUATION_TARGETS + BS64_153M_WD03_CONTINUATION_TARGETS))
 )
@@ -199,7 +200,13 @@ def validate_coordinate(item: dict[str, Any]) -> None:
     batch = int(item["batchSequences"])
     lr = str(item["learningRate"])
     wd = str(item["weightDecay"])
-    if batch == 32:
+    is_bs64_lr_probe = str(item.get("id")) == BS64_474M_LR1E3_WD03_PROBE
+    if is_bs64_lr_probe:
+        if model != "474m" or batch != 64:
+            raise ValueError("474M LR probe must use BS64")
+        if Decimal(lr) != Decimal("1e-3") or wd != "0.3":
+            raise ValueError("474M BS64 LR probe must use LR1e-3/WD0.3")
+    elif batch == 32:
         batch_policy = BS32_POLICIES[model]
         if Decimal(lr) != Decimal(str(batch_policy["lr"])):
             raise ValueError(f"{model}/BS32 has the wrong LR")
@@ -216,7 +223,10 @@ def validate_coordinate(item: dict[str, Any]) -> None:
     evaluations = [int(epoch) for epoch in item["evaluationEpochs"]]
     max_epoch = int(item["maxEpoch"])
     continuation_targets = authorized_continuation_targets(item)
-    if model == "474m" and max_epoch in continuation_targets:
+    if is_bs64_lr_probe:
+        expected_retained = [8, 16, 32]
+        expected_evaluations = [8, 16, 32]
+    elif model == "474m" and max_epoch in continuation_targets:
         expected_retained = list(range(8, max_epoch + 1, 8))
         expected_evaluations = [epoch for epoch in (16, 32, 48, 64) if epoch <= max_epoch]
     elif model == "153m" and max_epoch in continuation_targets:
@@ -235,7 +245,11 @@ def validate_coordinate(item: dict[str, Any]) -> None:
         raise ValueError("every evaluation epoch must have an exact retained PD source")
     if max_epoch != retained[-1]:
         raise ValueError(f"{model} max epoch must match the retained-checkpoint frontier")
-    if max_epoch != int(policy["max_epoch"]) and max_epoch not in continuation_targets:
+    if (
+        not is_bs64_lr_probe
+        and max_epoch != int(policy["max_epoch"])
+        and max_epoch not in continuation_targets
+    ):
         raise ValueError(f"{model} has the wrong producer ceiling")
     if gpu_count(item) <= 0:
         raise ValueError("GPU count must be positive")
@@ -262,8 +276,8 @@ def load_manifest(path: Path) -> dict[str, Any]:
     if Decimal(str(value.get("decayFraction"))) != Decimal(str(DECAY_FRACTION)):
         raise ValueError("pre-decay step convention must remain the uncapped 10% WSD boundary")
     coordinates = value.get("producerCoordinates", [])
-    if len(coordinates) != 15:
-        raise ValueError("producer manifest must contain exactly fifteen registered coordinates")
+    if len(coordinates) != 16:
+        raise ValueError("producer manifest must contain exactly sixteen registered coordinates")
     ids = [str(item["id"]) for item in coordinates]
     outputs = [str(item["output"]) for item in coordinates]
     if len(ids) != len(set(ids)) or len(outputs) != len(set(outputs)):
@@ -274,6 +288,8 @@ def load_manifest(path: Path) -> dict[str, Any]:
         expected = len(policy["batches"]) * len(policy["wds"]) + len(
             BS32_POLICIES[model]["wds"]
         )
+        if model == "474m":
+            expected += 1
         if sum(item["model"] == model for item in coordinates) != expected:
             raise ValueError(f"manifest does not contain exactly {expected} {model} coordinates")
     validate_dataset_manifest(EXPECTED_DATASET_MANIFEST)

@@ -704,8 +704,8 @@ def main() -> None:
     report = json.loads(REPORT.read_text())
     if len(report.get("producers", [])) != 14 or len(report.get("evaluators", [])) != 2:
         raise RuntimeError("report must contain fourteen producers and two evaluators")
-    if len(report.get("dclm333mIntegratedRuns", [])) != 15:
-        raise RuntimeError("report must contain fifteen Pool-333M integrated runs")
+    if len(report.get("dclm333mIntegratedRuns", [])) != 16:
+        raise RuntimeError("report must contain sixteen Pool-333M integrated runs")
     for record in report["producers"]:
         status = refresh_producer(record) if should_poll(record) else str(record.get("status"))
         print(f"{record['id']}: {status}")

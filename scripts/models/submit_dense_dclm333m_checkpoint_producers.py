@@ -349,6 +349,14 @@ def register_new_runs(
             record["futureConditionalCoordinate"] = (
                 "dense-1b-dclm333m-bs32-lr5e-4-wd1.0"
             )
+        elif coordinate_id == runner.BS64_474M_LR1E3_WD03_PROBE:
+            record["learningRateProbe"] = {
+                "baselineCoordinate": "dense-474m-dclm333m-bs64-lr2e-3-wd0.3",
+                "matchedPostEpochs": [8, 16, 32],
+                "criterion": "healthy_matched_post_validationExact",
+                "status": "running",
+                "wd0.1Authorized": False,
+            }
         else:
             record["wdPruningGate"] = {
                 "decisionEpoch": 16 if item["model"] == "474m" else 32,
