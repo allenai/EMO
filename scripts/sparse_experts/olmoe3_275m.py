@@ -355,8 +355,9 @@ def _beaker_env_vars() -> list[BeakerEnvVar]:
         {
             "OLMO_SYMM_VDEV2D_AUTO_BUILD": "1" if EP_SIZE > 1 else "0",
             "TORCH_CUDA_ARCH_LIST": os.environ.get("TORCH_CUDA_ARCH_LIST", "9.0"),  # H100; any JIT build targets only this
-            # Plain AWS keys come from env secrets. Leave S3_PROFILE UNSET: the pinned olmo_core
-            # passes its value straight to boto3 as a profile name (an empty string -> ProfileNotFound).
+            # S3 credentials: the pinned launcher injects S3_PROFILE=S3 and the pinned olmo_core hands
+            # that name straight to boto3 (a named profile disables env-var credentials), so the
+            # worker writes an [S3] profile from the AWS env secrets in post_setup (see below).
             "PYTHONPATH": f"{OLMO_CORE_SUBMODULE}/src",
             # gantry would otherwise `uv pip install` THIS repo (pyproject pins torch==2.8.0) into
             # the image. Install the pinned submodule instead, exactly like scaling-ladders does.
@@ -388,7 +389,13 @@ def build_common_components(cli_context, **kwargs) -> CommonComponents:
         # The preset's symm-mem/NVSHMEM extension prebuild only serves the rowwise-EP transport;
         # at EP=1 it is dead weight and its nvcc build fails on jupiter (no GPU arch detection ->
         # builds sm_50..sm_120). Skip it and disable the import-time auto-build too.
-        launch.post_setup = OLMO_DDP_PRESET.post_setup if EP_SIZE > 1 else None
+        write_aws_profile = (
+            'mkdir -p ~/.aws && printf "[S3]\\naws_access_key_id=%s\\naws_secret_access_key=%s\\n" '
+            '"$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" > ~/.aws/credentials'
+        )
+        launch.post_setup = (
+            f"{write_aws_profile} && {OLMO_DDP_PRESET.post_setup}" if EP_SIZE > 1 else write_aws_profile
+        )
         launch.env_secrets = [
             BeakerEnvSecret(name="BEAKER_TOKEN", secret="RYAN_BEAKER_TOKEN"),
             BeakerEnvSecret(name="WANDB_API_KEY", secret="RYAN_WANDB_API_KEY"),
