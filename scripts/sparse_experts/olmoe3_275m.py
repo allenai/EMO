@@ -37,8 +37,9 @@ Env knobs (all forwarded to the Beaker worker, which rebuilds the config):
     OLMOE3_PREEMPTIBLE    0 (default, allocated) | 1 (preemptible) | filler (unallocated backfill,
                           min_runtime 0s, as the ladder submits)
     OLMOE3_FOLLOW         1 (default) streams logs and blocks; 0 submits and returns
-    OLMOE3_NUM_EXPERTS    routed experts (default 512 = the ladder rung; 1024 doubles stored params to
-                          5.02B with active params ~unchanged at 279.6M)
+    OLMOE3_NUM_EXPERTS    routed experts (default 512 = the ladder rung). 1000 -> 4.90B total /
+                          279.5M active (the team's EP1 approximation of 2x experts); 1024 needs
+                          EP>=2 because the grouped-GEMM kernel caps groups at 1023.
     OLMOE3_EMO            1 -> EMO document-pool routing on the same model (the ladder's own EMO
                           setting: per-document pool drawn uniformly from [top_k=16, 512] experts,
                           eval pool 512, local-batch LB loss with global load balancing). Default 0.
@@ -160,7 +161,11 @@ KDA_LAYERS = tuple(i for i in range(N_LAYERS) if i not in FULL_ATTENTION_LAYERS)
 # (active, active non-embedding, total) with the dolma2 vocab; guarded on build.
 EXPECTED_PARAMS = {
     512: (276_669_264, 212_443_984, 2_607_948_624),  # the ladder's 275M rung
-    1024: (279_618_384, 215_393_104, 5_017_379_664),  # +512 experts x 522,240 x 9 layers, +router
+    # 1024 experts hit the pinned grouped-GEMM kernel's `group_count < 1024` check at EP1 (the
+    # same limit behind the OLMo-core team's "1,000 experts, EP1 approximation"); 1000 is their
+    # precedent and is what the 1000e scripts use.
+    1000: (279_480_144, 215_254_864, 4_904_437_584),
+    1024: (279_618_384, 215_393_104, 5_017_379_664),  # needs EP>=2 (rowwise NVSHMEM path)
 }
 
 KDA_USE_CUTE_KERNEL = _env_bool("OLMOE3_USE_CUTE_KDA", False)
