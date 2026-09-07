@@ -1,0 +1,513 @@
+"""OLMoE3 scaling-ladder 275M rung, runnable for a fixed token budget.
+
+Model + recipe taken from allenai/scaling-ladders ``ladders/olmoe3/workloads/{arch,common,
+pretraining}.py`` (branch codex/olmoe3-integration-run). Only the 275M rung is kept; the
+builders and guards are otherwise verbatim. It needs the OLMo-core the ladder was
+qualified against, which is the ``external/OLMo-core`` submodule pinned to 0e5c2d44
+(``PYTHONPATH=external/OLMo-core/src``); this repo's own ``olmo_core`` (v2.3.0) lacks
+the fused MoE-v2 / LatentMoE / KDA stack.
+
+Usage (from the repo root; see scripts/sparse_experts/model_scripts/olmoe3_275m_10b.sh):
+    PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_275m.py \
+        <launch|dry_run|train> <run_name> <cluster> [--config.overrides ...]
+
+Env knobs (all forwarded to the Beaker worker, which rebuilds the config):
+    OLMOE3_TOKENS         token budget (required)
+    OLMOE3_LR             peak LR (default 1.2e-3; the ladder's WSD sweep gave 1.6e-3 @ 8.5B
+                          tokens and 8e-4 @ 17B tokens)
+    OLMOE3_NUM_GPUS       GPUs on the single node (default 4 = the ladder's qualified 275M cell)
+    OLMOE3_RANK_MB        sequences per rank per micro-batch (default 16 -> no grad accumulation
+                          with 4 GPUs and the fixed 64-sequence global batch)
+    OLMOE3_EP_SIZE        expert-parallel degree (default 1)
+    OLMOE3_ATTN_BACKEND   flash_4 (default, Blackwell only) | flash_3 (Hopper)
+    OLMOE3_USE_CUTE_KDA   1 (default, Blackwell CuTe KDA kernel) | 0 (FLA Triton fallback)
+    OLMOE3_PREEMPTIBLE    0 (default, allocated) | 1
+    OLMOE3_SAVE_ROOT / OLMOE3_WORK_DIR / OLMOE3_DATA_ROOT / OLMOE3_WANDB_TAGS
+"""
+
+from __future__ import annotations
+
+import dataclasses
+import math
+import os
+import sys
+from copy import deepcopy
+from functools import partial
+
+from olmo_core.config import DType
+from olmo_core.data import (
+    DataMix,
+    InstanceFilterConfig,
+    NumpyDataLoaderConfig,
+    NumpyFSLDatasetConfig,
+)
+from olmo_core.distributed.parallel import DataParallelType
+from olmo_core.internal.experiment import (
+    CommonComponents,
+    DataComponents,
+    build_common_components as build_default_common_components,
+    build_config,
+    main,
+)
+from olmo_core.launch.beaker import BeakerEnvSecret, BeakerEnvVar, BeakerWekaBucket
+from olmo_core.launch.beaker_presets import get_preset
+from olmo_core.nn.attention import (
+    AttentionBackendName,
+    AttentionConfig,
+    AttentionType,
+    GateConfig,
+    GateGranularity,
+    KimiDeltaAttentionConfig,
+)
+from olmo_core.nn.ddp import OLMoDDPTransformerBlockConfig
+from olmo_core.nn.layer_norm import LayerNormConfig, LayerNormType
+from olmo_core.nn.lm_head import LMHeadConfig
+from olmo_core.nn.moe import (
+    LatentMoEConfig,
+    MoELoadBalancingLossGranularity,
+    MoERouterGatingFunction,
+)
+from olmo_core.nn.moe.v2.ep_config import ExpertParallelConfig, ExpertParallelPath
+from olmo_core.nn.moe.v2.fp8 import MoERowwiseFP8Config
+from olmo_core.nn.moe.v2.routed_experts import RoutedExpertsConfig
+from olmo_core.nn.moe.v2.router import MoERouterConfigV2
+from olmo_core.nn.moe.v2.shared_experts import SharedExpertsConfig
+from olmo_core.nn.transformer import (
+    OLMoDDPModelConfig,
+    TransformerBlockType,
+    TransformerType,
+)
+from olmo_core.optim import OLMoDDPOptimizerConfig, OptimGroupOverride, SchedulerUnits
+from olmo_core.optim.scheduler import (
+    ComposableScheduler,
+    ComposableSchedulerStage,
+    ComposableSchedulerStageType,
+)
+from olmo_core.train import Duration, LoadStrategy, TrainerConfig
+from olmo_core.train.callbacks import (
+    BeakerCallback,
+    CheckpointerCallback,
+    CheckpointRemovalStrategy,
+    SpeedMonitorCallback,
+    WandBCallback,
+)
+from olmo_core.train.checkpoint import CheckpointerConfig
+from olmo_core.train.train_module import (
+    OLMoDDPTrainModuleConfig,
+    TransformerDataParallelConfig,
+    TransformerExpertParallelConfig,
+)
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    if raw.strip().lower() in {"1", "true", "yes", "on"}:
+        return True
+    if raw.strip().lower() in {"0", "false", "no", "off"}:
+        return False
+    raise ValueError(f"{name} must be a boolean, got {raw!r}")
+
+
+# ---------------------------------------------------------------------------------------------
+# Model: the ladder's "275m" geometry (dense-geometry-kda-nope-gated-latent-moe-l2).
+# ---------------------------------------------------------------------------------------------
+VOCAB_SIZE = 100_352  # dolma2 tokenizer, padded
+HEAD_DIM = 128
+TOP_K = 16
+LATENT_COMPRESSION = 2
+INIT_SEED = 0
+INIT_STD = 0.02
+
+D_MODEL = 640
+N_LAYERS = 10
+N_HEADS = 8
+N_KV_HEADS = 8
+EXPERT_HIDDEN_SIZE = 544  # multiple of 32 that active-matches the dense 275M rung
+NUM_ROUTED_EXPERTS = 512
+LATENT_DIM = D_MODEL // LATENT_COMPRESSION
+FULL_ATTENTION_LAYERS = tuple(range(4, N_LAYERS, 5))  # (4, 9); layer 0 is dense KDA
+KDA_LAYERS = tuple(i for i in range(N_LAYERS) if i not in FULL_ATTENTION_LAYERS)
+EXPECTED_ACTIVE_PARAMS = 276_669_264
+EXPECTED_ACTIVE_NON_EMBEDDING_PARAMS = 212_443_984
+EXPECTED_TOTAL_PARAMS = 2_607_948_624
+
+KDA_USE_CUTE_KERNEL = _env_bool("OLMOE3_USE_CUTE_KDA", True)
+ATTN_BACKEND = AttentionBackendName(os.environ.get("OLMOE3_ATTN_BACKEND", "flash_4"))
+
+
+def _layer_norm() -> LayerNormConfig:
+    return LayerNormConfig(name=LayerNormType.rms, eps=1e-6, bias=False, dtype=DType.float32)
+
+
+def _kda() -> KimiDeltaAttentionConfig:
+    return KimiDeltaAttentionConfig(
+        n_heads=N_HEADS,
+        n_v_heads=N_HEADS,
+        head_dim=HEAD_DIM,
+        expand_v=2.0,
+        allow_neg_eigval=True,
+        conv_size=4,
+        conv_bias=False,
+        norm_eps=1e-5,
+        use_cute_kernel=KDA_USE_CUTE_KERNEL,
+        dtype=DType.float32,
+    )
+
+
+def _full_attention(layer_norm: LayerNormConfig) -> AttentionConfig:
+    return AttentionConfig(
+        name=AttentionType.default,
+        n_heads=N_HEADS,
+        n_kv_heads=N_KV_HEADS,
+        head_dim=HEAD_DIM,
+        bias=False,
+        gate=GateConfig(granularity=GateGranularity.elementwise, full_precision=True),
+        rope=None,  # NoPE
+        qk_norm=deepcopy(layer_norm),
+        backend=ATTN_BACKEND,
+        scalable_softmax=True,
+        dtype=DType.float32,
+        use_head_qk_norm=True,
+    )
+
+
+def _shared_expert(hidden_size: int = EXPERT_HIDDEN_SIZE) -> SharedExpertsConfig:
+    return SharedExpertsConfig(
+        d_model=D_MODEL, hidden_size=hidden_size, num_experts=1, bias=False, dtype=DType.float32
+    )
+
+
+def _moe_block(layer_norm: LayerNormConfig, sequence_mixer) -> OLMoDDPTransformerBlockConfig:
+    return OLMoDDPTransformerBlockConfig(
+        name=TransformerBlockType.moe_fused_v2,
+        sequence_mixer=sequence_mixer,
+        layer_norm=deepcopy(layer_norm),
+        shared_experts=_shared_expert(),
+        routed_experts=RoutedExpertsConfig(
+            d_model=LATENT_DIM,
+            hidden_size=EXPERT_HIDDEN_SIZE,
+            num_experts=NUM_ROUTED_EXPERTS,
+            bias=False,
+            dtype=DType.float32,
+            rowwise_fp8=MoERowwiseFP8Config(enabled=False),
+        ),
+        # Routing sees the full-width token; only the routed payload is projected.
+        routed_experts_router=MoERouterConfigV2(
+            d_model=D_MODEL,
+            num_experts=NUM_ROUTED_EXPERTS,
+            top_k=TOP_K,
+            bias=False,
+            normalize_expert_weights=1.0,
+            gating_function=MoERouterGatingFunction.softmax,
+            dtype=DType.float32,
+            lb_loss_weight=0.01,
+            lb_loss_granularity=MoELoadBalancingLossGranularity.instance,
+            z_loss_weight=1e-5,
+            restore_weight_scale=True,
+            use_recompute_fp32_cast=False,
+        ),
+        latent_moe=LatentMoEConfig(latent_dim=LATENT_DIM, up_proj_input_norm_enabled=False),
+        use_peri_norm=True,
+        use_pre_norm=False,
+        checkpoint_attn=False,
+        checkpoint_permute_moe_unpermute=False,
+        checkpoint_second_unpermute=False,
+        ep=ExpertParallelConfig(path=ExpertParallelPath.rowwise_nvshmem),
+        rowwise_fp8=MoERowwiseFP8Config(enabled=False),
+    )
+
+
+def _dense_first_block(layer_norm: LayerNormConfig) -> OLMoDDPTransformerBlockConfig:
+    # Matches the dense mainline ladder's 8*d_model SwiGLU FFN exactly.
+    return OLMoDDPTransformerBlockConfig(
+        name=TransformerBlockType.moe_fused_v2,
+        sequence_mixer=_kda(),
+        layer_norm=deepcopy(layer_norm),
+        shared_experts=_shared_expert(hidden_size=8 * D_MODEL),
+        use_peri_norm=True,
+        use_pre_norm=False,
+        checkpoint_attn=False,
+        checkpoint_permute_moe_unpermute=False,
+        checkpoint_second_unpermute=False,
+    )
+
+
+def build_model_config(common: CommonComponents) -> OLMoDDPModelConfig:
+    layer_norm = _layer_norm()
+    vocab_size = common.tokenizer.padded_vocab_size()
+    full_attention = _moe_block(layer_norm, _full_attention(layer_norm))
+    model = OLMoDDPModelConfig(
+        name=TransformerType.moe_fused_v2,
+        d_model=D_MODEL,
+        vocab_size=vocab_size,
+        n_layers=N_LAYERS,
+        block=_moe_block(layer_norm, _kda()),
+        block_overrides={
+            0: _dense_first_block(layer_norm),
+            **{i: deepcopy(full_attention) for i in FULL_ATTENTION_LAYERS},
+        },
+        lm_head=LMHeadConfig(layer_norm=deepcopy(layer_norm), bias=False, dtype=DType.float32),
+        embedding_norm=deepcopy(layer_norm),
+        dtype=DType.float32,
+        init_method="normal",
+        init_seed=INIT_SEED,
+        init_std=INIT_STD,
+        embed_scale=math.sqrt(D_MODEL),
+        tie_word_embeddings=False,
+        two_batch_overlap=False,
+        recompute_all_blocks_by_chunk=False,
+        recompute_each_block=False,
+    )
+    model.validate()
+
+    resolved = model.resolved_block_configs
+    kda = tuple(i for i, b in enumerate(resolved) if isinstance(b.sequence_mixer, KimiDeltaAttentionConfig))
+    attn = tuple(i for i, b in enumerate(resolved) if isinstance(b.sequence_mixer, AttentionConfig))
+    if kda != KDA_LAYERS or attn != FULL_ATTENTION_LAYERS:
+        raise ValueError(f"mixer layout drifted: kda={kda} attn={attn}")
+    if resolved[0].routed_experts is not None or resolved[0].latent_moe is not None:
+        raise ValueError("layer 0 must remain dense")
+    if vocab_size == VOCAB_SIZE:
+        actual = (model.num_active_params, model.num_active_non_embedding_params, model.num_params)
+        expected = (EXPECTED_ACTIVE_PARAMS, EXPECTED_ACTIVE_NON_EMBEDDING_PARAMS, EXPECTED_TOTAL_PARAMS)
+        if actual != expected:
+            raise ValueError(f"parameter-count drift: expected {expected}, found {actual}")
+    return model
+
+
+# ---------------------------------------------------------------------------------------------
+# Recipe (ladder PT defaults) + this repo's Beaker / output conventions.
+# ---------------------------------------------------------------------------------------------
+SEQUENCE_LENGTH = 8192
+GLOBAL_BATCH_SIZE = 64 * SEQUENCE_LENGTH  # dense-mainline fixed 275M batch = 524,288 tokens
+DATA_MIX = DataMix.Dolma3p5_14t
+LOADER_SEED = 928_543_231  # dense-mainline PT loader seed
+
+TOKENS = int(float(os.environ["OLMOE3_TOKENS"])) if "OLMOE3_TOKENS" in os.environ else None
+LR = float(os.environ.get("OLMOE3_LR", "1.2e-3"))
+NUM_GPUS = int(os.environ.get("OLMOE3_NUM_GPUS", "4"))
+RANK_MICROBATCH_SEQUENCES = int(os.environ.get("OLMOE3_RANK_MB", "16"))
+EP_SIZE = int(os.environ.get("OLMOE3_EP_SIZE", "1"))
+PREEMPTIBLE = _env_bool("OLMOE3_PREEMPTIBLE", False)
+DATA_ROOT = os.environ.get("OLMOE3_DATA_ROOT", "s3://ai2-llm")
+SAVE_ROOT = os.environ.get("OLMOE3_SAVE_ROOT", "/weka/oe-training-default/ryanwang/EMO/sparse_experts")
+WORK_DIR = os.environ.get("OLMOE3_WORK_DIR", "/weka/oe-training-default/ryanwang/dataset-cache")
+EXTRA_WANDB_TAGS = [t for t in os.environ.get("OLMOE3_WANDB_TAGS", "").split(",") if t]
+
+OLMO_CORE_SUBMODULE = "external/OLMo-core"
+BEAKER_WORKSPACE = os.environ.get("BEAKER_WORKSPACE", "ai2/flex2")
+BEAKER_PRIORITY = os.environ.get("BEAKER_PRIORITY", "urgent")
+OLMO_DDP_PRESET = get_preset("olmo-ddp")  # the team's B300 image (torch 2.11 / cu130 / FA4 / NVSHMEM)
+BEAKER_IMAGE = os.environ.get("BEAKER_IMAGE") or OLMO_DDP_PRESET.beaker_image
+WANDB_PROJECT, WANDB_ENTITY = "emo-extension", "ryanyxw"
+
+FORWARDED_ENV = (
+    "OLMOE3_TOKENS", "OLMOE3_LR", "OLMOE3_NUM_GPUS", "OLMOE3_RANK_MB", "OLMOE3_EP_SIZE",
+    "OLMOE3_ATTN_BACKEND", "OLMOE3_USE_CUTE_KDA", "OLMOE3_PREEMPTIBLE", "OLMOE3_DATA_ROOT",
+    "OLMOE3_SAVE_ROOT", "OLMOE3_WORK_DIR", "OLMOE3_WANDB_TAGS",
+)
+
+
+def _beaker_env_vars() -> list[BeakerEnvVar]:
+    values = dict(OLMO_DDP_PRESET.env_vars)
+    values.update(
+        {
+            # Plain AWS keys come from env secrets; an empty S3_PROFILE keeps boto on the default
+            # credential chain (same trick as scripts/launch_common.sh).
+            "S3_PROFILE": "",
+            "PYTHONPATH": f"{OLMO_CORE_SUBMODULE}/src",
+            # gantry would otherwise `uv pip install` THIS repo (pyproject pins torch==2.8.0) into
+            # the image. Install the pinned submodule instead, exactly like scaling-ladders does.
+            "GANTRY_INSTALL_CMD": (
+                "uv pip install --system --break-system-packages "
+                f"-e '{OLMO_CORE_SUBMODULE}[beaker,wandb,fla]'"
+            ),
+        }
+    )
+    values.update({k: v for k in FORWARDED_ENV if (v := os.environ.get(k)) is not None})
+    return [BeakerEnvVar(name=k, value=v) for k, v in values.items()]
+
+
+def build_common_components(cli_context, **kwargs) -> CommonComponents:
+    common = build_default_common_components(cli_context, **kwargs)
+    if (launch := common.launch) is not None:
+        launch.workspace = BEAKER_WORKSPACE
+        launch.priority = BEAKER_PRIORITY
+        launch.preemptible = PREEMPTIBLE
+        launch.min_runtime = None
+        launch.num_gpus = NUM_GPUS
+        launch.torchrun = True  # 1-GPU jobs still need torchrun (LOCAL_RANK etc.)
+        launch.allow_dirty = True  # untracked checkpoint dirs live in the tree; push discipline is manual
+        launch.beaker_image = BEAKER_IMAGE
+        launch.gh_token_secret = "RYAN_GITHUB_TOKEN"
+        launch.env_vars = _beaker_env_vars()
+        launch.post_setup = OLMO_DDP_PRESET.post_setup if EP_SIZE > 1 else None  # symm-mem build: EP only
+        launch.env_secrets = [
+            BeakerEnvSecret(name="BEAKER_TOKEN", secret="RYAN_BEAKER_TOKEN"),
+            BeakerEnvSecret(name="WANDB_API_KEY", secret="RYAN_WANDB_API_KEY"),
+            BeakerEnvSecret(name="AWS_ACCESS_KEY_ID", secret="RYAN_AWS_ACCESS_KEY_ID"),
+            BeakerEnvSecret(name="AWS_SECRET_ACCESS_KEY", secret="RYAN_AWS_SECRET_ACCESS_KEY"),
+            BeakerEnvSecret(name="HF_TOKEN", secret="RYAN_HF_TOKEN", required=False),
+        ]
+        launch.google_credentials_secret = None
+        launch.aws_config_secret = None
+        launch.aws_credentials_secret = None
+        launch.shared_filesystem = True
+        if not any(b.bucket == "oe-training-default" for b in launch.weka_buckets):
+            launch.weka_buckets.append(BeakerWekaBucket("oe-training-default", "/weka/oe-training-default"))
+    return dataclasses.replace(common, save_folder=f"{SAVE_ROOT}/{common.run_name}", work_dir=WORK_DIR)
+
+
+def build_data_components(common: CommonComponents) -> DataComponents:
+    dataset = NumpyFSLDatasetConfig.from_data_mix(
+        DATA_MIX,
+        tokenizer=common.tokenizer,
+        mix_base_dir=DATA_ROOT,
+        work_dir=common.work_dir,
+        sequence_length=common.max_sequence_length,
+        max_target_sequence_length=SEQUENCE_LENGTH,
+        generate_doc_lengths=False,
+        instance_filter_config=InstanceFilterConfig(
+            repetition_max_period=13, repetition_min_period=1, repetition_max_count=32
+        ),
+    )
+    return DataComponents(
+        dataset=dataset,
+        data_loader=NumpyDataLoaderConfig(
+            global_batch_size=common.global_batch_size,
+            seed=LOADER_SEED,
+            num_workers=8,
+            prefetch_factor=8,
+            num_threads=4,
+        ),
+    )
+
+
+def _scheduler(tokens: int) -> ComposableScheduler:
+    """Ladder PT schedule: 10% of the budget linear warmup, then cosine to 10% of peak."""
+    warmup = max(GLOBAL_BATCH_SIZE, int((tokens * 0.1 // GLOBAL_BATCH_SIZE) * GLOBAL_BATCH_SIZE))
+    return ComposableScheduler(
+        units=SchedulerUnits.tokens,
+        stages=[
+            ComposableSchedulerStage(
+                duration=warmup,
+                shape=ComposableSchedulerStageType.linear,
+                start_lr_fraction=0.0,
+                end_lr_fraction=1.0,
+            ),
+            ComposableSchedulerStage(
+                duration=max(tokens - warmup, GLOBAL_BATCH_SIZE),
+                shape=ComposableSchedulerStageType.cosine,
+                end_lr_fraction=0.1,
+            ),
+        ],
+    )
+
+
+def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleConfig:
+    assert TOKENS is not None, "set OLMOE3_TOKENS"
+    print(
+        f"[olmoe3_275m] tokens={TOKENS:,} steps={TOKENS // GLOBAL_BATCH_SIZE:,} lr={LR:g} "
+        f"gpus={NUM_GPUS} rank_mb={RANK_MICROBATCH_SEQUENCES} ep={EP_SIZE} attn={ATTN_BACKEND} "
+        f"cute_kda={KDA_USE_CUTE_KERNEL}"
+    )
+    return OLMoDDPTrainModuleConfig(
+        rank_microbatch_size=RANK_MICROBATCH_SEQUENCES * common.max_sequence_length,
+        max_sequence_length=common.max_sequence_length,
+        optim=OLMoDDPOptimizerConfig(
+            lr=LR,
+            weight_decay=0.1,
+            betas=(0.9, 0.95),
+            group_overrides=[
+                # Dense mainline: only token embeddings are exempt from weight decay.
+                OptimGroupOverride(params=["embeddings.weight"], opts={"weight_decay": 0.0}),
+                # Routed experts get their own group for OLMoDDP's distributed expert handling
+                # but inherit the optimizer-level LR.
+                OptimGroupOverride(params=["*routed_experts.w_up_gate", "*routed_experts.w_down"], opts={}),
+            ],
+            compile=True,
+            dtype=DType.float32,
+            sigma_factor=6,  # SkipStepAdamW: skip loss/grad-norm spikes beyond 6 rolling sigma
+            max_grad_norm=1.0,
+            use_distributed=True,
+        ),
+        scheduler=_scheduler(TOKENS),
+        compile_model=True,
+        dp_config=TransformerDataParallelConfig(
+            name=DataParallelType.ddp, reduce_grads_in_fp32=True, accumulate_grads_in_fp32=True
+        ),
+        ep_config=TransformerExpertParallelConfig(degree=EP_SIZE) if EP_SIZE > 1 else None,
+        pp_config=None,
+        tp_config=None,
+        cp_config=None,
+        ac_config=None,
+        float8_config=None,
+        z_loss_multiplier=1e-5,
+        max_grad_norm=1.0,
+    )
+
+
+def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfig:
+    assert TOKENS is not None, "set OLMOE3_TOKENS"
+    cancel_check_interval = 1000
+    trainer = TrainerConfig(
+        load_strategy=LoadStrategy.if_available,
+        save_folder=common.save_folder,
+        work_dir=common.work_dir,
+        save_overwrite=False,
+        checkpointer=CheckpointerConfig(save_thread_count=3, load_thread_count=8, throttle_uploads=True),
+        metrics_collect_interval=10,
+        cancel_check_interval=cancel_check_interval,
+        async_bookkeeping=False,
+        max_duration=Duration.tokens(TOKENS),
+    )
+    return (
+        trainer.with_callback(
+            "checkpointer",
+            CheckpointerCallback(
+                save_interval=1000,
+                ephemeral_save_interval=500,
+                save_async=False,
+                pre_train_checkpoint=False,
+                remove=CheckpointRemovalStrategy.ephemeral_only,
+            ),
+        )
+        .with_callback("speed_monitor", SpeedMonitorCallback())
+        .with_callback("beaker", BeakerCallback())
+        .with_callback(
+            "wandb",
+            WandBCallback(
+                name=common.run_name,
+                group=common.run_name,
+                project=WANDB_PROJECT,
+                entity=WANDB_ENTITY,
+                cancel_check_interval=cancel_check_interval,
+                enabled=True,
+                tags=["pretraining", "sparse_experts", "olmoe3_275m", cluster.rsplit("/", 1)[-1], *EXTRA_WANDB_TAGS],
+            ),
+        )
+    )
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 4:
+        raise SystemExit(f"Usage: {sys.argv[0]} <launch|dry_run|train> <run_name> <cluster> [overrides...]")
+    cluster = sys.argv[3]
+    main(
+        config_builder=partial(
+            build_config,
+            global_batch_size=GLOBAL_BATCH_SIZE,
+            max_sequence_length=SEQUENCE_LENGTH,
+            num_nodes=1,
+            common_config_builder=build_common_components,
+            data_config_builder=build_data_components,
+            model_config_builder=build_model_config,
+            train_module_config_builder=build_train_module_config,
+            trainer_config_builder=partial(build_trainer_config, cluster=cluster),
+            include_default_evals=False,
+            beaker_workspace=BEAKER_WORKSPACE,
+            num_execution_units=1,
+        )
+    )
