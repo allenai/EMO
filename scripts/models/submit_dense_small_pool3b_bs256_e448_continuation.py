@@ -18,7 +18,7 @@ import run_dense_small_pool3b_bs256_e448_continuation as runner
 WORKSPACE = "ai2/flex2"
 REPORT = Path("reports/0802/data/wsd_checkpoint_producer_grid.json")
 REPORT_JS = REPORT.with_suffix(".js")
-NAME = "dense-153m-dclm3b-bs256-lr2e-3-wd0.1-integrated-e384-e448-two-node-v1"
+NAME = "dense-153m-dclm3b-bs256-lr2e-3-wd0.1-integrated-e384-e448-two-node-v2"
 
 
 def command(arguments: list[str], *, input_text: str | None = None) -> str:
