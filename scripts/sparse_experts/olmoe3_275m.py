@@ -29,6 +29,7 @@ Env knobs (all forwarded to the Beaker worker, which rebuilds the config):
     OLMOE3_IMAGE          Beaker image (default: the team's torch 2.10 / cu128 H100 image; the
                           ladder's own cu130 B300 image needs a CUDA-13 driver, which jupiter lacks)
     OLMOE3_PREEMPTIBLE    0 (default, allocated) | 1
+    OLMOE3_FOLLOW         1 (default) streams logs and blocks; 0 submits and returns
     OLMOE3_EMO            1 -> EMO document-pool routing on the same model (the ladder's own EMO
                           setting: per-document pool drawn uniformly from [top_k=16, 512] experts,
                           eval pool 512, local-batch LB loss with global load balancing). Default 0.
@@ -378,6 +379,8 @@ def build_common_components(cli_context, **kwargs) -> CommonComponents:
         launch.min_runtime = None
         launch.num_gpus = NUM_GPUS
         launch.torchrun = True  # 1-GPU jobs still need torchrun (LOCAL_RANK etc.)
+        launch.launch_timeout = 6 * 3600  # allocated multi-node jobs can queue for hours; default 5 min
+        launch.follow = _env_bool("OLMOE3_FOLLOW", True)  # 0 -> fire-and-forget; watch with beaker/gantry CLIs
         launch.allow_dirty = True  # untracked checkpoint dirs live in the tree; push discipline is manual
         launch.beaker_image = BEAKER_IMAGE
         launch.gh_token_secret = "RYAN_GITHUB_TOKEN"
