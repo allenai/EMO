@@ -17,8 +17,13 @@ Usage (from the repo root; see scripts/sparse_experts/model_scripts/olmoe3_275m_
 
 Env knobs (all forwarded to the Beaker worker, which rebuilds the config):
     OLMOE3_TOKENS         token budget (required)
-    OLMOE3_LR             peak LR (default 1.2e-3; the ladder's WSD sweep gave 1.6e-3 @ 8.5B
-                          tokens and 8e-4 @ 17B tokens)
+    OLMOE3_LR             peak LR (default 8e-4 = the ladder's observed WSD winner at Cx4 and Cx8,
+                          i.e. 17B and 34B tokens; Cx2 / 8.5B preferred 1.6e-3). Chosen for
+                          extension-friendliness: the trunk can be continued past 10B.
+    OLMOE3_SCHEDULER      wsd (default: the ladder's WSD sweep recipe, 2,000-step linear warmup,
+                          constant, linear decay over the last 10% of steps; a fixed checkpoint is
+                          kept at the decay-start step so the stable trunk can be extended) |
+                          cosine (the branch's scale-phase default: 10% warmup, cosine to 10%)
     OLMOE3_NUM_NODES      nodes (default 4), OLMOE3_NUM_GPUS GPUs per node (default 8)
     OLMOE3_RANK_MB        sequences per rank per micro-batch (default 2 -> 32 ranks x 2 = the fixed
                           64-sequence global batch, no grad accumulation)
@@ -91,6 +96,7 @@ from olmo_core.nn.transformer import (
 )
 from olmo_core.optim import OLMoDDPOptimizerConfig, OptimGroupOverride, SchedulerUnits
 from olmo_core.optim.scheduler import (
+    WSD,
     ComposableScheduler,
     ComposableSchedulerStage,
     ComposableSchedulerStageType,
@@ -316,11 +322,14 @@ def build_model_config(common: CommonComponents) -> OLMoDDPModelConfig:
 # ---------------------------------------------------------------------------------------------
 SEQUENCE_LENGTH = 8192
 GLOBAL_BATCH_SIZE = 64 * SEQUENCE_LENGTH  # dense-mainline fixed 275M batch = 524,288 tokens
+SCHEDULER = os.environ.get("OLMOE3_SCHEDULER", "wsd")
+WSD_WARMUP_STEPS = 2_000  # ladder generate_wsd.py / emo-integration pretraining.py
+WSD_DECAY_FRACTION = 0.10
 DATA_MIX = DataMix.Dolma3p5_14t
 LOADER_SEED = 928_543_231  # dense-mainline PT loader seed
 
 TOKENS = int(float(os.environ["OLMOE3_TOKENS"])) if "OLMOE3_TOKENS" in os.environ else None
-LR = float(os.environ.get("OLMOE3_LR", "1.2e-3"))
+LR = float(os.environ.get("OLMOE3_LR", "8e-4"))
 NUM_NODES = int(os.environ.get("OLMOE3_NUM_NODES", "4"))
 NUM_GPUS = int(os.environ.get("OLMOE3_NUM_GPUS", "8"))
 RANK_MICROBATCH_SEQUENCES = int(os.environ.get("OLMOE3_RANK_MB", "2"))
@@ -440,8 +449,26 @@ def build_data_components(common: CommonComponents) -> DataComponents:
     )
 
 
-def _scheduler(tokens: int) -> ComposableScheduler:
-    """Ladder PT schedule: 10% of the budget linear warmup, then cosine to 10% of peak."""
+def _max_steps(tokens: int) -> int:
+    return math.ceil(tokens / GLOBAL_BATCH_SIZE)
+
+
+def _wsd_decay_start_step(tokens: int) -> int:
+    """First decay step of the ladder's WSD: t_max - round(0.1 * t_max) (= its trunk fork step)."""
+    t_max = _max_steps(tokens)
+    return t_max - round(t_max * WSD_DECAY_FRACTION)
+
+
+def _scheduler(tokens: int):
+    if SCHEDULER == "wsd":
+        return WSD(warmup=WSD_WARMUP_STEPS, decay_fraction=WSD_DECAY_FRACTION)
+    if SCHEDULER != "cosine":
+        raise ValueError(f"OLMOE3_SCHEDULER must be wsd or cosine, got {SCHEDULER!r}")
+    return _cosine_scheduler(tokens)
+
+
+def _cosine_scheduler(tokens: int) -> ComposableScheduler:
+    """Ladder scale-phase schedule: 10% of the budget linear warmup, then cosine to 10% of peak."""
     warmup = max(GLOBAL_BATCH_SIZE, int((tokens * 0.1 // GLOBAL_BATCH_SIZE) * GLOBAL_BATCH_SIZE))
     return ComposableScheduler(
         units=SchedulerUnits.tokens,
@@ -464,7 +491,9 @@ def _scheduler(tokens: int) -> ComposableScheduler:
 def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleConfig:
     assert TOKENS is not None, "set OLMOE3_TOKENS"
     print(
-        f"[olmoe3_275m] tokens={TOKENS:,} steps={TOKENS // GLOBAL_BATCH_SIZE:,} lr={LR:g} "
+        f"[olmoe3_275m] tokens={TOKENS:,} steps={_max_steps(TOKENS):,} lr={LR:g} sched={SCHEDULER}"
+        + (f" (warmup {WSD_WARMUP_STEPS}, decay from step {_wsd_decay_start_step(TOKENS):,})" if SCHEDULER == "wsd" else "")
+        + " "
         f"nodes={NUM_NODES} gpus/node={NUM_GPUS} rank_mb={RANK_MICROBATCH_SEQUENCES} ep={EP_SIZE} attn={ATTN_BACKEND} "
         f"cute_kda={KDA_USE_CUTE_KERNEL} emo={EMO_ENABLED}"
         + (f" pool=[{EMO_MIN_POOL},{EMO_MAX_POOL}] eval_pool={EMO_EVAL_POOL}" if EMO_ENABLED else "")
@@ -525,6 +554,9 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
             CheckpointerCallback(
                 save_interval=1000,
                 ephemeral_save_interval=500,
+                # WSD: keep the last stable-phase checkpoint (the ladder's trunk fork step) so a
+                # longer run can resume from it instead of from a decayed model.
+                fixed_steps=[_wsd_decay_start_step(TOKENS)] if SCHEDULER == "wsd" else None,
                 save_async=False,
                 pre_train_checkpoint=False,
                 remove=CheckpointRemovalStrategy.ephemeral_only,

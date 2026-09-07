@@ -9,10 +9,12 @@
 #     (routed dim 320), dense layer 0 (8*d_model FFN), KDA at 8 layers + NoPE gated full
 #     attention at layers 4 and 9. Active 276.7M / active non-embed 212.4M / total 2.608B.
 #
-#     Recipe (ladder PT defaults): Dolma 3.5 14T from s3://ai2-llm, seq 8192, global batch 64 seq
-#     = 524,288 tokens (-> 19,073 steps), AdamW (0.9, 0.95) wd 0.1, clip 1.0, 10% linear warmup
-#     then cosine to 10%. LR 1.2e-3: the ladder's WSD sweep found 1.6e-3 best at 8.5B tokens and
-#     8e-4 at 17B; 10B sits between. Topology follows the other scripts here: ai2/jupiter,
+#     Recipe (the ladder's WSD sweep recipe): Dolma 3.5 14T from s3://ai2-llm, seq 8192, global
+#     batch 64 seq = 524,288 tokens (-> 19,074 steps), AdamW (0.9, 0.95) wd 0.1, clip 1.0, WSD with
+#     a 2,000-step linear warmup, constant peak, linear decay over the last 10% of steps (from step
+#     17,167). Peak LR 8e-4 = the sweep's observed winner at Cx4 and Cx8 (17B / 34B tokens), chosen
+#     so the stable trunk can be extended past 10B; a fixed checkpoint is kept at step 17,167
+#     (the trunk fork step) for that. Topology follows the other scripts here: ai2/jupiter,
 #     4 nodes x 8 H100 (allocated), EP1, rank micro-batch 2 seq (32 ranks x 2 = 64, no grad
 #     accumulation). The ladder itself ran this rung on 4 B300s with FA4 + the CuTe KDA kernel;
 #     on H100 the script selects flash-attn 3 and the FLA Triton KDA kernel instead (same math) and
@@ -34,7 +36,8 @@ git submodule update --init external/OLMo-core
 unset GH_TOKEN   # the session's GH_TOKEN is invalid; gantry's ref check should fall back to the gh CLI
 
 export OLMOE3_TOKENS="${OLMOE3_TOKENS:-10000000000}"
-export OLMOE3_LR="${OLMOE3_LR:-1.2e-3}"
+export OLMOE3_LR="${OLMOE3_LR:-8e-4}"
+export OLMOE3_SCHEDULER="${OLMOE3_SCHEDULER:-wsd}"
 export OLMOE3_NUM_NODES="${OLMOE3_NUM_NODES:-4}"
 export OLMOE3_NUM_GPUS="${OLMOE3_NUM_GPUS:-8}"
 export OLMOE3_RANK_MB="${OLMOE3_RANK_MB:-2}"
