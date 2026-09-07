@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06",
+  "updated": "2026-09-07",
   "title": "0802 Step 1-1 \u00b7 Dense 153M",
   "setup": "Dense 153M; 1B-unique-pool repeated-token regime; sequence length 4096. Report tables include BS32/64/128/256/512; completed higher-batch results and provenance remain fully visible. Rank microbatch is 16 sequences; BS32/64 use 2/4 GPUs with gradient accumulation 1/1. Warmup is token-matched across batches.",
   "selection": "For BS32, run the fresh E1 Cartesian grid LR{1e-3,2e-3} x WD{0.033,0.1}, select the healthy coordinate with the lowest validation CE, and then permanently lock both LR and WD to that exact E1 winner. Continue only the locked coordinate at E2/E4/E8/E12/E16 and then E24/E32/E40/E48/E56/E64, stopping at the first post-E16 non-improvement and performing no further tuning. Existing higher-batch chains retain their recorded terminal policies and every completed result and provenance item remains visible. BS64 continues its exact selected LR2e-3/WD0.1 trajectory in eight-epoch increments beyond E80, stopping at the first validation-CE non-improvement; E128 is the current launcher safety ceiling and must be extended if validation is still improving there. BS128 is terminal at E80, BS256 is terminal at E56, and BS512 is terminal at E48 by user policy. Completed E20/E28 work remains visible only in provenance and is omitted from summary rows; neither is a future launch target. BS32 now has one persistent saturation-gated continuation from E48; it uses the locked LR1e-3/WD0.033 coordinate and one canonical output directory. BS64 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS128 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS256 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS512 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS32 now includes a guarded LR5e-4/WD0.033 hybrid probe: POST E40 is the first gate, E32 is evaluated only to confirm a negative E40 result, and a promising or inconclusive probe continues through E80 before the selected LR is tested from scratch with WD0.1.",
@@ -11637,7 +11637,7 @@
       "search": "small-model-bs32-lr-wd-hybrid",
       "hybridWorkflow": true,
       "beaker": "01M1TRGS226RPKDZKN9PPKHYZY",
-      "experiment": "01M1TRGS226RPKDZKN9PPKHYZY",
+      "experiment": "01M1WTNSWNSK87R0KD9HQP5WK9",
       "revision": "f59e5816ed319591d8f39244fa2b3d90e075205e",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr5e-4_wd0.033_hybrid_v1",
       "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr5e-4_wd0.033_hybrid_v1/constant_lr",
@@ -11758,13 +11758,13 @@
           "validationExact": 3.403,
           "wandb": "fh3h2zps",
           "wd": "0.033",
-          "beaker": "01M1TRGS226RPKDZKN9PPKHYZY",
-          "experiment": "01M1TRGS226RPKDZKN9PPKHYZY",
-          "job": "01M1TRGS5R34VZC1WJMR1A6SA4",
+          "beaker": "01M1WTNSWNSK87R0KD9HQP5WK9",
+          "experiment": "01M1WTNSWNSK87R0KD9HQP5WK9",
+          "job": "01M1WTNT0HCWWQQV4MY6JJRVYR",
           "revision": "f59e5816ed319591d8f39244fa2b3d90e075205e"
         }
       },
-      "reason": "E20 POST retained; submitted its LR decision against the completed LR1e-3 E16 reference and conditional fresh LR1e-3/WD0.1 follow-up.",
+      "reason": "The integrated hybrid task is terminal without a complete workflow marker.",
       "priorAttempts": [
         {
           "experiment": "01M1SXP400YKVFFZTCMCPPEMR7",
@@ -11792,6 +11792,28 @@
         "reason": "probe_e20_strictly_worse_than_lr1e3_e16_reference",
         "selectedLearningRate": "1e-3",
         "selectedWeightDecay": "0.033"
+      },
+      "experimentHistory": [
+        {
+          "experiment": "01M1TRGS226RPKDZKN9PPKHYZY",
+          "job": null,
+          "status": "failed_disk_exhaustion",
+          "failedAt": "2026-09-07T01:30:00+00:00"
+        }
+      ],
+      "job": "01M1WTNT0HCWWQQV4MY6JJRVYR",
+      "jobs": [
+        "01M1WTNT0HCWWQQV4MY6JJRVYR"
+      ],
+      "beakerStatus": "scheduled",
+      "submittedAt": "2026-09-07T02:22:56.114930+00:00",
+      "expectedEta": "2026-09-07T19:34:41.731791+00:00",
+      "etaBasis": "live trainer ETA for the active producer or decay stage",
+      "progress": {
+        "currentStep": 532705,
+        "endpointStep": 549317,
+        "trainerEta": "53m",
+        "observedAt": "2026-09-07T18:41:41.731791+00:00"
       }
     },
     {
@@ -11807,16 +11829,16 @@
       "gradientAccumulation": 1,
       "gpuCount": 2,
       "status": "running",
-      "activeEpoch": 48,
+      "activeEpoch": 80,
       "activePhase": "followup_producer",
       "search": "small-model-bs32-lr-wd-hybrid",
       "hybridWorkflow": true,
       "hybridFollowup": true,
       "beaker": "01M1TRGS226RPKDZKN9PPKHYZY",
-      "experiment": "01M1TRGS226RPKDZKN9PPKHYZY",
+      "experiment": "01M1WTNSWNSK87R0KD9HQP5WK9",
       "revision": "f59e5816ed319591d8f39244fa2b3d90e075205e",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1\n2026-09-06T07:05:58.404217368Z",
-      "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1\n2026-09-06T07:05:58.404217368Z/constant_lr",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1",
+      "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1/constant_lr",
       "saveEveryEpochs": 4,
       "evaluationEpochs": [
         40,
@@ -11831,6 +11853,19 @@
       "embeddingWeightDecay": "zero",
       "automaticTaskRetries": 8,
       "minRuntimeOmitted": true,
+      "beakerStatus": "running",
+      "job": "01M1WTNT0HCWWQQV4MY6JJRVYR",
+      "jobs": [
+        "01M1WTNT0HCWWQQV4MY6JJRVYR"
+      ],
+      "expectedEta": "2026-09-07T22:33:15.681511+00:00",
+      "etaBasis": "live trainer ETA for the active producer or decay stage",
+      "progress": {
+        "currentStep": 495485,
+        "endpointStep": 549316,
+        "trainerEta": "2h52m",
+        "observedAt": "2026-09-07T19:41:15.681511+00:00"
+      },
       "results": {
         "40": {
           "acc": 32.519999999999996,
@@ -11882,14 +11917,135 @@
           "wandb": "whchk4n2",
           "wd": "0.1",
           "weightTying": false,
-          "beaker": "01M1TRGS226RPKDZKN9PPKHYZY",
-          "experiment": "01M1TRGS226RPKDZKN9PPKHYZY",
-          "job": "01M1TRGS5R34VZC1WJMR1A6SA4",
+          "beaker": "01M1WTNSWNSK87R0KD9HQP5WK9",
+          "experiment": "01M1WTNSWNSK87R0KD9HQP5WK9",
+          "job": "01M1WTNT0HCWWQQV4MY6JJRVYR",
+          "revision": "f59e5816ed319591d8f39244fa2b3d90e075205e",
+          "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations."
+        },
+        "48": {
+          "acc": 32.31,
+          "avg8Accuracy": 40.89,
+          "avg8Bpb": 1.466375,
+          "bpb": 0.976,
+          "c4": 3.36,
+          "comparisonGroup": "post_decay",
+          "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1/constant_lr",
+          "downstream": {
+            "arc_challenge": 23.41,
+            "arc_easy": 49.120000000000005,
+            "boolq": 59.39,
+            "csqa": 39.15,
+            "hellaswag": 32.31,
+            "openbookqa": 25.6,
+            "piqa": 65.18,
+            "socialiqa": 42.07,
+            "winogrande": 50.28
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.543,
+            "arc_easy": 1.616,
+            "boolq": 1.779,
+            "csqa": 1.622,
+            "hellaswag": 0.976,
+            "openbookqa": 1.73,
+            "piqa": 1.312,
+            "socialiqa": 1.349,
+            "winogrande": 1.583
+          },
+          "dynamicRepacking": false,
+          "embeddingWeightDecay": "zero",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1/post_decay_runs/e48/step366211",
+          "epoch": 48,
+          "gap": -0.051,
+          "lr": "1e-3",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1",
+          "phase": "followup",
+          "policy": "dense_153m_bs32_lr_wd_hybrid_v1",
+          "postOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1/post_decay_runs/e48",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1/constant_lr/step329589",
+          "source": "integrated_isolated_wsd_decay_heldout_and_downstream_eval",
+          "sourcePreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1/constant_lr/step329589",
+          "status": "complete",
+          "train": 3.411,
+          "validation": 3.36,
+          "validationExact": 3.36,
+          "wandb": "xpq56s6u",
+          "wd": "0.1",
+          "weightTying": false,
+          "beaker": "01M1WTNSWNSK87R0KD9HQP5WK9",
+          "experiment": "01M1WTNSWNSK87R0KD9HQP5WK9",
+          "job": "01M1WTNT0HCWWQQV4MY6JJRVYR",
+          "revision": "f59e5816ed319591d8f39244fa2b3d90e075205e",
+          "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations."
+        },
+        "72": {
+          "acc": 32.79,
+          "avg8Accuracy": 40.55125,
+          "avg8Bpb": 1.461675,
+          "bpb": 0.9744,
+          "c4": 3.353,
+          "comparisonGroup": "post_decay",
+          "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1/constant_lr",
+          "downstream": {
+            "arc_challenge": 22.74,
+            "arc_easy": 47.370000000000005,
+            "boolq": 51.44,
+            "csqa": 39.72,
+            "hellaswag": 32.79,
+            "openbookqa": 24.2,
+            "piqa": 64.53,
+            "socialiqa": 42.63,
+            "winogrande": 50.43
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.534,
+            "arc_easy": 1.594,
+            "boolq": 1.545,
+            "csqa": 1.594,
+            "hellaswag": 0.9744,
+            "openbookqa": 1.737,
+            "piqa": 1.313,
+            "socialiqa": 1.38,
+            "winogrande": 1.567
+          },
+          "dynamicRepacking": false,
+          "embeddingWeightDecay": "zero",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1/post_decay_runs/e72/step549317",
+          "epoch": 72,
+          "gap": 0.084,
+          "lr": "1e-3",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1",
+          "phase": "followup",
+          "policy": "dense_153m_bs32_lr_wd_hybrid_v1",
+          "postOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1/post_decay_runs/e72",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1/constant_lr/step494384",
+          "source": "integrated_isolated_wsd_decay_heldout_and_downstream_eval",
+          "sourcePreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1/constant_lr/step494384",
+          "status": "complete",
+          "train": 3.269,
+          "validation": 3.353,
+          "validationExact": 3.353,
+          "wandb": "kpguuvgo",
+          "wd": "0.1",
+          "weightTying": false,
+          "beaker": "01M1WTNSWNSK87R0KD9HQP5WK9",
+          "experiment": "01M1WTNSWNSK87R0KD9HQP5WK9",
+          "job": "01M1WTNT0HCWWQQV4MY6JJRVYR",
           "revision": "f59e5816ed319591d8f39244fa2b3d90e075205e",
           "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations."
         }
       },
-      "reason": "The same guarded task started the fresh WD0.1 trajectory at the selected LR."
+      "reason": "The same guarded task started the fresh WD0.1 trajectory at the selected LR.",
+      "experimentHistory": [
+        {
+          "experiment": "01M1TRGS226RPKDZKN9PPKHYZY",
+          "job": null,
+          "status": "failed_disk_exhaustion",
+          "failedAt": "2026-09-07T01:30:00+00:00"
+        }
+      ],
+      "submittedAt": "2026-09-07T02:22:56.114930+00:00"
     }
   ],
   "summaryBatches": [
@@ -22938,7 +23094,7 @@
   "bs32LrWdHybridWorkflow": {
     "policy": "dense_153m_bs32_lr_wd_hybrid_v1",
     "status": "running",
-    "experiment": "01M1TRGS226RPKDZKN9PPKHYZY",
+    "experiment": "01M1WTNSWNSK87R0KD9HQP5WK9",
     "revision": "f59e5816ed319591d8f39244fa2b3d90e075205e",
     "probeLearningRate": "5e-4",
     "baselineLearningRate": "1e-3",
@@ -22956,9 +23112,9 @@
     ],
     "minRuntimeOmitted": true,
     "beakerStatus": "running",
-    "job": "01M1TRGS5R34VZC1WJMR1A6SA4",
+    "job": "01M1WTNT0HCWWQQV4MY6JJRVYR",
     "activePhase": "followup_producer",
-    "activeEpoch": 48,
+    "activeEpoch": 80,
     "activeLearningRate": "1e-3",
     "activeWeightDecay": "0.1",
     "conditionalFollowupLearningRate": "1e-3",
@@ -22972,7 +23128,23 @@
       "selectedLearningRate": "1e-3",
       "selectedWeightDecay": "0.033"
     },
-    "selectedLearningRate": "1e-3"
+    "selectedLearningRate": "1e-3",
+    "replacementHistory": [
+      {
+        "experiment": "01M1TRGS226RPKDZKN9PPKHYZY",
+        "job": "01M1WRNYV62RSGZHFAEPTA1JRA",
+        "status": "failed_disk_exhaustion",
+        "failedAt": "2026-09-07T01:30:00+00:00"
+      }
+    ],
+    "expectedEta": "2026-09-07T22:33:15.681511+00:00",
+    "etaBasis": "live trainer ETA for the active producer or decay stage",
+    "progress": {
+      "currentStep": 495485,
+      "endpointStep": 549316,
+      "trainerEta": "2h52m",
+      "observedAt": "2026-09-07T19:41:15.681511+00:00"
+    }
   },
   "earlyDiagnosticEvaluations": [
     {
