@@ -322,6 +322,8 @@ def _beaker_env_vars() -> list[BeakerEnvVar]:
     values = dict(OLMO_DDP_PRESET.env_vars)
     values.update(
         {
+            "OLMO_SYMM_VDEV2D_AUTO_BUILD": "1" if EP_SIZE > 1 else "0",
+            "TORCH_CUDA_ARCH_LIST": os.environ.get("TORCH_CUDA_ARCH_LIST", "9.0"),  # H100; any JIT build targets only this
             # Plain AWS keys come from env secrets; an empty S3_PROFILE keeps boto on the default
             # credential chain (same trick as scripts/launch_common.sh).
             "S3_PROFILE": "",
@@ -351,7 +353,10 @@ def build_common_components(cli_context, **kwargs) -> CommonComponents:
         launch.beaker_image = BEAKER_IMAGE
         launch.gh_token_secret = "RYAN_GITHUB_TOKEN"
         launch.env_vars = _beaker_env_vars()
-        launch.post_setup = OLMO_DDP_PRESET.post_setup  # per-node symm-mem prebuild (unused at EP=1, but avoids any import-time build)
+        # The preset's symm-mem/NVSHMEM extension prebuild only serves the rowwise-EP transport;
+        # at EP=1 it is dead weight and its nvcc build fails on jupiter (no GPU arch detection ->
+        # builds sm_50..sm_120). Skip it and disable the import-time auto-build too.
+        launch.post_setup = OLMO_DDP_PRESET.post_setup if EP_SIZE > 1 else None
         launch.env_secrets = [
             BeakerEnvSecret(name="BEAKER_TOKEN", secret="RYAN_BEAKER_TOKEN"),
             BeakerEnvSecret(name="WANDB_API_KEY", secret="RYAN_WANDB_API_KEY"),
