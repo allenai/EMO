@@ -129,23 +129,7 @@
         61,
         62,
         63,
-        64,
-        65,
-        66,
-        67,
-        68,
-        69,
-        70,
-        71,
-        72,
-        73,
-        74,
-        75,
-        76,
-        77,
-        78,
-        79,
-        80
+        64
       ],
       "stopPolicy": "retain_exact_predecay_checkpoint_evaluate_then_stop",
       "stopAuthorized": false,
@@ -203,7 +187,7 @@
         79,
         80
       ],
-      "currentEpoch": 80,
+      "currentEpoch": 65,
       "evaluationEnabled": true,
       "experiment": "01M1WTNNHSF2ZS12XEBYFNSRP8",
       "revision": "e1711c3cd2171f957853ef3b70a1bb12203b3a4a",
@@ -234,7 +218,7 @@
         }
       ],
       "policy": "dense_1b_pool3b_bs128_e32_e80_integrated_v2",
-      "currentPhase": "post_pending",
+      "currentPhase": "repacked_shuffled_pool3b_constant_lr",
       "evaluationEpochs": [
         48,
         64,
@@ -330,11 +314,13 @@
       "lastDecisionEpoch": 64,
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-07T15:31:32.039563+00:00",
+        "checkedAt": "2026-09-07T15:51:42.616446+00:00",
         "beakerState": "running",
-        "latestStep": 333046,
+        "latestStep": 334083,
         "totalSteps": 411987,
         "run": "3im579o3",
+        "epoch": 59,
+        "eta": "1d1h27m",
         "criticalSignals": []
       }
     },
@@ -1175,7 +1161,8 @@
         372,
         376,
         380,
-        384
+        384,
+        448
       ],
       "targetEpochs": [
         32,
@@ -1235,8 +1222,8 @@
         444,
         448
       ],
-      "currentEpoch": 388,
-      "currentPhase": "repacked_shuffled_pool3b_constant_lr",
+      "currentEpoch": 448,
+      "currentPhase": "post",
       "evaluationEnabled": true,
       "experiment": "01M1X7YD066MXTWYCTS3VKMF5H",
       "jobs": [
@@ -1422,11 +1409,13 @@
       "gradientAccumulationSteps": 1,
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-07T15:31:45.823452+00:00",
+        "checkedAt": "2026-09-07T15:51:51.354946+00:00",
         "beakerState": "running",
-        "latestStep": 1175600,
+        "latestStep": 1182559,
         "totalSteps": 1281739,
         "run": null,
+        "epoch": 411,
+        "eta": "4h50m",
         "criticalSignals": []
       }
     },
@@ -2164,7 +2153,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-07T15:32:25.545461+00:00",
+  "updatedAt": "2026-09-07T15:51:51.355158+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",

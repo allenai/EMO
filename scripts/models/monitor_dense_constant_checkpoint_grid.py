@@ -27,6 +27,9 @@ EXPECTED_BEAKER_AUTHOR = "sewonm"
 ACTIVE_BEAKER_STATES = {"submitted", "queued", "scheduled", "running"}
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 TRAIN_STEP = re.compile(r"\[step=([0-9,]+)/([0-9,]+),epoch=")
+TRAIN_ETA = re.compile(
+    r"\[step=[0-9,]+/[0-9,]+,epoch=([0-9]+),eta=([^\]]+)\]"
+)
 DESCRIPTION_STEP = re.compile(r"\bstep ([0-9,]+)/([0-9,]+)")
 TRAIN_LOSS = re.compile(r"\btrain/CE loss=([^\s]+)")
 WANDB = re.compile(r"https://wandb\.ai/[^\s]+/runs/([a-zA-Z0-9]{8})\b")
@@ -105,6 +108,17 @@ def beaker_state(payload: dict[str, Any]) -> str:
 
 
 def should_poll(record: dict[str, Any]) -> bool:
+    if (
+        record.get("role") == "integrated_checkpoint_producer_and_evaluator"
+        and record.get("status") == "complete"
+        and record.get("beakerStatus") == "failed"
+        and not set(int(epoch) for epoch in record.get("evaluationEpochs", [])).issubset(
+            int(epoch) for epoch in record.get("postDecayResults", {})
+        )
+    ):
+        # Repair a legacy false-complete produced when the workflow emitted its
+        # final marker after exhausting retries before all POST gates resolved.
+        return True
     beaker_status = record.get("beakerStatus")
     if beaker_status is not None:
         return str(beaker_status) in ACTIVE_BEAKER_STATES
@@ -147,6 +161,7 @@ def health(logs: str, state: str) -> dict[str, Any]:
     if any(marker in logs for marker in stage_markers) and "Loading checkpoint from '" not in logs:
         critical.append("missing-exact-checkpoint-load")
     wandb = WANDB.findall(logs)
+    eta = TRAIN_ETA.findall(logs)
     return {
         "status": "critical" if critical else "healthy" if steps else "pending",
         "checkedAt": datetime.now(tz=UTC).isoformat(),
@@ -154,6 +169,8 @@ def health(logs: str, state: str) -> dict[str, Any]:
         "latestStep": steps[-1][0] if steps else None,
         "totalSteps": steps[-1][1] if steps else None,
         "run": wandb[-1] if wandb else None,
+        "epoch": int(eta[-1][0]) if eta else None,
+        "eta": eta[-1][1] if eta else None,
         "criticalSignals": critical,
     }
 
@@ -250,18 +267,38 @@ def refresh_producer(record: dict[str, Any]) -> str:
             str(experiment), state, str(jobs[-1]["id"]), since="70m"
         )
     resolved = {int(epoch) for epoch in record.get("resolvedCheckpointEpochs", [])}
+    if (
+        integrated_pool3b
+        and state == "failed"
+        and record.get("currentEpoch") is not None
+        and not set(int(epoch) for epoch in record.get("evaluationEpochs", [])).issubset(
+            int(epoch) for epoch in record.get("postDecayResults", {})
+        )
+    ):
+        # An older monitor treated the terminal marker as proof that every
+        # future PD checkpoint existed. Integrated workflows evaluate each gate
+        # before continuing, so no checkpoint beyond the unresolved gate can
+        # be considered retained.
+        resolved = {
+            epoch for epoch in resolved if epoch <= int(record["currentEpoch"])
+        }
     if pool3b_v2 and f"DENSE_SMALL_POOL3B_BRIDGE_COMPLETE id={record['id']}" in logs:
         resolved.add(1)
     for epoch in record["targetEpochs"]:
         pool_tokens = 3_000_000_000 if record["pool"] == "dclm3b" else 1_000_000_000
         endpoint = -(-int(epoch) * pool_tokens // (int(record["batchSequences"]) * 4096))
         step = endpoint - round(0.1 * endpoint) - 1
-        if re.search(rf"(?:/|\b)step[ ]?{step}(?:\b|/)", logs):
+        if not integrated_pool3b and re.search(
+            rf"(?:/|\b)step[ ]?{step}(?:\b|/)", logs
+        ):
             resolved.add(int(epoch))
     if integrated_pool3b:
+        retained_in_logs: set[int] = set()
         for producer_id, epoch, _checkpoint in POOL3B_INTEGRATED_PD_RETAINED.findall(logs):
             if producer_id == record["id"]:
-                resolved.add(int(epoch))
+                retained_epoch = int(epoch)
+                resolved.add(retained_epoch)
+                retained_in_logs.add(retained_epoch)
         results = record.setdefault("postDecayResults", {})
         for producer_id, epoch, raw in POOL3B_INTEGRATED_POST_RESULT.findall(logs):
             if producer_id == record["id"]:
@@ -276,6 +313,24 @@ def refresh_producer(record: dict[str, Any]) -> str:
             decision_epoch, decision = decisions[-1]
             record["decision"] = decision
             record["lastDecisionEpoch"] = decision_epoch
+        # The 1B integrated workflow can be retried from an earlier recovery
+        # checkpoint after a terminal disk failure.  Do not carry unverified
+        # future PD epochs from the failed attempt into the active retry.  A
+        # completed POST proves its own PD source; newer epochs require a
+        # retained marker from the active job.
+        if (
+            record.get("policy") == "dense_1b_pool3b_bs128_e32_e80_integrated_v2"
+            and state in ACTIVE_BEAKER_STATES
+        ):
+            proven_epochs = {
+                int(record.get("continuationSourceEpoch", 0)),
+                *(int(epoch) for epoch in results),
+                *retained_in_logs,
+            }
+            latest_proven = max(proven_epochs)
+            resolved = {
+                epoch for epoch in resolved if epoch <= latest_proven
+            } | retained_in_logs
     # A retained post-bridge checkpoint proves that the exact E1 bridge
     # completed, even when its older completion marker is no longer in the
     # active log tail.
@@ -303,7 +358,12 @@ def refresh_producer(record: dict[str, Any]) -> str:
         record["stopAfterEpoch"] = int(integrated_decision["producerStoppedAfterEpoch"])
         record["currentPhase"] = "terminal"
         record.pop("needsAttention", None)
-    elif any(marker in logs for marker in completion_markers):
+    elif any(marker in logs for marker in completion_markers) and (
+        not integrated_pool3b
+        or set(int(epoch) for epoch in record.get("evaluationEpochs", [])).issubset(
+            int(epoch) for epoch in record.get("postDecayResults", {})
+        )
+    ):
         if pool3b_v2:
             resolved.add(1)
         resolved.update(record["targetEpochs"])
