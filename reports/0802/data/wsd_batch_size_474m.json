@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06",
+  "updated": "2026-09-07",
   "title": "0802 Step 1-1 \u00b7 Dense 474M",
   "setup": "Dense 474M; 1B-unique-pool repeated-token regime; sequence length 4096. Report tables include BS32/64/128/256/512; completed higher-batch results and provenance remain fully visible. Rank microbatch is 16 sequences; BS32/64 use 2/4 GPUs with gradient accumulation 1/1. Warmup is token-matched across batches.",
   "selection": "For BS32, the user declared LR1e-3/WD0.1 the E1 winner after it tied the minimum validation CE, preferring the higher WD for later epochs. Both LR and WD are now permanently locked: continue only this exact coordinate through E2/E4/E8/E12/E16 and then E24/E32/E40/E48/E56/E64, stopping at the first post-E16 non-improvement. The selected E1 trajectory also supplies exact-coordinate E0.125/E0.25/E0.5 decay endpoints. All nonwinning E1 results and recovery provenance remain visible. Existing higher-batch chains retain their recorded terminal policies. Completed E20/E28 work remains visible only in provenance and is omitted from summary rows; neither is a future launch target. BS32 now has one persistent saturation-gated continuation from E24; it uses the locked LR1e-3/WD0.1 coordinate and one canonical output directory. BS64 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.1 and its immediate neighbors. BS128 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.3 and its immediate neighbors. BS256 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.333 and its immediate neighbors. BS512 also has a persistent DR+WT+EmbedWD adaptive-WD saturation chain at LR2e-3, starting from baseline WD0.3 and its immediate neighbors. Original-model tuning now includes BS32 LR5e-4 and LR2e-3 WD0.1 POST E4 probes against LR1e-3/WD0.1, plus a user-authorized BS128 LR2e-3/WD0.3 E52 extension after the rounded E40/E48 tie. Because LR5e-4/WD0.1 strictly beat LR1e-3/WD0.1 at E4, its exact E4 PD frontier continues through E32 with POST evaluations at E16, E24, and E32.",
@@ -9018,12 +9018,12 @@
       "rankMicrobatchSequences": 16,
       "gradientAccumulation": 1,
       "gpuCount": 2,
-      "status": "running",
-      "activeEpoch": 24,
-      "activePhase": "producer",
+      "status": "complete",
+      "activeEpoch": 32,
+      "activePhase": "post_complete",
       "search": "small-model-original-lr-selected-extension",
       "beaker": "01M1TM1X22ARAY4WBX70QWT8Q3",
-      "experiment": "01M1TM1X22ARAY4WBX70QWT8Q3",
+      "experiment": "01M1WTP1433BMC3H8MEE2YAYP9",
       "revision": "8da2785254e0a5e8b97dd1cc7c2b634976a8c15f",
       "sourceEpoch": 4,
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/step27465",
@@ -9031,7 +9031,7 @@
       "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1",
       "postDecayOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/.dense_474m_original_tuning_v1/post_decay_runs/e4-retry01",
       "retainedPreDecayEpochs": [
-        16
+        24
       ],
       "comparisonEpoch": 4,
       "baselineLearningRate": "1e-3",
@@ -9152,15 +9152,131 @@
           "wandb": "y5slf92i",
           "wd": "0.1",
           "weightTying": false,
-          "beaker": "01M1TM1X22ARAY4WBX70QWT8Q3",
-          "experiment": "01M1TM1X22ARAY4WBX70QWT8Q3",
-          "job": "01M1TM1X5JR6XV55Q1QWZHGMX6",
+          "beaker": "01M1WTP1433BMC3H8MEE2YAYP9",
+          "experiment": "01M1WTP1433BMC3H8MEE2YAYP9",
+          "job": "01M1WTP17NDPDHXDB2VGCWK3SM",
+          "revision": "8da2785254e0a5e8b97dd1cc7c2b634976a8c15f",
+          "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations."
+        },
+        "24": {
+          "acc": 41.17,
+          "avg8Accuracy": 45.02875,
+          "avg8Bpb": 1.329575,
+          "batchSequences": 32,
+          "bpb": 0.9126,
+          "c4": 3.139,
+          "comparisonGroup": "post_decay",
+          "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1",
+          "coordinate": "lr5e-4-wd0.1",
+          "downstream": {
+            "arc_challenge": 25.75,
+            "arc_easy": 50.349999999999994,
+            "boolq": 53.21,
+            "csqa": 49.63,
+            "hellaswag": 41.17,
+            "openbookqa": 27.6,
+            "piqa": 68.77,
+            "socialiqa": 45.34,
+            "winogrande": 51.62
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.343,
+            "arc_easy": 1.348,
+            "boolq": 1.803,
+            "csqa": 1.37,
+            "hellaswag": 0.9126,
+            "openbookqa": 1.669,
+            "piqa": 1.214,
+            "socialiqa": 1.241,
+            "winogrande": 1.539
+          },
+          "dynamicRepacking": false,
+          "embeddingWeightDecay": "zero",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/.dense_474m_original_lr5e4_e32_v1/post_decay_runs/e24-retry01/step183106",
+          "epoch": 24,
+          "gap": 0.209,
+          "lr": "5e-4",
+          "mode": "bs32-lr5e4-e32",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1",
+          "policy": "dense_474m_original_lr5e4_e32_v1",
+          "postOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/.dense_474m_original_lr5e4_e32_v1/post_decay_runs/e24-retry01",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/step164794",
+          "source": "integrated_isolated_wsd_decay_heldout_and_downstream_eval",
+          "sourcePreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/step164794",
+          "status": "complete",
+          "train": 2.93,
+          "validation": 3.139,
+          "validationExact": 3.139,
+          "wandb": "81pii2cy",
+          "wd": "0.1",
+          "weightTying": false,
+          "beaker": "01M1WTP1433BMC3H8MEE2YAYP9",
+          "experiment": "01M1WTP1433BMC3H8MEE2YAYP9",
+          "job": "01M1WTP17NDPDHXDB2VGCWK3SM",
+          "revision": "8da2785254e0a5e8b97dd1cc7c2b634976a8c15f",
+          "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations."
+        },
+        "32": {
+          "acc": 42.18,
+          "avg8Accuracy": 45.613749999999996,
+          "avg8Bpb": 1.34095,
+          "batchSequences": 32,
+          "bpb": 0.9126,
+          "c4": 3.142,
+          "comparisonGroup": "post_decay",
+          "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1",
+          "coordinate": "lr5e-4-wd0.1",
+          "downstream": {
+            "arc_challenge": 24.08,
+            "arc_easy": 54.910000000000004,
+            "boolq": 53.879999999999995,
+            "csqa": 48.809999999999995,
+            "hellaswag": 42.18,
+            "openbookqa": 28.599999999999998,
+            "piqa": 68.66,
+            "socialiqa": 45.5,
+            "winogrande": 52.17
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.381,
+            "arc_easy": 1.381,
+            "boolq": 1.676,
+            "csqa": 1.381,
+            "hellaswag": 0.9126,
+            "openbookqa": 1.653,
+            "piqa": 1.228,
+            "socialiqa": 1.26,
+            "winogrande": 1.531
+          },
+          "dynamicRepacking": false,
+          "embeddingWeightDecay": "zero",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/.dense_474m_original_lr5e4_e32_v1/post_decay_runs/e32-retry01/step244141",
+          "epoch": 32,
+          "gap": 0.283,
+          "lr": "5e-4",
+          "mode": "bs32-lr5e4-e32",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1",
+          "policy": "dense_474m_original_lr5e4_e32_v1",
+          "postOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/.dense_474m_original_lr5e4_e32_v1/post_decay_runs/e32-retry01",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/step219726",
+          "source": "integrated_isolated_wsd_decay_heldout_and_downstream_eval",
+          "sourcePreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs32_lr5e-4_wd0.1/step219726",
+          "status": "complete",
+          "train": 2.859,
+          "validation": 3.142,
+          "validationExact": 3.142,
+          "wandb": "tlco8cbp",
+          "wd": "0.1",
+          "weightTying": false,
+          "beaker": "01M1WTP1433BMC3H8MEE2YAYP9",
+          "experiment": "01M1WTP1433BMC3H8MEE2YAYP9",
+          "job": "01M1WTP17NDPDHXDB2VGCWK3SM",
           "revision": "8da2785254e0a5e8b97dd1cc7c2b634976a8c15f",
           "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations."
         }
       },
       "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations.",
-      "job": "01M1TM1X5JR6XV55Q1QWZHGMX6",
+      "job": "01M1WTP17NDPDHXDB2VGCWK3SM",
       "continuations": [
         {
           "experiment": "01M1T7J31A5SDZHBW113BF3NAD",
@@ -9182,7 +9298,20 @@
         16,
         24,
         32
-      ]
+      ],
+      "experimentHistory": [
+        {
+          "experiment": "01M1TM1X22ARAY4WBX70QWT8Q3",
+          "job": "01M1WRHJBWJ3D2ESDQKH853RA7",
+          "status": "failed_disk_exhaustion",
+          "failedAt": "2026-09-07T01:30:00+00:00"
+        }
+      ],
+      "jobs": [
+        "01M1WTP17NDPDHXDB2VGCWK3SM"
+      ],
+      "beakerStatus": "scheduled",
+      "submittedAt": "2026-09-07T02:22:56.114930+00:00"
     },
     {
       "id": "dense-474m-bs32-lr2e-3-wd0.1-e4-probe-v1",
@@ -18413,13 +18542,13 @@
   ],
   "originalTuningWorkflow": {
     "policy": "dense_474m_original_tuning_v1",
-    "status": "running",
+    "status": "complete",
     "revision": "8da2785254e0a5e8b97dd1cc7c2b634976a8c15f",
     "minRuntimeOmitted": true,
     "experiments": {
       "bs32-probes": "01M1T7J31A5SDZHBW113BF3NAD",
       "bs128-e52": "01M1T7J3XM38XR2BP4GA7W5F26",
-      "bs32-lr5e4-e32": "01M1TM1X22ARAY4WBX70QWT8Q3"
+      "bs32-lr5e4-e32": "01M1WTP1433BMC3H8MEE2YAYP9"
     },
     "bs32Baseline": {
       "learningRate": "1e-3",
@@ -18461,7 +18590,8 @@
         "results": {
           "lr5e-4-wd0.1": [
             "4",
-            "16"
+            "16",
+            "24"
           ],
           "lr2e-3-wd0.1": [
             "4"
@@ -18488,15 +18618,17 @@
         }
       },
       "bs32-lr5e4-e32": {
-        "experiment": "01M1TM1X22ARAY4WBX70QWT8Q3",
-        "job": "01M1TM1X5JR6XV55Q1QWZHGMX6",
-        "beakerStatus": "running",
-        "status": "running",
+        "experiment": "01M1WTP1433BMC3H8MEE2YAYP9",
+        "job": "01M1WTP17NDPDHXDB2VGCWK3SM",
+        "beakerStatus": "complete",
+        "status": "complete",
         "decision": null,
         "results": {
           "lr5e-4-wd0.1": [
             "4",
-            "16"
+            "16",
+            "24",
+            "32"
           ]
         }
       }
@@ -18517,6 +18649,14 @@
         ],
         "status": "canceled",
         "reason": "Used separate v2 output roots instead of the canonical Original coordinate roots; canceled before replacement and never resumable."
+      },
+      {
+        "experiments": [
+          "01M1TM1X22ARAY4WBX70QWT8Q3"
+        ],
+        "job": "01M1WRHJBWJ3D2ESDQKH853RA7",
+        "status": "failed_disk_exhaustion",
+        "failedAt": "2026-09-07T01:30:00+00:00"
       }
     ],
     "decisions": {
