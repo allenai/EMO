@@ -359,13 +359,13 @@
       "job": "01M1YAWGQ0MJF9S5HGX3VRZEVJ",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-07T21:42:09.313701+00:00",
+        "checkedAt": "2026-09-07T23:41:55.896423+00:00",
         "beakerState": "running",
-        "latestStep": 362695,
+        "latestStep": 374713,
         "totalSteps": 411987,
         "run": "tciktjyl",
-        "epoch": 64,
-        "eta": "8h12m",
+        "epoch": 66,
+        "eta": "6h12m",
         "criticalSignals": []
       }
     },
@@ -1505,13 +1505,13 @@
       "job": "01M1YV0T0KSKCQP3TH0JBF4QM3",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-07T21:42:11.070419+00:00",
+        "checkedAt": "2026-09-07T23:42:02.037994+00:00",
         "beakerState": "running",
-        "latestStep": 1164794,
+        "latestStep": 1205309,
         "totalSteps": 1318359,
         "run": "4ucejt31",
-        "epoch": 404,
-        "eta": "7h26m",
+        "epoch": 419,
+        "eta": "5h34m",
         "criticalSignals": []
       }
     },
@@ -2249,7 +2249,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-07T21:43:02.937939+00:00",
+  "updatedAt": "2026-09-07T23:42:28.109870+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",
@@ -6689,7 +6689,7 @@
         "submittedAt": "2026-09-07T02:22:56.114930+00:00",
         "wandbHealth": {
           "status": "canceled",
-          "checkedAt": "2026-09-07T21:42:59.436831+00:00",
+          "checkedAt": "2026-09-07T23:42:24.391613+00:00",
           "beakerState": "canceled",
           "criticalSignals": []
         },
@@ -6717,13 +6717,14 @@
         "gradientAccumulationSteps": 2,
         "minRuntimeOmitted": true,
         "resolvedCheckpointEpochs": [
-          16
+          16,
+          32
         ],
         "resolvedPostEpochs": [
           16
         ],
         "currentEpoch": 32,
-        "currentPhase": "producer",
+        "currentPhase": "post",
         "postDecayResults": {
           "16": {
             "batchSequences": 256,
@@ -6766,7 +6767,7 @@
         "submittedAt": "2026-09-07T02:22:56.114930+00:00",
         "wandbHealth": {
           "status": "healthy",
-          "checkedAt": "2026-09-07T21:43:02.937896+00:00",
+          "checkedAt": "2026-09-07T23:42:28.109760+00:00",
           "beakerState": "running",
           "criticalSignals": []
         }
