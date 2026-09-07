@@ -9,7 +9,7 @@ the fused MoE-v2 / LatentMoE / KDA stack.
 
 The ladder trained this rung on 4 B300s (FA4 + CuTe KDA). Here the defaults follow the other
 scripts in model_scripts/: ai2/jupiter H100s, 4 nodes x 8 GPUs, allocated, so the H100-capable
-kernels (flash-attn 2, FLA Triton KDA) are selected instead.
+kernels (flash-attn 3, FLA Triton KDA) and a CUDA-12.8 image are selected instead.
 
 Usage (from the repo root; see scripts/sparse_experts/model_scripts/olmoe3_275m_10b.sh):
     PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_275m.py \
@@ -23,11 +23,11 @@ Env knobs (all forwarded to the Beaker worker, which rebuilds the config):
     OLMOE3_RANK_MB        sequences per rank per micro-batch (default 2 -> 32 ranks x 2 = the fixed
                           64-sequence global batch, no grad accumulation)
     OLMOE3_EP_SIZE        expert-parallel degree (default 1)
-    OLMOE3_ATTN_BACKEND   flash_2 (default; works on H100) | flash_3 (Hopper, needs an FA3 image) |
-                          flash_4 (Blackwell only, the ladder's own setting)
+    OLMOE3_ATTN_BACKEND   flash_3 (default, Hopper) | flash_2 | flash_4 (Blackwell only, the
+                          ladder's own setting)
     OLMOE3_USE_CUTE_KDA   0 (default, FLA Triton KDA kernel, any GPU) | 1 (Blackwell CuTe kernel)
-    OLMOE3_IMAGE          Beaker image (default: the team's olmo-ddp preset image, torch 2.11 /
-                          cu130 built for sm_90+sm_100+sm_103, so it runs on H100 too)
+    OLMOE3_IMAGE          Beaker image (default: the team's torch 2.10 / cu128 H100 image; the
+                          ladder's own cu130 B300 image needs a CUDA-13 driver, which jupiter lacks)
     OLMOE3_PREEMPTIBLE    0 (default, allocated) | 1
     OLMOE3_SAVE_ROOT / OLMOE3_WORK_DIR / OLMOE3_DATA_ROOT / OLMOE3_WANDB_TAGS
 """
@@ -141,7 +141,7 @@ EXPECTED_ACTIVE_NON_EMBEDDING_PARAMS = 212_443_984
 EXPECTED_TOTAL_PARAMS = 2_607_948_624
 
 KDA_USE_CUTE_KERNEL = _env_bool("OLMOE3_USE_CUTE_KDA", False)
-ATTN_BACKEND = AttentionBackendName(os.environ.get("OLMOE3_ATTN_BACKEND", "flash_2"))
+ATTN_BACKEND = AttentionBackendName(os.environ.get("OLMOE3_ATTN_BACKEND", "flash_3"))
 
 
 def _layer_norm() -> LayerNormConfig:
@@ -308,7 +308,10 @@ OLMO_CORE_SUBMODULE = "external/OLMo-core"
 BEAKER_WORKSPACE = os.environ.get("BEAKER_WORKSPACE", "ai2/flex2")
 BEAKER_PRIORITY = os.environ.get("BEAKER_PRIORITY", "urgent")
 OLMO_DDP_PRESET = get_preset("olmo-ddp")  # the team's B300 image (torch 2.11 / cu130 / FA4 / NVSHMEM)
-BEAKER_IMAGE = os.environ.get("OLMOE3_IMAGE") or OLMO_DDP_PRESET.beaker_image
+# jupiter's driver is CUDA 12.8, so the olmo-ddp preset's CUDA-13 B300 image cannot run there.
+# This is the team's torch 2.10 / cu128 image (flash-attn 2+3, grouped_gemm, TransformerEngine).
+H100_IMAGE = "petew/olmo-core-tch2100cu128-2026-01-23"
+BEAKER_IMAGE = os.environ.get("OLMOE3_IMAGE") or H100_IMAGE
 WANDB_PROJECT, WANDB_ENTITY = "emo-extension", "ryanyxw"
 
 FORWARDED_ENV = (

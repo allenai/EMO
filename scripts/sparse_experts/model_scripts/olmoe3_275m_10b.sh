@@ -15,7 +15,8 @@
 #     8e-4 at 17B; 10B sits between. Topology follows the other scripts here: ai2/jupiter,
 #     4 nodes x 8 H100 (allocated), EP1, rank micro-batch 2 seq (32 ranks x 2 = 64, no grad
 #     accumulation). The ladder itself ran this rung on 4 B300s with FA4 + the CuTe KDA kernel;
-#     on H100 the script selects flash-attn 2 and the FLA Triton KDA kernel instead (same math).
+#     on H100 the script selects flash-attn 3 and the FLA Triton KDA kernel instead (same math) and
+#     the team's torch 2.10 / cu128 image (jupiter's driver is CUDA 12.8; the B300 image is CUDA 13).
 #     Checkpoints every 1000 steps (~0.5B tokens) under ${OLMOE3_SAVE_ROOT}/olmoe3_275m_10b.
 #
 #   git add ... && git commit && git push origin <branch>   # gantry clones from origin!
@@ -23,7 +24,8 @@
 #   bash scripts/sparse_experts/model_scripts/olmoe3_275m_10b.sh dry_run    # print the config only
 #
 #   B300 (the ladder's own setting): OLMOE3_CLUSTER=ai2/holmes OLMOE3_NUM_NODES=1 OLMOE3_NUM_GPUS=4 \
-#     OLMOE3_RANK_MB=16 OLMOE3_ATTN_BACKEND=flash_4 OLMOE3_USE_CUTE_KDA=1 (note: ai2/flex2 has no
+#     OLMOE3_RANK_MB=16 OLMOE3_ATTN_BACKEND=flash_4 OLMOE3_USE_CUTE_KDA=1
+#     OLMOE3_IMAGE=akshitab/olmo-core-tch2110cu130-fa4-rma-2026-07-24 (note: ai2/flex2 has no
 #     Holmes allocation, so that needs an unallocated/filler workspace setting).
 ##############################################################
 set -euo pipefail
@@ -36,7 +38,7 @@ export OLMOE3_LR="${OLMOE3_LR:-1.2e-3}"
 export OLMOE3_NUM_NODES="${OLMOE3_NUM_NODES:-4}"
 export OLMOE3_NUM_GPUS="${OLMOE3_NUM_GPUS:-8}"
 export OLMOE3_RANK_MB="${OLMOE3_RANK_MB:-2}"
-export OLMOE3_ATTN_BACKEND="${OLMOE3_ATTN_BACKEND:-flash_2}"
+export OLMOE3_ATTN_BACKEND="${OLMOE3_ATTN_BACKEND:-flash_3}"
 export OLMOE3_USE_CUTE_KDA="${OLMOE3_USE_CUTE_KDA:-0}"
 export OLMOE3_EP_SIZE="${OLMOE3_EP_SIZE:-1}"
 export OLMOE3_PREEMPTIBLE=0   # allocated slot: multi-node preemptible gangs queue for days / die mid-run
