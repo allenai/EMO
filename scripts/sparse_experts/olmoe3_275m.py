@@ -7,6 +7,10 @@ qualified against, which is the ``external/OLMo-core`` submodule pinned to 0e5c2
 (``PYTHONPATH=external/OLMo-core/src``); this repo's own ``olmo_core`` (v2.3.0) lacks
 the fused MoE-v2 / LatentMoE / KDA stack.
 
+The ladder trained this rung on 4 B300s (FA4 + CuTe KDA). Here the defaults follow the other
+scripts in model_scripts/: ai2/jupiter H100s, 4 nodes x 8 GPUs, allocated, so the H100-capable
+kernels (flash-attn 2, FLA Triton KDA) are selected instead.
+
 Usage (from the repo root; see scripts/sparse_experts/model_scripts/olmoe3_275m_10b.sh):
     PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_275m.py \
         <launch|dry_run|train> <run_name> <cluster> [--config.overrides ...]
@@ -15,12 +19,15 @@ Env knobs (all forwarded to the Beaker worker, which rebuilds the config):
     OLMOE3_TOKENS         token budget (required)
     OLMOE3_LR             peak LR (default 1.2e-3; the ladder's WSD sweep gave 1.6e-3 @ 8.5B
                           tokens and 8e-4 @ 17B tokens)
-    OLMOE3_NUM_GPUS       GPUs on the single node (default 4 = the ladder's qualified 275M cell)
-    OLMOE3_RANK_MB        sequences per rank per micro-batch (default 16 -> no grad accumulation
-                          with 4 GPUs and the fixed 64-sequence global batch)
+    OLMOE3_NUM_NODES      nodes (default 4), OLMOE3_NUM_GPUS GPUs per node (default 8)
+    OLMOE3_RANK_MB        sequences per rank per micro-batch (default 2 -> 32 ranks x 2 = the fixed
+                          64-sequence global batch, no grad accumulation)
     OLMOE3_EP_SIZE        expert-parallel degree (default 1)
-    OLMOE3_ATTN_BACKEND   flash_4 (default, Blackwell only) | flash_3 (Hopper)
-    OLMOE3_USE_CUTE_KDA   1 (default, Blackwell CuTe KDA kernel) | 0 (FLA Triton fallback)
+    OLMOE3_ATTN_BACKEND   flash_2 (default; works on H100) | flash_3 (Hopper, needs an FA3 image) |
+                          flash_4 (Blackwell only, the ladder's own setting)
+    OLMOE3_USE_CUTE_KDA   0 (default, FLA Triton KDA kernel, any GPU) | 1 (Blackwell CuTe kernel)
+    OLMOE3_IMAGE          Beaker image (default: the team's olmo-ddp preset image, torch 2.11 /
+                          cu130 built for sm_90+sm_100+sm_103, so it runs on H100 too)
     OLMOE3_PREEMPTIBLE    0 (default, allocated) | 1
     OLMOE3_SAVE_ROOT / OLMOE3_WORK_DIR / OLMOE3_DATA_ROOT / OLMOE3_WANDB_TAGS
 """
@@ -133,8 +140,8 @@ EXPECTED_ACTIVE_PARAMS = 276_669_264
 EXPECTED_ACTIVE_NON_EMBEDDING_PARAMS = 212_443_984
 EXPECTED_TOTAL_PARAMS = 2_607_948_624
 
-KDA_USE_CUTE_KERNEL = _env_bool("OLMOE3_USE_CUTE_KDA", True)
-ATTN_BACKEND = AttentionBackendName(os.environ.get("OLMOE3_ATTN_BACKEND", "flash_4"))
+KDA_USE_CUTE_KERNEL = _env_bool("OLMOE3_USE_CUTE_KDA", False)
+ATTN_BACKEND = AttentionBackendName(os.environ.get("OLMOE3_ATTN_BACKEND", "flash_2"))
 
 
 def _layer_norm() -> LayerNormConfig:
@@ -287,8 +294,9 @@ LOADER_SEED = 928_543_231  # dense-mainline PT loader seed
 
 TOKENS = int(float(os.environ["OLMOE3_TOKENS"])) if "OLMOE3_TOKENS" in os.environ else None
 LR = float(os.environ.get("OLMOE3_LR", "1.2e-3"))
-NUM_GPUS = int(os.environ.get("OLMOE3_NUM_GPUS", "4"))
-RANK_MICROBATCH_SEQUENCES = int(os.environ.get("OLMOE3_RANK_MB", "16"))
+NUM_NODES = int(os.environ.get("OLMOE3_NUM_NODES", "4"))
+NUM_GPUS = int(os.environ.get("OLMOE3_NUM_GPUS", "8"))
+RANK_MICROBATCH_SEQUENCES = int(os.environ.get("OLMOE3_RANK_MB", "2"))
 EP_SIZE = int(os.environ.get("OLMOE3_EP_SIZE", "1"))
 PREEMPTIBLE = _env_bool("OLMOE3_PREEMPTIBLE", False)
 DATA_ROOT = os.environ.get("OLMOE3_DATA_ROOT", "s3://ai2-llm")
@@ -300,13 +308,13 @@ OLMO_CORE_SUBMODULE = "external/OLMo-core"
 BEAKER_WORKSPACE = os.environ.get("BEAKER_WORKSPACE", "ai2/flex2")
 BEAKER_PRIORITY = os.environ.get("BEAKER_PRIORITY", "urgent")
 OLMO_DDP_PRESET = get_preset("olmo-ddp")  # the team's B300 image (torch 2.11 / cu130 / FA4 / NVSHMEM)
-BEAKER_IMAGE = os.environ.get("BEAKER_IMAGE") or OLMO_DDP_PRESET.beaker_image
+BEAKER_IMAGE = os.environ.get("OLMOE3_IMAGE") or OLMO_DDP_PRESET.beaker_image
 WANDB_PROJECT, WANDB_ENTITY = "emo-extension", "ryanyxw"
 
 FORWARDED_ENV = (
-    "OLMOE3_TOKENS", "OLMOE3_LR", "OLMOE3_NUM_GPUS", "OLMOE3_RANK_MB", "OLMOE3_EP_SIZE",
+    "OLMOE3_TOKENS", "OLMOE3_LR", "OLMOE3_NUM_NODES", "OLMOE3_NUM_GPUS", "OLMOE3_RANK_MB", "OLMOE3_EP_SIZE",
     "OLMOE3_ATTN_BACKEND", "OLMOE3_USE_CUTE_KDA", "OLMOE3_PREEMPTIBLE", "OLMOE3_DATA_ROOT",
-    "OLMOE3_SAVE_ROOT", "OLMOE3_WORK_DIR", "OLMOE3_WANDB_TAGS",
+    "OLMOE3_SAVE_ROOT", "OLMOE3_WORK_DIR", "OLMOE3_WANDB_TAGS", "OLMOE3_IMAGE",
 )
 
 
@@ -343,7 +351,7 @@ def build_common_components(cli_context, **kwargs) -> CommonComponents:
         launch.beaker_image = BEAKER_IMAGE
         launch.gh_token_secret = "RYAN_GITHUB_TOKEN"
         launch.env_vars = _beaker_env_vars()
-        launch.post_setup = OLMO_DDP_PRESET.post_setup if EP_SIZE > 1 else None  # symm-mem build: EP only
+        launch.post_setup = OLMO_DDP_PRESET.post_setup  # per-node symm-mem prebuild (unused at EP=1, but avoids any import-time build)
         launch.env_secrets = [
             BeakerEnvSecret(name="BEAKER_TOKEN", secret="RYAN_BEAKER_TOKEN"),
             BeakerEnvSecret(name="WANDB_API_KEY", secret="RYAN_WANDB_API_KEY"),
@@ -410,7 +418,7 @@ def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleCon
     assert TOKENS is not None, "set OLMOE3_TOKENS"
     print(
         f"[olmoe3_275m] tokens={TOKENS:,} steps={TOKENS // GLOBAL_BATCH_SIZE:,} lr={LR:g} "
-        f"gpus={NUM_GPUS} rank_mb={RANK_MICROBATCH_SEQUENCES} ep={EP_SIZE} attn={ATTN_BACKEND} "
+        f"nodes={NUM_NODES} gpus/node={NUM_GPUS} rank_mb={RANK_MICROBATCH_SEQUENCES} ep={EP_SIZE} attn={ATTN_BACKEND} "
         f"cute_kda={KDA_USE_CUTE_KERNEL}"
     )
     return OLMoDDPTrainModuleConfig(
@@ -500,7 +508,7 @@ if __name__ == "__main__":
             build_config,
             global_batch_size=GLOBAL_BATCH_SIZE,
             max_sequence_length=SEQUENCE_LENGTH,
-            num_nodes=1,
+            num_nodes=NUM_NODES,
             common_config_builder=build_common_components,
             data_config_builder=build_data_components,
             model_config_builder=build_model_config,
