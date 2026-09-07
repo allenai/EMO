@@ -23,13 +23,15 @@
   }[pool] || pool);
   const formatModel = (model) => ({"1b": "1B", "474m": "474M", "153m": "153M"}[model] || model);
   const isActive = (status) => ["submitted", "scheduled", "running"].includes(status);
-  const isFailed = (status) => ["failed", "canceled", "cancelled", "error"].includes(status);
+  const isFailed = (status) =>
+    ["failed", "failed_validation", "canceled", "cancelled", "error"].includes(status);
 
   const integratedRuns = current.dclm333mIntegratedRuns || [];
   const integratedPool3bRuns = (current.producers || []).filter((producer) =>
     producer.role === "integrated_checkpoint_producer_and_evaluator",
   );
-  const producers = [...(current.producers || []), ...integratedRuns];
+  const wdProbeRuns = current.weightDecayProbes474m?.coordinates || [];
+  const producers = [...(current.producers || []), ...integratedRuns, ...wdProbeRuns];
   const dense1bEvaluators = current.evaluators || [];
   const evaluators = [
     ...dense1bEvaluators,
@@ -75,6 +77,15 @@
       postDecayResults: run.postDecayResults || {},
       currentEvaluationEpoch: ["post", "post_pending"].includes(run.currentPhase)
         ? run.currentEpoch : null,
+    })),
+    ...wdProbeRuns.map((run) => ({
+      id: `${run.id}-integrated-post`,
+      producerId: run.id,
+      status: run.status,
+      epochs: current.weightDecayProbes474m?.evaluationEpochs || [16, 32],
+      resolvedPostEpochs: run.resolvedPostEpochs || [],
+      postDecayResults: run.postDecayResults || {},
+      currentEvaluationEpoch: run.currentPhase === "post" ? run.currentEpoch : null,
     })),
   ];
   const evaluatorsByProducer = new Map();

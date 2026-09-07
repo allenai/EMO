@@ -88,7 +88,7 @@
       "batchSequences": 128,
       "learningRate": "1e-3",
       "weightDecay": "0.3",
-      "status": "complete",
+      "status": "running",
       "sourceEpoch": 16,
       "sourceExperiment": "01M14BSBDFA9Y9P546Y8AZ4A9Q",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm3b/bs128_dr_wt_embwd_lr1e-3_wd0.3/step82397",
@@ -228,7 +228,7 @@
         }
       ],
       "policy": "dense_1b_pool3b_bs128_e32_e80_integrated_v2",
-      "currentPhase": "post",
+      "currentPhase": "post_pending",
       "evaluationEpochs": [
         48,
         64,
@@ -282,9 +282,9 @@
       ],
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-06T19:10:23.828974+00:00",
+        "checkedAt": "2026-09-07T00:11:15.759838+00:00",
         "beakerState": "running",
-        "latestStep": 329602,
+        "latestStep": 345052,
         "totalSteps": 366211,
         "run": "lq5gqrhb",
         "criticalSignals": []
@@ -2159,7 +2159,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-06T19:10:23.829322+00:00",
+  "updatedAt": "2026-09-07T00:42:04.042369+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",
@@ -6117,5 +6117,83 @@
       }
     }
   ],
-  "smallPool3bBs512Policy": "dense_small_pool3b_bs512_checkpoint_producers_v1"
+  "smallPool3bBs512Policy": "dense_small_pool3b_bs512_checkpoint_producers_v1",
+  "weightDecayProbes474m": {
+    "policy": "dense_474m_pool3b_bs256_wd_probes_v1",
+    "status": "running",
+    "revision": "7d6ab8da889107adcc5daf4f7cc939f4d9c54e85",
+    "submittedAt": "2026-09-07T00:39:32.088649+00:00",
+    "evaluationEpochs": [
+      16,
+      32
+    ],
+    "coordinates": [
+      {
+        "id": "dense-474m-dclm3b-bs256-lr2e-3-wd0.033-probe-v1",
+        "model": "474m",
+        "pool": "dclm3b",
+        "batchSequences": 256,
+        "learningRate": "2e-3",
+        "weightDecay": "0.033",
+        "sourceOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.033",
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.033",
+        "status": "scheduled",
+        "experiment": "01M1WMWMDKTPTBNZV1Q3M5N5TA",
+        "jobs": [
+          "01M1WMWMJCBES0K0V32P2ZHJZE"
+        ],
+        "job": "01M1WMWMJCBES0K0V32P2ZHJZE",
+        "beakerStatus": "scheduled",
+        "revision": "7d6ab8da889107adcc5daf4f7cc939f4d9c54e85",
+        "gpuCount": 8,
+        "rankMicrobatchSequences": 16,
+        "gradientAccumulationSteps": 2,
+        "minRuntimeOmitted": true,
+        "resolvedCheckpointEpochs": [],
+        "resolvedPostEpochs": [],
+        "currentEpoch": 16,
+        "currentPhase": "producer",
+        "postDecayResults": {},
+        "wandbHealth": {
+          "status": "scheduled",
+          "checkedAt": "2026-09-07T00:42:03.596135+00:00",
+          "beakerState": "scheduled",
+          "criticalSignals": []
+        }
+      },
+      {
+        "id": "dense-474m-dclm3b-bs256-lr2e-3-wd0.3-probe-v1",
+        "model": "474m",
+        "pool": "dclm3b",
+        "batchSequences": 256,
+        "learningRate": "2e-3",
+        "weightDecay": "0.3",
+        "sourceOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.3",
+        "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.3",
+        "status": "running",
+        "experiment": "01M1WMWN6DWG4W9Z6JSTQBY6W5",
+        "jobs": [
+          "01M1WMWN9YWT15Q9NX6W0Q54QY"
+        ],
+        "job": "01M1WMWN9YWT15Q9NX6W0Q54QY",
+        "beakerStatus": "running",
+        "revision": "7d6ab8da889107adcc5daf4f7cc939f4d9c54e85",
+        "gpuCount": 8,
+        "rankMicrobatchSequences": 16,
+        "gradientAccumulationSteps": 2,
+        "minRuntimeOmitted": true,
+        "resolvedCheckpointEpochs": [],
+        "resolvedPostEpochs": [],
+        "currentEpoch": 16,
+        "currentPhase": "producer",
+        "postDecayResults": {},
+        "wandbHealth": {
+          "status": "healthy",
+          "checkedAt": "2026-09-07T00:42:04.042231+00:00",
+          "beakerState": "running",
+          "criticalSignals": []
+        }
+      }
+    ]
+  }
 }
