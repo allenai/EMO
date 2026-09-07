@@ -40,6 +40,8 @@ Env knobs (all forwarded to the Beaker worker, which rebuilds the config):
                           setting: per-document pool drawn uniformly from [top_k=16, 512] experts,
                           eval pool 512, local-batch LB loss with global load balancing). Default 0.
     OLMOE3_SAVE_ROOT / OLMOE3_WORK_DIR / OLMOE3_DATA_ROOT / OLMOE3_WANDB_TAGS
+    OLMOE3_SAVE_INTERVAL  permanent checkpoint every N steps (default 5000; a 500-step ephemeral
+                          checkpoint is kept for resuming and rolls over)
 """
 
 from __future__ import annotations
@@ -341,6 +343,7 @@ DATA_ROOT = os.environ.get("OLMOE3_DATA_ROOT", "s3://ai2-llm")
 SAVE_ROOT = os.environ.get("OLMOE3_SAVE_ROOT", "/weka/oe-training-default/ryanwang/EMO/sparse_experts")
 WORK_DIR = os.environ.get("OLMOE3_WORK_DIR", "/weka/oe-training-default/ryanwang/dataset-cache")
 EXTRA_WANDB_TAGS = [t for t in os.environ.get("OLMOE3_WANDB_TAGS", "").split(",") if t]
+SAVE_INTERVAL = int(os.environ.get("OLMOE3_SAVE_INTERVAL", "5000"))  # permanent checkpoints
 
 OLMO_CORE_SUBMODULE = "external/OLMo-core"
 BEAKER_WORKSPACE = os.environ.get("BEAKER_WORKSPACE", "ai2/flex2")
@@ -355,7 +358,7 @@ WANDB_PROJECT, WANDB_ENTITY = "emo-extension", "ryanyxw"
 FORWARDED_ENV = (
     "OLMOE3_TOKENS", "OLMOE3_LR", "OLMOE3_NUM_NODES", "OLMOE3_NUM_GPUS", "OLMOE3_RANK_MB", "OLMOE3_EP_SIZE",
     "OLMOE3_ATTN_BACKEND", "OLMOE3_USE_CUTE_KDA", "OLMOE3_PREEMPTIBLE", "OLMOE3_DATA_ROOT",
-    "OLMOE3_SAVE_ROOT", "OLMOE3_WORK_DIR", "OLMOE3_WANDB_TAGS", "OLMOE3_IMAGE",
+    "OLMOE3_SAVE_ROOT", "OLMOE3_WORK_DIR", "OLMOE3_WANDB_TAGS", "OLMOE3_IMAGE", "OLMOE3_SAVE_INTERVAL",
     "OLMOE3_EMO", "OLMOE3_EMO_MIN_POOL", "OLMOE3_EMO_MAX_POOL", "OLMOE3_EMO_EVAL_POOL",
 )
 
@@ -557,8 +560,8 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
         trainer.with_callback(
             "checkpointer",
             CheckpointerCallback(
-                save_interval=1000,
-                ephemeral_save_interval=500,
+                save_interval=SAVE_INTERVAL,
+                ephemeral_save_interval=500,  # rolling resume point; only the latest is kept
                 # wsd_decay: keep the last stable-phase checkpoint (the ladder's trunk fork step)
                 # so a longer run can resume from it instead of from a decayed model.
                 fixed_steps=[_wsd_decay_start_step(TOKENS)] if SCHEDULER == "wsd_decay" else None,

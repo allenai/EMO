@@ -19,7 +19,8 @@
 #     accumulation). The ladder itself ran this rung on 4 B300s with FA4 + the CuTe KDA kernel;
 #     on H100 the script selects flash-attn 3 and the FLA Triton KDA kernel instead (same math) and
 #     the team's torch 2.10 / cu128 image (jupiter's driver is CUDA 12.8; the B300 image is CUDA 13).
-#     Checkpoints every 1000 steps (~0.5B tokens) under ${OLMOE3_SAVE_ROOT}/olmoe3_275m_10b.
+#     Permanent checkpoints every 5000 steps (~2.6B tokens) under ${OLMOE3_SAVE_ROOT}/olmoe3_275m_10b
+#     (plus a rolling 500-step ephemeral one for resuming).
 #
 #   git add ... && git commit && git push origin <branch>   # gantry clones from origin!
 #   bash scripts/sparse_experts/model_scripts/olmoe3_275m_10b.sh            # launch (blocks, streams logs)
