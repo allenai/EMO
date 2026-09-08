@@ -88,7 +88,7 @@
       "batchSequences": 128,
       "learningRate": "1e-3",
       "weightDecay": "0.3",
-      "status": "scheduled",
+      "status": "running",
       "sourceEpoch": 16,
       "sourceExperiment": "01M14BSBDFA9Y9P546Y8AZ4A9Q",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm3b/bs128_dr_wt_embwd_lr1e-3_wd0.3/step82397",
@@ -208,7 +208,7 @@
       "evaluationEnabled": true,
       "experiment": "01M210D0EYX8B6S1YKB66MD3D0",
       "revision": "d423e74d1ee64441c42f3ba2810535e680dff2a5",
-      "beakerStatus": "scheduled",
+      "beakerStatus": "running",
       "submittedAt": "2026-09-08T17:17:40.263504+00:00",
       "experimentHistory": [
         {
@@ -393,14 +393,14 @@
       ],
       "job": "01M210D0JGRGJQBNV0TV125KRZ",
       "wandbHealth": {
-        "status": "pending",
-        "checkedAt": "2026-09-08T17:18:19.600292+00:00",
-        "beakerState": "scheduled",
-        "latestStep": null,
-        "totalSteps": null,
-        "run": null,
-        "epoch": null,
-        "eta": null,
+        "status": "healthy",
+        "checkedAt": "2026-09-08T17:26:35.138992+00:00",
+        "beakerState": "running",
+        "latestStep": 412343,
+        "totalSteps": 494384,
+        "run": "oy48c0dt",
+        "epoch": 72,
+        "eta": "13h27m",
         "criticalSignals": []
       }
     },
@@ -2332,7 +2332,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-08T17:18:19.600914+00:00",
+  "updatedAt": "2026-09-08T17:30:18.915355+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",
@@ -6693,7 +6693,7 @@
   "smallPool3bBs512Policy": "dense_small_pool3b_bs512_checkpoint_producers_v1",
   "weightDecayProbes474m": {
     "policy": "dense_474m_pool3b_bs256_wd_probes_v1",
-    "status": "running",
+    "status": "failed",
     "revision": "7d6ab8da889107adcc5daf4f7cc939f4d9c54e85",
     "submittedAt": "2026-09-07T02:22:56.114930+00:00",
     "evaluationEpochs": [
@@ -6787,16 +6787,30 @@
         "weightDecay": "0.3",
         "sourceOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.3",
         "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.3",
-        "status": "running",
+        "status": "failed",
         "experiment": "01M20TWRFMASKMJA87QKAGQ059",
         "jobs": [
           "01M20TWRKD0F1BM4QSE03KTNH8",
           "01M20TWRPWXQF89M9MKBJBMTPY",
+          "01M20V9YJY8CXSJT52DMPWHZSZ",
+          "01M20V9YTFJRTNMBFKYMBMXE5Y",
+          "01M20VKEH50RCF3BAW44RFAA0S",
+          "01M20VKEQ5V2QN3MGDNRB2NNJV",
+          "01M20W9RR0F2SMATCWZXPT36FX",
+          "01M20W9RZA9CGTF3TS1F35WFZ6",
           "01M20WYKZX7REW5MNZ5EEVA6VV",
-          "01M20WYM73JVA2BK1W4RBREMMM"
+          "01M20WYM73JVA2BK1W4RBREMMM",
+          "01M20Y2KCC6WZM22E6NCQ3KG3P",
+          "01M20Y2KGGQTDDA4XR5VA9FFW8",
+          "01M20YB8EXVGJGD2YQCA4KH5PA",
+          "01M20YB8JVQJS4NNQ2NFTWSR94",
+          "01M20YWXN8XCY4S3P735BA0TJ9",
+          "01M20YWXVG3S9GKSVM3PZSBXV2",
+          "01M20ZH99KYWM59WZAKAK9TNSA",
+          "01M20ZH9HFVB05NQVRBX0QV4Q7"
         ],
-        "job": "01M20WYKZX7REW5MNZ5EEVA6VV",
-        "beakerStatus": "running",
+        "job": "01M20ZH99KYWM59WZAKAK9TNSA",
+        "beakerStatus": "failed",
         "revision": "8322cbd62e993011265a025c606f602a9e6aa19c",
         "gpuCount": 16,
         "rankMicrobatchSequences": 16,
@@ -6811,7 +6825,7 @@
           32
         ],
         "currentEpoch": 64,
-        "currentPhase": "producer",
+        "currentPhase": "terminal",
         "postDecayResults": {
           "16": {
             "batchSequences": 256,
@@ -6946,11 +6960,15 @@
           ]
         },
         "wandbHealth": {
-          "status": "healthy",
-          "checkedAt": "2026-09-08T16:30:34.096130+00:00",
-          "beakerState": "running",
-          "criticalSignals": []
-        }
+          "status": "critical",
+          "checkedAt": "2026-09-08T17:28:00+00:00",
+          "beakerState": "failed",
+          "criticalSignals": [
+            "nonfinite-training-loss"
+          ]
+        },
+        "needsAttention": true,
+        "reason": "E32-to-E64 continuation exhausted all eight automatic retries with non-finite training loss before retaining E36; preserve E16/E32 and keep this experiment terminal."
       }
     ],
     "replacementHistory": [
