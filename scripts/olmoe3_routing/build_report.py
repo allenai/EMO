@@ -201,9 +201,10 @@ def build_heatmaps():
         qtxt = ""
         if qf.exists():
             q = json.load(open(qf)); qtxt = " &middot; spectral Q by layer: " + ", ".join(f"{v:.2f}" for v in q["Q_spectral"])
-        sub = (fig_row(fig(f"{tag}_lift_tok_grid.png", "log2 lift, token level", HEAT), fig(f"{tag}_cond_tok_grid.png", "conditional co-activation P(j|i), token level", HEAT))
-               + fig_row(fig(f"{tag}_lift_doc_grid.png", "log2 lift, document level", HEAT), fig(f"{tag}_cond_doc_grid.png", "conditional co-activation, document level", HEAT))
-               + fig_row(fig(f"{tag}_usage.png", "per-expert token usage by layer", HEAT), fig(f"{tag}_lift_hist.png", "distribution of pairwise lift", HEAT)))
+        h = lambda name, cap: img_tag(HEAT / name, cap)
+        sub = (fig_row(h(f"{tag}_lift_tok_grid.png", "log2 lift, token level"), h(f"{tag}_cond_tok_grid.png", "conditional co-activation P(j|i), token level"))
+               + fig_row(h(f"{tag}_lift_doc_grid.png", "log2 lift, document level"), h(f"{tag}_cond_doc_grid.png", "conditional co-activation, document level"))
+               + fig_row(h(f"{tag}_usage.png", "per-expert token usage by layer"), h(f"{tag}_lift_hist.png", "distribution of pairwise lift")))
         body += card("info", f"{label}{qtxt}", sub)
     return body
 
