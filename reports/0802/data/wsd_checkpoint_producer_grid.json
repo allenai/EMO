@@ -2372,7 +2372,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-08T15:12:07.050650+00:00",
+  "updatedAt": "2026-09-08T15:42:28.470585+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",
@@ -6827,17 +6827,18 @@
         "weightDecay": "0.3",
         "sourceOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.3",
         "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.3",
-        "status": "complete",
-        "experiment": "01M1WMWN6DWG4W9Z6JSTQBY6W5",
+        "status": "scheduled",
+        "experiment": "01M20TWRFMASKMJA87QKAGQ059",
         "jobs": [
-          "01M1WTXF2VER11M5RWBYFKW053"
+          "01M20TWRKD0F1BM4QSE03KTNH8",
+          "01M20TWRPWXQF89M9MKBJBMTPY"
         ],
-        "job": "01M1WTXF2VER11M5RWBYFKW053",
-        "beakerStatus": "complete",
-        "revision": "7d6ab8da889107adcc5daf4f7cc939f4d9c54e85",
-        "gpuCount": 8,
+        "job": "01M20TWRKD0F1BM4QSE03KTNH8",
+        "beakerStatus": "scheduled",
+        "revision": "8322cbd62e993011265a025c606f602a9e6aa19c",
+        "gpuCount": 16,
         "rankMicrobatchSequences": 16,
-        "gradientAccumulationSteps": 2,
+        "gradientAccumulationSteps": 1,
         "minRuntimeOmitted": true,
         "resolvedCheckpointEpochs": [
           16,
@@ -6847,8 +6848,8 @@
           16,
           32
         ],
-        "currentEpoch": 32,
-        "currentPhase": "complete",
+        "currentEpoch": 64,
+        "currentPhase": "producer",
         "postDecayResults": {
           "16": {
             "batchSequences": 256,
@@ -6910,13 +6911,72 @@
             "experiment": "01M1WTP9Q4Q6RMK3E2M8R03EWW",
             "job": "01M1WTP9TYBJQR8BCBEFZVTSHD",
             "status": "failed_output_ownership_guard"
+          },
+          {
+            "experiment": "01M1WMWN6DWG4W9Z6JSTQBY6W5",
+            "job": "01M1WTXF2VER11M5RWBYFKW053",
+            "revision": "7d6ab8da889107adcc5daf4f7cc939f4d9c54e85",
+            "status": "complete_e16_e32",
+            "maxValidatedEpoch": 32,
+            "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.3",
+            "stoppedAt": "2026-09-08T15:41:26.454892+00:00"
           }
         ],
-        "submittedAt": "2026-09-07T02:22:56.114930+00:00",
+        "submittedAt": "2026-09-08T15:41:26.455134+00:00",
+        "policy": "dense_474m_pool3b_bs256_wd03_e64_two_node_v1",
+        "targetEpochs": [
+          64
+        ],
+        "continuationSourceEpoch": 32,
+        "continuationSourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.3/step82397",
+        "continuationTargetEpoch": 64,
+        "continuationCheckpointEpochs": [
+          36,
+          40,
+          44,
+          48,
+          52,
+          56,
+          60,
+          64
+        ],
+        "evaluationEpochs": [
+          16,
+          32,
+          64
+        ],
+        "checkpointIntervalEpochs": 4,
+        "checkpointCleanupKeepEpochs": [
+          16,
+          32,
+          64
+        ],
+        "role": "integrated_checkpoint_producer_and_evaluator",
+        "evaluationEnabled": true,
+        "decayEnabled": true,
+        "postBranchesIsolatedFromConstantFrontier": true,
+        "standaloneEvaluatorSubmissionsAuthorized": false,
+        "futureEvaluatorSubmissionsAuthorized": false,
+        "nodeCount": 2,
+        "gpusPerNode": 8,
+        "runtimeEstimate": {
+          "producerHours": [
+            10,
+            12
+          ],
+          "postHours": [
+            2,
+            3
+          ],
+          "totalHours": [
+            12,
+            15
+          ]
+        },
         "wandbHealth": {
-          "status": "complete",
-          "checkedAt": "2026-09-08T01:54:58.696476+00:00",
-          "beakerState": "complete",
+          "status": "scheduled",
+          "checkedAt": "2026-09-08T15:42:28.470022+00:00",
+          "beakerState": "scheduled",
           "criticalSignals": []
         }
       }
