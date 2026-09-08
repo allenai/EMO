@@ -284,7 +284,8 @@ def run(args):
         for b0 in range(0, N, B):
             ids = torch.from_numpy(tokens[b0 : b0 + B].astype(np.int64)).to(device)
             labels = get_labels({"input_ids": ids})
-            loss = model(ids, labels=labels, loss_reduction="none")  # (B, S)
+            out = model(ids, labels=labels, loss_reduction="none", return_logits=False)
+            loss = out.ce_loss if hasattr(out, "ce_loss") else out  # LMOutputWithLoss -> per-token CE (B, S)
             assert loss.shape == ids.shape, loss.shape
             idx = torch.stack([captured[l][0] for l in MOE_LAYERS], dim=2).long()  # (B, S, L, k)
             scores = [captured[l][1] for l in MOE_LAYERS]
