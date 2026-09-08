@@ -128,8 +128,14 @@ def build_model(checkpoint: Path, device, attn_backend: Optional[str], use_cute_
     model = OLMoDDPModelConfig.from_dict(mcfg).build(init_device="meta")
     model.to(torch.bfloat16)  # fwd precision used in training; DCP casts the fp32 shards on load
     model.to_empty(device=device)
+    # OLMoDDP checkpoints keep the weights as flattened fp32 optimizer `module.<name>.main` tensors;
+    # the pinned HF converter's loader handles that layout (asserts every parameter is found and
+    # numel matches). Falls back to the plain DCP loader for conventional checkpoints.
+    from olmo_core.nn.hf.convert_checkpoint import _load_ddp_optimizer_model_state as load_ddp_ckpt
     with TemporaryDirectory() as wd:
-        load_model_and_optim_state(str(checkpoint / "model_and_optim"), model, work_dir=wd)
+        sd = load_ddp_ckpt(str(checkpoint / "model_and_optim"), model, work_dir=wd, return_state_dict=False)
+        if sd is None:
+            load_model_and_optim_state(str(checkpoint / "model_and_optim"), model, work_dir=wd)
     model.eval()
     routers = {}
     for name, blk in model.blocks.items():
@@ -299,6 +305,9 @@ def run(args):
             if raw is not None and b0 < raw_n:
                 n = min(B, raw_n - b0)
                 raw[b0 : b0 + n] = idx[:n].to(torch.int16).cpu().numpy()
+            if b0 == 0:
+                ce0 = loss[valid].mean().item()
+                assert ce0 < args.max_first_ce, f"first-batch CE {ce0:.3f} > {args.max_first_ce}: weights probably mis-loaded"
             if (b0 // B) % args.log_every == 0:
                 done = b0 + idx.shape[0]
                 el = time.time() - t0
@@ -398,6 +407,7 @@ def main():
     ap.add_argument("--attn-backend", default=None, help="override, e.g. flash_3 / torch")
     ap.add_argument("--use-cute-kda", action="store_true")
     ap.add_argument("--log-every", type=int, default=10)
+    ap.add_argument("--max-first-ce", type=float, default=4.0, help="guard against mis-loaded weights")
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args()
     if args.selftest:
