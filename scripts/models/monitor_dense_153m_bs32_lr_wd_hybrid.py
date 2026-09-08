@@ -42,6 +42,22 @@ E20_GATE_START = re.compile(
     r"DENSE153M_BS32_E20_GATE_POST_START label=(probe|baseline) source=([^ ]+) output=([^ ]+)"
 )
 E20_GATE_HOLD = re.compile(r"DENSE153M_BS32_E20_GATE_COMPLETE action=hold_no_followup")
+SATURATION_POLICY = "dense_153m_original_bs32_e80_post_saturation_v1"
+SATURATION_ID = "dense-153m-original-bs32-e80-saturation-v1"
+SATURATION_RESULT = re.compile(
+    r"DENSE153M_ORIGINAL_BS32_SATURATION_POST_RESULT epoch=([0-9]+) json=(\{.*\})$",
+    re.MULTILINE,
+)
+SATURATION_PD_START = re.compile(
+    r"DENSE153M_ORIGINAL_BS32_SATURATION_PD_START epoch=([0-9]+)"
+)
+SATURATION_POST_START = re.compile(
+    r"DENSE153M_ORIGINAL_BS32_SATURATION_POST_START epoch=([0-9]+)"
+)
+SATURATION_DECISION = re.compile(
+    r"DENSE153M_ORIGINAL_BS32_SATURATION_DECISION json=(\{.*\})$", re.MULTILINE
+)
+SATURATION_COMPLETE = re.compile(r"DENSE153M_ORIGINAL_BS32_SATURATED epoch=([0-9]+)")
 
 
 def run(arguments: list[str]) -> str:
@@ -90,6 +106,32 @@ def find_sweep(report: dict[str, Any], identifier: str) -> dict[str, Any] | None
 
 def latest_job(experiment: dict[str, Any]) -> dict[str, Any]:
     return (experiment.get("jobs") or [{}])[-1]
+
+
+def inspect_job(job_id: str) -> dict[str, Any]:
+    payload = json.loads(run(["beaker", "job", "inspect", job_id, "--format", "json"]))
+    if not isinstance(payload, list) or len(payload) != 1:
+        raise RuntimeError(f"expected one job for {job_id}")
+    job = payload[0]
+    author = (job.get("author") or {}).get("name")
+    if author != EXPECTED_BEAKER_AUTHOR:
+        raise RuntimeError(
+            f"refusing job {job_id} owned by {author!r}; expected {EXPECTED_BEAKER_AUTHOR!r}"
+        )
+    return job
+
+
+def job_state(job: dict[str, Any]) -> str:
+    status = job.get("status") or {}
+    if "finalized" in status:
+        return "complete" if status.get("exitCode") == 0 else "failed"
+    if "canceled" in status or "cancelled" in status:
+        return "canceled"
+    if "started" in status:
+        return "running"
+    if "scheduled" in status:
+        return "scheduled"
+    return "submitted"
 
 
 def duration_seconds(value: str) -> int:
@@ -168,8 +210,124 @@ def followup_sweep(
     return sweep
 
 
+def refresh_saturation_continuation(
+    report: dict[str, Any], sweep: dict[str, Any]
+) -> dict[str, Any]:
+    job_id = str(sweep["job"])
+    job = inspect_job(job_id)
+    live_state = job_state(job)
+    spec = (job.get("execution") or {}).get("spec") or {}
+    context = spec.get("context") or {}
+    if "minRuntime" in context:
+        raise RuntimeError("153M Original saturation continuation unexpectedly has minRuntime")
+    if int((spec.get("resources") or {}).get("gpuCount", 0)) != 2:
+        raise RuntimeError("153M Original saturation continuation must use exactly two GPUs")
+    logs = ""
+    if live_state in {"running", "complete", "failed"}:
+        try:
+            logs = ANSI.sub("", run(["beaker", "job", "logs", job_id, "--since", "70m"]))
+        except subprocess.CalledProcessError:
+            logs = ""
+
+    sweep["status"] = live_state
+    sweep["beakerStatus"] = live_state
+    sweep["jobs"] = [job_id]
+    for raw_epoch, raw_result in SATURATION_RESULT.findall(logs):
+        result = json.loads(raw_result)
+        result.update(
+            {
+                "status": "complete",
+                "beaker": sweep["experiment"],
+                "experiment": sweep["experiment"],
+                "job": job_id,
+                "revision": sweep.get("revision"),
+                "reason": (
+                    "Completed isolated 10% WSD decay from the exact retained pre-decay "
+                    "checkpoint, followed by matched held-out and all nine downstream evaluations."
+                ),
+            }
+        )
+        sweep.setdefault("results", {})[raw_epoch] = result
+
+    starts: list[tuple[int, str, int]] = []
+    starts.extend(
+        (match.start(), "producer", int(match.group(1)))
+        for match in SATURATION_PD_START.finditer(logs)
+    )
+    starts.extend(
+        (match.start(), "post", int(match.group(1)))
+        for match in SATURATION_POST_START.finditer(logs)
+    )
+    if starts and live_state not in {"complete", "failed", "canceled"}:
+        _, phase, epoch = max(starts)
+        sweep["activeEpoch"] = epoch
+        sweep["activePhase"] = phase
+
+    decisions = [json.loads(raw) for raw in SATURATION_DECISION.findall(logs)]
+    if decisions:
+        sweep["latestDecision"] = decisions[-1]
+        if decisions[-1]["action"] == "continue":
+            sweep["activeEpoch"] = int(decisions[-1]["epoch"]) + int(sweep["epochIncrement"])
+            sweep["activePhase"] = "producer"
+
+    steps = STEP.findall(logs)
+    if steps:
+        timestamp, current_step, endpoint_step, trainer_eta = steps[-1]
+        telemetry_at = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        expected_eta = telemetry_at + timedelta(seconds=duration_seconds(trainer_eta))
+        sweep["expectedEta"] = expected_eta.isoformat()
+        sweep["etaBasis"] = "live trainer ETA for the active producer or decay stage"
+        sweep["progress"] = {
+            "currentStep": int(current_step),
+            "endpointStep": int(endpoint_step),
+            "trainerEta": trainer_eta,
+            "observedAt": telemetry_at.isoformat(),
+        }
+
+    saturated = SATURATION_COMPLETE.findall(logs)
+    if saturated:
+        epoch = int(saturated[-1])
+        sweep.update(
+            {
+                "status": "complete",
+                "beakerStatus": "complete",
+                "activeEpoch": None,
+                "activePhase": "saturated",
+                "saturatedEpoch": epoch,
+                "reason": (
+                    f"The persistent continuation stopped at E{epoch}, the first adjacent "
+                    "POST validation non-improvement after E80."
+                ),
+            }
+        )
+    elif live_state == "complete":
+        sweep["status"] = "failed"
+        sweep["reason"] = "Job exited successfully without the required saturation marker."
+    elif live_state in {"failed", "canceled"}:
+        sweep["reason"] = "Continuation became terminal before a saturation decision."
+
+    report["updated"] = datetime.now(tz=UTC).date().isoformat()
+    REPORT.write_text(json.dumps(report, indent=2) + "\n")
+    REPORT.with_suffix(".js").write_text(
+        "window.ICSL_REPORT_DATA=" + json.dumps(report, separators=(",", ":")) + ";\n"
+    )
+    return {
+        "experiment": sweep["experiment"],
+        "job": job_id,
+        "beakerStatus": live_state,
+        "status": sweep["status"],
+        "activeEpoch": sweep.get("activeEpoch"),
+        "activePhase": sweep.get("activePhase"),
+        "results": sorted(sweep.get("results", {}), key=int),
+        "expectedEta": sweep.get("expectedEta"),
+    }
+
+
 def refresh() -> dict[str, Any]:
     report = json.loads(REPORT.read_text())
+    saturation = find_sweep(report, SATURATION_ID)
+    if saturation is not None and saturation.get("policy") == SATURATION_POLICY:
+        return refresh_saturation_continuation(report, saturation)
     primary = find_sweep(report, "dense-153m-bs32-lr-wd-hybrid-v1")
     if primary is None:
         raise RuntimeError("Dense-153M BS32 hybrid is not registered")
