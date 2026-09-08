@@ -24,7 +24,7 @@ _ml = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(_ml)
 card, table, img_tag, fig_row, CSS, JS = _ml.card, _ml.table, _ml.img_tag, _ml.fig_row, _ml.CSS, _ml.JS
 
 LAYERS = [str(l) for l in range(1, 10)]
-MODEL_LABEL = {"std": "standard MoE (512e)", "emo": "EMO (512e)", "std1000": "standard MoE (1000e)", "emo1000": "EMO (1000e)"}
+MODEL_LABEL = {"std": "standard MoE (512e)", "emo": "EMO (512e)", "std1000": "standard MoE (1000e)", "emo1000": "EMO (1000e)", "std128": "standard MoE (128e)", "emo128": "EMO (128e)"}
 
 
 def cond_sort(c):
@@ -180,7 +180,7 @@ def build_1000(res1000, res):
     for model, conds in list(res.items()) + list(res1000.items()):
         r = conds["none"]
         rows2.append([MODEL_LABEL[model]] + [f(r["layers"][l]["Q_louvain"]) for l in LAYERS])
-    return (card("info", "Unrestricted pass: held-out CE and top-64 poolability by layer, all four trained arms", table(["model", "CE", *[f"L{l}" for l in LAYERS]], rows))
+    return (card("info", "Unrestricted pass: held-out CE and top-64 poolability by layer, all trained arms", table(["model", "CE", *[f"L{l}" for l in LAYERS]], rows))
             + card("info", "Louvain Q by layer, unrestricted", table(["model", *[f"L{l}" for l in LAYERS]], rows2))
             + fig_row(fig("poolable64_by_layer.png", "1000-expert arms: top-64 poolability (unrestricted only).", RUNS1000), fig("q_louvain_by_layer.png", "1000-expert arms: Louvain Q.", RUNS1000)))
 
@@ -256,7 +256,7 @@ def main(findings_path=OUT / "findings.html"):
         ("pool", "2 · Poolability & modularity, all layers", build_poolability(res)),
         ("early", "3 · Early-pool conditioning", build_earlypool(res)),
         ("cross", "4 · Cross-layer NMI", build_cross(res)),
-        ("e1000", "5 · 1000-expert arms", build_1000(res1000, res)),
+        ("e1000", "5 · 128- and 1000-expert arms", build_1000(res1000, res)),
         ("heat", "6 · Co-activation heatmaps", build_heatmaps()),
         ("ksweep", "7 · k sweep & document partition", build_ksweep()),
         ("next", "Next steps", build_next()),
