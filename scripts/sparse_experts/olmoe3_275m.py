@@ -164,6 +164,7 @@ EXPECTED_PARAMS = {
     # 1024 experts hit the pinned grouped-GEMM kernel's `group_count < 1024` check at EP1 (the
     # same limit behind the OLMo-core team's "1,000 experts, EP1 approximation"); 1000 is their
     # precedent and is what the 1000e scripts use.
+    128: (274_457_424, 210_232_144, 800_875_344),  # -384 experts x 522,240 x 9 layers, smaller router
     1000: (279_480_144, 215_254_864, 4_904_437_584),
     1024: (279_618_384, 215_393_104, 5_017_379_664),  # needs EP>=2 (rowwise NVSHMEM path)
 }
