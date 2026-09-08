@@ -1,0 +1,30 @@
+{
+  "policy": "dense_474m_pool3b_bs256_wd03_e64_two_node_v1",
+  "sourcePool": "dclm3b",
+  "sourcePoolTokens": 3000000000,
+  "targetPool": "dclm3b",
+  "targetPoolTokens": 3000000000,
+  "repeatedManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b_flat_dynamic_repacking.json",
+  "compositeManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
+  "poolAudit": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_1b_3b_9b.pool.json",
+  "sourceEpoch": 32,
+  "targetEpochs": [64],
+  "evaluationEpochs": [64],
+  "checkpointIntervalEpochs": 4,
+  "producerCoordinate": {
+    "id": "dense-474m-dclm3b-bs256-lr2e-3-wd0.3-probe-v1",
+    "model": "474m",
+    "pool": "dclm3b",
+    "batchSequences": 256,
+    "gpuCount": 16,
+    "gpusPerNode": 8,
+    "nodeCount": 2,
+    "rankMicrobatchSequences": 16,
+    "gradientAccumulationSteps": 1,
+    "learningRate": "2e-3",
+    "weightDecay": "0.3",
+    "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.3",
+    "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.3/step82397",
+    "baseExperiment": "01M1WMWN6DWG4W9Z6JSTQBY6W5"
+  }
+}
