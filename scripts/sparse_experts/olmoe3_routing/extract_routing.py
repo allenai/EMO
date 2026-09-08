@@ -276,9 +276,9 @@ def run(args):
     hooks = [routers[l].register_forward_hook(make_hook(l)) for l in MOE_LAYERS]
 
     acc = Accum(L, E, k, n_doc, device)
+    args.out_dir.mkdir(parents=True, exist_ok=True)
     raw_n = min(args.raw_instances, N)
     raw = np.lib.format.open_memmap(args.out_dir / "raw_topk.npy", mode="w+", dtype=np.int16, shape=(raw_n, S, L, k)) if raw_n else None
-    args.out_dir.mkdir(parents=True, exist_ok=True)
     t0 = time.time(); B = args.batch_size
     with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
         for b0 in range(0, N, B):
