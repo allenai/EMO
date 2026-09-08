@@ -12108,9 +12108,9 @@
       "rankMicrobatchSequences": 16,
       "gradientAccumulation": 1,
       "gpuCount": 2,
-      "status": "running",
-      "activeEpoch": 96,
-      "activePhase": "post",
+      "status": "complete",
+      "activeEpoch": null,
+      "activePhase": "saturated",
       "search": "small-model-bs32-post-saturation-continuation",
       "saturationChain": true,
       "beaker": "01M1ZVG06BBVWVPJGQ9XDEJZE1",
@@ -12119,14 +12119,14 @@
       "jobs": [
         "01M1ZVG0EYKGN91WS01QRZAX0S"
       ],
-      "beakerStatus": "running",
-      "expectedEta": "2026-09-08T18:08:20.673617+00:00",
+      "beakerStatus": "complete",
+      "expectedEta": "2026-09-08T18:09:54.321352+00:00",
       "etaBasis": "live trainer ETA for the active producer or decay stage",
       "progress": {
-        "currentStep": 667960,
+        "currentStep": 732420,
         "endpointStep": 732422,
-        "trainerEta": "2h56m",
-        "observedAt": "2026-09-08T15:12:20.673617+00:00"
+        "trainerEta": "1m",
+        "observedAt": "2026-09-08T18:08:54.321352+00:00"
       },
       "revision": "6b0088deebb482241d33f0220f7c10c247a83cd4",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1",
@@ -12145,12 +12145,12 @@
       "automaticTaskRetries": 8,
       "minRuntimeOmitted": true,
       "latestDecision": {
-        "action": "continue",
+        "action": "stop",
         "criterion": "strict_non_improvement",
-        "epoch": 88,
+        "epoch": 96,
         "policy": "dense_153m_original_bs32_e80_post_saturation_v1",
-        "previousEpoch": 80,
-        "previousValidationExact": 3.351,
+        "previousEpoch": 88,
+        "previousValidationExact": 3.35,
         "validationExact": 3.35
       },
       "results": {
@@ -12209,9 +12209,66 @@
           "job": "01M1ZVG0EYKGN91WS01QRZAX0S",
           "revision": "6b0088deebb482241d33f0220f7c10c247a83cd4",
           "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations."
+        },
+        "96": {
+          "acc": 33.19,
+          "avg8Accuracy": 40.4875,
+          "avg8Bpb": 1.462425,
+          "bpb": 0.9714,
+          "c4": 3.35,
+          "comparisonGroup": "post_decay",
+          "constantOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1/constant_lr",
+          "downstream": {
+            "arc_challenge": 21.740000000000002,
+            "arc_easy": 48.949999999999996,
+            "boolq": 55.28999999999999,
+            "csqa": 40.38,
+            "hellaswag": 33.19,
+            "openbookqa": 24.6,
+            "piqa": 63.6,
+            "socialiqa": 41.4,
+            "winogrande": 50.03999999999999
+          },
+          "downstreamBpb": {
+            "arc_challenge": 1.53,
+            "arc_easy": 1.593,
+            "boolq": 1.481,
+            "csqa": 1.599,
+            "hellaswag": 0.9714,
+            "openbookqa": 1.741,
+            "piqa": 1.329,
+            "socialiqa": 1.368,
+            "winogrande": 1.568
+          },
+          "dynamicRepacking": false,
+          "embeddingWeightDecay": "zero",
+          "endpointCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1/post_decay_runs/e96/step732422",
+          "epoch": 96,
+          "gap": 0.062,
+          "lr": "1e-3",
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1",
+          "phase": "saturation_continuation",
+          "policy": "dense_153m_original_bs32_e80_post_saturation_v1",
+          "postOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1/post_decay_runs/e96",
+          "preDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1/constant_lr/step659179",
+          "source": "integrated_isolated_wsd_decay_heldout_and_downstream_eval",
+          "sourcePreDecayCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs32_lr1e-3_wd0.1_hybrid_v1/constant_lr/step659179",
+          "status": "complete",
+          "train": 3.288,
+          "validation": 3.35,
+          "validationExact": 3.35,
+          "wandb": "korp0d4c",
+          "wd": "0.1",
+          "weightTying": false,
+          "beaker": "01M1ZVG06BBVWVPJGQ9XDEJZE1",
+          "experiment": "01M1ZVG06BBVWVPJGQ9XDEJZE1",
+          "job": "01M1ZVG0EYKGN91WS01QRZAX0S",
+          "revision": "6b0088deebb482241d33f0220f7c10c247a83cd4",
+          "reason": "Completed isolated 10% WSD decay from the exact retained pre-decay checkpoint, followed by matched held-out and all nine downstream evaluations."
         }
       },
-      "reason": "Submitted one persistent integrated continuation from exact retained E80 PD. It saves recovery checkpoints every four epochs, evaluates E88, E96, ... inline, and stops at the first adjacent POST validation non-improvement."
+      "reason": "The persistent continuation stopped at E96, the first adjacent POST validation non-improvement after E80.",
+      "saturatedEpoch": 96
     }
   ],
   "summaryBatches": [
