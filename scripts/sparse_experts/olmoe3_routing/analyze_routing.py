@@ -87,11 +87,15 @@ def analyze_condition(cdir: Path, k_clusters: int, early_layer: int, early_pool:
         order = np.argsort(-ds[:, li], axis=1)  # (n_doc, E) experts ranked by doc score
         rank = np.empty_like(order); np.put_along_axis(rank, order, np.arange(E)[None, :].repeat(len(order), 0), axis=1)
         tot = np.maximum(du[:, li].sum(1), 1)
+        okdoc = doc_len >= 64  # unweighted stats over docs with >= 64 tokens
         for P in POOLS:
             share = (du[:, li] * (rank < P)).sum(1) / tot
             r[f"poolable_top{P}"] = float(np.average(share, weights=w))
+            r[f"poolable_top{P}_unw"] = float(share[okdoc].mean())
         d_ent = entropy(du[:, li].astype(float)); r["doc_eff_experts"] = float(np.average(np.exp(d_ent), weights=w))
+        r["doc_eff_experts_unw"] = float(np.exp(d_ent)[okdoc].mean())
         r["doc_experts_used"] = float(np.average((du[:, li] > 0).sum(1), weights=w))
+        r["doc_experts_used_unw"] = float((du[okdoc, li] > 0).sum(1).mean())
         res["layers"][str(l)] = r
     # cross-layer normalized MI (expert at l vs expert at m)
     nmi = np.zeros((L, L))
@@ -111,8 +115,9 @@ def analyze_condition(cdir: Path, k_clusters: int, early_layer: int, early_pool:
         U = du[keep, li].astype(float)
         joint = np.stack([U[lab == c].sum(0) for c in range(k_clusters)])  # (k, E)
         nmi_c, _ = norm_mi(joint)
-        # Jaccard of expert sets within vs across clusters (sampled pairs)
-        sets = U > 0
+        # Jaccard of each doc's top-64 expert set (by usage) within vs across clusters (sampled pairs)
+        top = np.argsort(-U, axis=1)[:, :64]
+        sets = np.zeros(U.shape, bool); np.put_along_axis(sets, top, True, axis=1)
         def mean_j(pairs):
             a, b = sets[pairs[:, 0]], sets[pairs[:, 1]]
             inter = (a & b).sum(1); union = (a | b).sum(1)
@@ -146,7 +151,7 @@ def main():
     lines = []
     for model, conds in all_res.items():
         lines.append(f"\n## {model}\ncond | CE | " + " | ".join(f"L{l}" for l in LAYERS))
-        for key in ("Q_spectral", "Q_louvain", "poolable_top64", "poolable_top128", "doc_experts_used", "mean_router_entropy"):
+        for key in ("Q_spectral", "Q_louvain", "poolable_top64", "poolable_top64_unw", "poolable_top128_unw", "doc_eff_experts_unw", "mean_router_entropy"):
             lines.append(f"\n{key}")
             for cond, r in conds.items():
                 lines.append(f"{cond} | {r['meta']['mean_ce']:.3f} | " + " | ".join(f"{r['layers'][str(l)][key]:.3f}" for l in LAYERS))
