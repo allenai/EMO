@@ -111,6 +111,28 @@ unrestricted CE 2.44 (std) / 2.46 (EMO) matches the runs' end-of-training loss.<
     return card("info", "Method", body)
 
 
+def build_late_layers(res):
+    """The direct test: layers 7-9 (free) under unrestricted vs layers 1-3 vs 1-6 restricted, per pool size."""
+    late = ["7", "8", "9"]
+    def row(model, cond):
+        x = res[model][cond]; ly = x["layers"]
+        j = lambda k, nd: " / ".join(f"{ly[l][k]:.{nd}f}" for l in late)
+        return [MODEL_LABEL[model], cond, f(x["meta"]["mean_ce"]), j("poolable_top32_unw", 2), j("poolable_top64_unw", 2),
+                j("poolable_top128_unw", 2), j("doc_eff_experts_unw", 0), j("Q_louvain", 2)]
+    hdr = ["model", "restriction", "CE", "top-32 share L7 / L8 / L9", "top-64 share", "top-128 share", "eff. experts / doc", "Louvain Q"]
+    out = ("<p>Layers 7&ndash;9 are unrestricted in every row except the all-layer reference rows. <b>top-P share</b> = fraction of a "
+           "document's routed assignments in that layer that fall inside the document's own top-P experts of that layer (unweighted mean over "
+           "documents with &ge; 64 tokens); <b>eff. experts</b> = exp(entropy) of the document's expert-usage histogram in that layer.</p>")
+    for model in ("emo", "std"):
+        rows = []
+        for P in (32, 64, 128):
+            for cond in (["none"] if P == 32 else []) + [f"1-3:{P}", f"1-6:{P}", f"1-9:{P}"]:
+                if cond in res[model]: rows.append(row(model, cond))
+        out += card("info", f"{MODEL_LABEL[model]}: layers 7&ndash;9 under early-layer restriction", table(hdr, rows))
+    out += fig_row(fig("poolable64_by_layer.png", "Top-64 poolability by layer (all conditions)."), fig("doc_eff_experts_by_layer.png", "Effective experts per document by layer (all conditions)."))
+    return out
+
+
 def build_poolability(res):
     body = (
         "<p>Does restricting early layers make later layers more document-poolable? Rows are conditions, columns MoE layers; restricted "
@@ -176,10 +198,11 @@ def main(findings_path=OUT / "findings.html"):
     tabs = [
         ("overview", "Overview", build_overview(res, res1000, findings_html)),
         ("method", "Method", build_method()),
-        ("pool", "1 · Poolability & modularity", build_poolability(res)),
-        ("early", "2 · Early-pool conditioning", build_earlypool(res)),
-        ("cross", "3 · Cross-layer NMI", build_cross(res)),
-        ("e1000", "4 · 1000-expert arms", build_1000(res1000, res)),
+        ("late", "1 · Layers 7-9 under early restriction", build_late_layers(res)),
+        ("pool", "2 · Poolability & modularity, all layers", build_poolability(res)),
+        ("early", "3 · Early-pool conditioning", build_earlypool(res)),
+        ("cross", "4 · Cross-layer NMI", build_cross(res)),
+        ("e1000", "5 · 1000-expert arms", build_1000(res1000, res)),
         ("next", "Next steps", build_next()),
     ]
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
