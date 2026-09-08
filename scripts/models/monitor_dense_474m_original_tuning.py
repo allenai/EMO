@@ -251,7 +251,14 @@ def refresh() -> dict[str, Any]:
     for mode in MODES:
         experiment_id = experiments.get(mode)
         if experiment_id:
-            mode_summaries[mode] = refresh_mode(report, mode, str(experiment_id))
+            prior_summary = prior_mode_summaries.get(mode) or {}
+            # Terminal modes are resolved provenance. Do not depend on live Beaker
+            # retention (or re-poll historical experiments) after all expected
+            # results have already been recorded in the report.
+            if prior_summary.get("status") == "complete":
+                mode_summaries[mode] = prior_summary
+            else:
+                mode_summaries[mode] = refresh_mode(report, mode, str(experiment_id))
             if mode_summaries[mode].get("decision") is None:
                 prior_decision = (prior_mode_summaries.get(mode) or {}).get("decision")
                 if prior_decision is None:
