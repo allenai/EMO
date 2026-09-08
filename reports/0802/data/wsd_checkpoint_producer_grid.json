@@ -2372,7 +2372,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-08T15:42:28.470585+00:00",
+  "updatedAt": "2026-09-08T16:31:07.794298+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",
@@ -6812,7 +6812,7 @@
         "submittedAt": "2026-09-07T02:22:56.114930+00:00",
         "wandbHealth": {
           "status": "canceled",
-          "checkedAt": "2026-09-08T01:54:53.653241+00:00",
+          "checkedAt": "2026-09-08T16:29:55.390515+00:00",
           "beakerState": "canceled",
           "criticalSignals": []
         },
@@ -6827,14 +6827,16 @@
         "weightDecay": "0.3",
         "sourceOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm1b/bs256_dr_wt_embwd_lr2e-3_wd0.3",
         "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.3",
-        "status": "scheduled",
+        "status": "running",
         "experiment": "01M20TWRFMASKMJA87QKAGQ059",
         "jobs": [
           "01M20TWRKD0F1BM4QSE03KTNH8",
-          "01M20TWRPWXQF89M9MKBJBMTPY"
+          "01M20TWRPWXQF89M9MKBJBMTPY",
+          "01M20WYKZX7REW5MNZ5EEVA6VV",
+          "01M20WYM73JVA2BK1W4RBREMMM"
         ],
-        "job": "01M20TWRKD0F1BM4QSE03KTNH8",
-        "beakerStatus": "scheduled",
+        "job": "01M20WYKZX7REW5MNZ5EEVA6VV",
+        "beakerStatus": "running",
         "revision": "8322cbd62e993011265a025c606f602a9e6aa19c",
         "gpuCount": 16,
         "rankMicrobatchSequences": 16,
@@ -6920,6 +6922,16 @@
             "maxValidatedEpoch": 32,
             "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.3",
             "stoppedAt": "2026-09-08T15:41:26.454892+00:00"
+          },
+          {
+            "experiment": "01M20TWRFMASKMJA87QKAGQ059",
+            "jobs": [
+              "01M20TWRKD0F1BM4QSE03KTNH8",
+              "01M20TWRPWXQF89M9MKBJBMTPY"
+            ],
+            "revision": "8322cbd62e993011265a025c606f602a9e6aa19c",
+            "status": "failed_replica_pair_retrying",
+            "failedAt": "2026-09-08T15:48:00+00:00"
           }
         ],
         "submittedAt": "2026-09-08T15:41:26.455134+00:00",
@@ -6974,9 +6986,9 @@
           ]
         },
         "wandbHealth": {
-          "status": "scheduled",
-          "checkedAt": "2026-09-08T15:42:28.470022+00:00",
-          "beakerState": "scheduled",
+          "status": "healthy",
+          "checkedAt": "2026-09-08T16:30:34.096130+00:00",
+          "beakerState": "running",
           "criticalSignals": []
         }
       }
