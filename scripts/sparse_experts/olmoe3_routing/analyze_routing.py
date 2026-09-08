@@ -130,6 +130,71 @@ def analyze_condition(cdir: Path, k_clusters: int, early_layer: int, early_pool:
     return res
 
 
+# --------------------------------------------------------------------------------------------
+# figures
+# --------------------------------------------------------------------------------------------
+def cond_style(cond):
+    """colour by pool size, line style by restricted prefix."""
+    if cond == "none":
+        return dict(color="black", ls="-", lw=2.2, label="unrestricted")
+    pre, P = cond.split(":"); P = int(P)
+    colors = {32: "#d62728", 64: "#ff7f0e", 128: "#2ca02c", 256: "#1f77b4"}
+    ls = {"1-3": "-", "1-6": "--", "1-9": ":"}[pre]
+    return dict(color=colors[P], ls=ls, lw=1.6, label=f"layers {pre} @ pool {P}")
+
+
+def make_figures(all_res, out: Path):
+    import matplotlib; matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    figs = out / "figs"; figs.mkdir(parents=True, exist_ok=True)
+    models = list(all_res)
+    def per_layer(model, cond, key, sub=None):
+        r = all_res[model][cond]
+        return [r[sub]["layers"][str(l)][key] if sub else r["layers"][str(l)][key] for l in LAYERS]
+    def line_fig(key, ylabel, fname, sub=None, transform=None):
+        fig, axes = plt.subplots(1, len(models), figsize=(6.2 * len(models), 4.2), sharey=True)
+        axes = np.atleast_1d(axes)
+        for ax, model in zip(axes, models):
+            for cond in sorted(all_res[model], key=lambda c: (c != "none", c.split(":")[0], int(c.split(":")[1]) if ":" in c else 0)):
+                y = transform(all_res[model][cond]) if transform else per_layer(model, cond, key, sub)
+                ax.plot(LAYERS, y, marker="o", ms=3, **cond_style(cond))
+            ax.set_title(f"{model}"); ax.set_xlabel("MoE layer"); ax.grid(alpha=0.3)
+        axes[0].set_ylabel(ylabel); axes[-1].legend(fontsize=7, ncol=2)
+        fig.tight_layout(); fig.savefig(figs / fname, dpi=110); plt.close(fig)
+    line_fig("poolable_top64_unw", "share of routed assignments inside the doc's top-64 experts", "poolable64_by_layer.png")
+    line_fig("poolable_top128_unw", "share inside the doc's top-128 experts", "poolable128_by_layer.png")
+    line_fig("doc_eff_experts_unw", "effective # experts per document", "doc_eff_experts_by_layer.png")
+    line_fig("Q_louvain", "Louvain modularity Q (token co-activation lift)", "q_louvain_by_layer.png")
+    line_fig("mean_router_entropy", "mean router entropy (nats)", "router_entropy_by_layer.png")
+    line_fig(None, "Jaccard(top-64 sets) within - across early-pool clusters", "earlypool_jaccard_gap.png",
+             transform=lambda r: [r["earlypool"]["layers"][str(l)]["jaccard_within"] - r["earlypool"]["layers"][str(l)]["jaccard_across"] for l in LAYERS])
+    line_fig(None, "NMI(early-pool cluster ; expert usage)", "earlypool_nmi.png",
+             transform=lambda r: [r["earlypool"]["layers"][str(l)]["nmi_cluster_expert"] for l in LAYERS])
+    # cross-layer NMI heatmaps: unrestricted vs the tightest 1-3 and 1-6 restrictions
+    show = ["none", "1-3:32", "1-6:32", "1-9:32"]
+    fig, axes = plt.subplots(len(models), len(show), figsize=(3.3 * len(show), 3.2 * len(models)), squeeze=False)
+    vmax = max(np.max(np.array(all_res[m][c]["cross_nmi"])[~np.eye(len(LAYERS), dtype=bool)]) for m in models for c in show if c in all_res[m])
+    for i, model in enumerate(models):
+        for j, cond in enumerate(show):
+            ax = axes[i, j]
+            if cond not in all_res[model]: ax.axis("off"); continue
+            M = np.array(all_res[model][cond]["cross_nmi"]); np.fill_diagonal(M, np.nan)
+            im = ax.imshow(M, vmin=0, vmax=vmax, cmap="viridis"); ax.set_title(f"{model} / {cond}", fontsize=9)
+            ax.set_xticks(range(len(LAYERS))); ax.set_xticklabels(LAYERS, fontsize=7); ax.set_yticks(range(len(LAYERS))); ax.set_yticklabels(LAYERS, fontsize=7)
+    fig.colorbar(im, ax=axes.ravel().tolist(), shrink=0.6, label="normalized MI(expert@l ; expert@m)")
+    fig.savefig(figs / "cross_layer_nmi.png", dpi=110); plt.close(fig)
+    # CE by condition
+    fig, ax = plt.subplots(figsize=(10, 3.6))
+    conds = sorted({c for m in models for c in all_res[m]}, key=lambda c: (c != "none", c.split(":")[0], int(c.split(":")[1]) if ":" in c else 0))
+    x = np.arange(len(conds)); wdt = 0.8 / len(models)
+    for i, m in enumerate(models):
+        ax.bar(x + i * wdt, [all_res[m][c]["meta"]["mean_ce"] if c in all_res[m] else np.nan for c in conds], wdt, label=m)
+    ax.set_xticks(x + wdt * (len(models) - 1) / 2); ax.set_xticklabels(conds, rotation=45, ha="right", fontsize=8); ax.set_ylabel("mean CE"); ax.legend(); ax.grid(axis="y", alpha=0.3)
+    lo = min(all_res[m][c]["meta"]["mean_ce"] for m in models for c in all_res[m]); ax.set_ylim(lo - 0.05, None)
+    fig.tight_layout(); fig.savefig(figs / "ce_by_condition.png", dpi=110); plt.close(fig)
+    log(f"figures -> {figs}")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--root", type=Path, required=True)
@@ -160,6 +225,7 @@ def main():
             lines.append(cond + " | " + " | ".join(f"{r['earlypool']['layers'][str(l)]['nmi_cluster_expert']:.3f}/{r['earlypool']['layers'][str(l)]['jaccard_within']:.2f}/{r['earlypool']['layers'][str(l)]['jaccard_across']:.2f}" for l in LAYERS))
     (a.out / "tables.md").write_text("\n".join(lines))
     print("\n".join(lines))
+    make_figures(all_res, a.out)
 
 
 if __name__ == "__main__":
