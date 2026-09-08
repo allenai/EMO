@@ -32,7 +32,8 @@ def cond_sort(c):
 
 
 def fig(name, caption, d=RUNS):
-    return img_tag(d / "figs" / name, caption)
+    p = d / "figs" / name
+    return img_tag(p if p.exists() else d / name, caption)
 
 
 def f(x, nd=3):
@@ -209,6 +210,34 @@ def build_heatmaps():
     return body
 
 
+KS = OUT / "ksweep"
+
+
+def build_ksweep():
+    body = ("<p>Why k=8? It was inherited from the sparse_experts analysis, not chosen for this data; it only affects the display ordering and the "
+            "spectral-Q number (the lift matrix is k-free). Here the spectral cluster count is swept over k = 4 / 8 / 16 / 32 / 64 on the EMO "
+            "1000-expert full-routing pass, and for each k the experts of ONE layer are partitioned into k clusters and every document is assigned "
+            "to the cluster that captures most of its routed assignments in that layer. <b>purity</b> = the share of the document's assignments in "
+            "its assigned cluster (mean over documents with &ge; 64 tokens), against a random expert partition with the same cluster sizes; "
+            "<b>lift within / across</b> = mean log2 lift among the experts the document actually uses (top-16 by usage) inside vs outside its "
+            "cluster; NMI(cluster ; source) = how much the document clusters line up with the data source.</p>")
+    body += fig(f"emo1000_full_Q_vs_k.png", "Spectral Q vs k per layer (EMO 1000, full routing); shuffled-label null shown for layer 1.", KS)
+    hdr = ["k", "Q (this layer)", "purity", "purity null", "median purity", "docs with purity &gt; 0.5", "lift within", "lift across", "NMI(cluster;source)", "largest doc clusters"]
+    for tag, layer, label in (("emo1000_full", 1, "EMO 1000, layer-1 partition"), ("emo1000_full", 5, "EMO 1000, layer-5 partition"), ("emo1000_full", 9, "EMO 1000, layer-9 partition"),
+                              ("emo512_full", 1, "EMO 512, layer-1 partition"), ("std1000_full", 1, "standard 1000, layer-1 partition")):
+        jf = KS / f"{tag}_L{layer}_ksweep.json"
+        if not jf.exists(): continue
+        r = json.load(open(jf)); rows = []
+        for k, v in sorted(r.items(), key=lambda kv: int(kv[0])):
+            rows.append([k, f(v["Q_spectral"][layer - 1]), f(v["purity"]), f(v["purity_null"]), f(v["purity_median"]), f"{v['frac_purity_gt_half']:.2f}", f(v["lift_within"], 2), f(v["lift_across"], 2), f(v["nmi_doc_cluster_source"]),
+                         ", ".join(str(x) for x in sorted(v["doc_cluster_sizes"], reverse=True)[:5])])
+        figs = fig_row(*[img_tag(KS / f"{tag}_L{layer}_k{k}_docpartition.png", f"k={k}: purity histogram vs null; source composition of the document clusters") for k in (4, 8, 32)])
+        body += card("info", label, table(hdr, rows) + figs)
+    body += card("info", "EMO 1000 full routing: log2 lift grids ordered by spectral clusters at each k",
+                 "".join(fig(f"emo1000_full_k{k}_lift_tok_grid.png", f"k = {k}", KS) for k in (4, 8, 16, 32, 64)))
+    return body
+
+
 def build_next():
     return card("info", "Next steps", "<ul><li>Sweep every prefix length 1..8 at one pool size to locate where later-layer structure (if any) switches on.</li>"
                 "<li>Replace the k-means early-pool clustering with the exact early pool identity (documents sharing the same top-32 set) once enough documents share pools.</li>"
@@ -229,6 +258,7 @@ def main(findings_path=OUT / "findings.html"):
         ("cross", "4 · Cross-layer NMI", build_cross(res)),
         ("e1000", "5 · 1000-expert arms", build_1000(res1000, res)),
         ("heat", "6 · Co-activation heatmaps", build_heatmaps()),
+        ("ksweep", "7 · k sweep & document partition", build_ksweep()),
         ("next", "Next steps", build_next()),
     ]
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
