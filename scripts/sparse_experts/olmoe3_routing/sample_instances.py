@@ -44,7 +44,7 @@ def main():
     labels = json.load(open(args.stream / "labels.json")); inv = {v: k for k, v in labels.items()}
     rows = []  # (shard, row, step, slot, dataset_index, label, group, mask)
     for sh in man["shards"]:
-        m = np.load(args.stream / f"shard_{sh['k']}.meta.npz")
+        m = {k: v for k, v in np.load(args.stream / f"shard_{sh['k']}.meta.npz").items()}  # materialize once (NpzFile re-reads per access)
         for i in range(len(m["step"])):
             lab = inv[int(m["label_id"][i])]
             rows.append((sh["k"], i, int(m["step"][i]), int(m["slot"][i]), int(m["dataset_index"][i]), lab, group_of(lab), bool(m["instance_mask"][i])))
