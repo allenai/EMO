@@ -33,6 +33,7 @@ Usage (Beaker 1-GPU, PYTHONPATH=external/OLMo-core/src):
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import math
 import os
@@ -154,6 +155,9 @@ def apply_restriction(routers: Dict[int, torch.nn.Module], layers: List[int], po
     for l, r in routers.items():
         p = pool if l in layers else None
         if isinstance(r, EmoRouterV2):
+            # Routers built from the same block config SHARE one EmoRouterConfig object; give this
+            # router its own copy before editing, or every layer ends up with the last value set.
+            r.emo = copy.deepcopy(r.emo)
             r.emo.eval_document_expert_pool = p if p is not None else num_experts
             r.emo.validate_for_router(num_experts=num_experts, top_k=r.top_k)
             kinds[l] = f"emo(eval_pool={r.emo.eval_pool_size()})"
@@ -264,6 +268,10 @@ def run(args):
     L = len(MOE_LAYERS)
     kinds = apply_restriction(routers, layers, pool, E)
     log("routers: " + ", ".join(f"L{l}:{kinds[l]}" for l in MOE_LAYERS))
+    for l, r in routers.items():  # read-back check of the effective per-layer pool
+        eff = r.emo.eval_pool_size() if hasattr(r, "emo") and r.emo is not None else (r.pool or E)
+        want = pool if l in layers else E
+        assert eff == want, f"layer {l}: effective pool {eff} != wanted {want}"
 
     captured: Dict[int, Tuple[torch.Tensor, torch.Tensor]] = {}
     def make_hook(l):
