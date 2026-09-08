@@ -184,6 +184,30 @@ def build_1000(res1000, res):
             + fig_row(fig("poolable64_by_layer.png", "1000-expert arms: top-64 poolability (unrestricted only).", RUNS1000), fig("q_louvain_by_layer.png", "1000-expert arms: Louvain Q.", RUNS1000)))
 
 
+HEAT = OUT / "heatmaps"
+HEAT_TAGS = [("std512_full", "standard MoE, 512 experts, full routing"), ("emo512_full", "EMO, 512 experts, full routing"),
+             ("std1000_full", "standard MoE, 1000 experts, full routing"), ("emo1000_full", "EMO, 1000 experts, full routing"),
+             ("std512_pool64", "standard MoE, 512 experts, all 9 layers at pool 64"), ("emo512_pool64", "EMO, 512 experts, all 9 layers at pool 64")]
+
+
+def build_heatmaps():
+    body = ("<p>Per-layer expert co-activation on the same 65.5M-token pass, drawn exactly as in the sparse_experts report: log2 lift "
+            "(observed / expected-under-independence pair counts, experts ordered by spectral cluster (k=8) then usage, clipped to &plusmn;3) and "
+            "conditional co-activation P(E<sub>j</sub> | E<sub>i</sub>), each at token level (both experts in one token's top-16) and document "
+            "level (both used at least once in a document). Full routing for all four trained arms, plus the 512-expert models with every layer "
+            "pinned to a per-document pool of 64 (the analogue of the earlier report's pool-64 tab).</p>")
+    for tag, label in HEAT_TAGS:
+        qf = HEAT / f"{tag}_heatmaps.json"
+        qtxt = ""
+        if qf.exists():
+            q = json.load(open(qf)); qtxt = " &middot; spectral Q by layer: " + ", ".join(f"{v:.2f}" for v in q["Q_spectral"])
+        sub = (fig_row(fig(f"{tag}_lift_tok_grid.png", "log2 lift, token level", HEAT), fig(f"{tag}_cond_tok_grid.png", "conditional co-activation P(j|i), token level", HEAT))
+               + fig_row(fig(f"{tag}_lift_doc_grid.png", "log2 lift, document level", HEAT), fig(f"{tag}_cond_doc_grid.png", "conditional co-activation, document level", HEAT))
+               + fig_row(fig(f"{tag}_usage.png", "per-expert token usage by layer", HEAT), fig(f"{tag}_lift_hist.png", "distribution of pairwise lift", HEAT)))
+        body += card("info", f"{label}{qtxt}", sub)
+    return body
+
+
 def build_next():
     return card("info", "Next steps", "<ul><li>Sweep every prefix length 1..8 at one pool size to locate where later-layer structure (if any) switches on.</li>"
                 "<li>Replace the k-means early-pool clustering with the exact early pool identity (documents sharing the same top-32 set) once enough documents share pools.</li>"
@@ -203,6 +227,7 @@ def main(findings_path=OUT / "findings.html"):
         ("early", "3 · Early-pool conditioning", build_earlypool(res)),
         ("cross", "4 · Cross-layer NMI", build_cross(res)),
         ("e1000", "5 · 1000-expert arms", build_1000(res1000, res)),
+        ("heat", "6 · Co-activation heatmaps", build_heatmaps()),
         ("next", "Next steps", build_next()),
     ]
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
