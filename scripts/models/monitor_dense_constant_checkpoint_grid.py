@@ -107,6 +107,12 @@ def beaker_state(payload: dict[str, Any]) -> str:
     return "submitted"
 
 
+def job_is_active(job: dict[str, Any]) -> bool:
+    status = job.get("status") or {}
+    terminal = {"exited", "finalized", "canceled", "cancelled"}
+    return not terminal.intersection(status)
+
+
 def should_poll(record: dict[str, Any]) -> bool:
     if (
         record.get("role") == "integrated_checkpoint_producer_and_evaluator"
@@ -247,11 +253,18 @@ def refresh_producer(record: dict[str, Any]) -> str:
     payload = inspect(str(experiment))
     state = beaker_state(payload)
     jobs = [job for job in payload.get("jobs") or [] if job.get("id")]
+    active_jobs = [job for job in jobs if job_is_active(job)]
     if jobs:
         record["jobs"] = [job["id"] for job in jobs]
-        record["job"] = (
-            jobs[0]["id"] if int(record.get("nodeCount", 1)) > 1 else jobs[-1]["id"]
-        )
+        current_jobs = active_jobs or jobs[-int(record.get("nodeCount", 1)) :]
+        if int(record.get("nodeCount", 1)) > 1:
+            primary = min(
+                current_jobs,
+                key=lambda job: int((job.get("execution") or {}).get("replicaRank", 0)),
+            )
+            record["job"] = primary["id"]
+        else:
+            record["job"] = current_jobs[-1]["id"]
     pool3b_v2 = record.get("policy") in {
         "dense_small_pool3b_checkpoint_producers_v2",
         "dense_small_pool3b_bs512_checkpoint_producers_v1",
@@ -265,7 +278,12 @@ def refresh_producer(record: dict[str, Any]) -> str:
         # running, so include the active retry's recent log before deciding the
         # resolved frontier. Older bridge completion is inferred below once a
         # later retained checkpoint is present.
-        monitored_jobs = jobs if int(record.get("nodeCount", 1)) > 1 else [jobs[-1]]
+        current_jobs = active_jobs or jobs[-int(record.get("nodeCount", 1)) :]
+        monitored_jobs = (
+            current_jobs
+            if int(record.get("nodeCount", 1)) > 1
+            else [current_jobs[-1]]
+        )
         logs += "".join(
             experiment_logs(str(experiment), state, str(job["id"]), since="70m")
             for job in monitored_jobs
