@@ -62,3 +62,7 @@ pool_beta<alpha>, jupiter, 10b]`.
 
 | run | Beaker | commit | submitted | status |
 |---|---|---|---|---|
+| `olmoe3_275m_emo_beta2_10b` | https://beaker.org/ex/01M23NCFD03S129HJZN5RC25YW (allocated, 4 nodes) | 20ed25409 | 2026-09-09 18:03 UTC | scheduled within 20 s |
+| `olmoe3_275m_emo_beta4_10b` | https://beaker.org/ex/01M23ND2QPD1ZD1J0V1HHMCE7A (allocated, 4 nodes) | 20ed25409 | 2026-09-09 18:03 UTC | scheduled within 20 s |
+| ppl validation `olmoe3_275m_10b` (5 ckpts) | https://beaker.org/ex/01M23NN9KTC9CWXEN2CQBR7BTZ (allocated, 1 GPU) | 20ed25409 | 2026-09-09 18:13 UTC | |
+| ppl validation `olmoe3_275m_emo_10b` (5 ckpts) | https://beaker.org/ex/01M23NNPBAG459EMB0Z0K2J4S3 (allocated, 1 GPU) | 20ed25409 | 2026-09-09 18:13 UTC | |

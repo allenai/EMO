@@ -11,6 +11,8 @@
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 export PATH=/root/.conda/envs/emo/bin:$PATH
+unset GH_TOKEN   # the session's GH_TOKEN is invalid ("invalid header field value") -> gantry falls back to the gh CLI
+LOG=${LOG:-/tmp/claude-0/pplval_launch}; mkdir -p "$LOG"
 W=/weka/oe-training-default/ryanwang/EMO
 RUNS=${RUNS:-"olmoe3_275m_10b olmoe3_275m_emo_10b"}
 STEPS=${STEPS:-"step5000 step10000 step15000 step19000 step19074"}
@@ -20,5 +22,5 @@ for run in $RUNS; do
   PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_beaker_cmd.py \
     --name "pplval-$run" --gpus 1 --allocated ${DRY:+--dry-run} -- \
     python scripts/debug_validation/eval_ppl_validation.py --checkpoints "${ckpts[@]}" --out-dir "$OUT" --batch-size 8 \
-    2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -oE 'beaker.org/ex/[A-Z0-9]+|BeakerLaunchConfig.*' | head -1 | sed "s|^|$run: |"
+    2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee "$LOG/$run.log" | grep -oE 'beaker.org/ex/[A-Z0-9]+|BeakerLaunchConfig.*|Error.*|error.*' | head -1 | sed "s|^|$run: |"
 done
