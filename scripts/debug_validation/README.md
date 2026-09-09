@@ -66,7 +66,7 @@ pool_beta<alpha>, jupiter, 10b]`.
 | `olmoe3_275m_emo_beta4_10b` | https://beaker.org/ex/01M23ND2QPD1ZD1J0V1HHMCE7A (allocated, 4 nodes) | 20ed25409 | 2026-09-09 18:03 UTC | DONE 19:41 UTC (same) |
 | ppl validation `olmoe3_275m_10b` (5 ckpts) | https://beaker.org/ex/01M23NN9KTC9CWXEN2CQBR7BTZ (allocated, 1 GPU) | 20ed25409 | 2026-09-09 18:13 UTC | DONE 19:01 UTC (5/5 ckpts, ~9 min each) |
 | ppl validation `olmoe3_275m_emo_10b` (5 ckpts) | https://beaker.org/ex/01M23NNPBAG459EMB0Z0K2J4S3 (allocated, 1 GPU) | 20ed25409 | 2026-09-09 18:13 UTC | DONE 19:11 UTC (5/5 ckpts) |
-| offline-vs-in-loop cross-check: `olmoe3_275m_emo_beta4_10b/step19000` | https://beaker.org/ex/01M23V3EXP4NSKDTFHW1VK8SZ2 (allocated, 1 GPU) | 332970e2d | 2026-09-09 19:47 UTC | |
+| offline-vs-in-loop cross-check: `olmoe3_275m_emo_beta4_10b/step19000` | https://beaker.org/ex/01M23V3EXP4NSKDTFHW1VK8SZ2 (allocated, 1 GPU) | 332970e2d | 2026-09-09 19:47 UTC | DONE: offline == in-loop within 0.0006 CE on every set (bf16 noise) |
 
 ## Results: offline v3-small ppl validation (CE loss, in-loop convention; tables in `claude_outputs/debug_validation/ppl_validation/`)
 
