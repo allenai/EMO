@@ -131,7 +131,8 @@
         63,
         64,
         65,
-        80
+        80,
+        96
       ],
       "stopPolicy": "retain_exact_predecay_checkpoint_evaluate_then_stop",
       "targetEpochs": [
@@ -204,7 +205,7 @@
         95,
         96
       ],
-      "currentEpoch": 81,
+      "currentEpoch": 96,
       "evaluationEnabled": true,
       "experiment": "01M210D0EYX8B6S1YKB66MD3D0",
       "revision": "d423e74d1ee64441c42f3ba2810535e680dff2a5",
@@ -256,7 +257,7 @@
         }
       ],
       "policy": "dense_1b_pool3b_bs128_e80_e96_two_node_integrated_v1",
-      "currentPhase": "repacked_shuffled_pool3b_constant_lr",
+      "currentPhase": "post",
       "evaluationEpochs": [
         96
       ],
@@ -394,13 +395,13 @@
       "job": "01M210D0JGRGJQBNV0TV125KRZ",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-08T17:26:35.138992+00:00",
+        "checkedAt": "2026-09-09T07:39:13.022665+00:00",
         "beakerState": "running",
-        "latestStep": 412343,
-        "totalSteps": 494384,
-        "run": "oy48c0dt",
-        "epoch": 72,
-        "eta": "13h27m",
+        "latestStep": 497079,
+        "totalSteps": 549317,
+        "run": "trcdqqlh",
+        "epoch": 87,
+        "eta": "8h36m",
         "criticalSignals": []
       }
     },
@@ -2332,7 +2333,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-08T17:30:18.915355+00:00",
+  "updatedAt": "2026-09-09T07:39:13.023093+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",
