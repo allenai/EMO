@@ -401,13 +401,13 @@
       "job": "01M2330AQYEJBZ8YY5JSS4CEKA",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-09T13:39:08.194987+00:00",
+        "checkedAt": "2026-09-09T14:40:38.440188+00:00",
         "beakerState": "running",
-        "latestStep": 499484,
+        "latestStep": 505649,
         "totalSteps": 549317,
         "run": "jrjm6ro7",
-        "epoch": 88,
-        "eta": "8h19m",
+        "epoch": 89,
+        "eta": "7h17m",
         "criticalSignals": []
       }
     },
@@ -2339,7 +2339,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-09T13:39:08.195522+00:00",
+  "updatedAt": "2026-09-09T14:45:03.822812+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",

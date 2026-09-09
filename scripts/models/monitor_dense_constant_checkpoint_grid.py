@@ -431,12 +431,14 @@ def refresh_producer(record: dict[str, Any]) -> str:
     )
     if integrated_pool3b:
         if record.get("currentPhase") != "terminal":
+            previous_phase = record.get("currentPhase")
             record["currentPhase"] = (
                 "post"
                 if due_post_epoch is not None
                 and (
                     "DENSE_SMALL_CHECKPOINT_EVALUATOR_START" in logs
                     or "DENSE1B_CHECKPOINT_EVALUATOR_START" in logs
+                    or previous_phase == "post"
                 )
                 else "post_pending"
                 if due_post_epoch is not None
