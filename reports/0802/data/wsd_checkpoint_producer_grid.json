@@ -88,7 +88,7 @@
       "batchSequences": 128,
       "learningRate": "1e-3",
       "weightDecay": "0.3",
-      "status": "submitted",
+      "status": "running",
       "sourceEpoch": 16,
       "sourceExperiment": "01M14BSBDFA9Y9P546Y8AZ4A9Q",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm3b/bs128_dr_wt_embwd_lr1e-3_wd0.3/step82397",
@@ -209,7 +209,7 @@
       "evaluationEnabled": true,
       "experiment": "01M210D0EYX8B6S1YKB66MD3D0",
       "revision": "d423e74d1ee64441c42f3ba2810535e680dff2a5",
-      "beakerStatus": "submitted",
+      "beakerStatus": "running",
       "submittedAt": "2026-09-08T17:17:40.263504+00:00",
       "experimentHistory": [
         {
@@ -257,7 +257,7 @@
         }
       ],
       "policy": "dense_1b_pool3b_bs128_e80_e96_two_node_integrated_v1",
-      "currentPhase": "post_pending",
+      "currentPhase": "post",
       "evaluationEpochs": [
         96
       ],
@@ -394,18 +394,20 @@
         "01M22QA3YBTDJZPA8Q6H6C3040",
         "01M22QA41T32Q8JK1DCZ8RHWKZ",
         "01M22ZBQ15WKZJ0A9V29ZPHVEA",
-        "01M22ZBQ77WDYP9WYYFVV0GXH4"
+        "01M22ZBQ77WDYP9WYYFVV0GXH4",
+        "01M2330AH9FE6A1E7BA25S06FD",
+        "01M2330AQYEJBZ8YY5JSS4CEKA"
       ],
-      "job": "01M22ZBQ77WDYP9WYYFVV0GXH4",
+      "job": "01M2330AQYEJBZ8YY5JSS4CEKA",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-09T11:39:08.139127+00:00",
-        "beakerState": "submitted",
-        "latestStep": 506825,
+        "checkedAt": "2026-09-09T13:39:08.194987+00:00",
+        "beakerState": "running",
+        "latestStep": 499484,
         "totalSteps": 549317,
-        "run": "trcdqqlh",
-        "epoch": null,
-        "eta": null,
+        "run": "jrjm6ro7",
+        "epoch": 88,
+        "eta": "8h19m",
         "criticalSignals": []
       }
     },
@@ -2337,7 +2339,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-09T11:39:08.139972+00:00",
+  "updatedAt": "2026-09-09T13:39:08.195522+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",
