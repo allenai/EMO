@@ -62,10 +62,11 @@ pool_beta<alpha>, jupiter, 10b]`.
 
 | run | Beaker | commit | submitted | status |
 |---|---|---|---|---|
-| `olmoe3_275m_emo_beta2_10b` | https://beaker.org/ex/01M23NCFD03S129HJZN5RC25YW (allocated, 4 nodes) | 20ed25409 | 2026-09-09 18:03 UTC | scheduled within 20 s |
-| `olmoe3_275m_emo_beta4_10b` | https://beaker.org/ex/01M23ND2QPD1ZD1J0V1HHMCE7A (allocated, 4 nodes) | 20ed25409 | 2026-09-09 18:03 UTC | scheduled within 20 s |
+| `olmoe3_275m_emo_beta2_10b` | https://beaker.org/ex/01M23NCFD03S129HJZN5RC25YW (allocated, 4 nodes) | 20ed25409 | 2026-09-09 18:03 UTC | DONE 19:41 UTC (19,074 steps, ~1h35 incl. 20 in-loop evals of ~20 s; ckpts step{5000,10000,15000,19000,19074}) |
+| `olmoe3_275m_emo_beta4_10b` | https://beaker.org/ex/01M23ND2QPD1ZD1J0V1HHMCE7A (allocated, 4 nodes) | 20ed25409 | 2026-09-09 18:03 UTC | DONE 19:41 UTC (same) |
 | ppl validation `olmoe3_275m_10b` (5 ckpts) | https://beaker.org/ex/01M23NN9KTC9CWXEN2CQBR7BTZ (allocated, 1 GPU) | 20ed25409 | 2026-09-09 18:13 UTC | DONE 19:01 UTC (5/5 ckpts, ~9 min each) |
 | ppl validation `olmoe3_275m_emo_10b` (5 ckpts) | https://beaker.org/ex/01M23NNPBAG459EMB0Z0K2J4S3 (allocated, 1 GPU) | 20ed25409 | 2026-09-09 18:13 UTC | DONE 19:11 UTC (5/5 ckpts) |
+| offline-vs-in-loop cross-check: `olmoe3_275m_emo_beta4_10b/step19000` | https://beaker.org/ex/01M23V3EXP4NSKDTFHW1VK8SZ2 (allocated, 1 GPU) | 332970e2d | 2026-09-09 19:47 UTC | |
 
 ## Results: offline v3-small ppl validation (CE loss, in-loop convention; tables in `claude_outputs/debug_validation/ppl_validation/`)
 
@@ -74,3 +75,21 @@ Mean over the 11 sets, standard vs EMO (uniform pool): 3.241 / 3.259 (step 5000)
 average, at every checkpoint and on every set (largest on m2d2_s2orc / reddit / c4 / common-crawl, +0.03 to
 +0.05; smallest on pes2o / stack / books, ~+0.01); the gap does not close with tokens. Step 19000 -> 19074 is
 flat (WSD trunk at constant LR).
+
+## Results: four arms (`claude_outputs/debug_validation/ppl_validation/table_four_arms.md`; Beta arms from their in-loop evals, `inloop_beta_arms.json`)
+
+Mean CE over the 11 sets:
+
+| step | standard | EMO uniform [16,512] | EMO Beta(2,1) | EMO Beta(4,1) |
+|---|---|---|---|---|
+| 5000 | 3.241 | 3.259 | 3.248 | 3.238 |
+| 10000 | 3.075 | 3.097 | 3.085 | 3.076 |
+| 15000 | 3.005 | 3.029 | 3.011 | 3.004 |
+| 19000 | 2.973 | 2.996 | 2.982 | 2.971 |
+| 19074 | 2.974 | 3.000 | 2.985 | 2.979 |
+
+Skewing the per-document pool toward large pools closes EMO's full-routing CE gap to the standard router
+monotonically: uniform +0.022, Beta(2,1) +0.009, Beta(4,1) -0.003 (step 19000, per-set differences all
+within +-0.016). The ordering holds at every checkpoint from step 5000 on. Not measured here: what the
+Beta arms give up in selective (small-pool) routing quality, which is EMO's purpose - that needs a pool-32/64
+eval of the same checkpoints (the routing extractor's `--restrict` can do it).
