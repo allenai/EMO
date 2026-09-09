@@ -392,12 +392,14 @@
         "01M210D0JGRGJQBNV0TV125KRZ",
         "01M210D0NYKC50MSQ6D3GGEM8H",
         "01M22QA3YBTDJZPA8Q6H6C3040",
-        "01M22QA41T32Q8JK1DCZ8RHWKZ"
+        "01M22QA41T32Q8JK1DCZ8RHWKZ",
+        "01M22ZBQ15WKZJ0A9V29ZPHVEA",
+        "01M22ZBQ77WDYP9WYYFVV0GXH4"
       ],
-      "job": "01M22QA41T32Q8JK1DCZ8RHWKZ",
+      "job": "01M22ZBQ77WDYP9WYYFVV0GXH4",
       "wandbHealth": {
         "status": "healthy",
-        "checkedAt": "2026-09-09T10:39:07.276695+00:00",
+        "checkedAt": "2026-09-09T11:39:08.139127+00:00",
         "beakerState": "submitted",
         "latestStep": 506825,
         "totalSteps": 549317,
@@ -2335,7 +2337,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-09T10:41:01.633089+00:00",
+  "updatedAt": "2026-09-09T11:39:08.139972+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",
