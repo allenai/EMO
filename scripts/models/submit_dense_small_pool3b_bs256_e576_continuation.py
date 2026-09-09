@@ -41,8 +41,13 @@ def verify_ready(record: dict[str, Any]) -> None:
 
 def build_spec(item: dict[str, Any], revision: str, priority: str) -> dict[str, Any]:
     spec = copy.deepcopy(json.loads(base.command(["beaker", "experiment", "spec", str(item["baseExperiment"]), "--format", "json"])))
-    if len(spec.get("tasks", [])) != 1:
-        raise RuntimeError("base experiment must contain exactly one task")
+    tasks = spec.get("tasks", [])
+    if len(tasks) not in {1, 2}:
+        raise RuntimeError("base experiment must contain one logical task or two materialized replicas")
+    if len(tasks) == 2:
+        if {task.get("name") for task in tasks} != {"main-replica-0", "main-replica-1"}:
+            raise RuntimeError("unexpected materialized replica names")
+        spec["tasks"] = [copy.deepcopy(tasks[0])]
     task = spec["tasks"][0]
     if "/weka/oe-training-default" not in {x.get("mountPath") for x in task.get("datasets", [])}:
         raise RuntimeError("base experiment is missing Weka")
