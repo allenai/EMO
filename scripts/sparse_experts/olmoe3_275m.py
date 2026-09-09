@@ -43,9 +43,22 @@ Env knobs (all forwarded to the Beaker worker, which rebuilds the config):
     OLMOE3_EMO            1 -> EMO document-pool routing on the same model (the ladder's own EMO
                           setting: per-document pool drawn uniformly from [top_k=16, 512] experts,
                           eval pool 512, local-batch LB loss with global load balancing). Default 0.
+    OLMOE3_EMO_POOL_DIST  how each training document draws its pool size d from
+                          [OLMOE3_EMO_MIN_POOL, OLMOE3_EMO_MAX_POOL]: uniform (default, the ladder's
+                          setting) | beta:<alpha> -> d = round(min + (max - min) * u ** (1/alpha)),
+                          u ~ U(0,1), i.e. a Beta(alpha, 1) fraction of the range (alpha > 1 skews
+                          toward large pools). Applied by patching EmoRouterV2._pool_sizes in this
+                          process (the pinned submodule is not modified). Eval pools are unaffected.
+    OLMOE3_EXPERIMENT     experiment subfolder tag for W&B (default sparse_experts)
     OLMOE3_SAVE_ROOT / OLMOE3_WORK_DIR / OLMOE3_DATA_ROOT / OLMOE3_WANDB_TAGS
     OLMOE3_SAVE_INTERVAL  permanent checkpoint every N steps (default 5000; a 500-step ephemeral
                           checkpoint is kept for resuming and rolls over)
+    OLMOE3_PPL_EVAL_INTERVAL  in-loop LM (perplexity) eval on the v3-small ppl validation mix
+                          (c4_en, dolma_{books,common-crawl,pes2o,reddit,stack,wiki}, ice,
+                          m2d2_s2orc, pile, wikitext_103; DataMix.v3_small_ppl_validation from
+                          OLMOE3_DATA_ROOT) every N steps plus at the end of training, logged as
+                          eval/lm/<set>/{CE loss,PPL}. Default 0 = off (the ladder runs its evals
+                          out of loop; the sparse_experts arms were trained without it).
 """
 
 from __future__ import annotations
@@ -53,9 +66,13 @@ from __future__ import annotations
 import dataclasses
 import math
 import os
+import re
 import sys
 from copy import deepcopy
 from functools import partial
+from typing import Optional
+
+import torch
 
 from olmo_core.config import DType
 from olmo_core.data import (
@@ -63,6 +80,7 @@ from olmo_core.data import (
     InstanceFilterConfig,
     NumpyDataLoaderConfig,
     NumpyFSLDatasetConfig,
+    NumpyPaddedFSLDatasetConfig,
 )
 from olmo_core.distributed.parallel import DataParallelType
 from olmo_core.internal.experiment import (
@@ -114,6 +132,7 @@ from olmo_core.train.callbacks import (
     BeakerCallback,
     CheckpointerCallback,
     CheckpointRemovalStrategy,
+    LMEvaluatorCallbackConfig,
     SpeedMonitorCallback,
     WandBCallback,
 )
@@ -175,6 +194,56 @@ EOS_TOKEN_ID = 100_257  # dolma2 tokenizer; EMO derives document segments from E
 EMO_MIN_POOL = int(os.environ.get("OLMOE3_EMO_MIN_POOL", str(TOP_K)))
 EMO_MAX_POOL = int(os.environ.get("OLMOE3_EMO_MAX_POOL", str(NUM_ROUTED_EXPERTS)))
 EMO_EVAL_POOL = int(os.environ.get("OLMOE3_EMO_EVAL_POOL", str(NUM_ROUTED_EXPERTS)))
+EMO_POOL_DIST = os.environ.get("OLMOE3_EMO_POOL_DIST", "uniform").strip().lower()
+EXPERIMENT_TAG = os.environ.get("OLMOE3_EXPERIMENT", "sparse_experts")
+
+
+def _parse_pool_dist(spec: str) -> Optional[float]:
+    """Return the Beta(alpha, 1) alpha for 'beta:<alpha>', or None for 'uniform'."""
+    if spec == "uniform":
+        return None
+    m = re.fullmatch(r"beta:([0-9.]+)", spec)
+    if not m or float(m.group(1)) <= 0:
+        raise ValueError(f"OLMOE3_EMO_POOL_DIST must be 'uniform' or 'beta:<alpha>' (alpha > 0), got {spec!r}")
+    return float(m.group(1))
+
+
+def beta_pool_sizes(alpha: float, min_pool: int, max_pool: int, shape, device=None) -> torch.Tensor:
+    """Per-document pool sizes d = round(min + (max - min) * u ** (1/alpha)), u ~ U(0,1).
+
+    u ** (1/alpha) is the inverse CDF of Beta(alpha, 1), so the fraction of the range is
+    Beta(alpha, 1)-distributed (mean alpha / (alpha + 1)); alpha = 1 is the uniform default.
+    """
+    u = torch.rand(shape, device=device, dtype=torch.float32)
+    d = min_pool + (max_pool - min_pool) * u.pow(1.0 / alpha)
+    return d.round().long().clamp_(min_pool, max_pool)
+
+
+def install_pool_dist_patch(alpha: Optional[float]) -> None:
+    """Replace EmoRouterV2._pool_sizes (training branch only) with the Beta(alpha, 1) sampler."""
+    if alpha is None:
+        return
+    from olmo_core.nn.moe.v2.emo_router import EmoRouterV2
+
+    def _pool_sizes(self, segment_ids: torch.Tensor) -> torch.Tensor:
+        if not self.training:
+            return torch.full_like(segment_ids, self.emo.eval_pool_size())
+        per_document = beta_pool_sizes(
+            alpha,
+            self.emo.min_document_expert_pool,
+            self.emo.max_document_expert_pool,
+            segment_ids.shape,
+            device=segment_ids.device,
+        )
+        return per_document.gather(1, segment_ids)
+
+    EmoRouterV2._pool_sizes = _pool_sizes  # type: ignore[method-assign]
+    EmoRouterV2._pool_dist_alpha = alpha  # type: ignore[attr-defined]
+
+
+EMO_POOL_ALPHA = _parse_pool_dist(EMO_POOL_DIST)
+if EMO_ENABLED:
+    install_pool_dist_patch(EMO_POOL_ALPHA)
 ATTN_BACKEND = AttentionBackendName(os.environ.get("OLMOE3_ATTN_BACKEND", "flash_3"))
 
 
@@ -358,6 +427,7 @@ SAVE_ROOT = os.environ.get("OLMOE3_SAVE_ROOT", "/weka/oe-training-default/ryanwa
 WORK_DIR = os.environ.get("OLMOE3_WORK_DIR", "/weka/oe-training-default/ryanwang/dataset-cache")
 EXTRA_WANDB_TAGS = [t for t in os.environ.get("OLMOE3_WANDB_TAGS", "").split(",") if t]
 SAVE_INTERVAL = int(os.environ.get("OLMOE3_SAVE_INTERVAL", "5000"))  # permanent checkpoints
+PPL_EVAL_INTERVAL = int(os.environ.get("OLMOE3_PPL_EVAL_INTERVAL", "0"))  # 0 = no in-loop ppl eval
 
 OLMO_CORE_SUBMODULE = "external/OLMo-core"
 BEAKER_WORKSPACE = os.environ.get("BEAKER_WORKSPACE", "ai2/flex2")
@@ -374,6 +444,7 @@ FORWARDED_ENV = (
     "OLMOE3_ATTN_BACKEND", "OLMOE3_USE_CUTE_KDA", "OLMOE3_PREEMPTIBLE", "OLMOE3_DATA_ROOT",
     "OLMOE3_SAVE_ROOT", "OLMOE3_WORK_DIR", "OLMOE3_WANDB_TAGS", "OLMOE3_IMAGE", "OLMOE3_SAVE_INTERVAL",
     "OLMOE3_EMO", "OLMOE3_EMO_MIN_POOL", "OLMOE3_EMO_MAX_POOL", "OLMOE3_EMO_EVAL_POOL", "OLMOE3_NUM_EXPERTS",
+    "OLMOE3_EMO_POOL_DIST", "OLMOE3_EXPERIMENT", "OLMOE3_PPL_EVAL_INTERVAL",
 )
 
 
@@ -522,8 +593,8 @@ def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleCon
         + (f" (warmup {WSD_WARMUP_STEPS}, decay from step {_wsd_decay_start_step(TOKENS):,})" if SCHEDULER == "wsd_decay" else "")
         + " "
         f"nodes={NUM_NODES} gpus/node={NUM_GPUS} rank_mb={RANK_MICROBATCH_SEQUENCES} ep={EP_SIZE} attn={ATTN_BACKEND} "
-        f"cute_kda={KDA_USE_CUTE_KERNEL} emo={EMO_ENABLED}"
-        + (f" pool=[{EMO_MIN_POOL},{EMO_MAX_POOL}] eval_pool={EMO_EVAL_POOL}" if EMO_ENABLED else "")
+        f"cute_kda={KDA_USE_CUTE_KERNEL} ppl_eval_interval={PPL_EVAL_INTERVAL} emo={EMO_ENABLED}"
+        + (f" pool=[{EMO_MIN_POOL},{EMO_MAX_POOL}] pool_dist={EMO_POOL_DIST} eval_pool={EMO_EVAL_POOL}" if EMO_ENABLED else "")
     )
     return OLMoDDPTrainModuleConfig(
         rank_microbatch_size=RANK_MICROBATCH_SEQUENCES * common.max_sequence_length,
@@ -561,6 +632,23 @@ def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleCon
     )
 
 
+def _ppl_eval_callback(common: CommonComponents) -> LMEvaluatorCallbackConfig:
+    """OLMo-core's standard in-loop LM eval (the same one `_build_default_eval_callbacks` attaches):
+    one padded instance per validation document, truncated to the training sequence length,
+    per-set mean token CE + PPL."""
+    return LMEvaluatorCallbackConfig(
+        eval_dataset=NumpyPaddedFSLDatasetConfig.from_data_mix(
+            DataMix.v3_small_ppl_validation,
+            mix_base_dir=DATA_ROOT,
+            sequence_length=common.max_sequence_length,
+            tokenizer=common.tokenizer,
+            work_dir=common.work_dir,
+        ),
+        eval_interval=PPL_EVAL_INTERVAL,
+        eval_on_finish=True,
+    )
+
+
 def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfig:
     assert TOKENS is not None, "set OLMOE3_TOKENS"
     cancel_check_interval = 1000
@@ -575,6 +663,8 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
         async_bookkeeping=False,
         max_duration=Duration.tokens(TOKENS),
     )
+    if PPL_EVAL_INTERVAL > 0:
+        trainer = trainer.with_callback("lm_evaluator", _ppl_eval_callback(common))
     return (
         trainer.with_callback(
             "checkpointer",
@@ -600,8 +690,9 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
                 entity=WANDB_ENTITY,
                 cancel_check_interval=cancel_check_interval,
                 enabled=True,
-                tags=["pretraining", "sparse_experts", "olmoe3_275m", f"{NUM_ROUTED_EXPERTS}e",
+                tags=["pretraining", EXPERIMENT_TAG, "olmoe3_275m", f"{NUM_ROUTED_EXPERTS}e",
                       "emo" if EMO_ENABLED else "noemo",
+                      *([f"pool_{EMO_POOL_DIST.replace(':', '')}"] if EMO_ENABLED and EMO_POOL_ALPHA is not None else []),
                       cluster.rsplit("/", 1)[-1], *EXTRA_WANDB_TAGS],
             ),
         )
