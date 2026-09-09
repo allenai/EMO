@@ -64,5 +64,13 @@ pool_beta<alpha>, jupiter, 10b]`.
 |---|---|---|---|---|
 | `olmoe3_275m_emo_beta2_10b` | https://beaker.org/ex/01M23NCFD03S129HJZN5RC25YW (allocated, 4 nodes) | 20ed25409 | 2026-09-09 18:03 UTC | scheduled within 20 s |
 | `olmoe3_275m_emo_beta4_10b` | https://beaker.org/ex/01M23ND2QPD1ZD1J0V1HHMCE7A (allocated, 4 nodes) | 20ed25409 | 2026-09-09 18:03 UTC | scheduled within 20 s |
-| ppl validation `olmoe3_275m_10b` (5 ckpts) | https://beaker.org/ex/01M23NN9KTC9CWXEN2CQBR7BTZ (allocated, 1 GPU) | 20ed25409 | 2026-09-09 18:13 UTC | |
-| ppl validation `olmoe3_275m_emo_10b` (5 ckpts) | https://beaker.org/ex/01M23NNPBAG459EMB0Z0K2J4S3 (allocated, 1 GPU) | 20ed25409 | 2026-09-09 18:13 UTC | |
+| ppl validation `olmoe3_275m_10b` (5 ckpts) | https://beaker.org/ex/01M23NN9KTC9CWXEN2CQBR7BTZ (allocated, 1 GPU) | 20ed25409 | 2026-09-09 18:13 UTC | DONE 19:01 UTC (5/5 ckpts, ~9 min each) |
+| ppl validation `olmoe3_275m_emo_10b` (5 ckpts) | https://beaker.org/ex/01M23NNPBAG459EMB0Z0K2J4S3 (allocated, 1 GPU) | 20ed25409 | 2026-09-09 18:13 UTC | DONE 19:11 UTC (5/5 ckpts) |
+
+## Results: offline v3-small ppl validation (CE loss, in-loop convention; tables in `claude_outputs/debug_validation/ppl_validation/`)
+
+Mean over the 11 sets, standard vs EMO (uniform pool): 3.241 / 3.259 (step 5000), 3.075 / 3.097 (10000),
+3.005 / 3.029 (15000), 2.973 / 2.996 (19000), 2.974 / 3.000 (19074). EMO trails by +0.017 to +0.025 CE on
+average, at every checkpoint and on every set (largest on m2d2_s2orc / reddit / c4 / common-crawl, +0.03 to
++0.05; smallest on pes2o / stack / books, ~+0.01); the gap does not close with tokens. Step 19000 -> 19074 is
+flat (WSD trunk at constant LR).
