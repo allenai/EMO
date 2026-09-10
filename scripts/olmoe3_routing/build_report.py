@@ -369,20 +369,21 @@ KS = OUT / "ksweep"
 
 def ksweep_table(tag, layer):
     jf = KS / f"{tag}_L{layer}_ksweep.json"
-    if not jf.exists(): return ""
+    if not jf.exists(): return "<p class=\"muted\">not run</p>"
     r = json.load(open(jf)); rows = []
     for k, v in sorted(r.items(), key=lambda kv: int(kv[0])):
-        rows.append([k, f(v["Q_spectral"][layer - 1], 2), f(v["purity"], 2), f(v["purity_null"], 2), f"{v['frac_purity_gt_half']:.2f}", f(v["lift_within"], 2), f(v["lift_across"], 2), f(v["nmi_doc_cluster_source"], 2)])
-    return table(["k", "spectral Q", "purity", "purity, random partition", "docs with purity &gt; 0.5", "lift within", "lift across", "NMI(doc cluster ; source)"], rows)
+        rows.append([k, f(v["purity"], 2), f(v["purity_null"], 2), f"{v['frac_purity_gt_half']:.2f}", f(v["lift_within"], 2), f(v["lift_across"], 2)])
+    return table(["k", "purity", "purity, random partition", "docs with purity &gt; 0.5", "lift within", "lift across"], rows)
 
 
 def build_q5():
     body = question_card("q5")
     body += card("ok", "Short answer",
-                 "<p><b>Yes in the later layers, no in layer 1, and k does not change the answer.</b> Experts form co-firing blocks at every "
-                 "k from 4 to 64. Splitting layer 1's experts into k blocks does not split the documents: a document's routing is spread "
-                 "over the blocks exactly as under a random partition. Splitting layer 9's experts does: at k = 4 the average document puts "
-                 "55% of its routing in one block (random partition: 32%), and the blocks line up partly with data source.</p>")
+                 "<p><b>Yes in EMO's later layers, no in EMO's layer 1, and never in the standard model; k does not change the answer.</b> "
+                 "Experts form co-firing blocks at every k from 4 to 64 in every model. Splitting a layer's experts into k blocks splits the "
+                 "documents only for EMO at layers 5 and 9: there the average document puts about half of its routing in one block at k = 4 "
+                 "(random partition: a third), with identical numbers at 512 and 1000 experts. For EMO layer 1 and for every layer of the "
+                 "standard 1000-expert model, a document's routing is spread over the blocks exactly as under a random partition.</p>")
     body += section("Does k matter for the expert clustering?",
         "The k = 8 used elsewhere was inherited from the sparse_experts analysis. Here the spectral clustering of the token lift graph is "
         "re-run with k = 4 / 8 / 16 / 32 / 64 on the EMO 1000-expert unrestricted pass, and Q is reported per layer, against a "
@@ -395,17 +396,18 @@ def build_q5():
         "For one layer, split its experts into k spectral clusters and assign each document to the cluster that receives most of its routing "
         "in that layer. <b>Purity</b> = the share of the document's routing that lands in its own cluster, compared with a random expert "
         "partition of the same sizes. <b>Lift within / across</b> = mean log2 lift among the experts the document actually uses, inside vs "
-        "outside its cluster. <b>NMI(doc cluster ; source)</b> = how much the document split follows the data source (web / pdf / code / math).",
-        "".join(f"<p><b>{label}</b></p>" + ksweep_table(tag, layer)
-                + fig_row(*[img_tag(KS / f"{tag}_L{layer}_k{k}_docpartition.png", f"k = {k}: purity histogram vs null; source composition of the document clusters") for k in (4, 8, 32)])
-                for tag, layer, label in (("emo1000_full", 1, "EMO 1000, layer 1"), ("emo1000_full", 5, "EMO 1000, layer 5"), ("emo1000_full", 9, "EMO 1000, layer 9"),
-                                          ("emo512_full", 1, "EMO 512, layer 1"), ("std1000_full", 1, "standard 1000, layer 1"))),
-        "Layer 1: purity equals the random-partition value at every k (0.33 vs 0.32 at k = 4) for EMO 1000, EMO 512 and standard 1000 "
-        "alike, and the expert blocks there anti-correlate across (lift across &lt; 0): layer-1 blocks are groups of experts that fire "
-        "on the same <em>tokens</em>, and every document contains tokens of every kind. Layers 5 and 9: purity is well above random at "
-        "every k (layer 9: 0.55 / 0.43 / 0.30 vs 0.32 / 0.18 / 0.12 at k = 4 / 8 / 16), a third to a half of documents put more than half "
-        "their routing in one block, and the document clusters follow source with NMI ~0.3. Later-layer blocks are document-level "
-        "groups; layer-1 blocks are not, which is where EMO's document structure starts (Q1).")
+        "outside its cluster. Shown for three models at layers 1, 5 and 9.",
+        "".join(f"<p><b>{MODEL_LABEL[m]}, layer {layer}</b></p>" + ksweep_table(tag, layer)
+                + fig_row(*[img_tag(KS / f"{tag}_L{layer}_k{k}_docpartition.png", f"k = {k}: document purity vs a random partition") for k in (4, 8, 32)])
+                for tag, m in (("emo512_full", "emo"), ("std1000_full", "std1000"), ("emo1000_full", "emo1000")) for layer in (1, 5, 9)),
+        "Standard 1000, every layer: purity equals the random-partition value at every k (layer 9: 0.32 vs 0.31 at k = 4), no document "
+        "puts more than half its routing in one block, and experts from different blocks anti-correlate (lift across &lt; 0). Its blocks "
+        "are groups of experts that fire on the same <em>tokens</em>, and every document contains tokens of every kind. EMO layer 1 looks "
+        "the same. EMO layers 5 and 9: purity is well above random at every k (layer 9: 0.54&ndash;0.55 / 0.41&ndash;0.43 / 0.27&ndash;0.30 vs "
+        "0.32 / 0.18 / 0.12 at k = 4 / 8 / 16, for 512 and 1000 experts alike), about 60% of documents put more than half their routing in "
+        "one block at k = 4, and experts from different blocks still co-fire (lift across &gt; 0), i.e. the blocks are document-level groups "
+        "that tokens cross freely. A document-level expert partition exists only where EMO's per-document pooling acts (layers 2&ndash;9), "
+        "not as a consequence of depth alone.")
     return body
 
 

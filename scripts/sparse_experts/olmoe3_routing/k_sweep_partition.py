@@ -90,14 +90,10 @@ def main():
                           expert_cluster_sizes=esizes.tolist(), doc_cluster_sizes=sizes.tolist(), nmi_doc_cluster_source=norm_mi(joint),
                           source_composition={g: (joint[:, gi] / np.maximum(sizes, 1)).round(3).tolist() for gi, g in enumerate(groups)}, n_docs=int(keep.sum()))
         print(f"k={k:3d}: L{a.layer} Q={Qs[PL]:.3f} (null {Qn[PL]:.3f}) | doc purity {purity.mean():.3f} (null {null_p.mean():.3f}), median {np.median(purity):.3f}, >0.5: {(purity>0.5).mean():.2f} (null {(null_p>0.5).mean():.2f}) | log2 lift within {np.mean(within):.2f} vs across {np.mean(across):.2f} | expert cluster sizes {sorted(esizes.tolist(), reverse=True)[:6]}.. | doc cluster sizes {sorted(sizes.tolist(), reverse=True)[:6]}.. | NMI(doc cluster;source)={results[k]['nmi_doc_cluster_source']:.3f}")
-        # purity histogram + source composition figure
-        fig, axes = plt.subplots(1, 2, figsize=(11, 3.6))
-        axes[0].hist(purity, bins=50, range=(0, 1), alpha=0.7, label=f"layer-{a.layer} expert clusters"); axes[0].hist(null_p[0], bins=50, range=(0, 1), alpha=0.5, label="random partition (same sizes)")
-        axes[0].set_xlabel(f"document purity: share of layer-{a.layer} assignments in its assigned cluster"); axes[0].legend(fontsize=8); axes[0].set_title(f"k={k}")
-        comp = np.stack([joint[:, gi] for gi in range(len(groups))], 1); comp = comp / np.maximum(comp.sum(1, keepdims=True), 1); order = np.argsort(-sizes)
-        bottom = np.zeros(k)
-        for gi, g in enumerate(groups): axes[1].bar(np.arange(k), comp[order, gi], bottom=bottom, label=g); bottom += comp[order, gi]
-        axes[1].set_xticks(np.arange(k)); axes[1].set_xticklabels([str(sizes[o]) for o in order], rotation=90, fontsize=6); axes[1].set_xlabel("document cluster (label = #docs)"); axes[1].set_ylabel("source share"); axes[1].legend(fontsize=7, ncol=5); axes[1].set_title(f"NMI(cluster;source)={results[k]['nmi_doc_cluster_source']:.2f}")
+        # purity histogram (source composition is kept in the json only)
+        fig, ax = plt.subplots(figsize=(5.5, 3.6))
+        ax.hist(purity, bins=50, range=(0, 1), alpha=0.7, label=f"layer-{a.layer} expert clusters"); ax.hist(null_p[0], bins=50, range=(0, 1), alpha=0.5, label="random partition (same sizes)")
+        ax.set_xlabel(f"document purity: share of layer-{a.layer} assignments in its assigned cluster"); ax.legend(fontsize=8); ax.set_title(f"k={k}")
         fig.tight_layout(); coact.save_png(fig, a.out / f"{a.tag}_L{a.layer}_k{k}_docpartition.png", 100); plt.close(fig)
     # Q vs k summary figure
     fig, ax = plt.subplots(figsize=(8, 3.8))
