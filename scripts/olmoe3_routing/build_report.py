@@ -188,116 +188,224 @@ def build_q1(res, findings):
     return body
 
 
+RESTRICTION_CARD = card("info", "How the restriction works",
+    "<p>Per document, sum the router's softmax scores over the document's tokens, keep the top-P experts, and route each token top-16 "
+    "within them (EMO's own pool rule; the standard checkpoint gets a router wrapper that reproduces it exactly). A condition "
+    "<code>A-B:P</code> applies pool P to MoE layers A&ndash;B and leaves the others free: prefixes 1&ndash;3 and 1&ndash;6 are the "
+    "experiment, 1&ndash;9 (every layer pooled) is the reference. P = 32 / 64 / 128 / 256 of 512. Metrics are those of Q1, read in the "
+    "<em>free</em> layers; a pooled layer reads 1.00 top-P share by construction.</p>")
+
+
+def compact_ce_table(res):
+    conds = sorted(res["std"], key=cond_sort)
+    rows = []
+    for c in conds:
+        cells = [c]
+        for m in ("std", "emo"):
+            ce = res[m][c]["meta"]["mean_ce"]; base = res[m]["none"]["meta"]["mean_ce"]
+            cells += [f(ce), f"{ce-base:+.3f}"]
+        rows.append(cells)
+    return table(["restriction", "standard CE", "&Delta;", "EMO CE", "&Delta;"], rows)
+
+
 def build_q2(res, res1000, findings):
-    method = (
-        "<p><b>Restriction</b>: <em>per document</em>, sum the softmax router scores over the document's tokens, keep the top-P experts, and "
-        "route top-16 within them (the EMO pool rule; EMO checkpoints do it natively, the standard checkpoint gets a router wrapper self-tested "
-        "to reproduce EmoRouterV2 bit-for-bit). A condition <code>A-B:P</code> applies pool P to MoE layers A..B and leaves the other layers "
-        "unrestricted; P &isin; {32, 64, 128, 256}, prefixes 1&ndash;3 / 1&ndash;6 / 1&ndash;9 (the last one is the all-layer reference). A per-batch "
-        "assertion checks that restricted layers never use more than P experts in a document (this caught a config-aliasing bug in the first "
-        "EMO pilot). Metrics are those of Q1, read off in the <em>unrestricted</em> layers; restricted layers read 1.000 top-P share by "
-        "construction. CE is the pass's mean token cross-entropy (also split by data source).</p>"
-    )
+    body = question_card("q2")
+    body += card("ok", "Short answer",
+                 "<p><b>Only slightly, and at a large cost, in the standard model; EMO is already there and pays almost nothing.</b> Pooling "
+                 "the standard model's layers 1&ndash;6 to 32 experts per document lifts layers 7&ndash;9 from 22&ndash;28% to 33&ndash;39% top-64 share, "
+                 "far short of EMO's 62&ndash;67%, leaves their expert-group structure unchanged, and raises CE from 2.44 to 3.59. The same "
+                 "restriction on EMO costs 0.06 CE and changes the free layers by a few points. Later-layer document structure is learned "
+                 "during training, not induced by restricting what comes before.</p>")
+    body += RESTRICTION_CARD
     late = ["7", "8", "9"]
     def row(model, cond):
         x = res[model][cond]; ly = x["layers"]
         j = lambda k, nd: " / ".join(f"{ly[l][k]:.{nd}f}" for l in late)
-        return [MODEL_LABEL[model], cond, f(x["meta"]["mean_ce"]), j("poolable_top32_unw", 2), j("poolable_top64_unw", 2),
-                j("poolable_top128_unw", 2), j("doc_eff_experts_unw", 0), j("Q_louvain", 2)]
-    hdr = ["model", "restriction", "CE", "top-32 share L7 / L8 / L9", "top-64 share", "top-128 share", "eff. experts / doc", "Louvain Q"]
-    body = question_card("q2") + card("info", "Method", method) + findings[1] + findings[2] + findings[3]
-    body += "<p>The direct test: layers 7&ndash;9 (unrestricted in every row except the 1-9 reference rows) under no restriction vs layers 1&ndash;3 vs 1&ndash;6 restricted, per pool size.</p>"
-    for model in ("emo", "std"):
+        return [cond, f(x["meta"]["mean_ce"]), j("poolable_top32_unw", 2), j("poolable_top64_unw", 2), j("doc_eff_experts_unw", 0), j("Q_louvain", 2)]
+    hdr = ["restriction", "CE", "top-32 share L7 / L8 / L9", "top-64 share L7 / L8 / L9", "eff. experts / doc L7 / L8 / L9", "Louvain Q L7 / L8 / L9"]
+    tables = ""
+    for model in ("std", "emo"):
         rows = []
         for P in (32, 64, 128):
             for cond in (["none"] if P == 32 else []) + [f"1-3:{P}", f"1-6:{P}", f"1-9:{P}"]:
                 if cond in res[model]: rows.append(row(model, cond))
-        body += card("info", f"{MODEL_LABEL[model]}: layers 7&ndash;9 under early-layer restriction", table(hdr, rows))
-    body += card("info", "Cross-entropy of every pass", ce_table(res, res1000))
-    body += "<p>All layers, all conditions (rows = conditions, columns = MoE layers):</p>"
-    body += (card("info", "Share of routed assignments inside the document's top-64 experts (unweighted over docs)", layer_table(res, "poolable_top64_unw"))
-             + card("info", "Same, top-128", layer_table(res, "poolable_top128_unw"))
-             + card("info", "Effective # experts per document", layer_table(res, "doc_eff_experts_unw", nd=1))
-             + fig_row(fig("poolable64_by_layer.png", "Top-64 poolability by layer; colour = pool size, line style = restricted prefix (solid 1-3, dashed 1-6, dotted 1-9)."),
-                       fig("doc_eff_experts_by_layer.png", "Effective number of experts per document by layer."))
-             + card("info", "Louvain modularity Q of the token co-activation graph", layer_table(res, "Q_louvain"))
-             + card("info", "Spectral Q (k=8)", layer_table(res, "Q_spectral"))
-             + fig_row(fig("q_louvain_by_layer.png", "Louvain Q by layer and condition."), fig("router_entropy_by_layer.png", "Mean router entropy by layer (nats; ln 512 = 6.24)."), fig("ce_by_condition.png", "CE by condition.")))
+        tables += f"<p><b>{MODEL_LABEL[model]}</b></p>" + table(hdr, rows)
+    body += section("Layers 7&ndash;9 when layers 1&ndash;3 or 1&ndash;6 are pooled",
+        "The direct test. Layers 7&ndash;9 route freely in every row except the 1&ndash;9 reference rows; each cell lists the three layers. "
+        "Top-P share and effective experts per document are defined in Q1.",
+        tables,
+        "Standard model: pooling layers 1&ndash;3 at 32 moves the top-64 share of layers 7&ndash;9 by +0.02&ndash;0.03; pooling 1&ndash;6 by "
+        "+0.11 and cuts effective experts from ~400 to ~320. The shift grows with tighter pools and deeper prefixes but never approaches "
+        "EMO (0.62&ndash;0.67), and Louvain Q in those layers does not move (0.38&ndash;0.40 in every row). EMO: the free layers gain "
+        "+0.02&ndash;0.04 and lose ~15 effective experts, i.e. they were already pooled and barely notice.")
+    body += section("What the restriction costs",
+        "Mean token cross-entropy of the whole pass under each condition, and its change from the unrestricted pass.",
+        compact_ce_table(res),
+        "The standard model pays 0.43 CE for pooling layers 1&ndash;3 at 32, 1.15 for 1&ndash;6 and 1.50 for all nine; even pool 256 in "
+        "three layers costs 0.05. EMO pays 0.003 / 0.06 / 0.11 for the same three, and pool 64 in layers 1&ndash;3 is free. The cost scales "
+        "with every data source alike (standard 1&ndash;3 at 32: code 1.45&rarr;1.70, web 2.95&rarr;3.48). Restricting a router trained "
+        "without pools breaks it; restricting one trained with pools does not.")
+    body += section("Every layer under every condition",
+        "Rows are conditions, columns MoE layers. Pooled layers read 1.00 / P by construction; read the free columns to the right of "
+        "each pooled prefix.",
+        "<p><b>Top-64 share</b></p>" + layer_table(res, "poolable_top64_unw")
+        + "<p><b>Effective experts per document</b></p>" + layer_table(res, "doc_eff_experts_unw", nd=1)
+        + fig_row(fig("poolable64_by_layer.png", "Top-64 share by layer; colour = pool size, line style = pooled prefix (solid 1-3, dashed 1-6, dotted 1-9)."),
+                  fig("doc_eff_experts_by_layer.png", "Effective experts per document by layer.")),
+        "The same picture layer by layer: in the standard model the free layers stay at 0.2&ndash;0.4 top-64 share whatever happens "
+        "upstream, with a small monotone lift; in EMO they sit at 0.55&ndash;0.71 in every condition. A pooled layer's own numbers are "
+        "mechanical (pool 32 &rArr; 31 effective experts).")
+    body += section("Do the pools line up with the experts' natural groups?",
+        "Louvain Q of the token co-activation graph (Q1) inside the <em>pooled</em> layers. If a document's top-P experts by router score "
+        "form a coherent group, pooling makes co-firing blockier and Q rises; if the top-P slice across the natural groups, Q falls.",
+        layer_table(res, "Q_louvain") + fig_row(fig("q_louvain_by_layer.png", "Louvain Q by layer and condition."), fig("router_entropy_by_layer.png", "Mean router entropy by layer.")),
+        "With the grain in EMO, against it in the standard model. EMO's pooled layers become <em>more</em> modular (layer 1: 0.28 &rarr; 0.40 "
+        "at pool 32; layers 4&ndash;6: 0.37&ndash;0.38 &rarr; 0.43&ndash;0.44), the standard model's less (layer 1: 0.23 &rarr; 0.10; layers 4&ndash;6: "
+        "0.32&ndash;0.39 &rarr; 0.17&ndash;0.24). A standard document's top-P experts are a slice through several co-firing groups, so forcing "
+        "it onto them destroys the group structure; an EMO document's top-P already is a group.")
+    body += card("info", "Co-activation heatmaps with every layer pooled at 64",
+                 "<p>Token-level lift and conditional co-activation as in Q1, for the 1&ndash;9:64 condition of both 512-expert models.</p>")
     body += heatmap_card("std512_pool64", "standard MoE, 512 experts, all 9 layers at pool 64") + heatmap_card("emo512_pool64", "EMO, 512 experts, all 9 layers at pool 64")
+    body += card("info", "Takeaway from the heatmaps",
+                 "<p>The same result in pictures. EMO's blocks under pooling look like its unrestricted blocks (spectral Q 0.34&ndash;0.40 vs "
+                 "0.27&ndash;0.33). The standard model's blocks dissolve into a near-uniform grid (spectral Q 0.09&ndash;0.22 vs 0.22&ndash;0.36): "
+                 "the pools mix experts from different groups and split experts that used to fire together.</p>")
     return body
+
+
+def gap_table(res, conds):
+    rows = []
+    for model in ("std", "emo"):
+        for cond in sorted(conds, key=cond_sort):
+            ep = res[model][cond]["earlypool"]["layers"]
+            rows.append([MODEL_LABEL[model], cond] + [f"{ep[l]['jaccard_within'] - ep[l]['jaccard_across']:+.2f}" for l in LAYERS])
+    return table(["model", "restriction", *[f"L{l}" for l in LAYERS]], rows)
+
+
+def cross_table(res, conds):
+    import numpy as np
+    rows = []
+    for model in ("std", "emo"):
+        for cond in sorted(conds, key=cond_sort):
+            X = np.array(res[model][cond]["cross_nmi"]); off = lambda A: A[~np.eye(A.shape[0], dtype=bool)].mean()
+            rows.append([MODEL_LABEL[model], cond, f(np.mean([X[i, i + 1] for i in range(8)])), f(off(X[0:3, 0:3])), f(off(X[6:9, 6:9])), f(X[0:3, 6:9].mean()), f(X[0, 8])])
+    return table(["model", "restriction", "adjacent layers", "within L1&ndash;3", "within L7&ndash;9", "L1&ndash;3 vs L7&ndash;9", "L1 vs L9"], rows)
 
 
 def build_q3(res):
-    method = (
-        "<ul><li><b>early-pool conditioning</b>: documents are k-means clustered (k=8) by their layer-1 top-32 expert SET; for every layer we "
-        "report the normalized MI between cluster id and expert usage, and the mean Jaccard of documents' top-64 expert sets for pairs within vs "
-        "across clusters. A positive within-minus-across gap in a <em>later, unrestricted</em> layer means that documents whose early pools agree "
-        "also share later experts.</li>"
-        "<li><b>cross-layer NMI</b>: normalized mutual information between the expert chosen at layer l and at layer m, from the E&times;E "
-        "cross-layer assignment counts.</li></ul>"
-    )
-    result = ("<p><b>Result.</b> No early-pool&rarr;late-expert dependence appears in either model: the within-minus-across Jaccard gap in the "
-              "free layers stays at +0.02&ndash;0.03 and NMI(cluster ; expert) &le; 0.01 under every restriction. Cross-layer expert dependence is "
-              "higher in EMO than in the standard model (late&ndash;late NMI 0.085 vs 0.055) and grows under restriction (0.15 at all layers @ 32), "
-              "but this is the restricted layers agreeing with each other, not the free layers following them.</p>")
-    body = question_card("q3") + card("info", "Method & metrics", method) + card("ok", "Finding", result)
-    body += (card("info", "NMI(early-pool cluster ; expert usage)", layer_table(res, None, sub="earlypool", subkey="nmi_cluster_expert"))
-             + card("info", "Jaccard within clusters", layer_table(res, None, nd=2, sub="earlypool", subkey="jaccard_within"))
-             + card("info", "Jaccard across clusters", layer_table(res, None, nd=2, sub="earlypool", subkey="jaccard_across"))
-             + fig_row(fig("earlypool_jaccard_gap.png", "Within-minus-across Jaccard of top-64 expert sets, by layer."), fig("earlypool_nmi.png", "NMI(early-pool cluster ; expert) by layer."))
-             + card("info", "Cross-layer expert NMI", "<p>Rows = layer l, columns = layer m, unrestricted vs the tightest restrictions (diagonal blanked).</p>" + fig("cross_layer_nmi.png", "Cross-layer expert NMI heatmaps.")))
+    conds = ["none", "1-3:32", "1-6:32", "1-9:32", "1-9:256"]
+    body = question_card("q3")
+    body += card("ok", "Short answer",
+                 "<p><b>Not in the standard model, and only weakly in EMO, where it is present with or without restriction.</b> Documents "
+                 "that share a layer-1 pool share later experts no more than random documents in the standard model (Jaccard gap +0.02, "
+                 "unchanged by any restriction). In EMO the gap is +0.10&ndash;0.15 in every later layer, but it is the same before and after "
+                 "pooling the early layers, so it reflects documents that look alike routing alike at every depth, not later layers "
+                 "following the early pool.</p>")
+    body += section("Early-pool conditioning: do documents with the same early pool share later experts?",
+        "Cluster documents by their layer-1 top-32 expert set (k-means, k = 8). For each later layer, compare how similar two documents' "
+        "top-64 expert sets are (Jaccard) when they are in the same early cluster vs in different ones. The table shows the difference, "
+        "within minus across: 0 means the early pool tells you nothing about later routing. Shown for pool 32 at each prefix and pool 256 "
+        "for every layer.",
+        gap_table(res, conds) + fig_row(fig("earlypool_jaccard_gap.png", "Within-minus-across Jaccard of top-64 expert sets, by layer, all conditions."), fig("earlypool_nmi.png", "Normalized mutual information between early-pool cluster and expert usage, by layer.")),
+        "Standard model: +0.01&ndash;0.03 in every free layer under every condition, i.e. none. EMO: +0.10&ndash;0.15 in layers 2&ndash;9, already "
+        "in the unrestricted pass, and pooling layers 1&ndash;3 or 1&ndash;6 leaves the free layers' gap where it was. Within a pooled prefix "
+        "the gap drops (+0.07: every document is on 32 experts, so sets are small either way). Nothing here is created by restriction.")
+    body += section("Cross-layer dependence: does the expert picked at one layer predict the expert picked at another?",
+        "Normalized mutual information between the expert a token selects at layer l and at layer m, from the expert &times; expert "
+        "cross-layer counts. 0 = independent choices, 1 = one determines the other. Averaged over adjacent pairs, within the early block, "
+        "within the late block, and between the two.",
+        cross_table(res, conds) + fig("cross_layer_nmi.png", "Cross-layer expert NMI, all layer pairs (diagonal blanked), unrestricted vs the tightest restrictions."),
+        "Dependence is weak everywhere (&le; 0.15) and higher in EMO than in the standard model (adjacent layers 0.085 vs 0.058). Under "
+        "pooling the two models move in opposite directions: EMO's early&ndash;late NMI rises (0.055 &rarr; 0.076&ndash;0.136) because "
+        "pooled layers now agree with each other on a per-document set, while the standard model's falls (0.034 &rarr; 0.004) because "
+        "its pooled early layers are forced onto experts that carry no information about what the free layers will choose.")
     return body
+
+
+def arms_table(res, res1000, key, nd=2):
+    rows = []
+    for model, conds in list(res.items()) + list(res1000.items()):
+        r = conds["none"]
+        rows.append([MODEL_LABEL[model], f(r["meta"]["mean_ce"])] + [f(r["layers"][l][key], nd) for l in LAYERS])
+    return table(["model", "CE", *[f"L{l}" for l in LAYERS]], rows)
 
 
 def build_q4(res1000, res, findings):
     if not res1000:
         return question_card("q4") + card("warn", "128- and 1000-expert arms", "<p>No analysis found in runs_1000/.</p>")
-    method = ("<p>Same pass and metrics as Q1 (unrestricted routing only) on the 128- and 1000-expert arms; top-P share is at a fixed P, so it "
-              "dilutes mechanically as the expert count grows &mdash; compare the ordering between routings and the effective expert count.</p>")
-    rows, rows2 = [], []
-    for model, conds in list(res.items()) + list(res1000.items()):
-        r = conds["none"]
-        rows.append([MODEL_LABEL[model], f(r["meta"]["mean_ce"])] + [f(r["layers"][l]["poolable_top64_unw"]) for l in LAYERS])
-        rows2.append([MODEL_LABEL[model]] + [f(r["layers"][l]["Q_louvain"]) for l in LAYERS])
-    body = question_card("q4") + card("info", "Method", method) + findings[4]
-    body += (card("info", "Unrestricted pass: held-out CE and top-64 poolability by layer, all trained arms", table(["model", "CE", *[f"L{l}" for l in LAYERS]], rows))
-             + card("info", "Louvain Q by layer, unrestricted", table(["model", *[f"L{l}" for l in LAYERS]], rows2))
-             + card("info", "1000-expert arms: per-layer routing statistics", unrestricted_table(res1000, ("std1000", "emo1000")))
-             + card("info", "128-expert arms: per-layer routing statistics", unrestricted_table(res1000, ("std128", "emo128")))
-             + fig_row(fig("poolable64_by_layer.png", "128/1000-expert arms: top-64 poolability (unrestricted only).", RUNS1000), fig("q_louvain_by_layer.png", "128/1000-expert arms: Louvain Q.", RUNS1000)))
+    body = question_card("q4")
+    body += card("ok", "Short answer",
+                 "<p><b>It does not.</b> At every expert count the standard model spreads a document over most of the layer and EMO keeps "
+                 "it on roughly a fifth to a quarter of the experts from layer 2 on, at a cost of about 0.02 CE. More experts help both "
+                 "routings equally (CE 2.51 / 2.44 / 2.42 standard, 2.53 / 2.46 / 2.44 EMO at 128 / 512 / 1000), and expert-group "
+                 "structure (Q) is the same in all six models.</p>")
+    body += section("Held-out CE and top-64 share, all six arms",
+        "Unrestricted pass. Top-64 share (Q1) is at a fixed P, so it falls mechanically as the expert count grows: 64 is half of 128 "
+        "experts but 6% of 1000. Compare the two routings at the same count, not across counts.",
+        arms_table(res, res1000, "poolable_top64_unw") + fig_row(fig("poolable64_by_layer.png", "128- and 1000-expert arms: top-64 share by layer.", RUNS1000)),
+        "EMO above standard at every count and layer from 2 on: 0.88&ndash;0.92 vs 0.58&ndash;0.67 at 128, 0.55&ndash;0.67 vs 0.17&ndash;0.28 at 512, "
+        "0.38&ndash;0.57 vs 0.09&ndash;0.17 at 1000. EMO's layer-1 exception holds at every count. Going 512 &rarr; 1000 buys 0.02&ndash;0.03 CE "
+        "for both routings.")
+    body += section("Effective experts per document, all six arms",
+        "Exp-entropy of the document's usage histogram (Q1); the natural scale-free comparison across expert counts.",
+        arms_table(res, res1000, "doc_eff_experts_unw", nd=0),
+        "Standard: 110&ndash;124 of 128, 360&ndash;450 of 512, 600&ndash;810 of 1000, i.e. 60&ndash;95% of the layer at any size. EMO from layer 2: "
+        "60&ndash;72 of 128, 140&ndash;210 of 512, 210&ndash;400 of 1000, i.e. 20&ndash;50%, and the share shrinks with depth at every count.")
+    body += section("Expert-group structure, all six arms",
+        "Louvain Q of the token co-activation graph (Q1).",
+        arms_table(res, res1000, "Q_louvain") + fig_row(fig("q_louvain_by_layer.png", "128- and 1000-expert arms: Louvain Q by layer.", RUNS1000)),
+        "Q rises with depth from ~0.2&ndash;0.3 to ~0.4 in every model and does not separate the routings or the expert counts. As in Q1, "
+        "EMO's document-level concentration is not visible as stronger token-level groups.")
+    body += card("info", "Co-activation heatmaps, 1000 experts", "<p>Token-level lift and conditional co-activation as in Q1.</p>")
     body += heatmap_card("std1000_full", "standard MoE, 1000 experts, full routing") + heatmap_card("emo1000_full", "EMO, 1000 experts, full routing")
+    body += card("info", "Takeaway from the heatmaps",
+                 "<p>Same blocks, same strength as at 512 experts (spectral Q 0.18&ndash;0.38 standard, 0.23&ndash;0.35 EMO), just twice as many "
+                 "experts per block. Nothing new appears at 1000 experts.</p>")
     return body
 
 
 KS = OUT / "ksweep"
 
 
+def ksweep_table(tag, layer):
+    jf = KS / f"{tag}_L{layer}_ksweep.json"
+    if not jf.exists(): return ""
+    r = json.load(open(jf)); rows = []
+    for k, v in sorted(r.items(), key=lambda kv: int(kv[0])):
+        rows.append([k, f(v["Q_spectral"][layer - 1], 2), f(v["purity"], 2), f(v["purity_null"], 2), f"{v['frac_purity_gt_half']:.2f}", f(v["lift_within"], 2), f(v["lift_across"], 2), f(v["nmi_doc_cluster_source"], 2)])
+    return table(["k", "spectral Q", "purity", "purity, random partition", "docs with purity &gt; 0.5", "lift within", "lift across", "NMI(doc cluster ; source)"], rows)
+
+
 def build_q5():
-    method = ("<p>The spectral cluster count k = 8 used elsewhere was inherited from the sparse_experts analysis, not chosen for this data; it only "
-              "affects the display ordering and the spectral-Q number (the lift matrix is k-free). Here k is swept over 4 / 8 / 16 / 32 / 64 on the "
-              "EMO 1000-expert full-routing pass. For each k the experts of ONE layer are partitioned into k spectral clusters and every document "
-              "is assigned to the cluster that captures most of its routed assignments in that layer. <b>purity</b> = the share of the document's "
-              "assignments in its assigned cluster (mean over documents with &ge; 64 tokens), against a random expert partition with the same "
-              "cluster sizes; <b>lift within / across</b> = mean log2 lift among the experts the document actually uses (top-16 by usage) inside "
-              "vs outside its cluster; NMI(cluster ; source) = how much the document clusters line up with the data source.</p>")
-    result = ("<p><b>Result.</b> Block structure exists at every k (Q stays well above the null), but a <em>layer-1</em> expert partition does not "
-              "partition documents at any k: purity matches the random-partition null. Later layers do: e.g. at layer 9, k = 4 gives purity 0.55 "
-              "vs 0.32 null. So document-level partitions live in the later layers, consistent with Q1.</p>")
-    body = question_card("q5") + card("info", "Method", method) + card("ok", "Finding", result)
-    body += fig(f"emo1000_full_Q_vs_k.png", "Spectral Q vs k per layer (EMO 1000, full routing); shuffled-label null shown for layer 1.", KS)
-    hdr = ["k", "Q (this layer)", "purity", "purity null", "median purity", "docs with purity &gt; 0.5", "lift within", "lift across", "NMI(cluster;source)", "largest doc clusters"]
-    for tag, layer, label in (("emo1000_full", 1, "EMO 1000, layer-1 partition"), ("emo1000_full", 5, "EMO 1000, layer-5 partition"), ("emo1000_full", 9, "EMO 1000, layer-9 partition"),
-                              ("emo512_full", 1, "EMO 512, layer-1 partition"), ("std1000_full", 1, "standard 1000, layer-1 partition")):
-        jf = KS / f"{tag}_L{layer}_ksweep.json"
-        if not jf.exists(): continue
-        r = json.load(open(jf)); rows = []
-        for k, v in sorted(r.items(), key=lambda kv: int(kv[0])):
-            rows.append([k, f(v["Q_spectral"][layer - 1]), f(v["purity"]), f(v["purity_null"]), f(v["purity_median"]), f"{v['frac_purity_gt_half']:.2f}", f(v["lift_within"], 2), f(v["lift_across"], 2), f(v["nmi_doc_cluster_source"]),
-                         ", ".join(str(x) for x in sorted(v["doc_cluster_sizes"], reverse=True)[:5])])
-        figs = fig_row(*[img_tag(KS / f"{tag}_L{layer}_k{k}_docpartition.png", f"k={k}: purity histogram vs null; source composition of the document clusters") for k in (4, 8, 32)])
-        body += card("info", label, table(hdr, rows) + figs)
-    body += card("info", "EMO 1000 full routing: log2 lift grids ordered by spectral clusters at each k",
-                 "".join(fig(f"emo1000_full_k{k}_lift_tok_grid.png", f"k = {k}", KS) for k in (4, 8, 16, 32, 64)))
+    body = question_card("q5")
+    body += card("ok", "Short answer",
+                 "<p><b>Yes in the later layers, no in layer 1, and k does not change the answer.</b> Experts form co-firing blocks at every "
+                 "k from 4 to 64. Splitting layer 1's experts into k blocks does not split the documents: a document's routing is spread "
+                 "over the blocks exactly as under a random partition. Splitting layer 9's experts does: at k = 4 the average document puts "
+                 "55% of its routing in one block (random partition: 32%), and the blocks line up partly with data source.</p>")
+    body += section("Does k matter for the expert clustering?",
+        "The k = 8 used elsewhere was inherited from the sparse_experts analysis. Here the spectral clustering of the token lift graph is "
+        "re-run with k = 4 / 8 / 16 / 32 / 64 on the EMO 1000-expert unrestricted pass, and Q is reported per layer, against a "
+        "shuffled-label null.",
+        fig("emo1000_full_Q_vs_k.png", "Spectral Q vs k per layer (EMO 1000, full routing); null shown for layer 1.", KS)
+        + "<p><b>EMO 1000, lift grids ordered by the k clusters</b></p>" + "".join(fig(f"emo1000_full_k{k}_lift_tok_grid.png", f"k = {k}", KS) for k in (4, 8, 16, 32, 64)),
+        "Q is far above the null at every k and declines slowly as k grows, as expected when a fixed amount of block structure is cut "
+        "into more pieces. The grids show the same diagonal blocks subdivided: k changes the granularity, not the picture.")
+    body += section("Does an expert partition partition the documents?",
+        "For one layer, split its experts into k spectral clusters and assign each document to the cluster that receives most of its routing "
+        "in that layer. <b>Purity</b> = the share of the document's routing that lands in its own cluster, compared with a random expert "
+        "partition of the same sizes. <b>Lift within / across</b> = mean log2 lift among the experts the document actually uses, inside vs "
+        "outside its cluster. <b>NMI(doc cluster ; source)</b> = how much the document split follows the data source (web / pdf / code / math).",
+        "".join(f"<p><b>{label}</b></p>" + ksweep_table(tag, layer)
+                + fig_row(*[img_tag(KS / f"{tag}_L{layer}_k{k}_docpartition.png", f"k = {k}: purity histogram vs null; source composition of the document clusters") for k in (4, 8, 32)])
+                for tag, layer, label in (("emo1000_full", 1, "EMO 1000, layer 1"), ("emo1000_full", 5, "EMO 1000, layer 5"), ("emo1000_full", 9, "EMO 1000, layer 9"),
+                                          ("emo512_full", 1, "EMO 512, layer 1"), ("std1000_full", 1, "standard 1000, layer 1"))),
+        "Layer 1: purity equals the random-partition value at every k (0.33 vs 0.32 at k = 4) for EMO 1000, EMO 512 and standard 1000 "
+        "alike, and the expert blocks there anti-correlate across (lift across &lt; 0): layer-1 blocks are groups of experts that fire "
+        "on the same <em>tokens</em>, and every document contains tokens of every kind. Layers 5 and 9: purity is well above random at "
+        "every k (layer 9: 0.55 / 0.43 / 0.30 vs 0.32 / 0.18 / 0.12 at k = 4 / 8 / 16), a third to a half of documents put more than half "
+        "their routing in one block, and the document clusters follow source with NMI ~0.3. Later-layer blocks are document-level "
+        "groups; layer-1 blocks are not, which is where EMO's document structure starts (Q1).")
     return body
 
 
