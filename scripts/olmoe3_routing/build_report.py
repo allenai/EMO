@@ -135,9 +135,8 @@ def heatmap_card(tag, label):
     if qf.exists():
         q = json.load(open(qf)); qtxt = " &middot; spectral Q by layer: " + ", ".join(f"{v:.2f}" for v in q["Q_spectral"])
     h = lambda name, cap: img_tag(HEAT / name, cap)
-    sub = (fig_row(h(f"{tag}_lift_tok_grid.png", "log2 lift, token level"), h(f"{tag}_cond_tok_grid.png", "conditional co-activation P(j|i), token level"))
-           + fig_row(h(f"{tag}_lift_doc_grid.png", "log2 lift, document level"), h(f"{tag}_cond_doc_grid.png", "conditional co-activation, document level"))
-           + fig_row(h(f"{tag}_usage.png", "per-expert token usage by layer"), h(f"{tag}_lift_hist.png", "distribution of pairwise lift")))
+    sub = (fig_row(h(f"{tag}_lift_tok_grid.png", "log2 lift"), h(f"{tag}_cond_tok_grid.png", "conditional co-activation P(j|i)"))
+           + fig_row(h(f"{tag}_lift_hist.png", "distribution of pairwise lift")))
     return card("info", f"Heatmaps: {label}{qtxt}", sub)
 
 
@@ -176,15 +175,16 @@ def build_q1(res, findings):
     body += card("info", "Co-activation heatmaps: which experts are used together?",
         "<p>Expert &times; expert grids per layer. <b>Lift</b>: how much more often two experts are used together than chance, in log2 "
         "(+1 = twice as often, 0 = independent, clipped to &plusmn;3), with experts ordered so that groups appear as blocks on the diagonal. "
-        "<b>Conditional co-activation</b>: given that expert i is used, the probability that expert j is too. Both come at <em>token</em> level "
-        "(the two experts are in one token's top-16) and <em>document</em> level (both are used somewhere in the same document).</p>")
+        "<b>Conditional co-activation</b>: given that expert i is used on a token, the probability that expert j is in the same token's top-16 "
+        "(row = conditioning expert; not symmetric, so a dark column is simply a rarely used expert). Two experts count as co-activated when "
+        "they are both in one token's top-16.</p>")
     body += heatmap_card("std512_full", "standard MoE, 512 experts, full routing") + heatmap_card("emo512_full", "EMO, 512 experts, full routing")
     body += card("info", "Takeaway from the heatmaps",
-        "<p>At token level both models show clear red blocks on the diagonal in every layer, of similar size and strength: which experts fire "
-        "together on a token is organised the same way in both. The difference is at document level. The standard model's document-level "
-        "grids are blank, because a document touches nearly every expert, so no pair is used together more or less often than chance. In "
-        "EMO faint blocks appear from layer 2 and sharpen with depth (layer 9 clearest): sets of experts that are used by the same documents "
-        "and, in the off-diagonal blue, sets that are rarely used by the same document.</p>")
+        "<p>Both models show clear red blocks on the diagonal in every layer, of similar size and strength, and the lift histograms have the "
+        "same shape: which experts fire together on a token is organised the same way in both models. EMO's off-block region is somewhat "
+        "bluer (pairs from different groups co-fire less than chance), but the group structure itself is not stronger, matching the Q values "
+        "above. Nothing in these token-level grids reveals EMO's per-document concentration, which is a statement about which experts a "
+        "whole document uses, not about which experts a single token uses together.</p>")
     return body
 
 
