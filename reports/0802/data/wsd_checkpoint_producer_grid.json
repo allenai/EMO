@@ -1253,14 +1253,14 @@
     {
       "id": "dense-153m-dclm3b-bs256-lr2e-3-wd0.1",
       "role": "integrated_checkpoint_producer_and_evaluator",
-      "policy": "dense_small_pool3b_bs256_e576_integrated_v1",
+      "policy": "dense_small_pool3b_bs256_e576_integrated_protected_v2",
       "model": "153m",
       "pool": "dclm3b",
       "sourcePool": "dclm1b",
       "batchSequences": 256,
       "learningRate": "2e-3",
       "weightDecay": "0.1",
-      "status": "scheduled",
+      "status": "running",
       "sourceEpoch": 1,
       "sourceExperiment": "01M1AAJ4WYM9TCNEY7AC7P67MG",
       "sourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1/step2575",
@@ -1405,15 +1405,15 @@
       "currentEpoch": 516,
       "currentPhase": "repacked_shuffled_pool3b_constant_lr",
       "evaluationEnabled": true,
-      "experiment": "01M245CQWC82SERW9D0NV9658N",
-      "revision": "81885db821d62165c52a8efbcadc37c068a82baa",
+      "experiment": "01M2601KVK3QAMV1YWX46QS56Z",
+      "revision": "6b17abec797a1754d006e05d1685d6aab60e9a0d",
       "previousExperiment": "01M1AAJ4WYM9TCNEY7AC7P67MG",
       "previousOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1",
       "previousExperimentStatus": "stopped_after_recovery_selection",
       "previousExperimentStoppedAt": "2026-08-30T23:03:05Z",
       "recoveryAttempt": 2,
       "recoverySelectedAt": "2026-08-30T23:00:24Z",
-      "beakerStatus": "scheduled",
+      "beakerStatus": "running",
       "experimentHistory": [
         {
           "experiment": "01M1ADAHGHRCVEHMJ8K4H8BNWB",
@@ -1485,9 +1485,19 @@
           "maxValidatedEpoch": 512,
           "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1_throughput_recovery_r2",
           "stoppedAt": "2026-09-09T22:42:37.619689+00:00"
+        },
+        {
+          "experiment": "01M245CQWC82SERW9D0NV9658N",
+          "job": "01M24Z9MX52SXC2MSVW2J0P9ZF",
+          "revision": "81885db821d62165c52a8efbcadc37c068a82baa",
+          "status": "failed",
+          "maxValidatedEpoch": 512,
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr2e-3_wd0.1_throughput_recovery_r2",
+          "stoppedAt": "2026-09-10T15:47:39.503198+00:00"
         }
       ],
       "continuationSourceEpoch": 512,
+      "continuationRecoverySourceEpoch": 568,
       "continuationTargetEpoch": 576,
       "continuationCheckpointEpochs": [
         516,
@@ -1510,7 +1520,7 @@
       "evaluationEpochs": [
         576
       ],
-      "submittedAt": "2026-09-09T22:42:37.620634+00:00",
+      "submittedAt": "2026-09-10T15:47:39.505244+00:00",
       "checkpointIntervalEpochs": 4,
       "checkpointCleanupKeepEpochs": [
         256,
@@ -1628,11 +1638,11 @@
         448,
         512
       ],
-      "minRuntimeOmitted": true,
+      "minRuntimeOmitted": false,
       "runtimeEstimate": {
         "producerHours": [
-          8,
-          10
+          0.75,
+          1.25
         ],
         "postHours": [
           8,
@@ -1643,8 +1653,8 @@
           0.5
         ],
         "totalHours": [
-          16,
-          20
+          9,
+          10.75
         ]
       },
       "nodeCount": 2,
@@ -1652,15 +1662,22 @@
       "gpuCount": 16,
       "rankMicrobatchSequences": 16,
       "gradientAccumulationSteps": 1,
-      "jobs": [
-        "01M245CR14E1XN9HEK693QW7PT",
-        "01M245CR5DF29SSF94JVGG6CEV"
+      "minRuntime": "8h",
+      "postDecayRecoverySteps": [
+        1524353,
+        1565552,
+        1606751,
+        1647950
       ],
-      "job": "01M245CR14E1XN9HEK693QW7PT",
+      "jobs": [
+        "01M2601M7Z534KKT173AHNGQAS",
+        "01M2601MH4WPAA4F58S2Z17W29"
+      ],
+      "job": "01M2601M7Z534KKT173AHNGQAS",
       "wandbHealth": {
         "status": "pending",
-        "checkedAt": "2026-09-09T22:43:04.099065+00:00",
-        "beakerState": "scheduled",
+        "checkedAt": "2026-09-10T15:51:20.965941+00:00",
+        "beakerState": "running",
         "latestStep": null,
         "totalSteps": null,
         "run": null,
@@ -2403,7 +2420,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-09T22:43:04.099357+00:00",
+  "updatedAt": "2026-09-10T15:51:20.967159+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",

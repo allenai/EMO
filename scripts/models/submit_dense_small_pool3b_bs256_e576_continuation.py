@@ -119,10 +119,11 @@ def register(report: dict[str, Any], experiment: str, revision: str) -> None:
     })
     record.update({
         "experiment": experiment, "revision": revision, "policy": runner.POLICY,
-        "status": "submitted", "beakerStatus": "submitted", "currentEpoch": 516,
+        "status": "submitted", "beakerStatus": "submitted", "currentEpoch": 568,
         "currentPhase": "repacked_shuffled_pool3b_constant_lr",
         "targetEpochs": sorted({*[int(x) for x in record.get("targetEpochs", [])], *runner.CHECKPOINT_EPOCHS}),
-        "continuationSourceEpoch": 512, "continuationTargetEpoch": 576,
+        "continuationSourceEpoch": 512, "continuationRecoverySourceEpoch": 568,
+        "continuationTargetEpoch": 576,
         "continuationCheckpointEpochs": list(runner.CHECKPOINT_EPOCHS),
         "evaluationEpochs": [576], "checkpointIntervalEpochs": 4,
         "checkpointCleanupKeepEpochs": [256, 320, 384, 448, 512, 576],
@@ -135,7 +136,7 @@ def register(report: dict[str, Any], experiment: str, revision: str) -> None:
         "rankMicrobatchSequences": 16, "gradientAccumulationSteps": 1,
         "minRuntime": MIN_RUNTIME, "minRuntimeOmitted": False,
         "postDecayRecoverySteps": list(runner.POST_RECOVERY_STEPS),
-        "runtimeEstimate": {"producerHours": [8, 10], "postHours": [8, 9], "evaluationAndOverheadHours": [0.1, 0.5], "totalHours": [16, 20]},
+        "runtimeEstimate": {"producerHours": [0.75, 1.25], "postHours": [8, 9], "evaluationAndOverheadHours": [0.1, 0.5], "totalHours": [9, 10.75]},
         "submittedAt": datetime.now(tz=UTC).isoformat(),
     })
     for key in ("job", "jobs", "wandbHealth", "needsAttention", "decision", "lastDecisionEpoch", "stopAuthorized", "stopAfterEpoch"):
