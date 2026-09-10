@@ -369,31 +369,8 @@ def build_q4(res1000, res, findings):
 KS = OUT / "ksweep"
 
 
-def ksweep_table(tag, layer):
-    jf = KS / f"{tag}_L{layer}_ksweep.json"
-    if not jf.exists(): return "<p class=\"muted\">not run</p>"
-    r = json.load(open(jf)); rows = []
-    for k, v in sorted(r.items(), key=lambda kv: int(kv[0])):
-        rows.append([k, f(v["purity"], 2), f(v["purity_null"], 2), f"{v['frac_purity_gt_half']:.2f}", f(v["lift_within"], 2), f(v["lift_across"], 2)])
-    return table(["k", "purity", "purity, random partition", "docs with purity &gt; 0.5", "lift within", "lift across"], rows)
-
-
-KS_MODELS = (("emo512_full", "emo"), ("emo1000_full", "emo1000"), ("std1000_full", "std1000"))
+KS_MODELS = (("emo1000_full", "emo1000"), ("emo512_full", "emo"), ("emo128_full", "emo128"), ("std1000_full", "std1000"))
 KS_LAYERS = (1, 5, 9)
-
-
-def ksweep_tables_by_layer():
-    out = ""
-    for layer in KS_LAYERS:
-        rows = []
-        for tag, m in KS_MODELS:
-            jf = KS / f"{tag}_L{layer}_ksweep.json"
-            if not jf.exists(): continue
-            r = json.load(open(jf))
-            for k, v in sorted(r.items(), key=lambda kv: int(kv[0])):
-                rows.append([MODEL_LABEL[m], k, f(v["purity"], 2), f(v["purity_null"], 2), f"{v['frac_purity_gt_half']:.2f}", f(v["lift_within"], 2), f(v["lift_across"], 2)])
-        out += f"<p><b>Layer {layer}</b> (rows grouped by model)</p>" + table(["model", "k", "purity", "purity, random partition", "docs with purity &gt; 0.5", "lift within", "lift across"], rows)
-    return out
 
 
 def purity_grid():
@@ -433,7 +410,7 @@ def build_q5():
         "in that layer. <b>Purity</b> = the share of the document's routing that lands in its own cluster, compared with a random expert "
         "partition of the same sizes. <b>Lift within / across</b> = mean log2 lift among the experts the document actually uses, inside vs "
         "outside its cluster. Shown for three models at layers 1, 5 and 9.",
-        ksweep_tables_by_layer() + purity_grid(),
+        purity_grid(),
         "Standard 1000, every layer: purity equals the random-partition value at every k (layer 9: 0.32 vs 0.31 at k = 4), no document "
         "puts more than half its routing in one block, and experts from different blocks anti-correlate (lift across &lt; 0). Its blocks "
         "are groups of experts that fire on the same <em>tokens</em>, and every document contains tokens of every kind. EMO layer 1 looks "
